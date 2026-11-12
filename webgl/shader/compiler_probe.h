@@ -1,6 +1,7 @@
 #ifndef VOX_DIRECT_METAL_PROBE_H
 #define VOX_DIRECT_METAL_PROBE_H
 #include <stdint.h>
+int vox_direct_metal_compile_probe(char const*);
 int vox_direct_metal_feedback_probe(char const*, uint32_t, uint32_t, uint32_t, uint32_t, uint32_t, uint32_t*, uint64_t);
 int vox_direct_metal_attribute_probe(char const*, char const*, uint32_t, uint32_t, uint32_t, void const*, uint64_t);
 int vox_direct_metal_texture_probe(char const*, char const*, int, uint32_t);

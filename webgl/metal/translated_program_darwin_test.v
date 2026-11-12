@@ -22,7 +22,7 @@ fn test_translated_v_program_uses_engine_uniform_writes_and_draw_submission() {
 fn test_translated_v_program_captures_vertices_through_existing_engine_api() {
  mut target := DrawingBuffer.create(1,1)!
  defer { target.close() }
- vertex := shader.translate('#version 300 es\nout vec3 value;out mat2 matrix;void main(){value=vec3(float(gl_VertexID),float(gl_InstanceID),7.0);matrix[0]=vec2(1.0,2.0);matrix[1]=vec2(3.0,4.0);gl_Position=vec4(1.0,2.0,3.0,4.0);}',.vertex)!
+ vertex := shader.translate('#version 300 es\nout vec3 value;out mat2 matrix;void main(){value=vec3(float(gl_VertexID),float(gl_InstanceID),7.0);matrix=mat2(1.0,2.0,3.0,4.0);gl_Position=vec4(1.0,2.0,3.0,4.0);}',.vertex)!
  fragment := shader.translate('#version 300 es\nprecision highp float;out vec4 color;void main(){color=vec4(1.0);}',.fragment)!
  mut program := ShaderProgram.from_translation(target,vertex,fragment)!
  defer { program.close() }

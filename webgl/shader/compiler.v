@@ -47,6 +47,7 @@ pub fn translate_with_bindings(source string, stage Stage, bindings map[string]i
 
 	processed := preprocess(source)!
 	tokens := processed.tokens
+	validate_essl_language(tokens,processed.version)!
 	mut body := []string{}
 	mut inputs := []Interface{}
 	mut outputs := []Interface{}
@@ -80,6 +81,10 @@ pub fn translate_with_bindings(source string, stage Stage, bindings map[string]i
 		if token == '#' {
 			return error('Preprocessor directives are not supported by the direct Metal slice yet')
 		}
+        if token == 'invariant' && depth == 0 && at+2 < tokens.len && tokens[at+1] == 'gl_Position' && tokens[at+2] == ';' {
+            if stage != .vertex { return error('Invariant position requires a vertex shader') }
+            at += 3; continue
+        }
 		if token in ['layout', 'invariant'] {
 			return error('Unsupported direct Metal declaration: ${token}')
 		}
@@ -177,6 +182,7 @@ pub fn translate_with_bindings(source string, stage Stage, bindings map[string]i
 			return error('Unsupported direct Metal token: ${token}')
 		}
 		if version == 100 && (token == 'uint' || token.starts_with('uvec')) { return error('Unsigned types require ESSL 300') }
+		if value := essl_builtin_constant(token) { body << value; at++;continue }
 		if token.starts_with('gl_') && token !in ['gl_Position', 'gl_PointSize', 'gl_FragColor',
 			'gl_VertexID', 'gl_InstanceID'] {
 			return error('Unsupported builtin: ${token}')

@@ -121,7 +121,7 @@ attribute reconstruction with the regular vertex variant. This is code generatio
 only: production integration, varying selection/packing, interface arrays and
 selection/packing beyond these raw capture records remains pending.
 
-Validation for this slice: all nine test files pass with the C backend in
+Validation for this slice: all ten shader test files pass with the C backend in
 default GC and `-gc none`. The macOS test compiles the V-generated vertex and fragment
 sources (including macro/conditional and uniform variants) with Metal, links a render
 pipeline, draws a full-target triangle, and
@@ -169,3 +169,13 @@ uniform, render exact pixels, and capture matrix/clip outputs without loading
 compiler libraries. Existing glslang program/uniform/capture tests also pass in
 both GC modes. This explicit integration API does not yet replace the default
 ESSL compile path; build dependencies remain until the acceptance corpus is ported.
+
+The original 40 acceptance/error shaders are now one shared V fixture consumed
+by both the native WebGL service test and the direct V-to-Metal compiler test,
+with unchanged source bytes and expectations. Both paths pass, together with
+the existing eight texture pixel fixtures, in default GC and `-gc none`.
+V now checks ESSL100 loop initializer/bound/step constant forms and rejects its
+bitwise/modulo/unsigned/control-flow restrictions before MSL lowering. Builtin
+resource-limit constants and invariant vertex position are lowered explicitly.
+These checks cover the shared corpus; they do not establish complete Appendix A
+index/mutation validation or general ESSL type equivalence with Metal.

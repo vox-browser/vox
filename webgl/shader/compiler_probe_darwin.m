@@ -143,3 +143,13 @@ int vox_direct_metal_feedback_probe(char const* source, uint32_t first, uint32_t
         return 1;
     }
 }
+
+int vox_direct_metal_compile_probe(char const* source) {
+    @autoreleasepool {
+        id<MTLDevice> device=MTLCreateSystemDefaultDevice();
+        if(!device) return 0;
+        NSError* error=nil;
+        id<MTLLibrary> library=[device newLibraryWithSource:[NSString stringWithUTF8String:source] options:nil error:&error];
+        return library!=nil;
+    }
+}

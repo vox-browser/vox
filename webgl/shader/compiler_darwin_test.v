@@ -173,3 +173,16 @@ fn test_regular_rendering_reconstructs_matrix_and_flat_integer_varyings() {
  link(vertex,fragment)!
  assert C.vox_direct_metal_probe(vertex.source.str,fragment.source.str)==1
 }
+
+fn C.vox_direct_metal_compile_probe(&char) int
+
+fn test_shared_essl_acceptance_corpus_through_v_translation_and_metal_compilation() {
+ for case in acceptance_cases() {
+  translated:=translate(case.source,if case.stage==0x8b31 {Stage.vertex} else {Stage.fragment}) or {
+   assert !case.accepted,case.name+': '+err.msg()
+   continue
+  }
+  accepted:=C.vox_direct_metal_compile_probe(translated.source.str)==1
+  assert accepted==case.accepted,case.name
+ }
+}
