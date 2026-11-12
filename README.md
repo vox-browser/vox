@@ -12,6 +12,10 @@ WebGL shader validation needs glslang (`brew install glslang` on macOS,
 
 ### Building
 
+Python is not required to build Vox. Setup and build helpers run as V `.vsh`
+scripts. Python is used by optional tests, benchmarks, and generators. See
+[build-tool commands](tools/BUILDING.md).
+
 Install a current [V compiler](https://github.com/vlang/v), put `v` on `PATH`,
 and install the shared V UI with `v install ui2` (or update it with `v up ui2`).
 Vox needs no Ladybird checkout, Skia, vcpkg or Rust toolchain.
@@ -106,8 +110,6 @@ For a quick engine check, run the resulting executable with `--headless-smoke`.
 The latest [Linux VM checks](docs/LINUX.md#vm-follow-up-2026-11-12) and
 [Windows VM checks](docs/WINDOWS.md#vm-follow-up-2026-11-12) record the verified
 builds, runtime checks and earlier failed attempts.
-The build tools use V. Python remains in optional tests, benchmarks, and
-generators. See [build-tool commands](tools/BUILDING.md).
 Repository contributors run builds and tests through
 `sh tools/run_v_tool.sh run_memory_bounded --lock Build/JOB.lock --report Build/JOB.json -- v .`.
 
