@@ -176,3 +176,34 @@ bypassed. Local corrective-slice evidence is in
 `docs/performance/optimized-pixels-fixes-20261112/`, including the rejected
 legacy-blending experiment and the floating-color replay diagnostic. Diagnostics
 are not whole-browser acceptance results.
+
+## Second corrective slice: rounded image clipping
+
+Commit `adcfdb660` installs V/gg.canvas coverage for uniform rounded image
+clips aligned to the device grid. The native adapter installs that coverage
+into the existing image context; unsupported geometry retains its prior path.
+Small repeated masks use a bounded persistent cache (at most 64 KiB), with a
+test that retires the construction workspace before reusing its cached mask.
+
+The new black-avatar clip fixture matches fresh Brave coverage exactly at
+both 1× and 2× through the actual CoreGraphics mask-installation boundary.
+All three focused tests pass in normal and `-prealloc -gc none` modes under
+3 GiB guards. Existing references and tolerances remain unchanged.
+
+Managed build `20261112-090832-84e95ffc`, executable SHA-256
+`5ac58eb4aba69b6a16b7ffb777f0ee0c319e72dbd04e1c5defaa0d59bd69d975`,
+contains the fix: the receipt's parsed-source manifest hashes for the V clip
+implementation, native adapter header and native image painter match the
+committed implementation. The receipt's earlier source head is `547cfce1b`;
+its dirty, verified input snapshot includes this subsequent corrective slice.
+Two fresh browser captures of the reduced fixture are pixel-exact. Two fresh
+Lobsters captures now differ at **303 pixels each**, down from 637, with stable
+executable/resource identities, successful content/viewport checks and exits 0.
+
+Lobsters is still open. The remaining errors include single-level color errors
+around colored avatar boundaries and differences inside one photographic
+avatar. That resource, named `aphyr-16.png`, actually contains JPEG bytes;
+image decoding/sampling needs a separate check from clip coverage. Maximum
+remaining channel error is 13. Other catalog sites have not been reaccepted.
+Local commands, images, comparisons, build/source identity checks and guard
+receipts are retained under `docs/performance/lobsters-avatar-20261112/`.
