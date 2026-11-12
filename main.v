@@ -8397,14 +8397,18 @@ fn (mut app BrowserApp) handle_key(key gg.KeyCode, modifier gg.Modifier) {
 }
 
 fn main() {
+	run_browser(os.args)
+}
+
+fn run_browser(arguments []string) {
 	load_instruction_stage := processmetrics.begin_instruction_stage('browser_main')
 	defer { load_instruction_stage.finish() }
 	configure_browser_javascript_startup()
 	install_browser_script_resource_cache()
 	loader.install_fetch_user_agent_provider()
 	// Dispatch the signed self-helper before browser heap/font/GUI setup.
-	if status := browserjs.run_worker_process_role(os.args) { exit(status) }
-	if status := adblock.run_default_worker_role(os.args) { exit(status) }
+	if status := browserjs.run_worker_process_role(arguments) { exit(status) }
+	if status := adblock.run_default_worker_role(arguments) { exit(status) }
 	$if macos {
 		adblock.configure_default_self_worker() or {
 			eprintln('Ladybird V: cannot configure the default filter worker: ${err.msg()}')
@@ -8426,7 +8430,7 @@ fn main() {
 	css.install_remote_style_sheet_loader(load_browser_imported_style_sheet)
 	defer { requestserver.close_native_font_fetch_host() }
 	xpath.install_dom_xpath_bridge()
-	mut options := parse_launch_options(os.args[1..]) or {
+	mut options := parse_launch_options(arguments[1..]) or {
 		eprintln('Ladybird V: ${err.msg()}')
 		exit(2)
 	}
