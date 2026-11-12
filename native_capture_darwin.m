@@ -4776,6 +4776,7 @@ static CGContextRef native_background_text_content_context;
 static CGContextRef native_background_text_destination;
 static CGImageRef native_background_text_clip_image;
 static CGRect native_background_text_clip_rect;
+static CGRect native_background_text_raster_rect;
 static int native_background_text_clip_active;
 static int native_background_text_gradient_pending;
 static int native_background_text_gradient_recording;
@@ -4819,10 +4820,19 @@ void native_begin_background_text_clip(float canvas_width, float canvas_height,
 		native_background_text_clip_rect = CGRectZero;
 	}
 	CGFloat scale = native_svg_mask_backing_scale();
-	size_t width = (size_t)MAX(1.0,
-		ceil(native_background_text_clip_rect.size.width * scale));
-	size_t height = (size_t)MAX(1.0,
-		ceil(native_background_text_clip_rect.size.height * scale));
+	// Keep the mask on the destination device grid. Fractional clip bounds
+	// remain the paint clip, but must not resample the glyph coverage image.
+	native_background_text_raster_rect = CGRectMake(
+		floor(CGRectGetMinX(native_background_text_clip_rect) * scale) / scale,
+		floor(CGRectGetMinY(native_background_text_clip_rect) * scale) / scale, 0, 0);
+	native_background_text_raster_rect.size.width =
+		ceil(CGRectGetMaxX(native_background_text_clip_rect) * scale) / scale
+		- native_background_text_raster_rect.origin.x;
+	native_background_text_raster_rect.size.height =
+		ceil(CGRectGetMaxY(native_background_text_clip_rect) * scale) / scale
+		- native_background_text_raster_rect.origin.y;
+	size_t width = (size_t)MAX(1.0, round(native_background_text_raster_rect.size.width * scale));
+	size_t height = (size_t)MAX(1.0, round(native_background_text_raster_rect.size.height * scale));
 	CGColorSpaceRef color_space = CGColorSpaceCreateWithName(kCGColorSpaceSRGB);
 	native_background_text_clip_build_context = CGBitmapContextCreate(NULL, width,
 		height, 8, width * 4, color_space,
@@ -4833,8 +4843,8 @@ void native_begin_background_text_clip(float canvas_width, float canvas_height,
 	}
 	CGContextScaleCTM(native_background_text_clip_build_context, scale, scale);
 	CGContextTranslateCTM(native_background_text_clip_build_context,
-		-native_background_text_clip_rect.origin.x,
-		-native_background_text_clip_rect.origin.y);
+		-native_background_text_raster_rect.origin.x,
+		-native_background_text_raster_rect.origin.y);
 	CGContextSetShouldAntialias(native_background_text_clip_build_context, true);
 }
 
@@ -4861,6 +4871,10 @@ void native_add_background_text_clip_run(float x, float y, string value,
 	[NSGraphicsContext restoreGraphicsState];
 }
 
+extern int32_t vox_draw_background_glyph_mask(uint16_t *, double *, int32_t,
+	float, int32_t, float, float, float, float, float, float, float, float,
+	float, float, float, float, float, string, int32_t, int32_t);
+
 int native_add_background_glyph_clip_run(const uint16_t *glyphs,
 	const double *positions, int glyph_count, float font_size, int font_weight, int emoji_face,
 	float baseline_x, float baseline_y, float transform_a, float transform_b,
@@ -4869,6 +4883,17 @@ int native_add_background_glyph_clip_run(const uint16_t *glyphs,
 	string font_path_value, int face_index, int font_smoothing) {
 	if (native_background_text_clip_build_context == NULL) {
 		return 0;
+	}
+	if (!emoji_face && (font_smoothing & 16)) {
+		[NSGraphicsContext saveGraphicsState];
+		[NSGraphicsContext setCurrentContext:[NSGraphicsContext
+			graphicsContextWithCGContext:native_background_text_clip_build_context flipped:NO]];
+		int drawn = vox_draw_background_glyph_mask((uint16_t *)glyphs, (double *)positions, glyph_count,
+			font_size, font_weight, baseline_x, baseline_y, transform_a, transform_b,
+			transform_c, transform_d, transform_e, transform_f, page_x, page_y,
+			scroll_y, canvas_width, canvas_height, font_path_value, face_index, font_smoothing);
+		[NSGraphicsContext restoreGraphicsState];
+		if (drawn) return 1;
 	}
 	// Upstream records text-mask glyphs in black. Skia's text contrast/gamma
 	// adjustment is paint-color dependent even though DestinationIn later uses
@@ -4902,7 +4927,7 @@ void native_finish_background_text_clip(void) {
 	if (native_background_text_clip_image != NULL
 		&& !CGRectIsEmpty(native_background_text_clip_rect)) {
 		CGContextClipToRect(destination, native_background_text_clip_rect);
-		CGContextClipToMask(destination, native_background_text_clip_rect,
+		CGContextClipToMask(destination, native_background_text_raster_rect,
 			native_background_text_clip_image);
 	} else {
 		CGContextClipToRect(destination, CGRectZero);
