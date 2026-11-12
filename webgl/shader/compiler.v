@@ -16,6 +16,7 @@ pub:
 	explicit_location bool
 	rows int = 1
 	columns int = 1
+	flat bool
 }
 
 pub struct Translation {
@@ -66,8 +67,15 @@ pub fn translate_with_bindings(source string, stage Stage, bindings map[string]i
 			qualifier := location_qualifier(tokens,at)!
 			explicit_location = qualifier.location
 			at = qualifier.end
-			if at >= tokens.len || tokens[at] !in ['in','out'] { return error('Expected input/output after layout location') }
+			if at >= tokens.len || tokens[at] !in ['in','out','flat','smooth'] { return error('Expected input/output after layout location') }
 		}
+        mut interpolation := ''
+        if depth == 0 && tokens[at] in ['flat','smooth'] {
+            if version != 300 { return error('Interpolation qualifiers require ESSL 300') }
+            interpolation = tokens[at]
+            at++
+            if at >= tokens.len || tokens[at] !in ['in','out'] { return error('Expected input/output after interpolation qualifier') }
+        }
 		token := tokens[at]
 		if token == '#' {
 			return error('Preprocessor directives are not supported by the direct Metal slice yet')
@@ -140,10 +148,14 @@ pub fn translate_with_bindings(source string, stage Stage, bindings map[string]i
 				return error('Duplicate interface: ${name}')
 			}
 			if explicit_location >= 0 && !((stage == .vertex && is_input) || (stage == .fragment && !is_input)) { return error('Layout locations only apply to vertex inputs or fragment outputs in ESSL 300') }
+            interstage := (stage == .vertex && !is_input) || (stage == .fragment && is_input)
+            if interpolation.len > 0 && !interstage { return error('Interpolation qualifier on a non-varying interface') }
+            if interstage && (typ == 'bool' || typ.starts_with('bvec')) { return error('Boolean stage varyings are invalid') }
+            if interstage && (typ == 'int' || typ == 'uint' || typ.starts_with('ivec') || typ.starts_with('uvec')) && interpolation != 'flat' { return error('Integer stage varyings require flat interpolation') }
 			rows,columns := interface_dimensions(typ)
 			if stage == .vertex && is_input && (typ == 'bool' || typ.starts_with('bvec')) { return error('Boolean vertex attributes are invalid') }
 			if stage == .fragment && !is_input && (columns > 1 || typ == 'bool' || typ.starts_with('bvec')) { return error('Invalid fragment output type') }
-			item := Interface{name:name,typ:typ,storage:if is_input {'in'} else {'out'},location:explicit_location,explicit_location:explicit_location>=0,rows:rows,columns:columns}
+			item := Interface{name:name,typ:typ,storage:if is_input {'in'} else {'out'},location:explicit_location,explicit_location:explicit_location>=0,rows:rows,columns:columns,flat:interpolation=='flat'}
 			if is_input { inputs << item } else { outputs << item }
 			at += 3
 			continue
@@ -208,7 +220,7 @@ pub fn translate_with_bindings(source string, stage Stage, bindings map[string]i
 	lines << '};'
 	lines << 'struct VoxInput {'
 	if stage == .vertex { lines << vertex_input_members(inputs)! }
-	else { for item in inputs { lines << '${metal_type(item.typ)!} ${item.name} [[user(v_${item.name})]];' } }
+	else { lines << varying_members(inputs)! }
 	lines << '};'
 	capture_prefix := lines.join('\n')
 	lines << 'struct VoxOutput {'
@@ -217,14 +229,8 @@ pub fn translate_with_bindings(source string, stage Stage, bindings map[string]i
 	} else if version == 100 {
 		lines << 'float4 color [[color(0)]];'
 	}
-	for item in outputs {
-		attribute := if stage == .vertex {
-			'user(v_${item.name})'
-		} else {
-			'color(${item.location})'
-		}
-		lines << '${metal_type(item.typ)!} ${item.name} [[${attribute}]];'
-	}
+    if stage == .vertex { lines << varying_members(outputs)! }
+    else { for item in outputs { lines << '${metal_type(item.typ)!} ${item.name} [[color(${item.location})]];' } }
 	lines << '};'
 	qualifier := if stage == .vertex { 'vertex' } else { 'fragment' }
 	mut args := texture_arguments(textures)
@@ -238,7 +244,7 @@ pub fn translate_with_bindings(source string, stage Stage, bindings map[string]i
 	reflected_uniforms := flatten_uniforms(uniforms,structures,0)!
 	lines << uniform_loads(reflected_uniforms)!
 	if stage == .vertex { lines << vertex_input_loads(inputs)! }
-	else { for item in inputs { lines << 'state.${item.name} = input.${item.name};' } }
+	else { lines << varying_loads(inputs)! }
 	if stage == .vertex {
 		lines << 'state.gl_VertexID = int(vertex_id); state.gl_InstanceID = int(instance_id);'
 	}
@@ -248,7 +254,8 @@ pub fn translate_with_bindings(source string, stage Stage, bindings map[string]i
 	} else if version == 100 {
 		lines << 'result.color = state.gl_FragColor;'
 	}
-	for item in outputs { lines << 'result.${item.name} = state.${item.name};' }
+	if stage == .vertex { lines << varying_stores(outputs) }
+	else { for item in outputs { lines << 'result.${item.name} = state.${item.name};' } }
 	lines << 'return result; }'
 	mut capture := FeedbackTranslation{}
 	if stage == .vertex && version == 300 {
@@ -276,7 +283,7 @@ pub fn link(vertex Translation, fragment Translation) ! {
 	}
 	for input in fragment.inputs {
 		matches := vertex.outputs.filter(it.name == input.name)
-		if matches.len != 1 || matches[0].typ != input.typ {
+		if matches.len != 1 || matches[0].typ != input.typ || matches[0].flat != input.flat {
 			return error('Varying mismatch: ${input.name}')
 		}
 	}

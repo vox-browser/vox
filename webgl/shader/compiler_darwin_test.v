@@ -142,7 +142,7 @@ fn test_api_bound_and_explicit_matrix_attributes_read_each_column_on_the_gpu() {
 fn C.vox_direct_metal_feedback_probe(&char,u32,u32,u32,u32,u32,&u32,u64) int
 
 fn test_v_generated_feedback_preserves_ids_matrix_bits_and_original_clip_position() {
- vertex := translate('#version 300 es\nout vec3 value;out mat2 matrix;out int signed_value;out uint unsigned_value;void main(){value=vec3(float(gl_VertexID),float(gl_InstanceID),7.0);matrix[0]=vec2(1.0,2.0);matrix[1]=vec2(3.0,4.0);signed_value=-7;unsigned_value=4000000000u;gl_Position=vec4(1.0,2.0,3.0,4.0);}',.vertex)!
+ vertex := translate('#version 300 es\nout vec3 value;out mat2 matrix;flat out int signed_value;flat out uint unsigned_value;void main(){value=vec3(float(gl_VertexID),float(gl_InstanceID),7.0);matrix[0]=vec2(1.0,2.0);matrix[1]=vec2(3.0,4.0);signed_value=-7;unsigned_value=4000000000u;gl_Position=vec4(1.0,2.0,3.0,4.0);}',.vertex)!
  assert vertex.feedback_stride==52
  assert vertex.feedback_fields.map(it.offset)==[0,12,28,32,36]
  // Four records, with canaries beyond the output range. A nonzero Metal base
@@ -165,4 +165,11 @@ fn test_v_generated_feedback_preserves_ids_matrix_bits_and_original_clip_positio
  for i in 0..words.len { words[i]=0xdeadbeef }
  assert C.vox_direct_metal_feedback_probe(vertex.feedback_source.str,2,2,3,2,51,words.data,56)==1
  assert words.all(it==u32(0xdeadbeef))
+}
+
+fn test_regular_rendering_reconstructs_matrix_and_flat_integer_varyings() {
+ vertex := translate('#version 300 es\nout mat2x3 basis;flat out ivec2 signed_value;flat out uint unsigned_value;void main(){gl_Position=vec4(gl_VertexID==1?3.0:-1.0,gl_VertexID==2?3.0:-1.0,0.0,1.0);basis[0]=vec3(1.0,2.0,3.0);basis[1]=vec3(4.0,5.0,6.0);signed_value=ivec2(-7,9);unsigned_value=4000000000u;}',.vertex)!
+ fragment := translate('#version 300 es\nprecision highp float;in mat2x3 basis;flat in ivec2 signed_value;flat in uint unsigned_value;out vec4 color;void main(){color=basis[0].z==3.0 && basis[1].y==5.0 && signed_value.x==-7 && unsigned_value==4000000000u ? vec4(1.0,0.0,0.0,1.0) : vec4(0.0,1.0,0.0,1.0);}',.fragment)!
+ link(vertex,fragment)!
+ assert C.vox_direct_metal_probe(vertex.source.str,fragment.source.str)==1
 }

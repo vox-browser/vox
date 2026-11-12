@@ -1,7 +1,7 @@
 module shader
 
 fn test_capture_reflection_is_tightly_packed_and_position_is_included() {
- vertex := translate('#version 300 es\nout vec3 value;out mat2 matrix;out int index;void main(){gl_Position=vec4(1.0);}',.vertex)!
+ vertex := translate('#version 300 es\nout vec3 value;out mat2 matrix;flat out int index;void main(){gl_Position=vec4(1.0);}',.vertex)!
  assert vertex.feedback_fields.map(it.name)==['value','matrix','index','gl_Position']
  assert vertex.feedback_fields.map(it.offset)==[0,12,28,32]
  assert vertex.feedback_stride==48

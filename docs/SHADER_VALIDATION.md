@@ -119,9 +119,9 @@ capacity checks precede multiplications and suppress an undersized capture.
 The generated capture variant shares uniform decoding, texture bindings and
 attribute reconstruction with the regular vertex variant. This is code generation
 only: production integration, varying selection/packing, interface arrays and
-regular rasterization of matrix varyings are still pending.
+selection/packing beyond these raw capture records remains pending.
 
-Validation for this slice: all eight test files pass with the C backend in
+Validation for this slice: all nine test files pass with the C backend in
 default GC and `-gc none`. The macOS test compiles the V-generated vertex and fragment
 sources (including macro/conditional and uniform variants) with Metal, links a render
 pipeline, draws a full-target triangle, and
@@ -152,3 +152,11 @@ capacity. The V test driver bootstrap still references an unavailable
 build-tool split-loop workaround restores the managed V memory guard and commit
 hooks; the final direct checks use that guard. Earlier direct checks used the
 existing Python guard with the same 3 GiB process-tree budget.
+
+Regular vertex/fragment MSL now flattens matrix varyings into one matching user
+semantic per column and reconstructs the matrix in fragment state. ESSL300
+`flat`/`smooth` qualifiers are parsed and linking checks their agreement.
+Integer varyings require `flat`; boolean varyings and interpolation qualifiers
+on attributes or fragment outputs are rejected. A GPU fixture renders through
+non-square matrix, signed-vector and unsigned-scalar varyings in both GC modes.
+Centroid interpolation and varying arrays remain pending.
