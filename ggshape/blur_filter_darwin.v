@@ -150,6 +150,9 @@ fn shadow_filter_scale(shape &C.VoxGraphiteShape) ?f32 {
 fn rounded_shadow_mask(shape &C.VoxGraphiteShape, width int, height int) ![]u8 {
 	if affine_shadow_supported(shape) {
 		if patch := rounded_shadow_nine_patch(shape, width, height) { return patch }
+		if shape.rect[4..12].any(it > 0) {
+			return shadow_filter_mask(shape, width, height, none, canvas.Point{})
+		}
 	}
 	if !capsule_shadow_supported(shape) && !ellipse_shadow(shape) {
 		return error('Unsupported blurred shadow geometry')
