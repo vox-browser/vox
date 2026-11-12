@@ -23,6 +23,7 @@ fn (app &BrowserApp) update_window_title() {
 	// Sokol's X11 title setter requires a live Display and Window. Documents
 	// are also installed before window creation and in non-windowed modes.
 	if app.ctx == unsafe { nil } || app.document == unsafe { nil } || !app.is_active_browser_tab() { return }
+	$if linux { initialize_linux_window_identity() }
 	title := document_title(app.document)
 	gg.set_window_title(browser_window_title(title))
 }
