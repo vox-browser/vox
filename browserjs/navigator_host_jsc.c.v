@@ -18,7 +18,7 @@ pub fn (mut host NavigatorHost) install(mut runtime Runtime) ! {
 	host.freeze = runtime.evaluate_host_value('Object.freeze')!
 	mut arguments := [C.JSContextGetGlobalObject(runtime.context)]
 	for name in navigator_attribute_names {
-		arguments << runtime.make_native_value_host_function('get ' + name, 0,
+		arguments << runtime.make_native_value_host_accessor(name, false,
 			fn [owner, name] (receiver voidptr, _ []voidptr) !voidptr {
 				runtime := unsafe { &Runtime(owner) }
 				mut actual := runtime.native_navigator_host(receiver)!
@@ -32,7 +32,7 @@ pub fn (mut host NavigatorHost) install(mut runtime Runtime) ! {
 			return actual.operate('javaEnabled')
 		})!
 	for name in ['navigator', 'clientInformation'] {
-		arguments << runtime.make_native_value_host_function('get ' + name, 0,
+		arguments << runtime.make_native_value_host_accessor(name, false,
 			fn [owner] (receiver voidptr, _ []voidptr) !voidptr {
 				runtime := unsafe { &Runtime(owner) }
 				actual := runtime.navigator_host_for_window(receiver)!
@@ -40,7 +40,7 @@ pub fn (mut host NavigatorHost) install(mut runtime Runtime) ! {
 			})!
 	}
 	replace := runtime.evaluate_host_value('(function(global,value){Object.defineProperty(global,"clientInformation",{value,writable:true,enumerable:true,configurable:true})})')!
-	arguments << runtime.make_native_value_host_function('set clientInformation', 1,
+	arguments << runtime.make_native_value_host_accessor('clientInformation', true,
 		fn [owner, replace] (receiver voidptr, values []voidptr) !voidptr {
 			runtime := unsafe { &Runtime(owner) }
 			_ = runtime.navigator_host_for_window(receiver)!

@@ -108,13 +108,30 @@ pub fn (mut runtime Runtime) make_value_host_function(callback ValueHostFunction
 // and no [[Construct]]. Exact actual function references retain their source
 // host records until the owning Runtime closes; this is not full wrapper GC.
 pub fn (mut runtime Runtime) make_native_value_host_function(name string, length int, callback ValueHostFunction) !voidptr {
+	return runtime.make_named_native_value_host_function(name, name, length, callback)
+}
+
+// WebKit's DOM accessors expose "get name"/"set name" as their own name,
+// but use the unprefixed operation name for native source and stack frames.
+pub fn (mut runtime Runtime) make_native_value_host_accessor(name string, setter bool, callback ValueHostFunction) !voidptr {
+	prefix := if setter { 'set ' } else { 'get ' }
+	length := if setter { 1 } else { 0 }
+	$if vox_v8 ? {
+		return runtime.make_native_value_host_function(prefix + name, length, callback)
+	}
+	return runtime.make_named_native_value_host_function(prefix + name, name, length, callback)
+}
+
+fn (mut runtime Runtime) make_named_native_value_host_function(name string, source_name string, length int, callback ValueHostFunction) !voidptr {
 	runtime.require_javascript_value_context()!
 	record := &ValueHostFunctionRecord{runtime: &runtime, callback: callback, diagnostic: new_host_callback_diagnostic(name)}
-	actual_name := js_source_string(name)
-	defer { C.JSStringRelease(actual_name) }
-	function := C.vox_make_js_native_value_host_function(runtime.context, actual_name)
+	internal_name := js_source_string(source_name)
+	defer { C.JSStringRelease(internal_name) }
+	function := C.vox_make_js_native_value_host_function(runtime.context, internal_name)
 	if function == unsafe { nil } { return error('JavaScriptCore native function creation failed') }
 	runtime.retain_javascript_value(function)!
+	actual_name := js_source_string(name)
+	defer { C.JSStringRelease(actual_name) }
 	runtime.call_engine_function(runtime.value_function_metadata_intrinsic_, [function, C.vox_jsc_JSValueMakeString(runtime.context, actual_name), C.vox_jsc_JSValueMakeNumber(runtime.context, f64(length))])!
 	register_runtime_binding(mut native_value_host_functions_, function, record)
 	runtime.value_host_functions_ << record

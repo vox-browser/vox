@@ -80,8 +80,8 @@ fn test_navigator_native_getters_preserve_same_object_languages_and_cross_realm_
 	assert runtime.evaluate_host(r'
  const getter=Object.getOwnPropertyDescriptor(Navigator.prototype,"userAgent").get;
  let bad=false,nativeStack=false;
- try{getter.call(new Proxy(navigator,{}))}catch(error){bad=error instanceof TypeError;nativeStack=!error.stack.split("\n").some(line=>line==="@"||line.startsWith("check@"));}
- navigator.languages===navigator.languages&&bad&&nativeStack&&/\[native code\]/.test(Function.prototype.toString.call(getter));
+ try{getter.call(new Proxy(navigator,{}))}catch(error){bad=error instanceof TypeError;nativeStack=error.stack.startsWith("userAgent@[native code]\n")&&!error.stack.split("\n").some(line=>line==="@"||line.startsWith("check@"));}
+ navigator.languages===navigator.languages&&bad&&nativeStack&&String(getter)==="function userAgent() {\n    [native code]\n}"&&getter.name==="get userAgent";
  ')! == 'true'
 }
 
