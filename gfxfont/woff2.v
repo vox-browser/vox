@@ -481,7 +481,7 @@ fn woff2_size_of_composite(stream Woff2Buffer) ?Woff2CompositeSize {
 	return Woff2CompositeSize{composite.offset - start_offset, have_instructions}
 }
 
-fn woff2_store_loca(loca_values []u32, index_format u16, mut out Woff2Out) u32 {
+fn woff2_store_loca(loca_values []u32, index_format u16, mut out Woff2Out) ?u32 {
 	offset_size := if index_format != 0 { 4 } else { 2 }
 	mut loca_content := []u8{len: loca_values.len * offset_size}
 	mut offset := 0
@@ -646,7 +646,7 @@ fn woff2_reconstruct_glyf(data []u8, mut glyf_table Woff2Table, mut loca_table W
 	loca_table.dst_offset = u32(out.data.len)
 	// loca[n] is the length of the glyph data (glyf) table.
 	loca_values[int(info.num_glyphs)] = glyf_table.dst_length
-	loca_checksum := woff2_store_loca(loca_values, info.index_format, mut out)
+	loca_checksum := woff2_store_loca(loca_values, info.index_format, mut out)?
 	loca_table.dst_length = u32(out.data.len) - loca_table.dst_offset
 	return Woff2GlyfResult{glyf_checksum, loca_checksum}
 }
