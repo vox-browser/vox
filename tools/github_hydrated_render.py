@@ -161,6 +161,8 @@ def run(args):
                             VOX_PROXY=replay.ready['proxy'], SSL_CERT_FILE=replay.ready['ca'])
                         if args.metadata_control:
                             environment['VOX_DISABLE_METADATA_ATTRIBUTE_STYLE_REUSE'] = '1'
+                        if args.matches_control:
+                            environment['VOX_RETAIN_COMPACT_MATCHES_QUERY'] = '1'
                         os.environ.clear()
                         os.environ.update(environment)
                         common = dict(url=URL, width=1024, height=768, timeout=args.timeout,
@@ -205,6 +207,7 @@ def run(args):
                  for engine in ['vox', 'brave']}
         valid = all(r.get('content_validated') and r.get('pixels', {}).get('exact') for r in records)
         summary = dict(records=records, pins=pins, author_scripts=manifest['author_scripts'],
+            controls=dict(metadata=args.metadata_control, matches=args.matches_control),
             selected_js_engines=dict(vox='javascriptcore', brave='v8'),
             replay_clock=manifest.get('replay_clock'), median_ms={k: statistics.median(v) for k, v in times.items()},
             conservative_time_ratio=max(times['vox']) / min(times['brave']),
@@ -232,4 +235,6 @@ if __name__ == '__main__':
     parser.add_argument('--settle-seconds', type=float, default=1)
     parser.add_argument('--timeout', type=float, default=120)
     parser.add_argument('--metadata-control', action='store_true')
+    parser.add_argument('--matches-control', action='store_true',
+                        help='Use the original JSON transport for Element.matches in Vox')
     raise SystemExit(run(parser.parse_args()))
