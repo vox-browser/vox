@@ -186,3 +186,22 @@ fn test_shared_essl_acceptance_corpus_through_v_translation_and_metal_compilatio
   assert accepted==case.accepted,case.name
  }
 }
+
+fn test_legacy_derivative_extension_is_enforced_by_the_generated_overloads() {
+ source:='precision highp float;void main(){gl_FragColor=vec4(dFdx(1.0));}'
+ disabled:=translate(source,.fragment)!
+ assert C.vox_direct_metal_compile_probe(disabled.source.str)==0
+ enabled:=translate('#extension GL_OES_standard_derivatives : enable\n'+source,.fragment)!
+ assert C.vox_direct_metal_compile_probe(enabled.source.str)==1
+}
+
+fn test_legacy_texture_lod_extension_enables_fragment_lod_and_gradient_sampling() {
+ vertex:=translate('#version 300 es\nvoid main(){gl_Position=vec4(gl_VertexID==1?3.0:-1.0,gl_VertexID==2?3.0:-1.0,0.0,1.0);}',.vertex)!
+ for expression in ['texture2DLodEXT(image,vec2(0.25),0.0)','texture2DProjLodEXT(image,vec3(0.5,0.5,2.0),0.0)','texture2DGradEXT(image,vec2(0.25),vec2(0.0),vec2(0.0))','texture2DProjGradEXT(image,vec4(0.5,0.5,0.0,2.0),vec2(0.0),vec2(0.0))'] {
+  source:='precision highp float;uniform sampler2D image;void main(){gl_FragColor='+expression+';}'
+  disabled:=translate(source,.fragment)!
+  assert C.vox_direct_metal_compile_probe(disabled.source.str)==0,expression
+  enabled:=translate('#extension GL_EXT_shader_texture_lod : require\n'+source,.fragment)!
+  assert C.vox_direct_metal_texture_probe(vertex.source.str,enabled.source.str,1,0xff0000ff)==1,expression
+ }
+}

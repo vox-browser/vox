@@ -51,8 +51,7 @@ macros, undefinition, nested conditional branches, `defined`, integer conditions
 ESSL version selection and predefined ES/precision macros now run in V before
 translation. Macro rescanning suppresses recursive expansion, with explicit
 source, nesting, token and operation limits. Conditions short-circuit inactive
-operands. Token pasting and stringification are rejected. Extension and line
-directives, line-number builtins, ternary conditions and complete ESSL
+operands. Token pasting and stringification are rejected. Line directives, line-number builtins, ternary conditions and complete ESSL
 preprocessor conformance remain pending. The compiler also still needs semantic
 validation and the remaining
 ESSL expressions/builtins and control flow. General expression syntax and type
@@ -90,11 +89,11 @@ consume no plain-uniform buffer space. V generates ESSL100 texture2D/Cube and
 projected calls, plus ESSL300 texture, textureLod, textureGrad, textureSize,
 texelFetch (2D) and projected forms. Vertex implicit sampling uses level zero;
 fragment implicit sampling preserves derivatives, and fragment bias calls use
-Metal bias sampling. Legacy fragment explicit LOD
-and its enabling extension remain pending. Call names are rewritten only at calls/function
+Metal bias sampling. Legacy fragment explicit LOD and gradient forms are enabled by
+`GL_EXT_shader_texture_lod`. Call names are rewritten only at calls/function
 declarations, preserving legal sampler variables named `texture`/`textureLod`
-and user overloads of legacy functions. Sampler arrays, depth-comparison textures, extension spellings and full
-opaque-type validation remain pending. ESSL300 3D/array and signed/unsigned 2D
+and user overloads of legacy functions. Sampler arrays, depth-comparison textures and full opaque-type validation
+remain pending. ESSL300 3D/array and signed/unsigned 2D
 samplers now carry dimension, array and scalar metadata into the Metal runtime.
 Texture, LOD, gradient, size and fetch helpers are generated for these types;
 vector comparison helpers preserve integer comparisons. End-to-end storage tests
@@ -125,7 +124,7 @@ attribute reconstruction with the regular vertex variant. This is code generatio
 only: production integration, varying selection/packing, interface arrays and
 selection/packing beyond these raw capture records remains pending.
 
-Validation for this slice: all eleven shader test files pass with the C backend in
+Validation for this slice: all twelve shader test files pass with the C backend in
 default GC and `-gc none`. The macOS test compiles the V-generated vertex and fragment
 sources (including macro/conditional and uniform variants) with Metal, links a render
 pipeline, draws a full-target triangle, and
@@ -191,3 +190,13 @@ writes and external, aligned buffer ranges through the existing draw API.
 Cross-stage block signatures are checked; named block instances and alternative
 layout qualifiers remain pending. Plain uniforms keep their private block names
 so WebGL block queries can distinguish them from author blocks.
+
+Fragment coordinates, facing and point coordinates now use explicit Metal
+builtin inputs. Fragment depth and discard reach the existing depth/render-state
+path. ESSL100 draw-buffers output requires its extension and emits only statically
+selected color targets; exact two-target pixels are checked through the runtime.
+Known extension enable/disable directives gate derivatives and legacy texture
+LOD/gradient overloads. Tests check disabled rejection, projected coordinates,
+depth visibility, discarded pixels and original coordinate/facing behavior in
+both GC modes. Fragment-output indexing currently requires resolved integer
+expressions; general constant-variable resolution remains pending.

@@ -63,6 +63,7 @@ pub fn translate_with_bindings(source string, stage Stage, bindings map[string]i
 	mut main_count := 0
 	mut precision := stage == .vertex
 	version := processed.version
+	fragment_info:=if stage==.fragment {fragment_builtins(tokens,version,processed.extensions)!} else {FragmentBuiltins{}}
 	for at < tokens.len {
 		mut explicit_location := -1
         if tokens[at] == 'layout' && at+2 < tokens.len && tokens[at+2] == 'std140' {
@@ -196,17 +197,17 @@ pub fn translate_with_bindings(source string, stage Stage, bindings map[string]i
             if version==100 && token !in ['sampler2D','samplerCube'] {return error('Sampler type requires ESSL300')}
             body << sampler_type(token)!; at++;continue
         }
-		if token in ['double', 'while', 'do', 'switch', 'discard', 'gl_FragData', 'gl_FragDepth',
-			'gl_FragDepthEXT'] || token.starts_with('sampler') {
+		if token in ['double', 'while', 'do', 'switch'] || token.starts_with('sampler') {
 			return error('Unsupported direct Metal token: ${token}')
 		}
 		if version == 100 && (token == 'uint' || token.starts_with('uvec')) { return error('Unsigned types require ESSL 300') }
 		if value := essl_builtin_constant(token) { body << value; at++;continue }
 		if token.starts_with('gl_') && token !in ['gl_Position', 'gl_PointSize', 'gl_FragColor',
-			'gl_VertexID', 'gl_InstanceID'] {
+			'gl_VertexID', 'gl_InstanceID','gl_FragCoord','gl_FrontFacing','gl_PointCoord','gl_FragDepth','gl_FragDepthEXT','gl_FragData'] {
 			return error('Unsupported builtin: ${token}')
 		}
-		if stage == .vertex && token == 'gl_FragColor' {
+        if stage==.vertex && token=='discard' {return error('Discard requires a fragment shader')}
+		if stage == .vertex && token in ['gl_FragColor','gl_FragCoord','gl_FrontFacing','gl_PointCoord','gl_FragDepth','gl_FragDepthEXT','gl_FragData'] {
 			return error('Fragment builtin in vertex shader')
 		}
 		if version == 300 && token == 'gl_FragColor' {
@@ -215,7 +216,7 @@ pub fn translate_with_bindings(source string, stage Stage, bindings map[string]i
 		if version == 100 && token in ['gl_VertexID', 'gl_InstanceID'] {
 			return error('Vertex IDs require ESSL 300')
 		}
-		body << if token in structures && (at == 0 || tokens[at-1] != '.') { '_vox_Struct_'+token } else if token in ['equal','notEqual','lessThan','lessThanEqual','greaterThan','greaterThanEqual','not'] && at+1 < tokens.len && tokens[at+1]=='(' {'_vox_'+token} else if texture_call(token,version) && at+1 < tokens.len && tokens[at+1] == '(' { '_vox_'+token } else if token == 'main' { 'run' } else { lower_token(token) }
+		body << if token in ['dFdx','dFdy','fwidth'] && at+1 < tokens.len && tokens[at+1]=='(' {'_vox_'+token} else if token=='gl_FragDepthEXT' {'gl_FragDepth'} else if token=='discard' {'discard_fragment()'} else if token in structures && (at == 0 || tokens[at-1] != '.') { '_vox_Struct_'+token } else if token in ['equal','notEqual','lessThan','lessThanEqual','greaterThan','greaterThanEqual','not'] && at+1 < tokens.len && tokens[at+1]=='(' {'_vox_'+token} else if texture_call(token,version) && at+1 < tokens.len && tokens[at+1] == '(' { '_vox_'+token } else if token == 'main' { 'run' } else { lower_token(token) }
 		at++
 	}
 	if depth != 0 || main_count != 1 { return error('Shader must define exactly one void main()') }
@@ -228,9 +229,10 @@ pub fn translate_with_bindings(source string, stage Stage, bindings map[string]i
 	lines << 'struct VoxState {'
 	if stage == .vertex {
 		lines << 'float4 gl_Position = float4(0.0); float gl_PointSize = 1.0; int gl_VertexID = 0; int gl_InstanceID = 0;'
-	} else if version == 100 {
+	} else if version == 100 && !fragment_info.data {
 		lines << 'float4 gl_FragColor = float4(0.0);'
 	}
+	if stage==.fragment {lines << fragment_info.members()}
 	for item in inputs {
 		lines << '${metal_type(item.typ)!} ${item.name} = ${metal_type(item.typ)!}(0);'
 	}
@@ -239,8 +241,9 @@ pub fn translate_with_bindings(source string, stage Stage, bindings map[string]i
 	}
 	for field in textures { lines << '${sampler_type(field.typ)!} ${field.name};' }
 	if textures.len > 0 { lines << texture_constructor(textures)! }
-	lines << texture_methods(stage,version,tokens)
+	lines << texture_methods(stage,version,tokens,processed.extensions['GL_EXT_shader_texture_lod'])
 	lines << comparison_methods(tokens)
+	lines << derivative_methods(stage,version,processed.extensions,tokens)
 	lines << uniform_members(uniforms)!
 	lines << body.join(' ')
 	lines << '};'
@@ -250,9 +253,11 @@ pub fn translate_with_bindings(source string, stage Stage, bindings map[string]i
 	lines << '};'
 	capture_prefix := lines.join('\n')
 	lines << 'struct VoxOutput {'
+	if stage==.fragment && fragment_info.depth {lines << 'float _vox_depth [[depth(any)]];'}
+	if stage==.fragment && fragment_info.data {for target in fragment_info.targets {lines << 'float4 _vox_color${target} [[color(${target})]];'}}
 	if stage == .vertex {
 		lines << 'float4 position [[position]]; float point_size [[point_size]];'
-	} else if version == 100 {
+	} else if version == 100 && !fragment_info.data {
 		lines << 'float4 color [[color(0)]];'
 	}
     if stage == .vertex { lines << varying_members(outputs)! }
@@ -260,6 +265,7 @@ pub fn translate_with_bindings(source string, stage Stage, bindings map[string]i
 	lines << '};'
 	qualifier := if stage == .vertex { 'vertex' } else { 'fragment' }
 	mut args := texture_arguments(textures)
+	if stage==.fragment {args << fragment_info.arguments()}
 	if uniform_size > 0 { args << 'constant uchar* _vox_uniform_bytes [[buffer(0)]]' }
 	for block in uniform_blocks { args << 'constant uchar* _vox_uniform_block${block.binding} [[buffer(${block.binding})]]' }
 	if inputs.len > 0 { args << 'VoxInput input [[stage_in]]' }
@@ -268,6 +274,7 @@ pub fn translate_with_bindings(source string, stage Stage, bindings map[string]i
 		args << 'uint instance_id [[instance_id]]'
 	}
 	lines << '${qualifier} VoxOutput vox_main(${args.join(', ')}) { ${texture_state(textures)!}'
+	if stage==.fragment {lines << fragment_info.loads()}
 	reflected_uniforms := flatten_uniforms(uniforms,structures,0)!
 	lines << uniform_loads(reflected_uniforms)!
 	if stage == .vertex { lines << vertex_input_loads(inputs)! }
@@ -278,11 +285,13 @@ pub fn translate_with_bindings(source string, stage Stage, bindings map[string]i
 	lines << 'state.run(); VoxOutput result;'
 	if stage == .vertex {
 		lines << 'result.position = state.gl_Position; result.position.y = -result.position.y; result.position.z = (result.position.z + result.position.w) * 0.5; result.point_size = state.gl_PointSize;'
-	} else if version == 100 {
+	} else if version == 100 && !fragment_info.data {
 		lines << 'result.color = state.gl_FragColor;'
 	}
 	if stage == .vertex { lines << varying_stores(outputs) }
 	else { for item in outputs { lines << 'result.${item.name} = state.${item.name};' } }
+	if stage==.fragment && fragment_info.depth {lines << 'result._vox_depth = clamp(state.gl_FragDepth,0.0,1.0);'}
+	if stage==.fragment && fragment_info.data {for target in fragment_info.targets {lines << 'result._vox_color${target} = state.gl_FragData[${target}];'}}
 	lines << 'return result; }'
 	mut capture := FeedbackTranslation{}
 	if stage == .vertex && version == 300 {

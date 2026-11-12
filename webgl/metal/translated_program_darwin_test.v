@@ -102,3 +102,64 @@ fn test_translated_unsigned_texture_retains_values_above_signed_range() {
  direct_storage_sample(mut target,image,'#version 300 es\nprecision highp float;precision highp usampler2D;uniform usampler2D image;out vec4 color;void main(){color=all(equal(texture(image,vec2(0.5)),uvec4(4000000001u,7u,9u,4294967295u)))?vec4(1.0,0.0,0.0,1.0):vec4(0.0,1.0,0.0,1.0);}')!
  assert (target.read_pixels()!)==[u8(255),0,0,255]
 }
+
+fn test_translated_fragment_builtins_and_legacy_draw_buffers_render_real_targets() {
+ mut target:=DrawingBuffer.create(2,2)!
+ defer {target.close()}
+ vertex:=shader.translate('#version 300 es\nvoid main(){gl_Position=vec4(gl_VertexID==1?3.0:-1.0,gl_VertexID==2?3.0:-1.0,0.0,1.0);}',.vertex)!
+ fragment:=shader.translate('#version 300 es\nprecision highp float;out vec4 color;void main(){color=gl_FrontFacing && gl_FragCoord.y<1.0 ? vec4(1.0,0.0,0.0,1.0) : vec4(0.0,0.0,1.0,1.0);}',.fragment)!
+ mut program:=ShaderProgram.from_translation(target,vertex,fragment)!
+ defer {program.close()}
+ target.draw(program,[],.triangles,0,3,1)!
+ pixels:=target.read_pixels()!
+ assert pixels[..8]==[u8(255),0,0,255,255,0,0,255]
+ assert pixels[8..]==[u8(0),0,255,255,0,0,255,255]
+ legacy_vertex:=shader.translate('attribute vec2 position;void main(){gl_Position=vec4(position,0.0,1.0);}',.vertex)!
+ legacy_fragment:=shader.translate('#extension GL_EXT_draw_buffers : require\nprecision mediump float;void main(){gl_FragData[0]=vec4(1.0,0.0,0.0,1.0);gl_FragData[1]=vec4(0.0,1.0,0.0,1.0);}',.fragment)!
+ mut mrt:=ShaderProgram.from_translation(target,legacy_vertex,legacy_fragment)!
+ defer {mrt.close()}
+ mut first:=Texture2D.create_storage(target,TextureStorageOptions{width:2,height:2})!
+ defer {first.close()}
+ mut second:=Texture2D.create_storage(target,TextureStorageOptions{width:2,height:2})!
+ defer {second.close()}
+ mut positions:=GPUBuffer.create(target,24)!
+ defer {positions.close()}
+ values:=[f32(-1),-1,3,-1,-1,3]
+ positions.write(0,unsafe{(&u8(values.data)).vbytes(24)})!
+ options:=DrawOptions{colors_configured:true,color_targets:[ColorTargetBinding{index:0,texture:first},ColorTargetBinding{index:1,texture:second}]}
+ target.draw_with_options(mrt,[VertexStream{buffer:positions,location:0,components:2}],.triangles,0,3,1,options)!
+ a:=first.read_pixels()!;b:=second.read_pixels()!
+ for i:=0;i<a.len;i+=4 {assert a[i..i+4]==[u8(255),0,0,255];assert b[i..i+4]==[u8(0),255,0,255]}
+}
+
+fn test_translated_fragment_depth_and_discard_affect_existing_render_state() {
+ mut target:=DrawingBuffer.create(2,2)!
+ defer {target.close()}
+ vertex:=shader.translate('#version 300 es\nvoid main(){gl_Position=vec4(gl_VertexID==1?3.0:-1.0,gl_VertexID==2?3.0:-1.0,0.0,1.0);}',.vertex)!
+ fragment:=shader.translate('#version 300 es\nprecision highp float;uniform float z;uniform vec4 value;out vec4 color;void main(){gl_FragDepth=z;color=value;}',.fragment)!
+ mut program:=ShaderProgram.from_translation(target,vertex,fragment)!
+ defer {program.close()}
+ mut depth:=DepthStencil.create(target,2,2)!
+ defer {depth.close()}
+ depth.clear(1,0)!
+ options:=DrawOptions{depth_stencil:depth,state:RenderState{depth_test:true}}
+ program.uniform_floats('z',[f32(0.75)])!
+ program.uniform_floats('value',[f32(1),0,0,1])!
+ target.draw_with_options(program,[],.triangles,0,3,1,options)!
+ program.uniform_floats('z',[f32(0.25)])!
+ program.uniform_floats('value',[f32(0),1,0,1])!
+ target.draw_with_options(program,[],.triangles,0,3,1,options)!
+ pixels:=target.read_pixels()!
+ for i:=0;i<pixels.len;i+=4 {assert pixels[i..i+4]==[u8(0),255,0,255]}
+ target.draw(program,[],.triangles,0,3,1)!
+ clipped:=shader.translate('#version 300 es\nprecision highp float;out vec4 color;void main(){if(gl_FragCoord.x<1.0)discard;color=vec4(0.0,1.0,0.0,1.0);}',.fragment)!
+ mut discard_program:=ShaderProgram.from_translation(target,vertex,clipped)!
+ defer {discard_program.close()}
+ target.clear(0,0,0,0)!
+ target.draw(discard_program,[],.triangles,0,3,1)!
+ clipped_pixels:=target.read_pixels()!
+ for row in 0..2 {
+  assert clipped_pixels[row*8..row*8+4]==[u8(0),0,0,0]
+  assert clipped_pixels[row*8+4..row*8+8]==[u8(0),255,0,255]
+ }
+}

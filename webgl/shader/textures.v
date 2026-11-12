@@ -62,7 +62,7 @@ fn texture_types() []string {
  ]
 }
 
-fn texture_methods(stage Stage, version int, used_types []string) []string {
+fn texture_methods(stage Stage, version int, used_types []string, legacy_lod bool) []string {
  mut methods := []string{}
  for typ in ['sampler2D','samplerCube'] {
   cube := typ == 'samplerCube'
@@ -76,7 +76,7 @@ fn texture_methods(stage Stage, version int, used_types []string) []string {
   if stage == .fragment {
    methods << 'float4 _vox_${sample}(${wrapper} s, ${coordinate} p, float b) { return s.image.sample(s.sampling, p, bias(b)); }'
   }
-  if stage == .vertex || version == 300 {
+  if stage == .vertex || version == 300 || legacy_lod {
    methods << 'float4 _vox_${lod}(${wrapper} s, ${coordinate} p, float l) { return s.image.sample(s.sampling, p, level(l)); }'
   }
   if version == 300 {
@@ -93,18 +93,19 @@ fn texture_methods(stage Stage, version int, used_types []string) []string {
   divisor := if coordinate == 'float3' {'z'} else {'w'}
   methods << 'float4 _vox_${projected}(_vox_Sampler2D s, ${coordinate} p) { return _vox_${base}(s, p.xy/p.${divisor}); }'
   if stage == .fragment { methods << 'float4 _vox_${projected}(_vox_Sampler2D s, ${coordinate} p, float b) { return _vox_${base}(s, p.xy/p.${divisor}, b); }' }
-  if stage == .vertex || version == 300 { methods << 'float4 _vox_${projected_lod}(_vox_Sampler2D s, ${coordinate} p, float l) { return _vox_${lod}(s, p.xy/p.${divisor}, l); }' }
+  if stage == .vertex || version == 300 || legacy_lod { methods << 'float4 _vox_${projected_lod}(_vox_Sampler2D s, ${coordinate} p, float l) { return _vox_${lod}(s, p.xy/p.${divisor}, l); }' }
  }
  if version == 300 {
   methods << 'float4 _vox_texelFetch(_vox_Sampler2D s, int2 p, int l) { return s.image.read(uint2(p),uint(l)); }'
  }
  if version==300 {methods << extended_texture_methods(stage,used_types)}
+ if version==100 && legacy_lod {methods << legacy_lod_methods()}
  return methods
 }
 
 fn texture_call(name string, version int) bool {
  return if version == 100 {
-  name in ['texture2D','textureCube','texture2DProj','texture2DLod','textureCubeLod','texture2DProjLod']
+  name in ['texture2D','textureCube','texture2DProj','texture2DLod','textureCubeLod','texture2DProjLod','texture2DLodEXT','textureCubeLodEXT','texture2DProjLodEXT','texture2DGradEXT','textureCubeGradEXT','texture2DProjGradEXT']
  } else {
   name in ['texture','textureLod','textureProj','textureProjLod','textureGrad','textureSize','texelFetch']
  }
@@ -170,6 +171,23 @@ fn extended_texture_methods(stage Stage, used_types []string) []string {
   methods << '${dimension} _vox_textureSize(${wrapper} s, int l) {return ${dimension}(s.image.get_width(uint(l)),s.image.get_height(uint(l))${size_tail});}'
   fetch_coordinates:=if volume {'uint3(p)'} else if arrayed {'uint2(p.xy),uint(p.z)'} else {'uint2(p)'}
   methods << '${result} _vox_texelFetch(${wrapper} s, ${dimension} p, int l) {return s.image.read(${fetch_coordinates},uint(l));}'
+ }
+ return methods
+}
+
+fn legacy_lod_methods() []string {
+ mut methods:=[
+  'float4 _vox_texture2DLodEXT(_vox_Sampler2D s,float2 p,float l) {return _vox_texture2DLod(s,p,l);}',
+  'float4 _vox_textureCubeLodEXT(_vox_SamplerCube s,float3 p,float l) {return _vox_textureCubeLod(s,p,l);}',
+  'float4 _vox_texture2DGradEXT(_vox_Sampler2D s,float2 p,float2 dx,float2 dy) {return s.image.sample(s.sampling,p,gradient2d(dx,dy));}',
+  'float4 _vox_textureCubeGradEXT(_vox_SamplerCube s,float3 p,float3 dx,float3 dy) {return s.image.sample(s.sampling,p,gradientcube(dx,dy));}',
+ ]
+ for typ in ['float3','float4'] {
+  divisor:=if typ=='float3' {'z'} else {'w'}
+  methods << 'float4 _vox_texture2DProjLodEXT(_vox_Sampler2D s,${typ} p,float l) {return _vox_texture2DProjLod(s,p,l);}'
+  // GLSL ES 3.2 textureProjGrad: derivatives are already projected.
+  // https://registry.khronos.org/OpenGL/specs/es/3.2/GLSL_ES_Specification_3.20.html
+  methods << 'float4 _vox_texture2DProjGradEXT(_vox_Sampler2D s,${typ} p,float2 dx,float2 dy) {return _vox_texture2DGradEXT(s,p.xy/p.${divisor},dx,dy);}'
  }
  return methods
 }

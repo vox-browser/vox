@@ -21,12 +21,16 @@ mut:
 struct Preprocessed {
  tokens []string
  version int
+ extensions map[string]bool
 }
 
 fn preprocess(source string) !Preprocessed {
  if source.len > 1024*1024 { return error('Shader exceeds the source limit') }
  clean := pp_comments(source.replace('\\\r\n','').replace('\\\n',''))!
  mut macros := {'GL_ES':Macro{body:['1']}, 'GL_FRAGMENT_PRECISION_HIGH':Macro{body:['1']}, '__VERSION__':Macro{body:['100']}}
+ mut extensions:=map[string]bool{}
+ known_extensions:= ['GL_EXT_draw_buffers','GL_EXT_frag_depth','GL_OES_standard_derivatives','GL_EXT_shader_texture_lod']
+ for name in known_extensions {macros[name]=Macro{body:['1']}}
  mut stack := []Conditional{}
  mut pending := []string{}
  mut output := []string{}
@@ -116,13 +120,23 @@ fn preprocess(source string) !Preprocessed {
     if args.len != 1 || args[0].starts_with('GL_') || args[0].contains('__') { return error('Invalid #undef') }
     macros.delete(args[0])
    }
+   'extension' {
+    seen_code=true
+    if args.len!=3 || args[1]!=':' || args[2] !in ['enable','require','warn','disable'] {return error('Invalid extension directive')}
+    name:=args[0];behavior:=args[2]
+    if name=='all' {
+     if behavior in ['enable','require'] {return error('Invalid all-extension behavior')}
+     for known in known_extensions {extensions[known]=behavior=='warn'}
+    } else if name in known_extensions {extensions[name]=behavior!='disable'}
+    else if behavior in ['enable','require'] {return error('Unsupported shader extension: '+name)}
+   }
    'error' { return error('Shader #error: '+args.join(' ')) }
    else { return error('Unsupported shader directive: #${directive}') }
   }
  }
  if stack.len != 0 { return error('Unterminated conditional directive') }
  output << pp_expand(pending,macros)!
- return Preprocessed{tokens:output,version:version}
+ return Preprocessed{tokens:output,version:version,extensions:extensions}
 }
 
 fn pp_comments(source string) !string {
