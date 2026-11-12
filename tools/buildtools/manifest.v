@@ -278,8 +278,17 @@ fn verify_parsed(root string, inventory Record, directory string, sources map[st
 		return error('Consumed V package membership changed during parsing')
 	}
 	check_fingerprints(sources)!
-	if sources != only_v(component_inputs(directory)!) {
-		return error('Compiler manifest changed during verification')
+	check_parsed_manifest(directory, sources)!
+}
+
+fn check_parsed_manifest(directory string, sources map[string]string) ! {
+	actual := only_v(component_inputs(directory)!)
+	if sources != actual {
+		write_json(join(directory, 'manifest-changed.json'), json.Any(map[string]json.Any{
+			'expected': record_strings(sources)
+			'actual': record_strings(actual)
+		}))!
+		return error('Compiler manifest changed during verification; see ${directory}/manifest-changed.json')
 	}
 }
 
