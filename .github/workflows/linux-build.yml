@@ -194,7 +194,7 @@ jobs:
             --report "$RUNNER_TEMP/vox-webgl-$LADYBIRD_V_GC.json" --timeout 1080 -- \
             python3 tools/test_linux_native.py --gc "$LADYBIRD_V_GC" \
               webgl/native_draw_test.v webgl/native_essl_equivalence_test.v \
-              webgl/native_parameter_query_test.v
+              webgl/native_parameter_query_test.v imageraster/canvas_upload_test.v
 
       - name: Check portable shadow and canvas rasterization
         if: ${{ !cancelled() && steps.native_dependencies.outcome == 'success' }}
