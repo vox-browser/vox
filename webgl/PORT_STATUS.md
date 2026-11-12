@@ -17,7 +17,9 @@ coverage, including asymmetric GL row orientation. Base-level RGBA8 textures,
 nearest/linear samplers, wrapping and offscreen color targets have exact-pixel
 and feedback/ownership checks. Indexed draws/restart, viewport/scissor, color
 masks/blending, depth and separate stencil faces now have focused exact-pixel
-coverage in both GC modes;
+coverage in both GC modes. Typed/normalized/constant vertex fetch is covered;
+the standalone suite passes six native fixtures in three ownership/sanitizer
+modes and 21 V cases in both GC modes;
 the production WebGL implementation still uses ANGLE. See the
 [migration status and next slices](../docs/WEBGL_METAL_MIGRATION.md).
 

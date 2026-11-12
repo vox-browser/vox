@@ -4,11 +4,13 @@
 #include "shader_program_darwin.h"
 #include "texture_darwin.h"
 #include "render_state_darwin.h"
+#include "vertex_formats_darwin.h"
 
 typedef struct {
     void* buffer;
     uint64_t offset, stride;
     uint32_t location, components, divisor;
+    uint32_t format, normalized, constant;
 } VoxMetalVertexStream;
 typedef struct { void* buffer; uint32_t stage, binding; uint64_t offset; } VoxMetalUniformBinding;
 typedef struct { void* texture; uint32_t stage, binding, sampler_binding, sampled; } VoxMetalTextureBinding;
@@ -41,15 +43,17 @@ static int vox_metal_draw_configured(void* target_handle, void* program_handle,
         for (uint32_t i = 0; i < stream_count; ++i) {
             VoxMetalVertexStream const* stream = streams + i;
             VoxMetalGPUBuffer* buffer = stream->buffer;
+            unsigned scalar_size = vox_metal_vertex_scalar_size(stream->format);
+            MTLVertexFormat format = vox_metal_vertex_format(stream->format, stream->components, stream->normalized);
             if (!buffer || buffer->device != target->device || stream->location >= 16 || stream->components < 1 || stream->components > 4
-                || stream->offset > buffer->size || stream->stride < stream->components * 4 || stream->stride > 2048) return 0;
+                || !scalar_size || format == MTLVertexFormatInvalid || stream->offset > buffer->size || stream->stride < stream->components * scalar_size || stream->stride > 2048) return 0;
             uint32_t slot = 15 + stream->location;
-            vertices.attributes[stream->location].format = (MTLVertexFormat)(MTLVertexFormatFloat + stream->components - 1);
-            vertices.attributes[stream->location].offset = 0;
+            vertices.attributes[stream->location].format = format;
+            vertices.attributes[stream->location].offset = stream->offset % 4;
             vertices.attributes[stream->location].bufferIndex = slot;
             vertices.layouts[slot].stride = stream->stride;
-            vertices.layouts[slot].stepFunction = stream->divisor ? MTLVertexStepFunctionPerInstance : MTLVertexStepFunctionPerVertex;
-            vertices.layouts[slot].stepRate = stream->divisor ?: 1;
+            vertices.layouts[slot].stepFunction = stream->constant ? MTLVertexStepFunctionConstant : stream->divisor ? MTLVertexStepFunctionPerInstance : MTLVertexStepFunctionPerVertex;
+            vertices.layouts[slot].stepRate = stream->constant ? 0 : stream->divisor ?: 1;
         }
         for (uint32_t i = 0; i < uniform_count; ++i) {
             VoxMetalGPUBuffer* buffer = uniforms[i].buffer;
@@ -124,7 +128,7 @@ static int vox_metal_draw_configured(void* target_handle, void* program_handle,
         }
         for (uint32_t i = 0; i < stream_count; ++i) {
             VoxMetalGPUBuffer* buffer = streams[i].buffer;
-            [encoder setVertexBuffer:(__bridge id<MTLBuffer>)buffer->buffer offset:streams[i].offset atIndex:15 + streams[i].location];
+            [encoder setVertexBuffer:(__bridge id<MTLBuffer>)buffer->buffer offset:streams[i].offset & ~(uint64_t)3 atIndex:15 + streams[i].location];
         }
         for (uint32_t i = 0; i < uniform_count; ++i) {
             VoxMetalGPUBuffer* buffer = uniforms[i].buffer;

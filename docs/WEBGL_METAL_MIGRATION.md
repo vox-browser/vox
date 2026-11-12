@@ -97,6 +97,19 @@ sanitizer checks exercise the index path and initialized depth/stencil state.
 Browser dispatch, masked clears, additional texture formats/targets, queries,
 transform feedback and complete WebGL2 coverage are still pending.
 
+## Completed: typed and constant vertex fetch
+
+Vertex streams now describe float/half, signed/unsigned byte/short/int formats,
+byte/short normalization, integer shader inputs and constant attributes.
+Aligned Metal buffer bases plus descriptor offsets preserve byte-aligned input
+slices. Integer input signedness/type mismatches are rejected before drawing.
+Normalized 32-bit integer conversion and packed 10:10:10:2 formats remain work.
+
+Exact pixels verify normalized bytes at an unaligned base, constant float and
+integer attributes, half vertices, and missing vec4 components defaulting to
+zero/one. The complete standalone suite passes: six native fixtures in ARC,
+MRC and ASan/UBSan modes, and 21 V cases across seven files in both GC modes.
+
 ## Validation
 
 On 2026-11-12, native GPU tests passed with ARC, manual reference counting and
@@ -106,7 +119,7 @@ rejected resize, separate contexts and repeated create/destroy. Three focused
 V cases pass with default GC and `-gc none`.
 
 ```sh
-python3 tools/test_webgl_metal.py --output Build/metal-test-UNIQUE
+python3 tools/test_webgl_metal.py --v-bin ~/code/v/v --output Build/metal-test-UNIQUE
 ```
 
 Run focused V tests with current V's C backend, `-memory-limit 10G` and the

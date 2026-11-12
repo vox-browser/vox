@@ -10,6 +10,9 @@ struct C.VoxMetalVertexStream {
 	location u32
 	components u32
 	divisor u32
+	format u32
+	normalized u32
+	constant u32
 }
 
 @[typedef]

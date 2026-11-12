@@ -9,6 +9,16 @@ pub:
 	offset int
 	stride int
 	divisor int
+	format VertexFormat
+	normalized bool
+	integer bool
+	constant bool
+}
+
+pub enum VertexFormat { float32 uint8 int8 uint16 int16 uint32 int32 float16 }
+
+fn vertex_scalar_size(format VertexFormat) int {
+	return match format { .uint8, .int8 { 1 } .uint16, .int16, .float16 { 2 } else { 4 } }
 }
 
 pub enum Primitive { points lines line_strip triangles triangle_strip }
@@ -100,27 +110,35 @@ pub fn (mut target DrawingBuffer) draw_with_options(program &ShaderProgram, stre
 	mut native_streams := []C.VoxMetalVertexStream{cap: streams.len}
 	mut used := u32(0)
 	for stream in streams {
+		scalar_size := vertex_scalar_size(stream.format)
 		if stream.buffer == unsafe { nil } || stream.buffer.handle == unsafe { nil }
 			|| stream.buffer.owner.handle != target.handle || stream.location < 0 || stream.location >= 16
-			|| stream.components < 1 || stream.components > 4 || stream.offset < 0 || stream.offset % 4 != 0
-			|| stream.divisor < 0 || u64(stream.divisor) > 0xffffffff || stream.stride < 0 || stream.stride > 2048 || stream.stride % 4 != 0 {
+			|| stream.components < 1 || stream.components > 4 || stream.offset < 0 || stream.offset % scalar_size != 0
+			|| stream.divisor < 0 || u64(stream.divisor) > 0xffffffff || stream.stride < 0 || stream.stride > 2048 || stream.stride % scalar_size != 0
+			|| (stream.integer && (stream.normalized || stream.format in [.float32, .float16]))
+			|| (stream.normalized && stream.format in [.int32, .uint32]) {
 			return error('Invalid Metal vertex stream')
 		}
 		mask := u32(1) << stream.location
 		if used & mask != 0 { return error('Duplicate Metal vertex stream location') }
 		used |= mask
-		stride := if stream.stride == 0 { stream.components * 4 } else { stream.stride }
-		if stride < stream.components * 4 { return error('Metal vertex stride is too small') }
+		stride := if stream.stride == 0 { stream.components * scalar_size } else { stream.stride }
+		if stride < stream.components * scalar_size { return error('Metal vertex stride is too small') }
 		if stream.offset > stream.buffer.length { return error('Metal vertex offset outside buffer') }
 		if count > 0 && instances > 0 && (!indexed || prepared.has_vertices) {
-			last := if stream.divisor > 0 { u64(instances - 1) / u64(stream.divisor) } else if indexed { prepared.maximum } else { u64(first) + u64(count) - 1 }
-			if last * u64(stride) + u64(stream.components * 4) > u64(stream.buffer.length - stream.offset) { return error('Metal draw reads outside vertex buffer') }
+			last := if stream.constant { u64(0) } else if stream.divisor > 0 { u64(instances - 1) / u64(stream.divisor) } else if indexed { prepared.maximum } else { u64(first) + u64(count) - 1 }
+			if last * u64(stride) + u64(stream.components * scalar_size) > u64(stream.buffer.length - stream.offset) { return error('Metal draw reads outside vertex buffer') }
 		}
-		native_streams << C.VoxMetalVertexStream{buffer: stream.buffer.handle, offset: u64(stream.offset), stride: u64(stride), location: u32(stream.location), components: u32(stream.components), divisor: u32(stream.divisor)}
+		native_streams << C.VoxMetalVertexStream{buffer: stream.buffer.handle, offset: u64(stream.offset), stride: u64(stride), location: u32(stream.location), components: u32(stream.components), divisor: u32(stream.divisor), format: u32(stream.format), normalized: u32(stream.normalized), constant: u32(stream.constant)}
 	}
 	mut textures := []C.VoxMetalTextureBinding{}
 	for resource in program.resources()! {
 		if resource.kind == 3 && resource.stage == .vertex && (resource.location >= 16 || used & (u32(1) << resource.location) == 0) { return error('Missing Metal vertex stream ${resource.name}') }
+		if resource.kind == 3 && resource.stage == .vertex {
+			input := streams.filter(u32(it.location) == resource.location)[0]
+			if (resource.scalar_type in [u32(7),8]) != input.integer { return error('Metal shader input type does not match vertex stream ${resource.name}') }
+			if input.integer && ((resource.scalar_type == 7 && input.format !in [.int8,.int16,.int32]) || (resource.scalar_type == 8 && input.format !in [.uint8,.uint16,.uint32])) { return error('Metal integer vertex stream has wrong signedness') }
+		}
 		if resource.kind == 11 { return error('Separate Metal sampler bindings are not supported') }
 		if resource.kind !in [u32(7), 10] { continue }
 		for index in u32(0) .. resource.array_length {
