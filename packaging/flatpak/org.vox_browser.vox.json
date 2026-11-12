@@ -1,5 +1,5 @@
 {
-    "app-id": "org.voxbrowser.vox",
+    "app-id": "org.vox_browser.vox",
     "runtime": "org.gnome.Platform",
     "runtime-version": "51",
     "sdk": "org.gnome.Sdk",
@@ -77,9 +77,9 @@
                 "sh build-linux-browser.sh",
                 "test -x Build/linux/vox",
                 "install -D Build/linux/vox /app/bin/vox",
-                "install -Dm644 packaging/flatpak/org.voxbrowser.vox.metainfo.xml /app/share/metainfo/org.voxbrowser.vox.metainfo.xml",
-                "install -Dm644 packaging/flatpak/org.voxbrowser.vox.desktop /app/share/applications/org.voxbrowser.vox.desktop",
-                "install -Dm644 packaging/Vox.png /app/share/icons/hicolor/256x256/apps/org.voxbrowser.vox.png"
+                "install -Dm644 packaging/flatpak/org.vox_browser.vox.metainfo.xml /app/share/metainfo/org.vox_browser.vox.metainfo.xml",
+                "install -Dm644 packaging/flatpak/org.vox_browser.vox.desktop /app/share/applications/org.vox_browser.vox.desktop",
+                "install -Dm644 packaging/Vox.png /app/share/icons/hicolor/256x256/apps/org.vox_browser.vox.png"
             ]
         }
     ]

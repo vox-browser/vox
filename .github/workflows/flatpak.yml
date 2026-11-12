@@ -37,7 +37,7 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends appstream
-          appstreamcli validate --pedantic packaging/flatpak/org.voxbrowser.vox.metainfo.xml
+          appstreamcli validate --pedantic packaging/flatpak/org.vox_browser.vox.metainfo.xml
 
       - name: Check Flatpak manifest
         run: python3 tools/check_flatpak_manifest.py

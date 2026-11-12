@@ -2,7 +2,7 @@
 Name=Vox
 Comment=A new browser engine written 100% in V + UI2
 Exec=vox %U
-Icon=org.voxbrowser.vox
+Icon=org.vox_browser.vox
 Type=Application
 Categories=Network;WebBrowser;
 MimeType=text/html;text/xml;application/xhtml+xml;x-scheme-handler/http;x-scheme-handler/https;
