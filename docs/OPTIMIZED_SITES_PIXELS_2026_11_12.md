@@ -722,3 +722,48 @@ an empty test selector was corrected before executing the final tests. All
 attempts remain local under `docs/performance/vlang-gradients-20261112/`.
 The original references and zero-error gate are unchanged; GitHub still fails
 at 1,083 pixels and the all-site task remains open.
+
+
+## Production flex confirmation and table percentage precision (2026-11-13)
+
+Production executable
+`86516f7f2eb9c44f78173c2a4f7acd12834c9d31bb24aa1a7954ec0dca640234`
+(receipt `20261112-220611-a7923f72`) contains the root-baseline cache correction
+`08cbf34dd`, verified against its exact compiled source manifest. Two fresh
+captures confirm GitHub at **1,083 differing pixels**, preserving all 33 row
+identities. HN, Wikipedia and Lobsters remain exact twice; vlang.io remains
+at 3,250 twice. HN retains all 30 stories. All ten capture guards and the
+complete driver exit zero. This clears the preceding pending-production
+qualification for the flex correction only.
+
+`7077ea544` fixes a separate percentage-column rounding discrepancy. Brave's
+fixed GitHub table gives its 40% column 258.390625px from a 646px grid. Vox
+rounded this percentage to the nearest 1/64px, yielding 258.40625px and shifting
+commit text across glyph raster phases. Chromium policy now truncates the
+percentage guess before adding box-model offsets, for both fixed and auto
+tables. LibWeb policy keeps its existing rounding. A reduced Brave probe
+independently confirms both modes. Fresh full-page Brave geometry captures
+still match the original GitHub reference exactly.
+
+Diagnostic executable
+`a4da33d01cd1e0166e90b681921ac347a5f9b63f7823036fd4476107cd98b8d8`
+reduces GitHub from **1,083 to 303 differing pixels** in each of two fresh
+captures. All table text now agrees; remaining differences lie above the
+table. All 33 rows retain their identities. HN, Wikipedia and Lobsters remain
+exact twice, vlang.io remains at 3,250 twice, and CNN remains at 175,866 twice.
+The startup smoke check, all 12 capture/content/identity checks, their 13
+memory guards and the complete driver exit zero. The focused regression test
+executes both table modes under both rendering policies; it and the existing
+surplus-distribution test pass with arena poisoning under the 3 GiB guard.
+Generated C confirms both selected test calls execute. Guarded compilations
+peak near 6.3 GiB and finish normally. Production validation of the table fix
+awaits its managed rebuild; the diagnostic result does not validate an older
+production executable.
+
+The initial auto-only attempt leaves GitHub at 1,083 pixels and is retained
+locally alongside the corrected fixed-layout attempt, reduced Brave geometry,
+commands, raw PNGs, audits, identities and actual exits under
+`docs/performance/vlang-gradients-20261112/`. References and zero tolerances
+are unchanged. CNN's earlier source/replay failure, vlang.io, Reddit and the
+all-site gate remain open. No live-site or performance claim follows from
+these frozen viewport checks.

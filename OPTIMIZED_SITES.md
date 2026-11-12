@@ -9,7 +9,10 @@ Provisional entries retain unresolved acceptance checks.
 **Pixel recheck, 2026-11-12:** the latest completed production bundle does
 **not** pass pixel equality across this catalog. Hacker News, Lobsters and Wikipedia
 are exact in two fresh production captures each. PNG and text-mask corrections
-reduce vlang.io to 3,250 differing pixels on the unchanged current archive. CNN, vlang.io and GitHub remain open.
+reduce vlang.io to 3,250 differing pixels on the unchanged current archive.
+The flex baseline fix reduces GitHub to 1,083 pixels in production; a table
+percentage precision correction reaches 303 in diagnostic captures, pending
+production validation. CNN, vlang.io and GitHub remain open.
 Reddit could not be verified (missing historical fixture, live HTTP 403).
 See the [current audit, capture scopes and retained failures](docs/OPTIMIZED_SITES_PIXELS_2026_11_12.md).
 
