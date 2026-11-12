@@ -17,9 +17,10 @@ and install the shared V UI with `v install ui2` (or update it with `v up ui2`).
 Vox needs no Ladybird checkout, Skia, vcpkg or Rust toolchain.
 
 Install native dependencies once, then prepare the development environment once
-per terminal. Subsequent builds use **`v .`**. The setup command prepares native
-bridges and compiler adapters and selects the checked C backend. Re-run it after
-updating V or UI2. `V_BIN` and `UI2_SOURCE_DIR` can select existing checkouts.
+per terminal from the repository root. Subsequent builds use **`v .`**. The setup
+command prepares native bridges and compiler adapters and selects the checked C
+backend. Re-run setup after updating V, UI2 or the build dependencies. `V_BIN`
+and `UI2_SOURCE_DIR` can select existing checkouts.
 
 #### macOS
 
@@ -34,8 +35,15 @@ v .
 ./vox2 https://example.com
 ```
 
-FreeType and HarfBuzz remain native dependencies. Setup builds pinned HarfBuzz
-15.1.0 without its optional Graphite2 backend; no Graphite2 library is needed.
+The first setup downloads checksum-verified HarfBuzz 15.1.0 sources and builds
+its OpenType/CoreText library with CMake, without the optional Graphite2 backend.
+The result is cached under `Build/deps/harfbuzz-15.1.0` and reused by development
+and production builds. FreeType and HarfBuzz remain native dependencies;
+HarfBuzz is supplied by setup rather than Homebrew. Graphite2 is not required.
+
+For an existing macOS checkout, install CMake (`brew install cmake`) and rerun
+`eval "$(python3 tools/dev_build_env.py)"` before the next `v .` build.
+
 Font selection, Unicode processing and glyph-run policy use V code with bundled
 Unicode 17 data; ICU is not required. FFmpeg, libavif and curl
 supply media, AVIF and HTTP support. To produce the signed application bundle:
