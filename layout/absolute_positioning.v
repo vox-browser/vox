@@ -63,6 +63,10 @@ fn is_acceptable_anchor_element(target voidptr, candidate &dom.Element) bool {
 }
 
 fn resolve_named_anchor_rect(state &LayoutState, box &Node, containing_state &UsedValues, name string) ?css.CSSPixelRect {
+	// A box positioned against an anchor elsewhere in the tree cannot be
+	// bounded by one subtree's relayout (incremental_layout.v).
+	mut anchored_state := unsafe { &LayoutState(state) }
+	anchored_state.resolved_anchor_positions_ = true
 	if saved := position_try_saved_anchor(box,name) { return saved }
 	element := anchor_query_element(box) or { return none }
 	containing_block := box.containing_block() or { return none }
@@ -831,11 +835,20 @@ fn layout_absolutely_positioned_descendants(mut state LayoutState, root &Node) {
 }
 
 fn layout_absolutely_positioned_subtree(mut state LayoutState, root &Node) {
-	if root.is_absolutely_positioned() {
+	layout_absolutely_positioned_subtree_in(mut state, root, state.in_reused_subtree(root, false))
+}
+
+// A subtree restored by incremental_layout.v already carries its absolute
+// positions and block-content alignment; `parent_reused` skips it.
+fn layout_absolutely_positioned_subtree_in(mut state LayoutState, root &Node, parent_reused bool) {
+	if root.is_absolutely_positioned() && !parent_reused {
 		layout_absolutely_positioned_box(mut state, root)
 	}
-	align_block_contents(mut state, root)
+	reused := subtree_layout_reused_below(state, root, parent_reused)
+	if !reused {
+		align_block_contents(mut state, root)
+	}
 	for child in root.children() {
-		layout_absolutely_positioned_subtree(mut state, child)
+		layout_absolutely_positioned_subtree_in(mut state, child, reused)
 	}
 }

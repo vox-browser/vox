@@ -1416,6 +1416,18 @@ mut:
 	committed_pass_ CommittedLayoutPass
 	dirty_text_controls_ []&Node
 	general_layout_invalidation_ bool
+	// Incremental relayout (incremental_layout.v): the committed inner layout
+	// of each box that can bound a relayout, each replaced box's natural size,
+	// and the layout invalidations recorded against this pass.
+	relayout_records_ map[u32]RelayoutRecord
+	replaced_sizes_ map[u32]ReplacedSizeEntry
+	layout_invalidation_origins_ []&Node
+	layout_invalidation_unbounded_ bool
+	resolved_anchor_positions_ bool
+	// The committed state whose clean subtrees this pass may reuse, and how
+	// each independent formatting context of this pass was laid out.
+	subtree_reuse_source_ &LayoutState = unsafe { nil }
+	subtree_layout_decisions_ map[u64]SubtreeLayoutDecision
 }
 
 pub fn LayoutState.new() &LayoutState {

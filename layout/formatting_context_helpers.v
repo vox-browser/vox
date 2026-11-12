@@ -257,6 +257,21 @@ fn compute_relative_inset_for_node(node &NodeWithStyle, mut used_values UsedValu
 }
 
 fn resolve_relative_insets(mut state LayoutState, root &Node) {
+	resolve_relative_insets_in(mut state, root, state.in_reused_subtree(root, false))
+}
+
+// A subtree restored by incremental_layout.v already carries its insets.
+fn resolve_relative_insets_in(mut state LayoutState, root &Node, parent_reused bool) {
+	if !parent_reused {
+		resolve_own_relative_insets(mut state, root)
+	}
+	reused := subtree_layout_reused_below(state, root, parent_reused)
+	for child in root.children() {
+		resolve_relative_insets_in(mut state, child, reused)
+	}
+}
+
+fn resolve_own_relative_insets(mut state LayoutState, root &Node) {
 	if styled := root.as_node_with_style() {
 		// Nodes which did not participate in layout (for example anonymous text
 		// wrappers below an SVG viewport) have no UsedValues to adjust.
@@ -268,9 +283,6 @@ fn resolve_relative_insets(mut state LayoutState, root &Node) {
 				}
 			}
 		}
-	}
-	for child in root.children() {
-		resolve_relative_insets(mut state, child)
 	}
 }
 

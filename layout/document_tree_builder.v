@@ -955,6 +955,14 @@ fn invalidate_size_queries_after_geometry_commit(previous map[u64]SizeQueryConta
 // and relative positioning, and scrollable overflow.
 fn run_document_geometry(document &dom.Document, root &Node, viewport &Viewport, viewport_width f64,
 	viewport_height f64, started u64) (&LayoutState, u64) {
+	return run_document_geometry_with_reuse(document, root, viewport, viewport_width, viewport_height,
+		started, false)
+}
+
+// `reuse`: clean subtrees may restore the previous committed layout
+// (incremental_layout.v); the caller has checked that its environment matches.
+fn run_document_geometry_with_reuse(document &dom.Document, root &Node, viewport &Viewport, viewport_width f64,
+	viewport_height f64, started u64, reuse bool) (&LayoutState, u64) {
 	geometry_started := started
 	mut timing_checkpoint := started
 	mut state := LayoutState.new()
@@ -966,6 +974,9 @@ fn run_document_geometry(document &dom.Document, root &Node, viewport &Viewport,
 		}
 		previous_backoff = previous.state.block_layout_backoff_
 		state.previous_state_ = unsafe { &LayoutState(previous.state) }
+		if reuse && !disable_incremental_layout && !previous.state.resolved_anchor_positions_ {
+			state.subtree_reuse_source_ = unsafe { &LayoutState(previous.state) }
+		}
 	}
 	state.begin_retained_block_backoff_pass(previous_backoff)
 	state.enable_measurement_chunk_pool()
@@ -991,12 +1002,16 @@ fn run_document_geometry(document &dom.Document, root &Node, viewport &Viewport,
 	commit_line_clamp_edges(mut state, root)
 	measure_document_scrollable_overflow(mut state, root)
 	coordinates.finish()
+	// Decisions are geometry-workspace data; later passes keep the records,
+	// not the traversal map backed by this pass's scratch arena.
+	state.subtree_layout_decisions_ = map[u64]SubtreeLayoutDecision{}
 	geometry_scratch.finish()
 	// The new cache retains only contexts present in this committed pass. Drop
 	// the lookup owner for removed or otherwise ineligible previous contexts.
 	state.previous_inline_layouts_ = map[u64]&RetainedInlineLayout{}
 	state.previous_block_layouts_ = map[u64]&RetainedBlockLayout{}
 	state.previous_state_ = unsafe { nil }
+	state.subtree_reuse_source_ = unsafe { nil }
 	state.block_layout_rejections_ = map[u64]bool{}
 	timing_checkpoint = layout_timing_checkpoint('      scrollable_overflow', timing_checkpoint)
 	if os.getenv('LADYBIRD_DEBUG_TIMING') != '' {
@@ -1024,7 +1039,9 @@ fn finish_document_layout_with_reuse(document &dom.Document, root &Node, viewpor
 	}
 	// ImagePaintable::reset_for_relayout() refreshes image availability and alt
 	// text before geometry consumes the replaced element's natural dimensions.
-	replaced_signature := reset_images_and_sign_replaced_sizes(root, u64(0xcbf29ce484222325))
+	mut replaced_sizes := map[u32]ReplacedSizeEntry{}
+	replaced_signature := reset_images_and_sign_replaced_sizes_by_node(root,
+		u64(0xcbf29ce484222325), mut replaced_sizes)
 	pass := committed_layout_pass(document, viewport_width, viewport_height, replaced_signature)
 	// TreeBuilder upstream associates each DOM node with its Layout::Node as it
 	// is created. Install the opaque bridge before layout as well, so algorithms
@@ -1042,7 +1059,16 @@ fn finish_document_layout_with_reuse(document &dom.Document, root &Node, viewpor
 	if previous := document_layout_result(document) {
 		if same_tree && voidptr(previous.root) == voidptr(root) { previous_state = previous.state }
 	}
-	if previous_state != unsafe { nil } {
+	// Subtree reuse below needs a changed natural size reported as a change.
+	mut reuse := false
+	if previous := document_layout_result(document) {
+		if previous.state != unsafe { nil }
+			&& committed_layout_environment_matches(previous.state.committed_pass_, pass) {
+			reuse = true
+			mark_changed_replaced_sizes(previous.state, replaced_sizes)
+		}
+	}
+	if previous_state != unsafe { nil } && !verify_incremental_layout_control {
 		if relaid := relayout_dirty_text_controls(document, root, previous_state, pass) {
 			state = relaid
 			if verify_text_control_relayout {
@@ -1052,11 +1078,27 @@ fn finish_document_layout_with_reuse(document &dom.Document, root &Node, viewpor
 			}
 		}
 	}
+	if state == unsafe { nil } && previous_state != unsafe { nil } && !verify_incremental_layout_control {
+		if relaid := relayout_incrementally(document, root, previous_state, pass, replaced_sizes) {
+			state = relaid
+			if verify_incremental_layout {
+				full, _ := run_document_geometry(document, root, viewport, viewport_width,
+					viewport_height, timing_checkpoint)
+				verify_incremental_layout_geometry_for(document, pass, state, full)
+			}
+		}
+	}
 	if state == unsafe { nil } {
-		state, timing_checkpoint = run_document_geometry(document, root, viewport, viewport_width,
-			viewport_height, timing_checkpoint)
+		state, timing_checkpoint = run_document_geometry_with_reuse(document, root, viewport,
+			viewport_width, viewport_height, timing_checkpoint, reuse && !verify_incremental_layout_control)
+		if reuse && verify_incremental_layout {
+			full, _ := run_document_geometry(document, root, viewport, viewport_width,
+				viewport_height, timing_checkpoint)
+			verify_incremental_layout_geometry_for(document, pass, state, full)
+		}
 	}
 	state.committed_pass_ = pass
+	state.replaced_sizes_ = replaced_sizes
 	root_placeholder := commit_dom_layout_attachment(root, state, prepared_attachment)
 	mutable_document.set_layout_viewport(&dom.LayoutViewport{
 		root_node: root_placeholder

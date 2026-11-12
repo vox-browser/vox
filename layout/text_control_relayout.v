@@ -61,11 +61,12 @@ fn text_control_containing(node &Node) ?&Node {
 // Called for every layout invalidation, before the already-dirty early exit:
 // a node first dirtied by propagation can later change itself.
 fn note_layout_invalidation_origin(node &Node) {
-	if disable_text_control_relayout || node.document_ == unsafe { nil } { return }
+	if node.document_ == unsafe { nil } { return }
 	result := document_layout_result(node.document_) or { return }
 	if result.state == unsafe { nil } { return }
 	mut state := unsafe { &LayoutState(result.state) }
-	if state.general_layout_invalidation_ { return }
+	note_incremental_layout_origin(mut state, node)
+	if disable_text_control_relayout || state.general_layout_invalidation_ { return }
 	if control := text_control_containing(node) {
 		for existing in state.dirty_text_controls_ {
 			if voidptr(existing) == voidptr(control) { return }
@@ -219,6 +220,8 @@ fn relayout_dirty_text_controls(document &dom.Document, root &Node, previous &La
 	state.block_layouts_ = previous.block_layouts_.clone()
 	state.inline_layouts_ = previous.inline_layouts_.clone()
 	state.text_control_layouts_ = previous.text_control_layouts_.clone()
+	state.relayout_records_ = previous.relayout_records_.clone()
+	state.resolved_anchor_positions_ = previous.resolved_anchor_positions_
 	state.subgrid_storage_ = previous.subgrid_storage_
 	state.begin_retained_block_backoff_pass(previous.block_layout_backoff_)
 	state.previous_state_ = unsafe { &LayoutState(previous) }
@@ -338,20 +341,6 @@ fn relayout_dirty_text_controls(document &dom.Document, root &Node, previous &La
 		eprintln('VOX_TEXT_CONTROL_RELAYOUT result=controls count=${controls.len}')
 	}
 	return state
-}
-
-// ImagePaintable::reset_for_relayout() for every image, combined with the
-// replaced-size signature of this pass.
-fn reset_images_and_sign_replaced_sizes(node &Node, hash u64) u64 {
-	if image_box := node.as_image_box() {
-		mut mutable_image_box := unsafe { &ImageBox(image_box) }
-		mutable_image_box.reset_for_relayout()
-	}
-	mut result := mix_replaced_natural_size(hash, node)
-	for child in node.children() {
-		result = reset_images_and_sign_replaced_sizes(child, result)
-	}
-	return result
 }
 
 fn used_values_geometry_differs(a &UsedValues, b &UsedValues) bool {
