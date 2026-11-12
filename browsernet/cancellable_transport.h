@@ -30,6 +30,10 @@ static int vox_resource_curl_debug(CURL *easy, curl_infotype type, char *data,
 }
 
 // A worker reuses its multi handle's connection cache for its subsequent jobs.
+// Windows pthread destructors run under the DLL loader lock. curl cleanup can
+// join a resolver thread, whose DLL initialization needs that lock, so Windows
+// transfers own and release their handles before returning to the caller.
+#ifndef _WIN32
 // No native event-loop callback or translated DOM/Fetch object crosses threads.
 VOX_NATIVE_STATE pthread_key_t vox_resource_curl_worker_key;
 VOX_NATIVE_STATE pthread_once_t vox_resource_curl_worker_once VOX_NATIVE_STATE_INIT(PTHREAD_ONCE_INIT);
@@ -55,6 +59,7 @@ static void *vox_resource_curl_worker(void) {
     }
     return multi;
 }
+#endif
 
 static int vox_resource_curl_fetch(const char *url, const char *proxy,
         const char *ca_bundle, const char *user_agent, void *headers,
@@ -67,9 +72,19 @@ static int vox_resource_curl_fetch(const char *url, const char *proxy,
     CURLcode result = vox_curl_global_init(CURL_GLOBAL_ALL);
     if (result != CURLE_OK) return result;
     const VoxCurlApi *api = vox_curl_api();
+#ifdef _WIN32
+    void *multi = api->multi_init();
+#else
     void *multi = vox_resource_curl_worker();
+#endif
     void *easy = api->easy_init();
-    if (!multi || !easy) { if (easy) api->easy_cleanup(easy); return CURLE_OUT_OF_MEMORY; }
+    if (!multi || !easy) {
+        if (easy) api->easy_cleanup(easy);
+#ifdef _WIN32
+        if (multi) api->multi_cleanup(multi);
+#endif
+        return CURLE_OUT_OF_MEMORY;
+    }
     bool attached = false;
     VoxResourceTransfer transfer = {0};
 #define VOX_RESOURCE_OPTION(option, value) \
@@ -138,6 +153,9 @@ done:
     }
     if (attached) api->multi_remove_handle(multi, easy);
     api->easy_cleanup(easy);
+#ifdef _WIN32
+    api->multi_cleanup(multi);
+#endif
     return result;
 }
 #endif
