@@ -31,14 +31,14 @@ fn test_public_vertex_divisor_preserves_source_driver_and_conversion_order() {
 	expected_error := C.vox_gl_get_error()
 	other.native.make_current()
 	runtime.evaluate_host('gl.vertexAttribDivisor(-1,1);')!
-	mut selected := [0, 0, 0, 0]!
+	mut selected := [i32(0), 0, 0, 0]!
 	C.vox_gl_int_parameter(webgl.viewport, &selected[0])
-	assert selected == [1, 2, 3, 4]!
+	assert selected == [i32(1), 2, 3, 4]!
 	assert runtime.evaluate_host('gl.getError()')! == expected_error.str()
 	other.native.make_current()
 	assert runtime.evaluate_host('(function(){const marker={};try{gl.vertexAttribDivisor(2,{valueOf(){throw marker}});return false}catch(error){return error===marker}})()')! == 'true'
 	C.vox_gl_int_parameter(webgl.viewport, &selected[0])
-	assert selected == [9, 10, 11, 12]!
+	assert selected == [i32(9), 10, 11, 12]!
 	assert runtime.evaluate_host('(function(){const order=[];gl.vertexAttribDivisor({valueOf(){order.push("index");return 2}},{valueOf(){order.push("divisor");return 17}});return order.join(",")==="index,divisor"&&gl.getVertexAttrib(2,gl.VERTEX_ATTRIB_ARRAY_DIVISOR)===17&&gl.getError()===gl.NO_ERROR})()')! == 'true'
 	assert runtime.evaluate_host('const gl1=__webglContext({bridgeKey:"__created_vertex_divisor_webgl1",width:1,height:1},"webgl",null);typeof gl1.vertexAttribDivisor==="undefined"')! == 'true'
 }

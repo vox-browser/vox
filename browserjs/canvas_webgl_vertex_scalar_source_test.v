@@ -53,9 +53,9 @@ fn test_public_scalar_vertex_attributes_follow_source_float_abi_and_idl_order() 
 			} else {
 				''
 			}});return false}catch(error){return error===marker}})()')! == 'true'
-			mut selected := [0, 0, 0, 0]!
+			mut selected := [i32(0), 0, 0, 0]!
 			C.vox_gl_int_parameter(webgl.viewport, &selected[0])
-			assert selected == [9, 10, 11, 12]!
+			assert selected == [i32(9), 10, 11, 12]!
 		}
 		assert runtime.evaluate_host('(function(){const order=[];gl.vertexAttrib4f({valueOf(){order.push("index");return 2}},...[1,2,3,4].map(value=>({valueOf(){order.push(value);return value}})));const a=gl.getVertexAttrib(2,gl.CURRENT_VERTEX_ATTRIB);return order.join(",")==="index,1,2,3,4"&&a instanceof Float32Array&&a.join(",")==="1,2,3,4"&&gl.getError()===gl.NO_ERROR})()')! == 'true'
 	}

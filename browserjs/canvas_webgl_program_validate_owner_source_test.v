@@ -42,12 +42,12 @@ precision mediump float;out vec4 color;void main(){color=vec4(1);}'
 		}
 		assert native_name != 0
 		other.native.make_current()
-		mut unused := 0
+		mut unused := i32(0)
 		C.vox_gl_int_parameter(u32(0xffff_ffff), &unused)
 		assert runtime.evaluate_host('gl.validateProgram(foreign)===undefined')! == 'true'
-		mut selected := [0, 0, 0, 0]!
+		mut selected := [i32(0), 0, 0, 0]!
 		C.vox_gl_int_parameter(webgl.viewport, &selected[0])
-		assert selected == [9, 10, 11, 12]!
+		assert selected == [i32(9), 10, 11, 12]!
 		for expression in ['gl.validateProgram()', 'gl.validateProgram(null)',
 			'gl.validateProgram(undefined)', 'gl.validateProgram(Object.create(WebGLProgram.prototype))'] {
 			assert runtime.evaluate_host('(function(){try{${expression};return false}catch(error){return error instanceof TypeError}})()')! == 'true'
@@ -72,7 +72,7 @@ precision mediump float;out vec4 color;void main(){color=vec4(1);}'
 		other.native.make_current()
 		assert runtime.evaluate_host('gl.validateProgram(program)===undefined')! == 'true'
 		C.vox_gl_int_parameter(webgl.viewport, &selected[0])
-		assert selected == [1, 2, 3, 4]!
+		assert selected == [i32(1), 2, 3, 4]!
 		assert C.vox_gl_program_parameter(native_name, webgl.validate_status) == expected_validation
 		assert runtime.evaluate_host('gl.getProgramParameter(program,gl.VALIDATE_STATUS)===true&&gl.getError()===gl.NO_ERROR')! == 'true'
 		runtime.evaluate_host('gl.deleteProgram(program)')!
@@ -80,7 +80,7 @@ precision mediump float;out vec4 color;void main(){color=vec4(1);}'
 		C.vox_gl_int_parameter(u32(0xffff_ffff), &unused)
 		assert runtime.evaluate_host('gl.validateProgram(program)===undefined')! == 'true'
 		C.vox_gl_int_parameter(webgl.viewport, &selected[0])
-		assert selected == [9, 10, 11, 12]!
+		assert selected == [i32(9), 10, 11, 12]!
 		assert C.vox_gl_get_error() == webgl.invalid_enum
 		assert C.vox_gl_get_error() == webgl.no_error
 		assert runtime.evaluate_host('gl.getError()===gl.INVALID_OPERATION')! == 'true'
@@ -100,7 +100,7 @@ precision mediump float;out vec4 color;void main(){color=vec4(1);}'
 		other.native.make_current()
 		assert runtime.evaluate_host('gl.validateProgram(rejected)===undefined')! == 'true'
 		C.vox_gl_int_parameter(webgl.viewport, &selected[0])
-		assert selected == [1, 2, 3, 4]!
+		assert selected == [i32(1), 2, 3, 4]!
 		assert runtime.evaluate_host('gl.getError()===${expected}')! == 'true'
 	}
 }

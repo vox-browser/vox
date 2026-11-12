@@ -25,7 +25,7 @@ void main(){gl_Position=vec4(0);}'
 		owner.lose_context_from_compositor_loss()
 		other.viewport(9, 10, 11, 12)
 		other.native.make_current()
-		mut unused := 0
+		mut unused := i32(0)
 		C.vox_gl_int_parameter(GLenum(0xffff_ffff), &unused)
 		mut after := owner.create_shader(vertex_shader) or { panic('owned source shader after loss') }
 		assert after.object.native_name() == 0
@@ -43,9 +43,9 @@ void main(){gl_Position=vec4(0);}'
 		assert owner.get_attached_shaders(program) or { panic('retained lost attachment') } == [original]
 		assert C.vox_gl_is_object(9, sentinel.object.native_name()) == 1
 		assert C.vox_gl_shader_parameter(sentinel.object.native_name(), delete_status) == 0
-		mut selected := [0, 0, 0, 0]!
+		mut selected := [i32(0), 0, 0, 0]!
 		C.vox_gl_int_parameter(viewport, &selected[0])
-		assert selected == [9, 10, 11, 12]!
+		assert selected == [i32(9), 10, 11, 12]!
 		length := C.vox_gl_shader_parameter(sentinel.object.native_name(), GLenum(0x8b88))
 		mut bytes := []u8{len: length}
 		C.vox_gl_get_shader_source(sentinel.object.native_name(), length, bytes.data)

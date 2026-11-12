@@ -6,9 +6,9 @@ import html
 import webgl
 
 fn public_sampler_binding_source_owner() {
-	mut selected := [0, 0, 0, 0]!
+	mut selected := [i32(0), 0, 0, 0]!
 	C.vox_gl_int_parameter(0x0ba2, &selected[0])
-	assert selected == [1, 2, 3, 4]!
+	assert selected == [i32(1), 2, 3, 4]!
 }
 
 fn test_public_sampler_bind_delete_body_order_and_fresh_native_query_records() {
@@ -28,7 +28,7 @@ fn test_public_sampler_bind_delete_body_order_and_fresh_native_query_records() {
 	other.native.make_current()
 	assert runtime.evaluate_host(r'samplerSourceGL.bindSampler(0,ownedSampler);samplerSourceGL.bindSampler(1,ownedSampler);globalThis.queriedSampler=samplerSourceGL.getParameter(samplerSourceGL.SAMPLER_BINDING);queriedSampler instanceof WebGLSampler&&queriedSampler!==ownedSampler&&queriedSampler!==samplerSourceGL.getParameter(samplerSourceGL.SAMPLER_BINDING)&&samplerSourceGL.getError()===samplerSourceGL.NO_ERROR')! == 'true'
 	public_sampler_binding_source_owner()
-	mut initial := 0
+	mut initial := i32(0)
 	C.vox_gl_int_parameter(webgl.sampler_binding, &initial)
 	assert initial != 0
 	for pair in [
@@ -41,7 +41,7 @@ fn test_public_sampler_bind_delete_body_order_and_fresh_native_query_records() {
 		runtime.evaluate_host('samplerSourceGL.${pair[0]};')!
 		public_sampler_binding_source_owner()
 		assert runtime.evaluate_host('samplerSourceGL.getError()')! == pair[1]
-		mut actual := 0
+		mut actual := i32(0)
 		C.vox_gl_int_parameter(webgl.sampler_binding, &actual)
 		assert actual == initial
 	}
@@ -50,7 +50,7 @@ fn test_public_sampler_bind_delete_body_order_and_fresh_native_query_records() {
 	public_sampler_binding_source_owner()
 	for unit in [0, 1] {
 		runtime.evaluate_host('samplerSourceGL.activeTexture(samplerSourceGL.TEXTURE0+${unit})')!
-		mut actual := -1
+		mut actual := i32(-1)
 		C.vox_gl_int_parameter(webgl.sampler_binding, &actual)
 		assert actual == 0
 		assert runtime.evaluate_host(r'globalThis.zeroSampler=samplerSourceGL.getParameter(samplerSourceGL.SAMPLER_BINDING);zeroSampler instanceof WebGLSampler&&zeroSampler!==samplerSourceGL.getParameter(samplerSourceGL.SAMPLER_BINDING)&&samplerSourceGL.getError()===samplerSourceGL.NO_ERROR')! == 'true'
@@ -66,13 +66,13 @@ fn test_public_sampler_bind_delete_body_order_and_fresh_native_query_records() {
 	for expression in ['bindSampler(0,{})', 'deleteSampler({})'] {
 		other.native.make_current()
 		assert runtime.evaluate_host('(function(){try{samplerSourceGL.${expression};return false}catch(error){return error instanceof TypeError}})()')! == 'true'
-		mut selected := [0, 0, 0, 0]!
+		mut selected := [i32(0), 0, 0, 0]!
 		C.vox_gl_int_parameter(0x0ba2, &selected[0])
-		assert selected == [9, 10, 11, 12]!
+		assert selected == [i32(9), 10, 11, 12]!
 	}
 	other.native.make_current()
 	assert runtime.evaluate_host(r'(function(){const marker={};try{samplerSourceGL.bindSampler({valueOf(){throw marker}},foreignSampler);return false}catch(error){return error===marker}})()')! == 'true'
-	mut selected := [0, 0, 0, 0]!
+	mut selected := [i32(0), 0, 0, 0]!
 	C.vox_gl_int_parameter(0x0ba2, &selected[0])
-	assert selected == [9, 10, 11, 12]!
+	assert selected == [i32(9), 10, 11, 12]!
 }

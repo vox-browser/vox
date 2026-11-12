@@ -47,9 +47,9 @@ fn test_source_clear_canvas_hook_runs_once_before_real_gl_and_remains_unconditio
 		witness.calls = 0
 		other.native.make_current()
 		context.clear(0xffffffff)
-		mut selected := [0, 0, 0, 0]!
+		mut selected := [i32(0), 0, 0, 0]!
 		C.vox_gl_int_parameter(viewport, &selected[0])
-		assert selected == [1, 2, 3, 4]!
+		assert selected == [i32(1), 2, 3, 4]!
 		assert witness.calls == 1
 		assert context.needs_to_present()
 		assert context.get_error() == expected

@@ -5,9 +5,9 @@ module webgl
 fn C.glIsQuery(u32) u8
 
 fn deletion_query_source_owner() {
-	mut selected := [0, 0, 0, 0]!
+	mut selected := [i32(0), 0, 0, 0]!
 	C.vox_gl_int_parameter(viewport, &selected[0])
-	assert selected == [1, 2, 3, 4]!
+	assert selected == [i32(1), 2, 3, 4]!
 }
 
 fn test_source_query_delete_selects_owner_before_all_early_returns_and_keeps_slot() {

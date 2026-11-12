@@ -3,7 +3,7 @@
 module webgl
 
 fn framebuffer_source_native_int(pname GLenum) int {
-	mut result := 0
+	mut result := i32(0)
 	C.vox_gl_int_parameter(pname, &result)
 	return result
 }
@@ -38,14 +38,14 @@ fn test_source_framebuffer_renderbuffer_binds_write_slots_after_driver_errors() 
 		assert context.get_error() == invalid_enum
 		foreign := other.create_framebuffer()
 		context.bind_framebuffer(0xbad, foreign)
-		mut selected := [0, 0, 0, 0]!
+		mut selected := [i32(0), 0, 0, 0]!
 		C.vox_gl_int_parameter(viewport, &selected[0])
-		assert selected == [1, 2, 3, 4]!
+		assert selected == [i32(1), 2, 3, 4]!
 		assert context.get_error() == invalid_operation
 		foreign_renderbuffer := other.create_renderbuffer()
 		context.bind_renderbuffer(0xbad, foreign_renderbuffer)
 		C.vox_gl_int_parameter(viewport, &selected[0])
-		assert selected == [1, 2, 3, 4]!
+		assert selected == [i32(1), 2, 3, 4]!
 		assert context.get_error() == invalid_operation
 		C.vox_gl_bind_buffer(0xbad, 0)
 		context.bind_framebuffer(framebuffer, replacement)
@@ -63,7 +63,7 @@ fn test_source_framebuffer_renderbuffer_binds_write_slots_after_driver_errors() 
 		other.native.make_current()
 		context.delete_framebuffer(replacement)
 		C.vox_gl_int_parameter(viewport, &selected[0])
-		assert selected == [1, 2, 3, 4]!
+		assert selected == [i32(1), 2, 3, 4]!
 		assert context.get_error() == no_error
 	}
 }

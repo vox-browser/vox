@@ -44,9 +44,9 @@ fn test_source_get_uniform_returns_exact_zero_without_owner_handle_or_driver_que
 		for index, argument_program in programs {
 			value := context.get_uniform(argument_program, locations[index])
 			assert value.kind == .integer && value.integer == 0
-			mut selected := [0, 0, 0, 0]!
+			mut selected := [i32(0), 0, 0, 0]!
 			C.vox_gl_int_parameter(viewport, &selected[0])
-			assert selected == [9, 10, 11, 12]!
+			assert selected == [i32(9), 10, 11, 12]!
 		}
 		// An unrelated actual driver error must survive the source FIXME body.
 		C.vox_gl_enable(0xbad)
@@ -58,9 +58,9 @@ fn test_source_get_uniform_returns_exact_zero_without_owner_handle_or_driver_que
 		other.native.make_current()
 		deleted_value := context.get_uniform(program, location)
 		assert deleted_value.kind == .integer && deleted_value.integer == 0
-		mut selected := [0, 0, 0, 0]!
+		mut selected := [i32(0), 0, 0, 0]!
 		C.vox_gl_int_parameter(viewport, &selected[0])
-		assert selected == [9, 10, 11, 12]!
+		assert selected == [i32(9), 10, 11, 12]!
 		actual_body_error := context.get_error()
 		assert actual_body_error == no_error
 	}

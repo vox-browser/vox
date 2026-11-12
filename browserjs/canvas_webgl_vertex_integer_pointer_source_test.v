@@ -24,13 +24,13 @@ fn test_public_integer_pointer_uses_source_driver_order_and_idl_conversion() {
 	expected_error := C.vox_gl_get_error()
 	other.native.make_current()
 	runtime.evaluate_host('gl.vertexAttribIPointer(0,0,gl.INT,-1,4);')!
-	mut selected := [0, 0, 0, 0]!
+	mut selected := [i32(0), 0, 0, 0]!
 	C.vox_gl_int_parameter(webgl.viewport, &selected[0])
-	assert selected == [1, 2, 3, 4]!
+	assert selected == [i32(1), 2, 3, 4]!
 	assert runtime.evaluate_host('gl.getError()')! == expected_error.str()
 	assert runtime.evaluate_host('(function(){const buffer=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,buffer);gl.bufferData(gl.ARRAY_BUFFER,64,gl.STATIC_DRAW);const order=[];gl.vertexAttribIPointer(...[0,2,gl.INT,16,4].map(value=>({valueOf(){order.push(value);return value}})));return order.join(",")==="0,2,5124,16,4"&&gl.getVertexAttrib(0,gl.VERTEX_ATTRIB_ARRAY_INTEGER)===true&&gl.getVertexAttrib(0,gl.VERTEX_ATTRIB_ARRAY_STRIDE)===16&&gl.getVertexAttribOffset(0,gl.VERTEX_ATTRIB_ARRAY_POINTER)===4&&gl.getError()===gl.NO_ERROR})()')! == 'true'
 	other.native.make_current()
 	assert runtime.evaluate_host('(function(){const marker={};try{gl.vertexAttribIPointer(0,2,gl.INT,0,{valueOf(){throw marker}});return false}catch(error){return error===marker}})()')! == 'true'
 	C.vox_gl_int_parameter(webgl.viewport, &selected[0])
-	assert selected == [9, 10, 11, 12]!
+	assert selected == [i32(9), 10, 11, 12]!
 }

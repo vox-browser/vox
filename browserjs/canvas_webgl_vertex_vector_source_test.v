@@ -28,9 +28,9 @@ fn test_public_vertex_vectors_preserve_source_short_span_owner_and_idl_sequence_
 					'Array(${components - 1}).fill(1)'
 				}
 				runtime.evaluate_host('gl.vertexAttrib${components}fv(2,${short});')!
-				mut selected := [0, 0, 0, 0]!
+				mut selected := [i32(0), 0, 0, 0]!
 				C.vox_gl_int_parameter(webgl.viewport, &selected[0])
-				assert selected == [9, 10, 11, 12]!
+				assert selected == [i32(9), 10, 11, 12]!
 				assert runtime.evaluate_host('gl.getError()===gl.INVALID_VALUE&&gl.getError()===gl.NO_ERROR')! == 'true'
 				full := if typed { 'new Float32Array([1,2,3,4,13,14])' } else { '[1,2,3,4,13,14]' }
 				assert runtime.evaluate_host('(function(){gl.vertexAttrib${components}fv(2,${full});const a=gl.getVertexAttrib(2,gl.CURRENT_VERTEX_ATTRIB);return a instanceof Float32Array&&a.slice(0,${components}).join(",")==="${[]string{len: components, init: (index + 1).str()}.join(',')}"&&gl.getError()===gl.NO_ERROR})()')! == 'true'

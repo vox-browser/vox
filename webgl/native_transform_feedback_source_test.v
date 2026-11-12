@@ -5,9 +5,9 @@ module webgl
 fn C.glIsTransformFeedback(u32) u8
 
 fn transform_feedback_source_owner() {
-	mut selected := [0, 0, 0, 0]!
+	mut selected := [i32(0), 0, 0, 0]!
 	C.vox_gl_int_parameter(viewport, &selected[0])
-	assert selected == [1, 2, 3, 4]!
+	assert selected == [i32(1), 2, 3, 4]!
 }
 
 fn test_source_transform_feedback_never_assigns_the_declared_retained_slot() {
@@ -20,7 +20,7 @@ fn test_source_transform_feedback_never_assigns_the_declared_retained_slot() {
 	other.native.make_current()
 	context.bind_transform_feedback(transform_feedback, feedback)
 	transform_feedback_source_owner()
-	mut actual := 0
+	mut actual := i32(0)
 	C.vox_gl_int_parameter(transform_feedback_binding, &actual)
 	assert GLuint(actual) == feedback.object.native_handle_
 	assert C.glIsTransformFeedback(feedback.object.native_handle_) == 1

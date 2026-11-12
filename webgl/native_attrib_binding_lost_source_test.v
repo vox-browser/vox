@@ -3,9 +3,9 @@
 module webgl
 
 fn attrib_binding_lost_other_driver(program GLuint) {
-	mut selected := [0, 0, 0, 0]!
+	mut selected := [i32(0), 0, 0, 0]!
 	C.vox_gl_int_parameter(viewport, &selected[0])
-	assert selected == [9, 10, 11, 12]!
+	assert selected == [i32(9), 10, 11, 12]!
 	// Relinking exposes pending glBindAttribLocation changes, so a later reset cannot hide them.
 	C.vox_gl_link_program(program)
 	assert C.vox_gl_program_parameter(program, link_status) == 1
@@ -40,7 +40,7 @@ fn test_source_lost_bind_attrib_drops_actual_command_and_preserves_other_pending
 		C.vox_gl_bind_attrib_location(sentinel.object.native_name(), 2, c'position')
 		owner.lose_context_from_compositor_loss()
 		other.viewport(9, 10, 11, 12)
-		mut unused := 0
+		mut unused := i32(0)
 		C.vox_gl_int_parameter(GLenum(0xffff_ffff), &unused)
 		after := owner.create_program()
 		assert after.object.native_name() == 0

@@ -3,7 +3,7 @@
 module webgl
 
 fn retained_binding_native_int(pname GLenum) int {
-	mut result := 0
+	mut result := i32(0)
 	C.vox_gl_int_parameter(pname, &result)
 	return result
 }
@@ -43,14 +43,14 @@ fn test_source_indexed_binds_leave_generic_retained_slots_unchanged() {
 		foreign := other.create_buffer()
 		other.native.make_current()
 		context.bind_buffer_base(0xbad, 0, foreign)
-		mut selected := [0, 0, 0, 0]!
+		mut selected := [i32(0), 0, 0, 0]!
 		C.vox_gl_int_parameter(viewport, &selected[0])
-		assert selected == [1, 2, 3, 4]!
+		assert selected == [i32(1), 2, 3, 4]!
 		assert context.get_error() == invalid_operation
 		other.native.make_current()
 		context.bind_buffer_range(0xbad, 0, foreign, -1, -1)
 		C.vox_gl_int_parameter(viewport, &selected[0])
-		assert selected == [1, 2, 3, 4]!
+		assert selected == [i32(1), 2, 3, 4]!
 		assert context.get_error() == invalid_operation
 	}
 }
@@ -105,9 +105,9 @@ fn test_source_vao_changes_leave_element_retained_slot_unchanged() {
 			other.native.make_current()
 			context.delete_vertex_array_oes(array)
 		}
-		mut selected := [0, 0, 0, 0]!
+		mut selected := [i32(0), 0, 0, 0]!
 		C.vox_gl_int_parameter(viewport, &selected[0])
-		assert selected == [1, 2, 3, 4]!
+		assert selected == [i32(1), 2, 3, 4]!
 		assert context.get_error() == no_error
 	}
 }

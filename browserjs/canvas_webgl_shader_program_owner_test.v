@@ -34,9 +34,9 @@ fn test_public_shader_program_mutations_select_source_owner_and_native_error_ord
 		for index, call in calls {
 			other.native.make_current()
 			runtime.evaluate_host(call)!
-			mut selected := [0, 0, 0, 0]!
+			mut selected := [i32(0), 0, 0, 0]!
 			C.vox_gl_int_parameter(0x0ba2, &selected[0])
-			assert selected == [9, 10, 11, 12]!
+			assert selected == [i32(9), 10, 11, 12]!
 			assert runtime.evaluate_host('shaderOwner.getError()')! == expected[index]
 		}
 		context.native.make_current()
@@ -47,9 +47,9 @@ fn test_public_shader_program_mutations_select_source_owner_and_native_error_ord
 		C.vox_gl_delete_program(native_program)
 		other.native.make_current()
 		runtime.evaluate_host('shaderOwner.bindAttribLocation(ownedProgram,0xffffffff,"gl_reserved");')!
-		mut selected := [0, 0, 0, 0]!
+		mut selected := [i32(0), 0, 0, 0]!
 		C.vox_gl_int_parameter(0x0ba2, &selected[0])
-		assert selected == [1, 2, 3, 4]!
+		assert selected == [i32(1), 2, 3, 4]!
 		assert runtime.evaluate_host('shaderOwner.getError()')! == expected_binding_error.str()
 		other.native.make_current()
 		runtime.evaluate_host('shaderOwner.attachShader(ownedProgram,ownedShader);')!
@@ -57,7 +57,7 @@ fn test_public_shader_program_mutations_select_source_owner_and_native_error_ord
 		other.native.make_current()
 		runtime.evaluate_host('shaderOwner.attachShader(ownedProgram,ownedShader);')!
 		C.vox_gl_int_parameter(0x0ba2, &selected[0])
-		assert selected == [9, 10, 11, 12]!
+		assert selected == [i32(9), 10, 11, 12]!
 		assert runtime.evaluate_host('shaderOwner.getError()')! == '1282'
 	}
 }

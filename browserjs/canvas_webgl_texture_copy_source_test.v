@@ -26,16 +26,16 @@ fn test_public_texture_copy_uses_source_owner_and_actual_driver_error_order() {
 		expected_image := C.vox_gl_get_error()
 		other.native.make_current()
 		runtime.evaluate_host('copyGL.copyTexImage2D(0xbad,0,copyGL.RGBA,0,0,-1,1,1);')!
-		mut selected := [0, 0, 0, 0]!
+		mut selected := [i32(0), 0, 0, 0]!
 		C.vox_gl_int_parameter(0x0ba2, &selected[0])
-		assert selected == [1, 2, 3, 4]!
+		assert selected == [i32(1), 2, 3, 4]!
 		assert runtime.evaluate_host('copyGL.getError()')! == expected_image.str()
 		C.vox_gl_copy_tex_sub_image2d(0xbad, 0, 0, 0, 0, 0, -1, 1)
 		expected_sub_image := C.vox_gl_get_error()
 		other.native.make_current()
 		runtime.evaluate_host('copyGL.copyTexSubImage2D(0xbad,0,0,0,0,0,-1,1);')!
 		C.vox_gl_int_parameter(0x0ba2, &selected[0])
-		assert selected == [1, 2, 3, 4]!
+		assert selected == [i32(1), 2, 3, 4]!
 		assert runtime.evaluate_host('copyGL.getError()')! == expected_sub_image.str()
 	}
 }

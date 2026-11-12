@@ -13,16 +13,16 @@ fn test_source_texture_copy_selects_owner_and_delegates_competing_validation() {
 		expected_image := C.vox_gl_get_error()
 		other.native.make_current()
 		context.copy_tex_image2d(0xbad, 0, rgba, 0, 0, -1, 1, 1)
-		mut selected := [0, 0, 0, 0]!
+		mut selected := [i32(0), 0, 0, 0]!
 		C.vox_gl_int_parameter(viewport, &selected[0])
-		assert selected == [1, 2, 3, 4]!
+		assert selected == [i32(1), 2, 3, 4]!
 		assert context.get_error() == expected_image
 		C.vox_gl_copy_tex_sub_image2d(0xbad, 0, 0, 0, 0, 0, -1, 1)
 		expected_sub_image := C.vox_gl_get_error()
 		other.native.make_current()
 		context.copy_tex_sub_image2d(0xbad, 0, 0, 0, 0, 0, -1, 1)
 		C.vox_gl_int_parameter(viewport, &selected[0])
-		assert selected == [1, 2, 3, 4]!
+		assert selected == [i32(1), 2, 3, 4]!
 		assert context.get_error() == expected_sub_image
 	}
 }

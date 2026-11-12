@@ -20,7 +20,7 @@ fn test_vertex_vectors_preserve_source_minimum_span_gate_and_exact_driver_calls(
 		context.viewport(1, 2, 3, 4)
 		other.viewport(9, 10, 11, 12)
 		context.native.make_current()
-		mut limit := 0
+		mut limit := i32(0)
 		C.vox_gl_int_parameter(GLenum(0x8869), &limit)
 		values := [f32(math.nan()), f32(math.inf(1)), f32(math.inf(-1)), f32(math.copysign(0, -1)),
 			f32(13), f32(14)]
@@ -28,9 +28,9 @@ fn test_vertex_vectors_preserve_source_minimum_span_gate_and_exact_driver_calls(
 			for length in 0 .. components {
 				other.native.make_current()
 				call_vertex_vector_source(mut context, components, GLuint(limit), values[..length])
-				mut selected := [0, 0, 0, 0]!
+				mut selected := [i32(0), 0, 0, 0]!
 				C.vox_gl_int_parameter(viewport, &selected[0])
-				assert selected == [9, 10, 11, 12]!
+				assert selected == [i32(9), 10, 11, 12]!
 				assert context.error_ == invalid_value
 				assert context.get_error() == invalid_value
 				assert other.get_error() == no_error
@@ -53,9 +53,9 @@ fn test_vertex_vectors_preserve_source_minimum_span_gate_and_exact_driver_calls(
 				context.set_error(invalid_operation)
 				other.native.make_current()
 				call_vertex_vector_source(mut context, components, index, values[..components + 2])
-				mut selected := [0, 0, 0, 0]!
+				mut selected := [i32(0), 0, 0, 0]!
 				C.vox_gl_int_parameter(viewport, &selected[0])
-				assert selected == [1, 2, 3, 4]!
+				assert selected == [i32(1), 2, 3, 4]!
 				if expected_error != no_error {
 					assert context.get_error() == expected_error
 				}

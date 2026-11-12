@@ -89,7 +89,7 @@ pub fn (mut context WebGLRenderingContext) read_pixels(x int, y int, width int, 
 		return []u8{}
 	}
 	context.command('read_pixels', x, y, width, height, format, type_)
-	mut alignment := 0
+	mut alignment := i32(0)
 	C.vox_gl_int_parameter(pack_alignment, &alignment)
 	capacity := required_2d_texture_data_size(width, height, format, type_, PixelUnpackState{alignment: u64(alignment)}) or {
  context.set_error(invalid_enum); return []u8{}
@@ -227,7 +227,9 @@ pub fn (mut context WebGLRenderingContext) clear_bufferfv(buffer GLenum, draw_bu
 pub fn (mut context WebGLRenderingContext) clear_bufferiv(buffer GLenum, draw_buffer int, values []int) {
     if !context.validate_clear_buffer_values(buffer,values.len) { return }
     context.webgl2_command('clear_bufferiv',buffer,draw_buffer,values.len)
-    C.vox_gl_clear_buffer_ints(buffer,draw_buffer,values.data)
+    native_values := values.map(i32(it))
+    defer { unsafe { native_values.free() } }
+    C.vox_gl_clear_buffer_ints(buffer,draw_buffer,native_values.data)
 }
 
 pub fn (mut context WebGLRenderingContext) clear_bufferuiv(buffer GLenum, draw_buffer int, values []u32) {
@@ -308,9 +310,9 @@ pub fn (mut context WebGLRenderingContext) get_internalformat_parameter(target G
     if !context.require_webgl2() { return WebGLParameterValue{} }
     context.native.make_current()
     if pname != samples { context.set_error(invalid_enum); return WebGLParameterValue{} }
-    mut count := 0
+    mut count := i32(0)
     C.vox_gl_internalformat_parameter(target,internal_format,num_sample_counts,1,&count)
-    mut values := []int{len: if count > 0 { count } else { 0 }}
+    mut values := []i32{len: if count > 0 { int(count) } else { 0 }}
     C.vox_gl_internalformat_parameter(target,internal_format,samples,values.len,values.data)
     return WebGLParameterValue{kind:.integers, integers:values.map(i64(it))}
 }
@@ -345,7 +347,7 @@ pub fn (mut context WebGLRenderingContext) get_active_uniforms(program &WebGLPro
 	context.native.make_current()
     if !context.require_webgl2() { return WebGLParameterValue{} }
     if !context.owns(&program.object) { context.set_error(invalid_operation); return WebGLParameterValue{kind:.undefined_} }
-    mut result := []int{len:indices.len}
+    mut result := []i32{len:indices.len}
     C.vox_gl_active_uniforms(program.object.native_handle_,indices.len,indices.data,pname,result.data)
     // Source validates pname in its per-element result loop, after GL. An
     // empty index vector skips that switch and still creates an empty Array.
@@ -367,9 +369,9 @@ pub fn (mut context WebGLRenderingContext) get_uniform_block_index(program &WebG
 }
 
 fn (mut context WebGLRenderingContext) uniform_block_parameter(program &WebGLProgram, index GLuint, pname GLenum) int {
-    mut result := 0
+    mut result := i32(0)
     C.vox_gl_uniform_block_parameter(program.object.native_handle_,index,pname,1,&result)
-    return result
+    return int(result)
 }
 
 pub fn (mut context WebGLRenderingContext) get_active_uniform_block_parameter(program &WebGLProgram, index GLuint, pname GLenum) WebGLParameterValue {
@@ -384,7 +386,7 @@ pub fn (mut context WebGLRenderingContext) get_active_uniform_block_parameter(pr
     }
     if pname == uniform_block_active_uniform_indices {
         count := context.uniform_block_parameter(program,index,uniform_block_active_uniforms)
-        mut indices := []int{len: if count>0 { count } else { 0 }}
+        mut indices := []i32{len: if count>0 { count } else { 0 }}
         C.vox_gl_uniform_block_parameter(program.object.native_handle_,index,pname,indices.len,indices.data)
         return WebGLParameterValue{kind:.integers,integers:indices.map(i64(it))}
     }
@@ -551,7 +553,9 @@ pub fn (mut context WebGLRenderingContext) vertex_attrib_i4iv(index GLuint, valu
 		return
 	}
 	context.native.make_current()
-	C.vox_gl_vertex_attrib_ints(index, values.data)
+	native_values := values[..4].map(i32(it))
+	defer { unsafe { native_values.free() } }
+	C.vox_gl_vertex_attrib_ints(index, native_values.data)
 }
 
 pub fn (mut context WebGLRenderingContext) vertex_attrib_i4ui(index GLuint, x u32, y u32, z u32, w u32) {

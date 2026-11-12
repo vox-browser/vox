@@ -55,9 +55,9 @@ fn test_vertex_pointer_preserves_only_source_retained_slot_gate_and_native_valid
 				if !bound && item.offset != 0 {
 					other.native.make_current()
 					context.vertex_attrib_pointer(item.index, item.size, item.type_, item.normalized, item.stride, item.offset)
-					mut selected := [0, 0, 0, 0]!
+					mut selected := [i32(0), 0, 0, 0]!
 					C.vox_gl_int_parameter(viewport, &selected[0])
-					assert selected == [9, 10, 11, 12]!
+					assert selected == [i32(9), 10, 11, 12]!
 					assert context.error_ == invalid_operation
 					assert context.get_error() == invalid_operation
 					assert other.get_error() == no_error
@@ -76,9 +76,9 @@ fn test_vertex_pointer_preserves_only_source_retained_slot_gate_and_native_valid
 				context.set_error(invalid_operation)
 				other.native.make_current()
 				context.vertex_attrib_pointer(item.index, item.size, item.type_, item.normalized, item.stride, item.offset)
-				mut selected := [0, 0, 0, 0]!
+				mut selected := [i32(0), 0, 0, 0]!
 				C.vox_gl_int_parameter(viewport, &selected[0])
-				assert selected == [1, 2, 3, 4]!
+				assert selected == [i32(1), 2, 3, 4]!
 				assert vertex_pointer_source_driver_state() == expected
 				if expected_error != no_error {
 					assert context.get_error() == expected_error
@@ -97,9 +97,9 @@ fn test_vertex_pointer_preserves_only_source_retained_slot_gate_and_native_valid
 		assert C.vox_gl_get_error() == no_error
 		other.native.make_current()
 		context.vertex_attrib_pointer(0, 2, gl_float, false, 0, 4)
-		mut selected := [0, 0, 0, 0]!
+		mut selected := [i32(0), 0, 0, 0]!
 		C.vox_gl_int_parameter(viewport, &selected[0])
-		assert selected == [1, 2, 3, 4]!
+		assert selected == [i32(1), 2, 3, 4]!
 		assert context.get_error() == deleted_driver_error
 	}
 }

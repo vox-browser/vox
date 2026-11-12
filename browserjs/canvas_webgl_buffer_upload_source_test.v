@@ -45,9 +45,9 @@ fn test_actual_buffer_uploads_reach_driver_bindings_without_source_slots() {
 			if kind == 'webgl' && call.contains('bufferSubData') { continue }
 			other.native.make_current()
 			runtime.evaluate_host(call)!
-			mut actual_viewport := [0, 0, 0, 0]!
+			mut actual_viewport := [i32(0), 0, 0, 0]!
 			C.vox_gl_int_parameter(0x0ba2, &actual_viewport[0])
-			assert actual_viewport == [1, 2, 3, 4]!
+			assert actual_viewport == [i32(1), 2, 3, 4]!
 			assert runtime.evaluate_host('uploadGL.getError()')! == '1281'
 		}
 		context.native.make_current()

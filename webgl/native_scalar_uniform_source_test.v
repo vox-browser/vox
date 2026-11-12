@@ -29,7 +29,7 @@ fn scalar_uniform_source_program(mut context WebGLRenderingContext, index int) (
 
 fn scalar_uniform_source_driver(index int, zero bool) {
 	floats := if zero { [f32(0), 0, 0, 0]! } else { [f32(0.25), 0.5, 0.75, 1]! }
-	ints := if zero { [0, 0, 0, 0]! } else { [1, 2, 3, 4]! }
+	ints := if zero { [i32(0), 0, 0, 0]! } else { [i32(1), 2, 3, 4]! }
 	uints := if zero {
 		[u32(0), 0, 0, 0]!
 	} else {
@@ -54,7 +54,7 @@ fn scalar_uniform_source_driver(index int, zero bool) {
 
 fn scalar_uniform_source_call(mut context WebGLRenderingContext, index int, location ?&WebGLUniformLocation, zero bool) {
 	floats := if zero { [f32(0), 0, 0, 0]! } else { [f32(0.25), 0.5, 0.75, 1]! }
-	ints := if zero { [0, 0, 0, 0]! } else { [1, 2, 3, 4]! }
+	ints := if zero { [i32(0), 0, 0, 0]! } else { [i32(1), 2, 3, 4]! }
 	uints := if zero {
 		[u32(0), 0, 0, 0]!
 	} else {
@@ -84,9 +84,9 @@ fn scalar_uniform_source_query(program &WebGLProgram, width int) []f32 {
 }
 
 fn scalar_uniform_source_owner() {
-	mut selected := [0, 0, 0, 0]!
+	mut selected := [i32(0), 0, 0, 0]!
 	C.vox_gl_int_parameter(viewport, &selected[0])
-	assert selected == [1, 2, 3, 4]!
+	assert selected == [i32(1), 2, 3, 4]!
 }
 
 fn test_source_scalar_uniforms_use_owner_nullable_zero_and_exact_driver_operations() {

@@ -5,9 +5,9 @@ module webgl
 fn C.glIsSampler(u32) u8
 
 fn sampler_binding_source_owner() {
-	mut selected := [0, 0, 0, 0]!
+	mut selected := [i32(0), 0, 0, 0]!
 	C.vox_gl_int_parameter(viewport, &selected[0])
-	assert selected == [1, 2, 3, 4]!
+	assert selected == [i32(1), 2, 3, 4]!
 }
 
 fn test_source_sampler_binding_and_deletion_use_only_driver_bindings_and_owner_first() {
@@ -22,7 +22,7 @@ fn test_source_sampler_binding_and_deletion_use_only_driver_bindings_and_owner_f
 		context.bind_sampler(unit, sampler)
 		sampler_binding_source_owner()
 		context.active_texture(texture0 + unit)
-		mut actual := 0
+		mut actual := i32(0)
 		C.vox_gl_int_parameter(sampler_binding, &actual)
 		assert GLuint(actual) == sampler.object.native_handle_
 		first := context.get_parameter(sampler_binding).sampler or { panic('first sampler') }
@@ -40,7 +40,7 @@ fn test_source_sampler_binding_and_deletion_use_only_driver_bindings_and_owner_f
 	context.bind_sampler(0xffffffff, sampler)
 	sampler_binding_source_owner()
 	assert context.get_error() == expected
-	mut actual := 0
+	mut actual := i32(0)
 	C.vox_gl_int_parameter(sampler_binding, &actual)
 	assert GLuint(actual) == sampler.object.native_handle_
 	other.native.make_current()

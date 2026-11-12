@@ -11,9 +11,9 @@ fn public_matrix_source_query(program u32, location int, size int) []f32 {
 }
 
 fn public_matrix_source_owner() {
-	mut selected := [0, 0, 0, 0]!
+	mut selected := [i32(0), 0, 0, 0]!
 	C.vox_gl_int_parameter(0x0ba2, &selected[0])
-	assert selected == [1, 2, 3, 4]!
+	assert selected == [i32(1), 2, 3, 4]!
 }
 
 fn test_public_source_matrix_uniforms_preserve_transpose_native_values_and_source_order() {
@@ -59,7 +59,7 @@ fn test_public_source_matrix_uniforms_preserve_transpose_native_values_and_sourc
 			for column in 0 .. column_count { terms << 'vec4(data[${column}]${padding})' }
 			runtime.evaluate_host('globalThis.matrixOwned=__matrixSourceProgram(matrixOwner,"${type_}","${terms.join('+')}");globalThis.matrixForeign=__matrixSourceProgram(matrixOther,"${type_}","${terms.join('+')}");matrixOwner.useProgram(matrixOwned.program);globalThis.matrixValues=new Float32Array(${size});for(let i=0;i<matrixValues.length;i++)matrixValues[i]=i+1;')!
 			context.native.make_current()
-			mut native_program := 0
+			mut native_program := i32(0)
 			C.vox_gl_int_parameter(0x8b8d, &native_program)
 			name := 'data'
 			native_location := C.vox_gl_uniform_location(u32(native_program), name.str)

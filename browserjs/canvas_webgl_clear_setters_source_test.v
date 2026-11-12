@@ -44,9 +44,9 @@ fn test_public_clear_setters_preserve_float_abi_and_idl_before_real_driver_comma
 			'clearDepth({valueOf(){throw marker}})', 'clearStencil({valueOf(){throw marker}})'] {
 			other.native.make_current()
 			assert runtime.evaluate_host('(function(){const marker={};try{gl.${expression};return false}catch(error){return error===marker}})()')! == 'true'
-			mut selected := [0, 0, 0, 0]!
+			mut selected := [i32(0), 0, 0, 0]!
 			C.vox_gl_int_parameter(webgl.viewport, &selected[0])
-			assert selected == [9, 10, 11, 12]!
+			assert selected == [i32(9), 10, 11, 12]!
 		}
 		assert runtime.evaluate_host('(function(){const v=gl.createShader(gl.VERTEX_SHADER),f=gl.createShader(gl.FRAGMENT_SHADER),p=gl.createProgram();gl.shaderSource(v,"void main(){gl_Position=vec4(0,0,0,1);gl_PointSize=1.0;}");gl.shaderSource(f,"precision mediump float;void main(){gl_FragColor=vec4(1,0,0,1);}");gl.compileShader(v);gl.compileShader(f);gl.attachShader(p,v);gl.attachShader(p,f);gl.linkProgram(p);if(!gl.getProgramParameter(p,gl.LINK_STATUS))return false;gl.useProgram(p);gl.clearColor(0,0,1,1);gl.clearDepth(0.25);gl.clearStencil(0x1ab);gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT|gl.STENCIL_BUFFER_BIT);gl.depthMask(false);gl.clearDepth(1);gl.stencilMask(0);gl.clearStencil(0);gl.clear(gl.DEPTH_BUFFER_BIT|gl.STENCIL_BUFFER_BIT);gl.enable(gl.DEPTH_TEST);gl.depthFunc(gl.GREATER);gl.enable(gl.STENCIL_TEST);gl.stencilFunc(gl.EQUAL,0xab,0xff);let touched=0;const truth={valueOf(){touched++;throw 1}};gl.colorMask(truth,truth,false,truth);gl.drawArrays(gl.POINTS,0,1);const pixel=new Uint8Array(4);gl.readPixels(0,0,1,1,gl.RGBA,gl.UNSIGNED_BYTE,pixel);return touched===0&&Array.from(pixel).join(",")==="255,0,255,255"&&gl.getError()===gl.NO_ERROR})()')! == 'true'
 		assert other.get_error() == webgl.no_error

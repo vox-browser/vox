@@ -8,7 +8,7 @@ fn test_vertex_divisor_forwards_source_unsigned_widths_and_driver_validation() {
 	context.viewport(1, 2, 3, 4)
 	other.viewport(9, 10, 11, 12)
 	context.native.make_current()
-	mut limit := 0
+	mut limit := i32(0)
 	C.vox_gl_int_parameter(GLenum(0x8869), &limit)
 	for index in [GLuint(0), GLuint(limit - 1), GLuint(limit), GLuint(0xffff_ffff)] {
 		for divisor in [GLuint(0), GLuint(1), GLuint(17), GLuint(0x8000_0000), GLuint(0xffff_ffff)] {
@@ -26,9 +26,9 @@ fn test_vertex_divisor_forwards_source_unsigned_widths_and_driver_validation() {
 			context.set_error(invalid_operation)
 			other.native.make_current()
 			context.vertex_attrib_divisor(index, divisor)
-			mut selected := [0, 0, 0, 0]!
+			mut selected := [i32(0), 0, 0, 0]!
 			C.vox_gl_int_parameter(viewport, &selected[0])
-			assert selected == [1, 2, 3, 4]!
+			assert selected == [i32(1), 2, 3, 4]!
 			if index < GLuint(limit) {
 				assert C.vox_gl_vertex_attrib_parameter(index, vertex_attrib_array_divisor) == expected
 			}

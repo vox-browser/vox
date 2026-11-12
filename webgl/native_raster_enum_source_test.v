@@ -10,7 +10,7 @@ struct RasterEnumSourceCase {
 fn raster_enum_source_state() []int {
 	mut values := []int{}
 	for pname in [cull_face_mode, depth_func, front_face, generate_mipmap_hint] {
-		mut value := 0
+		mut value := i32(0)
 		C.vox_gl_int_parameter(pname, &value)
 		values << value
 	}
@@ -76,9 +76,9 @@ fn test_source_raster_enum_setters_delegate_actual_driver_state_errors_and_owner
 					'front' { context.front_face(operation.args[0]) }
 					else { context.hint(operation.args[0], operation.args[1]) }
 				}
-				mut selected := [0, 0, 0, 0]!
+				mut selected := [i32(0), 0, 0, 0]!
 				C.vox_gl_int_parameter(viewport, &selected[0])
-				assert selected == [1, 2, 3, 4]!
+				assert selected == [i32(1), 2, 3, 4]!
 				assert raster_enum_source_state() == expected_state
 				if expected_error != no_error {
 					assert context.get_error() == expected_error

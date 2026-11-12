@@ -663,9 +663,9 @@ pub fn (mut context WebGLRenderingContext) get_shader_precision_format(shader GL
 	context.command('get_shader_precision_format')
 	// C writes two C ints; V's int is 64-bit under current V.
 	mut range := [i32(0), 0]!
-	mut bits := 0
+	mut bits := i32(0)
 	C.vox_gl_shader_precision(shader, precision, &range[0], &bits)
-	return WebGLShaderPrecisionFormat.create(int(range[0]), int(range[1]), bits)
+	return WebGLShaderPrecisionFormat.create(int(range[0]), int(range[1]), int(bits))
 }
 
 pub fn (mut context WebGLRenderingContext) get_buffer_parameter(target GLenum, pname GLenum) WebGLParameterValue {
@@ -743,7 +743,7 @@ pub fn (mut context WebGLRenderingContext) get_parameter(pname GLenum) WebGLPara
    vertex_array_binding {array:=context.current_vertex_array or {return WebGLParameterValue{}};return WebGLParameterValue{kind:.object,object:array.object.handle_,vertex_array:array}}
    sampler_binding {
     context.native.make_current()
-    mut handle:=0
+    mut handle:=i32(0)
     C.vox_gl_int_parameter(pname,&handle)
     logical:=context.allocate_handle()
     sampler:=&WebGLSampler{object:WebGLObject{...new_object(context.identity(),context.context_generation_,logical,GLuint(handle)),native_handle_:GLuint(handle)}}
@@ -963,7 +963,9 @@ fn (mut context WebGLRenderingContext) uniform_ints(location ?&WebGLUniformLocat
  value.handle(context.current_program) or { context.set_error(invalid_operation); return }
 
  if values.len % width != 0 { context.set_error(invalid_value); return }
- C.vox_gl_uniform_ints(int(value.handle_), width, values.len / width, values.data)
+ native_values := values.map(i32(it))
+ defer { unsafe { native_values.free() } }
+ C.vox_gl_uniform_ints(int(value.handle_), width, native_values.len / width, native_values.data)
 }
 
 fn (mut context WebGLRenderingContext) uniform_uints(location ?&WebGLUniformLocation, values []u32, width int) {

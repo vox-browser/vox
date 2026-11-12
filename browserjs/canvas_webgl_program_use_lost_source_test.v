@@ -7,10 +7,10 @@ import json2
 import webgl
 
 fn public_program_use_lost_other_driver(name u32) {
-	mut selected := [0, 0, 0, 0]!
+	mut selected := [i32(0), 0, 0, 0]!
 	C.vox_gl_int_parameter(webgl.viewport, &selected[0])
-	assert selected == [9, 10, 11, 12]!
-	mut actual := -1
+	assert selected == [i32(9), 10, 11, 12]!
+	mut actual := i32(-1)
 	C.vox_gl_int_parameter(webgl.current_program, &actual)
 	assert actual == int(name)
 	assert C.vox_gl_program_parameter(name, webgl.link_status) == 1
@@ -57,7 +57,7 @@ precision mediump float;out vec4 color;void main(){color=vec4(1);}'
 		owner.lose_context_from_compositor_loss()
 		other.viewport(9, 10, 11, 12)
 		other.native.make_current()
-		mut unused := 0
+		mut unused := i32(0)
 		C.vox_gl_int_parameter(u32(0xffff_ffff), &unused)
 		assert runtime.evaluate_host('globalThis.after=gl.createProgram();after instanceof WebGLProgram')! == 'true'
 		for argument in ['null', 'undefined'] {

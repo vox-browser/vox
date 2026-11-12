@@ -84,9 +84,9 @@ fn test_source_float_raster_setters_pass_exact_float_abi_to_owning_actual_driver
 				'polygon' { context.polygon_offset(a[0], a[1]) }
 				else { context.sample_coverage(a[0], operation.invert) }
 			}
-			mut selected := [0, 0, 0, 0]!
+			mut selected := [i32(0), 0, 0, 0]!
 			C.vox_gl_int_parameter(viewport, &selected[0])
-			assert selected == [1, 2, 3, 4]!
+			assert selected == [i32(1), 2, 3, 4]!
 			actual := raster_float_source_state()
 			for index, value in expected {
 				assert actual[index] == value || (math.is_nan(actual[index]) && math.is_nan(value))

@@ -34,32 +34,32 @@ fn test_public_is_shader_source_optional_gate_preserves_other_owner_and_actual_n
 			}
 		}
 		assert name !in reserved
-		mut selected := [0, 0, 0, 0]!
+		mut selected := [i32(0), 0, 0, 0]!
 		other.native.make_current()
 		assert runtime.evaluate_host('gl.isShader(foreign)===false')! == 'true'
 		C.vox_gl_int_parameter(webgl.viewport, &selected[0])
-		assert selected == [9, 10, 11, 12]!
+		assert selected == [i32(9), 10, 11, 12]!
 		assert runtime.evaluate_host('gl.getError()===gl.INVALID_OPERATION')! == 'true'
 		other.native.make_current()
 		assert runtime.evaluate_host('(function(){try{gl.isShader(Object.create(WebGLShader.prototype));return false}catch(error){return error instanceof TypeError}})()')! == 'true'
 		C.vox_gl_int_parameter(webgl.viewport, &selected[0])
-		assert selected == [9, 10, 11, 12]!
+		assert selected == [i32(9), 10, 11, 12]!
 		other.native.make_current()
 		assert runtime.evaluate_host('gl.isShader(shader)===true')! == 'true'
 		C.vox_gl_int_parameter(webgl.viewport, &selected[0])
-		assert selected == [1, 2, 3, 4]!
+		assert selected == [i32(1), 2, 3, 4]!
 		runtime.evaluate_host('gl.deleteShader(shader)')!
 		assert C.vox_gl_is_object(9, name) == 1
 		other.native.make_current()
 		assert runtime.evaluate_host('gl.isShader(shader)===false')! == 'true'
 		C.vox_gl_int_parameter(webgl.viewport, &selected[0])
-		assert selected == [9, 10, 11, 12]!
+		assert selected == [i32(9), 10, 11, 12]!
 		assert runtime.evaluate_host('gl.getError()===gl.NO_ERROR')! == 'true'
 		runtime.evaluate_host('other.deleteShader(foreign)')!
 		other.native.make_current()
 		assert runtime.evaluate_host('gl.isShader(foreign)===false')! == 'true'
 		C.vox_gl_int_parameter(webgl.viewport, &selected[0])
-		assert selected == [9, 10, 11, 12]!
+		assert selected == [i32(9), 10, 11, 12]!
 		assert runtime.evaluate_host('gl.getError()===gl.INVALID_OPERATION')! == 'true'
 		owner.native.make_current()
 		for native in reserved[1..] { C.vox_gl_delete_shader(native) }

@@ -51,9 +51,9 @@ fn test_public_lost_is_shader_sync_returns_source_boolean_without_other_driver_q
 			'(function(){try{gl.isShader(Object.create(WebGLShader.prototype));return false}catch(error){return error instanceof TypeError}})()',
 			'(function(){try{gl.isShader();return false}catch(error){return error instanceof TypeError}})()'] {
 			assert runtime.evaluate_host(query)! == 'true'
-			mut selected := [0, 0, 0, 0]!
+			mut selected := [i32(0), 0, 0, 0]!
 			C.vox_gl_int_parameter(webgl.viewport, &selected[0])
-			assert selected == [9, 10, 11, 12]!
+			assert selected == [i32(9), 10, 11, 12]!
 			assert C.vox_gl_is_object(9, sentinel_name) == 1
 		}
 		assert C.vox_gl_get_error() == webgl.invalid_value

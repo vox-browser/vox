@@ -91,9 +91,9 @@ fn test_source_webgl2_draw_invalid_arguments_still_select_owner_notify_and_use_d
 			1 { context.draw_elements_instanced(0xbad, -1, 0xbad, -1, -1) }
 			else { context.draw_range_elements(0xbad, 2, 1, -1, 0xbad, -1) }
 		}
-		mut selected := [0, 0, 0, 0]!
+		mut selected := [i32(0), 0, 0, 0]!
 		C.vox_gl_int_parameter(viewport, &selected[0])
-		assert selected == [1, 2, 3, 4]!
+		assert selected == [i32(1), 2, 3, 4]!
 		assert witness.calls == 1
 		assert context.needs_to_present()
 		assert context.get_error() == expected

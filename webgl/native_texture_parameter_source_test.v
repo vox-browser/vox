@@ -13,15 +13,15 @@ fn test_source_texture_parameters_use_actual_driver_binding_and_validation() {
 		assert texture_2d !in context.bound_texture_objects
 		other.native.make_current()
 		context.tex_parameteri(texture_2d, texture_min_filter, 0x2600)
-		mut selected := [0, 0, 0, 0]!
+		mut selected := [i32(0), 0, 0, 0]!
 		C.vox_gl_int_parameter(viewport, &selected[0])
-		assert selected == [1, 2, 3, 4]!
+		assert selected == [i32(1), 2, 3, 4]!
 		assert context.get_tex_parameter(texture_2d, texture_min_filter).integer == 0x2600
 		assert context.get_error() == no_error
 		other.native.make_current()
 		context.tex_parameterf(texture_2d, texture_wrap_s, f32(0x812f))
 		C.vox_gl_int_parameter(viewport, &selected[0])
-		assert selected == [1, 2, 3, 4]!
+		assert selected == [i32(1), 2, 3, 4]!
 		assert context.get_tex_parameter(texture_2d, texture_wrap_s).integer == 0x812f
 		assert context.get_error() == no_error
 		C.vox_gl_tex_parameteri(0xbad, 0xbad, -1)
@@ -29,14 +29,14 @@ fn test_source_texture_parameters_use_actual_driver_binding_and_validation() {
 		other.native.make_current()
 		context.tex_parameteri(0xbad, 0xbad, -1)
 		C.vox_gl_int_parameter(viewport, &selected[0])
-		assert selected == [1, 2, 3, 4]!
+		assert selected == [i32(1), 2, 3, 4]!
 		assert context.get_error() == expected_int
 		C.vox_gl_tex_parameterf(0xbad, 0xbad, -1)
 		expected_float := C.vox_gl_get_error()
 		other.native.make_current()
 		context.tex_parameterf(0xbad, 0xbad, -1)
 		C.vox_gl_int_parameter(viewport, &selected[0])
-		assert selected == [1, 2, 3, 4]!
+		assert selected == [i32(1), 2, 3, 4]!
 		assert context.get_error() == expected_float
 		context.tex_parameteri(texture_2d, texture_min_filter, 0x2601)
 		assert context.get_tex_parameter(texture_2d, texture_min_filter).integer == 0x2601

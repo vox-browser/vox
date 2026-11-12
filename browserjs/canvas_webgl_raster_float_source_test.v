@@ -62,9 +62,9 @@ fn test_public_float_raster_setters_use_source_unrestricted_float_and_driver_err
 			context.set_error(webgl.invalid_operation)
 			other.native.make_current()
 			runtime.evaluate_host('gl.${expression};')!
-			mut selected := [0, 0, 0, 0]!
+			mut selected := [i32(0), 0, 0, 0]!
 			C.vox_gl_int_parameter(webgl.viewport, &selected[0])
-			assert selected == [1, 2, 3, 4]!
+			assert selected == [i32(1), 2, 3, 4]!
 			actual := public_raster_float_source_state()
 			for index, value in expected {
 				assert actual[index] == value || (math.is_nan(actual[index]) && math.is_nan(value))
@@ -79,9 +79,9 @@ fn test_public_float_raster_setters_use_source_unrestricted_float_and_driver_err
 			'sampleCoverage({valueOf(){throw marker}},true)'] {
 			other.native.make_current()
 			assert runtime.evaluate_host('(function(){const marker={};try{gl.${expression};return false}catch(error){return error===marker}})()')! == 'true'
-			mut selected := [0, 0, 0, 0]!
+			mut selected := [i32(0), 0, 0, 0]!
 			C.vox_gl_int_parameter(webgl.viewport, &selected[0])
-			assert selected == [9, 10, 11, 12]!
+			assert selected == [i32(9), 10, 11, 12]!
 		}
 		assert runtime.evaluate_host('(function(){let touched=0;gl.lineWidth(1.5);gl.depthRange(0.25,0.75);gl.polygonOffset(0.125,-2.75);gl.sampleCoverage(0.625,{valueOf(){touched++;throw 1}});return touched===0&&gl.getParameter(gl.LINE_WIDTH)===1.5&&Array.from(gl.getParameter(gl.DEPTH_RANGE)).join(",")==="0.25,0.75"&&gl.getParameter(gl.POLYGON_OFFSET_FACTOR)===0.125&&gl.getParameter(gl.POLYGON_OFFSET_UNITS)===-2.75&&gl.getParameter(gl.SAMPLE_COVERAGE_VALUE)===0.625&&gl.getParameter(gl.SAMPLE_COVERAGE_INVERT)===true&&gl.getError()===gl.NO_ERROR})()')! == 'true'
 		assert other.get_error() == webgl.no_error

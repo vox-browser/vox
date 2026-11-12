@@ -42,9 +42,9 @@ fn test_integer_vertex_pointer_forwards_all_source_arguments_to_actual_driver() 
 			context.set_error(invalid_operation)
 			other.native.make_current()
 			context.vertex_attrib_i_pointer(GLuint(item[0]), int(item[1]), GLenum(item[2]), int(item[3]), item[4])
-			mut selected := [0, 0, 0, 0]!
+			mut selected := [i32(0), 0, 0, 0]!
 			C.vox_gl_int_parameter(viewport, &selected[0])
-			assert selected == [1, 2, 3, 4]!
+			assert selected == [i32(1), 2, 3, 4]!
 			assert integer_pointer_source_driver_state() == expected
 			if expected_error != no_error {
 				assert context.get_error() == expected_error

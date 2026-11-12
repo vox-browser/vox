@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: BSD-2-Clause
 module webgl
 
-fn C.glGetFramebufferAttachmentParameteriv(u32, u32, u32, &int)
+fn C.glGetFramebufferAttachmentParameteriv(u32, u32, u32, &i32)
 
 fn test_source_framebuffer_attachment_query_returns_actual_retained_deleted_records() {
 	for version in [WebGLVersion.webgl1, .webgl2] {
@@ -22,7 +22,7 @@ fn test_source_framebuffer_attachment_query_returns_actual_retained_deleted_reco
 		context.delete_texture(texture)
 		assert texture.object.invalidated()
 		assert texture.object.handle_ !in context.textures
-		mut native_type := -1
+		mut native_type := i32(-1)
 		C.glGetFramebufferAttachmentParameteriv(framebuffer, color_attachment0,
 			framebuffer_attachment_object_type, &native_type)
 		assert native_type == 0

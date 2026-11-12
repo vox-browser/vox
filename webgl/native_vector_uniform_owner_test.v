@@ -46,9 +46,9 @@ fn source_vector_call(mut context WebGLRenderingContext, index int, location ?&W
 }
 
 fn source_vector_owner_and_error(mut context WebGLRenderingContext, expected GLenum) {
-	mut selected := [0, 0, 0, 0]!
+	mut selected := [i32(0), 0, 0, 0]!
 	C.vox_gl_int_parameter(viewport, &selected[0])
-	assert selected == [1, 2, 3, 4]!
+	assert selected == [i32(1), 2, 3, 4]!
 	actual_error := context.get_error()
 	assert actual_error == expected
 }

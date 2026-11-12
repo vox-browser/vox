@@ -43,9 +43,9 @@ fn test_public_stencil_setters_keep_actual_driver_owner_error_priority_and_idl_o
 				else { 'stencilOpSeparate(gl.FRONT_AND_BACK,gl.KEEP,gl.KEEP,0xbad)' }
 			}
 			runtime.evaluate_host('gl.${expression};')!
-			mut selected := [0, 0, 0, 0]!
+			mut selected := [i32(0), 0, 0, 0]!
 			C.vox_gl_int_parameter(webgl.viewport, &selected[0])
-			assert selected == [1, 2, 3, 4]!
+			assert selected == [i32(1), 2, 3, 4]!
 			assert runtime.evaluate_host('gl.getError()')! == expected_error.str()
 			assert runtime.evaluate_host('gl.getError()===gl.INVALID_VALUE&&gl.getError()===gl.NO_ERROR')! == 'true'
 		}
@@ -57,9 +57,9 @@ fn test_public_stencil_setters_keep_actual_driver_owner_error_priority_and_idl_o
 			'stencilOpSeparate(gl.FRONT,gl.KEEP,gl.KEEP,{valueOf(){throw marker}})'] {
 			other.native.make_current()
 			assert runtime.evaluate_host('(function(){const marker={};try{gl.${expression};return false}catch(error){return error===marker}})()')! == 'true'
-			mut selected := [0, 0, 0, 0]!
+			mut selected := [i32(0), 0, 0, 0]!
 			C.vox_gl_int_parameter(webgl.viewport, &selected[0])
-			assert selected == [9, 10, 11, 12]!
+			assert selected == [i32(9), 10, 11, 12]!
 		}
 		assert runtime.evaluate_host('gl.stencilFunc(gl.ALWAYS,0,0xffffffff);gl.stencilFuncSeparate(gl.FRONT,gl.EQUAL,7,0x0f);gl.stencilMask(0xffffffff);gl.stencilMaskSeparate(gl.BACK,0xf0);gl.stencilOp(gl.REPLACE,gl.INCR,gl.DECR_WRAP);gl.stencilOpSeparate(gl.FRONT,gl.INVERT,gl.KEEP,gl.DECR);gl.getParameter(gl.STENCIL_FUNC)===gl.EQUAL&&gl.getParameter(gl.STENCIL_REF)===7&&gl.getParameter(gl.STENCIL_VALUE_MASK)===15&&gl.getParameter(gl.STENCIL_BACK_WRITEMASK)===240&&gl.getParameter(gl.STENCIL_FAIL)===gl.INVERT&&gl.getParameter(gl.STENCIL_BACK_FAIL)===gl.REPLACE&&gl.getError()===gl.NO_ERROR')! == 'true'
 		assert other.get_error() == webgl.no_error

@@ -9,12 +9,12 @@ fn test_max_client_wait_timeout_is_source_webgl2_zero_without_a_driver_query() {
 		owner.viewport(1, 2, 3, 4)
 		other.viewport(9, 10, 11, 12)
 		other.native.make_current()
-		mut unused := 0
+		mut unused := i32(0)
 		C.vox_gl_int_parameter(GLenum(0xffff_ffff), &unused)
 		result := owner.get_parameter(max_client_wait_timeout_webgl)
-		mut selected := [0, 0, 0, 0]!
+		mut selected := [i32(0), 0, 0, 0]!
 		C.vox_gl_int_parameter(viewport, &selected[0])
-		assert selected == [9, 10, 11, 12]!
+		assert selected == [i32(9), 10, 11, 12]!
 		assert C.vox_gl_get_error() == invalid_enum
 		assert C.vox_gl_get_error() == no_error
 		if version == .webgl2 {

@@ -25,16 +25,16 @@ fn test_public_texture_storage_uses_source_owner_and_actual_driver_validation() 
 	expected_2d := C.vox_gl_get_error()
 	other.native.make_current()
 	runtime.evaluate_host('storageGL.texStorage2D(0xbad,0,storageGL.RGBA8,-1,0);')!
-	mut selected := [0, 0, 0, 0]!
+	mut selected := [i32(0), 0, 0, 0]!
 	C.vox_gl_int_parameter(0x0ba2, &selected[0])
-	assert selected == [1, 2, 3, 4]!
+	assert selected == [i32(1), 2, 3, 4]!
 	assert runtime.evaluate_host('storageGL.getError()')! == expected_2d.str()
 	C.vox_gl_tex_storage3d(0xbad, 0, 0x8058, -1, 0, -1)
 	expected_3d := C.vox_gl_get_error()
 	other.native.make_current()
 	runtime.evaluate_host('storageGL.texStorage3D(0xbad,0,storageGL.RGBA8,-1,0,-1);')!
 	C.vox_gl_int_parameter(0x0ba2, &selected[0])
-	assert selected == [1, 2, 3, 4]!
+	assert selected == [i32(1), 2, 3, 4]!
 	assert runtime.evaluate_host('storageGL.getError()')! == expected_3d.str()
 	assert runtime.evaluate_host(r'(function(){const gl=storageGL;const texture=gl.createTexture();gl.bindTexture(gl.TEXTURE_2D,texture);gl.texStorage2D(gl.TEXTURE_2D,1,gl.RGBA8,2,2);if(gl.getTexParameter(gl.TEXTURE_2D,gl.TEXTURE_IMMUTABLE_FORMAT)!==true||gl.getTexParameter(gl.TEXTURE_2D,gl.TEXTURE_IMMUTABLE_LEVELS)!==1)return false;const volume=gl.createTexture();gl.bindTexture(gl.TEXTURE_3D,volume);gl.texStorage3D(gl.TEXTURE_3D,1,gl.RGBA8,1,1,2);return gl.getTexParameter(gl.TEXTURE_3D,gl.TEXTURE_IMMUTABLE_FORMAT)===true&&gl.getTexParameter(gl.TEXTURE_3D,gl.TEXTURE_IMMUTABLE_LEVELS)===1&&gl.getError()===gl.NO_ERROR})()')! == 'true'
 }

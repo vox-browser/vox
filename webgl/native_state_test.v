@@ -81,16 +81,16 @@ fn test_native_fractional_state_and_integer_attributes_retain_exact_types() {
 	C.vox_gl_float_parameter(sample_coverage_value, values.data)
 	assert values[0] == 0.625
 	context.active_texture(texture0 + 3)
-	mut integer := 0
+	mut integer := i32(0)
 	C.vox_gl_int_parameter(active_texture, &integer)
 	assert integer == int(texture0 + 3)
 	context.active_texture(0)
 	assert context.get_error() == invalid_enum
 	assert context.get_parameter(active_texture).integer == texture0 + 3
 	context.vertex_attrib_i4i(2, 2_000_000_001, -2_000_000_001, 7, -9)
-	mut signed := []int{len: 4}
+	mut signed := []i32{len: 4}
 	C.vox_gl_vertex_attrib_int_parameter(2, signed.data)
-	assert signed == [2_000_000_001, -2_000_000_001, 7, -9]
+	assert signed == [i32(2_000_000_001), -2_000_000_001, 7, -9]
 	context.vertex_attrib_i4ui(3, 0xffff_ffff, 0xfedc_ba98, 7, 9)
 	mut unsigned := []u32{len: 4}
 	C.vox_gl_vertex_attrib_uint_parameter(3, unsigned.data)

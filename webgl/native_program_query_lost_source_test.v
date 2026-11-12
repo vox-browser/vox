@@ -60,9 +60,9 @@ precision mediump float;out vec4 color;void main(){color=vec4(1);}'
 				assert result.kind == .boolean
 				assert !result.boolean
 			}
-			mut selected := [0, 0, 0, 0]!
+			mut selected := [i32(0), 0, 0, 0]!
 			C.vox_gl_int_parameter(viewport, &selected[0])
-			assert selected == [9, 10, 11, 12]!
+			assert selected == [i32(9), 10, 11, 12]!
 			assert C.vox_gl_program_parameter(valid.object.native_name(), link_status) == 1
 			assert C.vox_gl_program_parameter(invalid.object.native_name(), GLenum(0x8b84)) == log_length
 		}

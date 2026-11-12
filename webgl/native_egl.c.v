@@ -159,17 +159,18 @@ fn C.vox_gl_stencil_mask_separate(u32,u32)
 fn C.vox_gl_stencil_op(u32,u32,u32)
 fn C.vox_gl_stencil_op_separate(u32,u32,u32,u32)
 fn C.vox_gl_clear_buffer_floats(u32,int,&f32)
-fn C.vox_gl_clear_buffer_ints(u32,int,&int)
+// GLint storage is always 32-bit, including when V's int is 64-bit.
+fn C.vox_gl_clear_buffer_ints(u32,int,&i32)
 fn C.vox_gl_clear_buffer_uints(u32,int,&u32)
 fn C.vox_gl_clear_buffer_depth_stencil(u32,int,f32,int)
 fn C.vox_gl_vertex_attrib_i4i(u32, int, int, int, int)
 fn C.vox_gl_vertex_attrib_i4ui(u32, u32, u32, u32, u32)
-fn C.vox_gl_vertex_attrib_ints(u32,&int)
+fn C.vox_gl_vertex_attrib_ints(u32,&i32)
 fn C.vox_gl_vertex_attrib_uints(u32,&u32)
-fn C.vox_gl_vertex_attrib_int_parameter(u32,&int)
+fn C.vox_gl_vertex_attrib_int_parameter(u32,&i32)
 fn C.vox_gl_vertex_attrib_uint_parameter(u32,&u32)
 fn C.vox_gl_float_parameter(u32,&f32)
-fn C.vox_gl_int_parameter(u32,&int)
+fn C.vox_gl_int_parameter(u32,&i32)
 fn C.vox_gl_create_shader(u32) u32
 fn C.vox_gl_create_program() u32
 fn C.vox_gl_shader_source(u32, &char, int)
@@ -191,15 +192,15 @@ fn C.vox_gl_program_log(u32, int, &u8)
 fn C.vox_gl_uniform_location(u32, &char) int
 fn C.vox_gl_attrib_location(u32, &char) int
 fn C.vox_gl_bind_attrib_location(u32, u32, &char)
-fn C.vox_gl_active_info(u32, u32, int, int, &u8, &int, &u32) int
+fn C.vox_gl_active_info(u32, u32, int, int, &u8, &i32, &u32) int
 fn C.vox_gl_uniform_indices(u32,int,voidptr,&u32)
-fn C.vox_gl_active_uniforms(u32,int,&u32,u32,&int)
+fn C.vox_gl_active_uniforms(u32,int,&u32,u32,&i32)
 fn C.vox_gl_uniform_block_index(u32,&char) u32
-fn C.vox_gl_uniform_block_parameter(u32,u32,u32,int,&int)
+fn C.vox_gl_uniform_block_parameter(u32,u32,u32,int,&i32)
 fn C.vox_gl_uniform_block_name(u32,u32,int,&u8)
 fn C.vox_gl_uniform_block_binding(u32,u32,u32)
-fn C.vox_gl_internalformat_parameter(u32,u32,u32,int,&int)
-fn C.vox_gl_shader_precision(u32, u32, &i32, &int)
+fn C.vox_gl_internalformat_parameter(u32,u32,u32,int,&i32)
+fn C.vox_gl_shader_precision(u32, u32, &i32, &i32)
 fn C.vox_gl_uniform1f(int, f32)
 fn C.vox_gl_uniform2f(int, f32, f32)
 fn C.vox_gl_uniform3f(int, f32, f32, f32)
@@ -213,11 +214,11 @@ fn C.vox_gl_uniform2ui(int, u32, u32)
 fn C.vox_gl_uniform3ui(int, u32, u32, u32)
 fn C.vox_gl_uniform4ui(int, u32, u32, u32, u32)
 fn C.vox_gl_uniform_floats(int, int, int, &f32)
-fn C.vox_gl_uniform_ints(int, int, int, &int)
+fn C.vox_gl_uniform_ints(int, int, int, &i32)
 fn C.vox_gl_uniform_uints(int, int, int, &u32)
 fn C.vox_gl_uniform_matrix(int, int, int, int, int, &f32)
 fn C.vox_gl_get_uniform_floats(u32, int, &f32)
-fn C.vox_gl_get_uniform_ints(u32, int, &int)
+fn C.vox_gl_get_uniform_ints(u32, int, &i32)
 fn C.vox_gl_get_uniform_uints(u32, int, &u32)
 
 fn (mut context OpenGLContext) native_fence_sync(condition GLenum, flags GLenum) voidptr {
@@ -314,8 +315,8 @@ fn (mut context OpenGLContext) native_program_log(handle GLuint) string {
 fn (mut context OpenGLContext) native_active_info(handle GLuint, index GLuint, uniform bool) WebGLActiveInfo {
 	context.make_current()
 	mut name := []u8{len: 256}
-	mut size := 0
+	mut size := i32(0)
 	mut type_ := u32(0)
 	length := C.vox_gl_active_info(handle, index, int(uniform), name.len, name.data, &size, &type_)
-	return WebGLActiveInfo.create(name[..length].bytestr(), GLenum(type_), size)
+	return WebGLActiveInfo.create(name[..length].bytestr(), GLenum(type_), int(size))
 }

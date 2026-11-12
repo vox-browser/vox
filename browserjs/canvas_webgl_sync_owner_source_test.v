@@ -4,8 +4,8 @@ module browserjs
 
 import html
 
-fn public_sync_source_owner(expected [4]int) {
-	mut selected := [0, 0, 0, 0]!
+fn public_sync_source_owner(expected [4]i32) {
+	mut selected := [i32(0), 0, 0, 0]!
 	C.vox_gl_int_parameter(0x0ba2, &selected[0])
 	assert selected == expected
 }
@@ -37,15 +37,15 @@ fn test_public_sync_source_cpu_returns_preserve_other_and_native_dispatch_select
 	] {
 		other.native.make_current()
 		runtime.evaluate_host('syncBodyOwner.${pair[0]};')!
-		public_sync_source_owner(if pair[2] == 'driver' { [1, 2, 3, 4]! } else { [9, 10, 11, 12]! })
+		public_sync_source_owner(if pair[2] == 'driver' { [i32(1), 2, 3, 4]! } else { [i32(9), 10, 11, 12]! })
 		assert runtime.evaluate_host('syncBodyOwner.getError()')! == pair[1]
 	}
 	for expression in ['clientWaitSync(null,0,0)', 'waitSync(null,0,0)', 'deleteSync({})'] {
 		other.native.make_current()
 		assert runtime.evaluate_host('(function(){try{syncBodyOwner.${expression};return false}catch(error){return error instanceof TypeError}})()')! == 'true'
-		public_sync_source_owner([9, 10, 11, 12]!)
+		public_sync_source_owner([i32(9), 10, 11, 12]!)
 	}
 	other.native.make_current()
 	assert runtime.evaluate_host(r'(function(){const marker={};try{syncBodyOwner.waitSync(foreignBodySync,0,{valueOf(){throw marker}});return false}catch(error){return error===marker}})()')! == 'true'
-	public_sync_source_owner([9, 10, 11, 12]!)
+	public_sync_source_owner([i32(9), 10, 11, 12]!)
 }

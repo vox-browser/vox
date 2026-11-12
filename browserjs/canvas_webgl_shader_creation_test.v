@@ -22,22 +22,22 @@ fn test_public_shader_creation_source_type_gate_and_conversion_precede_driver_ow
 		for type_ in ['0', '0xbad', '0xffff', '-1'] {
 			other.native.make_current()
 			assert runtime.evaluate_host('gl.createShader(${type_})===null')! == 'true'
-			mut selected := [0, 0, 0, 0]!
+			mut selected := [i32(0), 0, 0, 0]!
 			C.vox_gl_int_parameter(webgl.viewport, &selected[0])
-			assert selected == [9, 10, 11, 12]!
+			assert selected == [i32(9), 10, 11, 12]!
 			assert runtime.evaluate_host('gl.getError()===gl.INVALID_ENUM&&gl.getError()===gl.NO_ERROR')! == 'true'
 		}
 		other.native.make_current()
 		assert runtime.evaluate_host('(function(){const marker={};try{gl.createShader({valueOf(){throw marker}});return false}catch(error){return error===marker}})()')! == 'true'
-		mut selected := [0, 0, 0, 0]!
+		mut selected := [i32(0), 0, 0, 0]!
 		C.vox_gl_int_parameter(webgl.viewport, &selected[0])
-		assert selected == [9, 10, 11, 12]!
+		assert selected == [i32(9), 10, 11, 12]!
 		assert runtime.evaluate_host('gl.getError()===gl.NO_ERROR')! == 'true'
 		for type_ in ['gl.VERTEX_SHADER', 'gl.FRAGMENT_SHADER'] {
 			other.native.make_current()
 			assert runtime.evaluate_host('gl.createShader(${type_}) instanceof WebGLShader')! == 'true'
 			C.vox_gl_int_parameter(webgl.viewport, &selected[0])
-			assert selected == [1, 2, 3, 4]!
+			assert selected == [i32(1), 2, 3, 4]!
 			assert runtime.evaluate_host('gl.getError()===gl.NO_ERROR')! == 'true'
 		}
 	}
@@ -106,13 +106,13 @@ fn test_public_lost_shader_creation_retains_owned_ids_and_other_driver_untouched
 			retained_ids << shader.object.bookkeeping_id()
 		}
 		assert retained_ids[0] != retained_ids[1]
-		mut selected := [0, 0, 0, 0]!
+		mut selected := [i32(0), 0, 0, 0]!
 		C.vox_gl_int_parameter(webgl.viewport, &selected[0])
-		assert selected == [9, 10, 11, 12]!
+		assert selected == [i32(9), 10, 11, 12]!
 		assert C.vox_gl_get_error() == webgl.invalid_value
 		assert C.vox_gl_get_error() == webgl.no_error
 		assert runtime.evaluate_host('other.getShaderSource(sentinel)==="void main(){gl_Position=vec4(0);}"&&other.getError()===other.NO_ERROR&&gl.isContextLost()&&gl.getError()===gl.CONTEXT_LOST_WEBGL&&gl.getError()===gl.NO_ERROR')! == 'true'
 		C.vox_gl_int_parameter(webgl.viewport, &selected[0])
-		assert selected == [9, 10, 11, 12]!
+		assert selected == [i32(9), 10, 11, 12]!
 	}
 }

@@ -2,12 +2,12 @@
 // SPDX-License-Identifier: BSD-2-Clause
 module webgl
 
-fn C.glGetFramebufferAttachmentParameteriv(u32, u32, u32, &int)
+fn C.glGetFramebufferAttachmentParameteriv(u32, u32, u32, &i32)
 
 fn attachment_source_owner() {
-	mut selected := [0, 0, 0, 0]!
+	mut selected := [i32(0), 0, 0, 0]!
 	C.vox_gl_int_parameter(viewport, &selected[0])
-	assert selected == [1, 2, 3, 4]!
+	assert selected == [i32(1), 2, 3, 4]!
 }
 
 fn attachment_source_native_name() int {

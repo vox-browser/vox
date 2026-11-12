@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: BSD-2-Clause
 module webgl
 
-fn shader_delete_owner(expected [4]int) {
-	mut selected := [0, 0, 0, 0]!
+fn shader_delete_owner(expected [4]i32) {
+	mut selected := [i32(0), 0, 0, 0]!
 	C.vox_gl_int_parameter(viewport, &selected[0])
 	assert selected == expected
 }
@@ -21,12 +21,12 @@ fn test_source_nullable_shader_deletion_validates_before_native_owner_and_retain
 		other.native.make_current()
 		C.vox_gl_vertex_attrib_enable(0xffff_ffff, 1)
 		owner.delete_shader(none)
-		shader_delete_owner([9, 10, 11, 12]!)
+		shader_delete_owner([i32(9), 10, 11, 12]!)
 		assert C.vox_gl_get_error() == invalid_value
 		assert owner.get_error() == no_error
 		other.native.make_current()
 		owner.delete_shader(foreign)
-		shader_delete_owner([9, 10, 11, 12]!)
+		shader_delete_owner([i32(9), 10, 11, 12]!)
 		assert !foreign.object.invalidated()
 		assert C.vox_gl_is_object(9, foreign.object.native_name()) == 1
 		assert owner.get_error() == invalid_operation
@@ -34,7 +34,7 @@ fn test_source_nullable_shader_deletion_validates_before_native_owner_and_retain
 		source_handle := shader.object.handle(owner.identity(), owner.context_generation())!
 		other.native.make_current()
 		owner.delete_shader(shader)
-		shader_delete_owner([1, 2, 3, 4]!)
+		shader_delete_owner([i32(1), 2, 3, 4]!)
 		assert shader.object.invalidated()
 		assert shader.object.source_handle_ == source_handle
 		assert shader.object.native_name() == actual_name
@@ -43,14 +43,14 @@ fn test_source_nullable_shader_deletion_validates_before_native_owner_and_retain
 		assert owner.get_error() == no_error
 		other.native.make_current()
 		assert owner.get_attached_shaders(program) or { panic('retained deleted attachment') } == [shader]
-		shader_delete_owner([9, 10, 11, 12]!)
+		shader_delete_owner([i32(9), 10, 11, 12]!)
 		other.native.make_current()
 		owner.delete_shader(shader)
-		shader_delete_owner([9, 10, 11, 12]!)
+		shader_delete_owner([i32(9), 10, 11, 12]!)
 		assert owner.get_error() == no_error
 		other.native.make_current()
 		other.delete_shader(shader)
-		shader_delete_owner([9, 10, 11, 12]!)
+		shader_delete_owner([i32(9), 10, 11, 12]!)
 		assert other.get_error() == invalid_operation
 		owner.native.make_current()
 		assert C.vox_gl_shader_parameter(actual_name, delete_status) == 1
@@ -70,7 +70,7 @@ fn test_source_shader_deletion_invalidates_before_genuine_native_rejection() {
 	assert expected != no_error
 	other.native.make_current()
 	owner.delete_shader(shader)
-	shader_delete_owner([1, 2, 3, 4]!)
+	shader_delete_owner([i32(1), 2, 3, 4]!)
 	assert shader.object.invalidated()
 	assert shader.object.native_name() == name
 	assert owner.get_error() == expected

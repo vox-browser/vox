@@ -21,7 +21,7 @@ fn test_source_public_2d_byte_uploads_use_actual_texture_binding_and_owner() {
 		runtime.evaluate_host('globalThis.uploadGL=__webglContext({bridgeKey:"${key}",width:2,height:2},"${kind}",null);globalThis.uploadOther=__webglContext({bridgeKey:"${other_key}",width:2,height:2},"${kind}",null);uploadGL.viewport(1,2,3,4);uploadOther.viewport(9,10,11,12);globalThis.uploadTexture=uploadGL.createTexture();uploadGL.bindTexture(uploadGL.TEXTURE_2D,uploadTexture);')!
 		mut context := host.contexts[key] or { panic('native texture upload context') }
 		mut other := host.contexts[other_key] or { panic('other native texture upload context') }
-		mut native_texture := 0
+		mut native_texture := i32(0)
 		C.vox_gl_int_parameter(0x8069, &native_texture)
 		assert native_texture != 0
 		runtime.evaluate_host('uploadGL.bindTexture(uploadGL.TEXTURE_2D,null);')!
@@ -40,9 +40,9 @@ fn test_source_public_2d_byte_uploads_use_actual_texture_binding_and_owner() {
 		} else {
 			runtime.evaluate_host('uploadGL.texSubImage2D(0xbad,0,0,0,1,1,uploadGL.RGBA,uploadGL.UNSIGNED_BYTE,null);')!
 		}
-		mut selected := [0, 0, 0, 0]!
+		mut selected := [i32(0), 0, 0, 0]!
 		C.vox_gl_int_parameter(0x0ba2, &selected[0])
-		assert selected == [1, 2, 3, 4]!
+		assert selected == [i32(1), 2, 3, 4]!
 		expected_error := if kind == 'webgl2' { '1282' } else { '1281' }
 		assert runtime.evaluate_host('uploadGL.getError()')! == expected_error
 		context.native.make_current()

@@ -2,10 +2,10 @@
 // SPDX-License-Identifier: BSD-2-Clause
 module webgl
 
-fn C.glGetAttachedShaders(u32, int, &int, &u32)
+fn C.glGetAttachedShaders(u32, int, &i32, &u32)
 
-fn shader_attach_owner(expected [4]int) {
-	mut selected := [0, 0, 0, 0]!
+fn shader_attach_owner(expected [4]i32) {
+	mut selected := [i32(0), 0, 0, 0]!
 	C.vox_gl_int_parameter(viewport, &selected[0])
 	assert selected == expected
 }
@@ -28,20 +28,20 @@ fn test_source_shader_attach_handle_and_slot_gates_precede_native_owner_and_reta
 		for shader in [foreign, deleted] {
 			other.native.make_current()
 			owner.attach_shader(mut program, shader)
-			shader_attach_owner([9, 10, 11, 12]!)
+			shader_attach_owner([i32(9), 10, 11, 12]!)
 			assert (owner.get_attached_shaders(program) or { panic('empty retained slots') }).len == 0
 			assert owner.get_error() == invalid_operation
 		}
 		other.native.make_current()
 		owner.attach_shader(mut foreign_program, vertex)
-		shader_attach_owner([9, 10, 11, 12]!)
+		shader_attach_owner([i32(9), 10, 11, 12]!)
 		assert owner.get_error() == invalid_operation
 		other.native.make_current()
 		owner.attach_shader(mut program, fragment)
-		shader_attach_owner([1, 2, 3, 4]!)
+		shader_attach_owner([i32(1), 2, 3, 4]!)
 		other.native.make_current()
 		owner.attach_shader(mut program, vertex)
-		shader_attach_owner([1, 2, 3, 4]!)
+		shader_attach_owner([i32(1), 2, 3, 4]!)
 		mut count := 0
 		mut native_names := [u32(0), 0]!
 		C.glGetAttachedShaders(program.object.native_name(), 2, &count, &native_names[0])
@@ -54,10 +54,10 @@ fn test_source_shader_attach_handle_and_slot_gates_precede_native_owner_and_reta
 		]
 		for shader in [vertex, fragment, same_vertex, same_fragment] {
 			other.native.make_current()
-			mut unused := 0
+			mut unused := i32(0)
 			C.vox_gl_int_parameter(GLenum(0xffff_ffff), &unused)
 			owner.attach_shader(mut program, shader)
-			shader_attach_owner([9, 10, 11, 12]!)
+			shader_attach_owner([i32(9), 10, 11, 12]!)
 			assert owner.get_attached_shaders(program) or { panic('unchanged retained refs') } == [
 				vertex,
 				fragment,
@@ -69,7 +69,7 @@ fn test_source_shader_attach_handle_and_slot_gates_precede_native_owner_and_reta
 		owner.delete_program(program)
 		other.native.make_current()
 		owner.attach_shader(mut program, same_vertex)
-		shader_attach_owner([9, 10, 11, 12]!)
+		shader_attach_owner([i32(9), 10, 11, 12]!)
 		assert owner.get_error() == invalid_operation
 	}
 }
@@ -85,7 +85,7 @@ fn test_source_duplicate_pointer_gate_precedes_type_gate_for_real_source_setter_
 	program.attached_vertex_shader = fragment
 	other.native.make_current()
 	owner.attach_shader(mut program, fragment)
-	shader_attach_owner([9, 10, 11, 12]!)
+	shader_attach_owner([i32(9), 10, 11, 12]!)
 	assert program.attached_fragment_shader == none
 	assert owner.get_attached_shaders(program) or { panic('source setter pointer') } == [fragment]
 	assert owner.get_error() == invalid_operation
@@ -107,7 +107,7 @@ fn test_source_shader_attach_retains_pointer_after_actual_owned_driver_rejection
 	assert expected != no_error
 	other.native.make_current()
 	owner.attach_shader(mut program, shader)
-	shader_attach_owner([1, 2, 3, 4]!)
+	shader_attach_owner([i32(1), 2, 3, 4]!)
 	assert owner.get_attached_shaders(program) or { panic('actual retained rejected shader') } == [shader]
 	assert owner.get_error() == expected
 }

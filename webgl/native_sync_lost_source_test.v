@@ -18,9 +18,9 @@ fn test_source_lost_client_wait_returns_default_without_touching_other_native_ma
 		for timeout in [u64(0), u64(1), u64(-1)] {
 			assert owner.client_wait_sync(mut before_loss, flags, timeout) == 0
 			assert owner.client_wait_sync(mut after_loss, flags, timeout) == 0
-			mut selected := [0, 0, 0, 0]!
+			mut selected := [i32(0), 0, 0, 0]!
 			C.vox_gl_int_parameter(viewport, &selected[0])
-			assert selected == [9, 10, 11, 12]!
+			assert selected == [i32(9), 10, 11, 12]!
 			assert C.vox_gl_get_sync_parameter(sentinel.native_pointer(), sync_condition) == int(sync_gpu_commands_complete)
 		}
 	}

@@ -46,7 +46,7 @@ precision mediump float;out vec4 color;void main(){color=vec4(1);}'
 		owner.lose_context_from_compositor_loss()
 		other.viewport(9, 10, 11, 12)
 		other.native.make_current()
-		mut unused := 0
+		mut unused := i32(0)
 		C.vox_gl_int_parameter(u32(0xffff_ffff), &unused)
 		assert runtime.evaluate_host('globalThis.after=gl.createProgram();after instanceof WebGLProgram')! == 'true'
 		for argument in ['null', 'undefined', 'sentinel', 'after'] {
@@ -61,14 +61,14 @@ precision mediump float;out vec4 color;void main(){color=vec4(1);}'
 		assert owner.get_parameter(webgl.current_program).program == none
 		assert original.object.invalidated()
 		assert runtime.evaluate_host('gl.getParameter(gl.CURRENT_PROGRAM)===null&&gl.isProgram(original)===false&&gl.isProgram(after)===false')! == 'true'
-		mut selected := [0, 0, 0, 0]!
+		mut selected := [i32(0), 0, 0, 0]!
 		C.vox_gl_int_parameter(webgl.viewport, &selected[0])
-		assert selected == [9, 10, 11, 12]!
+		assert selected == [i32(9), 10, 11, 12]!
 		assert C.vox_gl_is_object(10, native_name) == 1
 		assert C.vox_gl_program_parameter(native_name, webgl.delete_status) == 0
 		assert C.vox_gl_program_parameter(native_name, webgl.link_status) == 1
 		assert C.vox_gl_program_parameter(native_name, webgl.attached_shaders) == 2
-		mut current := 0
+		mut current := i32(0)
 		C.vox_gl_int_parameter(webgl.current_program, &current)
 		assert current == int(native_name)
 		assert C.vox_gl_get_error() == webgl.invalid_enum

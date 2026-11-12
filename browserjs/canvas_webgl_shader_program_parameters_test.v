@@ -4,7 +4,7 @@ module browserjs
 
 import html
 
-fn C.glGetAttachedShaders(u32, int, &int, &u32)
+fn C.glGetAttachedShaders(u32, int, &i32, &u32)
 
 fn test_actual_shader_program_parameters_use_driver_deletion_status_and_source_errors() {
 	$if !darwin {
@@ -25,7 +25,7 @@ fn test_actual_shader_program_parameters_use_driver_deletion_status_and_source_e
 	assert initial == 'true'
 	mut context := host.contexts['__created_driver_status'] or { panic('native status context') }
 	context.native.make_current()
-	mut native_program := 0
+	mut native_program := i32(0)
 	C.vox_gl_int_parameter(0x8b8d, &native_program)
 	mut count := 0
 	mut shaders := [u32(0), 0]!

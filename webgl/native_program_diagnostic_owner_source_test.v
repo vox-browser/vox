@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: BSD-2-Clause
 module webgl
 
-fn program_diagnostic_owner(expected [4]int) {
-	mut selected := [0, 0, 0, 0]!
+fn program_diagnostic_owner(expected [4]i32) {
+	mut selected := [i32(0), 0, 0, 0]!
 	C.vox_gl_int_parameter(viewport, &selected[0])
 	assert selected == expected
 }
@@ -19,12 +19,12 @@ fn test_source_program_info_log_keeps_handle_gate_before_actual_regular_sync_que
 		other.native.make_current()
 		C.vox_gl_vertex_attrib_enable(0xffff_ffff, 1)
 		assert owner.get_program_info_log(foreign) == none
-		program_diagnostic_owner([9, 10, 11, 12]!)
+		program_diagnostic_owner([i32(9), 10, 11, 12]!)
 		assert C.vox_gl_get_error() == invalid_value
 		assert owner.get_error() == invalid_operation
 		other.native.make_current()
 		assert owner.get_program_info_log(program) or { panic('owned empty program log') } == ''
-		program_diagnostic_owner([1, 2, 3, 4]!)
+		program_diagnostic_owner([i32(1), 2, 3, 4]!)
 		assert owner.get_error() == no_error
 		// A failed link outside V supplies a genuine driver log.
 		owner.native.make_current()
@@ -37,13 +37,13 @@ fn test_source_program_info_log_keeps_handle_gate_before_actual_regular_sync_que
 		actual_log := bytes[..length - 1].bytestr()
 		other.native.make_current()
 		assert owner.get_program_info_log(program) or { panic('actual driver program log') } == actual_log
-		program_diagnostic_owner([1, 2, 3, 4]!)
+		program_diagnostic_owner([i32(1), 2, 3, 4]!)
 		assert owner.get_error() == no_error
 		owner.delete_program(program)
 		other.native.make_current()
 		C.vox_gl_vertex_attrib_enable(0xffff_ffff, 1)
 		assert owner.get_program_info_log(program) == none
-		program_diagnostic_owner([9, 10, 11, 12]!)
+		program_diagnostic_owner([i32(9), 10, 11, 12]!)
 		assert C.vox_gl_get_error() == invalid_value
 		assert owner.get_error() == invalid_operation
 	}

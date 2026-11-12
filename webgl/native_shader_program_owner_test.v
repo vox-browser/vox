@@ -3,11 +3,11 @@
 module webgl
 
 fn shader_program_owner_and_error(mut context WebGLRenderingContext, expected GLenum) {
-	shader_program_owner_and_error_selected(mut context, expected, [1, 2, 3, 4]!)
+	shader_program_owner_and_error_selected(mut context, expected, [i32(1), 2, 3, 4]!)
 }
 
-fn shader_program_owner_and_error_selected(mut context WebGLRenderingContext, expected GLenum, expected_owner [4]int) {
-	mut selected := [0, 0, 0, 0]!
+fn shader_program_owner_and_error_selected(mut context WebGLRenderingContext, expected GLenum, expected_owner [4]i32) {
+	mut selected := [i32(0), 0, 0, 0]!
 	C.vox_gl_int_parameter(viewport, &selected[0])
 	assert selected == expected_owner
 	actual := context.get_error()
@@ -27,32 +27,32 @@ fn test_source_shader_program_mutations_select_owner_before_early_returns() {
 		other.native.make_current()
 		invalid_shader := context.create_shader(0xbad)
 		assert invalid_shader == none
-		mut invalid_type_owner := [0, 0, 0, 0]!
+		mut invalid_type_owner := [i32(0), 0, 0, 0]!
 		C.vox_gl_int_parameter(viewport, &invalid_type_owner[0])
-		assert invalid_type_owner == [9, 10, 11, 12]!
+		assert invalid_type_owner == [i32(9), 10, 11, 12]!
 		assert context.get_error() == invalid_enum
 		other.native.make_current()
 		context.shader_source(mut foreign_shader, 'void main(){}')
-		shader_program_owner_and_error_selected(mut context, invalid_operation, [9, 10, 11, 12]!)
+		shader_program_owner_and_error_selected(mut context, invalid_operation, [i32(9), 10, 11, 12]!)
 		other.native.make_current()
 		context.compile_shader(mut foreign_shader)
-		shader_program_owner_and_error_selected(mut context, invalid_operation, [9, 10, 11, 12]!)
+		shader_program_owner_and_error_selected(mut context, invalid_operation, [i32(9), 10, 11, 12]!)
 		other.native.make_current()
 		context.link_program(mut foreign_program)
-		shader_program_owner_and_error_selected(mut context, invalid_operation, [9, 10, 11, 12]!)
+		shader_program_owner_and_error_selected(mut context, invalid_operation, [i32(9), 10, 11, 12]!)
 		other.native.make_current()
 		context.validate_program(mut foreign_program)
-		shader_program_owner_and_error_selected(mut context, invalid_operation, [9, 10, 11, 12]!)
+		shader_program_owner_and_error_selected(mut context, invalid_operation, [i32(9), 10, 11, 12]!)
 		other.native.make_current()
 		context.attach_shader(mut program, foreign_shader)
-		shader_program_owner_and_error_selected(mut context, invalid_operation, [9, 10, 11, 12]!)
+		shader_program_owner_and_error_selected(mut context, invalid_operation, [i32(9), 10, 11, 12]!)
 		context.attach_shader(mut program, shader)
 		other.native.make_current()
 		context.attach_shader(mut program, shader)
-		shader_program_owner_and_error_selected(mut context, invalid_operation, [9, 10, 11, 12]!)
+		shader_program_owner_and_error_selected(mut context, invalid_operation, [i32(9), 10, 11, 12]!)
 		other.native.make_current()
 		context.bind_attrib_location(foreign_program, 0xffffffff, 'gl_reserved')
-		shader_program_owner_and_error_selected(mut context, invalid_operation, [9, 10, 11, 12]!)
+		shader_program_owner_and_error_selected(mut context, invalid_operation, [i32(9), 10, 11, 12]!)
 		name := 'gl_reserved'
 		context.native.make_current()
 		C.vox_gl_bind_attrib_location(program.object.native_handle_, 0xffffffff, name.str)
@@ -62,30 +62,30 @@ fn test_source_shader_program_mutations_select_owner_before_early_returns() {
 		shader_program_owner_and_error(mut context, expected_binding_error)
 		other.native.make_current()
 		context.delete_shader(foreign_shader)
-		shader_program_owner_and_error_selected(mut context, invalid_operation, [9, 10, 11, 12]!)
+		shader_program_owner_and_error_selected(mut context, invalid_operation, [i32(9), 10, 11, 12]!)
 		other.native.make_current()
 		context.delete_program(foreign_program)
-		shader_program_owner_and_error_selected(mut context, invalid_operation, [9, 10, 11, 12]!)
+		shader_program_owner_and_error_selected(mut context, invalid_operation, [i32(9), 10, 11, 12]!)
 		other.native.make_current()
 		context.delete_shader(none)
-		shader_program_owner_and_error_selected(mut context, no_error, [9, 10, 11, 12]!)
+		shader_program_owner_and_error_selected(mut context, no_error, [i32(9), 10, 11, 12]!)
 		other.native.make_current()
 		context.delete_program(none)
-		shader_program_owner_and_error_selected(mut context, no_error, [9, 10, 11, 12]!)
+		shader_program_owner_and_error_selected(mut context, no_error, [i32(9), 10, 11, 12]!)
 		context.delete_shader(shader)
 		other.native.make_current()
 		context.delete_shader(shader)
-		shader_program_owner_and_error_selected(mut context, no_error, [9, 10, 11, 12]!)
+		shader_program_owner_and_error_selected(mut context, no_error, [i32(9), 10, 11, 12]!)
 		other.native.make_current()
 		context.compile_shader(mut shader)
-		shader_program_owner_and_error_selected(mut context, invalid_operation, [9, 10, 11, 12]!)
+		shader_program_owner_and_error_selected(mut context, invalid_operation, [i32(9), 10, 11, 12]!)
 		context.delete_program(program)
 		other.native.make_current()
 		context.delete_program(program)
-		shader_program_owner_and_error_selected(mut context, no_error, [9, 10, 11, 12]!)
+		shader_program_owner_and_error_selected(mut context, no_error, [i32(9), 10, 11, 12]!)
 		other.native.make_current()
 		context.link_program(mut program)
-		shader_program_owner_and_error_selected(mut context, invalid_operation, [9, 10, 11, 12]!)
+		shader_program_owner_and_error_selected(mut context, invalid_operation, [i32(9), 10, 11, 12]!)
 	}
 }
 

@@ -13,9 +13,9 @@ fn test_attrib_location_preserves_source_handle_gate_and_actual_named_query_owne
 		C.vox_gl_vertex_attrib_enable(0xffff_ffff, 1)
 		other.native.make_current()
 		assert context.get_attrib_location(foreign, 'position') == -1
-		mut selected := [0, 0, 0, 0]!
+		mut selected := [i32(0), 0, 0, 0]!
 		C.vox_gl_int_parameter(viewport, &selected[0])
-		assert selected == [9, 10, 11, 12]!
+		assert selected == [i32(9), 10, 11, 12]!
 		assert context.get_error() == invalid_value
 		assert context.get_error() == invalid_operation
 		mut program := context.create_program()
@@ -26,7 +26,7 @@ fn test_attrib_location_preserves_source_handle_gate_and_actual_named_query_owne
 		other.native.make_current()
 		assert context.get_attrib_location(program, name) == expected_unlinked
 		C.vox_gl_int_parameter(viewport, &selected[0])
-		assert selected == [1, 2, 3, 4]!
+		assert selected == [i32(1), 2, 3, 4]!
 		assert context.get_error() == expected_error
 		mut vertex := context.create_shader(vertex_shader) or { panic('attribute vertex') }
 		mut fragment := context.create_shader(fragment_shader) or { panic('attribute fragment') }
@@ -53,14 +53,14 @@ fn test_attrib_location_preserves_source_handle_gate_and_actual_named_query_owne
 			other.native.make_current()
 			assert context.get_attrib_location(program, query_name) == expected
 			C.vox_gl_int_parameter(viewport, &selected[0])
-			assert selected == [1, 2, 3, 4]!
+			assert selected == [i32(1), 2, 3, 4]!
 			assert context.get_error() == expected_query_error
 		}
 		context.delete_program(program)
 		other.native.make_current()
 		assert context.get_attrib_location(program, name) == -1
 		C.vox_gl_int_parameter(viewport, &selected[0])
-		assert selected == [9, 10, 11, 12]!
+		assert selected == [i32(9), 10, 11, 12]!
 		assert context.get_error() == invalid_operation
 		assert context.get_error() == no_error
 	}

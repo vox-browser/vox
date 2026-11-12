@@ -20,21 +20,21 @@ fn test_public_shader_diagnostic_source_handles_gate_actual_native_sync_owner() 
 		runtime.evaluate_host('globalThis.gl=__webglContext({bridgeKey:"__created_shader_diagnostic",width:2,height:2},"${kind}",null);globalThis.other=__webglContext({bridgeKey:"__created_shader_diagnostic_other",width:2,height:2},"${kind}",null);gl.viewport(1,2,3,4);other.viewport(9,10,11,12);globalThis.shader=gl.createShader(gl.VERTEX_SHADER);globalThis.foreign=other.createShader(other.VERTEX_SHADER);')!
 		mut owner := host.contexts['__created_shader_diagnostic'] or { panic('owner diagnostic') }
 		mut other := host.contexts['__created_shader_diagnostic_other'] or { panic('other diagnostic') }
-		mut selected := [0, 0, 0, 0]!
+		mut selected := [i32(0), 0, 0, 0]!
 		for method in ['getShaderSource', 'getShaderInfoLog'] {
 			other.native.make_current()
 			assert runtime.evaluate_host('gl.${method}(foreign)===null')! == 'true'
 			C.vox_gl_int_parameter(webgl.viewport, &selected[0])
-			assert selected == [9, 10, 11, 12]!
+			assert selected == [i32(9), 10, 11, 12]!
 			assert runtime.evaluate_host('gl.getError()===gl.INVALID_OPERATION')! == 'true'
 			other.native.make_current()
 			assert runtime.evaluate_host('gl.${method}(shader)===""')! == 'true'
 			C.vox_gl_int_parameter(webgl.viewport, &selected[0])
-			assert selected == [1, 2, 3, 4]!
+			assert selected == [i32(1), 2, 3, 4]!
 			other.native.make_current()
 			assert runtime.evaluate_host('(function(){try{gl.${method}(Object.create(WebGLShader.prototype));return false}catch(error){return error instanceof TypeError}})()')! == 'true'
 			C.vox_gl_int_parameter(webgl.viewport, &selected[0])
-			assert selected == [9, 10, 11, 12]!
+			assert selected == [i32(9), 10, 11, 12]!
 		}
 		mut native_name := u32(0)
 		for _, record in host.shaders {
@@ -55,18 +55,18 @@ fn test_public_shader_diagnostic_source_handles_gate_actual_native_sync_owner() 
 		other.native.make_current()
 		assert runtime.evaluate_host('gl.getShaderSource(shader)')! == actual_source
 		C.vox_gl_int_parameter(webgl.viewport, &selected[0])
-		assert selected == [1, 2, 3, 4]!
+		assert selected == [i32(1), 2, 3, 4]!
 		other.native.make_current()
 		assert runtime.evaluate_host('gl.getShaderInfoLog(shader)')! == actual_log
 		C.vox_gl_int_parameter(webgl.viewport, &selected[0])
-		assert selected == [1, 2, 3, 4]!
+		assert selected == [i32(1), 2, 3, 4]!
 		assert runtime.evaluate_host('gl.getError()===gl.NO_ERROR')! == 'true'
 		runtime.evaluate_host('gl.deleteShader(shader)')!
 		for method in ['getShaderSource', 'getShaderInfoLog'] {
 			other.native.make_current()
 			assert runtime.evaluate_host('gl.${method}(shader)===null')! == 'true'
 			C.vox_gl_int_parameter(webgl.viewport, &selected[0])
-			assert selected == [9, 10, 11, 12]!
+			assert selected == [i32(9), 10, 11, 12]!
 			assert runtime.evaluate_host('gl.getError()===gl.INVALID_OPERATION')! == 'true'
 		}
 	}

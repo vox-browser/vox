@@ -14,7 +14,7 @@ fn test_source_buffer_and_renderbuffer_deletion_preserve_retained_binding_slots(
 		assert buffer.object.invalidated()
 		assert owner.get_parameter(array_buffer_binding).object == buffer.object.handle_
 		assert C.vox_gl_vertex_attrib_parameter(0, vertex_attrib_array_buffer_binding) == 0
-		mut actual_buffer := -1
+		mut actual_buffer := i32(-1)
 		C.vox_gl_int_parameter(array_buffer_binding, &actual_buffer)
 		assert actual_buffer == 0
 		assert !owner.is_buffer(buffer)
@@ -36,7 +36,7 @@ fn test_source_buffer_and_renderbuffer_deletion_preserve_retained_binding_slots(
 		owner.delete_renderbuffer(rbo)
 		assert rbo.object.invalidated()
 		assert owner.get_parameter(renderbuffer_binding).object == rbo.object.handle_
-		mut actual_rbo := -1
+		mut actual_rbo := i32(-1)
 		C.vox_gl_int_parameter(renderbuffer_binding, &actual_rbo)
 		assert actual_rbo == 0
 		assert !owner.is_renderbuffer(rbo)
@@ -47,13 +47,13 @@ fn test_source_buffer_and_renderbuffer_deletion_preserve_retained_binding_slots(
 		other.viewport(9, 10, 11, 12)
 		other.native.make_current()
 		owner.delete_buffer(none)
-		mut current_viewport := [0, 0, 0, 0]!
+		mut current_viewport := [i32(0), 0, 0, 0]!
 		C.vox_gl_int_parameter(viewport, &current_viewport[0])
-		assert current_viewport == [1, 2, 3, 4]!
+		assert current_viewport == [i32(1), 2, 3, 4]!
 		other.native.make_current()
 		owner.delete_renderbuffer(rbo)
 		C.vox_gl_int_parameter(viewport, &current_viewport[0])
-		assert current_viewport == [1, 2, 3, 4]!
+		assert current_viewport == [i32(1), 2, 3, 4]!
 		assert owner.get_error() == no_error
 	}
 }

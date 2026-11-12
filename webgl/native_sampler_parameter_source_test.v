@@ -3,9 +3,9 @@
 module webgl
 
 fn sampler_parameter_source_owner() {
-	mut selected := [0, 0, 0, 0]!
+	mut selected := [i32(0), 0, 0, 0]!
 	C.vox_gl_int_parameter(viewport, &selected[0])
-	assert selected == [1, 2, 3, 4]!
+	assert selected == [i32(1), 2, 3, 4]!
 }
 
 fn test_source_sampler_parameter_owner_precedes_handle_and_exact_parameter_name_gates() {
