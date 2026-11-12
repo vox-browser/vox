@@ -54,7 +54,7 @@ source, nesting, token and operation limits. Conditions short-circuit inactive
 operands. Token pasting and stringification are rejected. Extension and line
 directives, line-number builtins, ternary conditions and complete ESSL
 preprocessor conformance remain pending. The compiler also still needs semantic
-validation, explicit interface locations, transform feedback, and the remaining
+validation, transform feedback, and the remaining
 ESSL expressions/builtins and control flow. General expression syntax and type
 checking currently depend on compiling the emitted MSL with Metal; successful
 translation alone does not establish ESSL validity. The production service still
@@ -96,11 +96,25 @@ declarations, preserving legal sampler variables named `texture`/`textureLod`
 and user overloads of legacy functions. Sampler arrays, integer/depth/3D/array
 textures, extension spellings and full opaque-type validation remain pending.
 
-Validation for this slice: all six test files pass with the C backend in
+ESSL300 vertex input and fragment output `layout(location=...)` qualifiers now
+run through the V compiler, including macro-expanded integer arithmetic. The
+`translate_with_bindings` API applies attribute bindings, with explicit shader
+locations taking precedence. Explicit/API spans are reserved before automatic
+allocation, with limits of 16 vertex slots and eight fragment output slots.
+Matrices reserve consecutive locations, emit one Metal attribute per column,
+and reconstruct their value in V-generated MSL. Reflection retains the base
+location and row/column counts. Overlaps, overflowing spans and unresolved
+location identifiers are rejected. Constant-variable expressions, attribute
+arrays, interpolation qualifiers and active-attribute analysis remain pending;
+currently all declared attributes reserve space, including unused ones.
+
+Validation for this slice: all seven test files pass with the C backend in
 default GC and `-gc none`. The macOS test compiles the V-generated vertex and fragment
 sources (including macro/conditional and uniform variants) with Metal, links a render
 pipeline, draws a full-target triangle, and
-checks all sixteen RGBA pixels exactly. Texture checks sample supplied 2D and
+checks all sixteen RGBA pixels exactly. Attribute tests bind a matrix through
+both API and explicit locations, read distinct column values with square and
+non-square matrices, and change a consumed value to verify the pixel response. Texture checks sample supplied 2D and
 cube texels, reject a changed source color, verify an explicit mip level and its
 size, and exercise projected/bias/gradient/fetch, macro, user-overload and vertex
 sampling paths. ESSL100 fragment MSL is paired with procedural ESSL300 vertex

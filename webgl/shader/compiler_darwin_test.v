@@ -118,3 +118,23 @@ fn test_nested_structure_and_matrix_arrays_decode_on_the_gpu() {
  words[28]=math.f32_bits(f32(8))
  assert C.vox_direct_metal_uniform_probe(vertex.source.str,fragment.source.str,unsafe{nil},0,words.data,128)==0
 }
+
+fn C.vox_direct_metal_attribute_probe(&char, &char, u32, u32, u32, voidptr, u64) int
+
+fn test_api_bound_and_explicit_matrix_attributes_read_each_column_on_the_gpu() {
+ fragment := translate('#version 300 es\nprecision highp float;in vec4 value;layout(location=0) out vec4 color;void main(){color=value;}',.fragment)!
+ for qualifier in ['', 'layout(location=3) '] {
+  vertex := translate_with_bindings('#version 300 es\n'+qualifier+'in mat4 transform;out vec4 value;void main(){gl_Position=vec4(gl_VertexID==1?3.0:-1.0,gl_VertexID==2?3.0:-1.0,0.0,1.0);value=transform[0].y==2.0 && transform[1].x==5.0 && transform[2].w==12.0 && transform[3].z==15.0 ? vec4(1.0,0.0,0.0,1.0) : vec4(0.0,1.0,0.0,1.0);}',.vertex,{'transform':4})!
+  link(vertex,fragment)!
+  location := if qualifier.len > 0 {u32(3)} else {u32(4)}
+  assert vertex.inputs[0].location == int(location)
+  mut values := [f32(1),2,3,4,5,6,7,8,9,10,11,12,13,14,15,16]
+  assert C.vox_direct_metal_attribute_probe(vertex.source.str,fragment.source.str,location,4,4,values.data,64)==1
+  values[14]=0
+  assert C.vox_direct_metal_attribute_probe(vertex.source.str,fragment.source.str,location,4,4,values.data,64)==0
+ }
+ squareless := translate_with_bindings('#version 300 es\nin mat2x3 basis;out vec4 value;void main(){gl_Position=vec4(gl_VertexID==1?3.0:-1.0,gl_VertexID==2?3.0:-1.0,0.0,1.0);value=basis[0].z==3.0 && basis[1].y==5.0 ? vec4(1.0,0.0,0.0,1.0) : vec4(0.0,1.0,0.0,1.0);}',.vertex,{'basis':7})!
+ link(squareless,fragment)!
+ values := [f32(1),2,3,-100,4,5,6,-100]
+ assert C.vox_direct_metal_attribute_probe(squareless.source.str,fragment.source.str,7,3,2,values.data,32)==1
+}

@@ -13,6 +13,9 @@ pub:
 	typ      string
 	storage  string
 	location int
+	explicit_location bool
+	rows int = 1
+	columns int = 1
 }
 
 pub struct Translation {
@@ -30,6 +33,14 @@ pub:
 // The first direct-MSL slice deliberately rejects features it cannot lower.
 // Callers must never interpret an unsupported declaration as an empty shader.
 pub fn translate(source string, stage Stage) !Translation {
+ return translate_with_bindings(source,stage,map[string]int{})
+}
+
+pub fn translate_with_bindings(source string, stage Stage, bindings map[string]int) !Translation {
+ for name,location in bindings {
+  if !identifier(name) || name.starts_with('gl_') || location < 0 || location >= 16 { return error('Invalid attribute binding') }
+ }
+
 	processed := preprocess(source)!
 	tokens := processed.tokens
 	mut body := []string{}
@@ -46,6 +57,14 @@ pub fn translate(source string, stage Stage) !Translation {
 	mut precision := stage == .vertex
 	version := processed.version
 	for at < tokens.len {
+		mut explicit_location := -1
+		if tokens[at] == 'layout' {
+			if depth != 0 || version != 300 { return error('Interface layout locations require global ESSL 300 declarations') }
+			qualifier := location_qualifier(tokens,at)!
+			explicit_location = qualifier.location
+			at = qualifier.end
+			if at >= tokens.len || tokens[at] !in ['in','out'] { return error('Expected input/output after layout location') }
+		}
 		token := tokens[at]
 		if token == '#' {
 			return error('Preprocessor directives are not supported by the direct Metal slice yet')
@@ -117,11 +136,11 @@ pub fn translate(source string, stage Stage) !Translation {
 			if inputs.any(it.name == name) || outputs.any(it.name == name) || uniforms.any(it.name == name) || textures.any(it.name == name) {
 				return error('Duplicate interface: ${name}')
 			}
-			item := Interface{ name: name, typ: typ, storage: if is_input { 'in' } else { 'out' }, location: if is_input {
-				inputs.len
-			} else {
-				outputs.len
-			} }
+			if explicit_location >= 0 && !((stage == .vertex && is_input) || (stage == .fragment && !is_input)) { return error('Layout locations only apply to vertex inputs or fragment outputs in ESSL 300') }
+			rows,columns := interface_dimensions(typ)
+			if stage == .vertex && is_input && (typ == 'bool' || typ.starts_with('bvec')) { return error('Boolean vertex attributes are invalid') }
+			if stage == .fragment && !is_input && (columns > 1 || typ == 'bool' || typ.starts_with('bvec')) { return error('Invalid fragment output type') }
+			item := Interface{name:name,typ:typ,storage:if is_input {'in'} else {'out'},location:explicit_location,explicit_location:explicit_location>=0,rows:rows,columns:columns}
 			if is_input { inputs << item } else { outputs << item }
 			at += 3
 			continue
@@ -161,6 +180,8 @@ pub fn translate(source string, stage Stage) !Translation {
 	}
 	if depth != 0 || main_count != 1 { return error('Shader must define exactly one void main()') }
 	if !precision { return error('Fragment shader requires a default float precision') }
+	if stage == .vertex { inputs = assign_interface_locations(inputs,bindings,16)! }
+	if stage == .fragment { outputs = assign_interface_locations(outputs,map[string]int{},8)! }
 	mut lines := ['#include <metal_stdlib>', 'using namespace metal;']
 	lines << texture_types()
 	lines << structure_source(structure_order)!
@@ -183,14 +204,8 @@ pub fn translate(source string, stage Stage) !Translation {
 	lines << body.join(' ')
 	lines << '};'
 	lines << 'struct VoxInput {'
-	for item in inputs {
-		attribute := if stage == .vertex {
-			'attribute(${item.location})'
-		} else {
-			'user(v_${item.name})'
-		}
-		lines << '${metal_type(item.typ)!} ${item.name} [[${attribute}]];'
-	}
+	if stage == .vertex { lines << vertex_input_members(inputs)! }
+	else { for item in inputs { lines << '${metal_type(item.typ)!} ${item.name} [[user(v_${item.name})]];' } }
 	lines << '};'
 	lines << 'struct VoxOutput {'
 	if stage == .vertex {
@@ -218,7 +233,8 @@ pub fn translate(source string, stage Stage) !Translation {
 	lines << '${qualifier} VoxOutput vox_main(${args.join(', ')}) { ${texture_state(textures)!}'
 	reflected_uniforms := flatten_uniforms(uniforms,structures,0)!
 	lines << uniform_loads(reflected_uniforms)!
-	for item in inputs { lines << 'state.${item.name} = input.${item.name};' }
+	if stage == .vertex { lines << vertex_input_loads(inputs)! }
+	else { for item in inputs { lines << 'state.${item.name} = input.${item.name};' } }
 	if stage == .vertex {
 		lines << 'state.gl_VertexID = int(vertex_id); state.gl_InstanceID = int(instance_id);'
 	}

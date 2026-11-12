@@ -4,7 +4,7 @@
 #include <mach-o/dyld.h>
 #include <stdio.h>
 #include <string.h>
-static int vox_direct_metal_render_probe(char const* vertex, char const* fragment, void const* vertex_bytes, uint64_t vertex_length, void const* fragment_bytes, uint64_t fragment_length, int texture_kind, uint32_t rgba) {
+static int vox_direct_metal_render_probe(char const* vertex, char const* fragment, void const* vertex_bytes, uint64_t vertex_length, void const* fragment_bytes, uint64_t fragment_length, int texture_kind, uint32_t rgba, uint32_t attribute_location, uint32_t attribute_rows, uint32_t attribute_columns, void const* attribute_bytes, uint64_t attribute_length) {
     @autoreleasepool {
         id<MTLDevice> device = MTLCreateSystemDefaultDevice();
         if (!device) return 0;
@@ -17,6 +17,20 @@ static int vox_direct_metal_render_probe(char const* vertex, char const* fragmen
         desc.vertexFunction = [vs newFunctionWithName:@"vox_main"];
         desc.fragmentFunction = [fs newFunctionWithName:@"vox_main"];
         desc.colorAttachments[0].pixelFormat = MTLPixelFormatRGBA8Unorm;
+        if (attribute_columns) {
+            if(attribute_rows < 1 || attribute_rows > 4 || attribute_columns > 4 || attribute_location + attribute_columns > 16 || !attribute_bytes || attribute_length < 16 * attribute_columns) return 0;
+            MTLVertexDescriptor* layout = [MTLVertexDescriptor vertexDescriptor];
+            MTLVertexFormat formats[4] = {MTLVertexFormatFloat,MTLVertexFormatFloat2,MTLVertexFormatFloat3,MTLVertexFormatFloat4};
+            for(unsigned column=0; column<attribute_columns; ++column) {
+                layout.attributes[attribute_location+column].format = formats[attribute_rows-1];
+                layout.attributes[attribute_location+column].offset = column * 16;
+                layout.attributes[attribute_location+column].bufferIndex = 1;
+            }
+            layout.layouts[1].stride = attribute_columns * 16;
+            layout.layouts[1].stepFunction = MTLVertexStepFunctionConstant;
+            layout.layouts[1].stepRate = 0;
+            desc.vertexDescriptor = layout;
+        }
         id<MTLRenderPipelineState> pipeline = [device newRenderPipelineStateWithDescriptor:desc error:&error];
         if (!pipeline) { fprintf(stderr,"%s\n",error.localizedDescription.UTF8String); return 0; }
         MTLTextureDescriptor* tex = [MTLTextureDescriptor texture2DDescriptorWithPixelFormat:MTLPixelFormatRGBA8Unorm width:4 height:4 mipmapped:NO];
@@ -31,6 +45,7 @@ static int vox_direct_metal_render_probe(char const* vertex, char const* fragmen
         id<MTLCommandBuffer> command = [queue commandBuffer];
         id<MTLRenderCommandEncoder> encoder = [command renderCommandEncoderWithDescriptor:pass];
         [encoder setRenderPipelineState:pipeline];
+        if (attribute_columns) [encoder setVertexBytes:attribute_bytes length:attribute_length atIndex:1];
         if (vertex_length) [encoder setVertexBytes:vertex_bytes length:vertex_length atIndex:0];
         if (fragment_length) [encoder setFragmentBytes:fragment_bytes length:fragment_length atIndex:0];
         if (texture_kind) {
@@ -80,12 +95,16 @@ static int vox_direct_metal_render_probe(char const* vertex, char const* fragmen
 }
 
 int vox_direct_metal_uniform_probe(char const* vertex, char const* fragment, void const* vertex_bytes, uint64_t vertex_length, void const* fragment_bytes, uint64_t fragment_length) {
-    return vox_direct_metal_render_probe(vertex, fragment, vertex_bytes, vertex_length, fragment_bytes, fragment_length, 0, 0);
+    return vox_direct_metal_render_probe(vertex, fragment, vertex_bytes, vertex_length, fragment_bytes, fragment_length, 0, 0, 0, 0, 0, NULL, 0);
 }
 int vox_direct_metal_texture_probe(char const* vertex, char const* fragment, int kind, uint32_t rgba) {
-    return vox_direct_metal_render_probe(vertex, fragment, NULL, 0, NULL, 0, kind, rgba);
+    return vox_direct_metal_render_probe(vertex, fragment, NULL, 0, NULL, 0, kind, rgba, 0, 0, 0, NULL, 0);
 }
 
 int vox_direct_metal_probe(char const* vertex, char const* fragment) {
     return vox_direct_metal_uniform_probe(vertex, fragment, NULL, 0, NULL, 0);
+}
+
+int vox_direct_metal_attribute_probe(char const* vertex, char const* fragment, uint32_t location, uint32_t rows, uint32_t columns, void const* bytes, uint64_t length) {
+    return vox_direct_metal_render_probe(vertex, fragment, NULL, 0, NULL, 0, 0, 0, location, rows, columns, bytes, length);
 }
