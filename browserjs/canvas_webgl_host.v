@@ -666,7 +666,7 @@ fn (mut host CanvasWebGLHost) dispatch(request map[string]json2.Any) !json2.Any 
 			host.validate_resource(wg_arg(args, 0), 'query', true)!
 			mut argument_0 := ?&webgl.WebGLQuery(none)
 			if value := host.queries[wg_handle(wg_arg(args, 0))] { argument_0 = value }
-			context.delete_query(mut argument_0)
+			context.delete_query(argument_0)
 		}
 		'createSampler' {
 			value := context.create_sampler()
