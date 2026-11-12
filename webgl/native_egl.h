@@ -711,5 +711,8 @@ VOX_EGL_LINKAGE void vox_gl_parameter(unsigned pname, int shape, double* output)
     case 4: { GLint64 value = 0; glGetInteger64vRobustANGLE(pname, 1, &written, &value); output[0] = (double)value; break; }
     }
 }
+#ifdef __linux__
+#include "gles_cleanup_linux.h"
+#endif
 #endif // implementation
 #endif // VOX_WEBGL_NATIVE_EGL_H

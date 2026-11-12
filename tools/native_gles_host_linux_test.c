@@ -3,6 +3,9 @@
 #include <stdio.h>
 #include <GL/glx.h>
 #include "../webgl/native_egl.h"
+#if defined(glCompileShader) || defined(glGetError) || defined(glBindBuffer)
+#error WebGL aliases must not intercept the host renderer
+#endif
 static Display *display;
 static GLXContext host;
 static void preserved(void) {
@@ -23,6 +26,11 @@ int main(int argc,char **argv) {
     Window window=XCreateWindow(display,RootWindow(display,visual->screen),0,0,32,32,0,
         visual->depth,InputOutput,visual->visual,CWColormap,&settings);
     assert(glXMakeCurrent(display,window,host));
+    /* Desktop shaders use Sokol's GLSL dialect, not WebGL ESSL. */
+    GLuint desktop=glCreateShader(GL_VERTEX_SHADER);
+    const char *source="#version 120\nvoid main(){gl_Position=gl_Vertex;}";
+    glShaderSource(desktop,1,&source,NULL);glCompileShader(desktop);
+    GLint compiled=0;glGetShaderiv(desktop,GL_COMPILE_STATUS,&compiled);assert(compiled);glDeleteShader(desktop);
     glViewport(7,8,9,10);glClearColor(.25f,.5f,.75f,1);
     if(!baseline) {
     /* Simulate an early call before Sokol has loaded its GLX library. */
