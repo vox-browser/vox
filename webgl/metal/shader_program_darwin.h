@@ -21,16 +21,15 @@ static void vox_metal_program_destroy(void* handle)
     free(program);
 }
 
-static void* vox_metal_program_create_bound(void* target, char const* vertex, int vertex_length,
-    char const* fragment, int fragment_length, int version,
-    VoxMetalAttributeBinding const* bindings, uint64_t binding_count, char* log, uint64_t capacity)
+static void* vox_metal_program_build(void* target, VoxMetalTranslatedProgram* translated, char* log, uint64_t capacity)
 {
     VoxMetalDrawingBuffer* context = target;
     if (capacity) log[0] = 0;
-    if (!context) { if (capacity) snprintf(log, capacity, "Metal drawing buffer is closed"); return NULL; }
+    if (!context) { vox_metal_translation_destroy(translated); if (capacity) snprintf(log, capacity, "Metal drawing buffer is closed"); return NULL; }
     VoxMetalShaderProgram* program = calloc(1, sizeof(*program));
-    if (!program) return NULL;
-    program->translated = vox_metal_translate_program_bound(vertex, vertex_length, fragment, fragment_length, version, bindings, binding_count, log, capacity);
+    if (!program) { vox_metal_translation_destroy(translated); return NULL; }
+    program->translated = translated;
+    program->feedback_stride = translated ? translated->direct_feedback_stride : 0;
     if (!program->translated) { vox_metal_program_destroy(program); return NULL; }
     program->device = CFRetain(context->device);
     @autoreleasepool {
@@ -72,6 +71,16 @@ static void* vox_metal_program_create_bound(void* target, char const* vertex, in
     return program;
 }
 
+static void* vox_metal_program_create_bound(void* target, char const* vertex, int vertex_length,
+    char const* fragment, int fragment_length, int version,
+    VoxMetalAttributeBinding const* bindings, uint64_t binding_count, char* log, uint64_t capacity)
+{
+    if (!target) { if (capacity) snprintf(log,capacity,"Metal drawing buffer is closed"); return NULL; }
+    VoxMetalTranslatedProgram* translated = vox_metal_translate_program_bound(vertex,vertex_length,fragment,fragment_length,version,bindings,binding_count,log,capacity);
+    if (!translated) return NULL;
+    return vox_metal_program_build(target,translated,log,capacity);
+}
+
 static void* vox_metal_program_create(void* target, char const* vertex, int vertex_length,
     char const* fragment, int fragment_length, int version, char* log, uint64_t capacity)
 {
@@ -85,6 +94,7 @@ static int vox_metal_program_feedback(void* handle,char* log,uint64_t capacity)
     if(capacity) log[0]=0;
     if(!program) return 0;
     if(program->feedback) return 1;
+    if(!program->translated->feedback_msl) { if(capacity) snprintf(log,capacity,"Transform feedback is unavailable for this translation");return 0; }
     for(size_t i=0;i<program->translated->resource_count;++i) {
         VoxMetalShaderResource* field=program->translated->resources+i;
         if(field->stage==0 && field->kind==SPVC_RESOURCE_TYPE_UNIFORM_BUFFER && field->binding>=13) {
@@ -103,7 +113,7 @@ static int vox_metal_program_feedback(void* handle,char* log,uint64_t capacity)
             [NSString stringWithUTF8String:program->translated->feedback_msl] options:options error:&error];
         vox_metal_drop_owned(options);
         if(!library) { if(capacity) snprintf(log,capacity,"%s",error.localizedDescription.UTF8String ?: "Metal feedback compilation failed");return 0; }
-        id<MTLFunction> function=[library newFunctionWithName:[NSString stringWithUTF8String:program->translated->entry[0]]];
+        id<MTLFunction> function=[library newFunctionWithName:[NSString stringWithUTF8String:program->translated->direct_feedback_stride ? "vox_capture" : program->translated->entry[0]]];
         if(function) program->feedback=CFRetain((__bridge CFTypeRef)function);
         vox_metal_drop_owned(function);vox_metal_drop_owned(library);
         return program->feedback!=NULL;

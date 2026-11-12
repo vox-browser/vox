@@ -108,6 +108,7 @@ static int vox_metal_draw_configured(void* target_handle, void* program_handle,
         vox_metal_drop_owned(descriptor);
         if (!pipeline) { if (capacity) snprintf(log, capacity, "%s", error.localizedDescription.UTF8String ?: "Metal pipeline compilation failed"); return 0; }
         if(state->feedback) {
+            if (!program->translated->direct_feedback_stride) {
             MTLStructType* structure=nil;
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wdeprecated-declarations"
@@ -124,6 +125,7 @@ static int vox_metal_draw_configured(void* target_handle, void* program_handle,
                 field->offset=member?(uint32_t)member.offset:UINT32_MAX;
                 field->array_stride=member && member.dataType==MTLDataTypeArray?(uint32_t)member.arrayType.stride:0;
                 field->matrix_stride=field->columns>1?(field->rows==2?8:16):0;
+            }
             }
             VoxMetalGPUBuffer* output=state->feedback_buffer;
             if(!output) { vox_metal_drop_owned(pipeline);return 1; }
@@ -194,9 +196,13 @@ static int vox_metal_draw_configured(void* target_handle, void* program_handle,
         }
         if(state->feedback) {
             VoxMetalGPUBuffer* output=state->feedback_buffer;
-            uint32_t parameters[4]={count,instances,0,0};
+            uint32_t parameters[5]={count,instances,0,0,0};
+            if(program->translated->direct_feedback_stride) {
+                parameters[0]=first;parameters[1]=count;parameters[2]=0;parameters[3]=instances;
+                uint64_t words=output->size/4;parameters[4]=words>UINT32_MAX?UINT32_MAX:(uint32_t)words;
+            }
             [encoder setVertexBuffer:(__bridge id<MTLBuffer>)output->buffer offset:0 atIndex:13];
-            [encoder setVertexBytes:parameters length:sizeof(parameters) atIndex:14];
+            [encoder setVertexBytes:parameters length:program->translated->direct_feedback_stride?sizeof(parameters):sizeof(uint32_t)*4 atIndex:14];
         }
         if (indices)
             [encoder drawIndexedPrimitives:(MTLPrimitiveType)primitive indexCount:count indexType:index_width == 2 ? MTLIndexTypeUInt16 : MTLIndexTypeUInt32

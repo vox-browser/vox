@@ -160,3 +160,12 @@ Integer varyings require `flat`; boolean varyings and interpolation qualifiers
 on attributes or fragment outputs are rejected. A GPU fixture renders through
 non-square matrix, signed-vector and unsigned-scalar varyings in both GC modes.
 Centroid interpolation and varying arrays remain pending.
+
+`metal.ShaderProgram.from_translation` now sends the V translations and reflected
+resources through the browser's existing Metal program, uniform, drawing and
+vertex-capture APIs. Native code owns copies of the generated sources/reflection
+and performs Metal compilation/submission only. End-to-end tests write a nested
+uniform, render exact pixels, and capture matrix/clip outputs without loading
+compiler libraries. Existing glslang program/uniform/capture tests also pass in
+both GC modes. This explicit integration API does not yet replace the default
+ESSL compile path; build dependencies remain until the acceptance corpus is ported.

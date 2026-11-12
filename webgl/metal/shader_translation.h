@@ -26,6 +26,7 @@ typedef struct {
     char* feedback_msl;
     VoxMetalFeedbackField* feedback_fields;
     size_t feedback_count;
+    uint64_t direct_feedback_stride;
     char* msl[2];
     char* entry[2];
     VoxMetalShaderResource* resources;
