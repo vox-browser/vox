@@ -205,6 +205,7 @@ def check_webgl_browser(binary, artifacts, temporary):
     screenshot = artifacts / "webgl.png"
     environment['VOX_CAPTURE_AUDIT_PATH'] = str(audit)
     screenshot.unlink(missing_ok=True)
+    audit.unlink(missing_ok=True)
     run(["xvfb-run", "-a", "-s", "-screen 0 1024x768x24", str(binary),
          "--enable-javascript", "--window-width=800", "--window-height=600",
          "--screenshot-viewport-height=600", f"--screenshot={screenshot}", str(fixture)],

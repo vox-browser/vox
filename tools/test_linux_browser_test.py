@@ -39,6 +39,20 @@ def png(background=b"\x2c\xa0\x5a", stale_edge=False, text=True, chrome=False):
 
 
 class LinuxBrowserSmokeTest(unittest.TestCase):
+    def test_webgl_capture_requires_a_new_script_audit(self):
+        with tempfile.TemporaryDirectory() as directory:
+            artifacts = Path(directory)
+            binary = artifacts / 'vox'
+            binary.write_bytes(b'controlled browser stub')
+            audit = artifacts / 'webgl-audit.json'
+            audit.write_text(json.dumps(dict(title='WebGL GPU smoke PASS', ready='complete',
+                native_reported_error_count=0,
+                javascript_diagnostics=['WEBGL_GPU_SMOKE_PASS ["Mesa","Mesa"]'])))
+            with mock.patch.object(smoke, 'run', return_value=''):
+                with self.assertRaises(FileNotFoundError) as error:
+                    smoke.check_webgl_browser(binary, artifacts, artifacts / 'private')
+            self.assertEqual(Path(error.exception.filename), audit)
+
     def test_webgl_pixel_check_rejects_an_unexecuted_blank_or_corrupt_canvas(self):
         def capture(broken=False):
             width, height = 320, 160
