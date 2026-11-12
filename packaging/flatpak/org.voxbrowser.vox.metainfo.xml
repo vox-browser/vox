@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <component type="desktop-application">
-  <id>org.voxbrowser.Vox</id>
-  <launchable type="desktop-id">org.voxbrowser.Vox.desktop</launchable>
+  <id>org.voxbrowser.vox</id>
+  <launchable type="desktop-id">org.voxbrowser.vox.desktop</launchable>
   <provides>
     <binary>vox</binary>
   </provides>
@@ -21,11 +21,18 @@
   <project_license>GPL-2.0-or-later</project_license>
   <metadata_license>CC0-1.0</metadata_license>
   <developer>
+    <id>org.voxbrowser</id>
     <name>vox-browser</name>
   </developer>
   <url type="homepage">https://vox-browser.org</url>
   <url type="bugtracker">https://github.com/vox-browser/vox/issues</url>
-  <!-- Follow-ups before Flathub submission: <releases> entries once
-       versions publish on GitHub Releases, screenshots, and the OARS
+  <releases>
+    <release version="0.1" date="2026-11-12">
+      <description>
+        <p>Initial Flathub scaffolding release.</p>
+      </description>
+    </release>
+  </releases>
+  <!-- Follow-ups before Flathub submission: screenshots and the OARS
        content rating questionnaire. -->
 </component>

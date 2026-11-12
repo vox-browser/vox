@@ -2,9 +2,9 @@
 
 This directory holds the Flathub submission scaffolding:
 
-- `org.voxbrowser.Vox.json` — the `flatpak-builder` manifest.
-- `org.voxbrowser.Vox.metainfo.xml` — AppStream metadata.
-- `org.voxbrowser.Vox.desktop` — the desktop entry installed in the sandbox.
+- `org.voxbrowser.vox.json` — the `flatpak-builder` manifest.
+- `org.voxbrowser.vox.metainfo.xml` — AppStream metadata.
+- `org.voxbrowser.vox.desktop` — the desktop entry installed in the sandbox.
 
 ## Status: scaffolding, not submitted
 
@@ -33,7 +33,7 @@ What is still needed before a Flathub submission:
 
 ```sh
 flatpak-builder --force-clean build-dir \
-  packaging/flatpak/org.voxbrowser.Vox.json
+  packaging/flatpak/org.voxbrowser.vox.json
 flatpak-builder --run build-dir \
-  packaging/flatpak/org.voxbrowser.Vox.json vox --headless-smoke
+  packaging/flatpak/org.voxbrowser.vox.json vox --headless-smoke
 ```

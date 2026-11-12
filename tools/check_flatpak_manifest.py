@@ -12,7 +12,7 @@ import sys
 import xml.etree.ElementTree as ET
 from pathlib import Path
 
-APP_ID = 'org.voxbrowser.Vox'
+APP_ID = 'org.voxbrowser.vox'
 
 
 def fail(message):
