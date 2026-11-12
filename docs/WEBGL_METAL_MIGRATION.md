@@ -61,6 +61,20 @@ Exact 8x8 pixels cover matrix/color uniforms and instanced streams; an asymmetri
 synchronous and compiles a pipeline per draw. Textures, render state and browser
 dispatch are still pending; these tests do not establish complete WebGL parity.
 
+## Completed: RGBA8 textures, samplers and color targets
+
+Private 2D textures are initialized before use, accept exact bounded RGBA8
+uploads, and support nearest/linear filtering plus clamp/repeat/mirror wrapping.
+Draw bindings use preserved ESSL sampler names and the reflected stage/Metal
+slots. A texture can be the offscreen color target, then be sampled in a later
+draw. Closed/foreign bindings and read/write feedback loops fail before drawing.
+These are base-level RGBA8 resources; mipmaps, other formats, cube/3D/array
+textures, multiple attachments and depth/stencil remain migration work.
+
+Three V cases pass in both GC modes, with exact quadrant/wrap, interpolated
+center-sample, offscreen readback and feedback-loop checks. Native GPU sampling
+also passes ARC, MRC and ASan/UBSan with no ANGLE image loaded.
+
 ## Validation
 
 On 2026-11-12, native GPU tests passed with ARC, manual reference counting and

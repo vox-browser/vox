@@ -13,6 +13,19 @@ pub:
 
 pub enum Primitive { points lines line_strip triangles triangle_strip }
 
+pub struct TextureBinding {
+pub:
+	name string
+	texture &Texture2D = unsafe { nil }
+	array_index u32
+}
+
+pub struct DrawOptions {
+pub:
+	textures []TextureBinding
+	color_target &Texture2D = unsafe { nil }
+}
+
 struct UniformStorage {
 	stage ShaderStage
 	binding u32
@@ -57,8 +70,17 @@ pub fn (mut program ShaderProgram) uniform_floats(name string, values []f32) ! {
 }
 
 pub fn (mut target DrawingBuffer) draw(program &ShaderProgram, streams []VertexStream, primitive Primitive, first int, count int, instances int) ! {
+	target.draw_with_options(program, streams, primitive, first, count, instances, DrawOptions{})!
+}
+
+pub fn (mut target DrawingBuffer) draw_with_options(program &ShaderProgram, streams []VertexStream, primitive Primitive, first int, count int, instances int, options DrawOptions) ! {
 	if target.handle == unsafe { nil } || program.handle == unsafe { nil } || program.owner.handle != target.handle {
 		return error('Metal draw requires a live program from this drawing buffer')
+	}
+	mut render_target := target.handle
+	if options.color_target != unsafe { nil } {
+		if options.color_target.handle == unsafe { nil } || options.color_target.owner.handle != target.handle { return error('Metal color target requires a live texture from this drawing buffer') }
+		render_target = options.color_target.handle
 	}
 	if first < 0 || count < 0 || instances < 0 || u64(first) > 0xffffffff || u64(count) > 0xffffffff
 		|| u64(instances) > 0xffffffff || u64(first) + u64(count) > 0xffffffff || streams.len > 16 {
@@ -85,9 +107,22 @@ pub fn (mut target DrawingBuffer) draw(program &ShaderProgram, streams []VertexS
 		}
 		native_streams << C.VoxMetalVertexStream{buffer: stream.buffer.handle, offset: u64(stream.offset), stride: u64(stride), location: u32(stream.location), components: u32(stream.components), divisor: u32(stream.divisor)}
 	}
+	mut textures := []C.VoxMetalTextureBinding{}
 	for resource in program.resources()! {
 		if resource.kind == 3 && resource.stage == .vertex && (resource.location >= 16 || used & (u32(1) << resource.location) == 0) { return error('Missing Metal vertex stream ${resource.name}') }
-		if resource.kind in [u32(7), 10, 11] { return error('Metal draw requires texture bindings for ${resource.name}') }
+		if resource.kind == 11 { return error('Separate Metal sampler bindings are not supported') }
+		if resource.kind !in [u32(7), 10] { continue }
+		for index in u32(0) .. resource.array_length {
+			bound := options.textures.filter(it.name == resource.name && it.array_index == index)
+			if bound.len != 1 { return error('Missing or duplicate Metal texture binding ${resource.name}[${index}]') }
+			texture := bound[0].texture
+			if texture == unsafe { nil } || texture.handle == unsafe { nil } || texture.owner.handle != target.handle {
+				return error('Metal texture binding requires a live texture from this drawing buffer')
+			}
+			if texture.handle == render_target { return error('Metal texture feedback loop') }
+			if u64(resource.binding) + index >= 128 || (resource.kind == 7 && u64(resource.secondary_binding) + index >= 16) { return error('Metal texture binding exceeds device limits') }
+			textures << C.VoxMetalTextureBinding{texture: texture.handle, stage: if resource.stage == .vertex { u32(0) } else { u32(1) }, binding: resource.binding + index, sampler_binding: resource.secondary_binding + index, sampled: if resource.kind == 7 { u32(1) } else { u32(0) }}
+		}
 	}
 	if count == 0 || instances == 0 { return }
 	mut bindings := []C.VoxMetalUniformBinding{cap: program.uniforms.len}
@@ -95,7 +130,7 @@ pub fn (mut target DrawingBuffer) draw(program &ShaderProgram, streams []VertexS
 		bindings << C.VoxMetalUniformBinding{buffer: uniform.buffer.handle, stage: if uniform.stage == .vertex { u32(0) } else { u32(1) }, binding: uniform.binding}
 	}
 	mut log := []u8{len: 16384}
-	if C.vox_metal_draw(target.handle, program.handle, native_streams.data, u32(native_streams.len), bindings.data, u32(bindings.len), u32(primitive), u32(first), u32(count), u32(instances), &char(log.data), u64(log.len)) != 1 {
+	if C.vox_metal_draw_textured(render_target, program.handle, native_streams.data, u32(native_streams.len), bindings.data, u32(bindings.len), textures.data, u32(textures.len), u32(primitive), u32(first), u32(count), u32(instances), &char(log.data), u64(log.len)) != 1 {
 		message := unsafe { cstring_to_vstring(&char(log.data)).clone() }
 		return error(if message.len > 0 { message } else { 'Metal draw failed' })
 	}

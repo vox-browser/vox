@@ -13,7 +13,9 @@ lower through SPIR-V/MSL, and compile as actual Metal functions; resource names
 and uniform/matrix layouts have focused coverage in both GC modes. Browser
 dispatch is not migrated. Initialized GPU buffers, bounded vertex streams,
 float/matrix uniforms and array/instanced draws now have exact Metal pixel
-coverage, including asymmetric GL row orientation;
+coverage, including asymmetric GL row orientation. Base-level RGBA8 textures,
+nearest/linear samplers, wrapping and offscreen color targets have exact-pixel
+and feedback/ownership checks;
 the production WebGL implementation still uses ANGLE. See the
 [migration status and next slices](../docs/WEBGL_METAL_MIGRATION.md).
 
