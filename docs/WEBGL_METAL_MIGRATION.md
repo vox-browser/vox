@@ -268,6 +268,12 @@ produces 0. The new Metal test keeps the GLES 3.0.6 section 2.9.2 signed-field
 semantics; this is a retained reference discrepancy, not a full pixel-parity
 claim. The failing reference receipts remain in local migration evidence.
 
+Nested structured uniforms and arrays of structures now expose leaf names and
+real std140 offsets, including matrices and boolean members. A zero-padding
+SPIRV-Cross MSL template is specialized without adding bytes to the structure.
+The GPU uniform case passes against both Metal and ANGLE with both GC modes;
+all eight native fixtures pass ARC, MRC and ASan/UBSan (24 fixture/mode runs).
+
 ## Next implementation slices
 
 The experimental V service now owns context/resource records, the painting

@@ -127,6 +127,24 @@ static char* vox_metal_string_copy(char const* value)
     return copy;
 }
 
+// SPIRV-Cross emits this padded-struct wrapper even when Metal's structure
+// already has the exact stride. Metal rejects the resulting zero-length char
+// array. A partial specialization preserves sizeof(T), with no extra byte.
+static char* vox_metal_msl_layout_source(char const* source)
+{
+    char const* padding=strstr(source,"char padding[stride - sizeof(T)];");
+    char const* end=padding?strstr(padding,"};"):NULL;
+    if(!end) return vox_metal_string_copy(source);
+    end+=2;
+    char const* specialization="\ntemplate<typename T> struct spvPaddedArrayElement<T, sizeof(T)> { T data; };\n";
+    size_t before=(size_t)(end-source),extra=strlen(specialization),length=strlen(source);
+    if(length>SIZE_MAX-extra-1) return NULL;
+    char* result=malloc(length+extra+1);
+    if(!result) return NULL;
+    memcpy(result,source,before);memcpy(result+before,specialization,extra);memcpy(result+before+extra,end,length-before+1);
+    return result;
+}
+
 static void vox_metal_translation_destroy(VoxMetalTranslatedProgram* program)
 {
     if (!program) return;
@@ -189,12 +207,77 @@ static int vox_metal_boolean_uniform(char const* source,char const* name)
         while(vox_glsl_identifier(source[i])) ++i;
         size_t length=i-begin;
         if(!depth && vox_glsl_equal(source+begin,length,"uniform")) { uniform=1;continue; }
-        if(!uniform || brackets) continue;
+        if(!uniform || brackets || depth) continue;
         if(vox_glsl_equal(source+begin,length,"bool") || vox_glsl_equal(source+begin,length,"bvec2")
             || vox_glsl_equal(source+begin,length,"bvec3") || vox_glsl_equal(source+begin,length,"bvec4")) { boolean=1;continue; }
         if(boolean && vox_glsl_equal(source+begin,length,name)) return 1;
     }
     return 0;
+}
+
+static int vox_metal_boolean_member(char const* source,char const* type_name,char const* name)
+{
+    if(!source || !type_name || !name) return 0;
+    unsigned depth=0;int expect_type=0,target=0,inside=0,boolean=0;
+    for(size_t i=0;source[i];) {
+        char c=source[i];
+        if(c=='{') { ++depth;if(depth==1 && target) inside=1;++i;continue; }
+        if(c=='}') { if(depth) --depth;if(!depth) { inside=target=0; } boolean=0;++i;continue; }
+        if(c==';') { boolean=0;if(!depth) target=expect_type=0;++i;continue; }
+        if(!vox_glsl_identifier_start(c)) { ++i;continue; }
+        size_t begin=i++;
+        while(vox_glsl_identifier(source[i])) ++i;
+        size_t length=i-begin;
+        if(!depth && expect_type) { target=vox_glsl_equal(source+begin,length,type_name);expect_type=0;continue; }
+        if(!depth && (vox_glsl_equal(source+begin,length,"struct") || vox_glsl_equal(source+begin,length,"uniform"))) { expect_type=1;continue; }
+        if(!inside || depth!=1) continue;
+        if(vox_glsl_equal(source+begin,length,"bool") || vox_glsl_equal(source+begin,length,"bvec2")
+            || vox_glsl_equal(source+begin,length,"bvec3") || vox_glsl_equal(source+begin,length,"bvec4")) { boolean=1;continue; }
+        if(boolean && vox_glsl_equal(source+begin,length,name)) return 1;
+    }
+    return 0;
+}
+
+static int vox_metal_reflect_uniform_member(VoxMetalTranslatedProgram* program,
+    spvc_compiler compiler,spvc_compiler original_names,spvc_type_id parent_id,unsigned member,
+    VoxMetalShaderResource block,char const* prefix,uint32_t base_offset,unsigned nesting)
+{
+    if(nesting>32) return 0;
+    spvc_type parent=spvc_compiler_get_type_handle(compiler,parent_id);
+    spvc_type_id id=spvc_type_get_member_type(parent,member);
+    spvc_type type=spvc_compiler_get_type_handle(compiler,id);
+    VoxMetalShaderResource field=block;field.kind=100;field.array_stride=field.matrix_stride=field.semantic_type=0;
+    size_t size=0;
+    uint32_t relative=0;
+    if(!vox_metal_reflect_type(type,&field)
+        || spvc_compiler_type_struct_member_offset(compiler,parent,member,&relative)!=SPVC_SUCCESS
+        || spvc_compiler_get_declared_struct_member_size(compiler,parent,member,&size)!=SPVC_SUCCESS
+        || relative>UINT32_MAX-base_offset) return 0;
+    field.offset=base_offset+relative;field.byte_size=size;
+    char const* leaf=spvc_compiler_get_member_name(original_names,spvc_type_get_base_type_id(parent),member);
+    char name[2048];
+    int length=snprintf(name,sizeof(name),"%s%s%s",prefix,*prefix?".":"",leaf);
+    if(length<0 || (size_t)length>=sizeof(name)) return 0;
+    unsigned dimensions=spvc_type_get_num_array_dimensions(type);
+    if(dimensions && spvc_compiler_type_struct_member_array_stride(compiler,parent,member,&field.array_stride)!=SPVC_SUCCESS) return 0;
+    if(field.base_type==SPVC_BASETYPE_STRUCT) {
+        if(dimensions>1 || field.array_length>4096) return 0;
+        for(uint32_t element=0;element<field.array_length;++element) {
+            char path[2048];
+            length=dimensions?snprintf(path,sizeof(path),"%s[%u]",name,element):snprintf(path,sizeof(path),"%s",name);
+            if(length<0 || (size_t)length>=sizeof(path)) return 0;
+            uint64_t offset=(uint64_t)field.offset+(uint64_t)element*field.array_stride;
+            if(offset>UINT32_MAX) return 0;
+            for(unsigned child=0;child<spvc_type_get_num_member_types(type);++child)
+                if(!vox_metal_reflect_uniform_member(program,compiler,original_names,id,child,block,path,(uint32_t)offset,nesting+1)) return 0;
+        }
+        return 1;
+    }
+    if(field.columns>1 && spvc_compiler_type_struct_member_matrix_stride(compiler,parent,member,&field.matrix_stride)!=SPVC_SUCCESS) return 0;
+    char const* type_name=spvc_compiler_get_name(original_names,spvc_type_get_base_type_id(parent));
+    if(field.base_type==SPVC_BASETYPE_UINT32 && (vox_metal_boolean_member(program->essl[field.stage],type_name,leaf)
+        || (type_name && !strncmp(type_name,"_webgl_native_",14) && vox_metal_boolean_uniform(program->essl[field.stage],leaf)))) field.semantic_type=SPVC_BASETYPE_BOOLEAN;
+    return vox_metal_append_resource(program,field,name);
 }
 
 static int vox_metal_reflect_resources(VoxMetalTranslatedProgram* program, spvc_compiler compiler,
@@ -245,19 +328,7 @@ static int vox_metal_reflect_resources(VoxMetalTranslatedProgram* program, spvc_
                         for (size_t j = 0; j < range_count; ++j) if (ranges[j].index == member) used = 1;
                         if (!used) continue;
                     }
-                    VoxMetalShaderResource field = resource;
-                    field.kind = 100; /* Uniform-block member, including lowered plain uniforms. */
-                    spvc_type member_type = spvc_compiler_get_type_handle(compiler, spvc_type_get_member_type(structure, member));
-                    if (!vox_metal_reflect_type(member_type, &field)
-                        || spvc_compiler_type_struct_member_offset(compiler, structure, member, &field.offset) != SPVC_SUCCESS
-                        || spvc_compiler_get_declared_struct_member_size(compiler, structure, member, &size) != SPVC_SUCCESS) return 0;
-                    field.byte_size = size;
-                    if(field.base_type==SPVC_BASETYPE_UINT32 && vox_metal_boolean_uniform(program->essl[stage],spvc_compiler_get_member_name(original_names,item->base_type_id,member))) field.semantic_type=SPVC_BASETYPE_BOOLEAN;
-                    if (spvc_type_get_num_array_dimensions(member_type))
-                        if (spvc_compiler_type_struct_member_array_stride(compiler, structure, member, &field.array_stride) != SPVC_SUCCESS) return 0;
-                    if (field.columns > 1)
-                        if (spvc_compiler_type_struct_member_matrix_stride(compiler, structure, member, &field.matrix_stride) != SPVC_SUCCESS) return 0;
-                    if (!vox_metal_append_resource(program, field, spvc_compiler_get_member_name(original_names, item->base_type_id, member))) return 0;
+                    if(!vox_metal_reflect_uniform_member(program,compiler,original_names,item->base_type_id,member,resource,"",0,0)) return 0;
                 }
             } else if (!vox_metal_append_resource(program, resource, spvc_compiler_get_name(original_names, item->id))) return 0;
         }
@@ -297,7 +368,7 @@ static int vox_metal_emit_stage(VoxMetalTranslatedProgram* output, glslang_progr
     if (success) success = spvc_compiler_install_compiler_options(compiler, options) == SPVC_SUCCESS;
     if (success) success = spvc_compiler_compile(compiler, &source) == SPVC_SUCCESS;
     if (success) {
-        output->msl[stage] = vox_metal_string_copy(source);
+        output->msl[stage] = vox_metal_msl_layout_source(source);
         output->entry[stage] = vox_metal_string_copy(spvc_compiler_get_cleansed_entry_point_name(compiler, "main", stage ? SpvExecutionModelFragment : SpvExecutionModelVertex));
         success = output->msl[stage] && output->entry[stage] && vox_metal_reflect_resources(output, compiler, original_names, stage);
     }
@@ -314,7 +385,7 @@ static int vox_metal_emit_stage(VoxMetalTranslatedProgram* output, glslang_progr
             && spvc_compiler_options_set_uint(options,SPVC_COMPILER_OPTION_MSL_INDIRECT_PARAMS_BUFFER_INDEX,14)==SPVC_SUCCESS
             && spvc_compiler_install_compiler_options(compiler,options)==SPVC_SUCCESS
             && spvc_compiler_compile(compiler,&source)==SPVC_SUCCESS;
-        if(success) { output->feedback_msl=vox_metal_string_copy(source);success=output->feedback_msl!=NULL; }
+        if(success) { output->feedback_msl=vox_metal_msl_layout_source(source);success=output->feedback_msl!=NULL; }
         spvc_resources reflected;
         spvc_reflected_resource const* fields=NULL;
         size_t count=0;
