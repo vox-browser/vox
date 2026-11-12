@@ -2006,8 +2006,6 @@ fn javascript_bootstrap() string {
 		compact_event_dispatch_bootstrap(),
 		compact_mutation_observer_bootstrap(),
 		'__compactInstallNativeAttributeMutations();',
-		// Last: bridge-installed platform functions print as native code.
-		compact_native_function_source_bootstrap(),
 		// Initialization has no replay consumer; explicit snapshots remain available.
 		'return;',
 		'})',
@@ -3309,6 +3307,10 @@ fn initialize_document_script_runtime(document &dom.Document, current_url string
 	}
 	install_browser_page_storage(document, runtime) or {
 		messages << 'JavaScript storage bindings: ${err.msg()}'
+		return false
+	}
+	mutable_runtime.install_platform_function_source(compact_native_function_source_bootstrap()) or {
+		messages << 'JavaScript platform function identity: ${err.msg()}'
 		return false
 	}
 	processmetrics.instruction_checkpoint('javascript_document_bindings')
