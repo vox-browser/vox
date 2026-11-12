@@ -72,6 +72,9 @@ typedef struct {
     float border_widths[4];
     int has_float_underlay_color;
     float underlay_float_color[4];
+    // CSS contoured backgrounds, uniform borders and outer shadows (11..13).
+    float contour_parameters[4], contour_reference[12];
+    int has_contour_reference;
 } VoxGraphiteShape;
 
 // An SVG path in the browser's serialized segment format: twelve floats per

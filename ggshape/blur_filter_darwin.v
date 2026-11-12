@@ -86,7 +86,7 @@ fn shadow_linear_kernel(sigma f32) ([56]f32, int) {
 
 // Capsule corners cannot be nine-patched. Graphite uses its general A8
 // image-filter path for them; other rounded shadows retain their existing path.
-fn capsule_shadow_supported(shape &C.VoxGraphiteShape) bool {
+fn affine_shadow_supported(shape &C.VoxGraphiteShape) bool {
 	m := shape.matrix
 	for value in m {
 		if math.is_nan(f64(value)) || math.is_inf(f64(value), 0) { return false }
@@ -99,16 +99,27 @@ fn capsule_shadow_supported(shape &C.VoxGraphiteShape) bool {
 		|| math.abs(m[0] - m[4]) > f32(0.00001) {
 		return false
 	}
-	if shape.rect[2] <= shape.rect[3] || shape.rect[3] <= 0 { return false }
-	for i in 4 .. 12 {
-		if math.abs(shape.rect[i] - shape.rect[3] * f32(0.5)) > f32(0.00001) { return false }
-	}
 	sigma := shape.thickness * f32(0.5) * m[0]
 	return sigma >= 1 && sigma <= 135
 }
 
+fn capsule_shadow_supported(shape &C.VoxGraphiteShape) bool {
+	if !affine_shadow_supported(shape) { return false }
+	if shape.rect[2] <= shape.rect[3] || shape.rect[3] <= 0 { return false }
+	for i in 4 .. 12 {
+		if math.abs(shape.rect[i] - shape.rect[3] * f32(0.5)) > f32(0.00001) { return false }
+	}
+	return true
+}
+
 fn capsule_shadow_mask(shape &C.VoxGraphiteShape, width int, height int) ![]u8 {
 	if !capsule_shadow_supported(shape) { return error('Unsupported blurred shadow') }
+	return shadow_filter_mask(shape, width, height, none, canvas.Point{})
+}
+
+fn shadow_filter_mask(shape &C.VoxGraphiteShape, width int, height int,
+	source_path ?canvas.Path, source_offset canvas.Point) ![]u8 {
+	if !affine_shadow_supported(shape) { return error('Unsupported shadow filter transform') }
 	m := shape.matrix
 	sigma := shape.thickness * f32(0.5) * m[0]
 	left := f32(math.floor(f64(shape.rect[0] * m[0] + m[2])))
@@ -128,13 +139,15 @@ fn capsule_shadow_mask(shape &C.VoxGraphiteShape, width int, height int) ![]u8 {
 	source.clear(canvas.Color4f{})
 	mut source_matrix := [9]f32{}
 	for i in 0 .. 9 { source_matrix[i] = m[i] }
-	source_matrix[2] -= left
-	source_matrix[5] -= top
+	source_matrix[2] += source_offset.x * m[0] - left
+	source_matrix[5] += source_offset.y * m[4] - top
 	source.set_matrix(canvas.Matrix.values(source_matrix))
-	source.draw_rrect(rounded_rect(shape.rect), canvas.Paint{
-		color:      canvas.Color4f{1, 1, 1, 1}
-		anti_alias: true
-	})!
+	white := canvas.Paint{ color: canvas.Color4f{1, 1, 1, 1}, anti_alias: true }
+	if path := source_path {
+		source.draw_path(path, white)!
+	} else {
+		source.draw_rrect(rounded_rect(shape.rect), white)!
+	}
 	mut rgba := []u8{len: source_width * source_height * 4}
 	source.read_pixels(rgba.data, source_width * 4)!
 	mut alpha := []u8{len: source_width * source_height}

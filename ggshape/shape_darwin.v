@@ -41,6 +41,9 @@ pub mut:
 	border_widths            [4]f32
 	has_float_underlay_color i32
 	underlay_float_color     [4]f32
+	contour_parameters       [4]f32
+	contour_reference        [12]f32
+	has_contour_reference    i32
 }
 
 struct GpuState {
@@ -75,7 +78,7 @@ fn context() !&canvas.GpuContext {
 // 2..5) and equal sides (mode 8).
 fn supported(shape &C.VoxGraphiteShape) bool {
 	kind_ok := match shape.fill {
-		0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 { true }
+		0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13 { true }
 		else { false }
 	}
 	return kind_ok && (shape.clip_out_count == 0 || shape.clip_outs != unsafe { nil })
@@ -165,7 +168,9 @@ fn draw_shape_pixels(pixels &u8, width i32, height i32, pitch i32, has_backgroun
 		style:        if stroke { .stroke } else { .fill }
 		stroke_width: if stroke && shape.thickness > 0 { shape.thickness } else { 0 }
 	}
-	if shape.fill == 10 {
+	if shape.fill in [11, 12, 13] {
+		draw_contoured_shape(mut target, shape, paint, int(width), int(height)) or { return 0 }
+	} else if shape.fill == 10 {
 		mask := capsule_shadow_mask(shape, int(width), int(height)) or { return 0 }
 		target.clip_rrect(rounded_rect(shape.underlay_rect), .difference, true) or { return 0 }
 		target.set_matrix(canvas.Matrix.identity())
