@@ -501,6 +501,21 @@ fn (mut service BrowserHostedDocument) poll(mut messages []string) bool {
 	return changed
 }
 
+// A parent phase cache owns a snapshot of its child's display list. A
+// document-level repaint keeps that phase cache, so child updates must also
+// invalidate the embedding box, through every ancestor of a nested frame.
+fn invalidate_browser_child_document_paint(child &BrowserChildDocument) {
+	mut container := ?&dom.Node(child.element.as_node())
+	for container != none {
+		node := container or { break }
+		if mut paintable := node.paintable_box() {
+			paintable.set_needs_repaint(.paint_commands)
+		}
+		parent := node.document().navigable() or { break }
+		container = parent.container()
+	}
+}
+
 fn (mut host BrowserChildDocumentHost) poll(mut messages []string) bool {
 	if host.closed { return false }
 	persistent := platform.enter_persistent()
@@ -546,6 +561,7 @@ fn (mut host BrowserChildDocumentHost) poll(mut messages []string) bool {
 			was_initialized := service.initialized
 			service.initialize(mut messages)
 			if service.poll(mut messages) || was_initialized != service.initialized {
+				invalidate_browser_child_document_paint(child)
 				changed = true
 			}
 			parser_generation := if parser := service.parser_host { parser.parser_generation } else { u64(0) }
