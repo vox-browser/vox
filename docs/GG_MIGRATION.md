@@ -2685,3 +2685,12 @@ receipts, captures and failed attempts are retained under
 A separate direct live-site capture exited 0 but remained blank and `loading`
 with no editor. It does not validate the live ChatGPT experience. Full-page exact
 parity and live-site readiness remain open.
+
+The November 12 follow-up checked the two Linux outer-shadow byte failures
+against an independent Skia ee20d565 oracle (library SHA-256
+`19dedece03588619f6857b0b7936ef393d038cdc8f5c8d10f65b4c7bfe55cde5`).
+Native RGBA gives `[248,131,36,35]` and red `124`; non-native RGBA gives
+`[241,128,35,36]` and red `128`, exactly matching Linux's existing pipeline.
+The tests now pin both platform results without changing rasterization or
+tolerances. All six outer-shadow tests pass when executed on macOS and in the
+Debian 13 ARM64 VM, under separate memory guards.
