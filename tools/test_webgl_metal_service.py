@@ -21,6 +21,8 @@ def main():
     parser.add_argument('--v-bin', type=Path, default=Path.home() / 'code/v/v')
     parser.add_argument('--gc', choices=['both', 'default', 'none'], default='both')
     parser.add_argument('--backend', choices=['c', 'fastc'], default='c')
+    parser.add_argument('--service', choices=['metal', 'angle'], default='metal')
+    parser.add_argument('--batch', action='store_true', help='Compile all selected tests into one executable using V -file-list')
     parser.add_argument('tests', nargs='*', type=Path)
     args = parser.parse_args()
     if sys.platform != 'darwin':
@@ -40,20 +42,25 @@ def main():
         if path.is_file() and path.suffix in ['.v', '.h', '.m'] and not path.name.endswith('_test.v'):
             inputs.add(path)
     pins = {str(path): digest(path) for path in sorted(inputs)}
-    report = dict(pins=pins, jobs=[], passed=False)
+    report = dict(pins=pins, selected_tests=[str(path.relative_to(ROOT)) for path in tests], service=args.service, batch=args.batch, jobs=[], passed=False)
     environment = os.environ.copy()
     if args.backend == 'fastc':
         environment['VJOBS'] = '1'  # Native header state must live in one FastC C unit.
     modes = ['default', 'none'] if args.gc == 'both' else [args.gc]
-    for test in tests:
+    groups = [tests] if args.batch else [[test] for test in tests]
+    for group in groups:
+        test = group[0]
+        stem = 'combined-webgl' if args.batch else test.stem
         for gc in modes:
-            binary = output / (test.stem + '-' + gc)
+            binary = output / (stem + '-' + gc)
             command = [str(compiler), '-w', '-new-compiler', '-skip-running', '-b', args.backend,
                        '-cc', 'clang', '-cflags', '-O0', '-memory-limit', '10G', '-enable-globals',
-                       '-d', 'vox_direct_metal', *(['-gc', 'none'] if gc == 'none' else []),
+                       *(['-d', 'vox_direct_metal'] if args.service == 'metal' else []),
+                       *(['-file-list', ','.join(str(path) for path in group[1:])] if len(group)>1 else []),
+                       *(['-gc', 'none'] if gc == 'none' else []),
                        '-o', str(binary), str(test)]
             for phase, invocation in [('compile', command), ('runtime', [str(binary)])]:
-                label = test.stem + '-' + gc + '-' + phase
+                label = stem + '-' + gc + '-' + phase
                 guard = [sys.executable, str(ROOT / 'tools/run_memory_bounded.py'),
                          '--limit-gib', '12' if phase == 'compile' else '3',
                          '--timeout', '300' if phase == 'compile' else '120',
@@ -71,7 +78,7 @@ def main():
                     if report['changed_inputs']:
                         print('Inputs changed: ' + ', '.join(report['changed_inputs']))
                     return result.returncode or 1
-            print(str(test.relative_to(ROOT)) + ' gc=' + gc + ': passed', flush=True)
+            print((f'{len(group)} combined files' if args.batch else str(test.relative_to(ROOT))) + ' gc=' + gc + ': passed', flush=True)
     report['passed'] = True
     (output / 'result.json').write_text(json.dumps(report, indent=2) + '\n')
     return 0
