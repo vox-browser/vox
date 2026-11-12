@@ -139,3 +139,40 @@ and exited before browser startup. Corrected repeats use fresh output paths.
 These setup failures receive no rendering credit. The replay controller exits
 0 after recording the comparisons; that is successful evidence collection,
 **not** an all-site parity pass.
+
+## First corrective slice: fractional glyph colors
+
+Commit `e546a39ac` preserves computed floating-point text colors through glyph
+coverage and the final pixel store. The restored document rasterizer had passed
+only the serialized byte color into the CPU glyph painter, discarding the
+existing `PaintSRGBColor` payload. For example, Lobsters uses author alpha 59%,
+which must remain fractional while it blends with the glyph mask. The precise
+path uses floating-point coverage blending; unsupported color-font, outline,
+shader and filtered cases still decline to the caller's existing drawing path.
+
+The new `glyph-fractional-color` fixture uses the existing test font and a fresh
+Brave reference. Its original production capture differs at **585 pixels**.
+The new production executable
+`696faec3e67977fec3b70839999367f89c04d8293219f9e89e51f0476c1a8b41`
+(managed receipt `20261112-084900-fdef0d9b`, source head `e546a39ac`) matches
+that reference at **zero pixels in both fresh launches**. Cached and uncached
+glyph tests match the exact Brave crop in normal and `-prealloc -gc none` modes;
+the existing glyph-run tests also pass. All run through memory guards.
+
+Two fresh native captures of the unchanged Lobsters archive now differ from
+the retained Brave reference at **637 pixels each**, down from 17,969. The
+remaining pixels are confined to the small avatars, mainly their rounded
+boundaries; maximum channel error is 14. Both launches exit 0 and pass the
+document identity, readiness and viewport checks. Their executable/resource
+identities remain unchanged. This bundle also includes concurrent graphics
+changes and the separate `0c99d4545` layout scratch-lifetime fix. Two successful
+captures do not establish that the earlier intermittent crash is resolved.
+
+**Lobsters and the all-site goal remain open.** The other site's original rows
+above have not been replaced by results from this new executable. Production
+attempts preceding this receipt repeatedly rejected source membership changes
+or changed inputs during concurrent development; no consistency guard was
+bypassed. Local corrective-slice evidence is in
+`docs/performance/optimized-pixels-fixes-20261112/`, including the rejected
+legacy-blending experiment and the floating-color replay diagnostic. Diagnostics
+are not whole-browser acceptance results.
