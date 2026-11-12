@@ -125,6 +125,41 @@ class VBuildMigrationTest(unittest.TestCase):
         self.assertEqual(source.read_text(), patch_compiler(original)[0])
         self.assertEqual(receipt.read_text(), 'patched\n')
 
+    def test_windows_dependency_notices_do_not_pollute_shell_setup_stdout(self):
+        import re
+        mock = self.work / 'windows-build-tools'
+        mock.mkdir()
+        compiler = mock / 'compiler'
+        compiler.write_text("#!/bin/sh\nif [ \"$1\" = --version ]; then echo fake-compiler; exit 0; fi\n"
+                            "while [ \"$#\" -gt 0 ]; do if [ \"$1\" = -o ]; then shift; echo object > \"$1\"; exit 0; fi; shift; done\nexit 2\n")
+        archiver = mock / 'ar'
+        archiver.write_text('#!/bin/sh\necho archive > "$2"\n')
+        pkg_config = mock / 'pkg-config'
+        pkg_config.write_text('#!/bin/sh\nexit 0\n')
+        header = (ROOT / 'browserjs/include/JavaScriptCore/JavaScript.h').read_text()
+        required = sorted(set(re.findall(r'^JS_EXPORT\s+.+?\s+(JS\w+)\(', header, re.M)))
+        self.assertTrue(required)
+        exports = mock / 'exports'
+        exports.write_text('pei-x86-64\n' + '\n'.join(' [ %d] %s' % (i, name) for i, name in enumerate(required)) + '\n')
+        objdump = mock / 'objdump'
+        objdump.write_text('#!/bin/sh\ncat "' + str(exports) + '"\n')
+        dlltool = mock / 'dlltool'
+        dlltool.write_text('#!/bin/sh\nwhile [ "$#" -gt 0 ]; do if [ "$1" = -l ]; then shift; echo imports > "$1"; exit 0; fi; shift; done\nexit 2\n')
+        for tool in [compiler, archiver, pkg_config, objdump, dlltool]:
+            tool.chmod(0o755)
+        environment = dict(self.environment, CC=str(compiler), CXX=str(compiler), AR=str(archiver),
+                           OBJDUMP=str(objdump), DLLTOOL=str(dlltool))
+        environment['PATH'] = str(mock) + os.pathsep + environment['PATH']
+        dll = mock / 'JavaScriptCore.dll'
+        dll.write_bytes(b'MZ fixture inspected by mock objdump')
+        for command, arguments, notice in [('build_linux_native', ['--os', 'windows'], 'Built windows'),
+                                           ('prepare_windows_jsc', [str(dll)], 'Imported')]:
+            result = subprocess.run([self.driver, command, *arguments], env=environment,
+                                    text=True, capture_output=True)
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertEqual(result.stdout, '')
+            self.assertIn(notice, result.stderr)
+
     def test_parallel_compile_preserves_failure_and_fallback_behavior(self):
         from parallel_browser_compile_test import FAKE_COMPILER
         for mode, supported, expected_mode, expected_code in [

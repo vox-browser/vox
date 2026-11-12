@@ -213,10 +213,10 @@ fn build_harfbuzz() !string {
 }
 
 fn build_linux_native(target_os string) ! {
-	output := join(root_dir(), if target_os == 'windows' {
-		'Build/deps/windows/native'
+	output := build_cache(if target_os == 'windows' {
+		'deps/windows/native'
 	} else {
-		'Build/linux/native'
+		'linux/native'
 	})
 	mkdir(output)!
 	if target_os != 'windows' { return }
@@ -241,5 +241,5 @@ fn build_linux_native(target_os string) ! {
 	checked([...ar, 'rcs', tmp, object_file])!
 	os.rename(tmp, archive)!
 	atomic_write(stamp, sha)!
-	println('Built ${target_os} webgl bridge')
+	eprintln('Built ${target_os} webgl bridge')
 }

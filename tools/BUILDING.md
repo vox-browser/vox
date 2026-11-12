@@ -82,10 +82,12 @@ keep their original command lines.
 
 Validation used `/Users/alex/code/v/v3` with its matching `/Users/alex/code/v/vlib`:
 19 focused V checks; 103 existing Python regression tests passed, with two
-host-specific tests skipped; eight migration checks passed. The latter compare
+host-specific tests skipped; nine migration checks passed. The latter compare
 HTTP, Brotli, UI2/Metal, Linux adapters, font initialization, preallocation and
 compiler-scope output, verify compiler refusal/failure handling, reject modified
-runtime files, and check child `--help` forwarding through the memory guard. Additional V
+runtime files, and check child `--help` forwarding through the memory guard. Windows dependency
+notices are checked with mocked compiler/import tools to keep setup stdout
+usable as a shell environment. Additional V
 checks cover receipt retention, safe symlink removal, and lock descriptors
 closing across exec. Scratch pruning reports protected entries individually
 and continues without recursive permission-error floods.

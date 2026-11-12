@@ -26,7 +26,7 @@ fn prepare_windows_jsc(a Args) ! {
 	}
 	missing := required.filter(it !in available)
 	if missing.len > 0 { return error('JavaScriptCore DLL lacks: ' + missing.join(', ')) }
-	output := join(root_dir(), 'Build/deps/windows/native')
+	output := build_cache('deps/windows/native')
 	mkdir(output)!
 	required.sort()
 	definition := join(output, 'JavaScriptCore.def')
@@ -36,7 +36,7 @@ fn prepare_windows_jsc(a Args) ! {
 	checked([a.get('--dlltool', os.getenv_opt('DLLTOOL') or { 'dlltool' }), '-m', 'i386:x86-64',
 		'-d', definition, '-l', tmp])!
 	os.rename(tmp, archive)!
-	println('Imported ${required.len} verified JavaScriptCore exports: ${archive}')
+	eprintln('Imported ${required.len} verified JavaScriptCore exports: ${archive}')
 }
 
 fn build_windows(a Args) ! {
