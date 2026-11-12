@@ -1,5 +1,18 @@
 module cpuraster
 
+fn test_document_shadow_keeps_unrounded_author_alpha() {
+	shape := rounded_rect(Rect{0, 0, 4, 4}, [8]f32{})
+	transform := [f32(1), 0, 0, 1, 0, 0]!
+	legacy := rasterize_outer_shadow(4, 4, shape, RoundedRect{}, transform,
+		0x19000000, 0, []) or { panic('legacy shadow') }
+	document := rasterize_outer_shadow_with_coverage(4, 4, shape, RoundedRect{}, transform,
+		0x19000000, 0, [], 0.1) or { panic('document shadow') }
+	// CSS alpha 0.1 rounds to 26 at readback. Quantizing it before coverage
+	// loses one level, making every shadow on a white page too light.
+	assert legacy[3] == 25
+	assert document[3] == 26
+}
+
 fn test_outer_shadow_preserves_elliptical_corners_and_content_hole() {
 	shape := rounded_rect(Rect{8, 8, 24, 24}, [f32(6), 4, 2, 6, 4, 2, 2, 2]!)
 	pixels := rasterize_outer_shadow(32, 32, shape, shape, [f32(1), 0, 0, 1, 0, 0]!, 0xff0000ff, 4, []) or { panic('shadow') }

@@ -37,6 +37,7 @@ pub:
 	positions      []f32
 	translation    [2]f32
 	font_smoothing int
+	coverage_alpha f32 = -1
 }
 
 // Surfaces past the untiled limit are drawn tile by tile, each through a
@@ -95,8 +96,8 @@ fn rasterize_shadow_untiled(width int, height int, command ShadowCommand) ![]u8 
 		}
 	}
 	if command.kind == 0 {
-		if result := rasterize_outer_shadow(width, height, shadow_rounded_rect(command.outer),
-			shadow_rounded_rect(command.content), command.transform, command.color, command.blur, cpu_clips) {
+		if result := rasterize_outer_shadow_with_coverage(width, height, shadow_rounded_rect(command.outer),
+			shadow_rounded_rect(command.content), command.transform, command.color, command.blur, cpu_clips, command.coverage_alpha) {
 			return result
 		}
 	} else if command.kind == 1 {

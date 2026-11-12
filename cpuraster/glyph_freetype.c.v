@@ -38,6 +38,15 @@ $if linux || cpuraster_freetype ? {
 
 	fn open_glyph_face(path string) ?GlyphFace { return open_freetype_face(path, 0) }
 
+	// FreeType faces are files; installed CoreText registrations do not apply.
+	pub fn glyph_face_style(path string, index int) ?(bool, bool) {
+		return none
+	}
+
+	pub fn register_glyph_face(key string, path string, postscript_name string, tags []u32, values []f32) bool {
+		return false
+	}
+
 	fn open_freetype_face(path string, index int) ?GlyphFace {
 		mut flags := i32(0)
 		font := C.cpuraster_ft_open(path.str, index, &flags)

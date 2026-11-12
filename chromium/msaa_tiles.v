@@ -495,6 +495,7 @@ fn (mut app BrowserApp) set_chromium_msaa_tiles() {
 	stage := processmetrics.begin_instruction_stage('raster_tile_setup')
 	defer { stage.finish() }
 	$if macos {
+		document_geometry_grid = DocumentGeometryGrid{}
 		app.chromium_background_uses_local_origin = false
 		app.begin_chromium_image_decode_frame()
 		if os.getenv('VOX_DIAGNOSTIC_PAINT_LAYER') != '' {
@@ -526,6 +527,7 @@ fn (mut app BrowserApp) set_chromium_msaa_tiles() {
 
 fn (mut app BrowserApp) select_chromium_raster_layer(index int) {
 	$if macos {
+		document_geometry_grid = DocumentGeometryGrid{}
 		if index < 0 || index >= app.chromium_raster_plan.layers.len
 			|| index >= app.chromium_raster_tiles.len {
 			return
@@ -571,6 +573,7 @@ fn (mut app BrowserApp) select_chromium_raster_layer(index int) {
 		if raster_index < app.chromium_raster_grids.len {
 			grid := app.chromium_raster_grids[raster_index]
 			if grid.columns > 0 {
+				set_document_geometry_grid(grid, x, y, layer.bounds.height, scale)
 				cell_pointer := if grid.native_cells.len > 0 {
 					&grid.native_cells[0]
 				} else {

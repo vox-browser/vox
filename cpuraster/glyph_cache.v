@@ -16,7 +16,16 @@ mut:
 	faces   map[string]&GlyphFaceInfo
 	strikes map[string]&CachedGlyphStrike
 	order   []string
+	// Optional GlyphCacheScope hooks bracketing every allocation the cache
+	// keeps (entries, glyph images and their maps), so an owner can place
+	// them in an arena that outlives the draw's own scratch.
+	enter_scope voidptr
+	leave_scope voidptr
 }
+
+// GlyphCacheScope routes the cache's retained allocations; leave restores
+// the previous allocation target.
+pub type GlyphCacheScope = fn ()
 
 // SkStrikeCache's default budget, and a bound on the strikes it keeps.
 const glyph_cache_max_bytes = 2 * 1024 * 1024
@@ -27,10 +36,36 @@ pub fn new_glyph_cache() &GlyphCache {
 	return &GlyphCache{}
 }
 
+// new_scoped_glyph_cache makes a cache whose retained allocations happen
+// between enter() and leave().
+pub fn new_scoped_glyph_cache(enter GlyphCacheScope, leave GlyphCacheScope) &GlyphCache {
+	return &GlyphCache{
+		enter_scope: voidptr(enter)
+		leave_scope: voidptr(leave)
+	}
+}
+
+@[inline]
+fn glyph_cache_enter(cache &GlyphCache) {
+	if cache != unsafe { nil } && cache.enter_scope != unsafe { nil } {
+		enter := unsafe { GlyphCacheScope(cache.enter_scope) }
+		enter()
+	}
+}
+
+@[inline]
+fn glyph_cache_leave(cache &GlyphCache) {
+	if cache != unsafe { nil } && cache.leave_scope != unsafe { nil } {
+		leave := unsafe { GlyphCacheScope(cache.leave_scope) }
+		leave()
+	}
+}
+
 @[heap]
 struct GlyphFaceInfo {
 	color_glyphs bool
 	variable     bool
+	owner        &GlyphCache = unsafe { nil }
 mut:
 	// font_bounds() by the f32 bits of the size.
 	bounds map[u32]GlyphFaceBounds
@@ -45,6 +80,7 @@ struct GlyphFaceBounds {
 // its font could not be made.
 @[heap]
 struct CachedGlyphStrike {
+	owner &GlyphCache = unsafe { nil }
 mut:
 	glyphs map[u32]StrikeGlyph
 	bytes  int
@@ -75,7 +111,7 @@ fn (mut l LazyGlyphFace) get() ?GlyphFace {
 			return none
 		}
 	} $else {
-		open_glyph_face(l.path) or {
+		open_glyph_face(l.path, l.index) or {
 			l.failed = true
 			return none
 		}
@@ -104,14 +140,17 @@ fn glyph_face_info(cache &GlyphCache, key string, mut lazy LazyGlyphFace) ?&Glyp
 		}
 	}
 	face := lazy.get()?
+	glyph_cache_enter(cache)
 	info := &GlyphFaceInfo{
 		color_glyphs: face.color_glyphs
 		variable:     face.variable
+		owner:        cache
 	}
 	if cache != unsafe { nil } {
 		mut c := unsafe { &GlyphCache(cache) }
-		c.faces[key] = info
+		c.faces[key.clone()] = info
 	}
+	glyph_cache_leave(cache)
 	return info
 }
 
@@ -126,10 +165,12 @@ fn glyph_face_bounds(mut info GlyphFaceInfo, mut lazy LazyGlyphFace, size f32) ?
 	if rect := face.font_bounds(size) {
 		known = GlyphFaceBounds{true, rect}
 	}
+	glyph_cache_enter(info.owner)
 	if info.bounds.len >= glyph_cache_max_bounds {
 		info.bounds.clear()
 	}
 	info.bounds[key] = known
+	glyph_cache_leave(info.owner)
 	return if known.valid { known.rect } else { none }
 }
 
@@ -144,6 +185,10 @@ fn glyph_cache_strike(cache &GlyphCache, key string) &CachedGlyphStrike {
 	if entry := c.strikes[key] {
 		return entry
 	}
+	glyph_cache_enter(cache)
+	defer {
+		glyph_cache_leave(cache)
+	}
 	mut bytes := 0
 	for _, entry in c.strikes {
 		bytes += entry.bytes
@@ -156,9 +201,12 @@ fn glyph_cache_strike(cache &GlyphCache, key string) &CachedGlyphStrike {
 		}
 		c.strikes.delete(oldest)
 	}
-	entry := &CachedGlyphStrike{}
-	c.strikes[key] = entry
-	c.order << key
+	entry := &CachedGlyphStrike{
+		owner: cache
+	}
+	owned_key := key.clone()
+	c.strikes[owned_key] = entry
+	c.order << owned_key
 	return entry
 }
 
@@ -181,8 +229,10 @@ fn (mut e CachedGlyphStrike) glyph(mut strike GlyphStrike, mut lazy LazyGlyphFac
 		e.empty = true
 		return none
 	}
+	glyph_cache_enter(e.owner)
 	g := strike.make_glyph(id, sub_x, sub_y)
 	e.glyphs[key] = g
+	glyph_cache_leave(e.owner)
 	e.bytes += g.image.len
 	return g
 }

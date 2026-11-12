@@ -3,6 +3,10 @@ module cpuraster
 // Portable box shadow replay: premultiplied drawing, followed by the
 // straight-RGBA readback expected by GG/Sokol's source-alpha transport.
 pub fn rasterize_outer_shadow(width int, height int, outer RoundedRect, content RoundedRect, transform [6]f32, color u32, blur f32, clips []Path) ?[]u8 {
+    return rasterize_outer_shadow_with_coverage(width, height, outer, content, transform, color, blur, clips, -1)
+}
+
+fn rasterize_outer_shadow_with_coverage(width int, height int, outer RoundedRect, content RoundedRect, transform [6]f32, color u32, blur f32, clips []Path, coverage_alpha f32) ?[]u8 {
 	if width <= 0 || height <= 0 || width > max_untiled_dimension || height > max_untiled_dimension { return none }
 	mut pixels := []u8{len: width * height * 4}
 	mut rc := canvas_raster_clip(width, height, clips)
@@ -15,8 +19,15 @@ pub fn rasterize_outer_shadow(width int, height int, outer RoundedRect, content 
 	}
 	if canvas_quick_reject(fast_bounds, matrix, &rc) { return pixels }
 	if !rc.is_empty && color >> 24 != 0 {
-		mut blitter := choose_color_blitter(mut pixels, width * 4, color, f32(color >> 24) * inv_255,
-			.src_over, canvas_rgba_uses_legacy()) or { return none }
+        mut blitter := if coverage_alpha >= 0 {
+            mut pipeline := new_color_shader_blitter(mut pixels, width * 4,
+                [f32(color >> 16 & 255) * inv_255, f32(color >> 8 & 255) * inv_255,
+                 f32(color & 255) * inv_255, coverage_alpha]!, 1, .src_over)
+            Blitter(PipelineBlitter{...pipeline, lowp: false})
+        } else {
+            choose_color_blitter(mut pixels, width * 4, color, f32(color >> 24) * inv_255,
+                .src_over, canvas_rgba_uses_legacy()) or { return none }
+        }
 		// drawRRect delegates square corners to drawRect and ovals to drawOval.
 		mut local := outer.path()
 		if outer.radii[..].all(it == 0) { local = rect_path(outer.bounds) }

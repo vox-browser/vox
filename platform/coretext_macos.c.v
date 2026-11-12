@@ -3,6 +3,10 @@ module platform
 #flag darwin -framework CoreText
 #flag darwin -framework CoreFoundation
 #include "coretext_macos.h"
+#include "@DIR/../cpuraster/glyph_coretext.h"
+
+fn C.cpuraster_ct_advances(path &char, index int, size f32, glyphs &u16, count int, widths &f32) int
+fn C.cpuraster_ct_register_face(key &char, path &char, name &char, tags &u32, values &f32, count int) int
 
 @[typedef]
 struct C.vox_ct_face {
@@ -34,29 +38,29 @@ fn system_font_face_from_native(native &C.vox_ct_face) SystemFontFace {
 	mut variations := []FontVariationAxis{cap: native.axis_count}
 	for index in 0 .. native.axis_count {
 		variations << FontVariationAxis{
-			tag: native.axis_tags[index]
+			tag:   native.axis_tags[index]
 			value: native.axis_values[index]
 		}
 	}
 	return SystemFontFace{
-		path: unsafe { cstring_to_vstring(&char(&native.path[0])) }
+		path:            unsafe { cstring_to_vstring(&char(&native.path[0])) }
 		postscript_name: unsafe { cstring_to_vstring(&char(&native.postscript[0])) }
-		family_name: unsafe { cstring_to_vstring(&char(&native.family[0])) }
-		metrics: SystemFontMetrics{
-			ascent: native.ascent
-			descent: native.descent
-			leading: native.leading
-			x_height: native.x_height
+		family_name:     unsafe { cstring_to_vstring(&char(&native.family[0])) }
+		metrics:         SystemFontMetrics{
+			ascent:     native.ascent
+			descent:    native.descent
+			leading:    native.leading
+			x_height:   native.x_height
 			cap_height: native.cap_height
 			bbox_x_min: native.bbox_x_min
 			bbox_y_min: native.bbox_y_min
 			bbox_x_max: native.bbox_x_max
 			bbox_y_max: native.bbox_y_max
 		}
-		face_index: native.face_index
-		weight: native.weight
-		italic: native.italic != 0
-		variations: variations
+		face_index:      native.face_index
+		weight:          native.weight
+		italic:          native.italic != 0
+		variations:      variations
 	}
 }
 

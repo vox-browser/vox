@@ -4309,7 +4309,11 @@ fn paint_color(serialized string, opacity f64) gg.Color {
 }
 
 fn (mut app BrowserApp) draw_portable_shadow(command layout.PaintCommand, page_x f32, page_y f32, scroll_y f64) {
-	bitmap := layout.rasterize_portable_shadow(command, f64(app.ctx.scale)) or {
+	chromium := $if macos {
+		app.ctx.native_rendering && app.document != unsafe { nil }
+			&& app.document.font_rendering_policy() == .chromium
+	} $else { false }
+	bitmap := layout.rasterize_portable_shadow_with_coverage(command, f64(app.ctx.scale), chromium) or {
 		app.js_messages << 'Shadow replay: ${err.msg()}'
 		return
 	}
@@ -4368,8 +4372,22 @@ fn native_draw_retained_glyph_run(command layout.PaintCommand, page_x f32, page_
 		} else {
 			native_replay_font_path(glyph_run.font())
 		}
+		smoothing := native_retained_font_smoothing(command.font_smoothing, glyph_run.font())
+		if !shadow_only && blur <= 0 {
+			if glyph_color.a == 0 {
+				return true
+			}
+			if draw_document_glyph_raster(glyphs, positions, font_path, glyph_run.font().face_index(),
+				glyph_run.font().point_size, glyph_run.font().weight, f32(command.glyph_translation_x),
+				f32(command.glyph_translation_y), [f32(matrix[0]), f32(matrix[1]), f32(matrix[2]),
+				f32(matrix[3]), f32(matrix[4]), f32(matrix[5])]!, page_x, page_y, f32(scroll_y),
+				canvas_width, canvas_height, u32(glyph_color.a) << 24 | u32(glyph_color.r) << 16 | u32(glyph_color.g) << 8 | u32(glyph_color.b),
+				smoothing) {
+				return true
+			}
+		}
 		unsafe {
-			return C.native_draw_document_glyph_run_srgb(&glyphs[0], &positions[0], glyphs.len, glyph_run.font().point_size, glyph_run.font().weight, int(glyph_run.face() == .emoji), f32(command.glyph_translation_x), f32(command.glyph_translation_y), f32(matrix[0]), f32(matrix[1]), f32(matrix[2]), f32(matrix[3]), f32(matrix[4]), f32(matrix[5]), page_x, page_y, f32(scroll_y), canvas_width, canvas_height, font_path, glyph_run.font().face_index(), glyph_color, blur, int(shadow_only), native_retained_font_smoothing(command.font_smoothing, glyph_run.font())) != 0
+			return C.native_draw_document_glyph_run_srgb(&glyphs[0], &positions[0], glyphs.len, glyph_run.font().point_size, glyph_run.font().weight, int(glyph_run.face() == .emoji), f32(command.glyph_translation_x), f32(command.glyph_translation_y), f32(matrix[0]), f32(matrix[1]), f32(matrix[2]), f32(matrix[3]), f32(matrix[4]), f32(matrix[5]), page_x, page_y, f32(scroll_y), canvas_width, canvas_height, font_path, glyph_run.font().face_index(), glyph_color, blur, int(shadow_only), smoothing) != 0
 		}
 	}
 	return false
@@ -6220,36 +6238,9 @@ fn (mut app BrowserApp) draw_command(source_command &layout.PaintCommand, page_x
 			app.ctx.scissor_rect(0, 0, app.ctx.width, app.ctx.height)
 		}
 		'paint_outer_box_shadow' {
-			shadow_geometry := command.box_shadow()
-			fill := app.paint_colors.color(command.color, command.opacity)
-			$if macos {
-				if app.ctx.native_rendering {
-					shadow := command.corner_radii
-					content := shadow_geometry.content_radii
-					// Skia transforms the local blur together with the shadow geometry.
-					set_native_chromium_paint_color(*command)
-					C.native_draw_outer_box_shadow_corners_srgb(f32(command.x), f32(command.y), f32(command.width), f32(command.height), f32(shadow.top_left.x), f32(shadow.top_left.y), f32(shadow.top_right.x), f32(shadow.top_right.y), f32(shadow.bottom_right.x), f32(shadow.bottom_right.y), f32(shadow.bottom_left.x), f32(shadow.bottom_left.y), f32(shadow_geometry.content_rect.x), f32(shadow_geometry.content_rect.y), f32(shadow_geometry.content_rect.width), f32(shadow_geometry.content_rect.height), f32(content.top_left.x), f32(content.top_left.y), f32(content.top_right.x), f32(content.top_right.y), f32(content.bottom_right.x), f32(content.bottom_right.y), f32(content.bottom_left.x), f32(content.bottom_left.y), f32(matrix[0]), f32(matrix[1]), f32(matrix[2]), f32(matrix[3]), f32(matrix[4]), f32(matrix[5]), page_x, page_y, f32(scroll_y), f32(app.ctx.width), f32(app.ctx.height), f32(command.blur), fill)
-					return
-				}
-			}
 			app.draw_portable_shadow(*command, page_x, page_y, scroll_y)
 		}
 		'paint_inner_box_shadow' {
-			shadow_geometry := command.box_shadow()
-			fill := app.paint_colors.color(command.color, command.opacity)
-			$if macos {
-				if app.ctx.native_rendering {
-					outer := command.corner_radii
-					inner := shadow_geometry.inner_radii
-					content := shadow_geometry.content_radii
-					clip := shadow_geometry.clip_radii
-					scale_x := math.sqrt(matrix[0] * matrix[0] + matrix[1] * matrix[1])
-					scale_y := math.sqrt(matrix[2] * matrix[2] + matrix[3] * matrix[3])
-					blur_scale := math.min(scale_x, scale_y)
-					C.native_draw_inner_box_shadow_corners_srgb(f32(command.x), f32(command.y), f32(command.width), f32(command.height), f32(outer.top_left.x), f32(outer.top_left.y), f32(outer.top_right.x), f32(outer.top_right.y), f32(outer.bottom_right.x), f32(outer.bottom_right.y), f32(outer.bottom_left.x), f32(outer.bottom_left.y), f32(shadow_geometry.inner_rect.x), f32(shadow_geometry.inner_rect.y), f32(shadow_geometry.inner_rect.width), f32(shadow_geometry.inner_rect.height), f32(inner.top_left.x), f32(inner.top_left.y), f32(inner.top_right.x), f32(inner.top_right.y), f32(inner.bottom_right.x), f32(inner.bottom_right.y), f32(inner.bottom_left.x), f32(inner.bottom_left.y), f32(shadow_geometry.content_rect.x), f32(shadow_geometry.content_rect.y), f32(shadow_geometry.content_rect.width), f32(shadow_geometry.content_rect.height), f32(content.top_left.x), f32(content.top_left.y), f32(content.top_right.x), f32(content.top_right.y), f32(content.bottom_right.x), f32(content.bottom_right.y), f32(content.bottom_left.x), f32(content.bottom_left.y), f32(clip.top_left.x), f32(clip.top_left.y), f32(clip.top_right.x), f32(clip.top_right.y), f32(clip.bottom_right.x), f32(clip.bottom_right.y), f32(clip.bottom_left.x), f32(clip.bottom_left.y), f32(matrix[0]), f32(matrix[1]), f32(matrix[2]), f32(matrix[3]), f32(matrix[4]), f32(matrix[5]), page_x, page_y, f32(scroll_y), f32(app.ctx.width), f32(app.ctx.height), f32(command.blur * blur_scale), fill)
-					return
-				}
-			}
 			app.draw_portable_shadow(*command, page_x, page_y, scroll_y)
 		}
 		'fill_rect' {

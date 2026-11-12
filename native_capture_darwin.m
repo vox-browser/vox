@@ -992,11 +992,230 @@ double native_display_device_pixel_ratio(void) {
 	return isfinite(scale) && scale > 0 ? scale : 1.0;
 }
 
+// Retained glyph runs name the exact face V shaped them with: either a font
+// file plus its collection index, or a key registered below for a matched
+// system face with variation coordinates. Replay must draw with that face;
+// glyph IDs are meaningless in any other font. cpuraster's CoreText services
+// own the registry, so its glyph masks and this fallback open the same face.
+#include "cpuraster/glyph_coretext.h"
+
 // Register a CoreText-selected face for retained glyph replay under `key`.
 int native_register_system_face(string key, string path, string postscript_name,
 	const uint32_t *axis_tags, const float *axis_values, int axis_count) {
-	(void)key; (void)path; (void)postscript_name; (void)axis_tags; (void)axis_values; (void)axis_count;
-	return 0;
+	NSString *key_string = native_capture_string(key);
+	NSString *path_string = native_capture_string(path);
+	NSString *name_string = native_capture_string(postscript_name);
+	if (key_string.length == 0 || path_string.length == 0) return 0;
+	return cpuraster_ct_register_face(key_string.UTF8String, path_string.fileSystemRepresentation,
+		name_string ? name_string.UTF8String : "", axis_tags, axis_values, axis_count);
+}
+
+// A CTFont for a retained run's face at `size`, or NULL when the face cannot
+// be opened.
+static CTFontRef native_replay_font(const char *font_path, int face_index, CGFloat size) CF_RETURNS_RETAINED {
+	if (font_path == NULL || *font_path == 0) return NULL;
+	int flags = 0;
+	CTFontRef base = (CTFontRef)cpuraster_ct_font_for_face(font_path, face_index, &flags);
+	if (base == NULL) return NULL;
+	CTFontRef font = CTFontCreateCopyWithAttributes(base, MAX(size, 0.0), NULL, NULL);
+	CFRelease(base);
+	return font;
+}
+
+// Retained text rasters (main.v's native_draw_retained_glyph_run()): cpuraster
+// draws a run's glyph masks into a device-pixel RGBA raster covering its
+// bounds, as the removed Skia bridge's leaf raster did. Opaque document text
+// blends over a copy of the page pixels it covers, as Blink's raster does,
+// and replaces them; other runs draw over transparency and Quartz blends the
+// result. `geometry` receives the raster's logical left/top, its device
+// width/height, whether it holds the backdrop, and its logical width/height
+// (seven values). Returns 0 when the
+// destination cannot take a raster, 2 when the run is clipped out, else 1.
+int native_text_raster_begin(float left, float top, float right, float bottom,
+	float canvas_width, float canvas_height, int font_smoothing, int32_t *geometry, float *scale_out) {
+	CGContextRef context = [[NSGraphicsContext currentContext] CGContext];
+	if (context == NULL || geometry == NULL || scale_out == NULL) return 0;
+	if (!isfinite(left) || !isfinite(top) || !isfinite(right) || !isfinite(bottom)) return 0;
+	int region_left = MAX(0, (int)floorf(left - 2.0f));
+	int region_top = MAX(0, (int)floorf(top - 2.0f));
+	int region_right = MIN((int)ceilf(canvas_width), (int)ceilf(right + 2.0f));
+	int region_bottom = MIN((int)ceilf(canvas_height), (int)ceilf(bottom + 2.0f));
+	if (region_right <= region_left || region_bottom <= region_top) return 2;
+	CGRect clip = CGContextGetClipBoundingBox(context);
+	if (CGRectIsNull(clip) || CGRectIsEmpty(clip)) return 2;
+	if (!CGRectIsInfinite(clip) && isfinite(clip.origin.x) && isfinite(clip.origin.y)
+		&& isfinite(clip.size.width) && isfinite(clip.size.height)) {
+		const double fringe = 2.0;
+		if (!(region_right > CGRectGetMinX(clip) - fringe && region_left < CGRectGetMaxX(clip) + fringe
+			&& region_bottom > canvas_height - CGRectGetMaxY(clip) - fringe
+			&& region_top < canvas_height - CGRectGetMinY(clip) + fringe)) return 2;
+	}
+	CGSize horizontal = CGContextConvertSizeToDeviceSpace(context, CGSizeMake(1.0, 0.0));
+	CGSize vertical = CGContextConvertSizeToDeviceSpace(context, CGSizeMake(0.0, 1.0));
+	double scale = MAX(hypot(horizontal.width, horizontal.height), hypot(vertical.width, vertical.height));
+	if (!isfinite(scale) || scale <= 0.0) scale = 1.0;
+	int width = MAX(1, (int)ceilf((float)(region_right - region_left) * (float)scale));
+	int height = MAX(1, (int)ceilf((float)(region_bottom - region_top) * (float)scale));
+	if ((int64_t)width * height > 64 * 1024 * 1024) return 0;
+	int backdrop = 0;
+	if ((font_smoothing & 16) && context == native_font_compositing_context
+		&& native_font_compositing_transparency_depth == 0
+		&& CGBitmapContextGetBitsPerPixel(context) == 32
+		&& CGBitmapContextGetAlphaInfo(context) == kCGImageAlphaPremultipliedLast
+		&& (CGBitmapContextGetBitmapInfo(context) & kCGBitmapByteOrderMask) == kCGBitmapByteOrder32Big
+		&& CGBitmapContextGetData(context) != NULL) {
+		CGAffineTransform ctm = CGContextGetCTM(context);
+		size_t x = (size_t)lround(region_left * scale), y = (size_t)lround(region_top * scale);
+		backdrop = ctm.a > 0 && ctm.d > 0 && ctm.b == 0 && ctm.c == 0 && ctm.tx == 0 && ctm.ty == 0
+			&& x + (size_t)width <= CGBitmapContextGetWidth(context)
+			&& y + (size_t)height <= CGBitmapContextGetHeight(context);
+	}
+	geometry[0] = region_left;
+	geometry[1] = region_top;
+	geometry[2] = width;
+	geometry[3] = height;
+	geometry[4] = backdrop;
+	geometry[5] = region_right - region_left;
+	geometry[6] = region_bottom - region_top;
+	*scale_out = (float)scale;
+	return 1;
+}
+
+// Copy the page pixels a backdrop raster covers (premultiplied RGBA rows).
+int native_text_raster_read_backdrop(uint8_t *pixels, int left, int top, int width, int height, float scale) {
+	CGContextRef context = [[NSGraphicsContext currentContext] CGContext];
+	if (context == NULL || pixels == NULL) return 0;
+	CGContextFlush(context);
+	const uint8_t *data = (const uint8_t *)CGBitmapContextGetData(context);
+	if (data == NULL) return 0;
+	size_t pitch = CGBitmapContextGetBytesPerRow(context);
+	size_t x = (size_t)lround(left * scale), y = (size_t)lround(top * scale);
+	for (int row = 0; row < height; ++row)
+		memcpy(pixels + (size_t)row * width * 4, data + (y + (size_t)row) * pitch + x * 4, (size_t)width * 4);
+	return 1;
+}
+
+// Composite a finished raster: a backdrop raster replaces its pixels under
+// the current clip, a transparent one blends over them.
+int native_text_raster_finish(const uint8_t *pixels, int left, int top, int width, int height,
+	int logical_width, int logical_height, float canvas_height, int backdrop) {
+	CGContextRef context = [[NSGraphicsContext currentContext] CGContext];
+	if (context == NULL || pixels == NULL) return 0;
+	CFDataRef data = CFDataCreate(kCFAllocatorDefault, pixels, (CFIndex)width * height * 4);
+	if (data == NULL) return 0;
+	CGDataProviderRef provider = CGDataProviderCreateWithCFData(data);
+	CFRelease(data);
+	if (provider == NULL) return 0;
+	CGColorSpaceRef space = CGColorSpaceCreateWithName(kCGColorSpaceSRGB);
+	CGImageRef image = CGImageCreate((size_t)width, (size_t)height, 8, 32, (size_t)width * 4, space,
+		(CGBitmapInfo)kCGImageAlphaPremultipliedLast | kCGBitmapByteOrder32Big, provider, NULL, false,
+		kCGRenderingIntentDefault);
+	CGColorSpaceRelease(space);
+	CGDataProviderRelease(provider);
+	if (image == NULL) return 0;
+	CGRect rect = CGRectMake(left, canvas_height - (float)(top + logical_height),
+		logical_width, (float)logical_height);
+	CGContextSaveGState(context);
+	if (backdrop) CGContextSetBlendMode(context, kCGBlendModeCopy);
+	CGContextSetInterpolationQuality(context, kCGInterpolationNone);
+	CGContextDrawImage(context, rect, image);
+	CGContextRestoreGState(context);
+	CGImageRelease(image);
+	return 1;
+}
+
+// The native boundary supplies the destination pixels; geometry and GPU
+// rasterization belong to V's gg.canvas adapter.
+#include "native/include/native_graphite_bridge.h"
+extern int vox_draw_document_shape_pixels(uint8_t*, int, int, int, int, int, int, VoxGraphiteShape*);
+VOX_NATIVE_STATE VoxGraphiteShape native_v_shape_state;
+
+static int native_try_v_rounded_rect(float x, float y, float width, float height,
+    const float* radii, const float* matrix, float canvas_width, float canvas_height,
+    gg__Color color, int fill, float thickness, int anti_alias,
+    float page_x, float page_y, float scroll_y) {
+    if ([[NSGraphicsContext currentContext] CGContext] != native_font_compositing_context) return 0;
+    VoxGraphiteShape shape = native_v_shape_state;
+    shape.rect[0] = x; shape.rect[1] = y; shape.rect[2] = width; shape.rect[3] = height;
+    memcpy(shape.rect + 4, radii, 8 * sizeof(float));
+    shape.red = color.r; shape.green = color.g; shape.blue = color.b; shape.alpha = color.a;
+    shape.fill = fill; shape.thickness = thickness; shape.anti_alias = anti_alias;
+    shape.force_msaa = 1;
+    float left = INFINITY, top = INFINITY, right = -INFINITY, bottom = -INFINITY;
+    float pad = fill == 0 ? fmaxf(thickness, 0) * .5f : 0;
+    for (int i = 0; i < 4; ++i) {
+        float px = x + ((i & 1) ? width + pad : -pad);
+        float py = y + ((i & 2) ? height + pad : -pad);
+        float dx = matrix[0]*px + matrix[2]*py + matrix[4];
+        float dy = matrix[1]*px + matrix[3]*py + matrix[5];
+        left=fminf(left,dx); top=fminf(top,dy); right=fmaxf(right,dx); bottom=fmaxf(bottom,dy);
+    }
+    int32_t geometry[7]; float scale;
+    int prepared = native_text_raster_begin(left, top, right, bottom, canvas_width, canvas_height,
+        16, geometry, &scale);
+    if (prepared == 2) return 1;
+    if (prepared != 1) return 0;
+    int w=geometry[2], h=geometry[3], backdrop=geometry[4];
+    size_t size=(size_t)w*h*4;
+    uint8_t* pixels=calloc(size,1);
+    if (!pixels) return 0;
+    if (backdrop && !native_text_raster_read_backdrop(pixels,geometry[0],geometry[1],w,h,scale)) {
+        free(pixels); return 0;
+    }
+    float sx=(float)w/geometry[5], sy=(float)h/geometry[6];
+    float cropped[9]={matrix[0]*sx,matrix[2]*sx,(matrix[4]-geometry[0])*sx,
+        matrix[1]*sy,matrix[3]*sy,(matrix[5]-geometry[1])*sy,0,0,1};
+    memcpy(shape.matrix,cropped,sizeof(cropped));
+    int drawn=vox_draw_document_shape_pixels(pixels,w,h,w*4,backdrop,
+        (int)lround((geometry[0]-page_x)*scale),
+        (int)lround((geometry[1]-page_y+scroll_y)*scale),&shape);
+    if (drawn) drawn=native_text_raster_finish(pixels,geometry[0],geometry[1],w,h,
+        geometry[5],geometry[6],canvas_height,backdrop);
+    free(pixels);
+    return drawn;
+}
+
+extern int vox_draw_document_path_pixels(uint8_t*, int, int, int, int, VoxGraphitePath*);
+static int native_try_v_svg_path(CGPathRef path, const float* segments, int count, int even_odd,
+    const float* matrix, float canvas_width, float canvas_height, gg__Color color,
+    const float* components, int stroke, float stroke_width, int cap, int join,
+    float miter, int non_scaling) {
+    if ([[NSGraphicsContext currentContext] CGContext] != native_font_compositing_context) return 0;
+    CGRect bounds=CGPathGetPathBoundingBox(path);
+    float pad=stroke ? fmaxf(stroke_width,0)*fmaxf(miter,1) : 0;
+    float left=INFINITY,top=INFINITY,right=-INFINITY,bottom=-INFINITY;
+    for(int i=0;i<4;++i) {
+        float x=bounds.origin.x+((i&1)?bounds.size.width+pad:-pad);
+        float y=bounds.origin.y+((i&2)?bounds.size.height+pad:-pad);
+        float dx=matrix[0]*x+matrix[2]*y+matrix[4],dy=matrix[1]*x+matrix[3]*y+matrix[5];
+        left=fminf(left,dx);top=fminf(top,dy);right=fmaxf(right,dx);bottom=fmaxf(bottom,dy);
+    }
+    int32_t geometry[7];float scale;
+    int prepared=native_text_raster_begin(left,top,right,bottom,canvas_width,canvas_height,16,geometry,&scale);
+    if(prepared==2)return 1;
+    if(prepared!=1)return 0;
+    int w=geometry[2],h=geometry[3],backdrop=geometry[4];
+    uint8_t* pixels=calloc((size_t)w*h*4,1);
+    if(!pixels)return 0;
+    if(backdrop&&!native_text_raster_read_backdrop(pixels,geometry[0],geometry[1],w,h,scale)){
+        free(pixels);return 0;
+    }
+    float sx=(float)w/geometry[5],sy=(float)h/geometry[6];
+    VoxGraphitePath draw={0};
+    float cropped[9]={matrix[0]*sx,matrix[2]*sx,(matrix[4]-geometry[0])*sx,
+        matrix[1]*sy,matrix[3]*sy,(matrix[5]-geometry[1])*sy,0,0,1};
+    memcpy(draw.matrix,cropped,sizeof(cropped));
+    draw.segments=segments;draw.segment_count=count;draw.even_odd=even_odd;
+    draw.red=color.r;draw.green=color.g;draw.blue=color.b;draw.alpha=color.a;
+    draw.stroke=stroke;draw.stroke_width=stroke_width;draw.line_cap=cap;draw.line_join=join;
+    draw.miter_limit=miter;draw.non_scaling_stroke=non_scaling;
+    draw.opacity=1;
+    draw.has_float_color=components!=NULL;
+    if(components)memcpy(draw.float_color,components,4*sizeof(float));
+    int drawn=vox_draw_document_path_pixels(pixels,w,h,w*4,backdrop,&draw);
+    if(drawn)drawn=native_text_raster_finish(pixels,geometry[0],geometry[1],w,h,
+        geometry[5],geometry[6],canvas_height,backdrop);
+    free(pixels);return drawn;
 }
 
 static void native_configure_glyph_rasterization(CGContextRef context, int font_smoothing) {
@@ -1029,15 +1248,16 @@ static int native_draw_retained_glyph_run(CGContextRef context,
 		|| glyph_count <= 0) {
 		return 0;
 	}
-	CGFontRef graphics_font = emoji_face
-		? native_deferred_font_resolve(&native_emoji_font, native_load_emoji_font)
-		: (!font_path || !*font_path ? native_document_graphics_font(font_weight) : NULL);
-	// Explicit-face Skia replay uses its own font bytes. Open the configured
-	// CoreGraphics fallback only when that replay could not draw the run.
-	if (!graphics_font && !emoji_face) graphics_font = native_document_graphics_font(font_weight);
-	if (!graphics_font) return 0;
-	CTFontRef font = CTFontCreateWithGraphicsFont(graphics_font,
-		MAX(font_size, 0.0f), NULL, NULL);
+	// Draw with the exact face the run was shaped with. The configured
+	// document font remains the fallback for runs without a face.
+	CTFontRef font = emoji_face ? NULL : native_replay_font(font_path, face_index, font_size);
+	if (font == NULL) {
+		CGFontRef graphics_font = emoji_face
+			? native_deferred_font_resolve(&native_emoji_font, native_load_emoji_font)
+			: native_document_graphics_font(font_weight);
+		if (!graphics_font) return 0;
+		font = CTFontCreateWithGraphicsFont(graphics_font, MAX(font_size, 0.0f), NULL, NULL);
+	}
 	if (font == NULL) {
 		return 0;
 	}
@@ -1157,7 +1377,7 @@ int native_draw_document_glyph_run_srgb(const uint16_t *glyphs,
 	CGContextRef context = [[NSGraphicsContext currentContext] CGContext];
 	NSString *font_path = native_capture_string(font_path_value);
 	CGColorRef cg_color = native_srgb_color(color);
-	int did_draw = native_draw_retained_glyph_run(context, [font_path fileSystemRepresentation], face_index, glyphs, positions, glyph_count,
+	int did_draw = native_draw_retained_glyph_run(context, [font_path UTF8String], face_index, glyphs, positions, glyph_count,
 		font_size, font_weight, emoji_face, baseline_x, baseline_y, transform_a, transform_b,
 		transform_c, transform_d, transform_e, transform_f, page_x, page_y,
 		scroll_y, canvas_width, canvas_height, cg_color, blur, shadow_only,
@@ -1518,6 +1738,16 @@ void native_draw_svg_path_srgb(const float *data, int segment_count, int even_od
 	float resolved_stroke_width = non_scaling_stroke && native_font_compositing_context == NULL
 		? stroke_width / host_scale + 2.0f / 512.0f : stroke_width;
 	CGMutablePathRef path = native_create_path_from_data(data, segment_count);
+    if (dash_count == 0 && !(has_fill && has_stroke)) {
+        const float matrix[6]={transform_a,transform_b,transform_c,transform_d,
+            page_x+transform_e,page_y-scroll_y+transform_f};
+        if(native_try_v_svg_path(path,data,segment_count,even_odd,matrix,canvas_width,canvas_height,
+            has_stroke?stroke_color:fill_color,has_stroke?stroke_components:fill_components,
+            has_stroke,stroke_width,line_cap,line_join,miter_limit,non_scaling_stroke)) {
+            CGPathRelease(path);return;
+        }
+    }
+
 	CGAffineTransform to_canvas = CGAffineTransformMake(transform_a, -transform_b,
 		transform_c, -transform_d, page_x + transform_e,
 		canvas_height - page_y + scroll_y - transform_f);
@@ -2476,17 +2706,21 @@ void native_set_chromium_msaa_grid(const int *tiles, int count, int tile_width,
 
 // Whether the next native rounded rectangle can draw an underlay in its pass.
 int native_rounded_rect_underlay_supported(void) {
-	return 0;
+	return 1;
 }
 
 // The filled rounded rectangle, as x, y, width, height and four corner radius
 // pairs, that the next native rounded rectangle draws first in its own pass.
 void native_set_rounded_rect_underlay(const float *rect, gg__Color color) {
-	(void)rect; (void)color;
+    native_v_shape_state.has_underlay = rect != NULL;
+    if (rect) memcpy(native_v_shape_state.underlay_rect,rect,12*sizeof(float));
+    native_v_shape_state.underlay_rgba[0]=color.r; native_v_shape_state.underlay_rgba[1]=color.g;
+    native_v_shape_state.underlay_rgba[2]=color.b; native_v_shape_state.underlay_rgba[3]=color.a;
 }
 
 void native_set_rounded_rect_underlay_color(const float *color) {
-	(void)color;
+    native_v_shape_state.has_float_underlay_color = color != NULL;
+    if (color) memcpy(native_v_shape_state.underlay_float_color,color,4*sizeof(float));
 }
 
 void native_set_image_background(gg__Color color) {
@@ -2498,13 +2732,21 @@ void native_set_image_border(float const* rect, float width, gg__Color color) {
 
 // Insets retained by a single visible rounded border, including transparent sides.
 void native_set_rounded_border_widths(const float *widths) {
-    (void)widths;
+    if (widths) memcpy(native_v_shape_state.border_widths,widths,4*sizeof(float));
 }
 
 // Rectangles clipped out of the next anti-aliased rectangle, as left, top,
 // right and bottom; a count of zero clears them.
 void native_set_rect_clip_outs(const double *rects, int count) {
-	(void)rects; (void)count;
+    free((void*)native_v_shape_state.clip_outs);
+    native_v_shape_state.clip_outs = NULL;
+    native_v_shape_state.clip_out_count = 0;
+    if (!rects || count <= 0 || count > 4096) return;
+    float* copy = malloc((size_t)count * 4 * sizeof(float));
+    if (!copy) return;
+    for (int i = 0; i < count * 4; ++i) copy[i] = (float)rects[i];
+    native_v_shape_state.clip_outs = copy;
+    native_v_shape_state.clip_out_count = count;
 }
 
 void native_set_css_gradient_tile_bounds(const float *bounds) {
@@ -4526,7 +4768,7 @@ int native_add_background_glyph_clip_run(const uint16_t *glyphs,
 	CGColorRef black = CGColorCreateGenericRGB(0.0, 0.0, 0.0, 1.0);
 	NSString *font_path = native_capture_string(font_path_value);
 	int did_draw = native_draw_retained_glyph_run(native_background_text_clip_build_context,
-		[font_path fileSystemRepresentation], face_index, glyphs, positions, glyph_count, font_size, font_weight, emoji_face, baseline_x,
+		[font_path UTF8String], face_index, glyphs, positions, glyph_count, font_size, font_weight, emoji_face, baseline_x,
 		baseline_y, transform_a, transform_b, transform_c, transform_d,
 		transform_e, transform_f, page_x, page_y, scroll_y,
 		canvas_width, canvas_height,
@@ -5002,6 +5244,8 @@ void native_add_image_viewport_clip(float x, float y, float width, float height,
 }
 
 void native_set_unrounded_paint_color(const float *color) {
+    native_v_shape_state.has_float_color = color != NULL;
+    if (color) memcpy(native_v_shape_state.float_color,color,4*sizeof(float));
 }
 
 int native_plain_rect_prefetch_enabled(void) {
@@ -5063,6 +5307,13 @@ void native_draw_rounded_rect_srgb(float x, float y, float width, float height,
 	if (context == NULL) {
 		return;
 	}
+    const float radii[8]={top_left_x,top_left_y,top_right_x,top_right_y,
+        bottom_right_x,bottom_right_y,bottom_left_x,bottom_left_y};
+    const float matrix[6]={transform_a,transform_b,transform_c,transform_d,
+        page_x+transform_e,page_y-scroll_y+transform_f};
+    if (!native_quartz_scrollbar_leaves && native_try_v_rounded_rect(x,y,width,height,radii,matrix,
+        canvas_width,canvas_height,color,fill,thickness,anti_alias,page_x,page_y,scroll_y)) return;
+
 	CGPathRef local_path = native_create_corner_rounded_rect_path(x, y, width, height,
 		top_left_x, top_left_y, top_right_x, top_right_y, bottom_right_x,
 		bottom_right_y, bottom_left_x, bottom_left_y);
