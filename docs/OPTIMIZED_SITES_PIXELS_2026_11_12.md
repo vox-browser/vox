@@ -555,3 +555,29 @@ all fixture/reference paths before launching; the final complete production
 command and every browser/guard exit pass. Completed job binaries and generated
 C are removed from `Build/`; raw commands, identities, PNGs and receipts are
 retained locally.
+
+## Tagged PNG color conversion
+
+`7defc6a8c` converts supported legacy PNG gamma/chromaticity metadata into an
+8-bit sRGB texture before final filtering, then regenerates its GPU mip levels.
+The unchanged Mastodon image on vlang.io becomes exact: its 24×24 crop improves
+from 475 differing pixels to zero. The unchanged whole-page archive improves
+from 4,144 to **3,669 differing pixels**, agreeing in two fresh diagnostic
+captures. Its JPEG icon, text mask and decorative shadows still differ.
+
+The new legacy-gamma PNG diagnostic is exact twice against two independently
+agreeing Brave references. Focused profile parsing, GPU conversion, odd-sized
+GPU mips, rounded clipping and cache/ownership checks pass. The converted upload
+also matches the independently captured former renderer's bytes exactly;
+alpha and source bytes remain unchanged. Wikipedia, Lobsters, ordinary
+PNG/gradient controls and image/poster resource reuse remain exact twice.
+GitHub remains at 38,404 differing pixels with all 33 row identities preserved.
+
+These are **diagnostic results**, from an unoptimized browser built with the
+current compiler and its matching libraries. Production validation is pending:
+the shared completed bundle predates this correction. Later managed build
+attempts failed with a mismatched shared compiler/library installation, then
+with compiler-manifest verification; they did not replace the completed bundle.
+The fail-fast compiler probe in `2cd7046ea` rejects the mismatched installation
+without falling back to an older compiler. All attempts and their actual exits
+remain local under `docs/performance/vlang-gradients-20261112/`.
