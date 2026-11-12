@@ -681,3 +681,44 @@ preflight-failed attempts remain alongside the completed results locally under
 `docs/performance/vlang-gradients-20261112/`. Completed job directories, generated
 C, diagnostic executables and guard files are removed from `Build/` after their
 evidence is retained. **The all-site zero-error gate remains open.**
+
+## Root baselines in reused flex measurements
+
+`08cbf34dd` fixes the largest remaining GitHub layout discrepancy. A column-flex
+ancestor caused measured flex geometry to be promoted into final layout. The
+cache restored descendants but cleared the flex root's published baselines.
+Synthesizing them again through the descendants produced a different result,
+expanding the header from Brave's 69px to 69.75px and shifting the directory.
+The cache now owns and restores both horizontal and vertical baseline sets;
+root offsets and percentage bases remain owned by the current caller.
+
+Diagnostic executable
+`1b19003f1fe81cf29758d86821cb5eb37e7498fd9778f004634609b8dc5a9324`
+reduces the unchanged GitHub archive from **38,404 to 1,083 differing pixels**
+in two fresh captures, with every one of the 33 row identities preserved.
+Wikipedia and Lobsters remain exact twice; vlang.io remains at 3,250 twice.
+The startup smoke check, all capture/content/identity checks and the complete
+comparison driver exit zero. This is an unoptimized diagnostic executable;
+production validation awaits the managed post-commit rebuild.
+
+The new focused test confirms that row and column flex cache hits restore the
+measured baselines instead of stale caller values, and verifies borrowed line
+storage to establish that the cache was actually used. The existing committed
+geometry test now compares baselines with its measured producer and uncached
+oracle. These tests, the cache-miss checks and the external-height dependency
+checks pass with arena poisoning under a 3 GiB runtime guard. Compilation uses
+the 12 GiB guard and peaks near 6.2 GiB. The selected root test harness includes
+the layout implementation files and focused tests explicitly; generated test
+calls were checked so an empty selector cannot supply a false pass.
+
+Retained diagnostics narrow the trigger from the whole page to its column-flex
+ancestor chain. Individually disabling committed flex measurement reuse or
+unused-height matching restores the 69px header; disabling grid or inline reuse
+does not. Moving the grid baseline reset and retaining descendant line boxes
+both leave GitHub at 38,404 twice, so those candidates were reverted. Initial
+standalone test builds reached the memory guard; an incomplete module selection
+was stopped after a compiler sample identified unknown-type diagnostics, and
+an empty test selector was corrected before executing the final tests. All
+attempts remain local under `docs/performance/vlang-gradients-20261112/`.
+The original references and zero-error gate are unchanged; GitHub still fails
+at 1,083 pixels and the all-site task remains open.
