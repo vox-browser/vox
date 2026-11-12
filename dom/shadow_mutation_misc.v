@@ -1207,7 +1207,7 @@ pub fn (mut document Document) notify_mutation_observers() {
 	// observed subtree happened to mutate first.
 	// 3. Empty the surrounding agent's pending mutation observers.
 	mut notify_set := document.pending_mutation_observers.clone()
-	notify_set.sort(a.creation_index_ < b.creation_index_)
+	sort_pending_mutation_observers(mut notify_set)
 	document.pending_mutation_observers.clear()
 
 	// 4. Let signalSet be a clone of the surrounding agent's signal slots.
