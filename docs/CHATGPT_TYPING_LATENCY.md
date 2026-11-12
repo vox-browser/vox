@@ -218,6 +218,13 @@ needs a fresh profile. The baseline production executable
 passes a fresh guarded headless startup, but predates these follow-ups. The
 first automatic rebuild failed its input seal when another session changed
 `native_capture_darwin.m`; later requests remain managed by the shared worker.
+A later completed bundle, receipt `20261112-065939-9acacb30`, executable
+`5dffba214de0bca57929036f8672940360567380131c140c2f6f99ef20f73f6b`,
+also passes a fresh guarded startup. Its parsed manifest contains an earlier
+paint synchronizer and omits `focused_control_paint_preparation.v`, so it
+cannot validate the final caret fix. A subsequent build also encountered the
+transient immutable raster-field assignment. Validation of all final changes
+in a production bundle remains pending.
 No live typing latency or instruction savings are claimed, and the measured
 broad-verification savings counter is unchanged. Running-animation style work
 and paint-tree projection remain open for attribution on a current production
