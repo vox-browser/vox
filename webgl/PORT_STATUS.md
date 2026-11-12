@@ -11,7 +11,9 @@ transfer slice passes native ARC/MRC/sanitizer checks and three V cases per GC
 mode without ANGLE dependencies. ESSL 1.00/3.00 shader pairs now validate/link,
 lower through SPIR-V/MSL, and compile as actual Metal functions; resource names
 and uniform/matrix layouts have focused coverage in both GC modes. Browser
-dispatch and drawing are not migrated;
+dispatch is not migrated. Initialized GPU buffers, bounded vertex streams,
+float/matrix uniforms and array/instanced draws now have exact Metal pixel
+coverage, including asymmetric GL row orientation;
 the production WebGL implementation still uses ANGLE. See the
 [migration status and next slices](../docs/WEBGL_METAL_MIGRATION.md).
 

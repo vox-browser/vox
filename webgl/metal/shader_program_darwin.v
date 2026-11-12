@@ -25,6 +25,7 @@ pub struct ShaderProgram {
 mut:
 	handle voidptr
 	owner &DrawingBuffer
+	uniforms []UniformStorage
 }
 
 // context_version is the GLES context version: 2 for WebGL1, 3 for WebGL2.
@@ -40,7 +41,12 @@ pub fn ShaderProgram.compile(owner &DrawingBuffer, vertex string, fragment strin
 		message := unsafe { cstring_to_vstring(&char(log.data)).clone() }
 		return error(if message.len > 0 { message } else { 'Metal shader allocation failed' })
 	}
-	return &ShaderProgram{handle: handle, owner: owner}
+	mut program := &ShaderProgram{handle: handle, owner: owner}
+	program.initialize_uniforms() or {
+		program.close()
+		return err
+	}
+	return program
 }
 
 pub fn (program &ShaderProgram) source(stage ShaderStage) !string {
@@ -79,6 +85,8 @@ pub fn (program &ShaderProgram) resources() ![]ShaderResource {
 }
 
 pub fn (mut program ShaderProgram) close() {
+	for mut uniform in program.uniforms { uniform.buffer.close() }
+	program.uniforms.clear()
 	C.vox_metal_program_destroy(program.handle)
 	program.handle = unsafe { nil }
 }

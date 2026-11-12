@@ -34,7 +34,7 @@ def main():
                     *['-lspirv-cross-' + name for name in ['c', 'msl', 'cpp', 'hlsl', 'reflect', 'glsl', 'core']], '-lc++']
     pins = {str(path): digest(path) for path in inputs}
     report = dict(pins=pins, jobs=[], passed=False)
-    for suite in ['drawing_buffer', 'shader_program']:
+    for suite in ['drawing_buffer', 'shader_program', 'render']:
         for mode, flags in [('arc', ['-fobjc-arc', '-O2']),
                             ('mrc', ['-fno-objc-arc', '-O2']),
                             ('sanitized', ['-fobjc-arc', '-O1', '-g', '-fsanitize=address,undefined'])]:

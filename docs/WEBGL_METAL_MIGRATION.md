@@ -46,6 +46,21 @@ three V cases pass with default GC and `-gc none`. No ANGLE library is loaded.
 Apple's shader compiler can indirectly load system OpenGL framework images;
 this package calls no OpenGL API and has no direct OpenGL dependency.
 
+## Completed: buffers and array/instanced drawing
+
+`metal.GPUBuffer` allocates zeroed shared GPU storage and bounds every CPU
+read/write. `DrawingBuffer.draw` validates stream ownership, locations, strides,
+divisors and complete vertex/instance ranges before native encoding. It builds
+Metal vertex descriptors and render pipelines, uploads reflected float/vector/
+matrix/array uniforms with their actual padding, and submits array/instanced
+primitives. Missing resource bindings and out-of-range draws fail explicitly.
+
+Native ARC/MRC/sanitizer checks and three focused V cases in both GC modes pass.
+Exact 8x8 pixels cover matrix/color uniforms and instanced streams; an asymmetric
+`gl_FragCoord.y` test establishes raw WebGL row orientation. This slice is
+synchronous and compiles a pipeline per draw. Textures, render state and browser
+dispatch are still pending; these tests do not establish complete WebGL parity.
+
 ## Validation
 
 On 2026-11-12, native GPU tests passed with ARC, manual reference counting and
