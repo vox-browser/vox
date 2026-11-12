@@ -6,6 +6,7 @@ import json
 import os
 from pathlib import Path
 import shlex
+import select
 import subprocess
 import sys
 
@@ -16,7 +17,34 @@ def digest(path):
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
+def host_runtime(arguments):
+    # Own and reap Xvfb explicitly: xvfb-run sends SIGTERM without waiting,
+    # which can leave its server alive past the runtime guard's endpoint.
+    read_fd, write_fd = os.pipe()
+    server = subprocess.Popen(['Xvfb', '-displayfd', str(write_fd), '-screen', '0',
+                               '640x480x24', '-nolisten', 'tcp'], pass_fds=(write_fd,),
+                              stdout=subprocess.DEVNULL)
+    os.close(write_fd)
+    try:
+        if not select.select([read_fd], [], [], 10)[0]:
+            raise RuntimeError('Xvfb did not publish its display')
+        display = os.read(read_fd, 64).decode().strip()
+        if not display.isdigit():
+            raise RuntimeError('Xvfb failed to initialize')
+        return subprocess.run(arguments, env=dict(os.environ, DISPLAY=':' + display)).returncode
+    finally:
+        os.close(read_fd)
+        server.terminate()
+        try:
+            server.wait(timeout=10)
+        except subprocess.TimeoutExpired:
+            server.kill()
+            server.wait()
+
+
 def main():
+    if len(sys.argv) > 1 and sys.argv[1] == '--host-runtime':
+        return host_runtime(sys.argv[2:])
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--output', required=True, type=Path)
     args = parser.parse_args()
@@ -45,7 +73,7 @@ def main():
             runtime = [str(binary)]
             runtime_environment = dict(environment)
             if fixture != 'headless':
-                runtime = ['xvfb-run', '-a', str(binary)] + (['--host-only'] if fixture == 'host-only' else [])
+                runtime = [sys.executable, str(Path(__file__).resolve()), '--host-runtime', str(binary)] + (['--host-only'] if fixture == 'host-only' else [])
                 runtime_environment['LSAN_OPTIONS'] = 'suppressions=' + str(ROOT / 'tools/native_gles_glx.lsan-suppressions')
             for phase, invocation in [('compile', command), ('runtime', runtime)]:
                 job_label = label + '-' + phase

@@ -38,7 +38,13 @@ int main(int argc,char **argv) {
     }
     glEnable(0xdead); /* A window error must remain outside the WebGL queue. */
     assert(vox_gl_get_error()==GL_NO_ERROR);assert(glGetError()==GL_INVALID_ENUM);
-    vox_egl_destroy(one);preserved();vox_egl_destroy(two);preserved();
+    assert(vox_egl_make_current(two));
+    vox_egl_destroy(one);preserved();
+    glXMakeCurrent(display,None,NULL);
+    /* After the host releases its context, service calls still bind the last
+     * selected WebGL context rather than silently executing without one. */
+    GLint viewport[4];vox_gl_int_parameter(GL_VIEWPORT,viewport);assert(viewport[2]==2 && viewport[3]==2);
+    vox_egl_destroy(two);
     assert(glGetError()==GL_NO_ERROR);
     }
     glXMakeCurrent(display,None,NULL);glXDestroyContext(display,host);

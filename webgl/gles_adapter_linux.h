@@ -28,8 +28,9 @@ static VoxGLESCall vox_gles_begin_call(void) {
     if(call.context) {
         call.display=glXGetCurrentDisplay();call.draw=glXGetCurrentDrawable();call.read=glXGetCurrentReadDrawable();
         glXMakeContextCurrent(call.display,None,None,NULL);
-        if(vox_gles_current)eglMakeCurrent(vox_gles_current->display,EGL_NO_SURFACE,EGL_NO_SURFACE,vox_gles_current->context);
     }
+    if(vox_gles_current && eglGetCurrentContext()!=vox_gles_current->context)
+        eglMakeCurrent(vox_gles_current->display,EGL_NO_SURFACE,EGL_NO_SURFACE,vox_gles_current->context);
     return call;
 }
 static void vox_gles_end_call(VoxGLESCall *call) {
