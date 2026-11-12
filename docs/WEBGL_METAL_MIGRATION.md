@@ -141,6 +141,18 @@ and structured-uniform reflection still require browser conformance coverage.
 
 ## Validation
 
+WebGL texture bindings, pixel uploads/subimages, immutable storage, layer
+selection, copies and mip generation now use the V service. Sampling assembles
+complete GPU mip/cube/array images, validates sampler types and feedback, and
+uses independent sampler objects. Color framebuffer/renderbuffer ownership,
+MRT draws, indexed clears, typed readback and PBO packing are connected.
+Ten focused public-context cases pass in both GC modes, including signed/
+unsigned 32-bit clears/readback and unclamped float attachment values. The
+standalone suite passes 34 V cases per mode and all 18 native fixture/mode runs;
+native coverage now includes real MRT outputs and visibility buffers.
+Depth/stencil user attachments, compressed uploads, blits, queries and transform
+feedback remain unfinished in the service.
+
 Metal sampler objects now preserve independent filtering, mip/LOD, wrap,
 comparison and anisotropy state. One draw can bind a texture through different
 samplers. The V service creates, binds, queries and deletes sampler records and

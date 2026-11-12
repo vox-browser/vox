@@ -10,6 +10,7 @@ typedef struct {
     uint32_t kind, stage, location, binding, secondary_binding;
     uint32_t offset, array_stride, matrix_stride, base_type, rows, columns, array_length;
     uint64_t byte_size;
+    uint32_t image_dimension,image_arrayed,image_depth,image_scalar_type;
 } VoxMetalShaderResource;
 
 typedef struct {
@@ -176,11 +177,18 @@ static int vox_metal_reflect_resources(VoxMetalTranslatedProgram* program, spvc_
             if (kinds[k] != SPVC_RESOURCE_TYPE_STAGE_INPUT && resource.binding == UINT32_MAX) continue;
             spvc_type type = spvc_compiler_get_type_handle(compiler, item->type_id);
             if (!vox_metal_reflect_type(type, &resource)) return 0;
+            if (kinds[k] == SPVC_RESOURCE_TYPE_SAMPLED_IMAGE || kinds[k] == SPVC_RESOURCE_TYPE_SEPARATE_IMAGE) {
+                resource.image_dimension=spvc_type_get_image_dimension(type);
+                resource.image_arrayed=spvc_type_get_image_arrayed(type);
+                resource.image_depth=spvc_type_get_image_is_depth(type);
+                spvc_type scalar=spvc_compiler_get_type_handle(compiler,spvc_type_get_image_sampled_type(type));
+                resource.image_scalar_type=spvc_type_get_basetype(scalar);
+            }
             if (kinds[k] == SPVC_RESOURCE_TYPE_UNIFORM_BUFFER) {
                 spvc_type structure = spvc_compiler_get_type_handle(compiler, item->base_type_id);
                 size_t size;
                 if (spvc_compiler_get_declared_struct_size(compiler, structure, &size) != SPVC_SUCCESS) return 0;
-                resource.byte_size = size;
+                resource.byte_size = (size+15)&~(size_t)15;
                 char const* block_name = spvc_compiler_get_name(original_names, item->base_type_id);
                 if (!block_name || !*block_name) block_name = spvc_compiler_get_name(original_names, item->id);
                 if (!vox_metal_append_resource(program, resource, block_name)) return 0;

@@ -172,6 +172,24 @@ static void* vox_metal_texture_attachment(void* handle,unsigned level,unsigned s
     return view;
 }
 
+static int vox_metal_texture_copy(void* destination_handle,unsigned destination_level,unsigned destination_slice,unsigned dx,unsigned dy,unsigned dz,
+    void* source_handle,unsigned source_level,unsigned source_slice,unsigned sx,unsigned sy,unsigned sz,unsigned width,unsigned height,unsigned depth)
+{
+    VoxMetalTexture* destination=destination_handle;VoxMetalTexture* source=source_handle;
+    if (!destination || !source || destination->storage.device!=source->storage.device) return 0;
+    id<MTLTexture> from=(__bridge id<MTLTexture>)source->storage.texture,to=(__bridge id<MTLTexture>)destination->storage.texture;
+    if (!from || !to || from==to || from.pixelFormat!=to.pixelFormat || from.sampleCount!=1 || to.sampleCount!=1) return 0;
+    @autoreleasepool {
+        id<MTLCommandBuffer> command=[(__bridge id<MTLCommandQueue>)source->storage.queue commandBuffer];
+        id<MTLBlitCommandEncoder> encoder=[command blitCommandEncoder];
+        if (!command || !encoder) return 0;
+        [encoder copyFromTexture:from sourceSlice:source_slice sourceLevel:source_level sourceOrigin:MTLOriginMake(sx,sy,sz) sourceSize:MTLSizeMake(width,height,depth)
+            toTexture:to destinationSlice:destination_slice destinationLevel:destination_level destinationOrigin:MTLOriginMake(dx,dy,dz)];
+        [encoder endEncoding];[command commit];[command waitUntilCompleted];
+        return command.status==MTLCommandBufferStatusCompleted;
+    }
+}
+
 static int vox_metal_texture_mipmaps(void* handle)
 {
     VoxMetalTexture* resource=handle;

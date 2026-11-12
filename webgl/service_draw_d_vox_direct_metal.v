@@ -72,7 +72,8 @@ fn (mut context MetalServiceContext) draw(mode u32,first int,count int,instances
     if indexed && (offset<0 || offset%i64(index_width)!=0) { metal_service_error(invalid_operation); return }
     object:=context.objects[context.current_program] or { metal_service_error(invalid_operation); return }
     if !object.linked || object.program==unsafe { nil } { metal_service_error(invalid_operation); return }
-    if !context.surface { metal_service_error(invalid_framebuffer_operation); return }
+    mut framebuffer_view:=context.framebuffer_view(framebuffer) or { context.last_failure=err.msg();return }
+    defer { framebuffer_view.close() }
     mut vao:=context.vao()
     mut maximum:=u64(first)+u64(if count>0 { count-1 } else { 0 })
     mut indices:=?metal.IndexBinding(none)
@@ -158,7 +159,10 @@ fn (mut context MetalServiceContext) draw(mode u32,first int,count int,instances
     }
     blocks:=context.uniform_block_bindings(object) or { context.last_failure=err.msg();return }
     defer { unsafe { blocks.free() } }
-    context.target.draw_with_options(object.program,streams,primitive,draw_first,draw_count,instances,metal.DrawOptions{uniform_blocks:blocks,indices:indices,depth_stencil:context.depth,state:context.render_state(mode)}) or {
-        context.last_failure=err.msg();metal_service_error(invalid_operation)
+    mut textures:=context.texture_bindings(object) or { context.last_failure=err.msg();return }
+    defer { textures.close() }
+    context.target.draw_with_options(object.program,streams,primitive,draw_first,draw_count,instances,metal.DrawOptions{textures:textures.bindings,color_target:framebuffer_view.primary,color_targets:framebuffer_view.colors,colors_configured:framebuffer_view.custom,uniform_blocks:blocks,indices:indices,depth_stencil:framebuffer_view.depth,state:context.render_state(mode)}) or {
+        context.last_failure=err.msg();metal_service_error(invalid_operation);return
     }
+    context.invalidate_draw_textures()
 }

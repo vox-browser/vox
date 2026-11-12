@@ -40,6 +40,9 @@ int main(void)
         assert(view && vox_metal_buffer_clear(view,1,0,1,1));
         assert(vox_metal_texture_region(volume,0,0,0,0,1,2,2,1,4,volume_bytes,16,0));
         for(int i=0;i<16;i+=4) assert(!memcmp(volume_bytes+i,(uint8_t[]){255,0,255,255},4));
+        assert(vox_metal_texture_copy(texture,0,0,0,0,0,volume,0,0,0,0,1,2,2,1));
+        assert(vox_metal_buffer_transfer(texture,volume_bytes,16,0));
+        for(int i=0;i<16;i+=4) assert(!memcmp(volume_bytes+i,(uint8_t[]){255,0,255,255},4));
         vox_metal_texture_destroy(view);
         vox_metal_texture_destroy(volume);
         for(unsigned format=35;format<=38;++format) {

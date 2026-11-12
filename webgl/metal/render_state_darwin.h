@@ -14,6 +14,9 @@ typedef struct {
     uint32_t cull, front_ccw, depth_test, depth_write, depth_compare, stencil_test;
     float depth_bias, depth_slope;
     VoxMetalStencilFace front, back;
+    void* color_targets[8];
+    uint32_t colors_configured;
+    void* visibility_buffer;
 } VoxMetalRenderState;
 
 static VoxMetalRenderState vox_metal_default_render_state(VoxMetalDrawingBuffer* target)

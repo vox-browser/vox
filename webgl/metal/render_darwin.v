@@ -31,10 +31,19 @@ pub:
     sampler &Sampler = unsafe { nil }
 }
 
+pub struct ColorTargetBinding {
+pub:
+    index int
+    texture &Texture2D
+}
+
 pub struct DrawOptions {
 pub:
 	textures []TextureBinding
 	color_target &Texture2D = unsafe { nil }
+    color_targets []ColorTargetBinding
+    colors_configured bool
+    visibility &GPUBuffer = unsafe { nil }
 	depth_stencil &DepthStencil = unsafe { nil }
 	state RenderState
 	indices ?IndexBinding

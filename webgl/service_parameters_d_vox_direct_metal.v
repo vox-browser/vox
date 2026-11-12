@@ -103,8 +103,8 @@ fn metal_service_default_parameters() map[u32][]f64 {
         u32(0x80a8): [f64(0)] // SAMPLE_BUFFERS
         u32(0x80a9): [f64(0)] // SAMPLES
         u32(0x8d57): [f64(1)] // MAX_SAMPLES
-        u32(0x8cdf): [f64(1)] // MAX_COLOR_ATTACHMENTS
-        u32(0x8824): [f64(1)] // MAX_DRAW_BUFFERS
+        u32(0x8cdf): [f64(8)] // MAX_COLOR_ATTACHMENTS
+        u32(0x8824): [f64(8)] // MAX_DRAW_BUFFERS
         u32(0x846e): [f64(1),f64(1)] // ALIASED_LINE_WIDTH_RANGE
         u32(0x846d): [f64(1),f64(511)] // ALIASED_POINT_SIZE_RANGE
         u32(0x8b9b): [f64(6408)] // IMPLEMENTATION_COLOR_READ_FORMAT
@@ -125,6 +125,10 @@ fn metal_service_default_parameters() map[u32][]f64 {
 
 fn (mut context MetalServiceContext) parameter(pname u32) ![]f64 {
     match pname {
+        0x8069 { return [f64(context.textures[context.texture_key(texture_2d)])] }
+        0x8514 { return [f64(context.textures[context.texture_key(texture_cube_map)])] }
+        0x806a { return [f64(context.textures[context.texture_key(texture_3d)])] }
+        0x8c1d { return [f64(context.textures[context.texture_key(texture_2d_array)])] }
         0x8919 { return [f64(context.samplers[int(context.parameters[active_texture][0])-int(texture0)])] }
         0x8b8d { return [f64(context.current_program)] }
         0x0ba2 { return [context.viewport.x,context.viewport.y,context.viewport.width,context.viewport.height] }
@@ -140,8 +144,9 @@ fn (mut context MetalServiceContext) parameter(pname u32) ![]f64 {
         0x8a28 { return [f64(context.buffer_binding(0x8a11))] }
         0x8c8f { return [f64(context.buffer_binding(0x8c8e))] }
         0x85b5 { return [f64(context.vertex_array)] }
-        0x8ca6,0x8caa { return [f64(if context.surface { 1 } else { 0 })] }
-        0x8ca7 { return [f64(if context.depth != unsafe { nil } { 2 } else { 0 })] }
+        0x8ca6 { return [f64(context.draw_framebuffer)] }
+        0x8caa { return [f64(context.read_framebuffer)] }
+        0x8ca7 { return [f64(context.renderbuffer)] }
         0x8e23,0x8e24 { return [f64(0)] }
         else {}
     }

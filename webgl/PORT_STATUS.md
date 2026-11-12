@@ -26,7 +26,9 @@ and external uniform-buffer ranges are included;
 the production WebGL implementation still uses ANGLE. The experimental service
 passes 15 focused cases in both GC modes through the actual WebGL context,
 including drawing, typed attributes/uniforms and packed readback, without ANGLE.
-It still rejects unsupported texture/framebuffer and WebGL2 service calls;
+Texture images, immutable storage, layer transfers, color framebuffers, MRT,
+samplers, typed clears/readback and PBO reads now have focused service coverage.
+User depth/stencil attachments and remaining WebGL2 service calls are pending;
 complete browser and site equivalence has not been established. See the
 [migration status and next slices](../docs/WEBGL_METAL_MIGRATION.md).
 

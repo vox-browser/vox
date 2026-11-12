@@ -18,6 +18,10 @@ pub:
 	columns u32
 	array_length u32
 	byte_size u64
+    image_dimension u32
+    image_arrayed bool
+    image_depth bool
+    image_scalar_type u32
 }
 
 @[heap]
@@ -87,6 +91,10 @@ pub fn (program &ShaderProgram) resources() ![]ShaderResource {
 			rows: value.rows
 			columns: value.columns
 			array_length: value.array_length
+            image_dimension:value.image_dimension
+            image_arrayed:value.image_arrayed!=0
+            image_depth:value.image_depth!=0
+            image_scalar_type:value.image_scalar_type
 			byte_size: value.byte_size
 		}
 	}

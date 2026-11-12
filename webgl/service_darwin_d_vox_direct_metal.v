@@ -21,12 +21,20 @@ mut:
     vertex_arrays map[u32]&MetalServiceVertexArray
     vertex_array u32
     samplers [32]u32
+    textures map[u64]u32
+    black_textures map[u64]&metal.Texture2D
+    draw_framebuffer u32
+    read_framebuffer u32
+    renderbuffer u32
+    default_draw_buffer u32 = 0x405
+    default_read_buffer u32 = 0x405
     current_program u32
     current_attributes [16]MetalServiceCurrentAttribute
     version int
     target &metal.DrawingBuffer
     depth &metal.DepthStencil = unsafe { nil }
     clear_program &metal.ShaderProgram = unsafe { nil }
+    clear_integer_programs map[u32]&metal.ShaderProgram
     width int = 1
     height int = 1
     surface bool
@@ -57,6 +65,9 @@ mut:
     gpu_buffer &metal.GPUBuffer = unsafe { nil }
     usage u32 = 0x88e4
     sampling &MetalServiceSampling = unsafe { nil }
+    texture &MetalServiceTexture = unsafe { nil }
+    fbo &MetalServiceFramebuffer = unsafe { nil }
+    rbo &MetalServiceRenderbuffer = unsafe { nil }
     retired bool
     shader_type u32
     source string
@@ -121,7 +132,12 @@ fn (mut context MetalServiceContext) collect_programs() {
 }
 
 fn metal_service_gl_type(resource metal.ShaderResource) u32 {
-    if resource.kind==7 { return 0x8b5e }
+    if resource.kind==7 {
+        if resource.image_scalar_type==7 { return if resource.image_dimension==3 { u32(0x8dcc) } else if resource.image_dimension==2 { u32(0x8dcb) } else if resource.image_arrayed { u32(0x8dcf) } else { u32(0x8dca) } }
+        if resource.image_scalar_type==8 { return if resource.image_dimension==3 { u32(0x8dd4) } else if resource.image_dimension==2 { u32(0x8dd3) } else if resource.image_arrayed { u32(0x8dd7) } else { u32(0x8dd2) } }
+        if resource.image_depth { return if resource.image_dimension==3 { u32(0x8dc5) } else if resource.image_arrayed { u32(0x8dc4) } else { u32(0x8b62) } }
+        return if resource.image_dimension==3 { u32(0x8b60) } else if resource.image_dimension==2 { u32(0x8b5f) } else if resource.image_arrayed { u32(0x8dc1) } else { u32(0x8b5e) }
+    }
     if resource.columns > 1 {
         if resource.columns==resource.rows { return 0x8b5a + resource.columns - 2 }
         return match resource.columns*10+resource.rows { 23 { u32(0x8b65) } 24 { u32(0x8b66) } 32 { u32(0x8b67) } 34 { u32(0x8b68) } 42 { u32(0x8b69) } 43 { u32(0x8b6a) } else { u32(0) } }
@@ -186,8 +202,10 @@ fn (mut context MetalServiceContext) collect_buffers() {
         if object.kind != 0 || !object.deleted || object.gpu_buffer == unsafe { nil } { continue }
         mut referenced := context.buffers.values().contains(name)
         for _,binding in context.indexed_buffers { if binding.buffer==name { referenced=true } }
-        for _, fence in context.fences { unsafe { free(fence) } }
-    unsafe { context.fences.free(); context.indexed_buffers.free() }
+        for _,mut texture in context.black_textures { texture.close();unsafe { free(texture) } }
+    unsafe { context.black_textures.free() }
+    for _, fence in context.fences { unsafe { free(fence) } }
+    unsafe { context.fences.free(); context.indexed_buffers.free();context.textures.free() }
     for _, vao in context.vertex_arrays {
             if vao.element_buffer == name || vao.attributes.any(it.buffer == name) { referenced = true }
         }
@@ -211,30 +229,45 @@ fn metal_service_unsupported(name string) {
 }
 
 fn (mut context MetalServiceContext) clear_pixels(mask u32) ! {
-    if !context.surface { return }
+    context.clear_pixels_at(mask,-1)!
+}
+
+fn (mut context MetalServiceContext) clear_pixels_at(mask u32,index int) ! {
+    mut view:=context.framebuffer_view(framebuffer)!
+    defer { view.close() }
     if mask & ~u32(0x4500) != 0 { return error('Invalid clear mask') }
+    if index>=0 && view.custom {
+        selected:=view.colors.filter(it.index==index)
+        unsafe { view.colors.free() }
+        view.colors=selected
+        if selected.len==0 { return }
+    }
     if context.clear_program == unsafe { nil } {
         context.clear_program = metal.ShaderProgram.compile(context.target,
             '#version 300 es\nuniform float z;void main(){gl_Position=vec4(gl_VertexID==1?3.0:-1.0,gl_VertexID==2?3.0:-1.0,z,1.0);}',
-            '#version 300 es\nprecision highp float;uniform vec4 value;out vec4 color;void main(){color=value;}',3)!
+            '#version 300 es\nprecision highp float;uniform vec4 value;layout(location=0)out vec4 c0;layout(location=1)out vec4 c1;layout(location=2)out vec4 c2;layout(location=3)out vec4 c3;layout(location=4)out vec4 c4;layout(location=5)out vec4 c5;layout(location=6)out vec4 c6;layout(location=7)out vec4 c7;void main(){c0=value;c1=value;c2=value;c3=value;c4=value;c5=value;c6=value;c7=value;}',3)!
     }
     context.clear_program.uniform_floats('z',[context.clear_depth * 2 - 1])!
     context.clear_program.uniform_floats('value',context.clear_color[..])!
     mut scissor := ?metal.ScissorRect(none)
     if context.scissor_enabled { scissor = context.scissor }
     context.target.draw_with_options(context.clear_program,[],.triangles,0,3,1,metal.DrawOptions{
-        depth_stencil:context.depth
+        color_target:view.primary
+        color_targets:view.colors
+        colors_configured:view.custom
+        depth_stencil:view.depth
         state:metal.RenderState{
             scissor:scissor
             color_mask:if mask & 0x4000 != 0 { context.color_mask } else { u32(0) }
-            depth_test:context.has_depth && mask & 0x100 != 0
+            depth_test:view.has_depth && mask & 0x100 != 0
             depth_compare:.always
             depth_write:context.depth_mask
-            stencil_test:context.has_stencil && mask & 0x400 != 0
+            stencil_test:view.has_stencil && mask & 0x400 != 0
             front_stencil:metal.StencilFace{pass:.replace,reference:context.clear_stencil,write_mask:context.front_stencil_mask}
             back_stencil:metal.StencilFace{pass:.replace,reference:context.clear_stencil,write_mask:context.front_stencil_mask}
         }
     })!
+    context.invalidate_draw_textures()
 }
 
 @[export: 'vox_egl_create']
@@ -267,10 +300,14 @@ fn metal_service_vox_egl_destroy(a0 voidptr) {
     mut context := unsafe { &MetalServiceContext(a0) }
     if C.vox_metal_service_get() == a0 { C.vox_metal_service_set(unsafe { nil }) }
     if context.clear_program != unsafe { nil } { context.clear_program.close(); unsafe { free(context.clear_program) } }
+    for _,mut program in context.clear_integer_programs { program.close();unsafe { free(program) } };unsafe { context.clear_integer_programs.free() }
     if context.depth != unsafe { nil } { context.depth.close(); unsafe { free(context.depth) } }
     for _, mut object in context.objects {
         if object.gpu_buffer != unsafe { nil } { object.gpu_buffer.close(); unsafe { free(object.gpu_buffer) } }
         if object.program != unsafe { nil } { object.program.close(); unsafe { free(object.program) } }
+        if object.fbo!=unsafe { nil } { unsafe { object.fbo.attachments.free();object.fbo.draw_buffers.free();free(object.fbo) } }
+        if object.rbo!=unsafe { nil } { if object.rbo.gpu!=unsafe { nil } { object.rbo.gpu.close();unsafe { free(object.rbo.gpu) } };unsafe { free(object.rbo) } }
+        if object.texture!=unsafe { nil } { object.texture.close();unsafe { free(object.texture) } }
         if object.sampling!=unsafe { nil } { unsafe { object.sampling.parameters.free();free(object.sampling) } }
         unsafe { object.source.free(); object.compiled_source.free(); object.log.free(); object.attached.free(); object.bindings.free(); object.clear_reflection(); object.attributes.free(); object.uniforms.free(); object.blocks.free(); object.locations.free(); free(object) }
     }
@@ -365,6 +402,7 @@ fn metal_service_vox_egl_allocate_surface(a0 voidptr, a1 i32, a2 i32, a3 i32, a4
     context.width = int(a1); context.height = int(a2)
     context.viewport = metal.Viewport{width:f64(a1),height:f64(a2)}
     context.has_depth = a3 != 0; context.has_stencil = a4 != 0; context.surface = true
+    context.draw_framebuffer=1;context.read_framebuffer=1;context.renderbuffer=if context.depth!=unsafe { nil } { u32(2) } else { u32(0) }
     return 1
 }
 
@@ -431,6 +469,12 @@ fn metal_service_vox_gl_delete_object(a0 i32, a1 u32) {
         if vao.element_buffer == a1 { vao.element_buffer = 0 }
         for mut attribute in vao.attributes { if attribute.buffer == a1 { attribute.buffer = 0 } }
         context.collect_buffers()
+    } else if a0==1 {
+        if context.draw_framebuffer==a1 { context.draw_framebuffer=0 };if context.read_framebuffer==a1 { context.read_framebuffer=0 }
+    } else if a0==2 {
+        if context.renderbuffer==a1 { context.renderbuffer=0 }
+    } else if a0==3 {
+        for key,name in context.textures { if name==a1 { context.textures[key]=0 } }
     } else if a0==5 {
         for index,name in context.samplers { if name==a1 { context.samplers[index]=0 } }
     } else if a0 in [6,7] {
@@ -763,43 +807,53 @@ fn metal_service_vox_gl_draw_range_elements(a0 u32, a1 u32, a2 u32, a3 i32, a4 u
 
 @[export: 'vox_gl_bind_framebuffer']
 fn metal_service_vox_gl_bind_framebuffer(a0 u32, a1 u32) {
-    metal_service_unsupported('vox_gl_bind_framebuffer')
+    mut context:=metal_service_current()
+    if context!=unsafe { nil } { context.bind_framebuffer(a0,a1) }
 }
 
 @[export: 'vox_gl_bind_renderbuffer']
 fn metal_service_vox_gl_bind_renderbuffer(a0 u32, a1 u32) {
-    metal_service_unsupported('vox_gl_bind_renderbuffer')
+    mut context:=metal_service_current()
+    if context!=unsafe { nil } { context.bind_renderbuffer(a0,a1) }
 }
 
 @[export: 'vox_gl_bind_texture']
 fn metal_service_vox_gl_bind_texture(a0 u32, a1 u32) {
-    metal_service_unsupported('vox_gl_bind_texture')
+    mut context:=metal_service_current()
+    if context!=unsafe { nil } { context.bind_texture(a0,a1) }
 }
 
 @[export: 'vox_gl_framebuffer_status']
 fn metal_service_vox_gl_framebuffer_status(a0 u32) u32 {
-    metal_service_unsupported('vox_gl_framebuffer_status')
-    return 0
+    mut context:=metal_service_current()
+    if context==unsafe { nil } { return 0 }
+    return context.framebuffer_status(a0)
 }
 
 @[export: 'vox_gl_framebuffer_texture']
 fn metal_service_vox_gl_framebuffer_texture(a0 u32, a1 u32, a2 u32, a3 u32, a4 i32) {
-    metal_service_unsupported('vox_gl_framebuffer_texture')
+    mut context:=metal_service_current()
+    if context!=unsafe { nil } { context.attach_texture(a0,a1,a2,a3,int(a4),0,false) }
 }
 
 @[export: 'vox_gl_framebuffer_renderbuffer']
 fn metal_service_vox_gl_framebuffer_renderbuffer(a0 u32, a1 u32, a2 u32, a3 u32) {
-    metal_service_unsupported('vox_gl_framebuffer_renderbuffer')
+    mut context:=metal_service_current()
+    if context!=unsafe { nil } { context.attach_renderbuffer(a0,a1,a2,a3) }
 }
 
 @[export: 'vox_gl_renderbuffer_storage']
 fn metal_service_vox_gl_renderbuffer_storage(a0 u32, a1 u32, a2 i32, a3 i32) {
-    metal_service_unsupported('vox_gl_renderbuffer_storage')
+    mut context:=metal_service_current()
+    if context!=unsafe { nil } { context.renderbuffer_storage(a0,0,a1,int(a2),int(a3)) }
 }
 
 @[export: 'vox_gl_tex_image2d']
 fn metal_service_vox_gl_tex_image2d(a0 u32, a1 i32, a2 i32, a3 i32, a4 i32, a5 i32, a6 u32, a7 u32, a8 i32, a9 voidptr) {
-    metal_service_unsupported('vox_gl_tex_image2d')
+    mut context:=metal_service_current()
+    if context==unsafe { nil } { return }
+    if a0!=texture_2d && (a0<0x8515 || a0>0x851a) { metal_service_error(invalid_enum);return }
+    context.define_texture_image(a0,int(a1),u32(a2),int(a3),int(a4),1,int(a5),a6,a7,int(a8),a9)
 }
 
 @[export: 'vox_gl_compressed_tex_image2d']
@@ -824,62 +878,84 @@ fn metal_service_vox_gl_compressed_tex_sub_image3d(a0 u32, a1 i32, a2 i32, a3 i3
 
 @[export: 'vox_gl_tex_sub_image2d']
 fn metal_service_vox_gl_tex_sub_image2d(a0 u32, a1 i32, a2 i32, a3 i32, a4 i32, a5 i32, a6 u32, a7 u32, a8 i32, a9 voidptr) {
-    metal_service_unsupported('vox_gl_tex_sub_image2d')
+    mut context:=metal_service_current()
+    if context==unsafe { nil } { return }
+    if a0!=texture_2d && (a0<0x8515 || a0>0x851a) { metal_service_error(invalid_enum);return }
+    context.sub_texture_image(a0,int(a1),int(a2),int(a3),0,int(a4),int(a5),1,a6,a7,int(a8),a9)
 }
 
 @[export: 'vox_gl_tex_parameteri']
 fn metal_service_vox_gl_tex_parameteri(a0 u32, a1 u32, a2 i32) {
-    metal_service_unsupported('vox_gl_tex_parameteri')
+    mut context:=metal_service_current()
+    if context!=unsafe { nil } { context.texture_parameter(a0,a1,f32(a2),true) }
 }
 
 @[export: 'vox_gl_tex_parameterf']
 fn metal_service_vox_gl_tex_parameterf(a0 u32, a1 u32, a2 f32) {
-    metal_service_unsupported('vox_gl_tex_parameterf')
+    mut context:=metal_service_current()
+    if context!=unsafe { nil } { context.texture_parameter(a0,a1,a2,true) }
 }
 
 @[export: 'vox_gl_tex_storage2d']
 fn metal_service_vox_gl_tex_storage2d(a0 u32, a1 i32, a2 u32, a3 i32, a4 i32) {
-    metal_service_unsupported('vox_gl_tex_storage2d')
+    mut context:=metal_service_current()
+    if context==unsafe { nil } { return }
+    if a0 !in [texture_2d,texture_cube_map] { metal_service_error(invalid_enum);return }
+    context.texture_storage(a0,int(a1),a2,int(a3),int(a4),1)
 }
 
 @[export: 'vox_gl_tex_storage3d']
 fn metal_service_vox_gl_tex_storage3d(a0 u32, a1 i32, a2 u32, a3 i32, a4 i32, a5 i32) {
-    metal_service_unsupported('vox_gl_tex_storage3d')
+    mut context:=metal_service_current()
+    if context==unsafe { nil } { return }
+    if a0 !in [texture_3d,texture_2d_array] { metal_service_error(invalid_enum);return }
+    context.texture_storage(a0,int(a1),a2,int(a3),int(a4),int(a5))
 }
 
 @[export: 'vox_gl_tex_image3d']
 fn metal_service_vox_gl_tex_image3d(a0 u32, a1 i32, a2 i32, a3 i32, a4 i32, a5 i32, a6 i32, a7 u32, a8 u32, a9 i32, a10 voidptr) {
-    metal_service_unsupported('vox_gl_tex_image3d')
+    mut context:=metal_service_current()
+    if context==unsafe { nil } { return }
+    if a0 !in [texture_3d,texture_2d_array] { metal_service_error(invalid_enum);return }
+    context.define_texture_image(a0,int(a1),u32(a2),int(a3),int(a4),int(a5),int(a6),a7,a8,int(a9),a10)
 }
 
 @[export: 'vox_gl_tex_sub_image3d']
 fn metal_service_vox_gl_tex_sub_image3d(a0 u32, a1 i32, a2 i32, a3 i32, a4 i32, a5 i32, a6 i32, a7 i32, a8 u32, a9 u32, a10 i32, a11 voidptr) {
-    metal_service_unsupported('vox_gl_tex_sub_image3d')
+    mut context:=metal_service_current()
+    if context==unsafe { nil } { return }
+    if a0 !in [texture_3d,texture_2d_array] { metal_service_error(invalid_enum);return }
+    context.sub_texture_image(a0,int(a1),int(a2),int(a3),int(a4),int(a5),int(a6),int(a7),a8,a9,int(a10),a11)
 }
 
 @[export: 'vox_gl_framebuffer_texture_layer']
 fn metal_service_vox_gl_framebuffer_texture_layer(a0 u32, a1 u32, a2 u32, a3 i32, a4 i32) {
-    metal_service_unsupported('vox_gl_framebuffer_texture_layer')
+    mut context:=metal_service_current()
+    if context!=unsafe { nil } { context.attach_texture(a0,a1,0,a2,int(a3),int(a4),true) }
 }
 
 @[export: 'vox_gl_copy_tex_image2d']
 fn metal_service_vox_gl_copy_tex_image2d(a0 u32, a1 i32, a2 u32, a3 i32, a4 i32, a5 i32, a6 i32, a7 i32) {
-    metal_service_unsupported('vox_gl_copy_tex_image2d')
+    mut context:=metal_service_current()
+    if context!=unsafe { nil } { context.copy_texture(a0,int(a1),a2,0,0,int(a3),int(a4),int(a5),int(a6),int(a7),true) }
 }
 
 @[export: 'vox_gl_copy_tex_sub_image2d']
 fn metal_service_vox_gl_copy_tex_sub_image2d(a0 u32, a1 i32, a2 i32, a3 i32, a4 i32, a5 i32, a6 i32, a7 i32) {
-    metal_service_unsupported('vox_gl_copy_tex_sub_image2d')
+    mut context:=metal_service_current()
+    if context!=unsafe { nil } { context.copy_texture(a0,int(a1),0,int(a2),int(a3),int(a4),int(a5),int(a6),int(a7),0,false) }
 }
 
 @[export: 'vox_gl_draw_buffers']
 fn metal_service_vox_gl_draw_buffers(a0 i32, a1 &u32, a2 i32) {
-    metal_service_unsupported('vox_gl_draw_buffers')
+    mut context:=metal_service_current()
+    if context!=unsafe { nil } { context.set_draw_buffers(int(a0),a1) }
 }
 
 @[export: 'vox_gl_read_buffer']
 fn metal_service_vox_gl_read_buffer(a0 u32) {
-    metal_service_unsupported('vox_gl_read_buffer')
+    mut context:=metal_service_current()
+    if context!=unsafe { nil } { context.set_read_buffer(a0) }
 }
 
 @[export: 'vox_gl_blit_framebuffer']
@@ -889,40 +965,47 @@ fn metal_service_vox_gl_blit_framebuffer(a0 i32, a1 i32, a2 i32, a3 i32, a4 i32,
 
 @[export: 'vox_gl_renderbuffer_storage_multisample']
 fn metal_service_vox_gl_renderbuffer_storage_multisample(a0 u32, a1 i32, a2 u32, a3 i32, a4 i32) {
-    metal_service_unsupported('vox_gl_renderbuffer_storage_multisample')
+    mut context:=metal_service_current()
+    if context!=unsafe { nil } { context.renderbuffer_storage(a0,int(a1),a2,int(a3),int(a4)) }
 }
 
 @[export: 'vox_gl_invalidate_framebuffer']
 fn metal_service_vox_gl_invalidate_framebuffer(a0 u32, a1 i32, a2 &u32) {
-    metal_service_unsupported('vox_gl_invalidate_framebuffer')
+    mut context:=metal_service_current()
+    if context!=unsafe { nil } { context.invalidate_framebuffer(a0,int(a1),a2,0,0,0,0) }
 }
 
 @[export: 'vox_gl_invalidate_sub_framebuffer']
 fn metal_service_vox_gl_invalidate_sub_framebuffer(a0 u32, a1 i32, a2 &u32, a3 i32, a4 i32, a5 i32, a6 i32) {
-    metal_service_unsupported('vox_gl_invalidate_sub_framebuffer')
+    mut context:=metal_service_current()
+    if context!=unsafe { nil } { context.invalidate_framebuffer(a0,int(a1),a2,int(a3),int(a4),int(a5),int(a6)) }
 }
 
 @[export: 'vox_gl_tex_parameter']
 fn metal_service_vox_gl_tex_parameter(a0 u32, a1 u32) i32 {
-    metal_service_unsupported('vox_gl_tex_parameter')
-    return 0
+    mut context:=metal_service_current()
+    if context==unsafe { nil } { return 0 }
+    return i32(context.texture_parameter(a0,a1,0,false))
 }
 
 @[export: 'vox_gl_tex_float_parameter']
 fn metal_service_vox_gl_tex_float_parameter(a0 u32, a1 u32) f32 {
-    metal_service_unsupported('vox_gl_tex_float_parameter')
-    return 0
+    mut context:=metal_service_current()
+    if context==unsafe { nil } { return 0 }
+    return context.texture_parameter(a0,a1,0,false)
 }
 
 @[export: 'vox_gl_renderbuffer_parameter']
 fn metal_service_vox_gl_renderbuffer_parameter(a0 u32, a1 u32) i32 {
-    metal_service_unsupported('vox_gl_renderbuffer_parameter')
-    return 0
+    mut context:=metal_service_current()
+    if context==unsafe { nil } { return 0 }
+    return context.renderbuffer_parameter(a0,a1)
 }
 
 @[export: 'vox_gl_read_pixels_to_buffer']
 fn metal_service_vox_gl_read_pixels_to_buffer(a0 i32, a1 i32, a2 i32, a3 i32, a4 u32, a5 u32, a6 i64) {
-    metal_service_unsupported('vox_gl_read_pixels_to_buffer')
+    mut context:=metal_service_current()
+    if context!=unsafe { nil } { context.read_pixels_to_buffer(int(a0),int(a1),int(a2),int(a3),a4,a5,a6) }
 }
 
 @[export: 'vox_gl_read_pixels']
@@ -1118,7 +1201,8 @@ fn metal_service_vox_gl_front_face(a0 u32) {
 
 @[export: 'vox_gl_generate_mipmap']
 fn metal_service_vox_gl_generate_mipmap(a0 u32) {
-    metal_service_unsupported('vox_gl_generate_mipmap')
+    mut context:=metal_service_current()
+    if context!=unsafe { nil } { context.generate_mipmap(a0) }
 }
 
 @[export: 'vox_gl_hint']
@@ -1195,22 +1279,26 @@ fn metal_service_vox_gl_stencil_op_separate(a0 u32, a1 u32, a2 u32, a3 u32) {
 
 @[export: 'vox_gl_clear_buffer_floats']
 fn metal_service_vox_gl_clear_buffer_floats(a0 u32, a1 i32, a2 &f32) {
-    metal_service_unsupported('vox_gl_clear_buffer_floats')
+    mut context:=metal_service_current()
+    if context!=unsafe { nil } { context.clear_buffer(a0,int(a1),13,a2,0,0) }
 }
 
 @[export: 'vox_gl_clear_buffer_ints']
 fn metal_service_vox_gl_clear_buffer_ints(a0 u32, a1 i32, a2 &i32) {
-    metal_service_unsupported('vox_gl_clear_buffer_ints')
+    mut context:=metal_service_current()
+    if context!=unsafe { nil } { context.clear_buffer(a0,int(a1),7,a2,0,0) }
 }
 
 @[export: 'vox_gl_clear_buffer_uints']
 fn metal_service_vox_gl_clear_buffer_uints(a0 u32, a1 i32, a2 &u32) {
-    metal_service_unsupported('vox_gl_clear_buffer_uints')
+    mut context:=metal_service_current()
+    if context!=unsafe { nil } { context.clear_buffer(a0,int(a1),8,a2,0,0) }
 }
 
 @[export: 'vox_gl_clear_buffer_depth_stencil']
 fn metal_service_vox_gl_clear_buffer_depth_stencil(a0 u32, a1 i32, a2 f32, a3 i32) {
-    metal_service_unsupported('vox_gl_clear_buffer_depth_stencil')
+    mut context:=metal_service_current()
+    if context!=unsafe { nil } { context.clear_buffer(a0,int(a1),0,unsafe { nil },a2,a3) }
 }
 
 @[export: 'vox_gl_vertex_attrib_i4i']

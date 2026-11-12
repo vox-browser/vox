@@ -80,3 +80,13 @@ pub fn (mut texture Texture2D) generate_mipmaps() ! {
     if texture.format !in [.rgba8,.r8,.rg8,.srgba8,.r8_snorm,.rg8_snorm,.rgba8_snorm,.r16f,.rg16f,.rgba16f,.r32f,.rg32f,.rgba32f,.rgb10a2,.rg11b10f] { return error('Metal texture format cannot generate filtered mipmaps') }
     if texture.samples!=1 || C.vox_metal_texture_mipmaps(texture.handle)!=1 { return error('Metal mipmap generation failed') }
 }
+
+// Copying actual GPU storage keeps framebuffer writes observable when a mutable
+// WebGL texture is assembled into one complete sampled mip/cube/array image.
+pub fn (mut destination Texture2D) copy_from(source &Texture2D,source_level int,source_slice int,region TextureRegion,destination_level int,destination_slice int,x int,y int,z int) ! {
+    size:=source.region_size(source_level,source_slice,region)!
+    destination.region_size(destination_level,destination_slice,TextureRegion{x:x,y:y,z:z,width:region.width,height:region.height,depth:region.depth})!
+    if source.owner.handle!=destination.owner.handle || source.format!=destination.format || source.handle==destination.handle { return error('Incompatible Metal texture copy') }
+    if size==0 { return }
+    if C.vox_metal_texture_copy(destination.handle,u32(destination_level),u32(destination_slice),u32(x),u32(y),u32(z),source.handle,u32(source_level),u32(source_slice),u32(region.x),u32(region.y),u32(region.z),u32(region.width),u32(region.height),u32(region.depth))!=1 { return error('Metal texture copy failed') }
+}

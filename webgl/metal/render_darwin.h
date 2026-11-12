@@ -34,6 +34,12 @@ static int vox_metal_draw_configured(void* target_handle, void* program_handle,
     VoxMetalRenderState const* state = configured_state ?: &defaults;
     VoxMetalDepthStencil* depth = state->depth_stencil;
     VoxMetalGPUBuffer* indices = index_handle;
+    VoxMetalDrawingBuffer* colors[8]={0};
+    if (state->colors_configured) for(unsigned i=0;i<8;++i) colors[i]=state->color_targets[i];
+    else colors[0]=target;
+    for(unsigned i=0;i<8;++i) if(colors[i] && (colors[i]->device!=target->device || !colors[i]->texture || colors[i]->width!=target->width || colors[i]->height!=target->height)) return 0;
+    VoxMetalGPUBuffer* visibility=state->visibility_buffer;
+    if(visibility && (visibility->device!=target->device || visibility->size<8)) return 0;
     if (depth && (depth->device != target->device || depth->width != target->width || depth->height != target->height)) return 0;
     if (indices && (indices->device != target->device || (index_width != 2 && index_width != 4)
         || index_offset % index_width || index_offset > indices->size || (uint64_t)count * index_width > indices->size - index_offset)) return 0;
@@ -64,15 +70,18 @@ static int vox_metal_draw_configured(void* target_handle, void* program_handle,
             VoxMetalTexture* texture = textures[i].texture;
             if (!texture || texture->storage.device != target->device || !texture->storage.texture || (!texture->sampler && !textures[i].sampler)
                 || textures[i].stage > 1 || textures[i].binding >= 128 || (textures[i].sampled && textures[i].sampler_binding >= 16)
-                || texture->storage.texture == target->texture) return 0;
+                ) return 0;
+            for(unsigned c=0;c<8;++c) if(colors[c] && texture->storage.texture==colors[c]->texture) return 0;
         }
         MTLRenderPipelineDescriptor* descriptor = [[MTLRenderPipelineDescriptor alloc] init];
         descriptor.vertexFunction = (__bridge id<MTLFunction>)program->vertex;
         descriptor.fragmentFunction = (__bridge id<MTLFunction>)program->fragment;
         descriptor.vertexDescriptor = vertices;
-        descriptor.colorAttachments[0].pixelFormat = [(__bridge id<MTLTexture>)target->texture pixelFormat];
-        descriptor.rasterSampleCount = [(__bridge id<MTLTexture>)target->texture sampleCount];
-        MTLRenderPipelineColorAttachmentDescriptor* color = descriptor.colorAttachments[0];
+        descriptor.rasterSampleCount=[(__bridge id<MTLTexture>)target->texture sampleCount];
+        for(unsigned c=0;c<8;++c) {
+            if(!colors[c]) continue;
+            descriptor.colorAttachments[c].pixelFormat=[(__bridge id<MTLTexture>)colors[c]->texture pixelFormat];
+        MTLRenderPipelineColorAttachmentDescriptor* color = descriptor.colorAttachments[c];
         color.writeMask = ((state->color_mask & 1) ? MTLColorWriteMaskRed : 0)
             | ((state->color_mask & 2) ? MTLColorWriteMaskGreen : 0)
             | ((state->color_mask & 4) ? MTLColorWriteMaskBlue : 0)
@@ -84,18 +93,21 @@ static int vox_metal_draw_configured(void* target_handle, void* program_handle,
         color.destinationRGBBlendFactor = vox_metal_blend_factor(state->destination_rgb);
         color.sourceAlphaBlendFactor = vox_metal_blend_factor(state->source_alpha);
         color.destinationAlphaBlendFactor = vox_metal_blend_factor(state->destination_alpha);
+        }
         if (depth) { descriptor.depthAttachmentPixelFormat = MTLPixelFormatDepth32Float_Stencil8; descriptor.stencilAttachmentPixelFormat = MTLPixelFormatDepth32Float_Stencil8; }
         NSError* error = nil;
         id<MTLRenderPipelineState> pipeline = [device newRenderPipelineStateWithDescriptor:descriptor error:&error];
         vox_metal_drop_owned(descriptor);
         if (!pipeline) { if (capacity) snprintf(log, capacity, "%s", error.localizedDescription.UTF8String ?: "Metal pipeline compilation failed"); return 0; }
         MTLRenderPassDescriptor* pass = [MTLRenderPassDescriptor renderPassDescriptor];
-        pass.colorAttachments[0].texture = (__bridge id<MTLTexture>)target->texture;
-        pass.colorAttachments[0].level = target->level;
-        pass.colorAttachments[0].slice = target->slice;
-        pass.colorAttachments[0].depthPlane = target->plane;
-        pass.colorAttachments[0].loadAction = MTLLoadActionLoad;
-        pass.colorAttachments[0].storeAction = MTLStoreActionStore;
+        pass.renderTargetWidth=target->width;pass.renderTargetHeight=target->height;
+        pass.defaultRasterSampleCount=[(__bridge id<MTLTexture>)target->texture sampleCount];
+        for(unsigned c=0;c<8;++c) if(colors[c]) {
+            pass.colorAttachments[c].texture=(__bridge id<MTLTexture>)colors[c]->texture;
+            pass.colorAttachments[c].level=colors[c]->level;pass.colorAttachments[c].slice=colors[c]->slice;pass.colorAttachments[c].depthPlane=colors[c]->plane;
+            pass.colorAttachments[c].loadAction=MTLLoadActionLoad;pass.colorAttachments[c].storeAction=MTLStoreActionStore;
+        }
+        if(visibility) pass.visibilityResultBuffer=(__bridge id<MTLBuffer>)visibility->buffer;
         if (depth) {
             pass.depthAttachment.texture = (__bridge id<MTLTexture>)depth->texture;
             pass.depthAttachment.loadAction = MTLLoadActionLoad; pass.depthAttachment.storeAction = MTLStoreActionStore;
@@ -106,6 +118,7 @@ static int vox_metal_draw_configured(void* target_handle, void* program_handle,
         id<MTLRenderCommandEncoder> encoder = [command renderCommandEncoderWithDescriptor:pass];
         if (!command || !encoder) { vox_metal_drop_owned(pipeline); return 0; }
         [encoder setRenderPipelineState:pipeline];
+        if(visibility) [encoder setVisibilityResultMode:MTLVisibilityResultModeBoolean offset:0];
         [encoder setViewport:(MTLViewport){state->x, state->y, state->width, state->height, state->near_depth, state->far_depth}];
         [encoder setScissorRect:(MTLScissorRect){state->scissor_x, state->scissor_y, state->scissor_width, state->scissor_height}];
         [encoder setCullMode:(MTLCullMode)state->cull];

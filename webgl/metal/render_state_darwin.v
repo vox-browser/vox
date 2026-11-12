@@ -82,7 +82,24 @@ fn native_render_state(target &DrawingBuffer, options DrawOptions) !C.VoxMetalRe
 		if depth.handle == unsafe { nil } || depth.owner.handle != target.handle || depth.width != width || depth.height != height { return error('Metal depth/stencil attachment has wrong owner or dimensions') }
 		depth_handle = depth.handle
 	}
+    mut colors:=[8]voidptr{}
+    mut used:=u32(0)
+    for attachment in options.color_targets {
+        texture:=attachment.texture
+        if attachment.index<0 || attachment.index>=8 || used&(u32(1)<<attachment.index)!=0
+            || texture==unsafe { nil } || texture.handle==unsafe { nil } || texture.owner.handle!=target.handle || texture.width!=width || texture.height!=height { return error('Invalid Metal color attachment') }
+        used|=u32(1)<<attachment.index
+        colors[attachment.index]=texture.handle
+    }
+    mut visibility:=unsafe { nil }
+    if options.visibility!=unsafe { nil } {
+        if options.visibility.handle==unsafe { nil } || options.visibility.owner.handle!=target.handle || options.visibility.length<8 { return error('Invalid Metal visibility buffer') }
+        visibility=options.visibility.handle
+    }
 	return C.VoxMetalRenderState{
+        color_targets:colors
+        colors_configured:u32(options.colors_configured)
+        visibility_buffer:visibility
 		depth_stencil: depth_handle
 		x: viewport.x, y: viewport.y, width: viewport.width, height: viewport.height
 		near_depth: clear_component(viewport.near_depth), far_depth: clear_component(viewport.far_depth)

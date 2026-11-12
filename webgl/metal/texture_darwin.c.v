@@ -9,3 +9,4 @@ fn C.vox_metal_texture_region(voidptr,u32,u32,u32,u32,u32,u32,u32,u32,u32,voidpt
 fn C.vox_metal_texture_attachment(voidptr,u32,u32) voidptr
 fn C.vox_metal_texture_mipmaps(voidptr) i32
 fn C.vox_metal_texture_set_sampler(voidptr,voidptr) i32
+fn C.vox_metal_texture_copy(voidptr,u32,u32,u32,u32,u32,voidptr,u32,u32,u32,u32,u32,u32,u32,u32) i32

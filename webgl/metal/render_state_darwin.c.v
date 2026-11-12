@@ -48,4 +48,7 @@ struct C.VoxMetalRenderState {
 	depth_slope f32
 	front C.VoxMetalStencilFace
 	back C.VoxMetalStencilFace
+    color_targets [8]voidptr
+    colors_configured u32
+    visibility_buffer voidptr
 }
