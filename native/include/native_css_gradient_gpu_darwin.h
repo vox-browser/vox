@@ -7,7 +7,6 @@ extern int vox_draw_document_gradient_pixels(uint8_t*, int, int, int, int, int, 
 static int native_try_v_css_gradient(VoxGraphitePath draw, const float *matrix,
     float page_x, float page_y, float scroll_y, float canvas_height) {
     if ([[NSGraphicsContext currentContext] CGContext] != native_font_compositing_context
-        || native_font_compositing_transparency_depth != 0
         || !draw.segments || draw.segment_count <= 0 || draw.stroke || !draw.stops
         || draw.stop_count < 2 || draw.stop_count > 64 || draw.linear_color_space) return 0;
     if (draw.gradient != 1 && draw.gradient != 2) return 0;
@@ -36,7 +35,7 @@ static int native_try_v_css_gradient(VoxGraphitePath draw, const float *matrix,
     int prepared = native_text_raster_begin(left, top, right, bottom, canvas_width, canvas_height,
         16, geometry, &scale);
     if (prepared == 2) return 1;
-    if (prepared != 1 || !geometry[4]) return 0;
+    if (prepared != 1) return 0;
     int w=geometry[2], h=geometry[3], backdrop=geometry[4];
     uint8_t *pixels = calloc((size_t)w*h*4, 1);
     if (!pixels) return 0;
@@ -58,7 +57,7 @@ static int native_try_v_css_gradient(VoxGraphitePath draw, const float *matrix,
 
 #ifdef VOX_TEST_CSS_GRADIENT_PIXELS
 static int vox_test_css_gradient_pixels(uint8_t *pixels, int width, int height, int chrome,
-    const VoxGraphitePath *draw) {
+    const VoxGraphitePath *draw, int layered) {
     CGColorSpaceRef space=CGColorSpaceCreateWithName(kCGColorSpaceSRGB);
     CGContextRef context=CGBitmapContextCreate(pixels,width,height+chrome,8,width*4,space,
         kCGImageAlphaPremultipliedLast|kCGBitmapByteOrder32Big);
@@ -73,7 +72,9 @@ static int vox_test_css_gradient_pixels(uint8_t *pixels, int width, int height, 
     [NSGraphicsContext saveGraphicsState];
     [NSGraphicsContext setCurrentContext:[NSGraphicsContext graphicsContextWithCGContext:context flipped:NO]];
     float matrix[6]={1,0,0,1,0,chrome};
+    if (layered) native_begin_tracked_transparency_layer(context,NULL);
     int result=native_try_v_css_gradient(*draw,matrix,0,chrome,0,height+chrome);
+    if (layered) native_end_tracked_transparency_layer(context);
     [NSGraphicsContext restoreGraphicsState];
     native_font_compositing_context=previous;
     native_font_compositing_transparency_depth=previous_depth;

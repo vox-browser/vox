@@ -8,7 +8,36 @@ import os
 
 #flag darwin -DVOX_TEST_CSS_GRADIENT_PIXELS
 
-fn C.vox_test_css_gradient_pixels(&u8, i32, i32, i32, &C.VoxGraphitePath) i32
+fn C.vox_test_css_gradient_pixels(&u8, i32, i32, i32, &C.VoxGraphitePath, i32) i32
+
+fn test_opaque_css_gradient_preserves_pixels_inside_a_transparency_layer() {
+	previous := document_geometry_grid
+	defer { document_geometry_grid = previous }
+	document_geometry_grid = DocumentGeometryGrid{width:256,height:256,columns:1,rows:1}
+	mut segments := []f32{}
+	append_native_gradient_path_point(mut segments, 0, 8, 12)
+	append_native_gradient_path_point(mut segments, 1, 120, 12)
+	append_native_gradient_path_point(mut segments, 1, 120, 52)
+	append_native_gradient_path_point(mut segments, 1, 8, 52)
+	append_native_gradient_path_point(mut segments, 5, 0, 0)
+	stops := [f32(.1), .2, .3, 1, 0, f32(.7), .8, .9, 1, 1]
+	path := C.VoxGraphitePath{
+		segments:segments.data,segment_count:5,gradient:1,gradient_premul:1,
+		stop_count:2,stops:stops.data,opacity:1,
+		gradient_points:[f32(8),12,120,52,0,0]!,
+		gradient_matrix:[f32(1),0,0,0,1,0,0,0,1]!
+	}
+	mut expected := []u8{len:128*64*4}
+	mut actual := expected.clone()
+	assert C.vox_test_css_gradient_pixels(expected.data,128,64,0,&path,0) == 1
+	assert C.vox_test_css_gradient_pixels(actual.data,128,64,0,&path,1) == 1
+	mut changed := 0
+	for i in 0 .. expected.len {
+		assert expected[i] == actual[i], 'channel=${i}'
+		if i%4==0 && actual[i] != 9 { changed++ }
+	}
+	assert changed > 4000
+}
 
 fn test_css_radial_gradient_keeps_premultiplied_dither_through_the_native_boundary() {
 	mut document := html.parse_document($embed_file('@VMODROOT/Tests/Browser/Brave/input/css-radial-gradient.html').to_string())
@@ -44,7 +73,7 @@ fn test_css_radial_gradient_keeps_premultiplied_dither_through_the_native_bounda
 	for chrome in [0, 60] {
 		document_geometry_grid = DocumentGeometryGrid{ width: 832, height: 256, columns: 1, rows: 3, cells: [i32(0)] }
 		mut pixels := []u8{len: 800 * (600 + chrome) * 4}
-		assert C.vox_test_css_gradient_pixels(pixels.data, 800, 600, i32(chrome), &path) == 1
+		assert C.vox_test_css_gradient_pixels(pixels.data, 800, 600, i32(chrome), &path, 0) == 1
 		mut count := 0
 		for i in 0 .. 800 * 180 * 4 {
 			if pixels[chrome * 800 * 4 + i] != unsafe { expected.data[i] } { count++ }
@@ -106,7 +135,7 @@ fn test_css_linear_and_radial_fades_keep_rounded_clips_and_tile_dither() {
 				if gradient.css_angle_degrees != none { f32(tile.y) } else { f32(0) }, 0, 0, 1]!
 		}
 		mut pixels := []u8{len: 1024 * (768 + 60) * 4}
-		assert C.vox_test_css_gradient_pixels(pixels.data, 1024, 768, 60, &path) == 1
+		assert C.vox_test_css_gradient_pixels(pixels.data, 1024, 768, 60, &path, 0) == 1
 		mut count := 0
 		for y in int(tile.y) .. int(tile.bottom()) {
 			for x in int(tile.x) .. int(tile.right()) {
