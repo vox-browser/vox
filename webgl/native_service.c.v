@@ -3,12 +3,7 @@
 module webgl
 
 $if macos {
-    $if vox_direct_metal ? {
-        #include "@DIR/native_metal_boundary.h"
-    } $else {
-        #pkgconfig --cflags egl glesv2
-        #include "@DIR/native_egl.h"
-    }
+    #include "@DIR/native_metal_boundary.h"
 } $else $if windows {
     #flag @DIR/../Build/deps/windows/native/webgl.a
     #pkgconfig angleproject
