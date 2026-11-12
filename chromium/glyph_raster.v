@@ -97,10 +97,10 @@ fn f32_finite(value f32) bool {
 fn draw_document_glyph_raster(glyphs []u16, positions []f64, font_path string, face_index int,
 	font_size f32, font_weight int, baseline_x f32, baseline_y f32, matrix [6]f32,
 	page_x f32, page_y f32, scroll_y f32, canvas_width f32, canvas_height f32,
-	color u32, font_smoothing int) bool {
+	color u32, font_smoothing int, paint_color ?[4]f32) bool {
 	reason := draw_document_glyph_raster_run(glyphs, positions, font_path, face_index, font_size,
 		font_weight, baseline_x, baseline_y, matrix, page_x, page_y, scroll_y, canvas_width,
-		canvas_height, color, font_smoothing)
+		canvas_height, color, font_smoothing, paint_color)
 	if reason != '' && document_glyph_raster_dump != '' {
 		eprintln('VOX_TEXT_RASTER fallback=${reason} font=${font_path}#${face_index} size=${font_size} weight=${font_weight} smoothing=${font_smoothing}')
 	}
@@ -130,7 +130,7 @@ fn document_glyph_raster_record(run cpuraster.CanvasGlyphRun, transform [6]f32, 
 fn draw_document_glyph_raster_run(glyphs []u16, positions []f64, font_path string, face_index int,
 	font_size f32, font_weight int, baseline_x f32, baseline_y f32, matrix [6]f32,
 	page_x f32, page_y f32, scroll_y f32, canvas_width f32, canvas_height f32,
-	color u32, font_smoothing int) string {
+	color u32, font_smoothing int, paint_color ?[4]f32) string {
 	$if macos {
 		if glyphs.len == 0 || positions.len < glyphs.len * 2 || font_path == '' || !(font_size >= 0) {
 			return 'empty run'
@@ -171,6 +171,7 @@ fn draw_document_glyph_raster_run(glyphs []u16, positions []f64, font_path strin
 			smoothing:         font_smoothing & 15
 			retained:          true
 			chromium_coverage: chromium
+			paint_color:       paint_color
 		}
 		// The page matrix: CSS transform after the page offset and scroll.
 		tx := page_x + matrix[4]

@@ -4382,7 +4382,7 @@ fn native_draw_retained_glyph_run(command layout.PaintCommand, page_x f32, page_
 				f32(command.glyph_translation_y), [f32(matrix[0]), f32(matrix[1]), f32(matrix[2]),
 				f32(matrix[3]), f32(matrix[4]), f32(matrix[5])]!, page_x, page_y, f32(scroll_y),
 				canvas_width, canvas_height, u32(glyph_color.a) << 24 | u32(glyph_color.r) << 16 | u32(glyph_color.g) << 8 | u32(glyph_color.b),
-				smoothing) {
+				smoothing, chromium_retained_paint_color(command)) {
 				return true
 			}
 		}

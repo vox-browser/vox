@@ -35,6 +35,8 @@ pub:
 	// Chromium's text surface properties: no contrast boost, and a linear
 	// mask gamma (no preblend) for unhinted antialiased text.
 	chromium_coverage bool
+	// Computed document color before byte serialization, including author alpha.
+	paint_color ?[4]f32
 }
 
 // fill_canvas_glyphs fills run with color (an SkColor), or the gradient or
@@ -72,12 +74,14 @@ pub fn canvas_glyph_run_bounds(mut cache GlyphCache, run CanvasGlyphRun) ?[4]f32
 	mut info := glyph_face_info(&cache, face_key, mut lazy)?
 	font_bounds := glyph_face_bounds(mut info, mut lazy, run.font_size)?
 	b := glyph_positions_bounds(run.positions[..run.glyphs.len * 2])
-	return [b.left + font_bounds.left + run.translation[0], b.top + font_bounds.top + run.translation[1],
-		b.right + font_bounds.right + run.translation[0], b.bottom + font_bounds.bottom +
-		run.translation[1]]!
+	return [b.left + font_bounds.left + run.translation[0],
+		b.top + font_bounds.top + run.translation[1], b.right + font_bounds.right + run.translation[0],
+		b.bottom + font_bounds.bottom +
+			run.translation[1]]!
 }
 
 fn fill_canvas_glyphs_surface(mut pixels []u8, width int, height int, pitch int, alpha_type int, run CanvasGlyphRun, transform [6]f32, color u32, style ?CanvasPaintStyle, global_alpha f32, mode BlendMode, clips []Path, filter_in ?CanvasFilter, legacy bool, cache &GlyphCache) bool {
+	if run.paint_color != none && (style != none || filter_in != none) { return false }
 	if run.glyphs.len == 0 {
 		return true
 	}
@@ -143,8 +147,15 @@ fn fill_canvas_glyphs_surface(mut pixels []u8, width int, height int, pitch int,
 	} else {
 		[]GlyphRoute{len: run.glyphs.len}
 	}
+	// The precise-color path currently transports mask coverage. Let the
+	// caller handle outlines rather than silently drawing them in byte color.
+	if run.paint_color != none && routes.any(it.kind != .mask) { return false }
 	paint_color, _ := canvas_paint_source(color, style, 0)
-	alpha := canvas_paint_alpha(paint_color, global_alpha)
+	alpha := if precise := run.paint_color {
+		fmin(fmax(precise[3] * global_alpha, 0), 1)
+	} else {
+		canvas_paint_alpha(paint_color, global_alpha)
+	}
 	matrix := Matrix{transform[0], transform[1], transform[2], transform[3], transform[4], transform[5]}
 	shader := canvas_paint_shader(style, matrix)
 	// The mask strike: A8 with the paint's mask gamma, or ARGB for a color
@@ -180,6 +191,7 @@ fn fill_canvas_glyphs_surface(mut pixels []u8, width int, height int, pitch int,
 		strike.release()
 	}
 	if info.color_glyphs {
+		if run.paint_color != none { return false }
 		strike.color = true
 		strike.foreground = paint_color & 0xffffff
 		// Color strikes check and draw their glyphs with the font itself.
@@ -275,15 +287,26 @@ fn fill_canvas_glyphs_surface(mut pixels []u8, width int, height int, pitch int,
 	if entry.empty {
 		return true
 	}
-	blitter := canvas_draw_blitter_for_surface(mut pixels, pitch, paint_color, shader, alpha, mode, Rect{},
-		filter, legacy) or { Blitter(NullBlitter{}) }
+	blitter := if precise := run.paint_color {
+		precise_blitter := new_color_shader_blitter(mut pixels, pitch, precise, global_alpha, mode)
+		// Lowp quantizes the source alpha before multiplying glyph coverage.
+		// Document colors must keep both products until the final pixel store.
+		Blitter(PipelineBlitter{ ...precise_blitter, lowp: false })
+	} else {
+		canvas_draw_blitter_for_surface(mut pixels, pitch, paint_color, shader, alpha, mode, Rect{},
+			filter, legacy) or { Blitter(NullBlitter{}) }
+	}
 	mut wrapped, clip_bounds := clip_wrapper(&rc, blitter)
 	for i, id in run.glyphs {
 		if routes[i].kind != .mask {
 			continue
 		}
 		mapped := map_point_affine(rounding, Point{run.positions[i * 2], run.positions[i * 2 + 1]})
-		glyph := entry.glyph(mut strike, mut lazy, id, if strike.snap_x { 0 } else { packed_subpixel(mapped.x) }, if strike.snap_y {
+		glyph := entry.glyph(mut strike, mut lazy, id, if strike.snap_x {
+			0
+		} else {
+			packed_subpixel(mapped.x)
+		}, if strike.snap_y {
 			0
 		} else {
 			packed_subpixel(mapped.y)
@@ -425,7 +448,7 @@ fn glyph_routes(face GlyphFace, ids []u16, as_paths bool) ?[]GlyphRoute {
 				kind: .drop
 			}
 		} else if drawable {
-			GlyphRoute{kind: .drawable}
+			GlyphRoute{ kind: .drawable }
 		} else if face.color_glyphs {
 			GlyphRoute{}
 		} else if outline := glyph_outline(strike.font, id, strike.transform) {
@@ -950,8 +973,8 @@ struct GlyphStrike {
 	// The CoreText font's size when it is made on first need.
 	text_size f64
 mut:
-	font     voidptr
-	deferred bool
+	font      voidptr
+	deferred  bool
 	table     []u8
 	smoothing int = 2
 	// An ARGB32 strike of a color typeface, and its foreground color.

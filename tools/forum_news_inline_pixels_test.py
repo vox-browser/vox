@@ -13,6 +13,9 @@ from forum_news_pixels import REPO, VOX, executable_identity, guarded, write_jso
 @unittest.skipUnless(sys.platform == 'darwin', 'The reference uses native macOS fonts')
 class ForumNewsInlinePixelsTests(unittest.TestCase):
 
+    def test_document_glyphs_preserve_fractional_author_color(self):
+        self.compare_fixture('glyph-fractional-color', width=160, height=80)
+
     def test_blended_video_keeps_the_surrounding_compositor_metadata(self):
         self.compare_fixture('blended-video-paint-metadata', width=1024, height=768,
                              settle_seconds=2)
