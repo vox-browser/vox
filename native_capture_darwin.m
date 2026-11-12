@@ -1130,17 +1130,11 @@ int native_text_raster_finish(const uint8_t *pixels, int left, int top, int widt
 extern int vox_draw_document_shape_pixels(uint8_t*, int, int, int, int, int, int, VoxGraphiteShape*);
 VOX_NATIVE_STATE VoxGraphiteShape native_v_shape_state;
 
-static int native_try_v_rounded_rect(float x, float y, float width, float height,
-    const float* radii, const float* matrix, float canvas_width, float canvas_height,
-    gg__Color color, int fill, float thickness, int anti_alias,
-    float page_x, float page_y, float scroll_y) {
+static int native_try_v_document_shape(VoxGraphiteShape shape, const float* matrix,
+    float canvas_width, float canvas_height, float page_x, float page_y, float scroll_y) {
     if ([[NSGraphicsContext currentContext] CGContext] != native_font_compositing_context) return 0;
-    VoxGraphiteShape shape = native_v_shape_state;
-    shape.rect[0] = x; shape.rect[1] = y; shape.rect[2] = width; shape.rect[3] = height;
-    memcpy(shape.rect + 4, radii, 8 * sizeof(float));
-    shape.red = color.r; shape.green = color.g; shape.blue = color.b; shape.alpha = color.a;
-    shape.fill = fill; shape.thickness = thickness; shape.anti_alias = anti_alias;
-    shape.force_msaa = 1;
+    float x=shape.rect[0], y=shape.rect[1], width=shape.rect[2], height=shape.rect[3];
+    int fill=shape.fill; float thickness=shape.thickness;
     float left = INFINITY, top = INFINITY, right = -INFINITY, bottom = -INFINITY;
     float pad = fill == 0 ? fmaxf(thickness, 0) * .5f : 0;
     for (int i = 0; i < 4; ++i) {
@@ -1173,6 +1167,26 @@ static int native_try_v_rounded_rect(float x, float y, float width, float height
         geometry[5],geometry[6],canvas_height,backdrop);
     free(pixels);
     return drawn;
+}
+
+static int native_try_v_rounded_rect(float x, float y, float width, float height,
+    const float* radii, const float* matrix, float canvas_width, float canvas_height,
+    gg__Color color, int fill, float thickness, int anti_alias,
+    float page_x, float page_y, float scroll_y) {
+    if ([[NSGraphicsContext currentContext] CGContext] != native_font_compositing_context) return 0;
+    VoxGraphiteShape shape = native_v_shape_state;
+    shape.rect[0] = x; shape.rect[1] = y; shape.rect[2] = width; shape.rect[3] = height;
+    memcpy(shape.rect + 4, radii, 8 * sizeof(float));
+    shape.red = color.r; shape.green = color.g; shape.blue = color.b; shape.alpha = color.a;
+    shape.fill = fill; shape.thickness = thickness; shape.anti_alias = anti_alias;
+    shape.force_msaa = 1;
+    return native_try_v_document_shape(shape,matrix,canvas_width,canvas_height,page_x,page_y,scroll_y);
+}
+
+int native_draw_document_shape(const VoxGraphiteShape* shape, const float* matrix,
+    float canvas_width, float canvas_height, float page_x, float page_y, float scroll_y) {
+    if (!shape || !matrix) return 0;
+    return native_try_v_document_shape(*shape,matrix,canvas_width,canvas_height,page_x,page_y,scroll_y);
 }
 
 extern int vox_draw_document_path_pixels(uint8_t*, int, int, int, int, VoxGraphitePath*);

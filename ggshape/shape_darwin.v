@@ -75,7 +75,7 @@ fn context() !&canvas.GpuContext {
 // 2..5) and equal sides (mode 8).
 fn supported(shape &C.VoxGraphiteShape) bool {
 	kind_ok := match shape.fill {
-		0, 1, 2, 3, 4, 5, 6, 7, 8 { true }
+		0, 1, 2, 3, 4, 5, 6, 7, 8, 9 { true }
 		else { false }
 	}
 	return kind_ok && (shape.clip_out_count == 0 || shape.clip_outs != unsafe { nil })
@@ -164,7 +164,12 @@ fn draw_shape_pixels(pixels &u8, width i32, height i32, pitch i32, has_backgroun
 		style:        if stroke { .stroke } else { .fill }
 		stroke_width: if stroke && shape.thickness > 0 { shape.thickness } else { 0 }
 	}
-	if shape.fill >= 2 {
+	if shape.fill == 9 {
+		// An unblurred outer shadow is the source rounded rectangle with its
+		// content rounded rectangle clipped out, both with analytic coverage.
+		target.clip_rrect(rounded_rect(shape.underlay_rect), .difference, true) or { return 0 }
+		target.draw_rrect(rounded_rect(shape.rect), paint) or { return 0 }
+	} else if shape.fill >= 2 {
 		background := if shape.has_underlay != 0 {
 			?canvas.Paint(canvas.Paint{
 				color:      shape_color(shape.underlay_rgba, shape.has_float_underlay_color != 0,

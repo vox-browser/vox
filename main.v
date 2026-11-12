@@ -4318,6 +4318,9 @@ fn (mut app BrowserApp) draw_portable_shadow(command layout.PaintCommand, page_x
 		app.ctx.native_rendering && app.document != unsafe { nil }
 			&& app.document.font_rendering_policy() == .chromium
 	} $else { false }
+	$if macos {
+		if chromium && app.draw_chromium_unblurred_outer_shadow(command, page_x, page_y, scroll_y) { return }
+	}
 	bitmap := layout.rasterize_portable_shadow_with_coverage(command, f64(app.ctx.scale), chromium) or {
 		app.js_messages << 'Shadow replay: ${err.msg()}'
 		return

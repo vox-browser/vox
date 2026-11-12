@@ -181,7 +181,7 @@ fn test_unsupported_descriptors_leave_pixels_untouched() {
 	}
 	// An unknown border mode.
 	mut unknown := base_shape()
-	unknown.fill = 9
+	unknown.fill = 99
 	unknown.border_widths = [f32(2), 0, 0, 0]!
 	for shape in [unknown] {
 		mut pixels := backdrop()
