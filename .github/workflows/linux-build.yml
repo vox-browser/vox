@@ -119,6 +119,21 @@ jobs:
           printf 'V_BIN=%s/v\nUI2_SOURCE_DIR=%s\n' \
             "$RUNNER_TEMP/v" "$RUNNER_TEMP/ui2" >> "$GITHUB_ENV"
 
+      # Test binaries link the prebuilt native bridges (e.g.
+      # Build/linux/native/platform.a), so build them before the first
+      # test step rather than just before the smoke-gated suites.
+      - name: Build native dependencies
+        id: native_dependencies
+        if: ${{ !cancelled() && steps.toolchain.outcome == 'success' }}
+        timeout-minutes: 10
+        run: |
+          export PKG_CONFIG_PATH="$GITHUB_WORKSPACE/Build/deps/lib/pkgconfig"
+          python3 tools/run_memory_bounded.py \
+            --lock "$RUNNER_TEMP/vox-native-build.lock" \
+            --report "$RUNNER_TEMP/vox-native-build.json" --timeout 300 -- \
+            python3 tools/build_linux_native.py
+
+
       - name: Check vlib XML input compatibility
         if: ${{ !cancelled() && steps.toolchain.outcome == 'success' && matrix.gc == 'boehm' }}
         timeout-minutes: 10
@@ -169,17 +184,6 @@ jobs:
             --lock "$RUNNER_TEMP/vox-tab-codec-$LADYBIRD_V_GC.lock" \
             --report "$RUNNER_TEMP/vox-tab-codec-$LADYBIRD_V_GC.json" --timeout 540 -- \
             python3 tools/test_tab_metadata_codec.py --v "$V_BIN" --gc "$LADYBIRD_V_GC"
-
-      - name: Build native dependencies
-        id: native_dependencies
-        if: ${{ !cancelled() && steps.toolchain.outcome == 'success' }}
-        timeout-minutes: 10
-        run: |
-          export PKG_CONFIG_PATH="$GITHUB_WORKSPACE/Build/deps/lib/pkgconfig"
-          python3 tools/run_memory_bounded.py \
-            --lock "$RUNNER_TEMP/vox-native-build.lock" \
-            --report "$RUNNER_TEMP/vox-native-build.json" --timeout 300 -- \
-            python3 tools/build_linux_native.py
 
       - name: Check portable shadow and canvas rasterization
         if: ${{ !cancelled() && steps.native_dependencies.outcome == 'success' }}
