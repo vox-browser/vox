@@ -18,6 +18,18 @@ This preserves legal sampler names such as `texture`, `textureProj` and
 Public shader-source queries retain the original source bytes. Invalid ESSL
 still reports failure through `compileShader` and its info log.
 
+The 40 acceptance cases and eight exact-pixel fixtures now also run through
+both V WebGL services, including the experimental direct Metal implementation:
+
+```sh
+python3 tools/test_webgl_metal_service.py --output Build/shaders-metal-UNIQUE webgl/native_essl_equivalence_test.v
+python3 tools/test_webgl_metal_service.py --service angle --output Build/shaders-angle-UNIQUE webgl/native_essl_equivalence_test.v
+```
+
+Both services pass all 48 fixtures in default GC and `-gc none`. Metal submits
+the translated shaders to actual MTLFunctions. The earlier CGL comparison below
+is retained as historical PR #63 evidence.
+
 Run the native shader comparison from the canonical checkout:
 
 ```sh
