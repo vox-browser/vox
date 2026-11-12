@@ -1,5 +1,6 @@
 module main
 
+import css
 import dom
 import html
 import layout
@@ -71,4 +72,23 @@ fn test_chromium_rtl_direction_attribute_orders_number_and_nested_word() {
 	}
 	assert positions.len >= 2
 	assert positions[0] > positions.last()
+}
+
+fn test_chromium_rtl_fragment_snaps_plus_and_space_advance_once() {
+	for policy in [platform.FontRenderingPolicy.chromium, .libweb] {
+		font := &platform.Font{family: 'Test', point_size: 13, font_rendering_policy: policy}
+		first := platform.GlyphRun.new(font, .rtl, [platform.Glyph{
+			code_point: u32(`+`), advance: f32(8.1123046875)
+		}])
+		space := platform.GlyphRun.new(font, .rtl, [platform.Glyph{
+			code_point: u32(` `), advance: f32(3.580078125)
+		}])
+		zero := css.CSSPixels.new(0)
+		mut fragment := layout.LineBoxFragment.new(unsafe { nil }, 0, 1, zero, zero,
+			css.CSSPixels.from_raw(520), css.CSSPixels.new(16), zero, .rtl, .horizontal_tb, first)
+		fragment.append_glyph_run(space, css.CSSPixels.from_raw(230))
+		assert fragment.inline_length().raw_value() == if policy == .chromium { 749 } else { 750 }
+		run := fragment.glyph_run() or { panic('missing plus and space') }
+		assert run.glyphs_[0].position.x == if policy == .chromium { f32(3.580078125) } else { f32(3.59375) }
+	}
 }
