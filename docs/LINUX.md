@@ -298,7 +298,9 @@ raising either memory limit, or disabling generic checks. Upstream compilers
 that already contain the fix bypass this compatibility bootstrap.
 
 The Debian 13 ARM64 VM built the full browser with this compiler. The final
-window-fix build exited 0 with a sampled aggregate peak RSS of 6,339,305,472 bytes
+window-fix executable SHA-256 was
+`22d49c141dccf3a4c285d6dc31a079e27db340f8fdfe3e4ee3263760a86db772`.
+The build exited 0 with a sampled aggregate peak RSS of 6,339,305,472 bytes
 under the 12 GiB guard and V's 10 GiB limit. Fresh processes passed headless
 JavaScript/DOM/wheel checks, local HTML, HTTP redirects, trusted HTTPS and
 certificate rejection, and an 800×600 rendered screenshot.

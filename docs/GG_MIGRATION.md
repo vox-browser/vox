@@ -2694,3 +2694,74 @@ Native RGBA gives `[248,131,36,35]` and red `124`; non-native RGBA gives
 The tests now pin both platform results without changing rasterization or
 tolerances. All six outer-shadow tests pass when executed on macOS and in the
 Debian 13 ARM64 VM, under separate memory guards.
+
+### Completed ChatGPT text and pixel follow-up (2026-11-12)
+
+The frozen homepage now matches the original Brave document **pixel for pixel**:
+**0 differing pixels out of 3,145,728**, maximum channel error 0, MAE 0 and
+RMSE 0. The viewport was 1024×768 CSS pixels at scale 2, replaying
+`Tests/Browser/Brave/archives/chatgpt-home-20261104-v2/archive` at its original
+`https://chatgpt.com/` origin with a private profile/cache and cookie blocking
+disabled. The reference PNG remains unchanged, SHA-256
+`6e81a153394cf640168483ae1979025df0271c4886a6f44e83792d548106028e`.
+The fresh C developer executable was
+`9b78d4613bf2b271d435a10ec17d1d560bde16601b177cce11c2ad4508417948`;
+its identity was checked before and after capture. Both capture and the 3 GiB
+guard exited 0, at a sampled peak RSS of 803,241,984 bytes. The complete
+readiness/content audit retained the heading and editor; no reference or
+tolerance was changed.
+
+The remaining migration gaps were an absent superellipse painter, blurred
+rounded-shadow filtering, prematurely resolved SVG/contour samples, and large
+page coordinates retained in rounded-border conics. These now use V/GG paths
+and a bounded Metal pixel-filter service. Native Cocoa code only transports
+retained descriptors, coordinates and pixels. The application does not link
+the independent Skia/Graphite libraries used to generate test expectations.
+
+Focused pixel hashes cover contour fills, border alignment, outer shadows,
+rounded-shadow nine-patches, shared SVG samples, and compositor-local conics.
+The shared-contour sequence independently reproduces the old combined GPU
+recording; separate resolves reproduce the prior 124-pixel composer failure.
+The group eligibility and existing SVG batch tests pass. The new contour, SVG
+and local-coordinate tests also pass with `-prealloc -gc none` under a 3 GiB
+guard. Build setup's 19 Python tests pass. The earlier 45,495-, 8,617-, 5,330-,
+134-, 10- and 2-pixel attempts remain local diagnostic history.
+
+A separate fresh **live** launch of `https://chatgpt.com/` reached `complete`,
+with loaded fonts, one heading and the visible `mobile-composer-prompt`
+textarea. It reported zero native errors and JavaScript diagnostics. Its
+browser and 3 GiB guard exited 0, peaking at 781,697,024 bytes, with the same
+verified executable identity. This closes the earlier blank/loading live
+check; frozen-page pixel equality does not claim equality with changing live
+content. These are rendering and functional checks, not a performance cohort.
+
+Reproduce the pixel-only check with:
+
+```sh
+python3 tools/test_chatgpt_pixels.py --output Build/chatgpt-pixels-UNIQUE
+```
+
+It uses the latest completed production bundle, a fresh browser under its
+3 GiB guard, disk-only replay, and the existing source/content audit. It rejects
+changed executable, library, fixture or reference identities and any nonzero
+pixel difference. The Vox capture waits for `textarea,[contenteditable=true]`
+before settling. Raw commands, logs, audits, PNGs, executable identities and guarded exits for this
+follow-up are retained locally under
+`docs/performance/plain-v-text-20261112/final-continuation/`.
+
+The latest completed managed production build also passes the same exact check.
+Receipt `20261112-121345-ed07aa77` used literal C `-prod` in one unit, with
+executable SHA-256
+`1522067fc882717d4eecb49d6bea89ae9a85929fe55a7b246cbe174a59119ad3`.
+All eight changed rendering source files match that receipt's parsed source
+manifest. The canonical pixel-only tool passed the source and viewport-button
+content gates and reported **0 differences**; browser/guard exit 0, sampled
+peak RSS 1,222,656,000 bytes. A separate fresh production `--headless-smoke`
+also passed DOM mutation, JavaScript click, native wheel routing and ordinary
+wheel listeners (guard exit 0, peak 143,949,824 bytes).
+
+A fresh live launch of that same production executable also reached `complete`
+with a laid-out heading and editor and zero native errors (browser/guard exit
+0; sampled peak RSS 2,298,757,120 bytes). Its audit retained Google's One Tap
+FedCM migration warning; the earlier developer live run had no diagnostics.
+The production identity remained unchanged throughout the launch.
