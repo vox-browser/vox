@@ -505,3 +505,53 @@ one-pixel failure. The three ordinary gradient controls, Wikipedia and Lobsters
 remain exact in both fresh production captures. Matching feature inputs,
 reference/resource hashes, complete document identity, viewport and normal
 exits are recorded under `docs/performance/vlang-gradients-20261112/`.
+
+
+## PNG decode, GPU filtering and rounded clips
+
+`283a01512` restores the bounded CPU decode-size/mipmap path and the GPU's
+trilinear image sampler for complete, static, untagged PNGs. It reuses the
+existing Q15 CPU bilinear sampler exposed by `a59948164`, premultiplies alpha
+before resizing, preserves natural-image coordinate arithmetic, and keeps
+resource URL, document generation and compositor scope in decode identities.
+Video posters use the same path only when their immutable paint snapshot still
+belongs to the current document and resource. Live frames retain their path.
+Tagged images, animation, transforms, source crops, opacity and unsupported
+capture scales keep the existing renderer.
+
+`2e749d85f` carries rectangular and rounded overflow clips into the same GPU
+image draw. The new 600×160 diagnostic has two exactly agreeing Brave
+157.1.99.56 references, captured before the correction with scripts disabled.
+It improves from **2,143 differing pixels to zero**, twice. The focused GPU
+tests require unchanged Brave logo pixels, with and without rounded clipping,
+and preserve every pixel outside a rectangular crop. Cache/ownership tests,
+alpha and odd-size CPU mip tests, the existing rounded-image/shadow checks,
+and all eleven UI2 preparation tests pass under their required guards.
+
+Production executable
+`303a768fe0f94a3b22c129a1cc3f471e0c7dad8c932527fed35d79831efe5511`
+(receipt `20261112-154007-d64f9163`) contains both corrections. Exact compiled
+source hashes match the V/native implementations, CPU sampler and prepared GG
+image shader inputs. With the unchanged archive, reference, viewport and
+script policy, **vlang.io improves from 6,287 to 4,144 differing pixels in both
+fresh production captures**. Image resource reuse, compositor reuse, the
+first-use image/video-poster mip control and the rounded PNG diagnostic are
+all exact twice. Wikipedia, Lobsters and the three ordinary gradient controls
+remain exact twice. GitHub improves from 38,654 to **38,404**, twice, with all
+33 row identities preserved. No reference or tolerance was changed.
+
+Additional diagnostic controls retain their existing crop, ICC and scrolling
+failures; the rounded transformed-image control improves from 21,076 to 571,
+twice, and translated minification stays exact. These results do not establish
+full image-cache or color-profile parity. vlang.io still differs in its tagged
+Mastodon image, JPEG icon, text mask and orbit decoration. CNN and the missing
+Reddit archive remain open as described above.
+
+Every attempt remains local under `docs/performance/vlang-gradients-20261112/`.
+This includes the corrected crop-test assertion, an early source-guard rejection
+when the native header changed during input collection, and two diagnostic
+commands with misspelled fixture names. The local capture driver now validates
+all fixture/reference paths before launching; the final complete production
+command and every browser/guard exit pass. Completed job binaries and generated
+C are removed from `Build/`; raw commands, identities, PNGs and receipts are
+retained locally.
