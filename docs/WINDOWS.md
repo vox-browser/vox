@@ -34,14 +34,14 @@ installation and the one-time environment setup followed by `v .`.
 
 ## Dependencies and native build
 
-Install current V, Python 3, the latest upstream UI2 and the MinGW development
+Install current V, the latest upstream UI2 and the MinGW development
 packages. Use `v install ui2` for a new installation and `v up ui2` to update it.
 The [UI2 adapter guide](../tools/ui2/README.md) also covers separate checkouts.
 In an MSYS2 MinGW64 shell, the native packages are:
 
 ```sh
 pacman -S --needed mingw-w64-x86_64-toolchain mingw-w64-x86_64-pkgconf \
-  mingw-w64-x86_64-python mingw-w64-x86_64-icu \
+  mingw-w64-x86_64-icu \
   mingw-w64-x86_64-harfbuzz mingw-w64-x86_64-freetype \
   mingw-w64-x86_64-openssl \
   mingw-w64-x86_64-angleproject mingw-w64-x86_64-curl \
@@ -50,14 +50,14 @@ pacman -S --needed mingw-w64-x86_64-toolchain mingw-w64-x86_64-pkgconf \
 
 Provide a Windows `JavaScriptCore.dll` and its runtime dependencies. The
 [Playwright WebKit distribution](https://github.com/microsoft/playwright/blob/main/packages/playwright-core/browsers.json)
-contains a Windows WebKit build with this DLL. `prepare_windows_jsc.py` checks
+contains a Windows WebKit build with this DLL. `prepare_windows_jsc.vsh` checks
 the actual DLL's x86-64 export table against every C API declared by Vox before
 creating its MinGW import library. It does not substitute a JavaScript engine.
 
-From the repository, with MinGW Python and compiler tools on PATH:
+From the repository, with V and MinGW compiler tools on PATH:
 
 ```sh
-python tools/build_windows_browser.py \
+sh tools/run_v_tool.sh build_windows_browser \
   --javascriptcore-dll C:/path/to/webkit/JavaScriptCore.dll \
   --output C:/path/to/output/Vox.exe
 ```
@@ -92,9 +92,9 @@ a Windows executable. The cross compiler supplies its own C runtime headers.
 The following builds inside the repository's memory guard:
 
 ```sh
-python3 tools/run_memory_bounded.py \
+sh tools/run_v_tool.sh run_memory_bounded \
   --lock Build/windows-build-UNIQUE.lock --report Build/windows-build-UNIQUE.json -- \
-  python3 tools/build_windows_browser.py \
+  sh tools/run_v_tool.sh build_windows_browser \
     --deps-root Build/deps/windows \
     --javascriptcore-dll /path/to/webkit/JavaScriptCore.dll \
     --output /tmp/Vox.exe
@@ -105,7 +105,7 @@ the import library remain under `Build/deps/windows`. The helper prepares
 native bridges and UI2, then runs the equivalent of:
 
 ```sh
-ui2_modules=$(python3 tools/prepare_ui2.py)
+ui2_modules=$(sh tools/run_v_tool.sh prepare_ui2)
 v -b c -memory-limit 10G -prod -no-prod-options -enable-globals -gc none \
   -os windows -arch amd64 -cc x86_64-w64-mingw32-gcc \
   -d ui2_custom_rendering -d sokol_d3d11 \

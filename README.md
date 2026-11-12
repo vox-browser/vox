@@ -28,9 +28,9 @@ Install Apple's command line tools (`xcode-select --install`) and
 [Homebrew](https://brew.sh/), then:
 
 ```sh
-brew install python cmake pkgconf freetype openssl \
+brew install cmake pkgconf freetype openssl \
     ffmpeg libavif curl glslang spirv-cross
-eval "$(python3 tools/dev_build_env.py)"
+eval "$(sh tools/run_v_tool.sh dev_build_env)"
 v .
 ./vox2 https://example.com
 ```
@@ -42,7 +42,7 @@ and production builds. FreeType and HarfBuzz remain native dependencies;
 HarfBuzz is supplied by setup rather than Homebrew. Graphite2 is not required.
 
 For an existing macOS checkout, install CMake (`brew install cmake`) and rerun
-`eval "$(python3 tools/dev_build_env.py)"` before the next `v .` build.
+`eval "$(sh tools/run_v_tool.sh dev_build_env)"` before the next `v .` build.
 
 Font selection, Unicode processing and glyph-run policy use V code with bundled
 Unicode 17 data; ICU is not required. FFmpeg, libavif and curl
@@ -57,13 +57,13 @@ open Build/v/Vox.app
 
 ```sh
 sudo apt-get update
-sudo apt-get install build-essential clang pkg-config python3 git ca-certificates \
+sudo apt-get install build-essential clang pkg-config git ca-certificates \
     libjavascriptcoregtk-4.1-dev libglib2.0-dev libharfbuzz-dev \
     libcurl4-openssl-dev libssl-dev libegl1-mesa-dev libgles2-mesa-dev \
     libgl1-mesa-dev libxi-dev libxcursor-dev libxrandr-dev libx11-dev \
     libasound2-dev libgc-dev libfreetype-dev libfontconfig-dev libwebp-dev \
     libpng-dev libjpeg-dev glslang-dev fonts-liberation2 fonts-dejavu-core
-eval "$(python3 tools/dev_build_env.py)"
+eval "$(sh tools/run_v_tool.sh dev_build_env)"
 v .
 Build/linux/vox https://example.com
 ```
@@ -74,12 +74,11 @@ including the Xvfb window test and optional media dependencies.
 
 #### Windows (x86-64)
 
-Use an [MSYS2 MinGW64](https://www.msys2.org/) terminal with V, Python and the
+Use an [MSYS2 MinGW64](https://www.msys2.org/) terminal with V and the
 compiler tools on `PATH`. Install:
 
 ```sh
 pacman -S --needed mingw-w64-x86_64-toolchain mingw-w64-x86_64-pkgconf \
-    mingw-w64-x86_64-python \
     mingw-w64-x86_64-harfbuzz mingw-w64-x86_64-freetype \
     mingw-w64-x86_64-openssl mingw-w64-x86_64-angleproject mingw-w64-x86_64-curl \
     mingw-w64-x86_64-glslang
@@ -90,7 +89,7 @@ Supply a Windows x86-64 `JavaScriptCore.dll` and its matching WebKit DLLs;
 source. The setup verifies the required exports and creates its import library:
 
 ```sh
-eval "$(python tools/dev_build_env.py --shell sh \
+eval "$(sh tools/run_v_tool.sh dev_build_env --shell sh \
     --javascriptcore-dll C:/path/to/webkit/JavaScriptCore.dll)"
 v .
 ./vox2.exe https://example.com
@@ -107,8 +106,10 @@ For a quick engine check, run the resulting executable with `--headless-smoke`.
 The latest [Linux VM checks](docs/LINUX.md#vm-follow-up-2026-11-12) and
 [Windows VM checks](docs/WINDOWS.md#vm-follow-up-2026-11-12) record the verified
 builds, runtime checks and earlier failed attempts.
+The build tools use V. Python remains in optional tests, benchmarks, and
+generators. See [build-tool commands](tools/BUILDING.md).
 Repository contributors run builds and tests through
-`python3 tools/run_memory_bounded.py --lock Build/JOB.lock --report Build/JOB.json -- v .`.
+`sh tools/run_v_tool.sh run_memory_bounded --lock Build/JOB.lock --report Build/JOB.json -- v .`.
 
 HTML/CSS - pure V, rendering via the V graphics module (DirectX 11, Metal, OpenGL, FreeType/stb_truetype).
 

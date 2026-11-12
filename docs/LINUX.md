@@ -14,7 +14,7 @@ On Ubuntu 24.04 or newer, install the following packages:
 ```sh
 sudo apt-get update
 sudo apt-get install build-essential clang ninja-build generate-ninja pkg-config \
-    python3 git curl ca-certificates libjavascriptcoregtk-4.1-dev libglib2.0-dev \
+    git curl ca-certificates libjavascriptcoregtk-4.1-dev libglib2.0-dev \
     libharfbuzz-dev libcurl4-openssl-dev glslang-dev \
     libssl-dev libegl1-mesa-dev libgles2-mesa-dev libgl1-mesa-dev libxi-dev \
     libxcursor-dev libxrandr-dev libx11-dev libasound2-dev libgc-dev \
@@ -23,8 +23,8 @@ sudo apt-get install build-essential clang ninja-build generate-ninja pkg-config
 ```
 
 You also need current [V](https://github.com/vlang/v) and
-[UI2](https://github.com/vlang/ui2) checkouts and Python 3.12 or newer. For a fresh
-setup, run these commands from the Vox checkout:
+[UI2](https://github.com/vlang/ui2) checkouts. Python 3.12 or newer is needed only for optional tests and
+benchmarks. For a fresh setup, run these commands from the Vox checkout:
 
 ```sh
 git clone --depth 1 https://github.com/vlang/v.git ../v
@@ -133,7 +133,7 @@ Build/linux/vox --headless-smoke
 Build/linux/vox --headless=layout-tree ./page.html
 
 sudo apt-get install xvfb xauth xdotool scrot
-python3 tools/run_memory_bounded.py \
+sh tools/run_v_tool.sh run_memory_bounded \
     --lock Build/linux-window-smoke.lock --report Build/linux-window-smoke.json \
     --limit-gib 3 --timeout 600 -- \
     python3 tools/test_linux_browser.py
@@ -172,7 +172,7 @@ the production build, run without a collector, and poison released storage to
 expose stale borrowed payloads:
 
 ```sh
-VOX_ARENA_POISON=1 python3 tools/run_memory_bounded.py \
+VOX_ARENA_POISON=1 sh tools/run_v_tool.sh run_memory_bounded \
     --lock Build/linux-ownership-tests.lock --report Build/linux-ownership-tests.json -- \
     python3 tools/test_linux_native.py --gc prealloc \
     platform/closure_metadata_arena_test.v \
@@ -189,7 +189,7 @@ resource cancellation against both allocation models. These are the focused
 application boundary checks:
 
 ```sh
-VOX_ARENA_POISON=1 python3 tools/run_memory_bounded.py \
+VOX_ARENA_POISON=1 sh tools/run_v_tool.sh run_memory_bounded \
     --lock Build/linux-session-tests.lock --report Build/linux-session-tests.json -- \
     python3 tools/test_linux_native.py --gc prealloc \
     document/session_test.v document/child_storage_test.v \
