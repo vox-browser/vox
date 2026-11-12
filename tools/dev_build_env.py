@@ -66,6 +66,8 @@ def main():
             print(line, file=sys.stderr)
         return lines[-1] if lines else ''
 
+    if sys.platform.startswith('linux'):
+        compiler = Path(prepare('prepare_v_match_scope.py', compiler))
     if sys.platform.startswith('linux') or os.name == 'nt':
         prepare('build_linux_native.py', '--os', 'windows' if os.name == 'nt' else 'linux')
     if os.name == 'nt':

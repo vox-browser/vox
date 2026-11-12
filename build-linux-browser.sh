@@ -49,6 +49,10 @@ esac
 # historical environment variable also controls fallback on Linux.
 V_MACOS_V3_NO_FALLBACK=1
 export V_MACOS_V3_NO_FALLBACK
+v_backend=${VOX_BUILD_BACKEND:-$(python3 "$repo_dir/tools/browser_backend.py" "$repo_dir")}
+if [ "$v_backend" = c ]; then
+    v_compiler=$(python3 "$repo_dir/tools/prepare_v_match_scope.py" "$v_compiler")
+fi
 
 export PKG_CONFIG_PATH="$repo_dir/Build/deps/lib/pkgconfig${PKG_CONFIG_PATH:+:$PKG_CONFIG_PATH}"
 for dependency in javascriptcoregtk-4.1 glib-2.0 fontconfig freetype2 harfbuzz icu-uc icu-i18n egl glesv2; do
@@ -82,7 +86,6 @@ fi
 # A checkout such as ~/.vmodules/vox2 would compile `encoding` as
 # `vox2.encoding` while its imports still name vlib's `encoding` directory.
 # Listing the repository first keeps its packages unqualified wherever it lives.
-v_backend=${VOX_BUILD_BACKEND:-$(python3 "$repo_dir/tools/browser_backend.py" "$repo_dir")}
 case "$v_backend" in c|fastc) ;; *) echo "Unsupported browser backend: $v_backend" >&2; exit 2 ;; esac
 set -- -b "$v_backend" -memory-limit 10G -enable-globals -cc "${CC:-clang}" \
     -d vox_production -d use_openssl \

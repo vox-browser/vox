@@ -25,7 +25,7 @@ class LinuxCompilerSelectionTest(unittest.TestCase):
             directory.mkdir()
         self.shell = shutil.which('sh')
         self.assertIsNotNone(self.shell)
-        for command in ('dirname', 'mkdir'):
+        for command in ('dirname', 'mkdir', 'rm'):
             executable = shutil.which(command)
             self.assertIsNotNone(executable)
             (self.helpers / command).symlink_to(executable)
@@ -77,7 +77,9 @@ class LinuxCompilerSelectionTest(unittest.TestCase):
                     [os.environ['VOX_BUILD_TEST_SHELL'], str(repo / 'build-linux-browser.sh')],
                     cwd=repo, env=dict(os.environ, VOX_BUILD_SUPERVISED='1'))
                 raise SystemExit(result.returncode)
-            if Path(sys.argv[1]).name == 'prepare_prealloc_runtime.py':
+            if Path(sys.argv[1]).name == 'prepare_v_match_scope.py':
+                print(sys.argv[2])
+            elif Path(sys.argv[1]).name == 'prepare_prealloc_runtime.py':
                 failure = int(os.environ['VOX_BUILD_TEST_PREALLOC_FAILURE'])
                 if failure:
                     print('Unsupported V allocator', file=sys.stderr)
@@ -167,8 +169,9 @@ class LinuxCompilerSelectionTest(unittest.TestCase):
         preparations = [item for item in helpers
                         if Path(item['argv'][0]).name.startswith('prepare_')]
         self.assertEqual([Path(item['argv'][0]).name for item in preparations],
-                         ['prepare_http_compat.py', 'prepare_ui2.py',
-                          'prepare_linux_modules.py', 'prepare_prealloc_runtime.py'])
+                         ((['prepare_v_match_scope.py'] if backend == 'c' else []) +
+                          ['prepare_http_compat.py', 'prepare_ui2.py',
+                           'prepare_linux_modules.py', 'prepare_prealloc_runtime.py']))
         for preparation in preparations:
             self.assertEqual(preparation['argv'][1], str(compiler))
             self.assertEqual(preparation['cwd'], str(helper_cwd or self.caller))
