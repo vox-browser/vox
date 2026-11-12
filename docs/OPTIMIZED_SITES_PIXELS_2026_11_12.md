@@ -837,3 +837,18 @@ remains pending. References and tolerances are unchanged, Reddit's original
 fixture is still missing, and CNN's source/replay mismatch remains open. No
 live-site, whole-document or performance claim is made. **The all-site gate
 remains open.**
+
+
+### Native repeatability follow-up
+
+A separate final check of decoded RGBA pixels confirms exact native repeats
+for GitHub, HN, Wikipedia, Lobsters and vlang.io in all three new cohorts.
+CNN remains unstable: the fractional-corner cohort's two native captures differ
+at **1,030 pixels** (maximum channel error 37), the multisampling cohort repeats
+exactly, and the fractional-shadow cohort differs at **1,007 pixels** (maximum
+error 22). Both failures occupy the same 104×15 region beginning at (460, 753),
+inside a photograph clipped by the viewport. Equal cross-browser counts of
+175,866 did not establish native repeatability. These observations reopen the
+native-stability qualification after the earlier production checkpoint; they
+are not attributed to a particular correction. The original image resources
+and both failed repeat comparisons remain local with the other evidence.
