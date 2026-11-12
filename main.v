@@ -6722,7 +6722,7 @@ fn (mut app BrowserApp) draw_command(source_command &layout.PaintCommand, page_x
 			}
 			if app.ctx.native_rendering && destination.width == image.width
 				&& destination.height == image.height && result.clip_radii != painting.CornerRadii{} {
-				if shader_image := app.rounded_jpeg_paint_image(image_data.image_url, image) { image = shader_image }
+				if shader_image := app.rounded_jpeg_paint_image(image_data.image_url) { image = shader_image }
 			}
 			if paint_command_image_allows_force_dark(*command, f64(destination.width),
 				f64(destination.height), image) {
