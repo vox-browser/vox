@@ -17,6 +17,7 @@ mut:
     objects map[u32]&MetalServiceObject
     buffers map[u32]u32
     fences map[voidptr]&MetalServiceFence
+    indexed_buffers map[u64]MetalServiceBufferRange
     vertex_arrays map[u32]&MetalServiceVertexArray
     vertex_array u32
     current_program u32
@@ -182,8 +183,9 @@ fn (mut context MetalServiceContext) collect_buffers() {
     for name, mut object in context.objects {
         if object.kind != 0 || !object.deleted || object.gpu_buffer == unsafe { nil } { continue }
         mut referenced := context.buffers.values().contains(name)
+        for _,binding in context.indexed_buffers { if binding.buffer==name { referenced=true } }
         for _, fence in context.fences { unsafe { free(fence) } }
-    unsafe { context.fences.free() }
+    unsafe { context.fences.free(); context.indexed_buffers.free() }
     for _, vao in context.vertex_arrays {
             if vao.element_buffer == name || vao.attributes.any(it.buffer == name) { referenced = true }
         }
@@ -420,6 +422,7 @@ fn metal_service_vox_gl_delete_object(a0 i32, a1 u32) {
     object.deleted = true
     if a0 == 0 {
         for target,name in context.buffers { if name == a1 { context.buffers[target] = 0 } }
+        for key,binding in context.indexed_buffers { if binding.buffer==a1 { context.indexed_buffers.delete(key) } }
         mut vao := context.vao()
         if vao.element_buffer == a1 { vao.element_buffer = 0 }
         for mut attribute in vao.attributes { if attribute.buffer == a1 { attribute.buffer = 0 } }
@@ -551,12 +554,14 @@ fn metal_service_vox_gl_transform_feedback_varyings(a0 u32, a1 i32, a2 voidptr, 
 
 @[export: 'vox_gl_bind_buffer_base']
 fn metal_service_vox_gl_bind_buffer_base(a0 u32, a1 u32, a2 u32) {
-    metal_service_unsupported('vox_gl_bind_buffer_base')
+    mut context:=metal_service_current()
+    if context!=unsafe { nil } { context.bind_indexed_buffer(a0,a1,a2,0,0,false) }
 }
 
 @[export: 'vox_gl_bind_buffer_range']
 fn metal_service_vox_gl_bind_buffer_range(a0 u32, a1 u32, a2 u32, a3 i64, a4 i64) {
-    metal_service_unsupported('vox_gl_bind_buffer_range')
+    mut context:=metal_service_current()
+    if context!=unsafe { nil } { context.bind_indexed_buffer(a0,a1,a2,a3,a4,true) }
 }
 
 @[export: 'vox_gl_bind_buffer']
@@ -1477,38 +1482,57 @@ fn metal_service_vox_gl_active_info(a0 u32, a1 u32, a2 i32, a3 i32, a4 &char, a5
 
 @[export: 'vox_gl_uniform_indices']
 fn metal_service_vox_gl_uniform_indices(a0 u32, a1 i32, a2 voidptr, a3 &u32) {
-    metal_service_unsupported('vox_gl_uniform_indices')
+    metal_service_uniform_indices(a0,a1,a2,a3)
 }
 
 @[export: 'vox_gl_active_uniforms']
 fn metal_service_vox_gl_active_uniforms(a0 u32, a1 i32, a2 &u32, a3 u32, a4 &i32) {
-    metal_service_unsupported('vox_gl_active_uniforms')
+    metal_service_active_uniforms(a0,a1,a2,a3,a4)
 }
 
 @[export: 'vox_gl_uniform_block_index']
 fn metal_service_vox_gl_uniform_block_index(a0 u32, a1 &char) u32 {
-    metal_service_unsupported('vox_gl_uniform_block_index')
-    return 0
+    context:=metal_service_current()
+    if context==unsafe { nil } { return ~u32(0) }
+    program:=context.linked_program(a0) or { return ~u32(0) }
+    if a1!=unsafe { nil } { name:=unsafe { cstring_to_vstring(a1) };for i,block in program.blocks { if block.name==name { return u32(i) } } }
+    return ~u32(0)
 }
 
 @[export: 'vox_gl_uniform_block_parameter']
 fn metal_service_vox_gl_uniform_block_parameter(a0 u32, a1 u32, a2 u32, a3 i32, a4 &i32) {
-    metal_service_unsupported('vox_gl_uniform_block_parameter')
+    metal_service_block_parameter(a0,a1,a2,a3,a4)
 }
 
 @[export: 'vox_gl_uniform_block_name']
 fn metal_service_vox_gl_uniform_block_name(a0 u32, a1 u32, a2 i32, a3 &char) {
-    metal_service_unsupported('vox_gl_uniform_block_name')
+    context:=metal_service_current()
+    if context==unsafe { nil } { return }
+    program:=context.linked_program(a0) or { return }
+    if a1>=u32(program.blocks.len) { metal_service_error(invalid_value);return }
+    metal_service_copy_string(program.blocks[int(a1)].name,a2,a3)
 }
 
 @[export: 'vox_gl_uniform_block_binding']
 fn metal_service_vox_gl_uniform_block_binding(a0 u32, a1 u32, a2 u32) {
-    metal_service_unsupported('vox_gl_uniform_block_binding')
+    context:=metal_service_current()
+    if context==unsafe { nil } { return }
+    mut program:=context.linked_program(a0) or { return }
+    if a1>=u32(program.blocks.len) || a2>=30 { metal_service_error(invalid_value);return }
+    program.blocks[int(a1)].binding=a2
 }
 
 @[export: 'vox_gl_internalformat_parameter']
 fn metal_service_vox_gl_internalformat_parameter(a0 u32, a1 u32, a2 u32, a3 i32, a4 &i32) {
-    metal_service_unsupported('vox_gl_internalformat_parameter')
+    context:=metal_service_current()
+    if context==unsafe { nil } { return }
+    if a0!=renderbuffer || a1 !in [u32(0x8058),0x8056,0x8057,0x8d62,0x8c43,0x8229,0x822b,0x881a,0x8814,0x8d48,0x81a5,0x81a6,0x8cac,0x88f0,0x8cad] || a2 !in [samples,num_sample_counts] { metal_service_error(invalid_enum);return }
+    if a3<0 { metal_service_error(invalid_value);return }
+    counts:=context.target.sample_counts()
+    defer { unsafe { counts.free() } }
+    if a3==0 || a4==unsafe { nil } { return }
+    if a2==num_sample_counts { unsafe { *a4=i32(counts.len) };return }
+    for i,count in counts { if i>=int(a3) { break };unsafe { a4[i]=i32(count) } }
 }
 
 @[export: 'vox_gl_shader_precision']

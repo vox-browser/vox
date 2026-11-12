@@ -156,7 +156,9 @@ fn (mut context MetalServiceContext) draw(mode u32,first int,count int,instances
             }
         }
     }
-    context.target.draw_with_options(object.program,streams,primitive,draw_first,draw_count,instances,metal.DrawOptions{indices:indices,depth_stencil:context.depth,state:context.render_state(mode)}) or {
+    blocks:=context.uniform_block_bindings(object) or { context.last_failure=err.msg();return }
+    defer { unsafe { blocks.free() } }
+    context.target.draw_with_options(object.program,streams,primitive,draw_first,draw_count,instances,metal.DrawOptions{uniform_blocks:blocks,indices:indices,depth_stencil:context.depth,state:context.render_state(mode)}) or {
         context.last_failure=err.msg();metal_service_error(invalid_operation)
     }
 }

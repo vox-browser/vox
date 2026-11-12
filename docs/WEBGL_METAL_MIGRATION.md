@@ -141,6 +141,16 @@ and structured-uniform reflection still require browser conformance coverage.
 
 ## Validation
 
+The direct service now implements sync fences and uniform-block dispatch.
+Fences follow the synchronous command-completion boundary, preserve context
+ownership and reject stale/deleted handles. Uniform indices, block names,
+layout queries and stage references use Metal shader reflection. Indexed UBO
+bindings track allocation changes, validate ranges at draw time and detach on
+deletion. Device sample-count queries report Metal's supported counts.
+The existing sync and uniform-block suites plus two new ownership/range cases
+pass in both GC modes (six cases per mode), including exact GPU pixels from a
+UBO bound at byte offset 256.
+
 The experimental service passes 15 focused WebGL cases in each of default GC
 and `-gc none`: six new context/buffer/draw/readback cases and the existing shader
 (3), uniform (1), base-draw (2), integer-attribute (1), viewport/scissor (2) cases.
