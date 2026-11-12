@@ -41,6 +41,13 @@ jobs:
           fetch-depth: 1
           persist-credentials: false
 
+      - name: Prepare the reviewed checkout
+        run: |
+          # The supervisor requires a regular checkout on master. Keep the
+          # checked-out push/PR commit; never replace it with origin/master.
+          git checkout -B master
+          git rev-parse HEAD
+
       - name: Check tag matches packaging/version.txt
         if: startsWith(github.ref, 'refs/tags/v')
         run: |
