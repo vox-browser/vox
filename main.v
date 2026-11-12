@@ -2849,6 +2849,10 @@ fn run_document_script_sources_with_resource_loaders(document &dom.Document, cur
 }
 
 fn initialize_document_script_runtime(document &dom.Document, current_url string, sources []browserjs.ScriptSource, runtime &browserjs.Runtime, image_fetch browserjs.ImageRequestFetchHook, image_async_fetch ?browserjs.ImageAsyncRequestFetchHook, script_loader ?&BrowserScriptRequestLoader, media_loader ?browserjs.MediaElementCreatedHook, mut messages []string) bool {
+	// Bindings are retained by the realm and by agent-wide native lookup maps.
+	// An iframe can initialize while its parent is in a temporary frame arena.
+	binding_storage := platform.enter_persistent()
+	defer { platform.leave_persistent(binding_storage) }
 	load_instruction_stage := processmetrics.begin_instruction_stage('script_runtime_setup')
 	defer { load_instruction_stage.finish() }
 	phase_mark := platform.arena_phase_begin()
