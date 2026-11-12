@@ -581,3 +581,32 @@ with compiler-manifest verification; they did not replace the completed bundle.
 The fail-fast compiler probe in `2cd7046ea` rejects the mismatched installation
 without falling back to an older compiler. All attempts and their actual exits
 remain local under `docs/performance/vlang-gradients-20261112/`.
+
+## Retained glyph coverage in background text masks
+
+`6520e253a` routes eligible horizontal Chromium-policy mask glyphs through the
+same V/CPU glyph rasterizer as ordinary document text, preserving black paint
+for its color-dependent coverage adjustment. The native bitmap boundary keeps
+the original paint clip while aligning the mask image to device pixels. Emoji,
+unsupported faces and other declined runs retain the existing fallback.
+
+Diagnostic executable
+`dbc14bc451668364c65b1d962c7622f086f44cb415b528cb4a3134b73d1157d2`
+reduces vlang.io from 3,669 to **3,250 differing pixels**, twice. The existing
+retained-gradient control improves from 8,686 to 3,752 differing pixels, all
+with maximum channel error one. The new fractional-position/overflow diagnostic
+improves from 13,044 to 7,725, also with maximum channel error one. Its two Brave
+reference captures agree exactly. The existing scope control improves from
+4,423 to 2,939; its separate shadow/SVG errors remain, including maximum error
+14 outside the text mask. The compositor-gradient control retains one error.
+These remaining differences are failures under the unchanged zero-tolerance
+gate, including the single-channel rounding differences.
+
+Wikipedia and Lobsters remain exact in two fresh diagnostic captures each.
+GitHub remains at 38,404 with all 33 row identities preserved. The compiler,
+mandatory non-windowed startup check, document readiness/viewport/content audits,
+reference/input identity checks and every browser exit pass. Compilation peaks
+at about 6.2 GiB under the 12 GiB guard; captures use 3 GiB guards. Initial
+pointer-view and exported-C declaration compile errors are retained alongside
+the corrected passing build. Production validation remains pending on the
+managed build; these results do not validate the older completed bundle.
