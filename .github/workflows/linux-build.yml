@@ -102,10 +102,14 @@ jobs:
           git -C "$RUNNER_TEMP/v" remote add origin https://github.com/vlang/v.git
           git -C "$RUNNER_TEMP/v" fetch --depth 1 origin "$V_REVISION"
           git -C "$RUNNER_TEMP/v" checkout --detach FETCH_HEAD
+          # No VFLAGS here: extra V flags break the v1-to-v2 bootstrap at
+          # this pin (unresolved string helper at link time). The memory
+          # guard on this step still bounds the build RSS; -memory-limit
+          # stays on every V invocation that compiles or tests Vox itself.
           python3 tools/run_memory_bounded.py \
             --lock "$RUNNER_TEMP/vox-v-build.lock" \
             --report "$RUNNER_TEMP/vox-v-build.json" --timeout 1200 -- \
-            make -C "$RUNNER_TEMP/v" -j2 VFLAGS='-memory-limit 10G'
+            make -C "$RUNNER_TEMP/v" -j2
           "$RUNNER_TEMP/v/v" version
           git init "$RUNNER_TEMP/ui2"
           git -C "$RUNNER_TEMP/ui2" remote add origin https://github.com/vlang/ui2.git
