@@ -483,3 +483,25 @@ guard; focused runtime checks use 3 GiB. The remaining image, text-mask and
 shadow differences keep vlang.io and the all-site gate open. Raw attempts,
 commands and receipts remain local under
 `docs/performance/vlang-gradients-20261112/`.
+
+
+## Gradients inside transparency layers
+
+`eac42f21f` also renders eligible CSS gradients in transparent native groups,
+including background text masks. These groups receive a transparent GPU raster
+and retain their existing native clipping and composition. The focused native
+boundary test requires an opaque gradient to produce identical pixels with
+and without a transparency layer; the six earlier gradient draws remain exact.
+An initial test incorrectly encoded its stop tuple as position/RGBA rather
+than RGBA/position and is retained alongside the corrected passing test.
+
+Production executable
+`8bdf8c3a0f29f8041c325bfc13f6f1ac167e0073773cbb4556bd8fee54fa1925`
+reduces the unchanged vlang.io archive to **6,287 differing pixels in both fresh
+captures**. The existing text-gradient controls improve from 15,068 to 8,686
+and from 5,196 to 4,423 respectively, with both repeated captures agreeing;
+they remain failures. The compositor-gradient control retains its existing
+one-pixel failure. The three ordinary gradient controls, Wikipedia and Lobsters
+remain exact in both fresh production captures. Matching feature inputs,
+reference/resource hashes, complete document identity, viewport and normal
+exits are recorded under `docs/performance/vlang-gradients-20261112/`.
