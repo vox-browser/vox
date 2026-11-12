@@ -9,6 +9,13 @@ pub:
 	mag_filter TextureFilter
 	wrap_s TextureWrap
 	wrap_t TextureWrap
+    wrap_r TextureWrap
+    mip_filter MipFilter
+    min_lod f32 = -1000
+    max_lod f32 = 1000
+    compare bool
+    compare_func CompareFunction = .less_equal
+    anisotropy int = 1
 }
 
 @[heap]
@@ -47,7 +54,9 @@ pub fn (texture &Texture2D) read_pixels() ![]u8 {
 }
 
 pub fn (mut texture Texture2D) sampler(options SamplerOptions) ! {
-	if C.vox_metal_texture_sampler(texture.handle, i32(options.min_filter), i32(options.mag_filter), i32(options.wrap_s), i32(options.wrap_t)) != 1 { return error('Metal sampler allocation failed or texture is closed') }
+    mut sampler:=Sampler.create(texture.owner,options)!
+    defer { sampler.close();unsafe { free(sampler) } }
+    if C.vox_metal_texture_set_sampler(texture.handle,sampler.handle)!=1 { return error('Metal sampler allocation failed or texture is closed') }
 }
 
 pub fn (mut texture Texture2D) close() {

@@ -141,6 +141,13 @@ and structured-uniform reflection still require browser conformance coverage.
 
 ## Validation
 
+Metal sampler objects now preserve independent filtering, mip/LOD, wrap,
+comparison and anisotropy state. One draw can bind a texture through different
+samplers. The V service creates, binds, queries and deletes sampler records and
+advertises its implemented anisotropy support. Four focused cases pass in both
+GC modes, with exact mixed nearest/linear and clamped-mip pixels; all six native
+fixtures also pass ARC/MRC/sanitizer checks.
+
 The resource layer now allocates mipmapped 2D/cube/array/3D textures, normalized,
 floating-point and integer formats, depth/stencil storage and supported
 multisample color storage. Checked region transfers preserve physical values;

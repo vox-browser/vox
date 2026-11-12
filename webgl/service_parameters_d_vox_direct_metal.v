@@ -119,12 +119,13 @@ fn metal_service_default_parameters() map[u32][]f64 {
         u32(0x8c8b): [f64(4)] // MAX_TRANSFORM_FEEDBACK_SEPARATE_ATTRIBS
         u32(0x8c80): [f64(4)] // MAX_TRANSFORM_FEEDBACK_SEPARATE_COMPONENTS
         u32(0x9111): [f64(0)] // MAX_SERVER_WAIT_TIMEOUT
-        u32(0x84ff): [f64(1)] // MAX_TEXTURE_MAX_ANISOTROPY_EXT
+        u32(0x84ff): [f64(16)] // MAX_TEXTURE_MAX_ANISOTROPY_EXT
     }
 }
 
 fn (mut context MetalServiceContext) parameter(pname u32) ![]f64 {
     match pname {
+        0x8919 { return [f64(context.samplers[int(context.parameters[active_texture][0])-int(texture0)])] }
         0x8b8d { return [f64(context.current_program)] }
         0x0ba2 { return [context.viewport.x,context.viewport.y,context.viewport.width,context.viewport.height] }
         0x0c10 { return [f64(context.scissor.x),f64(context.scissor.y),f64(context.scissor.width),f64(context.scissor.height)] }

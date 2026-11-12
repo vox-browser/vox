@@ -28,6 +28,7 @@ pub:
 	name string
 	texture &Texture2D = unsafe { nil }
 	array_index u32
+    sampler &Sampler = unsafe { nil }
 }
 
 pub struct DrawOptions {
@@ -215,7 +216,8 @@ pub fn (mut target DrawingBuffer) draw_with_options(program &ShaderProgram, stre
 			}
 			if texture.handle == render_target { return error('Metal texture feedback loop') }
 			if u64(resource.binding) + index >= 128 || (resource.kind == 7 && u64(resource.secondary_binding) + index >= 16) { return error('Metal texture binding exceeds device limits') }
-			textures << C.VoxMetalTextureBinding{texture: texture.handle, stage: if resource.stage == .vertex { u32(0) } else { u32(1) }, binding: resource.binding + index, sampler_binding: resource.secondary_binding + index, sampled: if resource.kind == 7 { u32(1) } else { u32(0) }}
+			if bound[0].sampler!=unsafe { nil } && (bound[0].sampler.handle==unsafe { nil } || bound[0].sampler.owner.handle!=target.handle) { return error('Metal sampler has wrong owner or is closed') }
+            textures << C.VoxMetalTextureBinding{texture: texture.handle, sampler:if bound[0].sampler!=unsafe { nil } { bound[0].sampler.handle } else { unsafe { nil } }, stage: if resource.stage == .vertex { u32(0) } else { u32(1) }, binding: resource.binding + index, sampler_binding: resource.secondary_binding + index, sampled: if resource.kind == 7 { u32(1) } else { u32(0) }}
 		}
 	}
 	if count == 0 || instances == 0 { return }

@@ -1,6 +1,7 @@
 #ifndef VOX_METAL_TEXTURE_H
 #define VOX_METAL_TEXTURE_H
 #include "drawing_buffer_darwin.h"
+#include "sampler_darwin.h"
 typedef struct { VoxMetalDrawingBuffer storage; CFTypeRef sampler; } VoxMetalTexture;
 
 static int vox_metal_texture_sampler(void* handle, int min_filter, int mag_filter, int wrap_s, int wrap_t)
@@ -22,6 +23,17 @@ static int vox_metal_texture_sampler(void* handle, int min_filter, int mag_filte
         if (previous) CFRelease(previous);
         return 1;
     }
+}
+
+static int vox_metal_texture_set_sampler(void* texture_handle,void* sampler_handle)
+{
+    VoxMetalTexture* texture=texture_handle;
+    VoxMetalSampler* sampler=sampler_handle;
+    if (!texture || !sampler || texture->storage.device!=sampler->device) return 0;
+    CFTypeRef previous=texture->sampler;
+    texture->sampler=CFRetain(sampler->state);
+    if (previous) CFRelease(previous);
+    return 1;
 }
 
 static void vox_metal_texture_destroy(void* handle)

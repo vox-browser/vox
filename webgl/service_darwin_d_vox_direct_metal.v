@@ -20,6 +20,7 @@ mut:
     indexed_buffers map[u64]MetalServiceBufferRange
     vertex_arrays map[u32]&MetalServiceVertexArray
     vertex_array u32
+    samplers [32]u32
     current_program u32
     current_attributes [16]MetalServiceCurrentAttribute
     version int
@@ -55,6 +56,7 @@ mut:
     deleted bool
     gpu_buffer &metal.GPUBuffer = unsafe { nil }
     usage u32 = 0x88e4
+    sampling &MetalServiceSampling = unsafe { nil }
     retired bool
     shader_type u32
     source string
@@ -269,6 +271,7 @@ fn metal_service_vox_egl_destroy(a0 voidptr) {
     for _, mut object in context.objects {
         if object.gpu_buffer != unsafe { nil } { object.gpu_buffer.close(); unsafe { free(object.gpu_buffer) } }
         if object.program != unsafe { nil } { object.program.close(); unsafe { free(object.program) } }
+        if object.sampling!=unsafe { nil } { unsafe { object.sampling.parameters.free();free(object.sampling) } }
         unsafe { object.source.free(); object.compiled_source.free(); object.log.free(); object.attached.free(); object.bindings.free(); object.clear_reflection(); object.attributes.free(); object.uniforms.free(); object.blocks.free(); object.locations.free(); free(object) }
     }
     for _, vao in context.vertex_arrays { unsafe { free(vao) } }
@@ -329,7 +332,8 @@ fn metal_service_vox_gl_string(a0 u32) &char {
         0x1f01 { return 'Vox direct Metal'.str }
         0x1f02 { return if metal_service_current().version==3 { 'OpenGL ES 3.0 Vox direct Metal experimental'.str } else { 'OpenGL ES 2.0 Vox direct Metal experimental'.str } }
         0x8b8c { return if metal_service_current().version==3 { 'OpenGL ES GLSL ES 3.00'.str } else { 'OpenGL ES GLSL ES 1.00'.str } }
-        0x1f03,0x93a8 { return ''.str }
+        0x1f03 { return 'GL_EXT_texture_filter_anisotropic'.str }
+        0x93a8 { return ''.str }
         else { metal_service_error(invalid_enum); return unsafe { nil } }
     }
 }
@@ -427,6 +431,8 @@ fn metal_service_vox_gl_delete_object(a0 i32, a1 u32) {
         if vao.element_buffer == a1 { vao.element_buffer = 0 }
         for mut attribute in vao.attributes { if attribute.buffer == a1 { attribute.buffer = 0 } }
         context.collect_buffers()
+    } else if a0==5 {
+        for index,name in context.samplers { if name==a1 { context.samplers[index]=0 } }
     } else if a0 in [6,7] {
         if context.vertex_array==a1 { context.vertex_array=0 }
         if vao:=context.vertex_arrays[a1] { context.vertex_arrays.delete(a1); unsafe { free(vao) } }
@@ -452,22 +458,30 @@ fn metal_service_vox_gl_query_parameter(a0 u32, a1 u32) u32 {
 
 @[export: 'vox_gl_bind_sampler']
 fn metal_service_vox_gl_bind_sampler(a0 u32, a1 u32) {
-    metal_service_unsupported('vox_gl_bind_sampler')
+    mut context:=metal_service_current()
+    if context==unsafe { nil } { return }
+    if a0>=32 { metal_service_error(invalid_value);return }
+    if a1!=0 { context.sampler_object(a1) or { return } }
+    context.samplers[int(a0)]=a1
 }
 
 @[export: 'vox_gl_sampler_parameteri']
 fn metal_service_vox_gl_sampler_parameteri(a0 u32, a1 u32, a2 i32) {
-    metal_service_unsupported('vox_gl_sampler_parameteri')
+    metal_service_sampler_set(a0,a1,f32(a2))
 }
 
 @[export: 'vox_gl_sampler_parameterf']
 fn metal_service_vox_gl_sampler_parameterf(a0 u32, a1 u32, a2 f32) {
-    metal_service_unsupported('vox_gl_sampler_parameterf')
+    metal_service_sampler_set(a0,a1,a2)
 }
 
 @[export: 'vox_gl_sampler_parameter']
 fn metal_service_vox_gl_sampler_parameter(a0 u32, a1 u32) f32 {
-    metal_service_unsupported('vox_gl_sampler_parameter')
+    mut context:=metal_service_current()
+    if context==unsafe { nil } { return 0 }
+    object:=context.sampler_object(a0) or { return 0 }
+    if value:=object.sampling.parameters[a1] { return value }
+    metal_service_error(invalid_enum)
     return 0
 }
 

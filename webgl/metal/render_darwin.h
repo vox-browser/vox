@@ -3,6 +3,7 @@
 #include "gpu_buffer_darwin.h"
 #include "shader_program_darwin.h"
 #include "texture_darwin.h"
+#include "sampler_darwin.h"
 #include "render_state_darwin.h"
 #include "vertex_formats_darwin.h"
 
@@ -13,7 +14,7 @@ typedef struct {
     uint32_t format, normalized, constant;
 } VoxMetalVertexStream;
 typedef struct { void* buffer; uint32_t stage, binding; uint64_t offset; } VoxMetalUniformBinding;
-typedef struct { void* texture; uint32_t stage, binding, sampler_binding, sampled; } VoxMetalTextureBinding;
+typedef struct { void* texture; uint32_t stage, binding, sampler_binding, sampled; void* sampler; } VoxMetalTextureBinding;
 
 /* All GL validation/state is owned by V. This boundary only encodes a checked
  * draw description and reports Metal compilation/submission errors. */
@@ -61,7 +62,7 @@ static int vox_metal_draw_configured(void* target_handle, void* program_handle,
         }
         for (uint32_t i = 0; i < texture_count; ++i) {
             VoxMetalTexture* texture = textures[i].texture;
-            if (!texture || texture->storage.device != target->device || !texture->storage.texture || !texture->sampler
+            if (!texture || texture->storage.device != target->device || !texture->storage.texture || (!texture->sampler && !textures[i].sampler)
                 || textures[i].stage > 1 || textures[i].binding >= 128 || (textures[i].sampled && textures[i].sampler_binding >= 16)
                 || texture->storage.texture == target->texture) return 0;
         }
@@ -142,12 +143,15 @@ static int vox_metal_draw_configured(void* target_handle, void* program_handle,
         }
         for (uint32_t i = 0; i < texture_count; ++i) {
             VoxMetalTexture* texture = textures[i].texture;
+            VoxMetalSampler* selected=textures[i].sampler;
+            if (selected && selected->device!=target->device) { vox_metal_drop_owned(pipeline);return 0; }
+            CFTypeRef sampler=selected?selected->state:texture->sampler;
             if (textures[i].stage) {
                 [encoder setFragmentTexture:(__bridge id<MTLTexture>)texture->storage.texture atIndex:textures[i].binding];
-                if (textures[i].sampled) [encoder setFragmentSamplerState:(__bridge id<MTLSamplerState>)texture->sampler atIndex:textures[i].sampler_binding];
+                if (textures[i].sampled) [encoder setFragmentSamplerState:(__bridge id<MTLSamplerState>)sampler atIndex:textures[i].sampler_binding];
             } else {
                 [encoder setVertexTexture:(__bridge id<MTLTexture>)texture->storage.texture atIndex:textures[i].binding];
-                if (textures[i].sampled) [encoder setVertexSamplerState:(__bridge id<MTLSamplerState>)texture->sampler atIndex:textures[i].sampler_binding];
+                if (textures[i].sampled) [encoder setVertexSamplerState:(__bridge id<MTLSamplerState>)sampler atIndex:textures[i].sampler_binding];
             }
         }
         if (indices)
