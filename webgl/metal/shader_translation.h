@@ -14,6 +14,16 @@ typedef struct {
 } VoxMetalShaderResource;
 
 typedef struct {
+    char* name;
+    char* metal_name;
+    uint32_t rows, columns, array_length, base_type;
+    uint32_t offset, array_stride, matrix_stride;
+} VoxMetalFeedbackField;
+
+typedef struct {
+    char* feedback_msl;
+    VoxMetalFeedbackField* feedback_fields;
+    size_t feedback_count;
     char* msl[2];
     char* entry[2];
     VoxMetalShaderResource* resources;
@@ -120,6 +130,9 @@ static void vox_metal_translation_destroy(VoxMetalTranslatedProgram* program)
     if (!program) return;
     for (int i = 0; i < 2; ++i) { free(program->msl[i]); free(program->entry[i]); }
     for (size_t i = 0; i < program->resource_count; ++i) free(program->resources[i].name);
+    free(program->feedback_msl);
+    for(size_t i=0;i<program->feedback_count;++i) { free(program->feedback_fields[i].name);free(program->feedback_fields[i].metal_name); }
+    free(program->feedback_fields);
     free(program->resources);
     free(program);
 }
@@ -232,12 +245,14 @@ static int vox_metal_emit_stage(VoxMetalTranslatedProgram* output, glslang_progr
     spvc_context context = NULL;
     spvc_parsed_ir ir;
     spvc_compiler compiler;
+    spvc_compiler feedback_compiler;
     spvc_compiler original_names;
     spvc_compiler_options options;
     char const* source = NULL;
     int success = spvc_context_create(&context) == SPVC_SUCCESS;
     if (success) success = spvc_context_parse_spirv(context, glslang_program_SPIRV_get_ptr(program), words, &ir) == SPVC_SUCCESS;
     if (success) success = spvc_context_create_compiler(context, SPVC_BACKEND_NONE, ir, SPVC_CAPTURE_MODE_COPY, &original_names) == SPVC_SUCCESS;
+    if (success && !stage) success=spvc_context_create_compiler(context,SPVC_BACKEND_MSL,ir,SPVC_CAPTURE_MODE_COPY,&feedback_compiler)==SPVC_SUCCESS;
     if (success) success = spvc_context_create_compiler(context, SPVC_BACKEND_MSL, ir, SPVC_CAPTURE_MODE_TAKE_OWNERSHIP, &compiler) == SPVC_SUCCESS;
     if (success && !stage) success = vox_metal_bind_attributes(compiler, lowered_source, bindings, binding_count);
     spvc_set active;
@@ -254,6 +269,45 @@ static int vox_metal_emit_stage(VoxMetalTranslatedProgram* output, glslang_progr
         output->msl[stage] = vox_metal_string_copy(source);
         output->entry[stage] = vox_metal_string_copy(spvc_compiler_get_cleansed_entry_point_name(compiler, "main", stage ? SpvExecutionModelFragment : SpvExecutionModelVertex));
         success = output->msl[stage] && output->entry[stage] && vox_metal_reflect_resources(output, compiler, original_names, stage);
+    }
+    if(success && !stage) {
+        compiler=feedback_compiler;
+        success=vox_metal_bind_attributes(compiler,lowered_source,bindings,binding_count)
+            && spvc_compiler_get_active_interface_variables(compiler,&active)==SPVC_SUCCESS
+            && spvc_compiler_set_enabled_interface_variables(compiler,active)==SPVC_SUCCESS
+            && spvc_compiler_create_compiler_options(compiler,&options)==SPVC_SUCCESS
+            && spvc_compiler_options_set_uint(options,SPVC_COMPILER_OPTION_MSL_VERSION,SPVC_MAKE_MSL_VERSION(2,0,0))==SPVC_SUCCESS;
+        if(success) success=spvc_compiler_options_set_bool(options,SPVC_COMPILER_OPTION_MSL_CAPTURE_OUTPUT_TO_BUFFER,SPVC_TRUE)==SPVC_SUCCESS
+            && spvc_compiler_options_set_bool(options,SPVC_COMPILER_OPTION_MSL_DISABLE_RASTERIZATION,SPVC_TRUE)==SPVC_SUCCESS
+            && spvc_compiler_options_set_uint(options,SPVC_COMPILER_OPTION_MSL_SHADER_OUTPUT_BUFFER_INDEX,13)==SPVC_SUCCESS
+            && spvc_compiler_options_set_uint(options,SPVC_COMPILER_OPTION_MSL_INDIRECT_PARAMS_BUFFER_INDEX,14)==SPVC_SUCCESS
+            && spvc_compiler_install_compiler_options(compiler,options)==SPVC_SUCCESS
+            && spvc_compiler_compile(compiler,&source)==SPVC_SUCCESS;
+        if(success) { output->feedback_msl=vox_metal_string_copy(source);success=output->feedback_msl!=NULL; }
+        spvc_resources reflected;
+        spvc_reflected_resource const* fields=NULL;
+        size_t count=0;
+        if(success) success=spvc_compiler_create_shader_resources(compiler,&reflected)==SPVC_SUCCESS
+            && spvc_resources_get_resource_list_for_type(reflected,SPVC_RESOURCE_TYPE_STAGE_OUTPUT,&fields,&count)==SPVC_SUCCESS;
+        if(success) {
+            output->feedback_fields=calloc(count+1,sizeof(VoxMetalFeedbackField));
+            success=output->feedback_fields!=NULL;
+        }
+        for(size_t i=0;success && i<count;++i) {
+            VoxMetalShaderResource type={0};
+            success=vox_metal_reflect_type(spvc_compiler_get_type_handle(compiler,fields[i].type_id),&type);
+            VoxMetalFeedbackField* field=output->feedback_fields+output->feedback_count++;
+            field->name=vox_metal_string_copy(spvc_compiler_get_name(original_names,fields[i].id));
+            field->metal_name=vox_metal_string_copy(spvc_compiler_get_name(compiler,fields[i].id));
+            field->rows=type.rows;field->columns=type.columns;field->array_length=type.array_length;field->base_type=type.base_type;
+            success=success && field->name && field->metal_name;
+        }
+        if(success) {
+            VoxMetalFeedbackField* field=output->feedback_fields+output->feedback_count++;
+            field->name=vox_metal_string_copy("gl_Position");field->metal_name=vox_metal_string_copy("gl_Position");
+            field->rows=4;field->columns=field->array_length=1;field->base_type=SPVC_BASETYPE_FP32;
+            success=field->name && field->metal_name;
+        }
     }
     if (!success && capacity) {
         char const* message = context ? spvc_context_get_last_error_string(context) : NULL;

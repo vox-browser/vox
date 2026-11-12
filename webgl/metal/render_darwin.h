@@ -43,7 +43,7 @@ static int vox_metal_draw_configured(void* target_handle, void* program_handle,
     if (depth && (depth->device != target->device || depth->width != target->width || depth->height != target->height)) return 0;
     if (indices && (indices->device != target->device || (index_width != 2 && index_width != 4)
         || index_offset % index_width || index_offset > indices->size || (uint64_t)count * index_width > indices->size - index_offset)) return 0;
-    if (!state->scissor_width || !state->scissor_height || !state->width || !state->height) return 1;
+    if (!state->feedback && (!state->scissor_width || !state->scissor_height || !state->width || !state->height)) return 1;
     @autoreleasepool {
         id<MTLDevice> device = (__bridge id<MTLDevice>)target->device;
         MTLVertexDescriptor* vertices = [MTLVertexDescriptor vertexDescriptor];
@@ -74,8 +74,9 @@ static int vox_metal_draw_configured(void* target_handle, void* program_handle,
             for(unsigned c=0;c<8;++c) if(colors[c] && texture->storage.texture==colors[c]->texture) return 0;
         }
         MTLRenderPipelineDescriptor* descriptor = [[MTLRenderPipelineDescriptor alloc] init];
-        descriptor.vertexFunction = (__bridge id<MTLFunction>)program->vertex;
-        descriptor.fragmentFunction = (__bridge id<MTLFunction>)program->fragment;
+        descriptor.vertexFunction = (__bridge id<MTLFunction>)(state->feedback?program->feedback:program->vertex);
+        descriptor.rasterizationEnabled=!state->feedback;
+        descriptor.fragmentFunction = state->feedback?nil:(__bridge id<MTLFunction>)program->fragment;
         descriptor.vertexDescriptor = vertices;
         descriptor.rasterSampleCount=[(__bridge id<MTLTexture>)target->texture sampleCount];
         for(unsigned c=0;c<8;++c) {
@@ -97,9 +98,37 @@ static int vox_metal_draw_configured(void* target_handle, void* program_handle,
         if (depth && depth->has_depth) descriptor.depthAttachmentPixelFormat=[(__bridge id<MTLTexture>)depth->texture pixelFormat];
         if (depth && depth->has_stencil) descriptor.stencilAttachmentPixelFormat=[(__bridge id<MTLTexture>)depth->stencil pixelFormat];
         NSError* error = nil;
-        id<MTLRenderPipelineState> pipeline = [device newRenderPipelineStateWithDescriptor:descriptor error:&error];
+        MTLRenderPipelineReflection* reflection=nil;
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
+        id<MTLRenderPipelineState> pipeline = state->feedback
+            ? [device newRenderPipelineStateWithDescriptor:descriptor options:MTLPipelineOptionArgumentInfo|MTLPipelineOptionBufferTypeInfo reflection:&reflection error:&error]
+            : [device newRenderPipelineStateWithDescriptor:descriptor error:&error];
+#pragma clang diagnostic pop
         vox_metal_drop_owned(descriptor);
         if (!pipeline) { if (capacity) snprintf(log, capacity, "%s", error.localizedDescription.UTF8String ?: "Metal pipeline compilation failed"); return 0; }
+        if(state->feedback) {
+            MTLStructType* structure=nil;
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
+            for(MTLArgument* argument in reflection.vertexArguments) if(argument.index==13 && argument.type==MTLArgumentTypeBuffer) {
+                program->feedback_stride=argument.bufferDataSize;
+                structure=argument.bufferStructType;
+                if(!structure) structure=argument.bufferPointerType.elementStructType;
+            }
+#pragma clang diagnostic pop
+            if(!structure || !program->feedback_stride) { if(capacity) snprintf(log,capacity,"Metal feedback layout reflection unavailable");vox_metal_drop_owned(pipeline);return 0; }
+            for(size_t i=0;i<program->translated->feedback_count;++i) {
+                VoxMetalFeedbackField* field=program->translated->feedback_fields+i;
+                MTLStructMember* member=[structure memberByName:[NSString stringWithUTF8String:field->metal_name]];
+                field->offset=member?(uint32_t)member.offset:UINT32_MAX;
+                field->array_stride=member && member.dataType==MTLDataTypeArray?(uint32_t)member.arrayType.stride:0;
+                field->matrix_stride=field->columns>1?(field->rows==2?8:16):0;
+            }
+            VoxMetalGPUBuffer* output=state->feedback_buffer;
+            if(!output) { vox_metal_drop_owned(pipeline);return 1; }
+            if(output->device!=target->device || (uint64_t)count*instances>output->size/program->feedback_stride) { vox_metal_drop_owned(pipeline);return 0; }
+        }
         MTLRenderPassDescriptor* pass = [MTLRenderPassDescriptor renderPassDescriptor];
         pass.renderTargetWidth=target->width;pass.renderTargetHeight=target->height;
         pass.defaultRasterSampleCount=[(__bridge id<MTLTexture>)target->texture sampleCount];
@@ -162,6 +191,12 @@ static int vox_metal_draw_configured(void* target_handle, void* program_handle,
                 [encoder setVertexTexture:(__bridge id<MTLTexture>)texture->storage.texture atIndex:textures[i].binding];
                 if (textures[i].sampled) [encoder setVertexSamplerState:(__bridge id<MTLSamplerState>)sampler atIndex:textures[i].sampler_binding];
             }
+        }
+        if(state->feedback) {
+            VoxMetalGPUBuffer* output=state->feedback_buffer;
+            uint32_t parameters[4]={count,instances,0,0};
+            [encoder setVertexBuffer:(__bridge id<MTLBuffer>)output->buffer offset:0 atIndex:13];
+            [encoder setVertexBytes:parameters length:sizeof(parameters) atIndex:14];
         }
         if (indices)
             [encoder drawIndexedPrimitives:(MTLPrimitiveType)primitive indexCount:count indexType:index_width == 2 ? MTLIndexTypeUInt16 : MTLIndexTypeUInt32

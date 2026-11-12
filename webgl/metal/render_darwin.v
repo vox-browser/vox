@@ -44,6 +44,8 @@ pub:
     color_targets []ColorTargetBinding
     colors_configured bool
     visibility &GPUBuffer = unsafe { nil }
+    feedback bool
+    feedback_buffer &GPUBuffer = unsafe { nil }
 	depth_stencil &DepthStencil = unsafe { nil }
 	state RenderState
 	indices ?IndexBinding

@@ -99,6 +99,8 @@ fn native_render_state(target &DrawingBuffer, options DrawOptions) !C.VoxMetalRe
 	return C.VoxMetalRenderState{
         color_targets:colors
         colors_configured:u32(options.colors_configured)
+        feedback:u32(options.feedback)
+        feedback_buffer:if options.feedback_buffer!=unsafe { nil } { options.feedback_buffer.handle } else { unsafe { nil } }
         visibility_buffer:visibility
 		depth_stencil: depth_handle
 		x: viewport.x, y: viewport.y, width: viewport.width, height: viewport.height

@@ -235,6 +235,15 @@ cube faces, array layers and immutable mip storage. Compressed textures remain
 non-renderable. Two existing GPU sampling cases and two new format/validation
 cases pass with default GC and `-gc none`; there is no ANGLE fallback.
 
+The Metal resource backend now captures vertex outputs through a separate
+non-rasterizing MSL function. Metal pipeline reflection supplies structure,
+array and matrix offsets; no host-side shader simulation is used. Native
+capture tests pass with ARC, MRC and ASan/UBSan, alongside the other six native
+fixtures. The V capture case passes with default GC and `-gc none`, preserving
+nonzero vertex IDs, instance order, matrices and unmodified clip coordinates.
+Connecting this resource operation to the WebGL transform-feedback lifecycle
+is the next slice.
+
 ## Next implementation slices
 
 The experimental V service now owns context/resource records, the painting
