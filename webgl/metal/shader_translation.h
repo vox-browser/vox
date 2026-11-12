@@ -11,6 +11,7 @@ typedef struct {
     uint32_t offset, array_stride, matrix_stride, base_type, rows, columns, array_length;
     uint64_t byte_size;
     uint32_t image_dimension,image_arrayed,image_depth,image_scalar_type;
+    uint32_t semantic_type;
 } VoxMetalShaderResource;
 
 typedef struct {
@@ -21,6 +22,7 @@ typedef struct {
 } VoxMetalFeedbackField;
 
 typedef struct {
+    char* essl[2];
     char* feedback_msl;
     VoxMetalFeedbackField* feedback_fields;
     size_t feedback_count;
@@ -128,7 +130,7 @@ static char* vox_metal_string_copy(char const* value)
 static void vox_metal_translation_destroy(VoxMetalTranslatedProgram* program)
 {
     if (!program) return;
-    for (int i = 0; i < 2; ++i) { free(program->msl[i]); free(program->entry[i]); }
+    for (int i = 0; i < 2; ++i) { free(program->msl[i]); free(program->entry[i]);free(program->essl[i]); }
     for (size_t i = 0; i < program->resource_count; ++i) free(program->resources[i].name);
     free(program->feedback_msl);
     for(size_t i=0;i<program->feedback_count;++i) { free(program->feedback_fields[i].name);free(program->feedback_fields[i].metal_name); }
@@ -165,6 +167,34 @@ static int vox_metal_append_resource(VoxMetalTranslatedProgram* program,
     resource.name = copy;
     program->resources[program->resource_count++] = resource;
     return 1;
+}
+
+/* Vulkan UBO storage represents booleans as uint. Recover only global
+ * uniform declarations from validated, macro-expanded ESSL, never local bools
+ * that happen to shadow another uniform's name. */
+static int vox_metal_boolean_uniform(char const* source,char const* name)
+{
+    if(!source || !name) return 0;
+    unsigned depth=0,brackets=0;
+    int uniform=0,boolean=0;
+    for(size_t i=0;source[i];) {
+        char c=source[i];
+        if(c=='{') { ++depth;++i;continue; }
+        if(c=='}') { if(depth) --depth;boolean=0;++i;continue; }
+        if(c=='[') { ++brackets;++i;continue; }
+        if(c==']') { if(brackets) --brackets;++i;continue; }
+        if(c==';') { boolean=0;if(!depth) uniform=0;++i;continue; }
+        if(!vox_glsl_identifier_start(c)) { ++i;continue; }
+        size_t begin=i++;
+        while(vox_glsl_identifier(source[i])) ++i;
+        size_t length=i-begin;
+        if(!depth && vox_glsl_equal(source+begin,length,"uniform")) { uniform=1;continue; }
+        if(!uniform || brackets) continue;
+        if(vox_glsl_equal(source+begin,length,"bool") || vox_glsl_equal(source+begin,length,"bvec2")
+            || vox_glsl_equal(source+begin,length,"bvec3") || vox_glsl_equal(source+begin,length,"bvec4")) { boolean=1;continue; }
+        if(boolean && vox_glsl_equal(source+begin,length,name)) return 1;
+    }
+    return 0;
 }
 
 static int vox_metal_reflect_resources(VoxMetalTranslatedProgram* program, spvc_compiler compiler,
@@ -222,6 +252,7 @@ static int vox_metal_reflect_resources(VoxMetalTranslatedProgram* program, spvc_
                         || spvc_compiler_type_struct_member_offset(compiler, structure, member, &field.offset) != SPVC_SUCCESS
                         || spvc_compiler_get_declared_struct_member_size(compiler, structure, member, &size) != SPVC_SUCCESS) return 0;
                     field.byte_size = size;
+                    if(field.base_type==SPVC_BASETYPE_UINT32 && vox_metal_boolean_uniform(program->essl[stage],spvc_compiler_get_member_name(original_names,item->base_type_id,member))) field.semantic_type=SPVC_BASETYPE_BOOLEAN;
                     if (spvc_type_get_num_array_dimensions(member_type))
                         if (spvc_compiler_type_struct_member_array_stride(compiler, structure, member, &field.array_stride) != SPVC_SUCCESS) return 0;
                     if (field.columns > 1)
@@ -357,6 +388,7 @@ static VoxMetalTranslatedProgram* vox_metal_translate_program_bound(char const* 
         if (success) success = original[i] && glslang_shader_preprocess(original[i], &input) && glslang_shader_parse(original[i], &input);
         if (!success && original[i] && capacity) snprintf(log, capacity, "%s", glslang_shader_get_info_log(original[i]));
         if (success) glslang_program_add_shader(original_program, original[i]);
+        if(success) { output->essl[i]=vox_metal_string_copy(preprocessed);success=output->essl[i]!=NULL; }
         free(preprocessed);
         input.client = GLSLANG_CLIENT_VULKAN; input.client_version = GLSLANG_TARGET_VULKAN_1_0;
         input.target_language = GLSLANG_TARGET_SPV; input.target_language_version = GLSLANG_TARGET_SPV_1_0;

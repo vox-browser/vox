@@ -155,9 +155,10 @@ fn metal_service_gl_type(resource metal.ShaderResource) u32 {
         if resource.columns==resource.rows { return 0x8b5a + resource.columns - 2 }
         return match resource.columns*10+resource.rows { 23 { u32(0x8b65) } 24 { u32(0x8b66) } 32 { u32(0x8b67) } 34 { u32(0x8b68) } 42 { u32(0x8b69) } 43 { u32(0x8b6a) } else { u32(0) } }
     }
-    base := match resource.scalar_type { 2 { u32(0x8b56) } 7 { u32(0x1404) } 8 { u32(0x1405) } 13 { u32(0x1406) } else { u32(0) } }
+    semantic:=if resource.semantic_type!=0 { resource.semantic_type } else { resource.scalar_type }
+    base := match semantic { 2 { u32(0x8b56) } 7 { u32(0x1404) } 8 { u32(0x1405) } 13 { u32(0x1406) } else { u32(0) } }
     if resource.rows==1 { return base }
-    return match resource.scalar_type { 2 { u32(0x8b57)+resource.rows-2 } 7 { u32(0x8b53)+resource.rows-2 } 8 { u32(0x8dc6)+resource.rows-2 } 13 { u32(0x8b50)+resource.rows-2 } else { u32(0) } }
+    return match semantic { 2 { u32(0x8b57)+resource.rows-2 } 7 { u32(0x8b53)+resource.rows-2 } 8 { u32(0x8dc6)+resource.rows-2 } 13 { u32(0x8b50)+resource.rows-2 } else { u32(0) } }
 }
 
 fn metal_service_copy_string(value string,capacity i32,output &char) {

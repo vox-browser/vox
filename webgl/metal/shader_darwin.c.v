@@ -38,6 +38,7 @@ struct C.VoxMetalShaderResource {
     image_arrayed u32
     image_depth u32
     image_scalar_type u32
+    semantic_type u32
 }
 
 fn C.vox_metal_program_create(voidptr, &char, i32, &char, i32, i32, &char, u64) voidptr
