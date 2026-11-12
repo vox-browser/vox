@@ -32,3 +32,4 @@ struct C.VoxMetalTextureBinding {
 }
 
 fn C.vox_metal_draw_textured(voidptr, voidptr, &C.VoxMetalVertexStream, u32, &C.VoxMetalUniformBinding, u32, &C.VoxMetalTextureBinding, u32, u32, u32, u32, u32, &char, u64) i32
+fn C.vox_metal_draw_configured(voidptr, voidptr, &C.VoxMetalVertexStream, u32, &C.VoxMetalUniformBinding, u32, &C.VoxMetalTextureBinding, u32, &C.VoxMetalRenderState, voidptr, u64, u32, u32, u32, u32, u32, &char, u64) i32

@@ -36,6 +36,12 @@ int main(void)
             uint8_t expected[]={y<4?255:0,0,y<4?0:255,255};
             assert(!memcmp(pixels+(y*8+x)*4,expected,4));
         }
+        void* indices = vox_metal_gpu_buffer_create(target, 6);
+        uint16_t indexed_triangle[] = {0,1,2};
+        assert(indices && vox_metal_gpu_buffer_transfer(indices,0,sizeof(indexed_triangle),indexed_triangle,1));
+        assert(vox_metal_draw_configured(target,program,&stream,1,NULL,0,NULL,0,NULL,indices,0,2,MTLPrimitiveTypeTriangle,0,3,1,log,sizeof(log)));
+        assert(!vox_metal_draw_configured(target,program,&stream,1,NULL,0,NULL,0,NULL,indices,0,2,MTLPrimitiveTypeTriangle,0,4,1,log,sizeof(log)));
+        vox_metal_gpu_buffer_destroy(indices);
         vox_metal_program_destroy(program);
         vox_metal_gpu_buffer_destroy(vertices);
         vox_metal_gpu_buffer_destroy(NULL);

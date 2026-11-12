@@ -24,6 +24,9 @@ pub struct DrawOptions {
 pub:
 	textures []TextureBinding
 	color_target &Texture2D = unsafe { nil }
+	depth_stencil &DepthStencil = unsafe { nil }
+	state RenderState
+	indices ?IndexBinding
 }
 
 struct UniformStorage {
@@ -86,6 +89,14 @@ pub fn (mut target DrawingBuffer) draw_with_options(program &ShaderProgram, stre
 		|| u64(instances) > 0xffffffff || u64(first) + u64(count) > 0xffffffff || streams.len > 16 {
 		return error('Invalid Metal draw range')
 	}
+	mut indexed := false
+	mut prepared := PreparedIndices{}
+	if indices := options.indices {
+		if first != 0 { return error('Indexed Metal draws require first = 0') }
+		prepared = prepare_indices(target, indices, count)!
+		indexed = true
+	}
+	defer { if prepared.owned { mut owned := prepared.buffer; owned.close() } }
 	mut native_streams := []C.VoxMetalVertexStream{cap: streams.len}
 	mut used := u32(0)
 	for stream in streams {
@@ -101,8 +112,8 @@ pub fn (mut target DrawingBuffer) draw_with_options(program &ShaderProgram, stre
 		stride := if stream.stride == 0 { stream.components * 4 } else { stream.stride }
 		if stride < stream.components * 4 { return error('Metal vertex stride is too small') }
 		if stream.offset > stream.buffer.length { return error('Metal vertex offset outside buffer') }
-		if count > 0 && instances > 0 {
-			last := if stream.divisor > 0 { u64(instances - 1) / u64(stream.divisor) } else { u64(first) + u64(count) - 1 }
+		if count > 0 && instances > 0 && (!indexed || prepared.has_vertices) {
+			last := if stream.divisor > 0 { u64(instances - 1) / u64(stream.divisor) } else if indexed { prepared.maximum } else { u64(first) + u64(count) - 1 }
 			if last * u64(stride) + u64(stream.components * 4) > u64(stream.buffer.length - stream.offset) { return error('Metal draw reads outside vertex buffer') }
 		}
 		native_streams << C.VoxMetalVertexStream{buffer: stream.buffer.handle, offset: u64(stream.offset), stride: u64(stride), location: u32(stream.location), components: u32(stream.components), divisor: u32(stream.divisor)}
@@ -130,7 +141,9 @@ pub fn (mut target DrawingBuffer) draw_with_options(program &ShaderProgram, stre
 		bindings << C.VoxMetalUniformBinding{buffer: uniform.buffer.handle, stage: if uniform.stage == .vertex { u32(0) } else { u32(1) }, binding: uniform.binding}
 	}
 	mut log := []u8{len: 16384}
-	if C.vox_metal_draw_textured(render_target, program.handle, native_streams.data, u32(native_streams.len), bindings.data, u32(bindings.len), textures.data, u32(textures.len), u32(primitive), u32(first), u32(count), u32(instances), &char(log.data), u64(log.len)) != 1 {
+	state := native_render_state(target, options)!
+	index_handle := if indexed { prepared.buffer.handle } else { unsafe { nil } }
+	if C.vox_metal_draw_configured(render_target, program.handle, native_streams.data, u32(native_streams.len), bindings.data, u32(bindings.len), textures.data, u32(textures.len), &state, index_handle, prepared.offset, prepared.width, u32(primitive), u32(first), u32(count), u32(instances), &char(log.data), u64(log.len)) != 1 {
 		message := unsafe { cstring_to_vstring(&char(log.data)).clone() }
 		return error(if message.len > 0 { message } else { 'Metal draw failed' })
 	}

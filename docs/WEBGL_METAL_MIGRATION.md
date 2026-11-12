@@ -75,6 +75,28 @@ Three V cases pass in both GC modes, with exact quadrant/wrap, interpolated
 center-sample, offscreen readback and feedback-loop checks. Native GPU sampling
 also passes ARC, MRC and ASan/UBSan with no ANGLE image loaded.
 
+## Completed: indexed draws and render state
+
+Indexed drawing validates the complete index and referenced vertex ranges.
+Byte indices expand to Metal's 16-bit format; WebGL1 non-restarting ushort
+indices expand to 32-bit so index 65535 remains a vertex. Fixed restart markers
+are preserved for WebGL2 strips. Non-restarting uint32 index `0xffffffff` is
+explicitly unsupported by this low-level slice.
+
+Viewport, clipped scissor, color masks, separate blending, culling, depth-range,
+depth comparison/writes and separate front/back stencil state reach Metal.
+Depth32Float/Stencil8 textures initialize to depth 1/stencil 0. Clip-Y conversion
+also reverses Metal front-face winding, preserving culling, `gl_FrontFacing`
+and the selected stencil face. Polygon depth bias is encoded; its cross-driver
+numerical equivalence still needs coverage.
+
+Six focused V cases pass in both GC modes. Exact pixels cover indexed quads,
+ushort maximum indices, restart strips, viewport/scissor/masks/blending, depth
+ordering/write masks, culling and independent stencil faces. Native ARC/MRC/
+sanitizer checks exercise the index path and initialized depth/stencil state.
+Browser dispatch, masked clears, additional texture formats/targets, queries,
+transform feedback and complete WebGL2 coverage are still pending.
+
 ## Validation
 
 On 2026-11-12, native GPU tests passed with ARC, manual reference counting and
