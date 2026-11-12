@@ -15,14 +15,17 @@ module browsersettings
 //      `error_table()`.
 
 pub fn supported_error_locales() []string {
-	return ['en']
+	return ['en', 'fa']
 }
 
 pub fn default_error_locale() string {
 	return 'en'
 }
 
-fn error_table(_locale string) map[string]string {
+fn error_table(locale string) map[string]string {
+	if locale == 'fa' {
+		return fa_error_messages
+	}
 	return map[string]string{}
 }
 

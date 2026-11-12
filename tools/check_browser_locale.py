@@ -37,7 +37,14 @@ EN_SPOT_CHECKS = {
 
 # Per-locale spot checks, e.g. 'fa': {'nav.back': 'قبلی'}. Locales without
 # an entry here still get full key-parity and non-empty checks.
-LOCALE_SPOT_CHECKS: dict[str, dict[str, str]] = {}
+LOCALE_SPOT_CHECKS: dict[str, dict[str, str]] = {
+    'fa': {
+        'settings.apply': 'اعمال',
+        'nav.back': 'قبلی',
+        'ctx.inspect': 'بازرسی',
+        'address.info': 'اطلاعات صفحه',
+    },
+}
 
 # (relative source, English literal) pairs that tr() has replaced. Test
 # files are intentionally excluded: they keep asserting English output.
