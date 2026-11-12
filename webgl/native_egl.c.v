@@ -27,6 +27,10 @@ fn C.vox_gl_client_wait_sync(voidptr, u32, u64) u32
 fn C.vox_gl_wait_sync(voidptr, u32, u64)
 fn C.vox_gl_delete_sync(voidptr)
 fn C.vox_gl_get_sync_parameter(voidptr, u32) int
+fn C.vox_gl_is_sync(voidptr) i32
+fn C.vox_gl_attached_shaders(u32,i32,&i32,&u32)
+fn C.vox_gl_query_target_parameter(u32,u32) i32
+fn C.vox_gl_framebuffer_attachment_parameter(u32,u32,u32) i32
 fn C.vox_gl_get_error() u32
 fn C.vox_gl_is_object(int,u32) int
 fn C.vox_gl_string(u32) &char

@@ -5,7 +5,6 @@ module browserjs
 import html
 import webgl
 
-fn C.glGetQueryiv(u32, u32, &i32)
 
 fn query_record_other_stays_selected() {
 	mut selected := [i32(0), 0, 0, 0]!
@@ -35,7 +34,7 @@ fn test_public_get_query_wraps_actual_retained_deleted_records_without_selecting
 		// Real GL can end a query independently of the source retained slot.
 		C.vox_gl_end_query(target)
 		mut native_current := i32(-1)
-		C.glGetQueryiv(target, webgl.current_query, &native_current)
+		native_current = C.vox_gl_query_target_parameter(target,webgl.current_query)
 		assert native_current == 0
 		context.delete_query(mut query)
 		assert query.object.invalidated()

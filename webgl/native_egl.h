@@ -125,6 +125,10 @@ VOX_EGL_LINKAGE int vox_gl_get_sync_parameter(void* sync, unsigned pname)
     glGetSynciv(sync, pname, 1, NULL, &result);
     return result;
 }
+VOX_EGL_LINKAGE int vox_gl_is_sync(void* sync) { return glIsSync(sync); }
+VOX_EGL_LINKAGE void vox_gl_attached_shaders(unsigned program, int capacity, int* count, unsigned* shaders) { glGetAttachedShaders(program, capacity, count, shaders); }
+VOX_EGL_LINKAGE int vox_gl_query_target_parameter(unsigned target, unsigned pname) { GLint result=0;glGetQueryiv(target,pname,&result);return result; }
+VOX_EGL_LINKAGE int vox_gl_framebuffer_attachment_parameter(unsigned target, unsigned attachment, unsigned pname) { GLint result=0;glGetFramebufferAttachmentParameteriv(target,attachment,pname,&result);return result; }
 VOX_EGL_LINKAGE unsigned vox_gl_get_error(void) { return glGetError(); }
 VOX_EGL_LINKAGE int vox_gl_is_object(int kind, unsigned handle) {
     switch (kind) {
@@ -132,6 +136,9 @@ VOX_EGL_LINKAGE int vox_gl_is_object(int kind, unsigned handle) {
     case 1: return glIsFramebuffer(handle);
     case 2: return glIsRenderbuffer(handle);
     case 3: return glIsTexture(handle);
+    case 4: return glIsQuery(handle);
+    case 5: return glIsSampler(handle);
+    case 8: return glIsTransformFeedback(handle);
     case 9: return glIsShader(handle);
     case 10: return glIsProgram(handle);
     default: return GL_FALSE;

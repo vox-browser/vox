@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: BSD-2-Clause
 module webgl
 
-fn C.glGetFramebufferAttachmentParameteriv(u32, u32, u32, &i32)
 
 fn test_source_framebuffer_attachment_query_returns_actual_retained_deleted_records() {
 	for version in [WebGLVersion.webgl1, .webgl2] {
@@ -23,8 +22,7 @@ fn test_source_framebuffer_attachment_query_returns_actual_retained_deleted_reco
 		assert texture.object.invalidated()
 		assert texture.object.handle_ !in context.textures
 		mut native_type := i32(-1)
-		C.glGetFramebufferAttachmentParameteriv(framebuffer, color_attachment0,
-			framebuffer_attachment_object_type, &native_type)
+		native_type = C.vox_gl_framebuffer_attachment_parameter(framebuffer,color_attachment0,framebuffer_attachment_object_type)
 		assert native_type == 0
 		after_texture := context.get_framebuffer_attachment_parameter(framebuffer,
 			color_attachment0, framebuffer_attachment_object_name)
@@ -43,8 +41,7 @@ fn test_source_framebuffer_attachment_query_returns_actual_retained_deleted_reco
 		context.delete_renderbuffer(renderbuffer_object)
 		assert renderbuffer_object.object.invalidated()
 		assert renderbuffer_object.object.handle_ !in context.renderbuffers
-		C.glGetFramebufferAttachmentParameteriv(framebuffer, color_attachment0,
-			framebuffer_attachment_object_type, &native_type)
+		native_type = C.vox_gl_framebuffer_attachment_parameter(framebuffer,color_attachment0,framebuffer_attachment_object_type)
 		assert native_type == 0
 		after_renderbuffer := context.get_framebuffer_attachment_parameter(framebuffer,
 			color_attachment0, framebuffer_attachment_object_name)

@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: BSD-2-Clause
 module webgl
 
-fn C.glIsSampler(u32) u8
 
 fn sampler_binding_source_owner() {
 	mut selected := [i32(0), 0, 0, 0]!
@@ -61,7 +60,7 @@ fn test_source_sampler_binding_and_deletion_use_only_driver_bindings_and_owner_f
 	other.native.make_current()
 	context.delete_sampler(mut sampler)
 	sampler_binding_source_owner()
-	assert C.glIsSampler(sampler.object.native_handle_) == 0
+	assert C.vox_gl_is_object(5,sampler.object.native_handle_) == 0
 	assert sampler.object.invalidated()
 	for unit in [GLuint(0), 1] {
 		context.active_texture(texture0 + unit)

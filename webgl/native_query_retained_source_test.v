@@ -2,11 +2,10 @@
 // SPDX-License-Identifier: BSD-2-Clause
 module webgl
 
-fn C.glGetQueryiv(u32, u32, &i32)
 
 fn query_source_native_current(target GLenum) int {
 	mut value := i32(0)
-	C.glGetQueryiv(target, current_query, &value)
+	value = C.vox_gl_query_target_parameter(target,current_query)
 	return value
 }
 

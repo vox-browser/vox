@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: BSD-2-Clause
 module webgl
 
-fn C.glIsSync(voidptr) u8
 
 fn sync_source_owner(expected [4]i32) {
 	mut selected := [i32(0), 0, 0, 0]!
@@ -63,11 +62,11 @@ fn test_source_sync_operations_select_owner_only_on_native_dispatch_and_preserve
 	retained_source := owned.source_handle_
 	retained := owned.native_handle_
 	assert retained != unsafe { nil }
-	assert C.glIsSync(retained) == 1
+	assert C.vox_gl_is_sync(retained) == 1
 	other.native.make_current()
 	context.delete_sync(mut owned)
 	sync_source_owner([i32(1), 2, 3, 4]!)
-	assert C.glIsSync(retained) == 0
+	assert C.vox_gl_is_sync(retained) == 0
 	assert owned.object.invalidated()
 	assert owned.native_handle_ == retained
 	assert owned.source_handle_ == retained_source

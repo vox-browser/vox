@@ -113,12 +113,14 @@
     X(glGetActiveUniformBlockName) \
     X(glGetActiveUniformBlockivRobustANGLE) \
     X(glGetActiveUniformsiv) \
+    X(glGetAttachedShaders) \
     X(glGetAttribLocation) \
     X(glGetBooleanvRobustANGLE) \
     X(glGetBufferParameterivRobustANGLE) \
     X(glGetError) \
     X(glGetFloatv) \
     X(glGetFloatvRobustANGLE) \
+    X(glGetFramebufferAttachmentParameteriv) \
     X(glGetInteger64vRobustANGLE) \
     X(glGetIntegerv) \
     X(glGetIntegervRobustANGLE) \
@@ -127,6 +129,7 @@
     X(glGetProgramiv) \
     X(glGetProgramivRobustANGLE) \
     X(glGetQueryObjectuivRobustANGLE) \
+    X(glGetQueryiv) \
     X(glGetRenderbufferParameterivRobustANGLE) \
     X(glGetSamplerParameterfvRobustANGLE) \
     X(glGetShaderInfoLog) \
@@ -156,9 +159,13 @@
     X(glIsEnabled) \
     X(glIsFramebuffer) \
     X(glIsProgram) \
+    X(glIsQuery) \
     X(glIsRenderbuffer) \
+    X(glIsSampler) \
     X(glIsShader) \
+    X(glIsSync) \
     X(glIsTexture) \
+    X(glIsTransformFeedback) \
     X(glIsVertexArray) \
     X(glIsVertexArrayOES) \
     X(glLineWidth) \
@@ -391,12 +398,14 @@ __attribute__((constructor)) static void vox_angle_eager_diagnostic(void) {
 #define glGetActiveUniformBlockName vox_angle_api.glGetActiveUniformBlockName
 #define glGetActiveUniformBlockivRobustANGLE vox_angle_api.glGetActiveUniformBlockivRobustANGLE
 #define glGetActiveUniformsiv vox_angle_api.glGetActiveUniformsiv
+#define glGetAttachedShaders vox_angle_api.glGetAttachedShaders
 #define glGetAttribLocation vox_angle_api.glGetAttribLocation
 #define glGetBooleanvRobustANGLE vox_angle_api.glGetBooleanvRobustANGLE
 #define glGetBufferParameterivRobustANGLE vox_angle_api.glGetBufferParameterivRobustANGLE
 #define glGetError vox_angle_api.glGetError
 #define glGetFloatv vox_angle_api.glGetFloatv
 #define glGetFloatvRobustANGLE vox_angle_api.glGetFloatvRobustANGLE
+#define glGetFramebufferAttachmentParameteriv vox_angle_api.glGetFramebufferAttachmentParameteriv
 #define glGetInteger64vRobustANGLE vox_angle_api.glGetInteger64vRobustANGLE
 #define glGetIntegerv vox_angle_api.glGetIntegerv
 #define glGetIntegervRobustANGLE vox_angle_api.glGetIntegervRobustANGLE
@@ -405,6 +414,7 @@ __attribute__((constructor)) static void vox_angle_eager_diagnostic(void) {
 #define glGetProgramiv vox_angle_api.glGetProgramiv
 #define glGetProgramivRobustANGLE vox_angle_api.glGetProgramivRobustANGLE
 #define glGetQueryObjectuivRobustANGLE vox_angle_api.glGetQueryObjectuivRobustANGLE
+#define glGetQueryiv vox_angle_api.glGetQueryiv
 #define glGetRenderbufferParameterivRobustANGLE vox_angle_api.glGetRenderbufferParameterivRobustANGLE
 #define glGetSamplerParameterfvRobustANGLE vox_angle_api.glGetSamplerParameterfvRobustANGLE
 #define glGetShaderInfoLog vox_angle_api.glGetShaderInfoLog
@@ -434,9 +444,13 @@ __attribute__((constructor)) static void vox_angle_eager_diagnostic(void) {
 #define glIsEnabled vox_angle_api.glIsEnabled
 #define glIsFramebuffer vox_angle_api.glIsFramebuffer
 #define glIsProgram vox_angle_api.glIsProgram
+#define glIsQuery vox_angle_api.glIsQuery
 #define glIsRenderbuffer vox_angle_api.glIsRenderbuffer
+#define glIsSampler vox_angle_api.glIsSampler
 #define glIsShader vox_angle_api.glIsShader
+#define glIsSync vox_angle_api.glIsSync
 #define glIsTexture vox_angle_api.glIsTexture
+#define glIsTransformFeedback vox_angle_api.glIsTransformFeedback
 #define glIsVertexArray vox_angle_api.glIsVertexArray
 #define glIsVertexArrayOES vox_angle_api.glIsVertexArrayOES
 #define glLineWidth vox_angle_api.glLineWidth
