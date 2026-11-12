@@ -2672,6 +2672,16 @@ executable identity `82b536155fc6c379e3ee01b0a3ba9ea072b6e909b7a746153c0a6b559dd
 This is rendering evidence, not a performance comparison or a production-bundle
 acceptance result. The commit requests the managed production rebuild.
 
+The subsequently completed managed build `20261112-075730-7e81c09c` contains the
+rendering commit and uses literal C `-prod` in a single unit. Its executable
+SHA-256 is `23ad40a6373357f83e8feab4e41e55ded8abda3a84f26fa6ff77f257427d91a1`.
+Fresh launches passed `--headless-smoke` and reproduced exactly the same 45,495
+ChatGPT differences, with stable executable/resource identities. Its
+`glyph-document-origin` capture has **zero differing pixels** out of 768,000.
+All three browser checks exited 0 under separate 3 GiB guards. Local commands,
+receipts, captures and failed attempts are retained under
+`docs/performance/plain-v-text-20261112/`, outside tracked measurement history.
+
 A separate direct live-site capture exited 0 but remained blank and `loading`
 with no editor. It does not validate the live ChatGPT experience. Full-page exact
 parity and live-site readiness remain open.
