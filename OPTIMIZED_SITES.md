@@ -7,8 +7,9 @@ Results apply to the frozen page and pinned build in each linked report.
 Provisional entries retain unresolved acceptance checks.
 
 **Pixel recheck, 2026-11-12:** the latest completed production bundle does
-**not** pass pixel equality across this catalog. Hacker News is exact;
-Lobsters, CNN, Wikipedia, vlang.io and GitHub differ from fresh Brave captures.
+**not** pass pixel equality across this catalog. Hacker News is exact in the
+initial audit; corrective production checks now make Lobsters and Wikipedia
+exact in two fresh captures each. CNN, vlang.io and GitHub remain open.
 Reddit could not be verified (missing historical fixture, live HTTP 403).
 See the [current audit, capture scopes and retained failures](docs/OPTIMIZED_SITES_PIXELS_2026_11_12.md).
 

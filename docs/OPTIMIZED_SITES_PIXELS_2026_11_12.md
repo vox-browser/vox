@@ -2,10 +2,10 @@
 
 **The all-site pixel-equality gate remains open.** The initial audit below
 found five differing sites and an unverified Reddit workload. Subsequent fixes
-now make the registered Lobsters page pixel-exact in two fresh production
-captures; see the corrective results below. Wikipedia still differs at 445
-pixels in its current baseline. This is a rendering correctness audit, not a
-new instruction or scrolling benchmark. Existing references, zero-error gates
+now make the registered Lobsters page and archived Wikipedia portal
+pixel-exact in two fresh production captures each; see the corrective results
+below. This is a rendering correctness audit, not a new instruction or
+scrolling benchmark. Existing references, zero-error gates
 and historical performance statistics remain unchanged.
 
 | Catalog site | Initial result | Differing RGBA pixels | Workload |
@@ -311,6 +311,68 @@ failures, source identities and guard reports remain under
 
 This accepts the frozen Lobsters viewport above. It does not reaccept the other
 catalog pages, live/interactive behavior, whole-document scrolling, scale 2 or
-any CPU/FPS result. The all-site task remains open. Wikipedia's current two
-captures still differ at 445 pixels (443 in its Persian article-count line and
-two in the wordmark); that is the next corrective investigation.
+any CPU/FPS result. The all-site task remains open. The Wikipedia investigation below follows
+this Lobsters milestone.
+
+
+## Wikipedia numeric-direction correction
+
+Wikipedia is now **0 / 786,432 differing RGBA pixels in both fresh captures**
+against the unchanged Brave portal reference. Both the four-row numeric bidi
+control and the fallback-font control are exact twice; Lobsters remains exact
+in two fresh regression captures under the same bundle lease.
+
+- Production executable SHA-256:
+  `ceed0de7fca9cbcb7d03972db94189ead1cc37a0378c3034c837e6682dad1c72`.
+- Managed receipt: `20261112-123123-60187c40`; verified source head
+  `6b8993a705f70ce98dae5a766e894e86873c6e8e`, dirty-input receipt retained.
+  Relevant source hashes match the completed numeric-direction commits.
+- Same sealed 15-response archive, URL, 1024×768 viewport, backing/capture
+  scale 1, private profile/cache, disabled author scripts and five-second
+  settling as the initial audit. Every native process is fresh; document
+  identity, readiness, content and viewport audits pass with browser/guard
+  exits 0. Fixture/reference/tool hashes and executable/library identities
+  remain unchanged throughout the grouped checks. OS caches are retained.
+
+The initial 445-pixel failure consisted of the Persian count line (443) and
+two wordmark pixels. Resolving only a numeric chunk's shaping direction
+(`d21dd0c2b`) leaves 430 pixels. Resolving separate text/font fragments together
+with ICU paragraph levels (`d82dd35d4`) leaves 70. Keeping number and neutral
+levels separate before font fragmentation, and honoring resolved RTL for ASCII
+neutrals (`9881fffec`), leaves 26. The reduced same-font control is exact at
+that stage, while its system-font/fallback version reproduces the remaining
+26-pixel failure.
+
+The final correction (`6b8993a70`) retains the precise advance when an RTL
+fragment combines the plus and its space, rounding their total once. Previously
+rounding each chunk separately moved the adjacent number by 1/64 pixel and
+selected a different quarter-pixel mask for one Persian digit. The two wordmark
+pixels disappear in the concurrently updated renderer; no isolated credit for
+those two pixels is assigned to the numeric changes.
+
+Focused application tests execute the paragraph layout and display-list path,
+including split Persian spans, adjacent Latin spans, RTL attributes, explicit
+overrides, translation-policy preservation and the fractional-advance case.
+They pass under the 3 GiB runtime guard after the 12 GiB compilation guard.
+Platform tests execute level resolution and ASCII neutral shaping in normal
+and preallocated ownership modes. New control references come from two agreeing
+fresh Brave processes; the fallback count crop also matches the original portal
+exactly. References and the zero-error gate are unchanged.
+
+A screenshot-tool correction (`140afa2e4`) removes animation-callback waits for
+script-disabled pages. Its 14 tests and real Brave capture pass; its numeric
+control matches the earlier reference exactly. A separate Brave geometry
+probe uses different form-control launch flags and differs at 1,728 search-form
+pixels. It supplies only character geometry, never a replacement acceptance
+reference. The original timeout, the standalone layout test stopped by the
+12 GiB guard, partial pixel failures and production source-guard rejection are
+retained locally under `docs/performance/wikipedia-numeric-20261112/`.
+
+The all-site gate remains open. vlang.io still differs at **309,681 pixels in
+both fresh captures** of the same script-disabled archive under the
+`1522067f` bundle (initial audit: 309,884); these are mostly small gradient
+color differences. The clipped CSS gradient GPU entry points currently decline
+the draws and use the CoreGraphics fallback, which is the next investigation.
+CNN, GitHub and the unavailable account-bearing Reddit workload remain open.
+These are frozen viewport results, with no new live-site, scale-2, interaction,
+scrolling or instruction-performance acceptance claim.
