@@ -376,3 +376,70 @@ the draws and use the CoreGraphics fallback, which is the next investigation.
 CNN, GitHub and the unavailable account-bearing Reddit workload remain open.
 These are frozen viewport results, with no new live-site, scale-2, interaction,
 scrolling or instruction-performance acceptance claim.
+
+
+## CSS gradient GPU correction
+
+`f76294b85` restores eligible CSS linear and radial gradient draws through the
+V document GPU tile renderer. The native entries previously declined every
+such draw, leaving CoreGraphics to choose different interpolation and rounding.
+The bridge now preserves premultiplied stops, rounded and ancestor clips,
+backdrop pixels, tile gutters and per-tile sample selection.
+
+Production executable
+`7f74bcb7355130ccc4d2cc51e8f02e2e8baf2a902d32f16a2159d0fdc7a77069`
+(receipt `20261112-132807-5c76223f`, feature source hashes verified) reduces the
+unchanged vlang.io archive from **309,681 to 70,357 differing pixels**, in both
+fresh captures. The original Brave reference is unchanged; vlang.io remains
+open. At their existing scale-one viewports, `css-radial-gradient`,
+`css-premultiplied-fades` and `radial-gradient-float-geometry` each match exactly
+in two fresh production captures. Wikipedia and Lobsters also remain exact in
+both repeated captures. Content, readiness, viewport, executable and resource
+identity checks pass.
+
+The focused test executes six real gradient draws through the native pixel
+boundary and GPU renderer, checking exact reference pixels, mixed backgrounds,
+rounded clips, tile seams and browser chrome offsets. Normal ownership and the
+prepared preallocated runtime pass. An initial run using an unprepared
+preallocated compiler crashes in PNG decoding before the draw; that failed run
+is retained. `59d80db2f` adds a focused entrypoint test which calls the real
+browser startup. Its mandatory headless smoke passes, and two diagnostic
+captures reproduce the production vlang.io pixels exactly. These unoptimized
+diagnostic captures supply no production or performance acceptance.
+
+Raw baseline, control and production receipts are local under
+`docs/performance/vlang-gradients-20261112/`. GitHub's unchanged archive still
+has **38,656** differing pixels in both follow-up captures. CNN and the missing
+account-bearing Reddit fixture remain open. No live-site, Retina, scrolling or
+instruction-performance acceptance is claimed.
+
+
+## Promoted shadow raster bounds
+
+`3878a38b1` clips ordinary root-scrolled promoted pictures to the scrollable
+document before choosing their GPU tiles. Brave's compilation-panel picture
+starts at x=0; Vox previously included its shadow at x=-58, incorrectly choosing
+three half-width tile columns and shifting the gradient dither coordinates.
+The focused application test checks both viewport-width and horizontally wider
+documents. It executes successfully under the 3 GiB guard after a 12 GiB
+compilation guard. The initial standalone layout test compilation reaches the
+12 GiB limit and is retained as a failed attempt; it supplies no runtime result.
+
+Production executable
+`296a9fa4b2e908a8e0447010f1cbe635fc62ad076fd7d0c4d5c7895bd6c320bb`
+(receipt `20261112-135812-f195c746`, matching feature source hashes) reduces the
+unchanged vlang.io archive to **28,961 differing pixels in both fresh captures**.
+The three existing gradient controls, Wikipedia and Lobsters each remain exact
+in both production captures. All content, readiness, viewport and identity
+checks pass. Two additional Brave diagnostic captures preserve the original
+reference exactly with and without a process device-scale override; re-enabling
+LayerTree observation exposes the document-clipped panel bounds. Neither probe
+changes the acceptance reference.
+
+A reduced shadow/gradient reproduction improves from 110,185 to 7,478 differing
+pixels, but retains separate shadow and small gradient-rounding differences.
+It is diagnostic, with no relaxed tolerance or full-parity claim. vlang.io's
+remaining panel differences follow its rotated orbit decoration. Further shadow
+and image corrections, CNN, GitHub and the unavailable Reddit workload remain
+open. Raw diagnostics and production receipts are retained locally under
+`docs/performance/vlang-gradients-20261112/`.
