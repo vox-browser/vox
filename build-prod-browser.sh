@@ -231,6 +231,9 @@ export V_MACOS_V3_NO_FALLBACK
 # remains available as an ownership diagnostic.
 ui2_modules=$(python3 "$repo_dir/tools/prepare_ui2.py" "$v_compiler")
 http_modules=$(python3 "$repo_dir/tools/prepare_http_compat.py" "$v_compiler")
+# Avoid the optional Graphite2 VM in Homebrew's HarfBuzz archive.
+harfbuzz_root=$(python3 "$repo_dir/tools/build_harfbuzz.py")
+cp "$harfbuzz_root/LICENSE" "$resources_dir/harfbuzz-LICENSE.txt"
 prealloc_modules=""
 # Every collector uses glyph-index lookup in the platform font bridge. Avoid
 # decoding x.ttf's dense Unicode vectors only to discard them after each face
@@ -439,6 +442,7 @@ if [ ! -f "$compile_dir/Vox" ]; then
 fi
 mv -f "$compile_dir/Vox" "$binary_dir/Vox"
 python3 "$repo_dir/tools/localize_bundle_rpaths.py" "$binary_dir/Vox" "$build_dir"
+python3 "$repo_dir/tools/build_harfbuzz.py" --check-executable "$binary_dir/Vox"
 
 
 # JPEG XL is decoded by the V jpegxl module; drop the former Rust helper.

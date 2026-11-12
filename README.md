@@ -27,15 +27,17 @@ Install Apple's command line tools (`xcode-select --install`) and
 [Homebrew](https://brew.sh/), then:
 
 ```sh
-brew install python pkgconf freetype graphite2 harfbuzz openssl \
+brew install python cmake pkgconf freetype openssl \
     startergo/angle/angle ffmpeg libavif curl glslang
 eval "$(python3 tools/dev_build_env.py)"
 v .
 ./vox2 https://example.com
 ```
 
-FreeType and HarfBuzz remain native dependencies. Unicode processing uses
-V code with bundled Unicode 17 data; ICU is not required. FFmpeg, libavif and curl
+FreeType and HarfBuzz remain native dependencies. Setup builds pinned HarfBuzz
+15.1.0 without its optional Graphite2 backend; no Graphite2 library is needed.
+Font selection, Unicode processing and glyph-run policy use V code with bundled
+Unicode 17 data; ICU is not required. FFmpeg, libavif and curl
 supply media, AVIF and HTTP support. To produce the signed application bundle:
 
 ```sh
