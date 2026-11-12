@@ -33,7 +33,9 @@ typedef struct {
 } VoxGLESGLX;
 VOX_NATIVE_STATE __thread VoxGLESGLX vox_gles_glx;
 static void vox_gles_prepare_glx(void) {
-    if(vox_gles_glx.initialized)return;
+    /* Sokol may load libGL after an earlier headless WebGL call. Retry a
+     * missing dispatch table instead of caching that pre-window result. */
+    if(vox_gles_glx.initialized && vox_gles_glx.context)return;
     vox_gles_glx.initialized=1;
     vox_gles_glx.context=(void*(*)(void))dlsym(RTLD_DEFAULT,"glXGetCurrentContext");
     vox_gles_glx.display=(void*(*)(void))dlsym(RTLD_DEFAULT,"glXGetCurrentDisplay");

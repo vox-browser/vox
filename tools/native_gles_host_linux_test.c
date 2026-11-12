@@ -25,6 +25,8 @@ int main(int argc,char **argv) {
     assert(glXMakeCurrent(display,window,host));
     glViewport(7,8,9,10);glClearColor(.25f,.5f,.75f,1);
     if(!baseline) {
+    /* Simulate an early call before Sokol has loaded its GLX library. */
+    vox_gles_glx.initialized=1;
     void *one=vox_egl_create(2);assert(one);preserved();
     void *two=vox_egl_create(3);assert(two);preserved();
     for(int i=0;i<4;i++) {
