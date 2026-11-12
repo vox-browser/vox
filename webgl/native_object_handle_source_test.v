@@ -85,7 +85,7 @@ fn test_all_source_named_resource_handles_and_cache_deletion_use_distinct_namesp
 	context.delete_texture(texture)
 	context.delete_shader(shader)
 	context.delete_program(program)
-	context.delete_query(mut query)
+	context.delete_query(query)
 	context.delete_sampler(mut sampler)
 	context.delete_transform_feedback(feedback)
 	context.delete_vertex_array(mut array)

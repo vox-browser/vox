@@ -108,10 +108,13 @@ pub fn (mut context WebGLRenderingContext) get_query_parameter(query &WebGLQuery
 	return u64(result)
 }
 
-pub fn (mut context WebGLRenderingContext) delete_query(mut query ?&WebGLQuery) {
+// Borrow the optional; only the owned object changes during deletion.
+// A mutable optional would require callers to pass an option container ABI.
+pub fn (mut context WebGLRenderingContext) delete_query(query ?&WebGLQuery) {
 	context.native.make_current()
-	if mut value := query {
-		handle_result := value.object.handle_for_deletion(context.identity(), context.context_generation_) or {
+	if value := query {
+        mut mutable_value:=unsafe { &WebGLQuery(value) }
+		handle_result := mutable_value.object.handle_for_deletion(context.identity(), context.context_generation_) or {
 			context.set_error(invalid_operation)
 			return
 		}

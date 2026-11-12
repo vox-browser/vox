@@ -36,7 +36,7 @@ fn test_public_get_query_wraps_actual_retained_deleted_records_without_selecting
 		mut native_current := i32(-1)
 		native_current = C.vox_gl_query_target_parameter(target,webgl.current_query)
 		assert native_current == 0
-		context.delete_query(mut query)
+		context.delete_query(query)
 		assert query.object.invalidated()
 		assert context.get_error() == webgl.no_error
 		assert voidptr(&query.object) !in host.platform_objects

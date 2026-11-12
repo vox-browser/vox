@@ -102,7 +102,7 @@ fn test_source_query_validates_only_handle_before_target_driver_errors() {
 	assert context.get_query(transform_feedback_primitives_written, current_query)? == owned
 	assert query_source_native_current(transform_feedback_primitives_written) == 0
 	assert context.get_error() == expected_retarget
-	context.delete_query(mut owned)
+	context.delete_query(owned)
 	other.native.make_current()
 	context.begin_query(0xbad, mut owned)
 	query_source_selected_owner()

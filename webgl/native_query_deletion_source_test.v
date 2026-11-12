@@ -15,13 +15,13 @@ fn test_source_query_delete_selects_owner_before_all_early_returns_and_keeps_slo
 	context.viewport(1, 2, 3, 4)
 	other.viewport(9, 10, 11, 12)
 	mut foreign := other.create_query()
-	context.delete_query(mut foreign)
+	context.delete_query(foreign)
 	deletion_query_source_owner()
 	assert !foreign.object.invalidated()
 	assert context.get_error() == invalid_operation
 	other.native.make_current()
 	mut absent := ?&WebGLQuery(none)
-	context.delete_query(mut absent)
+	context.delete_query(absent)
 	deletion_query_source_owner()
 	assert context.get_error() == no_error
 	mut owned := context.create_query()
@@ -32,7 +32,7 @@ fn test_source_query_delete_selects_owner_before_all_early_returns_and_keeps_slo
 	context.begin_query(transform_feedback_primitives_written, mut owned)
 	assert context.get_error() == invalid_operation
 	other.native.make_current()
-	context.delete_query(mut owned)
+	context.delete_query(owned)
 	deletion_query_source_owner()
 	assert C.vox_gl_is_object(4,owned.object.native_handle_) == 0
 	assert owned.object.invalidated()
@@ -40,7 +40,7 @@ fn test_source_query_delete_selects_owner_before_all_early_returns_and_keeps_slo
 	assert context.get_query(transform_feedback_primitives_written, current_query)? == owned
 	assert context.get_error() == no_error
 	other.native.make_current()
-	context.delete_query(mut owned)
+	context.delete_query(owned)
 	deletion_query_source_owner()
 	assert context.get_query(transform_feedback_primitives_written, current_query)? == owned
 	assert context.get_error() == no_error
