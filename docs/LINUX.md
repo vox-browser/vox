@@ -15,7 +15,7 @@ On Ubuntu 24.04 or newer, install the following packages:
 sudo apt-get update
 sudo apt-get install build-essential clang ninja-build generate-ninja pkg-config \
     python3 git curl ca-certificates libjavascriptcoregtk-4.1-dev libglib2.0-dev \
-    libharfbuzz-dev libicu-dev libwoff-dev libbrotli-dev libcurl4-openssl-dev \
+    libharfbuzz-dev libicu-dev glslang-dev libwoff-dev libbrotli-dev libcurl4-openssl-dev \
     libssl-dev libegl1-mesa-dev libgl1-mesa-dev libxi-dev \
     libxcursor-dev libxrandr-dev libx11-dev libasound2-dev libgc-dev \
     libfreetype-dev libfontconfig-dev libwebp-dev libpng-dev libjpeg-dev \

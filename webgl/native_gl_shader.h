@@ -2,8 +2,8 @@
  *
  * CGL, WGL and system EGL desktop contexts compile the corresponding GLSL 4.10
  * spelling while retaining the exact ESSL source for getShaderSource().
- * This is a language compatibility adapter, not an independent GLSL compiler:
- * parsing, type checking and optimization remain the native driver's job.
+ * glslang validates the original ESSL before this spelling adapter runs. The
+ * native driver compiles and optimizes the translated desktop shader.
  */
 #ifndef VOX_WEBGL_NATIVE_GL_SHADER_H
 #define VOX_WEBGL_NATIVE_GL_SHADER_H
@@ -12,6 +12,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
+#include "native_gl_shader_validation.h"
 
 typedef struct VoxGLShaderSource {
     struct VoxGLShaderSource* next;
@@ -220,6 +221,66 @@ static int vox_glsl_known_builtin(char const* token, size_t length, int version)
     return 0;
 }
 
+/* Keep the desktop builtins outside user-global scope. Renaming a source
+ * texture2D call to texture() directly collides with a legal sampler named
+ * texture; wrappers also preserve user overloads of the ESSL function names. */
+static int vox_glsl_texture_wrappers(VoxGLSLBuffer* output, int fragment)
+{
+    if (!vox_glsl_text(output,
+        "vec4 _webgl_native_texture2D(sampler2D s, vec2 p) { return texture(s,p); }\n"
+        "vec4 _webgl_native_textureCube(samplerCube s, vec3 p) { return texture(s,p); }\n"
+        "vec4 _webgl_native_texture2DProj(sampler2D s, vec3 p) { return textureProj(s,p); }\n"
+        "vec4 _webgl_native_texture2DProj(sampler2D s, vec4 p) { return textureProj(s,p); }\n"
+        "vec4 _webgl_native_texture2DLod(sampler2D s, vec2 p, float l) { return textureLod(s,p,l); }\n"
+        "vec4 _webgl_native_textureCubeLod(samplerCube s, vec3 p, float l) { return textureLod(s,p,l); }\n"
+        "vec4 _webgl_native_texture2DProjLod(sampler2D s, vec3 p, float l) { return textureProjLod(s,p,l); }\n"
+        "vec4 _webgl_native_texture2DProjLod(sampler2D s, vec4 p, float l) { return textureProjLod(s,p,l); }\n"
+        "vec4 _webgl_native_texture2DGrad(sampler2D s, vec2 p, vec2 x, vec2 y) { return textureGrad(s,p,x,y); }\n"
+        "vec4 _webgl_native_textureCubeGrad(samplerCube s, vec3 p, vec3 x, vec3 y) { return textureGrad(s,p,x,y); }\n"
+        "vec4 _webgl_native_texture2DProjGrad(sampler2D s, vec3 p, vec2 x, vec2 y) { return textureProjGrad(s,p,x,y); }\n"
+        "vec4 _webgl_native_texture2DProjGrad(sampler2D s, vec4 p, vec2 x, vec2 y) { return textureProjGrad(s,p,x,y); }\n")) return 0;
+    return !fragment || vox_glsl_text(output,
+        "vec4 _webgl_native_texture2D(sampler2D s, vec2 p, float b) { return texture(s,p,b); }\n"
+        "vec4 _webgl_native_textureCube(samplerCube s, vec3 p, float b) { return texture(s,p,b); }\n"
+        "vec4 _webgl_native_texture2DProj(sampler2D s, vec3 p, float b) { return textureProj(s,p,b); }\n"
+        "vec4 _webgl_native_texture2DProj(sampler2D s, vec4 p, float b) { return textureProj(s,p,b); }\n");
+}
+
+static glslang_resource_t vox_glsl_driver_resources(void)
+{
+    vox_essl_prepare();
+    if (!vox_essl_initialized) {
+        glslang_resource_t unavailable = {0};
+        return unavailable;
+    }
+    glslang_resource_t resources = *glslang_default_resource();
+    GLint value = 0;
+#define VOX_ESSL_LIMIT(field, name) do { glGetIntegerv(name, &value); resources.field = value; } while (0)
+    VOX_ESSL_LIMIT(max_vertex_attribs, GL_MAX_VERTEX_ATTRIBS);
+    VOX_ESSL_LIMIT(max_vertex_uniform_components, GL_MAX_VERTEX_UNIFORM_COMPONENTS);
+    VOX_ESSL_LIMIT(max_fragment_uniform_components, GL_MAX_FRAGMENT_UNIFORM_COMPONENTS);
+    VOX_ESSL_LIMIT(max_vertex_output_components, GL_MAX_VERTEX_OUTPUT_COMPONENTS);
+    VOX_ESSL_LIMIT(max_fragment_input_components, GL_MAX_FRAGMENT_INPUT_COMPONENTS);
+    VOX_ESSL_LIMIT(max_vertex_texture_image_units, GL_MAX_VERTEX_TEXTURE_IMAGE_UNITS);
+    VOX_ESSL_LIMIT(max_combined_texture_image_units, GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS);
+    VOX_ESSL_LIMIT(max_texture_image_units, GL_MAX_TEXTURE_IMAGE_UNITS);
+    VOX_ESSL_LIMIT(max_draw_buffers, GL_MAX_DRAW_BUFFERS);
+    VOX_ESSL_LIMIT(min_program_texel_offset, GL_MIN_PROGRAM_TEXEL_OFFSET);
+    VOX_ESSL_LIMIT(max_program_texel_offset, GL_MAX_PROGRAM_TEXEL_OFFSET);
+#undef VOX_ESSL_LIMIT
+    /* MAX_VARYING_COMPONENTS is a legacy query rejected by Apple's core
+     * context. Its vertex-output/fragment-input replacement limits are core. */
+    resources.max_varying_components = resources.max_vertex_output_components < resources.max_fragment_input_components
+        ? resources.max_vertex_output_components : resources.max_fragment_input_components;
+    resources.max_vertex_uniform_vectors = resources.max_vertex_uniform_components / 4;
+    resources.max_fragment_uniform_vectors = resources.max_fragment_uniform_components / 4;
+    resources.max_varying_vectors = resources.max_varying_components / 4;
+    resources.max_varying_floats = resources.max_varying_components;
+    resources.max_vertex_output_vectors = resources.max_vertex_output_components / 4;
+    resources.max_fragment_input_vectors = resources.max_fragment_input_components / 4;
+    return resources;
+}
+
 /* Returns an allocated, NUL-terminated shader or NULL on allocation failure.
  * Unsupported versions/features become #error so compileShader and its normal
  * info log report the failure; shaderSource itself still preserves the input. */
@@ -232,6 +293,7 @@ static char* vox_glsl_desktop_source(char const* source, int input_length,
         return NULL;
     VoxGLSLBuffer body = {0}, output = {0};
     char const* error = NULL;
+    char* preprocessed = NULL;
     int version = 100, have_version = 0, have_content = 0, line_start = 1;
     /* Resolve #version before rewriting any token or deciding the interface. */
     for (size_t i = 0; i < length && !error;) {
@@ -275,6 +337,21 @@ static char* vox_glsl_desktop_source(char const* source, int input_length,
             line_start = 0;
             ++i;
         }
+    }
+
+    char validation_log[1024] = {0};
+    glslang_resource_t resources = vox_glsl_driver_resources();
+    if (!error && !vox_essl_validate_preprocessed(source, input_length, fragment, version, &resources,
+            validation_log, sizeof(validation_log), &preprocessed))
+        error = "#error WebGL: ESSL validation failed\n";
+    if (preprocessed) {
+        /* Expand macros before deciding whether an identifier denotes a call
+         * or a user variable. Original source stays in the shader record. */
+        source = preprocessed;
+        length = strlen(source);
+        free(clean);
+        clean = vox_glsl_without_comments(source, length);
+        if (!clean) goto oom;
     }
 
     int fragment_outputs = 0, invariant = 0, in_directive = 0;
@@ -407,13 +484,19 @@ static char* vox_glsl_desktop_source(char const* source, int input_length,
                     fragment_outputs = 1;
                     replacement = "_webgl_native_frag_outputs";
                 } else if (vox_glsl_equal(token, n, "gl_FragDepthEXT")) replacement = "gl_FragDepth";
-                else if (vox_glsl_equal(token, n, "texture2D") || vox_glsl_equal(token, n, "textureCube")) replacement = "texture";
-                else if (vox_glsl_equal(token, n, "texture2DProj")) replacement = "textureProj";
-                else if (vox_glsl_equal(token, n, "texture2DLod") || vox_glsl_equal(token, n, "textureCubeLod")
-                    || vox_glsl_equal(token, n, "texture2DLodEXT") || vox_glsl_equal(token, n, "textureCubeLodEXT")) replacement = "textureLod";
-                else if (vox_glsl_equal(token, n, "texture2DProjLod") || vox_glsl_equal(token, n, "texture2DProjLodEXT")) replacement = "textureProjLod";
-                else if (vox_glsl_equal(token, n, "texture2DGradEXT") || vox_glsl_equal(token, n, "textureCubeGradEXT")) replacement = "textureGrad";
-                else if (vox_glsl_equal(token, n, "texture2DProjGradEXT")) replacement = "textureProjGrad";
+                else if (vox_glsl_equal(token, n, "texture2D")) replacement = "_webgl_native_texture2D";
+                else if (vox_glsl_equal(token, n, "textureCube")) replacement = "_webgl_native_textureCube";
+                else if (vox_glsl_equal(token, n, "texture2DProj")) replacement = "_webgl_native_texture2DProj";
+                else if (vox_glsl_equal(token, n, "texture2DLod") || vox_glsl_equal(token, n, "texture2DLodEXT")) replacement = "_webgl_native_texture2DLod";
+                else if (vox_glsl_equal(token, n, "textureCubeLod") || vox_glsl_equal(token, n, "textureCubeLodEXT")) replacement = "_webgl_native_textureCubeLod";
+                else if (vox_glsl_equal(token, n, "texture2DProjLod") || vox_glsl_equal(token, n, "texture2DProjLodEXT")) replacement = "_webgl_native_texture2DProjLod";
+                else if (vox_glsl_equal(token, n, "texture2DGradEXT")) replacement = "_webgl_native_texture2DGrad";
+                else if (vox_glsl_equal(token, n, "textureCubeGradEXT")) replacement = "_webgl_native_textureCubeGrad";
+                else if (vox_glsl_equal(token, n, "texture2DProjGradEXT")) replacement = "_webgl_native_texture2DProjGrad";
+            }
+            if (!in_directive && replacement && strncmp(replacement, "_webgl_native_texture", 21) == 0) {
+                size_t next = vox_glsl_skip_space(clean, end, length);
+                if (next == length || clean[next] != '(') replacement = NULL;
             }
             if (!in_directive && vox_glsl_equal(token, n, "invariant")) invariant = 1;
             if (!(replacement ? vox_glsl_text(&body, replacement) : vox_glsl_append(&body, source + i, n))) goto oom;
@@ -440,13 +523,16 @@ static char* vox_glsl_desktop_source(char const* source, int input_length,
         if (fragment_outputs && !vox_glsl_text(&output, context_version == 3
                 ? "layout(location = 0) out vec4 _webgl_native_frag_outputs[1];\n"
                 : "layout(location = 0) out vec4 _webgl_native_frag_outputs[gl_MaxDrawBuffers];\n")) goto oom;
+        if (version == 100 && !vox_glsl_texture_wrappers(&output, fragment)) goto oom;
         if (!vox_glsl_text(&output, "#line 1\n") || !vox_glsl_append(&output, body.bytes, body.length)) goto oom;
     }
     free(clean);
+    free(preprocessed);
     free(body.bytes);
     return output.bytes;
 oom:
     free(clean);
+    free(preprocessed);
     free(body.bytes);
     free(output.bytes);
     return NULL;

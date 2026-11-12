@@ -49,6 +49,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 Additional notices already accompany the components in the repository:
 
+- [glslang ESSL validation](webgl/licenses/glslang.txt) and its packaged
+  [SPIRV-Tools dependency](webgl/licenses/spirv-tools.txt).
 - [uBlock Origin and ad-blocking dependencies](adblock/vendor/NOTICE.md),
   including uBlock Origin's [GPL-3.0-or-later license](adblock/vendor/ublock/LICENSE.txt),
   polyfill licenses and filter-list attributions.
