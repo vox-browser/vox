@@ -86,9 +86,9 @@ fn test_all_source_named_resource_handles_and_cache_deletion_use_distinct_namesp
 	context.delete_shader(shader)
 	context.delete_program(program)
 	context.delete_query(query)
-	context.delete_sampler(mut sampler)
+	context.delete_sampler(sampler)
 	context.delete_transform_feedback(feedback)
-	context.delete_vertex_array(mut array)
+	context.delete_vertex_array(array)
 	assert context.buffers.len == 0
 	assert context.framebuffers.len == 0
 	assert context.renderbuffers.len == 0
@@ -173,5 +173,5 @@ fn test_source_raw_query_factory_values_do_not_consume_generated_ids() {
 	shader := context.create_shader(vertex_shader) or { panic('source creation after getter and sync') }
 	assert shader.object.handle(context.identity(), context.context_generation())! == 3
 	assert context.get_error() == no_error
-	context.delete_sync(mut sync)
+	context.delete_sync(sync)
 }

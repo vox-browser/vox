@@ -694,7 +694,7 @@ fn (mut host CanvasWebGLHost) dispatch(request map[string]json2.Any) !json2.Any 
 			host.validate_resource(wg_arg(args, 0), 'sampler', true)!
 			mut argument_0 := ?&webgl.WebGLSampler(none)
 			if value := host.samplers[wg_handle(wg_arg(args, 0))] { argument_0 = value }
-			context.delete_sampler(mut argument_0)
+			context.delete_sampler(argument_0)
 		}
 		'fenceSync' {
 			if value := context.fence_sync(wg_u32(wg_arg(args, 0)), wg_u32(wg_arg(args, 1))) {
@@ -718,7 +718,7 @@ fn (mut host CanvasWebGLHost) dispatch(request map[string]json2.Any) !json2.Any 
 			host.validate_resource(wg_arg(args, 0), 'sync', true)!
 			mut argument_0 := ?&webgl.WebGLSync(none)
 			if value := host.syncs[wg_handle(wg_arg(args, 0))] { argument_0 = value }
-			context.delete_sync(mut argument_0)
+			context.delete_sync(argument_0)
 		}
 		'createTransformFeedback' {
 			value := context.create_transform_feedback()
@@ -764,7 +764,7 @@ fn (mut host CanvasWebGLHost) dispatch(request map[string]json2.Any) !json2.Any 
 			host.validate_resource(wg_arg(args, 0), 'vertex_array', true)!
 			mut argument_0 := ?&webgl.WebGLVertexArrayObject(none)
 			if value := host.vertex_arrays[wg_handle(wg_arg(args, 0))] { argument_0 = value }
-			context.delete_vertex_array(mut argument_0)
+			context.delete_vertex_array(argument_0)
 		}
 		'createVertexArrayOES' {
 			value := context.create_vertex_array_oes()

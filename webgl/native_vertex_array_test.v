@@ -58,7 +58,7 @@ fn test_native_vertex_arrays_retain_attribute_and_element_buffer_state() {
 		assert pixels[offset..offset + 4] == [u8(255), 0, 0, 255]
 	}
 	assert context.get_error() == no_error
-	context.delete_vertex_array(mut triangle)
+	context.delete_vertex_array(triangle)
 	assert !context.is_vertex_array(triangle)
 	assert context.get_parameter(vertex_array_binding).kind == .none
 	assert context.get_parameter(element_array_buffer_binding).object == indices.object.handle_

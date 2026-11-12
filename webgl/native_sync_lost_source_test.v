@@ -29,7 +29,7 @@ fn test_source_lost_client_wait_returns_default_without_touching_other_native_ma
 	assert owner.get_error() == context_lost_webgl
 	assert owner.get_error() == no_error
 	assert other.get_error() == no_error
-	other.delete_sync(mut sentinel)
+	other.delete_sync(sentinel)
 }
 
 fn test_source_live_rejected_native_fence_retains_actual_wait_failed_driver_result() {

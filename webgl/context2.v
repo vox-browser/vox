@@ -192,10 +192,11 @@ pub fn (mut context WebGLRenderingContext) sampler_parameterf(mut sampler WebGLS
 	C.vox_gl_sampler_parameterf(sampler.object.native_handle_, pname, parameter)
 }
 
-pub fn (mut context WebGLRenderingContext) delete_sampler(mut sampler ?&WebGLSampler) {
+pub fn (mut context WebGLRenderingContext) delete_sampler(sampler ?&WebGLSampler) {
 	context.native.make_current()
-	if mut value := sampler {
-		handle_result := value.object.handle_for_deletion(context.identity(), context.context_generation_) or {
+	if value := sampler {
+		mut mutable_value := unsafe { &WebGLSampler(value) }
+		handle_result := mutable_value.object.handle_for_deletion(context.identity(), context.context_generation_) or {
 			context.set_error(invalid_operation)
 			return
 		}
@@ -244,9 +245,10 @@ pub fn (mut context WebGLRenderingContext) wait_sync(mut sync WebGLSync, flags G
 	context.native.native_wait_sync(sync.native_handle_, flags, timeout)
 }
 
-pub fn (mut context WebGLRenderingContext) delete_sync(mut sync ?&WebGLSync) {
-	if mut value := sync {
-		handle_result := value.sync_handle_for_deletion(context.identity(), context.context_generation_) or {
+pub fn (mut context WebGLRenderingContext) delete_sync(sync ?&WebGLSync) {
+	if value := sync {
+		mut mutable_value := unsafe { &WebGLSync(value) }
+		handle_result := mutable_value.sync_handle_for_deletion(context.identity(), context.context_generation_) or {
 			context.set_error(invalid_operation)
 			return
 		}
@@ -350,10 +352,11 @@ pub fn (mut context WebGLRenderingContext) is_vertex_array(array ?&WebGLVertexAr
 	return C.vox_gl_is_vertex_array(value.object.native_handle_,0) == 1
 }
 
-pub fn (mut context WebGLRenderingContext) delete_vertex_array(mut array ?&WebGLVertexArrayObject) {
+pub fn (mut context WebGLRenderingContext) delete_vertex_array(array ?&WebGLVertexArrayObject) {
 	context.native.make_current()
-	if mut value := array {
-		handle_result := value.object.handle_for_deletion(context.identity(), context.context_generation_) or {
+	if value := array {
+		mut mutable_value := unsafe { &WebGLVertexArrayObject(value) }
+		handle_result := mutable_value.object.handle_for_deletion(context.identity(), context.context_generation_) or {
 			context.set_error(invalid_operation)
 			return
 		}

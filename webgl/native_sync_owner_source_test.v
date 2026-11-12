@@ -29,13 +29,13 @@ fn test_source_sync_operations_select_owner_only_on_native_dispatch_and_preserve
 	sync_source_owner([i32(9), 10, 11, 12]!)
 	assert context.get_error() == invalid_operation
 	other.native.make_current()
-	context.delete_sync(mut foreign)
+	context.delete_sync(foreign)
 	sync_source_owner([i32(9), 10, 11, 12]!)
 	assert !foreign.object.invalidated()
 	assert context.get_error() == invalid_operation
 	other.native.make_current()
 	mut absent := ?&WebGLSync(none)
-	context.delete_sync(mut absent)
+	context.delete_sync(absent)
 	sync_source_owner([i32(9), 10, 11, 12]!)
 	assert context.get_error() == no_error
 	other.native.make_current()
@@ -64,7 +64,7 @@ fn test_source_sync_operations_select_owner_only_on_native_dispatch_and_preserve
 	assert retained != unsafe { nil }
 	assert C.vox_gl_is_sync(retained) == 1
 	other.native.make_current()
-	context.delete_sync(mut owned)
+	context.delete_sync(owned)
 	sync_source_owner([i32(1), 2, 3, 4]!)
 	assert C.vox_gl_is_sync(retained) == 0
 	assert owned.object.invalidated()
@@ -72,7 +72,7 @@ fn test_source_sync_operations_select_owner_only_on_native_dispatch_and_preserve
 	assert owned.source_handle_ == retained_source
 	assert context.get_error() == no_error
 	other.native.make_current()
-	context.delete_sync(mut owned)
+	context.delete_sync(owned)
 	sync_source_owner([i32(9), 10, 11, 12]!)
 	assert owned.native_handle_ == retained
 	assert owned.source_handle_ == retained_source
@@ -99,7 +99,7 @@ fn test_source_sync_operations_select_owner_only_on_native_dispatch_and_preserve
 	context.wait_sync(mut null_handle, 2, 0)
 	sync_source_owner([i32(1), 2, 3, 4]!)
 	assert context.get_error() == expected_null_error
-	context.delete_sync(mut null_handle)
+	context.delete_sync(null_handle)
 	assert context.get_error() == no_error
 	assert null_handle.native_handle_ == unsafe { nil }
 	assert other.get_error() == invalid_enum
