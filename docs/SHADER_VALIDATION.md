@@ -54,7 +54,7 @@ source, nesting, token and operation limits. Conditions short-circuit inactive
 operands. Token pasting and stringification are rejected. Extension and line
 directives, line-number builtins, ternary conditions and complete ESSL
 preprocessor conformance remain pending. The compiler also still needs semantic
-validation, transform feedback, and the remaining
+validation and the remaining
 ESSL expressions/builtins and control flow. General expression syntax and type
 checking currently depend on compiling the emitted MSL with Metal; successful
 translation alone does not establish ESSL validity. The production service still
@@ -108,7 +108,20 @@ location identifiers are rejected. Constant-variable expressions, attribute
 arrays, interpolation qualifiers and active-attribute analysis remain pending;
 currently all declared attributes reserve space, including unused ones.
 
-Validation for this slice: all seven test files pass with the C backend in
+The ESSL300 vertex translation now also generates a standalone `vox_capture`
+Metal entry point and V reflection for tightly packed output records. It captures
+all declared scalar/vector/matrix outputs and `gl_Position` before viewport Y or
+depth conversion. Matrices retain column-major order; signed/unsigned integers
+retain their 32-bit representation. Buffer slots 13/14 hold output words and
+capture parameters (first vertex, count, first instance, instance count, capacity
+in words). Instance-major indexing normalizes shader instance IDs to zero;
+capacity checks precede multiplications and suppress an undersized capture.
+The generated capture variant shares uniform decoding, texture bindings and
+attribute reconstruction with the regular vertex variant. This is code generation
+only: production integration, varying selection/packing, interface arrays and
+regular rasterization of matrix varyings are still pending.
+
+Validation for this slice: all eight test files pass with the C backend in
 default GC and `-gc none`. The macOS test compiles the V-generated vertex and fragment
 sources (including macro/conditional and uniform variants) with Metal, links a render
 pipeline, draws a full-target triangle, and
@@ -128,3 +141,14 @@ It also verifies that neither glslang
 nor SPIRV-Cross is loaded in the test process. The Objective-C test endpoint only
 submits generated MSL to Metal; all translation is V. Run under the memory guard
 with `VJOBS=1 v -b c -memory-limit 10G test webgl/shader` (and `-gc none`).
+
+The transform-feedback checks were compiled individually with the current V
+`-new-compiler -skip-running -b c -memory-limit 10G` and each produced executable
+was then run under the 3 GiB memory guard, in default GC and `-gc none`. The
+native capture test checks nonzero vertex/base-instance starts, matrix columns,
+integer bits, original clip coordinates, trailing canaries and an insufficient
+capacity. The V test driver bootstrap still references an unavailable
+`string__split_next` helper, so direct test executables avoid that driver. The
+build-tool split-loop workaround restores the managed V memory guard and commit
+hooks; the final direct checks use that guard. Earlier direct checks used the
+existing Python guard with the same 3 GiB process-tree budget.

@@ -28,6 +28,9 @@ pub:
 	textures            []TextureResource
 	uniform_buffer_size int
 	version             int
+	feedback_source     string
+	feedback_fields     []FeedbackField
+	feedback_stride     int
 }
 
 // The first direct-MSL slice deliberately rejects features it cannot lower.
@@ -207,6 +210,7 @@ pub fn translate_with_bindings(source string, stage Stage, bindings map[string]i
 	if stage == .vertex { lines << vertex_input_members(inputs)! }
 	else { for item in inputs { lines << '${metal_type(item.typ)!} ${item.name} [[user(v_${item.name})]];' } }
 	lines << '};'
+	capture_prefix := lines.join('\n')
 	lines << 'struct VoxOutput {'
 	if stage == .vertex {
 		lines << 'float4 position [[position]]; float point_size [[point_size]];'
@@ -246,7 +250,14 @@ pub fn translate_with_bindings(source string, stage Stage, bindings map[string]i
 	}
 	for item in outputs { lines << 'result.${item.name} = state.${item.name};' }
 	lines << 'return result; }'
-	return Translation{ source: lines.join('\n'), inputs: inputs, outputs: outputs, version: version, uniforms: reflected_uniforms, uniform_roots: uniforms, textures: textures, uniform_buffer_size: (uniform_size+15)/16*16 }
+	mut capture := FeedbackTranslation{}
+	if stage == .vertex && version == 300 {
+		mut initialization := [texture_state(textures)!]
+		initialization << uniform_loads(reflected_uniforms)!
+		initialization << vertex_input_loads(inputs)!
+		capture = feedback_translation(capture_prefix,args,initialization,outputs)!
+	}
+	return Translation{ feedback_source:capture.source,feedback_fields:capture.fields,feedback_stride:capture.stride,source: lines.join('\n'), inputs: inputs, outputs: outputs, version: version, uniforms: reflected_uniforms, uniform_roots: uniforms, textures: textures, uniform_buffer_size: (uniform_size+15)/16*16 }
 }
 
 pub fn link(vertex Translation, fragment Translation) ! {

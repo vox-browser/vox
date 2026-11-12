@@ -138,3 +138,31 @@ fn test_api_bound_and_explicit_matrix_attributes_read_each_column_on_the_gpu() {
  values := [f32(1),2,3,-100,4,5,6,-100]
  assert C.vox_direct_metal_attribute_probe(squareless.source.str,fragment.source.str,7,3,2,values.data,32)==1
 }
+
+fn C.vox_direct_metal_feedback_probe(&char,u32,u32,u32,u32,u32,&u32,u64) int
+
+fn test_v_generated_feedback_preserves_ids_matrix_bits_and_original_clip_position() {
+ vertex := translate('#version 300 es\nout vec3 value;out mat2 matrix;out int signed_value;out uint unsigned_value;void main(){value=vec3(float(gl_VertexID),float(gl_InstanceID),7.0);matrix[0]=vec2(1.0,2.0);matrix[1]=vec2(3.0,4.0);signed_value=-7;unsigned_value=4000000000u;gl_Position=vec4(1.0,2.0,3.0,4.0);}',.vertex)!
+ assert vertex.feedback_stride==52
+ assert vertex.feedback_fields.map(it.offset)==[0,12,28,32,36]
+ // Four records, with canaries beyond the output range. A nonzero Metal base
+ // instance must not leak into WebGL's zero-based gl_InstanceID.
+ mut words := []u32{len:56,init:0xdeadbeef}
+ assert C.vox_direct_metal_feedback_probe(vertex.feedback_source.str,2,2,3,2,52,words.data,56)==1
+ for record in 0..4 {
+  base := record*13
+  assert words[base]==math.f32_bits(f32(2+record%2))
+  assert words[base+1]==math.f32_bits(f32(record/2))
+  assert words[base+2]==math.f32_bits(f32(7))
+  for i in 0..4 { assert words[base+3+i]==math.f32_bits(f32(i+1)) }
+  assert words[base+7]==u32(i32(-7))
+  assert words[base+8]==u32(4000000000)
+  for i in 0..4 { assert words[base+9+i]==math.f32_bits(f32(i+1)) }
+ }
+ for i in 52..56 { assert words[i]==u32(0xdeadbeef) }
+ // An undersized capacity must suppress the whole capture without touching
+ // the allocation. This also checks multiplication guards before indexing.
+ for i in 0..words.len { words[i]=0xdeadbeef }
+ assert C.vox_direct_metal_feedback_probe(vertex.feedback_source.str,2,2,3,2,51,words.data,56)==1
+ assert words.all(it==u32(0xdeadbeef))
+}

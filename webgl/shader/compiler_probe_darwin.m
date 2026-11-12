@@ -108,3 +108,38 @@ int vox_direct_metal_probe(char const* vertex, char const* fragment) {
 int vox_direct_metal_attribute_probe(char const* vertex, char const* fragment, uint32_t location, uint32_t rows, uint32_t columns, void const* bytes, uint64_t length) {
     return vox_direct_metal_render_probe(vertex, fragment, NULL, 0, NULL, 0, 0, 0, location, rows, columns, bytes, length);
 }
+
+int vox_direct_metal_feedback_probe(char const* source, uint32_t first, uint32_t count, uint32_t first_instance, uint32_t instances, uint32_t capacity, uint32_t* output, uint64_t output_words) {
+    @autoreleasepool {
+        if (!output || !count || !instances || count>16 || instances>16 || output_words==0 || output_words>16384) return 0;
+        id<MTLDevice> device = MTLCreateSystemDefaultDevice();
+        if (!device) return 0;
+        NSError* error = nil;
+        id<MTLLibrary> library = [device newLibraryWithSource:[NSString stringWithUTF8String:source] options:nil error:&error];
+        if(!library) { fprintf(stderr,"%s\n",error.localizedDescription.UTF8String); return 0; }
+        MTLRenderPipelineDescriptor* descriptor = [MTLRenderPipelineDescriptor new];
+        descriptor.vertexFunction = [library newFunctionWithName:@"vox_capture"];
+        descriptor.rasterizationEnabled = NO;
+        id<MTLRenderPipelineState> pipeline = [device newRenderPipelineStateWithDescriptor:descriptor error:&error];
+        if(!pipeline) { fprintf(stderr,"%s\n",error.localizedDescription.UTF8String); return 0; }
+        id<MTLBuffer> buffer = [device newBufferWithBytes:output length:output_words*4 options:MTLResourceStorageModeShared];
+        if(!buffer) return 0;
+        MTLRenderPassDescriptor* pass = [MTLRenderPassDescriptor renderPassDescriptor];
+        pass.renderTargetWidth=1; pass.renderTargetHeight=1; pass.defaultRasterSampleCount=1;
+        id<MTLCommandQueue> queue = [device newCommandQueue];
+        id<MTLCommandBuffer> command = [queue commandBuffer];
+        id<MTLRenderCommandEncoder> encoder = [command renderCommandEncoderWithDescriptor:pass];
+        [encoder setRenderPipelineState:pipeline];
+        [encoder setVertexBuffer:buffer offset:0 atIndex:13];
+        // Clamp the advertised capacity to the actual allocation. Tests can
+        // provide a smaller capacity while retaining canary words after it.
+        uint32_t parameters[5]={first,count,first_instance,instances,capacity<output_words?capacity:(uint32_t)output_words};
+        [encoder setVertexBytes:parameters length:sizeof(parameters) atIndex:14];
+        [encoder drawPrimitives:MTLPrimitiveTypePoint vertexStart:first vertexCount:count instanceCount:instances baseInstance:first_instance];
+        [encoder endEncoding]; [command commit]; [command waitUntilCompleted];
+        if(command.status!=MTLCommandBufferStatusCompleted) return 0;
+        memcpy(output,buffer.contents,output_words*4);
+        for(uint32_t i=0;i<_dyld_image_count();++i) { char const* name=_dyld_get_image_name(i); if(strstr(name,"glslang") || strstr(name,"spirv-cross")) return 0; }
+        return 1;
+    }
+}
