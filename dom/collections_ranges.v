@@ -2248,13 +2248,15 @@ pub fn (mut r StaticRange) initialize() {
 }
 
 pub fn Range.create(document &Document) &Range {
+	// The live-range registry outlives the current parser/frame arena, and a
+	// range can move both boundaries into another document before retirement.
+	persistent := platform.enter_persistent()
+	defer { platform.leave_persistent(persistent) }
 	range := &Range{
 		start_container_: unsafe { &Node(document) }
 		end_container_: unsafe { &Node(document) }
 	}
-	persistent := platform.enter_persistent()
 	dom_live_ranges[u64(voidptr(range))] = range
-	platform.leave_persistent(persistent)
 	return range
 }
 
@@ -2271,15 +2273,15 @@ pub fn Range.create_from_window(window &Window) &Range {
 pub fn Range.create_from_boundary_points(start_container &Node, start_offset int, end_container &Node, end_offset int) &Range {
 	assert start_offset <= start_container.length()
 	assert end_offset <= end_container.length()
+	persistent := platform.enter_persistent()
+	defer { platform.leave_persistent(persistent) }
 	range := &Range{
 		start_container_: start_container
 		start_offset_: start_offset
 		end_container_: end_container
 		end_offset_: end_offset
 	}
-	persistent := platform.enter_persistent()
 	dom_live_ranges[u64(voidptr(range))] = range
-	platform.leave_persistent(persistent)
 	return range
 }
 
