@@ -18,6 +18,11 @@ mut:
 	owner &DrawingBuffer
 	width int
 	height int
+    depth int = 1
+    levels int = 1
+    samples int = 1
+    kind TextureKind
+    format TextureFormat
 }
 
 pub fn Texture2D.create(owner &DrawingBuffer, width int, height int) !&Texture2D {

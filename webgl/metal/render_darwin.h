@@ -69,7 +69,8 @@ static int vox_metal_draw_configured(void* target_handle, void* program_handle,
         descriptor.vertexFunction = (__bridge id<MTLFunction>)program->vertex;
         descriptor.fragmentFunction = (__bridge id<MTLFunction>)program->fragment;
         descriptor.vertexDescriptor = vertices;
-        descriptor.colorAttachments[0].pixelFormat = MTLPixelFormatRGBA8Unorm;
+        descriptor.colorAttachments[0].pixelFormat = [(__bridge id<MTLTexture>)target->texture pixelFormat];
+        descriptor.rasterSampleCount = [(__bridge id<MTLTexture>)target->texture sampleCount];
         MTLRenderPipelineColorAttachmentDescriptor* color = descriptor.colorAttachments[0];
         color.writeMask = ((state->color_mask & 1) ? MTLColorWriteMaskRed : 0)
             | ((state->color_mask & 2) ? MTLColorWriteMaskGreen : 0)
@@ -89,6 +90,9 @@ static int vox_metal_draw_configured(void* target_handle, void* program_handle,
         if (!pipeline) { if (capacity) snprintf(log, capacity, "%s", error.localizedDescription.UTF8String ?: "Metal pipeline compilation failed"); return 0; }
         MTLRenderPassDescriptor* pass = [MTLRenderPassDescriptor renderPassDescriptor];
         pass.colorAttachments[0].texture = (__bridge id<MTLTexture>)target->texture;
+        pass.colorAttachments[0].level = target->level;
+        pass.colorAttachments[0].slice = target->slice;
+        pass.colorAttachments[0].depthPlane = target->plane;
         pass.colorAttachments[0].loadAction = MTLLoadActionLoad;
         pass.colorAttachments[0].storeAction = MTLStoreActionStore;
         if (depth) {

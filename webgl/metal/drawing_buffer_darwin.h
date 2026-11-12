@@ -11,6 +11,7 @@
 typedef struct {
     CFTypeRef device, queue, texture;
     int width, height;
+    unsigned level, slice, plane;
 } VoxMetalDrawingBuffer;
 
 static void vox_metal_drop_owned(id value)
@@ -55,6 +56,9 @@ static int vox_metal_clear_texture(VoxMetalDrawingBuffer* context, id<MTLTexture
     id<MTLCommandBuffer> command = [queue commandBuffer];
     MTLRenderPassDescriptor* pass = [MTLRenderPassDescriptor renderPassDescriptor];
     pass.colorAttachments[0].texture = texture;
+    pass.colorAttachments[0].level = context->level;
+    pass.colorAttachments[0].slice = context->slice;
+    pass.colorAttachments[0].depthPlane = context->plane;
     pass.colorAttachments[0].loadAction = MTLLoadActionClear;
     pass.colorAttachments[0].storeAction = MTLStoreActionStore;
     pass.colorAttachments[0].clearColor = MTLClearColorMake(r, g, b, a);
@@ -128,13 +132,13 @@ static int vox_metal_buffer_transfer(void* handle, void* pixels, uint64_t capaci
         if (success) {
             id<MTLTexture> texture = (__bridge id<MTLTexture>)context->texture;
             MTLSize size = MTLSizeMake(context->width, context->height, 1);
-            MTLOrigin origin = MTLOriginMake(0, 0, 0);
+            MTLOrigin origin = MTLOriginMake(0, 0, context->plane);
             if (upload)
                 [encoder copyFromBuffer:staging sourceOffset:0 sourceBytesPerRow:pitch
                     sourceBytesPerImage:pitch * height sourceSize:size toTexture:texture
-                    destinationSlice:0 destinationLevel:0 destinationOrigin:origin];
+                    destinationSlice:context->slice destinationLevel:context->level destinationOrigin:origin];
             else
-                [encoder copyFromTexture:texture sourceSlice:0 sourceLevel:0 sourceOrigin:origin
+                [encoder copyFromTexture:texture sourceSlice:context->slice sourceLevel:context->level sourceOrigin:origin
                     sourceSize:size toBuffer:staging destinationOffset:0 destinationBytesPerRow:pitch
                     destinationBytesPerImage:pitch * height];
             [encoder endEncoding];

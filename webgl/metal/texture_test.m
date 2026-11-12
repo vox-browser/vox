@@ -31,6 +31,21 @@ int main(void)
         uint8_t expected[]={128,128,64,255};
         for(int i=0;i<16;i+=4)assert(!memcmp(pixels+i,expected,4));
         assert(!vox_metal_draw_textured(texture,program,NULL,0,NULL,0,&binding,1,MTLPrimitiveTypeTriangle,0,3,1,log,sizeof(log)));
+        void* volume=vox_metal_texture_storage(target,2,2,2,3,2,0,4,1);
+        assert(volume);
+        uint8_t volume_bytes[32]={0};
+        assert(vox_metal_texture_region(volume,0,0,0,0,0,2,2,2,4,volume_bytes,sizeof(volume_bytes),0));
+        for(unsigned i=0;i<sizeof(volume_bytes);++i) assert(volume_bytes[i]==0);
+        void* view=vox_metal_texture_attachment(volume,0,1);
+        assert(view && vox_metal_buffer_clear(view,1,0,1,1));
+        assert(vox_metal_texture_region(volume,0,0,0,0,1,2,2,1,4,volume_bytes,16,0));
+        for(int i=0;i<16;i+=4) assert(!memcmp(volume_bytes+i,(uint8_t[]){255,0,255,255},4));
+        vox_metal_texture_destroy(view);
+        vox_metal_texture_destroy(volume);
+        for(unsigned format=35;format<=38;++format) {
+            void* depth=vox_metal_texture_storage(target,2,2,1,0,1,format,format==35?2:format==36?4:format==37?8:1,1);
+            assert(depth);vox_metal_texture_destroy(depth);
+        }
         vox_metal_program_destroy(program);
         vox_metal_texture_destroy(texture);
         vox_metal_texture_destroy(NULL);

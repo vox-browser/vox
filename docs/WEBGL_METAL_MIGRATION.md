@@ -141,6 +141,17 @@ and structured-uniform reflection still require browser conformance coverage.
 
 ## Validation
 
+The resource layer now allocates mipmapped 2D/cube/array/3D textures, normalized,
+floating-point and integer formats, depth/stencil storage and supported
+multisample color storage. Checked region transfers preserve physical values;
+render attachments select a mip level, cube/array slice or 3D depth plane.
+Four new V cases pass in both GC modes, including exact integer sampling,
+volume/array/cube sampling, mip generation, isolated slice rendering and actual
+depth/sample-count allocations. Native texture tests also exercise volume
+attachments and depth allocation in ARC, MRC and ASan/UBSan modes; all six
+native fixtures pass in all three modes. Combined depth/stencil CPU transfers
+and multisample resolves still need service integration.
+
 The direct service now implements sync fences and uniform-block dispatch.
 Fences follow the synchronous command-completion boundary, preserve context
 ownership and reject stale/deleted handles. Uniform indices, block names,

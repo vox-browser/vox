@@ -45,4 +45,5 @@ static void* vox_metal_texture_create(void* owner, int width, int height)
     }
     return texture;
 }
+#include "texture_storage_darwin.h"
 #endif
