@@ -4,7 +4,7 @@
 #include <math.h>
 #include <stdlib.h>
 extern int32_t vox_document_rounded_image_pixels(uint8_t *, int32_t, int32_t, int32_t,
-    uint8_t *, int32_t, int32_t, float, float, float);
+    uint8_t *, int32_t, int32_t, int32_t, float, float, float);
 
 // Use the ordinary document raster boundary for a small, unscaled image.
 // V owns color/coverage composition; unsupported sampling and geometry retain
@@ -12,10 +12,11 @@ extern int32_t vox_document_rounded_image_pixels(uint8_t *, int32_t, int32_t, in
 static int native_try_v_rounded_image(CGContextRef context, gg__Image *image,
     float x, float y, float width, float height, float sx, float sy, float sw, float sh,
     float cx, float cy, float cw, float ch, float a, float b, float c, float d,
-    float e, float f, float canvas_width, float canvas_height, float opacity,
+    float e, float f, float page_x, float page_y, float scroll_y,
+    float canvas_width, float canvas_height, float opacity,
     const float *radii, int image_flags) {
     if (context != native_font_compositing_context || native_font_compositing_transparency_depth != 0
-        || !image || image->path.len || image->nr_channels != 6 || !radii || image_flags
+        || !image || image->path.len || (image->nr_channels != 6 && image->nr_channels != VOX_FLOAT_RGBA_CHANNEL_MARKER) || !radii || image_flags
         || image->width <= 0 || image->height <= 0 || image->width > 32 || image->height > 32
         || image->width * image->height > 256 || opacity != 1 || a != 1 || d != 1 || b || c
         || sx || sy || sw != image->width || sh != image->height
@@ -23,7 +24,8 @@ static int native_try_v_rounded_image(CGContextRef context, gg__Image *image,
         || cx != x || cy != y || cw != width || ch != height
         || !isfinite(radii[0]) || radii[0] <= 0) return 0;
     for (int i=1;i<8;++i) if (radii[i] != radii[0]) return 0;
-    float left=x+e, top=y+f;
+    // Match the image painter's document-to-canvas translation, including chrome and scroll.
+    float left=page_x+x+e, top=page_y-scroll_y+y+f;
     if (!isfinite(left) || !isfinite(top) || left != floorf(left) || top != floorf(top)) return 0;
     int32_t geometry[7]; float scale;
     int prepared=native_text_raster_begin(left,top,left+width,top+height,
@@ -36,7 +38,7 @@ static int native_try_v_rounded_image(CGContextRef context, gg__Image *image,
     if (!pixels) return 0;
     int drawn=native_text_raster_read_backdrop(pixels,geometry[0],geometry[1],w,h,scale);
     if (drawn) drawn=vox_document_rounded_image_pixels(pixels,w,h,w*4,image->data,
-        image->width,image->height,left-geometry[0],top-geometry[1],radii[0]);
+        image->width,image->height,image->nr_channels == VOX_FLOAT_RGBA_CHANNEL_MARKER,left-geometry[0],top-geometry[1],radii[0]);
     if (drawn) drawn=native_text_raster_finish(pixels,geometry[0],geometry[1],w,h,
         geometry[5],geometry[6],canvas_height,1);
     free(pixels);
@@ -44,24 +46,24 @@ static int native_try_v_rounded_image(CGContextRef context, gg__Image *image,
 }
 
 #ifdef VOX_TEST_ROUNDED_IMAGE_PIXELS
-static int vox_test_small_rounded_image_pixels(uint8_t *pixels, const uint8_t *source, int opaque) {
+static int vox_test_small_rounded_image_pixels(uint8_t *pixels, const void *source, int opaque, int float_source, int page_offset) {
     CGColorSpaceRef space=CGColorSpaceCreateWithName(kCGColorSpaceSRGB);
-    CGContextRef context=CGBitmapContextCreate(pixels,16,16,8,64,space,
+    CGContextRef context=CGBitmapContextCreate(pixels,16,16+page_offset,8,64,space,
         kCGImageAlphaPremultipliedLast|kCGBitmapByteOrder32Big);
     CGColorSpaceRelease(space);
     if (!context) return 0;
     CGContextSetRGBFillColor(context,1,1,1,1);
-    CGContextFillRect(context,CGRectMake(0,0,16,16));
+    CGContextFillRect(context,CGRectMake(0,0,16,16+page_offset));
     CGContextRef previous=native_font_compositing_context;
     int previous_depth=native_font_compositing_transparency_depth;
     native_font_compositing_context=context;
     native_font_compositing_transparency_depth=0;
     [NSGraphicsContext saveGraphicsState];
     [NSGraphicsContext setCurrentContext:[NSGraphicsContext graphicsContextWithCGContext:context flipped:NO]];
-    gg__Image image={0}; image.width=16; image.height=16; image.nr_channels=6; image.data=(void *)source;
+    gg__Image image={0}; image.width=16; image.height=16; image.nr_channels=float_source ? VOX_FLOAT_RGBA_CHANNEL_MARKER : 6; image.data=(void *)source;
     const float radii[8]={8,8,8,8,8,8,8,8};
     int result=native_try_v_rounded_image(context,&image,0,0,16,16,0,0,16,16,
-        0,0,16,16,1,0,0,1,0,0,16,16,opaque ? 1 : .5f,radii,0);
+        0,0,16,16,1,0,0,1,0,0,0,page_offset,0,16,16+page_offset,opaque ? 1 : .5f,radii,0);
     [NSGraphicsContext restoreGraphicsState];
     native_font_compositing_context=previous;
     native_font_compositing_transparency_depth=previous_depth;

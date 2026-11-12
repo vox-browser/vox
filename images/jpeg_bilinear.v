@@ -5,6 +5,8 @@ import gg
 import platform
 import yuv
 
+fn C.native_float_image_channel_marker() i32
+
 // Unscaled rounded JPEG draws use Chromium's image-shader path, whose chroma
 // samples differ from a direct libjpeg RGB image. Keep the ordinary image and
 // decoder for other draws; this cached paint variant owns its own pixels.
@@ -26,6 +28,12 @@ fn (mut app BrowserApp) rounded_jpeg_paint_image(image_url string) ?&gg.Image {
 		defer { C.native_free_jpeg_pixels(planes) }
 		persistent := platform.enter_persistent()
 		defer { platform.leave_persistent(persistent) }
+		if colors := yuv.jpeg_bilinear_colors(unsafe { planes.vbytes(size) }, w, h, sampling == 2) {
+			mut image := gg.Image{ width: w, height: h, nr_channels: int(C.native_float_image_channel_marker()), ok: true, data: colors.data }
+			image.id = app.ctx.cache_image(image)
+			app.background_image_ids[key.clone()] = image.id
+			return app.ctx.get_cached_image_by_idx(image.id)
+		}
 		data := yuv.jpeg_bilinear_rgba(unsafe { planes.vbytes(size) }, w, h, sampling == 2) or { return none }
 		mut image := gg.Image{ width: w, height: h, nr_channels: 6, ok: true, data: data.data }
 		image.id = app.ctx.cache_image(image)

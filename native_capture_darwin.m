@@ -5646,10 +5646,14 @@ static void native_update_animated_image_frame(NSImage *image) {
 	[animated_representation setProperty:NSImageCurrentFrame withValue:@(selected_frame)];
 }
 
+#include "native/include/native_float_image.h"
+
 static CGImageRef native_copy_cg_image(gg__Image *image) {
 	if (image == NULL || image->data == NULL || image->width <= 0 || image->height <= 0) {
 		return NULL;
 	}
+	if (image->nr_channels == VOX_FLOAT_RGBA_CHANNEL_MARKER)
+		return native_copy_float_rgba_image(image->data, image->width, image->height);
 	if (image->path.len > 0) {
 		NSImage *native_image = (__bridge NSImage *)image->data;
 		native_update_animated_image_frame(native_image);
@@ -5719,7 +5723,7 @@ static void native_draw_image_part_in_context(CGContextRef context, gg__Image *i
 	if (native_try_v_rounded_image(context, image, destination_x, destination_y,
 		destination_width, destination_height, source_x, source_y, source_width, source_height,
 		clip_x, clip_y, clip_width, clip_height, transform_a, transform_b, transform_c, transform_d,
-		transform_e, transform_f, canvas_width, canvas_height, opacity, clip_radii, image_flags)) return;
+		transform_e, transform_f, page_x, page_y, scroll_y, canvas_width, canvas_height, opacity, clip_radii, image_flags)) return;
 	CGImageRef image_copy = native_copy_cg_image(image);
 	if (image_copy == NULL) {
 		return;

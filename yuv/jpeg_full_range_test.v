@@ -20,3 +20,12 @@ fn test_jpeg_bilinear_neutral_chroma_preserves_luma_and_clamps_edges() {
 	assert jpeg_bilinear_rgba([], 2, 2, true) == none
 	assert jpeg_bilinear_rgba([], max_int, max_int, true) == none
 }
+
+fn test_fractional_jpeg_colors_preserve_neutral_luma_and_bound_the_small_image_path() {
+	colors := jpeg_bilinear_colors([u8(0), 64, 128, 255, 128, 128], 2, 2, true) or { panic('neutral JPEG') }
+	assert colors == [f32(0), 0, 0, 1, f32(64) / 255, f32(64) / 255, f32(64) / 255, 1, f32(128) / 255,
+		f32(128) / 255, f32(128) / 255, 1, 1, 1, 1, 1]
+	assert jpeg_bilinear_colors([], max_int, max_int, true) == none
+	assert jpeg_bilinear_colors([]u8{len: 32 * 32 * 3}, 32, 32, false) == none
+	assert jpeg_bilinear_colors([], 3, 2, true) == none
+}
