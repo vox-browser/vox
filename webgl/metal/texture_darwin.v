@@ -71,3 +71,9 @@ pub fn (mut texture Texture2D) close() {
 	texture.width = 0
 	texture.height = 0
 }
+
+pub fn (mut texture Texture2D) clear_color(red f64,green f64,blue f64,alpha f64) ! {
+    if texture.format in [.depth16,.depth32,.depth_stencil,.stencil8,.rgb9e5] { return error('Texture format is not color renderable') }
+    if texture.handle==unsafe { nil } { return error('Metal texture is closed') }
+    if C.vox_metal_buffer_clear(texture.handle,red,green,blue,alpha)!=1 { return error('Metal texture clear failed') }
+}

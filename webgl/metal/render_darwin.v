@@ -35,6 +35,7 @@ pub struct ColorTargetBinding {
 pub:
     index int
     texture &Texture2D
+    rgb_only bool
 }
 
 pub struct DrawOptions {

@@ -53,4 +53,5 @@ struct C.VoxMetalRenderState {
     visibility_buffer voidptr
     feedback u32
     feedback_buffer voidptr
+    rgb_only_mask u32
 }

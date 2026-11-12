@@ -163,8 +163,12 @@ fn (mut context MetalServiceContext) texture_storage(target u32,levels int,inter
     for level in 0..levels {
         w:=if width>>level>0 { width>>level } else { 1 };h:=if height>>level>0 { height>>level } else { 1 };d:=if target==texture_3d { if depth>>level>0 { depth>>level } else { 1 } } else { depth }
         for face in 0..if target==texture_cube_map { 6 } else { 1 } {
-            gpu:=metal.Texture2D.create_storage(context.target,metal.TextureStorageOptions{width:w,height:h,depth:d,kind:if target==texture_3d { .volume_3d } else if target==texture_2d_array { .array_2d } else { .image_2d },format:layout.format}) or {
+            mut gpu:=metal.Texture2D.create_storage(context.target,metal.TextureStorageOptions{width:w,height:h,depth:d,kind:if target==texture_3d { .volume_3d } else if target==texture_2d_array { .array_2d } else { .image_2d },format:layout.format}) or {
                 for _,image in images { image.gpu.close();unsafe { free(image.gpu);free(image) } };unsafe { images.free() }
+                context.last_failure=err.msg();metal_service_error(out_of_memory);return
+            }
+            context.initialize_rgb_storage(mut gpu,d,layout) or {
+                gpu.close();unsafe { free(gpu) };for _,image in images { image.gpu.close();unsafe { free(image.gpu);free(image) } };unsafe { images.free() }
                 context.last_failure=err.msg();metal_service_error(out_of_memory);return
             }
             images[u32(level)|(u32(face)<<8)]=&MetalServiceTextureImage{width:w,height:h,depth:d,internal:internal,layout:layout,gpu:gpu}
@@ -173,4 +177,13 @@ fn (mut context MetalServiceContext) texture_storage(target u32,levels int,inter
     for _,image in texture.images { if image.gpu!=unsafe { nil } { image.gpu.close();unsafe { free(image.gpu) } };unsafe { free(image) } }
     unsafe { texture.images.free() }
     texture.images=images;texture.immutable=true;texture.immutable_levels=levels;texture.invalidate_sampling()
+}
+
+fn (context &MetalServiceContext) initialize_rgb_storage(mut gpu metal.Texture2D,depth int,layout MetalServicePixelLayout) ! {
+    if !metal_service_rgb_alpha_storage(layout) { return }
+    for layer in 0..depth {
+        mut view:=gpu.attachment(0,layer)!
+        view.clear_color(0,0,0,1) or { view.close();unsafe { free(view) };return err }
+        view.close();unsafe { free(view) }
+    }
 }

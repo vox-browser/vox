@@ -19,6 +19,7 @@ typedef struct {
     void* visibility_buffer;
     uint32_t feedback;
     void* feedback_buffer;
+    uint32_t rgb_only_mask;
 } VoxMetalRenderState;
 
 static VoxMetalRenderState vox_metal_default_render_state(VoxMetalDrawingBuffer* target)

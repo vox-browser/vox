@@ -86,7 +86,7 @@ static int vox_metal_draw_configured(void* target_handle, void* program_handle,
         color.writeMask = ((state->color_mask & 1) ? MTLColorWriteMaskRed : 0)
             | ((state->color_mask & 2) ? MTLColorWriteMaskGreen : 0)
             | ((state->color_mask & 4) ? MTLColorWriteMaskBlue : 0)
-            | ((state->color_mask & 8) ? MTLColorWriteMaskAlpha : 0);
+            | ((state->color_mask & 8) && !(state->rgb_only_mask & (1u<<c)) ? MTLColorWriteMaskAlpha : 0);
         color.blendingEnabled = state->blend;
         color.rgbBlendOperation = (MTLBlendOperation)state->rgb_operation;
         color.alphaBlendOperation = (MTLBlendOperation)state->alpha_operation;

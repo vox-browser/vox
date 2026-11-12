@@ -91,6 +91,17 @@ fn metal_service_put_scalar(mut output []u8,offset int,size int,value u32) {
     for j in 0..size { output[offset+j]=u8(value>>(j*8)) }
 }
 
+fn metal_service_rgb_alpha_storage(layout MetalServicePixelLayout) bool {
+    return layout.components==3 && layout.format in [.rgba8,.srgba8,.rgba8_snorm,.rgba16f,.rgba32f,.rgba8i,.rgba8ui,.rgba16i,.rgba16ui,.rgba32i,.rgba32ui]
+}
+
+fn metal_service_initialize_rgb_alpha(mut bytes []u8,layout MetalServicePixelLayout) {
+    if !metal_service_rgb_alpha_storage(layout) { return }
+    stride:=layout.format.pixel_size();scalar:=stride/4
+    one:=if layout.floating { if scalar==2 { u32(0x3c00) } else { u32(0x3f800000) } } else if layout.integer { u32(1) } else if layout.signed { u32(127) } else { u32(255) }
+    for pixel in 0..bytes.len/stride { metal_service_put_scalar(mut bytes,pixel*stride+3*scalar,scalar,one) }
+}
+
 fn (mut context MetalServiceContext) unpack_pixels(layout MetalServicePixelLayout,width int,height int,depth int,format u32,type_ u32,capacity int,data voidptr,allow_null bool) ![]u8 {
     components:=component_count_for_format(format) or { metal_service_error(invalid_enum);return error('Invalid pixel format') }
     pixel_size:=bytes_per_pixel(format,type_) or { metal_service_error(invalid_enum);return error('Invalid pixel type') }
@@ -104,7 +115,9 @@ fn (mut context MetalServiceContext) unpack_pixels(layout MetalServicePixelLayou
     // A null image allocation has no source span: GLES ignores pixel-unpack
     // row/skip state while still validating the image format and type above.
     if allow_null && data==unsafe { nil } && context.buffer_binding(pixel_unpack_buffer)==0 {
-        return []u8{len:width*height*depth*layout.format.pixel_size()}
+        mut zero:=[]u8{len:width*height*depth*layout.format.pixel_size()}
+        metal_service_initialize_rgb_alpha(mut zero,layout)
+        return zero
     }
     alignment:=u64(context.parameters[unpack_alignment][0])
     row_length:=u64(context.parameters[unpack_row_length][0])
@@ -144,7 +157,7 @@ fn (mut context MetalServiceContext) unpack_pixels(layout MetalServicePixelLayou
     native_size:=layout.format.pixel_size()
     scalar_size:=native_size/native_components
     mut result:=[]u8{len:width*height*depth*native_size}
-    if source.len==0 { return result }
+    if source.len==0 { metal_service_initialize_rgb_alpha(mut result,layout);return result }
     for layer in 0..depth { for y in 0..height { for x in 0..width {
         input:=int(start+u64(layer)*image_stride+u64(y)*row_stride+u64(x)*pixel_size)
         destination:=((layer*height+y)*width+x)*native_size

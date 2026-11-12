@@ -84,11 +84,13 @@ fn native_render_state(target &DrawingBuffer, options DrawOptions) !C.VoxMetalRe
 	}
     mut colors:=[8]voidptr{}
     mut used:=u32(0)
+    mut rgb_only:=u32(0)
     for attachment in options.color_targets {
         texture:=attachment.texture
         if attachment.index<0 || attachment.index>=8 || used&(u32(1)<<attachment.index)!=0
             || texture==unsafe { nil } || texture.handle==unsafe { nil } || texture.owner.handle!=target.handle || texture.width!=width || texture.height!=height { return error('Invalid Metal color attachment') }
         used|=u32(1)<<attachment.index
+        if attachment.rgb_only { rgb_only|=u32(1)<<attachment.index }
         colors[attachment.index]=texture.handle
     }
     mut visibility:=unsafe { nil }
@@ -97,6 +99,7 @@ fn native_render_state(target &DrawingBuffer, options DrawOptions) !C.VoxMetalRe
         visibility=options.visibility.handle
     }
 	return C.VoxMetalRenderState{
+        rgb_only_mask:rgb_only
         color_targets:colors
         colors_configured:u32(options.colors_configured)
         feedback:u32(options.feedback)

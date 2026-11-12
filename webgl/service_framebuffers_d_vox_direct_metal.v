@@ -198,6 +198,7 @@ fn (mut context MetalServiceContext) renderbuffer_storage(target u32,samples int
     if width>0 && height>0 {
         gpu=metal.Texture2D.create_storage(context.target,metal.TextureStorageOptions{width:width,height:height,samples:count,format:layout.format}) or { context.last_failure=err.msg();metal_service_error(out_of_memory);return }
     }
+    if gpu!=unsafe { nil } { context.initialize_rgb_storage(mut gpu,1,layout) or { gpu.close();unsafe { free(gpu) };context.last_failure=err.msg();metal_service_error(out_of_memory);return } }
     if object.rbo.gpu!=unsafe { nil } { object.rbo.gpu.close();unsafe { free(object.rbo.gpu) } }
     object.rbo.gpu=gpu;object.rbo.width=width;object.rbo.height=height;object.rbo.layout=layout;object.rbo.internal=internal;object.rbo.samples=if samples==0 { 0 } else { count }
 }
@@ -215,7 +216,7 @@ fn (mut context MetalServiceContext) framebuffer_view(target u32) !MetalServiceF
         image:=context.attachment_image(attachment)!
         view:=image.gpu.attachment(0,image.layer)!
         result.owned<<view
-        result.colors<<metal.ColorTargetBinding{index:index,texture:view}
+        result.colors<<metal.ColorTargetBinding{index:index,texture:view,rgb_only:image.layout.components==3}
         if result.primary==unsafe { nil } { result.primary=view;result.width=image.width;result.height=image.height;result.samples=image.samples }
     }
     mut depth_view:=unsafe { &metal.Texture2D(nil) };mut stencil_view:=unsafe { &metal.Texture2D(nil) }
