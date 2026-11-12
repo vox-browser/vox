@@ -46,18 +46,25 @@ depth conversions used by the Metal backend. Comments and numeric/operator
 tokens are handled by a bounded lexer.
 
 This is an experimental compiler slice, **not the production replacement yet**.
-Unsupported declarations and preprocessor directives fail with an error. It
-still needs preprocessing, semantic validation, uniforms and their layouts,
-textures, explicit interface locations, transform feedback, and the remaining
+Unsupported declarations and directives fail with an error. Object and function
+macros, undefinition, nested conditional branches, `defined`, integer conditions,
+ESSL version selection and predefined ES/precision macros now run in V before
+translation. Macro rescanning suppresses recursive expansion, with explicit
+source, nesting, token and operation limits. Conditions short-circuit inactive
+operands. Token pasting and stringification are rejected. Extension and line
+directives, line-number builtins, ternary conditions and complete ESSL
+preprocessor conformance remain pending. The compiler also still needs semantic
+validation, uniforms and their layouts, textures, explicit interface locations, transform feedback, and the remaining
 ESSL expressions/builtins and control flow. General expression syntax and type
 checking currently depend on compiling the emitted MSL with Metal; successful
 translation alone does not establish ESSL validity. The production service still
 uses glslang and SPIRV-Cross until those paths and the existing WebGL corpus are
 ported. Neither dependency has been removed.
 
-Validation for this slice: both test files pass with the C backend in default GC
-and `-gc none`. The macOS test compiles the V-generated vertex and fragment
-sources with Metal, links a render pipeline, draws a full-target triangle, and
+Validation for this slice: all three test files pass with the C backend in
+default GC and `-gc none`. The macOS test compiles the V-generated vertex and fragment
+sources (including macro/conditional variants) with Metal, links a render
+pipeline, draws a full-target triangle, and
 checks all sixteen RGBA pixels exactly. It also verifies that neither glslang
 nor SPIRV-Cross is loaded in the test process. The Objective-C test endpoint only
 submits generated MSL to Metal; all translation is V. Run under the memory guard

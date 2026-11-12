@@ -26,7 +26,8 @@ pub:
 // The first direct-MSL slice deliberately rejects features it cannot lower.
 // Callers must never interpret an unsupported declaration as an empty shader.
 pub fn translate(source string, stage Stage) !Translation {
-	tokens := lex(source)!
+	processed := preprocess(source)!
+	tokens := processed.tokens
 	mut body := []string{}
 	mut inputs := []Interface{}
 	mut outputs := []Interface{}
@@ -34,17 +35,7 @@ pub fn translate(source string, stage Stage) !Translation {
 	mut depth := 0
 	mut main_count := 0
 	mut precision := stage == .vertex
-	mut version := 100
-	if tokens.len >= 3 && tokens[0] == '#' && tokens[1] == 'version' {
-		if tokens[2] == '300' && tokens.len >= 4 && tokens[3] == 'es' {
-			version = 300
-			at = 4
-		} else if tokens[2] == '100' {
-			at = 3
-		} else {
-			return error('Expected ESSL 100 or 300 es')
-		}
-	}
+	version := processed.version
 	for at < tokens.len {
 		token := tokens[at]
 		if token == '#' {
