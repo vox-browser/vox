@@ -6,6 +6,25 @@ import html
 import page
 import time
 
+fn test_portable_ui2_consumed_input_skips_only_its_following_gg_callback() {
+	mut app, _ := keyboard_input_test_app_with_markup(keyboard_input_test_markup)
+	defer { app.document.finalize() }
+	app.address = 'typed'
+	app.address_active = true
+	app.address_select = false
+	app.address_cursor = 5
+	app.note_portable_chrome_input_consumed(.char)
+	app.handle_character(u32(`x`))
+	assert app.address == 'typed'
+	app.handle_character(u32(`z`))
+	assert app.address == 'typedz'
+	app.note_portable_chrome_input_consumed(.key_down)
+	app.handle_key(.backspace, unsafe { gg.Modifier(0) })
+	assert app.address == 'typedz'
+	app.handle_key(.backspace, unsafe { gg.Modifier(0) })
+	assert app.address == 'typed'
+}
+
 const keyboard_input_test_markup = '<!doctype html><style>
 html,body { margin:0 } body { height:2000px }
 #search { margin:20px; width:300px }
