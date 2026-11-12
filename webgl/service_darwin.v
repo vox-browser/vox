@@ -189,7 +189,10 @@ mut:
 
 fn (mut context MetalServiceContext) vao() &MetalServiceVertexArray {
     if vao := context.vertex_arrays[context.vertex_array] { return vao }
-    vao := &MetalServiceVertexArray{}
+    mut vao := &MetalServiceVertexArray{}
+    for mut attribute in vao.attributes {
+        attribute = MetalServiceVertexAttribute{size:4,type_:gl_float}
+    }
     context.vertex_arrays[context.vertex_array] = vao
     return vao
 }
@@ -289,6 +292,7 @@ fn metal_service_vox_egl_create(a0 i32) voidptr {
     target := metal.DrawingBuffer.create(1,1) or { return unsafe { nil } }
     mut context := &MetalServiceContext{version:int(a0),target:target,parameters:metal_service_default_parameters(),enabled:{dither:true}}
     for mut attribute in context.current_attributes {
+        attribute.kind=13
         attribute.floats[3]=1
         attribute.signed[3]=1
         attribute.unsigned[3]=1

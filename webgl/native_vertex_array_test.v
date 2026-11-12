@@ -41,6 +41,7 @@ fn test_native_vertex_arrays_retain_attribute_and_element_buffer_state() {
 	context.bind_vertex_array(empty)
 	assert !context.get_vertex_attrib(0, vertex_attrib_array_enabled).boolean
 	assert context.get_vertex_attrib(0, vertex_attrib_array_size).integer == 4
+    assert context.get_vertex_attrib(0, vertex_attrib_array_type).integer == int(gl_float)
 	empty_buffer := context.get_vertex_attrib(0, vertex_attrib_array_buffer_binding).buffer or { panic('source empty buffer wrapper') }
 	assert empty_buffer.object.native_handle_ == 0
 	assert context.get_parameter(element_array_buffer_binding).object == indices.object.handle_
