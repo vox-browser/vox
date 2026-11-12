@@ -47,7 +47,7 @@ def main():
     output = args.output.resolve()
     output.mkdir(parents=True, exist_ok=False)
     binary = ROOT / 'Build/v/Vox.app/Contents/MacOS/Vox'
-    fixture = ROOT / 'Tests/Browser/Native/webgl-metal.html'
+    fixture = ROOT / 'Tests/Browser/Native/webgl-smoke.html'
     expected = output / 'expected.png'
     expected_png(expected)
     report = dict(passed=False, trials=[], scope='fresh launch through document PNG; real author JavaScript')
@@ -94,11 +94,11 @@ def main():
                 trial['guard'] = json.loads((directory / 'runtime.json').read_text())
                 audit = json.loads(audit_path.read_text())
                 trial['audit'] = audit
-                if (audit['title'] != 'WebGL Metal smoke PASS' or audit['ready'] != 'complete' or
+                if (audit['title'] != 'WebGL GPU smoke PASS' or audit['ready'] != 'complete' or
                     audit['viewport_width'] != WIDTH or audit['viewport_height'] != HEIGHT or
                     audit['native_reported_error_count'] != 0):
                     raise RuntimeError('Shader execution, document identity or viewport audit failed')
-                if not re.search(r'WEBGL_METAL_SMOKE_PASS.*Vox direct Metal.*Vox direct Metal', '\n'.join(audit['javascript_diagnostics'])):
+                if not re.search(r'WEBGL_GPU_SMOKE_PASS.*Vox direct Metal.*Vox direct Metal', '\n'.join(audit['javascript_diagnostics'])):
                     raise RuntimeError('Both shader contexts must report the direct Metal renderer')
                 if re.search(r'/lib(?:EGL|GLES|ANGLE)', log):
                     raise RuntimeError('An ANGLE/EGL/GLES library loaded')

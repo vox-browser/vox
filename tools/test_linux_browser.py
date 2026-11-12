@@ -5,6 +5,7 @@ import argparse
 import ctypes
 import ctypes.util
 import functools
+import hashlib
 import http.server
 import json
 import os
@@ -150,6 +151,77 @@ def check_rendered_pixels(data, background=b"\x2c\xa0\x5a", size=None):
     assert colored > width * height * 0.6, f"Missing page background: {colored} pixels"
     assert white > 200, f"Missing retained text: {white} pixels"
     assert edge > edge_total * 0.8, "The right edge was not repainted after resize/switch"
+
+
+def check_webgl_pixels(data):
+    """Find both complete shader canvases, excluding unknown browser chrome."""
+    assert data[:8] == b"\x89PNG\r\n\x1a\n", "Missing WebGL PNG"
+    width, height, depth, kind = struct.unpack(">IIBB", data[16:26])
+    assert depth == 8 and kind in (2, 6), "Unsupported WebGL capture format"
+    channels = 4 if kind == 6 else 3
+    compressed = bytearray()
+    offset = 8
+    while offset < len(data):
+        size = struct.unpack(">I", data[offset:offset + 4])[0]
+        if data[offset + 4:offset + 8] == b"IDAT":
+            compressed.extend(data[offset + 8:offset + 8 + size])
+        offset += size + 12
+    raw = zlib.decompress(compressed)
+    stride = width * channels
+    previous = bytearray(stride)
+    rows = []
+    for y in range(height):
+        start = y * (stride + 1)
+        filter_type = raw[start]
+        assert filter_type <= 4
+        row = bytearray(raw[start + 1:start + 1 + stride])
+        for x in range(stride):
+            a = row[x - channels] if x >= channels else 0
+            b = previous[x]
+            c = previous[x - channels] if x >= channels else 0
+            p = a + b - c
+            paeth = min((a, b, c), key=lambda value: abs(p - value))
+            row[x] = (row[x] + (0, a, b, (a + b) // 2, paeth)[filter_type]) & 255
+        rows.append(bytes(row))
+        previous = row
+    def pixel(rgb):
+        return bytes(rgb) + (b"\xff" if channels == 4 else b"")
+    top = pixel((255, 0, 0)) * 64 + pixel((0, 255, 0)) * 64
+    bottom = pixel((0, 0, 255)) * 64 + pixel((255, 255, 0)) * 64
+    for y in range(min(200, height - 63)):
+        for x in range(min(8, width - 127)):
+            start, end = x * channels, (x + 128) * channels
+            if all(rows[y + dy][start:end] == (top if dy < 32 else bottom) for dy in range(64)):
+                return
+    raise AssertionError("Missing or incorrect WebGL1/WebGL2 shader presentation pixels")
+
+
+def check_webgl_browser(binary, artifacts, temporary):
+    fixture = Path(__file__).resolve().parents[1] / "Tests/Browser/Native/webgl-smoke.html"
+    pins = {str(path): hashlib.sha256(path.read_bytes()).hexdigest()
+            for path in (binary, fixture, Path(__file__).resolve())}
+    environment = smoke_environment(Path(temporary) / "webgl")
+    audit = artifacts / "webgl-audit.json"
+    screenshot = artifacts / "webgl.png"
+    environment['VOX_CAPTURE_AUDIT_PATH'] = str(audit)
+    screenshot.unlink(missing_ok=True)
+    run(["xvfb-run", "-a", "-s", "-screen 0 1024x768x24", str(binary),
+         "--enable-javascript", "--window-width=800", "--window-height=600",
+         "--screenshot-viewport-height=600", f"--screenshot={screenshot}", str(fixture)],
+        env=environment, timeout=90, log_path=artifacts / "webgl.log")
+    result = json.loads(audit.read_text())
+    assert result['title'] == 'WebGL GPU smoke PASS', result
+    assert result['ready'] == 'complete' and result['native_reported_error_count'] == 0
+    diagnostic = next((line for line in result['javascript_diagnostics'] if line.startswith('WEBGL_GPU_SMOKE_PASS ')), '')
+    assert diagnostic, "Author WebGL script did not execute"
+    renderers = json.loads(diagnostic.split(' ', 1)[1])
+    assert len(renderers) == 2 and all(renderer and 'ANGLE' not in renderer for renderer in renderers), renderers
+    check_webgl_pixels(screenshot.read_bytes())
+    assert all(hashlib.sha256(Path(name).read_bytes()).hexdigest() == value
+               for name, value in pins.items()), "WebGL inputs changed during capture"
+    (artifacts / "webgl-result.json").write_text(json.dumps(
+        dict(passed=True, pins=pins, renderers=renderers, audit=result), indent=2) + "\n")
+    print('PASS: native GLES WebGL1/WebGL2 shaders, readback and canvas presentation', flush=True)
 
 
 def wait_for(description, predicate, browser=None, timeout=20):
@@ -422,6 +494,7 @@ def main():
         output = run([str(binary), "--headless=layout-tree", str(page)], env=environment)
         assert "Linux JavaScript rendered" in output, output
         print("PASS: local HTML and scripted layout")
+        check_webgl_browser(binary, artifacts, temporary)
         check_https_navigation(binary, temporary, environment)
         print("PASS: HTTPS navigation and certificate verification")
         server = http.server.ThreadingHTTPServer(("127.0.0.1", 0),

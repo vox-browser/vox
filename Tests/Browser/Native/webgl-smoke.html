@@ -1,6 +1,6 @@
 <!doctype html>
 <meta charset="utf-8">
-<title>WebGL Metal smoke pending</title>
+<title>WebGL GPU smoke pending</title>
 <style>
 html, body { margin: 0; background: white; }
 canvas { position: absolute; top: 0; width: 64px; height: 64px; }
@@ -61,12 +61,12 @@ canvas { position: absolute; top: 0; width: 64px; height: 64px; }
     }
     try {
         var renderers = [exercise(1), exercise(2)];
-        document.title = 'WebGL Metal smoke PASS';
-        console.log('WEBGL_METAL_SMOKE_PASS ' + JSON.stringify(renderers));
+        document.title = 'WebGL GPU smoke PASS';
+        console.log('WEBGL_GPU_SMOKE_PASS ' + JSON.stringify(renderers));
     } catch (error) {
-        document.title = 'WebGL Metal smoke FAIL';
+        document.title = 'WebGL GPU smoke FAIL';
         document.body.style.background = 'magenta';
-        console.error('WEBGL_METAL_SMOKE_FAIL ' + error.message);
+        console.error('WEBGL_GPU_SMOKE_FAIL ' + error.message);
         throw error;
     }
 }());

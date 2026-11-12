@@ -73,6 +73,11 @@ jobs:
             xvfb xauth xdotool scrot
           pkg-config --modversion javascriptcoregtk-4.1
 
+      - name: Check native GLES without ANGLE
+        if: ${{ !cancelled() && steps.system_dependencies.outcome == 'success' && matrix.gc == 'boehm' }}
+        timeout-minutes: 15
+        run: python3 tools/test_webgl_gles.py --output Build/linux/webgl-gles
+
       - name: Check tab process exit diagnostics
         if: ${{ !cancelled() && steps.system_dependencies.outcome == 'success' && matrix.gc == 'boehm' }}
         timeout-minutes: 2
@@ -179,6 +184,17 @@ jobs:
             --lock "$RUNNER_TEMP/vox-native-build.lock" \
             --report "$RUNNER_TEMP/vox-native-build.json" --timeout 300 -- \
             python3 tools/build_linux_native.py
+
+      - name: Check WebGL GLES service and shader equivalence
+        if: ${{ !cancelled() && steps.native_dependencies.outcome == 'success' }}
+        timeout-minutes: 20
+        run: |
+          python3 tools/run_memory_bounded.py \
+            --lock "$RUNNER_TEMP/vox-webgl-$LADYBIRD_V_GC.lock" \
+            --report "$RUNNER_TEMP/vox-webgl-$LADYBIRD_V_GC.json" --timeout 1080 -- \
+            python3 tools/test_linux_native.py --gc "$LADYBIRD_V_GC" \
+              webgl/native_draw_test.v webgl/native_essl_equivalence_test.v \
+              webgl/native_parameter_query_test.v
 
       - name: Check portable shadow and canvas rasterization
         if: ${{ !cancelled() && steps.native_dependencies.outcome == 'success' }}
@@ -449,6 +465,8 @@ jobs:
           paths = sorted(temporary.glob('vox-*.json'))
           paths.extend(sorted(temporary.glob('vox-*-revision.txt')))
           paths.extend(Path('Build/linux/browser-smoke').glob('*.log'))
+          paths.extend(Path('Build/linux/webgl-gles').glob('*.log'))
+          paths.extend(Path('Build/linux/webgl-gles').glob('*.json'))
           paths.extend(Path('Build/linux/tests').glob('*/run-*/*.log'))
           paths.extend(Path('Build/linux/tests').glob('*/run-*/*.json'))
           receipts = sorted(Path('Build/linux/production-build/receipts').glob('*'))
@@ -477,6 +495,8 @@ jobs:
             Build/linux/tests/*/run-*/*.log
             Build/linux/tests/*/run-*/*.json
             Build/linux/browser-smoke/
+            Build/linux/webgl-gles/*.log
+            Build/linux/webgl-gles/*.json
 
   # These suites compile the production Cocoa/IOSurface headers directly and
   # need neither V nor a prebuilt app. Full macOS app/tab and Metal pixel
