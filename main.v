@@ -453,6 +453,8 @@ mut:
 	force_dark_images                   map[string]&gg.Image
 	portable_shadow_images              []PortableShadowImage
 	portable_shadow_image_index         int
+	portable_canvas_images              []PortableCanvasImage
+	portable_canvas_image_index         int
 	draw_command_depth  int
 	native_replay_scratch &platform.Arena = unsafe { nil }
 	screenshot_path                     string
@@ -6826,6 +6828,7 @@ fn (mut app BrowserApp) draw_command(source_command &layout.PaintCommand, page_x
 					C.native_end_clip()
 				}
 			}
+			$if linux || windows { app.draw_portable_canvas(command, bitmap, result, page_x, page_y, scroll_y) }
 		}
 		'draw_video' {
 			paintable := command.video_paintable or { return }
@@ -7610,6 +7613,7 @@ fn (mut app BrowserApp) draw() {
 	app.retarget_document_frame_heap_scope(mut heap_scope)
 	app.prepare_overlay_scrollbars()
 	app.portable_shadow_image_index = 0
+	app.portable_canvas_image_index = 0
 	app.scroll_profile_prepared()
 	preparation_instructions.finish()
 	processmetrics.instruction_checkpoint('frame_prepared')
@@ -7968,6 +7972,7 @@ fn (mut app BrowserApp) draw() {
 		processmetrics.instruction_checkpoint('frame_chrome_updated')
 	}
 	end_browser_frame(app.ctx)
+	$if linux || windows { app.finish_portable_canvas_frame() }
 	if submission_claim.installation != 0 {
 		app.stage_native_document_submission(submission_claim)
 	}
