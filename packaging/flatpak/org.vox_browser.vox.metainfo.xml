@@ -20,8 +20,7 @@
   <!-- Matches the LICENSE file at the repository root. -->
   <project_license>GPL-2.0-or-later</project_license>
   <metadata_license>CC0-1.0</metadata_license>
-  <developer>
-    <id>org.vox_browser</id>
+  <developer id="org.vox_browser">
     <name>vox-browser</name>
   </developer>
   <url type="homepage">https://vox-browser.org</url>
