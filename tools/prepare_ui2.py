@@ -87,8 +87,9 @@ def prepare_gg_gradient(modules, vlib):
         else:
             link_to(canvas / entry.name, entry)
 
-    from prepare_gg_shadow import prepare as prepare_shadow
-    prepare_shadow(canvas)
+    if (canvas / 'gpu_layer.v').is_file():
+        from prepare_gg_shadow import prepare as prepare_shadow
+        prepare_shadow(canvas)
 
 
 def prepare_ui2_source(source, target):
