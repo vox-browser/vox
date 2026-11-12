@@ -49,8 +49,8 @@ OpenGL framework images; the implementation calls no OpenGL API.
 ## Verification
 
 The default macOS configuration passes **314 test functions from 178 WebGL
-files**, compiled together with the C backend, in default GC and `-gc none`.
-The public JavaScriptCore bindings pass **150 functions from 132 files** using
+files**, compiled together with both the C backend and FastC, in default GC
+and `-gc none`. The public JavaScriptCore bindings pass **151 functions from 132 files** using
 single-unit FastC in both GC modes. Both execute real native contexts and GPU
 results; compile-only audits receive no runtime credit.
 
@@ -62,20 +62,40 @@ reference suite passed 161 files in both GC modes. Later Metal-only resource
 cases are not described as ANGLE comparisons.
 
 The native resource suite covers nine fixtures in ARC, manual reference
-counting and ASan/UBSan modes (27 fixture/mode runs). Its V tests exercise exact
-pixels, bounds, ownership and GPU resource lifetime in both GC modes. Run from
+counting and ASan/UBSan modes (27 fixture/mode runs). Its 37 V tests across 12
+files exercise exact pixels, bounds, ownership and GPU resource lifetime in
+both GC modes. Run from
 the canonical checkout, with current V:
 
 ```sh
 python3 tools/test_webgl_metal.py --v-bin ~/code/v/v --output Build/metal-resources-UNIQUE
 python3 tools/test_webgl_metal_service.py --output Build/metal-service-UNIQUE --batch webgl/*_test.v
 python3 tools/test_webgl_metal_service.py --backend fastc --output Build/metal-public-UNIQUE --batch browserjs/canvas_webgl*_test.v
+python3 tools/test_webgl_metal_browser.py --output Build/metal-browser-UNIQUE
 ```
 
 The runners pin inputs and apply the repository compilation/runtime memory
 guards. FastC aggregation stays temporarily beside the canonical tests, groups
 conflicting import aliases separately and uses `VJOBS=1` so native state has
 one definition. No sources or browser bundles are copied into job directories.
+
+The broader FastC run exposed additional shared-wrapper/compiler boundaries.
+Sampler, sync and vertex-array deletion now borrow nullable handles, preserving
+heap-object mutation without passing a raw object as an optional-argument
+pointer. Error-path tests require failure explicitly, avoiding FastC's invalid
+read of an unused error result. Native string termination uses a bounded byte
+scan instead of the miscompiled generic `array.index(0)`. Metal vertex arrays
+initialize every attribute's default size/type explicitly; constant attributes
+also initialize their floating-point kind. Existing ownership/state tests and
+new string/default-state assertions pass with both compiler backends.
+
+The production browser passes headless startup and two fresh windowed WebGL
+checks. The fixture executes ESSL100/WebGL1 and ESSL300/WebGL2 programs through
+JavaScriptCore, checks preserved source, uniforms, scissor orientation, every
+readback pixel and normal error state. Both contexts report `Vox direct Metal`;
+full 400×240 document PNGs match independently generated expected pixels
+exactly. Dyld logs contain no ANGLE/EGL/GLES library. Executable/native-library
+hashes remain fixed under a bundle reader lease and every browser/guard exits 0.
 
 The [local migration evidence](performance/metal-webgl-migration-20261112.json)
 retains commands, input/executable hashes, actual exits, guard reports and failed
@@ -109,3 +129,40 @@ Optimized-site acceptance is tracked separately in
 vlang.io and GitHub differences and the missing account-bearing Reddit fixture
 prevent an all-site parity claim. Unchanged shader-free site pixels alone
 cannot validate this WebGL backend; actual shader execution is required.
+
+## Optimized-site capture follow-up
+
+The first completed Metal production executable is
+`05ae545a3d814fdbc65fed7a94c7c1701a28809bfaf403d6e7d4d790a8012391`,
+receipt `20261112-151621-60deec8f`. Its requested head precedes the final switch,
+but the verified parsed-source manifest hashes match the default Metal service,
+macOS source selector, framebuffer checks and render-state adapter. The old
+macOS ANGLE loader/gated service files are absent from the parsed closure.
+The shader browser fixture and headless smoke above ran this executable.
+
+Two fresh captures of each available frozen catalog workload give:
+
+| Site | Differing RGBA pixels against retained Brave reference, each capture |
+| --- | ---: |
+| Hacker News | 0 / 3,145,728 |
+| Lobsters | 0 / 786,432 |
+| Wikipedia | 0 / 786,432 |
+| CNN | 175,866 / 786,432 |
+| vlang.io | 5,756 / 786,432 |
+| GitHub /vlang/v | 38,654 / 786,432 |
+| Old Reddit | Unverified: historical account-bearing fixture absent |
+
+Captures retain original-origin sealed responses, fresh private profiles/caches,
+1024×768 document viewports, scale 2 for HN and scale 1 otherwise, two seconds
+of settling for HN and five otherwise. Author scripts are disabled for Wikipedia
+and vlang.io as in their references; other pages retain normal scripting.
+Readiness, URL, body content, title/row checks and resource/executable identities
+pass, with normal browser/guard exits. No reference or tolerance changed.
+
+HN, Lobsters and Wikipedia also match their retained ANGLE-era Vox images
+exactly. CNN, vlang.io and GitHub differ from those older Vox images at 1,861,
+1,372 and 15 pixels respectively, with improvements against the Brave reference.
+Concurrent document-renderer changes are included in this production build;
+these differences are not isolated Metal effects or backend-equivalence credit.
+The all-site equality gate remains open. These are frozen viewport checks, not
+live-site, interaction, Retina-wide, scrolling or instruction-performance claims.

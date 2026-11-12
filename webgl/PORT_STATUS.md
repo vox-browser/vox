@@ -13,8 +13,8 @@ fetch, depth/stencil, MRT, multisample resolves, queries and GPU transform
 feedback. Linux and Windows retain their GLES service.
 
 The default Metal configuration passes 314 functions from 178 native/Source
-WebGL test files with the C backend in both GC modes. The JavaScriptCore public
-bindings pass 150 functions from 132 files using single-unit FastC in both
+WebGL test files with both the C backend and FastC in both GC modes. The JavaScriptCore public
+bindings pass 151 functions from 132 files using single-unit FastC in both
 modes. The shared 40-case shader acceptance corpus and eight exact-pixel cases
 passed both Metal and ANGLE before loader removal. Native resources have nine
 fixtures checked under ARC, MRC and ASan/UBSan. These are focused parity results,
