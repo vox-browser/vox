@@ -665,6 +665,10 @@ fn (mut iterator InlineLevelIterator) generate_next_item() ?InlineLevelItem {
 		context.next_chunk_index++
 		is_last_chunk := context.next_chunk_index >= context.chunks.len
 		mut text_type := chunk.text_type
+		if text_type == .context_dependent && text_node.Node.document().font_rendering_policy() == .chromium
+			&& chromium_arabic_number_chunk(chunk.view) && chromium_numeric_direction_is_not_overridden(text_node) {
+			text_type = .ltr
+		}
 		if text_type in [.ltr, .rtl] {
 			context.last_known_direction = text_type
 		}
