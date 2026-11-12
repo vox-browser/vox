@@ -19,15 +19,16 @@ static void vox_metal_program_destroy(void* handle)
     free(program);
 }
 
-static void* vox_metal_program_create(void* target, char const* vertex, int vertex_length,
-    char const* fragment, int fragment_length, int version, char* log, uint64_t capacity)
+static void* vox_metal_program_create_bound(void* target, char const* vertex, int vertex_length,
+    char const* fragment, int fragment_length, int version,
+    VoxMetalAttributeBinding const* bindings, uint64_t binding_count, char* log, uint64_t capacity)
 {
     VoxMetalDrawingBuffer* context = target;
     if (capacity) log[0] = 0;
     if (!context) { if (capacity) snprintf(log, capacity, "Metal drawing buffer is closed"); return NULL; }
     VoxMetalShaderProgram* program = calloc(1, sizeof(*program));
     if (!program) return NULL;
-    program->translated = vox_metal_translate_program(vertex, vertex_length, fragment, fragment_length, version, log, capacity);
+    program->translated = vox_metal_translate_program_bound(vertex, vertex_length, fragment, fragment_length, version, bindings, binding_count, log, capacity);
     if (!program->translated) { vox_metal_program_destroy(program); return NULL; }
     program->device = CFRetain(context->device);
     @autoreleasepool {
@@ -67,6 +68,13 @@ static void* vox_metal_program_create(void* target, char const* vertex, int vert
         }
     }
     return program;
+}
+
+static void* vox_metal_program_create(void* target, char const* vertex, int vertex_length,
+    char const* fragment, int fragment_length, int version, char* log, uint64_t capacity)
+{
+    return vox_metal_program_create_bound(target, vertex, vertex_length, fragment, fragment_length,
+        version, NULL, 0, log, capacity);
 }
 
 static char const* vox_metal_program_source(void* handle, int stage)

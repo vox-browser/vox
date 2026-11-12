@@ -19,6 +19,92 @@ typedef struct {
     size_t resource_count;
 } VoxMetalTranslatedProgram;
 
+typedef struct { char const* name; uint32_t location; } VoxMetalAttributeBinding;
+
+static int vox_metal_statement_has_token(char const* start, size_t length, char const* name)
+{
+    for (size_t i = 0; i < length;) {
+        if (!vox_glsl_identifier_start(start[i])) { ++i; continue; }
+        size_t begin = i++;
+        while (i < length && vox_glsl_identifier(start[i])) ++i;
+        if (vox_glsl_equal(start + begin, i - begin, name)) return 1;
+    }
+    return 0;
+}
+
+/* The original ESSL has already been validated and preprocessed. Only the
+ * presence of a location qualifier matters; glslang evaluated its expression. */
+static int vox_metal_explicit_attribute(char const* source, char const* name)
+{
+    size_t length = strlen(source), begin = 0;
+    char* clean = vox_glsl_without_comments(source, length);
+    if (!clean) return -1;
+    unsigned depth = 0;
+    int explicit_location = 0;
+    for (size_t i = 0; i < length && !explicit_location; ++i) {
+        if (clean[i] == '{') ++depth;
+        else if (clean[i] == '}') { if (depth) --depth; if (!depth) begin = i + 1; }
+        else if (!depth && clean[i] == ';') {
+            char const* text = clean + begin;
+            size_t count = i - begin;
+            explicit_location = vox_metal_statement_has_token(text, count, "layout")
+                && vox_metal_statement_has_token(text, count, "location")
+                && vox_metal_statement_has_token(text, count, "in")
+                && vox_metal_statement_has_token(text, count, name);
+            begin = i + 1;
+        }
+    }
+    free(clean);
+    return explicit_location;
+}
+
+static int vox_metal_bind_attributes(spvc_compiler compiler, char const* source,
+    VoxMetalAttributeBinding const* bindings, size_t binding_count)
+{
+    spvc_set active;
+    spvc_resources resources;
+    spvc_reflected_resource const* inputs;
+    size_t count;
+    if (spvc_compiler_get_active_interface_variables(compiler, &active) != SPVC_SUCCESS
+        || spvc_compiler_create_shader_resources_for_active_variables(compiler, &resources, active) != SPVC_SUCCESS
+        || spvc_resources_get_resource_list_for_type(resources, SPVC_RESOURCE_TYPE_STAGE_INPUT, &inputs, &count) != SPVC_SUCCESS
+        || count > 16) return 0;
+    uint32_t locations[16], spans[16], occupied = 0;
+    for (size_t i = 0; i < count; ++i) {
+        spvc_type type = spvc_compiler_get_type_handle(compiler, inputs[i].type_id);
+        uint64_t span = spvc_type_get_columns(type);
+        for (unsigned j = 0; j < spvc_type_get_num_array_dimensions(type); ++j) {
+            if (!spvc_type_array_dimension_is_literal(type, j)) return 0;
+            span *= spvc_type_get_array_dimension(type, j);
+            if (span > 16) return 0;
+        }
+        if (!span || span > 16) return 0;
+        spans[i] = (uint32_t)span;
+        int explicit_location = vox_metal_explicit_attribute(source, inputs[i].name);
+        if (explicit_location < 0) return 0;
+        locations[i] = explicit_location ? spvc_compiler_get_decoration(compiler, inputs[i].id, SpvDecorationLocation) : UINT32_MAX;
+        if (!explicit_location)
+            for (size_t j = 0; j < binding_count; ++j)
+                if (!strcmp(bindings[j].name, inputs[i].name)) locations[i] = bindings[j].location;
+        if (locations[i] != UINT32_MAX) {
+            if (locations[i] >= 16 || span > 16 - locations[i]) return 0;
+            uint32_t mask = ((1u << span) - 1) << locations[i];
+            if (occupied & mask) return 0;
+            occupied |= mask;
+        }
+    }
+    for (size_t i = 0; i < count; ++i) {
+        if (locations[i] == UINT32_MAX) {
+            uint32_t location = 0, mask = (1u << spans[i]) - 1;
+            while (location + spans[i] <= 16 && (occupied & (mask << location))) ++location;
+            if (location + spans[i] > 16) return 0;
+            locations[i] = location; occupied |= mask << location;
+        }
+        spvc_compiler_set_decoration(compiler, inputs[i].id, SpvDecorationLocation, locations[i]);
+    }
+    return 1;
+}
+
 static char* vox_metal_string_copy(char const* value)
 {
     if (!value) return NULL;
@@ -71,7 +157,9 @@ static int vox_metal_reflect_resources(VoxMetalTranslatedProgram* program, spvc_
                                       spvc_compiler original_names, int stage)
 {
     spvc_resources resources;
-    if (spvc_compiler_create_shader_resources(compiler, &resources) != SPVC_SUCCESS) return 0;
+    spvc_set active;
+    if (spvc_compiler_get_active_interface_variables(compiler, &active) != SPVC_SUCCESS
+        || spvc_compiler_create_shader_resources_for_active_variables(compiler, &resources, active) != SPVC_SUCCESS) return 0;
     spvc_resource_type kinds[] = {SPVC_RESOURCE_TYPE_STAGE_INPUT, SPVC_RESOURCE_TYPE_UNIFORM_BUFFER,
         SPVC_RESOURCE_TYPE_SAMPLED_IMAGE, SPVC_RESOURCE_TYPE_SEPARATE_IMAGE, SPVC_RESOURCE_TYPE_SEPARATE_SAMPLERS};
     for (size_t k = 0; k < sizeof(kinds) / sizeof(*kinds); ++k) {
@@ -93,8 +181,19 @@ static int vox_metal_reflect_resources(VoxMetalTranslatedProgram* program, spvc_
                 size_t size;
                 if (spvc_compiler_get_declared_struct_size(compiler, structure, &size) != SPVC_SUCCESS) return 0;
                 resource.byte_size = size;
-                if (!vox_metal_append_resource(program, resource, spvc_compiler_get_name(original_names, item->id))) return 0;
+                char const* block_name = spvc_compiler_get_name(original_names, item->base_type_id);
+                if (!block_name || !*block_name) block_name = spvc_compiler_get_name(original_names, item->id);
+                if (!vox_metal_append_resource(program, resource, block_name)) return 0;
+                spvc_buffer_range const* ranges = NULL;
+                size_t range_count = 0;
+                int plain_uniforms = block_name && !strncmp(block_name, "_webgl_native_", sizeof("_webgl_native_") - 1);
+                if (plain_uniforms && spvc_compiler_get_active_buffer_ranges(compiler, item->id, &ranges, &range_count) != SPVC_SUCCESS) return 0;
                 for (unsigned member = 0; member < spvc_type_get_num_member_types(structure); ++member) {
+                    if (plain_uniforms) {
+                        int used = 0;
+                        for (size_t j = 0; j < range_count; ++j) if (ranges[j].index == member) used = 1;
+                        if (!used) continue;
+                    }
                     VoxMetalShaderResource field = resource;
                     field.kind = 100; /* Uniform-block member, including lowered plain uniforms. */
                     spvc_type member_type = spvc_compiler_get_type_handle(compiler, spvc_type_get_member_type(structure, member));
@@ -115,7 +214,8 @@ static int vox_metal_reflect_resources(VoxMetalTranslatedProgram* program, spvc_
 }
 
 static int vox_metal_emit_stage(VoxMetalTranslatedProgram* output, glslang_program_t* program,
-                                int stage, char* log, size_t capacity)
+                                int stage, char const* lowered_source, VoxMetalAttributeBinding const* bindings,
+                                size_t binding_count, char* log, size_t capacity)
 {
     glslang_stage_t shader_stage = stage ? GLSLANG_STAGE_FRAGMENT : GLSLANG_STAGE_VERTEX;
     glslang_program_SPIRV_generate(program, shader_stage);
@@ -131,6 +231,10 @@ static int vox_metal_emit_stage(VoxMetalTranslatedProgram* output, glslang_progr
     if (success) success = spvc_context_parse_spirv(context, glslang_program_SPIRV_get_ptr(program), words, &ir) == SPVC_SUCCESS;
     if (success) success = spvc_context_create_compiler(context, SPVC_BACKEND_NONE, ir, SPVC_CAPTURE_MODE_COPY, &original_names) == SPVC_SUCCESS;
     if (success) success = spvc_context_create_compiler(context, SPVC_BACKEND_MSL, ir, SPVC_CAPTURE_MODE_TAKE_OWNERSHIP, &compiler) == SPVC_SUCCESS;
+    if (success && !stage) success = vox_metal_bind_attributes(compiler, lowered_source, bindings, binding_count);
+    spvc_set active;
+    if (success) success = spvc_compiler_get_active_interface_variables(compiler, &active) == SPVC_SUCCESS;
+    if (success) success = spvc_compiler_set_enabled_interface_variables(compiler, active) == SPVC_SUCCESS;
     if (success) success = spvc_compiler_create_compiler_options(compiler, &options) == SPVC_SUCCESS;
     if (success) success = spvc_compiler_options_set_uint(options, SPVC_COMPILER_OPTION_MSL_VERSION, SPVC_MAKE_MSL_VERSION(2, 0, 0)) == SPVC_SUCCESS;
     if (success) success = spvc_compiler_options_set_bool(options, SPVC_COMPILER_OPTION_FIXUP_DEPTH_CONVENTION, SPVC_TRUE) == SPVC_SUCCESS;
@@ -151,8 +255,9 @@ static int vox_metal_emit_stage(VoxMetalTranslatedProgram* output, glslang_progr
     return success;
 }
 
-static VoxMetalTranslatedProgram* vox_metal_translate_program(char const* vertex, int vertex_length,
-    char const* fragment, int fragment_length, int context_version, char* log, size_t capacity)
+static VoxMetalTranslatedProgram* vox_metal_translate_program_bound(char const* vertex, int vertex_length,
+    char const* fragment, int fragment_length, int context_version,
+    VoxMetalAttributeBinding const* bindings, size_t binding_count, char* log, size_t capacity)
 {
     if (capacity) log[0] = 0;
     if (!vertex || !fragment || vertex_length < 0 || fragment_length < 0 || (context_version != 2 && context_version != 3)) return NULL;
@@ -173,9 +278,11 @@ static VoxMetalTranslatedProgram* vox_metal_translate_program(char const* vertex
     glslang_program_t* program = glslang_program_create();
     VoxMetalTranslatedProgram* output = calloc(1, sizeof(*output));
     int versions[2] = {0, 0};
+    char* lowered_sources[2] = {NULL, NULL};
     int success = program && original_program && output;
     for (int i = 0; success && i < 2; ++i) {
         char* code = vox_glsl_desktop_source_with_resources(sources[i], lengths[i], i, context_version, &resources);
+        lowered_sources[i] = code;
         if (!code) { success = 0; break; }
         versions[i] = strstr(code, "#define _webgl_native_version 300\n") ? 300 : 100;
         char* preprocessed = NULL;
@@ -202,7 +309,6 @@ static VoxMetalTranslatedProgram* vox_metal_translate_program(char const* vertex
             if (!success && capacity) snprintf(log, capacity, "%s", glslang_shader_get_info_log(lowered[i]));
         } else success = 0;
         if (success) glslang_program_add_shader(program, lowered[i]);
-        free(code);
     }
     if (success && versions[0] != versions[1]) {
         success = 0; if (capacity) snprintf(log, capacity, "Vertex and fragment ESSL versions differ");
@@ -215,14 +321,22 @@ static VoxMetalTranslatedProgram* vox_metal_translate_program(char const* vertex
         success = glslang_program_link(program, GLSLANG_MSG_SPV_RULES_BIT | GLSLANG_MSG_VULKAN_RULES_BIT) && glslang_program_map_io(program);
         if (!success && capacity) snprintf(log, capacity, "%s", glslang_program_get_info_log(program));
     }
-    if (success) success = vox_metal_emit_stage(output, program, 0, log, capacity) && vox_metal_emit_stage(output, program, 1, log, capacity);
+    if (success) success = vox_metal_emit_stage(output, program, 0, lowered_sources[0], bindings, binding_count, log, capacity)
+        && vox_metal_emit_stage(output, program, 1, lowered_sources[1], NULL, 0, log, capacity);
     if (program) glslang_program_delete(program);
     if (original_program) glslang_program_delete(original_program);
-    for (int i = 0; i < 2; ++i) { if (original[i]) glslang_shader_delete(original[i]); if (lowered[i]) glslang_shader_delete(lowered[i]); }
+    for (int i = 0; i < 2; ++i) { if (original[i]) glslang_shader_delete(original[i]); if (lowered[i]) glslang_shader_delete(lowered[i]); free(lowered_sources[i]); }
     if (!success) {
         if (capacity && !*log) snprintf(log, capacity, "Metal shader translation failed");
         vox_metal_translation_destroy(output); return NULL;
     }
     return output;
+}
+
+static VoxMetalTranslatedProgram* vox_metal_translate_program(char const* vertex, int vertex_length,
+    char const* fragment, int fragment_length, int context_version, char* log, size_t capacity)
+{
+    return vox_metal_translate_program_bound(vertex, vertex_length, fragment, fragment_length,
+        context_version, NULL, 0, log, capacity);
 }
 #endif

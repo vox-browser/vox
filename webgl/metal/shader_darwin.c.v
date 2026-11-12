@@ -37,6 +37,14 @@ struct C.VoxMetalShaderResource {
 }
 
 fn C.vox_metal_program_create(voidptr, &char, i32, &char, i32, i32, &char, u64) voidptr
+
+@[typedef]
+struct C.VoxMetalAttributeBinding {
+	name &char
+	location u32
+}
+
+fn C.vox_metal_program_create_bound(voidptr, &char, i32, &char, i32, i32, &C.VoxMetalAttributeBinding, u64, &char, u64) voidptr
 fn C.vox_metal_program_destroy(voidptr)
 fn C.vox_metal_program_source(voidptr, i32) &char
 fn C.vox_metal_program_resource_count(voidptr) u64

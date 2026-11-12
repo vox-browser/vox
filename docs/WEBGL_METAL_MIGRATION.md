@@ -124,6 +124,20 @@ unsigned/boolean rendering and external UBO/internal block writes. The complete
 standalone run passes 24 V cases in both GC modes plus the six native fixtures
 under ARC, MRC and sanitizers. This is backend coverage, not browser equivalence.
 
+## Completed: attribute locations and active shader resources
+
+Explicit attribute bindings now reserve complete matrix/array location spans;
+automatic inputs avoid those slots. ESSL 3.00 `layout(location=...)` takes
+precedence. Reflection excludes inactive inputs, samplers and synthetic plain
+uniform members, while retaining declared block layout offsets. Original block
+type names are preserved even when SPIR-V's block instance is unnamed.
+
+Three focused cases verify inactive resources, explicit-location precedence,
+collisions and a bound mat4 rendered through four constant vertex columns.
+The complete standalone suite passes 27 V cases in both GC modes and all six
+native fixtures in ARC/MRC/sanitizer modes. Full GLSL active-uniform array sizing
+and structured-uniform reflection still require browser conformance coverage.
+
 ## Validation
 
 On 2026-11-12, native GPU tests passed with ARC, manual reference counting and

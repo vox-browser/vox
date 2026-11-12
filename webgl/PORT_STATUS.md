@@ -19,7 +19,8 @@ and feedback/ownership checks. Indexed draws/restart, viewport/scissor, color
 masks/blending, depth and separate stencil faces now have focused exact-pixel
 coverage in both GC modes. Typed/normalized/constant vertex fetch is covered;
 the standalone suite passes six native fixtures in three ownership/sanitizer
-modes and 24 V cases in both GC modes. Typed uniforms, packed readback, padded arrays
+modes and 27 V cases in both GC modes. Explicit attribute locations, matrix columns
+and inactive resource reflection are covered. Typed uniforms, packed readback, padded arrays
 and external uniform-buffer ranges are included;
 the production WebGL implementation still uses ANGLE. See the
 [migration status and next slices](../docs/WEBGL_METAL_MIGRATION.md).

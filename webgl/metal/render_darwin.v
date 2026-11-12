@@ -192,12 +192,18 @@ pub fn (mut target DrawingBuffer) draw_with_options(program &ShaderProgram, stre
 	}
 	mut textures := []C.VoxMetalTextureBinding{}
 	for resource in program.resources()! {
-		if resource.kind == 3 && resource.stage == .vertex && (resource.location >= 16 || used & (u32(1) << resource.location) == 0) { return error('Missing Metal vertex stream ${resource.name}') }
-		if resource.kind == 3 && resource.stage == .vertex {
-			input := streams.filter(u32(it.location) == resource.location)[0]
-			if (resource.scalar_type in [u32(7),8]) != input.integer { return error('Metal shader input type does not match vertex stream ${resource.name}') }
-			if input.integer && ((resource.scalar_type == 7 && input.format !in [.int8,.int16,.int32]) || (resource.scalar_type == 8 && input.format !in [.uint8,.uint16,.uint32])) { return error('Metal integer vertex stream has wrong signedness') }
-		}
+        if resource.kind == 3 && resource.stage == .vertex {
+            span := u64(resource.columns) * resource.array_length
+            if span < 1 || resource.location >= 16 || span > 16 - resource.location { return error('Metal vertex input exceeds location limits') }
+            for column in u32(0)..u32(span) {
+                location := resource.location + column
+                if used & (u32(1) << location) == 0 { return error('Missing Metal vertex stream ${resource.name}') }
+                input := streams.filter(u32(it.location) == location)[0]
+                if (resource.scalar_type in [u32(7),8]) != input.integer { return error('Metal shader input type does not match vertex stream ${resource.name}') }
+                if input.integer && ((resource.scalar_type == 7 && input.format !in [.int8,.int16,.int32]) || (resource.scalar_type == 8 && input.format !in [.uint8,.uint16,.uint32])) { return error('Metal integer vertex stream has wrong signedness') }
+            }
+        }
+
 		if resource.kind == 11 { return error('Separate Metal sampler bindings are not supported') }
 		if resource.kind !in [u32(7), 10] { continue }
 		for index in u32(0) .. resource.array_length {
