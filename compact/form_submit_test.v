@@ -41,6 +41,9 @@ fn test_script_get_form_submission_reaches_the_shell_without_deactivating_its_do
 	app.install_compact_navigation_handler()
 	runtime.evaluate_host('globalThis.submits=0;form.addEventListener("submit",()=>submits++);')!
 	for method in ['submit', 'requestSubmit'] {
+		// Paint adoption reconnects the HTML model after script-flushed layout.
+		// That must retain the shell's navigation handoff for the next input.
+		focus_compact_browser_navigable(document)
 		runtime.evaluate_host('form.${method}();')!
 		assert app.pending_native_navigation? == 'https://form-submit.test/search?q=utc+time'
 		app.pending_native_navigation = none
