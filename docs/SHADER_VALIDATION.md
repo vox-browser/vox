@@ -1,51 +1,37 @@
 # Native WebGL shader validation
 
-The desktop shader adapter validates original ESSL with glslang before changing
-its spelling for the OpenGL driver. This retains ESSL version and precision
-checks and the WebGL1 statically bounded loop/index subset. The validator uses
-the current driver's uniform, varying, attribute and texture-unit limits.
+On macOS, the default V Metal service validates original ESSL with glslang,
+links the pair, lowers through SPIR-V and SPIRV-Cross MSL, and compiles actual
+Metal functions. It retains ESSL version/precision checks and the WebGL1
+statically bounded loop/index subset. Invalid ESSL reports failure through
+`compileShader` and its info log. Public shader-source queries preserve the
+original bytes.
 
-Install `glslang` with Homebrew on macOS, `glslang-dev` on Ubuntu/Debian, or
-`mingw-w64-x86_64-glslang` in the Windows MSYS2 environment. The C interface and
-default-resource-limits library are required; SPIR-V generation is not used.
-The normal macOS packaging dependency closure includes the validator libraries.
-macOS loads the validator on the first shader submission, keeping its libraries
-out of startup for pages that do not compile WebGL shaders.
+Install `glslang spirv-cross` with Homebrew. Shader compiler libraries load on
+the first shader submission; they stay out of startup for pages that do not
+compile WebGL shaders. The macOS browser does not load ANGLE/EGL/GLES. Other
+platforms retain their GLES service.
 
-ESSL100 texture calls use private wrapper functions declared before user globals.
-This preserves legal sampler names such as `texture`, `textureProj` and
-`textureLod`, including macros, function overloads, projected lookups and biases.
-Public shader-source queries retain the original source bytes. Invalid ESSL
-still reports failure through `compileShader` and its info log.
+ESSL100 texture calls use private wrapper functions before user globals. This
+preserves legal sampler names such as `texture`, `textureProj` and `textureLod`,
+including macros, overloads, projected lookups and biases. The supported
+`GL_EXT_draw_buffers : require` directive is normalized for glslang's validator,
+which recognizes the builtins without advertising the extension. Other required
+extensions retain their normal validation; actual MRT pixels are tested.
 
-The 40 acceptance cases and eight exact-pixel fixtures now also run through
-both V WebGL services, including the experimental direct Metal implementation:
+The shared V corpus covers 40 acceptance/error/source-query cases and eight
+exact 8×8 rendering fixtures. Before ANGLE removal, every case passed both the
+ANGLE and direct Metal services in default GC and `-gc none`. Run the current
+Metal corpus with:
 
 ```sh
 python3 tools/test_webgl_metal_service.py --output Build/shaders-metal-UNIQUE webgl/native_essl_equivalence_test.v
-python3 tools/test_webgl_metal_service.py --service angle --output Build/shaders-angle-UNIQUE webgl/native_essl_equivalence_test.v
 ```
 
-Both services pass all 48 fixtures in default GC and `-gc none`. Metal submits
-the translated shaders to actual MTLFunctions. The earlier CGL comparison below
-is retained as historical PR #63 evidence.
-
-Run the native shader comparison from the canonical checkout:
-
-```sh
-python3 webgl/shader_equivalence_test.py --candidate-ref PR_HEAD --output Build/shader-check-UNIQUE
-```
-
-The runner checks the exact PR native service headers with the current canonical
-shader adapter, using a compiler virtual filesystem overlay. It compares fresh
-ANGLE and Apple OpenGL contexts for shader acceptance, original source queries
-and exact drawing-buffer pixels. It pins its inputs and runs compilation and
-execution under the repository memory guard. This is a focused backend check;
-it does not establish complete WebGL conformance or whole-site equivalence.
-
-On 2026-11-12, all 40 shader cases and eight 8×8 RGBA rendering cases match
-ANGLE exactly, including source queries and GL errors. Eight focused V cases
-also pass in each of Boehm and no-GC mode: ESSL validation, existing ANGLE
-shader behavior and transform feedback. The native service is exercised by the
-separate C comparison. The [local evidence](performance/pr63-shader-equivalence-20261112.json)
-retains source pins, commands, actual exits and earlier failed diagnostics.
+The [migration report](WEBGL_METAL_MIGRATION.md) records additional boolean and
+structured uniform, packed vertex, MRT, texture and transform-feedback checks.
+The old PR #63 CGL adapter and its C comparison runner have been removed after
+porting the full shader corpus to V. Their historical results remain in the
+[local PR evidence](performance/pr63-shader-equivalence-20261112.json).
+These focused checks do not establish complete WebGL conformance or whole-site
+equivalence.

@@ -82,7 +82,7 @@ fn native_render_state(target &DrawingBuffer, options DrawOptions) !C.VoxMetalRe
 		if depth.handle == unsafe { nil } || depth.owner.handle != target.handle || depth.width != width || depth.height != height || depth.samples!=(if options.color_target!=unsafe { nil } { options.color_target.samples } else { 1 }) { return error('Metal depth/stencil attachment has wrong owner or dimensions') }
 		depth_handle = depth.handle
 	}
-    mut colors:=[8]voidptr{}
+    mut colors:=unsafe { [8]voidptr{} }
     mut used:=u32(0)
     mut rgb_only:=u32(0)
     for attachment in options.color_targets {

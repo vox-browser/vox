@@ -29,7 +29,7 @@ Install Apple's command line tools (`xcode-select --install`) and
 
 ```sh
 brew install python cmake pkgconf freetype openssl \
-    startergo/angle/angle ffmpeg libavif curl glslang
+    ffmpeg libavif curl glslang spirv-cross
 eval "$(python3 tools/dev_build_env.py)"
 v .
 ./vox2 https://example.com

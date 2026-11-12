@@ -73,7 +73,6 @@ def main():
     parser.add_argument('--v-bin', type=Path, default=Path.home() / 'code/v/v')
     parser.add_argument('--gc', choices=['both', 'default', 'none'], default='both')
     parser.add_argument('--backend', choices=['c', 'fastc'], default='c')
-    parser.add_argument('--service', choices=['metal', 'angle'], default='metal')
     parser.add_argument('--batch', action='store_true', help='Compile all selected tests into one executable using V -file-list')
     parser.add_argument('tests', nargs='*', type=Path)
     args = parser.parse_args()
@@ -83,7 +82,7 @@ def main():
     if not compiler.is_file():
         parser.error('V compiler not found: ' + str(compiler))
     tests = [(ROOT / path).resolve() for path in args.tests] if args.tests else sorted(
-        (ROOT / 'webgl').glob('service*_d_vox_direct_metal_test.v'))
+        (ROOT / 'webgl').glob('service*_darwin_test.v'))
     if not tests or any(not path.is_file() or not path.is_relative_to(ROOT) or
                         not path.name.endswith('_test.v') for path in tests):
         parser.error('Tests must be existing repository *_test.v files')
@@ -98,7 +97,7 @@ def main():
         if path.is_file() and path.suffix in ['.v', '.h', '.m'] and not path.name.endswith('_test.v'):
             inputs.add(path)
     pins = {str(path): digest(path) for path in sorted(inputs)}
-    report = dict(pins=pins, selected_tests=[str(path.relative_to(ROOT)) for path in tests], service=args.service, batch=args.batch, jobs=[], passed=False)
+    report = dict(pins=pins, selected_tests=[str(path.relative_to(ROOT)) for path in tests], service='metal', batch=args.batch, jobs=[], passed=False)
     environment = os.environ.copy()
     if args.backend == 'fastc':
         environment['VJOBS'] = '1'  # Native header state must live in one FastC C unit.
@@ -111,7 +110,6 @@ def main():
             binary = output / (stem + '-' + gc)
             command = [str(compiler), '-w', '-new-compiler', '-skip-running', '-b', args.backend,
                        '-cc', 'clang', '-cflags', '-O0 -ObjC' if args.backend == 'fastc' else '-O0', '-memory-limit', '10G', '-enable-globals',
-                       *(['-d', 'vox_direct_metal'] if args.service == 'metal' else []),
                        *(['-file-list', ','.join(str(path) for path in group[1:])] if len(group)>1 and args.backend == 'c' else []),
                        *(['-gc', 'none'] if gc == 'none' else []),
                        '-o', str(binary), str(test)]

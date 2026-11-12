@@ -4,6 +4,9 @@
  */
 #ifndef VOX_WEBGL_NATIVE_EGL_H
 #define VOX_WEBGL_NATIVE_EGL_H
+#ifdef __APPLE__
+#error "macOS WebGL uses the V Metal service, not EGL"
+#endif
 #if defined(_WIN32) && !defined(VOX_EGL_IMPLEMENTATION)
 #include "native_egl_api.h"
 #else
@@ -25,7 +28,6 @@
 #include "angle_procedures_linux.h"
 #else
 #include <GLES2/gl2ext_angle.h>
-#include "angle_dispatch_darwin.h"
 #endif
 
 typedef struct {
@@ -39,9 +41,6 @@ typedef struct {
 
 VOX_EGL_LINKAGE void* vox_egl_create(int version)
 {
-#ifdef __APPLE__
-    if (!vox_angle_prepare()) return NULL;
-#endif
 #ifdef __linux__
     // Keep ANGLE's WebGL compatibility and robust-buffer contract. An ordinary
     // Mesa installation reports WebGL unavailable instead of invoking missing
@@ -50,9 +49,7 @@ VOX_EGL_LINKAGE void* vox_egl_create(int version)
 #endif
     EGLAttrib display_attributes[] = {
         EGL_PLATFORM_ANGLE_TYPE_ANGLE,
-#ifdef __APPLE__
-        EGL_PLATFORM_ANGLE_TYPE_METAL_ANGLE,
-#elif defined(_WIN32)
+#if defined(_WIN32)
         EGL_PLATFORM_ANGLE_TYPE_D3D11_ANGLE,
 #else
         EGL_PLATFORM_ANGLE_TYPE_OPENGL_ANGLE,

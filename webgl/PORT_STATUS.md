@@ -3,34 +3,23 @@
 Upstream reference: `~/code/3rd/ladybird/Libraries/LibWeb/WebGL`
 
 Reference audit: 2026-09-12
-Latest native focused verification: 2026-10-05
+Latest native focused verification: 2026-11-12
 
-Direct Metal migration started on 2026-11-12 in the independent `webgl.metal`
-package. Its device/queue/private drawing-buffer, GPU clear and bounded pixel
-transfer slice passes native ARC/MRC/sanitizer checks and three V cases per GC
-mode without ANGLE dependencies. ESSL 1.00/3.00 shader pairs now validate/link,
-lower through SPIR-V/MSL, and compile as actual Metal functions; resource names
-and uniform/matrix layouts have focused coverage in both GC modes. Browser
-dispatch has an experimental partial V service behind `-d vox_direct_metal`.
-Initialized GPU buffers, bounded vertex streams,
-float/matrix uniforms and array/instanced draws now have exact Metal pixel
-coverage, including asymmetric GL row orientation. Base-level RGBA8 textures,
-nearest/linear samplers, wrapping and offscreen color targets have exact-pixel
-and feedback/ownership checks. Indexed draws/restart, viewport/scissor, color
-masks/blending, depth and separate stencil faces now have focused exact-pixel
-coverage in both GC modes. Typed/normalized/constant vertex fetch is covered;
-the standalone suite passes six native fixtures in three ownership/sanitizer
-modes and 27 V cases in both GC modes. Explicit attribute locations, matrix columns
-and inactive resource reflection are covered. Typed uniforms, packed readback, padded arrays
-and external uniform-buffer ranges are included;
-the production WebGL implementation still uses ANGLE. The experimental service
-passes 15 focused cases in both GC modes through the actual WebGL context,
-including drawing, typed attributes/uniforms and packed readback, without ANGLE.
-Texture images, immutable storage, layer transfers, color framebuffers, MRT,
-samplers, typed clears/readback and PBO reads now have focused service coverage.
-User depth/stencil attachments and remaining WebGL2 service calls are pending;
-complete browser and site equivalence has not been established. See the
-[migration status and next slices](../docs/WEBGL_METAL_MIGRATION.md).
+On macOS, the native WebGL service now uses V and Metal directly by default.
+The ANGLE loader, macOS dependency and obsolete CGL prototype have been removed.
+All 198 service entry points have Metal implementations, including shaders,
+reflection, typed/structured uniforms, textures/framebuffers, packed vertex
+fetch, depth/stencil, MRT, multisample resolves, queries and GPU transform
+feedback. Linux and Windows retain their GLES service.
+
+The default Metal configuration passes 314 functions from 178 native/Source
+WebGL test files with the C backend in both GC modes. The JavaScriptCore public
+bindings pass 150 functions from 132 files using single-unit FastC in both
+modes. The shared 40-case shader acceptance corpus and eight exact-pixel cases
+passed both Metal and ANGLE before loader removal. Native resources have nine
+fixtures checked under ARC, MRC and ASan/UBSan. These are focused parity results,
+not complete WebGL or optimized-site conformance. See the
+[migration implementation, evidence and limitations](../docs/WEBGL_METAL_MIGRATION.md).
 
 The [native getParameter string-cache correction](../docs/translation-audit/WEBGL_PARAMETER_STRING_CACHE.md)
 (`b1b05829`) connects the Source per-GL-enum cache to the actual direct-driver
@@ -2301,10 +2290,11 @@ the new native file passed after fixing its test field spelling in
 `source-active-texture-public-gc-none.log`. This removes source-body cache/gates;
 the actual-driver error-retention boundary is recorded separately above.
 
-`native_egl.h`/`native_egl.c.v` create real EGL/ANGLE contexts using the Metal
-backend on macOS and the source compositor configuration. `pkg-config egl
-glesv2` resolves those libraries. Context loss destroys the native namespace;
-restoration creates a fresh context.
+`native_service.c.v` selects the V Metal service on macOS and the GLES service
+on Linux/Windows. The macOS implementation has no ANGLE/EGL dependency.
+Context loss destroys the native namespace; restoration creates a fresh context.
+The following driver-integration history originally used ANGLE; current
+implementation and checks are summarized above.
 
 The direct backend executes the translated buffer/vertex commands, indexed and
 instanced draws, raster state, shader compilation/linking/reflection, typed
