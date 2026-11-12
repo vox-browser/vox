@@ -2044,6 +2044,8 @@ void native_draw_svg_linear_gradient_path(const float *data, int segment_count,
 		spread_method, linear_color_space, stop_data, stop_count, opacity);
 }
 
+#include "native/include/native_css_gradient_gpu_darwin.h"
+
 int native_draw_clipped_svg_linear_gradient_path(const float *data, int segment_count,
 	int even_odd, float transform_a, float transform_b, float transform_c,
 	float transform_d, float transform_e, float transform_f, float page_x,
@@ -2053,7 +2055,21 @@ int native_draw_clipped_svg_linear_gradient_path(const float *data, int segment_
 	float gradient_b, float gradient_c, float gradient_d, float gradient_e,
 	float gradient_f, int spread_method, int linear_color_space,
 	const float *stop_data, int stop_count, float opacity, const float *clip, const float *ancestor_clip) {
-    return 0;
+    if (spread_method != 4 || stroke || linear_color_space) return 0;
+    VoxGraphitePath draw={0};
+    draw.segments=data; draw.segment_count=segment_count; draw.even_odd=even_odd;
+    draw.gradient=1; draw.gradient_premul=1; draw.opacity=1;
+    draw.stops=stop_data; draw.stop_count=stop_count;
+    float points[6]={start_x,start_y,end_x,end_y,0,0};
+    memcpy(draw.gradient_points,points,sizeof(points));
+    float local[9]={gradient_a,gradient_c,gradient_e,gradient_b,gradient_d,gradient_f,0,0,1};
+    memcpy(draw.gradient_matrix,local,sizeof(local));
+    draw.has_clip=clip!=NULL; draw.has_ancestor_clip=ancestor_clip!=NULL;
+    if (clip) memcpy(draw.clip,clip,sizeof(draw.clip));
+    if (ancestor_clip) memcpy(draw.ancestor_clip,ancestor_clip,sizeof(draw.ancestor_clip));
+    float matrix[6]={transform_a,transform_b,transform_c,transform_d,
+        page_x+transform_e,page_y-scroll_y+transform_f};
+    return native_try_v_css_gradient(draw,matrix,page_x,page_y,scroll_y,canvas_height);
 }
 
 int native_draw_clipped_svg_radial_gradient_path(const float *data, int segment_count,
@@ -2066,7 +2082,21 @@ int native_draw_clipped_svg_radial_gradient_path(const float *data, int segment_
 	float gradient_b, float gradient_c, float gradient_d, float gradient_e,
 	float gradient_f, int spread_method, int linear_color_space,
 	const float *stop_data, int stop_count, float opacity, const float *clip, const float *ancestor_clip) {
-    return 0;
+    if (spread_method != 4 || stroke || linear_color_space) return 0;
+    VoxGraphitePath draw={0};
+    draw.segments=data; draw.segment_count=segment_count; draw.even_odd=even_odd;
+    draw.gradient=2; draw.gradient_premul=1; draw.opacity=1;
+    draw.stops=stop_data; draw.stop_count=stop_count;
+    float points[6]={start_x,start_y,start_radius,end_x,end_y,end_radius};
+    memcpy(draw.gradient_points,points,sizeof(points));
+    float local[9]={gradient_a,gradient_c,gradient_e,gradient_b,gradient_d,gradient_f,0,0,1};
+    memcpy(draw.gradient_matrix,local,sizeof(local));
+    draw.has_clip=clip!=NULL; draw.has_ancestor_clip=ancestor_clip!=NULL;
+    if (clip) memcpy(draw.clip,clip,sizeof(draw.clip));
+    if (ancestor_clip) memcpy(draw.ancestor_clip,ancestor_clip,sizeof(draw.ancestor_clip));
+    float matrix[6]={transform_a,transform_b,transform_c,transform_d,
+        page_x+transform_e,page_y-scroll_y+transform_f};
+    return native_try_v_css_gradient(draw,matrix,page_x,page_y,scroll_y,canvas_height);
 }
 
 static void native_draw_svg_radial_gradient_path_in_context(CGContextRef context,
