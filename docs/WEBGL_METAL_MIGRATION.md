@@ -28,6 +28,24 @@ allocates resources, encodes GPU operations and transfers completed pixels.
 The package imports no EGL/GLES service and links only Metal and system
 frameworks. Its native checks verify that ANGLE libraries remain unloaded.
 
+## Completed: shader compilation and reflection
+
+`metal.ShaderProgram.compile` validates and links the original ESSL pair with
+glslang, lowers it to SPIR-V, translates it to MSL with SPIRV-Cross, and creates
+actual Metal vertex/fragment functions. This path supports ESSL 1.00 and 3.00;
+it preserves original shader link errors and public resource names even when
+MSL requires renamed identifiers. Plain uniforms use separate stage blocks;
+reflection includes their offsets, array/matrix strides, types and Metal slots.
+Shader lowering requests GL depth and Y-coordinate conversion. Pixel tests must
+establish those conventions before browser dispatch is changed.
+
+On macOS this package requires `brew install glslang spirv-cross`. The generated
+MSL uses safe math and initialized locals. The native ARC/MRC/sanitizer suite
+compiles real Metal functions and checks uniform/matrix/sampler reflection;
+three V cases pass with default GC and `-gc none`. No ANGLE library is loaded.
+Apple's shader compiler can indirectly load system OpenGL framework images;
+this package calls no OpenGL API and has no direct OpenGL dependency.
+
 ## Validation
 
 On 2026-11-12, native GPU tests passed with ARC, manual reference counting and
@@ -49,8 +67,8 @@ retains commands, input hashes, actual exits and the initial fixture correction.
 1. Define V backend dispatch/capability records and connect these resources to
    the existing canvas owner and painting-surface lifecycle.
 2. Add initialized buffers/textures and framebuffer/depth/stencil ownership.
-3. Translate validated ESSL into MSL without ANGLE, then implement reflection,
-   vertex layouts, uniform bindings and cached Metal render pipelines.
+3. Connect compiled Metal functions/reflection to vertex layouts, uniform
+   bindings and cached Metal render pipelines.
 4. Implement indexed/instanced drawing, raster/blend/depth/stencil state,
    queries, synchronization and WebGL2 resource operations.
 5. Run typed/public WebGL regression suites and matched browser/site checks.

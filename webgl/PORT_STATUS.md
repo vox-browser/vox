@@ -8,7 +8,10 @@ Latest native focused verification: 2026-10-05
 Direct Metal migration started on 2026-11-12 in the independent `webgl.metal`
 package. Its device/queue/private drawing-buffer, GPU clear and bounded pixel
 transfer slice passes native ARC/MRC/sanitizer checks and three V cases per GC
-mode without ANGLE dependencies. Browser dispatch and shaders are not migrated;
+mode without ANGLE dependencies. ESSL 1.00/3.00 shader pairs now validate/link,
+lower through SPIR-V/MSL, and compile as actual Metal functions; resource names
+and uniform/matrix layouts have focused coverage in both GC modes. Browser
+dispatch and drawing are not migrated;
 the production WebGL implementation still uses ANGLE. See the
 [migration status and next slices](../docs/WEBGL_METAL_MIGRATION.md).
 
