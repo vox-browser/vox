@@ -610,3 +610,29 @@ at about 6.2 GiB under the 12 GiB guard; captures use 3 GiB guards. Initial
 pointer-view and exported-C declaration compile errors are retained alongside
 the corrected passing build. Production validation remains pending on the
 managed build; these results do not validate the older completed bundle.
+
+## Production receipt isolation and next GitHub investigation
+
+The new failure receipts from `f66e7fad8` identified two different compilers'
+inputs in the same receipt: 311 V build-tool sources followed by 393 browser
+worker sources. `8950af241` removes the ambient manifest destination only from
+the V tool bootstrap environment. The supervised compiler still receives its
+explicit manifest destination and keeps the existing source-verification gate.
+The focused environment test passes, and a real compiler probe leaves both
+pre-existing receipt files byte-for-byte unchanged. The managed attempt
+`20261112-194619-964c3f1f` passes source verification and reaches sealed C
+compilation with the tagged-PNG and text-mask corrections included. Production
+pixel validation is still pending until that attempt publishes successfully.
+An idle upgrade worker holding and waiting for its own inherited build lock
+was stopped with its launch wrappers; no active compiler or memory guard was
+terminated. The identities and lock evidence remain local.
+
+Two additional Brave captures of the unchanged GitHub archive agree exactly
+with the original reference. Read-only geometry audits locate a 0.75px header
+height discrepancy (Vox 69.75px, Brave 69px), shifting the directory below it.
+The fork/star links' containing list items are 28.75px in Vox versus 28px in
+Brave. Reduced button/grid/counter cases currently match Brave at 28px, so
+these findings do not yet justify an engine change or establish a GitHub fix.
+Two standalone layout-probe compilations hit the 12 GiB memory guard; the
+selected root-harness probe compiles and runs successfully within its guards.
+All raw attempts, successful captures and failed compilations are retained.
