@@ -29,6 +29,7 @@ mut:
     default_draw_buffer u32 = 0x405
     default_read_buffer u32 = 0x405
     current_program u32
+    active_queries map[u32]u32
     current_attributes [16]MetalServiceCurrentAttribute
     version int
     target &metal.DrawingBuffer
@@ -69,6 +70,9 @@ mut:
     fbo &MetalServiceFramebuffer = unsafe { nil }
     rbo &MetalServiceRenderbuffer = unsafe { nil }
     retired bool
+    query_target u32
+    query_result u64
+    query_available bool
     shader_type u32
     source string
     compiled_source string
@@ -313,7 +317,7 @@ fn metal_service_vox_egl_destroy(a0 voidptr) {
     }
     for _, vao in context.vertex_arrays { unsafe { free(vao) } }
     for _, values in context.parameters { unsafe { values.free() } }
-    unsafe { context.objects.free(); context.buffers.free(); context.vertex_arrays.free(); context.parameters.free(); context.enabled.free() }
+    unsafe { context.objects.free(); context.buffers.free(); context.vertex_arrays.free(); context.active_queries.free();context.parameters.free(); context.enabled.free() }
     context.target.close()
     unsafe { free(context.target); context.unsupported.free(); context.last_failure.free(); free(context) }
 }
@@ -476,6 +480,8 @@ fn metal_service_vox_gl_delete_object(a0 i32, a1 u32) {
         if context.renderbuffer==a1 { context.renderbuffer=0 }
     } else if a0==3 {
         for key,name in context.textures { if name==a1 { context.textures[key]=0 } }
+    } else if a0==4 {
+        for target,name in context.active_queries { if name==a1 { context.active_queries.delete(target) } }
     } else if a0==5 {
         for index,name in context.samplers { if name==a1 { context.samplers[index]=0 } }
     } else if a0 in [6,7] {
@@ -487,18 +493,21 @@ fn metal_service_vox_gl_delete_object(a0 i32, a1 u32) {
 
 @[export: 'vox_gl_begin_query']
 fn metal_service_vox_gl_begin_query(a0 u32, a1 u32) {
-    metal_service_unsupported('vox_gl_begin_query')
+    mut context:=metal_service_current()
+    if context!=unsafe { nil } { context.begin_query(a0,a1) }
 }
 
 @[export: 'vox_gl_end_query']
 fn metal_service_vox_gl_end_query(a0 u32) {
-    metal_service_unsupported('vox_gl_end_query')
+    mut context:=metal_service_current()
+    if context!=unsafe { nil } { context.end_query(a0) }
 }
 
 @[export: 'vox_gl_query_parameter']
 fn metal_service_vox_gl_query_parameter(a0 u32, a1 u32) u32 {
-    metal_service_unsupported('vox_gl_query_parameter')
-    return 0
+    context:=metal_service_current()
+    if context==unsafe { nil } { return 0 }
+    return context.query_parameter(a0,a1)
 }
 
 @[export: 'vox_gl_bind_sampler']

@@ -221,6 +221,13 @@ Run focused V tests with current V's C backend, `-memory-limit 10G` and the
 repository memory guard. The [local evidence](performance/metal-webgl-start-20261112.json)
 retains commands, input hashes, actual exits and the initial fixture correction.
 
+Occlusion queries now use Metal visibility-result buffers. Visible draws return
+true, while fragment discard, zero scissor and depth-occluded draws return
+false. Query target ownership, availability, empty draws and invalid operations
+pass the existing query suite and the focused visibility case with default GC
+and `-gc none` under the memory guard. Transform-feedback primitive queries
+share this lifecycle; their capture path is still pending.
+
 ## Next implementation slices
 
 The experimental V service now owns context/resource records, the painting

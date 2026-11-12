@@ -161,8 +161,11 @@ fn (mut context MetalServiceContext) draw(mode u32,first int,count int,instances
     defer { unsafe { blocks.free() } }
     mut textures:=context.texture_bindings(object) or { context.last_failure=err.msg();return }
     defer { textures.close() }
-    context.target.draw_with_options(object.program,streams,primitive,draw_first,draw_count,instances,metal.DrawOptions{textures:textures.bindings,color_target:framebuffer_view.primary,color_targets:framebuffer_view.colors,colors_configured:framebuffer_view.custom,uniform_blocks:blocks,indices:indices,depth_stencil:framebuffer_view.depth,state:context.render_state(mode,framebuffer_view.has_depth,framebuffer_view.has_stencil)}) or {
+    mut visibility:=context.visibility_buffer() or { context.last_failure=err.msg();metal_service_error(out_of_memory);return }
+    defer { if visibility!=unsafe { nil } { visibility.close();unsafe { free(visibility) } } }
+    context.target.draw_with_options(object.program,streams,primitive,draw_first,draw_count,instances,metal.DrawOptions{visibility:visibility,textures:textures.bindings,color_target:framebuffer_view.primary,color_targets:framebuffer_view.colors,colors_configured:framebuffer_view.custom,uniform_blocks:blocks,indices:indices,depth_stencil:framebuffer_view.depth,state:context.render_state(mode,framebuffer_view.has_depth,framebuffer_view.has_stencil)}) or {
         context.last_failure=err.msg();metal_service_error(invalid_operation);return
     }
+    context.record_visibility(visibility) or { context.last_failure=err.msg();metal_service_error(invalid_operation) }
     context.invalidate_draw_textures()
 }
