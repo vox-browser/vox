@@ -28,7 +28,8 @@ jobs:
     env:
       # FastC must support JSON enum attributes and dynamic-array decoding.
       # XML allocation fixes: https://github.com/vlang/v/pull/32104
-      V_REVISION: f7f3add7af3c4615ba5dbedc06e18f76ef604346
+      V_REVISION: 27c8699f26ef90d06449f866aeca145acf7e8289
+      RUSTUP_TOOLCHAIN: stable
       JOBS: '2'
       LADYBIRD_V_GC: ${{ matrix.gc }}
       VOX_ARENA_POISON: '1'
