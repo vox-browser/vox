@@ -44,8 +44,7 @@ pacman -S --needed mingw-w64-x86_64-toolchain mingw-w64-x86_64-pkgconf \
   mingw-w64-x86_64-icu \
   mingw-w64-x86_64-harfbuzz mingw-w64-x86_64-freetype \
   mingw-w64-x86_64-openssl \
-  mingw-w64-x86_64-angleproject mingw-w64-x86_64-curl \
-  mingw-w64-x86_64-glslang
+  mingw-w64-x86_64-angleproject mingw-w64-x86_64-curl
 ```
 
 Provide a Windows `JavaScriptCore.dll` and its runtime dependencies. The
@@ -278,7 +277,8 @@ native mouse input to display “Click passed”, and closed normally (browser a
 guest guard exit 0, peak 768,286,720 bytes). Both used a 3 GiB guest limit. The
 cross-build passed its 12 GiB host guard, peaking at 6,892,617,728 bytes.
 
-The runtime at `C:\vox-fixed-runtime` includes glslang and SPIRV-Tools plus their
+That historical runtime at `C:\vox-fixed-runtime` included the former shader
+compiler dependencies plus their
 matching MinGW runtime DLLs. The earlier missing-DLL/entry-point launches and
 pre-fix timeout above remain failed attempts; they are not passing shutdown
 checks. These results cover this executable's headless, click and close paths,

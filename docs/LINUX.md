@@ -16,7 +16,7 @@ On Ubuntu 24.04 or newer, install the following packages:
 sudo apt-get update
 sudo apt-get install build-essential clang ninja-build generate-ninja pkg-config \
     git curl ca-certificates libjavascriptcoregtk-4.1-dev libglib2.0-dev \
-    libharfbuzz-dev libcurl4-openssl-dev glslang-dev \
+    libharfbuzz-dev libcurl4-openssl-dev \
     libssl-dev libegl1-mesa-dev libgles2-mesa-dev libgl1-mesa-dev libxi-dev \
     libxcursor-dev libxrandr-dev libx11-dev libasound2-dev libgc-dev \
     libfreetype-dev libfontconfig-dev libwebp-dev libpng-dev libjpeg-dev \
@@ -261,7 +261,7 @@ The backend targets Mesa hardware drivers and software llvmpipe; this verificati
 used llvmpipe. No ANGLE headers, libraries or vendor entry points are required.
 The adapter checks CPU and PBO
 transfer bounds, initializes new buffer/texture/renderbuffer storage, validates
-WebGL shader restrictions with glslang, and checks active vertex/index streams
+WebGL shader restrictions with the shared V frontend, and checks active vertex/index streams
 before drawing. This is focused runtime coverage, not full WebGL conformance.
 A GLES3 driver with robust context support is required; unsupported drivers
 report context creation failure.

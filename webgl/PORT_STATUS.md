@@ -3,7 +3,7 @@
 Upstream reference: `~/code/3rd/ladybird/Libraries/LibWeb/WebGL`
 
 Reference audit: 2026-09-12
-Latest native focused verification: 2026-11-12
+Latest native focused verification: 2026-11-13
 
 On macOS, the native WebGL service now uses V and Metal directly by default.
 The ANGLE loader, macOS dependency and obsolete CGL prototype have been removed.
@@ -11,11 +11,12 @@ All 198 service entry points have Metal implementations, including shaders,
 reflection, typed/structured uniforms, textures/framebuffers, packed vertex
 fetch, depth/stencil, MRT, multisample resolves, queries and GPU transform
 feedback. Linux uses native EGL/GLES3 with bounded transfers, initialized
-storage and glslang shader validation; it requires no ANGLE installation.
+storage and the shared V shader frontend; it requires no ANGLE installation.
 Windows retains its ANGLE GLES service. See [Linux setup and checks](../docs/LINUX.md).
 
-The default Metal configuration passes 314 functions from 178 native/Source
-WebGL test files with both the C backend and FastC in both GC modes. The JavaScriptCore public
+The V shader configuration passes 314 functions from 178 native/Source WebGL
+files, 51 compiler functions and 45 Metal functions with the C backend in both
+GC modes. The earlier native configuration also passed with FastC. The JavaScriptCore public
 bindings pass 151 functions from 132 files using single-unit FastC in both
 modes. The shared 40-case shader acceptance corpus and eight exact-pixel cases
 passed both Metal and ANGLE before loader removal. Native resources have nine

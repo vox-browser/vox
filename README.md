@@ -6,8 +6,7 @@ https://vox-browser.org
 
 <img width="2078" height="1628" alt="image" src="https://github.com/user-attachments/assets/ed3d6776-78dd-4903-b716-a95cd5845cab" />
 
-WebGL shader validation needs glslang (`brew install glslang` on macOS,
-`glslang-dev` on Linux, or `mingw-w64-x86_64-glslang` on Windows). See
+WebGL uses the V shader frontend and direct Metal generation on macOS. See
 [shader validation and backend equivalence tests](docs/SHADER_VALIDATION.md).
 
 ### Building
@@ -33,7 +32,7 @@ Install Apple's command line tools (`xcode-select --install`) and
 
 ```sh
 brew install cmake pkgconf freetype openssl \
-    ffmpeg libavif curl glslang spirv-cross
+    ffmpeg libavif curl
 eval "$(sh tools/run_v_tool.sh dev_build_env)"
 v .
 ./vox2 https://example.com
@@ -66,7 +65,7 @@ sudo apt-get install build-essential clang pkg-config git ca-certificates \
     libcurl4-openssl-dev libssl-dev libegl1-mesa-dev libgles2-mesa-dev \
     libgl1-mesa-dev libxi-dev libxcursor-dev libxrandr-dev libx11-dev \
     libasound2-dev libgc-dev libfreetype-dev libfontconfig-dev libwebp-dev \
-    libpng-dev libjpeg-dev glslang-dev fonts-liberation2 fonts-dejavu-core
+    libpng-dev libjpeg-dev fonts-liberation2 fonts-dejavu-core
 eval "$(sh tools/run_v_tool.sh dev_build_env)"
 v .
 Build/linux/vox https://example.com
@@ -84,8 +83,7 @@ compiler tools on `PATH`. Install:
 ```sh
 pacman -S --needed mingw-w64-x86_64-toolchain mingw-w64-x86_64-pkgconf \
     mingw-w64-x86_64-harfbuzz mingw-w64-x86_64-freetype \
-    mingw-w64-x86_64-openssl mingw-w64-x86_64-angleproject mingw-w64-x86_64-curl \
-    mingw-w64-x86_64-glslang
+    mingw-w64-x86_64-openssl mingw-w64-x86_64-angleproject mingw-w64-x86_64-curl
 ```
 
 Supply a Windows x86-64 `JavaScriptCore.dll` and its matching WebKit DLLs;

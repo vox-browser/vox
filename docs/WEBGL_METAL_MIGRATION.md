@@ -8,8 +8,8 @@ Metal is an Apple API. Standard JavaScript extension names such as
 `ANGLE_instanced_arrays` remain API compatibility names.
 
 The macOS ANGLE dispatch loader, generator, native loader test and obsolete
-PR #63 CGL prototype/comparison harness have been removed. Homebrew setup now
-requires `glslang spirv-cross` instead of ANGLE. Shared service ABI names retain
+PR #63 CGL prototype/comparison harness have been removed. The shader pipeline now runs in pure V and requires neither glslang nor
+SPIRV-Cross. Shared service ABI names retain
 the historical `vox_egl_*` prefix; those names do not load or call EGL on macOS.
 
 ## Implementation
@@ -21,8 +21,8 @@ there are no unsupported-entry stubs or ANGLE fallbacks.
 
 - Initialized drawing buffers, buffers and textures; context loss/restoration,
   resizing, deferred deletion and painting-surface publication.
-- ESSL 1.00/3.00 validation/linking with glslang, SPIR-V generation and
-  SPIRV-Cross MSL translation into actual Metal functions. Original source
+- Direct V ESSL 1.00/3.00 preprocessing, linking, layout and MSL generation
+  into actual Metal functions. Original source
   queries, attribute locations, active resources, nested structured uniforms,
   boolean types, matrices, arrays and uniform-buffer ranges are preserved.
 - Array/indexed/instanced draws, expanded line loops/triangle fans, packed and
@@ -41,14 +41,27 @@ clears and drawing. Float filtering is advertised from actual Metal device
 support. Invalid multisample blit destinations are rejected according to the
 GLES contract rather than extending it with a per-sample copy operation.
 
-The shader compiler libraries load at the first shader submission, rather than
-browser startup. Native cold-loading tests check this boundary and assert that
-no ANGLE image loads. Apple shader compilation may indirectly load system
-OpenGL framework images; the implementation calls no OpenGL API.
+The default shader path and native fixture ABI both use `webgl/shader`.
+Shader submission does not load glslang or SPIRV-Cross. Apple shader compilation
+may indirectly load system OpenGL framework images; the implementation calls no
+OpenGL API. The [shader report](SHADER_VALIDATION.md) lists the supported subset
+and remaining conformance limits.
 
 ## Verification
 
-The default macOS configuration passes **314 test functions from 178 WebGL
+After switching the default shader path to V (2026-11-13), current V's C backend
+passes 314 functions from all 178 shared WebGL test files in default GC and
+`-gc none`. The focused compiler module passes 51 functions from 14 files and
+the Metal module passes 45 functions from 13 files in both modes. All 27 native
+fixture/mode combinations pass under ARC, MRC and ASan/UBSan, including the
+exported V ABI, GPU capture, uniforms and unloaded-compiler-library checks.
+Compile, test and memory-guard exits were zero; pinned native inputs stayed
+unchanged. The Windows native GLES fixture cross-compiles with `-gc none`
+without glslang/SPIRV-Cross imports; its runtime and the updated Linux GLES
+runner were not executed on this macOS host. The managed production rebuild
+is queued; these focused results do not validate the older installed bundle.
+
+Before the V compiler switch, the macOS configuration passed **314 test functions from 178 WebGL
 files**, compiled together with both the C backend and FastC, in default GC
 and `-gc none`. The public JavaScriptCore bindings pass **151 functions from 132 files** using
 single-unit FastC in both GC modes. Both execute real native contexts and GPU
@@ -62,7 +75,7 @@ reference suite passed 161 files in both GC modes. Later Metal-only resource
 cases are not described as ANGLE comparisons.
 
 The native resource suite covers nine fixtures in ARC, manual reference
-counting and ASan/UBSan modes (27 fixture/mode runs). Its 37 V tests across 12
+counting and ASan/UBSan modes (27 fixture/mode runs). Its 45 V tests across 13
 files exercise exact pixels, bounds, ownership and GPU resource lifetime in
 both GC modes. Run from
 the canonical checkout, with current V:

@@ -1,210 +1,65 @@
-# Native WebGL shader validation
+# V shader compilation
 
-On macOS, the default V Metal service validates original ESSL with glslang,
-links the pair, lowers through SPIR-V and SPIRV-Cross MSL, and compiles actual
-Metal functions. It retains ESSL version/precision checks and the WebGL1
-statically bounded loop/index subset. Invalid ESSL reports failure through
-`compileShader` and its info log. Public shader-source queries preserve the
-original bytes.
+The default macOS WebGL service compiles ESSL 100/300 directly to Metal through
+`webgl/shader`. Preprocessing, interface linking, uniform layout, resource
+reflection and transform-feedback layout run in V. The native bridge only owns
+Metal objects, compiles the generated MSL with Apple's Metal compiler, and
+submits GPU work. There is no glslang, SPIR-V or SPIRV-Cross translation path,
+dynamic compiler loader, or compiler-library dependency.
 
-Install `glslang spirv-cross` with Homebrew. Shader compiler libraries load on
-the first shader submission; they stay out of startup for pages that do not
-compile WebGL shaders. The macOS browser does not load ANGLE/EGL/GLES. Other
-platforms retain their GLES service.
+`compileShader` translates and compiles the individual stage with Metal;
+`linkProgram` links the original interfaces and builds the two Metal functions.
+Errors reach the existing status and info-log APIs. Source queries retain the
+original ESSL bytes. The C conformance fixtures call the same V compiler through
+an exported ABI, rather than a separate native translator.
 
-ESSL100 texture calls use private wrapper functions before user globals. This
-preserves legal sampler names such as `texture`, `textureProj` and `textureLod`,
-including macros, overloads, projected lookups and biases. The supported
-`GL_EXT_draw_buffers : require` directive is normalized for glslang's validator,
-which recognizes the builtins without advertising the extension. Other required
-extensions retain their normal validation; actual MRT pixels are tested.
+Linux and Windows use the shared V preprocessor and WebGL version/loop checks,
+then submit unchanged ESSL to their native GLES driver for syntax and type
+checking. Metal remains the macOS graphics backend. None of these paths requires
+the former glslang package.
 
-The shared V corpus covers 40 acceptance/error/source-query cases and eight
-exact 8×8 rendering fixtures. Before ANGLE removal, every case passed both the
-ANGLE and direct Metal services in default GC and `-gc none`. Run the current
-Metal corpus with:
+## Covered behavior
+
+- Bounded preprocessing with object/function macros, hide-set rescanning,
+  conditional directives, integer expressions and known extension gates.
+- ESSL 100/300 entry points, attributes and explicit locations, matrix varyings,
+  flat integer interpolation, fragment builtins, depth, discard and MRT.
+- Scalar/vector/matrix uniforms, literal arrays, nested named structures and
+  anonymous std140 blocks, with V-generated offsets and 32-bit boolean storage.
+- 2D/cube/3D/array textures, integer 2D textures, legacy and modern sample,
+  projection, LOD, gradient, fetch and size wrappers.
+- GPU transform feedback with tight scalar-word records, matrix columns,
+  original clip position and guarded output capacity.
+- Local literal-size arrays and ESSL300 array constructors.
+- Conservative pruning of unused attribute, plain-uniform and sampler roots.
+
+The original shared corpus keeps all 40 acceptance/error cases and eight exact
+8×8 texture fixtures. Additional tests exercise exact GPU pixels, uniform/block
+writes, capture canaries, texture layers, MRT, depth and disabled extensions.
+Native ARC, manual-retain and ASan/UBSan fixtures check the exported ABI and
+verify that compiler libraries and ANGLE remain unloaded after shader submission.
+
+## Limits
+
+This is a supported ESSL subset, not complete WebGL shader conformance. Metal
+checks emitted expression syntax and types; its type rules do not establish
+complete ESSL semantic equivalence. Appendix A indexing/loop mutation validation,
+scoped call-graph liveness, sampler arrays and comparison samplers, named block
+instances, general constant-expression array lengths, some builtins/control
+flow and complete preprocessing remain pending. Unsupported constructs report
+errors; they do not fall back to the removed compiler libraries.
+
+## Running checks
 
 ```sh
-python3 tools/test_webgl_metal_service.py --output Build/shaders-metal-UNIQUE webgl/native_essl_equivalence_test.v
+python3 tools/test_webgl_metal.py --output Build/metal-UNIQUE
+python3 tools/test_webgl_metal_service.py --batch --output Build/service-UNIQUE \
+  webgl/native_essl_equivalence_test.v webgl/native_compressed_texture_test.v
+python3 tools/test_webgl_gles.py --v-bin "$V_BIN" --output Build/gles-UNIQUE
 ```
 
-The [migration report](WEBGL_METAL_MIGRATION.md) records additional boolean and
-structured uniform, packed vertex, MRT, texture and transform-feedback checks.
-The old PR #63 CGL adapter and its C comparison runner have been removed after
-porting the full shader corpus to V. Their historical results remain in the
-[local PR evidence](performance/pr63-shader-equivalence-20261112.json).
-These focused checks do not establish complete WebGL conformance or whole-site
-equivalence.
-
-## Direct V-to-Metal replacement in progress
-
-`webgl/shader` is a dependency-free V source generator. The first slice lowers
-ESSL 100/300 scalar/vector/matrix spellings, attributes, varyings, fragment
-outputs, vertex/instance IDs and entry points directly to MSL. Its linker checks
-varying names/types and matching ESSL versions. It generates the vertex Y and
-depth conversions used by the Metal backend. Comments and numeric/operator
-tokens are handled by a bounded lexer.
-
-This is an experimental compiler slice, **not the production replacement yet**.
-Unsupported declarations and directives fail with an error. Object and function
-macros, undefinition, nested conditional branches, `defined`, integer conditions,
-ESSL version selection and predefined ES/precision macros now run in V before
-translation. Macro rescanning suppresses recursive expansion, with explicit
-source, nesting, token and operation limits. Conditions short-circuit inactive
-operands. Token pasting and stringification are rejected. Line directives, line-number builtins, ternary conditions and complete ESSL
-preprocessor conformance remain pending. The compiler also still needs semantic
-validation and the remaining
-ESSL expressions/builtins and control flow. General expression syntax and type
-checking currently depend on compiling the emitted MSL with Metal; successful
-translation alone does not establish ESSL validity. The production service still
-uses glslang and SPIRV-Cross until those paths and the existing WebGL corpus are
-ported. Neither dependency has been removed.
-
-Plain scalar, vector, square/non-square matrix and literal-length array uniforms
-now have V-generated std140 offsets, matrix/array strides and storage type
-reflection. Each stage uses buffer slot zero; generated MSL decodes individual
-32-bit scalars and copies them into shader state. This preserves packed vec3
-plus scalar fields, 32-bit boolean storage, and padded matrix/array elements
-without depending on Metal structure packing. Shared stage uniforms must have
-matching types and array shapes. Constant
-expression array lengths, active-uniform analysis and uniform write restrictions
-remain pending. Unreferenced plain-uniform roots are omitted from reflection;
-references in helper functions are conservatively retained.
-
-Named structure uniforms now support nested structures, arrays of structures,
-and scalar/vector/matrix array members. V calculates std140 structure padding
-and exposes leaf paths such as `lights[1].shade.tint`, retaining array and matrix
-strides on leaf arrays. Generated MSL structures use private type names and
-ordinary value layouts; raw-buffer loads use V's reflected offsets rather than
-MSL structure packing. The linker compares recursive member names, types and
-array shapes across stages, even when both stages use the same structure name.
-Definitions must be named, global and precede their uses; recursive, forward,
-empty and inline instance definitions are rejected. Nesting is limited to 16,
-reflection to 4096 leaves and each plain uniform buffer to 64 KiB. Structure
-constructors, struct interfaces and general local structure declarations remain
-pending.
-
-Combined float `sampler2D` and `samplerCube` uniforms now lower directly to
-separate Metal texture and sampler bindings, with dimension/type metadata. They
-consume no plain-uniform buffer space. V generates ESSL100 texture2D/Cube and
-projected calls, plus ESSL300 texture, textureLod, textureGrad, textureSize,
-texelFetch (2D) and projected forms. Vertex implicit sampling uses level zero;
-fragment implicit sampling preserves derivatives, and fragment bias calls use
-Metal bias sampling. Legacy fragment explicit LOD and gradient forms are enabled by
-`GL_EXT_shader_texture_lod`. Call names are rewritten only at calls/function
-declarations, preserving legal sampler variables named `texture`/`textureLod`
-and user overloads of legacy functions. Sampler arrays, depth-comparison textures and full opaque-type validation
-remain pending. ESSL300 3D/array and signed/unsigned 2D
-samplers now carry dimension, array and scalar metadata into the Metal runtime.
-Texture, LOD, gradient, size and fetch helpers are generated for these types;
-vector comparison helpers preserve integer comparisons. End-to-end storage tests
-check distinct volume/array layers and signed/unsigned values near 32-bit limits.
-
-ESSL300 vertex input and fragment output `layout(location=...)` qualifiers now
-run through the V compiler, including macro-expanded integer arithmetic. The
-`translate_with_bindings` API applies attribute bindings, with explicit shader
-locations taking precedence. Explicit/API spans are reserved before automatic
-allocation, with limits of 16 vertex slots and eight fragment output slots.
-Matrices reserve consecutive locations, emit one Metal attribute per column,
-and reconstruct their value in V-generated MSL. Reflection retains the base
-location and row/column counts. Overlaps, overflowing spans and unresolved
-location identifiers are rejected. Constant-variable expressions, attribute
-arrays, interpolation qualifiers and active-attribute analysis remain pending;
-unreferenced vertex attributes are removed before location allocation.
-
-The ESSL300 vertex translation now also generates a standalone `vox_capture`
-Metal entry point and V reflection for tightly packed output records. It captures
-all declared scalar/vector/matrix outputs and `gl_Position` before viewport Y or
-depth conversion. Matrices retain column-major order; signed/unsigned integers
-retain their 32-bit representation. Buffer slots 13/14 hold output words and
-capture parameters (first vertex, count, first instance, instance count, capacity
-in words). Instance-major indexing normalizes shader instance IDs to zero;
-capacity checks precede multiplications and suppress an undersized capture.
-The generated capture variant shares uniform decoding, texture bindings and
-attribute reconstruction with the regular vertex variant. This is code generation
-only: production integration, varying selection/packing, interface arrays and
-selection/packing beyond these raw capture records remains pending.
-
-Validation for this slice: all thirteen shader test files pass with the C backend in
-default GC and `-gc none`. The macOS test compiles the V-generated vertex and fragment
-sources (including macro/conditional and uniform variants) with Metal, links a render
-pipeline, draws a full-target triangle, and
-checks all sixteen RGBA pixels exactly. Attribute tests bind a matrix through
-both API and explicit locations, read distinct column values with square and
-non-square matrices, and change a consumed value to verify the pixel response. Texture checks sample supplied 2D and
-cube texels, reject a changed source color, verify an explicit mip level and its
-size, and exercise projected/bias/gradient/fetch, macro, user-overload and vertex
-sampling paths. ESSL100 fragment MSL is paired with procedural ESSL300 vertex
-MSL only at the native test endpoint (ESSL linking still rejects mixed versions).
-Nested structure tests also verify packed vec3/scalar fields, booleans, matrix
-columns and arrays of structures/matrices against poisoned buffer padding.
-The plain uniform case binds both stage
-buffers, poisons padding bytes, checks scalar/vector/matrix/array/boolean decoding,
-and changes a consumed boolean to prove that the buffer influences the pixels.
-It also verifies that neither glslang
-nor SPIRV-Cross is loaded in the test process. The Objective-C test endpoint only
-submits generated MSL to Metal; all translation is V. Run under the memory guard
-with `VJOBS=1 v -b c -memory-limit 10G test webgl/shader` (and `-gc none`).
-
-The transform-feedback checks were compiled individually with the current V
-`-new-compiler -skip-running -b c -memory-limit 10G` and each produced executable
-was then run under the 3 GiB memory guard, in default GC and `-gc none`. The
-native capture test checks nonzero vertex/base-instance starts, matrix columns,
-integer bits, original clip coordinates, trailing canaries and an insufficient
-capacity. The V test driver bootstrap still references an unavailable
-`string__split_next` helper, so direct test executables avoid that driver. The
-build-tool split-loop workaround restores the managed V memory guard and commit
-hooks; the final direct checks use that guard. Earlier direct checks used the
-existing Python guard with the same 3 GiB process-tree budget.
-
-Regular vertex/fragment MSL now flattens matrix varyings into one matching user
-semantic per column and reconstructs the matrix in fragment state. ESSL300
-`flat`/`smooth` qualifiers are parsed and linking checks their agreement.
-Integer varyings require `flat`; boolean varyings and interpolation qualifiers
-on attributes or fragment outputs are rejected. A GPU fixture renders through
-non-square matrix, signed-vector and unsigned-scalar varyings in both GC modes.
-Centroid interpolation and varying arrays remain pending.
-
-`metal.ShaderProgram.from_translation` now sends the V translations and reflected
-resources through the browser's existing Metal program, uniform, drawing and
-vertex-capture APIs. Native code owns copies of the generated sources/reflection
-and performs Metal compilation/submission only. End-to-end tests write a nested
-uniform, render exact pixels, and capture matrix/clip outputs without loading
-compiler libraries. Existing glslang program/uniform/capture tests also pass in
-both GC modes. This explicit integration API does not yet replace the default
-ESSL compile path; build dependencies remain until the acceptance corpus is ported.
-
-The original 40 acceptance/error shaders are now one shared V fixture consumed
-by both the native WebGL service test and the direct V-to-Metal compiler test,
-with unchanged source bytes and expectations. Both paths pass, together with
-the existing eight texture pixel fixtures, in default GC and `-gc none`.
-V now checks ESSL100 loop initializer/bound/step constant forms and rejects its
-bitwise/modulo/unsigned/control-flow restrictions before MSL lowering. Builtin
-resource-limit constants and invariant vertex position are lowered explicitly.
-These checks cover the shared corpus; they do not establish complete Appendix A
-index/mutation validation or general ESSL type equivalence with Metal.
-
-Anonymous `layout(std140)` uniform blocks now have independent V-generated
-bindings and layouts. Nested structures and arrays retain block ownership in
-leaf reflection. The integrated Metal program path supports both internal block
-writes and external, aligned buffer ranges through the existing draw API.
-Cross-stage block signatures are checked; named block instances and alternative
-layout qualifiers remain pending. Plain uniforms keep their private block names
-so WebGL block queries can distinguish them from author blocks.
-
-Fragment coordinates, facing and point coordinates now use explicit Metal
-builtin inputs. Fragment depth and discard reach the existing depth/render-state
-path. ESSL100 draw-buffers output requires its extension and emits only statically
-selected color targets; exact two-target pixels are checked through the runtime.
-Known extension enable/disable directives gate derivatives and legacy texture
-LOD/gradient overloads. Tests check disabled rejection, projected coordinates,
-depth visibility, discarded pixels and original coordinate/facing behavior in
-both GC modes. Fragment-output indexing currently requires resolved integer
-expressions; general constant-variable resolution remains pending.
-
-The compiler now distinguishes declared uniform/sampler shapes used for linking
-from reflected roots used at runtime. A conservative lexical-use pass removes
-unreferenced vertex attributes, plain uniforms and samplers, so they do not
-demand buffers/textures at draw time. Helper-function references are retained;
-this is not yet scoped call-graph liveness. A runtime draw checks that an unused
-attribute, scalar uniform and sampler require no supplied resources.
+The Metal runner includes every V Metal test in default GC and `-gc none`.
+Run the portable `webgl/shader/*_test.v` tests with current V in both modes as
+well. All runners retain compiler/runtime exits and memory-guard receipts;
+remove per-job Build output when finished. See the
+[migration report](WEBGL_METAL_MIGRATION.md) for historical backend comparisons.

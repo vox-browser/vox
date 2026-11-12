@@ -8,8 +8,8 @@ macOS uses the separate Metal service.
 errors, checked PBO offsets, and core GLES equivalents of the shared extension
 ABI. New buffer, texture, immutable mip/layer and renderbuffer storage is
 initialized. Draw validation checks active vertex/index streams before Mesa's
-robust fetch behavior can silently mask an out-of-range WebGL draw. glslang
-validates the original WebGL ESSL restrictions; the driver compiles unchanged
+robust fetch behavior can silently mask an out-of-range WebGL draw. The shared V frontend
+validates WebGL version and bounded-loop restrictions; the driver compiles unchanged
 ESSL, and source queries retain the original text after validation failures.
 
 The portable window uses desktop GLX. Every native WebGL service call temporarily
