@@ -12,6 +12,8 @@ import os
 const disable_javascript_paint_only_sync = os.getenv('VOX_DISABLE_JAVASCRIPT_PAINT_SYNC') != ''
 const javascript_paint_sync_diagnostics = os.getenv('VOX_JAVASCRIPT_PAINT_SYNC_DIAGNOSTICS') != ''
 
+__global javascript_paint_sync_adoptions u64
+
 fn C.native_prepare_css_filter_renderer()
 
 fn (app &BrowserApp) prepare_native_css_filter_renderer() {
@@ -33,10 +35,12 @@ fn (mut app BrowserApp) synchronize_javascript_task_paint(replayed_effects bool)
 	if app.document == unsafe { nil } { return }
 	app.adopt_document_viewport_scroll()
 	stale_paint := app.javascript_tasks_have_unadopted_paint()
-	if replayed_effects || app.document.needs_style_update_after_layout()
+	if app.document.needs_style_update_after_layout()
 		|| !app.document.layout_is_up_to_date()
-		|| (stale_paint && (disable_javascript_paint_only_sync || app.initial_layout_pending
-			|| app.paint_tree_storage == unsafe { nil })) {
+		|| ((replayed_effects || stale_paint) && (disable_javascript_paint_only_sync || app.initial_layout_pending
+			|| app.layout_tree_only || app.applied_page_zoom != app.page_zoom
+			|| app.document.autofocus_candidates().len > 0
+			|| app.paint_display_list == unsafe { nil })) {
 		if app.defer_javascript_layout_to_current_frame() { return }
 		if javascript_paint_sync_diagnostics {
 			eprintln('VOX_JAVASCRIPT_PAINT_SYNC action=relayout')
@@ -44,14 +48,22 @@ fn (mut app BrowserApp) synchronize_javascript_task_paint(replayed_effects bool)
 		app.relayout(app.viewport_width, app.viewport_height + app.chrome_height())
 		return
 	}
-	if !stale_paint { return }
+	// A script may already have flushed its edits through a geometry query.
+	// Replay effects alone do not require the shell to repeat that relayout.
+	// Still run live cosmetic actions and commit anything they invalidate.
+	if !stale_paint && !replayed_effects { return }
 	mut heap_scope := platform.begin_browser_activity_heap_scope_for_scripting(app.document_scripting_enabled_for_heap())
 	defer { heap_scope.finish() }
+	app.sync_window_activity()
 	app.refresh_browser_adblock()
 	if app.js_runtime != unsafe { nil } { app.js_runtime.take_document_replay_effects() }
+	layout.prepare_focused_text_controls_for_paint(app.document)
 	mut document := unsafe { &dom.Document(app.document) }
 	document.update_layout(.html_event_loop_rendering_update)
+	// Preserve the shell's focus ownership when adopting queried geometry.
+	focus_compact_browser_navigable(app.document)
 	app.adopt_current_document_geometry()
+	javascript_paint_sync_adoptions++
 	app.paint_commands_pending = true
 	if app.frame_preparation_depth == 0 { app.record_document_paint_commands() }
 	if javascript_paint_sync_diagnostics {
