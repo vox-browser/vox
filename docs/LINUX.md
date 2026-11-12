@@ -2,7 +2,8 @@
 
 The Linux executable uses the translated V engine, JavaScriptCoreGTK, GLib event
 sources, Fontconfig/HarfBuzz, the V `cpuraster` rasterizer, and GG/Sokol's OpenGL
-window. It does not depend on Skia.
+window. WebGL uses native EGL/GLES3 through Mesa, without ANGLE.
+It does not depend on Skia.
 JavaScriptCore's C API is supplied by the `javascriptcoregtk-4.1` pkg-config
 package on Linux.
 The desktop path is X11, including XWayland. Headless modes need no display.
@@ -143,7 +144,8 @@ Ctrl+L edits the address and Enter navigates. Back/forward, reload, page input,
 and scrolling use the portable shell. JavaScriptCore remains the default engine.
 The explicit `--js-engine=libjs` option keeps its existing documented limits.
 
-The smoke test exercises startup, JavaScript DOM/events, local documents, HTTPS
+The smoke test exercises startup, JavaScript DOM/events, local documents,
+WebGL1/WebGL2 shaders with exact readback and canvas presentation pixels, HTTPS
 with trusted and untrusted certificates, HTTP redirects, and an actual X11
 window under Xvfb. It drives Ctrl+L/Enter navigation, resizes the window and
 checks repainted pixels, creates and switches process tabs, closes a child tab,
@@ -254,8 +256,39 @@ Linux uses the existing portable painter, with retained shaped text and V
 (`cpuraster`) shadows. Advanced effects implemented solely in the Cocoa painter, including
 some SVG paint servers, masks and filters, remain unported. Cocoa input-method
 integration and the macOS video-frame decoder also remain platform-specific.
-WebGL requires an ANGLE EGL/GLES installation; distribution Mesa alone reports
-it unavailable. The native adapter preserves ANGLE's robust-buffer interface.
+WebGL uses surfaceless EGL with robust GLES3 contexts for both WebGL versions.
+The backend targets Mesa hardware drivers and software llvmpipe; this verification
+used llvmpipe. No ANGLE headers, libraries or vendor entry points are required.
+The adapter checks CPU and PBO
+transfer bounds, initializes new buffer/texture/renderbuffer storage, validates
+WebGL shader restrictions with glslang, and checks active vertex/index streams
+before drawing. This is focused runtime coverage, not full WebGL conformance.
+A GLES3 driver with robust context support is required; unsupported drivers
+report context creation failure.
+
+Run the native driver and sanitizer checks with:
+
+```sh
+python3 tools/test_webgl_gles.py --output Build/linux-webgl-gles
+sh tools/run_v_tool.sh run_memory_bounded \
+    --lock Build/linux-webgl.lock --report Build/linux-webgl.json --timeout 900 -- \
+    python3 tools/test_linux_native.py \
+    webgl/native_draw_test.v webgl/native_essl_equivalence_test.v \
+    webgl/native_parameter_query_test.v
+```
+
+The native driver runner uses separate memory guards for compilation and
+execution and tests both optimized and ASan/UBSan builds, including a real GLX
+host window. Each native service call temporarily binds its selected GLES
+context and restores the caller's GLX context and state. The host-only control
+independently reproduces Mesa 25.0.7's GLX visual/config cache leak; the GLX
+sanitizer cases use the narrow `libGLX_mesa.so` suppression in
+`tools/native_gles_glx.lsan-suppressions`. The headless driver cases retain
+unsuppressed leak checking. CI also runs the V
+service cases in both allocation jobs and the browser fixture through Xvfb.
+See [the Linux WebGL implementation and verification](LINUX_WEBGL_GLES.md) for
+the published executable identity, results and remaining limits.
+
 System OpenSSL 3.0 supports ordinary crypto operations; newer algorithms require
 their provider versions (Argon2: 3.2+, ML-KEM/ML-DSA: 3.5+). Unsupported operations
 return errors, including signature contexts an older provider cannot honor.

@@ -10,7 +10,9 @@ The ANGLE loader, macOS dependency and obsolete CGL prototype have been removed.
 All 198 service entry points have Metal implementations, including shaders,
 reflection, typed/structured uniforms, textures/framebuffers, packed vertex
 fetch, depth/stencil, MRT, multisample resolves, queries and GPU transform
-feedback. Linux and Windows retain their GLES service.
+feedback. Linux uses native EGL/GLES3 with bounded transfers, initialized
+storage and glslang shader validation; it requires no ANGLE installation.
+Windows retains its ANGLE GLES service. See [Linux setup and checks](../docs/LINUX.md).
 
 The default Metal configuration passes 314 functions from 178 native/Source
 WebGL test files with both the C backend and FastC in both GC modes. The JavaScriptCore public
