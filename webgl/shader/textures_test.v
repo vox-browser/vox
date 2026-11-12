@@ -1,7 +1,7 @@
 module shader
 
 fn test_sampler_reflection_separates_texture_slots_from_uniform_storage() {
- result := translate('#version 300 es\nuniform sampler2D image,second;uniform samplerCube sky;uniform vec4 tint;void main(){gl_Position=tint;}',.vertex)!
+ result := translate('#version 300 es\nuniform sampler2D image,second;uniform samplerCube sky;uniform vec4 tint;void main(){gl_Position=tint+texture(image,vec2(0.5))+texture(second,vec2(0.5))+texture(sky,vec3(1.0,0.0,0.0));}',.vertex)!
  assert result.textures.map(it.name) == ['image','second','sky']
  assert result.textures.map(it.binding) == [0,1,2]
  assert result.textures.map(it.sampler_binding) == [0,1,2]
@@ -35,7 +35,7 @@ fn test_sampler_binding_limit_rejects_seventeenth_resource() {
 }
 
 fn test_essl300_volume_array_and_integer_sampler_reflection() {
- result:=translate('#version 300 es\nuniform sampler3D volume;uniform sampler2DArray layers;uniform isampler2D signedImage;uniform usampler2D unsignedImage;void main(){gl_Position=vec4(1.0);}',.vertex)!
+ result:=translate('#version 300 es\nuniform sampler3D volume;uniform sampler2DArray layers;uniform isampler2D signedImage;uniform usampler2D unsignedImage;void main(){gl_Position=vec4(float(textureSize(volume,0).x+textureSize(layers,0).x+textureSize(signedImage,0).x+textureSize(unsignedImage,0).x));}',.vertex)!
  assert result.textures.map(it.image_dimension)==[2,1,1,1]
  assert result.textures.map(it.image_arrayed)==[false,true,false,false]
  assert result.textures.map(it.image_scalar_type)==[u32(13),13,7,8]

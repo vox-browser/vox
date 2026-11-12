@@ -1,7 +1,7 @@
 module shader
 
 fn test_uniform_layout_reflection_keeps_std140_padding() {
- result := translate('#version 300 es\nuniform float scalar;uniform vec2 pair;uniform vec3 triple;uniform float packed;uniform mat3 matrix;uniform float weights[3];uniform bvec2 flags;void main(){gl_Position=vec4(scalar);}',.vertex)!
+ result := translate('#version 300 es\nuniform float scalar;uniform vec2 pair;uniform vec3 triple;uniform float packed;uniform mat3 matrix;uniform float weights[3];uniform bvec2 flags;void main(){gl_Position=vec4(scalar+pair.x+triple.x+packed+matrix[0].x+weights[0]+(flags.x?1.0:0.0));}',.vertex)!
  assert result.uniforms.map(it.offset) == [0,8,16,28,32,80,128]
  assert result.uniform_buffer_size == 144
  assert result.uniforms[4].rows == 3 && result.uniforms[4].columns == 3

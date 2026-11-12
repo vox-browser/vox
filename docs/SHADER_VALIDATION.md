@@ -68,7 +68,8 @@ plus scalar fields, 32-bit boolean storage, and padded matrix/array elements
 without depending on Metal structure packing. Shared stage uniforms must have
 matching types and array shapes. Constant
 expression array lengths, active-uniform analysis and uniform write restrictions
-remain pending. Declared uniforms are currently reflected, including unused ones.
+remain pending. Unreferenced plain-uniform roots are omitted from reflection;
+references in helper functions are conservatively retained.
 
 Named structure uniforms now support nested structures, arrays of structures,
 and scalar/vector/matrix array members. V calculates std140 structure padding
@@ -109,7 +110,7 @@ and reconstruct their value in V-generated MSL. Reflection retains the base
 location and row/column counts. Overlaps, overflowing spans and unresolved
 location identifiers are rejected. Constant-variable expressions, attribute
 arrays, interpolation qualifiers and active-attribute analysis remain pending;
-currently all declared attributes reserve space, including unused ones.
+unreferenced vertex attributes are removed before location allocation.
 
 The ESSL300 vertex translation now also generates a standalone `vox_capture`
 Metal entry point and V reflection for tightly packed output records. It captures
@@ -124,7 +125,7 @@ attribute reconstruction with the regular vertex variant. This is code generatio
 only: production integration, varying selection/packing, interface arrays and
 selection/packing beyond these raw capture records remains pending.
 
-Validation for this slice: all twelve shader test files pass with the C backend in
+Validation for this slice: all thirteen shader test files pass with the C backend in
 default GC and `-gc none`. The macOS test compiles the V-generated vertex and fragment
 sources (including macro/conditional and uniform variants) with Metal, links a render
 pipeline, draws a full-target triangle, and
@@ -200,3 +201,10 @@ LOD/gradient overloads. Tests check disabled rejection, projected coordinates,
 depth visibility, discarded pixels and original coordinate/facing behavior in
 both GC modes. Fragment-output indexing currently requires resolved integer
 expressions; general constant-variable resolution remains pending.
+
+The compiler now distinguishes declared uniform/sampler shapes used for linking
+from reflected roots used at runtime. A conservative lexical-use pass removes
+unreferenced vertex attributes, plain uniforms and samplers, so they do not
+demand buffers/textures at draw time. Helper-function references are retained;
+this is not yet scoped call-graph liveness. A runtime draw checks that an unused
+attribute, scalar uniform and sampler require no supplied resources.

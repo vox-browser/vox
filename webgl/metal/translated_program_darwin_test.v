@@ -163,3 +163,21 @@ fn test_translated_fragment_depth_and_discard_affect_existing_render_state() {
   assert clipped_pixels[row*8+4..row*8+8]==[u8(0),255,0,255]
  }
 }
+
+fn test_translated_program_drops_unused_attribute_and_uniform_bindings() {
+ mut target:=DrawingBuffer.create(2,2)!
+ defer {target.close()}
+ vertex:=shader.translate_with_bindings('#version 300 es\nin vec2 position;in vec4 unused;uniform float never_used;void main(){gl_Position=vec4(position,0.0,1.0);}',.vertex,{'position':5})!
+ fragment:=shader.translate('#version 300 es\nprecision highp float;uniform sampler2D unusedImage;out vec4 color;void main(){color=vec4(1.0,0.0,0.0,1.0);}',.fragment)!
+ mut program:=ShaderProgram.from_translation(target,vertex,fragment)!
+ defer {program.close()}
+ resources:=program.resources()!
+ assert resources.len==1 && resources[0].name=='position'
+ mut positions:=GPUBuffer.create(target,24)!
+ defer {positions.close()}
+ values:=[f32(-1),-1,3,-1,-1,3]
+ positions.write(0,unsafe{(&u8(values.data)).vbytes(24)})!
+ target.draw(program,[VertexStream{buffer:positions,location:5,components:2}],.triangles,0,3,1)!
+ pixels:=target.read_pixels()!
+ for i:=0;i<pixels.len;i+=4 {assert pixels[i..i+4]==[u8(255),0,0,255]}
+}

@@ -29,11 +29,11 @@ fn test_invalid_and_overlapping_locations_fail() {
   'layout(location=0,index=0) in vec4 a;',
   'layout(location=0) uniform vec4 a;',
  ] {
-  translate('#version 300 es\n'+source+'void main(){gl_Position=vec4(1.0);}',.vertex) or { continue }
+  translate('#version 300 es\n'+source+'void main(){gl_Position=vec4(a[0])+vec4(b);}',.vertex) or { continue }
   assert false,source
  }
  for bindings in [{'a':15},{'a':2,'b':3},{'a':-1},{'a':16},{'gl_bad':1}] {
-  translate_with_bindings('#version 300 es\nin mat2 a;in vec4 b;void main(){gl_Position=vec4(1.0);}',.vertex,bindings) or { continue }
+  translate_with_bindings('#version 300 es\nin mat2 a;in vec4 b;void main(){gl_Position=vec4(a[0],0.0,1.0)+b;}',.vertex,bindings) or { continue }
   assert false,'Invalid binding accepted'
  }
  translate('layout(location=0) attribute vec4 a;void main(){gl_Position=a;}',.vertex) or { return }
@@ -50,7 +50,7 @@ fn test_fragment_output_locations_are_reserved_before_automatic_outputs() {
 }
 
 fn test_api_binding_cannot_overlap_an_explicit_matrix_span() {
- source := '#version 300 es\nlayout(location=3) in mat3 transform;in vec4 shade;void main(){gl_Position=shade;}'
+ source := '#version 300 es\nlayout(location=3) in mat3 transform;in vec4 shade;void main(){gl_Position=shade+vec4(transform[0],0.0);}'
  translate_with_bindings(source,.vertex,{'shade':4}) or {
   assert err.msg().contains('overlap')
   return

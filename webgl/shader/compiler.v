@@ -28,6 +28,7 @@ pub:
 	uniform_roots       []Uniform
 	uniform_blocks      []UniformBlock
 	textures            []TextureResource
+	texture_roots       []TextureResource
 	uniform_buffer_size int
 	version             int
 	feedback_source     string
@@ -221,6 +222,15 @@ pub fn translate_with_bindings(source string, stage Stage, bindings map[string]i
 	}
 	if depth != 0 || main_count != 1 { return error('Shader must define exactly one void main()') }
 	if !precision { return error('Fragment shader requires a default float precision') }
+    declared_uniforms:=uniforms.clone()
+    declared_textures:=textures.clone()
+    // Conservative lexical use: retain references in helper functions as well
+    // as main. This never drops a referenced root; scoped reachability follows
+    // with the full semantic parser. Declared shapes remain available to link.
+    if stage==.vertex {inputs=inputs.filter(body.contains(it.name))}
+    uniforms=uniforms.filter(it.binding!=0 || body.contains(it.name))
+    textures=textures.filter(body.contains(it.name))
+    if !uniforms.any(it.binding==0) {uniform_size=0}
 	if stage == .vertex { inputs = assign_interface_locations(inputs,bindings,16)! }
 	if stage == .fragment { outputs = assign_interface_locations(outputs,map[string]int{},8)! }
 	mut lines := ['#include <metal_stdlib>', 'using namespace metal;']
@@ -300,16 +310,16 @@ pub fn translate_with_bindings(source string, stage Stage, bindings map[string]i
 		initialization << vertex_input_loads(inputs)!
 		capture = feedback_translation(capture_prefix,args,initialization,outputs)!
 	}
-	return Translation{ feedback_source:capture.source,feedback_fields:capture.fields,feedback_stride:capture.stride,source: lines.join('\n'), inputs: inputs, outputs: outputs, version: version, uniforms: reflected_uniforms, uniform_roots: uniforms, uniform_blocks:uniform_blocks,textures: textures, uniform_buffer_size: (uniform_size+15)/16*16 }
+	return Translation{ feedback_source:capture.source,feedback_fields:capture.fields,feedback_stride:capture.stride,source: lines.join('\n'), inputs: inputs, outputs: outputs, version: version, uniforms: reflected_uniforms, uniform_roots: declared_uniforms, uniform_blocks:uniform_blocks,textures: textures,texture_roots:declared_textures, uniform_buffer_size: (uniform_size+15)/16*16 }
 }
 
 pub fn link(vertex Translation, fragment Translation) ! {
 	if vertex.version != fragment.version {
 		return error('Vertex and fragment ESSL versions differ')
 	}
-	for field in fragment.textures {
+	for field in fragment.texture_roots {
 		if vertex.uniform_roots.any(it.name == field.name) { return error('Uniform/sampler mismatch: ${field.name}') }
-		for other in vertex.textures { if field.name == other.name && field.typ != other.typ { return error('Sampler mismatch: ${field.name}') } }
+		for other in vertex.texture_roots { if field.name == other.name && field.typ != other.typ { return error('Sampler mismatch: ${field.name}') } }
 	}
     for block in fragment.uniform_blocks {
         for other in vertex.uniform_blocks {
@@ -318,7 +328,7 @@ pub fn link(vertex Translation, fragment Translation) ! {
     }
 	for field in fragment.uniform_roots {
         if field.binding != 0 {continue}
-		if vertex.textures.any(it.name == field.name) { return error('Uniform/sampler mismatch: ${field.name}') }
+		if vertex.texture_roots.any(it.name == field.name) { return error('Uniform/sampler mismatch: ${field.name}') }
 		for other in vertex.uniform_roots {
             if other.binding != 0 {continue}
 			if field.name == other.name && (field.typ != other.typ || field.is_array != other.is_array || field.array_length != other.array_length || field.signature != other.signature) { return error('Uniform mismatch: ${field.name}') }
