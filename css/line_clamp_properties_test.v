@@ -33,7 +33,7 @@ fn test_line_clamp_metadata_and_parsing() {
 	]
 	assert generated_shorthands_for_longhand(.max_lines) == [PropertyID.all, .line_clamp,
 		.webkit_line_clamp]
-	assert number_of_longhand_properties == 364
+	assert number_of_longhand_properties == 388
 
 	valid := {
 		'none':                  'none'
