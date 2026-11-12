@@ -767,3 +767,73 @@ commands, raw PNGs, audits, identities and actual exits under
 are unchanged. CNN's earlier source/replay failure, vlang.io, Reddit and the
 all-site gate remain open. No live-site or performance claim follows from
 these frozen viewport checks.
+
+
+## Fractional image clips and outer shadows (2026-11-13)
+
+Three further corrections keep floating-point geometry through Chromium replay:
+
+- `cd5261e7d` preserves replaced-image and video corner radii after border
+  insets. The integer corners in the portable paint result had changed the
+  GitHub avatar's 4.5px horizontal radius to 4px. A separate instrumented
+  capture confirms that the PNG renderer executes; platform fallback is not
+  responsible for this discrepancy. LibWeb's portable paint result is unchanged.
+- `3b1e1fd03` selects tile multisampling when an image clip needs path rendering.
+  The decision queries the renderer's analytic-clip capability, including its
+  circular-radius tolerance. The isolated unshadowed 9×20 ellipse now matches
+  Brave without an unrelated SVG path enabling multisampling.
+- `ffdd1cf49` preserves outer-shadow offsets, blur, spread and radii when the
+  device/layout conversion is one or the document density is one. These cases
+  previously entered integer shadow resolution. LibWeb, inset shadows and the
+  explicitly requested legacy snapping policy retain their existing paths.
+
+| Diagnostic executable SHA-256 | GitHub differing pixels, each of two captures |
+| --- | ---: |
+| `eb715e6d70f23f542807b10192c00769171e34f11eaf9f9afe6b3899d1685531` — fractional image corners | **287**, down from 303 |
+| `e49ec5b12bd44d14704a38cee04910f7295950c96f221c7cab7fe14d6d32aab9` — image-clip multisampling | **287**; this page's relevant tile already used multisampling |
+| `ee72bd3da0790d6dab29f980a26579d11f39b1eb0ecaa1c31a953deaf98f5a7a` — fractional outer shadows | **231**, maximum channel error 16 |
+
+Each cohort retains all 33 GitHub rows and all 30 HN stories. HN, Wikipedia and
+Lobsters remain exact twice in every cohort; vlang.io stays at 3,250 and CNN at
+175,866. Seven existing image/poster controls remain exact twice: rounded,
+colored and fractional-JPEG avatars, first-use mip, image-resource reuse,
+rounded scaled PNG and rounded video poster. Each complete driver exits zero,
+including its startup smoke check, 30 captures, content audits and identity
+checks. These are diagnostic executables, not production validation.
+
+The isolated avatar probe initially differs at 139 pixels across its three
+images. Fractional radii reduce this to 82; correct tile multisampling reduces
+it to 76; fractional shadows reduce it to **15**, all with maximum channel error
+**1**, confined to the shadowed image. Its unrounded and unshadowed elliptical
+images are exact. The control with an additional SVG path agrees with the
+ordinary probe after the multisampling fix. Neither residual result passes the
+zero-error gate.
+
+The scale-2 device-shadow control improves from **12,966 to 92 differing pixels**
+in both corrected captures per executable. Its original reference is
+1600×1200 for an 800×600 CSS-pixel viewport. An initial control run incorrectly
+used a 1600×1200 CSS viewport at scale 1 and differed at 41,790 pixels; that
+attempt is retained and excluded from the before/after claim. Both corrected
+arms use the original reference, scale 2 and the same viewport. The remaining
+92 pixels, maximum error 6, still fail. Eight other shadow controls retain their
+baseline results: box-shadow blur 3,301; opaque shadow 26; inset shadow 16,588;
+padding-background shadows 38,584; fractional underlay 0; fixed fractional-color
+shadow 0; overlapping shadow boxes 1,941; rounded inset shadow 15,550.
+
+All thirteen selected focused test functions execute and pass with arena
+poisoning under the 3 GiB guard: five image/video clip cases, four tile cases
+and four layout/shadow cases. Generated C records their actual harness calls.
+The shadow regression exercises Chromium and LibWeb at densities 1 and 2;
+existing opaque cutout and translucent-border tests also pass. Compilations
+finish under the 12 GiB guards, peaking below 6.4 GiB. The eleven UI2 preparation
+tests pass. Failed adapter compilations and control preflight/scale attempts
+remain with the successful commands, raw PNGs, audits, input hashes and actual
+exits locally under `docs/performance/vlang-gradients-20261112/`.
+
+The latest completed production executable remains `86516f7f…`, predating the
+table and these three corrections. Managed post-commit rebuilds are requested;
+no duplicate production build is queued for this audit. Production validation
+remains pending. References and tolerances are unchanged, Reddit's original
+fixture is still missing, and CNN's source/replay mismatch remains open. No
+live-site, whole-document or performance claim is made. **The all-site gate
+remains open.**
