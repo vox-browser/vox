@@ -1,8 +1,10 @@
 import shlex
+import subprocess
+import tempfile
 import unittest
 from pathlib import Path
 
-from dev_build_env import build_flags, shell_environment
+from dev_build_env import build_flags, compiler_shell_environment, shell_environment
 
 
 class DevelopmentBuildEnvironmentTests(unittest.TestCase):
@@ -29,6 +31,18 @@ class DevelopmentBuildEnvironmentTests(unittest.TestCase):
         self.assertEqual(shlex.split(sh.removeprefix('export '))[0], "VFLAGS=" + values['VFLAGS'])
         self.assertEqual(shell_environment(values, 'powershell'),
                          "$env:VFLAGS = 'a''b $(literal) `literal`'")
+
+    def test_plain_command_uses_the_compiler_selected_for_adapter_preparation(self):
+        with tempfile.TemporaryDirectory(prefix='vox compiler ') as directory:
+            compiler = Path(directory) / 'custom-v'
+            compiler.write_text('#!/bin/sh\nprintf "%s\\n" "$@"\n')
+            compiler.chmod(0o700)
+            setup = compiler_shell_environment({'V_BIN': str(compiler)}, 'sh')
+            result = subprocess.run(['sh', '-c', setup + '\nv . "two words" \'$literal\''],
+                                    check=True, capture_output=True, text=True)
+            self.assertEqual(result.stdout.splitlines(), ['.', 'two words', '$literal'])
+        self.assertIn('function global:v { & $env:V_BIN @args }',
+                      compiler_shell_environment({'V_BIN': 'C:/V/v.exe'}, 'powershell'))
 
 
 if __name__ == '__main__':

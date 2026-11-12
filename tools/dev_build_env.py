@@ -18,6 +18,14 @@ def shell_environment(values, shell):
     return '\n'.join('export ' + key + '=' + shlex.quote(value) for key, value in values.items())
 
 
+def compiler_shell_environment(values, shell):
+    # V_BIN may name a different compiler from `v` on PATH. Keep adapter
+    # preparation and the subsequent plain command on that same executable.
+    command = ('function global:v { & $env:V_BIN @args }' if shell == 'powershell'
+               else 'v() { "$V_BIN" "$@"; }')
+    return shell_environment(values, shell) + '\n' + command
+
+
 def build_flags(root, modules, platform):
     # Use the checked C backend: FastC can compile the browser but still
     # miscompiles live DOM queries. v.mod's development default is opt-in here.
@@ -68,7 +76,7 @@ def main():
     if sys.platform.startswith('linux'):
         # UI2 and the platform adapters intentionally share a module tree.
         modules.insert(0, prepare('prepare_linux_modules.py', compiler))
-    print(shell_environment({'V_BIN': str(compiler),
+    print(compiler_shell_environment({'V_BIN': str(compiler),
                              'VFLAGS': build_flags(ROOT, modules, sys.platform)}, args.shell))
 
 
