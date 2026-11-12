@@ -1,12 +1,14 @@
 # Optimized-site pixel audit, 2026-11-12
 
-**The all-site pixel-equality gate fails.** Hacker News passes; five sites have
-rendering differences, and Reddit remains unverified. This is a correctness
-audit of the latest completed production bundle available when testing began,
-not a new instruction or scrolling benchmark. No rendering implementation,
-reference image, tolerance or historical performance result was changed.
+**The all-site pixel-equality gate remains open.** The initial audit below
+found five differing sites and an unverified Reddit workload. Subsequent fixes
+now make the registered Lobsters page pixel-exact in two fresh production
+captures; see the corrective results below. Wikipedia still differs at 445
+pixels in its current baseline. This is a rendering correctness audit, not a
+new instruction or scrolling benchmark. Existing references, zero-error gates
+and historical performance statistics remain unchanged.
 
-| Catalog site | Current result | Differing RGBA pixels | Workload |
+| Catalog site | Initial result | Differing RGBA pixels | Workload |
 | --- | --- | ---: | --- |
 | Hacker News homepage | Exact in two fresh pairs | **0 / 3,145,728**, every capture | Original six-response instruction archive; 1024×768 CSS pixels, native scale 2, author scripts enabled |
 | Lobsters | Fails; initial native launch also crashed | **17,969 / 786,432**, both subsequent native captures | Registered 33-response frozen guest page, full-uBO filtering; scale 1 |
@@ -243,3 +245,72 @@ accepted pre-JPEG Lobsters measurement is still the 303 differing pixels above.
 Local logs, images, failed attempts, debugger diagnostics, exact commands and
 guard reports are retained in `docs/performance/lobsters-jpeg-20261112/`.
 Debugger runs are diagnostic only, including one timeout.
+
+
+## Rounded-image corrections: Lobsters is pixel-exact
+
+The registered 33-response Lobsters archive now differs from the unchanged
+Brave reference at **0 / 786,432 pixels in both fresh native captures**.
+Both reduced controls, `avatar-colored-clip` and `avatar-jpeg-fractional`, also
+match at zero in both fresh captures. Each browser process exits 0, with complete
+document readiness, matching title/URL, the required body-content audit and a
+1024×768 document viewport at scale 1 for the full page. Executable and runtime
+asset identities remain unchanged throughout the group.
+
+The completed production executable is SHA-256
+`5e955a71137d93413c5ea9e0f552a2ec620f9e642f1b031f704134af831ae56d`,
+managed receipt `20261112-112147-2dee6b0d`. The build began at `0a77dd3bf`;
+its verified parsed/native snapshot records `03bd136ee`. The rounded-image
+native adapter, V raster, tile sample selector and prepared GG image adapter
+hashes match the committed implementation. This remains a single-C-unit,
+literal `-prod` build. The guards and managed publisher were retained.
+
+The additional fixes are:
+
+- `8cbe1e8c2`: local JPEGs use the fetched-image decoder and pixel dimensions.
+  AppKit interpreted the 16×16 control's 96-DPI metadata as 12×12 points,
+  bypassing the intended paint path. Its two production captures improved
+  from 156 to 18 differing boundary pixels.
+- `d3e5cd3de` and `d74d3bab8`: combine rounded coverage with source color in
+  V/GG, retain photographic RGB as floats until the pixel store, and preserve
+  the document-to-canvas translation including chrome and scrolling. The
+  unscaled small-image path declines unsupported formats, transforms, scales,
+  opacity, clipping and mixed-sample tile boundaries to the existing painter.
+- `03bd136ee`: use the texture shader and the document tile's multisample
+  selection. The first raster tile required four samples. Treating each
+  texel as a solid fill changed its clipping behavior; byte and floating-point
+  textures reproduce both its PNG and JPEG crops exactly.
+
+Normal and preallocated/no-GC focused GPU tests match immutable Brave crops,
+including padded rasters and the multisampled tile. Application tests cover
+local JPEG dimensions, the cache collision, floating source transport, the
+native CoreGraphics boundary, a 60-pixel chrome offset and sample selection.
+Separate native test-binary reruns pass under the 3 GiB runtime guard; browser
+module compilation uses the 12 GiB guard. The 11 preparation compatibility tests
+pass, including minimal GG modules without the optional layer API. New source
+and reference controls are committed; generated diagnostics remain local.
+
+Rejected production results remain in the evidence:
+
+| Executable prefix | Full Lobsters differences | Finding |
+| --- | ---: | --- |
+| `b0d98845` | 178, twice | Cache correction works; avatar boundaries remain |
+| `ffa969bd` | 178, twice | Local JPEG control improves to 18 pixels |
+| `e89fe8ea` | 2,954, twice | Rejected: new raster omitted the chrome offset |
+| `3678cf92` | 47, twice | Translation and float color fixed; three avatars in the multisampled tile remain |
+| `5e955a71` | **0, twice** | Texture shading and tile sampling match the retained Brave image |
+
+Earlier failures are not erased by this pass. Rejected builds include changed
+native headers and the generated `vox2.c` input during compilation. A final
+focused recheck initially used the unprepared GG library after a concurrent
+shadow API change; rerunning with production's prepared GG module passes in
+both memory modes. No reference was regenerated from Vox and no tolerance was
+relaxed. The pixel-diff tool, commands, fixture bodies, audits, exact counts,
+failures, source identities and guard reports remain under
+`docs/performance/lobsters-rounded-20261112/`.
+
+This accepts the frozen Lobsters viewport above. It does not reaccept the other
+catalog pages, live/interactive behavior, whole-document scrolling, scale 2 or
+any CPU/FPS result. The all-site task remains open. Wikipedia's current two
+captures still differ at 445 pixels (443 in its Persian article-count line and
+two in the wordmark); that is the next corrective investigation.
