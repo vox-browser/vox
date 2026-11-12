@@ -110,6 +110,20 @@ integer attributes, half vertices, and missing vec4 components defaulting to
 zero/one. The complete standalone suite passes: six native fixtures in ARC,
 MRC and ASan/UBSan modes, and 21 V cases across seven files in both GC modes.
 
+## Completed: typed uniforms and uniform-buffer ranges
+
+Uniform storage now supports signed/unsigned 32-bit values, boolean encoding,
+tightly packed readback, padded arrays and non-square/small matrices. Raw block
+updates use reflected offsets. Draws can override reflected blocks with external
+GPU-buffer ranges, validating the owner, length, alignment and duplicate/unknown
+slots. The low-level boolean setter accepts Vulkan's lowered uint storage;
+original WebGL uniform API type validation belongs to browser dispatch.
+
+Three more V cases pass in both GC modes: matrix/vec3-array roundtrips, signed/
+unsigned/boolean rendering and external UBO/internal block writes. The complete
+standalone run passes 24 V cases in both GC modes plus the six native fixtures
+under ARC, MRC and sanitizers. This is backend coverage, not browser equivalence.
+
 ## Validation
 
 On 2026-11-12, native GPU tests passed with ARC, manual reference counting and

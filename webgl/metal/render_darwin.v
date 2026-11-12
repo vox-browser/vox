@@ -37,6 +37,16 @@ pub:
 	depth_stencil &DepthStencil = unsafe { nil }
 	state RenderState
 	indices ?IndexBinding
+	uniform_blocks []UniformBlockBinding
+}
+
+pub struct UniformBlockBinding {
+pub:
+	stage ShaderStage
+	binding u32
+	buffer &GPUBuffer = unsafe { nil }
+	offset int
+	length int // Zero uses the remainder of the buffer.
 }
 
 struct UniformStorage {
@@ -58,28 +68,77 @@ fn (mut program ShaderProgram) initialize_uniforms() ! {
 // Reflection supplies std140 offsets, including matrix-column and array padding.
 // Updating a name shared by both shader stages writes both stage allocations.
 pub fn (mut program ShaderProgram) uniform_floats(name string, values []f32) ! {
-	resources := program.resources()!
-	fields := resources.filter(it.kind == 100 && it.name == name)
-	if fields.len == 0 { return error('Unknown Metal shader uniform ${name}') }
-	for field in fields {
-		if field.scalar_type != 13 || field.rows < 1 || field.rows > 4 || field.columns < 1 || field.columns > 4
-			|| u64(values.len) != u64(field.rows) * field.columns * field.array_length {
-			return error('Metal uniform type or length mismatch for ${name}')
-		}
-	}
-	for field in fields {
-		for mut storage in program.uniforms {
-			if storage.stage != field.stage || storage.binding != field.binding { continue }
-			for element in u32(0) .. field.array_length {
-				for column in u32(0) .. field.columns {
-					base := int((element * field.columns + column) * field.rows)
-					bytes := unsafe { (&u8(&values[base])).vbytes(int(field.rows) * 4) }
-					offset := int(field.offset) + int(element) * int(field.array_stride) + int(column) * int(field.matrix_stride)
-					storage.buffer.write(offset, bytes)!
-				}
-			}
-		}
-	}
+    program.uniform_bytes(name, [u32(13)], unsafe { (&u8(values.data)).vbytes(values.len * 4) })!
+}
+
+pub fn (mut program ShaderProgram) uniform_ints(name string, values []i32) ! {
+    program.uniform_bytes(name, [u32(7)], unsafe { (&u8(values.data)).vbytes(values.len * 4) })!
+}
+
+pub fn (mut program ShaderProgram) uniform_uints(name string, values []u32) ! {
+    program.uniform_bytes(name, [u32(8)], unsafe { (&u8(values.data)).vbytes(values.len * 4) })!
+}
+
+pub fn (mut program ShaderProgram) uniform_bools(name string, values []bool) ! {
+    // Vulkan buffer layouts lower boolean storage to uint32.
+    mut encoded := []u32{len: values.len}
+    for i, value in values { encoded[i] = if value { u32(1) } else { u32(0) } }
+    program.uniform_bytes(name, [u32(2),8], unsafe { (&u8(encoded.data)).vbytes(encoded.len * 4) })!
+}
+
+fn (mut program ShaderProgram) uniform_bytes(name string, scalar_types []u32, values []u8) ! {
+    resources := program.resources()!
+    fields := resources.filter(it.kind == 100 && it.name == name)
+    if fields.len == 0 { return error('Unknown Metal shader uniform ${name}') }
+    for field in fields {
+        if field.scalar_type !in scalar_types || field.rows < 1 || field.rows > 4 || field.columns < 1 || field.columns > 4
+            || u64(values.len) != u64(field.rows) * field.columns * field.array_length * 4 {
+            return error('Metal uniform type or length mismatch for ${name}')
+        }
+    }
+    for field in fields {
+        for mut storage in program.uniforms {
+            if storage.stage != field.stage || storage.binding != field.binding { continue }
+            for element in u32(0) .. field.array_length {
+                for column in u32(0) .. field.columns {
+                    base := int((element * field.columns + column) * field.rows) * 4
+                    offset := int(field.offset) + int(element) * int(field.array_stride) + int(column) * int(field.matrix_stride)
+                    storage.buffer.write(offset, values[base..base + int(field.rows) * 4])!
+                }
+            }
+        }
+    }
+}
+
+pub fn (program &ShaderProgram) uniform_values(name string) ![]u8 {
+    fields := (program.resources()!).filter(it.kind == 100 && it.name == name)
+    if fields.len == 0 { return error('Unknown Metal shader uniform ${name}') }
+    field := fields[0]
+    if field.rows < 1 || field.rows > 4 || field.columns < 1 || field.columns > 4 || field.scalar_type !in [u32(2),7,8,13] { return error('Unsupported Metal uniform scalar type') }
+    for storage in program.uniforms {
+        if storage.stage != field.stage || storage.binding != field.binding { continue }
+        mut result := []u8{cap: int(field.rows * field.columns * field.array_length) * 4}
+        for element in u32(0) .. field.array_length {
+            for column in u32(0) .. field.columns {
+                offset := int(field.offset) + int(element) * int(field.array_stride) + int(column) * int(field.matrix_stride)
+                result << storage.buffer.read(offset, int(field.rows) * 4)!
+            }
+        }
+        return result
+    }
+    return error('Metal uniform storage unavailable')
+}
+
+// Raw uniform-block writes use the reflected std140 layout and Metal slot.
+pub fn (mut program ShaderProgram) uniform_block_bytes(stage ShaderStage, binding u32, offset int, values []u8) ! {
+    if program.handle == unsafe { nil } { return error('Metal program is closed') }
+    for mut storage in program.uniforms {
+        if storage.stage == stage && storage.binding == binding {
+            storage.buffer.write(offset, values)!
+            return
+        }
+    }
+    return error('Unknown Metal uniform block')
 }
 
 pub fn (mut target DrawingBuffer) draw(program &ShaderProgram, streams []VertexStream, primitive Primitive, first int, count int, instances int) ! {
@@ -156,7 +215,23 @@ pub fn (mut target DrawingBuffer) draw_with_options(program &ShaderProgram, stre
 	if count == 0 || instances == 0 { return }
 	mut bindings := []C.VoxMetalUniformBinding{cap: program.uniforms.len}
 	for uniform in program.uniforms {
-		bindings << C.VoxMetalUniformBinding{buffer: uniform.buffer.handle, stage: if uniform.stage == .vertex { u32(0) } else { u32(1) }, binding: uniform.binding}
+		external := options.uniform_blocks.filter(it.stage == uniform.stage && it.binding == uniform.binding)
+		if external.len > 1 { return error('Duplicate Metal uniform block binding') }
+		mut handle := uniform.buffer.handle
+		mut offset := u64(0)
+		if external.len == 1 {
+			block := external[0]
+			if block.buffer == unsafe { nil } || block.buffer.handle == unsafe { nil } || block.buffer.owner.handle != target.handle
+				|| block.offset < 0 || block.offset % 256 != 0 || block.offset > block.buffer.length || block.length < 0 || block.length > block.buffer.length - block.offset { return error('Invalid Metal uniform block range or owner') }
+			length := if block.length == 0 { block.buffer.length - block.offset } else { block.length }
+			if length < uniform.buffer.length { return error('Metal uniform block range is smaller than reflected layout') }
+			handle = block.buffer.handle
+			offset = u64(block.offset)
+		}
+		bindings << C.VoxMetalUniformBinding{buffer: handle, stage: if uniform.stage == .vertex { u32(0) } else { u32(1) }, binding: uniform.binding, offset: offset}
+	}
+	for block in options.uniform_blocks {
+		if !program.uniforms.any(it.stage == block.stage && it.binding == block.binding) { return error('Unknown Metal uniform block override') }
 	}
 	mut log := []u8{len: 16384}
 	state := native_render_state(target, options)!
