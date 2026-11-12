@@ -83,6 +83,15 @@ fn (mut app BrowserApp) create_local_image_with_profile(image_url string, path s
 	}
 	$if macos {
 		if app.ctx.native_rendering && app.document != unsafe { nil }
+			&& app.document.font_rendering_policy() == .chromium
+			&& prefix.len >= 3 && prefix[0] == 0xff && prefix[1] == 0xd8 && prefix[2] == 0xff {
+			bytes := app.background_image_bytes(image_url) or { return app.ctx.create_image(path) }
+			// AppKit reports point dimensions from JPEG resolution metadata.
+			// Use the fetched-image decoder's pixel size and chroma policy for
+			// local files too, including JPEG bytes under another extension.
+			return app.create_image_from_resource_bytes(image_url, bytes)
+		}
+		if app.ctx.native_rendering && app.document != unsafe { nil }
 			&& app.document.font_rendering_policy() == .chromium && image_bytes_are_webp(prefix) {
 			animated := prefix.len >= 21 && prefix[12..16].bytestr() == 'VP8X'
 				&& prefix[20] & 2 != 0
