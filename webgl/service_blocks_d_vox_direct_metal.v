@@ -23,7 +23,10 @@ fn (mut context MetalServiceContext) bind_indexed_buffer(target u32,index u32,na
     context.buffers[target]=name
     key:=(u64(target)<<32)|index
     context.indexed_buffers[key]=MetalServiceBufferRange{buffer:name,offset:if name!=0 && range { int(offset) } else { 0 },length:if name!=0 && range { int(length) } else { 0 }}
-    if target==transform_feedback_buffer { context.feedback().bindings[int(index)]=context.indexed_buffers[key] }
+    if target==transform_feedback_buffer {
+        mut feedback:=context.feedback()
+        feedback.bindings[int(index)]=context.indexed_buffers[key]
+    }
     context.collect_buffers()
 }
 

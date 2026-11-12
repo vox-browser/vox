@@ -71,7 +71,7 @@ fn native_render_state(target &DrawingBuffer, options DrawOptions) !C.VoxMetalRe
 	if viewport.width != viewport.width || viewport.height != viewport.height || viewport.width < 0 || viewport.height < 0 || viewport.width > 16384 || viewport.height > 16384
 		|| viewport.x != viewport.x || viewport.y != viewport.y || viewport.x < -32768 || viewport.y < -32768 || viewport.x > 32767 || viewport.y > 32767 { return error('Invalid Metal viewport') }
 	rect := state.scissor or { ScissorRect{width: width, height: height} }
-	if rect.width < 0 || rect.height < 0 || rect.width > 0x7fffffff || rect.height > 0x7fffffff || rect.x < -0x80000000 || rect.y < -0x80000000 || rect.x > 0x7fffffff || rect.y > 0x7fffffff { return error('Invalid Metal scissor') }
+	if rect.width < 0 || rect.height < 0 || rect.width > 0x7fffffff || rect.height > 0x7fffffff || rect.x < -2147483648 || rect.y < -2147483648 || rect.x > 0x7fffffff || rect.y > 0x7fffffff { return error('Invalid Metal scissor') }
 	x := if rect.x < 0 { 0 } else if rect.x > width { width } else { rect.x }
 	y := if rect.y < 0 { 0 } else if rect.y > height { height } else { rect.y }
 	right := if rect.x + rect.width < x { x } else if rect.x + rect.width > width { width } else { rect.x + rect.width }
