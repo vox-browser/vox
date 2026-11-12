@@ -1,5 +1,6 @@
 module main
 
+import browserui
 import browsersettings
 import gg
 import platform
@@ -35,37 +36,37 @@ fn browser_settings_input(id string, value string, hint string, x f64, y f64, wi
 		) or { panic(err) }
 		enabled:             browser_settings_ui.draft.enabled
 		accessibility_label: if id == 'settings-host' {
-			'SOCKS5 proxy host'
+			browserui.tr('settings.a11y.host')
 		} else if id == 'settings-port' {
-			'SOCKS5 proxy port'
+			browserui.tr('settings.a11y.port')
 		} else {
-			'Only use SOCKS5 proxy for these sites; empty means all sites'
+			browserui.tr('settings.a11y.sites')
 		}
 	}
 }
 
 fn browser_settings_elements(proxy browsersettings.Proxy) ui2.Element {
 	return ui2.view('settings-root', ui2.rect(0, 0, browser_settings_width, browser_settings_height), ui2.BoxStyle{}, [
-		ui2.label('settings-browsing-heading', 'Browsing', ui2.rect(24, 20, 452, 24), ui2.TextStyle{ size: 18 }),
-		ui2.checkbox('settings-tab-coloring', 'Enable tab coloring', proxy.enable_tab_coloring, ui2.rect(24, 56, 452, 24), ui2.TextStyle{ size: 13 }),
-		ui2.checkbox('settings-custom-tab-titles', 'Enable custom tab titles', proxy.enable_custom_tab_titles, ui2.rect(24, 86, 452, 24), ui2.TextStyle{ size: 13 }),
-		ui2.label('settings-heading', 'Network', ui2.rect(24, 140, 452, 24), ui2.TextStyle{ size: 18 }),
-		ui2.checkbox('settings-enabled', 'Use SOCKS5 proxy', proxy.enabled, ui2.rect(24, 180, 452, 24), ui2.TextStyle{ size: 13 }),
-		ui2.label('settings-host-label', 'Host', ui2.rect(24, 219, 320, 20), ui2.TextStyle{ size: 13 }),
-		ui2.label('settings-port-label', 'Port', ui2.rect(368, 219, 108, 20), ui2.TextStyle{ size: 13 }),
+		ui2.label('settings-browsing-heading', browserui.tr('settings.browsing'), ui2.rect(24, 20, 452, 24), ui2.TextStyle{ size: 18 }),
+		ui2.checkbox('settings-tab-coloring', browserui.tr('settings.tab-coloring'), proxy.enable_tab_coloring, ui2.rect(24, 56, 452, 24), ui2.TextStyle{ size: 13 }),
+		ui2.checkbox('settings-custom-tab-titles', browserui.tr('settings.custom-titles'), proxy.enable_custom_tab_titles, ui2.rect(24, 86, 452, 24), ui2.TextStyle{ size: 13 }),
+		ui2.label('settings-heading', browserui.tr('settings.network'), ui2.rect(24, 140, 452, 24), ui2.TextStyle{ size: 18 }),
+		ui2.checkbox('settings-enabled', browserui.tr('settings.proxy'), proxy.enabled, ui2.rect(24, 180, 452, 24), ui2.TextStyle{ size: 13 }),
+		ui2.label('settings-host-label', browserui.tr('settings.host'), ui2.rect(24, 219, 320, 20), ui2.TextStyle{ size: 13 }),
+		ui2.label('settings-port-label', browserui.tr('settings.port'), ui2.rect(368, 219, 108, 20), ui2.TextStyle{ size: 13 }),
 		browser_settings_input('settings-host', proxy.host, '127.0.0.1', 24, 242, 324),
 		browser_settings_input('settings-port', proxy.port, '1080', 368, 242, 108),
-		ui2.label('settings-sites-label', 'Only for these sites', ui2.rect(24, 286, 452, 20), ui2.TextStyle{ size: 13 }),
+		ui2.label('settings-sites-label', browserui.tr('settings.sites'), ui2.rect(24, 286, 452, 20), ui2.TextStyle{ size: 13 }),
 		browser_settings_input('settings-sites', proxy.sites, 'example.com, another.org', 24, 310, 452),
-		ui2.label('settings-sites-help', 'Includes subdomains. Separate with commas; leave empty for all.', ui2.rect(24, 344, 452, 20), ui2.TextStyle{ size: 12 }),
-		ui2.label('settings-help', 'Other sites connect directly. Proxied DNS uses SOCKS5.', ui2.rect(24, 365, 452, 20), ui2.TextStyle{ size: 12 }),
-		ui2.label('settings-request-help', 'Changes apply to new requests.', ui2.rect(24, 386, 452, 20), ui2.TextStyle{ size: 12 }),
-		ui2.label('settings-advanced-heading', 'Advanced', ui2.rect(24, 426, 452, 24), ui2.TextStyle{ size: 18 }),
-		ui2.checkbox('settings-gpu-canvas', 'GPU-accelerated scrolling', !proxy.disable_gpu_canvas, ui2.rect(24, 462, 452, 24), ui2.TextStyle{ size: 13 }),
-		ui2.label('settings-gpu-canvas-help', 'Turn off if scrolled pages show drawing errors.', ui2.rect(24, 492, 452, 20), ui2.TextStyle{ size: 12 }),
+		ui2.label('settings-sites-help', browserui.tr('settings.sites-help'), ui2.rect(24, 344, 452, 20), ui2.TextStyle{ size: 12 }),
+		ui2.label('settings-help', browserui.tr('settings.other-direct'), ui2.rect(24, 365, 452, 20), ui2.TextStyle{ size: 12 }),
+		ui2.label('settings-request-help', browserui.tr('settings.apply-note'), ui2.rect(24, 386, 452, 20), ui2.TextStyle{ size: 12 }),
+		ui2.label('settings-advanced-heading', browserui.tr('settings.advanced'), ui2.rect(24, 426, 452, 24), ui2.TextStyle{ size: 18 }),
+		ui2.checkbox('settings-gpu-canvas', browserui.tr('settings.gpu'), !proxy.disable_gpu_canvas, ui2.rect(24, 462, 452, 24), ui2.TextStyle{ size: 13 }),
+		ui2.label('settings-gpu-canvas-help', browserui.tr('settings.gpu-help'), ui2.rect(24, 492, 452, 20), ui2.TextStyle{ size: 12 }),
 		ui2.label('settings-error', browser_settings_ui.error, ui2.rect(24, 520, 452, 24), ui2.TextStyle{ size: 12, color: 0xb42318 }),
-		ui2.with_native_style(ui2.button('settings-cancel', 'Cancel', ui2.rect(294, 560, 86, 28), ui2.BoxStyle{}, ui2.TextStyle{ size: 13 })),
-		ui2.with_native_style(ui2.button('settings-apply', 'Apply', ui2.rect(390, 560, 86, 28), ui2.BoxStyle{}, ui2.TextStyle{ size: 13 })),
+		ui2.with_native_style(ui2.button('settings-cancel', browserui.tr('settings.cancel'), ui2.rect(294, 560, 86, 28), ui2.BoxStyle{}, ui2.TextStyle{ size: 13 })),
+		ui2.with_native_style(ui2.button('settings-apply', browserui.tr('settings.apply'), ui2.rect(390, 560, 86, 28), ui2.BoxStyle{}, ui2.TextStyle{ size: 13 })),
 	])
 }
 
@@ -79,7 +80,7 @@ fn browser_settings_visible() bool {
 fn show_browser_settings() {
 	if browser_settings_visible() {
 		$if vox_ui2 ? {
-			ui2.show_embedded_panel('settings', 'Vox Settings', browser_settings_width, browser_settings_height, browser_settings_elements(browser_settings_ui.draft))
+			ui2.show_embedded_panel('settings', browserui.tr('settings.title'), browser_settings_width, browser_settings_height, browser_settings_elements(browser_settings_ui.draft))
 		}
 		return
 	}
@@ -106,7 +107,7 @@ fn show_browser_settings() {
 
 fn refresh_browser_settings() {
 	$if vox_ui2 ? {
-		ui2.show_embedded_panel('settings', 'Vox Settings', browser_settings_width, browser_settings_height, browser_settings_elements(browser_settings_ui.draft))
+		ui2.show_embedded_panel('settings', browserui.tr('settings.title'), browser_settings_width, browser_settings_height, browser_settings_elements(browser_settings_ui.draft))
 	}
 	if address_bar_owner.app != unsafe { nil } {
 		mut app := address_bar_owner.app.active_browser_tab()
@@ -154,7 +155,7 @@ fn browser_settings_event(event string) {
 	if event == 'settings-apply' {
 		previous := browsersettings.current()
 		browsersettings.save(state.draft) or {
-			state.error = err.msg()
+			state.error = browsersettings.localize_error(err.msg())
 			refresh_browser_settings()
 			return
 		}

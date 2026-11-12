@@ -573,6 +573,6 @@ pub fn (dropdown AddressDropdown) elements(x f64, y f64, width f64, max_height f
 			border_bottom: 1
 		}, rows)
 		accessibility_role:  'menu'
-		accessibility_label: 'Address suggestions'
+		accessibility_label: tr('address.suggestions')
 	}]
 }
