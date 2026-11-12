@@ -1,8 +1,12 @@
 module webgl
 
+import webgl.metal as mtl_validation
+
 fn essl_validation(source string, fragment bool, version int) bool {
-	mut log := []u8{len: 4096}
-	return C.vox_essl_validate(source.str, source.len, int(fragment), version, unsafe { nil }, &char(log.data), u64(log.len)) != 0
+ mut target:=mtl_validation.DrawingBuffer.create(1,1) or {return false}
+ defer {target.close()}
+ mtl_validation.validate_shader(target,source,fragment,if version==300 {3} else {2}) or {return false}
+ return true
 }
 
 fn test_essl_validation_rejects_desktop_only_syntax_and_missing_precision() {

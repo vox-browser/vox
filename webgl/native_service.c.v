@@ -2,16 +2,22 @@
 // SPDX-License-Identifier: BSD-2-Clause
 module webgl
 
+import webgl.shader
+
+// Retain the shared V validator exported to the native GLES boundary.
+fn validate_native_essl_source(source string, fragment bool, version int) ! {
+    shader.validate_source(source, if fragment {shader.Stage.fragment} else {shader.Stage.vertex}, version)!
+}
+
 $if macos {
     #include "@DIR/native_metal_boundary.h"
 } $else $if windows {
     #flag @DIR/../Build/deps/windows/native/webgl.a
     #pkgconfig vox-mesa-egl
-    #flag windows -lglslang-default-resource-limits -lstdc++
     #include "@DIR/native_egl.h"
 } $else {
-    #pkgconfig egl glesv2 gl glslang
-    #flag linux -lglslang-default-resource-limits -lstdc++ -lm -ldl
+    #pkgconfig egl glesv2 gl
+    #flag linux -lm -ldl
     #include "@DIR/native_egl.h"
 }
 #flag darwin -Wl,-rpath,/opt/homebrew/lib

@@ -57,4 +57,5 @@ int main(void)
         vox_metal_program_destroy(program);vox_metal_depth_stencil_destroy(depth);vox_metal_depth_stencil_destroy(NULL);vox_metal_buffer_destroy(target);
         puts("PASS initialized depth/stencil attachments, GL front-facing/culling and separate stencil state on Metal");
     }
+    return 0;
 }

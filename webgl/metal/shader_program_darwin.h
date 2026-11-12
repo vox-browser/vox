@@ -71,14 +71,12 @@ static void* vox_metal_program_build(void* target, VoxMetalTranslatedProgram* tr
     return program;
 }
 
+extern void* vox_v_program_create_bound(void*,char*,int32_t,char*,int32_t,int32_t,VoxMetalAttributeBinding*,uint64_t,char*,uint64_t);
 static void* vox_metal_program_create_bound(void* target, char const* vertex, int vertex_length,
     char const* fragment, int fragment_length, int version,
     VoxMetalAttributeBinding const* bindings, uint64_t binding_count, char* log, uint64_t capacity)
 {
-    if (!target) { if (capacity) snprintf(log,capacity,"Metal drawing buffer is closed"); return NULL; }
-    VoxMetalTranslatedProgram* translated = vox_metal_translate_program_bound(vertex,vertex_length,fragment,fragment_length,version,bindings,binding_count,log,capacity);
-    if (!translated) return NULL;
-    return vox_metal_program_build(target,translated,log,capacity);
+    return vox_v_program_create_bound(target,(char*)vertex,vertex_length,(char*)fragment,fragment_length,version,(VoxMetalAttributeBinding*)bindings,binding_count,log,capacity);
 }
 
 static void* vox_metal_program_create(void* target, char const* vertex, int vertex_length,
@@ -97,7 +95,7 @@ static int vox_metal_program_feedback(void* handle,char* log,uint64_t capacity)
     if(!program->translated->feedback_msl) { if(capacity) snprintf(log,capacity,"Transform feedback is unavailable for this translation");return 0; }
     for(size_t i=0;i<program->translated->resource_count;++i) {
         VoxMetalShaderResource* field=program->translated->resources+i;
-        if(field->stage==0 && field->kind==SPVC_RESOURCE_TYPE_UNIFORM_BUFFER && field->binding>=13) {
+        if(field->stage==0 && field->kind==1 && field->binding>=13) {
             if(capacity) snprintf(log,capacity,"Transform feedback requires two reserved vertex buffer slots");return 0;
         }
     }
@@ -113,7 +111,7 @@ static int vox_metal_program_feedback(void* handle,char* log,uint64_t capacity)
             [NSString stringWithUTF8String:program->translated->feedback_msl] options:options error:&error];
         vox_metal_drop_owned(options);
         if(!library) { if(capacity) snprintf(log,capacity,"%s",error.localizedDescription.UTF8String ?: "Metal feedback compilation failed");return 0; }
-        id<MTLFunction> function=[library newFunctionWithName:[NSString stringWithUTF8String:program->translated->direct_feedback_stride ? "vox_capture" : program->translated->entry[0]]];
+        id<MTLFunction> function=[library newFunctionWithName:[NSString stringWithUTF8String:"vox_capture"]];
         if(function) program->feedback=CFRetain((__bridge CFTypeRef)function);
         vox_metal_drop_owned(function);vox_metal_drop_owned(library);
         return program->feedback!=NULL;

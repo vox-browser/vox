@@ -53,7 +53,21 @@ jobs:
         with:
           msystem: MINGW64
           update: true
-          install: mingw-w64-x86_64-gcc mingw-w64-x86_64-glslang
+          install: mingw-w64-x86_64-gcc mingw-w64-x86_64-pkgconf make git
+      - name: Build V for the shared shader validator
+        shell: msys2 {0}
+        run: |
+          set -euo pipefail
+          vox_v_toolchain="$(cygpath -u "$RUNNER_TEMP")/v"
+          git clone --depth 1 https://github.com/vlang/v.git "$vox_v_toolchain"
+          mkdir -p Build/windows-webgl
+          gcc -municode -O2 -o Build/windows-webgl/guard.exe tools/windows_runtime_guard.c
+          Build/windows-webgl/guard.exe 1200000 12288 \
+            Build/windows-webgl/v-build.out Build/windows-webgl/v-build.err \
+            "$(cygpath -w "$(command -v make)")" -C "$(cygpath -w "$vox_v_toolchain")" \
+            -j2 "VFLAGS=-memory-limit 10G" | tee Build/windows-webgl/v-build.json
+          cat Build/windows-webgl/v-build.out Build/windows-webgl/v-build.err
+          echo "V_BIN=$(cygpath -m "$vox_v_toolchain/v.exe")" >> "$GITHUB_ENV"
       - name: Prepare verified native Mesa EGL/GLES
         shell: pwsh
         run: ./tools/prepare_windows_mesa.ps1
@@ -67,12 +81,22 @@ jobs:
           gcc -municode -std=c11 -Wall -Wextra -Werror \
             tools/test_windows_browser.c -o Build/windows-webgl/browser-test.exe \
             -luser32 -lgdi32
-          gcc -std=gnu11 -O2 -Wall -Wextra -Wno-unused-function \
-            -Wno-misleading-indentation -Werror \
-            -IBuild/deps/windows/mesa/devel-mingw/include tools/native_gles_test.c \
-            -o Build/windows-webgl/native-gles.exe \
-            -LBuild/deps/windows/mesa/devel-mingw/lib/x64 \
-            -lEGL -lGLESv2 -lglslang -lglslang-default-resource-limits -lstdc++
+          mkdir -p Build/deps/windows/mesa/lib/pkgconfig
+          cat > Build/deps/windows/mesa/lib/pkgconfig/vox-mesa-egl.pc <<'PC'
+          prefix=${pcfiledir}/../..
+          Name: vox-mesa-egl
+          Description: Verified Mesa EGL/GLES
+          Version: 1
+          Cflags: -I${prefix}/devel-mingw/include
+          Libs: -L${prefix}/devel-mingw/lib/x64 -lEGL -lGLESv2
+          PC
+          export PKG_CONFIG_PATH="$PWD/Build/deps/windows/mesa/lib/pkgconfig:${PKG_CONFIG_PATH:-}"
+          Build/windows-webgl/guard.exe 300000 12288 \
+            Build/windows-webgl/compile.out Build/windows-webgl/compile.err \
+            "$V_BIN" -new-compiler -b c -memory-limit 10G \
+            -o Build/windows-webgl/native-gles.exe tools/native_gles_driver.v \
+            | tee Build/windows-webgl/compile.json
+          cat Build/windows-webgl/compile.out Build/windows-webgl/compile.err
           # Keep the current toolchain's C++ runtime ahead of Mesa's runtime.
           export PATH="$MINGW_PREFIX/bin:$PWD/Build/deps/windows/mesa/release-mingw/x64:$PATH"
           export GALLIUM_DRIVER=llvmpipe

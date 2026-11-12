@@ -34,4 +34,21 @@ static int vox_metal_translation_feedback(void* handle,VoxMetalFeedbackField con
     program->feedback_fields[program->feedback_count++]=copy;
     return 1;
 }
+static int vox_metal_validate_msl(void* target,char const* source,char* log,uint64_t capacity) {
+    vox_metal_shader_log(log,capacity,"");
+    VoxMetalDrawingBuffer* context=target;
+    if(!context || !source) return 0;
+    @autoreleasepool {
+        NSError* error=nil;
+        MTLCompileOptions* options=[[MTLCompileOptions alloc] init];options.languageVersion=MTLLanguageVersion2_0;
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
+        options.fastMathEnabled=NO;
+#pragma clang diagnostic pop
+        id<MTLLibrary> library=[(__bridge id<MTLDevice>)context->device newLibraryWithSource:[NSString stringWithUTF8String:source] options:options error:&error];
+        vox_metal_drop_owned(options);
+        if(!library) {vox_metal_shader_log(log,capacity,error.localizedDescription.UTF8String);return 0;}
+        vox_metal_drop_owned(library);return 1;
+    }
+}
 #endif

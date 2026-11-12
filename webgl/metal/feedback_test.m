@@ -29,4 +29,5 @@ int main(void) {
         vox_metal_gpu_buffer_destroy(output);vox_metal_program_destroy(program);vox_metal_buffer_destroy(target);
         puts("PASS actual Metal vertex output capture and reflected layout");
     }
+    return 0;
 }

@@ -164,4 +164,5 @@ int main(void) {
     fclose(maps);assert(mesa);
 #endif
     puts("Native Mesa GLES context, shader, initialization and bounded transfer checks passed");
+    return 0;
 }

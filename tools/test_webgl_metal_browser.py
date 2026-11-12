@@ -54,9 +54,7 @@ def main():
     result_path = output / 'result.json'
     try:
         with canonical_bundle_lease(binary.parents[2]):
-            prefix = Path(subprocess.check_output(['brew', '--prefix', 'glslang'], text=True).strip())
-            libraries = [prefix / 'lib/libglslang.dylib', prefix / 'lib/libglslang-default-resource-limits.dylib']
-            inputs = native_dependencies(binary, libraries) | {
+            inputs = native_dependencies(binary, []) | {
                 fixture, Path(__file__).resolve(), ROOT / 'tools/run_memory_bounded.py',
                 ROOT / 'tools/check_pixel_equality.py', ROOT / 'tools/browser_bundle_lease.py',
                 ROOT / 'tools/measure_sealed_github_instructions.py',

@@ -15,9 +15,10 @@ int main(void) {
         char const* fragment="precision mediump float;void main(){gl_FragColor=vec4(1);}";
         void* program=vox_metal_program_create(target,vertex,strlen(vertex),fragment,strlen(fragment),2,log,sizeof(log));
         if(!program) fprintf(stderr,"%s\n",log);assert(program);
-        assert(loaded("libglslang") && loaded("libglslang-default-resource-limits"));
+        assert(!loaded("glslang") && !loaded("spirv-cross"));
         assert(!loaded("libEGL") && !loaded("libGLES") && !loaded("libANGLE"));
         vox_metal_program_destroy(program);vox_metal_buffer_destroy(target);
-        puts("PASS shader compiler loads only at first shader compilation; no ANGLE dependency");
+        puts("PASS V compiler has no glslang, SPIRV-Cross or ANGLE runtime dependency");
     }
+    return 0;
 }

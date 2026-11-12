@@ -61,4 +61,5 @@ int main(int argc,char **argv) {
     glXMakeCurrent(display,None,NULL);glXDestroyContext(display,host);
     XDestroyWindow(display,window);XFreeColormap(display,map);XFree(visual);XCloseDisplay(display);
     puts("GLX window context and state preserved across WebGL1/WebGL2 calls");
+    return 0;
 }

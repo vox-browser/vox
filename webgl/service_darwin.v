@@ -7,7 +7,6 @@ import webgl.metal
 #include "@DIR/native_metal_boundary.h"
 fn C.vox_metal_service_get() voidptr
 fn C.vox_metal_service_set(voidptr)
-fn C.vox_metal_service_validate_stage(&char,i32,i32,i32,&char,u64) i32
 
 @[heap]
 struct MetalServiceContext {
@@ -1438,11 +1437,12 @@ fn metal_service_vox_gl_compile_shader(a0 u32) {
     mut context:=metal_service_current()
     if context==unsafe { nil } { return }
     mut shader:=context.object(a0,9) or { return }
-    mut log:=[]u8{len:16384}
-    defer { unsafe { log.free() } }
-    shader.compiled=C.vox_metal_service_validate_stage(shader.source.str,i32(shader.source.len),i32(shader.shader_type==fragment_shader),i32(context.version),&char(log.data),u64(log.len))==1
-    unsafe { shader.log.free() }
-    shader.log=unsafe { cstring_to_vstring(&char(log.data)).clone() }
+    mut compiled:=true
+    mut failure:=''
+    metal.validate_shader(context.target,shader.source,shader.shader_type==fragment_shader,context.version) or {compiled=false;failure=err.msg().clone()}
+    shader.compiled=compiled
+    unsafe {shader.log.free()}
+    shader.log=failure
     if shader.compiled { unsafe { shader.compiled_source.free() }; shader.compiled_source=shader.source.clone() }
 }
 

@@ -5,7 +5,6 @@ import hashlib
 import json
 import os
 from pathlib import Path
-import shlex
 import select
 import subprocess
 import sys
@@ -47,6 +46,7 @@ def main():
         return host_runtime(sys.argv[2:])
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--output', required=True, type=Path)
+    parser.add_argument('--v-bin', type=Path, default=Path(os.environ.get('V_BIN', 'v')))
     args = parser.parse_args()
     if sys.platform != 'linux':
         parser.error('Run on Linux with a GLES3 driver (Mesa software rendering is supported)')
@@ -54,10 +54,9 @@ def main():
     output.mkdir(parents=True, exist_ok=False)
     inputs = [Path(__file__).resolve(), ROOT / 'tools/native_gles_test.c', ROOT / 'tools/native_gles_host_linux_test.c',
               ROOT / 'tools/run_memory_bounded.py', ROOT / 'tools/native_gles_glx.lsan-suppressions', ROOT / 'platform/native_state.h',
-              ROOT / 'webgl/native_egl.h', ROOT / 'webgl/native_gl_shader_validation.h',
-              ROOT / 'webgl/essl_desktop_translation.h', *sorted((ROOT / 'webgl').glob('gles_*.h'))]
+              ROOT / 'tools/native_gles_driver.v', ROOT / 'webgl/native_egl.h',
+              *sorted((ROOT / 'webgl/shader').glob('*.v')), *sorted((ROOT / 'webgl').glob('gles_*.h'))]
     pins = {str(p): digest(p) for p in inputs}
-    flags = shlex.split(subprocess.check_output(['pkg-config', '--cflags', '--libs', 'egl', 'glesv2', 'gl', 'x11', 'glslang'], text=True))
     report = dict(pins=pins, jobs=[], passed=False)
     environment = dict(os.environ, LIBGL_ALWAYS_SOFTWARE='1')
     # Keep leak checking enabled. The GLX fixtures alone suppress Mesa's
@@ -66,10 +65,11 @@ def main():
         for fixture in ('headless', 'host-only', 'host'):
             label = mode + '-' + fixture
             binary = output / label
-            source = 'native_gles_host_linux_test.c' if fixture != 'headless' else 'native_gles_test.c'
-            command = [os.environ.get('CC', 'clang'), '-std=c11', '-Werror', '-Wno-unused-function',
-                       *options, str(ROOT / 'tools' / source), '-o', str(binary),
-                       *flags, '-lglslang-default-resource-limits', '-lstdc++', '-lm', '-ldl']
+            command = [str(args.v_bin), '-new-compiler', '-b', 'c', '-cc', os.environ.get('CC', 'clang'),
+                       '-memory-limit', '10G', '-cflags', ' '.join(options),
+                       *(['-ldflags', '-fsanitize=address,undefined'] if mode == 'sanitized' else []),
+                       *(['-d', 'vox_gles_host'] if fixture != 'headless' else []),
+                       '-o', str(binary), str(ROOT / 'tools/native_gles_driver.v')]
             runtime = [str(binary)]
             runtime_environment = dict(environment)
             if fixture != 'headless':

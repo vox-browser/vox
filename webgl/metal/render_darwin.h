@@ -98,35 +98,10 @@ static int vox_metal_draw_configured(void* target_handle, void* program_handle,
         if (depth && depth->has_depth) descriptor.depthAttachmentPixelFormat=[(__bridge id<MTLTexture>)depth->texture pixelFormat];
         if (depth && depth->has_stencil) descriptor.stencilAttachmentPixelFormat=[(__bridge id<MTLTexture>)depth->stencil pixelFormat];
         NSError* error = nil;
-        MTLRenderPipelineReflection* reflection=nil;
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wdeprecated-declarations"
-        id<MTLRenderPipelineState> pipeline = state->feedback
-            ? [device newRenderPipelineStateWithDescriptor:descriptor options:MTLPipelineOptionArgumentInfo|MTLPipelineOptionBufferTypeInfo reflection:&reflection error:&error]
-            : [device newRenderPipelineStateWithDescriptor:descriptor error:&error];
-#pragma clang diagnostic pop
+        id<MTLRenderPipelineState> pipeline = [device newRenderPipelineStateWithDescriptor:descriptor error:&error];
         vox_metal_drop_owned(descriptor);
         if (!pipeline) { if (capacity) snprintf(log, capacity, "%s", error.localizedDescription.UTF8String ?: "Metal pipeline compilation failed"); return 0; }
         if(state->feedback) {
-            if (!program->translated->direct_feedback_stride) {
-            MTLStructType* structure=nil;
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wdeprecated-declarations"
-            for(MTLArgument* argument in reflection.vertexArguments) if(argument.index==13 && argument.type==MTLArgumentTypeBuffer) {
-                program->feedback_stride=argument.bufferDataSize;
-                structure=argument.bufferStructType;
-                if(!structure) structure=argument.bufferPointerType.elementStructType;
-            }
-#pragma clang diagnostic pop
-            if(!structure || !program->feedback_stride) { if(capacity) snprintf(log,capacity,"Metal feedback layout reflection unavailable");vox_metal_drop_owned(pipeline);return 0; }
-            for(size_t i=0;i<program->translated->feedback_count;++i) {
-                VoxMetalFeedbackField* field=program->translated->feedback_fields+i;
-                MTLStructMember* member=[structure memberByName:[NSString stringWithUTF8String:field->metal_name]];
-                field->offset=member?(uint32_t)member.offset:UINT32_MAX;
-                field->array_stride=member && member.dataType==MTLDataTypeArray?(uint32_t)member.arrayType.stride:0;
-                field->matrix_stride=field->columns>1?(field->rows==2?8:16):0;
-            }
-            }
             VoxMetalGPUBuffer* output=state->feedback_buffer;
             if(!output) { vox_metal_drop_owned(pipeline);return 1; }
             if(output->device!=target->device || (uint64_t)count*instances>output->size/program->feedback_stride) { vox_metal_drop_owned(pipeline);return 0; }
@@ -149,7 +124,7 @@ static int vox_metal_draw_configured(void* target_handle, void* program_handle,
         [encoder setViewport:(MTLViewport){state->x, state->y, state->width, state->height, state->near_depth, state->far_depth}];
         [encoder setScissorRect:(MTLScissorRect){state->scissor_x, state->scissor_y, state->scissor_width, state->scissor_height}];
         [encoder setCullMode:(MTLCullMode)state->cull];
-        /* SPIRV-Cross flips clip Y to preserve raw GL readback rows; reverse
+        /* The V shader compiler flips clip Y to preserve raw GL readback rows; reverse
          * Metal winding with it so culling, gl_FrontFacing and stencil agree. */
         [encoder setFrontFacingWinding:state->front_ccw ? MTLWindingClockwise : MTLWindingCounterClockwise];
         [encoder setBlendColorRed:state->blend_red green:state->blend_green blue:state->blend_blue alpha:state->blend_alpha];
