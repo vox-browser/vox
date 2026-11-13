@@ -105,7 +105,7 @@ fn texture_methods(stage Stage, version int, used_types []string, legacy_lod boo
  if version == 300 {
   methods << 'float4 _vox_texelFetch(_vox_sampler2D s, int2 p, int l) { return s.image.read(uint2(p),uint(l)); }'
  }
- if version==300 {methods << extended_texture_methods(stage,used_types);methods << shadow_texture_methods(stage,used_types)}
+ if version==300 {methods << extended_texture_methods(stage,used_types);methods << shadow_texture_methods(stage,used_types);methods << offset_texture_methods(stage,used_types)}
  if version==100 && legacy_lod {methods << legacy_lod_methods()}
  return methods
 }
@@ -114,7 +114,7 @@ fn texture_call(name string, version int) bool {
  return if version == 100 {
   name in ['texture2D','textureCube','texture2DProj','texture2DLod','textureCubeLod','texture2DProjLod','texture2DLodEXT','textureCubeLodEXT','texture2DProjLodEXT','texture2DGradEXT','textureCubeGradEXT','texture2DProjGradEXT']
  } else {
-  name in ['texture','textureLod','textureProj','textureProjLod','textureGrad','textureSize','texelFetch']
+  name in ['texture','textureLod','textureProj','textureProjLod','textureGrad','textureSize','texelFetch','textureProjGrad','textureOffset','textureLodOffset','textureGradOffset','texelFetchOffset','textureProjOffset','textureProjLodOffset','textureProjGradOffset']
  }
 }
 
@@ -220,9 +220,60 @@ fn shadow_texture_methods(stage Stage, used []string) []string {
    result << 'float _vox_textureProj(${wrapper} s,float4 p){return _vox_texture(s,p.xyz/p.w);}'
 
   }
+  if stage==.fragment && !arrayed {result << 'float _vox_texture(${wrapper} s,${coordinate} p,float b){return s.image.sample_compare(s.sampling,${arguments},bias(b));}'}
+  derivative:=if cube {'float3'} else {'float2'}
+  gradient:=if cube {'gradientcube'} else {'gradient2d'}
+  result << 'float _vox_textureGrad(${wrapper} s,${coordinate} p,${derivative} dx,${derivative} dy){return s.image.sample_compare(s.sampling,${arguments},${gradient}(dx,dy));}'
+  if !cube && !arrayed {
+   result << 'float _vox_textureLod(${wrapper} s,float3 p,float l){return s.image.sample_compare(s.sampling,p.xy,p.z,level(l));}'
+   result << 'float _vox_textureProjLod(${wrapper} s,float4 p,float l){return _vox_textureLod(s,p.xyz/p.w,l);}'
+   result << 'float _vox_textureProjGrad(${wrapper} s,float4 p,float2 dx,float2 dy){return _vox_textureGrad(s,p.xyz/p.w,dx,dy);}'
+   if stage==.fragment {result << 'float _vox_textureProj(${wrapper} s,float4 p,float b){return _vox_texture(s,p.xyz/p.w,b);}'}
+  }
   size_type:=if arrayed {'int3'} else {'int2'}
   size_tail:=if arrayed {',s.image.get_array_size()'} else {''}
   result << '${size_type} _vox_textureSize(${wrapper} s,int l){return ${size_type}(s.image.get_width(uint(l)),s.image.get_height(uint(l))${size_tail});}'
+ }
+ return result
+}
+
+fn offset_texture_methods(stage Stage,used []string) []string {
+ mut result:=[]string{}
+ for typ in sampler_types() {
+  if typ !in used || typ.contains('Cube') {continue}
+  wrapper:=sampler_type(typ) or {continue}
+  shadow:=typ.ends_with('Shadow');volume:=typ.contains('3D');arrayed:=typ.contains('Array')
+  spatial:=if volume {'3'} else {'2'}
+  coordinate:=if shadow {if arrayed {'float4'} else {'float3'}} else if volume || arrayed {'float3'} else {'float2'}
+  pixel:=if volume || arrayed {'int3'} else {'int2'}
+  value:=if shadow {'float'} else if typ.starts_with('i') {'int4'} else if typ.starts_with('u') {'uint4'} else {'float4'}
+  sample_args:=if shadow {if arrayed {'p.xy,_vox_array_layer(p.z,s.image.get_array_size()),p.w'} else {'p.xy,p.z'}} else if arrayed {'p.xy,_vox_array_layer(p.z,s.image.get_array_size())'} else {'p'}
+  call:=if shadow {'sample_compare'} else {'sample'}
+  implicit:=if stage==.vertex {',level(0.0)'} else {''}
+  result << '${value} _vox_textureOffset(${wrapper} s,${coordinate} p,int${spatial} o){return s.image.${call}(s.sampling,${sample_args}${implicit},o);}'
+  if stage==.fragment && (!shadow || !arrayed) {result << '${value} _vox_textureOffset(${wrapper} s,${coordinate} p,int${spatial} o,float b){return s.image.${call}(s.sampling,${sample_args},bias(b),o);}'}
+  if !shadow || !arrayed {result << '${value} _vox_textureLodOffset(${wrapper} s,${coordinate} p,float l,int${spatial} o){return s.image.${call}(s.sampling,${sample_args},level(l),o);}'}
+  result << '${value} _vox_textureGradOffset(${wrapper} s,${coordinate} p,float${spatial} dx,float${spatial} dy,int${spatial} o){return s.image.${call}(s.sampling,${sample_args},gradient${spatial}d(dx,dy),o);}'
+  if !shadow {
+   fetch:=if arrayed {'uint2(p.xy+o),uint(p.z)'} else {'uint${spatial}(p+o)'}
+   result << '${value} _vox_texelFetchOffset(${wrapper} s,${pixel} p,int l,int${spatial} o){return s.image.read(${fetch},uint(l));}'
+  }
+  if !arrayed {
+   projected_types:=if volume || shadow {['float4']} else {['float3','float4']}
+   for projected in projected_types {
+    divisor:=if projected=='float3' {'z'} else {'w'}
+    projection:=if volume {'p.xyz/p.w'} else if shadow {'p.xyz/p.w'} else {'p.xy/p.'+divisor}
+    if typ!='sampler2D' && !shadow {
+     result << '${value} _vox_textureProj(${wrapper} s,${projected} p){return _vox_texture(s,${projection});}'
+     result << '${value} _vox_textureProjLod(${wrapper} s,${projected} p,float l){return _vox_textureLod(s,${projection},l);}'
+     if stage==.fragment {result << '${value} _vox_textureProj(${wrapper} s,${projected} p,float b){return _vox_texture(s,${projection},b);}'}
+    }
+    if !shadow {result << '${value} _vox_textureProjGrad(${wrapper} s,${projected} p,float${spatial} dx,float${spatial} dy){return _vox_textureGrad(s,${projection},dx,dy);}'}
+    result << '${value} _vox_textureProjOffset(${wrapper} s,${projected} p,int${spatial} o){return _vox_textureOffset(s,${projection},o);}'
+    result << '${value} _vox_textureProjLodOffset(${wrapper} s,${projected} p,float l,int${spatial} o){return _vox_textureLodOffset(s,${projection},l,o);}'
+    result << '${value} _vox_textureProjGradOffset(${wrapper} s,${projected} p,float${spatial} dx,float${spatial} dy,int${spatial} o){return _vox_textureGradOffset(s,${projection},dx,dy,o);}'
+   }
+  }
  }
  return result
 }

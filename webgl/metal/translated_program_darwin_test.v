@@ -258,3 +258,35 @@ fn test_invariant_position_pragma_survives_metal_compilation_and_rendering() {
  target.draw(program,[],.triangles,0,3,1)!
  assert (target.read_pixels()!)==[u8(255),0,0,255]
 }
+
+fn test_shadow_explicit_lod_bias_and_gradients_use_requested_depth_mip() {
+ mut target:=DrawingBuffer.create(1,1)!
+ defer {target.close()}
+ mut image:=Texture2D.create_storage(target,TextureStorageOptions{width:2,height:2,levels:2,format:.depth32})!
+ defer {image.close()}
+ base:=[f32(0.25),0.25,0.25,0.25];mip:=[f32(0.75)]
+ image.write_region(0,0,TextureRegion{width:2,height:2},unsafe{(&u8(base.data)).vbytes(16)})!
+ image.write_region(1,0,TextureRegion{width:1,height:1},unsafe{(&u8(mip.data)).vbytes(4)})!
+ mut sampler:=Sampler.create(target,SamplerOptions{compare:true,mip_filter:.nearest,compare_func:.less_equal})!
+ defer {sampler.close()}
+ mut program:=ShaderProgram.compile(target,
+ '#version 300 es\nvoid main(){gl_Position=vec4(gl_VertexID==1?3.0:-1.0,gl_VertexID==2?3.0:-1.0,0,1);}',
+ '#version 300 es\nprecision highp float;precision highp sampler2DShadow;uniform sampler2DShadow image;out vec4 color;void main(){float a=textureLod(image,vec3(0.5),1.0);float b=textureGrad(image,vec3(0.5),vec2(0.0),vec2(0.0));color=vec4(a,b,0,1);}',3)!
+ defer {program.close()}
+ target.draw_with_options(program,[],.triangles,0,3,1,DrawOptions{textures:[TextureBinding{name:'image',texture:image,sampler:sampler}]})!
+ assert (target.read_pixels()!)==[u8(255),0,0,255]
+}
+
+fn test_projected_gradient_and_fetch_offsets_use_actual_neighbor_texels() {
+ mut target:=DrawingBuffer.create(1,1)!
+ defer {target.close()}
+ mut image:=Texture2D.create(target,2,2)!
+ defer {image.close()}
+ image.write_pixels([u8(255),0,0,255, 0,255,0,255, 0,0,255,255, 255,255,255,255])!
+ for expression in ['textureOffset(image,vec2(0.25),ivec2(1,0))','textureProjGradOffset(image,vec3(0.25,0.25,1.0),vec2(0.0),vec2(0.0),ivec2(1,0))'] {
+  direct_storage_sample(mut target,image,'#version 300 es\nprecision highp float;uniform sampler2D image;out vec4 color;void main(){color='+expression+';}')!
+  assert (target.read_pixels()!)==[u8(0),255,0,255]
+ }
+ direct_storage_sample(mut target,image,'#version 300 es\nprecision highp float;uniform sampler2D image;out vec4 color;void main(){color=texelFetchOffset(image,ivec2(0),0,ivec2(0,1));}')!
+ assert (target.read_pixels()!)==[u8(0),0,255,255]
+}
