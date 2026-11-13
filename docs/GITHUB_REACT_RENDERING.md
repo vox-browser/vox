@@ -152,3 +152,85 @@ Its manifest is `docs/performance/github-react-rendering-20261113.json` (ignored
 The archive contains measurement evidence; browser bundles, generated compiler
 outputs and the Python environment are excluded. The shared production build
 is left running and no duplicate manual build was requested.
+
+## Production selector regression and cache correction
+
+Completed production executable
+`5fb3eb909ae426b7cfcb1b0e8a67ab494177d13b0a0f693d5ae5d1e737561576`
+contains both selector transports. A full-render diagnostic exposed a
+production-only regression in the absent-query probe: React commit messages,
+dates and the latest commit never appear, and native element-owner errors
+follow. Disabling only the absent-query path restores the complete content;
+the direct `matches()` path remains functional. The incomplete captures'
+20–21 billion observed instructions earn no performance credit.
+
+`3afd19a2d` fixes the ownership error. The probe called `node_for_key()`, which
+also registers a key in the retained identity map. Its argument belongs to
+the host's temporary string buffer, which is freed after the query under
+`-prealloc`. The probe now reads registered owners without modifying that
+map; unregistered owners retain the original transport. A new retained-key
+test and the existing DOM integration test both fail before the fix under
+`-prealloc`, then all three cases pass after it. Default GC, rollback and
+protected freed-buffer checks also pass. Compilation retains the 12 GiB
+guard and `-memory-limit 10G`; separate executions use the 3 GiB guard.
+
+A fresh windowed test executable, compiled with the published build's frozen
+compiler and patched preallocation runtime, passes the original full-text
+audit for all 33 archived rows, latest commit, README and commit links. Both
+native fast-path diagnostics execute, with no reported errors. A separate
+fresh live navigation displays all 34 current rows with commit links and date
+text, latest commit and README, also without native or script errors.
+These are functional checks of a C-O0 test executable; their counters and
+timings cannot establish production speed.
+
+All nine focused SVG cases are pixel-exact: same-size image-source replacement,
+gradient stop insertion, animation, offset and `moveBefore()`, gradient href
+and transform changes, and both paint-server ID collisions. The capture
+driver's attempt to compile its diff program selected FastC and failed; the
+retained PNG pairs were then verified with the existing pinned
+`Build/pixel-tools/pixel_diff` executable at zero tolerance and independently
+with decoded-pixel comparison. No capture, reference or tolerance was changed.
+
+Two full-browser `v -profile` builds fail on embedded-asset method/type
+resolution. A minimal `$embed_file(...).to_string()` probe reproduces the
+compiler failure with profiling enabled. No V profile was collected. A
+separate native sample identifies the timed-out capture's repeated readiness
+selector polling; it is diagnostic evidence, not optimization credit. An
+earlier test executable built with the unmatched compiler crashes while
+reallocating PNG data; that failed launch is retained too.
+
+Two alternating native control pairs with the broken absent-query path
+disabled retain complete React text. Observed work is 38.120/38.335 billion
+instructions with both transports disabled, versus 36.639/35.229 billion
+with native `matches()` enabled. One enabled capture has the known 1px table
+shift; the host is contended. This is not a seven-pair acceptance cohort, and
+neither a qualified instruction saving nor Brave parity is claimed.
+
+`7aaff5e95` removes a production build blocker without weakening verification.
+The font-runtime manifest includes the compiler and vlib paths, but its cache
+key previously omitted both. Two compilers with identical font sources
+therefore collided and rejected an intact cache as modified. The key now
+includes those identities. An integration case reproduces the original
+collision, then verifies separate reusable entries and continued rejection
+of changed staged files. All five build-tool test files pass. The managed
+production rebuild has restarted; a new production cohort remains required.
+
+The cache correction lets `20261113-084549-677a637f` compile, seal and link
+the production browser successfully (build guard exit 0, peak 8.69 GB).
+Its mandatory headless startup then exits 139 in
+`platform.enter_retained_allocations`, called by the HTML parser while
+installing the smoke document. The smoke guard also records 139. Publication
+is rejected and the prior bundle remains installed. Consequently the queued
+seven-pair comparison cannot validate this source revision. The retained
+startup failure must be resolved before production speed can be measured.
+
+This continuation's raw captures, counters, compiler/profiler failures,
+before/after regression checks, cache tests, startup stack and guard exits are
+local in
+`~/Library/Caches/Vox/benchmarks/github-react-rendering-20261113-r3/evidence.tar.gz`.
+The ignored structured record is
+`docs/performance/github-react-rendering-20261113-r3.json`.
+No production instruction saving or broad-check optimization checkpoint is
+credited. The installed `5fb3…` bundle still requires
+`VOX_RETAIN_COMPACT_FIRST_QUERY=1` for complete GitHub hydration until a
+corrected production bundle passes startup and is published.
