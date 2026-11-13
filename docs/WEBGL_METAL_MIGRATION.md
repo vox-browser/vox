@@ -49,8 +49,29 @@ and remaining conformance limits.
 
 ## Verification
 
-After switching the default shader path to V (2026-11-13), current V's C backend
-passes 314 functions from all 178 shared WebGL test files in default GC and
+The language-limit follow-up passes **316 WebGL functions from 179 files,
+71 compiler functions from 16 files, and 52 Metal functions from 13 files**
+with current V's C backend in default GC and `-gc none`. This includes scoped
+loop/output protection, overload liveness, constant bounds, struct member types,
+parameter copies, vector/matrix equality, numeric builtins, named/row-major
+block arrays, sampler arrays, shadow mip/gradient sampling, projected offsets
+and invariant positions. All 27 native ARC/MRC/ASan+UBSan fixture runs also pass;
+their pinned inputs stayed unchanged. Compilation, runtime and memory-guard
+exits were zero. The combined V run peaked at 1,036,238,848 sampled RSS bytes
+under its 3 GiB guard.
+
+The Windows native fixture cross-compiles for `-os windows -arch amd64 -gc none`
+without shader-compiler DLL imports. Linux and Windows driver runtime checks
+remain platform validation work. The latest completed production browser's
+headless engine/DOM/input smoke passes with executable SHA-256
+`5fb3eb909ae426b7cfcb1b0e8a67ab494177d13b0a0f693d5ae5d1e737561576`.
+That bundle predates these language changes; their browser-level smoke awaits
+the managed rebuild requested by the feature commits. The GPU/service tests
+above execute the current source directly. See
+[shader validation coverage](SHADER_VALIDATION.md) for the conformance boundary.
+
+The initial dependency-removal check (2026-11-13) with current V's C backend
+passed 314 functions from all 178 shared WebGL test files in default GC and
 `-gc none`. The focused compiler module passes 51 functions from 14 files and
 the Metal module passes 45 functions from 13 files in both modes. All 27 native
 fixture/mode combinations pass under ARC, MRC and ASan/UBSan, including the

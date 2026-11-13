@@ -8,12 +8,13 @@ submits GPU work. There is no glslang, SPIR-V or SPIRV-Cross translation path,
 dynamic compiler loader, or compiler-library dependency.
 
 `compileShader` translates and compiles the individual stage with Metal;
-`linkProgram` links the original interfaces and builds the two Metal functions.
+`linkProgram` links the original interfaces and builds the two Metal functions. Full-source validation also checks unreachable helpers before
+resource pruning.
 Errors reach the existing status and info-log APIs. Source queries retain the
 original ESSL bytes. The C conformance fixtures call the same V compiler through
 an exported ABI, rather than a separate native translator.
 
-Linux and Windows use the shared V preprocessor and WebGL version/loop checks,
+Linux and Windows use the shared V preprocessor, scope and expression checks,
 then submit unchanged ESSL to their native GLES driver for syntax and type
 checking. Metal remains the macOS graphics backend. None of these paths requires
 the former glslang package.
@@ -21,17 +22,28 @@ the former glslang package.
 ## Covered behavior
 
 - Bounded preprocessing with object/function macros, hide-set rescanning,
-  conditional directives, integer expressions and known extension gates.
+  conditional and ternary expressions, line/file macros, line directives,
+  pragmas and known extension gates.
 - ESSL 100/300 entry points, attributes and explicit locations, matrix varyings,
   flat integer interpolation, fragment builtins, depth, discard and MRT.
-- Scalar/vector/matrix uniforms, literal arrays, nested named structures and
-  anonymous std140 blocks, with V-generated offsets and 32-bit boolean storage.
-- 2D/cube/3D/array textures, integer 2D textures, legacy and modern sample,
-  projection, LOD, gradient, fetch and size wrappers.
+- Scalar/vector/matrix uniforms, constant-expression array bounds, nested
+  structures and named/anonymous uniform blocks, including block arrays and
+  row/column-major std140 matrices. V owns offsets and 32-bit boolean storage.
+- 2D/cube/3D/array and integer texture types, sampler arrays, comparison
+  samplers, projection, LOD, gradient, offset, fetch and size wrappers. Native
+  Metal 2.4 compilation supports explicit shadow mip levels and derivatives.
 - GPU transform feedback with tight scalar-word records, matrix columns,
   original clip position and guarded output capacity.
-- Local literal-size arrays and ESSL300 array constructors.
-- Conservative pruning of unused attribute, plain-uniform and sampler roots.
+- Local constant-size arrays, array constructors/lengths, function value
+  parameters and deferred output copies, and ES300 while/do/switch control flow.
+- Scalar/vector expression checking, read-only variables, boolean conditions,
+  overload resolution, recursive-call rejection and scoped Appendix A loop and
+  index checks. Parenthesized output/write operands retain their protections.
+- Reachable-function and overload analysis for attributes, plain uniforms and
+  samplers, with a separate full-source Metal validation pass.
+- GLSL vector/matrix equality and logical-XOR precedence, numeric/bit/packing
+  builtins, matrix component multiplication, outer products, determinants and
+  inverses. Invariant position declarations and pragmas reach Metal attributes.
 
 The original shared corpus keeps all 40 acceptance/error cases and eight exact
 8×8 texture fixtures. Additional tests exercise exact GPU pixels, uniform/block
@@ -39,15 +51,20 @@ writes, capture canaries, texture layers, MRT, depth and disabled extensions.
 Native ARC, manual-retain and ASan/UBSan fixtures check the exported ABI and
 verify that compiler libraries and ANGLE remain unloaded after shader submission.
 
-## Limits
+## Validation coverage
 
-This is a supported ESSL subset, not complete WebGL shader conformance. Metal
-checks emitted expression syntax and types; its type rules do not establish
-complete ESSL semantic equivalence. Appendix A indexing/loop mutation validation,
-scoped call-graph liveness, sampler arrays and comparison samplers, named block
-instances, general constant-expression array lengths, some builtins/control
-flow and complete preprocessing remain pending. Unsupported constructs report
-errors; they do not fall back to the removed compiler libraries.
+The former missing language categories above now have focused V checks and GPU
+fixtures. V validates source types and bindings before lowering constructs whose
+ESSL semantics differ from Metal, including equality, parameter copies and
+constant expressions. Metal validates the complete generated program, including
+helpers removed from the executable path. Original source queries keep ESSL.
+
+This does not establish exhaustive WebGL/ESSL conformance. Type inference keeps
+unresolved cases conservative, and unsupported constructs still report errors.
+The source, nesting, expansion and device-resource budgets remain intentional.
+No removed compiler library is used as a fallback. The language references are
+[Khronos ESSL 1.00](https://registry.khronos.org/OpenGL/specs/es/2.0/GLSL_ES_Specification_1.00.pdf)
+and [ESSL 3.00](https://registry.khronos.org/OpenGL/specs/es/3.0/GLSL_ES_Specification_3.00.pdf).
 
 ## Running checks
 
