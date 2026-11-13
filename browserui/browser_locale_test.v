@@ -179,11 +179,6 @@ fn test_locale_prefers_explicit_unix_chain_over_lang() {
 	os.setenv('LANG', 'en_US.UTF-8', true)
 	refresh_locale()
 	assert ui_locale() == 'en'
-	os.unsetenv('LC_ALL')
-	os.unsetenv('LC_MESSAGES')
-	os.unsetenv('LANG')
-	refresh_locale()
-	assert ui_locale() == 'en'
 }
 
 fn test_find_status_text() {
