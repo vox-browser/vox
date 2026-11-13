@@ -40,3 +40,15 @@ fn test_macro_expanded_shader_uses_only_the_selected_essl_branch() {
  fragment := translate('#version 300 es\n#if GL_ES\n#define FP mediump\nprecision FP float;\n#endif\nout vec4 color;\n#define SET(c) color=c\nvoid main(){SET(vec4(1.0));}',.fragment)!
  link(vertex,fragment)!
 }
+
+fn test_line_file_macros_and_ternary_conditions_preserve_locations() {
+ result:=preprocess('#version 300 es\n#define HERE __LINE__\nHERE\n#line 40 7\nHERE __FILE__\n#if __LINE__ == 41 && (0 ? (1/0) : 2) == 2\nyes\n#endif\n#pragma optimize(off)\n#pragma debug(on)\n#pragma vendor_extension\n')!
+ assert result.tokens==['3','40','7','yes']
+ assert preprocess('#define HERE __LINE__\nHERE\nHERE')!.tokens==['2','3']
+ assert preprocess('#define ID(x) x\nID(\n__LINE__\n)')!.tokens==['3']
+ assert preprocess('#define A \\\n2\n__LINE__')!.tokens==['3']
+ for source in ['#line -1','#line 2 0 8','#pragma debug(maybe)','#version 300 es\n#if UNKNOWN\n#endif'] {
+  preprocess(source) or {continue}
+  assert false,source
+ }
+}
