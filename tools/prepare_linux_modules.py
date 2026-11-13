@@ -141,6 +141,32 @@ def stage_module(source, target, package):
                 path.unlink()
 
 
+def restore_vox_canvas(modules):
+    """Re-apply vox's gg canvas work after pristine Linux staging.
+
+    prepare_ui2 stages the document-image helpers into the same modules
+    tree, but stage_module starts from pristine vlib and removes them.
+    """
+    from prepare_gg_shadow import prepare as prepare_shadow
+    from prepare_gg_image import prepare as prepare_image
+    canvas = Path(modules) / 'gg' / 'canvas'
+    gradient = canvas / 'gpu_gradient.v'
+    if gradient.is_file():
+        original = "(snippets['bodies_tile'] + snippets['body_colorize_${stops}']).replace('_skTemp',"
+        text = gradient.read_text()
+        if original in text:
+            write_if_changed(gradient, text.replace(
+                'bodies_tile := ' + original,
+                "tile_source := snippets['bodies_tile'] + snippets['body_colorize_${stops}']\n"
+                "\tbodies_tile := tile_source.replace('_skTemp',"))
+    if not (canvas / 'gpu_layer.v').is_file():
+        return
+    prepare_shadow(canvas)
+    prepare_image(canvas)
+    document_image = Path(__file__).parent / 'ui2/gg_document_image.v'
+    write_if_changed(canvas / 'vox_document_image.v', document_image.read_text())
+
+
 def main():
     repo = Path(__file__).resolve().parent.parent
     work = repo / "Build/linux/native"
@@ -177,6 +203,7 @@ def main():
             write_if_changed(target, text)
     for package in ["gg", "net/openssl", "sokol/sapp"]:
         stage_module(vlib / package, modules / package, package)
+    restore_vox_canvas(modules)
     print(modules)
 
 
