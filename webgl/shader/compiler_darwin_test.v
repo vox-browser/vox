@@ -217,3 +217,9 @@ fn test_constant_arrays_and_es300_control_flow_render_exact_pixels() {
  fragment:=translate('#version 300 es\nprecision highp float;in vec4 value;out vec4 color;void main(){color=value;}',.fragment)!
  assert C.vox_direct_metal_probe(vertex.source.str,fragment.source.str)==1
 }
+
+fn test_function_input_output_parameters_copy_values_and_support_forward_declarations() {
+ vertex:=translate('#version 300 es\nout vec4 value;float shade(in float x,inout float y,out float z);void main(void){gl_Position=vec4(gl_VertexID==1?3.0:-1.0,gl_VertexID==2?3.0:-1.0,0,1);float y=2.0,z=0.0;float x=shade(1.0,y,z);value=vec4(x==1.0&&y==3.0&&z==4.0?1.0:0.0,0,0,1);}float shade(in float x,inout float y,out float z){y+=x;z=y+1.0;return x;}',.vertex)!
+ fragment:=translate('#version 300 es\nprecision highp float;in vec4 value;out vec4 color;void main(){color=value;}',.fragment)!
+ assert C.vox_direct_metal_probe(vertex.source.str,fragment.source.str)==1
+}

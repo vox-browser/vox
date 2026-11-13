@@ -51,6 +51,10 @@ pub fn translate_with_bindings(source string, stage Stage, bindings map[string]i
 	tokens := normalize_constant_expressions(processed.tokens)!
 	validate_essl_language(tokens,processed.version)!
 	mut body := []string{}
+    functions:=shader_functions(tokens)!
+    mut function_starts:=map[int]ShaderFunction{}
+    mut function_setups:=map[int]string{}
+    for function in functions {function_starts[function.start]=function}
 	mut inputs := []Interface{}
 	mut outputs := []Interface{}
 	mut uniforms := []Uniform{}
@@ -67,6 +71,20 @@ pub fn translate_with_bindings(source string, stage Stage, bindings map[string]i
 	version := processed.version
 	fragment_info:=if stage==.fragment {fragment_builtins(tokens,version,processed.extensions)!} else {FragmentBuiltins{}}
 	for at < tokens.len {
+        if function:=function_starts[at] {
+            if function.body<0 {at=function.end;continue}
+            if function.name=='main' {
+                if function.typ!='void' || function.parameters.len!=0 {return error('Expected void main()')}
+                main_count++
+            }
+            signature:=function_signature(function,structures)!
+            parts:=signature.split_into_lines()
+            body << parts[0]
+            if parts.len>1 {function_setups[function.body]=parts[1..].join(' ')}
+            at=function.header_end+1
+            continue
+        }
+        if at in function_setups {body << '{';body << function_setups[at];depth++;at++;continue}
 		mut explicit_location := -1
         if tokens[at] == 'layout' && at+2 < tokens.len && tokens[at+2] == 'std140' {
             if depth != 0 || version != 300 {return error('Uniform blocks require global ESSL300 declarations')}
@@ -269,6 +287,7 @@ pub fn translate_with_bindings(source string, stage Stage, bindings map[string]i
 	if stage == .fragment { outputs = assign_interface_locations(outputs,map[string]int{},8)! }
 	mut lines := ['#include <metal_stdlib>', 'using namespace metal;']
 	lines << texture_types()
+    lines << copy_out_source()
 	lines << structure_source(structure_order)!
 	lines << 'struct VoxState {'
 	if stage == .vertex {
