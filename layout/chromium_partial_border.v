@@ -106,7 +106,7 @@ fn append_chromium_partial_border(mut commands []PaintCommand, box &BlockBox,
 	// one rectangle; joined sides that overlap retain their path fallback.
 	for index, width in widths {
 		if width <= 0 { continue }
-		if count > 1 && width >= math.min(rect.width, rect.height) { return false }
+		if count > 1 && width >= math.min(math.round(rect.width), math.round(rect.height)) { return false }
 		extent := if index in [0, 2] { math.round(rect.height) } else { math.round(rect.width) }
 		if width > extent { return false }
 	}

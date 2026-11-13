@@ -143,5 +143,7 @@ fn test_chromium_partial_border_keeps_single_sides_that_fill_a_fractional_box() 
 	// Overlapping joined sides still require the joined-path painter.
 	box := BlockBox{...base, border: BoxEdges{0, 1, 1, 0}}
 	mut commands := []PaintCommand{}
-	assert !append_chromium_partial_border(mut commands, &box, box.border_colors, BoxRadii{}, LayoutRect{0, 0, 1, 11.1875}, 1)
+	for rect in [LayoutRect{0, 0, 1, 11.1875}, LayoutRect{0, 0, 11.1875, 1.1875}] {
+		assert !append_chromium_partial_border(mut commands, &box, box.border_colors, BoxRadii{}, rect, 1)
+	}
 }
