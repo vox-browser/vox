@@ -28,29 +28,6 @@ fn (mut queue MutationObserverDeliveryQueue) add_pending(observer &MutationObser
 	queue.pending << observer
 }
 
-// sort_pending_mutation_observers orders observers by creation index.
-// Written as an explicit insertion sort: FastC (`v -b fastc`) mangles the
-// comparator name for closure sorts over pointer element types, emitting
-// `v_fastc_sort_dom__MutationObserver*...` which is not a valid C
-// identifier, so `observers.sort(a.creation_index_ < b.creation_index_)`
-// cannot compile under the production backend (see the
-// `src.unit0.c: expected ';' after top level declarator` build failure).
-// Pending sets are tiny and creation indices are unique, so this is exact.
-fn sort_pending_mutation_observers(mut observers []&MutationObserver) {
-	if observers.len < 2 {
-		return
-	}
-	for i in 1 .. observers.len {
-		mut j := i
-		for j > 0 && observers[j].creation_index_ < observers[j - 1].creation_index_ {
-			tmp := observers[j]
-			observers[j] = observers[j - 1]
-			observers[j - 1] = tmp
-			j--
-		}
-	}
-}
-
 fn (mut queue MutationObserverDeliveryQueue) ensure_microtask() {
 	if queue.retired || queue.microtask_queued { return }
 	queue.microtask_queued = true
@@ -61,7 +38,7 @@ pub fn (mut queue MutationObserverDeliveryQueue) notify() {
 	if queue.retired { return }
 	queue.microtask_queued = false
 	mut pending := queue.pending.clone()
-	sort_pending_mutation_observers(mut pending)
+	pending.sort_with_compare(compare_mutation_observer_creation)
 	queue.pending.clear()
 	for observer in pending { notify_one_mutation_observer(observer) }
 }
@@ -72,4 +49,10 @@ pub fn (mut queue MutationObserverDeliveryQueue) retire() {
 	queue.microtask_queued = false
 	queue.pending.clear()
 	platform.release_closure(voidptr(queue.enqueue))
+}
+
+fn compare_mutation_observer_creation(a &&MutationObserver,b &&MutationObserver) int {
+    if a.creation_index_ < b.creation_index_ { return -1 }
+    if a.creation_index_ > b.creation_index_ { return 1 }
+    return 0
 }

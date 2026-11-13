@@ -5,7 +5,6 @@ module browserjs
 import html
 import webgl
 
-fn C.glIsTransformFeedback(u32) u8
 
 fn public_transform_feedback_source_owner() {
 	mut selected := [i32(0), 0, 0, 0]!
@@ -33,7 +32,7 @@ fn test_public_transform_feedback_preserves_source_unassigned_slot_and_body_orde
 	mut native_binding := i32(0)
 	C.vox_gl_int_parameter(webgl.transform_feedback_binding, &native_binding)
 	assert native_binding != 0
-	assert C.glIsTransformFeedback(u32(native_binding)) == 1
+	assert C.vox_gl_is_object(8,u32(native_binding)) == 1
 	assert context.get_error() == webgl.no_error
 	for pair in [
 		['bindTransformFeedback(0xbad,ownedTF)', '1280'],

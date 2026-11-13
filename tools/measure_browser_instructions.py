@@ -46,9 +46,11 @@ def chrome_launch_command(args, binary, profile):
     if (getattr(args, "chrome_disable_javascript", False)
             and getattr(args, "chrome_launch_mode", "blank") == "direct"):
         raise ValueError("Disabling Chrome author JavaScript requires blank launch so the policy precedes navigation")
-    command = [str(binary), "--headless=new", "--no-first-run", "--no-default-browser-check",
+    command = [str(binary), "--no-first-run", "--no-default-browser-check",
                "--disable-background-networking", "--remote-debugging-port=0",
                f"--user-data-dir={profile}"]
+    if not getattr(args, 'chrome_windowed', False):
+        command.insert(1, '--headless=new')
     command.extend(getattr(args, "chrome_extra_arg", []))
     if getattr(args, "chrome_launch_mode", "blank") == "direct":
         command += [f"--window-size={args.width},{args.chrome_outer_window_height}", args.url]
@@ -365,7 +367,8 @@ def fresh_vox_cache(template, scratch_dir=None):
 
 def vox_launch_command(args, binary, window_screenshot):
     command = [str(binary), *getattr(args, "vox_arg", []),
-            "--window-width", str(args.width), "--window-height", str(args.height + VOX_CHROME_HEIGHT),
+            "--window-width", str(args.width), "--window-height",
+            str(args.height + getattr(args, 'vox_chrome_height', VOX_CHROME_HEIGHT)),
             "--screenshot", str(window_screenshot), args.url]
     if getattr(args, "counter_backend", None) in ("linux-perf", "callgrind", "cachegrind"):
         # Pin layout geometry as well as the X11 drawable's outer dimensions.
@@ -537,7 +540,11 @@ def run_vox(args, prefix, api, cache_dir=None):
     if code != 0 or not window_screenshot.exists():
         raise RuntimeError(f"Vox capture failed (exit {code}); see {log_path}")
     # Cropping runs in the observer after the browser's final counter sample.
-    crop_document_viewport(window_screenshot, screenshot, args.width, args.height)
+    if getattr(args, 'native_document_only', False):
+        validate_screenshot(window_screenshot, None, args.width, args.height)
+        shutil.copyfile(window_screenshot, screenshot)
+    else:
+        crop_document_viewport(window_screenshot, screenshot, args.width, args.height)
     report.update(engine="vox", binary=str(binary), endpoint="process exit after native document capture",
                   url=args.url, viewport=[args.width, args.height], exit=code,
                   command=command,
@@ -597,6 +604,9 @@ def run_chrome(args, prefix, api, client_factory=None):
                     expression = getattr(args, 'chrome_readiness_expression', None) or expression
                     while True:
                         evaluated = client.call("Runtime.evaluate", {"expression": expression, "returnByValue": True})
+                        if evaluated.get('exceptionDetails'):
+                            raise RuntimeError('Chrome capture readiness failed: ' +
+                                               repr(evaluated['exceptionDetails']))
                         value = evaluated.get("result", {}).get("value")
                         document = json.loads(value) if value else {}
                         github = urllib.parse.urlparse(args.url).hostname == "github.com" and "/vlang/v" in args.url

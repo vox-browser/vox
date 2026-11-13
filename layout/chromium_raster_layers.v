@@ -868,6 +868,18 @@ fn update_chromium_raster_layer_plan_with_cull(document &dom.Document, commands 
 			// paint's nearest-pixel snapping. Round after unioning descendant ink.
 			plan.layers[layer_index].bounds = chromium_enclosing_raster_rect(plan.layers[layer_index].bounds)
 		}
+		if cull != none && layer_index > 0 && !state.legacy_effect
+			&& state.effect_scope == 0 && state.scroll_frame == 0
+			&& state.sticky_frame == 0 && !state.fixed_to_viewport {
+			// Root-scrolled pictures cannot record ink outside the scrollable
+			// document. In particular, an outer shadow must not move a promoted
+			// sibling's tile origin beyond the root's left edge.
+			viewport := document.viewport_rect()
+			contents := chromium_root_paint_contents(result,
+				LayoutRect{viewport.x, viewport.y, viewport.width, viewport.height})
+			plan.layers[layer_index].bounds = chromium_enclosing_raster_rect(
+				compatibility_intersect_rects(plan.layers[layer_index].bounds, contents))
+		}
 	}
 }
 

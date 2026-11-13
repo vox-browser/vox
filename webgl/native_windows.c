@@ -1,3 +1,3 @@
-// ANGLE's GLES names and Sokol's WGL loader need separate translation units.
+// Keep Mesa's GLES headers and state separate from the GG/Sokol window host.
 #define VOX_EGL_IMPLEMENTATION 1
 #include "native_egl.h"

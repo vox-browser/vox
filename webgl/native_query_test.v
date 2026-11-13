@@ -44,7 +44,7 @@ fn test_native_occlusion_queries_report_drawn_samples_and_empty_draws() {
 	assert context.get_error() == invalid_enum
 	context.begin_query(transform_feedback_primitives_written, mut visible)
 	assert context.get_error() == invalid_operation
-	context.delete_query(mut visible)
+	context.delete_query(visible)
 	assert visible.object.invalidated()
 	assert context.get_query_parameter(visible, query_result) == none
 	assert context.get_error() == invalid_operation
@@ -59,7 +59,7 @@ fn test_native_queries_reject_foreign_objects_before_gpu_dispatch() {
 	assert other.get_error() == invalid_operation
 	assert other.get_query_parameter(query, query_result) == none
 	assert other.get_error() == invalid_operation
-	other.delete_query(mut query)
+	other.delete_query(query)
 	assert other.get_error() == invalid_operation
 	assert !query.object.invalidated()
 }

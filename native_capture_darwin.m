@@ -2044,6 +2044,8 @@ void native_draw_svg_linear_gradient_path(const float *data, int segment_count,
 		spread_method, linear_color_space, stop_data, stop_count, opacity);
 }
 
+#include "native/include/native_css_gradient_gpu_darwin.h"
+
 int native_draw_clipped_svg_linear_gradient_path(const float *data, int segment_count,
 	int even_odd, float transform_a, float transform_b, float transform_c,
 	float transform_d, float transform_e, float transform_f, float page_x,
@@ -2053,7 +2055,21 @@ int native_draw_clipped_svg_linear_gradient_path(const float *data, int segment_
 	float gradient_b, float gradient_c, float gradient_d, float gradient_e,
 	float gradient_f, int spread_method, int linear_color_space,
 	const float *stop_data, int stop_count, float opacity, const float *clip, const float *ancestor_clip) {
-    return 0;
+    if (spread_method != 4 || stroke || linear_color_space) return 0;
+    VoxGraphitePath draw={0};
+    draw.segments=data; draw.segment_count=segment_count; draw.even_odd=even_odd;
+    draw.gradient=1; draw.gradient_premul=1; draw.opacity=1;
+    draw.stops=stop_data; draw.stop_count=stop_count;
+    float points[6]={start_x,start_y,end_x,end_y,0,0};
+    memcpy(draw.gradient_points,points,sizeof(points));
+    float local[9]={gradient_a,gradient_c,gradient_e,gradient_b,gradient_d,gradient_f,0,0,1};
+    memcpy(draw.gradient_matrix,local,sizeof(local));
+    draw.has_clip=clip!=NULL; draw.has_ancestor_clip=ancestor_clip!=NULL;
+    if (clip) memcpy(draw.clip,clip,sizeof(draw.clip));
+    if (ancestor_clip) memcpy(draw.ancestor_clip,ancestor_clip,sizeof(draw.ancestor_clip));
+    float matrix[6]={transform_a,transform_b,transform_c,transform_d,
+        page_x+transform_e,page_y-scroll_y+transform_f};
+    return native_try_v_css_gradient(draw,matrix,page_x,page_y,scroll_y,canvas_height);
 }
 
 int native_draw_clipped_svg_radial_gradient_path(const float *data, int segment_count,
@@ -2066,7 +2082,21 @@ int native_draw_clipped_svg_radial_gradient_path(const float *data, int segment_
 	float gradient_b, float gradient_c, float gradient_d, float gradient_e,
 	float gradient_f, int spread_method, int linear_color_space,
 	const float *stop_data, int stop_count, float opacity, const float *clip, const float *ancestor_clip) {
-    return 0;
+    if (spread_method != 4 || stroke || linear_color_space) return 0;
+    VoxGraphitePath draw={0};
+    draw.segments=data; draw.segment_count=segment_count; draw.even_odd=even_odd;
+    draw.gradient=2; draw.gradient_premul=1; draw.opacity=1;
+    draw.stops=stop_data; draw.stop_count=stop_count;
+    float points[6]={start_x,start_y,start_radius,end_x,end_y,end_radius};
+    memcpy(draw.gradient_points,points,sizeof(points));
+    float local[9]={gradient_a,gradient_c,gradient_e,gradient_b,gradient_d,gradient_f,0,0,1};
+    memcpy(draw.gradient_matrix,local,sizeof(local));
+    draw.has_clip=clip!=NULL; draw.has_ancestor_clip=ancestor_clip!=NULL;
+    if (clip) memcpy(draw.clip,clip,sizeof(draw.clip));
+    if (ancestor_clip) memcpy(draw.ancestor_clip,ancestor_clip,sizeof(draw.ancestor_clip));
+    float matrix[6]={transform_a,transform_b,transform_c,transform_d,
+        page_x+transform_e,page_y-scroll_y+transform_f};
+    return native_try_v_css_gradient(draw,matrix,page_x,page_y,scroll_y,canvas_height);
 }
 
 static void native_draw_svg_radial_gradient_path_in_context(CGContextRef context,
@@ -4746,6 +4776,7 @@ static CGContextRef native_background_text_content_context;
 static CGContextRef native_background_text_destination;
 static CGImageRef native_background_text_clip_image;
 static CGRect native_background_text_clip_rect;
+static CGRect native_background_text_raster_rect;
 static int native_background_text_clip_active;
 static int native_background_text_gradient_pending;
 static int native_background_text_gradient_recording;
@@ -4789,10 +4820,19 @@ void native_begin_background_text_clip(float canvas_width, float canvas_height,
 		native_background_text_clip_rect = CGRectZero;
 	}
 	CGFloat scale = native_svg_mask_backing_scale();
-	size_t width = (size_t)MAX(1.0,
-		ceil(native_background_text_clip_rect.size.width * scale));
-	size_t height = (size_t)MAX(1.0,
-		ceil(native_background_text_clip_rect.size.height * scale));
+	// Keep the mask on the destination device grid. Fractional clip bounds
+	// remain the paint clip, but must not resample the glyph coverage image.
+	native_background_text_raster_rect = CGRectMake(
+		floor(CGRectGetMinX(native_background_text_clip_rect) * scale) / scale,
+		floor(CGRectGetMinY(native_background_text_clip_rect) * scale) / scale, 0, 0);
+	native_background_text_raster_rect.size.width =
+		ceil(CGRectGetMaxX(native_background_text_clip_rect) * scale) / scale
+		- native_background_text_raster_rect.origin.x;
+	native_background_text_raster_rect.size.height =
+		ceil(CGRectGetMaxY(native_background_text_clip_rect) * scale) / scale
+		- native_background_text_raster_rect.origin.y;
+	size_t width = (size_t)MAX(1.0, round(native_background_text_raster_rect.size.width * scale));
+	size_t height = (size_t)MAX(1.0, round(native_background_text_raster_rect.size.height * scale));
 	CGColorSpaceRef color_space = CGColorSpaceCreateWithName(kCGColorSpaceSRGB);
 	native_background_text_clip_build_context = CGBitmapContextCreate(NULL, width,
 		height, 8, width * 4, color_space,
@@ -4803,8 +4843,8 @@ void native_begin_background_text_clip(float canvas_width, float canvas_height,
 	}
 	CGContextScaleCTM(native_background_text_clip_build_context, scale, scale);
 	CGContextTranslateCTM(native_background_text_clip_build_context,
-		-native_background_text_clip_rect.origin.x,
-		-native_background_text_clip_rect.origin.y);
+		-native_background_text_raster_rect.origin.x,
+		-native_background_text_raster_rect.origin.y);
 	CGContextSetShouldAntialias(native_background_text_clip_build_context, true);
 }
 
@@ -4831,6 +4871,10 @@ void native_add_background_text_clip_run(float x, float y, string value,
 	[NSGraphicsContext restoreGraphicsState];
 }
 
+extern int32_t vox_draw_background_glyph_mask(uint16_t *, double *, int32_t,
+	float, int32_t, float, float, float, float, float, float, float, float,
+	float, float, float, float, float, string, int32_t, int32_t);
+
 int native_add_background_glyph_clip_run(const uint16_t *glyphs,
 	const double *positions, int glyph_count, float font_size, int font_weight, int emoji_face,
 	float baseline_x, float baseline_y, float transform_a, float transform_b,
@@ -4839,6 +4883,17 @@ int native_add_background_glyph_clip_run(const uint16_t *glyphs,
 	string font_path_value, int face_index, int font_smoothing) {
 	if (native_background_text_clip_build_context == NULL) {
 		return 0;
+	}
+	if (!emoji_face && (font_smoothing & 16)) {
+		[NSGraphicsContext saveGraphicsState];
+		[NSGraphicsContext setCurrentContext:[NSGraphicsContext
+			graphicsContextWithCGContext:native_background_text_clip_build_context flipped:NO]];
+		int drawn = vox_draw_background_glyph_mask((uint16_t *)glyphs, (double *)positions, glyph_count,
+			font_size, font_weight, baseline_x, baseline_y, transform_a, transform_b,
+			transform_c, transform_d, transform_e, transform_f, page_x, page_y,
+			scroll_y, canvas_width, canvas_height, font_path_value, face_index, font_smoothing);
+		[NSGraphicsContext restoreGraphicsState];
+		if (drawn) return 1;
 	}
 	// Upstream records text-mask glyphs in black. Skia's text contrast/gamma
 	// adjustment is paint-color dependent even though DestinationIn later uses
@@ -4872,7 +4927,7 @@ void native_finish_background_text_clip(void) {
 	if (native_background_text_clip_image != NULL
 		&& !CGRectIsEmpty(native_background_text_clip_rect)) {
 		CGContextClipToRect(destination, native_background_text_clip_rect);
-		CGContextClipToMask(destination, native_background_text_clip_rect,
+		CGContextClipToMask(destination, native_background_text_raster_rect,
 			native_background_text_clip_image);
 	} else {
 		CGContextClipToRect(destination, CGRectZero);
@@ -5769,6 +5824,7 @@ static void native_prepare_image_cpu_fallback(CGContextRef context) {
 
 #include "native/include/native_rounded_image_clip.h"
 #include "native/include/native_rounded_image_pixels.h"
+#include "native/include/native_sampled_png_darwin.h"
 
 static void native_draw_image_part_in_context(CGContextRef context, gg__Image *image,
 	float destination_x, float destination_y, float destination_width,

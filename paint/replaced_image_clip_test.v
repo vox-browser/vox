@@ -126,3 +126,29 @@ fn test_replaced_image_transfers_an_integer_overflow_crop_to_the_gpu() {
 		assert clips[index].corner_radii.top_left.x == 4
 	}
 }
+
+fn test_replaced_image_gpu_clip_keeps_fractional_radii_after_border_insets() {
+	radius := painting.BorderRadiusData{4.5, 10}
+	outer := painting.BorderRadiiData{radius, radius, radius, radius}
+	insets := painting.PixelBox{ top: 0.25, right: 0.5, bottom: 0.75, left: 1.25 }
+	image := layout.PaintCommand{
+		kind:            'draw_replaced_image'
+		image_paintable: &painting.ImagePaintable{ border_radii: outer, border_widths: insets }
+	}
+	video := layout.PaintCommand{
+		kind:            'draw_video'
+		video_paintable: &painting.VideoPaintable{ border_radii: outer, border_widths: insets }
+	}
+	for command in [image, video] {
+		assert replaced_image_gpu_clip_data(&command, painting.IntRect{16, 16, 9, 20},
+			painting.CornerRadii{}, -1) == [f32(16), 16, 9, 20, 3.25, 9.75, 4, 9.75, 4, 9.25, 3.25,
+			9.25]!
+	}
+	// Without an inset, the half-pixel horizontal radius remains an ellipse.
+	plain := layout.PaintCommand{
+		...image
+		image_paintable: &painting.ImagePaintable{ border_radii: outer }
+	}
+	assert replaced_image_gpu_clip_data(&plain, painting.IntRect{16, 16, 9, 20},
+		painting.CornerRadii{}, -1) == [f32(16), 16, 9, 20, 4.5, 10, 4.5, 10, 4.5, 10, 4.5, 10]!
+}

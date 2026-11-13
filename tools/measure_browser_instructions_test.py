@@ -284,7 +284,7 @@ class ChromeDirectLaunchTests(unittest.TestCase):
         self.assertEqual(result.returncode, 2)
         self.assertIn('positive --chrome-outer-window-height', result.stderr)
 
-    def assert_full_capture(self, direct, settle_seconds=0, custom_readiness=False):
+    def assert_full_capture(self, direct, settle_seconds=0, custom_readiness=False, readiness_error=False):
         with tempfile.TemporaryDirectory() as directory:
             args = self.args(directory, direct=direct)
             args.settle_seconds = settle_seconds
@@ -306,6 +306,8 @@ class ChromeDirectLaunchTests(unittest.TestCase):
                             return {'result': {'value': True}}
                         if expression == 'custom readiness':
                             readiness.append(True)
+                            if readiness_error:
+                                return {'exceptionDetails': {'text': 'invalid capture selector'}}
                             return {'result': {'value': json.dumps(dict(state,
                                 captureReady=len(readiness) > 1))}}
                         return {'result': {'value': json.dumps(state)}}
@@ -342,6 +344,12 @@ class ChromeDirectLaunchTests(unittest.TestCase):
                     patch.object(measurement.urllib.request, 'build_opener', return_value=opener), \
                     patch.object(measurement, 'stop_process'), \
                     patch.object(measurement.time, 'sleep', side_effect=lambda seconds: methods.append(('settle', seconds))):
+                if readiness_error:
+                    with self.assertRaisesRegex(RuntimeError, 'invalid capture selector'):
+                        measurement.run_chrome(args, Path(directory) / 'capture', None)
+                    self.assertNotIn('Page.captureScreenshot', methods)
+                    client.sock.close.assert_called_once()
+                    return
                 result = measurement.run_chrome(args, Path(directory) / 'capture', None)
             if direct:
                 capture_methods = methods[:methods.index('Page.stopLoading')]
@@ -382,6 +390,9 @@ class ChromeDirectLaunchTests(unittest.TestCase):
 
     def test_custom_content_readiness_must_succeed_before_capture(self):
         self.assert_full_capture(direct=False, custom_readiness=True)
+
+    def test_invalid_readiness_is_reported_before_capture_instead_of_polling_to_timeout(self):
+        self.assert_full_capture(direct=False, custom_readiness=True, readiness_error=True)
 
 
 class CaptureEnvironmentTests(unittest.TestCase):
