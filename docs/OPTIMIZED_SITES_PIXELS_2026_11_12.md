@@ -894,8 +894,8 @@ the layout origin and replay transform. `695af8b0d` retains the joined-path
 fallback when multiple sides overlap after dimension snapping. Non-finite and
 empty snapped boxes also retain their fallback.
 
-The new `rotated-collapsed-border` fixture covers all four single-sided cases,
-including a wider control. Two fresh, identity-pinned Brave **157.1.99.56**
+The new `rotated-collapsed-border` fixture covers thin right, left and bottom
+sides plus a wider control. Two fresh, identity-pinned Brave **157.1.99.56**
 processes match its reference exactly. The production baseline differs at
 **100 pixels** in both native captures; the candidate is **exact** twice.
 Existing site references and tolerances are unchanged.
