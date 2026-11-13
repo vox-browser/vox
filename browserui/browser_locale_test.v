@@ -54,8 +54,10 @@ fn test_locale_falls_back_to_english() {
 fn test_locale_prefers_vox_lang_over_lang() {
 	old_vox, old_lang := save_locale()
 	defer { restore_locale(old_vox, old_lang) }
+	set_preferred_languages([])
 	os.setenv('VOX_LANG', 'en', true)
 	os.setenv('LANG', 'de_DE.UTF-8', true)
+	refresh_locale()
 	assert ui_locale() == 'en'
 	assert tr('nav.reload') == 'Reload'
 }
@@ -63,8 +65,10 @@ fn test_locale_prefers_vox_lang_over_lang() {
 fn test_locale_reads_lang_when_vox_lang_absent() {
 	old_vox, old_lang := save_locale()
 	defer { restore_locale(old_vox, old_lang) }
+	set_preferred_languages([])
 	os.unsetenv('VOX_LANG')
 	os.setenv('LANG', 'en_US.UTF-8', true)
+	refresh_locale()
 	assert ui_locale() == 'en'
 	assert tr('menu.history') == 'History'
 }
@@ -72,8 +76,10 @@ fn test_locale_reads_lang_when_vox_lang_absent() {
 fn test_locale_defaults_to_english() {
 	old_vox, old_lang := save_locale()
 	defer { restore_locale(old_vox, old_lang) }
+	set_preferred_languages([])
 	os.setenv('VOX_LANG', 'xx', true)
 	os.setenv('LANG', 'yy_ZZ.UTF-8', true)
+	refresh_locale()
 	assert ui_locale() == 'en'
 	assert tr('nav.reload') == 'Reload'
 }
@@ -151,7 +157,21 @@ fn test_parse_apple_languages() {
 
 fn test_locale_prefers_explicit_unix_chain_over_lang() {
 	old_vox, old_lang := save_locale()
-	defer { restore_locale(old_vox, old_lang) }
+	old_lc_all := os.getenv_opt('LC_ALL')
+	old_lc_messages := os.getenv_opt('LC_MESSAGES')
+	defer {
+		restore_locale(old_vox, old_lang)
+		if v := old_lc_all {
+			os.setenv('LC_ALL', v, true)
+		} else {
+			os.unsetenv('LC_ALL')
+		}
+		if v := old_lc_messages {
+			os.setenv('LC_MESSAGES', v, true)
+		} else {
+			os.unsetenv('LC_MESSAGES')
+		}
+	}
 	set_preferred_languages([])
 	os.unsetenv('VOX_LANG')
 	os.setenv('LC_ALL', 'xx_XX.UTF-8', true)

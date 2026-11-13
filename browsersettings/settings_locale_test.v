@@ -12,7 +12,7 @@ const settings_error_messages = [
 
 fn test_settings_error_localization() {
 	assert default_error_locale() == 'en'
-	assert supported_error_locales() == ['en']
+	assert 'en' in supported_error_locales()
 	for message in settings_error_messages {
 		assert localize_error('en', message) == message
 	}

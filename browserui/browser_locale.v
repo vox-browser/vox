@@ -15,10 +15,11 @@ import os
 //      `locale_table()`.
 //   3. If `xx` uses non-Latin digits, shape them in `format_digits()`.
 //   4. Add `browser_locale_xx_test.v` plus checker spot checks.
-// The active locale resolves as: explicit user list (settings, most
-// preferred first), then `VOX_LANG`, then the OS locale, then English.
-// The resolved value is cached per process (see `refresh_locale`); the
-// settings UI applies a change through `set_preferred_languages`.
+// The active locale resolves as: `VOX_LANG` (developer override), then the
+// explicit user list (settings, most preferred first), then the OS locale,
+// then English. The resolved value is cached per process (see
+// `refresh_locale`); the settings UI applies a change through
+// `set_preferred_languages`.
 
 __global (
 	cached_chrome_locale = ''
@@ -89,6 +90,9 @@ pub fn refresh_locale() string {
 }
 
 fn resolve_locale() string {
+	if code := os.getenv_opt('VOX_LANG') {
+		return locale_from_code(code)
+	}
 	for lang in explicit_chrome_languages {
 		base := normalize_locale_code(lang)
 		if base in supported_locales() {
@@ -97,9 +101,6 @@ fn resolve_locale() string {
 	}
 	if explicit_chrome_languages.len > 0 {
 		return default_locale()
-	}
-	if code := os.getenv_opt('VOX_LANG') {
-		return locale_from_code(code)
 	}
 	// The OS default already folds an explicitly exported LANG in on every
 	// platform, so tests stay deterministic and real GUI launches follow
