@@ -17,12 +17,18 @@ fn restore_fa_locale(saved ?string, other ?string) {
 	} else {
 		os.unsetenv('LANG')
 	}
+	os.unsetenv('LC_ALL')
+	os.unsetenv('LC_MESSAGES')
+	set_preferred_languages([])
+	refresh_locale()
 }
 
 fn set_fa_locale(vox string) (?string, ?string) {
 	old_vox, old_lang := save_fa_locale()
+	set_preferred_languages([])
 	os.setenv('VOX_LANG', vox, true)
 	os.setenv('LANG', 'en_US.UTF-8', true)
+	refresh_locale()
 	return old_vox, old_lang
 }
 
@@ -45,17 +51,79 @@ fn test_fa_spot_checks() {
 
 fn test_fa_locale_selection() {
 	old_vox, old_lang := save_fa_locale()
-	defer { restore_fa_locale(old_vox, old_lang) }
+	old_lc_all := os.getenv_opt('LC_ALL')
+	old_lc_messages := os.getenv_opt('LC_MESSAGES')
+	defer {
+		restore_fa_locale(old_vox, old_lang)
+		if v := old_lc_all {
+			os.setenv('LC_ALL', v, true)
+		} else {
+			os.unsetenv('LC_ALL')
+		}
+		if v := old_lc_messages {
+			os.setenv('LC_MESSAGES', v, true)
+		} else {
+			os.unsetenv('LC_MESSAGES')
+		}
+	}
+	set_preferred_languages([])
+	os.unsetenv('LC_ALL')
+	os.unsetenv('LC_MESSAGES')
 	os.setenv('VOX_LANG', 'fa', true)
 	os.setenv('LANG', 'en_US.UTF-8', true)
+	refresh_locale()
 	assert ui_locale() == 'fa'
 	assert tr('nav.reload') == 'بارگذاری مجدد'
 	os.setenv('VOX_LANG', 'FA-ir', true)
+	refresh_locale()
 	assert ui_locale() == 'fa'
 	os.unsetenv('VOX_LANG')
 	os.setenv('LANG', 'fa_IR.UTF-8', true)
+	refresh_locale()
 	assert ui_locale() == 'fa'
 	assert tr('menu.history') == 'سابقه'
+}
+
+fn test_fa_unix_lc_chain_beats_lang() {
+	$if !linux {
+		return
+	}
+	old_vox, old_lang := save_fa_locale()
+	old_lc_all := os.getenv_opt('LC_ALL')
+	defer {
+		restore_fa_locale(old_vox, old_lang)
+		if v := old_lc_all {
+			os.setenv('LC_ALL', v, true)
+		} else {
+			os.unsetenv('LC_ALL')
+		}
+	}
+	set_preferred_languages([])
+	os.unsetenv('VOX_LANG')
+	os.setenv('LC_ALL', 'fa_IR.UTF-8', true)
+	os.setenv('LANG', 'en_US.UTF-8', true)
+	refresh_locale()
+	assert ui_locale() == 'fa'
+}
+
+fn test_fa_explicit_preferred_languages() {
+	old_vox, old_lang := save_fa_locale()
+	defer { restore_fa_locale(old_vox, old_lang) }
+	set_preferred_languages(['fa-IR', 'en'])
+	os.unsetenv('VOX_LANG')
+	os.setenv('LANG', 'en_US.UTF-8', true)
+	refresh_locale()
+	assert ui_locale() == 'fa'
+	assert tr('nav.reload') == 'بارگذاری مجدد'
+	// VOX_LANG is the developer override and beats the explicit list.
+	os.setenv('VOX_LANG', 'en', true)
+	refresh_locale()
+	assert ui_locale() == 'en'
+	// An explicit list with no supported language falls back to English.
+	set_preferred_languages(['xx'])
+	os.unsetenv('VOX_LANG')
+	refresh_locale()
+	assert ui_locale() == 'en'
 }
 
 fn test_fa_digits() {

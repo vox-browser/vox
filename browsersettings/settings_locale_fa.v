@@ -12,4 +12,5 @@ const fa_error_messages = {
 	'Enter site hostnames without schemes, paths, ports or wildcards.': 'نام میزبان سایت‌ها را بدون طرح، مسیر، درگاه یا نویسه جایگزین وارد کنید.'
 	'Enter at least one site, or leave the field empty for all sites.': 'دست‌کم یک سایت وارد کنید، یا برای همهٔ سایت‌ها خالی بگذارید.'
 	'Settings have not been initialized.':                          'تنظیمات مقداردهی اولیه نشده‌اند.'
+	'Enter language codes separated by commas (e.g. fa, en), or leave empty for the system language.': 'کدهای زبان را با کاما جدا کنید (مثلاً fa, en)، یا برای زبان سامانه خالی بگذارید.'
 }
