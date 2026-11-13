@@ -26,6 +26,7 @@ SETTINGS_ERRORS = [
     'Enter site hostnames without schemes, paths, ports or wildcards.',
     'Enter at least one site, or leave the field empty for all sites.',
     'Settings have not been initialized.',
+    'Enter language codes separated by commas (e.g. fa, en), or leave empty for the system language.',
 ]
 
 EN_SPOT_CHECKS = {

@@ -60,6 +60,40 @@ fn test_saved_proxy_is_atomic_restored_and_can_disable_ambient_proxies() {
 	assert proxy_override('https://example.com/') or { panic('lost override') } == ''
 }
 
+fn test_preferred_languages_normalize_validate_and_persist() {
+	assert normalize_preferred_languages('')! == ''
+	assert normalize_preferred_languages('  ')! == ''
+	assert normalize_preferred_languages('fa')! == 'fa'
+	assert normalize_preferred_languages('fa, en')! == 'fa, en'
+	assert normalize_preferred_languages(' EN ,fa-IR,,en ')! == 'en, fa-IR'
+	assert normalize_preferred_languages('fa, FA, fa-IR')! == 'fa, fa-IR'
+	for bad in ['fa!', 'e', 'toolongtaghere', 'en_US!', 'fa,,?', 'en;fa'] {
+		if _ := normalize_preferred_languages(bad) {
+			assert false, bad
+		}
+	}
+	proxy := Proxy{ enabled: true, host: 'proxy.example', port: '9050', languages: ' FA-IR , en ' }.normalized()!
+	assert proxy.languages == 'fa-IR, en'
+	proxy_disabled := Proxy{ languages: 'fa' }.normalized()!
+	assert proxy_disabled.languages == 'fa'
+	if _ := Proxy{ languages: 'xx!' }.normalized() {
+		assert false
+	}
+	directory := os.join_path(os.temp_dir(), 'vox-settings-languages-${os.getpid()}-${time.sys_mono_now()}')
+	os.mkdir_all(directory)!
+	defer { os.rmdir_all(directory) or {} }
+	path := os.join_path(directory, 'settings.json')
+	initialize(path)!
+	save(Proxy{ languages: 'fa, en' })!
+	assert current().languages == 'fa, en'
+	initialize(path)!
+	assert current().languages == 'fa, en'
+	// Profiles saved before the languages setting keep the system default.
+	os.write_file(path, '{"enabled":true,"host":"127.0.0.1","port":"1080"}')!
+	initialize(path)!
+	assert current().languages == ''
+}
+
 fn test_proxy_sites_normalize_and_match_destinations_at_domain_boundaries() {
 	proxy := Proxy{ enabled: true, sites: ' Example.COM.,\tother.test\nexample.com, 127.0.0.1, [2001:0db8::1], bücher.de ' }.normalized()!
 	assert proxy.sites == 'example.com, other.test, 127.0.0.1, [2001:db8::1], xn--bcher-kva.de'
