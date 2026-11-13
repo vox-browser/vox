@@ -48,7 +48,7 @@ pub fn translate_with_bindings(source string, stage Stage, bindings map[string]i
  }
 
 	processed := preprocess(source)!
-	tokens := processed.tokens
+	tokens := normalize_constant_expressions(processed.tokens)!
 	validate_essl_language(tokens,processed.version)!
 	mut body := []string{}
 	mut inputs := []Interface{}
@@ -232,7 +232,7 @@ pub fn translate_with_bindings(source string, stage Stage, bindings map[string]i
                 continue
             }
         }
-		if token in ['double', 'while', 'do', 'switch'] || token.starts_with('sampler') {
+		if token == 'double' || token.starts_with('sampler') {
 			return error('Unsupported direct Metal token: ${token}')
 		}
 		if version == 100 && (token == 'uint' || token.starts_with('uvec')) { return error('Unsigned types require ESSL 300') }

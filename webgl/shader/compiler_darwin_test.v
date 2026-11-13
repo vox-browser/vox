@@ -211,3 +211,9 @@ fn test_local_array_constructor_reaches_exact_gpu_pixels() {
  fragment:=translate('#version 300 es\nprecision highp float;in vec4 value;out vec4 color;void main(){color=value;}',.fragment)!
  assert C.vox_direct_metal_probe(vertex.source.str,fragment.source.str)==1
 }
+
+fn test_constant_arrays_and_es300_control_flow_render_exact_pixels() {
+ vertex:=translate('#version 300 es\nconst int N=3;out vec4 value;void main(){vec2 p[N]=vec2[N](vec2(-1,-1),vec2(3,-1),vec2(-1,3));gl_Position=vec4(p[gl_VertexID],0,1);int n=0;while(n<2){n++;}do{n--;}while(n>1);switch(n){case 1:value=vec4(1,0,0,1);break;default:value=vec4(0,1,0,1);break;}}',.vertex)!
+ fragment:=translate('#version 300 es\nprecision highp float;in vec4 value;out vec4 color;void main(){color=value;}',.fragment)!
+ assert C.vox_direct_metal_probe(vertex.source.str,fragment.source.str)==1
+}

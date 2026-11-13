@@ -23,7 +23,7 @@ fn test_uniform_declarations_arrays_and_stage_linking() {
 }
 
 fn test_invalid_uniform_declarations_are_rejected() {
- for source in ['uniform void a;', 'uniform float a[0];','uniform float a[4097];','uniform float a[];', 'uniform float a[1+1];', 'uniform float a=1.0;', 'uniform float a,a;', 'uniform float a;attribute vec2 a;', 'attribute vec2 a;uniform float a;', 'uniform vec4 gl_value;', 'uniform mat4 huge[4096];', 'uniform uint x;', 'uniform mat2x3 x;'] {
+ for source in ['uniform void a;', 'uniform float a[0];','uniform float a[4097];','uniform float a[];', 'uniform float a=1.0;', 'uniform float a,a;', 'uniform float a;attribute vec2 a;', 'attribute vec2 a;uniform float a;', 'uniform vec4 gl_value;', 'uniform mat4 huge[4096];', 'uniform uint x;', 'uniform mat2x3 x;'] {
   translate(source+'void main(){gl_Position=vec4(1.0);}',.vertex) or { continue }
   assert false,source
  }
