@@ -6,7 +6,7 @@ import html
 import webgl
 
 fn test_public_base_draws_select_owner_and_notify_while_driver_validates_after_idl() {
-	$if !darwin && !linux {
+	$if !darwin && !linux && !windows {
 		return
 	}
 	mut document := html.parse_document('<canvas></canvas>')
