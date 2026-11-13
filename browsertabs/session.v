@@ -305,6 +305,11 @@ pub fn (mut session Session) select(index int, frame Frame) ! {
 	} else {
 		state.tabs[index].activate = true
 	}
+	// A selected tab owns the visible window and must keep live content.
+	if state.tabs[index].hibernated {
+		state.tabs[index].hibernated = false
+		state.tabs[index].hibernated_at = 0
+	}
 	state.frame = frame
 	session.save(state)!
 	session.remember(state)
@@ -330,6 +335,46 @@ pub fn (mut session Session) detach(index int) ! {
 	state.tabs[index].detach = true
 	session.save(state)!
 	session.remember(state)
+}
+
+// hibernate marks a background tab's live content as discarded. Only its
+// metadata stays in the session until the tab is selected again. The owning
+// process reclaims the tab's documents and renderers; selecting the tab
+// wakes it (see select). Hibernating the selected tab is refused because the
+// visible tab must keep its live content.
+pub fn (mut session Session) hibernate(index int) ! {
+	fd := session.lock()!
+	defer { C.vox_tabs_unlock(fd) }
+	mut state := session.load()!
+	if index < 0 || index >= state.tabs.len { return }
+	if state.tabs[index].id == state.selected {
+		return error('cannot hibernate the selected tab')
+	}
+	if state.tabs[index].hibernated { return }
+	state.tabs[index].hibernated = true
+	state.tabs[index].hibernated_at = time.sys_mono_now()
+	state.tabs[index].loading = false
+	session.save(state)!
+	session.remember(state)
+}
+
+// wake clears a tab's hibernation mark without selecting it, so a process
+// that restored the tab's content can publish its readiness first.
+pub fn (mut session Session) wake(index int) ! {
+	fd := session.lock()!
+	defer { C.vox_tabs_unlock(fd) }
+	mut state := session.load()!
+	if index < 0 || index >= state.tabs.len { return }
+	if !state.tabs[index].hibernated { return }
+	state.tabs[index].hibernated = false
+	state.tabs[index].hibernated_at = 0
+	session.save(state)!
+	session.remember(state)
+}
+
+pub fn (session &Session) is_hibernated(index int) bool {
+	if index < 0 || index >= session.state.tabs.len { return false }
+	return session.state.tabs[index].hibernated
 }
 
 // The same live document moves to a new window group. Keep reaping children

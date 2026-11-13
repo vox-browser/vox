@@ -13,6 +13,10 @@ fn (app &BrowserApp) browser_display_tab_title(index int, custom_titles bool) st
 		return if custom_titles && tab.custom_title != '' { tab.custom_title } else { tab.title }
 	}
 	tab := if app.tabs == unsafe { nil } { app } else { app.tabs.pages[index] }
+	hibernated_title := app.hibernated_browser_tab_title(index)
+	if hibernated_title != '' {
+		return hibernated_title
+	}
 	custom := tab.browser_ui().custom_tab_title
 	return if custom_titles && custom != '' { custom } else { tab.browser_tab_title() }
 }

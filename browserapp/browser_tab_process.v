@@ -190,6 +190,10 @@ fn (mut app BrowserApp) activate_process_tab(action string) {
 				app.open_process_tab(action.all_after(':'), action.starts_with('tab-open-background:'))
 			} else if action.starts_with('tab-select:') {
 				session.select(action.all_after(':').int(), frame) or { eprintln(err) }
+			} else if action.starts_with('tab-hibernate:') {
+				session.hibernate(action.all_after(':').int()) or { eprintln(err) }
+			} else if action.starts_with('tab-wake:') {
+				session.wake(action.all_after(':').int()) or { eprintln(err) }
 			} else if action.starts_with('tab-close:') {
 				app.close_process_tab(action.all_after(':').int())
 			} else if action.starts_with('tab-move:') {

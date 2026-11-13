@@ -25,6 +25,11 @@ pub mut:
 	ready        bool
 	activate     bool
 	detach       bool
+	// hibernated marks a background tab whose live content was discarded to
+	// reclaim memory. Only metadata (title, url, favicon) is retained until
+	// the tab is selected again. The selected tab is never hibernated.
+	hibernated   bool
+	hibernated_at i64
 }
 
 pub struct Frame {
