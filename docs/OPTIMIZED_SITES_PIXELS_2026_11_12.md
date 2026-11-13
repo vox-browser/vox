@@ -932,3 +932,59 @@ local under `docs/performance/vlang-gradients-20261112/`. The published bundle
 above establishes the earlier fixes at 231 GitHub pixels; this border correction
 awaits its managed production rebuild. **GitHub's remaining 207 pixels and the
 all-site gate remain open.**
+
+
+## Small rounded-shadow kernels, 2026-11-13
+
+Commit `a2427d085` handles device-space Gaussian sigmas from 0.5 through 1
+in the V/GG rounded-shadow filter instead of falling back to the approximate
+Core Graphics shadow. Kernels that fit in 28 taps use a single two-dimensional
+pass, matching Chromium's filter. Two separate A8 passes add an intermediate
+rounding step: the first attempt retained four exterior pixels at one channel
+level in the sigma-0.5 case. Removing the nine-patch did not fix them; the
+single-pass kernel does. The existing larger-kernel path remains unchanged.
+
+The new `small-blur-shadows` fixture covers GitHub's two low-opacity green-button
+shadows, sigma-0.5 and sigma-0.75 rounded rectangles, and a sigma-0.5 ellipse.
+Two fresh, identity-pinned Brave 157.1.99.56 captures agree exactly. Both fresh
+Vox diagnostic captures match that new reference at **all 53,760 RGBA pixels**.
+The focused unit test independently checks the exterior bands at both sample
+settings and verifies that smaller unsupported kernels leave their target
+untouched. All six relevant shadow test files execute successfully with arena
+poisoning under 3 GiB runtime guards: the new cases and the previous capsule,
+nine-patch, short-rectangle, rotated-ellipse and unblurred-shadow tests. Existing
+oracles and tolerances are unchanged.
+
+The final diagnostic executable is
+`1a0939c8bbd7175d36a096df9eefec7ad280117fcaf5feed7340f0b1cc630a39`.
+It reduces the unchanged GitHub archive from **207 to 49 differing pixels**
+in two fresh captures, with the complete 33-row audit and the document at its
+reference origin. HN keeps all 30 stories and remains exact, as do Wikipedia
+and Lobsters. vlang.io remains at **3,250**, CNN at **175,866**. CNN's two
+successfully loaded images differ at **1,558 pixels**; its stability and
+source/replay gates remain open. All other completed site pairs repeat exactly.
+The seven image/poster controls and the rotated-border control remain exact
+in both captures; the scale-2 device-shadow control retains its **92-pixel** gap.
+
+Failed observations are retained separately. One preliminary GitHub capture
+scrolled its body to y=-115 and differed by 348,134 pixels, while the next was
+at the origin with 49 differences. The local driver now rejects that position
+drift. The first larger run stopped when CNN navigated to an unavailable
+article rather than its archived homepage; its driver exit is 1, despite a
+browser/guard exit of 0. The later CNN/control run has the required URL/title,
+complete audits, all browser/guard exits 0 and driver exit 0. The initial
+unit-test failure, duplicate-file compile failure and unsuccessful half-precision
+shader experiment are retained too. No failed attempt was turned into a pass.
+
+The original six-box diagnostic scene changes from 2,020 to 626 differences;
+all remaining differences belong to its unchanged unsupported sigma-0.25 box
+or existing sigma-1 control. The new four-box fixture omits those controls;
+it does not replace an existing reference or supply credit for their gaps.
+
+Commands, input/executable/library identities, raw PNGs, failed attempts,
+repeat checks and actual compile/browser/guard/driver exits remain local under
+`docs/performance/vlang-gradients-20261112/`. The latest completed production
+bundle is still the previously checked `5fb3eb90…` executable. The managed
+post-commit hook requests the new production build; no additional manual build
+was queued. **The 49-pixel GitHub result is diagnostic validation, and the
+all-site gate remains open.** No live-site or performance claim is added.
