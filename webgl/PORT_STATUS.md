@@ -12,7 +12,9 @@ reflection, typed/structured uniforms, textures/framebuffers, packed vertex
 fetch, depth/stencil, MRT, multisample resolves, queries and GPU transform
 feedback. Linux uses native EGL/GLES3 with bounded transfers, initialized
 storage and the shared V shader frontend; it requires no ANGLE installation.
-Windows retains its ANGLE GLES service. See [Linux setup and checks](../docs/LINUX.md).
+Windows shares the bounded GLES adapter through robust native Mesa WGL contexts. See
+[Linux setup and checks](../docs/LINUX.md) and the
+[Windows validation report](../docs/WINDOWS_WEBGL_GLES.md).
 
 The V shader configuration passes 314 functions from 178 native/Source WebGL
 files, 51 compiler functions and 45 Metal functions with the C backend in both

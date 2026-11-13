@@ -1,10 +1,11 @@
 # Linux WebGL without ANGLE
 
 The Linux service uses distribution EGL/GLES3 (Mesa), not ANGLE. Both WebGL
-versions use robust surfaceless GLES3 contexts. Windows retains its ANGLE service;
-macOS uses the separate Metal service.
+versions use robust surfaceless GLES3 contexts. Windows shares the bounded GLES
+adapter through [native Mesa WGL](WINDOWS_WEBGL_GLES.md); macOS uses the separate
+Metal service.
 
-`webgl/gles_adapter_linux.h` implements bounded queries and transfers, per-context
+`webgl/gles_adapter.h` implements bounded queries and transfers, per-context
 errors, checked PBO offsets, and core GLES equivalents of the shared extension
 ABI. New buffer, texture, immutable mip/layer and renderbuffer storage is
 initialized. Draw validation checks active vertex/index streams before Mesa's

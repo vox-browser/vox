@@ -82,8 +82,8 @@ compiler tools on `PATH`. Install:
 
 ```sh
 pacman -S --needed mingw-w64-x86_64-toolchain mingw-w64-x86_64-pkgconf \
-    mingw-w64-x86_64-harfbuzz mingw-w64-x86_64-freetype \
-    mingw-w64-x86_64-openssl mingw-w64-x86_64-angleproject mingw-w64-x86_64-curl
+    mingw-w64-x86_64-icu mingw-w64-x86_64-harfbuzz mingw-w64-x86_64-freetype \
+    mingw-w64-x86_64-openssl mingw-w64-x86_64-curl mingw-w64-x86_64-7zip
 ```
 
 Supply a Windows x86-64 `JavaScriptCore.dll` and its matching WebKit DLLs;
@@ -93,7 +93,7 @@ source. The setup verifies the required exports and creates its import library:
 ```sh
 eval "$(sh tools/run_v_tool.sh dev_build_env --shell sh \
     --javascriptcore-dll C:/path/to/webkit/JavaScriptCore.dll)"
-v .
+v -b c .
 ./vox2.exe https://example.com
 ```
 
