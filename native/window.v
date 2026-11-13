@@ -16,8 +16,161 @@ fn C.native_install_browser_layer_presentation()
 fn C.native_set_opaque_browser_frames(i32)
 fn C.native_set_load_stage_callbacks(fn (&char) u64, fn (u64))
 
-// Keep GG's normal input dispatch for events that do not need its font atlas.
-fn C.gg__gg_event_fn(voidptr, voidptr)
+// Dispatch GG input events without calling its private C entry point.
+// V HEAD moved gg's event dispatcher and no longer exposes
+// `gg__gg_event_fn` to other modules (production build failure:
+// `call to undeclared function 'gg__gg_event_fn'`). This mirrors
+// gg's `gg_event_fn` using only public Context/Config fields so it
+// keeps working across V revisions. Behavior matches upstream:
+// ui-mode refresh, mouse-button mask tracking, scale-normalized
+// coordinates, pressed-key edges, general event callback, per-type
+// hooks, resize dimension caching (ft Atlas update guarded for the
+// nil-atlas macOS shell), and Win32/X11 control-key char emulation.
+fn dispatch_gg_event(mut event gg.Event, user_data voidptr) {
+	mut context := unsafe { &gg.Context(user_data) }
+	if context.ui_mode {
+		context.refresh_ui()
+	}
+	if event.typ == .mouse_down {
+		bitplace := int(event.mouse_button)
+		context.mbtn_mask |= u8(1 << bitplace)
+		context.mouse_buttons = unsafe { gg.MouseButtons(context.mbtn_mask) }
+	}
+	if event.typ == .mouse_up {
+		bitplace := int(event.mouse_button)
+		context.mbtn_mask &= ~(u8(1 << bitplace))
+		context.mouse_buttons = unsafe { gg.MouseButtons(context.mbtn_mask) }
+	}
+	if event.typ == .mouse_move && event.mouse_button == .invalid {
+		if context.mbtn_mask & 0x01 > 0 {
+			event.mouse_button = .left
+		}
+		if context.mbtn_mask & 0x02 > 0 {
+			event.mouse_button = .right
+		}
+		if context.mbtn_mask & 0x04 > 0 {
+			event.mouse_button = .middle
+		}
+	}
+	event.mouse_x /= context.scale
+	event.mouse_y /= context.scale
+	event.mouse_dx /= context.scale
+	event.mouse_dy /= context.scale
+	event.scroll_x /= context.scale
+	event.scroll_y /= context.scale
+	context.mouse_pos_x = int(event.mouse_x)
+	context.mouse_pos_y = int(event.mouse_y)
+	context.mouse_dx = int(event.mouse_dx)
+	context.mouse_dy = int(event.mouse_dy)
+	context.scroll_x = int(event.scroll_x)
+	context.scroll_y = int(event.scroll_y)
+	context.key_modifiers = unsafe { gg.Modifier(event.modifiers) }
+	context.key_repeat = event.key_repeat
+	if event.typ in [.key_down, .key_up] {
+		// Mirrors gg's `key_code_max` (512, private to gg).
+		key_idx := int(event.key_code) % 512
+		prev := context.pressed_keys[key_idx]
+		next := event.typ == .key_down
+		context.pressed_keys[key_idx] = next
+		context.pressed_keys_edge[key_idx] = prev != next
+	}
+	if context.config.event_fn != unsafe { nil } {
+		context.config.event_fn(&event, context.user_data)
+	} else if context.config.on_event != unsafe { nil } {
+		context.config.on_event(context.user_data, &event)
+	}
+	match event.typ {
+		.mouse_move {
+			if context.config.move_fn != unsafe { nil } {
+				context.config.move_fn(event.mouse_x, event.mouse_y, context.user_data)
+			}
+		}
+		.mouse_down {
+			if context.config.click_fn != unsafe { nil } {
+				context.config.click_fn(event.mouse_x, event.mouse_y, event.mouse_button,
+					context.user_data)
+			}
+		}
+		.mouse_up {
+			if context.config.unclick_fn != unsafe { nil } {
+				context.config.unclick_fn(event.mouse_x, event.mouse_y, event.mouse_button,
+					context.user_data)
+			}
+		}
+		.mouse_leave {
+			if context.config.leave_fn != unsafe { nil } {
+				context.config.leave_fn(&event, context.user_data)
+			}
+		}
+		.mouse_enter {
+			if context.config.enter_fn != unsafe { nil } {
+				context.config.enter_fn(&event, context.user_data)
+			}
+		}
+		.mouse_scroll {
+			if context.config.scroll_fn != unsafe { nil } {
+				context.config.scroll_fn(&event, context.user_data)
+			}
+		}
+		.key_down {
+			if context.config.keydown_fn != unsafe { nil } {
+				context.config.keydown_fn(event.key_code, unsafe { gg.Modifier(event.modifiers) },
+					context.user_data)
+			}
+		}
+		.key_up {
+			if context.config.keyup_fn != unsafe { nil } {
+				context.config.keyup_fn(event.key_code, unsafe { gg.Modifier(event.modifiers) },
+					context.user_data)
+			}
+		}
+		.char {
+			if context.config.char_fn != unsafe { nil } {
+				context.config.char_fn(event.char_code, context.user_data)
+			}
+		}
+		.resized {
+			context.scale = native_browser_context_scale(sapp.dpi_scale())
+			if context.ft != unsafe { nil } {
+				context.ft.scale = context.scale
+			}
+			context.width = event.window_width
+			context.height = event.window_height
+			context.window.width = event.window_width
+			context.window.height = event.window_height
+			if context.config.resized_fn != unsafe { nil } {
+				context.config.resized_fn(&event, context.user_data)
+			}
+		}
+		.quit_requested {
+			if context.config.quit_fn != unsafe { nil } {
+				context.config.quit_fn(&event, context.user_data)
+			}
+		}
+		else {}
+	}
+	$if windows || ((linux || freebsd || openbsd || netbsd || dragonfly || solaris) && !sokol_wayland ?) {
+		if event.typ == .key_down && event.key_code in [.backspace, .delete, .enter, .tab] {
+			event.char_code = match event.key_code {
+				.backspace { u32(8) }
+				.tab { 9 }
+				.enter { 13 }
+				.delete { 127 }
+				else { u32(event.key_code) }
+			}
+			event.key_code = .invalid
+			event.typ = .char
+			if context.config.event_fn != unsafe { nil } {
+				context.config.event_fn(&event, context.user_data)
+			} else if context.config.on_event != unsafe { nil } {
+				context.config.on_event(context.user_data, &event)
+			}
+			if context.config.char_fn != unsafe { nil } {
+				context.config.char_fn(event.char_code, context.user_data)
+			}
+		}
+	}
+}
 
 fn (app &BrowserApp) update_window_title() {
 	// Sokol's X11 title setter requires a live Display and Window. Documents
@@ -83,7 +236,7 @@ fn dispatch_native_browser_event(event_pointer &sapp.Event, user_data voidptr) {
 	defer { stage.finish() }
 	// Sokol's C integer fields are 32-bit; GG's V integers can be 64-bit.
 	// Copy fields instead of aliasing incompatible event layouts.
-	event := gg.Event{
+	mut event := gg.Event{
 		frame_count: event_pointer.frame_count
 		typ: event_pointer.type
 		key_code: gg.KeyCode(event_pointer.key_code)
@@ -105,12 +258,12 @@ fn dispatch_native_browser_event(event_pointer &sapp.Event, user_data voidptr) {
 		framebuffer_height: event_pointer.framebuffer_height
 	}
 	if event.typ != .resized {
-		C.gg__gg_event_fn(&event, user_data)
+		dispatch_gg_event(mut event, user_data)
 		return
 	}
 	$if !macos {
 		// The portable renderer owns a normal GG font atlas and resize path.
-		C.gg__gg_event_fn(&event, user_data)
+		dispatch_gg_event(mut event, user_data)
 		return
 	}
 	mut context := unsafe { &gg.Context(user_data) }
