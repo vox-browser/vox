@@ -27,6 +27,12 @@ fn structure_declaration(tokens []string, start int, structures map[string]Shade
  for at < tokens.len && tokens[at] != '}' {
   // Reuse the uniform declarator parser for std140 field layout. Structure
   // members have no storage qualifier, so prepend it only to this token view.
+  mut order:=0
+  if tokens[at]=='layout' {
+   if version!=300 || at+4>=tokens.len || tokens[at+1]!='(' || tokens[at+2] !in ['row_major','column_major'] || tokens[at+3]!=')' {return error('Invalid block member layout')}
+   order=if tokens[at+2]=='row_major' {1} else {2}
+   at+=4
+  }
   mut member_tokens := ['uniform']
   member_tokens << tokens[at..]
   declaration := uniform_declarations(member_tokens,0,size,version,structures)!
@@ -34,8 +40,8 @@ fn structure_declaration(tokens []string, start int, structures map[string]Shade
    if fields.any(it.name == field.name) { return error('Duplicate structure member: ${field.name}') }
    if child := structures[field.typ] { if child.depth+1 > depth { depth=child.depth+1 } }
    if depth > 16 { return error('Structure nesting limit exceeded') }
-   fields << field
-   signature << '${field.name}:${field.signature}'
+   fields << Uniform{...field,matrix_order:order}
+   signature << '${field.name}:${field.signature}:${order}'
   }
   size = declaration.size
   at += declaration.end-1
@@ -66,11 +72,14 @@ fn flatten_uniforms(roots []Uniform, structures map[string]ShaderStruct, nesting
  for root in roots {
   if root.scalar_type != 0 { leaves << root; continue }
   definition := structures[root.typ] or { return error('Unknown uniform structure') }
+  mut layout_fields:=definition.fields.clone()
+  if root.row_major {adjusted,_:=layout_block_fields(definition.fields,structures,true)!;layout_fields=adjusted.clone()}
   for element in 0..root.array_length {
    prefix := root.name+if root.is_array {'[${element}]'} else {''}
    mut children := []Uniform{}
-   for field in definition.fields {
-    children << Uniform{...field,name:prefix+'.'+field.name,offset:root.offset+element*root.array_stride+field.offset,binding:root.binding}
+   for field in layout_fields {
+    path:=if root.access!='' {root.access+if root.is_array {'[${element}]'} else {''}+'.'+field.name} else {''}
+    children << Uniform{...field,name:prefix+'.'+field.name,access:path,offset:root.offset+(if root.block_array {0} else {element*root.array_stride})+field.offset,binding:root.binding+if root.block_array {u32(element)} else {0}}
    }
    leaves << flatten_uniforms(children,structures,nesting+1)!
    if leaves.len > 4096 { return error('Uniform reflection field limit exceeded') }

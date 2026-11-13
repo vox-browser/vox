@@ -7,6 +7,10 @@ module shader
 pub struct Uniform {
 pub:
  name string
+ access string
+ row_major bool
+ matrix_order int
+ block_array bool
  typ string
  offset int
  rows int
@@ -81,9 +85,10 @@ fn uniform_members(fields []Uniform) ![]string {
  mut result := []string{}
  for field in fields {
   typ := if field.scalar_type == 0 {'_vox_Struct_'+field.typ} else {metal_type(field.typ)!}
-  if field.is_array { result << 'array<${typ}, ${field.array_length}> ${field.name} = {};' }
-  else if field.scalar_type == 0 { result << '${typ} ${field.name} = {};' }
-  else { result << '${typ} ${field.name} = ${typ}(0);' }
+  name:=if field.access!='' {field.access} else {field.name}
+  if field.is_array { result << 'array<${typ}, ${field.array_length}> ${name} = {};' }
+  else if field.scalar_type == 0 { result << '${typ} ${name} = {};' }
+  else { result << '${typ} ${name} = ${typ}(0);' }
  }
  return result
 }
@@ -95,13 +100,13 @@ fn uniform_loads(fields []Uniform) ![]string {
  for field in fields {
   if field.is_array { result << 'for (uint _vox_element=0; _vox_element<${field.array_length}; ++_vox_element) {' }
   element_offset := if field.is_array {' + _vox_element * ${field.array_stride}'} else {''}
-  destination := 'state.${field.name}'+if field.is_array {'[_vox_element]'} else {''}
+  destination := 'state.'+if field.access!='' {field.access} else {field.name}+if field.is_array {'[_vox_element]'} else {''}
   buffer_name := if field.binding==0 {'_vox_uniform_bytes'} else {'_vox_uniform_block${field.binding}'}
   storage := match field.scalar_type {7 {'int'} 8 {'uint'} else {'float'}}
   for column in 0..field.columns {
    mut scalars := []string{}
    for row in 0..field.rows {
-    offset := field.offset+column*field.matrix_stride+row*4
+    offset := field.offset+if field.row_major {row*field.matrix_stride+column*4} else {column*field.matrix_stride+row*4}
     load := '(*reinterpret_cast<constant ${storage}*>(${buffer_name} + ${offset}${element_offset}))'
     scalars << if field.semantic_type == 2 {'(${load} != 0u)'} else {load}
    }

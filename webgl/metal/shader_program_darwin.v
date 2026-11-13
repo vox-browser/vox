@@ -23,6 +23,7 @@ pub:
     image_depth bool
     image_scalar_type u32
     semantic_type u32
+    row_major bool
 }
 
 @[heap]
@@ -78,7 +79,7 @@ pub fn (program &ShaderProgram) resources() ![]ShaderResource {
             image_arrayed:value.image_arrayed!=0
             image_depth:value.image_depth!=0
             image_scalar_type:value.image_scalar_type
-            semantic_type:value.semantic_type
+            row_major:value.row_major!=0,semantic_type:value.semantic_type
 			byte_size: value.byte_size
 		}
 	}

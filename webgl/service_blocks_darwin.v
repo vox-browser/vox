@@ -76,6 +76,7 @@ fn metal_service_active_uniforms(program_name u32,count i32,indices &u32,pname u
             uniform_block_index { info.block_index } uniform_offset { if info.block_index<0 { -1 } else { int(info.resource.offset) } }
             uniform_array_stride { if info.block_index<0 { -1 } else { int(info.resource.array_stride) } }
             uniform_matrix_stride { if info.block_index<0 { -1 } else { int(info.resource.matrix_stride) } }
+            uniform_is_row_major { int(info.resource.row_major) }
             else { 0 }
         }
         unsafe { output[i]=i32(value) }

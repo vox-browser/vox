@@ -181,3 +181,20 @@ fn test_translated_program_drops_unused_attribute_and_uniform_bindings() {
  pixels:=target.read_pixels()!
  for i:=0;i<pixels.len;i+=4 {assert pixels[i..i+4]==[u8(255),0,0,255]}
 }
+
+fn test_named_row_major_block_arrays_decode_independent_gpu_buffers() {
+ mut target:=DrawingBuffer.create(1,1)!
+ defer {target.close()}
+ mut program:=ShaderProgram.compile(target,
+  '#version 300 es\nvoid main(){gl_Position=vec4(gl_VertexID==1?3.0:-1.0,gl_VertexID==2?3.0:-1.0,0,1);}',
+  '#version 300 es\nprecision highp float;layout(row_major,std140) uniform State{mat2x3 basis;vec4 tint;} data[2];out vec4 color;void main(){color=data[1].basis[1][2]==6.0?data[0].tint:vec4(0,1,0,1);}',3)!
+ defer {program.close()}
+ mut first:=[]f32{len:16};first[12]=1;first[15]=1
+ second:=[f32(1),2,0,0,3,4,0,0,5,6,0,0,0,1,0,1]
+ program.uniform_block_bytes(.fragment,1,0,unsafe{(&u8(first.data)).vbytes(64)})!
+ program.uniform_block_bytes(.fragment,2,0,unsafe{(&u8(second.data)).vbytes(64)})!
+ resources:=program.resources()!
+ assert resources.any(it.kind==100 && it.name=='State[1].basis' && it.row_major && it.offset==0)
+ target.draw(program,[],.triangles,0,3,1)!
+ assert (target.read_pixels()!)==[u8(255),0,0,255]
+}

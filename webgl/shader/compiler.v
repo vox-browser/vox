@@ -63,6 +63,7 @@ pub fn translate_with_bindings(source string, stage Stage, bindings map[string]i
 	mut textures := []TextureResource{}
 	mut uniform_size := 0
 	mut uniform_blocks := []UniformBlock{}
+    mut default_row_major:=false
 	mut at := 0
 	mut depth := 0
 	mut array_constructor_ends := map[int]bool{}
@@ -86,16 +87,22 @@ pub fn translate_with_bindings(source string, stage Stage, bindings map[string]i
         }
         if at in function_setups {body << '{';body << function_setups[at];depth++;at++;continue}
 		mut explicit_location := -1
-        if tokens[at] == 'layout' && at+2 < tokens.len && tokens[at+2] == 'std140' {
-            if depth != 0 || version != 300 {return error('Uniform blocks require global ESSL300 declarations')}
-            if uniform_blocks.len >= 12 {return error('Uniform block binding limit exceeded')}
-            declaration:=uniform_block_declaration(tokens,at,structures,u32(uniform_blocks.len+1))!
-            if uniform_blocks.any(it.name==declaration.block.name) {return error('Duplicate uniform block')}
+        if _:=block_uniform_at(tokens,at) {
+            if depth!=0 || version!=300 {return error('Uniform blocks require global ESSL300 declarations')}
+            declaration:=uniform_block_declaration(tokens,at,structures,u32(uniform_blocks.len+1),default_row_major)!
+            if declaration.default_only {default_row_major=declaration.row_major;at=declaration.end;continue}
+            for block in declaration.blocks {if uniform_blocks.any(it.name==block.name) {return error('Duplicate uniform block')}}
+            if declaration.named {
+                if declaration.definition.name in structures {return error('Block type conflicts with a structure')}
+                structures[declaration.definition.name]=declaration.definition
+                structure_order << declaration.definition
+            }
             for field in declaration.fields {
-                if uniforms.any(it.name==field.name) || inputs.any(it.name==field.name) || outputs.any(it.name==field.name) || textures.any(it.name==field.name) {return error('Duplicate uniform block member')}
+                field_name:=if field.access!='' {field.access} else {field.name}
+                if uniforms.any(it.name==field_name || it.access==field_name) || inputs.any(it.name==field_name) || outputs.any(it.name==field_name) || textures.any(it.name==field_name) {return error('Duplicate uniform block member')}
                 uniforms << field
             }
-            uniform_blocks << declaration.block
+            uniform_blocks << declaration.blocks
             at=declaration.end
             continue
         }

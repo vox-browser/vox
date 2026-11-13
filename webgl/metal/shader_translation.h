@@ -12,7 +12,7 @@ typedef struct {
     uint32_t offset, array_stride, matrix_stride, base_type, rows, columns, array_length;
     uint64_t byte_size;
     uint32_t image_dimension,image_arrayed,image_depth,image_scalar_type;
-    uint32_t semantic_type;
+    uint32_t semantic_type,row_major;
 } VoxMetalShaderResource;
 
 typedef struct {
