@@ -7,20 +7,17 @@ https://vox-browser.org
 <img width="2078" height="1628" alt="image" src="https://github.com/user-attachments/assets/ed3d6776-78dd-4903-b716-a95cd5845cab" />
 
 WebGL uses a shader frontend written in V, with direct Metal generation on
-macOS and native driver compilation on Linux and Windows. **glslang and
-SPIRV-Cross are no longer build or runtime dependencies**; neither package is
-needed for the installation commands below. See
+macOS and native driver compilation on Linux and Windows. See
 [shader validation and backend equivalence tests](docs/SHADER_VALIDATION.md).
 
 ### Building
 
-Python is not required to build Vox. Setup and build helpers run as V `.vsh`
-scripts. Python is used by optional tests, benchmarks, and generators. See
+Setup and build helpers run as V `.vsh` scripts. Python is used by optional
+tests, benchmarks, and generators. See
 [build-tool commands](tools/BUILDING.md).
 
 Install a current [V compiler](https://github.com/vlang/v), put `v` on `PATH`,
 and install the shared V UI with `v install ui2` (or update it with `v up ui2`).
-Vox needs no Ladybird checkout, Skia, vcpkg or Rust toolchain.
 
 Install native dependencies once, then prepare the development environment once
 per terminal from the repository root. Subsequent builds use **`v .`**. The setup
@@ -37,18 +34,16 @@ v .
 ./vox2 https://example.com
 ```
 
-The first setup downloads checksum-verified HarfBuzz 15.1.0 sources and builds
-its OpenType/CoreText library directly with Apple's Clang, without the optional
-Graphite2 backend. CMake and pkgconf are not required on macOS.
-The result is cached under `Build/deps/harfbuzz-15.1.0` and reused by development
-and production builds. FreeType and HarfBuzz remain native dependencies;
-HarfBuzz is supplied by setup rather than Homebrew. Graphite2 is not required.
+The first setup downloads checksum-verified HarfBuzz 15.1.0 sources, builds its
+OpenType/CoreText library with Apple's Clang, and caches the result under
+`Build/deps/harfbuzz-15.1.0` for reuse by development and production builds.
+HarfBuzz is supplied by setup rather than Homebrew.
 
 For an existing macOS checkout, rerun
 `eval "$(sh tools/run_v_tool.sh dev_build_env)"` before the next `v .` build.
 
 Font selection, Unicode processing and glyph-run policy use V code with bundled
-Unicode 17 data; ICU is not required. FFmpeg, libavif and curl
+Unicode 17 data. FFmpeg, libavif and curl
 supply media, AVIF and HTTP support. To produce the signed application bundle:
 
 ```sh
