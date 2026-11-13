@@ -72,9 +72,34 @@ fn replaced_image_gpu_clip_data(command &layout.PaintCommand, rect painting.IntR
 			f32(r.top_left.x), f32(r.top_left.y), f32(r.top_right.x), f32(r.top_right.y),
 			f32(r.bottom_right.x), f32(r.bottom_right.y), f32(r.bottom_left.x), f32(r.bottom_left.y)]!
 	}
+	// ImagePaintResult's integer corners belong to LibWeb's device geometry.
+	// Chromium carries fractional CSS radii through its snapped image clip.
+	if command.kind == 'draw_replaced_image' {
+		if paintable := command.image_paintable {
+			mut own := paintable.border_radii
+			borders := paintable.border_widths
+			own.shrink(borders.top, borders.right, borders.bottom, borders.left)
+			return replaced_image_gpu_fractional_clip(rect, own)
+		}
+	} else if command.kind == 'draw_video' {
+		if paintable := command.video_paintable {
+			mut own := paintable.border_radii
+			borders := paintable.border_widths
+			own.shrink(borders.top, borders.right, borders.bottom, borders.left)
+			return replaced_image_gpu_fractional_clip(rect, own)
+		}
+	}
 	return [f32(rect.x), f32(rect.y), f32(rect.width), f32(rect.height),
 		f32(radii.top_left.horizontal), f32(radii.top_left.vertical),
 		f32(radii.top_right.horizontal), f32(radii.top_right.vertical),
 		f32(radii.bottom_right.horizontal), f32(radii.bottom_right.vertical),
 		f32(radii.bottom_left.horizontal), f32(radii.bottom_left.vertical)]!
+}
+
+fn replaced_image_gpu_fractional_clip(rect painting.IntRect, radii painting.BorderRadiiData) [12]f32 {
+	return [f32(rect.x), f32(rect.y), f32(rect.width), f32(rect.height),
+		f32(radii.top_left.horizontal), f32(radii.top_left.vertical), f32(radii.top_right.horizontal),
+		f32(radii.top_right.vertical), f32(radii.bottom_right.horizontal),
+		f32(radii.bottom_right.vertical), f32(radii.bottom_left.horizontal),
+		f32(radii.bottom_left.vertical)]!
 }

@@ -2,12 +2,18 @@
 
 Vox can be compiled for Windows x86-64 with current V and MinGW-w64. The build
 uses the shared V/UI2 chrome, GG/Sokol window host, V raster services,
-HarfBuzz, ICU, ANGLE, OpenSSL, libcurl and JavaScriptCore's C API. The Windows
+HarfBuzz, ICU, native Mesa WGL/GLES, OpenSSL, libcurl and JavaScriptCore's C API. The Windows
 window host uses Direct3D 11, with WARP software rendering when hardware device
 creation fails. The fallback lives in Vox's graphics adapter; the shared V and
 Sokol installations do not need changes.
 The V graphics adapter also supplies shaders that consume GG's column-major
 projection and texture matrices correctly in HLSL, including the font atlas.
+
+WebGL1 and WebGL2 share Linux's bounded GLES3 adapter and WebGL ESSL
+validation, using Mesa's native WGL ES profiles for robust contexts. The browser window
+continues to use D3D11. No ANGLE headers, libraries or vendor calls are required.
+This backend's current validation is recorded in
+[the Windows WebGL report](WINDOWS_WEBGL_GLES.md).
 
 The native `build_browser.vsh`/`x.imp` browser flow and portable ZIP packaging remain
 release scaffolding. Use the dedicated helper below for this compilation path.
@@ -34,33 +40,51 @@ installation and the one-time environment setup followed by `v .`.
 
 ## Dependencies and native build
 
-Install current V, Python 3, the latest upstream UI2 and the MinGW development
+Install current V, the latest upstream UI2 and the MinGW development
 packages. Use `v install ui2` for a new installation and `v up ui2` to update it.
 The [UI2 adapter guide](../tools/ui2/README.md) also covers separate checkouts.
 In an MSYS2 MinGW64 shell, the native packages are:
 
 ```sh
 pacman -S --needed mingw-w64-x86_64-toolchain mingw-w64-x86_64-pkgconf \
-  mingw-w64-x86_64-python mingw-w64-x86_64-icu \
+  mingw-w64-x86_64-icu \
   mingw-w64-x86_64-harfbuzz mingw-w64-x86_64-freetype \
   mingw-w64-x86_64-openssl \
-  mingw-w64-x86_64-angleproject mingw-w64-x86_64-curl \
-  mingw-w64-x86_64-glslang
+  mingw-w64-x86_64-7zip mingw-w64-x86_64-curl
 ```
 
 Provide a Windows `JavaScriptCore.dll` and its runtime dependencies. The
 [Playwright WebKit distribution](https://github.com/microsoft/playwright/blob/main/packages/playwright-core/browsers.json)
-contains a Windows WebKit build with this DLL. `prepare_windows_jsc.py` checks
+contains a Windows WebKit build with this DLL. `prepare_windows_jsc.vsh` checks
 the actual DLL's x86-64 export table against every C API declared by Vox before
 creating its MinGW import library. It does not substitute a JavaScript engine.
 
-From the repository, with MinGW Python and compiler tools on PATH:
+From the repository, with V and MinGW compiler tools on PATH:
 
 ```sh
-python tools/build_windows_browser.py \
+sh tools/run_v_tool.sh build_windows_browser \
   --javascriptcore-dll C:/path/to/webkit/JavaScriptCore.dll \
   --output C:/path/to/output/Vox.exe
 ```
+
+The helper downloads matching Mesa development files and the x64 MinGW runtime
+from `mesa-dist-win`, pinned by version and SHA-256 in `tools/windows_mesa.json`.
+It verifies both archives and prepares a separate `vox-mesa-egl.pc`; it never
+uses ANGLE's import libraries. MSYS2's standard Mesa package disables EGL/GLES
+and cannot replace this dependency. `curl` and `7zz` or `7z` must be on `PATH`.
+`SEVENZIP` can select a different archive tool.
+
+Install `libEGL.dll`, `libGLESv2.dll`, `libgallium_wgl.dll`, `opengl32.dll` and their matching
+runtime dependencies from `Build/deps/windows/mesa/release-mingw/x64` beside
+Vox, or make them discoverable on its DLL search path. Remove old ANGLE EGL/GLES
+DLLs beside the executable: Windows searches that directory before `PATH`.
+The WGL loader must be beside the Gallium DLL. Vox requires a robust Mesa GLES
+context instead of silently using an ordinary context or ANGLE. Include the
+package's `dxil.dll` when using Mesa's D3D12 driver.
+Keep the current compiler's C++/exception/pthread runtimes; do not replace them
+with older DLLs from another dependency package. Mesa can use its available
+hardware drivers or software rendering; set `GALLIUM_DRIVER=llvmpipe` for the
+focused software-rendering check.
 
 Set `V_BIN`, `UI2_SOURCE_DIR`, `CC`, `CXX`, `AR`, `OBJDUMP` or `DLLTOOL` to
 override tool discovery. UI2 is linked directly from the current checkout.
@@ -69,6 +93,9 @@ Windows Developer Mode supplies this for ordinary user accounts. Keep the native
 dependency DLL directories on PATH, or install their
 DLLs beside Vox.
 JavaScriptCore's dependencies must come from its matching WebKit distribution.
+On a fresh Windows installation, also install Microsoft's
+[Visual C++ v14 x64 Redistributable](https://learn.microsoft.com/en-us/cpp/windows/latest-supported-vc-redist)
+for JavaScriptCore's MSVC runtime imports (`MSVCP140` and `VCRUNTIME140`).
 The GCC runtime DLLs must match the compiler used for Vox's native bridges.
 An older `libstdc++-6.dll` can load successfully itself while lacking an export
 required by Vox, such as GCC 16's `__cxa_thread_atexit`. For a cross compiler,
@@ -92,9 +119,9 @@ a Windows executable. The cross compiler supplies its own C runtime headers.
 The following builds inside the repository's memory guard:
 
 ```sh
-python3 tools/run_memory_bounded.py \
+sh tools/run_v_tool.sh run_memory_bounded \
   --lock Build/windows-build-UNIQUE.lock --report Build/windows-build-UNIQUE.json -- \
-  python3 tools/build_windows_browser.py \
+  sh tools/run_v_tool.sh build_windows_browser \
     --deps-root Build/deps/windows \
     --javascriptcore-dll /path/to/webkit/JavaScriptCore.dll \
     --output /tmp/Vox.exe
@@ -105,7 +132,7 @@ the import library remain under `Build/deps/windows`. The helper prepares
 native bridges and UI2, then runs the equivalent of:
 
 ```sh
-ui2_modules=$(python3 tools/prepare_ui2.py)
+ui2_modules=$(sh tools/run_v_tool.sh prepare_ui2)
 v -b c -memory-limit 10G -prod -no-prod-options -enable-globals -gc none \
   -os windows -arch amd64 -cc x86_64-w64-mingw32-gcc \
   -d ui2_custom_rendering -d sokol_d3d11 \
@@ -278,7 +305,8 @@ native mouse input to display “Click passed”, and closed normally (browser a
 guest guard exit 0, peak 768,286,720 bytes). Both used a 3 GiB guest limit. The
 cross-build passed its 12 GiB host guard, peaking at 6,892,617,728 bytes.
 
-The runtime at `C:\vox-fixed-runtime` includes glslang and SPIRV-Tools plus their
+That historical runtime at `C:\vox-fixed-runtime` included the former shader
+compiler dependencies plus their
 matching MinGW runtime DLLs. The earlier missing-DLL/entry-point launches and
 pre-fix timeout above remain failed attempts; they are not passing shutdown
 checks. These results cover this executable's headless, click and close paths,
@@ -317,3 +345,38 @@ scan codes were absent; these attempts remain local evidence. The earlier
 900-second browser timeout is also retained and is not a passing close check.
 These smoke checks validate this build's window lifecycle and navigation; they
 do not establish Windows pixel equivalence with Brave.
+
+## Native WebGL checks
+
+The Windows CI workflow runs `tools/native_gles_test.c` on Windows with the
+pinned Mesa runtime. It checks both WebGL versions, shader pixels and rejection,
+original shader source, robust context flags, zero-initialized resources,
+CPU/PBO bounds, errors and context ownership, and loaded Mesa modules. Run the
+same check in an MSYS2 MinGW64 shell after preparing dependencies:
+
+```sh
+sh tools/run_v_tool.sh prepare_windows_mesa
+mkdir -p Build/windows-webgl
+runtime-guard.exe 300000 12288 compile.out compile.err \
+  "$(cygpath -w "${V_BIN:-$(command -v v)}")" \
+  -new-compiler -b c -memory-limit 10G -subsystem console \
+  -o Build/windows-webgl/native-gles.exe tools/native_gles_driver.v
+export PATH="$MINGW_PREFIX/bin:$PWD/Build/deps/windows/mesa/release-mingw/x64:$PATH"
+export GALLIUM_DRIVER=llvmpipe
+runtime-guard.exe 180000 3072 native.out native.err \
+  "$(cygpath -w "$PWD/Build/windows-webgl/native-gles.exe")"
+```
+
+The interactive browser driver accepts the unchanged shared WebGL fixture as
+an optional additional command-line argument. After its startup, click, resize and
+address-entry checks it verifies the author's successful shader/readback title,
+all 8,192 displayed canvas pixels, a loaded Mesa driver and clean browser exit:
+
+```sh
+runtime-guard.exe 600000 3072 browser.out browser.err \
+  test-windows-browser.exe C:/path/to/Vox.exe C:/private/windows-fixtures \
+  C:/path/to/vox2/Tests/Browser/Native/webgl-smoke.html
+```
+
+Compilation alone does not execute either test. Use a fresh executable/profile,
+record executable and dependency hashes, and keep the browser/guard receipts.

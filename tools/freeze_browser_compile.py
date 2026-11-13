@@ -23,7 +23,7 @@ OPTION_ARGUMENTS = {'-I', '-L', '-F', '-D', '-U', '-isystem', '-iquote', '-idira
                     '-framework', '-weak_framework', '-arch',
                     '-target', '-stdlib', '-isystem-after'}
 SYSTEM_LIBRARIES = {'System', 'c', 'm', 'pthread', 'objc', 'z', 'iconv', 'c++',
-                    'icucore', 'resolv', 'dl'}
+                    'resolv', 'dl'}
 
 
 def digest(path):

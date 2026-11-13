@@ -116,22 +116,22 @@ fn test_deferred_mutation_records_own_metadata_outside_native_request_scratch() 
 	queue.retire()
 }
 
-fn test_pending_mutation_observers_sort_by_creation_index() {
-	first := MutationObserver.construct_impl(none)!
-	second := MutationObserver.construct_impl(none)!
-	third := MutationObserver.construct_impl(none)!
-	assert first.creation_index_ < second.creation_index_
-	assert second.creation_index_ < third.creation_index_
-	mut pending := [third, first, second]
-	sort_pending_mutation_observers(mut pending)
-	assert voidptr(pending[0]) == voidptr(first)
-	assert voidptr(pending[1]) == voidptr(second)
-	assert voidptr(pending[2]) == voidptr(third)
-	mut already_sorted := [first, second]
-	sort_pending_mutation_observers(mut already_sorted)
-	assert voidptr(already_sorted[0]) == voidptr(first)
-	assert voidptr(already_sorted[1]) == voidptr(second)
-	mut single := [first]
-	sort_pending_mutation_observers(mut single)
-	assert voidptr(single[0]) == voidptr(first)
+fn test_mutation_delivery_uses_creation_order_when_mutations_arrive_in_reverse() {
+    mut document:=Document.create(url_about_blank())
+    defer { document.finalize() }
+    mut first_target:=document.create_element_ns('http://www.w3.org/1999/xhtml','div')!
+    mut second_target:=document.create_element_ns('http://www.w3.org/1999/xhtml','div')!
+    document.append_child(first_target);document.append_child(second_target)
+    mut log:=&MutationDeliveryLog{}
+    mut queue:=MutationObserverDeliveryQueue.create(fn () {})
+    mut first:=MutationObserver.construct_impl(&CallbackType{mutation_callback:fn [mut log] (_ []&MutationRecord,_ &MutationObserver) { log.deliveries<<1 }})!
+    mut second:=MutationObserver.construct_impl(&CallbackType{mutation_callback:fn [mut log] (_ []&MutationRecord,_ &MutationObserver) { log.deliveries<<2 }})!
+    first.delivery_queue_=queue;second.delivery_queue_=queue
+    mut first_options:=MutationObserverOptions{attributes:true};mut second_options:=MutationObserverOptions{attributes:true}
+    first.observe(first_target.as_node(),mut first_options)!;second.observe(second_target.as_node(),mut second_options)!
+    second_target.set_attribute_value('data-order','second');first_target.set_attribute_value('data-order','first')
+    assert log.deliveries.len==0
+    queue.notify()
+    assert log.deliveries==[1,2]
+    first.disconnect();second.disconnect();queue.retire()
 }

@@ -1,11 +1,6 @@
 // SPDX-License-Identifier: BSD-2-Clause
 module webcrypto
 
-$if macos {
-	#pkgconfig --cflags openssl
-} $else {
-	#pkgconfig openssl
-}
 #include "@DIR/native_chacha.h"
 
 fn C.vox_chacha20_poly1305(int, &u8, uint, &u8, uint, &u8, uint, &u8, uint, &u8, &uint) &char

@@ -62,7 +62,7 @@ jobs:
           sudo apt-get install -y --no-install-recommends \
             build-essential clang ninja-build generate-ninja pkg-config \
             python3 git curl ca-certificates nodejs openssl libjavascriptcoregtk-4.1-dev \
-            libglib2.0-dev libharfbuzz-dev libicu-dev glslang-dev \
+            libglib2.0-dev libharfbuzz-dev \
             libcurl4-openssl-dev libssl-dev libegl1-mesa-dev libgles2-mesa-dev \
             libgl1-mesa-dev libxi-dev libxcursor-dev libxrandr-dev libx11-dev \
             libasound2-dev libgc-dev libfreetype-dev libfontconfig-dev \
@@ -91,10 +91,9 @@ jobs:
           sudo swapon "$RUNNER_TEMP/vox.swap"
 
       - name: Build V and fetch UI2
-        # Unpinned shallow clone plus plain make, exactly like the master
-        # scaffolding job: pinned source builds no longer bootstrap on
-        # current runners (missing fd_poll.h, then an unresolved string
-        # helper in the v1-to-v2 step at the old pin).
+        # Unpinned shallow clone plus plain make: pinned source builds no longer
+        # bootstrap on current runners (missing fd_poll.h at old pins, then an
+        # unresolved string helper in the v1-to-v2 step).
         id: toolchain
         if: ${{ !cancelled() && steps.system_dependencies.outcome == 'success' }}
         timeout-minutes: 25
@@ -130,6 +129,10 @@ jobs:
             --report "$RUNNER_TEMP/vox-native-build.json" --timeout 300 -- \
             python3 tools/build_linux_native.py
 
+      - name: Check native GLES without ANGLE
+        if: ${{ !cancelled() && steps.toolchain.outcome == 'success' && matrix.gc == 'boehm' }}
+        timeout-minutes: 15
+        run: python3 tools/test_webgl_gles.py --output Build/linux/webgl-gles
 
       - name: Check vlib XML input compatibility
         if: ${{ !cancelled() && steps.toolchain.outcome == 'success' && matrix.gc == 'boehm' }}
@@ -181,6 +184,17 @@ jobs:
             --lock "$RUNNER_TEMP/vox-tab-codec-$LADYBIRD_V_GC.lock" \
             --report "$RUNNER_TEMP/vox-tab-codec-$LADYBIRD_V_GC.json" --timeout 540 -- \
             python3 tools/test_tab_metadata_codec.py --v "$V_BIN" --gc "$LADYBIRD_V_GC"
+
+      - name: Check WebGL GLES service and shader equivalence
+        if: ${{ !cancelled() && steps.native_dependencies.outcome == 'success' }}
+        timeout-minutes: 20
+        run: |
+          python3 tools/run_memory_bounded.py \
+            --lock "$RUNNER_TEMP/vox-webgl-$LADYBIRD_V_GC.lock" \
+            --report "$RUNNER_TEMP/vox-webgl-$LADYBIRD_V_GC.json" --timeout 1080 -- \
+            python3 tools/test_linux_native.py --gc "$LADYBIRD_V_GC" \
+              webgl/native_draw_test.v webgl/native_essl_equivalence_test.v \
+              webgl/native_parameter_query_test.v imageraster/canvas_upload_test.v
 
       - name: Check portable shadow and canvas rasterization
         if: ${{ !cancelled() && steps.native_dependencies.outcome == 'success' }}
@@ -451,6 +465,8 @@ jobs:
           paths = sorted(temporary.glob('vox-*.json'))
           paths.extend(sorted(temporary.glob('vox-*-revision.txt')))
           paths.extend(Path('Build/linux/browser-smoke').glob('*.log'))
+          paths.extend(Path('Build/linux/webgl-gles').glob('*.log'))
+          paths.extend(Path('Build/linux/webgl-gles').glob('*.json'))
           paths.extend(Path('Build/linux/tests').glob('*/run-*/*.log'))
           paths.extend(Path('Build/linux/tests').glob('*/run-*/*.json'))
           receipts = sorted(Path('Build/linux/production-build/receipts').glob('*'))
@@ -479,6 +495,8 @@ jobs:
             Build/linux/tests/*/run-*/*.log
             Build/linux/tests/*/run-*/*.json
             Build/linux/browser-smoke/
+            Build/linux/webgl-gles/*.log
+            Build/linux/webgl-gles/*.json
 
   # These suites compile the production Cocoa/IOSurface headers directly and
   # need neither V nor a prebuilt app. Full macOS app/tab and Metal pixel

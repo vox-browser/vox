@@ -2,6 +2,52 @@
 
 Audited: 2026-10-02.
 
+## Pure V Unicode backend — 2026-11-12
+
+Unicode processing now lives in `../vunicode/`: Unicode 17.0.0 general
+categories, binary properties, scripts/extensions and emoji sequences; full
+casing and simple folding; case closures; lossless UTF-16 normalization;
+UAX #9 paragraph levels/reordering; UAX #14 line breaks with CSS CJK tailoring;
+and UAX #29 word boundaries for titlecase. The URL package uses the same
+normalizer/data for nontransitional UTS #46, ContextJ and bidi validation, with
+V's `encoding.punycode` codec. C/C++ bridges, native ICU symbols and ICU package
+requirements have been removed.
+
+Default JavaScript String casing now uses Unicode root mappings, independent
+of the process locale; CSS casing still honors explicit language tags,
+including Turkish/Azeri, Lithuanian, Dutch IJ and Greek uppercase tailoring.
+Unpaired UTF-16 surrogates remain intact through casing and normalization.
+Line breaking implements the Unicode default rules and the existing CSS CJK
+modes; it does not ship ICU's dictionary segmentation for Southeast Asian
+languages. This change does not replace the browser's JavaScriptCore engine
+or remove dependencies internal to system frameworks and third-party libraries.
+
+`tools/generate_unicode.py UCD_DIRECTORY` regenerates the bundled data without
+ICU or third-party Python packages. Use the Unicode 17 UCD, IDNA and Emoji
+text files; `vunicode/data/SOURCES` records their hashes, and `data/LICENSE`
+contains the Unicode license. Runtime lookup uses immutable embedded tables;
+no system Unicode files, native Unicode calls or network access are needed.
+`tools/check_unicode_dependency.py [EXECUTABLE]` audits source and direct binary
+imports. `tools/unicode_smoke.v` exercises the services in a standalone program.
+
+The checked-in Unicode 17 normalization, line-break, word-break and
+bidirectional-character conformance files pass, including visual ordering for
+explicit paragraph directions. All 6,391 IDNA corpus rows pass in both strict
+and nonstrict modes. Existing property/case/regex corpus references are retained.
+The C backend also passes the 250-file LibJS suite with `-gc none`; default-GC
+coverage consists of 248 files in the initial full run and the two remaining
+corpus files after removing obsolete ICU locale setup. The unchanged matching,
+class and property corpus references pass. The exact AST corpus passes 100/100.
+The browser type-check passes with its production module paths, and the
+standalone Unicode smoke executes under `-prod -gc none` while importing only
+libSystem on macOS, with no ICU symbols. Bidi shaping and CSS CJK segmenter
+regressions pass. Full first-letter layout validation remains pending: its
+compilation exceeded the 12 GiB aggregate guard even with serial code generation.
+No windowed production validation is claimed for the new backend; the managed
+post-commit rebuild supplies the next browser bundle.
+
+Older ICU-based validation records below describe historical implementations.
+
 ## November 1 upstream correctness ports — 2026-11-10
 
 Five commits from Ladybird's November 1 landing set are translated here:
@@ -32,7 +78,7 @@ explicit untranslated dependency.
 String UTF-16 helpers also follow `AK/{UnicodeUtils.h,Utf16View.cpp,Utf16String.cpp}`
 and simdutf 7.4.0's scalar `utf16.h` validation and repair bodies. Unicode casing
 and normalization follow `LibUnicode/{Utf16String.cpp,Normalize.{h,cpp},ICU.{h,cpp}}`
-and retain ICU as the native algorithm and Unicode-data dependency.
+and now use the shared pure V Unicode backend.
 Regex records, input primitives, pattern analysis, literal prefilters and VM
 storage, repetition, traversal, literal/backreference and character-class matching,
 simple-match predicates, candidate filters, simple-scan execution, fast greedy
@@ -44,8 +90,8 @@ Unicode property queries, resolution/validation, scalar predicates and
 string-property packing follow `LibUnicode/Rust/src/character_types.rs` and
 `LibUnicode/CharacterTypes.cpp`. Regex execution remains pending.
 Regex canonicalization and UnicodeSet closure/range operations additionally follow
-`LibUnicode/{CharacterTypes,String}.cpp`, retaining ICU's full UTF-8 uppercase,
-simple Unicode folding and case-closure algorithms.
+`LibUnicode/{CharacterTypes,String}.cpp`, with full uppercase, simple Unicode
+folding and case closures supplied by the shared V backend.
 All refreshed V code and tests live here; the upstream checkout and the original
 `libjs_v` checkout are references. The upstream BSD-2-Clause notice is retained
 in [`LICENSE`](LICENSE).
@@ -71,7 +117,7 @@ creates a realm with a global environment and pushes its execution context.
 
 | V implementation | Upstream responsibility |
 | --- | --- |
-| `lexer.v`, `token.v`, `unicode_properties.c.v` | UTF-16 lexing, token classification, ICU identifier properties |
+| `lexer.v`, `token.v`, `unicode_properties.v` | UTF-16 lexing, token classification, ICU identifier properties |
 | `parser.v`, `expressions.v`, `declarations.v`, `statements.v` | Script/module grammar and parser early errors |
 | `scope_collector.v` | Binding resolution, local indices, captures, eval poisoning, declaration metadata |
 | `ast.v`, `ast_dump.v`, `utf16_utils.v` | Retained syntax trees, function ownership, UTF-16 identity, AST serialization |
@@ -103,8 +149,8 @@ creates a realm with a global environment and pushes its execution context.
 | `string_character_access.v`, `string_slicing.v`, `string_search.v`, `string_concat.v` | String branding/value extraction, CodePointAt, at/charAt/charCodeAt/codePointAt, slice/substring/substr, indexOf/lastIndexOf and concatenation |
 | `string_trim.v`, `string_well_formed.v`, `string_prototype_iterator.v` | Exact upstream whitespace trimming, simdutf UTF-16 validation/repair and String @@iterator creation; remaining prototype bodies and initialization pending |
 | `string_repeat.v`, `string_padding.v`, `string_html.v` | Ordered repeat validation and checked UTF-16 assembly, StringPad early returns and filler truncation, and all thirteen Annex B HTML wrappers with exact attribute-quote replacement |
-| `string_case.v`, `unicode_transform.c.v`, `unicode_transform.h` | Generic toLowerCase/toUpperCase conversion, source ASCII shortcut and native UTF-16 ICU casing; header contains ABI declarations only |
-| `string_normalize.v`, `unicode_normalize.c.v` | normalize form validation and conversion order, all four native UTF-16 ICU normalization forms and original-input failure fallback |
+| `string_case.v`, `unicode_transform.v` | Generic toLowerCase/toUpperCase conversion, ASCII shortcut and locale-independent V UTF-16 casing |
+| `string_normalize.v`, `unicode_normalize.v` | normalize form validation and conversion order, all four UTF-16 normalization forms through the shared V backend |
 | `string_substitution.v` | GetSubstitution dollar tokens, one/two-digit capture selection and fallback, live named-group lookup and capture conversion |
 | `string_replace.v`, `string_split.v` | String replace/split symbol dispatch and complete string paths, native replacement callbacks, Uint32 split limits and real Array results with an explicit prototype dependency |
 | `regexp_flags.v` | `RegExpObject::Flags`, strict initialization flag validation, permissive constructor bit mapping and exact UTF-16 SyntaxError diagnostics |
@@ -118,14 +164,14 @@ creates a realm with a global environment and pushes its execution context.
 | `regex_vm_state.v` | VM/scratch records, construction/reset, flat register snapshots, all saved-choice variants and modifier-stack transitions |
 | `regex_vm_repeat.v` | Repeat-start/check handlers with greedy/lazy counter snapshots and checked same-matcher loop suffix minima |
 | `regex_vm_traversal.v` | Forward/backward code-point boundaries, pair-aware character movement and checked multi-character position arithmetic |
-| `regex_case_folding.c.v`, `regex_case_folding.h` | Legacy full-uppercase and Unicode simple-fold canonicalization, ASCII shortcuts, equality, word/digit predicates and all six builtin character classes through the native ICU ABI |
+| `regex_case_folding.v` | Legacy full-uppercase and Unicode simple-fold canonicalization, ASCII shortcuts, equality, word/digit predicates and all six builtin character classes through the V Unicode tables |
 | `regex_vm_character.v` | Modifier-aware literal matching and adjacent-code-unit word-boundary checks |
 | `regex_vm_backreference.v` | Numbered/named references, Unicode code-point comparison in both directions, and first-participating duplicate capture priority |
-| `regex_unicode_set.c.v`, `regex_unicode_set.h` | Ordered bounded case closures, case-insensitive range expansion and inverse-range matching through ICU; header contains ABI declarations only |
+| `regex_unicode_set.v` | Ordered bounded case closures, case-insensitive range expansion and inverse-range matching in V |
 | `regex_character_class.v` | Inclusive small/large range membership and complete legacy, Unicode and UnicodeSets case-insensitive character-class matching |
 | `regex_simple_scan.v` | Complete simple-scan membership predicate |
-| `regex_unicode_property_names.c.v`, `regex_unicode_properties.v`, `regex_unicode_property.h` | Exact category/binary/script aliases, aggregate categories, script extensions, cached case-closed sets, property resolution/validation and scalar predicates; header contains ABI declarations only |
-| `regex_unicode_string_properties.c.v` | ICU string-property enumeration, complete code-point packing and query/short-buffer/Rust wrapper boundaries |
+| `regex_unicode_property_names.v`, `regex_unicode_properties.v` | Exact category/binary/script aliases, aggregate categories, script extensions, case closures, property resolution/validation and scalar predicates |
+| `regex_unicode_string_properties.v` | V string-property enumeration in preserved UTF-16 sort order, complete code-point packing and query/short-buffer/Rust wrapper boundaries |
 | `regex_vm_property.v`, `regex_simple_match.v` | VM property forwarding, raw/modifier-only/VM simple-match predicates, unions and the Unicode/UnicodeSets negated-property case distinction |
 | `regex_candidate_start.v` | First-character/first-filter membership and complete next-candidate selection, preserving anchors, empty patterns and surrogate boundaries |
 | `regex_scan_execution.v` | Complete single-match, greedy and find-all simple scan execution with UTF-16 positions and source capture-buffer boundaries |
@@ -1478,15 +1524,9 @@ All 100 checked-in upstream AST fixtures compare directly and exactly, including
 scope flags and source positions. Only trailing CR/LF characters are ignored;
 there are no case overrides. Actual dumps are written to `Build/libjs-ast/`.
 Pass fixture stems to select cases, `--upstream PATH` to choose a checkout, or
-set `LADYBIRD_SOURCE_DIR`. ICU headers and `libicucore` on macOS or `libicuuc` on
-Linux are required for identifier predicates, Unicode casing and normalization.
-The regex property backend additionally requires standard ICU 78 on macOS.
-The V package links Homebrew's `icu4c` under `/opt/homebrew/opt/icu4c` on arm64
-or `/usr/local/opt/icu4c` on Intel; the native bundle can also resolve the same
-versioned ABI through its existing vcpkg dependency path. Apple's libicucore
-tailors general categories and binary properties for legacy private-use
-characters, so those property queries use private standard-ICU bindings.
-The other platform ICU entry points are not renamed by this header.
+set `LADYBIRD_SOURCE_DIR`. The frontend and regex Unicode helpers use the
+bundled Unicode 17 V implementation; no ICU headers or libraries are required.
+
 
 The VM tests exercise the runtime records directly and through compiled scripts.
 Translated native functions cover call frames, arguments, receiver/realm state,

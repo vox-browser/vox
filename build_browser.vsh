@@ -27,7 +27,7 @@ os.chdir(repo_dir) or { panic('imp: cannot enter ${repo_dir}: ${err}') }
 
 target := browser_target()
 
-if !imp.check_binary(['git', 'python3'], panic: true) {
+if !imp.check_binary(['git'], panic: true) {
 	return
 }
 

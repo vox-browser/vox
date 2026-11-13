@@ -59,4 +59,5 @@ int main(void)
         }
         puts("PASS sampled private textures, initialized transfers, linear filtering, feedback rejection; no ANGLE loaded");
     }
+    return 0;
 }

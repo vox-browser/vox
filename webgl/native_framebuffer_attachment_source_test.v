@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: BSD-2-Clause
 module webgl
 
-fn C.glGetFramebufferAttachmentParameteriv(u32, u32, u32, &i32)
 
 fn attachment_source_owner() {
 	mut selected := [i32(0), 0, 0, 0]!
@@ -12,8 +11,7 @@ fn attachment_source_owner() {
 
 fn attachment_source_native_name() int {
 	mut value := 0
-	C.glGetFramebufferAttachmentParameteriv(framebuffer, color_attachment0,
-		framebuffer_attachment_object_name, &value)
+	value = C.vox_gl_framebuffer_attachment_parameter(framebuffer,color_attachment0,framebuffer_attachment_object_name)
 	return value
 }
 

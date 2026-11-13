@@ -1,239 +1,247 @@
 # Direct Metal WebGL migration
 
-The target is a macOS WebGL implementation that submits directly to Metal,
-without ANGLE or desktop OpenGL. The migration starts with an independently
-usable V resource backend in `webgl.metal`. An experimental V service now
-connects part of `WebGLRenderingContext` through `-d vox_direct_metal` on macOS.
-The production browser still selects ANGLE until the replacement is complete.
+On macOS, WebGL now uses the V Metal service by default. There is no ANGLE,
+EGL, GLES or desktop OpenGL execution path or fallback on that platform.
+`webgl/native_service.c.v` selects `native_metal_boundary.h` and the
+`service*_darwin.v` implementation. Linux and Windows retain their GLES service;
+Metal is an Apple API. Standard JavaScript extension names such as
+`ANGLE_instanced_arrays` remain API compatibility names.
 
-## Completed: drawing-buffer resources
+The macOS ANGLE dispatch loader, generator, native loader test and obsolete
+PR #63 CGL prototype/comparison harness have been removed. The shader pipeline now runs in pure V and requires neither glslang nor
+SPIRV-Cross. Shared service ABI names retain
+the historical `vox_egl_*` prefix; those names do not load or call EGL on macOS.
 
-`metal.DrawingBuffer.create(width, height)` owns a Metal device, command queue
-and private RGBA8 render-target texture. The V object controls dimensions,
-clear-color normalization, upload lengths and lifetime. Its native bridge only
-allocates resources, encodes GPU operations and transfers completed pixels.
+## Implementation
 
-- Creation and changed-size allocations clear the entire texture to transparent
-  black before making it observable. Same-size resize preserves its pixels.
-- Failed resize preserves the old texture and dimensions.
-- Clears use a Metal render pass. Upload and readback use blit encoders and
-  shared staging buffers, with checked capacities and aligned row pitches.
-- Transfers expose tightly packed, top-row-first, straight-alpha RGBA8.
-  The future WebGL adapter must handle WebGL coordinates, masks/scissors and
-  painting-surface alpha conversion in V.
-- Operations wait for GPU completion and report submission failures. This first
-  slice is synchronous and provides no scrolling or throughput claim.
-- `close()` is idempotent. A drawing buffer is confined to its owning thread;
-  callers must not access it concurrently or copy its native handle.
+V owns context validation, error flags, resource namespaces, lifetime and draw
+assembly. Small native graphics bridges allocate Metal resources and encode
+GPU operations. All 198 shared service entry points have Metal implementations;
+there are no unsupported-entry stubs or ANGLE fallbacks.
 
-The package imports no EGL/GLES service and links only Metal and system
-frameworks. Its native checks verify that ANGLE libraries remain unloaded.
+- Initialized drawing buffers, buffers and textures; context loss/restoration,
+  resizing, deferred deletion and painting-surface publication.
+- Direct V ESSL 1.00/3.00 preprocessing, linking, layout and MSL generation
+  into actual Metal functions. Original source
+  queries, attribute locations, active resources, nested structured uniforms,
+  boolean types, matrices, arrays and uniform-buffer ranges are preserved.
+- Array/indexed/instanced draws, expanded line loops/triangle fans, packed and
+  overlapping vertex inputs, integer/normalized/constant attributes, raster,
+  viewport/scissor, blending, culling, depth and separate stencil faces.
+- 2D/cube/array/3D textures, mipmaps, samplers, typed and packed pixel transfers,
+  pixel buffers, S3TC BC1/2/3 decoding, framebuffer layers, multiple color
+  targets, depth/stencil attachments, multisample storage/resolves and blits.
+- Native visibility queries, synchronous completed fences and actual GPU vertex
+  output capture for transform feedback, including packing, ownership,
+  pause/resume and primitive queries.
 
-## Completed: shader compilation and reflection
+Physical native signed integers use V `i32`; public `[]int` inputs are packed
+at the boundary. RGB storage preserves implicit alpha one through allocation,
+clears and drawing. Float filtering is advertised from actual Metal device
+support. Invalid multisample blit destinations are rejected according to the
+GLES contract rather than extending it with a per-sample copy operation.
 
-`metal.ShaderProgram.compile` validates and links the original ESSL pair with
-glslang, lowers it to SPIR-V, translates it to MSL with SPIRV-Cross, and creates
-actual Metal vertex/fragment functions. This path supports ESSL 1.00 and 3.00;
-it preserves original shader link errors and public resource names even when
-MSL requires renamed identifiers. Plain uniforms use separate stage blocks;
-reflection includes their offsets, array/matrix strides, types and Metal slots.
-Shader lowering requests GL depth and Y-coordinate conversion. Pixel tests must
-establish those conventions before browser dispatch is changed.
+The default shader path and native fixture ABI both use `webgl/shader`.
+Shader submission does not load glslang or SPIRV-Cross. Apple shader compilation
+may indirectly load system OpenGL framework images; the implementation calls no
+OpenGL API. The [shader report](SHADER_VALIDATION.md) lists the supported subset
+and remaining conformance limits.
 
-On macOS this package requires `brew install glslang spirv-cross`. The generated
-MSL uses safe math and initialized locals. The native ARC/MRC/sanitizer suite
-compiles real Metal functions and checks uniform/matrix/sampler reflection;
-three V cases pass with default GC and `-gc none`. No ANGLE library is loaded.
-Apple's shader compiler can indirectly load system OpenGL framework images;
-this package calls no OpenGL API and has no direct OpenGL dependency.
+## Verification
 
-## Completed: buffers and array/instanced drawing
+The vector-swizzle follow-up passes 316 WebGL, 73 compiler and 52 Metal test
+functions (441 total) in both GC modes. It adds real GPU coverage for `.stpq`
+reads and writes, rejects mixed/out-of-range selectors and duplicate writable
+components, and preserves structure fields whose names resemble selectors.
+All compiler/runtime and guard exits were zero; the combined run peaked at
+1,057,832,960 sampled RSS bytes under a 3 GiB guard.
 
-`metal.GPUBuffer` allocates zeroed shared GPU storage and bounds every CPU
-read/write. `DrawingBuffer.draw` validates stream ownership, locations, strides,
-divisors and complete vertex/instance ranges before native encoding. It builds
-Metal vertex descriptors and render pipelines, uploads reflected float/vector/
-matrix/array uniforms with their actual padding, and submits array/instanced
-primitives. Missing resource bindings and out-of-range draws fail explicitly.
+The language-limit follow-up passes **316 WebGL functions from 179 files,
+71 compiler functions from 16 files, and 52 Metal functions from 13 files**
+with current V's C backend in default GC and `-gc none`. This includes scoped
+loop/output protection, overload liveness, constant bounds, struct member types,
+parameter copies, vector/matrix equality, numeric builtins, named/row-major
+block arrays, sampler arrays, shadow mip/gradient sampling, projected offsets
+and invariant positions. All 27 native ARC/MRC/ASan+UBSan fixture runs also pass;
+their pinned inputs stayed unchanged. Compilation, runtime and memory-guard
+exits were zero. The combined V run peaked at 1,036,238,848 sampled RSS bytes
+under its 3 GiB guard.
 
-Native ARC/MRC/sanitizer checks and three focused V cases in both GC modes pass.
-Exact 8x8 pixels cover matrix/color uniforms and instanced streams; an asymmetric
-`gl_FragCoord.y` test establishes raw WebGL row orientation. This slice is
-synchronous and compiles a pipeline per draw. Textures, render state and browser
-dispatch are still pending; these tests do not establish complete WebGL parity.
+The Windows native fixture cross-compiles for `-os windows -arch amd64 -gc none`
+without shader-compiler DLL imports. Linux and Windows driver runtime checks
+remain platform validation work. The latest completed production browser's
+headless engine/DOM/input smoke passes with executable SHA-256
+`5fb3eb909ae426b7cfcb1b0e8a67ab494177d13b0a0f693d5ae5d1e737561576`.
+That bundle predates these language changes; their browser-level smoke awaits
+the managed rebuild requested by the feature commits. The GPU/service tests
+above execute the current source directly. See
+[shader validation coverage](SHADER_VALIDATION.md) for the conformance boundary.
 
-## Completed: RGBA8 textures, samplers and color targets
+The initial dependency-removal check (2026-11-13) with current V's C backend
+passed 314 functions from all 178 shared WebGL test files in default GC and
+`-gc none`. The focused compiler module passes 51 functions from 14 files and
+the Metal module passes 45 functions from 13 files in both modes. All 27 native
+fixture/mode combinations pass under ARC, MRC and ASan/UBSan, including the
+exported V ABI, GPU capture, uniforms and unloaded-compiler-library checks.
+Compile, test and memory-guard exits were zero; pinned native inputs stayed
+unchanged. The Windows native GLES fixture cross-compiles with `-gc none`
+without glslang/SPIRV-Cross imports; its runtime and the updated Linux GLES
+runner were not executed on this macOS host. The managed production rebuild
+is queued; these focused results do not validate the older installed bundle.
 
-Private 2D textures are initialized before use, accept exact bounded RGBA8
-uploads, and support nearest/linear filtering plus clamp/repeat/mirror wrapping.
-Draw bindings use preserved ESSL sampler names and the reflected stage/Metal
-slots. A texture can be the offscreen color target, then be sampled in a later
-draw. Closed/foreign bindings and read/write feedback loops fail before drawing.
-These are base-level RGBA8 resources; mipmaps, other formats, cube/3D/array
-textures, multiple attachments and depth/stencil remain migration work.
+Before the V compiler switch, the macOS configuration passed **314 test functions from 178 WebGL
+files**, compiled together with both the C backend and FastC, in default GC
+and `-gc none`. The public JavaScriptCore bindings pass **151 functions from 132 files** using
+single-unit FastC in both GC modes. Both execute real native contexts and GPU
+results; compile-only audits receive no runtime credit.
 
-Three V cases pass in both GC modes, with exact quadrant/wrap, interpolated
-center-sample, offscreen readback and feedback-loop checks. Native GPU sampling
-also passes ARC, MRC and ASan/UBSan with no ANGLE image loaded.
+Before removing ANGLE dispatch, the shared shader corpus passed both services:
+40 acceptance/error/source-query cases and eight exact 8×8 pixel fixtures, in
+both GC modes. Boolean/structured uniforms, ESSL100 MRT, float filtering and
+RGB alpha checks also passed both services. The earlier full ANGLE native
+reference suite passed 161 files in both GC modes. Later Metal-only resource
+cases are not described as ANGLE comparisons.
 
-## Completed: indexed draws and render state
-
-Indexed drawing validates the complete index and referenced vertex ranges.
-Byte indices expand to Metal's 16-bit format; WebGL1 non-restarting ushort
-indices expand to 32-bit so index 65535 remains a vertex. Fixed restart markers
-are preserved for WebGL2 strips. Non-restarting uint32 index `0xffffffff` is
-explicitly unsupported by this low-level slice.
-
-Viewport, clipped scissor, color masks, separate blending, culling, depth-range,
-depth comparison/writes and separate front/back stencil state reach Metal.
-Depth32Float/Stencil8 textures initialize to depth 1/stencil 0. Clip-Y conversion
-also reverses Metal front-face winding, preserving culling, `gl_FrontFacing`
-and the selected stencil face. Polygon depth bias is encoded; its cross-driver
-numerical equivalence still needs coverage.
-
-Six focused V cases pass in both GC modes. Exact pixels cover indexed quads,
-ushort maximum indices, restart strips, viewport/scissor/masks/blending, depth
-ordering/write masks, culling and independent stencil faces. Native ARC/MRC/
-sanitizer checks exercise the index path and initialized depth/stencil state.
-Browser dispatch, masked clears, additional texture formats/targets, queries,
-transform feedback and complete WebGL2 coverage are still pending.
-
-## Completed: typed and constant vertex fetch
-
-Vertex streams now describe float/half, signed/unsigned byte/short/int formats,
-byte/short normalization, integer shader inputs and constant attributes.
-Aligned Metal buffer bases plus descriptor offsets preserve byte-aligned input
-slices. Integer input signedness/type mismatches are rejected before drawing.
-Normalized 32-bit integer conversion and packed 10:10:10:2 formats remain work.
-
-Exact pixels verify normalized bytes at an unaligned base, constant float and
-integer attributes, half vertices, and missing vec4 components defaulting to
-zero/one. The complete standalone suite passes: six native fixtures in ARC,
-MRC and ASan/UBSan modes, and 21 V cases across seven files in both GC modes.
-
-## Completed: typed uniforms and uniform-buffer ranges
-
-Uniform storage now supports signed/unsigned 32-bit values, boolean encoding,
-tightly packed readback, padded arrays and non-square/small matrices. Raw block
-updates use reflected offsets. Draws can override reflected blocks with external
-GPU-buffer ranges, validating the owner, length, alignment and duplicate/unknown
-slots. The low-level boolean setter accepts Vulkan's lowered uint storage;
-original WebGL uniform API type validation belongs to browser dispatch.
-
-Three more V cases pass in both GC modes: matrix/vec3-array roundtrips, signed/
-unsigned/boolean rendering and external UBO/internal block writes. The complete
-standalone run passes 24 V cases in both GC modes plus the six native fixtures
-under ARC, MRC and sanitizers. This is backend coverage, not browser equivalence.
-
-## Completed: attribute locations and active shader resources
-
-Explicit attribute bindings now reserve complete matrix/array location spans;
-automatic inputs avoid those slots. ESSL 3.00 `layout(location=...)` takes
-precedence. Reflection excludes inactive inputs, samplers and synthetic plain
-uniform members, while retaining declared block layout offsets. Original block
-type names are preserved even when SPIR-V's block instance is unnamed.
-
-Three focused cases verify inactive resources, explicit-location precedence,
-collisions and a bound mat4 rendered through four constant vertex columns.
-The complete standalone suite passes 27 V cases in both GC modes and all six
-native fixtures in ARC/MRC/sanitizer modes. Full GLSL active-uniform array sizing
-and structured-uniform reflection still require browser conformance coverage.
-
-## Validation
-
-WebGL texture bindings, pixel uploads/subimages, immutable storage, layer
-selection, copies and mip generation now use the V service. Sampling assembles
-complete GPU mip/cube/array images, validates sampler types and feedback, and
-uses independent sampler objects. Color framebuffer/renderbuffer ownership,
-MRT draws, indexed clears, typed readback and PBO packing are connected.
-Ten focused public-context cases pass in both GC modes, including signed/
-unsigned 32-bit clears/readback and unclamped float attachment values. The
-standalone suite passes 34 V cases per mode and all 18 native fixture/mode runs;
-native coverage now includes real MRT outputs and visibility buffers.
-Depth/stencil user attachments, compressed uploads, blits, queries and transform
-feedback remain unfinished in the service.
-
-Metal sampler objects now preserve independent filtering, mip/LOD, wrap,
-comparison and anisotropy state. One draw can bind a texture through different
-samplers. The V service creates, binds, queries and deletes sampler records and
-advertises its implemented anisotropy support. Four focused cases pass in both
-GC modes, with exact mixed nearest/linear and clamped-mip pixels; all six native
-fixtures also pass ARC/MRC/sanitizer checks.
-
-The resource layer now allocates mipmapped 2D/cube/array/3D textures, normalized,
-floating-point and integer formats, depth/stencil storage and supported
-multisample color storage. Checked region transfers preserve physical values;
-render attachments select a mip level, cube/array slice or 3D depth plane.
-Four new V cases pass in both GC modes, including exact integer sampling,
-volume/array/cube sampling, mip generation, isolated slice rendering and actual
-depth/sample-count allocations. Native texture tests also exercise volume
-attachments and depth allocation in ARC, MRC and ASan/UBSan modes; all six
-native fixtures pass in all three modes. Combined depth/stencil CPU transfers
-and multisample resolves still need service integration.
-
-The direct service now implements sync fences and uniform-block dispatch.
-Fences follow the synchronous command-completion boundary, preserve context
-ownership and reject stale/deleted handles. Uniform indices, block names,
-layout queries and stage references use Metal shader reflection. Indexed UBO
-bindings track allocation changes, validate ranges at draw time and detach on
-deletion. Device sample-count queries report Metal's supported counts.
-The existing sync and uniform-block suites plus two new ownership/range cases
-pass in both GC modes (six cases per mode), including exact GPU pixels from a
-UBO bound at byte offset 256.
-
-The experimental service passes 15 focused WebGL cases in each of default GC
-and `-gc none`: six new context/buffer/draw/readback cases and the existing shader
-(3), uniform (1), base-draw (2), integer-attribute (1), viewport/scissor (2) cases.
-They compile with current V's C backend and run under the 3 GiB memory guard.
-The new cases assert that no EGL/GLES/ANGLE library is loaded. Signed native
-buffers use V `i32`; public `[]int` inputs are packed at the native boundary.
-
-Five public JavaScript binding files also pass against the existing ANGLE
-backend with single-unit FastC. Compile audits covered 107 WebGL and 92 public
-binding files. These are separate results: the combined public runtime crashes
-in the retained-query test, and the C backend's browser-binding compilation
-hits the 12 GiB guard. FastC's multi-unit build also duplicates native dispatch
-state; the focused passing runs used `VJOBS=1`. Neither compile audits nor these
-focused results establish complete browser or optimized-site equivalence.
-
-The [local migration evidence](performance/metal-webgl-migration-20261112.json)
-retains commands, hashes, guard exits and failed diagnostics.
-
-On 2026-11-12, native GPU tests passed with ARC, manual reference counting and
-address/undefined-behavior sanitizers. They cover zero initialization, exact
-clears, asymmetric row uploads/readbacks, destination guards, short transfers,
-rejected resize, separate contexts and repeated create/destroy. Three focused
-V cases pass with default GC and `-gc none`.
+The native resource suite covers nine fixtures in ARC, manual reference
+counting and ASan/UBSan modes (27 fixture/mode runs). Its 45 V tests across 13
+files exercise exact pixels, bounds, ownership and GPU resource lifetime in
+both GC modes. Run from
+the canonical checkout, with current V:
 
 ```sh
-python3 tools/test_webgl_metal.py --v-bin ~/code/v/v --output Build/metal-test-UNIQUE
+python3 tools/test_webgl_metal.py --v-bin ~/code/v/v --output Build/metal-resources-UNIQUE
+python3 tools/test_webgl_metal_service.py --output Build/metal-service-UNIQUE --batch webgl/*_test.v
+python3 tools/test_webgl_metal_service.py --backend fastc --output Build/metal-public-UNIQUE --batch browserjs/canvas_webgl*_test.v
+python3 tools/test_webgl_metal_browser.py --output Build/metal-browser-UNIQUE
 ```
 
-Run focused V tests with current V's C backend, `-memory-limit 10G` and the
-repository memory guard. The [local evidence](performance/metal-webgl-start-20261112.json)
-retains commands, input hashes, actual exits and the initial fixture correction.
+The runners pin inputs and apply the repository compilation/runtime memory
+guards. FastC aggregation stays temporarily beside the canonical tests, groups
+conflicting import aliases separately and uses `VJOBS=1` so native state has
+one definition. No sources or browser bundles are copied into job directories.
 
-## Next implementation slices
+The broader FastC run exposed additional shared-wrapper/compiler boundaries.
+Sampler, sync and vertex-array deletion now borrow nullable handles, preserving
+heap-object mutation without passing a raw object as an optional-argument
+pointer. Error-path tests require failure explicitly, avoiding FastC's invalid
+read of an unused error result. Native string termination uses a bounded byte
+scan instead of the miscompiled generic `array.index(0)`. Metal vertex arrays
+initialize every attribute's default size/type explicitly; constant attributes
+also initialize their floating-point kind. Existing ownership/state tests and
+new string/default-state assertions pass with both compiler backends.
 
-The experimental V service now owns context/resource records, the painting
-surface, errors and state queries, initialized buffers, shader/program lifetime
-and reflection, typed uniforms, vertex arrays and attributes. It submits array,
-indexed and instanced draws with raster/blend/depth/stencil state and packed
-RGBA8 readback. Line loops and triangle fans expand to equivalent index lists.
-Unsupported entry points explicitly report `INVALID_OPERATION`; there is no
-ANGLE fallback. This is an incomplete backend behind a compile-time flag.
+The production browser passes headless startup and two fresh windowed WebGL
+checks. The fixture executes ESSL100/WebGL1 and ESSL300/WebGL2 programs through
+JavaScriptCore, checks preserved source, uniforms, scissor orientation, every
+readback pixel and normal error state. Both contexts report `Vox direct Metal`;
+full 400×240 document PNGs match independently generated expected pixels
+exactly. Dyld logs contain no ANGLE/EGL/GLES library. Executable/native-library
+hashes remain fixed under a bundle reader lease and every browser/guard exits 0.
 
-1. Connect texture/sampler and user-framebuffer ownership, uploads and draws.
-   Extend the resource backend beyond base-level RGBA8 2D textures.
-2. Complete uniform blocks, shader type/reflection edge cases, packed vertex
-   formats and overlapping strides; cache render pipelines.
-3. Add queries, synchronization, transform feedback, multisampling, multiple
-   draw buffers and remaining WebGL2 operations.
-4. Resolve browser-suite compilation/runtime blockers and extend conformance.
-5. Run typed/public WebGL regression suites and matched browser/site checks.
-   Switch the macOS default only after the replacement covers those contracts;
-   then remove ANGLE loading, dependencies and obsolete service code.
+The [local migration evidence](performance/metal-webgl-migration-20261112.json)
+retains commands, input/executable hashes, actual exits, guard reports and failed
+attempts, including the earlier partial implementation checkpoints. Their old
+experimental flags and ANGLE-reference runner options describe those historical
+inputs; they are no longer current build options.
 
-The current production browser continues to use ANGLE's Metal backend during
-these slices. PR #63's CGL backend is a separate OpenGL prototype and is not the
-implementation of this direct Metal migration.
+## Limits and retained failures
+
+This replaces the macOS backend; it is not complete WebGL conformance or a
+performance claim. Submission currently waits for GPU completion and pipelines
+are created at draw time. Broader shader/conformance edge cases remain subject
+to testing. The browser still uses JavaScriptCore; unfinished LibJS and remote
+transport/wrapper boundaries are unchanged.
+
+The installed ANGLE reference agrees on unsigned packed, signed normalized,
+normalized i32 and overlapping float vertex inputs. For signed **unnormalized**
+2:10:10:10 input with negative two-bit alpha, it produces alpha 255 where Metal
+produces 0. Metal retains the GLES 3.0.6 section 2.9.2 signed-field semantics;
+the failing reference receipts remain local. This is a disclosed discrepancy,
+not a full pixel-equivalence claim.
+
+The combined browser-binding test compilation using the C backend reached the
+12 GiB guard and supplied no runtime result; the complete public suite instead
+passes FastC. Production browser compilation is verified separately. Standalone
+MutationObserver FastC execution also remains a failed diagnostic; its ordering
+checks pass the C backend and are not part of the WebGL parity claim.
+
+Optimized-site acceptance is tracked separately in
+[the site pixel audit](OPTIMIZED_SITES_PIXELS_2026_11_12.md). Existing CNN,
+vlang.io and GitHub differences and the missing account-bearing Reddit fixture
+prevent an all-site parity claim. Unchanged shader-free site pixels alone
+cannot validate this WebGL backend; actual shader execution is required.
+
+## Optimized-site capture follow-up
+
+The first completed Metal production executable is
+`05ae545a3d814fdbc65fed7a94c7c1701a28809bfaf403d6e7d4d790a8012391`,
+receipt `20261112-151621-60deec8f`. Its requested head precedes the final switch,
+but the verified parsed-source manifest hashes match the default Metal service,
+macOS source selector, framebuffer checks and render-state adapter. The old
+macOS ANGLE loader/gated service files are absent from the parsed closure.
+The shader browser fixture and headless smoke above ran this executable.
+
+Two fresh captures of each available frozen catalog workload give:
+
+| Site | Differing RGBA pixels against retained Brave reference, each capture |
+| --- | ---: |
+| Hacker News | 0 / 3,145,728 |
+| Lobsters | 0 / 786,432 |
+| Wikipedia | 0 / 786,432 |
+| CNN | 175,866 / 786,432 |
+| vlang.io | 5,756 / 786,432 |
+| GitHub /vlang/v | 38,654 / 786,432 |
+| Old Reddit | Unverified: historical account-bearing fixture absent |
+
+Captures retain original-origin sealed responses, fresh private profiles/caches,
+1024×768 document viewports, scale 2 for HN and scale 1 otherwise, two seconds
+of settling for HN and five otherwise. Author scripts are disabled for Wikipedia
+and vlang.io as in their references; other pages retain normal scripting.
+Readiness, URL, body content, title/row checks and resource/executable identities
+pass, with normal browser/guard exits. No reference or tolerance changed.
+
+HN, Lobsters and Wikipedia also match their retained ANGLE-era Vox images
+exactly. CNN, vlang.io and GitHub differ from those older Vox images at 1,861,
+1,372 and 15 pixels respectively, with improvements against the Brave reference.
+Concurrent document-renderer changes are included in this production build;
+these differences are not isolated Metal effects or backend-equivalence credit.
+The all-site equality gate remains open. These are frozen viewport checks, not
+live-site, interaction, Retina-wide, scrolling or instruction-performance claims.
+
+## Final committed-source production check
+
+The completed production executable
+`303a768fe0f94a3b22c129a1cc3f471e0c7dad8c932527fed35d79831efe5511`
+(receipt `20261112-154007-d64f9163`, requested head `f0dd5a1fd`) contains all
+final WebGL fixes. All 92 WebGL inputs present in its parsed/native source
+manifest match the current implementation hashes. It uses the C backend,
+literal V `-prod`, one C unit and the prepared preallocated runtime.
+The headless smoke and two new WebGL1/WebGL2 shader/readback/presentation
+trials pass with normal exits and no ANGLE/EGL/GLES library loaded.
+
+All 314 native/Source tests pass in C and FastC, and all 151 public binding
+tests pass in FastC, each in default GC and no-GC mode. The final native
+compiler-compatibility executable also compiles and runs through the production
+C frontend. No guard was bypassed: the `153721-4412c760` production attempt
+rejected a concurrent PNG-header change; the managed retry above succeeded.
+An earlier successful but unpublished build was superseded while a bundle
+reader lease was held. Both attempts remain in local evidence.
+
+Two fresh captures per available catalog site under this final executable give:
+
+| Site | Differing RGBA pixels against unchanged Brave reference, each capture |
+| --- | ---: |
+| Hacker News | 0 / 3,145,728 |
+| Lobsters | 0 / 786,432 |
+| Wikipedia | 0 / 786,432 |
+| CNN | 175,866 / 786,432 |
+| vlang.io | 4,144 / 786,432 |
+| GitHub /vlang/v | 38,404 / 786,432 |
+| Old Reddit | Unverified: historical account-bearing fixture absent |
+
+The same fixture/script/viewport/scale/settle policies and document audits above
+pass. HN, Lobsters and Wikipedia remain identical to their ANGLE-era Vox images.
+CNN, vlang.io and GitHub differ from those older Vox images at 1,861, 2,143 and
+419 pixels. Concurrent PNG sampling changes improve vlang.io and GitHub against
+the retained Brave references; they do not supply isolated Metal credit.
+No all-site equality or live-site/performance acceptance is claimed.

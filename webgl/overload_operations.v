@@ -25,9 +25,7 @@ pub fn (_ &WebGLRenderingContext) span_from_uint32_list(values []u32, offset u64
 }
 
 pub fn (_ &WebGLRenderingContext) null_terminated_string(bytes []u8) string {
-	index := bytes.index(0)
-	end := if index < 0 { bytes.len } else { index }
-	return bytes[..end].bytestr()
+	return null_terminated_string(bytes)
 }
 
 pub fn (context &WebGLRenderingContext) texture_data_for_2d_upload(bytes []u8, width GLsizei, height GLsizei, format GLenum, type_ GLenum) ![]u8 {

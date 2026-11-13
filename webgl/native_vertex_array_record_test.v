@@ -16,7 +16,7 @@ fn test_source_vertex_array_binding_returns_actual_record_without_driver_substit
 	assert result.vertex_array? == array
 	assert result.object == array.object.bookkeeping_id()
 	assert result.vertex_array_oes == none
-	context.delete_vertex_array(mut array)
+	context.delete_vertex_array(array)
 	assert context.get_parameter(vertex_array_binding).kind == .none
 	assert context.get_error() == no_error
 }

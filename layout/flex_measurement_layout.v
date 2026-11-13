@@ -38,6 +38,10 @@ struct FlexMeasurementLayout {
 	font_policy dom.FontRenderingPolicy
 	style_environment u64
 	result FormattingContextResult
+	first_baseline ?CSSPixels
+	last_baseline ?CSSPixels
+	vertical_first_baseline ?CSSPixels
+	vertical_last_baseline ?CSSPixels
 }
 
 fn committed_flex_measurement_keys_match(a &FlexMeasurementQuestion, b &FlexMeasurementQuestion) bool {
@@ -103,10 +107,11 @@ fn run_flex_formatting_context_with_mode(mut state LayoutState, container &Node,
 			}
 			continue
 		}
-		// Normal flex clears the root's derived intrinsic baselines before it
-		// publishes descendant geometry. Root offsets and percentage bases still
-		// belong to this caller; only the measured descendants are restored.
-		used.set_derived_baselines(none, none)
+		// Normal layout publishes the root baselines as well as descendant
+		// geometry. Reuse both; falling back through restored descendants can
+		// synthesize a different baseline for replaced or empty flex items.
+		used.set_derived_baselines(cached.first_baseline, cached.last_baseline)
+		used.set_derived_vertical_baselines(cached.vertical_first_baseline, cached.vertical_last_baseline)
 		for index in 0 .. cached.values.len {
 			entry := unsafe { &cached.values[index] }
 			containing := if parent := entry.containing { state.get(parent) } else { none }
@@ -199,6 +204,10 @@ fn run_flex_formatting_context_with_mode(mut state LayoutState, container &Node,
 		font_policy: container.document().font_rendering_policy()
 		style_environment: style_environment
 		result: result
+		first_baseline: used.derived_first_baseline()
+		last_baseline: used.derived_last_baseline()
+		vertical_first_baseline: used.derived_vertical_baseline(.first)
+		vertical_last_baseline: used.derived_vertical_baseline(.last)
 	}
 	mut entries := pool.flex_measurements_[node_key] or { []&FlexMeasurementLayout{} }
 	if entries.len == 4 { entries.delete(0) }

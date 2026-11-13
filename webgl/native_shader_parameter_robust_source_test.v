@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: BSD-2-Clause
 module webgl
 
-fn C.glGetShaderivRobustANGLE(u32, u32, int, voidptr, &i32)
 
 fn test_source_shader_parameter_uses_actual_one_element_robust_query() {
 	for version in [WebGLVersion.webgl1, .webgl2] {
@@ -16,7 +15,7 @@ fn test_source_shader_parameter_uses_actual_one_element_robust_query() {
 		for pname in [shader_type, compile_status, delete_status, GLenum(0x8b84), GLenum(0xbad)] {
 			owner.native.make_current()
 			mut expected := i32(0)
-			C.glGetShaderivRobustANGLE(shader.object.native_name(), pname, 1, unsafe { nil }, &expected)
+			expected = i32(C.vox_gl_shader_parameter_robust(shader.object.native_name(),pname))
 			expected_error := C.vox_gl_get_error()
 			other.native.make_current()
 			actual := owner.get_shader_parameter(shader, pname)
@@ -46,7 +45,7 @@ fn test_source_shader_parameter_uses_actual_one_element_robust_query() {
 		C.vox_gl_delete_shader(shader.object.native_name())
 		assert !shader.object.invalidated()
 		mut rejected := i32(0)
-		C.glGetShaderivRobustANGLE(shader.object.native_name(), shader_type, 1, unsafe { nil }, &rejected)
+		rejected = i32(C.vox_gl_shader_parameter_robust(shader.object.native_name(),shader_type))
 		expected_error := C.vox_gl_get_error()
 		assert expected_error != no_error
 		other.native.make_current()

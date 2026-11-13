@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: BSD-2-Clause
 module webgl
 
-fn C.glIsQuery(u32) u8
 
 fn deletion_query_source_owner() {
 	mut selected := [i32(0), 0, 0, 0]!
@@ -16,32 +15,32 @@ fn test_source_query_delete_selects_owner_before_all_early_returns_and_keeps_slo
 	context.viewport(1, 2, 3, 4)
 	other.viewport(9, 10, 11, 12)
 	mut foreign := other.create_query()
-	context.delete_query(mut foreign)
+	context.delete_query(foreign)
 	deletion_query_source_owner()
 	assert !foreign.object.invalidated()
 	assert context.get_error() == invalid_operation
 	other.native.make_current()
 	mut absent := ?&WebGLQuery(none)
-	context.delete_query(mut absent)
+	context.delete_query(absent)
 	deletion_query_source_owner()
 	assert context.get_error() == no_error
 	mut owned := context.create_query()
 	context.begin_query(any_samples_passed, mut owned)
 	context.end_query(any_samples_passed)
-	assert C.glIsQuery(owned.object.native_handle_) == 1
+	assert C.vox_gl_is_object(4,owned.object.native_handle_) == 1
 	// A rejected retarget still installs the source's independent retained slot.
 	context.begin_query(transform_feedback_primitives_written, mut owned)
 	assert context.get_error() == invalid_operation
 	other.native.make_current()
-	context.delete_query(mut owned)
+	context.delete_query(owned)
 	deletion_query_source_owner()
-	assert C.glIsQuery(owned.object.native_handle_) == 0
+	assert C.vox_gl_is_object(4,owned.object.native_handle_) == 0
 	assert owned.object.invalidated()
 	assert owned.object.handle_ !in context.queries
 	assert context.get_query(transform_feedback_primitives_written, current_query)? == owned
 	assert context.get_error() == no_error
 	other.native.make_current()
-	context.delete_query(mut owned)
+	context.delete_query(owned)
 	deletion_query_source_owner()
 	assert context.get_query(transform_feedback_primitives_written, current_query)? == owned
 	assert context.get_error() == no_error

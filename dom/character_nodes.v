@@ -10,15 +10,8 @@
 module dom
 
 import strings
+import vunicode
 import encoding.utf8
-
-#flag darwin -licucore
-
-#flag linux -licuuc
-
-#include <unicode/uchar.h>
-
-fn C.u_charDirection(code_point i32) int
 
 // --- QualifiedName ---
 pub fn QualifiedName.new(local_name string, prefix ?string, namespace_ ?string) QualifiedName {
@@ -786,10 +779,8 @@ pub enum UnicodeBidiClass {
 }
 
 pub fn unicode_bidirectional_class(code_point u32) UnicodeBidiClass {
-	// LibUnicode::bidirectional_class() is a direct mapping from ICU's
-	// u_charDirection(). Keep the complete mapping here so DOM directionality
-	// and Layout text-run segmentation consume the same Unicode property.
-	return match C.u_charDirection(i32(code_point)) {
+	// DOM directionality and layout consume the same bundled Bidi_Class data.
+	return match vunicode.bidi_class(code_point) {
 		0 { .left_to_right } // U_LEFT_TO_RIGHT
 		1 { .right_to_left } // U_RIGHT_TO_LEFT
 		2 { .european_number } // U_EUROPEAN_NUMBER
