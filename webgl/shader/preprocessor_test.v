@@ -52,3 +52,10 @@ fn test_line_file_macros_and_ternary_conditions_preserve_locations() {
   assert false,source
  }
 }
+
+fn test_unknown_optional_directives_do_not_disable_other_preprocessing() {
+ result:=preprocess('#version 300 es\n#pragma vendor_unknown "ignored text"\n#extension GL_vendor_unknown : enable\nvoid main(){}')!
+ assert result.tokens==['void','main','(',')','{','}']
+ preprocess('#pragma debug(off)\n#version 300 es') or {return}
+ assert false
+}

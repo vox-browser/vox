@@ -42,7 +42,7 @@ static int vox_metal_validate_msl(void* target,char const* source,char* log,uint
     if(!context || !source) return 0;
     @autoreleasepool {
         NSError* error=nil;
-        MTLCompileOptions* options=[[MTLCompileOptions alloc] init];options.languageVersion=MTLLanguageVersion2_0;
+        MTLCompileOptions* options=[[MTLCompileOptions alloc] init];options.languageVersion=MTLLanguageVersion2_4;
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wdeprecated-declarations"
         options.fastMathEnabled=NO;

@@ -246,3 +246,15 @@ fn test_pruned_helpers_still_receive_full_native_type_validation() {
  '#version 300 es\nprecision highp float;out vec4 color;void main(){color=vec4(1.0);}',3) or {rejected=true}
  assert rejected
 }
+
+fn test_invariant_position_pragma_survives_metal_compilation_and_rendering() {
+ mut target:=DrawingBuffer.create(1,1)!
+ defer {target.close()}
+ vertex:=shader.translate('#version 300 es\n#pragma STDGL invariant(all)\nvoid main(){gl_Position=vec4(gl_VertexID==1?3.0:-1.0,gl_VertexID==2?3.0:-1.0,0,1);}',.vertex)!
+ assert vertex.source.contains('[[position,invariant]]')
+ fragment:=shader.translate('#version 300 es\nprecision highp float;out vec4 color;void main(){color=vec4(1,0,0,1);}',.fragment)!
+ mut program:=ShaderProgram.from_translation(target,vertex,fragment)!
+ defer {program.close()}
+ target.draw(program,[],.triangles,0,3,1)!
+ assert (target.read_pixels()!)==[u8(255),0,0,255]
+}

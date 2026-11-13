@@ -80,6 +80,7 @@ fn translate_impl(source string,stage Stage,bindings map[string]int,validation b
 	mut depth := 0
 	mut array_constructor_ends := map[int]bool{}
 	mut main_count := 0
+    mut invariant_position:=processed.invariant_all
 	mut precision := stage == .vertex
 	version := processed.version
 	fragment_info:=if stage==.fragment {fragment_builtins(tokens,version,processed.extensions)!} else {FragmentBuiltins{}}
@@ -138,6 +139,7 @@ fn translate_impl(source string,stage Stage,bindings map[string]int,validation b
 		}
         if token == 'invariant' && depth == 0 && at+2 < tokens.len && tokens[at+1] == 'gl_Position' && tokens[at+2] == ';' {
             if stage != .vertex { return error('Invariant position requires a vertex shader') }
+            invariant_position=true
             at += 3; continue
         }
 		if token in ['layout', 'invariant'] {
@@ -339,7 +341,7 @@ fn translate_impl(source string,stage Stage,bindings map[string]int,validation b
 	if stage==.fragment && fragment_info.depth {lines << 'float _vox_depth [[depth(any)]];'}
 	if stage==.fragment && fragment_info.data {for target in fragment_info.targets {lines << 'float4 _vox_color${target} [[color(${target})]];'}}
 	if stage == .vertex {
-		lines << 'float4 position [[position]]; float point_size [[point_size]];'
+		lines << 'float4 position [[position'+if invariant_position {',invariant'} else {''}+']]; float point_size [[point_size]];'
 	} else if version == 100 && !fragment_info.data {
 		lines << 'float4 color [[color(0)]];'
 	}

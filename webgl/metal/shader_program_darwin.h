@@ -37,7 +37,7 @@ static void* vox_metal_program_build(void* target, VoxMetalTranslatedProgram* tr
         for (int stage = 0; stage < 2; ++stage) {
             NSError* error = nil;
             MTLCompileOptions* options = [[MTLCompileOptions alloc] init];
-            options.languageVersion = MTLLanguageVersion2_0;
+            options.languageVersion = MTLLanguageVersion2_4;
 #if __MAC_OS_X_VERSION_MAX_ALLOWED >= 150000
             if (@available(macOS 15.0, *)) options.mathMode = MTLMathModeSafe;
             else
@@ -110,7 +110,7 @@ static int vox_metal_program_feedback(void* handle,char* log,uint64_t capacity)
     @autoreleasepool {
         NSError* error=nil;
         MTLCompileOptions* options=[[MTLCompileOptions alloc] init];
-        options.languageVersion=MTLLanguageVersion2_0;
+        options.languageVersion=MTLLanguageVersion2_4;
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wdeprecated-declarations"
         options.fastMathEnabled=NO;

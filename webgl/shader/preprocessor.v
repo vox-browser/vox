@@ -24,6 +24,7 @@ struct Preprocessed {
  tokens []string
  version int
  extensions map[string]bool
+ invariant_all bool
 }
 
 fn preprocess(source string) !Preprocessed {
@@ -42,6 +43,7 @@ fn preprocess(source string) !Preprocessed {
  mut version := 100
  mut seen_code := false
  mut seen_version := false
+ mut invariant_all:=false
  // GLSL joins escaped physical lines before interpreting directives.
  logical := clean
  for line_index,line in logical.split_into_lines() {
@@ -58,6 +60,11 @@ fn preprocess(source string) !Preprocessed {
    continue
   }
   if pending.len > 0 { output << pp_expand_located(pending,macros,0)!.map(it.text); pending.clear() }
+  directive_text:=trimmed[1..].trim_space()
+  if directive_text.starts_with('pragma ') || directive_text.starts_with('pragma\t') {
+   pragma_body:=directive_text['pragma'.len..].trim_space()
+   if !pragma_body.starts_with('debug') && !pragma_body.starts_with('optimize') && !pragma_body.starts_with('STDGL invariant') {if stack.len==0 || stack.last().active {seen_code=true};continue}
+  }
   words := lex(trimmed[1..])!
   if words.len == 0 { continue }
   directive := words[0]
@@ -143,9 +150,10 @@ fn preprocess(source string) !Preprocessed {
      if behavior in ['enable','require'] {return error('Invalid all-extension behavior')}
      for known in known_extensions {extensions[known]=behavior=='warn'}
     } else if name in known_extensions {extensions[name]=behavior!='disable'}
-    else if behavior in ['enable','require'] {return error('Unsupported shader extension: '+name)}
+    else if behavior=='require' {return error('Unsupported required shader extension: '+name)}
    }
    'line' {
+    seen_code=true
     expanded:=pp_expand(args,macros)!
     if expanded.len>256 {return error('Preprocessor expression limit exceeded')}
     mut parser:=PPExpression{tokens:expanded,strict:true}
@@ -160,6 +168,8 @@ fn preprocess(source string) !Preprocessed {
     line_number=int(next)
    }
    'pragma' {
+    seen_code=true
+    if args==['STDGL','invariant','(','all',')'] {invariant_all=true}
     if args.len>0 && args[0] in ['debug','optimize'] {
      if args.len!=4 || args[1]!='(' || args[2] !in ['on','off'] || args[3]!=')' {return error('Invalid shader pragma')}
      if output.count(it=='{')!=output.count(it=='}') {return error('Shader pragma requires global scope')}
@@ -172,7 +182,7 @@ fn preprocess(source string) !Preprocessed {
  }
  if stack.len != 0 { return error('Unterminated conditional directive') }
  output << pp_expand_located(pending,macros,0)!.map(it.text)
- return Preprocessed{tokens:output,version:version,extensions:extensions}
+ return Preprocessed{tokens:output,version:version,extensions:extensions,invariant_all:invariant_all}
 }
 
 fn pp_comments(source string) !string {
