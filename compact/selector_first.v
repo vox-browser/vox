@@ -21,7 +21,13 @@ fn install_compact_first_query(binding &CompactElementQueryBinding, mut runtime 
 
 fn (mut binding CompactElementQueryBinding) selector_first(key string, selector string) !browserjs.SelectorMatchReply {
 	root := if key == '' { binding.document.as_node() } else {
-		binding.node_for_key(key) or { return browserjs.SelectorMatchReply{} }
+		// Host arguments are borrowed scratch strings. node_for_key() also
+		// registers keys, which would publish this temporary buffer into the
+		// retained identity map. Only probe owners already registered here.
+		binding.nodes[key] or {
+			element := binding.elements[key] or { return browserjs.SelectorMatchReply{} }
+			element.as_node()
+		}
 	}
 	if voidptr(root.document()) != voidptr(binding.document)
 		|| (!root.is_element() && !root.is_document() && !root.is_document_fragment()) {

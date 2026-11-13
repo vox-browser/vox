@@ -1,8 +1,44 @@
 module main
 
 import browserjs
+import dom
 import html
 import platform
+
+fn test_selector_first_retains_registered_keys_after_temporary_arguments_retire() {
+	mut document := dom.Document.create(dom.URL{value: 'https://selector-first.test/'})
+	document.enable_native_storage()
+	mut owner := document.enter_native_storage()
+	html.parse_html_from_a_string(document, '<!doctype html><main id="host"><i></i></main>')
+	mut runtime := browserjs.Runtime.create_with_engine(.javascriptcore)
+	defer {
+		runtime.close()
+		owner.finish()
+		document.finalize()
+		document.release_native_storage()
+	}
+	mut binding := &CompactElementQueryBinding{document: document, runtime: runtime}
+	target := document.get_element_by_id('host') or { panic('host') }
+	key := '__element_0'.clone()
+	binding.elements[key] = target
+	binding.keys[voidptr(target)] = key
+	work := platform.begin_thread_scratch('selector first borrowed key')
+	borrowed := key.clone()
+	work.leave()
+	reply := binding.selector_first(borrowed, '.absent')!
+	assert reply.handled && !reply.matched
+	work.finish()
+	retained := binding.keys[voidptr(target)] or { panic('registered key') }
+	$if prealloc {
+		// A later positive query publishes this key to the facade. It must not
+		// point into the retired host argument buffer.
+		assert document.native_storage().arena.contains(voidptr(retained.str))
+	}
+	churn := platform.begin_thread_scratch('selector first key overwrite')
+	_ = 'x'.repeat(128 * 1024)
+	churn.finish()
+	assert binding.element_key(target) == '__element_0'
+}
 
 fn test_compact_selector_first_keeps_live_results_errors_scopes_and_reactions() {
 	mut document := html.parse_document('<!doctype html><main id="host"><i id="target"></i></main><div id="other"></div>')
