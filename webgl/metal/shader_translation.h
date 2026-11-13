@@ -28,6 +28,7 @@ typedef struct {
     size_t feedback_count;
     uint64_t direct_feedback_stride;
     char* msl[2];
+    char* validation_msl[2];
     char* entry[2];
     VoxMetalShaderResource* resources;
     size_t resource_count;
@@ -44,7 +45,7 @@ static char* vox_metal_string_copy(char const* value) {
 }
 static void vox_metal_translation_destroy(VoxMetalTranslatedProgram* program) {
     if(!program) return;
-    for(int i=0;i<2;++i) {free(program->msl[i]);free(program->entry[i]);}
+    for(int i=0;i<2;++i) {free(program->msl[i]);free(program->validation_msl[i]);free(program->entry[i]);}
     for(size_t i=0;i<program->resource_count;++i) free(program->resources[i].name);
     for(size_t i=0;i<program->feedback_count;++i) {free(program->feedback_fields[i].name);free(program->feedback_fields[i].metal_name);}
     free(program->feedback_fields);free(program->feedback_msl);free(program->resources);free(program);

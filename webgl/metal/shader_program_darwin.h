@@ -48,6 +48,14 @@ static void* vox_metal_program_build(void* target, VoxMetalTranslatedProgram* tr
                 options.fastMathEnabled = NO;
 #pragma clang diagnostic pop
             }
+            if(program->translated->validation_msl[stage]) {
+                id<MTLLibrary> validation=[device newLibraryWithSource:[NSString stringWithUTF8String:program->translated->validation_msl[stage]] options:options error:&error];
+                if(!validation) {
+                    if(capacity) snprintf(log,capacity,"%s",error.localizedDescription.UTF8String ?: "Metal validation failed");
+                    vox_metal_drop_owned(options);vox_metal_program_destroy(program);return NULL;
+                }
+                vox_metal_drop_owned(validation);
+            }
             id<MTLLibrary> library = [device newLibraryWithSource:
                 [NSString stringWithUTF8String:program->translated->msl[stage]] options:options error:&error];
             vox_metal_drop_owned(options);

@@ -3,7 +3,7 @@ module metal
 import webgl.shader
 
 #include "@DIR/translated_program_darwin.h"
-fn C.vox_metal_translation_from_msl(&char,&char,&char,u64) voidptr
+fn C.vox_metal_translation_from_msl(&char,&char,&char,u64,&char,&char) voidptr
 fn C.vox_metal_translation_resource(voidptr,&C.VoxMetalShaderResource) i32
 fn C.vox_metal_translation_feedback(voidptr,&C.VoxMetalFeedbackField) i32
 fn C.vox_metal_translation_destroy(voidptr)
@@ -12,7 +12,7 @@ fn C.vox_metal_program_build(voidptr,voidptr,&char,u64) voidptr
 // Own a native copy of V-generated source and reflection before compilation.
 fn translation_descriptor(vertex shader.Translation, fragment shader.Translation) !voidptr {
  shader.link(vertex,fragment)!
- translated := C.vox_metal_translation_from_msl(vertex.source.str,fragment.source.str,vertex.feedback_source.str,u64(vertex.feedback_stride))
+ translated := C.vox_metal_translation_from_msl(vertex.source.str,fragment.source.str,vertex.feedback_source.str,u64(vertex.feedback_stride),vertex.validation_source.str,fragment.validation_source.str)
  if translated == unsafe{nil} { return error('Metal translation allocation failed') }
  mut transferred := false
  defer { if !transferred { C.vox_metal_translation_destroy(translated) } }
@@ -74,7 +74,7 @@ fn C.vox_metal_validate_msl(voidptr,&char,&char,u64) i32
 pub fn validate_shader(owner &DrawingBuffer, source string, fragment bool, context_version int) ! {
  if owner.handle==unsafe{nil} {return error('Metal drawing buffer is closed')}
  if context_version !in [2,3] {return error('Invalid WebGL context version')}
- translated:=shader.translate(source,if fragment {shader.Stage.fragment} else {shader.Stage.vertex})!
+ translated:=shader.translate_validation(source,if fragment {shader.Stage.fragment} else {shader.Stage.vertex})!
  if context_version==2 && translated.version!=100 {return error('ESSL300 requires WebGL2')}
  mut log:=[]u8{len:16384}
  defer {unsafe{log.free()}}

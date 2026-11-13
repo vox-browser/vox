@@ -6,6 +6,7 @@ struct FunctionParameter {
  name string
  typ string
  direction string = 'in'
+ constant bool
  array_length int
 }
 struct ShaderFunction {
@@ -53,8 +54,11 @@ fn shader_functions(tokens []string) ![]ShaderFunction {
     if p+1==end && tokens[p]=='void' {p++}
     for p<end {
      mut direction:='in'
-     if tokens[p]=='const' {p++}
+     mut constant:=false
+     if tokens[p]=='const' {constant=true;p++}
      if p<end && tokens[p] in ['in','out','inout'] {direction=tokens[p];p++}
+     if p<end && tokens[p]=='const' {constant=true;p++}
+     if constant && direction!='in' {return error('const function parameters must be inputs')}
      if p<end && tokens[p] in ['lowp','mediump','highp'] {p++}
      if p>=end {return error('Missing function parameter type')}
      typ:=tokens[p];p++
@@ -68,11 +72,12 @@ fn shader_functions(tokens []string) ![]ShaderFunction {
       if count<1 || count>4096 {return error('Invalid function parameter array size')}
       p=close+1
      }
-     parameters << FunctionParameter{name:name,typ:typ,direction:direction,array_length:count}
+     parameters << FunctionParameter{name:name,typ:typ,direction:direction,array_length:count,constant:constant}
      if p<end {if tokens[p]!=',' {return error('Invalid function parameter')};p++}
     }
     body:=if tokens[end+1]=='{' {end+1} else {-1}
     finish:=if body>=0 {matching_token(tokens,body)!+1} else {end+2}
+    if result.len>=1024 || parameters.len>256 {return error('Shader function capacity exceeded')}
     result << ShaderFunction{name:tokens[at+1],typ:tokens[at],parameters:parameters,start:at,header_end:end,body:body,end:finish}
     at=finish;continue
    }

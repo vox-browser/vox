@@ -236,3 +236,13 @@ fn test_shadow_sampler_compares_actual_gpu_depth_values() {
  target.draw_with_options(program,[],.triangles,0,3,1,DrawOptions{textures:[TextureBinding{name:'image',texture:image,sampler:sampler}]})!
  assert (target.read_pixels()!)==[u8(0),0,0,255]
 }
+
+fn test_pruned_helpers_still_receive_full_native_type_validation() {
+ mut target:=DrawingBuffer.create(1,1)!
+ defer {target.close()}
+ mut rejected:=false
+ ShaderProgram.compile(target,
+ '#version 300 es\nfloat unused(float x){return x%2.0;}void main(){gl_Position=vec4(0,0,0,1);}',
+ '#version 300 es\nprecision highp float;out vec4 color;void main(){color=vec4(1.0);}',3) or {rejected=true}
+ assert rejected
+}

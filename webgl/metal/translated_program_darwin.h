@@ -8,14 +8,16 @@ static int vox_metal_direct_compiler_unloaded(void) {
 }
 
 /* Own copies of V-generated MSL and reflection; no shader parsing here. */
-static void* vox_metal_translation_from_msl(char const* vertex, char const* fragment, char const* feedback, uint64_t stride) {
+static void* vox_metal_translation_from_msl(char const* vertex, char const* fragment, char const* feedback, uint64_t stride, char const* validation_vertex,char const* validation_fragment) {
     if(!vertex || !fragment) return NULL;
     VoxMetalTranslatedProgram* result=calloc(1,sizeof(*result));
     if(!result) return NULL;
     result->msl[0]=vox_metal_string_copy(vertex);result->msl[1]=vox_metal_string_copy(fragment);
     result->entry[0]=vox_metal_string_copy("vox_main");result->entry[1]=vox_metal_string_copy("vox_main");
+    if(validation_vertex && validation_vertex[0]) result->validation_msl[0]=vox_metal_string_copy(validation_vertex);
+    if(validation_fragment && validation_fragment[0]) result->validation_msl[1]=vox_metal_string_copy(validation_fragment);
     if(stride) { result->feedback_msl=vox_metal_string_copy(feedback);result->direct_feedback_stride=stride; }
-    if(!result->msl[0] || !result->msl[1] || !result->entry[0] || !result->entry[1] || (stride && !result->feedback_msl)) { vox_metal_translation_destroy(result);return NULL; }
+    if((validation_vertex && validation_vertex[0] && !result->validation_msl[0]) || (validation_fragment && validation_fragment[0] && !result->validation_msl[1]) || !result->msl[0] || !result->msl[1] || !result->entry[0] || !result->entry[1] || (stride && !result->feedback_msl)) { vox_metal_translation_destroy(result);return NULL; }
     return result;
 }
 static int vox_metal_translation_resource(void* handle, VoxMetalShaderResource const* field) {

@@ -8,8 +8,9 @@ pub fn validate_source(source string, stage Stage, context_version int) ! {
     if context_version !in [2, 3] { return error('Invalid WebGL context version') }
     processed := preprocess(source)!
     if context_version == 2 && processed.version != 100 { return error('ESSL300 requires WebGL2') }
-    validate_essl_language(processed.tokens, processed.version)!
-    _ = stage
+    tokens:=normalize_constant_expressions(processed.tokens)!
+    validate_essl_language(tokens, processed.version)!
+    _ = analyze_shader(tokens,processed.version,stage)!
 }
 
 @[export: 'vox_v_validate_essl']

@@ -22,6 +22,7 @@ pub:
 pub struct Translation {
 pub:
 	source              string
+    validation_source string
 	inputs              []Interface
 	outputs             []Interface
 	uniforms            []Uniform
@@ -43,6 +44,14 @@ pub fn translate(source string, stage Stage) !Translation {
 }
 
 pub fn translate_with_bindings(source string, stage Stage, bindings map[string]int) !Translation {
+ return translate_impl(source,stage,bindings,false)
+}
+
+pub fn translate_validation(source string,stage Stage) !Translation {
+ return translate_impl(source,stage,map[string]int{},true)
+}
+
+fn translate_impl(source string,stage Stage,bindings map[string]int,validation bool) !Translation {
  for name,location in bindings {
   if !identifier(name) || name.starts_with('gl_') || location < 0 || location >= 16 { return error('Invalid attribute binding') }
  }
@@ -51,7 +60,8 @@ pub fn translate_with_bindings(source string, stage Stage, bindings map[string]i
 	tokens := normalize_constant_expressions(processed.tokens)!
 	validate_essl_language(tokens,processed.version)!
 	mut body := []string{}
-    functions:=shader_functions(tokens)!
+    analysis:=analyze_shader(tokens,processed.version,stage)!
+    functions:=analysis.functions
     mut function_starts:=map[int]ShaderFunction{}
     mut function_setups:=map[int]string{}
     for function in functions {function_starts[function.start]=function}
@@ -73,7 +83,7 @@ pub fn translate_with_bindings(source string, stage Stage, bindings map[string]i
 	fragment_info:=if stage==.fragment {fragment_builtins(tokens,version,processed.extensions)!} else {FragmentBuiltins{}}
 	for at < tokens.len {
         if function:=function_starts[at] {
-            if function.body<0 {at=function.end;continue}
+            if function.body<0 || (!validation && !analysis.live[function.start]) {at=function.end;continue}
             if function.name=='main' {
                 if function.typ!='void' || function.parameters.len!=0 {return error('Expected void main()')}
                 main_count++
@@ -283,12 +293,11 @@ pub fn translate_with_bindings(source string, stage Stage, bindings map[string]i
 	if !precision { return error('Fragment shader requires a default float precision') }
     declared_uniforms:=uniforms.clone()
     declared_textures:=textures.clone()
-    // Conservative lexical use: retain references in helper functions as well
-    // as main. This never drops a referenced root; scoped reachability follows
-    // with the full semantic parser. Declared shapes remain available to link.
-    if stage==.vertex {inputs=inputs.filter(body.contains(it.name))}
-    uniforms=uniforms.filter(it.binding!=0 || body.contains(it.name))
-    textures=textures.filter(body.contains(it.name))
+    if !validation {
+        inputs=inputs.filter(analysis.used[it.name])
+        uniforms=uniforms.filter(it.binding!=0 || analysis.used[it.name])
+        textures=textures.filter(analysis.used[it.name])
+    }
     if !uniforms.any(it.binding==0) {uniform_size=0}
 	if stage == .vertex { inputs = assign_interface_locations(inputs,bindings,16)! }
 	if stage == .fragment { outputs = assign_interface_locations(outputs,map[string]int{},8)! }
@@ -370,7 +379,13 @@ pub fn translate_with_bindings(source string, stage Stage, bindings map[string]i
 		initialization << vertex_input_loads(inputs)!
 		capture = feedback_translation(capture_prefix,args,initialization,outputs)!
 	}
-	return Translation{ feedback_source:capture.source,feedback_fields:capture.fields,feedback_stride:capture.stride,source: lines.join('\n'), inputs: inputs, outputs: outputs, version: version, uniforms: reflected_uniforms, uniform_roots: declared_uniforms, uniform_blocks:uniform_blocks,textures: textures,texture_roots:declared_textures, uniform_buffer_size: (uniform_size+15)/16*16 }
+    generated:=lines.join('\n')
+    mut validation_source:=''
+    if !validation {
+        complete:=translate_impl(source,stage,bindings,true)!
+        if complete.source!=generated {validation_source=complete.source}
+    }
+	return Translation{validation_source:validation_source, feedback_source:capture.source,feedback_fields:capture.fields,feedback_stride:capture.stride,source: generated, inputs: inputs, outputs: outputs, version: version, uniforms: reflected_uniforms, uniform_roots: declared_uniforms, uniform_blocks:uniform_blocks,textures: textures,texture_roots:declared_textures, uniform_buffer_size: (uniform_size+15)/16*16 }
 }
 
 pub fn link(vertex Translation, fragment Translation) ! {

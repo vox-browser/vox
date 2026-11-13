@@ -13,8 +13,15 @@ fn normalize_constant_expressions(tokens []string) ![]string {
  mut declared:=map[int]bool{}
  mut function_bodies:=map[int]bool{}
  mut prototypes:=map[int]bool{}
+ mut statement_scopes:=map[int]int{}
  for at<tokens.len {
+  if count:=statement_scopes[at] {for _ in 0..count {constants=scopes.pop()}}
   word:=tokens[at]
+  if word in ['for','while','if','switch'] {
+   end:=statement_end(tokens,at,0)!
+   scopes << constants.clone()
+   statement_scopes[end]++
+  }
   if word=='{' && !(at in function_bodies) {scopes << constants.clone()}
   if at in prototypes {constants=scopes.pop()}
   if word=='}' && scopes.len>0 {constants=scopes.pop()}

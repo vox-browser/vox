@@ -18,7 +18,7 @@ fn function_signature(function ShaderFunction, structures map[string]ShaderStruc
   } else if parameter.array_length>0 {
    // ESSL input arrays are passed by value; mutations stay local to the callee.
    parameters << '${value_type} ${parameter.name}'
-  } else {parameters << '${typ} ${parameter.name}'}
+  } else {parameters << (if parameter.constant {'const '} else {''})+'${typ} ${parameter.name}'}
  }
  name:=if function.name=='main' {'run'} else if texture_call(function.name,300) || texture_call(function.name,100) {'_vox_'+function.name} else {function.name}
  return '${return_type} ${name}(${parameters.join(', ')})'+if setup.len>0 {'\n'+setup.join('\n')} else {''}
