@@ -83,12 +83,20 @@ fn prepare_gg_canvas(canvas string) ! {
 	write_changed(join(canvas, 'vox_document_clip.v'), read(join(root_dir(), 'tools/ui2/gg_document_clip.v'))!)!
 }
 
+fn prepare_gg_gradient_tile(canvas string) ! {
+	gradient := join(canvas, 'gpu_gradient.v')
+	if !os.is_file(gradient) { return }
+	original := "(snippets['bodies_tile'] + snippets['body_colorize_\${stops}']).replace('_skTemp',"
+	text := read(gradient)!
+	if text.contains(original) {
+		write_changed(gradient, text.replace('bodies_tile := ' + original, "tile_source := snippets['bodies_tile'] + snippets['body_colorize_\${stops}']\n\tbodies_tile := tile_source.replace('_skTemp',"))!
+	}
+}
+
 fn prepare_gg_gradient(modules string, vlib string) ! {
 	source := join(vlib, 'gg')
 	gradient := join(source, 'canvas/gpu_gradient.v')
 	if !os.is_file(gradient) { return }
-	original := "(snippets['bodies_tile'] + snippets['body_colorize_\${stops}']).replace('_skTemp',"
-	text := read(gradient)!.replace('bodies_tile := ' + original, "tile_source := snippets['bodies_tile'] + snippets['body_colorize_\${stops}']\n\tbodies_tile := tile_source.replace('_skTemp',")
 	target := join(modules, 'gg')
 	mkdir(target)!
 	for entry in listing(source)! {
@@ -110,7 +118,7 @@ fn prepare_gg_gradient(modules string, vlib string) ! {
 	for entry in listing(join(source, 'canvas'))! {
 		output := join(canvas, os.file_name(entry))
 		if entry == gradient {
-			write_changed(output, text)!
+			write_changed(output, read(entry)!)!
 		} else if os.is_file(entry) && entry.ends_with('.v') && read(entry)!.contains('fn C.') {
 			mut context := read(entry)!
 			for line in context.split_into_lines() {
@@ -135,6 +143,7 @@ fn prepare_gg_gradient(modules string, vlib string) ! {
 			link_to(output, entry)!
 		}
 	}
+	prepare_gg_gradient_tile(canvas)!
 	prepare_gg_canvas(canvas)!
 }
 
