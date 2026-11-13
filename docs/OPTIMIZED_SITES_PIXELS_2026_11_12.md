@@ -852,3 +852,32 @@ inside a photograph clipped by the viewport. Equal cross-browser counts of
 native-stability qualification after the earlier production checkpoint; they
 are not attributed to a particular correction. The original image resources
 and both failed repeat comparisons remain local with the other evidence.
+
+
+## Production confirmation of fractional geometry corrections (2026-11-13)
+
+The completed production executable
+`5fb3eb909ae426b7cfcb1b0e8a67ab494177d13b0a0f693d5ae5d1e737561576`
+(receipt `20261113-011934-947f0697`, C backend, literal `-prod`, single C unit)
+contains the table precision, fractional image-corner, image-clip multisampling
+and fractional outer-shadow corrections. Exact compiled source hashes match
+these implementations and the preceding rendering fixes, including the prepared
+GG image, layer and surface inputs. This supersedes their pending-production
+qualification above.
+
+Two fresh production captures of each catalog archive confirm GitHub at
+**231 differing pixels**, HN/Wikipedia/Lobsters at **0**, vlang.io at **3,250**
+and CNN at **175,866**. All 33 GitHub rows and all 30 HN stories are preserved.
+The seven image/poster controls remain exact twice, and the corrected scale-2
+device-shadow control remains at **92 pixels** twice. All 28 capture guards,
+content/viewport/identity checks and the complete driver exit zero. All
+references and zero-error tolerances are unchanged.
+
+Decoded native pixels repeat exactly for GitHub, HN, Wikipedia, Lobsters and
+vlang.io. CNN's two native images differ at **1,555 pixels**, maximum channel
+error **127**, again confined to the same 104×15 photographic region beginning
+at (460, 753). Thus production confirms the CNN stability failure as well as
+its cross-browser mismatch; equal cross-browser counts do not clear it.
+The all-site task remains open. Raw captures, feature witnesses, production
+receipt, commands, repeat comparison and actual exits remain local under
+`docs/performance/vlang-gradients-20261112/`.
