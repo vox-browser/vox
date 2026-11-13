@@ -7,7 +7,8 @@ fn compressed_texture_sampling_program(mut context WebGLRenderingContext, array_
 	context.shader_source(mut fragment,if array_texture {'#version 300 es\nprecision highp float;precision highp sampler2DArray;uniform sampler2DArray inputTexture;out vec4 color;void main(){color=texture(inputTexture,vec3(0.5,0.5,1));}'} else {'#version 300 es\nprecision highp float;uniform sampler2D inputTexture;out vec4 color;void main(){color=texture(inputTexture,vec2(0.5));}'})
 	context.compile_shader(mut vertex)
 	context.compile_shader(mut fragment)
-	assert context.get_shader_parameter(vertex, compile_status).boolean && context.get_shader_parameter(fragment, compile_status).boolean
+	assert context.get_shader_parameter(vertex, compile_status).boolean, context.get_shader_info_log(vertex) or {''}
+	assert context.get_shader_parameter(fragment, compile_status).boolean, context.get_shader_info_log(fragment) or {''}
 	mut program:=context.create_program()
 	context.attach_shader(mut program,vertex)
 	context.attach_shader(mut program,fragment)

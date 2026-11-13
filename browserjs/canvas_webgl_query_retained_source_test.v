@@ -5,11 +5,10 @@ module browserjs
 import html
 import webgl
 
-fn C.glGetQueryiv(u32, u32, &i32)
 
 fn public_query_native_current(target u32) int {
 	mut value := i32(0)
-	C.glGetQueryiv(target, 0x8865, &value)
+	value = C.vox_gl_query_target_parameter(target,0x8865)
 	return value
 }
 

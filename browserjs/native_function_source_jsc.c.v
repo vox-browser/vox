@@ -1,6 +1,6 @@
 module browserjs
 
-#include "native_function_registry.h"
+#include "@DIR/native_function_registry.h"
 
 fn C.vox_install_platform_function_source(context voidptr, factory voidptr, exception &voidptr) bool
 

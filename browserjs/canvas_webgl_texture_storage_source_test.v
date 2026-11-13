@@ -5,7 +5,7 @@ module browserjs
 import html
 
 fn test_public_texture_storage_uses_source_owner_and_actual_driver_validation() {
-	$if !darwin {
+	$if !darwin && !linux && !windows {
 		return
 	}
 	mut document := html.parse_document('<canvas></canvas>')

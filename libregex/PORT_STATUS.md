@@ -12,7 +12,8 @@ pattern validation now calls this V engine in UnicodeSets mode, preserving
 the original-pattern compile gate and noncapturing full-value anchors.
 
 There is no regex Rust snapshot, archive build or link dependency. Unicode
-properties and case data still use the existing ICU bridge. This does not
+properties and case data use the shared pure V `vunicode` package with bundled
+Unicode 17 data. This does not
 replace JavaScriptCore or complete LibJS's RegExp object, constructor and
 prototype integration; the frontend `compile_regex_pattern()` hook remains
 unfinished.

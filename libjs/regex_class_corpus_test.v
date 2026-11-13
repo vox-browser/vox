@@ -1,8 +1,5 @@
 module libjs
 
-fn C.uloc_getDefault() &char
-fn C.uloc_setDefault(locale &char, status &i32)
-
 fn regex_class_fixture_bit(value bool) string {
 	return if value { '1' } else { '0' }
 }
@@ -102,15 +99,8 @@ fn regex_class_fixture_result(fields []string, definitions [][]RegexCharRange) s
 }
 
 fn test_regex_unicode_sets_classes_and_scans_match_every_native_output_exactly() {
-	original := unsafe { cstring_to_vstring(C.uloc_getDefault()).clone() }
-	defer {
-		mut status := i32(0)
-		C.uloc_setDefault(original.str, &status)
-		assert status <= 0
-	}
-	mut status := i32(0)
-	C.uloc_setDefault(c'en_US_POSIX', &status)
-	assert status <= 0
+	// Root case mappings are independent of the process locale.
+
 	mut definitions := [][]RegexCharRange{}
 	for line in $embed_file('testdata/regex-class-ranges.tsv').to_string().split_into_lines() {
 		if line == '' || line.starts_with('#') { continue

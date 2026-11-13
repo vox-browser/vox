@@ -39,6 +39,43 @@ def png(background=b"\x2c\xa0\x5a", stale_edge=False, text=True, chrome=False):
 
 
 class LinuxBrowserSmokeTest(unittest.TestCase):
+    def test_webgl_capture_requires_a_new_script_audit(self):
+        with tempfile.TemporaryDirectory() as directory:
+            artifacts = Path(directory)
+            binary = artifacts / 'vox'
+            binary.write_bytes(b'controlled browser stub')
+            audit = artifacts / 'webgl-audit.json'
+            audit.write_text(json.dumps(dict(title='WebGL GPU smoke PASS', ready='complete',
+                native_reported_error_count=0,
+                javascript_diagnostics=['WEBGL_GPU_SMOKE_PASS ["Mesa","Mesa"]'])))
+            with mock.patch.object(smoke, 'run', return_value=''):
+                with self.assertRaises(FileNotFoundError) as error:
+                    smoke.check_webgl_browser(binary, artifacts, artifacts / 'private')
+            self.assertEqual(Path(error.exception.filename), audit)
+
+    def test_webgl_pixel_check_rejects_an_unexecuted_blank_or_corrupt_canvas(self):
+        def capture(broken=False):
+            width, height = 320, 160
+            data = bytearray()
+            for y in range(height):
+                data.append(0)
+                for x in range(width):
+                    color = (255, 255, 255)
+                    if 60 <= y < 124 and x < 128:
+                        color = ((255, 0, 0) if y < 92 else (0, 0, 255)) if x < 64 else (
+                            (0, 255, 0) if y < 92 else (255, 255, 0))
+                    if broken and x == 80 and y == 100:
+                        color = (0, 0, 0)
+                    data.extend(color)
+            def chunk(kind, payload):
+                return struct.pack('>I', len(payload)) + kind + payload + struct.pack('>I', zlib.crc32(kind + payload))
+            return b'\x89PNG\r\n\x1a\n' + chunk(b'IHDR', struct.pack('>IIBBBBB', width, height, 8, 2, 0, 0, 0)) + chunk(b'IDAT', zlib.compress(bytes(data))) + chunk(b'IEND', b'')
+        smoke.check_webgl_pixels(capture())
+        with self.assertRaisesRegex(AssertionError, 'WebGL1/WebGL2'):
+            smoke.check_webgl_pixels(capture(broken=True))
+        with self.assertRaisesRegex(AssertionError, 'WebGL1/WebGL2'):
+            smoke.check_webgl_pixels(png())
+
     def test_fixture_responses_forbid_reuse_between_trust_checks(self):
         with tempfile.TemporaryDirectory() as directory:
             (Path(directory) / "linux.html").write_text("<!doctype html><title>Fixture</title>")

@@ -20,15 +20,13 @@ def main():
     output = args.output.resolve()
     output.parent.mkdir(parents=True, exist_ok=True)
     if sys.platform == 'darwin':
-        # Homebrew's libavif (`brew install libavif`) through pkg-config, or an
+        # Homebrew's libavif (`brew install libavif`), or an
         # explicit prefix holding include/avif and lib/libavif.
-        if args.sdk_root:
-            sdk = args.sdk_root.resolve()
-            flags = ['-I' + str(sdk / 'include'), '-L' + str(sdk / 'lib'), '-lavif',
-                     '-Wl,-rpath,' + str(sdk / 'lib')]
-        else:
-            flags = shlex.split(subprocess.check_output(
-                ['pkg-config', '--cflags', '--libs', 'libavif'], text=True))
+        sdk = args.sdk_root.resolve() if args.sdk_root else Path(subprocess.check_output(
+            ['sh', str(REPO / 'tools/run_v_tool.sh'), 'macos_dependency_prefix', 'libavif'],
+            text=True).strip())
+        flags = ['-I' + str(sdk / 'include'), '-L' + str(sdk / 'lib'), '-lavif',
+                 '-Wl,-rpath,' + str(sdk / 'lib')]
         flags += ['-dynamiclib', '-Wl,-install_name,@rpath/libVoxAVIF.dylib']
     elif sys.platform == 'linux':
         flags = shlex.split(subprocess.check_output(

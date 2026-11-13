@@ -31,7 +31,7 @@ The custom renderer draws the same declarations inside the existing GG pass.
 Settings use a generic UI2 panel host on macOS and a scrollable UI2 overlay with
 the custom backend. These APIs live in
 [upstream UI2](https://github.com/vlang/ui2/blob/master/docs/embedding.md).
-[prepare_ui2.py](../tools/prepare_ui2.py) selects the installed upstream checkout.
+[prepare_ui2.vsh](../tools/prepare_ui2.vsh) selects the installed upstream checkout.
 
 ## Retained native boundaries
 

@@ -1,0 +1,7 @@
+#!/bin/sh
+# Vox staged-file check; managed by tools/rebuild_browser.py.
+set -eu
+repo=$(git rev-parse --show-toplevel)
+# Worktrees of older branches share these hooks but may predate the check.
+[ -f "$repo/tools/pre_commit_check.py" ] || exit 0
+exec python3 "$repo/tools/pre_commit_check.py"

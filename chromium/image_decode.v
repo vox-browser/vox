@@ -37,6 +37,8 @@ fn (app &BrowserApp) begin_chromium_image_decode_frame() {
 
 fn set_chromium_image_decode_scope(scope int) {
 	$if macos {
+		mut state := unsafe { png_decode_scope }
+		state.scope = scope
 		C.native_set_image_decode_scope(u64(scope))
 	}
 }

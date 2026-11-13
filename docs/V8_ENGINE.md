@@ -11,7 +11,7 @@ JavaScriptCore, and a `vox_v8` build uses V8 wherever it would.
 Build a private bundle; never publish a V8 build as the shared
 `Build/v/Vox.app`. The production worker does not see `VOX_V8`, so run the
 supervised build directly (the protocol value is `BUILD_PROTOCOL` in
-`tools/rebuild_browser.py`):
+`tools/rebuild_browser.vsh`):
 
 ```sh
 brew install node   # V8 14.6 headers and libnode.147.dylib
@@ -21,7 +21,7 @@ python3 -c "import json, sys; sys.path.insert(0, 'tools'); import rebuild_browse
 from pathlib import Path; json.dump(r.repository_state(Path('.')), open('$receipt/inputs-before.json', 'w'))"
 VOX_V8=1 VOX_BUILD_SUPERVISED=1 VOX_BUILD_COMPILE_PROTOCOL=bundle-lease-v4 \
 VOX_BUILD_OUTPUT_DIR="$stage" VOX_BUILD_RECEIPT_DIR="$receipt" VOX_BUILD_C_MODE=single \
-  python3 tools/run_memory_bounded.py --lock Build/v8-build.lock --report "$receipt/memory.json" \
+  sh tools/run_v_tool.sh run_memory_bounded --lock Build/v8-build.lock --report "$receipt/memory.json" \
   --timeout 5400 -- sh -c 'exec sh -c "$(cat)" "$0"' build-prod-browser.sh < build-prod-browser.sh
 VOX_V8_DIAGNOSTICS=1 "$stage/Vox.app/Contents/MacOS/Vox" https://chatgpt.com/
 sh tools/test_jsc_on_v8.sh   # JavaScriptCore vs V8 differential check

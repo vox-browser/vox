@@ -5,7 +5,6 @@ module browserjs
 import html
 import webgl
 
-fn C.glGetProgramivRobustANGLE(u32, u32, int, voidptr, &i32)
 
 fn test_public_program_parameter_matches_exact_robust_driver_values_and_errors() {
 	$if !darwin {
@@ -34,7 +33,7 @@ fn test_public_program_parameter_matches_exact_robust_driver_values_and_errors()
 			webgl.active_uniform_blocks, u32(0x8b84), u32(0xbad)] {
 			owner.native.make_current()
 			mut expected := i32(0)
-			C.glGetProgramivRobustANGLE(name, pname, 1, unsafe { nil }, &expected)
+			expected = i32(C.vox_gl_program_parameter_robust(name,pname))
 			expected_error := C.vox_gl_get_error()
 			other.native.make_current()
 			numeric := pname in [webgl.attached_shaders, webgl.active_attributes,
@@ -63,7 +62,7 @@ fn test_public_program_parameter_matches_exact_robust_driver_values_and_errors()
 		owner.native.make_current()
 		C.vox_gl_delete_program(name)
 		mut expected := i32(0)
-		C.glGetProgramivRobustANGLE(name, webgl.link_status, 1, unsafe { nil }, &expected)
+		expected = i32(C.vox_gl_program_parameter_robust(name,webgl.link_status))
 		expected_error := C.vox_gl_get_error()
 		assert expected_error != webgl.no_error
 		other.native.make_current()

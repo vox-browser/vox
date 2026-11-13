@@ -43,7 +43,7 @@ static int vox_metal_draw_configured(void* target_handle, void* program_handle,
     if (depth && (depth->device != target->device || depth->width != target->width || depth->height != target->height)) return 0;
     if (indices && (indices->device != target->device || (index_width != 2 && index_width != 4)
         || index_offset % index_width || index_offset > indices->size || (uint64_t)count * index_width > indices->size - index_offset)) return 0;
-    if (!state->scissor_width || !state->scissor_height || !state->width || !state->height) return 1;
+    if (!state->feedback && (!state->scissor_width || !state->scissor_height || !state->width || !state->height)) return 1;
     @autoreleasepool {
         id<MTLDevice> device = (__bridge id<MTLDevice>)target->device;
         MTLVertexDescriptor* vertices = [MTLVertexDescriptor vertexDescriptor];
@@ -74,8 +74,9 @@ static int vox_metal_draw_configured(void* target_handle, void* program_handle,
             for(unsigned c=0;c<8;++c) if(colors[c] && texture->storage.texture==colors[c]->texture) return 0;
         }
         MTLRenderPipelineDescriptor* descriptor = [[MTLRenderPipelineDescriptor alloc] init];
-        descriptor.vertexFunction = (__bridge id<MTLFunction>)program->vertex;
-        descriptor.fragmentFunction = (__bridge id<MTLFunction>)program->fragment;
+        descriptor.vertexFunction = (__bridge id<MTLFunction>)(state->feedback?program->feedback:program->vertex);
+        descriptor.rasterizationEnabled=!state->feedback;
+        descriptor.fragmentFunction = state->feedback?nil:(__bridge id<MTLFunction>)program->fragment;
         descriptor.vertexDescriptor = vertices;
         descriptor.rasterSampleCount=[(__bridge id<MTLTexture>)target->texture sampleCount];
         for(unsigned c=0;c<8;++c) {
@@ -85,7 +86,7 @@ static int vox_metal_draw_configured(void* target_handle, void* program_handle,
         color.writeMask = ((state->color_mask & 1) ? MTLColorWriteMaskRed : 0)
             | ((state->color_mask & 2) ? MTLColorWriteMaskGreen : 0)
             | ((state->color_mask & 4) ? MTLColorWriteMaskBlue : 0)
-            | ((state->color_mask & 8) ? MTLColorWriteMaskAlpha : 0);
+            | ((state->color_mask & 8) && !(state->rgb_only_mask & (1u<<c)) ? MTLColorWriteMaskAlpha : 0);
         color.blendingEnabled = state->blend;
         color.rgbBlendOperation = (MTLBlendOperation)state->rgb_operation;
         color.alphaBlendOperation = (MTLBlendOperation)state->alpha_operation;
@@ -100,6 +101,11 @@ static int vox_metal_draw_configured(void* target_handle, void* program_handle,
         id<MTLRenderPipelineState> pipeline = [device newRenderPipelineStateWithDescriptor:descriptor error:&error];
         vox_metal_drop_owned(descriptor);
         if (!pipeline) { if (capacity) snprintf(log, capacity, "%s", error.localizedDescription.UTF8String ?: "Metal pipeline compilation failed"); return 0; }
+        if(state->feedback) {
+            VoxMetalGPUBuffer* output=state->feedback_buffer;
+            if(!output) { vox_metal_drop_owned(pipeline);return 1; }
+            if(output->device!=target->device || (uint64_t)count*instances>output->size/program->feedback_stride) { vox_metal_drop_owned(pipeline);return 0; }
+        }
         MTLRenderPassDescriptor* pass = [MTLRenderPassDescriptor renderPassDescriptor];
         pass.renderTargetWidth=target->width;pass.renderTargetHeight=target->height;
         pass.defaultRasterSampleCount=[(__bridge id<MTLTexture>)target->texture sampleCount];
@@ -118,7 +124,7 @@ static int vox_metal_draw_configured(void* target_handle, void* program_handle,
         [encoder setViewport:(MTLViewport){state->x, state->y, state->width, state->height, state->near_depth, state->far_depth}];
         [encoder setScissorRect:(MTLScissorRect){state->scissor_x, state->scissor_y, state->scissor_width, state->scissor_height}];
         [encoder setCullMode:(MTLCullMode)state->cull];
-        /* SPIRV-Cross flips clip Y to preserve raw GL readback rows; reverse
+        /* The V shader compiler flips clip Y to preserve raw GL readback rows; reverse
          * Metal winding with it so culling, gl_FrontFacing and stencil agree. */
         [encoder setFrontFacingWinding:state->front_ccw ? MTLWindingClockwise : MTLWindingCounterClockwise];
         [encoder setBlendColorRed:state->blend_red green:state->blend_green blue:state->blend_blue alpha:state->blend_alpha];
@@ -162,6 +168,16 @@ static int vox_metal_draw_configured(void* target_handle, void* program_handle,
                 [encoder setVertexTexture:(__bridge id<MTLTexture>)texture->storage.texture atIndex:textures[i].binding];
                 if (textures[i].sampled) [encoder setVertexSamplerState:(__bridge id<MTLSamplerState>)sampler atIndex:textures[i].sampler_binding];
             }
+        }
+        if(state->feedback) {
+            VoxMetalGPUBuffer* output=state->feedback_buffer;
+            uint32_t parameters[5]={count,instances,0,0,0};
+            if(program->translated->direct_feedback_stride) {
+                parameters[0]=first;parameters[1]=count;parameters[2]=0;parameters[3]=instances;
+                uint64_t words=output->size/4;parameters[4]=words>UINT32_MAX?UINT32_MAX:(uint32_t)words;
+            }
+            [encoder setVertexBuffer:(__bridge id<MTLBuffer>)output->buffer offset:0 atIndex:13];
+            [encoder setVertexBytes:parameters length:program->translated->direct_feedback_stride?sizeof(parameters):sizeof(uint32_t)*4 atIndex:14];
         }
         if (indices)
             [encoder drawIndexedPrimitives:(MTLPrimitiveType)primitive indexCount:count indexType:index_width == 2 ? MTLIndexTypeUInt16 : MTLIndexTypeUInt32

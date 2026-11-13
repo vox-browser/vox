@@ -55,7 +55,7 @@ fn test_source_sampler_parameter_owner_precedes_handle_and_exact_parameter_name_
 		sampler_parameter_source_owner()
 		assert context.get_error() == expected_zero
 	}
-	context.delete_sampler(mut owned)
+	context.delete_sampler(owned)
 	for floating in [false, true] {
 		other.native.make_current()
 		if floating {

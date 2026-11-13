@@ -58,4 +58,5 @@ int main(void)
         puts("PASS direct Metal GPU clear, initialized resize, bounded row transfers, ownership, lifecycle; no ANGLE loaded");
     }
     return 0;
+    return 0;
 }
