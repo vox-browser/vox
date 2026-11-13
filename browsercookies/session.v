@@ -1,6 +1,6 @@
 // Native browser session cookies, shared by navigation, Fetch and Document.
-// Storage/matching follows LibWebView/CookieJar.cpp; disk persistence and
-// partitioned cookies are not implemented by this in-process adapter.
+// Storage/matching follows LibWebView/CookieJar.cpp. Persistent cookies use
+// the browser profile; session cookies remain local to the browser process.
 module browsercookies
 
 import httpcookie
@@ -29,6 +29,8 @@ mut:
 	lock sync.Mutex
 	cookies []StoredCookie
 	next_order u64
+	path string
+	file_version ?CookieFileVersion
 }
 
 const session_jar = &Jar{}
@@ -141,6 +143,9 @@ fn (mut jar Jar) set_cookie_at(record &url.URL, parsed httpcookie.ParsedCookie, 
 	defer { platform.leave_persistent(entry) }
 	jar.lock.@lock()
 	defer { jar.lock.unlock() }
+	guard := jar.profile_lock() or { return }
+	defer { guard.release() }
+	jar.reload_profile(now) or { return }
 	jar.purge_expired(now)
 	mut replacement := -1
 	mut order := jar.next_order
@@ -158,6 +163,7 @@ fn (mut jar Jar) set_cookie_at(record &url.URL, parsed httpcookie.ParsedCookie, 
 	expires := parsed.expiry_time_from_max_age_attribute or { parsed.expiry_time_from_expires_attribute or { max_i64 } }
 	if expires <= now {
 		if replacement >= 0 { jar.cookies.delete(replacement) }
+		jar.save_profile() or { return }
 		return
 	}
 	cookie := StoredCookie{
@@ -172,6 +178,7 @@ fn (mut jar Jar) set_cookie_at(record &url.URL, parsed httpcookie.ParsedCookie, 
 		if jar.cookies.len >= 3000 { jar.cookies.delete(0) }
 		jar.cookies << cookie
 	}
+	jar.save_profile() or { return }
 }
 
 fn (mut jar Jar) cookie_string_at(record &url.URL, source httpcookie.Source, context Context, now i64) string {
@@ -180,6 +187,9 @@ fn (mut jar Jar) cookie_string_at(record &url.URL, source httpcookie.Source, con
 	path := record.serialize_path()
 	jar.lock.@lock()
 	defer { jar.lock.unlock() }
+	guard := jar.profile_lock() or { return '' }
+	defer { guard.release() }
+	jar.reload_profile(now) or { return '' }
 	jar.purge_expired(now)
 	mut matches := []StoredCookie{}
 	for cookie in jar.cookies {

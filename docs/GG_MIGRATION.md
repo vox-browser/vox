@@ -2765,3 +2765,15 @@ with a laid-out heading and editor and zero native errors (browser/guard exit
 0; sampled peak RSS 2,298,757,120 bytes). Its audit retained Google's One Tap
 FedCM migration warning; the earlier developer live run had no diagnostics.
 The production identity remained unchanged throughout the launch.
+
+
+### Small rounded shadows, 2026-11-13
+
+`a2427d085` extends the bounded V/GG Gaussian filter to device sigma 0.5 and
+uses a single 2D pass when the kernel fits in 28 samples, preserving A8 rounding.
+The new four-case `small-blur-shadows` browser fixture matches two fresh pinned
+Brave captures exactly. The six shadow test files pass with arena poisoning
+and 3 GiB runtime guards, retaining all previous GPU-oracle hashes. The unchanged
+GitHub archive improves from 207 to 49 differing pixels in the diagnostic build;
+production validation is pending. See the [pixel audit](OPTIMIZED_SITES_PIXELS_2026_11_12.md#small-rounded-shadow-kernels-2026-11-13)
+for capture scope, retained failures and remaining gaps.

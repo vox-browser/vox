@@ -441,6 +441,7 @@ fn test_committed_flex_consumes_owned_measurement_without_replacing_caller_geome
 			measured_outer.set_content_height(CSSPixels.new(0))
 			measured_outer.set_has_definite_height(false)
 			result := run_flex_formatting_context_with_mode(mut producer, root, mut measured, .normal, space)
+			measured_first, measured_last := measured.derived_first_baseline(), measured.derived_last_baseline()
 			entries := source.measurement_chunk_pool_.flex_measurements_[u64(voidptr(root))] or { []&FlexMeasurementLayout{} }
 			producer.release_measurement()
 			gc_collect()
@@ -454,7 +455,9 @@ fn test_committed_flex_consumes_owned_measurement_without_replacing_caller_geome
 			assert used.offset == css.CSSPixelPoint.from_values(11, 13)
 			assert used.relative_inset_basis_width() or { panic('basis') } == CSSPixels.new(731)
 			assert used.relative_inset_basis_height() or { panic('basis') } == CSSPixels.new(919)
-			assert used.derived_first_baseline() == none && used.derived_last_baseline() == none
+			actual_first, actual_last := used.derived_first_baseline(), used.derived_last_baseline()
+			assert actual_first == measured_first
+			assert actual_last == measured_last
 			if !disable_flex_measurement_reuse {
 				assert entries.len == 1
 				assert committed_flex_measurement_test_reused(source, entries[0]) == !disable_committed_flex_measurement_reuse
@@ -473,7 +476,9 @@ fn test_committed_flex_consumes_owned_measurement_without_replacing_caller_geome
 			expected.set_derived_baselines(CSSPixels.new(71), CSSPixels.new(93))
 			assert actual == run_uncached_flex_formatting_context_with_mode(mut oracle, root, mut expected, .normal, space)
 			assert geometry == flex_measurement_test_geometry(oracle, root)
-			assert expected.derived_first_baseline() == none && expected.derived_last_baseline() == none
+			oracle_first, oracle_last := expected.derived_first_baseline(), expected.derived_last_baseline()
+			assert actual_first == oracle_first
+			assert actual_last == oracle_last
 			oracle.release_measurement()
 			if !disable_flex_measurement_reuse && !disable_committed_flex_measurement_reuse {
 				for entry in entries[0].values {

@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: BSD-2-Clause
 module webgl
 
-fn C.glGetAttachedShaders(u32, int, &i32, &u32)
 
 fn shader_attach_owner(expected [4]i32) {
 	mut selected := [i32(0), 0, 0, 0]!
@@ -44,7 +43,7 @@ fn test_source_shader_attach_handle_and_slot_gates_precede_native_owner_and_reta
 		shader_attach_owner([i32(1), 2, 3, 4]!)
 		mut count := 0
 		mut native_names := [u32(0), 0]!
-		C.glGetAttachedShaders(program.object.native_name(), 2, &count, &native_names[0])
+		C.vox_gl_attached_shaders(program.object.native_name(), 2, &count, &native_names[0])
 		assert count == 2
 		assert vertex.object.native_name() in native_names
 		assert fragment.object.native_name() in native_names

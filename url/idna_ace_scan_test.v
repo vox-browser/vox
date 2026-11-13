@@ -19,14 +19,7 @@ fn idna_split_lower_original_domain_to_ascii(domain string, be_strict bool) ?str
 			return domain.to_lower()
 		}
 	}
-	mut output_length := 0
-	output := C.libweb_v_idna_to_ascii(domain.str, domain.len, int(be_strict), &output_length)
-	if output == unsafe { nil } {
-		return none
-	}
-	result := unsafe { tos(&u8(output), output_length).clone() }
-	C.free(output)
-	return result
+	return idna_to_ascii(domain, be_strict)
 }
 
 fn assert_idna_scan_matches_original(input string, strict bool) {
@@ -87,8 +80,8 @@ fn test_idna_ace_scan_preserves_case_and_only_checks_actual_label_starts() {
 fn test_idna_ace_scan_keeps_strict_non_ascii_and_empty_inputs_on_original_paths() {
 	for input in ['', '.', '..', 'EXAMPLE.COM.', 'a..B', 'a b', 'a\x00B', '\x00', '\x7f', '\xff',
 		'a.\xc0\xaf', 'faß.de', '測試', 'bücher.example', 'пример.рф', 'example。com',
-		'example．com', 'example｡com', 'ＸＮ--a', 'xn--fa-hia.de', 'a.\u200d.com',
-		'a.\u200c.com', 'א.example', '١٢.example', '💩.example'] {
+		'example．com', 'example｡com', 'ＸＮ--a', 'xn--fa-hia.de', 'a.\u200d.com', 'a.\u200c.com',
+		'א.example', '١٢.example', '💩.example'] {
 		assert_idna_scan_matches_original(input, false)
 		assert_idna_scan_matches_original(input, true)
 	}

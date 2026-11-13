@@ -1,2 +1,5 @@
 # Content-addressed HTTP responses must retain their captured bytes verbatim.
 Tests/Browser/Brave/sites/*/bodies/* binary
+
+# Preserve official Unicode conformance files, including upstream comment spacing.
+vunicode/testdata/*.txt -text whitespace=-blank-at-eol

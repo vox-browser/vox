@@ -6380,6 +6380,9 @@ fn dom_assign_slottables_for_a_tree(root &Node) {
 }
 
 fn (mut e Element) invalidate_style_after_attribute_change(attribute_name string, old_value ?string, new_value ?string) {
+	// The DOM mutation and custom-element reactions have already been queued.
+	// Reassigning identical metadata cannot change selectors or attr() values.
+	if metadata_attribute_style_reuse(attribute_name) && old_value == new_value { return }
 	if trace_style_invalidation_sources {
 		trace_style_invalidation_source(e.as_node(), .element_attribute_change, 'attribute(${attribute_name})')
 	}
@@ -6460,9 +6463,11 @@ fn (mut e Element) invalidate_style_after_attribute_change(attribute_name string
 		type_: .attribute
 		name: attribute_name
 	}
-	// Presentational-hint detection belongs to the concrete HTML element subclasses. Recomputing the
-	// changed element is conservative until those subclass hooks are represented in this module.
-	options.invalidate_self = true
+	// ARIA and data attributes have no presentational hints. Their selectors
+	// still participate in the normal invalidation plan, and attr() users need
+	// a new style even when no selector mentions the changed attribute.
+	// Keep the conservative hint handling for every other attribute.
+	options.invalidate_self = options.invalidate_self || !metadata_attribute_style_reuse(attribute_name)
 	node.invalidate_style_with_properties(.element_attribute_change, changed_properties, options)
 	e.invalidate_hosted_shadow_tree_after_attribute_change(style_computer)
 }

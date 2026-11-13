@@ -5,7 +5,6 @@ module browserjs
 import html
 import webgl
 
-fn C.glGetShaderivRobustANGLE(u32, u32, int, voidptr, &i32)
 
 fn test_public_shader_parameter_matches_genuine_robust_native_results_and_errors() {
 	$if !darwin {
@@ -29,7 +28,7 @@ fn test_public_shader_parameter_matches_genuine_robust_native_results_and_errors
 			u32(0xbad)] {
 			owner.native.make_current()
 			mut expected := i32(0)
-			C.glGetShaderivRobustANGLE(name, pname, 1, unsafe { nil }, &expected)
+			expected = i32(C.vox_gl_shader_parameter_robust(name,pname))
 			expected_error := C.vox_gl_get_error()
 			other.native.make_current()
 			result := runtime.evaluate_host('gl.getShaderParameter(shader,${pname})')!
@@ -54,7 +53,7 @@ fn test_public_shader_parameter_matches_genuine_robust_native_results_and_errors
 		owner.native.make_current()
 		C.vox_gl_delete_shader(name)
 		mut expected := i32(0)
-		C.glGetShaderivRobustANGLE(name, webgl.shader_type, 1, unsafe { nil }, &expected)
+		expected = i32(C.vox_gl_shader_parameter_robust(name,webgl.shader_type))
 		expected_error := C.vox_gl_get_error()
 		assert expected_error != webgl.no_error
 		other.native.make_current()
