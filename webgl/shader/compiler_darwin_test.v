@@ -241,3 +241,9 @@ fn test_array_constructor_function_arguments_preserve_value_semantics() {
  fragment:=translate('#version 300 es\nprecision highp float;in vec4 value;out vec4 color;void main(){color=value;}',.fragment)!
  assert C.vox_direct_metal_probe(vertex.source.str,fragment.source.str)==1
 }
+
+fn test_texture_coordinate_swizzles_lower_to_exact_metal_component_reads_and_writes() {
+ vertex:=translate('#version 300 es\nout vec4 value;void main(){gl_Position=vec4(gl_VertexID==1?3.0:-1.0,gl_VertexID==2?3.0:-1.0,0,1);vec4 v=vec4(0,1,0,1);v.st=vec2(1,0);v.pq=vec2(0,1);bool ok=v.sspq==vec4(1,1,0,1);value=ok?v:vec4(0,1,0,1);}',.vertex)!
+ fragment:=translate('#version 300 es\nprecision highp float;in vec4 value;out vec4 color;void main(){color=value;}',.fragment)!
+ assert C.vox_direct_metal_probe(vertex.source.str,fragment.source.str)==1
+}

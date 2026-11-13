@@ -15,3 +15,17 @@ fn test_structure_members_keep_their_types_during_expression_validation() {
   assert false,expression
  }
 }
+
+fn test_vector_swizzles_validate_component_sets_bounds_and_write_uniqueness() {
+ for member in ['s0','xr','z','xyzwx'] {
+  translate('#version 300 es\nvoid main(){vec2 v=vec2(1.0);gl_Position=vec4(v.'+member+');}',.vertex) or {assert err.msg().contains('swizzle');continue}
+  assert false,member
+ }
+ for body in ['v.xx=vec2(0.0);','paint(v.xx);','v.rr++;'] {
+  translate('#version 300 es\nvoid paint(out vec2 x){x=vec2(0.0);}void main(){vec4 v=vec4(1.0);'+body+'gl_Position=v;}',.vertex) or {continue}
+  assert false,body
+ }
+ translated:=translate('#version 300 es\nvoid main(){vec4 v=vec4(1.0);vec2 a=v.ss;v.st=a;gl_Position=v;}',.vertex)!
+ assert !translated.source.contains('. st') && !translated.source.contains('. ss')
+ translate('#version 300 es\nstruct myvec{vec4 st;};uniform myvec data;void main(){gl_Position=data.st;}',.vertex)!
+}

@@ -23,10 +23,13 @@ fn expression_priority(op string) int {
  return match op {'=','+=','-=','*=','/=','%=','&=','|=','^=','<<=','>>=' {0} '||' {2} '^^' {3} '&&' {4} '|' {5} '^' {6} '&' {7} '==','!=' {8} '<','>','<=','>=' {9} '<<','>>' {10} '+','-' {11} '*','/','%' {12} else {-1}}
 }
 fn scalar_of(typ string) string {
- if typ.starts_with('bvec') {return 'bool'}
- if typ.starts_with('ivec') {return 'int'}
- if typ.starts_with('uvec') {return 'uint'}
- if typ.starts_with('vec') || typ.starts_with('mat') {return 'float'}
+ if is_vector_type(typ) {
+  if typ.starts_with('bvec') {return 'bool'}
+  if typ.starts_with('ivec') {return 'int'}
+  if typ.starts_with('uvec') {return 'uint'}
+  return 'float'
+ }
+ if is_matrix_type(typ) {return 'float'}
  return typ
 }
 fn vector_type(scalar string, width int) string {
@@ -95,10 +98,10 @@ fn (mut p ExpressionParser) expression(minimum int) !ShaderExpression {
    if index.typ!='' && index.typ !in ['int','uint'] {return error('Shader array index must be integral')}
    if p.at>=p.tokens.len || p.tokens[p.at]!=']' {return error('Expected ]')};p.at++
    if value:=constant_integer(lex(index.source)!,map[string]ConstantScalar{}) {
-    count:=if left.length>0 {left.length} else if left.typ.starts_with('mat') {_,columns:=interface_dimensions(left.typ);columns} else if left.typ.contains('vec') {int(left.typ[left.typ.len-1]-`0`)} else {0}
+    count:=if left.length>0 {left.length} else if is_matrix_type(left.typ) {_,columns:=interface_dimensions(left.typ);columns} else if is_vector_type(left.typ) {int(left.typ[left.typ.len-1]-`0`)} else {0}
     if count>0 && (value<0 || value>=count) {return error('Constant shader index out of range')}
    }
-   typ:=if left.length>0 {left.typ} else if left.typ.starts_with('mat') {rows,_:=interface_dimensions(left.typ);vector_type('float',rows)} else if left.typ.contains('vec') {scalar_of(left.typ)} else {''}
+   typ:=if left.length>0 {left.typ} else if is_matrix_type(left.typ) {rows,_:=interface_dimensions(left.typ);vector_type('float',rows)} else if is_vector_type(left.typ) {scalar_of(left.typ)} else {''}
    left=ShaderExpression{typ:typ,source:left.source+'['+index.source+']',writable:left.writable}
    continue
   }
@@ -109,14 +112,22 @@ fn (mut p ExpressionParser) expression(minimum int) !ShaderExpression {
     if left.length<1 {return error('length() requires an array')}
     p.at+=2;left=ShaderExpression{typ:'int',source:left.length.str()};continue
    }
-   mut typ:=if left.typ.contains('vec') {vector_type(scalar_of(left.typ),member.len)} else {''}
+   mut typ:=''
    mut length:=0
-   if definition:=p.structures[left.typ] {
+   mut selector:=member
+   mut writable:=left.writable
+   if left.length>0 {return error('Array member access requires length()')}
+   if is_vector_type(left.typ) {
+    swizzle:=vector_swizzle(left.typ,member)!
+    selector=swizzle.selector
+    typ=vector_type(scalar_of(left.typ),member.len)
+    writable=writable && swizzle.unique
+   } else if definition:=p.structures[left.typ] {
     fields:=definition.fields.filter(it.name==member)
     if fields.len!=1 {return error('Unknown shader structure member: '+member)}
     typ=fields[0].typ;length=if fields[0].is_array {fields[0].array_length} else {0}
-   }
-   left=ShaderExpression{typ:typ,length:length,source:left.source+'.'+member,writable:left.writable}
+   } else if left.typ!='' {return error('Member selection requires a vector or structure')}
+   left=ShaderExpression{typ:typ,length:length,source:left.source+'.'+selector,writable:writable}
    continue
   }
   if op in ['++','--'] {
@@ -151,7 +162,7 @@ fn (mut p ExpressionParser) expression(minimum int) !ShaderExpression {
    typ='bool'
    source=(if op=='!=' {'!'} else {''})+'_vox_same('+left.source+','+right.source+')'
   } else if op in ['<','<=','>','>='] {
-   if known && (left.typ!=right.typ || left.typ.contains('vec') || left.typ.starts_with('mat')) {return error('Ordered comparison requires matching scalar types')}
+   if known && (left.typ!=right.typ || is_vector_type(left.typ) || is_matrix_type(left.typ)) {return error('Ordered comparison requires matching scalar types')}
    typ='bool'
   } else if known {
    if scalar_of(left.typ)!=scalar_of(right.typ) && op !in ['<<','>>'] {return error('Implicit shader operand conversion is forbidden')}
@@ -188,7 +199,7 @@ fn function_result_type(name string,args []ShaderExpression,functions []ShaderFu
  validate_builtin_arguments(name,args)!
  if name in ['modf','frexp'] {
   if args.len!=2 || !args[1].writable {return error('Builtin output parameter requires a writable value')}
-  expected:=if name=='modf' {args[0].typ} else {vector_type('int',if args[0].typ.contains('vec') {int(args[0].typ[args[0].typ.len-1]-`0`)} else {1})}
+  expected:=if name=='modf' {args[0].typ} else {vector_type('int',if is_vector_type(args[0].typ) {int(args[0].typ[args[0].typ.len-1]-`0`)} else {1})}
   if args[1].typ!='' && args[1].typ!=expected {return error('Builtin output parameter type mismatch')}
  }
  if name in ['step','smoothstep'] && args.len>0 {return args.last().typ}
@@ -196,12 +207,12 @@ fn function_result_type(name string,args []ShaderExpression,functions []ShaderFu
  if name in ['length','distance','dot','determinant'] {return 'float'}
  if args.len==0 {return ''}
  first:=args[0].typ
- if name in ['equal','notEqual','lessThan','lessThanEqual','greaterThan','greaterThanEqual'] {return vector_type('bool',if first.contains('vec') {int(first[first.len-1]-`0`)} else {1})}
+ if name in ['equal','notEqual','lessThan','lessThanEqual','greaterThan','greaterThanEqual'] {return vector_type('bool',if is_vector_type(first) {int(first[first.len-1]-`0`)} else {1})}
  if name.starts_with('texture') || name.starts_with('texelFetch') {
   if name=='textureSize' {return if first.contains('3D') || first.contains('Array') {'ivec3'} else {'ivec2'}}
   return if first.ends_with('Shadow') {'float'} else if first.starts_with('isampler') {'ivec4'} else if first.starts_with('usampler') {'uvec4'} else if first.starts_with('sampler') {'vec4'} else {''}
  }
- if name in ['floatBitsToInt','floatBitsToUint','intBitsToFloat','uintBitsToFloat'] {return vector_type(if name=='floatBitsToInt' {'int'} else if name=='floatBitsToUint' {'uint'} else {'float'},if first.contains('vec') {int(first[first.len-1]-`0`)} else {1})}
+ if name in ['floatBitsToInt','floatBitsToUint','intBitsToFloat','uintBitsToFloat'] {return vector_type(if name=='floatBitsToInt' {'int'} else if name=='floatBitsToUint' {'uint'} else {'float'},if is_vector_type(first) {int(first[first.len-1]-`0`)} else {1})}
  if name.starts_with('pack') {return 'uint'}
  if name.starts_with('unpack') {return 'vec2'}
  if name in ['sin','cos','tan','asin','acos','atan','sinh','cosh','tanh','asinh','acosh','atanh','radians','degrees','pow','exp','exp2','log','log2','sqrt','inversesqrt','abs','sign','floor','trunc','round','roundEven','ceil','fract','mod','modf','min','max','clamp','mix','step','smoothstep','normalize','faceforward','reflect','refract','matrixCompMult','inverse','frexp','ldexp','dFdx','dFdy','fwidth'] {return first}
@@ -310,9 +321,9 @@ fn validate_builtin_arguments(name string,args []ShaderExpression) ! {
  if name in ['min','max','clamp','abs','sign'] && scalar !in ['float','int','uint'] {return error('Numeric builtin operand required: '+name)}
  if name in ['atan','pow'] && args.len==2 && args[0].typ!=args[1].typ {return error('Builtin operand types differ: '+name)}
  if name in ['any','all'] && (!first.starts_with('bvec') || args.len!=1) {return error('Boolean vector builtin operand required')}
- if name in ['equal','notEqual','lessThan','lessThanEqual','greaterThan','greaterThanEqual'] && (args.len!=2 || args[0].typ!=args[1].typ || !first.contains('vec')) {return error('Matching vector operands required')}
+ if name in ['equal','notEqual','lessThan','lessThanEqual','greaterThan','greaterThanEqual'] && (args.len!=2 || args[0].typ!=args[1].typ || !is_vector_type(first)) {return error('Matching vector operands required')}
  if name in ['min','max','clamp','mod'] {
-  for arg in args[1..] {if arg.typ!=first && !(first.contains('vec') && arg.typ==scalar) {return error('Builtin operand types differ: '+name)}}
+  for arg in args[1..] {if arg.typ!=first && !(is_vector_type(first) && arg.typ==scalar) {return error('Builtin operand types differ: '+name)}}
  }
  if name in ['packUnorm2x16','packSnorm2x16','packHalf2x16'] && (args.len!=1 || first!='vec2') {return error('Packing requires vec2')}
  if name in ['unpackUnorm2x16','unpackSnorm2x16','unpackHalf2x16'] && (args.len!=1 || first!='uint') {return error('Unpacking requires uint')}
