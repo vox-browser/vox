@@ -113,3 +113,35 @@ fn test_chromium_partial_border_paints_horizontal_sides_before_vertical_sides() 
   else {assert sides==['top','bottom']}
  }
 }
+
+fn test_chromium_partial_border_keeps_single_sides_that_fill_a_fractional_box() {
+	base := partial_border_box()
+	for side in 0 .. 4 {
+		mut widths := [f64(0), 0, 0, 0]!
+		widths[side] = 1
+		box := BlockBox{...base, border: BoxEdges{widths[0], widths[1], widths[2], widths[3]}}
+		rect := if side in [0, 2] { LayoutRect{16.8125, 16.15625, 11.1875, 1} }
+			else { LayoutRect{16.8125, 16.15625, 1, 11.1875} }
+		mut commands := []PaintCommand{}
+		assert append_chromium_partial_border(mut commands, &box, box.border_colors, BoxRadii{}, rect, 1)
+		assert commands.len == 1
+		assert commands[0].kind == 'fill_rect' && commands[0].antialiased_rect
+		assert commands[0].x == 0 && commands[0].y == 0
+		assert commands[0].width == if side in [0, 2] { f64(11) } else { f64(1) }
+		assert commands[0].height == if side in [0, 2] { f64(1) } else { f64(11) }
+		assert commands[0].local_border_data.origin_x == 16.8125
+		assert commands[0].local_border_data.origin_y == 16.15625
+	}
+	// Non-finite or subpixel boxes that snap empty keep the fallback.
+	for dimension in [math.nan(), math.inf(1), f64(0.25)] {
+		box := BlockBox{...base, border: BoxEdges{0, 1, 0, 0}}
+		for rect in [LayoutRect{0, 0, dimension, 11}, LayoutRect{0, 0, 1, dimension}] {
+			mut commands := []PaintCommand{}
+			assert !append_chromium_partial_border(mut commands, &box, box.border_colors, BoxRadii{}, rect, 1)
+		}
+	}
+	// Overlapping joined sides still require the joined-path painter.
+	box := BlockBox{...base, border: BoxEdges{0, 1, 1, 0}}
+	mut commands := []PaintCommand{}
+	assert !append_chromium_partial_border(mut commands, &box, box.border_colors, BoxRadii{}, LayoutRect{0, 0, 1, 11.1875}, 1)
+}
