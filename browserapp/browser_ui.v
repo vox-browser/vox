@@ -109,6 +109,12 @@ fn (mut app BrowserApp) browser_popup_action(action string) {
 		app.refresh_browser_ui()
 		return
 	}
+	if id.starts_with('tab-hibernate:') || id.starts_with('tab-wake:') {
+		app.dismiss_browser_popup()
+		app.refresh_browser_ui()
+		app.activate_tab_chrome(id)
+		return
+	}
 	if id.starts_with('select-') {
 		app.complete_browser_select_picker(id.all_after('select-').u32())
 		app.dismiss_browser_popup()

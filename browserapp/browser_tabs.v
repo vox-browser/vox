@@ -32,6 +32,8 @@ mut:
 	pending_actions         []string
 	drag                    ?BrowserTabDrag
 	pending_detaches        []PendingTabDetach
+	hibernated              map[string]HibernatedTab
+	tab_activity            map[string]i64
 	open_window             fn (string) ! = open_detached_browser_window
 }
 
@@ -179,6 +181,11 @@ fn (mut app BrowserApp) activate_tab_chrome(action string) {
 				app.select_browser_tab(action.all_after(':').int())
 			} else if action.starts_with('tab-close:') {
 				app.close_browser_tab(action.all_after(':').int())
+			} else if action.starts_with('tab-hibernate:') {
+				app.hibernate_browser_tab(action.all_after(':').int())
+			} else if action.starts_with('tab-wake:') {
+				app.wake_browser_tab(action.all_after(':').int())
+				app.select_browser_tab(action.all_after(':').int())
 			} else if action.starts_with('tab-move:') {
 				indices := action.all_after(':').split(':')
 				if indices.len == 2 { app.move_browser_tab(indices[0].int(), indices[1].int()) }
@@ -224,6 +231,9 @@ fn (mut app BrowserApp) move_browser_tab(from int, to int) {
 
 fn (mut app BrowserApp) select_browser_tab(index int) {
 	if app.tabs == unsafe { nil } || index < 0 || index >= app.tabs.pages.len { return }
+	// Selecting a hibernated tab restores its page before it becomes visible.
+	app.wake_browser_tab(index)
+	app.note_browser_tab_activity(index)
 	mut previous := app.active_browser_tab()
 	previous.stop_browser_tab_loading_animation()
 	$if linux || ui2_custom_rendering ? { previous.stop_browser_memory_chrome() }
@@ -261,6 +271,7 @@ fn (mut app BrowserApp) close_browser_tab(index int) {
 	app.tabs.drag = none
 	// Keep a useful window when its final tab is closed.
 	if app.tabs.pages.len == 1 { app.activate_tab_chrome('tab-new') }
+	app.drop_browser_tab_hibernation(index)
 	mut closing := app.tabs.pages[index]
 	was_selected := app.tabs.selected == index
 	if was_selected { closing.blur_address_bar() }
@@ -323,9 +334,13 @@ fn (mut app BrowserApp) draw_browser_tabs() {
 	mut active := app.active_browser_tab()
 	if app.tabs != unsafe { nil } {
 		for i in 0 .. app.tabs.pages.len {
+			if app.is_browser_tab_hibernated(i) {
+				continue
+			}
 			mut tab := app.tabs.pages[i]
 			if voidptr(tab) != voidptr(active) { tab.poll_background_browser_tab() }
 		}
+		app.auto_hibernate_browser_tabs()
 	}
 	active.draw()
 }
