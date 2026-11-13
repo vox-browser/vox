@@ -57,6 +57,7 @@ fn (mut transport NativeFontFetchTransport) deferred_network_error(mut request f
 
 pub fn (transport &NativeFontFetchTransport) fetch_host() &fetch.FetchHost {
 	return &fetch.FetchHost{
+		preferred_languages: preferred_fetch_languages()
 		perform:                   fn (_ &fetch.Request) !&fetch.Response {
 			return error('Font RequestServer transport requires asynchronous Fetch')
 		}

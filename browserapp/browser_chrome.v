@@ -189,16 +189,16 @@ fn browser_chrome_elements(chrome BrowserChromeState) []ui2.Element {
 			0.0
 		}), ui2.BoxStyle{ bg: 0xf7f7f7 }, [
 			browserui.address_info_mark('address-info', ui2.rect(78, tab_strip_height + 6, 18, 20), 0x888888),
-			ui2.Element{ ...chrome_navigation_button('back', '‹', 5, chrome.back), tooltip: 'Back', accessibility_label: 'Back' },
-			ui2.Element{ ...chrome_navigation_button('forward', '›', 27, chrome.forward), tooltip: 'Forward', accessibility_label: 'Forward' },
-			ui2.Element{ ...chrome_navigation_button('reload', '↻', 49, chrome.reload), tooltip: 'Reload', accessibility_label: 'Reload' },
+			ui2.Element{ ...chrome_navigation_button('back', '‹', 5, chrome.back), tooltip: browserui.tr('nav.back'), accessibility_label: browserui.tr('nav.back') },
+			ui2.Element{ ...chrome_navigation_button('forward', '›', 27, chrome.forward), tooltip: browserui.tr('nav.forward'), accessibility_label: browserui.tr('nav.forward') },
+			ui2.Element{ ...chrome_navigation_button('reload', '↻', 49, chrome.reload), tooltip: browserui.tr('nav.reload'), accessibility_label: browserui.tr('nav.reload') },
 			browserui.address_field(ui2.rect(address_field_left, tab_strip_height + address_field_top,
 				address_width, address_field_height), chrome.address),
 			ui2.Element{
 				...chrome_navigation_button('history', '◷', width - 32, true)
 				text_style:          chrome_history_text_style()
-				tooltip:             'History'
-				accessibility_label: 'History'
+				tooltip:             browserui.tr('menu.history')
+				accessibility_label: browserui.tr('menu.history')
 			},
 			ui2.Element{
 				...ui2.label('load-status', chrome.status, ui2.rect(12, tab_strip_height + toolbar_height, width - 24, debug_status_height), ui2.TextStyle{ color: 0x555555, size: 12 })
@@ -224,13 +224,13 @@ $if vox_ui2 ? {
 		ui2.install_embedded_keys(browser_ui_key)
 		ui2.install_embedded_wheel(browser_ui_scroll)
 		ui2.install_embedded_menus('Vox', [ui2.Menu{
-			title: 'Browser'
+			title: browserui.tr('menu.browser')
 			items: [
-				ui2.menu_item_with_shortcut('settings-open', 'Settings…', 'cmd+,'),
-				ui2.menu_item_with_shortcut('history', 'History', 'cmd+y'),
-				ui2.menu_item_with_shortcut('devtools-toggle', 'Developer Tools', 'cmd+alt+i'),
-				ui2.menu_item_with_shortcut('devtools-inspect', 'Inspect Element', 'cmd+shift+c'),
-				ui2.menu_item_with_shortcut('devtools-console', 'JavaScript Console', 'cmd+alt+j'),
+				ui2.menu_item_with_shortcut('settings-open', browserui.tr('menu.settings'), 'cmd+,'),
+				ui2.menu_item_with_shortcut('history', browserui.tr('menu.history'), 'cmd+y'),
+				ui2.menu_item_with_shortcut('devtools-toggle', browserui.tr('menu.devtools'), 'cmd+alt+i'),
+				ui2.menu_item_with_shortcut('devtools-inspect', browserui.tr('menu.inspect'), 'cmd+shift+c'),
+				ui2.menu_item_with_shortcut('devtools-console', browserui.tr('menu.console'), 'cmd+alt+j'),
 			]
 		}])
 		app.start_browser_memory_chrome()

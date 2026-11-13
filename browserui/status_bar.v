@@ -21,8 +21,8 @@ pub fn status_bar(frame ui2.Rect, footer string, memory string) ui2.Element {
 			...ui2.label('build-time', build_time_label,
 				ui2.rect(frame.width - 280, 0, 128, frame.height),
 				ui2.TextStyle{ color: 0x555555, size: 12, align: .right })
-			tooltip: 'Build time (UTC)'
-			accessibility_label: 'Build time (UTC)'
+			tooltip: tr('status.build-time')
+			accessibility_label: tr('status.build-time')
 		},
 		ui2.label('memory', memory, ui2.rect(frame.width - 140, 0, 128, frame.height),
 			ui2.TextStyle{ color: 0x555555, size: 12, align: .right }),

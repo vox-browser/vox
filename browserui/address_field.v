@@ -11,7 +11,7 @@ pub fn address_field(frame ui2.Rect, address string) ui2.Element {
 		action_id:    'address-change'
 		submit_id:    'address-submit'
 		text:         address
-		hint_text:    'Enter a URL'
+		hint_text:    tr('address.hint')
 		multiline:    false
 		autocorrect:  false
 		frame:        frame
