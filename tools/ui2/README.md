@@ -44,7 +44,7 @@ export UI2_SOURCE_DIR="$(cd ../ui2 && pwd)"
 git -C "$UI2_SOURCE_DIR" pull --ff-only
 ```
 
-`tools/prepare_ui2.py` links the selected checkout into the compiler module path.
+`tools/prepare_ui2.vsh` links the selected checkout into the compiler module path.
 It creates no UI2 source snapshots, copies, revision locks or process leases.
 Local edits and updates are visible through the link immediately. Local builds
 use `UI2_SOURCE_DIR`, or `~/.vmodules/ui2` (`$VMODULES/ui2`) by default. CI fetches
@@ -72,15 +72,15 @@ GG pass. `embedded_elements_custom.c.v` handles event delivery and text editing;
 separate browser-owned GG control implementation. The custom renderer does not
 establish Linux graphics or window parity when tested on macOS.
 
-Run expensive compilation through `tools/run_memory_bounded.py` with unique lock
+Run expensive compilation through `tools/run_memory_bounded.vsh` with unique lock
 and report paths, then execute focused binaries with `--limit-gib 3`. Supply
 `-memory-limit 10G` to V. For example:
 
 ```sh
-python3 tools/run_memory_bounded.py --lock Build/ui2-address-build.lock \
+sh tools/run_v_tool.sh run_memory_bounded --lock Build/ui2-address-build.lock \
   --report Build/ui2-address-build.json -- \
   sh tools/test_address_bar.sh -memory-limit 10G -skip-running -o Build/ui2-address-test
-python3 tools/run_memory_bounded.py --limit-gib 3 --lock Build/ui2-address-run.lock \
+sh tools/run_v_tool.sh run_memory_bounded --limit-gib 3 --lock Build/ui2-address-run.lock \
   --report Build/ui2-address-run.json -- env VOX_TEST_WINDOW=1 Build/ui2-address-test
 ```
 
@@ -96,7 +96,7 @@ Small component checks avoid compiling the document engine. Use the preparation
 script's complete printed search path in `-path`:
 
 ```sh
-ui2_modules=$(python3 tools/prepare_ui2.py)
+ui2_modules=$(sh tools/run_v_tool.sh prepare_ui2)
 v -enable-globals -memory-limit 10G -cc clang \
   -path "$ui2_modules|.|@vmodules|@vlib" test browserui
 v -enable-globals -memory-limit 10G -cc clang -d vox_ui2 \

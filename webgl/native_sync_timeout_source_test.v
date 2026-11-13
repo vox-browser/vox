@@ -30,6 +30,6 @@ fn test_source_client_wait_host_timeout_override_preserves_actual_driver_states_
 	context.finish()
 	assert context.client_wait_sync(mut sync, 0, u64(-1)) == already_signaled
 	assert context.get_sync_parameter(sync, sync_status).integer == signaled
-	context.delete_sync(mut sync)
+	context.delete_sync(sync)
 	assert context.get_error() == no_error
 }

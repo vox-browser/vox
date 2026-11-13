@@ -3,11 +3,6 @@
 module webcrypto
 
 // LibCrypto uses OpenSSL 3 EVP_MAC for HMAC/KMAC and EVP_CIPHER for AES-OCB.
-$if macos {
-	#pkgconfig --cflags openssl
-} $else {
-	#pkgconfig openssl
-}
 #include "@DIR/native_crypto.h"
 
 fn C.vox_kmac(&char, &u8, uint, &u8, uint, &u8, uint, &u8, uint) int

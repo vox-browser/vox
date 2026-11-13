@@ -1,10 +1,25 @@
 import tempfile
 import unittest
+import subprocess
 from pathlib import Path
+from unittest.mock import patch
 
-from prepare_http_compat import (patch_brotli_compressor, patch_proxy, patch_request, patch_response,
+from prepare_http_compat import (brotli_callback_shim, patch_brotli_compressor, patch_proxy, patch_request, patch_response,
                                  remove_obsolete_entries,
                                  remove_unused_private_helper, staged_modules)
+from prepare_http_compat import compiler_vlib
+
+
+class CompilerRuntimeProbeTest(unittest.TestCase):
+    def test_incompatible_runtime_fails_before_staging_with_an_actionable_error(self):
+        failure = subprocess.CompletedProcess([], 1, '', 'undeclared string__trim_space_eq')
+        with tempfile.TemporaryDirectory() as directory, \
+                patch('prepare_http_compat.subprocess.run', return_value=failure) as run:
+            with self.assertRaisesRegex(RuntimeError, 'matching vlib') as error:
+                compiler_vlib('/selected/v', Path(directory))
+            self.assertIn('string__trim_space_eq', str(error.exception))
+            self.assertEqual(run.call_args.kwargs['env']['V_MACOS_V3_NO_FALLBACK'], '1')
+            self.assertEqual(list(Path(directory).iterdir()), [])
 
 
 class HTTPCompatibilityStagingTest(unittest.TestCase):
@@ -133,6 +148,16 @@ pub fn compress(data []u8, params CompressParams) ![]u8 {
         self.assertEqual(patched, patch_brotli_compressor(patched))
         with self.assertRaisesRegex(RuntimeError, 'Unsupported optional native Brotli'):
             patch_brotli_compressor(source.replace('if compressed :=', 'if result :='))
+
+    def test_pure_v_brotli_shim_provides_streaming_callback(self):
+        shim = brotli_callback_shim()
+        self.assertIn('module brotli', shim)
+        self.assertIn('pub fn decompress_with_callback(', shim)
+        self.assertIn('decompress(data)!', shim)
+        self.assertIn('32 * 1024', shim)
+        # Early-stop must return delivered bytes without an error so the
+        # response sink can report over_limit like the native decoder.
+        self.assertIn('return delivered', shim)
 
     def test_obsolete_helpers_are_removed_only_when_no_callers_remain(self):
         declaration = "// Helper description.\n@[inline]\nfn helper(value string) string {\n\treturn value\n}\n"

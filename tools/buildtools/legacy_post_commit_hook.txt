@@ -1,0 +1,5 @@
+#!/bin/sh
+# Vox canonical production rebuild hook; managed by tools/rebuild_browser.py.
+set -eu
+repo=$(git rev-parse --show-toplevel)
+exec python3 "$repo/tools/rebuild_browser.py" --request --backend c --prod

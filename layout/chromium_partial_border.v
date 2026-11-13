@@ -68,8 +68,9 @@ fn append_chromium_partial_border(mut commands []PaintCommand, box &BlockBox,
 	// Portable players flatten opacity instead of isolating the complete box.
 	// Keep their translucent corners on the joined-path fallback.
 	if opacity != 1 || !box.snaps_background_rect || box.own_paint_transform == [6]f64{}
+		|| !math.is_finite(rect.width) || !math.is_finite(rect.height)
 		|| rect.width <= 0 || rect.height <= 0
-		|| rect.width != math.floor(rect.width) || rect.height != math.floor(rect.height) {
+		|| math.round(rect.width) <= 0 || math.round(rect.height) <= 0 {
 		return false
 	}
 	own := box.own_paint_transform
@@ -93,7 +94,7 @@ fn append_chromium_partial_border(mut commands []PaintCommand, box &BlockBox,
 	for index, width in widths {
 		if width <= 0 { continue }
 		if styles[index] != .solid || side_colors[index].a != 255
-			|| width != math.floor(width) || width >= math.min(rect.width, rect.height) {
+			|| width != math.floor(width) {
 			return false
 		}
 		if count > 0 && side_colors[index] != color { return false }
@@ -101,6 +102,14 @@ fn append_chromium_partial_border(mut commands []PaintCommand, box &BlockBox,
 		count++
 	}
 	if count == 0 || count == 4 { return false }
+	// A single side may fill the box's perpendicular dimension. It is still
+	// one rectangle; joined sides that overlap retain their path fallback.
+	for index, width in widths {
+		if width <= 0 { continue }
+		if count > 1 && width >= math.min(math.round(rect.width), math.round(rect.height)) { return false }
+		extent := if index in [0, 2] { math.round(rect.height) } else { math.round(rect.width) }
+		if width > extent { return false }
+	}
 	data := &PaintLocalBorderData{
 		origin_x: rect.x
 		origin_y: rect.y

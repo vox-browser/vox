@@ -1,11 +1,6 @@
 // SPDX-License-Identifier: BSD-2-Clause
 module webcrypto
 
-$if macos {
-	#pkgconfig --cflags openssl
-} $else {
-	#pkgconfig openssl
-}
 #include "@DIR/native_edwards.h"
 
 fn C.vox_edwards_private(&char, &u8, &uint) int

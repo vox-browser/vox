@@ -3,6 +3,8 @@
 // LibRegex/Rust/src/compiler.rs: AST lowering and repetition.
 module libjs
 
+import vunicode
+
 struct RegexBytecodeCompiler {
 mut:
 	program       RegexProgram
@@ -326,15 +328,9 @@ fn (mut c RegexBytecodeCompiler) character(point u32) {
 	if c.ignore_case && regex_unicode_scalar(point) {
 		// Both operations use Unicode root case mapping. Only the first scalar
 		// decides whether the source emits CharNoCase; matching uses canonicalize.
-		mut units := []u16{}
-		append_utf16_code_point(mut units, point)
-		mut lower := [8]u16{}
-		mut upper := [8]u16{}
-		mut status := i32(0)
-		lower_len := C.u_strToLower(&lower[0], 8, units.data, i32(units.len), c'', &status)
-		status = 0
-		upper_len := C.u_strToUpper(&upper[0], 8, units.data, i32(units.len), c'', &status)
-		if lower_len > 0 && upper_len > 0 && (lower[0] != upper[0] || (is_utf16_high_surrogate(lower[0]) && lower[1] != upper[1])) {
+		lower := vunicode.decode_utf16(vunicode.map_case(vunicode.encode_utf16([point]), '', .lowercase).units)
+		upper := vunicode.full_upper(point)
+		if lower.len > 0 && upper.len > 0 && lower[0] != upper[0] {
 			c.emit(RegexCharNoCase{ first: point, second: point })
 			return
 		}

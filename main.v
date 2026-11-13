@@ -3,6 +3,7 @@ module main
 import color
 import adblock
 import browsernet
+import browsercookies
 import browsersettings
 import browserjs
 import browserhistory
@@ -452,6 +453,8 @@ mut:
 	force_dark_images                   map[string]&gg.Image
 	portable_shadow_images              []PortableShadowImage
 	portable_shadow_image_index         int
+	portable_canvas_images              []PortableCanvasImage
+	portable_canvas_image_index         int
 	draw_command_depth  int
 	native_replay_scratch &platform.Arena = unsafe { nil }
 	screenshot_path                     string
@@ -2849,6 +2852,10 @@ fn run_document_script_sources_with_resource_loaders(document &dom.Document, cur
 }
 
 fn initialize_document_script_runtime(document &dom.Document, current_url string, sources []browserjs.ScriptSource, runtime &browserjs.Runtime, image_fetch browserjs.ImageRequestFetchHook, image_async_fetch ?browserjs.ImageAsyncRequestFetchHook, script_loader ?&BrowserScriptRequestLoader, media_loader ?browserjs.MediaElementCreatedHook, mut messages []string) bool {
+	// Bindings are retained by the realm and by agent-wide native lookup maps.
+	// An iframe can initialize while its parent is in a temporary frame arena.
+	binding_storage := platform.enter_persistent()
+	defer { platform.leave_persistent(binding_storage) }
 	load_instruction_stage := processmetrics.begin_instruction_stage('script_runtime_setup')
 	defer { load_instruction_stage.finish() }
 	phase_mark := platform.arena_phase_begin()
@@ -6751,6 +6758,12 @@ fn (mut app BrowserApp) draw_command(source_command &layout.PaintCommand, page_x
 						C.native_add_corner_rounded_clip(f32(clip.x), f32(clip.y), f32(clip.width), f32(clip.height), f32(radii.top_left.horizontal), f32(radii.top_left.vertical), f32(radii.top_right.horizontal), f32(radii.top_right.vertical), f32(radii.bottom_right.horizontal), f32(radii.bottom_right.vertical), f32(radii.bottom_left.horizontal), f32(radii.bottom_left.vertical), f32(matrix[0]), f32(matrix[1]), f32(matrix[2]), f32(matrix[3]), f32(matrix[4]), f32(matrix[5]), page_x, page_y, f32(scroll_y), f32(app.ctx.height))
 					}
 					app.set_chromium_image_resource_identity(image_data.image_url)
+					if app.draw_sampled_png(command,image,image_data.image_url,draw_rect,source_rect,clip_data,matrix,
+						page_x,page_y,scroll_y,result.bitmap.scaling == .nearest_neighbor) {
+						clear_chromium_image_resource_identity()
+						C.native_end_clip()
+						return
+					}
 					C.native_draw_image_part_transformed_clipped(image, f32(draw_rect.x), f32(draw_rect.y), f32(draw_rect.width), f32(draw_rect.height), source_rect[0], source_rect[1], source_rect[2], source_rect[3], clip_data[0], clip_data[1], clip_data[2], clip_data[3], f32(matrix[0]), f32(matrix[1]), f32(matrix[2]), f32(matrix[3]), f32(matrix[4]), f32(matrix[5]), page_x, page_y, f32(scroll_y), f32(app.ctx.width), f32(app.ctx.height), f32(command.opacity), if result.bitmap.scaling == .nearest_neighbor {
 						1
 					} else {
@@ -6815,6 +6828,7 @@ fn (mut app BrowserApp) draw_command(source_command &layout.PaintCommand, page_x
 					C.native_end_clip()
 				}
 			}
+			$if linux || windows { app.draw_portable_canvas(command, bitmap, result, page_x, page_y, scroll_y) }
 		}
 		'draw_video' {
 			paintable := command.video_paintable or { return }
@@ -6887,6 +6901,14 @@ fn (mut app BrowserApp) draw_command(source_command &layout.PaintCommand, page_x
 						C.native_add_corner_rounded_clip(f32(clip.x), f32(clip.y), f32(clip.width), f32(clip.height), f32(radii.top_left.horizontal), f32(radii.top_left.vertical), f32(radii.top_right.horizontal), f32(radii.top_right.vertical), f32(radii.bottom_right.horizontal), f32(radii.bottom_right.vertical), f32(radii.bottom_left.horizontal), f32(radii.bottom_left.vertical), f32(matrix[0]), f32(matrix[1]), f32(matrix[2]), f32(matrix[3]), f32(matrix[4]), f32(matrix[5]), page_x, page_y, f32(scroll_y), f32(app.ctx.height))
 					}
 					// Live frames, not posters, bypass the image decode-cache resize.
+					if poster_url := layout.video_poster_resource_url(app.document, command) {
+						if app.draw_sampled_png(command, video_image, poster_url, destination,
+							[f32(0), 0, f32(bitmap.width), f32(bitmap.height)]!, clip_data, matrix,
+							page_x, page_y, scroll_y, scaling == .nearest_neighbor) {
+							C.native_end_clip()
+							return
+						}
+					}
 					C.native_set_video_frame_image(i32(command.video_frame_source != none))
 					if gpu_video_upload_keys_enabled {
 						C.native_set_video_frame_resource(video_resource.source, video_resource.revision, video_resource.generation)
@@ -7591,6 +7613,7 @@ fn (mut app BrowserApp) draw() {
 	app.retarget_document_frame_heap_scope(mut heap_scope)
 	app.prepare_overlay_scrollbars()
 	app.portable_shadow_image_index = 0
+	app.portable_canvas_image_index = 0
 	app.scroll_profile_prepared()
 	preparation_instructions.finish()
 	processmetrics.instruction_checkpoint('frame_prepared')
@@ -7949,6 +7972,7 @@ fn (mut app BrowserApp) draw() {
 		processmetrics.instruction_checkpoint('frame_chrome_updated')
 	}
 	end_browser_frame(app.ctx)
+	$if linux || windows { app.finish_portable_canvas_frame() }
 	if submission_claim.installation != 0 {
 		app.stage_native_document_submission(submission_claim)
 	}
@@ -8393,14 +8417,18 @@ fn (mut app BrowserApp) handle_key(key gg.KeyCode, modifier gg.Modifier) {
 }
 
 fn main() {
+	run_browser(os.args)
+}
+
+fn run_browser(arguments []string) {
 	load_instruction_stage := processmetrics.begin_instruction_stage('browser_main')
 	defer { load_instruction_stage.finish() }
 	configure_browser_javascript_startup()
 	install_browser_script_resource_cache()
 	loader.install_fetch_user_agent_provider()
 	// Dispatch the signed self-helper before browser heap/font/GUI setup.
-	if status := browserjs.run_worker_process_role(os.args) { exit(status) }
-	if status := adblock.run_default_worker_role(os.args) { exit(status) }
+	if status := browserjs.run_worker_process_role(arguments) { exit(status) }
+	if status := adblock.run_default_worker_role(arguments) { exit(status) }
 	$if macos {
 		adblock.configure_default_self_worker() or {
 			eprintln('Ladybird V: cannot configure the default filter worker: ${err.msg()}')
@@ -8413,6 +8441,10 @@ fn main() {
 		eprintln('Vox: could not load settings: ${err.msg()}')
 		exit(1)
 	}
+	browsercookies.initialize(os.join_path(os.dir(browsersettings.default_path()), 'cookies.json')) or {
+		eprintln('Vox: could not load cookies: ${err.msg()}')
+		exit(1)
+	}
 	link_translated_modules()
 	apply_preferred_languages()
 	requestserver.install_native_font_fetch_host() or {
@@ -8423,7 +8455,7 @@ fn main() {
 	css.install_remote_style_sheet_loader(load_browser_imported_style_sheet)
 	defer { requestserver.close_native_font_fetch_host() }
 	xpath.install_dom_xpath_bridge()
-	mut options := parse_launch_options(os.args[1..]) or {
+	mut options := parse_launch_options(arguments[1..]) or {
 		eprintln('Ladybird V: ${err.msg()}')
 		exit(2)
 	}

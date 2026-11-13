@@ -71,7 +71,7 @@ fn native_render_state(target &DrawingBuffer, options DrawOptions) !C.VoxMetalRe
 	if viewport.width != viewport.width || viewport.height != viewport.height || viewport.width < 0 || viewport.height < 0 || viewport.width > 16384 || viewport.height > 16384
 		|| viewport.x != viewport.x || viewport.y != viewport.y || viewport.x < -32768 || viewport.y < -32768 || viewport.x > 32767 || viewport.y > 32767 { return error('Invalid Metal viewport') }
 	rect := state.scissor or { ScissorRect{width: width, height: height} }
-	if rect.width < 0 || rect.height < 0 || rect.width > 0x7fffffff || rect.height > 0x7fffffff || rect.x < -0x80000000 || rect.y < -0x80000000 || rect.x > 0x7fffffff || rect.y > 0x7fffffff { return error('Invalid Metal scissor') }
+	if rect.width < 0 || rect.height < 0 || rect.width > 0x7fffffff || rect.height > 0x7fffffff || rect.x < -2147483648 || rect.y < -2147483648 || rect.x > 0x7fffffff || rect.y > 0x7fffffff { return error('Invalid Metal scissor') }
 	x := if rect.x < 0 { 0 } else if rect.x > width { width } else { rect.x }
 	y := if rect.y < 0 { 0 } else if rect.y > height { height } else { rect.y }
 	right := if rect.x + rect.width < x { x } else if rect.x + rect.width > width { width } else { rect.x + rect.width }
@@ -82,13 +82,15 @@ fn native_render_state(target &DrawingBuffer, options DrawOptions) !C.VoxMetalRe
 		if depth.handle == unsafe { nil } || depth.owner.handle != target.handle || depth.width != width || depth.height != height || depth.samples!=(if options.color_target!=unsafe { nil } { options.color_target.samples } else { 1 }) { return error('Metal depth/stencil attachment has wrong owner or dimensions') }
 		depth_handle = depth.handle
 	}
-    mut colors:=[8]voidptr{}
+    mut colors:=unsafe { [8]voidptr{} }
     mut used:=u32(0)
+    mut rgb_only:=u32(0)
     for attachment in options.color_targets {
         texture:=attachment.texture
         if attachment.index<0 || attachment.index>=8 || used&(u32(1)<<attachment.index)!=0
             || texture==unsafe { nil } || texture.handle==unsafe { nil } || texture.owner.handle!=target.handle || texture.width!=width || texture.height!=height { return error('Invalid Metal color attachment') }
         used|=u32(1)<<attachment.index
+        if attachment.rgb_only { rgb_only|=u32(1)<<attachment.index }
         colors[attachment.index]=texture.handle
     }
     mut visibility:=unsafe { nil }
@@ -97,8 +99,11 @@ fn native_render_state(target &DrawingBuffer, options DrawOptions) !C.VoxMetalRe
         visibility=options.visibility.handle
     }
 	return C.VoxMetalRenderState{
+        rgb_only_mask:rgb_only
         color_targets:colors
         colors_configured:u32(options.colors_configured)
+        feedback:u32(options.feedback)
+        feedback_buffer:if options.feedback_buffer!=unsafe { nil } { options.feedback_buffer.handle } else { unsafe { nil } }
         visibility_buffer:visibility
 		depth_stencil: depth_handle
 		x: viewport.x, y: viewport.y, width: viewport.width, height: viewport.height

@@ -51,7 +51,7 @@ def main():
                     if (Path(folder) / 'compiler/v').is_file())
     clang = subprocess.check_output(['xcrun', '--find', 'clang'], text=True).strip()
     native = ROOT / 'Build/v/Vox.app/Contents/MacOS'
-    # Native dependencies (ICU, FFmpeg, AVIF) come from Homebrew through the V
+    # Native dependencies (FFmpeg, AVIF) come from Homebrew through the V
     # sources' own flags or runtime dlopen; the bundle links no native bridge.
     ldflags = '-Wl,-dead_strip,-dead_strip_dylibs -Wl,-rpath,@executable_path'
     base = [str(compiler), *options, '-cflags', cflags, '-ldflags', ldflags]

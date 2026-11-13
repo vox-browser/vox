@@ -2,19 +2,19 @@ module layout
 
 // Blink snaps the border box, then preserves the shadow's floating-point
 // offset, blur, spread and corner radii. Keep the portable integer path for
-// ordinary logical-grid painting and for inset shadows.
+// LibWeb painting, the explicit legacy snapping policy and inset shadows.
 fn paintable_box_paint_box_shadow_for_node(mut commands []PaintCommand, shadows []BoxShadow,
 	border BoxEdges, colors BoxColors, styles BoxBorderStyles, radii BoxRadii,
 	border_rect LayoutRect, padding_rect LayoutRect, opacity f64, handle voidptr) {
 	if shadows.len == 0 { return }
 	scale := chromium_paint_pixel_scale(handle)
-	if scale == 1 || handle == unsafe { nil } {
+	if retain_logical_paint_snapping || handle == unsafe { nil } {
 		paintable_box_paint_box_shadow(mut commands, shadows, border, colors, styles,
 			radii, border_rect, padding_rect, opacity)
 		return
 	}
 	document := unsafe { &Node(handle) }.document()
-	if document.font_rendering_policy() != .chromium || document.display_device_pixel_ratio() == 1 {
+	if document.font_rendering_policy() != .chromium {
 		paintable_box_paint_box_shadow(mut commands, shadows, border, colors, styles,
 			radii, border_rect, padding_rect, opacity)
 		return

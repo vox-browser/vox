@@ -5,7 +5,7 @@ import css
 import dom
 
 fn test_javascript_webgl_host_compiles_shaders_uploads_buffers_and_draws_native_pixels() {
-	$if darwin {
+	$if darwin || linux || windows {
 		mut document := html.parse_document('<canvas id="canvas" width="4" height="4"></canvas>')
 		mut host := CanvasWebGLHost.create(document)
 		mut runtime := Runtime.create()
@@ -39,7 +39,7 @@ fn test_javascript_webgl_host_compiles_shaders_uploads_buffers_and_draws_native_
 }
 
 fn test_javascript_webgl_context_kinds_and_foreign_resource_ownership() {
-	$if darwin {
+	$if darwin || linux || windows {
 		mut document := html.parse_document('<canvas id="first"></canvas><canvas id="second"></canvas>')
 		mut host := CanvasWebGLHost.create(document)
 		mut runtime := Runtime.create()
@@ -56,7 +56,7 @@ fn test_javascript_webgl_context_kinds_and_foreign_resource_ownership() {
 }
 
 fn test_public_webgl_wrapper_uses_idl_conversions_resources_readback_and_resize() {
-	$if darwin {
+	$if darwin || linux || windows {
 		mut document := html.parse_document('<canvas id="canvas" width="4" height="4"></canvas>')
 		mut host := CanvasWebGLHost.create(document)
 		mut runtime := Runtime.create()

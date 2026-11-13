@@ -5,6 +5,7 @@ module main
 import dom
 import gg
 
+// Precise platform wheels use three legacy wheelDelta units per CSS pixel.
 const element_wheel_smoke_markup = '<!doctype html><style>
 html,body { margin:0 }
 body { height:4000px }
@@ -21,7 +22,7 @@ globalThis.elementWheelSmokeViewportVideo=document.getElementById("element-wheel
 for(const player of [elementWheelSmokeVideo,elementWheelSmokeViewportVideo]){
  player.addEventListener("wheel",function(event){
   elementWheelSmokeSaved.push(event);
-  elementWheelSmokeChecks.push(this===player&&arguments.length===1&&event.target===player&&event.currentTarget===player&&event instanceof WheelEvent&&Object.getPrototypeOf(event)===WheelEvent.prototype&&event.isTrusted&&event.bubbles&&event.cancelable&&event.composed&&event.view===window&&event.type==="wheel"&&event.deltaX===0&&event.deltaY===42&&event.deltaZ===0&&event.deltaMode===WheelEvent.DOM_DELTA_PIXEL&&event.wheelDeltaY===-42&&event.button===0&&event.buttons===0&&window.event===event);
+  elementWheelSmokeChecks.push(this===player&&arguments.length===1&&event.target===player&&event.currentTarget===player&&event instanceof WheelEvent&&Object.getPrototypeOf(event)===WheelEvent.prototype&&event.isTrusted&&event.bubbles&&event.cancelable&&event.composed&&event.view===window&&event.type==="wheel"&&event.deltaX===0&&event.deltaY===42&&event.deltaZ===0&&event.deltaMode===WheelEvent.DOM_DELTA_PIXEL&&event.wheelDeltaY===-126&&event.button===0&&event.buttons===0&&window.event===event);
   const cancelled=elementWheelSmokeSaved.length===1;
   document.getElementById("element-wheel-smoke-result").textContent=cancelled?"cancelled":"accepted";
   if(cancelled)event.preventDefault();
@@ -75,7 +76,7 @@ fn (mut app BrowserApp) run_element_wheel_smoke() ! {
 		}
 		wheel := unsafe { &dom.WheelEvent(event) }
 		if wheel.delta_x() != 0 || wheel.delta_y() != 42
-			|| wheel.delta_mode() != dom.dom_delta_pixel || wheel.wheel_delta_y() != -42
+			|| wheel.delta_mode() != dom.dom_delta_pixel || wheel.wheel_delta_y() != -126
 			|| event.default_prevented() != (index == 0) {
 			return error('element wheel smoke: GG delta conversion or cancellation failed at input ${
 				index + 1}')

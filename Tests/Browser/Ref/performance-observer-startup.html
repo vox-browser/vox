@@ -1,0 +1,12 @@
+<!doctype html>
+<link rel="match" href="performance-observer-startup-ref.html">
+<style>#result { width:100px; height:100px; background:red }</style>
+<div id="result"></div>
+<script>
+const types = PerformanceObserver.supportedEntryTypes;
+const observer = new PerformanceObserver(() => {});
+observer.disconnect();
+if (Object.isFrozen(types) && types.includes('mark') && types.includes('measure') &&
+    (!types.includes('visibility-state') || typeof VisibilityStateEntry.prototype.toJSON === 'function'))
+    document.getElementById('result').style.background = 'green';
+</script>
