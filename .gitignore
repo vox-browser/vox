@@ -40,6 +40,12 @@
 # Temporary and local files to ignore
 **/__pycache__/
 
+# Local Snap build inputs and outputs
+/snap/
+/release-staging/
+squashfs-root/
+*.snap
+
 # Captured response bodies (binary)
 Tests/Browser/Brave/archives/*/archive/bodies/
 Tests/Browser/Brave/archives/*/capture-watchdog/archive/bodies/
