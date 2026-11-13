@@ -15,9 +15,15 @@ import os
 //      `locale_table()`.
 //   3. If `xx` uses non-Latin digits, shape them in `format_digits()`.
 //   4. Add `browser_locale_xx_test.v` plus checker spot checks.
-// The active locale comes from `VOX_LANG` (preferred) or `LANG` and falls
-// back to English for unknown codes, so English output is unchanged until a
-// locale is selected (e.g. `VOX_LANG=fa`).
+// The active locale resolves as: explicit user list (settings, most
+// preferred first), then `VOX_LANG`, then the OS locale, then English.
+// The resolved value is cached per process (see `refresh_locale`); the
+// settings UI applies a change through `set_preferred_languages`.
+
+__global (
+	cached_chrome_locale = ''
+	explicit_chrome_languages = []string{}
+)
 
 pub fn supported_locales() []string {
 	return ['en']
@@ -49,13 +55,145 @@ pub fn locale_from_code(code string) string {
 }
 
 pub fn ui_locale() string {
+	if cached_chrome_locale == '' {
+		return refresh_locale()
+	}
+	return cached_chrome_locale
+}
+
+// set_preferred_languages overrides the UI locale with an explicit ordered
+// list (most preferred first), as chosen in settings. An empty list clears
+// the override. The cache is dropped so the next lookup re-resolves.
+pub fn set_preferred_languages(langs []string) {
+	mut clean := []string{}
+	for lang in langs {
+		tag := lang.trim_space()
+		if tag == '' || tag in clean {
+			continue
+		}
+		clean << tag
+	}
+	explicit_chrome_languages = clean.clone()
+	cached_chrome_locale = ''
+}
+
+// refresh_locale re-resolves the active locale from the current
+// configuration. Production code resolves once and caches: the process
+// locale never changes at runtime, while a settings panel or tab strip
+// formats dozens of strings per render and each resolution scans the
+// environment. Tests call this after changing VOX_LANG/LANG or the
+// preferred list.
+pub fn refresh_locale() string {
+	cached_chrome_locale = resolve_locale()
+	return cached_chrome_locale
+}
+
+fn resolve_locale() string {
+	for lang in explicit_chrome_languages {
+		base := normalize_locale_code(lang)
+		if base in supported_locales() {
+			return base
+		}
+	}
+	if explicit_chrome_languages.len > 0 {
+		return default_locale()
+	}
 	if code := os.getenv_opt('VOX_LANG') {
 		return locale_from_code(code)
 	}
-	if code := os.getenv_opt('LANG') {
-		return locale_from_code(code)
+	// The OS default already folds an explicitly exported LANG in on every
+	// platform, so tests stay deterministic and real GUI launches follow
+	// the system region and language settings.
+	if tag := platform_locale_tag() {
+		base := normalize_locale_code(tag)
+		if base in supported_locales() {
+			return base
+		}
+		return default_locale()
 	}
 	return default_locale()
+}
+
+// platform_locale_tag reports the OS locale as a BCP47 tag (e.g. `fa-IR`,
+// `en-US`), or none when it cannot be determined. An explicitly exported
+// LANG wins over the system default on every platform; otherwise Unix
+// follows LC_ALL > LC_MESSAGES > LANG, macOS reads the AppleLanguages
+// preference, and Windows reads the user locale.
+fn platform_locale_tag() ?string {
+	$if windows {
+		if code := os.getenv_opt('LANG') {
+			if code.trim_space() != '' {
+				return code
+			}
+		}
+		return windows_locale_tag()
+	}
+	$if macos {
+		if code := os.getenv_opt('LANG') {
+			if code.trim_space() != '' {
+				return code
+			}
+		}
+		return macos_locale_tag()
+	}
+	for name in ['LC_ALL', 'LC_MESSAGES', 'LANG'] {
+		if code := os.getenv_opt(name) {
+			if code.trim_space() != '' {
+				return code
+			}
+		}
+	}
+	return none
+}
+
+$if macos {
+	fn macos_locale_tag() ?string {
+		result := os.execute('defaults read -g AppleLanguages')
+		if result.exit_code != 0 {
+			return none
+		}
+		return parse_apple_languages(result.output)
+	}
+}
+
+// parse_apple_languages extracts the first entry of
+// `defaults read -g AppleLanguages` output, e.g. `(\n    "fa-IR",\n    en\n)`.
+fn parse_apple_languages(output string) ?string {
+	for line in output.split_into_lines() {
+		token := line.trim_space().trim(',').trim('"')
+		if token == '' || token == '(' || token == ')' {
+			continue
+		}
+		if token.len >= 2 {
+			return token
+		}
+	}
+	return none
+}
+
+$if windows {
+	#include <windows.h>
+	fn C.GetLocaleInfoA(locale int, lctype u32, lcdata &char, cchdata int) int
+	fn windows_locale_tag() ?string {
+		// LOCALE_USER_DEFAULT, LOCALE_SISO639LANGNAME, LOCALE_SISO3166CTRYNAME.
+		mut lang := []u8{len: 16}
+		if C.GetLocaleInfoA(0x0400, 0x59, &char(lang.data), lang.len) <= 0 {
+			return none
+		}
+		language := unsafe { cstring_to_vstring(&char(lang.data)) }
+		if language == '' {
+			return none
+		}
+		mut country := []u8{len: 16}
+		if C.GetLocaleInfoA(0x0400, 0x5a, &char(country.data), country.len) <= 0 {
+			return language
+		}
+		region := unsafe { cstring_to_vstring(&char(country.data)) }
+		if region == '' {
+			return language
+		}
+		return '${language}-${region}'
+	}
 }
 
 // locale_table serves the string table for a supported locale. Unknown
@@ -216,6 +354,9 @@ const en_chrome_strings = {
 	'settings.other-direct': 'Other sites connect directly. Proxied DNS uses SOCKS5.'
 	'settings.apply-note':   'Changes apply to new requests.'
 	'settings.advanced':     'Advanced'
+	'settings.languages':    'Languages'
+	'settings.languages-help': 'Preferred languages, most preferred first. Empty uses the system language.'
+	'settings.a11y.languages': 'Preferred user interface languages'
 	'settings.gpu':          'GPU-accelerated scrolling'
 	'settings.gpu-help':     'Turn off if scrolled pages show drawing errors.'
 	'settings.cancel':       'Cancel'

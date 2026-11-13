@@ -17,6 +17,8 @@ fn restore_locale(saved ?string, other ?string) {
 	} else {
 		os.unsetenv('LANG')
 	}
+	set_preferred_languages([])
+	refresh_locale()
 }
 
 fn test_locale_registry_lists_english_by_default() {
@@ -29,7 +31,7 @@ fn test_locale_tables_cover_every_chrome_key() {
 	for key, en in en_chrome_strings {
 		assert en != '', 'empty en string for ${key}'
 	}
-	assert en_chrome_strings.len == 71
+	assert en_chrome_strings.len == 74
 }
 
 fn test_locale_normalizes_codes() {
@@ -101,9 +103,67 @@ fn test_format_digits_defaults_to_identity() {
 
 fn set_test_locale(vox string) (?string, ?string) {
 	old_vox, old_lang := save_locale()
+	set_preferred_languages([])
 	os.setenv('VOX_LANG', vox, true)
 	os.setenv('LANG', 'en_US.UTF-8', true)
+	refresh_locale()
 	return old_vox, old_lang
+}
+
+fn test_explicit_preferred_languages_win() {
+	old_vox, old_lang := save_locale()
+	defer { restore_locale(old_vox, old_lang) }
+	os.setenv('VOX_LANG', 'en', true)
+	// Unsupported entries are skipped; the first supported one wins.
+	set_preferred_languages(['xx', 'en'])
+	refresh_locale()
+	assert ui_locale() == 'en'
+	// An explicit list with no supported language falls back to English
+	// instead of consulting the environment.
+	set_preferred_languages(['xx'])
+	refresh_locale()
+	assert ui_locale() == 'en'
+	set_preferred_languages([])
+	refresh_locale()
+	assert ui_locale() == 'en'
+}
+
+fn test_locale_cache_holds_until_refresh() {
+	old_vox, old_lang := save_locale()
+	defer { restore_locale(old_vox, old_lang) }
+	set_preferred_languages([])
+	os.setenv('VOX_LANG', 'en', true)
+	os.unsetenv('LANG')
+	refresh_locale()
+	assert ui_locale() == 'en'
+	os.setenv('VOX_LANG', 'xx', true)
+	assert ui_locale() == 'en'
+	refresh_locale()
+	assert ui_locale() == 'en'
+}
+
+fn test_parse_apple_languages() {
+	assert parse_apple_languages('(\n    "fa-IR",\n    en\n)') or { '' } == 'fa-IR'
+	assert parse_apple_languages('(\n    en,\n    "fa-IR"\n)') or { '' } == 'en'
+	assert parse_apple_languages('') == none
+	assert parse_apple_languages('(\n)') == none
+}
+
+fn test_locale_prefers_explicit_unix_chain_over_lang() {
+	old_vox, old_lang := save_locale()
+	defer { restore_locale(old_vox, old_lang) }
+	set_preferred_languages([])
+	os.unsetenv('VOX_LANG')
+	os.setenv('LC_ALL', 'xx_XX.UTF-8', true)
+	os.setenv('LC_MESSAGES', 'yy_YY.UTF-8', true)
+	os.setenv('LANG', 'en_US.UTF-8', true)
+	refresh_locale()
+	assert ui_locale() == 'en'
+	os.unsetenv('LC_ALL')
+	os.unsetenv('LC_MESSAGES')
+	os.unsetenv('LANG')
+	refresh_locale()
+	assert ui_locale() == 'en'
 }
 
 fn test_find_status_text() {
