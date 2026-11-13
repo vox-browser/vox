@@ -49,6 +49,13 @@ and remaining conformance limits.
 
 ## Verification
 
+The vector-swizzle follow-up passes 316 WebGL, 73 compiler and 52 Metal test
+functions (441 total) in both GC modes. It adds real GPU coverage for `.stpq`
+reads and writes, rejects mixed/out-of-range selectors and duplicate writable
+components, and preserves structure fields whose names resemble selectors.
+All compiler/runtime and guard exits were zero; the combined run peaked at
+1,057,832,960 sampled RSS bytes under a 3 GiB guard.
+
 The language-limit follow-up passes **316 WebGL functions from 179 files,
 71 compiler functions from 16 files, and 52 Metal functions from 13 files**
 with current V's C backend in default GC and `-gc none`. This includes scoped

@@ -17,7 +17,7 @@ Windows shares the bounded GLES adapter through robust native Mesa WGL contexts.
 [Windows validation report](../docs/WINDOWS_WEBGL_GLES.md).
 
 The V shader configuration passes 316 functions from 179 native/Source WebGL
-files, 71 compiler functions and 52 Metal functions with the C backend in both
+files, 73 compiler functions and 52 Metal functions with the C backend in both
 GC modes. Named/row-major block arrays, sampler arrays, explicit shadow sampling,
 scoped source validation and GLSL expression lowering are covered by GPU tests.
 Earlier native verification also passed with FastC. Earlier JavaScriptCore public

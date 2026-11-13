@@ -36,7 +36,8 @@ the former glslang package.
   original clip position and guarded output capacity.
 - Local constant-size arrays, array constructors/lengths, function value
   parameters and deferred output copies, and ES300 while/do/switch control flow.
-- Scalar/vector expression checking, read-only variables, boolean conditions,
+- Scalar/vector expression checking, validated xyzw/rgba/stpq swizzles,
+  unique components for writable selectors, read-only variables, boolean conditions,
   overload resolution, recursive-call rejection and scoped Appendix A loop and
   index checks. Parenthesized output/write operands retain their protections.
 - Reachable-function and overload analysis for attributes, plain uniforms and
