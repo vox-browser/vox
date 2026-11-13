@@ -192,5 +192,11 @@ fn prepare_linux(selected string) !string {
 	for package in ['gg', 'net/openssl', 'sokol/sapp'] {
 		stage_linux_module(join(vlib, package), join(modules, package), package)!
 	}
+	// prepare_ui2 stages vox's gg canvas work into the same modules tree, but
+	// this pristine staging runs after it and would otherwise drop the
+	// document-image helpers the browser imports. Re-apply them on top.
+	canvas := join(modules, 'gg/canvas')
+	prepare_gg_gradient_tile(canvas)!
+	prepare_gg_canvas(canvas)!
 	return modules
 }
