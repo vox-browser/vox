@@ -7,6 +7,20 @@ import json2 as json
 fn wrap_function(source string, signature string, before string, after string) !string {
 	start, end := function_span(source, signature)!
 	body := source[start..end].all_after('{').trim_string_right('}')
+	// A selected compiler may already use this staged runtime. These hooks
+	// save one allocator pointer and are not reentrant: wrapping them twice
+	// restores nil on the second leave. Preserve a complete existing wrapper,
+	// and reject partial/duplicated instrumentation instead of extending it.
+	hooks := ['closure_metadata_enter()', 'closure_metadata_leave()']
+	if hooks.any(body.contains(it)) {
+		expected := before + after
+		complete := (before == '' || body.trim_space().starts_with(before.trim_space()))
+			&& (after == '' || body.trim_space().ends_with(after.trim_space()))
+		if !complete || hooks.any(body.count(it) != expected.count(it)) {
+			return error('Unsupported closure metadata wrapper: ${signature}')
+		}
+		return source
+	}
 	return source[..start] + signature + ' {\n' + before + body + after + '}\n' + source[end..]
 }
 
