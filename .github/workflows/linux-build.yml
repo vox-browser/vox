@@ -243,7 +243,14 @@ jobs:
       - name: Build Vox and run the headless smoke test
         id: production_build
         if: ${{ !cancelled() && steps.native_dependencies.outcome == 'success' }}
-        timeout-minutes: 50
+        timeout-minutes: 170
+        env:
+          # Single C unit until V's FastC splitter handles current upstream
+          # sources (V f9ebca4 + UI2 a9fb7e0: `if x := opt-global` emits
+          # `if (x:=...)`, fixed-array calls take a function address, and
+          # cross-unit prototypes for vlib brotli go missing). One sealed
+          # unit is several times slower, hence the raised step timeout.
+          VOX_BUILD_C_MODE: single
         run: |
           # The normal supervisor applies the build memory guard and runs
           # --headless-smoke before publishing Build/linux/vox.
