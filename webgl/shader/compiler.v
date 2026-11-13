@@ -145,7 +145,7 @@ pub fn translate_with_bindings(source string, stage Stage, bindings map[string]i
 			if type_at < tokens.len && tokens[type_at] in ['lowp','mediump','highp'] { type_at++ }
 			if type_at < tokens.len && (tokens[type_at].contains('sampler')) {
                 if version==100 && tokens[type_at] !in ['sampler2D','samplerCube'] {return error('Sampler type requires ESSL300')}
-				declaration := texture_declarations(tokens,type_at,textures.len)!
+				declaration := texture_declarations(tokens,type_at,texture_slot_count(textures))!
 				for field in declaration.fields {
 					if textures.any(it.name == field.name) || uniforms.any(it.name == field.name) || inputs.any(it.name == field.name) || outputs.any(it.name == field.name) { return error('Duplicate sampler: ${field.name}') }
 					textures << field
@@ -220,7 +220,7 @@ pub fn translate_with_bindings(source string, stage Stage, bindings map[string]i
 			depth--
 			if depth < 0 { return error('Unbalanced braces') }
 		}
-		if token in ['sampler2D','samplerCube','sampler3D','sampler2DArray','isampler2D','usampler2D'] {
+		if token in sampler_types() {
             if version==100 && token !in ['sampler2D','samplerCube'] {return error('Sampler type requires ESSL300')}
             body << sampler_type(token)!; at++;continue
         }
@@ -309,7 +309,7 @@ pub fn translate_with_bindings(source string, stage Stage, bindings map[string]i
 	for item in outputs {
 		lines << '${metal_type(item.typ)!} ${item.name} = ${metal_type(item.typ)!}(0);'
 	}
-	for field in textures { lines << '${sampler_type(field.typ)!} ${field.name};' }
+	for field in textures { lines << if field.is_array {'array<${sampler_type(field.typ)!}, ${field.array_length}> ${field.name};'} else {'${sampler_type(field.typ)!} ${field.name};'} }
 	if textures.len > 0 { lines << texture_constructor(textures)! }
 	lines << texture_methods(stage,version,tokens,processed.extensions['GL_EXT_shader_texture_lod'])
 	lines << comparison_methods(tokens)
@@ -379,7 +379,7 @@ pub fn link(vertex Translation, fragment Translation) ! {
 	}
 	for field in fragment.texture_roots {
 		if vertex.uniform_roots.any(it.name == field.name) { return error('Uniform/sampler mismatch: ${field.name}') }
-		for other in vertex.texture_roots { if field.name == other.name && field.typ != other.typ { return error('Sampler mismatch: ${field.name}') } }
+		for other in vertex.texture_roots { if field.name == other.name && (field.typ != other.typ || field.array_length!=other.array_length || field.is_array!=other.is_array) { return error('Sampler mismatch: ${field.name}') } }
 	}
     for block in fragment.uniform_blocks {
         for other in vertex.uniform_blocks {

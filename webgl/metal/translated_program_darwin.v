@@ -28,7 +28,7 @@ fn translation_descriptor(vertex shader.Translation, fragment shader.Translation
    append_translated_resource(translated,C.VoxMetalShaderResource{name:field.name.str,kind:100,stage:u32(stage),binding:field.binding,offset:u32(field.offset),array_stride:u32(field.array_stride),matrix_stride:u32(field.matrix_stride),base_type:field.scalar_type,semantic_type:field.semantic_type,row_major:if field.row_major {u32(1)} else {u32(0)},rows:u32(field.rows),columns:u32(field.columns),array_length:u32(field.array_length),byte_size:u64(field.byte_size)})!
   }
   for field in translation.textures {
-   append_translated_resource(translated,C.VoxMetalShaderResource{name:field.name.str,kind:7,stage:u32(stage),binding:u32(field.binding),secondary_binding:u32(field.sampler_binding),rows:1,columns:1,array_length:1,base_type:13,image_dimension:u32(field.image_dimension),image_arrayed:if field.image_arrayed {u32(1)} else {u32(0)},image_scalar_type:field.image_scalar_type})!
+   append_translated_resource(translated,C.VoxMetalShaderResource{name:field.name.str,kind:7,stage:u32(stage),binding:u32(field.binding),secondary_binding:u32(field.sampler_binding),rows:1,columns:1,array_length:u32(field.array_length),array_stride:if field.is_array {u32(1)} else {u32(0)},base_type:13,image_depth:if field.image_depth {u32(1)} else {u32(0)},image_dimension:u32(field.image_dimension),image_arrayed:if field.image_arrayed {u32(1)} else {u32(0)},image_scalar_type:field.image_scalar_type})!
   }
  }
  for field in vertex.inputs {

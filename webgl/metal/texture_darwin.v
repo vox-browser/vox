@@ -30,6 +30,7 @@ mut:
     samples int = 1
     kind TextureKind
     format TextureFormat
+    comparison bool
 }
 
 pub fn Texture2D.create(owner &DrawingBuffer, width int, height int) !&Texture2D {
@@ -60,9 +61,11 @@ pub fn (texture &Texture2D) read_pixels() ![]u8 {
 }
 
 pub fn (mut texture Texture2D) sampler(options SamplerOptions) ! {
+    if texture.handle==unsafe{nil} {return error('Metal texture is closed')}
     mut sampler:=Sampler.create(texture.owner,options)!
-    defer { sampler.close();unsafe { free(sampler) } }
-    if C.vox_metal_texture_set_sampler(texture.handle,sampler.handle)!=1 { return error('Metal sampler allocation failed or texture is closed') }
+    defer {sampler.close()}
+    if C.vox_metal_texture_set_sampler(texture.handle,sampler.handle)!=1 {return error('Metal texture sampler assignment failed')}
+    texture.comparison=options.compare
 }
 
 pub fn (mut texture Texture2D) close() {

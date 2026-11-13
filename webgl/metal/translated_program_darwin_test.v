@@ -198,3 +198,41 @@ fn test_named_row_major_block_arrays_decode_independent_gpu_buffers() {
  target.draw(program,[],.triangles,0,3,1)!
  assert (target.read_pixels()!)==[u8(255),0,0,255]
 }
+
+fn test_sampler_array_bindings_select_independent_real_textures() {
+ mut target:=DrawingBuffer.create(1,1)!
+ defer {target.close()}
+ mut red:=Texture2D.create(target,1,1)!
+ defer {red.close()}
+ red.write_pixels([u8(255),0,0,255])!
+ mut green:=Texture2D.create(target,1,1)!
+ defer {green.close()}
+ green.write_pixels([u8(0),255,0,255])!
+ mut program:=ShaderProgram.compile(target,
+ '#version 300 es\nvoid main(){gl_Position=vec4(gl_VertexID==1?3.0:-1.0,gl_VertexID==2?3.0:-1.0,0,1);}',
+ '#version 300 es\nprecision highp float;uniform sampler2D images[2];out vec4 color;void main(){color=texture(images[1],vec2(0.5));}',3)!
+ defer {program.close()}
+ target.draw_with_options(program,[],.triangles,0,3,1,DrawOptions{textures:[TextureBinding{name:'images',array_index:0,texture:red},TextureBinding{name:'images',array_index:1,texture:green}]})!
+ assert (target.read_pixels()!)==[u8(0),255,0,255]
+}
+
+fn test_shadow_sampler_compares_actual_gpu_depth_values() {
+ mut target:=DrawingBuffer.create(1,1)!
+ defer {target.close()}
+ mut image:=Texture2D.create_storage(target,TextureStorageOptions{width:1,height:1,format:.depth32})!
+ defer {image.close()}
+ value:=[f32(0.75)]
+ image.write_region(0,0,TextureRegion{width:1,height:1},unsafe{(&u8(value.data)).vbytes(4)})!
+ mut sampler:=Sampler.create(target,SamplerOptions{compare:true,compare_func:.less_equal})!
+ defer {sampler.close()}
+ mut program:=ShaderProgram.compile(target,
+ '#version 300 es\nvoid main(){gl_Position=vec4(gl_VertexID==1?3.0:-1.0,gl_VertexID==2?3.0:-1.0,0,1);}',
+ '#version 300 es\nprecision highp float;precision highp sampler2DShadow;uniform sampler2DShadow image;out vec4 color;void main(){color=vec4(texture(image,vec3(0.5,0.5,0.5)),0,0,1);}',3)!
+ defer {program.close()}
+ target.draw_with_options(program,[],.triangles,0,3,1,DrawOptions{textures:[TextureBinding{name:'image',texture:image,sampler:sampler}]})!
+ assert (target.read_pixels()!)==[u8(255),0,0,255]
+ value2:=[f32(0.25)]
+ image.write_region(0,0,TextureRegion{width:1,height:1},unsafe{(&u8(value2.data)).vbytes(4)})!
+ target.draw_with_options(program,[],.triangles,0,3,1,DrawOptions{textures:[TextureBinding{name:'image',texture:image,sampler:sampler}]})!
+ assert (target.read_pixels()!)==[u8(0),0,0,255]
+}

@@ -28,23 +28,24 @@ fn (mut context MetalServiceContext) black_texture(target u32,scalar u32) !&meta
     key:=(u64(target)<<32)|scalar
     if texture:=context.black_textures[key] { return texture }
     kind:=if target==texture_cube_map { metal.TextureKind.cube } else if target==texture_3d { metal.TextureKind.volume_3d } else if target==texture_2d_array { metal.TextureKind.array_2d } else { metal.TextureKind.image_2d }
-    format:=if scalar==7 { metal.TextureFormat.rgba32i } else if scalar==8 { metal.TextureFormat.rgba32ui } else { metal.TextureFormat.rgba8 }
+    format:=if scalar==7 { metal.TextureFormat.rgba32i } else if scalar==8 { metal.TextureFormat.rgba32ui } else if scalar==14 {metal.TextureFormat.depth32} else { metal.TextureFormat.rgba8 }
     mut texture:=metal.Texture2D.create_storage(context.target,metal.TextureStorageOptions{width:1,height:1,kind:kind,format:format})!
     mut bytes:=[]u8{len:format.pixel_size()}
     defer { unsafe { bytes.free() } }
-    if scalar in [u32(7),8] { bytes[12]=1 } else { bytes[3]=255 }
+    if scalar in [u32(7),8] { bytes[12]=1 } else if scalar!=14 { bytes[3]=255 }
     for slice in 0..if target==texture_cube_map { 6 } else { 1 } { texture.write_region(0,slice,metal.TextureRegion{width:1,height:1},bytes)! }
     context.black_textures[key]=texture
     return texture
 }
 
-fn (mut context MetalServiceContext) sampled_texture(mut texture MetalServiceTexture,sampling &MetalServiceSampling,scalar u32) !&metal.Texture2D {
-    base:=texture.images[u32(texture.base_level)] or { return context.black_texture(texture.target,scalar) }
-    if base.gpu==unsafe { nil } || texture.max_level<texture.base_level { return context.black_texture(texture.target,scalar) }
+fn (mut context MetalServiceContext) sampled_texture(mut texture MetalServiceTexture,sampling &MetalServiceSampling,scalar u32,depth bool) !&metal.Texture2D {
+    fallback:=if depth {u32(14)} else {scalar}
+    base:=texture.images[u32(texture.base_level)] or { return context.black_texture(texture.target,fallback) }
+    if base.gpu==unsafe { nil } || texture.max_level<texture.base_level { return context.black_texture(texture.target,fallback) }
     if (base.layout.integer && ((scalar==7)!=base.layout.signed || scalar !in [u32(7),8])) || (!base.layout.integer && scalar in [u32(7),8]) { metal_service_error(invalid_operation);return error('Sampler scalar type does not match texture') }
-    if base.layout.integer && (sampling.parameters[texture_mag_filter]!=0x2600 || sampling.parameters[texture_min_filter] !in [f32(0x2600),0x2700]) { return context.black_texture(texture.target,scalar) }
+    if base.layout.integer && (sampling.parameters[texture_mag_filter]!=0x2600 || sampling.parameters[texture_min_filter] !in [f32(0x2600),0x2700]) { return context.black_texture(texture.target,fallback) }
     if context.version==2 && ((base.width&(base.width-1))!=0 || (base.height&(base.height-1))!=0)
-        && (sampling.parameters[texture_wrap_s]!=0x812f || sampling.parameters[texture_wrap_t]!=0x812f || sampling.parameters[texture_min_filter] !in [f32(0x2600),0x2601]) { return context.black_texture(texture.target,scalar) }
+        && (sampling.parameters[texture_wrap_s]!=0x812f || sampling.parameters[texture_wrap_t]!=0x812f || sampling.parameters[texture_min_filter] !in [f32(0x2600),0x2601]) { return context.black_texture(texture.target,fallback) }
     mut levels:=1
     if sampling.parameters[texture_min_filter]>=0x2700 {
         mut extent:=if base.width>base.height { base.width } else { base.height }
@@ -53,9 +54,9 @@ fn (mut context MetalServiceContext) sampled_texture(mut texture MetalServiceTex
     }
     for level in 0..levels {
         for face in 0..if texture.target==texture_cube_map { 6 } else { 1 } {
-            image:=texture.images[u32(texture.base_level+level)|(u32(face)<<8)] or { return context.black_texture(texture.target,scalar) }
+            image:=texture.images[u32(texture.base_level+level)|(u32(face)<<8)] or { return context.black_texture(texture.target,fallback) }
             if image.gpu==unsafe { nil } || image.width!=max_dimension(base.width>>level) || image.height!=max_dimension(base.height>>level)
-                || image.depth!=(if texture.target==texture_3d { max_dimension(base.depth>>level) } else { base.depth }) || image.internal!=base.internal { return context.black_texture(texture.target,scalar) }
+                || image.depth!=(if texture.target==texture_3d { max_dimension(base.depth>>level) } else { base.depth }) || image.internal!=base.internal { return context.black_texture(texture.target,fallback) }
         }
     }
     if texture.target==texture_2d && levels==1 { return base.gpu }
@@ -111,15 +112,19 @@ fn (mut context MetalServiceContext) texture_bindings(program &MetalServiceObjec
                 sampling=*object.sampling;own_sampling=false
             }
             mut gpu:=unsafe { &metal.Texture2D(nil) }
-            if texture==unsafe { nil } { gpu=context.black_texture(target,info.resource.image_scalar_type)! }
+            if texture==unsafe { nil } { gpu=context.black_texture(target,if info.resource.image_depth {u32(14)} else {info.resource.image_scalar_type})! }
             else {
                 if context.draw_framebuffer>=16 {
                     fbo:=context.bound_framebuffer(framebuffer)!
                     for _,attachment in fbo.attachments { if attachment.kind==3 && attachment.object==name { result.close();metal_service_error(invalid_operation);return error('Framebuffer texture feedback loop') } }
                 }
-                gpu=context.sampled_texture(mut texture,&sampling,info.resource.image_scalar_type) or { result.close();return err }
+                gpu=context.sampled_texture(mut texture,&sampling,info.resource.image_scalar_type,info.resource.image_depth) or { result.close();return err }
             }
-            sampler:=metal.Sampler.create(context.target,sampling.native_options()) or { if own_sampling { unsafe { sampling.parameters.free() } };result.close();return err }
+            depth_texture:=gpu.pixel_format() in [.depth16,.depth32,.depth_stencil]
+            mut native_options:=sampling.native_options()
+            if info.resource.image_depth && texture==unsafe{nil} {native_options=metal.SamplerOptions{...native_options,compare:true,compare_func:.never}}
+            if (info.resource.image_depth && (!depth_texture || !native_options.compare)) || (!info.resource.image_depth && depth_texture && native_options.compare) {if own_sampling {unsafe{sampling.parameters.free()}};result.close();metal_service_error(invalid_operation);return error('Texture comparison mode does not match shader sampler')}
+            sampler:=metal.Sampler.create(context.target,native_options) or { if own_sampling { unsafe { sampling.parameters.free() } };result.close();return err }
             if own_sampling { unsafe { sampling.parameters.free() } }
             result.samplers<<sampler
             result.bindings<<metal.TextureBinding{name:info.lookup,texture:gpu,sampler:sampler,array_index:u32(element)}
