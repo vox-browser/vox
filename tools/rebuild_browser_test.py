@@ -220,20 +220,20 @@ class ProductionBuildTests(unittest.TestCase):
 
     def test_shell_prod_option_forwards_both_options_in_either_order(self):
         with tempfile.TemporaryDirectory() as directory:
-            root=Path(directory); executable=root/'python3'; capture=root/'args'
+            root=Path(directory); executable=root/'v'; capture=root/'args'
             executable.write_text('#!/bin/sh\nprintf \'%s\\n\' "$@" > "$VOX_TEST_CAPTURE_ARGS"\n')
             executable.chmod(0o755)
             environment=dict(os.environ,PATH=str(root)+os.pathsep+os.environ['PATH'],
-                             VOX_BUILD_SUPERVISED='0',VOX_TEST_CAPTURE_ARGS=str(capture))
+                             VOX_BUILD_SUPERVISED='0',V_BIN=str(executable),VOX_TEST_CAPTURE_ARGS=str(capture))
             script=build.ROOT/'build-prod-browser.sh'
             for options in [('--prod',),('--prod','--no-parallel-cc'),('--no-parallel-cc','--prod')]:
                 subprocess.run(['sh',str(script),*options],env=environment,check=True)
                 self.assertEqual(capture.read_text().splitlines(),
-                                 [str(build.ROOT/'tools/rebuild_browser.py'),'--build','--no-parallel-cc','--prod'])
+                                 ['-b','c','-memory-limit','10G','-o',capture.read_text().splitlines()[5],'run',str(build.ROOT/'tools/rebuild_browser.vsh'),'--build','--no-parallel-cc','--prod'])
             for options in [('--prod','--parallel-cc'),('--parallel-cc','--prod')]:
                 subprocess.run(['sh',str(script),*options],env=environment,check=True)
                 self.assertEqual(capture.read_text().splitlines(),
-                                 [str(build.ROOT/'tools/rebuild_browser.py'),'--build','--parallel-cc','--prod'])
+                                 ['-b','c','-memory-limit','10G','-o',capture.read_text().splitlines()[5],'run',str(build.ROOT/'tools/rebuild_browser.vsh'),'--build','--parallel-cc','--prod'])
 
     @unittest.skipUnless(sys.platform == 'darwin', 'macOS application-directory publication')
     def test_verified_frozen_compile_can_publish_its_pinned_source_after_later_edits(self):

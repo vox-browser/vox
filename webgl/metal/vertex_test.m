@@ -29,4 +29,5 @@ int main(void)
         vox_metal_program_destroy(program);vox_metal_gpu_buffer_destroy(bytes);vox_metal_buffer_destroy(target);
         puts("PASS normalized byte attributes, unaligned stream base and constant vertex fetch on Metal");
     }
+    return 0;
 }

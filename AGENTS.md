@@ -56,7 +56,7 @@
 - Commit every completed feature and fix after running the relevant checks.
   Do not leave implemented work uncommitted unless the user explicitly asks.
 - Every commit must request an automatic production rebuild through the managed
-  post-commit hook (`python3 tools/rebuild_browser.py --install-hook`). The hook
+  post-commit hook (`sh tools/run_v_tool.sh rebuild_browser --install-hook`). The hook
   selects the C backend with literal V `-prod` in one C unit; FastC remains
   available for explicit builds. Keep requests coalesced under the shared worker
   and memory guard.
@@ -72,8 +72,8 @@
 - Never commit evidence or measurement archives (`.tar.gz`, `.zip`, `.gz`) or
   force-add ignored files under `docs/`; keep archives local and commit the
   report or manifest that describes them. The pre-commit hook
-  (`tools/pre_commit_check.py`, installed by
-  `python3 tools/rebuild_browser.py --install-hook`) rejects archives outside
+  (`tools/pre_commit_check.vsh`, installed by
+  `sh tools/run_v_tool.sh rebuild_browser --install-hook`) rejects archives outside
   `adblock/`, `tools/adblock/fixtures/` and `Tests/Browser/Brave/candidates/`,
   anything under `Build/`, and files over 32 MiB. Do not bypass it with
   `--no-verify`.
@@ -145,7 +145,7 @@
   below and pin build identity for comparisons.
 
 - Run expensive builds, test binaries and benchmarks through
-  `python3 tools/run_memory_bounded.py --lock Build/UNIQUE-job.lock --report Build/UNIQUE-job.json -- COMMAND...`.
+  `sh tools/run_v_tool.sh run_memory_bounded --lock Build/UNIQUE-job.lock --report Build/UNIQUE-job.json -- COMMAND...`.
   Keep its default 12 GiB aggregate process-tree RSS budget; use `--limit-gib 3`
   for focused runtime tests. Use a separate lock per independent job; a busy
   shared lock must not queue unrelated work. Independent capped jobs may run
@@ -304,7 +304,7 @@ and an existing verified pixel-diff binary, for example:
 ```sh
 env -u ALL_PROXY -u HTTP_PROXY -u HTTPS_PROXY \
     -u all_proxy -u http_proxy -u https_proxy \
-  python3 tools/run_memory_bounded.py \
+  sh tools/run_v_tool.sh run_memory_bounded \
     --lock Build/hn-brave-UNIQUE.lock \
     --report Build/hn-brave-UNIQUE-guard.json \
     --adopt-pids-from Build/hn-brave-UNIQUE-pids.json -- \

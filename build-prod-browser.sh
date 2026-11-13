@@ -56,8 +56,10 @@ for argument in "$@"; do
 done
 if [ -n "$v_prod_flag" ] && [ "$seen_single_option" = 0 ]; then single_c_unit_flag=--no-parallel-cc; fi
 repo_dir=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd -P)
+# V owns the build helpers; the shell only bootstraps compiler discovery.
+v_tool() { sh "$repo_dir/tools/run_v_tool.sh" "$@"; }
 if [ "${VOX_BUILD_SUPERVISED:-0}" != 1 ]; then
-    exec python3 "$repo_dir/tools/rebuild_browser.py" --build $single_c_unit_flag $parallel_c_unit_flag $v_prod_flag
+    exec sh "$repo_dir/tools/run_v_tool.sh" rebuild_browser --build $single_c_unit_flag $parallel_c_unit_flag $v_prod_flag
 fi
 
 case "$(uname -s)" in
@@ -75,12 +77,12 @@ export MACOSX_DEPLOYMENT_TARGET
 # A worker already running when the build protocol changes must finish its
 # current job, then hand off before starting another compiler. The successor
 # uses the same queued request and guard; no process is interrupted.
-if [ "${VOX_BUILD_COMPILE_PROTOCOL:-}" != bundle-lease-v8 ]; then
-    python3 "$repo_dir/tools/rebuild_browser.py" --upgrade-worker
+if [ "${VOX_BUILD_COMPILE_PROTOCOL:-}" != bundle-lease-v10-vtools ]; then
+    v_tool rebuild_browser --upgrade-worker
     exit 75
 fi
 : "${VOX_BUILD_RECEIPT_DIR:?production build receipt directory is required}"
-python3 "$repo_dir/tools/production_source_manifest.py" begin --root "$repo_dir" \
+v_tool production_source_manifest begin --root "$repo_dir" \
     --inventory "$VOX_BUILD_RECEIPT_DIR/source-inventory.json"
 
 c_mode=${VOX_BUILD_C_MODE:-parallel}
@@ -177,15 +179,14 @@ extra_ldflags="-Wl,-dead_strip,-dead_strip_dylibs -Wl,-rpath,@executable_path"
 # Native dependencies come from Homebrew (see README.md). AVIF and FFmpeg are
 # optional: without them the bundle omits AVIF decoding and video playback.
 avif_library=""
-if pkg-config --exists libavif 2>/dev/null; then
+if avif_root=$(v_tool macos_dependency_prefix libavif 2>/dev/null); then
     avif_library="$build_dir/libVoxAVIF.dylib"
-    python3 "$repo_dir/tools/build_native_avif.py" --output "$avif_library"
+    v_tool build_native_avif --sdk-root "$avif_root" --output "$avif_library"
 fi
 # FFmpeg's libraries load on first use (native/include/native_ffmpeg_darwin.h),
 # at the major versions of these headers; only the headers are needed here.
-if pkg-config --exists libavformat libavcodec libavutil libswscale 2>/dev/null; then
-    ffmpeg_cflags=$(pkg-config --cflags libavformat libavcodec libavutil libswscale)
-    extra_cflags="$extra_cflags -DLADYBIRD_V_HAS_FFMPEG $ffmpeg_cflags"
+if ffmpeg_root=$(v_tool macos_dependency_prefix ffmpeg 2>/dev/null); then
+    extra_cflags="$extra_cflags -DLADYBIRD_V_HAS_FFMPEG -I\"$ffmpeg_root/include\""
 fi
 
 # `-d vox_v8` (VOX_V8=1) is an experimental compile-time backend: the
@@ -229,15 +230,18 @@ export V_MACOS_V3_NO_FALLBACK
 # graph while leaving pointer-free buffers atomic. Optimized forced-GC tests
 # cover nested token strings, CSSOM values and arena records. boehm_full
 # remains available as an ownership diagnostic.
-ui2_modules=$(python3 "$repo_dir/tools/prepare_ui2.py" "$v_compiler")
-http_modules=$(python3 "$repo_dir/tools/prepare_http_compat.py" "$v_compiler")
+ui2_modules=$(sh "$repo_dir/tools/run_v_tool.sh" prepare_ui2 "$v_compiler")
+http_modules=$(v_tool prepare_http_compat "$v_compiler")
+# Avoid the optional Graphite2 VM in Homebrew's HarfBuzz archive.
+harfbuzz_root=$(v_tool build_harfbuzz)
+cp "$harfbuzz_root/LICENSE" "$resources_dir/harfbuzz-LICENSE.txt"
 prealloc_modules=""
 # Every collector uses glyph-index lookup in the platform font bridge. Avoid
 # decoding x.ttf's dense Unicode vectors only to discard them after each face
 # initialization. Stage the same checked initializer for every browser build.
-font_modules=$(python3 "$repo_dir/tools/prepare_font_runtime.py" "$v_compiler")
+font_modules=$(v_tool prepare_font_runtime "$v_compiler")
 if [ "$gc_mode" = prealloc ]; then
-    prealloc_modules=$(python3 "$repo_dir/tools/prepare_prealloc_runtime.py" "$v_compiler" "$cache_dir/prealloc-runtime")
+    prealloc_modules=$(v_tool prepare_prealloc_runtime "$v_compiler" "$cache_dir/prealloc-runtime")
     v_compiler="$prealloc_modules/compiler/v"
 fi
 # Anchor package names at the repository; see build-linux-browser.sh. Without
@@ -245,7 +249,7 @@ fi
 # `encoding` as `vox2.encoding` while imports still resolve to vlib's name.
 # Pin the manifest's frontend and Clang for native code and C optimization.
 # V drivers without manifest defaults need the backend passed explicitly.
-v_backend=${VOX_BUILD_BACKEND:-$(python3 "$repo_dir/tools/browser_backend.py" "$repo_dir")}
+v_backend=${VOX_BUILD_BACKEND:-$(v_tool browser_backend "$repo_dir")}
 case "$v_backend" in c|fastc) ;; *) echo "Unsupported browser backend: $v_backend" >&2; exit 2 ;; esac
 set -- -b "$v_backend" -cc clang -memory-limit 10G -exclude "$zoneinfo_exclude" -enable-globals -d vox_sparse_ttf \
     -d vox_production -d vox_ui2 -path "$repo_dir|$prealloc_modules|$font_modules|$http_modules|$ui2_modules|@vmodules|@vlib"
@@ -347,7 +351,7 @@ export V_MACOS_V3_SOURCE_MANIFEST=1
 export V_MACOS_V3_C_ERROR_DIR="$VOX_BUILD_RECEIPT_DIR/worker-sources"
 # Compile the module directory so FastC enables full language support, including
 # the generic JSON transport. Its single-file mode uses a restricted parser.
-python3 "$repo_dir/tools/production_source_manifest.py" compile --root "$repo_dir" \
+v_tool production_source_manifest compile --root "$repo_dir" \
     --inventory "$VOX_BUILD_RECEIPT_DIR/source-inventory.json" \
     --component-dir "$VOX_BUILD_RECEIPT_DIR/worker-sources" \
     --command "$v_compiler" "$@" -cflags "$helper_cflags" -ldflags "-Wl,-dead_strip,-dead_strip_dylibs" \
@@ -377,7 +381,7 @@ if [ "$v_backend" = fastc ]; then
     if [ "$v_prod" = 1 ]; then v_prod_json=true; fi
     printf '{"backend": "fastc", "mode": "fastc", "requested": "%s", "v_prod": %s}\n' \
         "$requested_c_mode" "$v_prod_json" > "$VOX_BUILD_RECEIPT_DIR/c-compile.json"
-    python3 "$repo_dir/tools/production_source_manifest.py" compile --root "$repo_dir" \
+    v_tool production_source_manifest compile --root "$repo_dir" \
         --inventory "$VOX_BUILD_RECEIPT_DIR/source-inventory.json" \
         --component-dir "$VOX_BUILD_RECEIPT_DIR/browser-sources" --command "$v_compiler" "$@" \
         -cflags "$extra_cflags" -ldflags "$extra_ldflags" -o "$compile_dir/Vox" "$repo_dir"
@@ -386,11 +390,11 @@ elif [ "$c_mode" = parallel ]; then
     # split support, or when native code would be duplicated in every unit, the
     # helper leaves no executable and the sealed single-unit compile below runs.
     if [ "$v_prod" = 1 ]; then
-        python3 "$repo_dir/tools/parallel_browser_compile.py" --receipt "$VOX_BUILD_RECEIPT_DIR" \
+        v_tool parallel_browser_compile --receipt "$VOX_BUILD_RECEIPT_DIR" \
             --output "$compile_dir/Vox" -- "$v_compiler" "$@" \
             -cflags "$extra_cflags" -ldflags "$extra_ldflags" "$repo_dir"
     else
-        python3 "$repo_dir/tools/parallel_browser_compile.py" --receipt "$VOX_BUILD_RECEIPT_DIR" \
+        v_tool parallel_browser_compile --receipt "$VOX_BUILD_RECEIPT_DIR" \
             --output "$compile_dir/Vox" -- "$v_compiler" "$@" \
             -cflags "$extra_cflags -flto=thin" \
             -ldflags "$extra_ldflags -flto=thin${parallel_lto_ldflags:-}" "$repo_dir"
@@ -406,7 +410,7 @@ if [ ! -f "$compile_dir/Vox" ]; then
     export V_MACOS_V3_SOURCE_MANIFEST=1
     export V_MACOS_V3_C_ERROR_DIR="$VOX_BUILD_RECEIPT_DIR/browser-sources"
     compile_browser_v() {
-        python3 "$repo_dir/tools/production_source_manifest.py" compile --root "$repo_dir" \
+        v_tool production_source_manifest compile --root "$repo_dir" \
             --inventory "$VOX_BUILD_RECEIPT_DIR/source-inventory.json" \
             --component-dir "$VOX_BUILD_RECEIPT_DIR/browser-sources" --command "$v_compiler" "$@"
     }
@@ -425,7 +429,7 @@ if [ ! -f "$compile_dir/Vox" ]; then
        [ -f "$VOX_BUILD_RECEIPT_DIR/browser-sources/v_sources" ]; then
         # A compiler without manifest support retains the whole-tree check.
         # Partial manifests fail in combine rather than weakening verification.
-        python3 "$repo_dir/tools/production_source_manifest.py" combine --parsed --root "$repo_dir" \
+        v_tool production_source_manifest combine --parsed --root "$repo_dir" \
             --inventory "$VOX_BUILD_RECEIPT_DIR/source-inventory.json" \
             --component "$VOX_BUILD_RECEIPT_DIR/worker-sources" \
             --component "$VOX_BUILD_RECEIPT_DIR/browser-sources" \
@@ -435,10 +439,11 @@ if [ ! -f "$compile_dir/Vox" ]; then
             --parsed-component "$VOX_BUILD_RECEIPT_DIR/worker-sources" \
             --parsed-component "$VOX_BUILD_RECEIPT_DIR/browser-sources"
     fi
-    python3 "$repo_dir/tools/freeze_browser_compile.py" "$@"
+    v_tool freeze_browser_compile "$@"
 fi
 mv -f "$compile_dir/Vox" "$binary_dir/Vox"
-python3 "$repo_dir/tools/localize_bundle_rpaths.py" "$binary_dir/Vox" "$build_dir"
+v_tool localize_bundle_rpaths "$binary_dir/Vox" "$build_dir"
+v_tool build_harfbuzz --check-executable "$binary_dir/Vox"
 
 
 # JPEG XL is decoded by the V jpegxl module; drop the former Rust helper.

@@ -187,7 +187,7 @@ for(const player of [routeVideo,routeViewportVideo]){
 		assert observation.events.len == index + 1 && observation.targets[index] == voidptr(player)
 		assert observation.inner_before[index] == 0 && observation.viewport_before[index] == 16
 		assert runtime.evaluate_host('routeSaved[${index}].screenX===111.375&&routeSaved[${index}].screenY===222.625&&routeSaved[${index}].clientX===${client.x}&&routeSaved[${index}].clientY===${client.y}&&routeSaved[${index}].pageY===${
-			client.y + 16}&&routeSaved[${index}].deltaX===1.5&&routeSaved[${index}].deltaY===3.75&&routeSaved[${index}].wheelDeltaX===-2&&routeSaved[${index}].wheelDeltaY===-4&&routeSaved[${index}].button===2&&routeSaved[${index}].buttons===2&&routeSaved[${index}].ctrlKey&&routeSaved[${index}].altKey&&routeSaved[${index}].metaKey&&routeChecks.every(Boolean)')! == 'true'
+			client.y + 16}&&routeSaved[${index}].deltaX===1.5&&routeSaved[${index}].deltaY===3.75&&routeSaved[${index}].wheelDeltaX===-4&&routeSaved[${index}].wheelDeltaY===-11&&routeSaved[${index}].button===2&&routeSaved[${index}].buttons===2&&routeSaved[${index}].ctrlKey&&routeSaved[${index}].altKey&&routeSaved[${index}].metaKey&&routeChecks.every(Boolean)')! == 'true'
 		wheel_routing_test_matches(mut runtime, observation.events[index], 'routeSaved[${index}]')!
 	}
 	// Exercise the actual native shell entry, whose existing scale is 42 CSS pixels.

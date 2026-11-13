@@ -11,4 +11,11 @@ static uint32_t vox_metal_device_sample_mask(void* owner)
         if ([device supportsTextureSampleCount:count]) mask |= 1u << count;
     return mask;
 }
+static int vox_metal_device_float_filtering(void* owner)
+{
+    VoxMetalDrawingBuffer* target=owner;
+    if(!target || !target->device) return 0;
+    if(@available(macOS 11.0,*)) return [(__bridge id<MTLDevice>)target->device supports32BitFloatFiltering];
+    return 0;
+}
 #endif

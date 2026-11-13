@@ -37,6 +37,7 @@ struct C.VoxGraphitePath {
 	ancestor_clip      [12]f32
 	has_float_color    int
 	float_color        [4]f32
+	gradient_premul    int
 }
 
 fn C.native_draw_svg_path_batch(&C.VoxGraphitePath, int, &f32, f32, f32, f32, f32, f32, f32, f32, f32, f32, &f32) int

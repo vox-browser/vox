@@ -4,6 +4,29 @@ import dom
 import html
 import painting
 
+// Resolve posters from the current paint owner, rather than treating decoded
+// live frames or a retained snapshot from an old document as image resources.
+pub fn video_poster_resource_url(document &dom.Document, command &PaintCommand) ?string {
+	if command.kind != 'draw_video' || command.video_representation != .poster_frame
+		|| command.video_frame_source != none { return none }
+	result := document_layout_result(document) or { return none }
+	if command.paint_box_index < 0 || command.paint_box_index >= result.paint_order.len { return none }
+	box := result.paint_order[command.paint_box_index].box
+	paintable := command.video_paintable or { return none }
+	current := box.media().video_paintable or { return none }
+	if voidptr(paintable) != voidptr(current)
+		|| video_paint_bitmap_identity(command.video_bitmap) != video_paint_bitmap_identity(box.media().video_bitmap) {
+		return none
+	}
+	node := dom.Node.from_unique_id(dom.UniqueNodeID(box.node_id)) or { return none }
+	if voidptr(node.document()) != voidptr(document) { return none }
+	element := node.as_element() or { return none }
+	if !element.is_html_element() || element.local_name() != 'video' { return none }
+	poster := element.get_attribute_ns(none, 'poster') or { return none }
+	if poster == '' { return none }
+	return (document.encoding_parse_url(poster) or { return none }).serialize()
+}
+
 // Painting::push_video_paint_facts(). Resolve the current document and layout
 // owner on every push; an adopted or unboxed video must not update an old tree.
 fn push_video_paint_facts(element &dom.HTMLVideoElement) {

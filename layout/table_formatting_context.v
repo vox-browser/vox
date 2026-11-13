@@ -1197,7 +1197,7 @@ fn chromium_automatic_table_column_widths(table &Node, max_widths []CSSPixels,
 
 // TableFormattingContext::distribute_width_to_columns() and
 // distribute_excess_width_to_columns().
-fn distribute_table_width_to_columns(min_widths []CSSPixels, max_widths []CSSPixels, constrained_columns []bool, intrinsic_percentages []f64, has_intrinsic_percentage []bool, percentage_offsets []CSSPixels, has_originating_cells []bool, table_width CSSPixels, spacing CSSPixels, fixed_mode bool) []CSSPixels {
+fn distribute_table_width_to_columns(min_widths []CSSPixels, max_widths []CSSPixels, constrained_columns []bool, intrinsic_percentages []f64, has_intrinsic_percentage []bool, percentage_offsets []CSSPixels, has_originating_cells []bool, table_width CSSPixels, spacing CSSPixels, fixed_mode bool, chromium bool) []CSSPixels {
 	available_width := table_width.minus(spacing.scaled(f64(min_widths.len + 1)))
 	mut widths := []CSSPixels{len: min_widths.len, init: CSSPixels.new(0)}
 	mut candidate_widths := []CSSPixels{len: min_widths.len, init: CSSPixels.new(0)}
@@ -1209,7 +1209,15 @@ fn distribute_table_width_to_columns(min_widths []CSSPixels, max_widths []CSSPix
 	}
 	for index in 0 .. widths.len {
 		if has_intrinsic_percentage[index] {
-			candidate_widths[index] = css_pixels_max(min_widths[index], CSSPixels.nearest_value_for(intrinsic_percentages[index] / 100.0 * available_width.to_double()).plus(percentage_offsets[index]))
+			// Resolve Blink's percentage guess at LayoutUnit precision before
+			// adding the box-model offset in either table layout mode.
+			percentage_width := intrinsic_percentages[index] / 100.0 * available_width.to_double()
+			resolved := if chromium {
+				CSSPixels.truncated_value_for(percentage_width)
+			} else {
+				CSSPixels.nearest_value_for(percentage_width)
+			}
+			candidate_widths[index] = css_pixels_max(min_widths[index], resolved.plus(percentage_offsets[index]))
 		}
 	}
 	if available_width.raw_value() < table_columns_total_width(candidate_widths).raw_value() {
@@ -2296,7 +2304,7 @@ fn run_table_formatting_context(mut state LayoutState, table &Node, mut table_st
 		intrinsic_widths.column_max_widths, intrinsic_widths.constrained_columns,
 		intrinsic_widths.has_intrinsic_percentage, intrinsic_widths.has_originating_cells,
 		table_state.content_width(), horizontal_spacing, fixed_mode) or {
-		distribute_table_width_to_columns(intrinsic_widths.column_min_widths, intrinsic_widths.column_max_widths, intrinsic_widths.constrained_columns, intrinsic_widths.intrinsic_percentages, intrinsic_widths.has_intrinsic_percentage, intrinsic_widths.percentage_offsets, intrinsic_widths.has_originating_cells, table_state.content_width(), horizontal_spacing, fixed_mode)
+		distribute_table_width_to_columns(intrinsic_widths.column_min_widths, intrinsic_widths.column_max_widths, intrinsic_widths.constrained_columns, intrinsic_widths.intrinsic_percentages, intrinsic_widths.has_intrinsic_percentage, intrinsic_widths.percentage_offsets, intrinsic_widths.has_originating_cells, table_state.content_width(), horizontal_spacing, fixed_mode, table.document().font_rendering_policy() == .chromium)
 	}
 	mut removed_column_width := CSSPixels.new(0)
 	for index in 0 .. column_widths.len {

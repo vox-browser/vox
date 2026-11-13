@@ -198,9 +198,10 @@ fn slice_u32(values []u32, offset u64, length u32) ![]u32 {
 }
 
 pub fn null_terminated_string(bytes []u8) string {
-	index := bytes.index(0)
-	end := if index < 0 { bytes.len } else { index }
-	return bytes[..end].bytestr()
+	for index, value in bytes {
+		if value == 0 { return bytes[..index].bytestr() }
+	}
+	return bytes.bytestr()
 }
 
 pub fn (mut context WebGLRenderingContext) active_texture(texture GLenum) {
