@@ -22,16 +22,45 @@ static BOOL CALLBACK find_browser(HWND window, LPARAM unused) {
 }
 
 static int activate_browser(void) {
+  if (GetForegroundWindow() == browser_window) return 1;
+  /* A console test runner may not have an input queue yet. Join both
+   * desktop queues while asking Windows to activate the browser. */
+  MSG message;
+  PeekMessageW(&message, NULL, 0, 0, PM_NOREMOVE);
   HWND foreground = GetForegroundWindow();
   DWORD thread = GetWindowThreadProcessId(foreground, NULL);
+  DWORD target = GetWindowThreadProcessId(browser_window, NULL);
   DWORD self = GetCurrentThreadId();
   BOOL attached = thread && thread != self && AttachThreadInput(self, thread, TRUE);
+  BOOL target_attached = target && target != self && target != thread &&
+                        AttachThreadInput(self, target, TRUE);
   ShowWindow(browser_window, SW_RESTORE);
   BOOL raised = SetWindowPos(browser_window, HWND_TOPMOST, 0, 0, 0, 0,
                              SWP_NOMOVE | SWP_NOSIZE | SWP_SHOWWINDOW);
   SetForegroundWindow(browser_window);
+  if (target_attached) AttachThreadInput(self, target, FALSE);
   if (attached) AttachThreadInput(self, thread, FALSE);
-  return raised && GetForegroundWindow() == browser_window;
+  if (!raised) return 0;
+  if (GetForegroundWindow() == browser_window) return 1;
+  /* Foreground-lock policy can reject programmatic activation from an
+   * interactive scheduled task. Use real input in the address field, above
+   * the document, and restore the cursor for the caller's document click. */
+  POINT previous, point = {200, 44};
+  if (!GetCursorPos(&previous) || !ClientToScreen(browser_window, &point) ||
+      !SetCursorPos(point.x, point.y)) return 0;
+  INPUT click[2] = {0};
+  click[0].type = click[1].type = INPUT_MOUSE;
+  click[0].mi.dwFlags = MOUSEEVENTF_LEFTDOWN;
+  click[1].mi.dwFlags = MOUSEEVENTF_LEFTUP;
+  UINT sent = SendInput(2, click, sizeof click[0]);
+  SetCursorPos(previous.x, previous.y);
+  if (sent != 2) return 0;
+  ULONGLONG deadline = GetTickCount64() + 10000;
+  while (GetTickCount64() < deadline) {
+    if (GetForegroundWindow() == browser_window) return 1;
+    Sleep(100);
+  }
+  return 0;
 }
 
 static int wait_title(HANDLE process, wchar_t const *expected) {
@@ -217,10 +246,12 @@ int wmain(int argc, wchar_t **argv) {
   CloseHandle(browser.hThread);
   browser_pid = browser.dwProcessId;
   int result = 1;
-  char const *phase = "startup";
+  char const *phase = "startup-title";
   if (!wait_title(browser.hProcess, L"Windows startup passed"))
     goto finished;
+  phase = "startup-activate";
   if (!activate_browser()) goto finished;
+  phase = "startup-pixels";
   if (!wait_pixel(browser.hProcess, 400, 300, RGB(44, 160, 90)))
     goto finished;
   puts("PASS: native startup and rendered pixels");
@@ -314,8 +345,13 @@ int wmain(int argc, wchar_t **argv) {
   result = 0;
 finished:
   if (result) {
-    fprintf(stderr, "FAIL: phase=%s pid=%lu error=%lu\n", phase,
-            (unsigned long)browser_pid, (unsigned long)GetLastError());
+    DWORD error = GetLastError(), code = STILL_ACTIVE;
+    GetExitCodeProcess(browser.hProcess, &code);
+    wchar_t title[512] = {0};
+    GetWindowTextW(browser_window, title, 512);
+    fprintf(stderr, "FAIL: phase=%s pid=%lu error=%lu child_exit=%lu window=%p foreground=%p title=%ls\n", phase,
+            (unsigned long)browser_pid, (unsigned long)error, (unsigned long)code,
+            (void*)browser_window, (void*)GetForegroundWindow(), title);
     TerminateProcess(browser.hProcess, 125);
     WaitForSingleObject(browser.hProcess, 10000);
   }
