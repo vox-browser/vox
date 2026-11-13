@@ -36,7 +36,7 @@ fn test_source_sync_creation_retains_owned_records_after_actual_driver_rejection
 		assert actual_query_error == expected_query_error
 		C.vox_gl_delete_sync(expected_handle)
 		expected_delete_error := C.vox_gl_get_error()
-		context.delete_sync(mut sync)
+		context.delete_sync(sync)
 		actual_delete_error := context.get_error()
 		assert actual_delete_error == expected_delete_error
 		assert sync.object.invalidated()

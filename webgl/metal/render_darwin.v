@@ -35,6 +35,7 @@ pub struct ColorTargetBinding {
 pub:
     index int
     texture &Texture2D
+    rgb_only bool
 }
 
 pub struct DrawOptions {
@@ -44,6 +45,8 @@ pub:
     color_targets []ColorTargetBinding
     colors_configured bool
     visibility &GPUBuffer = unsafe { nil }
+    feedback bool
+    feedback_buffer &GPUBuffer = unsafe { nil }
 	depth_stencil &DepthStencil = unsafe { nil }
 	state RenderState
 	indices ?IndexBinding
@@ -226,6 +229,10 @@ pub fn (mut target DrawingBuffer) draw_with_options(program &ShaderProgram, stre
 			if texture.handle == render_target { return error('Metal texture feedback loop') }
 			if u64(resource.binding) + index >= 128 || (resource.kind == 7 && u64(resource.secondary_binding) + index >= 16) { return error('Metal texture binding exceeds device limits') }
 			if bound[0].sampler!=unsafe { nil } && (bound[0].sampler.handle==unsafe { nil } || bound[0].sampler.owner.handle!=target.handle) { return error('Metal sampler has wrong owner or is closed') }
+            depth_texture:=texture.format in [.depth16,.depth32,.depth_stencil]
+            comparison:=if bound[0].sampler!=unsafe{nil} {bound[0].sampler.comparison} else {texture.comparison}
+            if resource.image_depth && (!depth_texture || !comparison) {return error('Shadow sampler requires a comparison sampler and depth texture')}
+            if !resource.image_depth && depth_texture && comparison {return error('Comparison sampler requires a shadow shader type')}
             textures << C.VoxMetalTextureBinding{texture: texture.handle, sampler:if bound[0].sampler!=unsafe { nil } { bound[0].sampler.handle } else { unsafe { nil } }, stage: if resource.stage == .vertex { u32(0) } else { u32(1) }, binding: resource.binding + index, sampler_binding: resource.secondary_binding + index, sampled: if resource.kind == 7 { u32(1) } else { u32(0) }}
 		}
 	}

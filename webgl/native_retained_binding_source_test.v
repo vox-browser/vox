@@ -79,12 +79,12 @@ fn test_source_vao_changes_leave_element_retained_slot_unchanged() {
 			context.bind_vertex_array(array)
 			assert context.current_vertex_array_binding()? == &array.object
 			assert context.get_error() == invalid_enum
-			context.delete_vertex_array(mut array)
+			context.delete_vertex_array(array)
 			assert context.current_vertex_array_binding() == none
 			assert context.get_parameter(element_array_buffer_binding).buffer? == retained
 			assert retained_binding_native_int(element_array_buffer_binding) == int(initial.object.native_handle_)
 			other.native.make_current()
-			context.delete_vertex_array(mut array)
+			context.delete_vertex_array(array)
 		} else {
 			array := context.create_vertex_array_oes()
 			context.bind_vertex_array_oes(array)

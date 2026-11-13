@@ -82,7 +82,7 @@ fn performance_observer_binding_factory() string {
  }};
  for(const [prototype,methods] of [[prototypes[0],observerMethods],[prototypes[1],listMethods],[prototypes[2],{toJSON(){return {name:operate("name",this),entryType:operate("entryType",this),startTime:operate("startTime",this),duration:operate("duration",this)}}}]])
   for(const name of Object.keys(methods))define(prototype,name,{value:methods[name],writable:true,enumerable:true,configurable:true});
- define(prototypes[8],"toJSON",{value:({toJSON(){operate("visibilityBrand",this);return {name:operate("name",this),entryType:operate("entryType",this),startTime:operate("startTime",this),duration:operate("duration",this)}}).toJSON,writable:true,enumerable:true,configurable:true});
+ define(prototypes[8],"toJSON",{value:({toJSON(){operate("visibilityBrand",this);return {name:operate("name",this),entryType:operate("entryType",this),startTime:operate("startTime",this),duration:operate("duration",this)}}}).toJSON,writable:true,enumerable:true,configurable:true});
  for(const name of ["name","entryType","startTime","duration"]){
   const get=descriptor({get [name](){return operate(name,this)}},name).get;
   define(prototypes[2],name,{get,enumerable:true,configurable:true});

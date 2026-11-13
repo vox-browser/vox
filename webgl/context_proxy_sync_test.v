@@ -50,10 +50,14 @@ fn test_context_proxy_rejects_malformed_sync_replies_and_mapping_calls() {
 	assert proxy.get_string(0x1f00) == ''
 	assert proxy.is_lost()
 
-	proxy.map_buffer_range(0x8892, 0, 4, 0) or {
+	if _ := proxy.map_buffer_range(0x8892, 0, 4, 0) {
+		assert false, 'Proxy buffer mapping must fail'
+	} else {
 		assert err.msg().contains('unreachable')
 	}
-	proxy.unmap_buffer(0x8892) or {
+	if _ := proxy.unmap_buffer(0x8892) {
+		assert false, 'Unmapping a proxy buffer must fail'
+	} else {
 		assert err.msg().contains('never mapped')
 	}
 }

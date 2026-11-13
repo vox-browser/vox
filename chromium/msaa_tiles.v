@@ -5,6 +5,7 @@ import math
 import painting
 import os
 import processmetrics
+import gg.canvas
 
 fn C.native_set_chromium_raster_layer_size(f64, f64)
 fn C.native_set_chromium_save_layer_image_raster(f64, f64, f64, f64, i32)
@@ -141,6 +142,20 @@ fn chromium_msaa_trigger_rect(command &layout.PaintCommand) ?layout.LayoutRect {
 fn chromium_msaa_trigger_rect_with_transform(command &layout.PaintCommand,
 	transform [6]f64) ?layout.LayoutRect {
 	match command.kind {
+		'draw_replaced_image' {
+			paintable := command.image_paintable or { return none }
+			converter := painting.new_device_pixel_converter(1) or { return none }
+			rect := converter.rounded_device_rect(painting.Rect{
+				paintable.image_rect.x + paintable.paint_offset_adjustment.x,
+				paintable.image_rect.y + paintable.paint_offset_adjustment.y,
+				paintable.image_rect.width, paintable.image_rect.height})
+			if rect.width <= 0 || rect.height <= 0 { return none }
+			clip := replaced_image_gpu_clip_data(command, rect, painting.CornerRadii{}, -1)
+			if !canvas.document_image_clip_requires_msaa(canvas.Rect.xywh(clip[0], clip[1], clip[2], clip[3]),
+				[canvas.Point{clip[4], clip[5]}, canvas.Point{clip[6], clip[7]},
+				canvas.Point{clip[8], clip[9]}, canvas.Point{clip[10], clip[11]}]!) { return none }
+			return transformed_raster_bounds(transform, f64(rect.x), f64(rect.y), f64(rect.width), f64(rect.height))
+		}
 		'paint_outer_box_shadow' {
 			// An unfiltered non-round contour is a path on the parent pass.
 			// Filtered shadows rasterize that path in their own blur surface.

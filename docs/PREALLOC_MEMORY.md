@@ -8,7 +8,7 @@ retained state is: for a fixed live workload, retained memory must stop
 growing after warm-up, however many frames or replacements happen.
 
 The production build stages its prealloc runtime with
-`tools/prepare_prealloc_runtime.py`. For the supported current V allocator, it
+`tools/prepare_prealloc_runtime.vsh`. For the supported current V allocator, it
 bounds `v_realloc` copies before allocating the destination and handles
 `realloc(nil, n)` without reading from null. An already bounded compiler runtime
 is preserved; unfamiliar or partially patched allocators are rejected.
@@ -83,7 +83,7 @@ frame: each arena is reset only after its last reader has let go.
   and fragment documents share their containing document's allocation lifetime.
   Cross-document adoption and untracked host borrowing conservatively pin it.
   Process-wide caches, diagnostic maps and V closure bookkeeping stay outside
-  these arenas; `tools/prepare_prealloc_runtime.py` stages the closure runtime
+  these arenas; `tools/prepare_prealloc_runtime.vsh` stages the closure runtime
   used by the build without modifying the compiler checkout.
 - **Cascade bookkeeping** (`css/cascade_scratch.v`). Private style passes lease
   reusable buffers, with a separate slot for each nested call. Only map heads,

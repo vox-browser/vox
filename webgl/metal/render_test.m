@@ -52,4 +52,5 @@ int main(void)
         }
         puts("PASS initialized buffers, bounded updates, actual Metal vertex pipeline and asymmetric GL-coordinate pixels; no ANGLE loaded");
     }
+    return 0;
 }

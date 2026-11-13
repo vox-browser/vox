@@ -39,6 +39,16 @@ def main():
         raise SystemExit('Set V_BIN or put the current V compiler on PATH')
     compiler = str(Path(compiler).resolve())
 
+    # The Mesa runtime and its import libraries are prepared by the canonical
+    # pinned V helper, also used by the native Windows build entrypoint.
+    mesa_root = (args.deps_root or repo / 'Build/deps/windows').resolve()
+    subprocess.run(['sh', str(repo / 'tools/run_v_tool.sh'), 'prepare_windows_mesa',
+                    '--deps-root', str(mesa_root)], cwd=repo,
+                   env=dict(environment, V_BIN=compiler), check=True)
+    mesa_pc = str(mesa_root / 'mesa/lib/pkgconfig')
+    environment['PKG_CONFIG_PATH'] = mesa_pc + (os.pathsep + environment['PKG_CONFIG_PATH']
+                                               if environment.get('PKG_CONFIG_PATH') else '')
+
     def run(command):
         subprocess.run([str(part) for part in command], cwd=repo,
                        env=environment, check=True)

@@ -39,4 +39,5 @@ int main(void)
         }
         puts("PASS ESSL linking, Metal functions, uniform/matrix/sampler reflection; no ANGLE loaded");
     }
+    return 0;
 }

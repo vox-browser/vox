@@ -4,7 +4,7 @@ module browserjs
 
 import webidl
 
-#include "native_error.h"
+#include "@DIR/native_error.h"
 
 fn C.vox_jsc_construct_error(context voidptr, constructor voidptr, message voidptr, exception &voidptr) voidptr
 

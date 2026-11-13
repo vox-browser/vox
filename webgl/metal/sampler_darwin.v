@@ -25,6 +25,7 @@ pub struct Sampler {
 mut:
     handle voidptr
     owner &DrawingBuffer
+    comparison bool
 }
 
 pub fn Sampler.create(owner &DrawingBuffer,options SamplerOptions) !&Sampler {
@@ -32,7 +33,7 @@ pub fn Sampler.create(owner &DrawingBuffer,options SamplerOptions) !&Sampler {
     native:=C.VoxMetalSamplerOptions{min_filter:u32(options.min_filter),mag_filter:u32(options.mag_filter),mip_filter:u32(options.mip_filter),wrap_s:u32(options.wrap_s),wrap_t:u32(options.wrap_t),wrap_r:u32(options.wrap_r),compare:u32(options.compare),compare_func:u32(options.compare_func),anisotropy:u32(options.anisotropy),min_lod:options.min_lod,max_lod:options.max_lod}
     handle:=C.vox_metal_sampler_create(owner.handle,&native)
     if handle==unsafe { nil } { return error('Metal sampler creation failed') }
-    return &Sampler{handle:handle,owner:owner}
+    return &Sampler{handle:handle,owner:owner,comparison:options.compare}
 }
 
 pub fn (mut sampler Sampler) close() {
