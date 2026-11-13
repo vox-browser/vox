@@ -6,7 +6,10 @@ https://vox-browser.org
 
 <img width="2078" height="1628" alt="image" src="https://github.com/user-attachments/assets/ed3d6776-78dd-4903-b716-a95cd5845cab" />
 
-WebGL uses the V shader frontend and direct Metal generation on macOS. See
+WebGL uses a shader frontend written in V, with direct Metal generation on
+macOS and native driver compilation on Linux and Windows. **glslang and
+SPIRV-Cross are no longer build or runtime dependencies**; neither package is
+needed for the installation commands below. See
 [shader validation and backend equivalence tests](docs/SHADER_VALIDATION.md).
 
 ### Building
