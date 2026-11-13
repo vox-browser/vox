@@ -8,6 +8,14 @@
 #include <stdio.h>
 #include <string.h>
 #include "../webgl/native_egl.h"
+static void native_check_progress(const char *message) {
+#ifdef _WIN32
+    DWORD written=0;
+    WriteFile(GetStdHandle(STD_OUTPUT_HANDLE),message,(DWORD)strlen(message),&written,NULL);
+#else
+    fputs(message,stdout);fflush(stdout);
+#endif
+}
 static void pixels_and_bounds(void *context) {
     assert(vox_egl_allocate_surface(context,4,4,1,1));
     vox_egl_clear_drawing_buffer(context);
@@ -132,12 +140,25 @@ static void shader_validation_rejects_dynamic_webgl1_loops(void) {
 int main(void) {
     for(int version=2;version<=3;version++) {
         void *context=vox_egl_create(version);assert(context);
+        native_check_progress("Native context created\n");
         printf("WebGL%d: %s / %s\n",version-1,vox_gl_string(GL_VENDOR),vox_gl_string(GL_RENDERER));
+        fflush(stdout);
         assert(!strstr(vox_gl_string(GL_RENDERER),"ANGLE"));
         assert(strstr(vox_gl_string(GL_EXTENSIONS),"GL_ANGLE_instanced_arrays"));
         assert(!*vox_gl_string(0x93a8));assert(vox_gl_get_error()==GL_NO_ERROR);
-        GLint flags=0;glGetIntegerv(0x821e,&flags);assert(flags&4);
-        pixels_and_bounds(context);initialized_resources();immutable_and_renderbuffer_initialization();if(version==3)pbo_transfer_bounds();shader_pixels(context,version);
+        GLboolean robust=GL_FALSE;glGetBooleanv(GL_CONTEXT_ROBUST_ACCESS_KHR,&robust);
+        assert(robust==GL_TRUE && vox_gl_get_error()==GL_NO_ERROR);
+#ifdef _WIN32
+        /* A host release must be repaired before the next shared GLES call. */
+        assert(vox_wgl.bind(NULL,NULL));assert(!vox_wgl.current());
+        assert(vox_gl_string(GL_VERSION));
+        assert(vox_wgl.current()==((VoxEGLContext*)context)->windows.context);
+#endif
+        native_check_progress("Checking bounded pixels\n");pixels_and_bounds(context);
+        native_check_progress("Checking initialized resources\n");initialized_resources();
+        native_check_progress("Checking immutable storage\n");immutable_and_renderbuffer_initialization();
+        if(version==3){native_check_progress("Checking PBO bounds\n");pbo_transfer_bounds();}
+        native_check_progress("Checking shader pixels\n");shader_pixels(context,version);
         if(version==2)shader_validation_rejects_dynamic_webgl1_loops();
         void *other=vox_egl_create(3);assert(other);GLint small=7;vox_gles_get_Integerv(GL_VIEWPORT,0,NULL,&small);
         assert(vox_egl_make_current(context));assert(vox_gl_get_error()==GL_NO_ERROR);
@@ -147,13 +168,14 @@ int main(void) {
 #ifdef _WIN32
     HANDLE modules=CreateToolhelp32Snapshot(TH32CS_SNAPMODULE,GetCurrentProcessId());
     assert(modules!=INVALID_HANDLE_VALUE);
-    MODULEENTRY32 module={0};module.dwSize=sizeof(module);int mesa=0;
-    assert(Module32First(modules,&module));
+    MODULEENTRY32W module={0};module.dwSize=sizeof(module);int mesa=0,loader=0;
+    assert(Module32FirstW(modules,&module));
     do {
-        assert(!strstr(module.szModule,"ANGLE") && !strstr(module.szModule,"angle"));
-        if(!lstrcmpiA(module.szModule,"libgallium_wgl.dll"))mesa=1;
-    } while(Module32Next(modules,&module));
-    CloseHandle(modules);assert(mesa);
+        assert(!wcsstr(module.szModule,L"ANGLE") && !wcsstr(module.szModule,L"angle"));
+        if(!lstrcmpiW(module.szModule,L"libgallium_wgl.dll"))mesa=1;
+        if(!lstrcmpiW(module.szModule,L"opengl32.dll"))loader=1;
+    } while(Module32NextW(modules,&module));
+    CloseHandle(modules);assert(mesa && loader);
 #else
     FILE *maps=fopen("/proc/self/maps","r");assert(maps);
     char line[4096];int mesa=0;

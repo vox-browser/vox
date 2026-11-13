@@ -15,7 +15,7 @@ foreach ($kind in @('devel-mingw', 'release-mingw')) {
     & 7z x -y "-o$Destination/$kind" $archive | Out-Null
     if ($LASTEXITCODE -ne 0) { throw "Mesa extraction failed: $name" }
 }
-foreach ($dll in @('libEGL.dll', 'libGLESv2.dll', 'libgallium_wgl.dll')) {
+foreach ($dll in @('libEGL.dll', 'libGLESv2.dll', 'libgallium_wgl.dll', 'opengl32.dll')) {
     if (!(Test-Path "$Destination/release-mingw/x64/$dll")) {
         throw "Mesa runtime is missing $dll"
     }

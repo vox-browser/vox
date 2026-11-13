@@ -88,12 +88,12 @@ jobs:
           Description: Verified Mesa EGL/GLES
           Version: 1
           Cflags: -I${prefix}/devel-mingw/include
-          Libs: -L${prefix}/devel-mingw/lib/x64 -lEGL -lGLESv2
+          Libs: -L${prefix}/devel-mingw/lib/x64 -lEGL -lGLESv2 -luser32 -lgdi32
           PC
           export PKG_CONFIG_PATH="$PWD/Build/deps/windows/mesa/lib/pkgconfig:${PKG_CONFIG_PATH:-}"
           Build/windows-webgl/guard.exe 300000 12288 \
             Build/windows-webgl/compile.out Build/windows-webgl/compile.err \
-            "$V_BIN" -new-compiler -b c -memory-limit 10G \
+            "$V_BIN" -new-compiler -b c -memory-limit 10G -subsystem console \
             -o Build/windows-webgl/native-gles.exe tools/native_gles_driver.v \
             | tee Build/windows-webgl/compile.json
           cat Build/windows-webgl/compile.out Build/windows-webgl/compile.err

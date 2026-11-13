@@ -14,7 +14,11 @@
 #endif
 
 typedef struct {
+#ifdef _WIN32
+    VoxWGLContext *windows;
+#else
     EGLDisplay display; EGLContext context;
+#endif
     GLenum errors[8]; unsigned error_count;
     int webgl_version;
     void (GL_APIENTRYP texture_level_parameter)(GLenum,GLint,GLenum,GLint*);
@@ -71,8 +75,8 @@ static void vox_gles_end_call(VoxGLESCall *call) {
 /* The Windows host uses D3D11, which has independent context state. Rebind
  * the selected GLES context if a host operation released it. */
 static void vox_gles_begin_call(void) {
-    if(vox_gles_current && eglGetCurrentContext()!=vox_gles_current->context)
-        eglMakeCurrent(vox_gles_current->display,EGL_NO_SURFACE,EGL_NO_SURFACE,vox_gles_current->context);
+    if(vox_gles_current && vox_wgl.current()!=vox_gles_current->windows->context)
+        vox_wgl.bind(vox_gles_current->windows->dc,vox_gles_current->windows->context);
 }
 #define VOX_GLES_CALL vox_gles_begin_call()
 #endif

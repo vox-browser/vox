@@ -30,7 +30,7 @@ fn main() {
     $if vox_gles_host ? {
         mut args := []&char{}
         for arg in os.args { args << &char(arg.str) }
-        args << unsafe { nil }
+        args << &char(unsafe { nil })
         exit(int(C.vox_native_gles_main(i32(os.args.len), args.data)))
     } $else {
         exit(int(C.vox_native_gles_main()))

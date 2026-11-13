@@ -29,7 +29,7 @@ fn prepare_windows_mesa(root string) !string {
 		}
 		_ := capture([seven, 'x', '-y', '-o' + join(base, kind), archive])!
 	}
-	for dll in ['libEGL.dll', 'libGLESv2.dll', 'libgallium_wgl.dll'] {
+	for dll in ['libEGL.dll', 'libGLESv2.dll', 'libgallium_wgl.dll', 'opengl32.dll'] {
 		if !os.is_file(join(base, 'release-mingw/x64', dll)) {
 			return error('Mesa runtime is missing ${dll}')
 		}
@@ -41,7 +41,7 @@ Name: vox-mesa-egl
 Description: Pinned native Mesa EGL and GLES for Vox on Windows
 Version: ${mesa_version}
 Cflags: -I"\${prefix}/devel-mingw/include"
-Libs: -L"\${prefix}/devel-mingw/lib/x64" -lEGL -lGLESv2
+Libs: -L"\${prefix}/devel-mingw/lib/x64" -lEGL -lGLESv2 -luser32 -lgdi32
 ')!
 	return pc
 }

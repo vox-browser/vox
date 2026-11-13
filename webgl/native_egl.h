@@ -23,11 +23,18 @@
 #define GL_GLEXT_PROTOTYPES 1
 #include <GLES3/gl3.h>
 #include <GLES2/gl2ext.h>
+#ifdef _WIN32
+#include "native_wgl.h"
+#endif
 #include "gles_adapter.h"
 
 typedef struct {
+#ifdef _WIN32
+    VoxWGLContext windows;
+#else
     EGLDisplay display;
     EGLContext context;
+#endif
     int version;
     VoxGLESState state;
     GLuint framebuffer;
@@ -38,10 +45,15 @@ typedef struct {
 VOX_EGL_LINKAGE void* vox_egl_create(int version)
 { VOX_GLES_CALL;
     if (version!=2 && version!=3) return NULL;
+#ifdef _WIN32
+    VoxEGLContext* result=calloc(1,sizeof(VoxEGLContext));
+    if(!result)return NULL;
+    if(!vox_wgl_create(&result->windows)){free(result);return NULL;}
+    result->state.windows=&result->windows;
+#else
 #ifdef __linux__
     EGLDisplay display=eglGetPlatformDisplay(EGL_PLATFORM_SURFACELESS_MESA,EGL_DEFAULT_DISPLAY,NULL);
 #else
-    /* Mesa's Windows EGL implementation selects its WGL platform. */
     EGLDisplay display=eglGetDisplay(EGL_DEFAULT_DISPLAY);
 #endif
     EGLint major, minor;
@@ -53,12 +65,6 @@ VOX_EGL_LINKAGE void* vox_egl_create(int version)
         return NULL;
 #endif
     }
-#ifdef _WIN32
-    /* Old installations may still put ANGLE's identically named DLLs beside
-     * Vox. Fail context creation instead of silently retaining that backend. */
-    const char *vendor=eglQueryString(display,EGL_VENDOR);
-    if(!vendor || !strstr(vendor,"Mesa")) return NULL;
-#endif
     EGLint config_attributes[] = {
         EGL_SURFACE_TYPE, EGL_PBUFFER_BIT, EGL_RENDERABLE_TYPE,
         EGL_OPENGL_ES3_BIT,
@@ -91,21 +97,31 @@ VOX_EGL_LINKAGE void* vox_egl_create(int version)
     }
     result->display = display;
     result->context = context;
-    result->version = version;
     result->state.display=display;result->state.context=context;
+#endif
+    result->version = version;
     result->state.webgl_version=version;
     vox_gles_current=&result->state;
     if (version==3) glEnable(GL_PRIMITIVE_RESTART_FIXED_INDEX);
     GLint gl_major=0,gl_minor=0;glGetIntegerv(GL_MAJOR_VERSION,&gl_major);glGetIntegerv(GL_MINOR_VERSION,&gl_minor);
     if(gl_major>3 || (gl_major==3 && gl_minor>=1))
-        result->state.texture_level_parameter=(void (GL_APIENTRYP)(GLenum,GLint,GLenum,GLint*))eglGetProcAddress("glGetTexLevelParameteriv");
+        result->state.texture_level_parameter=(void (GL_APIENTRYP)(GLenum,GLint,GLenum,GLint*))
+#ifdef _WIN32
+            (void*)vox_wgl.procedure("glGetTexLevelParameteriv");
+#else
+            eglGetProcAddress("glGetTexLevelParameteriv");
+#endif
     return result;
 }
 
 VOX_EGL_LINKAGE int vox_egl_make_current(void* handle)
 { VOX_GLES_CALL;
     VoxEGLContext* context = handle;
+#ifdef _WIN32
+    if(!context || !vox_wgl.bind(context->windows.dc,context->windows.context))return 0;
+#else
     if (!context || !eglMakeCurrent(context->display,EGL_NO_SURFACE,EGL_NO_SURFACE,context->context)) return 0;
+#endif
     vox_gles_current=&context->state;
     return 1;
 }
@@ -115,11 +131,15 @@ VOX_EGL_LINKAGE void vox_egl_destroy(void* handle)
     VoxEGLContext* context = handle;
     if (!context)
         return;
+#ifdef _WIN32
+    vox_wgl_destroy(&context->windows);
+#else
     if (eglGetCurrentContext()==context->context) {
         eglMakeCurrent(context->display,EGL_NO_SURFACE,EGL_NO_SURFACE,EGL_NO_CONTEXT);
         vox_gles_current=NULL;
     }
     eglDestroyContext(context->display, context->context);
+#endif
     if(vox_gles_current==&context->state)vox_gles_current=NULL;
     free(context->state.extensions);
     free(context);
