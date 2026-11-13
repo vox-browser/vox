@@ -881,3 +881,54 @@ its cross-browser mismatch; equal cross-browser counts do not clear it.
 The all-site task remains open. Raw captures, feature witnesses, production
 receipt, commands, repeat comparison and actual exits remain local under
 `docs/performance/vlang-gradients-20261112/`.
+
+
+## Rotated thin border sides (2026-11-13)
+
+`867f88d6f` fixes GitHub's breadcrumb separator: a rotated, one-sided border
+whose 1px thickness fills its 1px-wide box. Its fractional 11.1875px height
+and the full-width side had excluded it from rectangle painting. The fallback
+painted a joined path with different edge coverage. Chromium now records this
+side as a local antialiased rectangle, snapping its dimensions while preserving
+the layout origin and replay transform. `695af8b0d` retains the joined-path
+fallback when multiple sides overlap after dimension snapping. Non-finite and
+empty snapped boxes also retain their fallback.
+
+The new `rotated-collapsed-border` fixture covers all four single-sided cases,
+including a wider control. Two fresh, identity-pinned Brave **157.1.99.56**
+processes match its reference exactly. The production baseline differs at
+**100 pixels** in both native captures; the candidate is **exact** twice.
+Existing site references and tolerances are unchanged.
+
+Final diagnostic executable
+`b588c878778dcc00851c8646c055e23f33aa233e4d3ab719d9c5e39d371160ea`
+reduces GitHub from **231 to 207 differing pixels**, in two fresh captures,
+preserving all 33 rows. HN retains all 30 stories and remains exact, as do
+Wikipedia and Lobsters. vlang.io remains at 3,250; CNN remains at 175,866 and
+still fails native repeatability in the same cropped photograph. All other
+catalog pairs repeat exactly within the cohort.
+
+The seven image/poster controls remain exact twice. Transformed partial borders,
+transformed border offsets and the scale-2 rounded-side control stay exact;
+the existing rounded-partial-border control keeps its seven-pixel failure.
+The scale-2 device-shadow control remains at 92. All 38 final captures, their
+startup smoke check, 39 memory guards and the complete driver exit zero, with
+unchanged implementation/test input hashes. Six focused border tests execute
+and pass with arena poisoning under the 3 GiB runtime guard, including live
+transform replay, fallback preservation, snapped overlap and non-finite inputs.
+Generated C confirms the selected harness calls.
+
+Initial setup failures from a transient build-tool helper error, concurrent
+module preparation and an unrelated in-progress shader syntax error remain
+local alongside successful runs. Prepared modules were reused for the final
+compilations; sources remained in the canonical checkout. After the completed
+cohort, the shared diff executable became unavailable. Its replacement passes
+known exact and one-pixel controls before the independent pinned-Brave checks;
+earlier results retain their original tool identity. No measurements or
+references were replaced to obtain a pass.
+
+Commands, identities, compilation/guard exits, raw PNGs and repeat checks remain
+local under `docs/performance/vlang-gradients-20261112/`. The published bundle
+above establishes the earlier fixes at 231 GitHub pixels; this border correction
+awaits its managed production rebuild. **GitHub's remaining 207 pixels and the
+all-site gate remain open.**
