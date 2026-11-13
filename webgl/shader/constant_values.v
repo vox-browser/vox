@@ -60,7 +60,8 @@ fn (mut p ConstantParser) expression(minimum int, evaluate bool) !ConstantScalar
  } else if word.contains('.') || word.contains('e') || word.contains('E') {
   number:=if word.ends_with('f') || word.ends_with('F') {word[..word.len-1]} else {word}
   left=ConstantScalar{kind:'float',value:strconv.atof64(number)!}
- } else {left=ConstantScalar{kind:if word.ends_with('u') || word.ends_with('U') {'uint'} else {'int'},value:f64(pp_integer(word)!)}}
+ } else if word.starts_with('-') && word.len>1 {left=ConstantScalar{kind:'int',value:-f64(pp_integer(word[1..])!)}}
+ else {left=ConstantScalar{kind:if word.ends_with('u') || word.ends_with('U') {'uint'} else {'int'},value:f64(pp_integer(word)!)}}
  for p.at<p.tokens.len {
   op:=p.tokens[p.at]
   if op=='?' && minimum==0 {
@@ -94,7 +95,7 @@ fn (mut p ConstantParser) expression(minimum int, evaluate bool) !ConstantScalar
     value=if condition {1.0} else {0.0}
    }
   }
-  left=ConstantScalar{kind:kind,value:value}
+  left=ConstantScalar{kind:kind,value:if kind=='uint' {f64(u32(i64(value)))} else {value}}
  }
  return left
 }
@@ -102,7 +103,7 @@ fn constant_function(name string, args []ConstantScalar, evaluate bool) !Constan
  if args.len==0 || args.len>3 {return error('Invalid constant function arity')}
  a:=args[0].value
  if name in ['int','uint','bool','float'] && args.len==1 {
-  value:=if name=='bool' {if a==0 {0.0} else {1.0}} else if name=='float' {a} else {f64(i64(a))}
+  value:=if name=='bool' {if a==0 {0.0} else {1.0}} else if name=='float' {a} else if name=='uint' {f64(u32(i64(a)))} else {f64(i32(i64(a)))}
   return ConstantScalar{kind:name,value:value}
  }
  for arg in args {if arg.kind!=args[0].kind {return error('Constant function types differ')}}
@@ -113,7 +114,7 @@ fn constant_function(name string, args []ConstantScalar, evaluate bool) !Constan
   value=match name {
    'abs' {math.abs(a)} 'sign' {if a<0 {-1.0} else if a>0 {1.0} else {0.0}}
    'ceil' {math.ceil(a)} 'floor' {math.floor(a)} 'trunc' {math.trunc(a)}
-   'round','roundEven' {math.round(a)} 'sqrt' {if a<0 && evaluate {return error('Constant square root domain')};math.sqrt(a)}
+   'round' {math.round(a)} 'roundEven' {base:=math.floor(a);fraction:=a-base;if fraction<0.5 {base} else if fraction>0.5 {base+1.0} else if i64(base)%2==0 {base} else {base+1.0}} 'sqrt' {if a<0 && evaluate {return error('Constant square root domain')};math.sqrt(a)}
    'exp' {math.exp(a)} 'exp2' {math.pow(2.0,a)} 'log' {math.log(a)} 'log2' {math.log2(a)}
    'sin' {math.sin(a)} 'cos' {math.cos(a)} 'tan' {math.tan(a)}
    else {return error('Not a scalar constant function: '+name)}

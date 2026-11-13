@@ -37,8 +37,8 @@ pub:
 	feedback_stride     int
 }
 
-// The first direct-MSL slice deliberately rejects features it cannot lower.
-// Callers must never interpret an unsupported declaration as an empty shader.
+// Lower ESSL with bounded preprocessing, scoped validation and reflection.
+// Unsupported syntax must fail rather than disappear from the shader.
 pub fn translate(source string, stage Stage) !Translation {
  return translate_with_bindings(source,stage,map[string]int{})
 }
@@ -57,8 +57,10 @@ fn translate_impl(source string,stage Stage,bindings map[string]int,validation b
  }
 
 	processed := preprocess(source)!
-	tokens := normalize_constant_expressions(processed.tokens)!
-	validate_essl_language(tokens,processed.version)!
+	constant_tokens := normalize_constant_expressions(processed.tokens)!
+	validate_essl_language(constant_tokens,processed.version)!
+    _=analyze_shader(constant_tokens,processed.version,stage)!
+    tokens := normalize_shader_expressions(constant_tokens,processed.version,stage)!
 	mut body := []string{}
     analysis:=analyze_shader(tokens,processed.version,stage)!
     functions:=analysis.functions
@@ -88,7 +90,7 @@ fn translate_impl(source string,stage Stage,bindings map[string]int,validation b
                 if function.typ!='void' || function.parameters.len!=0 {return error('Expected void main()')}
                 main_count++
             }
-            signature:=function_signature(function,structures)!
+            signature:=function_signature(function,structures,version)!
             parts:=signature.split_into_lines()
             body << parts[0]
             if parts.len>1 {function_setups[function.body]=parts[1..].join(' ')}
@@ -286,7 +288,7 @@ fn translate_impl(source string,stage Stage,bindings map[string]int,validation b
 		if version == 100 && token in ['gl_VertexID', 'gl_InstanceID'] {
 			return error('Vertex IDs require ESSL 300')
 		}
-		body << if token in ['dFdx','dFdy','fwidth'] && at+1 < tokens.len && tokens[at+1]=='(' {'_vox_'+token} else if token=='gl_FragDepthEXT' {'gl_FragDepth'} else if token=='discard' {'discard_fragment()'} else if token in structures && (at == 0 || tokens[at-1] != '.') { '_vox_Struct_'+token } else if token in ['equal','notEqual','lessThan','lessThanEqual','greaterThan','greaterThanEqual','not'] && at+1 < tokens.len && tokens[at+1]=='(' {'_vox_'+token} else if texture_call(token,version) && at+1 < tokens.len && tokens[at+1] == '(' { '_vox_'+token } else if token == 'main' { 'run' } else { lower_token(token) }
+		body << if token in ['dFdx','dFdy','fwidth'] && at+1 < tokens.len && tokens[at+1]=='(' {'_vox_'+token} else if token=='gl_FragDepthEXT' {'gl_FragDepth'} else if token=='discard' {'discard_fragment()'} else if token in structures && (at == 0 || tokens[at-1] != '.') { '_vox_Struct_'+token } else if token in ['equal','notEqual','lessThan','lessThanEqual','greaterThan','greaterThanEqual','not'] && at+1 < tokens.len && tokens[at+1]=='(' {'_vox_'+token} else if texture_call(token,version) && at+1 < tokens.len && tokens[at+1] == '(' { '_vox_'+token } else if token == 'main' { 'run' } else if mapped_builtin(token) && at+1<tokens.len && tokens[at+1]=='(' {'_vox_'+token} else if token=='^^' {'!='} else { lower_token(token) }
 		at++
 	}
 	if depth != 0 || main_count != 1 { return error('Shader must define exactly one void main()') }
@@ -322,6 +324,8 @@ fn translate_impl(source string,stage Stage,bindings map[string]int,validation b
 	if textures.len > 0 { lines << texture_constructor(textures)! }
 	lines << texture_methods(stage,version,tokens,processed.extensions['GL_EXT_shader_texture_lod'])
 	lines << comparison_methods(tokens)
+    lines << builtin_methods(tokens,version)
+    lines << equality_methods(structure_order)
 	lines << derivative_methods(stage,version,processed.extensions,tokens)
 	lines << uniform_members(uniforms)!
 	lines << body.join(' ')
@@ -483,8 +487,9 @@ fn lex(source string) ![]string {
 			`>`, `!`, `?`, `:`, `&`, `|`, `%`, `#`, `^`, `~`] {
 			at++
 			if at < source.len && source[begin..at + 1] in ['++', '--', '+=', '-=', '*=', '/=',
-				'==', '!=', '<=', '>=', '&&', '||', '<<', '>>'] {
+				'==', '!=', '<=', '>=', '&&', '||', '^^', '<<', '>>', '%=', '&=', '|=', '^='] {
 				at++
+                if at<source.len && source[begin..at] in ['<<','>>'] && source[at]==`=` {at++}
 			}
 		} else {
 			return error('Invalid shader byte at ${at}')

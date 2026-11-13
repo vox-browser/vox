@@ -11,6 +11,7 @@ struct ShaderSymbol {
  readonly bool
  uniform bool
  sampler bool
+ block bool
 }
 struct ShaderAnalysis {
  functions []ShaderFunction
@@ -55,7 +56,7 @@ fn shader_global_symbols(tokens []string, functions []ShaderFunction, stage Stag
   if tokens[at]=='uniform' && at+2<tokens.len && tokens[at+2]=='{' {
    end:=matching_token(tokens,at+2)!
    if end+1<tokens.len && identifier(tokens[end+1]) {
-    result << ShaderSymbol{name:tokens[end+1],typ:tokens[at+1],start:end+1,end:tokens.len,readonly:true,uniform:true}
+    result << ShaderSymbol{name:tokens[end+1],typ:tokens[at+1],start:end+1,end:tokens.len,length:if end+4<tokens.len && tokens[end+2]=='[' && tokens[end+4]==']' {int(pp_integer(tokens[end+3]) or {0})} else {0},readonly:true,uniform:true,block:true}
    } else {
     for p in at+3..end-1 {
      if identifier(tokens[p]) && identifier(tokens[p+1]) && tokens[p] !in ['lowp','mediump','highp','layout'] {
@@ -92,7 +93,7 @@ fn shader_global_symbols(tokens []string, functions []ShaderFunction, stage Stag
  return result
 }
 
-fn function_symbols(tokens []string, function ShaderFunction, types map[string]bool) ![]ShaderSymbol {
+fn function_symbols(tokens []string, function ShaderFunction, types map[string]bool, version int) ![]ShaderSymbol {
  mut result:=[]ShaderSymbol{}
  for parameter in function.parameters {result << ShaderSymbol{name:parameter.name,typ:parameter.typ,start:function.body-1,end:function.end,length:parameter.array_length,readonly:parameter.constant}}
  mut ends:=[]int{len:function.end-function.body,init:function.end}
@@ -126,6 +127,16 @@ fn function_symbols(tokens []string, function ShaderFunction, types map[string]b
    name_at=at+1
   }
  }
+ if version==100 {
+  mut protected:=[]ShaderSymbol{}
+  for p in function.body..function.end-4 {
+   if tokens[p]!='for' {continue}
+   header:=matching_token(tokens,p+1)!
+   end:=statement_end(tokens,p,0)!
+   for symbol in result {if symbol.start==p+3 {protected << ShaderSymbol{...symbol,start:header+1,end:end,readonly:true}}}
+  }
+  result << protected
+ }
  return result
 }
 
@@ -150,15 +161,18 @@ fn write_after_access(tokens []string, start int) !bool {
 fn analyze_shader(tokens []string, version int, stage Stage) !ShaderAnalysis {
  functions:=shader_functions(tokens)!
  globals:=shader_global_symbols(tokens,functions,stage)!
+ structures:=shader_structure_types(tokens,version,functions)!
  mut types:=map[string]bool{}
  for p,word in tokens {if word=='struct' && p+1<tokens.len {types[tokens[p+1]]=true}}
  mut uses:=map[int][]string{}
- mut calls:=map[int][]string{}
+ mut calls:=map[int][]int{}
+ mut cycle_calls:=map[int][]int{}
  for function in functions {
   if function.body<0 {continue}
-  locals:=function_symbols(tokens,function,types)!
+  locals:=function_symbols(tokens,function,types,version)!
   mut used:=[]string{}
-  mut called:=[]string{}
+  mut called:=[]int{}
+  mut cycle_called:=[]int{}
   mut loop_indices:=map[int]ShaderSymbol{}
   mut loop_headers:=map[int]int{}
   for p in function.body..function.end {
@@ -169,7 +183,7 @@ fn analyze_shader(tokens []string, version int, stage Stage) !ShaderAnalysis {
   for p in function.body+1..function.end-1 {
    word:=tokens[p]
    if !identifier(word) || tokens[p-1]=='.' {continue}
-   if p+1<tokens.len && tokens[p+1]=='(' {if word !in called {called << word};continue}
+   if p+1<tokens.len && tokens[p+1]=='(' {continue}
    symbol:=resolve_symbol(word,p,locals,globals) or {continue}
    if p==symbol.start {continue}
    local:=locals.any(it.start==symbol.start && it.name==symbol.name)
@@ -187,9 +201,9 @@ fn analyze_shader(tokens []string, version int, stage Stage) !ShaderAnalysis {
     index:=tokens[access+1..end]
     if value:=constant_integer(index,map[string]ConstantScalar{}) {
      if value<0 || (access==p+1 && symbol.length>0 && value>=symbol.length) {return error('Constant shader index out of range')}
-    } else if (symbol.sampler && version==300) || (version==100 && !(stage==.vertex && symbol.uniform && !symbol.sampler)) {
+    } else if (version==300 && (symbol.sampler || (symbol.block && symbol.length>0 && access==p+1))) || (version==100 && !(stage==.vertex && symbol.uniform && !symbol.sampler)) {
      mut permitted:=map[string]bool{}
-     for _,loop in loop_indices {if loop.start<p && p<loop.end {if selected:=resolve_symbol(loop.name,p,locals,globals) {if selected.start==loop.start {permitted[loop.name]=true}}}}
+     for _,loop in loop_indices {if loop.start<p && p<loop.end {if selected:=resolve_symbol(loop.name,p,locals,globals) {if selected.start==loop.start || (selected.start==loop_headers[loop.start]+1 && selected.readonly) {permitted[loop.name]=true}}}}
      if version!=100 || !constant_expression(index,permitted) {return error('Shader index requires a constant expression')}
     }
     access=end+1
@@ -197,19 +211,27 @@ fn analyze_shader(tokens []string, version int, stage Stage) !ShaderAnalysis {
   }
   // Passing a protected lvalue to out/inout is also a write.
   for p in function.body+1..function.end-1 {
-   if tokens[p+1]!='(' {continue}
+   if tokens[p+1]!='(' || !functions.any(it.name==tokens[p]) {continue}
    end:=matching_token(tokens,p+1)!
    mut arguments:=[][]string{}
+   mut argument_offsets:=[]int{}
    mut begin:=p+2
    mut at:=begin
    for at<end {
     if tokens[at] in ['(', '['] {at=matching_token(tokens,at)!}
-    if tokens[at]==',' {arguments << tokens[begin..at].clone();begin=at+1}
+    if tokens[at]==',' {arguments << tokens[begin..at].clone();argument_offsets << begin;begin=at+1}
     at++
    }
-   if begin<end {arguments << tokens[begin..end].clone()}
+   if begin<end {arguments << tokens[begin..end].clone();argument_offsets << begin}
+   mut argument_types:=[]ShaderExpression{}
+   for i,arg in arguments {argument_types << expression_type(arg,argument_offsets[i],locals,globals,functions,structures)!}
+   mut possible:=[]int{}
    for target in functions {
     if target.name!=tokens[p] || target.parameters.len!=arguments.len {continue}
+    mut matches:=true
+    for i,param in target.parameters {if argument_types[i].typ!='' && (argument_types[i].typ!=param.typ || argument_types[i].length!=param.array_length) {matches=false}}
+    if !matches {continue}
+    if target.body>=0 && target.start !in possible {possible << target.start}
     for i,parameter in target.parameters {
      if parameter.direction !in ['out','inout'] || arguments[i].len==0 {continue}
      name:=arguments[i][0]
@@ -217,15 +239,18 @@ fn analyze_shader(tokens []string, version int, stage Stage) !ShaderAnalysis {
      if symbol.readonly || (version==100 && symbol.start in loop_indices) {return error('Protected variable passed to output parameter: '+name)}
     }
    }
+   for candidate in possible {if candidate !in called {called << candidate}}
+   if possible.len==1 && possible[0] !in cycle_called {cycle_called << possible[0]}
   }
   uses[function.start]=used
   calls[function.start]=called
+  cycle_calls[function.start]=cycle_called
  }
  mut validated:=map[int]bool{}
  for function in functions {
   if function.body<0 {continue}
   mut path:=map[int]bool{}
-  validate_call_cycles(function.start,calls,functions,mut path,mut validated,0)!
+  validate_call_cycles(function.start,cycle_calls,functions,mut path,mut validated,0)!
  }
  mut live:=map[int]bool{}
  mut pending:=functions.filter(it.name=='main' && it.body>=0).map(it.start)
@@ -233,23 +258,19 @@ fn analyze_shader(tokens []string, version int, stage Stage) !ShaderAnalysis {
   start:=pending.pop()
   if live[start] {continue}
   live[start]=true
-  for name in calls[start] {for target in functions {if target.name==name && target.body>=0 && !live[target.start] {pending << target.start}}}
+  for target in calls[start] {if !live[target] {pending << target}}
  }
  mut used:=map[string]bool{}
  for start,_ in live {for name in uses[start] {used[name]=true}}
  return ShaderAnalysis{functions:functions,live:live,used:used}
 }
 
-fn validate_call_cycles(start int,calls map[int][]string,functions []ShaderFunction,mut path map[int]bool,mut validated map[int]bool,depth int) ! {
+fn validate_call_cycles(start int,calls map[int][]int,functions []ShaderFunction,mut path map[int]bool,mut validated map[int]bool,depth int) ! {
  if depth>128 {return error('Shader call depth limit exceeded')}
  if path[start] {return error('Recursive shader functions are forbidden')}
  if validated[start] {return}
  path[start]=true
- for name in calls[start] {
-  targets:=functions.filter(it.name==name && it.body>=0)
-  // Overload resolution remains the Metal type checker's responsibility.
-  if targets.len==1 {validate_call_cycles(targets[0].start,calls,functions,mut path,mut validated,depth+1)!}
- }
+ for target in calls[start] {validate_call_cycles(target,calls,functions,mut path,mut validated,depth+1)!}
  path.delete(start)
  validated[start]=true
 }

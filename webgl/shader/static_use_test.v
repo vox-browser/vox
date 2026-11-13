@@ -27,3 +27,11 @@ fn test_function_reachability_and_local_shadowing_prune_inactive_roots() {
  result2:=translate('uniform vec4 tint;vec4 a(){return tint;}vec4 b(){return a();}void main(){gl_Position=b();}',.vertex)!
  assert result2.uniforms.map(it.name)==['tint']
 }
+
+fn test_unselected_overloads_do_not_keep_sampler_bindings_live() {
+ result:=translate('uniform sampler2D unusedImage;vec4 shade(float x){return vec4(x);}vec4 shade(int x){return texture2D(unusedImage,vec2(float(x)));}void main(){gl_Position=shade(1.0);}',.vertex)!
+ assert result.textures.len==0 && result.texture_roots.len==1
+ assert !result.source.contains('unusedImage')
+ assert result.validation_source.contains('unusedImage')
+ translate('uniform float value;float shade(float x){return x;}float shade(out int x){x=1;return float(x);}void main(){gl_Position=vec4(shade(value));}',.vertex)!
+}

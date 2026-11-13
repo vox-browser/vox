@@ -16,7 +16,7 @@ fn test_builtin_limits_and_invariant_position_preserve_original_essl() {
 }
 
 fn test_appendix_a_indices_and_loop_mutation_validate_lexical_bindings() {
- for body in ['for(int i=0;i<2;i++){i=1;}', 'for(int i=0;i<2;i++){++i;}', 'for(int i=0;i<2;i++){change(i);}', 'int n=1;vec4 x=values[n];'] {
+ for body in ['for(int i=0;i<2;i++){i=1;}', 'for(int i=0;i<2;i++){++i;}', 'for(int i=0;i<2;i++){++(i);}', 'for(int i=0;i<2;i++){(i)=1;}', 'for(int i=0;i<2;i++){change(i);}', 'int n=1;vec4 x=values[n];'] {
   translate('precision highp float;uniform vec4 values[2];void change(inout int n){n++;}void main(){'+body+'gl_FragColor=vec4(1.0);}',.fragment) or {continue}
   assert false,body
  }

@@ -223,3 +223,21 @@ fn test_function_input_output_parameters_copy_values_and_support_forward_declara
  fragment:=translate('#version 300 es\nprecision highp float;in vec4 value;out vec4 color;void main(){color=value;}',.fragment)!
  assert C.vox_direct_metal_probe(vertex.source.str,fragment.source.str)==1
 }
+
+fn test_glsl_numeric_bit_and_matrix_builtins_render_exact_gpu_values() {
+ vertex:=translate('#version 300 es\nout vec4 value;void main(){gl_Position=vec4(gl_VertexID==1?3.0:-1.0,gl_VertexID==2?3.0:-1.0,0,1);float integral;float frac=modf(-1.25,integral);int exponent;float mantissa=frexp(8.0,exponent);mat2 m=mat2(2,0,0,4);mat2 inv=inverse(m);bool ok=mod(-1.0,2.0)==1.0&&inversesqrt(4.0)==0.5&&abs(atan(1.0,1.0)-0.785398)<0.00001&&frac==-0.25&&integral==-1.0&&mantissa==0.5&&exponent==4&&determinant(m)==8.0&&inv[0][0]==0.5&&inv[1][1]==0.25&&matrixCompMult(m,inv)[0][0]==1.0&&floatBitsToUint(1.0)==1065353216u&&uintBitsToFloat(1065353216u)==1.0&&packUnorm2x16(vec2(1.0,0.0))==65535u&&all(equal(unpackHalf2x16(packHalf2x16(vec2(0.5,1.0))),vec2(0.5,1.0)));value=ok?vec4(1,0,0,1):vec4(0,1,0,1);}',.vertex)!
+ fragment:=translate('#version 300 es\nprecision highp float;in vec4 value;out vec4 color;void main(){color=value;}',.fragment)!
+ assert C.vox_direct_metal_probe(vertex.source.str,fragment.source.str)==1
+}
+
+fn test_vector_equality_logical_xor_and_array_length_keep_glsl_semantics() {
+ vertex:=translate('#version 300 es\nout vec4 value;void main(){vec2 points[3]=vec2[3](vec2(-1,-1),vec2(3,-1),vec2(-1,3));gl_Position=vec4(points[gl_VertexID],0,1);bool ok=vec2(1.0)==vec2(1.0)&&mat2(1.0)==mat2(1.0);bool precedence=true^^true&&false;bool counts=points.length()==3;value=ok&&precedence&&counts?vec4(1,0,0,1):vec4(0,1,0,1);}',.vertex)!
+ fragment:=translate('#version 300 es\nprecision highp float;in vec4 value;out vec4 color;void main(){color=value;}',.fragment)!
+ assert C.vox_direct_metal_probe(vertex.source.str,fragment.source.str)==1
+}
+
+fn test_array_constructor_function_arguments_preserve_value_semantics() {
+ vertex:=translate('#version 300 es\nout vec4 value;vec2 atVertex(vec2 positions[3],int i){positions[0]+=vec2(0.0);return positions[i];}void main(){gl_Position=vec4(atVertex(vec2[3](vec2(-1,-1),vec2(3,-1),vec2(-1,3)),gl_VertexID),0,1);value=vec4(1,0,0,1);}',.vertex)!
+ fragment:=translate('#version 300 es\nprecision highp float;in vec4 value;out vec4 color;void main(){color=value;}',.fragment)!
+ assert C.vox_direct_metal_probe(vertex.source.str,fragment.source.str)==1
+}

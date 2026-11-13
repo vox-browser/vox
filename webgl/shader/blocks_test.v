@@ -45,3 +45,10 @@ fn test_block_default_layouts_and_per_member_column_major_override() {
  assert result.uniform_blocks[0].byte_size==80
  assert result.uniforms[0].row_major && !result.uniforms[1].row_major
 }
+
+fn test_block_array_indices_are_constant_and_in_bounds() {
+ for expression in ['-1','2','gl_VertexID'] {
+  translate('#version 300 es\nuniform State{vec4 tint;} state[2];void main(){gl_Position=state['+expression+'].tint;}',.vertex) or {continue}
+  assert false,expression
+ }
+}

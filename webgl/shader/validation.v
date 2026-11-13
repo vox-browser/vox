@@ -11,6 +11,7 @@ pub fn validate_source(source string, stage Stage, context_version int) ! {
     tokens:=normalize_constant_expressions(processed.tokens)!
     validate_essl_language(tokens, processed.version)!
     _ = analyze_shader(tokens,processed.version,stage)!
+    _ = normalize_shader_expressions(tokens,processed.version,stage)!
 }
 
 @[export: 'vox_v_validate_essl']
