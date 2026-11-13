@@ -84,6 +84,27 @@ fn shadow_linear_kernel(sigma f32) ([56]f32, int) {
 	return result, 28
 }
 
+// Small Gaussian kernels fit in one pass. Resolving each axis to A8 instead
+// would introduce an intermediate quantization absent from Chromium's filter.
+fn shadow_small_kernel(sigma f32, radius int) ([56]f32, int) {
+	width := 2 * radius + 1
+	mut kernel := [56]f32{}
+	denominator := f32(1) / (f32(2) * sigma * sigma)
+	mut total := f32(0)
+	for x in 0 .. width {
+		x_term := f32(x - radius) * f32(x - radius) * denominator
+		for y in 0 .. width {
+			y_term := f32(y - radius)
+			value := C.expf(-(x_term + y_term * y_term * denominator))
+			kernel[y * width + x] = value
+			total += value
+		}
+	}
+	scale := f32(1) / total
+	for i in 0 .. width * width { kernel[i] *= scale }
+	return kernel, width * width
+}
+
 // Bounded A8 image filtering requires a positive, uniform axis-aligned scale.
 // Round rectangles use a nine-patch; capsule corners use the general mask.
 fn affine_shadow_supported(shape &C.VoxGraphiteShape) bool {
@@ -100,7 +121,7 @@ fn affine_shadow_supported(shape &C.VoxGraphiteShape) bool {
 		return false
 	}
 	sigma := shape.thickness * f32(0.5) * m[0]
-	return sigma >= 1 && sigma <= 135
+	return sigma >= f32(.5) && sigma <= 135
 }
 
 fn capsule_shadow_supported(shape &C.VoxGraphiteShape) bool {
@@ -143,7 +164,7 @@ fn shadow_filter_scale(shape &C.VoxGraphiteShape) ?f32 {
 	scale := f32(math.sqrt(f64(first)))
 	sigma := shape.thickness * f32(.5) * scale
 	if math.is_nan(f64(sigma)) || math.is_inf(f64(sigma), 0)
-		|| sigma < 1 || sigma > 135 { return none }
+		|| sigma < f32(.5) || sigma > 135 { return none }
 	return scale
 }
 
@@ -239,12 +260,18 @@ fn shadow_filter_mask(shape &C.VoxGraphiteShape, width int, height int,
 		steps--
 	}
 	low_sigma := f32(math.min(f64(sigma * (bounds.right - bounds.left) / (original.right - original.left)), 4))
-	pairs, count := shadow_linear_kernel(low_sigma)
 	radius := f32(math.ceil(f64(f32(3) * low_sigma)))
 	blur_width := image.width + int(radius) * 2
 	blur_height := image.height + int(radius) * 2
-	image = shadow_mask_pass(image, blur_width, blur_height, [f32(1), 1, -radius, -radius]!, pairs, count, 0)!
-	image = shadow_mask_pass(image, blur_width, blur_height, [f32(1), 1, 0, 0]!, pairs, count, 1)!
+	if (2 * int(radius) + 1) * (2 * int(radius) + 1) <= 28 {
+		kernel, count := shadow_small_kernel(low_sigma, int(radius))
+		image = shadow_mask_pass(image, blur_width, blur_height,
+			[f32(1), 1, -radius, -radius]!, kernel, count, 2)!
+	} else {
+		pairs, count := shadow_linear_kernel(low_sigma)
+		image = shadow_mask_pass(image, blur_width, blur_height, [f32(1), 1, -radius, -radius]!, pairs, count, 0)!
+		image = shadow_mask_pass(image, blur_width, blur_height, [f32(1), 1, 0, 0]!, pairs, count, 1)!
+	}
 	pixels = ShadowBounds{pixels.left - radius, pixels.top - radius, pixels.right + radius, pixels.bottom + radius}
 	sx := (bounds.right - bounds.left) / (original.right - original.left)
 	sy := (bounds.bottom - bounds.top) / (original.bottom - original.top)
