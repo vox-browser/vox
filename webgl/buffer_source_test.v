@@ -50,6 +50,11 @@ fn test_out_of_bounds_buffer_source_allows_only_an_empty_default_range() {
 }
 
 fn test_webgl_string_helpers_preserve_utf8_and_termination() {
+    assert null_terminated_string([]u8{}) == ''
+    assert null_terminated_string([u8(0), 65]) == ''
+    assert null_terminated_string('Леди'.bytes()) == 'Леди'
+    assert null_terminated_string('Леди\x00ignored'.bytes()) == 'Леди'
+
 	encoded := null_terminated_utf8_string('Леди')
 	assert encoded.last() == 0
 	assert encoded[..encoded.len - 1].bytestr() == 'Леди'

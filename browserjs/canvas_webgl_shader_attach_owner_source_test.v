@@ -5,7 +5,6 @@ module browserjs
 import html
 import webgl
 
-fn C.glGetAttachedShaders(u32, int, &i32, &u32)
 
 fn test_public_shader_attachment_source_gates_and_actual_driver_retained_identities() {
 	$if !darwin {
@@ -55,7 +54,7 @@ fn test_public_shader_attachment_source_gates_and_actual_driver_retained_identit
 		}
 		mut count := 0
 		mut names := [u32(0), 0]!
-		C.glGetAttachedShaders(program_name, 2, &count, &names[0])
+		C.vox_gl_attached_shaders(program_name, 2, &count, &names[0])
 		assert count == 2
 		assert runtime.evaluate_host('(function(){const first=gl.getAttachedShaders(program),second=gl.getAttachedShaders(program);return first!==second&&first.length===2&&first[0]===vertex&&first[1]===fragment&&first[0]===second[0]&&first[1]===second[1]})()')! == 'true'
 		for argument in ['vertex', 'fragment', 'sameVertex', 'sameFragment'] {

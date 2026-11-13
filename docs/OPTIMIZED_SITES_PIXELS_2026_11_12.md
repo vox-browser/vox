@@ -376,3 +376,615 @@ the draws and use the CoreGraphics fallback, which is the next investigation.
 CNN, GitHub and the unavailable account-bearing Reddit workload remain open.
 These are frozen viewport results, with no new live-site, scale-2, interaction,
 scrolling or instruction-performance acceptance claim.
+
+
+## CSS gradient GPU correction
+
+`f76294b85` restores eligible CSS linear and radial gradient draws through the
+V document GPU tile renderer. The native entries previously declined every
+such draw, leaving CoreGraphics to choose different interpolation and rounding.
+The bridge now preserves premultiplied stops, rounded and ancestor clips,
+backdrop pixels, tile gutters and per-tile sample selection.
+
+Production executable
+`7f74bcb7355130ccc4d2cc51e8f02e2e8baf2a902d32f16a2159d0fdc7a77069`
+(receipt `20261112-132807-5c76223f`, feature source hashes verified) reduces the
+unchanged vlang.io archive from **309,681 to 70,357 differing pixels**, in both
+fresh captures. The original Brave reference is unchanged; vlang.io remains
+open. At their existing scale-one viewports, `css-radial-gradient`,
+`css-premultiplied-fades` and `radial-gradient-float-geometry` each match exactly
+in two fresh production captures. Wikipedia and Lobsters also remain exact in
+both repeated captures. Content, readiness, viewport, executable and resource
+identity checks pass.
+
+The focused test executes six real gradient draws through the native pixel
+boundary and GPU renderer, checking exact reference pixels, mixed backgrounds,
+rounded clips, tile seams and browser chrome offsets. Normal ownership and the
+prepared preallocated runtime pass. An initial run using an unprepared
+preallocated compiler crashes in PNG decoding before the draw; that failed run
+is retained. `59d80db2f` adds a focused entrypoint test which calls the real
+browser startup. Its mandatory headless smoke passes, and two diagnostic
+captures reproduce the production vlang.io pixels exactly. These unoptimized
+diagnostic captures supply no production or performance acceptance.
+
+Raw baseline, control and production receipts are local under
+`docs/performance/vlang-gradients-20261112/`. GitHub's unchanged archive still
+has **38,656** differing pixels in both follow-up captures. CNN and the missing
+account-bearing Reddit fixture remain open. No live-site, Retina, scrolling or
+instruction-performance acceptance is claimed.
+
+
+## Promoted shadow raster bounds
+
+`3878a38b1` clips ordinary root-scrolled promoted pictures to the scrollable
+document before choosing their GPU tiles. Brave's compilation-panel picture
+starts at x=0; Vox previously included its shadow at x=-58, incorrectly choosing
+three half-width tile columns and shifting the gradient dither coordinates.
+The focused application test checks both viewport-width and horizontally wider
+documents. It executes successfully under the 3 GiB guard after a 12 GiB
+compilation guard. The initial standalone layout test compilation reaches the
+12 GiB limit and is retained as a failed attempt; it supplies no runtime result.
+
+Production executable
+`296a9fa4b2e908a8e0447010f1cbe635fc62ad076fd7d0c4d5c7895bd6c320bb`
+(receipt `20261112-135812-f195c746`, matching feature source hashes) reduces the
+unchanged vlang.io archive to **28,961 differing pixels in both fresh captures**.
+The three existing gradient controls, Wikipedia and Lobsters each remain exact
+in both production captures. All content, readiness, viewport and identity
+checks pass. Two additional Brave diagnostic captures preserve the original
+reference exactly with and without a process device-scale override; re-enabling
+LayerTree observation exposes the document-clipped panel bounds. Neither probe
+changes the acceptance reference.
+
+A reduced shadow/gradient reproduction improves from 110,185 to 7,478 differing
+pixels, but retains separate shadow and small gradient-rounding differences.
+It is diagnostic, with no relaxed tolerance or full-parity claim. vlang.io's
+remaining panel differences follow its rotated orbit decoration. Further shadow
+and image corrections, CNN, GitHub and the unavailable Reddit workload remain
+open. Raw diagnostics and production receipts are retained locally under
+`docs/performance/vlang-gradients-20261112/`.
+
+
+## Rotated and short rounded shadow corrections
+
+`9ac4bf9ab` keeps rotated elliptical shadows on a bounded V/GPU image-filter
+path, rather than falling back to CoreGraphics. Uniform rotations use the
+transformed source bounds and the corresponding isotropic kernel; shear and
+unequal scales keep their fallback. The new focused test executes both a
+rotated ellipse and its equivalent axis-aligned geometry and requires exact
+RGBA equality, visible outer blur and an empty clipped interior. Existing
+unblurred-shadow and six nine-patch reference hashes also pass. A standalone
+native include correction avoids Cocoa math macros colliding with V's C
+prototypes; the initial compiler failure and successful rerun are retained.
+
+Production executable
+`a484d15d68d391366a0b66099091630984da22ab7ef835d66f4aaed870abc9e8`
+(receipt `20261112-140916-7a45d7d6`, source hashes matched to the committed
+feature) reduces vlang.io to **9,054 differing pixels in both fresh captures**.
+The diagnostic rotated-orbit reference improves from 26,238 to 1,901, in both
+captures; its two independent Brave captures agree exactly. It remains a
+known failing diagnostic, never a relaxed acceptance reference.
+
+`7c97385d9` also filters axis-aligned rounded shadows when the short dimension
+cannot hold a nine-patch. The focused GPU test exercises short and asymmetric
+corners, visible blur, the clipped interior and a pixel beyond the finite
+filter bounds. Its first assertion incorrectly expected a pixel inside the
+blur extent to be empty; the retained failing run is followed by a corrected
+geometric assertion and passing runtime check.
+
+Production executable
+`2f6e12170d69a41b13c09970556d3c3fda455b72a72872e021ba8fb7090f6d3e`
+(receipt `20261112-141300-a1768de5`, matching feature inputs) reduces the same
+vlang.io archive to **6,738 differing pixels in both fresh captures**. For both
+shadow corrections, the three gradient controls, Wikipedia and Lobsters remain
+exact in two fresh production captures each. Content, readiness, viewport,
+reference and executable identity checks pass. Compilation uses the 12 GiB
+guard; focused runtime checks use 3 GiB. The remaining image, text-mask and
+shadow differences keep vlang.io and the all-site gate open. Raw attempts,
+commands and receipts remain local under
+`docs/performance/vlang-gradients-20261112/`.
+
+
+## Gradients inside transparency layers
+
+`eac42f21f` also renders eligible CSS gradients in transparent native groups,
+including background text masks. These groups receive a transparent GPU raster
+and retain their existing native clipping and composition. The focused native
+boundary test requires an opaque gradient to produce identical pixels with
+and without a transparency layer; the six earlier gradient draws remain exact.
+An initial test incorrectly encoded its stop tuple as position/RGBA rather
+than RGBA/position and is retained alongside the corrected passing test.
+
+Production executable
+`8bdf8c3a0f29f8041c325bfc13f6f1ac167e0073773cbb4556bd8fee54fa1925`
+reduces the unchanged vlang.io archive to **6,287 differing pixels in both fresh
+captures**. The existing text-gradient controls improve from 15,068 to 8,686
+and from 5,196 to 4,423 respectively, with both repeated captures agreeing;
+they remain failures. The compositor-gradient control retains its existing
+one-pixel failure. The three ordinary gradient controls, Wikipedia and Lobsters
+remain exact in both fresh production captures. Matching feature inputs,
+reference/resource hashes, complete document identity, viewport and normal
+exits are recorded under `docs/performance/vlang-gradients-20261112/`.
+
+
+## PNG decode, GPU filtering and rounded clips
+
+`283a01512` restores the bounded CPU decode-size/mipmap path and the GPU's
+trilinear image sampler for complete, static, untagged PNGs. It reuses the
+existing Q15 CPU bilinear sampler exposed by `a59948164`, premultiplies alpha
+before resizing, preserves natural-image coordinate arithmetic, and keeps
+resource URL, document generation and compositor scope in decode identities.
+Video posters use the same path only when their immutable paint snapshot still
+belongs to the current document and resource. Live frames retain their path.
+Tagged images, animation, transforms, source crops, opacity and unsupported
+capture scales keep the existing renderer.
+
+`2e749d85f` carries rectangular and rounded overflow clips into the same GPU
+image draw. The new 600×160 diagnostic has two exactly agreeing Brave
+157.1.99.56 references, captured before the correction with scripts disabled.
+It improves from **2,143 differing pixels to zero**, twice. The focused GPU
+tests require unchanged Brave logo pixels, with and without rounded clipping,
+and preserve every pixel outside a rectangular crop. Cache/ownership tests,
+alpha and odd-size CPU mip tests, the existing rounded-image/shadow checks,
+and all eleven UI2 preparation tests pass under their required guards.
+
+Production executable
+`303a768fe0f94a3b22c129a1cc3f471e0c7dad8c932527fed35d79831efe5511`
+(receipt `20261112-154007-d64f9163`) contains both corrections. Exact compiled
+source hashes match the V/native implementations, CPU sampler and prepared GG
+image shader inputs. With the unchanged archive, reference, viewport and
+script policy, **vlang.io improves from 6,287 to 4,144 differing pixels in both
+fresh production captures**. Image resource reuse, compositor reuse, the
+first-use image/video-poster mip control and the rounded PNG diagnostic are
+all exact twice. Wikipedia, Lobsters and the three ordinary gradient controls
+remain exact twice. GitHub improves from 38,654 to **38,404**, twice, with all
+33 row identities preserved. No reference or tolerance was changed.
+
+Additional diagnostic controls retain their existing crop, ICC and scrolling
+failures; the rounded transformed-image control improves from 21,076 to 571,
+twice, and translated minification stays exact. These results do not establish
+full image-cache or color-profile parity. vlang.io still differs in its tagged
+Mastodon image, JPEG icon, text mask and orbit decoration. CNN and the missing
+Reddit archive remain open as described above.
+
+Every attempt remains local under `docs/performance/vlang-gradients-20261112/`.
+This includes the corrected crop-test assertion, an early source-guard rejection
+when the native header changed during input collection, and two diagnostic
+commands with misspelled fixture names. The local capture driver now validates
+all fixture/reference paths before launching; the final complete production
+command and every browser/guard exit pass. Completed job binaries and generated
+C are removed from `Build/`; raw commands, identities, PNGs and receipts are
+retained locally.
+
+## Tagged PNG color conversion
+
+`7defc6a8c` converts supported legacy PNG gamma/chromaticity metadata into an
+8-bit sRGB texture before final filtering, then regenerates its GPU mip levels.
+The unchanged Mastodon image on vlang.io becomes exact: its 24×24 crop improves
+from 475 differing pixels to zero. The unchanged whole-page archive improves
+from 4,144 to **3,669 differing pixels**, agreeing in two fresh diagnostic
+captures. Its JPEG icon, text mask and decorative shadows still differ.
+
+The new legacy-gamma PNG diagnostic is exact twice against two independently
+agreeing Brave references. Focused profile parsing, GPU conversion, odd-sized
+GPU mips, rounded clipping and cache/ownership checks pass. The converted upload
+also matches the independently captured former renderer's bytes exactly;
+alpha and source bytes remain unchanged. Wikipedia, Lobsters, ordinary
+PNG/gradient controls and image/poster resource reuse remain exact twice.
+GitHub remains at 38,404 differing pixels with all 33 row identities preserved.
+
+These are **diagnostic results**, from an unoptimized browser built with the
+current compiler and its matching libraries. Production validation is pending:
+the shared completed bundle predates this correction. Later managed build
+attempts failed with a mismatched shared compiler/library installation, then
+with compiler-manifest verification; they did not replace the completed bundle.
+The fail-fast compiler probe in `2cd7046ea` rejects the mismatched installation
+without falling back to an older compiler. All attempts and their actual exits
+remain local under `docs/performance/vlang-gradients-20261112/`.
+
+## Retained glyph coverage in background text masks
+
+`6520e253a` routes eligible horizontal Chromium-policy mask glyphs through the
+same V/CPU glyph rasterizer as ordinary document text, preserving black paint
+for its color-dependent coverage adjustment. The native bitmap boundary keeps
+the original paint clip while aligning the mask image to device pixels. Emoji,
+unsupported faces and other declined runs retain the existing fallback.
+
+Diagnostic executable
+`dbc14bc451668364c65b1d962c7622f086f44cb415b528cb4a3134b73d1157d2`
+reduces vlang.io from 3,669 to **3,250 differing pixels**, twice. The existing
+retained-gradient control improves from 8,686 to 3,752 differing pixels, all
+with maximum channel error one. The new fractional-position/overflow diagnostic
+improves from 13,044 to 7,725, also with maximum channel error one. Its two Brave
+reference captures agree exactly. The existing scope control improves from
+4,423 to 2,939; its separate shadow/SVG errors remain, including maximum error
+14 outside the text mask. The compositor-gradient control retains one error.
+These remaining differences are failures under the unchanged zero-tolerance
+gate, including the single-channel rounding differences.
+
+Wikipedia and Lobsters remain exact in two fresh diagnostic captures each.
+GitHub remains at 38,404 with all 33 row identities preserved. The compiler,
+mandatory non-windowed startup check, document readiness/viewport/content audits,
+reference/input identity checks and every browser exit pass. Compilation peaks
+at about 6.2 GiB under the 12 GiB guard; captures use 3 GiB guards. Initial
+pointer-view and exported-C declaration compile errors are retained alongside
+the corrected passing build. Production validation remains pending on the
+managed build; these results do not validate the older completed bundle.
+
+## Production receipt isolation and next GitHub investigation
+
+The new failure receipts from `f66e7fad8` identified two different compilers'
+inputs in the same receipt: 311 V build-tool sources followed by 393 browser
+worker sources. `8950af241` removes the ambient manifest destination only from
+the V tool bootstrap environment. The supervised compiler still receives its
+explicit manifest destination and keeps the existing source-verification gate.
+The focused environment test passes, and a real compiler probe leaves both
+pre-existing receipt files byte-for-byte unchanged. The managed attempt
+`20261112-194619-964c3f1f` passes source verification and reaches sealed C
+compilation with the tagged-PNG and text-mask corrections included. Production
+pixel validation is still pending until that attempt publishes successfully.
+An idle upgrade worker holding and waiting for its own inherited build lock
+was stopped with its launch wrappers; no active compiler or memory guard was
+terminated. The identities and lock evidence remain local.
+
+Two additional Brave captures of the unchanged GitHub archive agree exactly
+with the original reference. Read-only geometry audits locate a 0.75px header
+height discrepancy (Vox 69.75px, Brave 69px), shifting the directory below it.
+The fork/star links' containing list items are 28.75px in Vox versus 28px in
+Brave. Reduced button/grid/counter cases currently match Brave at 28px, so
+these findings do not yet justify an engine change or establish a GitHub fix.
+Two standalone layout-probe compilations hit the 12 GiB memory guard; the
+selected root-harness probe compiles and runs successfully within its guards.
+All raw attempts, successful captures and failed compilations are retained.
+
+## Production confirmation after PNG and text-mask corrections
+
+Production executable
+`081a75f66fbda26d5df97732bce84bfdb4664ea73257ee19ec3f9f381b474829`
+(receipt `20261112-202158-a889a56c`, C backend, literal `-prod`, single C unit)
+contains `7defc6a8c` and `6520e253a`. Exact compiled source hashes match the
+profile parser, GPU conversion, CPU image sampler, native image boundary,
+prepared GG shader inputs and retained text-mask implementation. This
+supersedes the pending-production qualification for those two fixes above.
+
+| Catalog workload | Differing pixels, each of two fresh production captures |
+| --- | ---: |
+| Hacker News, original six-response archive, scale 2 | **0** |
+| Lobsters, registered guest archive, scale 1 | **0** |
+| Wikipedia portal archive, scripts disabled, scale 1 | **0** |
+| vlang.io archive, scripts disabled, scale 1 | **3,250** |
+| GitHub archived hydrated DOM, all 33 row identities preserved | **38,404** |
+| CNN registered archive | **175,866** |
+
+HN retains all 30 story identities. Its PNGs match the unchanged Brave reference
+from the initial audit. CNN's two native PNGs now match each other exactly;
+this does not clear its cross-browser failure or the earlier source/replay
+mismatch. Concurrent changes are included in this production build, so the CNN
+change is not attributed to either rendering correction. Reddit remains
+unverified because its historical fixture is missing; no workload was
+substituted. These checks establish frozen-viewport results, not live-site,
+whole-document or interactive parity.
+
+The legacy-gamma and rounded PNG diagnostics, first-use image/poster mip,
+image-resource/compositor reuse and all three ordinary gradient controls remain
+exact twice. Text-mask diagnostics retain 7,725 and 3,752 differences; the scope
+control retains 2,939 and the compositor-gradient control retains one. Their
+nonzero results remain failures with the original references and tolerance.
+
+All 36 saved captures have normal browser/3 GiB guard exits, completed document
+readiness and unchanged executable, native-library, fixture and reference
+identities. A separate verifier rechecks every saved PNG, feature witness and
+exit receipt and exits zero. FuseCode interrupted delivery of the original
+capture driver's final CLI exit, so that outer exit is recorded as unknown;
+it is not inferred from the completed observations. Earlier interrupted and
+preflight-failed attempts remain alongside the completed results locally under
+`docs/performance/vlang-gradients-20261112/`. Completed job directories, generated
+C, diagnostic executables and guard files are removed from `Build/` after their
+evidence is retained. **The all-site zero-error gate remains open.**
+
+## Root baselines in reused flex measurements
+
+`08cbf34dd` fixes the largest remaining GitHub layout discrepancy. A column-flex
+ancestor caused measured flex geometry to be promoted into final layout. The
+cache restored descendants but cleared the flex root's published baselines.
+Synthesizing them again through the descendants produced a different result,
+expanding the header from Brave's 69px to 69.75px and shifting the directory.
+The cache now owns and restores both horizontal and vertical baseline sets;
+root offsets and percentage bases remain owned by the current caller.
+
+Diagnostic executable
+`1b19003f1fe81cf29758d86821cb5eb37e7498fd9778f004634609b8dc5a9324`
+reduces the unchanged GitHub archive from **38,404 to 1,083 differing pixels**
+in two fresh captures, with every one of the 33 row identities preserved.
+Wikipedia and Lobsters remain exact twice; vlang.io remains at 3,250 twice.
+The startup smoke check, all capture/content/identity checks and the complete
+comparison driver exit zero. This is an unoptimized diagnostic executable;
+production validation awaits the managed post-commit rebuild.
+
+The new focused test confirms that row and column flex cache hits restore the
+measured baselines instead of stale caller values, and verifies borrowed line
+storage to establish that the cache was actually used. The existing committed
+geometry test now compares baselines with its measured producer and uncached
+oracle. These tests, the cache-miss checks and the external-height dependency
+checks pass with arena poisoning under a 3 GiB runtime guard. Compilation uses
+the 12 GiB guard and peaks near 6.2 GiB. The selected root test harness includes
+the layout implementation files and focused tests explicitly; generated test
+calls were checked so an empty selector cannot supply a false pass.
+
+Retained diagnostics narrow the trigger from the whole page to its column-flex
+ancestor chain. Individually disabling committed flex measurement reuse or
+unused-height matching restores the 69px header; disabling grid or inline reuse
+does not. Moving the grid baseline reset and retaining descendant line boxes
+both leave GitHub at 38,404 twice, so those candidates were reverted. Initial
+standalone test builds reached the memory guard; an incomplete module selection
+was stopped after a compiler sample identified unknown-type diagnostics, and
+an empty test selector was corrected before executing the final tests. All
+attempts remain local under `docs/performance/vlang-gradients-20261112/`.
+The original references and zero-error gate are unchanged; GitHub still fails
+at 1,083 pixels and the all-site task remains open.
+
+
+## Production flex confirmation and table percentage precision (2026-11-13)
+
+Production executable
+`86516f7f2eb9c44f78173c2a4f7acd12834c9d31bb24aa1a7954ec0dca640234`
+(receipt `20261112-220611-a7923f72`) contains the root-baseline cache correction
+`08cbf34dd`, verified against its exact compiled source manifest. Two fresh
+captures confirm GitHub at **1,083 differing pixels**, preserving all 33 row
+identities. HN, Wikipedia and Lobsters remain exact twice; vlang.io remains
+at 3,250 twice. HN retains all 30 stories. All ten capture guards and the
+complete driver exit zero. This clears the preceding pending-production
+qualification for the flex correction only.
+
+`7077ea544` fixes a separate percentage-column rounding discrepancy. Brave's
+fixed GitHub table gives its 40% column 258.390625px from a 646px grid. Vox
+rounded this percentage to the nearest 1/64px, yielding 258.40625px and shifting
+commit text across glyph raster phases. Chromium policy now truncates the
+percentage guess before adding box-model offsets, for both fixed and auto
+tables. LibWeb policy keeps its existing rounding. A reduced Brave probe
+independently confirms both modes. Fresh full-page Brave geometry captures
+still match the original GitHub reference exactly.
+
+Diagnostic executable
+`a4da33d01cd1e0166e90b681921ac347a5f9b63f7823036fd4476107cd98b8d8`
+reduces GitHub from **1,083 to 303 differing pixels** in each of two fresh
+captures. All table text now agrees; remaining differences lie above the
+table. All 33 rows retain their identities. HN, Wikipedia and Lobsters remain
+exact twice, vlang.io remains at 3,250 twice, and CNN remains at 175,866 twice.
+The startup smoke check, all 12 capture/content/identity checks, their 13
+memory guards and the complete driver exit zero. The focused regression test
+executes both table modes under both rendering policies; it and the existing
+surplus-distribution test pass with arena poisoning under the 3 GiB guard.
+Generated C confirms both selected test calls execute. Guarded compilations
+peak near 6.3 GiB and finish normally. Production validation of the table fix
+awaits its managed rebuild; the diagnostic result does not validate an older
+production executable.
+
+The initial auto-only attempt leaves GitHub at 1,083 pixels and is retained
+locally alongside the corrected fixed-layout attempt, reduced Brave geometry,
+commands, raw PNGs, audits, identities and actual exits under
+`docs/performance/vlang-gradients-20261112/`. References and zero tolerances
+are unchanged. CNN's earlier source/replay failure, vlang.io, Reddit and the
+all-site gate remain open. No live-site or performance claim follows from
+these frozen viewport checks.
+
+
+## Fractional image clips and outer shadows (2026-11-13)
+
+Three further corrections keep floating-point geometry through Chromium replay:
+
+- `cd5261e7d` preserves replaced-image and video corner radii after border
+  insets. The integer corners in the portable paint result had changed the
+  GitHub avatar's 4.5px horizontal radius to 4px. A separate instrumented
+  capture confirms that the PNG renderer executes; platform fallback is not
+  responsible for this discrepancy. LibWeb's portable paint result is unchanged.
+- `3b1e1fd03` selects tile multisampling when an image clip needs path rendering.
+  The decision queries the renderer's analytic-clip capability, including its
+  circular-radius tolerance. The isolated unshadowed 9×20 ellipse now matches
+  Brave without an unrelated SVG path enabling multisampling.
+- `ffdd1cf49` preserves outer-shadow offsets, blur, spread and radii when the
+  device/layout conversion is one or the document density is one. These cases
+  previously entered integer shadow resolution. LibWeb, inset shadows and the
+  explicitly requested legacy snapping policy retain their existing paths.
+
+| Diagnostic executable SHA-256 | GitHub differing pixels, each of two captures |
+| --- | ---: |
+| `eb715e6d70f23f542807b10192c00769171e34f11eaf9f9afe6b3899d1685531` — fractional image corners | **287**, down from 303 |
+| `e49ec5b12bd44d14704a38cee04910f7295950c96f221c7cab7fe14d6d32aab9` — image-clip multisampling | **287**; this page's relevant tile already used multisampling |
+| `ee72bd3da0790d6dab29f980a26579d11f39b1eb0ecaa1c31a953deaf98f5a7a` — fractional outer shadows | **231**, maximum channel error 16 |
+
+Each cohort retains all 33 GitHub rows and all 30 HN stories. HN, Wikipedia and
+Lobsters remain exact twice in every cohort; vlang.io stays at 3,250 and CNN at
+175,866. Seven existing image/poster controls remain exact twice: rounded,
+colored and fractional-JPEG avatars, first-use mip, image-resource reuse,
+rounded scaled PNG and rounded video poster. Each complete driver exits zero,
+including its startup smoke check, 30 captures, content audits and identity
+checks. These are diagnostic executables, not production validation.
+
+The isolated avatar probe initially differs at 139 pixels across its three
+images. Fractional radii reduce this to 82; correct tile multisampling reduces
+it to 76; fractional shadows reduce it to **15**, all with maximum channel error
+**1**, confined to the shadowed image. Its unrounded and unshadowed elliptical
+images are exact. The control with an additional SVG path agrees with the
+ordinary probe after the multisampling fix. Neither residual result passes the
+zero-error gate.
+
+The scale-2 device-shadow control improves from **12,966 to 92 differing pixels**
+in both corrected captures per executable. Its original reference is
+1600×1200 for an 800×600 CSS-pixel viewport. An initial control run incorrectly
+used a 1600×1200 CSS viewport at scale 1 and differed at 41,790 pixels; that
+attempt is retained and excluded from the before/after claim. Both corrected
+arms use the original reference, scale 2 and the same viewport. The remaining
+92 pixels, maximum error 6, still fail. Eight other shadow controls retain their
+baseline results: box-shadow blur 3,301; opaque shadow 26; inset shadow 16,588;
+padding-background shadows 38,584; fractional underlay 0; fixed fractional-color
+shadow 0; overlapping shadow boxes 1,941; rounded inset shadow 15,550.
+
+All thirteen selected focused test functions execute and pass with arena
+poisoning under the 3 GiB guard: five image/video clip cases, four tile cases
+and four layout/shadow cases. Generated C records their actual harness calls.
+The shadow regression exercises Chromium and LibWeb at densities 1 and 2;
+existing opaque cutout and translucent-border tests also pass. Compilations
+finish under the 12 GiB guards, peaking below 6.4 GiB. The eleven UI2 preparation
+tests pass. Failed adapter compilations and control preflight/scale attempts
+remain with the successful commands, raw PNGs, audits, input hashes and actual
+exits locally under `docs/performance/vlang-gradients-20261112/`.
+
+The latest completed production executable remains `86516f7f…`, predating the
+table and these three corrections. Managed post-commit rebuilds are requested;
+no duplicate production build is queued for this audit. Production validation
+remains pending. References and tolerances are unchanged, Reddit's original
+fixture is still missing, and CNN's source/replay mismatch remains open. No
+live-site, whole-document or performance claim is made. **The all-site gate
+remains open.**
+
+
+### Native repeatability follow-up
+
+A separate final check of decoded RGBA pixels confirms exact native repeats
+for GitHub, HN, Wikipedia, Lobsters and vlang.io in all three new cohorts.
+CNN remains unstable: the fractional-corner cohort's two native captures differ
+at **1,030 pixels** (maximum channel error 37), the multisampling cohort repeats
+exactly, and the fractional-shadow cohort differs at **1,007 pixels** (maximum
+error 22). Both failures occupy the same 104×15 region beginning at (460, 753),
+inside a photograph clipped by the viewport. Equal cross-browser counts of
+175,866 did not establish native repeatability. These observations reopen the
+native-stability qualification after the earlier production checkpoint; they
+are not attributed to a particular correction. The original image resources
+and both failed repeat comparisons remain local with the other evidence.
+
+
+## Production confirmation of fractional geometry corrections (2026-11-13)
+
+The completed production executable
+`5fb3eb909ae426b7cfcb1b0e8a67ab494177d13b0a0f693d5ae5d1e737561576`
+(receipt `20261113-011934-947f0697`, C backend, literal `-prod`, single C unit)
+contains the table precision, fractional image-corner, image-clip multisampling
+and fractional outer-shadow corrections. Exact compiled source hashes match
+these implementations and the preceding rendering fixes, including the prepared
+GG image, layer and surface inputs. This supersedes their pending-production
+qualification above.
+
+Two fresh production captures of each catalog archive confirm GitHub at
+**231 differing pixels**, HN/Wikipedia/Lobsters at **0**, vlang.io at **3,250**
+and CNN at **175,866**. All 33 GitHub rows and all 30 HN stories are preserved.
+The seven image/poster controls remain exact twice, and the corrected scale-2
+device-shadow control remains at **92 pixels** twice. All 28 capture guards,
+content/viewport/identity checks and the complete driver exit zero. All
+references and zero-error tolerances are unchanged.
+
+Decoded native pixels repeat exactly for GitHub, HN, Wikipedia, Lobsters and
+vlang.io. CNN's two native images differ at **1,555 pixels**, maximum channel
+error **127**, again confined to the same 104×15 photographic region beginning
+at (460, 753). Thus production confirms the CNN stability failure as well as
+its cross-browser mismatch; equal cross-browser counts do not clear it.
+The all-site task remains open. Raw captures, feature witnesses, production
+receipt, commands, repeat comparison and actual exits remain local under
+`docs/performance/vlang-gradients-20261112/`.
+
+
+## Rotated thin border sides (2026-11-13)
+
+`867f88d6f` fixes GitHub's breadcrumb separator: a rotated, one-sided border
+whose 1px thickness fills its 1px-wide box. Its fractional 11.1875px height
+and the full-width side had excluded it from rectangle painting. The fallback
+painted a joined path with different edge coverage. Chromium now records this
+side as a local antialiased rectangle, snapping its dimensions while preserving
+the layout origin and replay transform. `695af8b0d` retains the joined-path
+fallback when multiple sides overlap after dimension snapping. Non-finite and
+empty snapped boxes also retain their fallback.
+
+The new `rotated-collapsed-border` fixture covers thin right, left and bottom
+sides plus a wider control. Two fresh, identity-pinned Brave **157.1.99.56**
+processes match its reference exactly. The production baseline differs at
+**100 pixels** in both native captures; the candidate is **exact** twice.
+Existing site references and tolerances are unchanged.
+
+Final diagnostic executable
+`b588c878778dcc00851c8646c055e23f33aa233e4d3ab719d9c5e39d371160ea`
+reduces GitHub from **231 to 207 differing pixels**, in two fresh captures,
+preserving all 33 rows. HN retains all 30 stories and remains exact, as do
+Wikipedia and Lobsters. vlang.io remains at 3,250; CNN remains at 175,866 and
+still fails native repeatability in the same cropped photograph. All other
+catalog pairs repeat exactly within the cohort.
+
+The seven image/poster controls remain exact twice. Transformed partial borders,
+transformed border offsets and the scale-2 rounded-side control stay exact;
+the existing rounded-partial-border control keeps its seven-pixel failure.
+The scale-2 device-shadow control remains at 92. All 38 final captures, their
+startup smoke check, 39 memory guards and the complete driver exit zero, with
+unchanged implementation/test input hashes. Six focused border tests execute
+and pass with arena poisoning under the 3 GiB runtime guard, including live
+transform replay, fallback preservation, snapped overlap and non-finite inputs.
+Generated C confirms the selected harness calls.
+
+Initial setup failures from a transient build-tool helper error, concurrent
+module preparation and an unrelated in-progress shader syntax error remain
+local alongside successful runs. Prepared modules were reused for the final
+compilations; sources remained in the canonical checkout. After the completed
+cohort, the shared diff executable became unavailable. Its replacement passes
+known exact and one-pixel controls before the independent pinned-Brave checks;
+earlier results retain their original tool identity. No measurements or
+references were replaced to obtain a pass.
+
+Commands, identities, compilation/guard exits, raw PNGs and repeat checks remain
+local under `docs/performance/vlang-gradients-20261112/`. The published bundle
+above establishes the earlier fixes at 231 GitHub pixels; this border correction
+awaits its managed production rebuild. **GitHub's remaining 207 pixels and the
+all-site gate remain open.**
+
+
+## Small rounded-shadow kernels, 2026-11-13
+
+Commit `a2427d085` handles device-space Gaussian sigmas from 0.5 through 1
+in the V/GG rounded-shadow filter instead of falling back to the approximate
+Core Graphics shadow. Kernels that fit in 28 taps use a single two-dimensional
+pass, matching Chromium's filter. Two separate A8 passes add an intermediate
+rounding step: the first attempt retained four exterior pixels at one channel
+level in the sigma-0.5 case. Removing the nine-patch did not fix them; the
+single-pass kernel does. The existing larger-kernel path remains unchanged.
+
+The new `small-blur-shadows` fixture covers GitHub's two low-opacity green-button
+shadows, sigma-0.5 and sigma-0.75 rounded rectangles, and a sigma-0.5 ellipse.
+Two fresh, identity-pinned Brave 157.1.99.56 captures agree exactly. Both fresh
+Vox diagnostic captures match that new reference at **all 53,760 RGBA pixels**.
+The focused unit test independently checks the exterior bands at both sample
+settings and verifies that smaller unsupported kernels leave their target
+untouched. All six relevant shadow test files execute successfully with arena
+poisoning under 3 GiB runtime guards: the new cases and the previous capsule,
+nine-patch, short-rectangle, rotated-ellipse and unblurred-shadow tests. Existing
+oracles and tolerances are unchanged.
+
+The final diagnostic executable is
+`1a0939c8bbd7175d36a096df9eefec7ad280117fcaf5feed7340f0b1cc630a39`.
+It reduces the unchanged GitHub archive from **207 to 49 differing pixels**
+in two fresh captures, with the complete 33-row audit and the document at its
+reference origin. HN keeps all 30 stories and remains exact, as do Wikipedia
+and Lobsters. vlang.io remains at **3,250**, CNN at **175,866**. CNN's two
+successfully loaded images differ at **1,558 pixels**; its stability and
+source/replay gates remain open. All other completed site pairs repeat exactly.
+The seven image/poster controls and the rotated-border control remain exact
+in both captures; the scale-2 device-shadow control retains its **92-pixel** gap.
+
+Failed observations are retained separately. One preliminary GitHub capture
+scrolled its body to y=-115 and differed by 348,134 pixels, while the next was
+at the origin with 49 differences. The local driver now rejects that position
+drift. The first larger run stopped when CNN navigated to an unavailable
+article rather than its archived homepage; its driver exit is 1, despite a
+browser/guard exit of 0. The later CNN/control run has the required URL/title,
+complete audits, all browser/guard exits 0 and driver exit 0. The initial
+unit-test failure, duplicate-file compile failure and unsuccessful half-precision
+shader experiment are retained too. No failed attempt was turned into a pass.
+
+The original six-box diagnostic scene changes from 2,020 to 626 differences;
+all remaining differences belong to its unchanged unsupported sigma-0.25 box
+or existing sigma-1 control. The new four-box fixture omits those controls;
+it does not replace an existing reference or supply credit for their gaps.
+
+Commands, input/executable/library identities, raw PNGs, failed attempts,
+repeat checks and actual compile/browser/guard/driver exits remain local under
+`docs/performance/vlang-gradients-20261112/`. The latest completed production
+bundle is still the previously checked `5fb3eb90…` executable. The managed
+post-commit hook requests the new production build; no additional manual build
+was queued. **The 49-pixel GitHub result is diagnostic validation, and the
+all-site gate remains open.** No live-site or performance claim is added.

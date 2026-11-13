@@ -1,59 +1,97 @@
 # Google Search compatibility — 2026-11-12
 
-The `google.com` → type `utc time` → Enter failure remains open. A fresh
-private Brave window returns results on this machine. Do not attribute Vox's
-challenge to the shared network based on the earlier automated comparison.
+The fixed browser returned the UTC clock card and search results in three
+consecutive fresh-profile runs of `google.com` → type `utc time` → Enter.
+Input went through native mouse/key events, with the default JavaScriptCore
+backend, unchanged browser identity, empty profiles, and proxy overrides removed.
+Each process exited cleanly after its native screenshot. The longer run kept the
+results page open until a 55-second capture timer, completing after 61.8 seconds.
 
-## Verified controls
+Fresh private Brave also returned results on this network with
+`navigator.webdriver=false`. The earlier blanket network explanation was wrong.
 
-- A native Brave incognito window returned 11 results. An isolated, fresh
-  private CDP context also returned results with `navigator.webdriver=false`.
-  Chromium's `--remote-debugging-port=0` enabled `webdriver` in the earlier
-  failing control; that control did not represent the user's private window.
-- Vox and Brave used the same observed public IP. Brave also returned results
-  with Vox's User-Agent, platform string, and individual missing-plugin or
-  missing-outer-dimension controls.
-- For an identical fresh check page, submitting the browsers' resulting
-  cookies through the same HTTP client returned a redirect to the challenge
-  for Vox and search-result HTML for Brave. These are short-lived, isolated
-  diagnostic sessions, not an acceptance test or a proposed cookie workaround.
-- A fresh nonpersistent native WebKit view, using a Safari User-Agent, returned
-  seven result headings and exited successfully. Changing Vox's identity alone
-  in the completed controls did not resolve the failure.
+## Changes
 
-## Completed fix
+- `64ac33a2a`, `d0545216f`, `fd73e6172`: Navigator accessors and platform function
+  source formatting use native callbacks. Native WebIDL exceptions use captured
+  engine constructors, preserving their classes and identity without JavaScript
+  factory frames. Invalid function-source receivers throw at one native boundary.
+  Accessor names retain `get userAgent`, while JSC native source and stack frames
+  use `userAgent`. Source snapshots ignore later author changes to function names;
+  author function source remains intact. `navigator.languages` reuses its frozen
+  array until the language preferences change.
+- `02fd51fd6`: the initial iframe realm exists on the first `contentWindow` read.
+  Previously that read returned a placeholder: reading `Function` created the
+  realm, subsequent `contentWindow` and `document.defaultView` reads returned a
+  different object, and `eval` was a wrapped function. The focused identity and
+  native-function checks now pass.
+- `5ca8ef30b`: runtime and binding records survive the temporary frame arena in
+  which an iframe initializes. The regression fails before the fix and passes
+  after releasing that arena and calling the retained native bindings.
+- `6f3c529cf`, `7b1c5eff9`: registered Range identities survive their creation
+  arena. Registry entries pointing into borrowed/inert document payloads retire
+  with the final storage lease. Shared adoption keeps valid ranges receiving
+  mutations until the destination retires. These fixes address storage crashes
+  exposed while loading and closing real result pages.
+- `a1ead31ea`: a missing object-literal brace in the PerformanceObserver bootstrap
+  prevented page-script initialization after the upstream port. Its source failed
+  syntax validation before the repair; the rendered startup regression is now
+  pixel exact.
+- `138b82146` anchors native headers to their source directories.
+  `f4591cd1c` updates wheel diagnostics for the ported precise-wheel legacy units
+  (42 pixels yields −126 legacy units). The signed-browser smoke path passes.
 
-Commit `9d074571b` preserves platform-function source identity across same-agent
-realms. A child realm's borrowed `Function.prototype.toString` now recognizes
-platform functions installed in its parent, while preserving author source.
-The registry uses weak keys in a DOM-free agent realm.
+The earlier same-agent source fix `9d074571b` alone did not resolve search.
+Google's server decision is opaque: these changes correct observed API and
+lifetime defects, and the live runs validate the combined browsing workflow.
 
-The two focused tests and native smoke check passed. SVG image-source switching,
-paint-server ID collisions, and gradient-stop reordering remained pixel exact
-using the existing pixel-diff executable. This fix **does not establish that
-Google Search works**.
+## Validation
 
-## Limits and remaining work
+The three acceptance runs used a pinned C build with production preallocation
+(`-prealloc -gc none`, JSC, `vox_production`, C optimization `-O0`), launched as a
+fresh native process each time. This is functional verification, not a production
+performance comparison. Executable SHA-256:
+`773ccd5eadd15833b2c59ad9232c343c09acbeccc626eb4830fc088508ee7b11`.
 
-The check produces a result and Vox follows its redirect, but Google still
-rejects the result. UA, clock, readiness and bridge-source controls have not
-isolated a sufficient fix. An eager initial-iframe realm candidate was reverted;
-its focused identity tests passed, but the child-document suite timed out and
-Google still rejected its result.
+| Fresh profile | Result headings | Browser exit | Elapsed |
+| --- | ---: | ---: | ---: |
+| 1 | 8 | 0 | 25.3 s |
+| 2 | 8 | 0 | 22.6 s |
+| 3 | 10 | 0 | 61.8 s |
 
-A minimal JavaScriptCore harness initially appeared accepted after Brave had
-used the same diagnostic session. A fresh first-use control was rejected;
-the earlier observation cannot establish that the harness passes the check.
-Modified/instrumented check programs likewise cannot establish live correctness.
+The screenshots show the UTC clock card. All three stayed at `/search`, and their
+executable identities remained unchanged. No cookies or proof values were copied
+from another browser. Earlier failing, challenged, and crashing attempts remain
+in the local evidence; they are not included as successful final runs.
 
-The experimental V8 diagnostic exposed a separate cross-context security-token
-restriction. Its temporary library changes were reverted; they are not a
-production fix. The final pure Safari identity diagnostic failed to compile
-because concurrent native rounded-image declarations disagreed about source
-pointer constness. Those rendering changes were left untouched.
+Focused function-source, native Navigator/exception, range-lifetime,
+initial-frame, and runtime-arena checks pass. The native startup smoke passes.
+SVG image-source switching, paint-server ID collisions, gradient-stop reordering,
+and the PerformanceObserver startup reftest have zero differing pixels.
 
-Local, ignored evidence is under
-`docs/benchmark-results/google-private-window-20261112/`. It retains sanitized
-summaries, selected screenshots, guard outcomes and compilation errors. Private
-profiles, cookies, check programs, temporary executables and probe sources were
-removed. No live-search acceptance claim is made.
+The broader wheel-routing suite still reports four fractional-scroll assertions:
+3.75 is expected where 4 is observed, including combined element/viewport scroll
+checks. Its native legacy-delta assertions now match the ported units. These
+remaining scroll assertions are outside the Google Search fix; no scrolling
+performance or broad-suite acceptance claim is made.
+
+The managed shared production bundle was subsequently verified as well. Its
+receipt is `20261112-132807-5c76223f`, C backend with literal V `-prod` in one C
+unit. Executable SHA-256:
+`7f74bcb7355130ccc4d2cc51e8f02e2e8baf2a902d32f16a2159d0fdc7a77069`.
+A fresh native process repeated the homepage typing flow, returned 11 result
+headings, reached `complete` readiness, rendered the UTC card, and exited 0 after
+24.0 seconds. Its executable identity stayed unchanged. The receipt's parsed
+source hashes match the bridge and lifetime fixes; the sealed generated C also
+contains the runtime binding allocation scope and corrected smoke assertions.
+The receipt precedes later comments and unrelated edits in `main.v`.
+
+All fixes are committed on canonical `master`; their post-commit hooks request
+the coalesced production build. The successfully validated bundle is already at
+`Build/v/Vox.app`.
+
+Sanitized local evidence is under
+`docs/benchmark-results/google-search-resolved-20261112/`. It retains outcomes,
+build/source identities, failure summaries, focused checks, and selected native
+screenshots. Private profiles, cookies, check programs, temporary executables,
+and probe sources are removed after validation.

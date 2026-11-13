@@ -1132,6 +1132,14 @@ the original stops and use the same Skia path as linear gradients.
 The adjacent `diagnostic/css-radial-rounded-border.html` and its unchanged Brave
 PNG keep an outer rounded-border case open: eight pixels differ by one level.
 
+`diagnostic/rotated-ellipse-shadow` retains a rotated, clipped orbit over layered
+CSS gradients. Two fresh Brave 157.1.99.56 captures agree exactly at 1024×768,
+scale 1. The bounded GPU ellipse blur reduces its difference from 26,238 to
+1,901 pixels; it remains a diagnostic with an unchanged exact reference.
+`ggshape/rotated_shadow_darwin_test.v` executes equivalent rotated and
+axis-aligned ellipse draws and requires exact RGBA equality, visible blur and
+an empty clipped interior. Sheared and anisotropic kernels retain the fallback.
+
 CSS blur uses Skia's premultiplied sRGB image-filter path in the Chromium
 profile. A supported single gradient retains its drawing commands through
 the filter input instead of quantizing to a bitmap before blur.
@@ -1239,3 +1247,20 @@ CSS `clip` edges in CSS-coordinate layout. At 800×600 CSS pixels and scale 2,
 the device-clip source browser matches Brave at zero pixels. The
 [device-clip receipt](../../../docs/parity/chatgpt-retina-device-clips-20261103.json)
 retains the unchanged reference, control failure, native identities and checks.
+
+`diagnostic/rounded-scaled-png.html` isolates scaled PNGs inside rounded
+overflow clips, including vlang.io's fractional Patreon rectangle. The plain
+scaled image is a control. Two fresh Brave 157.1.99.56 captures agree exactly
+at 600×160, scale 1, with scripts disabled. The V/GPU clip correction reduces
+the diagnostic from 2,143 differing pixels to zero in two fresh captures;
+the focused GPU test also requires exact logo pixels and preserves pixels
+outside a rectangular crop. This diagnostic does not establish full-site parity.
+
+`diagnostic/legacy-gamma-scaled-png.html` retains the source PNG's `gAMA` and
+canonical sRGB `cHRM` metadata while drawing at 24px and 20px. Two fresh Brave
+157.1.99.56 captures agree exactly at 600×300, scale 1, with scripts disabled.
+The focused GPU test requires exact pixels at both sizes, including mipmap
+generation after the upload's color conversion. A separate conversion gold
+matches an independently pinned previous-renderer readback, preserves alpha
+and leaves its input unchanged. The cache test runs with poisoned scratch
+memory to verify that temporary decode storage cannot escape into the upload.

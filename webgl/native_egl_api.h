@@ -9,6 +9,10 @@ unsigned vox_gl_client_wait_sync(void* sync, unsigned flags, unsigned long long 
 void vox_gl_wait_sync(void* sync, unsigned flags, unsigned long long timeout);
 void vox_gl_delete_sync(void* sync);
 int vox_gl_get_sync_parameter(void* sync, unsigned pname);
+int vox_gl_is_sync(void* sync);
+void vox_gl_attached_shaders(unsigned program, int capacity, int* count, unsigned* shaders);
+int vox_gl_query_target_parameter(unsigned target, unsigned pname);
+int vox_gl_framebuffer_attachment_parameter(unsigned target, unsigned attachment, unsigned pname);
 unsigned vox_gl_get_error(void);
 int vox_gl_is_object(int kind, unsigned handle);
 char const* vox_gl_string(unsigned name);

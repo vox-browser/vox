@@ -5,7 +5,9 @@ fn test_object_context_identity_buffer_compatibility_and_deletion() {
 	mut second := WebGLRenderingContext.new(.webgl2, WebGLContextAttributes{}, [])
 	mut buffer := first.create_buffer()
 	assert buffer.object.handle(first.identity(), first.context_generation())! > 0
-	buffer.object.handle(second.identity(), second.context_generation()) or {
+	if _ := buffer.object.handle(second.identity(), second.context_generation()) {
+		assert false, 'Invalid object handle must fail'
+	} else {
 		assert err.msg() == 'GL_INVALID_OPERATION'
 	}
 	assert buffer.is_compatible_with(array_buffer)
@@ -40,7 +42,9 @@ fn test_object_generation_invalidates_pre_loss_wrappers() {
 	context.reset_context_state_after_loss()
 	assert context.context_generation() == 1
 	assert old_buffer.object.invalidated_for_context(context.context_generation())
-	old_buffer.object.handle(context.identity(), context.context_generation()) or {
+	if _ := old_buffer.object.handle(context.identity(), context.context_generation()) {
+		assert false, 'Invalid object handle must fail'
+	} else {
 		assert err.msg() == 'GL_INVALID_OPERATION'
 	}
 	assert !old_buffer.object.handle_for_query(context.identity(), context.context_generation())!.has_value
@@ -82,9 +86,11 @@ fn test_sync_deletion_uses_generation_aware_sync_handle() {
 	assert uint(sync.source_handle_) == 1
 	assert sync.native_handle_ != unsafe { nil }
 	context.reset_context_state_after_loss()
-	sync.sync_handle(context.identity(), context.context_generation()) or {
+	if _ := sync.sync_handle(context.identity(), context.context_generation()) {
+		assert false, 'Invalid object handle must fail'
+	} else {
 		assert err.msg() == 'GL_INVALID_OPERATION'
 	}
-	context.delete_sync(mut sync)
+	context.delete_sync(sync)
 	assert context.get_error() == no_error
 }

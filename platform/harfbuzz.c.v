@@ -5,47 +5,23 @@
 module platform
 
 import math
+import vunicode
 import os
 
-// Browser shaping must match current HarfBuzz behavior (for example AAT 'trak'
-// tracking in fonts without GPOS), so link Homebrew's library by path on
-// macOS, ahead of any other -L path. Its static archive lets the linker
-// omit unused GLib integration, while keeping all reachable shaping backends.
-// Keep an explicit dynamic-link control for build comparisons.
+// Keep OpenType/AAT/CoreText shaping at the pinned version. The Homebrew
+// archive also enables Graphite2 and pulls its native VM into every browser.
+// tools/build_harfbuzz.py prepares this archive without that optional backend;
+// font selection, Unicode handling and glyph-run policy remain in V.
 $if macos {
-	$if arm64 {
-		#flag -I/opt/homebrew/opt/harfbuzz/include/harfbuzz
-		$if vox_dynamic_harfbuzz ? {
-			#flag /opt/homebrew/opt/harfbuzz/lib/libharfbuzz.0.dylib
-		} $else {
-			#flag /opt/homebrew/opt/harfbuzz/lib/libharfbuzz.a
-			// The archive's FreeType backend only needs its symbols bound: shaping
-			// uses OpenType/CoreText font functions.
-			#flag /opt/homebrew/opt/freetype/lib/libfreetype.6.dylib
-			#flag /opt/homebrew/opt/graphite2/lib/libgraphite2.3.dylib
-		}
-	} $else {
-		#flag -I/usr/local/opt/harfbuzz/include/harfbuzz
-		$if vox_dynamic_harfbuzz ? {
-			#flag /usr/local/opt/harfbuzz/lib/libharfbuzz.0.dylib
-		} $else {
-			#flag /usr/local/opt/harfbuzz/lib/libharfbuzz.a
-			#flag /usr/local/opt/freetype/lib/libfreetype.6.dylib
-			#flag /usr/local/opt/graphite2/lib/libgraphite2.3.dylib
-		}
-	}
-	$if !vox_dynamic_harfbuzz ? {
-		#flag -framework CoreFoundation
-		#flag -framework CoreGraphics
-		#flag -framework CoreText
-	}
+	#flag -I@VMODROOT/Build/deps/harfbuzz-15.1.0/include/harfbuzz
+	#flag @VMODROOT/Build/deps/harfbuzz-15.1.0/lib/libharfbuzz.a
+	#flag -framework CoreFoundation
+	#flag -framework CoreGraphics
+	#flag -framework CoreText
+	#flag -lc++
 } $else {
 	#pkgconfig harfbuzz
 }
-
-#flag darwin -licucore
-
-#flag linux -licuuc
 
 #include <hb.h>
 
@@ -58,8 +34,6 @@ $if !windows {
 $if macos {
 	#include "harfbuzz_coretext_macos.h"
 }
-
-#include <unicode/uchar.h>
 
 struct C.hb_glyph_info_t {
 	codepoint u32
@@ -155,11 +129,8 @@ fn C.hb_face_reference_table(face voidptr, tag u32) voidptr
 
 fn C.hb_blob_get_length(blob voidptr) u32
 
-fn C.u_hasBinaryProperty(code_point i32, property int) int
-
 const harfbuzz_direction_ltr = 4
 const harfbuzz_direction_rtl = 5
-const icu_default_ignorable_code_point_property = 5
 
 __global (
 	harfbuzz_document_blobs     = map[string]voidptr{}
@@ -844,7 +815,7 @@ fn code_point_at_utf16_offset(text string, utf16_units []u16, is_ascii bool, off
 }
 
 fn code_point_is_default_ignorable(code_point u32) bool {
-	return C.u_hasBinaryProperty(i32(code_point), icu_default_ignorable_code_point_property) != 0
+	return vunicode.property_named(code_point, 'Default_Ignorable_Code_Point')
 }
 
 // Smart punctuation retains the Latin script chosen from an ASCII letter.
@@ -907,7 +878,9 @@ fn shape_text_with_harfbuzz(initial_x f32, letter_spacing f32, word_spacing f32,
 		C.hb_buffer_set_script(buffer, C.hb_script_from_string(c'Latn', 4))
 		C.hb_buffer_set_direction(buffer, if font.font_rendering_policy == .chromium && text_type == .rtl {
 			harfbuzz_direction_rtl
-		} else { harfbuzz_direction_ltr })
+		} else {
+			harfbuzz_direction_ltr
+		})
 	} else {
 		if text_type == .ltr {
 			C.hb_buffer_set_direction(buffer, harfbuzz_direction_ltr)

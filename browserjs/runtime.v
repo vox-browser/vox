@@ -138,6 +138,10 @@ fn Runtime.create_with_global(engine Engine, worker_global bool) &Runtime {
 }
 
 fn Runtime.create_with_global_kind(engine Engine, global_kind int) &Runtime {
+	// Realms and their native callback records outlive the parser/task/frame
+	// that first needs them, including same-agent WindowProxy lookups.
+	persistent := platform.enter_persistent()
+	defer { platform.leave_persistent(persistent) }
 	mut agent_vm := libjs.VM.create()
 	realm_context := libjs.create_simple_execution_context(mut agent_vm)
 	mut context := unsafe { nil }

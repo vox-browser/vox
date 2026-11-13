@@ -22,6 +22,8 @@ pub:
     image_arrayed bool
     image_depth bool
     image_scalar_type u32
+    semantic_type u32
+    row_major bool
 }
 
 @[heap]
@@ -39,27 +41,9 @@ pub fn ShaderProgram.compile(owner &DrawingBuffer, vertex string, fragment strin
 }
 
 pub fn ShaderProgram.compile_with_bindings(owner &DrawingBuffer, vertex string, fragment string, context_version int, attribute_bindings map[string]int) !&ShaderProgram {
-	if owner.handle == unsafe { nil } { return error('Metal drawing buffer is closed') }
-	if context_version !in [2, 3] { return error('Invalid Metal WebGL context version') }
-	if vertex.len > 0x7fffffff || fragment.len > 0x7fffffff { return error('Shader source too large') }
-	mut log := []u8{len: 16384}
-	mut bindings := []C.VoxMetalAttributeBinding{cap:attribute_bindings.len}
-	for name,location in attribute_bindings {
-		if location < 0 || location >= 16 || name.starts_with('gl_') { return error('Invalid Metal attribute binding') }
-		bindings << C.VoxMetalAttributeBinding{name:name.str,location:u32(location)}
-	}
-	handle := C.vox_metal_program_create_bound(owner.handle, vertex.str, i32(vertex.len), fragment.str,
-		i32(fragment.len), i32(context_version), bindings.data, u64(bindings.len), &char(log.data), u64(log.len))
-	if handle == unsafe { nil } {
-		message := unsafe { cstring_to_vstring(&char(log.data)).clone() }
-		return error(if message.len > 0 { message } else { 'Metal shader allocation failed' })
-	}
-	mut program := &ShaderProgram{handle: handle, owner: owner}
-	program.initialize_uniforms() or {
-		program.close()
-		return err
-	}
-	return program
+ if owner.handle==unsafe{nil} {return error('Metal drawing buffer is closed')}
+ v,f:=translate_sources(vertex,fragment,context_version,attribute_bindings)!
+ return ShaderProgram.from_translation(owner,v,f)
 }
 
 pub fn (program &ShaderProgram) source(stage ShaderStage) !string {
@@ -95,6 +79,7 @@ pub fn (program &ShaderProgram) resources() ![]ShaderResource {
             image_arrayed:value.image_arrayed!=0
             image_depth:value.image_depth!=0
             image_scalar_type:value.image_scalar_type
+            row_major:value.row_major!=0,semantic_type:value.semantic_type
 			byte_size: value.byte_size
 		}
 	}
