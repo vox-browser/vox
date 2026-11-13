@@ -8414,6 +8414,7 @@ fn main() {
 		exit(1)
 	}
 	link_translated_modules()
+	apply_preferred_languages()
 	requestserver.install_native_font_fetch_host() or {
 		eprintln('Ladybird V: failed to initialize the font RequestServer transport: ${err.msg()}')
 		exit(1)
