@@ -183,6 +183,42 @@ def patch_brotli_compressor(source):
         '// Vox always uses the V encoder, including large inputs.\n')
 
 
+def brotli_callback_shim() -> str:
+    # V's net/http/response.v now streams Brotli through
+    # brotli.decompress_with_callback (32 KiB native chunks with an early-stop
+    # callback for output limits). x/compress/brotli only exposes the whole-input
+    # decompress(), so stage a small same-module shim with the native signature.
+    # It decodes purely in V, then replays 32 KiB chunks through the caller's
+    # callback, preserving the native early-stop contract (return delivered
+    # without an error when the callback stops early; response.v checks its
+    # sink.over_limit flag afterwards). Anonymous fn type avoids colliding with
+    # a future upstream DecompressCallback alias.
+    return '''module brotli
+
+// decompress_with_callback decodes the whole stream in V and delivers it in
+// native-sized chunks. Returning a short count from cb stops delivery without
+// raising an error, matching the system decoder contract used by net/http.
+pub fn decompress_with_callback(data []u8, cb fn (chunk []u8, userdata voidptr) int, userdata voidptr) !int {
+\tdecoded := decompress(data)!
+\tmut delivered := 0
+\tmut offset := 0
+\tfor offset < decoded.len {
+\t\tmut end := offset + 32 * 1024
+\t\tif end > decoded.len {
+\t\t\tend = decoded.len
+\t\t}
+\t\tchunk := decoded[offset..end]
+\t\tif cb(chunk, userdata) != chunk.len {
+\t\t\treturn delivered
+\t\t}
+\t\tdelivered += chunk.len
+\t\toffset = end
+\t}
+\treturn delivered
+}
+'''
+
+
 def stage_brotli(vlib, modules):
     original = vlib / 'x/compress/brotli'
     source = (original / 'compressor.v').read_text()
@@ -198,9 +234,12 @@ def stage_brotli(vlib, modules):
             if output.is_symlink() or output.is_file():
                 output.unlink()
             output.symlink_to(entry, target_is_directory=entry.is_dir())
+    shim = brotli_callback_shim()
+    write_if_changed(target / 'vox_brotli_callback.v', shim)
     return {
         'source_brotli_compressor_sha256': hashlib.sha256(source.encode()).hexdigest(),
         'staged_brotli_compressor_sha256': hashlib.sha256(patched.encode()).hexdigest(),
+        'staged_brotli_callback_sha256': hashlib.sha256(shim.encode()).hexdigest(),
     }
 
 
@@ -321,7 +360,7 @@ def remove_obsolete_entries(target, original):
     names = {entry.name for entry in original.iterdir()} | {
         "vox_h2_wake.h", "vox_receive_buffer.h", "vox_receive_buffer.v",
         "vox_receive_buffer_test.v", "vox_tls_sessions.h", "vox_tls_sessions.v",
-        "vox_native_state.h"}
+        "vox_native_state.h", "vox_brotli_callback.v"}
     for entry in target.iterdir():
         if entry.name not in names:
             if entry.is_symlink() or entry.is_file():

@@ -1,0 +1,43 @@
+name: Flatpak metadata
+
+# Validates the Flathub scaffolding (metainfo + manifest) without building:
+# a full `flatpak-builder` run needs the SDK download and the multi-hour
+# V/Skia/Vox toolchain, so it stays a documented manual step until the
+# manifest is proven. See packaging/flatpak/README.md.
+on:
+  push:
+    branches: [master]
+    paths:
+      - packaging/flatpak/**
+      - .github/workflows/flatpak.yml
+  pull_request:
+    paths:
+      - packaging/flatpak/**
+      - .github/workflows/flatpak.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: flatpak-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          fetch-depth: 1
+          persist-credentials: false
+
+      - name: Validate AppStream metainfo
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends appstream
+          appstreamcli validate --pedantic packaging/flatpak/org.vox_browser.vox.metainfo.xml
+
+      - name: Check Flatpak manifest
+        run: python3 tools/check_flatpak_manifest.py

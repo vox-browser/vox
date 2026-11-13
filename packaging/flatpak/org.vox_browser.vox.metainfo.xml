@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop-application">
+  <id>org.vox_browser.vox</id>
+  <launchable type="desktop-id">org.vox_browser.vox.desktop</launchable>
+  <provides>
+    <binary>vox</binary>
+  </provides>
+  <name>Vox</name>
+  <summary>A new browser engine written 100% in V + UI2</summary>
+  <description>
+    <p>
+      Vox is a browser engine written 100% in V, with its interface in UI2.
+      It targets fast startup, low memory use, and exact web rendering.
+    </p>
+    <p>
+      This Flathub package tracks Vox releases. Windows and macOS builds,
+      plus portable Linux archives, are published on GitHub Releases.
+    </p>
+  </description>
+  <!-- Matches the LICENSE file at the repository root. -->
+  <project_license>GPL-2.0-or-later</project_license>
+  <metadata_license>CC0-1.0</metadata_license>
+  <developer id="org.vox_browser">
+    <name>vox-browser</name>
+  </developer>
+  <url type="homepage">https://vox-browser.org</url>
+  <url type="bugtracker">https://github.com/vox-browser/vox/issues</url>
+  <releases>
+    <release version="0.1" date="2026-11-12">
+      <description>
+        <p>Initial Flathub scaffolding release.</p>
+      </description>
+    </release>
+  </releases>
+  <!-- Follow-ups before Flathub submission: screenshots and the OARS
+       content rating questionnaire. -->
+</component>
