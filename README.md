@@ -31,20 +31,20 @@ Install Apple's command line tools (`xcode-select --install`) and
 [Homebrew](https://brew.sh/), then:
 
 ```sh
-brew install cmake pkgconf freetype openssl \
-    ffmpeg libavif curl
+brew install freetype openssl ffmpeg libavif curl
 eval "$(sh tools/run_v_tool.sh dev_build_env)"
 v .
 ./vox2 https://example.com
 ```
 
 The first setup downloads checksum-verified HarfBuzz 15.1.0 sources and builds
-its OpenType/CoreText library with CMake, without the optional Graphite2 backend.
+its OpenType/CoreText library directly with Apple's Clang, without the optional
+Graphite2 backend. CMake and pkgconf are not required on macOS.
 The result is cached under `Build/deps/harfbuzz-15.1.0` and reused by development
 and production builds. FreeType and HarfBuzz remain native dependencies;
 HarfBuzz is supplied by setup rather than Homebrew. Graphite2 is not required.
 
-For an existing macOS checkout, install CMake (`brew install cmake`) and rerun
+For an existing macOS checkout, rerun
 `eval "$(sh tools/run_v_tool.sh dev_build_env)"` before the next `v .` build.
 
 Font selection, Unicode processing and glyph-run policy use V code with bundled

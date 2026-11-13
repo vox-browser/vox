@@ -19,12 +19,10 @@ VERSION = '15.1.0'
 SHA256 = '5c057929413b8664592fea67edea5c2c47b4ffb0bf5f4accb5164bc6acc69d94'
 URL = f'https://codeload.github.com/harfbuzz/harfbuzz/tar.gz/refs/tags/{VERSION}'
 ROOT = Path(__file__).resolve().parents[1]
-OPTIONS = ['-DBUILD_SHARED_LIBS=OFF', '-DCMAKE_BUILD_TYPE=Release',
-           '-DCMAKE_POSITION_INDEPENDENT_CODE=ON', '-DHB_HAVE_CORETEXT=ON',
-           *['-DHB_HAVE_' + name + '=OFF' for name in
-             ['GRAPHITE2', 'FREETYPE', 'GLIB', 'ICU', 'CAIRO', 'GOBJECT', 'INTROSPECTION']],
-           *['-DHB_BUILD_' + name + '=OFF' for name in
-             ['UTILS', 'SUBSET', 'RASTER', 'VECTOR', 'GPU', 'GPU_DEMO']]]
+OPTIONS = ['-std=c++11', '-O3', '-DNDEBUG', '-fPIC', '-DHAVE_CORETEXT=1',
+           *['-DHAVE_' + name + '=1' for name in
+             ['PTHREAD', 'ATEXIT', 'MPROTECT', 'SYSCONF', 'GETPAGESIZE', 'MMAP',
+              'ISATTY', 'UNISTD_H', 'SYS_MMAN_H', 'STDBOOL_H']]]
 
 
 def digest(path):
@@ -75,15 +73,17 @@ def build():
     root.mkdir(parents=True, exist_ok=True)
     with (root / 'build.lock').open('a') as lock:
         fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
-        cmake = shutil.which('cmake')
+        archiver = shutil.which('ar')
         compiler = shutil.which('clang++')
-        if not cmake or not compiler:
-            raise RuntimeError('HarfBuzz preparation requires CMake and Clang')
+        if not archiver or not compiler:
+            raise RuntimeError("HarfBuzz preparation requires Apple's Clang and ar")
         identity = dict(version=VERSION, url=URL, sha256=SHA256, options=OPTIONS,
                         builder=digest(Path(__file__)), architecture=platform.machine(),
                         deployment_target=os.environ.get('MACOSX_DEPLOYMENT_TARGET', '15.0'),
                         compiler=subprocess.check_output([compiler, '--version'], text=True),
-                        cmake=subprocess.check_output([cmake, '--version'], text=True))
+                        archiver=archiver,
+                        sdk=subprocess.check_output(['xcrun', '--show-sdk-path'], text=True).strip(),
+                        sdk_version=subprocess.check_output(['xcrun', '--show-sdk-version'], text=True).strip())
         if cached(root, identity):
             return root
         archive = root / 'source.tar.gz'
@@ -98,18 +98,28 @@ def build():
         with tempfile.TemporaryDirectory(prefix='compile-', dir=root) as temporary:
             work = Path(temporary)
             extract_sources(archive, work)
-            output = work / 'build'
-            command = [cmake, '-S', str(work / f'harfbuzz-{VERSION}'), '-B', str(output),
-                       f'-DCMAKE_CXX_COMPILER={compiler}',
-                       '-DCMAKE_OSX_DEPLOYMENT_TARGET=' + identity['deployment_target'],
-                       '-DCMAKE_INSTALL_PREFIX=' + str(root), *OPTIONS]
-            for args in [command, [cmake, '--build', str(output), '--parallel', '2'],
-                         [cmake, '--install', str(output)]]:
-                subprocess.run(args, check=True, stdout=sys.stderr, stderr=sys.stderr)
+            source = work / f'harfbuzz-{VERSION}/src'
+            features = (source / 'hb-features.h.in').read_text()
+            features = re.sub(r'^#mesondefine (\w+)$',
+                              lambda m: '#define HB_HAS_CORETEXT 1' if m[1] == 'HB_HAS_CORETEXT'
+                              else '/* #undef ' + m[1] + ' */', features, flags=re.M)
+            (source / 'hb-features.h').write_text(features)
+            obj = work / 'harfbuzz.o'
+            command = [compiler, *OPTIONS,
+                       '-mmacosx-version-min=' + identity['deployment_target'],
+                       '-isysroot', identity['sdk'], '-c', str(source / 'harfbuzz.cc'), '-o', str(obj)]
+            subprocess.run(command, check=True, stdout=sys.stderr, stderr=sys.stderr)
+            archive_command = [archiver, 'rcs', str(work / 'libharfbuzz.a'), str(obj)]
+            subprocess.run(archive_command, check=True, stdout=sys.stderr, stderr=sys.stderr)
+            (root / 'lib').mkdir(exist_ok=True)
+            (root / 'include/harfbuzz').mkdir(parents=True, exist_ok=True)
+            (work / 'libharfbuzz.a').replace(root / 'lib/libharfbuzz.a')
+            for header in source.glob('*.h'):
+                shutil.copyfile(header, root / 'include/harfbuzz' / header.name)
             shutil.copyfile(work / f'harfbuzz-{VERSION}/COPYING', root / 'LICENSE')
         outputs = [root / 'lib/libharfbuzz.a', root / 'LICENSE',
                    *sorted((root / 'include/harfbuzz').glob('*.h'))]
-        receipt = dict(inputs=identity, configure_command=command,
+        receipt = dict(inputs=identity, compile_command=command, archive_command=archive_command,
                        outputs={str(p.relative_to(root)): digest(p) for p in outputs})
         (root / 'build.json').write_text(json.dumps(receipt, indent=2) + '\n')
         return root

@@ -52,6 +52,7 @@ The command arguments are unchanged from their Python counterparts:
 | `prepare_ui2`, `prepare_http_compat`, `prepare_font_runtime`, `prepare_linux_modules`, `prepare_v_match_scope` | V compiler path |
 | `prepare_prealloc_runtime` | V compiler path, optional runtime cache path |
 | `build_harfbuzz` | Optional `--check-executable PATH` |
+| `macos_dependency_prefix` | `libavif` or `ffmpeg`; find installed Homebrew headers and libraries without pkg-config |
 | `build_native_avif` | `--output PATH`, optional `--sdk-root PATH`, `--sanitize` |
 | `build_linux_native` | Optional `--os linux\|windows` |
 | `build_windows_browser` | `--javascriptcore-dll PATH --output PATH`, optional `--deps-root PATH`, `--console` |

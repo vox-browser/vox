@@ -77,6 +77,11 @@ fn dispatch(name string, args []string) !int {
 			build_avif(arguments(args, ['--sanitize'])!)!
 			return 0
 		}
+		'macos_dependency_prefix' {
+			if args.len != 1 { return error('Expected Homebrew formula name') }
+			println(macos_dependency_prefix(args[0])!)
+			return 0
+		}
 		'build_linux_native' {
 			a := arguments(args, []string{})!
 			build_linux_native(a.get('--os', 'linux'))!

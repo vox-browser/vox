@@ -179,15 +179,14 @@ extra_ldflags="-Wl,-dead_strip,-dead_strip_dylibs -Wl,-rpath,@executable_path"
 # Native dependencies come from Homebrew (see README.md). AVIF and FFmpeg are
 # optional: without them the bundle omits AVIF decoding and video playback.
 avif_library=""
-if pkg-config --exists libavif 2>/dev/null; then
+if avif_root=$(v_tool macos_dependency_prefix libavif 2>/dev/null); then
     avif_library="$build_dir/libVoxAVIF.dylib"
-    v_tool build_native_avif --output "$avif_library"
+    v_tool build_native_avif --sdk-root "$avif_root" --output "$avif_library"
 fi
 # FFmpeg's libraries load on first use (native/include/native_ffmpeg_darwin.h),
 # at the major versions of these headers; only the headers are needed here.
-if pkg-config --exists libavformat libavcodec libavutil libswscale 2>/dev/null; then
-    ffmpeg_cflags=$(pkg-config --cflags libavformat libavcodec libavutil libswscale)
-    extra_cflags="$extra_cflags -DLADYBIRD_V_HAS_FFMPEG $ffmpeg_cflags"
+if ffmpeg_root=$(v_tool macos_dependency_prefix ffmpeg 2>/dev/null); then
+    extra_cflags="$extra_cflags -DLADYBIRD_V_HAS_FFMPEG -I\"$ffmpeg_root/include\""
 fi
 
 # `-d vox_v8` (VOX_V8=1) is an experimental compile-time backend: the
