@@ -30,9 +30,6 @@ and `UI2_SOURCE_DIR` can select existing checkouts.
 
 #### macOS
 
-Install Apple's command line tools (`xcode-select --install`) and
-[Homebrew](https://brew.sh/), then:
-
 ```sh
 brew install freetype openssl ffmpeg libavif curl
 eval "$(sh tools/run_v_tool.sh dev_build_env)"
