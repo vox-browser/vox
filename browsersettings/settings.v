@@ -19,6 +19,9 @@ pub:
 	port    string = '1080'
 	// Empty selects every destination; otherwise comma-separated hostnames.
 	sites string
+	// Preferred UI languages, most preferred first (e.g. `fa, en`). Empty
+	// follows the system language; unknown codes fall back to English.
+	languages string
 }
 
 @[heap]
@@ -61,7 +64,10 @@ pub fn (proxy Proxy) normalized() !Proxy {
 	host := proxy.host.trim_space()
 	port := proxy.port.trim_space()
 	sites := proxy.sites.trim_space()
-	if !proxy.enabled { return Proxy{ ...proxy, host: host, port: port, sites: sites } }
+	languages := normalize_preferred_languages(proxy.languages)!
+	if !proxy.enabled {
+		return Proxy{ ...proxy, host: host, port: port, sites: sites, languages: languages }
+	}
 	if host == '' || host.bytes().any(it <= 32 || it == 127)
 		|| host.contains_any('/\\?#@') {
 		return error('Enter a proxy hostname or IP address, without a URL scheme.')
@@ -83,7 +89,77 @@ pub fn (proxy Proxy) normalized() !Proxy {
 	if parsed.hostname().contains(':') && !valid_ipv6_host(parsed.hostname()) {
 		return error('Enter a valid proxy hostname or IP address.')
 	}
-	return Proxy{ ...proxy, host: parsed.hostname(), port: port.int().str(), sites: normalize_proxy_sites(sites)! }
+	return Proxy{ ...proxy, host: parsed.hostname(), port: port.int().str(), sites: normalize_proxy_sites(sites)!, languages: languages }
+}
+
+// normalize_preferred_languages canonicalizes a comma-separated BCP47 list
+// (`fa-IR, en`) to `fa-IR, en` form: entries are trimmed, canonicalized,
+// deduplicated, and empty entries are dropped. An empty input selects the
+// system language. Malformed entries are rejected with a localizable error.
+pub fn normalize_preferred_languages(input string) !string {
+	if input.trim_space() == '' {
+		return ''
+	}
+	mut out := []string{}
+	for entry in input.split(',') {
+		tag := canonical_lang_tag(entry) or {
+			return error('Enter language codes separated by commas (e.g. fa, en), or leave empty for the system language.')
+		}
+		if tag == '' {
+			continue
+		}
+		if tag !in out {
+			out << tag
+		}
+	}
+	return out.join(', ')
+}
+
+// canonical_lang_tag canonicalizes one BCP47 tag (`fa-ir` -> `fa-IR`) and
+// reports none for malformed input. An empty entry yields an empty tag so
+// stray separators are skipped instead of rejected.
+fn canonical_lang_tag(entry string) ?string {
+	t := entry.trim_space().replace('_', '-')
+	if t == '' {
+		return ''
+	}
+	parts := t.split('-')
+	if parts.len == 0 {
+		return none
+	}
+	lang := parts[0].to_lower()
+	if lang.len < 2 || lang.len > 3 {
+		return none
+	}
+	for b in lang.bytes() {
+		if (b < `a` || b > `z`) && (b < `0` || b > `9`) {
+			return none
+		}
+	}
+	if lang.bytes()[0] < `a` || lang.bytes()[0] > `z` {
+		return none
+	}
+	mut out := lang
+	for i in 1 .. parts.len {
+		sub := parts[i]
+		if sub.len < 2 || sub.len > 8 {
+			return none
+		}
+		for b in sub.bytes() {
+			if (b < `a` || b > `z`) && (b < `A` || b > `Z`) && (b < `0` || b > `9`) {
+				return none
+			}
+		}
+		lowered := sub.to_lower()
+		if sub.len == 2 && lowered.bytes().all(it >= `a` && it <= `z`) {
+			out += '-' + sub.to_upper()
+		} else if sub.len == 4 && lowered.bytes().all(it >= `a` && it <= `z`) {
+			out += '-' + lowered[0..1].to_upper() + lowered[1..]
+		} else {
+			out += '-' + lowered
+		}
+	}
+	return out
 }
 
 fn normalize_proxy_sites(input string) !string {

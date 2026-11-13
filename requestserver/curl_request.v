@@ -55,7 +55,31 @@ pub fn (mut connection CurlConnection) fetch_host() &fetch.FetchHost {
 		perform_async_with_params: fn [mut connection] (params &fetch.FetchParams, request &fetch.Request) &fetch.PendingResponse {
 			return connection.start_fetch(params, request)
 		}
+		preferred_languages: preferred_fetch_languages()
 	}
+}
+
+// preferred_fetch_languages reports the user's configured languages for
+// outbound requests. Browsers send the user's preference list; with no
+// configured list the FetchHost default ('en-US') is kept so existing
+// behavior is unchanged.
+fn preferred_fetch_languages() []string {
+	languages := browsersettings.current().languages
+	if languages == '' {
+		return ['en-US']
+	}
+	mut out := []string{}
+	for entry in languages.split(',') {
+		tag := entry.trim_space()
+		if tag == '' || tag in out {
+			continue
+		}
+		out << tag
+	}
+	if out.len == 0 {
+		return ['en-US']
+	}
+	return out
 }
 
 pub fn (mut connection CurlConnection) start_fetch(params &fetch.FetchParams, input &fetch.Request) &fetch.PendingResponse {

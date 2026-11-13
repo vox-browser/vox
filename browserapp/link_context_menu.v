@@ -17,11 +17,11 @@ fn (mut app BrowserApp) show_link_context_menu(x f32, y f32) {
 	app.remember_devtools_inspect_target(x, y)
 	mut rows := []browserui.MenuRow{}
 	if destination != '' {
-		rows << browserui.MenuRow{ id: 'link-open', text: 'Open Link in New Tab' }
-		rows << browserui.MenuRow{ id: 'link-copy', text: 'Copy Link URL' }
+		rows << browserui.MenuRow{ id: 'link-open', text: browserui.tr('ctx.open-link') }
+		rows << browserui.MenuRow{ id: 'link-copy', text: browserui.tr('ctx.copy-link') }
 		rows << browserui.MenuRow{ separator: true }
 	}
-	rows << browserui.MenuRow{ id: 'inspect', text: 'Inspect' }
+	rows << browserui.MenuRow{ id: 'inspect', text: browserui.tr('ctx.inspect') }
 	state.version++
 	state.popup = browserui.Popup{
 		token: u64(time.sys_mono_now())

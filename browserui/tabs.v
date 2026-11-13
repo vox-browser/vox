@@ -37,14 +37,14 @@ pub fn tab_loading_icon(index int, frame int) ui2.Element {
 			stroke: 0x1a73e8
 			stroke_width: 2
 		}
-		accessibility_label: 'Loading'
+		accessibility_label: tr('tab.loading')
 	}
 }
 
 fn tab_context_menu(tab Tab) []ui2.MenuEntry {
 	mut entries := []ui2.MenuEntry{}
-	if tab.color_action != '' { entries << ui2.MenuEntry{ id: tab.color_action, title: 'Tab Color…' } }
-	if tab.rename_action != '' { entries << ui2.MenuEntry{ id: tab.rename_action, title: 'Rename Tab…' } }
+	if tab.color_action != '' { entries << ui2.MenuEntry{ id: tab.color_action, title: tr('tab.color.menu') } }
+	if tab.rename_action != '' { entries << ui2.MenuEntry{ id: tab.rename_action, title: tr('tab.rename.menu') } }
 	return entries
 }
 
@@ -74,11 +74,11 @@ pub fn tab_fill(color browsertabs.TabColor, selected bool) u32 {
 }
 
 pub fn tab_color_rows(selected browsertabs.TabColor) []MenuRow {
-	mut rows := [MenuRow{ text: 'Tab Color', group: true }]
+	mut rows := [MenuRow{ text: tr('tab.color.group'), group: true }]
 	for color in [browsertabs.TabColor.none, .red, .orange, .yellow, .green, .blue, .purple, .pink] {
 		rows << MenuRow{
 			id: 'tab-color-${color}'
-			text: if color == .none { 'Default' } else { color.str().title() }
+			text: if color == .none { tr('tab.color.default') } else { tab_color_text(color.str()) }
 			checked: color == selected
 		}
 	}
@@ -143,8 +143,8 @@ pub fn tab_strip(width f64, tabs []Tab, new_x f64) ui2.Element {
 		children << ui2.Element{
 			...ui2.button('window-${action}', '', ui2.rect(10 + f64(index) * 16, 8, 12, 12),
 				ui2.BoxStyle{ bg: [u32(0xff5f57), 0xffbd2e, 0x28c840][index], radius: 6 }, ui2.TextStyle{})
-			tooltip:             '${action} window'
-			accessibility_label: '${action} window'
+			tooltip:             window_button_text(action)
+			accessibility_label: window_button_text(action)
 		}
 	}
 	mut inactive := []ui2.Element{}
@@ -163,8 +163,8 @@ pub fn tab_strip(width f64, tabs []Tab, new_x f64) ui2.Element {
 		content << ui2.label('tab-title-${tab.index}', tab.title, ui2.rect(30, 3, paint_width - 56, 18), ui2.TextStyle{ size: 11, color: 0x383838, valign: .top })
 		content << ui2.Element{
 			...ui2.button('tab-close:${tab.index}', '×', ui2.rect(tab.width - 16, 3, 16, 16), ui2.BoxStyle{ transparent: true }, ui2.TextStyle{ size: 11, color: 0x666666 })
-			tooltip:             'Close ${tab.title}'
-			accessibility_label: 'Close ${tab.title}'
+			tooltip:             close_tab_text(tab.title)
+			accessibility_label: close_tab_text(tab.title)
 		}
 		if tab.selected {
 			content << ui2.view('tab-seam-${tab.index}', ui2.rect(1, 23, paint_width - 2, 1), ui2.BoxStyle{ bg: tab_fill(tab.color, true) }, [])
@@ -209,8 +209,8 @@ pub fn tab_strip(width f64, tabs []Tab, new_x f64) ui2.Element {
 			stroke:       0xadadad
 			stroke_width: 1
 		}
-		tooltip:             'New tab'
-		accessibility_label: 'New tab'
+		tooltip:             tr('tab.new')
+		accessibility_label: tr('tab.new')
 	}
 	return ui2.Element{
 		...ui2.view('tab-strip', ui2.rect(0, 0, width, 29), ui2.BoxStyle{ bg: 0xdbdbdb, border_bottom: 1, border_color: 0xadadad }, children)

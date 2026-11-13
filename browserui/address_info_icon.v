@@ -26,7 +26,7 @@ pub fn address_info_icon(id string, frame ui2.Rect, color u32) ui2.Element {
 			fill:         color
 			stroke_width: 0
 		}
-		accessibility_label: 'Page information'
+		accessibility_label: tr('address.info')
 	}
 }
 

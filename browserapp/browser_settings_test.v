@@ -1,6 +1,7 @@
 module main
 
 import browsersettings
+import browserui
 import gg
 import os
 import time
@@ -88,6 +89,24 @@ fn test_ui2_settings_apply_cancel_validation_and_toolbar_reconciliation() {
 		assert ui2.control_checked('settings-custom-tab-titles')
 		assert !ui2.control_checked('settings-gpu-canvas')
 		assert browsersettings.current().disable_gpu_canvas
+		assert ui2.text('settings-error') == ''
+		ui2.set_text('settings-languages', 'xx!!')
+		browser_settings_event('settings-apply')
+		assert browser_settings_visible()
+		assert ui2.text('settings-error').contains('fa, en')
+		ui2.set_text('settings-languages', 'fa, en')
+		browser_settings_event('settings-apply')
+		assert !browser_settings_visible()
+		assert browsersettings.current().languages == 'fa, en'
+		assert browserui.ui_locale() == 'fa'
+		show_browser_settings()
+		assert ui2.text('settings-languages') == 'fa, en'
+		ui2.set_text('settings-languages', '')
+		browser_settings_event('settings-apply')
+		assert !browser_settings_visible()
+		assert browsersettings.current().languages == ''
+		show_browser_settings()
+		assert ui2.text('settings-languages') == ''
 		assert ui2.text('settings-error') == ''
 		assert C.native_test_address_shortcut(ui2.embedded_browser_control('settings-port'), app, address_bar_shortcut, 53, 0) != 0
 		assert !browser_settings_visible()

@@ -88,9 +88,9 @@ pub fn prepare_navigation_images(mut context gg.Context, mut images map[string]i
 pub fn navigation_button(action NavigationAction, frame ui2.Rect, enabled bool) ui2.Element {
 	id := action.str()
 	label := match action {
-		.back { 'Back' }
-		.forward { 'Forward' }
-		.reload { 'Reload' }
+		.back { tr('nav.back') }
+		.forward { tr('nav.forward') }
+		.reload { tr('nav.reload') }
 	}
 	$if windows && !ui2_custom_rendering ? {
 		// The native Win32 UI2 image backend currently accepts BMP only.
