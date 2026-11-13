@@ -1,0 +1,6 @@
+#!/bin/sh
+# AppRun for the Vox AppImage. Points the loader at the bundled native
+# libraries, then runs the browser. Arguments pass through unchanged.
+HERE="$(dirname "$(readlink -f "$0")")"
+export LD_LIBRARY_PATH="$HERE/usr/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
+exec "$HERE/usr/bin/vox" "$@"

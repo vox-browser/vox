@@ -7665,7 +7665,7 @@ fn (mut d Document) note_layout_dirty(kind string, reason string, node &Node) {
 }
 
 fn os_getenv_document_layout_diagnostics() bool {
-	return unsafe { C.getenv(c'VOX_DOCUMENT_LAYOUT_DIAGNOSTICS') } != nil
+	return unsafe { C.getenv(c'VOX_DOCUMENT_LAYOUT_DIAGNOSTICS') } != unsafe { nil }
 }
 
 pub fn (mut d Document) update_layout(reason UpdateLayoutReason) {
