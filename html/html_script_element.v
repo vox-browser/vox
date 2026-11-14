@@ -263,10 +263,10 @@ pub fn (script &HTMLScriptElementModel) script_type() ScriptElementType {
 	return script.script_type_
 }
 
-fn (script &HTMLScriptElementModel) determine_type() ScriptElementType {
-	type_value := if value := script.type_attribute_ {
+fn script_element_type_from_attributes(type_attribute ?string, language_attribute ?string) ScriptElementType {
+	type_value := if value := type_attribute {
 		if value == '' { 'text/javascript' } else { value }
-	} else if language := script.language_attribute_ {
+	} else if language := language_attribute {
 		if language == '' { 'text/javascript' } else { 'text/${language}' }
 	} else {
 		'text/javascript'
@@ -274,7 +274,7 @@ fn (script &HTMLScriptElementModel) determine_type() ScriptElementType {
 	// Whitespace is stripped only for the type attribute's classic MIME check.
 	// In particular, it remains significant for module and import-map scripts.
 	if mimesniff.is_javascript_mime_type_essence_match(type_value)
-		|| mimesniff.is_javascript_mime_type_essence_match((script.type_attribute_ or { '' }).trim('\t\n\f\r ')) {
+		|| mimesniff.is_javascript_mime_type_essence_match((type_attribute or { '' }).trim('\t\n\f\r ')) {
 		return .classic
 	}
 	return match ascii_lowercase_string(type_value) {
@@ -282,6 +282,10 @@ fn (script &HTMLScriptElementModel) determine_type() ScriptElementType {
 		'importmap' { .import_map }
 		else { .null_ }
 	}
+}
+
+fn (script &HTMLScriptElementModel) determine_type() ScriptElementType {
+	return script_element_type_from_attributes(script.type_attribute_, script.language_attribute_)
 }
 
 pub fn (mut script HTMLScriptElementModel) prepare_script(document ?&dom.Document) {
