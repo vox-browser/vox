@@ -28,6 +28,35 @@ Three seven-pair HN native-DOM cohorts show cache reuse and correct collapse/res
 but no reliable callback speedup. This tier is not enabled by browser settings
 and does not establish a browser load/rendering improvement or additional parity.
 
+## GitHub runtime prerequisites — 2026-11-14
+
+Object binding declarations support aliases, nested defaults and enumerable rest
+copies. `Object` and 21 static methods, strict UTF-16 `JSON.parse` with revivers
+and source context, and native Error constructors/prototypes are installed.
+Object literals execute prototype setters and infer anonymous property-function
+names; computed keys convert before values. Function creation reuses decoded
+source, ordinary expressions skip unnecessary template-tail copies, expression
+temporaries use value storage, and reserved-word checks avoid repeated decoding.
+Focused checks pass with and without GC, with additional stack-use-after-return
+sanitizer coverage for retained expressions. These complete the next ten-slice
+batch including native Performance. Its source-pinned checkpoint passes all
+271 package files in each GC mode and all 100 upstream AST fixtures exactly.
+The retained screenshot smoke has eight passes under existing limits and three
+failures; it does not close visual acceptance.
+
+Optional chains now preserve receivers and skip nullish keys/arguments/tails;
+delete chains skip terminal getters. For-in executes ordered own/prototype
+string-key snapshots, non-enumerable shadowing, deletion checks, TDZ RHS
+environments, and fresh lexical bindings per iteration. Focused checks pass in
+both GC modes. These two language slices postdate the 271-file checkpoint.
+
+Array/parameter/assignment/catch destructuring, object accessors/spread,
+for-of/for-await-of, `Object.fromEntries/groupBy`, JSON serialization/raw objects/modules,
+AggregateError and Number/BigInt prototype graphs remain incomplete. Original
+GitHub bytes still do not hydrate with LibJS. Native diagnostics and the pending
+production memory/visual checks are recorded in
+[`docs/LIBJS_GITHUB.md`](../docs/LIBJS_GITHUB.md).
+
 ## Ordinary ECMAScript calls — 2026-11-14
 
 The bytecode runtime now executes ordinary function declarations and expressions,

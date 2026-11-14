@@ -60,7 +60,16 @@ timeline; non-null detail cloning, measures and observers remain incomplete.
 The namespace read adapter uses accessor descriptors; full namespace data
 descriptor and freeze semantics remain incomplete.
 
-Remaining work includes dynamic imports, top-level
+Object declaration bindings now handle aliases, nested defaults and enumerable
+rest. `Object` construction/static methods, UTF-16 `JSON.parse` with revivers,
+and native Error constructors/prototypes are installed. Object literals support
+prototype setters and inferred property-function names. Source-buffer reuse and
+parser allocation fixes have focused ownership checks. Optional chains and
+for-in loops execute, including short-circuit/delete semantics and fresh lexical
+iteration bindings. GitHub remains incomplete.
+
+Remaining work includes array/parameter/assignment destructuring, object
+accessors/spread, for-of, JSON serialization, dynamic imports, top-level
 await, async/generators, eval/Function, non-simple
 parameters, complete arguments objects, class execution, `finally`,
 the remaining intrinsic graph and most Web APIs. The parser retains its 32-call
