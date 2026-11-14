@@ -220,11 +220,29 @@ fn draw_shape_descriptor(mut target canvas.GpuSurface, shape &C.VoxGraphiteShape
 	}
 }
 
+// Coverage and source color for a horizontal A8 glyph run.
+pub struct GlyphCoverage {
+pub:
+	pixels []u8
+	color  [4]f32
+}
+
 // draw_shapes resolves a bounded sequence once, preserving sample ownership
 // between adjacent shadows, backgrounds and borders. Failure leaves pixels intact.
 pub fn draw_shapes(pixels &u8, width i32, height i32, pitch i32, backdrop i32, shapes &C.VoxGraphiteShape, count i32) i32 {
+	return draw_shapes_with_glyphs(pixels, width, height, pitch, backdrop, shapes, count, [])
+}
+
+// Keep shape samples alive until the following glyph coverage has blended.
+pub fn draw_shapes_with_glyphs(pixels &u8, width i32, height i32, pitch i32, backdrop i32, shapes &C.VoxGraphiteShape, count i32, glyphs []GlyphCoverage) i32 {
 	if pixels == unsafe { nil } || shapes == unsafe { nil } || count <= 0 || count > 32 || width <= 0 || height <= 0 || pitch < width * 4 || C.pthread_main_np() == 0 {
 		return 0
+	}
+	for glyph in glyphs {
+		if glyph.pixels.len != int(width) * int(height) { return 0 }
+		for value in glyph.color {
+			if math.is_nan(value) || math.is_inf(value, 0) || value < 0 || value > 1 { return 0 }
+		}
 	}
 	mut samples := 1
 	for i in 0 .. int(count) {
@@ -245,6 +263,10 @@ pub fn draw_shapes(pixels &u8, width i32, height i32, pitch i32, backdrop i32, s
 		target.save()
 		draw_shape_descriptor(mut target, unsafe { &shapes[i] }, int(width), int(height)) or { return 0 }
 		target.restore()
+	}
+	target.set_matrix(canvas.Matrix.identity())
+	for glyph in glyphs {
+		target.draw_alpha_mask(glyph.pixels, int(width), int(height), canvas.Paint{ color: canvas.Color4f{glyph.color[0], glyph.color[1], glyph.color[2], glyph.color[3]} }) or { return 0 }
 	}
 	target.read_pixels(pixels, int(pitch)) or { return 0 }
 	return 1

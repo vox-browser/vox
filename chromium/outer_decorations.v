@@ -110,6 +110,8 @@ fn (mut app BrowserApp) draw_chromium_outer_decorations(index int, page_y f32, w
 			|| app.viewport_width <= 4 || app.viewport_height <= 4 { return index }
         image_end := app.draw_shadowed_png_group(index,page_y,window_height)
         if image_end>index {return image_end}
+		text_end := app.draw_elliptical_text_group(index, page_y)
+		if text_end > index { return text_end }
 		ellipse_end := app.draw_elliptical_outer_group(index,page_y)
 		if ellipse_end>index {return ellipse_end}
 		group_end := app.draw_rounded_outer_group(index, page_y, window_height)
