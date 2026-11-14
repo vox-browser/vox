@@ -81,6 +81,7 @@ mut:
 	next_offset uint
 	free_ranges []PrimitiveStorageFreeRange
 	small_slabs [13][]PrimitiveStorageSlab
+	small_slabs_with_free_slots [13][]u16
 }
 
 fn (mut allocator PrimitiveStorageAllocator) ensure_cage() ! {
@@ -101,43 +102,46 @@ fn (mut allocator PrimitiveStorageAllocator) allocate(size uint, capacity uint, 
 			return allocator.allocate_small_storage(size, zero_fill)
 		}
 	}
-	return allocator.allocate_large_storage(size, capacity, zero_fill, guard_size)
+	return allocator.allocate_large_storage(size, capacity, guard_size)
 }
 
 fn (mut allocator PrimitiveStorageAllocator) allocate_small_storage(size uint, zero_fill ZeroFillNewBytes) !PrimitiveStorageAllocation {
 	class_index := primitive_small_size_class_index(size) or { panic('Invalid source small size class') }
 	allocator.ensure_cage()!
 	slot_size := primitive_small_slot_size_for_class(class_index)
-	for slab_index in 0 .. allocator.small_slabs[class_index].len {
-		mut slab := unsafe { &allocator.small_slabs[class_index][slab_index] }
-		if slab.free_slots.len == 0 { continue }
-		slot_index := slab.free_slots.pop()
-		slab.used_slot_count++
-		offset := slab.offset + uint(slot_index) * slot_size
-		if zero_fill == .yes { unsafe { C.memset(allocator.cage_base + offset, 0, size) } }
-		return PrimitiveStorageAllocation{ offset: offset, capacity: slot_size, reservation_size: slot_size, committed_size: slot_size, small_allocation: PrimitiveStorageSmallAllocation{ size_class_index: class_index, slab_index: u16(slab_index), slot_index: slot_index } }
+	if allocator.small_slabs_with_free_slots[class_index].len == 0 {
+		return allocator.allocate_from_new_slab(class_index, slot_size)
 	}
-	return allocator.allocate_from_new_slab(class_index, slot_size, zero_fill, size)
+	slab_index := allocator.small_slabs_with_free_slots[class_index].last()
+	mut slab := unsafe { &allocator.small_slabs[class_index][slab_index] }
+	slot_index := slab.free_slots.pop()
+	if slab.free_slots.len == 0 { allocator.small_slabs_with_free_slots[class_index].pop() }
+	slab.used_slot_count++
+	offset := slab.offset + uint(slot_index) * slot_size
+	if zero_fill == .yes { unsafe { C.memset(allocator.cage_base + offset, 0, size) } }
+	return PrimitiveStorageAllocation{ offset: offset, capacity: slot_size, reservation_size: slot_size, committed_size: slot_size, small_allocation: PrimitiveStorageSmallAllocation{ size_class_index: class_index, slab_index: slab_index, slot_index: slot_index } }
 }
 
-fn (mut allocator PrimitiveStorageAllocator) allocate_from_new_slab(class_index u16, slot_size uint, zero_fill ZeroFillNewBytes, requested_size uint) !PrimitiveStorageAllocation {
+fn (mut allocator PrimitiveStorageAllocator) allocate_from_new_slab(class_index u16, slot_size uint) !PrimitiveStorageAllocation {
 	if allocator.small_slabs[class_index].len >= 0xffff { return storage_errno_error(C.ENOMEM) }
+	// Reserve room for every slab before allocating it, so freeing a full slab
+	// can put it on this list without growing the list during deallocation.
+	allocator.small_slabs_with_free_slots[class_index].ensure_cap(allocator.small_slabs[class_index].len + 1)
 	slab_offset := allocator.allocate_cage_range(primitive_small_slab_size)!
 	commit_storage_memory(unsafe { allocator.cage_base + slab_offset }, primitive_small_slab_size) or {
 		allocator.release_cage_range(slab_offset, primitive_small_slab_size)
 		return err
 	}
-	mut slab := PrimitiveStorageSlab{ offset: slab_offset, slot_size: slot_size, slot_count: u32(primitive_small_slab_size / slot_size), used_slot_count: 1 }
+	mut slab := PrimitiveStorageSlab{ offset: slab_offset, slot_size: slot_size, slot_count: u32(primitive_small_slab_size / slot_size), used_slot_count: 1, free_slots: []u32{cap: int(primitive_small_slab_size / slot_size)} }
 	for slot := slab.slot_count - 1; slot > 0; slot-- { slab.free_slots << slot }
 	slab_index := u16(allocator.small_slabs[class_index].len)
 	allocator.small_slabs[class_index] << slab
-	if zero_fill == .yes {
-		unsafe { C.memset(allocator.cage_base + slab_offset, 0, requested_size) }
-	}
+	if slab.free_slots.len > 0 { allocator.small_slabs_with_free_slots[class_index] << slab_index }
+	// The first slot is already zeroed by the fresh anonymous mapping.
 	return PrimitiveStorageAllocation{ offset: slab_offset, capacity: slot_size, reservation_size: slot_size, committed_size: slot_size, small_allocation: PrimitiveStorageSmallAllocation{ size_class_index: class_index, slab_index: slab_index, slot_index: 0 } }
 }
 
-fn (mut allocator PrimitiveStorageAllocator) allocate_large_storage(size uint, capacity uint, zero_fill ZeroFillNewBytes, guard_size uint) !PrimitiveStorageAllocation {
+fn (mut allocator PrimitiveStorageAllocator) allocate_large_storage(size uint, capacity uint, guard_size uint) !PrimitiveStorageAllocation {
 	allocator.ensure_cage()!
 	rounded_capacity := round_storage_up_to_page(capacity)
 	rounded_guard_size := round_storage_up_to_page(guard_size)
@@ -151,7 +155,7 @@ fn (mut allocator PrimitiveStorageAllocator) allocate_large_storage(size uint, c
 			return err
 		}
 	}
-	if zero_fill == .yes && size > 0 { unsafe { C.memset(allocator.cage_base + offset, 0, size) } }
+	// Freshly committed anonymous pages are zeroed lazily by the operating system.
 	return PrimitiveStorageAllocation{ offset: offset, capacity: capacity, reservation_size: reservation_size, committed_size: committed_size }
 }
 
@@ -178,11 +182,14 @@ fn (mut allocator PrimitiveStorageAllocator) allocate_cage_range(requested_size 
 
 fn (mut allocator PrimitiveStorageAllocator) resize(mut allocation PrimitiveStorageAllocation, old_size uint, new_size uint, zero_fill ZeroFillNewBytes) ! {
 	assert new_size <= allocation.capacity
+	old_committed_size := allocation.committed_size
 	if allocation.small_allocation == none {
 		allocator.commit_large_storage(mut allocation, new_size)!
 	}
-	if zero_fill == .yes && new_size > old_size {
-		unsafe { C.memset(allocator.data(allocation, old_size), 0, new_size - old_size) }
+	// Only the previously committed tail can still contain old data.
+	zero_fill_end := math.min(new_size, old_committed_size)
+	if zero_fill == .yes && zero_fill_end > old_size {
+		unsafe { C.memset(allocator.data(allocation, old_size), 0, zero_fill_end - old_size) }
 	}
 }
 
@@ -208,7 +215,7 @@ fn (mut allocator PrimitiveStorageAllocator) reallocate(old_allocation Primitive
 	if bytes_to_copy > 0 {
 		unsafe { C.memcpy(allocator.cage_base + allocation.offset, allocator.cage_base + old_allocation.offset, bytes_to_copy) }
 	}
-	if zero_fill == .yes && new_size > old_size {
+	if zero_fill == .yes && new_size > old_size && allocation.small_allocation != none {
 		unsafe { C.memset(allocator.cage_base + allocation.offset + old_size, 0, new_size - old_size) }
 	}
 	return allocation
@@ -219,6 +226,9 @@ fn (mut allocator PrimitiveStorageAllocator) deallocate(mut allocation Primitive
 		assert int(small.slab_index) < allocator.small_slabs[small.size_class_index].len
 		mut slab := unsafe { &allocator.small_slabs[small.size_class_index][small.slab_index] }
 		assert u64(slab.free_slots.len) < u64(slab.slot_count)
+		if slab.free_slots.len == 0 {
+			allocator.small_slabs_with_free_slots[small.size_class_index] << small.slab_index
+		}
 		slab.free_slots << small.slot_index
 		assert slab.used_slot_count > 0
 		slab.used_slot_count--

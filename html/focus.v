@@ -68,7 +68,7 @@ fn focus_chain(subject ?&dom.Node) []&dom.Node {
 	return output
 }
 
-fn run_focus_update_steps(mut manager FocusManager, old_chain_input []&dom.Node, new_chain_input []&dom.Node, new_focus_target ?&dom.Node, trigger dom.FocusTrigger) {
+fn run_focus_update_steps(mut manager FocusManager, old_chain_input []&dom.Node, new_chain_input []&dom.Node, new_focus_target ?&dom.Node, trigger dom.FocusTrigger) bool {
 	mut old_chain := old_chain_input.clone()
 	mut new_chain := new_chain_input.clone()
 	for old_chain.len > 0 && new_chain.len > 0 && old_chain.last() == new_chain.last() {
@@ -96,10 +96,23 @@ fn run_focus_update_steps(mut manager FocusManager, old_chain_input []&dom.Node,
 	for index := new_chain.len - 1; index >= 0; index-- {
 		entry := new_chain[index]
 		if entry.is_element() {
+			document := entry.document()
+			focused_before_dispatch := focus_related_id(document.focused_area())
 			fire_a_focus_event(mut manager, entry, related_old, 'focus', false)
+			// A nested focus update owns the new designation and its events. Do
+			// not send focusin to the element its focus handler just left.
+			if focus_related_id(document.focused_area()) != focused_before_dispatch {
+				manager.currently_focused_area = document.focused_area()
+				return false
+			}
 			fire_a_focus_event(mut manager, entry, related_old, 'focusin', true)
+			if focus_related_id(document.focused_area()) != focused_before_dispatch {
+				manager.currently_focused_area = document.focused_area()
+				return false
+			}
 		}
 	}
+	return true
 }
 
 // https://html.spec.whatwg.org/multipage/interaction.html#focusing-steps
@@ -115,8 +128,9 @@ pub fn run_focusing_steps(mut manager FocusManager, new_focus_target ?&dom.Node,
 	}
 	old_chain := focus_chain(manager.currently_focused_area)
 	new_chain := focus_chain(target)
-	run_focus_update_steps(mut manager, old_chain, new_chain, target, trigger)
-	manager.currently_focused_area = target
+	if run_focus_update_steps(mut manager, old_chain, new_chain, target, trigger) {
+		manager.currently_focused_area = target
+	}
 }
 
 // https://html.spec.whatwg.org/multipage/interaction.html#unfocusing-steps
@@ -131,13 +145,17 @@ pub fn run_unfocusing_steps(mut manager FocusManager, old_focus_target &dom.Node
 		if document == unsafe { nil } {
 			return
 		}
-		run_focus_update_steps(mut manager, old_chain, [unsafe { &dom.Node(document) }],
-			unsafe { &dom.Node(document) }, .other)
+		if !run_focus_update_steps(mut manager, old_chain, [unsafe { &dom.Node(document) }],
+			unsafe { &dom.Node(document) }, .other) {
+			return
+		}
 		mut mutable_document := unsafe { document }
 		mutable_document.set_focused_area(none)
 		manager.currently_focused_area = unsafe { &dom.Node(document) }
 	} else {
-		run_focus_update_steps(mut manager, old_chain, [], none, .other)
+		if !run_focus_update_steps(mut manager, old_chain, [], none, .other) {
+			return
+		}
 		mut document := current.document()
 		if document != unsafe { nil } {
 			document.set_focused_area(none)

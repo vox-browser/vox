@@ -6104,7 +6104,7 @@ pub fn (mut e Element) attribute_changed(local_name string, old_value ?string, v
 	if local_name == 'nonce' && (e.is_html_element() || e.is_svg_element()) {
 		e.set_cryptographic_nonce(value_or_empty)
 	}
-	if local_name in ['autoplay', 'preload'] && e.is_html_element() && e.local_name() in ['audio', 'video'] {
+	if local_name in ['autoplay', 'preload', 'loop'] && e.is_html_element() && e.local_name() in ['audio', 'video'] {
 		if hook := e.document().media_element_resource_attribute_changed_hook_ {
 			hook(&e)
 		}
@@ -6170,14 +6170,16 @@ pub fn (mut e Element) attribute_changed(local_name string, old_value ?string, v
 	}
 
 	if local_name == 'id' {
+		old_id := e.id_
 		if value_or_empty.len == 0 {
 			e.id_ = none
 		} else {
 			e.id_ = value_or_empty
 		}
-		if e.is_connected() {
+		// Reassigning the same ID moves no document or SVG resource index entry.
+		if e.id_ != old_id && e.is_connected() {
 			mut doc := unsafe { &Document(e.document()) }
-			doc.element_id_changed(&e, old_value)
+			doc.element_id_changed(&e, old_id)
 		}
 	} else if local_name == 'name' {
 		if value_or_empty.len == 0 {
@@ -6582,12 +6584,12 @@ pub fn (e &Element) has_hidden_ancestor() bool {
 }
 
 // Returns true when this element's id is mentioned by another element's
-// aria-labelledby attribute somewhere in the same root subtree.
+// aria-labelledby or aria-describedby attribute in the same root subtree.
 //
 // The C++ implementation consults Web::ARIA::AriaData, which collects every
 // IDREF-list ARIA attribute. The translated ARIA module depends on DOM and
 // therefore cannot be imported here without a cycle, so this DOM-side bridge
-// scans aria-labelledby tokens directly.
+// scans the naming and description IDREF tokens directly.
 pub fn (e &Element) is_referenced() bool {
 	id := e.id() or { return false }
 	root := e.as_node().root()
@@ -6597,10 +6599,12 @@ pub fn (e &Element) is_referenced() bool {
 fn id_referenced_in_subtree(node &Node, id string) bool {
 	if element := node.as_element() {
 		if element.is_html_element() {
-			if labelled_by := element.get_attribute('aria-labelledby') {
-				for token in labelled_by.fields() {
-					if token == id {
-						return true
+			for attribute in ['aria-labelledby', 'aria-describedby'] {
+				if references := element.get_attribute(attribute) {
+					for token in references.fields() {
+						if token == id {
+							return true
+						}
 					}
 				}
 			}
@@ -6718,12 +6722,20 @@ pub fn (mut e Element) set_style_uses_tree_counting_function() {
 
 // --- Lifecycle callbacks ---
 fn (e &Element) report_title_change_to_page() {
-	navigable := e.as_node().navigable() or { return }
-	if !navigable.is_traversable() { return }
-	document := e.document()
-	if document == unsafe { nil } || document.page() == unsafe { nil } { return }
-	mut page := unsafe { &Page(document.page()) }
-	page.client_page_did_change_title(document.title())
+	mut document := e.document()
+	if document == unsafe { nil } { return }
+	document.report_title_change_to_page()
+}
+
+// HTMLTitleElement::set_text and the SVG document.title setter share this
+// operation. Keep the DOM mutations intact while coalescing page reports.
+pub fn (mut e Element) set_title_text(value string) {
+	mut document := e.document()
+	document.begin_title_change_report_batch()
+	defer { document.end_title_change_report_batch() }
+	mut node := e.as_node()
+	node.string_replace_all(value)
+	e.report_title_change_to_page()
 }
 
 pub fn (mut e Element) inserted() {
@@ -7103,6 +7115,21 @@ pub fn (e &Element) get_an_elements_target(target ?string) string {
 	return ''
 }
 
+// https://html.spec.whatwg.org/multipage/dom.html#advisory-information
+pub fn (e &Element) advisory_information() string {
+	for current := ?&Element(e); current != none; {
+		element := current or { break }
+		if element.is_html_element() {
+			if title := element.get_attribute('title') {
+				// An empty title stops inheritance and means no advisory information.
+				return title.replace('\r\n', '\n').replace('\r', '\n')
+			}
+		}
+		current = element.as_node().flat_tree_parent_element()
+	}
+	return ''
+}
+
 // https://html.spec.whatwg.org/multipage/links.html#get-an-element's-noopener
 pub fn (e &Element) get_an_elements_noopener(url URL, target string) TokenizedFeatureNoOpener {
 	_ = url
@@ -7164,10 +7191,9 @@ pub fn (mut e Element) follow_the_hyperlink(hyperlink_suffix ?string, user_invol
 		url = dom_url_parse(url_string + suffix, url_record, 'UTF-8') or { return }
 	}
 
-	// 11. Let referrerPolicy be the current state of subject's referrerpolicy content attribute.
-	referrer_policy := e.get_attribute_value('referrerpolicy')
-
-	// FIXME: 12. If subject's link types includes the noreferrer keyword, then set referrerPolicy to "no-referrer".
+	// 11-12. The noreferrer link type overrides the referrerpolicy attribute.
+	link_types := split_on_ascii_whitespace(to_ascii_lowercase(e.get_attribute_value('rel')))
+	referrer_policy := if 'noreferrer' in link_types { 'no-referrer' } else { e.get_attribute_value('referrerpolicy') }
 
 	// 13. Navigate targetNavigable to urlString using subject's node document, with referrerPolicy set to referrerPolicy
 	//     and userInvolvement set to userInvolvement.
@@ -7524,7 +7550,7 @@ pub fn (mut e Element) svg_element_changed(svg_element &Element) {
 		return
 	}
 	to_clone := e.svg_use_referenced_element() or { return }
-	if to_clone == svg_element || to_clone.as_node().is_ancestor_of(svg_element.as_node()) {
+	if voidptr(to_clone) == voidptr(svg_element) || to_clone.as_node().is_ancestor_of(svg_element.as_node()) {
 		e.svg_use_clone_element_tree_as_our_shadow_tree(to_clone)
 	}
 }
@@ -7546,8 +7572,8 @@ pub fn (mut e Element) svg_element_removed(svg_element &Element) {
 }
 
 pub fn (mut e Element) update_use_elements_that_reference_this() {
-	if !e.is_svg_element() || e.local_name() == 'use' || e.id() == none || !e.is_connected()
-		|| !e.document().is_completely_loaded() || e.as_node().root().as_shadow_root() != none {
+	if !e.is_svg_element() || e.local_name() == 'use' || !e.is_connected()
+		|| e.document().readiness() == .loading || e.as_node().root().as_shadow_root() != none {
 		return
 	}
 	document_root := unsafe { &Node(e.document()) }

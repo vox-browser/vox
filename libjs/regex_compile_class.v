@@ -9,8 +9,8 @@ struct RegexCompilerOrderedRange {
 }
 
 fn regex_compiler_sort_ranges(mut ranges []RegexCharRange) {
-	// Preserve Rust's stable equal-start ordering; the VM's large-range binary
-	// search is right-biased, so reordering equal starts can change its answer.
+	// Binary search in the VM requires sorted, disjoint ranges. Merge ranges
+	// that overlap or touch so an inner range cannot hide an enclosing one.
 	mut ordered := []RegexCompilerOrderedRange{cap: ranges.len}
 	for index, value in ranges {
 		ordered << RegexCompilerOrderedRange{ value: value, index: index }
@@ -22,7 +22,22 @@ fn regex_compiler_sort_ranges(mut ranges []RegexCharRange) {
 		if a.index > b.index { return 1 }
 		return 0
 	})
-	for index, item in ordered { ranges[index] = item.value }
+	mut merged_count := 0
+	for item in ordered {
+		range := item.value
+		if merged_count > 0 {
+			last := ranges[merged_count - 1]
+			if range.start <= last.end || (last.end < 0xffffffff && range.start == last.end + 1) {
+				if range.end > last.end {
+					ranges[merged_count - 1] = RegexCharRange{ start: last.start, end: range.end }
+				}
+				continue
+			}
+		}
+		ranges[merged_count] = range
+		merged_count++
+	}
+	ranges.trim(merged_count)
 }
 
 fn (mut c RegexBytecodeCompiler) point_string(points []u32) {
@@ -71,13 +86,57 @@ fn (mut c RegexBytecodeCompiler) string_property(property RegexUnicodeProperty) 
 	c.emit(RegexStringPropertyMatch{ strings: packed, property: regex_compiler_property(property) })
 }
 
-fn regex_compiler_inline_builtin(class RegexBuiltinCharacterClass, mut ranges []RegexCharRange) bool {
-	if class !in [.digit, .word] { return false }
-	ranges << RegexCharRange{ start: 48, end: 57 }
-	if class == .word {
-		ranges << RegexCharRange{ start: 65, end: 90 }
-		ranges << RegexCharRange{ start: 95, end: 95 }
-		ranges << RegexCharRange{ start: 97, end: 122 }
+// Builtin classes have fixed ranges in legacy mode. Avoid the large case
+// closures of whitespace and complements when ignore-case is active.
+fn (c &RegexBytecodeCompiler) append_legacy_builtin_ranges(class RegexBuiltinCharacterClass, negated bool, mut ranges []RegexCharRange) bool {
+	if c.program.unicode || c.program.unicode_sets { return false }
+	if c.ignore_case && (negated || class !in [.digit, .word]) { return false }
+	match class {
+		.digit {
+			ranges << RegexCharRange{ start: 0x30, end: 0x39 }
+		}
+		.non_digit {
+			ranges << RegexCharRange{ start: 0x0, end: 0x2f }
+			ranges << RegexCharRange{ start: 0x3a, end: 0x10ffff }
+		}
+		.word {
+			ranges << RegexCharRange{ start: 0x30, end: 0x39 }
+			ranges << RegexCharRange{ start: 0x41, end: 0x5a }
+			ranges << RegexCharRange{ start: 0x5f, end: 0x5f }
+			ranges << RegexCharRange{ start: 0x61, end: 0x7a }
+		}
+		.non_word {
+			ranges << RegexCharRange{ start: 0x0, end: 0x2f }
+			ranges << RegexCharRange{ start: 0x3a, end: 0x40 }
+			ranges << RegexCharRange{ start: 0x5b, end: 0x5e }
+			ranges << RegexCharRange{ start: 0x60, end: 0x60 }
+			ranges << RegexCharRange{ start: 0x7b, end: 0x10ffff }
+		}
+		.whitespace {
+			ranges << RegexCharRange{ start: 0x9, end: 0xd }
+			ranges << RegexCharRange{ start: 0x20, end: 0x20 }
+			ranges << RegexCharRange{ start: 0xa0, end: 0xa0 }
+			ranges << RegexCharRange{ start: 0x1680, end: 0x1680 }
+			ranges << RegexCharRange{ start: 0x2000, end: 0x200a }
+			ranges << RegexCharRange{ start: 0x2028, end: 0x2029 }
+			ranges << RegexCharRange{ start: 0x202f, end: 0x202f }
+			ranges << RegexCharRange{ start: 0x205f, end: 0x205f }
+			ranges << RegexCharRange{ start: 0x3000, end: 0x3000 }
+			ranges << RegexCharRange{ start: 0xfeff, end: 0xfeff }
+		}
+		.non_whitespace {
+			ranges << RegexCharRange{ start: 0x0, end: 0x8 }
+			ranges << RegexCharRange{ start: 0xe, end: 0x1f }
+			ranges << RegexCharRange{ start: 0x21, end: 0x9f }
+			ranges << RegexCharRange{ start: 0xa1, end: 0x167f }
+			ranges << RegexCharRange{ start: 0x1681, end: 0x1fff }
+			ranges << RegexCharRange{ start: 0x200b, end: 0x2027 }
+			ranges << RegexCharRange{ start: 0x202a, end: 0x202e }
+			ranges << RegexCharRange{ start: 0x2030, end: 0x205e }
+			ranges << RegexCharRange{ start: 0x2060, end: 0x2fff }
+			ranges << RegexCharRange{ start: 0x3001, end: 0xfefe }
+			ranges << RegexCharRange{ start: 0xff00, end: 0x10ffff }
+		}
 	}
 	return true
 }
@@ -105,7 +164,7 @@ fn (mut c RegexBytecodeCompiler) character_class(class RegexCharacterClass) {
 				}
 				RegexCharRange { ranges << item }
 				RegexBuiltinCharacterClass {
-					if class.negated || c.program.unicode || !regex_compiler_inline_builtin(item, mut ranges) {
+					if !c.append_legacy_builtin_ranges(item, class.negated, mut ranges) {
 						complex = true
 					}
 				}

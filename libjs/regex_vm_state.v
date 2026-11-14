@@ -19,6 +19,7 @@ pub mut:
 	reg_snapshot_offset uint
 	modifiers           RegexActiveModifiers
 	modifier_stack_len  uint
+	modifier_trail_len  uint
 }
 
 pub struct RegexSavedGreedy {
@@ -31,6 +32,7 @@ pub mut:
 	backward            bool
 	modifiers           RegexActiveModifiers
 	modifier_stack_len  uint
+	modifier_trail_len  uint
 }
 
 pub struct RegexSavedLazy {
@@ -42,6 +44,13 @@ pub mut:
 	consumed            u32
 	modifiers           RegexActiveModifiers
 	modifier_stack_len  uint
+	modifier_trail_len  uint
+}
+
+pub struct RegexModifierUndo {
+pub:
+	pushed    bool
+	modifiers RegexActiveModifiers
 }
 
 @[heap]
@@ -51,6 +60,7 @@ pub mut:
 	backtrack_stack []RegexSavedState
 	register_pool   []i32
 	modifier_stack  []RegexActiveModifiers
+	modifier_trail  []RegexModifierUndo
 }
 
 pub fn RegexVmScratch.new() &RegexVmScratch {
@@ -74,7 +84,7 @@ pub mut:
 
 // The VM borrows the stable program/input and this scratch owner. Callers must
 // retain all three and use one active VM per scratch, matching Rust's exclusive
-// borrow of the four vectors. One owner reference replaces four vector borrows.
+// borrow of its scratch vectors. One owner reference replaces those vector borrows.
 pub fn RegexVm.new(program &RegexProgram, input RegexInput, start_pos uint, mut scratch RegexVmScratch) &RegexVm {
 	if program.register_count > u32(max_int) {
 		panic('Regex register count exceeds V array capacity')
@@ -90,6 +100,7 @@ pub fn RegexVm.new(program &RegexProgram, input RegexInput, start_pos uint, mut 
 	scratch.backtrack_stack.clear()
 	scratch.register_pool.clear()
 	scratch.modifier_stack.clear()
+	scratch.modifier_trail.clear()
 	return &RegexVm{
 		program:   program
 		input:     input
@@ -126,6 +137,7 @@ pub fn (mut vm RegexVm) reset(pos uint) {
 		dot_all:     vm.program.dot_all
 	}
 	vm.scratch.modifier_stack.clear()
+	vm.scratch.modifier_trail.clear()
 	vm.backward = false
 	vm.bt_floor = 0
 	vm.look_depth = 0
@@ -159,6 +171,7 @@ pub fn (mut vm RegexVm) push_backtrack(pc u32, pos uint) {
 		reg_snapshot_offset: offset
 		modifiers:           vm.modifiers
 		modifier_stack_len:  uint(vm.scratch.modifier_stack.len)
+		modifier_trail_len:  uint(vm.scratch.modifier_trail.len)
 	}
 }
 
@@ -174,6 +187,7 @@ pub fn (mut vm RegexVm) push_backtrack_modified(pc u32, pos uint, mod_index uint
 		reg_snapshot_offset: offset
 		modifiers:           vm.modifiers
 		modifier_stack_len:  uint(vm.scratch.modifier_stack.len)
+		modifier_trail_len:  uint(vm.scratch.modifier_trail.len)
 	}
 }
 
@@ -188,6 +202,7 @@ pub fn (mut vm RegexVm) push_greedy_backtrack(pc u32, start_pos uint, current_po
 		backward:            vm.backward
 		modifiers:           vm.modifiers
 		modifier_stack_len:  uint(vm.scratch.modifier_stack.len)
+		modifier_trail_len:  uint(vm.scratch.modifier_trail.len)
 	}
 }
 
@@ -201,11 +216,17 @@ pub fn (mut vm RegexVm) push_lazy_backtrack(pc u32, pos uint, max ?u32, consumed
 		consumed:            consumed
 		modifiers:           vm.modifiers
 		modifier_stack_len:  uint(vm.scratch.modifier_stack.len)
+		modifier_trail_len:  uint(vm.scratch.modifier_trail.len)
 	}
 }
 
 pub fn (mut vm RegexVm) handle_push_modifiers(ignore_case ?bool, multiline ?bool, dot_all ?bool) {
 	vm.scratch.modifier_stack << vm.modifiers
+	if vm.needs_modifier_undo_entries() {
+		vm.scratch.modifier_trail << RegexModifierUndo{ pushed: true }
+	} else {
+		vm.scratch.modifier_trail.clear()
+	}
 	if value := ignore_case { vm.modifiers.ignore_case = value }
 	if value := multiline { vm.modifiers.multiline = value }
 	if value := dot_all { vm.modifiers.dot_all = value }
@@ -213,6 +234,30 @@ pub fn (mut vm RegexVm) handle_push_modifiers(ignore_case ?bool, multiline ?bool
 }
 
 pub fn (mut vm RegexVm) handle_pop_modifiers() {
-	if vm.scratch.modifier_stack.len > 0 { vm.modifiers = vm.scratch.modifier_stack.pop() }
+	if vm.scratch.modifier_stack.len > 0 {
+		previous := vm.scratch.modifier_stack.pop()
+		if vm.needs_modifier_undo_entries() {
+			vm.scratch.modifier_trail << RegexModifierUndo{ modifiers: previous }
+		} else {
+			vm.scratch.modifier_trail.clear()
+		}
+		vm.modifiers = previous
+	}
 	vm.pc++
+}
+
+fn (vm &RegexVm) needs_modifier_undo_entries() bool {
+	return vm.scratch.backtrack_stack.len > 0 || vm.look_depth != 0
+}
+
+// Restore pushes and pops, including entries removed after a saved choice.
+fn (mut vm RegexVm) undo_modifier_changes(trail_length uint) {
+	for uint(vm.scratch.modifier_trail.len) > trail_length {
+		change := vm.scratch.modifier_trail.pop()
+		if change.pushed {
+			if vm.scratch.modifier_stack.len > 0 { vm.scratch.modifier_stack.pop() }
+		} else {
+			vm.scratch.modifier_stack << change.modifiers
+		}
+	}
 }

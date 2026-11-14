@@ -206,7 +206,7 @@ pub fn (mut handler EventHandler) update_hover_after_scroll() {
 }
 
 pub fn (mut handler EventHandler) update_hover_after_scroll_at(target ?InputTarget, _ PixelPoint, _ PixelPoint, _ u32, _ u32, _ u32) {
-	if !handler.active_document || !handler.paint_root_available {
+	if handler.should_ignore_device_input_event() || !handler.paint_root_available {
 		return
 	}
 	value := target or {

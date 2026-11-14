@@ -1446,11 +1446,17 @@ pub fn html_image_element_decode(element &dom.HTMLImageElement) &dom.Promise {
 }
 
 pub fn html_image_element_default_role(element &dom.HTMLImageElement) aria.Role {
-	return if image_dom_element(element).get_attribute_value('alt') != '' {
-		.image
-	} else {
-		.none_
+	image := image_dom_element(element)
+	if image.get_attribute_value('alt') != '' { return .image }
+	// An ARIA name restores the image role of an otherwise decorative image.
+	// A title or a whitespace-only aria-label does not override an empty alt.
+	if label := image.get_attribute('aria-label') {
+		if label.trim(' \t\n\r\f').len > 0 { return .image }
 	}
+	if labelled_by := image.get_attribute('aria-labelledby') {
+		if dom.Node.first_valid_id(labelled_by, image.document()) != none { return .image }
+	}
+	return .none_
 }
 
 pub fn html_image_element_uses_srcset_or_picture(element &dom.HTMLImageElement) bool {

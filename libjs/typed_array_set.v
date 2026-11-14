@@ -78,9 +78,9 @@ fn set_typed_array_from_typed_array(mut vm VM, mut target TypedArray, target_off
 			limit - target_index)
 	} else {
 		for target_index < limit {
-			// Preserve the pinned active body: it reads through the original
-			// source view even when the local source_buffer was cloned above.
-			value := source.get_value_from_buffer(mut vm, source_index, .unordered, true)
+			// The local buffer may be a snapshot of the aliased source view.
+			value := source_buffer.get_value(mut vm, source_index, source.kind, true,
+				.unordered, true)
 			target.set_value_in_buffer(mut vm, target_index, value, .unordered, true)
 			source_index += source_size
 			target_index += target_size

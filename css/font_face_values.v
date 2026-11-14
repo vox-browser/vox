@@ -4182,11 +4182,13 @@ pub fn (loader &FontLoader) try_load_font(response &fetch.Response, bytes []u8) 
 
 pub fn (_ &FontLoader) try_load_font_mime_type_essence(response &fetch.Response, bytes []u8) ?string {
 	if mime := fetch.extract_mime_type(response.header_list) {
-		if mime.is_font() { return mime.essence() }
+		if is_supported_font_mimetype(mime.essence()) { return mime.essence() }
 	}
 	// Resource::sniff in the font context with no supplied MIME returns the
 	// font-pattern match, including null when no font pattern matches.
-	if mime := mimesniff.match_a_font_type_pattern(bytes) { return mime.essence() }
+	if mime := mimesniff.match_a_font_type_pattern(bytes) {
+		if is_supported_font_mimetype(mime.essence()) { return mime.essence() }
+	}
 	return none
 }
 

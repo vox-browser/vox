@@ -1055,8 +1055,8 @@ pub fn html_title_element_text(element &dom.HTMLTitleElement) string {
 }
 
 pub fn set_html_title_element_text(element &dom.HTMLTitleElement, value string) {
-	mut node := unsafe { &dom.Element(element) }.as_node()
-	node.string_replace_all(value)
+	mut title := unsafe { &dom.Element(element) }
+	title.set_title_text(value)
 }
 
 pub fn html_title_element_children_changed(element &dom.HTMLTitleElement, metadata dom.ChildrenChangedMetadata) {

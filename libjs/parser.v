@@ -13,6 +13,7 @@ const precedence_member = 19
 // V's by-value AST temporaries use more native stack than the Rust arena.
 // The upstream guard needs a lower limit here to fire before stack exhaustion.
 const max_parser_recursion_depth = u32(32)
+const max_parser_recursion_stack_bytes = uint(4 * 1024 * 1024)
 
 // Result of parsing a function's formal parameter list.
 struct ParsedParameters {
@@ -201,6 +202,7 @@ mut:
 	class_has_super_class          bool
 	class_scope_depth              u32
 	recursion_depth                u32
+	recursion_stack_base           uint
 	recursion_limit                u32 = max_parser_recursion_depth
 	stack_info                     StackInfo
 	recursion_limit_reached        bool
@@ -460,8 +462,16 @@ fn (p &Parser) source_text_end_offset() u32 {
 // === Error reporting ===
 
 fn (mut p Parser) enter_recursion() bool {
+	stack_address := C.vox_ak_current_frame_address()
+	if p.recursion_depth == 0 { p.recursion_stack_base = stack_address }
+	stack_used := if p.recursion_stack_base >= stack_address {
+		p.recursion_stack_base - stack_address
+	} else {
+		stack_address - p.recursion_stack_base
+	}
 	p.recursion_depth++
-	if p.recursion_depth > p.recursion_limit || p.stack_info.size_free() < 512 * 1024 {
+	if p.recursion_depth > p.recursion_limit || p.stack_info.size_free() < 512 * 1024
+		|| stack_used > max_parser_recursion_stack_bytes {
 		p.recursion_depth--
 		p.recursion_limit_reached = true
 		p.syntax_error('Maximum parser recursion depth exceeded')

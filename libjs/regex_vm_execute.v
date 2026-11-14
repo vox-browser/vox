@@ -83,6 +83,11 @@ pub fn (mut vm RegexVm) run() RegexVmResult {
 			}
 			RegexJump { vm.pc = instruction.target }
 			RegexSplit {
+				if !vm.program.unicode && !vm.program.unicode_sets && !vm.backward
+					&& !vm.modifiers.ignore_case && vm.fails_at_first_code_unit(instruction.prefer) {
+					vm.pc = instruction.other
+					continue
+				}
 				vm.push_backtrack(instruction.other, vm.pos)
 				vm.pc = instruction.prefer
 			}
@@ -218,4 +223,36 @@ pub fn (mut vm RegexVm) run() RegexVmResult {
 		}
 	}
 	return .no_match
+}
+
+// Before saving registers for an alternative, reject a leading literal or
+// character class that cannot match. Saves and clears would be undone on failure.
+fn (vm &RegexVm) fails_at_first_code_unit(start u32) bool {
+	mut pc := uint(start)
+	mut position := vm.pos
+	mut checked := 0
+	for checked < 4 {
+		instruction := regex_instruction_at(vm.program.instructions, pc) or { return false }
+		match instruction {
+			RegexLiteral {
+				if position >= vm.input_len()
+					|| u32(vm.input_code_unit(position)) != instruction.code_point { return true }
+			}
+			RegexBytecodeCharClass {
+				if position >= vm.input_len()
+					|| regex_char_in_ranges(u32(vm.input_code_unit(position)), instruction.ranges) == instruction.negated {
+					return true
+				}
+			}
+			RegexSave, RegexClearRegister {
+				pc++
+				continue
+			}
+			else { return false }
+		}
+		pc++
+		position++
+		checked++
+	}
+	return false
 }

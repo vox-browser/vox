@@ -975,7 +975,9 @@ pub fn (mut vm VM) throw_error_utf16(kind ErrorKind, message Utf16String) IError
 }
 
 pub fn (mut vm VM) throw_error(kind ErrorKind, message string) IError {
-	return vm.throw_error_utf16(kind, utf16_string(message))
+	// Runtime strings format through WTF-8, so preserve their unpaired UTF-16
+	// surrogates when the formatted message becomes a JavaScript string again.
+	return vm.throw_error_utf16(kind, utf16_string_from_utf8_without_validation(message))
 }
 
 // throw_completion<T>(ErrorType const&, Args&&...)

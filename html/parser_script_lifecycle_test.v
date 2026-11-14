@@ -426,18 +426,18 @@ fn test_document_open_resets_readiness_and_ignores_previous_stream_tasks() {
 }
 
 fn test_reentrant_document_open_during_readiness_preserves_the_new_stream() {
-	for stage in ['interactive', 'complete', 'load'] {
+	for stage in ['interactive', 'complete', 'load', 'pageshow'] {
 		mut document := parser_script_document()!
 		defer { document.finalize() }
 		observation := &ParserScriptObservation{}
-		target := if stage == 'load' {
+		target := if stage in ['load', 'pageshow'] {
 			unsafe { &dom.EventTarget(document.get_window()?) }
 		} else { unsafe { &dom.EventTarget(document) } }
-		target.add_event_listener_without_options(if stage == 'load' { 'load' } else { 'readystatechange' },
+		target.add_event_listener_without_options(if stage in ['load', 'pageshow'] { stage } else { 'readystatechange' },
 			dom.IDLEventListener.create(&dom.CallbackType{
 				handle_event: fn [document, observation, stage] (_ &dom.Event, _ ?&dom.EventTarget) dom.JSValue {
 					mut observed := unsafe { &ParserScriptObservation(observation) }
-					if observed.reopened || (stage != 'load' && document.ready_state() != stage) {
+					if observed.reopened || (stage !in ['load', 'pageshow'] && document.ready_state() != stage) {
 						return dom.js_undefined()
 					}
 					observed.reopened = true
@@ -456,6 +456,8 @@ fn test_reentrant_document_open_during_readiness_preserves_the_new_stream() {
 		assert document.parser.is_script_created()
 		assert !document.is_completely_loaded()
 		assert !document.fired_load_event
+		assert document.document_load_timing_info().load_event_start_time == 0
+		assert document.document_load_timing_info().load_event_end_time == 0
 		assert document.get_element_by_id('replacement') != none
 		document.close()!
 		parser_script_drain_tasks()

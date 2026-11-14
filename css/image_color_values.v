@@ -2372,6 +2372,10 @@ pub fn (style_value LinearGradientStyleValue) serialize(mode SerializationMode) 
 }
 
 pub fn (style_value LinearGradientStyleValue) absolutized(context ComputationContext) LinearGradientStyleValue {
+	direction := match style_value.direction_[0] {
+		LinearGradientSideOrCorner { LinearGradientDirection(style_value.direction_[0]) }
+		StyleValue { LinearGradientDirection(style_value.direction_[0].absolutized(context)) }
+	}
 	mut absolutized_color_stops := []ColorStopListElement{}
 	for color_stop in style_value.color_stop_list_ {
 		absolutized_color_stops << color_stop.absolutized(context)
@@ -2382,7 +2386,7 @@ pub fn (style_value LinearGradientStyleValue) absolutized(context ComputationCon
 		?ColorInterpolationMethodStyleValue(none)
 	}
 
-	return LinearGradientStyleValue.create(style_value.direction_[0], absolutized_color_stops, style_value.gradient_type_, style_value.repeating_, absolutized_color_interpolation_method)
+	return LinearGradientStyleValue.create(direction, absolutized_color_stops, style_value.gradient_type_, style_value.repeating_, absolutized_color_interpolation_method)
 }
 
 pub fn (style_value LinearGradientStyleValue) angle_degrees(gradient_size CSSPixelSize) f64 {
