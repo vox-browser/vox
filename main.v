@@ -6798,7 +6798,9 @@ fn (mut app BrowserApp) draw_command(source_command &layout.PaintCommand, page_x
 						C.native_add_corner_rounded_clip(f32(clip.x), f32(clip.y), f32(clip.width), f32(clip.height), f32(radii.top_left.horizontal), f32(radii.top_left.vertical), f32(radii.top_right.horizontal), f32(radii.top_right.vertical), f32(radii.bottom_right.horizontal), f32(radii.bottom_right.vertical), f32(radii.bottom_left.horizontal), f32(radii.bottom_left.vertical), f32(matrix[0]), f32(matrix[1]), f32(matrix[2]), f32(matrix[3]), f32(matrix[4]), f32(matrix[5]), page_x, page_y, f32(scroll_y), f32(app.ctx.height))
 					}
 					app.set_chromium_image_resource_identity(image_data.image_url)
-					if app.draw_sampled_png(command,image,image_data.image_url,draw_rect,source_rect,clip_data,matrix,
+					if app.draw_sampled_jpeg(command,image,image_data.image_url,draw_rect,source_rect,clip_data,matrix,
+						page_x,page_y,scroll_y,result.bitmap.scaling == .nearest_neighbor)
+						|| app.draw_sampled_png(command,image,image_data.image_url,draw_rect,source_rect,clip_data,matrix,
 						page_x,page_y,scroll_y,result.bitmap.scaling == .nearest_neighbor) {
 						clear_chromium_image_resource_identity()
 						C.native_end_clip()
