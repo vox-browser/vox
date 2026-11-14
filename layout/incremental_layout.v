@@ -332,13 +332,9 @@ fn try_incremental_relayout(document &dom.Document, root &Node, previous &Layout
 			values := unsafe { &UsedValues(entry) }
 			node := values.node_
 			if node == unsafe { nil } || node.layout_index() in skipped { continue }
-			// The containing block of the current tree: a rebuild may have
-			// replaced the one the committed values point to.
 			mut containing := ?&UsedValues(none)
-			if containing_block := node.containing_block() {
-				if containing_styled := unsafe { &Node(containing_block) }.as_node_with_style() {
-					containing = state.get(containing_styled)
-				}
+			if parent := committed_geometry_parent(unsafe { &Node(node) }, values) {
+				containing = state.get(parent)
 			}
 			_ = state.restore_retained_values(node, values, containing)
 		}
@@ -608,18 +604,30 @@ pub fn incremental_layout_reused_subtree_count() u64 {
 	return incremental_layout_reused_subtrees
 }
 
+// Table rows, groups, columns and captions can be positioned relative to the
+// principal table instead of their CSS containing block (its wrapper). Preserve
+// that coordinate parent while it is still an ancestor in the current tree.
+// Other boxes, and replaced ancestors, rebind to the current containing block.
+fn committed_geometry_parent(node &Node, values &UsedValues) ?&NodeWithStyle {
+	if parent := values.containing_block_used_values_ {
+		parent_node := unsafe { &Node(parent.node_) }
+		if parent_node.display().is_table_inside()
+			&& node_is_inclusive_ancestor(parent_node, node) {
+			return parent.node_
+		}
+	}
+	containing := node.containing_block() or { return none }
+	return unsafe { &Node(containing) }.as_node_with_style()
+}
+
 fn restore_committed_layout_node(mut state LayoutState, previous &LayoutState, node &Node) {
 	if styled := node.as_node_with_style() {
 		lookup := committed_values_lookup(previous, styled)
 		if lookup.values != unsafe { nil } {
 			values := lookup.values
-			// The containing block of the current tree: a rebuild may have
-			// replaced the one the committed values point to.
 			mut containing := ?&UsedValues(none)
-			if containing_block := node.containing_block() {
-				if containing_styled := unsafe { &Node(containing_block) }.as_node_with_style() {
-					containing = state.get(containing_styled)
-				}
+			if parent := committed_geometry_parent(node, values) {
+				containing = state.get(parent)
 			}
 			mut restored := state.restore_retained_values(styled, values, containing)
 			restored.scrollable_overflow_rect_ = none
