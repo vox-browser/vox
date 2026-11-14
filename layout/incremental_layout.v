@@ -559,7 +559,10 @@ fn apply_recorded_inner_layout(mut values UsedValues, before &UsedValues, after 
 	if after.content_width_ != before.content_width_ {
 		values.content_width_ = after.content_width_
 	}
-	if after.content_height_ != before.content_height_ {
+	// An indefinite recorded height that the inputs did not have to match is
+	// the recorded call's result whether or not the inner layout wrote it.
+	if after.content_height_ != before.content_height_
+		|| (values.content_height_ != before.content_height_ && subtree_height_is_not_an_input(before, values)) {
 		values.content_height_ = after.content_height_
 	}
 	if after.has_definite_width_ != before.has_definite_width_ {
@@ -699,10 +702,24 @@ fn subtree_optional_pixels_equal(a ?CSSPixels, b ?CSSPixels) bool {
 	return b == none
 }
 
+// Same-binary control: compare the content height of a box whose height is
+// indefinite, as before.
+const retain_indefinite_height_input = os.getenv('VOX_RETAIN_INDEFINITE_HEIGHT_INPUT') != ''
+
+// A box laid out more than once in a pass keeps the content height its
+// parent derived from the earlier call. While that height is indefinite on
+// both sides it is the previous call's output, not an input of this one: a
+// parent that hands a height to the inner layout marks it definite or passes
+// it as the available height, and both are compared.
+fn subtree_height_is_not_an_input(a &UsedValues, b &UsedValues) bool {
+	return !retain_indefinite_height_input && !a.has_definite_height_ && !b.has_definite_height_
+}
+
 // The values a parent sets before FormattingContext::layout_inside() that the
 // inner layout reads. Offsets and margins only place the box.
 fn subtree_layout_inputs_match(a &UsedValues, b &UsedValues) bool {
-	if a.content_width_ != b.content_width_ || a.content_height_ != b.content_height_
+	if a.content_width_ != b.content_width_
+		|| (a.content_height_ != b.content_height_ && !subtree_height_is_not_an_input(a, b))
 		|| a.has_definite_width_ != b.has_definite_width_ || a.has_definite_height_ != b.has_definite_height_
 		|| a.width_constraint != b.width_constraint || a.height_constraint != b.height_constraint
 		|| a.padding_left != b.padding_left || a.padding_right != b.padding_right
@@ -731,7 +748,7 @@ fn subtree_layout_inputs_match(a &UsedValues, b &UsedValues) bool {
 // The first input that differs, for VOX_INCREMENTAL_LAYOUT_DIAGNOSTICS.
 fn subtree_layout_inputs_difference(a &UsedValues, b &UsedValues) string {
 	if a.content_width_ != b.content_width_ { return 'content-width' }
-	if a.content_height_ != b.content_height_ { return 'content-height' }
+	if a.content_height_ != b.content_height_ && !subtree_height_is_not_an_input(a, b) { return 'content-height' }
 	if a.has_definite_width_ != b.has_definite_width_ { return 'definite-width' }
 	if a.has_definite_height_ != b.has_definite_height_ { return 'definite-height' }
 	if a.width_constraint != b.width_constraint { return 'width-constraint' }
