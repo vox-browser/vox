@@ -51,6 +51,7 @@ fn (mut module_record SourceTextModule) compile_module(mut vm VM) !&Executable {
 			source_code: SourceCode.create(utf16_string(module_record.module_filename), utf16_string(module_record.parsed.source_text))
 			parsed_source: module_record.parsed
 			starting_line: module_record.module_starting_line
+			native_cache_scope: 'module'
 		}
 		strict: true
 		starting_line: module_record.module_starting_line

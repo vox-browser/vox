@@ -793,6 +793,7 @@ pub fn (mut script Script) compile(mut vm VM) !&Executable {
 				utf16_string(script.parsed.source_text))
 			parsed_source: script.parsed
 			starting_line: script.starting_line
+			native_cache_scope: 'script'
 		}
 		strict:        script.is_strict_mode
 		starting_line: script.starting_line

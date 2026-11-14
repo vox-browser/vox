@@ -86,6 +86,7 @@ fn (mut function ECMAScriptFunction) compile(mut vm VM) !&Executable {
 			source_code: function.source.source_code
 			parsed_source: function.source.parsed_source
 			starting_line: function.source.starting_line
+			native_cache_scope: 'function:${function.data.source_text_start}:${function.data.source_text_end}:${function.data.is_strict_mode}:${function.data.is_arrow_function}'
 		}
 		strict: function.data.is_strict_mode
 		starting_line: function.source.starting_line

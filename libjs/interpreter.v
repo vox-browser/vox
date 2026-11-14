@@ -404,6 +404,7 @@ pub fn (mut vm VM) run_executable(mut frame ExecutionContext, executable &Execut
 		}
 	}
 	if mut tier := vm.native_tier {
+		if tier.persistent != none { tier.prepare_cached_entry(executable) }
 		if tier.profiling {
 			tier.observe(executable)
 		}

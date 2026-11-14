@@ -25,6 +25,13 @@ mut:
 	stats       NativeCodeStats
 	diagnostics bool
 	activity    NativeCodeActivity
+	persistent ?&NativeCodeCache
+}
+
+struct NativeCompiledLibrary {
+	handle voidptr
+	entries []NativeEntry
+	stats NativeCodeStats
 }
 
 pub struct NativeCodeActivity {
@@ -105,6 +112,17 @@ pub fn (mut vm VM) compile_native_code(directory string, compiler string, minimu
 		}
 	}
 	if selected.len == 0 { return error('No warmed executables meet the native threshold') }
+	compiled := native_compile_library(selected, directory, compiler)!
+	mut entries := map[voidptr]NativeEntry{}
+	for index, executable in selected { entries[voidptr(executable)] = compiled.entries[index] }
+	tier.entries = entries.move()
+	tier.handle = compiled.handle
+	tier.stats = NativeCodeStats{...compiled.stats, observed_executables: tier.observed.len}
+	tier.enabled = true
+	return tier.stats
+}
+
+fn native_compile_library(selected []&Executable, directory string, compiler string) !NativeCompiledLibrary {
 	source, fast_count := native_source(selected)!
 	// The generated ABI, opcodes, target and optimization flags are part of the
 	// key. No function pointer or process-specific payload is embedded in the file.
@@ -112,7 +130,6 @@ pub fn (mut vm VM) compile_native_code(directory string, compiler string, minimu
 	os.mkdir_all(directory)!
 	library := os.join_path(os.real_path(directory), key + dl.dl_ext)
 	mut stats := NativeCodeStats{
-		observed_executables: tier.observed.len
 		compiled_executables: selected.len
 		fast_instructions:    fast_count
 		cache_hit:            os.is_file(library)
@@ -149,21 +166,17 @@ pub fn (mut vm VM) compile_native_code(directory string, compiler string, minimu
 	}
 	started := time.sys_mono_now()
 	handle := dl.open_opt(library, dl.rtld_now | dl.rtld_local)!
-	mut entries := map[voidptr]NativeEntry{}
-	for index, executable in selected {
+	mut entries := []NativeEntry{}
+	for index in 0 .. selected.len {
 		symbol := dl.sym_opt(handle, 'vox_native_${index}') or {
 			dl.close(handle)
 			return err
 		}
-		entries[voidptr(executable)] = unsafe { NativeEntry(symbol) }
+		entries << unsafe { NativeEntry(symbol) }
 	}
 	stats.load_ms = f64(time.sys_mono_now() - started) / 1e6
 	stats.library_sha256 = sha256.hexhash(os.read_file(library)!)
-	tier.entries = entries.move()
-	tier.handle = handle
-	tier.stats = stats
-	tier.enabled = true
-	return stats
+	return NativeCompiledLibrary{handle: handle, entries: entries, stats: stats}
 }
 
 // Switch the same warmed VM between control and candidate without profiling or
@@ -173,7 +186,7 @@ pub fn (mut vm VM) use_native_code(enabled bool) ! {
 		return error('Cannot switch native code during JavaScript execution')
 	}
 	mut tier := vm.native_tier or { return error('Native tier is not initialized') }
-	if enabled && tier.handle == unsafe { nil } { return error('No native code loaded') }
+	if enabled && tier.handle == unsafe { nil } && tier.persistent == none { return error('No native code loaded') }
 	tier.enabled = enabled
 }
 
@@ -184,6 +197,9 @@ pub fn (mut vm VM) close_native_code() ! {
 	if mut tier := vm.native_tier {
 		tier.enabled = false
 		if tier.handle != unsafe { nil } { dl.close(tier.handle) }
+		if mut cache := tier.persistent {
+			for _, library in cache.libraries { dl.close(library.handle) }
+		}
 	}
 	vm.native_tier = none
 }

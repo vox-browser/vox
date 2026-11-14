@@ -71,6 +71,8 @@ pub mut:
 	global_bindings []GlobalBinding
 	parsed_source &ParsedSource = unsafe { nil }
 	starting_line u32 = 1
+	// Stable role inside the owning source, used only by the disk code cache.
+	native_cache_scope string
 }
 
 pub fn (executable &Executable) get_identifier(index u32) Utf16String {
