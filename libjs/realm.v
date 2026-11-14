@@ -29,6 +29,7 @@ pub mut:
 	error_prototypes               map[ErrorKind]&Object
 	error_constructors             map[ErrorKind]&Object
 	function_prototype             ?&Object                 // %Function.prototype%
+	async_function_prototype ?&Object
 	array_prototype ?&Object
 	array_constructor ?&Object
 	map_prototype ?&Object
@@ -148,6 +149,10 @@ pub fn initialize_host_defined_realm(mut vm VM, hooks RealmGlobalHooks) !&Execut
 	realm.object_prototype = object_prototype.object
 	function_prototype := FunctionPrototype.create(mut vm, realm, object_prototype.object)
 	realm.function_prototype = function_prototype.object
+	mut async_function_prototype := Object.create(realm, realm.function_prototype)
+	async_function_prototype.define_direct_property(PropertyName.from_symbol(vm.well_known_symbol_to_string_tag()),
+		Value.from_string(vm.create_string_from_str('AsyncFunction')), attribute_configurable)
+	realm.async_function_prototype = async_function_prototype
 	object_prototype.initialize(mut vm, realm, realm_primitive_prototypes())
 	realm.object_constructor = ObjectConstructor.create(mut vm, realm).object
 	initialize_error_intrinsics(mut vm, mut realm)

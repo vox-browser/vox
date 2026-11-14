@@ -19,9 +19,9 @@ mut:
 
 fn create_ecmascript_function(mut vm VM, source &Executable, index u32, named_expression bool, inferred_name ?Utf16String) !&Object {
 	data := source.parsed_source.function_table.get(FunctionId{id: index})
-	if data.kind != .normal { return error('LibJS async and generator functions are not translated yet') }
+	if data.kind in [.generator, .async_generator] { return error('LibJS generator functions are not translated yet') }
 	realm := vm.realm()
-	mut object := Object.create(realm, realm.function_prototype)
+	mut object := Object.create(realm, if data.kind == .async_kind { realm.async_function_prototype } else { realm.function_prototype })
 	object.class_name = 'Function'
 	mut environment := vm.running_execution_context().lexical_environment
 	// Named function expressions have a private immutable self binding.
@@ -44,7 +44,7 @@ fn create_ecmascript_function(mut vm VM, source &Executable, index u32, named_ex
 		inferred_name: inferred_name
 	}
 	object.callable = FunctionObject(function)
-	if !data.is_arrow_function { object.constructor = ConstructorFunction(function) }
+	if !data.is_arrow_function && data.kind == .normal { object.constructor = ConstructorFunction(function) }
 	object.set_function_length(f64(data.function_length))
 	object.set_function_name(mut vm, PropertyName.from_utf16(function.name_for_call_stack()), none)
 	// SourceCode is already decoded once per script/module and shared by all
@@ -60,7 +60,7 @@ fn create_ecmascript_function(mut vm VM, source &Executable, index u32, named_ex
 		mut binding := scope
 		binding.initialize_binding(mut vm, data.name or { panic('missing function name') }.name, Value.from_object(object), .normal)!
 	}
-	if !data.is_arrow_function {
+	if !data.is_arrow_function && data.kind == .normal {
 		mut prototype := Object.create(realm, realm.object_prototype)
 		prototype.define_direct_property(PropertyName.from_str('constructor'), Value.from_object(object), attribute_writable | attribute_configurable)
 		object.define_direct_property(PropertyName.from_str('prototype'), Value.from_object(prototype), attribute_writable)
@@ -111,6 +111,9 @@ fn (mut function ECMAScriptFunction) compile(mut vm VM) !&Executable {
 }
 
 fn (mut function ECMAScriptFunction) internal_call(mut vm VM, this_value Value, arguments []Value) !Value {
+	// Creating a function does not evaluate its body. Do not execute an async
+	// body as an ordinary function while Promise/await execution is pending.
+	if function.data.kind != .normal { return error('LibJS async function execution is not translated yet') }
 	executable := function.compile(mut vm)!
 	mut stack := vm.interpreter_stack()
 	mark := stack.top()
