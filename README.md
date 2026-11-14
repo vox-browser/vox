@@ -34,10 +34,13 @@ v .
 ./vox2 https://example.com
 ```
 
-The first setup downloads checksum-verified HarfBuzz 15.1.0 sources, builds its
-OpenType/CoreText library with Apple's Clang, and caches the result under
-`Build/deps/harfbuzz-15.1.0` for reuse by development and production builds.
-HarfBuzz is supplied by setup rather than Homebrew.
+The first setup installs the [HarfBuzz VPM module](https://github.com/vlang/harfbuzz),
+including a checksum-verified, optimized HarfBuzz 15.1.0 archive for Apple Silicon
+or Intel from its GitHub release. It enables OpenType/AAT/CoreText without
+Graphite2 and reuses the installed archive for development and production builds.
+HarfBuzz is downloaded precompiled; no local C++ build or Homebrew HarfBuzz is
+needed. Use a current VPM with `vpm-binaries.json` support. The dependency is also
+listed in `v.mod`, so `v install` installs it directly.
 
 For an existing macOS checkout, rerun
 `eval "$(sh tools/run_v_tool.sh dev_build_env)"` before the next `v .` build.
