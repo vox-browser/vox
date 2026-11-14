@@ -476,9 +476,11 @@ fn (mut scope WindowOrWorkerGlobalScopeMixin) run_timer_initialization_steps(han
 	completion := fn [owner_handle, task_steps, nesting_level, id] () {
 		mut owner := unsafe { &WindowOrWorkerGlobalScopeMixin(owner_handle) }
 		mut timer := owner.active_timers_[id] or { return }
-		// A repeating platform clock may fire while its previous task is still
-		// queued, or deliver a firing posted before the timer was restarted.
-		if timer.firing_queued || (timer.repeat && owner.timer_now_ms() < timer.due_time_ms) {
+		// The native repeating clock keeps its schedule when the interval is
+		// unchanged. Its next tick can precede the deadline recomputed after
+		// the previous task; only a pending/running firing should suppress it.
+		// Platform timer generations already reject deferred stale registrations.
+		if timer.firing_queued {
 			return
 		}
 		timer.firing_queued = true
@@ -487,9 +489,9 @@ fn (mut scope WindowOrWorkerGlobalScopeMixin) run_timer_initialization_steps(han
 		if window := owner.associated_window_ { document = window.associated_document() }
 		mut queued_task := Task.create(.timer_task, document, fn [owner_handle, task_steps, id] () {
 			mut owner := unsafe { &WindowOrWorkerGlobalScopeMixin(owner_handle) }
-			mut timer := owner.active_timers_[id] or { return }
-			timer.firing_queued = false
-			owner.active_timers_[id] = timer
+			if id !in owner.active_timers_ { return }
+			// Keep the firing coalesced across nested event-loop work in the
+			// callback. Completion removes the timer or rearms it with a fresh flag.
 			if mut realm := owner.error_reporting_realm_ {
 				mut context := TemporaryExecutionContext.create(mut realm, .yes)
 				defer { context.close() }
