@@ -1721,7 +1721,7 @@ pub fn perform_url_and_history_update_steps(document &dom.Document, new_url dom.
 	// The navigable's session history outlives the document whose script
 	// pushed or replaced this entry; keep the entry and its payload persistent.
 	persistent := platform.enter_persistent()
-	new_entry := &SessionHistoryEntry{
+	mut new_entry := &SessionHistoryEntry{
 		url: persistent_session_history_url(new_url)
 		classic_history_api_state: persistent_serialization_record(serialized_data or {
 			active_entry.classic_history_api_state
@@ -1735,6 +1735,9 @@ pub fn perform_url_and_history_update_steps(document &dom.Document, new_url dom.
 		HistoryHandlingBehavior.replace
 	} else {
 		history_handling_
+	}
+	if history_handling == .replace {
+		new_entry.navigation_api_key = active_entry.navigation_api_key
 	}
 	mut mutable_document := unsafe { &dom.Document(document) }
 	if history_handling == .push {
