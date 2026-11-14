@@ -9,10 +9,10 @@ Provisional entries retain unresolved acceptance checks.
 **Pixel recheck, 2026-11-14:** Vox does **not** pass pixel equality across
 this catalog. GitHub, Hacker News, Lobsters and Wikipedia are exact in two
 fresh production captures each. vlang.io now has **810 differing pixels** in
-production, down from the earlier 3,228. The latest background/border and inset
-groups correct 20 pixels without new differences relative to the 830-pixel
-production control. Earlier rotated filtering introduced 142 one-level errors;
-remaining JPEG, text and shadow errors still fail equality. CNN retains its
+production, down from the earlier 3,228. A new recorded-clip fix reduces this
+to **341 in diagnostics**, correcting 469 pixels without new differences;
+production validation of that fix is pending. Remaining JPEG, text and scene
+errors still fail equality. CNN retains its
 rendering, source/replay and native-repeat failures. Reddit remains unverified
 (missing historical fixture, earlier live HTTP 403). A separate tall-shadow
 control also has a retained baseline repeat failure. See the [current audit,

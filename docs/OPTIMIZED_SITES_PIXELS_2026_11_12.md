@@ -1924,3 +1924,75 @@ Completed job scratch, binaries, generated C and the temporary harness symlink
 are removed after verified archival. Normal managed commit hooks request C,
 literal V `-prod`, single-unit rebuilds. Frozen captures establish no live-site,
 author-script or instruction-performance acceptance.
+
+## Recorded filter clips beyond the window, 2026-11-14
+
+`8dc5c0df1` preserves the recorded author clip when preparing grouped rotated
+elliptical shadows. The native graphics clip included the visible window's
+bottom edge. In vlang.io's picture, the final visible tile starts at y=638;
+using the window edge at 792 instead of the author's rounded-out edge at 841
+changed the blur input's centered downsampling grid. V now intersects supported
+axis-aligned recorded ancestor clips, and the native transfer converts that
+document rectangle into readback coordinates. Publication retains the native
+clip. Unsupported clips keep the preceding boundary; kernels, shaders,
+sampling policy and existing references are unchanged.
+
+Two independently captured, identity-pinned Brave references for each new
+fixture agree exactly. The empty transform hint in `large-clipped-orbit`
+reproduces the non-root picture and its y=384 raster origin. Its companion
+`large-orbit-underlay` supplies the same scene without the orbit. The focused
+GPU check compares every RGBA pixel in the final tile's visible interior:
+the window-clipped input differs at 485 pixels; the author-clipped input is
+exact. The complete scene retains other differences, reported below.
+
+Twenty-three focused checks execute successfully: four browser-module checks
+and nineteen GPU checks, including the existing capsule, rounded-shadow,
+rotated, inset and shared-decoration oracles. The final RGBA assertion also
+executes separately. Runtime checks use the 3 GiB guard and the supported
+`VOX_ARENA_POISON=1`; compiler jobs use the default guard and V's 10G limit.
+
+Diagnostic executable SHA-256
+`b6a9250894995a81b60d59e33dc014764f879d660ea8902aa83fea04e9d997c6`
+produces these counts in two fresh captures each:
+
+| Workload | Differing pixels |
+| --- | ---: |
+| vlang.io | **341**, down from 810 |
+| New large clipped orbit | **111**, down from 596 |
+| New orbit underlay control | **105**, unchanged |
+| GitHub / Hacker News / Lobsters / Wikipedia | **0 each** |
+| All preceding exact background, inset, shadow, avatar and gradient-text controls | **0 each** |
+| Other preceding diagnostic controls | Unchanged |
+| CNN | **175,866**, with its existing source/replay failure |
+
+vlang.io has **469 corrected pixels and zero new differences**; the complete
+orbit fixture has **485 corrected and zero new**. vlang.io retains 279 JPEG
+pixels, one heading pixel and 61 scene pixels. The four exact archived sites
+retain their content audits, including 33 GitHub rows and 30 Hacker News
+stories. The fixed-input rerun covers 30 workloads, 60 document captures and
+one startup check; all 61 native guards, the driver and outer guard exit 0.
+Its 46 rendering-source and six tool witnesses remain unchanged. Twenty-nine
+native pairs repeat exactly; CNN differs at 1,050 pixels. The earlier tall
+shadow baseline repeat failure remains unresolved despite this cohort's
+matching tall-shadow captures.
+
+An initial wider run is retained as diagnostic evidence because the on-disk
+driver manifest changed briefly during its execution. The unchanged-input
+rerun supplies the results above. Other retained investigations establish
+that the thin capsule control is already exact, sampled CPU/GPU glyph blending
+agrees, and a matrix-association candidate changes no browser pixels. That
+candidate and temporary tracing/probe code are reverted.
+
+Production `aa19da69`, receipt `20261114-191855-433aa86a`, still supplies the
+810-pixel baseline. Its compiled manifest lacks this fix; **341 remains a
+diagnostic result pending the managed production rebuild**. A concurrent
+LibJS performance-binding change also separates the recorded control and
+candidate source sets; these captures use the default JavaScriptCore build,
+with author scripts disabled for vlang.io. The isolated GPU comparison directly
+exercises the changed filter boundary. No live-site, scripting or performance
+acceptance is claimed. All-site equality remains open, including CNN, the
+missing original Reddit fixture and the retained repeatability failure.
+
+Raw commands, identities, sources, PNGs, actual exits, failed attempts and
+transition counts are local under
+`docs/performance/vlang-gradients-20261112/raw/large-orbit-20261114/`.

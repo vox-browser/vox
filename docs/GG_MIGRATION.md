@@ -2946,3 +2946,15 @@ correcting eight without new differences. Production `1861ac91` confirms all
 27 workload counts twice, including four exact archives. The earlier tall-shadow
 baseline repeat failure remains open alongside the existing site failures.
 See the [audit](OPTIMIZED_SITES_PIXELS_2026_11_12.md#shared-unblurred-inset-decorations-2026-11-14).
+
+### Recorded rotated-filter clips beyond the window, 2026-11-14
+
+`8dc5c0df1` carries supported recorded author clips through the native pixel
+transfer, preserving the blur grid beyond the visible window. The final-tile
+RGBA oracle improves 485 differences to zero; the complete reduced scene
+improves 596 to 111 and vlang.io improves 810 to 341, both without new errors.
+Twenty-three focused checks pass with arena poisoning. The fixed-input
+30-workload diagnostic cohort preserves four exact archives and preceding
+control counts; CNN and the earlier tall-shadow instability remain open.
+Production validation is pending the managed rebuild. See the
+[audit](OPTIMIZED_SITES_PIXELS_2026_11_12.md#recorded-filter-clips-beyond-the-window-2026-11-14).

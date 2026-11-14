@@ -1353,3 +1353,15 @@ is exact. `f4a40d91b` also makes the complete fixture exact twice in diagnostics
 and production `1861ac91`, while the ordinary non-SVG inset fixture stays exact.
 Eleven focused checks pass; known blur and repeatability failures remain open.
 See the [inset-group audit](../../../docs/OPTIMIZED_SITES_PIXELS_2026_11_12.md#shared-unblurred-inset-decorations-2026-11-14).
+
+`diagnostic/large-clipped-orbit.html` uses an empty transform-hinted overlap
+barrier to give the tall panel its own picture at y=384. The clipped orbit's
+author bounds extend below the visible window. `large-orbit-underlay.html`
+keeps the same layout with the orbit hidden. Each unchanged 1024×768, scale-1
+reference matches two fresh identity-pinned Brave captures. The GPU test uses
+that independent background and compares the final tile's visible RGBA pixels:
+window-clipped filter input leaves 485 errors; recorded author bounds are exact.
+The complete scene retains 111 differences and its underlay retains 105;
+the fixture is not globally pixel-exact. `8dc5c0df1` corrects 469 vlang.io pixels
+without new differences in diagnostics; production validation is pending.
+See the [recorded-clip audit](../../../docs/OPTIMIZED_SITES_PIXELS_2026_11_12.md#recorded-filter-clips-beyond-the-window-2026-11-14).
