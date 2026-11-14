@@ -150,3 +150,38 @@ pub fn document_image_clip_requires_msaa(rect Rect, radii [4]Point) bool {
 	return can_apply_analytic_clip(rrect_shape(RRect.rect_radii(rect, radii)),
 		Transform.new(Matrix.identity())).is_empty()
 }
+
+pub fn (mut s GpuSurface) draw_document_scaled_float_rgba(levels [][]f32, width int, height int,
+	natural_width int, natural_height int, x f32, y f32, destination_width f32, destination_height f32) ! {
+	if width <= 0 || height <= 0 || width > 4096 || height > 4096
+		|| width*height > 4*1024*1024 || levels.len == 0 || levels.len > 13
+		|| natural_width <= 0 || natural_height <= 0 || destination_width <= 0 || destination_height <= 0 {
+		return error('gg.canvas: invalid floating document image')
+	}
+	mut desc := gfx.ImageDesc{width:width,height:height,pixel_format:.rgba32f,num_mipmaps:levels.len}
+	for index,level in levels {
+		if level.len != math.max(1,width>>index)*math.max(1,height>>index)*4 {
+			return error('gg.canvas: invalid floating image mip')
+		}
+		desc.data.subimage[0][index]=gfx.Range{ptr:level.data,size:u32(level.len*int(sizeof(f32)))}
+	}
+	image:=gfx.make_image(&desc)
+	if gfx.query_image_state(image)!=.valid {gfx.destroy_image(image);return error('gg.canvas: float upload failed')}
+	s.retired << &GpuSurface{ctx:s.ctx,color:image}
+	extent_x,extent_y:=f32(natural_width)*(f32(width)/natural_width),f32(natural_height)*(f32(height)/natural_height)
+	mut draw_width,mut draw_height:=f32(natural_width),f32(natural_height)
+	mut sx,mut sy:=destination_width/natural_width,destination_height/natural_height
+	mut sample_x,mut sample_y:=extent_x/natural_width,extent_y/natural_height
+	if levels.len>1 {
+		sx*=f32(natural_width)/extent_x;sy*=f32(natural_height)/extent_y
+		draw_width,draw_height=f32(width),f32(height)
+		sample_x,sample_y=1,1
+	}
+	saved:=s.transform
+	defer {s.transform=saved}
+	s.transform=Transform.new(Matrix.values([sx,f32(0),x,0,sy,y,0,0,1]!))
+	s.draw_shape(ShapeGeometry{kind:.rect,rect:Rect.ltrb(0,0,draw_width,draw_height)},Paint{
+		anti_alias:true
+		layer_image:LayerImage{image:image,texture_width:width,texture_height:height,document_scale:[sample_x,sample_y]!,document_linear_filter:true}
+	})!
+}

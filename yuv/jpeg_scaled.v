@@ -7,6 +7,28 @@ import math
 // both chroma reconstruction and clipping of out-of-gamut samples.
 pub fn jpeg_scaled_rgba(planes []u8, width int, height int, target_width int,
 	target_height int, subsampled bool) ?[]u8 {
+	scaled := jpeg_scaled_planes(planes, width, height, target_width, target_height, subsampled) or { return none }
+	if target_width == width && target_height == height {
+		return jpeg_bilinear_rgba(planes, width, height, subsampled)
+	}
+	return jpeg_bilinear_rgba(scaled, target_width, target_height, false)
+}
+
+// Retain fractional RGB until texture coverage and destination blending.
+pub fn jpeg_scaled_colors(planes []u8, width int, height int, tw int, th int, subsampled bool) ?[]f32 {
+	scaled := jpeg_scaled_planes(planes, width, height, tw, th, subsampled) or { return none }
+	size := tw * th
+	mut out := []f32{len: size * 4}
+	for i in 0 .. size {
+		yy, u, v := f64(scaled[i]), f64(scaled[size + i]) - 128, f64(scaled[size * 2 + i]) - 128
+		for c, value in [yy + 1.402 * v, yy - .344136 * u - .714136 * v, yy + 1.772 * u, f64(255)] {
+			out[i * 4 + c] = f32(math.max(0, math.min(255, value)) / 255)
+		}
+	}
+	return out
+}
+
+fn jpeg_scaled_planes(planes []u8, width int, height int, target_width int, target_height int, subsampled bool) ?[]u8 {
 	if width <= 0 || height <= 0 || width > 4096 || height > 4096 || width * height > 4 * 1024 * 1024
 		|| target_width <= 0 || target_height <= 0 || target_width > width || target_height > height
 		|| (subsampled && (width % 2 != 0 || height % 2 != 0)) {
@@ -19,13 +41,10 @@ pub fn jpeg_scaled_rgba(planes []u8, width int, height int, target_width int,
 	}
 	ys, cs := width * height, cw * ch
 	if planes.len != ys + 2 * cs { return none }
-	if target_width == width && target_height == height {
-		return jpeg_bilinear_rgba(planes, width, height, subsampled)
-	}
 	mut scaled := jpeg_scale_plane(planes[..ys], width, height, target_width, target_height)
 	scaled << jpeg_scale_plane(planes[ys..ys + cs], cw, ch, target_width, target_height)
 	scaled << jpeg_scale_plane(planes[ys + cs..], cw, ch, target_width, target_height)
-	return jpeg_bilinear_rgba(scaled, target_width, target_height, false)
+	return scaled
 }
 
 fn jpeg_scale_plane(source []u8, width int, height int, tw int, th int) []u8 {

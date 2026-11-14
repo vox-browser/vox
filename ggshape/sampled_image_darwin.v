@@ -23,6 +23,16 @@ pub fn draw_sampled_rgba_with_shadow(pixels &u8, width i32, height i32, pitch i3
 	source []u8, source_width int, source_height int, x f32, y f32,
 	destination_width f32, destination_height f32, samples int, natural_width int, natural_height int,
 	clip [12]f32, gpu_mips bool, shadow &C.VoxGraphiteShape) i32 {
+ return draw_sampled_image(pixels,width,height,pitch,backdrop,source,[],source_width,source_height,x,y,destination_width,destination_height,samples,natural_width,natural_height,clip,gpu_mips,shadow)
+}
+
+pub fn draw_sampled_colors_clipped(pixels &u8,width i32,height i32,pitch i32,backdrop i32,colors []f32,sw int,sh int,x f32,y f32,dw f32,dh f32,samples int,nw int,nh int,clip [12]f32) i32 {
+ if sw<=0 || sh<=0 || sw>4096 || sh>4096 || sw*sh>4*1024*1024 || colors.len!=sw*sh*4 {return 0}
+ for i,v in colors {if !math.is_finite(v) || v<0 || v>1 || (i%4==3 && v!=1) {return 0}}
+ return draw_sampled_image(pixels,width,height,pitch,backdrop,[],colors,sw,sh,x,y,dw,dh,samples,nw,nh,clip,false,unsafe{nil})
+}
+
+fn draw_sampled_image(pixels &u8,width i32,height i32,pitch i32,backdrop i32,source []u8,colors []f32,source_width int,source_height int,x f32,y f32,destination_width f32,destination_height f32,samples int,natural_width int,natural_height int,clip [12]f32,gpu_mips bool,shadow &C.VoxGraphiteShape) i32 {
 	if shadow != unsafe { nil } && (shadow.fill != 9 || shadow.thickness != 0 || !supported(shadow)) {
 		return 0
 	}
@@ -42,10 +52,11 @@ pub fn draw_sampled_rgba_with_shadow(pixels &u8, width i32, height i32, pitch i3
 	}
 	extent_x := f32(natural_width) * (f32(source_width) / f32(natural_width))
 	extent_y := f32(natural_height) * (f32(source_height) / f32(natural_height))
-	mut levels := [source]
+	byte_source := if colors.len>0 {colors.map(u8(math.floor(it*255+.5)))} else {source}
+	mut levels := [byte_source]
 	if destination_width < source_width && destination_height < source_height
 		&& extent_x >= source_width && extent_y >= source_height {
-		image := imageraster.Image{ width: source_width, height: source_height, pixels: source }
+		image := imageraster.Image{ width: source_width, height: source_height, pixels: byte_source }
 		chain := if gpu_mips {
 			gpu_image_mip_chain(image) or { return 0 }
 		} else {
@@ -79,8 +90,14 @@ pub fn draw_sampled_rgba_with_shadow(pixels &u8, width i32, height i32, pitch i3
 			canvas.Point{clip[10], clip[11]},
 		]!), .intersect, true) or { return 0 }
 	}
+ if colors.len>0 {
+  mut floats:=[colors]
+  for level in levels[1..] {floats << level.map(f32(it)/255)}
+  surface.draw_document_scaled_float_rgba(floats,source_width,source_height,natural_width,natural_height,x,y,destination_width,destination_height) or {return 0}
+ } else {
 	surface.draw_document_scaled_rgba(levels, source_width, source_height, natural_width, natural_height, x, y,
 		destination_width, destination_height) or { return 0 }
+ }
 	surface.read_pixels(pixels, pitch) or { return 0 }
 	return 1
 }

@@ -28,7 +28,7 @@ fn (mut app BrowserApp) draw_sampled_jpeg(command &layout.PaintCommand, image &g
 	dw, dh := imageraster.decode_size(image.width, image.height, f64(destination.width), f64(destination.height)) or { return false }
 	bytes := app.background_image_bytes(url) or { return false }
 	if !yuv.jpeg_plane_orientation_supported(bytes) { return false }
-	key := '\x00scaled-jpeg:${sha256.hexhash(bytes.bytestr())}:${dw}x${dh}'
+	key := '\x00scaled-float-jpeg:${sha256.hexhash(bytes.bytestr())}:${dw}x${dh}'
 	mut decoded := &gg.Image{}
 	if id := app.background_image_ids[key] {
 		decoded = app.ctx.get_cached_image_by_idx(id)
@@ -38,11 +38,11 @@ fn (mut app BrowserApp) draw_sampled_jpeg(command &layout.PaintCommand, image &g
 		if planes == unsafe { nil } { return false }
 		defer { C.native_free_jpeg_pixels(planes) }
 		if w != image.width || h != image.height { return false }
-		pixels := yuv.jpeg_scaled_rgba(unsafe { planes.vbytes(size) }, w, h, dw, dh, sampling == 2) or { return false }
+		pixels := yuv.jpeg_scaled_colors(unsafe { planes.vbytes(size) }, w, h, dw, dh, sampling == 2) or { return false }
 		persistent := platform.enter_persistent()
 		defer { platform.leave_persistent(persistent) }
 		retained := pixels.clone()
-		mut uploaded := gg.Image{ width: dw, height: dh, nr_channels: 6, ok: true, data: retained.data }
+		mut uploaded := gg.Image{ width: dw, height: dh, nr_channels: int(C.native_float_image_channel_marker()), ok: true, data: retained.data }
 		uploaded.id = app.ctx.cache_image(uploaded)
 		app.background_image_ids[key.clone()] = uploaded.id
 		decoded = app.ctx.get_cached_image_by_idx(uploaded.id)
@@ -50,7 +50,7 @@ fn (mut app BrowserApp) draw_sampled_jpeg(command &layout.PaintCommand, image &g
 	mut clipping := clip
 	clipping[0] += f32(matrix[4])
 	clipping[1] += f32(matrix[5])
-	drawn := C.native_draw_sampled_png(decoded.data, i32(dw), i32(dh), i32(image.width), i32(image.height), 0,
+	drawn := C.native_draw_sampled_png(decoded.data, i32(dw), i32(dh), i32(image.width), i32(image.height), 2,
 		f32(destination.x) + f32(matrix[4]), f32(destination.y) + f32(matrix[5]), f32(destination.width), f32(destination.height), &clipping[0], page_x, page_y, f32(scroll_y), f32(app.ctx.width), f32(app.ctx.height)) != 0
 	if drawn && os.getenv('VOX_DIAGNOSTIC_PNG') != '' {
 		eprintln('VOX_SCALED_JPEG ${image.width}x${image.height}->${dw}x${dh}')

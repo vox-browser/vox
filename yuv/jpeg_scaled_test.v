@@ -64,3 +64,14 @@ fn test_scaled_jpeg_promotes_chroma_before_clipping_rgb() {
 	assert actual == [u8(128), 172, 0, 255, 128, 84, 255, 255, 128, 172, 0, 255, 128, 84, 255,
 		255]
 }
+
+fn test_scaled_jpeg_keeps_fractional_rgb_before_texture_sampling() {
+	mut planes := []u8{len: 24, init: 128}
+	for i in 20 .. 24 { planes[i] = 129 }
+	colors := jpeg_scaled_colors(planes, 4, 4, 2, 2, true) or { panic('colors') }
+	assert colors[0] == f32(129.402 / 255)
+	assert colors[1] == f32((128 - .714136) / 255)
+	assert colors[2] == f32(128.0 / 255)
+	assert colors[3] == 1
+	assert jpeg_scaled_colors(planes[..23], 4, 4, 2, 2, true) == none
+}
