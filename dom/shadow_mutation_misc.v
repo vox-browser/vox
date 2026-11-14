@@ -3417,7 +3417,7 @@ fn append_media_document_style(document &Document) ! {
 	head_node.append_child(style_element.as_node())!
 }
 
-fn convert_to_xml_error_document(mut document Document, error_string string) {
+pub fn convert_to_xml_error_document(mut document Document, error_string string) {
 	html_element := create_element(document, 'html', namespace_html_, none, none, false) or {
 		return
 	}

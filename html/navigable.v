@@ -1389,9 +1389,9 @@ fn parse_navigated_text_document(document &dom.Document, source string, type_ mi
 
 fn parse_navigated_xml_document(document &dom.Document, source string) {
 	mut owner := unsafe { &dom.Document(document) }
-	// A malformed document keeps what was built before the error, as no
-	// error document is translated for this path yet.
-	parse_xml_document_source(document, source) or {}
+	parse_xml_document_source(document, source) or {
+		dom.convert_to_xml_error_document(mut owner, 'Failed to parse XML document: ${err}')
+	}
 	// The end steps of the HTML parser, which the XML parser has no state for.
 	owner.update_readiness(.interactive)
 	owner.update_readiness(.complete)
