@@ -8,8 +8,16 @@ struct GlyphFace {
 	variable     bool
 }
 
-fn open_glyph_face(path string) ?GlyphFace {
+fn open_glyph_face(path string, index int) ?GlyphFace {
 	return none
+}
+
+pub fn glyph_face_style(path string, index int) ?(bool, bool) {
+	return none
+}
+
+pub fn register_glyph_face(key string, path string, postscript_name string, tags []u32, values []f32) bool {
+	return false
 }
 
 fn (f GlyphFace) release() {}

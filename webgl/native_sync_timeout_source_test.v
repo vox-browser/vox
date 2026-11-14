@@ -15,9 +15,9 @@ fn test_source_client_wait_host_timeout_override_preserves_actual_driver_states_
 			expected_error := C.vox_gl_get_error()
 			other.native.make_current()
 			actual := context.client_wait_sync(mut sync, flags, requested_timeout)
-			mut selected := [0, 0, 0, 0]!
+			mut selected := [i32(0), 0, 0, 0]!
 			C.vox_gl_int_parameter(viewport, &selected[0])
-			assert selected == [1, 2, 3, 4]!
+			assert selected == [i32(1), 2, 3, 4]!
 			if expected == wait_failed {
 				assert actual == expected
 			} else {
@@ -30,6 +30,6 @@ fn test_source_client_wait_host_timeout_override_preserves_actual_driver_states_
 	context.finish()
 	assert context.client_wait_sync(mut sync, 0, u64(-1)) == already_signaled
 	assert context.get_sync_parameter(sync, sync_status).integer == signaled
-	context.delete_sync(mut sync)
+	context.delete_sync(sync)
 	assert context.get_error() == no_error
 }

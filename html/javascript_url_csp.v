@@ -2,10 +2,15 @@ module html
 
 import contentsecuritypolicy as csp
 import dom
+import encoding
 import url as liburl
 
 fn javascript_url_source(address dom.URL) string {
-	return liburl.percent_decode(address.serialize().all_after(':')).bytestr()
+	bytes := liburl.percent_decode(address.serialize().all_after(':'))
+	decoder := encoding.TextDecoder.construct('utf-8', encoding.TextDecoderOptions{
+		ignore_bom: true
+	}) or { panic(err) }
+	return decoder.decode(bytes, encoding.TextDecodeOptions{}) or { panic(err) }
 }
 
 fn javascript_url_is_blocked_by_csp(document &dom.Document, address dom.URL) bool {

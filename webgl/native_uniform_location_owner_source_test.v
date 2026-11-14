@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: BSD-2-Clause
 module webgl
 
-fn uniform_location_owner(expected [4]int) {
-	mut selected := [0, 0, 0, 0]!
+fn uniform_location_owner(expected [4]i32) {
+	mut selected := [i32(0), 0, 0, 0]!
 	C.vox_gl_int_parameter(viewport, &selected[0])
 	assert selected == expected
 }
@@ -21,10 +21,10 @@ fn test_source_uniform_location_handle_gate_precedes_driver_and_fresh_owned_reco
 		mut gated_records := [foreign, deleted]
 		for mut record in gated_records {
 			other.native.make_current()
-			mut unused := 0
+			mut unused := i32(0)
 			C.vox_gl_int_parameter(GLenum(0xffff_ffff), &unused)
 			assert owner.get_uniform_location(mut record, 'first') == none
-			uniform_location_owner([9, 10, 11, 12]!)
+			uniform_location_owner([i32(9), 10, 11, 12]!)
 			assert C.vox_gl_get_error() == invalid_enum
 			assert C.vox_gl_get_error() == no_error
 			assert owner.get_error() == invalid_operation
@@ -52,10 +52,10 @@ fn test_source_uniform_location_handle_gate_precedes_driver_and_fresh_owned_reco
 			assert expected >= 0
 			other.native.make_current()
 			first := owner.get_uniform_location(mut program, name) or { panic('first owned location') }
-			uniform_location_owner([1, 2, 3, 4]!)
+			uniform_location_owner([i32(1), 2, 3, 4]!)
 			other.native.make_current()
 			second := owner.get_uniform_location(mut program, name) or { panic('fresh owned location') }
-			uniform_location_owner([1, 2, 3, 4]!)
+			uniform_location_owner([i32(1), 2, 3, 4]!)
 			assert voidptr(first) != voidptr(second)
 			assert first.handle(program)! == u32(expected)
 			assert second.handle(program)! == u32(expected)
@@ -68,7 +68,7 @@ fn test_source_uniform_location_handle_gate_precedes_driver_and_fresh_owned_reco
 			assert C.vox_gl_uniform_location(program.object.native_name(), name.str) == -1
 			other.native.make_current()
 			assert owner.get_uniform_location(mut program, name) == none
-			uniform_location_owner([1, 2, 3, 4]!)
+			uniform_location_owner([i32(1), 2, 3, 4]!)
 			assert owner.get_error() == no_error
 		}
 		mut unlinked := owner.create_program()
@@ -77,7 +77,7 @@ fn test_source_uniform_location_handle_gate_precedes_driver_and_fresh_owned_reco
 		assert expected != no_error
 		other.native.make_current()
 		assert owner.get_uniform_location(mut unlinked, 'first') == none
-		uniform_location_owner([1, 2, 3, 4]!)
+		uniform_location_owner([i32(1), 2, 3, 4]!)
 		assert owner.get_error() == expected
 	}
 }

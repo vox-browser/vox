@@ -254,10 +254,7 @@ fn stable_scroll_node_id_for(node_id u64, kind CompositorScrollNodeKind, pseudo_
 pub fn async_scrolling_state_from_display_list(display_list CompositorDisplayList) AsyncScrollingState {
 	metadata := display_list.metadata or { AsyncScrollingMetadata{} }
 	mut scroll_nodes := []AsyncScrollNode{}
-	mut parent_indices := []int{}
 	mut hit_targets := []WheelHitTestTarget{}
-	mut target_indices := []int{}
-	mut target_document_ids := []u64{}
 	mut main_thread_regions := []MainThreadWheelEventRegion{}
 	mut blocking_regions := []BlockingWheelEventRegion{}
 	mut scrollbars := []ViewportScrollbar{}
@@ -265,8 +262,12 @@ pub fn async_scrolling_state_from_display_list(display_list CompositorDisplayLis
 	for entry in display_list.commands {
 		match entry {
 			CompositorScrollNodeCommand {
+				parent_node_id := if entry.parent_scroll_node_index != 0 {
+					?AsyncScrollNodeId(scroll_node_id_for(entry.document_id, entry.parent_scroll_node_index))
+				} else { ?AsyncScrollNodeId(none) }
 				scroll_nodes << AsyncScrollNode{
 					node_id: scroll_node_id_for(entry.document_id, entry.scroll_node_index)
+					parent_node_id: parent_node_id
 					stable_node_id: stable_scroll_node_id_for(entry.scrollable_node_id, entry.scroll_node_kind, entry.pseudo_element_type)
 					scrollport_rect: entry.scrollport_rect
 					min_scroll_offset: entry.min_scroll_offset
@@ -277,16 +278,17 @@ pub fn async_scrolling_state_from_display_list(display_list CompositorDisplayLis
 					snaps_scroll_position_horizontally: entry.snaps_scroll_position_horizontally
 					snaps_scroll_position_vertically: entry.snaps_scroll_position_vertically
 				}
-				parent_indices << entry.parent_scroll_node_index
 			}
 			CompositorWheelHitTestTargetCommand {
+				target_node_id := if entry.target_scroll_node_index != 0 {
+					?AsyncScrollNodeId(scroll_node_id_for(entry.document_id, entry.target_scroll_node_index))
+				} else { ?AsyncScrollNodeId(none) }
 				hit_targets << WheelHitTestTarget{
+					target_node_id: target_node_id
 					context: entry.context
 					rect: entry.rect
 					corner_radii: entry.corner_radii
 				}
-				target_indices << entry.target_scroll_node_index
-				target_document_ids << entry.document_id
 			}
 			CompositorMainThreadWheelEventRegionCommand {
 				main_thread_regions << MainThreadWheelEventRegion{entry.context, entry.rect}
@@ -312,20 +314,6 @@ pub fn async_scrolling_state_from_display_list(display_list CompositorDisplayLis
 					vertical: entry.vertical
 				}
 			}
-		}
-	}
-	for index, parent_index in parent_indices {
-		if parent_index != 0 {
-			mut node := scroll_nodes[index]
-			node.parent_node_id = scroll_node_id_for(node.node_id.document_id, parent_index)
-			scroll_nodes[index] = node
-		}
-	}
-	for index, target_index in target_indices {
-		if target_index != 0 {
-			mut target := hit_targets[index]
-			target.target_node_id = scroll_node_id_for(target_document_ids[index], target_index)
-			hit_targets[index] = target
 		}
 	}
 	return AsyncScrollingState{
@@ -417,23 +405,21 @@ pub fn (mut tree VisualContextTree) resolve_sticky_offsets(snapshot CompositorSc
 	tree.sticky_resolution_count++
 }
 
+fn scroll_tree_for_hit_testing(state AsyncScrollingState, display_list ?&CompositorDisplayList, visual_context_tree ?&VisualContextTree, snapshot CompositorScrollStateSnapshot) AsyncScrollTree {
+	mut tree := AsyncScrollTree{}
+	tree.set_state(state)
+	tree.rebuild_wheel_hit_test_targets(display_list, visual_context_tree, snapshot)
+	return tree
+}
+
 pub fn blocks_wheel_event_at_position(state AsyncScrollingState, display_list ?&CompositorDisplayList, visual_context_tree ?&VisualContextTree, snapshot CompositorScrollStateSnapshot, position painting.Point) bool {
 	if state.has_blocking_wheel_event_region_covering_viewport {
 		return true
 	}
 	list := display_list or { return state.has_blocking_wheel_event_listeners }
-	tree := visual_context_tree or { return state.has_blocking_wheel_event_listeners }
-	assert list.structural_epoch == tree.structural_epoch
-	for region in state.blocking_wheel_event_regions {
-		if !tree.context_is_valid(region.context) {
-			return true
-		}
-		position_in_context := tree.transform_point_for_hit_test(region.context, position, snapshot) or { continue }
-		if region.rect.contains(position_in_context) {
-			return true
-		}
-	}
-	return false
+	contexts := visual_context_tree or { return state.has_blocking_wheel_event_listeners }
+	tree := scroll_tree_for_hit_testing(state, list, contexts, snapshot)
+	return tree.blocks_wheel_event_at_position(*contexts, position)
 }
 
 pub struct WheelHitTestResult {
@@ -684,10 +670,9 @@ pub fn (mut tree AsyncScrollTree) rebuild_wheel_hit_test_targets(display_list ?&
 		}
 	}
 	for region in tree.blocking_wheel_event_regions_ {
-		if !contexts.context_is_valid(region.context) {
-			continue
-		}
-		viewport_rect := if contexts.animated_spatial_nodes[region.context.spatial] {
+		// Retain invalid blockers so production hit testing fails closed.
+		viewport_rect := if !contexts.context_is_valid(region.context)
+			|| contexts.animated_spatial_nodes[region.context.spatial] {
 			?painting.Rect(none)
 		} else {
 			?painting.Rect(contexts.transform_rect_to_viewport(region.context, region.rect, snapshot))
@@ -717,6 +702,21 @@ fn wheel_hit_test_target_contains_point(target CachedWheelHitTestTarget, point p
 	return target.corner_radii.contains(painting.IntPoint{int(point.x), int(point.y)}, painting.IntRect{int(target.rect.x), int(target.rect.y), int(target.rect.width), int(target.rect.height)})
 }
 
+pub fn (tree AsyncScrollTree) blocks_wheel_event_at_position(visual_context_tree VisualContextTree, position painting.Point) bool {
+	if tree.has_blocking_wheel_event_region_covering_viewport_ { return true }
+	epoch := tree.visual_context_tree_structural_epoch_ or { return true }
+	if epoch != visual_context_tree.structural_epoch { return true }
+	for target in tree.cached_blocking_wheel_event_targets_ {
+		if !visual_context_tree.context_is_valid(target.context) { return true }
+		if viewport := target.viewport_rect {
+			if !viewport.contains(position) { continue }
+		}
+		position_in_context := visual_context_tree.transform_point_for_hit_test(target.context, position, tree.scroll_state_snapshot_) or { continue }
+		if target.rect.contains(position_in_context) { return true }
+	}
+	return false
+}
+
 pub fn (tree AsyncScrollTree) hit_test_scroll_node_for_wheel(visual_context_tree VisualContextTree, position painting.Point, delta painting.Point, snap_handling SnapContainerHandling) WheelHitTestResult {
 	epoch := tree.visual_context_tree_structural_epoch_ or { return WheelHitTestResult{} }
 	if epoch != visual_context_tree.structural_epoch {
@@ -736,16 +736,8 @@ pub fn (tree AsyncScrollTree) hit_test_scroll_node_for_wheel(visual_context_tree
 			return WheelHitTestResult{ blocked_by_main_thread_region: true }
 		}
 	}
-	for target in tree.cached_blocking_wheel_event_targets_ {
-		if viewport := target.viewport_rect {
-			if !viewport.contains(position) {
-				continue
-			}
-		}
-		position_in_context := visual_context_tree.transform_point_for_hit_test(target.context, position, tree.scroll_state_snapshot_) or { continue }
-		if target.rect.contains(position_in_context) {
-			return WheelHitTestResult{ blocked_by_wheel_event_region: true }
-		}
+	if tree.blocks_wheel_event_at_position(visual_context_tree, position) {
+		return WheelHitTestResult{ blocked_by_wheel_event_region: true }
 	}
 	for index := tree.cached_wheel_hit_test_targets_.len - 1; index >= 0; index-- {
 		target := tree.cached_wheel_hit_test_targets_[index]
@@ -792,11 +784,9 @@ pub fn (tree AsyncScrollTree) hit_test_scroll_node_for_wheel(visual_context_tree
 }
 
 fn hit_test_scroll_node_at_position(state AsyncScrollingState, display_list ?&CompositorDisplayList, visual_context_tree ?&VisualContextTree, snapshot CompositorScrollStateSnapshot, position painting.Point, delta painting.Point, snap_handling SnapContainerHandling) WheelHitTestResult {
-	list := display_list or { return WheelHitTestResult{} }
-	contexts := visual_context_tree or { return WheelHitTestResult{} }
-	mut tree := AsyncScrollTree{}
-	tree.set_state(state)
-	tree.rebuild_wheel_hit_test_targets(list, contexts, snapshot)
+	list := display_list or { return WheelHitTestResult{blocked_by_wheel_event_region: state.has_blocking_wheel_event_listeners} }
+	contexts := visual_context_tree or { return WheelHitTestResult{blocked_by_wheel_event_region: state.has_blocking_wheel_event_listeners} }
+	tree := scroll_tree_for_hit_testing(state, list, contexts, snapshot)
 	return tree.hit_test_scroll_node_for_wheel(*contexts, position, delta, snap_handling)
 }
 
@@ -809,7 +799,7 @@ pub fn admit_wheel_scroll(state AsyncScrollingState, display_list ?&CompositorDi
 		if !blocker_regions_are_current {
 			return .stale_blocking_wheel_event_regions
 		}
-		if blocks_wheel_event_at_position(state, display_list, visual_context_tree, snapshot, position) {
+		if result.blocked_by_wheel_event_region {
 			return .blocked_by_wheel_event_region
 		}
 	}

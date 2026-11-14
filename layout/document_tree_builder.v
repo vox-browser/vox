@@ -29,6 +29,10 @@ mut:
 	workspace               &platform.Arena = unsafe { nil }
 	allow_subtree_reuse      bool
 	nonreusable_flow_roots   map[u64]bool
+	// clean_subtree_reuse.v: ancestors being built whose DOM node is flagged
+	// for a complete rebuild, and elements already found ineligible.
+	flagged_ancestor_depth   int
+	clean_subtree_rejections map[u64]bool
 	quote_nesting_level      u32
 	counter_sets             map[i64]css.CountersSet
 	last_child_by_parent     map[i64]i64
@@ -881,7 +885,8 @@ fn run_document_layout_with_current_style(document &dom.Document, viewport_width
 		}
 	}
 	timing_checkpoint = layout_timing_checkpoint('    build_tree_total', timing_checkpoint)
-	return finish_document_layout(document, root, viewport_width, viewport_height, timing_checkpoint)
+	return finish_document_layout_with_reuse(document, root, viewport_width, viewport_height,
+		timing_checkpoint, !needs_layout_tree_rebuild)
 }
 
 struct SizeQueryContainerGeometry {
@@ -950,36 +955,20 @@ fn invalidate_size_queries_after_geometry_commit(previous map[u64]SizeQueryConta
 	}
 }
 
-fn finish_document_layout(document &dom.Document, root &Node, viewport_width f64, viewport_height f64, initial_checkpoint u64) ?DocumentLayoutResult {
-	load_instruction_stage := processmetrics.begin_instruction_stage('layout_geometry')
-	defer { load_instruction_stage.finish() }
-	mut timing_checkpoint := initial_checkpoint
-	viewport := root.as_viewport() or { return none }
-	// Restore current propagation facts on retained trees as well as new trees.
-	if root_element := viewport_document_element_box(root) {
-		mut mutable_viewport := unsafe { &Node(root) }
-		propagate_root_styles_to_viewport(root_element, mut mutable_viewport)
-	}
-	// ImagePaintable::reset_for_relayout() refreshes image availability and alt
-	// text before geometry consumes the replaced element's natural dimensions.
-	root.for_each_in_inclusive_subtree(fn (node &Node) dom.TraversalDecision {
-		if image_box := node.as_image_box() {
-			mut mutable_image_box := unsafe { &ImageBox(image_box) }
-			mutable_image_box.reset_for_relayout()
-		}
-		return .@continue
-	})
-	// TreeBuilder upstream associates each DOM node with its Layout::Node as it
-	// is created. Install the opaque bridge before layout as well, so algorithms
-	// which run during layout (notably list-item ordinal resolution) observe the
-	// same complete layout tree. Geometry is refreshed after layout below.
-	previous_query_container_geometry := snapshot_size_query_container_geometry(root)
-	prepared_attachment := prepare_dom_layout_attachment(root)
-	initial_root_placeholder := prepared_attachment.root
-	mut mutable_document := unsafe { &dom.Document(document) }
-	mutable_document.set_layout_viewport(&dom.LayoutViewport{
-		root_node: initial_root_placeholder
-	})
+// The complete geometry of one document pass: formatting contexts, absolute
+// and relative positioning, and scrollable overflow.
+fn run_document_geometry(document &dom.Document, root &Node, viewport &Viewport, viewport_width f64,
+	viewport_height f64, started u64) (&LayoutState, u64) {
+	return run_document_geometry_with_reuse(document, root, viewport, viewport_width, viewport_height,
+		started, false)
+}
+
+// `reuse`: clean subtrees may restore the previous committed layout
+// (incremental_layout.v); the caller has checked that its environment matches.
+fn run_document_geometry_with_reuse(document &dom.Document, root &Node, viewport &Viewport, viewport_width f64,
+	viewport_height f64, started u64, reuse bool) (&LayoutState, u64) {
+	geometry_started := started
+	mut timing_checkpoint := started
 	mut state := LayoutState.new()
 	mut previous_backoff := unsafe { &RetainedBlockBackoffTable(nil) }
 	if previous := document_layout_result(document) {
@@ -989,7 +978,11 @@ fn finish_document_layout(document &dom.Document, root &Node, viewport_width f64
 		}
 		previous_backoff = previous.state.block_layout_backoff_
 		state.previous_state_ = unsafe { &LayoutState(previous.state) }
+		if reuse && !disable_incremental_layout && !previous.state.resolved_anchor_positions_ {
+			state.subtree_reuse_source_ = unsafe { &LayoutState(previous.state) }
+		}
 	}
+	state.pass_serial_ = next_layout_pass_serial()
 	state.begin_retained_block_backoff_pass(previous_backoff)
 	state.enable_measurement_chunk_pool()
 	$if prealloc {
@@ -997,7 +990,6 @@ fn finish_document_layout(document &dom.Document, root &Node, viewport_width f64
 	}
 	defer { state.release_measurement_chunk_pool() }
 	mut geometry_scratch := begin_document_geometry_scratch(document)
-	geometry_started := timing_checkpoint
 	layout_viewport(mut state, viewport, viewport_width * document.layout_coordinate_scale(),
 		viewport_height * document.layout_coordinate_scale())
 	timing_checkpoint = layout_timing_checkpoint('      formatting_contexts', timing_checkpoint)
@@ -1015,17 +1007,105 @@ fn finish_document_layout(document &dom.Document, root &Node, viewport_width f64
 	commit_line_clamp_edges(mut state, root)
 	measure_document_scrollable_overflow(mut state, root)
 	coordinates.finish()
+	// Decisions are geometry-workspace data; later passes keep the records,
+	// not the traversal map backed by this pass's scratch arena.
+	state.subtree_layout_decisions_ = map[u64]SubtreeLayoutDecision{}
 	geometry_scratch.finish()
 	// The new cache retains only contexts present in this committed pass. Drop
 	// the lookup owner for removed or otherwise ineligible previous contexts.
 	state.previous_inline_layouts_ = map[u64]&RetainedInlineLayout{}
 	state.previous_block_layouts_ = map[u64]&RetainedBlockLayout{}
 	state.previous_state_ = unsafe { nil }
+	state.subtree_reuse_source_ = unsafe { nil }
 	state.block_layout_rejections_ = map[u64]bool{}
 	timing_checkpoint = layout_timing_checkpoint('      scrollable_overflow', timing_checkpoint)
 	if os.getenv('LADYBIRD_DEBUG_TIMING') != '' {
 		eprintln('Ladybird V timing:     geometry ${(timing_checkpoint - geometry_started) / 1_000_000} ms')
 	}
+	return state, timing_checkpoint
+}
+
+fn finish_document_layout(document &dom.Document, root &Node, viewport_width f64, viewport_height f64, initial_checkpoint u64) ?DocumentLayoutResult {
+	return finish_document_layout_with_reuse(document, root, viewport_width, viewport_height,
+		initial_checkpoint, false)
+}
+
+// `same_tree`: the layout tree was not rebuilt since the previous pass, so
+// every change since then was reported through Node.set_needs_layout_update().
+fn finish_document_layout_with_reuse(document &dom.Document, root &Node, viewport_width f64, viewport_height f64, initial_checkpoint u64, same_tree bool) ?DocumentLayoutResult {
+	load_instruction_stage := processmetrics.begin_instruction_stage('layout_geometry')
+	defer { load_instruction_stage.finish() }
+	mut timing_checkpoint := initial_checkpoint
+	viewport := root.as_viewport() or { return none }
+	// Restore current propagation facts on retained trees as well as new trees.
+	if root_element := viewport_document_element_box(root) {
+		mut mutable_viewport := unsafe { &Node(root) }
+		propagate_root_styles_to_viewport(root_element, mut mutable_viewport)
+	}
+	// ImagePaintable::reset_for_relayout() refreshes image availability and alt
+	// text before geometry consumes the replaced element's natural dimensions.
+	mut replaced_sizes := map[u32]ReplacedSizeEntry{}
+	replaced_signature := reset_images_and_sign_replaced_sizes_by_node(root,
+		u64(0xcbf29ce484222325), mut replaced_sizes)
+	pass := committed_layout_pass(document, viewport_width, viewport_height, replaced_signature)
+	// TreeBuilder upstream associates each DOM node with its Layout::Node as it
+	// is created. Install the opaque bridge before layout as well, so algorithms
+	// which run during layout (notably list-item ordinal resolution) observe the
+	// same complete layout tree. Geometry is refreshed after layout below.
+	previous_query_container_geometry := snapshot_size_query_container_geometry(root)
+	prepared_attachment := prepare_dom_layout_attachment(root)
+	initial_root_placeholder := prepared_attachment.root
+	mut mutable_document := unsafe { &dom.Document(document) }
+	mutable_document.set_layout_viewport(&dom.LayoutViewport{
+		root_node: initial_root_placeholder
+	})
+	mut state := unsafe { &LayoutState(nil) }
+	mut previous_state := unsafe { &LayoutState(nil) }
+	if previous := document_layout_result(document) {
+		if same_tree && voidptr(previous.root) == voidptr(root) { previous_state = previous.state }
+	}
+	// Subtree reuse below needs a changed natural size reported as a change.
+	mut reuse := false
+	if previous := document_layout_result(document) {
+		if previous.state != unsafe { nil }
+			&& committed_layout_environment_matches(previous.state.committed_pass_, pass) {
+			reuse = true
+			mark_changed_replaced_sizes(previous.state, replaced_sizes)
+		}
+	}
+	if previous_state != unsafe { nil } && !verify_incremental_layout_control {
+		if relaid := relayout_dirty_text_controls(document, root, previous_state, pass) {
+			state = relaid
+			if verify_text_control_relayout {
+				full, _ := run_document_geometry(document, root, viewport, viewport_width,
+					viewport_height, timing_checkpoint)
+				verify_text_control_geometry(state, full)
+			}
+		}
+	}
+	if state == unsafe { nil } && previous_state != unsafe { nil } && !verify_incremental_layout_control {
+		if relaid := relayout_incrementally(document, root, previous_state, pass, replaced_sizes) {
+			state = relaid
+			if verify_incremental_layout {
+				full, _ := run_document_geometry(document, root, viewport, viewport_width,
+					viewport_height, timing_checkpoint)
+				verify_incremental_layout_geometry_for(document, pass, state, full)
+			}
+		}
+	}
+	if state == unsafe { nil } {
+		state, timing_checkpoint = run_document_geometry_with_reuse(document, root, viewport,
+			viewport_width, viewport_height, timing_checkpoint, reuse && !verify_incremental_layout_control)
+		if reuse && verify_incremental_layout {
+			full, _ := run_document_geometry(document, root, viewport, viewport_width,
+				viewport_height, timing_checkpoint)
+			verify_incremental_layout_geometry_for(document, pass, state, full)
+		}
+	}
+	report_incremental_layout_pass(same_tree)
+	report_clean_subtree_reuse()
+	state.committed_pass_ = pass
+	state.replaced_sizes_ = replaced_sizes
 	root_placeholder := commit_dom_layout_attachment(root, state, prepared_attachment)
 	mutable_document.set_layout_viewport(&dom.LayoutViewport{
 		root_node: root_placeholder
@@ -1054,6 +1134,9 @@ pub fn document_layout_result(document &dom.Document) ?&DocumentLayoutResult {
 
 fn build_layout_box_for_element(document &dom.Document, element &dom.Element, style_computer &css.StyleComputer, mut builder_state TreeBuilderState) ?&Node {
 	if builder_state.allow_subtree_reuse {
+		if clean := reusable_clean_subtree(element, mut builder_state) {
+			return clean
+		}
 		if retained := reusable_clean_flow_subtree(element, mut builder_state.nonreusable_flow_roots) {
 			resolve_retained_flow_counters(retained, mut builder_state)
 			return retained.root
@@ -1201,6 +1284,13 @@ fn build_layout_box_for_element_with_svg_resource_kind(document &dom.Document, e
 		return box_node
 	}
 
+	// clean_subtree_reuse.v: nothing below a flagged node keeps its boxes on
+	// the strength of the invalidation flags.
+	rebuilds_whole_subtree := element.as_node().needs_layout_tree_update_()
+	if rebuilds_whole_subtree { builder_state.flagged_ancestor_depth++ }
+	defer {
+		if rebuilds_whole_subtree { builder_state.flagged_ancestor_depth-- }
+	}
 	// Collect generated ::before content, DOM children, then generated ::after
 	// content in tree order.
 	mut children := []&Node{}
@@ -1296,7 +1386,7 @@ fn build_layout_box_for_element_with_svg_resource_kind(document &dom.Document, e
 	}
 	mut list_item_marker := ?&Node(none)
 	if box_node.is_list_item_box() {
-		if marker := build_list_item_marker(document, element, computed, mut builder_state) {
+		if marker := build_list_item_marker(document, element, computed, .marker, mut builder_state) {
 			list_item_marker = marker
 			mut list_item := unsafe { &ListItemBox(box_node) }
 			list_item.set_marker(marker)
@@ -2617,7 +2707,7 @@ fn build_generated_pseudo_element(document &dom.Document, element &dom.Element, 
 			generated_style)
 	}
 	if node.is_list_item_box() {
-		if marker := build_list_item_marker(document, element, computed, mut builder_state) {
+		if marker := build_list_item_marker(document, element, computed, layout_pseudo, mut builder_state) {
 			mut list_item := unsafe { &ListItemBox(node) }
 			list_item.set_marker(marker)
 			attach_list_item_marker(mut node, marker, document, computed)
@@ -2638,10 +2728,13 @@ fn build_backdrop_pseudo_element(document &dom.Document, element &dom.Element, m
 	return node
 }
 
-fn build_list_item_marker(document &dom.Document, element &dom.Element, list_item_computed &css.ComputedProperties, mut builder_state TreeBuilderState) ?&Node {
-	marker_computed := css.computed_properties_for_pseudo_element(element, .marker) or {
+fn build_list_item_marker(document &dom.Document, element &dom.Element, list_item_computed &css.ComputedProperties, originating_pseudo css.PseudoElement, mut builder_state TreeBuilderState) ?&Node {
+	marker_style := css.computed_properties_for_pseudo_element(element, .marker) or {
 		list_item_computed.clone_for_anonymous_block()
 	}
+	// A marker of ::before or ::after belongs to that pseudo-element. Keep
+	// its style separate from the originating element's own ::marker.
+	marker_computed := if originating_pseudo == .marker { marker_style } else { marker_style.clone_for_nested_marker() }
 	if marker_computed.display().is_none() {
 		return none
 	}
@@ -2662,7 +2755,7 @@ fn build_list_item_marker(document &dom.Document, element &dom.Element, list_ite
 		mutable_marker_computed.set_content(content)
 		marker_box := ListItemMarkerBox.new(document, list_style_type, list_item_computed.list_style_position(), element, marker_computed)
 		mut marker := unsafe { &Node(marker_box) }
-		marker.set_generated_for(.marker, element)
+		marker.set_generated_for(originating_pseudo, element)
 		if styled := marker.as_node_with_style() {
 			mut mutable_styled := unsafe { &NodeWithStyle(styled) }
 			mutable_styled.set_content(content)
@@ -2674,7 +2767,7 @@ fn build_list_item_marker(document &dom.Document, element &dom.Element, list_ite
 			} else {
 				unsafe { &Node(TextNode.new_generated(document, item.value)) }
 			}
-			child.set_generated_for(.marker, element)
+			child.set_generated_for(originating_pseudo, element)
 			marker.append_child(child)
 		}
 		marker.set_children_are_inline(content.items.len > 0)
@@ -2693,19 +2786,19 @@ fn build_list_item_marker(document &dom.Document, element &dom.Element, list_ite
 	}
 	marker := ListItemMarkerBox.new(document, list_style_type, list_item_computed.list_style_position(), element, marker_computed)
 	mut marker_node := unsafe { &Node(marker) }
-	marker_node.set_generated_for(.marker, element)
+	marker_node.set_generated_for(originating_pseudo, element)
 	marker_node.set_children_are_inline(true)
 	if has_list_style_image {
 		image_value := list_style_image or { return marker_node }
 		if item := css.content_item_for_abstract_image(image_value, document.device_pixels_per_css_pixel()) {
 			inline_image_style := marker_computed.clone_for_anonymous_with_display(css.Display.from_short(.inline_))
 			mut image := unsafe { &Node(ImageBox.new_generated_for_content_item(document, inline_image_style, item)) }
-			image.set_generated_for(.marker, element)
+			image.set_generated_for(originating_pseudo, element)
 			marker_node.append_child(image)
 		}
 	} else {
 		mut text_node := unsafe { &Node(TextNode.new_generated(document, '')) }
-		text_node.set_generated_for(.marker, element)
+		text_node.set_generated_for(originating_pseudo, element)
 		marker_node.append_child(text_node)
 	}
 	return marker_node

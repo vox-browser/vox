@@ -4,6 +4,7 @@ module browserjs
 import dom
 import fetch
 import html
+import libjs
 import requestserver
 
 struct BrowserModuleSource {
@@ -20,6 +21,10 @@ struct BrowserModuleOperation {
 	source  BrowserModuleSource
 	resolve voidptr
 	reject  voidptr
+	// A modulepreload fetch: it fills the module map and hands its result to
+	// the imports that joined it, but has no JavaScript promise of its own.
+	preload bool
+	libjs_import ?LibJSModuleImport
 mut:
 	controller ?&fetch.FetchController
 	finished   bool
@@ -34,6 +39,8 @@ mut:
 	delayer   ?dom.DocumentLoadEventDelayer
 	evaluated bool
 	finished  bool
+	libjs_module ?&libjs.SourceTextModule
+	libjs_loading ?&libjs.PromiseCapability
 }
 
 struct BrowserModuleCurrentScript {
@@ -67,6 +74,7 @@ mut:
 	diagnostics        []string
 	closed             bool
 	worker_entry       ?&WorkerModuleEntryResult
+	libjs_draining bool
 }
 
 pub fn ModuleHost.create(settings &html.EnvironmentSettingsObject, transport &fetch.FetchHost) &ModuleHost {

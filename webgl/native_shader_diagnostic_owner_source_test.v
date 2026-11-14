@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: BSD-2-Clause
 module webgl
 
-fn shader_diagnostic_owner(expected [4]int) {
-	mut selected := [0, 0, 0, 0]!
+fn shader_diagnostic_owner(expected [4]i32) {
+	mut selected := [i32(0), 0, 0, 0]!
 	C.vox_gl_int_parameter(viewport, &selected[0])
 	assert selected == expected
 }
@@ -25,7 +25,7 @@ fn test_source_shader_diagnostics_keep_cpu_handle_returns_before_actual_sync_own
 				owner.get_shader_source(foreign)
 			}
 			assert result == none
-			shader_diagnostic_owner([9, 10, 11, 12]!)
+			shader_diagnostic_owner([i32(9), 10, 11, 12]!)
 			assert C.vox_gl_get_error() == invalid_value
 			assert owner.get_error() == invalid_operation
 			other.native.make_current()
@@ -35,7 +35,7 @@ fn test_source_shader_diagnostics_keep_cpu_handle_returns_before_actual_sync_own
 				owner.get_shader_source(shader)
 			}
 			assert empty or { panic('owned empty diagnostic') } == ''
-			shader_diagnostic_owner([1, 2, 3, 4]!)
+			shader_diagnostic_owner([i32(1), 2, 3, 4]!)
 			assert owner.get_error() == no_error
 		}
 		// Driver mutation supplies the source and compiler log independently of V.
@@ -51,10 +51,10 @@ fn test_source_shader_diagnostics_keep_cpu_handle_returns_before_actual_sync_own
 		actual_log := bytes[..length - 1].bytestr()
 		other.native.make_current()
 		assert owner.get_shader_source(shader) or { panic('driver source') } == actual_source
-		shader_diagnostic_owner([1, 2, 3, 4]!)
+		shader_diagnostic_owner([i32(1), 2, 3, 4]!)
 		other.native.make_current()
 		assert owner.get_shader_info_log(shader) or { panic('driver compiler log') } == actual_log
-		shader_diagnostic_owner([1, 2, 3, 4]!)
+		shader_diagnostic_owner([i32(1), 2, 3, 4]!)
 		assert owner.get_error() == no_error
 		owner.delete_shader(shader)
 		for info_log in [false, true] {
@@ -65,7 +65,7 @@ fn test_source_shader_diagnostics_keep_cpu_handle_returns_before_actual_sync_own
 				owner.get_shader_source(shader)
 			}
 			assert deleted == none
-			shader_diagnostic_owner([9, 10, 11, 12]!)
+			shader_diagnostic_owner([i32(9), 10, 11, 12]!)
 			assert owner.get_error() == invalid_operation
 		}
 	}

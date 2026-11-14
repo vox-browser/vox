@@ -2,8 +2,9 @@ module libjs
 
 // Selected paths from Rust/src/bytecode/{generator,codegen}.rs.
 // The V stream uses instruction indices and monotonically allocated registers;
-// upstream's register reuse, caches, packed instruction ABI and functions remain
-// pending. Unsupported syntax fails during compilation of the entire program.
+// upstream's register reuse, caches and packed instruction ABI remain pending.
+// Ordinary functions retain their defining source and compile on first call.
+// Unsupported top-level syntax fails before the program executes.
 struct BytecodeLoop {
 mut:
 	breaks      []u32
@@ -19,6 +20,16 @@ mut:
 	range         SourceRange
 	scope_depth   int
 	loops         []BytecodeLoop
+	function_body bool
+	initialized_functions []u32
+	compile_stack_ ?StackInfo
+}
+
+fn (mut generator BytecodeGenerator) check_compile_stack() ! {
+	if generator.compile_stack_ == none { generator.compile_stack_ = StackInfo.new() }
+	if (generator.compile_stack_ or { return error('Missing compiler stack bounds') }).size_free() < 512 * 1024 {
+		return error('LibJS bytecode compilation stack budget exceeded')
+	}
 }
 
 fn (mut generator BytecodeGenerator) emit(instruction Instruction) u32 {
@@ -202,11 +213,44 @@ fn (mut generator BytecodeGenerator) member_assignment(mut vm VM, target &Expres
 }
 
 fn (mut generator BytecodeGenerator) expression(mut vm VM, expression &Expression) !Operand {
+	generator.check_compile_stack()!
 	previous_range := generator.range
 	generator.range = expression.range
 	defer { generator.range = previous_range }
 	kind := expression.kind
 	match kind.tag {
+		.meta_property {
+			if kind.meta_property_type!=.import_meta { return generator.unsupported('new.target') }
+			dst := generator.temporary()
+			generator.emit(Instruction{op:.get_import_meta,dst:dst})
+			return dst
+		}
+		.regexp_literal {
+			data := kind.regexp_data or { return error('Missing regular expression') }
+			compile_regexp_engine(data.pattern, data.flags) or { return error('SyntaxError: ' + err.msg()) }
+			dst := generator.temporary()
+			generator.emit(Instruction{op: .new_regexp, dst: dst, lhs: generator.constant(Value.from_string(vm.create_string(data.pattern))), rhs: generator.constant(Value.from_string(vm.create_string(data.flags)))})
+			return dst
+		}
+		.array_expr {
+			dst := generator.temporary()
+			generator.emit(Instruction{op: .new_array, dst: dst, lhs: generator.constant(Value.from_f64(f64(kind.array_elements.len)))})
+			for index, element in kind.array_elements {
+				if value := element {
+					item := generator.expression(mut vm, &value)!
+					generator.emit(Instruction{op: .define_property, lhs: dst, rhs: generator.constant(Value.from_f64(f64(index))), src: item})
+				}
+			}
+			return dst
+		}
+		.object_expr {
+			return generator.object_literal(mut vm, kind.object_properties)
+		}
+		.function_expr {
+			dst := generator.temporary()
+			generator.emit(Instruction{op: .new_function, dst: dst, identifier: kind.function_id.id, strict: generator.executable.parsed_source.function_table.get(kind.function_id).name != none})
+			return dst
+		}
 		.numeric_literal {
 			return generator.constant(Value.from_f64(kind.numeric_value))
 		}
@@ -332,23 +376,7 @@ fn (mut generator BytecodeGenerator) expression(mut vm VM, expression &Expressio
 			return dst
 		}
 		.conditional {
-			dst := generator.temporary()
-			test := generator.expression(mut vm, kind.test or {
-				return error('Missing conditional test')
-			})!
-			alternate := generator.emit(Instruction{ op: .jump_if_false, lhs: test })
-			consequent := generator.expression(mut vm, kind.consequent or {
-				return error('Missing consequent')
-			})!
-			generator.emit(Instruction{ op: .mov, dst: dst, lhs: consequent })
-			end := generator.emit(Instruction{ op: .jump })
-			generator.patch(alternate)
-			other := generator.expression(mut vm, kind.alternate_expr or {
-				return error('Missing alternate')
-			})!
-			generator.emit(Instruction{ op: .mov, dst: dst, lhs: other })
-			generator.patch(end)
-			return dst
+			return generator.conditional_tail(mut vm, expression)
 		}
 		.sequence {
 			mut last := generator.constant(js_undefined())
@@ -537,29 +565,31 @@ fn (mut generator BytecodeGenerator) expression(mut vm VM, expression &Expressio
 	}
 }
 
-fn declaration_name(declaration VariableDeclarator) !Utf16String {
-	if declaration.target is IdentifierVarTarget { return declaration.target.identifier.name }
-	return error('Destructuring declarations are not translated yet')
+fn declaration_bound_names(declaration VariableDeclarator) []Utf16String {
+    mut names := []Utf16String{}
+    collect_declarator_names(declaration.target,mut names)
+    return names
 }
 
 fn (mut generator BytecodeGenerator) collect_vars(statement &Statement) ! {
 	kind := statement.kind
-	if kind.tag == .variable_declaration && kind.decl_kind == .var_kind {
-		for declaration in kind.declarations {
-			name := declaration_name(declaration)!
-			mut exists := false
-			for binding in generator.executable.global_bindings {
-				if !binding.is_lexical && binding.name == name {
-					exists = true
-					break
-				}
-			}
-			if !exists { generator.executable.global_bindings << GlobalBinding{
-					name: name.clone()
-				} }
+	if kind.tag == .function_declaration {
+		name := kind.func_name or { return error('Missing function declaration name') }
+		if !generator.executable.global_bindings.any(it.name == name.name && !it.is_lexical) {
+			generator.executable.global_bindings << GlobalBinding{name: name.name.clone()}
 		}
+		return
 	}
-	if kind.tag in [.program, .block] {
+	if kind.tag == .variable_declaration && kind.decl_kind == .var_kind {
+        for declaration in kind.declarations {
+            for name in declaration_bound_names(declaration) {
+                if !generator.executable.global_bindings.any(it.name==name && !it.is_lexical) {
+                    generator.executable.global_bindings << GlobalBinding{name:name.clone()}
+                }
+            }
+        }
+    }
+	if kind.tag in [.program, .block, .function_body] {
 		scope := if kind.tag == .program { (kind.program_data or { return error('Missing program') }).scope } else { kind.scope or {
 				return error('Missing block')} }
 		for child in scope.children {
@@ -572,6 +602,11 @@ fn (mut generator BytecodeGenerator) collect_vars(statement &Statement) ! {
 		if init := kind.for_init {
 			if init is ForInitDeclaration { generator.collect_vars(init.statement)! }
 		}
+	} else if kind.tag==.try_stmt {
+		data := kind.try_data or { return error('Missing try statement') }
+		generator.collect_vars(&data.block)!
+		if handler := data.handler { generator.collect_vars(&handler.body)! }
+		if finalizer := data.finalizer { generator.collect_vars(&finalizer)! }
 	}
 }
 
@@ -579,26 +614,16 @@ fn (mut generator BytecodeGenerator) lexical_declarations(children []Statement, 
 	for child in children {
 		if child.kind.tag != .variable_declaration || child.kind.decl_kind == .var_kind { continue
 		 }
-		for declaration in child.kind.declarations {
-			name := declaration_name(declaration)!
-			constant := child.kind.decl_kind == .const_kind
-			if global {
-				generator.executable.global_bindings << GlobalBinding{
-					name:        name.clone()
-					is_lexical:  true
-					is_constant: constant
-				}
-			} else {
-				generator.emit(Instruction{
-					op:         if constant {
-						OpCode.create_immutable_binding
-					} else {
-						OpCode.create_mutable_binding
-					}
-					identifier: generator.identifier(name)
-				})
-			}
-		}
+        for declaration in child.kind.declarations {
+            for name in declaration_bound_names(declaration) {
+                constant := child.kind.decl_kind==.const_kind
+                if global {
+                    generator.executable.global_bindings << GlobalBinding{name:name.clone(),is_lexical:true,is_constant:constant}
+                } else {
+                    generator.emit(Instruction{op:if constant { OpCode.create_immutable_binding } else { OpCode.create_mutable_binding },identifier:generator.identifier(name)})
+                }
+            }
+        }
 	}
 }
 
@@ -611,12 +636,35 @@ fn (mut generator BytecodeGenerator) clear_completion() {
 	})
 }
 
+fn (mut generator BytecodeGenerator) initialize_functions(children []Statement) {
+	for child in children {
+		if child.kind.tag != .function_declaration { continue }
+		generator.initialized_functions << child.kind.function_id.id
+		name := child.kind.func_name or { continue }
+		dst := generator.temporary()
+		generator.emit(Instruction{op: .new_function, dst: dst, identifier: child.kind.function_id.id})
+		generator.emit(Instruction{op: .set_variable, lhs: dst, identifier: generator.identifier(name.name), strict: generator.strict})
+	}
+}
+
 fn (mut generator BytecodeGenerator) statement(mut vm VM, statement &Statement) ! {
+	generator.check_compile_stack()!
 	previous_range := generator.range
 	generator.range = statement.range
 	defer { generator.range = previous_range }
 	kind := statement.kind
 	match kind.tag {
+		.try_stmt { generator.try_catch_statement(mut vm,statement)! }
+		.function_declaration {
+			if kind.function_id.id !in generator.initialized_functions {
+				return generator.unsupported('conditional function declarations')
+			}
+		}
+		.return_stmt {
+			if !generator.function_body { return generator.unsupported('return outside function') }
+			value := if argument := kind.return_arg { generator.expression(mut vm, argument)! } else { generator.constant(js_undefined()) }
+			generator.emit(Instruction{op: .end, lhs: value})
+		}
 		.empty, .debugger_stmt {}
 		.expression_stmt {
 			value := generator.expression(mut vm, kind.expression or {
@@ -630,39 +678,26 @@ fn (mut generator BytecodeGenerator) statement(mut vm VM, statement &Statement) 
 		}
 		.block {
 			scope := kind.scope or { return error('Missing block scope') }
+			if scope.children.any(it.kind.tag == .function_declaration) {
+				return generator.unsupported('block-scoped function declarations')
+			}
 			generator.emit(Instruction{ op: .enter_scope })
 			generator.scope_depth++
 			generator.lexical_declarations(scope.children, false)!
+			generator.initialize_functions(scope.children)
 			for child in scope.children {
 				generator.statement(mut vm, &child)!
 			}
 			generator.scope_depth--
 			generator.emit(Instruction{ op: .leave_scope })
 		}
-		.variable_declaration {
-			for declaration in kind.declarations {
-				name := declaration_name(declaration) or {
-					return generator.unsupported('destructuring declaration')
-				}
-				if declaration.init == none && kind.decl_kind == .var_kind { continue
-				 }
-				value := if init := declaration.init {
-					generator.expression(mut vm, &init)!
-				} else {
-					generator.constant(js_undefined())
-				}
-				generator.emit(Instruction{
-					op:         if kind.decl_kind == .var_kind {
-						OpCode.set_variable
-					} else {
-						OpCode.initialize_binding
-					}
-					lhs:        value
-					identifier: generator.identifier(name)
-					strict:     generator.strict
-				})
-			}
-		}
+        .variable_declaration {
+            for declaration in kind.declarations {
+                if declaration.init==none && kind.decl_kind==.var_kind { continue }
+                value := if init := declaration.init { generator.expression(mut vm,&init)! } else { generator.constant(js_undefined()) }
+                generator.initialize_declaration_target(mut vm,declaration.target,value,kind.decl_kind!=.var_kind)!
+            }
+        }
 		.if_stmt {
 			generator.clear_completion()
 			test := generator.expression(mut vm, kind.test or { return error('Missing if test') })!
@@ -770,6 +805,8 @@ pub fn (mut script Script) compile(mut vm VM) !&Executable {
 			registers_and_locals_count: reserved_register_count
 			source_code:                SourceCode.create(utf16_string(script.filename),
 				utf16_string(script.parsed.source_text))
+			parsed_source: script.parsed
+			starting_line: script.starting_line
 		}
 		strict:        script.is_strict_mode
 		starting_line: script.starting_line
@@ -778,6 +815,7 @@ pub fn (mut script Script) compile(mut vm VM) !&Executable {
 	generator.collect_vars(&script.parsed.program)!
 	generator.lexical_declarations(program.scope.children, true)!
 	generator.clear_completion()
+	generator.initialize_functions(program.scope.children)
 	for statement in program.scope.children {
 		generator.statement(mut vm, &statement)!
 	}

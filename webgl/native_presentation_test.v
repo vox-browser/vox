@@ -41,7 +41,7 @@ fn test_native_drawing_buffer_readback_preserves_pack_buffers_and_framebuffer_st
 	context.bind_framebuffer(0x8ca8,fbo)
 	frame := context.native.read_back_drawing_buffer() or { panic('source readback') }
 	for offset := 0; offset < frame.pixels.len; offset+=4 { assert frame.pixels[offset..offset+4] == [u8(255),128,0,255] }
-	mut native_binding := 0
+	mut native_binding := i32(0)
 	C.vox_gl_int_parameter(0x8caa,&native_binding)
 	assert native_binding == int(fbo.object.native_handle_)
 	C.vox_gl_int_parameter(pixel_pack_buffer_binding,&native_binding)

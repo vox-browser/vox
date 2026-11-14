@@ -17,6 +17,7 @@ import time
 // Diagnostic JSON lines for completed transfers: new connections, handshake
 // and first-byte times, and wall-clock start/header/finish timestamps.
 const curl_transfer_log_path = os.getenv('VOX_CURL_TRANSFER_LOG')
+const disable_curl_pipewait = os.getenv('VOX_DISABLE_CURL_PIPEWAIT') != ''
 
 @[heap]
 pub struct CurlRequest {
@@ -43,6 +44,9 @@ mut:
 	request_body_ []u8
 	started_us_ i64
 	headers_us_ i64
+	// Lease on the native storage holding request_, params_ and their
+	// policy records; released when the transfer stops or finishes.
+	storage_lease_ voidptr
 }
 
 pub fn (mut connection CurlConnection) fetch_host() &fetch.FetchHost {
@@ -135,6 +139,7 @@ fn (mut connection CurlConnection) start_transfer(params &fetch.FetchParams, req
 		output.resolve(fetch.Response.network_error('Failed to initialize curl easy handle'))
 		return pending
 	}
+	native.lease_request_storage()
 	if object := request.body.body_object { native.request_body_ = object.bytes() }
 	else if request.body.kind == .bytes { native.request_body_ = request.body.bytes.clone() }
 	check_curl_result(C.vox_curl_setopt_pointer(native.easy_, C.CURLOPT_PRIVATE, native), C.CURLE_OK)
@@ -150,12 +155,8 @@ fn (mut connection CurlConnection) start_transfer(params &fetch.FetchParams, req
 	// Match document navigation's process-local trust configuration. libcurl's
 	// API does not read the curl command-line tool's CA environment variables.
 	// Keep its certificate and hostname verification enabled.
-	if certificate_file := os.getenv_opt('SSL_CERT_FILE') {
-		if os.is_file(certificate_file) {
-			check_curl_result(C.vox_curl_setopt_pointer(native.easy_, C.CURLOPT_CAINFO,
-				certificate_file.str), C.CURLE_OK)
-		}
-	}
+	certificate_file := os.getenv('SSL_CERT_FILE')
+	check_curl_result(C.vox_curl_server_trust(native.easy_, certificate_file.str), C.CURLE_OK)
 	if proxy := browsersettings.proxy_override(request.current_url().serialize()) {
 		check_curl_result(C.vox_curl_setopt_pointer(native.easy_, C.CURLOPT_PROXY, proxy.str), C.CURLE_OK)
 		check_curl_result(C.vox_curl_setopt_pointer(native.easy_, C.CURLOPT_NOPROXY, c''), C.CURLE_OK)
@@ -166,6 +167,12 @@ fn (mut connection CurlConnection) start_transfer(params &fetch.FetchParams, req
 			proxy.trim_space().str), C.CURLE_OK)
 	}
 	check_curl_result(C.vox_curl_setopt_long(native.easy_, C.CURLOPT_CONNECTTIMEOUT, 90), C.CURLE_OK)
+	// Requests started together (a page's first API calls) would each open and
+	// handshake a connection. Wait for one that is still connecting and
+	// multiplex on it, as Chromium waits for an in-progress HTTP/2 session.
+	if !disable_curl_pipewait {
+		check_curl_result(C.vox_curl_setopt_long(native.easy_, C.CURLOPT_PIPEWAIT, 1), C.CURLE_OK)
+	}
 	check_curl_result(C.vox_curl_setopt_pointer(native.easy_, C.CURLOPT_CUSTOMREQUEST, request.method.str), C.CURLE_OK)
 	check_curl_result(C.vox_curl_setopt_long(native.easy_, C.CURLOPT_FOLLOWLOCATION, 0), C.CURLE_OK)
 	if request.method in ['POST', 'PUT', 'PATCH', 'DELETE'] {
@@ -368,6 +375,24 @@ pub fn (mut request CurlRequest) stop() {
 	request.free_curl_structs()
 }
 
+// Only the arena's originating (main) thread may take or drop leases.
+fn (mut request CurlRequest) lease_request_storage() {
+	if !platform.is_main_thread() { return }
+	storage := fetch.request_client_storage(request.request_)
+	if storage == unsafe { nil } { return }
+	mut owner := unsafe { &platform.RetainedArena(storage) }
+	owner.retain()
+	request.storage_lease_ = storage
+}
+
+fn (mut request CurlRequest) release_request_storage() {
+	storage := request.storage_lease_
+	if storage == unsafe { nil } { return }
+	request.storage_lease_ = unsafe { nil }
+	mut owner := unsafe { &platform.RetainedArena(storage) }
+	owner.release()
+}
+
 fn (mut request CurlRequest) free_curl_structs() {
 	if request.finished_ { return }
 	request.finished_ = true
@@ -381,6 +406,8 @@ fn (mut request CurlRequest) free_curl_structs() {
 	if request.headers_ != unsafe { nil } { C.vox_curl_slist_free_all(request.headers_); request.headers_ = unsafe { nil } }
 	mut owner := unsafe { &CurlConnection(request.connection_) }
 	owner.requests_.delete(request.id_)
+	// Drop the storage lease last: releasing it can free the request records.
+	request.release_request_storage()
 }
 
 // CURL.cpp: curl_code_to_network_error; LibRequests/NetworkError.h text.

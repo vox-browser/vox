@@ -3,9 +3,9 @@
 module webgl
 
 fn framebuffer_layer_source_owner() {
-	mut selected := [0, 0, 0, 0]!
+	mut selected := [i32(0), 0, 0, 0]!
 	C.vox_gl_int_parameter(viewport, &selected[0])
-	assert selected == [1, 2, 3, 4]!
+	assert selected == [i32(1), 2, 3, 4]!
 }
 
 fn test_source_framebuffer_texture_layer_selects_owner_before_only_handle_gate() {

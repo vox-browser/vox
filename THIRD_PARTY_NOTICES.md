@@ -49,11 +49,10 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 Additional notices already accompany the components in the repository:
 
-- [glslang ESSL validation](webgl/licenses/glslang.txt) and its packaged
-  [SPIRV-Tools dependency](webgl/licenses/spirv-tools.txt).
 - [uBlock Origin and ad-blocking dependencies](adblock/vendor/NOTICE.md),
   including uBlock Origin's [GPL-3.0-or-later license](adblock/vendor/ublock/LICENSE.txt),
   polyfill licenses and filter-list attributions.
+- [ANGLE and Khronos declarations](webgl/ANGLE_LICENSE).
 - [Chromium broken-image icons](layout/resources/chromium/README.md) and their
   [BSD license](layout/resources/chromium/LICENSE).
 - [es-module-lexer](browserjs/vendor/es-module-lexer-1.7.0/LICENSE).

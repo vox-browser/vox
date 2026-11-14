@@ -24,7 +24,7 @@ fn test_public_active_texture_preserves_source_owner_driver_and_conversion_order
 		C.vox_gl_enable(0xbad)
 		other.native.make_current()
 		runtime.evaluate_host('gl.activeTexture(gl.TEXTURE0+3);')!
-		mut selected := 0
+		mut selected := i32(0)
 		C.vox_gl_int_parameter(webgl.active_texture, &selected)
 		assert selected == int(webgl.texture0 + 3)
 		assert runtime.evaluate_host('gl.getParameter(gl.ACTIVE_TEXTURE)===gl.TEXTURE0+3&&gl.getError()===gl.INVALID_ENUM&&gl.getError()===gl.NO_ERROR')! == 'true'

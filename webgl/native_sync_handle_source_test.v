@@ -5,8 +5,8 @@ module webgl
 fn test_source_sync_handle_returns_proxy_pointer_with_separate_actual_driver_mapping() {
 	mut context := WebGLRenderingContext.new(.webgl2, WebGLContextAttributes{}, [])
 	mut other := WebGLRenderingContext.new(.webgl2, WebGLContextAttributes{}, [])
-	// Drivers may use small integer native GLsync values, so independent real
-	// fences force the tested Source IDs away from their native mapping.
+	// ANGLE can use small integer native GLsync values, so independent real
+	// driver fences force the tested Source IDs away from their native mapping.
 	context.native.make_current()
 	mut reserved := []voidptr{}
 	for _ in 0 .. 8 {
@@ -29,13 +29,17 @@ fn test_source_sync_handle_returns_proxy_pointer_with_separate_actual_driver_map
 		assert sync.sync_handle(context.identity(), context.context_generation())! == source
 		// Context validation runs before invalidation in both source handle APIs.
 		mut rejected := false
-		sync.sync_handle(other.identity(), other.context_generation()) or {
+		if _ := sync.sync_handle(other.identity(), other.context_generation()) {
+			assert false, 'Invalid sync handle must fail'
+		} else {
 			assert err.msg() == 'GL_INVALID_OPERATION'
 			rejected = true
 		}
 		assert rejected
 		rejected = false
-		sync.sync_handle_for_deletion(other.identity(), other.context_generation()) or {
+		if _ := sync.sync_handle_for_deletion(other.identity(), other.context_generation()) {
+			assert false, 'Invalid sync handle must fail'
+		} else {
 			assert err.msg() == 'GL_INVALID_OPERATION'
 			rejected = true
 		}
@@ -49,13 +53,17 @@ fn test_source_sync_handle_returns_proxy_pointer_with_separate_actual_driver_map
 		repeat := sync.sync_handle_for_deletion(context.identity(), context.context_generation())!
 		assert !repeat.has_value
 		rejected = false
-		sync.sync_handle_for_deletion(other.identity(), other.context_generation()) or {
+		if _ := sync.sync_handle_for_deletion(other.identity(), other.context_generation()) {
+			assert false, 'Invalid sync handle must fail'
+		} else {
 			assert err.msg() == 'GL_INVALID_OPERATION'
 			rejected = true
 		}
 		assert rejected
 		rejected = false
-		sync.sync_handle(context.identity(), context.context_generation()) or {
+		if _ := sync.sync_handle(context.identity(), context.context_generation()) {
+			assert false, 'Invalid sync handle must fail'
+		} else {
 			assert err.msg() == 'GL_INVALID_OPERATION'
 			rejected = true
 		}
@@ -83,7 +91,9 @@ fn test_source_sync_pointer_generation_validation_ignores_native_pointer_value()
 		source := sync.source_handle_
 		stale_generation := context.context_generation() + 1
 		mut rejected := false
-		sync.sync_handle(context.identity(), stale_generation) or {
+		if _ := sync.sync_handle(context.identity(), stale_generation) {
+			assert false, 'Invalid sync handle must fail'
+		} else {
 			assert err.msg() == 'GL_INVALID_OPERATION'
 			rejected = true
 		}
@@ -93,7 +103,7 @@ fn test_source_sync_pointer_generation_validation_ignores_native_pointer_value()
 		assert !sync.object.invalidated()
 		assert sync.native_handle_ == actual
 		assert sync.sync_handle(context.identity(), context.context_generation())! == source
-		context.delete_sync(mut sync)
+		context.delete_sync(sync)
 		assert sync.object.invalidated()
 		assert sync.native_handle_ == actual
 		assert context.get_error() == no_error

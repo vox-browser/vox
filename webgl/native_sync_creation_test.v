@@ -21,9 +21,9 @@ fn test_source_sync_creation_retains_owned_records_after_actual_driver_rejection
 		assert context.owns(&sync.object)
 		assert !sync.object.invalidated()
 		assert context.syncs[sync.object.handle_] == sync
-		mut selected := [0, 0, 0, 0]!
+		mut selected := [i32(0), 0, 0, 0]!
 		C.vox_gl_int_parameter(viewport, &selected[0])
-		assert selected == [1, 2, 3, 4]!
+		assert selected == [i32(1), 2, 3, 4]!
 		actual_error := context.get_error()
 		assert actual_error == expected_error
 		// Source ownership permits the null driver handle to reach GL queries.
@@ -36,7 +36,7 @@ fn test_source_sync_creation_retains_owned_records_after_actual_driver_rejection
 		assert actual_query_error == expected_query_error
 		C.vox_gl_delete_sync(expected_handle)
 		expected_delete_error := C.vox_gl_get_error()
-		context.delete_sync(mut sync)
+		context.delete_sync(sync)
 		actual_delete_error := context.get_error()
 		assert actual_delete_error == expected_delete_error
 		assert sync.object.invalidated()

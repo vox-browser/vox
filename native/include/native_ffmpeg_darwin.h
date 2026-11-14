@@ -5,13 +5,13 @@
 #include <stdlib.h>
 #include <math.h>
 #include <string.h>
+#include <stdio.h>
 #ifdef LADYBIRD_V_HAS_FFMPEG
 #include <libavcodec/avcodec.h>
 #include <libavformat/avformat.h>
 #include <libavutil/imgutils.h>
 #include <libavutil/dict.h>
 #include <libswscale/swscale.h>
-#include <libyuv/convert_argb.h>
 #include <dispatch/dispatch.h>
 #include <dlfcn.h>
 #define VOX_FFMPEG_STRINGIFY_INNER(value) #value
@@ -48,11 +48,8 @@
 typedef struct {
 #define VOX_FFMPEG_FIELD(name) __typeof__(&name) name;
     VOX_FFMPEG_FUNCTIONS(VOX_FFMPEG_FIELD)
-#ifndef LADYBIRD_V_HAS_V_YUV
-    VOX_FFMPEG_FIELD(H420ToABGR)
-#endif
 #undef VOX_FFMPEG_FIELD
-    void *format_library, *scale_library, *yuv_library;
+    void *format_library, *scale_library;
     bool ready;
 } VoxFFmpegAPI;
 
@@ -63,13 +60,23 @@ static const VoxFFmpegAPI *native_ffmpeg_api(void) {
     static dispatch_once_t once;
     dispatch_once(&once, ^{
         VoxFFmpegAPI *api = &native_ffmpeg_functions;
-        api->format_library = dlopen("@rpath/libavformat."
-            VOX_FFMPEG_STRINGIFY(LIBAVFORMAT_VERSION_MAJOR) ".dylib", RTLD_LAZY | RTLD_LOCAL);
-        api->scale_library = dlopen("@rpath/libswscale."
-            VOX_FFMPEG_STRINGIFY(LIBSWSCALE_VERSION_MAJOR) ".dylib", RTLD_LAZY | RTLD_LOCAL);
-#ifndef LADYBIRD_V_HAS_V_YUV
-        api->yuv_library = dlopen("@rpath/libyuv.dylib", RTLD_LAZY | RTLD_LOCAL);
-#endif
+        // Homebrew's FFmpeg (`brew install ffmpeg`): the bundle's rpath, then
+        // the Apple Silicon and Intel prefixes, at the headers' major version.
+        static const char *prefixes[] = { "@rpath/", "/opt/homebrew/opt/ffmpeg/lib/",
+            "/usr/local/opt/ffmpeg/lib/" };
+        char path[256];
+        for (size_t i = 0; i < sizeof(prefixes) / sizeof(prefixes[0]) && !api->format_library; ++i) {
+            snprintf(path, sizeof(path), "%slibavformat." VOX_FFMPEG_STRINGIFY(LIBAVFORMAT_VERSION_MAJOR)
+                ".dylib", prefixes[i]);
+            api->format_library = dlopen(path, RTLD_LAZY | RTLD_LOCAL);
+            snprintf(path, sizeof(path), "%slibswscale." VOX_FFMPEG_STRINGIFY(LIBSWSCALE_VERSION_MAJOR)
+                ".dylib", prefixes[i]);
+            api->scale_library = api->format_library ? dlopen(path, RTLD_LAZY | RTLD_LOCAL) : NULL;
+            if (!api->scale_library && api->format_library) {
+                dlclose(api->format_library);
+                api->format_library = NULL;
+            }
+        }
         bool complete = api->format_library && api->scale_library;
 #define VOX_FFMPEG_RESOLVE(name) \
         api->name = api->format_library ? dlsym(api->format_library, #name) : NULL; \
@@ -77,16 +84,11 @@ static const VoxFFmpegAPI *native_ffmpeg_api(void) {
         if (!api->name) complete = false;
         VOX_FFMPEG_FUNCTIONS(VOX_FFMPEG_RESOLVE)
 #undef VOX_FFMPEG_RESOLVE
-#ifndef LADYBIRD_V_HAS_V_YUV
-        api->H420ToABGR = api->yuv_library ? dlsym(api->yuv_library, "H420ToABGR") : NULL;
-        if (!api->H420ToABGR) complete = false;
-#endif
         api->ready = complete;
         if (!complete) {
-            if (api->yuv_library) dlclose(api->yuv_library);
             if (api->scale_library) dlclose(api->scale_library);
             if (api->format_library) dlclose(api->format_library);
-            api->format_library = api->scale_library = api->yuv_library = NULL;
+            api->format_library = api->scale_library = NULL;
         }
     });
     return native_ffmpeg_functions.ready ? &native_ffmpeg_functions : NULL;
@@ -96,11 +98,12 @@ static const VoxFFmpegAPI *native_ffmpeg_api(void) {
 #undef VOX_FFMPEG_STRINGIFY_INNER
 #endif
 
-#ifdef LADYBIRD_V_HAS_V_YUV
+// Pure V conversions exported from media/yuv_bridge.v; Vox links no libyuv.
+extern bool vox_i420_bt601_to_rgba(uint8_t *, int32_t, uint8_t *, int32_t,
+    uint8_t *, int32_t, uint8_t *, int32_t, uint8_t *, int32_t, int32_t, int32_t);
 extern bool vox_yuv_u8_to_rgba(uint8_t *, uint32_t,
     uint8_t *, uint32_t, uint8_t *, uint32_t, uint32_t,
     uint32_t, bool, bool, uint8_t *, uint32_t, uint8_t, uint8_t);
-#endif
 
 #ifdef LADYBIRD_V_HAS_FFMPEG
 static bool native_ffmpeg_convert_frame(const VoxFFmpegAPI *ffmpeg, AVFrame *frame,
@@ -113,20 +116,12 @@ static bool native_ffmpeg_convert_frame(const VoxFFmpegAPI *ffmpeg, AVFrame *fra
 	    && frame->color_range != AVCOL_RANGE_JPEG
 	    && (frame->colorspace == AVCOL_SPC_UNSPECIFIED
 	        || frame->colorspace == AVCOL_SPC_BT709)) {
-#ifdef LADYBIRD_V_HAS_V_YUV
 		if (vox_yuv_u8_to_rgba(frame->data[0], frame->linesize[0],
 			frame->data[1], frame->linesize[1], frame->data[2],
 			frame->linesize[2], width, height, true, true, pixels,
 			pitch, 0, 0)) {
 			return true;
 		}
-#else
-		if (ffmpeg->H420ToABGR(frame->data[0], frame->linesize[0],
-			frame->data[1], frame->linesize[1], frame->data[2],
-			frame->linesize[2], pixels, pitch, width, height) == 0) {
-			return true;
-		}
-#endif
 	}
 	struct SwsContext *converter = ffmpeg->sws_getContext(width, height, (enum AVPixelFormat)frame->format,
 		width, height, AV_PIX_FMT_RGBA, SWS_BILINEAR, NULL, NULL, NULL);

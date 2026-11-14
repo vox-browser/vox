@@ -7,9 +7,12 @@ const retain_absolute_measurement_layout = os.getenv('VOX_RETAIN_ABSOLUTE_MEASUR
 const absolute_measurement_diagnostics = os.getenv('VOX_ABSOLUTE_MEASUREMENT_DIAGNOSTICS') != ''
 const retain_absolute_root_measurements = os.getenv('VOX_RETAIN_ABSOLUTE_ROOT_MEASUREMENTS') != ''
 const absolute_root_measurement_diagnostics = os.getenv('VOX_ABSOLUTE_ROOT_MEASUREMENT_DIAGNOSTICS') != ''
+const disable_absolute_pseudo_measurements = os.getenv('VOX_DISABLE_ABSOLUTE_PSEUDO_MEASUREMENTS') != ''
+const absolute_pseudo_measurement_diagnostics = os.getenv('VOX_ABSOLUTE_PSEUDO_MEASUREMENT_DIAGNOSTICS') != ''
 
 __global absolute_measurement_reported bool
 __global absolute_root_measurement_reported bool
+__global absolute_pseudo_measurement_reported bool
 
 // Ordinary absolute descendants do not participate in grid/flex sizing. The
 // within-pass snapshot owns their static-position records; final absolute
@@ -19,11 +22,17 @@ __global absolute_root_measurement_reported bool
 fn measurement_absolute_descendant_is_reusable(node &Node) bool {
 	if retain_absolute_measurement_layout || node.computed_values().position() != .absolute
 		|| node.is_replaced_box() || node.is_svg_box() { return false }
-	owner := node.dom_node() or { return false }
-	element := owner.as_element() or { return false }
-	if !element.is_html_element() || element.local_name() !in ['div', 'span', 'p',
-		'section', 'article', 'aside', 'header', 'footer', 'nav', 'main', 'a', 'label'] {
-		return false
+	// Before/after content is already materialized and validated by the shared
+	// collector. Its ordinary non-replaced box has the same positioning inputs;
+	// markers and other generated kinds keep their specialized algorithms.
+	generated := !disable_absolute_pseudo_measurements && node.is_generated_for_pseudo_element()
+		&& static_generated_measurement_input(node)
+	if !generated {
+		owner := node.dom_node() or { return false }
+		element := owner.as_element() or { return false }
+		if !element.is_html_element() { return false }
+		if element.local_name() !in ['div', 'span', 'p', 'section', 'article', 'aside',
+			'header', 'footer', 'nav', 'main', 'a', 'label'] { return false }
 	}
 	computed := node.computed_values()
 	if computed.position_anchor() != none { return false }
@@ -60,6 +69,16 @@ fn (mut pool MeasurementUsedValuesChunkPool) admit_absolute_measurement(node u64
 }
 
 fn report_absolute_measurement_reuse(inputs []RetainedInlineInput) {
+	if absolute_pseudo_measurement_diagnostics && !absolute_pseudo_measurement_reported {
+		for input in inputs {
+			if input.node.is_generated_for_pseudo_element()
+				&& measurement_absolute_descendant_is_reusable(input.node) {
+				absolute_pseudo_measurement_reported = true
+				eprintln('Vox absolute pseudo measurement: reused validated before/after geometry')
+				break
+			}
+		}
+	}
 	if !absolute_measurement_diagnostics || absolute_measurement_reported { return }
 	for input in inputs {
 		if measurement_absolute_descendant_is_reusable(input.node) {

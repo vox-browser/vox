@@ -3,7 +3,30 @@
 Upstream reference: `~/code/3rd/ladybird/Libraries/LibWeb/WebGL`
 
 Reference audit: 2026-09-12
-Latest native focused verification: 2026-10-05
+Latest native focused verification: 2026-11-13
+
+On macOS, the native WebGL service now uses V and Metal directly by default.
+The ANGLE loader, macOS dependency and obsolete CGL prototype have been removed.
+All 198 service entry points have Metal implementations, including shaders,
+reflection, typed/structured uniforms, textures/framebuffers, packed vertex
+fetch, depth/stencil, MRT, multisample resolves, queries and GPU transform
+feedback. Linux uses native EGL/GLES3 with bounded transfers, initialized
+storage and the shared V shader frontend; it requires no ANGLE installation.
+Windows shares the bounded GLES adapter through robust native Mesa WGL contexts. See
+[Linux setup and checks](../docs/LINUX.md) and the
+[Windows validation report](../docs/WINDOWS_WEBGL_GLES.md).
+
+The V shader configuration passes 316 functions from 179 native/Source WebGL
+files, 73 compiler functions and 52 Metal functions with the C backend in both
+GC modes. Named/row-major block arrays, sampler arrays, explicit shadow sampling,
+scoped source validation and GLSL expression lowering are covered by GPU tests.
+Earlier native verification also passed with FastC. Earlier JavaScriptCore public
+binding verification passed 151 functions from 132 files using single-unit FastC
+in both modes. The shared 40-case shader acceptance corpus and eight exact-pixel cases
+passed both Metal and ANGLE before loader removal. Native resources have nine
+fixtures checked under ARC, MRC and ASan/UBSan. These are focused parity results,
+not complete WebGL or optimized-site conformance. See the
+[migration implementation, evidence and limitations](../docs/WEBGL_METAL_MIGRATION.md).
 
 The [native getParameter string-cache correction](../docs/translation-audit/WEBGL_PARAMETER_STRING_CACHE.md)
 (`b1b05829`) connects the Source per-GL-enum cache to the actual direct-driver
@@ -2274,12 +2297,11 @@ the new native file passed after fixing its test field spelling in
 `source-active-texture-public-gc-none.log`. This removes source-body cache/gates;
 the actual-driver error-retention boundary is recorded separately above.
 
-`native_egl.h`/`native_egl.c.v` retain the service ABI while creating native
-CGL contexts on macOS, WGL contexts on Windows, and system EGL/OpenGL contexts
-on Linux. ANGLE is no longer a build or runtime dependency. Context loss
-destroys the native namespace; restoration creates a fresh context. See
-[`docs/NATIVE_WEBGL.md`](../docs/NATIVE_WEBGL.md) for driver requirements and
-the remaining shader-validation limitations of the native adapter.
+`native_service.c.v` selects the V Metal service on macOS and the GLES service
+on Linux/Windows. The macOS implementation has no ANGLE/EGL dependency.
+Context loss destroys the native namespace; restoration creates a fresh context.
+The following driver-integration history originally used ANGLE; current
+implementation and checks are summarized above.
 
 The direct backend executes the translated buffer/vertex commands, indexed and
 instanced draws, raster state, shader compilation/linking/reflection, typed

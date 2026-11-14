@@ -3,6 +3,13 @@ module layout
 import dom
 import html
 
+// These cases exercise the validated salvage of retained_flow_subtrees.v, which
+// the builder consults below a flagged ancestor. Their unflagged branches would
+// otherwise keep their boxes through clean_subtree_reuse.v first.
+fn testsuite_begin() {
+	clean_subtree_reuse_suspended = true
+}
+
 fn flow_image_tree_document(markup string) &dom.Document {
 	address := dom.URL{value:'https://image-tree.example/'}
 	return html.parse_navigation_document(markup,address,address.origin(),none) or { panic(err) }

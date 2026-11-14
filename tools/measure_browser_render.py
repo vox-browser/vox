@@ -74,14 +74,8 @@ def run_sample(args, label, index, binary, extra):
                    LADYBIRD_SCREENSHOT_DELAY_SECONDS="0")
         env.pop("LADYBIRD_ENABLE_SNAPSHOT_CACHE", None)
         env.pop("GC_PRINT_STATS", None)
-        # A preserved pre-change executable can keep its native replay library
-        # beside it instead of loading a newly rebuilt canonical library.
-        library_name = "libLadybirdVSkiaText.dylib"
-        library = binary.parent / library_name
-        if not library.is_file() and len(binary.parents) > 3:
-            library = binary.parents[3] / library_name
-        if library.is_file():
-            env["DYLD_LIBRARY_PATH"] = str(library.parent)
+        # The browser loads its optional AVIF helper from beside the executable.
+        library = binary.parent / "libVoxAVIF.dylib"
         library_hash = sha256(library) if library.is_file() else None
         command = [str(binary), *extra, "--window-width", str(args.width),
                    "--window-height", str(args.height + VOX_CHROME_HEIGHT),
@@ -99,7 +93,7 @@ def run_sample(args, label, index, binary, extra):
         if code or not window.is_file():
             raise RuntimeError(f"{label} sample {index} failed (exit {code}); see {log_path}")
         if sha256(binary) != binary_hash or (library_hash and sha256(library) != library_hash):
-            raise RuntimeError("Measured executable or replay library changed during capture")
+            raise RuntimeError("Measured executable or native library changed during capture")
         timings = native_summary(log)
         if "navigation_to_first_document_paint" not in timings:
             raise RuntimeError(f"Missing first-document-frame timer; see {log_path}")

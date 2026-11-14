@@ -1,5 +1,7 @@
 module adblock
 
+import compress.deflate
+import hash.crc32
 import json2
 import os
 $if prealloc {
@@ -12,17 +14,14 @@ $if !vox_v8 ? {
 	#flag darwin -framework JavaScriptCore
 }
 #flag darwin -framework CoreFoundation
-#flag darwin -lz
 $if linux {
 	#pkgconfig javascriptcoregtk-4.1
 }
-#flag linux -lz
-#flag windows -lz -lJavaScriptCore
+#flag windows -lJavaScriptCore
 #include "@DIR/../browserjs/jsc_abi.h"
 #include "@DIR/runtime.h"
 
 fn C.vox_adblock_utf8_string(&u8, uint) voidptr
-fn C.vox_adblock_gunzip(&u8, uint, &u8, uint) int
 
 fn C.JSGlobalContextCreate(voidptr) voidptr
 fn C.JSGlobalContextRelease(voidptr)
@@ -267,14 +266,28 @@ fn script_string(source string) voidptr {
 }
 
 // The bundled asset is one gzip member produced by tools/build_adblock.mjs.
-// zlib validates its CRC and exact input/output sizes before we evaluate it.
+// vlib's V inflater validates its CRC and exact sizes before we evaluate it.
 fn decompress_engine_source(data []u8) !string {
+ output := gunzip_single_member(data)!
+ return output.bytestr()
+}
+
+// Decodes exactly one gzip member that fills `data`, checking its CRC-32 and
+// declared size. Shared by the engine source and the snapshot metadata.
+fn gunzip_single_member(data []u8) ![]u8 {
  if data.len < 18 { return error('Truncated gzip source') }
  n := data.len
  size := u32(data[n-4]) | (u32(data[n-3]) << 8) | (u32(data[n-2]) << 16) | (u32(data[n-1]) << 24)
  if size > u32(max_int) { return error('Bundled source exceeds string capacity') }
- mut output := []u8{len: int(size)}
- status := C.vox_adblock_gunzip(data.data, uint(data.len), output.data, uint(output.len))
- if status != 0 { return error('Invalid gzip source (${status})') }
- return output.bytestr()
+ header := deflate.validate_gzip_header(data) or { return error('Invalid gzip source (${err})') }
+ body := deflate.decompress_raw_with_consumed(data[header.payload_start..n - 8]) or {
+  return error('Invalid gzip source (${err})')
+ }
+ if body.consumed != n - 8 - header.payload_start || u32(body.decoded.len) != size {
+  return error('Invalid gzip source (size mismatch)')
+ }
+ if crc32.sum(body.decoded) != (u32(data[n-8]) | (u32(data[n-7]) << 8) | (u32(data[n-6]) << 16) | (u32(data[n-5]) << 24)) {
+  return error('Invalid gzip source (crc32 mismatch)')
+ }
+ return body.decoded
 }

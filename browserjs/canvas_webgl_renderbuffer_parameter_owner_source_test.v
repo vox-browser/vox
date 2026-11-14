@@ -22,9 +22,9 @@ fn test_public_renderbuffer_getter_preserves_source_name_gate_and_driver_results
 		mut other := host.contexts['__created_renderbuffer_getter_other'] or { panic('renderbuffer getter other') }
 		other.native.make_current()
 		assert runtime.evaluate_host('gl.getRenderbufferParameter(0xffff,0xffff)===null')! == 'true'
-		mut selected := [0, 0, 0, 0]!
+		mut selected := [i32(0), 0, 0, 0]!
 		C.vox_gl_int_parameter(webgl.viewport, &selected[0])
-		assert selected == [9, 10, 11, 12]!
+		assert selected == [i32(9), 10, 11, 12]!
 		assert runtime.evaluate_host('gl.getError()===gl.INVALID_ENUM&&gl.getError()===gl.NO_ERROR')! == 'true'
 		context.native.make_current()
 		native_buffer := C.vox_gl_gen_object(2)
@@ -39,14 +39,14 @@ fn test_public_renderbuffer_getter_preserves_source_name_gate_and_driver_results
 				other.native.make_current()
 				assert runtime.evaluate_host('gl.getRenderbufferParameter(${target},${pname})')! == expected.str()
 				C.vox_gl_int_parameter(webgl.viewport, &selected[0])
-				assert selected == [1, 2, 3, 4]!
+				assert selected == [i32(1), 2, 3, 4]!
 				assert runtime.evaluate_host('gl.getError()')! == expected_error.str()
 			}
 		}
 		other.native.make_current()
 		assert runtime.evaluate_host('(function(){const marker={};try{gl.getRenderbufferParameter(gl.RENDERBUFFER,{valueOf(){throw marker}});return false}catch(error){return error===marker}})()')! == 'true'
 		C.vox_gl_int_parameter(webgl.viewport, &selected[0])
-		assert selected == [9, 10, 11, 12]!
+		assert selected == [i32(9), 10, 11, 12]!
 		context.native.make_current()
 		C.vox_gl_delete_object(2, native_buffer)
 	}

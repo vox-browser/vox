@@ -25,9 +25,9 @@ fn test_public_pixel_store_preserves_source_early_returns_driver_validation_and_
 			'pixelStorei(gl.UNPACK_COLORSPACE_CONVERSION_WEBGL,-1)'] {
 			other.native.make_current()
 			runtime.evaluate_host('gl.${expression};')!
-			mut selected := [0, 0, 0, 0]!
+			mut selected := [i32(0), 0, 0, 0]!
 			C.vox_gl_int_parameter(webgl.viewport, &selected[0])
-			assert selected == [9, 10, 11, 12]!
+			assert selected == [i32(9), 10, 11, 12]!
 			assert C.vox_gl_get_error() == webgl.no_error
 		}
 		assert runtime.evaluate_host('gl.getError()===gl.INVALID_VALUE&&gl.getError()===gl.NO_ERROR&&gl.getParameter(gl.UNPACK_ALIGNMENT)===4&&gl.getParameter(gl.UNPACK_FLIP_Y_WEBGL)===true&&gl.getParameter(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL)===true&&gl.getParameter(gl.UNPACK_COLORSPACE_CONVERSION_WEBGL)===4294967295')! == 'true'
@@ -41,9 +41,9 @@ fn test_public_pixel_store_preserves_source_early_returns_driver_validation_and_
 		assert runtime.evaluate_host('gl.getError()===gl.INVALID_OPERATION&&gl.getError()===gl.NO_ERROR')! == 'true'
 		other.native.make_current()
 		assert runtime.evaluate_host('(function(){const marker={};try{gl.pixelStorei(gl.UNPACK_ALIGNMENT,{valueOf(){throw marker}});return false}catch(error){return error===marker}})()')! == 'true'
-		mut selected := [0, 0, 0, 0]!
+		mut selected := [i32(0), 0, 0, 0]!
 		C.vox_gl_int_parameter(webgl.viewport, &selected[0])
-		assert selected == [9, 10, 11, 12]!
+		assert selected == [i32(9), 10, 11, 12]!
 		assert other.get_error() == webgl.no_error
 	}
 }

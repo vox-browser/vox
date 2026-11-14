@@ -28,6 +28,8 @@ struct C.VoxGraphiteShape {
 	border_widths            [4]f32
 	has_float_underlay_color int
 	underlay_float_color     [4]f32
+	has_filter_clip          i32
+	filter_clip              [4]f32
 }
 
 fn C.native_prefetch_plain_rects(&C.VoxGraphiteShape, int, f32, f32, f32, f32)

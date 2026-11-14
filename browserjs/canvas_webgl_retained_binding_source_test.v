@@ -27,7 +27,7 @@ fn test_actual_indexed_binds_keep_source_generic_wrapper_identity() {
  }return true})()
  ')!
 	assert result == 'true'
-	mut actual := -1
+	mut actual := i32(-1)
 	C.vox_gl_int_parameter(0x8c8f, &actual)
 	assert actual == 0
 }

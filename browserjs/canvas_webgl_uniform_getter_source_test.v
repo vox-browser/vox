@@ -23,7 +23,7 @@ fn test_public_source_get_uniform_preserves_upstream_zero_body_and_idl_conversio
 		mut context := host.contexts[key] or { panic('uniform owner context') }
 		mut other := host.contexts[other_key] or { panic('other uniform context') }
 		context.native.make_current()
-		mut native_program := 0
+		mut native_program := i32(0)
 		C.vox_gl_int_parameter(0x8b8d, &native_program)
 		name := 'tint'
 		native_location := C.vox_gl_uniform_location(u32(native_program), name.str)
@@ -36,9 +36,9 @@ fn test_public_source_get_uniform_preserves_upstream_zero_body_and_idl_conversio
 		assert actual == 'true'
 		converted := runtime.evaluate_host(r'(function(){let converted=0;for(const args of [[uniformOwned.program],[null,uniformOwned.location],[uniformOwned.program,null],[Object.create(WebGLProgram.prototype),uniformOwned.location],[uniformOwned.program,{valueOf(){converted++;return 0}}]]){try{uniformOwner.getUniform(...args);return false}catch(error){if(!(error instanceof TypeError))return false}}return converted===0})()')!
 		assert converted == 'true'
-		mut selected := [0, 0, 0, 0]!
+		mut selected := [i32(0), 0, 0, 0]!
 		C.vox_gl_int_parameter(0x0ba2, &selected[0])
-		assert selected == [9, 10, 11, 12]!
+		assert selected == [i32(9), 10, 11, 12]!
 		C.vox_gl_enable(0xbad)
 		pending_value := runtime.evaluate_host('uniformOwner.getUniform(uniformOwned.program,uniformOwned.location)')!
 		pending_error := C.vox_gl_get_error()
@@ -49,7 +49,7 @@ fn test_public_source_get_uniform_preserves_upstream_zero_body_and_idl_conversio
 		deleted_value := runtime.evaluate_host('uniformOwner.getUniform(uniformOwned.program,uniformOwned.location)')!
 		assert deleted_value == '0'
 		C.vox_gl_int_parameter(0x0ba2, &selected[0])
-		assert selected == [9, 10, 11, 12]!
+		assert selected == [i32(9), 10, 11, 12]!
 		assert runtime.evaluate_host('uniformOwner.getError()')! == '0'
 	}
 }

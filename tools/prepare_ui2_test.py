@@ -7,11 +7,22 @@ import unittest
 from unittest.mock import patch
 
 from prepare_linux_modules import stage_module
-from prepare_ui2 import prepare_gg_gradient, prepare_ui2_source
+from prepare_ui2 import link_to, prepare_gg_gradient, prepare_ui2_source
 import test_linux_native as native_runner
 
 
 class GGGradientCompatibilityTests(unittest.TestCase):
+    def test_module_link_never_removes_an_existing_directory(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            source, target = root / 'source', root / 'target'
+            source.mkdir()
+            target.mkdir()
+            (target / 'keep.v').write_text('module keep\n')
+            with self.assertRaisesRegex(RuntimeError, 'Refusing to replace a directory'):
+                link_to(target, source)
+            self.assertEqual((target / 'keep.v').read_text(), 'module keep\n')
+
     def test_linux_and_ui2_stages_can_alternate_without_modifying_the_compiler(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory).resolve()
@@ -169,11 +180,15 @@ class UpstreamUI2Tests(unittest.TestCase):
         prepare_ui2_source(self.source, self.target)
         self.assertEqual(self.target.resolve(), self.source)
 
-    def test_replaces_old_private_copy_and_retargets_an_existing_link(self):
+    def test_preserves_old_directory_and_retargets_an_existing_link(self):
         self.target.mkdir(parents=True)
         (self.target / 'private.v').write_text('obsolete copy')
+        with self.assertRaisesRegex(RuntimeError, 'Refusing to replace a directory'):
+            prepare_ui2_source(self.source, self.target)
+        self.assertEqual((self.target / 'private.v').read_text(), 'obsolete copy')
+        (self.target / 'private.v').unlink()
+        self.target.rmdir()
         prepare_ui2_source(self.source, self.target)
-        self.assertFalse((self.target / 'private.v').exists())
         newer = self.root / 'latest-ui2'
         self.source.rename(newer)
         prepare_ui2_source(newer, self.target)

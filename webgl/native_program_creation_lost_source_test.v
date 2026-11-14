@@ -32,9 +32,9 @@ fn test_source_lost_create_program_retains_owned_proxy_ids_without_native_dispat
 				assert earlier != program
 			}
 			records << program
-			mut selected := [0, 0, 0, 0]!
+			mut selected := [i32(0), 0, 0, 0]!
 			C.vox_gl_int_parameter(viewport, &selected[0])
-			assert selected == [9, 10, 11, 12]!
+			assert selected == [i32(9), 10, 11, 12]!
 			assert C.vox_gl_is_object(10, sentinel.object.native_name()) == 1
 		}
 		assert C.vox_gl_get_error() == invalid_value

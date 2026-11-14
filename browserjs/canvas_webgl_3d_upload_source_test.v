@@ -20,7 +20,7 @@ fn test_public_3d_byte_uploads_use_driver_storage_and_select_owner_before_bad_sp
 	runtime.evaluate_host('globalThis.volumeGL=__webglContext({bridgeKey:"${key}",width:2,height:2},"webgl2",null);globalThis.volumeOther=__webglContext({bridgeKey:"${other_key}",width:2,height:2},"webgl2",null);volumeGL.viewport(1,2,3,4);volumeOther.viewport(9,10,11,12);globalThis.volumeTexture=volumeGL.createTexture();volumeGL.bindTexture(volumeGL.TEXTURE_3D,volumeTexture);')!
 	mut context := host.contexts[key] or { panic('native 3D upload context') }
 	mut other := host.contexts[other_key] or { panic('other 3D upload context') }
-	mut native_texture := 0
+	mut native_texture := i32(0)
 	C.vox_gl_int_parameter(0x806a, &native_texture)
 	assert native_texture != 0
 	runtime.evaluate_host('volumeGL.bindTexture(volumeGL.TEXTURE_3D,null);')!
@@ -38,9 +38,9 @@ fn test_public_3d_byte_uploads_use_driver_storage_and_select_owner_before_bad_sp
 	expected_image := C.vox_gl_get_error()
 	other.native.make_current()
 	runtime.evaluate_host('volumeGL.texImage3D(0xbad,0,volumeGL.RGBA8,-1,1,1,1,volumeGL.RGBA,volumeGL.UNSIGNED_BYTE,new Uint8Array([255,0,0,255]));')!
-	mut selected := [0, 0, 0, 0]!
+	mut selected := [i32(0), 0, 0, 0]!
 	C.vox_gl_int_parameter(0x0ba2, &selected[0])
-	assert selected == [1, 2, 3, 4]!
+	assert selected == [i32(1), 2, 3, 4]!
 	assert runtime.evaluate_host('volumeGL.getError()')! == expected_image.str()
 	for call in [
 		'volumeGL.texImage3D(0xbad,0,volumeGL.RGBA8,1,1,1,0,volumeGL.RGBA,volumeGL.UNSIGNED_BYTE,new Uint8Array(4),5);',
@@ -49,7 +49,7 @@ fn test_public_3d_byte_uploads_use_driver_storage_and_select_owner_before_bad_sp
 		other.native.make_current()
 		runtime.evaluate_host(call)!
 		C.vox_gl_int_parameter(0x0ba2, &selected[0])
-		assert selected == [1, 2, 3, 4]!
+		assert selected == [i32(1), 2, 3, 4]!
 		assert runtime.evaluate_host('volumeGL.getError()')! == '1282'
 	}
 	context.native.make_current()

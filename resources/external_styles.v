@@ -7,7 +7,6 @@ import dom
 import html
 import os
 import platform
-import url
 
 fn load_browser_imported_style_sheet(document &dom.Document, address string) ?css.ImportedStyleSheetSource {
 	if document.is_svg_image_document() && dom.URL{value: address}.scheme() != 'data' { return none }
@@ -109,7 +108,7 @@ fn install_external_styles_with_existing_policy(document &dom.Document, base_url
 			continue
 		}
 		if resolved_url.starts_with('file://') {
-			path := url.percent_decode(resolved_url['file://'.len..]).bytestr()
+			path := browser_local_file_path(resolved_url) or { continue }
 			if path != '' && os.is_file(path) {
 				// The CSS bridge reads local link stylesheets itself and retains their URL.
 				continue

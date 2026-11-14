@@ -142,7 +142,7 @@ class SampleAggregationTests(unittest.TestCase):
 Call graph:
     10 Thread_123: Main Thread
     + 6 render (in Vox) + 12 [0x123abc]
-    + ! 4 work (in libLadybirdVSkiaText.dylib) + 5 [0xdef]
+    + ! 4 work (in libVoxAVIF.dylib) + 5 [0xdef]
     + 4 mach_msg2_trap (in libsystem_kernel.dylib) + 8 [0x456]
 Total number in stack
 Ignored footer
@@ -154,7 +154,7 @@ Ignored footer
         self.assertEqual(len(trees), 1)
         self.assertEqual(aggregate.busy(trees[0]), 6)
         self.assertEqual(trees[0][2][0][0], 'render [Vox]')
-        self.assertEqual(trees[0][2][0][2][0][0], 'work [libLadybirdVSkiaText.dylib]')
+        self.assertEqual(trees[0][2][0][2][0][0], 'work [libVoxAVIF.dylib]')
 
 
 if __name__ == '__main__':

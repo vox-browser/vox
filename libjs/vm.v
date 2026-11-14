@@ -285,6 +285,12 @@ mut:
 	native_function_table          []NativeFunctionTableEntry
 	native_function_indices        map[string]u32
 	run_executable_depth           u32
+	// Explicit experimental tier; absent in ordinary/browser execution.
+	native_tier ?&NativeTier
+	instruction_budget u64
+	instruction_budget_active bool
+	external_budget_depth u32
+	array_join_objects map[voidptr]bool
 	module_execution_depth         u32
 	module_async_evaluation_count  u64 // [[ModuleAsyncEvaluationCount]]
 	private_environment_next_id    u64 = 1
@@ -1263,6 +1269,15 @@ pub fn (mut vm VM) handle_exception(program_counter_argument u32, exception Valu
 	mut program_counter := program_counter_argument
 	for {
 		if handlers := vm.current_executable().exception_handlers_for_offset(program_counter) {
+			if depth := handlers.restore_scope_depth {
+				mut frame := vm.running_execution_context()
+				if depth>frame.lexical_scope_depth { vm.set_reg(register_exception,exception);return .exit_from_executable }
+				for frame.lexical_scope_depth>depth {
+					environment := frame.lexical_environment or { return .exit_from_executable }
+					frame.lexical_environment=environment.outer_environment()
+					frame.lexical_scope_depth--
+				}
+			}
 			vm.set_reg(register_exception, exception)
 			mut running := vm.running_execution_context()
 			running.program_counter = handlers.handler_offset

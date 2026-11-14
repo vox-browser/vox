@@ -5,9 +5,9 @@ module browserjs
 import html
 
 fn public_deletion_query_owner() {
-	mut selected := [0, 0, 0, 0]!
+	mut selected := [i32(0), 0, 0, 0]!
 	C.vox_gl_int_parameter(0x0ba2, &selected[0])
-	assert selected == [1, 2, 3, 4]!
+	assert selected == [i32(1), 2, 3, 4]!
 }
 
 fn test_public_source_query_delete_selects_owner_before_null_foreign_and_repeat() {
@@ -37,7 +37,7 @@ fn test_public_source_query_delete_selects_owner_before_null_foreign_and_repeat(
 	// A binding type error remains an IDL error before source body entry.
 	other.native.make_current()
 	assert runtime.evaluate_host(r'(function(){try{deleteQueryOwner.deleteQuery({});return false}catch(error){return error instanceof TypeError}})()')! == 'true'
-	mut selected := [0, 0, 0, 0]!
+	mut selected := [i32(0), 0, 0, 0]!
 	C.vox_gl_int_parameter(0x0ba2, &selected[0])
-	assert selected == [9, 10, 11, 12]!
+	assert selected == [i32(9), 10, 11, 12]!
 }

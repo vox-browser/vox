@@ -5,7 +5,6 @@ module browserjs
 import html
 import webgl
 
-fn C.glGetAttachedShaders(u32, int, &int, &u32)
 
 fn test_public_shader_attachment_source_gates_and_actual_driver_retained_identities() {
 	$if !darwin {
@@ -22,13 +21,13 @@ fn test_public_shader_attachment_source_gates_and_actual_driver_retained_identit
 		runtime.evaluate_host('globalThis.gl=__webglContext({bridgeKey:"__created_shader_attach",width:2,height:2},"${kind}",null);globalThis.other=__webglContext({bridgeKey:"__created_shader_attach_other",width:2,height:2},"${kind}",null);gl.viewport(1,2,3,4);other.viewport(9,10,11,12);globalThis.program=gl.createProgram();globalThis.foreignProgram=other.createProgram();globalThis.foreign=other.createShader(other.VERTEX_SHADER);globalThis.vertex=gl.createShader(gl.VERTEX_SHADER);globalThis.fragment=gl.createShader(gl.FRAGMENT_SHADER);globalThis.sameVertex=gl.createShader(gl.VERTEX_SHADER);globalThis.sameFragment=gl.createShader(gl.FRAGMENT_SHADER);globalThis.deleted=gl.createShader(gl.VERTEX_SHADER);gl.deleteShader(deleted);')!
 		mut owner := host.contexts['__created_shader_attach'] or { panic('attach owner') }
 		mut other := host.contexts['__created_shader_attach_other'] or { panic('attach other') }
-		mut selected := [0, 0, 0, 0]!
+		mut selected := [i32(0), 0, 0, 0]!
 		for expression in ['gl.attachShader(program,foreign)', 'gl.attachShader(foreignProgram,vertex)',
 			'gl.attachShader(program,deleted)'] {
 			other.native.make_current()
 			assert runtime.evaluate_host('${expression}===undefined')! == 'true'
 			C.vox_gl_int_parameter(webgl.viewport, &selected[0])
-			assert selected == [9, 10, 11, 12]!
+			assert selected == [i32(9), 10, 11, 12]!
 			assert runtime.evaluate_host('gl.getAttachedShaders(program).length===0&&gl.getError()===gl.INVALID_OPERATION')! == 'true'
 		}
 		for expression in ['gl.attachShader()', 'gl.attachShader(program)',
@@ -38,7 +37,7 @@ fn test_public_shader_attachment_source_gates_and_actual_driver_retained_identit
 			other.native.make_current()
 			assert runtime.evaluate_host('(function(){try{${expression};return false}catch(error){return error instanceof TypeError}})()')! == 'true'
 			C.vox_gl_int_parameter(webgl.viewport, &selected[0])
-			assert selected == [9, 10, 11, 12]!
+			assert selected == [i32(9), 10, 11, 12]!
 		}
 		mut program_name := u32(0)
 		for _, record in host.programs {
@@ -51,20 +50,20 @@ fn test_public_shader_attachment_source_gates_and_actual_driver_retained_identit
 			other.native.make_current()
 			assert runtime.evaluate_host('gl.attachShader(program,${argument})===undefined')! == 'true'
 			C.vox_gl_int_parameter(webgl.viewport, &selected[0])
-			assert selected == [1, 2, 3, 4]!
+			assert selected == [i32(1), 2, 3, 4]!
 		}
 		mut count := 0
 		mut names := [u32(0), 0]!
-		C.glGetAttachedShaders(program_name, 2, &count, &names[0])
+		C.vox_gl_attached_shaders(program_name, 2, &count, &names[0])
 		assert count == 2
 		assert runtime.evaluate_host('(function(){const first=gl.getAttachedShaders(program),second=gl.getAttachedShaders(program);return first!==second&&first.length===2&&first[0]===vertex&&first[1]===fragment&&first[0]===second[0]&&first[1]===second[1]})()')! == 'true'
 		for argument in ['vertex', 'fragment', 'sameVertex', 'sameFragment'] {
 			other.native.make_current()
-			mut unused := 0
+			mut unused := i32(0)
 			C.vox_gl_int_parameter(u32(0xffff_ffff), &unused)
 			assert runtime.evaluate_host('gl.attachShader(program,${argument})===undefined')! == 'true'
 			C.vox_gl_int_parameter(webgl.viewport, &selected[0])
-			assert selected == [9, 10, 11, 12]!
+			assert selected == [i32(9), 10, 11, 12]!
 			assert C.vox_gl_get_error() == webgl.invalid_enum
 			assert C.vox_gl_get_error() == webgl.no_error
 			assert runtime.evaluate_host('gl.getAttachedShaders(program)[0]===vertex&&gl.getAttachedShaders(program)[1]===fragment&&gl.getError()===gl.INVALID_OPERATION')! == 'true'
@@ -73,7 +72,7 @@ fn test_public_shader_attachment_source_gates_and_actual_driver_retained_identit
 		other.native.make_current()
 		assert runtime.evaluate_host('gl.attachShader(program,sameVertex)===undefined')! == 'true'
 		C.vox_gl_int_parameter(webgl.viewport, &selected[0])
-		assert selected == [9, 10, 11, 12]!
+		assert selected == [i32(9), 10, 11, 12]!
 		assert runtime.evaluate_host('gl.getError()===gl.INVALID_OPERATION')! == 'true'
 		runtime.evaluate_host('globalThis.rejected=gl.createProgram()')!
 		mut rejected_name := u32(0)
@@ -98,7 +97,7 @@ fn test_public_shader_attachment_source_gates_and_actual_driver_retained_identit
 		other.native.make_current()
 		assert runtime.evaluate_host('gl.attachShader(rejected,vertex)===undefined')! == 'true'
 		C.vox_gl_int_parameter(webgl.viewport, &selected[0])
-		assert selected == [1, 2, 3, 4]!
+		assert selected == [i32(1), 2, 3, 4]!
 		assert runtime.evaluate_host('gl.getAttachedShaders(rejected)[0]===vertex&&gl.getError()===${expected}')! == 'true'
 	}
 }

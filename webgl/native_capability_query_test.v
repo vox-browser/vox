@@ -38,7 +38,7 @@ fn test_vertex_attribute_enable_disable_remains_actual_driver_state() {
 		context.viewport(1, 2, 3, 4)
 		other.viewport(9, 10, 11, 12)
 		context.native.make_current()
-		mut limit := 0
+		mut limit := i32(0)
 		C.vox_gl_int_parameter(GLenum(0x8869), &limit) // GL_MAX_VERTEX_ATTRIBS
 		assert limit > 0
 		for index in [GLuint(0), GLuint(limit - 1), GLuint(limit), GLuint(0xffff_ffff)] {
@@ -56,9 +56,9 @@ fn test_vertex_attribute_enable_disable_remains_actual_driver_state() {
 				} else {
 					context.disable_vertex_attrib_array(index)
 				}
-				mut actual_owner := [0, 0, 0, 0]!
+				mut actual_owner := [i32(0), 0, 0, 0]!
 				C.vox_gl_int_parameter(viewport, &actual_owner[0])
-				assert actual_owner == [1, 2, 3, 4]!
+				assert actual_owner == [i32(1), 2, 3, 4]!
 				if expected_error != no_error {
 					assert context.get_error() == expected_error
 				}

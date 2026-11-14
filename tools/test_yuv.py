@@ -3,7 +3,7 @@
 import argparse
 import os
 from pathlib import Path
-import platform
+import shlex
 import shutil
 import subprocess
 import sys
@@ -19,14 +19,12 @@ def main():
     output = args.output.resolve()
     output.mkdir(parents=True, exist_ok=True)
     compiler = os.environ.get('V_BIN') or shutil.which('v') or str(Path.home() / 'code/v/v')
-    arch = 'arm64' if platform.machine() in ('arm64', 'aarch64') else 'x64'
-    triplet = os.environ.get('LADYBIRD_VCPKG_TRIPLET', arch + '-osx-dynamic')
-    upstream = Path(os.environ.get('LADYBIRD_SOURCE_DIR', root.parent / '3rd/ladybird'))
-    sdk = upstream / 'Build/release/vcpkg_installed' / triplet
     library = output / 'libVoxYUV.dylib'
     executable = output / 'native-yuv'
-    flags = ['-fblocks', '-DLADYBIRD_V_HAS_FFMPEG', '-DLADYBIRD_V_HAS_V_YUV',
-             '-I' + str(sdk / 'include')]
+    # Homebrew FFmpeg headers; the bridge dlopens its libraries at runtime.
+    flags = ['-fblocks', '-DLADYBIRD_V_HAS_FFMPEG', *shlex.split(subprocess.check_output(
+        ['pkg-config', '--cflags', 'libavformat', 'libavcodec', 'libavutil', 'libswscale'],
+        text=True))]
     commands = [
         ('compile-v', '12', [compiler, '-memory-limit', '10G', '-b', 'c', '-cc', 'clang',
                             '-gc', 'none', '-shared', '-o', str(library),

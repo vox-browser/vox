@@ -75,7 +75,10 @@ fn test_fixed_clipped_rounded_box_retains_the_leaf_compositor_surface() {
 		owner := plan.command_layers[index]
 		assert owner > 0
 		assert chromium_leaf_compositor_layer_supported(commands, plan, owner)
-		assert !chromium_svg_compositor_layer_supported(commands, plan, owner)
+		// Complete shadow pictures may also own this surface. Disabling that
+		// recorder still leaves the leaf compositor fallback available.
+		assert chromium_svg_compositor_layer_supported(commands, plan, owner)
+			== !disable_complete_shadow_pictures
 	}
 	assert shadows == 1
 }

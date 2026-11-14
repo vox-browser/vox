@@ -1,11 +1,17 @@
 #!/usr/bin/env python3
 """Check transparent VP8/VP9 frames against libvpx's decoded alpha planes."""
 import argparse
-import os
 from pathlib import Path
-import platform
+import shlex
 import shutil
 import subprocess
+
+
+def ffmpeg_cflags():
+    """Homebrew FFmpeg headers; the bridge dlopens its libraries at runtime."""
+    return shlex.split(subprocess.check_output(
+        ['pkg-config', '--cflags', 'libavformat', 'libavcodec', 'libavutil', 'libswscale'],
+        text=True))
 
 
 def main():
@@ -18,16 +24,10 @@ def main():
     ffmpeg = shutil.which('ffmpeg')
     if not ffmpeg:
         raise SystemExit('ffmpeg with libvpx is required')
-    architecture = 'arm64' if platform.machine() in ('arm64', 'aarch64') else 'x64'
-    triplet = os.environ.get('LADYBIRD_VCPKG_TRIPLET', architecture + '-osx-dynamic')
-    upstream = Path(os.environ.get('LADYBIRD_SOURCE_DIR', root.parent / '3rd/ladybird'))
-    libraries = upstream / 'Build/release/vcpkg_installed' / triplet
     executable = output / 'native-ffmpeg-alpha'
     subprocess.run(['clang', '-O2', '-fblocks', '-DLADYBIRD_V_HAS_FFMPEG',
-                    '-I' + str(libraries / 'include'),
-                    str(root / 'tools/native_ffmpeg_alpha_test.m'),
-                    '-framework', 'Foundation', '-Wl,-rpath,' + str(libraries / 'lib'),
-                    '-o', str(executable)], check=True)
+                    *ffmpeg_cflags(), str(root / 'tools/native_ffmpeg_alpha_test.m'),
+                    '-framework', 'Foundation', '-o', str(executable)], check=True)
     raw = output / 'input.rgba'
     raw.write_bytes(bytes(channel for frame in range(2) for y in range(16)
                          for x in range(16) for channel in

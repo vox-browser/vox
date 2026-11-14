@@ -49,6 +49,7 @@ def normalized(text):
 def vox_replay_environment(proxy, ca, unfocused):
     return dict(VOX_PROXY=proxy, SSL_CERT_FILE=ca,
                 VOX_BLOCK_COOKIE_BANNERS='0', VOX_CAPTURE_DOCUMENT_ACTIVE='0' if unfocused else '1',
+                VOX_CAPTURE_READY_SELECTOR='textarea,[contenteditable=true]',
                 # The browser's opt-in checks presence, not boolean spelling.
                 # Even "0" enables synchronous native snapshot PNG caching.
                 LADYBIRD_ENABLE_SNAPSHOT_CACHE='')

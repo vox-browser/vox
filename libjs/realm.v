@@ -21,8 +21,18 @@ pub mut:
 	global_declarative_environment ?&DeclarativeEnvironment // Cached from GlobalEnv
 	host_defined                   ?RealmHostDefined        // [[HostDefined]]
 	object_prototype               ?&Object
+	object_constructor             ?&Object
 	math_object                    ?&Object
+	json_object                    ?&Object
+	error_prototypes               map[ErrorKind]&Object
+	error_constructors             map[ErrorKind]&Object
 	function_prototype             ?&Object                 // %Function.prototype%
+	array_prototype ?&Object
+	array_constructor ?&Object
+	string_prototype ?&Object
+	string_constructor ?&Object
+	regexp_prototype ?&Object
+	regexp_constructor ?&Object
 	throw_type_error_function      ?&Object
 	boolean_prototype              ?&Object
 	boolean_constructor            ?&Object
@@ -50,6 +60,10 @@ pub fn (realm &Realm) global_environment_record() &GlobalEnvironment {
 
 pub fn (realm &Realm) object_prototype_record() &Object {
 	return realm.object_prototype or { panic('Realm has no Object prototype yet') }
+}
+
+pub fn (realm &Realm) object_constructor_record() &Object {
+	return realm.object_constructor or { panic('Realm has no Object constructor yet') }
 }
 
 pub fn (realm &Realm) math_object_record() &Object {
@@ -123,7 +137,9 @@ pub fn initialize_host_defined_realm(mut vm VM, hooks RealmGlobalHooks) !&Execut
 	realm.object_prototype = object_prototype.object
 	function_prototype := FunctionPrototype.create(mut vm, realm, object_prototype.object)
 	realm.function_prototype = function_prototype.object
-	object_prototype.initialize(mut vm, realm, PrimitiveObjectPrototypes{})
+	object_prototype.initialize(mut vm, realm, realm_primitive_prototypes())
+	realm.object_constructor = ObjectConstructor.create(mut vm, realm).object
+	initialize_error_intrinsics(mut vm, mut realm)
 	realm.math_object = MathObject.create(mut vm, realm, object_prototype.object).object
 	thrower := create_throw_type_error_function(mut vm, realm, function_prototype.object)
 	realm.throw_type_error_function = thrower
@@ -167,6 +183,9 @@ pub fn initialize_host_defined_realm(mut vm VM, hooks RealmGlobalHooks) !&Execut
 	mut shared_array_buffer_prototype_object := shared_array_buffer_prototype.object
 	shared_array_buffer_prototype_object.define_direct_property(PropertyName.from_str('constructor'),
 		Value.from_object(shared_array_buffer_constructor.object), attribute_writable | attribute_configurable)
+	initialize_collection_intrinsics(mut vm, mut realm)!
+	initialize_regexp_intrinsics(mut vm, mut realm)
+	realm.json_object = create_json_object(mut vm, realm)
 	// 4. Set realm.[[GlobalObject]] to undefined.
 	// 5. Set realm.[[GlobalEnv]] to undefined.
 	// 7. Let newContext be a new execution context.
@@ -206,6 +225,9 @@ pub fn initialize_host_defined_realm(mut vm VM, hooks RealmGlobalHooks) !&Execut
 	set_default_global_value_bindings(realm)
 	// GlobalObject.cpp installs intrinsic constructor properties after values.
 	// Eager materialization replaces the engine-private intrinsic accessor map.
+	global.define_direct_property(PropertyName.from_str('Array'),
+		Value.from_object(realm.array_constructor or { panic('Missing Array constructor') }),
+		attribute_writable | attribute_configurable)
 	global.define_direct_property(PropertyName.from_str('ArrayBuffer'),
 		Value.from_object(realm.array_buffer_constructor_record()),
 		attribute_writable | attribute_configurable)
@@ -215,18 +237,41 @@ pub fn initialize_host_defined_realm(mut vm VM, hooks RealmGlobalHooks) !&Execut
 	global.define_direct_property(PropertyName.from_str('DataView'),
 		Value.from_object(realm.data_view_constructor_record()),
 		attribute_writable | attribute_configurable)
+	for kind in [ErrorKind.error, .eval_error, .internal_error] {
+		global.define_direct_property(PropertyName.from_str(kind.name()), Value.from_object(realm.error_constructors[kind] or { panic('Missing error constructor') }), attribute_writable | attribute_configurable)
+	}
+	global.define_direct_property(PropertyName.from_str('Object'),
+		Value.from_object(realm.object_constructor_record()), attribute_writable | attribute_configurable)
+	for kind in [ErrorKind.range_error, .reference_error] {
+		global.define_direct_property(PropertyName.from_str(kind.name()), Value.from_object(realm.error_constructors[kind] or { panic('Missing error constructor') }), attribute_writable | attribute_configurable)
+	}
+	global.define_direct_property(PropertyName.from_str('RegExp'),
+		Value.from_object(realm.regexp_constructor or { panic('Missing RegExp constructor') }),
+		attribute_writable | attribute_configurable)
 	global.define_direct_property(PropertyName.from_str('SharedArrayBuffer'),
 		Value.from_object(realm.shared_array_buffer_constructor_record()), attribute_writable | attribute_configurable)
+	global.define_direct_property(PropertyName.from_str('String'),
+		Value.from_object(realm.string_constructor or { panic('Missing String constructor') }),
+		attribute_writable | attribute_configurable)
 	global.define_direct_property(PropertyName.from_str('Symbol'),
 		Value.from_object(realm.symbol_constructor_record()),
 		attribute_writable | attribute_configurable)
+	for kind in [ErrorKind.syntax_error, .type_error, .uri_error] {
+		global.define_direct_property(PropertyName.from_str(kind.name()), Value.from_object(realm.error_constructors[kind] or { panic('Missing error constructor') }), attribute_writable | attribute_configurable)
+	}
 	// Other intrinsic properties follow constructors in GlobalObject.cpp.
+	global.define_direct_property(PropertyName.from_str('JSON'),
+		Value.from_object(realm.json_object or { panic('Missing JSON object') }), attribute_writable | attribute_configurable)
 	global.define_direct_property(PropertyName.from_str('Math'),
 		Value.from_object(realm.math_object_record()), attribute_writable | attribute_configurable)
 	set_default_global_legacy_functions(mut vm, realm)
 	// 19. Create any host-defined global object properties on global.
 	// 20. Return unused.
 	return new_context
+}
+
+pub fn (realm &Realm) array_prototype_record() &Object {
+	return realm.array_prototype or { panic('Realm has no Array prototype') }
 }
 
 // Runtime/GlobalObject.cpp::set_default_global_bindings, value properties only.

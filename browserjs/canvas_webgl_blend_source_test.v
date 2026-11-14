@@ -10,7 +10,7 @@ fn public_blend_source_state() []int {
 	mut result := []int{}
 	for pname in [webgl.blend_equation_rgb, webgl.blend_equation_alpha, webgl.blend_src_rgb,
 		webgl.blend_dst_rgb, webgl.blend_src_alpha, webgl.blend_dst_alpha] {
-		mut value := 0
+		mut value := i32(0)
 		C.vox_gl_int_parameter(pname, &value)
 		result << value
 	}
@@ -57,9 +57,9 @@ fn test_public_blend_preserves_source_driver_validation_unrestricted_floats_and_
 				else { 'blendFuncSeparate(gl.ONE,gl.ZERO,gl.CONSTANT_COLOR,gl.CONSTANT_ALPHA)' }
 			}
 			runtime.evaluate_host('gl.${expression}')!
-			mut selected := [0, 0, 0, 0]!
+			mut selected := [i32(0), 0, 0, 0]!
 			C.vox_gl_int_parameter(webgl.viewport, &selected[0])
-			assert selected == [1, 2, 3, 4]!
+			assert selected == [i32(1), 2, 3, 4]!
 			assert public_blend_source_state() == expected_state
 			if expected_error != webgl.no_error {
 				assert runtime.evaluate_host('gl.getError()')! == expected_error.str()
@@ -86,9 +86,9 @@ fn test_public_blend_preserves_source_driver_validation_unrestricted_floats_and_
 			'blendFuncSeparate(gl.ONE,gl.ZERO,gl.ONE,{valueOf(){throw marker}})'] {
 			other.native.make_current()
 			assert runtime.evaluate_host('(function(){const marker={};try{gl.${expression};return false}catch(error){return error===marker}})()')! == 'true'
-			mut selected := [0, 0, 0, 0]!
+			mut selected := [i32(0), 0, 0, 0]!
 			C.vox_gl_int_parameter(webgl.viewport, &selected[0])
-			assert selected == [9, 10, 11, 12]!
+			assert selected == [i32(9), 10, 11, 12]!
 		}
 		assert runtime.evaluate_host('(function(){gl.viewport(0,0,1,1);const v=gl.createShader(gl.VERTEX_SHADER),f=gl.createShader(gl.FRAGMENT_SHADER),p=gl.createProgram();gl.shaderSource(v,"void main(){gl_Position=vec4(0,0,0,1);gl_PointSize=1.0;}");gl.shaderSource(f,"precision mediump float;void main(){gl_FragColor=vec4(0.25,0,0,1);}");gl.compileShader(v);gl.compileShader(f);gl.attachShader(p,v);gl.attachShader(p,f);gl.linkProgram(p);if(!gl.getProgramParameter(p,gl.LINK_STATUS))return false;gl.useProgram(p);gl.clearColor(0,0,0.25,1);gl.clear(gl.COLOR_BUFFER_BIT);gl.enable(gl.BLEND);gl.blendColor(0.5,0.5,0.5,1);gl.blendEquation(gl.FUNC_SUBTRACT);gl.blendEquationSeparate(gl.FUNC_ADD,gl.FUNC_ADD);gl.blendFunc(gl.ZERO,gl.ZERO);gl.blendFuncSeparate(gl.ONE,gl.ONE,gl.ONE,gl.ONE);gl.drawArrays(gl.POINTS,0,1);const pixel=new Uint8Array(4);gl.readPixels(0,0,1,1,gl.RGBA,gl.UNSIGNED_BYTE,pixel);return Array.from(pixel).join(",")==="64,0,64,255"&&gl.getError()===gl.NO_ERROR})()')! == 'true'
 		assert other.get_error() == webgl.no_error

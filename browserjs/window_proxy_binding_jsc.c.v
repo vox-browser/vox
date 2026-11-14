@@ -108,6 +108,13 @@ fn (mut runtime Runtime) javascript_window_proxy(proxy &dom.WindowProxy) !voidpt
 	mut binding := window_proxy_bindings_[voidptr(runtime)] or {
 		return runtime.javascript_event_target(unsafe { &dom.EventTarget(window) }, none)
 	}
+	// The initial about:blank Window already has a realm when contentWindow
+	// is exposed. Returning a placeholder until its first property read changes
+	// identity on the next read and wraps native functions such as eval.
+	document := window.associated_document()
+	if document.get_is_initial_about_blank() && !document.has_been_destroyed() {
+		if global := runtime.window_proxy_realm_global(binding, window) { return global }
+	}
 	if wrapper := binding.by_native[voidptr(proxy)] { return wrapper }
 	wrapper := runtime.call_javascript_function(binding.factory, C.vox_jsc_JSValueMakeUndefined(runtime.context), [])!
 	binding.by_wrapper[wrapper] = proxy

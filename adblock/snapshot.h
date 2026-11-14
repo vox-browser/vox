@@ -154,7 +154,7 @@ static int vox_adblock_install_snapshot(JSGlobalContextRef context,
     uint32_t expected_crc = (uint32_t)crc_bytes[0] | ((uint32_t)crc_bytes[1] << 8) |
         ((uint32_t)crc_bytes[2] << 16) | ((uint32_t)crc_bytes[3] << 24);
     const unsigned char *payload = snapshot + 16;
-    if ((uint32_t)vox_crc32(0, payload, (uInt)size) != expected_crc) return 4;
+    if (vox_crc32(0, payload, size) != expected_crc) return 4;
     void *owner = NULL;
     void *bytes = vox_adblock_copy_snapshot(payload, size, &owner);
     if (!bytes) return 3;
@@ -282,19 +282,12 @@ static JSValueRef vox_adblock_read_snapshot_metadata(JSContextRef context,
     return value;
 }
 
+// `bytes` is the decompressed metadata JSON; V inflates the bundled gzip
+// asset (adblock/snapshot_jsc.c.v) before installing it here.
 static int vox_adblock_install_snapshot_metadata(JSGlobalContextRef context,
-        const unsigned char *compressed, size_t compressed_size) {
-    if (!context || !compressed || compressed_size < 18) return 1;
-    const unsigned char *size_bytes = compressed + compressed_size - 4;
-    size_t size = (size_t)size_bytes[0] | ((size_t)size_bytes[1] << 8) |
-        ((size_t)size_bytes[2] << 16) | ((size_t)size_bytes[3] << 24);
+        const unsigned char *bytes, size_t size) {
+    if (!context || !bytes) return 1;
     if (!size || size > 128 * 1024 * 1024) return 2;
-    unsigned char *bytes = malloc(size + 1);
-    if (!bytes) return 3;
-    if (vox_adblock_gunzip(compressed, compressed_size, bytes, size) != Z_OK) {
-        free(bytes);
-        return 4;
-    }
     // Reject non-ASCII input explicitly: CoreFoundation's ASCII conversion can
     // accept high bytes on some system versions. Scan aligned-size chunks so
     // validating the generated multi-megabyte metadata remains inexpensive.
@@ -308,20 +301,22 @@ static int vox_adblock_install_snapshot_metadata(JSGlobalContextRef context,
     }
     int ascii = !(high_bits & UINT64_C(0x8080808080808080));
     while (offset < size) ascii &= !(bytes[offset++] & 0x80);
-    if (!ascii) { free(bytes); return 5; }
+    if (!ascii) return 5;
     // The generator emits ASCII JSON escapes, retaining Unicode/NUL/BOM values
     // while keeping CoreFoundation's conversion on its fast ASCII path.
 #ifdef __APPLE__
     CFStringRef text = CFStringCreateWithBytes(kCFAllocatorDefault, bytes,
         (CFIndex)size, kCFStringEncodingASCII, false);
-    free(bytes);
     if (!text) return 5;
     JSStringRef json = JSStringCreateWithCFString(text);
     CFRelease(text);
 #else
-    bytes[size] = 0;
-    JSStringRef json = JSStringCreateWithUTF8CString((const char *)bytes);
-    free(bytes);
+    char *text = malloc(size + 1);
+    if (!text) return 3;
+    memcpy(text, bytes, size);
+    text[size] = 0;
+    JSStringRef json = JSStringCreateWithUTF8CString(text);
+    free(text);
 #endif
     if (!json) return 5;
     struct vox_adblock_snapshot_metadata *metadata = malloc(sizeof *metadata);

@@ -28,7 +28,7 @@ fn blend_source_state() []i64 {
 	mut result := []i64{}
 	for pname in [blend_equation_rgb, blend_equation_alpha, blend_src_rgb, blend_dst_rgb,
 		blend_src_alpha, blend_dst_alpha] {
-		mut value := 0
+		mut value := i32(0)
 		C.vox_gl_int_parameter(pname, &value)
 		result << i64(value)
 	}
@@ -81,9 +81,9 @@ fn test_source_blend_enums_use_driver_validation_state_and_error_priority() {
 					'func' { context.blend_func(a[0], a[1]) }
 					else { context.blend_func_separate(a[0], a[1], a[2], a[3]) }
 				}
-				mut selected := [0, 0, 0, 0]!
+				mut selected := [i32(0), 0, 0, 0]!
 				C.vox_gl_int_parameter(viewport, &selected[0])
-				assert selected == [1, 2, 3, 4]!
+				assert selected == [i32(1), 2, 3, 4]!
 				assert blend_source_state() == expected_state
 				if expected_error != no_error {
 					assert context.get_error() == expected_error

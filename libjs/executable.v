@@ -41,6 +41,9 @@ pub:
 	end_offset        u32
 	handler_offset    u32
 	catches_exception bool
+	// This instruction-index backend restores block environments by depth;
+	// upstream emits SetLexicalEnvironment with a saved environment operand.
+	restore_scope_depth ?u32
 }
 
 pub struct SourceMapEntry {
@@ -66,6 +69,8 @@ pub mut:
 	source_code     ?&SourceCode
 	instructions    []Instruction
 	global_bindings []GlobalBinding
+	parsed_source &ParsedSource = unsafe { nil }
+	starting_line u32 = 1
 }
 
 pub fn (executable &Executable) get_identifier(index u32) Utf16String {

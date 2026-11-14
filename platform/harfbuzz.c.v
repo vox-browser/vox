@@ -5,53 +5,20 @@
 module platform
 
 import math
+import vunicode
 import os
 
-// Browser shaping must match current HarfBuzz behavior (for example AAT 'trak'
-// tracking in fonts without GPOS). Ladybird's vcpkg tree ships an older
-// libharfbuzz whose -L path can precede pkg-config's, so link the installed
-// library by path on macOS. The same installed static archive lets the linker
-// omit unused GLib integration, while keeping all reachable shaping backends.
-// Keep an explicit dynamic-link control for build comparisons.
+// The HarfBuzz VPM module supplies optimized macOS OpenType/CoreText archives
+// without Graphite2; other platforms use their system HarfBuzz. Font selection,
+// Unicode handling and glyph-run policy remain in V.
 $if macos {
-	$if arm64 {
-		#flag -I/opt/homebrew/opt/harfbuzz/include/harfbuzz
-		$if vox_dynamic_harfbuzz ? {
-			#flag /opt/homebrew/opt/harfbuzz/lib/libharfbuzz.0.dylib
-		} $else {
-			#flag /opt/homebrew/opt/harfbuzz/lib/libharfbuzz.a
-			// The archive's FreeType backend only needs its symbols bound: shaping
-			// uses OpenType/CoreText font functions. Bind them to the FreeType that
-			// Skia already maps, rather than loading Homebrew's FreeType with its
-			// libpng and Brotli into every launch.
-			#flag @DIR/../../3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libfreetype.dylib
-			#flag -Wl,-rpath,@DIR/../../3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib
-			#flag /opt/homebrew/opt/graphite2/lib/libgraphite2.3.dylib
-		}
-	} $else {
-		#flag -I/usr/local/opt/harfbuzz/include/harfbuzz
-		$if vox_dynamic_harfbuzz ? {
-			#flag /usr/local/opt/harfbuzz/lib/libharfbuzz.0.dylib
-		} $else {
-			#flag /usr/local/opt/harfbuzz/lib/libharfbuzz.a
-			#flag /usr/local/opt/freetype/lib/libfreetype.6.dylib
-			#flag /usr/local/opt/graphite2/lib/libgraphite2.3.dylib
-		}
-	}
-	$if !vox_dynamic_harfbuzz ? {
-		#flag -framework CoreFoundation
-		#flag -framework CoreGraphics
-		#flag -framework CoreText
-	}
+	import harfbuzz as _
 } $else {
 	#pkgconfig harfbuzz
 }
 
-#flag darwin -licucore
-
-#flag linux -licuuc
-
 #include <hb.h>
+
 $if !windows {
 	#include <dlfcn.h>
 }
@@ -61,8 +28,6 @@ $if !windows {
 $if macos {
 	#include "harfbuzz_coretext_macos.h"
 }
-
-#include <unicode/uchar.h>
 
 struct C.hb_glyph_info_t {
 	codepoint u32
@@ -158,11 +123,8 @@ fn C.hb_face_reference_table(face voidptr, tag u32) voidptr
 
 fn C.hb_blob_get_length(blob voidptr) u32
 
-fn C.u_hasBinaryProperty(code_point i32, property int) int
-
 const harfbuzz_direction_ltr = 4
 const harfbuzz_direction_rtl = 5
-const icu_default_ignorable_code_point_property = 5
 
 __global (
 	harfbuzz_document_blobs     = map[string]voidptr{}
@@ -389,7 +351,7 @@ fn resolve_font_path_for_family(family string, weight int) ?string {
 		if regular_path != '' && os.is_file(regular_path) {
 			// CoreText's generic serif cascade keeps Times New Roman's regular
 			// advances and synthesizes bold. Preserve those advances for Layout;
-			// the Skia replay bridge applies emboldening when the face itself is
+			// native glyph replay applies emboldening when the face itself is
 			// not bold.
 			if weight >= 600 && lower_family !in ['serif', 'uiserif'] {
 				for candidate in bold_font_path_candidates(regular_path) {
@@ -669,43 +631,12 @@ fn text_uses_emoji_fallback(text string) bool {
 	return found_emoji
 }
 
-// Blink shapes with Skia's glyph advances. For CoreText bitmap faces, such as
-// Apple Color Emoji, they are whole pixels for the selected strike rather than
-// scaled horizontal metrics. The native Skia bridge supplies them when linked.
-type SkiaSystemFaceAdvances = fn (key &char, path &char, postscript_name &char, size f32, glyphs &u16, count int, advances &f32) int
+__global harfbuzz_bitmap_face_cache = HarfBuzzBitmapFaceCache{}
 
-type SkiaFaceAdvances = fn (path &char, face_index int, weight int, size f32, glyphs &u16, count int, advances &f32) int
-
-type SkiaRegisterFace = fn (key &char, path &char, postscript_name &char, tags &u32, values &f32, count int) int
-
-__global skia_system_face_advances_lookup = SkiaSystemFaceAdvancesLookup{}
-
-struct SkiaSystemFaceAdvancesLookup {
+struct HarfBuzzBitmapFaceCache {
 mut:
-	attempted     bool
-	function      voidptr
-	face_function voidptr
-	register_function voidptr
 	// Cleared whenever native faces retire; their addresses can be reused.
-	bitmap_faces map[u64]bool
-}
-
-fn skia_system_face_advances_function() voidptr {
-	$if macos {
-		if !skia_system_face_advances_lookup.attempted {
-			skia_system_face_advances_lookup.attempted = true
-			// RTLD_DEFAULT searches every image loaded into the process.
-			skia_system_face_advances_lookup.function = C.dlsym(unsafe { voidptr(int(-2)) },
-				c'ladybird_v_skia_system_face_advances')
-			skia_system_face_advances_lookup.face_function = C.dlsym(unsafe { voidptr(int(-2)) },
-				c'ladybird_v_skia_face_advances')
-			skia_system_face_advances_lookup.register_function = C.dlsym(unsafe { voidptr(int(-2)) },
-				c'ladybird_v_skia_register_system_face')
-		}
-		return skia_system_face_advances_lookup.function
-	} $else {
-		return unsafe { nil }
-	}
+	faces map[u64]bool
 }
 
 fn harfbuzz_face_has_table(face voidptr, tag u32) bool {
@@ -720,21 +651,21 @@ fn harfbuzz_face_has_table(face voidptr, tag u32) bool {
 
 fn harfbuzz_face_is_bitmap_face(face voidptr) bool {
 	key := u64(face)
-	if is_bitmap := skia_system_face_advances_lookup.bitmap_faces[key] {
+	if is_bitmap := harfbuzz_bitmap_face_cache.faces[key] {
 		return is_bitmap
 	}
 	// 'sbix'
 	is_bitmap := harfbuzz_face_has_table(face, 0x73626978)
 	persistent := enter_persistent()
-	skia_system_face_advances_lookup.bitmap_faces[key] = is_bitmap
+	harfbuzz_bitmap_face_cache.faces[key] = is_bitmap
 	leave_persistent(persistent)
 	return is_bitmap
 }
 
-// Blink's SimpleFontData::WidthForGlyph(): the glyph's Skia strike advance
-// alone. Skia copies the CoreText font without AAT 'trak' tracking, which text
-// shaping adds back as a HarfBuzz adjustment. Text controls size from this
-// width: SF's 'x' is 7.35px at 14px, while shaped text advances 7.19px.
+// Blink's SimpleFontData::WidthForGlyph(): the glyph's advance without AAT
+// 'trak' tracking, which text shaping adds back as a HarfBuzz adjustment. Text
+// controls size from this width: SF's 'x' is 7.35px at 14px, while shaped text
+// advances 7.19px.
 pub fn (font &Font) chromium_strike_glyph_width(code_point u32) ?f32 {
 	if font.font_rendering_policy != .chromium { return none }
 	face := document_harfbuzz_face(font) or { return none }
@@ -743,17 +674,9 @@ pub fn (font &Font) chromium_strike_glyph_width(code_point u32) ?f32 {
 		font.variations(), system_font_matching_supported(), font.tracking_size()) or { return none }
 	mut glyph := u32(0)
 	if C.hb_font_get_nominal_glyph(hb_font, code_point, &glyph) == 0 { return none }
-	// Installed variable faces, such as SF with its optical size, keep
-	// HarfBuzz's interpolated advances, as their shaping does.
 	if !harfbuzz_face_is_bitmap_face(face) && !(font.source_path == '' && font.variations().len > 0) {
-		info := C.hb_glyph_info_t{
-			codepoint: glyph
-		}
-		widths := if font.replay_face() != none {
-			skia_system_face_widths(font, &info, 1)
-		} else {
-			skia_document_face_widths(font, &info, 1)
-		}
+		info := C.hb_glyph_info_t{ codepoint: glyph }
+		widths := chromium_native_face_widths(font, &info, 1)
 		if widths.len == 1 { return widths[0] }
 	}
 	// HarfBuzz's nominal advance also excludes the shaping-time tracking.
@@ -761,7 +684,7 @@ pub fn (font &Font) chromium_strike_glyph_width(code_point u32) ?f32 {
 }
 
 // Blink's HarfBuzz font functions also take an outline face's advances from
-// its Skia strike, truncated to 16.16 fixed point, and HarfBuzz adds its GPOS
+// its native strike, truncated to 16.16 fixed point, and HarfBuzz adds its GPOS
 // adjustments at the same scale. HarfBuzz's own scaling rounds the design
 // advance instead, which differs by 1/65536px for about half the glyphs and
 // moves glyphs late in a line across a quarter-pixel raster position.
@@ -772,9 +695,9 @@ fn chromium_outline_face_advances(font &Font, face voidptr, hb_font voidptr, inf
 		return []f32{}
 	}
 	widths := if font.replay_face() != none {
-		skia_system_face_widths(font, infos, count)
+		chromium_native_face_widths(font, infos, count)
 	} else {
-		skia_document_face_widths(font, infos, count)
+		chromium_native_face_widths(font, infos, count)
 	}
 	if widths.len != count {
 		return []f32{}
@@ -794,8 +717,8 @@ fn chromium_outline_face_advances(font &Font, face voidptr, hb_font voidptr, inf
 // Blink's SkiaScalarToHarfBuzzPosition() truncates a strike width to 16.16
 // fixed point. HarfBuzz's positioning adjustments, the difference between its
 // shaped and nominal advances, are added at the same scale.
-fn chromium_harfbuzz_advance(skia_width f32, x_advance int, nominal_advance int) f32 {
-	width := i64(skia_width * f32(65536))
+fn chromium_harfbuzz_advance(strike_width f32, x_advance int, nominal_advance int) f32 {
+	width := i64(strike_width * f32(65536))
 	return f32(f64(width + i64(x_advance) - i64(nominal_advance)) / 65536)
 }
 
@@ -803,55 +726,31 @@ fn chromium_bitmap_face_advances(font &Font, face voidptr, infos &C.hb_glyph_inf
 	if font.font_rendering_policy != .chromium || count <= 0 || !harfbuzz_face_is_bitmap_face(face) {
 		return []f32{}
 	}
-	return skia_system_face_widths(font, infos, count)
+	return chromium_native_face_widths(font, infos, count)
 }
 
-fn skia_document_face_widths(font &Font, infos &C.hb_glyph_info_t, count int) []f32 {
-	path := font.font_path() or { return []f32{} }
-	skia_system_face_advances_function()
-	function := skia_system_face_advances_lookup.face_function
-	if function == unsafe { nil } {
-		return []f32{}
+// CoreText supplies the same untracked strike widths used by glyph rasterization.
+fn chromium_native_face_widths(font &Font, infos &C.hb_glyph_info_t, count int) []f32 {
+	$if macos {
+		mut path := font.font_path() or { return []f32{} }
+		if face := font.replay_face() {
+			key := face.replay_key()
+			tags := face.variations.map(it.tag)
+			values := face.variations.map(it.value)
+			if C.cpuraster_ct_register_face(key.str, face.path.str, face.postscript_name.str,
+				tags.data, values.data, tags.len) == 0 {
+				return []f32{}
+			}
+			path = key
+		}
+		glyphs := []u16{len: count, init: u16(unsafe { infos[index] }.codepoint)}
+		mut widths := []f32{len: count}
+		if C.cpuraster_ct_advances(path.str, font.face_index(), font.point_size,
+			glyphs.data, count, widths.data) != 0 {
+			return widths
+		}
 	}
-	mut glyph_ids := []u16{len: count}
-	for index in 0 .. count {
-		glyph_ids[index] = u16(unsafe { infos[index] }.codepoint)
-	}
-	mut widths := []f32{len: count}
-	measure := unsafe { SkiaFaceAdvances(function) }
-	if measure(&char(path.str), font.face_index(), font.weight, font.point_size, glyph_ids.data,
-		count, widths.data) == 0 {
-		return []f32{}
-	}
-	return widths
-}
-
-fn skia_system_face_widths(font &Font, infos &C.hb_glyph_info_t, count int) []f32 {
-	system_face := font.replay_face() or { return []f32{} }
-	function := skia_system_face_advances_function()
-	if function == unsafe { nil } {
-		return []f32{}
-	}
-	mut glyph_ids := []u16{len: count}
-	for index in 0 .. count {
-		glyph_ids[index] = u16(unsafe { infos[index] }.codepoint)
-	}
-	mut advances := []f32{len: count}
-	measure := unsafe { SkiaSystemFaceAdvances(function) }
-	key := system_face.replay_key()
-	if font.source_path != '' && system_face.variations.len > 0 {
-		register := skia_system_face_advances_lookup.register_function
-		if register == unsafe { nil } { return []f32{} }
-		tags := system_face.variations.map(it.tag)
-		values := system_face.variations.map(it.value)
-		register_face := unsafe { SkiaRegisterFace(register) }
-		if register_face(&char(key.str), &char(system_face.path.str), &char(system_face.postscript_name.str), tags.data, values.data, tags.len) == 0 { return []f32{} }
-	}
-	if measure(&char(key.str), &char(system_face.path.str), &char(system_face.postscript_name.str),
-		font.point_size, glyph_ids.data, count, advances.data) == 0 {
-		return []f32{}
-	}
-	return advances
+	return []f32{}
 }
 
 // Chromium-policy text uses the platform's fallback face, such as Apple Color
@@ -910,7 +809,7 @@ fn code_point_at_utf16_offset(text string, utf16_units []u16, is_ascii bool, off
 }
 
 fn code_point_is_default_ignorable(code_point u32) bool {
-	return C.u_hasBinaryProperty(i32(code_point), icu_default_ignorable_code_point_property) != 0
+	return vunicode.property_named(code_point, 'Default_Ignorable_Code_Point')
 }
 
 // Smart punctuation retains the Latin script chosen from an ASCII letter.
@@ -920,7 +819,8 @@ fn harfbuzz_latin_punctuation_units(units []u16) bool {
 	for unit in units {
 		if (unit >= `A` && unit <= `Z`) || (unit >= `a` && unit <= `z`) {
 			has_latin = true
-		} else if unit > 0x7f && unit !in [u16(0x2013), 0x2014, 0x2018, 0x2019, 0x201a, 0x201b, 0x201c, 0x201d, 0x201e, 0x201f, 0x2026] {
+		} else if unit > 0x7f && unit !in [u16(0x2013), 0x2014, 0x2018, 0x2019, 0x201a, 0x201b,
+			0x201c, 0x201d, 0x201e, 0x201f, 0x2026] {
 			return false
 		}
 	}
@@ -970,7 +870,11 @@ fn shape_text_with_harfbuzz(initial_x f32, letter_spacing f32, word_spacing f32,
 	}
 	if is_ascii {
 		C.hb_buffer_set_script(buffer, C.hb_script_from_string(c'Latn', 4))
-		C.hb_buffer_set_direction(buffer, harfbuzz_direction_ltr)
+		C.hb_buffer_set_direction(buffer, if font.font_rendering_policy == .chromium && text_type == .rtl {
+			harfbuzz_direction_rtl
+		} else {
+			harfbuzz_direction_ltr
+		})
 	} else {
 		if text_type == .ltr {
 			C.hb_buffer_set_direction(buffer, harfbuzz_direction_ltr)
@@ -985,7 +889,7 @@ fn shape_text_with_harfbuzz(initial_x f32, letter_spacing f32, word_spacing f32,
 		// Blink disables optional common/contextual ligatures for either sign
 		// of letter spacing. Required script features remain HarfBuzz defaults.
 		for index, tag in [u32(0x6c696761), 0x636c6967, 0x63616c74] {
-			features[index] = C.hb_feature_t{tag:tag, value:0, start:0, end:0xffffffff}
+			features[index] = C.hb_feature_t{ tag: tag, value: 0, start: 0, end: 0xffffffff }
 		}
 		feature_count = 3
 	}
@@ -993,16 +897,6 @@ fn shape_text_with_harfbuzz(initial_x f32, letter_spacing f32, word_spacing f32,
 	mut glyph_count := u32(0)
 	infos := C.hb_buffer_get_glyph_infos(buffer, &glyph_count)
 	positions := C.hb_buffer_get_glyph_positions(buffer, &glyph_count)
-	mut skia_advances := if uses_emoji {
-		[]f32{}
-	} else {
-		chromium_bitmap_face_advances(font, face,
-			infos, int(glyph_count))
-	}
-	if !uses_emoji && skia_advances.len == 0 {
-		skia_advances = chromium_outline_face_advances(font, face, hb_font, infos, positions,
-			int(glyph_count))
-	}
 	// UNSAFE_TO_BREAK is meaningful only at cluster starts. Reject duplicate,
 	// decreasing or missing cluster coverage rather than inferring offsets.
 	mut known_breaks := (is_ascii || harfbuzz_latin_punctuation_units(utf16_units))
@@ -1018,6 +912,10 @@ fn shape_text_with_harfbuzz(initial_x f32, letter_spacing f32, word_spacing f32,
 			}
 			previous = cluster
 		}
+	}
+	mut native_advances := chromium_bitmap_face_advances(font, face, infos, int(glyph_count))
+	if native_advances.len == 0 {
+		native_advances = chromium_outline_face_advances(font, face, hb_font, infos, positions, int(glyph_count))
 	}
 	resolved_letter_spacing := font.quantized_shaping_spacing(letter_spacing)
 	resolved_word_spacing := font.quantized_shaping_spacing(word_spacing)
@@ -1035,8 +933,8 @@ fn shape_text_with_harfbuzz(initial_x f32, letter_spacing f32, word_spacing f32,
 		should_paint := !font.is_invisible && !is_default_ignorable
 		mut advance := f32(0)
 		if !is_default_ignorable {
-			design_advance := if index < skia_advances.len {
-				skia_advances[index]
+			design_advance := if native_advances.len == int(glyph_count) {
+				native_advances[index]
 			} else {
 				f32(f64(position.x_advance) / resolution)
 			}

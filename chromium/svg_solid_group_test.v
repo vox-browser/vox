@@ -6,13 +6,13 @@ import css
 
 fn scaled_svg_viewport_command() layout.PaintCommand {
 	return layout.PaintCommand{
-		kind: 'draw_svg_path'
-		color: 'white'
+		kind:      'draw_svg_path'
+		color:     'white'
 		transform: [f64(1), 0, 0, 1, 33, 422]!
-		svg_data: &layout.PaintSVGPathData{
+		svg_data:  &layout.PaintSVGPathData{
 			path_transform: [f64(.04), 0, 0, .04, 0, 10.5]!
-			path_data: [f32(0), 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-				1, 400, 70, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+			path_data:      [f32(0), 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 400, 70, 0, 0, 0, 0, 0,
+				0, 0, 0, 0]
 		}
 	}
 }
@@ -29,10 +29,10 @@ fn test_downscaled_svg_batch_viewport_keeps_the_last_covered_pixel_row() {
 fn test_svg_batch_enclosure_preserves_fractional_author_clip_boundaries() {
 	command := layout.PaintCommand{
 		...scaled_svg_viewport_command()
-		has_clip: true
-		clip_x: 33.25
-		clip_y: 432.875
-		clip_width: 10.5
+		has_clip:    true
+		clip_x:      33.25
+		clip_y:      432.875
+		clip_width:  10.5
 		clip_height: 2.375
 	}
 	viewport := chromium_svg_solid_run_viewport([command, command], 0, 2) or { panic('viewport') }
@@ -288,4 +288,17 @@ fn test_precise_svg_leaf_paints_keep_channels_and_combine_opacity_once() {
 	// geometry path, including scaled SVG viewports.
 	leaf := layout.PaintCommand{ ...command, stroke_color: '' }
 	assert chromium_svg_solid_run_end([leaf], [], 0) == 0
+}
+
+fn test_solid_svg_batch_can_omit_a_rounded_ancestor_that_cannot_touch_its_ink() {
+	fill := svg_solid_group_test_command()
+	clip := layout.PaintClip{
+		rect:         layout.LayoutRect{-100, -100, 500, 500}
+		corner_radii: layout.BoxRadii{ top_left: layout.CornerRadius{100, 100} }
+	}
+	command := layout.PaintCommand{ ...fill, has_clip: true, clip_x: -100, clip_y: -100, clip_width: 500, clip_height: 500, clip_list: &layout.PaintClipList{ items: [clip] } }
+	assert chromium_svg_solid_run_end([command, command], [], 0) == 2
+	corner := layout.PaintClip{ ...clip, rect: layout.LayoutRect{0, 0, 30, 30}, corner_radii: layout.BoxRadii{ top_left: layout.CornerRadius{20, 20} } }
+	clipped := layout.PaintCommand{ ...command, clip_list: &layout.PaintClipList{ items: [corner] } }
+	assert chromium_svg_solid_run_end([clipped, clipped], [], 0) == 0
 }

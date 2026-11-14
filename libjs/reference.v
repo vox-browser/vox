@@ -161,6 +161,9 @@ fn (reference Reference) base_object(mut vm VM) !&Object {
 	if reference.base_value.is_symbol() {
 		return SymbolObject.create(vm.realm(), reference.base_value.as_symbol()).object
 	}
+	if reference.base_value.is_string() || reference.base_value.is_number() || reference.base_value.is_bigint() {
+		return reference.base_value.to_object_with_prototypes(mut vm, realm_primitive_prototypes())
+	}
 	// 7.1.18 ToObject ( argument ) throws for undefined and null; primitive
 	// wrappers belong to the pending object-model translation.
 	if reference.base_value.is_nullish() {

@@ -42,13 +42,13 @@ precision mediump float;out vec4 color;void main(){color=vec4(1);}'
 		}
 		assert native_name != 0
 		other.native.make_current()
-		mut unused := 0
+		mut unused := i32(0)
 		C.vox_gl_int_parameter(u32(0xffff_ffff), &unused)
 		for argument in ['null', 'undefined', 'foreign'] {
 			assert runtime.evaluate_host('gl.deleteProgram(${argument})===undefined')! == 'true'
-			mut selected := [0, 0, 0, 0]!
+			mut selected := [i32(0), 0, 0, 0]!
 			C.vox_gl_int_parameter(webgl.viewport, &selected[0])
-			assert selected == [9, 10, 11, 12]!
+			assert selected == [i32(9), 10, 11, 12]!
 		}
 		for expression in ['gl.deleteProgram()',
 			'gl.deleteProgram(Object.create(WebGLProgram.prototype))'] {
@@ -59,12 +59,12 @@ precision mediump float;out vec4 color;void main(){color=vec4(1);}'
 		assert runtime.evaluate_host('gl.getError()===gl.INVALID_OPERATION&&other.isProgram(foreign)===true')! == 'true'
 		other.native.make_current()
 		assert runtime.evaluate_host('gl.deleteProgram(program)===undefined')! == 'true'
-		mut selected := [0, 0, 0, 0]!
+		mut selected := [i32(0), 0, 0, 0]!
 		C.vox_gl_int_parameter(webgl.viewport, &selected[0])
-		assert selected == [1, 2, 3, 4]!
+		assert selected == [i32(1), 2, 3, 4]!
 		assert C.vox_gl_is_object(10, native_name) == 1
 		assert C.vox_gl_program_parameter(native_name, webgl.delete_status) == 1
-		mut actual := 0
+		mut actual := i32(0)
 		C.vox_gl_int_parameter(webgl.current_program, &actual)
 		assert actual == int(native_name)
 		assert runtime.evaluate_host('gl.getParameter(gl.CURRENT_PROGRAM)===null&&gl.isProgram(program)===false&&gl.getError()===gl.NO_ERROR')! == 'true'
@@ -72,7 +72,7 @@ precision mediump float;out vec4 color;void main(){color=vec4(1);}'
 			other.native.make_current()
 			assert runtime.evaluate_host('${expression}===undefined')! == 'true'
 			C.vox_gl_int_parameter(webgl.viewport, &selected[0])
-			assert selected == [9, 10, 11, 12]!
+			assert selected == [i32(9), 10, 11, 12]!
 			expected := if expression.starts_with('other') {
 				'other.getError()===other.INVALID_OPERATION'
 			} else {

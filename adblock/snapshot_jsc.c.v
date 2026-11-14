@@ -3,7 +3,6 @@ module adblock
 import os
 
 
-#flag darwin -lz
 #include "@DIR/snapshot.h"
 
 fn C.vox_adblock_install_snapshot(voidptr, &u8, uint) int
@@ -68,7 +67,11 @@ fn install_snapshot(context voidptr) ! {
 	metadata := if path := snapshot_asset_path('engine.snapshot.json.gz') {
 		os.read_bytes(path)!
 	} else { compressed_snapshot_metadata.to_bytes() }
-	metadata_status := C.vox_adblock_install_snapshot_metadata(context, metadata.data, uint(metadata.len))
+	// Status 4 keeps the native installer's former inflate-failure code.
+	json := gunzip_single_member(metadata) or {
+		return error('Cannot restore bundled adblock metadata: 4')
+	}
+	metadata_status := C.vox_adblock_install_snapshot_metadata(context, json.data, uint(json.len))
 	if metadata_status != 0 {
 		return error('Cannot restore bundled adblock metadata: ${metadata_status}')
 	}

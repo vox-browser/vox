@@ -36,7 +36,7 @@ void main(){gl_Position=vec4(0);}'
 		owner.lose_context_from_compositor_loss()
 		other.viewport(9, 10, 11, 12)
 		other.native.make_current()
-		mut unused := 0
+		mut unused := i32(0)
 		C.vox_gl_int_parameter(u32(0xffff_ffff), &unused)
 		assert runtime.evaluate_host('globalThis.after=gl.createShader(gl.VERTEX_SHADER);after instanceof WebGLShader')! == 'true'
 		assert C.vox_gl_shader_parameter(name, webgl.compile_status) == 0
@@ -47,9 +47,9 @@ void main(){gl_Position=vec4(0);}'
 		}
 		assert runtime.evaluate_host('(function(){try{gl.compileShader(Object.create(WebGLShader.prototype));return false}catch(error){return error instanceof TypeError}})()')! == 'true'
 		assert runtime.evaluate_host('gl.compileShader(sentinel)===undefined')! == 'true'
-		mut selected := [0, 0, 0, 0]!
+		mut selected := [i32(0), 0, 0, 0]!
 		C.vox_gl_int_parameter(webgl.viewport, &selected[0])
-		assert selected == [9, 10, 11, 12]!
+		assert selected == [i32(9), 10, 11, 12]!
 		length := C.vox_gl_shader_parameter(name, u32(0x8b88))
 		mut bytes := []u8{len: length}
 		C.vox_gl_get_shader_source(name, length, bytes.data)

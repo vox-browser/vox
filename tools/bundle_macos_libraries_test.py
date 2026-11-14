@@ -33,7 +33,7 @@ class BundleLibrariesTests(unittest.TestCase):
         temporary = tempfile.TemporaryDirectory(prefix='vox-bundle-test-')
         self.addCleanup(temporary.cleanup)
         self.root = Path(temporary.name)
-        # vcpkg addresses its libraries through @rpath; Homebrew by absolute path.
+        # Vox helpers are addressed through @rpath; Homebrew by absolute path.
         self.vendor, self.brew = self.root / 'vendor', self.root / 'brew'
         self.app = self.root / 'Vox.app'
         binaries = self.app / 'Contents/MacOS'

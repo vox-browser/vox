@@ -46,12 +46,23 @@ fn independent_query_matches(element &dom.Element, compounds []CompoundSelector,
 	return false
 }
 
+// Same-binary control: use the document's name history for document roots only.
+const retain_document_only_absence_queries = os.getenv('VOX_RETAIN_DOCUMENT_ONLY_ABSENCE_QUERIES') != ''
+
 // A document remembers names seen by every element insertion, including
 // adoption and fragment insertion. An absent positive tag rules out a whole
 // compound; removed elements only cause a harmless fallback to the live walk.
-// Element/shadow/detached scopes retain their ordinary traversal.
+//
+// The same history covers every connected root: each descendant of a
+// connected element or shadow root is in the document's tree, and ran its
+// insertion steps there when it, or a subtree containing it, was inserted.
+// Lazy custom-element loaders ask every changed subtree for each pending tag
+// name, almost always absent. Detached scopes retain their ordinary
+// traversal: their descendants may never have been inserted anywhere.
 fn independent_query_may_match_document(root &dom.Node, compounds []CompoundSelector) bool {
-	if !root.is_document() { return true }
+	if !root.is_document() && (retain_document_only_absence_queries || !root.is_connected()) {
+		return true
+	}
 	document := root.document()
 	for compound in compounds {
 		mut tag_name := ''

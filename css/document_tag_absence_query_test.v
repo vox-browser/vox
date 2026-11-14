@@ -103,3 +103,88 @@ fn test_document_tag_absence_query_preserves_xml_case_namespaces_and_other_scope
 	}
 	assert false
 }
+
+fn absence_compare_scoped_query(root &dom.Node, selector string) {
+	selectors := parse_query_selector_list(selector) or { panic('invalid selector') }
+	mut expected := []&dom.Element{}
+	query_selector_all_in(root, selectors, mut expected)
+	actual := query_selector_all(root, selector)
+	assert actual.len == expected.len, selector
+	for index, element in actual { assert voidptr(element) == voidptr(expected[index]), selector }
+	if first := query_selector(root, selector) {
+		assert expected.len > 0, selector
+		assert voidptr(first) == voidptr(expected[0]), selector
+	} else { assert expected.len == 0, selector }
+}
+
+// Connected elements and shadow roots use the document's name history like
+// the document itself; detached subtrees, whose descendants may never have
+// been inserted, keep the walk. Results always equal the plain traversal.
+fn test_tag_absence_covers_connected_roots_and_spares_detached_ones() {
+	mut document := dom.Document.create(dom.url_about_blank())
+	defer { document.finalize() }
+	document.set_document_type(.html)
+	mut main := document.create_element('main')!
+	mut main_node := main.as_node()
+	mut document_node := document.as_node()
+	_ = document_node.append_child(main_node)!
+	mut section := document.create_element('section')!
+	section.set_attribute_value('class', 'pane')
+	mut section_node := section.as_node()
+	_ = main_node.append_child(section_node)!
+	_ = section_node.append_child(document.create_element('p')!.as_node())!
+	mut host := document.create_element('div')!
+	_ = main_node.append_child(host.as_node())!
+	shadow := host.attach_shadow(dom.ShadowRootInit{mode: .open})!
+	mut shadow_node := shadow.as_node()
+	_ = shadow_node.append_child(document.create_element('span')!.as_node())!
+	selectors := ['lazy-element', 'p', 'span', 'section.pane', 'p.missing', 'section[data-x]',
+		'lazy-element, p', 'LAZY-ELEMENT', '*', 'main p']
+	lazy := independent_query_compounds(parse_query_selector_list('lazy-element')?)?
+	precise := !retain_document_only_absence_queries
+	for root in [main_node, section_node, shadow_node] {
+		assert independent_query_may_match_document(root, lazy) == !precise
+		for selector in selectors { absence_compare_scoped_query(root, selector) }
+	}
+	// A detached subtree built without ever entering the document.
+	mut detached := document.create_element('aside')!
+	mut detached_node := detached.as_node()
+	_ = detached_node.append_child(document.create_element('lazy-element')!.as_node())!
+	assert independent_query_may_match_document(detached_node, lazy)
+	for selector in selectors { absence_compare_scoped_query(detached_node, selector) }
+	mut fragment := document.create_document_fragment()
+	mut fragment_node := unsafe { &dom.Node(fragment) }
+	_ = fragment_node.append_child(document.create_element('other-element')!.as_node())!
+	other := independent_query_compounds(parse_query_selector_list('other-element')?)?
+	assert independent_query_may_match_document(fragment_node, other)
+	for selector in ['other-element', 'lazy-element'] { absence_compare_scoped_query(fragment_node, selector) }
+	// Inserting the subtree publishes its names for every connected root, and
+	// removing it leaves a harmless positive entry.
+	_ = section_node.append_child(detached_node)!
+	for root in [main_node, section_node, detached_node] {
+		assert independent_query_may_match_document(root, lazy)
+		for selector in selectors { absence_compare_scoped_query(root, selector) }
+	}
+	assert independent_query_may_match_document(shadow_node, lazy)
+	for selector in selectors { absence_compare_scoped_query(shadow_node, selector) }
+	_ = section_node.remove_child(detached_node)!
+	for root in [main_node, section_node, detached_node, shadow_node] {
+		for selector in selectors { absence_compare_scoped_query(root, selector) }
+	}
+	// A clone is detached until it is inserted, and then publishes its names.
+	mut article := document.create_element('article')!
+	mut article_node := article.as_node()
+	mut later := document.create_element('later-element')!
+	later.set_attribute_value('class', 'x')
+	_ = article_node.append_child(later.as_node())!
+	mut copy := article_node.clone_node_binding(true)!
+	later_compounds := independent_query_compounds(parse_query_selector_list('later-element')?)?
+	assert independent_query_may_match_document(copy, later_compounds)
+	_ = main_node.append_child(copy)!
+	assert independent_query_may_match_document(main_node, later_compounds)
+	for root in [main_node, section_node, copy, article_node] {
+		for selector in ['later-element', 'later-element.x', 'article later-element', 'lazy-element', 'never-element'] {
+			absence_compare_scoped_query(root, selector)
+		}
+	}
+}

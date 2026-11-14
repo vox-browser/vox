@@ -14,9 +14,9 @@ fn test_buffer_uploads_forward_without_retained_bindings_and_select_the_owner() 
 		assert array_buffer !in owner.bound_buffers
 		other.native.make_current()
 		owner.buffer_data(array_buffer, [u8(1), 2, 3, 4], GLenum(0x88e4))
-		mut actual_viewport := [0, 0, 0, 0]!
+		mut actual_viewport := [i32(0), 0, 0, 0]!
 		C.vox_gl_int_parameter(viewport, &actual_viewport[0])
-		assert actual_viewport == [1, 2, 3, 4]!
+		assert actual_viewport == [i32(1), 2, 3, 4]!
 		assert owner.get_buffer_parameter(array_buffer, buffer_size).integer == 4
 		assert owner.get_buffer_parameter(array_buffer, buffer_usage).integer == 0x88e4
 		assert owner.get_error() == no_error
@@ -31,7 +31,7 @@ fn test_buffer_uploads_forward_without_retained_bindings_and_select_the_owner() 
 		other.native.make_current()
 		owner.buffer_data_size(array_buffer, 7, GLenum(0x88e8))
 		C.vox_gl_int_parameter(viewport, &actual_viewport[0])
-		assert actual_viewport == [1, 2, 3, 4]!
+		assert actual_viewport == [i32(1), 2, 3, 4]!
 		assert owner.get_buffer_parameter(array_buffer, buffer_size).integer == 7
 		assert owner.get_buffer_parameter(array_buffer, buffer_usage).integer == 0x88e8
 		assert owner.get_error() == no_error
@@ -44,7 +44,7 @@ fn test_buffer_uploads_forward_without_retained_bindings_and_select_the_owner() 
 		other.native.make_current()
 		owner.buffer_sub_data(array_buffer, -1, [u8(1)])
 		C.vox_gl_int_parameter(viewport, &actual_viewport[0])
-		assert actual_viewport == [1, 2, 3, 4]!
+		assert actual_viewport == [i32(1), 2, 3, 4]!
 		assert owner.get_error() == invalid_value
 		C.vox_gl_bind_buffer(array_buffer, 0)
 		owner.buffer_data(array_buffer, [u8(1)], GLenum(0x88e4))

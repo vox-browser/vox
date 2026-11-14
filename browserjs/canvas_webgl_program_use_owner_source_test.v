@@ -36,14 +36,14 @@ precision mediump float;out vec4 color;void main(){color=vec4(1);}'
 		mut other := host.contexts['__created_program_use_other'] or { panic('use other') }
 		original := owner.get_parameter(webgl.current_program).program or { panic('actual retained current program') }
 		name := original.object.native_name()
-		mut selected := [0, 0, 0, 0]!
+		mut selected := [i32(0), 0, 0, 0]!
 		for argument in ['foreign', 'deleted'] {
 			other.native.make_current()
-			mut unused := 0
+			mut unused := i32(0)
 			C.vox_gl_int_parameter(u32(0xffff_ffff), &unused)
 			assert runtime.evaluate_host('gl.useProgram(${argument})===undefined')! == 'true'
 			C.vox_gl_int_parameter(webgl.viewport, &selected[0])
-			assert selected == [9, 10, 11, 12]!
+			assert selected == [i32(9), 10, 11, 12]!
 			assert C.vox_gl_get_error() == webgl.invalid_enum
 			assert C.vox_gl_get_error() == webgl.no_error
 			assert runtime.evaluate_host('gl.getParameter(gl.CURRENT_PROGRAM)===program&&gl.getError()===gl.INVALID_OPERATION')! == 'true'
@@ -52,15 +52,15 @@ precision mediump float;out vec4 color;void main(){color=vec4(1);}'
 			other.native.make_current()
 			assert runtime.evaluate_host('(function(){try{${expression};return false}catch(error){return error instanceof TypeError}})()')! == 'true'
 			C.vox_gl_int_parameter(webgl.viewport, &selected[0])
-			assert selected == [9, 10, 11, 12]!
+			assert selected == [i32(9), 10, 11, 12]!
 		}
 		for argument in ['null', 'undefined'] {
 			runtime.evaluate_host('gl.useProgram(program)')!
 			other.native.make_current()
 			assert runtime.evaluate_host('gl.useProgram(${argument})===undefined')! == 'true'
 			C.vox_gl_int_parameter(webgl.viewport, &selected[0])
-			assert selected == [1, 2, 3, 4]!
-			mut actual := -1
+			assert selected == [i32(1), 2, 3, 4]!
+			mut actual := i32(-1)
 			C.vox_gl_int_parameter(webgl.current_program, &actual)
 			assert actual == 0
 			assert runtime.evaluate_host('gl.getParameter(gl.CURRENT_PROGRAM)===null&&gl.getError()===gl.NO_ERROR')! == 'true'
@@ -82,8 +82,8 @@ precision mediump float;out vec4 color;void main(){color=vec4(1);}'
 		other.native.make_current()
 		assert runtime.evaluate_host('gl.useProgram(rejected)===undefined')! == 'true'
 		C.vox_gl_int_parameter(webgl.viewport, &selected[0])
-		assert selected == [1, 2, 3, 4]!
-		mut actual := -1
+		assert selected == [i32(1), 2, 3, 4]!
+		mut actual := i32(-1)
 		C.vox_gl_int_parameter(webgl.current_program, &actual)
 		assert actual == int(name)
 		assert runtime.evaluate_host('gl.getParameter(gl.CURRENT_PROGRAM)===rejected&&gl.getError()===${expected}')! == 'true'

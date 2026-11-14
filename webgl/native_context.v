@@ -1,8 +1,8 @@
 // Copyright (c) 2026, Ladybird contributors
 // SPDX-License-Identifier: BSD-2-Clause
 
-// Translation of OpenGLContext.cpp. Native CGL, WGL and system EGL contexts
-// provide the driver API; drawing-surface state is retained here.
+// Translation of OpenGLContext.cpp. macOS dispatches to the V Metal service;
+// the other platforms retain their native GLES service. Surface state lives here.
 module webgl
 
 pub struct DrawingBufferOptions {
@@ -182,12 +182,11 @@ pub fn (mut context OpenGLContext) present() bool {
 }
 
 pub fn (mut context OpenGLContext) present_with_preserved_buffer(preserve_drawing_buffer bool) bool {
-	defer { release_native_current() }
 	if context.lost_ {
 		return false
 	}
-	context.make_current()
-	if context.lost_ || !context.surface_allocated_ {
+	context.allocate_painting_surface_if_needed()
+	if !context.surface_allocated_ {
 		return false
 	}
 	// Upstream CPU painting surfaces wait for GPU writes before reading the rows.
@@ -201,7 +200,6 @@ pub fn (mut context OpenGLContext) present_with_preserved_buffer(preserve_drawin
 }
 
 pub fn (mut context OpenGLContext) read_back_drawing_buffer() ?WebGLPaintingSurface {
-	defer { release_native_current() }
 	context.make_current()
 	if !context.surface_allocated_ { return none }
 	length := u64(context.width_) * u64(context.height_) * 4

@@ -33,9 +33,9 @@ fn test_public_webgl2_draw_source_owner_and_notifications_follow_idl_and_driver(
 		assert !context.needs_to_present()
 		other.native.make_current()
 		runtime.evaluate_host('drawSourceGL.${expression}')!
-		mut selected := [0, 0, 0, 0]!
+		mut selected := [i32(0), 0, 0, 0]!
 		C.vox_gl_int_parameter(0x0ba2, &selected[0])
-		assert selected == [1, 2, 3, 4]!
+		assert selected == [i32(1), 2, 3, 4]!
 		assert context.needs_to_present()
 		assert runtime.evaluate_host('drawSourceGL.getError()')! == expected.str()
 	}
@@ -46,9 +46,9 @@ fn test_public_webgl2_draw_source_owner_and_notifications_follow_idl_and_driver(
 		context.native.present_with_preserved_buffer(true)
 		other.native.make_current()
 		assert runtime.evaluate_host('(function(){const marker={};try{drawSourceGL.${expression};return false}catch(error){return error===marker}})()')! == 'true'
-		mut selected := [0, 0, 0, 0]!
+		mut selected := [i32(0), 0, 0, 0]!
 		C.vox_gl_int_parameter(0x0ba2, &selected[0])
-		assert selected == [9, 10, 11, 12]!
+		assert selected == [i32(9), 10, 11, 12]!
 		assert !context.needs_to_present()
 	}
 }

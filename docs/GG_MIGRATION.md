@@ -2639,3 +2639,350 @@ executable runs all 15 source-image test functions with Skia unavailable to
 pkg-config; direct libraries are FreeType, libm and libc. Full-browser integration still uses installed Skia. See the
 [native cases, guarded comparisons and component
 proof](https://github.com/vox-browser/vox-tests/blob/7550a2aa6ea614dd9d9d21dcf7146e30f194f499/evidence/gg-migration/identity-prefix-image-blurs-20261110.json).
+
+
+## Retained document text after removing Skia (2026-11-12)
+
+The native macOS painter now transports tightly bounded RGBA rasters from V
+`cpuraster` for retained glyphs. Registered CoreText faces preserve collection
+indices, variation coordinates and strike advances. Cached and uncached retained
+runs use the same coverage pipeline. Variable-font skip-ink uses the canonical
+64px outline and ignores pathless spaces without discarding the other glyphs.
+V `gg.canvas` draws eligible rounded shapes and solid SVG paths; shape replay
+preserves the raster grid and each tile's multisampling selection. Outer shadows
+keep unrounded author alpha. The developer executable does not link Skia.
+
+The unchanged `glyph-document-origin` Brave fixture is pixel-exact. Focused glyph,
+font-advance, variable-outline, shadow-alpha and geometry checks pass on macOS,
+including glyph-cache checks with `-prealloc -gc none`. The non-scaling stroke
+checks pin 42 outputs recorded from the prior Graphite library
+(SHA-256 `59b9b9a5d65da5d69b196474afc5eb48c9e71e21f3fddfc04b986aa9d2a47c54`);
+these tests require no Skia library at runtime.
+
+The frozen ChatGPT homepage remains **short of pixel parity**. At 1024×768 CSS
+pixels and scale 2, the unchanged archive
+`Tests/Browser/Brave/archives/chatgpt-home-20261104-v2` has 3,145,728 pixels.
+The C developer build reduced differences from 435,025 (13.8291%) to 45,495
+(1.4462%); 1,095 differ by more than three channel levels, with maximum error 59.
+The remaining differences are predominantly faint shadows and geometry edges.
+The reference PNG was not modified (SHA-256
+`6e81a153394cf640168483ae1979025df0271c4886a6f44e83792d548106028e`).
+The final fresh-process capture exited 0 under the 3 GiB guard with unchanged
+executable identity `82b536155fc6c379e3ee01b0a3ba9ea072b6e909b7a746153c0a6b559ddd4db0`.
+This is rendering evidence, not a performance comparison or a production-bundle
+acceptance result. The commit requests the managed production rebuild.
+
+The subsequently completed managed build `20261112-075730-7e81c09c` contains the
+rendering commit and uses literal C `-prod` in a single unit. Its executable
+SHA-256 is `23ad40a6373357f83e8feab4e41e55ded8abda3a84f26fa6ff77f257427d91a1`.
+Fresh launches passed `--headless-smoke` and reproduced exactly the same 45,495
+ChatGPT differences, with stable executable/resource identities. Its
+`glyph-document-origin` capture has **zero differing pixels** out of 768,000.
+All three browser checks exited 0 under separate 3 GiB guards. Local commands,
+receipts, captures and failed attempts are retained under
+`docs/performance/plain-v-text-20261112/`, outside tracked measurement history.
+
+A separate direct live-site capture exited 0 but remained blank and `loading`
+with no editor. It does not validate the live ChatGPT experience. Full-page exact
+parity and live-site readiness remain open.
+
+The November 12 follow-up checked the two Linux outer-shadow byte failures
+against an independent Skia ee20d565 oracle (library SHA-256
+`19dedece03588619f6857b0b7936ef393d038cdc8f5c8d10f65b4c7bfe55cde5`).
+Native RGBA gives `[248,131,36,35]` and red `124`; non-native RGBA gives
+`[241,128,35,36]` and red `128`, exactly matching Linux's existing pipeline.
+The tests now pin both platform results without changing rasterization or
+tolerances. All six outer-shadow tests pass when executed on macOS and in the
+Debian 13 ARM64 VM, under separate memory guards.
+
+### Completed ChatGPT text and pixel follow-up (2026-11-12)
+
+The frozen homepage now matches the original Brave document **pixel for pixel**:
+**0 differing pixels out of 3,145,728**, maximum channel error 0, MAE 0 and
+RMSE 0. The viewport was 1024×768 CSS pixels at scale 2, replaying
+`Tests/Browser/Brave/archives/chatgpt-home-20261104-v2/archive` at its original
+`https://chatgpt.com/` origin with a private profile/cache and cookie blocking
+disabled. The reference PNG remains unchanged, SHA-256
+`6e81a153394cf640168483ae1979025df0271c4886a6f44e83792d548106028e`.
+The fresh C developer executable was
+`9b78d4613bf2b271d435a10ec17d1d560bde16601b177cce11c2ad4508417948`;
+its identity was checked before and after capture. Both capture and the 3 GiB
+guard exited 0, at a sampled peak RSS of 803,241,984 bytes. The complete
+readiness/content audit retained the heading and editor; no reference or
+tolerance was changed.
+
+The remaining migration gaps were an absent superellipse painter, blurred
+rounded-shadow filtering, prematurely resolved SVG/contour samples, and large
+page coordinates retained in rounded-border conics. These now use V/GG paths
+and a bounded Metal pixel-filter service. Native Cocoa code only transports
+retained descriptors, coordinates and pixels. The application does not link
+the independent Skia/Graphite libraries used to generate test expectations.
+
+Focused pixel hashes cover contour fills, border alignment, outer shadows,
+rounded-shadow nine-patches, shared SVG samples, and compositor-local conics.
+The shared-contour sequence independently reproduces the old combined GPU
+recording; separate resolves reproduce the prior 124-pixel composer failure.
+The group eligibility and existing SVG batch tests pass. The new contour, SVG
+and local-coordinate tests also pass with `-prealloc -gc none` under a 3 GiB
+guard. Build setup's 19 Python tests pass. The earlier 45,495-, 8,617-, 5,330-,
+134-, 10- and 2-pixel attempts remain local diagnostic history.
+
+A separate fresh **live** launch of `https://chatgpt.com/` reached `complete`,
+with loaded fonts, one heading and the visible `mobile-composer-prompt`
+textarea. It reported zero native errors and JavaScript diagnostics. Its
+browser and 3 GiB guard exited 0, peaking at 781,697,024 bytes, with the same
+verified executable identity. This closes the earlier blank/loading live
+check; frozen-page pixel equality does not claim equality with changing live
+content. These are rendering and functional checks, not a performance cohort.
+
+Reproduce the pixel-only check with:
+
+```sh
+python3 tools/test_chatgpt_pixels.py --output Build/chatgpt-pixels-UNIQUE
+```
+
+It uses the latest completed production bundle, a fresh browser under its
+3 GiB guard, disk-only replay, and the existing source/content audit. It rejects
+changed executable, library, fixture or reference identities and any nonzero
+pixel difference. The Vox capture waits for `textarea,[contenteditable=true]`
+before settling. Raw commands, logs, audits, PNGs, executable identities and guarded exits for this
+follow-up are retained locally under
+`docs/performance/plain-v-text-20261112/final-continuation/`.
+
+The latest completed managed production build also passes the same exact check.
+Receipt `20261112-121345-ed07aa77` used literal C `-prod` in one unit, with
+executable SHA-256
+`1522067fc882717d4eecb49d6bea89ae9a85929fe55a7b246cbe174a59119ad3`.
+All eight changed rendering source files match that receipt's parsed source
+manifest. The canonical pixel-only tool passed the source and viewport-button
+content gates and reported **0 differences**; browser/guard exit 0, sampled
+peak RSS 1,222,656,000 bytes. A separate fresh production `--headless-smoke`
+also passed DOM mutation, JavaScript click, native wheel routing and ordinary
+wheel listeners (guard exit 0, peak 143,949,824 bytes).
+
+A fresh live launch of that same production executable also reached `complete`
+with a laid-out heading and editor and zero native errors (browser/guard exit
+0; sampled peak RSS 2,298,757,120 bytes). Its audit retained Google's One Tap
+FedCM migration warning; the earlier developer live run had no diagnostics.
+The production identity remained unchanged throughout the launch.
+
+
+### Small rounded shadows, 2026-11-13
+
+`a2427d085` extends the bounded V/GG Gaussian filter to device sigma 0.5 and
+uses a single 2D pass when the kernel fits in 28 samples, preserving A8 rounding.
+The new four-case `small-blur-shadows` browser fixture matches two fresh pinned
+Brave captures exactly. The six shadow test files pass with arena poisoning
+and 3 GiB runtime guards, retaining all previous GPU-oracle hashes. The unchanged
+GitHub archive improves from 207 to 49 differing pixels in the diagnostic build;
+production validation is pending. See the [pixel audit](OPTIMIZED_SITES_PIXELS_2026_11_12.md#small-rounded-shadow-kernels-2026-11-13)
+for capture scope, retained failures and remaining gaps.
+
+
+### Scrollbar capture policy, 2026-11-14
+
+`e68a210c6` matches Brave's explicit hidden-scrollbar capture policy under both
+macOS scrollbar preferences. Four focused visibility/fade tests pass; live
+behavior is preserved. With the current staged closure runtime, both rendering
+fixtures and HN/Wikipedia/Lobsters are exact twice. GitHub remains at 49 pixels,
+vlang.io at 3,250 and CNN at 175,866; CNN repeatability remains open. Production
+confirms the previous rendering fixes at 49 GitHub pixels; this capture-policy
+fix awaits its managed rebuild. The [pixel audit](OPTIMIZED_SITES_PIXELS_2026_11_12.md#production-confirmation-and-scrollbar-capture-policy-2026-11-14)
+retains all failed setup and diagnostic attempts. No reference or tolerance changed.
+
+
+### Shared rounded outer decorations, 2026-11-14
+
+`93b2ed18e` retains an opaque rounded box's shadows, background and border
+through one sample resolve. The exact corner-band GPU regression and guarded
+layout eligibility test pass. The new complete Brave fixture is exact twice;
+the unchanged GitHub archive improves from 49 to 39 differing pixels twice.
+Other checked site counts and focused controls are preserved. Production
+validation is pending; see the [pixel audit](OPTIMIZED_SITES_PIXELS_2026_11_12.md#shared-rounded-outer-decorations-2026-11-14)
+for pinned builds, failed probes, scope and remaining gaps. No reference or
+tolerance changed, and no performance credit is claimed.
+
+
+### Inset-shadow alpha, 2026-11-14
+
+`83683f508` retains fractional inset-shadow alpha through layout lowering and
+both direct and fallback CPU raster routes. Fifteen focused tests pass,
+including forced fallback coverage, existing raster oracles and both layout
+policies. The complete site recheck preserves 39 GitHub differences and the
+previous other counts; the exact controls remain exact. This precision fix
+does not resolve the input-corner gap. Production validation remains pending;
+see the [audit](OPTIMIZED_SITES_PIXELS_2026_11_12.md#inset-shadow-alpha-transport-2026-11-14).
+
+
+### Unblurred inset shadows, 2026-11-14
+
+`7440a807d` replays eligible inset shadows with a square caster, rounded hole
+and retained content clip through V/GG `drawDRRect`, preserving the existing
+tile antialiasing policy and CPU fallback. The new three-case Brave fixture is
+exact twice; all 27 focused tests pass. GitHub improves from 39 to 19 differing
+pixels and vlang.io from 3,250 to 3,228 in two fresh diagnostic captures each.
+The other site and focused-control results are preserved. Production bundle
+`6bf5db1e` now confirms the new fixture exactly and the 19/3,228 site counts,
+with 32 source witnesses, 22 fresh captures and a passing startup smoke. The [audit](OPTIMIZED_SITES_PIXELS_2026_11_12.md#unblurred-inset-shadow-geometry-2026-11-14)
+retains failed probes, CNN's instability and the remaining all-site gaps.
+
+
+### Native leaf padding and tile coordinates, 2026-11-14
+
+`7019fc7ec` retains the compositor tile when a native readback's two-pixel
+padding crosses its origin. The outside fringe stays untouched. Both single
+and grouped replay now match the exact search-border regression. All 24 focused
+tests pass; the full fixture is exact twice and GitHub improves from 19 to 15
+differing pixels twice. Other site/control counts are preserved. Production `b6501a1e` now confirms the search-border fixture exactly
+and GitHub at 15 pixels, each twice; see the [audit](OPTIMIZED_SITES_PIXELS_2026_11_12.md#native-leaf-fringe-correction-2026-11-14).
+
+
+### Shared PNG and outer-shadow resolve, 2026-11-14
+
+`cd0173d0d` draws an eligible adjacent unblurred shadow and PNG on one V/GG
+surface, preserving samples until the image has blended. Root-owner, clip,
+opacity, transform, color/profile and decoded-bitmap checks preserve fallbacks.
+Five focused tests and all seven existing image controls pass. GitHub's frozen
+archive improves from 15 differing pixels to zero in two fresh captures; the
+new shadowed-avatar fixture is also exact twice. HN/Wikipedia/Lobsters stay
+exact; vlang.io and CNN counts are unchanged. Production validation is pending.
+See the [audit](OPTIMIZED_SITES_PIXELS_2026_11_12.md#shared-png-and-outer-shadow-resolve-2026-11-14).
+
+
+### Uniformly rotated ellipse decorations, 2026-11-14
+
+`50bdd42d6` retains adjacent elliptical shadows and a translucent border through
+one sample resolve, including their shared rounded clip list. Unrotated,
+nonuniformly transformed, clipped-out, differently owned and non-AA paints retain
+their previous path. Nine focused checks pass. Two fresh diagnostic captures
+reduce vlang.io from 3,228 to 2,946 differing pixels and the orbit diagnostic from
+1,901 to 1,530. There are 287 corrected and five newly differing one-level site
+pixels; equality remains open. Production now separately confirms the preceding
+PNG-shadow fix with GitHub exact twice. See the [audit](OPTIMIZED_SITES_PIXELS_2026_11_12.md#shared-rotated-ellipse-decorations-2026-11-14).
+
+
+### Text-layer gradient dither origin, 2026-11-14
+
+`f2ee06925` gives an eligible scale-1 text gradient its mask layer's device
+origin through the existing V/GG raster boundary. Native code supplies bounds
+and backing scale; V selects the grid and clips padded leaf input to it. Other
+gradients and higher backing scales keep their prior grid. Seven focused checks
+pass, including unchanged Brave pixels, padding, safe declines and existing CSS
+gradient oracles. vlang.io improves from 2,946 to 2,710 pixels twice, correcting
+236 pixels without new differences. The basic gradient-text control is exact;
+fractional, inline and mixed-scope controls retain failures. Retina text keeps
+its previous pixels exactly after two rejected higher-scale experiments.
+Production `314e32e9` now confirms the 2,710-pixel site result and exact basic
+gradient-text control, each twice, with all 36 rendering witnesses matched.
+See the [production audit](OPTIMIZED_SITES_PIXELS_2026_11_12.md#production-confirmation-of-ellipse-and-text-gradient-fixes-2026-11-14).
+
+### Tile-local shadow filter inputs, 2026-11-14
+
+`de478eee8` restricts axis-aligned filter inputs to the raster tile plus its
+three-sigma footprint before progressive downsampling. This preserves the
+tile-local sampling grid for tall offscreen sources. Rotated geometry retains
+its preceding path; kernels and final A8 resolution are unchanged. The new
+complete panel/control fixture and independent mask control are exact twice
+against agreeing fresh Brave references. Thirteen focused shadow tests pass.
+Thirty-two fresh captures across sixteen workloads preserve the four exact
+archives and reduce vlang.io from 2,710 to 2,139 pixels, correcting 571 without
+new differences. CNN retains its rendering and repeatability failures.
+Production validation is pending the managed rebuild; see the
+[audit](OPTIMIZED_SITES_PIXELS_2026_11_12.md#tile-local-shadow-filter-inputs-2026-11-14).
+
+### Rotated shadow filter layers, 2026-11-14
+
+`d79672699` resolves translucent rotated ellipses in filter-layer coordinates
+and restores the resulting A8 image with linear sampling. The active clip
+bounds the layer input; extended readback fringes require the entire visible
+clip to fit the compositor grid. Existing kernels and unsupported paint paths
+are preserved. All 23 focused checks pass. vlang.io improves from 2,139 to 830
+pixels, correcting 1,451 but introducing 142 one-level differences. Four
+archived sites stay exact. Production `731ef68c` confirms all eighteen workload
+counts twice with matching source witnesses. The complete new translucent fixture retains four
+one-level errors despite its focused shadow-band test passing; the opaque
+control and remaining site failures stay open. See the
+[audit](OPTIMIZED_SITES_PIXELS_2026_11_12.md#rotated-shadow-filter-layers-2026-11-14).
+
+### Root-picture shadow fringes, 2026-11-14
+
+`a4b71a733` keeps eligible rotated filters on the root compositor grid when an
+offscreen clip includes negative document coordinates. The root picture clips
+that fringe before publication; outside readback bytes remain unchanged.
+Non-root and positive-edge guards retain their preceding constraints. Eight
+focused checks pass, including single/grouped raster comparisons and the
+unchanged non-root fallback control. The complete translucent-shadow fixture
+improves four pixels to zero twice, without shader, kernel or reference changes.
+The other seventeen workloads retain their preceding counts, including vlang.io
+at 830 and
+four exact archives. All native pairs agree in this cohort; earlier CNN failures
+remain open. Production `e1925955` now confirms the complete translucent fixture
+exactly twice with matching witnesses. See the
+[audit](OPTIMIZED_SITES_PIXELS_2026_11_12.md#root-picture-shadow-fringes-2026-11-14).
+
+### Shared rounded backgrounds and borders, 2026-11-14
+
+`77143c150` routes eligible opaque background/border pairs through the existing
+V document-shape group. The old native transaction declines, leaving separate
+resolves; the new group preserves corner samples through both paints. Root
+ownership, geometry, transform, clip and sample-state guards remain strict.
+Seven focused checks pass with arena poisoning. The complete rounded-border
+fixture improves 14 pixels to zero, twice; its independent GPU bands improve
+24 pixels to zero. vlang.io improves 830 to 818, correcting twelve without new
+differences, while four archived sites and preceding exact controls stay exact.
+The 23-workload cohort retains the CNN and other known failures. Production
+validation was pending at that check; production `1861ac91` now confirms both
+decoration fixes at 810. See the
+[audit](OPTIMIZED_SITES_PIXELS_2026_11_12.md#rounded-backgrounds-and-borders-in-one-v-raster-group-2026-11-14).
+
+### Shared unblurred inset decorations, 2026-11-14
+
+`f4a40d91b` groups one box's opaque background, unblurred inset shadows and
+border in a common root or non-root picture. It reuses the existing inset
+geometry and tile sample policy; clipped, blurred and incompatible cases keep
+ordinary replay. Eleven focused checks pass with arena poisoning. The new
+Brave fixture improves nine pixels to zero, and vlang.io improves 818 to 810,
+correcting eight without new differences. Production `1861ac91` confirms all
+27 workload counts twice, including four exact archives. The earlier tall-shadow
+baseline repeat failure remains open alongside the existing site failures.
+See the [audit](OPTIMIZED_SITES_PIXELS_2026_11_12.md#shared-unblurred-inset-decorations-2026-11-14).
+
+### Recorded rotated-filter clips beyond the window, 2026-11-14
+
+`8dc5c0df1` carries supported recorded author clips through the native pixel
+transfer, preserving the blur grid beyond the visible window. The final-tile
+RGBA oracle improves 485 differences to zero; the complete reduced scene
+improves 596 to 111 and vlang.io improves 810 to 341, both without new errors.
+Twenty-three focused checks pass with arena poisoning. The fixed-input
+30-workload diagnostic cohort preserves four exact archives and preceding
+control counts; CNN and the earlier tall-shadow instability remain open.
+Production validation is pending the managed rebuild. See the
+[audit](OPTIMIZED_SITES_PIXELS_2026_11_12.md#recorded-filter-clips-beyond-the-window-2026-11-14).
+
+
+### Gradient pictures without optional hit-test metadata, 2026-11-14
+
+`19224ad53` retains eligible contiguous promoted gradient pictures at scale 1
+without optional hit-test metadata. Unsafe intervening paints and unsupported
+scales retain the existing fallback. Sixteen focused checks execute with arena
+poisoning, including real picture ownership and scale changes on a reused plan.
+The complete orbit scene improves 111 to 4 differences and its underlay 105 to
+3, both without new errors; vlang.io remains 341. The 29-workload diagnostic
+cohort preserves four exact archives and preceding control counts. CNN and the
+earlier tall-shadow repeat failure remain open. `de783cfd7` separately corrects
+an independently reproduced stale shadow-recording assertion. Production
+validation is pending the managed rebuild. See the
+[audit](OPTIMIZED_SITES_PIXELS_2026_11_12.md#gradient-picture-isolation-without-hit-test-metadata-2026-11-14).
+
+
+### Shared elliptical decoration and glyph samples, 2026-11-14
+
+`efaca9e3c` retains a supported shape prefix and following horizontal A8 glyphs
+through one GPU resolve, preserving their common owner, clip and paint order.
+The independent Brave text-band oracle improves 50 differences to zero.
+Fifteen focused checks pass with arena poisoning. The complete vlang.io capture
+improves 341 to 284 pixels, correcting 57 with zero new differences. The
+29-workload diagnostic cohort preserves four exact archives and all other
+preceding counts. CNN and the earlier tall-shadow repeat failure remain open;
+production validation is pending the managed rebuild. See the
+[audit](OPTIMIZED_SITES_PIXELS_2026_11_12.md#shape-and-glyph-samples-in-one-pass-2026-11-14).

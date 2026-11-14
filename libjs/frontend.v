@@ -5,6 +5,13 @@ pub enum SourceType {
 	module
 }
 
+pub struct ParseOptions {
+pub:
+	// Embedders may admit deeper programs while retaining both a finite depth
+	// bound (capped at 1024) and the parser's native-stack reserve.
+	max_recursion_depth u32 = max_parser_recursion_depth
+}
+
 pub struct SyntaxDiagnostic {
 pub:
 	message string
@@ -28,8 +35,17 @@ pub:
 // The translated frontend is usable independently of the browser's VM host.
 // Syntax diagnostics include both parsing and lexical-scope early errors.
 pub fn parse_source(source string, source_type SourceType) &ParsedSource {
+	return parse_source_with_options(source, source_type, ParseOptions{})
+}
+
+pub fn parse_source_with_options(source string, source_type SourceType, options ParseOptions) &ParsedSource {
 	program_type := if source_type == .module { ProgramType.module } else { ProgramType.script }
 	mut parser := Parser.new(utf16(source), program_type)
+	parser.recursion_limit = if options.max_recursion_depth == 0 {
+		max_parser_recursion_depth
+	} else if options.max_recursion_depth > 1024 {
+		u32(1024)
+	} else { options.max_recursion_depth }
 	program := parser.parse_program(false)
 	if !parser.has_errors() {
 		parser.scope_collector.analyze(false)

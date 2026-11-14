@@ -28,8 +28,7 @@ pub fn typed_array_prototype_filter(mut vm VM, prototypes PrimitiveObjectPrototy
 	], constructor_getter)!
 	mut object := array.object
 	for index, value in kept {
-		// The source uses MUST here: values come from the same content type.
-		object.set(mut vm, PropertyName.from_number(u32(index)), value, .yes) or { panic(err) }
+		object.set(mut vm, PropertyName.from_number(u32(index)), value, .yes)!
 	}
 	return Value.from_object(object)
 }

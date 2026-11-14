@@ -5,7 +5,6 @@
 #include <stdlib.h>
 #include <math.h>
 #include <string.h>
-#include <zlib.h>
 #include <dlfcn.h>
 #include <stdio.h>
 #include "native_rgba_is_opaque.h"
@@ -26,7 +25,7 @@ static void native_png_append_chunk(NSMutableData *output, const char *type,
     [output appendBytes:word length:4];
     [output appendBytes:type length:4];
     if (length) [output appendBytes:bytes length:length];
-    uLong crc = vox_crc32(0, (const Bytef *)type, 4);
+    uint32_t crc = vox_crc32(0, (const unsigned char *)type, 4);
     if (length) crc = vox_crc32(crc, bytes, length);
     native_png_write_u32(word, (uint32_t)crc);
     [output appendBytes:word length:4];
@@ -88,14 +87,23 @@ static NSData *native_encode_opaque_snapshot_png(NSBitmapImageRep *bitmap,
     if (!trusted && !vox_rgba8_is_opaque(source, (size_t)width, (size_t)height, (size_t)row_pitch)) return nil;
 
     size_t size = filtered_pitch * (size_t)height;
-    NSMutableData *compressed = [NSMutableData dataWithLength:compressBound((uLong)size)];
-    BOOL libdeflate = !getenv("VOX_DISABLE_LIBDEFLATE_PNG");
+    // Vox links no zlib: this encoder needs the optional libdeflate backend.
+    // Without it (or when it cannot allocate or fit its output) the ordinary
+    // ImageIO encoder writes the snapshot instead.
+    if (getenv("VOX_DISABLE_LIBDEFLATE_PNG")) return nil;
     // The repeated-pixel codec reads unfiltered rows straight from the
     // bitmap. Its output equals compressing the materialized rows below.
     typedef size_t (*SnapshotRowCompressor)(const void *, size_t, size_t, size_t, void *, size_t);
+    typedef size_t (*SnapshotCompressor)(const void *, size_t, void *, size_t);
     SnapshotRowCompressor row_compressor = (SnapshotRowCompressor)dlsym(RTLD_DEFAULT,
         "ladybird_v_snapshot_compress_png_rows");
-    size_t written = libdeflate && row_compressor ? row_compressor(source, row_bytes, (size_t)height,
+    SnapshotCompressor compressor = (SnapshotCompressor)dlsym(RTLD_DEFAULT,
+        "ladybird_v_snapshot_compress_zlib");
+    if (!row_compressor && !compressor) return nil;
+    // zlib's compressBound, the capacity the libdeflate entry points expect.
+    size_t bound = size + (size >> 12) + (size >> 14) + (size >> 25) + 13;
+    NSMutableData *compressed = [NSMutableData dataWithLength:bound];
+    size_t written = row_compressor ? row_compressor(source, row_bytes, (size_t)height,
         (size_t)row_pitch, compressed.mutableBytes, compressed.length) : 0;
     if (!written) {
         NSMutableData *rows = [NSMutableData dataWithLength:size];
@@ -105,23 +113,9 @@ static NSData *native_encode_opaque_snapshot_png(NSBitmapImageRep *bitmap,
             output[0] = 0;
             memcpy(output + 1, source + (size_t)y * row_pitch, row_bytes);
         }
-        typedef size_t (*SnapshotCompressor)(const void *, size_t, void *, size_t);
-        SnapshotCompressor compressor = (SnapshotCompressor)dlsym(RTLD_DEFAULT,
-            "ladybird_v_snapshot_compress_zlib");
-        written = libdeflate && compressor
-            ? compressor(rows.bytes, size, compressed.mutableBytes, compressed.length) : 0;
-        if (!written) {
-            z_stream stream = {0};
-            // Retain the original lossless encoder if the optional backend is
-            // absent, cannot allocate, or cannot fit its output in this buffer.
-            if (deflateInit2(&stream, Z_BEST_SPEED, Z_DEFLATED, MAX_WBITS, 5, Z_DEFAULT_STRATEGY) != Z_OK) return nil;
-            stream.next_in = rows.mutableBytes; stream.avail_in = (uInt)size;
-            stream.next_out = compressed.mutableBytes; stream.avail_out = (uInt)compressed.length;
-            int status = deflate(&stream, Z_FINISH);
-            written = stream.total_out;
-            deflateEnd(&stream);
-            if (status != Z_STREAM_END) return nil;
-        } else if (getenv("VOX_LIBDEFLATE_PNG_DIAGNOSTICS"))
+        written = compressor ? compressor(rows.bytes, size, compressed.mutableBytes, compressed.length) : 0;
+        if (!written) return nil;
+        if (getenv("VOX_LIBDEFLATE_PNG_DIAGNOSTICS"))
             fprintf(stderr, "VOX_LIBDEFLATE_PNG input=%zu output=%zu\n", size, written);
     } else if (getenv("VOX_LIBDEFLATE_PNG_DIAGNOSTICS"))
         fprintf(stderr, "VOX_LIBDEFLATE_PNG input=%zu output=%zu\n", size, written);

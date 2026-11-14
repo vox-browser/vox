@@ -82,6 +82,7 @@ fn (mut app BrowserApp) handle_wheel_at_viewport_point(client page.PixelPoint,
 fn (mut app BrowserApp) handle_wheel_input(client page.PixelPoint,
 	screen page.PixelPoint, button u32, buttons u32, modifiers u32,
 	delta_x f64, delta_y f64, async_default_action bool, horizontal_only bool) page.EventResult {
+	app.note_page_input()
 	if app.document == unsafe { nil } || app.page_model == unsafe { nil } || client.x < 0
 		|| client.y < 0 || client.x >= f64(app.viewport_width)
 		|| client.y >= f64(app.viewport_height) {

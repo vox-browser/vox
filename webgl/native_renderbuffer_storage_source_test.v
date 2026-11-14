@@ -17,9 +17,9 @@ fn test_source_renderbuffer_storage_forwards_real_binding_and_depth_stencil_mapp
 		assert mapped_error == no_error
 		other.native.make_current()
 		context.renderbuffer_storage(renderbuffer, 0x84f9, 7, 9)
-		mut selected := [0, 0, 0, 0]!
+		mut selected := [i32(0), 0, 0, 0]!
 		C.vox_gl_int_parameter(viewport, &selected[0])
-		assert selected == [1, 2, 3, 4]!
+		assert selected == [i32(1), 2, 3, 4]!
 		assert context.get_renderbuffer_parameter(renderbuffer, 0x8d44).integer == expected_format
 		assert context.get_renderbuffer_parameter(renderbuffer, 0x8d42).integer == 7
 		assert context.get_renderbuffer_parameter(renderbuffer, 0x8d43).integer == 9
@@ -32,13 +32,13 @@ fn test_source_renderbuffer_storage_forwards_real_binding_and_depth_stencil_mapp
 		other.native.make_current()
 		context.renderbuffer_storage(0xbad, 0x8056, -1, 2)
 		C.vox_gl_int_parameter(viewport, &selected[0])
-		assert selected == [1, 2, 3, 4]!
+		assert selected == [i32(1), 2, 3, 4]!
 		assert context.get_error() == expected
 		if version == .webgl2 {
 			other.native.make_current()
 			context.renderbuffer_storage_multisample(renderbuffer, 0, 0x8058, 5, 6)
 			C.vox_gl_int_parameter(viewport, &selected[0])
-			assert selected == [1, 2, 3, 4]!
+			assert selected == [i32(1), 2, 3, 4]!
 			assert context.get_renderbuffer_parameter(renderbuffer, 0x8d44).integer == 0x8058
 			assert context.get_renderbuffer_parameter(renderbuffer, 0x8d42).integer == 5
 			assert context.get_renderbuffer_parameter(renderbuffer, 0x8d43).integer == 6
@@ -49,7 +49,7 @@ fn test_source_renderbuffer_storage_forwards_real_binding_and_depth_stencil_mapp
 			other.native.make_current()
 			context.renderbuffer_storage_multisample(0xbad, -1, 0x8058, -1, 2)
 			C.vox_gl_int_parameter(viewport, &selected[0])
-			assert selected == [1, 2, 3, 4]!
+			assert selected == [i32(1), 2, 3, 4]!
 			assert context.get_error() == expected_samples
 		}
 	}

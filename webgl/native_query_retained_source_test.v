@@ -2,18 +2,17 @@
 // SPDX-License-Identifier: BSD-2-Clause
 module webgl
 
-fn C.glGetQueryiv(u32, u32, &int)
 
 fn query_source_native_current(target GLenum) int {
-	mut value := 0
-	C.glGetQueryiv(target, current_query, &value)
+	mut value := i32(0)
+	value = C.vox_gl_query_target_parameter(target,current_query)
 	return value
 }
 
 fn query_source_selected_owner() {
-	mut selected := [0, 0, 0, 0]!
+	mut selected := [i32(0), 0, 0, 0]!
 	C.vox_gl_int_parameter(viewport, &selected[0])
-	assert selected == [1, 2, 3, 4]!
+	assert selected == [i32(1), 2, 3, 4]!
 }
 
 fn test_source_query_slots_change_before_driver_calls_even_when_gl_rejects() {
@@ -60,9 +59,9 @@ fn test_source_query_slots_change_before_driver_calls_even_when_gl_rejects() {
 		// getQuery reads the retained source slot and never selects GL.
 		other.native.make_current()
 		assert context.get_query(target, current_query) == none
-		mut selected := [0, 0, 0, 0]!
+		mut selected := [i32(0), 0, 0, 0]!
 		C.vox_gl_int_parameter(viewport, &selected[0])
-		assert selected == [9, 10, 11, 12]!
+		assert selected == [i32(9), 10, 11, 12]!
 	}
 }
 
@@ -103,7 +102,7 @@ fn test_source_query_validates_only_handle_before_target_driver_errors() {
 	assert context.get_query(transform_feedback_primitives_written, current_query)? == owned
 	assert query_source_native_current(transform_feedback_primitives_written) == 0
 	assert context.get_error() == expected_retarget
-	context.delete_query(mut owned)
+	context.delete_query(owned)
 	other.native.make_current()
 	context.begin_query(0xbad, mut owned)
 	query_source_selected_owner()

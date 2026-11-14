@@ -32,15 +32,15 @@ fn check_popular_adblock_case(test_case PopularAdblockCase) ! {
 	assert runtime.evaluate_host(test_case.probe)! == 'true', test_case.url
 	advert := document.get_element_by_id('advert') or { panic('missing advert') }
 	advert_style := css.StyleComputer.new(document).compute_style(dom.AbstractElement.new(advert, none))
-	assert (advert_style.property(.display, .no)!.css_text == 'none') == test_case.hide_advert, test_case.url
+	assert ((advert_style.property(.display, .no) or { panic('missing value') }).css_text == 'none') == test_case.hide_advert, test_case.url
 	if test_case.preserve_generic {
 		generic := document.get_element_by_id('generic') or { panic('missing generic candidate') }
 		generic_style := css.StyleComputer.new(document).compute_style(dom.AbstractElement.new(generic, none))
-		assert generic_style.property(.display, .no)!.css_text != 'none', test_case.url
+		assert (generic_style.property(.display, .no) or { panic('missing value') }).css_text != 'none', test_case.url
 	}
 	content := document.get_element_by_id('content') or { panic('missing article') }
 	content_style := css.StyleComputer.new(document).compute_style(dom.AbstractElement.new(content, none))
-	assert content_style.property(.display, .no)!.css_text != 'none', test_case.url
+	assert (content_style.property(.display, .no) or { panic('missing value') }).css_text != 'none', test_case.url
 }
 
 fn popular_adblock_cases() []PopularAdblockCase {

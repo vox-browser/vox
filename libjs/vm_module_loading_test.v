@@ -308,7 +308,7 @@ fn test_link_and_eval_module_registers_the_entry_module_and_checks_promises() {
 	assert vm.stored_module(3).referrer.kind == .cyclic_module
 }
 
-fn test_source_text_modules_report_pending_linking_and_import_meta_is_memoized() {
+fn test_source_text_modules_execute_local_exports_and_import_meta_is_memoized() {
 	mut vm := VM.create()
 	create_simple_execution_context(mut vm)
 	realm := vm.realm()
@@ -316,14 +316,11 @@ fn test_source_text_modules_report_pending_linking_and_import_meta_is_memoized()
 	assert !source_module.has_top_level_await()
 	assert source_module.import_meta() == none
 	mut module_record := Module(source_module)
-	module_record.link(mut vm) or {
-		assert thrown_value(err).as_object().error_message()?.contains('CyclicModule translation')
-	}
-	module_record.evaluate(mut vm) or {
-		assert thrown_value(err).as_object().error_kind()? == .internal_error
-	}
 	load_capability := module_record.load_requested_modules(mut vm, unsafe { nil })
-	assert load_capability.promise.state == .rejected
+	assert load_capability.promise.state == .fulfilled
+	module_record.link(mut vm)!
+	assert module_record.evaluate(mut vm)!.promise.state == .fulfilled
+	assert source_module.local_export_value(mut vm, 'value')!.number == 1
 	SourceTextModule.parse('export let ;', realm, 'bad.js', unsafe { nil }) or {
 		assert err is ModuleParseError
 	}

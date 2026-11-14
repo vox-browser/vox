@@ -14,9 +14,9 @@ fn test_shader_creation_source_type_gate_precedes_real_native_creation_owner() {
 			C.vox_gl_vertex_attrib_enable(0xffff_ffff, 1)
 			other.native.make_current()
 			assert context.create_shader(type_) == none
-			mut selected := [0, 0, 0, 0]!
+			mut selected := [i32(0), 0, 0, 0]!
 			C.vox_gl_int_parameter(viewport, &selected[0])
-			assert selected == [9, 10, 11, 12]!
+			assert selected == [i32(9), 10, 11, 12]!
 			assert context.shaders.len == previous_records
 			assert context.get_error() == invalid_value
 			assert context.get_error() == invalid_enum
@@ -25,9 +25,9 @@ fn test_shader_creation_source_type_gate_precedes_real_native_creation_owner() {
 		for type_ in [vertex_shader, fragment_shader] {
 			other.native.make_current()
 			shader := context.create_shader(type_) or { panic('source actual shader') }
-			mut selected := [0, 0, 0, 0]!
+			mut selected := [i32(0), 0, 0, 0]!
 			C.vox_gl_int_parameter(viewport, &selected[0])
-			assert selected == [1, 2, 3, 4]!
+			assert selected == [i32(1), 2, 3, 4]!
 			assert shader.type_ == type_
 			assert C.vox_gl_shader_parameter(shader.object.native_handle_, shader_type) == int(type_)
 			assert context.owns(&shader.object)
@@ -44,8 +44,8 @@ fn test_source_shader_creation_retains_owned_record_for_actual_native_zero() {
 		context.lose_context_from_compositor_loss()
 		assert context.native.is_lost()
 		mut zero_shaders := []&WebGLShader{}
-		// The production loss path destroys and unbinds its native GL context.
-		// The backend supplies zero here; this test installs no substitute backend.
+		// The production loss path destroys EGL and unbinds its current context.
+		// ANGLE itself supplies zero here; this test installs no substitute backend.
 		for type_ in [vertex_shader, fragment_shader] {
 			native_handle := C.vox_gl_create_shader(type_)
 			assert native_handle == 0
@@ -110,9 +110,9 @@ fn test_source_lost_shader_creation_retains_owned_ids_without_touching_other_dri
 			assert context.shaders[shader.object.bookkeeping_id()] == shader
 		}
 		assert context.shaders.len == previous_records + 2
-		mut selected := [0, 0, 0, 0]!
+		mut selected := [i32(0), 0, 0, 0]!
 		C.vox_gl_int_parameter(viewport, &selected[0])
-		assert selected == [9, 10, 11, 12]!
+		assert selected == [i32(9), 10, 11, 12]!
 		assert C.vox_gl_is_object(9, sentinel.object.native_handle_) == 1
 		assert C.vox_gl_get_error() == invalid_value
 		assert C.vox_gl_get_error() == no_error
@@ -120,6 +120,6 @@ fn test_source_lost_shader_creation_retains_owned_ids_without_touching_other_dri
 		assert context.get_error() == context_lost_webgl
 		assert context.get_error() == no_error
 		C.vox_gl_int_parameter(viewport, &selected[0])
-		assert selected == [9, 10, 11, 12]!
+		assert selected == [i32(9), 10, 11, 12]!
 	}
 }

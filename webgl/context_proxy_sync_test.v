@@ -11,14 +11,14 @@ fn span_reply(data []u8) ![]u8 {
 
 fn test_context_proxy_caches_remote_gl_strings() {
 	mut proxy := WebGLContextProxyBase.new(.webgl1, []string{}, 128)!
-	proxy.set_next_sync_reply(span_reply('Native GL renderer\x00'.bytes())!)
-	assert proxy.get_string(0x1f01) == 'Native GL renderer'
+	proxy.set_next_sync_reply(span_reply('ANGLE renderer\x00'.bytes())!)
+	assert proxy.get_string(0x1f01) == 'ANGLE renderer'
 	assert proxy.sync_requests().len == 1
 	request := WebGLSyncCall.dispatch_request(proxy.sync_requests()[0])!
 	assert request.type_ == webgl_sync_get_string
 	assert binary.little_endian_u32_at(request.payload, 0) == 0x1f01
 
-	assert proxy.get_string(0x1f01) == 'Native GL renderer'
+	assert proxy.get_string(0x1f01) == 'ANGLE renderer'
 	assert proxy.sync_requests().len == 1
 }
 
@@ -50,10 +50,14 @@ fn test_context_proxy_rejects_malformed_sync_replies_and_mapping_calls() {
 	assert proxy.get_string(0x1f00) == ''
 	assert proxy.is_lost()
 
-	proxy.map_buffer_range(0x8892, 0, 4, 0) or {
+	if _ := proxy.map_buffer_range(0x8892, 0, 4, 0) {
+		assert false, 'Proxy buffer mapping must fail'
+	} else {
 		assert err.msg().contains('unreachable')
 	}
-	proxy.unmap_buffer(0x8892) or {
+	if _ := proxy.unmap_buffer(0x8892) {
+		assert false, 'Unmapping a proxy buffer must fail'
+	} else {
 		assert err.msg().contains('never mapped')
 	}
 }

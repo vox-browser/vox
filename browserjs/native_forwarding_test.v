@@ -87,3 +87,44 @@ fn test_native_forwarding_retains_thrown_values_for_collection_and_rejects_close
 	else { assert err.msg().contains('closed') }
 	assert C.vox_forwarding_api_exception_count() == 0
 }
+
+// Every argument count reaches the implementation unchanged, results are
+// returned as they are, and a throw inside a nested forward does not disturb
+// the value an outer forward is about to report.
+fn test_native_forwarding_passes_each_argument_and_keeps_nested_failures_apart() {
+	$if !darwin { return }
+	mut runtime := Runtime.create()
+	defer { runtime.close() }
+	callback := runtime.evaluate_host_value('(function(){"use strict";return [this,arguments.length,...arguments]})')!
+	forwarded := runtime.make_native_value_host_function('forwarded', 0, fn [runtime, callback] (receiver voidptr, args []voidptr) !voidptr {
+		return runtime.forward_javascript_function(callback, receiver, args)
+	})!
+	runtime.define_value_host_function('__argumentForward', fn [forwarded] (_ voidptr, _ []voidptr) !voidptr { return forwarded })!
+	assert runtime.evaluate_host(r'(()=>{
+ const forwarded=__argumentForward(),receiver={},a={},b=[];
+ for(const args of [[],[a],[a,b],[undefined,null,a],[1,"two",a,b,Symbol.iterator,6n,7,8]]){
+  const result=forwarded.apply(receiver,args);
+  if(result[0]!==receiver||result[1]!==args.length)return false;
+  for(let i=0;i<args.length;i++)if(!Object.is(result[i+2],args[i]))return false;
+ }
+ return true;
+})()')! == 'true'
+	// The inner forward fails and is handled by the implementation of the
+	// outer one, which then throws a different value.
+	inner := runtime.evaluate_host_value('(function(value){throw value})')!
+	runtime.define_value_host_function('__innerFailure', fn [runtime, inner] (receiver voidptr, args []voidptr) !voidptr {
+		return runtime.forward_javascript_function(inner, receiver, args)
+	})!
+	outer := runtime.evaluate_host_value('(function(first,second){let seen;try{__innerFailure(first)}catch(error){seen=error}if(seen!==first)throw Error("inner identity");if(second===undefined)return seen;throw second})')!
+	runtime.define_value_host_function('__outerFailure', fn [runtime, outer] (receiver voidptr, args []voidptr) !voidptr {
+		return runtime.forward_javascript_function(outer, receiver, args)
+	})!
+	C.vox_forwarding_reset_api_exceptions()
+	assert runtime.evaluate_host(r'(()=>{
+ const first={},second={};
+ if(__outerFailure(first)!==first)return false;
+ try{__outerFailure(first,second)}catch(error){return error===second&&__outerFailure(second)===second}
+ return false;
+})()')! == 'true'
+	assert C.vox_forwarding_api_exception_count() == 0
+}

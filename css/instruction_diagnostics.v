@@ -82,6 +82,7 @@ fn record_diagnostic_longhand_rejection(id PropertyID, value &dom.StyleValue) {
 }
 
 pub fn report_diagnostic_instruction_scopes() {
+	report_attribute_value_invalidation()
 	if diagnostic_style_reasons_enabled {
 		for index, count in diagnostic_font_guard_rejections {
 			if count > 0 { eprintln('Vox runtime font guard: ${index} ${count}') }

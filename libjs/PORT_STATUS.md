@@ -2,6 +2,109 @@
 
 Audited: 2026-10-02.
 
+The opt-in browser backend and its 2026-11-14 validation are documented in
+[`docs/LIBJS_ENGINE.md`](../docs/LIBJS_ENGINE.md). JavaScriptCore remains the default.
+
+The [GitHub continuation](../docs/LIBJS_GITHUB.md) adds bounded deeper browser
+parsing, iterative conditional alternatives and synchronous module graphs.
+Graph loading supports asynchronous host completion; linking/evaluation preserve
+live imports, cycles, re-exports, private environments and cached results/errors.
+The browser uses native Fetch/import maps without a JavaScriptCore context.
+Namespace reads have stable identity and sorted live exports, but their accessor
+descriptor adapter does not implement full namespace data-descriptor/freeze
+semantics. `import.meta` bytecode and synchronous `try/catch` also execute;
+`finally`, dynamic imports, top-level await, remaining language/builtin/Web APIs,
+React hydration and pixel-perfect GitHub rendering remain open.
+The ten-fix checkpoint has 261-file default-GC coverage (184 retained plus 77
+recovered after a host restart), a full 261/261 GC-disabled pass and 100/100 exact
+AST comparisons. Production visual validation remains pending. Native module
+metadata and the subsequent native Performance mark binding have focused browser
+coverage; the mark binding does not implement cloned detail, measures or observers.
+
+The [cached native-code experiment](../docs/LIBJS_NATIVE_CODE.md) adds an explicit
+warmup/compile/load API for cached bytecode. Numeric/control operations have
+runtime guards; dynamic operations keep interpreter helpers and shared budgets.
+Three seven-pair HN native-DOM cohorts show cache reuse and correct collapse/restore,
+but no reliable callback speedup. This tier is not enabled by browser settings
+and does not establish a browser load/rendering improvement or additional parity.
+
+## Ordinary ECMAScript calls — 2026-11-14
+
+The bytecode runtime now executes ordinary function declarations and expressions,
+closures, recursive calls, returns, constructors and lexical arrow `this`.
+Each call owns a checked interpreter frame and a function environment. Nested
+calls share the outer instruction budget. Function bodies compile on first
+call; uncalled bodies retain their parsed source. Unsupported body syntax fails
+when that function is called, without switching to JavaScriptCore.
+
+Focused function, script, native-call and interpreter checks pass with current V;
+the new function cases also pass with GC disabled. Non-simple parameters,
+async/generator functions, block/conditional function declarations and full
+arguments-object semantics remain open. This is runtime groundwork for the
+opt-in browser backend; it does not establish site compatibility.
+
+Array and object literals now allocate fresh objects in the executing realm.
+Array and String constructors/prototypes are installed, including the existing
+UTF-16 String algorithms and borrowed Array indexOf/join/push/pop/unshift/slice/
+splice/forEach. Array methods preserve holes, live property access, callback
+exceptions and the shared execution budget; slice/splice consult @@species.
+Focused collection/function/property/script cases pass; collection cases also
+pass without GC. Remaining Array methods, full cross-realm species handling
+and Number/BigInt prototype graphs are still separate work.
+
+RegExp literals, construction, exec/test and String @@match now call the V
+RegexEngine. Focused executions cover global/sticky lastIndex, captures and
+named groups, /d indices, Unicode empty-match advancement, overridden @@match,
+flag ordering and compile-error isolation. These checks pass in both GC modes.
+RegExp replace/split/search/matchAll hooks, full constructor IsRegExp/subclass
+semantics and the frontend's grammar-validation hook remain open.
+
+## Pure V Unicode backend — 2026-11-12
+
+Unicode processing now lives in `../vunicode/`: Unicode 17.0.0 general
+categories, binary properties, scripts/extensions and emoji sequences; full
+casing and simple folding; case closures; lossless UTF-16 normalization;
+UAX #9 paragraph levels/reordering; UAX #14 line breaks with CSS CJK tailoring;
+and UAX #29 word boundaries for titlecase. The URL package uses the same
+normalizer/data for nontransitional UTS #46, ContextJ and bidi validation, with
+V's `encoding.punycode` codec. C/C++ bridges, native ICU symbols and ICU package
+requirements have been removed.
+
+Default JavaScript String casing now uses Unicode root mappings, independent
+of the process locale; CSS casing still honors explicit language tags,
+including Turkish/Azeri, Lithuanian, Dutch IJ and Greek uppercase tailoring.
+Unpaired UTF-16 surrogates remain intact through casing and normalization.
+Line breaking implements the Unicode default rules and the existing CSS CJK
+modes; it does not ship ICU's dictionary segmentation for Southeast Asian
+languages. This change does not replace the browser's JavaScriptCore engine
+or remove dependencies internal to system frameworks and third-party libraries.
+
+`tools/generate_unicode.py UCD_DIRECTORY` regenerates the bundled data without
+ICU or third-party Python packages. Use the Unicode 17 UCD, IDNA and Emoji
+text files; `vunicode/data/SOURCES` records their hashes, and `data/LICENSE`
+contains the Unicode license. Runtime lookup uses immutable embedded tables;
+no system Unicode files, native Unicode calls or network access are needed.
+`tools/check_unicode_dependency.py [EXECUTABLE]` audits source and direct binary
+imports. `tools/unicode_smoke.v` exercises the services in a standalone program.
+
+The checked-in Unicode 17 normalization, line-break, word-break and
+bidirectional-character conformance files pass, including visual ordering for
+explicit paragraph directions. All 6,391 IDNA corpus rows pass in both strict
+and nonstrict modes. Existing property/case/regex corpus references are retained.
+The C backend also passes the 250-file LibJS suite with `-gc none`; default-GC
+coverage consists of 248 files in the initial full run and the two remaining
+corpus files after removing obsolete ICU locale setup. The unchanged matching,
+class and property corpus references pass. The exact AST corpus passes 100/100.
+The browser type-check passes with its production module paths, and the
+standalone Unicode smoke executes under `-prod -gc none` while importing only
+libSystem on macOS, with no ICU symbols. Bidi shaping and CSS CJK segmenter
+regressions pass. Full first-letter layout validation remains pending: its
+compilation exceeded the 12 GiB aggregate guard even with serial code generation.
+No windowed production validation is claimed for the new backend; the managed
+post-commit rebuild supplies the next browser bundle.
+
+Older ICU-based validation records below describe historical implementations.
+
 ## November 1 upstream correctness ports — 2026-11-10
 
 Five commits from Ladybird's November 1 landing set are translated here:
@@ -32,7 +135,7 @@ explicit untranslated dependency.
 String UTF-16 helpers also follow `AK/{UnicodeUtils.h,Utf16View.cpp,Utf16String.cpp}`
 and simdutf 7.4.0's scalar `utf16.h` validation and repair bodies. Unicode casing
 and normalization follow `LibUnicode/{Utf16String.cpp,Normalize.{h,cpp},ICU.{h,cpp}}`
-and retain ICU as the native algorithm and Unicode-data dependency.
+and now use the shared pure V Unicode backend.
 Regex records, input primitives, pattern analysis, literal prefilters and VM
 storage, repetition, traversal, literal/backreference and character-class matching,
 simple-match predicates, candidate filters, simple-scan execution, fast greedy
@@ -42,10 +145,11 @@ failure/assertion handlers follow
 at the same upstream revision. Property-kind and resolved-property records,
 Unicode property queries, resolution/validation, scalar predicates and
 string-property packing follow `LibUnicode/Rust/src/character_types.rs` and
-`LibUnicode/CharacterTypes.cpp`. Regex execution remains pending.
+`LibUnicode/CharacterTypes.cpp`. RegExp execution now uses the V RegexEngine;
+the remaining JavaScript-facing hooks are listed above.
 Regex canonicalization and UnicodeSet closure/range operations additionally follow
-`LibUnicode/{CharacterTypes,String}.cpp`, retaining ICU's full UTF-8 uppercase,
-simple Unicode folding and case-closure algorithms.
+`LibUnicode/{CharacterTypes,String}.cpp`, with full uppercase, simple Unicode
+folding and case closures supplied by the shared V backend.
 All refreshed V code and tests live here; the upstream checkout and the original
 `libjs_v` checkout are references. The upstream BSD-2-Clause notice is retained
 in [`LICENSE`](LICENSE).
@@ -71,7 +175,7 @@ creates a realm with a global environment and pushes its execution context.
 
 | V implementation | Upstream responsibility |
 | --- | --- |
-| `lexer.v`, `token.v`, `unicode_properties.c.v` | UTF-16 lexing, token classification, ICU identifier properties |
+| `lexer.v`, `token.v`, `unicode_properties.v` | UTF-16 lexing, token classification, ICU identifier properties |
 | `parser.v`, `expressions.v`, `declarations.v`, `statements.v` | Script/module grammar and parser early errors |
 | `scope_collector.v` | Binding resolution, local indices, captures, eval poisoning, declaration metadata |
 | `ast.v`, `ast_dump.v`, `utf16_utils.v` | Retained syntax trees, function ownership, UTF-16 identity, AST serialization |
@@ -103,8 +207,8 @@ creates a realm with a global environment and pushes its execution context.
 | `string_character_access.v`, `string_slicing.v`, `string_search.v`, `string_concat.v` | String branding/value extraction, CodePointAt, at/charAt/charCodeAt/codePointAt, slice/substring/substr, indexOf/lastIndexOf and concatenation |
 | `string_trim.v`, `string_well_formed.v`, `string_prototype_iterator.v` | Exact upstream whitespace trimming, simdutf UTF-16 validation/repair and String @@iterator creation; remaining prototype bodies and initialization pending |
 | `string_repeat.v`, `string_padding.v`, `string_html.v` | Ordered repeat validation and checked UTF-16 assembly, StringPad early returns and filler truncation, and all thirteen Annex B HTML wrappers with exact attribute-quote replacement |
-| `string_case.v`, `unicode_transform.c.v`, `unicode_transform.h` | Generic toLowerCase/toUpperCase conversion, source ASCII shortcut and native UTF-16 ICU casing; header contains ABI declarations only |
-| `string_normalize.v`, `unicode_normalize.c.v` | normalize form validation and conversion order, all four native UTF-16 ICU normalization forms and original-input failure fallback |
+| `string_case.v`, `unicode_transform.v` | Generic toLowerCase/toUpperCase conversion, ASCII shortcut and locale-independent V UTF-16 casing |
+| `string_normalize.v`, `unicode_normalize.v` | normalize form validation and conversion order, all four UTF-16 normalization forms through the shared V backend |
 | `string_substitution.v` | GetSubstitution dollar tokens, one/two-digit capture selection and fallback, live named-group lookup and capture conversion |
 | `string_replace.v`, `string_split.v` | String replace/split symbol dispatch and complete string paths, native replacement callbacks, Uint32 split limits and real Array results with an explicit prototype dependency |
 | `regexp_flags.v` | `RegExpObject::Flags`, strict initialization flag validation, permissive constructor bit mapping and exact UTF-16 SyntaxError diagnostics |
@@ -118,14 +222,14 @@ creates a realm with a global environment and pushes its execution context.
 | `regex_vm_state.v` | VM/scratch records, construction/reset, flat register snapshots, all saved-choice variants and modifier-stack transitions |
 | `regex_vm_repeat.v` | Repeat-start/check handlers with greedy/lazy counter snapshots and checked same-matcher loop suffix minima |
 | `regex_vm_traversal.v` | Forward/backward code-point boundaries, pair-aware character movement and checked multi-character position arithmetic |
-| `regex_case_folding.c.v`, `regex_case_folding.h` | Legacy full-uppercase and Unicode simple-fold canonicalization, ASCII shortcuts, equality, word/digit predicates and all six builtin character classes through the native ICU ABI |
+| `regex_case_folding.v` | Legacy full-uppercase and Unicode simple-fold canonicalization, ASCII shortcuts, equality, word/digit predicates and all six builtin character classes through the V Unicode tables |
 | `regex_vm_character.v` | Modifier-aware literal matching and adjacent-code-unit word-boundary checks |
 | `regex_vm_backreference.v` | Numbered/named references, Unicode code-point comparison in both directions, and first-participating duplicate capture priority |
-| `regex_unicode_set.c.v`, `regex_unicode_set.h` | Ordered bounded case closures, case-insensitive range expansion and inverse-range matching through ICU; header contains ABI declarations only |
+| `regex_unicode_set.v` | Ordered bounded case closures, case-insensitive range expansion and inverse-range matching in V |
 | `regex_character_class.v` | Inclusive small/large range membership and complete legacy, Unicode and UnicodeSets case-insensitive character-class matching |
 | `regex_simple_scan.v` | Complete simple-scan membership predicate |
-| `regex_unicode_property_names.c.v`, `regex_unicode_properties.v`, `regex_unicode_property.h` | Exact category/binary/script aliases, aggregate categories, script extensions, cached case-closed sets, property resolution/validation and scalar predicates; header contains ABI declarations only |
-| `regex_unicode_string_properties.c.v` | ICU string-property enumeration, complete code-point packing and query/short-buffer/Rust wrapper boundaries |
+| `regex_unicode_property_names.v`, `regex_unicode_properties.v` | Exact category/binary/script aliases, aggregate categories, script extensions, case closures, property resolution/validation and scalar predicates |
+| `regex_unicode_string_properties.v` | V string-property enumeration in preserved UTF-16 sort order, complete code-point packing and query/short-buffer/Rust wrapper boundaries |
 | `regex_vm_property.v`, `regex_simple_match.v` | VM property forwarding, raw/modifier-only/VM simple-match predicates, unions and the Unicode/UnicodeSets negated-property case distinction |
 | `regex_candidate_start.v` | First-character/first-filter membership and complete next-candidate selection, preserving anchors, empty patterns and surrogate boundaries |
 | `regex_scan_execution.v` | Complete single-match, greedy and find-all simple scan execution with UTF-16 positions and source capture-buffer boundaries |
@@ -298,8 +402,9 @@ bitwise operators, comparisons, primitive string concatenation, unary operators,
 `typeof` (including unknown names and lexical TDZ checks), conditional and sequence
 expressions, short-circuiting logical operators and assignments, identifier
 assignments/updates, ordinary data/accessor-property reads/writes/updates, `delete`, `in`, `instanceof`,
-native function and method calls and `new` expressions
-without spread arguments, string own `length`/character properties, `var`/`let`/`const`,
+ordinary and native function/method calls and construction without spread arguments,
+closures, returns, object/array/RegExp literals, string own `length`/character
+properties, `var`/`let`/`const`,
 blocks, `if`, `while`, `do`/`while`, `for`, unlabelled `break`/`continue`, and `throw`. Bindings persist across scripts in one
 realm. Global declaration conflicts are checked before creating any bindings;
 block declarations are created before executing their initializers. The global
@@ -308,23 +413,23 @@ property attributes. It also installs the translated `isFinite`, `isNaN`,
 `parseInt`, `parseFloat`, `encodeURI`, `encodeURIComponent`, `decodeURI`, and
 `decodeURIComponent`, `escape`, and `unescape` functions with their upstream names,
 lengths, and descriptors. Global property installation retains upstream
-numeric/URI-function-before-value order, then Boolean/Symbol constructor entries,
-then legacy functions.
+numeric/URI-function-before-value order, followed by the installed constructor
+subset in source order and then legacy functions.
 
-The entire program is compiled before declaration instantiation or execution.
-An unsupported construct, even inside an untaken branch, rejects the program
-without running its preceding statements or creating its bindings. ECMAScript
-functions, spread calls/construction, object/array literals,
+Top-level code is compiled before declaration instantiation or execution.
+Unsupported top-level syntax, even inside an untaken branch, rejects that script
+without running its preceding statements or creating its bindings. Ordinary
+function bodies compile lazily when called. Spread calls/construction,
 destructuring, classes, exceptions with `try`/`catch`/`finally`, labels, iterators,
-templates, regex, async, and modules are still pending. Handwritten bytecode tests exercise exception
+templates, async, and modules are still pending. Handwritten bytecode tests exercise exception
 handler dispatch and `Catch`; this does not imply AST-level catch support.
 Ordinary objects supplied by a host can coerce through `@@toPrimitive`, `valueOf`,
 and `toString`, with upstream hint order and abrupt-completion propagation.
 Objects without a usable coercion method throw the upstream `TypeError`.
-Boolean and Symbol primitive references box through their translated wrappers
+Boolean, Symbol and String primitive references box through their translated wrappers
 while preserving the original primitive receiver for inherited methods and
-accessors. Other primitive property access beyond virtual string own properties
-still requires untranslated wrapper prototypes and reports the explicit runtime error.
+accessors. Number and BigInt inherited property access still requires untranslated
+wrapper prototypes and reports the explicit runtime error.
 
 BigInt numeric operations follow `Runtime/Value.cpp`: arithmetic, truncating
 division/remainder, signed bitwise operations, arithmetic shifts (including
@@ -1425,23 +1530,35 @@ Build/v/Vox.app/Contents/MacOS/Vox --js-engine=libjs page.html
 # The separate form --js-engine libjs is also accepted.
 ```
 
-JavaScriptCore remains the default until the LibJS DOM and builtin bindings are
-ready. `Runtime.create_with_engine(.libjs)` creates no JavaScriptCore context,
+JavaScriptCore remains the default. Vox Settings exposes the experimental LibJS
+option; restart Vox after changing it. An explicit `--js-engine` overrides the
+saved preference. `Runtime.create_with_engine(.libjs)` creates no JavaScriptCore context,
 runs supported programs through the translated VM, and never falls back to
 JavaScriptCore. Parse-budget exhaustion and unsupported code are reported
 explicitly. Source URLs and starting lines reach bytecode diagnostics and runtime
 tracebacks. Per-script failures leave later scripts runnable.
 
-LibJS mode establishes the native browsing context and renders the document, but
-skips the current JavaScriptCore-based DOM bootstrap and event dispatch. It logs
-that DOM bindings are pending; unsupported DOM scripts produce diagnostics.
-`--headless-smoke --js-engine=libjs` tests bytecode execution and identifies the
-pending DOM bindings. The JavaScriptCore smoke still checks DOM mutation and click
-handlers.
+LibJS uses the native `libjsdom` bindings instead of the compact JavaScriptCore
+bootstrap. The supported boundary includes native node identity, document queries,
+attributes and class changes, text/HTML setters, tree traversal, live HTML
+collections, native DOM listeners and cancellation, URL reads and search-parameter
+lookup. Listener callbacks share a bounded execution entry and honor the owning
+document scripting gate. Closing the Runtime stops VM entry, removes listeners
+and retires binding closures. `--headless-smoke --js-engine=libjs` checks arithmetic
+and the same DOM mutation/click fixture as JSC. The unmodified archived `hn.js`
+is the first site acceptance fixture; its bytes match a fresh 2026-11-14 fetch.
 
-## Verification
+This is an experimental browser execution slice, not full LibJS parity. Modules,
+async/generator execution, eval/Function, non-simple parameters, the complete
+arguments object, the remaining builtin graph and most Web APIs remain open.
+Unsupported operations report errors; there is no author-script fallback to JSC.
+Logged-in Hacker News voting/hiding, fetch/XHR and arbitrary modern sites are not
+covered by the comment-collapse acceptance test.
 
-The repository's current V checkout requires its old compiler frontend:
+## Historical verification
+
+The following older snapshot used the compatibility compiler frontend. Current
+backend checks use current V without `-old-compiler`; see the engine guide above.
 
 ```sh
 v -old-compiler -enable-globals test libjs
@@ -1478,15 +1595,9 @@ All 100 checked-in upstream AST fixtures compare directly and exactly, including
 scope flags and source positions. Only trailing CR/LF characters are ignored;
 there are no case overrides. Actual dumps are written to `Build/libjs-ast/`.
 Pass fixture stems to select cases, `--upstream PATH` to choose a checkout, or
-set `LADYBIRD_SOURCE_DIR`. ICU headers and `libicucore` on macOS or `libicuuc` on
-Linux are required for identifier predicates, Unicode casing and normalization.
-The regex property backend additionally requires standard ICU 78 on macOS.
-The V package links Homebrew's `icu4c` under `/opt/homebrew/opt/icu4c` on arm64
-or `/usr/local/opt/icu4c` on Intel; the native bundle can also resolve the same
-versioned ABI through its existing vcpkg dependency path. Apple's libicucore
-tailors general categories and binary properties for legacy private-use
-characters, so those property queries use private standard-ICU bindings.
-The other platform ICU entry points are not renamed by this header.
+set `LADYBIRD_SOURCE_DIR`. The frontend and regex Unicode helpers use the
+bundled Unicode 17 V implementation; no ICU headers or libraries are required.
+
 
 The VM tests exercise the runtime records directly and through compiled scripts.
 Translated native functions cover call frames, arguments, receiver/realm state,

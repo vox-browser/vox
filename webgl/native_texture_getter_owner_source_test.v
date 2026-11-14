@@ -22,9 +22,9 @@ fn test_texture_getter_preserves_source_extension_version_gates_and_driver_owner
 			C.vox_gl_vertex_attrib_enable(0xffff_ffff, 1)
 			other.native.make_current()
 			assert context.get_tex_parameter(GLenum(0xffff), pname).kind == .none
-			mut selected := [0, 0, 0, 0]!
+			mut selected := [i32(0), 0, 0, 0]!
 			C.vox_gl_int_parameter(viewport, &selected[0])
-			assert selected == [9, 10, 11, 12]!
+			assert selected == [i32(9), 10, 11, 12]!
 			assert C.vox_gl_get_error() == no_error
 			assert context.get_error() == invalid_value
 			assert context.get_error() == invalid_enum
@@ -41,7 +41,7 @@ fn test_texture_getter_preserves_source_extension_version_gates_and_driver_owner
 		assert texture_2d !in context.bound_texture_objects
 		assert C.vox_gl_get_error() == no_error
 		if _ := context.get_extension('EXT_texture_filter_anisotropic', false) {
-			println('actual native anisotropy extension enabled')
+			println('actual ANGLE anisotropy extension enabled')
 			names << GLenum(0x84fe)
 		}
 		for target in [texture_2d, GLenum(0xffff)] {
@@ -58,9 +58,9 @@ fn test_texture_getter_preserves_source_extension_version_gates_and_driver_owner
 				context.set_error(invalid_operation)
 				other.native.make_current()
 				result := context.get_tex_parameter(target, pname)
-				mut selected := [0, 0, 0, 0]!
+				mut selected := [i32(0), 0, 0, 0]!
 				C.vox_gl_int_parameter(viewport, &selected[0])
-				assert selected == [1, 2, 3, 4]!
+				assert selected == [i32(1), 2, 3, 4]!
 				if is_lod || pname == GLenum(0x912f) {
 					assert result.kind == .boolean
 					assert result.boolean == (expected == 1)

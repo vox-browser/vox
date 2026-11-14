@@ -44,29 +44,29 @@ fn test_public_active_info_source_handle_returns_precede_actual_sync_owner_selec
 		runtime.evaluate_host(webgl_bootstrap())!
 		runtime.evaluate_host('globalThis.gl=__webglContext({bridgeKey:"__created_active_owner",width:1,height:1},"${kind}",null);globalThis.other=__webglContext({bridgeKey:"__created_active_owner_other",width:1,height:1},"${kind}",null);gl.viewport(1,2,3,4);other.viewport(9,10,11,12);globalThis.program=gl.createProgram();globalThis.foreign=other.createProgram();')!
 		mut other := host.contexts['__created_active_owner_other'] or { panic('active info other') }
-		mut selected := [0, 0, 0, 0]!
+		mut selected := [i32(0), 0, 0, 0]!
 		for method in ['getActiveAttrib', 'getActiveUniform'] {
 			other.native.make_current()
 			assert runtime.evaluate_host('gl.${method}(foreign,0)===null')! == 'true'
 			C.vox_gl_int_parameter(webgl.viewport, &selected[0])
-			assert selected == [9, 10, 11, 12]!
+			assert selected == [i32(9), 10, 11, 12]!
 			assert runtime.evaluate_host('gl.getError()===gl.INVALID_OPERATION&&gl.getError()===gl.NO_ERROR')! == 'true'
 			other.native.make_current()
 			assert runtime.evaluate_host('gl.${method}(program,0) instanceof WebGLActiveInfo')! == 'true'
 			C.vox_gl_int_parameter(webgl.viewport, &selected[0])
-			assert selected == [1, 2, 3, 4]!
+			assert selected == [i32(1), 2, 3, 4]!
 			assert runtime.evaluate_host('gl.getError()!==gl.NO_ERROR&&gl.getError()===gl.NO_ERROR')! == 'true'
 			other.native.make_current()
 			assert runtime.evaluate_host('(function(){const marker={};try{gl.${method}(program,{valueOf(){throw marker}});return false}catch(error){return error===marker}})()')! == 'true'
 			C.vox_gl_int_parameter(webgl.viewport, &selected[0])
-			assert selected == [9, 10, 11, 12]!
+			assert selected == [i32(9), 10, 11, 12]!
 		}
 		runtime.evaluate_host('gl.deleteProgram(program);')!
 		for method in ['getActiveAttrib', 'getActiveUniform'] {
 			other.native.make_current()
 			assert runtime.evaluate_host('gl.${method}(program,0)===null')! == 'true'
 			C.vox_gl_int_parameter(webgl.viewport, &selected[0])
-			assert selected == [9, 10, 11, 12]!
+			assert selected == [i32(9), 10, 11, 12]!
 			assert runtime.evaluate_host('gl.getError()===gl.INVALID_OPERATION')! == 'true'
 		}
 	}

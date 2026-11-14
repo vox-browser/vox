@@ -86,7 +86,8 @@ pub fn LineBoxFragment.new(layout_node &Node, start int, length_in_code_units in
 	}
 	if run := glyph_run {
 		fragment.current_insert_direction = fragment.resolve_glyph_run_direction(run.text_type())
-		if direction == .ltr && fragment.current_insert_direction == .ltr
+		if ((direction == .ltr && fragment.current_insert_direction == .ltr)
+			|| (direction == .rtl && run.text_type() in [.ltr, .rtl]))
 			&& run.font().font_rendering_policy == .chromium
 			&& inline_length == shaped_inline_width(run, 0)
 			&& run.glyphs_.len > 0 && run.glyphs_[0].position.x == 0 {
@@ -99,7 +100,7 @@ pub fn LineBoxFragment.new(layout_node &Node, start int, length_in_code_units in
 			fragment.item_width_ = f64(run.width())
 		}
 		if direction == .rtl {
-			fragment.insert_position_ = f32(inline_length.to_double())
+			fragment.insert_position_ = f32(fragment.precise_inline_length_ or { inline_length.to_double() })
 		}
 	}
 	return fragment
@@ -422,7 +423,19 @@ fn (mut fragment LineBoxFragment) append_glyph_run_ltr(glyph_run &platform.Glyph
 
 fn (mut fragment LineBoxFragment) append_glyph_run_rtl(glyph_run &platform.GlyphRun, run_width CSSPixels) {
 	run_direction := fragment.resolve_glyph_run_direction(glyph_run.text_type())
-	run_offset := f32(run_width.to_double())
+	// One text/font fragment snaps its total advance once. In particular,
+	// rounding an RTL plus and its following space separately shifts the
+	// adjacent number and can select a different quarter-pixel glyph mask.
+	mut exact_advance := false
+	if precise := fragment.precise_inline_length_ {
+		if fragment.current_insert_direction == run_direction
+			&& run_width == shaped_inline_width(glyph_run, 0)
+			&& glyph_run.glyphs_.len > 0 && glyph_run.glyphs_[0].position.x == 0 {
+			fragment.precise_inline_length_ = precise + f64(glyph_run.width())
+			exact_advance = true
+		} else { fragment.precise_inline_length_ = none }
+	}
+	run_offset := if exact_advance { glyph_run.width() } else { f32(run_width.to_double()) }
 	if fragment.current_insert_direction != run_direction {
 		if run_direction == .ltr {
 			fragment.insert_position_ = 0
@@ -453,7 +466,9 @@ fn (mut fragment LineBoxFragment) append_glyph_run_rtl(glyph_run &platform.Glyph
 			destination.glyphs_ << glyph_run.glyphs_
 		}
 	}
-	fragment.inline_length_ = fragment.inline_length_.plus(run_width)
+	fragment.inline_length_ = if precise := fragment.precise_inline_length_ {
+		inline_advance_to_css_pixels(precise, glyph_run.font())
+	} else { fragment.inline_length_.plus(run_width) }
 	fragment.insert_position_ += run_offset
 }
 
@@ -558,7 +573,9 @@ pub fn (mut line LineBox) add_fragment_with_trailing_whitespace(layout_node &Nod
 					// HarfBuzz face behind the same CSS Font object. Glyph IDs from
 					// different faces cannot share one retained replay run.
 					if voidptr(last_run.font()) == voidptr(run.font())
-						&& last_run.face() == run.face() {
+						&& last_run.face() == run.face()
+						&& (line.direction_ != .rtl || run.font().font_rendering_policy != .chromium
+							|| last_run.text_type() == run.text_type()) {
 						last.length_in_code_units_ += length
 						previous_width := last.inline_length_
 						last.append_glyph_run(run, content_width)

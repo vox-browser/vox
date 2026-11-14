@@ -8,7 +8,7 @@ fn test_integer_scalar_vertex_attributes_preserve_source_native_signed_unsigned_
 	context.viewport(1, 2, 3, 4)
 	other.viewport(9, 10, 11, 12)
 	context.native.make_current()
-	mut limit := 0
+	mut limit := i32(0)
 	C.vox_gl_int_parameter(GLenum(0x8869), &limit)
 	for index in [GLuint(2), GLuint(limit - 1), GLuint(limit)] {
 		for unsigned in [false, true] {
@@ -19,7 +19,7 @@ fn test_integer_scalar_vertex_attributes_preserve_source_native_signed_unsigned_
 				C.vox_gl_vertex_attrib_i4i(index, -2_147_483_648, 2_147_483_647, -2_000_000_001, 2_000_000_001)
 			}
 			expected_error := C.vox_gl_get_error()
-			mut expected_signed := [0, 0, 0, 0]!
+			mut expected_signed := [i32(0), 0, 0, 0]!
 			mut expected_unsigned := [u32(0), 0, 0, 0]!
 			if index < GLuint(limit) {
 				if unsigned {
@@ -36,9 +36,9 @@ fn test_integer_scalar_vertex_attributes_preserve_source_native_signed_unsigned_
 			} else {
 				context.vertex_attrib_i4i(index, -2_147_483_648, 2_147_483_647, -2_000_000_001, 2_000_000_001)
 			}
-			mut selected := [0, 0, 0, 0]!
+			mut selected := [i32(0), 0, 0, 0]!
 			C.vox_gl_int_parameter(viewport, &selected[0])
-			assert selected == [1, 2, 3, 4]!
+			assert selected == [i32(1), 2, 3, 4]!
 			if expected_error != no_error {
 				assert context.get_error() == expected_error
 			}
@@ -50,7 +50,7 @@ fn test_integer_scalar_vertex_attributes_preserve_source_native_signed_unsigned_
 					C.vox_gl_vertex_attrib_uint_parameter(index, &actual[0])
 					assert actual == expected_unsigned
 				} else {
-					mut actual := [0, 0, 0, 0]!
+					mut actual := [i32(0), 0, 0, 0]!
 					C.vox_gl_vertex_attrib_int_parameter(index, &actual[0])
 					assert actual == expected_signed
 				}

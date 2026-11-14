@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: BSD-2-Clause
 module webgl
 
-fn program_use_owner(expected [4]int) {
-	mut selected := [0, 0, 0, 0]!
+fn program_use_owner(expected [4]i32) {
+	mut selected := [i32(0), 0, 0, 0]!
 	C.vox_gl_int_parameter(viewport, &selected[0])
 	assert selected == expected
 }
@@ -42,10 +42,10 @@ precision mediump float;out vec4 color;void main(){color=vec4(1);}'
 		owner.delete_program(deleted)
 		for rejected in [foreign, deleted] {
 			other.native.make_current()
-			mut unused := 0
+			mut unused := i32(0)
 			C.vox_gl_int_parameter(GLenum(0xffff_ffff), &unused)
 			owner.use_program(rejected)
-			program_use_owner([9, 10, 11, 12]!)
+			program_use_owner([i32(9), 10, 11, 12]!)
 			assert owner.current_program or { panic('unchanged retained program') } == program
 			assert C.vox_gl_get_error() == invalid_enum
 			assert C.vox_gl_get_error() == no_error
@@ -53,15 +53,15 @@ precision mediump float;out vec4 color;void main(){color=vec4(1);}'
 		}
 		other.native.make_current()
 		owner.use_program(none)
-		program_use_owner([1, 2, 3, 4]!)
-		mut actual := -1
+		program_use_owner([i32(1), 2, 3, 4]!)
+		mut actual := i32(-1)
 		C.vox_gl_int_parameter(current_program, &actual)
 		assert actual == 0
 		assert owner.current_program == none
 		assert owner.get_error() == no_error
 		other.native.make_current()
 		owner.use_program(program)
-		program_use_owner([1, 2, 3, 4]!)
+		program_use_owner([i32(1), 2, 3, 4]!)
 		C.vox_gl_int_parameter(current_program, &actual)
 		assert actual == int(name)
 		assert owner.current_program or { panic('owned retained program') } == program
@@ -72,7 +72,7 @@ precision mediump float;out vec4 color;void main(){color=vec4(1);}'
 		assert expected != no_error
 		other.native.make_current()
 		owner.use_program(rejected)
-		program_use_owner([1, 2, 3, 4]!)
+		program_use_owner([i32(1), 2, 3, 4]!)
 		C.vox_gl_int_parameter(current_program, &actual)
 		assert actual == int(name)
 		assert owner.current_program or { panic('source record after native rejection') } == rejected

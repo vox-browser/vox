@@ -82,33 +82,68 @@ done:
     return pixels;
 }
 
-// The native painter samples the original planes before BT.601 conversion.
-// Subsampling follows the existing native JPEG markers: 0=444, 1=422, 2=420.
-VOX_AVIF_EXPORT uint8_t *vox_avif_decode_yuv(const uint8_t *bytes, uint64_t length,
-    int32_t *width, int32_t *height, int32_t *size, int32_t *subsampling)
+// libyuv's YuvConstants for an image, as libavif's getLibYUVConstants picks
+// them: 0=I601, 1=JPEG, 2=H709, 3=F709, 4=2020, 5=V2020, or -1 when libavif
+// would use its own conversion.
+static int vox_avif_libyuv_matrix(const avifImage *image)
+{
+    avifMatrixCoefficients matrix = image->matrixCoefficients;
+    if (image->yuvFormat == AVIF_PIXEL_FORMAT_YUV400 && matrix == AVIF_MATRIX_COEFFICIENTS_IDENTITY)
+        matrix = AVIF_MATRIX_COEFFICIENTS_BT601;
+    int family = -1; // 0=BT.601, 1=BT.709, 2=BT.2020
+    switch (matrix) {
+    case AVIF_MATRIX_COEFFICIENTS_BT709: family = 1; break;
+    case AVIF_MATRIX_COEFFICIENTS_BT470BG:
+    case AVIF_MATRIX_COEFFICIENTS_BT601:
+    case AVIF_MATRIX_COEFFICIENTS_UNSPECIFIED: family = 0; break;
+    case AVIF_MATRIX_COEFFICIENTS_BT2020_NCL: family = 2; break;
+    case AVIF_MATRIX_COEFFICIENTS_CHROMA_DERIVED_NCL:
+        switch (image->colorPrimaries) {
+        case AVIF_COLOR_PRIMARIES_BT709:
+        case AVIF_COLOR_PRIMARIES_UNSPECIFIED: family = 1; break;
+        case AVIF_COLOR_PRIMARIES_BT470BG:
+        case AVIF_COLOR_PRIMARIES_BT601: family = 0; break;
+        case AVIF_COLOR_PRIMARIES_BT2020: family = 2; break;
+        default: break;
+        }
+        break;
+    default: break;
+    }
+    if (family < 0) return -1;
+    return family * 2 + (image->yuvRange == AVIF_RANGE_FULL ? 1 : 0);
+}
+
+// Packed 8-bit planes of an opaque image whose colors libavif converts with
+// libyuv; Vox reproduces that conversion in V (yuv.libyuv_to_rgba) because
+// packaged libavif builds may lack libyuv. Layout: 0=444, 1=422, 2=420, 3=400.
+// Other images return NULL and use vox_avif_decode.
+VOX_AVIF_EXPORT uint8_t *vox_avif_decode_planes(const uint8_t *bytes, uint64_t length,
+    int32_t *width, int32_t *height, int32_t *size, int32_t *layout, int32_t *matrix)
 {
     if (width) *width = 0;
     if (height) *height = 0;
     if (size) *size = 0;
-    if (subsampling) *subsampling = 0;
-    if (!width || !height || !size || !subsampling) return NULL;
+    if (layout) *layout = 0;
+    if (matrix) *matrix = -1;
+    if (!width || !height || !size || !layout || !matrix) return NULL;
     avifDecoder *decoder = vox_avif_open(bytes, length);
     if (!decoder) return NULL;
     avifImage *image = decoder->image;
     uint8_t *planes = NULL;
-    if (decoder->alphaPresent || image->depth != 8 || image->yuvRange != AVIF_RANGE_FULL
-        || (image->matrixCoefficients != AVIF_MATRIX_COEFFICIENTS_BT601
-            && image->matrixCoefficients != AVIF_MATRIX_COEFFICIENTS_UNSPECIFIED)
+    int libyuv_matrix = vox_avif_libyuv_matrix(image);
+    if (decoder->alphaPresent || image->alphaPlane || image->depth != 8 || libyuv_matrix < 0
         || (image->yuvFormat != AVIF_PIXEL_FORMAT_YUV444
             && image->yuvFormat != AVIF_PIXEL_FORMAT_YUV422
-            && image->yuvFormat != AVIF_PIXEL_FORMAT_YUV420)) goto done;
+            && image->yuvFormat != AVIF_PIXEL_FORMAT_YUV420
+            && image->yuvFormat != AVIF_PIXEL_FORMAT_YUV400)) goto done;
+    int count = image->yuvFormat == AVIF_PIXEL_FORMAT_YUV400 ? 1 : 3;
     uint32_t cw = image->yuvFormat == AVIF_PIXEL_FORMAT_YUV444 ? image->width : (image->width + 1) / 2;
     uint32_t ch = image->yuvFormat == AVIF_PIXEL_FORMAT_YUV420 ? (image->height + 1) / 2 : image->height;
-    size_t total = (size_t)image->width * image->height + 2 * (size_t)cw * ch;
+    size_t total = (size_t)image->width * image->height + (count == 3 ? 2 * (size_t)cw * ch : 0);
     planes = (uint8_t *)malloc(total);
     if (!planes) goto done;
     size_t offset = 0;
-    for (int p = 0; p < 3; ++p) {
+    for (int p = 0; p < count; ++p) {
         uint32_t w = p ? cw : image->width, h = p ? ch : image->height;
         if (!image->yuvPlanes[p] || image->yuvRowBytes[p] < w) {
             free(planes); planes = NULL; goto done;
@@ -121,8 +156,10 @@ VOX_AVIF_EXPORT uint8_t *vox_avif_decode_yuv(const uint8_t *bytes, uint64_t leng
     *width = (int32_t)image->width;
     *height = (int32_t)image->height;
     *size = (int32_t)total;
-    *subsampling = image->yuvFormat == AVIF_PIXEL_FORMAT_YUV444 ? 0
-        : image->yuvFormat == AVIF_PIXEL_FORMAT_YUV422 ? 1 : 2;
+    *layout = image->yuvFormat == AVIF_PIXEL_FORMAT_YUV444 ? 0
+        : image->yuvFormat == AVIF_PIXEL_FORMAT_YUV422 ? 1
+        : image->yuvFormat == AVIF_PIXEL_FORMAT_YUV420 ? 2 : 3;
+    *matrix = libyuv_matrix;
 done:
     avifDecoderDestroy(decoder);
     return planes;

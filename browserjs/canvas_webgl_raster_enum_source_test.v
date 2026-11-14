@@ -34,9 +34,9 @@ fn test_public_raster_enum_setters_use_owning_driver_and_keep_idl_conversion_ord
 			other.native.make_current()
 			expression := if method == 'hint' { 'gl.GENERATE_MIPMAP_HINT,0xbad' } else { '0xbad' }
 			runtime.evaluate_host('gl.${method}(${expression});')!
-			mut selected := [0, 0, 0, 0]!
+			mut selected := [i32(0), 0, 0, 0]!
 			C.vox_gl_int_parameter(webgl.viewport, &selected[0])
-			assert selected == [1, 2, 3, 4]!
+			assert selected == [i32(1), 2, 3, 4]!
 			assert runtime.evaluate_host('gl.getError()')! == expected_error.str()
 			assert runtime.evaluate_host('gl.getError()===gl.INVALID_VALUE&&gl.getError()===gl.NO_ERROR')! == 'true'
 			other.native.make_current()
@@ -47,7 +47,7 @@ fn test_public_raster_enum_setters_use_owning_driver_and_keep_idl_conversion_ord
 			}
 			assert runtime.evaluate_host('(function(){const marker={};try{gl.${method}(${throwing});return false}catch(error){return error===marker}})()')! == 'true'
 			C.vox_gl_int_parameter(webgl.viewport, &selected[0])
-			assert selected == [9, 10, 11, 12]!
+			assert selected == [i32(9), 10, 11, 12]!
 		}
 		assert runtime.evaluate_host('gl.cullFace(gl.FRONT);gl.depthFunc(gl.GEQUAL);gl.frontFace(gl.CW);gl.hint(gl.GENERATE_MIPMAP_HINT,gl.NICEST);gl.getParameter(gl.CULL_FACE_MODE)===gl.FRONT&&gl.getParameter(gl.DEPTH_FUNC)===gl.GEQUAL&&gl.getParameter(gl.FRONT_FACE)===gl.CW&&gl.getParameter(gl.GENERATE_MIPMAP_HINT)===gl.NICEST&&gl.getError()===gl.NO_ERROR')! == 'true'
 		assert other.get_error() == webgl.no_error

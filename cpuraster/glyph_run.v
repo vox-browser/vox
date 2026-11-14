@@ -27,6 +27,16 @@ pub:
 	baseline_snap bool
 	// Retained text's native smoothing modes: default, alias, AA, subpixel.
 	smoothing int = 2
+	// Retained document text: the font path may name a registered installed
+	// face (register_glyph_face()) and the face may be any member of a
+	// collection, as the browser's own typefaces are. Canvas runs keep
+	// SkTypeface_Mac::MakeFromStream()'s first-face limit.
+	retained bool
+	// Chromium's text surface properties: no contrast boost, and a linear
+	// mask gamma (no preblend) for unhinted antialiased text.
+	chromium_coverage bool
+	// Computed document color before byte serialization, including author alpha.
+	paint_color ?[4]f32
 }
 
 // fill_canvas_glyphs fills run with color (an SkColor), or the gradient or
@@ -36,16 +46,42 @@ pub:
 // tile, faces Skia cannot open, color glyphs too wide for SkGlyph, and
 // non-finite glyph positions.
 pub fn fill_canvas_glyphs(mut pixels []u8, width int, height int, pitch int, alpha_type int, run CanvasGlyphRun, transform [6]f32, color u32, style ?CanvasPaintStyle, global_alpha f32, mode BlendMode, clips []Path, filter_in ?CanvasFilter) bool {
-	return fill_canvas_glyphs_surface(mut pixels, width, height, pitch, alpha_type, run, transform, color, style, global_alpha, mode, clips, filter_in, canvas_rgba_uses_legacy(), unsafe { nil })
+	return fill_canvas_glyphs_surface(mut pixels, width, height, pitch, alpha_type, run, transform, color, style, global_alpha, mode, clips, filter_in, canvas_rgba_uses_legacy() && !run.retained, unsafe { nil })
 }
 
 // fill_canvas_glyphs() with the canvas's glyph cache, which keeps the run's
 // typeface facts and glyph masks for later draws.
 pub fn fill_canvas_glyphs_cached(mut cache GlyphCache, mut pixels []u8, width int, height int, pitch int, alpha_type int, run CanvasGlyphRun, transform [6]f32, color u32, style ?CanvasPaintStyle, global_alpha f32, mode BlendMode, clips []Path, filter_in ?CanvasFilter) bool {
-	return fill_canvas_glyphs_surface(mut pixels, width, height, pitch, alpha_type, run, transform, color, style, global_alpha, mode, clips, filter_in, canvas_rgba_uses_legacy(), &cache)
+	return fill_canvas_glyphs_surface(mut pixels, width, height, pitch, alpha_type, run, transform, color, style, global_alpha, mode, clips, filter_in, canvas_rgba_uses_legacy() && !run.retained, &cache)
+}
+
+// canvas_glyph_run_bounds returns the run's conservative SkTextBlob bounds
+// (the glyph positions expanded by the typeface's bounds at the font size)
+// offset by its translation, as left, top, right, bottom. None when the face
+// cannot be opened or has no bounds.
+pub fn canvas_glyph_run_bounds(mut cache GlyphCache, run CanvasGlyphRun) ?[4]f32 {
+	if run.glyphs.len == 0 || run.positions.len < run.glyphs.len * 2 {
+		return none
+	}
+	face_key := glyph_face_key(run.font_path, run.face_index)
+	mut lazy := LazyGlyphFace{
+		path:  run.font_path
+		index: run.face_index
+	}
+	defer {
+		lazy.release()
+	}
+	mut info := glyph_face_info(&cache, face_key, mut lazy)?
+	font_bounds := glyph_face_bounds(mut info, mut lazy, run.font_size)?
+	b := glyph_positions_bounds(run.positions[..run.glyphs.len * 2])
+	return [b.left + font_bounds.left + run.translation[0],
+		b.top + font_bounds.top + run.translation[1], b.right + font_bounds.right + run.translation[0],
+		b.bottom + font_bounds.bottom +
+			run.translation[1]]!
 }
 
 fn fill_canvas_glyphs_surface(mut pixels []u8, width int, height int, pitch int, alpha_type int, run CanvasGlyphRun, transform [6]f32, color u32, style ?CanvasPaintStyle, global_alpha f32, mode BlendMode, clips []Path, filter_in ?CanvasFilter, legacy bool, cache &GlyphCache) bool {
+	if run.paint_color != none && (style != none || filter_in != none) { return false }
 	if run.glyphs.len == 0 {
 		return true
 	}
@@ -65,7 +101,7 @@ fn fill_canvas_glyphs_surface(mut pixels []u8, width int, height int, pitch int,
 	}
 	$if !linux && !cpuraster_freetype ? {
 		// SkTypeface_Mac::MakeFromStream() only opens the first face.
-		if run.face_index != 0 { return false }
+		if run.face_index != 0 && !run.retained { return false }
 	}
 	// The face opens when a draw first needs it; the cache's facts and
 	// masks usually leave it closed.
@@ -111,8 +147,15 @@ fn fill_canvas_glyphs_surface(mut pixels []u8, width int, height int, pitch int,
 	} else {
 		[]GlyphRoute{len: run.glyphs.len}
 	}
+	// The precise-color path currently transports mask coverage. Let the
+	// caller handle outlines rather than silently drawing them in byte color.
+	if run.paint_color != none && routes.any(it.kind != .mask) { return false }
 	paint_color, _ := canvas_paint_source(color, style, 0)
-	alpha := canvas_paint_alpha(paint_color, global_alpha)
+	alpha := if precise := run.paint_color {
+		fmin(fmax(precise[3] * global_alpha, 0), 1)
+	} else {
+		canvas_paint_alpha(paint_color, global_alpha)
+	}
 	matrix := Matrix{transform[0], transform[1], transform[2], transform[3], transform[4], transform[5]}
 	shader := canvas_paint_shader(style, matrix)
 	// The mask strike: A8 with the paint's mask gamma, or ARGB for a color
@@ -134,12 +177,21 @@ fn fill_canvas_glyphs_surface(mut pixels []u8, width int, height int, pitch int,
 		if run.smoothing != 2 && (run.smoothing == 1 || behavior != 0) {
 			smooth_luminance = paint_mask_luminance(paint_color, alpha, shader, filter, behavior)
 			strike.table = smooth_mask_gamma_tables[smooth_luminance]
+		} else if run.chromium_coverage {
+			// Zero contrast with the sRGB transfer, or no preblend at all for
+			// the unhinted antialiased mode's linear gamma.
+			strike.table = if run.smoothing == 2 {
+				identity_mask_gamma_table
+			} else {
+				smooth_mask_gamma_tables[luminance]
+			}
 		}
 	}
 	defer {
 		strike.release()
 	}
 	if info.color_glyphs {
+		if run.paint_color != none { return false }
 		strike.color = true
 		strike.foreground = paint_color & 0xffffff
 		// Color strikes check and draw their glyphs with the font itself.
@@ -229,20 +281,32 @@ fn fill_canvas_glyphs_surface(mut pixels []u8, width int, height int, pitch int,
 			alpha, mode, filter, legacy)
 		return true
 	}
-	mut entry := glyph_cache_strike(cache, glyph_strike_key(face_key, run.font_size, position_matrix,
+	strike_face := if run.chromium_coverage { face_key + '\x00chromium' } else { face_key }
+	mut entry := glyph_cache_strike(cache, glyph_strike_key(strike_face, run.font_size, position_matrix,
 		&strike, smooth_luminance, luminance))
 	if entry.empty {
 		return true
 	}
-	blitter := canvas_draw_blitter_for_surface(mut pixels, pitch, paint_color, shader, alpha, mode, Rect{},
-		filter, legacy) or { Blitter(NullBlitter{}) }
+	blitter := if precise := run.paint_color {
+		precise_blitter := new_color_shader_blitter(mut pixels, pitch, precise, global_alpha, mode)
+		// Lowp quantizes the source alpha before multiplying glyph coverage.
+		// Document colors must keep both products until the final pixel store.
+		Blitter(PipelineBlitter{ ...precise_blitter, lowp: false })
+	} else {
+		canvas_draw_blitter_for_surface(mut pixels, pitch, paint_color, shader, alpha, mode, Rect{},
+			filter, legacy) or { Blitter(NullBlitter{}) }
+	}
 	mut wrapped, clip_bounds := clip_wrapper(&rc, blitter)
 	for i, id in run.glyphs {
 		if routes[i].kind != .mask {
 			continue
 		}
 		mapped := map_point_affine(rounding, Point{run.positions[i * 2], run.positions[i * 2 + 1]})
-		glyph := entry.glyph(mut strike, mut lazy, id, if strike.snap_x { 0 } else { packed_subpixel(mapped.x) }, if strike.snap_y {
+		glyph := entry.glyph(mut strike, mut lazy, id, if strike.snap_x {
+			0
+		} else {
+			packed_subpixel(mapped.x)
+		}, if strike.snap_y {
 			0
 		} else {
 			packed_subpixel(mapped.y)
@@ -384,7 +448,7 @@ fn glyph_routes(face GlyphFace, ids []u16, as_paths bool) ?[]GlyphRoute {
 				kind: .drop
 			}
 		} else if drawable {
-			GlyphRoute{kind: .drawable}
+			GlyphRoute{ kind: .drawable }
 		} else if face.color_glyphs {
 			GlyphRoute{}
 		} else if outline := glyph_outline(strike.font, id, strike.transform) {
@@ -704,6 +768,7 @@ fn srgb_from_luma(luma f32) f32 {
 // SK_GAMMA_EXPONENT 0 (sRGB)), as the rec stores them: eight 256-entry
 // tables from SkTMaskGamma_build_correcting_lut().
 const mask_gamma_tables = build_mask_gamma_tables()
+const identity_mask_gamma_table = []u8{len: 256, init: u8(index)}
 const smooth_mask_gamma_tables = build_smooth_mask_gamma_tables()
 
 fn build_smooth_mask_gamma_tables() [][]u8 {
@@ -908,8 +973,8 @@ struct GlyphStrike {
 	// The CoreText font's size when it is made on first need.
 	text_size f64
 mut:
-	font     voidptr
-	deferred bool
+	font      voidptr
+	deferred  bool
 	table     []u8
 	smoothing int = 2
 	// An ARGB32 strike of a color typeface, and its foreground color.

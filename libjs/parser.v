@@ -201,6 +201,8 @@ mut:
 	class_has_super_class          bool
 	class_scope_depth              u32
 	recursion_depth                u32
+	recursion_limit                u32 = max_parser_recursion_depth
+	stack_info                     StackInfo
 	recursion_limit_reached        bool
 	has_default_export_name        bool
 	referenced_private_names_stack []map[string]bool
@@ -229,6 +231,7 @@ fn Parser.new_with_line_offset(source []u16, program_type ProgramType, initial_l
 		source:          source
 		scope_collector: ScopeCollector.new()
 		function_table:  FunctionTable.new()
+		stack_info:      StackInfo.new()
 	}
 }
 
@@ -458,7 +461,7 @@ fn (p &Parser) source_text_end_offset() u32 {
 
 fn (mut p Parser) enter_recursion() bool {
 	p.recursion_depth++
-	if p.recursion_depth > max_parser_recursion_depth {
+	if p.recursion_depth > p.recursion_limit || p.stack_info.size_free() < 512 * 1024 {
 		p.recursion_depth--
 		p.recursion_limit_reached = true
 		p.syntax_error('Maximum parser recursion depth exceeded')
@@ -1184,12 +1187,21 @@ fn collect_binding_pattern_names(pattern BindingPattern, mut names map[string]bo
 	}
 }
 
+const strict_reserved_words = ['implements', 'interface', 'let', 'package', 'private',
+	'protected', 'public', 'static', 'yield']
+
 fn is_strict_reserved_word(name []u16) bool {
-	return utf16_equals(name, utf16('implements')) || utf16_equals(name, utf16('interface'))
-		|| utf16_equals(name, utf16('let')) || utf16_equals(name, utf16('package'))
-		|| utf16_equals(name, utf16('private')) || utf16_equals(name, utf16('protected'))
-		|| utf16_equals(name, utf16('public')) || utf16_equals(name, utf16('static'))
-		|| utf16_equals(name, utf16('yield'))
+	// These grammar terminals are ASCII. Compare their units directly instead
+	// of allocating nine UTF-16 strings for every ordinary strict identifier.
+	for word in strict_reserved_words {
+		if name.len != word.len { continue }
+		mut matches := true
+		for index, character in word {
+			if name[index] != u16(character) { matches = false; break }
+		}
+		if matches { return true }
+	}
+	return false
 }
 
 // Await and yield use contextual LabelIdentifier rules; the other

@@ -8,6 +8,45 @@ import platform
 // Cookie banners are blocked in ordinary sessions. The environment override
 // below permits a consent state shared with a reference browser.
 const cookie_blocker_enabled_by_default = true
+const disable_cookie_survey_reuse = os.getenv('VOX_DISABLE_COOKIE_SURVEY_REUSE') == '1'
+
+// Scalar stamps retain no DOM nodes. Text cannot turn an ordinary container
+// into a banner until its identity/role changes; only candidate containers
+// need the broader text/tree epochs (including text-node replacement).
+struct BrowserCookieSurveyCache {
+mut:
+	document voidptr
+	attributes u64
+	elements u64
+	tree u64
+	text u64
+	text_sensitive bool
+	valid bool
+}
+
+fn (mut cache BrowserCookieSurveyCache) apply(document &dom.Document) int {
+	if os.getenv('VOX_BLOCK_COOKIE_BANNERS') == '0' || !cookie_blocker_enabled_by_default {
+		cache.valid = false
+		return 0
+	}
+	if !disable_cookie_survey_reuse && cache.valid && cache.document == voidptr(document)
+		&& cache.attributes == document.attribute_version()
+		&& cache.elements == document.light_dom_element_version()
+		&& (!cache.text_sensitive || (cache.tree == document.dom_tree_version()
+			&& cache.text == document.character_data_version())) {
+		return 0
+	}
+	changed, text_sensitive := hide_cookie_banners_with_dependencies(document)
+	// Hiding a banner updates its own attributes. Stamp the completed pass.
+	cache.document = voidptr(document)
+	cache.attributes = document.attribute_version()
+	cache.elements = document.light_dom_element_version()
+	cache.tree = document.dom_tree_version()
+	cache.text = document.character_data_version()
+	cache.text_sensitive = text_sensitive
+	cache.valid = true
+	return changed
+}
 
 // Conformance captures and launches can preserve a site's consent UI while
 // retaining the browser's default policy for ordinary sessions.
@@ -218,11 +257,16 @@ fn has_cookie_banner_action(node &dom.Node, require_choice bool) bool {
 }
 
 fn is_cookie_banner(element &dom.Element) bool {
+	matched, _ := cookie_banner_match_with_dependencies(element)
+	return matched
+}
+
+fn cookie_banner_match_with_dependencies(element &dom.Element) (bool, bool) {
 	if !is_cookie_banner_container(element) {
-		return false
+		return false, false
 	}
 	if is_cookie_banner_vendor_root(element) {
-		return true
+		return true, false
 	}
 	identity := cookie_banner_identity(element)
 	role := element.get_attribute_value('role').to_lower()
@@ -232,10 +276,10 @@ fn is_cookie_banner(element &dom.Element) bool {
 	is_reddit_banner := element.get_attribute_value('id') == 'eu-cookie-policy'
 	identified := has_cookie_banner_identity(identity) || is_reddit_banner
 	if !identified && !is_dialog {
-		return false
+		return false, false
 	}
 	text := element.as_node().descendant_text_content().to_lower()
-	return text.contains('cookie') && has_cookie_banner_action(element.as_node(), !identified)
+	return text.contains('cookie') && has_cookie_banner_action(element.as_node(), !identified), true
 }
 
 // hide_cookie_banners marks the outermost matching banner elements before
@@ -243,14 +287,26 @@ fn is_cookie_banner(element &dom.Element) bool {
 // the DOM in place for scripts that expect their consent widget to exist.
 // No buttons are clicked and no consent choice is persisted.
 fn hide_cookie_banners(document &dom.Document) int {
+	changed, _ := hide_cookie_banners_with_dependencies(document)
+	return changed
+}
+
+fn hide_cookie_banners_with_dependencies(document &dom.Document) (int, bool) {
 	scratch := platform.begin_thread_scratch('cookie banner survey')
 	mut banners := []&dom.Element{}
 	banners_ptr := &banners
+	mut text_sensitive := false
+	text_sensitive_ptr := &text_sensitive
 	document_node := unsafe { &dom.Node(document) }
-	document_node.visit_subtree(fn [banners_ptr] (node &dom.Node) dom.TraversalDecision {
+	document_node.visit_subtree(fn [banners_ptr, text_sensitive_ptr] (node &dom.Node) dom.TraversalDecision {
 		element := node.as_element() or { return .@continue }
-		if is_cookie_banner_container(element)
-			&& (element.has_attribute('data-vox-cookie-blocked') || is_cookie_banner(element)) {
+		mut matched := is_cookie_banner_container(element) && element.has_attribute('data-vox-cookie-blocked')
+		if !matched {
+			result, reads_text := cookie_banner_match_with_dependencies(element)
+			matched = result
+			if !matched && reads_text { unsafe { *text_sensitive_ptr = true } }
+		}
+		if matched {
 			unsafe {
 				mut matches := *banners_ptr
 				matches << element
@@ -290,5 +346,5 @@ fn hide_cookie_banners(document &dom.Document) int {
 		}
 	}
 	scratch.finish()
-	return changed
+	return changed, text_sensitive
 }

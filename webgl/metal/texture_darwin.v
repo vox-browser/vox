@@ -1,0 +1,82 @@
+module metal
+
+pub enum TextureFilter { nearest linear }
+pub enum TextureWrap { clamp repeat mirror_repeat }
+
+pub struct SamplerOptions {
+pub:
+	min_filter TextureFilter
+	mag_filter TextureFilter
+	wrap_s TextureWrap
+	wrap_t TextureWrap
+    wrap_r TextureWrap
+    mip_filter MipFilter
+    min_lod f32 = -1000
+    max_lod f32 = 1000
+    compare bool
+    compare_func CompareFunction = .less_equal
+    anisotropy int = 1
+}
+
+@[heap]
+pub struct Texture2D {
+mut:
+	handle voidptr
+	owner &DrawingBuffer
+	width int
+	height int
+    depth int = 1
+    levels int = 1
+    samples int = 1
+    kind TextureKind
+    format TextureFormat
+    comparison bool
+}
+
+pub fn Texture2D.create(owner &DrawingBuffer, width int, height int) !&Texture2D {
+	if owner.handle == unsafe { nil } || width <= 0 || height <= 0 || width > 16384 || height > 16384 { return error('Invalid Metal texture dimensions or owner') }
+	handle := C.vox_metal_texture_create(owner.handle, i32(width), i32(height))
+	if handle == unsafe { nil } { return error('Metal texture allocation failed') }
+	return &Texture2D{handle: handle, owner: owner, width: width, height: height}
+}
+
+pub fn (texture &Texture2D) pixel_format() TextureFormat { return texture.format }
+
+pub fn (texture &Texture2D) texture_kind() TextureKind { return texture.kind }
+
+pub fn (texture &Texture2D) pixel_size() int { return texture.format.pixel_size() }
+
+pub fn (texture &Texture2D) size() (int, int) { return texture.width, texture.height }
+
+pub fn (mut texture Texture2D) write_pixels(bytes []u8) ! {
+	if texture.handle == unsafe { nil } || bytes.len != texture.width * texture.height * 4 { return error('Metal texture upload requires a live texture and exact RGBA8 length') }
+	if C.vox_metal_buffer_transfer(texture.handle, bytes.data, u64(bytes.len), 1) != 1 { return error('Metal texture upload failed') }
+}
+
+pub fn (texture &Texture2D) read_pixels() ![]u8 {
+	if texture.handle == unsafe { nil } { return error('Metal texture is closed') }
+	mut pixels := []u8{len: texture.width * texture.height * 4}
+	if C.vox_metal_buffer_transfer(texture.handle, pixels.data, u64(pixels.len), 0) != 1 { return error('Metal texture readback failed') }
+	return pixels
+}
+
+pub fn (mut texture Texture2D) sampler(options SamplerOptions) ! {
+    if texture.handle==unsafe{nil} {return error('Metal texture is closed')}
+    mut sampler:=Sampler.create(texture.owner,options)!
+    defer {sampler.close()}
+    if C.vox_metal_texture_set_sampler(texture.handle,sampler.handle)!=1 {return error('Metal texture sampler assignment failed')}
+    texture.comparison=options.compare
+}
+
+pub fn (mut texture Texture2D) close() {
+	C.vox_metal_texture_destroy(texture.handle)
+	texture.handle = unsafe { nil }
+	texture.width = 0
+	texture.height = 0
+}
+
+pub fn (mut texture Texture2D) clear_color(red f64,green f64,blue f64,alpha f64) ! {
+    if texture.format in [.depth16,.depth32,.depth_stencil,.stencil8,.rgb9e5] { return error('Texture format is not color renderable') }
+    if texture.handle==unsafe { nil } { return error('Metal texture is closed') }
+    if C.vox_metal_buffer_clear(texture.handle,red,green,blue,alpha)!=1 { return error('Metal texture clear failed') }
+}

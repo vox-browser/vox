@@ -81,14 +81,7 @@ counts must never supply optimization credit. See `hn-launch-cost-map.md` in the
 original memory directory and `docs/benchmark-results/hacker-news-1800-reached-2026-11-04.json`
 for the earlier cost map and accepted 1.8B result.
 
-`glyphs.c` interposes the Skia glyph and colored SVG path entry points and reports
-aggregate call, glyph and browser-process instruction counts at exit. Compile with the same
-CoreGraphics command plus `-undefined dynamic_lookup`. Its weak import allows
-the adblock worker to inherit the probe without linking Skia. Process-counter
-reads include their own overhead and concurrent browser threads; use only to
-locate work, with unchanged pixels/content, never as an acceptance result.
-
 `coregraphics.c` similarly counts clipping, image, rectangle and path API calls.
 Compile with the CoreGraphics command. Nested API totals overlap, and totals
 include startup/chrome calls as well as document rendering. Do not add them to
-each other or to the glyph probe's total.
+each other.

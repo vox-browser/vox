@@ -37,7 +37,7 @@ precision mediump float;out vec4 color;void main(){color=vec4(1);}'
 		owner.lose_context_from_compositor_loss()
 		other.viewport(9, 10, 11, 12)
 		other.native.make_current()
-		mut unused := 0
+		mut unused := i32(0)
 		C.vox_gl_int_parameter(GLenum(0xffff_ffff), &unused)
 		after := owner.create_program()
 		assert after.object.native_name() == 0
@@ -56,14 +56,14 @@ precision mediump float;out vec4 color;void main(){color=vec4(1);}'
 		owner.delete_program(original)
 		assert !sentinel.object.invalidated()
 		assert owner.get_parameter(current_program).kind == .none
-		mut selected := [0, 0, 0, 0]!
+		mut selected := [i32(0), 0, 0, 0]!
 		C.vox_gl_int_parameter(viewport, &selected[0])
-		assert selected == [9, 10, 11, 12]!
+		assert selected == [i32(9), 10, 11, 12]!
 		assert C.vox_gl_is_object(10, sentinel.object.native_name()) == 1
 		assert C.vox_gl_program_parameter(sentinel.object.native_name(), delete_status) == 0
 		assert C.vox_gl_program_parameter(sentinel.object.native_name(), link_status) == 1
 		assert C.vox_gl_program_parameter(sentinel.object.native_name(), attached_shaders) == 2
-		mut native_current := 0
+		mut native_current := i32(0)
 		C.vox_gl_int_parameter(current_program, &native_current)
 		assert native_current == int(sentinel.object.native_name())
 		assert C.vox_gl_get_error() == invalid_enum

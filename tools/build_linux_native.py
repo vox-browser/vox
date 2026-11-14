@@ -18,13 +18,9 @@ def main():
     output.mkdir(parents=True, exist_ok=True)
     compiler = shlex.split(os.environ.get("CXX", "c++"))
     version = subprocess.check_output(compiler + ["--version"])
-    groups = [
-        ("platform", ["unicode_case_mapping"], ["icu-uc", "icu-i18n"]),
-        ("gfxfont", ["woff2"], ["libwoff2dec"] if args.os == 'windows' else []),
-    ]
+    groups = []
     if args.os == 'windows':
-        # WGL and the OpenGL declarations come from the MinGW Windows SDK.
-        groups.append(('webgl', ['native_windows'], []))
+        groups.append(('webgl', ['native_windows'], ['vox-mesa-egl', 'icu-uc']))
     for package, names, dependencies in groups:
         flags = shlex.split(subprocess.check_output(
             ["pkg-config", "--cflags", *dependencies], text=True)) if dependencies else []

@@ -6,6 +6,19 @@ fewer instructions measure CPU work, rather than elapsed rendering time.
 Results apply to the frozen page and pinned build in each linked report.
 Provisional entries retain unresolved acceptance checks.
 
+**Pixel recheck, 2026-11-14:** Vox does **not** pass pixel equality across
+this catalog. GitHub, Hacker News, Lobsters and Wikipedia are exact in two
+fresh production captures each. vlang.io now has **810 differing pixels** in
+production, down from the earlier 3,228. The recorded-clip fix reaches 341 in
+diagnostics; shared shape/glyph samples now reach **284**, correcting another
+57 pixels without new differences. Production validation of these fixes is
+pending. The remaining 279 JPEG pixels, one heading pixel and four scene pixels
+still fail equality. CNN retains its
+rendering, source/replay and native-repeat failures. Reddit remains unverified
+(missing historical fixture, earlier live HTTP 403). A separate tall-shadow
+control also has a retained baseline repeat failure. See the [current audit,
+capture scopes and retained failures](docs/OPTIMIZED_SITES_PIXELS_2026_11_12.md).
+
 | Site | Recorded date | Trials per browser | Statistic | Vox instructions | Brave observed instructions | Fewer instructions | Vox RAM (MiB)‡ | Brave RAM (MiB)‡ | Vox scroll FPS§ | Vox GPU canvas FPS§ | Brave scroll FPS† | Evidence |
 | --- | --- | ---: | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- |
 | Hacker News homepage | 2026-11-04 | 7 | Median | 1,918,074,453 | 8,056,201,640 | **76.19%** | — | — | 59.8–59.9 frozen | 59.8–59.9 frozen | — | [Comparison](docs/HACKER_NEWS_BRAVE_INSTRUCTIONS.md), [ledger](docs/benchmark-results/hacker-news-1800-attempt-2026-11-04.json), [scrolling](docs/HACKER_NEWS_SCROLLING.md), [2026-11-05 FPS](docs/OPTIMIZED_SITES_SCROLL_FPS.md#current-build-2026-11-05) (RAM 559.7/639.2 MiB and Brave scroll 59.78–59.79 FPS were measured on earlier builds; Vox FPS after the `d96b871e4` fix, see the HN note below) |

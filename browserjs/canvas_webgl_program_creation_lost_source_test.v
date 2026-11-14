@@ -46,9 +46,9 @@ fn test_public_lost_create_program_returns_distinct_owned_records_with_absent_na
 		}
 		ids.sort()
 		assert ids == [u32(1), 2, 3, 4]
-		mut selected := [0, 0, 0, 0]!
+		mut selected := [i32(0), 0, 0, 0]!
 		C.vox_gl_int_parameter(webgl.viewport, &selected[0])
-		assert selected == [9, 10, 11, 12]!
+		assert selected == [i32(9), 10, 11, 12]!
 		assert C.vox_gl_is_object(10, sentinel_name) == 1
 		assert C.vox_gl_get_error() == webgl.invalid_value
 		assert C.vox_gl_get_error() == webgl.no_error

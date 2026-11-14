@@ -130,6 +130,13 @@ pub enum IntegrityLevel {
 	frozen
 }
 
+// WebIDL legacy platform objects supply live indexed properties without
+// copying their native collection into an ordinary JavaScript array.
+pub interface HostProperties {
+	get_own_property(key PropertyName) ?PropertyDescriptor
+	own_property_keys() []PropertyName
+}
+
 @[heap]
 pub struct Object {
 pub mut:
@@ -150,6 +157,8 @@ pub mut:
 	native_initial_name  ?Utf16String
 	bound_function       ?&BoundFunction
 	function_source_text ?Utf16String // [[SourceText]] on ECMAScript callables
+	regexp_object ?&RegExpObject
+	host_properties ?HostProperties
 	array_object         ?&ArrayObject
 	boolean_object       ?&BooleanObject // [[BooleanData]]
 	number_object        ?&NumberObject  // [[NumberData]]
@@ -265,6 +274,11 @@ pub fn (object &Object) is_error_object() bool {
 }
 
 pub fn (object &Object) own_property_keys() []PropertyName {
+	if host := object.host_properties {
+		mut keys := host.own_property_keys()
+		for property in object.properties { if !keys.any(it.equals(property.key)) { keys << property.key } }
+		return keys
+	}
 	if array := object.typed_array { return array.own_property_keys() }
 	// Object.cpp::OrdinaryOwnPropertyKeys: indices in ascending order, followed
 	// by strings and then symbols in their respective creation orders.
@@ -303,6 +317,7 @@ pub fn (object &Object) own_property_keys() []PropertyName {
 
 // 10.1.5 [[GetOwnProperty]] ( P ), https://tc39.es/ecma262/#sec-ordinary-object-internal-methods-and-internal-slots-getownproperty-p
 pub fn (object &Object) internal_get_own_property(key PropertyName) ?PropertyDescriptor {
+	if host := object.host_properties { if descriptor := host.get_own_property(key) { return descriptor } }
 	if array := object.typed_array {
 		if index := typed_array_property_index(key) {
 			value := typed_array_get_element(array, index)
@@ -392,7 +407,15 @@ pub fn (object &Object) internal_get(mut vm VM, key PropertyName, receiver Value
 	// receivers whose direct prototype is the holder. Deeper/foreign receivers
 	// call the getter without reading or populating that shared cache.
 	index := object.find_own_property(key)
+	// A host descriptor may have no ordinary property cell, or override a
+	// data/accessor cell. Only the matching owned Accessor carries cache state.
+	if index<0 || !object.properties[index].value.is_accessor() {
+		return call(mut vm,getter,receiver,[]Value{})
+	}
 	accessor := object.properties[index].value.as_accessor()
+	if !same_value(getter,accessor_function_value(accessor.getter)) {
+		return call(mut vm,getter,receiver,[]Value{})
+	}
 	mut receiver_uses_holder_cache := false
 	if receiver.is_object() {
 		receiver_object := receiver.as_object()

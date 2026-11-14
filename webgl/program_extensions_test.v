@@ -28,7 +28,8 @@ fn test_shader_program_and_uniform_parent_validation() {
 }
 
 fn test_extension_filtering_caching_and_compressed_formats() {
-	native_extensions := ['GL_ARB_instanced_arrays', 'GL_EXT_texture_compression_s3tc']
+	native_extensions := ['GL_ANGLE_instanced_arrays', 'GL_EXT_texture_compression_dxt1',
+		'GL_ANGLE_texture_compression_dxt3', 'GL_ANGLE_texture_compression_dxt5']
 	mut context := WebGLRenderingContext.new(.webgl1, WebGLContextAttributes{}, native_extensions)
 	supported := context.get_supported_extensions(false)
 	assert 'ANGLE_instanced_arrays' in supported

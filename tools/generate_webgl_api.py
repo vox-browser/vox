@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Refresh the C-only ABI for the native WebGL translation unit."""
+"""Refresh the C-only WebGL ABI used outside ANGLE's translation unit."""
 
 from pathlib import Path
 import re

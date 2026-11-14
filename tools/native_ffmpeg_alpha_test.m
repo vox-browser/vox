@@ -2,6 +2,17 @@
 #include <assert.h>
 #include <stdio.h>
 
+// The browser exports this converter from V (media/yuv_bridge.v). Declining
+// here keeps the bridge on its swscale path; this test checks alpha only.
+bool vox_yuv_u8_to_rgba(uint8_t *y, uint32_t y_stride, uint8_t *u, uint32_t u_stride,
+    uint8_t *v, uint32_t v_stride, uint32_t width, uint32_t height, bool subsampling_x,
+    bool subsampling_y, uint8_t *output, uint32_t stride, uint8_t range, uint8_t matrix) {
+    (void)y; (void)y_stride; (void)u; (void)u_stride; (void)v; (void)v_stride; (void)width;
+    (void)height; (void)subsampling_x; (void)subsampling_y; (void)output; (void)stride;
+    (void)range; (void)matrix;
+    return false;
+}
+
 int main(int argc, char **argv) {
     assert(argc == 5);
     bool transparent = false, translucent = false, opaque = false;

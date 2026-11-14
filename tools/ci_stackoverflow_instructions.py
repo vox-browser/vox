@@ -182,8 +182,6 @@ class Run:
         self.command("build-v", ["make", "-j1", "local=1", "VFLAGS=-memory-limit 10G"],
                      cwd=deps / "v", env=env)
         state["v_executable_sha256"] = digest(deps / "v/v")
-        self.command("build-skia", [sys.executable, "tools/build_linux_skia.py"],
-                     env=env, timeout=3600)
         for label, sha in [("baseline", baseline)] + ([("candidate", candidate)] if candidate else []):
             before = self.select(sha, runner_bytes)
             stage = self.output / label
@@ -210,8 +208,7 @@ class Run:
             if sources() != before:
                 raise RuntimeError("Sources changed during the build")
             native = {}
-            for directory in (ROOT / "Build/linux/native", ROOT / "Build/libregex/linux",
-                              ROOT / "Build/deps/skia/out/Release"):
+            for directory in (ROOT / "Build/linux/native", ROOT / "Build/libregex/linux"):
                 native.update({str(p): digest(p) for p in directory.glob("*.a")})
             state["builds"][label] = {"sha": sha, "binary": str(stage / "vox"),
                 "binary_sha256": digest(stage / "vox"), "native_sha256": native,

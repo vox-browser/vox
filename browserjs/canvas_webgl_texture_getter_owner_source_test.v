@@ -32,9 +32,9 @@ fn test_public_texture_getter_preserves_source_early_gates_and_lod_return_shape(
 		for pname in early_names {
 			other.native.make_current()
 			assert runtime.evaluate_host('gl.getTexParameter(0xffff,${pname})===null')! == 'true'
-			mut selected := [0, 0, 0, 0]!
+			mut selected := [i32(0), 0, 0, 0]!
 			C.vox_gl_int_parameter(webgl.viewport, &selected[0])
-			assert selected == [9, 10, 11, 12]!
+			assert selected == [i32(9), 10, 11, 12]!
 			assert runtime.evaluate_host('gl.getError()===gl.INVALID_ENUM&&gl.getError()===gl.NO_ERROR')! == 'true'
 		}
 		context.native.make_current()
@@ -46,7 +46,7 @@ fn test_public_texture_getter_preserves_source_early_gates_and_lod_return_shape(
 			C.vox_gl_tex_parameterf(webgl.texture_2d, 0x813a, -2.5)
 		}
 		if runtime.evaluate_host('gl.getExtension("EXT_texture_filter_anisotropic")!==null')! == 'true' {
-			println('actual public native anisotropy extension enabled')
+			println('actual public ANGLE anisotropy extension enabled')
 			names << u32(0x84fe)
 		}
 		for target in [u32(webgl.texture_2d), u32(0xffff)] {
@@ -67,17 +67,17 @@ fn test_public_texture_getter_preserves_source_early_gates_and_lod_return_shape(
 					i64(expected).str()
 				}
 				assert runtime.evaluate_host('gl.getTexParameter(${target},${pname})')! == expected_reply
-				mut selected := [0, 0, 0, 0]!
+				mut selected := [i32(0), 0, 0, 0]!
 				C.vox_gl_int_parameter(webgl.viewport, &selected[0])
-				assert selected == [1, 2, 3, 4]!
+				assert selected == [i32(1), 2, 3, 4]!
 				assert runtime.evaluate_host('gl.getError()')! == expected_error.str()
 			}
 		}
 		other.native.make_current()
 		assert runtime.evaluate_host('(function(){const marker={};try{gl.getTexParameter(gl.TEXTURE_2D,{valueOf(){throw marker}});return false}catch(error){return error===marker}})()')! == 'true'
-		mut selected := [0, 0, 0, 0]!
+		mut selected := [i32(0), 0, 0, 0]!
 		C.vox_gl_int_parameter(webgl.viewport, &selected[0])
-		assert selected == [9, 10, 11, 12]!
+		assert selected == [i32(9), 10, 11, 12]!
 		context.native.make_current()
 		C.vox_gl_delete_object(3, native_texture)
 	}

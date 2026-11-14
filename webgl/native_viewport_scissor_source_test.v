@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: BSD-2-Clause
 module webgl
 
-fn viewport_scissor_source_state(pname GLenum) [4]int {
-	mut value := [0, 0, 0, 0]!
+fn viewport_scissor_source_state(pname GLenum) [4]i32 {
+	mut value := [i32(0), 0, 0, 0]!
 	C.vox_gl_int_parameter(pname, &value[0])
 	return value
 }
@@ -59,13 +59,13 @@ fn test_source_viewport_scissor_select_owner_and_delegate_dimensions_to_driver()
 			} else {
 				context.scissor(0, 0, -1, 1)
 			}
-			assert viewport_scissor_source_state(viewport) != [9, 10, 11, 12]!
+			assert viewport_scissor_source_state(viewport) != [i32(9), 10, 11, 12]!
 			assert context.get_error() == invalid_value
 			assert context.get_error() == invalid_operation
 			assert context.get_error() == no_error
 		}
 		other.native.make_current()
-		assert viewport_scissor_source_state(viewport) == [9, 10, 11, 12]!
+		assert viewport_scissor_source_state(viewport) == [i32(9), 10, 11, 12]!
 		assert other.get_error() == no_error
 	}
 }

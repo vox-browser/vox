@@ -5,18 +5,16 @@
 #include <stdint.h>
 #include "../native/include/native_layer_presentation_darwin.h"
 
-static unsigned graphics_releases;
 static unsigned managed_deliveries;
-static unsigned idle_checks;
-static unsigned pending_idle_checks;
+static unsigned pool_discards;
 static unsigned pressure_reliefs;
 static unsigned filter_reclaims;
 static unsigned filter_clears;
-static unsigned expected_filter_clears;
 static unsigned created_probes;
 static unsigned destroyed_probes;
 static void *expected_owner;
 static CIContext *native_css_filter_ci_context;
+static CIContext *native_css_filter_software_context;
 
 @interface MemoryCleanupProbe : NSObject
 @end
@@ -32,40 +30,28 @@ static void create_autoreleased_cleanup_probe(void) {
     assert(destroyed_probes == previous_destructions);
 }
 
-void ladybird_v_skia_release_unused_graphics_memory(void) {
+static void test_discard_opacity_canvas_pool(void) {
     assert([NSThread isMainThread]);
     assert(!native_layer_document_work_active && !native_layer_presenting);
-    graphics_releases++;
-    if (native_css_filter_ci_context != nil) expected_filter_clears++;
-    create_autoreleased_cleanup_probe();
-}
-
-int ladybird_v_skia_release_idle_graphics_memory(void) {
-    assert([NSThread isMainThread]);
-    assert(!native_layer_document_work_active && !native_layer_presenting);
-    idle_checks++;
-    create_autoreleased_cleanup_probe();
-    if (!pending_idle_checks) return 0;
-    pending_idle_checks--;
-    return 1;
+    pool_discards++;
 }
 
 static size_t test_malloc_zone_pressure_relief(malloc_zone_t *zone, size_t goal) {
     assert(zone == NULL && goal == 0);
     assert([NSThread isMainThread]);
     assert(!native_layer_document_work_active && !native_layer_presenting);
-    assert(created_probes == destroyed_probes);
-    assert(filter_reclaims == expected_filter_clears);
-    assert(filter_clears == expected_filter_clears);
+    assert(created_probes == destroyed_probes); // The autorelease pool drained first.
+    assert(filter_reclaims == filter_clears);
     pressure_reliefs++;
-    assert(pressure_reliefs == graphics_releases + idle_checks);
-    return 0; // Lack of allocator headroom must not stop GPU retirement polls.
+    return 0;
 }
 
 // The driver extracts these function bodies verbatim from the production host.
+#define native_discard_opacity_canvas_pool test_discard_opacity_canvas_pool
 #define malloc_zone_pressure_relief test_malloc_zone_pressure_relief
 #include VOX_NATIVE_MEMORY_FRAGMENT
 #undef malloc_zone_pressure_relief
+#undef native_discard_opacity_canvas_pool
 
 @interface MemoryTestContext : NSObject
 @property unsigned reclaims;
@@ -119,68 +105,66 @@ int main(void) {
         native_layer_presenting = NO;
         pump(0.03);
         assert(managed_deliveries == 2);
+        assert(pool_discards == 0 && pressure_reliefs == 0);
+
+        // Idle cleanup coalesces requests, runs once after its delay and does
+        // not keep polling afterwards.
+        native_schedule_idle_graphics_cleanup();
+        native_schedule_idle_graphics_cleanup();
+        pump(0.50);
+        assert(pool_discards == 0);
+        pump(0.60);
+        assert(pool_discards == 1);
         assert(pressure_reliefs == 0);
+        pump(1.10);
+        assert(pool_discards == 1);
 
-        // A final frame must retire a context even when the first check is
-        // earlier than its idle threshold and no more frames are requested.
-        pending_idle_checks = 2;
-        native_schedule_idle_graphics_cleanup();
-        native_schedule_idle_graphics_cleanup();
-        pump(1.10);
-        assert(idle_checks == 1);
-        assert(pressure_reliefs == 1);
-        pump(1.10);
-        assert(idle_checks == 2);
-        assert(pressure_reliefs == 2);
-        pump(1.10);
-        assert(idle_checks == 3);
-        assert(pressure_reliefs == 3);
-        pump(1.10);
-        assert(idle_checks == 3); // No permanent polling after retirement.
-        assert(pressure_reliefs == 3);
-
+        // It waits for document work and presentation to finish.
         native_layer_document_work_active = YES;
         native_schedule_idle_graphics_cleanup();
         pump(1.10);
-        assert(idle_checks == 3);
-        assert(pressure_reliefs == 3);
+        assert(pool_discards == 1);
         native_layer_document_work_active = NO;
         native_layer_presenting = YES;
         pump(0.03);
-        assert(idle_checks == 3 && pressure_reliefs == 3);
+        assert(pool_discards == 1);
         native_layer_presenting = NO;
         pump(0.10);
-        assert(idle_checks == 4);
-        assert(pressure_reliefs == 4);
+        assert(pool_discards == 2);
+        assert(pressure_reliefs == 0);
 
         native_schedule_static_graphics_cleanup();
         pump(0.05);
         native_schedule_static_graphics_cleanup();
         pump(0.22);
-        assert(graphics_releases == 0); // First deadline was superseded.
-        assert(pressure_reliefs == 4);
+        assert(pool_discards == 2); // First deadline was superseded.
+        assert(pressure_reliefs == 0);
         pump(0.12);
-        assert(graphics_releases == 1);
-        assert(pressure_reliefs == 5);
+        assert(pool_discards == 3);
+        assert(pressure_reliefs == 1);
         assert(native_css_filter_ci_context == nil); // Never creates a renderer.
+        assert(native_css_filter_software_context == nil);
 
         MemoryTestContext *context = [MemoryTestContext new];
+        MemoryTestContext *software = [MemoryTestContext new];
         native_css_filter_ci_context = (CIContext *)context;
+        native_css_filter_software_context = (CIContext *)software;
         native_layer_document_work_active = YES;
         native_schedule_static_graphics_cleanup();
         pump(0.30);
-        assert(graphics_releases == 1 && context.reclaims == 0);
-        assert(pressure_reliefs == 5);
+        assert(pool_discards == 3 && context.reclaims == 0);
+        assert(pressure_reliefs == 1);
         // A second frame supersedes even a cleanup waiting for document work.
         native_schedule_static_graphics_cleanup();
         native_layer_document_work_active = NO;
         pump(0.04);
-        assert(graphics_releases == 1);
-        assert(pressure_reliefs == 5);
+        assert(pool_discards == 3);
+        assert(pressure_reliefs == 1);
         pump(0.30);
-        assert(graphics_releases == 2);
+        assert(pool_discards == 4);
         assert(context.reclaims == 1 && context.clears == 1);
-        assert(pressure_reliefs == 6);
+        assert(software.reclaims == 1 && software.clears == 1);
+        assert(pressure_reliefs == 2);
 
         dispatch_group_t group = dispatch_group_create();
         dispatch_group_async(group, dispatch_get_global_queue(QOS_CLASS_DEFAULT, 0), ^{
@@ -188,11 +172,12 @@ int main(void) {
             native_release_unused_graphics_memory();
         });
         dispatch_group_wait(group, DISPATCH_TIME_FOREVER);
-        assert(graphics_releases == 2);
+        assert(pool_discards == 4);
         assert(context.reclaims == 1 && context.clears == 1);
-        assert(pressure_reliefs == 6);
-        assert(created_probes == 8 && destroyed_probes == 8);
+        assert(pressure_reliefs == 2);
+        assert(created_probes == 4 && destroyed_probes == 4);
         native_css_filter_ci_context = nil;
+        native_css_filter_software_context = nil;
         puts("Native idle cleanup: deferred delivery, busy guards, coalescing, lazy renderer, cache reclamation, autorelease drain, pressure relief and owner thread passed.");
     }
     return 0;

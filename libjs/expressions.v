@@ -135,7 +135,9 @@ fn (mut p Parser) parse_expression(min_precedence int, associativity Associativi
 		return p.parse_comma_expression(lhs_start, expression, min_precedence, forbidden)
 	}
 
-	expression2 := p.parse_tagged_template_literals(lhs_start, expression)
+	expression2 := if p.match_token(.template_literal_start) {
+		p.parse_tagged_template_literals(lhs_start, expression)
+	} else { expression }
 
 	return p.continue_parse_expression(lhs_start, expression2, min_precedence, associativity,
 		forbidden)
@@ -163,7 +165,7 @@ fn (mut p Parser) continue_parse_expression(lhs_start Position, expression_ Expr
 		forbidden = forbidden.merge(result_forbidden)
 
 		// Tagged template literals bind tighter than any operator.
-		if !is_update_expression(expression) {
+		if p.match_token(.template_literal_start) && !is_update_expression(expression) {
 			expression = p.parse_tagged_template_literals(lhs_start, expression)
 		}
 	}
@@ -592,16 +594,7 @@ fn (mut p Parser) parse_secondary_expression(lhs Expression, min_precedence int,
 		}
 		// === Ternary ===
 		.question_mark {
-			p.consume()
-			consequent := p.parse_assignment_expression()
-			p.consume_token(.colon)
-			alternate := p.parse_expression(precedence_assignment, .right, forbidden)
-			return p.expression(start, ExpressionKind{
-				tag:            .conditional
-				test:           &lhs
-				consequent:     &consequent
-				alternate_expr: &alternate
-			}), ForbiddenTokens{}
+			return p.parse_conditional_tail(lhs, forbidden), ForbiddenTokens{}
 		}
 		// === Member access ===
 		.period {
@@ -1866,8 +1859,7 @@ fn (mut p Parser) try_parse_arrow_function_expression_impl(expect_parens bool, i
 		})
 	} else {
 		// C++ uses rule_start (function start) for ReturnStatement and FunctionBody.
-		body_forbidden := if saved_formal_parameter_ctx { ForbiddenTokens{} } else { forbidden }
-		expression := p.parse_expression(precedence_assignment, .right, body_forbidden)
+		expression := p.parse_expression(precedence_assignment, .right, forbidden)
 		return_statement := Statement.new(p.range_from(start), StatementKind{
 			tag:        .return_stmt
 			return_arg: &expression

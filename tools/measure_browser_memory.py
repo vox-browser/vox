@@ -116,9 +116,8 @@ def run_memory_sample(args, label, index, binary, extra, api=None):
     log_path = Path(str(prefix) + ".log")
     window.unlink(missing_ok=True)
     binary_hash = sha256(binary)
-    library = binary.parent / "libLadybirdVSkiaText.dylib"
-    if not library.is_file() and len(binary.parents) > 3:
-        library = binary.parents[3] / library.name
+    # The browser loads its optional AVIF helper from beside the executable.
+    library = binary.parent / "libVoxAVIF.dylib"
     library_hash = sha256(library) if library.is_file() else None
     readings, installation_events, first_frame_index, saved_capture_seconds = [], [], None, None
     with fresh_vox_cache(args.cache_template, args.output) as (cache, digest):
@@ -128,8 +127,6 @@ def run_memory_sample(args, label, index, binary, extra, api=None):
                    LADYBIRD_SCREENSHOT_DELAY_SECONDS=str(args.settle_seconds))
         env.pop("LADYBIRD_ENABLE_SNAPSHOT_CACHE", None)
         env.pop("GC_PRINT_STATS", None)
-        if library.is_file():
-            env["DYLD_LIBRARY_PATH"] = str(library.parent)
         command = [str(binary), *extra, "--window-width", str(args.width),
                    "--window-height", str(args.height + VOX_CHROME_HEIGHT),
                    "--screenshot", str(window), args.url]
@@ -175,7 +172,7 @@ def run_memory_sample(args, label, index, binary, extra, api=None):
         if saved_capture_seconds is None:
             raise RuntimeError("Missing saved capture marker")
         if sha256(binary) != binary_hash or (library_hash and sha256(library) != library_hash):
-            raise RuntimeError("Measured executable or replay library changed")
+            raise RuntimeError("Measured executable or native library changed")
         if len({row["process_start_ticks"] for row in readings}) != 1:
             raise RuntimeError("Process identity changed during memory capture")
         crop_document_viewport(window, screenshot, args.width, args.height)

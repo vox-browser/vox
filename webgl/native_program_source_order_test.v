@@ -27,7 +27,7 @@ fn test_owned_program_use_and_uniform_location_rely_on_native_link_status() {
 	assert context.get_error() == invalid_operation
 	assert context.get_parameter(current_program).object == unlinked.object.handle_
 	// The source writes its retained slot after glUseProgram even after rejection.
-	mut actual := 0
+	mut actual := i32(0)
 	C.vox_gl_int_parameter(current_program, &actual)
 	assert u32(actual) == program.object.native_handle_
 	mut foreign := WebGLRenderingContext.new(.webgl1, WebGLContextAttributes{}, [])

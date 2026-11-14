@@ -155,7 +155,7 @@ pub fn (mut scope WorkerGlobalScope) policy_container() &PolicyContainer {
 	if container := scope.policy_container_ {
 		return container
 	}
-	container := &PolicyContainer{}
+	container := &dom.PolicyContainer{}
 	scope.policy_container_ = container
 	return container
 }

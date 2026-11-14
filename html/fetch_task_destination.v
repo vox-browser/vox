@@ -47,6 +47,13 @@ pub fn (settings &EnvironmentSettingsObject) fetch_request_client_deferred_invok
 	defer_fetch_continuation(algorithm, owner)
 }
 
+// The live native storage that owns this client's requests, or nil.
+pub fn (settings &EnvironmentSettingsObject) fetch_request_client_storage() voidptr {
+	document := settings.responsible_document() or { return unsafe { nil } }
+	if document.has_been_destroyed() { return unsafe { nil } }
+	return voidptr(document.native_storage())
+}
+
 // PendingResponse uses the platform's deferred queue, independently of HTML
 // task selection. Only Fetch's response handover queues a networking task.
 fn defer_fetch_continuation(algorithm fn (), storage &platform.RetainedArena) {

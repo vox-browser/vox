@@ -176,7 +176,11 @@ fn chromium_svg_compositor_layer_supported_for_viewport(commands []layout.PaintC
 		had_svg := has_svg
 		match command.kind {
 			'fill_gradient' {
-				if !plan.has_paint_metadata || !chromium_compositor_css_gradient_supported(command) {
+				// The leaf carries its own geometry, color and clip. Optional
+				// hit-test metadata is needed to prove intervening-layer gaps,
+				// not to retain a contiguous picture's transparency boundary.
+				if (!plan.has_paint_metadata && plan.device_scale != 1)
+					|| !chromium_compositor_css_gradient_supported(command) {
 					return chromium_svg_compositor_layer_declined(index, command_index, 'CSS gradient', command.kind)
 				}
 				has_svg = true

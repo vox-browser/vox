@@ -30,6 +30,10 @@ fn portable_shadow_transform(input [6]f64, pixel_scale f64, origin_x f64, origin
 }
 
 pub fn rasterize_portable_shadow(command PaintCommand, pixel_scale f64) !PortableShadowBitmap {
+    return rasterize_portable_shadow_with_coverage(command, pixel_scale, false)
+}
+
+pub fn rasterize_portable_shadow_with_coverage(command PaintCommand, pixel_scale f64, chromium bool) !PortableShadowBitmap {
 	if command.kind !in ['paint_outer_box_shadow', 'paint_inner_box_shadow', 'draw_text_shadow'] {
 		return error('Unsupported shadow command')
 	}
@@ -110,7 +114,16 @@ pub fn rasterize_portable_shadow(command PaintCommand, pixel_scale f64) !Portabl
 		glyphs = run.glyph_indices()
 		positions = run.glyph_positions().map(f32(it))
 	}
+    mut coverage_alpha := f32(-1)
+    if chromium {
+        coverage_alpha = f32(alpha) / 255
+        data := command.srgb_color_data
+        if data != unsafe { nil } && data.serialized == command.color {
+            coverage_alpha = f32(data.components[3] * command.opacity)
+        }
+    }
 	native := cpuraster.ShadowCommand{
+        coverage_alpha: coverage_alpha
 		kind: if command.kind == 'paint_outer_box_shadow' { 0 } else if command.kind == 'paint_inner_box_shadow' { 1 } else { 2 }
 		color: (alpha << 24) | (u32(color.r) << 16) | (u32(color.g) << 8) | u32(color.b)
 		blur: f32(command.blur)

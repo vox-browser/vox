@@ -32,3 +32,24 @@ fn test_chromium_outer_shadow_colors_retain_fractional_components_in_paint_order
 		}
 	}
 }
+
+fn test_chromium_inset_shadow_colors_retain_fractional_components() {
+	for policy in [dom.FontRenderingPolicy.libweb, .chromium] {
+		mut document := html.parse_document('<!doctype html><style>div{width:40px;height:30px;
+			box-shadow:inset 0 1px 0 rgb(10.5 20.25 30.75 / 25%),
+			inset 1px 2px 3px rgb(90.5 100.25 110.75 / 60%)}</style><div></div>')
+		defer { document.finalize() }
+		document.set_font_rendering_policy(policy)
+		root := layout_document_typed_in_viewport(document, 200, 100)
+		commands := root.paint_commands().filter(it.kind == 'paint_inner_box_shadow')
+		assert commands.len == 2
+		for index,command in commands {
+			if policy == .libweb { assert command.srgb_color_data == unsafe { nil }; continue }
+			data:=command.srgb_color_data
+			assert data != unsafe { nil }
+			assert data.serialized == command.color
+			expected:=if index==0 {[90.5/255,100.25/255,110.75/255,0.6]!} else {[10.5/255,20.25/255,30.75/255,0.25]!}
+			assert data.components==expected
+		}
+	}
+}

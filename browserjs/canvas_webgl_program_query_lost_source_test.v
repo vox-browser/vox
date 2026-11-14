@@ -67,9 +67,9 @@ precision mediump float;out vec4 color;void main(){color=vec4(1);}'
 			}
 			for query in queries {
 				assert runtime.evaluate_host(query)! == 'true'
-				mut selected := [0, 0, 0, 0]!
+				mut selected := [i32(0), 0, 0, 0]!
 				C.vox_gl_int_parameter(webgl.viewport, &selected[0])
-				assert selected == [9, 10, 11, 12]!
+				assert selected == [i32(9), 10, 11, 12]!
 				assert C.vox_gl_program_parameter(valid_name, webgl.link_status) == 1
 				assert C.vox_gl_program_parameter(invalid_name, u32(0x8b84)) == log_length
 			}

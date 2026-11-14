@@ -120,7 +120,7 @@ class TreeMemory:
 def measure_vox(args, prefix):
     window, screenshot = Path(str(prefix) + '.window.png'), Path(str(prefix) + '.png')
     log_path = Path(str(prefix) + '.log')
-    runtime_paths = {'skia_bridge': args.binary.parent / 'libLadybirdVSkiaText.dylib',
+    runtime_paths = {'avif_library': args.binary.parent / 'libVoxAVIF.dylib',
                      'snapshot_payload': args.binary.parent.parent / 'Resources/adblock.snapshot.bin'}
     runtime_files = {key: {'path': str(path), 'sha256': hashlib.sha256(path.read_bytes()).hexdigest()}
                      for key, path in runtime_paths.items() if path.is_file()}
@@ -133,9 +133,6 @@ def measure_vox(args, prefix):
             env['LADYBIRD_CACHE_DIR'] = str(cache)
         for key in ('LADYBIRD_ENABLE_SNAPSHOT_CACHE', 'GC_PRINT_STATS'):
             env.pop(key, None)
-        library = args.binary.parent / 'libLadybirdVSkiaText.dylib'
-        if library.is_file():
-            env['DYLD_LIBRARY_PATH'] = str(library.parent)
         if args.diagnostic_library:
             env['DYLD_INSERT_LIBRARIES'] = str(args.diagnostic_library.resolve())
         command = [str(args.binary), *args.vox_arg, '--window-width', str(args.width),

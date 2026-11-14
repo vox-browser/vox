@@ -14,7 +14,7 @@ fn test_source_current_program_query_returns_actual_retained_record_after_driver
 		assert result.kind == .object
 		assert result.program? == program
 		assert result.object == program.object.bookkeeping_id()
-		mut actual := -1
+		mut actual := i32(-1)
 		C.vox_gl_int_parameter(current_program, &actual)
 		assert actual == 0
 		assert context.get_error() == expected

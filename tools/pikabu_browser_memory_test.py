@@ -54,7 +54,7 @@ class ComparisonTests(unittest.TestCase):
             binary = root / 'MacOS/Vox'
             binary.parent.mkdir()
             binary.write_bytes(b'executable')
-            library = binary.with_name('libVoxGraphite.dylib')
+            library = binary.with_name('libVoxAVIF.dylib')
             library.write_bytes(b'backend')
             snapshot = root / 'Resources/adblock.snapshot.bin'
             snapshot.parent.mkdir()

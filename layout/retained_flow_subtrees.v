@@ -164,6 +164,50 @@ fn retained_flow_element_name_is_generic(name string) bool {
 		'dd', 'figure', 'figcaption'] || (name.contains('-') && name.len > 1 && name[0] >= `a` && name[0] <= `z`)
 }
 
+// VOX_RETAINED_FLOW_REJECTION_DIAGNOSTICS=1: which eligibility rule first
+// rejected each clean element whose boxes were rebuilt, cumulative counts with
+// the number of DOM elements below each rejected element.
+const retained_flow_rejection_diagnostics = os.getenv('VOX_RETAINED_FLOW_REJECTION_DIAGNOSTICS') != ''
+
+__global retained_flow_rejection_counts map[string]int
+__global retained_flow_rejection_sizes map[string]int
+
+fn note_retained_flow_rejection(reason string, element &dom.Element) bool {
+	if !retained_flow_rejection_diagnostics { return false }
+	retained_flow_rejection_counts[reason]++
+	retained_flow_rejection_sizes[reason] += retained_flow_rejection_subtree_size(element.as_node())
+	return false
+}
+
+fn retained_flow_rejection_subtree_size(node &dom.Node) int {
+	mut size := if node.is_element() { 1 } else { 0 }
+	for child in node.children { size += retained_flow_rejection_subtree_size(child) }
+	return size
+}
+
+fn report_retained_flow_rejections() {
+	if !retained_flow_rejection_diagnostics { return }
+	for reason, count in retained_flow_rejection_counts {
+		eprintln('VOX_RETAINED_FLOW_REJECTION reason=${reason} count=${count} elements=${retained_flow_rejection_sizes[reason]}')
+	}
+	retained_flow_rejection_counts = map[string]int{}
+	retained_flow_rejection_sizes = map[string]int{}
+}
+
+fn retained_flow_ordinary_rejection(node &Node) string {
+	if (node.is_svg_box() || node.is_svg_svg_box()) && !retained_flow_svg_node_is_ordinary(node) { return 'svg' }
+	if node.is_generated_for_pseudo_element() || node.is_generated_text_node() { return 'generated' }
+	if node.is_replaced_element() && !node.is_svg_box() && !node.is_svg_svg_box() && !retained_flow_raster_image_is_ordinary(node) { return 'replaced' }
+	if node.is_list_item_box() && !retained_flow_list_item_box_is_static(node) { return 'list-item' }
+	if node.is_list_item_marker_box() && !retained_flow_marker_box_is_static(node) { return 'marker' }
+	if node.is_absolutely_positioned() && !node.is_image_box() { return 'absolute' }
+	if !node.is_text_node() && !retained_tree_display_is_supported(node.display()) {
+		return 'display:${node.display().to_string()}'
+	}
+	if node.is_flex_item() || node.is_grid_item_ { return 'item-role' }
+	return 'other'
+}
+
 fn collect_retained_flow_elements(element &dom.Element, mut elements []&dom.Element, mut rejected map[u64]bool) bool {
 	key := u64(voidptr(element))
 	if rejected[key] { return false }
@@ -174,15 +218,36 @@ fn collect_retained_flow_elements(element &dom.Element, mut elements []&dom.Elem
 	node := element.as_node()
 	if node.needs_layout_tree_update_() || node.child_needs_layout_tree_update_() { return false }
 	if element.is_svg_element() {
-		return collect_retained_flow_svg_elements(element, mut elements)
+		if !collect_retained_flow_svg_elements(element, mut elements) {
+			return note_retained_flow_rejection('svg', element)
+		}
+		return true
 	}
-	computed := css.computed_properties_for_element(element) or { return false }
+	computed := css.computed_properties_for_element(element) or {
+		return note_retained_flow_rejection('no-style', element)
+	}
 	if computed.display().is_none() {
 		eligible = true
 		return true
 	}
 	if retained_flow_element_has_generated_pseudo_style_except_static_marker(element, computed) {
-		return false
+		return note_retained_flow_rejection('generated-pseudo', element)
+	}
+	if retained_flow_rejection_diagnostics {
+		if !element.is_html_element() { return note_retained_flow_rejection('non-html', element) }
+		if element.shadow_root() != none { return note_retained_flow_rejection('shadow-root', element) }
+		if element.rendered_in_top_layer() { return note_retained_flow_rejection('top-layer', element) }
+		if computed.content_visibility() != .visible {
+			return note_retained_flow_rejection('content-visibility', element)
+		}
+		if computed.position() !in [.static_, .relative]
+			&& !(computed.position() == .absolute && element.as_node().is_html_image_element()
+				&& !disable_extended_image_trees) {
+			return note_retained_flow_rejection('position', element)
+		}
+		if !retained_flow_element_name_is_generic(element.local_name()) {
+			return note_retained_flow_rejection('name:${element.local_name()}', element)
+		}
 	}
 	if !element.is_html_element() || element.shadow_root() != none
 		|| element.rendered_in_top_layer() || computed.content_visibility() != .visible
@@ -193,27 +258,33 @@ fn collect_retained_flow_elements(element &dom.Element, mut elements []&dom.Elem
 		return false
 	}
 	if value := computed.typed_property_value(.content) {
-		if value.to_keyword() !in [.normal, .none_] { return false }
+		if value.to_keyword() !in [.normal, .none_] { return note_retained_flow_rejection('content', element) }
 	}
-	mirror := node.unsafe_layout_node() or { return false }
+	mirror := node.unsafe_layout_node() or { return note_retained_flow_rejection('no-layout-node', element) }
 	if mirror.real_layout_handle() == unsafe { nil } || mirror.continuation_next() != none {
-		return false
+		return note_retained_flow_rejection('no-box-or-continuation', element)
 	}
 	typed := unsafe { &Node(mirror.real_layout_handle()) }
 	if voidptr(typed.document()) != voidptr(element.document()) {
-		return false
+		return note_retained_flow_rejection('document', element)
 	}
-	if !retained_flow_layout_node_is_ordinary(typed) { return false }
+	if !retained_flow_layout_node_is_ordinary(typed) {
+		if !retained_flow_rejection_diagnostics { return false }
+		return note_retained_flow_rejection('box:${retained_flow_ordinary_rejection(typed)}', element)
+	}
 	expects_inline_node := computed.display().is_inline_outside() && computed.display().is_flow_inside()
 	if !typed.is_break_node() && !typed.is_image_box()
-		&& typed.is_inline_node() != expects_inline_node { return false }
+		&& typed.is_inline_node() != expects_inline_node { return note_retained_flow_rejection('inline-kind', element) }
 	for child in typed.children() {
-		if !retained_flow_anonymous_layout_is_ordinary(child) { return false }
+		if !retained_flow_anonymous_layout_is_ordinary(child) {
+			if !retained_flow_rejection_diagnostics { return false }
+			return note_retained_flow_rejection('child-box:${retained_flow_ordinary_rejection(child)}', element)
+		}
 	}
-	if typed.as_node_with_style() == none { return false }
+	if typed.as_node_with_style() == none { return note_retained_flow_rejection('unstyled', element) }
 	if !retained_flow_style_matches(typed, computed)
 		|| typed.display() != computed.display() {
-		return false
+		return note_retained_flow_rejection('style-changed', element)
 	}
 	elements << element
 	for child in node.children {
@@ -223,14 +294,14 @@ fn collect_retained_flow_elements(element &dom.Element, mut elements []&dom.Elem
 			}
 		} else if child.is_text() {
 			data := child.as_character_data() or { return false }
-			text_mirror := child.unsafe_layout_node() or { return false }
-			if text_mirror.real_layout_handle() == unsafe { nil } { return false }
+			text_mirror := child.unsafe_layout_node() or { return note_retained_flow_rejection('text-unboxed', element) }
+			if text_mirror.real_layout_handle() == unsafe { nil } { return note_retained_flow_rejection('text-unboxed', element) }
 			text := unsafe { &Node(text_mirror.real_layout_handle()) }.as_text_node() or {
-				return false
+				return note_retained_flow_rejection('text-kind', element)
 			}
 			if text.source_text_ != data.data() || text.source_range_length_ != none
 				|| text.first_letter_ != none {
-				return false
+				return note_retained_flow_rejection('text-changed', element)
 			}
 		}
 	}

@@ -21,16 +21,16 @@ fn test_source_lost_is_shader_sync_returns_default_without_other_native_query() 
 		assert after_loss.object.handle(owner.identity(), owner.context_generation())! == 2
 		for shader in [original, after_loss] {
 			assert !owner.is_shader(shader)
-			mut selected := [0, 0, 0, 0]!
+			mut selected := [i32(0), 0, 0, 0]!
 			C.vox_gl_int_parameter(viewport, &selected[0])
-			assert selected == [9, 10, 11, 12]!
+			assert selected == [i32(9), 10, 11, 12]!
 			assert C.vox_gl_is_object(9, sentinel.object.native_name()) == 1
 		}
 		assert !owner.is_shader(none)
 		assert !owner.is_shader(sentinel)
-		mut selected := [0, 0, 0, 0]!
+		mut selected := [i32(0), 0, 0, 0]!
 		C.vox_gl_int_parameter(viewport, &selected[0])
-		assert selected == [9, 10, 11, 12]!
+		assert selected == [i32(9), 10, 11, 12]!
 		assert C.vox_gl_get_error() == invalid_value
 		assert C.vox_gl_get_error() == no_error
 		assert owner.get_error() == context_lost_webgl
@@ -54,9 +54,9 @@ fn test_source_live_is_shader_retains_actual_driver_result_outside_wrapper_state
 		assert C.vox_gl_is_object(9, shader.object.native_name()) == 0
 		other.native.make_current()
 		assert !owner.is_shader(shader)
-		mut selected := [0, 0, 0, 0]!
+		mut selected := [i32(0), 0, 0, 0]!
 		C.vox_gl_int_parameter(viewport, &selected[0])
-		assert selected == [1, 2, 3, 4]!
+		assert selected == [i32(1), 2, 3, 4]!
 		assert owner.get_error() == no_error
 	}
 }

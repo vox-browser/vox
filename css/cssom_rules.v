@@ -2862,15 +2862,22 @@ fn (mut list StyleSheetList) add_sheet(sheet &CSSStyleSheet) {
 	}
 
 	invalidate_css_style_scope_for_node(list.document_or_shadow_root)
+	marked_before := style_sheet_change_marked_elements
 	if !list.document_or_shadow_root.is_shadow_root()
 		&& (list.document_or_shadow_root.entire_subtree_needs_style_update()
 		|| document_awaits_first_style_update(list.document())) {
+		report_style_sheet_change('add', sheet, marked_before, 'covered')
 		return
 	}
 
 	mut invalidation_result := build_invalidation_set_for_stylesheet(sheet)
 	requires_broad_invalidation := invalidation_result.invalidation_set.needs_invalidate_whole_subtree()
 		|| stylesheet_requires_broad_add_or_remove_invalidation(sheet)
+	defer {
+		report_style_sheet_change('add', sheet, marked_before, if requires_broad_invalidation {
+			if invalidation_result.invalidation_set.needs_invalidate_whole_subtree() { 'broad-selectors' } else { 'broad-rules' }
+		} else { 'targeted' })
+	}
 	if requires_broad_invalidation {
 		if shadow_root := list.document_or_shadow_root.as_shadow_root() {
 			effects := determine_shadow_root_style_sheet_effects(shadow_root)

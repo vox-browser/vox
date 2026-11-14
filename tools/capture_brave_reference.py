@@ -178,12 +178,21 @@ def resize_native_viewport(browser, cdp, target, width, height, scale):
     raise RuntimeError(f'Brave could not resize its native viewport to {width}x{height}')
 
 
-def scroll_viewport(cdp, scroll_y, scroll_x=0):
-    position = cdp.call('Runtime.evaluate', {
-        'expression': 'new Promise(resolve => {scrollTo({top:' + json.dumps(scroll_y) +
-                      ',left:' + json.dumps(scroll_x) + ',behavior:"instant"});requestAnimationFrame(() => '
-                      'requestAnimationFrame(() => resolve({x:scrollX,y:scrollY})));})',
-        'awaitPromise': True, 'returnByValue': True})['result']['value']
+def scroll_viewport(cdp, scroll_y, scroll_x=0, *, script_execution_disabled=False):
+    if script_execution_disabled:
+        # Script-disabled pages never run rAF callbacks, including callbacks
+        # installed through Runtime.evaluate. Read the instant scroll directly;
+        # captureScreenshot flushes layout and the compositor at capture time.
+        expression = ('scrollTo({top:' + json.dumps(scroll_y) + ',left:' +
+                      json.dumps(scroll_x) + ',behavior:"instant"});({x:scrollX,y:scrollY})')
+        position = cdp.call('Runtime.evaluate', {
+            'expression': expression, 'returnByValue': True})['result']['value']
+    else:
+        position = cdp.call('Runtime.evaluate', {
+            'expression': 'new Promise(resolve => {scrollTo({top:' + json.dumps(scroll_y) +
+                          ',left:' + json.dumps(scroll_x) + ',behavior:"instant"});requestAnimationFrame(() => '
+                          'requestAnimationFrame(() => resolve({x:scrollX,y:scrollY})));})',
+            'awaitPromise': True, 'returnByValue': True})['result']['value']
     if abs(position['x'] - scroll_x) > .001 or abs(position['y'] - scroll_y) > .001:
         raise RuntimeError(f'Brave could not reach scroll ({scroll_x}, {scroll_y}): {position}')
     return position
@@ -285,7 +294,8 @@ def main() -> None:
             cdp.call("Runtime.evaluate", {"expression": "document.fonts.ready.then(() => true)",
                                           "awaitPromise": True})
             time.sleep(args.settle)
-            position = scroll_viewport(cdp, args.scroll_y, args.scroll_x)
+            position = scroll_viewport(cdp, args.scroll_y, args.scroll_x,
+                                       script_execution_disabled=args.no_js)
             if args.scroll_y or args.scroll_x:
                 # Newly visible tiles can first show an intermediate decode.
                 # Let their final raster settle just like the initial viewport.

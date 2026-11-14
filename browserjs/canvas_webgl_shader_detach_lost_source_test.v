@@ -6,9 +6,9 @@ import html
 import webgl
 
 fn public_shader_detach_lost_other_driver(program u32, vertex u32, fragment u32) {
-	mut selected := [0, 0, 0, 0]!
+	mut selected := [i32(0), 0, 0, 0]!
 	C.vox_gl_int_parameter(webgl.viewport, &selected[0])
-	assert selected == [9, 10, 11, 12]!
+	assert selected == [i32(9), 10, 11, 12]!
 	assert C.vox_gl_program_parameter(program, webgl.attached_shaders) == 2
 	assert C.vox_gl_program_parameter(program, webgl.delete_status) == 0
 	for shader in [vertex, fragment] {
@@ -52,7 +52,7 @@ fn test_public_lost_detach_shader_clears_source_slots_while_other_actual_attachm
 		assert program_name != 0 && vertex_name != 0 && fragment_name != 0
 		owner.lose_context_from_compositor_loss()
 		other.viewport(9, 10, 11, 12)
-		mut unused := 0
+		mut unused := i32(0)
 		C.vox_gl_int_parameter(u32(0xffff_ffff), &unused)
 		assert runtime.evaluate_host('globalThis.after=gl.createProgram();globalThis.afterVertex=gl.createShader(gl.VERTEX_SHADER);globalThis.afterFragment=gl.createShader(gl.FRAGMENT_SHADER);gl.attachShader(after,afterVertex);gl.attachShader(after,afterFragment);gl.getAttachedShaders(after)[0]===afterVertex&&gl.getAttachedShaders(after)[1]===afterFragment')! == 'true'
 		public_shader_detach_lost_other_driver(program_name, vertex_name, fragment_name)

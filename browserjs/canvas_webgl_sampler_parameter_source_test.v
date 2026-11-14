@@ -5,8 +5,8 @@ module browserjs
 import html
 import webgl
 
-fn public_sampler_parameter_source_owner(expected [4]int) {
-	mut selected := [0, 0, 0, 0]!
+fn public_sampler_parameter_source_owner(expected [4]i32) {
+	mut selected := [i32(0), 0, 0, 0]!
 	C.vox_gl_int_parameter(0x0ba2, &selected[0])
 	assert selected == expected
 }
@@ -34,17 +34,17 @@ fn test_public_sampler_parameter_owner_and_source_name_gates_follow_idl_conversi
 		] {
 			other.native.make_current()
 			runtime.evaluate_host('samplerParamGL.${method}(${pair[0]})')!
-			public_sampler_parameter_source_owner([1, 2, 3, 4]!)
+			public_sampler_parameter_source_owner([i32(1), 2, 3, 4]!)
 			assert runtime.evaluate_host('samplerParamGL.getError()')! == pair[1]
 		}
 		for receiver in ['null', '{}'] {
 			other.native.make_current()
 			assert runtime.evaluate_host('(function(){try{samplerParamGL.${method}(${receiver},0xbad,1);return false}catch(error){return error instanceof TypeError}})()')! == 'true'
-			public_sampler_parameter_source_owner([9, 10, 11, 12]!)
+			public_sampler_parameter_source_owner([i32(9), 10, 11, 12]!)
 		}
 		other.native.make_current()
 		assert runtime.evaluate_host('(function(){const marker={};try{samplerParamGL.${method}(foreignParamSampler,0xbad,{valueOf(){throw marker}});return false}catch(error){return error===marker}})()')! == 'true'
-		public_sampler_parameter_source_owner([9, 10, 11, 12]!)
+		public_sampler_parameter_source_owner([i32(9), 10, 11, 12]!)
 	}
 	runtime.evaluate_host('samplerParamGL.samplerParameterf(ownedParamSampler,samplerParamGL.TEXTURE_MIN_LOD,-2.75);samplerParamGL.samplerParameterf(ownedParamSampler,samplerParamGL.TEXTURE_MAX_LOD,4.5)')!
 	for _, sampler in host.samplers {
@@ -58,7 +58,7 @@ fn test_public_sampler_parameter_owner_and_source_name_gates_follow_idl_conversi
 	for method in ['samplerParameteri', 'samplerParameterf'] {
 		other.native.make_current()
 		runtime.evaluate_host('samplerParamGL.${method}(ownedParamSampler,0xbad,1)')!
-		public_sampler_parameter_source_owner([1, 2, 3, 4]!)
+		public_sampler_parameter_source_owner([i32(1), 2, 3, 4]!)
 		assert context.get_error() == webgl.invalid_operation
 	}
 }

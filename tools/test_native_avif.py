@@ -5,7 +5,6 @@ import hashlib
 import json
 import os
 from pathlib import Path
-import platform
 import subprocess
 import sys
 import time
@@ -17,20 +16,24 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--output', type=Path)
     parser.add_argument('--sanitize', action='store_true')
-    parser.add_argument('--graphite-library', type=Path,
-                        help='also compare the YUV422 GPU draw with the fixed Brave photo')
-    parser.add_argument('--sdk-root', type=Path, default=REPO.parent /
-        '3rd/ladybird/Build/release/vcpkg_installed' /
-        ('arm64-osx-dynamic' if platform.machine() == 'arm64' else 'x64-osx-dynamic'))
+    parser.add_argument('--sdk-root', type=Path,
+                        help='prefix holding include/avif and lib/libavif (default: pkg-config libavif)')
     args = parser.parse_args()
     if sys.platform != 'darwin':
         parser.error('This native dependency audit currently requires macOS')
     output = (args.output or REPO / 'Build/native-avif' / str(time.time_ns())).resolve()
     output.mkdir(parents=True, exist_ok=False)
-    sdk = args.sdk_root.resolve()
+    # Homebrew's libavif (`brew install libavif`) unless an explicit prefix is given.
+    if args.sdk_root:
+        include, lib = args.sdk_root.resolve() / 'include', args.sdk_root.resolve() / 'lib'
+    else:
+        include, lib = (Path(subprocess.check_output(
+            ['pkg-config', '--variable=' + name, 'libavif'], text=True).strip()).resolve()
+            for name in ('includedir', 'libdir'))
     resources = REPO / 'Tests/Browser/Brave/resources/avif'
+    # Pin libavif and its non-system codec libraries (dav1d, aom, ...).
     dependencies = set()
-    pending = [sdk / 'lib/libavif.dylib']
+    pending = [lib / 'libavif.dylib']
     while pending:
         library = pending.pop().resolve()
         if library in dependencies:
@@ -39,40 +42,35 @@ def main():
         lines = subprocess.check_output(['otool', '-L', str(library)], text=True).splitlines()[1:]
         for line in lines:
             name = line.strip().split(' (', 1)[0]
-            path = sdk / 'lib' / Path(name).name if name.startswith('@rpath/') else Path(name)
-            if path.is_file() and path.is_relative_to(sdk):
+            path = library.parent / Path(name).name if name.startswith('@rpath/') else Path(name)
+            if path.is_file() and not str(path).startswith(('/usr/lib/', '/System/')):
                 pending.append(path)
     paths = [REPO / 'native_avif.c', REPO / 'native/include/native_avif.h',
              REPO / 'tools/native_avif_test.cpp', REPO / 'tools/build_native_avif.py',
-             Path(__file__).resolve(), sdk / 'include/avif/avif.h',
+             REPO / 'tools/native_avif_v_check.v', *sorted((REPO / 'yuv').glob('*.v')),
+             Path(__file__).resolve(), include / 'avif/avif.h',
              *sorted(resources.iterdir()), *sorted(dependencies)]
-    if args.graphite_library:
-        args.graphite_library = args.graphite_library.resolve()
-        paths += [args.graphite_library, REPO / 'tools/native_avif_yuv_test.cpp',
-                  REPO / 'native/include/native_graphite_bridge.h',
-                  REPO / 'Tests/Browser/Brave/expected/avif-yuv-sampling.png',
-                  REPO / 'Tests/Browser/Brave/expected/avif-image-paths.png']
     pins = lambda: {str(path): hashlib.sha256(path.read_bytes()).hexdigest() for path in paths}
     before = pins()
     (output / 'identities.json').write_text(json.dumps(before, indent=2) + '\n')
     helper = output / 'libVoxAVIF.dylib'
     executable = output / 'native_avif_test'
+    v_check = output / 'native_avif_v_check'
     flags = ['-O1', '-g', '-fsanitize=address,undefined', '-fno-omit-frame-pointer'] if args.sanitize else ['-O2']
-    build = [sys.executable, str(REPO / 'tools/build_native_avif.py'), '--sdk-root', str(sdk), '--output', str(helper)]
+    build = [sys.executable, str(REPO / 'tools/build_native_avif.py'), '--output', str(helper)]
+    if args.sdk_root:
+        build += ['--sdk-root', str(args.sdk_root.resolve())]
     if args.sanitize:
         build.append('--sanitize')
     commands = [('helper', build, 12),
         ('compile', ['clang++', '-std=c++20', *flags, str(REPO / 'tools/native_avif_test.cpp'), '-o', str(executable)], 12),
-        ('runtime', [str(executable), str(resources)], 3)]
-    if args.graphite_library:
-        pixel_test = output / 'native_avif_yuv_test'
-        commands += [('pixel-compile', ['clang++', '-std=c++20', *flags,
-            str(REPO / 'tools/native_avif_yuv_test.cpp'), '-framework', 'CoreGraphics',
-            '-framework', 'ImageIO', '-framework', 'CoreFoundation', '-o', str(pixel_test)], 12),
-            ('pixel-runtime', [str(pixel_test), str(args.graphite_library),
-                str(resources / 'slate-hero.jpeg'),
-                str(REPO / 'Tests/Browser/Brave/expected/avif-yuv-sampling.png'),
-                str(REPO / 'Tests/Browser/Brave/expected/avif-image-paths.png')], 3)]
+        ('runtime', [str(executable), str(resources)], 3),
+        # The browser converts opaque 8-bit images in V; its bytes must match
+        # Brave's. The checker loads the helper beside it.
+        ('v-compile', [os.environ.get('V_BIN', 'v'), '-b', 'c', '-memory-limit', '10G',
+                       '-path', f'{REPO}|@vlib|@vmodules', '-o', str(v_check),
+                       str(REPO / 'tools/native_avif_v_check.v')], 12),
+        ('v-runtime', [str(v_check), str(resources)], 3)]
     results = []
     environment = dict(os.environ, ASAN_OPTIONS='detect_leaks=0')
     for phase, command, limit in commands:

@@ -129,7 +129,7 @@ def deploy(root=ROOT, output=None, package_only=False):
             if bundle_identity(source) != source_identity or bundle_identity(app) != source_identity:
                 raise RuntimeError('The source bundle changed while staging the release')
 
-        # The build links vcpkg and Homebrew libraries by absolute build-machine
+        # The build links Homebrew libraries by absolute build-machine
         # paths. Carry them inside the release and drop those search paths.
         bundle_libraries(app)
         info = plistlib.loads((app / 'Contents/Info.plist').read_bytes())

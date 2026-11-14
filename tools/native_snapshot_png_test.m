@@ -3,6 +3,8 @@
 #include <stdio.h>
 #include <string.h>
 #include "native/include/native_snapshot_png_darwin.h"
+// The test alone links zlib, to decode the optional backend's output.
+#include <zlib.h>
 
 static void test_opacity_scan(void)
 {
@@ -110,7 +112,9 @@ int main(int argc, const char *argv[])
                     }
                     NSData *fast = native_encode_opaque_snapshot_png(converted, converted.CGImage, density);
                     if (fast) { assert([fast isEqualToData:actual]); ++optimized_cases; }
+                    // Disabling libdeflate selects the ordinary encoder.
                     assert(setenv("VOX_DISABLE_LIBDEFLATE_PNG", "1", 1) == 0);
+                    assert(native_encode_opaque_snapshot_png(converted, converted.CGImage, density) == nil);
                     NSData *zlib = native_encode_snapshot_png(converted);
                     assert(unsetenv("VOX_DISABLE_LIBDEFLATE_PNG") == 0);
                     assert(zlib);
@@ -137,7 +141,10 @@ int main(int argc, const char *argv[])
                 }
             }
         assert(cases == 45);
-        assert(optimized_cases > 0 && optimized_cases < cases);
+        // Without the optional libdeflate backend every snapshot takes the
+        // ordinary ImageIO encoder: Vox links no zlib for this fast path.
+        if (argc == 3) assert(optimized_cases > 0 && optimized_cases < cases);
+        else assert(optimized_cases == 0);
         printf("PASS 45 snapshot PNG pixel/profile/density cases\n");
     }
 }

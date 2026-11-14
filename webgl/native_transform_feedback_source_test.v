@@ -2,12 +2,11 @@
 // SPDX-License-Identifier: BSD-2-Clause
 module webgl
 
-fn C.glIsTransformFeedback(u32) u8
 
 fn transform_feedback_source_owner() {
-	mut selected := [0, 0, 0, 0]!
+	mut selected := [i32(0), 0, 0, 0]!
 	C.vox_gl_int_parameter(viewport, &selected[0])
-	assert selected == [1, 2, 3, 4]!
+	assert selected == [i32(1), 2, 3, 4]!
 }
 
 fn test_source_transform_feedback_never_assigns_the_declared_retained_slot() {
@@ -20,10 +19,10 @@ fn test_source_transform_feedback_never_assigns_the_declared_retained_slot() {
 	other.native.make_current()
 	context.bind_transform_feedback(transform_feedback, feedback)
 	transform_feedback_source_owner()
-	mut actual := 0
+	mut actual := i32(0)
 	C.vox_gl_int_parameter(transform_feedback_binding, &actual)
 	assert GLuint(actual) == feedback.object.native_handle_
-	assert C.glIsTransformFeedback(feedback.object.native_handle_) == 1
+	assert C.vox_gl_is_object(8,feedback.object.native_handle_) == 1
 	assert context.current_transform_feedback == none
 	assert context.get_parameter(transform_feedback_binding).kind == .none
 	assert context.get_error() == no_error
@@ -56,7 +55,7 @@ fn test_source_transform_feedback_never_assigns_the_declared_retained_slot() {
 	context.delete_transform_feedback(feedback)
 	transform_feedback_source_owner()
 	assert feedback.object.invalidated()
-	assert C.glIsTransformFeedback(feedback.object.native_handle_) == 0
+	assert C.vox_gl_is_object(8,feedback.object.native_handle_) == 0
 	C.vox_gl_int_parameter(transform_feedback_binding, &actual)
 	assert actual == 0
 	assert context.get_parameter(transform_feedback_binding).kind == .none

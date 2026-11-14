@@ -592,8 +592,10 @@ pub fn (run &GlyphRun) glyph_intercepts(scale f32, y_top f32, y_bottom f32) []f3
 	if !(scale > 0) || math.is_nan(scale) || scale == f32(math.inf(1)) {
 		return []f32{}
 	}
-	if intervals := chromium_variable_glyph_intercepts(run, scale, y_top, y_bottom) {
-		return intervals
+	$if macos {
+		if intervals := chromium_variable_glyph_intercepts(run, scale, y_top, y_bottom) {
+			return intervals
+		}
 	}
 	mut intervals := []f32{}
 	for glyph in run.glyphs_ {

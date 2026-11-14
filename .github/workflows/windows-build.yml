@@ -1,29 +1,42 @@
-name: Windows build (scaffolding)
+name: Windows build and native WebGL
 
-# Baseline for the Windows release work (see docs/WINDOWS.md). A native
-# Windows checkout is still blocked by pixel_tests fixture names that are
-# illegal on Windows (see issue #8), so this runs on Linux: it verifies the
-# Windows driver syntax and exercises the
-# x.imp build script end to end through `v run build_browser.vsh --help`.
+# Windows runs native Mesa WebGL checks with a sparse checkout that omits
+# archived fixture names unsupported by NTFS. Linux checks the build drivers.
 on:
   push:
     branches: [master]
     paths:
       - build_browser.vsh
       - .github/workflows/windows-build.yml
-      - tools/build_windows_browser.py
+      - tools/build_windows_browser.vsh
+      - tools/buildtools/**
+      - tools/*windows*
+      - tools/native_gles_test.c
+      - webgl/**
+      - tools/run_v_tool.sh
       - libregex/**
       - packaging/version.txt
       - browserupdate/**
+      - platform/curl_api.h
+      - browsernet/cancellable_transport.h
+      - requestserver/curl_*
       - docs/WINDOWS.md
   pull_request:
     paths:
       - build_browser.vsh
       - .github/workflows/windows-build.yml
-      - tools/build_windows_browser.py
+      - tools/build_windows_browser.vsh
+      - tools/buildtools/**
+      - tools/*windows*
+      - tools/native_gles_test.c
+      - webgl/**
+      - tools/run_v_tool.sh
       - libregex/**
       - packaging/version.txt
       - browserupdate/**
+      - platform/curl_api.h
+      - browsernet/cancellable_transport.h
+      - requestserver/curl_*
       - docs/WINDOWS.md
   workflow_dispatch:
 
@@ -31,6 +44,106 @@ permissions:
   contents: read
 
 jobs:
+  native-webgl:
+    runs-on: windows-2025
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+          sparse-checkout-cone-mode: false
+          sparse-checkout: |
+            /*
+            !/pixel_tests/
+      - uses: msys2/setup-msys2@ec48f7c5447b3140e2b088413ae3a55687bccb6e # v2
+        with:
+          msystem: MINGW64
+          update: true
+          install: mingw-w64-x86_64-gcc mingw-w64-x86_64-pkgconf mingw-w64-x86_64-curl mingw-w64-x86_64-openssl mingw-w64-x86_64-python make git
+      - name: Build V for the shared shader validator
+        shell: msys2 {0}
+        run: |
+          set -euo pipefail
+          vox_v_toolchain="$(cygpath -u "$RUNNER_TEMP")/v"
+          git clone --depth 1 https://github.com/vlang/v.git "$vox_v_toolchain"
+          mkdir -p Build/windows-webgl
+          gcc -municode -O2 -o Build/windows-webgl/guard.exe tools/windows_runtime_guard.c
+          Build/windows-webgl/guard.exe 1200000 12288 \
+            Build/windows-webgl/v-build.out Build/windows-webgl/v-build.err \
+            "$(cygpath -w "$(command -v make)")" -C "$(cygpath -w "$vox_v_toolchain")" \
+            -j2 "VFLAGS=-memory-limit 10G" | tee Build/windows-webgl/v-build.json
+          cat Build/windows-webgl/v-build.out Build/windows-webgl/v-build.err
+          echo "V_BIN=$(cygpath -m "$vox_v_toolchain/v.exe")" >> "$GITHUB_ENV"
+      - name: Prepare verified native Mesa EGL/GLES
+        shell: pwsh
+        run: ./tools/prepare_windows_mesa.ps1
+      - name: Execute bounded GLES context, shader, storage and transfer checks
+        shell: msys2 {0}
+        run: |
+          set -euo pipefail
+          mkdir -p Build/windows-webgl
+          gcc -municode -std=gnu11 -O2 -Wall -Wextra -Wno-unused-function -Werror \
+            tools/windows_runtime_guard.c -o Build/windows-webgl/guard.exe
+          gcc -municode -std=c11 -Wall -Wextra -Werror \
+            tools/test_windows_browser.c -o Build/windows-webgl/browser-test.exe \
+            -luser32 -lgdi32
+          gcc -municode -std=c11 -Wall -Wextra -Werror \
+            tools/test_windows_browser_title.c -o Build/windows-webgl/browser-title-test.exe \
+            -luser32 -lgdi32
+          Build/windows-webgl/guard.exe 30000 3072 \
+            Build/windows-webgl/title.out Build/windows-webgl/title.err \
+            "$(cygpath -w "$PWD/Build/windows-webgl/browser-title-test.exe")" \
+            | tee Build/windows-webgl/title.json
+          cat Build/windows-webgl/title.out Build/windows-webgl/title.err
+          gcc -municode -std=c11 -O2 -Wall -Wextra -Werror \
+            tools/test_windows_close_dump.c -o Build/windows-webgl/close-dump-test.exe \
+            -luser32 -lgdi32
+          Build/windows-webgl/guard.exe 180000 3072 \
+            Build/windows-webgl/close-dump.out Build/windows-webgl/close-dump.err \
+            "$(cygpath -w "$PWD/Build/windows-webgl/close-dump-test.exe")" \
+            "$(cygpath -w "$PWD/Build/windows-webgl/close-test.dmp")" \
+            | tee Build/windows-webgl/close-dump.json
+          cat Build/windows-webgl/close-dump.out Build/windows-webgl/close-dump.err
+          gcc -municode -std=gnu11 -O2 -Wall -Wextra -Wno-unused-function -Werror \
+            tools/test_windows_https.c -lcurl -lpthread -o Build/windows-webgl/https-test.exe
+          python tools/test_windows_https.py --guard Build/windows-webgl/guard.exe \
+            --test Build/windows-webgl/https-test.exe --output Build/windows-webgl \
+            | tee Build/windows-webgl/https.json
+          cat Build/windows-webgl/https.out Build/windows-webgl/https.err
+          mkdir -p Build/deps/windows/mesa/lib/pkgconfig
+          cat > Build/deps/windows/mesa/lib/pkgconfig/vox-mesa-egl.pc <<'PC'
+          prefix=${pcfiledir}/../..
+          Name: vox-mesa-egl
+          Description: Verified Mesa EGL/GLES
+          Version: 1
+          Cflags: -I${prefix}/devel-mingw/include
+          Libs: -L${prefix}/devel-mingw/lib/x64 -lEGL -lGLESv2 -luser32 -lgdi32
+          PC
+          export PKG_CONFIG_PATH="$PWD/Build/deps/windows/mesa/lib/pkgconfig:${PKG_CONFIG_PATH:-}"
+          Build/windows-webgl/guard.exe 300000 12288 \
+            Build/windows-webgl/compile.out Build/windows-webgl/compile.err \
+            "$V_BIN" -new-compiler -b c -memory-limit 10G -subsystem console \
+            -o Build/windows-webgl/native-gles.exe tools/native_gles_driver.v \
+            | tee Build/windows-webgl/compile.json
+          cat Build/windows-webgl/compile.out Build/windows-webgl/compile.err
+          # Keep the current toolchain's C++ runtime ahead of Mesa's runtime.
+          export PATH="$MINGW_PREFIX/bin:$PWD/Build/deps/windows/mesa/release-mingw/x64:$PATH"
+          export GALLIUM_DRIVER=llvmpipe
+          Build/windows-webgl/guard.exe 180000 3072 \
+            Build/windows-webgl/native.out Build/windows-webgl/native.err \
+            "$(cygpath -w "$PWD/Build/windows-webgl/native-gles.exe")" \
+            | tee Build/windows-webgl/guard.json
+          cat Build/windows-webgl/native.out
+          cat Build/windows-webgl/native.err
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        if: always()
+        with:
+          name: windows-native-webgl
+          path: |
+            Build/windows-webgl/*.json
+            Build/windows-webgl/*.out
+            Build/windows-webgl/*.err
+
   scaffolding:
     runs-on: ubuntu-24.04
     timeout-minutes: 60
@@ -40,9 +153,6 @@ jobs:
           fetch-depth: 1
           persist-credentials: false
 
-      - name: Syntax-check the Windows build driver
-        run: python3 -m py_compile tools/build_windows_browser.py
-
       - name: Install V from source (for x.imp)
         timeout-minutes: 20
         run: |
@@ -50,6 +160,9 @@ jobs:
           git clone --depth 1 https://github.com/vlang/v.git "$RUNNER_TEMP/v"
           make -C "$RUNNER_TEMP/v" -j2
           "$RUNNER_TEMP/v/v" version
+
+      - name: Check the V Windows build driver
+        run: '"$RUNNER_TEMP/v/v" -b c -memory-limit 10G run tools/build_windows_browser.vsh --help'
 
       - name: Show x.imp build flows
         run: '"$RUNNER_TEMP/v/v" run build_browser.vsh --help'

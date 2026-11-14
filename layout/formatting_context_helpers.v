@@ -257,6 +257,21 @@ fn compute_relative_inset_for_node(node &NodeWithStyle, mut used_values UsedValu
 }
 
 fn resolve_relative_insets(mut state LayoutState, root &Node) {
+	resolve_relative_insets_in(mut state, root, state.in_reused_subtree(root, false))
+}
+
+// A subtree restored by incremental_layout.v already carries its insets.
+fn resolve_relative_insets_in(mut state LayoutState, root &Node, parent_reused bool) {
+	if !parent_reused {
+		resolve_own_relative_insets(mut state, root)
+	}
+	reused := subtree_layout_reused_below(state, root, parent_reused)
+	for child in root.children() {
+		resolve_relative_insets_in(mut state, child, reused)
+	}
+}
+
+fn resolve_own_relative_insets(mut state LayoutState, root &Node) {
 	if styled := root.as_node_with_style() {
 		// Nodes which did not participate in layout (for example anonymous text
 		// wrappers below an SVG viewport) have no UsedValues to adjust.
@@ -268,9 +283,6 @@ fn resolve_relative_insets(mut state LayoutState, root &Node) {
 				}
 			}
 		}
-	}
-	for child in root.children() {
-		resolve_relative_insets(mut state, child)
 	}
 }
 
@@ -459,6 +471,8 @@ fn layout_independent_child_with_height_mode(mut state LayoutState, child &Node,
 		available_height
 	}
 	inside := layout_inside_independent_formatting_context(mut state, child, mut child_state, AvailableSpace.new(AvailableSize.make_definite(child_state.content_width()), child_available_height))
+	note_automatic_height_answer(mut state, child, child_state, child_available_height,
+		definite_height != none, inside.automatic_content_height)
 	mut height := if use_automatic_height {
 		inside.automatic_content_height
 	} else if resolved := definite_height {
