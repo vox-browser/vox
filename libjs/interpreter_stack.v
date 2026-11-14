@@ -61,7 +61,10 @@ pub fn (mut stack InterpreterStack) deallocate(mark uint) {
 		panic('InterpreterStack.deallocate: mark ${mark} is above the top ${stack.top_}')
 	}
 	for stack.contexts.len > 0 && stack.contexts.last().stack_offset >= mark {
-		mut released := stack.contexts.pop()
+		mut released := stack.contexts.last()
+		// pop() leaves the pointer in the capacity tail, which is still scanned
+		// by a conservative collector after the frame has stopped executing.
+		stack.contexts.delete_last()
 		released.stack_allocated = false
 	}
 	stack.top_ = mark

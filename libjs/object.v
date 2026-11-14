@@ -162,6 +162,7 @@ pub mut:
 	array_object         ?&ArrayObject
 	keyed_collection     ?&KeyedCollection
 	keyed_iterator       ?&KeyedCollectionIterator
+	weak_map             ?&WeakMapObject
 	boolean_object       ?&BooleanObject // [[BooleanData]]
 	date_object          ?&DateObject // [[DateValue]]
 	number_object        ?&NumberObject  // [[NumberData]]

@@ -287,6 +287,7 @@ mut:
 	run_executable_depth           u32
 	// Explicit experimental tier; absent in ordinary/browser execution.
 	native_tier ?&NativeTier
+	weak_collection_registry ?&WeakCollectionRegistry
 	instruction_budget u64
 	instruction_budget_active bool
 	external_budget_depth u32
@@ -689,12 +690,14 @@ pub fn (mut vm VM) pop_execution_context() &ExecutionContext {
 	if vm.execution_context_stack_.len == 0 {
 		panic('pop_execution_context on an empty execution context stack')
 	}
-	mut context := vm.execution_context_stack_.pop()
+	mut context := vm.execution_context_stack_.last()
+	vm.execution_context_stack_.delete_last()
 	context.caller_frame = none
 	context.caller_return_pc = 0
 	context.caller_dst_raw = 0
 	context.caller_is_construct = false
-	vm.running_execution_context_ = vm.execution_context_stack_previous_running_contexts.pop()
+	vm.running_execution_context_ = vm.execution_context_stack_previous_running_contexts.last()
+	vm.execution_context_stack_previous_running_contexts.delete_last()
 	return context
 }
 
@@ -802,8 +805,8 @@ pub fn (mut vm VM) save_execution_context_stack() {
 }
 
 pub fn (mut vm VM) clear_execution_context_stack() {
-	vm.execution_context_stack_.clear()
-	vm.execution_context_stack_previous_running_contexts.clear()
+	for vm.execution_context_stack_.len > 0 { vm.execution_context_stack_.delete_last() }
+	for vm.execution_context_stack_previous_running_contexts.len > 0 { vm.execution_context_stack_previous_running_contexts.delete_last() }
 	vm.running_execution_context_ = none
 	vm.type_error_realm_override = none
 	vm.type_error_realm_override_depth = 0
@@ -813,7 +816,8 @@ pub fn (mut vm VM) restore_execution_context_stack() {
 	if vm.saved_execution_context_stacks.len == 0 {
 		panic('restore_execution_context_stack without a saved stack')
 	}
-	saved_stack := vm.saved_execution_context_stacks.pop()
+	saved_stack := vm.saved_execution_context_stacks.last()
+	vm.saved_execution_context_stacks.delete_last()
 	vm.execution_context_stack_ = saved_stack.stack
 	vm.execution_context_stack_previous_running_contexts = saved_stack.previous_running_contexts
 	vm.running_execution_context_ = saved_stack.running_execution_context
@@ -917,6 +921,7 @@ pub fn (vm &VM) execution_generation() u32 {
 
 pub fn (mut vm VM) finish_execution_generation() {
 	vm.execution_generation_++
+	vm.sweep_weak_collections()
 }
 
 pub fn (vm &VM) run_executable_depth() u32 {

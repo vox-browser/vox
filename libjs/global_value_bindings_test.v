@@ -11,7 +11,7 @@ fn test_default_global_property_order_follows_upstream_function_then_value_insta
 		'parseFloat', 'parseInt', 'decodeURI', 'decodeURIComponent', 'encodeURI', 'encodeURIComponent',
 		'globalThis', 'Infinity', 'NaN', 'undefined', 'Array', 'ArrayBuffer', 'Boolean', 'DataView',
 		'Error', 'EvalError', 'InternalError', 'Map', 'Object', 'RangeError', 'ReferenceError', 'RegExp',
-		'Set', 'SharedArrayBuffer', 'String', 'Symbol', 'SyntaxError', 'TypeError', 'URIError', 'Date', 'JSON', 'Math', 'escape', 'unescape']
+		'Set', 'SharedArrayBuffer', 'String', 'Symbol', 'SyntaxError', 'TypeError', 'URIError', 'WeakMap', 'Date', 'JSON', 'Math', 'escape', 'unescape']
 }
 
 fn test_default_global_value_bindings_have_standard_descriptors() {
