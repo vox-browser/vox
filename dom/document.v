@@ -12496,8 +12496,11 @@ pub fn (d &Document) cached_query_selector_result(selector_text string) ?Selecto
 	return none
 }
 
+// A lazy custom-element loader cycles through a few hundred tag-name
+// selectors; a bound below that count emptied the cache on every round and
+// parsed each selector again.
 pub fn (mut d Document) cache_query_selector_result(selector_text string, result ?SelectorList) {
-	if d.selector_query_cache.len >= 256 {
+	if d.selector_query_cache.len >= 2048 {
 		d.selector_query_cache.clear()
 	}
 	d.selector_query_cache[selector_text] = result

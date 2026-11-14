@@ -138,3 +138,69 @@ fn test_warm_query_plan_reuses_compound_storage_without_allocating() {
 		else { assert growth == 0 }
 	}
 }
+
+// Plans made only of names, IDs and classes match without a workspace outside
+// quirks mode; attribute selectors and quirks-mode documents keep it. The
+// answers equal the general matcher's either way.
+fn test_scalar_query_plans_match_like_the_general_matcher_in_both_modes() {
+	for quirks in [false, true] {
+		mut document := dom.Document.create(dom.url_about_blank())
+		defer { document.finalize() }
+		document.set_document_type(.html)
+		if quirks { document.set_quirks_mode(.yes) }
+		mut root := document.create_element('main')!
+		root.set_attribute_value('class', 'Pane wide')
+		root.set_attribute_value('id', 'Root')
+		root.set_attribute_value('data-k', 'v')
+		mut document_node := document.as_node()
+		_ = document_node.append_child(root.as_node())!
+		install_document_selector_query_hook(document)
+		hook := document.selector_query_hook() or { panic('missing selector hook') }
+		mut state := unsafe { &DocumentSelectorQueryState(hook.target) }
+		for selector, scalar in {
+			'main':            true
+			'MAIN':            true
+			'lazy-element':    true
+			'*':               true
+			'.Pane':           true
+			'.pane':           true
+			'#Root':           true
+			'#root':           true
+			'main.wide#Root':  true
+			'lazy-one, main':  true
+			'[data-k]':        false
+			'main[data-k=v]':  false
+			'main:not(.x)':    false
+			'body main':       false
+		} {
+			plan := state.query_plan(selector) or { panic(selector) }
+			assert plan.scalar == scalar, selector
+			assert plan.matches_without_workspace(document) == (scalar && !quirks && !retain_scalar_query_scratch), selector
+			expected := general_query_matches(root, plan.selectors, none)
+			assert element_matches_query_plan(root, plan, none) == expected, '${selector} quirks=${quirks}'
+			assert root.matches(selector)! == expected, '${selector} quirks=${quirks}'
+		}
+		// Quirks mode folds class and ID case; standards mode does not.
+		assert root.matches('.pane')! == quirks
+		assert root.matches('#root')! == quirks
+	}
+}
+
+fn test_require_document_selector_reports_the_matches_error() {
+	mut document := dom.Document.create(dom.url_about_blank())
+	defer { document.finalize() }
+	document.set_document_type(.html)
+	mut root := document.create_element('main')!
+	mut document_node := document.as_node()
+	_ = document_node.append_child(root.as_node())!
+	for selector in ['main', 'lazy-element', 'a > b', ':not(.x)', '[data-k="v"]'] {
+		require_document_selector(document, selector)!
+	}
+	for selector in ['[', ':unknown-pseudo', '', 'a >', '>>']{
+		mut reported := ''
+		require_document_selector(document, selector) or { reported = err.msg() }
+		mut matched := ''
+		_ = root.matches(selector) or { matched = err.msg(); false }
+		assert reported != '' && reported == matched, selector
+	}
+}

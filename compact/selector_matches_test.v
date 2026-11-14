@@ -78,3 +78,37 @@ fn test_selector_match_query_restores_storage_and_keeps_realm_owners_separate() 
 	first.close()
 	assert second.evaluate_host('__ladybirdSelectorMatches("second","*")')! == 'true'
 }
+
+// Short keys and selectors are converted into the host call's own frame;
+// longer ones, at and around the buffer sizes, take the workspace. Multi-byte
+// text, lone surrogates and NUL reach the callback exactly as before.
+fn test_selector_match_query_passes_arguments_of_every_length_unchanged() {
+	mut runtime := browserjs.Runtime.create_with_engine(.javascriptcore)
+	defer { runtime.close() }
+	mut seen := &[]string{}
+	runtime.install_selector_match_query(fn [mut seen] (key string, selector string) !browserjs.SelectorMatchReply {
+		// Arguments are borrowed for this call only.
+		seen << '${key.len}:${key.clone()}|${selector.len}:${selector.clone()}'
+		return browserjs.SelectorMatchReply{handled: true, matched: selector.len % 2 == 0}
+	})!
+	lengths := [0, 1, 94, 95, 96, 97, 138, 139, 414, 415, 416, 417, 1000, 5000]
+	for length in lengths {
+		for unit in ['a', 'é', '😀'] {
+			seen.clear()
+			result := runtime.evaluate_host('(()=>{const text=${json_string(unit)}.repeat(${length});return [__ladybirdSelectorMatches("k"+text,"s"+text),__ladybirdSelectorMatches("k","s"+text),__ladybirdSelectorMatches("k"+text,"s")].join(",")})()')!
+			text := unit.repeat(length)
+			expected := ['${1 + text.len}:k${text}|${1 + text.len}:s${text}', '1:k|${1 + text.len}:s${text}',
+				'${1 + text.len}:k${text}|1:s']
+			assert *seen == expected, '${unit} ${length}'
+			assert result == '${(1 + text.len) % 2 == 0},${(1 + text.len) % 2 == 0},false', '${unit} ${length}'
+		}
+	}
+	seen.clear()
+	assert runtime.evaluate_host(r'__ladybirdSelectorMatches("a\u0000b","\ud800x")')! in ['true', 'false']
+	last := *seen
+	assert last.len == 1 && last[0].starts_with('3:a\0b|')
+}
+
+fn json_string(value string) string {
+	return '"' + value + '"'
+}
