@@ -2812,3 +2812,16 @@ policies. The complete site recheck preserves 39 GitHub differences and the
 previous other counts; the exact controls remain exact. This precision fix
 does not resolve the input-corner gap. Production validation remains pending;
 see the [audit](OPTIMIZED_SITES_PIXELS_2026_11_12.md#inset-shadow-alpha-transport-2026-11-14).
+
+
+### Unblurred inset shadows, 2026-11-14
+
+`7440a807d` replays eligible inset shadows with a square caster, rounded hole
+and retained content clip through V/GG `drawDRRect`, preserving the existing
+tile antialiasing policy and CPU fallback. The new three-case Brave fixture is
+exact twice; all 27 focused tests pass. GitHub improves from 39 to 19 differing
+pixels and vlang.io from 3,250 to 3,228 in two fresh diagnostic captures each.
+The other site and focused-control results are preserved. A newer completed
+production bundle separately confirms the prior fixes at 39 GitHub pixels;
+the new correction awaits production validation. The [audit](OPTIMIZED_SITES_PIXELS_2026_11_12.md#unblurred-inset-shadow-geometry-2026-11-14)
+retains failed probes, CNN's instability and the remaining all-site gaps.

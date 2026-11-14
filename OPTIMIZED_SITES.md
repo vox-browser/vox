@@ -6,17 +6,14 @@ fewer instructions measure CPU work, rather than elapsed rendering time.
 Results apply to the frozen page and pinned build in each linked report.
 Provisional entries retain unresolved acceptance checks.
 
-**Pixel recheck, 2026-11-14:** the latest completed production bundle does
-**not** pass pixel equality across this catalog. Hacker News, Lobsters and Wikipedia
-are exact in two fresh production captures each. PNG and text-mask corrections
-reduce vlang.io to 3,250 differing pixels on the unchanged current archive.
-The table, image-corner, rotated-border and small-shadow corrections now reach
-49 differing GitHub pixels in two fresh production captures. A subsequent
-capture-policy fix keeps scrollbar visibility consistent with Brave
-under both macOS preferences. Shared outer-shadow/background/border samples
-reduce GitHub to 39 differing pixels in diagnostic captures. These follow-ups
-await production validation. CNN also retains
-a native-repeat stability failure. CNN, vlang.io and GitHub remain open.
+**Pixel recheck, 2026-11-14:** Vox does **not** pass pixel equality across
+this catalog. Hacker News, Lobsters and Wikipedia are exact in two fresh
+production captures each. The latest checked production bundle confirms the
+shared-decoration and inset-alpha fixes at **39 GitHub differences**. The new
+unblurred inset-shadow correction reaches **19 GitHub differences** and **3,228
+vlang.io differences** in two fresh diagnostic captures each; its production
+validation is pending. CNN retains both a large rendering mismatch and a
+native-repeat stability failure. CNN, vlang.io and GitHub remain open.
 Reddit could not be verified (missing historical fixture, live HTTP 403).
 See the [current audit, capture scopes and retained failures](docs/OPTIMIZED_SITES_PIXELS_2026_11_12.md).
 

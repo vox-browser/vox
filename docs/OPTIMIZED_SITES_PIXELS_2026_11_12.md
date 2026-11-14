@@ -1142,3 +1142,61 @@ failed attempts remain local under
 `docs/performance/vlang-gradients-20261112/raw/inset-alpha-20261114/`.
 The managed hooks request production rebuilding; this fix's production
 validation and the all-site pixel gate remain open.
+
+
+## Unblurred inset-shadow geometry, 2026-11-14
+
+Commit `7440a807d` replays eligible unblurred inset shadows through V/GG as a
+square caster with a rounded hole, intersected with the retained content clip.
+This follows Blink's `FillRectWithContouredHole` / `drawDRRect` geometry and
+inverse-hole clipping rather than a generic compound rounded path. The caster
+covers the content and its offset, including negative spread. Blur, inherited
+clips, incompatible radii and invalid geometry retain the existing CPU fallback.
+The surrounding tile keeps its existing analytic or MSAA selection.
+
+The new `unblurred-inset-shadow` fixture has three ordinary CSS boxes, including
+positive and negative offsets/spreads, without an artificial SVG trigger. Two
+fresh pinned Brave 157.1.99.56 captures agree exactly; the final native browser
+matches the full 1024×768 reference exactly twice. Twenty-five browser-module
+tests execute successfully (three new geometry/eligibility/layout tests and the
+22 existing MSAA-policy tests), plus two GPU tests for exact corner pixels and
+failure without backdrop mutation. Runtime guards use 3 GiB and arena poisoning.
+All compiler and runtime checks exit 0; generated test-call witnesses are retained.
+
+The latest completed production bundle, SHA-256
+`8695c878b296dc6a5abcec4ac1fe85fca814c339f2d5ad6c1f5ac454c3e3f74e`,
+receipt `20261114-104533-f814e776`, contains the prior shared-decoration and
+inset-alpha fixes, verified against its frozen source manifest. Two fresh
+production captures now confirm **39 GitHub differences**. That bundle predates
+this GPU inset correction and differs from the new focused reference at **76
+pixels**, twice.
+
+Final diagnostic executable
+`032d36bda9b022e673543bd750b2fb03815fa63c790f12272efadafa7bceb4eb`
+reduces the unchanged GitHub archive from **39 to 19 differing pixels**, twice:
+the twenty input-corner differences are gone; four search-border and fifteen
+avatar pixels remain. vlang.io improves from **3,250 to 3,228**, twice.
+HN/Wikipedia/Lobsters remain exact twice, with all 30 HN stories and 33 GitHub
+rows preserved. CNN remains at **175,866**, twice, and its native pair differs
+at **1,554 pixels**. The small-shadow, shared-outer-decoration and rotated-border
+controls remain exact twice; the scale-2 device-shadow control remains at 92.
+All 22 final captures, 23 runtime guards including startup smoke, and the driver
+exit 0 with unchanged source, executable, library, fixture and reference hashes.
+
+Earlier probes and failures remain available. Generic compound-path attempts
+left 14 and 8/9 input-band differences before `drawDRRect` matched that band.
+An intermediate implementation incorrectly treated the inset as an MSAA trigger:
+it improved GitHub but differed from the natural fixture at 66 pixels and failed
+the GPU corner test at 18 pixels. Removing that trigger and retaining the existing
+tile policy produces the final exact fixture. The initial Brave command used an
+unsupported command-line option and exited 2 before capture; corrected commands
+retain the launcher's existing hidden-scrollbar policy. No established reference
+or tolerance was changed, and no instruction, timing or live-site parity credit
+is claimed.
+
+Raw commands, source/build identities, PNGs, guard exits, failed attempts and test
+calls remain local under
+`docs/performance/vlang-gradients-20261112/raw/inset-gpu-20261114/`.
+The managed commit hook requests the normal C `-prod` rebuild; this new fix's
+production validation remains pending. The all-site gate remains open, including
+CNN's source/replay failure and the missing original Reddit fixture.
