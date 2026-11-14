@@ -1379,3 +1379,59 @@ inputs. This confirms the preceding fringe correction in production; the new
 shared PNG-shadow correction remains diagnostic pending production. These six
 checks do not rerun the entire catalog. Evidence is archived with the avatar
 work; no duplicate manual production build was requested.
+
+
+## Shared rotated ellipse decorations, 2026-11-14
+
+Commit `50bdd42d6` shares a uniformly rotated ellipse's adjacent outer shadows
+and border in one V/GG pass. It preserves the complete common clip list,
+including rounded ancestor clips, through the existing native graphics boundary.
+Selection requires one owner/layer, a uniform rotation, elliptical radii,
+matching transforms, full opacity and a shared supported clip list. Other paints,
+including unrotated geometry and non-AA commands, retain their previous replay.
+No blur kernel, reference or pixel tolerance changes.
+
+Final diagnostic executable SHA-256
+`bc0de89a8aee8a49f9d036d61508e23b972febe4afa628351b77a4ce058096bb`
+reduces the unchanged vlang.io archive **3,228 → 2,946**, twice. The comparison
+corrects **287 pixels** and introduces **five one-channel, one-level differences**;
+the 2,946 remaining differences still fail equality. The orbit diagnostic improves
+**1,901 → 1,530**, twice, retaining maximum channel error 1. GitHub, HN,
+Wikipedia, Lobsters, the prior avatar/border fixtures, small-shadow,
+shared-decoration and rotated-border controls stay exact twice. CNN remains at
+175,866 and its native repeat differs at 1,558 pixels; scale-2 device shadows
+remain at 92. All 26 final captures, startup smoke, their 27 runtime guards and
+the driver exit 0, with stable feature-source/executable/library/fixture/reference
+and tool identities. Content checks preserve 33 GitHub rows and 30 HN stories.
+Nine focused checks execute successfully: the selection test covers rectangular
+and rounded clips plus safe declines, and eight existing GPU shadow checks retain
+their oracle hashes. Runtime guards use 3 GiB and arena poisoning.
+
+The first rectangle-only candidate improves the reduced orbit but leaves the
+site unchanged. A scalar callback trace shows that the site inherits a rounded
+panel clip, explaining its decline. The broader clipping candidate improves the
+site, but a separate unrotated ellipse probe exposes a four-pixel residual with
+worse maximum error. Failed exact-match/no-new-error assertions and a duplicate
+unit-file compile error are retained. The final selector excludes unrotated
+geometry; temporary probes and their uncommitted fixture were removed rather
+than changing reference tolerances. This is a partial correction, not a pixel
+pass or performance claim.
+
+Production bundle
+`243a18521e40b66394d8b6901294bf718bd8381e2eaf76aade81524ff9b0cb17`,
+receipt `20261114-123523-3c4097b7`, separately confirms the preceding PNG-shadow
+fix. Its 35 selected rendering witnesses match `cd0173d0d`; eight fresh native
+captures give GitHub 0, avatar fixture 0, vlang.io 3,228 and orbit diagnostic
+1,901, each twice, with guard/browser/driver exits 0. It uses C, literal V `-prod`
+and one C unit. An initial baseline request against the older feature revision
+fails its source-witness assertion before capture and is preserved. A later
+production preview already contains the broad experiment, so its unrotated
+fixture capture is not treated as a pre-change control or validation of the
+final guarded selector.
+
+Evidence and all attempts remain local under
+`docs/performance/vlang-gradients-20261112/raw/ellipse-group-20261114/`.
+Completed job directories, binaries, generated C and guards are removed after
+archival. The normal managed commit hook requests rebuilding; the final 2,946
+result remains **diagnostic pending production**. vlang.io, CNN, missing Reddit
+and the all-site gate remain open. No additional manual production build was queued.

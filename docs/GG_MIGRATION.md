@@ -2847,3 +2847,15 @@ archive improves from 15 differing pixels to zero in two fresh captures; the
 new shadowed-avatar fixture is also exact twice. HN/Wikipedia/Lobsters stay
 exact; vlang.io and CNN counts are unchanged. Production validation is pending.
 See the [audit](OPTIMIZED_SITES_PIXELS_2026_11_12.md#shared-png-and-outer-shadow-resolve-2026-11-14).
+
+
+### Uniformly rotated ellipse decorations, 2026-11-14
+
+`50bdd42d6` retains adjacent elliptical shadows and a translucent border through
+one sample resolve, including their shared rounded clip list. Unrotated,
+nonuniformly transformed, clipped-out, differently owned and non-AA paints retain
+their previous path. Nine focused checks pass. Two fresh diagnostic captures
+reduce vlang.io from 3,228 to 2,946 differing pixels and the orbit diagnostic from
+1,901 to 1,530. There are 287 corrected and five newly differing one-level site
+pixels; equality remains open. Production now separately confirms the preceding
+PNG-shadow fix with GitHub exact twice. See the [audit](OPTIMIZED_SITES_PIXELS_2026_11_12.md#shared-rotated-ellipse-decorations-2026-11-14).

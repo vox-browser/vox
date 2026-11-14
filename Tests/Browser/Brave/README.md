@@ -1135,7 +1135,10 @@ PNG keep an outer rounded-border case open: eight pixels differ by one level.
 `diagnostic/rotated-ellipse-shadow` retains a rotated, clipped orbit over layered
 CSS gradients. Two fresh Brave 157.1.99.56 captures agree exactly at 1024×768,
 scale 1. The bounded GPU ellipse blur reduces its difference from 26,238 to
-1,901 pixels; it remains a diagnostic with an unchanged exact reference.
+1,901 pixels. Commit `50bdd42d6` shares the rotated ellipse's shadows and
+border through one resolve and preserves the common rounded clip list, reducing
+this to 1,530 pixels in two diagnostic captures. It remains a known failing
+diagnostic with an unchanged exact reference; production validation is pending.
 `ggshape/rotated_shadow_darwin_test.v` executes equivalent rotated and
 axis-aligned ellipse draws and requires exact RGBA equality, visible blur and
 an empty clipped interior. Sheared and anisotropic kernels retain the fallback.
