@@ -3378,7 +3378,12 @@ fn run_uncached_grid_formatting_context_internal(mut state LayoutState, containe
 			}
 		}
 		inline_margin_space := area_width.minus(item_state.margin_box_width())
-		if inline_margin_space.raw_value() < 0 && grid_item_alignment_is_safe(container,placement.item,true) { inline_alignment = .start }
+		// Auto margins take precedence over self-alignment even when the item
+		// overflows and those margins resolve to zero.
+		if left_margin_auto || right_margin_auto
+			|| (inline_margin_space.raw_value() < 0 && grid_item_alignment_is_safe(container,placement.item,true)) {
+			inline_alignment = .start
+		}
 		if inline_margin_space.raw_value() > 0 && left_margin_auto && right_margin_auto {
 			item_state.margin_left = inline_margin_space.divided_by_float(2)
 			item_state.margin_right = inline_margin_space.divided_by_float(2)
@@ -3406,7 +3411,10 @@ fn run_uncached_grid_formatting_context_internal(mut state LayoutState, containe
 			item_state.margin_left = item_state.margin_left.plus(inline_margin_space)
 		}
 		block_margin_space := area_height.minus(item_state.margin_box_height())
-		if block_margin_space.raw_value() < 0 && grid_item_alignment_is_safe(container,placement.item,false) { block_alignment = .start }
+		if top_margin_auto || bottom_margin_auto
+			|| (block_margin_space.raw_value() < 0 && grid_item_alignment_is_safe(container,placement.item,false)) {
+			block_alignment = .start
+		}
 		if block_margin_space.raw_value() > 0 && top_margin_auto && bottom_margin_auto {
 			item_state.margin_top = block_margin_space.divided_by_float(2)
 			item_state.margin_bottom = block_margin_space.divided_by_float(2)
