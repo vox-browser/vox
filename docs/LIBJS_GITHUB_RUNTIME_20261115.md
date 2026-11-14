@@ -88,6 +88,9 @@ the subsequent attempts. The first LibJS observation overlapped the broad
 GC-disabled suite; the later LibJS diagnostic and JSC control did not.
 
 The successful JSC control uses the default engine and supplies no LibJS credit.
+Its retained directory rows, latest commit, README and commit-link text/identities
+also pass the existing `github_hydrated_render.validate` check against the fixed
+Brave audit, without changing the expected content.
 Its PNG is a whole-window diagnostic, not a document-only pixel comparison.
 There is no new LibJS PNG to compare with Brave. The missing runtime behavior
 and the native LibJS memory failure both remain required work.
