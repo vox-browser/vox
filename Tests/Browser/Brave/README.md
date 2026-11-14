@@ -1264,3 +1264,13 @@ generation after the upload's color conversion. A separate conversion gold
 matches an independently pinned previous-renderer readback, preserves alpha
 and leaves its input unchanged. The cache test runs with poisoned scratch
 memory to verify that temporary decode storage cannot escape into the upload.
+
+
+`diagnostic/legacy-backdrop-border.html` is an unresolved 1024×768, scale-1
+reduction of GitHub's search-border mismatch. Its reference comes from two
+identical fresh Brave captures. Production `6bf5db1e` differs at exactly four
+pixels: (764,16), (762,18), (801,49), (799,51), with the same RGBA values as the
+full GitHub archive's search-border errors. The fractional x=760.75, relative
+header, isolated long page and backdrop blur reproduce the original context.
+This is a known failing diagnostic, not a passing smoke test. See the
+[pixel audit](../../../docs/OPTIMIZED_SITES_PIXELS_2026_11_12.md#legacy-grid-reduction-2026-11-14).
