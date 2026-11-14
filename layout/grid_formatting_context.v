@@ -2637,7 +2637,9 @@ fn run_uncached_grid_formatting_context_internal(mut state LayoutState, containe
 	// part of its block parent's contribution to an ancestor grid row.
 	if layout_mode == .intrinsic_sizing
 		&& !available_space.width.is_intrinsic_sizing_constraint()
-		&& available_space.height.is_definite() {
+		&& available_space.height.is_definite()
+		&& !container.display().is_inline_outside()
+		&& container_state.has_definite_height() {
 		return FormattingContextResult{
 			automatic_content_width: container_state.content_width()
 			automatic_content_height: container_state.content_height()
