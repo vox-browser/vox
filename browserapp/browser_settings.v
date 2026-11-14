@@ -46,9 +46,12 @@ fn browser_settings_input(id string, value string, hint string, x f64, y f64, wi
 
 fn browser_settings_elements(proxy browsersettings.Proxy) ui2.Element {
 	return ui2.view('settings-root', ui2.rect(0, 0, browser_settings_width, browser_settings_height), ui2.BoxStyle{}, [
-		ui2.label('settings-browsing-heading', 'Browsing', ui2.rect(24, 20, 452, 24), ui2.TextStyle{ size: 18 }),
-		ui2.checkbox('settings-tab-coloring', 'Enable tab coloring', proxy.enable_tab_coloring, ui2.rect(24, 56, 452, 24), ui2.TextStyle{ size: 13 }),
-		ui2.checkbox('settings-custom-tab-titles', 'Enable custom tab titles', proxy.enable_custom_tab_titles, ui2.rect(24, 86, 452, 24), ui2.TextStyle{ size: 13 }),
+		ui2.label('settings-browsing-heading', 'Browsing', ui2.rect(24, 20, 218, 24), ui2.TextStyle{ size: 18 }),
+		ui2.checkbox('settings-tab-coloring', 'Enable tab coloring', proxy.enable_tab_coloring, ui2.rect(24, 56, 218, 24), ui2.TextStyle{ size: 13 }),
+		ui2.checkbox('settings-custom-tab-titles', 'Enable custom tab titles', proxy.enable_custom_tab_titles, ui2.rect(24, 86, 218, 24), ui2.TextStyle{ size: 13 }),
+		ui2.label('settings-appearance-heading', 'Appearance', ui2.rect(258, 20, 218, 24), ui2.TextStyle{ size: 18 }),
+		ui2.checkbox('settings-force-dark', 'Force dark mode', proxy.force_dark_enabled, ui2.rect(258, 56, 218, 24), ui2.TextStyle{ size: 13 }),
+		ui2.label('settings-force-dark-help', 'For pages without a dark theme.', ui2.rect(258, 86, 218, 20), ui2.TextStyle{ size: 12 }),
 		ui2.label('settings-heading', 'Network', ui2.rect(24, 140, 452, 24), ui2.TextStyle{ size: 18 }),
 		ui2.checkbox('settings-enabled', 'Use SOCKS5 proxy', proxy.enabled, ui2.rect(24, 180, 452, 24), ui2.TextStyle{ size: 13 }),
 		ui2.label('settings-host-label', 'Host', ui2.rect(24, 219, 320, 20), ui2.TextStyle{ size: 13 }),
@@ -100,6 +103,7 @@ fn show_browser_settings() {
 	ui2.set_control_checked('settings-enabled', state.draft.enabled)
 	ui2.set_control_checked('settings-tab-coloring', state.draft.enable_tab_coloring)
 	ui2.set_control_checked('settings-custom-tab-titles', state.draft.enable_custom_tab_titles)
+	ui2.set_control_checked('settings-force-dark', state.draft.force_dark_enabled)
 	ui2.set_control_checked('settings-gpu-canvas', !state.draft.disable_gpu_canvas)
 	ui2.set_control_checked('settings-libjs', state.draft.javascript_engine == 'libjs')
 	ui2.set_text('settings-host', state.draft.host)
@@ -148,6 +152,7 @@ fn browser_settings_event(event string) {
 	state.draft = browsersettings.Proxy{
 		javascript_engine: if ui2.control_checked('settings-libjs') { 'libjs' } else { 'javascriptcore' }
 		enable_custom_tab_titles: ui2.control_checked('settings-custom-tab-titles')
+		force_dark_enabled: ui2.control_checked('settings-force-dark')
 		enable_tab_coloring: ui2.control_checked('settings-tab-coloring')
 		disable_gpu_canvas: !ui2.control_checked('settings-gpu-canvas')
 		enabled:        ui2.control_checked('settings-enabled')
@@ -161,6 +166,9 @@ fn browser_settings_event(event string) {
 			state.error = err.msg()
 			refresh_browser_settings()
 			return
+		}
+		if previous.force_dark_enabled != state.draft.force_dark_enabled {
+			apply_browser_appearance_to_open_tabs(state.draft.force_dark_enabled)
 		}
 		if (previous.enable_tab_coloring != state.draft.enable_tab_coloring
 			|| previous.enable_custom_tab_titles != state.draft.enable_custom_tab_titles) && address_bar_owner.app != unsafe { nil } {
