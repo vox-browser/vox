@@ -3024,3 +3024,16 @@ The nine introduced JPEG differences remain within vlang.io's residual. Two
 newer layout edits are not in this bundle. No renderer change was applied by
 this confirmation. See the
 [audit](OPTIMIZED_SITES_PIXELS_2026_11_12.md#production-confirmation-of-the-28-pixel-result-2026-11-15).
+
+
+### Text gradients in local picture coordinates, 2026-11-15
+
+`4e3445943` localizes supported line-only text-gradient paths and their clips in
+V before GPU drawing. This removes the final heading pixel: vlang.io improves
+28 to 27, one corrected and none introduced. Two new GPU cases and seven existing
+root cases pass with arena poisoning; 33 workloads captured twice preserve every
+other reference count. Four archived sites remain exact. Retina PNGs stay
+identical to production. Existing references, shader and dither are unchanged.
+The JPEG's 23 and scene's four pixels remain, alongside CNN/Reddit and historical
+repeat failures. Production is still at 28; the 27 result awaits the managed
+build. See the [audit](OPTIMIZED_SITES_PIXELS_2026_11_12.md#text-gradient-coordinates-inside-recorded-layers-2026-11-15).

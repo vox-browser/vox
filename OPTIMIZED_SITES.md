@@ -11,7 +11,9 @@ this catalog. Production build `05e6ace1` confirms GitHub, Hacker News, Lobsters
 and Wikipedia exact in two fresh captures each. Vlang.io now has **28 differing
 pixels in production**, down from the previously verified 810. Its 23 JPEG
 pixels include nine one-level differences introduced by the fractional-texture
-slice; one heading pixel and four scene pixels also remain. CNN retains its
+slice; one heading pixel and four scene pixels also remain. The latest
+diagnostic fix removes that heading pixel: **27 differing pixels**, one corrected
+and none introduced, with production confirmation pending. CNN retains its
 rendering, source/replay and native-repeat failures. Reddit remains unverified
 (missing historical fixture, earlier live HTTP 403). A separate tall-shadow
 control has a retained baseline repeat failure. Newer uncompiled layout edits

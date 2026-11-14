@@ -2308,3 +2308,73 @@ actual exits and diagnostic logs are under
 Completed scratch and the temporary diagnostic source are removed after verified
 archival. The normal documentation commit hook requests a coalesced managed
 production rebuild.
+
+
+## Text-gradient coordinates inside recorded layers, 2026-11-15
+
+Commit `4e3445943` removes vlang.io's final heading difference. The gradient
+previously retained large page coordinates while drawing into its small text
+picture. Cancelling the page translation in the vertex shader changes one
+rounded green value. The V graphics adapter now copies eligible line-only paths
+into local coordinates, translates their gradient and rounded clips consistently,
+and leaves the original descriptor untouched. Selection stays inside the
+existing scale-1 text-layer grid. Curves, strokes, fractional translations,
+transformed pictures, unsupported matrices and other gradients keep their
+previous route. No shader, dither, glyph coverage or existing reference changes.
+
+Diagnostic executable SHA-256
+`a7e79f64bee143d2d47b941b1f3d40fcf12479fde41e0917fd433e11f5516cfb`
+improves the full archived page **28 → 27**, twice: **one corrected pixel and
+none introduced**. Only (871,264) changes, from RGBA (177,202,233,255) to the
+unchanged Brave value (177,201,233,255). All 23 JPEG and four scene differences
+remain. The JPEG still includes the nine introduced one-level differences from
+the earlier fractional-texture slice.
+
+The focused oracle uses an unchanged 78×79 Brave crop at (854,208), together
+with the retained glyph mask as input. The old path differs at one of its 991
+fully covered samples; local coordinates match all 991. The second new case
+checks clip translation, source immutability and unsupported-input rejection.
+Both new GPU cases and seven existing root gradient cases execute successfully
+under 3 GiB guards with arena poisoning; actual calls and zero exits are retained.
+The two PNG resources are lossless derivatives of existing reference/input
+bytes, independently verified after encoding, and do not replace page references.
+
+A stable 33-workload cohort produces 66 fresh document captures plus a separate
+startup check, all 67 native guards and driver/outer exits zero. All 83 selected
+rendering/tool/resource witnesses stay unchanged through capture. The other 32
+reference counts are unchanged. GitHub, Hacker News, Lobsters and Wikipedia
+remain exact twice, with all 33 GitHub rows and 30 HN stories audited. Thirty-two
+native pairs repeat exactly; CNN remains at 175,866 differing pixels and its
+pair differs at 1,558 pixels. Historical CNN source/replay, tall-shadow
+repeatability and missing original Reddit failures remain open.
+
+Fresh production controls match the candidate: the fractional text-grid fixture
+retains 2,214 pixels, text-clip scope stays exact and compositor backdrop retains
+one pixel, each twice. Four additional Retina captures retain the existing 1,767
+reference differences and production/candidate PNG equality in both pairs. The
+higher-scale route remains unchanged. The available production `90aaf0a5`, receipt
+`20261115-005842-658dc21d` (C, literal `-prod`, single unit), separately reproduces
+vlang.io at 28 twice; it predates this fix. The 27-pixel result is **diagnostic,
+pending managed production confirmation**, not a live-site or performance claim.
+
+An initial browser compile fails on unfinished foreign LibJS Set declarations.
+Later successful compilations retain unchanged selected rendering inputs, while
+an unrelated LibJS realm source changes. Both source comparisons are preserved;
+the final comparison is tied to its fixed executable and default JavaScriptCore
+capture policy, not whole-checkout reproducibility or LibJS validation. All
+selected rendering inputs remain unchanged through compilation and capture.
+
+Earlier isolated JPEG probes supply no accepted change. Half precision after
+texture sampling worsens 23 differences to 41; explicit derivative-based LOD,
+a different sharpen bias and base-only sampling worsen the result to 114 or
+172. The initial heading probe uses incorrect color stops and fails calibration;
+only the corrected source stops reproduce the one-pixel control. These attempts
+are retained. Both experimental GG helpers/shaders were restored byte-for-byte,
+and temporary probe source is removed.
+
+Local commands, input/source hashes, asset provenance, PNGs, actual exits,
+failed attempts and selected archived scratch are under
+`docs/performance/vlang-gradients-20261114/raw/jpeg-sample-precision-20261115/`.
+Completed job directories, guards, generated C and binaries are removed after
+verified archival. The normal commit hook requests the coalesced production
+rebuild; no duplicate manual build is queued. All-site equality remains open.
