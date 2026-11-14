@@ -136,7 +136,7 @@ pub fn html_script_element_model_for_dom_element(element &dom.HTMLScriptElement)
 	model.async_attribute_ = dom_element.has_attribute('async')
 	model.nomodule_ = dom_element.has_attribute('nomodule')
 	model.connected_ = dom_element.as_node().is_connected()
-	model.crossorigin_ = cors_setting_attribute_from_keyword(dom_element.get_attribute('crossorigin'))
+	model.crossorigin_ = cors_setting_attribute_from_keyword(dom_element.get_attribute_ns(none, 'crossorigin'))
 	model.referrer_policy_ = ascii_lowercase_string(dom_element.get_attribute_value('referrerpolicy'))
 	attach_html_script_element_model(element, model)
 	return model
@@ -659,7 +659,7 @@ pub fn html_script_element_attribute_changed(element &dom.HTMLScriptElement, nam
 		return
 	}
 	mut model := unsafe { &HTMLScriptElementModel(html_script_element_model_for_dom_element(element)) }
-	if name == 'crossorigin' {
+	if namespace_ == none && name == 'crossorigin' {
 		model.crossorigin_ = cors_setting_attribute_from_keyword(value)
 	} else if name == 'referrerpolicy' {
 		model.referrer_policy_ = ascii_lowercase_string(value or { '' })
