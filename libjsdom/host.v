@@ -27,6 +27,9 @@ mut:
 	collection_prototype &libjs.Object = unsafe { nil }
 	event_prototype      &libjs.Object = unsafe { nil }
 	url_prototype        &libjs.Object = unsafe { nil }
+	style_prototype      &libjs.Object = unsafe { nil }
+	style_wrappers       map[u32]&libjs.Object
+	style_elements       map[voidptr]&dom.Element
 	wrappers             map[u32]&libjs.Object
 	nodes                map[voidptr]&dom.Node
 	events               map[voidptr]&dom.Event
@@ -41,6 +44,7 @@ pub fn Host.create(vm &libjs.VM, realm &libjs.Realm, document &dom.Document, hoo
 	defer { platform.leave_persistent(persistent) }
 	mut host := &Host{ vm: vm, realm: realm, document: document, hooks: hooks }
 	host.install_nodes()!
+	host.install_styles()
 	host.install_urls()!
 	mut global := realm.global_object_record()
 	global.define_direct_property(libjs.PropertyName.from_str('document'), host.wrap_node(document.as_node()), libjs.attribute_enumerable)
@@ -70,6 +74,10 @@ fn (mut host Host) method(mut object libjs.Object, name string, length int, call
 }
 
 fn (mut host Host) accessor(mut object libjs.Object, name string, getter libjs.NativeFunctionPointer, setter libjs.NativeFunctionPointer) {
+	host.accessor_attributes(mut object, name, getter, setter, libjs.attribute_enumerable | libjs.attribute_configurable)
+}
+
+fn (mut host Host) accessor_attributes(mut object libjs.Object, name string, getter libjs.NativeFunctionPointer, setter libjs.NativeFunctionPointer, attributes u8) {
 	mut vm := host.vm
 	get := libjs.NativeFunction.create(mut vm, host.realm, host.realm.function_prototype, getter, 0, libjs.PropertyName.from_str(name), 'get')
 	host.closures << voidptr(getter)
@@ -78,7 +86,7 @@ fn (mut host Host) accessor(mut object libjs.Object, name string, getter libjs.N
 		set = libjs.NativeFunction.create(mut vm, host.realm, host.realm.function_prototype, setter, 1, libjs.PropertyName.from_str(name), 'set').object
 		host.closures << voidptr(setter)
 	}
-	object.define_direct_accessor(libjs.PropertyName.from_str(name), get.object, set, libjs.attribute_enumerable | libjs.attribute_configurable)
+	object.define_direct_accessor(libjs.PropertyName.from_str(name), get.object, set, attributes)
 }
 
 fn (host &Host) require_open(mut vm libjs.VM) ! {
@@ -111,6 +119,8 @@ pub fn (mut host Host) close() {
 	host.wrappers.clear()
 	host.events.clear()
 	host.event_wrappers.clear()
+	host.style_wrappers.clear()
+	host.style_elements.clear()
 	for callback in [host.hooks.before_callback, host.hooks.after_callback, host.hooks.changed] {
 		if function := callback { platform.release_closure(voidptr(function)) }
 	}
