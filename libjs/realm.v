@@ -31,6 +31,9 @@ pub mut:
 	function_prototype             ?&Object                 // %Function.prototype%
 	array_prototype ?&Object
 	array_constructor ?&Object
+	map_prototype ?&Object
+	map_constructor ?&Object
+	map_iterator_prototype ?&Object
 	set_prototype ?&Object
 	set_constructor ?&Object
 	set_iterator_prototype ?&Object
@@ -194,6 +197,7 @@ pub fn initialize_host_defined_realm(mut vm VM, hooks RealmGlobalHooks) !&Execut
 	initialize_collection_intrinsics(mut vm, mut realm)!
 	initialize_iterator_intrinsics(mut vm, mut realm)
 	initialize_set_intrinsics(mut vm, mut realm)
+	initialize_map_intrinsics(mut vm, mut realm)
 	initialize_regexp_intrinsics(mut vm, mut realm)
 	realm.json_object = create_json_object(mut vm, realm)
 	initialize_date_intrinsics(mut vm, mut realm)
@@ -251,6 +255,8 @@ pub fn initialize_host_defined_realm(mut vm VM, hooks RealmGlobalHooks) !&Execut
 	for kind in [ErrorKind.error, .eval_error, .internal_error] {
 		global.define_direct_property(PropertyName.from_str(kind.name()), Value.from_object(realm.error_constructors[kind] or { panic('Missing error constructor') }), attribute_writable | attribute_configurable)
 	}
+	global.define_direct_property(PropertyName.from_str('Map'),
+		Value.from_object(realm.map_constructor or { panic('Missing Map constructor') }), attribute_writable | attribute_configurable)
 	global.define_direct_property(PropertyName.from_str('Object'),
 		Value.from_object(realm.object_constructor_record()), attribute_writable | attribute_configurable)
 	for kind in [ErrorKind.range_error, .reference_error] {
