@@ -2777,3 +2777,15 @@ and 3 GiB runtime guards, retaining all previous GPU-oracle hashes. The unchange
 GitHub archive improves from 207 to 49 differing pixels in the diagnostic build;
 production validation is pending. See the [pixel audit](OPTIMIZED_SITES_PIXELS_2026_11_12.md#small-rounded-shadow-kernels-2026-11-13)
 for capture scope, retained failures and remaining gaps.
+
+
+### Scrollbar capture policy, 2026-11-14
+
+`e68a210c6` matches Brave's explicit hidden-scrollbar capture policy under both
+macOS scrollbar preferences. Four focused visibility/fade tests pass; live
+behavior is preserved. With the current staged closure runtime, both rendering
+fixtures and HN/Wikipedia/Lobsters are exact twice. GitHub remains at 49 pixels,
+vlang.io at 3,250 and CNN at 175,866; CNN repeatability remains open. Production
+confirms the previous rendering fixes at 49 GitHub pixels; this capture-policy
+fix awaits its managed rebuild. The [pixel audit](OPTIMIZED_SITES_PIXELS_2026_11_12.md#production-confirmation-and-scrollbar-capture-policy-2026-11-14)
+retains all failed setup and diagnostic attempts. No reference or tolerance changed.

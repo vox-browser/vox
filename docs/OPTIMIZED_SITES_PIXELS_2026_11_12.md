@@ -988,3 +988,62 @@ bundle is still the previously checked `5fb3eb90…` executable. The managed
 post-commit hook requests the new production build; no additional manual build
 was queued. **The 49-pixel GitHub result is diagnostic validation, and the
 all-site gate remains open.** No live-site or performance claim is added.
+
+
+## Production confirmation and scrollbar capture policy, 2026-11-14
+
+The checkout moved from `vox2` to `vox`. Receipt
+`20261113-103410-86416163`, literal C `-prod` in one unit, publishes executable
+`07b5873dc78af20df3f730261db0fb44e79b6b7d061aa210bff1dcb4f9a0316c`.
+The local audit resolves receipt paths against the relocated checkout and checks
+all 27 rendering input hashes against the original manifest keys; it does not
+rewrite the sealed receipt. This production browser confirms **49 differing
+GitHub pixels**, twice, with all 33 rows and the reference origin, and **zero
+HN differences**, twice, with all 30 stories. The seven image/poster controls
+remain exact twice; the scale-2 device-shadow control remains at 92.
+
+This run also exposed a capture-policy mismatch. Brave's canonical reference
+launcher explicitly uses `--hide-scrollbars`. Vox suppressed capture scrollbars
+only when AppKit preferred overlay scrollbars, allowing the persistent preference
+to add a visible right-edge thumb. Raw production counts are retained:
+small shadows 1,476; rotated borders 452; Wikipedia 1,724; Lobsters 2,636;
+vlang.io 3,534; CNN 176,606, each twice. These observations fail equality and
+are not silently relabeled as passes or removed from the viewport comparison.
+
+The V capture policy now hides Chromium viewport scrollbars during screenshots
+under either system preference, matching the reference launcher. Live visibility,
+hover, drag, hold and fade retain their existing policy. Four focused tests
+execute and pass under the 3 GiB runtime guard with arena poisoning, covering
+both preferences and the live behavior. Initial test setup failures from a stale
+compiler path and an incompatible HTTP module are retained with their exits.
+The prepared compiler/module combination then compiles and runs successfully.
+
+The first diagnostic runtime subsequently crashed twice in PNG realloc during
+GitHub capture (browser/guard 139, driver 1). Its prepared runtime predates the
+closure allocator restoration fix; both attempts are retained. The final
+cohort uses a newly staged runtime containing those existing allocator hooks.
+Candidate results and remaining gates are recorded below after that cohort. Existing references, pixel tolerances and historical instruction
+statistics remain unchanged. This policy correction earns no rendering or
+performance optimization credit.
+
+
+Fix `e68a210c6` is validated by diagnostic executable
+`de3dc74e85e1d12fba6034f51a67f594f415a3d6dbea9a8b319af3f80f4da622`,
+using the current staged closure allocator runtime. Both focused fixtures are
+exact in two fresh captures each. GitHub remains at **49**, HN/Wikipedia/Lobsters
+at **0**, vlang.io at **3,250**, CNN at **175,866**, and the scale-2 device-shadow
+control at **92**, each twice. All 18 completed captures, the startup smoke,
+19 runtime guards and the final driver exit 0; source hashes and executable,
+library, fixture and reference identities remain unchanged during the run.
+The complete content audits retain all 33 GitHub rows and 30 HN stories.
+CNN repeatability still fails at 1,558 pixels in the 104×15 photograph region;
+all five other site pairs repeat exactly. The earlier production CNN pair
+already differed at 1,477 pixels. Neither run establishes CNN stability.
+
+The managed commit hook requests the normal C `-prod` rebuild. No duplicate
+manual production build was queued. Production now confirms the earlier
+rotated-border/small-shadow fixes at 49 GitHub pixels; the scrollbar-policy
+correction itself still awaits production validation. Raw commands, identities,
+guard exits, failed attempts and PNGs remain local under
+`docs/performance/vlang-gradients-20261112/raw/scrollbar-20261114/`.
+The all-site gate remains open, including the missing original Reddit fixture.
