@@ -160,6 +160,8 @@ pub mut:
 	regexp_object ?&RegExpObject
 	host_properties ?HostProperties
 	array_object         ?&ArrayObject
+	keyed_collection     ?&KeyedCollection
+	keyed_iterator       ?&KeyedCollectionIterator
 	boolean_object       ?&BooleanObject // [[BooleanData]]
 	date_object          ?&DateObject // [[DateValue]]
 	number_object        ?&NumberObject  // [[NumberData]]

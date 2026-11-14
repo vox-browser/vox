@@ -31,6 +31,9 @@ pub mut:
 	function_prototype             ?&Object                 // %Function.prototype%
 	array_prototype ?&Object
 	array_constructor ?&Object
+	set_prototype ?&Object
+	set_constructor ?&Object
+	set_iterator_prototype ?&Object
 	iterator_prototype ?&Object
 	array_iterator_prototype ?&Object
 	string_iterator_prototype ?&Object
@@ -190,6 +193,7 @@ pub fn initialize_host_defined_realm(mut vm VM, hooks RealmGlobalHooks) !&Execut
 		Value.from_object(shared_array_buffer_constructor.object), attribute_writable | attribute_configurable)
 	initialize_collection_intrinsics(mut vm, mut realm)!
 	initialize_iterator_intrinsics(mut vm, mut realm)
+	initialize_set_intrinsics(mut vm, mut realm)
 	initialize_regexp_intrinsics(mut vm, mut realm)
 	realm.json_object = create_json_object(mut vm, realm)
 	initialize_date_intrinsics(mut vm, mut realm)
@@ -255,6 +259,8 @@ pub fn initialize_host_defined_realm(mut vm VM, hooks RealmGlobalHooks) !&Execut
 	global.define_direct_property(PropertyName.from_str('RegExp'),
 		Value.from_object(realm.regexp_constructor or { panic('Missing RegExp constructor') }),
 		attribute_writable | attribute_configurable)
+	global.define_direct_property(PropertyName.from_str('Set'),
+		Value.from_object(realm.set_constructor or { panic('Missing Set constructor') }), attribute_writable | attribute_configurable)
 	global.define_direct_property(PropertyName.from_str('SharedArrayBuffer'),
 		Value.from_object(realm.shared_array_buffer_constructor_record()), attribute_writable | attribute_configurable)
 	global.define_direct_property(PropertyName.from_str('String'),
