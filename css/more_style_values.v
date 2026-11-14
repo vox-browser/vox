@@ -3089,7 +3089,7 @@ fn (style_value ShorthandStyleValue) serialize_white_space(mode SerializationMod
 }
 
 // grid-row / grid-column serialize as `<start> [/ <end>]`, dropping the end when it
-// is `auto` or equal to the start.
+// can be omitted without changing the parsed start and end placements.
 fn (style_value ShorthandStyleValue) serialize_grid_line(mode SerializationMode) ?string {
 	if style_value.shorthand_ !in [PropertyID.grid_row, .grid_column] {
 		return none
@@ -3111,9 +3111,13 @@ fn (style_value ShorthandStyleValue) serialize_grid_line(mode SerializationMode)
 	} else {
 		PropertyID.grid_column_end
 	}
-	start := (style_value.coordinating_longhand_value(start_id) or { return none }).serialize(mode)
+	start_value := style_value.coordinating_longhand_value(start_id) or { return none }
+	start := start_value.serialize(mode)
 	end := (style_value.coordinating_longhand_value(end_id) or { return none }).serialize(mode)
-	if end == 'auto' || start == end {
+	// A lone custom identifier would also become the end placement when reparsed.
+	start_is_lone_custom_ident := start_value is GridTrackPlacementStyleValue
+		&& start_value.grid_track_placement().is_custom_ident()
+	if start == end || (end == 'auto' && !start_is_lone_custom_ident) {
 		return start
 	}
 	return '${start} / ${end}'
@@ -3147,6 +3151,31 @@ fn serialize_grid_template_values(mode SerializationMode, areas StyleValue, rows
 	// Without named areas, the simple `<rows> / <columns>` form.
 	if areas_value.row_count() == 0 {
 		return '${rows_value.serialize(mode)} / ${columns_value.serialize(mode)}'
+	}
+
+	// Area strings require one explicit row track each and cannot be combined with
+	// repeat() or subgrid. Unrepresentable shorthands serialize to the empty string.
+	row_tracks := rows_value.grid_track_size_list()
+	column_tracks := columns_value.grid_track_size_list()
+	if row_tracks.is_subgrid() || column_tracks.is_subgrid() {
+		return ''
+	}
+	mut row_track_count := 0
+	for item in row_tracks.list() {
+		if item is ExplicitGridTrack {
+			if item.is_repeat() {
+				return ''
+			}
+			row_track_count++
+		}
+	}
+	if row_track_count != int(areas_value.row_count()) {
+		return ''
+	}
+	for item in column_tracks.list() {
+		if item is ExplicitGridTrack && item.is_repeat() {
+			return ''
+		}
 	}
 
 	// Named-areas form: interleave each area-row string with the row track sizes (omitting
