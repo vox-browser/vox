@@ -126,6 +126,9 @@ mut:
 	libjs_callback_settings_ []?&html.EnvironmentSettingsObject
 	libjs_modules_ map[string]&libjs.SourceTextModule
 	next_libjs_inline_module_ u64
+	libjs_native_cache_enabled_ bool
+	libjs_native_cache_pending_ bool
+	libjs_native_cache_failed_ bool
 }
 
 pub fn Runtime.create() &Runtime {
@@ -235,6 +238,7 @@ fn (runtime &Runtime) clean_up_html_script() {
 		mut realm := unsafe { &html.ScriptingRealm(settings.realm()) }
 		html.clean_up_after_running_script(mut realm)
 	}
+	runtime.schedule_document_native_cache()
 }
 
 fn (runtime &Runtime) callback_settings() ?&html.EnvironmentSettingsObject {
@@ -444,6 +448,10 @@ pub fn (runtime &Runtime) run_document_scripts_collect_errors(sources []ScriptSo
 pub fn (mut runtime Runtime) close() {
 	if runtime.closed {
 		return
+	}
+	runtime.flush_document_native_cache()
+	runtime.agent_vm.close_native_code() or {
+		eprintln('LibJS native cache close deferred: ${err.msg()}')
 	}
 	runtime.closed = true
 	runtime.libjs_modules_.clear()

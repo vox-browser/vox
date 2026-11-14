@@ -12,6 +12,7 @@ pub fn (mut runtime Runtime) install_libjs_document(document &dom.Document) ! {
 		return error('Native LibJS DOM bindings require the LibJS backend')
 	}
 	if runtime.libjs_document_host_ != none { return }
+	runtime.initialize_document_native_cache()
 	owner := voidptr(&runtime)
 	host := libjsdom.Host.create(runtime.agent_vm, runtime.realm, document, libjsdom.Hooks{
 		can_run_callback: fn [owner] () bool {
