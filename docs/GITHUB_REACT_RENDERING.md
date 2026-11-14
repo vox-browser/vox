@@ -521,3 +521,57 @@ are in
 The ignored structured record is
 `docs/performance/github-react-rendering-20261114-r8.json`. Generated C,
 private test executables and the Python environment are excluded.
+
+## Absolute generated-box measurements (November 14)
+
+`1c21e2e0a` admits ordinary absolute `::before` and `::after` boxes to the
+existing within-pass grid/flex measurement cache. The shared collector still
+validates generated text, style revisions, fonts, child identities and internal
+containing blocks. Replaced content, specialized generated kinds, anchors,
+calculated insets and shifted/fixed/sticky positions retain their full paths.
+Final absolute layout still runs. `VOX_DISABLE_ABSOLUTE_PSEUDO_MEASUREMENTS=1`
+restores the prior admission policy. A separate diagnostic confirms an actual
+new cache hit on the archived GitHub page.
+
+Three new cases pass with compiler-default GC and preallocation/GC disabled,
+plus the new rollback and existing static-generated rollback controls. They
+compare static records, final geometry and glyph positions with an independent
+uncached layout after producer scratch retirement, check copy-on-write rare
+records, and reject live text/inset/containing-block changes. Test compilation
+uses `V3_STR_CAP=1` to bound the current compiler's generated object formatters;
+assertions remain active. Both builds peak near 4.12 GB under the unchanged
+12 GiB guard, and runtime checks use 3 GiB guards. Initial uncapped attempts hit
+the guard; a separate compiler sample identifies automatic formatter synthesis.
+Temporary assertion changes were reverted. Transient shared LibJS compilation
+failures and the initial missing cross-file test helpers are also retained.
+
+The final C-O0 executable is
+`966123836108a671f654a544c7ed0b39af03f1bfc542ace76a3ee802d6bdef5c`.
+Startup, all nine SVG mutation reftests, and live navigation with all 34
+commit-linked rows pass. Two alternating final candidate/control pairs pass
+all four complete 33-row archived React audits, with identical decoded PNGs
+(`f0324073…`). Their launch-through-native-PNG/audit/teardown time medians are
+**12,140.762 ms candidate and 10,846.641 ms control**; observed instruction
+medians are 117,766,534,061 and 115,170,506,267.5. Both counters remain
+process-tree lower bounds. The 18-CPU host has recorded one-minute loads of
+6.85–7.62, with other builds active. The candidate regresses at these medians.
+An earlier, broader candidate had three exact-pixel pairs at 13,592.446 versus
+14,753.690 ms; its heading extension never reported a heading hit and was
+removed. These development results do not establish a production saving.
+
+The original native PNG reference still fails. No reference or tolerance
+changed, no instruction saving or broad-cadence credit is assigned, and Brave
+parity remains open. The latest completed production executable remains
+`d94d…`, which lacks this change. Its seven-pair Vox/Brave failure above remains
+the last measured production comparison. The managed post-commit hook requests
+a coalesced single-unit literal `-prod` rebuild; no duplicate build is queued.
+
+Raw commands, identities, counters, captures, profiles, failures and guard exits
+are retained in
+`~/Library/Caches/Vox/benchmarks/github-react-rendering-20261114-r9/evidence.tar.gz`
+(552 files; SHA-256
+`5711f7d5d9f5f7f180ae25613e8616b43e886c96c4d98596b84a44757f9df693`).
+The ignored structured record is
+`docs/performance/github-react-rendering-20261114-r9.json`. Generated C, private
+executables and the Python environment are excluded; scratch is removed after
+archive verification.
