@@ -1729,3 +1729,57 @@ scratch directories, binaries, generated C and guards are removed. The normal
 managed hook requests a C, literal V `-prod`, single-unit rebuild; no additional
 manual production build is requested. Frozen captures establish no live-site,
 author-script or instruction-performance acceptance.
+
+## Root-picture shadow fringes, 2026-11-14
+
+`a4b71a733` corrects the reduced translucent-shadow fixture's remaining four
+pixels without changing its reference, the filter kernel or the image shader.
+The native trace shows a 400×404 readback at picture position `(0, -60)`, with
+a clip covering the whole readback. The compositor grid is 416×256 with two
+rows. Its preceding guard treats the negative part of that offscreen clip as
+visible and declines tiled drawing, producing the four-pixel whole-readback
+result. An isolated GPU control reproduces the same four errors.
+
+The root picture clips negative document coordinates before publication. V now
+carries that property with the selected root grid and allows eligible rotated
+filters to retain the tile sampling grid across this invisible fringe. Copying
+and publication preserve the outside bytes. Right and bottom bounds retain
+their previous checks; non-root grids keep the stricter clip requirement.
+The existing diagnostics now report the filter clip alongside the grid.
+
+All **eight focused checks** pass under the 3 GiB runtime guard. The new
+regression compares the unchanged Brave shadow band through
+both single and grouped drawing: root tiles are exact, non-root fallback retains
+its four-pixel control result, and the sixty outside rows remain unchanged.
+Geometry, grouping and prefetch checks continue to pass. Compiler guards retain
+the default 12 GiB and V's 10G limit.
+
+Diagnostic executable SHA-256
+`b6fc5c6fc96111ae6964297c4f94ee774dc434462fbe4b1c533ef58c7de5c8b8`
+completes 36 fresh document captures across eighteen workloads plus startup.
+All 37 native guards, the driver and outer guard exit 0. All eighteen native
+pairs agree exactly in this cohort. The 41 selected rendering witnesses and
+executable, native-library, fixture, reference and diff-tool identities stay
+stable. GitHub preserves its 33 rows and HN its 30 stories.
+
+The **complete translucent-shadow fixture is exact twice**, correcting four
+pixels with no newly differing pixels. vlang.io stays at **830**, byte-for-byte
+unchanged from the fresh production control. GitHub, HN, Wikipedia, Lobsters
+and the preceding exact controls remain exact. The orbit retains 19 differences,
+the opaque layer 21,069, device-pixel shadows 92, and CNN 175,866. CNN's pair
+agreement here does not erase earlier native-repeat failures or its unresolved
+source/replay mismatch. vlang.io, CNN, missing Reddit and all-site equality
+remain open.
+
+The latest completed production bundle at this check is `0be493a0…`. Its receipt
+matches 39 of the candidate's 41 witnesses but predates both changed rendering
+inputs, `chromium/gpu_raster_darwin.v` and `chromium/msaa_tiles.v`. It cannot
+validate this fix. The normal managed hook requests a C, literal V `-prod`,
+single-unit rebuild; no duplicate manual build is requested. **Production
+validation of the new exact fixture remains pending.**
+
+Local evidence is retained under
+`docs/performance/vlang-gradients-20261112/raw/rotated-refine-20261114/`.
+Completed jobs, binaries, generated C, guards and the temporary harness symlink
+are removed after verified archival. Frozen screenshot checks establish no
+live-site, author-script or instruction-performance acceptance.

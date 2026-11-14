@@ -1319,9 +1319,17 @@ production `731ef68c` now confirms both complete fixtures exactly twice. See the
 with a faint blue floating-point color over a dark background. Two independent
 Brave captures agree, including two canonical-path confirmations. The focused
 GPU test checks the shadow through row 279 in both tile sampling modes, exactly;
-the complete browser capture with `d79672699` retains four one-level differences.
+the initial complete browser capture with `d79672699` retains four one-level
+differences. Follow-up `a4b71a733` makes the complete fixture exact twice in
+diagnostics by preserving the root compositor grid across an invisible negative
+readback fringe. Production validation of that follow-up is pending.
 The SVG triangle below that band establishes tile MSAA. The corresponding
 opaque `diagnostic/rotated-filter-layer` control stays on the preceding path
 and retains 21,069 differing pixels. References and tolerances are unchanged.
 The [pixel audit](../../../docs/OPTIMIZED_SITES_PIXELS_2026_11_12.md#rotated-shadow-filter-layers-2026-11-14)
 records the 23 focused checks, site results and rejected precision experiments.
+
+The root-fringe regression also exercises the real 400×404 readback at `(0,-60)`
+through single and grouped drawing, checks the unchanged non-root fallback,
+and verifies that outside pixels stay untouched. See the
+[root-fringe audit](../../../docs/OPTIMIZED_SITES_PIXELS_2026_11_12.md#root-picture-shadow-fringes-2026-11-14).

@@ -2903,3 +2903,18 @@ counts twice with matching source witnesses. The complete new translucent fixtur
 one-level errors despite its focused shadow-band test passing; the opaque
 control and remaining site failures stay open. See the
 [audit](OPTIMIZED_SITES_PIXELS_2026_11_12.md#rotated-shadow-filter-layers-2026-11-14).
+
+### Root-picture shadow fringes, 2026-11-14
+
+`a4b71a733` keeps eligible rotated filters on the root compositor grid when an
+offscreen clip includes negative document coordinates. The root picture clips
+that fringe before publication; outside readback bytes remain unchanged.
+Non-root and positive-edge guards retain their preceding constraints. Eight
+focused checks pass, including single/grouped raster comparisons and the
+unchanged non-root fallback control. The complete translucent-shadow fixture
+improves four pixels to zero twice, without shader, kernel or reference changes.
+The other seventeen workloads retain their preceding counts, including vlang.io
+at 830 and
+four exact archives. All native pairs agree in this cohort; earlier CNN failures
+remain open. Production validation awaits the managed rebuild. See the
+[audit](OPTIMIZED_SITES_PIXELS_2026_11_12.md#root-picture-shadow-fringes-2026-11-14).
