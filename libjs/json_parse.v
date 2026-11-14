@@ -29,6 +29,12 @@ mut:
 	position int
 }
 
+struct JSONStringToken {
+	start       int
+	end_        int
+	has_escapes bool
+}
+
 fn (mut parser JSONTextParser) take(mut vm VM) !u16 {
 	vm.consume_execution_budget()!
 	if parser.position >= parser.text.len {
@@ -56,18 +62,53 @@ fn json_hex_digit(character u16) int {
 	return -1
 }
 
-fn (mut parser JSONTextParser) string_value(mut vm VM) !Utf16String {
+// Validate each source code unit once, retaining its range rather than growing
+// a temporary UTF-16 array for the common unescaped string case.
+fn (mut parser JSONTextParser) string_token(mut vm VM) !JSONStringToken {
 	if parser.take(mut vm)! != `"` { return vm.throw_error_type(.syntax_error, .json_malformed) }
-	mut units := []u16{}
+	start := parser.position
+	mut has_escapes := false
 	for {
 		character := parser.take(mut vm)!
-		if character == `"` { return utf16_string_from_code_units(units) }
+		if character == `"` {
+			return JSONStringToken{ start: start, end_: parser.position - 1, has_escapes: has_escapes }
+		}
 		if character < 0x20 { return vm.throw_error_type(.syntax_error, .json_malformed) }
+		if character != `\\` { continue }
+		has_escapes = true
+		escaped := parser.take(mut vm)!
+		match escaped {
+			`"`, `\\`, `/`, `b`, `f`, `n`, `r`, `t` {}
+			`u` {
+				for _ in 0 .. 4 {
+					digit := json_hex_digit(parser.take(mut vm)!)
+					if digit < 0 { return vm.throw_error_type(.syntax_error, .json_malformed) }
+				}
+			}
+			else { return vm.throw_error_type(.syntax_error, .json_malformed) }
+		}
+	}
+	return error('Unreachable JSON string parser')
+}
+
+fn (parser &JSONTextParser) decode_string(token JSONStringToken) Utf16String {
+	if !token.has_escapes {
+		// Ladybird ed7562519e69: construct unescaped strings directly from
+		// their source storage. Vox already parses UTF-16, preserving lone
+		// surrogates without a UTF-8 conversion or an intermediate builder.
+		return utf16_string_from_code_units(parser.text[token.start..token.end_])
+	}
+	mut units := []u16{cap: token.end_ - token.start}
+	mut position := token.start
+	for position < token.end_ {
+		character := parser.text[position]
+		position++
 		if character != `\\` {
 			units << character
 			continue
 		}
-		escaped := parser.take(mut vm)!
+		escaped := parser.text[position]
+		position++
 		match escaped {
 			`"`, `\\`, `/` { units << escaped }
 			`b` { units << u16(8) }
@@ -78,16 +119,20 @@ fn (mut parser JSONTextParser) string_value(mut vm VM) !Utf16String {
 			`u` {
 				mut unit := u16(0)
 				for _ in 0 .. 4 {
-					digit := json_hex_digit(parser.take(mut vm)!)
-					if digit < 0 { return vm.throw_error_type(.syntax_error, .json_malformed) }
-					unit = (unit << 4) | u16(digit)
+					unit = (unit << 4) | u16(json_hex_digit(parser.text[position]))
+					position++
 				}
 				units << unit
 			}
-			else { return vm.throw_error_type(.syntax_error, .json_malformed) }
+			else { panic('Invalid validated JSON escape') }
 		}
 	}
-	return error('Unreachable JSON string parser')
+	return utf16_string_from_code_units(units)
+}
+
+fn (mut parser JSONTextParser) string_value(mut vm VM) !Utf16String {
+	token := parser.string_token(mut vm)!
+	return parser.decode_string(token)
 }
 
 fn (mut parser JSONTextParser) digits(mut vm VM) ! {
