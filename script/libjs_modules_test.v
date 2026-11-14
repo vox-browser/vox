@@ -59,3 +59,41 @@ fn test_libjs_module_urls_are_evaluated_once_and_errors_leave_classics_runnable(
 	}
 	assert false,'Module exceptions must stay observable'
 }
+
+fn test_libjs_external_module_dispatches_its_load_event_after_native_dom_changes() {
+	address := 'https://github.com/vlang/ready.js'
+	mut app := &BrowserApp{
+		page_model:page.Page.create(1)!
+		js_engine:.libjs
+		script_policy:.enabled
+		layout_tree_only:true
+		viewport_width:800
+		viewport_height:600
+		navigation_preloaded_resources:{
+			address:PreloadedResource{
+				url:address
+				body:'export const value=42;document.getElementById("result").textContent=value+"";'
+				request_type:'script'
+				status_code:200
+				response_headers:[adblock.ResponseHeader{name:'Content-Type',value:'text/javascript'}]
+			}
+		}
+	}
+	defer { app.dispose_browser_tab() }
+	app.install_loaded_page(LoadedPage{
+		url:'https://github.com/vlang/v'
+		content_type:'text/html'
+		markup:'<!doctype html><body><p id=result>pending</p><script id=module type=module src="./ready.js"></script><script>globalThis.moduleLoads=0;document.getElementById("module").addEventListener("load",function(){moduleLoads++;document.getElementById("result").textContent+=" loaded";});</script>'
+	},false)
+	mut loop := html.main_thread_event_loop()
+	for _ in 0 .. 32 {
+		if !loop.task_queue().has_runnable_tasks() { break }
+		loop.process()
+	}
+	app.poll_javascript_tasks()
+	text := app.document.get_element_by_id('result')?.as_node().text_content()?
+	assert text == '42 loaded', text
+	assert app.js_runtime.evaluate('moduleLoads')! == '1'
+	assert app.js_messages == []string{},app.js_messages.str()
+	assert !app.js_runtime.native_context_initialized()
+}
