@@ -28,7 +28,7 @@ and `UI2_SOURCE_DIR` can select existing checkouts.
 #### macOS
 
 ```sh
-brew install freetype openssl ffmpeg libavif curl
+brew install freetype openssl ffmpeg libavif
 eval "$(sh tools/run_v_tool.sh dev_build_env)"
 v .
 ./vox2 https://example.com
@@ -43,8 +43,9 @@ For an existing macOS checkout, rerun
 `eval "$(sh tools/run_v_tool.sh dev_build_env)"` before the next `v .` build.
 
 Font selection, Unicode processing and glyph-run policy use V code with bundled
-Unicode 17 data. FFmpeg, libavif and curl
-supply media, AVIF and HTTP support. To produce the signed application bundle:
+Unicode 17 data. FFmpeg and libavif supply media and AVIF support. HTTP uses
+macOS's built-in libcurl; Homebrew curl is not required. OpenSSL remains a
+dependency for WebCrypto. To produce the signed application bundle:
 
 ```sh
 sh build-prod-browser.sh --prod
