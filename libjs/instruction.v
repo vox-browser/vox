@@ -44,6 +44,7 @@ pub enum OpCode {
 	call
 	construct
 	new_function
+	new_function_with_name
 	new_object
 	new_array
 	new_regexp
@@ -102,7 +103,7 @@ fn (instruction Instruction) input_count() int {
 		}
 		.mov, .unary_plus, .unary_minus, .bitwise_not, .not_op, .typeof_op, .to_numeric,
 		.increment, .decrement, .set_binding, .set_variable, .initialize_binding, .jump_if_true,
-		.jump_if_false, .jump_if_nullish, .end, .throw_op, .construct, .new_array {
+		.jump_if_false, .jump_if_nullish, .end, .throw_op, .construct, .new_array, .new_function_with_name {
 			1
 		}
 		else {
@@ -155,7 +156,7 @@ pub fn (executable &Executable) validate(arguments_count u32) ! {
 				argument.slot(executable, arguments_count, false)!
 			}
 		}
-		if instruction.op == .new_function && (executable.parsed_source == unsafe { nil }
+		if instruction.op in [.new_function, .new_function_with_name] && (executable.parsed_source == unsafe { nil }
 			|| instruction.identifier >= u32(executable.parsed_source.function_table.entries.len)) {
 			return error('Function index out of range')
 		}

@@ -118,6 +118,8 @@ mut:
 	libjs_document_host_ ?&libjsdom.Host
 	libjs_messages_ []string
 	libjs_callback_settings_ []?&html.EnvironmentSettingsObject
+	libjs_modules_ map[string]&libjs.SourceTextModule
+	next_libjs_inline_module_ u64
 }
 
 pub fn Runtime.create() &Runtime {
@@ -265,7 +267,7 @@ fn (runtime &Runtime) check_execution_support(source_type libjs.SourceType) ! {
 	if runtime.closed {
 		return error('JavaScript runtime is closed')
 	}
-	if source_type == .module && runtime.module_host_ == none {
+	if source_type == .module && runtime.engine != .libjs && runtime.module_host_ == none {
 		return error('Module execution is not yet implemented by the browser JavaScript backend')
 	}
 }
@@ -300,6 +302,7 @@ fn (runtime &Runtime) execute_prepared(script &PreparedScript, stringify_result 
 	runtime.check_execution_support(script.source.source_type)!
 	if runtime.module_host_ != none { return runtime.execute_source(script.source, stringify_result) }
 	if runtime.engine == .libjs {
+		if script.source.source_type == .module { return runtime.execute_libjs_module(script, stringify_result) }
 		// Functions, lexical environments and completion values belong to the
 		// realm, including when an event or parser enters from frame scratch.
 		persistent := platform.enter_persistent()
@@ -435,6 +438,7 @@ pub fn (mut runtime Runtime) close() {
 		return
 	}
 	runtime.closed = true
+	runtime.libjs_modules_.clear()
 	if wakeup := runtime.document_state_wakeup_ {
 		runtime.document_state_wakeup_ = none
 		platform.release_closure(voidptr(wakeup))

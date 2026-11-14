@@ -113,6 +113,12 @@ fn (mut host BrowserParserScriptHost) execute(script &dom.HTMLScriptElement,
 		element: element
 		external_element: if element.has_attribute('src') { ?&dom.Element(element) } else { none }
 	})!
+	if host.engine == .libjs && kind == .module && element.has_attribute('src') {
+		// LibJS completes import-free modules synchronously. The element model
+		// delegates module completion events to its element-aware execution hook.
+		event := dom.Event.create('load', dom.EventInit{})
+		unsafe { &dom.EventTarget(element) }.dispatch_event(event)
+	}
 }
 
 fn (mut host BrowserParserScriptHost) run_script(source browserjs.ScriptSource) ! {

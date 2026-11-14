@@ -57,8 +57,9 @@ fn (mut vm VM) execute_instruction(instruction Instruction, executable &Executab
 			mut object := left.as_object()
 			object.create_data_property_or_throw(mut vm, right.to_property_key(mut vm)!, source)!
 		}
-		.new_function {
-			result = Value.from_object(create_ecmascript_function(mut vm, executable, instruction.identifier, instruction.strict)!)
+		.new_function, .new_function_with_name {
+			inferred := if instruction.op == .new_function_with_name { ?Utf16String(left.to_primitive_string(mut vm)!.utf16) } else { none }
+			result = Value.from_object(create_ecmascript_function(mut vm, executable, instruction.identifier, instruction.strict, inferred)!)
 		}
 		.mov {
 			result = left

@@ -246,8 +246,8 @@ pub fn (err ModuleParseError) msg() string {
 }
 
 // 16.2.1.7 Source Text Module Records, https://tc39.es/ecma262/#sec-source-text-module-records
-// Parsing runs through the translated frontend. Linking and evaluation report
-// an InternalError until the CyclicModule machinery is translated.
+// Parsing runs through the translated frontend. Import-free modules execute in
+// a private ModuleEnvironment; dependency graph linking remains open.
 @[heap]
 pub struct SourceTextModule {
 pub mut:
@@ -257,11 +257,22 @@ pub mut:
 	loaded          []LoadedModuleRequest
 	meta            ?&Object // [[ImportMeta]]
 	host_defined    voidptr
+	module_starting_line u32 = 1
+mut:
+	module_environment ?&ModuleEnvironment
+	module_executable ?&Executable
+	module_body_start u32
+	module_status ModuleExecutionStatus
+	module_evaluation ?&PromiseCapability
 }
 
 // 16.2.1.7.1 ParseModule ( sourceText, realm, hostDefined ), https://tc39.es/ecma262/#sec-parsemodule
 pub fn SourceTextModule.parse(source_text string, realm &Realm, filename string, host_defined voidptr) !&SourceTextModule {
-	parsed := parse_source(source_text, .module)
+	return SourceTextModule.parse_with_options(source_text, realm, filename, host_defined, ParseOptions{})
+}
+
+pub fn SourceTextModule.parse_with_options(source_text string, realm &Realm, filename string, host_defined voidptr, options ParseOptions) !&SourceTextModule {
+	parsed := parse_source_with_options(source_text, .module, options)
 	if parsed.has_errors() {
 		return ModuleParseError{
 			diagnostics: parsed.diagnostics
@@ -309,14 +320,8 @@ fn (module_record &SourceTextModule) pending_translation_error(mut vm VM, operat
 
 pub fn (mut module_record SourceTextModule) load_requested_modules(mut vm VM, host_defined voidptr) &PromiseCapability {
 	mut promise := Promise.create(module_record.module_realm)
-	promise.reject(mut vm, thrown_value(module_record.pending_translation_error(mut vm, 'loading')))
+	if module_record.requests_dependencies() {
+		promise.reject(mut vm, thrown_value(module_record.pending_translation_error(mut vm, 'loading')))
+	} else { promise.fulfill(js_undefined()) }
 	return PromiseCapability.create(promise, none, none)
-}
-
-pub fn (mut module_record SourceTextModule) link(mut vm VM) ! {
-	return module_record.pending_translation_error(mut vm, 'linking')
-}
-
-pub fn (mut module_record SourceTextModule) evaluate(mut vm VM) !&PromiseCapability {
-	return module_record.pending_translation_error(mut vm, 'evaluation')
 }

@@ -244,7 +244,7 @@ fn (mut host Host) install_nodes() ! {
 		mut owner := unsafe { &Host(host) }
 		return owner.wrap_node(element.as_node())
 	})
-	for name in ['body', 'documentElement', 'URL', 'readyState'] {
+	for name in ['body', 'head', 'currentScript', 'documentElement', 'URL', 'readyState'] {
 		host.accessor(mut document, name, fn [host, name] (mut vm libjs.VM) !libjs.Value {
 			actual := host.node(mut vm)!
 			if !actual.is_document() {
@@ -259,6 +259,10 @@ fn (mut host Host) install_nodes() ! {
 			}
 			if name == 'body' {
 				if body := actual.document().body() { return owner.wrap_node(body.as_node()) }
+			} else if name == 'head' {
+				if head := actual.document().head() { return owner.wrap_node(head.as_node()) }
+			} else if name == 'currentScript' {
+				if script := actual.document().current_script() { return owner.wrap_node(script.as_node()) }
 			} else {
 				if root := actual.document().document_element() {
 					return owner.wrap_node(root.as_node())

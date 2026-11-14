@@ -12,11 +12,12 @@ struct ECMAScriptFunction {
 	environment ?Environment
 	private_environment ?&PrivateEnvironment
 	script_or_module ScriptOrModule
+	inferred_name ?Utf16String
 mut:
 	executable ?&Executable
 }
 
-fn create_ecmascript_function(mut vm VM, source &Executable, index u32, named_expression bool) !&Object {
+fn create_ecmascript_function(mut vm VM, source &Executable, index u32, named_expression bool, inferred_name ?Utf16String) !&Object {
 	data := source.parsed_source.function_table.get(FunctionId{id: index})
 	if data.kind != .normal { return error('LibJS async and generator functions are not translated yet') }
 	realm := vm.realm()
@@ -40,11 +41,12 @@ fn create_ecmascript_function(mut vm VM, source &Executable, index u32, named_ex
 		environment: environment
 		private_environment: vm.running_execution_context().private_environment
 		script_or_module: vm.running_execution_context().script_or_module
+		inferred_name: inferred_name
 	}
 	object.callable = FunctionObject(function)
 	if !data.is_arrow_function { object.constructor = ConstructorFunction(function) }
 	object.set_function_length(f64(data.function_length))
-	object.set_function_name(mut vm, PropertyName.from_utf16(if name := data.name { name.name } else { Utf16String.new() }), none)
+	object.set_function_name(mut vm, PropertyName.from_utf16(function.name_for_call_stack()), none)
 	units := utf16(source.parsed_source.source_text)
 	object.function_source_text = utf16_string_from_code_units(units[int(data.source_text_start)..int(data.source_text_end)])
 	if scope := named {
@@ -60,7 +62,10 @@ fn create_ecmascript_function(mut vm VM, source &Executable, index u32, named_ex
 }
 
 fn (function &ECMAScriptFunction) name_for_call_stack() Utf16String {
-	return if name := function.data.name { name.name } else { Utf16String.new() }
+	if name := function.data.name {
+		return if name.name.str() == '*default*' { utf16_string('default') } else { name.name }
+	}
+	return function.inferred_name or { Utf16String.new() }
 }
 
 fn (function &ECMAScriptFunction) realm() ?&Realm { return function.realm_ }
