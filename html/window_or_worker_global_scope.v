@@ -963,6 +963,9 @@ fn timer_delay_from(milliseconds f64) i32 {
 }
 
 fn (mut scope WindowOrWorkerGlobalScopeMixin) arm_timeout(timeout i32, completion_step fn (), id i32, repeat bool, throttling_class TimerThrottlingClass) {
+	if window := scope.associated_window_ {
+		if window.associated_document().has_been_destroyed() { return }
+	}
 	normalized_timeout := i64(if timeout < 0 { 0 } else { timeout })
 	now_ms := scope.timer_now_ms()
 	deadline_ms := now_ms + f64(normalized_timeout)
