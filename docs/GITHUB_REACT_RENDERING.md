@@ -451,3 +451,73 @@ The ignored structured record is
 `docs/performance/github-react-rendering-20261114-r7.json`. Generated C, private
 executables and the Python environment are excluded; job scratch is removed
 after archive verification.
+
+## Cached query classifications and production follow-up (November 14)
+
+`1cbb2af9d` keeps each valid selector's independent-compound classification and
+namespace metadata with its document-owned parsed graph. Matches, scope,
+relational contexts and DOM results remain fresh. General descendant walks
+reuse the known classification instead of analyzing the selector at every node.
+Each distinct valid selector retains one additional plan and compound vector.
+`VOX_RECOMPUTE_DOCUMENT_QUERY_PLANS=1` recomputes those projections and uses the
+old general walks for a same-executable diagnostic; the parsed-plan map remains
+present in both modes.
+
+Five new cases pass with compiler-default GC, preallocation/GC disabled, and
+the recompute control. They cover live mutations, scope/relations, invalid
+syntax, namespace metadata, separate documents and first-caller scratch
+retirement. The 512-call warm-classification check allocates **0 bytes**, versus
+**73,728 bytes** when recomputed. Ten existing query files pass in both GC
+configurations; two additional namespace/quirks and general-workspace files pass
+under preallocation. Startup, all nine SVG mutation reftests, and a fresh live
+navigation with all 34 commit-linked rows also pass.
+
+Three alternating C-O0 candidate/control pairs preserve complete archived
+React content and identical paired PNGs. Their time medians are 9,923.914 and
+10,711.615 ms. These development observations supply no production credit.
+
+Production receipt `20261114-143607-0a077e61` publishes executable
+`d94dced5f7643aa17ec662ec0a72400c5bb62a5e1ce87752af0a15ac07c41ce6` with
+single-unit literal `-prod`. Its sealed CSS source hash matches the committed
+query-plan implementation despite its earlier recorded HEAD. The previous
+`314e…` bundle also verifies the table-coordinate fix in a fresh full-content
+capture; its rows remain at x=33.
+
+Seven production candidate/recompute pairs pass every complete-content audit.
+Observed instruction medians are 31,752,569,697 and 32,103,418,111; time medians
+are 6,528.990 and 6,659.184 ms, with overlapping ranges. Six pairs have identical
+PNGs; one candidate differs by 54 header pixels in `(32,195)–(576,293)`. All 14
+captures keep rows at x=33, but all fail the original native reference.
+**No production page saving is credited.**
+
+A separate seven-pair Vox/Brave cohort on `d94d…` passes all 14 complete React
+text/error audits but fails every unchanged original per-engine PNG check.
+Vox's median is **7,146.097 ms**, versus **2,564.486 ms** for Brave; the
+highest-Vox/lowest-Brave ratio is **2.9865**. The requested parity gate fails.
+These retain the launch-through-PNG scope, one-second settle, frozen responses,
+fresh private HTTP caches and retained OS caches documented above, including
+the asymmetric audit/teardown endpoints. Instruction totals remain observed
+process-tree lower bounds. No references or tolerances changed.
+
+`f70d47527` fixes the guard failure uncovered before the corrected cohorts:
+current JSON decoding represents numeric PIDs as floats. The guard now accepts
+finite integral values within signed `pid_t` range while rejecting fractions,
+strings, booleans, out-of-range values and its own PID. A registry error also
+stops newly observed descendants. Four new guard cases and existing tooling
+checks pass, including RSS accounting and cleanup of a separately grouped
+64 MiB process. The failed first attempt and identity-verified cleanup of its
+one surviving owned Vox process are retained. Both corrected production
+cohorts adopt all 14 browser roots without adoption errors and retain the
+12 GiB guard.
+
+A separate production sample confirms continuing layout, script and painting
+costs; it is diagnostic evidence, not timing acceptance. Setup failures from a
+namespace fixture and a mismatched Python/Pillow environment are also retained.
+Raw commands, identities, counters, captures, profiles, failures and guard exits
+are in
+`~/Library/Caches/Vox/benchmarks/github-react-rendering-20261114-r8/evidence.tar.gz`
+(738 files; SHA-256
+`826bcab0d61b89292696e4eefe38ac5dfa994d9ebdd8ae73824d0afd550221fa`).
+The ignored structured record is
+`docs/performance/github-react-rendering-20261114-r8.json`. Generated C,
+private test executables and the Python environment are excluded.
