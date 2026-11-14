@@ -176,10 +176,11 @@ pub struct PaintTextShadow {
 pub:
 	glyph_run_id         string
 	shadow_bounding_rect IntRect
-	text_rect            IntRect
-	draw_location        Point
+	rect                 IntRect
+	translation          Point
 	blur_radius          int
 	color                Color
+	orientation          Orientation
 	font_smoothing       u8
 }
 
@@ -414,11 +415,11 @@ pub fn (command PaintConicGradient) dump() string {
 }
 
 pub fn (command PaintTextShadow) bounding_rect() IntRect {
-	return IntRect{int(command.draw_location.x), int(command.draw_location.y), command.shadow_bounding_rect.width, command.shadow_bounding_rect.height}
+	return command.shadow_bounding_rect
 }
 
 pub fn (command PaintTextShadow) dump() string {
-	return ' shadow_rect=${command.shadow_bounding_rect} text_rect=${command.text_rect} draw_location=${command.draw_location} blur_radius=${command.blur_radius} color=${command.color}'
+	return ' shadow_rect=${command.shadow_bounding_rect} rect=${command.rect} translation=${command.translation} blur_radius=${command.blur_radius} color=${command.color} orientation=${command.orientation}'
 }
 
 pub fn (command FillRoundedRect) bounding_rect() IntRect {

@@ -3672,6 +3672,7 @@ fn paint_text_shadow(mut commands []PaintCommand, fragment TextFragment,
 			rtl: fragment.rtl
 			opacity: opacity
 			blur: layer.blur
+			glyph_orientation: fragment.paintable_fragment.orientation
 		}
 		if retained_run := glyph_run {
 			shadow_command.glyph_run = retained_run

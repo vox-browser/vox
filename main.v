@@ -7481,6 +7481,10 @@ fn (mut app BrowserApp) draw_command(source_command &layout.PaintCommand, page_x
 		}
 		'draw_text' {
 			{
+				if command.glyph_orientation == .vertical && command.glyph_run != none {
+					app.draw_portable_shadow(layout.PaintCommand{...command, kind: 'draw_text_shadow', blur: 0}, page_x, page_y, scroll_y)
+					return
+				}
 				$if linux {
 					if command.glyph_run != none {
 						app.draw_portable_shadow(layout.PaintCommand{...command, kind: 'draw_text_shadow', blur: 0}, page_x, page_y, scroll_y)
@@ -7515,6 +7519,10 @@ fn (mut app BrowserApp) draw_command(source_command &layout.PaintCommand, page_x
 		}
 		'draw_text_shadow' {
 			{
+				if command.glyph_orientation == .vertical {
+					app.draw_portable_shadow(*command, page_x, page_y, scroll_y)
+					return
+				}
 				font_scale := math.sqrt(matrix[0] * matrix[0] + matrix[1] * matrix[1])
 				font_size := int(clamp(command.font_size * font_scale, 1.0, 256.0) + 0.5)
 				text_y := $if macos { native_text_draw_y(y, h) } $else { y }
