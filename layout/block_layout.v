@@ -438,9 +438,19 @@ fn layout_inside_independent_formatting_context_with_mode(mut state LayoutState,
 	if layout_mode != .normal || state.subtree_root != none {
 		mark_sized_by_ancestor_measurement(box)
 	}
+	// measurement_subtree_reuse.v: a measurement lays its flex and grid items
+	// out in normal mode; a clean item's committed layout answers it.
+	if layout_mode == .normal && state.subtree_root != none
+		&& state.measurement_reuse_source_ != unsafe { nil } && relayout_root_candidate(box) {
+		if reused := reuse_committed_subtree_layout_in_measurement(mut state, box, mut box_state,
+			available_space) {
+			return reused
+		}
+	}
 	records_relayout_root := layout_mode == .normal && state.subtree_root == none
 		&& relayout_root_candidate(box)
 	if records_relayout_root {
+		note_repeated_relayout_root(mut state, box, box_state, available_space)
 		if reused := reuse_committed_subtree_layout(mut state, box, mut box_state, available_space) {
 			return reused
 		}

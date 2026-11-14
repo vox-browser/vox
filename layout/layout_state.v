@@ -1428,6 +1428,12 @@ mut:
 	// each independent formatting context of this pass was laid out.
 	subtree_reuse_source_ &LayoutState = unsafe { nil }
 	subtree_layout_decisions_ map[u64]SubtreeLayoutDecision
+	// measurement_subtree_reuse.v: the first committed inner layout of each
+	// box this pass laid out again with other inputs, the serial of this pass,
+	// and, in a measurement, the committed state it may restore from.
+	first_relayout_records_ map[u32]RelayoutRecord
+	pass_serial_ u64
+	measurement_reuse_source_ &LayoutState = unsafe { nil }
 }
 
 pub fn LayoutState.new() &LayoutState {
@@ -1472,6 +1478,12 @@ fn (mut source LayoutState) new_measurement_for_subtree(subtree_root &NodeWithSt
 	return &LayoutState{
 		measurement_scratch_: scratch
 		subtree_root: subtree_root
+		measurement_reuse_source_: if source.subtree_root == none {
+			source.subtree_reuse_source_
+		} else {
+			source.measurement_reuse_source_
+		}
+		pass_serial_: source.pass_serial_
 		measurement_chunk_pool_: source.measurement_chunk_pool_
 		used_values_store: UsedValuesPagedStore{
 			measurement_arena: &MeasurementUsedValuesArena{

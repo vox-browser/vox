@@ -982,6 +982,7 @@ fn run_document_geometry_with_reuse(document &dom.Document, root &Node, viewport
 			state.subtree_reuse_source_ = unsafe { &LayoutState(previous.state) }
 		}
 	}
+	state.pass_serial_ = next_layout_pass_serial()
 	state.begin_retained_block_backoff_pass(previous_backoff)
 	state.enable_measurement_chunk_pool()
 	$if prealloc {

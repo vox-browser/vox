@@ -57,6 +57,11 @@ struct RelayoutRecord {
 	after  UsedValues
 	space  AvailableSpace
 	result FormattingContextResult
+	// measurement_subtree_reuse.v: the pass that recorded or carried this
+	// record, and for a first record the box's baselines after that call.
+	serial        u64
+	baselines     TextControlBaselines
+	has_baselines bool
 }
 
 enum SubtreeLayoutDecision as u8 {
@@ -96,15 +101,24 @@ fn layout_record_snapshot(values &UsedValues) UsedValues {
 fn record_relayout_root(mut state LayoutState, box &Node, before &UsedValues, after &UsedValues,
 	space AvailableSpace, result FormattingContextResult) {
 	styled := box.as_node_with_style() or { return }
+	index := styled.layout_index()
+	// A box laid out again in this pass reports the baselines of this call, to
+	// compare with those its first record kept (measurement_subtree_reuse.v).
+	repeated := relayout_root_has_first_record_of_this_pass(state, box, index)
+	baselines := if repeated { layout_box_baselines(state, box) } else { TextControlBaselines{} }
 	mut retained := retain_geometry_allocations()
 	defer { retained.finish() }
-	state.relayout_records_[styled.layout_index()] = RelayoutRecord{
-		node:   box
-		before: layout_record_snapshot(before)
-		after:  layout_record_snapshot(after)
-		space:  space
-		result: result
+	state.relayout_records_[index] = RelayoutRecord{
+		node:          box
+		before:        layout_record_snapshot(before)
+		after:         layout_record_snapshot(after)
+		space:         space
+		result:        result
+		serial:        state.pass_serial_
+		baselines:     baselines
+		has_baselines: repeated
 	}
+	drop_stale_first_relayout_record(mut state, box, index)
 }
 
 fn note_incremental_layout_origin(mut state LayoutState, node &Node) {
@@ -318,6 +332,8 @@ fn try_incremental_relayout(document &dom.Document, root &Node, previous &Layout
 	state.inline_layouts_ = previous.inline_layouts_.clone()
 	state.text_control_layouts_ = previous.text_control_layouts_.clone()
 	state.relayout_records_ = previous.relayout_records_.clone()
+	state.first_relayout_records_ = previous.first_relayout_records_.clone()
+	state.pass_serial_ = next_layout_pass_serial()
 	state.subgrid_storage_ = previous.subgrid_storage_
 	state.begin_retained_block_backoff_pass(previous.block_layout_backoff_)
 	state.previous_state_ = unsafe { &LayoutState(previous) }
@@ -620,6 +636,7 @@ __global incremental_layout_fresh_counts [6]u64
 
 fn report_incremental_layout_pass(same_tree bool) {
 	report_retained_flow_rejections()
+	report_measurement_subtree_reuse()
 	if !incremental_layout_diagnostics { return }
 	eprintln('VOX_INCREMENTAL_LAYOUT pass same_tree=${same_tree} reused=${incremental_layout_reused_subtrees} no_source=${incremental_layout_fresh_counts[0]} dirty=${incremental_layout_fresh_counts[1]} uncommitted=${incremental_layout_fresh_counts[2]} unrecorded=${incremental_layout_fresh_counts[3]} changed_inputs=${incremental_layout_fresh_counts[4]} blocked=${incremental_layout_fresh_counts[5]}')
 }
@@ -673,8 +690,14 @@ fn carry_committed_layout_records(mut state LayoutState, previous &LayoutState, 
 		index := styled.layout_index()
 		old_index := lookup.index
 		if record := previous.relayout_records_[old_index] {
-			if voidptr(record.node) == voidptr(node) { state.relayout_records_[index] = record }
+			if voidptr(record.node) == voidptr(node) {
+				state.relayout_records_[index] = RelayoutRecord{
+					...record
+					serial: state.pass_serial_
+				}
+			}
 		}
+		carry_first_relayout_record(mut state, previous, node, old_index, index)
 		if record := previous.text_control_layouts_[old_index] {
 			state.text_control_layouts_[index] = record
 		}
