@@ -118,12 +118,12 @@ pub fn (mut form HTMLFormElementModel) remove_associated_element(control &FormAs
 pub fn (form &HTMLFormElementModel) action_from_form_element(submitter ?&FormAssociatedElement) string {
 	if control := submitter {
 		if control.is_submit_button() {
-			if value := control.element.get_attribute('formaction') {
+			if value := control.element.get_attribute_ns(none, 'formaction') {
 				return value
 			}
 		}
 	}
-	return form_model_element(form).get_attribute('action') or { '' }
+	return form_model_element(form).get_attribute_ns(none, 'action') or { '' }
 }
 
 pub fn (form &HTMLFormElementModel) method_state_from_form_element(submitter ?&FormAssociatedElement) FormMethodState {
