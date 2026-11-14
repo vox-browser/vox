@@ -449,6 +449,12 @@ pub fn (mut navigation Navigation) abort_a_navigate_event(event &NavigateEvent, 
 	defer {
 		if mut context := execution_context { context.close() }
 	}
+	// Abort listeners can synchronously start another navigation. Retire the
+	// old event and its tracker before dispatching the signal.
+	navigation.ongoing_navigate_event_ = none
+	if tracker := navigation.ongoing_api_method_tracker_ {
+		navigation.reject_the_finished_promise(tracker, reason)
+	}
 	if controller := event.abort_controller() {
 		mut mutable_controller := unsafe { &dom.AbortController(controller) }
 		if window := navigation.owning_window() {
@@ -461,10 +467,6 @@ pub fn (mut navigation Navigation) abort_a_navigate_event(event &NavigateEvent, 
 		}
 	}
 	information := navigation.navigation_error_information(reason)
-	navigation.ongoing_navigate_event_ = none
-	if tracker := navigation.ongoing_api_method_tracker_ {
-		navigation.reject_the_finished_promise(tracker, reason)
-	}
 	navigation.dispatch_navigation_error(information)
 	if transition := navigation.transition_ {
 		mut committed := unsafe { &dom.Promise(transition.committed()) }
