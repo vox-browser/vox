@@ -88,6 +88,11 @@ fn shader_global_symbols(tokens []string, functions []ShaderFunction, stage Stag
   }
   at++
  }
+ for declaration in ordinary_global_declarations(tokens,functions) {
+  for field in declaration.fields {
+   result << ShaderSymbol{name:field.name,typ:field.typ,start:field.name_at,end:tokens.len,length:field.length,readonly:declaration.readonly}
+  }
+ }
  for name in ['gl_VertexID','gl_InstanceID','gl_FragCoord','gl_FrontFacing','gl_PointCoord','gl_MaxVertexAttribs','gl_MaxVaryingVectors'] {result << ShaderSymbol{name:name,typ:if name in ['gl_VertexID','gl_InstanceID'] || name.starts_with('gl_Max') {'int'} else if name=='gl_FrontFacing' {'bool'} else if name=='gl_PointCoord' {'vec2'} else {'vec4'},readonly:true,start:-1,end:tokens.len}}
  for name,typ in {'gl_Position':'vec4','gl_FragColor':'vec4','gl_FragData':'vec4','gl_PointSize':'float'} {result << ShaderSymbol{name:name,typ:typ,start:-1,end:tokens.len,length:if name=='gl_FragData' {8} else {0}}}
  return result
@@ -98,33 +103,23 @@ fn function_symbols(tokens []string, function ShaderFunction, types map[string]b
  for parameter in function.parameters {result << ShaderSymbol{name:parameter.name,typ:parameter.typ,start:function.body-1,end:function.end,length:parameter.array_length,readonly:parameter.constant}}
  mut ends:=[]int{len:function.end-function.body,init:function.end}
  for p in function.body..function.end {
-  if tokens[p]=='{' || tokens[p]=='for' {
-   end:=if tokens[p]=='{' {matching_token(tokens,p)!+1} else {statement_end(tokens,p,0)!}
-   for position in p..end {if ends[position-function.body]>end {ends[position-function.body]=end}}
+  if tokens[p]=='{' {
+   end:=matching_token(tokens,p)!+1
+   cap_symbol_scope(mut ends,function.body,p,end)
+  } else if tokens[p] in ['if','for','while','switch','do'] {
+   end:=statement_end(tokens,p,0)!
+   cap_symbol_scope(mut ends,function.body,p,end)
+   body:=if tokens[p]=='do' {p+1} else {matching_token(tokens,p+1)!+1}
+   body_end:=statement_end(tokens,body,0)!
+   cap_symbol_scope(mut ends,function.body,body,body_end)
+   if tokens[p]=='if' && body_end<tokens.len && tokens[body_end]=='else' {
+    cap_symbol_scope(mut ends,function.body,body_end+1,end)
+   }
   }
  }
- for p in function.body..function.end-1 {
-  if !source_type(tokens[p],types) || !identifier(tokens[p+1]) || (p>0 && tokens[p-1]=='.') {continue}
-  if p+2<tokens.len && tokens[p+2]=='(' {continue}
-  mut name_at:=p+1
-  for name_at<function.end && identifier(tokens[name_at]) {
-   mut at:=name_at+1
-   mut length:=0
-   if at<tokens.len && tokens[at]=='[' {
-    end:=matching_token(tokens,at)!
-    if end==at+2 {length=int(pp_integer(tokens[at+1]) or {0})}
-    at=end+1
-   }
-   constant:=(p>0 && tokens[p-1]=='const') || (p>1 && tokens[p-2]=='const')
-   result << ShaderSymbol{name:tokens[name_at],typ:tokens[p],start:name_at,end:ends[name_at-function.body],length:length,readonly:constant}
-   mut nesting:=0
-   for at<function.end {
-    if nesting==0 && tokens[at] in [',',';'] {break}
-    if tokens[at] in ['(', '['] {nesting++};if tokens[at] in [')',']'] {if nesting==0 {break};nesting--}
-    at++
-   }
-   if at>=function.end || tokens[at]!=',' {break}
-   name_at=at+1
+ for declaration in local_declarations(tokens,function) {
+  for field in declaration.fields {
+   result << ShaderSymbol{name:field.name,typ:field.typ,start:field.name_at,end:ends[field.name_at-function.body],length:field.length,readonly:declaration.readonly}
   }
  }
  if version==100 {
@@ -137,7 +132,12 @@ fn function_symbols(tokens []string, function ShaderFunction, types map[string]b
   }
   result << protected
  }
+ _=types
  return result
+}
+
+fn cap_symbol_scope(mut ends []int,offset int,start int,end int) {
+ for position in start..end {if ends[position-offset]>end {ends[position-offset]=end}}
 }
 
 fn resolve_symbol(name string, at int, locals []ShaderSymbol, globals []ShaderSymbol) ?ShaderSymbol {
@@ -156,6 +156,23 @@ fn write_after_access(tokens []string, start int) !bool {
   break
  }
  return (start>0 && tokens[start-1] in ['++','--']) || (at<tokens.len && tokens[at] in ['=','+=','-=','*=','/=','%=','&=','|=','^=','<<=','>>=','++','--'])
+}
+
+fn constant_shader_index(tokens []string, permitted map[string]bool) bool {
+ if tokens.len>5 && tokens[0]=='_webgl_safe_index' && tokens[1]=='(' {
+  close:=matching_token(tokens,1) or {return false}
+  if close!=tokens.len-1 {return false}
+  mut comma:=2
+  for comma<close && tokens[comma]!=',' {
+   if tokens[comma] in ['(', '['] {comma=matching_token(tokens,comma) or {return false}}
+   comma++
+  }
+  if comma>=close {return false}
+  count:=constant_integer(tokens[comma+1..close],map[string]ConstantScalar{}) or {return false}
+  if count<1 || count>4096 {return false}
+  return constant_expression(tokens[2..comma],permitted)
+ }
+ return constant_expression(tokens,permitted)
 }
 
 fn analyze_shader(tokens []string, version int, stage Stage) !ShaderAnalysis {
@@ -204,7 +221,7 @@ fn analyze_shader(tokens []string, version int, stage Stage) !ShaderAnalysis {
     } else if (version==300 && (symbol.sampler || (symbol.block && symbol.length>0 && access==p+1))) || (version==100 && !(stage==.vertex && symbol.uniform && !symbol.sampler)) {
      mut permitted:=map[string]bool{}
      for _,loop in loop_indices {if loop.start<p && p<loop.end {if selected:=resolve_symbol(loop.name,p,locals,globals) {if selected.start==loop.start || (selected.start==loop_headers[loop.start]+1 && selected.readonly) {permitted[loop.name]=true}}}}
-     if version!=100 || !constant_expression(index,permitted) {return error('Shader index requires a constant expression')}
+     if version!=100 || !constant_shader_index(index,permitted) {return error('Shader index requires a constant expression')}
     }
     access=end+1
    }

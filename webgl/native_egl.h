@@ -89,6 +89,15 @@ VOX_EGL_LINKAGE void* vox_egl_create(int version)
         eglDestroyContext(display, context);
         return NULL;
     }
+    /* Never submit untrusted shaders to a context that ignored the requested
+     * robust access flag. An unavailable guarantee means WebGL is unavailable. */
+    GLboolean robust=GL_FALSE;
+    glGetBooleanv(GL_CONTEXT_ROBUST_ACCESS_KHR,&robust);
+    if(robust!=GL_TRUE || glGetError()!=GL_NO_ERROR) {
+        eglMakeCurrent(display,EGL_NO_SURFACE,EGL_NO_SURFACE,EGL_NO_CONTEXT);
+        eglDestroyContext(display,context);
+        return NULL;
+    }
     VoxEGLContext* result = calloc(1, sizeof(VoxEGLContext));
     if (!result) {
         eglMakeCurrent(display, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
