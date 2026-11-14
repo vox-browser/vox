@@ -179,7 +179,10 @@ fn (mut host CanvasHost) image_source(request map[string]json2.Any) !html.Canvas
 		bitmap := record.context.canvas().bitmap() or { return error('InvalidStateError: canvas has no bitmap') }
 		mut image := html.ImageBitmap.create()
 		image.set_bitmap(bitmap.clone())
-		return html.CanvasImageSource(html.ImageBitmapCanvasSource{ value: image })
+		return html.CanvasImageSource(html.ImageBitmapCanvasSource{
+			value: image
+			origin_clean: record.context.origin_clean()
+		})
 	}
 	if element := host.elements[source_key] {
 		if element.local_name() == 'canvas' {
@@ -187,7 +190,10 @@ fn (mut host CanvasHost) image_source(request map[string]json2.Any) !html.Canvas
 			if bitmap := html.html_canvas_element_get_bitmap_from_surface(canvas) {
 				mut image := html.ImageBitmap.create()
 				image.set_bitmap(bitmap.clone())
-				return html.CanvasImageSource(html.ImageBitmapCanvasSource{ value: image })
+				return html.CanvasImageSource(html.ImageBitmapCanvasSource{
+					value: image
+					origin_clean: html.html_canvas_element_is_origin_clean(canvas)
+				})
 			}
 		}
 		if element.local_name() == 'img' {
