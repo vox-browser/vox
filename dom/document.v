@@ -334,6 +334,10 @@ pub fn origin_create_opaque_file() Origin {
 	return origin_from_liburl(liburl.Origin.create_opaque(.file))
 }
 
+pub fn origin_create_opaque_sandboxed_file() Origin {
+	return origin_from_liburl(liburl.Origin.create_opaque(.sandboxed_file))
+}
+
 pub fn origin_from_tuple(scheme string, host string, port ?u16) Origin {
 	return origin_from_liburl(liburl.Origin.tuple(scheme, liburl.Host.from_string(host), port, none))
 }
@@ -346,8 +350,11 @@ pub fn origin_from_liburl(record liburl.Origin) Origin {
 }
 
 pub fn origin_from_ipc(value string) Origin {
-	if value.starts_with('opaque:') || value.starts_with('opaque-file:') {
-		prefix := if value.starts_with('opaque-file:') { 'opaque-file:' } else { 'opaque:' }
+	if value.starts_with('opaque:') || value.starts_with('opaque-file:')
+		|| value.starts_with('opaque-sandboxed-file:') {
+		prefix := if value.starts_with('opaque-sandboxed-file:') {
+			'opaque-sandboxed-file:'
+		} else if value.starts_with('opaque-file:') { 'opaque-file:' } else { 'opaque:' }
 		hex := value[prefix.len..]
 		if hex.len == 32 {
 			mut nonce := [16]u8{}
@@ -364,7 +371,9 @@ pub fn origin_from_ipc(value string) Origin {
 				nonce[index] = (high << 4) | low
 			}
 			if valid {
-				return origin_from_liburl(liburl.Origin.opaque(nonce, if prefix == 'opaque-file:' {
+				return origin_from_liburl(liburl.Origin.opaque(nonce, if prefix == 'opaque-sandboxed-file:' {
+					liburl.OpaqueOriginType.sandboxed_file
+				} else if prefix == 'opaque-file:' {
 					liburl.OpaqueOriginType.file
 				} else {
 					liburl.OpaqueOriginType.standard
@@ -382,7 +391,11 @@ pub fn (o Origin) serialize_for_ipc() string {
 			for byte in opaque.nonce {
 				hex += '${byte:02x}'
 			}
-			prefix := if opaque.type_ == .file { 'opaque-file:' } else { 'opaque:' }
+			prefix := match opaque.type_ {
+				.file { 'opaque-file:' }
+				.sandboxed_file { 'opaque-sandboxed-file:' }
+				.standard { 'opaque:' }
+			}
 			return prefix + hex
 		}
 		return typed.serialize()
@@ -394,7 +407,7 @@ pub fn (o Origin) liburl_origin() ?liburl.Origin {
 	if typed := o.typed {
 		return typed
 	}
-	if o.value in ['', 'opaque', 'opaque-file', 'null'] {
+	if o.value in ['', 'opaque', 'opaque-file', 'opaque-sandboxed-file', 'null'] {
 		return none
 	}
 	parsed := liburl.parse(o.value) or { return none }
@@ -409,7 +422,7 @@ pub fn (o Origin) is_opaque() bool {
 	if typed := o.typed {
 		return typed.is_opaque()
 	}
-	return o.value in ['', 'opaque', 'opaque-file', 'null']
+	return o.value in ['', 'opaque', 'opaque-file', 'opaque-sandboxed-file', 'null']
 }
 
 pub fn (o Origin) is_opaque_file_origin() bool {
@@ -417,6 +430,11 @@ pub fn (o Origin) is_opaque_file_origin() bool {
 		return typed.is_opaque_file_origin()
 	}
 	return o.value == 'opaque-file'
+}
+
+pub fn (o Origin) is_file_origin() bool {
+	if typed := o.liburl_origin() { return typed.is_file_origin() }
+	return o.value in ['opaque-file', 'opaque-sandboxed-file']
 }
 
 pub fn (o Origin) serialize() string {

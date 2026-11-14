@@ -214,7 +214,7 @@ fn decode_origin(mut decoder ByteDecoder) !url.Origin {
 			nonce[index] = decoder.byte()!
 		}
 		type_byte := decoder.byte()!
-		if type_byte > u8(url.OpaqueOriginType.file) {
+		if type_byte > u8(url.OpaqueOriginType.sandboxed_file) {
 			return error('Invalid opaque origin type')
 		}
 		return url.Origin.opaque(nonce, unsafe { url.OpaqueOriginType(type_byte) })
