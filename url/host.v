@@ -52,7 +52,7 @@ pub fn parse_host(input string, is_opaque bool) ?Host {
 	}
 	if is_opaque {
 		value := parse_opaque_host(input) or { return none }
-		return Host.from_string(value)
+		return Host.opaque(value)
 	}
 	if input == '' {
 		return none

@@ -106,11 +106,10 @@ pub fn scheme_part_matches(a string, b string) MatchResult {
 
 pub fn host_part_matches(pattern string, maybe_host ?url.Host) MatchResult {
 	host := maybe_host or { return .does_not_match }
-	if host.is_empty_host() {
+	// A CSP host-source matches domains, never opaque or numeric IP hosts.
+	if !host.is_domain() {
 		return .does_not_match
 	}
-	// Match numeric IP hosts by their serialization too. IPv6 includes
-	// brackets, which cannot occur in a parsed host-source except via '*'.
 	host_string := host.serialize()
 	if pattern == '*' {
 		return .matches

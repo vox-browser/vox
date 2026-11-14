@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: BSD-2-Clause
 
 // Translation of the Host record and its serializer/classifiers from LibURL/Host.cpp/Host.h — a host is
-// an IPv4 address, an IPv6 address, or a string (a domain, an opaque host, or the empty host).
+// an IPv4 address, an IPv6 address, a domain string, or a distinct opaque host.
 // https://url.spec.whatwg.org/#concept-host
 module url
 
@@ -17,8 +17,14 @@ pub:
 	pieces []u16 // eight pieces
 }
 
-// https://url.spec.whatwg.org/#concept-host — IPv4, IPv6, or a string (domain / opaque host / empty).
-pub type Host = Ipv4Host | Ipv6Host | string
+// https://url.spec.whatwg.org/#opaque-host
+pub struct OpaqueHost {
+pub:
+	value string
+}
+
+// A string alternative is a domain or the empty host.
+pub type Host = Ipv4Host | Ipv6Host | OpaqueHost | string
 
 pub fn Host.ipv4(address u32) Host {
 	return Ipv4Host{
@@ -32,12 +38,16 @@ pub fn Host.ipv6(pieces []u16) Host {
 	}
 }
 
-// A domain, an opaque host, or (for the empty string) the empty host.
+// A domain or (for the empty string) the empty host.
 pub fn Host.from_string(value string) Host {
 	return value
 }
 
-// https://url.spec.whatwg.org/#concept-domain — a non-empty string host.
+pub fn Host.opaque(value string) Host {
+	return OpaqueHost{ value: value }
+}
+
+// https://url.spec.whatwg.org/#concept-domain — a non-empty domain string.
 pub fn (host Host) is_domain() bool {
 	if host is string {
 		return host != ''
@@ -47,10 +57,11 @@ pub fn (host Host) is_domain() bool {
 
 // https://url.spec.whatwg.org/#empty-host — the empty string host.
 pub fn (host Host) is_empty_host() bool {
-	if host is string {
-		return host == ''
+	return match host {
+		string { host == '' }
+		OpaqueHost { host.value == '' }
+		else { false }
 	}
-	return false
 }
 
 // https://url.spec.whatwg.org/#concept-host-serializer
@@ -67,6 +78,9 @@ pub fn (host Host) serialize() string {
 		// 3. A domain, opaque host, or empty host serializes as itself.
 		string {
 			host
+		}
+		OpaqueHost {
+			host.value
 		}
 	}
 }
