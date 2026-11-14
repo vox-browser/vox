@@ -63,22 +63,40 @@ static int activate_browser(void) {
   return 0;
 }
 
-static int wait_title(HANDLE process, wchar_t const *expected) {
-  ULONGLONG deadline = GetTickCount64() + 120000;
+static int document_title_matches(wchar_t const *title, wchar_t const *expected,
+                                  int exact_document) {
+  if (!exact_document) return wcsstr(title, expected) != NULL;
+  size_t length = wcslen(expected);
+  return length && !wcsncmp(title, expected, length) &&
+         (!title[length] || !wcsncmp(title + length, L" — vox [", 8));
+}
+
+static int wait_title_matching(HANDLE process, wchar_t const *expected,
+                               int exact_document) {
+  /* Opt-in live pages include network, stylesheet and font loading. Give
+   * software-emulated Windows time to finish; local fixtures stay bounded. */
+  ULONGLONG deadline = GetTickCount64() + (exact_document ? 600000 : 120000);
   while (GetTickCount64() < deadline) {
     if (WaitForSingleObject(process, 0) == WAIT_OBJECT_0)
       return 0;
     EnumWindows(find_browser, 0);
     wchar_t title[512] = {0};
-    if (browser_window && GetWindowTextW(browser_window, title, 512) &&
-        wcsstr(title, expected))
-      return 1;
+    if (browser_window && GetWindowTextW(browser_window, title, 512)) {
+      /* A live load must supply the document title itself. An error page
+       * mentioning the expected title must not satisfy this check. */
+      if (document_title_matches(title, expected, exact_document))
+        return 1;
+    }
     Sleep(100);
   }
   wchar_t title[512] = {0};
   GetWindowTextW(browser_window, title, 512);
   fwprintf(stderr, L"Expected title %ls; got %ls\n", expected, title);
   return 0;
+}
+
+static int wait_title(HANDLE process, wchar_t const *expected) {
+  return wait_title_matching(process, expected, 0);
 }
 
 static int write_fixture(wchar_t const *path, char const *source,
@@ -209,9 +227,11 @@ static int browser_uses_mesa(void) {
 }
 
 int wmain(int argc, wchar_t **argv) {
-  if (argc != 3 && argc != 4) {
+  if ((argc != 3 && argc != 4 && argc != 6) ||
+      (argc == 6 && (wcsncmp(argv[4], L"https://", 8) || !argv[5][0]))) {
     fwprintf(stderr,
-             L"usage: test_windows_browser.exe BROWSER PRIVATE_FIXTURE_DIR [WEBGL_FIXTURE]\n");
+             L"usage: test_windows_browser.exe BROWSER PRIVATE_FIXTURE_DIR "
+             L"[WEBGL_FIXTURE [HTTPS_URL EXPECTED_DOCUMENT_TITLE]]\n");
     return 2;
   }
   SetProcessDPIAware();
@@ -310,7 +330,7 @@ int wmain(int argc, wchar_t **argv) {
        "fragment");
   fflush(stdout);
 
-  if (argc == 4) {
+  if (argc >= 4) {
     phase = "WebGL";
     /* Navigate the unchanged shared fixture only after startup/input checks. */
     wchar_t fixture[32768];
@@ -330,6 +350,14 @@ int wmain(int argc, wchar_t **argv) {
     while (GetTickCount64() < deadline && !(pixels = webgl_pixels())) Sleep(100);
     if (!pixels || !browser_uses_mesa()) goto finished;
     puts("PASS: Mesa WebGL1/WebGL2 shader readback and 8192 displayed canvas pixels");
+    fflush(stdout);
+  }
+
+  if (argc == 6) {
+    phase = "HTTPS";
+    if (!enter_address(argv[4]) ||
+        !wait_title_matching(browser.hProcess, argv[5], 1)) goto finished;
+    puts("PASS: live HTTPS navigation and expected document title");
     fflush(stdout);
   }
 

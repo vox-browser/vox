@@ -17,6 +17,9 @@ on:
       - libregex/**
       - packaging/version.txt
       - browserupdate/**
+      - platform/curl_api.h
+      - browsernet/cancellable_transport.h
+      - requestserver/curl_*
       - docs/WINDOWS.md
   pull_request:
     paths:
@@ -31,6 +34,9 @@ on:
       - libregex/**
       - packaging/version.txt
       - browserupdate/**
+      - platform/curl_api.h
+      - browsernet/cancellable_transport.h
+      - requestserver/curl_*
       - docs/WINDOWS.md
   workflow_dispatch:
 
@@ -53,7 +59,7 @@ jobs:
         with:
           msystem: MINGW64
           update: true
-          install: mingw-w64-x86_64-gcc mingw-w64-x86_64-pkgconf make git
+          install: mingw-w64-x86_64-gcc mingw-w64-x86_64-pkgconf mingw-w64-x86_64-curl mingw-w64-x86_64-openssl mingw-w64-x86_64-python make git
       - name: Build V for the shared shader validator
         shell: msys2 {0}
         run: |
@@ -81,6 +87,20 @@ jobs:
           gcc -municode -std=c11 -Wall -Wextra -Werror \
             tools/test_windows_browser.c -o Build/windows-webgl/browser-test.exe \
             -luser32 -lgdi32
+          gcc -municode -std=c11 -Wall -Wextra -Werror \
+            tools/test_windows_browser_title.c -o Build/windows-webgl/browser-title-test.exe \
+            -luser32 -lgdi32
+          Build/windows-webgl/guard.exe 30000 3072 \
+            Build/windows-webgl/title.out Build/windows-webgl/title.err \
+            "$(cygpath -w "$PWD/Build/windows-webgl/browser-title-test.exe")" \
+            | tee Build/windows-webgl/title.json
+          cat Build/windows-webgl/title.out Build/windows-webgl/title.err
+          gcc -municode -std=gnu11 -O2 -Wall -Wextra -Wno-unused-function -Werror \
+            tools/test_windows_https.c -lcurl -lpthread -o Build/windows-webgl/https-test.exe
+          python tools/test_windows_https.py --guard Build/windows-webgl/guard.exe \
+            --test Build/windows-webgl/https-test.exe --output Build/windows-webgl \
+            | tee Build/windows-webgl/https.json
+          cat Build/windows-webgl/https.out Build/windows-webgl/https.err
           mkdir -p Build/deps/windows/mesa/lib/pkgconfig
           cat > Build/deps/windows/mesa/lib/pkgconfig/vox-mesa-egl.pc <<'PC'
           prefix=${pcfiledir}/../..

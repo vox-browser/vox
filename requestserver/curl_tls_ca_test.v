@@ -59,4 +59,9 @@ fn test_native_https_uses_configured_ca_without_disabling_certificate_or_hostnam
 	tls_ca_test_fetch('https://localhost:${port}/owner', 0, '')
 	os.setenv('SSL_CERT_FILE', os.join_path(directory, 'unrelated.pem'), true)
 	tls_ca_test_fetch('https://127.0.0.1:${port}/owner', 0, '')
+	// An explicit broken path must fail closed instead of selecting OS roots.
+	os.setenv('SSL_CERT_FILE', os.join_path(directory, 'missing.pem'), true)
+	tls_ca_test_fetch('https://127.0.0.1:${port}/owner', 0, '')
+	os.unsetenv('SSL_CERT_FILE')
+	tls_ca_test_fetch('https://127.0.0.1:${port}/owner', 0, '')
 }

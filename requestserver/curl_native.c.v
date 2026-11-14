@@ -15,6 +15,7 @@ fn C.vox_curl_multi_socket_action(handle voidptr, socket i32, events i32, runnin
 fn C.vox_curl_multi_add_handle(multi voidptr, easy voidptr) i32
 fn C.vox_curl_multi_remove_handle(multi voidptr, easy voidptr) i32
 fn C.vox_curl_easy_init() voidptr
+fn C.vox_curl_server_trust(handle voidptr, bundle &char) i32
 fn C.vox_curl_easy_cleanup(handle voidptr)
 fn C.vox_curl_easy_pause(handle voidptr, flags i32) i32
 fn C.vox_curl_slist_append(list voidptr, value &char) voidptr

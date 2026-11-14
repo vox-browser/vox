@@ -102,7 +102,8 @@ static int vox_resource_curl_fetch(const char *url, const char *proxy,
     VOX_RESOURCE_OPTION(CURLOPT_FOLLOWLOCATION, 0L);
     VOX_RESOURCE_OPTION(CURLOPT_SSL_VERIFYPEER, 1L);
     VOX_RESOURCE_OPTION(CURLOPT_SSL_VERIFYHOST, 2L);
-    if (ca_bundle[0]) VOX_RESOURCE_OPTION(CURLOPT_CAINFO, ca_bundle);
+    result = vox_curl_server_trust(easy, ca_bundle);
+    if (result != CURLE_OK) goto done;
     VOX_RESOURCE_OPTION(CURLOPT_ACCEPT_ENCODING, "");
     VOX_RESOURCE_OPTION(CURLOPT_HTTP_VERSION, enable_http2
         ? (long)CURL_HTTP_VERSION_2TLS : (long)CURL_HTTP_VERSION_1_1);
