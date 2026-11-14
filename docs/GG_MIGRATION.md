@@ -2931,5 +2931,18 @@ fixture improves 14 pixels to zero, twice; its independent GPU bands improve
 24 pixels to zero. vlang.io improves 830 to 818, correcting twelve without new
 differences, while four archived sites and preceding exact controls stay exact.
 The 23-workload cohort retains the CNN and other known failures. Production
-validation of 818 is pending. See the
+validation was pending at that check; production `1861ac91` now confirms both
+decoration fixes at 810. See the
 [audit](OPTIMIZED_SITES_PIXELS_2026_11_12.md#rounded-backgrounds-and-borders-in-one-v-raster-group-2026-11-14).
+
+### Shared unblurred inset decorations, 2026-11-14
+
+`f4a40d91b` groups one box's opaque background, unblurred inset shadows and
+border in a common root or non-root picture. It reuses the existing inset
+geometry and tile sample policy; clipped, blurred and incompatible cases keep
+ordinary replay. Eleven focused checks pass with arena poisoning. The new
+Brave fixture improves nine pixels to zero, and vlang.io improves 818 to 810,
+correcting eight without new differences. Production `1861ac91` confirms all
+27 workload counts twice, including four exact archives. The earlier tall-shadow
+baseline repeat failure remains open alongside the existing site failures.
+See the [audit](OPTIMIZED_SITES_PIXELS_2026_11_12.md#shared-unblurred-inset-decorations-2026-11-14).

@@ -1840,11 +1840,87 @@ retaining its repeatability and source/replay failures. vlang.io, CNN, missing
 Reddit and all-site equality remain open.
 
 Production `e1925955…` matches 41 of the candidate's 43 witnesses, predating the
-new group implementation and its dispatch. **Production validation of 818 is
-pending** the normal managed C, literal V `-prod`, single-unit rebuild request.
+new group implementation and its dispatch. **Production validation of 818 was
+pending at that check.** The subsequent inset-group cohort below confirms both
+corrections in production at 810.
 No additional manual build is queued. Commands, all attempts, source witnesses,
 executed test calls, PNGs and actual exits are retained locally under
 `docs/performance/vlang-gradients-20261112/raw/rounded-background-20261114/`.
 Completed job scratch and the test harness symlink are removed after verified
 archival. These frozen captures establish no live-site, author-script or
 instruction-performance acceptance.
+
+## Shared unblurred inset decorations, 2026-11-14
+
+`f4a40d91b` keeps one box's opaque background, eligible unblurred inset shadows
+and uniform border in a V document-shape group. The legacy native transaction
+still declines. The new path accepts a common root or non-root raster owner,
+preserves paint order and floating-point colors, and reuses the existing
+square-caster/rounded-hole inset geometry. Independent clips, mismatched state,
+blur and unsupported decorations retain ordinary replay. Shaders, filter
+kernels, existing references and tile MSAA-trigger policy are unchanged.
+
+The new `inset-decoration-samples` diagnostic has a fractional-position rounded
+box and a tall asymmetric box, plus an SVG tile trigger. Two fresh Brave
+captures at its canonical path agree exactly. Its raster test uses the actual
+snapped paint geometry from the native trace: separate resolves leave nine
+errors; a shared resolve is exact. Initial probes incorrectly use the unsnapped
+CSS coordinate and fail; those sources, outputs and failed attempts are retained.
+The ordinary inset fixture still uses its analytic tile selection.
+
+All **eleven focused checks** execute and pass: eight grouping, geometry and
+fallback checks, plus three GPU checks. Runtime guards use 3 GiB and
+`VOX_ARENA_POISON=1`; compiler guards retain 12 GiB and V's 10G limit.
+
+A freshly compiled control reproduces vlang.io at 818 pixels and the new
+fixture at nine, twice each. Candidate executable SHA-256
+`5353b68525c61bfd56b60b79957aa3ae618b74b9022c699345a443b13284a75d`
+completes 54 fresh document captures across 27 workloads plus startup. All 55
+native guards, the driver and outer guard exit 0, with 45 selected rendering
+witnesses unchanged. vlang.io improves **818 → 810**, correcting all eight
+panel-corner pixels with **zero new differences**. The complete new fixture
+improves **9 → 0**, twice. The mixed blurred/unblurred inset control improves
+**14,108 → 14,102**, correcting six without new errors; its blurred cases retain
+the preceding fallback. Twenty-six native pairs repeat exactly; CNN differs at 1,558 pixels.
+
+Production executable SHA-256
+`1861ac9181458f16bfbb56b6f07c3ead5edbfd39593349804bcc34d67d7d5e64`
+confirms every candidate workload count in two fresh captures each. All 54
+native guards, the driver and outer guard exit 0. Its 44 compiled-file witnesses
+match the feature revision, and the canonical shadow helper matches its
+compiled staged copy. Although the build-start revision predates this commit,
+the frozen parsed source contains the complete correction. The completed bundle
+is reused; no extra manual build is requested.
+
+| Workload | Production differing pixels in each fresh capture |
+| --- | ---: |
+| vlang.io archive, scripts disabled, scale 1 | **810** |
+| New inset diagnostic / ordinary inset / minimal rounded inset | **0 each** |
+| GitHub / HN / Wikipedia / Lobsters archives | **0 each** |
+| Preceding exact background, border, shadow, avatar and gradient-text controls | **0 each** |
+| Mixed inset / partial-border / device-pixel-shadow controls | **14,102 / 7 / 92** |
+| Rotated ellipse / opaque layer diagnostics | **19 / 21,069** |
+| CNN archive | **175,866** |
+
+GitHub preserves all 33 rows and HN all 30 stories. Twenty-six production pairs
+agree exactly; CNN's pair differs at 1,555 pixels. Compared directly with the
+retained 830-pixel production control, the two latest decoration fixes correct
+**20 pixels with zero new differences**. This also confirms the preceding
+rounded background/border correction in production.
+
+A separate failure remains open: before this change, the unchanged control
+executable produces tall-shadow errors of **0 and 29,188** in two fresh captures,
+with maximum channel error two. Its visible SVG marker, geometry and sample
+flags agree, so a missing marker or changed MSAA flag is not established as the
+cause. Preview, final diagnostic and production pairs are exact, but those
+later passes do not erase that baseline instability or establish a fix for it.
+No reference, tolerance or input identity was relaxed. vlang.io, CNN, missing
+Reddit and overall equality remain open.
+
+Evidence is local under
+`docs/performance/vlang-gradients-20261112/raw/inset-group-20261114/`, including
+all failed probes, commands, actual exits, input/source witnesses and PNGs.
+Completed job scratch, binaries, generated C and the temporary harness symlink
+are removed after verified archival. Normal managed commit hooks request C,
+literal V `-prod`, single-unit rebuilds. Frozen captures establish no live-site,
+author-script or instruction-performance acceptance.

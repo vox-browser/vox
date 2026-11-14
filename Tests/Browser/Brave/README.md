@@ -1341,5 +1341,15 @@ left-only and right-only rounded corners. Its unchanged Brave reference is
 raster tile: grouped background/border samples are exact, while separated
 resolves differ at 24 pixels. `77143c150` makes the complete browser fixture
 exact twice, correcting its fourteen errors. Seven focused checks pass;
-production validation of this follow-up is pending. See the
+production `1861ac91` now confirms that complete fixture exactly twice. See the
 [shared-rounding audit](../../../docs/OPTIMIZED_SITES_PIXELS_2026_11_12.md#rounded-backgrounds-and-borders-in-one-v-raster-group-2026-11-14).
+
+`diagnostic/inset-decoration-samples.html` checks a fractional-position rounded
+box and a tall asymmetric box with unblurred inset highlights. Two fresh Brave
+captures agree at 1280×800, scale 1. The SVG establishes MSAA in the first tile.
+The GPU test uses snapped decoration coordinates and checks both boxes against
+the unchanged reference: separate resolves leave nine differences; one resolve
+is exact. `f4a40d91b` also makes the complete fixture exact twice in diagnostics
+and production `1861ac91`, while the ordinary non-SVG inset fixture stays exact.
+Eleven focused checks pass; known blur and repeatability failures remain open.
+See the [inset-group audit](../../../docs/OPTIMIZED_SITES_PIXELS_2026_11_12.md#shared-unblurred-inset-decorations-2026-11-14).
