@@ -70,6 +70,8 @@ pub enum OpCode {
 	end
 	throw_op
 	catch_op
+	get_object_property_iterator
+	property_name_iterator_next
 }
 
 pub struct Instruction {
@@ -109,6 +111,7 @@ fn (instruction Instruction) input_count() int {
 		.mov, .unary_plus, .unary_minus, .bitwise_not, .not_op, .typeof_op, .to_numeric,
 		.increment, .decrement, .set_binding, .set_variable, .initialize_binding, .jump_if_true,
 		.require_object_coercible, .to_property_key, .copy_object_excluding_keys,
+		.get_object_property_iterator, .property_name_iterator_next,
 		.jump_if_false, .jump_if_nullish, .end, .throw_op, .construct, .new_array, .new_function_with_name {
 			1
 		}
@@ -171,7 +174,7 @@ pub fn (executable &Executable) validate(arguments_count u32) ! {
 			&& instruction.identifier >= u32(executable.identifier_table.len) {
 			return error('Identifier out of range')
 		}
-		if instruction.op in [.jump, .jump_if_true, .jump_if_false, .jump_if_nullish]
+		if instruction.op in [.jump, .jump_if_true, .jump_if_false, .jump_if_nullish, .property_name_iterator_next]
 			&& instruction.target >= executable.bytecode_length {
 			return error('Jump target out of range')
 		}

@@ -167,6 +167,7 @@ pub mut:
 	string_object        ?&StringObject // [[StringData]] and virtual indexed properties
 	string_iterator      ?&StringIterator
 	array_iterator       ?&ArrayIterator
+	property_name_iterator ?&PropertyNameIterator
 	array_buffer         ?&ArrayBufferObject
 	data_view            ?&DataView
 	typed_array          ?&TypedArray

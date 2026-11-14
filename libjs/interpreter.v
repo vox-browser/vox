@@ -50,6 +50,14 @@ fn (mut vm VM) execute_instruction(instruction Instruction, executable &Executab
 	}
 	mut result := js_undefined()
 	match instruction.op {
+		.get_object_property_iterator { result = Value.from_object(create_property_name_iterator(mut vm, left)!) }
+		.property_name_iterator_next {
+			if !left.is_object() { return vm.throw_error(.internal_error, 'Invalid property-name iterator') }
+			mut iterator := left.as_object().property_name_iterator or { return vm.throw_error(.internal_error, 'Invalid property-name iterator') }
+			step := iterator.next(mut vm)!
+			if step.done { return instruction.target }
+			result = step.value
+		}
 		.require_object_coercible {
 			if left.is_nullish() { return vm.throw_error_type(.type_error,.to_object_null_or_undefined) }
 		}

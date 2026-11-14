@@ -581,12 +581,15 @@ fn (mut generator BytecodeGenerator) collect_vars(statement &Statement) ! {
 		for child in scope.children {
 			generator.collect_vars(&child)!
 		}
-	} else if kind.tag in [.if_stmt, .while_stmt, .do_while, .for_stmt] {
+	} else if kind.tag in [.if_stmt, .while_stmt, .do_while, .for_stmt, .for_in_of] {
 		if body := kind.body { generator.collect_vars(body)! }
 		if consequent := kind.consequent { generator.collect_vars(consequent)! }
 		if alternate := kind.alternate { generator.collect_vars(alternate)! }
 		if init := kind.for_init {
 			if init is ForInitDeclaration { generator.collect_vars(init.statement)! }
+		}
+		if lhs := kind.for_in_of_lhs {
+			if lhs is ForInOfLhsDeclaration { generator.collect_vars(lhs.statement)! }
 		}
 	} else if kind.tag==.try_stmt {
 		data := kind.try_data or { return error('Missing try statement') }
@@ -640,6 +643,7 @@ fn (mut generator BytecodeGenerator) statement(mut vm VM, statement &Statement) 
 	defer { generator.range = previous_range }
 	kind := statement.kind
 	match kind.tag {
+		.for_in_of { generator.for_in_statement(mut vm, statement)! }
 		.try_stmt { generator.try_catch_statement(mut vm,statement)! }
 		.function_declaration {
 			if kind.function_id.id !in generator.initialized_functions {
