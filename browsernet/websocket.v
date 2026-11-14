@@ -361,6 +361,9 @@ fn websocket_parse_frame(buffer []u8) !(WebSocketFrame, int) {
 	fin := buffer[0] & 0x80 != 0
 	if buffer[0] & 0x70 != 0 { return error('protocol: reserved bits set') }
 	opcode := buffer[0] & 0x0f
+	if (opcode >= 3 && opcode <= 7) || opcode >= 11 {
+		return error('protocol: reserved opcode')
+	}
 	if buffer[1] & 0x80 != 0 { return error('protocol: masked server frame') }
 	mut length := u64(buffer[1] & 0x7f)
 	mut offset := 2
