@@ -1053,7 +1053,8 @@ pub fn compute_required_invalidation(old_style &ComputedProperties, new_style &C
 			}
 		}
 	}
-	if _ := old_layout_node {
+	// Only list items render a marker. A display change already rebuilds the box.
+	if old_layout_node != none && old_style.display().is_list_item() {
 		old_list_style_type := unsafe { &ComputedValues(old_style) }.computed_list_style_type()
 		if old_list_style_type.kind == .counter_style {
 			new_list_style_type := new_style.list_style_type_for_scope(css_style_scope_for(abstract_element))
