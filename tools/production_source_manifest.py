@@ -149,6 +149,29 @@ def matches_compiled_checkout(root, frozen):
     return True
 
 
+def compiled_package_witnesses(frozen, package):
+    """Check every consumed V file under a named package, including dependencies.
+
+    Use compiler-recorded paths rather than a hand-maintained list of selected
+    files. Staged GG modules, for example, contain both patched files and links
+    into the compiler's vlib. Do not resolve those paths before selecting them:
+    the manifest describes the paths and buffers the compiler actually read.
+    This witnesses V buffers only, not embedded resources or native libraries.
+    """
+    if not re.fullmatch(r'[A-Za-z_][A-Za-z_0-9]*', package):
+        raise ValueError('Expected one package directory name')
+    sources = {name: digest for name, digest in v_inputs(
+        frozen.get('exact_source_manifest', {})).items()
+        if package in Path(name).parent.parts}
+    if not sources:
+        raise RuntimeError('Compiler manifest has no sources for package: ' + package)
+    for name, digest in sources.items():
+        if not Path(name).is_absolute() or not re.fullmatch('[0-9a-f]{64}', digest):
+            raise RuntimeError('Invalid compiled package source: ' + name)
+    check_fingerprints(sources)
+    return {name: dict(current=digest, compiled=digest) for name, digest in sorted(sources.items())}
+
+
 def compile_component(root, inventory, directory, command):
     """Seal parsed-buffer metadata before expensive checking/C generation.
 
