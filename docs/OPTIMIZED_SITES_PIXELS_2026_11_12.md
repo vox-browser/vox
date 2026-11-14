@@ -1315,3 +1315,52 @@ Evidence remains local under
 `docs/performance/vlang-gradients-20261112/raw/geometry-fringe-20261114/`.
 The managed commit hook requests production rebuilding; the new result is
 **diagnostic pending production**, and the all-site gate remains open.
+
+
+## Shared PNG and outer-shadow resolve, 2026-11-14
+
+Commit `cd0173d0d` removes GitHub's remaining fifteen avatar differences.
+An eligible adjacent unblurred shadow and downsampled PNG now share one V/GG
+surface. Previously, resolving the shadow before the image rounded the backdrop
+before its edge samples blended. Eligibility requires one root owner, identity
+transform, full opacity, ordinary corners, matching content/image clips and no
+inherited clipping. Other cases retain the existing replay. Native code supplies
+only pixels, coordinates and the optional shadow descriptor; V owns selection.
+The original PNG boundary remains compatible. Retained decoded bitmaps follow
+the same selection/row-marker policy as ordinary image replay.
+
+The new white-background shadowed-avatar fixture differs from production
+`6bf5db1e` at eight pixels, twice; two fresh pinned Brave captures agree exactly.
+The GPU control reproduces those eight differences with separate resolves and
+matches exactly with one resolve, using the existing retained 38/255 alpha.
+Using .15 instead produces 42 separated / 37 shared differences and supplies
+no color-policy correction. Five focused tests execute successfully: two new
+GPU checks, two existing sampled-image oracles and a layout eligibility check.
+They cover shared pixels, the separated control, unchanged destination on
+unsupported blur, and layer/clip/opacity/transform fallbacks. Runtime guards
+use 3 GiB and arena poisoning.
+
+Final diagnostic executable SHA-256
+`279fe3e6db45e16ee10e20a3d6d187659e9d93a8945cceba21d079f0faa99817`
+makes the unchanged **GitHub archive pixel-exact twice**, retaining all 33 rows.
+The new avatar and prior search-border fixtures are also exact twice.
+HN/Wikipedia/Lobsters remain exact, including all 30 HN stories; vlang.io stays
+at **3,228**, CNN **175,866**, each twice. CNN's native pair differs at 1,558
+pixels, preserving its stability failure. Small-shadow, inset, shared-decoration,
+rotated-border and all seven prior image/poster controls remain exact twice;
+scale-2 device shadows remain at 92. All 40 final captures, startup smoke,
+41 runtime guards, driver and focused compiler/test exits are zero. The five
+changed rendering-source hashes and executable/library/fixture/reference/tool
+identities remain stable. No existing reference or tolerance changed.
+
+The first browser candidate excluded retained decoded bitmaps and therefore
+preserved the old differing counts. It is retained alongside the corrected
+instrumented and uninstrumented runs. The final build removes temporary decline
+logging and is checked independently without tracing. Concurrent DOM/query edits
+are outside this focused commit. Evidence remains local under
+`docs/performance/vlang-gradients-20261112/raw/avatar-shadow-20261114/`;
+temporary jobs, binaries and generated C are deleted after archival.
+The managed hook requests the normal production rebuild. **GitHub zero is
+diagnostic pending production**, not live-site or JavaScript conformance.
+vlang.io, CNN's rendering/source-replay/stability failures, the missing Reddit
+fixture and the overall all-site gate remain open. No performance credit is claimed.

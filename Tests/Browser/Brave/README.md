@@ -1276,3 +1276,13 @@ Commit `7019fc7ec` makes the full fixture exact in two diagnostic browser captur
 and checks its border band through single and grouped replay. Production
 validation is pending. See the
 [pixel audit](../../../docs/OPTIMIZED_SITES_PIXELS_2026_11_12.md#legacy-grid-reduction-2026-11-14).
+
+
+`diagnostic/shadowed-elliptical-avatar.html` and `resources/shadowed-avatar.png`
+cover an anisotropic rounded PNG with an unblurred one-pixel outer shadow.
+Two fresh Brave captures agree. Production `6bf5db1e` leaves eight differences
+on its white background; `cd0173d0d` matches the full fixture exactly twice.
+The corresponding GitHub archive's fifteen avatar differences also disappear.
+The GPU test checks a shared resolve against a separated-resolve control and
+rejects filtered underlays without mutating the backdrop. Production validation
+is pending; see the [audit](../../../docs/OPTIMIZED_SITES_PIXELS_2026_11_12.md#shared-png-and-outer-shadow-resolve-2026-11-14).

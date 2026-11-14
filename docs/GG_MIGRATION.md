@@ -2835,3 +2835,15 @@ and grouped replay now match the exact search-border regression. All 24 focused
 tests pass; the full fixture is exact twice and GitHub improves from 19 to 15
 differing pixels twice. Other site/control counts are preserved. Production
 validation is pending; see the [audit](OPTIMIZED_SITES_PIXELS_2026_11_12.md#native-leaf-fringe-correction-2026-11-14).
+
+
+### Shared PNG and outer-shadow resolve, 2026-11-14
+
+`cd0173d0d` draws an eligible adjacent unblurred shadow and PNG on one V/GG
+surface, preserving samples until the image has blended. Root-owner, clip,
+opacity, transform, color/profile and decoded-bitmap checks preserve fallbacks.
+Five focused tests and all seven existing image controls pass. GitHub's frozen
+archive improves from 15 differing pixels to zero in two fresh captures; the
+new shadowed-avatar fixture is also exact twice. HN/Wikipedia/Lobsters stay
+exact; vlang.io and CNN counts are unchanged. Production validation is pending.
+See the [audit](OPTIMIZED_SITES_PIXELS_2026_11_12.md#shared-png-and-outer-shadow-resolve-2026-11-14).
