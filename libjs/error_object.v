@@ -2,8 +2,7 @@ module libjs
 
 // Translated from LibJS/Runtime/Error.{h,cpp} and ErrorData.{h,cpp}: Error
 // instances, their [[ErrorData]] traceback, and the V8-style stack string.
-// Error prototypes come from the realm intrinsics, which are not translated yet,
-// so error objects are created with a null prototype and carry their kind.
+// Error prototypes come from the owning realm's initialized intrinsic graph.
 
 pub enum ErrorKind {
 	error
@@ -46,8 +45,7 @@ pub fn (frame TracebackFrame) source_range() SourceCodeRange {
 pub struct ErrorData {
 pub mut:
 	kind ErrorKind
-	// Upstream identifies the realm through the error prototype; the record keeps
-	// it directly until intrinsics are translated.
+	// Keep the owner explicit, including incomplete host-defined bootstrap realms.
 	realm         ?&Realm
 	traceback     []TracebackFrame
 	cached_string ?&PrimitiveString
@@ -73,7 +71,8 @@ fn populate_stack(vm &VM) []TracebackFrame {
 
 // Error::create(Realm&, Utf16String message) and the native error variants.
 pub fn create_error(mut vm VM, realm &Realm, kind ErrorKind, message ?Utf16String) &Object {
-	mut object := Object.create(realm, none)
+	prototype := if intrinsic := realm.error_prototypes[kind] { ?&Object(intrinsic) } else { none }
+	mut object := Object.create(realm, prototype)
 	object.class_name = kind.name()
 	object.error_data = &ErrorData{
 		kind:      kind

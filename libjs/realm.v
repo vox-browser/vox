@@ -24,6 +24,8 @@ pub mut:
 	object_constructor             ?&Object
 	math_object                    ?&Object
 	json_object                    ?&Object
+	error_prototypes               map[ErrorKind]&Object
+	error_constructors             map[ErrorKind]&Object
 	function_prototype             ?&Object                 // %Function.prototype%
 	array_prototype ?&Object
 	array_constructor ?&Object
@@ -137,6 +139,7 @@ pub fn initialize_host_defined_realm(mut vm VM, hooks RealmGlobalHooks) !&Execut
 	realm.function_prototype = function_prototype.object
 	object_prototype.initialize(mut vm, realm, realm_primitive_prototypes())
 	realm.object_constructor = ObjectConstructor.create(mut vm, realm).object
+	initialize_error_intrinsics(mut vm, mut realm)
 	realm.math_object = MathObject.create(mut vm, realm, object_prototype.object).object
 	thrower := create_throw_type_error_function(mut vm, realm, function_prototype.object)
 	realm.throw_type_error_function = thrower
@@ -234,8 +237,14 @@ pub fn initialize_host_defined_realm(mut vm VM, hooks RealmGlobalHooks) !&Execut
 	global.define_direct_property(PropertyName.from_str('DataView'),
 		Value.from_object(realm.data_view_constructor_record()),
 		attribute_writable | attribute_configurable)
+	for kind in [ErrorKind.error, .eval_error, .internal_error] {
+		global.define_direct_property(PropertyName.from_str(kind.name()), Value.from_object(realm.error_constructors[kind] or { panic('Missing error constructor') }), attribute_writable | attribute_configurable)
+	}
 	global.define_direct_property(PropertyName.from_str('Object'),
 		Value.from_object(realm.object_constructor_record()), attribute_writable | attribute_configurable)
+	for kind in [ErrorKind.range_error, .reference_error] {
+		global.define_direct_property(PropertyName.from_str(kind.name()), Value.from_object(realm.error_constructors[kind] or { panic('Missing error constructor') }), attribute_writable | attribute_configurable)
+	}
 	global.define_direct_property(PropertyName.from_str('RegExp'),
 		Value.from_object(realm.regexp_constructor or { panic('Missing RegExp constructor') }),
 		attribute_writable | attribute_configurable)
@@ -247,6 +256,9 @@ pub fn initialize_host_defined_realm(mut vm VM, hooks RealmGlobalHooks) !&Execut
 	global.define_direct_property(PropertyName.from_str('Symbol'),
 		Value.from_object(realm.symbol_constructor_record()),
 		attribute_writable | attribute_configurable)
+	for kind in [ErrorKind.syntax_error, .type_error, .uri_error] {
+		global.define_direct_property(PropertyName.from_str(kind.name()), Value.from_object(realm.error_constructors[kind] or { panic('Missing error constructor') }), attribute_writable | attribute_configurable)
+	}
 	// Other intrinsic properties follow constructors in GlobalObject.cpp.
 	global.define_direct_property(PropertyName.from_str('JSON'),
 		Value.from_object(realm.json_object or { panic('Missing JSON object') }), attribute_writable | attribute_configurable)
