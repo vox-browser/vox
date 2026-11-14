@@ -3,8 +3,8 @@ module libjs
 // Translated from the module records the VM's loader bookkeeping depends on:
 // Module and the loading payload variants (LibJS/Module.h, ModuleLoading.h,
 // Runtime/ModuleRequest.h) plus FinishLoadingImportedModule from Module.cpp.
-// CyclicModule graph loading, linking, and evaluation are not translated; a
-// payload's continuation receives the loaded module or the thrown value instead.
+// The synchronous CyclicModule graph path is in module_graph_*.v. Payloads keep
+// the embedding's asynchronous fetch continuation separate from evaluation.
 
 // https://tc39.es/ecma262/#loadedmodulerequest-record
 pub struct LoadedModuleRequest {
@@ -69,6 +69,7 @@ pub mut:
 	promise_capability   ?&PromiseCapability // [[PromiseCapability]]
 	is_loading           bool                // [[IsLoading]]
 	pending_module_count int                 // [[PendingModulesCount]]
+	requested_module_count int               // embedding graph-work budget
 	visited              []Module            // [[Visited]]
 	host_defined         voidptr             // [[HostDefined]]
 }
@@ -246,8 +247,8 @@ pub fn (err ModuleParseError) msg() string {
 }
 
 // 16.2.1.7 Source Text Module Records, https://tc39.es/ecma262/#sec-source-text-module-records
-// Parsing runs through the translated frontend. Import-free modules execute in
-// a private ModuleEnvironment; dependency graph linking remains open.
+// Parsing runs through the translated frontend; synchronous dependency graphs
+// retain live bindings and a private ModuleEnvironment for each source module.
 @[heap]
 pub struct SourceTextModule {
 pub mut:
@@ -264,6 +265,9 @@ mut:
 	module_body_start u32
 	module_status ModuleExecutionStatus
 	module_evaluation ?&PromiseCapability
+	module_dfs_index int
+	module_dfs_ancestor int
+	module_namespace_ ?&Object
 }
 
 // 16.2.1.7.1 ParseModule ( sourceText, realm, hostDefined ), https://tc39.es/ecma262/#sec-parsemodule
@@ -314,14 +318,10 @@ pub fn (mut module_record SourceTextModule) set_import_meta(import_meta &Object)
 	module_record.meta = import_meta
 }
 
-fn (module_record &SourceTextModule) pending_translation_error(mut vm VM, operation string) IError {
-	return vm.throw_error(.internal_error, 'SourceTextModule ${operation} requires the CyclicModule translation (${module_record.module_filename})')
-}
-
 pub fn (mut module_record SourceTextModule) load_requested_modules(mut vm VM, host_defined voidptr) &PromiseCapability {
 	mut promise := Promise.create(module_record.module_realm)
-	if module_record.requests_dependencies() {
-		promise.reject(mut vm, thrown_value(module_record.pending_translation_error(mut vm, 'loading')))
-	} else { promise.fulfill(js_undefined()) }
-	return PromiseCapability.create(promise, none, none)
+	capability := PromiseCapability.create(promise, none, none)
+	state := &GraphLoadingState{promise_capability:capability,is_loading:true,pending_module_count:1,host_defined:host_defined}
+	continue_source_module_loading(mut vm,state,ModuleLoadResult.from_module(Module(&module_record)))
+	return capability
 }

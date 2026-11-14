@@ -56,7 +56,7 @@ fn test_libjs_parser_reports_unsupported_dependency_linking_instead_of_a_clean_s
 		loop.process()
 	}
 	app.poll_javascript_tasks()
-	assert app.js_messages.any(it.contains('module dependency linking') && it.contains('LibJS'))
+	assert app.js_messages.any(it.contains('module dependency') && it.contains('LibJS'))
 	assert !app.js_runtime.native_context_initialized()
 }
 
