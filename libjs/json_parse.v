@@ -21,12 +21,19 @@ struct JSONParseRecord {
 	children map[string]&JSONParseRecord
 }
 
+struct JSONPropertyKeyCacheEntry {
+	start int
+	end_  int
+	key   ?PropertyName
+}
+
 struct JSONTextParser {
 	text          []u16
 	record_source bool
 	stack         StackInfo
 mut:
-	position int
+	position      int
+	property_keys [128]JSONPropertyKeyCacheEntry
 }
 
 struct JSONStringToken {
@@ -135,6 +142,29 @@ fn (mut parser JSONTextParser) string_value(mut vm VM) !Utf16String {
 	return parser.decode_string(token)
 }
 
+fn (mut parser JSONTextParser) property_name(mut vm VM) !PropertyName {
+	token := parser.string_token(mut vm)!
+	raw := unsafe { parser.text[token.start..token.end_] }
+	// Ladybird 9ac3fde4d8ba: reuse decoded keys within one parse. The
+	// bounded direct-mapped cache retains source ranges, so even escaped
+	// keys avoid another decode on a hit without allocating lookup strings.
+	mut hash := u64(raw.len) * 31
+	if raw.len > 0 { hash += u64(raw[0]) * 17 + u64(raw.last()) }
+	slot := int(hash % u64(parser.property_keys.len))
+	entry := parser.property_keys[slot]
+	if key := entry.key {
+		// Hash collisions must compare the complete raw UTF-16 spelling.
+		if raw == parser.text[entry.start..entry.end_] { return key }
+	}
+	key := PropertyName.from_utf16(parser.decode_string(token))
+	parser.property_keys[slot] = JSONPropertyKeyCacheEntry{
+		start: token.start
+		end_: token.end_
+		key: key
+	}
+	return key
+}
+
 fn (mut parser JSONTextParser) digits(mut vm VM) ! {
 	start := parser.position
 	for parser.position < parser.text.len && parser.text[parser.position] >= `0` && parser.text[parser.position] <= `9` {
@@ -186,12 +216,12 @@ fn (mut parser JSONTextParser) value(mut vm VM, depth int) !&JSONParseRecord {
 				key := if array {
 					PropertyName.from_number(index)
 				} else {
-					name := parser.string_value(mut vm)!
+					name := parser.property_name(mut vm)!
 					parser.whitespace(mut vm)!
 					if parser.take(mut vm)! != `:` {
 						return vm.throw_error_type(.syntax_error, .json_malformed)
 					}
-					PropertyName.from_utf16(name)
+					name
 				}
 				child := parser.value(mut vm, depth + 1)!
 				object.create_data_property_or_throw(mut vm, key, child.value)!
