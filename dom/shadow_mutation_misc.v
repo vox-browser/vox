@@ -56,6 +56,24 @@ pub fn mutation_type_from_string(type_ string) MutationType {
 	}
 }
 
+// Remember every requested record type for this document's lifetime. Removing
+// observers need not clear a bit: a false positive only retains the usual walk.
+pub fn (mut document Document) add_mutation_observer_types(options MutationObserverOptions) {
+	if options.attributes or { false } {
+		document.mutation_observer_types_ |= u8(1) << u8(MutationType.attributes)
+	}
+	if options.character_data or { false } {
+		document.mutation_observer_types_ |= u8(1) << u8(MutationType.character_data)
+	}
+	if options.child_list {
+		document.mutation_observer_types_ |= u8(1) << u8(MutationType.child_list)
+	}
+}
+
+pub fn (document &Document) has_mutation_observers_of_type(type_ MutationType) bool {
+	return document.mutation_observer_types_ & (u8(1) << u8(type_)) != 0
+}
+
 // https://dom.spec.whatwg.org/#mutationrecord
 pub fn MutationRecord.create(type_ string, target &Node, added_nodes []&Node, removed_nodes []&Node, previous_sibling ?&Node, next_sibling ?&Node, attribute_name ?string, attribute_namespace ?string, old_value ?string) &MutationRecord {
 	// Records can outlive both the insertion snapshot and their delivery callback.
@@ -201,6 +219,10 @@ pub fn (mut observer MutationObserver) observe(target &Node, mut options Mutatio
 			// 2. Set registered's options to options.
 			mut mutable_registered_observer := unsafe { &RegisteredObserver(registered_observer) }
 			mutable_registered_observer.set_options(options)
+			mut document := target.document()
+			if document != unsafe { nil } {
+				document.add_mutation_observer_types(options)
+			}
 			return
 		}
 	}

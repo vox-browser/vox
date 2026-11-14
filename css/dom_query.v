@@ -15,6 +15,7 @@ struct DocumentQueryPlan {
 	selectors SelectorList
 	independent ?[]CompoundSelector
 	named_namespace bool
+	matches_every_element bool
 	// Every simple selector compares a name, an ID or a class. Outside quirks
 	// mode such a match allocates nothing and needs no scratch workspace.
 	scalar bool
@@ -92,6 +93,7 @@ fn (mut state DocumentSelectorQueryState) query_plan(text string) ?&DocumentQuer
 		selectors: selectors
 		independent: independent
 		named_namespace: selector_list_contains_named_namespace(selectors)
+		matches_every_element: selector_list_matches_every_element(selectors)
 		scalar: independent_compounds_are_scalar(independent)
 	}
 	state.plans[text.clone()] = plan
@@ -123,6 +125,17 @@ fn (mut state DocumentSelectorQueryState) parse(selector_text string) ?SelectorL
 fn dom_selector_query_validate(target voidptr, selector_text string) bool {
 	mut state := unsafe { &DocumentSelectorQueryState(target) }
 	return state.parse(selector_text) != none
+}
+
+// DOM query APIs have no default namespace. A lone * or *|* therefore
+// matches every element; |* remains restricted to the null namespace.
+fn selector_list_matches_every_element(selectors SelectorList) bool {
+	if selectors.selectors.len != 1 { return false }
+	compounds := selectors.selectors[0].compound_selectors()
+	if compounds.len != 1 || compounds[0].simple_selectors.len != 1 { return false }
+	simple := compounds[0].simple_selectors[0]
+	return simple.type_ == .universal
+		&& simple.qualified_name().namespace_type in [.default_, .any]
 }
 
 fn selector_list_contains_named_namespace(selectors SelectorList) bool {
@@ -182,6 +195,7 @@ fn dom_selector_query_matches_checked(target voidptr, selector_text string, elem
 
 fn element_matches_query_plan(element &dom.Element, plan &DocumentQueryPlan,
 	scoping_root ?&dom.ParentNode) bool {
+	if plan.matches_every_element { return true }
 	if !recompute_document_query_plans && plan.independent == none {
 		return general_query_matches(element, plan.selectors, scoping_root)
 	}
@@ -222,6 +236,19 @@ fn dom_selector_scope_query(target voidptr, selector_text string, root &dom.Pare
 	first bool) ?[]&dom.Node {
 	mut state := unsafe { &DocumentSelectorQueryState(target) }
 	plan := state.query_plan(selector_text) or { return none }
+	if plan.matches_every_element {
+		mut nodes := []&dom.Node{}
+		if first {
+			if element := first_descendant_element(root.as_node()) {
+				nodes << element.as_node()
+			}
+		} else {
+			mut elements := []&dom.Element{}
+			collect_descendant_elements(root.as_node(), mut elements)
+			for element in elements { nodes << element.as_node() }
+		}
+		return nodes
+	}
 	if !recompute_document_query_plans {
 		if compounds := plan.independent {
 			if independent_query_tags_are_absent(root.as_node(), compounds) { return []&dom.Node{} }
@@ -372,6 +399,7 @@ fn query_selector_all_with_plan(node &dom.Node, plan &DocumentQueryPlan, mut res
 // Returns the first descendant element of `root` (in tree order) that matches the selector.
 pub fn query_selector(root &dom.Node, selector_text string) ?&dom.Element {
 	plan := document_query_plan(root.document(), selector_text) or { return none }
+	if plan.matches_every_element { return first_descendant_element(root) }
 	if !recompute_document_query_plans {
 		if compounds := plan.independent {
 			if independent_query_tags_are_absent(root, compounds) { return none }
@@ -403,6 +431,11 @@ pub fn query_selector_all(root &dom.Node, selector_text string) []&dom.Element {
 		return elements
 	}
 	plan := document_query_plan(root.document(), selector_text) or { return []&dom.Element{} }
+	if plan.matches_every_element {
+		mut elements := []&dom.Element{}
+		collect_descendant_elements(root, mut elements)
+		return elements
+	}
 	scratch := platform.begin_thread_scratch('independent DOM query')
 	if compounds := plan.independent_compounds() {
 		if !independent_query_may_match_document(root, compounds) {
@@ -422,6 +455,14 @@ pub fn query_selector_all(root &dom.Node, selector_text string) []&dom.Element {
 	if recompute_document_query_plans { query_selector_all_in(root, plan.selectors, mut results) }
 	else { query_selector_all_with_plan(root, plan, mut results) }
 	return results
+}
+
+fn first_descendant_element(root &dom.Node) ?&dom.Element {
+	for child in root.children {
+		if element := child.as_element() { return element }
+		if element := first_descendant_element(child) { return element }
+	}
+	return none
 }
 
 fn collect_descendant_elements(root &dom.Node, mut elements []&dom.Element) {

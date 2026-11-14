@@ -139,10 +139,7 @@ pub fn (mut form HTMLFormElementModel) elements() &HTMLFormControlsCollection {
 	if collection := form.elements_ {
 		return collection
 	}
-	root := html_form_element_root(&form)
-	collection := HTMLFormControlsCollection.create(unsafe { &dom.ParentNode(root) }, .descendants, fn [form] (element &dom.Element) bool {
-		return html_form_element_is_form_control(form, element)
-	})
+	collection := HTMLFormControlsCollection.create_for_form(&form)
 	form.elements_ = collection
 	return collection
 }

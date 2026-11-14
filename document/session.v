@@ -2,6 +2,7 @@ module main
 
 import browsernet
 import browserjs
+import browsersettings
 import css
 import dom
 import html
@@ -31,6 +32,7 @@ mut:
 	child_document_host   ?&BrowserChildDocumentHost
 	cached_navigable      &dom.Navigable = unsafe { nil }
 	page_showing          bool
+	force_dark_setting    ?bool
 	markup                string
 	content_type          string
 	source_label          string
@@ -129,6 +131,9 @@ fn (mut session DocumentSession) activate(document &dom.Document) {
 	assert session.state == .active && session.document == unsafe { nil }
 	session.document = document
 	session.BrowserMediaOwner.media_document = document
+	if navigable := document.navigable() {
+		session.apply_browser_force_dark(navigable, browsersettings.current().force_dark_enabled)
+	}
 }
 
 fn (mut session DocumentSession) unbind_runtime() {
@@ -164,6 +169,9 @@ fn (session &DocumentSession) can_resume() bool {
 // can synchronously inspect the active document, realm and resource owners.
 fn (mut session DocumentSession) resume(navigable &dom.Navigable) bool {
 	if !session.can_resume() { return false }
+	// Refresh cached style before pageshow can query it. A settings change
+	// while this owner was suspended only invalidated the active document.
+	session.apply_browser_force_dark(navigable, browsersettings.current().force_dark_enabled)
 	session.state = .active
 	if session.js_runtime != unsafe { nil } && session.js_runtime.engine == .libjs {
 		mut event_loop := html.main_thread_event_loop()

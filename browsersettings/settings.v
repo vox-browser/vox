@@ -12,6 +12,7 @@ pub:
 	javascript_engine string = 'javascriptcore'
 	enable_tab_coloring bool
 	enable_custom_tab_titles bool
+	force_dark_enabled bool
 	// GPU-accelerated scrolling is on unless the user turns it off: a profile
 	// saved before this setting existed keeps the default.
 	disable_gpu_canvas bool

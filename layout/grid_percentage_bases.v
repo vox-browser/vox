@@ -6,11 +6,7 @@ module layout
 fn initialize_grid_item_percentage_bases(mut state LayoutState, container &Node, placements []GridItemPlacement, columns []GridTrack, row_basis CSSPixels, column_gap CSSPixels, row_gap CSSPixels, height_definite bool, implicit_rows int, required_rows int) {
 	vertical := grid_is_vertical(container)
 	mut tracks := if vertical {
-		resolve_grid_axis_tracks_in_state(mut state, container, false, row_basis, row_gap, height_definite, implicit_rows, if required_rows > 0 {
-			required_rows
-		} else {
-			1
-		})
+		resolve_grid_axis_tracks_in_state(mut state, container, false, row_basis, row_gap, height_definite, implicit_rows, required_rows)
 	} else {
 		columns
 	}

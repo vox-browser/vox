@@ -460,6 +460,18 @@ pub fn HTMLCollection.create(root &ParentNode, scope HTMLCollectionScope, filter
 	return collection
 }
 
+// Specialized live collections can derive membership from their owner's
+// associations while retaining document/adoption invalidation and name lookup.
+pub fn HTMLCollection.create_from_collector(root &ParentNode, collector fn () []&Element, sort fn (&Element, &Element) bool) &HTMLCollection {
+	mut collection := &HTMLCollection{
+		root: root
+		collect_elements_: collector
+		sort: sort
+	}
+	collection.update_cache_if_needed()
+	return collection
+}
+
 fn sort_elements_with_comparator(mut elements []&Element, sort fn(&Element, &Element) bool) {
 	for i := 1; i < elements.len; i++ {
 		mut j := i
@@ -571,7 +583,11 @@ pub fn (c &HTMLCollection) update_cache_if_needed() {
 	} else {
 		CollectionScope.children
 	}
-	mut elements := collect_elements_for_scope(root_node, collection_scope, c.filter)
+	mut elements := if collector := c.collect_elements_ {
+		collector()
+	} else {
+		collect_elements_for_scope(root_node, collection_scope, c.filter)
+	}
 	sort_elements_with_comparator(mut elements, c.sort)
 
 	mut mutable_collection := unsafe { &HTMLCollection(c) }

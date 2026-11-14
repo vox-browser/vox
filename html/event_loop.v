@@ -123,6 +123,8 @@ pub:
 	source TaskSource
 mut:
 	steps     fn() @[required]
+	owns_steps_ bool
+	owned_closures_ []voidptr
 	document_ ?&dom.Document
 	timer_nesting_level_ u32
 	allocation_owner &platform.RetainedArena = unsafe { nil }
@@ -136,6 +138,17 @@ pub fn Task.create(source TaskSource, document ?&dom.Document, steps fn()) &Task
 	}
 	if source == .rendering { owner = unsafe { nil } }
 	return Task.create_with_storage(source, document, steps, owner)
+}
+
+// Only callers that transfer a one-shot closure opt in to this owner. Other
+// task APIs continue to borrow their callback, which may be shared or reused.
+fn Task.create_with_owned_steps(source TaskSource, document ?&dom.Document, steps fn (), owned_closures []voidptr) &Task {
+	mut task := Task.create(source, document, steps)
+	persistent := platform.enter_persistent()
+	defer { platform.leave_persistent(persistent) }
+	task.owns_steps_ = true
+	task.owned_closures_ = owned_closures.clone()
+	return task
 }
 
 fn Task.create_with_storage(source TaskSource, document ?&dom.Document, steps fn(), storage &platform.RetainedArena) &Task {
@@ -166,10 +179,23 @@ pub fn (task &Task) execute() {
 	task.steps()
 }
 
+fn discarded_task_steps() {}
+
 fn (task &Task) cancel() {
 	mut mutable_task := unsafe { &Task(task) }
 	mut owner := mutable_task.allocation_owner
 	mutable_task.allocation_owner = unsafe { nil }
+	if mutable_task.owns_steps_ {
+		steps := mutable_task.steps
+		owned_closures := mutable_task.owned_closures_
+		mutable_task.steps = discarded_task_steps
+		mutable_task.owns_steps_ = false
+		mutable_task.owned_closures_ = []voidptr{}
+		platform.release_closure(voidptr(steps))
+		for callback in owned_closures {
+			platform.release_closure(callback)
+		}
+	}
 	if owner != unsafe { nil } { owner.release() }
 }
 

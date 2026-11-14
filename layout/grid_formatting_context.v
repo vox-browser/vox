@@ -840,14 +840,6 @@ fn resolve_grid_tracks_for_axis(container &Node, list css.GridTrackSizeList, imp
 			}
 		}
 	}
-	if tracks.len == 0 {
-		tracks << GridTrack{
-			flex: 1
-			intrinsic: true
-			minimum_intrinsic: true
-			auto_min: true
-		}
-	}
 	return tracks
 }
 
@@ -1015,8 +1007,8 @@ fn place_grid_items(container &Node, physical_column_lines [][]css.GridLineName,
 	items := ordered_grid_items(container)
 	explicit_column_count := if column_lines.len > 0 { column_lines.len - 1 } else { 0 }
 	explicit_row_count := if row_lines.len > 0 { row_lines.len - 1 } else { 0 }
-	mut column_count := if explicit_column_count > 0 { explicit_column_count } else { 1 }
-	mut row_count := if explicit_row_count > 0 { explicit_row_count } else { 1 }
+	mut column_count := explicit_column_count
+	mut row_count := explicit_row_count
 	mut implicit_minimum_column := 0
 	mut implicit_minimum_row := 0
 	// CSS Grid auto-placement step 3 determines the width of the implicit grid
@@ -2728,11 +2720,8 @@ fn run_uncached_grid_formatting_context_internal(mut state LayoutState, containe
 		column_lines, row_lines, true, column_gap)
 	mut row_sizing_placements := grid_track_sizing_placements(mut state, container, placements,
 		column_lines, row_lines, false, row_gap)
-	mut required_columns := if explicit_column_count + placement_result.implicit_columns_before > 0 {
-		explicit_column_count + placement_result.implicit_columns_before
-	} else {
-		1
-	}
+	// A trackless axis stays empty until an in-flow item occupies it.
+	mut required_columns := explicit_column_count + placement_result.implicit_columns_before
 	mut required_rows := explicit_row_count + placement_result.implicit_rows_before
 	for placement in placements {
 		if placement.column + placement.column_span > required_columns {
@@ -2757,7 +2746,7 @@ fn run_uncached_grid_formatting_context_internal(mut state LayoutState, containe
 	}
 	initialize_grid_item_percentage_bases(mut state,container,placements,columns,row_basis,column_gap,row_gap,container_state.has_definite_height(),placement_result.implicit_rows_before,required_rows)
 	if grid_has_orthogonal_items(container,placements) {
-		initial_rows := resolve_grid_axis_tracks_in_state(mut state,container,false,row_basis,row_gap,container_state.has_definite_height(),placement_result.implicit_rows_before,if required_rows>0 { required_rows } else { 1 })
+		initial_rows := resolve_grid_axis_tracks_in_state(mut state,container,false,row_basis,row_gap,container_state.has_definite_height(),placement_result.implicit_rows_before,required_rows)
 		initialize_orthogonal_grid_inline_sizes(mut state,container,placements,initial_rows,row_gap)
 	}
 	column_sizing_placements = grid_lanes_sizing_placements(container,column_sizing_placements,columns.len,true)
@@ -2792,6 +2781,7 @@ fn run_uncached_grid_formatting_context_internal(mut state LayoutState, containe
    chromium_grid_resolve_spanning_group(mut columns,group,column_gap)
    continue
   }
+		mut native_group := []GridSpanGroupContribution{}
 		for placement in column_sizing_placements {
 			if placement.column_span != span
 				|| grid_track_range_crosses_flexible_track(columns, placement.column, placement.column_span)
@@ -2803,30 +2793,44 @@ fn run_uncached_grid_formatting_context_internal(mut state LayoutState, containe
 			minimum_contribution=grid_clamp_minimum_for_baseline_shim(state,placement.item,columns,placement.column,placement.column_span,column_gap,minimum_contribution,baseline_column_shims[voidptr(placement.item)],true)
 			min_content_contribution := grid_intrinsic_outer_width_contribution(mut state,
 				placement.item, .min_content).plus(placement.sizing_extra(true)).plus(baseline_column_shims[voidptr(placement.item)])
-			phase_one_contribution := if available_space.width.is_max_content() {
-				grid_limited_content_contribution(state, container, container_state, available_space.width, true, columns, placement.column, placement.column_span, min_content_contribution, minimum_contribution)
-			} else {
-				minimum_contribution
-			}
-			distribute_grid_item_contribution_across_intrinsic_track_bases(mut columns, placement.column, placement.column_span, column_gap, phase_one_contribution, .minimum_contribution)
-			distribute_grid_item_contribution_across_intrinsic_track_bases(mut columns, placement.column, placement.column_span, column_gap, min_content_contribution, .min_content_contribution)
-			if available_space.width.is_max_content() {
-				max_content_contribution := grid_intrinsic_outer_width_contribution(mut state,
-					placement.item, .max_content).plus(placement.sizing_extra(true)).plus(baseline_column_shims[voidptr(placement.item)])
-				limited_max_content_contribution := grid_limited_content_contribution(state, container, container_state, available_space.width, true, columns, placement.column, placement.column_span, max_content_contribution, minimum_contribution)
-				distribute_grid_item_contribution_across_intrinsic_track_bases(mut columns, placement.column, placement.column_span, column_gap, limited_max_content_contribution, .max_content_contribution)
-			}
-			for index in 0 .. columns.len {
-				if columns[index].has_growth_limit
-					&& columns[index].growth_limit.raw_value() < columns[index].base_size.raw_value() {
-					columns[index].growth_limit = columns[index].base_size
-				}
-			}
-			distribute_grid_item_contribution_across_intrinsic_track_growth_limits(mut columns, placement.column, placement.column_span, column_gap, min_content_contribution, .intrinsic_maximum)
 			max_content_contribution := grid_intrinsic_outer_width_contribution(mut state,
 				placement.item, .max_content).plus(placement.sizing_extra(true)).plus(baseline_column_shims[voidptr(placement.item)])
-			distribute_grid_item_contribution_across_intrinsic_track_growth_limits(mut columns, placement.column, placement.column_span, column_gap, max_content_contribution, .max_content_maximum)
+			// Chromium has its own single-track sizing policy; keep that path.
+			if container.document().font_rendering_policy() == .chromium {
+				phase_one_contribution := if available_space.width.is_max_content() {
+					grid_limited_content_contribution(state, container, container_state, available_space.width, true, columns, placement.column, placement.column_span, min_content_contribution, minimum_contribution)
+				} else { minimum_contribution }
+				distribute_grid_item_contribution_across_intrinsic_track_bases(mut columns, placement.column, placement.column_span, column_gap, phase_one_contribution, .minimum_contribution)
+				distribute_grid_item_contribution_across_intrinsic_track_bases(mut columns, placement.column, placement.column_span, column_gap, min_content_contribution, .min_content_contribution)
+				if available_space.width.is_max_content() {
+					limited_max_content_contribution := grid_limited_content_contribution(state, container, container_state, available_space.width, true, columns, placement.column, placement.column_span, max_content_contribution, minimum_contribution)
+					distribute_grid_item_contribution_across_intrinsic_track_bases(mut columns, placement.column, placement.column_span, column_gap, limited_max_content_contribution, .max_content_contribution)
+				}
+				for index in 0 .. columns.len {
+					if columns[index].has_growth_limit {
+						columns[index].growth_limit = css_pixels_max(columns[index].growth_limit, columns[index].base_size)
+					}
+				}
+				distribute_grid_item_contribution_across_intrinsic_track_growth_limits(mut columns, placement.column, placement.column_span, column_gap, min_content_contribution, .intrinsic_maximum)
+				distribute_grid_item_contribution_across_intrinsic_track_growth_limits(mut columns, placement.column, placement.column_span, column_gap, max_content_contribution, .max_content_maximum)
+				continue
+			}
+			native_group << GridSpanGroupContribution{
+				start: placement.column
+				span: placement.column_span
+				minimum: if available_space.width.is_intrinsic_sizing_constraint() {
+					grid_limited_content_contribution(state, container, container_state, available_space.width,
+						true, columns, placement.column, placement.column_span, min_content_contribution, minimum_contribution)
+				} else { minimum_contribution }
+				min_content: min_content_contribution
+				max_content: max_content_contribution
+				limited_max_content: if available_space.width.is_max_content() {
+					grid_limited_content_contribution(state, container, container_state, available_space.width,
+						true, columns, placement.column, placement.column_span, max_content_contribution, minimum_contribution)
+				} else { max_content_contribution }
+			}
 		}
+		resolve_grid_intrinsic_span_group(mut columns, native_group, column_gap, available_space.width)
 	}
 	increase_grid_flexible_tracks_for_spanning_items(mut state, container, container_state, mut columns,
 		column_sizing_placements, true, available_space.width, column_gap, container_width, false)
@@ -2924,12 +2928,12 @@ fn run_uncached_grid_formatting_context_internal(mut state LayoutState, containe
 		} else {
 			resolve_grid_axis_tracks_in_state(mut state, container, false,
 				row_basis, row_gap, container_state.has_definite_height(),
-				placement_result.implicit_rows_before, if required_rows > 0 { required_rows } else { 1 })
+				placement_result.implicit_rows_before, required_rows)
 		}
 	} else {
 		resolve_grid_axis_tracks_in_state(mut state, container, false,
 			row_basis, row_gap, container_state.has_definite_height(),
-			placement_result.implicit_rows_before, if required_rows > 0 { required_rows } else { 1 })
+			placement_result.implicit_rows_before, required_rows)
 	}
 	collapse_empty_auto_fit_tracks(mut rows, placements, false)
 	for placement in placements {
@@ -3042,6 +3046,7 @@ fn run_uncached_grid_formatting_context_internal(mut state LayoutState, containe
 	}
 	for span in 1 .. maximum_row_span + 1 {
 		if chromium_rows { break }
+		mut native_group := []GridSpanGroupContribution{}
 		for placement in row_sizing_placements {
 			if placement.row_span != span
 				|| grid_track_range_crosses_flexible_track(rows, placement.row, placement.row_span)
@@ -3058,32 +3063,25 @@ fn run_uncached_grid_formatting_context_internal(mut state LayoutState, containe
 			min_content_contribution := grid_item_outer_block_content_contribution(mut state,
 				placement.item, item_state, .min_content, container_state.has_definite_height(),
 				row_basis, spanned_track_size).plus(placement.sizing_extra(false)).plus(baseline_row_shims[voidptr(placement.item)])
-			phase_one_contribution := if available_space.height.is_max_content() {
-				grid_limited_content_contribution(state, container, container_state, available_space.height, false, rows, placement.row, placement.row_span, min_content_contribution, minimum_contribution)
-			} else {
-				minimum_contribution
-			}
-			distribute_grid_item_contribution_across_intrinsic_track_bases(mut rows, placement.row, placement.row_span, row_gap, phase_one_contribution, .minimum_contribution)
-			distribute_grid_item_contribution_across_intrinsic_track_bases(mut rows, placement.row, placement.row_span, row_gap, min_content_contribution, .min_content_contribution)
-			if available_space.height.is_max_content() {
-				max_content_contribution := grid_item_outer_block_content_contribution(mut state,
-					placement.item, item_state, .max_content, container_state.has_definite_height(),
-					row_basis, spanned_track_size).plus(placement.sizing_extra(false)).plus(baseline_row_shims[voidptr(placement.item)])
-				limited_max_content_contribution := grid_limited_content_contribution(state, container, container_state, available_space.height, false, rows, placement.row, placement.row_span, max_content_contribution, minimum_contribution)
-				distribute_grid_item_contribution_across_intrinsic_track_bases(mut rows, placement.row, placement.row_span, row_gap, limited_max_content_contribution, .max_content_contribution)
-			}
-			for index in 0 .. rows.len {
-				if rows[index].has_growth_limit
-					&& rows[index].growth_limit.raw_value() < rows[index].base_size.raw_value() {
-					rows[index].growth_limit = rows[index].base_size
-				}
-			}
-			distribute_grid_item_contribution_across_intrinsic_track_growth_limits(mut rows, placement.row, placement.row_span, row_gap, min_content_contribution, .intrinsic_maximum)
 			max_content_contribution := grid_item_outer_block_content_contribution(mut state,
 				placement.item, item_state, .max_content, container_state.has_definite_height(),
 				row_basis, spanned_track_size).plus(placement.sizing_extra(false)).plus(baseline_row_shims[voidptr(placement.item)])
-			distribute_grid_item_contribution_across_intrinsic_track_growth_limits(mut rows, placement.row, placement.row_span, row_gap, max_content_contribution, .max_content_maximum)
+			native_group << GridSpanGroupContribution{
+				start: placement.row
+				span: placement.row_span
+				minimum: if available_space.height.is_intrinsic_sizing_constraint() {
+					grid_limited_content_contribution(state, container, container_state, available_space.height,
+						false, rows, placement.row, placement.row_span, min_content_contribution, minimum_contribution)
+				} else { minimum_contribution }
+				min_content: min_content_contribution
+				max_content: max_content_contribution
+				limited_max_content: if available_space.height.is_max_content() {
+					grid_limited_content_contribution(state, container, container_state, available_space.height,
+						false, rows, placement.row, placement.row_span, max_content_contribution, minimum_contribution)
+				} else { max_content_contribution }
+			}
 		}
+		resolve_grid_intrinsic_span_group(mut rows, native_group, row_gap, available_space.height)
 	}
 	increase_grid_flexible_tracks_for_spanning_items(mut state, container, container_state, mut rows,
 		row_sizing_placements, false, available_space.height, row_gap, row_basis,
@@ -3156,7 +3154,7 @@ fn run_uncached_grid_formatting_context_internal(mut state LayoutState, containe
  if grid_alignment_height == none && !subgridded_rows {
   mut intrinsic_height := row_gap.scaled(f64(grid_gutter_count(rows,0,rows.len-1)))
   for track in rows { intrinsic_height = intrinsic_height.plus(track.base_size) }
-  if resolve_cyclic_percentage_grid_rows(mut state,container,mut rows,intrinsic_height,row_gap,placement_result.implicit_rows_before,if required_rows > 0 { required_rows } else { 1 }) {
+  if resolve_cyclic_percentage_grid_rows(mut state,container,mut rows,intrinsic_height,row_gap,placement_result.implicit_rows_before,required_rows) {
    cyclic_percentage_auto_height = intrinsic_height
    grid_alignment_height = intrinsic_height
   }

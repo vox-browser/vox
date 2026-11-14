@@ -4355,6 +4355,11 @@ pub fn (mut e Element) set_rendered_in_top_layer(value bool) {
 fn (mut e Element) exit_fullscreen_on_element_removal() {
 	// 1. Let document be removedNode's node document.
 	mut document := unsafe { &Document(e.document()) }
+	// Every fullscreen element is in the top layer. Without one, no removed
+	// descendant can need fullscreen cleanup.
+	if document.fullscreen_element() == none {
+		return
+	}
 
 	// 2. Let nodes be removedNode's shadow-including inclusive descendants that
 	//    have their fullscreen flag set, in shadow-including tree order.
@@ -7694,13 +7699,28 @@ pub fn (mut d Document) note_svg_paint_resources_changed() {
 
 // https://svgwg.org/svg2-draft/types.html#__svg__SVGElement__ownerSVGElement
 //
-// The nearest ancestor `svg` element in the flat tree; none when this element is
+// The nearest ancestor `svg` element through DOM parents and shadow hosts; none when this element is
 // the outermost `svg` element.
 pub fn (e &Element) owner_svg_element() ?&Element {
 	if !e.is_svg_element() {
 		return none
 	}
-	mut ancestor := e.as_node().flat_tree_parent()
+	if e.is_svg_svg_element() {
+		parent := e.as_node().parent() or { return none }
+		if parent.is_svg_foreign_object_element() {
+			return none
+		}
+		// Only a use element's shadow root continues the enclosing SVG tree.
+		if shadow_root := parent.as_shadow_root() {
+			host := shadow_root.host() or { return none }
+			if !host.as_node().is_svg_use_element() {
+				return none
+			}
+		} else if !parent.is_svg_element() {
+			return none
+		}
+	}
+	mut ancestor := e.as_node().parent_or_shadow_host()
 	for {
 		current := ancestor or { return none }
 		if element := current.as_element() {
@@ -7708,7 +7728,7 @@ pub fn (e &Element) owner_svg_element() ?&Element {
 				return element
 			}
 		}
-		ancestor = current.flat_tree_parent()
+		ancestor = current.parent_or_shadow_host()
 	}
 	return none
 }

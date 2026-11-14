@@ -853,6 +853,7 @@ fn (mut iterator InlineLevelIterator) generate_next_item() ?InlineLevelItem {
 		iterator.skip_to_next()
 		return item
 	}
+	return none
 }
 
 fn (iterator &InlineLevelIterator) shape_text_for_layout(text_node &TextNode, initial_x f32, letter_spacing f32, word_spacing f32, text string, font &platform.Font, text_type platform.GlyphRunTextType) platform.ShapedText {

@@ -2674,6 +2674,7 @@ pub mut:
 	scope                   HTMLCollectionScope = .descendants
 	filter                  fn (&Element) bool = always_accept_element
 	sort                    fn (&Element, &Element) bool = never_sort_elements
+	collect_elements_       ?fn () []&Element
 	cached_elements         []&Element
 	cached_dom_tree_version u64
 	cached_attribute_version u64
@@ -5563,6 +5564,7 @@ pub mut:
 	custom_element_construction_hook_               ?CustomElementConstructionHook
 	processing_custom_element_reaction_backup_queue bool
 	invoking_custom_element_reactions               bool
+	mutation_observer_types_                        u8
 	mutation_observer_microtask_queued              bool
 	pending_mutation_observers                      []&MutationObserver
 	signal_slots                                    []&HTMLSlotElement
@@ -8292,6 +8294,12 @@ pub fn (mut d Document) adopt_node(node &Node) {
 			// 1. Set inclusiveDescendant's node document to document.
 			mut mutable_descendant := unsafe { &Node(inclusive_descendant) }
 			mutable_descendant.set_document(d_ptr)
+			// Adopted registrations, including transient ones, must keep record
+			// delivery enabled in their new document.
+			mut new_document := unsafe { &Document(d_ptr) }
+			for registered in inclusive_descendant.registered_observers() {
+				new_document.add_mutation_observer_types(registered.options())
+			}
 
 			if shadow_root := inclusive_descendant.as_shadow_root() {
 				registry := shadow_root.custom_element_registry()

@@ -534,12 +534,16 @@ fn CheckUnloadingCanceledState.create(traversable ?&TraversableNavigable, docume
 // is captured from each supplied native host when the check starts.
 fn (mut state CheckUnloadingCanceledState) start_navigable_check(navigables []&dom.Navigable, target_entry ?&SessionHistoryEntry) {
 	for navigable in navigables {
+		// A pending child may not have committed its initial document yet.
+		// Such hosts have no document that can cancel the unload.
+		if navigable.has_been_destroyed() {
+			continue
+		}
+		document := navigable.active_document() or { continue }
 		if navigable_model_for_host(navigable) == none {
 			panic('Source unload checks require actual local Navigable identities')
 		}
-		state.documents << navigable.active_document() or {
-			panic('Source unload-check input requires its active Document')
-		}
+		state.documents << document
 	}
 	if traversable := state.traversable {
 		if state.user_involvement == none {

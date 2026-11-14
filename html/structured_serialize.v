@@ -12,6 +12,7 @@ import math
 import libjs
 import webidl
 import webcrypto
+import webassembly
 import fileapi
 import math.big
 
@@ -104,6 +105,7 @@ pub mut:
 	dom_exception_      ?&webidl.DOMException
 	quota_exceeded_error_ ?&webidl.QuotaExceededError
 	crypto_key_         ?&webcrypto.CryptoKey
+	webassembly_module_ ?&webassembly.Module
 	blob_               ?&fileapi.Blob
 	file_               ?&fileapi.File
 	file_list_          ?&fileapi.FileList
@@ -126,6 +128,10 @@ pub fn StructuredObject.create_quota_exceeded_error(exception &webidl.QuotaExcee
 
 pub fn StructuredObject.create_crypto_key(key &webcrypto.CryptoKey) &StructuredObject {
 	return &StructuredObject{ kind: .serializable_object, serializable_interface_: .crypto_key, crypto_key_: key }
+}
+
+pub fn StructuredObject.create_webassembly_module(compiled &webassembly.Module) &StructuredObject {
+	return &StructuredObject{kind: .serializable_object, serializable_interface_: .module, webassembly_module_: compiled}
 }
 
 pub fn StructuredObject.create_blob(blob &fileapi.Blob) &StructuredObject {
@@ -621,7 +627,7 @@ fn (mut serializer StructuredSerializer) serialize_value(value dom.JSValue, for_
 		}
 		.serializable_object {
 			interface_name := object.serializable_interface_ or { return error('DataCloneError: serializable object has no primary interface') }
-			if interface_name !in [.dom_exception, .quota_exceeded_error, .crypto_key, .blob, .file, .file_list] { return error('DataCloneError: source serializable payload is not yet translated for ${structured_serializable_interface_name(interface_name)}') }
+			if interface_name !in [.dom_exception, .quota_exceeded_error, .crypto_key, .blob, .file, .file_list, .module] { return error('DataCloneError: source serializable payload is not yet translated for ${structured_serializable_interface_name(interface_name)}') }
 			serializer.write_tag(.serializable_object)
 			serializer.write_serializable_interface(interface_name)!
 			if serializer.type_ == .storage { serializer.write_u64(structured_serializable_payload_version) }
@@ -630,6 +636,12 @@ fn (mut serializer StructuredSerializer) serialize_value(value dom.JSValue, for_
 			} else if interface_name == .crypto_key {
 				key := object.crypto_key_ or { return error('DataCloneError: serializable CryptoKey has no native record') }
 				serializer.write_crypto_key_payload(key)!
+			} else if interface_name == .module {
+				// Module::serialization_steps rejects storage and copies the
+				// original source bytes, retaining structured-clone identity.
+				compiled := object.webassembly_module_ or { return error('DataCloneError: serializable WebAssembly Module has no native record') }
+				serialized := compiled.serialization_steps(for_storage)!
+				serializer.write_bytes(serialized.bytes)!
 			} else if interface_name == .dom_exception {
 				exception := object.dom_exception_ or { return error('DataCloneError: serializable DOMException has no native record') }
 				for field in exception.serialization_steps_utf16() { serializer.write_utf16_string(field)! }
@@ -1072,7 +1084,7 @@ fn (mut decoder StructuredDecoder) decode_value_with_tag(tag_byte u8) !&dom.JSVa
 			if decoder.type_ == .storage { version = decoder.read_u64()! }
 			is_exposed := decoder.context.is_exposed or { return error('DataCloneError: unsupported type in target realm') }
 			if !is_exposed(interface_name) { return error('DataCloneError: unsupported type in target realm') }
-			if interface_name !in [.dom_exception, .quota_exceeded_error, .crypto_key, .blob, .file, .file_list] { return error('DataCloneError: source serializable payload is not yet translated for ${structured_serializable_interface_name(interface_name)}') }
+			if interface_name !in [.dom_exception, .quota_exceeded_error, .crypto_key, .blob, .file, .file_list, .module] { return error('DataCloneError: source serializable payload is not yet translated for ${structured_serializable_interface_name(interface_name)}') }
 			mut object := if interface_name == .blob {
 				StructuredObject.create_blob(fileapi.Blob.create([], ''))
 			} else if interface_name == .file {
@@ -1081,6 +1093,8 @@ fn (mut decoder StructuredDecoder) decode_value_with_tag(tag_byte u8) !&dom.JSVa
 				StructuredObject.create_file_list(fileapi.FileList.create())
 			} else if interface_name == .crypto_key {
 				StructuredObject.create_crypto_key(webcrypto.CryptoKey.create_empty())
+			} else if interface_name == .module {
+				StructuredObject.create_webassembly_module(webassembly.Module.create_for_serialization())
 			} else if interface_name == .dom_exception {
 				StructuredObject.create_dom_exception(webidl.DOMException.create_utf16_record(libjs.utf16_string(''), libjs.utf16_string('')))
 			} else {
@@ -1098,6 +1112,14 @@ fn (mut decoder StructuredDecoder) decode_value_with_tag(tag_byte u8) !&dom.JSVa
 			if interface_name == .crypto_key {
 				mut key := object.crypto_key_ or { return error('DataCloneError: missing CryptoKey target record') }
 				decoder.read_crypto_key_payload(mut key)!
+				return value
+			}
+			if interface_name == .module {
+				// Register the target before decoding its payload, then compile
+				// the retained bytes through the existing Wasm policy boundary.
+				mut compiled := object.webassembly_module_ or { return error('DataCloneError: missing WebAssembly Module target record') }
+				bytes := decoder.read_bytes()!
+				compiled.deserialization_steps(webassembly.SerializedModule{bytes: bytes})!
 				return value
 			}
 			name := decoder.read_utf16_string()!

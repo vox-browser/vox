@@ -305,6 +305,7 @@ fn (mut app BrowserApp) poll_process_tabs() {
 	if time.sys_mono_now() >= app.tabs.profile_refresh_at {
 		app.tabs.profile_refresh_at = time.sys_mono_now() + 1_000_000_000
 		settings := browsersettings.current()
+		app.refresh_browser_appearance(settings.force_dark_enabled)
 		if app.browser_chrome.tab_coloring != settings.enable_tab_coloring
 			|| app.browser_chrome.custom_tab_titles != settings.enable_custom_tab_titles {
 			if !settings.enable_custom_tab_titles && app.browser_ui().tab_title_editor != none {
