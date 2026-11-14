@@ -355,6 +355,27 @@ scan codes were absent; these attempts remain local evidence. The earlier
 These smoke checks validate this build's window lifecycle and navigation; they
 do not establish Windows pixel equivalence with Brave.
 
+## Windows JavaScriptCore initialization
+
+The Windows JavaScriptCore DLL also requires initialization of WTF's main run
+loop. Its public context-creation API initializes threading without creating
+that loop. BrowserJS initializes it on the application thread during module
+startup, before worker agents can create contexts. It requires the pinned DLL's
+`WTF::initializeMainThread` export and reports a missing export at startup.
+WebKit's [initializer](https://github.com/WebKit/WebKit/blob/main/Source/WTF/wtf/MainThread.cpp)
+creates the loop used by its memory-pressure timers.
+
+The native regression loads the actual deployment DLL, exercises the timer
+constructor that previously crashed, repeats initialization, and verifies that
+a worker does not replace the main thread or its loop:
+
+```sh
+gcc -municode -std=c11 -O2 -Wall -Wextra -Werror \
+  browserjs/runtime_bootstrap_windows_test.c -o jsc-bootstrap-test.exe
+runtime-guard.exe 180000 3072 jsc-bootstrap.out jsc-bootstrap.err \
+  C:/path/to/jsc-bootstrap-test.exe C:/path/to/JavaScriptCore.dll
+```
+
 ## Native WebGL checks
 
 The Windows CI workflow runs `tools/native_gles_test.c` on Windows with the
@@ -409,6 +430,27 @@ style and font loading on software-emulated Windows. Live navigation is opt-in;
 the native title-matching regression test runs in Windows CI without network
 access. A matching live title establishes document identity, not full-page
 pixel equivalence or complete author-script support.
+
+To diagnose a browser that stays alive after a startup, input, navigation or
+close failure, set `VOX_WINDOWS_FAILURE_DUMP` to a unique `.dmp` path in an
+existing private output directory. The driver captures thread stacks and thread
+information before failure cleanup terminates the active child. The older
+`VOX_WINDOWS_CLOSE_DUMP` flag remains supported for close failures only.
+The driver still fails; dump capture never supplies a successful test result.
+It loads Windows' system DbgHelp only when requested and refuses to overwrite
+an existing dump. Capture errors are logged alongside the original failure.
+
+The native capture regression creates a sleeping fixture process, captures a
+startup failure, verifies the actual minidump header and both thread streams,
+and checks that the legacy close flag preserves an existing file. Windows CI
+runs it through the 3 GiB job guard. It does not execute Vox:
+
+```sh
+gcc -municode -std=c11 -O2 -Wall -Wextra -Werror \
+  tools/test_windows_close_dump.c -luser32 -lgdi32 -o close-dump-test.exe
+runtime-guard.exe 180000 3072 close-dump.out close-dump.err \
+  C:/path/to/close-dump-test.exe C:/private/fresh-close-test.dmp
+```
 
 The isolated HTTPS regression uses a temporary private CA without installing
 it into Windows' trust store. From an MSYS2 MinGW64 shell with Python and
