@@ -1531,6 +1531,10 @@ pub mut:
 	css_handle                                 voidptr = unsafe { nil }
 	invalidation_property_used_in_has_callback StyleComputerInvalidationPropertyUsedInHasCallback = unsafe { nil }
 	invalidation_plan_callback                 StyleComputerInvalidationPlanCallback = unsafe { nil }
+	// Whether a scope's attribute selectors answer alike for the old and the
+	// new value of a changed attribute, and the count of those decisions.
+	attribute_change_keeps_selectors_callback  StyleComputerAttributeChangeKeepsSelectorsCallback = unsafe { nil }
+	attribute_change_decided_callback          StyleComputerAttributeChangeDecidedCallback = unsafe { nil }
 	shadow_root_may_match_host_callback        StyleComputerShadowRootMayMatchHostCallback = unsafe { nil }
 	recompute_style_callback                   StyleComputerRecomputeStyleCallback = unsafe { nil }
 	recompute_inherited_style_callback         StyleComputerRecomputeInheritedStyleCallback = unsafe { nil }
@@ -1777,6 +1781,11 @@ pub:
 pub type StyleComputerInvalidationPropertyUsedInHasCallback = fn (voidptr, InvalidationProperty, &StyleScope) bool
 
 pub type StyleComputerInvalidationPlanCallback = fn (voidptr, []InvalidationProperty, &StyleScope) InvalidationPlan
+
+// (css handle, element, attribute name, old present, old value, new present, new value, scope)
+pub type StyleComputerAttributeChangeKeepsSelectorsCallback = fn (voidptr, &Element, string, bool, string, bool, string, &StyleScope) bool
+
+pub type StyleComputerAttributeChangeDecidedCallback = fn (voidptr, bool)
 
 pub type StyleComputerShadowRootMayMatchHostCallback = fn (voidptr, &ShadowRoot) bool
 

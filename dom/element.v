@@ -6469,9 +6469,11 @@ fn (mut e Element) invalidate_style_after_attribute_change(attribute_name string
 		state.removed_attributes << attribute_name
 		e.dependency_data_ = state
 	}
-	changed_properties << InvalidationProperty{
-		type_: .attribute
-		name: attribute_name
+	if !e.attribute_change_keeps_selector_matches(style_computer, attribute_name, old_value, new_value) {
+		changed_properties << InvalidationProperty{
+			type_: .attribute
+			name: attribute_name
+		}
 	}
 	// ARIA and data attributes have no presentational hints. Their selectors
 	// still participate in the normal invalidation plan, and attr() users need
@@ -6480,6 +6482,39 @@ fn (mut e Element) invalidate_style_after_attribute_change(attribute_name string
 	options.invalidate_self = options.invalidate_self || !metadata_attribute_style_reuse(attribute_name)
 	node.invalidate_style_with_properties(.element_attribute_change, changed_properties, options)
 	e.invalidate_hosted_shadow_tree_after_attribute_change(style_computer)
+}
+
+// Class, data and ARIA attributes reach selectors only through attribute
+// selectors (class tokens invalidate separately). When every such selector of
+// the observing scopes answers alike for both values, the plan registered for
+// the attribute's name has nothing to invalidate.
+fn (e &Element) attribute_change_keeps_selector_matches(style_computer &StyleComputer, attribute_name string, old_value ?string, new_value ?string) bool {
+	if style_computer.attribute_change_keeps_selectors_callback == unsafe { nil }
+		|| (attribute_name != 'class' && !attribute_name.starts_with('data-')
+		&& !attribute_name.starts_with('aria-')) || !e.is_html_element()
+		|| !e.document().is_html_document() {
+		return false
+	}
+	old_present := old_value != none
+	new_present := new_value != none
+	old_text := old_value or { '' }
+	new_text := new_value or { '' }
+	scopes := e.as_node().observing_style_scopes()
+	mut keeps := style_computer.attribute_change_keeps_selectors_callback(style_computer.css_handle,
+		e, attribute_name, old_present, old_text, new_present, new_text, scopes.first)
+	if keeps {
+		for scope in scopes.additional {
+			if !style_computer.attribute_change_keeps_selectors_callback(style_computer.css_handle,
+				e, attribute_name, old_present, old_text, new_present, new_text, scope) {
+				keeps = false
+				break
+			}
+		}
+	}
+	if style_computer.attribute_change_decided_callback != unsafe { nil } {
+		style_computer.attribute_change_decided_callback(style_computer.css_handle, keeps)
+	}
+	return keeps
 }
 
 pub fn (mut e Element) clear_removed_attributes_for_style_invalidation() {

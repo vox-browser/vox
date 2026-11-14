@@ -43,6 +43,9 @@ pub mut:
 	has_has_selectors                                                    bool
 	has_has_selectors_with_relative_selector_that_has_sibling_combinator bool
 	has_local_link_selectors                                             bool
+	// The value tests of every attribute selector, by lowercase attribute name
+	// (attribute_value_invalidation.v).
+	attribute_value_tests map[string]AttributeValueTests
 }
 
 pub fn StyleInvalidationData.new() &StyleInvalidationData {
@@ -1051,7 +1054,9 @@ pub fn (scope &StyleScope) rule_cache_for_cascade_origin(cascade_origin CascadeO
 pub fn StyleScope.collect_selector_insights(selector Selector, mut insights SelectorInsights) {
 	for compound_selector in selector.compound_selectors() {
 		for simple_selector in compound_selector.simple_selectors {
-			if simple_selector.type_ == .pseudo_class {
+			if simple_selector.type_ == .attribute {
+				insights.record_attribute_value_test(simple_selector.attribute())
+			} else if simple_selector.type_ == .pseudo_class {
 				if simple_selector.pseudo_class().type_ == .local_link {
 					insights.has_local_link_selectors = true
 				}
