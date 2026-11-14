@@ -559,7 +559,10 @@ pub fn (c &HTMLCollection) update_cache_if_needed() {
 	} else {
 		document.dom_tree_version()
 	}
-	if c.cache_initialized && c.cached_dom_tree_version == current_dom_tree_version {
+	current_attribute_version := if document == unsafe { nil } { u64(0) } else { document.attribute_version() }
+	if c.cache_initialized && c.cached_dom_tree_version == current_dom_tree_version
+		&& c.cached_attribute_version == current_attribute_version
+		&& c.cached_document_identity == voidptr(document) {
 		return
 	}
 
@@ -574,6 +577,8 @@ pub fn (c &HTMLCollection) update_cache_if_needed() {
 	mut mutable_collection := unsafe { &HTMLCollection(c) }
 	mutable_collection.cached_elements = elements
 	mutable_collection.cached_dom_tree_version = current_dom_tree_version
+	mutable_collection.cached_attribute_version = current_attribute_version
+	mutable_collection.cached_document_identity = voidptr(document)
 	mutable_collection.cache_generation++
 	mutable_collection.cache_initialized = true
 }

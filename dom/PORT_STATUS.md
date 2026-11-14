@@ -1,5 +1,11 @@
 # DOM translation status
 
+Live HTMLCollection caches retain document identity and attribute version
+alongside tree version. Existing class-filtered collections update after class
+replacement/removal without requiring a tree mutation. A focused native
+regression covers live membership, tree-version stability and unchanged-read
+cache reuse; this also supports the native LibJS DOM integration.
+
 Complete translation of the current `Libraries/LibWeb/DOM` inventory, audited
 against every adjacent `.h` and `.idl`. Selection and UIEvents implementations
 that physically share the `dom` package are counted only in their own status
