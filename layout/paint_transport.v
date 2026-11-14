@@ -1228,6 +1228,7 @@ fn paintable_box_paint_box_shadow(mut commands []PaintCommand, shadows []BoxShad
 				width: shadow.outer_shadow_rect.width
 				height: shadow.outer_shadow_rect.height
 				color: painting_color_string(shadow.color)
+				srgb_color_data: shadows[shadows.len - 1 - index].srgb_color_data
 				force_dark_role: .foreground
 				force_dark_role_set: true
 				opacity: opacity

@@ -163,6 +163,10 @@ fn general_primitive_scale(graph SvgFilterGraph, space GeneralFilterSpace) (f64,
 // restores the result through the clip with mode. Returns false, without
 // changing pixels, for devices Skia would tile and content that declines.
 fn draw_general_filter_layer(mut pixels []u8, width int, height int, pitch int, alpha_type int, transform [6]f32, clips []Path, specs []CanvasFilterSpec, space GeneralFilterSpace, tint ?u32, mode BlendMode, content LayerContent) bool {
+	return draw_general_filter_layer_with_coverage(mut pixels,width,height,pitch,alpha_type,transform,clips,specs,space,tint,-1,mode,content)
+}
+
+fn draw_general_filter_layer_with_coverage(mut pixels []u8, width int, height int, pitch int, alpha_type int, transform [6]f32, clips []Path, specs []CanvasFilterSpec, space GeneralFilterSpace, tint ?u32, coverage_alpha f32, mode BlendMode, content LayerContent) bool {
 	if !untiled_device(pixels, width, height, pitch) || !transform[..].all(is_finite_f32(it)) {
 		return false
 	}
@@ -193,7 +197,7 @@ fn draw_general_filter_layer(mut pixels []u8, width int, height int, pitch int, 
 		image = apply_general_filter(image, spec, layer, space)
 	}
 	if color := tint {
-		general_tint(mut image, color)
+		general_tint_with_coverage(mut image, color, coverage_alpha)
 	}
 	target.ready()
 	draw_filter_bitmap(mut pixels, pitch, CanvasBitmap{
@@ -290,7 +294,11 @@ fn general_place(src BlurImage, x int, y int, width int, height int) BlurImage {
 // SrcIn with a constant SkColor: the color, premultiplied, scaled by the
 // pixel's coverage.
 fn general_tint(mut image BlurImage, color u32) {
-	ca := f32(color >> 24) * inv_255
+	general_tint_with_coverage(mut image,color,-1)
+}
+
+fn general_tint_with_coverage(mut image BlurImage, color u32, coverage_alpha f32) {
+	ca := if coverage_alpha >= 0 { coverage_alpha } else { f32(color >> 24) * inv_255 }
 	rgb := [f32((color >> 16) & 255) * ca, f32((color >> 8) & 255) * ca, f32(color & 255) * ca]!
 	for i := 0; i + 3 < image.pixels.len; i += 4 {
 		a := f32(image.pixels[i + 3]) * inv_255

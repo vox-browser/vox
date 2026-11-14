@@ -84,3 +84,32 @@ fn test_inner_shadow_declines_intersecting_rounded_corners() {
 	if _ := rasterize_inner_shadow(20, 20, outer, inner, outer,
 		[f32(1), 0, 0, 1, 0, 0]!, 0xff000000, 4, []) { assert false }
 }
+
+
+fn test_inner_shadow_retained_alpha_reaches_direct_and_fallback_color_pipelines() {
+	shape := ShadowRect{rect: [f32(0), 0, 32, 32]!, radii: [f32(4), 4, 4, 4, 4, 4, 4, 4]!}
+	for left in [f32(8), 0] {
+		hole := ShadowRect{rect: [left, 8, 24 - left, 16]!}
+		if left == 0 {
+			if _ := rasterize_inner_shadow(32, 32, shadow_rounded_rect(shape),
+				shadow_rounded_rect(hole), shadow_rounded_rect(shape),
+				[f32(1), 0, 0, 1, 0, 0]!, 0x80ff0000, 0, []) { assert false }
+		}
+		for index, alpha in [f32(.25), .75, 1] {
+			pixels := rasterize_shadow(32, 32, ShadowCommand{
+				kind: 1
+				color: 0x80ff0000
+				coverage_alpha: alpha
+				transform: [f32(1), 0, 0, 1, 0, 0]!
+				content: shape
+				outer: shape
+				inner: hole
+			})!
+			i := (16 * 32 + 28) * 4
+			assert pixels[i] == 255
+			assert pixels[i + 1] == 0 && pixels[i + 2] == 0
+			assert pixels[i + 3] == [u8(64), 191, 255][index]
+			assert pixels[(16 * 32 + 16) * 4 + 3] == 0
+		}
+	}
+}

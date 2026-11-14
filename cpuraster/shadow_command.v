@@ -101,9 +101,9 @@ fn rasterize_shadow_untiled(width int, height int, command ShadowCommand) ![]u8 
 			return result
 		}
 	} else if command.kind == 1 {
-		if result := rasterize_inner_shadow(width, height, shadow_rounded_rect(command.outer),
+		if result := rasterize_inner_shadow_with_coverage(width, height, shadow_rounded_rect(command.outer),
 			shadow_rounded_rect(command.inner), shadow_rounded_rect(command.content), command.transform,
-			command.color, command.blur, cpu_clips) {
+			command.color, command.blur, cpu_clips, command.coverage_alpha) {
 			return result
 		}
 	} else {
@@ -170,8 +170,8 @@ fn rasterize_general_shadow(width int, height int, command ShadowCommand, clips 
 	inner := shadow_rounded_rect(command.inner)
 	run := command.glyph_run()
 	kind := command.kind
-	if !draw_general_filter_layer(mut pixels, width, height, width * 4, 2, t, all_clips, specs,
-		space, command.color, .src_over, fn [kind, outer, inner, run] (mut layer []u8, w int, h int, lt [6]f32, layer_clips []Path) bool {
+	if !draw_general_filter_layer_with_coverage(mut pixels, width, height, width * 4, 2, t, all_clips, specs,
+		space, command.color, command.coverage_alpha, .src_over, fn [kind, outer, inner, run] (mut layer []u8, w int, h int, lt [6]f32, layer_clips []Path) bool {
 		if kind == 2 {
 			fill_canvas_glyphs_surface(mut layer, w, h, w * 4, 2, CanvasGlyphRun{
 				...run
