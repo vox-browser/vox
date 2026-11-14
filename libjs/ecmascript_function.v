@@ -17,7 +17,7 @@ mut:
 	executable ?&Executable
 }
 
-fn create_ecmascript_function(mut vm VM, source &Executable, index u32, named_expression bool, inferred_name ?Utf16String) !&Object {
+fn create_ecmascript_function(mut vm VM, source &Executable, index u32, named_expression bool, inferred_name ?Utf16String, ordinary bool) !&Object {
 	data := source.parsed_source.function_table.get(FunctionId{id: index})
 	if data.kind in [.generator, .async_generator] { return error('LibJS generator functions are not translated yet') }
 	realm := vm.realm()
@@ -44,7 +44,7 @@ fn create_ecmascript_function(mut vm VM, source &Executable, index u32, named_ex
 		inferred_name: inferred_name
 	}
 	object.callable = FunctionObject(function)
-	if !data.is_arrow_function && data.kind == .normal { object.constructor = ConstructorFunction(function) }
+	if ordinary && !data.is_arrow_function && data.kind == .normal { object.constructor = ConstructorFunction(function) }
 	object.set_function_length(f64(data.function_length))
 	object.set_function_name(mut vm, PropertyName.from_utf16(function.name_for_call_stack()), none)
 	// SourceCode is already decoded once per script/module and shared by all
@@ -60,7 +60,7 @@ fn create_ecmascript_function(mut vm VM, source &Executable, index u32, named_ex
 		mut binding := scope
 		binding.initialize_binding(mut vm, data.name or { panic('missing function name') }.name, Value.from_object(object), .normal)!
 	}
-	if !data.is_arrow_function && data.kind == .normal {
+	if ordinary && !data.is_arrow_function && data.kind == .normal {
 		mut prototype := Object.create(realm, realm.object_prototype)
 		prototype.define_direct_property(PropertyName.from_str('constructor'), Value.from_object(object), attribute_writable | attribute_configurable)
 		object.define_direct_property(PropertyName.from_str('prototype'), Value.from_object(prototype), attribute_writable)

@@ -52,6 +52,12 @@ pub:
 	source_range    SourceCodeRange
 }
 
+pub struct ClassSourceSpan {
+pub:
+	start u32
+	end u32
+}
+
 @[heap]
 pub struct Executable {
 pub mut:
@@ -69,6 +75,7 @@ pub mut:
 	source_code     ?&SourceCode
 	instructions    []Instruction
 	global_bindings []GlobalBinding
+	class_source_spans []ClassSourceSpan
 	parsed_source &ParsedSource = unsafe { nil }
 	starting_line u32 = 1
 	// Stable role inside the owning source, used only by the disk code cache.

@@ -221,6 +221,7 @@ fn (mut generator BytecodeGenerator) expression(mut vm VM, expression &Expressio
 	defer { generator.range = previous_range }
 	kind := expression.kind
 	match kind.tag {
+		.class_expr { return generator.class_expression(mut vm, kind.class_data or { return error('Missing class expression') }) }
 		.meta_property {
 			if kind.meta_property_type!=.import_meta { return generator.unsupported('new.target') }
 			dst := generator.temporary()
@@ -603,6 +604,13 @@ fn (mut generator BytecodeGenerator) collect_vars(statement &Statement) ! {
 
 fn (mut generator BytecodeGenerator) lexical_declarations(children []Statement, global bool) ! {
 	for child in children {
+		if child.kind.tag == .class_declaration {
+			data := child.kind.class_data or { return error('Missing class declaration') }
+			name := data.name or { return error('Missing class name') }
+			if global { generator.executable.global_bindings << GlobalBinding{ name: name.name.clone(), is_lexical: true } }
+			else { generator.emit(Instruction{ op: .create_mutable_binding, identifier: generator.identifier(name.name) }) }
+			continue
+		}
 		if child.kind.tag != .variable_declaration || child.kind.decl_kind == .var_kind { continue
 		 }
         for declaration in child.kind.declarations {
@@ -645,6 +653,12 @@ fn (mut generator BytecodeGenerator) statement(mut vm VM, statement &Statement) 
 	defer { generator.range = previous_range }
 	kind := statement.kind
 	match kind.tag {
+		.class_declaration {
+			data := kind.class_data or { return error('Missing class declaration') }
+			name := data.name or { return error('Missing class name') }
+			value := generator.class_expression(mut vm, data)!
+			generator.emit(Instruction{ op: .initialize_binding, lhs: value, identifier: generator.identifier(name.name), strict: true })
+		}
 		.for_in_of { generator.for_in_statement(mut vm, statement)! }
 		.try_stmt { generator.try_catch_statement(mut vm,statement)! }
 		.function_declaration {

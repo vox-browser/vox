@@ -125,8 +125,14 @@ fn (mut vm VM) execute_instruction(instruction Instruction, executable &Executab
 		}
 		.new_function, .new_function_with_name {
 			inferred := if instruction.op == .new_function_with_name { ?Utf16String(make_function_name(left.to_property_key(mut vm)!, none)) } else { none }
-			result = Value.from_object(create_ecmascript_function(mut vm, executable, instruction.identifier, instruction.strict, inferred)!)
+			result = Value.from_object(create_ecmascript_function(mut vm, executable, instruction.identifier, instruction.strict, inferred, true)!)
 		}
+		.new_class_method {
+			prefix := if right.number == 1 { ?string('get') } else if right.number == 2 { ?string('set') } else { none }
+			result = Value.from_object(create_ecmascript_function(mut vm, executable, instruction.identifier, false, make_function_name(left.to_property_key(mut vm)!, prefix), false)!)
+		}
+		.new_class { result = create_base_class(mut vm, executable, instruction.identifier, left, right)! }
+		.define_class_method { define_class_method(mut vm, left, right, source, instruction.identifier)! }
 		.mov {
 			result = left
 		}
