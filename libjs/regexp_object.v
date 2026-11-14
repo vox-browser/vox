@@ -48,8 +48,8 @@ fn create_regexp_object(mut vm VM, pattern Utf16String, text Utf16String) !&Obje
 fn initialize_regexp_intrinsics(mut vm VM, mut realm Realm) {
 	mut prototype := Object.create(&realm, realm.object_prototype)
 	realm.regexp_prototype = prototype
-	install_intrinsic_method(mut vm, mut prototype, 'exec', 1, regexp_prototype_exec)
-	install_intrinsic_method(mut vm, mut prototype, 'test', 1, fn (mut vm VM) !Value {
+	install_intrinsic_method(mut vm, &realm, mut prototype, 'exec', 1, regexp_prototype_exec)
+	install_intrinsic_method(mut vm, &realm, mut prototype, 'test', 1, fn (mut vm VM) !Value {
 		object := vm.this_value()
 		if !object.is_object() { return vm.throw_error(.type_error, 'RegExp test requires an object') }
 		text := vm.argument(0).to_primitive_string(mut vm)!
@@ -86,7 +86,7 @@ fn initialize_regexp_intrinsics(mut vm VM, mut realm Realm) {
 	}
 	match_function := NativeFunction.create(mut vm, &realm, realm.function_prototype, regexp_symbol_match, 1, PropertyName.from_symbol(vm.well_known_symbol_match()), none)
 	prototype.define_direct_property(PropertyName.from_symbol(vm.well_known_symbol_match()), Value.from_object(match_function.object), attribute_writable | attribute_configurable)
-	install_intrinsic_method(mut vm, mut prototype, 'toString', 0, fn (mut vm VM) !Value {
+	install_intrinsic_method(mut vm, &realm, mut prototype, 'toString', 0, fn (mut vm VM) !Value {
 		if !vm.this_value().is_object() { return vm.throw_error(.type_error, 'RegExp toString requires an object') }
 		object := vm.this_value().as_object()
 		source := object.get(mut vm, PropertyName.from_str('source'))!.to_primitive_string(mut vm)!
@@ -103,10 +103,9 @@ fn initialize_regexp_intrinsics(mut vm VM, mut realm Realm) {
 	mut object := constructor.object
 	object.define_direct_property(PropertyName.from_str('prototype'), Value.from_object(prototype), 0)
 	prototype.define_direct_property(PropertyName.from_str('constructor'), Value.from_object(object), attribute_writable | attribute_configurable)
-	mut global := realm.global_object_record()
-	global.define_direct_property(PropertyName.from_str('RegExp'), Value.from_object(object), attribute_writable | attribute_configurable)
+	realm.regexp_constructor = object
 	mut text := realm.string_prototype or { panic('Missing String prototype') }
-	install_intrinsic_method(mut vm, mut text, 'match', 1, string_prototype_match)
+	install_intrinsic_method(mut vm, &realm, mut text, 'match', 1, string_prototype_match)
 }
 
 fn regexp_constructor_call(mut vm VM) !Value {

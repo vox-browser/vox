@@ -17,8 +17,8 @@ fn initialize_collection_intrinsics(mut vm VM, mut realm Realm) ! {
 		'slice': array_prototype_slice
 		'splice': array_prototype_splice
 		'forEach': array_prototype_for_each
-	} { install_intrinsic_method(mut vm, mut array, name, if name in ['slice','splice'] { 2 } else if name in ['join','pop'] { 0 } else { 1 }, behaviour) }
-	install_intrinsic_method(mut vm, mut array, 'toString', 0, fn (mut vm VM) !Value {
+	} { install_intrinsic_method(mut vm, &realm, mut array, name, if name in ['slice','splice'] { 2 } else if name == 'pop' { 0 } else { 1 }, behaviour) }
+	install_intrinsic_method(mut vm, &realm, mut array, 'toString', 0, fn (mut vm VM) !Value {
 		object := vm.this_value().to_object_with_prototypes(mut vm, realm_primitive_prototypes())!
 		join := object.get(mut vm, PropertyName.from_str('join'))!
 		if join.is_function() { return call(mut vm, join, Value.from_object(object), []) }
@@ -31,10 +31,11 @@ fn initialize_collection_intrinsics(mut vm VM, mut realm Realm) ! {
 	mut array_constructor := constructor.object
 	array_constructor.define_direct_property(PropertyName.from_str('prototype'), Value.from_object(array), 0)
 	array.define_direct_property(PropertyName.from_str('constructor'), Value.from_object(array_constructor), attribute_writable | attribute_configurable)
-	install_intrinsic_method(mut vm, mut array_constructor, 'isArray', 1, fn (mut vm VM) !Value {
+	install_intrinsic_method(mut vm, &realm, mut array_constructor, 'isArray', 1, fn (mut vm VM) !Value {
 		return Value.from_bool(vm.argument(0).is_array(mut vm)!)
 	})
 	realm.array_constructor = array_constructor
+	array_constructor.define_native_accessor(mut vm, &realm, PropertyName.from_symbol(vm.well_known_symbol_species()), fn (mut vm VM) !Value { return vm.this_value() }, unsafe { nil }, attribute_configurable, realm.function_prototype)
 	mut text := StringObject.create(&realm, vm.empty_string(), realm.object_prototype_record()).object
 	realm.string_prototype = text
 	for name, behaviour in {
@@ -50,20 +51,18 @@ fn initialize_collection_intrinsics(mut vm VM, mut realm Realm) ! {
 		'toLowerCase': string_prototype_to_lowercase
 		'toUpperCase': string_prototype_to_uppercase
 		'replace': string_prototype_replace
-	} { install_intrinsic_method(mut vm, mut text, name, if name in ['toString','valueOf','toLowerCase','toUpperCase'] { 0 } else if name in ['slice','substring','substr','replace'] { 2 } else { 1 }, behaviour) }
-	install_intrinsic_method(mut vm, mut text, 'split', 2, fn (mut vm VM) !Value { return string_prototype_split(mut vm, vm.realm().array_prototype_record()) })
+	} { install_intrinsic_method(mut vm, &realm, mut text, name, if name in ['toString','valueOf','toLowerCase','toUpperCase'] { 0 } else if name in ['slice','substring','substr','replace'] { 2 } else { 1 }, behaviour) }
+	install_intrinsic_method(mut vm, &realm, mut text, 'split', 2, fn (mut vm VM) !Value { return string_prototype_split(mut vm, vm.realm().array_prototype_record()) })
 	string_constructor := StringConstructor.create(mut vm, &realm, StringConstructorDependencies{
 		prototype: text
 		prototype_getter: fn (realm &Realm) &Object { return realm.string_prototype or { panic('String prototype absent') } }
 		primitives: realm_primitive_prototypes()
 	})
-	mut global := realm.global_object_record()
-	global.define_direct_property(PropertyName.from_str('Array'), Value.from_object(array_constructor), attribute_writable | attribute_configurable)
-	global.define_direct_property(PropertyName.from_str('String'), Value.from_object(string_constructor.object), attribute_writable | attribute_configurable)
+	realm.string_constructor = string_constructor.object
 }
 
-fn install_intrinsic_method(mut vm VM, mut object Object, name string, length int, behaviour NativeFunctionPointer) {
-	method := NativeFunction.create(mut vm, vm.realm(), vm.realm().function_prototype, behaviour, f64(length), PropertyName.from_str(name), none)
+fn install_intrinsic_method(mut vm VM, realm &Realm, mut object Object, name string, length int, behaviour NativeFunctionPointer) {
+	method := NativeFunction.create(mut vm, realm, realm.function_prototype, behaviour, f64(length), PropertyName.from_str(name), none)
 	object.define_direct_property(PropertyName.from_str(name), Value.from_object(method.object), attribute_writable | attribute_configurable)
 }
 

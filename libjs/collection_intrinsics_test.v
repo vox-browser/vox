@@ -15,6 +15,7 @@ fn test_collection_literals_and_installed_methods_execute_through_bytecode() {
 		'"😀x".substring(2)+":"+"ABC".toLowerCase()': '"x:abc"'
 		'function f(){return this.length} f.call("😀")': '2'
 		'Array.isArray(Array(3)) && Array(3).length===3': 'true'
+		'Array[Symbol.species]===Array && Array.prototype.join.length===1': 'true'
 	} {
 		mut vm := VM.create()
 		create_simple_execution_context(mut vm)
