@@ -687,6 +687,7 @@ fn (mut p HTMLParser) start_the_speculative_html_parser() {
 		p.stop_the_speculative_html_parser()
 	}
 	mut parser := SpeculativeHTMLParser.create(p.document_, p.tokenizer.unparsed_input(), p.document_.base_url(), p.speculative_fetch_hook)
+	parser.scripting_mode = p.scripting_mode
 	p.active_speculative_html_parser = parser
 	parser.run()
 }

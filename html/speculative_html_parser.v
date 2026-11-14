@@ -46,6 +46,7 @@ mut:
 	template_depth u32
 	foreign_depth  u32
 	stopped        bool
+	scripting_mode dom.ParserScriptingMode
 }
 
 pub fn SpeculativeHTMLParser.create(document &dom.Document, pending_input string, base_url dom.URL, fetch_hook ?SpeculativeFetchHook) &SpeculativeHTMLParser {
@@ -55,6 +56,11 @@ pub fn SpeculativeHTMLParser.create(document &dom.Document, pending_input string
 		tokenizer: HTMLTokenizer.new(pending_input)
 		base_url: base_url
 		fetch_hook: fetch_hook
+		scripting_mode: if document.is_scripting_enabled_by_embedder() {
+			dom.ParserScriptingMode.normal
+		} else {
+			dom.ParserScriptingMode.disabled
+		}
 	}
 }
 
@@ -75,12 +81,31 @@ pub fn (mut parser SpeculativeHTMLParser) run() {
 		token := parser.tokenizer.next_token() or { break }
 		if token.is_start_tag() {
 			parser.process_start_tag(token)
+			// The scanner has no tree builder to switch the tokenizer for text
+			// elements. Switch even inside a template, where fetching is suppressed.
+			if parser.foreign_depth == 0 {
+				if state := speculative_text_state(token.tag_name, parser.scripting_mode != .disabled) {
+					parser.tokenizer.switch_to(state)
+				}
+			}
 		} else if token.is_end_tag() {
 			parser.process_end_tag(token)
 		} else if token.is_end_of_file() {
 			break
 		}
 	}
+}
+
+fn speculative_text_state(tag_name string, scripting_enabled bool) ?State {
+	match tag_name {
+		'script' { return .script_data }
+		'title', 'textarea' { return .rcdata }
+		'style', 'xmp', 'iframe', 'noembed', 'noframes' { return .rawtext }
+		'noscript' { if scripting_enabled { return .rawtext } }
+		'plaintext' { return .plaintext }
+		else {}
+	}
+	return none
 }
 
 fn speculative_rel_contains_keyword(rel string, keyword string) bool {
