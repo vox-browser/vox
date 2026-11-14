@@ -2958,3 +2958,18 @@ Twenty-three focused checks pass with arena poisoning. The fixed-input
 control counts; CNN and the earlier tall-shadow instability remain open.
 Production validation is pending the managed rebuild. See the
 [audit](OPTIMIZED_SITES_PIXELS_2026_11_12.md#recorded-filter-clips-beyond-the-window-2026-11-14).
+
+
+### Gradient pictures without optional hit-test metadata, 2026-11-14
+
+`19224ad53` retains eligible contiguous promoted gradient pictures at scale 1
+without optional hit-test metadata. Unsafe intervening paints and unsupported
+scales retain the existing fallback. Sixteen focused checks execute with arena
+poisoning, including real picture ownership and scale changes on a reused plan.
+The complete orbit scene improves 111 to 4 differences and its underlay 105 to
+3, both without new errors; vlang.io remains 341. The 29-workload diagnostic
+cohort preserves four exact archives and preceding control counts. CNN and the
+earlier tall-shadow repeat failure remain open. `de783cfd7` separately corrects
+an independently reproduced stale shadow-recording assertion. Production
+validation is pending the managed rebuild. See the
+[audit](OPTIMIZED_SITES_PIXELS_2026_11_12.md#gradient-picture-isolation-without-hit-test-metadata-2026-11-14).

@@ -1996,3 +1996,77 @@ missing original Reddit fixture and the retained repeatability failure.
 Raw commands, identities, sources, PNGs, actual exits, failed attempts and
 transition counts are local under
 `docs/performance/vlang-gradients-20261112/raw/large-orbit-20261114/`.
+
+
+## Gradient picture isolation without hit-test metadata, 2026-11-14
+
+`19224ad53` retains eligible contiguous gradient pictures when optional
+hit-test metadata is absent. The gradient leaf already carries the geometry,
+color and clip needed for recording. Rejecting it discarded the promoted
+picture's transparency boundary in the reduced orbit scene. Intervening
+unrepresented paints still require the existing geometry proof. The plan now
+records device scale explicitly; metadata-free scale-2 pictures retain their
+previous fallback, including when a plan is reused at different scales.
+No references, tolerances, blur kernels or shaders change.
+
+The final diagnostic executable SHA-256 is
+`7f98db407390ab8088a6eb08b9ed0f4bac62299d01e17e7dc70a5f9631e13968`.
+Two fresh captures per workload produce:
+
+| Workload | Previous differences | Final differences |
+| --- | ---: | ---: |
+| Large clipped orbit | 111 | **4** |
+| Orbit underlay | 105 | **3** |
+| vlang.io | 341 | **341** |
+| GitHub / Hacker News / Lobsters / Wikipedia | 0 each | **0 each** |
+| Other preceding controls | Their preceding counts | Unchanged |
+
+The scene corrects **107 pixels with zero new differences**, and the underlay
+corrects **102 with zero new**. The scene comparison uses the preceding pinned
+candidate; the underlay also has a fresh current control. Existing independent
+Brave reference hashes and the installed Brave identity remain unchanged.
+This does not reduce vlang.io's remaining 279 JPEG pixels, one heading pixel
+and 61 scene pixels.
+
+The final cohort covers 29 workloads, 58 document captures and one startup
+check. All 59 native guards, the driver and outer guard exit 0; 47 rendering
+source and six tool witnesses remain unchanged. Twenty-eight native pairs
+repeat exactly. CNN still differs from Brave at 175,866 pixels and between
+native repeats at 706 pixels, with its retained source/replay failure. The
+four exact archives preserve their content audits, including 33 GitHub rows
+and 30 Hacker News stories. This cohort's matching tall-shadow captures do
+not clear the earlier baseline repeat failure.
+
+Sixteen focused tests execute successfully under the 3 GiB runtime guard with
+`VOX_ARENA_POISON=1`. They cover valid linear/radial leaves without metadata,
+unsupported gradients, unsafe gaps, real picture ownership and plan reuse at
+scales 2, 1 and 2, plus existing leaf/shadow recording. `de783cfd7` separately
+corrects a stale plain-shadow assertion: the unchanged preceding selector and
+current selector both accept that case, independently verified by execution.
+Initial compile failures involving concurrent script/LibJS edits, the stale
+assertion failure, a temporary probe compile error and a preview missing an
+expected PNG are retained. They are not counted as passing checks.
+
+A separate GPU experiment reproduces 50 text-over-orbit differences when the
+orbit resolves before glyph coverage and zero when both retain samples in one
+pass over the independent background. This is diagnostic evidence for future
+text grouping, not an implemented browser fix. Half-precision blend models
+introduced new errors and were rejected; no precision change was applied.
+
+Production `aa19da69`, receipt `20261114-191855-433aa86a`, still supplies the
+810-pixel vlang.io baseline and lacks both the preceding clip fix and this
+change. **341 and the reduced-scene results remain diagnostic pending the
+managed production rebuild.** Normal commit hooks request coalesced C backend,
+literal V `-prod`, single-unit builds; no duplicate build is requested.
+The managed attempt `20261114-213235-cee7c9b9` failed its frozen-input check
+because `tools/libjs_native_hn.v` changed during the build; the previous bundle
+was retained. This failure is archived separately from the successful
+focused and diagnostic checks.
+All-site equality remains open, including CNN, the missing original Reddit
+fixture and the retained repeatability failure. Frozen captures establish no
+live-site, author-script or instruction-performance acceptance.
+
+Commands, identities, actual exits, source witnesses, PNGs, probe masks and
+failed attempts are local under
+`docs/performance/vlang-gradients-20261114/raw/glyph-coverage-20261114/`.
+Completed scratch jobs and temporary probes are removed after archival.

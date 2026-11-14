@@ -1361,7 +1361,12 @@ keeps the same layout with the orbit hidden. Each unchanged 1024×768, scale-1
 reference matches two fresh identity-pinned Brave captures. The GPU test uses
 that independent background and compares the final tile's visible RGBA pixels:
 window-clipped filter input leaves 485 errors; recorded author bounds are exact.
-The complete scene retains 111 differences and its underlay retains 105;
-the fixture is not globally pixel-exact. `8dc5c0df1` corrects 469 vlang.io pixels
-without new differences in diagnostics; production validation is pending.
-See the [recorded-clip audit](../../../docs/OPTIMIZED_SITES_PIXELS_2026_11_12.md#recorded-filter-clips-beyond-the-window-2026-11-14).
+After `8dc5c0df1`, the complete scene retained 111 differences and its underlay
+105. `19224ad53` preserves the promoted gradient picture without optional
+hit-test metadata, reducing these to **4 and 3**, twice, with zero new errors.
+The unchanged references remain independent; neither fixture is globally exact.
+`8dc5c0df1` corrects 469 vlang.io pixels without new differences in diagnostics;
+vlang.io remains 341 after the gradient change. Production validation of both
+fixes is pending. See the
+[recorded-clip audit](../../../docs/OPTIMIZED_SITES_PIXELS_2026_11_12.md#recorded-filter-clips-beyond-the-window-2026-11-14)
+and [gradient isolation audit](../../../docs/OPTIMIZED_SITES_PIXELS_2026_11_12.md#gradient-picture-isolation-without-hit-test-metadata-2026-11-14).
