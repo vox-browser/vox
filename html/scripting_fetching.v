@@ -626,13 +626,11 @@ fn fetch_single_module_script_result(url dom.URL, fetch_client &EnvironmentSetti
 	} else {
 		'javascript-or-wasm'
 	}
+	mut module_map := unsafe { &ModuleMap(module_map_of_realm(module_map_realm)) }
 	if !module_type_allowed(module_type) {
-		for callback in callbacks {
-			callback(none)
-		}
+		module_map.invoke_fetch_callbacks(callbacks, none)
 		return ModuleScriptFetchResult{}
 	}
-	mut module_map := unsafe { &ModuleMap(module_map_of_realm(module_map_realm)) }
 	if entry := module_map.get(url, module_type) {
 		if entry.type_ == .fetching {
 			if callbacks.len > 0 {
@@ -643,11 +641,9 @@ fn fetch_single_module_script_result(url dom.URL, fetch_client &EnvironmentSetti
 			}
 			return error('InvalidStateError: module is already being fetched')
 		}
-		if script := entry.module_script {
-			for callback in callbacks {
-				callback(&script.Script)
-			}
-		}
+		mut result := ?&Script(none)
+		if script := entry.module_script { result = &script.Script }
+		module_map.invoke_fetch_callbacks(callbacks, result)
 		return ModuleScriptFetchResult{
 			module_script: entry.module_script
 		}
@@ -866,23 +862,49 @@ fn module_request_for_preload_destination(destination fetch.Destination) ?Module
 fn ignore_modulepreload_descendants_complete(_ ?&Script) {}
 
 // https://html.spec.whatwg.org/multipage/webappapis.html#fetch-a-modulepreload-module-script-graph
-// The compact host fetch is synchronous, so the boolean mirrors the result
-// delivered to on_complete and lets element processing dispatch its event.
+// The boolean reports whether a module was immediately available. Callers must
+// use on_complete for the final outcome: a shared in-progress fetch can finish later.
 pub fn fetch_modulepreload_module_script_graph(realm &ScriptingRealm, url dom.URL, destination fetch.Destination, settings_object &EnvironmentSettingsObject, options ScriptFetchOptions, on_complete OnFetchScriptComplete) bool {
+	return fetch_modulepreload_graph(realm, url, destination, settings_object, options,
+		on_complete, false)
+}
+
+// HTML's element callback is transferred to this operation. Public callers keep
+// ownership of theirs, even when a shared module fetch completes later.
+fn fetch_modulepreload_graph(realm &ScriptingRealm, url dom.URL, destination fetch.Destination, settings_object &EnvironmentSettingsObject, options ScriptFetchOptions, on_complete OnFetchScriptComplete, owns_completion bool) bool {
+	completion_document := settings_object.responsible_document()
+	completion := fn [realm, settings_object, destination, on_complete, owns_completion, completion_document] (result ?&Script) {
+		steps := fn [realm, settings_object, destination, on_complete, result] () {
+			on_complete(result)
+			if script := result {
+				module_script := unsafe { &ModuleScript(script) }
+				fetch_descendants_of_and_link_a_module_script(realm, module_script,
+					settings_object, destination, none, ignore_modulepreload_descendants_complete)
+			}
+		}
+		owned_closures := if owns_completion { [voidptr(on_complete)] } else { []voidptr{} }
+		task := Task.create_with_owned_steps(.networking, completion_document,
+			steps, owned_closures)
+		enqueue_owned_task(settings_object.responsible_event_loop(), task)
+	}
+	mut module_map := unsafe { &ModuleMap(module_map_of_realm(settings_object.realm())) }
+	if document := completion_document {
+		module_map.ensure_owned_callback_cleanup(document)
+	}
+	owned_closures := if owns_completion { [voidptr(on_complete)] } else { []voidptr{} }
+	document_identity := if document := completion_document { u64(voidptr(document)) } else { u64(0) }
+	owned := module_map.own_fetch_callback(completion, owned_closures, document_identity)
 	result := fetch_single_module_script_result(url, settings_object, destination, options,
 		settings_object.realm(), fetch.Referrer{}, module_request_for_preload_destination(destination),
-		.yes, none, []) or {
-		on_complete(none)
+		.yes, none, [OnFetchScriptComplete(completion)]) or {
+		// A reentrant fetch hook can remove or replace the pending entry.
+		// Its adapter may already have been canceled and released.
+		if !owned.canceled && !owned.invoked {
+			module_map.invoke_fetch_callbacks([OnFetchScriptComplete(completion)], none)
+		}
 		return false
 	}
-	fetched_module := result.module_script or {
-		on_complete(none)
-		return false
-	}
-	on_complete(&fetched_module.Script)
-	fetch_descendants_of_and_link_a_module_script(realm, fetched_module, settings_object,
-		destination, none, ignore_modulepreload_descendants_complete)
-	return true
+	return result.module_script != none
 }
 
 // https://html.spec.whatwg.org/multipage/webappapis.html#fetch-an-inline-module-script-graph

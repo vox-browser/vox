@@ -124,6 +124,7 @@ mut:
 	document_load_event_delaying_ bool
 	document_load_event_delayer_  ?dom.DocumentLoadEventDelayer
 	event_counts_                 map[string]int
+	current_fetch_generation_     u64
 }
 
 pub fn HTMLLinkElementModel.create(base_url dom.URL) &HTMLLinkElementModel {
@@ -358,6 +359,7 @@ pub fn (link &HTMLLinkElementModel) should_fetch_and_process_resource_type() boo
 }
 
 pub fn (mut link HTMLLinkElementModel) fetch_and_process_linked_resource() {
+	link.current_fetch_generation_++
 	if !link.should_fetch_and_process_resource_type() {
 		return
 	}
@@ -367,7 +369,7 @@ pub fn (mut link HTMLLinkElementModel) fetch_and_process_linked_resource() {
 	if link.has_relation('stylesheet') || link.has_relation('icon') || link.has_relation('alternate') {
 		link.default_fetch_and_process_linked_resource()
 	} else if link.has_relation('modulepreload') {
-		link.fetch_and_process_linked_modulepreload_resource()
+		link.process_linked_modulepreload_resource(link.current_fetch_generation_)
 	} else if link.has_relation('preload') {
 		link.fetch_and_process_linked_preload_resource()
 	} else if link.has_relation('preconnect') {
@@ -624,10 +626,28 @@ fn (link &HTMLLinkElementModel) resource_document() ?&dom.Document {
 	return link.parser_document_
 }
 
-fn ignore_modulepreload_fetch_complete(_ ?&Script) {}
+fn (mut link HTMLLinkElementModel) queue_modulepreload_event(fetch_generation u64, name string) {
+	model := voidptr(&link)
+	steps := fn [model, fetch_generation, name] () {
+		mut current_link := unsafe { &HTMLLinkElementModel(model) }
+		// A newer linked-resource fetch supersedes both queued errors and
+		// completions, including an attempt with an empty href or false media.
+		if current_link.current_fetch_generation_ != fetch_generation {
+			return
+		}
+		current_link.fire_event(name)
+	}
+	task := Task.create_with_owned_steps(.networking, link.resource_document(), steps, [])
+	enqueue_owned_task(main_thread_event_loop(), task)
+}
 
 // https://html.spec.whatwg.org/multipage/links.html#link-type-modulepreload:fetch-and-process-the-linked-resource
 pub fn (mut link HTMLLinkElementModel) fetch_and_process_linked_modulepreload_resource() {
+	link.current_fetch_generation_++
+	link.process_linked_modulepreload_resource(link.current_fetch_generation_)
+}
+
+fn (mut link HTMLLinkElementModel) process_linked_modulepreload_resource(fetch_generation u64) {
 	document := link.resource_document()
 	if actual_document := document {
 		if !actual_document.is_scripting_enabled_by_embedder() { return }
@@ -636,17 +656,17 @@ pub fn (mut link HTMLLinkElementModel) fetch_and_process_linked_modulepreload_re
 		return
 	}
 	destination := module_preload_destination_from_as_attribute(link.as_) or {
-		link.fire_event('error')
+		link.queue_modulepreload_event(fetch_generation, 'error')
 		return
 	}
 	url := dom.dom_url_parse(link.href_, link.base_url_, 'UTF-8') or { return }
 	actual_document := document or {
-		link.fire_event('error')
+		link.queue_modulepreload_event(fetch_generation, 'error')
 		return
 	}
 	settings_pointer := actual_document.relevant_settings_object()
 	if settings_pointer == unsafe { nil } {
-		link.fire_event('error')
+		link.queue_modulepreload_event(fetch_generation, 'error')
 		return
 	}
 	settings := unsafe { &EnvironmentSettingsObject(settings_pointer) }
@@ -678,9 +698,15 @@ pub fn (mut link HTMLLinkElementModel) fetch_and_process_linked_modulepreload_re
 			fetch.Priority.auto
 		}
 	}
-	success := fetch_modulepreload_module_script_graph(settings.realm(), url, destination,
-		settings, options, ignore_modulepreload_fetch_complete)
-	link.fire_event(if success { 'load' } else { 'error' })
+	model := voidptr(&link)
+	fetch_modulepreload_graph(settings.realm(), url, destination,
+		settings, options, fn [model, fetch_generation] (result ?&Script) {
+			mut current_link := unsafe { &HTMLLinkElementModel(model) }
+			if current_link.current_fetch_generation_ != fetch_generation { return }
+			// The graph completion runs on the networking task source and
+			// fires this event before optional descendant fetching begins.
+			current_link.fire_event(if result != none { 'load' } else { 'error' })
+		}, true)
 }
 
 pub fn (mut link HTMLLinkElementModel) preconnect(options &LinkProcessingOptions) {
