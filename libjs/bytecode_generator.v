@@ -371,23 +371,7 @@ fn (mut generator BytecodeGenerator) expression(mut vm VM, expression &Expressio
 			return dst
 		}
 		.conditional {
-			dst := generator.temporary()
-			test := generator.expression(mut vm, kind.test or {
-				return error('Missing conditional test')
-			})!
-			alternate := generator.emit(Instruction{ op: .jump_if_false, lhs: test })
-			consequent := generator.expression(mut vm, kind.consequent or {
-				return error('Missing consequent')
-			})!
-			generator.emit(Instruction{ op: .mov, dst: dst, lhs: consequent })
-			end := generator.emit(Instruction{ op: .jump })
-			generator.patch(alternate)
-			other := generator.expression(mut vm, kind.alternate_expr or {
-				return error('Missing alternate')
-			})!
-			generator.emit(Instruction{ op: .mov, dst: dst, lhs: other })
-			generator.patch(end)
-			return dst
+			return generator.conditional_tail(mut vm, expression)
 		}
 		.sequence {
 			mut last := generator.constant(js_undefined())

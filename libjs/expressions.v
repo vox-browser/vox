@@ -592,16 +592,7 @@ fn (mut p Parser) parse_secondary_expression(lhs Expression, min_precedence int,
 		}
 		// === Ternary ===
 		.question_mark {
-			p.consume()
-			consequent := p.parse_assignment_expression()
-			p.consume_token(.colon)
-			alternate := p.parse_expression(precedence_assignment, .right, forbidden)
-			return p.expression(start, ExpressionKind{
-				tag:            .conditional
-				test:           &lhs
-				consequent:     &consequent
-				alternate_expr: &alternate
-			}), ForbiddenTokens{}
+			return p.parse_conditional_tail(lhs, forbidden), ForbiddenTokens{}
 		}
 		// === Member access ===
 		.period {
