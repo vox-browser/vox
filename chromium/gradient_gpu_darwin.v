@@ -59,6 +59,10 @@ fn draw_document_gradient_tiles(pixels &u8, width i32, height i32, pitch i32, ba
 			mut draw := unsafe { *path }
 			draw.matrix[2] += f32(x0 - ox)
 			draw.matrix[5] += f32(y0 - oy)
+			mut local_segments := []f32{}
+			if clip_to_grid {
+				draw = ggshape.localize_linear_gradient_path(draw, mut local_segments) or { draw }
+			}
 			parent := [f32(1), 0, 0, 0, 1, 0, 0, 0, 1]!
 			viewport := [f32(0), 0, f32(grid.width), f32(grid.height)]!
 			flags := (if backdrop != 0 { i32(1) } else { i32(0) }) | 4 |
