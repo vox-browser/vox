@@ -2889,3 +2889,17 @@ archives and reduce vlang.io from 2,710 to 2,139 pixels, correcting 571 without
 new differences. CNN retains its rendering and repeatability failures.
 Production validation is pending the managed rebuild; see the
 [audit](OPTIMIZED_SITES_PIXELS_2026_11_12.md#tile-local-shadow-filter-inputs-2026-11-14).
+
+### Rotated shadow filter layers, 2026-11-14
+
+`d79672699` resolves translucent rotated ellipses in filter-layer coordinates
+and restores the resulting A8 image with linear sampling. The active clip
+bounds the layer input; extended readback fringes require the entire visible
+clip to fit the compositor grid. Existing kernels and unsupported paint paths
+are preserved. All 23 focused checks pass. vlang.io improves from 2,139 to 830
+pixels, correcting 1,451 but introducing 142 one-level differences. Four
+archived sites stay exact. Production `731ef68c` confirms all eighteen workload
+counts twice with matching source witnesses. The complete new translucent fixture retains four
+one-level errors despite its focused shadow-band test passing; the opaque
+control and remaining site failures stay open. See the
+[audit](OPTIMIZED_SITES_PIXELS_2026_11_12.md#rotated-shadow-filter-layers-2026-11-14).

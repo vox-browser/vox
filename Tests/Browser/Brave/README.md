@@ -1312,5 +1312,16 @@ three-sigma footprint. The separate `diagnostic/tall-rounded-shadow-mask`
 control also has agreeing Brave captures and is exact twice in the browser.
 Its focused GPU test checks the complete upper shadow band against that
 independent reference. Thirteen shadow tests pass with arena poisoning;
-production validation is pending. See the
+production `731ef68c` now confirms both complete fixtures exactly twice. See the
 [pixel audit](../../../docs/OPTIMIZED_SITES_PIXELS_2026_11_12.md#tile-local-shadow-filter-inputs-2026-11-14).
+
+`input/rotated-translucent-shadow.html` isolates a rotated elliptical shadow
+with a faint blue floating-point color over a dark background. Two independent
+Brave captures agree, including two canonical-path confirmations. The focused
+GPU test checks the shadow through row 279 in both tile sampling modes, exactly;
+the complete browser capture with `d79672699` retains four one-level differences.
+The SVG triangle below that band establishes tile MSAA. The corresponding
+opaque `diagnostic/rotated-filter-layer` control stays on the preceding path
+and retains 21,069 differing pixels. References and tolerances are unchanged.
+The [pixel audit](../../../docs/OPTIMIZED_SITES_PIXELS_2026_11_12.md#rotated-shadow-filter-layers-2026-11-14)
+records the 23 focused checks, site results and rejected precision experiments.

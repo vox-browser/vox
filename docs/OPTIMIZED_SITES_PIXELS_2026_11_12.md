@@ -1646,3 +1646,86 @@ after verified archival. The normal managed commit hook requests a C, literal
 V `-prod`, single-unit rebuild. The latest completed bundle still predates the
 correction; **production validation of 2,139 remains pending**. These frozen
 captures establish no live-site, author-script or performance acceptance.
+
+## Rotated shadow filter layers, 2026-11-14
+
+`d79672699` filters translucent, antialiased, noncircular elliptical shadows in
+scale-and-translation layer space, then restores the resolved A8 mask through
+the remaining rotation. The destination clip is mapped into the filter layer
+before allocating its bounded input. The native graphics boundary supplies
+only a conservative clip box; V carries it through tile translations. A larger
+readback fringe uses the compositor grid only when that grid contains the
+entire visible filter clip, preserving outside bytes. Opaque, circular,
+nonuniform and unsupported paints retain their preceding paths. Gaussian
+kernels, existing scale-helper arithmetic and references remain unchanged.
+
+The mapping follows the scale/translation filter capability in
+[SkImageFilter_Base](https://skia.googlesource.com/skia/+/refs/heads/main/src/core/SkImageFilter_Base.h)
+and scale decomposition in
+[SkMatrix](https://skia.googlesource.com/skia/+/refs/heads/main/src/core/SkMatrix.cpp).
+These are consulted mainline sources, not a verified source revision for
+installed Brave 157.0.8103.79: its Chromium revision's upstream DEPS lookup
+returned 404. Independent Brave screenshots remain the pixel oracle.
+
+All **23 focused checks** pass: sixteen GPU checks across ten files, plus
+seven root geometry, grouping and prefetch checks. The new GPU check matches
+both sampling modes exactly through the independent reference's upper shadow
+band. It also checks safe declines and bounded/invalid filter requests. The
+complete browser fixture still differs at **four one-level pixels**; the
+focused test does not establish full-page equality. Two fresh Brave captures,
+and two additional captures at the canonical input path, agree exactly.
+The opaque diagnostic remains a known failure.
+
+Diagnostic executable SHA-256
+`9317a2dfbc810292679e70e9a73fd923d20aaba937a9ff70925f7696648bd64b`
+completes 36 fresh document captures across eighteen workloads and a fresh
+startup smoke. All 37 native guards, the driver and outer guard exit 0.
+All 41 selected rendering-source witnesses remain stable. Existing fixture,
+reference, executable, native-library and diff-tool identities are pinned.
+GitHub retains all 33 rows and Hacker News all 30 stories.
+
+| Workload | Diagnostic differing pixels, each fresh capture |
+| --- | ---: |
+| vlang.io archive, scripts disabled, scale 1 | **830** |
+| GitHub / HN / Wikipedia / Lobsters archives | **0 each** |
+| CNN archive | **175,866** |
+| Rotated translucent fixture | **4**, maximum channel error 1 |
+| Rotated ellipse / opaque layer diagnostics | **19 / 21,069** |
+| Tall panel / independent mask / small shadows / shared decorations / avatar | **0 each** |
+| Border controls / basic gradient text | **0 each** |
+| Device-pixel shadows, scale 2 | **92** |
+
+Against the fresh 2,139-pixel source control, vlang.io has **1,451 corrected
+pixels and 142 newly differing pixels**, all new errors one level. Seventeen
+native pairs agree exactly; CNN's pair differs at 1,558 pixels and retains its
+source/replay failure. vlang.io, CNN, missing Reddit and all-site equality remain
+open. No reference or tolerance was changed to obtain this improvement.
+
+An approximate texture-allocation recheck leaves the same 830/four-pixel
+results and is reverted. A global half-precision sampling experiment fails
+four focused checks, including existing capsule, nine-patch and shared-image
+oracles, and is reverted. Earlier prototype zero-pixel results therefore do
+not describe the accepted configuration. Initial layer-space filtering without
+the destination clip produces 1,398 vlang.io differences with 672 new errors;
+that result and all other unsuccessful probes are retained.
+
+Production executable SHA-256
+`731ef68c901b8be1ce7858eef0c1d5d93c2b8df7584cc7b4f61a80d42bcef604`
+now confirms every count in the table in two fresh captures each. All 36 native
+guards, the driver and outer guard exit 0; seventeen pairs repeat exactly and
+CNN again differs at 1,425 pixels. The completed bundle is reused without a
+manual rebuild. Although its nominal build-start revision predates the commit,
+all 41 rendering witnesses match the accepted source, including the two shadow
+fixes. The full embedded Metal shader is decoded from its generated C, hashed
+and compared with the staged shader; they agree. The receipt and sealed C hash
+are retained. Production therefore confirms 830 rather than the earlier
+2,710-pixel result. vlang.io still fails equality.
+
+Local evidence is under
+`docs/performance/vlang-gradients-20261112/raw/rotated-filter-space-20261114/`.
+Runtime checks use 3 GiB guards and arena poisoning; compiler guards retain
+12 GiB and V's 10G compiler limit. Completed job outputs are archived before
+scratch directories, binaries, generated C and guards are removed. The normal
+managed hook requests a C, literal V `-prod`, single-unit rebuild; no additional
+manual production build is requested. Frozen captures establish no live-site,
+author-script or instruction-performance acceptance.
