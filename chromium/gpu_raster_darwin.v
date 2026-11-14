@@ -2,6 +2,7 @@ module main
 
 import ggshape
 import math
+import os
 
 struct DocumentGeometryGrid {
 	width    int
@@ -39,15 +40,29 @@ fn geometry_tile_owner(coordinate int, size int, count int) int {
 	}))
 }
 
+// Native leaf readbacks add two pixels around ink. That padding can cross
+// the compositor picture's origin; retain its tile and leave the outside
+// fringe unchanged rather than changing the GPU raster coordinate space.
+fn geometry_grid_covers_leaf(grid DocumentGeometryGrid, x int, y int, width int, height int) bool {
+	if grid.width <= 2 || grid.height <= 2 || grid.columns <= 0 || grid.rows <= 0
+		|| grid.width * grid.height > 8 * 1024 * 1024 || width <= 0 || height <= 0 {
+		return false
+	}
+	right := grid.columns * (grid.width - 2) + 2
+	bottom := grid.rows * (grid.height - 2) + 2
+	return x >= -2 && y >= -2 && x < right && y < bottom && x + width > 0 && y + height > 0
+		&& x + width <= right + 2 && y + height <= bottom + 2
+}
+
 fn draw_document_shape_tiles(pixels &u8, width i32, height i32, pitch i32, backdrop i32,
 	first_x int, first_y int, shape &C.VoxGraphiteShape) i32 {
 	grid := document_geometry_grid
+	if os.getenv('VOX_GG_DIAGNOSTICS') == '1' {
+		eprintln('VOX_GEOMETRY target=${width}x${height} first=${first_x},${first_y} grid=${grid.width}x${grid.height}/${grid.columns},${grid.rows} origin=${grid.origin_x},${grid.origin_y}')
+	}
 	x0 := first_x - int(math.round(grid.origin_x))
 	y0 := first_y - int(math.round(grid.origin_y))
-	if grid.width <= 2 || grid.height <= 2 || grid.columns <= 0 || grid.rows <= 0
-		|| x0 < 0 || y0 < 0 || x0 + width > grid.columns * (grid.width - 2) + 2
-		|| y0 + height > grid.rows * (grid.height - 2) + 2
-		|| grid.width * grid.height > 8 * 1024 * 1024 {
+	if !geometry_grid_covers_leaf(grid, x0, y0, int(width), int(height)) {
 		return ggshape.draw(pixels, width, height, pitch, backdrop, shape)
 	}
 	mut result := []u8{len: int(height) * int(pitch)}
@@ -105,10 +120,7 @@ fn draw_document_shape_group_tiles(pixels &u8, width i32, height i32, pitch i32,
 	grid := document_geometry_grid
 	x0 := first_x - int(math.round(grid.origin_x))
 	y0 := first_y - int(math.round(grid.origin_y))
-	if grid.width <= 2 || grid.height <= 2 || grid.columns <= 0 || grid.rows <= 0
-		|| x0 < 0 || y0 < 0 || x0 + width > grid.columns * (grid.width - 2) + 2
-		|| y0 + height > grid.rows * (grid.height - 2) + 2
-		|| grid.width * grid.height > 8 * 1024 * 1024 {
+	if !geometry_grid_covers_leaf(grid, x0, y0, int(width), int(height)) {
 		return ggshape.draw_shapes(pixels, width, height, pitch, backdrop, shapes, count)
 	}
 	mut result := []u8{len: int(height) * int(pitch)}
