@@ -818,7 +818,7 @@ pub fn (mut model NavigableModel) choose_a_navigable(name string, no_opener bool
 		chosen = model.parent_ or { &model }
 	} else if lower_name == '_top' {
 		chosen = model.traversable_navigable()
-	} else if lower_name != '_blank' && !no_opener {
+	} else if lower_name != '_blank' {
 		chosen = model.find_a_navigable_by_target_name(name)
 	}
 	if chosen == none {
