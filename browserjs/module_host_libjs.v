@@ -30,6 +30,24 @@ fn (mut host ModuleHost) install_libjs(mut runtime Runtime) ! {
 			host.drain_libjs_modules()
 		}
 	}
+	vm.host_get_import_meta_properties=fn [owner] (module_record libjs.Module) []libjs.ImportMetaProperty {
+		mut host := unsafe { &ModuleHost(owner) }
+		mut vm := unsafe { &libjs.VM(host.runtime.agent_vm) }
+		key := module_record.filename()
+		base := if source := host.sources[key] { source.base } else { key }
+		resolve := libjs.NativeFunction.create(mut vm,module_record.realm(),module_record.realm().function_prototype,
+			fn [owner,key,base] (mut vm libjs.VM) !libjs.Value {
+				mut host := unsafe { &ModuleHost(owner) }
+				if host.closed { return vm.throw_error(.type_error,'Module loader is closed') }
+				specifier := vm.argument(0).to_primitive_string(mut vm)!.str()
+				resolved := host.resolve(specifier,base,key) or { return vm.throw_error(.type_error,err.msg()) }
+				return libjs.Value.from_string(vm.create_string_from_str(resolved))
+			},1,libjs.PropertyName.from_str('resolve'),none)
+		return [
+			libjs.ImportMetaProperty{libjs.PropertyName.from_str('url'),libjs.Value.from_string(vm.create_string_from_str(base))},
+			libjs.ImportMetaProperty{libjs.PropertyName.from_str('resolve'),libjs.Value.from_object(resolve.object)},
+		]
+	}
 	runtime.module_host_=host
 	runtime.add_close_handler(fn [owner] () {
 		mut host := unsafe { &ModuleHost(owner) }
