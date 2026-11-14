@@ -1,5 +1,10 @@
 # LibJS cached native-code experiment
 
+The [2026-11-15 document cache](LIBJS_REVISIT_CACHE.md) now saves native code on
+the first visit and loads it before first execution on a later visit, with
+process-local parsed-source reuse. The manual experiment below is historical;
+its warmup requirement and HN callback timings do not describe the new workflow.
+
 This is an explicit, standalone LibJS experiment. Browser settings and the default
 JavaScriptCore backend are unchanged. The experiment runs Hacker News's unchanged
 `hn.js` against Vox's translated native DOM, warms its comment handlers, and
