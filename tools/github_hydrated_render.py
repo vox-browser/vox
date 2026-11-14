@@ -128,6 +128,9 @@ def run(args):
     if manifest['url'] != URL or not manifest.get('author_scripts', '').lower().startswith('original'):
         raise ValueError('Expected an original scripted GitHub archive')
     expected = content(json.loads(args.reference_audit.read_text()))
+    js_engine = getattr(args, 'vox_js_engine', 'javascriptcore')
+    if js_engine not in {'javascriptcore', 'libjs'}:
+        raise ValueError('Unsupported Vox JavaScript engine: ' + js_engine)
     if args.repeat < 1:
         raise ValueError('At least one complete pair is required')
     selector = ready_selector(expected)
@@ -175,7 +178,7 @@ def run(args):
                         if engine == 'vox':
                             options = SimpleNamespace(**common, binary=binary, native_instruction_markers=False,
                                 vox_chrome_height=112, native_document_only=True,
-                                vox_arg=['--enable-javascript', '--js-engine=javascriptcore',
+                                vox_arg=['--enable-javascript', '--js-engine=' + js_engine,
                                          '--screenshot-viewport-height', '768'])
                             row = measurement.run_vox(options, prefix, MacCounters(), Path(profile) / 'cache')
                             audit = json.loads(Path(str(prefix) + '.audit.json').read_text())
@@ -213,7 +216,7 @@ def run(args):
         summary = dict(records=records, pins=pins, author_scripts=manifest['author_scripts'],
             controls=dict(metadata=args.metadata_control, matches=args.matches_control,
                           first=args.first_control),
-            selected_js_engines=dict(vox='javascriptcore', brave='v8'),
+            selected_js_engines=dict(vox=js_engine, brave='v8'),
             replay_clock=manifest.get('replay_clock'), median_ms={k: statistics.median(v) for k, v in times.items()},
             conservative_time_ratio=max(times['vox']) / min(times['brave']),
             all_content_and_pixels_valid=valid,
@@ -239,6 +242,8 @@ if __name__ == '__main__':
     parser.add_argument('--repeat', type=int, default=7)
     parser.add_argument('--settle-seconds', type=float, default=1)
     parser.add_argument('--timeout', type=float, default=120)
+    parser.add_argument('--vox-js-engine', choices=['javascriptcore', 'libjs'], default='javascriptcore',
+                        help='Select the Vox backend; complete hydration and unchanged PNG checks remain required')
     parser.add_argument('--metadata-control', action='store_true')
     parser.add_argument('--matches-control', action='store_true',
                         help='Use the original JSON transport for Element.matches in Vox')
