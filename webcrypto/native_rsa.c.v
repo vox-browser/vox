@@ -92,6 +92,7 @@ fn native_rsa_verify(key &CryptoKey, signature []u8, message []u8, pss bool, sal
 	if pss && salt > u32(0x7fffffff) { return false }
 	parts := rsa_parts_from_handle(key.internal_handle_)
 	hash := rsa_operation_hash(key)!
+	if signature.len != int(parts[0].length) { return false }
 	result := C.vox_rsa_verify(parts.data, hash.str, int(pss), salt, signature.data, uint(signature.len), message.data, uint(message.len))
 	if result == 1 { return true }
 	if result == 0 { return false }
