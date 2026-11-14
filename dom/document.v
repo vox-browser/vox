@@ -635,6 +635,7 @@ pub struct HTMLDetailsElement {
 pub mut:
 	details_toggle_task_id_   u64
 	details_toggle_old_state_ string
+	default_summary_          ?&HTMLSummaryElement
 	summary_slot_             ?&HTMLSlotElement
 	descendants_slot_         ?&HTMLSlotElement
 }
@@ -4035,6 +4036,15 @@ pub fn (n &Navigable) is_focused() bool {
 // Navigable's virtual destroyed-state query on the actual local identity.
 pub fn (n &Navigable) has_been_destroyed() bool {
 	return n.has_been_destroyed_
+}
+
+// A detached subtree keeps its navigables until queued unload steps complete.
+pub fn (n &Navigable) is_in_a_destroyed_subtree() bool {
+	mut current := unsafe { &Navigable(n) }
+	for {
+		if current.has_been_destroyed() { return true }
+		current = current.parent() or { return false }
+	}
 }
 
 // The flag assignment from LocalNavigable::set_has_been_destroyed. Its other
@@ -8832,8 +8842,21 @@ pub fn (mut d Document) open_document() !&Document {
 	}
 	if d.parser != unsafe { nil } { d.parser.abort() }
 	d.reset_html_parser_stream()
-	// 11. Replace all with null (clear document).
+	// 9. Erase listeners and handlers on the document and its shadow-including descendants.
 	mut document_node := unsafe { &Node(&d) }
+	document_node.visit_shadow_including_inclusive_descendants(fn (node &Node) TraversalDecision {
+		target := unsafe { &EventTarget(node) }
+		target.erase_all_event_listeners_and_handlers()
+		return .@continue
+	})
+	// 10. Erase the relevant global object's listeners when this is its associated document.
+	if window := d.get_window() {
+		if voidptr(window.associated_document_) == voidptr(&d) {
+			target := unsafe { &EventTarget(window) }
+			target.erase_all_event_listeners_and_handlers()
+		}
+	}
+	// 11. Replace all with null (clear document).
 	document_node.replace_all(none)
 
 	// Reset editing state
@@ -9329,7 +9352,7 @@ fn (mut d Document) queue_visibility_state_entry(initial bool) {
 		// association, and a reused Window may still own the outgoing one.
 		if d.window == unsafe { nil } { return }
 		associated := d.window.associated_document() or { return }
-		if associated != &d { return }
+		if voidptr(associated) != voidptr(&d) { return }
 	}
 	hook.queue_visibility_state_entry(hook.target, d, initial)
 	if initial { d.initial_visibility_state_entry_pending_ = false }
@@ -9909,6 +9932,10 @@ pub fn (d &Document) is_fully_active() bool {
 	// A Document d is said to be fully active when d is the active document of a navigable navigable,
 	// and either navigable is a top-level traversable or navigable's parent has a fully active document.
 	nav := d.navigable() or { return false }
+	// The document can keep its navigable until unloading completes.
+	if nav.is_in_a_destroyed_subtree() {
+		return false
+	}
 
 	if nav.is_top_level_traversable() {
 		return true
@@ -10119,7 +10146,9 @@ pub fn (d &Document) inclusive_ancestor_navigables() []&Navigable {
 // https://html.spec.whatwg.org/multipage/document-sequences.html#document-tree-child-navigables
 pub fn (d &Document) document_tree_child_navigables() []&Navigable {
 	// 1. If document's node navigable is null, return the empty list.
-	_ = d.navigable() or { return [] }
+	navigable := d.navigable() or { return [] }
+	// Destruction detaches the whole subtree before queued unload steps finish.
+	if navigable.is_in_a_destroyed_subtree() { return [] }
 	// 2. Let navigables be new list.
 	mut navigables := []&Navigable{}
 	// 3-4. Iterate all registered navigables.
@@ -10724,6 +10753,11 @@ fn resolve_intersection_observer_margin(value IntersectionObserverMarginValue, r
 
 // https://www.w3.org/TR/intersection-observer/#run-the-update-intersection-observations-steps
 pub fn (mut d Document) run_the_update_intersection_observations_steps(time f64) {
+	// Painting prepares this state independently. With no observations, there
+	// is no reason to flush paint and hit-testing properties here.
+	if d.intersection_observers.len == 0 {
+		return
+	}
 	// 1-2. Copy the observer list so callbacks/GC finalizers cannot mutate the
 	// registry while this rendering update walks it.
 	observer_list := d.intersection_observers.clone()

@@ -2060,7 +2060,7 @@ pub fn (mut window WindowModel) delete_named_property(name string) bool {
 }
 
 pub fn (window &WindowModel) named_child(name string) ?&BrowsingContextModel {
-	for child in window.browsing_context_.children() {
+	for child in window.document_tree_child_browsing_contexts() {
 		if child.target_name() == name {
 			return child
 		}
@@ -2130,7 +2130,7 @@ pub fn (window &WindowModel) is_supported_property_name(name string) bool {
 		return true
 	}
 	for element in document.potentially_named_elements() {
-		if element.get_name() or { '' } == name {
+		if is_window_named_element_by_name(element) && (element.get_name() or { '' }) == name {
 			return true
 		}
 	}
@@ -2145,6 +2145,7 @@ pub fn (window &WindowModel) supported_property_names() []string {
 		}
 	}
 	for element in window.associated_document().potentially_named_elements() {
+		if !is_window_named_element_by_name(element) { continue }
 		if element_name := element.get_name() {
 			if element_name != '' && element_name !in names {
 				names << element_name

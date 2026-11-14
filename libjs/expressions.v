@@ -1859,8 +1859,7 @@ fn (mut p Parser) try_parse_arrow_function_expression_impl(expect_parens bool, i
 		})
 	} else {
 		// C++ uses rule_start (function start) for ReturnStatement and FunctionBody.
-		body_forbidden := if saved_formal_parameter_ctx { ForbiddenTokens{} } else { forbidden }
-		expression := p.parse_expression(precedence_assignment, .right, body_forbidden)
+		expression := p.parse_expression(precedence_assignment, .right, forbidden)
 		return_statement := Statement.new(p.range_from(start), StatementKind{
 			tag:        .return_stmt
 			return_arg: &expression

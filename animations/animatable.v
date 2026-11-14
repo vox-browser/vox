@@ -526,6 +526,11 @@ fn (mut animatable Animatable) ensure_transition(pseudo ?css.PseudoElement) ?&An
 	return transition
 }
 
+fn (animatable &Animatable) transition_if_exists(pseudo ?css.PseudoElement) ?&AnimatableTransition {
+	index := pseudo_index(pseudo) or { return none }
+	return animatable.transitions_[index] or { none }
+}
+
 pub fn (mut animatable Animatable) add_transitioned_properties(pseudo ?css.PseudoElement, transitions []css.TransitionProperties) {
 	mut bucket := animatable.ensure_transition(pseudo) or { return }
 	for transition in transitions {
@@ -543,12 +548,12 @@ pub fn (mut animatable Animatable) add_transitioned_properties(pseudo ?css.Pseud
 }
 
 pub fn (mut animatable Animatable) property_ids_with_matching_transition_property_entry(pseudo ?css.PseudoElement) []css.PropertyID {
-	bucket := animatable.ensure_transition(pseudo) or { return [] }
+	bucket := animatable.transition_if_exists(pseudo) or { return [] }
 	return bucket.attribute_indices.keys()
 }
 
 pub fn (mut animatable Animatable) property_transition_attributes(pseudo ?css.PseudoElement, property css.PropertyID) ?TransitionAttributes {
-	bucket := animatable.ensure_transition(pseudo) or { return none }
+	bucket := animatable.transition_if_exists(pseudo) or { return none }
 	index := bucket.attribute_indices[property] or { return none }
 	return bucket.attributes[index]
 }
@@ -566,12 +571,12 @@ pub fn (mut animatable Animatable) remove_transition(pseudo ?css.PseudoElement, 
 }
 
 pub fn (mut animatable Animatable) property_ids_with_existing_transitions(pseudo ?css.PseudoElement) []css.PropertyID {
-	bucket := animatable.ensure_transition(pseudo) or { return [] }
+	bucket := animatable.transition_if_exists(pseudo) or { return [] }
 	return bucket.associated_transitions.keys()
 }
 
 pub fn (mut animatable Animatable) property_transition(pseudo ?css.PseudoElement, property css.PropertyID) ?&css.CSSTransition {
-	bucket := animatable.ensure_transition(pseudo) or { return none }
+	bucket := animatable.transition_if_exists(pseudo) or { return none }
 	return bucket.associated_transitions[property] or { none }
 }
 

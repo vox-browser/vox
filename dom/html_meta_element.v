@@ -29,7 +29,7 @@ pub fn meta_http_equiv_state(value string) ?MetaHttpEquivState {
 }
 
 pub fn (meta &HTMLMetaElement) http_equiv_state() ?MetaHttpEquivState {
-	return meta_http_equiv_state(unsafe { &Element(meta) }.get_attribute_value('http-equiv'))
+	return meta_http_equiv_state(unsafe { &Element(meta) }.get_attribute_ns(none, 'http-equiv') or { '' })
 }
 
 // The existing HTML metadata body needs HTML's ReferrerPolicy type. The

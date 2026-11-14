@@ -1123,6 +1123,25 @@ pub fn (et &EventTarget) remove_an_event_listener(listener &DOMEventListener) {
 	}
 }
 
+// https://dom.spec.whatwg.org/#remove-all-event-listeners
+pub fn (et &EventTarget) remove_all_event_listeners() {
+	for et.data.event_listener_list.len > 0 {
+		et.remove_an_event_listener(et.data.event_listener_list[0])
+	}
+}
+
+// https://html.spec.whatwg.org/multipage/webappapis.html#erase-all-event-listeners-and-handlers
+pub fn (et &EventTarget) erase_all_event_listeners_and_handlers() {
+	if storage := et.data.event_handler_storage() {
+		// Deactivation removes entries, so snapshot their names first.
+		names := storage.handlers.keys()
+		for name in names {
+			et.deactivate_event_handler(name)
+		}
+	}
+	et.remove_all_event_listeners()
+}
+
 // EventTarget.cpp invokes this virtual hook after actual listener-list changes.
 // A typed callback preserves that dispatch for EventTarget subclasses outside DOM.
 pub fn (et &EventTarget) event_listener_list_changed() {

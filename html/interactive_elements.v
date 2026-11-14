@@ -581,6 +581,11 @@ pub fn html_details_element_create_shadow_tree_if_needed(details &dom.HTMLDetail
 	mut shadow_root := element.attach_a_user_agent_shadow_root(.manual)
 	document := element.document()
 	mut summary_slot_element := document.create_element_ns('http://www.w3.org/1999/xhtml', 'slot')!
+	mut default_summary := document.create_element_ns('http://www.w3.org/1999/xhtml', 'summary')!
+	mut default_summary_node := default_summary.as_node()
+	default_summary_node.append_child(document.create_text_node('Details').as_node())!
+	mut summary_slot_node := summary_slot_element.as_node()
+	summary_slot_node.append_child(default_summary_node)!
 	mut descendants_slot_element := document.create_element_ns('http://www.w3.org/1999/xhtml', 'slot')!
 	mut style_element := document.create_element_ns('http://www.w3.org/1999/xhtml', 'style')!
 	style_text := document.create_text_node('\n        :host summary {\n            display: list-item;\n            counter-increment: list-item 0;\n            list-style: disclosure-closed inside;\n        }\n        :host([open]) summary {\n            list-style-type: disclosure-open;\n        }\n    ')
@@ -592,6 +597,7 @@ pub fn html_details_element_create_shadow_tree_if_needed(details &dom.HTMLDetail
 	descendants_slot_element.set_associated_shadow_host_pseudo_element(int(css.PseudoElement.details_content))
 	shadow_node.append_child(style_element.as_node())!
 	mut mutable_details := unsafe { &dom.HTMLDetailsElement(details) }
+	mutable_details.default_summary_ = unsafe { &dom.HTMLSummaryElement(default_summary) }
 	mutable_details.summary_slot_ = unsafe { &dom.HTMLSlotElement(summary_slot_element) }
 	mutable_details.descendants_slot_ = unsafe { &dom.HTMLSlotElement(descendants_slot_element) }
 }
@@ -694,19 +700,7 @@ pub fn html_details_element_open(details &dom.HTMLDetailsElement) bool {
 }
 
 pub fn html_summary_element_is_summary_for_parent(summary &dom.HTMLSummaryElement) bool {
-	element := unsafe { &dom.Element(summary) }
-	parent := element.as_node().parent_element() or { return false }
-	if parent.local_name() != 'details' {
-		return false
-	}
-	for child in parent.as_node().children_as_vector() {
-		if child_element := child.as_element() {
-			if child_element.local_name() == 'summary' {
-				return voidptr(child_element) == voidptr(element)
-			}
-		}
-	}
-	return false
+	return summary.associated_details_element() != none
 }
 
 pub fn html_summary_element_is_summary_for_its_parent_details(summary &dom.HTMLSummaryElement) bool {
@@ -722,12 +716,8 @@ pub fn html_summary_element_is_focusable(summary &dom.HTMLSummaryElement, base_i
 }
 
 pub fn activate_html_summary_element(summary &dom.HTMLSummaryElement) {
-	if !html_summary_element_is_summary_for_parent(summary) {
-		return
-	}
-	parent := unsafe { &dom.Element(summary) }.as_node().parent_element() or { return }
-	mut details := unsafe { &dom.HTMLDetailsElement(parent) }
-	set_html_details_element_open(details, !parent.has_attribute('open'))
+	details := summary.associated_details_element() or { return }
+	set_html_details_element_open(details, !html_details_element_open(details))
 }
 
 pub fn html_summary_element_activation_behavior(summary &dom.HTMLSummaryElement) {

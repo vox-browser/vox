@@ -63,19 +63,28 @@ fn (reader &OkpDerReader) exact() ! {
 }
 
 fn decode_okp_oid(bytes []u8) ![]u32 {
+	if bytes.len == 0 {
+		return error('DataError: ASN1::Decoder: Decoding object identifier from an empty span')
+	}
 	mut result := [u32(0)]
-	mut value := u32(0)
+	mut value := u64(0)
 	for byte in bytes {
 		if value == 0 && byte == 0x80 {
-			return error('DataError: ASN1::Decoder: Invalid first byte in object identifier')
+			return error('DataError: ASN1::Decoder: Object identifier has a non-minimally encoded subidentifier')
 		}
-		value = (value << 7) | u32(byte & 0x7f)
+		value = (value << 7) | u64(byte & 0x7f)
+		if value > 0x0fffffff {
+			return error('DataError: ASN1::Decoder: Object identifier has an excessively large subidentifier')
+		}
 		if byte & 0x80 == 0 {
-			result << value
+			result << u32(value)
 			value = 0
 		}
 	}
-	if result.len == 1 || result[1] >= 1600 {
+	if value != 0 {
+		return error('DataError: ASN1::Decoder: Object identifier ends with an unterminated subidentifier')
+	}
+	if result[1] >= 1600 {
 		return error('DataError: ASN1::Decoder: Invalid encoding in object identifier')
 	}
 	result[0] = result[1] / 40
