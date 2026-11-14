@@ -774,6 +774,21 @@ fn block_contents_need_alignment(node &Node) bool {
 	return align in ['center', 'end', 'flex-end', 'flow-end', 'space-around', 'space-evenly']
 }
 
+// Same-binary control: treat every list item and generated box as dependent
+// on content outside a reused subtree.
+const retain_static_generated_blocking = os.getenv('VOX_RETAIN_STATIC_GENERATED_BLOCKING') != ''
+
+// Whether `node` is a marker, list item or generated box whose content a
+// counter or the quote depth produces. Generated text belongs to the marker
+// or pseudo-element box that contains it, which is examined as its parent.
+fn generated_box_depends_on_document_order(node &Node) bool {
+	if node.is_generated_text_node() { return false }
+	if node.is_list_item_marker_box() { return !retained_flow_marker_box_is_static(node) }
+	if node.is_list_item_box() { return !retained_flow_list_item_box_is_static(node) }
+	if node.is_generated_for_pseudo_element() { return generated_content_uses_document_state(node) }
+	return false
+}
+
 // An out-of-flow descendant positioned against a box outside `boundary`
 // depends on geometry the subtree does not own. Layout indices are not unique
 // across trees laid out in one state, so each committed value must belong to
@@ -781,8 +796,14 @@ fn block_contents_need_alignment(node &Node) bool {
 fn subtree_reuse_blocked(previous &LayoutState, node &Node, boundary &Node) bool {
 	// Counter-generated content can depend on preceding siblings outside the
 	// boundary. Its text and marker sizing must run through layout again.
-	if node.is_list_item_box() || node.is_list_item_marker_box()
-		|| node.is_generated_text_node() || node.is_generated_for_pseudo_element() {
+	// Bullets, authored strings and other content that no counter or quote
+	// depth produces depend on nothing outside their box.
+	if retain_static_generated_blocking {
+		if node.is_list_item_box() || node.is_list_item_marker_box()
+			|| node.is_generated_text_node() || node.is_generated_for_pseudo_element() {
+			return true
+		}
+	} else if generated_box_depends_on_document_order(node) {
 		return true
 	}
 	for child in node.children() {

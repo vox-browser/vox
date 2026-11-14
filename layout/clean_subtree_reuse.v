@@ -165,15 +165,8 @@ fn clean_subtree_blocker(node &Node, mut boxes &int) ?string {
 		if !retained_flow_raster_image_is_ordinary(node) { return 'replaced' }
 	}
 	if node.is_generated_text_node() { return none }
-	if node.is_generated_for_pseudo_element() {
-		// Counters and quote depth come from the document order outside this box.
-		if value := node.computed_values().property(.content, .yes) {
-			text := value.css_text
-			if text.contains('counter') || text.contains('quote') || text.contains('url(')
-				|| text.contains('image') || text.contains('gradient') || text.contains('attr(') {
-				return 'generated-content'
-			}
-		}
+	if node.is_generated_for_pseudo_element() && generated_content_uses_document_state(node) {
+		return 'generated-content'
 	}
 	if node.is_list_item_marker_box() {
 		if !retained_flow_marker_box_is_static(node) { return 'marker' }
@@ -258,4 +251,14 @@ fn clean_subtree_svg_is_closed(element &dom.Element, mut count &int) bool {
 		}
 	}
 	return true
+}
+
+// Whether a generated box's `content` is produced from counters, the quote
+// depth, an attribute or an image rather than authored strings alone.
+// Counters and quote depth come from the document order outside the box.
+fn generated_content_uses_document_state(node &Node) bool {
+	value := node.computed_values().property(.content, .yes) or { return false }
+	text := value.css_text
+	return text.contains('counter') || text.contains('quote') || text.contains('url(')
+		|| text.contains('image') || text.contains('gradient') || text.contains('attr(')
 }
