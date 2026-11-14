@@ -10,6 +10,8 @@ mut:
 	breaks      []u32
 	continues   []u32
 	scope_depth int
+	iterator    ?Operand
+	returns     []LoopReturnExit
 }
 
 struct BytecodeGenerator {
@@ -653,7 +655,7 @@ fn (mut generator BytecodeGenerator) statement(mut vm VM, statement &Statement) 
 		.return_stmt {
 			if !generator.function_body { return generator.unsupported('return outside function') }
 			value := if argument := kind.return_arg { generator.expression(mut vm, argument)! } else { generator.constant(js_undefined()) }
-			generator.emit(Instruction{op: .end, lhs: value})
+			generator.emit_return(value)
 		}
 		.empty, .debugger_stmt {}
 		.expression_stmt {

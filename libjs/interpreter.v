@@ -50,6 +50,25 @@ fn (mut vm VM) execute_instruction(instruction Instruction, executable &Executab
 	}
 	mut result := js_undefined()
 	match instruction.op {
+		.get_sync_iterator {
+			mut wrapper := Object.create(vm.realm(), none)
+			wrapper.iterator_record = get_iterator_sync_value(mut vm, left)!
+			result = Value.from_object(wrapper)
+		}
+		.sync_iterator_next, .close_sync_iterator, .close_sync_iterator_throw {
+			if !left.is_object() { return vm.throw_error(.internal_error, 'Invalid iterator record') }
+			mut record := left.as_object().iterator_record or { return vm.throw_error(.internal_error, 'Invalid iterator record') }
+			if instruction.op == .sync_iterator_next {
+				step := iterator_step_value(mut vm, mut record)!
+				if step.done { return instruction.target }
+				result = step.value
+			} else if !record.done {
+				record.done = true
+				completion := if instruction.op == .close_sync_iterator_throw { Completion{type_:.throw_,value:right} } else { normal_completion(js_undefined()) }
+				closed := iterator_close(mut vm, record, completion)
+				if instruction.op == .close_sync_iterator && closed.is_error() { return closed.release_error() }
+			}
+		}
 		.get_object_property_iterator { result = Value.from_object(create_property_name_iterator(mut vm, left)!) }
 		.property_name_iterator_next {
 			if !left.is_object() { return vm.throw_error(.internal_error, 'Invalid property-name iterator') }

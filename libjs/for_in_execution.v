@@ -5,6 +5,7 @@ module libjs
 // inaccessible PropertyNameIterator needs no user-visible IteratorClose.
 fn (mut generator BytecodeGenerator) for_in_statement(mut vm VM, statement &Statement) ! {
 	kind := statement.kind
+	if kind.for_in_of_kind == .for_of { return generator.for_of_statement(mut vm, statement) }
 	if kind.for_in_of_kind != .for_in { return generator.unsupported('for-of loop') }
 	lhs := kind.for_in_of_lhs or { return error('Missing for-in target') }
 	mut lexical := false

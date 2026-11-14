@@ -35,6 +35,10 @@ fn (mut generator BytecodeGenerator) try_catch_statement(mut vm VM,statement &St
 		generator.emit(Instruction{op:.leave_scope})
 	}
 	generator.patch(finished)
+	generator.protect_range(start, end, catch_start, depth)
+}
+
+fn (mut generator BytecodeGenerator) protect_range(start u32, end u32, catch_start u32, depth int) {
 	// Inner handlers already own their protected intervals. Fill the remaining
 	// intervals with the outer handler, including inner catch bodies.
 	mut protected := generator.executable.exception_handlers.clone()

@@ -160,6 +160,8 @@ pub mut:
 	regexp_object ?&RegExpObject
 	host_properties ?HostProperties
 	array_object         ?&ArrayObject
+	keyed_collection     ?&KeyedCollection
+	keyed_iterator       ?&KeyedCollectionIterator
 	boolean_object       ?&BooleanObject // [[BooleanData]]
 	date_object          ?&DateObject // [[DateValue]]
 	number_object        ?&NumberObject  // [[NumberData]]
@@ -169,6 +171,7 @@ pub mut:
 	string_iterator      ?&StringIterator
 	array_iterator       ?&ArrayIterator
 	property_name_iterator ?&PropertyNameIterator
+	iterator_record      ?&IteratorRecord // Inaccessible bytecode record wrapper
 	array_buffer         ?&ArrayBufferObject
 	data_view            ?&DataView
 	typed_array          ?&TypedArray

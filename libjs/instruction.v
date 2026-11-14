@@ -72,6 +72,10 @@ pub enum OpCode {
 	catch_op
 	get_object_property_iterator
 	property_name_iterator_next
+	get_sync_iterator
+	sync_iterator_next
+	close_sync_iterator
+	close_sync_iterator_throw
 }
 
 pub struct Instruction {
@@ -102,7 +106,7 @@ fn (instruction Instruction) input_count() int {
 		.in_op, .instance_of, .call {
 			2
 		}
-		.get_property, .delete_property, .new_regexp, .set_object_literal_prototype {
+		.get_property, .delete_property, .new_regexp, .set_object_literal_prototype, .close_sync_iterator_throw {
 			2
 		}
 		.put_property, .define_property {
@@ -112,6 +116,7 @@ fn (instruction Instruction) input_count() int {
 		.increment, .decrement, .set_binding, .set_variable, .initialize_binding, .jump_if_true,
 		.require_object_coercible, .to_property_key, .copy_object_excluding_keys,
 		.get_object_property_iterator, .property_name_iterator_next,
+		.get_sync_iterator, .sync_iterator_next, .close_sync_iterator,
 		.jump_if_false, .jump_if_nullish, .end, .throw_op, .construct, .new_array, .new_function_with_name {
 			1
 		}
@@ -133,6 +138,7 @@ fn (instruction Instruction) writes_operand() bool {
 	return instruction.op !in [.put_property, .define_property, .set_binding, .set_variable, .initialize_binding,
 		.create_mutable_binding, .create_immutable_binding, .enter_scope, .leave_scope, .jump,
 		.require_object_coercible, .set_object_literal_prototype,
+		.close_sync_iterator, .close_sync_iterator_throw,
 		.jump_if_true, .jump_if_false, .jump_if_nullish, .end, .throw_op]
 }
 
@@ -174,7 +180,7 @@ pub fn (executable &Executable) validate(arguments_count u32) ! {
 			&& instruction.identifier >= u32(executable.identifier_table.len) {
 			return error('Identifier out of range')
 		}
-		if instruction.op in [.jump, .jump_if_true, .jump_if_false, .jump_if_nullish, .property_name_iterator_next]
+		if instruction.op in [.jump, .jump_if_true, .jump_if_false, .jump_if_nullish, .property_name_iterator_next, .sync_iterator_next]
 			&& instruction.target >= executable.bytecode_length {
 			return error('Jump target out of range')
 		}
