@@ -92,6 +92,11 @@ mut:
 	protected_value_links_     []ProtectedValueLink
 	protected_value_links_reported_ bool
 	value_call_intrinsic_     voidptr
+	// forward_javascript_function(): the catching caller, the object it
+	// returns after a throw, and the reader of the thrown value.
+	value_forward_intrinsic_  voidptr
+	value_forward_failed_     voidptr
+	value_forward_take_       voidptr
 	promise_observe_intrinsic_ voidptr
 	value_error_intrinsic_     voidptr
 	value_error_constructors_ voidptr

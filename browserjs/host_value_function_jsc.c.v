@@ -3,11 +3,14 @@
 @[has_globals]
 module browserjs
 
+import os
 import processmetrics
 
 import webidl
 import platform
 
+// Same-binary control: forward through argument and outcome arrays, as before.
+const retain_array_forwarding = os.getenv('VOX_RETAIN_ARRAY_FORWARDING') != ''
 
 #include "host_function_darwin.h"
 
@@ -158,6 +161,15 @@ fn (mut runtime Runtime) initialize_javascript_value_intrinsics() ! {
 	// global Reflect/Promise properties. Native Promise adoption remains JSC's
 	// Resolve function, including then getter access and thenable job scheduling.
 	runtime.value_call_intrinsic_ = runtime.evaluate_host_value('(function(){const apply=Reflect.apply;return function(callback,receiver,args,caught){if(!caught)return apply(callback,receiver,args);try{return [true,apply(callback,receiver,args)]}catch(error){return [false,error]}}})()')!
+	// The forwarding caller receives the arguments as its own rest parameter
+	// and returns the result itself; only a throw takes a second entry.
+	forwarding := runtime.evaluate_host_value('(function(){const apply=Reflect.apply,failed={};let thrown;return [function(callback,receiver,...args){try{return apply(callback,receiver,args)}catch(error){thrown=error;return failed}},failed,function(){const value=thrown;thrown=undefined;return value}]})()')!
+	defer { runtime.release_javascript_value(forwarding) }
+	mut forwarding_exception := unsafe { nil }
+	runtime.value_forward_intrinsic_ = runtime.retain_javascript_value(C.vox_jsc_JSObjectGetPropertyAtIndex(runtime.context, forwarding, 0, &forwarding_exception))!
+	runtime.value_forward_failed_ = runtime.retain_javascript_value(C.vox_jsc_JSObjectGetPropertyAtIndex(runtime.context, forwarding, 1, &forwarding_exception))!
+	runtime.value_forward_take_ = runtime.retain_javascript_value(C.vox_jsc_JSObjectGetPropertyAtIndex(runtime.context, forwarding, 2, &forwarding_exception))!
+	if forwarding_exception != unsafe { nil } { return runtime.actual_javascript_exception(forwarding_exception) }
 	runtime.promise_observe_intrinsic_ = runtime.evaluate_host_value('(function(){const apply=Reflect.apply,then=Promise.prototype.then;return function(promise,fulfilled,rejected){return apply(then,promise,[fulfilled,rejected])}})()')!
 	runtime.value_error_intrinsic_ = runtime.evaluate_host_value('(function(){const E=Error,T=TypeError,R=RangeError,V=EvalError,F=ReferenceError,U=URIError;return function(kind,message){return new (kind==="TypeError"?T:kind==="RangeError"?R:kind==="EvalError"?V:kind==="ReferenceError"?F:kind==="URIError"?U:E)(message)}})()')!
 	runtime.value_error_constructors_ = runtime.evaluate_host_value('({Error,TypeError,RangeError,EvalError,ReferenceError,URIError})')!
@@ -237,9 +249,26 @@ pub fn (runtime &Runtime) call_javascript_function(function voidptr, receiver vo
 // Catch inside that implementation's API entry, then return the original thrown
 // value through the native callback. JSC otherwise reports this intermediate
 // API exception to the inspector even when the outer script handles it.
+//
+// The caller hands the arguments over as its own parameters and returns the
+// implementation's result directly. Building an argument array, an outcome
+// array and reading that array back through the C API cost several times the
+// call itself, on every selector method a page calls.
 pub fn (runtime &Runtime) forward_javascript_function(function voidptr, receiver voidptr, arguments []voidptr) !voidptr {
 	runtime.require_javascript_value_context()!
 	context := runtime.context
+	if !retain_array_forwarding && runtime.value_forward_intrinsic_ != unsafe { nil } {
+		mut forwarded := []voidptr{cap: arguments.len + 2}
+		forwarded << function
+		forwarded << receiver
+		forwarded << arguments
+		outcome := runtime.call_engine_function(runtime.value_forward_intrinsic_, forwarded)!
+		runtime.require_javascript_value_context()!
+		if runtime.context != context { return error('JavaScript context changed during native forwarding') }
+		if outcome != runtime.value_forward_failed_ { return outcome }
+		thrown := runtime.call_engine_function(runtime.value_forward_take_, []voidptr{})!
+		return runtime.actual_javascript_exception(thrown)
+	}
 	mut exception := unsafe { nil }
 	array := C.vox_jsc_JSObjectMakeArray(context, uint(arguments.len), arguments.data, &exception)
 	if exception != unsafe { nil } { return runtime.actual_javascript_exception(exception) }
