@@ -295,6 +295,10 @@ fn (mut vm VM) execute_instruction(instruction Instruction, executable &Executab
 		.resolve_this_binding {
 			result = vm.resolve_this_binding()!
 		}
+		.get_import_meta {
+			if vm.get_active_script_or_module().kind!=.module { return vm.throw_error(.internal_error,'ImportMeta requires an active module') }
+			result=Value.from_object(vm.get_import_meta())
+		}
 		.jump {
 			next = instruction.target
 		}

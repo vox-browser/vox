@@ -58,6 +58,7 @@ pub enum OpCode {
 	enter_scope
 	leave_scope
 	resolve_this_binding
+	get_import_meta
 	jump
 	jump_if_true
 	jump_if_false

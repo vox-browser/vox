@@ -219,6 +219,12 @@ fn (mut generator BytecodeGenerator) expression(mut vm VM, expression &Expressio
 	defer { generator.range = previous_range }
 	kind := expression.kind
 	match kind.tag {
+		.meta_property {
+			if kind.meta_property_type!=.import_meta { return generator.unsupported('new.target') }
+			dst := generator.temporary()
+			generator.emit(Instruction{op:.get_import_meta,dst:dst})
+			return dst
+		}
 		.regexp_literal {
 			data := kind.regexp_data or { return error('Missing regular expression') }
 			compile_regexp_engine(data.pattern, data.flags) or { return error('SyntaxError: ' + err.msg()) }
