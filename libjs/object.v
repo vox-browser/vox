@@ -407,7 +407,15 @@ pub fn (object &Object) internal_get(mut vm VM, key PropertyName, receiver Value
 	// receivers whose direct prototype is the holder. Deeper/foreign receivers
 	// call the getter without reading or populating that shared cache.
 	index := object.find_own_property(key)
+	// A host descriptor may have no ordinary property cell, or override a
+	// data/accessor cell. Only the matching owned Accessor carries cache state.
+	if index<0 || !object.properties[index].value.is_accessor() {
+		return call(mut vm,getter,receiver,[]Value{})
+	}
 	accessor := object.properties[index].value.as_accessor()
+	if !same_value(getter,accessor_function_value(accessor.getter)) {
+		return call(mut vm,getter,receiver,[]Value{})
+	}
 	mut receiver_uses_holder_cache := false
 	if receiver.is_object() {
 		receiver_object := receiver.as_object()
