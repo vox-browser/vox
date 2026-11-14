@@ -70,6 +70,10 @@ static void* cpuraster_ct_font_from_file(const char* path, int* flags) {
 typedef struct {
     char* key;
     CTFontDescriptorRef descriptor;
+    // Descriptors are immutable and registry keys are never replaced. Keep
+    // these typeface facts across draw-local CTFont opens, just like the
+    // descriptor itself; enumerating axes also localizes all their names.
+    int flags; // -1 until a font has opened successfully
 } cpuraster_ct_registered_face;
 
 VOX_NATIVE_STATE pthread_mutex_t cpuraster_ct_registry_lock VOX_NATIVE_STATE_INIT(PTHREAD_MUTEX_INITIALIZER);
@@ -78,14 +82,29 @@ VOX_NATIVE_STATE int cpuraster_ct_registry_count;
 VOX_NATIVE_STATE int cpuraster_ct_registry_capacity;
 
 // A retained descriptor registered under key, or NULL.
-static CTFontDescriptorRef cpuraster_ct_registered_descriptor(const char* key) {
+static CTFontDescriptorRef cpuraster_ct_registered_descriptor(const char* key, int* flags) {
     CTFontDescriptorRef found = NULL;
+    if (flags) *flags = -1;
     pthread_mutex_lock(&cpuraster_ct_registry_lock);
     for (int i = 0; i < cpuraster_ct_registry_count && !found; ++i)
-        if (strcmp(cpuraster_ct_registry[i].key, key) == 0)
+        if (strcmp(cpuraster_ct_registry[i].key, key) == 0) {
             found = (CTFontDescriptorRef)CFRetain(cpuraster_ct_registry[i].descriptor);
+            if (flags) *flags = cpuraster_ct_registry[i].flags;
+        }
     pthread_mutex_unlock(&cpuraster_ct_registry_lock);
     return found;
+}
+
+static void cpuraster_ct_remember_face_flags(const char* key, CTFontDescriptorRef descriptor, int flags) {
+    pthread_mutex_lock(&cpuraster_ct_registry_lock);
+    for (int i = 0; i < cpuraster_ct_registry_count; ++i) {
+        if (cpuraster_ct_registry[i].descriptor == descriptor
+            && strcmp(cpuraster_ct_registry[i].key, key) == 0) {
+            cpuraster_ct_registry[i].flags = flags;
+            break;
+        }
+    }
+    pthread_mutex_unlock(&cpuraster_ct_registry_lock);
 }
 
 static int cpuraster_ct_postscript_matches(CTFontDescriptorRef descriptor, CFStringRef wanted) {
@@ -105,7 +124,7 @@ static int cpuraster_ct_register_face(const char* key, const char* path, const c
     const uint32_t* tags, const float* values, int count) {
     if (!key || !*key || !path || !postscript_name)
         return 0;
-    CTFontDescriptorRef existing = cpuraster_ct_registered_descriptor(key);
+    CTFontDescriptorRef existing = cpuraster_ct_registered_descriptor(key, NULL);
     if (existing) {
         CFRelease(existing);
         return 1;
@@ -176,6 +195,7 @@ static int cpuraster_ct_register_face(const char* key, const char* path, const c
     }
     cpuraster_ct_registry[cpuraster_ct_registry_count].key = strdup(key);
     cpuraster_ct_registry[cpuraster_ct_registry_count].descriptor = selected;
+    cpuraster_ct_registry[cpuraster_ct_registry_count].flags = -1;
     ++cpuraster_ct_registry_count;
     pthread_mutex_unlock(&cpuraster_ct_registry_lock);
     return 1;
@@ -201,12 +221,22 @@ static void* cpuraster_ct_font_for_face(const char* path, int index, int* flags)
     *flags = 0;
     if (!path || !*path)
         return NULL;
-    CTFontDescriptorRef registered = cpuraster_ct_registered_descriptor(path);
+    int known_flags = -1;
+    CTFontDescriptorRef registered = cpuraster_ct_registered_descriptor(path, &known_flags);
     if (registered) {
         CTFontRef font = CTFontCreateWithFontDescriptor(registered, 12.0, NULL);
+        if (font) {
+            const char* disabled = getenv("VOX_DISABLE_REGISTERED_FACE_FLAGS_CACHE");
+            int reuse = !disabled || !*disabled;
+            if (reuse && known_flags >= 0) {
+                *flags = known_flags;
+            } else {
+                cpuraster_ct_face_flags(font, flags);
+                if (reuse)
+                    cpuraster_ct_remember_face_flags(path, registered, *flags);
+            }
+        }
         CFRelease(registered);
-        if (font)
-            cpuraster_ct_face_flags(font, flags);
         return (void*)font;
     }
     if (index == 0)
