@@ -90,6 +90,8 @@ fn (mut app BrowserApp) draw_chromium_rounded_background_pair(index int, page_y 
 		if !app.ctx.native_rendering || app.page_zoom != 1 || app.document == unsafe { nil }
 			|| app.document.font_rendering_policy() != .chromium
 			|| app.viewport_width <= 4 || app.viewport_height <= 4 { return index }
+		group_end := app.draw_rounded_background_group(index, page_y)
+		if group_end > index { return group_end }
 		end := chromium_rounded_background_pair_end(app.paint_commands,
 			app.chromium_raster_plan.command_layers, index)
 		if end == index { return index }
