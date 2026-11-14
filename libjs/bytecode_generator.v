@@ -296,29 +296,8 @@ fn (mut generator BytecodeGenerator) expression(mut vm VM, expression &Expressio
 				// A new-expression evaluates its callee as a value; no method
 				// receiver or environment this-binding is supplied to [[Construct]].
 				callee = generator.expression(mut vm, &data.callee)!
-			} else if data.callee.kind.tag == .member {
-				base, key := generator.member_reference(mut vm, &data.callee)!
-				callee = generator.temporary()
-				this_value = base
-				generator.emit(Instruction{
-					op:     .get_property
-					dst:    callee
-					lhs:    base
-					rhs:    key
-					strict: generator.strict
-				})
-			} else if data.callee.kind.tag == .identifier_expr {
-				callee = generator.temporary()
-				this_value = generator.temporary()
-				generator.emit(Instruction{
-					op:         .get_callee_and_this
-					dst:        callee
-					rhs:        this_value
-					identifier: generator.identifier(identifier_name(&data.callee)!)
-					strict:     generator.strict
-				})
 			} else {
-				callee = generator.expression(mut vm, &data.callee)!
+				callee, this_value = generator.call_reference(mut vm, &data.callee)!
 			}
 			// codegen.rs::generate_call_expression: evaluate arguments left to
 			// right after retaining the callee and receiver. This generator's
@@ -337,6 +316,10 @@ fn (mut generator BytecodeGenerator) expression(mut vm VM, expression &Expressio
 				arguments: call_arguments
 			})
 			return dst
+		}
+		.optional_chain {
+			value, _ := generator.optional_chain_reference(mut vm, expression, false)!
+			return value
 		}
 		.member {
 			base, key := generator.member_reference(mut vm, expression)!
@@ -407,6 +390,9 @@ fn (mut generator BytecodeGenerator) expression(mut vm VM, expression &Expressio
 						identifier: generator.identifier(identifier_name(operand)!)
 						strict:     generator.strict
 					})
+				} else if operand.kind.tag == .optional_chain {
+					value, _ := generator.optional_chain_reference(mut vm, operand, true)!
+					return value
 				} else if operand.kind.tag == .member {
 					base, key := generator.member_reference(mut vm, operand)!
 					generator.emit(Instruction{
