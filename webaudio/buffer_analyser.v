@@ -148,6 +148,7 @@ pub mut:
 	smoothing_time_constant f64
 	previous_block          []f32
 mut:
+	fft_                       FFT
 	time_domain_ring_          &MediaStreamAudioRing
 	render_node_               &AnalyserRenderNode
 	history_                   []f32
@@ -217,6 +218,7 @@ pub fn (mut analyser AnalyserNode) set_fft_size(size u32) ! {
 
 pub fn (mut analyser AnalyserNode) set_fft_size_without_validation(size u32) {
 	analyser.fft_size = size
+	analyser.fft_ = FFT.create(int(size))
 	analyser.previous_block = []f32{len: int(size / 2)}
 	analyser.frequency_data_cache_time_ = none
 }
@@ -290,7 +292,7 @@ pub fn (mut analyser AnalyserNode) current_frequency_data() []f32 {
 	}
 	current_time_domain_data := analyser.current_time_domain_data()
 	blackman_windowed_input := analyser.apply_a_blackman_window(current_time_domain_data)
-	frequency_domain_data := apply_a_fourier_transform(blackman_windowed_input)
+	frequency_domain_data := analyser.fft_.magnitudes(blackman_windowed_input)
 	smoothed_data := analyser.smoothing_over_time(frequency_domain_data)
 	result := analyser.conversion_to_d_b(smoothed_data)
 	analyser.cached_frequency_data_ = result.clone()
