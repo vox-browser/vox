@@ -1,0 +1,20 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Tall asymmetric rounded shadow over opaque controls</title>
+<style>
+html, body { margin: 0; background: #090b0f; }
+.button { position: absolute; box-sizing: border-box; top: 353px; height: 52px;
+  background: #467fc2; border: 1px solid #528fd4; }
+.left { left: 531px; width: 174px; border-radius: 10px 0 0 10px; }
+.right { left: 705px; width: 54px; border-radius: 0 10px 10px 0;
+  border-color: #6397d3; }
+.panel { position: absolute; box-sizing: border-box; left: 32px; top: 450px;
+  width: 960px; height: 3069px; border: 1px solid #344151;
+  border-radius: 13px 13px 0 0; overflow: hidden; background: #101722;
+  box-shadow: 0 24px 60px #0004, inset 0 1px #ffffff08; }
+</style>
+<div class="button left"></div><div class="button right"></div>
+<div class="panel"></div>
+<svg width="1024" height="768" style="position:absolute;pointer-events:none">
+  <path d="M1000 20L1001 21L1000 22Z" fill="white"/>
+</svg>

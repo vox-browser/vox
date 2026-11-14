@@ -195,8 +195,16 @@ fn shadow_filter_mask(shape &C.VoxGraphiteShape, width int, height int,
 		x0, y0 = math.min(x0,dx), math.min(y0,dy)
 		x1, y1 = math.max(x1,dx), math.max(y1,dy)
 	}
-	left, top := f32(math.floor(f64(x0))), f32(math.floor(f64(y0)))
-	right, bottom := f32(math.ceil(f64(x1))), f32(math.ceil(f64(y1)))
+	mut left, mut top := f32(math.floor(f64(x0))), f32(math.floor(f64(y0)))
+	mut right, mut bottom := f32(math.ceil(f64(x1))), f32(math.ceil(f64(y1)))
+	if affine_shadow_supported(shape) {
+		// The filter layer needs only the tile's input footprint. Keeping the
+		// whole offscreen box changes the centered downsampling grid. Rotated
+		// filter layers need their own layer-space bounds and retain replay.
+		pad := f32(math.ceil(f64(f32(3) * sigma)))
+		left, top = math.max(left, -pad), math.max(top, -pad)
+		right, bottom = math.min(right, f32(width) + pad), math.min(bottom, f32(height) + pad)
+	}
 	original := ShadowBounds{left, top, right, bottom}
 	source_width := int(right - left)
 	source_height := int(bottom - top)
