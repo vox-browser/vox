@@ -11,6 +11,7 @@ import url as liburl
 
 import rand
 import math
+import os
 import strings
 import webidl
 import trustedtypes
@@ -2409,8 +2410,17 @@ pub fn (mut e Element) set_shadow_root(sr ?&ShadowRoot) {
 
 // --- Selector matching ---
 
+const disable_checked_selector_matches = os.getenv('VOX_DISABLE_CHECKED_SELECTOR_MATCHES') != ''
+
 // https://dom.spec.whatwg.org/#dom-element-matches
 pub fn (e &Element) matches(selectors string) !bool {
+	if !disable_checked_selector_matches {
+		if hook := e.document().selector_query_hook() {
+			if hook.matches_checked != unsafe { nil } {
+				return hook.matches_checked(hook.target, selectors, e, unsafe { &ParentNode(e) })
+			}
+		}
+	}
 	// 1. Let s be the result of parse a selector from selectors.
 	maybe_selectors := parse_selector(e.document(), selectors)
 

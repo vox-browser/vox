@@ -84,6 +84,18 @@ fn independent_element_matches(element &dom.Element, selectors SelectorList) ?bo
 fn dom_selector_query_matches(target voidptr, selector_text string, element &dom.Element, scoping_root &dom.ParentNode) bool {
 	mut state := unsafe { &DocumentSelectorQueryState(target) }
 	selectors := state.parse(selector_text) or { return false }
+	return dom_selector_query_matches_parsed(element, selectors, scoping_root)
+}
+
+fn dom_selector_query_matches_checked(target voidptr, selector_text string, element &dom.Element, scoping_root &dom.ParentNode) !bool {
+	mut state := unsafe { &DocumentSelectorQueryState(target) }
+	selectors := state.parse(selector_text) or {
+		return error('SyntaxError: Failed to parse selector')
+	}
+	return dom_selector_query_matches_parsed(element, selectors, scoping_root)
+}
+
+fn dom_selector_query_matches_parsed(element &dom.Element, selectors SelectorList, scoping_root &dom.ParentNode) bool {
 	if result := independent_element_matches(element, selectors) { return result }
 	return general_query_matches(element, selectors, scoping_root)
 }
@@ -136,6 +148,7 @@ pub fn install_document_selector_query_hook(document &dom.Document) {
 	if hook := document.selector_query_hook() {
 		if hook.validate == dom_selector_query_validate
 			&& hook.matches == dom_selector_query_matches
+			&& hook.matches_checked == dom_selector_query_matches_checked
 			&& hook.contains_named_namespace == dom_selector_query_contains_named_namespace
 			&& hook.scope_query == dom_selector_scope_query {
 			return
@@ -152,6 +165,7 @@ pub fn install_document_selector_query_hook(document &dom.Document) {
 		target:                   voidptr(state)
 		validate:                 dom_selector_query_validate
 		matches:                  dom_selector_query_matches
+		matches_checked:          dom_selector_query_matches_checked
 		contains_named_namespace: dom_selector_query_contains_named_namespace
 		scope_query:              dom_selector_scope_query
 	})

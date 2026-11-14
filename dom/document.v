@@ -1963,6 +1963,10 @@ pub type DocumentSelectorQueryValidateCallback = fn (voidptr, string) bool
 
 pub type DocumentSelectorQueryMatchCallback = fn (voidptr, string, &Element, &ParentNode) bool
 
+// A selector engine can validate and match in one call without an opaque
+// DOM selector-list allocation. Other bridges keep the separate callbacks.
+pub type DocumentSelectorCheckedMatchCallback = fn (voidptr, string, &Element, &ParentNode) !bool
+
 pub type DocumentSelectorQueryContainsNamedNamespaceCallback = fn (voidptr, string) bool
 
 pub type DocumentSelectorScopeQueryCallback = fn (voidptr, string, &ParentNode, bool) ?[]&Node
@@ -1972,6 +1976,7 @@ pub:
 	target                   voidptr = unsafe { nil }
 	validate                 DocumentSelectorQueryValidateCallback = unsafe { nil }
 	matches                  DocumentSelectorQueryMatchCallback = unsafe { nil }
+	matches_checked          DocumentSelectorCheckedMatchCallback = unsafe { nil }
 	contains_named_namespace DocumentSelectorQueryContainsNamedNamespaceCallback = unsafe { nil }
 	scope_query              DocumentSelectorScopeQueryCallback = unsafe { nil }
 }
