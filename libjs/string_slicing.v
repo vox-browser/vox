@@ -48,8 +48,8 @@ pub fn string_prototype_substring(mut vm VM) !Value {
 	return Value.from_string(vm.create_string(Utf16String.from_slice(text.utf16.data[from..to])))
 }
 
-// Annex B StringPrototype::substr: its second argument is a length, and the
-// pinned source narrows start+length to i32 before taking its minimum with size.
+// Annex B StringPrototype::substr: its second argument is a length. Clamp the
+// end to the string's size before converting to the native slice index type.
 pub fn string_prototype_substr(mut vm VM) !Value {
 	text := string_primitive_from(mut vm)!
 	size := text.length_in_utf16_code_units()
@@ -68,7 +68,7 @@ pub fn string_prototype_substr(mut vm VM) !Value {
 		length_value.to_integer_or_infinity(mut vm)!
 	}
 	length = math.min(math.max(length, 0), size)
-	end := int(math.min(int(start + length), size))
+	end := int(math.min(start + length, f64(size)))
 	if start >= end { return Value.from_string(vm.empty_string()) }
 	return Value.from_string(vm.create_string(Utf16String.from_slice(text.utf16.data[int(start)..end])))
 }
