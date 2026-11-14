@@ -139,8 +139,20 @@ fn math_object_method(mut vm VM, name string) !Value {
 // The upstream variadic methods collect all conversions before inspecting NaN
 // or infinity, preserving observable conversion side effects and exceptions.
 fn math_variadic(mut vm VM, name string) !Value {
-	mut coerced := []f64{}
-	for index in 0 .. vm.argument_count() { coerced << vm.argument(index).to_number(mut vm)!.number }
+	argument_count := vm.argument_count()
+	if argument_count <= 8 {
+		mut inline_values := [8]f64{}
+		for index in 0 .. argument_count {
+			inline_values[index] = vm.argument(index).to_number(mut vm)!.number
+		}
+		return math_variadic_coerced(inline_values[..int(argument_count)], name)
+	}
+	mut coerced := []f64{len: int(argument_count)}
+	for index in 0 .. argument_count { coerced[index] = vm.argument(index).to_number(mut vm)!.number }
+	return math_variadic_coerced(coerced, name)
+}
+
+fn math_variadic_coerced(coerced []f64, name string) Value {
 	if name == 'hypot' { for number in coerced { if math.is_inf(number, 0) { return Value.from_f64(math.inf(1)) } } }
 	mut result := if name == 'max' { math.inf(-1) } else if name == 'min' { math.inf(1) } else { 0.0 }
 	for number in coerced {

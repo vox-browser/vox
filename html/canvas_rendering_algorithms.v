@@ -338,7 +338,7 @@ pub fn image_is_not_origin_clean(image CanvasImageSource) bool {
 		DecodedImageCanvasSource {
 			(image as DecodedImageCanvasSource).value.is_cors_cross_origin()
 		}
-		ImageBitmapCanvasSource { false }
+		ImageBitmapCanvasSource { !(image as ImageBitmapCanvasSource).origin_clean }
 	}
 }
 

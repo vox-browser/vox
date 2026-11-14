@@ -206,7 +206,9 @@ pub fn (block DataBlock) read_bytes(offset uint, count uint) []u8 {
 pub fn (block DataBlock) with_readonly_bytes[T](offset uint, count uint, callback fn (DataBlockBytes) T) T {
 	block.check_range(offset, count)
 	if count == 0 { return callback(DataBlockBytes{}) }
-	if block.contiguous_bytes_from(offset, count) == count {
+	// A shared block may change while the callback is reading. Give it a
+	// snapshot even when the requested bytes are contiguous in the backing store.
+	if !block.is_shared && block.contiguous_bytes_from(offset, count) == count {
 		return callback(DataBlockBytes{ data: block.data_at(offset), size: count })
 	}
 	storage := block.read_bytes(offset, count)

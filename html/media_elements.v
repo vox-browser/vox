@@ -158,8 +158,10 @@ fn (mut video HTMLVideoElementModel) start_poster_fetch(request &webfetch.Reques
 				video.finish_poster_fetch(generation, none)
 				return
 			}
-			// Source VERIFY(response->body()) remains active for malformed hosts.
-			if body.kind == .empty { panic('Video poster response requires a body') }
+			if body.kind == .empty {
+				video.finish_poster_fetch(generation, none)
+				return
+			}
 			decoded := transport.decode(body.bytes) or {
 				video.finish_poster_fetch(generation, none)
 				return

@@ -4985,42 +4985,58 @@ fn text_run_identity(node &Node) i64 {
 }
 
 fn selection_style_has_styling(style TextSelectionStyle) bool {
-	return style.background_color.a > 0 || style.text_color_set || style.text_shadows_set
-		|| style.decoration_set
+	return style.colors_authored || style.text_shadows_set || style.decoration_set
 }
 
-// Direct translation of Paintable::selection_style()'s per-element lookup.
-// Inherited ::selection values remain represented in ComputedProperties, but
-// text color/shadow/decoration only override a span when the property was
-// explicitly specified on that pseudo-element upstream.
+// A descendant without a matching ::selection rule has no cached pseudo
+// style of its own. Its highlight still inherits the nearest styled parent.
+fn selection_computed_properties(element &dom.Element) ?&css.ComputedProperties {
+	mut current := dom.AbstractElement.new(element, none)
+	for {
+		if computed := css.computed_properties_for_pseudo_element(current.element(), .selection) {
+			return computed
+		}
+		current = current.element_to_inherit_style_from() or { return none }
+	}
+	return none
+}
+
+// Highlight colors and decorations inherit through the highlight tree. A
+// currentColor text color leaves the underlying fragment's color visible.
 fn selection_style_from_element(element &dom.Element) ?TextSelectionStyle {
 	element_layout := element.as_node().unsafe_layout_node() or { return none }
-	computed := css.computed_properties_for_pseudo_element(element, .selection) or {
-		return none
-	}
+	computed := selection_computed_properties(element) or { return none }
 	context := css.color_resolution_context_for_layout_node(element_layout)
 	mut style := TextSelectionStyle{
-		background_color: computed_paint_color(computed, .background_color, context, css.Color{})
+		colors_authored: computed.highlight_colors_authored()
 	}
-	if !computed.is_property_inherited(.color) {
+	if style.colors_authored {
 		style = TextSelectionStyle{
 			...style
-			text_color: computed_paint_color(computed, .color, context, css.Color{})
-			text_color_set: true
+			background_color: computed_paint_color(computed, .background_color, context, css.Color{})
+		}
+		if !computed.highlight_color_is_current_color() {
+			style = TextSelectionStyle{
+				...style
+				text_color: computed_paint_color(computed, .color, context, css.Color{})
+				text_color_set: true
+			}
 		}
 	}
-	if !computed.is_property_inherited(.text_shadow) {
+	shadows := computed.text_shadow(element_layout)
+	if shadows.len > 0 {
 		style = TextSelectionStyle{
 			...style
-			text_shadows: computed_shadow_transport(computed.text_shadow(element_layout), computed.length_resolution_context())
+			text_shadows: computed_shadow_transport(shadows, computed.length_resolution_context())
 			text_shadows_set: true
 		}
 	}
-	if !computed.is_property_inherited(.text_decoration_line) {
+	decoration := text_decoration_string(computed.text_decoration_line())
+	if decoration != 'none' {
 		fallback := if style.text_color_set { style.text_color } else { css.Color{0, 0, 0, 255} }
 		style = TextSelectionStyle{
 			...style
-			decoration: text_decoration_string(computed.text_decoration_line())
+			decoration: decoration
 			decoration_color: computed_paint_color(computed, .text_decoration_color, context, fallback)
 			decoration_style: computed_text_decoration_style(computed)
 			decoration_set: true
@@ -5030,6 +5046,14 @@ fn selection_style_from_element(element &dom.Element) ?TextSelectionStyle {
 		return none
 	}
 	return style
+}
+
+fn selection_style_with_defaults(style TextSelectionStyle, defaults TextSelectionStyle) TextSelectionStyle {
+	if style.colors_authored { return style }
+	return TextSelectionStyle{
+		...style
+		background_color: defaults.background_color
+	}
 }
 
 // https://drafts.csswg.org/css-pseudo-4/#highlight-styling
@@ -5044,13 +5068,13 @@ fn selection_style(node &Node) TextSelectionStyle {
 		dom_node.parent_element() or { return default_style }
 	}
 	if style := selection_style_from_element(element) {
-		return style
+		return selection_style_with_defaults(style, default_style)
 	}
 	if shadow_root := element.as_node().containing_shadow_root() {
 		if shadow_root.is_user_agent_internal() {
 			if host := shadow_root.host() {
 				if style := selection_style_from_element(host) {
-					return style
+					return selection_style_with_defaults(style, default_style)
 				}
 			}
 		}

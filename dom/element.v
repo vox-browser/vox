@@ -7398,7 +7398,7 @@ fn (e &Element) svg_use_reference_url() ?URL {
 fn (e &Element) svg_use_reference_is_same_document(reference URL) bool {
 	mut reference_without_fragment := reference
 	reference_without_fragment.set_fragment(none)
-	mut document_without_fragment := e.document().url
+	mut document_without_fragment := e.document().base_url()
 	document_without_fragment.set_fragment(none)
 	return reference_without_fragment == document_without_fragment
 }
@@ -7617,6 +7617,13 @@ pub fn (mut e Element) mark_svg_resource_box_referencing_elements_for_layout_tre
 		mut state := e.copy_dependency_data()
 		state.svg_boxes = []&Element{}
 		e.dependency_data_ = state
+	}
+}
+
+pub fn (mut e Element) mark_svg_resource_box_referencing_elements_for_content_change() {
+	for referencing_element in e.svg_box_references() {
+		mut node := unsafe { &Node(referencing_element.as_node()) }
+		node.set_needs_layout_tree_update(true, .svg_resource_content_change)
 	}
 }
 

@@ -3281,29 +3281,27 @@ pub fn (r &Range) get_client_rects() &DOMRectList {
 			start_node = r.start_container_.next_in_pre_order(none)
 		}
 	}
-	mut end_node := ?&Node(r.end_container_)
-	if !r.end_container_.is_text() {
-		// end offset shouldn't be 0.
-		if r.end_offset_ == 0 {
-			return DOMRectList.create([])
-		}
-		end_node = r.end_container_.child_at_index(r.end_offset_ - 1)
+	// Element offsets count children; stop after all descendants of the last
+	// selected child, including ranges whose end offset is zero.
+	stop_node := if r.end_container_.is_character_data() {
+		r.end_container_.next_in_pre_order(none)
+	} else if end_child := r.end_container_.child_at_index(r.end_offset_) {
+		?&Node(end_child)
+	} else {
+		next_after_range_subtree(r.end_container_)
 	}
-	start := start_node or { return DOMRectList.create([]) }
-	end := end_node or { return DOMRectList.create([]) }
-	end_next := end.next_in_pre_order(none)
-	for node := ?&Node(start); node != none;  {
+	for node := start_node; node != none; {
 		current := node or { break }
-		if stop := end_next {
-			if current == stop {
-				break
-			}
+		if stop := stop_node {
+			if voidptr(current) == voidptr(stop) { break }
 		}
-		selection_state := if current == start && current == end {
+		is_start_container := voidptr(current) == voidptr(r.start_container_)
+		is_end_container := voidptr(current) == voidptr(r.end_container_)
+		selection_state := if is_start_container && is_end_container {
 			if r.start_offset_ == r.end_offset_ { SelectionState.none } else { SelectionState.start_and_end }
-		} else if current == start {
+		} else if is_start_container {
 			SelectionState.start
-		} else if current == end {
+		} else if is_end_container {
 			SelectionState.end
 		} else {
 			SelectionState.full

@@ -428,7 +428,10 @@ fn parse_hsts_policy(header_value string) ?HSTSPolicy {
 				if separator < 0 || max_age != none {
 					return none
 				}
-				max_age = strconv.parse_uint(value, 10, 64) or { return none }
+				if value.len == 0 || value.bytes().any(it < `0` || it > `9`) {
+					return none
+				}
+				max_age = strconv.parse_uint(value, 10, 64) or { u64(0xffffffffffffffff) }
 			}
 			'includesubdomains' {
 				if separator >= 0 || include_sub_domains {

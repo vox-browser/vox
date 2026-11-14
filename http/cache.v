@@ -145,7 +145,8 @@ pub fn is_cacheable_response(status_code u32, received_headers &HeaderList) bool
 
 pub fn is_header_exempted_from_cache_storage(name string) bool {
 	return cache_ascii_lowercase(name) in ['connection', 'keep-alive', 'proxy-connection', 'te',
-		'transfer-encoding', 'upgrade', 'x-ladybird-enable-disk-cache', 'x-ladybird-disk-cache-status',
+		'transfer-encoding', 'upgrade', 'set-cookie', 'strict-transport-security',
+		'x-ladybird-enable-disk-cache', 'x-ladybird-disk-cache-status',
 		'x-ladybird-request-time-offset']
 }
 
@@ -269,7 +270,7 @@ pub fn calculate_freshness_lifetime(status_code u32, headers &HeaderList) i64 {
 pub fn calculate_age(headers &HeaderList, request_time i64, response_time i64) i64 {
 	mut age_value := i64(0)
 	if age := headers.get('Age') {
-		if milliseconds := parse_cache_delta_seconds(age) {
+		if milliseconds := cachepolicy.age_milliseconds(age) {
 			age_value = milliseconds
 		}
 	}

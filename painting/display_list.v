@@ -176,10 +176,11 @@ pub struct PaintTextShadow {
 pub:
 	glyph_run_id         string
 	shadow_bounding_rect IntRect
-	text_rect            IntRect
-	draw_location        Point
+	rect                 IntRect
+	translation          Point
 	blur_radius          int
 	color                Color
+	orientation          Orientation
 	font_smoothing       u8
 }
 
@@ -309,6 +310,18 @@ pub fn glyph_run_device_bounding_rect(glyph_run &platform.GlyphRun, baseline_sta
 	}
 }
 
+// The player shifts the horizontal run right by the fragment's width and
+// rotates it clockwise around the fragment's top-left corner.
+fn vertical_glyph_bounds(horizontal_bounds IntRect, fragment_rect IntRect) IntRect {
+	return IntRect{
+		x: fragment_rect.x + fragment_rect.width
+			- (horizontal_bounds.y + horizontal_bounds.height - fragment_rect.y)
+		y: fragment_rect.y + horizontal_bounds.x - fragment_rect.x
+		width: horizontal_bounds.height
+		height: horizontal_bounds.width
+	}
+}
+
 pub fn (command FillRect) bounding_rect() IntRect {
 	return command.rect
 }
@@ -402,11 +415,11 @@ pub fn (command PaintConicGradient) dump() string {
 }
 
 pub fn (command PaintTextShadow) bounding_rect() IntRect {
-	return IntRect{int(command.draw_location.x), int(command.draw_location.y), command.shadow_bounding_rect.width, command.shadow_bounding_rect.height}
+	return command.shadow_bounding_rect
 }
 
 pub fn (command PaintTextShadow) dump() string {
-	return ' shadow_rect=${command.shadow_bounding_rect} text_rect=${command.text_rect} draw_location=${command.draw_location} blur_radius=${command.blur_radius} color=${command.color}'
+	return ' shadow_rect=${command.shadow_bounding_rect} rect=${command.rect} translation=${command.translation} blur_radius=${command.blur_radius} color=${command.color} orientation=${command.orientation}'
 }
 
 pub fn (command FillRoundedRect) bounding_rect() IntRect {
@@ -904,11 +917,14 @@ pub fn (mut recorder DisplayListRecorder) draw_glyph_run(baseline_start Point,
 	if color.a == 0 {
 		return false
 	}
+	horizontal_bounds := glyph_run_device_bounding_rect(glyph_run, baseline_start, scale)
 	return recorder.append(DrawGlyphRun{
 		glyph_run_id: u64(voidptr(glyph_run)).str()
 		glyph_run: glyph_run
 		rect: rect
-		glyph_bounding_rect: glyph_run_device_bounding_rect(glyph_run, baseline_start, scale)
+		glyph_bounding_rect: if orientation == .vertical {
+			vertical_glyph_bounds(horizontal_bounds, rect)
+		} else { horizontal_bounds }
 		translation: baseline_start
 		color: color
 		orientation: orientation

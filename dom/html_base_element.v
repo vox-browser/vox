@@ -37,12 +37,11 @@ pub fn (mut base HTMLBaseElement) removed_from_with_context(is_subtree_root Node
 	}
 }
 
-// HTML/HTMLBaseElement.cpp:57–75. The source tests the local name after the
-// HTMLElement parent hook without adding a namespace check here.
+// Only the null-namespace HTML href attribute changes the frozen base URL.
 pub fn (mut base HTMLBaseElement) attribute_changed(name string, old_value ?string, value ?string, namespace_ ?string) {
 	mut element := unsafe { &Element(&base) }
 	element.attribute_changed(name, old_value, value, namespace_)
-	if name != 'href' {
+	if namespace_ != none || name != 'href' {
 		return
 	}
 	mut document := unsafe { &Document(element.document()) }
@@ -61,7 +60,7 @@ pub fn (mut base HTMLBaseElement) set_the_frozen_base_url(old_base_url URL) {
 	element := unsafe { &Element(&base) }
 	document := element.document()
 	fallback := document.fallback_base_url()
-	frozen := dom_url_parse(element.get_attribute_value('href'), fallback, document.encoding_or_default()) or {
+	frozen := dom_url_parse(element.get_attribute_ns(none, 'href') or { '' }, fallback, document.encoding_or_default()) or {
 		base.frozen_base_url_ = fallback
 		base.frozen_base_url_initialized_ = true
 		return

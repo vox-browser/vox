@@ -91,7 +91,7 @@ pub fn html_base_element_attribute_changed(base &dom.HTMLBaseElement, name strin
 
 pub fn html_base_element_href(base &dom.HTMLBaseElement) string {
 	element := unsafe { &dom.Element(base) }
-	href := element.get_attribute_value('href')
+	href := element.get_attribute_ns(none, 'href') or { '' }
 	url := dom.dom_url_parse(href, element.document().fallback_base_url(), element.document().encoding_or_default()) or { return href }
 	return url.serialize()
 }
@@ -286,7 +286,7 @@ fn html_meta_element_update_referrer_policy(meta &dom.HTMLMetaElement) {
 	if !element.as_node().in_a_document_tree() {
 		return
 	}
-	content := element.get_attribute('content') or { return }
+	content := element.get_attribute_ns(none, 'content') or { return }
 	if content == '' {
 		return
 	}
@@ -307,7 +307,7 @@ fn html_meta_element_update_referrer_policy(meta &dom.HTMLMetaElement) {
 
 pub fn html_meta_element_update_metadata(meta &dom.HTMLMetaElement, old_name ?string) {
 	element := unsafe { &dom.Element(meta) }
-	name := ascii_lowercase_string(element.get_attribute_value('name'))
+	name := ascii_lowercase_string(element.get_attribute_ns(none, 'name') or { '' })
 	mut document := unsafe { &dom.Document(element.document()) }
 	if name == 'theme-color' {
 		document.obtain_theme_color()

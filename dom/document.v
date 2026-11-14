@@ -334,6 +334,10 @@ pub fn origin_create_opaque_file() Origin {
 	return origin_from_liburl(liburl.Origin.create_opaque(.file))
 }
 
+pub fn origin_create_opaque_sandboxed_file() Origin {
+	return origin_from_liburl(liburl.Origin.create_opaque(.sandboxed_file))
+}
+
 pub fn origin_from_tuple(scheme string, host string, port ?u16) Origin {
 	return origin_from_liburl(liburl.Origin.tuple(scheme, liburl.Host.from_string(host), port, none))
 }
@@ -346,8 +350,11 @@ pub fn origin_from_liburl(record liburl.Origin) Origin {
 }
 
 pub fn origin_from_ipc(value string) Origin {
-	if value.starts_with('opaque:') || value.starts_with('opaque-file:') {
-		prefix := if value.starts_with('opaque-file:') { 'opaque-file:' } else { 'opaque:' }
+	if value.starts_with('opaque:') || value.starts_with('opaque-file:')
+		|| value.starts_with('opaque-sandboxed-file:') {
+		prefix := if value.starts_with('opaque-sandboxed-file:') {
+			'opaque-sandboxed-file:'
+		} else if value.starts_with('opaque-file:') { 'opaque-file:' } else { 'opaque:' }
 		hex := value[prefix.len..]
 		if hex.len == 32 {
 			mut nonce := [16]u8{}
@@ -364,7 +371,9 @@ pub fn origin_from_ipc(value string) Origin {
 				nonce[index] = (high << 4) | low
 			}
 			if valid {
-				return origin_from_liburl(liburl.Origin.opaque(nonce, if prefix == 'opaque-file:' {
+				return origin_from_liburl(liburl.Origin.opaque(nonce, if prefix == 'opaque-sandboxed-file:' {
+					liburl.OpaqueOriginType.sandboxed_file
+				} else if prefix == 'opaque-file:' {
 					liburl.OpaqueOriginType.file
 				} else {
 					liburl.OpaqueOriginType.standard
@@ -382,7 +391,11 @@ pub fn (o Origin) serialize_for_ipc() string {
 			for byte in opaque.nonce {
 				hex += '${byte:02x}'
 			}
-			prefix := if opaque.type_ == .file { 'opaque-file:' } else { 'opaque:' }
+			prefix := match opaque.type_ {
+				.file { 'opaque-file:' }
+				.sandboxed_file { 'opaque-sandboxed-file:' }
+				.standard { 'opaque:' }
+			}
 			return prefix + hex
 		}
 		return typed.serialize()
@@ -394,7 +407,7 @@ pub fn (o Origin) liburl_origin() ?liburl.Origin {
 	if typed := o.typed {
 		return typed
 	}
-	if o.value in ['', 'opaque', 'opaque-file', 'null'] {
+	if o.value in ['', 'opaque', 'opaque-file', 'opaque-sandboxed-file', 'null'] {
 		return none
 	}
 	parsed := liburl.parse(o.value) or { return none }
@@ -409,7 +422,7 @@ pub fn (o Origin) is_opaque() bool {
 	if typed := o.typed {
 		return typed.is_opaque()
 	}
-	return o.value in ['', 'opaque', 'opaque-file', 'null']
+	return o.value in ['', 'opaque', 'opaque-file', 'opaque-sandboxed-file', 'null']
 }
 
 pub fn (o Origin) is_opaque_file_origin() bool {
@@ -417,6 +430,11 @@ pub fn (o Origin) is_opaque_file_origin() bool {
 		return typed.is_opaque_file_origin()
 	}
 	return o.value == 'opaque-file'
+}
+
+pub fn (o Origin) is_file_origin() bool {
+	if typed := o.liburl_origin() { return typed.is_file_origin() }
+	return o.value in ['opaque-file', 'opaque-sandboxed-file']
 }
 
 pub fn (o Origin) serialize() string {
@@ -6437,7 +6455,7 @@ pub fn (mut d Document) update_base_element() {
 fn first_base_element_with_attribute(root &Node, attribute_name string) ?&HTMLBaseElement {
 	for child in root.children_as_vector() {
 		if element := child.as_element() {
-			if element.local_name() == 'base' && (element.namespace_uri() or { namespace_html_ }) == namespace_html_ && element.has_attribute(attribute_name) {
+			if element.local_name() == 'base' && (element.namespace_uri() or { namespace_html_ }) == namespace_html_ && (if attribute_name == 'href' { element.has_attribute_ns(none, attribute_name) } else { element.has_attribute(attribute_name) }) {
 				return unsafe { &HTMLBaseElement(element) }
 			}
 		}
@@ -10621,6 +10639,20 @@ pub fn (mut d Document) set_scheduled_selectionchange_event(value bool) {
 
 // --- Permissions ---
 
+// The default "self" allowlist requires every ancestor navigable to have the
+// document's origin, including a same-origin document below a foreign ancestor.
+fn (d &Document) default_allowlist_enables_feature() bool {
+	navigable := d.navigable() or { return false }
+	mut ancestor := navigable.parent()
+	for ancestor != none {
+		current := ancestor or { break }
+		ancestor_origin := current.active_document_origin() or { return false }
+		if !ancestor_origin.is_same_origin(d.origin()) { return false }
+		ancestor = current.parent()
+	}
+	return true
+}
+
 // https://html.spec.whatwg.org/multipage/iframe-embed-object.html#allowed-to-use
 pub fn (d &Document) is_allowed_to_use_feature(feature PolicyControlledFeature) bool {
 	// 1. If document's browsing context is null, return false.
@@ -10640,7 +10672,9 @@ pub fn (d &Document) is_allowed_to_use_feature(feature PolicyControlledFeature) 
 		// FIXME: Implement allowlist for this.
 		.camera { true }
 		// FIXME: Implement allowlist for this.
-		.focus_without_user_activation, .encrypted_media { true }
+		.focus_without_user_activation { d.default_allowlist_enables_feature() }
+		// FIXME: Implement allowlist for this.
+		.encrypted_media { true }
 		// FIXME: Implement allowlist for this.
 		.fullscreen { true }
 		// FIXME: Implement allowlist for this.

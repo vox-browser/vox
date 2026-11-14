@@ -89,6 +89,10 @@ fn (mut navigation Navigation) finish_source_navigate_event(window &WindowModel,
 	} else if tracker := api_method_tracker {
 		navigation.clean_up(tracker)
 	}
+	if transition := navigation.transition_ {
+		mut committed := unsafe { &dom.Promise(transition.committed()) }
+		committed.resolve(dom.js_undefined())
+	}
 	return event.interception_state() == .none
 }
 
@@ -132,8 +136,7 @@ pub fn (mut navigation Navigation) run_the_navigate_event_intercept_commit_handl
 			operation_returns_promise: .yes
 			promise_context:           context
 		}
-		result := webidl.invoke_callback(invocation, none, []) or { panic(err) }
-		promises << webidl.create_resolved_promise_for(context, result)
+		promises << webidl.invoke_promise_callback(invocation, none, [])
 	}
 	if promises.len == 0 {
 		promises << webidl.create_resolved_promise_for(context, webidl.undefined_value())
@@ -160,7 +163,7 @@ pub fn (mut navigation Navigation) run_the_navigate_event_intercept_commit_handl
 			promise.resolve(dom.js_undefined())
 		}
 		owner.transition_ = none
-	}, fn [event, window, owner_handle, api_method_tracker] (reason webidl.Value) {
+	}, fn [event, window, owner_handle] (reason webidl.Value) {
 		mut owner := unsafe { &Navigation(owner_handle) }
 		if !window.associated_document().is_fully_active() { return }
 		controller := event.abort_controller() or { return }
@@ -169,17 +172,14 @@ pub fn (mut navigation Navigation) run_the_navigate_event_intercept_commit_handl
 			panic('VERIFY(event == ongoing navigate event)')
 		}
 		assert voidptr(ongoing) == voidptr(event)
-		owner.ongoing_navigate_event_ = none
-		mut finished_event := unsafe { &NavigateEvent(event) }
-		finished_event.finish(false) or { panic(err) }
 		original := dom.js_webidl_value(reason)
-		information := owner.navigation_error_information(original)
-		if tracker := api_method_tracker { owner.reject_the_finished_promise(tracker, original) }
-		owner.dispatch_navigation_error(information)
-		if transition := owner.transition_ {
-			mut promise := unsafe { &dom.Promise(transition.finished()) }
-			promise.reject(original)
+		if tracker := owner.ongoing_api_method_tracker_ {
+			owner.reject_the_finished_promise(tracker, original)
 		}
-		owner.transition_ = none
+		if event.interception_state() != .intercepted {
+			mut finished_event := unsafe { &NavigateEvent(event) }
+			finished_event.finish(false) or { panic(err) }
+		}
+		owner.abort_a_navigate_event(event, original)
 	})
 }

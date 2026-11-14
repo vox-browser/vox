@@ -313,7 +313,7 @@ fn (mut host BrowserChildDocumentHost) discover(document &dom.Document, mut mess
 
 fn (mut child BrowserChildDocument) process_attributes(mut messages []string) {
 	src := child.element.get_attribute_value('src')
-	srcdoc := child.element.get_attribute('srcdoc')
+	srcdoc := child.element.get_attribute_ns(none, 'srcdoc')
 	if child.observed && src == child.src && srcdoc == child.srcdoc { return }
 	if child.observed && srcdoc != none && srcdoc == child.srcdoc {
 		child.src = src.clone()
@@ -353,7 +353,7 @@ fn (mut child BrowserChildDocument) process_attributes(mut messages []string) {
 		source_document:   owner
 		document_resource: resource
 		initial_insertion: if initial { .yes } else { .no }
-		referrer_policy:   html.referrer_policy_from_string(child.element.get_attribute_value('referrerpolicy')) or { html.ReferrerPolicy.empty_string }
+		referrer_policy:   html.referrer_policy_from_string(child.element.get_attribute_ns(none, 'referrerpolicy') or { '' }) or { html.ReferrerPolicy.empty_string }
 	}) or {
 		messages << 'Child navigation: ${err.msg()}'
 		return
@@ -603,7 +603,7 @@ fn (mut host BrowserChildDocumentHost) poll(mut messages []string) bool {
 					// script replaces them, a browser would already have fired it, so
 					// it must not reach handlers installed for the next navigation.
 					if child.element.get_attribute_value('src') != src
-						|| !optional_strings_equal(child.element.get_attribute('srcdoc'), srcdoc) {
+						|| !optional_strings_equal(child.element.get_attribute_ns(none, 'srcdoc'), srcdoc) {
 						return
 					}
 					// The initial about:blank document fires load only for a frame that
@@ -625,7 +625,7 @@ fn (mut host BrowserChildDocumentHost) poll(mut messages []string) bool {
 }
 
 fn browser_child_frame_stays_blank(element &dom.Element) bool {
-	if element.get_attribute('srcdoc') != none {
+	if element.get_attribute_ns(none, 'srcdoc') != none {
 		return false
 	}
 	src := element.get_attribute_value('src')

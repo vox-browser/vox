@@ -52,15 +52,18 @@ pub fn (buffer AudioBuffer) number_of_channels() u32 {
 	return u32(buffer.channels.len)
 }
 
-pub fn (buffer AudioBuffer) channel_data(channel u32) ![]f32 {
+pub fn (buffer &AudioBuffer) channel_data(channel u32) ![]f32 {
 	if channel >= u32(buffer.channels.len) {
 		return error('IndexSizeError: Channel index is out of range')
 	}
+	// Complete deferred acquisition before exposing fresh writable channels.
+	mut mutable_buffer := unsafe { &AudioBuffer(buffer) }
+	mutable_buffer.attach_acquired_channels()
 	// Float32Array identity is SameObject upstream; V slices retain the backing array.
 	return buffer.channels[channel]
 }
 
-pub fn (buffer AudioBuffer) copy_from_channel(mut destination []f32, channel_number u32, buffer_offset u32) ! {
+pub fn (buffer &AudioBuffer) copy_from_channel(mut destination []f32, channel_number u32, buffer_offset u32) ! {
 	channel := buffer.channel_data(channel_number)!
 	if buffer_offset >= u32(channel.len) {
 		return
@@ -79,6 +82,7 @@ pub fn (mut buffer AudioBuffer) copy_to_channel(source []f32, channel_number u32
 	if channel_number >= u32(buffer.channels.len) {
 		return error('IndexSizeError: Channel index is out of range')
 	}
+	buffer.attach_acquired_channels()
 	if buffer_offset >= buffer.length {
 		return
 	}
@@ -148,6 +152,7 @@ pub mut:
 	smoothing_time_constant f64
 	previous_block          []f32
 mut:
+	fft_                       FFT
 	time_domain_ring_          &MediaStreamAudioRing
 	render_node_               &AnalyserRenderNode
 	history_                   []f32
@@ -217,6 +222,7 @@ pub fn (mut analyser AnalyserNode) set_fft_size(size u32) ! {
 
 pub fn (mut analyser AnalyserNode) set_fft_size_without_validation(size u32) {
 	analyser.fft_size = size
+	analyser.fft_ = FFT.create(int(size))
 	analyser.previous_block = []f32{len: int(size / 2)}
 	analyser.frequency_data_cache_time_ = none
 }
@@ -290,7 +296,7 @@ pub fn (mut analyser AnalyserNode) current_frequency_data() []f32 {
 	}
 	current_time_domain_data := analyser.current_time_domain_data()
 	blackman_windowed_input := analyser.apply_a_blackman_window(current_time_domain_data)
-	frequency_domain_data := apply_a_fourier_transform(blackman_windowed_input)
+	frequency_domain_data := analyser.fft_.magnitudes(blackman_windowed_input)
 	smoothed_data := analyser.smoothing_over_time(frequency_domain_data)
 	result := analyser.conversion_to_d_b(smoothed_data)
 	analyser.cached_frequency_data_ = result.clone()

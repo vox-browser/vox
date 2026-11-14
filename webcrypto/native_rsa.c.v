@@ -63,6 +63,9 @@ fn rsa_operation_hash(key &CryptoKey) !string {
 fn native_rsa_oaep(key &CryptoKey, input []u8, label []u8, decrypt bool) ![]u8 {
 	parts := rsa_parts_from_handle(key.internal_handle_)
 	hash := rsa_operation_hash(key)!
+	if decrypt && input.len != int(parts[0].length) {
+		return error('OperationError: Failed to encrypt')
+	}
 	mut output := []u8{len: int(parts[0].length)}
 	mut length := uint(output.len)
 	if C.vox_rsa_oaep(parts.data, int(decrypt), hash.str, label.data, uint(label.len), input.data, uint(input.len), output.data, &length) != 1 {
@@ -95,6 +98,7 @@ fn native_rsa_verify(key &CryptoKey, signature []u8, message []u8, pss bool, sal
 	if valid == 0 { return false }
 	if valid < 0 { return error('OperationError: Failed to validate RSA public key') }
 	hash := rsa_operation_hash(key)!
+	if signature.len != int(parts[0].length) { return false }
 	result := C.vox_rsa_verify(parts.data, hash.str, int(pss), salt, signature.data, uint(signature.len), message.data, uint(message.len))
 	if result == 1 { return true }
 	if result == 0 { return false }

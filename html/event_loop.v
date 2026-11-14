@@ -842,6 +842,10 @@ pub fn (mut event_loop EventLoop) update_the_rendering() {
 		// skipped-observation check at the same point in the rendering pipeline.
 		_ = mutable_document.has_skipped_resize_observations()
 		mutable_document.perform_pending_transition_operations()
+		// Earlier rendering callbacks can remove an iframe in this snapshot.
+		navigable := document.navigable() or { continue }
+		active_document := navigable.active_document() or { continue }
+		if voidptr(active_document) != voidptr(document) { continue }
 		mutable_document.update_layout(.html_event_loop_rendering_update)
 		mutable_document.run_the_update_intersection_observations_steps(frame_timestamp)
 		mutable_document.process_top_layer_removals()

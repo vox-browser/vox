@@ -145,15 +145,15 @@ fn (mut host ModuleHost) execute_libjs(source ScriptSource,stringify_result bool
 	mut options := html.default_script_fetch_options()
 	mut inline := false
 	if element := source.element {
-		inline = !element.has_attribute('src')
+		inline = !element.has_attribute_ns(none, 'src')
 		if inline {
 			base=element.document().base_url().serialize()
 			key=base.all_before('#')+'#vox-libjs-inline-${element.as_node().unique_id()}'
 		}
 		options.cryptographic_nonce=element.cryptographic_nonce()
-		options.integrity_metadata=element.get_attribute_value('integrity')
-		options.referrer_policy=element.get_attribute_value('referrerpolicy')
-		options.credentials_mode=if element.get_attribute_value('crossorigin').to_lower()=='use-credentials' { .include } else { .same_origin }
+		options.integrity_metadata=(element.get_attribute_ns(none, 'integrity') or { '' })
+		options.referrer_policy=(element.get_attribute_ns(none, 'referrerpolicy') or { '' })
+		options.credentials_mode=if (element.get_attribute_ns(none, 'crossorigin') or { '' }).to_lower()=='use-credentials' { .include } else { .same_origin }
 	}
 	if key=='' { host.next_inline++;key=base.all_before('#')+'#vox-libjs-inline-${host.next_inline}';inline=true }
 	host.sources[key]=BrowserModuleSource{base:base,options:options,top_level:.yes,code:if inline { source.code } else { none }}

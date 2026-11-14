@@ -84,7 +84,7 @@ fn (mut reader OkpDerReader) enter_ec_optional() ![]u8 {
 		return error('DataError: ASN1::Decoder: Entering a non-constructed type')
 	}
 	// Source REWRITE_TAG(Sequence) retains the constructed bit and skips kind.
-	return reader.read(false)
+	return reader.read_contents(false, true)
 }
 
 fn parse_ec_parameters(mut reader OkpDerReader) ![]int {

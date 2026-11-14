@@ -46,6 +46,7 @@ mut:
 	template_depth u32
 	foreign_depth  u32
 	stopped        bool
+	scripting_mode dom.ParserScriptingMode
 }
 
 pub fn SpeculativeHTMLParser.create(document &dom.Document, pending_input string, base_url dom.URL, fetch_hook ?SpeculativeFetchHook) &SpeculativeHTMLParser {
@@ -55,6 +56,11 @@ pub fn SpeculativeHTMLParser.create(document &dom.Document, pending_input string
 		tokenizer: HTMLTokenizer.new(pending_input)
 		base_url: base_url
 		fetch_hook: fetch_hook
+		scripting_mode: if document.is_scripting_enabled_by_embedder() {
+			dom.ParserScriptingMode.normal
+		} else {
+			dom.ParserScriptingMode.disabled
+		}
 	}
 }
 
@@ -75,12 +81,31 @@ pub fn (mut parser SpeculativeHTMLParser) run() {
 		token := parser.tokenizer.next_token() or { break }
 		if token.is_start_tag() {
 			parser.process_start_tag(token)
+			// The scanner has no tree builder to switch the tokenizer for text
+			// elements. Switch even inside a template, where fetching is suppressed.
+			if parser.foreign_depth == 0 {
+				if state := speculative_text_state(token.tag_name, parser.scripting_mode != .disabled) {
+					parser.tokenizer.switch_to(state)
+				}
+			}
 		} else if token.is_end_tag() {
 			parser.process_end_tag(token)
 		} else if token.is_end_of_file() {
 			break
 		}
 	}
+}
+
+fn speculative_text_state(tag_name string, scripting_enabled bool) ?State {
+	match tag_name {
+		'script' { return .script_data }
+		'title', 'textarea' { return .rcdata }
+		'style', 'xmp', 'iframe', 'noembed', 'noframes' { return .rawtext }
+		'noscript' { if scripting_enabled { return .rawtext } }
+		'plaintext' { return .plaintext }
+		else {}
+	}
+	return none
 }
 
 fn speculative_rel_contains_keyword(rel string, keyword string) bool {
@@ -142,7 +167,10 @@ fn request_destination_from_fetch_destination(destination fetch.Destination) ?Re
 	}
 }
 
-fn (mut parser SpeculativeHTMLParser) issue_speculative_modulepreload_fetch(element SpeculativeMockElement, url dom.URL, destination fetch.Destination) {
+// Modules always use CORS, including parser-discovered script elements without
+// a crossorigin attribute. Reuse the modulepreload request options and retain
+// the distinction between parser-inserted scripts and link preloads.
+fn (mut parser SpeculativeHTMLParser) issue_speculative_module_fetch(element SpeculativeMockElement, url dom.URL, destination fetch.Destination, parser_metadata fetch.ParserMetadata) {
 	if parser.document.has_speculative_fetch_url(url) {
 		return
 	}
@@ -169,10 +197,10 @@ fn (mut parser SpeculativeHTMLParser) issue_speculative_modulepreload_fetch(elem
 			mode: mode
 			credentials_mode: cors_settings_attribute_credentials_mode(cors_setting)
 			use_url_credentials: true
-			is_module_preload: true
+			is_module_preload: element.local_name == 'link'
 			cryptographic_nonce_metadata: element.attribute('nonce') or { '' }
 			integrity_metadata: integrity_metadata
-			parser_metadata: .not_parser_inserted
+			parser_metadata: parser_metadata
 			referrer_policy: ascii_lowercase_string(element.attribute('referrerpolicy') or { '' })
 			priority: fetch.request_priority_from_string(element.attribute('fetchpriority') or { '' }) or {
 				fetch.Priority.auto
@@ -196,9 +224,17 @@ fn (mut parser SpeculativeHTMLParser) speculative_fetch(element SpeculativeMockE
 
 	mut source := ''
 	mut destination := ?RequestDestination(none)
-	mut modulepreload_destination := ?fetch.Destination(none)
+	mut module_destination := ?fetch.Destination(none)
+	mut module_parser_metadata := fetch.ParserMetadata.not_parser_inserted
 	if element.local_name == 'script' {
 		if !parser.document.is_scripting_enabled_by_embedder() { return }
+		script_type := script_element_type_from_attributes(element.attribute('type'), element.attribute('language'))
+		if script_type == .module {
+			module_destination = .script
+			module_parser_metadata = .parser_inserted
+		} else if script_type != .classic || element.attribute('nomodule') != none {
+			return
+		}
 		source = element.attribute('src') or { return }
 		destination = .script
 	} else if element.local_name == 'link' {
@@ -213,7 +249,7 @@ fn (mut parser SpeculativeHTMLParser) speculative_fetch(element SpeculativeMockE
 			}) {
 				return
 			}
-			modulepreload_destination = module_preload_destination_from_as_attribute(element.attribute('as') or {
+			module_destination = module_preload_destination_from_as_attribute(element.attribute('as') or {
 				''
 			}) or { return }
 		} else if speculative_rel_contains_keyword(rel, 'preload') {
@@ -238,8 +274,8 @@ fn (mut parser SpeculativeHTMLParser) speculative_fetch(element SpeculativeMockE
 		return
 	}
 	url := dom.dom_url_parse(source, parser.base_url, 'UTF-8') or { return }
-	if module_destination := modulepreload_destination {
-		parser.issue_speculative_modulepreload_fetch(element, url, module_destination)
+	if actual_module_destination := module_destination {
+		parser.issue_speculative_module_fetch(element, url, actual_module_destination, module_parser_metadata)
 		return
 	}
 	parser.issue_speculative_fetch(url, destination, cors_setting_attribute_from_keyword(element.attribute('crossorigin')))

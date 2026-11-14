@@ -73,7 +73,7 @@ fn (mut reader OkpDerReader) enter_ml_octet_string() ![]u8 {
 	if reader.bytes[reader.position] & 0x20 == 0 {
 		return error('DataError: ASN1::Decoder: Entering a non-constructed type')
 	}
-	return reader.read(false)
+	return reader.read_contents(false, true)
 }
 
 fn read_mlkem_seed(mut reader OkpDerReader) ![]u8 {

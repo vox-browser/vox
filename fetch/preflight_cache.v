@@ -72,7 +72,7 @@ fn (mut cache PreflightCache) method_cache_entry_match(request &Request, method 
 		cached_method := entry.method or { continue }
 		// Like a live preflight, '*' covers other methods only without credentials.
 		wildcard_matches := request.credentials_mode != .include && cached_method == '*'
-		if !equals_ignoring_ascii_case(cached_method, method) && !wildcard_matches {
+		if cached_method != method && !wildcard_matches {
 			continue
 		}
 		if PreflightCache.is_cache_entry_match(entry, request) {

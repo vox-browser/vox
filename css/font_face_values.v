@@ -2221,14 +2221,16 @@ fn (mut face FontFaceObject) resolve_for_rendering() PendingFontState {
 	if face.status_ == .loaded {
 		return .visible
 	}
-	if face.font_download_timer_start_ns_ == none {
+	face.load_for_style()
+	// A synchronously resolved font has nothing left to download. Start the
+	// display deadline only after attempting that resolution.
+	if face.font_download_timer_start_ns_ == none && !face.font_download_completed_ {
 		face.font_download_timer_start_ns_ = time.sys_mono_now()
 		if face.font_display_ == .swap {
 			face.font_display_period_ = .swap
 		}
 		face.update_font_display_period()
 	}
-	face.load_for_style()
 	if mut loader := face.font_loader_ {
 		loader.did_request_for_rendering()
 	}
@@ -4525,7 +4527,15 @@ pub fn (mut computer FontComputer) load_font_face(font_face ParsedFontFace, on_l
 		return none
 	}
 
-	key := urls[0].url()
+	// A failed first URL can lead to a different fallback for each rule.
+	// Keep the complete ordered source list, including request modifiers,
+	// in the cache identity rather than aliasing lists by their first URL.
+	mut key_builder := strings.new_builder(128)
+	for url in urls {
+		serialized := url.to_string()
+		key_builder.write_string('${serialized.len}:${serialized}')
+	}
+	key := key_builder.str()
 	if existing := computer.loaders_by_url[key] {
 		if callback := on_load {
 			mut mutable_loader := unsafe { &FontLoader(existing) }

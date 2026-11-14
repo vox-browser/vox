@@ -3162,7 +3162,8 @@ pub fn (mut delayer DocumentLoadEventDelayer) move_from(mut other DocumentLoadEv
 }
 
 pub fn (mut delayer DocumentLoadEventDelayer) finish() {
-	if delayer.active && delayer.document != unsafe { nil } {
+	if delayer.active && delayer.document != unsafe { nil }
+		&& !delayer.document.has_been_destroyed() {
 		mut document := unsafe { &Document(delayer.document) }
 		if delayer.reason == .style_sheet_request { document.decrement_number_of_pending_style_sheet_requests() }
 		document.decrement_number_of_things_delaying_the_load_event()
@@ -3416,7 +3417,7 @@ fn append_media_document_style(document &Document) ! {
 	head_node.append_child(style_element.as_node())!
 }
 
-fn convert_to_xml_error_document(mut document Document, error_string string) {
+pub fn convert_to_xml_error_document(mut document Document, error_string string) {
 	html_element := create_element(document, 'html', namespace_html_, none, none, false) or {
 		return
 	}

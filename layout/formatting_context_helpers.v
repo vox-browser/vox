@@ -662,6 +662,11 @@ fn layout_box_baseline_in_context(state &LayoutState, box &Node, requested_basel
 			else {}
 		}
 	}
+	// A range input sits on its bottom border edge, independently of the
+	// track and thumb geometry in its internal shadow tree.
+	if box.is_range_input_box() {
+		return box_state.margin_box_top().plus(box_state.content_height()).plus(box_state.border_box_bottom())
+	}
 	mut baseline_set := requested_baseline_set
 	display := box.display()
 	is_flex_or_grid_container := display.is_flex_inside() || display.is_grid_inside()

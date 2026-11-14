@@ -214,7 +214,7 @@ pub fn (mut model HTMLTextAreaElementModel) handle_maxlength_attribute() {
 }
 
 fn textarea_placeholder_style_when_visible() string {
-	return 'width:100%;overflow:hidden;margin-inline-start:-100%;pointer-events:none;user-select:none;'
+	return 'display:block;width:100%;overflow:hidden;margin-inline-start:-100%;pointer-events:none;user-select:none;'
 }
 
 fn textarea_placeholder_style_when_hidden() string {

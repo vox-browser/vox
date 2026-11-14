@@ -15,7 +15,7 @@ fn (runtime &Runtime) execute_libjs_module(prepared &PreparedScript, stringify_r
 	source := prepared.source
 	mut key := source.url
 	if element := source.element {
-		if !element.has_attribute('src') { key += '#vox-libjs-inline-${element.as_node().unique_id()}' }
+		if !element.has_attribute_ns(none, 'src') { key += '#vox-libjs-inline-${element.as_node().unique_id()}' }
 	}
 	if key == '' {
 		owner.next_libjs_inline_module_++

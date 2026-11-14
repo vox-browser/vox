@@ -519,8 +519,15 @@ pub:
 // https://html.spec.whatwg.org/multipage/document-sequences.html#determining-the-origin
 pub fn determine_the_origin(url ?dom.URL, sandbox_flags SandboxingFlagSet, source_origin ?dom.Origin) dom.Origin {
 	if sandbox_flags.contains(.sandboxed_origin) {
+		if determine_the_origin_ignoring_sandboxing(url, source_origin).is_file_origin() {
+			return dom.origin_create_opaque_sandboxed_file()
+		}
 		return dom.origin_create_opaque()
 	}
+	return determine_the_origin_ignoring_sandboxing(url, source_origin)
+}
+
+fn determine_the_origin_ignoring_sandboxing(url ?dom.URL, source_origin ?dom.Origin) dom.Origin {
 	url_value := url or { return dom.origin_create_opaque() }
 	if url_matches_about_srcdoc(url_value) {
 		return source_origin or {

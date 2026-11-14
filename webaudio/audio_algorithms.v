@@ -25,7 +25,7 @@ pub fn (buffer AudioBuffer) length() u32 {
 	return buffer.length
 }
 
-pub fn (buffer AudioBuffer) get_channel_data(channel u32) ![]f32 {
+pub fn (buffer &AudioBuffer) get_channel_data(channel u32) ![]f32 {
 	return buffer.channel_data(channel)
 }
 
@@ -344,57 +344,12 @@ pub fn apply_a_fourier_transform(input []f32) []f32 {
 	if input.len == 0 {
 		return []f32{}
 	}
-	mut real := input.clone()
-	mut imaginary := []f32{len: input.len}
-	radix2_fft(mut real, mut imaginary)
-	mut magnitudes := []f32{len: input.len / 2}
-	inverse_length := f32(1.0 / f64(input.len))
-	for index in 0 .. magnitudes.len {
-		magnitudes[index] = f32(math.sqrt(f64(real[index] * real[index] + imaginary[index] * imaginary[index]))) * inverse_length
-	}
-	return magnitudes
+	return FFT.create(input.len).magnitudes(input)
 }
 
+// Keep the existing helper for callers that do not retain a fixed-size FFT.
 pub fn radix2_fft(mut real []f32, mut imaginary []f32) {
-	assert real.len == imaginary.len
-	mut j := 0
-	for i := 1; i < real.len; i++ {
-		mut bit := real.len >> 1
-		for j & bit != 0 {
-			j ^= bit
-			bit >>= 1
-		}
-		j ^= bit
-		if i < j {
-			real[i], real[j] = real[j], real[i]
-			imaginary[i], imaginary[j] = imaginary[j], imaginary[i]
-		}
-	}
-	mut length := 2
-	for length <= real.len {
-		half := length >> 1
-		angle := -2.0 * math.pi / f64(length)
-		root_real := math.cos(angle)
-		root_imaginary := math.sin(angle)
-		for start := 0; start < real.len; start += length {
-			mut weight_real := 1.0
-			mut weight_imaginary := 0.0
-			for offset in 0 .. half {
-				upper_real := real[start + offset]
-				upper_imaginary := imaginary[start + offset]
-				lower_real := real[start + offset + half] * f32(weight_real) - imaginary[start + offset + half] * f32(weight_imaginary)
-				lower_imaginary := real[start + offset + half] * f32(weight_imaginary) + imaginary[start + offset + half] * f32(weight_real)
-				real[start + offset] = upper_real + lower_real
-				imaginary[start + offset] = upper_imaginary + lower_imaginary
-				real[start + offset + half] = upper_real - lower_real
-				imaginary[start + offset + half] = upper_imaginary - lower_imaginary
-				next_weight_real := weight_real * root_real - weight_imaginary * root_imaginary
-				weight_imaginary = weight_real * root_imaginary + weight_imaginary * root_real
-				weight_real = next_weight_real
-			}
-		}
-		length <<= 1
-	}
+	FFT.create(real.len).transform(mut real, mut imaginary, .forward)
 }
 
 pub fn (mut analyser AnalyserNode) smoothing_over_time(current_block []f32) []f32 {

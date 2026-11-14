@@ -110,5 +110,6 @@ pub fn (mut meta HTMLMetaElement) removed_from_with_context(is_subtree_root Node
 pub fn (mut meta HTMLMetaElement) attribute_changed(local_name string, old_value ?string, value ?string, namespace_ ?string) {
 	mut element := unsafe { &Element(&meta) }
 	element.attribute_changed(local_name, old_value, value, namespace_)
+	if namespace_ != none { return }
 	meta.update_metadata(if local_name == 'name' { old_value } else { none })
 }

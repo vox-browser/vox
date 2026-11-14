@@ -101,6 +101,7 @@ pub fn rasterize_portable_shadow_with_coverage(command PaintCommand, pixel_scale
 	mut font_size := f32(0)
 	mut glyphs := []u16{}
 	mut positions := []f32{}
+	mut glyph_transform := matrix
 	if command.kind == 'draw_text_shadow' {
 		run := command.glyph_run or { return error('Text shadow is missing its retained glyph run') }
 		if run.font().is_invisible { return PortableShadowBitmap{ width: width, height: height, pixels: []u8{len: width * height * 4} } }
@@ -113,6 +114,16 @@ pub fn rasterize_portable_shadow_with_coverage(command PaintCommand, pixel_scale
 		font_size = run.font().point_size
 		glyphs = run.glyph_indices()
 		positions = run.glyph_positions().map(f32(it))
+		if command.glyph_orientation == .vertical {
+			// Match DrawGlyphRun's clockwise rotation around the text rect.
+			// The shadow's offset is already included in the rect and baseline;
+			// only the glyphs rotate, while bounds and clips stay in paint space.
+			tx := command.x + command.width + command.y
+			ty := command.y - command.x
+			glyph_transform = [matrix[2], matrix[3], -matrix[0], -matrix[1],
+				matrix[0] * tx + matrix[2] * ty + matrix[4],
+				matrix[1] * tx + matrix[3] * ty + matrix[5]]!
+		}
 	}
     mut coverage_alpha := f32(-1)
     if chromium {
@@ -127,7 +138,7 @@ pub fn rasterize_portable_shadow_with_coverage(command PaintCommand, pixel_scale
 		kind: if command.kind == 'paint_outer_box_shadow' { 0 } else if command.kind == 'paint_inner_box_shadow' { 1 } else { 2 }
 		color: (alpha << 24) | (u32(color.r) << 16) | (u32(color.g) << 8) | u32(color.b)
 		blur: f32(command.blur)
-		transform: portable_shadow_transform(command.transform, pixel_scale, left, top)
+		transform: portable_shadow_transform(glyph_transform, pixel_scale, left, top)
 		content: content
 		// Inner source uses content_corner_radii on the outer rectangle.
 		outer: shadow_rect(command.x, command.y, command.width, command.height, if command.kind == 'paint_inner_box_shadow' { geometry.content_radii } else { command.corner_radii })

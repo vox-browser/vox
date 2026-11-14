@@ -1198,14 +1198,19 @@ fn (mut model HTMLInputElementModel) install_range_input_ua_event_handlers() {
 pub fn (mut model HTMLInputElementModel) create_range_input_shadow_tree() {
 	mut element := input_element(&model)
 	shadow := element.attach_a_user_agent_shadow_root(.named)
+	// Keep track alignment independent of author changes to the input's display.
+	mut slider_container := dom.create_element(element.document(), 'div', ns_html, none, none, false) or { return }
+	slider_container.set_attribute_value('style', 'display:flex;align-items:center;width:100%;height:100%;')
 	track := dom.create_element(element.document(), 'div', ns_html, none, none, false) or { return }
 	progress := dom.create_element(element.document(), 'div', ns_html, none, none, false) or { return }
 	thumb := dom.create_element(element.document(), 'div', ns_html, none, none, false) or { return }
 	mut track_node := track.as_node()
 	append_input_shadow_child(mut track_node, progress.as_node())
 	append_input_shadow_child(mut track_node, thumb.as_node())
+	mut slider_container_node := slider_container.as_node()
+	append_input_shadow_child(mut slider_container_node, track.as_node())
 	mut shadow_node := unsafe { &dom.Node(shadow) }
-	append_input_shadow_child(mut shadow_node, track.as_node())
+	append_input_shadow_child(mut shadow_node, slider_container.as_node())
 	mut mutable_track := unsafe { &dom.Element(track) }
 	mutable_track.set_associated_shadow_host_pseudo_element(int(css.PseudoElement.slider_track))
 	mut mutable_progress := unsafe { &dom.Element(progress) }
