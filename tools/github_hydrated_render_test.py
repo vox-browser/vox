@@ -44,6 +44,8 @@ class HydratedRenderTests(unittest.TestCase):
         expected = render.content(audit())
         for update in [dict(javascript_diagnostics=['author failed']),
                        dict(native_reported_errors=['native failed']),
+                       dict(native_reported_error_count=1),
+                       dict(native_reported_error_information=['native failed']),
                        dict(url='https://github.com/login'), dict(ready='loading'),
                        dict(viewport_height=700)]:
             with self.assertRaises(ValueError):

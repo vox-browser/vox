@@ -106,7 +106,9 @@ def validate(audit, expected):
     if (audit.get('url') != URL or audit.get('ready') != 'complete'
             or (audit.get('viewport_width'), audit.get('viewport_height')) != (1024, 768)):
         raise ValueError('Wrong document, readiness or viewport')
-    if audit.get('javascript_diagnostics') or audit.get('native_reported_errors'):
+    if (audit.get('javascript_diagnostics') or audit.get('native_reported_errors')
+            or audit.get('native_reported_error_count')
+            or audit.get('native_reported_error_information')):
         raise ValueError('GitHub script/native errors')
     if content(audit) != expected:
         raise ValueError('React rows, latest commit or README differ from the retained text')
