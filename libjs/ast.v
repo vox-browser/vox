@@ -32,7 +32,6 @@ mut:
 // Node wrapper
 // =============================================================================
 
-@[heap]
 struct Expression {
 mut:
 	range SourceRange
