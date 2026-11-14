@@ -469,6 +469,9 @@ fn (mut scope StyleScope) adopt_style_cache(cache &StyleCache) {
 }
 
 pub fn (mut scope StyleScope) populate_new_rule_cache() &StyleCache {
+	if style_sheet_change_diagnostics {
+		eprintln('VOX_STYLE_SHEET_CHANGE action=rule-cache-rebuild author_sheets=${scope.stylesheets_for_cascade_origin(.author).len} shadow=${if node := scope.node { node.is_shadow_root() } else { false }}')
+	}
 	if document := scope.document() { scope.rule_cache_font_policy_ = document.font_rendering_policy() }
 	scope.has_size_container_queries = false
 	scope.author_rule_cache = RuleCaches.new()

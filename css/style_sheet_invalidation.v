@@ -5,6 +5,7 @@
 module css
 
 import dom
+import os
 import platform
 
 struct StyleSheetPseudoElementInvalidationRule {
@@ -292,9 +293,21 @@ fn extend_style_sheet_invalidation_set_with_style_rule(mut result StyleSheetInva
 	}
 }
 
+// VOX_STYLE_SHEET_CHANGE_DIAGNOSTICS=1: one line per style sheet added to or
+// removed from a list, with the number of elements its rules invalidated.
+const style_sheet_change_diagnostics = os.getenv('VOX_STYLE_SHEET_CHANGE_DIAGNOSTICS') != ''
+
+__global style_sheet_change_marked_elements u64
+
 fn mark_style_sheet_invalidation_element(element &dom.Element) {
+	if style_sheet_change_diagnostics { style_sheet_change_marked_elements++ }
 	mut mutable_element := unsafe { &dom.Element(element) }
 	mutable_element.set_needs_style_update(true)
+}
+
+fn report_style_sheet_change(action string, sheet &CSSStyleSheet, marked_before u64, outcome string) {
+	if !style_sheet_change_diagnostics { return }
+	eprintln('VOX_STYLE_SHEET_CHANGE action=${action} outcome=${outcome} marked=${style_sheet_change_marked_elements - marked_before} rules=${sheet.rules.length()} location=${sheet.base.location or { '' }}')
 }
 
 fn style_sheet_element_matches_anchor_rule(element &dom.Element, anchor_set InvalidationSet, anchor_selector ?Selector, style_sheet_for_rule ?&CSSStyleSheet, shadow_host ?&dom.Element, rule_shadow_root ?&dom.ShadowRoot) bool {
