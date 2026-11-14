@@ -425,7 +425,7 @@ pub fn html_iframe_element_model_for_dom_element(element &dom.HTMLIFrameElement)
 	model.srcdoc_ = dom_element.get_attribute_ns(none, 'srcdoc')
 	model.set_sandbox(dom_element.get_attribute('sandbox'))
 	model.loading_lazy_ = dom_element.get_attribute_value('loading').to_lower() == 'lazy'
-	model.referrer_policy_ = referrer_policy_from_string(dom_element.get_attribute_value('referrerpolicy')) or {
+	model.referrer_policy_ = referrer_policy_from_string(dom_element.get_attribute_ns(none, 'referrerpolicy') or { '' }) or {
 		ReferrerPolicy.empty_string
 	}
 	attach_navigable_container_load_event_delay_hook(dom_element, model.container)
