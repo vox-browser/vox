@@ -59,3 +59,18 @@ fn test_libjs_parser_reports_unsupported_module_execution_instead_of_a_clean_she
 	assert app.js_messages.any(it.contains('Module execution') && it.contains('LibJS'))
 	assert !app.js_runtime.native_context_initialized()
 }
+
+fn test_libjs_browser_accepts_deeper_scripts_with_guarded_frontend_limits() {
+	mut runtime := browserjs.Runtime.create_with_engine(.libjs)
+	defer { runtime.close() }
+	source := '('.repeat(64)+'42'+')'.repeat(64)
+	assert browserjs.prepare_script(browserjs.ScriptSource{code:source})!.frontend.reached_recursion_limit
+	assert runtime.evaluate(source)! == '42'
+	runtime.evaluate('('.repeat(5000)+'0'+')'.repeat(5000)) or {
+		assert err.msg().contains('recursion limit')
+		assert runtime.evaluate('6*7')! == '42'
+		assert !runtime.native_context_initialized()
+		return
+	}
+	assert false, 'Hostile nesting must remain bounded'
+}

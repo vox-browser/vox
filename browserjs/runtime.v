@@ -47,6 +47,10 @@ pub:
 // The backend must still validate RegExp patterns and input beyond the V parser's
 // recursion budget; neither of those limits is an ECMAScript syntax error.
 pub fn prepare_script(source ScriptSource) !&PreparedScript {
+	return prepare_script_with_options(source, libjs.ParseOptions{})
+}
+
+fn prepare_script_with_options(source ScriptSource, options libjs.ParseOptions) !&PreparedScript {
 	// Prepared ASTs and source text can outlive a parser task or DevTools edit.
 	persistent := platform.enter_persistent()
 	defer { platform.leave_persistent(persistent) }
@@ -54,7 +58,7 @@ pub fn prepare_script(source ScriptSource) !&PreparedScript {
 		return error('Script starting line must be positive')
 	}
 	owned := ScriptSource{...source, code: source.code.clone(), url: source.url.clone()}
-	parsed := libjs.parse_source(owned.code, owned.source_type)
+	parsed := libjs.parse_source_with_options(owned.code, owned.source_type, options)
 	if parsed.has_errors() && !parsed.reached_recursion_limit {
 		diagnostic := parsed.diagnostics[0]
 		filename := if source.url == '' { '<script>' } else { source.url }
@@ -282,7 +286,8 @@ fn (runtime &Runtime) execute_source(source ScriptSource, stringify_result bool)
 		return runtime.execute_embedding_script(transformed, record, stringify_result)
 	}
 	if runtime.engine == .libjs {
-		return runtime.execute_prepared(prepare_script(source)!, stringify_result)
+		return runtime.execute_prepared(prepare_script_with_options(source,
+			libjs.ParseOptions{max_recursion_depth:256})!, stringify_result)
 	}
 	record := libjs.Script.create_external(source.code, runtime.realm, source.url,
 		u32(source.starting_line), voidptr(runtime))!

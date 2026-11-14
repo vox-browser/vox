@@ -201,6 +201,8 @@ mut:
 	class_has_super_class          bool
 	class_scope_depth              u32
 	recursion_depth                u32
+	recursion_limit                u32 = max_parser_recursion_depth
+	stack_info                     StackInfo
 	recursion_limit_reached        bool
 	has_default_export_name        bool
 	referenced_private_names_stack []map[string]bool
@@ -229,6 +231,7 @@ fn Parser.new_with_line_offset(source []u16, program_type ProgramType, initial_l
 		source:          source
 		scope_collector: ScopeCollector.new()
 		function_table:  FunctionTable.new()
+		stack_info:      StackInfo.new()
 	}
 }
 
@@ -458,7 +461,7 @@ fn (p &Parser) source_text_end_offset() u32 {
 
 fn (mut p Parser) enter_recursion() bool {
 	p.recursion_depth++
-	if p.recursion_depth > max_parser_recursion_depth {
+	if p.recursion_depth > p.recursion_limit || p.stack_info.size_free() < 512 * 1024 {
 		p.recursion_depth--
 		p.recursion_limit_reached = true
 		p.syntax_error('Maximum parser recursion depth exceeded')

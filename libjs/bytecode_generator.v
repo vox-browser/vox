@@ -22,6 +22,14 @@ mut:
 	loops         []BytecodeLoop
 	function_body bool
 	initialized_functions []u32
+	compile_stack_ ?StackInfo
+}
+
+fn (mut generator BytecodeGenerator) check_compile_stack() ! {
+	if generator.compile_stack_ == none { generator.compile_stack_ = StackInfo.new() }
+	if (generator.compile_stack_ or { return error('Missing compiler stack bounds') }).size_free() < 512 * 1024 {
+		return error('LibJS bytecode compilation stack budget exceeded')
+	}
 }
 
 fn (mut generator BytecodeGenerator) emit(instruction Instruction) u32 {
@@ -205,6 +213,7 @@ fn (mut generator BytecodeGenerator) member_assignment(mut vm VM, target &Expres
 }
 
 fn (mut generator BytecodeGenerator) expression(mut vm VM, expression &Expression) !Operand {
+	generator.check_compile_stack()!
 	previous_range := generator.range
 	generator.range = expression.range
 	defer { generator.range = previous_range }
@@ -653,6 +662,7 @@ fn (mut generator BytecodeGenerator) initialize_functions(children []Statement) 
 }
 
 fn (mut generator BytecodeGenerator) statement(mut vm VM, statement &Statement) ! {
+	generator.check_compile_stack()!
 	previous_range := generator.range
 	generator.range = statement.range
 	defer { generator.range = previous_range }
