@@ -2898,6 +2898,10 @@ fn initialize_document_script_runtime(document &dom.Document, current_url string
 			messages << 'LibJS module bindings: ${err.msg()}'
 			return false
 		}
+		mutable_runtime.install_performance_binding() or {
+			messages << 'LibJS Performance bindings: ${err.msg()}'
+			return false
+		}
 		return true
 	}
 	mut canvas_host := browserjs.CanvasHost.create(document)

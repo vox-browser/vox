@@ -116,6 +116,7 @@ mut:
 	module_host_ ?&ModuleHost
 	source_location_sources_ map[voidptr]SourceLocationSource
 	libjs_document_host_ ?&libjsdom.Host
+	libjs_performance_host_ ?&LibJSPerformanceHost
 	libjs_messages_ []string
 	libjs_callback_settings_ []?&html.EnvironmentSettingsObject
 	libjs_modules_ map[string]&libjs.SourceTextModule
