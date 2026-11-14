@@ -1776,10 +1776,75 @@ matches 39 of the candidate's 41 witnesses but predates both changed rendering
 inputs, `chromium/gpu_raster_darwin.v` and `chromium/msaa_tiles.v`. It cannot
 validate this fix. The normal managed hook requests a C, literal V `-prod`,
 single-unit rebuild; no duplicate manual build is requested. **Production
-validation of the new exact fixture remains pending.**
+validation was pending at that check.** A subsequent fresh check with production
+`e1925955…`, matching all 41 preceding rendering witnesses, now confirms the
+complete translucent fixture exactly twice.
 
 Local evidence is retained under
 `docs/performance/vlang-gradients-20261112/raw/rotated-refine-20261114/`.
 Completed jobs, binaries, generated C, guards and the temporary harness symlink
 are removed after verified archival. Frozen screenshot checks establish no
 live-site, author-script or instruction-performance acceptance.
+
+## Rounded backgrounds and borders in one V raster group, 2026-11-14
+
+`77143c150` gives adjacent opaque rounded backgrounds and uniform borders one
+V raster group. The preceding batching code calls a native decoration
+transaction that now declines every request, so asymmetric corner paints reach
+separate raster resolves. The new path uses the existing document-shape group
+boundary and preserves their samples until both paints finish. The eligibility
+checks retain root ownership, matching geometry and transforms, antialiasing,
+full opacity and simple clip requirements. Pairs with color-cache alpha below
+255, independent clips, partial decoration runs and unsupported state keep
+their preceding path; retained floating-point colors are preserved.
+No native code, shader, filter kernel or reference is changed.
+
+Seven focused checks pass with `VOX_ARENA_POISON=1` and 3 GiB runtime guards.
+The new GPU check covers uniform, left-only and right-only rounded corners
+against the unchanged 1280×800 Brave reference: separate resolves differ at
+24 pixels in its selected bands; one resolve is exact. Six layout, eligibility
+and existing decoration checks execute successfully. An initial unit probe
+uses the wrong reference stride and fails in both modes; the corrected test
+asserts the reference dimensions. That failed attempt and its source are retained.
+Compiler guards retain 12 GiB and V's 10G limit.
+
+The fresh production control is executable SHA-256
+`e19259550bdc6ba53f2e3aae16f557aa3099416a1ba0d48b6f4f2291b36ac8d8`.
+It gives vlang.io **830** and the complete `rounded-background-border-root`
+fixture **14** differing pixels, each twice. It also confirms the preceding
+root-shadow-fringe fixture exactly twice, with all 41 preceding witnesses
+matching that correction. The additional HSL, transformed and transparent
+background controls are exact; the partial-border control retains seven errors.
+
+Candidate executable SHA-256
+`f4eccdef49ba3edaf530c46f03958562602c03d5e8e96d1f4191872e585f4666`
+completes 46 fresh document captures across 23 workloads plus startup. All 47
+native guards, the driver and outer guard exit 0. The 43 selected rendering
+witnesses and executable, native-library, fixture, reference and diff-tool
+identities stay stable. GitHub preserves all 33 rows and HN all 30 stories.
+
+| Workload | Differing pixels in each fresh candidate capture |
+| --- | ---: |
+| vlang.io archive, scripts disabled, scale 1 | **818** |
+| Complete rounded-background/border fixture | **0** |
+| GitHub / HN / Wikipedia / Lobsters archives | **0 each** |
+| Existing exact shadow, avatar, border, gradient-text and added background controls | **0 each** |
+| Rotated ellipse / opaque layer diagnostics | **19 / 21,069** |
+| Device-pixel shadows / partial-border control | **92 / 7** |
+| CNN archive | **175,866** |
+
+vlang.io has **12 corrected pixels with zero newly differing pixels** against
+the fresh control; the rounded-border fixture has **14 corrected and zero new**.
+Twenty-two native pairs agree exactly. CNN's pair differs at 1,556 pixels,
+retaining its repeatability and source/replay failures. vlang.io, CNN, missing
+Reddit and all-site equality remain open.
+
+Production `e1925955…` matches 41 of the candidate's 43 witnesses, predating the
+new group implementation and its dispatch. **Production validation of 818 is
+pending** the normal managed C, literal V `-prod`, single-unit rebuild request.
+No additional manual build is queued. Commands, all attempts, source witnesses,
+executed test calls, PNGs and actual exits are retained locally under
+`docs/performance/vlang-gradients-20261112/raw/rounded-background-20261114/`.
+Completed job scratch and the test harness symlink are removed after verified
+archival. These frozen captures establish no live-site, author-script or
+instruction-performance acceptance.

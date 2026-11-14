@@ -2916,5 +2916,20 @@ improves four pixels to zero twice, without shader, kernel or reference changes.
 The other seventeen workloads retain their preceding counts, including vlang.io
 at 830 and
 four exact archives. All native pairs agree in this cohort; earlier CNN failures
-remain open. Production validation awaits the managed rebuild. See the
+remain open. Production `e1925955` now confirms the complete translucent fixture
+exactly twice with matching witnesses. See the
 [audit](OPTIMIZED_SITES_PIXELS_2026_11_12.md#root-picture-shadow-fringes-2026-11-14).
+
+### Shared rounded backgrounds and borders, 2026-11-14
+
+`77143c150` routes eligible opaque background/border pairs through the existing
+V document-shape group. The old native transaction declines, leaving separate
+resolves; the new group preserves corner samples through both paints. Root
+ownership, geometry, transform, clip and sample-state guards remain strict.
+Seven focused checks pass with arena poisoning. The complete rounded-border
+fixture improves 14 pixels to zero, twice; its independent GPU bands improve
+24 pixels to zero. vlang.io improves 830 to 818, correcting twelve without new
+differences, while four archived sites and preceding exact controls stay exact.
+The 23-workload cohort retains the CNN and other known failures. Production
+validation of 818 is pending. See the
+[audit](OPTIMIZED_SITES_PIXELS_2026_11_12.md#rounded-backgrounds-and-borders-in-one-v-raster-group-2026-11-14).

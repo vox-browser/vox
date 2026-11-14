@@ -1322,7 +1322,8 @@ GPU test checks the shadow through row 279 in both tile sampling modes, exactly;
 the initial complete browser capture with `d79672699` retains four one-level
 differences. Follow-up `a4b71a733` makes the complete fixture exact twice in
 diagnostics by preserving the root compositor grid across an invisible negative
-readback fringe. Production validation of that follow-up is pending.
+readback fringe. Production `e1925955` now confirms that complete fixture
+exactly twice with matching rendering witnesses.
 The SVG triangle below that band establishes tile MSAA. The corresponding
 opaque `diagnostic/rotated-filter-layer` control stays on the preceding path
 and retains 21,069 differing pixels. References and tolerances are unchanged.
@@ -1333,3 +1334,12 @@ The root-fringe regression also exercises the real 400×404 readback at `(0,-60)
 through single and grouped drawing, checks the unchanged non-root fallback,
 and verifies that outside pixels stay untouched. See the
 [root-fringe audit](../../../docs/OPTIMIZED_SITES_PIXELS_2026_11_12.md#root-picture-shadow-fringes-2026-11-14).
+
+`rounded-background-border-root` also covers three opaque boxes with uniform,
+left-only and right-only rounded corners. Its unchanged Brave reference is
+1280×800. The GPU test compares the upper and lower corner bands in their
+raster tile: grouped background/border samples are exact, while separated
+resolves differ at 24 pixels. `77143c150` makes the complete browser fixture
+exact twice, correcting its fourteen errors. Seven focused checks pass;
+production validation of this follow-up is pending. See the
+[shared-rounding audit](../../../docs/OPTIMIZED_SITES_PIXELS_2026_11_12.md#rounded-backgrounds-and-borders-in-one-v-raster-group-2026-11-14).

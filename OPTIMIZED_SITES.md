@@ -15,7 +15,9 @@ production count to **830**. The tile-local input correction fixes 571 pixels
 without new differences; the rotated filter-layer correction then fixes 1,451
 but introduces 142 one-level differences relative to its 2,139-pixel control.
 The preceding text-gradient correction fixed 236 pixels relative to the
-2,946-pixel diagnostic. vlang.io still fails equality. CNN retains
+2,946-pixel diagnostic. A rounded background/border follow-up reduces the
+diagnostic count to **818**, correcting 12 pixels without new differences;
+production validation of 818 is pending. vlang.io still fails equality. CNN retains
 its rendering, source/replay and native-repeat failures. Reddit remains unverified
 (missing historical fixture, earlier live HTTP 403). See the [current audit,
 capture scopes and retained failures](docs/OPTIMIZED_SITES_PIXELS_2026_11_12.md).
