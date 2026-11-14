@@ -7694,7 +7694,7 @@ pub fn (mut d Document) note_svg_paint_resources_changed() {
 
 // https://svgwg.org/svg2-draft/types.html#__svg__SVGElement__ownerSVGElement
 //
-// The nearest ancestor `svg` element in the flat tree; none when this element is
+// The nearest ancestor `svg` element through DOM parents and shadow hosts; none when this element is
 // the outermost `svg` element.
 pub fn (e &Element) owner_svg_element() ?&Element {
 	if !e.is_svg_element() {
@@ -7715,7 +7715,7 @@ pub fn (e &Element) owner_svg_element() ?&Element {
 			return none
 		}
 	}
-	mut ancestor := e.as_node().flat_tree_parent()
+	mut ancestor := e.as_node().parent_or_shadow_host()
 	for {
 		current := ancestor or { return none }
 		if element := current.as_element() {
@@ -7723,7 +7723,7 @@ pub fn (e &Element) owner_svg_element() ?&Element {
 				return element
 			}
 		}
-		ancestor = current.flat_tree_parent()
+		ancestor = current.parent_or_shadow_host()
 	}
 	return none
 }
