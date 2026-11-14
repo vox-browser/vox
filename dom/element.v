@@ -7624,6 +7624,13 @@ pub fn (mut e Element) mark_svg_resource_box_referencing_elements_for_layout_tre
 	}
 }
 
+pub fn (mut e Element) mark_svg_resource_box_referencing_elements_for_content_change() {
+	for referencing_element in e.svg_box_references() {
+		mut node := unsafe { &Node(referencing_element.as_node()) }
+		node.set_needs_layout_tree_update(true, .svg_resource_content_change)
+	}
+}
+
 pub fn (mut e Element) mark_svg_resource_box_referencing_elements_for_layout_update() {
 	for referencing_element in e.svg_box_references() {
 		mut node := unsafe { &Node(referencing_element.as_node()) }
