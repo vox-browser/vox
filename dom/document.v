@@ -10592,6 +10592,20 @@ pub fn (mut d Document) set_scheduled_selectionchange_event(value bool) {
 
 // --- Permissions ---
 
+// The default "self" allowlist requires every ancestor navigable to have the
+// document's origin, including a same-origin document below a foreign ancestor.
+fn (d &Document) default_allowlist_enables_feature() bool {
+	navigable := d.navigable() or { return false }
+	mut ancestor := navigable.parent()
+	for ancestor != none {
+		current := ancestor or { break }
+		ancestor_origin := current.active_document_origin() or { return false }
+		if !ancestor_origin.is_same_origin(d.origin()) { return false }
+		ancestor = current.parent()
+	}
+	return true
+}
+
 // https://html.spec.whatwg.org/multipage/iframe-embed-object.html#allowed-to-use
 pub fn (d &Document) is_allowed_to_use_feature(feature PolicyControlledFeature) bool {
 	// 1. If document's browsing context is null, return false.
@@ -10611,7 +10625,9 @@ pub fn (d &Document) is_allowed_to_use_feature(feature PolicyControlledFeature) 
 		// FIXME: Implement allowlist for this.
 		.camera { true }
 		// FIXME: Implement allowlist for this.
-		.focus_without_user_activation, .encrypted_media { true }
+		.focus_without_user_activation { d.default_allowlist_enables_feature() }
+		// FIXME: Implement allowlist for this.
+		.encrypted_media { true }
 		// FIXME: Implement allowlist for this.
 		.fullscreen { true }
 		// FIXME: Implement allowlist for this.
