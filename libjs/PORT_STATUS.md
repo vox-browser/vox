@@ -26,6 +26,13 @@ Focused collection/function/property/script cases pass; collection cases also
 pass without GC. Remaining Array methods, full cross-realm species handling
 and Number/BigInt prototype graphs are still separate work.
 
+RegExp literals, construction, exec/test and String @@match now call the V
+RegexEngine. Focused executions cover global/sticky lastIndex, captures and
+named groups, /d indices, Unicode empty-match advancement, overridden @@match,
+flag ordering and compile-error isolation. These checks pass in both GC modes.
+RegExp replace/split/search/matchAll hooks, full constructor IsRegExp/subclass
+semantics and the frontend's grammar-validation hook remain open.
+
 ## Pure V Unicode backend — 2026-11-12
 
 Unicode processing now lives in `../vunicode/`: Unicode 17.0.0 general

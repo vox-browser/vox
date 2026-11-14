@@ -26,6 +26,7 @@ pub mut:
 	array_prototype ?&Object
 	array_constructor ?&Object
 	string_prototype ?&Object
+	regexp_prototype ?&Object
 	throw_type_error_function      ?&Object
 	boolean_prototype              ?&Object
 	boolean_constructor            ?&Object
@@ -228,6 +229,7 @@ pub fn initialize_host_defined_realm(mut vm VM, hooks RealmGlobalHooks) !&Execut
 		Value.from_object(realm.math_object_record()), attribute_writable | attribute_configurable)
 	set_default_global_legacy_functions(mut vm, realm)
 	initialize_collection_intrinsics(mut vm, mut realm)!
+	initialize_regexp_intrinsics(mut vm, mut realm)
 	// 19. Create any host-defined global object properties on global.
 	// 20. Return unused.
 	return new_context

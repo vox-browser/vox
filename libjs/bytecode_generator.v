@@ -209,6 +209,13 @@ fn (mut generator BytecodeGenerator) expression(mut vm VM, expression &Expressio
 	defer { generator.range = previous_range }
 	kind := expression.kind
 	match kind.tag {
+		.regexp_literal {
+			data := kind.regexp_data or { return error('Missing regular expression') }
+			compile_regexp_engine(data.pattern, data.flags) or { return error('SyntaxError: ' + err.msg()) }
+			dst := generator.temporary()
+			generator.emit(Instruction{op: .new_regexp, dst: dst, lhs: generator.constant(Value.from_string(vm.create_string(data.pattern))), rhs: generator.constant(Value.from_string(vm.create_string(data.flags)))})
+			return dst
+		}
 		.array_expr {
 			dst := generator.temporary()
 			generator.emit(Instruction{op: .new_array, dst: dst, lhs: generator.constant(Value.from_f64(f64(kind.array_elements.len)))})

@@ -50,6 +50,7 @@ fn (mut vm VM) execute_instruction(instruction Instruction, executable &Executab
 	}
 	mut result := js_undefined()
 	match instruction.op {
+		.new_regexp { result = Value.from_object(create_regexp_object(mut vm, left.as_string().utf16, right.as_string().utf16)!) }
 		.new_object { result = Value.from_object(Object.create(vm.realm(), vm.realm().object_prototype)) }
 		.new_array { result = Value.from_object(ArrayObject.create(mut vm, vm.realm(), u64(left.number), vm.realm().array_prototype_record())!.object) }
 		.define_property {

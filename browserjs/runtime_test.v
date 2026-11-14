@@ -43,7 +43,7 @@ fn test_libjs_backend_isolates_errors_and_never_falls_back_to_javascriptcore() {
 	assert runtime.evaluate('result;')! == '42'
 	assert runtime.evaluate('typeof leaked;')! == 'undefined'
 	assert runtime.context == unsafe { nil }
-	for source in ['('.repeat(40) + '42' + ')'.repeat(40), '/a/', '/[a-/'] {
+	for source in ['('.repeat(40) + '42' + ')'.repeat(40), '/[z-a]/', '/[a-/'] {
 		if _ := runtime.evaluate(source) {
 			assert false
 		} else {

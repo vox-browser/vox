@@ -46,6 +46,7 @@ pub enum OpCode {
 	new_function
 	new_object
 	new_array
+	new_regexp
 	define_property
 	typeof_binding
 	set_binding
@@ -93,7 +94,7 @@ fn (instruction Instruction) input_count() int {
 		.in_op, .instance_of, .call {
 			2
 		}
-		.get_property, .delete_property {
+		.get_property, .delete_property, .new_regexp {
 			2
 		}
 		.put_property, .define_property {

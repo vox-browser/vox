@@ -150,6 +150,7 @@ pub mut:
 	native_initial_name  ?Utf16String
 	bound_function       ?&BoundFunction
 	function_source_text ?Utf16String // [[SourceText]] on ECMAScript callables
+	regexp_object ?&RegExpObject
 	array_object         ?&ArrayObject
 	boolean_object       ?&BooleanObject // [[BooleanData]]
 	number_object        ?&NumberObject  // [[NumberData]]
