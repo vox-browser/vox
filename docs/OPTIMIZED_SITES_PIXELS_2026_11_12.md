@@ -1435,3 +1435,22 @@ Completed job directories, binaries, generated C and guards are removed after
 archival. The normal managed commit hook requests rebuilding; the final 2,946
 result remains **diagnostic pending production**. vlang.io, CNN, missing Reddit
 and the all-site gate remain open. No additional manual production build was queued.
+
+A subsequent production check rejects bundle `a7d897a12f0d662693441df9110770289fbacf73ebf98b678ce5993f5601481c`
+before capture: the final ellipse and other 34 witnesses match, but its compiled
+table-layout witness differs from the committed source. The next managed build,
+`20261114-133524-783edcee`, exits 1 because `layout/incremental_layout.v` changes
+during compilation; the previous bundle remains installed. Both failures are
+retained under the ellipse evidence directory. They do not validate the final
+fix in production, and no source guard was relaxed.
+
+Further JPEG investigation accepts no decoder change. A 540×540 image displayed
+at 24×24 remains imperfect in Vox; isolated native decode/downsample combinations
+do not reproduce Brave exactly. Two fresh Brave checks preserve the original
+displayed image crop exactly, but their full-page comparisons differ at 38
+dropdown-chevron pixels. Full-resolution canvas readbacks differ at 526 pixels
+between these processes, so they are not used as a stable decode oracle. The
+initial probe omitted the scrollbar flag and is retained as a rejected policy
+mismatch. Commands, failed compile attempt, GPU probes and captures remain local
+under `raw/jpeg-scale-probes-20261114/`; the temporary test and four job directories
+were removed. All 26 preceding ellipse jobs were likewise archived and removed.
