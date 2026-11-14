@@ -50,6 +50,25 @@ fn (mut vm VM) execute_instruction(instruction Instruction, executable &Executab
 	}
 	mut result := js_undefined()
 	match instruction.op {
+		.sync_iterator_step_value, .sync_iterator_elide, .sync_iterator_to_array {
+			if !left.is_object() { return vm.throw_error(.internal_error, 'Invalid iterator record') }
+			mut record := left.as_object().iterator_record or { return vm.throw_error(.internal_error, 'Invalid iterator record') }
+			if instruction.op == .sync_iterator_to_array {
+				mut values := []Value{}
+				for !record.done {
+					vm.consume_execution_budget()!
+					step := iterator_step_value(mut vm, mut record)!
+					if !step.done { values << step.value }
+				}
+				result = Value.from_object(ArrayObject.create_from(mut vm, vm.realm(), values, vm.realm().array_prototype_record())!.object)
+			} else if !record.done {
+				if instruction.op == .sync_iterator_elide { iterator_step(mut vm, mut record)! }
+				else {
+					step := iterator_step_value(mut vm, mut record)!
+					if !step.done { result = step.value }
+				}
+			}
+		}
 		.get_sync_iterator {
 			mut wrapper := Object.create(vm.realm(), none)
 			wrapper.iterator_record = get_iterator_sync_value(mut vm, left)!

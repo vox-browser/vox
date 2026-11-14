@@ -76,6 +76,9 @@ pub enum OpCode {
 	sync_iterator_next
 	close_sync_iterator
 	close_sync_iterator_throw
+	sync_iterator_step_value
+	sync_iterator_elide
+	sync_iterator_to_array
 }
 
 pub struct Instruction {
@@ -117,6 +120,7 @@ fn (instruction Instruction) input_count() int {
 		.require_object_coercible, .to_property_key, .copy_object_excluding_keys,
 		.get_object_property_iterator, .property_name_iterator_next,
 		.get_sync_iterator, .sync_iterator_next, .close_sync_iterator,
+		.sync_iterator_step_value, .sync_iterator_elide, .sync_iterator_to_array,
 		.jump_if_false, .jump_if_nullish, .end, .throw_op, .construct, .new_array, .new_function_with_name {
 			1
 		}
@@ -139,6 +143,7 @@ fn (instruction Instruction) writes_operand() bool {
 		.create_mutable_binding, .create_immutable_binding, .enter_scope, .leave_scope, .jump,
 		.require_object_coercible, .set_object_literal_prototype,
 		.close_sync_iterator, .close_sync_iterator_throw,
+		.sync_iterator_elide,
 		.jump_if_true, .jump_if_false, .jump_if_nullish, .end, .throw_op]
 }
 

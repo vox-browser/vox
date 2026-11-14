@@ -3,7 +3,7 @@ module libjs
 
 // Rust bytecode/codegen.rs::generate_object_binding_pattern. Binding names are
 // created before evaluating the initializer; each property/default then runs in
-// order and initializes its own binding. Array/assignment/parameter patterns
+// order and initializes its own binding. Assignment/parameter patterns
 // remain separate code-generation paths.
 fn (mut generator BytecodeGenerator) initialize_declaration_target(mut vm VM, target VariableDeclaratorTarget, value Operand, lexical bool) ! {
 	if target is IdentifierVarTarget {
@@ -11,7 +11,7 @@ fn (mut generator BytecodeGenerator) initialize_declaration_target(mut vm VM, ta
 		return
 	}
 	if target is BindingPatternVarTarget {
-		generator.object_binding_pattern(mut vm, target.pattern, value, lexical)!
+		generator.binding_pattern(mut vm, target.pattern, value, lexical)!
 	}
 }
 
@@ -33,7 +33,7 @@ fn (mut generator BytecodeGenerator) binding_entry_name(entry BindingEntry) ?Utf
 
 fn (mut generator BytecodeGenerator) initialize_binding_entry(mut vm VM, entry BindingEntry, value Operand, lexical bool) ! {
 	if pattern := entry.alias.binding_pattern {
-		generator.object_binding_pattern(mut vm, pattern, value, lexical)!
+		generator.binding_pattern(mut vm, pattern, value, lexical)!
 		return
 	}
 	if name := generator.binding_entry_name(entry) {
@@ -84,6 +84,11 @@ fn (mut generator BytecodeGenerator) object_binding_pattern(mut vm VM, pattern B
 		}
 		generator.initialize_binding_entry(mut vm, entry, property, lexical)!
 	}
+}
+
+fn (mut generator BytecodeGenerator) binding_pattern(mut vm VM, pattern BindingPattern, value Operand, lexical bool) ! {
+	if pattern.kind == .array { return generator.array_binding_pattern(mut vm, pattern, value, lexical) }
+	return generator.object_binding_pattern(mut vm, pattern, value, lexical)
 }
 
 // Object.cpp::CopyDataProperties, used by object rest. Excluded names have
