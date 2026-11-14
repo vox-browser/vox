@@ -105,11 +105,12 @@ fn test_iterator_step_defers_value_errors_and_marks_abrupt_exhaustion() {
 			step := iterator_step(mut vm, mut record)!
 			assert !record.done && !step.done
 			assert step.result.done.number == 0
-			assert step.result.value.is_error() && step.result.value.value.number == 42
-			assert log.events == ['next', 'done', 'value']
+			assert !step.result.value.is_error() && step.result.value.value.is_undefined()
+			assert log.events == ['next', 'done']
 			if _ := iterator_step_value(mut vm, mut record) { assert false } else {
 				assert thrown_value(err).number == 42
 			}
+			assert log.events == ['next', 'done', 'next', 'done', 'value']
 		} else if mode == 'exhausted' {
 			step := iterator_step_value(mut vm, mut record)!
 			assert step.done && step.value.is_undefined()
