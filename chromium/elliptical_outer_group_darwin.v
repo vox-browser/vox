@@ -77,6 +77,7 @@ fn (mut app BrowserApp) draw_elliptical_outer_group(start int, page_y f32) int {
 	end := elliptical_outer_group_end(commands, app.chromium_raster_plan.command_layers, start)
 	if end == start { return start }
 	mut shapes := []C.VoxGraphiteShape{}
+	filter_clip := chromium_recorded_filter_clip(&commands[start])
 	for i in start .. end {
 		mut command := commands[i]
 		if command.group_opacity > 0 {
@@ -109,6 +110,12 @@ fn (mut app BrowserApp) draw_elliptical_outer_group(start int, page_y f32) int {
 		if shadow {
 			box := command.box_shadow()
 			shape.underlay_rect = document_shadow_rect(box.content_rect.x, box.content_rect.y, box.content_rect.width, box.content_rect.height, box.content_radii)
+		}
+		if shape.fill == 10 {
+			if clip := filter_clip {
+				shape.has_filter_clip = 2
+				shape.filter_clip = clip
+			}
 		}
 		shapes << shape
 	}

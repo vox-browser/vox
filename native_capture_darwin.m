@@ -1131,7 +1131,16 @@ extern int vox_draw_document_shape_pixels(uint8_t*, int, int, int, int, int, int
 VOX_NATIVE_STATE VoxGraphiteShape native_v_shape_state;
 
 static void native_v_shape_filter_clip(VoxGraphiteShape* shape, int32_t* geometry,
-    float canvas_height, float sx, float sy) {
+    float canvas_height, float sx, float sy, float page_x, float page_y, float scroll_y) {
+    if(shape->fill==10 && shape->has_filter_clip==2) {
+        float* c=shape->filter_clip;
+        c[0]=(floorf(c[0]+page_x)-geometry[0])*sx;
+        c[1]=(floorf(c[1]+page_y-scroll_y)-geometry[1])*sy;
+        c[2]=(ceilf(c[2]+page_x)-geometry[0])*sx;
+        c[3]=(ceilf(c[3]+page_y-scroll_y)-geometry[1])*sy;
+        shape->has_filter_clip=1;
+        return;
+    }
     shape->has_filter_clip=0;
     if(shape->fill!=10)return;
     CGRect clip=CGContextGetClipBoundingBox([[NSGraphicsContext currentContext] CGContext]);
@@ -1174,7 +1183,7 @@ static int native_try_v_document_shape(VoxGraphiteShape shape, const float* matr
     float cropped[9]={matrix[0]*sx,matrix[2]*sx,(matrix[4]-geometry[0])*sx,
         matrix[1]*sy,matrix[3]*sy,(matrix[5]-geometry[1])*sy,0,0,1};
     memcpy(shape.matrix,cropped,sizeof(cropped));
-    native_v_shape_filter_clip(&shape,geometry,canvas_height,sx,sy);
+    native_v_shape_filter_clip(&shape,geometry,canvas_height,sx,sy,page_x,page_y,scroll_y);
     int drawn=vox_draw_document_shape_pixels(pixels,w,h,w*4,backdrop,
         (int)lround((geometry[0]-page_x)*scale),
         (int)lround((geometry[1]-page_y+scroll_y)*scale),&shape);
@@ -1214,7 +1223,7 @@ int native_draw_document_shape_group(VoxGraphiteShape* shapes, int count, float*
         matrix[1]*sy,matrix[3]*sy,(matrix[5]-geometry[1])*sy,0,0,1};
     for(int j=0;j<count;++j) {
         memcpy(copy[j].matrix,cropped,sizeof(cropped));
-        native_v_shape_filter_clip(&copy[j],geometry,canvas_height,sx,sy);
+        native_v_shape_filter_clip(&copy[j],geometry,canvas_height,sx,sy,page_x,page_y,scroll_y);
     }
     extern int vox_draw_document_shape_group_pixels(uint8_t*,int,int,int,int,int,int,VoxGraphiteShape*,int);
     int drawn=vox_draw_document_shape_group_pixels(pixels,w,h,w*4,backdrop,

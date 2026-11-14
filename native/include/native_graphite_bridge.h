@@ -78,6 +78,8 @@ typedef struct {
     float contour_parameters[4], contour_reference[12];
     int has_contour_reference;
     // Conservative destination clip in raster pixels, for filter input bounds.
+    // A native input value of 2 supplies the recorded document-space author
+    // clip; the transfer boundary converts it to raster pixels and value 1.
     // Other paints and legacy filter paths ignore these optional values.
     int has_filter_clip;
     float filter_clip[4];
