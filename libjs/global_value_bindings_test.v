@@ -10,7 +10,7 @@ fn test_default_global_property_order_follows_upstream_function_then_value_insta
 	assert vm.get_global_object().own_property_keys().map(it.str()) == ['isFinite', 'isNaN',
 		'parseFloat', 'parseInt', 'decodeURI', 'decodeURIComponent', 'encodeURI', 'encodeURIComponent',
 		'globalThis', 'Infinity', 'NaN', 'undefined', 'Array', 'ArrayBuffer', 'Boolean', 'DataView',
-		'Object', 'RegExp', 'SharedArrayBuffer', 'String', 'Symbol', 'Math', 'escape', 'unescape']
+		'Object', 'RegExp', 'SharedArrayBuffer', 'String', 'Symbol', 'JSON', 'Math', 'escape', 'unescape']
 }
 
 fn test_default_global_value_bindings_have_standard_descriptors() {

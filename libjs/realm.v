@@ -23,6 +23,7 @@ pub mut:
 	object_prototype               ?&Object
 	object_constructor             ?&Object
 	math_object                    ?&Object
+	json_object                    ?&Object
 	function_prototype             ?&Object                 // %Function.prototype%
 	array_prototype ?&Object
 	array_constructor ?&Object
@@ -181,6 +182,7 @@ pub fn initialize_host_defined_realm(mut vm VM, hooks RealmGlobalHooks) !&Execut
 		Value.from_object(shared_array_buffer_constructor.object), attribute_writable | attribute_configurable)
 	initialize_collection_intrinsics(mut vm, mut realm)!
 	initialize_regexp_intrinsics(mut vm, mut realm)
+	realm.json_object = create_json_object(mut vm, realm)
 	// 4. Set realm.[[GlobalObject]] to undefined.
 	// 5. Set realm.[[GlobalEnv]] to undefined.
 	// 7. Let newContext be a new execution context.
@@ -246,6 +248,8 @@ pub fn initialize_host_defined_realm(mut vm VM, hooks RealmGlobalHooks) !&Execut
 		Value.from_object(realm.symbol_constructor_record()),
 		attribute_writable | attribute_configurable)
 	// Other intrinsic properties follow constructors in GlobalObject.cpp.
+	global.define_direct_property(PropertyName.from_str('JSON'),
+		Value.from_object(realm.json_object or { panic('Missing JSON object') }), attribute_writable | attribute_configurable)
 	global.define_direct_property(PropertyName.from_str('Math'),
 		Value.from_object(realm.math_object_record()), attribute_writable | attribute_configurable)
 	set_default_global_legacy_functions(mut vm, realm)
