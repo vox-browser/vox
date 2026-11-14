@@ -11,9 +11,10 @@ this catalog. GitHub, Hacker News, Lobsters and Wikipedia are exact in two
 fresh production captures each. vlang.io now has **810 differing pixels** in
 production, down from the earlier 3,228. The recorded-clip fix reaches 341 in
 diagnostics; shared shape/glyph samples reach 284. Plane-scaled JPEG avatars
-now reach **111 in diagnostics**, correcting another 173 pixels with zero new
-differences. Production validation of these fixes is pending. The remaining
-106 JPEG pixels, one heading pixel and four scene pixels
+reach 111 in diagnostics. Retaining fractional texture colors now reaches
+**28**, with 92 corrected pixels and **nine new one-level differences** (83 fewer
+in total). Production validation is pending. The remaining 23 JPEG pixels,
+one heading pixel and four scene pixels
 still fail equality. CNN retains its
 rendering, source/replay and native-repeat failures. Reddit remains unverified
 (missing historical fixture, earlier live HTTP 403). A separate tall-shadow

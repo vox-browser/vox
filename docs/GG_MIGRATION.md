@@ -2999,3 +2999,15 @@ diagnostic cohort preserves the four exact archives, the unscaled JPEG control
 and preceding counts. Production confirmation is pending; CNN and historical
 repeatability failures remain open. See the
 [audit](OPTIMIZED_SITES_PIXELS_2026_11_12.md#scaled-jpeg-avatar-planes-2026-11-15).
+
+
+### Fractional scaled JPEG texture colors, 2026-11-15
+
+`f0b7f4a68` carries opaque JPEG components through RGBA32F base-texture sampling
+using the V canvas adapter. Byte mips, geometry, clip and shader are preserved.
+Five YUV test files and two GPU cases pass. Vlang.io improves 111 to 28 pixels:
+92 corrected, **nine new one-level differences**, net 83 fewer. The JPEG remains
+inexact. A stable 30-workload cohort preserves all other counts and repeats
+exactly; the earlier input-drift cohort and historical failures are retained.
+Production confirmation remains pending. See the
+[audit](OPTIMIZED_SITES_PIXELS_2026_11_12.md#fractional-jpeg-texture-colors-partial-improvement-2026-11-15).

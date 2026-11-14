@@ -2193,3 +2193,55 @@ Commands, source/executable witnesses, PNGs, actual exits, failed attempts and
 transition counts are local under
 `docs/performance/vlang-gradients-20261114/raw/jpeg-upload-20261115/`.
 Completed scratch jobs are removed after verified archival.
+
+
+## Fractional JPEG texture colors: partial improvement, 2026-11-15
+
+`f0b7f4a68` retains scaled JPEG RGB as floating components through the base texture
+sample and clip. The preceding upload quantized every converted source texel to
+RGB8 first. V now carries opaque RGBA32F rows through the existing native pixel
+transfer and the repository's V canvas adapter. The existing byte mip levels,
+geometry, clip and shader remain unchanged. Other image payloads keep the byte
+path. Invalid components, non-opaque colors and unsupported sizes are rejected
+before publication; eligibility remains limited to the preceding JPEG slice.
+
+Final diagnostic executable SHA-256:
+`1068803693eb4c8ade628cf3ee78d4579a0e445366fbb4f45d8f85d74e2d8650`.
+Two fresh vlang.io captures each have **28 differing pixels**, down from 111.
+This corrects **92 pixels but introduces nine new one-level pixel differences**,
+all in the same still-failing JPEG, for **83 fewer differences overall**. The
+JPEG retains 23 differing pixels; the heading pixel and four scene pixels are
+unchanged. This is a partial precision improvement, not JPEG pixel equality.
+Existing expected images and tolerances are unchanged. The installed Brave
+identity still matches the independent archived references.
+
+All five C-backend YUV test files pass, including the new fractional conversion
+case. Two GPU cases pass for sampled fractional colors in single/multisample
+surfaces and rejection of malformed/non-opaque inputs without changing the
+destination. Runtime checks use the 3 GiB guard and `VOX_ARENA_POISON=1`.
+
+The stable-input cohort covers 30 workloads, 60 document captures and startup;
+all 61 native guards, the driver and outer guard exit 0. Its 61 rendering-source
+and six tool witnesses remain unchanged. The other 29 workload counts are
+unchanged, including four exact archives and the exact unscaled JPEG avatar.
+GitHub's 33 rows and Hacker News's 30 stories pass their content audits. All 30
+native pairs repeat exactly in this cohort. CNN still differs from Brave at
+175,866 pixels, and its historical source/replay and repeatability failures,
+alongside the earlier tall-shadow baseline failure, remain open.
+
+The preceding cohort is retained as rejected input-coherence evidence: the
+managed worker refreshed the staged graphics helper during capture, changing
+one trailing newline. Its native driver exited 0 with matching counts, but the
+source-audit supervisor exited 1. The entire cohort was repeated with unchanged
+inputs to obtain the stable result above.
+
+Production `aa19da69`, receipt `20261114-191855-433aa86a`, remains the completed
+810-pixel baseline. **28 is diagnostic pending the managed production rebuild**;
+normal hooks request coalesced C backend, literal V `-prod`, single-unit builds.
+All-site equality remains open, including the missing original Reddit fixture.
+No live-site, scripting or performance acceptance is claimed.
+
+Local evidence, including both cohorts, exact transition counts, remaining
+pixel coordinates, source witnesses, commands and actual exits, is under
+`docs/performance/vlang-gradients-20261114/raw/jpeg-float-20261115/`.
+Completed scratch jobs are removed after verified archival.
