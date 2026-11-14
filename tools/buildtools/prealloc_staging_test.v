@@ -32,3 +32,21 @@ fn test_closure_staging_rejects_partial_or_duplicated_hooks() ! {
 		assert rejected
 	}
 }
+
+fn test_staged_runtime_can_be_regenerated_after_the_cache_directory_moves() ! {
+	root := temporary(os.temp_dir(), 'vox-runtime-move-')!
+	defer { remove(root) or {} }
+	vroot := join(root, 'compiler')
+	write_changed(join(vroot, 'vlib/builtin/allocation.c.v'), 'module builtin\npub fn v_realloc(b &u8, n int) &u8 {\n new_ptr = malloc(n)\n\t\t\tC.memcpy(new_ptr, b, n)\n return new_ptr\n}\n')!
+	write_changed(join(vroot, 'vlib/builtin/prealloc.c.v'), 'module builtin\nfn prealloc_realloc() {}\n')!
+	write_changed(join(vroot, 'vlib/builtin/closure/closure.c.v'), 'module closure\nfn closure_init_body() {\n initialize()\n}\n')!
+	compiler := join(vroot, 'v')
+	os.write_file(compiler, '#!/bin/sh\ndirname "$0"\n')!
+	os.chmod(compiler, 0o755)!
+	first := prepare_prealloc(compiler, join(root, 'old-cache'))!
+	os.rename(join(root, 'old-cache'), join(root, 'moved-cache'))!
+	second := prepare_prealloc(compiler, join(root, 'moved-cache'))!
+	assert os.file_name(first) != os.file_name(second)
+	assert real(join(second, 'compiler/vlib/builtin')) == join(second, 'builtin')
+	assert prepare_prealloc(compiler, join(root, 'moved-cache'))! == second
+}

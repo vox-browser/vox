@@ -176,14 +176,17 @@ fn prepare_prealloc(selected string, output_root string) !string {
 	}
 	for name, data in owned { inputs[name] = data }
 	compiler_hash := digest(resolved)!
-	mut bytes := real(vlib) + compiler_hash
+	mkdir(output_root)!
+	output_identity := real(output_root)
+	// Staged compiler links contain absolute paths into their cache entry.
+	// Relocating a checkout must regenerate those links in a fresh entry.
+	mut bytes := real(vlib) + compiler_hash + '\x00' + output_identity
 	mut names := inputs.keys()
 	names.sort()
 	for name in names { bytes += name + '\x00' + inputs[name] }
 	bytes += read(@FILE)!
 	sha := hash(bytes)
-	mkdir(output_root)!
-	root := join(real(output_root), sha)
+	root := join(output_identity, sha)
 	mut owned_hashes := map[string]string{}
 	for name, data in owned { owned_hashes[name] = hash(data) }
 	identity := map[string]json.Any{
