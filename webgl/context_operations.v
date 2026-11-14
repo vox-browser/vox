@@ -986,7 +986,7 @@ fn (mut context WebGLRenderingContext) scalar_uniform_location(location ?&WebGLU
 			return none
 		}
 	}
-	return GLuint(0)
+	return none
 }
 
 pub fn (mut context WebGLRenderingContext) uniform1f(location ?&WebGLUniformLocation, x f32) {
