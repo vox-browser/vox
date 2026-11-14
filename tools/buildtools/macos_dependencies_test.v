@@ -2,8 +2,29 @@ module buildtools
 
 import os
 
-fn test_harfbuzz_features_only_enable_coretext() {
-	assert hb_features('#mesondefine HB_HAS_CORETEXT\n#mesondefine HB_HAS_GRAPHITE\n#mesondefine HB_HAS_ICU') == '#define HB_HAS_CORETEXT 1\n/* #undef HB_HAS_GRAPHITE */\n/* #undef HB_HAS_ICU */\n'
+fn test_harfbuzz_binary_releases_are_pinned_for_both_macos_architectures() {
+	assert hb_binary_sha('arm64')!.len == 64
+	assert hb_binary_sha('amd64')!.len == 64
+	assert hb_binary_sha('arm64')! != hb_binary_sha('amd64')!
+	if _ := hb_binary_sha('unknown') {
+		assert false, 'unsupported architecture accepted'
+	}
+}
+
+fn test_harfbuzz_package_rejects_missing_and_corrupt_native_archives() ! {
+	root := temporary(os.temp_dir(), 'vox-harfbuzz-package-')!
+	defer { remove(root) or {} }
+	mkdir(join(root, 'include/harfbuzz'))!
+	mkdir(join(root, '.vpm-binaries'))!
+	os.write_file(join(root, 'include/harfbuzz/hb.h'), '')!
+	os.write_file(join(root, 'LICENSE.harfbuzz'), '')!
+	assert !hb_artifact_matches(root, 'a'.repeat(64))
+	library := join(root, '.vpm-binaries/libharfbuzz.a')
+	os.write_file(library, 'verified library')!
+	sha := digest(library)!
+	assert hb_artifact_matches(root, sha)
+	os.write_file(library, 'corrupt')!
+	assert !hb_artifact_matches(root, sha)
 }
 
 fn test_macos_dependencies_require_headers_and_matching_libraries() ! {

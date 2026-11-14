@@ -8,17 +8,11 @@ import math
 import vunicode
 import os
 
-// Keep OpenType/AAT/CoreText shaping at the pinned version. The Homebrew
-// archive also enables Graphite2 and pulls its native VM into every browser.
-// tools/build_harfbuzz.py prepares this archive without that optional backend;
-// font selection, Unicode handling and glyph-run policy remain in V.
+// The HarfBuzz VPM module supplies optimized macOS OpenType/CoreText archives
+// without Graphite2; other platforms use their system HarfBuzz. Font selection,
+// Unicode handling and glyph-run policy remain in V.
 $if macos {
-	#flag -I@VMODROOT/Build/deps/harfbuzz-15.1.0/include/harfbuzz
-	#flag @VMODROOT/Build/deps/harfbuzz-15.1.0/lib/libharfbuzz.a
-	#flag -framework CoreFoundation
-	#flag -framework CoreGraphics
-	#flag -framework CoreText
-	#flag -lc++
+	import harfbuzz as _
 } $else {
 	#pkgconfig harfbuzz
 }

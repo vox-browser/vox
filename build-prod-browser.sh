@@ -232,9 +232,9 @@ export V_MACOS_V3_NO_FALLBACK
 # remains available as an ownership diagnostic.
 ui2_modules=$(sh "$repo_dir/tools/run_v_tool.sh" prepare_ui2 "$v_compiler")
 http_modules=$(v_tool prepare_http_compat "$v_compiler")
-# Avoid the optional Graphite2 VM in Homebrew's HarfBuzz archive.
+# Fetch the optimized VPM archive without Homebrew's optional Graphite2 VM.
 harfbuzz_root=$(v_tool build_harfbuzz)
-cp "$harfbuzz_root/LICENSE" "$resources_dir/harfbuzz-LICENSE.txt"
+cp "$harfbuzz_root/LICENSE.harfbuzz" "$resources_dir/harfbuzz-LICENSE.txt"
 prealloc_modules=""
 # Every collector uses glyph-index lookup in the platform font bridge. Avoid
 # decoding x.ttf's dense Unicode vectors only to discard them after each face

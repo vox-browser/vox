@@ -87,7 +87,11 @@ fn build_avif(a Args) ! {
 	mkdir(os.dir(output))!
 	mut flags := []string{}
 	if os.user_os() == 'macos' {
-		sdk := if a.has('--sdk-root') { real(a.required('--sdk-root')!) } else { macos_dependency_prefix('libavif')! }
+		sdk := if a.has('--sdk-root') {
+			real(a.required('--sdk-root')!)
+		} else {
+			macos_dependency_prefix('libavif')!
+		}
 		flags = ['-I' + join(sdk, 'include'), '-L' + join(sdk, 'lib'), '-lavif',
 			'-Wl,-rpath,' + join(sdk, 'lib')]
 	} else {
@@ -114,29 +118,23 @@ fn build_avif(a Args) ! {
 	println(output)
 }
 
-const hb_version = '15.1.0'
-const hb_sha = '5c057929413b8664592fea67edea5c2c47b4ffb0bf5f4accb5164bc6acc69d94'
+const hb_module_revision = '46cfa89f34c92e8cb5fc6c89ca2743e37c5be18b'
+const hb_requirement = 'https://github.com/vlang/harfbuzz@v15.1.0'
 
-// The pinned upstream amalgamation includes all core sources. Optional backends
-// are disabled unless HAVE_* is defined; only CoreText is enabled here.
-fn hb_options() []string {
-	return ['-std=c++11', '-O3', '-DNDEBUG', '-fPIC', '-DHAVE_CORETEXT=1',
-		'-DHAVE_PTHREAD=1', '-DHAVE_ATEXIT=1', '-DHAVE_MPROTECT=1', '-DHAVE_SYSCONF=1',
-		'-DHAVE_GETPAGESIZE=1', '-DHAVE_MMAP=1', '-DHAVE_ISATTY=1', '-DHAVE_UNISTD_H=1',
-		'-DHAVE_SYS_MMAN_H=1', '-DHAVE_STDBOOL_H=1']
+fn hb_binary_sha(architecture string) !string {
+	return match architecture {
+		'arm64' { 'de4706c1224b6d21dbda11e6fed354296b80a624b7e9490d04f4ea8af90e2f26' }
+		'amd64' { '047b9df39213dde82daff87262bb7c58a2846b8e2716a745f1f7f86ce68e40df' }
+		else { return error('No precompiled macOS HarfBuzz for ${architecture}') }
+	}
 }
 
-fn hb_features(template string) string {
-	mut lines := []string{}
-	for line in template.split_into_lines() {
-		if line.starts_with('#mesondefine ') {
-			name := line.all_after('#mesondefine ')
-			lines << if name == 'HB_HAS_CORETEXT' { '#define ${name} 1' } else { '/* #undef ${name} */' }
-		} else {
-			lines << line
-		}
-	}
-	return lines.join('\n') + '\n'
+fn hb_artifact_matches(root string, expected_sha string) bool {
+	library := join(root, '.vpm-binaries/libharfbuzz.a')
+	return !os.is_link(join(root, '.vpm-binaries')) && !os.is_link(library)
+		&& os.is_file(join(root, 'include/harfbuzz/hb.h'))
+		&& os.is_file(join(root, 'LICENSE.harfbuzz'))
+		&& (digest(library) or { '' }) == expected_sha
 }
 
 fn check_harfbuzz(executable string) ! {
@@ -147,89 +145,25 @@ fn check_harfbuzz(executable string) ! {
 	}
 }
 
+// Retain the setup command's name; first builds now fetch a verified VPM
+// package rather than compiling the HarfBuzz C++ amalgamation locally.
 fn build_harfbuzz() !string {
-	if os.user_os() != 'macos' { return error('This isolated HarfBuzz build is for macOS') }
-	root := join(root_dir(), 'Build/deps/harfbuzz-${hb_version}')
-	mkdir(root)!
-	mut held := acquire(join(root, 'build.lock'), true)!
-	defer { held.release() }
-	archiver := os.find_abs_path_of_executable('ar')!
-	clang := os.find_abs_path_of_executable('clang++')!
-	url := 'https://codeload.github.com/harfbuzz/harfbuzz/tar.gz/refs/tags/${hb_version}'
-	identity := map[string]json.Any{
-		'version':           hb_version
-		'url':               url
-		'sha256':            hb_sha
-		'options':           any_strings(hb_options())
-		'builder':           digest(@FILE)!
-		'architecture':      capture(['uname', '-m'])!.trim_space()
-		'deployment_target': os.getenv_opt('MACOSX_DEPLOYMENT_TARGET') or { '15.0' }
-		'compiler':          capture([clang, '--version'])!
-		'archiver':          archiver
-		'sdk':               capture(['xcrun', '--show-sdk-path'])!.trim_space()
-		'sdk_version':       capture(['xcrun', '--show-sdk-version'])!.trim_space()
+	if os.user_os() != 'macos' { return error('This HarfBuzz package setup is for macOS') }
+	architecture := $if arm64 { 'arm64' } $else $if amd64 { 'amd64' } $else { 'unknown' }
+	sha := hb_binary_sha(architecture)!
+	root := join(os.vmodules_dir(), 'harfbuzz')
+	if hb_artifact_matches(root, sha)
+		&& (capture(['git', '-C', root, 'rev-parse', 'HEAD']) or { '' }).trim_space() == hb_module_revision {
+		return root
 	}
-	record := maybe_load(join(root, 'build.json'))
-	outputs := string_map((record['outputs'] or { json.Null{} }))
-	if (record['inputs'] or { json.Null{} }).as_map() == identity && 'lib/libharfbuzz.a' in outputs && 'include/harfbuzz/hb.h' in outputs {
-		mut valid := true
-		for name, sha in outputs {
-			if !os.is_file(join(root, name)) || (digest(join(root, name)) or { '' }) != sha {
-				valid = false
-				break
-			}
-		}
-		if valid { return root }
+	// Keep stdout usable by dev_build_env/build-prod-browser.sh.
+	checked(['sh', '-c', 'exec "$@" >&2', 'sh', compiler(), 'install', hb_requirement])!
+	if !hb_artifact_matches(root, sha) {
+		return error('HarfBuzz binary package is missing or corrupt. Update V to a VPM version with vpm-binaries.json support, then run v install ' + hb_requirement)
 	}
-	archive := join(root, 'source.tar.gz')
-	if !os.is_file(archive) {
-		staged := archive + '.download'
-		checked(['curl', '--fail', '--location', '--output', staged, url])!
-		if digest(staged)! != hb_sha { return error('HarfBuzz archive checksum mismatch') }
-		os.rename(staged, archive)!
+	if capture(['git', '-C', root, 'rev-parse', 'HEAD'])!.trim_space() != hb_module_revision {
+		return error('HarfBuzz package is not at the pinned release commit')
 	}
-	if digest(archive)! != hb_sha { return error('HarfBuzz archive checksum mismatch') }
-	work := temporary(root, 'compile-')!
-	defer { remove(work) or {} }
-	for path in capture(['tar', '-tzf', archive])!.split_into_lines() {
-		if path.starts_with('/') || '..' in path.split('/') || path.split('/')[0] != 'harfbuzz-${hb_version}' {
-			return error('Invalid HarfBuzz archive path')
-		}
-	}
-	for line in capture(['tar', '-tvzf', archive])!.split_into_lines() {
-		if line.len > 0 && line[0] !in [`-`, `d`] && !(line[0] == `l` && line.contains('harfbuzz-${hb_version}/CLAUDE.md')) {
-			return error('Unsupported HarfBuzz archive entry')
-		}
-	}
-	checked(['tar', '-xzf', archive, '-C', work, '--exclude=harfbuzz-${hb_version}/CLAUDE.md'])!
-	source := join(work, 'harfbuzz-${hb_version}/src')
-	os.write_file(join(source, 'hb-features.h'), hb_features(read(join(source, 'hb-features.h.in'))!))!
-	object := join(work, 'harfbuzz.o')
-	command := [clang, ...hb_options(),
-		'-mmacosx-version-min=' + (identity['deployment_target'] or { json.Null{} }).str(),
-		'-isysroot', (identity['sdk'] or { json.Null{} }).str(),
-		'-c', join(source, 'harfbuzz.cc'), '-o', object]
-	// Build chatter goes to stderr: stdout is the resulting dependency prefix.
-	checked(['sh', '-c', 'exec "$@" >&2', 'sh', ...command])!
-	archive_command := [archiver, 'rcs', join(work, 'libharfbuzz.a'), object]
-	checked(archive_command)!
-	mkdir(join(root, 'lib'))!
-	mkdir(join(root, 'include/harfbuzz'))!
-	os.rename(join(work, 'libharfbuzz.a'), join(root, 'lib/libharfbuzz.a'))!
-	for header in (listing(source)!).filter(it.ends_with('.h')) {
-		os.cp(header, join(root, 'include/harfbuzz', os.file_name(header)))!
-	}
-	os.cp(join(work, 'harfbuzz-${hb_version}/COPYING'), join(root, 'LICENSE'))!
-	mut output_paths := [join(root, 'lib/libharfbuzz.a'), join(root, 'LICENSE')]
-	output_paths << (listing(join(root, 'include/harfbuzz'))!).filter(it.ends_with('.h'))
-	mut hashes := map[string]string{}
-	for path in output_paths { hashes[relative(path, root)] = digest(path)! }
-	write_json(join(root, 'build.json'), json.Any(map[string]json.Any{
-		'inputs':            json.Any(identity)
-		'compile_command':   any_strings(command)
-		'archive_command':   any_strings(archive_command)
-		'outputs':           record_strings(hashes)
-	}))!
 	return root
 }
 
