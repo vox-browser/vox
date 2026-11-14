@@ -1097,6 +1097,7 @@ fn finish_document_layout_with_reuse(document &dom.Document, root &Node, viewpor
 			verify_incremental_layout_geometry_for(document, pass, state, full)
 		}
 	}
+	report_incremental_layout_pass(same_tree)
 	state.committed_pass_ = pass
 	state.replaced_sizes_ = replaced_sizes
 	root_placeholder := commit_dom_layout_attachment(root, state, prepared_attachment)

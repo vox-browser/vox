@@ -504,6 +504,9 @@ fn reuse_committed_subtree_layout(mut state LayoutState, box &Node, mut box_stat
 	space AvailableSpace) ?FormattingContextResult {
 	previous := state.subtree_reuse_source_
 	if previous == unsafe { nil } || box.needs_layout_update() || box.descendant_needs_layout_update_ {
+		if incremental_layout_diagnostics {
+			if previous == unsafe { nil } { incremental_layout_fresh_counts[0]++ } else { incremental_layout_fresh_counts[1]++ }
+		}
 		return none
 	}
 	// A face that loads during this pass changes text metrics everywhere; the
@@ -514,17 +517,26 @@ fn reuse_committed_subtree_layout(mut state LayoutState, box &Node, mut box_stat
 	}
 	styled := box.as_node_with_style() or { return none }
 	lookup := committed_values_lookup(previous, styled)
-	if lookup.values == unsafe { nil } { return none }
+	if lookup.values == unsafe { nil } {
+		if incremental_layout_diagnostics { incremental_layout_fresh_counts[2]++ }
+		return none
+	}
 	committed := lookup.values
-	record := previous.relayout_records_[lookup.index] or { return none }
+	record := previous.relayout_records_[lookup.index] or {
+		if incremental_layout_diagnostics { incremental_layout_fresh_counts[3]++ }
+		return none
+	}
 	if voidptr(record.node) != voidptr(box) || record.space != space
 		|| !subtree_layout_inputs_match(&record.before, box_state) {
 		if incremental_layout_diagnostics {
-			eprintln('VOX_INCREMENTAL_LAYOUT reuse=rejected tag=${layout_debug_tag(box)} space_matches=${record.space == space} inputs_match=${subtree_layout_inputs_match(&record.before, box_state)}')
+			incremental_layout_fresh_counts[4]++
+			parent_display := if parent := box.parent() { parent.display().to_string() } else { '' }
+			eprintln('VOX_INCREMENTAL_LAYOUT reuse=rejected tag=${layout_debug_tag(box)} same_node=${voidptr(record.node) == voidptr(box)} space_matches=${record.space == space} differs=${subtree_layout_inputs_difference(&record.before, box_state)} recorded_height=${record.before.content_height_.to_double()}/${record.before.has_definite_height_} now_height=${box_state.content_height_.to_double()}/${box_state.has_definite_height_} after_height=${record.after.content_height_.to_double()} display=${box.display().to_string()} parent_display=${parent_display}')
 		}
 		return none
 	}
 	if block_contents_need_alignment(box) || subtree_reuse_blocked(previous, box, box) {
+		if incremental_layout_diagnostics { incremental_layout_fresh_counts[5]++ }
 		return none
 	}
 	mut retained := retain_geometry_allocations()
@@ -598,6 +610,16 @@ fn apply_recorded_inner_layout(mut values UsedValues, before &UsedValues, after 
 }
 
 __global incremental_layout_reused_subtrees u64
+// VOX_INCREMENTAL_LAYOUT_DIAGNOSTICS: why committed subtrees were laid out
+// again (no source, dirty, no committed values, no record, changed inputs,
+// blocked), cumulative.
+__global incremental_layout_fresh_counts [6]u64
+
+fn report_incremental_layout_pass(same_tree bool) {
+	report_retained_flow_rejections()
+	if !incremental_layout_diagnostics { return }
+	eprintln('VOX_INCREMENTAL_LAYOUT pass same_tree=${same_tree} reused=${incremental_layout_reused_subtrees} no_source=${incremental_layout_fresh_counts[0]} dirty=${incremental_layout_fresh_counts[1]} uncommitted=${incremental_layout_fresh_counts[2]} unrecorded=${incremental_layout_fresh_counts[3]} changed_inputs=${incremental_layout_fresh_counts[4]} blocked=${incremental_layout_fresh_counts[5]}')
+}
 
 // Reused subtree roots in this process (tests and diagnostics).
 pub fn incremental_layout_reused_subtree_count() u64 {
@@ -704,6 +726,38 @@ fn subtree_layout_inputs_match(a &UsedValues, b &UsedValues) bool {
 		&& x.hidden_by_collapsed_columns_ == y.hidden_by_collapsed_columns_
 		&& x.has_line_clamp_point_ == y.has_line_clamp_point_
 		&& x.is_invisible_for_line_clamp_ == y.is_invisible_for_line_clamp_
+}
+
+// The first input that differs, for VOX_INCREMENTAL_LAYOUT_DIAGNOSTICS.
+fn subtree_layout_inputs_difference(a &UsedValues, b &UsedValues) string {
+	if a.content_width_ != b.content_width_ { return 'content-width' }
+	if a.content_height_ != b.content_height_ { return 'content-height' }
+	if a.has_definite_width_ != b.has_definite_width_ { return 'definite-width' }
+	if a.has_definite_height_ != b.has_definite_height_ { return 'definite-height' }
+	if a.width_constraint != b.width_constraint { return 'width-constraint' }
+	if a.height_constraint != b.height_constraint { return 'height-constraint' }
+	if a.padding_left != b.padding_left || a.padding_right != b.padding_right
+		|| a.padding_top != b.padding_top || a.padding_bottom != b.padding_bottom {
+		return 'padding'
+	}
+	if a.border_left != b.border_left || a.border_right != b.border_right || a.border_top != b.border_top
+		|| a.border_bottom != b.border_bottom {
+		return 'border'
+	}
+	x := a.rare_ or { &UsedValuesRareData{} }
+	y := b.rare_ or { &UsedValuesRareData{} }
+	if x.override_borders_data_ != none || y.override_borders_data_ != none { return 'override-borders' }
+	if x.static_position_rect_ != y.static_position_rect_ { return 'static-position' }
+	if !subtree_optional_pixels_equal(x.box_model_percentage_basis_, y.box_model_percentage_basis_) {
+		return 'percentage-basis'
+	}
+	if !subtree_optional_pixels_equal(x.collapsed_flow_margin_bottom_, y.collapsed_flow_margin_bottom_) {
+		return 'collapsed-margin'
+	}
+	if x.abspos_containing_block_rect_ != y.abspos_containing_block_rect_ { return 'abspos-rect' }
+	if x.table_cell_coordinates_ != y.table_cell_coordinates_ { return 'table-cell' }
+	if subtree_layout_inputs_match(a, b) { return '' }
+	return 'other-rare'
 }
 
 // align_block_contents() would move the box's children after layout.
