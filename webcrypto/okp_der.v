@@ -38,7 +38,7 @@ fn (mut reader OkpDerReader) read(sequence bool) ![]u8 {
 	mut length := u64(first)
 	if first & 0x80 != 0 {
 		count := int(first & 0x7f)
-		if count == 0x7f {
+		if count == 0 || count == 0x7f {
 			return error('DataError: ASN1::Decoder: Length has an invalid count value')
 		}
 		if count > 8 {
