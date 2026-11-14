@@ -2,6 +2,9 @@
 
 Audited: 2026-10-02.
 
+The opt-in browser backend and its 2026-11-14 validation are documented in
+[`docs/LIBJS_ENGINE.md`](../docs/LIBJS_ENGINE.md). JavaScriptCore remains the default.
+
 ## Ordinary ECMAScript calls — 2026-11-14
 
 The bytecode runtime now executes ordinary function declarations and expressions,
@@ -119,7 +122,8 @@ failure/assertion handlers follow
 at the same upstream revision. Property-kind and resolved-property records,
 Unicode property queries, resolution/validation, scalar predicates and
 string-property packing follow `LibUnicode/Rust/src/character_types.rs` and
-`LibUnicode/CharacterTypes.cpp`. Regex execution remains pending.
+`LibUnicode/CharacterTypes.cpp`. RegExp execution now uses the V RegexEngine;
+the remaining JavaScript-facing hooks are listed above.
 Regex canonicalization and UnicodeSet closure/range operations additionally follow
 `LibUnicode/{CharacterTypes,String}.cpp`, with full uppercase, simple Unicode
 folding and case closures supplied by the shared V backend.
@@ -375,8 +379,9 @@ bitwise operators, comparisons, primitive string concatenation, unary operators,
 `typeof` (including unknown names and lexical TDZ checks), conditional and sequence
 expressions, short-circuiting logical operators and assignments, identifier
 assignments/updates, ordinary data/accessor-property reads/writes/updates, `delete`, `in`, `instanceof`,
-native function and method calls and `new` expressions
-without spread arguments, string own `length`/character properties, `var`/`let`/`const`,
+ordinary and native function/method calls and construction without spread arguments,
+closures, returns, object/array/RegExp literals, string own `length`/character
+properties, `var`/`let`/`const`,
 blocks, `if`, `while`, `do`/`while`, `for`, unlabelled `break`/`continue`, and `throw`. Bindings persist across scripts in one
 realm. Global declaration conflicts are checked before creating any bindings;
 block declarations are created before executing their initializers. The global
@@ -385,23 +390,23 @@ property attributes. It also installs the translated `isFinite`, `isNaN`,
 `parseInt`, `parseFloat`, `encodeURI`, `encodeURIComponent`, `decodeURI`, and
 `decodeURIComponent`, `escape`, and `unescape` functions with their upstream names,
 lengths, and descriptors. Global property installation retains upstream
-numeric/URI-function-before-value order, then Boolean/Symbol constructor entries,
-then legacy functions.
+numeric/URI-function-before-value order, followed by the installed constructor
+subset in source order and then legacy functions.
 
-The entire program is compiled before declaration instantiation or execution.
-An unsupported construct, even inside an untaken branch, rejects the program
-without running its preceding statements or creating its bindings. ECMAScript
-functions, spread calls/construction, object/array literals,
+Top-level code is compiled before declaration instantiation or execution.
+Unsupported top-level syntax, even inside an untaken branch, rejects that script
+without running its preceding statements or creating its bindings. Ordinary
+function bodies compile lazily when called. Spread calls/construction,
 destructuring, classes, exceptions with `try`/`catch`/`finally`, labels, iterators,
-templates, regex, async, and modules are still pending. Handwritten bytecode tests exercise exception
+templates, async, and modules are still pending. Handwritten bytecode tests exercise exception
 handler dispatch and `Catch`; this does not imply AST-level catch support.
 Ordinary objects supplied by a host can coerce through `@@toPrimitive`, `valueOf`,
 and `toString`, with upstream hint order and abrupt-completion propagation.
 Objects without a usable coercion method throw the upstream `TypeError`.
-Boolean and Symbol primitive references box through their translated wrappers
+Boolean, Symbol and String primitive references box through their translated wrappers
 while preserving the original primitive receiver for inherited methods and
-accessors. Other primitive property access beyond virtual string own properties
-still requires untranslated wrapper prototypes and reports the explicit runtime error.
+accessors. Number and BigInt inherited property access still requires untranslated
+wrapper prototypes and reports the explicit runtime error.
 
 BigInt numeric operations follow `Runtime/Value.cpp`: arithmetic, truncating
 division/remainder, signed bitwise operations, arithmetic shifts (including
@@ -1527,9 +1532,10 @@ Unsupported operations report errors; there is no author-script fallback to JSC.
 Logged-in Hacker News voting/hiding, fetch/XHR and arbitrary modern sites are not
 covered by the comment-collapse acceptance test.
 
-## Verification
+## Historical verification
 
-The repository's current V checkout requires its old compiler frontend:
+The following older snapshot used the compatibility compiler frontend. Current
+backend checks use current V without `-old-compiler`; see the engine guide above.
 
 ```sh
 v -old-compiler -enable-globals test libjs
