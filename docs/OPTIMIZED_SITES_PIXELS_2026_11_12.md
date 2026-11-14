@@ -1517,3 +1517,12 @@ bundle remains available, but does not validate this correction. The 2,710 resul
 is **diagnostic pending production**. vlang.io, CNN, the missing Reddit fixture
 and the all-site gate remain open; there is no live-site, scripting or performance
 acceptance claim.
+
+A later completed production preview,
+`ec1876e0fa1f9f57c588f6b5ae980489f7a5455663a0cd3d5bb1330c155bdbc6`
+(receipt `20261114-141124-93161f1d`), contains an earlier mask-grid experiment.
+Two of the 36 current rendering witnesses differ: the gradient adapter and its
+native callback header. Its compiled sources match the preceding candidate
+before the higher-backing-scale restriction and empty-intersection guard. This
+preview supplies no production acceptance for the final fix. The final source
+is committed and requested through the managed rebuild hook.
