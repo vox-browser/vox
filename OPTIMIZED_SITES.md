@@ -10,7 +10,9 @@ Provisional entries retain unresolved acceptance checks.
 this catalog. The latest completed production bundle renders Hacker News,
 Lobsters and Wikipedia exactly in two fresh captures each. The unblurred
 inset-shadow correction now reaches **19 GitHub differences** and **3,228
-vlang.io differences** in production, twice each. CNN retains its large
+vlang.io differences** in production, twice each. The subsequent native-leaf
+padding fix reaches **15 GitHub differences** in diagnostic captures, pending
+production validation. CNN retains its large
 rendering mismatch and source/replay failure; earlier native-repeat failures
 remain unresolved despite an agreeing latest pair. CNN, vlang.io and GitHub
 remain open. Reddit could not be verified (missing historical fixture, live

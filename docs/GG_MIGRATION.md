@@ -2825,3 +2825,13 @@ The other site and focused-control results are preserved. Production bundle
 `6bf5db1e` now confirms the new fixture exactly and the 19/3,228 site counts,
 with 32 source witnesses, 22 fresh captures and a passing startup smoke. The [audit](OPTIMIZED_SITES_PIXELS_2026_11_12.md#unblurred-inset-shadow-geometry-2026-11-14)
 retains failed probes, CNN's instability and the remaining all-site gaps.
+
+
+### Native leaf padding and tile coordinates, 2026-11-14
+
+`7019fc7ec` retains the compositor tile when a native readback's two-pixel
+padding crosses its origin. The outside fringe stays untouched. Both single
+and grouped replay now match the exact search-border regression. All 24 focused
+tests pass; the full fixture is exact twice and GitHub improves from 19 to 15
+differing pixels twice. Other site/control counts are preserved. Production
+validation is pending; see the [audit](OPTIMIZED_SITES_PIXELS_2026_11_12.md#native-leaf-fringe-correction-2026-11-14).

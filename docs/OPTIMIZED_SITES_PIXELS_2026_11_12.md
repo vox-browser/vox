@@ -1280,3 +1280,38 @@ witnesses and actual exits remain local under
 The eight temporary job directories and their guards were deleted after archival.
 Host load exceeded 150 on 18 CPUs; no performance credit is claimed. The existing
 production result and all unresolved site gates remain unchanged.
+
+
+## Native leaf fringe correction, 2026-11-14
+
+Commit `7019fc7ec` fixes the search-border mismatch. A callback trace proves
+that the correct 64×64 compositor grid starts at (760,16), while the padded
+native leaf starts at (759,14). Rejecting that one/two-pixel overlap caused a
+fallback to a 46×40 GPU surface, changing corner coverage. The existing tile
+copy/publication bounds can safely preserve the outside padding. Single and
+grouped replay now accept this bounded fringe only when the leaf intersects
+a valid tile; larger excursions and unsupported grids retain their fallback.
+The existing diagnostic flag also reports callback grid/leaf coordinates.
+
+Diagnostic executable SHA-256
+`dcc40b06d4aec5cba0466a17ea7efdcbb19912652c552ab6ab2fb64d585a3694`
+reduces GitHub **19 → 15**, twice; all four search-border differences are gone
+and the avatar's fifteen pixels remain. The complete committed reduction is
+exact twice. HN/Wikipedia/Lobsters remain exact, vlang.io remains 3,228 and CNN
+175,866, each twice. Small-shadow, inset, shared-decoration and rotated-border
+controls stay exact; scale-2 device shadows remain at 92. All twelve native
+pairs repeat exactly in this cohort, without resolving CNN's historical
+instability or source/replay failure. References and tolerances are unchanged.
+
+Two focused tests execute GPU pixel checks through both replay routes and
+reject unsafe fringe bounds; the 22 existing MSAA tests also pass. All 24
+captures, startup smoke, 25 runtime guards, compilers and driver exit 0. Feature
+source hashes and executable/library/fixture/reference identities remain stable.
+The preceding trace and five-plane GPU probe are retained separately. This
+explains why the earlier legacy-grid candidates did not fix the error: the
+correct compositor grid was already available. No performance credit is claimed.
+
+Evidence remains local under
+`docs/performance/vlang-gradients-20261112/raw/geometry-fringe-20261114/`.
+The managed commit hook requests production rebuilding; the new result is
+**diagnostic pending production**, and the all-site gate remains open.
