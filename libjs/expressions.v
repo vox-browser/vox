@@ -135,7 +135,9 @@ fn (mut p Parser) parse_expression(min_precedence int, associativity Associativi
 		return p.parse_comma_expression(lhs_start, expression, min_precedence, forbidden)
 	}
 
-	expression2 := p.parse_tagged_template_literals(lhs_start, expression)
+	expression2 := if p.match_token(.template_literal_start) {
+		p.parse_tagged_template_literals(lhs_start, expression)
+	} else { expression }
 
 	return p.continue_parse_expression(lhs_start, expression2, min_precedence, associativity,
 		forbidden)
@@ -163,7 +165,7 @@ fn (mut p Parser) continue_parse_expression(lhs_start Position, expression_ Expr
 		forbidden = forbidden.merge(result_forbidden)
 
 		// Tagged template literals bind tighter than any operator.
-		if !is_update_expression(expression) {
+		if p.match_token(.template_literal_start) && !is_update_expression(expression) {
 			expression = p.parse_tagged_template_literals(lhs_start, expression)
 		}
 	}
