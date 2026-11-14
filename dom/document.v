@@ -2674,6 +2674,7 @@ pub mut:
 	scope                   HTMLCollectionScope = .descendants
 	filter                  fn (&Element) bool = always_accept_element
 	sort                    fn (&Element, &Element) bool = never_sort_elements
+	collect_elements_       ?fn () []&Element
 	cached_elements         []&Element
 	cached_dom_tree_version u64
 	cached_attribute_version u64
