@@ -2245,3 +2245,66 @@ Local evidence, including both cohorts, exact transition counts, remaining
 pixel coordinates, source witnesses, commands and actual exits, is under
 `docs/performance/vlang-gradients-20261114/raw/jpeg-float-20261115/`.
 Completed scratch jobs are removed after verified archival.
+
+
+## Production confirmation of the 28-pixel result, 2026-11-15
+
+The latest completed production bundle tested here is
+`05e6ace1a48deb21b40a1b731885229088f8b5abf6940df2ebbd205dcc044e33`, receipt
+`20261115-004720-a7e0da7f`. It uses the C backend, literal V `-prod` and one C
+unit. All **61 selected rendering-source hashes** match the verified compiled
+manifest. This confirms the previously pending recorded filter clip, gradient
+picture isolation, shared shape/glyph samples, scaled JPEG planes and fractional
+texture changes in production. No additional manual build was requested.
+
+Thirty workloads were captured twice through fresh processes with private
+profiles and the existing viewport, scale, replay and author-script policies.
+All 60 native capture guards, the driver and outer guard exit 0. The 61 rendering
+and six tool witnesses remain unchanged through the run. Every reference count
+matches the preceding diagnostic cohort:
+
+| Workload | Production differing pixels |
+| --- | ---: |
+| GitHub / Hacker News / Lobsters / Wikipedia | **0 each, twice** |
+| vlang.io | **28, twice**, down from the previously confirmed 810 |
+| Unscaled fractional JPEG avatar | **0, twice** |
+| Other preceding controls | Unchanged |
+| CNN | **175,866, twice** |
+
+Vlang.io's production PNG also matches the accepted diagnostic PNG exactly.
+The remaining 23 JPEG pixels, one heading pixel and four scene pixels therefore
+include the same **nine introduced one-level JPEG differences** documented in
+the partial precision slice. No expected image or tolerance changes. GitHub's
+33 rows and Hacker News's 30 stories pass their content audits. Twenty-nine
+native pairs repeat exactly; CNN differs between repeats at 1,558 pixels.
+CNN's prior source/replay mismatch and the historical tall-shadow baseline
+repeat failure remain open.
+
+An initial attempt supplied the build request's commit as `--feature-revision`.
+That revision predates later dirty buffers in the verified compilation, so the
+guard correctly rejected it before capture. The successful default check instead
+compares the actual current feature bytes with the exact compiled manifest; all
+match. Both attempts are retained. The production receipt's request revision
+alone is not treated as proof of its compiled sources.
+
+Two currently edited files, `layout/clean_subtree_reuse.v` and
+`layout/document_tree_builder.v`, differ from this bundle's compiled manifest.
+Those uncompiled changes are outside this validation. The result establishes
+the published production bundle's frozen-page behavior, not equality for every
+current checkout edit, live site, script behavior or performance metric.
+All-site parity remains open, including the missing original Reddit fixture.
+
+A separate GPU diagnostic reproduces the JPEG's 23-pixel residual. Unclamped
+source colors and the default normalized matrix from
+[upstream SkYUVMath](https://raw.githubusercontent.com/google/skia/main/src/core/SkYUVMath.cpp)
+retain the same count, so neither was applied. Initial probe arithmetic produced
+black source colors and failed calibration; explicit floating arithmetic restored
+the control. Those invalid initial outputs are retained but supply no rendering
+conclusion. No renderer code changed in this confirmation slice.
+
+Local receipts, compiled-source comparisons, both production attempts, PNGs,
+actual exits and diagnostic logs are under
+`docs/performance/vlang-gradients-20261114/raw/production-28-20261115/`.
+Completed scratch and the temporary diagnostic source are removed after verified
+archival. The normal documentation commit hook requests a coalesced managed
+production rebuild.

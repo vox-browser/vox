@@ -3011,3 +3011,16 @@ inexact. A stable 30-workload cohort preserves all other counts and repeats
 exactly; the earlier input-drift cohort and historical failures are retained.
 Production confirmation remains pending. See the
 [audit](OPTIMIZED_SITES_PIXELS_2026_11_12.md#fractional-jpeg-texture-colors-partial-improvement-2026-11-15).
+
+
+### Production confirmation of the 28-pixel cohort, 2026-11-15
+
+Production `05e6ace1` (C backend, literal `-prod`, single C unit) matches all 61
+selected compiled rendering-source witnesses. Thirty workloads captured twice
+confirm vlang.io at 28 pixels and four exact archived sites; every preceding
+reference count matches diagnostics. All 60 native guards and driver/outer exits
+are zero. CNN repeats differ at 1,558 pixels; historical failures remain open.
+The nine introduced JPEG differences remain within vlang.io's residual. Two
+newer layout edits are not in this bundle. No renderer change was applied by
+this confirmation. See the
+[audit](OPTIMIZED_SITES_PIXELS_2026_11_12.md#production-confirmation-of-the-28-pixel-result-2026-11-15).
