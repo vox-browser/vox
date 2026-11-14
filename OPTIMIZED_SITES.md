@@ -13,7 +13,9 @@ reduce vlang.io to 3,250 differing pixels on the unchanged current archive.
 The table, image-corner, rotated-border and small-shadow corrections now reach
 49 differing GitHub pixels in two fresh production captures. A subsequent
 capture-policy fix keeps scrollbar visibility consistent with Brave
-under both macOS preferences; its production validation is pending. CNN also retains
+under both macOS preferences. Shared outer-shadow/background/border samples
+reduce GitHub to 39 differing pixels in diagnostic captures. These follow-ups
+await production validation. CNN also retains
 a native-repeat stability failure. CNN, vlang.io and GitHub remain open.
 Reddit could not be verified (missing historical fixture, live HTTP 403).
 See the [current audit, capture scopes and retained failures](docs/OPTIMIZED_SITES_PIXELS_2026_11_12.md).

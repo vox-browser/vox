@@ -2789,3 +2789,15 @@ vlang.io at 3,250 and CNN at 175,866; CNN repeatability remains open. Production
 confirms the previous rendering fixes at 49 GitHub pixels; this capture-policy
 fix awaits its managed rebuild. The [pixel audit](OPTIMIZED_SITES_PIXELS_2026_11_12.md#production-confirmation-and-scrollbar-capture-policy-2026-11-14)
 retains all failed setup and diagnostic attempts. No reference or tolerance changed.
+
+
+### Shared rounded outer decorations, 2026-11-14
+
+`93b2ed18e` retains an opaque rounded box's shadows, background and border
+through one sample resolve. The exact corner-band GPU regression and guarded
+layout eligibility test pass. The new complete Brave fixture is exact twice;
+the unchanged GitHub archive improves from 49 to 39 differing pixels twice.
+Other checked site counts and focused controls are preserved. Production
+validation is pending; see the [pixel audit](OPTIMIZED_SITES_PIXELS_2026_11_12.md#shared-rounded-outer-decorations-2026-11-14)
+for pinned builds, failed probes, scope and remaining gaps. No reference or
+tolerance changed, and no performance credit is claimed.

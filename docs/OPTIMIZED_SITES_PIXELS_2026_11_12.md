@@ -1047,3 +1047,54 @@ correction itself still awaits production validation. Raw commands, identities,
 guard exits, failed attempts and PNGs remain local under
 `docs/performance/vlang-gradients-20261112/raw/scrollbar-20261114/`.
 The all-site gate remains open, including the missing original Reddit fixture.
+
+
+## Shared rounded outer decorations, 2026-11-14
+
+Commit `93b2ed18e` keeps a rounded box's outer shadows, background and opaque
+uniform border in one V/GG recording. The preceding per-leaf resolves rounded
+sample colors before the next decoration blended over them. Grouping only the
+background and border retains the corner error; retaining the shadow's samples
+through the final border fixes it. The path accepts adjacent paints of one root
+owner with matching transforms, ordinary circular corners, and no clips or
+translucent border. Unsupported groups retain the existing replay path. Pending
+backgrounds flush only after a complete supported group has been accepted.
+
+The new `rounded-opaque-shadow-group` fixture reproduces the two-pixel corner
+gap in two fresh production captures. Two fresh pinned Brave captures agree
+exactly; the final diagnostic matches the full reference exactly twice. Its
+small SVG trigger occupies the affected raster tile, reproducing the site's
+MSAA configuration. An initial fixture placed that trigger in another tile and
+its unit replay failed at eight pixels; those references and the failure remain
+local. No existing fixture, reference or tolerance was changed. The focused GPU
+test checks the exact corner band and verifies that separate resolves retain a
+difference. The layout eligibility test executes with arena poisoning under a
+3 GiB guard and preserves layer, clip, opacity, geometry and bleed-pair fallbacks.
+
+Final diagnostic executable
+`10283d26550631b4c8c076d10e15d39e62e8072cc48adebf4e9997cc8a6c9ca5`
+reduces the unchanged GitHub archive from **49 to 39 differing pixels**, twice,
+retaining all 33 rows and the reference origin. The ten corrected pixels are
+the rounded action-button and branch-button corners. The remaining 39 are four
+search-border pixels, twenty input-corner pixels and fifteen avatar pixels.
+HN retains its 30 stories and is exact twice, as are Wikipedia and Lobsters.
+vlang.io remains at **3,250** and CNN at **175,866**. All six site pairs repeat
+exactly in this particular cohort; CNN's earlier native instability and its
+source/replay failure remain unresolved. This change supplies no CNN fix.
+The small-shadow and rotated-border controls stay exact twice; the scale-2
+device-shadow control retains its **92-pixel** gap. All 20 final captures,
+the startup smoke, 21 runtime guards and the complete driver exit 0, with
+unchanged feature source hashes and pinned capture input identities.
+
+Earlier cropped-surface probes, the stale/pruned font-module compile failure,
+the background/border-only experiment and the preliminary complete cohort are
+retained separately. Final compilation included the strict pair validator and
+the deferred pending-background flush. Heavy host contention reached load
+averages above 130 on 18 CPUs; no timing or instruction credit is claimed.
+Commands, source/executable/library identities, PNGs, test calls and actual
+exits remain local under
+`docs/performance/vlang-gradients-20261112/raw/rounded-outer-20261114/`.
+
+The managed commit hook requests the normal production rebuild. The last
+verified production result remains 49 GitHub pixels; **39 is diagnostic
+validation pending production**, and the all-site gate remains open.
