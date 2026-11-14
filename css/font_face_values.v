@@ -2221,14 +2221,16 @@ fn (mut face FontFaceObject) resolve_for_rendering() PendingFontState {
 	if face.status_ == .loaded {
 		return .visible
 	}
-	if face.font_download_timer_start_ns_ == none {
+	face.load_for_style()
+	// A synchronously resolved font has nothing left to download. Start the
+	// display deadline only after attempting that resolution.
+	if face.font_download_timer_start_ns_ == none && !face.font_download_completed_ {
 		face.font_download_timer_start_ns_ = time.sys_mono_now()
 		if face.font_display_ == .swap {
 			face.font_display_period_ = .swap
 		}
 		face.update_font_display_period()
 	}
-	face.load_for_style()
 	if mut loader := face.font_loader_ {
 		loader.did_request_for_rendering()
 	}
