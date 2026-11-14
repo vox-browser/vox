@@ -288,7 +288,12 @@ fn connect_navigable_model_to_host(model &NavigableModel) {
 	host.delays_container_load_event_callback_ = navigable_model_delays_container_load_event
 	host.force_dark_enabled_callback_ = navigable_model_force_dark_enabled
 	host.choose_a_navigable_callback_ = navigable_model_choose_a_navigable
-	host.navigate_callback_ = navigable_model_navigate
+	// The browser can own visible-page navigation while the HTML model owns
+	// the remaining navigable services. Reconnecting during paint or focus
+	// must keep that embedder handoff.
+	if host.navigate_callback_ == unsafe { nil } {
+		host.navigate_callback_ = navigable_model_navigate
+	}
 	host.page_navigate_callback_ = navigable_model_navigate_from_page
 	host.reload_callback_ = navigable_model_reload
 	host.download_hyperlink_callback_ = navigable_model_download_hyperlink
@@ -895,7 +900,7 @@ fn determine_navigation_params_policy_container(response_url dom.URL, history_po
 		if container := parent_policy_container {
 			return cloned_policy_container(container)
 		}
-		return &PolicyContainer{}
+		return &dom.PolicyContainer{}
 	}
 	if fetch.is_local_url(response_url) {
 		if container := initiator_policy_container {
@@ -905,7 +910,7 @@ fn determine_navigation_params_policy_container(response_url dom.URL, history_po
 	if container := response_policy_container {
 		return cloned_policy_container(container)
 	}
-	return &PolicyContainer{}
+	return &dom.PolicyContainer{}
 }
 
 // https://html.spec.whatwg.org/multipage/browsers.html#obtain-coop

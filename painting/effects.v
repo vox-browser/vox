@@ -573,7 +573,9 @@ pub fn paint_box_shadow(bordered_content_rect Rect, borderless_content_rect Rect
 		} else {
 			device_content := converter.rounded_device_rect(borderless_content_rect)
 			mut outer_shadow_rect := device_content.translated(offset)
-			inner_shadow_rect := outer_shadow_rect.inflated(-spread, -spread, -spread, -spread)
+			raw_inner_shadow_rect := outer_shadow_rect.inflated(-spread, -spread, -spread, -spread)
+			inner_shadow_rect := IntRect{raw_inner_shadow_rect.x, raw_inner_shadow_rect.y,
+				max_int(raw_inner_shadow_rect.width, 0), max_int(raw_inner_shadow_rect.height, 0)}
 			outer_shadow_rect = outer_shadow_rect.inflated(blur + offset.y, blur + abs_int(offset.x), blur + abs_int(offset.y), blur + offset.x)
 			// Inset shadows follow the padding edge, not the outer border edge.
 			// https://drafts.csswg.org/css-backgrounds/#shadow-shape

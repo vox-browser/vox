@@ -229,7 +229,7 @@ test('native lookup reader matches the portable reader and rejects corrupt stora
         for (const sanitizer of [false, true]) {
             const binary = path.join(directory, sanitizer ? 'sanitized' : 'optimized');
             execFileSync('clang', ['-O2', ...(sanitizer ? ['-fsanitize=address,undefined', '-fno-omit-frame-pointer'] : []),
-                '-framework', 'JavaScriptCore', '-framework', 'CoreFoundation', '-lz',
+                '-framework', 'JavaScriptCore', '-framework', 'CoreFoundation',
                 fileURLToPath(new URL('./snapshot_packed_native_test.c', import.meta.url)), '-o', binary]);
             assert.match(execFileSync(binary, [script], {encoding:'utf8',env:{...process.env,ASAN_OPTIONS:'detect_leaks=0'}}), /PASS native packed lookups/);
         }

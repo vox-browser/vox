@@ -1,7 +1,19 @@
 module main
 
 import gg
+import dom
 import sokol.sapp
+
+fn test_portable_window_title_can_be_updated_before_sokol_window_creation() {
+	$if macos { return }
+	assert !sapp.isvalid()
+	mut app := BrowserApp{
+		ctx: gg.new_context(width: 960, height: 720)
+		document: dom.Document.create(dom.url_about_blank())
+	}
+	// Process-tab children install their document before Sokol opens X11.
+	app.update_window_title()
+}
 
 @[heap]
 struct NativeBrowserContextTestState {
@@ -51,14 +63,14 @@ fn test_native_browser_context_uses_cocoa_lifecycle_without_gpu_or_font_setup() 
 		)
 		state.context = context
 		original_frame := context.window.frame_userdata_cb
-		original_event := context.window.event_userdata_cb
+		original_event := voidptr(context.window.event_userdata_cb)
 		context.window.sample_count = 4
 		configure_native_browser_context(mut context)
 		assert context.window.sample_count == 1
 		assert context.config.swap_interval == 0
 		assert context.window.swap_interval == 1
 		assert context.window.frame_userdata_cb == original_frame
-		assert context.window.event_userdata_cb != original_event
+		assert voidptr(context.window.event_userdata_cb) != original_event
 		assert !context.has_started
 		context.window.cleanup_userdata_cb(context)
 		assert state.callbacks.len == 0
@@ -84,7 +96,7 @@ fn test_native_browser_context_preserves_other_renderers_callbacks() {
 	original_init := context.window.init_userdata_cb
 	original_cleanup := context.window.cleanup_userdata_cb
 	original_frame := context.window.frame_userdata_cb
-	original_event := context.window.event_userdata_cb
+	original_event := voidptr(context.window.event_userdata_cb)
 	context.window.sample_count = 4
 	configure_native_browser_context(mut context)
 	assert context.window.sample_count == 4
@@ -92,7 +104,11 @@ fn test_native_browser_context_preserves_other_renderers_callbacks() {
 	assert context.window.init_userdata_cb == original_init
 	assert context.window.cleanup_userdata_cb == original_cleanup
 	assert context.window.frame_userdata_cb == original_frame
-	assert context.window.event_userdata_cb == original_event
+	$if macos {
+		assert voidptr(context.window.event_userdata_cb) == original_event
+	} $else {
+		assert voidptr(context.window.event_userdata_cb) != original_event
+	}
 	assert !context.has_started
 }
 
@@ -245,14 +261,24 @@ fn test_native_browser_resize_adapter_preserves_gg_keyboard_and_pointer_dispatch
 }
 
 fn test_native_browser_event_adapter_preserves_full_width_key_codes() {
-	$if !macos { return }
 	mut state := &NativeBrowserContextTestState{}
 	mut context := gg.new_context(
 		native_rendering: true
 		user_data: state
 		event_fn: fn (event &gg.Event, user_data voidptr) {
 			state := unsafe { &NativeBrowserContextTestState(user_data) }
-			assert int(event.key_code) == state.key_code
+			if event.typ == .char {
+				// GG synthesizes Enter's character event on Win32/X11.
+				assert state.key_code == 257
+				assert event.key_code == .invalid
+				assert event.char_code == 13
+			} else {
+				assert int(event.key_code) == state.key_code
+			}
+			assert event.window_width == 960
+			assert event.window_height == 720
+			assert event.framebuffer_width == 1920
+			assert event.framebuffer_height == 1440
 		}
 		keydown_fn: fn (key gg.KeyCode, modifiers gg.Modifier, user_data voidptr) {
 			mut state := unsafe { &NativeBrowserContextTestState(user_data) }
@@ -277,7 +303,13 @@ fn test_native_browser_event_adapter_preserves_full_width_key_codes() {
 				type: event_type
 				key_code: unsafe { sapp.KeyCode(code) }
 				modifiers: if code in [343, 347] { u32(gg.Modifier.super) } else { u32(0) }
+				window_width: 960
+				window_height: 720
+				framebuffer_width: 1920
+				framebuffer_height: 1440
 			}
+			assert int(event.key_code) == code
+			assert event.type == event_type
 			context.window.event_userdata_cb(&event, context)
 			assert context.pressed_keys[code] == (event_type == .key_down)
 			assert !context.pressed_keys[87]

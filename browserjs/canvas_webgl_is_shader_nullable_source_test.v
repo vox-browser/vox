@@ -23,18 +23,18 @@ fn test_actual_is_shader_nullable_host_call_reaches_source_false_return_without_
 			other.native.make_current()
 			C.vox_gl_vertex_attrib_enable(0xffff_ffff, 1)
 			assert runtime.evaluate_host('gl.isShader(${argument})===false')! == 'true'
-			mut selected := [0, 0, 0, 0]!
+			mut selected := [i32(0), 0, 0, 0]!
 			C.vox_gl_int_parameter(webgl.viewport, &selected[0])
-			assert selected == [9, 10, 11, 12]!
+			assert selected == [i32(9), 10, 11, 12]!
 			assert C.vox_gl_get_error() == webgl.invalid_value
 			assert C.vox_gl_get_error() == webgl.no_error
 			assert runtime.evaluate_host('gl.getError()===gl.NO_ERROR')! == 'true'
 		}
 		other.native.make_current()
 		assert host.call('{"key":"__created_is_shader_nullable","method":"isShader","args":[null]}')! == 'false'
-		mut selected := [0, 0, 0, 0]!
+		mut selected := [i32(0), 0, 0, 0]!
 		C.vox_gl_int_parameter(webgl.viewport, &selected[0])
-		assert selected == [9, 10, 11, 12]!
+		assert selected == [i32(9), 10, 11, 12]!
 		assert runtime.evaluate_host('gl.isShader(shader)===true')! == 'true'
 		assert runtime.evaluate_host('(function(){try{gl.isShader();return false}catch(error){return error instanceof TypeError}})()')! == 'true'
 		assert runtime.evaluate_host('(function(){try{gl.isShader(Object.create(WebGLShader.prototype));return false}catch(error){return error instanceof TypeError}})()')! == 'true'

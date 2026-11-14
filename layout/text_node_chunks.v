@@ -28,6 +28,7 @@ pub:
 enum TextDirectionMode {
 	per_code_point
 	unidirectional_left_to_right
+	resolved_arabic_numbers
 }
 
 // Invisible fallbacks and synthesized caps need derived fonts. Ordinary text
@@ -55,6 +56,7 @@ pub struct TextNodeChunkIterator {
 	// `line-break: anywhere` disregards `word-break: keep-all`.
 	line_break_anywhere bool
 	text_direction_mode    TextDirectionMode
+	bidi_levels            []u8
 	font                   &platform.Font = unsafe { nil }
 	font_variant_caps      css.FontVariantCaps
 mut:
@@ -181,6 +183,9 @@ fn TextNodeChunkIterator.new_with_direction(text_node &TextNode, should_wrap_lin
 		word_break: text_node.Node.computed_values().word_break()
 		line_break_anywhere: line_break_anywhere
 		text_direction_mode: text_direction_mode
+		bidi_levels: if text_direction_mode == .resolved_arabic_numbers {
+			platform.bidi_paragraph_levels(code_units, text_node.Node.computed_values().direction() == .rtl)
+		} else { []u8{} }
 		font: rendering_font
 		font_variant_caps: text_node.Node.computed_values().font_variant_caps()
 	}
@@ -210,6 +215,9 @@ fn (node &TextNode) grapheme_boundaries_for_rendered_text() []int {
 fn (iterator &TextNodeChunkIterator) current_text_type() platform.GlyphRunTextType {
 	if iterator.text_direction_mode == .unidirectional_left_to_right {
 		return .ltr
+	}
+	if iterator.current_index < iterator.bidi_levels.len {
+		return if iterator.bidi_levels[iterator.current_index] % 2 == 0 { .ltr } else { .rtl }
 	}
 	return text_type_for_code_point(code_point_at_utf16(iterator.code_units,
 		iterator.current_index))
@@ -535,12 +543,14 @@ fn (mut iterator TextNodeChunkIterator) next_without_peek() ?TextNodeChunk {
 			return iterator.next_without_peek()
 		}
 
-		if iterator.should_wrap_lines_ {
+		if iterator.should_wrap_lines_ || iterator.bidi_levels.len > 0 {
 			if text_type != iterator.current_text_type() {
 				if chunk := iterator.try_commit_chunk(start_of_chunk, iterator.current_index, false, broken_on_tab, can_break_at_current_position, font, text_type) {
 					return chunk
 				}
 			}
+		}
+		if iterator.should_wrap_lines_ {
 			if is_ascii_space_code_point(code_point) {
 				if chunk := iterator.try_commit_chunk(start_of_chunk, iterator.current_index, false, broken_on_tab, false, font, text_type) {
 					return chunk

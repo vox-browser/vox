@@ -238,7 +238,7 @@ fn (mut app BrowserApp) run_devtools_console(source string) {
 	app.refresh_devtools()
 	if destination := navigation {
 		if destination != '' {
-			app.navigate(resolve_document_reference(destination, app.document.url.serialize()), true)
+			app.navigate_from_script(destination, app.document.url.serialize())
 		}
 	}
 }

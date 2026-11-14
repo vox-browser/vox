@@ -143,7 +143,7 @@ fn create_environment_settings(realm &ScriptingRealm, environment &Environment, 
 		module_map_: ModuleMap.create()
 		responsible_event_loop_: event_loop
 		global_kind_: kind
-		policy_container_: PolicyContainer{}
+		policy_container_: dom.PolicyContainer{}
 	}
 	mut mutable_realm := unsafe { &ScriptingRealm(realm) }
 	mutable_realm.settings_handle = voidptr(settings)

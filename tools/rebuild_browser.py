@@ -86,7 +86,7 @@ def validate_repository(root):
 def production_environment(environment):
     # A commit from a profiling/benchmark shell must not publish its diagnostics
     # or private implementation overrides as the shared production browser.
-    retained = {'LADYBIRD_SOURCE_DIR', 'LADYBIRD_VCPKG_TRIPLET'}
+    retained = {'LADYBIRD_SOURCE_DIR'}
     return {k: v for k, v in environment.items()
             if not k.startswith(('GIT_', 'VOX_', 'LADYBIRD_')) or k in retained}
 
@@ -109,24 +109,20 @@ def pending_c_mode(state):
     return 'parallel'
 
 
-def enqueue(root, background=True, c_mode=None, v_prod=None, renderer=None, backend=None):
+def enqueue(root, background=True, c_mode=None, v_prod=None, backend=None):
     validate_repository(root)
     state = production_state_dir(root)
     with lock(state / 'queue.lock'):
         prior = read_json(state / 'request.json') or {}
         prod = bool(prior.get('v_prod')) if v_prod is None else v_prod
         started = read_json(state / 'started.json') or {}
-        if renderer is None:
-            renderer = prior.get('renderer', 'gg') if prior.get('id') != started.get('id') else 'gg'
-        if renderer not in {'gg','skia'}:
-            raise ValueError('Unknown renderer: ' + str(renderer))
         if backend is None and prior.get('id') != started.get('id'):
             backend = prior.get('backend')
         if backend not in {None, 'c', 'fastc'}:
             raise ValueError('Unknown backend: ' + str(backend))
         write_json(state / 'request.json', dict(id=uuid.uuid4().hex,
                    head=git(root, 'rev-parse', 'HEAD').decode().strip(),
-                   c_mode=c_mode or pending_c_mode(state), v_prod=prod, renderer=renderer, backend=backend))
+                   c_mode=c_mode or pending_c_mode(state), v_prod=prod, backend=backend))
         if background:
             with (state / 'worker.log').open('ab') as log:
                 subprocess.Popen([sys.executable, str(root / 'tools/rebuild_browser.py'), '--worker'],
@@ -238,7 +234,7 @@ def same_build_inputs(before, after):
 
 
 def same_build_options(before, after):
-    defaults = dict(renderer='gg', c_mode='parallel', v_prod=False, backend=None)
+    defaults = dict(c_mode='parallel', v_prod=False, backend=None)
     return all(before.get(key, default) == after.get(key, default)
                for key, default in defaults.items())
 
@@ -356,7 +352,6 @@ def build_pending(root, runner=run_build, foreground=False):
                 environment = os.environ.copy()
                 environment['VOX_BUILD_C_MODE'] = request.get('c_mode') or 'parallel'
                 environment['VOX_BUILD_V_PROD'] = '1' if request.get('v_prod') else '0'
-                environment['VOX_USE_SKIA'] = '1' if request.get('renderer') == 'skia' else '0'
                 if request.get('backend'):
                     environment['VOX_BUILD_BACKEND'] = request['backend']
                 else:
@@ -366,9 +361,6 @@ def build_pending(root, runner=run_build, foreground=False):
                 c_compile = read_json(receipt / 'c-compile.json')
                 if c_compile is not None:
                     record['c_compile'] = c_compile
-                renderer = read_json(receipt / 'renderer.json')
-                if renderer is not None:
-                    record['renderer'] = renderer
                 if code:
                     write_json(receipt / 'result.json', record)
                     print('Production build failed; previous bundle retained. See ' + str(receipt), flush=True)
@@ -534,12 +526,9 @@ def main():
     if args.worker_after_current:
         return worker_after_current(ROOT)
     if args.build:
-        legacy = os.environ.get('VOX_USE_SKIA','0')
-        if legacy not in {'0','1'}:
-            parser.error('VOX_USE_SKIA must be 0 or 1')
         enqueue(ROOT, background=False, c_mode='parallel' if args.parallel_cc else
                 'single' if args.no_parallel_cc or args.prod else 'parallel',
-                v_prod=args.prod, renderer='skia' if legacy == '1' else 'gg', backend=args.backend)
+                v_prod=args.prod, backend=args.backend)
     code = build_pending(ROOT, foreground=args.build)
     try:
         prune_build.prune(ROOT)

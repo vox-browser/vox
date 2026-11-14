@@ -19,9 +19,9 @@ fn test_public_integer_scalar_vertex_attributes_use_source_widths_and_conversion
 	runtime.evaluate_host('globalThis.gl=__webglContext({bridgeKey:"__created_vertex_integer_scalar",width:1,height:1},"webgl2",null);globalThis.other=__webglContext({bridgeKey:"__created_vertex_integer_scalar_other",width:1,height:1},"webgl2",null);gl.viewport(1,2,3,4);other.viewport(9,10,11,12);')!
 	mut other := host.contexts['__created_vertex_integer_scalar_other'] or { panic('integer other owner') }
 	runtime.evaluate_host('gl.vertexAttribI4i(2,-2147483648,2147483647,-2000000001,2000000001);')!
-	mut signed := [0, 0, 0, 0]!
+	mut signed := [i32(0), 0, 0, 0]!
 	C.vox_gl_vertex_attrib_int_parameter(2, &signed[0])
-	assert signed == [-2_147_483_648, 2_147_483_647, -2_000_000_001, 2_000_000_001]!
+	assert signed == [i32(-2_147_483_648), 2_147_483_647, -2_000_000_001, 2_000_000_001]!
 	runtime.evaluate_host('gl.vertexAttribI4ui(2,0xffffffff,0xfedcba98,0x80000000,-1);')!
 	mut unsigned := [u32(0), 0, 0, 0]!
 	C.vox_gl_vertex_attrib_uint_parameter(2, &unsigned[0])
@@ -29,9 +29,9 @@ fn test_public_integer_scalar_vertex_attributes_use_source_widths_and_conversion
 	for method in ['vertexAttribI4i', 'vertexAttribI4ui'] {
 		other.native.make_current()
 		assert runtime.evaluate_host('(function(){const marker={};try{gl.${method}(2,1,2,{valueOf(){throw marker}},4);return false}catch(error){return error===marker}})()')! == 'true'
-		mut selected := [0, 0, 0, 0]!
+		mut selected := [i32(0), 0, 0, 0]!
 		C.vox_gl_int_parameter(webgl.viewport, &selected[0])
-		assert selected == [9, 10, 11, 12]!
+		assert selected == [i32(9), 10, 11, 12]!
 		assert runtime.evaluate_host('(function(){const order=[];gl.${method}(...[2,1,2,3,4].map(value=>({valueOf(){order.push(value);return value}})));return order.join(",")==="2,1,2,3,4"&&gl.getError()===gl.NO_ERROR})()')! == 'true'
 	}
 	assert runtime.evaluate_host('const gl1=__webglContext({bridgeKey:"__created_vertex_integer_webgl1",width:1,height:1},"webgl",null);typeof gl1.vertexAttribI4i==="undefined"&&typeof gl1.vertexAttribI4ui==="undefined"')! == 'true'

@@ -1,6 +1,7 @@
 module browserjs
 
 import libjs
+import libjsdom
 import dom
 import html
 import json2
@@ -46,17 +47,25 @@ pub:
 // The backend must still validate RegExp patterns and input beyond the V parser's
 // recursion budget; neither of those limits is an ECMAScript syntax error.
 pub fn prepare_script(source ScriptSource) !&PreparedScript {
+	return prepare_script_with_options(source, libjs.ParseOptions{})
+}
+
+fn prepare_script_with_options(source ScriptSource, options libjs.ParseOptions) !&PreparedScript {
+	// Prepared ASTs and source text can outlive a parser task or DevTools edit.
+	persistent := platform.enter_persistent()
+	defer { platform.leave_persistent(persistent) }
 	if source.starting_line < 1 {
 		return error('Script starting line must be positive')
 	}
-	parsed := libjs.parse_source(source.code, source.source_type)
+	owned := ScriptSource{...source, code: source.code.clone(), url: source.url.clone()}
+	parsed := libjs.parse_source_with_options(owned.code, owned.source_type, options)
 	if parsed.has_errors() && !parsed.reached_recursion_limit {
 		diagnostic := parsed.diagnostics[0]
 		filename := if source.url == '' { '<script>' } else { source.url }
 		line := u64(source.starting_line) + diagnostic.line - 1
 		return error('SyntaxError: ${filename}:${line}:${diagnostic.column + 1}: ${diagnostic.message}')
 	}
-	return &PreparedScript{source, parsed}
+	return &PreparedScript{owned, parsed}
 }
 
 // JavaScriptCore preserves the complete browser host while LibJS execution is
@@ -83,8 +92,14 @@ mut:
 	protected_value_links_     []ProtectedValueLink
 	protected_value_links_reported_ bool
 	value_call_intrinsic_     voidptr
+	// forward_javascript_function(): the catching caller, the object it
+	// returns after a throw, and the reader of the thrown value.
+	value_forward_intrinsic_  voidptr
+	value_forward_failed_     voidptr
+	value_forward_take_       voidptr
 	promise_observe_intrinsic_ voidptr
 	value_error_intrinsic_     voidptr
+	value_error_constructors_ voidptr
 	value_same_intrinsic_      voidptr
 	value_number_intrinsic_    voidptr
 	value_bigint_int64_intrinsic_ voidptr
@@ -105,6 +120,12 @@ mut:
 	scripting_settings_ ?&html.EnvironmentSettingsObject
 	module_host_ ?&ModuleHost
 	source_location_sources_ map[voidptr]SourceLocationSource
+	libjs_document_host_ ?&libjsdom.Host
+	libjs_performance_host_ ?&LibJSPerformanceHost
+	libjs_messages_ []string
+	libjs_callback_settings_ []?&html.EnvironmentSettingsObject
+	libjs_modules_ map[string]&libjs.SourceTextModule
+	next_libjs_inline_module_ u64
 }
 
 pub fn Runtime.create() &Runtime {
@@ -137,6 +158,10 @@ fn Runtime.create_with_global(engine Engine, worker_global bool) &Runtime {
 }
 
 fn Runtime.create_with_global_kind(engine Engine, global_kind int) &Runtime {
+	// Realms and their native callback records outlive the parser/task/frame
+	// that first needs them, including same-agent WindowProxy lookups.
+	persistent := platform.enter_persistent()
+	defer { platform.leave_persistent(persistent) }
 	mut agent_vm := libjs.VM.create()
 	realm_context := libjs.create_simple_execution_context(mut agent_vm)
 	mut context := unsafe { nil }
@@ -166,6 +191,12 @@ pub fn (runtime &Runtime) libjs_vm() &libjs.VM {
 
 pub fn (runtime &Runtime) libjs_realm() &libjs.Realm {
 	return runtime.realm
+}
+
+// Diagnostics distinguish an actual native engine context from the selected
+// enum, including after executing author code through the translated VM.
+pub fn (runtime &Runtime) native_context_initialized() bool {
+	return runtime.context != unsafe { nil }
 }
 
 // Bindings/MainThreadVM.cpp::create_a_new_javascript_realm removes the
@@ -242,7 +273,7 @@ fn (runtime &Runtime) check_execution_support(source_type libjs.SourceType) ! {
 	if runtime.closed {
 		return error('JavaScript runtime is closed')
 	}
-	if source_type == .module && runtime.module_host_ == none {
+	if source_type == .module && runtime.engine != .libjs && runtime.module_host_ == none {
 		return error('Module execution is not yet implemented by the browser JavaScript backend')
 	}
 }
@@ -257,13 +288,16 @@ fn (runtime &Runtime) execute_source(source ScriptSource, stringify_result bool)
 	if host := runtime.module_host_ {
 		mut mutable_host := unsafe { &ModuleHost(host) }
 		if source.source_type == .module { return mutable_host.execute(source, stringify_result) }
+		if runtime.engine != .libjs {
 		transformed := mutable_host.transform_classic(source)!
 		record := libjs.Script.create_external(source.code, runtime.realm, source.url,
 			u32(source.starting_line), voidptr(runtime))!
 		return runtime.execute_embedding_script(transformed, record, stringify_result)
+		}
 	}
 	if runtime.engine == .libjs {
-		return runtime.execute_prepared(prepare_script(source)!, stringify_result)
+		return runtime.execute_prepared(prepare_script_with_options(source,
+			libjs.ParseOptions{max_recursion_depth:256})!, stringify_result)
 	}
 	record := libjs.Script.create_external(source.code, runtime.realm, source.url,
 		u32(source.starting_line), voidptr(runtime))!
@@ -274,8 +308,13 @@ fn (runtime &Runtime) execute_prepared(script &PreparedScript, stringify_result 
 	load_instruction_stage := processmetrics.begin_javascript_instruction_stage()
 	defer { load_instruction_stage.finish() }
 	runtime.check_execution_support(script.source.source_type)!
-	if runtime.module_host_ != none { return runtime.execute_source(script.source, stringify_result) }
+	if runtime.module_host_ != none && (runtime.engine != .libjs || script.source.source_type == .module) { return runtime.execute_source(script.source, stringify_result) }
 	if runtime.engine == .libjs {
+		if script.source.source_type == .module { return runtime.execute_libjs_module(script, stringify_result) }
+		// Functions, lexical environments and completion values belong to the
+		// realm, including when an event or parser enters from frame scratch.
+		persistent := platform.enter_persistent()
+		defer { platform.leave_persistent(persistent) }
 		if script.frontend.reached_recursion_limit {
 			return error('LibJS frontend recursion limit reached; this program cannot be executed by the translated runtime')
 		}
@@ -407,6 +446,7 @@ pub fn (mut runtime Runtime) close() {
 		return
 	}
 	runtime.closed = true
+	runtime.libjs_modules_.clear()
 	if wakeup := runtime.document_state_wakeup_ {
 		runtime.document_state_wakeup_ = none
 		platform.release_closure(voidptr(wakeup))

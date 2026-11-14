@@ -44,6 +44,8 @@ pub struct ChromiumRasterLayerPlan {
 pub mut:
 	layers         []ChromiumRasterLayer
 	command_layers []int
+	// Keep backend scale eligibility independent of optional hit-test metadata.
+	device_scale f64 = 1
 	has_paint_metadata bool
 	has_picture_clip_metadata bool
 mut:
@@ -214,6 +216,7 @@ $if test {
 
 fn chromium_layerize_chunks_into(chunks []ChromiumRasterChunk, count int, device_scale f64,
 	mut plan ChromiumRasterLayerPlan, mut states []ChromiumRasterPropertyState) {
+	plan.device_scale = device_scale
 	plan.prepare(count)
 	plan.append_layer(false)
 	states.clear()
@@ -515,6 +518,7 @@ pub fn update_chromium_raster_layer_plan(document &dom.Document, commands []Pain
 
 fn update_chromium_raster_layer_plan_with_cull(document &dom.Document, commands []PaintCommand,
 	device_scale f64, cull ?LayoutRect, mut plan ChromiumRasterLayerPlan) {
+	plan.device_scale = device_scale
 	plan.has_paint_metadata = false
 	plan.has_picture_clip_metadata = false
 	persistent := platform.enter_persistent()
@@ -867,6 +871,18 @@ fn update_chromium_raster_layer_plan_with_cull(document &dom.Document, commands 
 			// Compositor rasters enclose fractional geometry, independently of
 			// paint's nearest-pixel snapping. Round after unioning descendant ink.
 			plan.layers[layer_index].bounds = chromium_enclosing_raster_rect(plan.layers[layer_index].bounds)
+		}
+		if cull != none && layer_index > 0 && !state.legacy_effect
+			&& state.effect_scope == 0 && state.scroll_frame == 0
+			&& state.sticky_frame == 0 && !state.fixed_to_viewport {
+			// Root-scrolled pictures cannot record ink outside the scrollable
+			// document. In particular, an outer shadow must not move a promoted
+			// sibling's tile origin beyond the root's left edge.
+			viewport := document.viewport_rect()
+			contents := chromium_root_paint_contents(result,
+				LayoutRect{viewport.x, viewport.y, viewport.width, viewport.height})
+			plan.layers[layer_index].bounds = chromium_enclosing_raster_rect(
+				compatibility_intersect_rects(plan.layers[layer_index].bounds, contents))
 		}
 	}
 }

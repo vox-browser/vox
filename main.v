@@ -3,6 +3,7 @@ module main
 import color
 import adblock
 import browsernet
+import browsercookies
 import browsersettings
 import browserjs
 import browserhistory
@@ -42,6 +43,8 @@ import storageapi
 import strconv
 import time
 import url
+// Keep the embed helper explicit for V's profiled dependency discovery.
+import v.embed_file as _
 import webvtt
 import xpath
 import x.json2
@@ -195,9 +198,7 @@ fn C.native_draw_line_srgb(from_x f32, from_y f32, to_x f32, to_y f32, thickness
 
 fn C.native_draw_rounded_rect_srgb(x f32, y f32, width f32, height f32, top_left_x f32, top_left_y f32, top_right_x f32, top_right_y f32, bottom_right_x f32, bottom_right_y f32, bottom_left_x f32, bottom_left_y f32, transform_a f32, transform_b f32, transform_c f32, transform_d f32, transform_e f32, transform_f f32, page_x f32, page_y f32, scroll_y f32, canvas_width f32, canvas_height f32, color gg.Color, fill int, thickness f32, anti_alias int)
 
-fn C.native_begin_skia_command_group(x f32, y f32, width f32, height f32, transform_a f32, transform_b f32, transform_c f32, transform_d f32, transform_e f32, transform_f f32, page_x f32, page_y f32, scroll_y f32, canvas_width f32, canvas_height f32)
 
-fn C.native_end_skia_command_group()
 
 fn C.native_draw_outer_box_shadow_srgb(source_x f32, source_y f32, source_width f32, source_height f32, source_radius f32, clip_x f32, clip_y f32, clip_width f32, clip_height f32, clip_radius f32, blur f32, color gg.Color)
 
@@ -381,7 +382,7 @@ const demo_markup = '<!doctype html>
       this.textContent = "JavaScript click handler executed.";
       console.log("click handler ran");
     });
-    console.log("LibJS frontend / JavaScriptCore DOM bridge ready");
+    console.log("JavaScript DOM bridge ready");
   </script>
 </body>
 </html>'
@@ -441,6 +442,7 @@ mut:
 	memory_status                       BrowserMemoryStatus
 	memory_maintenance                  BrowserMemoryMaintenance
 	navigation_work_depth               int
+	load_frames                         LoadFrameThrottle
 	navigation_work_yielded             bool
 	deferred_navigation_input           ?DeferredNavigationInput
 	deferred_page_input                 []DeferredPageInput
@@ -453,6 +455,8 @@ mut:
 	force_dark_images                   map[string]&gg.Image
 	portable_shadow_images              []PortableShadowImage
 	portable_shadow_image_index         int
+	portable_canvas_images              []PortableCanvasImage
+	portable_canvas_image_index         int
 	draw_command_depth  int
 	native_replay_scratch &platform.Arena = unsafe { nil }
 	screenshot_path                     string
@@ -482,6 +486,8 @@ mut:
 	// widget presses run through Page::EventHandler in event_fn and must not also
 	// enter the browser's compact DOM-click fallback.
 	suppress_next_click_for_chrome bool
+	suppress_next_key_for_chrome bool
+	suppress_next_character_for_chrome bool
 	restore_tab_path string
 	platform_pointer_buttons u32
 	pending_tab_link ?string
@@ -499,6 +505,7 @@ struct ChromePointerDispatchResult {
 struct LaunchOptions {
 mut:
 	js_engine                  browserjs.Engine = .javascriptcore
+	js_engine_explicit         bool
 	script_policy              BrowserScriptPolicy
 	source                     string
 	restore_tab                string
@@ -631,6 +638,7 @@ fn browser_window_size() gg.Size {
 	$if macos {
 		return gg.Size{C.native_window_width(), C.native_window_height()}
 	} $else {
+		if !sapp.isvalid() { return gg.Size{} }
 		return gg.window_size()
 	}
 }
@@ -685,8 +693,10 @@ fn parse_launch_options(arguments []string) !LaunchOptions {
 			if index + 1 >= arguments.len { return error('--js-engine requires javascriptcore or libjs') }
 			index++
 			options.js_engine = browserjs.parse_engine(arguments[index])!
+			options.js_engine_explicit = true
 		} else if argument.starts_with('--js-engine=') {
 			options.js_engine = browserjs.parse_engine(argument.all_after('='))!
+			options.js_engine_explicit = true
 		} else if argument == '--headless=layout-tree' {
 			options.headless_layout_tree = true
 		} else if argument == '--screenshot' {
@@ -805,7 +815,7 @@ fn initial_document(argument string) (string, string, string) {
 	mut file_name := argument
 	is_file_url := file_name.starts_with('file://')
 	if is_file_url {
-		file_name = url.percent_decode(file_name['file://'.len..]).bytestr()
+		file_name = browser_local_file_path(file_name) or { return argument, '', argument }
 	}
 	if !is_file_url && !os.is_file(file_name) {
 		if workspace_path := bundled_workspace_relative_file_path(file_name, os.executable()) {
@@ -1037,7 +1047,7 @@ fn fetch_page_with_scope(address string, base string, scope &browsernet.RequestS
 		}
 	}
 	if resolved.starts_with('file://') {
-		file_name := url.percent_decode(resolved['file://'.len..]).bytestr()
+		file_name := browser_local_file_path(resolved) or { return error('Malformed file URL') }
 		markup := read_local_file(file_name)!
 		return LoadedPage{
 			url: resolved
@@ -1140,7 +1150,7 @@ fn fetch_browser_resource_with_scope(reference string, base string, source_url s
 	scope.check()!
 	resolved := resolve_document_reference(reference, base)
 	if resolved.starts_with('file://') {
-		path := url.percent_decode(resolved['file://'.len..]).bytestr()
+		path := browser_local_file_path(resolved) or { return error('Malformed file URL') }
 		return PreloadedResource{url: resolved, body: read_local_file(path)!, source_url: source_url, final_url: resolved, request_type: request_type}
 	}
 	owner_url := if source_url == '' { resolved } else { source_url }
@@ -1520,7 +1530,7 @@ $if test {
 
 fn decode_local_video_frame(resolved_url string, seconds f64) ?&dom.Bitmap_ {
 	path := if resolved_url.starts_with('file://') {
-		url.percent_decode(resolved_url['file://'.len..]).bytestr()
+		browser_local_file_path(resolved_url) or { return none }
 	} else if !resolved_url.contains('://') {
 		resolved_url
 	} else {
@@ -1983,7 +1993,7 @@ fn javascript_bootstrap() string {
 		// call debug, trace, group and time freely; a missing method throws
 		// before the page renders. Output keeps the existing log record.
 		'const console = (function () { const logs = function () { return __state.logs; }, text = function (values) { return Array.prototype.map.call(values, String).join(" "); }, counts = new Map(), timers = new Map(); let indent = ""; const print = function (prefix, values) { logs().push(indent + prefix + text(values)); }; const label = function (value) { return value === undefined ? "default" : String(value); }; const now = function () { return typeof performance !== "undefined" ? performance.now() : Date.now(); }; return { log: function () { print("", arguments); }, info: function () { print("", arguments); }, warn: function () { print("", arguments); }, error: function () { print("", arguments); }, debug: function () { print("", arguments); }, trace: function () { print("Trace: ", arguments); }, dir: function (item) { print("", [item]); }, dirxml: function () { print("", arguments); }, table: function (data) { print("", [data]); }, assert: function (condition) { if (condition) return; const data = Array.prototype.slice.call(arguments, 1); print("Assertion failed" + (data.length ? ": " : ""), data); }, clear: function () {}, count: function (name) { const key = label(name), value = (counts.get(key) || 0) + 1; counts.set(key, value); print("", [key + ": " + value]); }, countReset: function (name) { const key = label(name); if (counts.has(key)) counts.set(key, 0); else print("", ["Count for " + key + " does not exist"]); }, group: function () { if (arguments.length) print("", arguments); indent += "  "; }, groupCollapsed: function () { if (arguments.length) print("", arguments); indent += "  "; }, groupEnd: function () { indent = indent.slice(2); }, time: function (name) { const key = label(name); if (timers.has(key)) print("", ["Timer " + key + " already exists"]); else timers.set(key, now()); }, timeLog: function (name) { const key = label(name); if (!timers.has(key)) { print("", ["Timer " + key + " does not exist"]); return; } print("", [key + ": " + (now() - timers.get(key)) + " ms"].concat(Array.prototype.slice.call(arguments, 1))); }, timeEnd: function (name) { const key = label(name); if (!timers.has(key)) { print("", ["Timer " + key + " does not exist"]); return; } print("", [key + ": " + (now() - timers.get(key)) + " ms"]); timers.delete(key); } }; })();',
-		'const location = {},__LocationURL=globalThis.URL; Object.defineProperty(location, "href", { get: function () { return __state.location; }, set: function (v) { __state.navigate = String(v); } }); for(const name of ["protocol","host","hostname","port","pathname","search","hash"]){Object.defineProperty(location,name,{enumerable:true,get:function(){return new __LocationURL(__state.location)[name];},set:function(value){const record=new __LocationURL(__state.location);record[name]=value;__state.navigate=record.href;}});} Object.defineProperty(location,"origin",{enumerable:true,get:function(){return new __LocationURL(__state.location).origin;}}); location.toString=function(){return __state.location;};',
+		'const location = {},__LocationURL=globalThis.URL; let __locationNavigationMode="",__locationNavigationURL=""; const __locationNavigate=function(address,mode){__state.navigate=address;__locationNavigationURL=address;__locationNavigationMode=mode;}; Object.defineProperty(location, "href", { get: function () { return __state.location; }, set: function (v) { __locationNavigate(String(v),""); } }); for(const name of ["protocol","host","hostname","port","pathname","search","hash"]){Object.defineProperty(location,name,{enumerable:true,get:function(){return new __LocationURL(__state.location)[name];},set:function(value){const record=new __LocationURL(__state.location);record[name]=value;__locationNavigate(record.href,"");}});} Object.defineProperty(location,"origin",{enumerable:true,get:function(){return new __LocationURL(__state.location).origin;}}); location.toString=function(){return __state.location;}; location.assign=function(address){if(arguments.length===0)throw new TypeError("Location.assign requires 1 argument");__locationNavigate(String(address),"");}; location.replace=function(address){if(arguments.length===0)throw new TypeError("Location.replace requires 1 argument");__locationNavigate(String(address),"replace");}; location.reload=function(){__locationNavigate(__state.location,"reload");}; globalThis.__ladybirdTakeNavigationMode=function(address){const mode=__locationNavigationURL===address?__locationNavigationMode:"";__locationNavigationMode="";__locationNavigationURL="";return mode;};',
 		'Object.defineProperty(document,"location",{get:function(){return location;},set:function(value){location.href=value;},enumerable:true,configurable:true});',
 		'const __observeHistoryURL=globalThis.__ladybirdObserveHistoryURL;delete globalThis.__ladybirdObserveHistoryURL;__observeHistoryURL(function(url){__state.location=url;});',
 		'const __documentCookie=globalThis.__ladybirdDocumentCookie,__documentCookieException=globalThis.DOMException; function __callDocumentCookie(input){try{return __documentCookie(input);}catch(error){const message=String(error.message);if(message.indexOf("SecurityError:")===0)throw new __documentCookieException(message.slice(14).trim(),"SecurityError");throw error;}} Object.defineProperty(document,"cookie",{enumerable:true,configurable:true,get:function(){return __callDocumentCookie("get");},set:function(value){__callDocumentCookie("set:"+String(value));}});',
@@ -2003,12 +2013,10 @@ fn javascript_bootstrap() string {
 		'window.__ladybirdFinalize = function (withoutLogs) { return __compactTakePendingDOMState(true,withoutLogs!==true,true); }; window.__ladybirdTakePendingDOMMutations=function(){return __compactTakePendingDOMState(false,false,false);}; window.__ladybirdTakeTaskOutput=__compactTakeTaskOutput;',
 		'window.__ladybirdClearLogs = function () { __state.logs = []; };',
 		// The back/forward cache keeps a realm whose navigation request was consumed.
-		'window.__ladybirdClearNavigation = function () { __state.navigate = ""; };',
+		'window.__ladybirdClearNavigation = function () { __state.navigate = ""; __ladybirdTakeNavigationMode(""); };',
 		compact_event_dispatch_bootstrap(),
 		compact_mutation_observer_bootstrap(),
 		'__compactInstallNativeAttributeMutations();',
-		// Last: bridge-installed platform functions print as native code.
-		compact_native_function_source_bootstrap(),
 		// Initialization has no replay consumer; explicit snapshots remain available.
 		'return;',
 		'})',
@@ -2849,6 +2857,10 @@ fn run_document_script_sources_with_resource_loaders(document &dom.Document, cur
 }
 
 fn initialize_document_script_runtime(document &dom.Document, current_url string, sources []browserjs.ScriptSource, runtime &browserjs.Runtime, image_fetch browserjs.ImageRequestFetchHook, image_async_fetch ?browserjs.ImageAsyncRequestFetchHook, script_loader ?&BrowserScriptRequestLoader, media_loader ?browserjs.MediaElementCreatedHook, mut messages []string) bool {
+	// Bindings are retained by the realm and by agent-wide native lookup maps.
+	// An iframe can initialize while its parent is in a temporary frame arena.
+	binding_storage := platform.enter_persistent()
+	defer { platform.leave_persistent(binding_storage) }
 	load_instruction_stage := processmetrics.begin_instruction_stage('script_runtime_setup')
 	defer { load_instruction_stage.finish() }
 	phase_mark := platform.arena_phase_begin()
@@ -2871,7 +2883,25 @@ fn initialize_document_script_runtime(document &dom.Document, current_url string
 	if !compact_document_can_run_script(document) { return false }
 	install_browser_input_image_fetch_hooks(document)
 	if runtime.engine == .libjs {
-		messages << 'LibJS DOM bindings are not translated yet; page scripts use the supported standalone runtime.'
+		mut mutable_runtime := unsafe { &browserjs.Runtime(runtime) }
+		if document.relevant_settings_object() != unsafe { nil } {
+			mutable_runtime.bind_scripting_environment(unsafe { &html.EnvironmentSettingsObject(document.relevant_settings_object()) }) or {
+				messages << 'LibJS scripting environment: ${err.msg()}'
+				return false
+			}
+		}
+		mutable_runtime.install_libjs_document(document) or {
+			messages << 'LibJS DOM bindings: ${err.msg()}'
+			return false
+		}
+		install_compact_module_host(document,mut mutable_runtime) or {
+			messages << 'LibJS module bindings: ${err.msg()}'
+			return false
+		}
+		mutable_runtime.install_performance_binding() or {
+			messages << 'LibJS Performance bindings: ${err.msg()}'
+			return false
+		}
 		return true
 	}
 	mut canvas_host := browserjs.CanvasHost.create(document)
@@ -3312,6 +3342,10 @@ fn initialize_document_script_runtime(document &dom.Document, current_url string
 		messages << 'JavaScript storage bindings: ${err.msg()}'
 		return false
 	}
+	mutable_runtime.install_platform_function_source(compact_native_function_source_bootstrap()) or {
+		messages << 'JavaScript platform function identity: ${err.msg()}'
+		return false
+	}
 	processmetrics.instruction_checkpoint('javascript_document_bindings')
 	install_browser_adblock_scriptlets(document, runtime, mut messages)
 	processmetrics.instruction_checkpoint('javascript_adblock_scriptlets')
@@ -3332,6 +3366,8 @@ fn run_document_script_sources_with_media_loader(document &dom.Document, current
 				messages << 'JavaScript (LibJS): ${diagnostic}'
 			}
 		}
+		mut owner := unsafe { &browserjs.Runtime(runtime) }
+		messages << owner.take_libjs_messages()
 		return none
 	}
 	mut mutable_runtime := unsafe { &browserjs.Runtime(runtime) }
@@ -3411,7 +3447,7 @@ fn (mut app BrowserApp) poll_javascript_tasks() {
 	app.synchronize_javascript_task_paint(replayed_effects)
 	app.update_window_title()
 	if destination := commit.navigation {
-		if destination != '' { app.navigate(resolve_document_reference(destination, app.document.url.serialize()), true) }
+		if destination != '' { app.navigate_from_script(destination, app.document.url.serialize()) }
 	}
 }
 
@@ -3470,7 +3506,25 @@ fn (mut app BrowserApp) dispatch_javascript_event(name string, element &dom.Elem
 	if app.js_runtime == unsafe { nil } {
 		return false
 	}
-	if app.js_runtime.engine == .libjs { return false }
+	if app.js_runtime.engine == .libjs {
+		mut prevented := false
+		mut native_dispatched := false
+		if name == 'click' && app.page_model != unsafe { nil } {
+			if event := app.page_model.event_handler.take_last_click_event() {
+				native_dispatched = true
+				prevented = event.default_prevented()
+			}
+		}
+		if !native_dispatched {
+			prevented = app.js_runtime.dispatch_libjs_event(name, element) or {
+				app.js_messages << err.msg()
+				return false
+			}
+		}
+		app.js_messages << app.js_runtime.take_libjs_messages()
+		app.synchronize_javascript_task_paint(false)
+		return prevented
+	}
 	mut media_replay := ''
 	if name == 'click' && element.is_html_element() && element.local_name() in ['audio', 'video'] {
 		state := app.media_click_replay_state(element) or {
@@ -3517,7 +3571,7 @@ fn (mut app BrowserApp) dispatch_javascript_event(name string, element &dom.Elem
 	replayed_effects := app.js_runtime.take_document_replay_effects()
 	app.synchronize_javascript_task_paint(replayed_effects)
 	if destination != '' {
-		app.navigate(resolve_document_reference(destination, app.address), true)
+		app.navigate_from_script(destination, app.address)
 		// A script navigation also consumes the pending link default action
 		// when the native input scope defers its generation change.
 		return true
@@ -3856,6 +3910,11 @@ fn document_has_window_event_handlers(document &dom.Document) bool {
 fn (mut app BrowserApp) install_loaded_page(input_loaded LoadedPage, add_history bool) {
 	load_instruction_stage := processmetrics.begin_instruction_stage('document_install')
 	defer { load_instruction_stage.finish() }
+	// A location.replace() commit overwrites the current entry; its outgoing
+	// page can no longer be reached by traversal, so it is not cached.
+	replace_history := add_history && app.history_replacement_generation == app.navigation_generation
+		&& app.history_index >= 0 && app.history_index < app.history.len
+	app.history_replacement_generation = -1
 	if add_history { app.save_history_scroll_position() }
 	app.dismiss_browser_popup()
 	loaded := if is_browser_history_url(input_loaded.url) {
@@ -3872,7 +3931,11 @@ fn (mut app BrowserApp) install_loaded_page(input_loaded LoadedPage, add_history
 	mut outgoing := app.document_session()
 	initiator_origin := if outgoing.document != unsafe { nil } { ?dom.Origin(outgoing.document.origin()) } else { none }
 	previous_document := if outgoing.document != unsafe { nil } { ?&dom.Document(outgoing.document) } else { ?&dom.Document(none) }
-	back_forward_cached := app.suspend_displayed_page_for_back_forward_cache(add_history)
+	back_forward_cached := if replace_history {
+		app.discard_replaced_history_entry_cache()
+	} else {
+		app.suspend_displayed_page_for_back_forward_cache(add_history)
+	}
 	mut incoming := new_document_session()
 	incoming.markup = loaded.markup
 	incoming.content_type = loaded.content_type
@@ -4028,12 +4091,17 @@ fn (mut app BrowserApp) install_loaded_page(input_loaded LoadedPage, add_history
 		if app.history_index + 1 < app.history.len {
 			app.history = app.history[..app.history_index + 1].clone()
 		}
-		app.history << HistoryEntry{
+		entry := HistoryEntry{
 			url: loaded.url
 			markup: loaded.markup
 			content_type: loaded.content_type
 			response_headers: loaded.response_headers
 			response_status: loaded.response_status
+		}
+		if replace_history {
+			app.history[app.history_index] = entry
+		} else {
+			app.history << entry
 		}
 		app.history_index = app.history.len - 1
 	}
@@ -4065,7 +4133,7 @@ fn (mut app BrowserApp) install_loaded_page(input_loaded LoadedPage, add_history
 	app.update_window_title()
 	if destination := javascript_navigation {
 		if destination != '' && destination != loaded.url {
-			app.navigate(resolve_document_reference(destination, loaded.url), true)
+			app.navigate_from_script(destination, loaded.url)
 		}
 	}
 }
@@ -4073,10 +4141,6 @@ fn (mut app BrowserApp) install_loaded_page(input_loaded LoadedPage, add_history
 fn create_browser_script_runtime(engine browserjs.Engine) &browserjs.Runtime {
 	mut runtime := browserjs.Runtime.create_with_engine(engine)
 	runtime.set_document_state_wakeup(request_browser_frame)
-	if engine == .libjs {
-		mut agent_event_loop := html.main_thread_event_loop()
-		agent_event_loop.bind_vm(runtime.libjs_vm())
-	}
 	return runtime
 }
 
@@ -4091,8 +4155,10 @@ fn (mut app BrowserApp) navigate(address string, add_history bool) {
 	defer {
 		$if gcboehm ? { C.GC_reachable_here(address.str) }
 	}
+	replace_history := add_history && app.replace_next_navigation_history
+	app.replace_next_navigation_history = false
 	if app.navigation_work_depth > 0 {
-		app.deferred_navigation_input = DeferredNavigationInput{address: address, add_history: add_history}
+		app.deferred_navigation_input = DeferredNavigationInput{address: address, add_history: add_history, replace_history: replace_history}
 		return
 	}
 	base := if app.history_index >= 0 && app.history_index < app.history.len {
@@ -4103,6 +4169,7 @@ fn (mut app BrowserApp) navigate(address string, add_history bool) {
 	resolved := resolve_url(address, base)
 	if resolved in [browser_history_url, browser_new_tab_url] {
 		app.navigation_generation++
+		app.history_replacement_generation = if replace_history { app.navigation_generation } else { -1 }
 		app.pending_navigation = none
 		app.cancel_navigation_fetch()
 		app.cancel_page_preload()
@@ -4125,6 +4192,7 @@ fn (mut app BrowserApp) navigate(address string, add_history bool) {
 	app.load_status = 'Loading ${resolved}'
 	app.status = app.load_status
 	app.navigation_generation++
+	app.history_replacement_generation = if replace_history { app.navigation_generation } else { -1 }
 	app.pending_navigation = none
 	app.cancel_navigation_fetch()
 	app.cancel_page_preload()
@@ -4292,7 +4360,15 @@ fn paint_color(serialized string, opacity f64) gg.Color {
 }
 
 fn (mut app BrowserApp) draw_portable_shadow(command layout.PaintCommand, page_x f32, page_y f32, scroll_y f64) {
-	bitmap := layout.rasterize_portable_shadow(command, f64(app.ctx.scale)) or {
+	chromium := $if macos {
+		app.ctx.native_rendering && app.document != unsafe { nil }
+			&& app.document.font_rendering_policy() == .chromium
+	} $else { false }
+	$if macos {
+		if chromium && (app.draw_chromium_outer_shadow(command, page_x, page_y, scroll_y)
+			|| app.draw_chromium_inner_shadow(command, page_x, page_y, scroll_y)) { return }
+	}
+	bitmap := layout.rasterize_portable_shadow_with_coverage(command, f64(app.ctx.scale), chromium) or {
 		app.js_messages << 'Shadow replay: ${err.msg()}'
 		return
 	}
@@ -4351,8 +4427,22 @@ fn native_draw_retained_glyph_run(command layout.PaintCommand, page_x f32, page_
 		} else {
 			native_replay_font_path(glyph_run.font())
 		}
+		smoothing := native_retained_font_smoothing(command.font_smoothing, glyph_run.font())
+		if !shadow_only && blur <= 0 {
+			if glyph_color.a == 0 {
+				return true
+			}
+			if draw_document_glyph_raster(glyphs, positions, font_path, glyph_run.font().face_index(),
+				glyph_run.font().point_size, glyph_run.font().weight, f32(command.glyph_translation_x),
+				f32(command.glyph_translation_y), [f32(matrix[0]), f32(matrix[1]), f32(matrix[2]),
+				f32(matrix[3]), f32(matrix[4]), f32(matrix[5])]!, page_x, page_y, f32(scroll_y),
+				canvas_width, canvas_height, u32(glyph_color.a) << 24 | u32(glyph_color.r) << 16 | u32(glyph_color.g) << 8 | u32(glyph_color.b),
+				smoothing, chromium_retained_paint_color(command)) {
+				return true
+			}
+		}
 		unsafe {
-			return C.native_draw_document_glyph_run_srgb(&glyphs[0], &positions[0], glyphs.len, glyph_run.font().point_size, glyph_run.font().weight, int(glyph_run.face() == .emoji), f32(command.glyph_translation_x), f32(command.glyph_translation_y), f32(matrix[0]), f32(matrix[1]), f32(matrix[2]), f32(matrix[3]), f32(matrix[4]), f32(matrix[5]), page_x, page_y, f32(scroll_y), canvas_width, canvas_height, font_path, glyph_run.font().face_index(), glyph_color, blur, int(shadow_only), native_retained_font_smoothing(command.font_smoothing, glyph_run.font())) != 0
+			return C.native_draw_document_glyph_run_srgb(&glyphs[0], &positions[0], glyphs.len, glyph_run.font().point_size, glyph_run.font().weight, int(glyph_run.face() == .emoji), f32(command.glyph_translation_x), f32(command.glyph_translation_y), f32(matrix[0]), f32(matrix[1]), f32(matrix[2]), f32(matrix[3]), f32(matrix[4]), f32(matrix[5]), page_x, page_y, f32(scroll_y), canvas_width, canvas_height, font_path, glyph_run.font().face_index(), glyph_color, blur, int(shadow_only), smoothing) != 0
 		}
 	}
 	return false
@@ -5034,7 +5124,7 @@ fn (app &BrowserApp) background_image_bytes(image_url string) ![]u8 {
 		return url.percent_decode(payload)
 	}
 	if image_url.starts_with('file://') {
-		path := url.percent_decode(image_url['file://'.len..]).bytestr()
+		path := browser_local_file_path(image_url) or { return error('Malformed file URL') }
 		return os.read_bytes(path)
 	}
 	if image_url.starts_with('http://') || image_url.starts_with('https://') {
@@ -5056,14 +5146,6 @@ fn (mut app BrowserApp) create_image_from_resource_bytes(image_url string, bytes
 			// Share the document decoder's pixels with native image and background
 			// painting. Animated streams keep AppKit's frame provider below.
 			if app.ctx.native_rendering {
-				if app.document != unsafe { nil } && app.document.font_rendering_policy() == .chromium {
-					if bitmap := chromium_tagged_webp_paint_bitmap(bytes) {
-						mut image := gg.Image{width: bitmap.width, height: bitmap.height,
-							nr_channels: 7, ok: true, data: bitmap.data.data}
-						image.id = app.ctx.cache_image(image)
-						return image
-					}
-				}
 				// Resource publication supplies a completed body, even when HTTP
 				// delivered it in chunks. Transport progress does not create an
 				// incremental RGB paint generator. Existing decoded images are
@@ -5139,7 +5221,7 @@ fn browser_local_file_path(serialized_url string) ?string {
 	if parsed.scheme != 'file' {
 		return none
 	}
-	return url.percent_decode(parsed.serialize_path()).bytestr()
+	return parsed.to_file_path()
 }
 
 fn (mut app BrowserApp) request_background_resource(image_url string) {
@@ -5867,21 +5949,9 @@ fn (mut app BrowserApp) draw_command(source_command &layout.PaintCommand, page_x
 			}
 		}
 	}
-	if command.kind == 'begin_skia_command_group' {
-		$if macos {
-			if app.ctx.native_rendering {
-				matrix := normalized_paint_transform(command.transform)
-				C.native_begin_skia_command_group(f32(command.x), f32(command.y), f32(command.width), f32(command.height), f32(matrix[0]), f32(matrix[1]), f32(matrix[2]), f32(matrix[3]), f32(matrix[4]), f32(matrix[5]), page_x, page_y, 0, f32(app.ctx.width), f32(app.ctx.height))
-			}
-		}
-		return
-	}
-	if command.kind == 'end_skia_command_group' {
-		$if macos {
-			if app.ctx.native_rendering {
-				C.native_end_skia_command_group()
-			}
-		}
+	// A command group only marks its extent for scroll raster reuse and clip
+	// depth; the native painter draws its member commands directly.
+	if command.kind in ['begin_skia_command_group', 'end_skia_command_group'] {
 		return
 	}
 	if command.kind == 'begin_css_effect_layer' {
@@ -6223,36 +6293,9 @@ fn (mut app BrowserApp) draw_command(source_command &layout.PaintCommand, page_x
 			app.ctx.scissor_rect(0, 0, app.ctx.width, app.ctx.height)
 		}
 		'paint_outer_box_shadow' {
-			shadow_geometry := command.box_shadow()
-			fill := app.paint_colors.color(command.color, command.opacity)
-			$if macos {
-				if app.ctx.native_rendering {
-					shadow := command.corner_radii
-					content := shadow_geometry.content_radii
-					// Skia transforms the local blur together with the shadow geometry.
-					set_native_chromium_paint_color(*command)
-					C.native_draw_outer_box_shadow_corners_srgb(f32(command.x), f32(command.y), f32(command.width), f32(command.height), f32(shadow.top_left.x), f32(shadow.top_left.y), f32(shadow.top_right.x), f32(shadow.top_right.y), f32(shadow.bottom_right.x), f32(shadow.bottom_right.y), f32(shadow.bottom_left.x), f32(shadow.bottom_left.y), f32(shadow_geometry.content_rect.x), f32(shadow_geometry.content_rect.y), f32(shadow_geometry.content_rect.width), f32(shadow_geometry.content_rect.height), f32(content.top_left.x), f32(content.top_left.y), f32(content.top_right.x), f32(content.top_right.y), f32(content.bottom_right.x), f32(content.bottom_right.y), f32(content.bottom_left.x), f32(content.bottom_left.y), f32(matrix[0]), f32(matrix[1]), f32(matrix[2]), f32(matrix[3]), f32(matrix[4]), f32(matrix[5]), page_x, page_y, f32(scroll_y), f32(app.ctx.width), f32(app.ctx.height), f32(command.blur), fill)
-					return
-				}
-			}
 			app.draw_portable_shadow(*command, page_x, page_y, scroll_y)
 		}
 		'paint_inner_box_shadow' {
-			shadow_geometry := command.box_shadow()
-			fill := app.paint_colors.color(command.color, command.opacity)
-			$if macos {
-				if app.ctx.native_rendering {
-					outer := command.corner_radii
-					inner := shadow_geometry.inner_radii
-					content := shadow_geometry.content_radii
-					clip := shadow_geometry.clip_radii
-					scale_x := math.sqrt(matrix[0] * matrix[0] + matrix[1] * matrix[1])
-					scale_y := math.sqrt(matrix[2] * matrix[2] + matrix[3] * matrix[3])
-					blur_scale := math.min(scale_x, scale_y)
-					C.native_draw_inner_box_shadow_corners_srgb(f32(command.x), f32(command.y), f32(command.width), f32(command.height), f32(outer.top_left.x), f32(outer.top_left.y), f32(outer.top_right.x), f32(outer.top_right.y), f32(outer.bottom_right.x), f32(outer.bottom_right.y), f32(outer.bottom_left.x), f32(outer.bottom_left.y), f32(shadow_geometry.inner_rect.x), f32(shadow_geometry.inner_rect.y), f32(shadow_geometry.inner_rect.width), f32(shadow_geometry.inner_rect.height), f32(inner.top_left.x), f32(inner.top_left.y), f32(inner.top_right.x), f32(inner.top_right.y), f32(inner.bottom_right.x), f32(inner.bottom_right.y), f32(inner.bottom_left.x), f32(inner.bottom_left.y), f32(shadow_geometry.content_rect.x), f32(shadow_geometry.content_rect.y), f32(shadow_geometry.content_rect.width), f32(shadow_geometry.content_rect.height), f32(content.top_left.x), f32(content.top_left.y), f32(content.top_right.x), f32(content.top_right.y), f32(content.bottom_right.x), f32(content.bottom_right.y), f32(content.bottom_left.x), f32(content.bottom_left.y), f32(clip.top_left.x), f32(clip.top_left.y), f32(clip.top_right.x), f32(clip.top_right.y), f32(clip.bottom_right.x), f32(clip.bottom_right.y), f32(clip.bottom_left.x), f32(clip.bottom_left.y), f32(matrix[0]), f32(matrix[1]), f32(matrix[2]), f32(matrix[3]), f32(matrix[4]), f32(matrix[5]), page_x, page_y, f32(scroll_y), f32(app.ctx.width), f32(app.ctx.height), f32(command.blur * blur_scale), fill)
-					return
-				}
-			}
 			app.draw_portable_shadow(*command, page_x, page_y, scroll_y)
 		}
 		'fill_rect' {
@@ -6727,6 +6770,10 @@ fn (mut app BrowserApp) draw_command(source_command &layout.PaintCommand, page_x
 				|| clip.height <= 0 {
 				return
 			}
+			if app.ctx.native_rendering && destination.width == image.width
+				&& destination.height == image.height && result.clip_radii != painting.CornerRadii{} {
+				if shader_image := app.rounded_jpeg_paint_image(image_data.image_url) { image = shader_image }
+			}
 			if paint_command_image_allows_force_dark(*command, f64(destination.width),
 				f64(destination.height), image) {
 				if bitmap := replay_bitmap {
@@ -6751,6 +6798,12 @@ fn (mut app BrowserApp) draw_command(source_command &layout.PaintCommand, page_x
 						C.native_add_corner_rounded_clip(f32(clip.x), f32(clip.y), f32(clip.width), f32(clip.height), f32(radii.top_left.horizontal), f32(radii.top_left.vertical), f32(radii.top_right.horizontal), f32(radii.top_right.vertical), f32(radii.bottom_right.horizontal), f32(radii.bottom_right.vertical), f32(radii.bottom_left.horizontal), f32(radii.bottom_left.vertical), f32(matrix[0]), f32(matrix[1]), f32(matrix[2]), f32(matrix[3]), f32(matrix[4]), f32(matrix[5]), page_x, page_y, f32(scroll_y), f32(app.ctx.height))
 					}
 					app.set_chromium_image_resource_identity(image_data.image_url)
+					if app.draw_sampled_png(command,image,image_data.image_url,draw_rect,source_rect,clip_data,matrix,
+						page_x,page_y,scroll_y,result.bitmap.scaling == .nearest_neighbor) {
+						clear_chromium_image_resource_identity()
+						C.native_end_clip()
+						return
+					}
 					C.native_draw_image_part_transformed_clipped(image, f32(draw_rect.x), f32(draw_rect.y), f32(draw_rect.width), f32(draw_rect.height), source_rect[0], source_rect[1], source_rect[2], source_rect[3], clip_data[0], clip_data[1], clip_data[2], clip_data[3], f32(matrix[0]), f32(matrix[1]), f32(matrix[2]), f32(matrix[3]), f32(matrix[4]), f32(matrix[5]), page_x, page_y, f32(scroll_y), f32(app.ctx.width), f32(app.ctx.height), f32(command.opacity), if result.bitmap.scaling == .nearest_neighbor {
 						1
 					} else {
@@ -6815,6 +6868,7 @@ fn (mut app BrowserApp) draw_command(source_command &layout.PaintCommand, page_x
 					C.native_end_clip()
 				}
 			}
+			$if linux || windows { app.draw_portable_canvas(command, bitmap, result, page_x, page_y, scroll_y) }
 		}
 		'draw_video' {
 			paintable := command.video_paintable or { return }
@@ -6887,6 +6941,14 @@ fn (mut app BrowserApp) draw_command(source_command &layout.PaintCommand, page_x
 						C.native_add_corner_rounded_clip(f32(clip.x), f32(clip.y), f32(clip.width), f32(clip.height), f32(radii.top_left.horizontal), f32(radii.top_left.vertical), f32(radii.top_right.horizontal), f32(radii.top_right.vertical), f32(radii.bottom_right.horizontal), f32(radii.bottom_right.vertical), f32(radii.bottom_left.horizontal), f32(radii.bottom_left.vertical), f32(matrix[0]), f32(matrix[1]), f32(matrix[2]), f32(matrix[3]), f32(matrix[4]), f32(matrix[5]), page_x, page_y, f32(scroll_y), f32(app.ctx.height))
 					}
 					// Live frames, not posters, bypass the image decode-cache resize.
+					if poster_url := layout.video_poster_resource_url(app.document, command) {
+						if app.draw_sampled_png(command, video_image, poster_url, destination,
+							[f32(0), 0, f32(bitmap.width), f32(bitmap.height)]!, clip_data, matrix,
+							page_x, page_y, scroll_y, scaling == .nearest_neighbor) {
+							C.native_end_clip()
+							return
+						}
+					}
 					C.native_set_video_frame_image(i32(command.video_frame_source != none))
 					if gpu_video_upload_keys_enabled {
 						C.native_set_video_frame_resource(video_resource.source, video_resource.revision, video_resource.generation)
@@ -7537,6 +7599,9 @@ fn (mut app BrowserApp) draw() {
 			&& C.vox_browser_has_paint_context() == 0 { return }
 	}
 	if app.navigation_work_depth > 0 { return }
+	frame_start := time.sys_mono_now()
+	if app.defer_loading_frame(frame_start) { return }
+	defer { app.finish_loading_frame(frame_start) }
 	preparation_instructions := processmetrics.begin_instruction_stage('frame_preparation')
 	paint_before_frame := app.paint_generation
 	app.poll_deferred_navigation_input()
@@ -7588,6 +7653,7 @@ fn (mut app BrowserApp) draw() {
 	app.retarget_document_frame_heap_scope(mut heap_scope)
 	app.prepare_overlay_scrollbars()
 	app.portable_shadow_image_index = 0
+	app.portable_canvas_image_index = 0
 	app.scroll_profile_prepared()
 	preparation_instructions.finish()
 	processmetrics.instruction_checkpoint('frame_prepared')
@@ -7628,14 +7694,17 @@ fn (mut app BrowserApp) draw() {
 			app.portable_shadow_image_index = 0
 			$if macos {
 				if app.ctx.native_rendering {
-					// Deferred layer pictures publish after the scroll raster ring
-					// stores the frame; keep leaf rasters immediate while the
-					// content qualifies for viewport scroll reuse.
-					enabled := replay_attempt == 0 && app.document != unsafe { nil }
+					// Speculative root pictures publish after the scroll raster ring
+					// stores the frame, so while the content qualifies for viewport
+					// scroll reuse only compositor layers, which publish within the
+					// command replay, may supply deferred leaf rasters (mode 2).
+					chromium := replay_attempt == 0 && app.document != unsafe { nil }
 						&& app.document.font_rendering_policy() == .chromium
-						&& !app.scroll_raster_content_eligible
+					enabled := chromium && !app.scroll_raster_content_eligible
+					layers_only := chromium && app.scroll_raster_content_eligible
+						&& !disable_reused_frame_layer_deferral
 					app.scroll_raster_frame_deferred = enabled
-					C.native_begin_deferred_layer_frame(i32(enabled))
+					C.native_begin_deferred_layer_frame(i32(if enabled { 1 } else if layers_only { 2 } else { 0 }))
 				}
 			}
 			mut scroll_damage := ScrollRasterDamage{}
@@ -7787,6 +7856,10 @@ fn (mut app BrowserApp) draw() {
 					}
 				}
 				if !gpu_leaf && command.kind == 'paint_outer_box_shadow' {
+					$if macos {
+						shared_svg_end = app.draw_contoured_group(command_index, page_y)
+						if shared_svg_end > command_index { continue }
+					}
 					outer_end := app.draw_chromium_outer_decorations(command_index, page_y, window.height, mut culling)
 					if outer_end > command_index {
 						shared_svg_end = outer_end
@@ -7939,6 +8012,7 @@ fn (mut app BrowserApp) draw() {
 		processmetrics.instruction_checkpoint('frame_chrome_updated')
 	}
 	end_browser_frame(app.ctx)
+	$if linux || windows { app.finish_portable_canvas_frame() }
 	if submission_claim.installation != 0 {
 		app.stage_native_document_submission(submission_claim)
 	}
@@ -8100,6 +8174,10 @@ fn browser_pointer_button_mask(button int) u32 {
 }
 
 fn (mut app BrowserApp) handle_event(event &gg.Event) {
+	if event.typ in [.mouse_down, .mouse_up, .mouse_scroll, .key_down, .key_up, .char, .touches_began,
+		.touches_moved, .touches_ended] {
+		app.note_page_input()
+	}
 	if app.align_wheel_to_frame(event) { return }
 	app.platform_pointer_modifiers = browser_pointer_modifiers(event.modifiers)
 	$if !vox_ui2 ? {
@@ -8219,6 +8297,10 @@ fn (mut app BrowserApp) handle_event(event &gg.Event) {
 }
 
 fn (mut app BrowserApp) handle_character(code u32) {
+	if app.suppress_next_character_for_chrome {
+		app.suppress_next_character_for_chrome = false
+		return
+	}
 	if code < 32 || code == 127 {
 		return
 	}
@@ -8254,6 +8336,10 @@ fn (mut app BrowserApp) handle_character(code u32) {
 }
 
 fn (mut app BrowserApp) handle_key(key gg.KeyCode, modifier gg.Modifier) {
+	if app.suppress_next_key_for_chrome {
+		app.suppress_next_key_for_chrome = false
+		return
+	}
 	if app.handle_browser_popup_key(key.str()) { return }
 	if is_browser_settings_shortcut(key, modifier) {
 		show_browser_settings()
@@ -8371,14 +8457,18 @@ fn (mut app BrowserApp) handle_key(key gg.KeyCode, modifier gg.Modifier) {
 }
 
 fn main() {
+	run_browser(os.args)
+}
+
+fn run_browser(arguments []string) {
 	load_instruction_stage := processmetrics.begin_instruction_stage('browser_main')
 	defer { load_instruction_stage.finish() }
 	configure_browser_javascript_startup()
 	install_browser_script_resource_cache()
 	loader.install_fetch_user_agent_provider()
 	// Dispatch the signed self-helper before browser heap/font/GUI setup.
-	if status := browserjs.run_worker_process_role(os.args) { exit(status) }
-	if status := adblock.run_default_worker_role(os.args) { exit(status) }
+	if status := browserjs.run_worker_process_role(arguments) { exit(status) }
+	if status := adblock.run_default_worker_role(arguments) { exit(status) }
 	$if macos {
 		adblock.configure_default_self_worker() or {
 			eprintln('Ladybird V: cannot configure the default filter worker: ${err.msg()}')
@@ -8391,6 +8481,10 @@ fn main() {
 		eprintln('Vox: could not load settings: ${err.msg()}')
 		exit(1)
 	}
+	browsercookies.initialize(os.join_path(os.dir(browsersettings.default_path()), 'cookies.json')) or {
+		eprintln('Vox: could not load cookies: ${err.msg()}')
+		exit(1)
+	}
 	link_translated_modules()
 	requestserver.install_native_font_fetch_host() or {
 		eprintln('Ladybird V: failed to initialize the font RequestServer transport: ${err.msg()}')
@@ -8400,9 +8494,12 @@ fn main() {
 	css.install_remote_style_sheet_loader(load_browser_imported_style_sheet)
 	defer { requestserver.close_native_font_fetch_host() }
 	xpath.install_dom_xpath_bridge()
-	mut options := parse_launch_options(os.args[1..]) or {
+	mut options := parse_launch_options(arguments[1..]) or {
 		eprintln('Ladybird V: ${err.msg()}')
 		exit(2)
+	}
+	if !options.js_engine_explicit {
+		options.js_engine = browserjs.parse_engine(browsersettings.current().javascript_engine) or { browserjs.Engine.javascriptcore }
 	}
 	restored_tab := read_detached_tab_session(options.restore_tab) or {
 		eprintln('Vox: could not restore tab: ${err.msg()}')
@@ -8416,9 +8513,6 @@ fn main() {
 	}
 	needs_native_font_replay := !options.headless_smoke && !options.headless_layout_tree
 	$if macos {
-		$if vox_gg_canvas ? {
-			install_gg_canvas_renderers()
-		}
 		if needs_native_font_replay {
 			C.native_prevent_app_nap()
 		}
@@ -8523,8 +8617,9 @@ fn main() {
 			}
 			runtime.close()
 			if result != '42' { panic('LibJS smoke: unexpected result ${result}') }
-			println('LibJS bytecode execution: passed (DOM bindings pending)')
-		} else if app.source_label == 'about:home' {
+			println('LibJS bytecode execution: passed')
+		}
+		if app.source_label == 'about:home' {
 			js_status := app.document.get_element_by_id('js-status') or {
 				panic('headless smoke: JavaScript target element is missing')
 			}

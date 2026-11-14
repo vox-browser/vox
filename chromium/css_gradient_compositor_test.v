@@ -65,6 +65,56 @@ fn test_css_gradient_isolates_a_contiguous_scrolling_compositor_picture() {
 	assert !chromium_svg_compositor_layer_supported(commands, gap, 1)
 }
 
+fn test_contiguous_gradient_picture_does_not_require_optional_paint_metadata() {
+	base := css_compositor_gradient()
+	linear := base.gradient or { panic('missing gradient') }
+	for gradient in [linear, &layout.LinearGradient{
+		...*linear
+		kind:     'radial'
+		radial:   true
+		radius_x: 60
+		radius_y: 70
+	}] {
+		commands := [layout.PaintCommand{ ...base, gradient: gradient },
+			layout.PaintCommand{ kind: 'draw_text', text: 'gradient' }]
+		mut plan := css_compositor_scope_plan(commands.len)
+		plan.has_paint_metadata = false
+		assert chromium_svg_compositor_layer_supported(commands, plan, 1)
+		plan.device_scale = 2
+		assert !chromium_svg_compositor_layer_supported(commands, plan, 1)
+		plan.device_scale = 1
+		// An unrepresented intervening layer still needs a geometry proof.
+		gapped := [commands[0], layout.PaintCommand{ kind: 'fill_rect', width: 10, height: 10 },
+			commands[1]]
+		plan.layers[1].command_indices = [0, 2]
+		plan.command_layers = [1, 0, 1]
+		assert !chromium_svg_compositor_layer_supported_for_viewport(gapped, plan, 1,
+			layout.LayoutRect{0, 0, 1024, 768})
+	}
+}
+
+fn test_real_gradient_panel_keeps_its_surface_without_hit_test_metadata() {
+	source := os.read_file('${@VMODROOT}/Tests/Browser/Brave/diagnostic/large-orbit-underlay.html')!
+	mut document := html.parse_document(source)
+	defer { document.finalize() }
+	document.set_font_rendering_policy(.chromium)
+	_ = layout.layout_document_typed_in_viewport(document, 1024, 768)
+	commands := layout.display_list_commands(document.record_display_list() or { panic('missing paint') })
+	mut plan := layout.ChromiumRasterLayerPlan{}
+	layout.update_chromium_raster_layer_plan_for_viewport(document, commands, 1,
+		layout.LayoutRect{0, 0, 1024, 768}, mut plan)
+	assert !plan.has_paint_metadata
+	mut gradients := 0
+	for index, command in commands {
+		if command.kind != 'fill_gradient' { continue }
+		gradients++
+		owner := plan.command_layers[index]
+		assert owner > 0
+		assert chromium_svg_compositor_layer_supported(commands, plan, owner)
+	}
+	assert gradients == 2
+}
+
 fn test_css_gradient_picture_keeps_supported_ellipse_and_stroke_leaves() {
 	for kind in ['fill_ellipse', 'stroke_ellipse', 'stroke_rounded_rect'] {
 		commands := [css_compositor_gradient(), layout.PaintCommand{
@@ -204,7 +254,11 @@ fn test_compositor_gradients_reject_unrepresented_geometry_and_color_spaces() {
 			layout.PaintCommand{ kind: 'end_css_effect_layer', visual_layer_data: layer },
 		]
 		assert !chromium_shared_recording_layer_supported(commands, css_compositor_scope_plan(commands.len), 1), 'case ${index}'
-		assert !chromium_svg_compositor_layer_supported([rejected], css_compositor_scope_plan(1), 1)
+		for metadata in [false, true] {
+			mut plan := css_compositor_scope_plan(1)
+			plan.has_paint_metadata = metadata
+			assert !chromium_svg_compositor_layer_supported([rejected], plan, 1)
+		}
 	}
 }
 
@@ -214,8 +268,8 @@ fn test_real_promoted_and_scrolling_css_gradients_keep_complete_picture_ownershi
 	document.set_font_rendering_policy(.chromium)
 	_ = layout.layout_document_typed_in_viewport(document, 1024, 768)
 	commands := layout.display_list_commands(document.record_display_list() or { panic('missing paint') })
-	for scale in [1.0, 2.0] {
-		mut plan := layout.ChromiumRasterLayerPlan{}
+	mut plan := layout.ChromiumRasterLayerPlan{}
+	for scale in [2.0, 1.0, 2.0] {
 		layout.update_chromium_raster_layer_plan_for_viewport(document, commands, scale,
 			layout.LayoutRect{0, 0, 1024, 768}, mut plan)
 		mut gradients := 0

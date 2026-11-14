@@ -16,10 +16,12 @@
 // interval and reports, per key, the synchronous keyDown handling time and the
 // delay until the page view's layer next publishes new contents
 // (tools/measure_chatgpt_typing.py). Publication is not physical scanout.
+// `shot` (payload: output path) writes the presented page pixels as RGBA rows.
 #import <Cocoa/Cocoa.h>
 #import <QuartzCore/QuartzCore.h>
 #include <math.h>
 #include <objc/runtime.h>
+#include "native_test_presented_frame.h"
 #include <JavaScriptCore/JavaScript.h>
 #include <JavaScriptCore/JSStringRefCF.h>
 #include <crt_externs.h>
@@ -32,9 +34,9 @@
 #include <sys/resource.h>
 #include <unistd.h>
 
-// Only the browser links the renderer bridge. Helpers that inherit
-// DYLD_INSERT_LIBRARIES (the adblock filter process) skip the driver.
-extern void ladybird_v_skia_set_root_raster_scroll_y(double) __attribute__((weak_import));
+// Helpers that inherit DYLD_INSERT_LIBRARIES (the adblock filter process)
+// skip the driver.
+static const char adblock_helper[] = "VoxAdblockWorker";
 
 enum { kMaximumContexts = 512 };
 static JSGlobalContextRef contexts[kMaximumContexts];
@@ -317,6 +319,21 @@ static void execute(NSString *identifier, NSString *command, NSString *payload)
         }
         type_with_latency(identifier, [payload substringFromIndex:newline.location + 1], 0,
             [[payload substringToIndex:newline.location] doubleValue] / 1000.0, [NSMutableArray array]);
+    } else if ([command isEqualToString:@"shot"]) {
+        // Raw RGBA rows of the page view's presented contents.
+        if (!hook_page_view()) {
+            respond(identifier, @{ @"error" : @"no page view" }, time);
+            return;
+        }
+        id contents = page_view.layer.contents;
+        CGSize size = native_test_presented_size(contents);
+        NSData *pixels = native_test_presented_pixels(contents);
+        if (!pixels || ![pixels writeToFile:payload atomically:YES]) {
+            respond(identifier, @{ @"error" : @"no presented pixels" }, time);
+            return;
+        }
+        respond(identifier, @{ @"width" : @(size.width), @"height" : @(size.height),
+            @"publications" : @(publication_count) }, time);
     } else if ([command isEqualToString:@"pid"]) {
         respond(identifier, @{ @"pid" : @(getpid()) }, time);
     } else if ([command isEqualToString:@"usage"]) {
@@ -373,7 +390,7 @@ static void wait_for_window(void)
 
 __attribute__((constructor)) static void boot(void)
 {
-    if (!ladybird_v_skia_set_root_raster_scroll_y) return;
+    if (!strcmp(getprogname(), adblock_helper)) return;
     // Script-worker children re-execute Vox with private --vox-* arguments.
     char **arguments = *_NSGetArgv();
     for (int i = 1; arguments[i]; i++)

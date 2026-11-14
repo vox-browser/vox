@@ -52,30 +52,30 @@ precision mediump float;out vec4 color;void main(){color=vec4(1);}'
 		other.native.make_current()
 		C.vox_gl_vertex_attrib_enable(0xffff_ffff, 1)
 		assert runtime.evaluate_host('gl.isProgram(foreign)===false')! == 'true'
-		mut selected := [0, 0, 0, 0]!
+		mut selected := [i32(0), 0, 0, 0]!
 		C.vox_gl_int_parameter(webgl.viewport, &selected[0])
-		assert selected == [9, 10, 11, 12]!
+		assert selected == [i32(9), 10, 11, 12]!
 		assert C.vox_gl_get_error() == webgl.invalid_value
 		assert runtime.evaluate_host('gl.getError()===gl.INVALID_OPERATION')! == 'true'
 		other.native.make_current()
 		assert runtime.evaluate_host('(function(){try{gl.isProgram(Object.create(WebGLProgram.prototype));return false}catch(error){return error instanceof TypeError}})()')! == 'true'
 		C.vox_gl_int_parameter(webgl.viewport, &selected[0])
-		assert selected == [9, 10, 11, 12]!
+		assert selected == [i32(9), 10, 11, 12]!
 		assert runtime.evaluate_host('gl.isProgram(program)===true')! == 'true'
 		C.vox_gl_int_parameter(webgl.viewport, &selected[0])
-		assert selected == [1, 2, 3, 4]!
+		assert selected == [i32(1), 2, 3, 4]!
 		runtime.evaluate_host('gl.useProgram(program);gl.deleteProgram(program)')!
 		assert C.vox_gl_is_object(10, name) == 1
 		other.native.make_current()
 		assert runtime.evaluate_host('gl.isProgram(program)===false')! == 'true'
 		C.vox_gl_int_parameter(webgl.viewport, &selected[0])
-		assert selected == [9, 10, 11, 12]!
+		assert selected == [i32(9), 10, 11, 12]!
 		assert runtime.evaluate_host('gl.getError()===gl.NO_ERROR')! == 'true'
 		runtime.evaluate_host('other.deleteProgram(foreign)')!
 		other.native.make_current()
 		assert runtime.evaluate_host('gl.isProgram(foreign)===false')! == 'true'
 		C.vox_gl_int_parameter(webgl.viewport, &selected[0])
-		assert selected == [9, 10, 11, 12]!
+		assert selected == [i32(9), 10, 11, 12]!
 		assert runtime.evaluate_host('gl.getError()===gl.INVALID_OPERATION')! == 'true'
 		owner.native.make_current()
 		C.vox_gl_use_program(0)

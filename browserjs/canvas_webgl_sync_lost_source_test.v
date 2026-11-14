@@ -27,9 +27,9 @@ fn test_public_lost_sync_wait_preserves_source_default_and_other_driver() {
 	for flags in ['0', '1', '2'] {
 		for timeout in ['0', '1', '18446744073709551615'] {
 			assert runtime.evaluate_host('owner.clientWaitSync(beforeLoss,${flags},${timeout})===0&&owner.clientWaitSync(afterLoss,${flags},${timeout})===0')! == 'true'
-			mut selected := [0, 0, 0, 0]!
+			mut selected := [i32(0), 0, 0, 0]!
 			C.vox_gl_int_parameter(webgl.viewport, &selected[0])
-			assert selected == [9, 10, 11, 12]!
+			assert selected == [i32(9), 10, 11, 12]!
 		}
 	}
 	assert C.vox_gl_get_error() == webgl.invalid_value

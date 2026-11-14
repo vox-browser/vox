@@ -21,14 +21,14 @@ fn test_public_attrib_location_preserves_source_program_gate_and_domstring_conve
 		mut other := host.contexts['__created_attrib_location_other'] or { panic('attribute location other') }
 		other.native.make_current()
 		assert runtime.evaluate_host('(function(){let converted=0;const value=gl.getAttribLocation(foreign,{toString(){converted++;return "position"}});return converted===1&&value===-1})()')! == 'true'
-		mut selected := [0, 0, 0, 0]!
+		mut selected := [i32(0), 0, 0, 0]!
 		C.vox_gl_int_parameter(webgl.viewport, &selected[0])
-		assert selected == [9, 10, 11, 12]!
+		assert selected == [i32(9), 10, 11, 12]!
 		assert runtime.evaluate_host('gl.getError()===gl.INVALID_OPERATION')! == 'true'
 		other.native.make_current()
 		assert runtime.evaluate_host('(function(){const marker={};try{gl.getAttribLocation(foreign,{toString(){throw marker}});return false}catch(error){return error===marker}})()')! == 'true'
 		C.vox_gl_int_parameter(webgl.viewport, &selected[0])
-		assert selected == [9, 10, 11, 12]!
+		assert selected == [i32(9), 10, 11, 12]!
 		assert runtime.evaluate_host('gl.getError()===gl.NO_ERROR')! == 'true'
 		vertex_source := if kind == 'webgl' {
 			'attribute vec2 position;void main(){gl_Position=vec4(position,0,1);}'
@@ -44,13 +44,13 @@ fn test_public_attrib_location_preserves_source_program_gate_and_domstring_conve
 		other.native.make_current()
 		assert runtime.evaluate_host('gl.getAttribLocation(program,"position")>=0')! == 'true'
 		C.vox_gl_int_parameter(webgl.viewport, &selected[0])
-		assert selected == [1, 2, 3, 4]!
+		assert selected == [i32(1), 2, 3, 4]!
 		assert runtime.evaluate_host('gl.getAttribLocation(program,"position\\u0000ignored")===gl.getAttribLocation(program,"position")&&gl.getAttribLocation(program,"absent")===-1&&gl.getError()===gl.NO_ERROR')! == 'true'
 		runtime.evaluate_host('gl.deleteProgram(program);')!
 		other.native.make_current()
 		assert runtime.evaluate_host('gl.getAttribLocation(program,"position")===-1')! == 'true'
 		C.vox_gl_int_parameter(webgl.viewport, &selected[0])
-		assert selected == [9, 10, 11, 12]!
+		assert selected == [i32(9), 10, 11, 12]!
 		assert runtime.evaluate_host('gl.getError()===gl.INVALID_OPERATION')! == 'true'
 	}
 }

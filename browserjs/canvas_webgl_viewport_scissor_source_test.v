@@ -24,9 +24,9 @@ fn test_public_viewport_scissor_use_actual_driver_and_preserve_idl_order() {
 			context.set_error(webgl.invalid_operation)
 			other.native.make_current()
 			runtime.evaluate_host('gl.${method}(0,0,-1,2);')!
-			mut selected := [0, 0, 0, 0]!
+			mut selected := [i32(0), 0, 0, 0]!
 			C.vox_gl_int_parameter(webgl.viewport, &selected[0])
-			assert selected == [1, 2, 3, 4]!
+			assert selected == [i32(1), 2, 3, 4]!
 			assert runtime.evaluate_host('gl.getError()===gl.INVALID_VALUE&&gl.getError()===gl.INVALID_OPERATION&&gl.getError()===gl.NO_ERROR&&Array.from(gl.getParameter(gl.${if method == 'viewport' {
 				'VIEWPORT'
 			} else {
@@ -35,7 +35,7 @@ fn test_public_viewport_scissor_use_actual_driver_and_preserve_idl_order() {
 			other.native.make_current()
 			assert runtime.evaluate_host('(function(){const marker={};try{gl.${method}(0,0,{valueOf(){throw marker}},2);return false}catch(error){return error===marker}})()')! == 'true'
 			C.vox_gl_int_parameter(webgl.viewport, &selected[0])
-			assert selected == [9, 10, 11, 12]!
+			assert selected == [i32(9), 10, 11, 12]!
 		}
 		assert runtime.evaluate_host('gl.disable(gl.SCISSOR_TEST);gl.clearColor(0,0,1,1);gl.clear(gl.COLOR_BUFFER_BIT);gl.enable(gl.SCISSOR_TEST);gl.scissor(0,0,1,1);gl.scissor(0,0,-1,2);const rejected=gl.getError()===gl.INVALID_VALUE;gl.clearColor(1,0,0,1);gl.clear(gl.COLOR_BUFFER_BIT);gl.disable(gl.SCISSOR_TEST);const pixels=new Uint8Array(16);gl.readPixels(0,0,2,2,gl.RGBA,gl.UNSIGNED_BYTE,pixels);rejected&&Array.from(pixels).join(",")==="255,0,0,255,0,0,255,255,0,0,255,255,0,0,255,255"&&gl.getError()===gl.NO_ERROR')! == 'true'
 		assert other.get_error() == webgl.no_error

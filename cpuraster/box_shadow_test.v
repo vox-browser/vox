@@ -1,5 +1,18 @@
 module cpuraster
 
+fn test_document_shadow_keeps_unrounded_author_alpha() {
+	shape := rounded_rect(Rect{0, 0, 4, 4}, [8]f32{})
+	transform := [f32(1), 0, 0, 1, 0, 0]!
+	legacy := rasterize_outer_shadow(4, 4, shape, RoundedRect{}, transform,
+		0x19000000, 0, []) or { panic('legacy shadow') }
+	document := rasterize_outer_shadow_with_coverage(4, 4, shape, RoundedRect{}, transform,
+		0x19000000, 0, [], 0.1) or { panic('document shadow') }
+	// CSS alpha 0.1 rounds to 26 at readback. Quantizing it before coverage
+	// loses one level, making every shadow on a white page too light.
+	assert legacy[3] == 25
+	assert document[3] == 26
+}
+
 fn test_outer_shadow_preserves_elliptical_corners_and_content_hole() {
 	shape := rounded_rect(Rect{8, 8, 24, 24}, [f32(6), 4, 2, 6, 4, 2, 2, 2]!)
 	pixels := rasterize_outer_shadow(32, 32, shape, shape, [f32(1), 0, 0, 1, 0, 0]!, 0xff0000ff, 4, []) or { panic('shadow') }
@@ -33,8 +46,13 @@ fn test_outer_shadow_snaps_nearly_integral_rectangular_content_clip() {
 	shape := rounded_rect(Rect{53.906555, -2.0712817, f32(53.906555) + f32(21.131067), f32(-2.0712817) + f32(13.188125)}, [8]f32{})
 	pixels := rasterize_outer_shadow(65, 58, shape, shape, [f32(1), 0, 0, 1, 0, 0]!,
 		1710523175, 6.87203, []) or { panic('shadow') }
-	// Captured from vox_skia_shadow(), including straight-alpha readback.
-	assert pixels[212..216] == [u8(248), 131, 36, 35]
+	// Independent Skia ee20d565 oracle, including straight-alpha readback.
+	// RGBA is native N32 on macOS; Linux takes the non-native pipeline.
+	$if linux {
+		assert pixels[212..216] == [u8(241), 128, 35, 36]
+	} $else {
+		assert pixels[212..216] == [u8(248), 131, 36, 35]
+	}
 }
 
 fn test_unblurred_rectangular_shadow_uses_rect_scan_coverage() {
@@ -44,5 +62,10 @@ fn test_unblurred_rectangular_shadow_uses_rect_scan_coverage() {
 		f32(35.326378) + f32(63.865044)}, [8]f32{})
 	pixels := rasterize_outer_shadow(35, 52, outer, content, [f32(1), 0, 0, 1, 0, 0]!,
 		679617509, -1, []) or { panic('shadow') }
-	assert pixels[42 * 35 * 4] == 124
+	// The same oracle distinguishes native and non-native RGBA coverage.
+	$if linux {
+		assert pixels[42 * 35 * 4] == 128
+	} $else {
+		assert pixels[42 * 35 * 4] == 124
+	}
 }

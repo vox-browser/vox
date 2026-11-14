@@ -28,15 +28,12 @@ typedef struct {
 #include <dlfcn.h>
 #include <pthread.h>
 #include <stdio.h>
-// Keep libcurl and its TLS/compression dependencies lazy. Both native Fetch
-// and cancellable browser resource requests resolve the same library.
-// Production rpaths name the same vcpkg library the linker selected; a test
-// binary without them uses the system library that -lcurl linked before.
+// Keep libcurl lazy. Both native Fetch and cancellable browser resource
+// requests use macOS's system library, including its TLS trust integration.
 VOX_NATIVE_STATE VoxCurlApi vox_curl_loaded_api;
 VOX_NATIVE_STATE pthread_once_t vox_curl_load_once VOX_NATIVE_STATE_INIT(PTHREAD_ONCE_INIT);
 static void vox_curl_load_api(void) {
-    void* library = dlopen("@rpath/libcurl.4.dylib", RTLD_NOW | RTLD_LOCAL);
-    if (!library) library = dlopen("/usr/lib/libcurl.4.dylib", RTLD_NOW | RTLD_LOCAL);
+    void* library = dlopen("/usr/lib/libcurl.4.dylib", RTLD_NOW | RTLD_LOCAL);
     if (!library) {
         fprintf(stderr, "Vox: cannot load libcurl: %s\n", dlerror());
         abort();
@@ -106,6 +103,23 @@ static void* vox_curl_slist_append(void* list, const char* value) { return vox_c
 static void vox_curl_slist_free_all(void* list) { vox_curl_api()->slist_free_all(list); }
 static int vox_curl_setopt_long(void* handle, int option, long value) { return vox_curl_api()->easy_setopt(handle, option, value); }
 static int vox_curl_setopt_pointer(void* handle, int option, void* value) { return vox_curl_api()->easy_setopt(handle, option, value); }
+// Configure a fresh handle's server trust without changing peer/host checks.
+// An explicit bundle remains authoritative, including an invalid bundle path.
+static CURLcode vox_curl_server_trust(void *handle, const char *bundle) {
+    const VoxCurlApi *api = vox_curl_api();
+    if (bundle && bundle[0]) return api->easy_setopt(handle, CURLOPT_CAINFO, bundle);
+#ifdef _WIN32
+    CURLcode result = api->easy_setopt(handle, CURLOPT_SSL_OPTIONS, (long)CURLSSLOPT_NATIVE_CA);
+    if (result != CURLE_OK) return result;
+    // The MinGW libcurl build's Unix-style defaults need not exist in a
+    // portable Windows deployment. Use Windows roots instead of those files.
+    result = api->easy_setopt(handle, CURLOPT_CAINFO, (char *)NULL);
+    if (result != CURLE_OK) return result;
+    return api->easy_setopt(handle, CURLOPT_CAPATH, (char *)NULL);
+#else
+    return CURLE_OK;
+#endif
+}
 static int vox_curl_setopt_write(void* handle, int option, size_t (*callback)(void*, size_t, size_t, void*)) { return vox_curl_api()->easy_setopt(handle, option, callback); }
 static int vox_curl_multi_setopt_pointer(void* handle, int option, void* value) { return vox_curl_api()->multi_setopt(handle, option, value); }
 static int vox_curl_multi_setopt_long(void* handle, int option, long value) { return vox_curl_api()->multi_setopt(handle, option, value); }

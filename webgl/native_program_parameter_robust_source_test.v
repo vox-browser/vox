@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: BSD-2-Clause
 module webgl
 
-fn C.glGetProgramivRobustANGLE(u32, u32, int, voidptr, &int)
 
 fn test_source_program_parameter_matches_exact_one_element_robust_driver_query() {
 	for version in [WebGLVersion.webgl1, .webgl2] {
@@ -18,14 +17,14 @@ fn test_source_program_parameter_matches_exact_one_element_robust_driver_query()
 			validate_status, transform_feedback_buffer_mode, transform_feedback_varyings,
 			active_uniform_blocks, GLenum(0x8b84), GLenum(0xbad)] {
 			owner.native.make_current()
-			mut expected := 0
-			C.glGetProgramivRobustANGLE(program.object.native_name(), pname, 1, unsafe { nil }, &expected)
+			mut expected := i32(0)
+			expected = i32(C.vox_gl_program_parameter_robust(program.object.native_name(),pname))
 			expected_error := C.vox_gl_get_error()
 			other.native.make_current()
 			actual := owner.get_program_parameter(program, pname)
-			mut selected := [0, 0, 0, 0]!
+			mut selected := [i32(0), 0, 0, 0]!
 			C.vox_gl_int_parameter(viewport, &selected[0])
-			assert selected == [1, 2, 3, 4]!
+			assert selected == [i32(1), 2, 3, 4]!
 			numeric := pname in [attached_shaders, active_attributes, active_uniforms] || (version == .webgl2 && pname in [
 				transform_feedback_buffer_mode,
 				transform_feedback_varyings,
@@ -52,8 +51,8 @@ fn test_source_program_parameter_matches_exact_one_element_robust_driver_query()
 		owner.native.make_current()
 		C.vox_gl_delete_program(program.object.native_name())
 		assert owner.owns(&program.object)
-		mut rejected := 0
-		C.glGetProgramivRobustANGLE(program.object.native_name(), link_status, 1, unsafe { nil }, &rejected)
+		mut rejected := i32(0)
+		rejected = i32(C.vox_gl_program_parameter_robust(program.object.native_name(),link_status))
 		expected_error := C.vox_gl_get_error()
 		assert expected_error != no_error
 		other.native.make_current()

@@ -15,18 +15,23 @@ const plain_bridge_function_source = os.getenv('VOX_PLAIN_BRIDGE_FUNCTION_SOURCE
 // with per-element attribute and offsetWidth reads; Old Reddit's
 // DOMContentLoaded handlers made 39,316 bridge calls instead of 2,146.
 //
-// This runs after the bootstrap installs its globals and before page scripts:
+// This runs after the native bindings install their globals and before page scripts:
 // every function then reachable from the global object, document and the
 // global constructors (including their prototypes, getters and setters) prints
 // as a platform function. Functions created later, including all page script,
-// keep their source text.
+// keep their source text. The private weak source registry belongs to the agent, so
+// borrowing another same-origin realm's toString preserves platform identity.
 fn compact_native_function_source_bootstrap() string {
 	if plain_bridge_function_source { return '' }
 	return r'
-(function(){
+(function(markNative){
  const sourceText=Function.prototype.toString,apply=Reflect.apply,descriptor=Reflect.getOwnPropertyDescriptor,ownKeys=Reflect.ownKeys;
- const platform=new WeakSet(),isPlatform=WeakSet.prototype.has,addPlatform=WeakSet.prototype.add;
- function mark(value){if(typeof value==="function")apply(addPlatform,platform,[value]);}
+ const nativeTemplate=apply(sourceText,Object.prototype.hasOwnProperty,[]);
+ function mark(value){
+  if(typeof value!=="function")return;
+  const original=apply(sourceText,value,[]),own=descriptor(value,"name"),name=own&&typeof own.value==="string"?own.value:"";
+  markNative(value,original.includes("[native code]")?original:nativeTemplate.replace("hasOwnProperty",name));
+ }
  function markObject(object){
   if(object===null||(typeof object!=="object"&&typeof object!=="function"))return;
   for(const key of ownKeys(object)){let own;try{own=descriptor(object,key);}catch(error){continue;}if(!own)continue;mark(own.value);mark(own.get);mark(own.set);}
@@ -38,11 +43,5 @@ fn compact_native_function_source_bootstrap() string {
   markObject(value);let prototype;try{prototype=value.prototype;}catch(error){continue;}
   if(prototype!==null&&typeof prototype==="object")markObject(prototype);
  }
- const toString={toString(){
-  if(apply(isPlatform,platform,[this])){const name=this.name;return "function "+(typeof name==="string"?name:"")+"() {\n    [native code]\n}";}
-  return apply(sourceText,this,arguments);
- }}.toString;
- mark(toString);
- Object.defineProperty(Function.prototype,"toString",{value:toString,writable:true,enumerable:false,configurable:true});
-})();'
+})'
 }

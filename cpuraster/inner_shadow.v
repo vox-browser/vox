@@ -5,6 +5,10 @@ import math
 // A nested rounded hole needs no curve intersections. Its two contours share
 // the even-odd winding rule of the boolean difference.
 pub fn rasterize_inner_shadow(width int, height int, outer RoundedRect, inner RoundedRect, content RoundedRect, transform [6]f32, color u32, blur f32, clips []Path) ?[]u8 {
+	return rasterize_inner_shadow_with_coverage(width, height, outer, inner, content, transform, color, blur, clips, -1)
+}
+
+fn rasterize_inner_shadow_with_coverage(width int, height int, outer RoundedRect, inner RoundedRect, content RoundedRect, transform [6]f32, color u32, blur f32, clips []Path, coverage_alpha f32) ?[]u8 {
 	if width <= 0 || height <= 0 || width > max_untiled_dimension || height > max_untiled_dimension { return none }
 	if !rect_contains(outer.bounds, inner.bounds) { return none }
 	if !outer.radii[..].all(it == 0) && !shadow_rounded_rect_contains_inner(outer, inner) { return none }
@@ -29,8 +33,15 @@ pub fn rasterize_inner_shadow(width int, height int, outer RoundedRect, inner Ro
 	}
 	if canvas_quick_reject(fast_bounds, matrix, &rc) { return pixels }
 	if !rc.is_empty && color >> 24 != 0 {
-		mut blitter := choose_color_blitter(mut pixels, width * 4, color, f32(color >> 24) * inv_255,
-			.src_over, canvas_rgba_uses_legacy()) or { return none }
+		mut blitter := if coverage_alpha >= 0 {
+            mut pipeline := new_color_shader_blitter(mut pixels, width * 4,
+                [f32(color >> 16 & 255) * inv_255, f32(color >> 8 & 255) * inv_255,
+                 f32(color & 255) * inv_255, coverage_alpha]!, 1, .src_over)
+            Blitter(PipelineBlitter{...pipeline, lowp: false})
+        } else {
+            choose_color_blitter(mut pixels, width * 4, color, f32(color >> 24) * inv_255,
+                .src_over, canvas_rgba_uses_legacy()) or { return none }
+        }
 		if sigma := canvas_shadow_sigma(blur) {
 			plan := plan_blur(device, false, sigma, matrix, &rc, false)
 			if plan.kind == .declined { return none }

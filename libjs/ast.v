@@ -32,7 +32,6 @@ mut:
 // Node wrapper
 // =============================================================================
 
-@[heap]
 struct Expression {
 mut:
 	range SourceRange
@@ -1052,14 +1051,14 @@ mut:
 // Module types (import/export)
 // =============================================================================
 
-struct ModuleRequest {
-mut:
+pub struct ModuleRequest {
+pub mut:
 	module_specifier Utf16String
 	attributes       []ImportAttribute
 }
 
-struct ImportAttribute {
-mut:
+pub struct ImportAttribute {
+pub mut:
 	key   Utf16String
 	value Utf16String
 }

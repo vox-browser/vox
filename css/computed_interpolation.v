@@ -11755,13 +11755,13 @@ fn (s &StyleComputer) compute_animated_custom_property_value(abstract_element do
 	mut value := unsafe { specified_value }
 	if typed := typed_style_value_logic_from_dom(value) {
 		keyword := typed.to_keyword()
-		if keyword == .initial || (keyword == .unset && if registered := registration {
+		if keyword == .initial || (keyword in [.unset, .revert, .revert_layer] && if registered := registration {
 			!registered.inherits
 		} else {
 			false
 		}) {
 			value = custom_property_initial_style_value(abstract_element.document(), name)
-		} else if keyword in [.inherit, .unset] {
+		} else if keyword in [.inherit, .unset, .revert, .revert_layer] {
 			if parent := abstract_element.element_to_inherit_style_from() {
 				value = StyleComputer.compute_value_of_custom_property(parent, name)
 			} else {
@@ -11776,6 +11776,10 @@ fn (s &StyleComputer) compute_animated_custom_property_value(abstract_element do
 			})
 			if contains_guaranteed_invalid_value(result) {
 				value = dom_style_value_from_value_logic(StyleValue(GuaranteedInvalidStyleValue.create()))
+			} else if keyword_text := single_css_wide_keyword_from_component_values(result) {
+				if resolved_keyword := keyword_from_string(keyword_text) {
+					value = resolve_computed_custom_property_keyword(abstract_element, name, resolved_keyword).materialize()
+				}
 			} else {
 				value = dom_style_value_from_value_logic(StyleValue(UnresolvedStyleValue.create_with_presence(result,
 					SubstitutionFunctionsPresence{}, none)))
@@ -12316,7 +12320,7 @@ pub fn (s &StyleComputer) compute_properties(abstract_element dom.AbstractElemen
 	// The root element establishes the root font metrics used by rem/rlh for every
 	// subsequently computed descendant. This is the mutable update performed by
 	// StyleComputer::compute_properties() after its longhand computation loop.
-	if abstract_element.pseudo_element() == none && abstract_element.element().is_html_element() && abstract_element.element().local_name().to_lower() == 'html' {
+	if abstract_element.pseudo_element() == none && abstract_element.element().is_document_element() {
 		mut mutable_computer := unsafe { &StyleComputer(s) }
 		mutable_computer.root_element_font_metrics = s.calculate_root_element_font_metrics(properties)
 		mutable_computer.root_element_font_metrics_depend_on_viewport_metrics = properties.font_metrics_depend_on_viewport_metrics()
@@ -12845,6 +12849,28 @@ fn dom_style_value_from_custom_property_bridge(value &dom.CSSStyleValue_) ?&dom.
 	return unsafe { &dom.StyleValue(value.css_value_handle) }
 }
 
+// Substitution can produce a CSS-wide keyword even when the written value
+// was var(). Resolve it before another custom property reads the token stream.
+fn resolve_computed_custom_property_keyword(abstract_element dom.AbstractElement, custom_property string, keyword Keyword) ComputedCustomPropertyValue {
+	registration := abstract_element.document().get_registered_custom_property(custom_property)
+	inherits := if registered := registration { registered.inherits } else { true }
+	// FIXME: Revert to a lower layer/origin declaration when one exists, as
+	// opposed to the unset behavior shared with the upstream implementation.
+	if keyword == .initial || (keyword != .inherit && !inherits) {
+		return initial_computed_custom_property_value(abstract_element.document(), custom_property)
+	}
+	inherit_from := abstract_element.element_to_inherit_style_from() or {
+		return initial_computed_custom_property_value(abstract_element.document(), custom_property)
+	}
+	inherited := inherit_from.get_custom_property(custom_property) or {
+		return initial_computed_custom_property_value(abstract_element.document(), custom_property)
+	}
+	inherited_value := dom_style_value_from_custom_property_bridge(inherited) or {
+		parse_custom_property_value(inherited.css_text)
+	}
+	return ComputedCustomPropertyValue{existing_value: inherited_value}
+}
+
 fn resolve_computed_custom_property_value(abstract_element dom.AbstractElement, custom_property string, mut guarded_contexts GuardedSubstitutionContexts) ComputedCustomPropertyValue {
 	bridged_value := abstract_element.get_custom_property(custom_property) or {
 		return initial_computed_custom_property_value(abstract_element.document(), custom_property)
@@ -12859,20 +12885,8 @@ fn resolve_computed_custom_property_value(abstract_element dom.AbstractElement, 
 		return ComputedCustomPropertyValue{existing_value: value}
 	}
 	keyword := typed.to_keyword()
-	if keyword == .initial {
-		return initial_computed_custom_property_value(abstract_element.document(), custom_property)
-	}
-	if keyword in [.inherit, .unset] {
-		inherit_from := abstract_element.element_to_inherit_style_from() or {
-			return initial_computed_custom_property_value(abstract_element.document(), custom_property)
-		}
-		inherited := inherit_from.get_custom_property(custom_property) or {
-			return initial_computed_custom_property_value(abstract_element.document(), custom_property)
-		}
-		inherited_value := dom_style_value_from_custom_property_bridge(inherited) or {
-			parse_custom_property_value(inherited.css_text)
-		}
-		return ComputedCustomPropertyValue{existing_value: inherited_value}
+	if keyword in [.initial, .inherit, .unset, .revert, .revert_layer] {
+		return resolve_computed_custom_property_keyword(abstract_element, custom_property, keyword)
 	}
 	if typed !is UnresolvedStyleValue || !typed.substitution_functions_presence.has_any() {
 		return ComputedCustomPropertyValue{existing_value: value}
@@ -12884,6 +12898,11 @@ fn resolve_computed_custom_property_value(abstract_element dom.AbstractElement, 
 	})
 	if contains_guaranteed_invalid_value(result) {
 		return ComputedCustomPropertyValue{kind: .guaranteed_invalid}
+	}
+	if keyword_text := single_css_wide_keyword_from_component_values(result) {
+		if resolved_keyword := keyword_from_string(keyword_text) {
+			return resolve_computed_custom_property_keyword(abstract_element, custom_property, resolved_keyword)
+		}
 	}
 	return ComputedCustomPropertyValue{kind: .substituted, tokens: result, base_url:value.base_url}
 }
@@ -14545,7 +14564,13 @@ fn (s &StyleComputer) compute_style_impl_with_animated_custom_property_recompute
 	// Special path for elements representing a pseudo-element in an element's
 	// internal user-agent shadow tree.
 	if raw_pseudo_element := abstract_element.element().associated_shadow_host_pseudo_element() {
-		if raw_pseudo_element >= 0 && raw_pseudo_element < int(PseudoElement.known_pseudo_element_count) {
+		// These pseudos match their own rules and inherit highlights from the
+		// internal element instead of using its host's backing-pseudo style.
+		computes_own_pseudo := if pseudo := abstract_element.pseudo_element() {
+			pseudo in [.first_letter, .selection]
+		} else { false }
+		if !computes_own_pseudo && raw_pseudo_element >= 0
+			&& raw_pseudo_element < int(PseudoElement.known_pseudo_element_count) {
 			element := abstract_element.element()
 			root := element.as_node().root()
 			host_element := root.parent_or_shadow_host_element() or { return none }
@@ -16318,6 +16343,11 @@ pub fn (s &StyleComputer) get_computation_context_for_property(property_id Prope
 		context.length_resolution_context.subject_inline_axis_is_horizontal = computed_properties.writing_mode() == .horizontal_tb
 		return context
 	}
+	is_document_element := if current := abstract_element {
+		current.pseudo_element() == none && current.element().is_document_element()
+	} else {
+		false
+	}
 	mut font_metrics := computed_interpolation_font_metrics_for_style(computed_properties, s.font_computer_)
 	mut root_font_metrics := s.root_element_font_metrics
 	if property_id == .line_height {
@@ -16333,21 +16363,14 @@ pub fn (s &StyleComputer) get_computation_context_for_property(property_id Prope
 				}
 			}
 		}
-		if root := s.document_.document_element() {
-			if current := abstract_element {
-				if voidptr(current.element()) == voidptr(root) {
-					root_font_metrics = font_metrics
-				}
-			}
+		if is_document_element {
+			root_font_metrics = font_metrics
 		}
 	} else {
 		font_metrics.line_height = computed_properties.line_height()
-		if root := s.document_.document_element() {
-			if current := abstract_element {
-				if voidptr(current.element()) == voidptr(root) {
-					root_font_metrics = font_metrics
-				}
-			}
+		if is_document_element {
+			root_font_metrics = font_metrics
+		} else if root := s.document_.document_element() {
 			root_abstract := dom.AbstractElement.new(root, none)
 			if root_dom_computed := root_abstract.computed_properties() {
 				if root_computed := computed_properties_from_dom(root_dom_computed) {
@@ -16362,16 +16385,8 @@ pub fn (s &StyleComputer) get_computation_context_for_property(property_id Prope
 			font_metrics: font_metrics
 			root_font_metrics: root_font_metrics
 			font_metrics_depend_on_viewport_metrics: computed_properties.font_metrics_depend_on_viewport_metrics()
-			root_font_metrics_depend_on_viewport_metrics: if root := s.document_.document_element() {
-				if current := abstract_element {
-					if voidptr(current.element()) == voidptr(root) {
-						computed_properties.font_metrics_depend_on_viewport_metrics()
-					} else {
-						s.root_element_font_metrics_depend_on_viewport_metrics
-					}
-				} else {
-					s.root_element_font_metrics_depend_on_viewport_metrics
-				}
+			root_font_metrics_depend_on_viewport_metrics: if is_document_element {
+				computed_properties.font_metrics_depend_on_viewport_metrics()
 			} else {
 				s.root_element_font_metrics_depend_on_viewport_metrics
 			}

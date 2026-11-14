@@ -6,7 +6,7 @@ import html
 import webgl
 
 fn test_public_base_draws_select_owner_and_notify_while_driver_validates_after_idl() {
-	$if !darwin {
+	$if !darwin && !linux && !windows {
 		return
 	}
 	mut document := html.parse_document('<canvas></canvas>')
@@ -40,9 +40,9 @@ fn test_public_base_draws_select_owner_and_notify_while_driver_validates_after_i
 				'drawArrays(0xbad,-1,-1)'
 			}
 			runtime.evaluate_host('baseDrawGL.${expression}')!
-			mut selected := [0, 0, 0, 0]!
+			mut selected := [i32(0), 0, 0, 0]!
 			C.vox_gl_int_parameter(0x0ba2, &selected[0])
-			assert selected == [1, 2, 3, 4]!
+			assert selected == [i32(1), 2, 3, 4]!
 			assert context.needs_to_present()
 			assert runtime.evaluate_host('baseDrawGL.getError()')! == expected.str()
 		}
@@ -52,9 +52,9 @@ fn test_public_base_draws_select_owner_and_notify_while_driver_validates_after_i
 			context.native.present_with_preserved_buffer(true)
 			other.native.make_current()
 			assert runtime.evaluate_host('(function(){const marker={};try{baseDrawGL.${expression};return false}catch(error){return error===marker}})()')! == 'true'
-			mut selected := [0, 0, 0, 0]!
+			mut selected := [i32(0), 0, 0, 0]!
 			C.vox_gl_int_parameter(0x0ba2, &selected[0])
-			assert selected == [9, 10, 11, 12]!
+			assert selected == [i32(9), 10, 11, 12]!
 			assert !context.needs_to_present()
 		}
 	}

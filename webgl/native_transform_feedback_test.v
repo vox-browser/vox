@@ -1,5 +1,23 @@
 module webgl
 
+fn test_native_transform_feedback_flags_are_webgl2_only_and_initially_false() {
+	mut context := WebGLRenderingContext.new(.webgl2, WebGLContextAttributes{}, [])
+	assert !context.is_context_lost()
+	for parameter in [transform_feedback_active, transform_feedback_paused] {
+		value := context.get_parameter(parameter)
+		assert value.kind == .boolean
+		assert !value.boolean
+	}
+	assert context.get_error() == no_error
+
+	mut legacy := WebGLRenderingContext.new(.webgl1, WebGLContextAttributes{}, [])
+	assert !legacy.is_context_lost()
+	for parameter in [transform_feedback_active, transform_feedback_paused] {
+		assert legacy.get_parameter(parameter).kind == .none
+		assert legacy.get_error() == invalid_enum
+	}
+}
+
 fn native_tf_program(mut context WebGLRenderingContext) &WebGLProgram {
 	mut vertex := context.create_shader(vertex_shader) or { panic('vertex') }
 	mut fragment := context.create_shader(fragment_shader) or { panic('fragment') }

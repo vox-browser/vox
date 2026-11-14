@@ -11,7 +11,7 @@ fn test_scalar_vertex_attributes_use_source_gl_entry_points_and_actual_driver_de
 		context.viewport(1, 2, 3, 4)
 		other.viewport(9, 10, 11, 12)
 		context.native.make_current()
-		mut limit := 0
+		mut limit := i32(0)
 		C.vox_gl_int_parameter(GLenum(0x8869), &limit)
 		assert limit > 0
 		for values in [
@@ -47,9 +47,9 @@ fn test_scalar_vertex_attributes_use_source_gl_entry_points_and_actual_driver_de
 							context.vertex_attrib4f(index, values[0], values[1], values[2], values[3])
 						}
 					}
-					mut selected := [0, 0, 0, 0]!
+					mut selected := [i32(0), 0, 0, 0]!
 					C.vox_gl_int_parameter(viewport, &selected[0])
-					assert selected == [1, 2, 3, 4]!
+					assert selected == [i32(1), 2, 3, 4]!
 					if expected_error != no_error {
 						assert context.get_error() == expected_error
 					}

@@ -4,15 +4,14 @@ $if linux || cpuraster_freetype ? {
 	$if linux {
 		#pkgconfig freetype2
 	} $else {
-		// Test-only FreeType backend on macOS, using the oracle's exact FT.
+		// Test-only FreeType backend on macOS: Homebrew's FreeType
+		// (`brew install freetype`).
 		$if arm64 {
-			#flag -I @DIR/../../3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/include
-			#flag -L @DIR/../../3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib
-			#flag -Wl,-rpath,@DIR/../../3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib
+			#flag -I/opt/homebrew/opt/freetype/include/freetype2
+			#flag -L/opt/homebrew/opt/freetype/lib
 		} $else {
-			#flag -I @DIR/../../3rd/ladybird/Build/release/vcpkg_installed/x64-osx-dynamic/include
-			#flag -L @DIR/../../3rd/ladybird/Build/release/vcpkg_installed/x64-osx-dynamic/lib
-			#flag -Wl,-rpath,@DIR/../../3rd/ladybird/Build/release/vcpkg_installed/x64-osx-dynamic/lib
+			#flag -I/usr/local/opt/freetype/include/freetype2
+			#flag -L/usr/local/opt/freetype/lib
 		}
 		#flag -lfreetype
 	}
@@ -38,6 +37,15 @@ $if linux || cpuraster_freetype ? {
 	}
 
 	fn open_glyph_face(path string) ?GlyphFace { return open_freetype_face(path, 0) }
+
+	// FreeType faces are files; installed CoreText registrations do not apply.
+	pub fn glyph_face_style(path string, index int) ?(bool, bool) {
+		return none
+	}
+
+	pub fn register_glyph_face(key string, path string, postscript_name string, tags []u32, values []f32) bool {
+		return false
+	}
 
 	fn open_freetype_face(path string, index int) ?GlyphFace {
 		mut flags := i32(0)

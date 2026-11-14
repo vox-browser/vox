@@ -68,10 +68,10 @@ fn test_source_shader_program_parameters_query_native_status_and_preserve_source
 		assert owner.get_error() == no_error
 		other.native.make_current()
 		// Source's foreign handle return precedes any actual sync owner selection.
-		mut other_current_program := 0
+		mut other_current_program := i32(0)
 		C.vox_gl_int_parameter(current_program, &other_current_program)
 		invalid_program := owner.get_program_parameter(foreign_program, GLenum(0xbad))
-		mut current := 0
+		mut current := i32(0)
 		C.vox_gl_int_parameter(current_program, &current)
 		assert current == other_current_program
 		assert invalid_program.kind == .none

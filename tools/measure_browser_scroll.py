@@ -163,16 +163,12 @@ def main():
     env.pop("LADYBIRD_SCREENSHOT_DELAY_SECONDS", None)
     if args.capture:
         env["LADYBIRD_SCREENSHOT_DELAY_SECONDS"] = "0"
-    library = binary.parent / "libLadybirdVSkiaText.dylib"
-    if not library.is_file() and len(binary.parents) > 3:
-        library = binary.parents[3] / "libLadybirdVSkiaText.dylib"
+    # The browser loads its optional native helpers from beside the executable.
+    library = binary.parent / "libVoxAVIF.dylib"
     library_digest = hashlib.sha256(library.read_bytes()).hexdigest() if library.is_file() else None
     native_libraries = {path: hashlib.sha256(path.read_bytes()).hexdigest()
-                        for name in ("libLadybirdVSkiaText.dylib", "libVoxGraphite.dylib",
-                                     "libVoxGraphiteDawn.dylib")
-                        if (path := library.parent / name).is_file()}
-    if library.is_file():
-        env["DYLD_LIBRARY_PATH"] = str(library.parent)
+                        for name in ("libVoxAVIF.dylib", "libVoxJSCOnV8.dylib")
+                        if (path := binary.parent / name).is_file()}
     env.update(item.split("=", 1) for item in args.env)
     if args.idle:
         env["VOX_SCROLL_PROFILE_IDLE"] = "1"
@@ -229,7 +225,7 @@ def main():
     if digest != hashlib.sha256(binary.read_bytes()).hexdigest():
         raise RuntimeError("Browser executable changed during measurement")
     if library_digest and library_digest != hashlib.sha256(library.read_bytes()).hexdigest():
-        raise RuntimeError("Native replay library changed during measurement")
+        raise RuntimeError("Native AVIF library changed during measurement")
     for path, original_digest in native_libraries.items():
         if original_digest != hashlib.sha256(path.read_bytes()).hexdigest():
             raise RuntimeError(f"Native library changed during measurement: {path}")

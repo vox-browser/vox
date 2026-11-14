@@ -5,8 +5,6 @@ module browserjs
 import html
 import webgl
 
-fn C.glGetAttachedShaders(u32, int, &int, &u32)
-fn C.glIsShader(u32) u8
 
 fn test_public_get_attached_shaders_wraps_retained_deleted_and_first_exposed_records() {
 	$if !darwin {
@@ -29,9 +27,9 @@ fn test_public_get_attached_shaders_wraps_retained_deleted_and_first_exposed_rec
 		mut other := host.contexts[other_key] or { panic('other shader context') }
 		other.native.make_current()
 		assert runtime.evaluate_host('recordShaderGL.getAttachedShaders(typedRecordProgram).length===0')! == 'true'
-		mut selected := [0, 0, 0, 0]!
+		mut selected := [i32(0), 0, 0, 0]!
 		C.vox_gl_int_parameter(0x0ba2, &selected[0])
-		assert selected == [9, 10, 11, 12]!
+		assert selected == [i32(9), 10, 11, 12]!
 		// The last registered program belongs to the public wrapper above.
 		program_wrapper := host.next_handle.str()
 		mut program := host.programs[program_wrapper] or { panic('typed record program') }
@@ -49,17 +47,17 @@ fn test_public_get_attached_shaders_wraps_retained_deleted_and_first_exposed_rec
 		assert voidptr(&fragment.object) !in host.platform_objects
 		mut count := 0
 		mut native_names := [u32(0), 0]!
-		C.glGetAttachedShaders(program.object.native_name(),
+		C.vox_gl_attached_shaders(program.object.native_name(),
 			2, &count, &native_names[0])
 		assert count == 2
 		assert vertex_native in native_names
 		assert fragment_native in native_names
-		assert C.glIsShader(vertex_native) == 1
-		assert C.glIsShader(fragment_native) == 1
+		assert C.vox_gl_is_object(9,vertex_native) == 1
+		assert C.vox_gl_is_object(9,fragment_native) == 1
 		other.native.make_current()
 		assert runtime.evaluate_host(r'(function(){globalThis.firstTypedShaders=recordShaderGL.getAttachedShaders(typedRecordProgram);const second=recordShaderGL.getAttachedShaders(typedRecordProgram);return firstTypedShaders.length===2&&firstTypedShaders!==second&&firstTypedShaders.every((shader,index)=>shader instanceof WebGLShader&&shader===second[index])})()')! == 'true'
 		C.vox_gl_int_parameter(0x0ba2, &selected[0])
-		assert selected == [9, 10, 11, 12]!
+		assert selected == [i32(9), 10, 11, 12]!
 		vertex_wrapper := host.platform_objects[voidptr(&vertex.object)] or { panic('vertex wrapper') }
 		fragment_wrapper := host.platform_objects[voidptr(&fragment.object)] or { panic('fragment wrapper') }
 		registered_vertex := host.shaders[vertex_wrapper] or { panic('vertex record') }
@@ -70,18 +68,18 @@ fn test_public_get_attached_shaders_wraps_retained_deleted_and_first_exposed_rec
 		assert registered_fragment.object.label() == 'retained deleted fragment'
 		assert runtime.evaluate_host(r'(function(){const gl=recordShaderGL;for(const shader of firstTypedShaders){if(gl.getShaderSource(shader)!==null||gl.getError()!==gl.INVALID_OPERATION)return false;gl.deleteShader(shader);if(gl.getError()!==gl.NO_ERROR)return false}return gl.getAttachedShaders(typedRecordProgram)[0]===firstTypedShaders[0]})()')! == 'true'
 		context.delete_program(program)
-		assert C.glIsShader(vertex_native) == 0
-		assert C.glIsShader(fragment_native) == 0
+		assert C.vox_gl_is_object(9,vertex_native) == 0
+		assert C.vox_gl_is_object(9,fragment_native) == 0
 		other.native.make_current()
 		assert runtime.evaluate_host('recordShaderGL.getAttachedShaders(typedRecordProgram)===null')! == 'true'
 		C.vox_gl_int_parameter(0x0ba2, &selected[0])
-		assert selected == [9, 10, 11, 12]!
+		assert selected == [i32(9), 10, 11, 12]!
 		assert runtime.evaluate_host('recordShaderGL.getError()===recordShaderGL.INVALID_OPERATION')! == 'true'
 		runtime.evaluate_host('globalThis.foreignAttachedProgram=recordShaderOther.createProgram();')!
 		other.native.make_current()
 		assert runtime.evaluate_host('recordShaderGL.getAttachedShaders(foreignAttachedProgram)===null')! == 'true'
 		C.vox_gl_int_parameter(0x0ba2, &selected[0])
-		assert selected == [9, 10, 11, 12]!
+		assert selected == [i32(9), 10, 11, 12]!
 		assert runtime.evaluate_host('recordShaderGL.getError()===recordShaderGL.INVALID_OPERATION')! == 'true'
 	}
 }

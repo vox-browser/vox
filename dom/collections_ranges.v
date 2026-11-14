@@ -559,7 +559,10 @@ pub fn (c &HTMLCollection) update_cache_if_needed() {
 	} else {
 		document.dom_tree_version()
 	}
-	if c.cache_initialized && c.cached_dom_tree_version == current_dom_tree_version {
+	current_attribute_version := if document == unsafe { nil } { u64(0) } else { document.attribute_version() }
+	if c.cache_initialized && c.cached_dom_tree_version == current_dom_tree_version
+		&& c.cached_attribute_version == current_attribute_version
+		&& c.cached_document_identity == voidptr(document) {
 		return
 	}
 
@@ -574,6 +577,8 @@ pub fn (c &HTMLCollection) update_cache_if_needed() {
 	mut mutable_collection := unsafe { &HTMLCollection(c) }
 	mutable_collection.cached_elements = elements
 	mutable_collection.cached_dom_tree_version = current_dom_tree_version
+	mutable_collection.cached_attribute_version = current_attribute_version
+	mutable_collection.cached_document_identity = voidptr(document)
 	mutable_collection.cache_generation++
 	mutable_collection.cache_initialized = true
 }
@@ -996,6 +1001,8 @@ pub mut:
 	associated_element   &Element = unsafe { nil }
 	associated_attribute string
 	token_set            []string
+mut:
+	updating_attribute   bool
 }
 
 pub fn DOMTokenList.create(associated_element &Element, associated_attribute string) &DOMTokenList {
@@ -1025,6 +1032,7 @@ pub fn (mut d DOMTokenList) visit_edges(mut visitor CellVisitor) {
 
 // https://dom.spec.whatwg.org/#ref-for-domtokenlist
 pub fn (mut d DOMTokenList) associated_attribute_changed(value string) {
+	if d.updating_attribute { return }
 	// 1. If localName is set's attribute name, namespace is null, and value is null, then empty token set.
 	// 2. Otherwise, if localName is set's attribute name and namespace is null, then set set's token set to value, parsed.
 	// AD-HOC: The caller is responsible for checking the name and namespace.
@@ -1246,6 +1254,8 @@ pub fn (mut d DOMTokenList) run_update_steps() {
 	}
 	// 2. Set an attribute value given set's element, set's attribute name, and the result of running the ordered set serializer for set's token set.
 	mut element := unsafe { &Element(d.associated_element) }
+	d.updating_attribute = true
+	defer { d.updating_attribute = false }
 	element.set_attribute_value(d.associated_attribute, d.serialize_ordered_set())
 }
 
@@ -2248,13 +2258,15 @@ pub fn (mut r StaticRange) initialize() {
 }
 
 pub fn Range.create(document &Document) &Range {
+	// The live-range registry outlives the current parser/frame arena, and a
+	// range can move both boundaries into another document before retirement.
+	persistent := platform.enter_persistent()
+	defer { platform.leave_persistent(persistent) }
 	range := &Range{
 		start_container_: unsafe { &Node(document) }
 		end_container_: unsafe { &Node(document) }
 	}
-	persistent := platform.enter_persistent()
 	dom_live_ranges[u64(voidptr(range))] = range
-	platform.leave_persistent(persistent)
 	return range
 }
 
@@ -2271,15 +2283,15 @@ pub fn Range.create_from_window(window &Window) &Range {
 pub fn Range.create_from_boundary_points(start_container &Node, start_offset int, end_container &Node, end_offset int) &Range {
 	assert start_offset <= start_container.length()
 	assert end_offset <= end_container.length()
+	persistent := platform.enter_persistent()
+	defer { platform.leave_persistent(persistent) }
 	range := &Range{
 		start_container_: start_container
 		start_offset_: start_offset
 		end_container_: end_container
 		end_offset_: end_offset
 	}
-	persistent := platform.enter_persistent()
 	dom_live_ranges[u64(voidptr(range))] = range
-	platform.leave_persistent(persistent)
 	return range
 }
 

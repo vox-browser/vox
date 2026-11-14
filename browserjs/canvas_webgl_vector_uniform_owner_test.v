@@ -5,9 +5,9 @@ module browserjs
 import html
 
 fn public_vector_owner() {
-	mut selected := [0, 0, 0, 0]!
+	mut selected := [i32(0), 0, 0, 0]!
 	C.vox_gl_int_parameter(0x0ba2, &selected[0])
-	assert selected == [1, 2, 3, 4]!
+	assert selected == [i32(1), 2, 3, 4]!
 }
 
 fn test_public_source_vector_uniform_owner_precedes_null_parent_span_and_size_returns() {
@@ -65,8 +65,8 @@ fn test_public_source_vector_uniform_owner_precedes_null_parent_span_and_size_re
 		other.native.make_current()
 		converted := runtime.evaluate_host(r'(function(){const marker={},order=[];try{vectorOwner.uniform4fv(null,[{valueOf(){order.push("item");throw marker}}]);return false}catch(error){return error===marker&&order.join(",")==="item"}})()')!
 		assert converted == 'true'
-		mut selected := [0, 0, 0, 0]!
+		mut selected := [i32(0), 0, 0, 0]!
 		C.vox_gl_int_parameter(0x0ba2, &selected[0])
-		assert selected == [9, 10, 11, 12]!
+		assert selected == [i32(9), 10, 11, 12]!
 	}
 }

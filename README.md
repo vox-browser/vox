@@ -6,13 +6,109 @@ https://vox-browser.org
 
 <img width="2078" height="1628" alt="image" src="https://github.com/user-attachments/assets/ed3d6776-78dd-4903-b716-a95cd5845cab" />
 
-Vox compiles in 2 seconds on M5 Max with `v .`!
+WebGL uses a shader frontend written in V, with direct Metal generation on
+macOS and native driver compilation on Linux and Windows. See
+[shader validation and backend equivalence tests](docs/SHADER_VALIDATION.md).
 
-With the native dependencies installed, use a current V compiler:
+### Building
+
+Setup and build helpers run as V `.vsh` scripts. Python is used by optional
+tests, benchmarks, and generators. See
+[build-tool commands](tools/BUILDING.md).
+
+Install a current [V compiler](https://github.com/vlang/v), put `v` on `PATH`,
+and install the shared V UI with `v install ui2` (or update it with `v up ui2`).
+
+Install native dependencies once, then prepare the development environment once
+per terminal from the repository root. Subsequent builds use **`v .`**. The setup
+command prepares native bridges and compiler adapters and selects the checked C
+backend. Re-run setup after updating V, UI2 or the build dependencies. `V_BIN`
+and `UI2_SOURCE_DIR` can select existing checkouts.
+
+#### macOS
 
 ```sh
-v -enable-globals .
+brew install freetype openssl ffmpeg libavif
+eval "$(sh tools/run_v_tool.sh dev_build_env)"
+v .
+./vox2 https://example.com
 ```
+
+The first setup installs the [HarfBuzz VPM module](https://github.com/vlang/harfbuzz),
+including a checksum-verified, optimized HarfBuzz 15.1.0 archive for Apple Silicon
+or Intel from its GitHub release. It enables OpenType/AAT/CoreText without
+Graphite2 and reuses the installed archive for development and production builds.
+HarfBuzz is downloaded precompiled; no local C++ build or Homebrew HarfBuzz is
+needed. Use a current VPM with `vpm-binaries.json` support. The dependency is also
+listed in `v.mod`, so `v install` installs it directly.
+
+For an existing macOS checkout, rerun
+`eval "$(sh tools/run_v_tool.sh dev_build_env)"` before the next `v .` build.
+
+Font selection, Unicode processing and glyph-run policy use V code with bundled
+Unicode 17 data. FFmpeg and libavif supply media and AVIF support. HTTP uses
+macOS's built-in libcurl; Homebrew curl is not required. OpenSSL remains a
+dependency for WebCrypto. To produce the signed application bundle:
+
+```sh
+sh build-prod-browser.sh --prod
+open Build/v/Vox.app
+```
+
+#### Linux (Ubuntu 24.04+ / Debian 13)
+
+```sh
+sudo apt-get update
+sudo apt-get install build-essential clang pkg-config git ca-certificates \
+    libjavascriptcoregtk-4.1-dev libglib2.0-dev libharfbuzz-dev \
+    libcurl4-openssl-dev libssl-dev libegl1-mesa-dev libgles2-mesa-dev \
+    libgl1-mesa-dev libxi-dev libxcursor-dev libxrandr-dev libx11-dev \
+    libasound2-dev libgc-dev libfreetype-dev libfontconfig-dev libwebp-dev \
+    libpng-dev libjpeg-dev fonts-liberation2 fonts-dejavu-core
+eval "$(sh tools/run_v_tool.sh dev_build_env)"
+v .
+Build/linux/vox https://example.com
+```
+
+The desktop renderer uses X11 (including XWayland). For the managed production
+build use `sh build-prod-browser.sh`. See [Linux setup and tests](docs/LINUX.md),
+including the Xvfb window test and optional media dependencies.
+
+#### Windows (x86-64)
+
+Use an [MSYS2 MinGW64](https://www.msys2.org/) terminal with V and the
+compiler tools on `PATH`. Install:
+
+```sh
+pacman -S --needed mingw-w64-x86_64-toolchain mingw-w64-x86_64-pkgconf \
+    mingw-w64-x86_64-icu mingw-w64-x86_64-harfbuzz mingw-w64-x86_64-freetype \
+    mingw-w64-x86_64-openssl mingw-w64-x86_64-curl mingw-w64-x86_64-7zip
+```
+
+Supply a Windows x86-64 `JavaScriptCore.dll` and its matching WebKit DLLs;
+[Playwright's WebKit distribution](https://playwright.dev/docs/browsers) is one
+source. The setup verifies the required exports and creates its import library:
+
+```sh
+eval "$(sh tools/run_v_tool.sh dev_build_env --shell sh \
+    --javascriptcore-dll C:/path/to/webkit/JavaScriptCore.dll)"
+v -b c .
+./vox2.exe https://example.com
+```
+
+Keep MinGW and matching WebKit DLL directories on `PATH`, or put their DLLs
+beside the executable. Enable Windows Developer Mode for the module links.
+Some pixel-test fixture names cannot be checked out on Windows; use the
+[sparse-checkout instructions](docs/WINDOWS.md#checkout-limitation).
+[Windows build details](docs/WINDOWS.md) also cover cross-compiling and the
+current runtime limitations.
+
+For a quick engine check, run the resulting executable with `--headless-smoke`.
+The latest [Linux VM checks](docs/LINUX.md#vm-follow-up-2026-11-12) and
+[Windows VM checks](docs/WINDOWS.md#vm-follow-up-2026-11-12) record the verified
+builds, runtime checks and earlier failed attempts.
+Repository contributors run builds and tests through
+`sh tools/run_v_tool.sh run_memory_bounded --lock Build/JOB.lock --report Build/JOB.json -- v .`.
 
 HTML/CSS - pure V, rendering via the V graphics module (DirectX 11, Metal, OpenGL, FreeType/stb_truetype).
 

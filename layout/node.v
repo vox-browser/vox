@@ -38,6 +38,13 @@ pub mut:
 	is_button_content_box_             bool
 	is_missing_table_cell_             bool
 	needs_layout_update_               bool
+	// Set once this box is laid out or sized for an ancestor's measurement
+	// (intrinsic sizes, probes): that ancestor's geometry depends on its
+	// content, so the box cannot bound an incremental relayout.
+	sized_by_ancestor_measurement_     bool
+	// A descendant beyond an SVG-root relayout boundary needs layout, which
+	// the boundary keeps out of needs_layout_update_ (incremental_layout.v).
+	descendant_needs_layout_update_    bool
 	initial_quote_nesting_level_       u32
 	has_been_wrapped_in_table_wrapper_ bool
 	// Concrete-type discriminants (C++ uses virtual fast_is<T>(); V has no RTTI). Each subclass's
@@ -286,6 +293,7 @@ pub fn (mut n Node) set_needs_layout_update(value bool) {
 		n.needs_layout_update_ = false
 		return
 	}
+	note_layout_invalidation_origin(n)
 	if n.needs_layout_update_ {
 		return
 	}
@@ -317,6 +325,14 @@ pub fn (mut n Node) set_needs_layout_update(value bool) {
 		}
 		mutable_current.needs_layout_update_ = true
 		if mutable_current.is_svg_svg_box() {
+			mut beyond := mutable_current.parent()
+			for beyond != none {
+				outer := beyond or { break }
+				mut mutable_outer := unsafe { &Node(outer) }
+				if mutable_outer.descendant_needs_layout_update_ { break }
+				mutable_outer.descendant_needs_layout_update_ = true
+				beyond = mutable_outer.parent()
+			}
 			break
 		}
 		ancestor = mutable_current.parent()
@@ -344,6 +360,7 @@ pub fn (mut n Node) set_needs_layout_update(value bool) {
 
 pub fn (mut n Node) reset_needs_layout_update() {
 	n.needs_layout_update_ = false
+	n.descendant_needs_layout_update_ = false
 }
 
 pub fn (n &Node) generated_for_pseudo_element() ?css.PseudoElement {
@@ -2190,6 +2207,7 @@ pub mut:
 	produces_line_box_fragment_when_empty_ bool
 	retains_empty_generated_fragment_ bool
 	cached_inline_chunks_         ?[]TextNodeChunk
+	cached_inline_direction_mode_ TextDirectionMode
 	cached_font_environment_generation_ u64
 	cached_inline_font_owner_ ?&css.FontCascadeList
 	cached_inline_font_style_ voidptr

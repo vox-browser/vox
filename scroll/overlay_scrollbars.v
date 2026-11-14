@@ -34,6 +34,13 @@ fn (bars &BrowserOverlayScrollbars) opacity_at(now_ns i64) f64 {
 	return 1 - f64(elapsed - overlay_scrollbar_hold_ns) / f64(overlay_scrollbar_fade_ns)
 }
 
+fn (bars &BrowserOverlayScrollbars) capture_opacity_at(now_ns i64, chromium_capture bool) f64 {
+	// Brave's reference harness explicitly hides scrollbars. Match that policy
+	// for captures even when macOS prefers persistent scrollbars.
+	if chromium_capture { return 0 }
+	return bars.opacity_at(now_ns)
+}
+
 fn (mut app BrowserApp) overlay_scrollbar_activity() {
 	if !app.overlay_scrollbars.enabled { return }
 	now := time.sys_mono_now()
@@ -69,11 +76,12 @@ fn (mut app BrowserApp) prepare_overlay_scrollbars() {
 			&& C.native_prefers_overlay_scrollbars() != 0
 	}
 	app.overlay_scrollbars.enabled = enabled
-	app.overlay_scrollbars.paint_opacity = app.overlay_scrollbars.opacity_at(time.sys_mono_now())
+	chromium_capture := app.screenshot_path != '' && app.document != unsafe { nil }
+		&& app.document.font_rendering_policy() == .chromium
+	app.overlay_scrollbars.paint_opacity = app.overlay_scrollbars.capture_opacity_at(time.sys_mono_now(), chromium_capture)
 	// Match the isolated Chromium reference capture's hidden scrollbars. A
 	// background screenshot window can still receive incidental hover events.
-	if enabled && app.screenshot_path != '' {
-		app.overlay_scrollbars.paint_opacity = 0
+	if chromium_capture {
 		return
 	}
 	now := time.sys_mono_now()

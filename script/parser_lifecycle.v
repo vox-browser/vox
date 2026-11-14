@@ -124,7 +124,15 @@ fn (mut host BrowserParserScriptHost) run_script(source browserjs.ScriptSource) 
 	if host.engine != .libjs { host.runtime.evaluate_host('__ladybirdRefreshNamedElements()')! }
 	// The element model sets currentScript and restores it across nested writes.
 	// Each evaluation flushes mutations before the parser consumes another token.
-	host.runtime.run_document_scripts([source])!
+	host.runtime.run_document_scripts([source]) or {
+		// HTML's element model consumes evaluation failures while dispatching
+		// its error event. Retain the translated backend's diagnostic before
+		// that boundary, just as the JSC backend reports through its console.
+		if host.engine == .libjs {
+			host.messages << 'JavaScript (LibJS): ${source.url}: ${err.msg()}'
+		}
+		return err
+	}
 	if host.engine != .libjs {
 		flush_compact_dom_mutations(host.document, host.runtime)!
 	}
@@ -167,7 +175,12 @@ fn (mut host BrowserParserScriptHost) did_finish_parsing() {
 fn (mut host BrowserParserScriptHost) flush(mut messages []string) ?string {
 	messages << host.messages
 	host.messages = []string{}
-	if !host.initialized || host.closed || host.engine == .libjs { return none }
+	if !host.initialized || host.closed { return none }
+	if host.engine == .libjs {
+		mut runtime := host.runtime
+		messages << runtime.take_libjs_messages()
+		return none
+	}
 	commit := commit_compact_dom_task(host.document, host.runtime, mut messages) or {
 		messages << 'JavaScript parser state: ${err.msg()}'
 		return none

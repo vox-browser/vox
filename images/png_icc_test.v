@@ -5,6 +5,7 @@ import gg
 import html
 import os
 import crypto.sha256
+import compress.deflate
 
 fn test_native_local_non_icc_png_matches_the_fetched_pixels_and_profile_path() {
 	$if !macos { return }
@@ -60,4 +61,25 @@ fn test_native_local_icc_png_uses_the_resource_decoder() {
 	assert native_png_channel_marker(frame.bitmap(), bytes, false) == 6
 	plain := os.read_bytes(os.join_path(@VMODROOT, 'Tests/Browser/Brave/resources/icc-matrix-untagged.png'))!
 	assert native_png_channel_marker(frame.bitmap(), plain, true) == 6
+}
+
+// The registered V inflater decodes iCCP zlib data, enforces the native
+// bridge's size limit while decoding, and rejects non-zlib input.
+fn test_native_png_icc_inflater_decodes_within_its_limit() {
+	$if !macos {
+		return
+	}
+	profile := []u8{len: 70000, init: u8(index % 7)}
+	compressed := deflate.compress_zlib(profile)!
+	mut length := uint(0)
+	decoded := png_icc_inflate_profile(compressed.data, uint(compressed.len), 1 << 20, &length)
+	assert !isnil(decoded)
+	assert unsafe { decoded.vbytes(int(length)) } == profile
+	unsafe { C.free(decoded) }
+	assert isnil(png_icc_inflate_profile(compressed.data, uint(compressed.len), 40000, &length))
+	raw := deflate.compress_raw(profile)!
+	assert isnil(png_icc_inflate_profile(raw.data, uint(raw.len), 1 << 20, &length))
+	mut corrupt := compressed.clone()
+	corrupt[corrupt.len - 1] ^= 1
+	assert isnil(png_icc_inflate_profile(corrupt.data, uint(corrupt.len), 1 << 20, &length))
 }

@@ -42,7 +42,8 @@ Available backends implement SHA-1, SHA-2, SHA-3, AES-CBC, AES-CTR,
 general-IV/general-tag AES-GCM, AES-KW, AES-OCB, HMAC, HKDF, PBKDF2,
 Argon2, Ed25519, Ed448, X25519, X448, ChaCha20-Poly1305, KMAC128/256, and cSHAKE128/256. AES-OCB
 and KMAC use the native OpenSSL EVP operations called by upstream LibCrypto;
-OpenSSL is resolved through `pkg-config openssl`. cSHAKE preserves upstream's
+OpenSSL headers use Homebrew prefixes on macOS and `pkg-config openssl` on
+other platforms. cSHAKE preserves upstream's
 restriction to empty functionName/customization. Focused tests include all 18
 upstream AES-OCB fixtures and six upstream SP 800-185 KMAC vectors.
 

@@ -7,9 +7,9 @@ import json2
 import webgl
 
 fn public_attrib_binding_lost_other_driver(program u32) {
-	mut selected := [0, 0, 0, 0]!
+	mut selected := [i32(0), 0, 0, 0]!
 	C.vox_gl_int_parameter(webgl.viewport, &selected[0])
-	assert selected == [9, 10, 11, 12]!
+	assert selected == [i32(9), 10, 11, 12]!
 	C.vox_gl_link_program(program)
 	assert C.vox_gl_program_parameter(program, webgl.link_status) == 1
 	assert C.vox_gl_attrib_location(program, c'position') == 2
@@ -52,7 +52,7 @@ fn test_public_lost_bind_attrib_preserves_other_real_linked_location_and_source_
 		assert program_name != 0
 		owner.lose_context_from_compositor_loss()
 		other.viewport(9, 10, 11, 12)
-		mut unused := 0
+		mut unused := i32(0)
 		C.vox_gl_int_parameter(u32(0xffff_ffff), &unused)
 		assert runtime.evaluate_host('globalThis.after=gl.createProgram();after instanceof WebGLProgram')! == 'true'
 		for argument in ['original', 'after', 'sentinel'] {

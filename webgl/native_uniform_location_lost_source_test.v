@@ -3,10 +3,10 @@
 module webgl
 
 fn uniform_location_lost_other_driver(program GLuint, location int) {
-	mut selected := [0, 0, 0, 0]!
+	mut selected := [i32(0), 0, 0, 0]!
 	C.vox_gl_int_parameter(viewport, &selected[0])
-	assert selected == [9, 10, 11, 12]!
-	mut bound := -1
+	assert selected == [i32(9), 10, 11, 12]!
+	mut bound := i32(-1)
 	C.vox_gl_int_parameter(current_program, &bound)
 	assert bound == int(program)
 	assert C.vox_gl_program_parameter(program, link_status) == 1
@@ -52,7 +52,7 @@ fn test_source_lost_uniform_location_returns_generated_zero_in_fresh_owned_paren
 		assert C.vox_gl_get_error() == no_error
 		owner.lose_context_from_compositor_loss()
 		other.viewport(9, 10, 11, 12)
-		mut unused := 0
+		mut unused := i32(0)
 		C.vox_gl_int_parameter(GLenum(0xffff_ffff), &unused)
 		mut after := owner.create_program()
 		assert after.object.native_name() == 0

@@ -9,8 +9,9 @@ fn test_default_global_property_order_follows_upstream_function_then_value_insta
 	// and other constructor/prototype entries, which are pending.
 	assert vm.get_global_object().own_property_keys().map(it.str()) == ['isFinite', 'isNaN',
 		'parseFloat', 'parseInt', 'decodeURI', 'decodeURIComponent', 'encodeURI', 'encodeURIComponent',
-		'globalThis', 'Infinity', 'NaN', 'undefined', 'ArrayBuffer', 'Boolean', 'DataView',
-		'SharedArrayBuffer', 'Symbol', 'Math', 'escape', 'unescape']
+		'globalThis', 'Infinity', 'NaN', 'undefined', 'Array', 'ArrayBuffer', 'Boolean', 'DataView',
+		'Error', 'EvalError', 'InternalError', 'Object', 'RangeError', 'ReferenceError', 'RegExp',
+		'SharedArrayBuffer', 'String', 'Symbol', 'SyntaxError', 'TypeError', 'URIError', 'JSON', 'Math', 'escape', 'unescape']
 }
 
 fn test_default_global_value_bindings_have_standard_descriptors() {
@@ -46,4 +47,17 @@ fn test_global_this_binding_uses_the_host_supplied_this_value() {
 	assert proxy == vm.realm().global_environment_record().global_this_value
 	assert proxy.class_name == 'WindowProxy'
 	assert proxy != global
+}
+
+fn test_intrinsic_constructors_exist_before_the_host_creates_its_global_object() {
+	mut vm := VM.create()
+	initialize_host_defined_realm(mut vm, RealmGlobalHooks{
+		create_global_object: fn (realm &Realm) &Object {
+			assert realm.object_constructor != none
+			assert realm.array_constructor != none
+			assert realm.string_constructor != none
+			assert realm.regexp_constructor != none
+			return Object.create(realm, realm.object_prototype)
+		}
+	})!
 }

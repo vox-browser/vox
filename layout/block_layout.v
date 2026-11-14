@@ -429,7 +429,40 @@ fn layout_inside_independent_formatting_context(mut state LayoutState, box &Node
 // flex/grid containers: they compute their intrinsic size without performing
 // the final normal-layout pass over their items.
 fn layout_inside_independent_formatting_context_with_mode(mut state LayoutState, box &Node, mut box_state UsedValues, layout_mode LayoutMode, available_space AvailableSpace) FormattingContextResult {
+	// Keep the inputs of a committed text-control layout for text_control_relayout.v.
+	records_text_control := layout_mode == .normal && state.subtree_root == none
+		&& !disable_text_control_relayout && text_control_host(box)
+	text_control_before := if records_text_control { &UsedValues{...*box_state} } else { unsafe { &UsedValues(nil) } }
+	// incremental_layout.v: a box laid out for a measurement depends on an
+	// ancestor's sizing; a committed layout of any other box bounds a relayout.
+	if layout_mode != .normal || state.subtree_root != none {
+		mark_sized_by_ancestor_measurement(box)
+	}
+	// measurement_subtree_reuse.v: a measurement lays its flex and grid items
+	// out in normal mode; a clean item's committed layout answers it.
+	if layout_mode == .normal && state.subtree_root != none
+		&& state.measurement_reuse_source_ != unsafe { nil } && relayout_root_candidate(box) {
+		if reused := reuse_committed_subtree_layout_in_measurement(mut state, box, mut box_state,
+			available_space) {
+			return reused
+		}
+	}
+	records_relayout_root := layout_mode == .normal && state.subtree_root == none
+		&& relayout_root_candidate(box)
+	if records_relayout_root {
+		note_repeated_relayout_root(mut state, box, box_state, available_space)
+		if reused := reuse_committed_subtree_layout(mut state, box, mut box_state, available_space) {
+			return reused
+		}
+		// The index is shared by all contexts in this pass. Its first allocation
+		// and later growth must outlive each context's geometry workspace.
+		mut retained := retain_geometry_allocations()
+		state.subtree_layout_decisions_[u64(voidptr(box))] = .fresh
+		retained.finish()
+	}
+	relayout_before := if records_relayout_root { &UsedValues{...layout_record_snapshot(box_state)} } else { unsafe { &UsedValues(nil) } }
 	mut result := layout_inside_independent_formatting_context_without_containment_override(mut state, box, mut box_state, layout_mode, available_space)
+	relayout_after := if records_relayout_root { &UsedValues{...layout_record_snapshot(box_state)} } else { unsafe { &UsedValues(nil) } }
 	if box.has_size_containment() {
 		// Every formatting context reports the sizes produced by its contents
 		// through this result. Replace both physical axes at that shared boundary.
@@ -443,6 +476,12 @@ fn layout_inside_independent_formatting_context_with_mode(mut state LayoutState,
 		} else {
 			result = FormattingContextResult{...result, automatic_content_height:box.explicit_intrinsic_inner_height() or { CSSPixels.new(0) }}
 		}
+	}
+	if records_text_control {
+		record_text_control_inner_layout(mut state, box, text_control_before, available_space, result)
+	}
+	if records_relayout_root {
+		record_relayout_root(mut state, box, relayout_before, relayout_after, available_space, result)
 	}
 	return result
 }

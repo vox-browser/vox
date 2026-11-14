@@ -6,8 +6,12 @@ import page
 
 fn test_script_policy_launch_overrides_do_not_change_engine_selection() {
 	assert parse_launch_options([])!.script_policy == .automatic
+	assert parse_launch_options([])!.js_engine == .javascriptcore
 	options := parse_launch_options(['--disable-javascript', '--js-engine=libjs', 'page.html'])!
 	assert options.script_policy == .disabled && options.js_engine == .libjs
+	assert options.js_engine_explicit
+	assert !parse_launch_options([])!.js_engine_explicit
+	assert parse_launch_options(['--js-engine','javascriptcore'])!.js_engine_explicit
 	assert options.source == 'page.html'
 	assert parse_launch_options(['--enable-javascript', 'https://wikipedia.org'])!.script_policy == .enabled
 	assert parse_launch_options(['--disable-javascript', '--enable-javascript'])!.script_policy == .enabled

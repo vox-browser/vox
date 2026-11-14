@@ -12,9 +12,9 @@ fn test_renderbuffer_parameter_source_name_gate_precedes_actual_sync_owner_selec
 		C.vox_gl_vertex_attrib_enable(0xffff_ffff, 1)
 		other.native.make_current()
 		assert context.get_renderbuffer_parameter(GLenum(0xffff), GLenum(0xffff)).kind == .none
-		mut selected := [0, 0, 0, 0]!
+		mut selected := [i32(0), 0, 0, 0]!
 		C.vox_gl_int_parameter(viewport, &selected[0])
-		assert selected == [9, 10, 11, 12]!
+		assert selected == [i32(9), 10, 11, 12]!
 		assert C.vox_gl_get_error() == no_error
 		assert context.get_error() == invalid_value
 		assert context.get_error() == invalid_enum
@@ -35,7 +35,7 @@ fn test_renderbuffer_parameter_source_name_gate_precedes_actual_sync_owner_selec
 				other.native.make_current()
 				result := context.get_renderbuffer_parameter(target, pname)
 				C.vox_gl_int_parameter(viewport, &selected[0])
-				assert selected == [1, 2, 3, 4]!
+				assert selected == [i32(1), 2, 3, 4]!
 				assert result.kind == .integer
 				assert result.integer == i64(expected)
 				if expected_error != no_error {
@@ -52,7 +52,7 @@ fn test_renderbuffer_parameter_source_name_gate_precedes_actual_sync_owner_selec
 		other.native.make_current()
 		assert context.get_renderbuffer_parameter(renderbuffer, 0x8d42).integer == expected_unbound
 		C.vox_gl_int_parameter(viewport, &selected[0])
-		assert selected == [1, 2, 3, 4]!
+		assert selected == [i32(1), 2, 3, 4]!
 		assert context.get_error() == expected_error
 		C.vox_gl_delete_object(2, native_buffer)
 	}

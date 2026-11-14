@@ -68,6 +68,7 @@ pub mut:
 
 	frame_id        u64
 	program_counter u32
+	lexical_scope_depth u32
 
 	// https://html.spec.whatwg.org/multipage/webappapis.html#skip-when-determining-incumbent-counter
 	skip_when_determining_incumbent_counter u32
@@ -191,6 +192,7 @@ pub fn (context &ExecutionContext) copy() &ExecutionContext {
 	duplicate.variable_environment = context.variable_environment
 	duplicate.private_environment = context.private_environment
 	duplicate.program_counter = context.program_counter
+	duplicate.lexical_scope_depth = context.lexical_scope_depth
 	duplicate.frame_id = context.frame_id
 	duplicate.yield_continuation = context.yield_continuation
 	duplicate.yield_is_await = context.yield_is_await

@@ -1409,6 +1409,36 @@ mut:
 	previous_inline_layouts_ map[u64]&RetainedInlineLayout
 	paint_coordinates_ &PaintCoordinateSession = unsafe { nil }
 	measurement_scratch_ MeasurementScratchScope
+	// Text-control relayout (text_control_relayout.v): the final inner layout
+	// of each text control, this committed pass's inputs, and the invalidations
+	// recorded against it until the next pass.
+	text_control_layouts_ map[u32]TextControlInnerLayout
+	committed_pass_ CommittedLayoutPass
+	dirty_text_controls_ []&Node
+	general_layout_invalidation_ bool
+	// Incremental relayout (incremental_layout.v): the committed inner layout
+	// of each box that can bound a relayout, each replaced box's natural size,
+	// and the layout invalidations recorded against this pass.
+	relayout_records_ map[u32]RelayoutRecord
+	replaced_sizes_ map[u32]ReplacedSizeEntry
+	layout_invalidation_origins_ []&Node
+	layout_invalidation_unbounded_ bool
+	resolved_anchor_positions_ bool
+	// The committed state whose clean subtrees this pass may reuse, and how
+	// each independent formatting context of this pass was laid out.
+	subtree_reuse_source_ &LayoutState = unsafe { nil }
+	subtree_layout_decisions_ map[u64]SubtreeLayoutDecision
+	// measurement_subtree_reuse.v: the first committed inner layout of each
+	// box this pass laid out again with other inputs, the serial of this pass,
+	// and, in a measurement, the committed state it may restore from.
+	first_relayout_records_ map[u32]RelayoutRecord
+	pass_serial_ u64
+	measurement_reuse_source_ &LayoutState = unsafe { nil }
+	// automatic_height_answer.v: the box, used width and automatic content
+	// height of the last inner layout that ran without any height.
+	automatic_height_answer_node_  voidptr
+	automatic_height_answer_width_ CSSPixels
+	automatic_height_answer_       CSSPixels
 }
 
 pub fn LayoutState.new() &LayoutState {
@@ -1453,6 +1483,12 @@ fn (mut source LayoutState) new_measurement_for_subtree(subtree_root &NodeWithSt
 	return &LayoutState{
 		measurement_scratch_: scratch
 		subtree_root: subtree_root
+		measurement_reuse_source_: if source.subtree_root == none {
+			source.subtree_reuse_source_
+		} else {
+			source.measurement_reuse_source_
+		}
+		pass_serial_: source.pass_serial_
 		measurement_chunk_pool_: source.measurement_chunk_pool_
 		used_values_store: UsedValuesPagedStore{
 			measurement_arena: &MeasurementUsedValuesArena{

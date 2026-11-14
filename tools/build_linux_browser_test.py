@@ -2,13 +2,15 @@ import json
 import os
 from pathlib import Path
 import shutil
+import shlex
+import re
 import subprocess
 import sys
 import tempfile
 import textwrap
 import unittest
 
-from rebuild_browser import BUILD_PROTOCOL
+BUILD_PROTOCOL = re.search(r"^const build_protocol = '([^']+)'", (Path(__file__).parent / 'buildtools/rebuild.v').read_text(), re.M).group(1)
 
 
 class LinuxCompilerSelectionTest(unittest.TestCase):
@@ -25,7 +27,7 @@ class LinuxCompilerSelectionTest(unittest.TestCase):
             directory.mkdir()
         self.shell = shutil.which('sh')
         self.assertIsNotNone(self.shell)
-        for command in ('dirname', 'mkdir'):
+        for command in ('sh', 'dirname', 'mkdir', 'rm'):
             executable = shutil.which(command)
             self.assertIsNotNone(executable)
             (self.helpers / command).symlink_to(executable)
@@ -51,6 +53,7 @@ class LinuxCompilerSelectionTest(unittest.TestCase):
             VOX_BUILD_TEST_LINUX_MODULES=str(self.root / 'linux-modules'),
             VOX_BUILD_TEST_SHELL=self.shell,
             VOX_BUILD_TEST_REENTER='0',
+            VOX_BUILD_TEST_REPO=str(self.repo),
             CC='clang',
             VOX_LINUX_CFLAGS='-O2',
         )
@@ -58,7 +61,7 @@ class LinuxCompilerSelectionTest(unittest.TestCase):
         # No native dependencies, compiler installation, or browser build is needed.
         self.write_executable(self.helpers / 'uname', "print('Linux')")
         self.write_executable(self.helpers / 'pkg-config', 'pass')
-        self.write_executable(self.helpers / 'python3', '''
+        self.write_executable(self.helpers / 'v-tool-fixture', '''
             import json
             import os
             from pathlib import Path
@@ -68,28 +71,36 @@ class LinuxCompilerSelectionTest(unittest.TestCase):
             with open(os.environ['VOX_BUILD_TEST_HELPER_LOG'], 'a') as log:
                 log.write(json.dumps({'argv': sys.argv[1:], 'cwd': os.getcwd(),
                                       'v_bin': os.environ.get('V_BIN')}) + '\\n')
-            if (Path(sys.argv[1]).name == 'rebuild_browser.py'
+            if (Path(sys.argv[1]).name == 'rebuild_browser'
                     and sys.argv[2:] == ['--build']
                     and os.environ['VOX_BUILD_TEST_REENTER'] == '1'):
                 # Model the supervisor's reentry from the repository directory.
-                repo = Path(sys.argv[1]).parent.parent
+                repo = Path(os.environ['VOX_BUILD_TEST_REPO'])
                 result = subprocess.run(
                     [os.environ['VOX_BUILD_TEST_SHELL'], str(repo / 'build-linux-browser.sh')],
                     cwd=repo, env=dict(os.environ, VOX_BUILD_SUPERVISED='1'))
                 raise SystemExit(result.returncode)
-            if Path(sys.argv[1]).name == 'prepare_prealloc_runtime.py':
+            if Path(sys.argv[1]).name == 'prepare_v_match_scope':
+                print(sys.argv[2])
+            elif Path(sys.argv[1]).name == 'prepare_prealloc_runtime':
                 failure = int(os.environ['VOX_BUILD_TEST_PREALLOC_FAILURE'])
                 if failure:
                     print('Unsupported V allocator', file=sys.stderr)
                     raise SystemExit(failure)
                 print(os.environ['VOX_BUILD_TEST_PREALLOC_MODULES'])
-            elif Path(sys.argv[1]).name == 'prepare_linux_modules.py':
+            elif Path(sys.argv[1]).name == 'prepare_linux_modules':
                 print(os.environ['VOX_BUILD_TEST_LINUX_MODULES'])
             elif Path(sys.argv[1]).name.startswith('prepare_'):
                 print(os.environ['VOX_BUILD_TEST_MODULES'])
-            if Path(sys.argv[1]).name == 'browser_backend.py':
+            if Path(sys.argv[1]).name == 'browser_backend':
                 print('fastc')
         ''')
+
+        tools = self.repo / 'tools'
+        tools.mkdir(exist_ok=True)
+        (tools / 'run_v_tool.sh').write_text('#!/bin/sh\nexec ' + shlex.quote(sys.executable)
+                                           + ' ' + shlex.quote(str(self.helpers / 'v-tool-fixture'))
+                                           + ' "$@"\n')
 
     def write_executable(self, path, body):
         path.parent.mkdir(parents=True, exist_ok=True)
@@ -136,7 +147,7 @@ class LinuxCompilerSelectionTest(unittest.TestCase):
         preparations = [item for item in helpers
                         if Path(item['argv'][0]).name.startswith('prepare_')]
         self.assertEqual([Path(item['argv'][0]).name for item in preparations],
-                         ['prepare_http_compat.py', 'prepare_ui2.py', 'prepare_linux_modules.py'])
+                         ['prepare_http_compat', 'prepare_ui2', 'prepare_linux_modules'])
         for preparation in preparations:
             self.assertEqual(preparation['argv'][1], str(compiler))
             self.assertEqual(preparation['cwd'], str(helper_cwd or self.caller))
@@ -167,8 +178,9 @@ class LinuxCompilerSelectionTest(unittest.TestCase):
         preparations = [item for item in helpers
                         if Path(item['argv'][0]).name.startswith('prepare_')]
         self.assertEqual([Path(item['argv'][0]).name for item in preparations],
-                         ['prepare_http_compat.py', 'prepare_ui2.py',
-                          'prepare_linux_modules.py', 'prepare_prealloc_runtime.py'])
+                         ((['prepare_v_match_scope'] if backend == 'c' else []) +
+                          ['prepare_http_compat', 'prepare_ui2',
+                           'prepare_linux_modules', 'prepare_prealloc_runtime']))
         for preparation in preparations:
             self.assertEqual(preparation['argv'][1], str(compiler))
             self.assertEqual(preparation['cwd'], str(helper_cwd or self.caller))
@@ -220,7 +232,7 @@ class LinuxCompilerSelectionTest(unittest.TestCase):
         self.assertFalse(self.compiler_log.exists())
         helpers = [json.loads(line) for line in self.helper_log.read_text().splitlines()]
         self.assertEqual([item['argv'] for item in helpers],
-                         [[str(self.repo / 'tools/rebuild_browser.py'), '--build']])
+                         [['rebuild_browser', '--build']])
         self.assertEqual(helpers[0]['v_bin'], str(compiler))
 
     def test_current_ui2_precedes_a_stale_linux_module(self):
@@ -275,7 +287,7 @@ class LinuxCompilerSelectionTest(unittest.TestCase):
                 self.assertFalse(self.compiler_log.exists())
                 helpers = [json.loads(line) for line in self.helper_log.read_text().splitlines()]
                 self.assertEqual([item['argv'] for item in helpers],
-                                 [[str(self.repo / 'tools/rebuild_browser.py'), '--upgrade-worker']])
+                                 [['rebuild_browser', '--upgrade-worker']])
 
     def test_current_supervisor_protocol_reaches_compiler(self):
         compiler = self.compiler(self.helpers / 'v')

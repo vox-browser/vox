@@ -1,3 +1,4 @@
+#pragma once
 // CoreText services for cpuraster's glyph masks, matching what LibWeb
 // Skia's SkTypeface_Mac and SkScalerContext_Mac ask of CoreText for an
 // unhinted anti-aliased (A8) strike. Everything else about the strike (the
@@ -10,6 +11,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include "glyph_smoothing_probe.h"
+#include <pthread.h>
+#include "../platform/native_state.h"
 
 // SkFontMgr_Mac::onMakeFromFile() -> SkTypeface_Mac::MakeFromStream():
 // the file's bytes, CTFontManagerCreateFontDescriptorFromData() and
@@ -60,6 +63,229 @@ static void* cpuraster_ct_font_from_file(const char* path, int* flags) {
     return (void*)font;
 }
 
+// Retained document text names faces two ways (platform/system_font_matching.v):
+// a font file with its collection index, or a key that the browser registered
+// for an installed face plus variation coordinates. The registry keeps those
+// keys' descriptors, as the removed Skia bridge's system typefaces did.
+typedef struct {
+    char* key;
+    CTFontDescriptorRef descriptor;
+    // Descriptors are immutable and registry keys are never replaced. Keep
+    // these typeface facts across draw-local CTFont opens, just like the
+    // descriptor itself; enumerating axes also localizes all their names.
+    int flags; // -1 until a font has opened successfully
+} cpuraster_ct_registered_face;
+
+VOX_NATIVE_STATE pthread_mutex_t cpuraster_ct_registry_lock VOX_NATIVE_STATE_INIT(PTHREAD_MUTEX_INITIALIZER);
+VOX_NATIVE_STATE cpuraster_ct_registered_face* cpuraster_ct_registry;
+VOX_NATIVE_STATE int cpuraster_ct_registry_count;
+VOX_NATIVE_STATE int cpuraster_ct_registry_capacity;
+
+// A retained descriptor registered under key, or NULL.
+static CTFontDescriptorRef cpuraster_ct_registered_descriptor(const char* key, int* flags) {
+    CTFontDescriptorRef found = NULL;
+    if (flags) *flags = -1;
+    pthread_mutex_lock(&cpuraster_ct_registry_lock);
+    for (int i = 0; i < cpuraster_ct_registry_count && !found; ++i)
+        if (strcmp(cpuraster_ct_registry[i].key, key) == 0) {
+            found = (CTFontDescriptorRef)CFRetain(cpuraster_ct_registry[i].descriptor);
+            if (flags) *flags = cpuraster_ct_registry[i].flags;
+        }
+    pthread_mutex_unlock(&cpuraster_ct_registry_lock);
+    return found;
+}
+
+static void cpuraster_ct_remember_face_flags(const char* key, CTFontDescriptorRef descriptor, int flags) {
+    pthread_mutex_lock(&cpuraster_ct_registry_lock);
+    for (int i = 0; i < cpuraster_ct_registry_count; ++i) {
+        if (cpuraster_ct_registry[i].descriptor == descriptor
+            && strcmp(cpuraster_ct_registry[i].key, key) == 0) {
+            cpuraster_ct_registry[i].flags = flags;
+            break;
+        }
+    }
+    pthread_mutex_unlock(&cpuraster_ct_registry_lock);
+}
+
+static int cpuraster_ct_postscript_matches(CTFontDescriptorRef descriptor, CFStringRef wanted) {
+    CFStringRef name = (CFStringRef)CTFontDescriptorCopyAttribute(descriptor, kCTFontNameAttribute);
+    int same = name && CFEqual(name, wanted);
+    if (name)
+        CFRelease(name);
+    return same;
+}
+
+// Registers the installed face at path named postscript_name, with the given
+// variation coordinates, under key. Prefers the face CoreText registered under
+// that name: a face re-created from its file loses system behavior Blink's
+// CTFont keeps (Apple Color Emoji's strike advances, for one). Returns 1 when
+// the key resolves to a face.
+static int cpuraster_ct_register_face(const char* key, const char* path, const char* postscript_name,
+    const uint32_t* tags, const float* values, int count) {
+    if (!key || !*key || !path || !postscript_name)
+        return 0;
+    CTFontDescriptorRef existing = cpuraster_ct_registered_descriptor(key, NULL);
+    if (existing) {
+        CFRelease(existing);
+        return 1;
+    }
+    CFURLRef url = CFURLCreateFromFileSystemRepresentation(NULL, (const UInt8*)path,
+        (CFIndex)strlen(path), false);
+    if (!url)
+        return 0;
+    CFStringRef wanted = *postscript_name
+        ? CFStringCreateWithCString(NULL, postscript_name, kCFStringEncodingUTF8) : NULL;
+    CTFontDescriptorRef selected = NULL;
+    if (wanted) {
+        CTFontDescriptorRef named = CTFontDescriptorCreateWithNameAndSize(wanted, 12.0);
+        CFURLRef named_url = named ? (CFURLRef)CTFontDescriptorCopyAttribute(named, kCTFontURLAttribute) : NULL;
+        char named_path[4096];
+        if (named_url && CFURLGetFileSystemRepresentation(named_url, true, (UInt8*)named_path, sizeof(named_path))
+            && strcmp(named_path, path) == 0)
+            selected = named;
+        else if (named)
+            CFRelease(named);
+        if (named_url)
+            CFRelease(named_url);
+    }
+    CFArrayRef descriptors = selected ? NULL : CTFontManagerCreateFontDescriptorsFromURL(url);
+    CFRelease(url);
+    if (!selected && descriptors) {
+        CFIndex n = CFArrayGetCount(descriptors);
+        // Downloaded standalone faces have no installed PostScript identity.
+        if (!wanted && n > 0)
+            selected = (CTFontDescriptorRef)CFRetain(CFArrayGetValueAtIndex(descriptors, 0));
+        for (CFIndex i = 0; !selected && wanted && i < n; ++i) {
+            CTFontDescriptorRef candidate = (CTFontDescriptorRef)CFArrayGetValueAtIndex(descriptors, i);
+            if (cpuraster_ct_postscript_matches(candidate, wanted))
+                selected = (CTFontDescriptorRef)CFRetain(candidate);
+        }
+        // A named instance of a variable face: the coordinates select it.
+        if (!selected && n > 0 && count > 0)
+            selected = (CTFontDescriptorRef)CFRetain(CFArrayGetValueAtIndex(descriptors, 0));
+    }
+    if (wanted)
+        CFRelease(wanted);
+    if (descriptors)
+        CFRelease(descriptors);
+    if (!selected)
+        return 0;
+    for (int i = 0; i < count && tags && values; ++i) {
+        int32_t tag = (int32_t)tags[i];
+        CFNumberRef number = CFNumberCreate(NULL, kCFNumberSInt32Type, &tag);
+        CTFontDescriptorRef copy = CTFontDescriptorCreateCopyWithVariation(selected, number, values[i]);
+        CFRelease(number);
+        if (copy) {
+            CFRelease(selected);
+            selected = copy;
+        }
+    }
+    pthread_mutex_lock(&cpuraster_ct_registry_lock);
+    if (cpuraster_ct_registry_count == cpuraster_ct_registry_capacity) {
+        int capacity = cpuraster_ct_registry_capacity ? cpuraster_ct_registry_capacity * 2 : 32;
+        cpuraster_ct_registered_face* grown = (cpuraster_ct_registered_face*)realloc(cpuraster_ct_registry,
+            (size_t)capacity * sizeof(cpuraster_ct_registered_face));
+        if (!grown) {
+            pthread_mutex_unlock(&cpuraster_ct_registry_lock);
+            CFRelease(selected);
+            return 0;
+        }
+        cpuraster_ct_registry = grown;
+        cpuraster_ct_registry_capacity = capacity;
+    }
+    cpuraster_ct_registry[cpuraster_ct_registry_count].key = strdup(key);
+    cpuraster_ct_registry[cpuraster_ct_registry_count].descriptor = selected;
+    cpuraster_ct_registry[cpuraster_ct_registry_count].flags = -1;
+    ++cpuraster_ct_registry_count;
+    pthread_mutex_unlock(&cpuraster_ct_registry_lock);
+    return 1;
+}
+
+static void cpuraster_ct_face_flags(CTFontRef font, int* flags) {
+    if (CTFontGetSymbolicTraits(font) & kCTFontColorGlyphsTrait)
+        *flags |= 1;
+    CFArrayRef axes = CTFontCopyVariationAxes(font);
+    if (axes) {
+        if (CFArrayGetCount(axes) > 0)
+            *flags |= 2;
+        CFRelease(axes);
+    }
+}
+
+// The typeface for a retained run's face: a registered key (as
+// SkMakeTypefaceFromCTFont() of a 12-point CTFont), the first face of a font
+// file (cpuraster_ct_font_from_file()), or the face at a collection index,
+// as SkFontMgr_Mac's makeFromStream() with SkFontArguments::setCollectionIndex()
+// selects it from the file's descriptors. Returns a retained CTFontRef or NULL.
+static void* cpuraster_ct_font_for_face(const char* path, int index, int* flags) {
+    *flags = 0;
+    if (!path || !*path)
+        return NULL;
+    int known_flags = -1;
+    CTFontDescriptorRef registered = cpuraster_ct_registered_descriptor(path, &known_flags);
+    if (registered) {
+        CTFontRef font = CTFontCreateWithFontDescriptor(registered, 12.0, NULL);
+        if (font) {
+            const char* disabled = getenv("VOX_DISABLE_REGISTERED_FACE_FLAGS_CACHE");
+            int reuse = !disabled || !*disabled;
+            if (reuse && known_flags >= 0) {
+                *flags = known_flags;
+            } else {
+                cpuraster_ct_face_flags(font, flags);
+                if (reuse)
+                    cpuraster_ct_remember_face_flags(path, registered, *flags);
+            }
+        }
+        CFRelease(registered);
+        return (void*)font;
+    }
+    if (index == 0)
+        return cpuraster_ct_font_from_file(path, flags);
+    if (index < 0)
+        return NULL;
+    CFURLRef url = CFURLCreateFromFileSystemRepresentation(NULL, (const UInt8*)path,
+        (CFIndex)strlen(path), false);
+    if (!url)
+        return NULL;
+    CFArrayRef descriptors = CTFontManagerCreateFontDescriptorsFromURL(url);
+    CFRelease(url);
+    if (!descriptors)
+        return NULL;
+    CTFontRef font = NULL;
+    if (index < CFArrayGetCount(descriptors))
+        font = CTFontCreateWithFontDescriptor(
+            (CTFontDescriptorRef)CFArrayGetValueAtIndex(descriptors, index), 0, NULL);
+    CFRelease(descriptors);
+    if (font)
+        cpuraster_ct_face_flags(font, flags);
+    return (void*)font;
+}
+
+// Whether a face is itself bold (CoreText weight trait at or above
+// SemiBold's) and italic, as SkTypeface_Mac's font style reports them.
+// Returns 0 when the face cannot be opened.
+static int cpuraster_ct_face_style(const char* path, int index, int* bold, int* italic) {
+    *bold = 0;
+    *italic = 0;
+    int flags = 0;
+    CTFontRef font = (CTFontRef)cpuraster_ct_font_for_face(path, index, &flags);
+    if (!font)
+        return 0;
+    CTFontSymbolicTraits symbolic = CTFontGetSymbolicTraits(font);
+    *italic = (symbolic & kCTFontItalicTrait) != 0;
+    CFDictionaryRef traits = CTFontCopyTraits(font);
+    double weight = 0;
+    if (traits) {
+        CFNumberRef number = (CFNumberRef)CFDictionaryGetValue(traits, kCTFontWeightTrait);
+        if (number)
+            CFNumberGetValue(number, kCFNumberDoubleType, &weight);
+        CFRelease(traits);
+    }
+    *bold = weight >= 0.27 || (symbolic & kCTFontBoldTrait) != 0;
+    CFRelease(font);
+    return 1;
+}
+
 static void cpuraster_ct_release(void* ref) {
     if (ref)
         CFRelease((CFTypeRef)ref);
@@ -91,6 +317,26 @@ static void* cpuraster_ct_exact_copy(void* base_ref, double text_size) {
     CTFontRef font = CTFontCreateCopyWithAttributes(base, text_size, NULL, desc);
     CFRelease(desc);
     return (void*)font;
+}
+
+// Native strike advances before HarfBuzz's 16.16 positioning conversion.
+// The exact copy disables AAT tracking, which HarfBuzz applies separately.
+static int cpuraster_ct_advances(const char* path, int index, float size,
+    const uint16_t* glyphs, int count, float* widths) {
+    if (!glyphs || !widths || count <= 0 || !(size > 0)) return 0;
+    int flags = 0;
+    CTFontRef base = (CTFontRef)cpuraster_ct_font_for_face(path, index, &flags);
+    if (!base) return 0;
+    CTFontRef font = (CTFontRef)cpuraster_ct_exact_copy(base, size);
+    CFRelease(base);
+    if (!font) return 0;
+    for (int i = 0; i < count; ++i) {
+        CGSize advance;
+        CTFontGetAdvancesForGlyphs(font, kCTFontOrientationHorizontal, glyphs + i, &advance, 1);
+        widths[i] = (float)advance.width;
+    }
+    CFRelease(font);
+    return 1;
 }
 
 // CTFontGetBoundingBox(): x, y, width, height.

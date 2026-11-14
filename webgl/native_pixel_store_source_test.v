@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: BSD-2-Clause
 module webgl
 
-fn pixel_store_source_viewport() [4]int {
-	mut value := [0, 0, 0, 0]!
+fn pixel_store_source_viewport() [4]i32 {
+	mut value := [i32(0), 0, 0, 0]!
 	C.vox_gl_int_parameter(viewport, &value[0])
 	return value
 }
@@ -15,7 +15,7 @@ fn test_source_pixel_store_early_client_branches_do_not_dispatch_to_actual_drive
 		context.viewport(1, 2, 3, 4)
 		other.viewport(9, 10, 11, 12)
 		context.pixel_storei(unpack_alignment, 3)
-		assert pixel_store_source_viewport() == [9, 10, 11, 12]!
+		assert pixel_store_source_viewport() == [i32(9), 10, 11, 12]!
 		assert context.unpack_state_.alignment == 4
 		assert C.vox_gl_get_error() == no_error
 		assert context.get_error() == invalid_value
@@ -23,7 +23,7 @@ fn test_source_pixel_store_early_client_branches_do_not_dispatch_to_actual_drive
 			unpack_colorspace_conversion_webgl] {
 			other.native.make_current()
 			context.pixel_storei(pname, -1)
-			assert pixel_store_source_viewport() == [9, 10, 11, 12]!
+			assert pixel_store_source_viewport() == [i32(9), 10, 11, 12]!
 			assert C.vox_gl_get_error() == no_error
 		}
 		assert context.unpack_flip_y_
@@ -52,7 +52,7 @@ fn test_source_pixel_store_remaining_names_values_and_version_checks_belong_to_d
 				context.set_error(invalid_operation)
 				other.native.make_current()
 				context.pixel_storei(pname, parameter)
-				assert pixel_store_source_viewport() == [1, 2, 3, 4]!
+				assert pixel_store_source_viewport() == [i32(1), 2, 3, 4]!
 				if expected_error != no_error {
 					assert context.get_error() == expected_error
 				}

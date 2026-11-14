@@ -29,9 +29,9 @@ fn test_public_source_sync_creation_exposes_records_after_actual_driver_rejectio
 		other.native.make_current()
 		actual := runtime.evaluate_host('globalThis.zeroSync=syncOwner.fenceSync(${condition},${flags[index]});zeroSync!==null&&zeroSync instanceof WebGLSync&&zeroSync instanceof WebGLObject&&syncOwner.getError()===${expected_error};')!
 		assert actual == 'true'
-		mut selected := [0, 0, 0, 0]!
+		mut selected := [i32(0), 0, 0, 0]!
 		C.vox_gl_int_parameter(0x0ba2, &selected[0])
-		assert selected == [1, 2, 3, 4]!
+		assert selected == [i32(1), 2, 3, 4]!
 		expected_value := C.vox_gl_get_sync_parameter(expected_handle, 0x9113)
 		expected_query_error := C.vox_gl_get_error()
 		actual_query := runtime.evaluate_host('syncOwner.getSyncParameter(zeroSync,syncOwner.SYNC_CONDITION)===${expected_value}&&syncOwner.getError()===${expected_query_error};')!

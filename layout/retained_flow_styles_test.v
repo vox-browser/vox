@@ -4,6 +4,13 @@ import css
 import dom
 import html
 
+// These cases exercise the validated salvage of retained_flow_subtrees.v, which
+// the builder consults below a flagged ancestor. Their unflagged branches would
+// otherwise keep their boxes through clean_subtree_reuse.v first.
+fn testsuite_begin() {
+	clean_subtree_reuse_suspended = true
+}
+
 fn flow_style_handle(document &dom.Document, id string) &Node {
 	element := document.get_element_by_id(id) or { panic(id) }
 	return unsafe { &Node(element.as_node().unsafe_layout_node() or { panic('layout') }.real_layout_handle()) }

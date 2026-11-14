@@ -1171,8 +1171,9 @@ fn (mut p Parser) parse_formal_parameters_impl(is_arrow bool) ParsedParameters {
 			has_seen_default = true
 			saved_in_function := p.flags.in_function_context
 			p.flags.in_function_context = true
-			default_value = p.parse_expression(precedence_assignment, .right,
-				ForbiddenTokens.with_in())
+			// Parameter initializers always use the +In grammar, including when
+			// the function itself occurs in a for-loop initializer.
+			default_value = p.parse_assignment_expression()
 			p.flags.in_function_context = saved_in_function
 		}
 

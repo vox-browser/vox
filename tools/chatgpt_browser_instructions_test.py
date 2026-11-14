@@ -100,6 +100,8 @@ class ChatGPTInstructionsTests(unittest.TestCase):
             self.assertEqual(settings['VOX_CAPTURE_DOCUMENT_ACTIVE'], active)
             self.assertEqual(settings['VOX_PROXY'], 'socks5h://replay:1')
             self.assertEqual(settings['SSL_CERT_FILE'], '/private/ca')
+            self.assertEqual(settings['VOX_CAPTURE_READY_SELECTOR'],
+                             'textarea,[contenteditable=true]')
 
     def pairs(self, count=7, vox=95, brave=100):
         def row(value):

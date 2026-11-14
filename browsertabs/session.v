@@ -3,6 +3,7 @@ module browsertabs
 import os
 import rand
 import platform
+import time
 
 #include "@DIR/process.h"
 
@@ -30,6 +31,8 @@ mut:
 	storage     &platform.RetainedArena = unsafe { nil }
 	encoded     string
 	reopen_seen u64
+	last_poll_ns u64
+	poll_invalidated bool
 }
 
 pub fn create(frame Frame) !&Session {
@@ -196,10 +199,32 @@ pub fn (mut session Session) poll(title string, address string, favicon string, 
 pub fn (mut session Session) poll_loading(title string, address string, favicon string, ready bool, loading bool) ! {
 	scratch := platform.begin_thread_scratch('tab session poll')
 	defer { scratch.finish() }
+	session.poll_invalidated = false
 	session.poll_state(title, address, favicon, ready, loading) or {
+		session.poll_invalidated = true
 		scratch.leave()
 		return error(err.msg().clone())
 	}
+	session.last_poll_ns = time.sys_mono_now()
+}
+
+// Frames can arrive much faster than the session's 100 ms housekeeping timer.
+// Publish local metadata immediately; the directory watcher also bypasses the
+// interval for remote changes. The timer remains the fallback on every OS,
+// including for crashed children which cannot publish their own removal.
+pub fn (mut session Session) poll_loading_if_due(title string, address string, favicon string, ready bool, loading bool) ! {
+	index := session.index()
+	if index >= 0 && !session.poll_invalidated && session.last_poll_ns > 0
+		&& time.sys_mono_now() < session.last_poll_ns + 100_000_000 {
+		tab := session.state.tabs[index]
+		if tab.title == title && tab.url == address && tab.favicon == favicon
+			&& tab.loading == loading && (tab.ready || !ready) { return }
+	}
+	session.poll_loading(title, address, favicon, ready, loading)!
+}
+
+pub fn (mut session Session) invalidate_poll() {
+	session.poll_invalidated = true
 }
 
 fn (mut session Session) poll_state(title string, address string, favicon string, ready bool, loading bool) ! {

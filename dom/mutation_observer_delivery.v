@@ -38,7 +38,7 @@ pub fn (mut queue MutationObserverDeliveryQueue) notify() {
 	if queue.retired { return }
 	queue.microtask_queued = false
 	mut pending := queue.pending.clone()
-	pending.sort(a.creation_index_ < b.creation_index_)
+	pending.sort_with_compare(compare_mutation_observer_creation)
 	queue.pending.clear()
 	for observer in pending { notify_one_mutation_observer(observer) }
 }
@@ -49,4 +49,10 @@ pub fn (mut queue MutationObserverDeliveryQueue) retire() {
 	queue.microtask_queued = false
 	queue.pending.clear()
 	platform.release_closure(voidptr(queue.enqueue))
+}
+
+fn compare_mutation_observer_creation(a &&MutationObserver,b &&MutationObserver) int {
+    if a.creation_index_ < b.creation_index_ { return -1 }
+    if a.creation_index_ > b.creation_index_ { return 1 }
+    return 0
 }

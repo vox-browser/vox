@@ -37,6 +37,21 @@ fn submit_browser_form(element &dom.Element, target string, submission html.Form
 	manager.discover(document, mut messages)
 	chosen := model.choose_a_navigable(target, false)!
 	mut destination := chosen.navigable or { return }
+	// The shell owns top-level URL loads. A direct model navigation would
+	// replace its active Document without installing that page in BrowserApp.
+	// GET carries its form data in the URL; POST and child navigations keep
+	// the typed resource path below.
+	if submission.method == .get && destination.is_top_level_traversable() {
+		native := destination.host_navigable()
+		if native.navigate_callback_ != unsafe { nil } {
+			native.navigate(submission.url, document, submission.referrer_policy, match submission.user_involvement {
+				.browser_ui { dom.UserNavigationInvolvement.browser_ui }
+				.activation { dom.UserNavigationInvolvement.activation }
+				.none_ { dom.UserNavigationInvolvement.none }
+			})!
+			return
+		}
+	}
 	for mut child in manager.children {
 		if child.closed || voidptr(child.navigable) != voidptr(destination) { continue }
 		// This navigation supersedes the frame's current attributes. A later

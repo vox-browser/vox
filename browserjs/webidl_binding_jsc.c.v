@@ -120,14 +120,11 @@ fn (runtime &Runtime) binding_exception_value(exception IError) voidptr {
 	for error_kind in ['TypeError', 'RangeError', 'EvalError'] {
 		if message.starts_with(error_kind + ':') { kind = error_kind; message = message[error_kind.len + 1..].trim_left(' '); break }
 	}
-	kind_string := js_source_string(kind)
-	kind_value := C.vox_jsc_JSValueMakeString(runtime.context, kind_string)
-	C.JSStringRelease(kind_string)
 	string_value := js_source_string(message)
 	value := C.vox_jsc_JSValueMakeString(runtime.context, string_value)
 	C.JSStringRelease(string_value)
-	if runtime.value_error_intrinsic_ != unsafe { nil } {
-		if actual := runtime.call_engine_function(runtime.value_error_intrinsic_, [kind_value, value]) { return actual }
+	if runtime.value_error_constructors_ != unsafe { nil } {
+		if actual := runtime.make_engine_error(kind, value) { return actual }
 	}
 	mut ignored := unsafe { nil }
 	object := C.vox_jsc_JSObjectMakeError(runtime.context, 1, &value, &ignored)

@@ -5,7 +5,6 @@ module browserjs
 import html
 import webgl
 
-fn C.glGetShaderivRobustANGLE(u32, u32, int, voidptr, &int)
 
 fn test_public_shader_parameter_matches_genuine_robust_native_results_and_errors() {
 	$if !darwin {
@@ -28,14 +27,14 @@ fn test_public_shader_parameter_matches_genuine_robust_native_results_and_errors
 		for pname in [webgl.shader_type, webgl.compile_status, webgl.delete_status, u32(0x8b84),
 			u32(0xbad)] {
 			owner.native.make_current()
-			mut expected := 0
-			C.glGetShaderivRobustANGLE(name, pname, 1, unsafe { nil }, &expected)
+			mut expected := i32(0)
+			expected = i32(C.vox_gl_shader_parameter_robust(name,pname))
 			expected_error := C.vox_gl_get_error()
 			other.native.make_current()
 			result := runtime.evaluate_host('gl.getShaderParameter(shader,${pname})')!
-			mut selected := [0, 0, 0, 0]!
+			mut selected := [i32(0), 0, 0, 0]!
 			C.vox_gl_int_parameter(webgl.viewport, &selected[0])
-			assert selected == [1, 2, 3, 4]!
+			assert selected == [i32(1), 2, 3, 4]!
 			assert result == if pname == webgl.shader_type {
 				expected.str()
 			} else if pname in [webgl.compile_status, webgl.delete_status] {
@@ -53,8 +52,8 @@ fn test_public_shader_parameter_matches_genuine_robust_native_results_and_errors
 		}
 		owner.native.make_current()
 		C.vox_gl_delete_shader(name)
-		mut expected := 0
-		C.glGetShaderivRobustANGLE(name, webgl.shader_type, 1, unsafe { nil }, &expected)
+		mut expected := i32(0)
+		expected = i32(C.vox_gl_shader_parameter_robust(name,webgl.shader_type))
 		expected_error := C.vox_gl_get_error()
 		assert expected_error != webgl.no_error
 		other.native.make_current()

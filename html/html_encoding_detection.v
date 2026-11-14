@@ -310,8 +310,40 @@ fn html_encoding_ascii_lower_byte(byte u8) u8 {
 	return if byte >= `A` && byte <= `Z` { byte + 0x20 } else { byte }
 }
 
+// https://html.spec.whatwg.org/multipage/parsing.html#concept-get-xml-encoding-when-sniffing
+fn get_an_xml_encoding(input []u8) ?string {
+	if input.len < 5 || input[..5].bytestr() != '<?xml' { return none }
+	declaration_end := input.bytestr().index('>') or { return none }
+	declaration := input[..declaration_end].bytestr()
+	encoding_index := declaration.index('encoding') or { return none }
+	mut position := encoding_index + 'encoding'.len
+	for position < input.len && input[position] <= 0x20 { position++ }
+	if position >= input.len || input[position] != `=` { return none }
+	position++
+	for position < input.len && input[position] <= 0x20 { position++ }
+	if position >= input.len { return none }
+	quote := input[position]
+	if quote != `"` && quote != `'` { return none }
+	position++
+	start := position
+	for position < input.len && input[position] != quote { position++ }
+	if position >= input.len { return none }
+	potential_encoding := input[start..position]
+	for byte in potential_encoding {
+		if byte <= 0x20 { return none }
+	}
+	encoding := standardized_html_encoding(potential_encoding.bytestr()) or { return none }
+	if encoding in ['UTF-16BE', 'UTF-16LE'] { return 'UTF-8' }
+	return encoding
+}
+
 // https://html.spec.whatwg.org/multipage/parsing.html#prescan-a-byte-stream-to-determine-its-encoding
 pub fn run_prescan_byte_stream_algorithm(input []u8) ?string {
+	if encoding := run_prescan_byte_stream_algorithm_steps(input) { return encoding }
+	return get_an_xml_encoding(input)
+}
+
+fn run_prescan_byte_stream_algorithm_steps(input []u8) ?string {
 	mut position := 0
 	if !prescan_should_abort(input, position + 5) {
 		if input[..6] == [u8(0x3c), 0, 0x3f, 0, 0x78, 0] {

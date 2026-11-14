@@ -19,7 +19,7 @@ fn test_idle_native_font_retirement_preserves_retained_runs_and_refreshes_borrow
 	for _, blob in harfbuzz_document_blobs { assert blob == unsafe { nil } }
 	assert harfbuzz_emoji_face == unsafe { nil }
 	assert harfbuzz_emoji_blob == unsafe { nil }
-	assert skia_system_face_advances_lookup.bitmap_faces.len == 0
+	assert harfbuzz_bitmap_face_cache.faces.len == 0
 	assert old.glyph_run.glyphs() == expected
 	new := shape_text_cached(0, 0, 0, 'Retained glyphs 123', font, .ltr)
 	assert new.glyph_run.glyphs() == expected
@@ -49,9 +49,9 @@ fn test_retired_bitmap_classification_is_recomputed_from_the_new_face() {
 	face := document_harfbuzz_face(font)?
 	expected := harfbuzz_face_has_table(face, 0x73626978)
 	assert harfbuzz_face_is_bitmap_face(face) == expected
-	assert skia_system_face_advances_lookup.bitmap_faces.len > 0
+	assert harfbuzz_bitmap_face_cache.faces.len > 0
 	release_unused_text_shaping()
-	assert skia_system_face_advances_lookup.bitmap_faces.len == 0
+	assert harfbuzz_bitmap_face_cache.faces.len == 0
 	next := document_harfbuzz_face(font)?
 	assert harfbuzz_face_is_bitmap_face(next) == expected
 }

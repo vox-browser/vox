@@ -7,10 +7,10 @@ import json2
 import webgl
 
 fn public_uniform_location_lost_other_driver(program u32, location int) {
-	mut selected := [0, 0, 0, 0]!
+	mut selected := [i32(0), 0, 0, 0]!
 	C.vox_gl_int_parameter(webgl.viewport, &selected[0])
-	assert selected == [9, 10, 11, 12]!
-	mut bound := -1
+	assert selected == [i32(9), 10, 11, 12]!
+	mut bound := i32(-1)
 	C.vox_gl_int_parameter(webgl.current_program, &bound)
 	assert bound == int(program)
 	assert C.vox_gl_program_parameter(program, webgl.link_status) == 1
@@ -64,7 +64,7 @@ fn test_public_lost_uniform_location_constructs_fresh_zero_records_and_preserves
 		assert C.vox_gl_get_error() == webgl.no_error
 		owner.lose_context_from_compositor_loss()
 		other.viewport(9, 10, 11, 12)
-		mut unused := 0
+		mut unused := i32(0)
 		C.vox_gl_int_parameter(u32(0xffff_ffff), &unused)
 		assert runtime.evaluate_host('globalThis.after=gl.createProgram();after instanceof WebGLProgram')! == 'true'
 		for argument in ['original', 'after'] {

@@ -1,0 +1,17 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Large clipped elliptical decorations</title>
+<style>
+* { box-sizing: border-box; }
+html, body { margin: 0; background: #090b0f; }
+section { position:absolute; left:32px; top:450.078125px; width:960px; height:3068.96875px; border:1px solid #344151; border-radius:13px 13px 0 0; overflow:hidden; background:#101722; box-shadow:0 24px 60px #0004,inset 0 1px #ffffff08; }
+main { position: relative;
+  width: 958px; height: 389.515625px; overflow: hidden;
+  background: radial-gradient(ellipse at 60% 110%, #43699557, transparent 65%),
+    linear-gradient(130deg, #121b28, #10151e 55%, #172233); }
+.orbit { visibility: hidden; position: absolute; right: -150px; bottom: -500px;
+  width: 1000px; height: 680px; border: 1px solid #a6c6f415;
+  border-radius: 50%; transform: rotate(-24deg);
+  box-shadow: 0 -15px 60px #79a8f309, 0 -1px 0 #a6c6f40d; }
+</style>
+<div style="position:absolute;left:0;top:0;width:1024px;height:10000px;will-change:transform;pointer-events:none"></div><section><main><div class="orbit"></div></main></section>

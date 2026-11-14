@@ -5,8 +5,8 @@ module browserjs
 import html
 import webgl
 
-fn error_receiver_source_viewport() [4]int {
-	mut value := [0, 0, 0, 0]!
+fn error_receiver_source_viewport() [4]i32 {
+	mut value := [i32(0), 0, 0, 0]!
 	C.vox_gl_int_parameter(webgl.viewport, &value[0])
 	return value
 }
@@ -33,16 +33,16 @@ fn test_public_get_error_preserves_early_returns_and_owning_sync_driver() {
 		other.native.make_current()
 		C.vox_gl_viewport(0, 0, -1, 1)
 		assert runtime.evaluate_host('gl.getError()===gl.OUT_OF_MEMORY')! == 'true'
-		assert error_receiver_source_viewport() == [9, 10, 11, 12]!
+		assert error_receiver_source_viewport() == [i32(9), 10, 11, 12]!
 		assert runtime.evaluate_host('gl.getError()===gl.INVALID_ENUM')! == 'true'
-		assert error_receiver_source_viewport() == [1, 2, 3, 4]!
+		assert error_receiver_source_viewport() == [i32(1), 2, 3, 4]!
 		assert runtime.evaluate_host('gl.getError()===gl.INVALID_OPERATION&&gl.getError()===gl.NO_ERROR')! == 'true'
 		assert runtime.evaluate_host('other.getError()===other.INVALID_VALUE&&other.getError()===other.NO_ERROR')! == 'true'
 		context.native.set_pending_local_error(webgl.out_of_memory)
 		context.lose_context('source actual receiver loss')
 		other.native.make_current()
 		assert runtime.evaluate_host('gl.getError()===gl.CONTEXT_LOST_WEBGL&&gl.getError()===gl.NO_ERROR')! == 'true'
-		assert error_receiver_source_viewport() == [9, 10, 11, 12]!
+		assert error_receiver_source_viewport() == [i32(9), 10, 11, 12]!
 		assert context.native.take_pending_local_error() == webgl.out_of_memory
 		assert other.get_error() == webgl.no_error
 	}

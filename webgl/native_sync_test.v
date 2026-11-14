@@ -22,9 +22,9 @@ fn test_webgl_sync_wait_and_queries_use_actual_angle_gpu_results() {
 	assert context.client_wait_sync(mut sync, 0, 0) == already_signaled
 	context.wait_sync(mut sync, 0, u64(-1))
 	assert context.get_error() == no_error
-	context.delete_sync(mut sync)
+	context.delete_sync(sync)
 	assert sync.object.invalidated()
-	context.delete_sync(mut sync)
+	context.delete_sync(sync)
 	assert context.get_error() == no_error
 }
 
@@ -50,7 +50,7 @@ fn test_webgl_sync_errors_come_from_native_gl_and_context_ownership() {
 	mut foreign := WebGLRenderingContext.new(.webgl2, WebGLContextAttributes{}, [])
 	assert foreign.client_wait_sync(mut sync, 0, 0) == wait_failed
 	assert foreign.get_error() == invalid_operation
-	context.delete_sync(mut sync)
+	context.delete_sync(sync)
 	assert context.client_wait_sync(mut sync, 0, 0) == wait_failed
 	assert context.get_error() == invalid_operation
 }

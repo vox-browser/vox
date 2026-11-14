@@ -118,3 +118,18 @@ fn test_overlay_scrollbar_activity_keeps_one_pending_fade_wake() {
 		assert app.overlay_scrollbars.wake_deadline_ns == now + 250_000_000
 	}
 }
+
+fn test_capture_scrollbars_are_hidden_with_both_system_preferences() {
+	for enabled in [false, true] {
+		mut bars := BrowserOverlayScrollbars{enabled: enabled}
+		bars.activity(1_000_000_000)
+		bars.hovered = true
+		bars.dragging = true
+		assert bars.capture_opacity_at(1_100_000_000, true) == 0
+		assert bars.capture_opacity_at(1_100_000_000, false) == 1
+		bars.hovered = false
+		bars.dragging = false
+		assert bars.capture_opacity_at(1_750_000_000, true) == 0
+		assert bars.capture_opacity_at(1_750_000_000, false) == if enabled { f64(.5) } else { f64(1) }
+	}
+}

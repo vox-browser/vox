@@ -75,14 +75,14 @@ fn test_public_vertex_array_binding_wraps_first_exposed_actual_record_and_reuses
 		context.native.make_current()
 		assert C.vox_gl_is_vertex_array(name, if kind == 'webgl' { 1 } else { 0 }) == 1
 		C.vox_gl_delete_object(if kind == 'webgl' { 7 } else { 6 }, name)
-		mut actual := -1
+		mut actual := i32(-1)
 		C.vox_gl_int_parameter(webgl.vertex_array_binding, &actual)
 		assert actual == 0
 		other.native.make_current()
 		assert runtime.evaluate_host('globalThis.exposedArray=arrayRecordGL.getParameter(${pname});${brand}&&exposedArray===arrayRecordGL.getParameter(${pname})&&${is_array}(exposedArray)===false&&arrayRecordGL.getError()===arrayRecordGL.NO_ERROR')! == 'true'
-		mut selected := [0, 0, 0, 0]!
+		mut selected := [i32(0), 0, 0, 0]!
 		C.vox_gl_int_parameter(0x0ba2, &selected[0])
-		assert selected == [1, 2, 3, 4]!
+		assert selected == [i32(1), 2, 3, 4]!
 		wrapper := host.platform_objects[voidptr(object)] or { panic('first exposed VAO') }
 		if kind == 'webgl2' {
 			registered := host.vertex_arrays[wrapper] or { panic('registered actual VAO') }

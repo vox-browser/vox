@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: BSD-2-Clause
 module webgl
 
-fn is_shader_owner(expected [4]int) {
-	mut selected := [0, 0, 0, 0]!
+fn is_shader_owner(expected [4]i32) {
+	mut selected := [i32(0), 0, 0, 0]!
 	C.vox_gl_int_parameter(viewport, &selected[0])
 	assert selected == expected
 }
@@ -28,27 +28,27 @@ fn test_source_is_shader_optional_handle_gates_precede_actual_driver_owner() {
 		other.native.make_current()
 		C.vox_gl_vertex_attrib_enable(0xffff_ffff, 1)
 		assert !owner.is_shader(none)
-		is_shader_owner([9, 10, 11, 12]!)
+		is_shader_owner([i32(9), 10, 11, 12]!)
 		assert C.vox_gl_get_error() == invalid_value
 		assert owner.get_error() == no_error
 		other.native.make_current()
 		assert !owner.is_shader(foreign)
-		is_shader_owner([9, 10, 11, 12]!)
+		is_shader_owner([i32(9), 10, 11, 12]!)
 		assert owner.get_error() == invalid_operation
 		other.native.make_current()
 		assert owner.is_shader(shader)
-		is_shader_owner([1, 2, 3, 4]!)
+		is_shader_owner([i32(1), 2, 3, 4]!)
 		assert owner.get_error() == no_error
 		owner.delete_shader(shader)
 		assert C.vox_gl_is_object(9, shader.object.native_name()) == 1
 		other.native.make_current()
 		assert !owner.is_shader(shader)
-		is_shader_owner([9, 10, 11, 12]!)
+		is_shader_owner([i32(9), 10, 11, 12]!)
 		assert owner.get_error() == no_error
 		other.delete_shader(foreign)
 		other.native.make_current()
 		assert !owner.is_shader(foreign)
-		is_shader_owner([9, 10, 11, 12]!)
+		is_shader_owner([i32(9), 10, 11, 12]!)
 		assert owner.get_error() == invalid_operation
 		owner.native.make_current()
 		for name in reserved[1..] { C.vox_gl_delete_shader(name) }

@@ -68,8 +68,7 @@ fn (mut context BinaryValidationContext) scan_declared_references(expression Bin
 	}
 }
 
-// Module context population retains the source's distinct imported composite
-// lists: a TypeIndex import of a struct/array is not counted as a function.
+// Function imports must reference function types, not struct or array definitions.
 fn build_binary_validation_context(compiled &Module) !BinaryValidationContext {
 	mut context := BinaryValidationContext{ types: compiled.types.clone(), canonical_types: compiled.canonical_types.clone(), data_count: compiled.data_count }
 	for entry in compiled.import_entries {
@@ -77,15 +76,12 @@ fn build_binary_validation_context(compiled &Module) !BinaryValidationContext {
 			.function_ {
 				validate_binary_type_index(entry.function_type_index, context.types)!
 				type_ := context.types[entry.function_type_index]
-				match type_.kind {
-					.function_ {
-						context.functions << type_
-						context.function_type_indices << ?u32(entry.function_type_index)
-						context.imported_function_count++
-					}
-					.struct_ { context.structs << type_ }
-					.array { context.arrays << type_ }
+				if type_.kind != .function_ {
+					return error('CompileError: invalid function import type')
 				}
+				context.functions << type_
+				context.function_type_indices << ?u32(entry.function_type_index)
+				context.imported_function_count++
 			}
 			.table {
 				context.tables << (entry.table_type or { panic('missing parsed table import type') })

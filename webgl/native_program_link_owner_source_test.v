@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: BSD-2-Clause
 module webgl
 
-fn program_link_owner(expected [4]int) {
-	mut selected := [0, 0, 0, 0]!
+fn program_link_owner(expected [4]i32) {
+	mut selected := [i32(0), 0, 0, 0]!
 	C.vox_gl_int_parameter(viewport, &selected[0])
 	assert selected == expected
 }
@@ -17,10 +17,10 @@ fn test_source_program_link_handle_gates_precede_native_owner_and_keep_actual_dr
 		mut program := owner.create_program()
 		mut foreign := other.create_program()
 		other.native.make_current()
-		mut unused := 0
+		mut unused := i32(0)
 		C.vox_gl_int_parameter(GLenum(0xffff_ffff), &unused)
 		owner.link_program(mut foreign)
-		program_link_owner([9, 10, 11, 12]!)
+		program_link_owner([i32(9), 10, 11, 12]!)
 		assert C.vox_gl_program_parameter(foreign.object.native_name(), link_status) == 0
 		assert C.vox_gl_get_error() == invalid_enum
 		assert C.vox_gl_get_error() == no_error
@@ -45,14 +45,14 @@ precision mediump float;out vec4 color;void main(){color=vec4(1);}'
 		owner.attach_shader(mut program, fragment)
 		other.native.make_current()
 		owner.link_program(mut program)
-		program_link_owner([1, 2, 3, 4]!)
+		program_link_owner([i32(1), 2, 3, 4]!)
 		assert C.vox_gl_program_parameter(program.object.native_name(), link_status) == 1
 		assert owner.get_error() == no_error
 		owner.delete_program(program)
 		other.native.make_current()
 		C.vox_gl_int_parameter(GLenum(0xffff_ffff), &unused)
 		owner.link_program(mut program)
-		program_link_owner([9, 10, 11, 12]!)
+		program_link_owner([i32(9), 10, 11, 12]!)
 		assert C.vox_gl_get_error() == invalid_enum
 		assert C.vox_gl_get_error() == no_error
 		assert owner.get_error() == invalid_operation
@@ -63,7 +63,7 @@ precision mediump float;out vec4 color;void main(){color=vec4(1);}'
 		assert expected != no_error
 		other.native.make_current()
 		owner.link_program(mut rejected)
-		program_link_owner([1, 2, 3, 4]!)
+		program_link_owner([i32(1), 2, 3, 4]!)
 		assert owner.get_error() == expected
 	}
 }

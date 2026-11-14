@@ -65,7 +65,7 @@ jobs:
           sudo apt-get install -y --no-install-recommends \
             build-essential clang ninja-build generate-ninja pkg-config \
             python3 git curl ca-certificates nodejs openssl libjavascriptcoregtk-4.1-dev \
-            libglib2.0-dev libharfbuzz-dev libicu-dev libwoff-dev libbrotli-dev \
+            libglib2.0-dev libharfbuzz-dev \
             libcurl4-openssl-dev libssl-dev libegl1-mesa-dev libgles2-mesa-dev \
             libgl1-mesa-dev libxi-dev libxcursor-dev libxrandr-dev libx11-dev \
             libasound2-dev libgc-dev libfreetype-dev libfontconfig-dev \
@@ -117,6 +117,11 @@ jobs:
           git -C "$RUNNER_TEMP/ui2" rev-parse HEAD > "$RUNNER_TEMP/vox-ui2-revision.txt"
           printf 'V_BIN=%s/v\nUI2_SOURCE_DIR=%s\n' \
             "$RUNNER_TEMP/v" "$RUNNER_TEMP/ui2" >> "$GITHUB_ENV"
+
+      - name: Check native GLES without ANGLE
+        if: ${{ !cancelled() && steps.toolchain.outcome == 'success' && matrix.gc == 'boehm' }}
+        timeout-minutes: 15
+        run: python3 tools/test_webgl_gles.py --output Build/linux/webgl-gles
 
       - name: Check vlib XML input compatibility
         if: ${{ !cancelled() && steps.toolchain.outcome == 'success' && matrix.gc == 'boehm' }}
@@ -179,6 +184,17 @@ jobs:
             --lock "$RUNNER_TEMP/vox-native-build.lock" \
             --report "$RUNNER_TEMP/vox-native-build.json" --timeout 300 -- \
             python3 tools/build_linux_native.py
+
+      - name: Check WebGL GLES service and shader equivalence
+        if: ${{ !cancelled() && steps.native_dependencies.outcome == 'success' }}
+        timeout-minutes: 20
+        run: |
+          python3 tools/run_memory_bounded.py \
+            --lock "$RUNNER_TEMP/vox-webgl-$LADYBIRD_V_GC.lock" \
+            --report "$RUNNER_TEMP/vox-webgl-$LADYBIRD_V_GC.json" --timeout 1080 -- \
+            python3 tools/test_linux_native.py --gc "$LADYBIRD_V_GC" \
+              webgl/native_draw_test.v webgl/native_essl_equivalence_test.v \
+              webgl/native_parameter_query_test.v imageraster/canvas_upload_test.v
 
       - name: Check portable shadow and canvas rasterization
         if: ${{ !cancelled() && steps.native_dependencies.outcome == 'success' }}
@@ -449,6 +465,8 @@ jobs:
           paths = sorted(temporary.glob('vox-*.json'))
           paths.extend(sorted(temporary.glob('vox-*-revision.txt')))
           paths.extend(Path('Build/linux/browser-smoke').glob('*.log'))
+          paths.extend(Path('Build/linux/webgl-gles').glob('*.log'))
+          paths.extend(Path('Build/linux/webgl-gles').glob('*.json'))
           paths.extend(Path('Build/linux/tests').glob('*/run-*/*.log'))
           paths.extend(Path('Build/linux/tests').glob('*/run-*/*.json'))
           receipts = sorted(Path('Build/linux/production-build/receipts').glob('*'))
@@ -477,6 +495,8 @@ jobs:
             Build/linux/tests/*/run-*/*.log
             Build/linux/tests/*/run-*/*.json
             Build/linux/browser-smoke/
+            Build/linux/webgl-gles/*.log
+            Build/linux/webgl-gles/*.json
 
   # These suites compile the production Cocoa/IOSurface headers directly and
   # need neither V nor a prebuilt app. Full macOS app/tab and Metal pixel

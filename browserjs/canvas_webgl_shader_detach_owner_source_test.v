@@ -5,8 +5,8 @@ module browserjs
 import html
 import webgl
 
-fn public_shader_detach_owner(expected [4]int) {
-	mut selected := [0, 0, 0, 0]!
+fn public_shader_detach_owner(expected [4]i32) {
+	mut selected := [i32(0), 0, 0, 0]!
 	C.vox_gl_int_parameter(webgl.viewport, &selected[0])
 	assert selected == expected
 }
@@ -29,10 +29,10 @@ fn test_public_detach_shader_source_handle_order_and_actual_rejected_attachment_
 		for expression in ['gl.detachShader(program,foreign)', 'gl.detachShader(program,deleted)',
 			'gl.detachShader(foreignProgram,vertex)'] {
 			other.native.make_current()
-			mut unused := 0
+			mut unused := i32(0)
 			C.vox_gl_int_parameter(u32(0xffff_ffff), &unused)
 			assert runtime.evaluate_host('${expression}===undefined&&gl.getAttachedShaders(program)[0]===vertex&&gl.getAttachedShaders(program)[1]===fragment')! == 'true'
-			public_shader_detach_owner([9, 10, 11, 12]!)
+			public_shader_detach_owner([i32(9), 10, 11, 12]!)
 			assert C.vox_gl_get_error() == webgl.invalid_enum
 			assert C.vox_gl_get_error() == webgl.no_error
 			assert runtime.evaluate_host('gl.getError()===gl.INVALID_OPERATION')! == 'true'
@@ -43,7 +43,7 @@ fn test_public_detach_shader_source_handle_order_and_actual_rejected_attachment_
 			'gl.detachShader(foreignProgram,Object.create(WebGLShader.prototype))'] {
 			other.native.make_current()
 			assert runtime.evaluate_host('(function(){try{${expression};return false}catch(error){return error instanceof TypeError}})()')! == 'true'
-			public_shader_detach_owner([9, 10, 11, 12]!)
+			public_shader_detach_owner([i32(9), 10, 11, 12]!)
 			assert runtime.evaluate_host('gl.getAttachedShaders(program)[0]===vertex&&gl.getAttachedShaders(program)[1]===fragment')! == 'true'
 		}
 		mut program_name := u32(0)
@@ -66,23 +66,23 @@ fn test_public_detach_shader_source_handle_order_and_actual_rejected_attachment_
 		assert C.vox_gl_program_parameter(program_name, webgl.attached_shaders) == 2
 		other.native.make_current()
 		assert runtime.evaluate_host('gl.detachShader(program,unattached)===undefined&&gl.getAttachedShaders(program).length===1&&gl.getAttachedShaders(program)[0]===fragment')! == 'true'
-		public_shader_detach_owner([1, 2, 3, 4]!)
+		public_shader_detach_owner([i32(1), 2, 3, 4]!)
 		assert C.vox_gl_program_parameter(program_name, webgl.attached_shaders) == 2
 		assert runtime.evaluate_host('gl.getError()===${expected}')! == 'true'
 		other.native.make_current()
 		assert runtime.evaluate_host('gl.detachShader(program,vertex)===undefined&&gl.getAttachedShaders(program)[0]===fragment')! == 'true'
-		public_shader_detach_owner([1, 2, 3, 4]!)
+		public_shader_detach_owner([i32(1), 2, 3, 4]!)
 		assert C.vox_gl_program_parameter(program_name, webgl.attached_shaders) == 1
 		assert runtime.evaluate_host('gl.getError()===gl.NO_ERROR')! == 'true'
 		other.native.make_current()
 		assert runtime.evaluate_host('gl.detachShader(program,fragment)===undefined&&gl.getAttachedShaders(program).length===0')! == 'true'
-		public_shader_detach_owner([1, 2, 3, 4]!)
+		public_shader_detach_owner([i32(1), 2, 3, 4]!)
 		assert C.vox_gl_program_parameter(program_name, webgl.attached_shaders) == 0
 		assert runtime.evaluate_host('gl.getError()===gl.NO_ERROR')! == 'true'
 		runtime.evaluate_host('gl.deleteProgram(program)')!
 		other.native.make_current()
 		assert runtime.evaluate_host('gl.detachShader(program,vertex)===undefined')! == 'true'
-		public_shader_detach_owner([9, 10, 11, 12]!)
+		public_shader_detach_owner([i32(9), 10, 11, 12]!)
 		assert runtime.evaluate_host('gl.getError()===gl.INVALID_OPERATION')! == 'true'
 	}
 }

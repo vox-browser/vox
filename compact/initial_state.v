@@ -5,7 +5,6 @@ import browserjs
 import dom
 import html
 import os
-import url
 import x.json2
 
 enum CompactInitialElementPolicy {
@@ -78,7 +77,7 @@ fn javascript_initial_element_state(element &dom.Element, bridge_key string, ele
 		// synchronously available before this script snapshot is executed.
 		host_image_complete := source.starts_with('data:')
 			|| (resolved_source.starts_with('file://')
-			&& os.is_file(url.percent_decode(resolved_source['file://'.len..]).bytestr()))
+			&& os.is_file(browser_local_file_path(resolved_source) or { '' }))
 		state['complete'] = json2.Any(html.html_image_element_complete(image) || host_image_complete)
 	}
 	if element.local_name() == 'input' {

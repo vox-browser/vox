@@ -509,7 +509,8 @@ fn svg_image_source_for_source(document &dom.Document, source string) ?SVGImageS
 	}
 	mut path := serialized
 	if serialized.starts_with('file://') {
-		path = url.percent_decode(parsed_url.serialize_path()).bytestr()
+		record := url.parse(serialized) or { return none }
+		path = record.to_file_path() or { return none }
 	} else if serialized.contains('://') {
 		return none
 	}
@@ -649,7 +650,8 @@ fn image_intrinsic_size_for_source(document &dom.Document, source string) ?css.S
 	}
 	mut path := serialized
 	if serialized.starts_with('file://') {
-		path = url.percent_decode(parsed_url.serialize_path()).bytestr()
+		record := url.parse(serialized) or { return none }
+		path = record.to_file_path() or { return none }
 	} else if serialized.starts_with('http://') || serialized.starts_with('https://') {
 		image_source := svg_image_source_for_source(document, source) or { return none }
 		return svg_image_natural_size_with_fragment(image_source.source, fragment)

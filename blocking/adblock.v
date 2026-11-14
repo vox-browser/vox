@@ -61,8 +61,7 @@ fn install_browser_adblock_styles_with_tokens(document &dom.Document, procedural
 		if document.has_page() { document.page().user_style() or { '' } } else { '' }
 	}
 	marker := '/* vox-adblock-start */'
-	tokens := token_cache.survey(document)
-	filter_css := adblock.document_css(document.url.serialize(), tokens)!
+	filter_css := token_cache.document_css(document)!
 	// An unchanged sheet is common during timestamp updates. Its composed
 	// source is comparison storage; only an actual replacement must survive.
 	work := platform.begin_thread_scratch('adblock stylesheet comparison')
@@ -148,6 +147,6 @@ fn refresh_browser_adblock_with_tokens(document &dom.Document, runtime &browserj
 	}
 	// Consent widgets can arrive in delayed callbacks or be shown again by
 	// scripts. Apply the independent cookie policy after replay, before layout.
-	apply_cookie_banner_policy(document)
+	tokens.cookie_survey.apply(document)
 	install_browser_adblock_styles_with_tokens(document, procedural_css, mut tokens) or { messages << 'Adblock styles: ${err.msg()}' }
 }

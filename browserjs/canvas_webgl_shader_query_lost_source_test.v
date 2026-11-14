@@ -56,9 +56,9 @@ void main(){gl_Position=vec4(0);}'
 				'gl.getShaderParameter(${shader},gl.COMPILE_STATUS)===false',
 				'gl.getShaderParameter(${shader},gl.DELETE_STATUS)===false'] {
 				assert runtime.evaluate_host(query)! == 'true'
-				mut selected := [0, 0, 0, 0]!
+				mut selected := [i32(0), 0, 0, 0]!
 				C.vox_gl_int_parameter(webgl.viewport, &selected[0])
-				assert selected == [9, 10, 11, 12]!
+				assert selected == [i32(9), 10, 11, 12]!
 				assert C.vox_gl_shader_parameter(valid_name, webgl.compile_status) == 1
 				assert C.vox_gl_shader_parameter(invalid_name, u32(0x8b84)) == log_length
 			}

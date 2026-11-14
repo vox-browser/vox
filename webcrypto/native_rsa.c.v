@@ -1,11 +1,6 @@
 // SPDX-License-Identifier: BSD-2-Clause
 module webcrypto
 
-$if macos {
-	#pkgconfig --cflags openssl
-} $else {
-	#pkgconfig openssl
-}
 #include "@DIR/native_rsa.h"
 
 struct C.VoxRsaPart {
@@ -96,6 +91,9 @@ fn native_rsa_sign(key &CryptoKey, message []u8, pss bool, salt u32) ![]u8 {
 fn native_rsa_verify(key &CryptoKey, signature []u8, message []u8, pss bool, salt u32) !bool {
 	if pss && salt > u32(0x7fffffff) { return false }
 	parts := rsa_parts_from_handle(key.internal_handle_)
+	valid := C.vox_rsa_valid(parts.data, 0)
+	if valid == 0 { return false }
+	if valid < 0 { return error('OperationError: Failed to validate RSA public key') }
 	hash := rsa_operation_hash(key)!
 	result := C.vox_rsa_verify(parts.data, hash.str, int(pss), salt, signature.data, uint(signature.len), message.data, uint(message.len))
 	if result == 1 { return true }

@@ -6,10 +6,10 @@ import html
 import webgl
 
 fn public_shader_attach_lost_other_driver(program u32, vertex u32, fragment u32) {
-	mut selected := [0, 0, 0, 0]!
+	mut selected := [i32(0), 0, 0, 0]!
 	C.vox_gl_int_parameter(webgl.viewport, &selected[0])
-	assert selected == [9, 10, 11, 12]!
-	mut bound := -1
+	assert selected == [i32(9), 10, 11, 12]!
+	mut bound := i32(-1)
 	C.vox_gl_int_parameter(webgl.current_program, &bound)
 	assert bound == 0
 	assert C.vox_gl_program_parameter(program, webgl.attached_shaders) == 0
@@ -69,7 +69,7 @@ fn test_public_lost_shader_attachment_retains_actual_wrappers_without_other_driv
 		}
 		owner.lose_context_from_compositor_loss()
 		other.viewport(9, 10, 11, 12)
-		mut unused := 0
+		mut unused := i32(0)
 		C.vox_gl_int_parameter(u32(0xffff_ffff), &unused)
 		assert runtime.evaluate_host('globalThis.after=gl.createProgram();globalThis.afterVertex=gl.createShader(gl.VERTEX_SHADER);globalThis.afterFragment=gl.createShader(gl.FRAGMENT_SHADER);after instanceof WebGLProgram&&afterVertex instanceof WebGLShader&&afterFragment instanceof WebGLShader')! == 'true'
 		public_shader_attach_lost_other_driver(program_name, vertex_name, fragment_name)

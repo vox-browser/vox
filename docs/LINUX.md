@@ -2,7 +2,8 @@
 
 The Linux executable uses the translated V engine, JavaScriptCoreGTK, GLib event
 sources, Fontconfig/HarfBuzz, the V `cpuraster` rasterizer, and GG/Sokol's OpenGL
-window. It does not depend on Skia.
+window. WebGL uses native EGL/GLES3 through Mesa, without ANGLE.
+It does not depend on Skia.
 JavaScriptCore's C API is supplied by the `javascriptcoregtk-4.1` pkg-config
 package on Linux.
 The desktop path is X11, including XWayland. Headless modes need no display.
@@ -14,8 +15,8 @@ On Ubuntu 24.04 or newer, install the following packages:
 ```sh
 sudo apt-get update
 sudo apt-get install build-essential clang ninja-build generate-ninja pkg-config \
-    python3 git curl ca-certificates libjavascriptcoregtk-4.1-dev libglib2.0-dev \
-    libharfbuzz-dev libicu-dev libwoff-dev libbrotli-dev libcurl4-openssl-dev \
+    git curl ca-certificates libjavascriptcoregtk-4.1-dev libglib2.0-dev \
+    libharfbuzz-dev libcurl4-openssl-dev \
     libssl-dev libegl1-mesa-dev libgles2-mesa-dev libgl1-mesa-dev libxi-dev \
     libxcursor-dev libxrandr-dev libx11-dev libasound2-dev libgc-dev \
     libfreetype-dev libfontconfig-dev libwebp-dev libpng-dev libjpeg-dev \
@@ -23,8 +24,8 @@ sudo apt-get install build-essential clang ninja-build generate-ninja pkg-config
 ```
 
 You also need current [V](https://github.com/vlang/v) and
-[UI2](https://github.com/vlang/ui2) checkouts and Python 3.12 or newer. For a fresh
-setup, run these commands from the Vox checkout:
+[UI2](https://github.com/vlang/ui2) checkouts. Python 3.12 or newer is needed only for optional tests and
+benchmarks. For a fresh setup, run these commands from the Vox checkout:
 
 ```sh
 git clone --depth 1 https://github.com/vlang/v.git ../v
@@ -133,7 +134,7 @@ Build/linux/vox --headless-smoke
 Build/linux/vox --headless=layout-tree ./page.html
 
 sudo apt-get install xvfb xauth xdotool scrot
-python3 tools/run_memory_bounded.py \
+sh tools/run_v_tool.sh run_memory_bounded \
     --lock Build/linux-window-smoke.lock --report Build/linux-window-smoke.json \
     --limit-gib 3 --timeout 600 -- \
     python3 tools/test_linux_browser.py
@@ -143,7 +144,8 @@ Ctrl+L edits the address and Enter navigates. Back/forward, reload, page input,
 and scrolling use the portable shell. JavaScriptCore remains the default engine.
 The explicit `--js-engine=libjs` option keeps its existing documented limits.
 
-The smoke test exercises startup, JavaScript DOM/events, local documents, HTTPS
+The smoke test exercises startup, JavaScript DOM/events, local documents,
+WebGL1/WebGL2 shaders with exact readback and canvas presentation pixels, HTTPS
 with trusted and untrusted certificates, HTTP redirects, and an actual X11
 window under Xvfb. It drives Ctrl+L/Enter navigation, resizes the window and
 checks repainted pixels, creates and switches process tabs, closes a child tab,
@@ -172,7 +174,7 @@ the production build, run without a collector, and poison released storage to
 expose stale borrowed payloads:
 
 ```sh
-VOX_ARENA_POISON=1 python3 tools/run_memory_bounded.py \
+VOX_ARENA_POISON=1 sh tools/run_v_tool.sh run_memory_bounded \
     --lock Build/linux-ownership-tests.lock --report Build/linux-ownership-tests.json -- \
     python3 tools/test_linux_native.py --gc prealloc \
     platform/closure_metadata_arena_test.v \
@@ -189,7 +191,7 @@ resource cancellation against both allocation models. These are the focused
 application boundary checks:
 
 ```sh
-VOX_ARENA_POISON=1 python3 tools/run_memory_bounded.py \
+VOX_ARENA_POISON=1 sh tools/run_v_tool.sh run_memory_bounded \
     --lock Build/linux-session-tests.lock --report Build/linux-session-tests.json -- \
     python3 tools/test_linux_native.py --gc prealloc \
     document/session_test.v document/child_storage_test.v \
@@ -254,11 +256,98 @@ Linux uses the existing portable painter, with retained shaped text and V
 (`cpuraster`) shadows. Advanced effects implemented solely in the Cocoa painter, including
 some SVG paint servers, masks and filters, remain unported. Cocoa input-method
 integration and the macOS video-frame decoder also remain platform-specific.
-WebGL requires an ANGLE EGL/GLES installation; distribution Mesa alone reports
-it unavailable. The native adapter preserves ANGLE's robust-buffer interface.
+WebGL uses surfaceless EGL with robust GLES3 contexts for both WebGL versions.
+The backend targets Mesa hardware drivers and software llvmpipe; this verification
+used llvmpipe. No ANGLE headers, libraries or vendor entry points are required.
+The adapter checks CPU and PBO
+transfer bounds, initializes new buffer/texture/renderbuffer storage, validates
+WebGL shader restrictions with the shared V frontend, and checks active vertex/index streams
+before drawing. This is focused runtime coverage, not full WebGL conformance.
+A GLES3 driver with robust context support is required; unsupported drivers
+report context creation failure.
+
+Run the native driver and sanitizer checks with:
+
+```sh
+python3 tools/test_webgl_gles.py --output Build/linux-webgl-gles
+sh tools/run_v_tool.sh run_memory_bounded \
+    --lock Build/linux-webgl.lock --report Build/linux-webgl.json --timeout 900 -- \
+    python3 tools/test_linux_native.py \
+    webgl/native_draw_test.v webgl/native_essl_equivalence_test.v \
+    webgl/native_parameter_query_test.v
+```
+
+The native driver runner uses separate memory guards for compilation and
+execution and tests both optimized and ASan/UBSan builds, including a real GLX
+host window. Each native service call temporarily binds its selected GLES
+context and restores the caller's GLX context and state. The host-only control
+independently reproduces Mesa 25.0.7's GLX visual/config cache leak; the GLX
+sanitizer cases use the narrow `libGLX_mesa.so` suppression in
+`tools/native_gles_glx.lsan-suppressions`. The headless driver cases retain
+unsuppressed leak checking. CI also runs the V
+service cases in both allocation jobs and the browser fixture through Xvfb.
+See [the Linux WebGL implementation and verification](LINUX_WEBGL_GLES.md) for
+the published executable identity, results and remaining limits.
+
 System OpenSSL 3.0 supports ordinary crypto operations; newer algorithms require
 their provider versions (Argon2: 3.2+, ML-KEM/ML-DSA: 3.5+). Unsupported operations
 return errors, including signature contexts an older provider cannot honor.
 Linux rendering is not pixel-equivalent to the macOS screenshot suite, and
 JavaScriptCoreGTK can differ in version from Apple's JavaScriptCore. Translated
 code alone does not establish complete Ladybird or LibJS parity.
+
+
+## VM follow-up (2026-11-12)
+
+The existing Debian 13 ARM64 VM received the documented native dependencies.
+The FreeType raster fixture compiled with current V's C backend and passed when
+executed under the 3 GiB runtime guard (exit 0, sampled peak RSS 4,136,960 bytes).
+This exercises native masks, including transformed glyph runs, without Skia.
+
+The full browser did not build within the required budget. Repeated C-backend
+attempts with serial generation, bounded workers and split C were stopped by
+the 12 GiB aggregate RSS guard. Investigation identified V's generic-instance
+checker, which forks the compiler's parsed state. A standalone check including
+library instances also reached V's explicit 10 GiB compiler limit; its recorded
+peak was 10,626,682,880 bytes. V's separate-process checking mode did not get the
+combined build under the guard either. No memory limit was raised and no
+compiler checks were disabled for a successful-build claim. Browser startup,
+Xvfb rendering and keyboard navigation remain unverified for this revision.
+
+The focused outer-shadow suite ran but failed two existing platform-dependent
+byte expectations: `[241,128,35,36]` versus `[248,131,36,35]`, and red 128 versus
+124. Linux selects the non-legacy RGBA pipeline while those assertions pin the
+legacy output. The newly added unrounded-alpha case passed. These failures
+remain open; do not describe the full Linux suite as passing.
+
+### Completed compiler and window follow-up (2026-11-12)
+
+The bounded build failure above is resolved. Its root cause was stale function
+locals in V's late-match transform: the compiler inferred an unrelated owner
+record for an interpolated UI2 string and generated an enormous object formatter.
+The setup now caches a checked C compiler with each late-match function's scope
+isolated. It builds from the selected V sources without editing the V checkout,
+raising either memory limit, or disabling generic checks. Upstream compilers
+that already contain the fix bypass this compatibility bootstrap.
+
+The Debian 13 ARM64 VM built the full browser with this compiler. The final
+window-fix executable SHA-256 was
+`22d49c141dccf3a4c285d6dc31a079e27db340f8fdfe3e4ee3263760a86db772`.
+The build exited 0 with a sampled aggregate peak RSS of 6,339,305,472 bytes
+under the 12 GiB guard and V's 10 GiB limit. Fresh processes passed headless
+JavaScript/DOM/wheel checks, local HTML, HTTP redirects, trusted HTTPS and
+certificate rejection, and an 800×600 rendered screenshot.
+
+The Xvfb lifecycle check then passed native address entry, resize/redraw at
+960×720, independent process-tab startup, tab switching, retained paint, child
+retirement and normal native close with complete process-group retirement.
+The browser test and guard exited 0, peaking at 804,208,640 bytes under 3 GiB.
+The full native-window test file also passed strict C callback/pointer checks
+and execution. Sokol events now copy their 32-bit fields into GG's V event
+layout on Linux; X11 titles are set only after window creation.
+
+The six shadow tests also pass after independently verifying and pinning the
+intentional native/non-native RGBA byte differences. Earlier failed attempts
+above remain diagnostic history; the current Linux build and lifecycle checks
+are no longer blocked by those failures. These are functional port checks,
+not Brave pixel parity or a performance acceptance cohort.

@@ -31,7 +31,7 @@ fn test_libjs_backend_isolates_errors_and_never_falls_back_to_javascriptcore() {
 	defer { runtime.close() }
 	errors := runtime.run_document_scripts_collect_errors([
 		ScriptSource{ code: 'const x=40;' },
-		ScriptSource{ code: 'var leaked=1; (() => 42)();', url: 'unsupported.js' },
+		ScriptSource{ code: 'var leaked=1; class C {}', url: 'unsupported.js' },
 		ScriptSource{ code: 'let duplicate; let duplicate;', url: 'syntax.js' },
 		ScriptSource{ code: 'throw 42;', url: 'throw.js' },
 		ScriptSource{ code: 'var result=x+2;' },
@@ -43,7 +43,7 @@ fn test_libjs_backend_isolates_errors_and_never_falls_back_to_javascriptcore() {
 	assert runtime.evaluate('result;')! == '42'
 	assert runtime.evaluate('typeof leaked;')! == 'undefined'
 	assert runtime.context == unsafe { nil }
-	for source in ['('.repeat(40) + '42' + ')'.repeat(40), '/a/', '/[a-/'] {
+	for source in ['('.repeat(40) + '42' + ')'.repeat(40), '/[z-a]/', '/[a-/'] {
 		if _ := runtime.evaluate(source) {
 			assert false
 		} else {
@@ -51,7 +51,7 @@ fn test_libjs_backend_isolates_errors_and_never_falls_back_to_javascriptcore() {
 				|| err.msg().contains('SyntaxError')
 		}
 	}
-	if _ := runtime.evaluate_host('JSON.stringify({answer:42});') {
+	if _ := runtime.evaluate_host('class Unsupported {}') {
 		assert false
 	} else {
 		assert err.msg().contains('not translated')
@@ -134,7 +134,7 @@ fn test_libjs_backend_preserves_source_urls_and_starting_lines() {
 		assert err.msg().contains('https://example.test/limited.js:13:')
 	}
 	unsupported := prepare_script(ScriptSource{
-		code:          '\n(()=>1);'
+		code:          '\n(class {});'
 		url:           'https://example.test/unsupported.js'
 		starting_line: 20
 	})!

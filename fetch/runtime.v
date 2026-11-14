@@ -1759,6 +1759,23 @@ pub interface FetchTaskDestinationProvider {
 	fetch_request_client_deferred_invoke(algorithm fn ())
 }
 
+// HTML clients name the retained allocation owner of their requests (the
+// responsible document's native storage). A network transport leases it while
+// a transfer is in flight, so a response that arrives after the document
+// retired never reaches freed request, params or policy records.
+pub interface FetchRequestStorageOwner {
+	fetch_request_client_storage() voidptr
+}
+
+pub fn request_client_storage(request &Request) voidptr {
+	if client := request.client {
+		if client is FetchRequestStorageOwner {
+			return client.fetch_request_client_storage()
+		}
+	}
+	return unsafe { nil }
+}
+
 pub fn deferred_invoke_for_request(request &Request, algorithm fn ()) {
 	if client := request.client {
 		if client is FetchTaskDestinationProvider {

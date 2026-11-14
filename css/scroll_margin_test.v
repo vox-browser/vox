@@ -8,7 +8,7 @@ fn scroll_margin_serialization(property_id PropertyID, text string) ?string {
 }
 
 fn test_scroll_margin_metadata_and_parsing() {
-	assert number_of_longhand_properties == 364
+	assert number_of_longhand_properties == 388
 	assert last_longhand_property_id() == .webkit_font_smoothing
 	assert property_id_from_string('scroll-margin')? == .scroll_margin
 	assert property_id_from_string('SCROLL-MARGIN-INLINE-END')? == .scroll_margin_inline_end

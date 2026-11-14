@@ -3,7 +3,7 @@
 module webgl
 
 fn source_texture_native_binding(pname GLenum) int {
-	mut result := 0
+	mut result := i32(0)
 	C.vox_gl_int_parameter(pname, &result)
 	return result
 }
@@ -24,9 +24,9 @@ fn test_source_texture_binds_retain_objects_before_native_target_conflicts() {
 		assert context.get_error() == invalid_operation
 		foreign := other.create_texture()
 		context.bind_texture(0xbad, foreign)
-		mut selected := [0, 0, 0, 0]!
+		mut selected := [i32(0), 0, 0, 0]!
 		C.vox_gl_int_parameter(viewport, &selected[0])
-		assert selected == [1, 2, 3, 4]!
+		assert selected == [i32(1), 2, 3, 4]!
 		assert context.get_error() == invalid_operation
 		context.bind_texture(0xbad, texture)
 		assert context.get_error() == invalid_enum
@@ -61,12 +61,12 @@ fn test_source_texture_binds_retain_objects_before_native_target_conflicts() {
 		other.native.make_current()
 		context.delete_texture(texture)
 		C.vox_gl_int_parameter(viewport, &selected[0])
-		assert selected == [1, 2, 3, 4]!
+		assert selected == [i32(1), 2, 3, 4]!
 		assert context.get_error() == no_error
 		other.native.make_current()
 		context.delete_texture(foreign)
 		C.vox_gl_int_parameter(viewport, &selected[0])
-		assert selected == [1, 2, 3, 4]!
+		assert selected == [i32(1), 2, 3, 4]!
 		assert context.get_error() == invalid_operation
 	}
 }

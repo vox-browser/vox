@@ -26,7 +26,7 @@ fn test_public_source_proxy_ids_and_native_names_preserve_compact_wrapper_identi
 		reserved << name
 	}
 	assert runtime.evaluate_host(r'(function(){const gl=handleGL;globalThis.handleBuffer=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,handleBuffer);if(gl.getParameter(gl.ARRAY_BUFFER_BINDING)!==handleBuffer)return false;const f=gl.createFramebuffer(),r=gl.createRenderbuffer(),t=gl.createTexture();gl.bindFramebuffer(gl.FRAMEBUFFER,f);gl.bindRenderbuffer(gl.RENDERBUFFER,r);gl.bindTexture(gl.TEXTURE_2D,t);if(gl.getParameter(gl.FRAMEBUFFER_BINDING)!==f||gl.getParameter(gl.RENDERBUFFER_BINDING)!==r||gl.getParameter(gl.TEXTURE_BINDING_2D)!==t)return false;gl.bindFramebuffer(gl.FRAMEBUFFER,null);const vertex=gl.createShader(gl.VERTEX_SHADER),fragment=gl.createShader(gl.FRAGMENT_SHADER),program=gl.createProgram();gl.shaderSource(vertex,"#version 300 es\nvoid main(){gl_Position=vec4(0,0,0,1);}");gl.shaderSource(fragment,"#version 300 es\nprecision mediump float;out vec4 color;void main(){color=vec4(1);}");gl.compileShader(vertex);gl.compileShader(fragment);gl.attachShader(program,vertex);gl.attachShader(program,fragment);gl.linkProgram(program);gl.useProgram(program);const attached=gl.getAttachedShaders(program);return gl.getProgramParameter(program,gl.LINK_STATUS)&&gl.getParameter(gl.CURRENT_PROGRAM)===program&&attached.length===2&&attached[0]===vertex&&attached[1]===fragment&&gl.getError()===gl.NO_ERROR})()')! == 'true'
-	mut actual := 0
+	mut actual := i32(0)
 	C.vox_gl_int_parameter(webgl.array_buffer_binding, &actual)
 	assert u32(actual) !in reserved
 	for _, buffer in host.buffers {

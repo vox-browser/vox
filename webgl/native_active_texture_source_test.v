@@ -3,7 +3,7 @@
 module webgl
 
 fn active_texture_source_driver_unit() int {
-	mut unit := 0
+	mut unit := i32(0)
 	C.vox_gl_int_parameter(active_texture, &unit)
 	return unit
 }

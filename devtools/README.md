@@ -68,14 +68,14 @@ picker and hover input, highlights, keys, actions and relayout after edits.
 ## Tests
 
 ```sh
-ui2_modules=$(python3 tools/prepare_ui2.py)
+ui2_modules=$(sh tools/run_v_tool.sh prepare_ui2)
 v -enable-globals -memory-limit 10G -cc clang \
   -path "$ui2_modules|.|@vmodules|@vlib" test devtools
 VOX_CHROME_TEST_FILE=browserapp/devtools_test.v sh tools/test_address_bar.sh \
   -memory-limit 10G -skip-running -o Build/devtools-main-test
 ```
 
-Run both through `tools/run_memory_bounded.py` as described in
+Run both through `tools/run_memory_bounded.vsh` as described in
 [the UI2 adapter guide](../tools/ui2/README.md). The custom-renderer path
 shares these declarations but has not been exercised in a Linux window.
 

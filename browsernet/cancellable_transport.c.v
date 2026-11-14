@@ -79,6 +79,9 @@ fn fetch_cancellable(config http.FetchConfig, scope &RequestScope, mut progress 
 	mut headers := voidptr(unsafe { nil })
 	defer { if headers != unsafe { nil } { C.vox_curl_slist_free_all(headers) } }
 	for name in config.header.keys() {
+		// CURLOPT_ACCEPT_ENCODING advertises this libcurl's actual decoders.
+		// V's HTTP client also supports Brotli, which macOS libcurl may lack.
+		if name.to_lower() == 'accept-encoding' { continue }
 		for value in config.header.custom_values(name) {
 			appended := C.vox_curl_slist_append(headers, '${name}: ${value}'.str)
 			if appended == unsafe { nil } {

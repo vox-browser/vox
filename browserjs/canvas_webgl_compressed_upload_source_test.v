@@ -28,16 +28,16 @@ fn test_public_compressed_uploads_select_owner_before_format_and_span_errors() {
 		expected_image := C.vox_gl_get_error()
 		other.native.make_current()
 		runtime.evaluate_host('compressedGL.compressedTexImage2D(0xbad,0,0x83f0,-4,4,1,new Uint8Array([0,248,224,7,0,0,0,0]));')!
-		mut selected := [0, 0, 0, 0]!
+		mut selected := [i32(0), 0, 0, 0]!
 		C.vox_gl_int_parameter(0x0ba2, &selected[0])
-		assert selected == [1, 2, 3, 4]!
+		assert selected == [i32(1), 2, 3, 4]!
 		assert runtime.evaluate_host('compressedGL.getError()')! == expected_image.str()
 		C.vox_gl_compressed_tex_sub_image2d(0xbad, 0, 0, 0, -4, 4, 0x83f0, pixels.len, pixels.data)
 		expected_sub_image := C.vox_gl_get_error()
 		other.native.make_current()
 		runtime.evaluate_host('compressedGL.compressedTexSubImage2D(0xbad,0,0,0,-4,4,0x83f0,new Uint8Array([0,248,224,7,0,0,0,0]));')!
 		C.vox_gl_int_parameter(0x0ba2, &selected[0])
-		assert selected == [1, 2, 3, 4]!
+		assert selected == [i32(1), 2, 3, 4]!
 		assert runtime.evaluate_host('compressedGL.getError()')! == expected_sub_image.str()
 		mut calls := [
 			'compressedGL.compressedTexImage2D(0xbad,0,0xbad,-4,4,1,new Uint8Array(0));',
@@ -56,7 +56,7 @@ fn test_public_compressed_uploads_select_owner_before_format_and_span_errors() {
 			other.native.make_current()
 			runtime.evaluate_host(call)!
 			C.vox_gl_int_parameter(0x0ba2, &selected[0])
-			assert selected == [1, 2, 3, 4]!
+			assert selected == [i32(1), 2, 3, 4]!
 			assert runtime.evaluate_host('compressedGL.getError()')! == expected[index]
 		}
 	}

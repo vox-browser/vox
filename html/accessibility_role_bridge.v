@@ -321,15 +321,15 @@ fn dom_meta_csp_enforce(document &dom.Document, input string) string {
 		panic('Meta CSP requires the actual Document origin')
 	})
 	serialized := policy.serialize() or { panic(err) }
-	mut directives := []SerializedCSPDirective{}
+	mut directives := []dom.SerializedCSPDirective{}
 	for directive in serialized.directives {
-		directives << SerializedCSPDirective{ name: directive.name, value: directive.value.clone() }
+		directives << dom.SerializedCSPDirective{ name: directive.name, value: directive.value.clone() }
 	}
 	settings_pointer := document.relevant_settings_object()
 	if settings_pointer != unsafe { nil } {
 		settings := unsafe { &EnvironmentSettingsObject(settings_pointer) }
 		mut container := unsafe { &PolicyContainer(settings.policy_container()) }
-		container.csp_list << SerializedCSPPolicy{
+		container.csp_list << dom.SerializedCSPPolicy{
 			directives: directives
 			disposition: .enforce
 			source: .meta

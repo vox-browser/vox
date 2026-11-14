@@ -8,7 +8,13 @@ import platform
 pub fn (mut d Document) enable_native_storage() {
 	$if prealloc {
 		if d.native_storage_ == unsafe { nil } {
-			d.native_storage_ = platform.new_retained_arena('native document')
+			persistent := platform.enter_persistent()
+			defer { platform.leave_persistent(persistent) }
+			mut storage := platform.new_retained_arena('native document')
+			d.native_storage_ = storage
+			storage.add_cleanup(fn [storage] () {
+				retire_ranges_in_native_storage(storage)
+			})
 		} else if d.native_storage_borrowed_ {
 			// An embedder can explicitly keep an inert template owner separately.
 			d.native_storage_.retain()
@@ -16,6 +22,22 @@ pub fn (mut d Document) enable_native_storage() {
 		}
 		// An explicit native owner uses the embedder's retirement boundary.
 		d.native_storage_adoption_owner_ = false
+	}
+}
+
+// Inert documents can borrow this arena, and adoption can share its lifetime
+// with another document. A range's current node document therefore need not
+// be the document that owns the nodes' allocation. Prune these weak registry
+// entries at the last storage lease, while every member's payload is readable.
+fn retire_ranges_in_native_storage(storage &platform.RetainedArena) {
+	persistent := platform.enter_persistent()
+	defer { platform.leave_persistent(persistent) }
+	for key in dom_live_ranges.keys() {
+		range := dom_live_ranges[key] or { continue }
+		if storage.arena.contains(voidptr(range.start_container()))
+			|| storage.arena.contains(voidptr(range.end_container())) {
+			dom_live_ranges.delete(key)
+		}
 	}
 }
 

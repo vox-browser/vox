@@ -9,6 +9,7 @@ import webidl
 __global performance_bindings_ = map[voidptr]bool{}
 
 pub fn (mut runtime Runtime) install_performance_binding() ! {
+	if runtime.engine == .libjs { runtime.install_libjs_performance()!; return }
 	runtime.require_javascript_value_context()!
 	owner := voidptr(&runtime)
 	if performance_bindings_[owner] { return }

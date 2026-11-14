@@ -92,7 +92,7 @@ static VoxInitialDocumentClear native_layer_initial_document_clear;
 
 // V opts in only for callbacks that replace the whole frame before completing:
 // an opaque background plus replay, a restored scroll frame, or a snapshot.
-// Callbacks that return before completing still publish a transparent bitmap.
+// Callbacks that return before completing retain the last presented frame.
 static BOOL native_layer_opaque_frames;
 static CGContextRef native_layer_opaque_frame_context;
 static BOOL native_layer_opaque_frame_complete;
@@ -522,8 +522,8 @@ static CGImageRef native_layer_raster_frame_with_submission(NSView *view, CGFloa
     size_t width = (size_t)pixel_width, height = (size_t)pixel_height;
     if (!width || !height || width > SIZE_MAX / 4 / height) return NULL;
     const char *force_clear = getenv("VOX_CLEAR_OPAQUE_FRAME_BUFFERS");
-    BOOL defer_clear = native_layer_opaque_frames && native_layer_is_browser_view(view)
-        && !(force_clear && *force_clear);
+    BOOL opaque_frame = native_layer_opaque_frames && native_layer_is_browser_view(view);
+    BOOL defer_clear = opaque_frame && !(force_clear && *force_clear);
     const char *disable_surface = getenv("VOX_DISABLE_IOSURFACE_FRAMES");
     BOOL shared = !(disable_surface && *disable_surface) && native_layer_is_browser_view(view)
         && width * 4 * height <= 64 * 1024 * 1024;
@@ -565,17 +565,17 @@ static CGImageRef native_layer_raster_frame_with_submission(NSView *view, CGFloa
         native_layer_document_bitmap = bitmap;
         native_layer_document_bitmap_claimed = NO;
         native_layer_initial_document_clear = (VoxInitialDocumentClear){0};
-        native_layer_opaque_frame_context = defer_clear && (pooled || native_scroll_tile_destination) ? bitmap : NULL;
+        // Completion governs publication even with clearing forced, the pool
+        // disabled, or every pooled surface retained by Core Animation.
+        native_layer_opaque_frame_context = opaque_frame ? bitmap : NULL;
         native_layer_opaque_frame_complete = NO;
         NSGraphicsContext.currentContext = [NSGraphicsContext
             graphicsContextWithCGContext:bitmap flipped:view.isFlipped];
         ((void (*)(id, SEL, NSRect))draw)(view, @selector(drawRect:), bounds);
-        if (native_layer_opaque_frame_context && !native_layer_opaque_frame_complete) {
-            CGContextFlush(bitmap);
-            memset(CGBitmapContextGetData(bitmap), 0, CGBitmapContextGetBytesPerRow(bitmap) * height);
+        if (!opaque_frame || native_layer_opaque_frame_complete) {
+            image = pooled ? native_layer_pooled_frame_image(bitmap, pooled, &pooled_owned)
+                : vox_frame_snapshot_copy(bitmap);
         }
-        image = pooled ? native_layer_pooled_frame_image(bitmap, pooled, &pooled_owned)
-            : vox_frame_snapshot_copy(bitmap);
         if (image && tiles && native_scroll_tile_pending && native_layer_opaque_frame_complete) {
             VoxScrollTileFrame *result = native_scroll_tile_pending;
             result->base = CGImageRetain(image);
@@ -675,7 +675,7 @@ static void native_layer_complete_frame(NSView *view, VoxNativePreparedFrame *fr
     native_document_submission_acknowledge(&frame->submission);
 }
 
-static void native_layer_present_frame(NSView *view, CGFloat scale, IMP draw) {
+static BOOL native_layer_present_frame(NSView *view, CGFloat scale, IMP draw) {
     VoxNativeLoadStage stage = native_begin_load_stage("native_frame_presentation");
     @try {
     uint64_t generation = native_layer_redraw_generation;
@@ -699,7 +699,7 @@ static void native_layer_present_frame(NSView *view, CGFloat scale, IMP draw) {
         native_layer_preparation_started = previous_preparation_started;
         native_layer_preparation_view = previous_preparation_view;
     }
-    if (!image) return;
+    if (!image) return NO;
     VoxNativePreparedFrame *frame = [[VoxNativePreparedFrame alloc] init];
     frame->image = image;
     frame->tiles = tiles ? CFRetain((__bridge CFTypeRef)tiles) : NULL;
@@ -728,6 +728,7 @@ static void native_layer_present_frame(NSView *view, CGFloat scale, IMP draw) {
         [tiles release];
 #endif
     }
+    return YES;
     } @finally { native_finish_load_stage(stage); }
 }
 
@@ -799,15 +800,19 @@ static void native_layer_update(id self, SEL command) {
         return;
     }
     native_layer_presenting = YES;
+    BOOL prepared = NO;
     @try {
     @autoreleasepool {
-        native_layer_present_frame(self, native_layer_effective_scale(self),
+        prepared = native_layer_present_frame(self, native_layer_effective_scale(self),
             native_layer_original_draw);
     }
     } @finally {
         native_layer_presenting = NO;
         native_frame_publication_flush_notifications();
     }
+    // Loading throttles schedule their own deadline. Retaining an older frame
+    // must not turn its stale generation into an immediate redraw loop.
+    if (!prepared) return;
     if (native_frame_timeline_enabled())
         fprintf(stderr, "VOX_TIMELINE updated t=%.6f\n", native_frame_timeline_now());
     // AppKit clears needsDisplay after updateLayer returns. Input or timers

@@ -1741,7 +1741,7 @@ fn matches_simple(component &SimpleSelector, element &dom.Element, shadow_host ?
 					if qualified_name.name.lowercase_name != element.local_name() {
 						return false
 					}
-				} else if !equals_ignoring_ascii_case(qualified_name.name.name, element.local_name()) {
+				} else if qualified_name.name.name != element.local_name() {
 					return false
 				}
 			}
@@ -3669,10 +3669,11 @@ enum SelectorCaseSensitivity {
 	case_insensitive
 }
 
-fn matches_attribute(attribute SelectorAttribute, style_sheet_for_rule ?&CSSStyleSheet, element &dom.Element) bool {
+@[inline]
+fn selector_attribute_case_sensitivity(attribute SelectorAttribute, element &dom.Element) SelectorCaseSensitivity {
 	attribute_name := attribute.qualified_name.name.name
 
-	case_sensitivity := match attribute.case_type {
+	return match attribute.case_type {
 		.case_insensitive_match {
 			SelectorCaseSensitivity.case_insensitive
 		}
@@ -3690,9 +3691,11 @@ fn matches_attribute(attribute SelectorAttribute, style_sheet_for_rule ?&CSSStyl
 			}
 		}
 	}
+}
 
+fn matches_attribute(attribute SelectorAttribute, style_sheet_for_rule ?&CSSStyleSheet, element &dom.Element) bool {
 	return matches_attribute_in_namespace(attribute, style_sheet_for_rule, element,
-		case_sensitivity)
+		selector_attribute_case_sensitivity(attribute, element))
 }
 
 fn matches_attribute_in_namespace(attribute_selector SelectorAttribute,
@@ -3723,7 +3726,7 @@ fn matches_attribute_in_namespace(attribute_selector SelectorAttribute,
 				for i := 0; i < attrs.length(); i++ {
 					attr := attrs.item(i) or { continue }
 					is_match := if case_insensitive {
-						equals_ignoring_ascii_case(attr.local_name_, attribute_name)
+						attr.local_name_ == qualified_name.name.lowercase_name
 					} else {
 						attr.local_name_ == attribute_name
 					}
@@ -3747,9 +3750,15 @@ fn matches_attribute_in_namespace(attribute_selector SelectorAttribute,
 	return false
 }
 
+@[inline]
 fn matches_single_attribute(attribute_selector SelectorAttribute, attribute &dom.Attr_, case_sensitivity SelectorCaseSensitivity) bool {
+	return selector_attribute_matches_value(attribute_selector, attribute.value(), case_sensitivity)
+}
+
+// Whether an attribute holding `attribute_value` satisfies the selector's
+// value test. The attribute's name and namespace are the caller's concern.
+fn selector_attribute_matches_value(attribute_selector SelectorAttribute, attribute_value string, case_sensitivity SelectorCaseSensitivity) bool {
 	case_insensitive_match := case_sensitivity == .case_insensitive
-	attribute_value := attribute.value()
 	match attribute_selector.match_type {
 		.exact_value_match {
 			return if case_insensitive_match {

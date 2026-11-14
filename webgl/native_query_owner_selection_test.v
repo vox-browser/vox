@@ -11,16 +11,16 @@ struct QueryOwnerSelectionCase {
 fn run_query_owner_selection_case(mut owner WebGLRenderingContext, mut other WebGLRenderingContext, test_case QueryOwnerSelectionCase) {
 	other.native.make_current()
 	test_case.steps()
-	mut viewport_state := [0, 0, 0, 0]!
+	mut viewport_state := [i32(0), 0, 0, 0]!
 	C.vox_gl_int_parameter(viewport, &viewport_state[0])
 	// These reviewed Source bodies return before issuing a sync query. Other
 	// historical cases stay scoped to their separate implementation reviews.
 	expected_owner := if test_case.name in ['getRenderbufferParameter(unknown)',
 		'getTexParameter(unknown)', 'getAttribLocation(foreign)', 'getSyncParameter(foreign)', 'isShader(null)', 'isProgram(null)',
 		'getParameter(browser state)', 'getParameter(unknown)'] {
-		[9, 10, 11, 12]!
+		[i32(9), 10, 11, 12]!
 	} else {
-		[1, 2, 3, 4]!
+		[i32(1), 2, 3, 4]!
 	}
 	if viewport_state != expected_owner {
 		panic('${test_case.name} selected ${viewport_state}; expected ${expected_owner}')

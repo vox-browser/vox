@@ -6,7 +6,7 @@ import html
 
 fn public_scalar_uniform_source_driver(index int, zero bool) {
 	floats := if zero { [f32(0), 0, 0, 0]! } else { [f32(0.25), 0.5, 0.75, 1]! }
-	ints := if zero { [0, 0, 0, 0]! } else { [1, 2, 3, 4]! }
+	ints := if zero { [i32(0), 0, 0, 0]! } else { [i32(1), 2, 3, 4]! }
 	uints := if zero {
 		[u32(0), 0, 0, 0]!
 	} else {
@@ -36,9 +36,9 @@ fn public_scalar_uniform_source_query(program u32, width int) []f32 {
 }
 
 fn public_scalar_uniform_source_owner() {
-	mut selected := [0, 0, 0, 0]!
+	mut selected := [i32(0), 0, 0, 0]!
 	C.vox_gl_int_parameter(0x0ba2, &selected[0])
-	assert selected == [1, 2, 3, 4]!
+	assert selected == [i32(1), 2, 3, 4]!
 }
 
 fn test_public_source_scalar_uniforms_preserve_nullable_zero_owner_and_idl_order() {
@@ -79,7 +79,7 @@ fn test_public_source_scalar_uniforms_preserve_nullable_zero_owner_and_idl_order
 			args := values[..width].join(',')
 			runtime.evaluate_host('globalThis.scalarOwned=__scalarSourceProgram(scalarOwner,"${types[index]}","${expressions[index]}");globalThis.scalarForeign=__scalarSourceProgram(scalarOther,"${types[index]}","${expressions[index]}");scalarOwner.useProgram(scalarOwned.program);')!
 			context.native.make_current()
-			mut native_program := 0
+			mut native_program := i32(0)
 			C.vox_gl_int_parameter(0x8b8d, &native_program)
 			name := 'value'
 			native_location := C.vox_gl_uniform_location(u32(native_program), name.str)
@@ -115,9 +115,9 @@ fn test_public_source_scalar_uniforms_preserve_nullable_zero_owner_and_idl_order
 		other.native.make_current()
 		wrong_brand := runtime.evaluate_host(r'(function(){let converted=0;try{scalarOwner.uniform1f({}, {valueOf(){converted++;return 1}});return false}catch(error){return error instanceof TypeError&&converted===0}})()')!
 		assert wrong_brand == 'true'
-		mut selected := [0, 0, 0, 0]!
+		mut selected := [i32(0), 0, 0, 0]!
 		C.vox_gl_int_parameter(0x0ba2, &selected[0])
-		assert selected == [9, 10, 11, 12]!
+		assert selected == [i32(9), 10, 11, 12]!
 		converted := runtime.evaluate_host(r'(function(){const order=[];scalarOwner.uniform4f(scalarForeign.location,...[1,2,3,4].map((value,index)=>({valueOf(){order.push(index);return value}})));return order.join(",")==="0,1,2,3"})()')!
 		assert converted == 'true'
 		public_scalar_uniform_source_owner()

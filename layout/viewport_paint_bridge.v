@@ -1478,7 +1478,8 @@ fn layout_paintable_image_contents_changed_with_geometry_check(target voidptr, l
 		return false
 	}
 	independent_size := check_geometry
-		&& positioned_image_geometry_is_independent_of_natural_size(source_node, result.state)
+		&& (positioned_image_geometry_is_independent_of_natural_size(source_node, result.state)
+		|| image_geometry_is_fixed_by_style(source_node))
 	if check_geometry {
 		if !independent_size
 			&& !positioned_image_geometry_is_independent_of_natural_width(source_node, result.state) {

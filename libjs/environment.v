@@ -22,6 +22,7 @@ pub enum EnvironmentKind {
 	function
 	object
 	global
+	module
 }
 
 pub interface Environment {

@@ -28,6 +28,7 @@ fn (runtime &Runtime) compile_host_function(name voidptr, count u32, parameters 
 }
 
 fn (mut runtime Runtime) install_string_compilation_policy(realm &html.ScriptingRealm) {
+	if runtime.engine != .javascriptcore { return }
 	$if darwin {
 		$if !vox_v8 ? {
 			owner := voidptr(&runtime)

@@ -48,7 +48,7 @@ int main(void) {
     uint32_t payload_size = (uint32_t)size;
     memcpy(envelope + 8, &payload_size, 4);
     for (size_t i = 0; i < size; ++i) envelope[i + 16] = (unsigned char)(i * 13);
-    uint32_t checksum = (uint32_t)crc32(0, envelope + 16, (uInt)size);
+    uint32_t checksum = vox_crc32(0, envelope + 16, size);
     memcpy(envelope + 12, &checksum, 4);
     JSGlobalContextRef contexts[] = {JSGlobalContextCreate(NULL), JSGlobalContextCreate(NULL)};
     unsigned char *views[2];

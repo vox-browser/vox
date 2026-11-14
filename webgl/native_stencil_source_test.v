@@ -20,7 +20,7 @@ fn stencil_source_state() []int {
 		stencil_pass_depth_fail, stencil_pass_depth_pass, stencil_back_func, stencil_back_ref,
 		stencil_back_value_mask, stencil_back_writemask, stencil_back_fail,
 		stencil_back_pass_depth_fail, stencil_back_pass_depth_pass] {
-		mut value := 0
+		mut value := i32(0)
 		C.vox_gl_int_parameter(pname, &value)
 		result << value
 	}
@@ -89,9 +89,9 @@ fn test_source_stencil_setters_use_actual_front_back_driver_state_validation_and
 				'op' { context.stencil_op(u32(a[0]), u32(a[1]), u32(a[2])) }
 				else { context.stencil_op_separate(u32(a[0]), u32(a[1]), u32(a[2]), u32(a[3])) }
 			}
-			mut selected := [0, 0, 0, 0]!
+			mut selected := [i32(0), 0, 0, 0]!
 			C.vox_gl_int_parameter(viewport, &selected[0])
-			assert selected == [1, 2, 3, 4]!
+			assert selected == [i32(1), 2, 3, 4]!
 			assert stencil_source_state() == expected
 			if expected_error != no_error {
 				assert context.get_error() == expected_error

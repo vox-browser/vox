@@ -12,22 +12,55 @@ import time
 @[heap]
 struct SubmittedFormObservation {
 mut:
-	submissions []html.FormSubmission
-	methods []string
-	bodies [][]u8
+	submissions   []html.FormSubmission
+	methods       []string
+	bodies        [][]u8
 	content_types []string
 }
 
 fn form_submit_document(markup string) !&dom.Document {
 	owner := page.Page.create(1)!
 	return parse_browser_navigation_document_for_page_with_response_time(markup,
-		dom.URL{value: 'https://form-submit.test/page'}, none, none, unsafe { &dom.Page(owner) }, time.sys_mono_now())
+		dom.URL{ value: 'https://form-submit.test/page' }, none, none, unsafe { &dom.Page(owner) }, time.sys_mono_now())
+}
+
+fn test_script_get_form_submission_reaches_the_shell_without_deactivating_its_document() {
+	mut document := form_submit_document('<!doctype html><form id="form" action="/search"><textarea name="q">utc time</textarea></form>')!
+	mut runtime := browserjs.Runtime.create()
+	defer {
+		runtime.close()
+		document.finalize()
+	}
+	mut messages := []string{}
+	run_document_javascript(document, document.url.serialize(), []string{}, runtime, mut messages)
+	mut app := &BrowserApp{
+		document:   document
+		page_model: unsafe { &page.Page(document.page().target) }
+		js_runtime: runtime
+	}
+	app.install_compact_navigation_handler()
+	runtime.evaluate_host('globalThis.submits=0;form.addEventListener("submit",()=>submits++);')!
+	for method in ['submit', 'requestSubmit'] {
+		// Paint adoption reconnects the HTML model after script-flushed layout.
+		// That must retain the shell's navigation handoff for the next input.
+		focus_compact_browser_navigable(document)
+		runtime.evaluate_host('form.${method}();')!
+		assert app.pending_native_navigation? == 'https://form-submit.test/search?q=utc+time'
+		app.pending_native_navigation = none
+		assert document.is_fully_active()
+		assert voidptr(document.navigable()?.active_document()?) == voidptr(document)
+	}
+	assert runtime.evaluate_host('submits')! == '1'
+	assert messages == []string{}
 }
 
 fn test_legacy_form_submit_uses_live_properties_and_files_without_validation_or_submit_events() {
 	mut document := form_submit_document('<!doctype html><form id="form"><input id="required" required name="required"><input id="file" name="upload" type="file"></form>')!
 	mut runtime := browserjs.Runtime.create()
-	defer { runtime.close(); document.finalize() }
+	defer {
+		runtime.close()
+		document.finalize()
+	}
 	element := document.get_element_by_id('form') or { panic('form') }
 	mut model := html.HTMLFormElementModel.create(unsafe { &dom.HTMLFormElement(element) })
 	observed := &SubmittedFormObservation{}
@@ -51,14 +84,22 @@ for(const receiver of [null,undefined,{},document.createElement("div"),new Proxy
 	submission := observed.submissions[0]
 	assert submission.method == .post && submission.encoding == .multipart
 	assert submission.url.serialize() == 'https://form-submit.test/echo'
-	assert submission.body.bytestr().contains('name="upload"; filename="binary.bin"\r\nContent-Type: application/octet-stream\r\n\r\n'+[u8(0),255,128,65].bytestr())
+	assert submission.body.bytestr().contains('name="upload"; filename="binary.bin"\r\nContent-Type: application/octet-stream\r\n\r\n' + [
+		u8(0),
+		255,
+		128,
+		65,
+	].bytestr())
 	assert model.has_submission_hook()
 }
 
 fn test_form_post_navigates_the_named_child_with_its_entity_body_and_boundary() {
 	mut document := form_submit_document('<!doctype html><iframe id="frame" name="upload"></iframe><form id="form" target="upload"><input name="field" value="sent"></form>')!
 	mut runtime := browserjs.Runtime.create()
-	defer { runtime.close(); document.finalize() }
+	defer {
+		runtime.close()
+		document.finalize()
+	}
 	mut messages := []string{}
 	run_document_javascript(document, document.url.serialize(), []string{}, runtime, mut messages)
 	mut manager := browser_child_document_host(document, .javascriptcore)
@@ -72,7 +113,7 @@ fn test_form_post_navigates_the_named_child_with_its_entity_body_and_boundary() 
 		output.content_types << (request.header_list.get('Content-Type') or { '' })
 		mut response := fetch.Response.create()
 		response.url_list = [request.current_url()]
-		response.header_list.append(http.Header{name: 'Content-Type', value: 'text/plain; charset=UTF-8'})
+		response.header_list.append(http.Header{ name: 'Content-Type', value: 'text/plain; charset=UTF-8' })
 		response.set_body_bytes('posted &#63472; <b>literal</b>\r\nnext'.bytes())
 		return response
 	}
@@ -92,7 +133,7 @@ fn test_form_post_navigates_the_named_child_with_its_entity_body_and_boundary() 
 	assert observed.methods == ['POST']
 	assert observed.bodies.len == 1 && observed.bodies[0].bytestr().contains('name="field"\r\n\r\nsent\r\n')
 	boundary := observed.content_types[0].all_after('boundary=')
-	assert boundary != '' && observed.bodies[0].bytestr().starts_with('--'+boundary+'\r\n')
+	assert boundary != '' && observed.bodies[0].bytestr().starts_with('--' + boundary + '\r\n')
 	assert runtime.evaluate_host('uploadText')! == 'posted &#63472; <b>literal</b>\nnext'
 
 	// The cleanup and replacement happen within one task, before host.poll().
@@ -110,7 +151,7 @@ fn test_form_post_navigates_the_named_child_with_its_entity_body_and_boundary() 
 		if runtime.evaluate_host('uploadDone')! == 'true' { break }
 		assert time.now() < next_deadline, messages.join('\n')
 	}
-	assert observed.methods == ['POST','POST']
+	assert observed.methods == ['POST', 'POST']
 	assert observed.bodies[1].bytestr().contains('name="field"\r\n\r\nagain\r\n')
 	assert runtime.evaluate_host('uploadText')! == 'posted &#63472; <b>literal</b>\nnext'
 	model := html.HTMLFormElementModel.create(unsafe { &dom.HTMLFormElement(document.get_element_by_id('form') or { panic('form') }) })

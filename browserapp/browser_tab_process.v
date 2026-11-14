@@ -115,7 +115,10 @@ fn (mut app BrowserApp) watch_process_tabs() {
 
 fn process_tabs_changed(context voidptr) {
 	mut app := unsafe { &BrowserApp(context) }
-	if app.process_tabs() && !app.tabs.closing_process { app.poll_process_tabs() }
+	if app.process_tabs() && !app.tabs.closing_process {
+		app.tabs.session.invalidate_poll()
+		app.poll_process_tabs()
+	}
 }
 
 // A deselected or closed tab keeps its window on screen until the newly
@@ -246,7 +249,7 @@ fn (mut app BrowserApp) poll_process_tabs() {
 	}
 	mut session := app.tabs.session
 	previous := session.revision
-	session.poll_loading(app.browser_tab_title(), app.address, app.tabs.process_icon,
+	session.poll_loading_if_due(app.browser_tab_title(), app.address, app.tabs.process_icon,
 		app.initial_window_frame_presented, app.browser_document_loading()) or {
 		eprintln('Vox: tab session failed: ${err}')
 		sapp.quit()

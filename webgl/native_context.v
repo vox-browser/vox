@@ -1,8 +1,8 @@
 // Copyright (c) 2026, Ladybird contributors
 // SPDX-License-Identifier: BSD-2-Clause
 
-// Translation of OpenGLContext.cpp. The native EGL context uses the upstream
-// ANGLE backend and context attributes; drawing-surface state is retained here.
+// Translation of OpenGLContext.cpp. macOS dispatches to the V Metal service;
+// the other platforms retain their native GLES service. Surface state lives here.
 module webgl
 
 pub struct DrawingBufferOptions {

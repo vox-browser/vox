@@ -5,8 +5,8 @@ module browserjs
 import html
 import webgl
 
-fn public_attachment_source_owner(expected [4]int) {
-	mut selected := [0, 0, 0, 0]!
+fn public_attachment_source_owner(expected [4]i32) {
+	mut selected := [i32(0), 0, 0, 0]!
 	C.vox_gl_int_parameter(0x0ba2, &selected[0])
 	assert selected == expected
 }
@@ -37,20 +37,20 @@ fn test_public_source_framebuffer_attachment_owner_validation_and_driver_error_r
 		] {
 			other.native.make_current()
 			runtime.evaluate_host('attachmentOwner.${expression};')!
-			public_attachment_source_owner([1, 2, 3, 4]!)
+			public_attachment_source_owner([i32(1), 2, 3, 4]!)
 			assert runtime.evaluate_host('attachmentOwner.getError()')! == '1280'
 		}
 		other.native.make_current()
 		runtime.evaluate_host('attachmentOwner.framebufferTexture2D(36160,36064,3553,attachmentForeignTexture,-1);')!
-		public_attachment_source_owner([1, 2, 3, 4]!)
+		public_attachment_source_owner([i32(1), 2, 3, 4]!)
 		assert runtime.evaluate_host('attachmentOwner.getError()')! == '1281'
 		runtime.evaluate_host('globalThis.attachmentFramebuffer=attachmentOwner.createFramebuffer();globalThis.attachmentTexture=attachmentOwner.createTexture();globalThis.attachmentRenderbuffer=attachmentOwner.createRenderbuffer();attachmentOwner.bindFramebuffer(36160,attachmentFramebuffer);attachmentOwner.bindTexture(3553,attachmentTexture);attachmentOwner.bindRenderbuffer(36161,attachmentRenderbuffer);')!
 		mut context := host.contexts[key] or { panic('attachment owner context') }
 		context.native.make_current()
 		C.vox_gl_bind_framebuffer(webgl.framebuffer, 0)
-		mut texture_handle := 0
+		mut texture_handle := i32(0)
 		C.vox_gl_int_parameter(webgl.texture_binding_2d, &texture_handle)
-		mut renderbuffer_handle := 0
+		mut renderbuffer_handle := i32(0)
 		C.vox_gl_int_parameter(webgl.renderbuffer_binding, &renderbuffer_handle)
 		for index, pair in [
 			['framebufferTexture2D(36160,36064,3553,attachmentTexture,0)', 'attachmentTexture'],
@@ -73,6 +73,6 @@ fn test_public_source_framebuffer_attachment_owner_validation_and_driver_error_r
 		// Generated IDL conversion completes before the source body selects GL.
 		other.native.make_current()
 		assert runtime.evaluate_host(r'(function(){const marker={};try{attachmentOwner.framebufferTexture2D(36160,36064,3553,null,{valueOf(){throw marker}});return false}catch(error){return error===marker}})()')! == 'true'
-		public_attachment_source_owner([9, 10, 11, 12]!)
+		public_attachment_source_owner([i32(9), 10, 11, 12]!)
 	}
 }

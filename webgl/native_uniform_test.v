@@ -23,9 +23,9 @@ fn test_uniform_uploads_preserve_float_integer_unsigned_and_matrix_types() {
 	assert read_float == float_data[4..]
 	integers := context.get_uniform_location(mut program, 'integers') or { panic('integers') }
 	context.uniform2iv(integers, [int(-2_000_000_001), 2_000_000_001])
-	mut read_int := []int{len: 2}
+	mut read_int := []i32{len: 2}
 	C.vox_gl_get_uniform_ints(program.object.native_handle_, int(integers.handle_), read_int.data)
-	assert read_int == [int(-2_000_000_001), 2_000_000_001]
+	assert read_int == [i32(-2_000_000_001), 2_000_000_001]
 	unsigned_values := context.get_uniform_location(mut program, 'unsigned_values') or { panic('unsigned') }
 	context.uniform2ui(unsigned_values, 0xfedcba98, 0xffffffff)
 	mut read_uint := []u32{len: 2}

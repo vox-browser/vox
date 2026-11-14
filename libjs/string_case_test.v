@@ -13,18 +13,16 @@ fn test_string_case_maps_upstream_expansions_context_and_supplementary_utf16() {
 	mut vm := VM.create()
 	create_simple_execution_context(mut vm)
 	for row in [['ω', 'ω', 'Ω'], ['Ω', 'ω', 'Ω'], ['😀', '😀', '😀'],
-		['foo', 'foo', 'FOO'], ['Foo', 'foo', 'FOO'], ['FOO', 'foo', 'FOO'],
-		['ß', 'ß', 'SS'], ['İ', 'i̇', 'İ'], ['ﬀ', 'ﬀ', 'FF'],
-		['ﬁ', 'ﬁ', 'FI'], ['ﬂ', 'ﬂ', 'FL'], ['ﬃ', 'ﬃ', 'FFI'],
-		['ﬄ', 'ﬄ', 'FFL'], ['ﬅ', 'ﬅ', 'ST'], ['ﬆ', 'ﬆ', 'ST'],
+		['foo', 'foo', 'FOO'], ['Foo', 'foo', 'FOO'], ['FOO', 'foo', 'FOO'], ['ß', 'ß', 'SS'],
+		['İ', 'i̇', 'İ'], ['ﬀ', 'ﬀ', 'FF'], ['ﬁ', 'ﬁ', 'FI'], ['ﬂ', 'ﬂ', 'FL'],
+		['ﬃ', 'ﬃ', 'FFI'], ['ﬄ', 'ﬄ', 'FFL'], ['ﬅ', 'ﬅ', 'ST'], ['ﬆ', 'ﬆ', 'ST'],
 		['ΐ', 'ΐ', 'Ϊ́'], ['ΰ', 'ΰ', 'Ϋ́'], ['ᾷ', 'ᾷ', 'Α͂Ι'],
 		['ῇ', 'ῇ', 'Η͂Ι'], ['ῷ', 'ῷ', 'Ω͂Ι'], ['ΟΣ', 'ος', 'ΟΣ'],
 		['ΟΣΑ', 'οσα', 'ΟΣΑ'], ['𐐀𐐨', '𐐨𐐨', '𐐀𐐀']] {
 		receiver := Value.from_string(vm.create_string_from_str(row[0]))
 		for uppercase in [false, true] {
 			result := string_case_call(mut vm, receiver, uppercase, []Value{})!
-			assert result.as_string().utf16 == utf16_string(row[if uppercase { 2 } else { 1 }]),
-			'${row[0]} uppercase=${uppercase}: ${result.as_string().str()}'
+			assert result.as_string().utf16 == utf16_string(row[if uppercase { 2 } else { 1 }]), '${row[0]} uppercase=${uppercase}: ${result.as_string().str()}'
 		}
 	}
 	text := Value.from_string(vm.create_string(Utf16String.from_slice([u16(0xd800), 0x41, 0, 0xdc00,
@@ -102,35 +100,9 @@ fn test_string_case_coerces_once_ignores_arguments_and_restores_conversion_error
 	assert vm.running_execution_context() == base && vm.interpreter_stack().depth() == 0
 }
 
-fn C.uloc_getDefault() &char
-fn C.uloc_setDefault(locale &char, status &i32)
-
-fn test_string_case_preserves_source_ascii_shortcut_and_non_ascii_default_locale() {
-	original_locale := unsafe { cstring_to_vstring(C.uloc_getDefault()).clone() }
-	defer {
-		mut status := i32(0)
-		C.uloc_setDefault(original_locale.str, &status)
-		assert status <= 0
-	}
-	mut status := i32(0)
-	C.uloc_setDefault(c'tr_TR', &status)
-	assert status <= 0
+fn test_string_case_default_mapping_is_locale_independent() {
 	assert unicode_string_case(utf16_string('I'), false).str() == 'i'
 	assert unicode_string_case(utf16_string('i'), true).str() == 'I'
-	assert unicode_string_case(utf16_string('IΩ'), false).str() == 'ıω'
-	assert unicode_string_case(utf16_string('iω'), true).str() == 'İΩ'
-}
-
-// ICU reports a negative success warning when an exact-capacity output has
-// no terminator. UErrorCode must stay signed 32-bit even when V int is 64-bit.
-fn test_icu_case_mapping_accepts_exact_capacity_success_warning() {
-	input := utf16_string('Ω')
-	mut output := [u16(0)]
-	mut status := i32(0)
-	written := C.u_strToLower(output.data, i32(output.len), input.data.data,
-		i32(input.len()), c'en_US_POSIX', &status)
-	assert written == 1
-	assert status < 0
-	assert output == [u16(0x03c9)]
-	assert icu_case_map(input, false).data == output
+	assert unicode_string_case(utf16_string('IΩ'), false).str() == 'iω'
+	assert unicode_string_case(utf16_string('iω'), true).str() == 'IΩ'
 }

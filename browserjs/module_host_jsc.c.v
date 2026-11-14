@@ -34,6 +34,7 @@ const module_normalization_diagnostics = os.getenv('VOX_MODULE_NORMALIZATION_DIA
 const retain_realm_module_helper = os.getenv('VOX_RETAIN_REALM_MODULE_HELPER') != ''
 
 pub fn (mut host ModuleHost) install(mut runtime Runtime) ! {
+	if runtime.engine == .libjs { host.install_libjs(mut runtime)!; return }
 	$if !darwin {
 		return error('Native module loading is currently available on macOS only')
 	}
@@ -231,6 +232,7 @@ fn (mut host ModuleHost) transform_classic(source ScriptSource) !ScriptSource {
 }
 
 fn (mut host ModuleHost) execute(source ScriptSource, stringify_result bool) !string {
+	if host.runtime.engine == .libjs { return host.execute_libjs(source,stringify_result) }
 	$if darwin {
 		if host.closed { return error('Module loader is closed') }
 		mut key := source.url
@@ -364,7 +366,10 @@ fn (mut host ModuleHost) finish_script(mut execution BrowserModuleExecution, mes
 	host.release_execution(mut execution)
 	if message != '' {
 		host.diagnostics << message
-		host.runtime.evaluate_host('console.error(${json2.encode(message)})') or {}
+		if host.runtime.engine == .libjs {
+			mut owner := unsafe { &Runtime(host.runtime) }
+			owner.libjs_messages_ << 'JavaScript (LibJS): '+execution.key+': '+message
+		} else { host.runtime.evaluate_host('console.error(${json2.encode(message)})') or {} }
 	}
 	mut runtime := unsafe { &Runtime(host.runtime) }
 	if !was_finished {
@@ -394,6 +399,7 @@ fn (mut host ModuleHost) finish_script(mut execution BrowserModuleExecution, mes
 fn (mut host ModuleHost) reject(mut operation BrowserModuleOperation, message string) {
 	if operation.finished || host.closed { return }
 	operation.finished = true
+	if host.runtime.engine == .libjs { host.reject_libjs_import(operation,message); return }
 	mut runtime := unsafe { &Runtime(host.runtime) }
 	value := runtime.call_javascript_function(runtime.value_error_intrinsic_,
 		C.vox_jsc_JSValueMakeUndefined(runtime.context), [runtime.binding_string('TypeError'),
@@ -417,10 +423,15 @@ fn (mut host ModuleHost) supply(mut operation BrowserModuleOperation, code strin
 		return
 	}
 	mut runtime := unsafe { &Runtime(host.runtime) }
+	// The specifier rewrite of the module's source, apart from the engine's
+	// own parse and evaluation of the result.
+	rewrite_stage := processmetrics.begin_instruction_stage('javascript_module_source_rewrite')
 	transformed := host.rewrite_value(code, base, operation.key, true) or {
+		rewrite_stage.finish()
 		host.reject(mut operation, js_exception_or_message(runtime.context, err))
 		return
 	}
+	rewrite_stage.finish()
 	defer { runtime.release_javascript_value(transformed) }
 	$if darwin {
 		mut exception := unsafe { nil }
@@ -453,6 +464,8 @@ fn js_exception_or_message(context voidptr, err IError) string {
 }
 
 fn (mut host ModuleHost) consume_script(mut operation BrowserModuleOperation, script ?&html.Script) {
+	if host.closed { return }
+	if host.runtime.engine == .libjs { host.consume_libjs_script(operation,script); return }
 	mut waiters := host.in_flight[operation.key] or { [&operation] }
 	host.in_flight.delete(operation.key)
 	if source := script {
@@ -470,9 +483,43 @@ fn (mut host ModuleHost) consume_script(mut operation BrowserModuleOperation, sc
 }
 
 fn (mut host ModuleHost) fail_load(operation &BrowserModuleOperation, message string) {
+	if operation.preload {
+		// A failed preload leaves the module map empty, as if it never ran:
+		// the imports that joined it fetch the module themselves.
+		mut waiters := host.in_flight[operation.key] or { return }
+		host.in_flight.delete(operation.key)
+		if waiters.len == 0 { return }
+		persistent := platform.enter_persistent()
+		defer { platform.leave_persistent(persistent) }
+		host.in_flight[operation.key] = waiters
+		mut first := waiters[0]
+		host.fetch_module(mut first)
+		return
+	}
 	mut waiters := host.in_flight[operation.key] or { [operation] }
 	host.in_flight.delete(operation.key)
 	for mut waiting in waiters { host.reject(mut waiting, message) }
+}
+
+// https://html.spec.whatwg.org/multipage/links.html#link-type-modulepreload
+// JavaScriptCore requests an import only after parsing its importer, so a
+// page's preloaded chunks would otherwise arrive one import level at a time.
+// The preload fills the module map; an import that arrives while it is in
+// flight joins it instead of starting a second fetch.
+pub fn (mut host ModuleHost) preload(key string, options html.ScriptFetchOptions) {
+	if host.closed || host.runtime == unsafe { nil } || key in host.in_flight { return }
+	if host.settings.module_map().get(dom.URL{ value: key }, 'javascript-or-wasm') != none { return }
+	persistent := platform.enter_persistent()
+	defer { platform.leave_persistent(persistent) }
+	mut operation := &BrowserModuleOperation{
+		key:      key
+		source:   BrowserModuleSource{ base: key, options: options }
+		preload:  true
+		finished: true
+	}
+	host.operations << operation
+	host.in_flight[key] = []&BrowserModuleOperation{}
+	host.fetch_module(mut operation)
 }
 
 fn (mut host ModuleHost) load(key string, resolve voidptr, reject voidptr) ! {
@@ -498,6 +545,13 @@ fn (mut host ModuleHost) load(key string, resolve voidptr, reject voidptr) ! {
 		return
 	}
 	host.in_flight[key] = [operation]
+	host.fetch_module(mut operation)
+}
+
+fn (mut host ModuleHost) fetch_module(mut operation BrowserModuleOperation) {
+	mut runtime := unsafe { &Runtime(host.runtime) }
+	key := operation.key
+	entry := operation.source
 	url := dom.URL{ value: key }
 	owner := voidptr(host)
 	op := voidptr(operation)

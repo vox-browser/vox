@@ -8,7 +8,7 @@ import math
 // strokes such as the native textarea grip, until their shared MSAA resolve.
 // The surrounding command stream retains ownership of masks and effects.
 fn chromium_svg_solid_path_supported(command &layout.PaintCommand) bool {
-	return chromium_svg_solid_path_supported_with_clips(command,false)
+	return chromium_svg_solid_path_supported_with_clips(command, false)
 }
 
 // Whole compositor recordings retain each native rounded clip. Scalar SVG
@@ -69,9 +69,14 @@ fn chromium_svg_simple_path_supported(command &layout.PaintCommand,
 		for clip in command.clip_list.items {
 			matrix := normalized_paint_transform(clip.transform)
 			if clip.is_path || clip.is_svg_mask || clip.is_svg_content_mask
-				|| (!rounded_clips && clip.corner_radii != layout.BoxRadii{})
 				|| matrix[1] != 0 || matrix[2] != 0 {
 				return false
+			}
+			if !rounded_clips && clip.corner_radii != layout.BoxRadii{} {
+				// A rounded ancestor cannot affect this path when its full
+				// conservative AA/stroke enclosure lies inside the clip.
+				bounds := chromium_msaa_trigger_rect(command) or { return false }
+				if !chromium_opaque_clip_contains(clip, bounds) { return false }
 			}
 		}
 	}

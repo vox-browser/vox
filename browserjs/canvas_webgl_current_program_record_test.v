@@ -26,15 +26,15 @@ fn test_public_current_program_first_exposure_wraps_actual_typed_source_record()
 		program.object.set_label('typed retained program')
 		context.use_program(program)
 		assert context.get_error() == webgl.invalid_operation
-		mut native_program := -1
+		mut native_program := i32(-1)
 		C.vox_gl_int_parameter(webgl.current_program, &native_program)
 		assert native_program == 0
 		assert voidptr(&program.object) !in host.platform_objects
 		other.native.make_current()
 		assert runtime.evaluate_host(r'globalThis.exposedProgram=programRecordGL.getParameter(programRecordGL.CURRENT_PROGRAM);exposedProgram instanceof WebGLProgram&&exposedProgram===programRecordGL.getParameter(programRecordGL.CURRENT_PROGRAM)')! == 'true'
-		mut selected := [0, 0, 0, 0]!
+		mut selected := [i32(0), 0, 0, 0]!
 		C.vox_gl_int_parameter(0x0ba2, &selected[0])
-		assert selected == [9, 10, 11, 12]!
+		assert selected == [i32(9), 10, 11, 12]!
 		wrapper := host.platform_objects[voidptr(&program.object)] or { panic('program wrapper') }
 		registered := host.programs[wrapper] or { panic('registered typed program') }
 		assert registered == program

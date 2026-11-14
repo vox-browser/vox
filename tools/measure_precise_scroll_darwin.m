@@ -22,8 +22,7 @@ static void record_native_image(const struct mach_header *header, intptr_t slide
     if (!dladdr(header, &info) || !info.dli_fname) return;
     const char *name = strrchr(info.dli_fname, '/');
     name = name ? name + 1 : info.dli_fname;
-    if (strcmp(name, "libLadybirdVSkiaText.dylib") &&
-        strcmp(name, "libVoxGraphite.dylib") && strcmp(name, "libVoxGraphiteDawn.dylib")) return;
+    if (strcmp(name, "libVoxAVIF.dylib") && strcmp(name, "libVoxJSCOnV8.dylib")) return;
     // Hex preserves spaces and non-ASCII path bytes without using Foundation
     // or recursively loading code from inside dyld's image callback.
     flockfile(stderr);
@@ -54,19 +53,19 @@ static unsigned rendered_inputs;
 static double rendered_last_input;
 static unsigned inputs;
 static double last_input;
-// The signed adblock helper inherits DYLD_INSERT_LIBRARIES but does not link
-// the renderer. Loading this observer must not break its startup handshake.
-extern void ladybird_v_skia_set_root_raster_scroll_y(double) __attribute__((weak_import));
+// The signed adblock helper inherits DYLD_INSERT_LIBRARIES and the probe
+// environment. Loading this observer must not break its startup handshake,
+// nor start the probe in processes launched without its input schedule.
+static const char adblock_helper[] = "VoxAdblockWorker";
 extern void vreset_profile_stats(void) __attribute__((weak_import));
-static void track_scroll(double y) {
+// The browser reports the root raster's scroll position here, resolving the
+// receiver with dlsym like vox_precise_scroll_diagnostic_time. Without a
+// report every publication keeps scroll_y=0 and the summary rejects the run.
+__attribute__((visibility("default"))) void vox_precise_scroll_rendered_y(double y) {
     rendered_scroll = y;
     rendered_inputs = inputs;
     rendered_last_input = last_input;
-    ladybird_v_skia_set_root_raster_scroll_y(y);
 }
-__attribute__((used)) static struct { const void *replacement, *original; } scroll_interpose
-    __attribute__((section("__DATA,__interpose"))) = {
-        (const void *)track_scroll, (const void *)ladybird_v_skia_set_root_raster_scroll_y };
 
 typedef struct { double time, elapsed, delta_x, delta_y; unsigned long long modifiers; } Input;
 typedef struct { double time, elapsed, age, scroll; unsigned inputs; } Frame;
@@ -406,7 +405,7 @@ static void begin(void) {
 }
 
 __attribute__((constructor)) static void boot(void) {
-    if (!ladybird_v_skia_set_root_raster_scroll_y) return;
+    if (!getenv("VOX_PRECISE_INPUTS") || !strcmp(getprogname(), adblock_helper)) return;
     count_instructions=getenv("VOX_PRECISE_INSTRUCTIONS") && !strcmp(getenv("VOX_PRECISE_INSTRUCTIONS"),"1");
     if (count_instructions) {
         void *library=dlopen("/usr/lib/libproc.dylib",RTLD_LAZY|RTLD_LOCAL);

@@ -22,21 +22,21 @@ fn test_public_shader_command_source_gates_follow_argument_conversion_before_nat
 		for expression in ['gl.shaderSource(foreign,"rejected")', 'gl.compileShader(foreign)'] {
 			other.native.make_current()
 			runtime.evaluate_host(expression)!
-			mut selected := [0, 0, 0, 0]!
+			mut selected := [i32(0), 0, 0, 0]!
 			C.vox_gl_int_parameter(webgl.viewport, &selected[0])
-			assert selected == [9, 10, 11, 12]!
+			assert selected == [i32(9), 10, 11, 12]!
 			assert runtime.evaluate_host('gl.getError()===gl.INVALID_OPERATION')! == 'true'
 		}
 		other.native.make_current()
 		assert runtime.evaluate_host('(function(){let conversions=0;gl.shaderSource(foreign,{toString(){conversions++;other.viewport(9,10,11,12);return "rejected"}});return conversions===1})()')! == 'true'
-		mut selected := [0, 0, 0, 0]!
+		mut selected := [i32(0), 0, 0, 0]!
 		C.vox_gl_int_parameter(webgl.viewport, &selected[0])
-		assert selected == [9, 10, 11, 12]!
+		assert selected == [i32(9), 10, 11, 12]!
 		assert runtime.evaluate_host('gl.getError()===gl.INVALID_OPERATION&&other.getShaderSource(foreign)==="foreign original"&&other.getError()===other.NO_ERROR')! == 'true'
 		other.native.make_current()
 		assert runtime.evaluate_host('(function(){const marker={};try{gl.shaderSource(foreign,{toString(){throw marker}});return false}catch(error){return error===marker}})()')! == 'true'
 		C.vox_gl_int_parameter(webgl.viewport, &selected[0])
-		assert selected == [9, 10, 11, 12]!
+		assert selected == [i32(9), 10, 11, 12]!
 		text := if kind == 'webgl2' {
 			r'#version 300 es\nvoid main(){gl_Position=vec4(0);}'
 		} else {
@@ -46,7 +46,7 @@ fn test_public_shader_command_source_gates_follow_argument_conversion_before_nat
 			other.native.make_current()
 			runtime.evaluate_host(expression)!
 			C.vox_gl_int_parameter(webgl.viewport, &selected[0])
-			assert selected == [1, 2, 3, 4]!
+			assert selected == [i32(1), 2, 3, 4]!
 			assert runtime.evaluate_host('gl.getError()===gl.NO_ERROR')! == 'true'
 		}
 		assert runtime.evaluate_host('gl.getShaderParameter(shader,gl.COMPILE_STATUS)===true')! == 'true'
@@ -55,7 +55,7 @@ fn test_public_shader_command_source_gates_follow_argument_conversion_before_nat
 			other.native.make_current()
 			runtime.evaluate_host(expression)!
 			C.vox_gl_int_parameter(webgl.viewport, &selected[0])
-			assert selected == [9, 10, 11, 12]!
+			assert selected == [i32(9), 10, 11, 12]!
 			assert runtime.evaluate_host('gl.getError()===gl.INVALID_OPERATION')! == 'true'
 		}
 	}

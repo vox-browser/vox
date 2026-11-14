@@ -90,9 +90,100 @@ static void assert_transparent(CGImageRef image)
     for (NSUInteger i = 0; i < data.length; ++i) assert(bytes[i] == 0);
 }
 
+@interface PoolSkippedFrameView : MyView2
+@property(nonatomic) NSUInteger redraws;
+@end
+@implementation PoolSkippedFrameView
+- (BOOL)needsDisplay { return NO; }
+- (void)setNeedsDisplay:(BOOL)value { if (value) ++self.redraws; }
+@end
+
+static unsigned prepared_frames, published_frames;
+static void count_prepared_frame(void *view, uint64_t token, double started) {
+    (void)view; (void)token; (void)started;
+    ++prepared_frames;
+}
+static void count_published_frame(void *view, uint64_t token) {
+    (void)view; (void)token;
+    ++published_frames;
+}
+
+static void pool_test_partial_draw(id self, SEL command, NSRect rect)
+{
+    CGContextRef context = NSGraphicsContext.currentContext.CGContext;
+    CGContextSetRGBFillColor(context, 1, 0, 0, 1);
+    CGContextFillRect(context, CGRectInset(rect, 2, 2));
+    pool_test_incomplete_draw(self, command, rect);
+}
+
+static void test_skipped_frame_publication(void)
+{
+    PoolSkippedFrameView *view = [[PoolSkippedFrameView alloc] initWithFrame:NSMakeRect(0, 0, 80, 40)];
+    view.wantsLayer = YES;
+    native_set_opaque_browser_frames(1);
+    native_layer_original_draw = (IMP)pool_test_incomplete_draw;
+    [VoxNativeFramePublication observePrepared:count_prepared_frame published:count_published_frame];
+    native_layer_update(view, @selector(updateLayer));
+    // A skipped initial frame has no pixels to publish or acknowledge.
+    assert(!view.layer.contents && !prepared_frames && !published_frames);
+    frame_value = 100;
+    native_layer_original_draw = (IMP)pool_test_opaque_draw;
+    native_layer_update(view, @selector(updateLayer));
+    assert(prepared_frames == 1 && published_frames == 1);
+    id contents = view.layer.contents;
+    CGImageRef image = CGImageRetain(native_layer_frame_image(view));
+    NSData *pixels = image_bytes(image);
+    NSNumber *generation = objc_getAssociatedObject(view, &native_layer_frame_generation_key);
+    NSUInteger redraws = view.redraws;
+    native_layer_original_draw = (IMP)pool_test_partial_draw;
+    NSView *child = [[MyView2 alloc] initWithFrame:NSMakeRect(0, 0, 80, 40)];
+    nested_view = child;
+    for (unsigned i = 0; i < 8; ++i) {
+        ++native_layer_redraw_generation;
+        native_layer_update(view, @selector(updateLayer));
+        // A nested completed canvas cannot complete its skipped parent.
+        assert(view.layer.contents == contents);
+        assert(native_layer_frame_image(view) == image);
+        assert([image_bytes(image) isEqualToData:pixels]);
+        assert(objc_getAssociatedObject(view, &native_layer_frame_generation_key) == generation);
+        assert(prepared_frames == 1 && published_frames == 1);
+        assert(!native_layer_presenting && !native_layer_opaque_frame_context);
+    }
+    nested_view = nil;
+    // The throttle's timer owns the next attempt. A stale retained generation
+    // must not spin a main-queue redraw loop before that deadline.
+    __block BOOL drained = NO;
+    dispatch_async(dispatch_get_main_queue(), ^{ drained = YES; });
+    double deadline = CACurrentMediaTime() + 1;
+    while (!drained && CACurrentMediaTime() < deadline)
+        CFRunLoopRunInMode(kCFRunLoopDefaultMode, 0.01, true);
+    assert(drained && view.redraws == redraws);
+    frame_value = 200;
+    native_layer_original_draw = (IMP)pool_test_opaque_draw;
+    native_layer_update(view, @selector(updateLayer));
+    assert(prepared_frames == 2 && published_frames == 2);
+    assert(![image_bytes(native_layer_frame_image(view)) isEqualToData:pixels]);
+    assert([image_bytes(image) isEqualToData:pixels]);
+    NSNumber *resumed = objc_getAssociatedObject(view, &native_layer_frame_generation_key);
+    assert(resumed.unsignedLongLongValue == native_layer_redraw_generation);
+    CGImageRelease(image);
+    [VoxNativeFramePublication observePrepared:NULL published:NULL];
+    native_layer_original_draw = NULL;
+    native_set_opaque_browser_frames(0);
+#if !__has_feature(objc_arc)
+    [child release];
+    [view release];
+#endif
+    puts("Skipped frames: retained pixels and generation, no publication or redraw loop, resumed paint passed");
+}
+
 int main(int argc, char **argv)
 {
     @autoreleasepool {
+        if (argc == 2 && !strcmp(argv[1], "--skipped")) {
+            test_skipped_frame_publication();
+            return 0;
+        }
         if(argc==2 && (!strcmp(argv[1],"--spare") || !strcmp(argv[1],"--readiness"))) {
             const char *option=!strcmp(argv[1],"--spare")
                 ? "VOX_EXTRA_FRAME_BUFFER" : "VOX_GPU_FRAME_READINESS_QUEUE";
@@ -212,16 +303,17 @@ int main(int argc, char **argv)
         @try { native_layer_raster_frame(opaque_view, 2, (IMP)pool_test_opaque_throw); assert(0); }
         @catch (NSException* exception) { }
         CGImageRef incomplete = native_layer_raster_frame(opaque_view, 2, (IMP)pool_test_incomplete_draw);
-        assert_transparent(incomplete);
-        CGImageRelease(incomplete);
+        assert(!incomplete);
         nested_view = [[MyView2 alloc] initWithFrame:NSMakeRect(0, 0, 80, 40)];
         CGImageRef parent = native_layer_raster_frame(opaque_view, 2, (IMP)pool_test_incomplete_draw);
-        assert_transparent(parent);
-        CGImageRelease(parent);
+        assert(!parent);
         nested_view = nil;
         // Opt-in affects only browser callbacks; generic partial painting still
         // receives a cleared bitmap and retains its transparent background.
         CGImageRef generic = frame(view, 12);
+        CGImageRelease(generic);
+        generic = native_layer_raster_frame(view, 2, (IMP)pool_test_incomplete_draw);
+        assert_transparent(generic);
         CGImageRelease(generic);
         native_set_opaque_browser_frames(0);
         assert(!native_layer_opaque_frame_context && !native_layer_opaque_frame_complete);

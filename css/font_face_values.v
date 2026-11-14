@@ -5991,7 +5991,7 @@ fn platform_load_font_from_url_boundary(raw_url string, family_name string) &Pla
 	if parsed.scheme != 'file' {
 		return unsafe { nil }
 	}
-	path := liburl.percent_decode(parsed.serialize_path()).bytestr()
+	path := parsed.to_file_path() or { return unsafe { nil } }
 	prepared_path := platform.prepare_font_file(path) or { return unsafe { nil } }
 	return &PlatformTypeface{
 		family_name: family_name.clone()

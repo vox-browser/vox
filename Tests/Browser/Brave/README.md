@@ -1,5 +1,12 @@
 # Brave rendering fixtures
 
+Many fixtures below were first matched through the Skia text bridge and the
+Graphite/Dawn GPU helpers. Vox no longer builds or loads either; the native
+library checks named in older entries (`tools/test_skia_*.py`,
+`tools/test_graphite_*.py`, `native_direct_image_pixels_test.mm`,
+`test_chromium_image_decode_cache.py`, `test_chromium_screen_blend.py`) were
+removed with them. The fixtures and references remain browser regressions.
+
 `pikabu-direct-composited-image` and `pikabu-hoisted-image-clip` keep authored
 overflow on the final compositor quad. Commit `81c3204c9` removes a synthetic
 first-stage clip, resolving 1,097 differences in each unchanged reference.
@@ -1125,6 +1132,17 @@ the original stops and use the same Skia path as linear gradients.
 The adjacent `diagnostic/css-radial-rounded-border.html` and its unchanged Brave
 PNG keep an outer rounded-border case open: eight pixels differ by one level.
 
+`diagnostic/rotated-ellipse-shadow` retains a rotated, clipped orbit over layered
+CSS gradients. Two fresh Brave 157.1.99.56 captures agree exactly at 1024×768,
+scale 1. The bounded GPU ellipse blur reduces its difference from 26,238 to
+1,901 pixels. Commit `50bdd42d6` shares the rotated ellipse's shadows and
+border through one resolve and preserves the common rounded clip list, reducing
+this to 1,530 pixels in two diagnostic captures. It remains a known failing
+diagnostic with an unchanged exact reference; production validation is pending.
+`ggshape/rotated_shadow_darwin_test.v` executes equivalent rotated and
+axis-aligned ellipse draws and requires exact RGBA equality, visible blur and
+an empty clipped interior. Sheared and anisotropic kernels retain the fallback.
+
 CSS blur uses Skia's premultiplied sRGB image-filter path in the Chromium
 profile. A supported single gradient retains its drawing commands through
 the filter input instead of quantizing to a bitmap before blur.
@@ -1232,3 +1250,136 @@ CSS `clip` edges in CSS-coordinate layout. At 800×600 CSS pixels and scale 2,
 the device-clip source browser matches Brave at zero pixels. The
 [device-clip receipt](../../../docs/parity/chatgpt-retina-device-clips-20261103.json)
 retains the unchanged reference, control failure, native identities and checks.
+
+`diagnostic/rounded-scaled-png.html` isolates scaled PNGs inside rounded
+overflow clips, including vlang.io's fractional Patreon rectangle. The plain
+scaled image is a control. Two fresh Brave 157.1.99.56 captures agree exactly
+at 600×160, scale 1, with scripts disabled. The V/GPU clip correction reduces
+the diagnostic from 2,143 differing pixels to zero in two fresh captures;
+the focused GPU test also requires exact logo pixels and preserves pixels
+outside a rectangular crop. This diagnostic does not establish full-site parity.
+
+`diagnostic/legacy-gamma-scaled-png.html` retains the source PNG's `gAMA` and
+canonical sRGB `cHRM` metadata while drawing at 24px and 20px. Two fresh Brave
+157.1.99.56 captures agree exactly at 600×300, scale 1, with scripts disabled.
+The focused GPU test requires exact pixels at both sizes, including mipmap
+generation after the upload's color conversion. A separate conversion gold
+matches an independently pinned previous-renderer readback, preserves alpha
+and leaves its input unchanged. The cache test runs with poisoned scratch
+memory to verify that temporary decode storage cannot escape into the upload.
+
+
+`diagnostic/legacy-backdrop-border.html` is an unresolved 1024×768, scale-1
+reduction of GitHub's search-border mismatch. Its reference comes from two
+identical fresh Brave captures. Production `6bf5db1e` differs at exactly four
+pixels: (764,16), (762,18), (801,49), (799,51), with the same RGBA values as the
+full GitHub archive's search-border errors. The fractional x=760.75, relative
+header, isolated long page and backdrop blur reproduce the original context.
+Commit `7019fc7ec` makes the full fixture exact in two diagnostic browser captures
+and checks its border band through single and grouped replay. Production
+`b6501a1e` now confirms the full search-border fixture exactly twice. See the
+[pixel audit](../../../docs/OPTIMIZED_SITES_PIXELS_2026_11_12.md#legacy-grid-reduction-2026-11-14).
+
+
+`diagnostic/shadowed-elliptical-avatar.html` and `resources/shadowed-avatar.png`
+cover an anisotropic rounded PNG with an unblurred one-pixel outer shadow.
+Two fresh Brave captures agree. Production `6bf5db1e` leaves eight differences
+on its white background; `cd0173d0d` matches the full fixture exactly twice.
+The corresponding GitHub archive's fifteen avatar differences also disappear.
+The GPU test checks a shared resolve against a separated-resolve control and
+rejects filtered underlays without mutating the backdrop. Production `314e32e9`
+confirms the avatar fixture and GitHub archive exactly twice; see the
+[audit](../../../docs/OPTIMIZED_SITES_PIXELS_2026_11_12.md#production-confirmation-of-ellipse-and-text-gradient-fixes-2026-11-14).
+
+
+`resources/gradient-text-linear-mask.png` freezes the retained glyph coverage
+for the first line of `input/background-clip-text-retained-gradient.html`.
+The focused raster test combines this coverage input with the gradient and
+compares against the existing, unchanged Brave reference. A page-origin control
+differs at 597 pixels; the text-layer origin is exact with two- and four-pixel
+leaf padding. Seven focused checks pass with `f2ee06925`; the complete basic
+browser fixture is exact twice at scale 1 in diagnostics and production
+`314e32e9`. Higher backing scales retain the
+previous renderer path, verified by unchanged Retina captures. This does not
+make the fractional, inline or mixed-scope text controls exact; see the
+[pixel audit](../../../docs/OPTIMIZED_SITES_PIXELS_2026_11_12.md#text-layer-gradient-dither-origin-2026-11-14).
+
+`tall-rounded-shadow` checks an asymmetric 3,069px-tall panel shadow over
+opaque blue controls. Two fresh Brave captures agree at 1024×768, scale 1.
+Production `d94dced5` differs at 2,114 pixels; `de478eee8` makes the complete
+fixture exact twice by restricting axis-aligned filter inputs to each tile's
+three-sigma footprint. The separate `diagnostic/tall-rounded-shadow-mask`
+control also has agreeing Brave captures and is exact twice in the browser.
+Its focused GPU test checks the complete upper shadow band against that
+independent reference. Thirteen shadow tests pass with arena poisoning;
+production `731ef68c` now confirms both complete fixtures exactly twice. See the
+[pixel audit](../../../docs/OPTIMIZED_SITES_PIXELS_2026_11_12.md#tile-local-shadow-filter-inputs-2026-11-14).
+
+`input/rotated-translucent-shadow.html` isolates a rotated elliptical shadow
+with a faint blue floating-point color over a dark background. Two independent
+Brave captures agree, including two canonical-path confirmations. The focused
+GPU test checks the shadow through row 279 in both tile sampling modes, exactly;
+the initial complete browser capture with `d79672699` retains four one-level
+differences. Follow-up `a4b71a733` makes the complete fixture exact twice in
+diagnostics by preserving the root compositor grid across an invisible negative
+readback fringe. Production `e1925955` now confirms that complete fixture
+exactly twice with matching rendering witnesses.
+The SVG triangle below that band establishes tile MSAA. The corresponding
+opaque `diagnostic/rotated-filter-layer` control stays on the preceding path
+and retains 21,069 differing pixels. References and tolerances are unchanged.
+The [pixel audit](../../../docs/OPTIMIZED_SITES_PIXELS_2026_11_12.md#rotated-shadow-filter-layers-2026-11-14)
+records the 23 focused checks, site results and rejected precision experiments.
+
+The root-fringe regression also exercises the real 400×404 readback at `(0,-60)`
+through single and grouped drawing, checks the unchanged non-root fallback,
+and verifies that outside pixels stay untouched. See the
+[root-fringe audit](../../../docs/OPTIMIZED_SITES_PIXELS_2026_11_12.md#root-picture-shadow-fringes-2026-11-14).
+
+`rounded-background-border-root` also covers three opaque boxes with uniform,
+left-only and right-only rounded corners. Its unchanged Brave reference is
+1280×800. The GPU test compares the upper and lower corner bands in their
+raster tile: grouped background/border samples are exact, while separated
+resolves differ at 24 pixels. `77143c150` makes the complete browser fixture
+exact twice, correcting its fourteen errors. Seven focused checks pass;
+production `1861ac91` now confirms that complete fixture exactly twice. See the
+[shared-rounding audit](../../../docs/OPTIMIZED_SITES_PIXELS_2026_11_12.md#rounded-backgrounds-and-borders-in-one-v-raster-group-2026-11-14).
+
+`diagnostic/inset-decoration-samples.html` checks a fractional-position rounded
+box and a tall asymmetric box with unblurred inset highlights. Two fresh Brave
+captures agree at 1280×800, scale 1. The SVG establishes MSAA in the first tile.
+The GPU test uses snapped decoration coordinates and checks both boxes against
+the unchanged reference: separate resolves leave nine differences; one resolve
+is exact. `f4a40d91b` also makes the complete fixture exact twice in diagnostics
+and production `1861ac91`, while the ordinary non-SVG inset fixture stays exact.
+Eleven focused checks pass; known blur and repeatability failures remain open.
+See the [inset-group audit](../../../docs/OPTIMIZED_SITES_PIXELS_2026_11_12.md#shared-unblurred-inset-decorations-2026-11-14).
+
+`diagnostic/large-clipped-orbit.html` uses an empty transform-hinted overlap
+barrier to give the tall panel its own picture at y=384. The clipped orbit's
+author bounds extend below the visible window. `large-orbit-underlay.html`
+keeps the same layout with the orbit hidden. Each unchanged 1024×768, scale-1
+reference matches two fresh identity-pinned Brave captures. The GPU test uses
+that independent background and compares the final tile's visible RGBA pixels:
+window-clipped filter input leaves 485 errors; recorded author bounds are exact.
+After `8dc5c0df1`, the complete scene retained 111 differences and its underlay
+105. `19224ad53` preserves the promoted gradient picture without optional
+hit-test metadata, reducing these to **4 and 3**, twice, with zero new errors.
+The unchanged references remain independent; neither fixture is globally exact.
+`8dc5c0df1` corrects 469 vlang.io pixels without new differences in diagnostics;
+vlang.io remains 341 after the gradient change. Production validation of both
+fixes is pending. See the
+[recorded-clip audit](../../../docs/OPTIMIZED_SITES_PIXELS_2026_11_12.md#recorded-filter-clips-beyond-the-window-2026-11-14)
+and [gradient isolation audit](../../../docs/OPTIMIZED_SITES_PIXELS_2026_11_12.md#gradient-picture-isolation-without-hit-test-metadata-2026-11-14).
+
+
+`diagnostic/orbit-text-band.png` is the unchanged decoded 327×25 crop at
+(600,624) from the independently captured archived vlang.io Brave reference.
+`orbit-text-coverage.png` is its corresponding 446×25 A8 glyph-run input, whose
+origin is (481,624), obtained from cpuraster run 13. The GPU regression replays
+the recorded orbit over the independent `large-orbit-underlay.png`: resolving
+before glyph coverage leaves 50 differences in the band; sharing the pass is
+exact. The coverage asset is not an expected image. `efaca9e3c` carries that
+sample ownership through browser replay, improving vlang.io from 341 to 284
+pixels with zero new differences. The reduced scene and underlay retain four
+and three differences; production confirmation is pending. See the
+[shape/glyph audit](../../../docs/OPTIMIZED_SITES_PIXELS_2026_11_12.md#shape-and-glyph-samples-in-one-pass-2026-11-14).

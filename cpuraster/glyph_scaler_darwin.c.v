@@ -8,6 +8,9 @@ $if !cpuraster_freetype ? {
 	#include "@DIR/glyph_coretext.h"
 
 	fn C.cpuraster_ct_font_from_file(path &char, flags &int) voidptr
+	fn C.cpuraster_ct_font_for_face(path &char, index int, flags &int) voidptr
+	fn C.cpuraster_ct_face_style(path &char, index int, bold &int, italic &int) int
+	fn C.cpuraster_ct_register_face(key &char, path &char, postscript_name &char, tags &u32, values &f32, count int) int
 	fn C.cpuraster_ct_release(ref voidptr)
 	fn C.cpuraster_ct_exact_copy(base voidptr, text_size f64) voidptr
 	fn C.cpuraster_ct_bounding_box(font voidptr, out &f64)
@@ -23,9 +26,9 @@ $if !cpuraster_freetype ? {
 		variable     bool
 	}
 
-	fn open_glyph_face(path string) ?GlyphFace {
+	fn open_glyph_face(path string, index int) ?GlyphFace {
 		mut flags := 0
-		font := C.cpuraster_ct_font_from_file(&char(path.str), &flags)
+		font := C.cpuraster_ct_font_for_face(&char(path.str), index, &flags)
 		if font == unsafe { nil } {
 			return none
 		}
@@ -34,6 +37,24 @@ $if !cpuraster_freetype ? {
 			color_glyphs: flags & 1 != 0
 			variable:     flags & 2 != 0
 		}
+	}
+
+	// register_glyph_face names an installed face (its file, PostScript name
+	// and variation coordinates) so runs can use key as their font path.
+	pub fn register_glyph_face(key string, path string, postscript_name string, tags []u32, values []f32) bool {
+		count := if tags.len < values.len { tags.len } else { values.len }
+		return C.cpuraster_ct_register_face(&char(key.str), &char(path.str), &char(postscript_name.str),
+			tags.data, values.data, count) != 0
+	}
+
+	// glyph_face_style reports whether the face is itself bold and italic.
+	pub fn glyph_face_style(path string, index int) ?(bool, bool) {
+		mut bold := 0
+		mut italic := 0
+		if C.cpuraster_ct_face_style(&char(path.str), index, &bold, &italic) == 0 {
+			return none
+		}
+		return bold != 0, italic != 0
 	}
 
 	fn (f GlyphFace) release() {

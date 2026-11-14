@@ -32,7 +32,7 @@ fn test_source_retained_buffer_binding_is_written_before_driver_error_collection
 		C.vox_gl_enable(0xbad)
 		owner.bind_buffer(array_buffer, next)
 		assert owner.get_parameter(array_buffer_binding).object == next.object.handle_
-		mut actual := 0
+		mut actual := i32(0)
 		C.vox_gl_int_parameter(array_buffer_binding, &actual)
 		assert u32(actual) == next.object.native_handle_
 		assert owner.get_error() == invalid_enum

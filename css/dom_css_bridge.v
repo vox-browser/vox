@@ -4,6 +4,7 @@ import platform
 import dom
 import os
 import mimesniff
+import url as liburl
 
 // dom <-> css bridge
 // ==================
@@ -496,19 +497,9 @@ fn resolve_stylesheet_url(reference string, base_url string) ?string {
 	return resolved.to_string()
 }
 
-fn local_path_for_stylesheet_url(url string) ?string {
-	if !url.starts_with('file://') {
-		return none
-	}
-	mut path := url['file://'.len..]
-	for path.starts_with('//') {
-		path = path[1..]
-	}
-	query_index := path.index_any('?#')
-	if query_index >= 0 {
-		path = path[..query_index]
-	}
-	return path
+fn local_path_for_stylesheet_url(serialized string) ?string {
+	parsed := liburl.parse(serialized) or { return none }
+	return parsed.to_file_path()
 }
 
 fn read_local_stylesheet(reference string, base_url string) ?(string, string) {
@@ -1164,6 +1155,8 @@ pub fn css_style_computer_for(document &dom.Document) &StyleComputer {
 		css_handle: voidptr(style_computer)
 		invalidation_property_used_in_has_callback: style_computer_invalidation_property_used_in_has_callback
 		invalidation_plan_callback: style_computer_invalidation_plan_callback
+		attribute_change_keeps_selectors_callback: style_computer_attribute_change_keeps_selectors_callback
+		attribute_change_decided_callback: style_computer_attribute_change_decided_callback
 		shadow_root_may_match_host_callback: style_computer_shadow_root_may_match_host_callback
 		recompute_style_callback: style_computer_recompute_style_callback
 		recompute_inherited_style_callback: style_computer_recompute_inherited_style_callback

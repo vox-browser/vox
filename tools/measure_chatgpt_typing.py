@@ -49,6 +49,8 @@ def main():
     parser.add_argument('--load-timeout', type=float, default=90)
     parser.add_argument('--socks', help='HOST:PORT SOCKS proxy for chatgpt.com, stored in the private profile')
     parser.add_argument('--env', action='append', default=[], help='NAME=VALUE for the browser process')
+    parser.add_argument('--sample', type=float, default=0,
+                        help='also run /usr/bin/sample on the browser for this many seconds while typing')
     args = parser.parse_args()
 
     args.output.mkdir(parents=True, exist_ok=False)
@@ -93,9 +95,17 @@ def main():
         time.sleep(args.settle)
         driver.request('eval', "(() => { const e = document.querySelector('#prompt-textarea') ||"
                        " document.querySelector('textarea, [contenteditable=true]'); e && e.focus(); return 'ok' })()")
+        sampler = None
+        if args.sample > 0:
+            pid = driver.request('pid')['result']['pid']
+            sampler = subprocess.Popen(['/usr/bin/sample', str(pid), '%g' % args.sample, '1', '-file',
+                                        str(args.output / 'sample.txt')],
+                                       stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
         before = driver.request('usage')['result']
         response = driver.request('typelat', '%g\n%s' % (args.interval_ms, args.text), timeout=600)['result']
         after = driver.request('usage')['result']
+        if sampler:
+            sampler.wait()
         if 'rows' not in response:
             raise RuntimeError('driver: %s' % response)
         rows = response['rows']

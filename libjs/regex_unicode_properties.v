@@ -121,7 +121,7 @@ pub fn regex_is_valid_ecma262_property(name string, value ?string) bool {
 
 pub fn regex_has_space_separator_category(point u32) bool {
 	if point < 128 { return point == 0x20 || point == 0xa0 }
-	return regex_unicode_has_general_category(point, u32(C.U_SPACE_SEPARATOR), false)
+	return regex_unicode_has_general_category(point, u32(12), false)
 }
 
 pub fn regex_has_identifier_start_property(point u32) bool {

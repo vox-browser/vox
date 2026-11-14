@@ -4,6 +4,24 @@ module browserjs
 
 import webidl
 
+#include "@DIR/native_error.h"
+
+fn C.vox_jsc_construct_error(context voidptr, constructor voidptr, message voidptr, exception &voidptr) voidptr
+
+// Construct through the captured engine constructor. A JavaScript factory
+// adds its own frame to every platform error's author-visible stack.
+fn (runtime &Runtime) make_engine_error(kind string, message voidptr) !voidptr {
+	name := if kind in ['TypeError', 'RangeError', 'EvalError', 'ReferenceError', 'URIError'] {
+		kind
+	} else {
+		'Error'
+	}
+	constructor := runtime.binding_property(runtime.value_error_constructors_, name)!
+	mut exception := unsafe { nil }
+	object := C.vox_jsc_construct_error(runtime.context, constructor, message, &exception)
+	if exception != unsafe { nil } { return runtime.actual_javascript_exception(exception) }
+	return object
+}
 
 @[heap]
 struct SimpleExceptionJavaScriptWrapper {
@@ -26,12 +44,14 @@ pub fn (mut runtime Runtime) javascript_simple_exception(value webidl.Value) !vo
 	mut binding := simple_exception_bindings_[owner] or {
 		new_binding := &SimpleExceptionBinding{}
 		register_runtime_binding(mut simple_exception_bindings_, owner, new_binding)
-		runtime.add_close_handler(fn [owner] () { unregister_runtime_binding(mut simple_exception_bindings_, owner) })
+		runtime.add_close_handler(fn [owner] () {
+			unregister_runtime_binding(mut simple_exception_bindings_, owner)
+		})
 		new_binding
 	}
 	if wrapper := binding.wrappers[voidptr(native)] { return wrapper.object }
-	object := runtime.call_engine_function(runtime.value_error_intrinsic_, [runtime.binding_string(native.name()), runtime.binding_string(native.message)])!
+	object := runtime.make_engine_error(native.name(), runtime.binding_string(native.message))!
 	runtime.retain_javascript_value(object)!
-	binding.wrappers[voidptr(native)] = &SimpleExceptionJavaScriptWrapper{native: native, object: object}
+	binding.wrappers[voidptr(native)] = &SimpleExceptionJavaScriptWrapper{ native: native, object: object }
 	return object
 }

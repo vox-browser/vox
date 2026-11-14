@@ -35,13 +35,13 @@ fn test_source_active_info_preserves_fixed_name_span_empty_driver_records_and_ow
 		assert owner.get_program_parameter(program, link_status).boolean
 		other.native.make_current()
 		attrib := owner.get_active_attrib(program, 0) or { panic('source attribute') }
-		mut selected := [0, 0, 0, 0]!
+		mut selected := [i32(0), 0, 0, 0]!
 		C.vox_gl_int_parameter(viewport, &selected[0])
-		assert selected == [1, 2, 3, 4]!
+		assert selected == [i32(1), 2, 3, 4]!
 		other.native.make_current()
 		active := owner.get_active_uniform(program, 0) or { panic('source uniform') }
 		C.vox_gl_int_parameter(viewport, &selected[0])
-		assert selected == [1, 2, 3, 4]!
+		assert selected == [i32(1), 2, 3, 4]!
 		assert attrib.name == attribute[..if attribute.len < 255 { attribute.len } else { 255 }]
 		assert attrib.size == 1 && attrib.type_ == 0x8b50
 		assert active.name == uniform[..if uniform.len < 255 { uniform.len } else { 255 }]
@@ -59,24 +59,24 @@ fn test_source_active_info_preserves_fixed_name_span_empty_driver_records_and_ow
 		other.native.make_current()
 		assert owner.get_active_attrib(foreign, 0) == none
 		C.vox_gl_int_parameter(viewport, &selected[0])
-		assert selected == [9, 10, 11, 12]!
+		assert selected == [i32(9), 10, 11, 12]!
 		assert owner.get_error() == invalid_value
 		assert owner.get_error() == invalid_operation
 		other.native.make_current()
 		assert owner.get_active_uniform(foreign, 0) == none
 		C.vox_gl_int_parameter(viewport, &selected[0])
-		assert selected == [9, 10, 11, 12]!
+		assert selected == [i32(9), 10, 11, 12]!
 		assert owner.get_error() == invalid_operation
 		owner.delete_program(program)
 		other.native.make_current()
 		assert owner.get_active_attrib(program, 0) == none
 		C.vox_gl_int_parameter(viewport, &selected[0])
-		assert selected == [9, 10, 11, 12]!
+		assert selected == [i32(9), 10, 11, 12]!
 		assert owner.get_error() == invalid_operation
 		other.native.make_current()
 		assert owner.get_active_uniform(program, 0) == none
 		C.vox_gl_int_parameter(viewport, &selected[0])
-		assert selected == [9, 10, 11, 12]!
+		assert selected == [i32(9), 10, 11, 12]!
 		assert owner.get_error() == invalid_operation
 		assert owner.get_error() == no_error
 	}

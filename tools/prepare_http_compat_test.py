@@ -1,10 +1,25 @@
 import tempfile
 import unittest
+import subprocess
 from pathlib import Path
+from unittest.mock import patch
 
 from prepare_http_compat import (patch_brotli_compressor, patch_proxy, patch_request, patch_response,
                                  remove_obsolete_entries,
                                  remove_unused_private_helper, staged_modules)
+from prepare_http_compat import compiler_vlib
+
+
+class CompilerRuntimeProbeTest(unittest.TestCase):
+    def test_incompatible_runtime_fails_before_staging_with_an_actionable_error(self):
+        failure = subprocess.CompletedProcess([], 1, '', 'undeclared string__trim_space_eq')
+        with tempfile.TemporaryDirectory() as directory, \
+                patch('prepare_http_compat.subprocess.run', return_value=failure) as run:
+            with self.assertRaisesRegex(RuntimeError, 'matching vlib') as error:
+                compiler_vlib('/selected/v', Path(directory))
+            self.assertIn('string__trim_space_eq', str(error.exception))
+            self.assertEqual(run.call_args.kwargs['env']['V_MACOS_V3_NO_FALLBACK'], '1')
+            self.assertEqual(list(Path(directory).iterdir()), [])
 
 
 class HTTPCompatibilityStagingTest(unittest.TestCase):

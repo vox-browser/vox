@@ -48,18 +48,18 @@ fn test_public_buffer_parameter_source_gate_precedes_actual_driver_selection() {
 		mut other := host.contexts['__created_buffer_parameter_other'] or { panic('buffer parameter other') }
 		other.native.make_current()
 		assert runtime.evaluate_host('gl.getBufferParameter(0xbad,0xbad)===null')! == 'true'
-		mut selected := [0, 0, 0, 0]!
+		mut selected := [i32(0), 0, 0, 0]!
 		C.vox_gl_int_parameter(webgl.viewport, &selected[0])
-		assert selected == [9, 10, 11, 12]!
+		assert selected == [i32(9), 10, 11, 12]!
 		assert runtime.evaluate_host('gl.getError()===gl.INVALID_ENUM&&gl.getError()===gl.NO_ERROR')! == 'true'
 		other.native.make_current()
 		assert runtime.evaluate_host('gl.getBufferParameter(0xbad,gl.BUFFER_SIZE)===0')! == 'true'
 		C.vox_gl_int_parameter(webgl.viewport, &selected[0])
-		assert selected == [1, 2, 3, 4]!
+		assert selected == [i32(1), 2, 3, 4]!
 		assert runtime.evaluate_host('gl.getError()===gl.INVALID_ENUM&&gl.getError()===gl.NO_ERROR')! == 'true'
 		other.native.make_current()
 		assert runtime.evaluate_host('(function(){const marker={};try{gl.getBufferParameter(gl.ARRAY_BUFFER,{valueOf(){throw marker}});return false}catch(error){return error===marker}})()')! == 'true'
 		C.vox_gl_int_parameter(webgl.viewport, &selected[0])
-		assert selected == [9, 10, 11, 12]!
+		assert selected == [i32(9), 10, 11, 12]!
 	}
 }

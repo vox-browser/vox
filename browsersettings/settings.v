@@ -9,6 +9,7 @@ import url
 
 pub struct Proxy {
 pub:
+	javascript_engine string = 'javascriptcore'
 	enable_tab_coloring bool
 	enable_custom_tab_titles bool
 	// GPU-accelerated scrolling is on unless the user turns it off: a profile
@@ -58,6 +59,9 @@ pub fn default_path() string {
 }
 
 pub fn (proxy Proxy) normalized() !Proxy {
+	if proxy.javascript_engine !in ['javascriptcore','libjs'] {
+		return error('Select JavaScriptCore or LibJS as the JavaScript engine.')
+	}
 	host := proxy.host.trim_space()
 	port := proxy.port.trim_space()
 	sites := proxy.sites.trim_space()
@@ -225,7 +229,7 @@ pub fn save(input Proxy) ! {
 	file.close()
 	platform.atomic_replace_file(temporary, state.path)!
 	// Publish only after persistence succeeds. Failed Apply keeps the old route.
-	state.proxy = Proxy{ ...proxy, host: proxy.host.clone(), port: proxy.port.clone(), sites: proxy.sites.clone() }
+	state.proxy = Proxy{ ...proxy, javascript_engine: proxy.javascript_engine.clone(), host: proxy.host.clone(), port: proxy.port.clone(), sites: proxy.sites.clone() }
 	state.configured = true
 	// Read the persisted identity on the next access rather than caching a stat
 	// that could belong to another process's save immediately after our rename.

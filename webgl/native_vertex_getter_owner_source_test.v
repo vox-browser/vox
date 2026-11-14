@@ -19,9 +19,9 @@ fn test_vertex_getters_preserve_source_early_gate_and_real_sync_owner_selection(
 			other.native.make_current()
 			result := context.get_vertex_attrib(0xffff_ffff, pname)
 			assert result.kind == .none
-			mut selected := [0, 0, 0, 0]!
+			mut selected := [i32(0), 0, 0, 0]!
 			C.vox_gl_int_parameter(viewport, &selected[0])
-			assert selected == [9, 10, 11, 12]!
+			assert selected == [i32(9), 10, 11, 12]!
 			assert C.vox_gl_get_error() == no_error
 			assert context.get_error() == invalid_value
 			assert context.get_error() == invalid_enum
@@ -29,9 +29,9 @@ fn test_vertex_getters_preserve_source_early_gate_and_real_sync_owner_selection(
 		}
 		other.native.make_current()
 		assert context.get_vertex_attrib_offset(0xffff_ffff, GLenum(0xffff)) == 0
-		mut selected := [0, 0, 0, 0]!
+		mut selected := [i32(0), 0, 0, 0]!
 		C.vox_gl_int_parameter(viewport, &selected[0])
-		assert selected == [9, 10, 11, 12]!
+		assert selected == [i32(9), 10, 11, 12]!
 		assert context.get_error() == invalid_enum
 		buffer := context.create_buffer()
 		context.bind_buffer(array_buffer, buffer)
@@ -52,7 +52,7 @@ fn test_vertex_getters_preserve_source_early_gate_and_real_sync_owner_selection(
 			other.native.make_current()
 			result := context.get_vertex_attrib(2, pname)
 			C.vox_gl_int_parameter(viewport, &selected[0])
-			assert selected == [1, 2, 3, 4]!
+			assert selected == [i32(1), 2, 3, 4]!
 			if pname in [vertex_attrib_array_enabled, vertex_attrib_array_normalized,
 				vertex_attrib_array_integer] {
 				assert result.kind == .boolean
@@ -65,11 +65,11 @@ fn test_vertex_getters_preserve_source_early_gate_and_real_sync_owner_selection(
 		other.native.make_current()
 		assert context.get_vertex_attrib(2, current_vertex_attrib).numbers == [f64(1), 2, 3, 4]
 		C.vox_gl_int_parameter(viewport, &selected[0])
-		assert selected == [1, 2, 3, 4]!
+		assert selected == [i32(1), 2, 3, 4]!
 		other.native.make_current()
 		assert context.get_vertex_attrib_offset(2, vertex_attrib_array_pointer) == 4
 		C.vox_gl_int_parameter(viewport, &selected[0])
-		assert selected == [1, 2, 3, 4]!
+		assert selected == [i32(1), 2, 3, 4]!
 		first := context.get_vertex_attrib(2, vertex_attrib_array_buffer_binding).buffer or { panic('first source buffer') }
 		second := context.get_vertex_attrib(2, vertex_attrib_array_buffer_binding).buffer or { panic('second source buffer') }
 		assert first != second

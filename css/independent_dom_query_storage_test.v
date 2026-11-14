@@ -9,13 +9,13 @@ fn test_independent_query_results_and_cached_selectors_survive_workspace_retirem
 	document.set_document_type(.html)
 	document.set_quirks_mode(.yes)
 	root := document.create_element('main')!
-	independent_query_append(document.as_node(), root.as_node())
+	document.as_node().append_child(root.as_node())!
 	mut expected := []&dom.Element{}
 	for index in 0 .. 160 {
 		mut child := document.create_element('span')!
 		child.set_attribute_value('class', 'TARGET')
 		child.set_attribute_value('data-key', 'Value ${index}')
-		independent_query_append(root.as_node(), child.as_node())
+		root.as_node().append_child(child.as_node())!
 		expected << child
 	}
 	selector := '.target[data-key^="value " i], span'
@@ -50,11 +50,11 @@ fn test_independent_queries_keep_only_the_final_result_vector() {
 	document.set_document_type(.html)
 	document.set_quirks_mode(.yes)
 	root := document.create_element('main')!
-	independent_query_append(document.as_node(), root.as_node())
+	document.as_node().append_child(root.as_node())!
 	for _ in 0 .. 512 {
 		mut child := document.create_element('span')!
 		child.set_attribute_value('class', 'TARGET')
-		independent_query_append(root.as_node(), child.as_node())
+		root.as_node().append_child(child.as_node())!
 	}
 	selector := '.target, span'
 	_ = document_query_selector_list(document, selector) or { panic('invalid selector') }

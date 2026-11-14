@@ -1,13 +1,19 @@
 # Windows build and runtime
 
 Vox can be compiled for Windows x86-64 with current V and MinGW-w64. The build
-uses the shared V/UI2 chrome, GG/Sokol window host, Skia raster services,
-HarfBuzz, ICU, ANGLE, OpenSSL, libcurl and JavaScriptCore's C API. The Windows
+uses the shared V/UI2 chrome, GG/Sokol window host, V raster services,
+HarfBuzz, ICU, native Mesa WGL/GLES, OpenSSL, libcurl and JavaScriptCore's C API. The Windows
 window host uses Direct3D 11, with WARP software rendering when hardware device
 creation fails. The fallback lives in Vox's graphics adapter; the shared V and
 Sokol installations do not need changes.
 The V graphics adapter also supplies shaders that consume GG's column-major
 projection and texture matrices correctly in HLSL, including the font atlas.
+
+WebGL1 and WebGL2 share Linux's bounded GLES3 adapter and WebGL ESSL
+validation, using Mesa's native WGL ES profiles for robust contexts. The browser window
+continues to use D3D11. No ANGLE headers, libraries or vendor calls are required.
+This backend's current validation is recorded in
+[the Windows WebGL report](WINDOWS_WEBGL_GLES.md).
 
 The native `build_browser.vsh`/`x.imp` browser flow and portable ZIP packaging remain
 release scaffolding. Use the dedicated helper below for this compilation path.
@@ -16,40 +22,69 @@ remains in `packaging/version.txt`.
 
 ## Checkout limitation
 
-The repository still has 46 `pixel_tests/` fixture paths containing `:` or `?`,
-which Windows cannot check out. This compilation change does not rename those
-fixtures. Cross-compiling the canonical checkout from macOS or Linux avoids
-that filesystem restriction; a complete native Windows checkout remains
-blocked until the fixture paths are made portable.
+Some archived `pixel_tests/` fixture paths contain `:` or `?`, which Windows
+cannot check out. Use a sparse checkout for a native build:
+
+```sh
+git clone --no-checkout https://github.com/vox-browser/vox.git vox
+cd vox
+git sparse-checkout init --no-cone
+git sparse-checkout set '/*' '!/pixel_tests/'
+git checkout master
+```
+
+The excluded directory holds visual-test archives, not production source.
+Cross-compilation from the canonical macOS or Linux checkout also avoids this
+filesystem restriction. The [README](../README.md#building) shows native dependency
+installation and the one-time environment setup followed by `v .`.
 
 ## Dependencies and native build
 
-Install current V, Python 3, the latest upstream UI2 and the MinGW development
+Install current V, the latest upstream UI2 and the MinGW development
 packages. Use `v install ui2` for a new installation and `v up ui2` to update it.
 The [UI2 adapter guide](../tools/ui2/README.md) also covers separate checkouts.
 In an MSYS2 MinGW64 shell, the native packages are:
 
 ```sh
 pacman -S --needed mingw-w64-x86_64-toolchain mingw-w64-x86_64-pkgconf \
-  mingw-w64-x86_64-python mingw-w64-x86_64-skia mingw-w64-x86_64-icu \
+  mingw-w64-x86_64-icu \
   mingw-w64-x86_64-harfbuzz mingw-w64-x86_64-freetype \
-  mingw-w64-x86_64-woff2 mingw-w64-x86_64-openssl \
-  mingw-w64-x86_64-angleproject mingw-w64-x86_64-curl
+  mingw-w64-x86_64-openssl \
+  mingw-w64-x86_64-7zip mingw-w64-x86_64-curl
 ```
 
 Provide a Windows `JavaScriptCore.dll` and its runtime dependencies. The
 [Playwright WebKit distribution](https://github.com/microsoft/playwright/blob/main/packages/playwright-core/browsers.json)
-contains a Windows WebKit build with this DLL. `prepare_windows_jsc.py` checks
+contains a Windows WebKit build with this DLL. `prepare_windows_jsc.vsh` checks
 the actual DLL's x86-64 export table against every C API declared by Vox before
 creating its MinGW import library. It does not substitute a JavaScript engine.
 
-From the repository, with MinGW Python and compiler tools on PATH:
+From the repository, with V and MinGW compiler tools on PATH:
 
 ```sh
-python tools/build_windows_browser.py \
+sh tools/run_v_tool.sh build_windows_browser \
   --javascriptcore-dll C:/path/to/webkit/JavaScriptCore.dll \
   --output C:/path/to/output/Vox.exe
 ```
+
+The helper downloads matching Mesa development files and the x64 MinGW runtime
+from `mesa-dist-win`, pinned by version and SHA-256 in `tools/windows_mesa.json`.
+It verifies both archives and prepares a separate `vox-mesa-egl.pc`; it never
+uses ANGLE's import libraries. MSYS2's standard Mesa package disables EGL/GLES
+and cannot replace this dependency. `curl` and `7zz` or `7z` must be on `PATH`.
+`SEVENZIP` can select a different archive tool.
+
+Install `libEGL.dll`, `libGLESv2.dll`, `libgallium_wgl.dll`, `opengl32.dll` and their matching
+runtime dependencies from `Build/deps/windows/mesa/release-mingw/x64` beside
+Vox, or make them discoverable on its DLL search path. Remove old ANGLE EGL/GLES
+DLLs beside the executable: Windows searches that directory before `PATH`.
+The WGL loader must be beside the Gallium DLL. Vox requires a robust Mesa GLES
+context instead of silently using an ordinary context or ANGLE. Include the
+package's `dxil.dll` when using Mesa's D3D12 driver.
+Keep the current compiler's C++/exception/pthread runtimes; do not replace them
+with older DLLs from another dependency package. Mesa can use its available
+hardware drivers or software rendering; set `GALLIUM_DRIVER=llvmpipe` for the
+focused software-rendering check.
 
 Set `V_BIN`, `UI2_SOURCE_DIR`, `CC`, `CXX`, `AR`, `OBJDUMP` or `DLLTOOL` to
 override tool discovery. UI2 is linked directly from the current checkout.
@@ -58,6 +93,9 @@ Windows Developer Mode supplies this for ordinary user accounts. Keep the native
 dependency DLL directories on PATH, or install their
 DLLs beside Vox.
 JavaScriptCore's dependencies must come from its matching WebKit distribution.
+On a fresh Windows installation, also install Microsoft's
+[Visual C++ v14 x64 Redistributable](https://learn.microsoft.com/en-us/cpp/windows/latest-supported-vc-redist)
+for JavaScriptCore's MSVC runtime imports (`MSVCP140` and `VCRUNTIME140`).
 The GCC runtime DLLs must match the compiler used for Vox's native bridges.
 An older `libstdc++-6.dll` can load successfully itself while lacking an export
 required by Vox, such as GCC 16's `__cxa_thread_atexit`. For a cross compiler,
@@ -71,6 +109,15 @@ x86_64-w64-mingw32-gcc -print-file-name=libgcc_s_seh-1.dll
 Use that toolchain's `libwinpthread-1.dll` too, rather than mixing compiler
 runtime versions from a different dependency distribution.
 
+HTTPS document/resource requests and native Fetch use Windows' certificate
+store by default. The OpenSSL-backed MinGW libcurl needs
+[`CURLSSLOPT_NATIVE_CA`](https://curl.se/libcurl/c/CURLOPT_SSL_OPTIONS.html);
+Vox also clears libcurl's compiled Unix-style CA file/directory defaults so a
+portable installation does not require `C:/etc/ssl/certs/ca-bundle.crt`.
+Certificate and hostname verification remain enabled. A supplied CA bundle
+remains authoritative; native Fetch takes it from `SSL_CERT_FILE` and rejects
+missing or invalid files.
+
 ## Cross-compilation from macOS or Linux
 
 Install the `x86_64-w64-mingw32` toolchain. Supply Windows development packages
@@ -81,9 +128,9 @@ a Windows executable. The cross compiler supplies its own C runtime headers.
 The following builds inside the repository's memory guard:
 
 ```sh
-python3 tools/run_memory_bounded.py \
+sh tools/run_v_tool.sh run_memory_bounded \
   --lock Build/windows-build-UNIQUE.lock --report Build/windows-build-UNIQUE.json -- \
-  python3 tools/build_windows_browser.py \
+  sh tools/run_v_tool.sh build_windows_browser \
     --deps-root Build/deps/windows \
     --javascriptcore-dll /path/to/webkit/JavaScriptCore.dll \
     --output /tmp/Vox.exe
@@ -94,8 +141,8 @@ the import library remain under `Build/deps/windows`. The helper prepares
 native bridges and UI2, then runs the equivalent of:
 
 ```sh
-ui2_modules=$(python3 tools/prepare_ui2.py)
-v -memory-limit 10G -prod -no-prod-options -enable-globals -gc none \
+ui2_modules=$(sh tools/run_v_tool.sh prepare_ui2)
+v -b c -memory-limit 10G -prod -no-prod-options -enable-globals -gc none \
   -os windows -arch amd64 -cc x86_64-w64-mingw32-gcc \
   -d ui2_custom_rendering -d sokol_d3d11 \
   -path "$PWD|$ui2_modules|@vmodules|@vlib" -o /tmp/Vox.exe .
@@ -228,3 +275,197 @@ runtime failures. The [Windows desktop capture](windows/windows-vm-click-2026110
 shows the normal browser window after the click. These are functional smoke
 checks of the pinned build; the platform limitations listed above still apply.
 The VM shut down cleanly after the checks; the tested runtime remains installed.
+
+
+## VM follow-up (2026-11-12)
+
+A fresh C-backend cross-build without Skia was launched in the existing Windows
+11 x86-64 QEMU VM. Its executable SHA-256 was
+`2047393cf0d542e44bc22f9f75ad76e4193ee1800303aa507f6f4a3801d7358e`.
+A fresh `--headless-smoke` process passed DOM mutation, JavaScript click,
+wheel routing and ordinary-element wheel listeners: browser/guest guard exit 0,
+peak job committed memory 410,357,760 bytes under the 3 GiB limit.
+
+A normal launch of `Tests/Browser/Windows/smoke.html` in a private profile rendered
+the fixture, displayed “JavaScript passed” and changed to “Click passed” after
+native mouse input. Its private APPDATA contained only the update-check opt-out
+so a machine-level update dialog would not obscure this check. Closing the
+window then stopped responding; cleanup forcibly terminated its verified
+process (PID 6672). This does **not** establish clean window shutdown. The earlier
+launch with the update dialog timed out after 600 seconds (guest exit 124,
+peak committed memory 1,000,751,104 bytes). Keep both results when assessing the
+port. The host VM guard subsequently reached its 3,600-second limit and stopped
+QEMU (exit -9); this also prevents treating the whole VM run as acceptance.
+
+### Shutdown fix and repeated VM checks (2026-11-12)
+
+The close hang was traced to libcurl cleanup in a pthread TLS destructor on
+Windows. A resolver join there ran under the Windows loader lock and blocked
+JavaScriptCore thread initialization. Windows now creates and releases its
+curl multi handle on the requesting thread; Unix retains per-worker reuse.
+The native regression fixture checks failed initialization and completed
+transfer cleanup on the caller's thread. It passes on macOS and Windows.
+
+A fresh full browser executable with SHA-256
+`fcd41ff121cb11c8302c90865186480322f43cb7b02e5b51baa758cad126d088`
+passed `--headless-smoke` (exit 0, peak job committed memory 418,938,880 bytes).
+A separate private-profile window rendered the JavaScript fixture, accepted
+native mouse input to display “Click passed”, and closed normally (browser and
+guest guard exit 0, peak 768,286,720 bytes). Both used a 3 GiB guest limit. The
+cross-build passed its 12 GiB host guard, peaking at 6,892,617,728 bytes.
+
+That historical runtime at `C:\vox-fixed-runtime` included the former shader
+compiler dependencies plus their
+matching MinGW runtime DLLs. The earlier missing-DLL/entry-point launches and
+pre-fix timeout above remain failed attempts; they are not passing shutdown
+checks. These results cover this executable's headless, click and close paths,
+not cross-browser pixel equivalence or every Windows interaction.
+
+### Native input, resize and file URL check (2026-11-12)
+
+The next full C-backend executable includes the Sokol event adapter and the
+shared file URL decoder. In the same Windows 11 VM, a fresh private-profile
+process passed rendered-pixel checks, native mouse input and JavaScript mutation,
+resize/redraw at 960×720, and Ctrl+L / Enter navigation to a `file:///C:/…` URL
+containing an escaped space, query and fragment. Normal window close returned
+browser exit 0; the guest guard also exited 0 without a timeout, at a peak
+743,100,416 bytes under its 3 GiB limit. The full cross-build completed with
+host guard exit 0, peaking at 8,046,133,248 bytes. Its SHA-256 was
+`b6ca164391b6ad11918f495fb05359339f875cfba019fe1498aecc6ac6995047`,
+verified on both host and guest. The VM then shut down normally; its host
+guard exited 0 after 11,997.79 seconds, with a sampled aggregate peak RSS of
+11,255,578,624 bytes under 12 GiB.
+
+The interactive check is reproducible with `tools/test_windows_browser.c`:
+
+```sh
+x86_64-w64-mingw32-gcc -std=c11 -Wall -Wextra -Werror -municode \
+  tools/test_windows_browser.c -o test-windows-browser.exe -luser32 -lgdi32
+runtime-guard.exe 600000 3072 browser.out browser.err \
+  test-windows-browser.exe C:/path/to/vox2.exe C:/private/windows-fixtures
+```
+
+Run it on the interactive desktop with an empty `VOX_PROFILE_DIR`, matching
+runtime DLLs on `PATH`, and update checking disabled in that private profile.
+The driver raises its browser window before reading desktop pixels, and emits
+physical scan codes for shortcuts, matching Sokol's Win32 input boundary.
+Earlier driver attempts failed because the window was obscured or keyboard
+scan codes were absent; these attempts remain local evidence. The earlier
+900-second browser timeout is also retained and is not a passing close check.
+These smoke checks validate this build's window lifecycle and navigation; they
+do not establish Windows pixel equivalence with Brave.
+
+## Windows JavaScriptCore initialization
+
+The Windows JavaScriptCore DLL also requires initialization of WTF's main run
+loop. Its public context-creation API initializes threading without creating
+that loop. BrowserJS initializes it on the application thread during module
+startup, before worker agents can create contexts. It requires the pinned DLL's
+`WTF::initializeMainThread` export and reports a missing export at startup.
+WebKit's [initializer](https://github.com/WebKit/WebKit/blob/main/Source/WTF/wtf/MainThread.cpp)
+creates the loop used by its memory-pressure timers.
+
+The native regression loads the actual deployment DLL, exercises the timer
+constructor that previously crashed, repeats initialization, and verifies that
+a worker does not replace the main thread or its loop:
+
+```sh
+gcc -municode -std=c11 -O2 -Wall -Wextra -Werror \
+  browserjs/runtime_bootstrap_windows_test.c -o jsc-bootstrap-test.exe
+runtime-guard.exe 180000 3072 jsc-bootstrap.out jsc-bootstrap.err \
+  C:/path/to/jsc-bootstrap-test.exe C:/path/to/JavaScriptCore.dll
+```
+
+## Native WebGL checks
+
+The Windows CI workflow runs `tools/native_gles_test.c` on Windows with the
+pinned Mesa runtime. It checks both WebGL versions, shader pixels and rejection,
+original shader source, robust context flags, zero-initialized resources,
+CPU/PBO bounds, errors and context ownership, and loaded Mesa modules. Run the
+same check in an MSYS2 MinGW64 shell after preparing dependencies:
+
+```sh
+sh tools/run_v_tool.sh prepare_windows_mesa
+mkdir -p Build/windows-webgl
+runtime-guard.exe 300000 12288 compile.out compile.err \
+  "$(cygpath -w "${V_BIN:-$(command -v v)}")" \
+  -new-compiler -b c -memory-limit 10G -subsystem console \
+  -o Build/windows-webgl/native-gles.exe tools/native_gles_driver.v
+export PATH="$MINGW_PREFIX/bin:$PWD/Build/deps/windows/mesa/release-mingw/x64:$PATH"
+export GALLIUM_DRIVER=llvmpipe
+runtime-guard.exe 180000 3072 native.out native.err \
+  "$(cygpath -w "$PWD/Build/windows-webgl/native-gles.exe")"
+```
+
+The interactive browser driver accepts the unchanged shared WebGL fixture as
+an optional additional command-line argument. After its startup, click, resize and
+address-entry checks it verifies the author's successful shader/readback title,
+all 8,192 displayed canvas pixels, a loaded Mesa driver and clean browser exit:
+
+```sh
+runtime-guard.exe 600000 3072 browser.out browser.err \
+  test-windows-browser.exe C:/path/to/Vox.exe C:/private/windows-fixtures \
+  C:/path/to/vox2/Tests/Browser/Native/webgl-smoke.html
+```
+
+Compilation alone does not execute either test. Use a fresh executable/profile,
+record executable and dependency hashes, and keep the browser/guard receipts.
+
+For an explicit live HTTPS check, append the URL and its expected document
+title after the WebGL fixture:
+
+```sh
+runtime-guard.exe 1200000 3072 browser-live.out browser-live.err \
+  test-windows-browser.exe C:/path/to/Vox.exe C:/private/fresh-windows-fixtures \
+  C:/path/to/vox/Tests/Browser/Native/webgl-smoke.html \
+  https://vlang.io/ 'V — The V Programming Language'
+```
+
+This mode keeps the local input and WebGL pixel checks, then navigates through
+the address bar and requires the expected document title, with only Vox's
+build suffix permitted. Error-page titles that merely contain that text fail.
+HTTP URLs and empty expected titles are rejected. Local fixture titles keep
+their two-minute limit; the opt-in live page gets ten minutes for network,
+style and font loading on software-emulated Windows. Live navigation is opt-in;
+the native title-matching regression test runs in Windows CI without network
+access. A matching live title establishes document identity, not full-page
+pixel equivalence or complete author-script support.
+
+To diagnose a browser that stays alive after a startup, input, navigation or
+close failure, set `VOX_WINDOWS_FAILURE_DUMP` to a unique `.dmp` path in an
+existing private output directory. The driver captures thread stacks and thread
+information before failure cleanup terminates the active child. The older
+`VOX_WINDOWS_CLOSE_DUMP` flag remains supported for close failures only.
+The driver still fails; dump capture never supplies a successful test result.
+It loads Windows' system DbgHelp only when requested and refuses to overwrite
+an existing dump. Capture errors are logged alongside the original failure.
+
+The native capture regression creates a sleeping fixture process, captures a
+startup failure, verifies the actual minidump header and both thread streams,
+and checks that the legacy close flag preserves an existing file. Windows CI
+runs it through the 3 GiB job guard. It does not execute Vox:
+
+```sh
+gcc -municode -std=c11 -O2 -Wall -Wextra -Werror \
+  tools/test_windows_close_dump.c -luser32 -lgdi32 -o close-dump-test.exe
+runtime-guard.exe 180000 3072 close-dump.out close-dump.err \
+  C:/path/to/close-dump-test.exe C:/private/fresh-close-test.dmp
+```
+
+The isolated HTTPS regression uses a temporary private CA without installing
+it into Windows' trust store. From an MSYS2 MinGW64 shell with Python and
+OpenSSL installed:
+
+```sh
+gcc -municode -std=gnu11 -O2 -Wall -Wextra -Wno-unused-function -Werror \
+  tools/test_windows_https.c -lcurl -lpthread -o https-test.exe
+python tools/test_windows_https.py --guard runtime-guard.exe \
+  --test https-test.exe --output C:/private/fresh-https-results
+```
+
+It requires rejection of untrusted roots, wrong hostnames and a missing
+explicit CA file, plus a successful request with the explicit test CA. Windows
+CI runs these deterministic cases. Add `--live-url https://vlang.io/` to check
+public HTTPS against Windows roots as well. The native child receives a 3 GiB
+job-object limit and a four-minute timeout; the fixture deletes its temporary
+keys and certificates after the run.

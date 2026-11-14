@@ -101,7 +101,11 @@ pub fn (transport &NativeFontFetchTransport) fetch_host() &fetch.FetchHost {
 					output.resolve(fetch.Response.network_error('Failed to parse the file URL'))
 					return
 				}
-				bytes := os.read_bytes(liburl.percent_decode(parsed.serialize_path()).bytestr()) or {
+				path := parsed.to_file_path() or {
+					output.resolve(fetch.Response.network_error('Invalid local file URL'))
+					return
+				}
+				bytes := os.read_bytes(path) or {
 					output.resolve(fetch.Response.network_error(err.msg()))
 					return
 				}

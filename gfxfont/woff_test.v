@@ -3,6 +3,7 @@ module gfxfont
 // testdata retains the pinned upstream TestWOFF/TestWOFF2 malformed inputs,
 // LibWeb/Assets/HashSans.woff and Screenshot/data/variable-font-example.woff2.
 
+import crypto.sha256
 import encoding.binary
 import os
 
@@ -93,4 +94,39 @@ fn test_source_woff2_decoder_accepts_valid_fonts_and_tolerates_incorrect_declare
 			assert err.msg() == message
 		}
 	}
+}
+
+fn test_v_woff2_decoder_matches_libwoff2_output() {
+	// SHA-256 of the sfnt bytes Google's libwoff2 1.0.2 produced for these fixtures.
+	for name, expected in {
+		'variable-font-example.woff2': '8fb025fefe7ef6faf3e3f5bdf12b42dd4dabf759ddb534c821e3489917eae9ab'
+		'incorrect_sfnt_size.woff2':   '0e8f88ad1512e41df1363911bb8744798706760c29be2dded81063da5dc9463c'
+	} {
+		assert sha256.sum(convert_woff2_to_sfnt(source_font_fixture(name))!).hex() == expected, name
+	}
+}
+
+fn test_v_woff2_decoder_ignores_bytes_after_the_brotli_stream() {
+	// libwoff2 stops at the Brotli stream's last meta-block, so a compressed
+	// block with four extra bytes after the stream decodes the same font.
+	valid := source_font_fixture('variable-font-example.woff2')
+	expected := convert_woff2_to_sfnt(valid)!
+	mut padded := valid.clone()
+	padded << [u8(0), 0, 0, 0]
+	binary.big_endian_put_u32_at(mut padded, u32(padded.len), 8)
+	binary.big_endian_put_u32_at(mut padded, binary.big_endian_u32_at(valid, 20) + 4, 20)
+	assert convert_woff2_to_sfnt(padded)! == expected
+}
+
+fn test_v_woff2_writer_preserves_output_limit() {
+	mut out := Woff2Out{}
+	if _ := out.write_at([u8(1)], int(woff2_max_output_size)) {
+		assert false, 'oversized write must fail before allocation'
+	}
+	assert out.data.len == 0
+	out.data = []u8{len: int(woff2_max_output_size)}
+	if _ := out.write([u8(1)]) {
+		assert false, 'append past output limit must fail'
+	}
+	assert out.data.len == int(woff2_max_output_size)
 }

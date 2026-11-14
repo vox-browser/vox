@@ -8,6 +8,13 @@ pub:
 	max_instructions u64
 }
 
+fn (mut vm VM) consume_execution_budget() ! {
+	if vm.instruction_budget_active {
+		if vm.instruction_budget == 0 { return vm.throw_error(.internal_error, 'LibJS instruction budget exceeded') }
+		vm.instruction_budget--
+	}
+}
+
 fn typeof_value(value Value) string {
 	if value.is_function() { return 'function' }
 	return match value.tag {
@@ -43,6 +50,37 @@ fn (mut vm VM) execute_instruction(instruction Instruction, executable &Executab
 	}
 	mut result := js_undefined()
 	match instruction.op {
+		.require_object_coercible {
+			if left.is_nullish() { return vm.throw_error_type(.type_error,.to_object_null_or_undefined) }
+		}
+		.to_property_key { result=left.to_property_key(mut vm)!.to_value(mut vm) }
+		.copy_object_excluding_keys {
+			mut excluded := []PropertyName{cap:instruction.arguments.len}
+			for operand in instruction.arguments {
+				key := frame.values[operand.slot(executable,frame.argument_count,false)!]
+				if key.is_special_empty_value() { return vm.throw_error(.internal_error,'Uninitialized object rest key') }
+				excluded << key.to_property_key(mut vm)!
+			}
+			result=Value.from_object(copy_object_excluding_keys(mut vm,left,excluded)!)
+		}
+		.new_regexp { result = Value.from_object(create_regexp_object(mut vm, left.as_string().utf16, right.as_string().utf16)!) }
+		.new_object { result = Value.from_object(Object.create(vm.realm(), vm.realm().object_prototype)) }
+		.new_array { result = Value.from_object(ArrayObject.create(mut vm, vm.realm(), u64(left.number), vm.realm().array_prototype_record())!.object) }
+		.define_property {
+			mut object := left.as_object()
+			object.create_data_property_or_throw(mut vm, right.to_property_key(mut vm)!, source)!
+		}
+		.set_object_literal_prototype {
+			if right.is_object() || right.is_null() {
+				mut object := left.as_object()
+				prototype := if right.is_object() { ?&Object(right.as_object()) } else { none }
+				if !object.internal_set_prototype_of(prototype) { return vm.throw_error_type(.type_error, .object_set_prototype_of_returned_false) }
+			}
+		}
+		.new_function, .new_function_with_name {
+			inferred := if instruction.op == .new_function_with_name { ?Utf16String(make_function_name(left.to_property_key(mut vm)!, none)) } else { none }
+			result = Value.from_object(create_ecmascript_function(mut vm, executable, instruction.identifier, instruction.strict, inferred)!)
+		}
 		.mov {
 			result = left
 		}
@@ -263,6 +301,7 @@ fn (mut vm VM) execute_instruction(instruction Instruction, executable &Executab
 		}
 		.enter_scope {
 			frame.lexical_environment = Environment(DeclarativeEnvironment.create(frame.lexical_environment))
+			frame.lexical_scope_depth++
 		}
 		.leave_scope {
 			environment := frame.lexical_environment or {
@@ -273,9 +312,14 @@ fn (mut vm VM) execute_instruction(instruction Instruction, executable &Executab
 				return error('Cannot leave a non-block environment')
 			}
 			frame.lexical_environment = environment.outer_environment()
+			if frame.lexical_scope_depth>0 { frame.lexical_scope_depth-- }
 		}
 		.resolve_this_binding {
 			result = vm.resolve_this_binding()!
+		}
+		.get_import_meta {
+			if vm.get_active_script_or_module().kind!=.module { return vm.throw_error(.internal_error,'ImportMeta requires an active module') }
+			result=Value.from_object(vm.get_import_meta())
 		}
 		.jump {
 			next = instruction.target
@@ -310,7 +354,8 @@ fn (mut vm VM) execute_instruction(instruction Instruction, executable &Executab
 }
 
 // Interpreter/Interpreter.cpp::VM::run_executable, with a V dispatch loop in
-// place of the generated assembly interpreter. No calls/inline frames yet.
+// place of the generated assembly interpreter. Ordinary calls allocate their
+// own checked frames; upstream inline-call frames remain untranslated.
 pub fn (mut vm VM) run_executable(mut frame ExecutionContext, executable &Executable, entry_point u32, limits ExecutionLimits) !Value {
 	executable.validate(frame.argument_count)!
 	if entry_point >= executable.bytecode_length { return error('Entry point out of range') }
@@ -326,6 +371,15 @@ pub fn (mut vm VM) run_executable(mut frame ExecutionContext, executable &Execut
 	}
 	previous_context := vm.running_execution_context_
 	previous_environment := frame.lexical_environment
+	previous_scope_depth := frame.lexical_scope_depth
+	frame.lexical_scope_depth=0
+	own_budget := vm.run_executable_depth == 0 && vm.external_budget_depth == 0
+	previous_budget := vm.instruction_budget
+	previous_budget_active := vm.instruction_budget_active
+	if own_budget {
+		vm.instruction_budget = limits.max_instructions
+		vm.instruction_budget_active = limits.max_instructions != 0
+	}
 	vm.running_execution_context_ = &frame
 	vm.run_executable_depth++
 	frame.executable = executable
@@ -341,15 +395,40 @@ pub fn (mut vm VM) run_executable(mut frame ExecutionContext, executable &Execut
 			vm.finish_execution_generation()
 		}
 		frame.lexical_environment = previous_environment
+		frame.lexical_scope_depth=previous_scope_depth
 		vm.run_executable_depth--
 		vm.running_execution_context_ = previous_context
-	}
-	mut executed := u64(0)
-	for frame.program_counter < executable.bytecode_length {
-		if limits.max_instructions != 0 && executed >= limits.max_instructions {
-			return vm.throw_error(.internal_error, 'LibJS instruction budget exceeded')
+		if own_budget {
+			vm.instruction_budget = previous_budget
+			vm.instruction_budget_active = previous_budget_active
 		}
-		executed++
+	}
+	if mut tier := vm.native_tier {
+		if tier.profiling {
+			tier.observe(executable)
+		}
+		if tier.enabled {
+			if entry := tier.entries[voidptr(executable)] {
+				mut invocation := NativeInvocation{vm: &vm, executable: executable}
+				mut fast_steps := &u64(unsafe { nil })
+				if tier.diagnostics {
+					tier.activity.entries++
+					fast_steps = &tier.activity.fast_steps
+				}
+				entry(voidptr(&invocation), frame.values.data, &vm.instruction_budget,
+					u8(vm.instruction_budget_active), &frame.program_counter, native_slow_step, fast_steps)
+				if failure := invocation.failure { return failure }
+				if frame.program_counter == 0xfffffffe {
+					frame.program_counter = executable.bytecode_length
+					return vm.reg(register_return_value)
+				}
+				if invocation.ended { return vm.reg(register_return_value) }
+				return vm.throw_error(.internal_error, 'Bytecode fell off the end without End')
+			}
+		}
+	}
+	for frame.program_counter < executable.bytecode_length {
+		vm.consume_execution_budget()!
 		instruction := executable.instructions[frame.program_counter]
 		next := vm.execute_instruction(instruction, executable) or {
 			if !is_throw_completion(err) { return err }
@@ -361,4 +440,19 @@ pub fn (mut vm VM) run_executable(mut frame ExecutionContext, executable &Execut
 		if instruction.op == .end { return vm.reg(register_return_value) }
 	}
 	return vm.throw_error(.internal_error, 'Bytecode fell off the end without End')
+}
+
+// Browser events enter a callable directly, including native-only callbacks.
+// Give that entire entry (and all its nested functions) one execution budget.
+pub fn (mut vm VM) call_with_limits(function Value, this_value Value, arguments []Value, limits ExecutionLimits) !Value {
+	outer := vm.run_executable_depth == 0 && vm.external_budget_depth == 0
+	previous_budget := vm.instruction_budget
+	previous_active := vm.instruction_budget_active
+	if outer { vm.instruction_budget = limits.max_instructions; vm.instruction_budget_active = limits.max_instructions != 0 }
+	vm.external_budget_depth++
+	defer {
+		vm.external_budget_depth--
+		if outer { vm.instruction_budget = previous_budget; vm.instruction_budget_active = previous_active }
+	}
+	return call(mut vm, function, this_value, arguments)
 }

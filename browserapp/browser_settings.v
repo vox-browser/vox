@@ -15,7 +15,7 @@ mut:
 const browser_settings_ui = &BrowserSettingsUI{}
 
 const browser_settings_width = 500
-const browser_settings_height = 606
+const browser_settings_height = 678
 
 fn is_browser_settings_shortcut(key gg.KeyCode, modifier gg.Modifier) bool {
 	return key == .comma && modifier == $if macos { gg.Modifier.super } $else { gg.Modifier.ctrl }
@@ -63,9 +63,11 @@ fn browser_settings_elements(proxy browsersettings.Proxy) ui2.Element {
 		ui2.label('settings-advanced-heading', 'Advanced', ui2.rect(24, 426, 452, 24), ui2.TextStyle{ size: 18 }),
 		ui2.checkbox('settings-gpu-canvas', 'GPU-accelerated scrolling', !proxy.disable_gpu_canvas, ui2.rect(24, 462, 452, 24), ui2.TextStyle{ size: 13 }),
 		ui2.label('settings-gpu-canvas-help', 'Turn off if scrolled pages show drawing errors.', ui2.rect(24, 492, 452, 20), ui2.TextStyle{ size: 12 }),
-		ui2.label('settings-error', browser_settings_ui.error, ui2.rect(24, 520, 452, 24), ui2.TextStyle{ size: 12, color: 0xb42318 }),
-		ui2.with_native_style(ui2.button('settings-cancel', 'Cancel', ui2.rect(294, 560, 86, 28), ui2.BoxStyle{}, ui2.TextStyle{ size: 13 })),
-		ui2.with_native_style(ui2.button('settings-apply', 'Apply', ui2.rect(390, 560, 86, 28), ui2.BoxStyle{}, ui2.TextStyle{ size: 13 })),
+		ui2.checkbox('settings-libjs', 'Use LibJS JavaScript engine (experimental)', proxy.javascript_engine == 'libjs', ui2.rect(24, 526, 452, 24), ui2.TextStyle{ size: 13 }),
+		ui2.label('settings-libjs-help', 'Restart Vox to apply. JavaScriptCore is the default.', ui2.rect(24, 556, 452, 20), ui2.TextStyle{ size: 12 }),
+		ui2.label('settings-error', browser_settings_ui.error, ui2.rect(24, 592, 452, 24), ui2.TextStyle{ size: 12, color: 0xb42318 }),
+		ui2.with_native_style(ui2.button('settings-cancel', 'Cancel', ui2.rect(294, 632, 86, 28), ui2.BoxStyle{}, ui2.TextStyle{ size: 13 })),
+		ui2.with_native_style(ui2.button('settings-apply', 'Apply', ui2.rect(390, 632, 86, 28), ui2.BoxStyle{}, ui2.TextStyle{ size: 13 })),
 	])
 }
 
@@ -99,6 +101,7 @@ fn show_browser_settings() {
 	ui2.set_control_checked('settings-tab-coloring', state.draft.enable_tab_coloring)
 	ui2.set_control_checked('settings-custom-tab-titles', state.draft.enable_custom_tab_titles)
 	ui2.set_control_checked('settings-gpu-canvas', !state.draft.disable_gpu_canvas)
+	ui2.set_control_checked('settings-libjs', state.draft.javascript_engine == 'libjs')
 	ui2.set_text('settings-host', state.draft.host)
 	ui2.set_text('settings-port', state.draft.port)
 	ui2.set_text('settings-sites', state.draft.sites)
@@ -143,6 +146,7 @@ fn browser_settings_event(event string) {
 	defer { platform.leave_persistent(persistent) }
 	mut state := unsafe { browser_settings_ui }
 	state.draft = browsersettings.Proxy{
+		javascript_engine: if ui2.control_checked('settings-libjs') { 'libjs' } else { 'javascriptcore' }
 		enable_custom_tab_titles: ui2.control_checked('settings-custom-tab-titles')
 		enable_tab_coloring: ui2.control_checked('settings-tab-coloring')
 		disable_gpu_canvas: !ui2.control_checked('settings-gpu-canvas')

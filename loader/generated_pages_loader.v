@@ -45,7 +45,8 @@ fn human_readable_size(size u64) string {
 }
 
 fn file_path_from_url(url dom.URL) !string {
-	return liburl.percent_decode(url.serialize_path()).bytestr()
+	parsed := liburl.parse(url.serialize()) or { return error('Malformed file URL') }
+	return parsed.to_file_path() or { return error('Invalid local file URL') }
 }
 
 pub fn load_file_directory_page(url dom.URL) !string {

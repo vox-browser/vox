@@ -4,14 +4,20 @@
 #include <stdlib.h>
 #include <string.h>
 
-static id<MTLCommandBuffer> expected_commands;
-static unsigned joined_reads, standalone_reads;
+static id<MTLCommandBuffer> expected_commands, expected_upload;
+static unsigned joined_reads, standalone_reads, joined_uploads, standalone_uploads;
 static bool vox_test_gg_metal_fail_allocation, vox_test_gg_metal_fail_encoder;
 static void vox_test_gg_metal_transfer(id<MTLCommandBuffer> commands, bool joined) {
     assert(commands);
     assert(joined == (expected_commands != nil));
     if (joined) { assert(commands == expected_commands); ++joined_reads; }
     else ++standalone_reads;
+}
+static void vox_test_gg_metal_upload(id<MTLCommandBuffer> commands, bool joined) {
+    assert(commands);
+    assert(joined == (expected_upload != nil));
+    if (joined) { assert(commands == expected_upload); ++joined_uploads; }
+    else ++standalone_uploads;
 }
 #define VOX_TEST_GG_METAL_TRANSFER
 #define SOKOL_IMPL
@@ -104,6 +110,62 @@ static void exercise(id<MTLDevice> device, bool retained) {
         assert(memcmp(expected, actual, sizeof(actual)) == 0);
         if (frame % 4 == 0) sg_commit();
     }
+    // Uploads return without waiting but keep program order. An upload after
+    // pending rendering joins its command buffer and replaces the rendering;
+    // rendering after a standalone upload covers it. The caller may reuse its
+    // buffer as soon as the upload returns.
+    uint8_t pattern[pitch * height], uploaded[pitch * height], rendered[pitch * height];
+    for (int frame = 0; frame < 16; ++frame) {
+        for (size_t i = 0; i < sizeof(pattern); ++i) pattern[i] = (uint8_t)(i * 31 + frame);
+        memcpy(uploaded, pattern, sizeof(pattern));
+        setenv("VOX_GG_SEPARATE_TRANSFERS", "1", 1);
+        render(attachments, pipeline, frame + 3);
+        memset(rendered, 0xa7, sizeof(rendered));
+        assert(sg_v_read_image(image, 0, 0, width, height, rendered, pitch));
+        unsetenv("VOX_GG_SEPARATE_TRANSFERS");
+        render(attachments, pipeline, frame);
+        expected_upload = _sg.mtl.cmd_buffer;
+        assert(expected_upload && _sg.mtl.cur_ub_offset > 0);
+        unsigned before = joined_uploads;
+        if (frame == 0) {
+            vox_test_gg_metal_fail_allocation = true;
+            assert(!sg_v_write_image(image, 0, 0, width, height, pattern, pitch));
+            vox_test_gg_metal_fail_allocation = false;
+            vox_test_gg_metal_fail_encoder = true;
+            assert(!sg_v_write_image(image, 0, 0, width, height, pattern, pitch));
+            vox_test_gg_metal_fail_encoder = false;
+            assert(joined_uploads == before && _sg.mtl.cmd_buffer == expected_upload);
+        }
+        assert(sg_v_write_image(image, 0, 0, width, height, pattern, pitch));
+        assert(joined_uploads == before + 1 && _sg.mtl.cmd_buffer == expected_upload);
+        assert(_sg.mtl.cur_ub_offset > 0);
+        memset(pattern, 0x11, sizeof(pattern));
+        expected_upload = nil;
+        expected_commands = _sg.mtl.cmd_buffer;
+        memset(actual, 0xa7, sizeof(actual));
+        assert(sg_v_read_image(image, 0, 0, width, height, actual, pitch));
+        assert(_sg.mtl.cmd_buffer == nil && _sg.mtl.cur_ub_offset == 0);
+        for (int row = 0; row < height; ++row)
+            assert(memcmp(actual + row * pitch, uploaded + row * pitch, width * 4) == 0);
+        memcpy(pattern, uploaded, sizeof(pattern));
+        before = standalone_uploads;
+        assert(sg_v_write_image(image, 0, 0, width, height, pattern, pitch));
+        assert(standalone_uploads == before + 1 && _sg.mtl.cmd_buffer == nil);
+        memset(pattern, 0x22, sizeof(pattern));
+        render(attachments, pipeline, frame + 3);
+        expected_commands = _sg.mtl.cmd_buffer;
+        memset(actual, 0xa7, sizeof(actual));
+        assert(sg_v_read_image(image, 0, 0, width, height, actual, pitch));
+        assert(memcmp(actual, rendered, sizeof(actual)) == 0);
+        expected_commands = nil;
+        // A standalone upload with no rendering is observed by the next read.
+        assert(sg_v_write_image(image, 0, 0, width, height, uploaded, pitch));
+        memset(actual, 0xa7, sizeof(actual));
+        assert(sg_v_read_image(image, 0, 0, width, height, actual, pitch));
+        for (int row = 0; row < height; ++row)
+            assert(memcmp(actual + row * pitch, uploaded + row * pitch, width * 4) == 0);
+        if (frame % 4 == 0) sg_commit();
+    }
     // Upload ownership, active-encoder rejection and subsequent render order.
     memset(actual, 0x80, sizeof(actual));
     assert(sg_v_write_image(image, 0, 0, width, height, actual, pitch));
@@ -122,8 +184,8 @@ static void exercise(id<MTLDevice> device, bool retained) {
 
 int main(void) { @autoreleasepool {
     id<MTLDevice> device = MTLCreateSystemDefaultDevice(); assert(device);
-    setenv("VOX_GG_JOINED_READBACK", "1", 1);
     exercise(device, false); exercise(device, true);
-    assert(joined_reads == 130 && standalone_reads == 130);
-    printf("GG Metal readback: 128 exact pending-uniform cases, 130 joined / 130 standalone reads; padding, upload ownership, invalid views, active passes and frame-slot reuse pass\n");
+    assert(joined_reads == 194 && standalone_reads == 162);
+    assert(joined_uploads == 32 && standalone_uploads == 66);
+    printf("GG Metal transfers: 128 exact pending-uniform cases, 194 joined / 162 standalone reads, 32 joined / 66 standalone uploads; upload order, buffer reuse, padding, invalid views, active passes, failures and frame-slot reuse pass\n");
 } }

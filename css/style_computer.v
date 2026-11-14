@@ -1853,7 +1853,7 @@ fn style_computer_update_animated_style_callback(target voidptr) {
 			mutable_target_node.set_needs_layout_update(.keyframe_effect)
 		}
 		if invalidation.needs_layout_tree_rebuild() {
-			if parent_element := target_node.parent_element() {
+			if parent_element := target_node.parent_or_shadow_host_element() {
 				mut parent_node := unsafe { &dom.Node(parent_element.as_node()) }
 				parent_node.set_needs_layout_tree_update(true, .keyframe_effect)
 			} else {
@@ -2039,7 +2039,7 @@ fn update_style_recursively(mut style_computer StyleComputer, node &dom.Node, ne
 		mutable_node.set_needs_layout_update(.style_change)
 	}
 	if node_invalidation.needs_layout_tree_rebuild() {
-		if parent_element := node.parent_element() {
+		if parent_element := node.parent_or_shadow_host_element() {
 			mut mutable_parent := unsafe { &dom.Node(parent_element.as_node()) }
 			mutable_parent.set_needs_layout_tree_update(true, .style_change)
 		} else {

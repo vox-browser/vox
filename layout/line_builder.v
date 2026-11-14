@@ -832,10 +832,11 @@ pub fn (mut builder LineBuilder) update_last_line() {
 	mut first_unshifted_text_baseline := ?CSSPixels(none)
 	mut aligned_subtrees := []LineRelativeAlignedSubtree{}
 	current_block_offset := builder.current_block_offset
+	bidi_offsets := chromium_rtl_fragment_offsets(line_box)
 	for index in 0 .. line_box.fragments_.len {
 		mut fragment := &line_box.fragments_[index]
 		uses_container_alignment := builder.fragment_uses_container_alignment(fragment)
-		fragment_inline_offset := inline_offset.plus(fragment.inline_offset())
+		fragment_inline_offset := inline_offset.plus(if bidi_offsets.len > 0 { bidi_offsets[index] } else { fragment.inline_offset() })
 		mut effective_box_top_offset := fragment.border_box_top()
 		mut effective_box_bottom_offset := fragment.border_box_top()
 		if fragment.is_atomic_inline() {

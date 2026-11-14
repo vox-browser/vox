@@ -4,8 +4,9 @@ import argparse
 import hashlib
 import json
 from pathlib import Path
-import shlex
 import subprocess
+
+from build_harfbuzz import build
 
 
 def main():
@@ -16,10 +17,12 @@ def main():
     args.output.mkdir(parents=True, exist_ok=False)
     inputs = [root / 'platform/harfbuzz_coretext_macos.h',
               root / 'tools/harfbuzz_coretext_cache_test.c', Path(__file__).resolve()]
+    harfbuzz = build()
+    inputs += [harfbuzz / 'build.json', harfbuzz / 'lib/libharfbuzz.a']
     fingerprint = lambda: {str(p): hashlib.sha256(p.read_bytes()).hexdigest() for p in inputs}
     before = fingerprint()
-    flags = shlex.split(subprocess.check_output(
-        ['pkg-config', '--cflags', '--libs', 'harfbuzz'], text=True))
+    flags = ['-I' + str(harfbuzz / 'include/harfbuzz'),
+             str(harfbuzz / 'lib/libharfbuzz.a'), '-framework', 'CoreGraphics', '-lc++']
     binary = (args.output / 'test').resolve()
     command = ['clang', '-O2', '-Wall', '-Wextra', '-Werror', '-I', str(root),
                str(inputs[1]), '-framework', 'CoreText', '-framework', 'CoreFoundation',

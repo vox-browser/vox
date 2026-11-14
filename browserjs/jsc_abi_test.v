@@ -213,7 +213,12 @@ fn test_jsc_abi_string_callback_preserves_data_and_recovers_after_errors() {
 	if _ := runtime.evaluate_host('abiString("throw", ...Array.from({length: 63}, (_, index) => index))') {
 		assert false
 	} else {
-		assert err.msg().contains('string callback failure')
+		if err is JavaScriptValueException {
+			assert err.context == runtime.context
+			assert js_exception_message(err.context, err.value).contains('string callback failure')
+		} else {
+			assert false, err.msg()
+		}
 	}
 	assert runtime.evaluate_host('abiString("recovered")')! == 'recovered✓'
 }

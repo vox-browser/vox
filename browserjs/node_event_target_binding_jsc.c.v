@@ -13,9 +13,9 @@ mut:
 	closed   bool
 }
 
-// Compact facades for shadow roots, fragments and character data share their
-// native node's listener list, as element facades do through ElementWheelHost.
-// GitHub's invoker-commands polyfill listens on every attached shadow root.
+// Compact node facades share their native node's listener list. The resolver
+// also covers elements added by the parser after ElementWheelHost took its
+// initial registry snapshot.
 pub fn (mut runtime Runtime) install_node_event_target_binding(lookup NodeEventTargetLookup, state NodeEventTargetState) ! {
 	runtime.event_binding()!
 	owner := voidptr(&runtime)
@@ -63,7 +63,10 @@ pub fn (mut runtime Runtime) install_node_event_target_binding(lookup NodeEventT
 				return unsafe { nil }
 			}
 			node := unsafe { &dom.Node(target) }
-			if node.is_element() || node.is_document() { return unsafe { nil } }
+			if node.is_document() { return unsafe { nil } }
+			// Materialize a late element's bridge key and facade before the
+			// EventTarget fallback can cache a generic wrapper for that owner.
+			// Otherwise a later selector creates a second wrapper and throws.
 			encoded := state(node) or { return unsafe { nil } }
 			mut runtime := unsafe { &Runtime(owner) }
 			wrapper := runtime.call_javascript_function(resolver.function,

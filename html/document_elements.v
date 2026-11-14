@@ -216,7 +216,7 @@ pub fn (mut meta HTMLMetaElementModel) update_referrer_policy() {
 }
 
 fn parse_meta_csp(input string) SerializedCSPPolicy {
-	mut directives := []SerializedCSPDirective{}
+	mut directives := []dom.SerializedCSPDirective{}
 	for serialized_directive in input.split(';') {
 		parts := serialized_directive.fields()
 		if parts.len == 0 {
@@ -227,12 +227,12 @@ fn parse_meta_csp(input string) SerializedCSPPolicy {
 		if name in ['report-uri', 'frame-ancestors', 'sandbox'] {
 			continue
 		}
-		directives << SerializedCSPDirective{
+		directives << dom.SerializedCSPDirective{
 			name: name
 			value: parts[1..].clone()
 		}
 	}
-	return SerializedCSPPolicy{
+	return dom.SerializedCSPPolicy{
 		directives: directives
 		disposition: .enforce
 		source: .meta

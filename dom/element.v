@@ -11,6 +11,7 @@ import url as liburl
 
 import rand
 import math
+import os
 import strings
 import webidl
 import trustedtypes
@@ -2055,6 +2056,12 @@ pub fn (mut e Element) set_attribute_node_ns_for_bindings(attr &Attr_) !&Attr_ {
 	return attrs.set_attribute(attr)!
 }
 
+pub fn (mut e Element) ensure_attribute_capacity(capacity int) {
+	if capacity <= 0 { return }
+	mut attrs := e.ensure_attributes()
+	attrs.attrs.ensure_cap(capacity)
+}
+
 // https://dom.spec.whatwg.org/#dom-element-appendattribute
 pub fn (mut e Element) append_attribute_by_name(name string, value string) {
 	mut attrs := e.ensure_attributes()
@@ -2409,8 +2416,17 @@ pub fn (mut e Element) set_shadow_root(sr ?&ShadowRoot) {
 
 // --- Selector matching ---
 
+const disable_checked_selector_matches = os.getenv('VOX_DISABLE_CHECKED_SELECTOR_MATCHES') != ''
+
 // https://dom.spec.whatwg.org/#dom-element-matches
 pub fn (e &Element) matches(selectors string) !bool {
+	if !disable_checked_selector_matches {
+		if hook := e.document().selector_query_hook() {
+			if hook.matches_checked != unsafe { nil } {
+				return hook.matches_checked(hook.target, selectors, e, unsafe { &ParentNode(e) })
+			}
+		}
+	}
 	// 1. Let s be the result of parse a selector from selectors.
 	maybe_selectors := parse_selector(e.document(), selectors)
 
@@ -3796,18 +3812,8 @@ pub fn (e &Element) default_tab_index_value() int {
 		if e.local_name() in ['a', 'area', 'button', 'frame', 'iframe', 'input', 'object', 'select', 'textarea'] {
 			return 0
 		}
-		if e.local_name() == 'summary' {
-			if parent := e.as_node().parent_element() {
-				if is_html_element_with_local_name(parent, 'details') {
-					for child in parent.as_node().children_as_vector() {
-						if element := child.as_element() {
-							if is_html_element_with_local_name(element, 'summary') {
-								return if voidptr(element) == voidptr(e) { 0 } else { -1 }
-							}
-						}
-					}
-				}
-			}
+		if e.local_name() == 'summary' && html_summary_element_is_summary_for_its_parent_details(e) {
+			return 0
 		}
 	} else if e.local_name() == 'a' && (e.namespace_uri() or { '' }) in [namespace_svg_uri,
 		'http://www.w3.org/1998/Math/MathML'] {
@@ -6382,6 +6388,9 @@ fn dom_assign_slottables_for_a_tree(root &Node) {
 }
 
 fn (mut e Element) invalidate_style_after_attribute_change(attribute_name string, old_value ?string, new_value ?string) {
+	// The DOM mutation and custom-element reactions have already been queued.
+	// Reassigning identical metadata cannot change selectors or attr() values.
+	if metadata_attribute_style_reuse(attribute_name) && old_value == new_value { return }
 	if trace_style_invalidation_sources {
 		trace_style_invalidation_source(e.as_node(), .element_attribute_change, 'attribute(${attribute_name})')
 	}
@@ -6458,15 +6467,52 @@ fn (mut e Element) invalidate_style_after_attribute_change(attribute_name string
 		state.removed_attributes << attribute_name
 		e.dependency_data_ = state
 	}
-	changed_properties << InvalidationProperty{
-		type_: .attribute
-		name: attribute_name
+	if !e.attribute_change_keeps_selector_matches(style_computer, attribute_name, old_value, new_value) {
+		changed_properties << InvalidationProperty{
+			type_: .attribute
+			name: attribute_name
+		}
 	}
-	// Presentational-hint detection belongs to the concrete HTML element subclasses. Recomputing the
-	// changed element is conservative until those subclass hooks are represented in this module.
-	options.invalidate_self = true
+	// ARIA and data attributes have no presentational hints. Their selectors
+	// still participate in the normal invalidation plan, and attr() users need
+	// a new style even when no selector mentions the changed attribute.
+	// Keep the conservative hint handling for every other attribute.
+	options.invalidate_self = options.invalidate_self || !metadata_attribute_style_reuse(attribute_name)
 	node.invalidate_style_with_properties(.element_attribute_change, changed_properties, options)
 	e.invalidate_hosted_shadow_tree_after_attribute_change(style_computer)
+}
+
+// Class, data and ARIA attributes reach selectors only through attribute
+// selectors (class tokens invalidate separately). When every such selector of
+// the observing scopes answers alike for both values, the plan registered for
+// the attribute's name has nothing to invalidate.
+fn (e &Element) attribute_change_keeps_selector_matches(style_computer &StyleComputer, attribute_name string, old_value ?string, new_value ?string) bool {
+	if style_computer.attribute_change_keeps_selectors_callback == unsafe { nil }
+		|| (attribute_name != 'class' && !attribute_name.starts_with('data-')
+		&& !attribute_name.starts_with('aria-')) || !e.is_html_element()
+		|| !e.document().is_html_document() {
+		return false
+	}
+	old_present := old_value != none
+	new_present := new_value != none
+	old_text := old_value or { '' }
+	new_text := new_value or { '' }
+	scopes := e.as_node().observing_style_scopes()
+	mut keeps := style_computer.attribute_change_keeps_selectors_callback(style_computer.css_handle,
+		e, attribute_name, old_present, old_text, new_present, new_text, scopes.first)
+	if keeps {
+		for scope in scopes.additional {
+			if !style_computer.attribute_change_keeps_selectors_callback(style_computer.css_handle,
+				e, attribute_name, old_present, old_text, new_present, new_text, scope) {
+				keeps = false
+				break
+			}
+		}
+	}
+	if style_computer.attribute_change_decided_callback != unsafe { nil } {
+		style_computer.attribute_change_decided_callback(style_computer.css_handle, keeps)
+	}
+	return keeps
 }
 
 pub fn (mut e Element) clear_removed_attributes_for_style_invalidation() {
@@ -7088,7 +7134,7 @@ pub fn (e &Element) advisory_information() string {
 pub fn (e &Element) get_an_elements_noopener(url URL, target string) TokenizedFeatureNoOpener {
 	_ = url
 	// 1. If element's link types include the noopener or noreferrer keyword, then return true.
-	rel := to_ascii_lowercase(e.get_attribute_value('rel'))
+	rel := to_ascii_lowercase(e.get_attribute_ns(none, 'rel') or { '' })
 	link_types := split_on_ascii_whitespace(rel)
 	if 'noopener' in link_types || 'noreferrer' in link_types {
 		return .yes

@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: BSD-2-Clause
 module webgl
 
-fn program_validate_owner(expected [4]int) {
-	mut selected := [0, 0, 0, 0]!
+fn program_validate_owner(expected [4]i32) {
+	mut selected := [i32(0), 0, 0, 0]!
 	C.vox_gl_int_parameter(viewport, &selected[0])
 	assert selected == expected
 }
@@ -17,10 +17,10 @@ fn test_source_program_validate_handle_gates_precede_native_owner_and_keep_actua
 		mut program := owner.create_program()
 		mut foreign := other.create_program()
 		other.native.make_current()
-		mut unused := 0
+		mut unused := i32(0)
 		C.vox_gl_int_parameter(GLenum(0xffff_ffff), &unused)
 		owner.validate_program(mut foreign)
-		program_validate_owner([9, 10, 11, 12]!)
+		program_validate_owner([i32(9), 10, 11, 12]!)
 		assert C.vox_gl_program_parameter(foreign.object.native_name(), validate_status) == 0
 		assert C.vox_gl_get_error() == invalid_enum
 		assert C.vox_gl_get_error() == no_error
@@ -55,14 +55,14 @@ precision mediump float;out vec4 color;void main(){color=vec4(1);}'
 		assert C.vox_gl_program_parameter(program.object.native_name(), validate_status) == 0
 		other.native.make_current()
 		owner.validate_program(mut program)
-		program_validate_owner([1, 2, 3, 4]!)
+		program_validate_owner([i32(1), 2, 3, 4]!)
 		assert C.vox_gl_program_parameter(program.object.native_name(), validate_status) == expected_validation
 		assert owner.get_error() == no_error
 		owner.delete_program(program)
 		other.native.make_current()
 		C.vox_gl_int_parameter(GLenum(0xffff_ffff), &unused)
 		owner.validate_program(mut program)
-		program_validate_owner([9, 10, 11, 12]!)
+		program_validate_owner([i32(9), 10, 11, 12]!)
 		assert C.vox_gl_get_error() == invalid_enum
 		assert C.vox_gl_get_error() == no_error
 		assert owner.get_error() == invalid_operation
@@ -73,7 +73,7 @@ precision mediump float;out vec4 color;void main(){color=vec4(1);}'
 		assert expected != no_error
 		other.native.make_current()
 		owner.validate_program(mut rejected)
-		program_validate_owner([1, 2, 3, 4]!)
+		program_validate_owner([i32(1), 2, 3, 4]!)
 		assert owner.get_error() == expected
 	}
 }
