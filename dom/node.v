@@ -4454,6 +4454,9 @@ pub fn (n &Node) unsafe_paintable_box() ?&PaintableBox {
 pub fn (mut n Node) queue_mutation_record(type_ MutationType, attribute_name ?string, attribute_namespace ?string, old_value ?string, added_nodes []&Node, removed_nodes []&Node, previous_sibling &Node, next_sibling &Node) {
 	target := unsafe { &Node(&n) }
 	mut document := unsafe { &Document(target.document()) }
+	if document != unsafe { nil } && !document.has_mutation_observers_of_type(type_) {
+		return
+	}
 
 	// 1. Let interestedObservers be an empty map.
 	// mutationObserver -> mappedOldValue
@@ -4994,6 +4997,10 @@ pub fn (mut n Node) add_registered_observer(registered_observer &RegisteredObser
 	state.registered_observers = state.registered_observers.clone()
 	state.registered_observers << registered_observer
 	n.cold_data_ = state
+	mut document := n.document()
+	if document != unsafe { nil } {
+		document.add_mutation_observer_types(registered_observer.options())
+	}
 }
 
 pub fn (n &Node) has_inclusive_ancestor_with_display_none_ignoring_animations() bool {
