@@ -7,18 +7,16 @@ Results apply to the frozen page and pinned build in each linked report.
 Provisional entries retain unresolved acceptance checks.
 
 **Pixel recheck, 2026-11-15:** Vox does **not** pass pixel equality across
-this catalog. Production build `05e6ace1` confirms GitHub, Hacker News, Lobsters
-and Wikipedia exact in two fresh captures each. Vlang.io now has **28 differing
-pixels in production**, down from the previously verified 810. Its 23 JPEG
-pixels include nine one-level differences introduced by the fractional-texture
-slice; one heading pixel and four scene pixels also remain. The latest
-diagnostic fix removes that heading pixel: **27 differing pixels**, one corrected
-and none introduced, with production confirmation pending. CNN retains its
-rendering, source/replay and native-repeat failures. Reddit remains unverified
-(missing historical fixture, earlier live HTTP 403). A separate tall-shadow
-control has a retained baseline repeat failure. Newer uncompiled layout edits
-require separate validation. See the [current audit, capture scopes and
-retained failures](docs/OPTIMIZED_SITES_PIXELS_2026_11_12.md).
+this catalog. Production build `01436d0a` confirms GitHub, Hacker News, Lobsters
+and Wikipedia exact in two fresh captures each. Vlang.io has **27 differing
+pixels in production**, down from the previously verified 810. The latest fix
+removes the final heading difference. Its 23 JPEG pixels still include nine
+one-level differences introduced by the fractional-texture slice; four scene
+pixels also remain. CNN retains its rendering, source/replay and native-repeat
+failures. Reddit remains unverified (missing historical fixture, earlier live
+HTTP 403). A separate tall-shadow control has a retained baseline repeat failure.
+These results apply to the pinned bundle and frozen page bytes. See the
+[current audit, capture scopes and retained failures](docs/OPTIMIZED_SITES_PIXELS_2026_11_12.md).
 
 | Site | Recorded date | Trials per browser | Statistic | Vox instructions | Brave observed instructions | Fewer instructions | Vox RAM (MiB)‡ | Brave RAM (MiB)‡ | Vox scroll FPS§ | Vox GPU canvas FPS§ | Brave scroll FPS† | Evidence |
 | --- | --- | ---: | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- |

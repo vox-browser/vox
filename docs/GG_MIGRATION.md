@@ -3037,3 +3037,16 @@ identical to production. Existing references, shader and dither are unchanged.
 The JPEG's 23 and scene's four pixels remain, alongside CNN/Reddit and historical
 repeat failures. Production is still at 28; the 27 result awaits the managed
 build. See the [audit](OPTIMIZED_SITES_PIXELS_2026_11_12.md#text-gradient-coordinates-inside-recorded-layers-2026-11-15).
+
+
+### Production confirmation of the local-coordinate fix, 2026-11-15
+
+Production `01436d0a` (C, literal `-prod`, single unit) matches all 62 selected
+compiled rendering witnesses. Thirty-three workloads captured twice confirm
+vlang.io at 27 and four exact archived sites; every diagnostic reference count
+matches. All 66 capture guards and driver/outer exits are zero, with 69 stable
+input witnesses. Vlang.io's production PNG matches diagnostics exactly. CNN's
+repeat pair differs at 1,540 pixels; its rendering/source failures and the
+remaining vlang/Reddit/historical repeat issues stay open. This supersedes the
+preceding pending-production status. See the
+[audit](OPTIMIZED_SITES_PIXELS_2026_11_12.md#production-confirmation-of-the-27-pixel-result-2026-11-15).

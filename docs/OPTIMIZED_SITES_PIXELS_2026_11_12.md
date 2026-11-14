@@ -2378,3 +2378,31 @@ failed attempts and selected archived scratch are under
 Completed job directories, guards, generated C and binaries are removed after
 verified archival. The normal commit hook requests the coalesced production
 rebuild; no duplicate manual build is queued. All-site equality remains open.
+
+
+## Production confirmation of the 27-pixel result, 2026-11-15
+
+The completed production bundle became available during closeout. Executable
+`01436d0a3575be46dc850d0450af7480f4b5fd97a0fae0de63263489ae0eb34d`,
+receipt `20261115-013256-3c6d2644`, uses the C backend, literal V `-prod` and a
+single C unit. All 62 selected rendering-source witnesses match its exact
+compiled manifest, including `4e3445943`. No extra build was requested.
+
+Thirty-three workloads captured twice confirm **vlang.io at 27 pixels**, the
+four exact archived sites and every other diagnostic reference count unchanged.
+Vlang.io's production and accepted diagnostic PNGs match exactly. The heading
+is now exact; the 23 JPEG and four scene differences, including the earlier nine
+introduced JPEG pixels, remain. All 66 native capture guards, driver and outer
+guard exit zero; 69 source/tool witnesses stay unchanged. GitHub's 33 rows and
+HN's 30 stories pass their audits. Thirty-two native pairs repeat exactly; CNN
+remains at 175,866 pixels and its pair differs at 1,540 pixels.
+
+The previously pending layout sources checked against this receipt now match,
+including clean-subtree reuse and the document-tree builder. A newer uncompiled
+capture-audit edit is outside this validation. The earlier diagnostic pending
+status is superseded for this gradient fix; all-site, live-site, scripting and
+performance parity remain open. Production receipts, source witnesses and all
+captures are retained alongside the preceding evidence under
+`raw/jpeg-sample-precision-20261115/production27-summary.json` in the local
+performance evidence directory. Completed production-check scratch is archived
+and removed. The ordinary documentation hook requests the next coalesced build.
