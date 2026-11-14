@@ -324,7 +324,7 @@ pub fn (mut control FormAssociatedElement) reset_form_owner() {
 		}
 	}
 	control.set_form(none)
-	if control.is_listed() && control.element.has_attribute('form') && control.element.is_connected() {
+	if control.is_listed() && control.element.is_connected() && control.element.has_attribute('form') {
 		form_id := control.element.get_attribute('form') or { return }
 		if form := form_element_find_form_by_id(control.element.as_node().root(), form_id) {
 			control.set_form(form)
