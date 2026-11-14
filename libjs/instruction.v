@@ -49,6 +49,9 @@ pub enum OpCode {
 	new_array
 	new_regexp
 	define_property
+	require_object_coercible
+	to_property_key
+	copy_object_excluding_keys
 	typeof_binding
 	set_binding
 	set_variable
@@ -104,6 +107,7 @@ fn (instruction Instruction) input_count() int {
 		}
 		.mov, .unary_plus, .unary_minus, .bitwise_not, .not_op, .typeof_op, .to_numeric,
 		.increment, .decrement, .set_binding, .set_variable, .initialize_binding, .jump_if_true,
+		.require_object_coercible, .to_property_key, .copy_object_excluding_keys,
 		.jump_if_false, .jump_if_nullish, .end, .throw_op, .construct, .new_array, .new_function_with_name {
 			1
 		}
@@ -124,6 +128,7 @@ fn (instruction Instruction) input_operand(index int) Operand {
 fn (instruction Instruction) writes_operand() bool {
 	return instruction.op !in [.put_property, .define_property, .set_binding, .set_variable, .initialize_binding,
 		.create_mutable_binding, .create_immutable_binding, .enter_scope, .leave_scope, .jump,
+		.require_object_coercible,
 		.jump_if_true, .jump_if_false, .jump_if_nullish, .end, .throw_op]
 }
 
@@ -152,7 +157,7 @@ pub fn (executable &Executable) validate(arguments_count u32) ! {
 		if instruction.op == .get_callee_and_this {
 			instruction.rhs.slot(executable, arguments_count, true)!
 		}
-		if instruction.op in [.call, .construct] {
+		if instruction.op in [.call, .construct, .copy_object_excluding_keys] {
 			for argument in instruction.arguments {
 				argument.slot(executable, arguments_count, false)!
 			}

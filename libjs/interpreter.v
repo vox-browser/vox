@@ -50,6 +50,19 @@ fn (mut vm VM) execute_instruction(instruction Instruction, executable &Executab
 	}
 	mut result := js_undefined()
 	match instruction.op {
+		.require_object_coercible {
+			if left.is_nullish() { return vm.throw_error_type(.type_error,.to_object_null_or_undefined) }
+		}
+		.to_property_key { result=left.to_property_key(mut vm)!.to_value(mut vm) }
+		.copy_object_excluding_keys {
+			mut excluded := []PropertyName{cap:instruction.arguments.len}
+			for operand in instruction.arguments {
+				key := frame.values[operand.slot(executable,frame.argument_count,false)!]
+				if key.is_special_empty_value() { return vm.throw_error(.internal_error,'Uninitialized object rest key') }
+				excluded << key.to_property_key(mut vm)!
+			}
+			result=Value.from_object(copy_object_excluding_keys(mut vm,left,excluded)!)
+		}
 		.new_regexp { result = Value.from_object(create_regexp_object(mut vm, left.as_string().utf16, right.as_string().utf16)!) }
 		.new_object { result = Value.from_object(Object.create(vm.realm(), vm.realm().object_prototype)) }
 		.new_array { result = Value.from_object(ArrayObject.create(mut vm, vm.realm(), u64(left.number), vm.realm().array_prototype_record())!.object) }
