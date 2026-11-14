@@ -403,3 +403,51 @@ The ignored structured record is
 `docs/performance/github-react-rendering-20261114-r6.json`. The environment,
 private test executable and generated C are excluded. The job directory,
 its guard files and its AST output are removed after archive verification.
+
+## Table coordinate restoration (November 14)
+
+`7cea23bf7` fixes the timing-dependent file-table shift. Bounded diagnostics
+reproduce rows at x=32 and x=33 even though block layout consistently places
+the principal table at x=1 inside its wrapper. Incremental restoration linked
+rows, groups and columns to their CSS containing block, the anonymous wrapper,
+skipping the table's border offset. Both bounded relayout and clean-subtree
+reuse now preserve the resolved principal-table coordinate parent while it
+remains an ancestor in the current tree.
+
+Two browser integration cases pass with compiler-default GC and with production
+preallocation/GC disabled. They check separate and collapsed borders, captions,
+columns, row groups and cells through six unrelated text edits and three clean
+subtree reuses. The unchanged-code executable fails the column-coordinate
+check. Final builds peak below 6.7 GB under the 12 GiB guard; executions retain
+the 3 GiB guard.
+
+Three fresh C-O0 captures pass the complete 33-row React text/error audit and
+are pixel-identical, with rows consistently at x=33. Their decoded RGBA digest
+is `f0324073630dc41b827460d06c3f91e690c2ccbba24a9a9a8736f26bdac81c81`.
+A separate fresh live navigation passes with all 34 current rows carrying
+commit links, latest commit and README, without reported native/script errors.
+Startup and all nine SVG mutation reftests pass on the final candidate.
+
+Earlier failures remain in the evidence: five compiler memory-guard exits,
+temporary V/C signature mismatches during concurrent native-gradient work,
+and an 8/9 SVG attempt whose failing actual PNG matches the unchanged-code
+control while its reference capture varies. A supplementary preallocation
+text-control suite crashes in `Document.cursor_position()` before typing,
+including with incremental layout disabled; no pass is claimed for it.
+
+**Brave parity remains open.** These are functional C-O0 checks, and the original
+native PNG reference still fails. No references or tolerances changed and no
+instruction or latency saving is credited. The latest completed production
+executable, `a7d897a12f0d662693441df9110770289fbacf73ebf98b678ce5993f5601481c`,
+does not contain the fix. The managed post-commit hook requests its single-unit
+literal `-prod` rebuild; production validation and a qualifying matched cohort
+remain pending. No duplicate production build was requested.
+
+Raw commands, identities, captures, failures and guard exits are retained in
+`~/Library/Caches/Vox/benchmarks/github-react-rendering-20261114-r7/evidence.tar.gz`
+(636 files; SHA-256
+`2ebe9d9278093e4519a480ba367b08ef682f04afca32fe28fb904868ebb516e6`).
+The ignored structured record is
+`docs/performance/github-react-rendering-20261114-r7.json`. Generated C, private
+executables and the Python environment are excluded; job scratch is removed
+after archive verification.
