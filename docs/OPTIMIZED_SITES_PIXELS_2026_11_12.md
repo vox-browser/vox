@@ -1248,3 +1248,35 @@ stroke does not remove the four differences. The remaining search-border and
 avatar gaps therefore stay open; reference geometry is not adjusted to force
 a pass. Search diagnostics remain local under
 `docs/performance/vlang-gradients-20261112/raw/search-border-20261114/`.
+
+## Legacy-grid reduction, 2026-11-14
+
+`a2fd01d46` adds the known failing diagnostic
+`Tests/Browser/Brave/diagnostic/legacy-backdrop-border.html` and its Brave
+reference. Unlike the earlier fixed-header reduction, this retains the relative
+header, isolated long page, fractional x=760.75 and backdrop blur 20. Two fresh
+identity-pinned Brave captures agree exactly. Two fresh production captures of
+`6bf5db1e` differ at precisely the original GitHub search-border coordinates
+(764,16), (762,18), (801,49), (799,51), with the same actual/reference RGBA pairs.
+It isolates that four-pixel failure without GitHub's other content or resources.
+This reproducer supplies no rendering fix or all-site acceptance.
+
+Two geometry-grid candidates were tested and rejected. The first reused the
+normal root grid; the second prepared an independent document grid even when
+the root itself uses legacy rasterization. Both preserve native effect ownership
+and MSAA rows, but neither reduces the original GitHub gap or the new reduction.
+The first cohort completes 22 captures, the second 24, plus their startup smokes,
+with driver/browser/guard exits 0. Both preserve GitHub 19, vlang.io 3,228,
+CNN 175,866, HN/Wikipedia/Lobsters 0, the exact focused controls and the scale-2
+device-shadow gap of 92. The reduction stays at four differences twice in the
+second cohort. The final candidate's two focused grid tests and 22 existing
+MSAA tests execute successfully, but passing those checks does not demonstrate
+pixel correction. Both experimental implementations and their temporary unit
+tests were removed; production rendering code remains unchanged.
+
+Raw commands, source snapshots, build identities, PNGs, guard reports, test-call
+witnesses and actual exits remain local under
+`docs/performance/vlang-gradients-20261112/raw/legacy-grid-20261114/`.
+The eight temporary job directories and their guards were deleted after archival.
+Host load exceeded 150 on 18 CPUs; no performance credit is claimed. The existing
+production result and all unresolved site gates remain unchanged.
