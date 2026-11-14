@@ -2429,6 +2429,13 @@ fn collect_nodes_for_post_connection(node &Node, mut nodes []&Node) {
 }
 
 fn run_post_connection_steps(nodes []&Node) {
+	mut has_connected_root := false
+	for node in nodes {
+		if node.is_connected() { has_connected_root = true; break }
+	}
+	if !has_connected_root { return }
+	// Collect every root if any is connected: a callback can connect a root
+	// that was initially detached before its own post-connection step.
 	// Snapshot before invoking any step; callbacks can change the tree. Only
 	// that local pointer vector uses temporary storage, never callback writes.
 	scratch := platform.begin_thread_scratch('post-connection snapshot')
