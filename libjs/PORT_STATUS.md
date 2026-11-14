@@ -5,6 +5,11 @@ Audited: 2026-10-02.
 The opt-in browser backend and its 2026-11-14 validation are documented in
 [`docs/LIBJS_ENGINE.md`](../docs/LIBJS_ENGINE.md). JavaScriptCore remains the default.
 
+The [GitHub continuation](../docs/LIBJS_GITHUB.md) adds bounded deeper browser
+parsing, iterative conditional alternatives and import-free module execution.
+Dependency graphs, namespaces and React hydration remain open; pixel-perfect
+GitHub rendering is not established.
+
 ## Ordinary ECMAScript calls — 2026-11-14
 
 The bytecode runtime now executes ordinary function declarations and expressions,

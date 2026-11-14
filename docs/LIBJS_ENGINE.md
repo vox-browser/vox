@@ -5,6 +5,9 @@ runtime can now execute Hacker News's comment-collapse script against the
 browser's native DOM. This is an experimental, explicitly selected backend;
 general ECMAScript and Web API compatibility remains incomplete.
 
+The subsequent [GitHub work and pixel baseline](LIBJS_GITHUB.md) remain open.
+Import-free ES modules now execute; dependency graphs and React hydration do not.
+
 ## Select the engine
 
 In **Vox Settings → Advanced**, enable **Use LibJS JavaScript engine
@@ -41,10 +44,12 @@ the translated native URL implementation. Script-source and callback storage
 outlive parser scratch allocations. Runtime closure removes listeners and stops
 further VM entry.
 
-Remaining work includes modules, async/generators, eval/Function, non-simple
+Remaining work includes module dependency graphs, dynamic imports, top-level
+await, async/generators, eval/Function, non-simple
 parameters, complete arguments objects, class execution, try/catch code generation,
 the remaining intrinsic graph and most Web APIs. The parser retains its 32-call
-recursion guard. RegExp replace/split/search/matchAll hooks and constructor edge
+recursion guard by default; browser execution requests depth 256 while retaining
+native parser/compiler stack reserves. RegExp replace/split/search/matchAll hooks and constructor edge
 semantics remain incomplete. Location is a read adapter; navigation setters and
 complete URL mutation APIs are not provided. `querySelectorAll`/NodeList,
 fetch/XHR, timers and logged-in Hacker News voting/hiding are outside this slice.
