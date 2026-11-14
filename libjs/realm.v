@@ -21,6 +21,7 @@ pub mut:
 	global_declarative_environment ?&DeclarativeEnvironment // Cached from GlobalEnv
 	host_defined                   ?RealmHostDefined        // [[HostDefined]]
 	object_prototype               ?&Object
+	object_constructor             ?&Object
 	math_object                    ?&Object
 	function_prototype             ?&Object                 // %Function.prototype%
 	array_prototype ?&Object
@@ -56,6 +57,10 @@ pub fn (realm &Realm) global_environment_record() &GlobalEnvironment {
 
 pub fn (realm &Realm) object_prototype_record() &Object {
 	return realm.object_prototype or { panic('Realm has no Object prototype yet') }
+}
+
+pub fn (realm &Realm) object_constructor_record() &Object {
+	return realm.object_constructor or { panic('Realm has no Object constructor yet') }
 }
 
 pub fn (realm &Realm) math_object_record() &Object {
@@ -129,7 +134,8 @@ pub fn initialize_host_defined_realm(mut vm VM, hooks RealmGlobalHooks) !&Execut
 	realm.object_prototype = object_prototype.object
 	function_prototype := FunctionPrototype.create(mut vm, realm, object_prototype.object)
 	realm.function_prototype = function_prototype.object
-	object_prototype.initialize(mut vm, realm, PrimitiveObjectPrototypes{})
+	object_prototype.initialize(mut vm, realm, realm_primitive_prototypes())
+	realm.object_constructor = ObjectConstructor.create(mut vm, realm).object
 	realm.math_object = MathObject.create(mut vm, realm, object_prototype.object).object
 	thrower := create_throw_type_error_function(mut vm, realm, function_prototype.object)
 	realm.throw_type_error_function = thrower
@@ -226,6 +232,8 @@ pub fn initialize_host_defined_realm(mut vm VM, hooks RealmGlobalHooks) !&Execut
 	global.define_direct_property(PropertyName.from_str('DataView'),
 		Value.from_object(realm.data_view_constructor_record()),
 		attribute_writable | attribute_configurable)
+	global.define_direct_property(PropertyName.from_str('Object'),
+		Value.from_object(realm.object_constructor_record()), attribute_writable | attribute_configurable)
 	global.define_direct_property(PropertyName.from_str('RegExp'),
 		Value.from_object(realm.regexp_constructor or { panic('Missing RegExp constructor') }),
 		attribute_writable | attribute_configurable)
