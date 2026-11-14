@@ -4355,6 +4355,11 @@ pub fn (mut e Element) set_rendered_in_top_layer(value bool) {
 fn (mut e Element) exit_fullscreen_on_element_removal() {
 	// 1. Let document be removedNode's node document.
 	mut document := unsafe { &Document(e.document()) }
+	// Every fullscreen element is in the top layer. Without one, no removed
+	// descendant can need fullscreen cleanup.
+	if document.fullscreen_element() == none {
+		return
+	}
 
 	// 2. Let nodes be removedNode's shadow-including inclusive descendants that
 	//    have their fullscreen flag set, in shadow-including tree order.
