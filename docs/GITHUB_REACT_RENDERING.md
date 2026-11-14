@@ -575,3 +575,103 @@ The ignored structured record is
 `docs/performance/github-react-rendering-20261114-r9.json`. Generated C, private
 executables and the Python environment are excluded; scratch is removed after
 archive verification.
+
+## Parser-end layout and clean box reuse (November 14)
+
+**Brave parity remains open.** This continuation compares observed
+process-tree retired instructions, which vary less with host load than the
+launch-through-PNG time; both remain lower bounds with the endpoints above.
+Three fresh captures of the `d94d…` bundle retire 31.61–32.24 billion
+instructions, against 19.49–20.91 billion (median 20.68) for Brave in the last
+cohort. The counts still depend on timer-driven scheduling: the number of
+document layout passes in otherwise identical captures ranges from 21 to 24.
+
+A main-thread stage log of `d94d…` attributes about 10.1 billion instructions
+to script execution and module completion, 8.2 billion to 22 document layout
+passes, 4.1 billion to style (about 5,400 element computations and the rule
+cache), 2.5 billion to two full raster replays before capture and 1.2 billion
+to CSS parsing. These are diagnostic process-counter intervals with logging
+enabled, not acceptance measurements.
+
+`f7a56a2c4` removes one whole-document layout per readiness check. The
+parser-end progress check flushed layout so font downloads selected by text
+shaping could delay the load event, and the completion task queued behind it
+flushed again. Rendered documents now leave that layout to the completion
+task, which still returns to the load-delay phase when layout starts a
+download. `VOX_RETAIN_PARSER_END_PROGRESS_LAYOUT=1` restores the old flush.
+Five alternating pairs on production executable `731ef68c901b…` retire a
+median **30.81 billion** instructions, versus **32.98 billion** with the
+control; four pairs improve and one regresses by 1.07 billion. All ten
+complete-content audits pass. Four captures in each arm share decoded digest
+`f0324073…`; one in each arm differs from it by 114 and 60 pixels.
+
+`34ffdf338` keeps the boxes of clean branches across layout tree rebuilds.
+The builder previously constructed new boxes for everything except ordinary
+flow branches, so one changed element rebuilt about two thirds of this page's
+boxes and discarded their retained records. Elements without invalidation
+flags, below ancestors that only carry the descendant mark, now keep their
+boxes as upstream's TreeBuilder does. Counter and quote content, ordinal
+markers, SVG trees other than closed shape trees with current natural
+metrics, images other than available or pending rasters, controls with
+internal boxes, first-letter text and boxes in shadow trees keep the complete
+builder. `VOX_DISABLE_CLEAN_SUBTREE_REUSE=1` restores the previous builder.
+
+An earlier variant without the SVG and image guards retired a median 29.91
+billion instructions versus 31.03 billion with the switch on executable
+`0be493a0a5cc…` (five pairs, four improving, ten identical captures). The
+committed variant on `e19259550bdc…` does **not** establish a whole-page
+saving: seven pairs have medians of 31.53 and 31.25 billion with overlapping
+ranges, and three pairs improve. Thirteen captures share `f0324073…`; one
+control capture differs. Five further pairs with stage logging in both arms
+attribute a median 7.26 billion instructions to the layout stages, versus
+8.12 billion with the switch, again with overlapping ranges. No instruction
+credit is assigned to this change.
+
+`af7bac2ff` lets committed subtree reuse restore subtrees that contain
+bullets, authored-string `::before`/`::after` boxes and other static generated
+content; ordinals, counters, quotes, images and `attr()` content still run
+through layout. `VOX_RETAIN_STATIC_GENERATED_BLOCKING=1` restores the old
+rule. In a C-O0 build the capture stays pixel-identical, the incremental
+layout verifier reports no additional mismatch, and blocked subtree roots
+fall from 3,351 to 1,175 over the load. Its production measurement is
+pending: four managed builds after the commit were rejected by frozen-input
+verification of files other sessions changed, or by a full disk, and six
+private build attempts failed the same verification. The published
+`e192…` bundle predates it.
+
+`34ceadd82` and `dda5abcf5` add the diagnostics used here:
+`VOX_STYLE_SHEET_CHANGE_DIAGNOSTICS`, per-pass reuse counters and the first
+differing input under `VOX_INCREMENTAL_LAYOUT_DIAGNOSTICS`, and
+`VOX_RETAINED_FLOW_REJECTION_DIAGNOSTICS`.
+
+Eight new layout cases in `clean_subtree_reuse_test.v` and
+`static_generated_subtree_reuse_test.v` compare kept and restored branches
+with a complete rebuild's display list. They pass with the default collector
+and `-prealloc -gc none`, together with the retained-tree, relayout and table
+fixup files selected for these changes and the updated parser end-state
+file. Four retained-flow test files suspend clean reuse so they continue to
+exercise the validated salvage. `document_tree_builder_test.v`,
+`retained_simple_svg_test.v` and `parser_script_lifecycle_test.v` fail
+identically with the new paths disabled; they are not fixed here. With
+`VOX_VERIFY_INCREMENTAL_LAYOUT=1` the existing incremental layout already
+reports a 0.75px document-height difference at y≈16,990 on this page in
+several passes, with and without these changes.
+
+All eleven default smoke captures on `e19259550bdc…` are pixel-identical with
+both new paths disabled through their switches. The seven reference-test
+cases are exact against their references. The four upstream-PNG cases were
+not judged against their tolerances, because the comparison tool did not
+compile with the compiler on `PATH`; each capture equals its control. The
+broad regression batch for instruction work was not run, so no broad
+checkpoint is credited for the measured reduction.
+
+Remaining measured costs, largest first: script execution and bindings; the
+column-flex height measurement, which lays out its item in a throwaway state
+that cannot restore committed subtrees and is about 40% of layout samples;
+each element style computation, about 0.7 million instructions; a complete
+viewport raster for a two-element style change 500 ms after the first paint;
+and a rule cache rebuild for every style sheet added during hydration.
+
+The stage logs, samples, captures and guard reports of this continuation are
+retained locally in
+`~/Library/Caches/Vox/benchmarks/github-react-rendering-20261114-r10/evidence.tar.gz`.
