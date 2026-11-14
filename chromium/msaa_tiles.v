@@ -588,7 +588,7 @@ fn (mut app BrowserApp) select_chromium_raster_layer(index int) {
 		if raster_index < app.chromium_raster_grids.len {
 			grid := app.chromium_raster_grids[raster_index]
 			if grid.columns > 0 {
-				set_document_geometry_grid(grid, x, y, layer.bounds.height, scale)
+				set_document_geometry_grid(grid, x, y, layer.bounds.height, scale, raster_index == 0)
 				cell_pointer := if grid.native_cells.len > 0 {
 					&grid.native_cells[0]
 				} else {

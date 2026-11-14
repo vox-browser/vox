@@ -5,30 +5,32 @@ import math
 import os
 
 struct DocumentGeometryGrid {
-	width    int
-	height   int
-	columns  int
-	rows     int
-	origin_x f64
-	origin_y f64
-	cells    []i32
+	width                 int
+	height                int
+	columns               int
+	rows                  int
+	origin_x              f64
+	origin_y              f64
+	cells                 []i32
+	clips_negative_origin bool
 }
 
 __global document_geometry_grid = DocumentGeometryGrid{}
 
-fn set_document_geometry_grid(grid ChromiumRasterGrid, origin_x f64, origin_y f64, content_height f64, scale f64) {
+fn set_document_geometry_grid(grid ChromiumRasterGrid, origin_x f64, origin_y f64, content_height f64, scale f64, clips_negative_origin bool) {
 	document_geometry_grid = DocumentGeometryGrid{
-		width:    grid.tile_width
-		height:   grid.tile_height
-		columns:  grid.columns
-		rows:     if grid.tile_height > 2 {
+		width:                 grid.tile_width
+		height:                grid.tile_height
+		columns:               grid.columns
+		rows:                  if grid.tile_height > 2 {
 			math.max(1, int(math.ceil((content_height * scale - 2) / (grid.tile_height - 2))))
 		} else {
 			1
 		}
-		origin_x: origin_x * scale
-		origin_y: origin_y * scale
-		cells:    grid.native_cells
+		origin_x:              origin_x * scale
+		origin_y:              origin_y * scale
+		cells:                 grid.native_cells
+		clips_negative_origin: clips_negative_origin
 	}
 }
 
@@ -56,37 +58,47 @@ fn geometry_grid_covers_leaf(grid DocumentGeometryGrid, x int, y int, width int,
 
 fn geometry_grid_intersects_leaf(grid DocumentGeometryGrid, x int, y int, width int, height int) bool {
 	if grid.width <= 2 || grid.height <= 2 || grid.columns <= 0 || grid.rows <= 0
-		|| width <= 0 || height <= 0 { return false }
+		|| width <= 0 || height <= 0 {
+		return false
+	}
 	right := grid.columns * (grid.width - 2) + 2
 	bottom := grid.rows * (grid.height - 2) + 2
-	left, top := math.max(x,0), math.max(y,0)
-	return geometry_grid_covers_leaf(grid,left,top,math.min(x+width,right)-left,
-		math.min(y+height,bottom)-top)
+	left, top := math.max(x, 0), math.max(y, 0)
+	return geometry_grid_covers_leaf(grid, left, top, math.min(x + width, right) - left,
+		math.min(y + height, bottom) - top)
 }
 
-fn geometry_grid_contains_filter_clip(grid DocumentGeometryGrid, x int, y int, clip [4]f32) bool {
+fn geometry_grid_covers_filter_output(grid DocumentGeometryGrid, x int, y int, clip [4]f32) bool {
 	if grid.width <= 2 || grid.height <= 2 || grid.columns <= 0 || grid.rows <= 0 { return false }
 	for value in clip {
-		if math.is_nan(value) || math.is_inf(value,0) { return false }
+		if math.is_nan(value) || math.is_inf(value, 0) { return false }
 	}
-	right := grid.columns * (grid.width-2)+2
-	bottom := grid.rows * (grid.height-2)+2
-	return clip[2] > clip[0] && clip[3] > clip[1] && clip[0]+f32(x) >= 0
-		&& clip[1]+f32(y) >= 0 && clip[2]+f32(x) <= right && clip[3]+f32(y) <= bottom
+	right := grid.columns * (grid.width - 2) + 2
+	bottom := grid.rows * (grid.height - 2) + 2
+	if clip[2] <= clip[0] || clip[3] <= clip[1]
+		|| clip[2] + f32(x) > right || clip[3] + f32(y) > bottom {
+		return false
+	}
+	// The root picture clips negative document coordinates before publication.
+	// Offscreen readbacks can include that invisible fringe in their own clip.
+	if grid.clips_negative_origin {
+		return clip[2] + f32(x) > 0 && clip[3] + f32(y) > 0
+	}
+	return clip[0] + f32(x) >= 0 && clip[1] + f32(y) >= 0
 }
 
 fn draw_document_shape_tiles(pixels &u8, width i32, height i32, pitch i32, backdrop i32,
 	first_x int, first_y int, shape &C.VoxGraphiteShape) i32 {
 	grid := document_geometry_grid
 	if os.getenv('VOX_GG_DIAGNOSTICS') == '1' {
-		eprintln('VOX_GEOMETRY target=${width}x${height} first=${first_x},${first_y} grid=${grid.width}x${grid.height}/${grid.columns},${grid.rows} origin=${grid.origin_x},${grid.origin_y}')
+		eprintln('VOX_GEOMETRY target=${width}x${height} first=${first_x},${first_y} grid=${grid.width}x${grid.height}/${grid.columns},${grid.rows} origin=${grid.origin_x},${grid.origin_y} filter_clip=${shape.has_filter_clip}:${shape.filter_clip}')
 	}
 	x0 := first_x - int(math.round(grid.origin_x))
 	y0 := first_y - int(math.round(grid.origin_y))
 	if !geometry_grid_covers_leaf(grid, x0, y0, int(width), int(height))
 		&& !(shape.has_filter_clip != 0 && ggshape.rotated_filter_supported(shape)
-			&& geometry_grid_contains_filter_clip(grid,x0,y0,shape.filter_clip)
-			&& geometry_grid_intersects_leaf(grid,x0,y0,int(width),int(height))) {
+			&& geometry_grid_covers_filter_output(grid, x0, y0, shape.filter_clip)
+			&& geometry_grid_intersects_leaf(grid, x0, y0, int(width), int(height))) {
 		return ggshape.draw(pixels, width, height, pitch, backdrop, shape)
 	}
 	mut result := []u8{len: int(height) * int(pitch)}
@@ -109,8 +121,10 @@ fn draw_document_shape_tiles(pixels &u8, width i32, height i32, pitch i32, backd
 			draw.matrix[2] += f32(x0 - ox)
 			draw.matrix[5] += f32(y0 - oy)
 			if draw.has_filter_clip != 0 {
-				draw.filter_clip[0] += f32(x0-ox);draw.filter_clip[2] += f32(x0-ox)
-				draw.filter_clip[1] += f32(y0-oy);draw.filter_clip[3] += f32(y0-oy)
+				draw.filter_clip[0] += f32(x0 - ox)
+				draw.filter_clip[2] += f32(x0 - ox)
+				draw.filter_clip[1] += f32(y0 - oy)
+				draw.filter_clip[3] += f32(y0 - oy)
 			}
 			if grid.origin_x != 0 || grid.origin_y != 0 {
 				draw = ggshape.localize_rounded_shape(draw, -(draw.matrix[2] + f32(ox)) / draw.matrix[0], -(draw.matrix[5] + f32(oy)) / draw.matrix[4])
@@ -149,13 +163,13 @@ fn draw_document_shape_group_tiles(pixels &u8, width i32, height i32, pitch i32,
 	x0 := first_x - int(math.round(grid.origin_x))
 	y0 := first_y - int(math.round(grid.origin_y))
 	mut clipped_filter := false
-	for i in 0..int(count) {
-		shape := unsafe {&shapes[i]}
+	for i in 0 .. int(count) {
+		shape := unsafe { &shapes[i] }
 		clipped_filter = clipped_filter || (shape.has_filter_clip != 0 && ggshape.rotated_filter_supported(shape)
-			&& geometry_grid_contains_filter_clip(grid,x0,y0,shape.filter_clip))
+			&& geometry_grid_covers_filter_output(grid, x0, y0, shape.filter_clip))
 	}
 	if !geometry_grid_covers_leaf(grid, x0, y0, int(width), int(height))
-		&& !(clipped_filter && geometry_grid_intersects_leaf(grid,x0,y0,int(width),int(height))) {
+		&& !(clipped_filter && geometry_grid_intersects_leaf(grid, x0, y0, int(width), int(height))) {
 		return ggshape.draw_shapes(pixels, width, height, pitch, backdrop, shapes, count)
 	}
 	mut result := []u8{len: int(height) * int(pitch)}
@@ -180,8 +194,10 @@ fn draw_document_shape_group_tiles(pixels &u8, width i32, height i32, pitch i32,
 				draw.matrix[2] += f32(x0 - ox)
 				draw.matrix[5] += f32(y0 - oy)
 				if draw.has_filter_clip != 0 {
-					draw.filter_clip[0] += f32(x0-ox);draw.filter_clip[2] += f32(x0-ox)
-					draw.filter_clip[1] += f32(y0-oy);draw.filter_clip[3] += f32(y0-oy)
+					draw.filter_clip[0] += f32(x0 - ox)
+					draw.filter_clip[2] += f32(x0 - ox)
+					draw.filter_clip[1] += f32(y0 - oy)
+					draw.filter_clip[3] += f32(y0 - oy)
 				}
 				draw.force_msaa = i32(i32(row * grid.columns + col) in grid.cells)
 				draws << draw
