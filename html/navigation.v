@@ -500,6 +500,9 @@ pub fn (mut navigation Navigation) navigate(url string, options NavigationNaviga
 	url_record := dom.dom_url_parse(url, document.base_url(), 'UTF-8') or {
 		return navigation.early_error_result('SyntaxError: invalid navigation URL')
 	}
+	if url_record.scheme() == 'javascript' {
+		return navigation.early_error_result('NotSupportedError: Cannot navigate to a javascript: URL')
+	}
 	state_value := options.state or { dom.js_undefined() }
 	serialized_state := structured_serialize_for_storage(state_value) or {
 		return navigation.early_error_result(err.msg())
