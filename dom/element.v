@@ -7700,6 +7700,21 @@ pub fn (e &Element) owner_svg_element() ?&Element {
 	if !e.is_svg_element() {
 		return none
 	}
+	if e.is_svg_svg_element() {
+		parent := e.as_node().parent() or { return none }
+		if parent.is_svg_foreign_object_element() {
+			return none
+		}
+		// Only a use element's shadow root continues the enclosing SVG tree.
+		if shadow_root := parent.as_shadow_root() {
+			host := shadow_root.host() or { return none }
+			if !host.as_node().is_svg_use_element() {
+				return none
+			}
+		} else if !parent.is_svg_element() {
+			return none
+		}
+	}
 	mut ancestor := e.as_node().flat_tree_parent()
 	for {
 		current := ancestor or { return none }
