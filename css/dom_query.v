@@ -18,6 +18,10 @@ struct DocumentQueryPlan {
 	// Every simple selector compares a name, an ID or a class. Outside quirks
 	// mode such a match allocates nothing and needs no scratch workspace.
 	scalar bool
+mut:
+	// general_scope_query.v: the selector list by subject requirement, built
+	// by the first general walk of this plan.
+	buckets &QuerySubjectBuckets = unsafe { nil }
 }
 
 // Same-binary control: open a scratch workspace for every query, as before.
@@ -225,6 +229,8 @@ fn dom_selector_scope_query(target voidptr, selector_text string, root &dom.Pare
 	if !recompute_document_query_plans {
 		if compounds := plan.independent {
 			if independent_query_tags_are_absent(root.as_node(), compounds) { return []&dom.Node{} }
+		} else {
+			return general_scope_query(plan, root, first)
 		}
 	}
 	// Parsed selectors are document-owned. Only the independent matching walk
