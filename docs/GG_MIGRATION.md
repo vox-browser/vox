@@ -2801,3 +2801,14 @@ Other checked site counts and focused controls are preserved. Production
 validation is pending; see the [pixel audit](OPTIMIZED_SITES_PIXELS_2026_11_12.md#shared-rounded-outer-decorations-2026-11-14)
 for pinned builds, failed probes, scope and remaining gaps. No reference or
 tolerance changed, and no performance credit is claimed.
+
+
+### Inset-shadow alpha, 2026-11-14
+
+`83683f508` retains fractional inset-shadow alpha through layout lowering and
+both direct and fallback CPU raster routes. Fifteen focused tests pass,
+including forced fallback coverage, existing raster oracles and both layout
+policies. The complete site recheck preserves 39 GitHub differences and the
+previous other counts; the exact controls remain exact. This precision fix
+does not resolve the input-corner gap. Production validation remains pending;
+see the [audit](OPTIMIZED_SITES_PIXELS_2026_11_12.md#inset-shadow-alpha-transport-2026-11-14).

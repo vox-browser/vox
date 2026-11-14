@@ -1098,3 +1098,47 @@ exits remain local under
 The managed commit hook requests the normal production rebuild. The last
 verified production result remains 49 GitHub pixels; **39 is diagnostic
 validation pending production**, and the all-site gate remains open.
+
+
+## Inset-shadow alpha transport, 2026-11-14
+
+Commit `83683f508` fixes a separate precision bug found while tracing the
+remaining input corners. Inset shadow lowering dropped its retained sRGB
+payload, and both the direct CPU inner-shadow path and general shadow tint
+ignored the supplied fractional alpha. The inset command now retains that
+payload in paint order; both raster routes honor the retained alpha. Existing
+callers without an override retain the legacy path and its oracle hashes.
+
+Fifteen focused tests execute successfully: six inner-shadow tests, seven
+general-filter tests and two layout color-transport tests. The alpha regression
+checks explicit RGBA8 results for quarter, three-quarter and opaque coverage,
+including a geometry proven to decline the direct path and enter the fallback.
+The layout checks retain fractional components and serialization in reverse
+paint order while preserving the LibWeb policy. Runtime tests use 3 GiB guards;
+the layout checks also use arena poisoning. A missing relocated harness link
+caused an initial compile failure; the repaired canonical link and successful
+commands are retained alongside it.
+
+Final diagnostic executable
+`17d86d6239fe90a7b0f44fcdf0dc4170013e53762ca0dbd042abb6fa0eabb5d6`
+preserves the existing site counts in both fresh captures: **GitHub 39**,
+**HN/Wikipedia/Lobsters 0**, **vlang.io 3,250**, **CNN 175,866**. The small-shadow,
+shared-outer-shadow and rotated-border controls remain exact twice, and the
+scale-2 device-shadow control remains at 92. All 20 captures, their 21 runtime
+guards including startup smoke, and the complete driver exit 0 with unchanged
+feature source hashes and pinned capture identities. CNN's two images differ
+at 1,556 pixels; its historical stability and source/replay gates remain open.
+
+This fixes the alpha transport/raster contract; it does **not** close GitHub's
+twenty input-corner differences. The isolated coordinate probe omitted the
+input's inset shadow and part of its comparison overlapped the adjacent button;
+its 302/303-pixel results are retained as incomplete diagnostic evidence, not
+an acceptance comparison. Remaining input coverage/sample ownership needs
+further work. Existing references and tolerances were unchanged, and no
+instruction, timing, live-site or all-site parity claim is added.
+
+Commands, test-call witnesses, source/executable identities, guards, PNGs and
+failed attempts remain local under
+`docs/performance/vlang-gradients-20261112/raw/inset-alpha-20261114/`.
+The managed hooks request production rebuilding; this fix's production
+validation and the all-site pixel gate remain open.
