@@ -78,11 +78,24 @@ fn patch_header(source string) !string {
 	return private_helper(text, 'header_value_without_ows')
 }
 
+// The system Brotli decoder streams its output into the response's bounded
+// sink. The staged V decoder returns the whole stream, which the same sink
+// then bounds and copies.
+const streamed_brotli_response = 'brotli.decompress_with_callback(decoded, callback, voidptr(&sink)) or {\n\t\t\t\t\tdecode_failed = true\n\t\t\t\t\t0\n\t\t\t\t}'
+const collected_brotli_response = 'mut expanded := brotli.decompress(decoded) or {\n\t\t\t\t\tdecode_failed = true\n\t\t\t\t\t[]u8{}\n\t\t\t\t}\n\t\t\t\tif !decode_failed {\n\t\t\t\t\tcallback(expanded, voidptr(&sink))\n\t\t\t\t}\n\t\t\t\tunsafe { expanded.free() }'
+
 fn patch_response(source string) !string {
-	if source.count('import x.compress.brotli\n') == 1 && !source.contains('import compress.brotli\n') {
-		return source
+	mut text := source
+	if !(text.count('import x.compress.brotli\n') == 1 && !text.contains('import compress.brotli\n')) {
+		text = replace_once(text, 'import compress.brotli\n', 'import x.compress.brotli\n')!
 	}
-	return replace_once(source, 'import compress.brotli\n', 'import x.compress.brotli\n')
+	if text.contains(streamed_brotli_response) {
+		text = replace_once(text, streamed_brotli_response, collected_brotli_response)!
+	}
+	if text.contains('brotli.decompress_with_callback') {
+		return error('Unsupported adapter source: streaming Brotli response decoder')
+	}
+	return text
 }
 
 fn patch_brotli(source string) !string {

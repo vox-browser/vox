@@ -340,3 +340,24 @@ fn test_windows_mesa_rejects_corrupt_cached_archives() ! {
     assert failure.starts_with('Mesa archive checksum mismatch:')
     assert !os.exists(join(root, 'mesa/lib/pkgconfig/vox-mesa-egl.pc'))
 }
+
+// The staged response decoder uses the V Brotli module, which has no
+// streaming entry point: the adapter collects its output and hands it to the
+// same bounded sink. Other streaming Brotli call shapes fail closed.
+fn test_response_adapter_replaces_the_streaming_brotli_decoder() ! {
+	prefix := 'module http\n\nimport compress.brotli\nimport compress.gzip\n\nfn decode() {\n\t\tmatch encoding {\n\t\t\t\'br\' {\n\t\t\t\t'
+	suffix := '\n\t\t\t}\n\t\t}\n}\n'
+	patched := patch_response(prefix + streamed_brotli_response + suffix)!
+	assert patched.contains('import x.compress.brotli\n') && !patched.contains('import compress.brotli\n')
+	assert patched.contains(collected_brotli_response)
+	assert !patched.contains('decompress_with_callback')
+	// Staging an already staged file changes nothing.
+	assert patch_response(patched)! == patched
+	// A source that decodes at once only needs the import.
+	plain := patch_response(prefix + 'body = brotli.decompress(decoded)!' + suffix)!
+	assert plain.contains('import x.compress.brotli\n') && plain.contains('brotli.decompress(decoded)!')
+	// An unknown streaming call is not staged silently.
+	if _ := patch_response(prefix + 'brotli.decompress_with_callback(decoded, other, sink)!' + suffix) {
+		assert false
+	}
+}
