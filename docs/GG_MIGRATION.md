@@ -2859,3 +2859,17 @@ reduce vlang.io from 3,228 to 2,946 differing pixels and the orbit diagnostic fr
 1,901 to 1,530. There are 287 corrected and five newly differing one-level site
 pixels; equality remains open. Production now separately confirms the preceding
 PNG-shadow fix with GitHub exact twice. See the [audit](OPTIMIZED_SITES_PIXELS_2026_11_12.md#shared-rotated-ellipse-decorations-2026-11-14).
+
+
+### Text-layer gradient dither origin, 2026-11-14
+
+`f2ee06925` gives an eligible scale-1 text gradient its mask layer's device
+origin through the existing V/GG raster boundary. Native code supplies bounds
+and backing scale; V selects the grid and clips padded leaf input to it. Other
+gradients and higher backing scales keep their prior grid. Seven focused checks
+pass, including unchanged Brave pixels, padding, safe declines and existing CSS
+gradient oracles. vlang.io improves from 2,946 to 2,710 pixels twice, correcting
+236 pixels without new differences. The basic gradient-text control is exact;
+fractional, inline and mixed-scope controls retain failures. Retina text keeps
+its previous pixels exactly after two rejected higher-scale experiments.
+Production validation remains pending. See the [audit](OPTIMIZED_SITES_PIXELS_2026_11_12.md#text-layer-gradient-dither-origin-2026-11-14).

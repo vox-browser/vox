@@ -1454,3 +1454,66 @@ initial probe omitted the scrollbar flag and is retained as a rejected policy
 mismatch. Commands, failed compile attempt, GPU probes and captures remain local
 under `raw/jpeg-scale-probes-20261114/`; the temporary test and four job directories
 were removed. All 26 preceding ellipse jobs were likewise archived and removed.
+
+
+## Text-layer gradient dither origin, 2026-11-14
+
+Commit `f2ee06925` selects a mask-layer grid for eligible scale-1 background-text
+gradients. Native graphics code supplies the retained mask's device-aligned
+bounds and backing scale; V owns selection, sample policy and rasterization.
+Padded leaf input is intersected with that grid, preserving pixels outside it.
+Higher backing scales, unsupported bounds and ordinary gradients keep their
+previous grid. No shader, mask coverage, reference or pixel tolerance changes.
+
+Final diagnostic executable SHA-256
+`472adce2973034c81e1ef239fed1471d3907bfc19cd51240d42752af75c7fa20`
+reduces the unchanged vlang.io archive **2,946 → 2,710**, twice: **236 corrected
+pixels and none newly differing**. The text mask retains one green-channel,
+one-level difference at (871,264); the JPEG crop retains 279 differences and
+other page regions retain 2,430. This remains a failure of equality. The basic
+gradient-text fixture improves **3,752 → 0**, twice; the fractional-position
+control improves **7,725 → 2,214**, twice.
+
+All 28 candidate captures in the 14-workload cohort and its separate startup
+smoke exit 0 under 29 runtime guards. GitHub/HN/Wikipedia/Lobsters remain exact
+twice, with 33 GitHub rows and 30 HN stories preserved. Prior border, avatar,
+small-shadow, shared-decoration and rotated-border controls remain exact;
+scale-2 device shadows remain at 92. CNN remains at 175,866; its native pair
+differs at 1,534 pixels, so its prior stability and source/replay failures stay
+open. The other 13 native pairs agree exactly. Feature-source, executable,
+native-library, input, reference and diff-tool identities remain unchanged.
+
+Eight further candidate captures and eight matched prior-path controls cover
+inline/wrapped text, mixed clipping, Retina text and compositor gradients. Every
+browser and guard exits 0. Inline text improves **26,489 → 16,007**; the mixed
+scope improves **2,898 → 1,401**; the compositor control retains one difference,
+each twice. Retina text remains at **1,767**, with candidate and prior-path PNGs
+pixel-identical. Its scale-2 Brave reference comes from two pinned fresh
+processes that agree exactly. These controls retain their recorded failures.
+Seven focused checks execute successfully with arena poisoning and 3 GiB runtime
+guards: three new grid/oracle/padding checks, the retained-input eligibility check
+and three existing CSS gradient oracles. Compiler jobs retain the 12 GiB guard
+and 10 GiB V compiler limit.
+
+Mask/gradient readbacks show that separate-term mask compositing already
+reproduces Vox exactly; alternate rounding formulas regress. A 64-phase GPU
+probe instead isolates the dither origin: the unchanged linear-text reference
+is exact at the layer origin, versus 597 differences at the page phase. A first
+browser compile fails a C declaration qualifier check and is corrected. Extra
+checks reject Retina candidates at 43,986 and then 12,100 pixels against the
+1,767-pixel prior path; the final selector explicitly declines higher backing
+scales. A diagnostic driver also exits 1 on a missing optional compositor
+reference before that case captures; the corrected run retains all attempts.
+Temporary instrumentation and the phase probe are removed.
+
+Evidence remains local under
+`docs/performance/vlang-gradients-20261112/raw/text-mask-resolve-20261114/`;
+completed scratch jobs, binaries, generated C, guards and the test harness link
+are removed after archival. The managed hook requests the normal C `-prod`
+single-unit rebuild. The preceding managed attempt
+`20261114-135103-86ce3af6` failed because its staged HTTP response code calls a
+Brotli callback API absent from the staged pure-V decoder. The latest completed
+bundle remains available, but does not validate this correction. The 2,710 result
+is **diagnostic pending production**. vlang.io, CNN, the missing Reddit fixture
+and the all-site gate remain open; there is no live-site, scripting or performance
+acceptance claim.

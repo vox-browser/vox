@@ -10,9 +10,10 @@ Provisional entries retain unresolved acceptance checks.
 this catalog. GitHub's archived page is now exact in two fresh production
 captures; Hacker News, Lobsters and Wikipedia were exact in prior production
 checks and remain exact in current diagnostics. vlang.io improves from the
-confirmed production count of **3,228 to 2,946 differing pixels** in two fresh
-diagnostic captures, pending production validation. This corrects 287 pixels
-and introduces five one-level differences; it does not pass equality. CNN retains
+confirmed production count of **3,228 to 2,710 differing pixels** in two fresh
+diagnostic captures, pending production validation. The latest text-gradient
+correction fixes 236 pixels without introducing differences relative to the
+preceding 2,946-pixel diagnostic; vlang.io still fails equality. CNN retains
 its rendering, source/replay and native-repeat failures. Reddit remains unverified
 (missing historical fixture, earlier live HTTP 403). See the [current audit,
 capture scopes and retained failures](docs/OPTIMIZED_SITES_PIXELS_2026_11_12.md).
