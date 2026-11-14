@@ -637,6 +637,7 @@ __global incremental_layout_fresh_counts [6]u64
 fn report_incremental_layout_pass(same_tree bool) {
 	report_retained_flow_rejections()
 	report_measurement_subtree_reuse()
+	report_automatic_height_answers()
 	if !incremental_layout_diagnostics { return }
 	eprintln('VOX_INCREMENTAL_LAYOUT pass same_tree=${same_tree} reused=${incremental_layout_reused_subtrees} no_source=${incremental_layout_fresh_counts[0]} dirty=${incremental_layout_fresh_counts[1]} uncommitted=${incremental_layout_fresh_counts[2]} unrecorded=${incremental_layout_fresh_counts[3]} changed_inputs=${incremental_layout_fresh_counts[4]} blocked=${incremental_layout_fresh_counts[5]}')
 }

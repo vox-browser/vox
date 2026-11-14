@@ -471,6 +471,8 @@ fn layout_independent_child_with_height_mode(mut state LayoutState, child &Node,
 		available_height
 	}
 	inside := layout_inside_independent_formatting_context(mut state, child, mut child_state, AvailableSpace.new(AvailableSize.make_definite(child_state.content_width()), child_available_height))
+	note_automatic_height_answer(mut state, child, child_state, child_available_height,
+		definite_height != none, inside.automatic_content_height)
 	mut height := if use_automatic_height {
 		inside.automatic_content_height
 	} else if resolved := definite_height {

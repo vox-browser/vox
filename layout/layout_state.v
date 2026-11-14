@@ -1434,6 +1434,11 @@ mut:
 	first_relayout_records_ map[u32]RelayoutRecord
 	pass_serial_ u64
 	measurement_reuse_source_ &LayoutState = unsafe { nil }
+	// automatic_height_answer.v: the box, used width and automatic content
+	// height of the last inner layout that ran without any height.
+	automatic_height_answer_node_  voidptr
+	automatic_height_answer_width_ CSSPixels
+	automatic_height_answer_       CSSPixels
 }
 
 pub fn LayoutState.new() &LayoutState {
