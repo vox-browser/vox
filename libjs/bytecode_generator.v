@@ -617,6 +617,11 @@ fn (mut generator BytecodeGenerator) collect_vars(statement &Statement) ! {
 		if init := kind.for_init {
 			if init is ForInitDeclaration { generator.collect_vars(init.statement)! }
 		}
+	} else if kind.tag==.try_stmt {
+		data := kind.try_data or { return error('Missing try statement') }
+		generator.collect_vars(&data.block)!
+		if handler := data.handler { generator.collect_vars(&handler.body)! }
+		if finalizer := data.finalizer { generator.collect_vars(&finalizer)! }
 	}
 }
 
@@ -674,6 +679,7 @@ fn (mut generator BytecodeGenerator) statement(mut vm VM, statement &Statement) 
 	defer { generator.range = previous_range }
 	kind := statement.kind
 	match kind.tag {
+		.try_stmt { generator.try_catch_statement(mut vm,statement)! }
 		.function_declaration {
 			if kind.function_id.id !in generator.initialized_functions {
 				return generator.unsupported('conditional function declarations')

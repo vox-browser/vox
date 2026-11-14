@@ -281,6 +281,7 @@ fn (mut vm VM) execute_instruction(instruction Instruction, executable &Executab
 		}
 		.enter_scope {
 			frame.lexical_environment = Environment(DeclarativeEnvironment.create(frame.lexical_environment))
+			frame.lexical_scope_depth++
 		}
 		.leave_scope {
 			environment := frame.lexical_environment or {
@@ -291,6 +292,7 @@ fn (mut vm VM) execute_instruction(instruction Instruction, executable &Executab
 				return error('Cannot leave a non-block environment')
 			}
 			frame.lexical_environment = environment.outer_environment()
+			if frame.lexical_scope_depth>0 { frame.lexical_scope_depth-- }
 		}
 		.resolve_this_binding {
 			result = vm.resolve_this_binding()!
@@ -349,6 +351,8 @@ pub fn (mut vm VM) run_executable(mut frame ExecutionContext, executable &Execut
 	}
 	previous_context := vm.running_execution_context_
 	previous_environment := frame.lexical_environment
+	previous_scope_depth := frame.lexical_scope_depth
+	frame.lexical_scope_depth=0
 	own_budget := vm.run_executable_depth == 0 && vm.external_budget_depth == 0
 	previous_budget := vm.instruction_budget
 	previous_budget_active := vm.instruction_budget_active
@@ -371,6 +375,7 @@ pub fn (mut vm VM) run_executable(mut frame ExecutionContext, executable &Execut
 			vm.finish_execution_generation()
 		}
 		frame.lexical_environment = previous_environment
+		frame.lexical_scope_depth=previous_scope_depth
 		vm.run_executable_depth--
 		vm.running_execution_context_ = previous_context
 		if own_budget {

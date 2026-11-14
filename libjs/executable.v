@@ -41,6 +41,9 @@ pub:
 	end_offset        u32
 	handler_offset    u32
 	catches_exception bool
+	// This instruction-index backend restores block environments by depth;
+	// upstream emits SetLexicalEnvironment with a saved environment operand.
+	restore_scope_depth ?u32
 }
 
 pub struct SourceMapEntry {
