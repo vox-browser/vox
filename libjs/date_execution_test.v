@@ -61,7 +61,11 @@ fn test_date_iso_parser_offsets_default_fields_invalid_inputs_and_native_roundtr
 		'1970-01-01T00:00Zjunk'] {
 		assert math.is_nan(parse_date_string(utf16_string(source))), source
 	}
-	assert date_eval(mut vm, 'var d=new Date(-2203891200000);Date.parse(d.toString())===d.getTime()&&Date.parse(d.toUTCString())===d.getTime()&&Date.parse(d.toISOString())===d.getTime()')!.as_bool()
+	assert date_eval(mut vm, 'var d=new Date(-2203891200000);Date.parse(d.toUTCString())===d.getTime()&&Date.parse(d.toISOString())===d.getTime()')!.as_bool()
+	assert date_eval(mut vm, 'var d=new Date(946684800000);Date.parse(d.toString())===d.getTime()')!.as_bool()
+	// GMT offsets in native strings have minute precision. Historical Moscow
+	// has +02:30:17; Node also parses its GMT+0230 string 17 seconds later.
+	assert date_eval(mut vm, 'Date.parse("Thu Mar 01 1900 02:30:17 GMT+0230")')!.number == -2203891183000
 	assert date_eval(mut vm, 'var seen="";Date.parse({toString:function(){seen+="s";return "1970-01-01"},valueOf:function(){throw 1}});seen')!.as_string().str() == 's'
 }
 

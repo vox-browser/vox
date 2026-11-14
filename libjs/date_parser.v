@@ -94,8 +94,9 @@ fn parse_iso_date_string(text Utf16String) f64 {
 	return date_time_clip(if local { date_utc_time(value) } else { value })
 }
 
-// Date.parse must round-trip the engine's own toString/toUTCString output for
-// integral-second dates. Other implementation-defined legacy formats are absent.
+// The engine's toString/toUTCString formats. Numeric GMT offsets have minute
+// precision, so historical sub-minute offsets cannot round-trip their omitted
+// seconds. Other implementation-defined legacy formats are absent.
 fn parse_native_date_string(text Utf16String) f64 {
 	if text.len() > 64 { return math.nan() }
 	words := text.str().split(' ')
