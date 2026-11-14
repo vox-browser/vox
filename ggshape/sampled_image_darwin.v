@@ -16,6 +16,16 @@ pub fn draw_sampled_rgba_clipped(pixels &u8, width i32, height i32, pitch i32, b
 	source []u8, source_width int, source_height int, x f32, y f32,
 	destination_width f32, destination_height f32, samples int, natural_width int, natural_height int,
 	clip [12]f32, gpu_mips bool) i32 {
+	return draw_sampled_rgba_with_shadow(pixels, width, height, pitch, backdrop, source, source_width, source_height, x, y, destination_width, destination_height, samples, natural_width, natural_height, clip, gpu_mips, unsafe { nil })
+}
+
+pub fn draw_sampled_rgba_with_shadow(pixels &u8, width i32, height i32, pitch i32, backdrop i32,
+	source []u8, source_width int, source_height int, x f32, y f32,
+	destination_width f32, destination_height f32, samples int, natural_width int, natural_height int,
+	clip [12]f32, gpu_mips bool, shadow &C.VoxGraphiteShape) i32 {
+	if shadow != unsafe { nil } && (shadow.fill != 9 || shadow.thickness != 0 || !supported(shadow)) {
+		return 0
+	}
 	if pixels == unsafe { nil } || width <= 0 || height <= 0 || width > 4096 || height > 4096
 		|| int(width) * int(height) > 4 * 1024 * 1024 || pitch < width * 4 || samples !in [
 		1,
@@ -50,6 +60,12 @@ pub fn draw_sampled_rgba_clipped(pixels &u8, width i32, height i32, pitch i32, b
 		surface.write_pixels(pixels, pitch) or { return 0 }
 	} else {
 		surface.clear(canvas.Color4f{})
+	}
+	if shadow != unsafe { nil } {
+		if samples == 4 { surface.draw_msaa_trigger() }
+		surface.save()
+		draw_shape_descriptor(mut surface, shadow, int(width), int(height)) or { return 0 }
+		surface.restore()
 	}
 	for value in clip { if !math.is_finite(value) { return 0 } }
 	if clip[4..12].any(it < 0) { return 0 }

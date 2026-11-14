@@ -108,6 +108,8 @@ fn (mut app BrowserApp) draw_chromium_outer_decorations(index int, page_y f32, w
 		if !app.ctx.native_rendering || app.page_zoom != 1 || app.document == unsafe { nil }
 			|| app.document.font_rendering_policy() != .chromium
 			|| app.viewport_width <= 4 || app.viewport_height <= 4 { return index }
+        image_end := app.draw_shadowed_png_group(index,page_y,window_height)
+        if image_end>index {return image_end}
 		group_end := app.draw_rounded_outer_group(index, page_y, window_height)
 		if group_end > index { return group_end }
 		end := chromium_outer_decoration_visible_run_end(app.paint_commands,

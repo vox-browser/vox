@@ -99,3 +99,25 @@ fn document_sampled_png_pixels(pixels &u8, width i32, height i32, pitch i32, bac
 	swap_document_raster_channels(pixels, width, height, pitch)
 	return result
 }
+
+@[export:'vox_document_shadowed_png_pixels']
+fn document_shadowed_png_pixels(pixels &u8, width i32, height i32, pitch i32, backdrop i32,
+	first_x i32, first_y i32, source &u8, source_width i32, source_height i32, natural_width i32, natural_height i32, gpu_mips i32,
+	x f32, y f32, destination_width f32, destination_height f32, clip &f32, shadow &C.VoxGraphiteShape) i32 {
+	if source == unsafe { nil } || source_width <= 0 || source_height <= 0
+		|| source_width > 4096 || source_height > 4096
+		|| int(source_width) * int(source_height) > 4 * 1024 * 1024 {
+		return 0
+	}
+	samples := document_image_sample_count(int(first_x), int(first_y), int(width), int(height))
+	if samples == 0 { return 0 }
+	if clip == unsafe { nil } { return 0 }
+	mut clipping := [12]f32{}
+	unsafe { vmemcpy(&clipping[0], clip, 12 * int(sizeof(f32))) }
+	swap_document_raster_channels(pixels, width, height, pitch)
+	result := ggshape.draw_sampled_rgba_with_shadow(pixels, width, height, pitch, backdrop,
+		unsafe { source.vbytes(int(source_width) * int(source_height) * 4) }, source_width, source_height,
+		x, y, destination_width, destination_height, int(samples), int(natural_width), int(natural_height), clipping, gpu_mips != 0, shadow)
+	swap_document_raster_channels(pixels, width, height, pitch)
+	return result
+}
