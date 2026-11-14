@@ -2,8 +2,9 @@ module libjs
 
 // Selected paths from Rust/src/bytecode/{generator,codegen}.rs.
 // The V stream uses instruction indices and monotonically allocated registers;
-// upstream's register reuse, caches, packed instruction ABI and functions remain
-// pending. Unsupported syntax fails during compilation of the entire program.
+// upstream's register reuse, caches and packed instruction ABI remain pending.
+// Ordinary functions retain their defining source and compile on first call.
+// Unsupported top-level syntax fails before the program executes.
 struct BytecodeLoop {
 mut:
 	breaks      []u32

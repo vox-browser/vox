@@ -1502,19 +1502,30 @@ Build/v/Vox.app/Contents/MacOS/Vox --js-engine=libjs page.html
 # The separate form --js-engine libjs is also accepted.
 ```
 
-JavaScriptCore remains the default until the LibJS DOM and builtin bindings are
-ready. `Runtime.create_with_engine(.libjs)` creates no JavaScriptCore context,
+JavaScriptCore remains the default. Vox Settings exposes the experimental LibJS
+option; restart Vox after changing it. An explicit `--js-engine` overrides the
+saved preference. `Runtime.create_with_engine(.libjs)` creates no JavaScriptCore context,
 runs supported programs through the translated VM, and never falls back to
 JavaScriptCore. Parse-budget exhaustion and unsupported code are reported
 explicitly. Source URLs and starting lines reach bytecode diagnostics and runtime
 tracebacks. Per-script failures leave later scripts runnable.
 
-LibJS mode establishes the native browsing context and renders the document, but
-skips the current JavaScriptCore-based DOM bootstrap and event dispatch. It logs
-that DOM bindings are pending; unsupported DOM scripts produce diagnostics.
-`--headless-smoke --js-engine=libjs` tests bytecode execution and identifies the
-pending DOM bindings. The JavaScriptCore smoke still checks DOM mutation and click
-handlers.
+LibJS uses the native `libjsdom` bindings instead of the compact JavaScriptCore
+bootstrap. The supported boundary includes native node identity, document queries,
+attributes and class changes, text/HTML setters, tree traversal, live HTML
+collections, native DOM listeners and cancellation, URL reads and search-parameter
+lookup. Listener callbacks share a bounded execution entry and honor the owning
+document scripting gate. Closing the Runtime stops VM entry, removes listeners
+and retires binding closures. `--headless-smoke --js-engine=libjs` checks arithmetic
+and the same DOM mutation/click fixture as JSC. The unmodified archived `hn.js`
+is the first site acceptance fixture; its bytes match a fresh 2026-11-14 fetch.
+
+This is an experimental browser execution slice, not full LibJS parity. Modules,
+async/generator execution, eval/Function, non-simple parameters, the complete
+arguments object, the remaining builtin graph and most Web APIs remain open.
+Unsupported operations report errors; there is no author-script fallback to JSC.
+Logged-in Hacker News voting/hiding, fetch/XHR and arbitrary modern sites are not
+covered by the comment-collapse acceptance test.
 
 ## Verification
 

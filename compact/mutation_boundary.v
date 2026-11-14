@@ -8,6 +8,7 @@ import platform
 // Console output and navigation remain queued for the task owner. A replay
 // failure rejects the host operation instead of letting it read stale DOM.
 fn flush_compact_dom_mutations(document &dom.Document, runtime &browserjs.Runtime) ! {
+	if runtime.engine == .libjs { return }
 	state := runtime.evaluate_host_temporary_text('__ladybirdFinalize(true)')!
 	defer { state.finish() }
 	mut messages := []string{}
@@ -85,6 +86,11 @@ fn apply_compact_dom_task(document &dom.Document, encoded string, runtime &brows
 // produced by native callbacks while that batch is being replayed.
 fn commit_compact_dom_task(document &dom.Document, runtime &browserjs.Runtime,
 	mut messages []string) !CompactDOMTaskCommit {
+	if runtime.engine == .libjs {
+		mut owner := unsafe { &browserjs.Runtime(runtime) }
+		messages << owner.take_libjs_messages()
+		return CompactDOMTaskCommit{}
+	}
 	state := runtime.evaluate_host_temporary_text('__ladybirdFinalize()')!
 	defer { state.finish() }
 	return apply_compact_dom_task(document, state.value, runtime, mut messages)

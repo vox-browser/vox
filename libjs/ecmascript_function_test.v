@@ -47,3 +47,17 @@ fn test_ecmascript_call_failures_and_shared_instruction_budget() {
 		assert execute_function_source(mut vm, '6*7')!.str() == '42'
 	}
 }
+
+fn test_direct_host_call_has_one_budget_and_restores_it_on_failure() {
+	mut vm := VM.create()
+	create_simple_execution_context(mut vm)
+	execute_function_source(mut vm, 'function spin(){while(true){}} function answer(){return 42}')!
+	spin := vm.get_global_object().get(mut vm, PropertyName.from_str('spin'))!
+	if _ := vm.call_with_limits(spin, js_undefined(), [], ExecutionLimits{max_instructions: 100}) { assert false }
+	assert !vm.instruction_budget_active
+	assert vm.external_budget_depth == 0
+	answer := vm.get_global_object().get(mut vm, PropertyName.from_str('answer'))!
+	assert vm.call_with_limits(answer, js_undefined(), [], ExecutionLimits{max_instructions: 100})!.number == 42
+	assert vm.execution_context_stack().len == 1
+	assert vm.interpreter_stack().depth() == 0
+}

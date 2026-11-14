@@ -287,6 +287,7 @@ mut:
 	run_executable_depth           u32
 	instruction_budget u64
 	instruction_budget_active bool
+	external_budget_depth u32
 	array_join_objects map[voidptr]bool
 	module_execution_depth         u32
 	module_async_evaluation_count  u64 // [[ModuleAsyncEvaluationCount]]

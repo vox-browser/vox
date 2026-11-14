@@ -382,7 +382,7 @@ const demo_markup = '<!doctype html>
       this.textContent = "JavaScript click handler executed.";
       console.log("click handler ran");
     });
-    console.log("LibJS frontend / JavaScriptCore DOM bridge ready");
+    console.log("JavaScript DOM bridge ready");
   </script>
 </body>
 </html>'
@@ -505,6 +505,7 @@ struct ChromePointerDispatchResult {
 struct LaunchOptions {
 mut:
 	js_engine                  browserjs.Engine = .javascriptcore
+	js_engine_explicit         bool
 	script_policy              BrowserScriptPolicy
 	source                     string
 	restore_tab                string
@@ -692,8 +693,10 @@ fn parse_launch_options(arguments []string) !LaunchOptions {
 			if index + 1 >= arguments.len { return error('--js-engine requires javascriptcore or libjs') }
 			index++
 			options.js_engine = browserjs.parse_engine(arguments[index])!
+			options.js_engine_explicit = true
 		} else if argument.starts_with('--js-engine=') {
 			options.js_engine = browserjs.parse_engine(argument.all_after('='))!
+			options.js_engine_explicit = true
 		} else if argument == '--headless=layout-tree' {
 			options.headless_layout_tree = true
 		} else if argument == '--screenshot' {
@@ -2880,7 +2883,17 @@ fn initialize_document_script_runtime(document &dom.Document, current_url string
 	if !compact_document_can_run_script(document) { return false }
 	install_browser_input_image_fetch_hooks(document)
 	if runtime.engine == .libjs {
-		messages << 'LibJS DOM bindings are not translated yet; page scripts use the supported standalone runtime.'
+		mut mutable_runtime := unsafe { &browserjs.Runtime(runtime) }
+		if document.relevant_settings_object() != unsafe { nil } {
+			mutable_runtime.bind_scripting_environment(unsafe { &html.EnvironmentSettingsObject(document.relevant_settings_object()) }) or {
+				messages << 'LibJS scripting environment: ${err.msg()}'
+				return false
+			}
+		}
+		mutable_runtime.install_libjs_document(document) or {
+			messages << 'LibJS DOM bindings: ${err.msg()}'
+			return false
+		}
 		return true
 	}
 	mut canvas_host := browserjs.CanvasHost.create(document)
@@ -3345,6 +3358,8 @@ fn run_document_script_sources_with_media_loader(document &dom.Document, current
 				messages << 'JavaScript (LibJS): ${diagnostic}'
 			}
 		}
+		mut owner := unsafe { &browserjs.Runtime(runtime) }
+		messages << owner.take_libjs_messages()
 		return none
 	}
 	mut mutable_runtime := unsafe { &browserjs.Runtime(runtime) }
@@ -3483,7 +3498,25 @@ fn (mut app BrowserApp) dispatch_javascript_event(name string, element &dom.Elem
 	if app.js_runtime == unsafe { nil } {
 		return false
 	}
-	if app.js_runtime.engine == .libjs { return false }
+	if app.js_runtime.engine == .libjs {
+		mut prevented := false
+		mut native_dispatched := false
+		if name == 'click' && app.page_model != unsafe { nil } {
+			if event := app.page_model.event_handler.take_last_click_event() {
+				native_dispatched = true
+				prevented = event.default_prevented()
+			}
+		}
+		if !native_dispatched {
+			prevented = app.js_runtime.dispatch_libjs_event(name, element) or {
+				app.js_messages << err.msg()
+				return false
+			}
+		}
+		app.js_messages << app.js_runtime.take_libjs_messages()
+		app.synchronize_javascript_task_paint(false)
+		return prevented
+	}
 	mut media_replay := ''
 	if name == 'click' && element.is_html_element() && element.local_name() in ['audio', 'video'] {
 		state := app.media_click_replay_state(element) or {
@@ -4100,10 +4133,6 @@ fn (mut app BrowserApp) install_loaded_page(input_loaded LoadedPage, add_history
 fn create_browser_script_runtime(engine browserjs.Engine) &browserjs.Runtime {
 	mut runtime := browserjs.Runtime.create_with_engine(engine)
 	runtime.set_document_state_wakeup(request_browser_frame)
-	if engine == .libjs {
-		mut agent_event_loop := html.main_thread_event_loop()
-		agent_event_loop.bind_vm(runtime.libjs_vm())
-	}
 	return runtime
 }
 
@@ -8461,6 +8490,9 @@ fn run_browser(arguments []string) {
 		eprintln('Ladybird V: ${err.msg()}')
 		exit(2)
 	}
+	if !options.js_engine_explicit {
+		options.js_engine = browserjs.parse_engine(browsersettings.current().javascript_engine) or { browserjs.Engine.javascriptcore }
+	}
 	restored_tab := read_detached_tab_session(options.restore_tab) or {
 		eprintln('Vox: could not restore tab: ${err.msg()}')
 		exit(2)
@@ -8577,8 +8609,9 @@ fn run_browser(arguments []string) {
 			}
 			runtime.close()
 			if result != '42' { panic('LibJS smoke: unexpected result ${result}') }
-			println('LibJS bytecode execution: passed (DOM bindings pending)')
-		} else if app.source_label == 'about:home' {
+			println('LibJS bytecode execution: passed')
+		}
+		if app.source_label == 'about:home' {
 			js_status := app.document.get_element_by_id('js-status') or {
 				panic('headless smoke: JavaScript target element is missing')
 			}

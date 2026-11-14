@@ -1,6 +1,7 @@
 module browserjs
 
 import libjs
+import libjsdom
 import dom
 import html
 import json2
@@ -46,17 +47,21 @@ pub:
 // The backend must still validate RegExp patterns and input beyond the V parser's
 // recursion budget; neither of those limits is an ECMAScript syntax error.
 pub fn prepare_script(source ScriptSource) !&PreparedScript {
+	// Prepared ASTs and source text can outlive a parser task or DevTools edit.
+	persistent := platform.enter_persistent()
+	defer { platform.leave_persistent(persistent) }
 	if source.starting_line < 1 {
 		return error('Script starting line must be positive')
 	}
-	parsed := libjs.parse_source(source.code, source.source_type)
+	owned := ScriptSource{...source, code: source.code.clone(), url: source.url.clone()}
+	parsed := libjs.parse_source(owned.code, owned.source_type)
 	if parsed.has_errors() && !parsed.reached_recursion_limit {
 		diagnostic := parsed.diagnostics[0]
 		filename := if source.url == '' { '<script>' } else { source.url }
 		line := u64(source.starting_line) + diagnostic.line - 1
 		return error('SyntaxError: ${filename}:${line}:${diagnostic.column + 1}: ${diagnostic.message}')
 	}
-	return &PreparedScript{source, parsed}
+	return &PreparedScript{owned, parsed}
 }
 
 // JavaScriptCore preserves the complete browser host while LibJS execution is
@@ -106,6 +111,9 @@ mut:
 	scripting_settings_ ?&html.EnvironmentSettingsObject
 	module_host_ ?&ModuleHost
 	source_location_sources_ map[voidptr]SourceLocationSource
+	libjs_document_host_ ?&libjsdom.Host
+	libjs_messages_ []string
+	libjs_callback_settings_ []?&html.EnvironmentSettingsObject
 }
 
 pub fn Runtime.create() &Runtime {
@@ -171,6 +179,12 @@ pub fn (runtime &Runtime) libjs_vm() &libjs.VM {
 
 pub fn (runtime &Runtime) libjs_realm() &libjs.Realm {
 	return runtime.realm
+}
+
+// Diagnostics distinguish an actual native engine context from the selected
+// enum, including after executing author code through the translated VM.
+pub fn (runtime &Runtime) native_context_initialized() bool {
+	return runtime.context != unsafe { nil }
 }
 
 // Bindings/MainThreadVM.cpp::create_a_new_javascript_realm removes the
@@ -281,6 +295,10 @@ fn (runtime &Runtime) execute_prepared(script &PreparedScript, stringify_result 
 	runtime.check_execution_support(script.source.source_type)!
 	if runtime.module_host_ != none { return runtime.execute_source(script.source, stringify_result) }
 	if runtime.engine == .libjs {
+		// Functions, lexical environments and completion values belong to the
+		// realm, including when an event or parser enters from frame scratch.
+		persistent := platform.enter_persistent()
+		defer { platform.leave_persistent(persistent) }
 		if script.frontend.reached_recursion_limit {
 			return error('LibJS frontend recursion limit reached; this program cannot be executed by the translated runtime')
 		}

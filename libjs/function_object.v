@@ -2,8 +2,8 @@ module libjs
 
 // The FunctionObject surface the VM relies on (LibJS/Runtime/FunctionObject.h)
 // and the JobCallback record from LibJS/Runtime/JobCallback.{h,cpp}. Concrete
-// ECMAScript functions remain pending; NativeFunction supplies the translated
-// native callable implementation. Hosts may also implement this interface.
+// ECMAScript functions use ECMAScriptFunction's checked bytecode frames;
+// NativeFunction supplies native calls. Hosts may also implement this interface.
 
 pub interface FunctionObject {
 	name_for_call_stack() Utf16String

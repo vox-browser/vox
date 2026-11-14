@@ -1,5 +1,5 @@
 // Host binding boundary. Native functions execute the translated V records;
-// JavaScriptCore remains the browser's execution engine until LibJS is complete.
+// JavaScriptCore is the default; LibJS uses its own NativeFunction records.
 module browserjs
 
 import libjs

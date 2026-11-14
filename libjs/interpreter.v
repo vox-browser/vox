@@ -327,7 +327,8 @@ fn (mut vm VM) execute_instruction(instruction Instruction, executable &Executab
 }
 
 // Interpreter/Interpreter.cpp::VM::run_executable, with a V dispatch loop in
-// place of the generated assembly interpreter. No calls/inline frames yet.
+// place of the generated assembly interpreter. Ordinary calls allocate their
+// own checked frames; upstream inline-call frames remain untranslated.
 pub fn (mut vm VM) run_executable(mut frame ExecutionContext, executable &Executable, entry_point u32, limits ExecutionLimits) !Value {
 	executable.validate(frame.argument_count)!
 	if entry_point >= executable.bytecode_length { return error('Entry point out of range') }
@@ -343,7 +344,10 @@ pub fn (mut vm VM) run_executable(mut frame ExecutionContext, executable &Execut
 	}
 	previous_context := vm.running_execution_context_
 	previous_environment := frame.lexical_environment
-	if vm.run_executable_depth == 0 {
+	own_budget := vm.run_executable_depth == 0 && vm.external_budget_depth == 0
+	previous_budget := vm.instruction_budget
+	previous_budget_active := vm.instruction_budget_active
+	if own_budget {
 		vm.instruction_budget = limits.max_instructions
 		vm.instruction_budget_active = limits.max_instructions != 0
 	}
@@ -364,6 +368,10 @@ pub fn (mut vm VM) run_executable(mut frame ExecutionContext, executable &Execut
 		frame.lexical_environment = previous_environment
 		vm.run_executable_depth--
 		vm.running_execution_context_ = previous_context
+		if own_budget {
+			vm.instruction_budget = previous_budget
+			vm.instruction_budget_active = previous_budget_active
+		}
 	}
 	for frame.program_counter < executable.bytecode_length {
 		vm.consume_execution_budget()!
@@ -378,4 +386,19 @@ pub fn (mut vm VM) run_executable(mut frame ExecutionContext, executable &Execut
 		if instruction.op == .end { return vm.reg(register_return_value) }
 	}
 	return vm.throw_error(.internal_error, 'Bytecode fell off the end without End')
+}
+
+// Browser events enter a callable directly, including native-only callbacks.
+// Give that entire entry (and all its nested functions) one execution budget.
+pub fn (mut vm VM) call_with_limits(function Value, this_value Value, arguments []Value, limits ExecutionLimits) !Value {
+	outer := vm.run_executable_depth == 0 && vm.external_budget_depth == 0
+	previous_budget := vm.instruction_budget
+	previous_active := vm.instruction_budget_active
+	if outer { vm.instruction_budget = limits.max_instructions; vm.instruction_budget_active = limits.max_instructions != 0 }
+	vm.external_budget_depth++
+	defer {
+		vm.external_budget_depth--
+		if outer { vm.instruction_budget = previous_budget; vm.instruction_budget_active = previous_active }
+	}
+	return call(mut vm, function, this_value, arguments)
 }

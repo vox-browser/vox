@@ -7,6 +7,7 @@ import gg
 import html
 import layout
 import page
+import platform
 
 // HN deliberately shares each row's ID with its collapse anchor. Keep the
 // archived site script (identical to hn.js on the reported page) so its
@@ -49,9 +50,16 @@ fn hacker_news_collapse_click(mut app BrowserApp, target &dom.Element) {
 }
 
 fn test_hacker_news_comment_collapse_roundtrip_from_pointer_input() {
+	for engine in [browserjs.Engine.javascriptcore, .libjs] {
+		hacker_news_comment_collapse_roundtrip(engine)!
+	}
+}
+
+fn hacker_news_comment_collapse_roundtrip(engine browserjs.Engine) ! {
 	mut owner := page.Page.create(1)!
 	mut app := &BrowserApp{
 		page_model:      owner
+		js_engine:       engine
 		script_policy:   .enabled
 		viewport_width:  800
 		viewport_height: 600
@@ -73,14 +81,14 @@ fn test_hacker_news_comment_collapse_roundtrip_from_pointer_input() {
 		document.finalize()
 	}
 	assert app.js_messages == []string{}
-	link := css.query_selector(document.as_node(), '.togg')?
+	link := css.query_selector(document.as_node(), '.togg') or { return error('Missing Hacker News collapse anchor') }
 	rows := css.query_selector_all(document.as_node(), '.comtr')
-	body := css.query_selector(rows[0].as_node(), '.comment')?
+	body := css.query_selector(rows[0].as_node(), '.comment') or { return error('Missing Hacker News comment body') }
 	for turn in 0 .. 2 {
 		hacker_news_collapse_click(mut app, link)
 		assert app.js_messages == []string{}
-		assert rows[0].class_names().contains('coll') == (turn == 0), app.js_runtime.evaluate_host('JSON.stringify({row:document.querySelector(".comtr").className,label:document.querySelector(".togg").getBoundingClientRect(),body:document.querySelector(".comment").getBoundingClientRect()})')!
-		assert link.as_node().text_content()? == if turn == 0 { '[4 more]' } else { '[–]' }
+		assert rows[0].class_names().contains('coll') == (turn == 0), rows[0].get_attribute_value('class')
+		assert (link.as_node().text_content() or { return error('Missing toggle label') }) == if turn == 0 { '[4 more]' } else { '[–]' }
 		assert (body.get_bounding_client_rect().height == 0) == (turn == 0)
 		for row in rows[1..4] {
 			assert (row.get_bounding_client_rect().height == 0) == (turn == 0)
@@ -94,7 +102,7 @@ fn test_hacker_news_comment_collapse_roundtrip_from_pointer_input() {
 		assert app.deferred_navigation_input == none
 	}
 	// Expanding a parent must preserve an independently collapsed reply.
-	child_link := css.query_selector(rows[1].as_node(), '.togg')?
+	child_link := css.query_selector(rows[1].as_node(), '.togg') or { return error('Missing Hacker News reply toggle') }
 	hacker_news_collapse_click(mut app, child_link)
 	assert rows[1].class_names().contains('coll')
 	assert rows[2].get_bounding_client_rect().height == 0
@@ -108,6 +116,12 @@ fn test_hacker_news_comment_collapse_roundtrip_from_pointer_input() {
 	assert rows[2].get_bounding_client_rect().height > 0
 	assert app.navigation_generation == 0
 	assert app.js_messages == []string{}
+	if engine == .libjs {
+		assert !app.js_runtime.native_context_initialized()
+		assert app.js_runtime.libjs_vm().execution_context_stack().len == 0
+		assert app.js_runtime.libjs_vm().interpreter_stack().depth() == 0
+	}
+	println('Hacker News pointer input, layout and nested collapse: ${engine} passed')
 }
 
 fn test_compact_native_window_click_handler_runs_once_and_honors_propagation() {
@@ -132,4 +146,22 @@ window.onclick=function(event){clickOrder.push("window");if(!(event instanceof M
 	assert !javascript_default_prevented(stopped)
 	assert runtime.evaluate_host('clickOrder.join(",")')! == 'control,document'
 	assert messages == []string{}
+}
+
+fn test_libjs_prepared_sources_and_functions_outlive_the_callers_scratch() {
+	mut runtime := browserjs.Runtime.create_with_engine(.libjs)
+	defer { runtime.close() }
+	work := platform.begin_thread_scratch('LibJS prepared source')
+	source := 'function retainedAnswer(x){return x+1};retainedAnswer(41)'.clone()
+	prepared := browserjs.prepare_script(browserjs.ScriptSource{code: source, url: 'retained-libjs.js'.clone()})!
+	work.finish()
+	churn := platform.begin_thread_scratch('LibJS source overwrite')
+	_ = []u8{len: 128 * 1024, init: u8(0xa5)}
+	churn.finish()
+	assert runtime.evaluate_prepared(prepared)! == '42'
+	entry := platform.begin_thread_scratch('LibJS function source')
+	assert runtime.evaluate('function retainedClosure(x){return function(y){return x+y}};var saved=retainedClosure(20);')! == 'undefined'
+	entry.finish()
+	assert runtime.evaluate('saved(22)')! == '42'
+	assert !runtime.native_context_initialized()
 }
