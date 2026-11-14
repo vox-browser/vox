@@ -11,6 +11,8 @@ pub:
 	icon     string
 	loading  bool
 	loading_frame int
+	hibernated bool
+	hibernate_action string
 	x        f64
 	width    f64 // distance between tab origins; shoulders overlap by 10px
 	selected bool
@@ -43,6 +45,12 @@ pub fn tab_loading_icon(index int, frame int) ui2.Element {
 
 fn tab_context_menu(tab Tab) []ui2.MenuEntry {
 	mut entries := []ui2.MenuEntry{}
+	if tab.hibernate_action != '' {
+		entries << ui2.MenuEntry{
+			id:    tab.hibernate_action
+			title: if tab.hibernated { 'Wake Tab' } else { 'Hibernate Tab' }
+		}
+	}
 	if tab.color_action != '' { entries << ui2.MenuEntry{ id: tab.color_action, title: 'Tab Color…' } }
 	if tab.rename_action != '' { entries << ui2.MenuEntry{ id: tab.rename_action, title: 'Rename Tab…' } }
 	return entries
@@ -160,7 +168,7 @@ pub fn tab_strip(width f64, tabs []Tab, new_x f64) ui2.Element {
 		} else {
 			tab_fallback_icon(tab)
 		}
-		content << ui2.label('tab-title-${tab.index}', tab.title, ui2.rect(30, 3, paint_width - 56, 18), ui2.TextStyle{ size: 11, color: 0x383838, valign: .top })
+		content << ui2.label('tab-title-${tab.index}', if tab.hibernated { '💤 ${tab.title}' } else { tab.title }, ui2.rect(30, 3, paint_width - 56, 18), ui2.TextStyle{ size: 11, color: 0x383838, valign: .top })
 		content << ui2.Element{
 			...ui2.button('tab-close:${tab.index}', '×', ui2.rect(tab.width - 16, 3, 16, 16), ui2.BoxStyle{ transparent: true }, ui2.TextStyle{ size: 11, color: 0x666666 })
 			tooltip:             'Close ${tab.title}'

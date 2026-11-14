@@ -42,6 +42,8 @@ fn (app &BrowserApp) browser_tab_strip(chrome BrowserChromeState) ui2.Element {
 			icon: app.browser_tab_icon_path(index, chrome)
 			loading: index < chrome.tab_loading.len && chrome.tab_loading[index]
 			loading_frame: app.browser_ui().tab_loading_frame
+			hibernated: index < chrome.tab_hibernated.len && chrome.tab_hibernated[index]
+			hibernate_action: app.browser_tab_hibernate_action(index)
 			x: x
 			width: width
 			selected: index == chrome.selected_tab
