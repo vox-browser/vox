@@ -110,6 +110,7 @@ pub:
 // empty text-shadow suppresses the fragment's ordinary shadows.
 pub struct TextSelectionStyle {
 pub:
+	colors_authored  bool
 	background_color css.Color
 	text_color       css.Color
 	text_color_set   bool
