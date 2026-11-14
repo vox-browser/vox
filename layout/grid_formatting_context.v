@@ -840,14 +840,6 @@ fn resolve_grid_tracks_for_axis(container &Node, list css.GridTrackSizeList, imp
 			}
 		}
 	}
-	if tracks.len == 0 {
-		tracks << GridTrack{
-			flex: 1
-			intrinsic: true
-			minimum_intrinsic: true
-			auto_min: true
-		}
-	}
 	return tracks
 }
 
@@ -1015,8 +1007,8 @@ fn place_grid_items(container &Node, physical_column_lines [][]css.GridLineName,
 	items := ordered_grid_items(container)
 	explicit_column_count := if column_lines.len > 0 { column_lines.len - 1 } else { 0 }
 	explicit_row_count := if row_lines.len > 0 { row_lines.len - 1 } else { 0 }
-	mut column_count := if explicit_column_count > 0 { explicit_column_count } else { 1 }
-	mut row_count := if explicit_row_count > 0 { explicit_row_count } else { 1 }
+	mut column_count := explicit_column_count
+	mut row_count := explicit_row_count
 	mut implicit_minimum_column := 0
 	mut implicit_minimum_row := 0
 	// CSS Grid auto-placement step 3 determines the width of the implicit grid
@@ -2728,11 +2720,8 @@ fn run_uncached_grid_formatting_context_internal(mut state LayoutState, containe
 		column_lines, row_lines, true, column_gap)
 	mut row_sizing_placements := grid_track_sizing_placements(mut state, container, placements,
 		column_lines, row_lines, false, row_gap)
-	mut required_columns := if explicit_column_count + placement_result.implicit_columns_before > 0 {
-		explicit_column_count + placement_result.implicit_columns_before
-	} else {
-		1
-	}
+	// A trackless axis stays empty until an in-flow item occupies it.
+	mut required_columns := explicit_column_count + placement_result.implicit_columns_before
 	mut required_rows := explicit_row_count + placement_result.implicit_rows_before
 	for placement in placements {
 		if placement.column + placement.column_span > required_columns {
@@ -2757,7 +2746,7 @@ fn run_uncached_grid_formatting_context_internal(mut state LayoutState, containe
 	}
 	initialize_grid_item_percentage_bases(mut state,container,placements,columns,row_basis,column_gap,row_gap,container_state.has_definite_height(),placement_result.implicit_rows_before,required_rows)
 	if grid_has_orthogonal_items(container,placements) {
-		initial_rows := resolve_grid_axis_tracks_in_state(mut state,container,false,row_basis,row_gap,container_state.has_definite_height(),placement_result.implicit_rows_before,if required_rows>0 { required_rows } else { 1 })
+		initial_rows := resolve_grid_axis_tracks_in_state(mut state,container,false,row_basis,row_gap,container_state.has_definite_height(),placement_result.implicit_rows_before,required_rows)
 		initialize_orthogonal_grid_inline_sizes(mut state,container,placements,initial_rows,row_gap)
 	}
 	column_sizing_placements = grid_lanes_sizing_placements(container,column_sizing_placements,columns.len,true)
@@ -2924,12 +2913,12 @@ fn run_uncached_grid_formatting_context_internal(mut state LayoutState, containe
 		} else {
 			resolve_grid_axis_tracks_in_state(mut state, container, false,
 				row_basis, row_gap, container_state.has_definite_height(),
-				placement_result.implicit_rows_before, if required_rows > 0 { required_rows } else { 1 })
+				placement_result.implicit_rows_before, required_rows)
 		}
 	} else {
 		resolve_grid_axis_tracks_in_state(mut state, container, false,
 			row_basis, row_gap, container_state.has_definite_height(),
-			placement_result.implicit_rows_before, if required_rows > 0 { required_rows } else { 1 })
+			placement_result.implicit_rows_before, required_rows)
 	}
 	collapse_empty_auto_fit_tracks(mut rows, placements, false)
 	for placement in placements {
@@ -3156,7 +3145,7 @@ fn run_uncached_grid_formatting_context_internal(mut state LayoutState, containe
  if grid_alignment_height == none && !subgridded_rows {
   mut intrinsic_height := row_gap.scaled(f64(grid_gutter_count(rows,0,rows.len-1)))
   for track in rows { intrinsic_height = intrinsic_height.plus(track.base_size) }
-  if resolve_cyclic_percentage_grid_rows(mut state,container,mut rows,intrinsic_height,row_gap,placement_result.implicit_rows_before,if required_rows > 0 { required_rows } else { 1 }) {
+  if resolve_cyclic_percentage_grid_rows(mut state,container,mut rows,intrinsic_height,row_gap,placement_result.implicit_rows_before,required_rows) {
    cyclic_percentage_auto_height = intrinsic_height
    grid_alignment_height = intrinsic_height
   }
