@@ -5,6 +5,11 @@ runtime can now execute Hacker News's comment-collapse script against the
 browser's native DOM. This is an experimental, explicitly selected backend;
 general ECMAScript and Web API compatibility remains incomplete.
 
+The separate [cached native-code experiment](LIBJS_NATIVE_CODE.md) warms HN
+callbacks and compiles cached bytecode to a reusable native library. It remains
+an explicit VM API, is not enabled by this browser setting, and showed no
+reliable callback speedup in its three seven-pair cohorts.
+
 The subsequent [GitHub work and pixel baseline](LIBJS_GITHUB.md) remain open.
 Synchronous ES module graphs now load through native Fetch and import maps.
 GitHub's React hydration and pixel-perfect rendering remain incomplete.

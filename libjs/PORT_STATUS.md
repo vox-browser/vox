@@ -21,6 +21,13 @@ AST comparisons. Production visual validation remains pending. Native module
 metadata and the subsequent native Performance mark binding have focused browser
 coverage; the mark binding does not implement cloned detail, measures or observers.
 
+The [cached native-code experiment](../docs/LIBJS_NATIVE_CODE.md) adds an explicit
+warmup/compile/load API for cached bytecode. Numeric/control operations have
+runtime guards; dynamic operations keep interpreter helpers and shared budgets.
+Three seven-pair HN native-DOM cohorts show cache reuse and correct collapse/restore,
+but no reliable callback speedup. This tier is not enabled by browser settings
+and does not establish a browser load/rendering improvement or additional parity.
+
 ## Ordinary ECMAScript calls — 2026-11-14
 
 The bytecode runtime now executes ordinary function declarations and expressions,
