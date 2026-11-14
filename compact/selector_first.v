@@ -8,6 +8,8 @@ import platform
 import sync.stdatomic
 
 const retain_compact_first_query = os.getenv('VOX_RETAIN_COMPACT_FIRST_QUERY') != ''
+// Same-binary control: validate the selector by matching it against the root.
+const retain_compact_first_validation_match = os.getenv('VOX_RETAIN_COMPACT_FIRST_VALIDATION_MATCH') != ''
 const compact_first_diagnostics = os.getenv('VOX_COMPACT_FIRST_DIAGNOSTICS') != ''
 __global compact_first_reported stdatomic.AtomicVal[bool]
 
@@ -48,7 +50,11 @@ fn (mut binding CompactElementQueryBinding) selector_first(key string, selector 
 	// Preserve SyntaxError even when the receiver has no descendants. Parsed
 	// selectors may enter the document cache, beyond the argument scratch scope.
 	owned_selector := selector.clone()
-	_ = validation.matches(owned_selector)!
+	if retain_compact_first_validation_match {
+		_ = validation.matches(owned_selector)!
+	} else {
+		css.require_document_selector(binding.document, owned_selector)!
+	}
 	parent := unsafe { &dom.ParentNode(root) }
 	matched := parent.query_selector(owned_selector) != none
 	if !matched && compact_first_diagnostics && compact_first_reported.compare_and_swap(false, true) {

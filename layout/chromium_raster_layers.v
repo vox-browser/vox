@@ -44,6 +44,8 @@ pub struct ChromiumRasterLayerPlan {
 pub mut:
 	layers         []ChromiumRasterLayer
 	command_layers []int
+	// Keep backend scale eligibility independent of optional hit-test metadata.
+	device_scale f64 = 1
 	has_paint_metadata bool
 	has_picture_clip_metadata bool
 mut:
@@ -214,6 +216,7 @@ $if test {
 
 fn chromium_layerize_chunks_into(chunks []ChromiumRasterChunk, count int, device_scale f64,
 	mut plan ChromiumRasterLayerPlan, mut states []ChromiumRasterPropertyState) {
+	plan.device_scale = device_scale
 	plan.prepare(count)
 	plan.append_layer(false)
 	states.clear()
@@ -515,6 +518,7 @@ pub fn update_chromium_raster_layer_plan(document &dom.Document, commands []Pain
 
 fn update_chromium_raster_layer_plan_with_cull(document &dom.Document, commands []PaintCommand,
 	device_scale f64, cull ?LayoutRect, mut plan ChromiumRasterLayerPlan) {
+	plan.device_scale = device_scale
 	plan.has_paint_metadata = false
 	plan.has_picture_clip_metadata = false
 	persistent := platform.enter_persistent()

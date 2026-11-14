@@ -97,6 +97,62 @@ fn test_custom_registry_reentrancy_and_original_getter_iterator_exceptions_are_a
 	assert document.get_element_by_id('widget')?.ensure_custom_element_reaction_queue().len == 0
 }
 
+// Lookups are answered from the script-side mirror of completed definitions;
+// they agree with the native registry before, during and after define(),
+// for every registry, and do not depend on author-visible intrinsics.
+fn test_custom_registry_lookups_mirror_definitions_through_reentry_and_failures() {
+	mut runtime, mut document, registry := custom_registry_fixture()!
+	defer { runtime.close(); document.finalize() }
+	result := runtime.evaluate_host(r'
+ try{
+ const Earlier=function(){};customElements.define("x-earlier",Earlier);
+ const seen=[];const Nested=function(){};
+ const scoped=new CustomElementRegistry();
+ const Outer=function(){};Object.defineProperty(Outer.prototype,"connectedCallback",{get(){
+  // Metadata is read before the definition exists. A definition completed
+  // in another registry meanwhile is visible as soon as its define() returns.
+  seen.push(customElements.get("x-outer")===undefined,customElements.get("x-earlier")===Earlier);
+  let rejected=false;try{customElements.define("x-nested",function(){})}catch(error){rejected=error instanceof DOMException&&error.name==="NotSupportedError"}
+  scoped.define("x-nested",Nested);
+  seen.push(rejected,scoped.get("x-nested")===Nested,customElements.get("x-nested")===undefined,customElements.get("x-outer")===undefined);
+  return function(){};
+ }});
+ customElements.define("x-outer",Outer);
+ seen.push(customElements.get("x-outer")===Outer,customElements.get("x-nested")===undefined,scoped.get("x-nested")===Nested);
+ // A definition that fails after reading its metadata publishes nothing.
+ const marker={};const Failing=function(){};Object.defineProperty(Failing.prototype,"connectedCallback",{get(){throw marker}});
+ let original=false;try{customElements.define("x-failing",Failing)}catch(error){original=error===marker}
+ seen.push(original,customElements.get("x-failing")===undefined);
+ customElements.define("x-failing",Failing=== null?null:function Later(){});
+ seen.push(customElements.get("x-failing").name==="Later");
+ // Names are converted once, and compared as the strings they are.
+ let conversions=0;const name={toString(){conversions++;return "x-outer"}};
+ seen.push(customElements.get(name)===Outer,conversions===1,customElements.get("X-OUTER")===undefined,customElements.get("x-outer ")===undefined,customElements.get("")===undefined,customElements.get(7)===undefined);
+ // Scoped registries keep their own definitions.
+ const Scoped=function(){};scoped.define("x-scoped",Scoped);
+ seen.push(scoped.get("x-scoped")===Scoped,customElements.get("x-scoped")===undefined,scoped.get("x-outer")===undefined);
+ // Receivers are still checked, and author changes to the intrinsics the
+ // mirror uses are not observed.
+ let brands=0;for(const receiver of [{},Object.create(customElements),null,undefined])try{CustomElementRegistry.prototype.get.call(receiver,"x-outer")}catch(error){if(error instanceof TypeError)brands++}
+ const getter=Object.getOwnPropertyDescriptor(globalThis,"customElements").get;
+ let windows=0;try{getter.call({})}catch(error){if(error instanceof TypeError)windows++}
+ seen.push(brands===4,windows===1,getter.call(undefined)===customElements,getter.call(globalThis)===customElements);
+ Map.prototype.get=function(){return 42};Map.prototype.set=function(){throw Error("poisoned")};
+ WeakMap.prototype.get=function(){return undefined};WeakMap.prototype.set=function(){throw Error("poisoned")};
+ Reflect.apply=function(){throw Error("poisoned")};
+ const Poisoned=function(){};customElements.define("x-poisoned",Poisoned);
+ seen.push(customElements.get("x-poisoned")===Poisoned,customElements.get("x-outer")===Outer,customElements.get("x-missing")===undefined);
+ seen.length===28&&seen.every(value=>value===true)?"true":JSON.stringify(seen);
+ }catch(error){"threw "+String(error)+" "+String(error&&error.stack)}
+ ')!
+	assert result == 'true', result
+	assert registry.definition_count() == 4
+	for name in ['x-earlier', 'x-outer', 'x-failing', 'x-poisoned'] {
+		assert registry.get(name) != none, name
+	}
+	assert registry.get('x-scoped') == none && registry.get('x-nested') == none
+}
+
 fn test_custom_registry_when_defined_uses_real_promises_and_exact_callback_values() {
 	mut runtime, mut document, registry := custom_registry_fixture()!
 	defer { runtime.close(); document.finalize() }

@@ -67,27 +67,43 @@ pub fn (e &Element) is_focusable() bool {
 	}
 }
 
-// HTMLSummaryElement::is_summary_for_its_parent_details().
-fn html_summary_element_is_summary_for_its_parent_details(summary &Element) bool {
-	// 1. If this summary element has no parent, then return false.
-	// 2. Let parent be this summary element's parent.
-	parent := summary.as_node().parent_element() or { return false }
-
-	// 3. If parent is not a details element, then return false.
-	if !is_html_element_with_local_name(parent, 'details') {
-		return false
-	}
-
-	// 4. If parent's first summary element child is not this summary element, then return false.
-	for child in parent.as_node().children_as_vector() {
-		if child_element := child.as_element() {
-			if is_html_element_with_local_name(child_element, 'summary') {
-				// 5. Return true.
-				return child_element == summary
+// Author summaries and the user-agent fallback share activation and focus behavior.
+pub fn (summary &HTMLSummaryElement) associated_details_element() ?&HTMLDetailsElement {
+	element := unsafe { &Element(summary) }
+	parent := element.as_node().parent_element() or { return none }
+	if is_html_element_with_local_name(parent, 'details') {
+		for child in parent.as_node().children_as_vector() {
+			if child_element := child.as_element() {
+				if is_html_element_with_local_name(child_element, 'summary') {
+					if voidptr(child_element) == voidptr(element) {
+						return unsafe { &HTMLDetailsElement(parent) }
+					}
+					break
+				}
 			}
 		}
 	}
-	return false
+	if shadow_root := element.as_node().root().as_shadow_root() {
+		if shadow_root.is_user_agent_internal() {
+			if host := shadow_root.host() {
+				if is_html_element_with_local_name(host, 'details') {
+					details := unsafe { &HTMLDetailsElement(host) }
+					if default_summary := details.default_summary_ {
+						if voidptr(default_summary) == voidptr(summary) {
+							return details
+						}
+					}
+				}
+			}
+		}
+	}
+	return none
+}
+
+// HTMLSummaryElement::is_summary_for_its_parent_details().
+fn html_summary_element_is_summary_for_its_parent_details(summary &Element) bool {
+	summary_element := unsafe { &HTMLSummaryElement(summary) }
+	return summary_element.associated_details_element() != none
 }
 
 // HTMLAreaElement::is_focusable().

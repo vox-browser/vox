@@ -5,10 +5,11 @@ its GG/Sokol window. Both WebGL versions share the bounded GLES adapter used
 on Linux. There are no ANGLE headers, import libraries or vendor entry points.
 Compatibility extension names in the shared ABI map to core GLES operations.
 
-The 2026-11-14 checks passed native GLES, all 8,192 browser canvas pixels and
-live HTTPS, but the browser remained active after its window disappeared.
-That shutdown hang keeps the full Windows runtime gate open; see the latest
-[verification record](#cold-boot-and-https-trust-on-2026-11-14).
+The latest candidate passed headless startup, native input, all 8,192 browser
+canvas pixels, live HTTPS and normal close. Earlier attempts exposed a JSC
+startup crash (now fixed), an intermittent close hang in the older build and
+one candidate startup timeout. Wider reliability and all-site acceptance remain
+open; see the [verification record](#shutdown-diagnostics-and-jsc-startup-follow-up).
 
 The adapter validates transfer/query capacity and PBO offsets, initializes new
 buffer/texture/renderbuffer storage, checks active vertex/index streams, and
@@ -232,6 +233,80 @@ storage; do not classify a forced process exit as a clean shutdown result.
 Windows subsequently shut down normally. QEMU and its host guard exited 0;
 an offline, non-repairing disk check also exited 0 with no errors. The backing
 chain still contains one standalone image. The VM is stopped and preserved.
+
+## Shutdown diagnostics and JSC startup follow-up
+
+A later HTTPS-only fresh process loaded the expected live title and closed
+normally (browser/guard exit 0, peak committed memory 1,146,908,672 bytes).
+Another full retry of the unchanged `ae5286…` executable passed local input,
+resize, escaped file navigation, all 8,192 WebGL pixels, live HTTPS and normal
+close (exit 0, peak 1,466,806,272 bytes). The earlier close hang remains a failed
+attempt; these passes do not establish its cause or a shutdown fix.
+
+One intervening retry crashed during resize with access violation `0xc0000005`
+in `JavaScriptCore.dll` at offset `0x185aef0`. The DLL's exports and disassembly
+identify `WTF::MemoryPressureHandler::singleton()` dereferencing its missing
+main run loop. A native control reproduced the same exception and exact DLL
+offset without initializing that loop. With the startup helper, the actual
+timer constructor, repeated initialization and worker-thread identity check
+passed (exit 0, peak 171,048,960 bytes under 3 GiB). BrowserJS now initializes
+WTF on the application thread before worker agents. This fix is `b4e5db9da`.
+
+The new C-production Windows browser cross-build passed its 12 GiB guard at
+9,438,756,864 bytes peak sampled RSS. All 7,942 recorded source hashes stayed
+unchanged during compilation. Its SHA-256 is
+`bf2c70d88a1ec85e1c90f75bb2d5e1423e5cbc53d41f554819ef91a68ac95558`.
+Its first desktop attempt passed startup pixels, click and resize, but the VM
+stopped without a final host guard receipt before the test completed. That run
+is incomplete. An offline, non-repairing disk check passed before restarting;
+the disk still has no backing image. This interrupted attempt supplies no
+complete desktop result.
+
+The browser test also supports an opt-in close-timeout minidump, captured
+before failure cleanup; it never converts a timeout into a pass. Its native
+Windows regression verifies the actual header, thread streams and refusal to
+overwrite an existing file (exit 0, peak 4,857,856 bytes). Windows CI runs that
+regression. Local evidence, including failed and interrupted attempts, is in
+`docs/performance/windows-reboot-20261114/close-probes/`.
+
+After recovering the console session, a fresh candidate process explicitly
+selected JavaScriptCore and passed the headless DOM mutation, click and wheel
+assertions. Browser, guard and wrapper exited 0; peak committed memory was
+415,625,216 bytes. Its executable hashes before and after matched. An inventory
+also matched all 36 runtime DLLs against the earlier deployment, plus the
+fixture, candidate and driver hashes. That read-only inventory overlapped the
+headless check; there are no timing or performance claims.
+
+The first full desktop retry after reboot failed its unchanged two-minute
+startup-title deadline: the child remained active with the default version
+title (guard exit 1 without a job timeout, peak 392,388,608 bytes). This is a
+failed attempt. The test driver now also supports `VOX_WINDOWS_FAILURE_DUMP`
+for startup/input/navigation hangs, retaining the close-only legacy flag. Its
+expanded native regression passed (exit 0, peak 4,878,336 bytes; `e8d11bf05`).
+
+The unchanged candidate then passed the complete desktop repeat: startup pixels,
+native click, resize, escaped file URL with query/fragment, both WebGL versions'
+shader readback, all 8,192 displayed canvas pixels, the Mesa module audit,
+live HTTPS title and normal close. Browser, driver and wrapper exited 0; the
+3 GiB guard reported no timeout and peak committed memory 1,650,397,184 bytes.
+Executable hashes before and after matched. The original two-minute startup,
+ten-minute live-title and two-minute close deadlines were unchanged; private
+profiles were fresh, and OS/shader caches were retained. A final inventory
+matched all 39 prior inputs and the added diagnostic driver's host hash.
+
+These results validate the focused candidate workflow under software-emulated
+Windows with llvmpipe. They do not resolve the earlier startup timeout or prove
+the cause of the older build's close hang, full WebGL conformance, hardware GPU
+support or all-site pixel equivalence. The failed and interrupted runs remain
+part of the record.
+
+All seven temporary scheduled tasks were deleted. A native registry check
+confirmed automatic sign-in disabled, its temporary password/count values
+absent, and both per-application dump settings removed. Windows then shut down
+normally: QEMU and its host guard exited 0 (peak sampled RSS 9,366,011,904 bytes
+under 12 GiB). The final offline, non-repairing image check exited 0 with no
+errors. The standalone disk, UEFI variables and SSH state are preserved; the
+VM is stopped. The interrupted earlier VM run is not credited by this receipt.
 
 Cold-boot commands, input pins, failed attempts and guard receipts are local in
 `docs/performance/windows-reboot-20261114/`. These checks do not establish

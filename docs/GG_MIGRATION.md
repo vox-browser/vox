@@ -2946,3 +2946,43 @@ correcting eight without new differences. Production `1861ac91` confirms all
 27 workload counts twice, including four exact archives. The earlier tall-shadow
 baseline repeat failure remains open alongside the existing site failures.
 See the [audit](OPTIMIZED_SITES_PIXELS_2026_11_12.md#shared-unblurred-inset-decorations-2026-11-14).
+
+### Recorded rotated-filter clips beyond the window, 2026-11-14
+
+`8dc5c0df1` carries supported recorded author clips through the native pixel
+transfer, preserving the blur grid beyond the visible window. The final-tile
+RGBA oracle improves 485 differences to zero; the complete reduced scene
+improves 596 to 111 and vlang.io improves 810 to 341, both without new errors.
+Twenty-three focused checks pass with arena poisoning. The fixed-input
+30-workload diagnostic cohort preserves four exact archives and preceding
+control counts; CNN and the earlier tall-shadow instability remain open.
+Production validation is pending the managed rebuild. See the
+[audit](OPTIMIZED_SITES_PIXELS_2026_11_12.md#recorded-filter-clips-beyond-the-window-2026-11-14).
+
+
+### Gradient pictures without optional hit-test metadata, 2026-11-14
+
+`19224ad53` retains eligible contiguous promoted gradient pictures at scale 1
+without optional hit-test metadata. Unsafe intervening paints and unsupported
+scales retain the existing fallback. Sixteen focused checks execute with arena
+poisoning, including real picture ownership and scale changes on a reused plan.
+The complete orbit scene improves 111 to 4 differences and its underlay 105 to
+3, both without new errors; vlang.io remains 341. The 29-workload diagnostic
+cohort preserves four exact archives and preceding control counts. CNN and the
+earlier tall-shadow repeat failure remain open. `de783cfd7` separately corrects
+an independently reproduced stale shadow-recording assertion. Production
+validation is pending the managed rebuild. See the
+[audit](OPTIMIZED_SITES_PIXELS_2026_11_12.md#gradient-picture-isolation-without-hit-test-metadata-2026-11-14).
+
+
+### Shared elliptical decoration and glyph samples, 2026-11-14
+
+`efaca9e3c` retains a supported shape prefix and following horizontal A8 glyphs
+through one GPU resolve, preserving their common owner, clip and paint order.
+The independent Brave text-band oracle improves 50 differences to zero.
+Fifteen focused checks pass with arena poisoning. The complete vlang.io capture
+improves 341 to 284 pixels, correcting 57 with zero new differences. The
+29-workload diagnostic cohort preserves four exact archives and all other
+preceding counts. CNN and the earlier tall-shadow repeat failure remain open;
+production validation is pending the managed rebuild. See the
+[audit](OPTIMIZED_SITES_PIXELS_2026_11_12.md#shape-and-glyph-samples-in-one-pass-2026-11-14).

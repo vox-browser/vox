@@ -1187,12 +1187,21 @@ fn collect_binding_pattern_names(pattern BindingPattern, mut names map[string]bo
 	}
 }
 
+const strict_reserved_words = ['implements', 'interface', 'let', 'package', 'private',
+	'protected', 'public', 'static', 'yield']
+
 fn is_strict_reserved_word(name []u16) bool {
-	return utf16_equals(name, utf16('implements')) || utf16_equals(name, utf16('interface'))
-		|| utf16_equals(name, utf16('let')) || utf16_equals(name, utf16('package'))
-		|| utf16_equals(name, utf16('private')) || utf16_equals(name, utf16('protected'))
-		|| utf16_equals(name, utf16('public')) || utf16_equals(name, utf16('static'))
-		|| utf16_equals(name, utf16('yield'))
+	// These grammar terminals are ASCII. Compare their units directly instead
+	// of allocating nine UTF-16 strings for every ordinary strict identifier.
+	for word in strict_reserved_words {
+		if name.len != word.len { continue }
+		mut matches := true
+		for index, character in word {
+			if name[index] != u16(character) { matches = false; break }
+		}
+		if matches { return true }
+	}
+	return false
 }
 
 // Await and yield use contextual LabelIdentifier rules; the other

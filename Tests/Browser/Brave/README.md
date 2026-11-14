@@ -1353,3 +1353,33 @@ is exact. `f4a40d91b` also makes the complete fixture exact twice in diagnostics
 and production `1861ac91`, while the ordinary non-SVG inset fixture stays exact.
 Eleven focused checks pass; known blur and repeatability failures remain open.
 See the [inset-group audit](../../../docs/OPTIMIZED_SITES_PIXELS_2026_11_12.md#shared-unblurred-inset-decorations-2026-11-14).
+
+`diagnostic/large-clipped-orbit.html` uses an empty transform-hinted overlap
+barrier to give the tall panel its own picture at y=384. The clipped orbit's
+author bounds extend below the visible window. `large-orbit-underlay.html`
+keeps the same layout with the orbit hidden. Each unchanged 1024×768, scale-1
+reference matches two fresh identity-pinned Brave captures. The GPU test uses
+that independent background and compares the final tile's visible RGBA pixels:
+window-clipped filter input leaves 485 errors; recorded author bounds are exact.
+After `8dc5c0df1`, the complete scene retained 111 differences and its underlay
+105. `19224ad53` preserves the promoted gradient picture without optional
+hit-test metadata, reducing these to **4 and 3**, twice, with zero new errors.
+The unchanged references remain independent; neither fixture is globally exact.
+`8dc5c0df1` corrects 469 vlang.io pixels without new differences in diagnostics;
+vlang.io remains 341 after the gradient change. Production validation of both
+fixes is pending. See the
+[recorded-clip audit](../../../docs/OPTIMIZED_SITES_PIXELS_2026_11_12.md#recorded-filter-clips-beyond-the-window-2026-11-14)
+and [gradient isolation audit](../../../docs/OPTIMIZED_SITES_PIXELS_2026_11_12.md#gradient-picture-isolation-without-hit-test-metadata-2026-11-14).
+
+
+`diagnostic/orbit-text-band.png` is the unchanged decoded 327×25 crop at
+(600,624) from the independently captured archived vlang.io Brave reference.
+`orbit-text-coverage.png` is its corresponding 446×25 A8 glyph-run input, whose
+origin is (481,624), obtained from cpuraster run 13. The GPU regression replays
+the recorded orbit over the independent `large-orbit-underlay.png`: resolving
+before glyph coverage leaves 50 differences in the band; sharing the pass is
+exact. The coverage asset is not an expected image. `efaca9e3c` carries that
+sample ownership through browser replay, improving vlang.io from 341 to 284
+pixels with zero new differences. The reduced scene and underlay retain four
+and three differences; production confirmation is pending. See the
+[shape/glyph audit](../../../docs/OPTIMIZED_SITES_PIXELS_2026_11_12.md#shape-and-glyph-samples-in-one-pass-2026-11-14).

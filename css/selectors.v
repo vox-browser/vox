@@ -1741,7 +1741,7 @@ fn matches_simple(component &SimpleSelector, element &dom.Element, shadow_host ?
 					if qualified_name.name.lowercase_name != element.local_name() {
 						return false
 					}
-				} else if !equals_ignoring_ascii_case(qualified_name.name.name, element.local_name()) {
+				} else if qualified_name.name.name != element.local_name() {
 					return false
 				}
 			}
@@ -3726,7 +3726,7 @@ fn matches_attribute_in_namespace(attribute_selector SelectorAttribute,
 				for i := 0; i < attrs.length(); i++ {
 					attr := attrs.item(i) or { continue }
 					is_match := if case_insensitive {
-						equals_ignoring_ascii_case(attr.local_name_, attribute_name)
+						attr.local_name_ == qualified_name.name.lowercase_name
 					} else {
 						attr.local_name_ == attribute_name
 					}

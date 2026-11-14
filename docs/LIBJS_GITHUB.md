@@ -1,7 +1,7 @@
 # GitHub with LibJS — work in progress
 
-**Pixel-perfect acceptance is not achieved.** The current LibJS backend does not
-execute GitHub's dependency graph and React hydration. Rendering the server's
+**Pixel-perfect acceptance is not achieved.** LibJS now loads synchronous module
+graphs, but does not complete GitHub's React hydration. Rendering the server's
 file names is insufficient: the commit messages, dates, latest commit and active
 controls must appear as well. JSC remains the default backend.
 
@@ -71,6 +71,50 @@ The diagnostic PNG identities are retained here without changing references:
   names during creation, and module evaluation/results are cached. Browser
   modules preserve `this === undefined`, `document.currentScript === null`,
   separate inline scopes and native DOM mutation. No JSC context is created.
+- `0a8382c79` fixes live host getters without ordinary property storage, including
+  descriptors that override a cached ordinary getter.
+- `be5ee7464` loads and evaluates synchronous module graphs with live imports,
+  re-exports, function hoisting, lexical TDZ, cycles, asynchronous host loading,
+  cached failures and one instruction budget across dependency bodies. Imported
+  bindings reject assignment. The namespace adapter preserves sorted live reads,
+  null prototype, stable identity and non-extensibility; accessor descriptors
+  remain a deviation from full namespace data-descriptor/freeze semantics.
+- `ad2f1db4a` executes `import.meta` against the defining module, including calls
+  from functions after another module has run.
+- `723554d44` connects those graphs to native browser Fetch, HTML module maps and
+  import maps, including coalesced requests/preloads, native DOM changes, script
+  completion events, load delays and diagnostic recovery. Classics still execute
+  directly through LibJS; installing the loader creates no JSC context.
+- `bf0b88c25` executes synchronous `try/catch`, including optional catch bindings,
+  native/callee errors, nested handlers/rethrows, var hoisting, return and loop
+  control. Catch entry restores the correct lexical environment. `finally` and
+  destructured catch parameters still fail explicitly before execution.
+
+- `e1a753359` exposes native module URLs and import-map resolution through
+  `import.meta`, including the final base after an HTTP redirect. Its source-built
+  native fixture passes without initializing JSC.
+
+These are ten completed runtime fixes since the preceding 253-file LibJS/HN
+broad baseline. Tooling, documentation and added coverage do not increment that
+counter. The full GC-disabled sweep passes **261/261** files. Default-GC coverage
+is a disjoint **184 + 77 = 261** file union: the machine restarted during the
+original sweep, whose terminal status is unknown. That interrupted run also
+found one outdated test expecting `try/catch` rejection; `225188bef` preserves
+its early-rejection assertion with the still-unsupported `finally` construct.
+The 77-file recovery passes with child and guard exits zero. All 678 recorded
+LibJS/Unicode files remain unchanged from recovery through the GC-disabled and
+AST runs, and the compiler hash is unchanged. The exact upstream AST driver
+passes **100/100**, without overrides. Production screenshot validation remains
+pending; no visual gate or complete broad-cadence reset is claimed.
+
+The following runtime slice, `f49e6c730`, binds LibJS `performance` to the actual
+native document timeline: `now`, `timeOrigin`, marks with optional `startTime`,
+entry queries, stable entry wrappers, `toJSON`, and clearing marks/measures.
+Native entries own their copied names in the document arena. Two focused native
+functions pass with default GC and without GC; the final name-ownership copy is
+exercised by the GC-disabled executable. Non-null structured-cloned detail,
+creating measures, observers, constructors and the full EventTarget interface
+remain outside that slice. No marker is replaced by a JavaScript no-op.
 
 The initial frontend probe parsed 77 of 86 archived JavaScript resources with
 the default depth. Iterative conditional parsing raises this to 78. At depth
@@ -100,10 +144,21 @@ separately below; neither result establishes a whole-page memory bound.
   module-loading cases pass in both modes after replacing the old placeholder
   expectation with a real local-export evaluation.
 - Source-built browser parser tests pass for diagnostics, later-script recovery,
-  explicit dependency-linking failure and bounded deeper input. Native module
+  explicit unresolved-import failure and bounded deeper input. Native module
   tests pass for private scopes, currentScript, document.head, cached evaluation
   and error recovery. The external-module fixture also passes: its load listener
   observes the module's native DOM change exactly once.
+- Core graph, module execution and VM loading cases pass with default GC; graph
+  and module execution also pass with GC disabled. The host-accessor regression
+  passes in both modes, and ordinary cached-accessor behavior remains covered.
+- Import-metadata execution passes alongside graph/interpreter tests; metadata
+  and graph cases pass without GC. Catch execution, execution-context ownership
+  and VM handler tests pass; catch/context checks also pass without GC.
+- The source-built native browser module executable passes all five functions:
+  private scopes, cached evaluation/recovery, external completion after a DOM
+  change, fetched import-map/re-export graphs, and 404/MIME/syntax-error recovery.
+  The three parser diagnostic/recovery functions also pass. Every new native
+  check confirms that no JSC context was initialized.
 - The hydrated GitHub comparison tool's four existing tests pass. Its new
   `--vox-js-engine=libjs` option preserves all full-content and unchanged-reference
   checks. The frontend probe returns 0 for valid input, 1 for syntax failures,
@@ -115,20 +170,20 @@ shared worker compiler/vlib at
 `~/code/v/.codex-worktrees/fix-clang-linux-examples-43218932205/v`, because the
 other compiler's HTTP compatibility adapter cannot resolve Brotli's callback
 API. Package tests and optimized probes used current `~/code/v/v`.
-Focused checks cover these four completed runtime fixes; no new full-suite pass
-is credited to this combined snapshot.
+The ten-fix package/AST checkpoint is recorded above. The interrupted default
+command receives no wholesale success credit; its 184 completed files and the
+77 successful recovery files provide the stated disjoint coverage.
 
 ## Remaining acceptance work
 
-Static dependency loading/linking, live imported bindings and module namespaces
-remain unimplemented. GitHub also needs additional bytecode forms and builtin/Web
-APIs, including class execution, exception handling, iteration/destructuring,
-dynamic imports, promises and native asynchronous operations. Import-free module
-support does not execute its React graph. The 76,414-pixel JSC mismatch shows
+GitHub still needs additional bytecode forms and builtin/Web
+APIs, including class execution, `finally`, iteration/destructuring,
+dynamic imports, promises and native asynchronous operations. Synchronous module
+support alone does not complete its React graph. The 76,414-pixel JSC mismatch shows
 that rendering differences also need investigation after hydration is available.
 
-The source-built tests above validate the new code. At recording, the newest
-completed production receipt, `20261114-180014-82702051`, executable SHA-256
+The source-built tests above validate the new code. At the earlier checkpoint,
+the newest completed production receipt, `20261114-180014-82702051`, executable SHA-256
 `e19259550bdc6ba53f2e3aae16f557aa3099416a1ba0d48b6f4f2291b36ac8d8`, contains
 the conditional and parser-limit changes but predates the module execution
 integration. Each commit requested its normal managed production rebuild; no
@@ -142,6 +197,21 @@ diagnostics correctly recorded six rejected module entries rather than reporting
 a clean hydration. The live asset hashes differ from the November 8 archive;
 the 86-resource parser result applies to the archived workload. No live-site or
 pixel-perfect fix is claimed.
+
+The later completed bundle `20261114-191855-433aa86a`, executable SHA-256
+`aa19da698743326eca456245c2d5550accf2d33daee9c75e43d845522723f5f8`, contains
+the core graph linker but predates the native browser module host, `import.meta`
+and catch continuation. Its parsed-source manifest cannot validate those later
+changes. Commit rebuild requests remain coalesced under the managed worker;
+no duplicate production build was queued. A separate unoptimized diagnostic
+executable is being prepared from canonical sources for page diagnosis.
+
+The unchanged archive has 87 JavaScript URL records and 86 distinct script body
+hashes. `tools/libjs_module_probe.v`, using explicit local aliases from the flat
+archived import map, loads 50 module records and links all six original entries.
+Execution still fails: some functions need destructuring, and the standalone VM
+has no browser Performance/DOM host. This is a language diagnostic, not a browser
+hydration or pixel result. Local-alias loading never rewrites the script bytes.
 
 For the eventual full-content comparison, use the original scripted archive and
 retained audit with `tools/github_hydrated_render.py --vox-js-engine libjs`.

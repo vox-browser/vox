@@ -1508,7 +1508,8 @@ pub fn (mut element HTMLMediaElement) restart_fetch_at_offset(offset u64) ! {
 	if failure := element.verify_response_or_get_failure_reason(response, false) {
 		return error(failure)
 	}
-	element.last_fetch_offset_ = offset
+	// A server may ignore Range and return the entire resource instead.
+	element.last_fetch_offset_ = if response.status == 200 { u64(0) } else { offset }
 	element.process_media_data(.ongoing)
 }
 
@@ -1552,6 +1553,7 @@ pub fn (mut element HTMLMediaElement) set_ready_state(state MediaReadyState) {
 	if old_state == state {
 		return
 	}
+	was_potentially_playing := element.potentially_playing()
 	was_buffering := element.blocked()
 	element.ready_state_ = state
 	if was_buffering != element.blocked() {
@@ -1594,6 +1596,21 @@ pub fn (mut element HTMLMediaElement) set_ready_state(state MediaReadyState) {
 		// independently of whether this crossing queued the first-data event.
 		element.finish_delaying_load_event()
 	}
+	if int(old_state) >= int(MediaReadyState.have_future_data)
+		&& int(state) <= int(MediaReadyState.have_current_data) {
+		if was_potentially_playing && !element.ended() && element.error_ == none {
+			element_pointer := voidptr(&element)
+			element.queue_a_media_element_task(fn [element_pointer] () {
+				mut media := unsafe { &HTMLMediaElement(element_pointer) }
+				media.dispatch_time_update_event()
+			})
+			element.queue_a_media_element_task(fn [element_pointer] () {
+				mut media := unsafe { &HTMLMediaElement(element_pointer) }
+				media.fire_event('waiting')
+			})
+		}
+		return
+	}
 	// Both Source branches queue canplay before notifying about playing. Take
 	// the pending promise batch now, before any queued listener can call play().
 	if element.network_state_ != .empty
@@ -1632,9 +1649,6 @@ pub fn (mut element HTMLMediaElement) set_ready_state(state MediaReadyState) {
 			element.notify_about_playing()
 		}
 		return
-	}
-	if int(state) < int(MediaReadyState.have_future_data) && int(old_state) >= int(MediaReadyState.have_future_data) && !element.paused_ {
-		element.fire_event('waiting')
 	}
 }
 
@@ -1917,7 +1931,7 @@ pub fn (_ &HTMLMediaElement) stalled() bool {
 }
 
 pub fn (element &HTMLMediaElement) potentially_playing() bool {
-	return !element.paused_ && !element.ended() && !element.blocked()
+	return !element.paused_ && !element.ended() && element.error_ == none && !element.blocked()
 }
 
 pub fn (mut element HTMLMediaElement) play() &dom.Promise {
@@ -2496,7 +2510,10 @@ pub fn (mut element HTMLMediaElement) on_metadata_parsed(duration f64) {
 	}
 	element.current_playback_position_ = 0
 	element.set_official_playback_position(0)
-	element.set_duration(duration)
+	// A local MediaSource owns its duration; demuxer metadata must not replace it.
+	if element.attached_media_source_ == unsafe { nil } {
+		element.set_duration(duration)
+	}
 	element.set_ready_state(.have_metadata)
 	if element.default_playback_start_ > 0 {
 		element.seek_element(element.default_playback_start_, .accurate)
@@ -2580,6 +2597,9 @@ pub fn (mut element HTMLMediaElement) handle_media_source_failure(promises []&do
 		code: .src_not_supported
 		message: message
 	}
+	// Close the source before dropping the playback state it still references.
+	// Resource-fetch failures may detach even though they end at NO_SOURCE.
+	element.detach_attached_media_source()
 	element.forget_media_resource_specific_tracks()
 	element.network_state_ = .no_source
 	element.set_show_poster(true)

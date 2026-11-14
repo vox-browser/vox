@@ -212,7 +212,7 @@ pub fn html_link_element_model_for_dom_element(element &dom.HTMLLinkElement) &HT
 	model.sizes_ = dom_element.get_attribute_value('sizes')
 	model.disabled_ = dom_element.has_attribute('disabled')
 	model.crossorigin_ = cors_setting_attribute_from_keyword(dom_element.get_attribute('crossorigin'))
-	model.integrity_ = dom_element.get_attribute_value('integrity')
+	model.integrity_ = dom_element.get_attribute_ns(none, 'integrity') or { '' }
 	model.as_ = ascii_lowercase_string(dom_element.get_attribute_value('as'))
 	model.referrer_policy_ = ascii_lowercase_string(dom_element.get_attribute_value('referrerpolicy'))
 	model.fetch_priority_ = ascii_lowercase_string(dom_element.get_attribute_value('fetchpriority'))
@@ -652,7 +652,7 @@ pub fn (mut link HTMLLinkElementModel) fetch_and_process_linked_modulepreload_re
 	settings := unsafe { &EnvironmentSettingsObject(settings_pointer) }
 	mut integrity_metadata := link.integrity_
 	has_integrity_attribute := if element := link.element_ {
-		link_dom_element(element).has_attribute('integrity')
+		link_dom_element(element).has_attribute_ns(none, 'integrity')
 	} else {
 		link.integrity_ != ''
 	}
@@ -959,7 +959,7 @@ pub fn html_link_element_attribute_changed(element &dom.HTMLLinkElement, name st
 			model.crossorigin_ = cors_setting_attribute_from_keyword(value)
 		}
 		'integrity' {
-			model.integrity_ = value or { '' }
+			if namespace_ == none { model.integrity_ = value or { '' } }
 		}
 		'as' {
 			model.as_ = ascii_lowercase_string(value or { '' })

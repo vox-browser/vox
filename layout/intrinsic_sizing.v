@@ -1165,6 +1165,26 @@ fn calculate_max_content_height(mut state LayoutState, box &Box, width CSSPixels
 	if cached := cache.cached_content_height(false, key) {
 		return cached
 	}
+	// automatic_height_answer.v: the inner layout that just ran at this width
+	// without a height is this measurement.
+	if answer := automatic_height_answer(mut state, box, width) {
+		automatic_height_answer_counts[0]++
+		if verify_automatic_height_answers {
+			measured := calculate_content_height_with_constraint(mut state, box, width, .max_content)
+			eprintln('VOX_AUTOMATIC_HEIGHT_ANSWERS answer display=${node.display().to_string()} equal=${measured == answer}')
+			if measured != answer {
+				automatic_height_answer_counts[2]++
+				eprintln('VOX_AUTOMATIC_HEIGHT_ANSWERS mismatch tag=${layout_debug_tag(node)} display=${node.display().to_string()} width=${width.to_double()} answer=${answer.to_double()} measured=${measured.to_double()}')
+			}
+			cache = mutable_box.cached_intrinsic_sizes()
+			cache.cache_content_height(false, key, measured)
+			return measured
+		}
+		cache = mutable_box.cached_intrinsic_sizes()
+		cache.cache_content_height(false, key, answer)
+		return answer
+	}
+	automatic_height_answer_counts[1]++
 	result := calculate_content_height_with_constraint(mut state, box, width, .max_content)
 	cache = mutable_box.cached_intrinsic_sizes()
 	cache.cache_content_height(false, key, result)

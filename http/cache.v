@@ -31,10 +31,15 @@ fn cache_ascii_lowercase(value string) string {
 // the translated get/decode/split algorithm, which does not split on commas
 // inside quoted strings.
 pub fn extract_cache_control_directive(cache_control string, directive string) ?string {
+	return extract_cache_control_directive_impl(cache_control, directive, true)
+}
+
+fn extract_cache_control_directive_impl(cache_control string, directive string, allow_argument bool) ?string {
 	assert directive.len > 0
 	for raw_part in get_decode_and_split_header_value(cache_control) {
 		part := raw_part.trim('\t ')
 		if equals := part.index('=') {
+			if !allow_argument { continue }
 			name := part[..equals].trim('\t ')
 			if cache_ascii_lowercase(name) == cache_ascii_lowercase(directive) {
 				return part[equals + 1..].trim('\t ')
@@ -118,7 +123,7 @@ pub fn is_cacheable_response(status_code u32, received_headers &HeaderList) bool
 	cache_control := headers.get('Cache-Control')
 	if value := cache_control {
 		if cachepolicy.has_unterminated_quoted_string(value) { return false }
-		if contains_cache_control_directive(value, 'must-understand') {
+		if extract_cache_control_directive_impl(value, 'must-understand', false) != none {
 			if !is_heuristically_cacheable_status(status_code) && status_code != 304 {
 				return false
 			}

@@ -159,6 +159,12 @@ fn draw_document_shape_tiles(pixels &u8, width i32, height i32, pitch i32, backd
 
 fn draw_document_shape_group_tiles(pixels &u8, width i32, height i32, pitch i32, backdrop i32,
 	first_x int, first_y int, shapes &C.VoxGraphiteShape, count i32) i32 {
+	return draw_document_shape_glyph_tiles(pixels, width, height, pitch, backdrop, first_x, first_y, shapes, count, [])
+}
+
+fn draw_document_shape_glyph_tiles(pixels &u8, width i32, height i32, pitch i32, backdrop i32, first_x int, first_y int, shapes &C.VoxGraphiteShape, count i32, glyphs []ggshape.GlyphCoverage) i32 {
+	if width <= 0 || height <= 0 || pitch < width * 4 || glyphs.len > 16 { return 0 }
+	for glyph in glyphs { if glyph.pixels.len != int(width) * int(height) { return 0 } }
 	grid := document_geometry_grid
 	x0 := first_x - int(math.round(grid.origin_x))
 	y0 := first_y - int(math.round(grid.origin_y))
@@ -170,7 +176,7 @@ fn draw_document_shape_group_tiles(pixels &u8, width i32, height i32, pitch i32,
 	}
 	if !geometry_grid_covers_leaf(grid, x0, y0, int(width), int(height))
 		&& !(clipped_filter && geometry_grid_intersects_leaf(grid, x0, y0, int(width), int(height))) {
-		return ggshape.draw_shapes(pixels, width, height, pitch, backdrop, shapes, count)
+		return ggshape.draw_shapes_with_glyphs(pixels, width, height, pitch, backdrop, shapes, count, glyphs)
 	}
 	mut result := []u8{len: int(height) * int(pitch)}
 	unsafe { vmemcpy(result.data, pixels, result.len) }
@@ -202,7 +208,17 @@ fn draw_document_shape_group_tiles(pixels &u8, width i32, height i32, pitch i32,
 				draw.force_msaa = i32(i32(row * grid.columns + col) in grid.cells)
 				draws << draw
 			}
-			if ggshape.draw_shapes(tile.data, i32(grid.width), i32(grid.height), i32(grid.width * 4), backdrop, draws.data, count) == 0 {
+			mut masks := []ggshape.GlyphCoverage{}
+			for glyph in glyphs {
+				mut mask := []u8{len: grid.width * grid.height}
+				for y in top .. bottom {
+					for x in left .. right {
+						mask[(y - oy) * grid.width + x - ox] = glyph.pixels[(y - y0) * int(width) + x - x0]
+					}
+				}
+				masks << ggshape.GlyphCoverage{ pixels: mask, color: glyph.color }
+			}
+			if ggshape.draw_shapes_with_glyphs(tile.data, i32(grid.width), i32(grid.height), i32(grid.width * 4), backdrop, draws.data, count, masks) == 0 {
 				return 0
 			}
 

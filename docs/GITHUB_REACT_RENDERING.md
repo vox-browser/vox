@@ -675,3 +675,107 @@ and a rule cache rebuild for every style sheet added during hydration.
 The stage logs, samples, captures and guard reports of this continuation are
 retained locally in
 `~/Library/Caches/Vox/benchmarks/github-react-rendering-20261114-r10/evidence.tar.gz`.
+
+## Layout records, height answers and script bridge calls (November 14)
+
+Private builds used for same-binary comparisons must carry production's
+`com.apple.security.cs.allow-jit` entitlement
+(`codesign --force --sign - --entitlements packaging/Vox.entitlements.plist`).
+Without it JavaScriptCore runs interpreter-only: the unsigned optimized
+builds of the previous section's work measured 38–43 billion instructions on
+this workload, of which script execution was about 17 billion. Signed, the
+same kind of build measures 28–30 billion, with script stages near 9.5
+billion. Earlier private-build totals are not comparable with the ones
+below, and private totals run about one billion below the production
+bundle's.
+
+Layout:
+
+- `854e541c5` no longer treats a stale indefinite content height as an input
+  of a recorded inner layout. A box laid out twice in a pass (anything inside
+  a stretched flex item) kept the height of the first call as the recorded
+  input of the second, so the first call of the next pass never matched.
+  Unoptimized build: rejections for changed inputs fall from 2,565 to 635.
+- `592d81368` restores clean committed subtrees inside flex and grid
+  measurements, including from the first of two records of a stretched item
+  while its baselines are unchanged: 3,856 and 394 restores on this page.
+- Production bundle `aa19da698743…`, which contains both, 7 alternating
+  stage-logged pairs against `VOX_RETAIN_INDEFINITE_HEIGHT_INPUT=1
+  VOX_DISABLE_MEASUREMENT_SUBTREE_REUSE=1`: layout stages 5.53 against 5.88
+  billion instructions at the median, totals 30.53 against 30.88 billion,
+  identical pixels and passing content audits.
+- `7741abd5e` answers a block item's max-content height, asked by its column
+  flex container for the flex base size, from the inner layout that just ran
+  at the same width without a height. `VOX_VERIFY_AUTOMATIC_HEIGHT_ANSWERS=1`
+  runs the measurement as well: 251 answers on this page and 527 over 574
+  upstream and WPT column-flex pages agree with it; flex and grid items keep
+  the measurement, because their own formatting context runs differently in
+  intrinsic-sizing mode (a wrapping navigation row measured 88px against
+  40px). The upstream layout corpus prints identical output with the path
+  disabled (1,089 cases). Private signed build, 7 pairs: layout stages 5.21
+  against 5.57 billion; totals within noise.
+- `cabc6812e` skips the plan registered for an attribute's name when no
+  attribute selector changes its answer for the new value. It is neutral on
+  this page: the remaining broad invalidations are attributes of elements
+  that have no style yet.
+
+Script bridge. GitHub's lazy custom-element loader asks, after each DOM
+change, for every pending tag name: `node.matches(tag)`,
+`node.querySelector(tag)` and `customElements.get(tag)`, about 42,000 rounds
+in this load (48,693 `matches`, 42,000 `querySelector`, and 168,626 native
+calls for the registry lookups, the most frequent host function). Per call,
+in optimized test binaries with the entitlement:
+
+| Operation | Before | After |
+| --- | ---: | ---: |
+| `customElements.get(name)` | 21,600 | 1,000 |
+| `element.querySelector(absent tag)`, 2,500-element subtree | 707,900 | 9,500 |
+| `element.matches(tag)` | 16,700 | 9,100 |
+| a forwarded native DOM method, forwarding alone | 6,490 | 2,910 |
+
+- `fece7dbb7` answers `customElements.get()` from a script-side mirror of the
+  definitions whose `define()` has returned; `daeb889e1` extends the
+  document's never-inserted-tag shortcut from document roots to every
+  connected root. Together, 7 pairs: script stages 9.07 against 9.55 billion
+  (every candidate run below every control run), totals 28.54 against 28.94
+  billion.
+- `f669598b0` forwards the native selector methods to their JavaScript
+  implementation through a rest-parameter caller instead of argument and
+  outcome arrays. 7 pairs: script stages 8.65 against 9.06 billion, totals
+  28.39 against 28.64 billion.
+- `8abfe2545` removes scratch workspaces from allocation-free matches and
+  absent-tag queries, converts short arguments in the host call's frame,
+  validates first-match queries through the plan cache and raises the
+  document's parsed-selector cache from 256 to 2,048 entries (the loader's
+  few hundred tag names emptied it on every round). 7 pairs: script stages
+  8.07 against 8.41 billion; totals 28.38 against 28.41 billion, with layout
+  pass counts between 20 and 24 in both arms.
+
+All pairs have identical pixels and passing content audits. The private
+signed build with every change above measures 28.4 billion instructions at
+the median in these stage-logged runs. Stage logging itself costs about 1.2
+billion: three runs of the same build without it measure 26.92, 26.95 and
+27.35 billion. Brave's last measurement of this workload is about 20.5
+billion. Parity is not met.
+
+Other bridge costs measured with the same probe and not changed here:
+`getAttribute` 37,000 instructions (half of it JSON transport),
+`classList.contains` 49,000, `className` 39,000, `closest` 25,000,
+`children.length` on a 300-row table 4 million. The page loads 5.4 MB of
+JavaScript in 87 files and 2.6 MB of CSS in 24. Module completion is 1.56
+billion exclusive for the engine's parse and evaluation of 82 modules, plus
+0.43 billion inclusive for the specifier rewrite of their sources
+(`javascript_module_source_rewrite`, `39e5e1b95`); CSS parsing is 1.25
+billion.
+
+Verification: the new and neighboring test files pass with the default
+collector and with `-prealloc -gc none`. `document_tree_builder_test.v`,
+`retained_simple_svg_test.v`, `chromium_control_intrinsics_test.v` and
+`intrinsic_button_baseline_test.v` fail identically with the new paths
+disabled, and `leaf_query_walk_test.v` does not compile on its own; they are
+not changed here. The broad regression batch for instruction work was not
+run, so no broad checkpoint is credited.
+
+The stage logs, probes, captures and guard reports of this continuation are
+retained locally in
+`~/Library/Caches/Vox/benchmarks/github-react-rendering-20261114-r11/evidence.tar.gz`.

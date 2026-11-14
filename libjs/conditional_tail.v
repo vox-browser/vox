@@ -59,7 +59,7 @@ fn (mut generator BytecodeGenerator) conditional_tail(mut vm VM, expression &Exp
 	previous_range := generator.range
 	defer { generator.range = previous_range }
 	dst := generator.temporary()
-	mut current := expression
+	mut current := *expression
 	mut ends := []u32{}
 	for current.kind.tag == .conditional {
 		generator.range = current.range
@@ -69,9 +69,9 @@ fn (mut generator BytecodeGenerator) conditional_tail(mut vm VM, expression &Exp
 		generator.emit(Instruction{op: .mov, dst: dst, lhs: value})
 		ends << generator.emit(Instruction{op: .jump})
 		generator.patch(otherwise)
-		current = current.kind.alternate_expr or { return error('Missing alternate') }
+		current = *(current.kind.alternate_expr or { return error('Missing alternate') })
 	}
-	value := generator.expression(mut vm, current)!
+	value := generator.expression(mut vm, &current)!
 	generator.emit(Instruction{op: .mov, dst: dst, lhs: value})
 	for end in ends { generator.patch(end) }
 	return dst

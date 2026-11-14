@@ -244,17 +244,7 @@ fn (mut generator BytecodeGenerator) expression(mut vm VM, expression &Expressio
 			return dst
 		}
 		.object_expr {
-			dst := generator.temporary()
-			generator.emit(Instruction{op: .new_object, dst: dst})
-			for property in kind.object_properties {
-				if property.property_type != .key_value { return generator.unsupported('object accessor, spread or prototype setter') }
-				key := if !property.is_computed && property.key.kind.tag == .identifier_expr {
-					generator.constant(Value.from_string(vm.create_string(identifier_name(&property.key)!)))
-				} else { generator.expression(mut vm, &property.key)! }
-				value := generator.expression(mut vm, &(property.value or { return error('Missing property value') }))!
-				generator.emit(Instruction{op: .define_property, lhs: dst, rhs: key, src: value})
-			}
-			return dst
+			return generator.object_literal(mut vm, kind.object_properties)
 		}
 		.function_expr {
 			dst := generator.temporary()
@@ -575,9 +565,10 @@ fn (mut generator BytecodeGenerator) expression(mut vm VM, expression &Expressio
 	}
 }
 
-fn declaration_name(declaration VariableDeclarator) !Utf16String {
-	if declaration.target is IdentifierVarTarget { return declaration.target.identifier.name }
-	return error('Destructuring declarations are not translated yet')
+fn declaration_bound_names(declaration VariableDeclarator) []Utf16String {
+    mut names := []Utf16String{}
+    collect_declarator_names(declaration.target,mut names)
+    return names
 }
 
 fn (mut generator BytecodeGenerator) collect_vars(statement &Statement) ! {
@@ -590,20 +581,14 @@ fn (mut generator BytecodeGenerator) collect_vars(statement &Statement) ! {
 		return
 	}
 	if kind.tag == .variable_declaration && kind.decl_kind == .var_kind {
-		for declaration in kind.declarations {
-			name := declaration_name(declaration)!
-			mut exists := false
-			for binding in generator.executable.global_bindings {
-				if !binding.is_lexical && binding.name == name {
-					exists = true
-					break
-				}
-			}
-			if !exists { generator.executable.global_bindings << GlobalBinding{
-					name: name.clone()
-				} }
-		}
-	}
+        for declaration in kind.declarations {
+            for name in declaration_bound_names(declaration) {
+                if !generator.executable.global_bindings.any(it.name==name && !it.is_lexical) {
+                    generator.executable.global_bindings << GlobalBinding{name:name.clone()}
+                }
+            }
+        }
+    }
 	if kind.tag in [.program, .block, .function_body] {
 		scope := if kind.tag == .program { (kind.program_data or { return error('Missing program') }).scope } else { kind.scope or {
 				return error('Missing block')} }
@@ -629,26 +614,16 @@ fn (mut generator BytecodeGenerator) lexical_declarations(children []Statement, 
 	for child in children {
 		if child.kind.tag != .variable_declaration || child.kind.decl_kind == .var_kind { continue
 		 }
-		for declaration in child.kind.declarations {
-			name := declaration_name(declaration)!
-			constant := child.kind.decl_kind == .const_kind
-			if global {
-				generator.executable.global_bindings << GlobalBinding{
-					name:        name.clone()
-					is_lexical:  true
-					is_constant: constant
-				}
-			} else {
-				generator.emit(Instruction{
-					op:         if constant {
-						OpCode.create_immutable_binding
-					} else {
-						OpCode.create_mutable_binding
-					}
-					identifier: generator.identifier(name)
-				})
-			}
-		}
+        for declaration in child.kind.declarations {
+            for name in declaration_bound_names(declaration) {
+                constant := child.kind.decl_kind==.const_kind
+                if global {
+                    generator.executable.global_bindings << GlobalBinding{name:name.clone(),is_lexical:true,is_constant:constant}
+                } else {
+                    generator.emit(Instruction{op:if constant { OpCode.create_immutable_binding } else { OpCode.create_mutable_binding },identifier:generator.identifier(name)})
+                }
+            }
+        }
 	}
 }
 
@@ -716,30 +691,13 @@ fn (mut generator BytecodeGenerator) statement(mut vm VM, statement &Statement) 
 			generator.scope_depth--
 			generator.emit(Instruction{ op: .leave_scope })
 		}
-		.variable_declaration {
-			for declaration in kind.declarations {
-				name := declaration_name(declaration) or {
-					return generator.unsupported('destructuring declaration')
-				}
-				if declaration.init == none && kind.decl_kind == .var_kind { continue
-				 }
-				value := if init := declaration.init {
-					generator.expression(mut vm, &init)!
-				} else {
-					generator.constant(js_undefined())
-				}
-				generator.emit(Instruction{
-					op:         if kind.decl_kind == .var_kind {
-						OpCode.set_variable
-					} else {
-						OpCode.initialize_binding
-					}
-					lhs:        value
-					identifier: generator.identifier(name)
-					strict:     generator.strict
-				})
-			}
-		}
+        .variable_declaration {
+            for declaration in kind.declarations {
+                if declaration.init==none && kind.decl_kind==.var_kind { continue }
+                value := if init := declaration.init { generator.expression(mut vm,&init)! } else { generator.constant(js_undefined()) }
+                generator.initialize_declaration_target(mut vm,declaration.target,value,kind.decl_kind!=.var_kind)!
+            }
+        }
 		.if_stmt {
 			generator.clear_completion()
 			test := generator.expression(mut vm, kind.test or { return error('Missing if test') })!

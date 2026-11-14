@@ -423,10 +423,15 @@ fn (mut host ModuleHost) supply(mut operation BrowserModuleOperation, code strin
 		return
 	}
 	mut runtime := unsafe { &Runtime(host.runtime) }
+	// The specifier rewrite of the module's source, apart from the engine's
+	// own parse and evaluation of the result.
+	rewrite_stage := processmetrics.begin_instruction_stage('javascript_module_source_rewrite')
 	transformed := host.rewrite_value(code, base, operation.key, true) or {
+		rewrite_stage.finish()
 		host.reject(mut operation, js_exception_or_message(runtime.context, err))
 		return
 	}
+	rewrite_stage.finish()
 	defer { runtime.release_javascript_value(transformed) }
 	$if darwin {
 		mut exception := unsafe { nil }

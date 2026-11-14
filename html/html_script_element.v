@@ -131,7 +131,7 @@ pub fn html_script_element_model_for_dom_element(element &dom.HTMLScriptElement)
 	mut model := HTMLScriptElementModel.create(dom_element.document().base_url())
 	model.src_ = dom_element.get_attribute_ns(none, 'src')
 	model.text_ = dom_element.as_node().child_text_content()
-	model.type_attribute_ = dom_element.get_attribute('type')
+	model.type_attribute_ = dom_element.get_attribute_ns(none, 'type')
 	model.language_attribute_ = dom_element.get_attribute('language')
 	model.async_attribute_ = dom_element.has_attribute('async')
 	model.nomodule_ = dom_element.has_attribute('nomodule')
@@ -680,7 +680,7 @@ pub fn html_script_element_attribute_changed(element &dom.HTMLScriptElement, nam
 		model.async_attribute_ = true
 	} else if name == 'async' {
 		model.async_attribute_ = false
-	} else if name == 'type' {
+	} else if name == 'type' && namespace_ == none {
 		model.type_attribute_ = value
 	} else if name == 'language' {
 		model.language_attribute_ = value

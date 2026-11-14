@@ -15,6 +15,50 @@ struct DocumentQueryPlan {
 	selectors SelectorList
 	independent ?[]CompoundSelector
 	named_namespace bool
+	// Every simple selector compares a name, an ID or a class. Outside quirks
+	// mode such a match allocates nothing and needs no scratch workspace.
+	scalar bool
+}
+
+// Same-binary control: open a scratch workspace for every query, as before.
+const retain_scalar_query_scratch = os.getenv('VOX_RETAIN_SCALAR_QUERY_SCRATCH') != ''
+
+fn independent_compounds_are_scalar(compounds ?[]CompoundSelector) bool {
+	list := compounds or { return false }
+	for compound in list {
+		for simple in compound.simple_selectors {
+			if simple.type_ !in [.tag_name, .universal, .id, .class] { return false }
+		}
+	}
+	return true
+}
+
+fn (plan &DocumentQueryPlan) matches_without_workspace(document &dom.Document) bool {
+	return plan.scalar && !retain_scalar_query_scratch && !recompute_document_query_plans
+		&& document != unsafe { nil } && !document.in_quirks_mode()
+}
+
+// Whether every compound names a tag this document has never seen, so that
+// no element below a connected root can match. Reads only names: the caller
+// has not opened a workspace yet.
+fn independent_query_tags_are_absent(root &dom.Node, compounds []CompoundSelector) bool {
+	if retain_scalar_query_scratch || (!root.is_document()
+		&& (retain_document_only_absence_queries || !root.is_connected())) {
+		return false
+	}
+	document := root.document()
+	for compound in compounds {
+		mut absent := false
+		for simple in compound.simple_selectors {
+			if simple.type_ == .tag_name
+				&& !document.has_seen_element_local_name(simple.qualified_name().name.lowercase_name) {
+				absent = true
+				break
+			}
+		}
+		if !absent { return false }
+	}
+	return compounds.len > 0
 }
 
 fn (plan &DocumentQueryPlan) independent_compounds() ?[]CompoundSelector {
@@ -43,10 +87,12 @@ fn (mut state DocumentSelectorQueryState) query_plan(text string) ?&DocumentQuer
 	selectors := state.parse(text) or { return none }
 	persistent := platform.enter_persistent()
 	defer { platform.leave_persistent(persistent) }
+	independent := independent_query_compounds(selectors)
 	plan := &DocumentQueryPlan{
 		selectors: selectors
-		independent: independent_query_compounds(selectors)
+		independent: independent
 		named_namespace: selector_list_contains_named_namespace(selectors)
+		scalar: independent_compounds_are_scalar(independent)
 	}
 	state.plans[text.clone()] = plan
 	return plan
@@ -139,6 +185,12 @@ fn element_matches_query_plan(element &dom.Element, plan &DocumentQueryPlan,
 	if !recompute_document_query_plans && plan.independent == none {
 		return general_query_matches(element, plan.selectors, scoping_root)
 	}
+	if plan.matches_without_workspace(element.document()) {
+		if compounds := plan.independent {
+			mut context := MatchContext{has_result_cache: unsafe { nil }}
+			return independent_query_matches(element, compounds, mut context)
+		}
+	}
 	scratch := platform.begin_thread_scratch('independent query plan match')
 	if compounds := plan.independent_compounds() {
 		mut context := MatchContext{has_result_cache: unsafe { nil }}
@@ -170,6 +222,11 @@ fn dom_selector_scope_query(target voidptr, selector_text string, root &dom.Pare
 	first bool) ?[]&dom.Node {
 	mut state := unsafe { &DocumentSelectorQueryState(target) }
 	plan := state.query_plan(selector_text) or { return none }
+	if !recompute_document_query_plans {
+		if compounds := plan.independent {
+			if independent_query_tags_are_absent(root.as_node(), compounds) { return []&dom.Node{} }
+		}
+	}
 	// Parsed selectors are document-owned. Only the independent matching walk
 	// and its temporary vectors belong to this synchronous workspace.
 	scratch := platform.begin_thread_scratch('independent DOM query')
@@ -220,6 +277,14 @@ pub fn install_document_selector_query_hook(document &dom.Document) {
 		contains_named_namespace: dom_selector_query_contains_named_namespace
 		scope_query:              dom_selector_scope_query
 	})
+}
+
+// The error Element.matches() reports for a selector that does not parse,
+// without matching anything.
+pub fn require_document_selector(document &dom.Document, selector_text string) ! {
+	_ = document_query_plan(document, selector_text) or {
+		return error('SyntaxError: Failed to parse selector')
+	}
 }
 
 fn parse_query_selector_list(selector_text string) ?SelectorList {
@@ -307,6 +372,11 @@ fn query_selector_all_with_plan(node &dom.Node, plan &DocumentQueryPlan, mut res
 // Returns the first descendant element of `root` (in tree order) that matches the selector.
 pub fn query_selector(root &dom.Node, selector_text string) ?&dom.Element {
 	plan := document_query_plan(root.document(), selector_text) or { return none }
+	if !recompute_document_query_plans {
+		if compounds := plan.independent {
+			if independent_query_tags_are_absent(root, compounds) { return none }
+		}
+	}
 	scratch := platform.begin_thread_scratch('independent DOM query')
 	if compounds := plan.independent_compounds() {
 		if !independent_query_may_match_document(root, compounds) {

@@ -106,8 +106,9 @@ pub fn scheme_part_matches(a string, b string) MatchResult {
 
 pub fn host_part_matches(pattern string, maybe_host ?url.Host) MatchResult {
 	host := maybe_host or { return .does_not_match }
-	// A CSP host-source matches domains, never opaque or numeric IP hosts.
-	if !host.is_domain() {
+	// Opaque hosts are not network hosts. Preserve the later upstream support
+	// for numeric IP hosts while excluding opaque and empty hosts.
+	if host is url.OpaqueHost || host.is_empty_host() {
 		return .does_not_match
 	}
 	host_string := host.serialize()

@@ -5,8 +5,14 @@ runtime can now execute Hacker News's comment-collapse script against the
 browser's native DOM. This is an experimental, explicitly selected backend;
 general ECMAScript and Web API compatibility remains incomplete.
 
+The separate [cached native-code experiment](LIBJS_NATIVE_CODE.md) warms HN
+callbacks and compiles cached bytecode to a reusable native library. It remains
+an explicit VM API, is not enabled by this browser setting, and showed no
+reliable callback speedup in its three seven-pair cohorts.
+
 The subsequent [GitHub work and pixel baseline](LIBJS_GITHUB.md) remain open.
-Import-free ES modules now execute; dependency graphs and React hydration do not.
+Synchronous ES module graphs now load through native Fetch and import maps.
+GitHub's React hydration and pixel-perfect rendering remain incomplete.
 
 ## Select the engine
 
@@ -44,9 +50,19 @@ the translated native URL implementation. Script-source and callback storage
 outlive parser scratch allocations. Runtime closure removes listeners and stops
 further VM entry.
 
-Remaining work includes module dependency graphs, dynamic imports, top-level
+Synchronous module graphs retain live imported bindings, cycles, re-exports and
+private environments. Native loading shares HTML's Fetch, module map and import
+map; completion releases document delays and fires the script element's event.
+The interpreter also executes `import.meta` and synchronous `try/catch`.
+Module URLs and resolution use the native response base and import map.
+Performance marks and entry queries use the owning document's real native
+timeline; non-null detail cloning, measures and observers remain incomplete.
+The namespace read adapter uses accessor descriptors; full namespace data
+descriptor and freeze semantics remain incomplete.
+
+Remaining work includes dynamic imports, top-level
 await, async/generators, eval/Function, non-simple
-parameters, complete arguments objects, class execution, try/catch code generation,
+parameters, complete arguments objects, class execution, `finally`,
 the remaining intrinsic graph and most Web APIs. The parser retains its 32-call
 recursion guard by default; browser execution requests depth 256 while retaining
 native parser/compiler stack reserves. RegExp replace/split/search/matchAll hooks and constructor edge

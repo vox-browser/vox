@@ -285,6 +285,8 @@ mut:
 	native_function_table          []NativeFunctionTableEntry
 	native_function_indices        map[string]u32
 	run_executable_depth           u32
+	// Explicit experimental tier; absent in ordinary/browser execution.
+	native_tier ?&NativeTier
 	instruction_budget u64
 	instruction_budget_active bool
 	external_budget_depth u32

@@ -31,8 +31,8 @@ int wmain(int argc, wchar_t **argv) {
   assert(WaitForSingleObject(ready, 120000) == WAIT_OBJECT_0);
   CloseHandle(ready);
   browser_pid = child.dwProcessId;
-  assert(SetEnvironmentVariableW(L"VOX_WINDOWS_CLOSE_DUMP", argv[1]));
-  capture_close_timeout(child.hProcess);
+  assert(SetEnvironmentVariableW(L"VOX_WINDOWS_FAILURE_DUMP", argv[1]));
+  capture_browser_failure(child.hProcess, "startup-title");
 
   HANDLE file = CreateFileW(argv[1], GENERIC_READ | GENERIC_WRITE, 0, NULL,
                             OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
@@ -62,7 +62,9 @@ int wmain(int argc, wchar_t **argv) {
   assert(transferred == sizeof(marker));
   assert(GetFileSizeEx(file, &expected_size));
   CloseHandle(file);
-  capture_close_timeout(child.hProcess);
+  assert(SetEnvironmentVariableW(L"VOX_WINDOWS_FAILURE_DUMP", NULL));
+  assert(SetEnvironmentVariableW(L"VOX_WINDOWS_CLOSE_DUMP", argv[1]));
+  capture_browser_failure(child.hProcess, "close");
   file = CreateFileW(argv[1], GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING,
                       FILE_ATTRIBUTE_NORMAL, NULL);
   assert(file != INVALID_HANDLE_VALUE);
@@ -78,6 +80,6 @@ int wmain(int argc, wchar_t **argv) {
   assert(TerminateProcess(child.hProcess, 0));
   assert(WaitForSingleObject(child.hProcess, 10000) == WAIT_OBJECT_0);
   CloseHandle(child.hProcess);
-  puts("PASS: external-process close dump and no-overwrite protection");
+  puts("PASS: startup failure dump, legacy close flag and no-overwrite protection");
   return 0;
 }

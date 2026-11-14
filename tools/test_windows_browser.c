@@ -14,12 +14,14 @@ static HWND browser_window;
 
 /* Capture from the driver, before failure cleanup kills the hung child.
  * Load the system provider only when an explicit diagnostic path is set. */
-static void capture_close_timeout(HANDLE process) {
+static void capture_browser_failure(HANDLE process, char const *phase) {
   wchar_t path[32768];
-  DWORD length = GetEnvironmentVariableW(L"VOX_WINDOWS_CLOSE_DUMP", path, 32768);
+  DWORD length = GetEnvironmentVariableW(L"VOX_WINDOWS_FAILURE_DUMP", path, 32768);
+  if (!length && !strcmp(phase, "close"))
+    length = GetEnvironmentVariableW(L"VOX_WINDOWS_CLOSE_DUMP", path, 32768);
   if (!length) return;
   if (length >= 32768) {
-    fputs("Close dump path is too long\n", stderr);
+    fputs("Browser failure dump path is too long\n", stderr);
     return;
   }
   HMODULE library = LoadLibraryExW(L"dbghelp.dll", NULL, LOAD_LIBRARY_SEARCH_SYSTEM32);
@@ -37,7 +39,7 @@ static void capture_close_timeout(HANDLE process) {
   HANDLE file = CreateFileW(path, GENERIC_WRITE, FILE_SHARE_READ, NULL,
                             CREATE_NEW, FILE_ATTRIBUTE_NORMAL, NULL);
   if (file == INVALID_HANDLE_VALUE) {
-    fprintf(stderr, "Creating close dump failed: %lu\n", GetLastError());
+    fprintf(stderr, "Creating browser failure dump failed: %lu\n", GetLastError());
     FreeLibrary(library);
     return;
   }
@@ -46,8 +48,8 @@ static void capture_close_timeout(HANDLE process) {
   DWORD error = saved ? ERROR_SUCCESS : GetLastError();
   CloseHandle(file);
   FreeLibrary(library);
-  fprintf(stderr, "Close timeout dump: saved=%d error=0x%08lx path=%ls\n",
-          saved, (unsigned long)error, path);
+  fprintf(stderr, "Browser failure dump: phase=%s saved=%d error=0x%08lx path=%ls\n",
+          phase, saved, (unsigned long)error, path);
   fflush(stderr);
 }
 
@@ -422,8 +424,8 @@ finished:
     fprintf(stderr, "FAIL: phase=%s pid=%lu error=%lu child_exit=%lu window=%p foreground=%p title=%ls\n", phase,
             (unsigned long)browser_pid, (unsigned long)error, (unsigned long)code,
             (void*)browser_window, (void*)GetForegroundWindow(), title);
-    if (!strcmp(phase, "close") && code == STILL_ACTIVE)
-      capture_close_timeout(browser.hProcess);
+    if (code == STILL_ACTIVE)
+      capture_browser_failure(browser.hProcess, phase);
     TerminateProcess(browser.hProcess, 125);
     WaitForSingleObject(browser.hProcess, 10000);
   }

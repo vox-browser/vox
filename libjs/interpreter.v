@@ -50,6 +50,19 @@ fn (mut vm VM) execute_instruction(instruction Instruction, executable &Executab
 	}
 	mut result := js_undefined()
 	match instruction.op {
+		.require_object_coercible {
+			if left.is_nullish() { return vm.throw_error_type(.type_error,.to_object_null_or_undefined) }
+		}
+		.to_property_key { result=left.to_property_key(mut vm)!.to_value(mut vm) }
+		.copy_object_excluding_keys {
+			mut excluded := []PropertyName{cap:instruction.arguments.len}
+			for operand in instruction.arguments {
+				key := frame.values[operand.slot(executable,frame.argument_count,false)!]
+				if key.is_special_empty_value() { return vm.throw_error(.internal_error,'Uninitialized object rest key') }
+				excluded << key.to_property_key(mut vm)!
+			}
+			result=Value.from_object(copy_object_excluding_keys(mut vm,left,excluded)!)
+		}
 		.new_regexp { result = Value.from_object(create_regexp_object(mut vm, left.as_string().utf16, right.as_string().utf16)!) }
 		.new_object { result = Value.from_object(Object.create(vm.realm(), vm.realm().object_prototype)) }
 		.new_array { result = Value.from_object(ArrayObject.create(mut vm, vm.realm(), u64(left.number), vm.realm().array_prototype_record())!.object) }
@@ -57,8 +70,15 @@ fn (mut vm VM) execute_instruction(instruction Instruction, executable &Executab
 			mut object := left.as_object()
 			object.create_data_property_or_throw(mut vm, right.to_property_key(mut vm)!, source)!
 		}
+		.set_object_literal_prototype {
+			if right.is_object() || right.is_null() {
+				mut object := left.as_object()
+				prototype := if right.is_object() { ?&Object(right.as_object()) } else { none }
+				if !object.internal_set_prototype_of(prototype) { return vm.throw_error_type(.type_error, .object_set_prototype_of_returned_false) }
+			}
+		}
 		.new_function, .new_function_with_name {
-			inferred := if instruction.op == .new_function_with_name { ?Utf16String(left.to_primitive_string(mut vm)!.utf16) } else { none }
+			inferred := if instruction.op == .new_function_with_name { ?Utf16String(make_function_name(left.to_property_key(mut vm)!, none)) } else { none }
 			result = Value.from_object(create_ecmascript_function(mut vm, executable, instruction.identifier, instruction.strict, inferred)!)
 		}
 		.mov {
@@ -381,6 +401,30 @@ pub fn (mut vm VM) run_executable(mut frame ExecutionContext, executable &Execut
 		if own_budget {
 			vm.instruction_budget = previous_budget
 			vm.instruction_budget_active = previous_budget_active
+		}
+	}
+	if mut tier := vm.native_tier {
+		if tier.profiling {
+			tier.observe(executable)
+		}
+		if tier.enabled {
+			if entry := tier.entries[voidptr(executable)] {
+				mut invocation := NativeInvocation{vm: &vm, executable: executable}
+				mut fast_steps := &u64(unsafe { nil })
+				if tier.diagnostics {
+					tier.activity.entries++
+					fast_steps = &tier.activity.fast_steps
+				}
+				entry(voidptr(&invocation), frame.values.data, &vm.instruction_budget,
+					u8(vm.instruction_budget_active), &frame.program_counter, native_slow_step, fast_steps)
+				if failure := invocation.failure { return failure }
+				if frame.program_counter == 0xfffffffe {
+					frame.program_counter = executable.bytecode_length
+					return vm.reg(register_return_value)
+				}
+				if invocation.ended { return vm.reg(register_return_value) }
+				return vm.throw_error(.internal_error, 'Bytecode fell off the end without End')
+			}
 		}
 	}
 	for frame.program_counter < executable.bytecode_length {
