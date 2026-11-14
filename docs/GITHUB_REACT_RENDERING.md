@@ -234,3 +234,88 @@ No production instruction saving or broad-check optimization checkpoint is
 credited. The installed `5fb3…` bundle still requires
 `VOX_RETAIN_COMPACT_FIRST_QUERY=1` for complete GitHub hydration until a
 corrected production bundle passes startup and is published.
+
+## November 14 continuation
+
+`78d478971` fixes the rejected production startup. Staging an already staged
+compiler inserted closure-allocation hooks twice; the second leave restored
+a null allocator. Staging now recognizes complete existing instrumentation
+and rejects partial or duplicated hooks. The focused startup contract in
+`5636f3c19` uses explicit checks that remain active with literal `-prod`.
+The repaired runtime passes; its broken control fails.
+
+Production receipt `20261113-103410-86416163` subsequently publishes executable
+SHA-256 `07b5873dc78af20df3f730261db0fb44e79b6b7d061aa210bff1dcb4f9a0316c`
+in single-unit C `-prod` mode. A fresh November 14 process passes the complete
+33-row archived React text audit, including latest commit, README and commit
+links, with no script/native errors. Both native selector transports execute.
+The earlier absent-query rollback is no longer required. Browser and memory
+guard exits are zero. The host load is 63–66 on 18 CPUs, and a production
+compile runs concurrently; this check establishes functionality only.
+
+An interrupted prior turn recorded seven full-content pairs on this build,
+with all 14 original PNG comparisons failing and Vox slower than Brave. Its
+first pair also overlapped a diagnostic. The original job directory is now
+absent. A recovered summary preserves the previously recorded counts and
+this limitation; it is not a replacement for raw receipts and supplies no
+acceptance or optimization credit. References and tolerances remain unchanged.
+
+The checkout is now `/Users/alex/code/vox`; historical receipts retain its
+former `/Users/alex/code/vox2` location. `3d60705b4` fixes regeneration of staged
+compiler links after a cache directory moves. The cache key includes the
+absolute output root, so moved entries cannot reuse broken absolute symlinks.
+The regression fails against the old implementation and all six build-tool
+test files pass with the correction. The managed production hook requests
+the normal coalesced rebuild.
+
+The explicit embed-helper import in `f11a8b575` clears the V profiler's earlier
+embedded-asset resolution failure. Both the test and regular entry points then
+hit a separate compiler error: optional tuple returns of two fixed arrays in
+`gg.canvas` produce invalid C initializers. The diagnostic executable repairs
+only those two initializers to nested braces, with before/after hashes and the
+exact compiler command retained. It is **not** a production validation build.
+Its fresh capture passes the full archived text audit, both selector paths
+execute, and browser and guard exit zero. The resulting 1.5 MB V profile is
+retained. It records extensive repeated flow layout and style access, including
+244,664 block-box layout calls and 138,235 uncached independent layouts.
+These counts belong to the instrumented run; recursive inclusive times overlap
+and profiling changes callback scheduling. They establish no production gain.
+
+A separate native sample of the pinned production browser finds repeated
+`CTFontCopyVariationAxes` calls while opening registered faces for missing glyphs.
+Disassembly places the sampled return address at offset 268 in the registered
+descriptor branch, before the collection/file fallbacks. This verifies that
+the proposed cache applies to the workload. Axis enumeration also localizes
+the names on every open. `6b4924d38` stores the immutable
+color/variation flags beside the registry's retained descriptor after its first
+successful open. Lookup and publication use the existing mutex. No additional
+native font object is retained; ordinary file opens keep their prior behavior.
+`VOX_DISABLE_REGISTERED_FACE_FLAGS_CACHE=1` restores the old work in the same
+binary for a future comparison.
+
+The native regression fails before the fix. With it, 17 opens query axes once
+per registered face, versus 17 with the rollback enabled. Variable-font weights
+and color emoji retain identical flags, advances, bounds and glyph pixels;
+uncached file opens and failed opens retain their behavior. The new regression,
+existing glyph raster references and retained-glyph tests pass in all three
+test files with default GC and `-gc none`; the rollback regression passes too.
+An initial test-driver error used an unavailable temporary-directory API; its
+failed check is retained, followed by the corrected passing checks.
+
+The installed `07b5…` bundle predates this font optimization. Its native sample
+identifies the repeated work, and the focused checks validate the correction;
+a completed production bundle and matched unprofiled page cohort are still
+required to measure its benefit. No site instruction saving or broad-check
+optimization checkpoint is credited, and Brave parity remains open.
+
+This continuation's raw profiles, native samples, capture audits, PNGs, exact
+commands, guards and failed checks are local in
+`~/Library/Caches/Vox/benchmarks/github-react-rendering-20261114-r5/evidence.tar.gz`
+(312 files; SHA-256
+`7cca41feabf6bd7dd09154e9db347e328a18f85cac42b6d79ca5359881194007`).
+The ignored structured record is
+`docs/performance/github-react-rendering-20261114-r5.json`. Generated C units,
+executables and the Python environment are excluded from the archive; the
+diagnostic C repair's exact hunks, hashes and compiler command are retained.
+All job guards have final exit receipts, and the job's scratch directory and
+guard files are removed after verification of the archive.
