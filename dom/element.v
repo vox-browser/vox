@@ -7402,7 +7402,7 @@ fn (e &Element) svg_use_reference_url() ?URL {
 fn (e &Element) svg_use_reference_is_same_document(reference URL) bool {
 	mut reference_without_fragment := reference
 	reference_without_fragment.set_fragment(none)
-	mut document_without_fragment := e.document().url
+	mut document_without_fragment := e.document().base_url()
 	document_without_fragment.set_fragment(none)
 	return reference_without_fragment == document_without_fragment
 }
