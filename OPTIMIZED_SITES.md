@@ -7,15 +7,15 @@ Results apply to the frozen page and pinned build in each linked report.
 Provisional entries retain unresolved acceptance checks.
 
 **Pixel recheck, 2026-11-14:** Vox does **not** pass pixel equality across
-this catalog. The latest completed production bundle renders Hacker News,
-Lobsters and Wikipedia exactly in two fresh captures each. The unblurred
-inset-shadow correction now reaches **19 GitHub differences** and **3,228
-vlang.io differences** in production, twice each. The subsequent native-leaf
-padding and shared shadow/image fixes now make the archived GitHub page
-**pixel-exact in two fresh diagnostic captures**, pending production validation. CNN retains its large
-rendering mismatch and source/replay failure; earlier native-repeat failures
-remain unresolved despite an agreeing latest pair. CNN and vlang.io remain open; GitHub still awaits production confirmation. Reddit could not be verified (missing historical fixture, live
-HTTP 403). See the [current audit, capture scopes and retained failures](docs/OPTIMIZED_SITES_PIXELS_2026_11_12.md).
+this catalog. Hacker News, Lobsters and Wikipedia are exact in prior production
+checks. The newest checked production bundle reaches **15 GitHub differences**
+in two fresh captures; the last confirmed vlang.io production count is **3,228**.
+The subsequent shared shadow/image fix makes the archived GitHub page
+**pixel-exact in two fresh diagnostic captures**, pending production validation.
+CNN retains its rendering mismatch, source/replay failure and native-repeat
+instability. CNN and vlang.io remain open. Reddit could not be verified
+(missing historical fixture, live HTTP 403). See the [current audit, capture
+scopes and retained failures](docs/OPTIMIZED_SITES_PIXELS_2026_11_12.md).
 
 | Site | Recorded date | Trials per browser | Statistic | Vox instructions | Brave observed instructions | Fewer instructions | Vox RAM (MiB)‡ | Brave RAM (MiB)‡ | Vox scroll FPS§ | Vox GPU canvas FPS§ | Brave scroll FPS† | Evidence |
 | --- | --- | ---: | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- |

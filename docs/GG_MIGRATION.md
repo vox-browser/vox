@@ -2833,8 +2833,8 @@ retains failed probes, CNN's instability and the remaining all-site gaps.
 padding crosses its origin. The outside fringe stays untouched. Both single
 and grouped replay now match the exact search-border regression. All 24 focused
 tests pass; the full fixture is exact twice and GitHub improves from 19 to 15
-differing pixels twice. Other site/control counts are preserved. Production
-validation is pending; see the [audit](OPTIMIZED_SITES_PIXELS_2026_11_12.md#native-leaf-fringe-correction-2026-11-14).
+differing pixels twice. Other site/control counts are preserved. Production `b6501a1e` now confirms the search-border fixture exactly
+and GitHub at 15 pixels, each twice; see the [audit](OPTIMIZED_SITES_PIXELS_2026_11_12.md#native-leaf-fringe-correction-2026-11-14).
 
 
 ### Shared PNG and outer-shadow resolve, 2026-11-14

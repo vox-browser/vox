@@ -1274,7 +1274,7 @@ full GitHub archive's search-border errors. The fractional x=760.75, relative
 header, isolated long page and backdrop blur reproduce the original context.
 Commit `7019fc7ec` makes the full fixture exact in two diagnostic browser captures
 and checks its border band through single and grouped replay. Production
-validation is pending. See the
+`b6501a1e` now confirms the full search-border fixture exactly twice. See the
 [pixel audit](../../../docs/OPTIMIZED_SITES_PIXELS_2026_11_12.md#legacy-grid-reduction-2026-11-14).
 
 

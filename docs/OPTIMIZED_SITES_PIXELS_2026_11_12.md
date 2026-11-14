@@ -1364,3 +1364,18 @@ The managed hook requests the normal production rebuild. **GitHub zero is
 diagnostic pending production**, not live-site or JavaScript conformance.
 vlang.io, CNN's rendering/source-replay/stability failures, the missing Reddit
 fixture and the overall all-site gate remain open. No performance credit is claimed.
+
+
+### Production confirmation of the preceding fringe fix
+
+While finishing the PNG-shadow correction, production bundle
+`b6501a1e85c9bc260ed3664ed58de7a100e24521eff9bd55b870292ea471f6ac`
+completed through the managed worker (receipt `20261114-120227-85e8c420`,
+C backend, literal V `-prod`, one C unit). Its frozen manifest matches the 34
+selected pre-PNG rendering witnesses at `7019fc7ec`. Six fresh production
+captures confirm **GitHub 15**, **search-border fixture 0**, and **shadowed-avatar
+fixture 8**, each twice. Browser/guard/driver exits are 0 with unchanged pinned
+inputs. This confirms the preceding fringe correction in production; the new
+shared PNG-shadow correction remains diagnostic pending production. These six
+checks do not rerun the entire catalog. Evidence is archived with the avatar
+work; no duplicate manual production build was requested.
