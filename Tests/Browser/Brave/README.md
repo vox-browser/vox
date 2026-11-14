@@ -1370,3 +1370,16 @@ vlang.io remains 341 after the gradient change. Production validation of both
 fixes is pending. See the
 [recorded-clip audit](../../../docs/OPTIMIZED_SITES_PIXELS_2026_11_12.md#recorded-filter-clips-beyond-the-window-2026-11-14)
 and [gradient isolation audit](../../../docs/OPTIMIZED_SITES_PIXELS_2026_11_12.md#gradient-picture-isolation-without-hit-test-metadata-2026-11-14).
+
+
+`diagnostic/orbit-text-band.png` is the unchanged decoded 327×25 crop at
+(600,624) from the independently captured archived vlang.io Brave reference.
+`orbit-text-coverage.png` is its corresponding 446×25 A8 glyph-run input, whose
+origin is (481,624), obtained from cpuraster run 13. The GPU regression replays
+the recorded orbit over the independent `large-orbit-underlay.png`: resolving
+before glyph coverage leaves 50 differences in the band; sharing the pass is
+exact. The coverage asset is not an expected image. `efaca9e3c` carries that
+sample ownership through browser replay, improving vlang.io from 341 to 284
+pixels with zero new differences. The reduced scene and underlay retain four
+and three differences; production confirmation is pending. See the
+[shape/glyph audit](../../../docs/OPTIMIZED_SITES_PIXELS_2026_11_12.md#shape-and-glyph-samples-in-one-pass-2026-11-14).

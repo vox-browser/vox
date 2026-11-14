@@ -2973,3 +2973,16 @@ earlier tall-shadow repeat failure remain open. `de783cfd7` separately corrects
 an independently reproduced stale shadow-recording assertion. Production
 validation is pending the managed rebuild. See the
 [audit](OPTIMIZED_SITES_PIXELS_2026_11_12.md#gradient-picture-isolation-without-hit-test-metadata-2026-11-14).
+
+
+### Shared elliptical decoration and glyph samples, 2026-11-14
+
+`efaca9e3c` retains a supported shape prefix and following horizontal A8 glyphs
+through one GPU resolve, preserving their common owner, clip and paint order.
+The independent Brave text-band oracle improves 50 differences to zero.
+Fifteen focused checks pass with arena poisoning. The complete vlang.io capture
+improves 341 to 284 pixels, correcting 57 with zero new differences. The
+29-workload diagnostic cohort preserves four exact archives and all other
+preceding counts. CNN and the earlier tall-shadow repeat failure remain open;
+production validation is pending the managed rebuild. See the
+[audit](OPTIMIZED_SITES_PIXELS_2026_11_12.md#shape-and-glyph-samples-in-one-pass-2026-11-14).

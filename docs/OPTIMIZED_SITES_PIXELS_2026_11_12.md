@@ -2070,3 +2070,68 @@ Commands, identities, actual exits, source witnesses, PNGs, probe masks and
 failed attempts are local under
 `docs/performance/vlang-gradients-20261114/raw/glyph-coverage-20261114/`.
 Completed scratch jobs and temporary probes are removed after archival.
+
+
+## Shape and glyph samples in one pass, 2026-11-14
+
+`efaca9e3c` preserves an eligible elliptical decoration picture's samples until
+its following glyph coverage has blended. Previously, publishing the shapes
+before drawing text rounded the shared edge colors. V now records a bounded
+prefix of supported shapes followed by retained horizontal A8 glyph runs in
+one GPU pass. The real vlang.io picture uses seven shapes and six text runs.
+It stops at the next distinct clip. Culled leaves with author clips wholly
+outside the viewport may be skipped; visible owner, clip, effect and resource
+boundaries remain strict. Scale 1, supported geometry, opaque source text and
+representable font masks are required; unsupported inputs retain ordinary
+replay. Byte colors use the existing glyph rasterizer's color and font policy.
+The existing rounded native publication clip and outward filter-input rounding
+are preserved. No shaders, blur kernels or existing references change.
+
+The focused GPU regression uses an unchanged independent Brave text-band crop
+and the captured A8 coverage for that run. Separate resolves retain **50**
+differences; the shared pass is **pixel-exact**. The coverage PNG is an input,
+not an expected rendering. Thirteen browser-module checks and two GPU checks
+execute successfully under the 3 GiB guard with `VOX_ARENA_POISON=1`. These
+include byte-color coverage without optional float metadata, invalid coverage
+rejection before publication, unsafe owners/clips, invalid geometry, real
+picture ownership and the preceding gradient scale/fallback checks.
+
+Final diagnostic executable SHA-256:
+`9f011deb601e645efc3863832e08108c5c0f62d20570ad1fc335775b50c88320`.
+Two fresh vlang.io captures each have **284 differing pixels**, down from 341:
+**57 corrected pixels and zero new differences**. The remaining pixels are
+279 JPEG pixels, one heading pixel and four scene pixels. Those four scene
+pixels now match the reduced orbit fixture's residual coordinates and colors;
+the reduced scene remains four differences and its underlay remains three.
+
+The unchanged-input cohort covers 29 workloads, 58 document captures and one
+startup check. All 59 native guards, the driver and outer guard exit 0.
+Its 57 rendering-source and six tool witnesses remain unchanged. GitHub,
+Hacker News, Lobsters and Wikipedia remain exact twice, with all 33 GitHub rows
+and 30 Hacker News stories audited. All other preceding workload counts are
+unchanged. Twenty-eight native pairs repeat exactly. CNN remains 175,866 pixels
+different from Brave and differs between native repeats at 655 pixels, alongside
+its retained source/replay failure. Matching tall-shadow captures in this run
+do not clear the earlier baseline repeat failure.
+
+Initial non-activating candidates, a test fixture that initially omitted recorded
+clip metadata, formatter/import errors, an intentionally stopped stale compile,
+pruned compiler/font-runtime failures and a concurrent LibJS compile failure
+are retained separately from the final passing checks. The final diagnostic
+uses the available staged compiler and freshly prepared font runtime; no shared
+production bundle was replaced for this check.
+
+Production `aa19da69`, receipt `20261114-191855-433aa86a`, still supplies the
+810-pixel vlang.io baseline and lacks these changes. **284 remains a diagnostic
+result pending the managed production rebuild.** The normal commit hook requests
+a coalesced C backend, literal V `-prod`, single-unit build. No duplicate manual
+production build is requested. All-site equality remains open, including CNN,
+the missing original Reddit fixture and the retained repeatability failure.
+These frozen captures establish no live-site, author-script or performance
+acceptance.
+
+Commands, source/executable identities, font/runtime identities, reference crop
+provenance, actual exits, PNGs and failed attempts are local under
+`docs/performance/vlang-gradients-20261114/raw/orbit-text-20261114/`.
+Completed job scratch and the temporary harness symlink are removed after
+verified archival.
