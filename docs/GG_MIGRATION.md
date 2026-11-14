@@ -2872,4 +2872,6 @@ gradient oracles. vlang.io improves from 2,946 to 2,710 pixels twice, correcting
 236 pixels without new differences. The basic gradient-text control is exact;
 fractional, inline and mixed-scope controls retain failures. Retina text keeps
 its previous pixels exactly after two rejected higher-scale experiments.
-Production validation remains pending. See the [audit](OPTIMIZED_SITES_PIXELS_2026_11_12.md#text-layer-gradient-dither-origin-2026-11-14).
+Production `314e32e9` now confirms the 2,710-pixel site result and exact basic
+gradient-text control, each twice, with all 36 rendering witnesses matched.
+See the [production audit](OPTIMIZED_SITES_PIXELS_2026_11_12.md#production-confirmation-of-ellipse-and-text-gradient-fixes-2026-11-14).

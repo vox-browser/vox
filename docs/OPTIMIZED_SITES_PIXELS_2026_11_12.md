@@ -1526,3 +1526,57 @@ native callback header. Its compiled sources match the preceding candidate
 before the higher-backing-scale restriction and empty-intersection guard. This
 preview supplies no production acceptance for the final fix. The final source
 is committed and requested through the managed rebuild hook.
+
+
+## Production confirmation of ellipse and text-gradient fixes, 2026-11-14
+
+Production executable SHA-256
+`314e32e91a00d4b7e38ab01f3ed68531506770bd6aac15596e752d2b06e93d20`,
+receipt `20261114-142402-7aecdb3e`, contains the final guarded implementations of
+`50bdd42d6` and `f2ee06925`. All 36 selected rendering witnesses match the
+committed sources and staged GG inputs. The build uses C, literal V `-prod`
+and one C unit. Thirty fresh document captures across 15 workloads exit 0,
+as do all 30 native capture guards and the enclosing 12 GiB driver guard.
+
+| Workload | Differing pixels in each fresh capture |
+| --- | ---: |
+| vlang.io archive, scripts disabled, scale 1 | **2,710** |
+| Basic gradient text | **0** |
+| Fractional-position gradient text | **2,214** |
+| GitHub archive, 33 rows preserved | **0** |
+| Hacker News archive, 30 stories preserved | **0** |
+| Wikipedia / Lobsters archives | **0 / 0** |
+| CNN archive | **175,866** |
+| Border / avatar / small-shadow / shared-decoration / rotated-border controls | **0 each** |
+| Device-pixel shadows, scale 2 | **92** |
+| Rotated ellipse diagnostic | **1,530** |
+
+Every pair agrees internally except CNN, whose native repeat differs at 1,555
+pixels. Its source/replay and stability failures remain open. Fixture,
+reference, executable, library and diff-tool hashes remain unchanged throughout
+the cohort. A separate fresh non-windowed startup check exits 0; its empty
+environment creates disposable workspace-relative cache files, which are
+recorded and removed. A subsequent private-profile startup request is rejected
+before launch when a newer bundle appears; it supplies no replacement evidence
+for this pinned cohort. No changed-input attempt is counted as successful.
+
+Further JPEG probes accept no browser rendering change. Chromium's
+[GPU decode cache](https://chromium.googlesource.com/chromium/src/+/refs/heads/main/cc/tiles/gpu_image_decode_cache.cc)
+resizes YUV planes separately and promotes scaled images to 4:4:4. Isolated
+probes of that order, plane-filter precision, fractional RGB storage, mipmaps
+and compositing reduce the icon's residual to 23 one-level pixels in the best
+case, but do not reproduce the unchanged reference exactly. Half-float storage,
+conversion after mip filtering, different surface bounds and alternate natural
+coordinate normalization supply no accepted correction. The production JPEG
+crop still differs at 279 pixels. Two initial probe compiles fail on array
+assignment and slice-copy syntax; corrected executions and every failed result
+are retained. The temporary floating-image API and four probe tests are removed,
+and all staged rendering witnesses are restored exactly.
+
+Production evidence remains local under
+`docs/performance/vlang-gradients-20261112/raw/textmask-production-20261114/`;
+JPEG diagnostics remain under `raw/jpeg-planes-20261114/`. Completed scratch
+jobs, binaries, generated C and guards are archived and removed. This confirms
+the prior fixes in production; it does not pass the vlang.io, CNN, missing Reddit
+or all-site equality gates. No live-site, scripting or instruction-performance
+acceptance is claimed.

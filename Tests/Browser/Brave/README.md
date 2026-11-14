@@ -1287,8 +1287,9 @@ Two fresh Brave captures agree. Production `6bf5db1e` leaves eight differences
 on its white background; `cd0173d0d` matches the full fixture exactly twice.
 The corresponding GitHub archive's fifteen avatar differences also disappear.
 The GPU test checks a shared resolve against a separated-resolve control and
-rejects filtered underlays without mutating the backdrop. Production validation
-is pending; see the [audit](../../../docs/OPTIMIZED_SITES_PIXELS_2026_11_12.md#shared-png-and-outer-shadow-resolve-2026-11-14).
+rejects filtered underlays without mutating the backdrop. Production `314e32e9`
+confirms the avatar fixture and GitHub archive exactly twice; see the
+[audit](../../../docs/OPTIMIZED_SITES_PIXELS_2026_11_12.md#production-confirmation-of-ellipse-and-text-gradient-fixes-2026-11-14).
 
 
 `resources/gradient-text-linear-mask.png` freezes the retained glyph coverage
@@ -1297,7 +1298,8 @@ The focused raster test combines this coverage input with the gradient and
 compares against the existing, unchanged Brave reference. A page-origin control
 differs at 597 pixels; the text-layer origin is exact with two- and four-pixel
 leaf padding. Seven focused checks pass with `f2ee06925`; the complete basic
-browser fixture is exact twice at scale 1. Higher backing scales retain the
+browser fixture is exact twice at scale 1 in diagnostics and production
+`314e32e9`. Higher backing scales retain the
 previous renderer path, verified by unchanged Retina captures. This does not
 make the fractional, inline or mixed-scope text controls exact; see the
 [pixel audit](../../../docs/OPTIMIZED_SITES_PIXELS_2026_11_12.md#text-layer-gradient-dither-origin-2026-11-14).

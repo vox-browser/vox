@@ -7,11 +7,10 @@ Results apply to the frozen page and pinned build in each linked report.
 Provisional entries retain unresolved acceptance checks.
 
 **Pixel recheck, 2026-11-14:** Vox does **not** pass pixel equality across
-this catalog. GitHub's archived page is now exact in two fresh production
-captures; Hacker News, Lobsters and Wikipedia were exact in prior production
-checks and remain exact in current diagnostics. vlang.io improves from the
-confirmed production count of **3,228 to 2,710 differing pixels** in two fresh
-diagnostic captures, pending production validation. The latest text-gradient
+this catalog. GitHub, Hacker News, Lobsters and Wikipedia are exact in two
+fresh production captures each. vlang.io improves from the earlier production
+count of **3,228 to 2,710 differing pixels**, now confirmed in two fresh
+production captures. The latest text-gradient
 correction fixes 236 pixels without introducing differences relative to the
 preceding 2,946-pixel diagnostic; vlang.io still fails equality. CNN retains
 its rendering, source/replay and native-repeat failures. Reddit remains unverified
