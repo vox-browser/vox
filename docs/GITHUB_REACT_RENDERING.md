@@ -319,3 +319,87 @@ executables and the Python environment are excluded from the archive; the
 diagnostic C repair's exact hunks, hashes and compiler command are retained.
 All job guards have final exit receipts, and the job's scratch directory and
 guard files are removed after verification of the archive.
+
+## Production follow-up and checked selector matches
+
+The completed single-unit C `-prod` executable
+`6bf5db1e031eea8a68b6a4752ae3f45f603735510d16c6c7c5b43c27a0cde526`
+contains the font-flag cache. Receipt `20261114-111608-a68550bc` seals the
+expected `glyph_coretext.h` hash. Seven alternating normal/rollback pairs in
+this same binary pass every complete-text audit. The observed instruction
+medians are 31,911,369,766 normally and 36,066,520,908 with the cache disabled;
+the corresponding time medians are 5,967.171 and 7,707.930 ms.
+**These remain diagnostic observations, without qualified optimization credit.**
+Six pairs have different pixels, and every capture differs from the original
+native reference. Both settings produce both observed pixel states: directory
+rows start at x=32 or x=33, with 25,387 differing pixels between those states.
+The cause has not been isolated. Every attempt is retained, including the
+initial controller directory-creation failure before any browser launched.
+
+`60d87b57c` removes another repeated allocation from `Element.matches()`.
+The CSS bridge validates and matches its document-owned parsed selector in
+one callback. It avoids constructing the DOM's temporary opaque selector
+vector and rewalking namespace metadata. Other bridges retain their existing
+validation, namespace and matching callbacks. The existing matcher still reads
+live element state with the element as its scope.
+`VOX_DISABLE_CHECKED_SELECTOR_MATCHES=1` restores the old path.
+
+The preallocation regression retains 49,152 bytes for 768 cached matches before
+the change; afterward the same check retains less than 1 KiB. The five new
+cases cover live relational/group selectors, `:scope`, syntax errors, foreign
+bridge behavior, temporary argument retirement, and SVG/XML case. They pass
+with default GC, production preallocation, and rollback. The seven-file
+selector selection passes under preallocation; default-GC credit combines six
+retained passing files with the corrected storage fixture. `25c94cefc` makes
+that existing fixture independent of a helper in another test file, preserving
+its assertions. Its original compile failure is retained.
+
+A fresh C-O0 browser compiled from the canonical checkout passes mandatory
+startup checks and the complete 33-row React audit without generated-C repairs.
+All nine SVG mutation reftests remain pixel-exact in that executable, including
+same-size image replacement and paint-server ID collisions. The full CPU
+raster package passes all 38 test files in both default and no-GC modes, with
+unchanged pinned inputs. The official LibJS AST driver matches all 100 cases.
+These checks supply no production speed claim.
+
+Production receipt `20261114-123523-3c4097b7` subsequently publishes executable
+`243a18521e40b66394d8b6901294bf718bd8381e2eaf76aade81524ff9b0cb17`.
+Its sealed hashes match all three checked-matcher implementation files,
+although its recorded HEAD precedes the implementation commit. Seven
+alternating normal/rollback pairs pass every content audit. Observed instruction
+medians are 34,132,965,456 normally and 34,243,384,391 with checked matching
+disabled; time medians are 5,209.788 and 5,330.809 ms. Only five pairs have
+identical pixels, and none passes the original native reference. No production
+page saving is credited from this cohort.
+
+Two full seven-pair Vox/Brave cohorts retain the same frozen responses, complete
+React-text requirement, viewport, private-cache policy and original PNG references:
+
+| Pinned Vox executable | Vox median | Brave median | Highest Vox / lowest Brave |
+| --- | ---: | ---: | ---: |
+| `6bf5…` | 5,068.551 ms | 2,341.431 ms | 2.6283 |
+| `243a…` | 3,629.312 ms | 1,932.544 ms | 2.4758 |
+
+All 28 content audits pass; all 28 original PNG comparisons fail. Both cohorts
+fail the requested parity gate. Host contention and other source changes
+prevent attributing the difference between builds to this selector change.
+These are fresh-launch-through-PNG observations with the previously documented
+asymmetric audit/teardown endpoints, not isolated rendering timings. Process-tree
+instruction counts remain lower bounds. References and tolerances are unchanged.
+
+The benchmark validator also now rejects the capture format's current
+`native_reported_error_count` and `native_reported_error_information` fields,
+in addition to the earlier error field. All 44 driver tests pass. Revalidation
+of all 56 retained cohort captures passes the stronger content/error check;
+none contains previously missed reported native errors. Brave parity and
+whole-page pixel conformance remain open.
+
+Raw commands, captures, counter records, failed checks, source identities and
+final guard exits are retained locally in
+`~/Library/Caches/Vox/benchmarks/github-react-rendering-20261114-r6/evidence.tar.gz`
+(931 files; SHA-256
+`17e68bc7150b26f5e40eccb350232b1400f55988c53523dbf261184ebdf57b73`).
+The ignored structured record is
+`docs/performance/github-react-rendering-20261114-r6.json`. The environment,
+private test executable and generated C are excluded. The job directory,
+its guard files and its AST output are removed after archive verification.
