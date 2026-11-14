@@ -24,6 +24,8 @@ pub mut:
 	object_constructor             ?&Object
 	math_object                    ?&Object
 	json_object                    ?&Object
+	date_prototype                 ?&Object
+	date_constructor               ?&Object
 	error_prototypes               map[ErrorKind]&Object
 	error_constructors             map[ErrorKind]&Object
 	function_prototype             ?&Object                 // %Function.prototype%
@@ -186,6 +188,7 @@ pub fn initialize_host_defined_realm(mut vm VM, hooks RealmGlobalHooks) !&Execut
 	initialize_collection_intrinsics(mut vm, mut realm)!
 	initialize_regexp_intrinsics(mut vm, mut realm)
 	realm.json_object = create_json_object(mut vm, realm)
+	initialize_date_intrinsics(mut vm, mut realm)
 	// 4. Set realm.[[GlobalObject]] to undefined.
 	// 5. Set realm.[[GlobalEnv]] to undefined.
 	// 7. Let newContext be a new execution context.
@@ -260,6 +263,8 @@ pub fn initialize_host_defined_realm(mut vm VM, hooks RealmGlobalHooks) !&Execut
 		global.define_direct_property(PropertyName.from_str(kind.name()), Value.from_object(realm.error_constructors[kind] or { panic('Missing error constructor') }), attribute_writable | attribute_configurable)
 	}
 	// Other intrinsic properties follow constructors in GlobalObject.cpp.
+	global.define_direct_property(PropertyName.from_str('Date'),
+		Value.from_object(realm.date_constructor or { panic('Missing Date constructor') }), attribute_writable | attribute_configurable)
 	global.define_direct_property(PropertyName.from_str('JSON'),
 		Value.from_object(realm.json_object or { panic('Missing JSON object') }), attribute_writable | attribute_configurable)
 	global.define_direct_property(PropertyName.from_str('Math'),

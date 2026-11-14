@@ -161,6 +161,7 @@ pub mut:
 	host_properties ?HostProperties
 	array_object         ?&ArrayObject
 	boolean_object       ?&BooleanObject // [[BooleanData]]
+	date_object          ?&DateObject // [[DateValue]]
 	number_object        ?&NumberObject  // [[NumberData]]
 	bigint_object        ?&BigIntObject  // [[BigIntData]]
 	symbol_object        ?&SymbolObject // [[SymbolData]]
