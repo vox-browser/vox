@@ -3,6 +3,12 @@ module libjs
 import os
 import rand
 
+@[heap]
+struct NativeUnwindLog {
+mut:
+	offsets []u32
+}
+
 fn native_test_script(mut vm VM, source string) !&Script {
 	return Script.parse(source, vm.realm(), 'native-tier-test.js', unsafe { nil })
 }
@@ -137,5 +143,43 @@ fn test_native_and_interpreted_paths_exhaust_exactly_the_same_instruction_budget
 			assert vm.interpreter_stack().depth() == 0
 		}
 		assert completed[0] == completed[1], 'Different budget boundary at ${budget}'
+	}
+}
+
+fn test_native_errors_preserve_the_throwing_program_counter_during_unwind_jobs() {
+	cache := native_test_cache()
+	defer { os.rmdir_all(cache) or {} }
+	mut vm := VM.create()
+	create_simple_execution_context(mut vm)
+	vm.profile_native_code()!
+	defer { vm.close_native_code() or {} }
+	executable := &Executable{
+		registers_and_locals_count: 6
+		constants:                  [js_null(), Value.from_string(vm.create_string_from_str('x'))]
+		instructions:               [
+			Instruction{ op: .mov, dst: Operand.register(5), lhs: Operand.constant(0) },
+			Instruction{ op: .get_property, dst: Operand.register(5), lhs: Operand.register(5), rhs: Operand.constant(1) },
+			Instruction{ op: .end, lhs: Operand.register(5) },
+		]
+		bytecode_length:            3
+	}
+	for native in [false, true] {
+		if native { vm.compile_native_code(cache, '/usr/bin/clang', 1)! }
+		mut frame := ExecutionContext.create(6, executable.constants, 0)
+		frame.realm = vm.realm()
+		vm.push_execution_context_checked(mut frame)!
+		mut observed := &NativeUnwindLog{}
+		vm.enqueue_promise_job(fn [mut observed, frame] () !Value {
+			observed.offsets << frame.program_counter
+			return js_undefined()
+		}, none)
+		if _ := vm.run_executable(mut frame, executable, 0, ExecutionLimits{}) {
+			assert false
+		} else {
+			assert is_throw_completion(err)
+		}
+		assert frame.program_counter == 1
+		assert observed.offsets == [u32(1)]
+		vm.pop_execution_context()
 	}
 }

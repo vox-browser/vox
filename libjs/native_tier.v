@@ -261,7 +261,9 @@ fn native_source(executables []&Executable) !(string, int) {
 		for offset in 0 .. executable.instructions.len {
 			source.writeln('case ${offset}: goto L${offset};')
 		}
-		source.writeln('default: *pc=next; return; } }')
+		// The slow callback leaves the throwing PC installed for source maps
+		// and the queued jobs run while unwinding. Its exit marker is not a PC.
+		source.writeln('case 0xffffffff: return; default: *pc=next; return; } }')
 	}
 	return source.str(), fast_count
 }
