@@ -265,7 +265,7 @@ pub fn calculate_freshness_lifetime(status_code u32, headers &HeaderList) i64 {
 pub fn calculate_age(headers &HeaderList, request_time i64, response_time i64) i64 {
 	mut age_value := i64(0)
 	if age := headers.get('Age') {
-		if milliseconds := parse_cache_delta_seconds(age) {
+		if milliseconds := cachepolicy.age_milliseconds(age) {
 			age_value = milliseconds
 		}
 	}
