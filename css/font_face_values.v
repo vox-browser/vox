@@ -4527,7 +4527,15 @@ pub fn (mut computer FontComputer) load_font_face(font_face ParsedFontFace, on_l
 		return none
 	}
 
-	key := urls[0].url()
+	// A failed first URL can lead to a different fallback for each rule.
+	// Keep the complete ordered source list, including request modifiers,
+	// in the cache identity rather than aliasing lists by their first URL.
+	mut key_builder := strings.new_builder(128)
+	for url in urls {
+		serialized := url.to_string()
+		key_builder.write_string('${serialized.len}:${serialized}')
+	}
+	key := key_builder.str()
 	if existing := computer.loaders_by_url[key] {
 		if callback := on_load {
 			mut mutable_loader := unsafe { &FontLoader(existing) }
