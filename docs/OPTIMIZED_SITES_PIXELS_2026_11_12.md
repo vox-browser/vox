@@ -1580,3 +1580,69 @@ jobs, binaries, generated C and guards are archived and removed. This confirms
 the prior fixes in production; it does not pass the vlang.io, CNN, missing Reddit
 or all-site equality gates. No live-site, scripting or instruction-performance
 acceptance is claimed.
+
+## Tile-local shadow filter inputs, 2026-11-14
+
+Commit `de478eee8` restricts an axis-aligned shadow filter's source to the
+raster tile plus its three-sigma input footprint before progressive resampling.
+Previously, the entire offscreen box determined the centered downsampling grid.
+For vlang.io's tall panel, that shifted the faint shadow across the download
+buttons and panel corners. Gaussian kernels, final A8 resolution and existing
+references remain unchanged. Rotated geometry keeps its preceding path.
+
+The source-bound calculation follows the filter input/desired-output relationship
+in [SkCanvas](https://skia.googlesource.com/skia/+/refs/heads/main/src/core/SkCanvas.cpp)
+and [SkImageFilterTypes](https://skia.googlesource.com/skia/+/refs/heads/main/src/core/SkImageFilterTypes.cpp).
+Local snapshots retain the consulted source. The new complete colored-control
+fixture has two agreeing fresh Brave references. Production executable
+`d94dced5f7643aa17ec662ec0a72400c5bb62a5e1ce87752af0a15ac07c41ce6`
+differs at **2,114 pixels** in that fixture. The corrected diagnostic is exact
+twice. A separate opaque-black shadow control has agreeing fresh Brave captures,
+also verified after simplifying its canonical HTML, and is exact twice in Vox.
+Its focused test compares the complete upper shadow band with that independent
+reference. All **13 focused tests** across nine files execute successfully,
+including unchanged nine-patch, capsule, small-kernel, rotated, unblurred,
+shared-decoration and sampled-image oracle checks. Runtime guards use 3 GiB
+and arena poisoning; compiler guards retain the default 12 GiB budget.
+
+Final diagnostic executable SHA-256
+`1ec08bbf8240c18ce8bd4538e1881ad8972b8cdff73a8e8f1cc243480aa168a2`
+completes 32 fresh document captures across sixteen workloads plus a fresh startup
+smoke. All 33 native guards, the driver and outer guard exit 0. The selected
+36 rendering-source witnesses remain stable, with only the intended filter
+source differing from the preceding production cohort. Executable, native
+libraries, fixture, reference and diff-tool identities remain stable throughout.
+
+| Workload | Differing pixels in each fresh capture |
+| --- | ---: |
+| vlang.io archive, scripts disabled, scale 1 | **2,139** |
+| Tall panel / independent shadow mask | **0 / 0** |
+| GitHub / HN / Wikipedia / Lobsters archives | **0 each** |
+| CNN archive | **175,866** |
+| Small shadows / shared decorations / avatar / border controls | **0 each** |
+| Basic gradient text | **0** |
+| Rotated ellipse diagnostic | **1,530** |
+| Device-pixel shadows, scale 2 | **92** |
+
+The vlang.io change corrects **571 pixels with zero newly differing pixels**
+relative to the fresh 2,710-pixel production control. GitHub preserves all 33
+rows and HN all 30 stories. Fifteen native pairs agree exactly; CNN's pair
+differs at 1,558 pixels, retaining its stability failure and earlier source/replay
+failure. vlang.io still has JPEG, text and decoration differences; Reddit's
+historical fixture remains missing. The all-site equality gate stays open.
+
+Two broader experiments are rejected and reverted. Deferring the final A8
+upscale makes vlang.io worse at 3,405 pixels and the new fixture worse at 2,179,
+although the orbit improves to 1,312. The complete restore path resolves coverage
+to an image, so the final implementation preserves that step. Applying input
+clipping to rotated shapes gives vlang.io 1,978 pixels, but introduces 392 new
+differences; the final correction is restricted to axis-aligned filtering.
+All failed results and exploratory sources remain in local evidence.
+
+Evidence is retained under
+`docs/performance/vlang-gradients-20261112/raw/shadow-resolve-20261114/`.
+Thirteen completed job directories, binaries, generated C and guards are removed
+after verified archival. The normal managed commit hook requests a C, literal
+V `-prod`, single-unit rebuild. The latest completed bundle still predates the
+correction; **production validation of 2,139 remains pending**. These frozen
+captures establish no live-site, author-script or performance acceptance.

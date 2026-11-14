@@ -2875,3 +2875,17 @@ its previous pixels exactly after two rejected higher-scale experiments.
 Production `314e32e9` now confirms the 2,710-pixel site result and exact basic
 gradient-text control, each twice, with all 36 rendering witnesses matched.
 See the [production audit](OPTIMIZED_SITES_PIXELS_2026_11_12.md#production-confirmation-of-ellipse-and-text-gradient-fixes-2026-11-14).
+
+### Tile-local shadow filter inputs, 2026-11-14
+
+`de478eee8` restricts axis-aligned filter inputs to the raster tile plus its
+three-sigma footprint before progressive downsampling. This preserves the
+tile-local sampling grid for tall offscreen sources. Rotated geometry retains
+its preceding path; kernels and final A8 resolution are unchanged. The new
+complete panel/control fixture and independent mask control are exact twice
+against agreeing fresh Brave references. Thirteen focused shadow tests pass.
+Thirty-two fresh captures across sixteen workloads preserve the four exact
+archives and reduce vlang.io from 2,710 to 2,139 pixels, correcting 571 without
+new differences. CNN retains its rendering and repeatability failures.
+Production validation is pending the managed rebuild; see the
+[audit](OPTIMIZED_SITES_PIXELS_2026_11_12.md#tile-local-shadow-filter-inputs-2026-11-14).

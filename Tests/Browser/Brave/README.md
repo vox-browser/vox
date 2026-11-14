@@ -1303,3 +1303,14 @@ browser fixture is exact twice at scale 1 in diagnostics and production
 previous renderer path, verified by unchanged Retina captures. This does not
 make the fractional, inline or mixed-scope text controls exact; see the
 [pixel audit](../../../docs/OPTIMIZED_SITES_PIXELS_2026_11_12.md#text-layer-gradient-dither-origin-2026-11-14).
+
+`tall-rounded-shadow` checks an asymmetric 3,069px-tall panel shadow over
+opaque blue controls. Two fresh Brave captures agree at 1024×768, scale 1.
+Production `d94dced5` differs at 2,114 pixels; `de478eee8` makes the complete
+fixture exact twice by restricting axis-aligned filter inputs to each tile's
+three-sigma footprint. The separate `diagnostic/tall-rounded-shadow-mask`
+control also has agreeing Brave captures and is exact twice in the browser.
+Its focused GPU test checks the complete upper shadow band against that
+independent reference. Thirteen shadow tests pass with arena poisoning;
+production validation is pending. See the
+[pixel audit](../../../docs/OPTIMIZED_SITES_PIXELS_2026_11_12.md#tile-local-shadow-filter-inputs-2026-11-14).
