@@ -7,15 +7,14 @@ Results apply to the frozen page and pinned build in each linked report.
 Provisional entries retain unresolved acceptance checks.
 
 **Pixel recheck, 2026-11-14:** Vox does **not** pass pixel equality across
-this catalog. Hacker News, Lobsters and Wikipedia are exact in two fresh
-production captures each. The latest checked production bundle confirms the
-shared-decoration and inset-alpha fixes at **39 GitHub differences**. The new
-unblurred inset-shadow correction reaches **19 GitHub differences** and **3,228
-vlang.io differences** in two fresh diagnostic captures each; its production
-validation is pending. CNN retains both a large rendering mismatch and a
-native-repeat stability failure. CNN, vlang.io and GitHub remain open.
-Reddit could not be verified (missing historical fixture, live HTTP 403).
-See the [current audit, capture scopes and retained failures](docs/OPTIMIZED_SITES_PIXELS_2026_11_12.md).
+this catalog. The latest completed production bundle renders Hacker News,
+Lobsters and Wikipedia exactly in two fresh captures each. The unblurred
+inset-shadow correction now reaches **19 GitHub differences** and **3,228
+vlang.io differences** in production, twice each. CNN retains its large
+rendering mismatch and source/replay failure; earlier native-repeat failures
+remain unresolved despite an agreeing latest pair. CNN, vlang.io and GitHub
+remain open. Reddit could not be verified (missing historical fixture, live
+HTTP 403). See the [current audit, capture scopes and retained failures](docs/OPTIMIZED_SITES_PIXELS_2026_11_12.md).
 
 | Site | Recorded date | Trials per browser | Statistic | Vox instructions | Brave observed instructions | Fewer instructions | Vox RAM (MiB)‡ | Brave RAM (MiB)‡ | Vox scroll FPS§ | Vox GPU canvas FPS§ | Brave scroll FPS† | Evidence |
 | --- | --- | ---: | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- |

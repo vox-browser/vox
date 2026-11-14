@@ -1200,3 +1200,51 @@ calls remain local under
 The managed commit hook requests the normal C `-prod` rebuild; this new fix's
 production validation remains pending. The all-site gate remains open, including
 CNN's source/replay failure and the missing original Reddit fixture.
+
+
+## Production inset confirmation and search-border investigation, 2026-11-14
+
+The normally managed production worker completed during this investigation.
+Bundle SHA-256
+`6bf5db1e031eea8a68b6a4752ae3f45f603735510d16c6c7c5b43c27a0cde526`,
+receipt `20261114-111608-a68550bc`, uses the C backend, literal V `-prod` and
+one C unit. Its frozen manifest matches all **32 selected rendering-source
+witnesses**, including the committed inset helper, GG descriptor, dispatch and
+prior corrections. This supersedes the inset fix's pending-production status
+above. No additional manual production build was queued.
+
+All eleven workloads were checked in two fresh production processes each with
+private profiles/caches, the same sealed page bytes and unchanged references.
+**GitHub is 19**, **vlang.io 3,228**, and **HN/Wikipedia/Lobsters 0** differing
+pixels in both captures. The new inset fixture, small-shadow, shared-decoration
+and rotated-border controls are exact twice. The scale-2 device-shadow control
+remains at 92. CNN remains at **175,866**, twice; this particular native pair
+repeats exactly, but its earlier instability and source/replay failure remain
+unresolved. All 22 captures and their guards, the comparison driver, and a
+separate fresh production startup/JavaScript/wheel smoke check exit 0. Executable,
+library, source-witness, fixture, reference and comparison-tool identities remain
+unchanged throughout. No live-site or performance acceptance is inferred.
+Production evidence remains local under
+`docs/performance/vlang-gradients-20261112/raw/inset-gpu-20261114/`.
+
+Further search-border probes did not establish another fix. On the unchanged
+GitHub reference, a direct full-tile stroke reproduces its corner band exactly;
+cropped, translated, fractional-origin and double-rounded-rectangle variants
+retain four differences. A separately captured minimal backdrop fixture is a
+counterexample to treating the full-tile observation as a general correction.
+Its two pinned Brave images agree, but the focused full-tile test still fails
+at four pixels. The proposed parent-grid helper preserves the existing site
+counts and does not reduce GitHub's gap. Its first eligibility-test compile
+fails on an optional-pointer payload; after correction, the minimal fixture's
+layer-identity assertion fails because it does not reproduce the intended
+separate effect owner. These attempts supply no correction or acceptance.
+The experimental implementation, fixture and tests were removed after preserving
+their sources, commands and failures locally.
+
+A fresh Brave replay still matches the original GitHub reference exactly and
+records the search button's unsnapped x coordinate as **760.75**, border-box size
+42×36, radius 6 and backdrop blur 20. Folding that origin into the isolated
+stroke does not remove the four differences. The remaining search-border and
+avatar gaps therefore stay open; reference geometry is not adjusted to force
+a pass. Search diagnostics remain local under
+`docs/performance/vlang-gradients-20261112/raw/search-border-20261114/`.
