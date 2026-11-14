@@ -15,9 +15,37 @@ original ESSL bytes. The C conformance fixtures call the same V compiler through
 an exported ABI, rather than a separate native translator.
 
 Linux and Windows use the shared V preprocessor, scope and expression checks,
-then submit unchanged ESSL to their native GLES driver for syntax and type
-checking. Metal remains the macOS graphics backend. None of these paths requires
-the former glslang package.
+then prepare a private ESSL source with explicit WebGL variable initialization
+for their native GLES driver. The prepared source retains its ESSL version;
+public source queries retain the original bytes. Metal remains the macOS
+graphics backend. None of these paths requires the former glslang package.
+
+## Shader storage and accesses
+
+Native GLES context creation requires a verified robust-access guarantee.
+Linux checks the created EGL context rather than relying only on the requested
+attribute; Windows checks its WGL context. A driver that cannot provide the
+guarantee does not receive untrusted WebGL shaders.
+
+Metal lowering checks constant subscripts and clamps dynamic array, vector and
+matrix subscripts to the known extent. The generated helper evaluates an index
+once and clamps unsigned values before narrowing. Initializers, constructors,
+comma expressions and control-flow clauses receive the same checks. Unknown
+bounds or an expression that cannot be fully checked cause a compilation error.
+
+Shader invocation storage is initialized before use, including aggregate
+members and output parameters. Mutable global initialization follows declaration
+order after uniforms are available. Source validation preserves the original
+scope and the language version's initializer restrictions. Metal rejects
+initializer shadowing that would bind differently in ESSL and MSL, and rejects
+declarations it cannot safely parse, rather than passing unchecked native syntax
+through to the driver.
+
+The native GLES bridge compiles only prepared source into the public shader
+object. Any additional driver validation uses a private shader. Allocation and
+submission failures must not leave an executable compiled from unprepared
+source. Link validation retains the ESSL version associated with each compiled
+stage, so changing source after compilation cannot make mixed versions link.
 
 ## Covered behavior
 
