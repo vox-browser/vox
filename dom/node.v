@@ -2930,7 +2930,13 @@ pub fn (mut n Node) move_node(mut new_parent Node, child ?&Node) ! {
 		n.invalidate_style(.node_insert_before)
 	}
 	if n.is_connected() {
+		moved_subtree_already_needs_layout_tree_update := n.needs_layout_tree_update
+			|| n.child_needs_layout_tree_update
+		n.set_needs_layout_tree_update(true, .node_insert_before)
 		new_parent.set_needs_layout_tree_update(true, .node_insert_before)
+		if moved_subtree_already_needs_layout_tree_update {
+			new_parent.set_child_needs_layout_tree_update(true)
+		}
 	}
 	moved_node := &n
 	n.visit_shadow_including_inclusive_descendants(fn [old_parent, moved_node] (inclusive_descendant &Node) TraversalDecision {
