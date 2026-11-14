@@ -753,8 +753,10 @@ in optimized test binaries with the entitlement:
 
 All pairs have identical pixels and passing content audits. The private
 signed build with every change above measures 28.4 billion instructions at
-the median; Brave's last measurement of this workload is about 20.5 billion.
-Parity is not met.
+the median in these stage-logged runs. Stage logging itself costs about 1.2
+billion: three runs of the same build without it measure 26.92, 26.95 and
+27.35 billion. Brave's last measurement of this workload is about 20.5
+billion. Parity is not met.
 
 Other bridge costs measured with the same probe and not changed here:
 `getAttribute` 37,000 instructions (half of it JSON transport),
