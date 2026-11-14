@@ -29,6 +29,10 @@ mut:
 	workspace               &platform.Arena = unsafe { nil }
 	allow_subtree_reuse      bool
 	nonreusable_flow_roots   map[u64]bool
+	// clean_subtree_reuse.v: ancestors being built whose DOM node is flagged
+	// for a complete rebuild, and elements already found ineligible.
+	flagged_ancestor_depth   int
+	clean_subtree_rejections map[u64]bool
 	quote_nesting_level      u32
 	counter_sets             map[i64]css.CountersSet
 	last_child_by_parent     map[i64]i64
@@ -1098,6 +1102,7 @@ fn finish_document_layout_with_reuse(document &dom.Document, root &Node, viewpor
 		}
 	}
 	report_incremental_layout_pass(same_tree)
+	report_clean_subtree_reuse()
 	state.committed_pass_ = pass
 	state.replaced_sizes_ = replaced_sizes
 	root_placeholder := commit_dom_layout_attachment(root, state, prepared_attachment)
@@ -1128,6 +1133,9 @@ pub fn document_layout_result(document &dom.Document) ?&DocumentLayoutResult {
 
 fn build_layout_box_for_element(document &dom.Document, element &dom.Element, style_computer &css.StyleComputer, mut builder_state TreeBuilderState) ?&Node {
 	if builder_state.allow_subtree_reuse {
+		if clean := reusable_clean_subtree(element, mut builder_state) {
+			return clean
+		}
 		if retained := reusable_clean_flow_subtree(element, mut builder_state.nonreusable_flow_roots) {
 			resolve_retained_flow_counters(retained, mut builder_state)
 			return retained.root
@@ -1275,6 +1283,13 @@ fn build_layout_box_for_element_with_svg_resource_kind(document &dom.Document, e
 		return box_node
 	}
 
+	// clean_subtree_reuse.v: nothing below a flagged node keeps its boxes on
+	// the strength of the invalidation flags.
+	rebuilds_whole_subtree := element.as_node().needs_layout_tree_update_()
+	if rebuilds_whole_subtree { builder_state.flagged_ancestor_depth++ }
+	defer {
+		if rebuilds_whole_subtree { builder_state.flagged_ancestor_depth-- }
+	}
 	// Collect generated ::before content, DOM children, then generated ::after
 	// content in tree order.
 	mut children := []&Node{}

@@ -3,6 +3,13 @@ module layout
 import dom
 import html
 
+// These cases exercise the validated salvage of retained_flow_subtrees.v, which
+// the builder consults below a flagged ancestor. Their unflagged branches would
+// otherwise keep their boxes through clean_subtree_reuse.v first.
+fn testsuite_begin() {
+	clean_subtree_reuse_suspended = true
+}
+
 fn retained_flow_handle(element &dom.Element) voidptr {
 	return element.as_node().unsafe_layout_node() or { panic('missing layout') }.real_layout_handle()
 }
