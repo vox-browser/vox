@@ -4787,6 +4787,21 @@ void native_prepare_background_text_gradient_input(void) {
 	native_background_text_gradient_pending = 1;
 }
 
+// Supply the retained mask layer's device-aligned bounds to the V rasterizer.
+// V selects the gradient grid; this boundary only converts canvas coordinates.
+int native_background_text_gradient_bounds(float page_x, float page_y,
+	float scroll_y, float *bounds) {
+	if (!bounds || native_background_text_clip_active != 1
+		|| !native_background_text_gradient_recording
+		|| CGRectIsEmpty(native_background_text_raster_rect)) return 0;
+	bounds[0] = native_background_text_raster_rect.origin.x - page_x;
+	bounds[1] = native_background_text_canvas_height
+		- CGRectGetMaxY(native_background_text_raster_rect) - page_y + scroll_y;
+	bounds[2] = native_background_text_raster_rect.size.width;
+	bounds[3] = native_background_text_raster_rect.size.height;
+	return 1;
+}
+
 static void native_discard_background_text_recording(CGContextRef context) {
 }
 

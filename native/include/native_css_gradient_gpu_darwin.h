@@ -1,6 +1,7 @@
 #pragma once
 
-extern int vox_draw_document_gradient_pixels(uint8_t*, int, int, int, int, int, int, VoxGraphitePath*);
+extern int vox_draw_document_gradient_pixels(uint8_t*, int, int, int, int, int, int, VoxGraphitePath*, float*);
+int native_background_text_gradient_bounds(float, float, float, float*);
 
 // Only transfer destination pixels and normalized geometry here. V owns the
 // compositor grid, sample selection, premultiplied gradient and shader draw.
@@ -46,9 +47,16 @@ static int native_try_v_css_gradient(VoxGraphitePath draw, const float *matrix,
     float cropped[9]={matrix[0]*sx,matrix[2]*sx,(matrix[4]-geometry[0])*sx,
         matrix[1]*sy,matrix[3]*sy,(matrix[5]-geometry[1])*sy,0,0,1};
     memcpy(draw.matrix,cropped,sizeof(cropped));
+    float text_bounds[5];
+    int has_text_bounds=native_background_text_gradient_bounds(page_x,page_y,scroll_y,text_bounds);
+    if (has_text_bounds) {
+        for (int i=0;i<4;++i) text_bounds[i]*=scale;
+        text_bounds[4]=scale;
+    }
     int drawn=vox_draw_document_gradient_pixels(pixels,w,h,w*4,backdrop,
         (int)lround((geometry[0]-page_x)*scale),
-        (int)lround((geometry[1]-page_y+scroll_y)*scale),&draw);
+        (int)lround((geometry[1]-page_y+scroll_y)*scale),&draw,
+        has_text_bounds ? text_bounds : NULL);
     if (drawn) drawn=native_text_raster_finish(pixels,geometry[0],geometry[1],w,h,
         geometry[5],geometry[6],canvas_height,backdrop);
     free(pixels);
