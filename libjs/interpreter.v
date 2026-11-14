@@ -70,8 +70,15 @@ fn (mut vm VM) execute_instruction(instruction Instruction, executable &Executab
 			mut object := left.as_object()
 			object.create_data_property_or_throw(mut vm, right.to_property_key(mut vm)!, source)!
 		}
+		.set_object_literal_prototype {
+			if right.is_object() || right.is_null() {
+				mut object := left.as_object()
+				prototype := if right.is_object() { ?&Object(right.as_object()) } else { none }
+				if !object.internal_set_prototype_of(prototype) { return vm.throw_error_type(.type_error, .object_set_prototype_of_returned_false) }
+			}
+		}
 		.new_function, .new_function_with_name {
-			inferred := if instruction.op == .new_function_with_name { ?Utf16String(left.to_primitive_string(mut vm)!.utf16) } else { none }
+			inferred := if instruction.op == .new_function_with_name { ?Utf16String(make_function_name(left.to_property_key(mut vm)!, none)) } else { none }
 			result = Value.from_object(create_ecmascript_function(mut vm, executable, instruction.identifier, instruction.strict, inferred)!)
 		}
 		.mov {
