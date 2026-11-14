@@ -91,7 +91,7 @@ pub fn html_base_element_attribute_changed(base &dom.HTMLBaseElement, name strin
 
 pub fn html_base_element_href(base &dom.HTMLBaseElement) string {
 	element := unsafe { &dom.Element(base) }
-	href := element.get_attribute_value('href')
+	href := element.get_attribute_ns(none, 'href') or { '' }
 	url := dom.dom_url_parse(href, element.document().fallback_base_url(), element.document().encoding_or_default()) or { return href }
 	return url.serialize()
 }

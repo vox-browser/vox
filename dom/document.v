@@ -6427,7 +6427,7 @@ pub fn (mut d Document) update_base_element() {
 fn first_base_element_with_attribute(root &Node, attribute_name string) ?&HTMLBaseElement {
 	for child in root.children_as_vector() {
 		if element := child.as_element() {
-			if element.local_name() == 'base' && (element.namespace_uri() or { namespace_html_ }) == namespace_html_ && element.has_attribute(attribute_name) {
+			if element.local_name() == 'base' && (element.namespace_uri() or { namespace_html_ }) == namespace_html_ && (if attribute_name == 'href' { element.has_attribute_ns(none, attribute_name) } else { element.has_attribute(attribute_name) }) {
 				return unsafe { &HTMLBaseElement(element) }
 			}
 		}
