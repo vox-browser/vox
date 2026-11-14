@@ -412,7 +412,7 @@ fn (mut navigation Navigation) inner_navigate_event_firing_algorithm(navigation_
 		if from := from_entry {
 			mut committed := dom.Promise.create()
 			finished := dom.Promise.create()
-			committed.resolve(dom.js_object(voidptr(destination)))
+			committed.resolve(dom.js_undefined())
 			navigation.transition_ = NavigationTransition.create(navigation_type, from, destination, committed, finished)
 		}
 		event.run_navigation_handlers() or {

@@ -89,6 +89,10 @@ fn (mut navigation Navigation) finish_source_navigate_event(window &WindowModel,
 	} else if tracker := api_method_tracker {
 		navigation.clean_up(tracker)
 	}
+	if transition := navigation.transition_ {
+		mut committed := unsafe { &dom.Promise(transition.committed()) }
+		committed.resolve(dom.js_undefined())
+	}
 	return event.interception_state() == .none
 }
 
