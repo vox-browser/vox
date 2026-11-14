@@ -45,11 +45,19 @@ fn adopted_processes(path string) !map[int]string {
 		row := item.as_map()
 		pid := row['pid'] or { return error('Missing adopted PID') }
 		started := row['started'] or { return error('Missing adopted start identity') }
-		if pid !is i64 && pid !is int { return error('Invalid adopted PID') }
-		if started !is string || pid.int() <= 1 || pid.int() == os.getpid() || started.str().trim_space().len == 0 {
+		// Current json2 decodes JSON numbers as f64. Validate the value before
+		// narrowing it to the platform's signed 32-bit pid_t.
+		if pid !is i64 && pid !is int && pid !is f64 { return error('Invalid adopted PID') }
+		number := pid.f64()
+		if math.is_nan(number) || math.is_inf(number, 0) || number < 2
+			|| number > 2147483647 || math.floor(number) != number {
+			return error('Invalid adopted PID')
+		}
+		identity_pid := int(number)
+		if started !is string || identity_pid == os.getpid() || started.str().trim_space().len == 0 {
 			return error('Invalid adopted process identity')
 		}
-		result[pid.int()] = started.str()
+		result[identity_pid] = started.str()
 	}
 	return result
 }
@@ -110,6 +118,9 @@ fn bounded_run(command []string, limit i64, timeout f64, interval f64, adopt_pat
 		adopted := adopted_processes(adopt_path) or {
 			reason = 'adoption_error'
 			adoption_error = err.msg()
+			// Registry validation must not omit children discovered in this
+			// sample when stopping the already-owned process tree.
+			owned = job_processes(snapshot, process.pid, owned, map[int]string{})
 			break
 		}
 		for pid, started in adopted {
