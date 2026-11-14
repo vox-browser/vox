@@ -43,6 +43,8 @@ import storageapi
 import strconv
 import time
 import url
+// Keep the embed helper explicit for V's profiled dependency discovery.
+import v.embed_file as _
 import webvtt
 import xpath
 import x.json2
