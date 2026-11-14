@@ -2135,3 +2135,61 @@ provenance, actual exits, PNGs and failed attempts are local under
 `docs/performance/vlang-gradients-20261114/raw/orbit-text-20261114/`.
 Completed job scratch and the temporary harness symlink are removed after
 verified archival.
+
+
+## Scaled JPEG avatar planes, 2026-11-15
+
+`e63689e7a` filters JPEG luma and chroma planes before RGB conversion for
+eligible small circular minified avatars. The preceding RGBA decode/resize path
+reconstructed chroma and clipped colors before reducing the image. The new V
+path promotes resized chroma to 4:4:4 at the upload size, then uses the existing
+sampled-image painter and clip. It follows the plane scaling and chroma promotion
+in [Chromium's GPU image decode cache](https://raw.githubusercontent.com/chromium/chromium/main/cc/tiles/gpu_image_decode_cache.cc).
+This source reference describes the algorithm; the browser measurements below
+establish the observed result against the pinned Brave image.
+
+Eligibility requires an opaque, full-source, untransformed, circular avatar no
+larger than 32 CSS pixels and at least twofold minification in both dimensions.
+The existing native boundary additionally requires backing scale 1 and a readable
+compositor destination. Unsupported color profiles, non-default or malformed
+EXIF orientation, other geometry and sampling modes retain ordinary replay.
+The upload cache has its own namespace and keys source content and decoded size.
+No shaders, native UI, existing expected images or tolerances change.
+
+The final diagnostic executable SHA-256 is
+`11b526d3a485d5f9c31a9f2f0a80b59d0d7d4dc7f77cb752a7bd54407ca71bd7`.
+Two fresh vlang.io captures each improve **284 to 111 differing pixels**:
+**173 corrected, zero new differences**. The trace verifies that the 540×540
+JPEG uses a 34×34 plane upload. Its remaining JPEG errors decrease from 279 to
+106 pixels; the one heading pixel and four scene pixels remain unchanged.
+This is progress toward equality, not a pixel-exact JPEG result.
+
+All five C-backend YUV test files pass, including five new cases for neutral
+chroma, fractional resizing, promotion before RGB clipping, invalid dimensions
+and payloads, and EXIF validation in both byte orders. Runtime checks use the
+3 GiB memory guard and `VOX_ARENA_POISON=1`. The initial default FastC attempt
+failed to compile a loop; C compilation then caught an array assignment requiring
+an explicit clone. Those failed attempts and the corrected passing checks are
+retained separately.
+
+The final cohort covers 30 workloads, 60 document captures and startup. All 61
+native guards, the driver and outer guard exit 0; 60 rendering-source and six
+tool witnesses stay unchanged. GitHub, Hacker News, Lobsters and Wikipedia
+remain exact twice, preserving all 33 GitHub rows and 30 Hacker News stories.
+The existing unscaled fractional JPEG avatar remains exact twice. All preceding
+control counts remain unchanged. Twenty-nine native pairs repeat exactly; CNN
+retains 175,866 differences against Brave and 519 between native repeats, alongside
+its prior source/replay failure. This cohort does not clear the historical
+tall-shadow baseline repeat failure.
+
+Production `aa19da69`, receipt `20261114-191855-433aa86a`, still supplies the
+810-pixel baseline and lacks the pending fixes. **111 is diagnostic pending the
+managed production rebuild.** Normal commit hooks request a coalesced C backend,
+literal V `-prod`, single-unit build. All-site equality remains open, including
+CNN and the missing original Reddit fixture. No live-site, scripting or
+performance acceptance is claimed.
+
+Commands, source/executable witnesses, PNGs, actual exits, failed attempts and
+transition counts are local under
+`docs/performance/vlang-gradients-20261114/raw/jpeg-upload-20261115/`.
+Completed scratch jobs are removed after verified archival.

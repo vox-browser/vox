@@ -2986,3 +2986,16 @@ improves 341 to 284 pixels, correcting 57 with zero new differences. The
 preceding counts. CNN and the earlier tall-shadow repeat failure remain open;
 production validation is pending the managed rebuild. See the
 [audit](OPTIMIZED_SITES_PIXELS_2026_11_12.md#shape-and-glyph-samples-in-one-pass-2026-11-14).
+
+
+### Plane-scaled circular JPEG avatars, 2026-11-15
+
+`e63689e7a` resizes JPEG planes before RGB conversion for supported small circular
+minified avatars, then reuses the existing sampled-image GPU painter. Unsupported
+profiles, orientation, geometry and sampling modes retain replay. Five C-backend
+YUV test files pass, including five new scaling/EXIF cases. Vlang.io improves
+284 to 111 pixels, correcting 173 with zero new differences. The 30-workload
+diagnostic cohort preserves the four exact archives, the unscaled JPEG control
+and preceding counts. Production confirmation is pending; CNN and historical
+repeatability failures remain open. See the
+[audit](OPTIMIZED_SITES_PIXELS_2026_11_12.md#scaled-jpeg-avatar-planes-2026-11-15).
