@@ -18,7 +18,10 @@ fn parser_end_count_layout(target voidptr, _ &dom.Document, _ f64, _ f64, _ bool
 	return unsafe { nil }
 }
 
-fn test_parser_end_avoids_fallback_layout_only_while_a_rendering_font_already_delays_load() {
+// A rendered document's completion task flushes layout and returns to the
+// load-delay phase when that starts a download, so the progress check that
+// precedes it leaves the whole-document layout to that task.
+fn test_parser_end_leaves_the_readiness_layout_to_the_completion_task() {
 	for rendering in [false, true] {
 		mut document := parse_document('<!doctype html><p>pending load</p>')
 		defer { document.finalize() }
@@ -35,15 +38,15 @@ fn test_parser_end_avoids_fallback_layout_only_while_a_rendering_font_already_de
 		state.phase_ = .waiting_for_load_event_delay
 		state.check_progress()
 		assert state.phase() == .waiting_for_load_event_delay
-		if rendering { assert probe.calls == 0 }
-		else { assert probe.calls > 0 }
+		assert probe.calls == 0
 		delayer.finish()
 		state.check_progress()
-		assert probe.calls > 0
+		assert probe.calls == 0
 		assert state.phase() == .completion_queued
 		process_event_loop_until(fn [state] () bool {
 			return state.phase() == .completed
 		})
+		assert probe.calls > 0
 		assert state.phase() == .completed
 	}
 }
@@ -129,9 +132,9 @@ fn test_parser_end_state_resumes_each_async_phase() {
 	assert document.readiness() == .complete
 }
 
-// The load-event readiness check flushes layout so lazily selected fonts can
-// delay the load event. It runs after DOMContentLoaded listeners, so the flush
-// includes their DOM changes instead of preceding them with a separate layout.
+// The readiness layout, which lets lazily selected fonts delay the load event,
+// runs after DOMContentLoaded listeners, so it includes their DOM changes
+// instead of preceding them with a separate layout.
 fn test_parser_end_flushes_readiness_layout_after_dom_content_loaded_listeners() {
 	mut document := dom.Document.create(dom.URL{ value: 'https://example.test/listeners-first' })
 	_ = WindowModel.create_top_level(document, none, 'parser-end-listener-order')!
@@ -155,11 +158,11 @@ fn test_parser_end_flushes_readiness_layout_after_dom_content_loaded_listeners()
 	})
 	assert state.phase() == .waiting_for_load_event_delay
 	assert at_listener.calls == 0
-	assert probe.calls > 0
 	load_delayer.finish()
 	process_event_loop_until(fn [document] () bool {
 		return document.readiness() == .complete
 	})
+	assert probe.calls > 0
 	assert document.readiness() == .complete
 }
 
@@ -206,7 +209,7 @@ fn test_parser_end_completion_rechecks_layout_started_resource_delays() {
 	})
 	state.check_progress()
 	assert state.phase() == .completion_queued
-	assert probe.calls == 1
+	assert probe.calls == 0
 	assert !document.anything_is_delaying_the_load_event()
 
 	process_event_loop_until(fn [state] () bool {
@@ -215,7 +218,7 @@ fn test_parser_end_completion_rechecks_layout_started_resource_delays() {
 	assert state.phase() == .waiting_for_load_event_delay
 	assert document.readiness() == .interactive
 	assert document.has_html_parser_end_state()
-	assert probe.calls >= 2
+	assert probe.calls >= 1
 	assert probe.resource_loaded
 	assert document.anything_is_delaying_the_load_event()
 

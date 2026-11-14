@@ -700,6 +700,9 @@ fn (mut p HTMLParser) stop_the_speculative_html_parser() {
 
 // Same-binary control: flush the readiness layout before DOMContentLoaded runs.
 const eager_parser_end_layout = os.getenv('VOX_EAGER_PARSER_END_LAYOUT') != ''
+// Same-binary control: also flush layout in the progress check that precedes
+// the completion task, which flushes it again for a rendered document.
+const retain_parser_end_progress_layout = os.getenv('VOX_RETAIN_PARSER_END_PROGRESS_LAYOUT') != ''
 
 pub enum HTMLParserEndPhase {
 	waiting_for_deferred_scripts
@@ -812,9 +815,15 @@ fn (mut state HTMLParserEndState) check_progress() {
 			return
 		}
 		// Font faces are selected lazily by text shaping. Flush layout before the
-		// readiness check so a selected download can delay the load event.
-		mut mutable_document := unsafe { &dom.Document(state.document) }
-		mutable_document.update_layout(.document_readiness_complete)
+		// readiness check so a selected download can delay the load event. The
+		// completion task queued below repeats this flush for a rendered document
+		// and returns to this phase when it starts a download, so flushing here
+		// as well lays out the whole document twice whenever a task between the
+		// two changes it.
+		if retain_parser_end_progress_layout || !parser_end_completion_flushes_layout(state.document) {
+			mut mutable_document := unsafe { &dom.Document(state.document) }
+			mutable_document.update_layout(.document_readiness_complete)
+		}
 		if state.document.anything_is_delaying_the_load_event() {
 			return
 		}
@@ -834,6 +843,11 @@ fn parser_end_waits_for_rendering_fonts(document &dom.Document) bool {
 		}
 	}
 	return false
+}
+
+// Whether the completion task will flush layout before it completes readiness.
+fn parser_end_completion_flushes_layout(document &dom.Document) bool {
+	return document.is_fully_active() && parser_end_navigable_container_is_rendered(document)
 }
 
 fn parser_end_navigable_container_is_rendered(document &dom.Document) bool {
@@ -892,7 +906,7 @@ fn (mut state HTMLParserEndState) complete() {
 		}
 		// An intervening task can give an element an image that only starts
 		// loading during layout. Include that load before completing readiness.
-		if mutable_document.is_fully_active() && parser_end_navigable_container_is_rendered(document) {
+		if parser_end_completion_flushes_layout(document) {
 			mutable_document.update_layout(.document_readiness_complete)
 		}
 		if mutable_document.anything_is_delaying_the_load_event()
