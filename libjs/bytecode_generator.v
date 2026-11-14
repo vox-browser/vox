@@ -19,6 +19,8 @@ mut:
 	range         SourceRange
 	scope_depth   int
 	loops         []BytecodeLoop
+	function_body bool
+	initialized_functions []u32
 }
 
 fn (mut generator BytecodeGenerator) emit(instruction Instruction) u32 {
@@ -207,6 +209,11 @@ fn (mut generator BytecodeGenerator) expression(mut vm VM, expression &Expressio
 	defer { generator.range = previous_range }
 	kind := expression.kind
 	match kind.tag {
+		.function_expr {
+			dst := generator.temporary()
+			generator.emit(Instruction{op: .new_function, dst: dst, identifier: kind.function_id.id, strict: generator.executable.parsed_source.function_table.get(kind.function_id).name != none})
+			return dst
+		}
 		.numeric_literal {
 			return generator.constant(Value.from_f64(kind.numeric_value))
 		}
@@ -544,6 +551,13 @@ fn declaration_name(declaration VariableDeclarator) !Utf16String {
 
 fn (mut generator BytecodeGenerator) collect_vars(statement &Statement) ! {
 	kind := statement.kind
+	if kind.tag == .function_declaration {
+		name := kind.func_name or { return error('Missing function declaration name') }
+		if !generator.executable.global_bindings.any(it.name == name.name && !it.is_lexical) {
+			generator.executable.global_bindings << GlobalBinding{name: name.name.clone()}
+		}
+		return
+	}
 	if kind.tag == .variable_declaration && kind.decl_kind == .var_kind {
 		for declaration in kind.declarations {
 			name := declaration_name(declaration)!
@@ -559,7 +573,7 @@ fn (mut generator BytecodeGenerator) collect_vars(statement &Statement) ! {
 				} }
 		}
 	}
-	if kind.tag in [.program, .block] {
+	if kind.tag in [.program, .block, .function_body] {
 		scope := if kind.tag == .program { (kind.program_data or { return error('Missing program') }).scope } else { kind.scope or {
 				return error('Missing block')} }
 		for child in scope.children {
@@ -611,12 +625,33 @@ fn (mut generator BytecodeGenerator) clear_completion() {
 	})
 }
 
+fn (mut generator BytecodeGenerator) initialize_functions(children []Statement) {
+	for child in children {
+		if child.kind.tag != .function_declaration { continue }
+		generator.initialized_functions << child.kind.function_id.id
+		name := child.kind.func_name or { continue }
+		dst := generator.temporary()
+		generator.emit(Instruction{op: .new_function, dst: dst, identifier: child.kind.function_id.id})
+		generator.emit(Instruction{op: .set_variable, lhs: dst, identifier: generator.identifier(name.name), strict: generator.strict})
+	}
+}
+
 fn (mut generator BytecodeGenerator) statement(mut vm VM, statement &Statement) ! {
 	previous_range := generator.range
 	generator.range = statement.range
 	defer { generator.range = previous_range }
 	kind := statement.kind
 	match kind.tag {
+		.function_declaration {
+			if kind.function_id.id !in generator.initialized_functions {
+				return generator.unsupported('conditional function declarations')
+			}
+		}
+		.return_stmt {
+			if !generator.function_body { return generator.unsupported('return outside function') }
+			value := if argument := kind.return_arg { generator.expression(mut vm, argument)! } else { generator.constant(js_undefined()) }
+			generator.emit(Instruction{op: .end, lhs: value})
+		}
 		.empty, .debugger_stmt {}
 		.expression_stmt {
 			value := generator.expression(mut vm, kind.expression or {
@@ -630,9 +665,13 @@ fn (mut generator BytecodeGenerator) statement(mut vm VM, statement &Statement) 
 		}
 		.block {
 			scope := kind.scope or { return error('Missing block scope') }
+			if scope.children.any(it.kind.tag == .function_declaration) {
+				return generator.unsupported('block-scoped function declarations')
+			}
 			generator.emit(Instruction{ op: .enter_scope })
 			generator.scope_depth++
 			generator.lexical_declarations(scope.children, false)!
+			generator.initialize_functions(scope.children)
 			for child in scope.children {
 				generator.statement(mut vm, &child)!
 			}
@@ -770,6 +809,8 @@ pub fn (mut script Script) compile(mut vm VM) !&Executable {
 			registers_and_locals_count: reserved_register_count
 			source_code:                SourceCode.create(utf16_string(script.filename),
 				utf16_string(script.parsed.source_text))
+			parsed_source: script.parsed
+			starting_line: script.starting_line
 		}
 		strict:        script.is_strict_mode
 		starting_line: script.starting_line
@@ -778,6 +819,7 @@ pub fn (mut script Script) compile(mut vm VM) !&Executable {
 	generator.collect_vars(&script.parsed.program)!
 	generator.lexical_declarations(program.scope.children, true)!
 	generator.clear_completion()
+	generator.initialize_functions(program.scope.children)
 	for statement in program.scope.children {
 		generator.statement(mut vm, &statement)!
 	}

@@ -31,7 +31,7 @@ fn test_libjs_backend_isolates_errors_and_never_falls_back_to_javascriptcore() {
 	defer { runtime.close() }
 	errors := runtime.run_document_scripts_collect_errors([
 		ScriptSource{ code: 'const x=40;' },
-		ScriptSource{ code: 'var leaked=1; (() => 42)();', url: 'unsupported.js' },
+		ScriptSource{ code: 'var leaked=1; class C {}', url: 'unsupported.js' },
 		ScriptSource{ code: 'let duplicate; let duplicate;', url: 'syntax.js' },
 		ScriptSource{ code: 'throw 42;', url: 'throw.js' },
 		ScriptSource{ code: 'var result=x+2;' },
@@ -134,7 +134,7 @@ fn test_libjs_backend_preserves_source_urls_and_starting_lines() {
 		assert err.msg().contains('https://example.test/limited.js:13:')
 	}
 	unsupported := prepare_script(ScriptSource{
-		code:          '\n(()=>1);'
+		code:          '\n(class {});'
 		url:           'https://example.test/unsupported.js'
 		starting_line: 20
 	})!

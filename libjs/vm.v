@@ -285,6 +285,8 @@ mut:
 	native_function_table          []NativeFunctionTableEntry
 	native_function_indices        map[string]u32
 	run_executable_depth           u32
+	instruction_budget u64
+	instruction_budget_active bool
 	module_execution_depth         u32
 	module_async_evaluation_count  u64 // [[ModuleAsyncEvaluationCount]]
 	private_environment_next_id    u64 = 1

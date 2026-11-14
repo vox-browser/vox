@@ -43,6 +43,9 @@ fn (mut vm VM) execute_instruction(instruction Instruction, executable &Executab
 	}
 	mut result := js_undefined()
 	match instruction.op {
+		.new_function {
+			result = Value.from_object(create_ecmascript_function(mut vm, executable, instruction.identifier, instruction.strict)!)
+		}
 		.mov {
 			result = left
 		}
@@ -326,6 +329,10 @@ pub fn (mut vm VM) run_executable(mut frame ExecutionContext, executable &Execut
 	}
 	previous_context := vm.running_execution_context_
 	previous_environment := frame.lexical_environment
+	if vm.run_executable_depth == 0 {
+		vm.instruction_budget = limits.max_instructions
+		vm.instruction_budget_active = limits.max_instructions != 0
+	}
 	vm.running_execution_context_ = &frame
 	vm.run_executable_depth++
 	frame.executable = executable
@@ -344,12 +351,11 @@ pub fn (mut vm VM) run_executable(mut frame ExecutionContext, executable &Execut
 		vm.run_executable_depth--
 		vm.running_execution_context_ = previous_context
 	}
-	mut executed := u64(0)
 	for frame.program_counter < executable.bytecode_length {
-		if limits.max_instructions != 0 && executed >= limits.max_instructions {
-			return vm.throw_error(.internal_error, 'LibJS instruction budget exceeded')
+		if vm.instruction_budget_active {
+			if vm.instruction_budget == 0 { return vm.throw_error(.internal_error, 'LibJS instruction budget exceeded') }
+			vm.instruction_budget--
 		}
-		executed++
 		instruction := executable.instructions[frame.program_counter]
 		next := vm.execute_instruction(instruction, executable) or {
 			if !is_throw_completion(err) { return err }

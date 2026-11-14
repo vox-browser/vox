@@ -66,6 +66,8 @@ pub mut:
 	source_code     ?&SourceCode
 	instructions    []Instruction
 	global_bindings []GlobalBinding
+	parsed_source &ParsedSource = unsafe { nil }
+	starting_line u32 = 1
 }
 
 pub fn (executable &Executable) get_identifier(index u32) Utf16String {

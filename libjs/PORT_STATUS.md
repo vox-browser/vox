@@ -2,6 +2,21 @@
 
 Audited: 2026-10-02.
 
+## Ordinary ECMAScript calls — 2026-11-14
+
+The bytecode runtime now executes ordinary function declarations and expressions,
+closures, recursive calls, returns, constructors and lexical arrow `this`.
+Each call owns a checked interpreter frame and a function environment. Nested
+calls share the outer instruction budget. Function bodies compile on first
+call; uncalled bodies retain their parsed source. Unsupported body syntax fails
+when that function is called, without switching to JavaScriptCore.
+
+Focused function, script, native-call and interpreter checks pass with current V;
+the new function cases also pass with GC disabled. Non-simple parameters,
+async/generator functions, block/conditional function declarations and full
+arguments-object semantics remain open. This is runtime groundwork for the
+opt-in browser backend; it does not establish site compatibility.
+
 ## Pure V Unicode backend — 2026-11-12
 
 Unicode processing now lives in `../vunicode/`: Unicode 17.0.0 general

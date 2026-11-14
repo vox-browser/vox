@@ -43,6 +43,7 @@ pub enum OpCode {
 	delete_binding
 	call
 	construct
+	new_function
 	typeof_binding
 	set_binding
 	set_variable
@@ -149,6 +150,10 @@ pub fn (executable &Executable) validate(arguments_count u32) ! {
 			for argument in instruction.arguments {
 				argument.slot(executable, arguments_count, false)!
 			}
+		}
+		if instruction.op == .new_function && (executable.parsed_source == unsafe { nil }
+			|| instruction.identifier >= u32(executable.parsed_source.function_table.entries.len)) {
+			return error('Function index out of range')
 		}
 		if instruction.op in [.get_binding, .get_callee_and_this, .typeof_binding, .delete_binding, .set_binding, .set_variable, .initialize_binding, .create_mutable_binding, .create_immutable_binding]
 			&& instruction.identifier >= u32(executable.identifier_table.len) {
