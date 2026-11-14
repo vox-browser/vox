@@ -61,6 +61,8 @@ fn (mut app BrowserApp) draw_chromium_inset_decorations(index int, page_y f32, w
 	$if macos {
 		if !app.ctx.native_rendering || app.page_zoom != 1 || app.document == unsafe { nil }
 			|| app.document.font_rendering_policy() != .chromium { return index }
+		group_end := app.draw_inset_group(index, page_y, window_height)
+		if group_end > index { return group_end }
 		end := chromium_inset_decoration_end(app.paint_commands,
 			app.chromium_raster_plan.command_layers, index)
 		if end == index { return index }
