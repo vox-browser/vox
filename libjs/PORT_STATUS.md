@@ -17,6 +17,15 @@ async/generator functions, block/conditional function declarations and full
 arguments-object semantics remain open. This is runtime groundwork for the
 opt-in browser backend; it does not establish site compatibility.
 
+Array and object literals now allocate fresh objects in the executing realm.
+Array and String constructors/prototypes are installed, including the existing
+UTF-16 String algorithms and borrowed Array indexOf/join/push/pop/unshift/slice/
+splice/forEach. Array methods preserve holes, live property access, callback
+exceptions and the shared execution budget; slice/splice consult @@species.
+Focused collection/function/property/script cases pass; collection cases also
+pass without GC. Remaining Array methods, full cross-realm species handling
+and Number/BigInt prototype graphs are still separate work.
+
 ## Pure V Unicode backend — 2026-11-12
 
 Unicode processing now lives in `../vunicode/`: Unicode 17.0.0 general

@@ -51,7 +51,7 @@ fn test_libjs_backend_isolates_errors_and_never_falls_back_to_javascriptcore() {
 				|| err.msg().contains('SyntaxError')
 		}
 	}
-	if _ := runtime.evaluate_host('JSON.stringify({answer:42});') {
+	if _ := runtime.evaluate_host('class Unsupported {}') {
 		assert false
 	} else {
 		assert err.msg().contains('not translated')

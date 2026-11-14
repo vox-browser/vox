@@ -44,6 +44,9 @@ pub enum OpCode {
 	call
 	construct
 	new_function
+	new_object
+	new_array
+	define_property
 	typeof_binding
 	set_binding
 	set_variable
@@ -93,12 +96,12 @@ fn (instruction Instruction) input_count() int {
 		.get_property, .delete_property {
 			2
 		}
-		.put_property {
+		.put_property, .define_property {
 			3
 		}
 		.mov, .unary_plus, .unary_minus, .bitwise_not, .not_op, .typeof_op, .to_numeric,
 		.increment, .decrement, .set_binding, .set_variable, .initialize_binding, .jump_if_true,
-		.jump_if_false, .jump_if_nullish, .end, .throw_op, .construct {
+		.jump_if_false, .jump_if_nullish, .end, .throw_op, .construct, .new_array {
 			1
 		}
 		else {
@@ -116,7 +119,7 @@ fn (instruction Instruction) input_operand(index int) Operand {
 }
 
 fn (instruction Instruction) writes_operand() bool {
-	return instruction.op !in [.put_property, .set_binding, .set_variable, .initialize_binding,
+	return instruction.op !in [.put_property, .define_property, .set_binding, .set_variable, .initialize_binding,
 		.create_mutable_binding, .create_immutable_binding, .enter_scope, .leave_scope, .jump,
 		.jump_if_true, .jump_if_false, .jump_if_nullish, .end, .throw_op]
 }

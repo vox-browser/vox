@@ -209,6 +209,30 @@ fn (mut generator BytecodeGenerator) expression(mut vm VM, expression &Expressio
 	defer { generator.range = previous_range }
 	kind := expression.kind
 	match kind.tag {
+		.array_expr {
+			dst := generator.temporary()
+			generator.emit(Instruction{op: .new_array, dst: dst, lhs: generator.constant(Value.from_f64(f64(kind.array_elements.len)))})
+			for index, element in kind.array_elements {
+				if value := element {
+					item := generator.expression(mut vm, &value)!
+					generator.emit(Instruction{op: .define_property, lhs: dst, rhs: generator.constant(Value.from_f64(f64(index))), src: item})
+				}
+			}
+			return dst
+		}
+		.object_expr {
+			dst := generator.temporary()
+			generator.emit(Instruction{op: .new_object, dst: dst})
+			for property in kind.object_properties {
+				if property.property_type != .key_value { return generator.unsupported('object accessor, spread or prototype setter') }
+				key := if !property.is_computed && property.key.kind.tag == .identifier_expr {
+					generator.constant(Value.from_string(vm.create_string(identifier_name(&property.key)!)))
+				} else { generator.expression(mut vm, &property.key)! }
+				value := generator.expression(mut vm, &(property.value or { return error('Missing property value') }))!
+				generator.emit(Instruction{op: .define_property, lhs: dst, rhs: key, src: value})
+			}
+			return dst
+		}
 		.function_expr {
 			dst := generator.temporary()
 			generator.emit(Instruction{op: .new_function, dst: dst, identifier: kind.function_id.id, strict: generator.executable.parsed_source.function_table.get(kind.function_id).name != none})

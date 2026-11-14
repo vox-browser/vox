@@ -8,6 +8,13 @@ pub:
 	max_instructions u64
 }
 
+fn (mut vm VM) consume_execution_budget() ! {
+	if vm.instruction_budget_active {
+		if vm.instruction_budget == 0 { return vm.throw_error(.internal_error, 'LibJS instruction budget exceeded') }
+		vm.instruction_budget--
+	}
+}
+
 fn typeof_value(value Value) string {
 	if value.is_function() { return 'function' }
 	return match value.tag {
@@ -43,6 +50,12 @@ fn (mut vm VM) execute_instruction(instruction Instruction, executable &Executab
 	}
 	mut result := js_undefined()
 	match instruction.op {
+		.new_object { result = Value.from_object(Object.create(vm.realm(), vm.realm().object_prototype)) }
+		.new_array { result = Value.from_object(ArrayObject.create(mut vm, vm.realm(), u64(left.number), vm.realm().array_prototype_record())!.object) }
+		.define_property {
+			mut object := left.as_object()
+			object.create_data_property_or_throw(mut vm, right.to_property_key(mut vm)!, source)!
+		}
 		.new_function {
 			result = Value.from_object(create_ecmascript_function(mut vm, executable, instruction.identifier, instruction.strict)!)
 		}
@@ -352,10 +365,7 @@ pub fn (mut vm VM) run_executable(mut frame ExecutionContext, executable &Execut
 		vm.running_execution_context_ = previous_context
 	}
 	for frame.program_counter < executable.bytecode_length {
-		if vm.instruction_budget_active {
-			if vm.instruction_budget == 0 { return vm.throw_error(.internal_error, 'LibJS instruction budget exceeded') }
-			vm.instruction_budget--
-		}
+		vm.consume_execution_budget()!
 		instruction := executable.instructions[frame.program_counter]
 		next := vm.execute_instruction(instruction, executable) or {
 			if !is_throw_completion(err) { return err }

@@ -23,6 +23,9 @@ pub mut:
 	object_prototype               ?&Object
 	math_object                    ?&Object
 	function_prototype             ?&Object                 // %Function.prototype%
+	array_prototype ?&Object
+	array_constructor ?&Object
+	string_prototype ?&Object
 	throw_type_error_function      ?&Object
 	boolean_prototype              ?&Object
 	boolean_constructor            ?&Object
@@ -224,9 +227,14 @@ pub fn initialize_host_defined_realm(mut vm VM, hooks RealmGlobalHooks) !&Execut
 	global.define_direct_property(PropertyName.from_str('Math'),
 		Value.from_object(realm.math_object_record()), attribute_writable | attribute_configurable)
 	set_default_global_legacy_functions(mut vm, realm)
+	initialize_collection_intrinsics(mut vm, mut realm)!
 	// 19. Create any host-defined global object properties on global.
 	// 20. Return unused.
 	return new_context
+}
+
+pub fn (realm &Realm) array_prototype_record() &Object {
+	return realm.array_prototype or { panic('Realm has no Array prototype') }
 }
 
 // Runtime/GlobalObject.cpp::set_default_global_bindings, value properties only.

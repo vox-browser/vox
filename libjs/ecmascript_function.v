@@ -125,7 +125,7 @@ fn (mut function ECMAScriptFunction) internal_call(mut vm VM, this_value Value, 
 		} else if this_value.is_nullish() {
 			Value.from_object(function.realm_.global_environment_record().global_this_value)
 		} else {
-			Value.from_object(this_value.to_object_with_prototypes(mut vm, PrimitiveObjectPrototypes{})!)
+			Value.from_object(this_value.to_object_with_prototypes(mut vm, realm_primitive_prototypes())!)
 		}
 		environment.bind_this_value(mut vm, bound_this)!
 		frame.this_value = bound_this
