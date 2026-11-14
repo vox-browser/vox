@@ -58,7 +58,8 @@ The tests execute the complete, unchanged `hn.js` body already archived in
 `2e38ff883bd36dc4cc26f129f19169b0357cf32059988c926a4f73e5bfaa37f0`.
 The comments fixture uses the archived discussion
 `hacker-news-item-50231722-complete.html`, containing 101 comment rows, plus a
-small nested-comment regression fixture. Network loading is not under test.
+small nested-comment regression fixture. These fixture tests do not exercise
+network loading; the live navigation check is described separately below.
 
 | Check | Result |
 | --- | --- |
@@ -70,6 +71,10 @@ small nested-comment regression fixture. Network loading is not under test.
 | Settings serialization and defaults | Both focused files passed |
 | UI2 settings Apply, Cancel and saved preference roundtrip | Focused native test executable passed |
 | Native live-collection attribute invalidation | Focused regression passed in both GC modes |
+| Fresh production default-JSC and explicit-LibJS startup | Both headless smoke checks passed, including DOM mutation and native click handling |
+| Production saved engine and CLI override | Saved LibJS selected; explicit JSC overrode it; both smoke checks passed |
+| Production HN expanded/collapsed/restored pixels | Each phase matched JSC exactly; restoration matched baseline |
+| Live HN discussion with LibJS | Loaded and rendered; live clicking was not measured |
 
 The native host checks restore all 101 original comment-row classes after a
 collapse/expand cycle, preserve nested collapsed state, and exercise node identity,
@@ -116,15 +121,54 @@ env VOX_CHROME_TEST_FILE=browserapp/browser_settings_test.v \
   sh tools/test_address_bar.sh -b c -no-parallel -cc clang -memory-limit 10G
 ```
 
-## Production bundle status
+## Production bundle verification
 
 Implementation is committed through `fad8fc64ac6dd8d1e88f984330de6ce13faeb3af`.
-Each feature commit requested a managed production rebuild. At recording, the
-shared worker was still processing that request after earlier attempts rejected
-source inputs changed by other sessions during compilation. The latest completed
-bundle was receipt `20261114-143607-0a077e61`, executable SHA-256
-`d94dced5f7643aa17ec662ec0a72400c5bb62a5e1ce87752af0a15ac07c41ce6`.
-It predates this feature and cannot validate it. The checks above execute the new
-source in native test executables; production headless/windowed and live-site
-validation remain pending a successfully published bundle containing the change.
-No duplicate production build was queued.
+Each feature commit requested a managed production rebuild. Earlier attempts
+rejected source inputs changed by other sessions during compilation. The shared
+worker then published receipt `20261114-165954-ab3a34ed`, built with the C backend,
+literal `-prod` and a single C unit. Its recorded Git head is `da5c4769a`; the
+feature was present as uncommitted source when compilation was sealed. The exact
+source manifest matches all 556 macOS source inputs checked across LibJS,
+libjsdom, browserjs, browsersettings and the changed main/settings/DOM boundary;
+the two platform-specific Linux/Windows stack files are excluded from this build.
+No duplicate manual production build was queued.
+
+Fresh smoke processes 80206 (default JSC) and 80223 (LibJS) both exited zero.
+Fresh processes 89158 and 89174 additionally verified saved-LibJS selection and
+explicit-JSC override. Each used a separate private profile. Native library and
+executable identities stayed unchanged throughout smoke and paired fixture
+screenshot checks, with the managed bundle lease held during those jobs.
+
+Six windowed capture invocations used `capture_screenshot.sh` at an 800×600
+document viewport, two-second settle, separate private profiles, and the test
+display away from the pointer. The small nested-comment fixture embedded the
+unchanged `hn.js`; inline calls to `toggleCollapse("100")` drove the collapsed
+and restored phases. All three JSC-versus-LibJS comparisons have zero differing
+pixels. Collapse changes 4,067 pixels in each engine, and both restored images
+match their expanded baseline exactly. These production captures execute the
+collapse function directly; the source-built pointer test above validates actual
+event routing. These production smoke, settings, paired screenshot processes and
+their 3 GiB guards all exited zero.
+
+A fresh production LibJS process (PID 97363) also loaded and rendered the live
+discussion at `https://news.ycombinator.com/item?id=50231722`. Its 800×600 document
+capture visibly contains the story and comment thread; browser and guard exited
+zero, with a five-second settle and no ambient proxy overrides. The first live
+attempt stopped before browser launch because the bundle lease was busy. The
+retry used the available bundle and verified executable/native-library hashes
+before and after capture; identities remained unchanged. This establishes live
+navigation/rendering, while comment-collapse acceptance uses the frozen fixtures
+and native pointer test described above.
+
+Pinned SHA-256 identities:
+
+| Artifact under `Build/` | SHA-256 |
+| --- | --- |
+| `v/Vox.app/Contents/MacOS/Vox` | `731ef68c901b8be1ce7858eef0c1d5d93c2b8df7584cc7b4f61a80d42bcef604` |
+| `v/libLadybirdVSkiaText.dylib` | `ca10e83a001e18cf83ca29fea59da0091307c3ccb7ed5e4088f602b9e6ab0ac7` |
+| `v/libVoxAVIF.dylib` | `cbbae055532f17ab8f656bb120dc8d7fe3ffd9841bada8c7f635957b5c15f0ba` |
+| `v/libVoxGraphite.dylib` | `59b9b9a5d65da5d69b196474afc5eb48c9e71e21f3fddfc04b986aa9d2a47c54` |
+| `v/libVoxGraphiteDawn.dylib` | `aca10cc49100191dcc27b528214f92f1c8e8e5227610916d89ecd865e1e7776b` |
+| `v/libVoxJPEGXL.dylib` | `d8c2c90290e249524617ba1384453a6955bae630048ac7b2cbc6d8b3634882d9` |
+| `pixel-tools/pixel_diff` | `41d1b3b0e20f2e1dc422ac190a9dff6cf33a225aebdea8c3329b2713a28b7972` |
