@@ -95,6 +95,15 @@ jobs:
             "$(cygpath -w "$PWD/Build/windows-webgl/browser-title-test.exe")" \
             | tee Build/windows-webgl/title.json
           cat Build/windows-webgl/title.out Build/windows-webgl/title.err
+          gcc -municode -std=c11 -O2 -Wall -Wextra -Werror \
+            tools/test_windows_close_dump.c -o Build/windows-webgl/close-dump-test.exe \
+            -luser32 -lgdi32
+          Build/windows-webgl/guard.exe 180000 3072 \
+            Build/windows-webgl/close-dump.out Build/windows-webgl/close-dump.err \
+            "$(cygpath -w "$PWD/Build/windows-webgl/close-dump-test.exe")" \
+            "$(cygpath -w "$PWD/Build/windows-webgl/close-test.dmp")" \
+            | tee Build/windows-webgl/close-dump.json
+          cat Build/windows-webgl/close-dump.out Build/windows-webgl/close-dump.err
           gcc -municode -std=gnu11 -O2 -Wall -Wextra -Wno-unused-function -Werror \
             tools/test_windows_https.c -lcurl -lpthread -o Build/windows-webgl/https-test.exe
           python tools/test_windows_https.py --guard Build/windows-webgl/guard.exe \

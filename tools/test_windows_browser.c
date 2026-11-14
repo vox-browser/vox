@@ -3,12 +3,54 @@
  */
 #define WIN32_LEAN_AND_MEAN
 #include <stdio.h>
+#include <string.h>
 #include <wchar.h>
 #include <windows.h>
 #include <tlhelp32.h>
+#include <dbghelp.h>
 
 static DWORD browser_pid;
 static HWND browser_window;
+
+/* Capture from the driver, before failure cleanup kills the hung child.
+ * Load the system provider only when an explicit diagnostic path is set. */
+static void capture_close_timeout(HANDLE process) {
+  wchar_t path[32768];
+  DWORD length = GetEnvironmentVariableW(L"VOX_WINDOWS_CLOSE_DUMP", path, 32768);
+  if (!length) return;
+  if (length >= 32768) {
+    fputs("Close dump path is too long\n", stderr);
+    return;
+  }
+  HMODULE library = LoadLibraryExW(L"dbghelp.dll", NULL, LOAD_LIBRARY_SEARCH_SYSTEM32);
+  if (!library) {
+    fprintf(stderr, "Loading system DbgHelp failed: %lu\n", GetLastError());
+    return;
+  }
+  __typeof__(MiniDumpWriteDump) *write_dump =
+      (__typeof__(MiniDumpWriteDump) *)(void *)GetProcAddress(library, "MiniDumpWriteDump");
+  if (!write_dump) {
+    fprintf(stderr, "Resolving MiniDumpWriteDump failed: %lu\n", GetLastError());
+    FreeLibrary(library);
+    return;
+  }
+  HANDLE file = CreateFileW(path, GENERIC_WRITE, FILE_SHARE_READ, NULL,
+                            CREATE_NEW, FILE_ATTRIBUTE_NORMAL, NULL);
+  if (file == INVALID_HANDLE_VALUE) {
+    fprintf(stderr, "Creating close dump failed: %lu\n", GetLastError());
+    FreeLibrary(library);
+    return;
+  }
+  BOOL saved = write_dump(process, browser_pid, file, MiniDumpWithThreadInfo,
+                          NULL, NULL, NULL);
+  DWORD error = saved ? ERROR_SUCCESS : GetLastError();
+  CloseHandle(file);
+  FreeLibrary(library);
+  fprintf(stderr, "Close timeout dump: saved=%d error=0x%08lx path=%ls\n",
+          saved, (unsigned long)error, path);
+  fflush(stderr);
+}
+
 static BOOL CALLBACK find_browser(HWND window, LPARAM unused) {
   (void)unused;
   DWORD pid = 0;
@@ -380,6 +422,8 @@ finished:
     fprintf(stderr, "FAIL: phase=%s pid=%lu error=%lu child_exit=%lu window=%p foreground=%p title=%ls\n", phase,
             (unsigned long)browser_pid, (unsigned long)error, (unsigned long)code,
             (void*)browser_window, (void*)GetForegroundWindow(), title);
+    if (!strcmp(phase, "close") && code == STILL_ACTIVE)
+      capture_close_timeout(browser.hProcess);
     TerminateProcess(browser.hProcess, 125);
     WaitForSingleObject(browser.hProcess, 10000);
   }
