@@ -79,10 +79,11 @@ fn context() !&canvas.GpuContext {
 // 2..5) and equal sides (mode 8).
 fn supported(shape &C.VoxGraphiteShape) bool {
 	kind_ok := match shape.fill {
-		0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13 { true }
+		0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14 { true }
 		else { false }
 	}
-	return kind_ok && (shape.clip_out_count == 0 || shape.clip_outs != unsafe { nil })
+	return kind_ok && (shape.fill != 14 || (shape.thickness == 0 && shape.has_contour_reference != 0))
+		&& (shape.clip_out_count == 0 || shape.clip_outs != unsafe { nil })
 }
 
 // rounded_rect converts x, y, width, height and four radius pairs, like the
@@ -177,6 +178,11 @@ fn draw_shape_descriptor(mut target canvas.GpuSurface, shape &C.VoxGraphiteShape
 	}
 	if shape.fill in [11, 12, 13] {
 		draw_contoured_shape(mut target, shape, paint, width, height)!
+	} else if shape.fill == 14 {
+		// Match drawDRRect: its rounded hole uses the inverse-clip path,
+		// inside the antialiased content clip and active sample pass.
+		target.clip_rrect(rounded_rect(shape.contour_reference), .intersect, true)!
+		target.draw_drrect(rounded_rect(shape.rect), rounded_rect(shape.underlay_rect), paint)!
 	} else if shape.fill == 10 {
 		mask := rounded_shadow_mask(shape, width, height)!
 		target.clip_rrect(rounded_rect(shape.underlay_rect), .difference, true)!

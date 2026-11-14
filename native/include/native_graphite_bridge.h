@@ -52,6 +52,8 @@ typedef struct {
     // 6 a uniform elliptical ring (center rectangle, border_widths[0]),
     // 7 a uniform ring sharing its outer clip layer with the background,
     // 8 equal opaque solid sides with some zero-width sides (outer rectangle).
+    // 14: unblurred inset shadow: square caster in rect, rounded hole in
+    // underlay_rect, content clip in contour_reference (required).
     int fill, anti_alias;
     // Multisample the render pass, as Chromium does for a raster tile once any
     // draw in it needs MSAA.
