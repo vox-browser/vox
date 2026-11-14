@@ -6,9 +6,20 @@ The opt-in browser backend and its 2026-11-14 validation are documented in
 [`docs/LIBJS_ENGINE.md`](../docs/LIBJS_ENGINE.md). JavaScriptCore remains the default.
 
 The [GitHub continuation](../docs/LIBJS_GITHUB.md) adds bounded deeper browser
-parsing, iterative conditional alternatives and import-free module execution.
-Dependency graphs, namespaces and React hydration remain open; pixel-perfect
-GitHub rendering is not established.
+parsing, iterative conditional alternatives and synchronous module graphs.
+Graph loading supports asynchronous host completion; linking/evaluation preserve
+live imports, cycles, re-exports, private environments and cached results/errors.
+The browser uses native Fetch/import maps without a JavaScriptCore context.
+Namespace reads have stable identity and sorted live exports, but their accessor
+descriptor adapter does not implement full namespace data-descriptor/freeze
+semantics. `import.meta` bytecode and synchronous `try/catch` also execute;
+`finally`, dynamic imports, top-level await, remaining language/builtin/Web APIs,
+React hydration and pixel-perfect GitHub rendering remain open.
+The ten-fix checkpoint has 261-file default-GC coverage (184 retained plus 77
+recovered after a host restart), a full 261/261 GC-disabled pass and 100/100 exact
+AST comparisons. Production visual validation remains pending. Native module
+metadata and the subsequent native Performance mark binding have focused browser
+coverage; the mark binding does not implement cloned detail, measures or observers.
 
 ## Ordinary ECMAScript calls — 2026-11-14
 
