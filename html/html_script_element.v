@@ -129,7 +129,7 @@ pub fn html_script_element_model_for_dom_element(element &dom.HTMLScriptElement)
 	}
 	dom_element := script_dom_element(element)
 	mut model := HTMLScriptElementModel.create(dom_element.document().base_url())
-	model.src_ = dom_element.get_attribute('src')
+	model.src_ = dom_element.get_attribute_ns(none, 'src')
 	model.text_ = dom_element.as_node().child_text_content()
 	model.type_attribute_ = dom_element.get_attribute('type')
 	model.language_attribute_ = dom_element.get_attribute('language')
@@ -738,13 +738,13 @@ pub fn html_script_element_post_connection(element &dom.HTMLScriptElement) {
 
 pub fn html_script_element_src(element &dom.HTMLScriptElement) string {
 	dom_element := script_dom_element(element)
-	raw := dom_element.get_attribute('src') or { return '' }
+	raw := dom_element.get_attribute_ns(none, 'src') or { return '' }
 	return dom_element.document().encoding_parse_and_serialize_url(raw) or { return '' }
 }
 
 pub fn set_html_script_element_src(element &dom.HTMLScriptElement, value string) {
 	mut dom_element := script_dom_element(element)
-	old_value := dom_element.get_attribute('src')
+	old_value := dom_element.get_attribute_ns(none, 'src')
 	dom_element.set_attribute_value('src', value)
 	html_script_element_attribute_changed(element, 'src', old_value, value, none)
 }

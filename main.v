@@ -1342,7 +1342,8 @@ fn document_preload_resource_urls(document &dom.Document, base_url string) []str
 			if type_ != '' && type_ !in ['text/javascript', 'application/javascript', 'module'] {
 				continue
 			}
-			resource_url := resolve_document_reference(script.get_attribute_value('src'), base_url)
+			source := script.get_attribute_ns(none, 'src') or { continue }
+			resource_url := resolve_document_reference(source, base_url)
 			if (resource_url.starts_with('http://') || resource_url.starts_with('https://')) && resource_url !in seen {
 				seen[resource_url] = true
 				urls << resource_url
