@@ -59,13 +59,17 @@ fn prepare_script_with_options(source ScriptSource, options libjs.ParseOptions) 
 	}
 	owned := ScriptSource{...source, code: source.code.clone(), url: source.url.clone()}
 	parsed := libjs.parse_source_with_options(owned.code, owned.source_type, options)
+	return finish_script_preparation(owned, parsed)
+}
+
+fn finish_script_preparation(source ScriptSource, parsed &libjs.ParsedSource) !&PreparedScript {
 	if parsed.has_errors() && !parsed.reached_recursion_limit {
 		diagnostic := parsed.diagnostics[0]
 		filename := if source.url == '' { '<script>' } else { source.url }
 		line := u64(source.starting_line) + diagnostic.line - 1
 		return error('SyntaxError: ${filename}:${line}:${diagnostic.column + 1}: ${diagnostic.message}')
 	}
-	return &PreparedScript{owned, parsed}
+	return &PreparedScript{source, parsed}
 }
 
 // JavaScriptCore preserves the complete browser host while LibJS execution is
@@ -129,6 +133,9 @@ mut:
 	libjs_native_cache_enabled_ bool
 	libjs_native_cache_pending_ bool
 	libjs_native_cache_failed_ bool
+	libjs_native_cache_partition_ string
+	libjs_frontend_cache_hits_ u64
+	libjs_frontend_cache_misses_ u64
 }
 
 pub fn Runtime.create() &Runtime {
@@ -300,8 +307,7 @@ fn (runtime &Runtime) execute_source(source ScriptSource, stringify_result bool)
 		}
 	}
 	if runtime.engine == .libjs {
-		return runtime.execute_prepared(prepare_script_with_options(source,
-			libjs.ParseOptions{max_recursion_depth:256})!, stringify_result)
+		return runtime.execute_prepared(runtime.prepare_libjs_script(source)!, stringify_result)
 	}
 	record := libjs.Script.create_external(source.code, runtime.realm, source.url,
 		u32(source.starting_line), voidptr(runtime))!

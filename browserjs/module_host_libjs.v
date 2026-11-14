@@ -127,8 +127,10 @@ fn (mut host ModuleHost) consume_libjs_script(operation &BrowserModuleOperation,
 fn (mut host ModuleHost) parse_libjs_module(key string,code string,starting_line int) !&libjs.SourceTextModule {
 	mut runtime := unsafe { &Runtime(host.runtime) }
 	if cached := runtime.libjs_modules_[key] { return cached }
-	mut created := libjs.SourceTextModule.parse_with_options(code,runtime.realm,key,voidptr(runtime),
-		libjs.ParseOptions{max_recursion_depth:256})!
+	parsed := runtime.prepare_libjs_frontend(code, .module, libjs.ParseOptions{max_recursion_depth:256})
+	if parsed.has_errors() { return libjs.ModuleParseError{diagnostics: parsed.diagnostics} }
+	mut created := &libjs.SourceTextModule{module_realm:runtime.realm, module_filename:key,
+		host_defined:voidptr(runtime), parsed:parsed}
 	created.module_starting_line=u32(starting_line)
 	runtime.libjs_modules_[key.clone()]=created
 	return created

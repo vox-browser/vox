@@ -23,6 +23,7 @@ fn (mut runtime Runtime) initialize_document_native_cache() {
 		return
 	}
 	runtime.libjs_native_cache_enabled_ = true
+	runtime.libjs_native_cache_partition_ = os.real_path(directory)
 }
 
 pub fn (runtime &Runtime) native_code_cache_stats() libjs.NativeCacheStats {
