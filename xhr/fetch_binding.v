@@ -150,6 +150,7 @@ fn (mut request XMLHttpRequest) start_synchronous_fetch_if_bound() ! {
 	state := &SynchronousFetchState{}
 	algorithms := fetch.FetchAlgorithms.create(fetch.FetchAlgorithmsInput{
 		process_response_consume_body: fn [mut request, state] (response &fetch.Response, result fetch.BodyBytes) {
+			if state.did_time_out { return }
 			if result.kind != .failure {
 				request.fetch_response_ = response
 				request.response_ = project_fetch_response(response)
