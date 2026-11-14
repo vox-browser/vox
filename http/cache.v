@@ -140,7 +140,8 @@ pub fn is_cacheable_response(status_code u32, received_headers &HeaderList) bool
 
 pub fn is_header_exempted_from_cache_storage(name string) bool {
 	return cache_ascii_lowercase(name) in ['connection', 'keep-alive', 'proxy-connection', 'te',
-		'transfer-encoding', 'upgrade', 'x-ladybird-enable-disk-cache', 'x-ladybird-disk-cache-status',
+		'transfer-encoding', 'upgrade', 'set-cookie', 'strict-transport-security',
+		'x-ladybird-enable-disk-cache', 'x-ladybird-disk-cache-status',
 		'x-ladybird-request-time-offset']
 }
 

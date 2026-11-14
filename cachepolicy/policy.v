@@ -163,7 +163,8 @@ pub fn has_unterminated_quoted_string(value string) bool {
 // be cache metadata. Remove them before both policy evaluation and storage.
 pub fn storage_headers(headers []Header) []Header {
 	mut excluded := ['connection', 'keep-alive', 'proxy-connection', 'te',
-		'transfer-encoding', 'upgrade', 'x-ladybird-enable-disk-cache',
+		'transfer-encoding', 'upgrade', 'set-cookie', 'strict-transport-security',
+		'x-ladybird-enable-disk-cache',
 		'x-ladybird-disk-cache-status', 'x-ladybird-request-time-offset']
 	for header in headers {
 		if header.name.to_lower() == 'connection' {
@@ -305,7 +306,7 @@ pub fn evaluate(request Request, received_response Response, options ReuseOption
 		if request.method != 'GET' || request.mode != .default || response.status != 200
 			|| has_header(request.headers, 'Authorization') || has_header(request.headers, 'Cookie')
 			|| !contains_directive(response_control, 'public') || contains_directive(response_control, 'private')
-			|| has_header(response.headers, 'Set-Cookie')
+			|| has_header(received_response.headers, 'Set-Cookie')
 			|| vary_names(response.headers).any(it !in ['accept', 'accept-encoding'])
 			|| (options.require_immutable && !contains_directive(response_control, 'immutable')) {
 			return Decision{}

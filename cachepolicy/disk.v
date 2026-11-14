@@ -80,7 +80,7 @@ pub fn store_disk_response(path string, final_url string, body string, received_
 	response := Response{ ...received_response, headers: storage_headers(received_response.headers) }
 	os.rm(path + '.timing.json') or {}
 	os.rm(path + '.status') or {}
-	if forbids_storage(response.headers) {
+	if forbids_storage(response.headers) || has_header(received_response.headers, 'Set-Cookie') {
 		discard_disk_entry(path)
 		return false
 	}
@@ -152,7 +152,10 @@ pub fn read_disk_entry(path string, limit int) ?DiskEntry {
 	}
 	// Validate the original receipt before filtering. Older entries may still
 	// contain connection-specific fields, which must not be replayed either.
-	headers := storage_headers(disk_headers(encoded_headers) or { return none })
+	received_headers := disk_headers(encoded_headers) or { return none }
+	// Preserve the disk cache's refusal of cookie-bearing legacy responses.
+	if has_header(received_headers, 'Set-Cookie') { return none }
+	headers := storage_headers(received_headers)
 	return DiskEntry{
 		final_url: final_url
 		body:      body
