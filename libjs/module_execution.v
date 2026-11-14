@@ -23,6 +23,21 @@ pub fn (environment &ModuleEnvironment) get_this_binding(mut vm VM) !Value { ret
 
 enum ModuleExecutionStatus { unlinked linking linked evaluating evaluated }
 
+// Diagnostics inspect lifecycle state without evaluating code or converting
+// an author-controlled exception value.
+pub struct ModuleExecutionSnapshot {
+pub:
+	status string
+	promise_state string
+}
+
+pub fn (module_record &SourceTextModule) execution_snapshot() ModuleExecutionSnapshot {
+	return ModuleExecutionSnapshot{
+		status: module_record.module_status.str()
+		promise_state: if evaluation := module_record.module_evaluation { evaluation.promise.state.str() } else { '' }
+	}
+}
+
 fn (mut module_record SourceTextModule) compile_module(mut vm VM) !&Executable {
 	if executable := module_record.module_executable { return executable }
 	if module_record.module_starting_line == 0 { return error('Module starting line must be positive') }
