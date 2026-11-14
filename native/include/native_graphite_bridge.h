@@ -77,6 +77,10 @@ typedef struct {
     // CSS contoured backgrounds, uniform borders and outer shadows (11..13).
     float contour_parameters[4], contour_reference[12];
     int has_contour_reference;
+    // Conservative destination clip in raster pixels, for filter input bounds.
+    // Other paints and legacy filter paths ignore these optional values.
+    int has_filter_clip;
+    float filter_clip[4];
 } VoxGraphiteShape;
 
 // An SVG path in the browser's serialized segment format: twelve floats per

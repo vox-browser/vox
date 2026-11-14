@@ -77,3 +77,17 @@ fn test_native_geometry_fringe_requires_a_real_tile_intersection() {
 	}
 	assert !geometry_grid_covers_leaf(DocumentGeometryGrid{}, 0, 0, 1, 1)
 }
+
+fn test_filter_fringe_only_uses_a_grid_containing_the_visible_clip() {
+	grid := DocumentGeometryGrid{width:64,height:64,columns:1,rows:1}
+	assert geometry_grid_intersects_leaf(grid,-50,-60,114,124)
+	assert geometry_grid_contains_filter_clip(grid,-50,-60,[f32(50),60,114,124]!)
+	for clip in [[f32(49),60,114,124]!,[f32(50),59,114,124]!,
+		[f32(50),60,115,124]!,[f32(50),60,114,125]!,[f32(50),60,50,124]!] {
+		assert !geometry_grid_contains_filter_clip(grid,-50,-60,clip)
+	}
+	for rect in [[-100,-100,10,10],[64,0,20,20],[0,64,20,20],[0,0,0,20]] {
+		assert !geometry_grid_intersects_leaf(grid,rect[0],rect[1],rect[2],rect[3])
+	}
+	assert !geometry_grid_intersects_leaf(DocumentGeometryGrid{},0,0,1,1)
+}

@@ -1130,6 +1130,20 @@ int native_text_raster_finish(const uint8_t *pixels, int left, int top, int widt
 extern int vox_draw_document_shape_pixels(uint8_t*, int, int, int, int, int, int, VoxGraphiteShape*);
 VOX_NATIVE_STATE VoxGraphiteShape native_v_shape_state;
 
+static void native_v_shape_filter_clip(VoxGraphiteShape* shape, int32_t* geometry,
+    float canvas_height, float sx, float sy) {
+    shape->has_filter_clip=0;
+    if(shape->fill!=10)return;
+    CGRect clip=CGContextGetClipBoundingBox([[NSGraphicsContext currentContext] CGContext]);
+    if(CGRectIsEmpty(clip)||CGRectIsInfinite(clip)||CGRectIsNull(clip))return;
+    float left=floorf(CGRectGetMinX(clip)),right=ceilf(CGRectGetMaxX(clip));
+    float top=floorf(canvas_height-CGRectGetMaxY(clip)),bottom=ceilf(canvas_height-CGRectGetMinY(clip));
+    if(!isfinite(left)||!isfinite(top)||!isfinite(right)||!isfinite(bottom))return;
+    shape->has_filter_clip=1;
+    shape->filter_clip[0]=(left-geometry[0])*sx;shape->filter_clip[1]=(top-geometry[1])*sy;
+    shape->filter_clip[2]=(right-geometry[0])*sx;shape->filter_clip[3]=(bottom-geometry[1])*sy;
+}
+
 static int native_try_v_document_shape(VoxGraphiteShape shape, const float* matrix,
     float canvas_width, float canvas_height, float page_x, float page_y, float scroll_y) {
     if ([[NSGraphicsContext currentContext] CGContext] != native_font_compositing_context) return 0;
@@ -1160,6 +1174,7 @@ static int native_try_v_document_shape(VoxGraphiteShape shape, const float* matr
     float cropped[9]={matrix[0]*sx,matrix[2]*sx,(matrix[4]-geometry[0])*sx,
         matrix[1]*sy,matrix[3]*sy,(matrix[5]-geometry[1])*sy,0,0,1};
     memcpy(shape.matrix,cropped,sizeof(cropped));
+    native_v_shape_filter_clip(&shape,geometry,canvas_height,sx,sy);
     int drawn=vox_draw_document_shape_pixels(pixels,w,h,w*4,backdrop,
         (int)lround((geometry[0]-page_x)*scale),
         (int)lround((geometry[1]-page_y+scroll_y)*scale),&shape);
@@ -1197,7 +1212,10 @@ int native_draw_document_shape_group(VoxGraphiteShape* shapes, int count, float*
     float sx=(float)w/geometry[5],sy=(float)h/geometry[6];
     float cropped[9]={matrix[0]*sx,matrix[2]*sx,(matrix[4]-geometry[0])*sx,
         matrix[1]*sy,matrix[3]*sy,(matrix[5]-geometry[1])*sy,0,0,1};
-    for(int j=0;j<count;++j)memcpy(copy[j].matrix,cropped,sizeof(cropped));
+    for(int j=0;j<count;++j) {
+        memcpy(copy[j].matrix,cropped,sizeof(cropped));
+        native_v_shape_filter_clip(&copy[j],geometry,canvas_height,sx,sy);
+    }
     extern int vox_draw_document_shape_group_pixels(uint8_t*,int,int,int,int,int,int,VoxGraphiteShape*,int);
     int drawn=vox_draw_document_shape_group_pixels(pixels,w,h,w*4,backdrop,
         (int)lround((geometry[0]-page_x)*scale),(int)lround((geometry[1]-page_y+scroll_y)*scale),copy,count);

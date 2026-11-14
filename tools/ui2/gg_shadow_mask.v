@@ -4,12 +4,22 @@ module canvas
 // color, then applies the surface clip. Keep color multiplication in the GPU
 // draw: storing a low-opacity colored RGBA bitmap first loses coverage bits.
 pub fn (mut s GpuSurface) draw_alpha_mask(mask []u8, width int, height int, paint Paint) ! {
+	s.draw_alpha_mask_image(mask, width, height, paint, false)!
+}
+
+// A resolved filter layer retains its affine transform until this draw.
+pub fn (mut s GpuSurface) draw_linear_alpha_mask(mask []u8, width int, height int, paint Paint) ! {
+	s.draw_alpha_mask_image(mask, width, height, paint, true)!
+}
+
+fn (mut s GpuSurface) draw_alpha_mask_image(mask []u8, width int, height int, paint Paint,
+	linear bool) ! {
 	if width <= 0 || height <= 0 || mask.len != width * height {
 		return error('gg.canvas: invalid alpha mask')
 	}
 	if s.layer != unsafe { nil } {
 		mut top := s.layer
-		top.draw_alpha_mask(mask, width, height, paint)!
+		top.draw_alpha_mask_image(mask, width, height, paint, linear)!
 		return
 	}
 	mut image := s.ctx.new_surface(width: width, height: height)!
@@ -28,10 +38,11 @@ pub fn (mut s GpuSurface) draw_alpha_mask(mask []u8, width int, height int, pain
 	}, Paint{
 		anti_alias:  paint.anti_alias
 		layer_image: LayerImage{
-			image:          image.color
-			texture_width:  width
-			texture_height: height
-			mask_color:     paint.color.premul()
+			image:                  image.color
+			texture_width:          width
+			texture_height:         height
+			mask_color:             paint.color.premul()
+			document_linear_filter: linear
 		}
 	})!
 }

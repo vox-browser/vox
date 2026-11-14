@@ -45,6 +45,8 @@ pub mut:
 	contour_parameters       [4]f32
 	contour_reference        [12]f32
 	has_contour_reference    i32
+	has_filter_clip          i32
+	filter_clip              [4]f32
 }
 
 struct GpuState {
@@ -184,6 +186,15 @@ fn draw_shape_descriptor(mut target canvas.GpuSurface, shape &C.VoxGraphiteShape
 		target.clip_rrect(rounded_rect(shape.contour_reference), .intersect, true)!
 		target.draw_drrect(rounded_rect(shape.rect), rounded_rect(shape.underlay_rect), paint)!
 	} else if shape.fill == 10 {
+		if rotated_filter_supported(shape) {
+			if shape.has_filter_clip != 0 && (shape.filter_clip[2] <= 0 || shape.filter_clip[3] <= 0
+				|| shape.filter_clip[0] >= width || shape.filter_clip[1] >= height) { return }
+			layer := rotated_shadow_filter_layer(shape, width, height)!
+			target.clip_rrect(rounded_rect(shape.underlay_rect), .difference, true)!
+			target.set_matrix(canvas.Matrix.values(layer.matrix))
+			target.draw_linear_alpha_mask(layer.mask.pixels, layer.mask.width, layer.mask.height, paint)!
+			return
+		}
 		mask := rounded_shadow_mask(shape, width, height)!
 		target.clip_rrect(rounded_rect(shape.underlay_rect), .difference, true)!
 		target.set_matrix(canvas.Matrix.identity())
