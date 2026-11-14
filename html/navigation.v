@@ -338,7 +338,7 @@ fn (navigation &Navigation) can_rewrite_to(url dom.URL) bool {
 }
 
 fn (mut navigation Navigation) inner_navigate_event_firing_algorithm(navigation_type dom.NavigationType, destination &NavigationDestination, user_involvement UserNavigationInvolvement, source_element ?&dom.Element, form_data_entries ?[]FormDataEntry, download_request ?string, classic_history_api_state ?SerializationRecord) bool {
-	if navigation.ongoing_navigate_event_ != none {
+	for navigation.ongoing_navigate_event_ != none {
 		navigation.abort_the_ongoing_navigation(navigation.navigation_abort_reason())
 	}
 	if navigation.has_entries_and_events_disabled() {
@@ -690,8 +690,11 @@ pub fn (mut navigation Navigation) fire_a_push_replace_reload_navigate_event(nav
 		structured_serialize_for_storage(dom.js_null()) or { SerializationRecord{} }
 	}
 
-	if is_same_document && navigation.ongoing_navigate_event_ != none {
+	for navigation.ongoing_navigate_event_ != none {
 		navigation.abort_the_ongoing_navigation(navigation.navigation_abort_reason())
+	}
+	if document := navigation.associated_document_ {
+		if !document.is_fully_active() { return false }
 	}
 	mut destination := NavigationDestination.create()
 	destination.set_url(destination_url)

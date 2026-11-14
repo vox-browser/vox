@@ -2072,7 +2072,9 @@ pub fn (mut model NavigableModel) inform_the_navigation_api_about_child_navigabl
 fn (mut model NavigableModel) inform_the_navigation_api_about_aborting_navigation() {
 	if mut window := model.active_window() {
 		mut navigation := unsafe { &Navigation(window.navigation()) }
-		navigation.abort_the_ongoing_navigation(dom.js_string('AbortError: navigation aborted'))
+		for navigation.ongoing_navigate_event() != none {
+			navigation.abort_the_ongoing_navigation(dom.js_string('AbortError: navigation aborted'))
+		}
 	}
 }
 
