@@ -1163,6 +1163,19 @@ fn layout_node_is_attached_to_dom_subtree(layout_node &Node, subtree_root &dom.N
 	return false
 }
 
+// Nested top-layer elements own viewport subtrees, independent of the DOM
+// subtree being cleared. Preserve their boxes and pending update flags.
+fn clear_stale_layout_and_paint_node_in_subtree(node &dom.Node, subtree_root &dom.Node, content_visibility_hidden_root ?&dom.Node) dom.TraversalDecision {
+	if voidptr(node) != voidptr(subtree_root) {
+		if element := node.as_element() {
+			if element.rendered_in_top_layer() {
+				return .skip_children_and_continue
+			}
+		}
+	}
+	return clear_stale_layout_and_paint_node(node, content_visibility_hidden_root)
+}
+
 fn clear_stale_layout_and_paint_node(node &dom.Node, content_visibility_hidden_root ?&dom.Node) dom.TraversalDecision {
 	mut mutable_node := unsafe { &dom.Node(node) }
 	mutable_node.set_needs_layout_tree_update(false, .none)
@@ -1217,8 +1230,9 @@ fn build_layout_box_for_element_with_svg_resource_kind(document &dom.Document, e
 
 	// `display: none` produces no box (and neither do its descendants).
 	if computed.display().is_none() {
-		element.as_node().for_each_shadow_including_inclusive_descendant(fn (node &dom.Node) dom.TraversalDecision {
-			return clear_stale_layout_and_paint_node(node, none)
+		subtree_root := element.as_node()
+		subtree_root.visit_shadow_including_inclusive_descendants(fn [subtree_root] (node &dom.Node) dom.TraversalDecision {
+			return clear_stale_layout_and_paint_node_in_subtree(node, subtree_root, none)
 		})
 		return none
 	}
@@ -1269,15 +1283,15 @@ fn build_layout_box_for_element_with_svg_resource_kind(document &dom.Document, e
 	if computed.content_visibility() == .hidden {
 		hidden_root := element.as_node()
 		hidden_root.visit_shadow_including_descendants(fn [hidden_root] (node &dom.Node) dom.TraversalDecision {
-			return clear_stale_layout_and_paint_node(node, hidden_root)
+			return clear_stale_layout_and_paint_node_in_subtree(node, hidden_root, hidden_root)
 		})
 		// Assigned slottables are not DOM descendants of the slot, so the
 		// descendant cleanup above cannot reach their stale layout state.
 		if element.is_html_element() && element.local_name() == 'slot' {
 			slot := unsafe { &dom.HTMLSlotElement(element) }
 			for slottable_root in slot.assigned_nodes_internal() {
-				slottable_root.visit_shadow_including_inclusive_descendants(fn [slottable_root] (node &dom.Node) dom.TraversalDecision {
-					return clear_stale_layout_and_paint_node(node, slottable_root)
+				slottable_root.visit_shadow_including_inclusive_descendants(fn [hidden_root, slottable_root] (node &dom.Node) dom.TraversalDecision {
+					return clear_stale_layout_and_paint_node_in_subtree(node, hidden_root, slottable_root)
 				})
 			}
 		}
@@ -1529,8 +1543,8 @@ fn layout_tree_children_for_element(element &dom.Element) LayoutTreeChildSnapsho
 		}
 		// A previous layout may have selected this child. Detach its whole stale
 		// subtree when the selected child changes between tree rebuilds.
-		child.for_each_shadow_including_inclusive_descendant(fn (node &dom.Node) dom.TraversalDecision {
-			return clear_stale_layout_and_paint_node(node, none)
+		child.visit_shadow_including_inclusive_descendants(fn [child] (node &dom.Node) dom.TraversalDecision {
+			return clear_stale_layout_and_paint_node_in_subtree(node, child, none)
 		})
 	}
 	if selected := selected_child {

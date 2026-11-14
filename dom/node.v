@@ -3347,13 +3347,31 @@ pub fn (mut n Node) set_needs_layout_tree_update(value bool, reason SetNeedsLayo
 	if n.needs_layout_tree_update {
 		mut document := unsafe { &Document(n.document()) }
 		document.mark_needs_repaint(.no)
+		has_top_layer_elements := document.top_layer_elements.len > 0
+		mut update_is_inside_top_layer_member := false
+		if has_top_layer_elements {
+			if element := n.as_element() {
+				update_is_inside_top_layer_member = element.rendered_in_top_layer()
+			}
+		}
 		for ancestor := n.flat_tree_parent(); ancestor != none;  {
 			mut current := unsafe { &Node(ancestor or { break }) }
+			if has_top_layer_elements && !update_is_inside_top_layer_member {
+				if element := current.as_element() {
+					update_is_inside_top_layer_member = element.rendered_in_top_layer()
+				}
+			}
 			if current.child_needs_layout_tree_update {
 				break
 			}
 			current.child_needs_layout_tree_update = true
 			ancestor = current.flat_tree_parent()
+		}
+		// Top-layer boxes are viewport children even when their DOM position has
+		// no flat-tree path to the document. Schedule their viewport build too.
+		if update_is_inside_top_layer_member {
+			mut document_node := unsafe { &Node(document) }
+			document_node.set_child_needs_layout_tree_update(true)
 		}
 		// If this is an element with display: contents, we need to propagate the layout tree update to the parent.
 		if element := n.as_element() {
