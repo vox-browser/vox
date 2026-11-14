@@ -396,6 +396,30 @@ pub fn (mut vm VM) run_executable(mut frame ExecutionContext, executable &Execut
 			vm.instruction_budget_active = previous_budget_active
 		}
 	}
+	if mut tier := vm.native_tier {
+		if tier.profiling {
+			tier.observe(executable)
+		}
+		if tier.enabled {
+			if entry := tier.entries[voidptr(executable)] {
+				mut invocation := NativeInvocation{vm: &vm, executable: executable}
+				mut fast_steps := &u64(unsafe { nil })
+				if tier.diagnostics {
+					tier.activity.entries++
+					fast_steps = &tier.activity.fast_steps
+				}
+				entry(voidptr(&invocation), frame.values.data, &vm.instruction_budget,
+					u8(vm.instruction_budget_active), &frame.program_counter, native_slow_step, fast_steps)
+				if failure := invocation.failure { return failure }
+				if frame.program_counter == 0xfffffffe {
+					frame.program_counter = executable.bytecode_length
+					return vm.reg(register_return_value)
+				}
+				if invocation.ended { return vm.reg(register_return_value) }
+				return vm.throw_error(.internal_error, 'Bytecode fell off the end without End')
+			}
+		}
+	}
 	for frame.program_counter < executable.bytecode_length {
 		vm.consume_execution_budget()!
 		instruction := executable.instructions[frame.program_counter]

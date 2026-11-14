@@ -244,17 +244,7 @@ fn (mut generator BytecodeGenerator) expression(mut vm VM, expression &Expressio
 			return dst
 		}
 		.object_expr {
-			dst := generator.temporary()
-			generator.emit(Instruction{op: .new_object, dst: dst})
-			for property in kind.object_properties {
-				if property.property_type != .key_value { return generator.unsupported('object accessor, spread or prototype setter') }
-				key := if !property.is_computed && property.key.kind.tag == .identifier_expr {
-					generator.constant(Value.from_string(vm.create_string(identifier_name(&property.key)!)))
-				} else { generator.expression(mut vm, &property.key)! }
-				value := generator.expression(mut vm, &(property.value or { return error('Missing property value') }))!
-				generator.emit(Instruction{op: .define_property, lhs: dst, rhs: key, src: value})
-			}
-			return dst
+			return generator.object_literal(mut vm, kind.object_properties)
 		}
 		.function_expr {
 			dst := generator.temporary()

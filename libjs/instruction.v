@@ -49,6 +49,7 @@ pub enum OpCode {
 	new_array
 	new_regexp
 	define_property
+	set_object_literal_prototype
 	require_object_coercible
 	to_property_key
 	copy_object_excluding_keys
@@ -99,7 +100,7 @@ fn (instruction Instruction) input_count() int {
 		.in_op, .instance_of, .call {
 			2
 		}
-		.get_property, .delete_property, .new_regexp {
+		.get_property, .delete_property, .new_regexp, .set_object_literal_prototype {
 			2
 		}
 		.put_property, .define_property {
@@ -128,7 +129,7 @@ fn (instruction Instruction) input_operand(index int) Operand {
 fn (instruction Instruction) writes_operand() bool {
 	return instruction.op !in [.put_property, .define_property, .set_binding, .set_variable, .initialize_binding,
 		.create_mutable_binding, .create_immutable_binding, .enter_scope, .leave_scope, .jump,
-		.require_object_coercible,
+		.require_object_coercible, .set_object_literal_prototype,
 		.jump_if_true, .jump_if_false, .jump_if_nullish, .end, .throw_op]
 }
 
