@@ -25,7 +25,7 @@ pub fn (buffer AudioBuffer) length() u32 {
 	return buffer.length
 }
 
-pub fn (buffer AudioBuffer) get_channel_data(channel u32) ![]f32 {
+pub fn (buffer &AudioBuffer) get_channel_data(channel u32) ![]f32 {
 	return buffer.channel_data(channel)
 }
 

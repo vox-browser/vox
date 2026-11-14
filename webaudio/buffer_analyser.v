@@ -52,15 +52,18 @@ pub fn (buffer AudioBuffer) number_of_channels() u32 {
 	return u32(buffer.channels.len)
 }
 
-pub fn (buffer AudioBuffer) channel_data(channel u32) ![]f32 {
+pub fn (buffer &AudioBuffer) channel_data(channel u32) ![]f32 {
 	if channel >= u32(buffer.channels.len) {
 		return error('IndexSizeError: Channel index is out of range')
 	}
+	// Complete deferred acquisition before exposing fresh writable channels.
+	mut mutable_buffer := unsafe { &AudioBuffer(buffer) }
+	mutable_buffer.attach_acquired_channels()
 	// Float32Array identity is SameObject upstream; V slices retain the backing array.
 	return buffer.channels[channel]
 }
 
-pub fn (buffer AudioBuffer) copy_from_channel(mut destination []f32, channel_number u32, buffer_offset u32) ! {
+pub fn (buffer &AudioBuffer) copy_from_channel(mut destination []f32, channel_number u32, buffer_offset u32) ! {
 	channel := buffer.channel_data(channel_number)!
 	if buffer_offset >= u32(channel.len) {
 		return
@@ -79,6 +82,7 @@ pub fn (mut buffer AudioBuffer) copy_to_channel(source []f32, channel_number u32
 	if channel_number >= u32(buffer.channels.len) {
 		return error('IndexSizeError: Channel index is out of range')
 	}
+	buffer.attach_acquired_channels()
 	if buffer_offset >= buffer.length {
 		return
 	}
