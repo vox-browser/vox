@@ -28,6 +28,61 @@ Three seven-pair HN native-DOM cohorts show cache reuse and correct collapse/res
 but no reliable callback speedup. This tier is not enabled by browser settings
 and does not establish a browser load/rendering improvement or additional parity.
 
+## GitHub runtime checkpoint — 2026-11-15
+
+The native compiler was introduced in `5ed3e8155`; persistent reuse on a new
+visit followed in `7ec82b601`, and browser parsed-source reuse in `07902ae2d`.
+LibJS documents now enable that persistent cache automatically; the earlier
+manual HN experiment above is historical, not the current document-cache policy.
+
+Set/Map core operations and live ordered iterators, lazy async-function creation,
+native element CSSOM bindings, and base classes with static/instance methods and
+accessors are implemented. Async execution and its constructor link, class
+heritage/fields/private/super/static blocks, anonymous class assignment-name
+inference, Set algebra, Map extensions and weak collections remain incomplete.
+The CSSOM wrapper uses the actual native declarations; full interface constructor
+ancestry and custom-element reaction wrapping remain separate work.
+
+The current checkpoint passes 283/283 package files in each GC mode and 100/100
+exact upstream AST cases, with 721 unchanged source/fixture/compiler inputs.
+Focused cache tests load native code in fresh VMs with the compiler disabled.
+Original GitHub scripts reuse 119 native executables on the second opening,
+but all five failing entries now stop at missing WeakMap and no commit links
+hydrate. Native LibJS observations exceed the unchanged 3 GiB guard before
+capture; a same-build JSC control completes the content audit. Pixel equality
+and live-site acceptance remain open. Commits, deviations, retained failures,
+identities and scope are in the
+[runtime continuation report](../docs/LIBJS_GITHUB_RUNTIME_20261115.md).
+
+## Synchronous iteration and array declarations — 2026-11-15
+
+Each realm installs Array keys/values/entries and String Unicode iterators on
+the translated iterator prototype graph. Value acquisition keeps primitive
+receivers. For-of supports lexical/var/member targets, fresh iteration bindings,
+TDZ RHS environments, break/continue, and nested return/throw cleanup. Close
+errors reach surrounding handlers; iterator step failures retain the done state.
+Array binding declarations handle elisions without value access, undefined-only
+defaults, named default functions, nested patterns, and rest collection. Both
+normal and abrupt destructuring paths close unfinished iterators as required.
+
+Focused selections pass in both GC modes: four iterator files; eight for-of
+cases plus for-in/catch/script neighbors; five array-binding cases plus object
+bindings/for-of/script neighbors (and Set integration in the no-GC selection).
+Async iteration, assignment/parameter/catch patterns and Iterator helpers remain
+separate work. Native GitHub hydration and pixel acceptance remain open.
+
+## Date core runtime — 2026-11-15
+
+Date's clock, timestamp/copy/component construction, clipped millisecond slot,
+Gregorian arithmetic, UTC/local getters and setters, ISO/native string parsing,
+stringification, primitive conversion and generic `toJSON` are installed in each
+realm. Host timezone offsets retain historical DST and select compatible gap/
+overlap instants. Seven focused cases and realm/Object-prototype neighbors pass
+in both GC modes in New York; seven Date cases also pass in UTC. A pinned Node
+comparison passes 500 deterministic constructor/setter cases. Intl locale
+formatting, Temporal and additional legacy parsing remain incomplete. The
+unchanged GitHub module probe next lacks Set; browser hydration remains open.
+
 ## GitHub runtime prerequisites — 2026-11-14
 
 Object binding declarations support aliases, nested defaults and enumerable rest
@@ -50,8 +105,8 @@ string-key snapshots, non-enumerable shadowing, deletion checks, TDZ RHS
 environments, and fresh lexical bindings per iteration. Focused checks pass in
 both GC modes. These two language slices postdate the 271-file checkpoint.
 
-Array/parameter/assignment/catch destructuring, object accessors/spread,
-for-of/for-await-of, `Object.fromEntries/groupBy`, JSON serialization/raw objects/modules,
+Parameter/assignment/catch destructuring, object accessors/spread,
+for-await-of, `Object.fromEntries/groupBy`, JSON serialization/raw objects/modules,
 AggregateError and Number/BigInt prototype graphs remain incomplete. Original
 GitHub bytes still do not hydrate with LibJS. Native diagnostics and the pending
 production memory/visual checks are recorded in
