@@ -31,6 +31,9 @@ pub mut:
 	function_prototype             ?&Object                 // %Function.prototype%
 	array_prototype ?&Object
 	array_constructor ?&Object
+	iterator_prototype ?&Object
+	array_iterator_prototype ?&Object
+	string_iterator_prototype ?&Object
 	string_prototype ?&Object
 	string_constructor ?&Object
 	regexp_prototype ?&Object
@@ -186,6 +189,7 @@ pub fn initialize_host_defined_realm(mut vm VM, hooks RealmGlobalHooks) !&Execut
 	shared_array_buffer_prototype_object.define_direct_property(PropertyName.from_str('constructor'),
 		Value.from_object(shared_array_buffer_constructor.object), attribute_writable | attribute_configurable)
 	initialize_collection_intrinsics(mut vm, mut realm)!
+	initialize_iterator_intrinsics(mut vm, mut realm)
 	initialize_regexp_intrinsics(mut vm, mut realm)
 	realm.json_object = create_json_object(mut vm, realm)
 	initialize_date_intrinsics(mut vm, mut realm)
