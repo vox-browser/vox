@@ -137,10 +137,16 @@ The focused suites, builds and runtime diagnostics use the memory guard; V
 invocations supply `-memory-limit 10G`. Runtime diagnostics use a 3 GiB budget.
 
 No new whole-package, whole-browser visual or retired-instruction performance
-acceptance is claimed. The existing production bundle predates these changes;
-managed commit hooks request the next production build. Source-built checks
-validate the new code without copying an app bundle or queuing a duplicate
-manual production build.
+acceptance is claimed. The available production receipt (`0e836d1f0`, verified
+through `e535e22a6`) predates the parsed-source cache. Its fresh, privately profiled
+`--headless-smoke --js-engine=libjs` process passed startup, DOM mutation and click
+checks (browser/guard exits zero, sampled peak RSS 115,916,800 bytes). It created
+no native-cache artifacts, so this is baseline evidence, not validation of the
+new cache workflow. Its executable SHA-256 is
+`90aaf0a525e848a597a9ba12603047ae999b6a7549bd454b925dbaeba4b61329`.
+Managed commit hooks request the next production build. Source-built checks
+validate the new workflow without copying an app bundle or queuing a duplicate
+manual production build; full installed-browser validation remains pending.
 
 ## Reproduction
 
