@@ -11,6 +11,15 @@ const retain_separate_module_connection = os.getenv('VOX_RETAIN_SEPARATE_MODULE_
 const disable_module_preloads = os.getenv('VOX_DISABLE_MODULE_PRELOADS') != ''
 
 fn install_compact_module_host(document &dom.Document, mut runtime browserjs.Runtime) ! {
+	if runtime.engine == .libjs {
+		settings := unsafe { &html.EnvironmentSettingsObject(document.relevant_settings_object()) }
+		mut host := browserjs.ModuleHost.create_native(settings)!
+		host.install(mut runtime) or { host.close(); return err }
+		if !disable_module_preloads {
+			for preload in document_module_preloads(document,settings) { host.preload(preload.url,preload.options) }
+		}
+		return
+	}
 	$if darwin {
 		settings := unsafe { &html.EnvironmentSettingsObject(document.relevant_settings_object()) }
 		mut host := if transport := runtime.installed_fetch_transport() {

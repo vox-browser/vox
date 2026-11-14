@@ -282,10 +282,12 @@ fn (runtime &Runtime) execute_source(source ScriptSource, stringify_result bool)
 	if host := runtime.module_host_ {
 		mut mutable_host := unsafe { &ModuleHost(host) }
 		if source.source_type == .module { return mutable_host.execute(source, stringify_result) }
+		if runtime.engine != .libjs {
 		transformed := mutable_host.transform_classic(source)!
 		record := libjs.Script.create_external(source.code, runtime.realm, source.url,
 			u32(source.starting_line), voidptr(runtime))!
 		return runtime.execute_embedding_script(transformed, record, stringify_result)
+		}
 	}
 	if runtime.engine == .libjs {
 		return runtime.execute_prepared(prepare_script_with_options(source,
@@ -300,7 +302,7 @@ fn (runtime &Runtime) execute_prepared(script &PreparedScript, stringify_result 
 	load_instruction_stage := processmetrics.begin_javascript_instruction_stage()
 	defer { load_instruction_stage.finish() }
 	runtime.check_execution_support(script.source.source_type)!
-	if runtime.module_host_ != none { return runtime.execute_source(script.source, stringify_result) }
+	if runtime.module_host_ != none && (runtime.engine != .libjs || script.source.source_type == .module) { return runtime.execute_source(script.source, stringify_result) }
 	if runtime.engine == .libjs {
 		if script.source.source_type == .module { return runtime.execute_libjs_module(script, stringify_result) }
 		// Functions, lexical environments and completion values belong to the

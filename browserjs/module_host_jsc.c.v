@@ -34,6 +34,7 @@ const module_normalization_diagnostics = os.getenv('VOX_MODULE_NORMALIZATION_DIA
 const retain_realm_module_helper = os.getenv('VOX_RETAIN_REALM_MODULE_HELPER') != ''
 
 pub fn (mut host ModuleHost) install(mut runtime Runtime) ! {
+	if runtime.engine == .libjs { host.install_libjs(mut runtime)!; return }
 	$if !darwin {
 		return error('Native module loading is currently available on macOS only')
 	}
@@ -231,6 +232,7 @@ fn (mut host ModuleHost) transform_classic(source ScriptSource) !ScriptSource {
 }
 
 fn (mut host ModuleHost) execute(source ScriptSource, stringify_result bool) !string {
+	if host.runtime.engine == .libjs { return host.execute_libjs(source,stringify_result) }
 	$if darwin {
 		if host.closed { return error('Module loader is closed') }
 		mut key := source.url
@@ -364,7 +366,10 @@ fn (mut host ModuleHost) finish_script(mut execution BrowserModuleExecution, mes
 	host.release_execution(mut execution)
 	if message != '' {
 		host.diagnostics << message
-		host.runtime.evaluate_host('console.error(${json2.encode(message)})') or {}
+		if host.runtime.engine == .libjs {
+			mut owner := unsafe { &Runtime(host.runtime) }
+			owner.libjs_messages_ << 'JavaScript (LibJS): '+execution.key+': '+message
+		} else { host.runtime.evaluate_host('console.error(${json2.encode(message)})') or {} }
 	}
 	mut runtime := unsafe { &Runtime(host.runtime) }
 	if !was_finished {
@@ -394,6 +399,7 @@ fn (mut host ModuleHost) finish_script(mut execution BrowserModuleExecution, mes
 fn (mut host ModuleHost) reject(mut operation BrowserModuleOperation, message string) {
 	if operation.finished || host.closed { return }
 	operation.finished = true
+	if host.runtime.engine == .libjs { host.reject_libjs_import(operation,message); return }
 	mut runtime := unsafe { &Runtime(host.runtime) }
 	value := runtime.call_javascript_function(runtime.value_error_intrinsic_,
 		C.vox_jsc_JSValueMakeUndefined(runtime.context), [runtime.binding_string('TypeError'),
@@ -453,6 +459,8 @@ fn js_exception_or_message(context voidptr, err IError) string {
 }
 
 fn (mut host ModuleHost) consume_script(mut operation BrowserModuleOperation, script ?&html.Script) {
+	if host.closed { return }
+	if host.runtime.engine == .libjs { host.consume_libjs_script(operation,script); return }
 	mut waiters := host.in_flight[operation.key] or { [&operation] }
 	host.in_flight.delete(operation.key)
 	if source := script {
