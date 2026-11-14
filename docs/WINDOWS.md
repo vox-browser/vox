@@ -109,6 +109,15 @@ x86_64-w64-mingw32-gcc -print-file-name=libgcc_s_seh-1.dll
 Use that toolchain's `libwinpthread-1.dll` too, rather than mixing compiler
 runtime versions from a different dependency distribution.
 
+HTTPS document/resource requests and native Fetch use Windows' certificate
+store by default. The OpenSSL-backed MinGW libcurl needs
+[`CURLSSLOPT_NATIVE_CA`](https://curl.se/libcurl/c/CURLOPT_SSL_OPTIONS.html);
+Vox also clears libcurl's compiled Unix-style CA file/directory defaults so a
+portable installation does not require `C:/etc/ssl/certs/ca-bundle.crt`.
+Certificate and hostname verification remain enabled. A supplied CA bundle
+remains authoritative; native Fetch takes it from `SSL_CERT_FILE` and rejects
+missing or invalid files.
+
 ## Cross-compilation from macOS or Linux
 
 Install the `x86_64-w64-mingw32` toolchain. Supply Windows development packages
@@ -380,3 +389,41 @@ runtime-guard.exe 600000 3072 browser.out browser.err \
 
 Compilation alone does not execute either test. Use a fresh executable/profile,
 record executable and dependency hashes, and keep the browser/guard receipts.
+
+For an explicit live HTTPS check, append the URL and its expected document
+title after the WebGL fixture:
+
+```sh
+runtime-guard.exe 1200000 3072 browser-live.out browser-live.err \
+  test-windows-browser.exe C:/path/to/Vox.exe C:/private/fresh-windows-fixtures \
+  C:/path/to/vox/Tests/Browser/Native/webgl-smoke.html \
+  https://vlang.io/ 'V — The V Programming Language'
+```
+
+This mode keeps the local input and WebGL pixel checks, then navigates through
+the address bar and requires the expected document title, with only Vox's
+build suffix permitted. Error-page titles that merely contain that text fail.
+HTTP URLs and empty expected titles are rejected. Local fixture titles keep
+their two-minute limit; the opt-in live page gets ten minutes for network,
+style and font loading on software-emulated Windows. Live navigation is opt-in;
+the native title-matching regression test runs in Windows CI without network
+access. A matching live title establishes document identity, not full-page
+pixel equivalence or complete author-script support.
+
+The isolated HTTPS regression uses a temporary private CA without installing
+it into Windows' trust store. From an MSYS2 MinGW64 shell with Python and
+OpenSSL installed:
+
+```sh
+gcc -municode -std=gnu11 -O2 -Wall -Wextra -Wno-unused-function -Werror \
+  tools/test_windows_https.c -lcurl -lpthread -o https-test.exe
+python tools/test_windows_https.py --guard runtime-guard.exe \
+  --test https-test.exe --output C:/private/fresh-https-results
+```
+
+It requires rejection of untrusted roots, wrong hostnames and a missing
+explicit CA file, plus a successful request with the explicit test CA. Windows
+CI runs these deterministic cases. Add `--live-url https://vlang.io/` to check
+public HTTPS against Windows roots as well. The native child receives a 3 GiB
+job-object limit and a four-minute timeout; the fixture deletes its temporary
+keys and certificates after the run.

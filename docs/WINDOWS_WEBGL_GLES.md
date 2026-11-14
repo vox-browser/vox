@@ -5,6 +5,11 @@ its GG/Sokol window. Both WebGL versions share the bounded GLES adapter used
 on Linux. There are no ANGLE headers, import libraries or vendor entry points.
 Compatibility extension names in the shared ABI map to core GLES operations.
 
+The 2026-11-14 checks passed native GLES, all 8,192 browser canvas pixels and
+live HTTPS, but the browser remained active after its window disappeared.
+That shutdown hang keeps the full Windows runtime gate open; see the latest
+[verification record](#cold-boot-and-https-trust-on-2026-11-14).
+
 The adapter validates transfer/query capacity and PBO offsets, initializes new
 buffer/texture/renderbuffer storage, checks active vertex/index streams, and
 validates ESSL version and loop restrictions in V before unchanged driver compilation.
@@ -141,8 +146,9 @@ After verification, the temporary Windows firewall rule was removed and Windows
 shut down normally. QEMU and its 12 GiB host guard exited 0. An offline,
 non-repairing `qemu-img check` found no errors; the backing chain still contains
 only the installed disk. The VM is stopped. Its launcher now requires 5 GiB of
-free host storage before another boot. A further reboot was not attempted on
-the full host volume.
+free host storage before another boot. That verification did not attempt a
+further reboot on the full host volume; the later cold-boot check is recorded
+below.
 
 Local commands, hashes, failed attempts, guard receipts and captures are kept in
 ignored `docs/performance/windows-angle-free-20261112/`. The VM's standalone
@@ -151,3 +157,82 @@ disk, credentials and operational metadata remain outside
 
 This is focused WebGL and browser smoke coverage, not full WebGL conformance,
 hardware GPU validation, all-site equivalence or Windows release packaging.
+
+## Cold boot and HTTPS trust on 2026-11-14
+
+The standalone installation booted again with no installation or seed CDROM
+attached. The previously pinned browser passed native GLES, headless startup,
+local click/resize/navigation and all 8,192 WebGL canvas pixels after that boot.
+Its optional live navigation then failed with libcurl error 77: the portable
+runtime lacked the compiled default `C:/etc/ssl/certs/ca-bundle.crt`. This failed
+run remains in the local evidence.
+
+Windows document/resource requests and native Fetch now share a trust setup
+that selects Windows roots when no explicit CA bundle is supplied. It clears
+libcurl's compiled CA file and directory paths while preserving peer and
+hostname verification. Explicit CA bundles keep precedence. This follows
+libcurl's [native CA option](https://curl.se/libcurl/c/CURLOPT_SSL_OPTIONS.html)
+and [CA file semantics](https://curl.se/libcurl/c/CURLOPT_CAINFO.html).
+
+The actual Windows transport passed public HTTPS using Windows roots, rejected
+an untrusted private CA (60), accepted that CA only when explicitly supplied,
+rejected a hostname mismatch (60), and rejected a missing explicit CA file
+(77). Its 3 GiB job guard exited 0 without timeout. The runtime reports
+libcurl 8.23.0 with OpenSSL 3.6.5. No CA file was installed into Windows' trust
+store for these tests.
+
+The rebuilt browser's SHA-256 is
+`ae5286c576ad5e81691757179771ab2b5e0f7f964a9fffc3ace16505b0138cce`.
+It cross-compiled from the shared canonical checkout with current V
+`7d74206`, C `-prod -no-prod-options`, `-gc none` and MinGW GCC 16.2.0.
+The 12 GiB build guard exited 0 with peak sampled RSS 9,427,468,288 bytes.
+The shared checkout had unrelated concurrent edits; this executable and the
+relevant transport/header hashes are pinned in the local evidence.
+
+The macOS native RequestServer TLS test passed all five trust/hostname cases,
+including a missing CA file and an untrusted default-root request. The three
+cancellable-transport tests and system-libcurl lazy-loading check also passed
+under 3 GiB runtime guards. The V tests used assertion-enabled `-gc none` builds
+from the pinned compatible compiler `5909f83`. Current compiler attempts
+exceeded the unchanged 12 GiB guard; those failed attempts remain local.
+The first candidate suite passed TLS, title matching, headless startup and
+all 8,192 browser canvas pixels, but failed its live two-minute title deadline.
+Its four-minute native GLES job also timed out during WebGL2 shader checks.
+The VM was briefly paused when host free storage fell below 5 GiB, and resumed
+when it recovered to 18 GiB without deleting another session's files. That
+attempt remains recorded as failed.
+
+One 30-second HTTP-URL rejection invocation timed out in the emulated guest.
+The unchanged driver returned the expected exit 2 without timeout under a
+120-second limit; both receipts are retained. Windows CI is configured to run isolated
+TLS fixtures and exact live-title matching tests without depending on an
+external site. Live HTTPS/browser checks remain opt-in.
+
+With the unchanged native GLES executable and a ten-minute job limit, the
+suite subsequently passed with peak committed memory of 140,865,536 bytes.
+Shader and OS caches were retained across attempts; these are functional
+checks, not performance measurements.
+
+The fresh browser retry also passed every local input/rendering check, all
+8,192 canvas pixels, and the live HTTPS title. The opt-in live title deadline
+was extended to ten minutes; local title checks kept their two-minute limit.
+The browser then failed its clean-exit check: after `WM_CLOSE`, its window
+disappeared but the child remained active beyond two minutes. The overall driver
+exited 1, without hitting its job timeout, with peak committed memory of
+1,882,779,648 bytes. All pinned inputs still matched after the run. The HTTPS
+fix is committed as `23b40e16e`; the shutdown hang remains unresolved and the
+full Windows runtime gate is open.
+
+Host free storage later fell to 3 GiB, preventing a safe further browser build
+or live shutdown probe. The VM was paused to protect its disk. A smaller
+live-page-only probe with a minidump on a close timeout is prepared privately
+but has not run. Continue that investigation after restoring sufficient host
+storage; do not classify a forced process exit as a clean shutdown result.
+
+Windows subsequently shut down normally. QEMU and its host guard exited 0;
+an offline, non-repairing disk check also exited 0 with no errors. The backing
+chain still contains one standalone image. The VM is stopped and preserved.
+
+Cold-boot commands, input pins, failed attempts and guard receipts are local in
+`docs/performance/windows-reboot-20261114/`. These checks do not establish
+all-site pixel equivalence, full WebGL conformance or hardware acceleration.
