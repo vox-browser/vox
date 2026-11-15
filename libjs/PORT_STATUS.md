@@ -30,6 +30,13 @@ and does not establish a browser load/rendering improvement or additional parity
 
 ## GitHub runtime checkpoint — 2026-11-15
 
+**Current verification hold:** the user requested no tests until the GitHub
+compiled-JavaScript parity implementation is complete. The running sweep was
+stopped after 103 passing files; no subsequent runtime tests or page comparisons
+have run. Later committed slices have compiler-only checking and pending focused
+coverage. See the [implementation checkpoint](../docs/LIBJS_GITHUB_RUNTIME_20261115.md#implementation-checkpoint-with-runtime-verification-held)
+for commits, boundaries and the last actual GitHub observation.
+
 The native compiler was introduced in `5ed3e8155`; persistent reuse on a new
 visit followed in `7ec82b601`, and browser parsed-source reuse in `07902ae2d`.
 LibJS documents now enable that persistent cache automatically; the earlier
@@ -40,7 +47,8 @@ objects, default/rest/destructured function parameters, class inheritance,
 super construction (including explicit iterator-based argument spread),
 public field initializers, private fields/methods/accessors,
 lexical brands, object literal accessors/methods,
-Array.from, Array concat/fill/map/find/some and literal spread, object literal
+Array.from, Array concat/fill/map/find/some/reduce/filter/every/includes,
+shift/reverse/sort, directional searches, indexed access and literal spread, object literal
 spread, ordinary/tagged template literals and native element CSSOM bindings
 are implemented. Native Promise construction, resolving functions, then/catch,
 resolve/reject, generic species capabilities and FIFO reactions execute. Window
@@ -56,7 +64,10 @@ yet execute. Ordinary async functions return intrinsic Promises and suspend at
 await, preserving lexical/private scopes and resuming through internal Promise
 reactions, including persisted native entries. Labelled blocks and loop control
 close crossed iterators in order; Annex B labelled functions remain pending.
-Promise finally/combinators, generator execution, top-level await, call spread, class
+Promise finally, all/allSettled/race and withResolvers now have committed native
+implementations, with their later runtime checks held. Ordinary/new/optional
+spread calls compile through ordered iterator bytecode. Promise.any,
+generator execution, top-level await, class
 static blocks, super property
 references, anonymous class assignment/field-name
 inference, Set algebra, Map extensions and remaining weak-reference APIs remain

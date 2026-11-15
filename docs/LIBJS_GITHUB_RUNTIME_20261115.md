@@ -1,5 +1,11 @@
 # GitHub compiled-JavaScript continuation, 2026-11-15
 
+**Verification is on hold at the user's request.** The running r16 sweep was
+stopped; subsequent work uses source inspection and compiler-only checking.
+The later implementation checkpoint below has no runtime, hydration, speedup or
+pixel acceptance. Tests and page comparisons must remain held until the GitHub
+parity implementation is ready for final verification.
+
 **Pixel-perfect GitHub rendering remains unachieved.** A full native LibJS
 capture completes under the repository's default 12 GiB browser guard, but
 module failures leave loading placeholders and prevent commit links from
@@ -907,3 +913,82 @@ result. The log contains 124 disk-full diagnostics; default GC never starts. All
 816 pinned inputs still match after termination. This is a failed, incomplete
 checkpoint, not a replacement for the earlier source-stable 308-file functional
 union. Resource failures and all raw component receipts remain local.
+
+## Implementation checkpoint with runtime verification held
+
+The last original-response observations precede the user's test hold:
+
+| Stage | Commit | Warm native entries | Next first module failure |
+| --- | --- | ---: | --- |
+| Array reductions | `799ada300` | 623 | GitHub's wrapper accesses missing Node.insertBefore |
+| Native tree insertion | `cb906c1f9` | 672 | missing history in Turbo initialization |
+
+Both pairs preserve the original fixture and executable inputs, reuse 51 frontend
+sources, invoke no compiler on reopening and initialize no JSC. Both still have
+33 rows, zero commit links and five cascading module failures. An earlier
+TypeError also remains. These are incomplete initialization diagnostics, with no
+window/layout/paint, completed-page speedup or rendering acceptance.
+Local evidence is `docs/performance/libjs-reduce-github-20261115/` and
+`docs/performance/libjs-tree-github-20261115/`.
+
+Before the hold, six Array reduction cases and six native tree cases pass in
+both GC modes and AddressSanitizer. Reduction checks also cover three neighboring
+Array files per mode; native tree checks cover ParentNode mutations, templates
+and MutationObserver in both modes. Native insertion uses pre-insert/replacement,
+actual fragment adoption, observer records and custom-element reactions, with
+real first/last/previous sibling getters.
+
+The r15 no-GC sweep has 818 stable inputs and 310/311 passing files. Its single
+failure is a stale negative assertion expecting tagged templates to be unsupported.
+`f9ec58b89` removes that expectation, adds normal script execution coverage and
+replaces the deprecated usize cast rejected by strict production compilation.
+Tagged templates pass both GC modes, sanitizer and literal `-n -prod -prealloc
+-gc none`; script evaluation passes both GC modes. The r16 sweep then stops at the
+user's request: 103 passes, no completed failures, child 137/controller 125, no
+default-GC start and no completed source-stability acceptance. The guard reports
+remaining children during cancellation; a subsequent process inventory finds no
+owned test processes. Its private RAM volume detaches successfully. This is an
+interrupted checkpoint, not a passing broad suite.
+
+The following implementations were committed after the hold. Their focused
+regression cases are written but have not been executed in their final form.
+
+| Commits | Implemented surface | Remaining boundary |
+| --- | --- | --- |
+| `24adf7825` | Owning Window History entries, push/replace, native security and navigation cancellation, stable cloned-state identity, live Location reads. | Storage cloning currently supports primitives, ordinary objects and arrays; unsupported internal-slot/platform families throw DataCloneError. Traversal scheduling remains separate. |
+| `eb14b5022`, `3bdb68fa5` | Number constructor/predicates/constants, intrinsic boxing, radix and fixed formatting; original parse-function identities exist before host realm hooks. | Scientific decimal and Intl adapters remain uninstalled. |
+| `8d6b94558` | Native CharacterData/Text/Comment factories and prototypes, text mutation/splitting, nodeValue, containment, roots, cloning and ChildNode operations. | Native character storage's existing surrogate normalization is unchanged; broader DOM interfaces remain incomplete. |
+| `2751e5fa7` | Generic RegExp replacement with observable flags/exec, ordered captures, callbacks, substitutions and bounded empty-match advancement. | Other RegExp symbol methods remain separate. |
+| `4868f3ce5` | Spread in ordinary/new/optional calls, retaining receivers and iterator ordering through both execution tiers. | Generator execution, finally statements, super properties and other language gaps remain. |
+| `3b5caae3e` | Default-realm Reflect installs all thirteen existing translated methods. | This does not add Proxy exotic behavior. |
+| `dfe44a124` | Promise.finally species and cleanup chaining. | Runtime verification held. |
+| `099055fdb`, `fa2d2f10d`, `f46d7a14a`, `0ab92f02a` | Generic Promise.all/race/allSettled/withResolvers, ordered aggregation, once guards and abrupt iterator closing. | Promise.any and later proposals remain pending. |
+| `1becbb753`, `7f82decfd` | Actual document focus, visibility, title, cookies and Window aliases; checked matches/closest with retained scoping root, attribute names and toggles. | Other document/element APIs remain incomplete. |
+| `d87c25778` | Existing UTF-16 trim/pad/repeat/concat/normalize, character and well-formed-string algorithms are installed, with identical trimming aliases. | Intl locale operations remain separate. |
+| `3cde7b553`, `fce1def67`, `780e1c19a` | Species-aware filter, live sparse every and SameValueZero includes. | Runtime verification held. |
+| `64215da63`, `42a06afbb`, `ff5d3428b`, `467482ddd` | Sparse shift/reverse, stable sorting with shared budgets, directional searches and indexed access. | Runtime verification held. |
+
+One initial History run before the hold fails its temporary-arena fixture, which
+incorrectly allocates the surrounding test script and its later property writes
+inside the retired arena. The replacement fixture calls the actual native
+binding with preexisting values and checks retained roots; it remains unexecuted.
+That earlier failure is preserved and is not counted as a passing History check.
+
+Compiler-only `v -b c -check` completes successfully for the initialization tool
+and its native DOM/LibJS dependencies after each integration checkpoint. The
+latest check exits zero under the default 12-GiB guard, peaking at 5,230,526,464
+sampled process-tree RSS bytes. It executes no JavaScript or tests. Earlier
+FastC check-mode rejection, two wiring errors, a 3-GiB compiler limit and an
+undefined constant are retained; corrected C checks pass. Raw compile logs and
+commands remain in the local benchmark cache. Fifty-eight completed guard
+receipts were preserved byte-for-byte under the local follow-up evidence and
+removed with their job locks from Build; no source/app copies were made there.
+
+The latest inspected completed production executable is
+`78558628ea0b9c1b1adfb76793e32afbc1151bdd747526913a13fdd27fb76dc4`,
+single-unit C with literal V `-prod`. Its sealed-source comparison against
+`467482ddd` finds 13 differences among 343 selected paths, including the latest
+Array/String and document/selector bindings. It cannot validate those changes.
+No browser was launched after the hold. Commit rebuild requests remain coalesced;
+full GitHub hydration, live validation, completed-page speed and unchanged
+zero-pixel Brave conformance remain unachieved.
