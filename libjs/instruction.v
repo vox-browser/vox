@@ -109,6 +109,7 @@ pub enum OpCode {
 	put_super_property
 	delete_super_property
 	get_super_this
+	record_class_static_block
 }
 
 pub struct Instruction {
@@ -139,7 +140,7 @@ fn (instruction Instruction) input_count() int {
 		.in_op, .instance_of, .call {
 			2
 		}
-		.get_property, .get_private, .has_private, .delete_property, .get_super_property, .delete_super_property, .new_regexp, .set_object_literal_prototype, .close_sync_iterator_throw, .new_class_method, .copy_data_properties, .super_construct_with_array {
+		.get_property, .get_private, .has_private, .delete_property, .get_super_property, .delete_super_property, .record_class_static_block, .new_regexp, .set_object_literal_prototype, .close_sync_iterator_throw, .new_class_method, .copy_data_properties, .super_construct_with_array {
 			2
 		}
 		.put_property, .put_private, .put_super_property, .record_private_class_method, .define_property, .define_class_method, .new_class, .record_empty_class_field, .call_with_array, .construct_with_array {
@@ -176,7 +177,7 @@ fn (instruction Instruction) writes_operand() bool {
 		.put_private, .record_private_class_method, .enter_class_private_environment,
 		.create_mutable_binding, .create_immutable_binding, .enter_scope, .leave_scope, .enter_function_body, .jump,
 		.require_object_coercible, .set_object_literal_prototype, .copy_data_properties,
-		.record_empty_class_field, .initialize_empty_static_fields,
+		.record_empty_class_field, .record_class_static_block, .initialize_empty_static_fields,
 		.close_sync_iterator, .close_sync_iterator_throw,
 		.sync_iterator_elide, .await_value,
 		.jump_if_true, .jump_if_false, .jump_if_nullish, .end, .throw_op]

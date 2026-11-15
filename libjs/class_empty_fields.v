@@ -7,6 +7,7 @@ struct ClassFieldDefinition {
 	key PropertyName
 	initializer Value
 	private_name ?PrivateName
+	is_static_block bool
 }
 
 fn create_class_field_initializer(mut vm VM, source &Executable, index u32, key PropertyName) !&Object {
@@ -20,6 +21,7 @@ fn (field ClassFieldDefinition) define(mut vm VM, mut object Object) ! {
 	vm.consume_execution_budget()!
 	value := if field.initializer.is_undefined() { js_undefined() }
 		else { call(mut vm, field.initializer, Value.from_object(&object), [])! }
+	if field.is_static_block { return }
 	if name := field.private_name { object.private_field_add(mut vm, name, value)! }
 	else { object.create_data_property_or_throw(mut vm, field.key, value)! }
 }

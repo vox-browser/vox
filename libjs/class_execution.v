@@ -2,13 +2,11 @@
 module libjs
 
 // ClassDefinitionEvaluation / Rust bytecode codegen.rs: base classes with
-// ordinary, static and accessor methods and public/private fields. Static
-// blocks remain an explicit unsupported boundary.
+// ordinary, static and accessor methods, public/private fields and static blocks.
 fn (mut generator BytecodeGenerator) class_expression(mut vm VM, data &ClassData) !Operand {
 	previous_strict := generator.strict
 	generator.strict = true
 	defer { generator.strict = previous_strict }
-	for element in data.elements { if element.kind is ClassElementStaticInit { return generator.unsupported('class static initialization') } }
 	generator.emit(Instruction{ op: .enter_scope })
 	generator.scope_depth++
 	name := if identifier := data.name { identifier.name } else { Utf16String.new() }
@@ -34,6 +32,21 @@ fn (mut generator BytecodeGenerator) class_expression(mut vm VM, data &ClassData
 	for element in data.elements {
 		previous_range := generator.range
 		generator.range = element.range
+		if element.kind is ClassElementStaticInit {
+			static_body := element.kind.body
+			index := u32(generator.executable.class_field_initializers.len)
+			generator.executable.class_field_initializers << &JsFunctionData{
+				source_text_start: static_body.range.start.offset
+				source_text_end: static_body.range.end_.offset
+				body: static_body
+				is_strict_mode: true
+			}
+			initializer := generator.temporary()
+			generator.emit(Instruction{op: .new_class_field_initializer, dst: initializer, lhs: generator.constant(Value.from_string(vm.empty_string())), identifier: index})
+			generator.emit(Instruction{op: .record_class_static_block, lhs: result, rhs: initializer})
+			generator.range = previous_range
+			continue
+		}
 		if element.kind is ClassElementField {
 			is_private := element.kind.key.kind.tag == .private_identifier_expr
 			raw_key := if identifier := element.kind.key.kind.private_identifier { generator.constant(Value.from_string(vm.create_string(identifier.name))) }

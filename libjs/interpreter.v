@@ -91,6 +91,7 @@ fn (mut vm VM) execute_instruction(instruction Instruction, executable &Executab
 			else { result = reference.get_value(mut vm)! }
 		}
 		.record_empty_class_field { record_class_field(mut vm, left, right.to_property_key(mut vm)!, source, instruction.identifier == 1, instruction.strict)! }
+		.record_class_static_block { record_class_static_block(mut vm, left, right)! }
 		.enter_class_private_environment { enter_class_private_environment(mut vm, executable, instruction)! }
 		.record_private_class_method { record_private_class_method(mut vm, left, right, source, instruction.identifier, instruction.target == 1)! }
 		.get_private { result = make_private_reference(vm, left, resolve_class_private_name(mut vm, right)!.description).get_value(mut vm)! }
