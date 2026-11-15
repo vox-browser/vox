@@ -48,6 +48,18 @@ def generate(source: Path, destination: Path):
         return json.dumps(value, ensure_ascii=False, separators=(',', ':'), sort_keys=True).encode()
 
     destination.mkdir(parents=True, exist_ok=True)
+    zone_aliases = {}
+    for value in read('cldr-json/cldr-bcp47/bcp47/timezone.json')['keyword']['u']['tz'].values():
+        if not isinstance(value, dict) or '_alias' not in value:
+            continue
+        values = value['_alias'].split()
+        primary = value.get('_iana', values[0])
+        if primary in ['Etc/UTC', 'Etc/GMT']:
+            primary = 'UTC'
+        for alias in values + [primary]:
+            zone_aliases[alias.lower()] = primary
+    for alias in ['UTC', 'GMT', 'Etc/UTC', 'Etc/GMT', 'UCT', 'Universal', 'Zulu', 'Greenwich']:
+        zone_aliases[alias.lower()] = 'UTC'
     spans, records, full_records = {}, bytearray(), {}
     locales = read('cldr-json/cldr-core/availableLocales.json')['availableLocales']['full']
     for locale in sorted(locales):
@@ -78,6 +90,10 @@ def generate(source: Path, destination: Path):
             'decimal': {key.removeprefix('symbols-numberSystem-'): value.get('decimal', '.')
                         for key, value in numbers.items() if key.startswith('symbols-numberSystem-')},
         }
+        for name, value in list(record['zone_names'].items()):
+            primary = zone_aliases.get(name.lower(), name)
+            if primary not in record['zone_names']:
+                record['zone_names'][primary] = value
         full_records[locale] = record
     parents = supplemental('parentLocales')['parentLocales']['parentLocale']
     visiting = set()
@@ -123,18 +139,6 @@ def generate(source: Path, destination: Path):
         if parent in spans:
             spans[locale] = spans[parent]
     aliases = supplemental('aliases')['metadata']['alias']
-    zone_aliases = {}
-    for value in read('cldr-json/cldr-bcp47/bcp47/timezone.json')['keyword']['u']['tz'].values():
-        if not isinstance(value, dict) or '_alias' not in value:
-            continue
-        values = value['_alias'].split()
-        primary = value.get('_iana', values[0])
-        if primary in ['Etc/UTC', 'Etc/GMT']:
-            primary = 'UTC'
-        for alias in values + [primary]:
-            zone_aliases[alias.lower()] = primary
-    for alias in ['UTC', 'GMT', 'Etc/UTC', 'Etc/GMT', 'UCT', 'Universal', 'Zulu', 'Greenwich']:
-        zone_aliases[alias.lower()] = 'UTC'
     type_aliases = {}
     for name in ['calendar', 'collation', 'number', 'variant']:
         tree = read(f'cldr-json/cldr-bcp47/bcp47/{name}.json')['keyword']['u']
@@ -162,6 +166,10 @@ def generate(source: Path, destination: Path):
                 flatten_meta(value, path)
 
     flatten_meta(supplemental('metaZones')['metaZones']['metazoneInfo']['timezone'])
+    for name, periods in list(meta_zones.items()):
+        primary = zone_aliases.get(name.lower(), name)
+        if primary not in meta_zones:
+            meta_zones[primary] = periods
     periods = supplemental('dayPeriods')['dayPeriodRuleSet']
     language_rules = []
     for key, value in aliases['languageAlias'].items():

@@ -158,6 +158,7 @@ pub mut:
 	constructor          ?ConstructorFunction
 	native_callable      bool
 	native_initial_name  ?Utf16String
+	intl_date_time_format ?&IntlDateTimeFormat
 	intl_locale          ?&IntlLocaleObject
 	proxy_object         ?&ProxyObject
 	bound_function       ?&BoundFunction

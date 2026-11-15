@@ -61,3 +61,14 @@ fn test_intl_cldr_cache_survives_temporary_allocation_storage() {
 	arena.reset(); arena.release()
 	assert locale.months['format_wide'][0] == 'January' && core.zone_alias['america/new_york'] == 'America/New_York'
 }
+
+fn test_intl_canonical_language_records_retain_text_beyond_temporary_allocation_scope() {
+	mut vm := VM.create(); create_simple_execution_context(mut vm)
+	mut arena := platform.new_arena('canonical Intl locale text')
+	entry := arena.enter()
+	id := intl_canonicalize_language_tag(mut vm, utf16_string('EN-latn-us-u-ca-gregory'))!
+	arena.leave(entry)
+	assert !arena.contains(id.language.str) && !arena.contains(id.script.str) && !arena.contains(id.region.str)
+	arena.reset(); arena.release()
+	assert id.tag() == 'en-Latn-US-u-ca-gregory'
+}

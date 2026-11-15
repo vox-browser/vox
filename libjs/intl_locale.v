@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: BSD-2-Clause
 module libjs
 
+import platform
+
 @[heap]
 pub struct IntlLocaleObject {
 pub:
@@ -67,6 +69,8 @@ fn intl_locale_this(mut vm VM) !&IntlLocaleObject {
 }
 
 fn intl_locale_construct(mut vm VM, new_target &Object) !&Object {
+	persistent := platform.enter_persistent()
+	defer { platform.leave_persistent(persistent) }
 	prototype := get_prototype_from_constructor(mut vm, new_target, fn (realm &Realm) &Object { return realm.intl_locale_prototype or { panic('Missing Intl.Locale prototype') } })!
 	mut id := intl_locale_identifier_value(mut vm, vm.argument(0))!
 	options := intl_options_object(mut vm, vm.argument(1))!
@@ -114,6 +118,8 @@ fn intl_locale_construct(mut vm VM, new_target &Object) !&Object {
 }
 
 fn intl_maximize_identifier(mut vm VM, original IntlLocaleIdentifier) !IntlLocaleIdentifier {
+	persistent := platform.enter_persistent()
+	defer { platform.leave_persistent(persistent) }
 	core := intl_core_data(mut vm)!
 	mut id := original
 	script := if id.script == 'Zzzz' { '' } else { id.script }
@@ -139,6 +145,8 @@ fn intl_maximize_identifier(mut vm VM, original IntlLocaleIdentifier) !IntlLocal
 }
 
 fn intl_locale_minimize(mut vm VM, original IntlLocaleIdentifier) !IntlLocaleIdentifier {
+	persistent := platform.enter_persistent()
+	defer { platform.leave_persistent(persistent) }
 	maximum := intl_maximize_identifier(mut vm, original)!
 	mut trials := [IntlLocaleIdentifier{language: maximum.language}, IntlLocaleIdentifier{language: maximum.language, region: maximum.region}, IntlLocaleIdentifier{language: maximum.language, script: maximum.script}]
 	for trial in trials {

@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: BSD-2-Clause
 module libjs
 
+import platform
+
 // Runtime/Intl/AbstractOperations.cpp and Unicode locale identifiers. String
 // options remain UTF-16 until ASCII grammar validation, including lone surrogates.
 pub struct IntlLocaleIdentifier {
@@ -175,6 +177,8 @@ fn intl_canonical_base(mut vm VM, original IntlLocaleIdentifier) !IntlLocaleIden
 }
 
 fn intl_canonicalize_language_tag(mut vm VM, text Utf16String) !IntlLocaleIdentifier {
+	persistent := platform.enter_persistent()
+	defer { platform.leave_persistent(persistent) }
 	mut id := intl_canonical_base(mut vm, intl_parse_language_tag(mut vm, text)!)!
 	core := intl_core_data(mut vm)!
 	mut keywords := id.keywords.clone()
