@@ -6,6 +6,7 @@ import domurl
 import fetch
 import fileapi
 import libjs
+import webidl
 
 struct FetchOptionalText { value ?string }
 struct FetchBodyValue {
@@ -65,6 +66,12 @@ fn (body FetchBodyValue) materialize(mut vm libjs.VM) !FetchBodyValue {
 
 fn (host &Host) fetch_error_value(mut vm libjs.VM, err IError) libjs.Value {
 	if libjs.is_throw_completion(err) { return libjs.thrown_value(err) }
+	if err is webidl.ValueException {
+		mut owner := unsafe { &Host(host) }
+		return owner.abort_reason_value(mut vm, err.value) or {
+			libjs.Value.from_object(libjs.create_error(mut vm, host.realm, .type_error, libjs.utf16_string(err.msg())))
+		}
+	}
 	message := err.msg()
 	kind := if message.starts_with('RangeError:') { libjs.ErrorKind.range_error } else if message.starts_with('SyntaxError:') { libjs.ErrorKind.syntax_error } else { libjs.ErrorKind.type_error }
 	return libjs.Value.from_object(libjs.create_error(mut vm, host.realm, kind, libjs.utf16_string(message.all_after(': '))))
@@ -97,7 +104,7 @@ fn (host &Host) fetch_request(mut vm libjs.VM, input libjs.Value, options libjs.
 	referrer := fetch_text(mut vm, fetch_member(mut vm, options, 'referrer')!, 1)!.value
 	referrer_policy := fetch_enum(mut vm, fetch_member(mut vm, options, 'referrerPolicy')!, ['', 'no-referrer','no-referrer-when-downgrade','same-origin','origin','strict-origin','origin-when-cross-origin','strict-origin-when-cross-origin','unsafe-url'])!.value
 	signal := fetch_member(mut vm, options, 'signal')!
-	if !signal.is_nullish() { return vm.throw_error(.type_error, 'AbortSignal Fetch binding is not translated yet') }
+	native_signal := if signal.is_nullish() { ?&dom.AbortSignal(none) } else { ?&dom.AbortSignal(host.signal_value(mut vm, signal)!) }
 	window := fetch_member(mut vm, options, 'window')!
 	mut prototype := ?&libjs.Object(none)
 	if target := new_target {
@@ -111,6 +118,7 @@ fn (host &Host) fetch_request(mut vm libjs.VM, input libjs.Value, options libjs.
 	body := converted_body.materialize(mut vm)!.value
 	return fetch.RequestObject.construct(source, fetch.RequestInit{
 		body: body, body_present: !body_value.is_undefined(), headers: headers,
+		signal: native_signal, signal_present: !signal.is_undefined(),
 		cache: if text := cache { ?fetch.CacheMode(match text { 'no-store'{.no_store} 'reload'{.reload} 'no-cache'{.no_cache} 'force-cache'{.force_cache} 'only-if-cached'{.only_if_cached} else{.default} }) } else { none },
 		credentials: if text := credentials { ?fetch.CredentialsMode(match text { 'omit'{.omit} 'include'{.include} else{.same_origin} }) } else { none },
 		duplex: if duplex != none { ?fetch.RequestDuplex(.half) } else { none },

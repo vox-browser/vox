@@ -101,6 +101,9 @@ mut:
 	fetch_responses map[voidptr]&fetch.ResponseObject
 	fetch_wrappers map[voidptr]&libjs.Object
 	fetch_operations []&DocumentFetchOperation
+	fetch_signal_operations map[voidptr]&DocumentFetchOperation
+	fetch_abort_callback_depth int
+	retired_fetch_abort_closures []voidptr
 	fetch_json_parse libjs.Value
 	style_wrappers       map[u32]&libjs.Object
 	style_elements       map[voidptr]&dom.Element

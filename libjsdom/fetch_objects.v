@@ -97,11 +97,16 @@ fn (mut host Host) install_fetch_objects() ! {
 			}, libjs.attribute_writable | libjs.attribute_enumerable | libjs.attribute_configurable)
 		}
 	}
-	for name in ['url','method','headers','destination','referrer','referrerPolicy','mode','credentials','cache','redirect','integrity','keepalive','isReloadNavigation','isHistoryNavigation','duplex','bodyUsed'] {
+	for name in ['url','method','headers','destination','referrer','referrerPolicy','mode','credentials','cache','redirect','integrity','keepalive','isReloadNavigation','isHistoryNavigation','duplex','signal','bodyUsed'] {
 		host.accessor(mut request, name, fn [host, name] (mut vm libjs.VM) !libjs.Value {
 			native := host.request_receiver(mut vm)!
 			mut owner := unsafe { &Host(host) }
 			if name == 'headers' { return owner.wrap_headers(native.headers(), none) }
+			if name == 'signal' {
+				persistent := platform.enter_persistent()
+				defer { platform.leave_persistent(persistent) }
+				return owner.wrap_abort_signal(native.signal())
+			}
 			if name == 'bodyUsed' { return libjs.Value.from_bool(native.body_mixin().body_used()) }
 			if name == 'keepalive' { return libjs.Value.from_bool(native.keepalive()) }
 			if name == 'isReloadNavigation' { return libjs.Value.from_bool(native.is_reload_navigation()) }
@@ -150,10 +155,12 @@ fn (mut host Host) consume_fetch_body(body fetch.BodyMixin, method string, capab
 			}
 			return libjs.call(mut vm, capability.resolve, libjs.js_undefined(), [value])
 		})
+		host.release_completed_fetch_aborts()
 	}, fn [owner, capability] (reason webidl.Value) {
 		mut host := unsafe { &Host(owner) }
 		if !host.closed { host.settle_fetch_error(capability, webidl.ValueException{value: reason}) }
 	})
+	host.release_completed_fetch_aborts()
 }
 
 fn (mut host Host) fetch_body_result(mut vm libjs.VM, method string, bytes []u8, content_type string) !libjs.Value {
