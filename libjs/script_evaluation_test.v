@@ -62,6 +62,7 @@ fn test_compiled_blocks_loops_hoisting_and_completion_values() {
 		'var x=0; while(x<3) {x++; {let y=1; if(x<3)continue;}} x;':                     '3'
 		'var x=0; do {x++; if(x<3)continue;} while(x<3); x;':                            '3'
 		'var x=0; for(var i=0;i<3;i++) {for(var j=0;j<3;j++){if(j===1)break; x++;}} x;': '3'
+		'var changed=1; function tag(strings) { return changed + strings[0].length; } tag`text`;': '5'
 		'42; var x;':                                                                    '42'
 		'42; {}':                                                                        '42'
 		'42; if(false) 1;':                                                              'undefined'
@@ -131,7 +132,7 @@ fn test_runtime_errors_preserve_tdz_const_strictness_tracebacks_and_stack_cleanu
 fn test_unsupported_programs_are_rejected_before_any_execution_or_declarations() {
 	for source in ['var changed=1; class C { static {} }', 'var changed=1; false && class { static {} };',
 		'var changed=1; f(...a);', 'var changed=1; try {} catch(e) {} finally {}',
-		'var changed=1; tag`text`;', 'var changed=1; new C(...a);'] {
+		'var changed=1; new C(...a);'] {
 		mut vm := VM.create()
 		create_simple_execution_context(mut vm)
 		if _ := run_test_source(mut vm, source) {

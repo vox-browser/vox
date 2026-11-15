@@ -40,7 +40,7 @@ fn (mut vm VM) get_template_object(executable &Executable, instruction Instructi
 	source := executable.parsed_source
 	if source == unsafe { nil } { return vm.throw_error(.internal_error, 'Template object requires its parsed source') }
 	mut realm := vm.realm()
-	key := '${usize(voidptr(source))}:${instruction.target}'
+	key := '${uint(voidptr(source))}:${instruction.target}'
 	if entry := realm.template_objects[key] { return Value.from_object(entry.object) }
 	if instruction.arguments.len % 2 != 0 { return vm.throw_error(.internal_error, 'Unpaired template strings') }
 	count := instruction.arguments.len / 2
