@@ -40,8 +40,8 @@ objects, default/rest/destructured function parameters, class inheritance,
 super construction (including explicit iterator-based argument spread),
 public field initializers, private fields/methods/accessors,
 lexical brands, object literal accessors/methods,
-Array concat/fill/map/find/some and literal spread, object literal spread, ordinary template
-literals and native element CSSOM bindings
+Array.from, Array concat/fill/map/find/some and literal spread, object literal
+spread, ordinary/tagged template literals and native element CSSOM bindings
 are implemented. Native Promise construction, resolving functions, then/catch,
 resolve/reject, generic species capabilities and FIFO reactions execute. Window
 listeners use the associated native Window. Headers uses actual native Fetch
@@ -82,6 +82,8 @@ timestamps, bounded callback entry and persistent retirement storage. Native
 matchMedia/MediaQueryList and typed change events are bound. AbortController and
 AbortSignal use native dependencies, arbitrary reason identity, timeouts and
 abortable event listeners; Fetch RequestInit.signal remains explicitly unsupported.
+URLSearchParams now wraps the native parser/serializer and live iterators,
+including URL.searchParams identity and bidirectional href/search synchronization.
 Their focused cases cover both GC modes and persisted execution without a compiler.
 
 The latest source-stable complete dual-mode core checkpoint passes 300/300 package files in each GC mode,
@@ -109,9 +111,13 @@ not a clean single default sweep. All 100 canonical AST cases match exactly. Asy
 and sanitizer; an additional native case awaits a real Window frame before
 inserting template contents, including compiler-disabled cache reuse. Array
 find/some and labelled execution each have six cases in both modes and sanitizer.
-The Abort-stage original GitHub scripts reuse 526 native entries and
+Array.from has eight focused cases and tagged templates have six, all in both GC
+modes and sanitizer; the latter preserves realm/site identity, frozen raw/cooked
+arrays, uncoerced substitutions and await operands. A new 310-file core sweep
+remains pending; an earlier interrupted selection has only 25 completed files.
+The tagged-template-stage original GitHub scripts reuse 615 native entries and
 51 parsed sources on the second opening with zero compiler calls, then fail at
-unbound URLSearchParams;
+missing Array.reduce;
 33 directory rows remain and no commit links hydrate. These counts come from initialization diagnostics without layout
 or paint, and do not establish completed-page speedup.
 A full native LibJS browser capture completes under the default 12 GiB guard,
@@ -2651,8 +2657,9 @@ both modes; MutationObserver has six in both modes and sanitizer. The newest
 original-script pairs subsequently exercise String predicates, WeakSet, generator
 creation, Array.map, EventTarget, IntersectionObserver, ResizeObserver, classList
 namespace-aware element factories, template contents, animation frames,
-async/await, Array.find/some, matchMedia and AbortSignal. Their warm native-entry counts rise from
-230 to 526, with 51 cached frontend sources and zero compiler calls; hydration
+async/await, Array.find/some, matchMedia, AbortSignal, URLSearchParams, Array.from
+and tagged templates. Their warm native-entry counts rise from
+230 to 615, with 51 cached frontend sources and zero compiler calls; hydration
 still fails. A fresh ClassList-stage production browser has the same 33 rows and
 zero commit links; its first compiler diagnostic is explicit spread super calls.
 Full-repository coverage, validation of later bindings in a current production build and

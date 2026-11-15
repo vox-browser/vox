@@ -807,3 +807,69 @@ Its sealed source audit at the media-query stage mismatches animation_frames.v,
 events.v, host.v and media_queries.v among 313 selected paths. It cannot validate
 the current native bindings. Automatic commit rebuild requests remain coalesced;
 pixel-perfect GitHub, live behavior and completed-page performance stay open.
+
+
+## Query parameters, Array.from and tagged templates
+
+`b4b764394` exposes the actual native URLSearchParams parser/serializer, ordered
+record and iterable initialization, USVString conversion, optional-value methods
+and live iterators/forEach. URL.searchParams keeps its native identity as href
+and search change, and parameter mutations update the owning URL. Six focused
+cases pass in default GC, GC-none and AddressSanitizer. Headers and three native
+URL/query neighbor files pass in both modes. Early attempts with a test variable
+shadowing the error binding and an unavailable Number global are retained.
+This binding does not establish full URL/Location or Fetch-body parity.
+
+`17da110f4` implements both Array.from branches, generic constructor calls, mapper
+ordering, dense array-like Get, live iterable stepping, shared budgets and the
+required IteratorClose paths. Array construction now respects NewTarget's
+prototype, including Array subclass fields and intrinsic fallback. Eight cases
+pass in both modes and sanitizer; four Array/iterator/heritage neighbors pass
+in both modes. An early fallback fixture relied on the still-uninstalled Reflect
+global; the final fixture invokes the actual constructor operation from V.
+
+`1dbb4439d` adds GetTemplateObject and tagged calls. Realm-local caches retain the
+actual parsed site, so repeated calls and separate closures share one frozen
+array, separately parsed sites differ, and another realm gets fresh objects even
+with a shared frontend tree. Raw/cooked code units, invalid cooked escapes,
+member/private receivers, evaluation order and uncoerced substitutions survive;
+await also preserves the template operand. Native creation bypasses author
+constructors, freeze methods and inherited setters. Six cases pass in both modes
+and sanitizer, plus five template/call/async/cache/frontend neighbor files in
+both modes. The opcode participates in the existing native-cache ABI hash.
+
+| Original-response stage | Warm native entries | Next first module failure |
+| --- | ---: | --- |
+| URLSearchParams | 605 | Array.from in pb.js UUID helper |
+| Array.from | 613 | tagged template in Turbo defaultCSS |
+| Tagged templates | 615 | Array.reduce in the CSS template tag |
+
+Each pair has unchanged inputs, exit zero, 51 warm frontend hits, zero warm
+compiler invocations and no initialized JSC. All retain five module failures,
+33 rows and zero commit links. Missing setTimeout and an earlier TypeError remain
+in that recorded workload. These numbers count executed/compiled paths up to
+failure, not all functions in GitHub's bundles or a completion percentage.
+Number's default primitive-prototype wiring also remains incomplete; passing
+the UUID helper's startup call is not a UUID semantic-conformance result.
+
+A fresh native Abort-stage observation uses executable
+`73cc5a369ba8dcf011521ec9ea5bb00038a62a82a1f8f0c926fca57f8f48e54b`.
+All 315 selected consumed sources match `5b9350011`; PID 23336, browser/controller/
+guard exits zero, unchanged inputs and 5,040,603,136 sampled peak bytes are
+recorded. It has 33 rows, zero latest/commit links and one README; the unchanged
+Brave content validator rejects its script/native errors. The whole-window PNG
+was inspected and still shows commit placeholders; no canonical pixel acceptance
+follows. The later completed production executable
+`2e08971261e0625d26c1005f1dcd859421619ae6b19ff16c9e9f2459e7d256fc`
+has all 317 selected consumed sources matching the Array.from commit; that
+source audit alone is not a rendering check or tagged-template validation.
+
+The 310-file r13 sweep stops after 25 completed files with no final exit receipt.
+Its interruption audit finds all 816 pinned inputs unchanged; it remains an
+incomplete attempt. The subsequent r14 modes run sequentially with the same
+12-GiB guards and 1,800-second limits, using a durable controller; results remain
+pending. A fresh canonical AST run matches all 100 cases exactly, with all
+816 current inputs unchanged; its guard exits zero and peaks at 632,242,176
+bytes. Host load subsequently reaches about 94–102 on 18 CPUs with no swap,
+so these runs supply correctness checks only. Full execution, live behavior,
+completed-page speedup and zero-pixel Brave conformance remain open.
