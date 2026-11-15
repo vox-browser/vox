@@ -177,6 +177,7 @@ pub fn Host.create(vm &libjs.VM, realm &libjs.Realm, document &dom.Document, hoo
 	host.install_query_params()!
 	host.install_urls()!
 	host.install_text_encoding()
+	host.install_binary_string_codecs()
 	host.install_history()
 	host.install_headers()!
 	mut global := realm.global_object_record()
