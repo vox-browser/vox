@@ -687,3 +687,123 @@ a mistyped neighbor filename, and disk-full linking remain retained. Completed
 scratch binaries/generated C were removed after recording their hashes; receipts
 remain local. The GitHub spread-super compiler diagnostic disappears; a separate
 TypeError and missing requestAnimationFrame/setTimeout still prevent hydration.
+
+## Animation frames, async continuations and labelled control
+
+`e8967afbc` connects requestAnimationFrame/cancelAnimationFrame to the owning
+native Window driver. Five cases pass in both GC modes and sanitizer: native
+timestamps, callback receivers, cancellation during a batch, next-frame
+registrations, conversion/branding, shared budgets, errors, teardown and warm
+cache reuse. Native delivery under a temporary arena verifies persistent
+retirement storage. Completed JS roots are cleared before native trampolines are
+released at the next safe provider entry. Window-event, Hacker News and explicit
+native-super neighbors pass in both modes. These are document engine services;
+no browser UI or JavaScriptCore fallback was added.
+
+`b66628766` implements ordinary async function calls and await continuations.
+Calls return intrinsic Promises, execute the initial body synchronously, copy
+suspended contexts outside the bounded interpreter stack, and acquire checked
+frames when Promise jobs resume them. Internal PerformPromiseThen bypasses
+replaced then/species methods. Saved lexical/private scopes, this/arguments,
+live reference operands, original rejection values and catch handlers survive
+suspension. Return adopts thenables through Promise resolution. Nine focused
+cases pass in both GC modes and sanitizer. Creation/checkpoint/context fixtures
+and six runtime neighbors pass in both modes. A separate native case awaits a
+real animation frame, inserts actual template contents, and reopens with the
+compiler disabled; both modes and sanitizer pass. The initial compilation failure
+required a heap-owned Promise capability annotation. Top-level await, generators,
+try/finally and complete HTML unhandled-rejection event integration remain open.
+
+`bd76cf441` adds Array.find/some with live Get/HasProperty semantics, length
+snapshots, ordered callback arguments, short-circuiting and shared budgets.
+Find visits holes; some skips absent indices. Six cases pass in both modes and
+sanitizer, with Array.map/concat regressions and persisted callbacks.
+
+`aa8666f5c` adds labelled blocks and loop break/continue, including nested labels,
+for/while/do/for-in/for-of, var hoisting and lexical unwinding. Abrupt transfers
+close crossed for-of iterators in order; continuing the target iteration keeps
+its iterator open. Close failures escape body-local catches and reach enclosing
+handlers. Six cases pass in both modes and sanitizer, including cached async
+continuations; for-in, for-of, catch and async neighbors pass. Retained early
+attempts exposed the frontend's synthetic block wrappers and distinct for-in/of
+source positions. The final classifier reads their original start token without
+mutating AST data. Annex B labelled function execution remains separate work.
+
+The unchanged-response source-only pairs after animation frames, async/await and
+Array predicates reuse **451, 467 and 471 native entries**, respectively. Every
+warm visit also reuses 51 frontend sources, invokes no compiler, initializes no
+JSC and preserves fixture hashes. All retain 33 rows and zero commit links. The
+first failures progress from async execution to Array.find/some and then
+window.matchMedia. Missing setTimeout and a separate early TypeError remain in
+the JavaScript diagnostics. No completed-page timing or pixel credit follows.
+
+A fresh native observation uses executable
+`ab304f1f122ee2350d541ad5c2c0893b7abfe45cdc83671f7f2107f5ef2c628f`,
+PID 61724, with browser/controller/guard exits zero, unchanged inputs and
+4,851,122,176 sampled peak bytes. All 309 selected sources match `e8967afbc`
+except its two persistent-scope lines, absent from the completed bundle; the raw
+mismatch and exact pre-follow-up source hash qualification are retained. This
+baseline contains animation frames and predates async/await. It has 33 rows,
+zero latest/commit links, one README and script errors; the unchanged Brave
+content validator rejects it. Native frame execution additionally exposes the
+labelled loop at pb.js:136:144079. Its whole-window PNG was inspected against the
+fixed Brave document PNG, with loading placeholders still plainly visible.
+This supplies neither canonical pixel nor new-async-code validation.
+
+The subsequent `r11-default` sweep passes **305/305 files** with **806 unchanged
+inputs**, test/wrapper/guard zero, 977.395 seconds and 9,883,107,328 sampled peak
+bytes. This is a source-stable default-GC checkpoint, not a new dual-mode claim.
+The later 308-file `r12` checks run GC modes sequentially under separate guards
+with explicit 1,800-second timeouts. All 308 no-GC files pass in 944.477 seconds
+(peak 9,864,298,496 bytes). The default sweep passes 306 files and fails two
+compilations solely from disk exhaustion, retaining test/wrapper/guard exit 1
+(1,090.845 seconds, peak 9,852,764,160). The two files, typed_array_sources and
+uint8_array_hex, then pass under a separate 3-GiB guard in 43.881 seconds
+(peak 2,603,483,136). All 812 inputs remain stable across both sweeps and recovery.
+A fresh canonical AST run matches 100/100 cases exactly. This is a source-stable
+functional union, not a clean single default-GC sweep; the original failure is
+retained. The local r12-recovery composite ledger records all component exits.
+
+
+## Native media queries and cancellation
+
+`4bb817026` binds matchMedia to native CSS query evaluation and MediaQueryList
+EventTarget delivery. Legacy listeners and onchange share the native listener
+path; typed MediaQueryListEvent records preserve constructor/prototype ancestry.
+Five cases pass with default GC, GC-none and AddressSanitizer, plus animation
+frame, Event and EventTarget neighbors in both modes. Its original-response pair
+reuses 476 native entries before reaching missing AbortController.
+
+`5b9350011` binds native AbortController/AbortSignal, default DOMException reasons,
+static abort/timeout/any, throwIfAborted and abortable event listeners. Arbitrary
+JavaScript reason values retain identity without string conversion; dependent
+signals share native reason records. Abort removes both native listeners and VM
+roots; teardown removes owned abort algorithms before releasing closures. Native
+Window timers deliver timeout signals. Six cases pass in both GC modes and
+AddressSanitizer; EventTarget, media-query and DOMException neighbors pass in
+both modes. Fetch RequestInit.signal is still rejected explicitly.
+
+Disk exhaustion interrupted initial compilation, native-cache linking and one
+Git index write; these failures remain recorded. Completed task-owned generated
+C and binaries were removed with hash ledgers, and canonical pruning removed
+idle scratch according to its existing policy. The final focused checks use
+private 512-MiB RAM scratch for generated compiler output, with unchanged
+12-GiB build and 3-GiB runtime RSS guards. This adds 512 MiB of scratch RAM
+capacity outside sampled process RSS. No sources or browser bundles were copied;
+each newly allocated volume was verified and detached after its job.
+
+The first Abort-stage original-response pair exits 1 during disk-full cache
+linking and produces no visits. Its retained retry uses a private RAM-backed
+native cache and passes with unchanged inputs: the second fresh VM reuses
+**526 native entries and 51 frontend sources, with zero compiler invocations**.
+Neither VM initializes JSC. Both retain 33 rows, zero commit links and five
+module errors, now headed by missing URLSearchParams. Missing setTimeout and
+an earlier TypeError also remain. These changing, incomplete initialization
+workloads provide no completed-page speedup or rendering acceptance.
+
+The latest completed production executable remains
+`4a0da515ac045c10ee2349a1ee9ad4b1efb52385971278a42f7cc5effa5b55fd`.
+Its sealed source audit at the media-query stage mismatches animation_frames.v,
+events.v, host.v and media_queries.v among 313 selected paths. It cannot validate
+the current native bindings. Automatic commit rebuild requests remain coalesced;
+pixel-perfect GitHub, live behavior and completed-page performance stay open.

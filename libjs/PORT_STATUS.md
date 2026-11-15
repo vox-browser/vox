@@ -36,23 +36,27 @@ LibJS documents now enable that persistent cache automatically; the earlier
 manual HN experiment above is historical, not the current document-cache policy.
 
 Set/Map operations and live iterators, WeakMap weak keys, ordinary arguments
-objects, default/rest/destructured function parameters, class inheritance and
-super construction, public field initializers, private fields/methods/accessors,
-including explicit super argument spread through the ordinary iterator protocol,
+objects, default/rest/destructured function parameters, class inheritance,
+super construction (including explicit iterator-based argument spread),
+public field initializers, private fields/methods/accessors,
 lexical brands, object literal accessors/methods,
-Array concat/fill/map and literal spread, object literal spread, ordinary template
+Array concat/fill/map/find/some and literal spread, object literal spread, ordinary template
 literals and native element CSSOM bindings
 are implemented. Native Promise construction, resolving functions, then/catch,
 resolve/reject, generic species capabilities and FIFO reactions execute. Window
 listeners use the associated native Window. Headers uses actual native Fetch
 records with ByteString conversion and live iteration. Fetch now uses the module loader's
 actual native transport, Request/Response records, stream body consumption and
-Promise settlement. AbortSignal/ReadableStream exposure, remaining body variants
+Promise settlement. Abortable Fetch, ReadableStream exposure, remaining body variants
 and interface factories remain pending. Native DOM
 Event construction preserves subclass prototypes and actual native event records.
 String includes/startsWith/endsWith and WeakSet are installed. Generator and
 async-generator functions can be created with their prototype graph, but cannot
-yet execute. Promise finally/combinators, async/generator execution, call spread, class
+yet execute. Ordinary async functions return intrinsic Promises and suspend at
+await, preserving lexical/private scopes and resuming through internal Promise
+reactions, including persisted native entries. Labelled blocks and loop control
+close crossed iterators in order; Annex B labelled functions remain pending.
+Promise finally/combinators, generator execution, top-level await, call spread, class
 static blocks, super property
 references, anonymous class assignment/field-name
 inference, Set algebra, Map extensions and remaining weak-reference APIs remain
@@ -72,10 +76,15 @@ EventTarget construction and dispatch, DOMRectReadOnly geometry,
 layout-backed IntersectionObserver and ResizeObserver delivery, live classList
 token lists, namespace-aware element factories and HTMLTemplateElement.content
 use actual native records. Template content retains fragment identity, inert
-ownership and native cross-document adoption.
+ownership and native cross-document adoption. Animation-frame callbacks use the
+owning native Window driver, including cancellation during a batch, native
+timestamps, bounded callback entry and persistent retirement storage. Native
+matchMedia/MediaQueryList and typed change events are bound. AbortController and
+AbortSignal use native dependencies, arbitrary reason identity, timeouts and
+abortable event listeners; Fetch RequestInit.signal remains explicitly unsupported.
 Their focused cases cover both GC modes and persisted execution without a compiler.
 
-The latest source-stable complete core checkpoint passes 300/300 package files in each GC mode,
+The latest source-stable complete dual-mode core checkpoint passes 300/300 package files in each GC mode,
 with 796 unchanged source/fixture/compiler inputs, using four workers within the
 unchanged 12 GiB guard. Earlier resource failures and obsolete-fixture failures
 are retained in the continuation report. The unchanged canonical AST
@@ -91,9 +100,18 @@ the combined attempt times out after completing the default sweep, and the
 separate no-GC input audit flags another session's Float16 header change. Clang
 emits identical old/new helper IR; affected numeric tests pass again in both
 modes and all 100 upstream AST cases match exactly. This does not replace the
-source-stable checkpoint with a clean dual-mode receipt.
-The template-content-stage original GitHub scripts reuse 365 native entries and
-51 parsed sources on the second opening, then fail at unbound requestAnimationFrame;
+source-stable checkpoint with a clean dual-mode receipt. A later source-stable
+default-GC sweep passes 305/305 files with 806 unchanged inputs. The newer
+308-file checkpoint has 812 stable inputs: all 308 no-GC files pass; the default
+sweep passes 306 and fails two links on disk exhaustion, then those two files
+pass separately with the same inputs. This is a source-stable functional union,
+not a clean single default sweep. All 100 canonical AST cases match exactly. Async/await has nine focused cases in both modes
+and sanitizer; an additional native case awaits a real Window frame before
+inserting template contents, including compiler-disabled cache reuse. Array
+find/some and labelled execution each have six cases in both modes and sanitizer.
+The Abort-stage original GitHub scripts reuse 526 native entries and
+51 parsed sources on the second opening with zero compiler calls, then fail at
+unbound URLSearchParams;
 33 directory rows remain and no commit links hydrate. These counts come from initialization diagnostics without layout
 or paint, and do not establish completed-page speedup.
 A full native LibJS browser capture completes under the default 12 GiB guard,
@@ -2632,8 +2650,9 @@ and sanitizer. Native variadic mutations and NodeLists each have three cases in
 both modes; MutationObserver has six in both modes and sanitizer. The newest
 original-script pairs subsequently exercise String predicates, WeakSet, generator
 creation, Array.map, EventTarget, IntersectionObserver, ResizeObserver, classList
-and namespace-aware element factories. Their warm native-entry counts rise from
-230 to 324, with 51 cached frontend sources and zero compiler calls; hydration
+namespace-aware element factories, template contents, animation frames,
+async/await, Array.find/some, matchMedia and AbortSignal. Their warm native-entry counts rise from
+230 to 526, with 51 cached frontend sources and zero compiler calls; hydration
 still fails. A fresh ClassList-stage production browser has the same 33 rows and
 zero commit links; its first compiler diagnostic is explicit spread super calls.
 Full-repository coverage, validation of later bindings in a current production build and
