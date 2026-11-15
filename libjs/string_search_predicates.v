@@ -7,12 +7,7 @@ import math
 // observes @@match before coercing the needle, including false overrides on
 // actual RegExp records. Search positions and comparisons use UTF-16 units.
 fn string_search_needle(mut vm VM, value Value) !Utf16String {
-	if value.is_object() {
-		object := value.as_object()
-		matcher := object.get(mut vm, PropertyName.from_symbol(vm.well_known_symbol_match()))!
-		is_regex := if matcher.is_undefined() { object.regexp_object != none } else { matcher.to_boolean() }
-		if is_regex { return vm.throw_error(.type_error, 'searchString must not be a regular expression') }
-	}
+	if value.is_regexp(mut vm)! { return vm.throw_error(.type_error, 'searchString must not be a regular expression') }
 	return value.to_primitive_string(mut vm)!.utf16
 }
 

@@ -96,39 +96,14 @@ fn initialize_regexp_intrinsics(mut vm VM, mut realm Realm) {
 		return Value.from_string(vm.create_string(utf16_concat([utf16_string('/'), source.utf16, utf16_string('/'), flags.utf16])))
 	})
 	constructor := NativeFunction.create_constructor(mut vm, &realm, realm.function_prototype, regexp_constructor_call,
-		fn (mut vm VM, target &Object) !&Object {
-			mut object := regexp_constructor_create(mut vm)!
-			prototype_value := target.get(mut vm, PropertyName.from_str('prototype'))!
-			if prototype_value.is_object() { object.internal_set_prototype_of(prototype_value.as_object()) }
-			return object
-		}, 2, PropertyName.from_str('RegExp'))
+		regexp_constructor_construct, 2, PropertyName.from_str('RegExp'))
 	mut object := constructor.object
 	object.define_direct_property(PropertyName.from_str('prototype'), Value.from_object(prototype), 0)
+	object.define_native_accessor(mut vm, &realm, PropertyName.from_symbol(vm.well_known_symbol_species()), fn (mut vm VM) !Value { return vm.this_value() }, unsafe { nil }, attribute_configurable, realm.function_prototype)
 	prototype.define_direct_property(PropertyName.from_str('constructor'), Value.from_object(object), attribute_writable | attribute_configurable)
 	realm.regexp_constructor = object
 	mut text := realm.string_prototype or { panic('Missing String prototype') }
 	install_intrinsic_method(mut vm, &realm, mut text, 'match', 1, string_prototype_match)
-}
-
-fn regexp_constructor_call(mut vm VM) !Value {
-	pattern := vm.argument(0)
-	if pattern.is_object() && pattern.as_object().regexp_object != none && vm.argument(1).is_undefined() { return pattern }
-	return Value.from_object(regexp_constructor_create(mut vm)!)
-}
-
-fn regexp_constructor_create(mut vm VM) !&Object {
-	pattern := vm.argument(0)
-	flags := vm.argument(1)
-	mut pattern_text := Utf16String.new()
-	mut flag_text := Utf16String.new()
-	if pattern.is_object() {
-		if regex := pattern.as_object().regexp_object {
-			pattern_text = regex.pattern
-			flag_text = regex.flags_text
-		} else { pattern_text = pattern.to_primitive_string(mut vm)!.utf16 }
-	} else if !pattern.is_undefined() { pattern_text = pattern.to_primitive_string(mut vm)!.utf16 }
-	if !flags.is_undefined() { flag_text = flags.to_primitive_string(mut vm)!.utf16 }
-	return create_regexp_object(mut vm, pattern_text, flag_text)
 }
 
 fn regexp_receiver(mut vm VM) !&RegExpObject {
