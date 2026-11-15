@@ -121,8 +121,6 @@ fn array_constructor_with_prototype(mut vm VM, prototype &Object) !Value {
 	return Value.from_object(ArrayObject.create_from(mut vm, realm, values, prototype)!.object)
 }
 
-fn array_index_key(index u64) PropertyName { return PropertyName.from_str(index.str()) }
-
 fn array_receiver(mut vm VM) !(&Object, u64) {
 	object := vm.this_value().to_object_with_prototypes(mut vm, realm_primitive_prototypes())!
 	return object, length_of_array_like(mut vm, object)!

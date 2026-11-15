@@ -54,7 +54,7 @@ pub fn (mut iterator ArrayIterator) next(mut vm VM, array_prototype &Object) !It
 	// Array-like indices can exceed INT32_MAX; keep their exact Number value.
 	index_number := Value.from_f64(f64(index))
 	if iterator.iteration_kind == .key { return IteratorStepValue{value: index_number} }
-	element := array.get(mut vm, PropertyName.from_str(index.str()))!
+	element := array.get(mut vm, array_index_key(index))!
 	if iterator.iteration_kind == .value { return IteratorStepValue{value: element} }
 	pair := ArrayObject.create_from(mut vm, vm.realm(), [index_number, element], array_prototype)!
 	return IteratorStepValue{value: Value.from_object(pair.object)}

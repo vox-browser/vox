@@ -77,6 +77,11 @@ empty environment allocation. Budgeted no-ops retain ordinary boundary ticks;
 the native tier executes them directly. Catch/finally unwinding, retained lexical
 scopes, closures and loop budget cleanup have focused coverage in both GC modes.
 
+Array algorithms and iterators construct numeric property keys directly below
+2^32-1, avoiding decimal/UTF-16 round trips. The boundary and larger array-like
+indices retain complete string keys; proxy/getter ordering and large-index
+regressions pass in both GC modes.
+
 Set/Map operations and live iterators, WeakMap weak keys, ordinary arguments
 objects, default/rest/destructured function parameters, class inheritance,
 super construction (including explicit iterator-based argument spread),
