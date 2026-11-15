@@ -84,3 +84,24 @@ fn test_headers_create_from_init_and_breakable_iteration() {
 	})
 	assert visited.entries == ['x-a:one']
 }
+fn test_headers_iteration_keeps_set_cookie_values_separate_in_sorted_order() {
+	mut headers := Headers.construct([
+		HeaderPair{name: 'Z', value: 'last'},
+		HeaderPair{name: 'Set-Cookie', value: 'a=1'},
+		HeaderPair{name: 'A', value: 'first'},
+		HeaderPair{name: 'set-cookie', value: 'b=2'},
+		HeaderPair{name: 'A', value: 'second'},
+	])!
+	pairs := headers.sorted_and_combined()
+	assert pairs.len == 4
+	assert pairs[0].name == 'a' && pairs[0].value == 'first, second'
+	assert pairs[1].name == 'set-cookie' && pairs[1].value == 'a=1'
+	assert pairs[2].name == 'set-cookie' && pairs[2].value == 'b=2'
+	assert pairs[3].name == 'z' && pairs[3].value == 'last'
+	mut iterator := HeadersIterator.create(headers, .key_and_value)
+	for pair in pairs {
+		step := iterator.next()
+		assert !step.done && step.name == pair.name && step.value == pair.value
+	}
+	assert iterator.next().done
+}
