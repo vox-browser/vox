@@ -19,6 +19,11 @@ fn test_generators_keep_independent_frames_arguments_this_and_lexical_scope() {
 	mut vm := VM.create(); create_simple_execution_context(mut vm)
 	assert generator_eval(mut vm, 'function* g(x){let outer=x;{let inner=yield this.value+arguments[0];yield outer+inner}return x}var a=g.call({value:20},1),b=g.call({value:30},2);a.next().value===21&&b.next().value===32&&a.next(21).value===22&&b.next(10).value===12&&a.next().value===1&&b.next().value===2')!.as_bool()
 	assert generator_eval(mut vm, 'class A{get value(){return 20}}class B extends A{#value=22;*values(){yield super.value;yield this.#value}}var i=new B().values();i.next().value+i.next().value===42')!.as_bool()
+	assert generator_eval(mut vm, 'function factory(){let value=20;return function*(){yield value;yield ()=>++value}}var i=factory()(),a=i.next(),b=i.next(),closure=b.value;i.next();a.value===20&&closure()===21')!.as_bool()
+	global := vm.realm().global_object_record()
+	completed := global.get(mut vm, PropertyName.from_str('i'))!.as_object().generator_execution?
+	assert completed.context == none && completed.function == none
+	assert vm.interpreter_stack().depth() == 0
 }
 
 fn test_generator_throw_and_return_before_start_and_after_completion() {

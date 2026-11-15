@@ -8,9 +8,9 @@ enum GeneratorResumeKind { normal return_ throw_ }
 
 @[heap]
 pub struct GeneratorExecution {
-	function &ECMAScriptFunction
 	realm &Realm
 mut:
+	function ?&ECMAScriptFunction
 	state GeneratorState
 	context ?&ExecutionContext
 }

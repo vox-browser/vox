@@ -53,9 +53,13 @@ fn (mut vm VM) execute_instruction(instruction Instruction, executable &Executab
 	match instruction.op {
 		.generator_start {
 			mut execution := frame.generator_execution or { return error('Generator start requires a generator frame') }
-			prototype := execution.function.object.get(mut vm, PropertyName.from_str('prototype'))!
+			function := execution.function or { return error('Generator start requires its creating function') }
+			prototype := function.object.get(mut vm, PropertyName.from_str('prototype'))!
 			mut object := Object.create(execution.realm, if prototype.is_object() { ?&Object(prototype.as_object()) } else { execution.realm.generator_prototype })
 			object.generator_execution = execution
+			// The saved frame owns the function while suspended. A completed
+			// generator must not retain the creating function's lexical scope.
+			execution.function = none
 			execution.suspend(mut frame, .suspended_start)
 			vm.set_reg(register_return_value, Value.from_object(object))
 			return executable.bytecode_length
