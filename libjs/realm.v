@@ -38,6 +38,8 @@ pub mut:
 	map_iterator_prototype ?&Object
 	weak_map_prototype ?&Object
 	weak_map_constructor ?&Object
+	weak_set_prototype ?&Object
+	weak_set_constructor ?&Object
 	promise_prototype ?&Object
 	promise_constructor ?&Object
 	set_prototype ?&Object
@@ -213,6 +215,7 @@ pub fn initialize_host_defined_realm(mut vm VM, hooks RealmGlobalHooks) !&Execut
 	initialize_set_intrinsics(mut vm, mut realm)
 	initialize_map_intrinsics(mut vm, mut realm)
 	initialize_weak_map_intrinsics(mut vm, mut realm)
+	initialize_weak_set_intrinsics(mut vm, mut realm)
 	initialize_regexp_intrinsics(mut vm, mut realm)
 	realm.json_object = create_json_object(mut vm, realm)
 	initialize_date_intrinsics(mut vm, mut realm)
@@ -297,6 +300,8 @@ pub fn initialize_host_defined_realm(mut vm VM, hooks RealmGlobalHooks) !&Execut
 	// Other intrinsic properties follow constructors in GlobalObject.cpp.
 	global.define_direct_property(PropertyName.from_str('WeakMap'),
 		Value.from_object(realm.weak_map_constructor or { panic('Missing WeakMap constructor') }), attribute_writable | attribute_configurable)
+	global.define_direct_property(PropertyName.from_str('WeakSet'),
+		Value.from_object(realm.weak_set_constructor or { panic('Missing WeakSet constructor') }), attribute_writable | attribute_configurable)
 	global.define_direct_property(PropertyName.from_str('Date'),
 		Value.from_object(realm.date_constructor or { panic('Missing Date constructor') }), attribute_writable | attribute_configurable)
 	global.define_direct_property(PropertyName.from_str('Promise'),

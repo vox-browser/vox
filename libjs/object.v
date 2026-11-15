@@ -165,6 +165,7 @@ pub mut:
 	keyed_collection     ?&KeyedCollection
 	keyed_iterator       ?&KeyedCollectionIterator
 	weak_map             ?&WeakMapObject
+	weak_set             ?&WeakSetObject
 	boolean_object       ?&BooleanObject // [[BooleanData]]
 	date_object          ?&DateObject // [[DateValue]]
 	number_object        ?&NumberObject  // [[NumberData]]

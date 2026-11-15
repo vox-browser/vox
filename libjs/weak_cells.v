@@ -40,6 +40,7 @@ fn weak_cell_epoch() u64 {
 struct WeakCollectionRegistry {
 mut:
 	collections []WeakCellReference
+	sets []WeakCellReference
 	epoch u64
 }
 
@@ -64,4 +65,15 @@ fn (mut vm VM) sweep_weak_collections() {
 	}
 	for index in live .. registry.collections.len { registry.collections[index] = WeakCellReference{} }
 	registry.collections.trim(live)
+	live = 0
+	for reference in registry.sets {
+		cell := reference.cell()
+		if cell == unsafe { nil } { continue }
+		mut collection := unsafe { &WeakSetObject(cell) }
+		collection.remove_dead_cells()
+		registry.sets[live] = reference
+		live++
+	}
+	for index in live .. registry.sets.len { registry.sets[index] = WeakCellReference{} }
+	registry.sets.trim(live)
 }
