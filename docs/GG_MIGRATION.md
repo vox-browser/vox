@@ -3050,3 +3050,18 @@ repeat pair differs at 1,540 pixels; its rendering/source failures and the
 remaining vlang/Reddit/historical repeat issues stay open. This supersedes the
 preceding pending-production status. See the
 [audit](OPTIMIZED_SITES_PIXELS_2026_11_12.md#production-confirmation-of-the-27-pixel-result-2026-11-15).
+
+
+### Opaque lossless WebP sampling and source coverage, 2026-11-15
+
+`c242016bb` restores sampled uploads for downscaled opaque VP8L images. Two
+unchanged Brave mip references improve from 32,399/57,599 differing pixels to
+zero, twice. Eligibility/cache ownership tests and both GPU references at 1×/4×
+pass with arena poisoning. A 44-workload diagnostic cohort retains every other
+reference count; CNN and vlang.io remain open. Production confirmation is pending.
+
+`e0fec36b2` adds package-wide compiled V witnesses (23 Python tests). The restored
+production baseline passes 122 rendering witnesses including all 64 consumed GG
+V sources; the experimental shader bundle is explicitly rejected. Embedded
+shader/library identity remains a separate check. See the
+[audit](OPTIMIZED_SITES_PIXELS_2026_11_12.md#opaque-lossless-webp-sampling-2026-11-15).

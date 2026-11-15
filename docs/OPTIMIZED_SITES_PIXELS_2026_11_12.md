@@ -2406,3 +2406,87 @@ captures are retained alongside the preceding evidence under
 `raw/jpeg-sample-precision-20261115/production27-summary.json` in the local
 performance evidence directory. Completed production-check scratch is archived
 and removed. The ordinary documentation hook requests the next coalesced build.
+
+
+## Restored shader baseline and complete GG witnesses, 2026-11-15
+
+No additional scene-gradient correction was accepted. Broader linear localization
+introduces one pixel at (492, 557); radial localization, equivalent center/extent
+forms and a calibrated precomputed colorizer leave the three underlay differences
+unchanged. Tracing confirms those three pixels are already wrong after radial
+painting, with exact incoming backgrounds. All experiments are reverted; no
+reference, tolerance or coordinate-specific color adjustment is accepted.
+
+An automatic production build consumed a temporary staged GG colorizer experiment
+during this audit. Executable `2827b9be`, receipt `20261115-021725-4ab63d5a`,
+is rejected: vlang.io differs at 490,268 pixels. The previous 62-file manual source
+shortlist omitted `gpu_gradient.v`; successful process exits and unchanged
+shortlisted sources did not establish correct rendering. This failed cohort and
+its consumed-source receipts are retained.
+
+`e0fec36b2` adds package-wide compiled V source witnesses, with 23 focused Python
+tests passing. The comparison driver now checks all 64 consumed GG V files,
+including staged adapters and compiler-vlib sources, before capture and retains
+source pins throughout. It rejects the actual bad receipt at `gpu_gradient.v`
+and accepts the restored one. This check covers V buffers; embedded resources
+and native libraries require separate identity checks. All 24 current Metal
+shader payloads are found byte-for-byte in the restored executable.
+
+Restored production executable
+`73e7c2752a11a78cd30d8ab0cdf62482747a4efa433700e1ca26b3b3fcb4f409`,
+receipt `20261115-023044-27db595c`, uses literal V `-prod`, C and one C unit.
+Thirty-three workloads captured twice retain every preceding reference count:
+four archived sites exact, vlang.io 27, CNN 175,866. All 66 native guards and
+both enclosing exits are zero; 122 compiled rendering witnesses and 130 captured
+source/tool witnesses pass. CNN's pair still differs at 419 pixels. No extra
+manual production build was requested.
+
+## Opaque lossless WebP sampling, 2026-11-15
+
+`c242016bb` routes downscaled, opaque, simple VP8L images through the existing
+sampled-image upload and CPU mip chain. Previously they used the generic image
+replay filter. Uploads retain document, navigation, resource and compositor
+scope, and own their pixels beyond the scratch decode scope. Lossy, alpha,
+profiled/extended and animated streams, cropped sources and other unsupported
+paint states keep their existing paths. CNN's major photographs are lossy WebP;
+this correction does not fix them.
+
+| Unchanged Brave reference | Before | After, each of two fresh native captures |
+| --- | ---: | ---: |
+| Opaque WebP mip texture, 240×135 | 32,399 | **0** |
+| Opaque WebP mip blending, 320×180 | 57,599 | **0** |
+
+Two fresh Brave captures per four WebP controls repeat exactly and match their
+original references. Two browser-focused tests cover eligibility, cache ownership
+and compositor scope. The GPU test checks both lossless references at 1× and 4×
+sampling. All focused builds and arena-poisoned runtime guards exit zero.
+The first probe compile missed its decoder header; another probe loaded an
+unrelated 4×2 asset. Both invalid attempts are retained alongside the corrected
+fixture calibration.
+
+Diagnostic executable
+`a1f5d135667093a3a1329736bcf43a612fd5c729f0293dfccedcce503d7a2429`
+passes a 44-workload, 88-capture check with 134 stable source/tool witnesses.
+All 89 capture/startup guards, driver and outer guard exit zero. All preceding
+33 reference counts and five other WebP counts remain unchanged; four PNG
+sampling controls are exact. Forty-three pairs repeat exactly; CNN differs at
+1,406 pixels between native captures. Vlang.io's PNG is unchanged from the
+restored production result. Its 23 JPEG pixels still include the nine historical
+introduced pixels, and its four scene pixels remain.
+
+The normal commit hook requests production validation; this lossless WebP result
+is **diagnostic pending production**. One earlier managed build rejected source
+membership changes and retained the completed bundle; its failed receipt remains
+in the evidence. No duplicate manual build was queued. CNN's source/replay and
+repeat failures, missing Reddit fixture, historical tall-shadow repeat failure
+and all-site equality remain open. These frozen-page checks supply no live-site,
+scripting or performance acceptance.
+
+Local evidence is under
+`docs/performance/vlang-gradients-20261114/raw/scene-coordinates-20261115/`:
+restored/rejected production summaries, WebP baseline/candidate summaries,
+source and decoder identities, commands, actual exits, all failed probes,
+unchanged-reference PNGs and verified archival manifests. All 99 owned scratch
+roots (10,073 file records) were hashed; selected evidence was copied and
+reverified before removing jobs, binaries and guard files. Temporary source and
+test-harness links are removed.
