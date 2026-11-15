@@ -84,6 +84,7 @@ mut:
 	retired         bool
 	frame           ?&painting.MediaVideoFrame
 	mime_type       string = 'video/mp4'
+	resource_directory string
 }
 
 fn browser_native_media_type(type_ string) html.CanPlayTypeResult {
@@ -114,6 +115,10 @@ fn (mut player BrowserMediaPlayback) close() {
 		if player.handle != unsafe { nil } { C.native_media_close(player.handle) }
 	}
 	player.handle = unsafe { nil }
+	if player.resource_directory != '' {
+		os.rmdir_all(player.resource_directory) or {}
+		player.resource_directory = ''
+	}
 	player.frame = none
 	player.metadata_loaded = false
 }
@@ -306,10 +311,18 @@ fn (mut owner BrowserMediaOwner) install_native_media_player(element &dom.Elemen
 			}
 			p.handle = if p.mime_type == 'video/webm' {
 				browser_open_webm_resource(source, p.element.document().url.serialize())!
+			} else if browser_media_requires_browser_transport(source) {
+				resource := browser_stage_native_media_resource(source,
+					p.element.document().url.serialize())!
+				p.resource_directory = resource.directory
+				C.native_media_open(resource.url.str)
 			} else {
 				C.native_media_open(source.serialize().str)
 			}
-			if p.handle == unsafe { nil } { return error('Unsupported native media URL') }
+			if p.handle == unsafe { nil } {
+				p.close()
+				return error('Unsupported native media URL')
+			}
 			C.native_wake_browser_after(16)
 			return html.MediaResourceResponse{ mime_type: p.mime_type, metadata_pending: true }
 		})

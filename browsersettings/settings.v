@@ -199,8 +199,17 @@ pub fn current() Proxy {
 	return state.proxy
 }
 
-// None preserves ambient proxies; an empty string explicitly selects direct
-// connections. Readers snapshot under the lock while requests run on workers.
+// None preserves ambient routing; a configured profile owns proxy policy even
+// when it explicitly disables proxying or limits it to selected destinations.
+pub fn proxy_policy_override() ?bool {
+	mut state := unsafe { runtime }
+	state.lock.lock()
+	defer { state.lock.unlock() }
+	state.refresh()
+	if !state.configured { return none }
+	return state.proxy.enabled
+}
+
 pub fn proxy_override(resource_url string) ?string {
 	mut state := unsafe { runtime }
 	state.lock.lock()
