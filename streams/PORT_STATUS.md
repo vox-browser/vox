@@ -2,7 +2,7 @@
 
 Upstream reference: `~/code/3rd/ladybird/Libraries/LibWeb/Streams`
 
-Translation workspace: `~/code/vox2/streams`
+Translation workspace: `~/code/vox/streams`
 Audited: 2026-09-12
 Pending callback re-audit: 2026-10-02
 Read-loop and byte-reading owner prerequisites: 2026-10-04
@@ -105,6 +105,25 @@ source/sink/transformer, reader, iterator, pipe, and pair dictionaries used by
 those interfaces.
 
 ## Boundary
+
+The native LibJS bridge added on 2026-11-16 exposes Blob/Fetch byte streams
+through native default readers, locked/cancel/tee operations, stable wrappers
+and real JS read/closed/cancel Promises. Pending reads are traced ReadRequest
+records. WebIDL native settlement observers are detachable records, with no V
+closure per read or mirrored capability. VM settlement does not checkpoint JS
+reactions during a native enqueue/close task. Released-reader and locked-stream
+rejections retain typed SimpleException records and diagnostic strings.
+Blob delivery tasks now own their closures, and VM teardown removes them,
+detaches pending observers, releases reader locks and clears wrapper roots.
+
+This LibJS bridge is partial. Public ReadableStream construction and source/
+controller callbacks, BYOB wrappers, pipeTo/pipeThrough, async iteration,
+WritableStream/TransformStream and general cross-realm behavior remain open.
+Twenty-four regression functions across WebIDL and libjsdom are prepared but
+uncompiled and unexecuted under the user's hold. Final normal and production/
+preallocation GC-none compiler-only import checks pass; these do not establish
+runtime or browser parity. See the
+[native reader/Blob/Fetch continuation](../docs/LIBJS_GITHUB_RUNTIME_20261115.md#native-default-readers-and-blob-fetch-stream-continuation).
 
 Ladybird represents chunks as arbitrary LibJS values. The V package now also
 carries real owning JSC value references through its WebIDL/Streams boundary;

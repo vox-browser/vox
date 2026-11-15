@@ -2836,3 +2836,26 @@ remaining JS/Web/Intl/rendering work are still open. The latest inspected
 production bundle lacks all eleven selected changed implementation inputs.
 The GitHub/Brave compiled-JS parity goal remains incomplete; see the
 [Blob/Fetch continuation](../docs/LIBJS_GITHUB_RUNTIME_20261115.md#native-blob-object-url-and-fetch-continuation).
+
+The next native stream slice adds traced/detachable WebIDL Promise settlement
+observers, native default-reader ReadRequest records, stable native-to-JS
+Promise projection, locked/cancel/tee operations and reader closed/release
+behavior. Read results use actual Uint8Array storage and preserve native error
+records or original author reasons. Native settlement uses the bounded VM entry
+without flushing reaction jobs during an enqueue/close task. Blob.stream now
+returns the native HTML byte stream with an owned FileReading task; Request/
+Response.body getters and readable-stream body inputs use the actual Fetch
+records. Host close discards delivery tasks, detaches observers, releases reader
+locks, errors retained streams and clears the bridge's roots.
+
+Twenty-four focused regression functions remain uncompiled and unexecuted.
+Eight compiler-only attempts are retained: the initial observer normal and
+production checks rejected an immutable local sink array, corrected before its
+commit; the remaining six passed. All final checks cover the normal import
+graph and exclude tests, C linking and execution. Public ReadableStream/source/
+controller construction, BYOB/pipe/async iteration, other stream classes,
+FormData, foreign-realm semantics and complete native ownership remain open.
+The latest inspected production manifest matches none of thirteen selected
+changed inputs. No new cache speed, full GitHub execution or Brave pixel
+result is claimed. See the
+[stream continuation](../docs/LIBJS_GITHUB_RUNTIME_20261115.md#native-default-readers-and-blob-fetch-stream-continuation).

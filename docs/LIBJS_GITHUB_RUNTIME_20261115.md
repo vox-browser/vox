@@ -1873,3 +1873,90 @@ five module errors, before these slices. Acceptance still requires 33 rows,
 Brave content audit and zero differing pixels, then matched performance
 evidence. Full GitHub execution, faster compiled revisits and pixel-perfect
 Brave rendering remain unverified and unachieved.
+
+## Native default readers and Blob Fetch stream continuation
+
+This continuation spans 2026-11-15/16 and retains the user's test hold. No
+regression source was compiled or run, no JavaScript was evaluated, and no
+browser launch, capture, comparison or performance trial was performed.
+
+| Commit | Implemented behavior |
+| --- | --- |
+| `0ee818076` | Add traced, detachable WebIDL native Promise settlement observers. Existing callback reactions keep their behavior; native VM mirrors no longer require escaping V observer closures. |
+| `2b11fe072` | Bridge native readable streams and default readers with stable wrapper/closed-Promise identity, locked/cancel/tee operations, typed release/lock errors and pending native ReadRequest records. Chunk results use real Uint8Arrays. Capability settlement enters the bounded VM without flushing JS reactions partway through a native enqueue/close task. Close detaches observers and releases pending reader roots. |
+| `07da5df1d` | Expose Blob.stream through the actual HTML byte stream and FileReading task. Delivery tasks own their callback captures and can be discarded at VM teardown. Request/Response.body getters expose native streams; readable-stream body inputs preserve late lock/disturbed checks. Teardown errors retained streams and clears wrapper roots. |
+
+The frozen original repository script contains one .getReader() call in one
+body: the repository polling path streams an error response through the native
+TextDecoder. There are no textual ReadableStream identifiers, .stream() calls or
+for-await loops in these frozen bodies. This scan only describes source text;
+it does not prove that a path ran or identify the next runtime failure. The
+body hash and first match context remain local in
+`docs/performance/libjs-stream-bindings-20261116/static-source-scan.json`.
+
+Twenty-four regression functions are prepared: five native Promise observer,
+nine native reader and ten Blob/Fetch stream cases. They cover registration/
+removal/adoption, real Promise and wrapper identity, delayed JS reaction jobs,
+lock/release/reacquisition, cancellation, original abort values, native byte
+results, file-reading delivery, empty streams, body-use rules, clone/tee state,
+late body locking, arena/task teardown and compiler-disabled second-VM cache
+revisits. None is compiled or executed; cache-hit assertions are pending source.
+
+Eight compiler-only attempts and raw logs are preserved byte-identically with
+a hashed index. Both initial observer attempts rejected an immutable local
+array used for mutable interface dispatch. It was corrected before the
+observer commit. The remaining six checks passed:
+
+| Compiler-only check | Child exit | Seconds | Peak sampled RSS bytes |
+| --- | ---: | ---: | ---: |
+| Native observers initial normal | 1 | 12.043 | 1,521,876,992 |
+| Native observers initial production | 1 | 9.050 | 1,798,520,832 |
+| Native observers corrected normal | 0 | 16.319 | 5,284,085,760 |
+| Native observers corrected production | 0 | 18.657 | 5,567,414,272 |
+| Reader bridge normal | 0 | 27.112 | 5,367,545,856 |
+| Reader bridge production/prealloc/no-GC | 0 | 23.585 | 5,639,782,400 |
+| Blob/Fetch streams normal | 0 | 22.289 | 5,358,272,512 |
+| Blob/Fetch streams production/prealloc/no-GC | 0 | 24.385 | 5,636,161,536 |
+
+Each check uses `V3_STR_CAP=1 VJOBS=1`, current V and the normal import
+program `tools/libjs_github_revisit.v` with `-w -n -b c -no-parallel
+-cc clang -check -memory-limit 10G -enable-globals`. Production adds
+`-prod -prealloc -gc none`. Every attempt has its own memory-guard lock/
+report, uses the default 12 GiB process-tree RSS budget, and reports
+`reason=completed` with the child exit above. These checks exclude `_test.v`,
+C compilation/linking and runtime execution. Compiler durations are not JS
+timings. Completed per-job Build artifacts were removed after preserving the
+evidence in local `docs/performance/libjs-stream-bindings-20261116/`.
+
+At implementation revision `07da5df1dd8b5ba8bab69a2fc3be3bc60f671d46`, the
+latest completed production executable inspected statically has SHA-256
+`523e30ddb154f3a25f336661a213bc912b3eaddd409226ab886f19f440cff6f7`.
+Its actual hash matches the receipt at
+`Build/production-build/receipts/20261115-234808-804cb6d9/frozen-compile.json`.
+The build uses one C unit and literal V `-prod`. The sealed consumed-source
+manifest matches none of thirteen selected changed implementation files.
+Executable and latest-receipt identity stayed unchanged throughout the audit.
+The available bundle cannot validate this new code. All three commits requested
+the managed coalesced rebuild; no extra manual build or fresh process was
+introduced.
+
+This completes the default-reader bridge for native Blob/Fetch producers,
+not complete Streams/WebIDL parity. Public ReadableStream construction and
+source/controller callbacks, BYOB readers, pipe methods, async iteration,
+WritableStream/TransformStream, foreign-realm behavior, native ownership/
+collection, FormData and other JS/Web/Intl/rendering work remain open. The
+bridge rejects unbound BYOB mode explicitly. It adds no JSC execution route;
+selected-path execution and absence of fallback still need an allowed runtime
+diagnostic.
+
+The original fixture manifest remains
+`893e042c4f31e1b7fb984c81cf8f6a2a7eb65d790f7c3f4cc3e372c065de302d`
+and the unchanged Brave PNG remains
+`649abff51549508516e2e0681866ba81ce69e7112cfa8dc3446b9b76c99be3d3`.
+The last executed GitHub observation is still historical: 672 warm native
+entries, 51 frontend hits, zero compiler calls, 33 rows, zero commit links and
+five module errors, before these implementation slices. Acceptance still
+requires 33 rows, 56 commit links, current README, active controls, zero errors,
+the unchanged Brave content audit and zero differing pixels, followed by
+matched performance evidence. GitHub hydration, faster compiled revisits and
+pixel-perfect Brave rendering remain unverified and unachieved.

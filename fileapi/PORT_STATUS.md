@@ -29,12 +29,17 @@ in libjsdom. Reads queue owned FileReading tasks, and host close discards
 pending tasks and VM roots. URL.createObjectURL/revokeObjectURL use the actual
 native store and document settings; entries survive VM wrapper teardown until
 native document cleanup or explicit revocation. Fetch now accepts Blob bodies
-and returns native Blob results. Blob.stream, native LibJS File/FileReader
-bindings, foreign-realm WebIDL fallback and Blob History serialization remain
-open. New focused regression source is uncompiled and unexecuted under the
-user's hold; normal/production compiler-only checks do not establish runtime
+and returns native Blob results. The 2026-11-16 continuation also binds
+Blob.stream to the native HTML byte stream and owned FileReading task, including
+default-reader Promises, cancellation and teeing. Host close discards outstanding
+delivery tasks. Public ReadableStream construction, BYOB/pipe/async-iterator
+bindings, native LibJS File/FileReader, foreign-realm WebIDL fallback and Blob
+History serialization remain open. New focused regression source is uncompiled
+and unexecuted under the user's hold; normal/production compiler-only checks do not establish runtime
 parity. See the
 [native Blob/Fetch continuation](../docs/LIBJS_GITHUB_RUNTIME_20261115.md#native-blob-object-url-and-fetch-continuation).
+The [stream continuation](../docs/LIBJS_GITHUB_RUNTIME_20261115.md#native-default-readers-and-blob-fetch-stream-continuation)
+records the later compiler-only evidence and remaining runtime boundaries.
 
 Blob/File public constructors now follow File API's printable-ASCII gate and
 ASCII lowercase conversion, including parameter values and non-MIME strings.
