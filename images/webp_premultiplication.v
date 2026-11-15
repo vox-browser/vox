@@ -1,6 +1,7 @@
 module main
 
 import dom
+import imageraster
 
 // Chromium asks libwebp for MODE_rgbA/MODE_bgrA. Those modes truncate alpha
 // multiplication, unlike Skia's rounded conversion from straight RGBA.
@@ -17,6 +18,8 @@ fn chromium_webp_paint_pixels(pixels []u8) []u8 {
 }
 
 fn chromium_webp_premultiplies_at_decode(bytes []u8) bool {
-	// ICC-tagged images decode straight before their color transform.
+	// Canonical sRGB profiles need no transform; other ICC-tagged images
+	// decode straight before their existing color-managed conversion.
 	return !(bytes.len >= 21 && bytes[12..16].bytestr() == 'VP8X' && bytes[20] & 32 != 0)
+		|| imageraster.webp_lossless_srgb_profile(bytes)
 }

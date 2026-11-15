@@ -29,7 +29,7 @@ fn (mut app BrowserApp) sampled_lossless_webp_decode(url string, image &gg.Image
 		return none
 	}
 	bytes := app.background_image_bytes(url) or { return none }
-	if !lossless_webp_sampling_supported(bytes) { return none }
+	if !lossless_webp_sampling_supported(bytes) && !imageraster.webp_lossless_srgb_profile(bytes) { return none }
 	if width >= image.width && height >= image.height {
 		if width > 4096 || height > 4096 { return none }
 		// Marker 7 already owns libwebp-style premultiplied rows. Sample them

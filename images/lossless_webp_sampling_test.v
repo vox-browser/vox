@@ -66,15 +66,10 @@ fn test_lossless_webp_alpha_upload_preserves_existing_premultiplication() {
 		document.set_font_rendering_policy(.chromium)
 		mut app := BrowserApp{ document: document, ctx: gg.new_context(native_rendering: true) }
 		fixture := os.read_file(os.join_path(@VMODROOT, 'Tests/Browser/Brave/input/webp-alpha-premultiplication.html'))!
-		for i, source in fixture.split('src="')[1..] {
+		for source in fixture.split('src="')[1..] {
 			address := source.all_before('"')
 			bytes := app.background_image_bytes(address)!
 			image := app.create_image_from_resource_bytes(address, bytes)!
-			if i == 3 {
-				assert image.nr_channels == 6
-				assert app.sampled_lossless_webp_decode(address, &image, 76, 38) == none
-				continue
-			}
 			assert image.nr_channels == 7 && image.width == 4 && image.height == 2
 			before := unsafe { (&u8(image.data)).vbytes(32).clone() }
 			upload := app.sampled_lossless_webp_decode(address, &image, 76, 38) or { panic('alpha upload') }

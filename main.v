@@ -23,6 +23,7 @@ import gg
 import highresolutiontime
 import html
 import http
+import imageraster
 import infra
 import layout
 import loader
@@ -74,6 +75,7 @@ fn C.native_decode_video_frame(path &char, seconds f64, output_width &int, outpu
 
 fn C.native_free_video_frame(pixels &u8)
 fn C.native_decode_webp_rgba(bytes &u8, length uint, width &int, height &int, pitch &int) &u8
+fn C.native_decode_webp_raw_rgba(bytes &u8, length uint, width &int, height &int, pitch &int) &u8
 fn C.native_free_webp_pixels(pixels &u8)
 fn C.native_decode_webp_yuv(bytes &u8, length uint, width &int, height &int, size &int) &u8
 fn C.native_webp_yuv_paint_supported() int
@@ -1617,7 +1619,15 @@ fn browser_decode_raster_image_bytes(bytes []u8) !&dom.Bitmap_ {
 			mut width := 0
 			mut height := 0
 			mut pitch := 0
-			decoded := C.native_decode_webp_rgba(bytes.data, uint(bytes.len), &width, &height, &pitch)
+			// Canonical sRGB ICC profiles need no color conversion. Preserve the
+			// decoder's straight rows instead of an 8-bit premultiply round trip.
+			mut decoded := unsafe { &u8(nil) }
+			if imageraster.webp_lossless_srgb_profile(bytes) {
+				decoded = C.native_decode_webp_raw_rgba(bytes.data, uint(bytes.len), &width, &height, &pitch)
+			}
+			if decoded == unsafe { nil } {
+				decoded = C.native_decode_webp_rgba(bytes.data, uint(bytes.len), &width, &height, &pitch)
+			}
 			if decoded == unsafe { nil } { return error('Invalid or unsupported WebP image') }
 			defer { C.native_free_webp_pixels(decoded) }
 			mut pixels := []u8{len: pitch * height}
