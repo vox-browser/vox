@@ -21,5 +21,5 @@ fn chromium_webp_premultiplies_at_decode(bytes []u8) bool {
 	// Canonical sRGB profiles need no transform; other ICC-tagged images
 	// decode straight before their existing color-managed conversion.
 	return !(bytes.len >= 21 && bytes[12..16].bytestr() == 'VP8X' && bytes[20] & 32 != 0)
-		|| imageraster.webp_lossless_srgb_profile(bytes)
+		|| imageraster.webp_srgb_profile(bytes)
 }

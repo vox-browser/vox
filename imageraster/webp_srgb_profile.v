@@ -3,10 +3,21 @@ module imageraster
 import math
 
 // A conservative subset of SkColorSpace's sRGB canonicalization: RGB/XYZ
-// matrix profiles with parametric sRGB curves. Inspect the numerical tags,
+// matrix profiles with parametric or sampled sRGB curves. Inspect the numerical tags,
 // never the profile's description, producer, date or encoded-image identity.
 // LUTs, CICP and other transfer functions keep the color-managed decoder.
 pub fn webp_lossless_srgb_profile(bytes []u8) bool {
+	return webp_static_srgb_profile(bytes, false)
+}
+
+// Opaque VP8 can also avoid an unnecessary color-managed RGB decode. Keep
+// this separate from lossless upload eligibility: tagged lossy images still
+// retain the ordinary RGB painter, not the untagged YUV sampler.
+pub fn webp_srgb_profile(bytes []u8) bool {
+	return webp_static_srgb_profile(bytes, true)
+}
+
+fn webp_static_srgb_profile(bytes []u8, allow_lossy bool) bool {
 	if bytes.len < 30 || bytes[..4].bytestr() != 'RIFF'
 		|| bytes[8..16].bytestr() != 'WEBPVP8X' || webp_le32(bytes, 16) != 10
 		|| u64(webp_le32(bytes, 4)) + 8 != u64(bytes.len)
@@ -26,6 +37,10 @@ pub fn webp_lossless_srgb_profile(bytes []u8) bool {
 		} else if kind == 'VP8L' {
 			if image || size < 5 || bytes[at + 8] != 0x2f
 				|| bytes[at + 12] & 0xe0 != 0 { return false }
+			image = true
+		} else if kind == 'VP8 ' && allow_lossy && bytes[20] & 16 == 0 {
+			if image || size < 10 || bytes[at + 8] & 1 != 0
+				|| bytes[at + 11..at + 14] != [u8(0x9d), 1, 0x2a] { return false }
 			image = true
 		} else if kind !in ['EXIF', 'XMP '] {
 			return false
@@ -79,11 +94,30 @@ fn icc_matrix_is_srgb(bytes []u8) bool {
 			}
 			seen |= u32(1) << column
 		} else if kind in ['rTRC', 'gTRC', 'bTRC'] {
-			if !icc_parametric_is_srgb(data) { return false }
+			if !icc_curve_is_srgb(data) { return false }
 			seen |= if kind == 'rTRC' { u32(8) } else if kind == 'gTRC' { u32(16) } else { u32(32) }
 		}
 	}
 	return seen == 63
+}
+
+fn icc_curve_is_srgb(bytes []u8) bool {
+	if bytes.len < 12 { return false }
+	if bytes[..4].bytestr() == 'para' { return icc_parametric_is_srgb(bytes) }
+	if bytes[..8] != 'curv\x00\x00\x00\x00'.bytes() { return false }
+	count := u64(png_u32(bytes, 8))
+	// Sparse endpoint tables cannot establish the shape between their knots.
+	if count < 256 || count > 4096 || 12 + count * 2 != u64(bytes.len) { return false }
+	mut previous := -1
+	for i in 0 .. int(count) {
+		value := int(bytes[12 + i * 2]) * 256 + int(bytes[13 + i * 2])
+		if value < previous { return false }
+		previous = value
+		x := f64(i) / f64(count - 1)
+		expected := if x <= .04045 { x / 12.92 } else { math.pow((x + .055) / 1.055, 2.4) }
+		if math.abs(f64(value) / 65535 - expected) >= 1.0 / 4096 { return false }
+	}
+	return true
 }
 
 fn icc_parametric_is_srgb(bytes []u8) bool {
