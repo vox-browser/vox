@@ -2966,3 +2966,92 @@ The second verified archive hashes 6,014 file records across 11 production
 job roots and preserves 1,859 selected files (44,225,272 bytes), including
 the interrupted attempt. Copies are hash-verified before deleting all owned
 production outputs, guards and locks. No owned scratch jobs remain.
+
+## Native media routing in frozen CNN replay, 2026-11-15
+
+`de138d5e5` resolves the recurring native-repeat defect in the registered CNN
+replay. The command trace identifies the unstable (460, 753)–(563, 767) region
+as `draw_video`, with authored geometry (460.265625, 752.59375, 103.46875,
+58.1875). Earlier descriptions identifying it as the train photograph were
+incorrect. The train thumbnail is next to it at (588, 753), has identical
+decoded-row SHA-256 in both processes, and consistently uses the image sampler.
+The prior static WebP fixes and their exact control remain valid; they did not
+establish video stability.
+
+The frozen HTML contains four muted autoplay videos, but its manifest contains
+no MP4 responses. The old native player passes remote URLs directly to
+AVFoundation. The browser trace publishes changing video frames while the
+replay proxy sees 82 requests and zero MP4 requests. Two fresh Brave
+original-origin diagnostic processes, using the same archive, report the
+visible videos paused at time zero, readiness zero and network state 3. This
+read-only diagnostic does not replace the existing full-uBO reference. The
+registered reference and all tolerances remain unchanged.
+
+The correction detects saved or ambient proxy policy, including scopes that
+may apply after an initially bypassed redirect. Remote progressive media then
+uses the ordinary browser request path, preserving proxy resolution, TLS,
+filtering, redirects and HTTP errors. The native decoder receives an owned
+local file; reset/close removes it after closing the native handle. The media
+element retains its original `currentSrc`. Fetch/decode failures do not fall
+back to a remote native URL. Explicit direct overrides, universal environment
+bypasses, local files, ordinary media with no active proxy policy and the
+existing WebM path retain their applicable native/transport behavior.
+
+This implementation buffers progressive responses before native decoding.
+Proxied playlists explicitly fail until a streaming resource loader is
+implemented; they must not bypass the proxy. Unproxied native HLS remains on
+its previous path. Full media streaming and transport CORS parity are not
+claimed. No native painter, shader, author-script policy or animation
+preference changes were made.
+
+The proxy-policy test and real native MP4 integration test pass. The latter
+uses a generated H.264 movie, a local SOCKS proxy and an unresolvable redirected
+host, verifies native dimensions and original `currentSrc`, checks the retained
+file's bytes and deletion on close, rejects missing/playlist responses, and
+proves a refused proxy cannot fall back to a reachable local origin. Both
+focused runtimes pass under 3 GiB guards and arena poisoning. An earlier
+poisoned-arena fault exposed a scratch-allocated error escaping the new staging
+path; that failed run is retained. The corrected implementation copies error
+messages/interfaces into persistent storage, and the final test also reads the
+returned HTTP error after the scratch arena retires.
+
+The final C/O0 diagnostic executable is
+`05a631a537bb5e91f7be665dba338bb99cc7b7d809fa1c38e5574ddca269999b`.
+Its compiler buffers witness 177 consumed V inputs, including media, network,
+proxy settings and rendering. The final native test has 178 selected inputs.
+The 45-workload/90-capture cohort retains 311 stable source/tool/shader/archive
+pins. All 91 native startup/capture guards, the driver and outer guard exit zero.
+**CNN improves 165,579→164,021 twice: 1,558 corrected, zero introduced. All 45
+native pairs repeat exactly.** All 44 non-CNN PNGs match preceding production
+captures exactly. The four exact site archives and the full WebP control stay
+exact; Vlang retains 27 pixels, including its historical introduced JPEG pixels.
+Engadget's ICC control and the root-raster WebP control retain their counts.
+
+Across both CNN captures, all eight MP4 requests reach the replay proxy and
+receive 404 with `archived=false`, matching its missing-media policy. This
+restores the configured workload boundary; it is not a raster optimization or
+instruction-comparison result. Earlier CNN native-replay checks must not be
+called strictly offline merely because the HTML/image archive was sealed.
+The original source/replay mismatch and missing media remain explicit archive
+limitations; no new source or live-site parity claim is made.
+
+The latest completed production bundle checked here is `2e089712`, whose sealed
+inputs lack this correction. It cannot validate the new code. The ordinary
+managed commit hook requests the coalesced C/literal V `-prod` rebuild;
+**production confirmation is pending**, with no duplicate manual build queued.
+
+Evidence is local under
+`docs/performance/vlang-gradients-20261114/raw/cnn-request-20261115/`, including
+both Brave media observations, command/row traces, source witnesses, successful
+and failed checks, route logs, unchanged-reference transitions and cleanup
+records. Initial disk pressure and a failed default-backend compiler bootstrap
+are retained; the final focused/browser builds use explicit C and no compiler
+fallback. All-site pixel equality remains open: CNN's 164,021 rendering pixels,
+its source/replay limitations, Vlang, missing Reddit evidence and prior controls.
+
+The first verified cleanup hashes 461 file records across 11 probe roots and
+preserves 67 selected files (4,483,688 bytes). Final cleanup hashes 3,544
+records across 35 owned job roots and preserves 1,054 selected files
+(27,215,541 bytes). Copies are verified before deleting owned outputs,
+generated C, binaries, guards and locks. The test alias and Python bytecode
+are removed. Shared bundles, libraries and dependencies are retained.

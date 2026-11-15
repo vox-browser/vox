@@ -12,6 +12,14 @@ then makes the complete browser capture exact twice, including its clipped
 bottom copy, now confirmed in production `2e089712`. See the
 [profiled WebP audit](../../../docs/OPTIMIZED_SITES_PIXELS_2026_11_12.md#sampled-srgb-profiles-and-rgb-webp-minification-2026-11-15).
 
+The registered CNN replay's unstable region at (460, 753) is an autoplay video;
+the train thumbnail is at (588, 753). `webp-srgb-table` remains a static image
+sampling control and does not establish video stability. `de138d5e5` routes
+native media through browser fetching when proxy policy may apply, enforcing
+the archive's missing-MP4 failures through browser transport. Its focused
+and 45-workload diagnostic pairs repeat exactly; production confirmation is
+pending. See the [media audit](../../../docs/OPTIMIZED_SITES_PIXELS_2026_11_12.md#native-media-routing-in-frozen-cnn-replay-2026-11-15).
+
 Many fixtures below were first matched through the Skia text bridge and the
 Graphite/Dawn GPU helpers. Vox no longer builds or loads either; the native
 library checks named in older entries (`tools/test_skia_*.py`,

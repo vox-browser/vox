@@ -12,8 +12,9 @@ Lobsters and Wikipedia exact in two fresh captures each. Vlang.io has **27 diffe
 pixels in production**, down from the previously verified 810. The heading fix
 removes its final text difference. Its 23 JPEG pixels still include nine
 one-level differences introduced by the fractional-texture slice; four scene
-pixels also remain. CNN retains its rendering, source/replay and native-repeat
-failures. Reddit remains unverified (missing historical fixture, earlier live
+pixels also remain. CNN retains rendering and source/replay failures; its
+native-repeat correction is verified in diagnostics, pending production.
+Reddit remains unverified (missing historical fixture, earlier live
 HTTP 403). A separate tall-shadow control has a retained baseline repeat failure.
 Lossless and native-size/half-size lossy WebP controls now pass in production.
 All four images in the alpha WebP control are also exact in production after
@@ -26,7 +27,14 @@ is exact twice, including the viewport-clipped image, with zero introduced
 differences. Its 45-workload recheck retains all 43 other non-CNN PNGs.
 CNN stays at 165,579 reference differences and fails its production native
 repeat at 1,484 pixels (1,558 in diagnostics); earlier exact-repeat cohorts do
-not clear this recurring failure.
+not clear this recurring failure. The subsequent `de138d5e5` diagnostic
+identifies its cause as an autoplay video bypassing the replay proxy. Native
+playback now uses browser fetching when proxy policy may apply. CNN improves
+to **164,021 differences**, repeats exactly in both focused and 45-workload
+cohorts, and introduces zero new differences. All 44 non-CNN PNGs are unchanged.
+The archive has no MP4 responses: those requests now receive the same 404s
+that Brave receives. No reference or tolerance changed, and the source/replay
+gate remains open. Production confirmation of this last correction is pending.
 See the
 [current audit, capture scopes and retained failures](docs/OPTIMIZED_SITES_PIXELS_2026_11_12.md).
 

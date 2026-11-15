@@ -6,6 +6,16 @@ open. The exact acceptance condition is
 alternating pairs and unchanged content and pixel checks. Earlier cohorts below
 retain their original scope, counts and failures.
 
+The 2026-11-15 frozen-page pixel recheck finds that native video loading bypassed
+the configured replay proxy. That archive has no MP4 responses, so the native
+captures could include unarchived video. `de138d5e5` corrects new native
+media loads when proxy policy may apply: the diagnostic now records 164,021
+reference differences and exact repeats, with missing MP4 requests rejected by
+the replay proxy. Full pixel equality and the historical source/replay gate
+remain open. These are rendering checks, not a new instruction cohort; the
+earlier instruction counts retain their recorded scope and qualifications.
+See the [routing audit](OPTIMIZED_SITES_PIXELS_2026_11_12.md#native-media-routing-in-frozen-cnn-replay-2026-11-15).
+
 The completed seven alternating pairs use production executable
 `61311dd49feb6829e837180131fb32afee09a8769b834c3106603ea0870a7a77`.
 Vox's median is **21,805,542,771** instructions; Brave's median lower bound is

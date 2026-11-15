@@ -3170,3 +3170,30 @@ all 44 non-CNN PNGs match diagnostics. The 45-workload/90-capture cohort has
 reference differences and fails its repeat at 1,484 pixels. An earlier
 interrupted production attempt is retained without acceptance. This supersedes
 the fringe correction's pending-production status; all-site equality remains open.
+
+### Native media routing in frozen CNN replay, 2026-11-15
+
+`de138d5e5` fixes native playback bypassing browser proxy routing. The unstable
+104×15 region is a video command; the neighbouring train image has stable
+pixels and uses the verified sampler. The archive contains no MP4 responses.
+Two Brave diagnostic processes report paused videos with zero time/metadata,
+while Vox's old player loaded remote URLs outside browser transport and
+published changing frames.
+
+When proxy policy may apply, progressive native media now uses the browser
+transport and an owned local file retained until the player closes. Redirects,
+explicit direct overrides and global bypasses retain their proxy policy.
+Errors preserve their allocation lifetime and cannot trigger direct fallback.
+Unproxied/local playback and the existing WebM adapter retain their paths.
+Proxied progressive media buffers before decoding; proxied playlists explicitly
+require future streaming-loader support.
+
+Proxy-policy and real native MP4 integration checks pass, including redirects,
+file lifetime/cleanup, missing media, failed proxy and error-message ownership
+under arena poisoning. The C/O0 browser's 45-workload/90-capture cohort has
+177 compiled V witnesses, 311 stable pins and 91 successful native guards.
+CNN improves 165,579→164,021 (1,558 corrected, zero introduced); all 45 pairs
+repeat exactly. All 44 non-CNN PNGs are unchanged. Eight missing MP4 requests
+reach the replay proxy and return 404. Production confirmation remains pending.
+No raster, reference, tolerance, scripting or performance acceptance changes
+are claimed. See the [audit](OPTIMIZED_SITES_PIXELS_2026_11_12.md#native-media-routing-in-frozen-cnn-replay-2026-11-15).
