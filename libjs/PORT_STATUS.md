@@ -38,8 +38,9 @@ manual HN experiment above is historical, not the current document-cache policy.
 Set/Map operations and live iterators, WeakMap weak keys, ordinary arguments
 objects, default/rest/destructured function parameters, class inheritance and
 super construction, public field initializers, private fields/methods/accessors,
+including explicit super argument spread through the ordinary iterator protocol,
 lexical brands, object literal accessors/methods,
-Array concat/fill and literal spread, object literal spread, ordinary template
+Array concat/fill/map and literal spread, object literal spread, ordinary template
 literals and native element CSSOM bindings
 are implemented. Native Promise construction, resolving functions, then/catch,
 resolve/reject, generic species capabilities and FIFO reactions execute. Window
@@ -49,7 +50,9 @@ actual native transport, Request/Response records, stream body consumption and
 Promise settlement. AbortSignal/ReadableStream exposure, remaining body variants
 and interface factories remain pending. Native DOM
 Event construction preserves subclass prototypes and actual native event records.
-Promise finally/combinators, async/generator execution, call spread, class
+String includes/startsWith/endsWith and WeakSet are installed. Generator and
+async-generator functions can be created with their prototype graph, but cannot
+yet execute. Promise finally/combinators, async/generator execution, call spread, class
 static blocks, super property
 references, anonymous class assignment/field-name
 inference, Set algebra, Map extensions and remaining weak-reference APIs remain
@@ -65,8 +68,14 @@ not exposed as functional APIs.
 Native static/live NodeList collections, variadic ParentNode mutations and
 MutationObserver records/delivery are bound. Observer jobs share the VM FIFO with
 Promise reactions and native HTML microtasks bridge writes outside JavaScript.
+EventTarget construction and dispatch, DOMRectReadOnly geometry,
+layout-backed IntersectionObserver and ResizeObserver delivery, live classList
+token lists, namespace-aware element factories and HTMLTemplateElement.content
+use actual native records. Template content retains fragment identity, inert
+ownership and native cross-document adoption.
+Their focused cases cover both GC modes and persisted execution without a compiler.
 
-The latest complete core checkpoint passes 300/300 package files in each GC mode,
+The latest source-stable complete core checkpoint passes 300/300 package files in each GC mode,
 with 796 unchanged source/fixture/compiler inputs, using four workers within the
 unchanged 12 GiB guard. Earlier resource failures and obsolete-fixture failures
 are retained in the continuation report. The unchanged canonical AST
@@ -77,10 +86,15 @@ neighbors passing in both modes and an AddressSanitizer pass, followed by the
 300-file checkpoint. Headers has six focused cases passing in both modes, plus
 five native-model cases per mode. Native Event's three cases and the four original Hacker News
 DOM/event cases pass in both modes. Cache checks load native code in fresh VMs
-with the compiler disabled. The observer-stage original GitHub scripts
-reuse 200 native executables and 51 parsed sources on the second opening, but
-module evaluation next fails at an unbound String.prototype.includes; 33 directory
-rows remain and no commit links hydrate. These counts come from initialization diagnostics without layout
+with the compiler disabled. Later sweeps pass all 304 core files in each GC mode;
+the combined attempt times out after completing the default sweep, and the
+separate no-GC input audit flags another session's Float16 header change. Clang
+emits identical old/new helper IR; affected numeric tests pass again in both
+modes and all 100 upstream AST cases match exactly. This does not replace the
+source-stable checkpoint with a clean dual-mode receipt.
+The template-content-stage original GitHub scripts reuse 365 native entries and
+51 parsed sources on the second opening, then fail at unbound requestAnimationFrame;
+33 directory rows remain and no commit links hydrate. These counts come from initialization diagnostics without layout
 or paint, and do not establish completed-page speedup.
 A full native LibJS browser capture completes under the default 12 GiB guard,
 retaining module errors and placeholders; the earlier 3 GiB failures are focused
@@ -2616,6 +2630,11 @@ The later core checkpoint passes all 300 package files in both GC modes with 796
 stable inputs. Array/object spread each have five cases passing in both modes
 and sanitizer. Native variadic mutations and NodeLists each have three cases in
 both modes; MutationObserver has six in both modes and sanitizer. The newest
-original-script pair reuses 200 entries and next lacks String.prototype.includes.
-Full-repository coverage, production validation of the observer binding and
+original-script pairs subsequently exercise String predicates, WeakSet, generator
+creation, Array.map, EventTarget, IntersectionObserver, ResizeObserver, classList
+and namespace-aware element factories. Their warm native-entry counts rise from
+230 to 324, with 51 cached frontend sources and zero compiler calls; hydration
+still fails. A fresh ClassList-stage production browser has the same 33 rows and
+zero commit links; its first compiler diagnostic is explicit spread super calls.
+Full-repository coverage, validation of later bindings in a current production build and
 pixel acceptance remain open.

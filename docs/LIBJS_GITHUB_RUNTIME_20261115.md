@@ -576,3 +576,114 @@ gate. All 100 unchanged upstream AST fixtures also match exactly; later changes
 affect execution/bindings, not parsing. AST actuals, guard receipts and failed
 cohorts remain local. Complete LibJS/WebIDL parity, production validation of the
 observer feature, live-site behavior and pixel-perfect Brave rendering remain open.
+
+## Further native runtime and DOM work
+
+The following focused features are committed; each includes tests in the same
+commit. Native-cache checks use fresh VMs and `/usr/bin/false` on reopening.
+
+| Commit | Implemented behavior | Focused cases per GC mode |
+| --- | --- | ---: |
+| `b59499634` | UTF-16 String includes/startsWith/endsWith, RegExp rejection and observable coercion order. | 5 |
+| `453f59df3` | Native WeakSet weak membership, iterable construction and abrupt iterator closing. | 6 |
+| `84c2b99fd` | Generator/async-generator function creation, source, metadata and prototypes; execution still unsupported. | 5 |
+| `3739b0af9` | Array.map species construction, holes, live indices and budgeted callbacks. | 6 |
+| `d39962621` | Native EventTarget construction, Node ancestry, identity and real dispatch/cancellation. | 5 |
+| `075ad4108` | DOMRectReadOnly constructor, dictionary conversion, coordinates and toJSON object. | 5 |
+| `7f554067c` | Native IntersectionObserver/Entry, frozen thresholds and actual layout notifications. | 5 |
+| `1fe700a56` | Native ResizeObserver/Entry/Size, live content/border geometry and frozen size arrays. | 5 |
+| `1c433e094` | Live native classList DOMTokenList identity, indexed properties and token mutations. | 5 |
+| `c6915db72` | Namespace-aware element creation, native validation and WebIDL registry/is options. | 5 |
+| `248dbd33f` | Native template content fragments, SameObject/inert ownership and cross-document adoption. | 4 |
+| `1fc47aafd` | Explicit spread super calls, ordered iterator evaluation and superclass capture; default derived constructors retain direct argument forwarding. | 6 |
+
+WeakSet, EventTarget, IntersectionObserver, ResizeObserver, DOMTokenList,
+element-factory and template-content cases also pass AddressSanitizer with GC
+disabled. DocumentFragment, element factories
+and custom elements pass in both modes with unchanged binding inputs. The initial
+adoption assertion exposed an existing missing native adopting-step call; the
+fix connects the existing template routine to Element.adopted_from, retaining the
+failed attempt before the successful checks. Neighboring
+core or DOM selections pass in both modes. Observer callbacks use the shared
+bounded VM callback entry and retire native registrations before host teardown.
+Resize tests check actual 100×50 to 140×50 layout changes and distinguish content
+from border observations. Token lists retain native state and atomic validation;
+part/relList and complete indexed WebIDL define/delete behavior remain pending.
+Full Window ancestry, cross-realm wrappers and specialized HTML members remain
+incomplete. DOMRect.toJSON tests inspect the actual returned object; JSON.stringify
+is not implied by this binding. Failed early fixture/compile attempts remain local.
+
+Authenticated source-only original-response pairs preserve all archived bytes,
+the fixed Brave references and all attempts. All still have 33 rows, zero commit
+links, five module errors and no JSC context. Reopening uses 51 cached frontend
+sources, zero compiler calls and the following native-entry counts:
+
+| Stage | Warm entries | Next first module failure |
+| --- | ---: | --- |
+| String predicates | 230 | WeakSet |
+| WeakSet | 235 | Generator function creation |
+| Generator creation | 247 | Array.map |
+| Array.map | 253 | EventTarget |
+| EventTarget | 253 | IntersectionObserver |
+| IntersectionObserver | 253 | ResizeObserver |
+| ResizeObserver | 324 | classList |
+| DOMTokenList | 324 | createElementNS |
+| Element factories | 324 | HTMLTemplateElement.content |
+| Template content | 365 | requestAnimationFrame |
+| Spread super calls | 373 | requestAnimationFrame |
+
+These are changing, failed initialization workloads without a window, layout or
+paint. Cold compilation versus warm loading is not completed-page performance.
+Raw pins, commands, host contention, results and failures remain local under the
+matching `docs/performance/libjs-*-github-20261115/` directories.
+
+Three further fresh production observations use the unchanged 1024×768 replay
+and fixed Brave content audit. Browser, controller and default-12-GiB guard
+exits are zero; PID adoption succeeds and inputs remain unchanged.
+
+| Sealed source stage | Executable SHA-256 | PID | Sampled peak bytes |
+| --- | --- | ---: | ---: |
+| MutationObserver (`0e61c1934`, 292 selected V files) | `4ce4867393f550712384f955ae053e74a39a7cde15e0ed927c90cd4a54d1ebef` | 63793 | 4,420,009,984 |
+| WeakSet (`453f59df3`, 295 selected V files) | `249852422e761432035a5a00a8b5451162aaf7d3afdc2ee3837500d379309960` | 95498 | 4,480,204,800 |
+| DOMTokenList (`1c433e094`, 306 consumed V/header files) | `9b7f8053037f5c05a935b8e12d7ff2d43ceae36912ee685e3ff17221af3cc229` | 32262 | 4,620,173,312 |
+
+All are single-C-unit literal `-prod` bundles. Source stages come from sealed
+consumed buffers, not receipt HEAD: the WeakSet bundle contains changes newer
+than its recorded HEAD. Each has 33 rows, zero latest/commit links and one README;
+the unchanged strict content gate rejects every capture. The first two expose
+String.includes and generator-creation failures respectively. The DOMTokenList
+native capture exposes **spread super arguments not translated**, a compiler
+failure also present in the source-only JavaScript messages. Its 31.086-second
+observation and whole-window PNG are diagnostics, not canonical document-pixel
+or page-performance acceptance. Local records are in the mutation-observer,
+strings and class-list native directories. No pixel tolerance changed.
+
+The later core sweeps retain an important identity limitation. The four-worker
+`r9` default mode passes **304/304 files** in 899.905 seconds. The combined guard
+then times out at 1,800 seconds partway through no-GC (child 137); all 805 inputs
+still match immediately after termination. The separate `r10-none` run passes
+**304/304 no-GC files** in 1,104.408 seconds, but the wrapper exits 1 because
+another session commits `59ce2c848`, changing `libjs/float16.h` during the run.
+Its raw source audit remains failed. Sampled peaks are 9,914,613,760 and
+9,830,514,688 bytes respectively, within the unchanged cap.
+
+Clang's old/new Float16 helper LLVM IR is byte-identical at both O0 and O2; the
+raw preprocessing differs by one blank line. The two affected numeric test files
+pass again in both GC modes with the new header. A fresh canonical AST run matches
+all 100 upstream cases exactly, with 805 current inputs stable across these
+follow-up checks. This targeted recovery and code-equivalence proof do not turn
+the failed raw identity audit into a source-stable dual-mode checkpoint.
+The compatibility attempt stops before testing because the 0.5.2 compiler rejects
+the required `-memory-limit` flag; no compatibility pass is claimed. Raw receipts
+remain in `libjs-runtime-checkpoint-20261115-r9` and `r10-none` locally.
+
+Spread-super cases and all five array-spread regressions pass in both GC modes
+and sanitizer. Heritage, field initializers, parameters and native-cache neighbors
+pass in both modes. A separate native integration case constructs EventTarget and
+custom-element subclasses using explicit rest/spread constructors, dispatches a
+real event and reopens with persisted code and the compiler disabled. It passes
+in both GC modes. Early attempts with unavailable cross-test helper functions,
+a mistyped neighbor filename, and disk-full linking remain retained. Completed
+scratch binaries/generated C were removed after recording their hashes; receipts
+remain local. The GitHub spread-super compiler diagnostic disappears; a separate
+TypeError and missing requestAnimationFrame/setTimeout still prevent hydration.
