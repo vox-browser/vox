@@ -226,6 +226,7 @@ fn (mut host Host) install_nodes() ! {
 				mut owner := unsafe { &Host(host) }
 				if name == 'querySelector' {
 					if actual.is_document_fragment() {
+						css.install_document_selector_query_hook(actual.document())
 						parent := unsafe { &dom.ParentNode(actual) }
 						list := parent.query_selector_all(key) or { return owner.dom_error(mut vm, err) }
 						return if found := list.item(0) { owner.wrap_node(found) } else { libjs.js_null() }
