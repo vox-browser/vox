@@ -273,6 +273,11 @@ fn (mut generator BytecodeGenerator) expression(mut vm VM, expression &Expressio
 			return dst
 		}
 		.array_expr {
+			for element in kind.array_elements {
+				if value := element {
+					if value.kind.tag == .spread { return generator.array_literal_with_spread(mut vm, kind.array_elements) }
+				}
+			}
 			dst := generator.temporary()
 			generator.emit(Instruction{op: .new_array, dst: dst, lhs: generator.constant(Value.from_f64(f64(kind.array_elements.len)))})
 			for index, element in kind.array_elements {
