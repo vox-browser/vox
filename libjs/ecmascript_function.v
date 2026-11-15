@@ -132,14 +132,16 @@ fn (mut function ECMAScriptFunction) compile(mut vm VM) !&Executable {
 }
 
 fn (mut function ECMAScriptFunction) internal_call(mut vm VM, this_value Value, arguments []Value) !Value {
+	if function.data.kind == .async_kind { return function.call_async(mut vm, this_value, arguments) }
 	return function.call_with_new_target(mut vm, this_value, arguments, js_undefined(), none)
 }
 
 fn (mut function ECMAScriptFunction) call_with_new_target(mut vm VM, this_value Value, arguments []Value, new_target Value, class_constructor ?&BaseClassFunction) !Value {
-	// Creating a function does not evaluate its body. Do not execute an async
-	// body as an ordinary function while Promise/await execution is pending.
+	return function.call_body(mut vm, this_value, arguments, new_target, class_constructor, none)
+}
+
+fn (mut function ECMAScriptFunction) call_body(mut vm VM, this_value Value, arguments []Value, new_target Value, class_constructor ?&BaseClassFunction, async_execution ?&AsyncExecution) !Value {
 	if function.data.kind in [.generator, .async_generator] { return error('LibJS generator execution is not translated yet') }
-	if function.data.kind == .async_kind { return error('LibJS async function execution is not translated yet') }
 	simple_parameters := function.data.simple_parameters()
 	executable := function.compile(mut vm)!
 	mut stack := vm.interpreter_stack()
@@ -159,6 +161,7 @@ fn (mut function ECMAScriptFunction) call_with_new_target(mut vm VM, this_value 
 	frame.lexical_environment = Environment(environment)
 	frame.variable_environment = Environment(environment)
 	frame.passed_argument_count = u32(arguments.len)
+	frame.async_execution = async_execution
 	for index, argument in arguments { frame.set_argument(u32(index), argument) }
 	vm.push_execution_context_checked(mut frame)!
 	defer { vm.pop_execution_context() }
@@ -201,6 +204,7 @@ fn (mut function ECMAScriptFunction) call_with_new_target(mut vm VM, this_value 
 		}
 	}
 	returned := vm.run_executable(mut frame, executable, 0, ExecutionLimits{})!
+	if frame.yield_is_await { return js_special_empty_value() }
 	if constructor := class_constructor {
 		if constructor.derived {
 			if returned.is_object() { return returned }

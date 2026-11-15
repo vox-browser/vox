@@ -25,13 +25,13 @@ fn test_module_async_exports_instantiate_without_executing_their_bodies() {
 	assert record.export_value(mut vm, utf16_string('initialized'))!.number == 42
 }
 
-fn test_async_execution_remains_explicitly_unsupported_and_does_not_run_the_body() {
+fn test_async_call_returns_promise_and_runs_its_body_after_lazy_creation() {
 	mut vm := VM.create()
 	create_simple_execution_context(mut vm)
 	async_creation_eval(mut vm, 'var effects=0;async function pending(){effects++;return 42}')!
-	if _ := async_creation_eval(mut vm, 'pending()') { assert false } else {
-		assert err.msg() == 'LibJS async function execution is not translated yet'
-	}
-	assert async_creation_eval(mut vm, 'effects')!.number == 0
+	value := async_creation_eval(mut vm, 'pending()')!
+	assert value.as_object().promise_record?.state == .fulfilled
+	assert value.as_object().promise_record?.result.number == 42
+	assert async_creation_eval(mut vm, 'effects')!.number == 1
 	assert vm.interpreter_stack().depth() == 0
 }

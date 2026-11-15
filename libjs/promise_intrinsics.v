@@ -3,7 +3,9 @@ module libjs
 
 // Promise.cpp, PromiseConstructor.cpp and PromisePrototype.cpp. Ordinary
 // constructor/resolution/reaction paths share the VM's FIFO job queue. Promise
-// combinators, finally, and async/await continuations remain separate slices.
+// combinators and finally remain separate slices. Async/await uses the internal
+// PerformPromiseThen path without an observable result capability.
+@[heap]
 pub struct JSPromiseCapability {
 pub:
 	promise Value
@@ -13,7 +15,7 @@ pub:
 
 struct PromiseReaction {
 	handler ?&JobCallback
-	capability &JSPromiseCapability
+	capability &JSPromiseCapability = unsafe { nil }
 	rejects bool
 }
 
@@ -163,6 +165,13 @@ fn promise_prototype_then(mut vm VM) !Value {
 	constructor := species_constructor(mut vm, value.as_object(), vm.realm().promise_constructor or { panic('Missing Promise constructor') })!
 	capability := new_promise_capability(mut vm, Value.from_object(constructor))!
 	fulfilled, rejected := vm.argument(0), vm.argument(1)
+	perform_promise_then(mut vm, mut promise, fulfilled, rejected, capability)
+	return capability.promise
+}
+
+// PerformPromiseThen permits an absent result capability for await's internal
+// reactions. It never reads user-replaced then or @@species properties.
+fn perform_promise_then(mut vm VM, mut promise Promise, fulfilled Value, rejected Value, capability &JSPromiseCapability) {
 	on_fulfilled := PromiseReaction{handler: if fulfilled.is_function() { ?&JobCallback(vm.host_make_job_callback(fulfilled.as_function())) } else { none }, capability: capability}
 	on_rejected := PromiseReaction{handler: if rejected.is_function() { ?&JobCallback(vm.host_make_job_callback(rejected.as_function())) } else { none }, capability: capability, rejects: true}
 	match promise.state {
@@ -174,7 +183,6 @@ fn promise_prototype_then(mut vm VM) !Value {
 		}
 	}
 	promise.set_is_handled()
-	return capability.promise
 }
 
 fn enqueue_promise_reaction(mut vm VM, reaction PromiseReaction, value Value) {
@@ -195,7 +203,9 @@ fn enqueue_promise_reaction(mut vm VM, reaction PromiseReaction, value Value) {
 				rejects = true
 			}
 		}
-		call(mut vm, if rejects { reaction.capability.reject } else { reaction.capability.resolve }, js_undefined(), [result])!
+		if reaction.capability != unsafe { nil } {
+			call(mut vm, if rejects { reaction.capability.reject } else { reaction.capability.resolve }, js_undefined(), [result])!
+		}
 		return js_undefined()
 	}
 	realm := if callback := reaction.handler { callback.callback.realm() } else { none }

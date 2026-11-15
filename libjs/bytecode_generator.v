@@ -270,6 +270,13 @@ fn (mut generator BytecodeGenerator) expression(mut vm VM, expression &Expressio
 			generator.emit(Instruction{op: .super_construct, dst: result, lhs: callee, arguments: arguments, strict: data.is_synthetic})
 			return result
 		}
+		.await_expr {
+			value := generator.expression(mut vm, kind.operand or { return error('Missing await operand') })!
+			generator.emit(Instruction{op: .await_value, lhs: value})
+			result := generator.temporary()
+			generator.emit(Instruction{op: .resume_async, dst: result})
+			return result
+		}
 		.regexp_literal {
 			data := kind.regexp_data or { return error('Missing regular expression') }
 			compile_regexp_engine(data.pattern, data.flags) or { return error('SyntaxError: ' + err.msg()) }

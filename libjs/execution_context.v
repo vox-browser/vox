@@ -80,6 +80,10 @@ pub mut:
 	yield_value_is_iterator_result bool
 	caller_is_construct            bool
 	frame_initialized              bool
+	async_execution ?&AsyncExecution
+	async_resuming bool
+	async_resume_value Value
+	async_resume_rejected bool
 
 	this_value ?Value
 	executable ?&Executable
@@ -211,6 +215,10 @@ pub fn (context &ExecutionContext) copy() &ExecutionContext {
 	duplicate.yield_value_is_iterator_result = context.yield_value_is_iterator_result
 	duplicate.caller_is_construct = context.caller_is_construct
 	duplicate.frame_initialized = context.frame_initialized
+	duplicate.async_execution = context.async_execution
+	duplicate.async_resuming = context.async_resuming
+	duplicate.async_resume_value = context.async_resume_value
+	duplicate.async_resume_rejected = context.async_resume_rejected
 	duplicate.this_value = context.this_value
 	duplicate.executable = context.executable
 	duplicate.passed_argument_count = context.passed_argument_count
@@ -227,6 +235,8 @@ pub fn (context &ExecutionContext) copy() &ExecutionContext {
 
 // ExecutionContext::visit_edges: report the cells this frame keeps alive.
 pub fn (context &ExecutionContext) visit_roots(mut roots HeapRoots) {
+	roots.add_value(context.async_resume_value)
+	if execution := context.async_execution { roots.add(voidptr(execution)) }
 	if function := context.function {
 		roots.add(function_object_identity(function))
 	}

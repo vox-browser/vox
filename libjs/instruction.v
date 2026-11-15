@@ -99,6 +99,8 @@ pub enum OpCode {
 	has_private
 	copy_data_properties
 	super_construct_with_array
+	await_value
+	resume_async
 }
 
 pub struct Instruction {
@@ -143,7 +145,7 @@ fn (instruction Instruction) input_count() int {
 		.get_object_property_iterator, .property_name_iterator_next,
 		.get_sync_iterator, .sync_iterator_next, .close_sync_iterator,
 		.sync_iterator_step_value, .sync_iterator_elide, .sync_iterator_to_array,
-		.jump_if_false, .jump_if_nullish, .end, .throw_op, .construct, .super_construct, .new_array, .new_function_with_name {
+		.jump_if_false, .jump_if_nullish, .end, .throw_op, .construct, .super_construct, .new_array, .new_function_with_name, .await_value {
 			1
 		}
 		else {
@@ -167,7 +169,7 @@ fn (instruction Instruction) writes_operand() bool {
 		.require_object_coercible, .set_object_literal_prototype, .copy_data_properties,
 		.record_empty_class_field, .initialize_empty_static_fields,
 		.close_sync_iterator, .close_sync_iterator_throw,
-		.sync_iterator_elide,
+		.sync_iterator_elide, .await_value,
 		.jump_if_true, .jump_if_false, .jump_if_nullish, .end, .throw_op]
 }
 

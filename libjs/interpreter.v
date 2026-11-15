@@ -51,6 +51,18 @@ fn (mut vm VM) execute_instruction(instruction Instruction, executable &Executab
 	}
 	mut result := js_undefined()
 	match instruction.op {
+		.await_value {
+			mut execution := frame.async_execution or { return error('Await requires an async function execution context') }
+			execution.suspend(mut vm, mut frame, left)!
+			return executable.bytecode_length
+		}
+		.resume_async {
+			result = frame.async_resume_value
+			rejected := frame.async_resume_rejected
+			frame.async_resume_value = js_undefined()
+			frame.async_resume_rejected = false
+			if rejected { return throw_completion(result) }
+		}
 		.copy_data_properties {
 			if !right.is_nullish() {
 				mut target := left.as_object()
@@ -458,7 +470,7 @@ pub fn (mut vm VM) run_executable(mut frame ExecutionContext, executable &Execut
 	previous_environment := frame.lexical_environment
 	previous_private_environment := frame.private_environment
 	previous_scope_depth := frame.lexical_scope_depth
-	frame.lexical_scope_depth=0
+	if !frame.async_resuming { frame.lexical_scope_depth=0 }
 	own_budget := vm.run_executable_depth == 0 && vm.external_budget_depth == 0
 	previous_budget := vm.instruction_budget
 	previous_budget_active := vm.instruction_budget_active
@@ -525,7 +537,7 @@ pub fn (mut vm VM) run_executable(mut frame ExecutionContext, executable &Execut
 			return err
 		}
 		frame.program_counter = next
-		if instruction.op == .end { return vm.reg(register_return_value) }
+		if instruction.op in [.end, .await_value] { return vm.reg(register_return_value) }
 	}
 	return vm.throw_error(.internal_error, 'Bytecode fell off the end without End')
 }

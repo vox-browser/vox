@@ -35,9 +35,9 @@ fn test_host_callback_drains_promise_jobs_after_throw_and_preserves_original_exc
 fn test_unsupported_promise_callbacks_are_retained_for_embedding_diagnostics() {
 	mut vm := VM.create()
 	create_simple_execution_context(mut vm)
-	checkpoint_eval(mut vm, 'Promise.resolve().then(async function(){})')!
+	checkpoint_eval(mut vm, 'Promise.resolve().then(function*(){})')!
 	errors := vm.take_promise_job_errors()
-	assert errors.len == 1 && errors[0].msg().contains('async function execution is not translated')
+	assert errors.len == 1 && errors[0].msg().contains('generator execution is not translated')
 	assert vm.take_promise_job_errors().len == 0 && vm.promise_job_count() == 0
 }
 
