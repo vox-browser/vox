@@ -37,6 +37,12 @@ fn test_native_file_usv_name_defaults_errors_and_history_brand() {
 	assert stream_eval(mut vm, 'var f=new File([],"\\ud800"),bad=0;for(var run of [()=>File([],"x"),()=>new File(),()=>new File(undefined,"x"),()=>new File([],Symbol()),()=>new File([],"x",1),()=>new File([],"x",{endings:"bad"}),()=>Object.getOwnPropertyDescriptor(File.prototype,"name").get.call(new Blob())])try{run()}catch(e){if(e instanceof TypeError)bad++}var clone=false;try{history.replaceState(f,"")}catch(e){clone=e.name==="DataCloneError"}bad===7&&f.name==="�"&&f.lastModified>0&&clone')!.as_bool()
 }
 
+fn test_native_file_last_modified_preserves_negative_signed_64_values() {
+	mut host, mut vm := text_encoding_fixture()!
+	defer { host.close() }
+	assert stream_eval(mut vm, 'new File([],"x",{lastModified:-1}).lastModified===-1&&new File([],"x",{lastModified:-17.9}).lastModified===-17&&new File([],"x",{lastModified:-9007199254740991}).lastModified===-9007199254740991&&new File([],"x",{lastModified:9223372036854775808}).lastModified===-9223372036854775808')!.as_bool()
+}
+
 fn test_native_file_wrapper_survives_arena_reset_and_clears_roots_on_close() {
 	mut host, mut vm := text_encoding_fixture()!
 	mut arena := platform.new_arena('native File wrapper')
