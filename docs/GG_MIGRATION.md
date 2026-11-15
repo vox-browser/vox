@@ -3228,3 +3228,21 @@ GPU, native preparation and Python preparation checks pass. No original
 reference or tolerance changes. Production `44f9e0ff` confirms every diagnostic
 PNG in 48 workloads/96 fresh captures; catalog parity remains open. See the
 [audit](OPTIMIZED_SITES_PIXELS_2026_11_12.md#bounded-minified-webp-plane-filtering-2026-11-15).
+
+
+### Sampled YUV across mixed MSAA tiles, 2026-11-15
+
+`59c259a55` keeps packed YUV filtering when an image readback crosses tiles with
+different sample counts. It rasterizes each tile with its own gutter and sample
+count, publishes only owned pixels, preserves the outside fringe and padded
+rows, and leaves the destination untouched on failure. Existing non-YUV mixed
+sample paths retain their fallback.
+
+The C/O0 diagnostic improves CNN 88,752→71,925: 16,841 corrected and 14
+introduced one-level differences, all inside one image. All 47 other PNGs are
+unchanged in 48 workloads/96 repeatable captures. Two focused V checks exercise
+both seam directions, sample selection, native channel conversion, fringe,
+row padding and rejection under arena poisoning. No original reference or
+tolerance changes. Production confirmation remains pending the managed build;
+CNN and catalog-wide parity remain open. See the
+[audit](OPTIMIZED_SITES_PIXELS_2026_11_12.md#sampled-yuv-images-across-mixed-msaa-tiles-2026-11-15).

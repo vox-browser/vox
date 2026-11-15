@@ -3583,3 +3583,73 @@ folder described above. Additional cleanup hashes 3,058 records across eight
 owned roots, preserves/reverifies 955 files (19,545,245 bytes), and removes the
 production capture jobs, profiles, guards and locks. The shared bundle and its
 dependencies are retained.
+
+
+## Sampled YUV images across mixed MSAA tiles, 2026-11-15
+
+`59c259a55` fixes another supported minified WebP fallback. A native diagnostic
+shows that CNN's Trump image has a readable, unit-scale backdrop with no
+transparency depth, but its V image callback rejects the later paint. The
+readback crosses root tile row 1 (one sample) and row 2 (four samples). The
+uniform-sample selector correctly returns zero for that mixed region; treating
+zero as a whole-image fallback discards the supported plane filtering.
+
+The packed-YUV callback now draws in each owning tile's coordinate space and
+sample mode. It copies the original backdrop into the tile including its
+gutter, translates image and clip together, and publishes only owned pixels.
+The cropped result is committed only after every tile succeeds. Outside
+fringes and padded rows retain their original bytes. Unsupported grids still
+fall back. This does not broaden the bounded decoder's scale/profile/source
+selection, or the other image formats' mixed-sample paths. No site, resource
+hash or pixel coordinate selects a correction. The native diagnostic edits
+are removed; the implementation and focused tests are V.
+
+Diagnostic executable
+`b1c36ebf6460f92a7fcf9274c3bd5fa8910aa1bea2c149c54dae865108ba4771`
+(C/O0/preallocated/no-GC) completes **48 workloads and 96 fresh captures**, plus
+startup smoke. Every pair repeats byte for byte; every one of the **47 non-CNN
+PNGs is unchanged** from accepted production `44f9e0ff`. CNN improves
+**88,752→71,925**: 16,841 corrected pixels and 14 introduced pixels, each new
+error at most one channel level. All 16,967 changed pixels lie inside the Trump
+image's rectangle. Its interior, excluding a four-pixel border, improves
+**15,507→116**, maximum error **84→1**. Other selected image interiors retain
+their prior results: Sullivan 34,991/max88, Netanyahu 384/max1, logo 231/max1,
+and peptides 4,106/max26. The logged focused capture and unlogged broad capture
+are byte-identical. GitHub, Hacker News, Lobsters and Wikipedia remain exact;
+Vlang remains at 27. These are frozen-page results, not full CNN equality.
+
+All **825 consumed rendering/CSS/DOM/layout V witnesses and 851 input pins**
+stay matched. All 96 capture guards, startup, driver, outer guard and guarded
+analysis exit zero. Focused test executable
+`4abaf70178c27611f90732c6798d839c3a4d6ff22333cca6d3e57ae6aa878b1f`
+passes both tests with arena poisoning and a 3 GiB runtime guard; its 164 V
+witnesses match. The tests compare both seam directions against independent
+whole-surface one/four-sample rectangle coverage, exercise the native callback's
+channel conversion, and verify unchanged fringe, pitch padding and rejected
+draws. An initial rounded-clip translation-invariance assertion differs by one
+alpha level between different-sized GPU surfaces; its failed source and guard
+are retained. The accepted exact test uses binary-fraction rectangle coverage
+and does not claim general rounded-raster translation invariance. No existing
+reference or tolerance is changed.
+
+An interrupted compile produced no executable or completed guard receipt.
+A subsequent prototype compiled successfully but its post-compile hash guard
+rejected formatting during compilation. Both attempts remain recorded without
+acceptance. The first broad-driver invocation failed before any captures
+because its script had not been written; the completed cohort above uses a
+separate job and retains that failure. The final code's focused and broad
+checks use stable source inputs. No performance or instruction claim is made.
+
+Completed production `48b7a944`, receipt `20261115-220911-056313d0`, lacks the
+new V file and callback change by consumed source hashes. The feature commit
+requests the coalesced C/literal V `-prod`/single-unit build. Production
+confirmation remains pending; no duplicate manual build is queued. CNN's
+remaining image/source differences, Vlang's remaining pixels, Reddit's missing
+evidence and the existing inexact controls keep catalog-wide parity open.
+
+Local evidence is under
+`docs/performance/vlang-gradients-20261114/raw/cnn-target-20261115/`.
+Cleanup hashes 3,905 files across 34 owned roots, preserves/reverifies 1,034
+selected files (26,332,260 bytes), and removes owned binaries, generated
+intermediates, capture profiles/jobs, guards and locks. The owned test alias is
+removed; shared production bundles and dependencies remain.

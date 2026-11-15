@@ -78,6 +78,15 @@ and Vlang's 27 pixels. Unsupported scales retain their existing rendering.
 Production `44f9e0ff` now confirms the correction across 48 workloads/96 fresh
 captures: every PNG matches the accepted diagnostic. CNN and the catalog
 still do not pass equality. No original reference or tolerance changes.
+The subsequent `59c259a55` mixed-tile YUV correction reduces CNN to **71,925
+in diagnostics**, from 88,752: 16,841 corrected and 14 introduced one-level
+differences, all inside the Trump image. Its interior improves 15,507→116
+pixels, with remaining channel errors at most one. The sampler now preserves
+each crossed tile's sample count instead of falling back for the whole image.
+All 47 other PNGs are unchanged across 48 workloads/96 repeatable captures.
+Focused V/native-callback checks pass under arena poisoning. Production
+confirmation is pending the managed rebuild; completed production `48b7a944`
+does not contain this change. No original reference or tolerance changes.
 See the
 [current audit, capture scopes and retained failures](docs/OPTIMIZED_SITES_PIXELS_2026_11_12.md).
 
