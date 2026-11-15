@@ -3318,3 +3318,23 @@ workloads/96 fresh captures: every PNG matches its accepted diagnostic and all
 pairs repeat. Startup smoke and all guards pass; full equality remains open.
 No original reference or tolerance changes.
 See the [audit](OPTIMIZED_SITES_PIXELS_2026_11_12.md#full-plane-aligned-yuv-mips-2026-11-16).
+
+### Profiled RGB WebP half uploads, 2026-11-16
+
+`5a2157173` retains CPU mip averages when a canonical sRGB VP8
+image requests an exact half-size upload. Larger uploads already used in the
+same resource/navigation/raster scope keep their existing GPU mip samples;
+stronger and rounded reductions retain their previous path. Cached pixels
+outlive temporary paint memory. No shader or native application UI changes.
+
+CNN improves 33,409→6,091 in diagnostics: 27,321 corrected and three introduced
+one-level differences, all inside the ice-cap image (27,345→27). All 47 other
+prior PNGs are unchanged across 50 workloads/100 repeatable captures. Four
+focused V functions pass with arena poisoning and 3 GiB runtime guards.
+Both new direct GG controls match independent Brave references exactly at
+sample counts one and four; their browser captures retain 18/24 one-level
+differences. Production `d0fa860e` confirms every diagnostic PNG across 50
+workloads/100 fresh captures, with all pairs repeating. Startup and all guards
+pass. No original reference or tolerance changes; catalog parity remains open.
+See the
+[audit](OPTIMIZED_SITES_PIXELS_2026_11_12.md#profiled-rgb-webp-half-uploads-2026-11-16).

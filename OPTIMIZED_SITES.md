@@ -7,7 +7,7 @@ Results apply to the frozen page and pinned build in each linked report.
 Provisional entries retain unresolved acceptance checks.
 
 **Pixel recheck, 2026-11-16:** Vox does **not** pass pixel equality across
-this catalog. Production build `99957e17` confirms GitHub, Hacker News,
+this catalog. Production build `d0fa860e` confirms GitHub, Hacker News,
 Lobsters and Wikipedia exact in two fresh captures each. Vlang.io has **27 differing
 pixels in production**, down from the previously verified 810. The heading fix
 removes its final text difference. Its 23 JPEG pixels still include nine
@@ -120,6 +120,18 @@ an independent chroma-texture edge regression. Production `99957e17` confirms
 the final fix across 48 workloads/96 fresh captures: every PNG matches its
 accepted diagnostic and every pair repeats. CNN retains 33,409 differences;
 catalog-wide parity remains open, with unchanged references and tolerances.
+The subsequent `5a2157173` profiled-RGB half-upload correction
+reduces CNN to **6,091 in diagnostics**, from 33,409: 27,321 corrected and
+three introduced one-level differences, all inside the ice-cap photo. That
+photo improves **27,345→27**, with maximum error one. Exact half-size uploads
+retain CPU mip averages; a larger upload already used in the same raster scope
+keeps its prior filtering. Stronger reductions retain their existing path.
+All 47 other prior PNGs are unchanged across 50 workloads/100 repeatable
+captures, including two new independent Brave controls. The direct GG controls
+are exact; their browser captures retain 18/24 one-level differences. Four
+focused V test functions pass under arena poisoning. Production `d0fa860e`
+confirms this slice across 50 workloads/100 fresh captures: every PNG matches
+the accepted diagnostic, with all pairs repeating. Full parity remains open.
 See the
 [current audit, capture scopes and retained failures](docs/OPTIMIZED_SITES_PIXELS_2026_11_12.md).
 

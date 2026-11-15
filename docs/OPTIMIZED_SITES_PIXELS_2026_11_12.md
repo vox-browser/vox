@@ -3933,3 +3933,100 @@ generated intermediates, profiles, capture jobs, guards, locks and the focused
 test alias. The archive guard and lock are separately preserved, verified and
 removed after completion. No owned scratch remains; the shared production
 bundle and dependencies are retained.
+
+## Profiled RGB WebP half uploads, 2026-11-16
+
+`5a2157173` corrects the bounded case where a canonical sRGB VP8
+image requests an exact half-size upload. The ice-cap image carries ICCP and
+therefore uses RGB decoding, independently of the preceding untagged YUV fix.
+All **341,640 decoded RGBA pixels** agree byte for byte with an independent
+fresh Brave Canvas2D readback. The difference occurs after decoding.
+
+The new path preserves the CPU mip's integer averages in the half-size upload
+and its remaining CPU mip chain. A full-size upload already used in the same
+resource/navigation/raster scope stays available with its existing GPU mips.
+Unsupported rounded uploads, stronger reductions and other profiles retain
+their previous path. Cache keys include the body digest; retained pixels and
+keys live outside temporary paint memory. Existing complete opaque sRGB VP8,
+full-source, identity-linear-transform, opacity and size restrictions remain.
+No shader, sampler bias, native application UI, site-specific condition or
+pixel-coordinate exception changes.
+
+The public [Chromium decode-cache policy](https://github.com/chromium/chromium/blob/main/cc/tiles/gpu_image_decode_cache.cc)
+motivated checking upload size and larger cached decodes separately. Those
+current upstream sources do not identify the exact path in the pinned Brave
+binary; the independent pixel controls establish this correction's bounded
+behavior. A separate first-use stronger-reduction diagnostic remains inexact
+and outside this feature. Its source, references and all probe attempts remain
+local; no reference was changed to make that case pass.
+
+Two new controls capture the same immutable image bytes in different upload
+orders: `profiled-webp-half-upload` draws two initially minified images, while
+`profiled-webp-native-first` draws the ice-cap image at native size before its
+thumbnail. Each new reference repeats exactly in two fresh Brave processes.
+The existing native-first train reference is unchanged. Direct GG rendering of
+both complete new controls is pixel-exact at sample counts one and four.
+Full browser captures still differ by **18/24 one-level pixels** respectively;
+the native-size part of the second control is exact. These browser residuals
+are counted without masks or a nonzero tolerance.
+
+Final diagnostic executable
+`6b61cd6ac49023af95b07814b170d57bcc429f1aacdde68b31072cedb902708c`
+(C/O0/preallocated/no-GC) completes **50 workloads/100 fresh captures**, plus
+startup smoke. Every pair repeats exactly, and all **47 prior non-CNN PNGs**
+are unchanged from the accepted full-plane cohort. CNN improves
+**33,409→6,091**: **27,321 corrected** and **three introduced** pixels. Every
+new error is at most one channel level, and every changed pixel lies in the
+ice-cap photo. Its complete rectangle improves **27,345→27**, maximum error
+**2→1**; six differences remain after excluding four pixels at each edge.
+GitHub, Hacker News, Lobsters and Wikipedia stay exact; Vlang stays at 27.
+The logged focused and unlogged broad CNN PNGs agree.
+
+The first complete 100-capture cohort checked V inputs but omitted explicit
+runtime shader pins. It remains recorded without supplying final acceptance.
+The second complete cohort includes **826 consumed rendering/CSS/DOM/layout V
+witnesses and 873 source/runtime-asset pins**; all stay matched. Every PNG
+equals the preceding complete cohort. All 100 native guards, startup, driver,
+outer guard and guarded analysis exit zero. The focused checks also run again
+with shader/runtime-asset pins matched before and after execution.
+
+Four focused V functions pass with arena poisoning and 3 GiB runtime guards.
+They verify temporary-scope pixel ownership, larger-upload reuse, independent
+raster scopes, rejected targets/markers, retention of stronger reductions and
+both complete independent GG pixel controls. The browser helper test has
+165 matched V witnesses and executable
+`c2a026384482a3f35fb6bf94232f152a20288c9ede3f4b512a11a09a68ca0992`;
+the GPU test has 58 and executable
+`7272e0dea2248ac04ebf32875a44d0f197fcbd4fb4af39e5100a3884b07d0c42`.
+An initial diagnostic name collision, an initially incorrect manual destination
+height and a test setup missing Chromium font policy remain recorded. The
+accepted checks use corrected setup and observed paint geometry.
+The test-only follow-up `ea42af34f` marks the browser-helper test file as
+macOS-only with the platform suffix and V test directive. Both helper checks
+run again successfully with matched V/shader/runtime pins and arena poisoning;
+implementation bytes and all pixel references stay unchanged.
+
+Initially available production `195b5171` lacks the new helper by consumed
+source hash. After diagnostic cleanup, shared production executable
+`d0fa860e0a8e080190c84b261b26e1a68bafabfaa32a73f660a96c5a45fb3b5a`
+completed, receipt `20261116-015645-b9d02ef9` (C/literal V `-prod`/single unit).
+Its consumed helper hash matches the final committed source, despite the
+requested head predating the feature commit. All **50 workloads/100 fresh
+captures** pass the unchanged driver's **196 source checks**. Every pair repeats
+and every PNG equals the accepted diagnostic. CNN stays at **6,091**, Vlang at
+**27**, and the four exact archived sites stay exact; the new controls retain
+18/24. Startup smoke, all 100 native guards, driver, outer guard and guarded
+analysis exit zero. This closes production validation of this slice. The
+completed shared bundle was reused, with no duplicate manual build requested.
+This is frozen-page rendering evidence, without a live-site, scripting,
+instruction or performance claim.
+CNN's remaining image/source failures, Vlang, missing Reddit evidence, the new
+one-level control residuals and prior inexact controls keep full equality open.
+No original reference or tolerance changes. Local evidence is under
+`docs/performance/vlang-gradients-20261114/raw/cnn-icc-mips-20261116/`.
+The three cleanup phases hash **10,136 files across 95 owned roots**, preserve
+and reverify **3,141 selected files (73,646,760 bytes)**, and remove owned test/browser
+binaries, intermediates, profiles, capture jobs, guards, locks and the temporary
+test alias. Independent decoded RGBA readbacks are retained locally. The
+archive guards and locks are separately copied, verified and removed after
+completion. No owned scratch remains; shared bundles and dependencies stay.
