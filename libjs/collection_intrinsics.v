@@ -30,6 +30,7 @@ fn initialize_collection_intrinsics(mut vm VM, mut realm Realm) ! {
 		'includes': array_prototype_includes
 		'every': array_prototype_every
 		'filter': array_prototype_filter
+		'flatMap': array_prototype_flat_map
 		'find': array_prototype_find
 		'some': array_prototype_some
 		'reduce': array_prototype_reduce
