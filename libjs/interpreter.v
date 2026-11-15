@@ -50,6 +50,7 @@ fn (mut vm VM) execute_instruction(instruction Instruction, executable &Executab
 	}
 	mut result := js_undefined()
 	match instruction.op {
+		.to_string { result = Value.from_string(left.to_primitive_string(mut vm)!) }
 		.get_new_target { result = vm.get_new_target() }
 		.get_super_constructor { result = get_super_constructor(mut vm)! }
 		.record_empty_class_field { record_empty_class_field(mut vm, left, right.to_property_key(mut vm)!, instruction.identifier == 1)! }

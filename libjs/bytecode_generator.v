@@ -221,6 +221,25 @@ fn (mut generator BytecodeGenerator) expression(mut vm VM, expression &Expressio
 	defer { generator.range = previous_range }
 	kind := expression.kind
 	match kind.tag {
+		.template_literal {
+			data := kind.template_data or { return error('Missing template literal') }
+			mut text := generator.constant(Value.from_string(vm.create_string(Utf16String.new())))
+			// codegen.rs::generate_template_literal: evaluate each substitution
+			// and ToString it before evaluating the next one. Addition itself
+			// uses the default primitive hint and cannot perform this conversion.
+			for part in data.expressions {
+				value := generator.expression(mut vm, &part)!
+				mut segment := value
+				if part.kind.tag != .string_literal {
+					segment = generator.temporary()
+					generator.emit(Instruction{op: .to_string, dst: segment, lhs: value})
+				}
+				joined := generator.temporary()
+				generator.emit(Instruction{op: .add, dst: joined, lhs: text, rhs: segment})
+				text = joined
+			}
+			return text
+		}
 		.class_expr { return generator.class_expression(mut vm, kind.class_data or { return error('Missing class expression') }) }
 		.meta_property {
 			dst := generator.temporary()

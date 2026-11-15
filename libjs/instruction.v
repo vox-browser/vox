@@ -90,6 +90,7 @@ pub enum OpCode {
 	super_construct
 	record_empty_class_field
 	initialize_empty_static_fields
+	to_string
 }
 
 pub struct Instruction {
@@ -126,7 +127,7 @@ fn (instruction Instruction) input_count() int {
 		.put_property, .define_property, .define_class_method, .new_class {
 			3
 		}
-		.mov, .unary_plus, .unary_minus, .bitwise_not, .not_op, .typeof_op, .to_numeric,
+		.mov, .unary_plus, .unary_minus, .bitwise_not, .not_op, .typeof_op, .to_numeric, .to_string,
 		.increment, .decrement, .set_binding, .set_variable, .initialize_binding, .jump_if_true,
 		.require_object_coercible, .to_property_key, .copy_object_excluding_keys,
 		.initialize_empty_static_fields,
