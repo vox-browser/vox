@@ -10,8 +10,12 @@ fn (mut host Host) wrap_node(node &dom.Node) libjs.Value {
 	persistent := platform.enter_persistent()
 	defer { platform.leave_persistent(persistent) }
 	is_html := if element := node.as_element() { element.is_html_element() } else { false }
+	interface_name := if is_html {
+		element := node.as_element() or { panic('Missing native HTML element') }
+		host.html_element_tags[element.local_name()] or { if dom.is_unknown_html_element(element.local_name()) { 'HTMLUnknownElement' } else { 'HTMLElement' } }
+	} else { '' }
 	prototype := if node.is_element() {
-		if is_html { host.html_element_prototype } else { host.element_prototype }
+		if is_html { host.html_element_prototypes[interface_name] or { host.html_element_prototype } } else { host.element_prototype }
 	} else if node.is_document() {
 		host.document_prototype
 	} else if node.is_document_fragment() {
@@ -21,7 +25,7 @@ fn (mut host Host) wrap_node(node &dom.Node) libjs.Value {
 	}
 	mut object := libjs.Object.create(host.realm, prototype)
 	object.class_name = if node.is_element() {
-		if is_html { 'HTMLElement' } else { 'Element' }
+		if is_html { interface_name } else { 'Element' }
 	} else if node.is_document() {
 		'Document'
 	} else if node.is_document_fragment() {

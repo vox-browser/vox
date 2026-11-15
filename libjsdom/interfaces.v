@@ -6,8 +6,8 @@ import libjs
 import platform
 
 // WebIDL interface objects share the exact native wrapper prototypes used by
-// document queries and mutations. Specialized HTML tag/SVG interfaces and the
-// EventTarget prototype ancestry remain separate binding slices.
+// document queries and mutations. SVG interfaces and EventTarget prototype
+// ancestry remain separate binding slices.
 fn (mut host Host) install_node_interfaces() ! {
 	mut vm := host.vm
 	mut global := host.realm.global_object_record()
@@ -26,7 +26,7 @@ fn (mut host Host) install_node_interfaces() ! {
 			host.require_open(mut vm)!
 			if name == 'HTMLElement' {
 				mut owner := unsafe { &Host(host) }
-				return owner.construct_html_element(mut vm, new_target)
+				return owner.construct_html_element(mut vm, new_target, 'HTMLElement')
 			}
 			if name == 'DocumentFragment' {
 				persistent := platform.enter_persistent()

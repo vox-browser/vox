@@ -12,7 +12,7 @@ fn (host &Host) custom_element_binding(handle voidptr) !&RegistryBinding {
 	return error('TypeError: Custom element registry belongs to another realm')
 }
 
-fn (mut host Host) construct_html_element(mut vm libjs.VM, new_target &libjs.Object) !&libjs.Object {
+fn (mut host Host) construct_html_element(mut vm libjs.VM, new_target &libjs.Object, interface_name string) !&libjs.Object {
 	persistent := platform.enter_persistent()
 	defer { platform.leave_persistent(persistent) }
 	id := u64(voidptr(new_target))
@@ -22,12 +22,13 @@ fn (mut host Host) construct_html_element(mut vm libjs.VM, new_target &libjs.Obj
 	definition := binding.native.get_definition_from_new_target(id) or { return vm.throw_error(.type_error, 'No custom element definition is assigned to this constructor') }
 	parent := new_target.get(mut vm, libjs.PropertyName.from_str('prototype'))!
 	element := if dom.html_constructor_is_upgrading(definition) {
-		dom.take_html_constructor_upgrade_element(definition, 'HTMLElement') or { return host.dom_error(mut vm, err) }
+		dom.take_html_constructor_upgrade_element(definition, interface_name) or { return host.dom_error(mut vm, err) }
 	} else {
-		dom.create_element_for_html_constructor(host.document, definition, handle, 'HTMLElement') or { return host.dom_error(mut vm, err) }
+		dom.create_element_for_html_constructor(host.document, definition, handle, interface_name) or { return host.dom_error(mut vm, err) }
 	}
 	mut object := host.wrap_node(element.as_node()).as_object()
-	if !object.internal_set_prototype_of(if parent.is_object() { parent.as_object() } else { host.html_element_prototype }) { return vm.throw_error(.type_error, 'Unable to set custom element prototype') }
+	fallback := host.html_element_prototypes[interface_name] or { host.html_element_prototype }
+	if !object.internal_set_prototype_of(if parent.is_object() { parent.as_object() } else { fallback }) { return vm.throw_error(.type_error, 'Unable to set custom element prototype') }
 	return object
 }
 

@@ -27,6 +27,8 @@ mut:
 	node_prototype       &libjs.Object = unsafe { nil }
 	element_prototype    &libjs.Object = unsafe { nil }
 	html_element_prototype &libjs.Object = unsafe { nil }
+	html_element_prototypes map[string]&libjs.Object
+	html_element_tags map[string]string
 	document_prototype   &libjs.Object = unsafe { nil }
 	fragment_prototype   &libjs.Object = unsafe { nil }
 	collection_prototype &libjs.Object = unsafe { nil }
@@ -75,6 +77,7 @@ pub fn Host.create(vm &libjs.VM, realm &libjs.Realm, document &dom.Document, hoo
 	mut host := &Host{ vm: vm, realm: realm, document: document, hooks: hooks }
 	host.install_nodes()!
 	host.install_node_interfaces()!
+	host.install_html_element_interfaces()!
 	host.install_dom_exceptions()!
 	host.install_custom_elements()!
 	host.install_navigator()!
@@ -148,6 +151,8 @@ pub fn (mut host Host) close() {
 	owner_document.clear_custom_element_construction_hook(voidptr(&host))
 	host.registries.clear()
 	host.active_registries.clear()
+	host.html_element_prototypes.clear()
+	host.html_element_tags.clear()
 	host.navigator_object = unsafe { nil }
 	host.navigator_native = unsafe { nil }
 	host.navigator_frozen_languages = unsafe { nil }
