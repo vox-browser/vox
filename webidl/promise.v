@@ -6,6 +6,8 @@
 // to the relevant event loop; standalone callers retain the direct job adapter.
 module webidl
 
+import platform
+
 pub enum PromiseState {
 	pending
 	fulfilled
@@ -33,6 +35,15 @@ struct PromiseObserver {
 	on_rejected  ReactionSteps @[required]
 }
 
+// Engine bridges observe native capability state without an escaping V
+// callback. These sinks update another capability; script reactions still
+// belong to that engine's ordinary Promise job queue.
+pub interface PromiseSettlementObserver {
+	promise_observer_identity() voidptr
+mut:
+	native_promise_settled(PromiseState, Value)
+}
+
 @[heap]
 pub struct Promise {
 pub mut:
@@ -46,6 +57,7 @@ mut:
 	realm_steps_runner ?PromiseRealmStepsRunner
 	reactions          []PromiseReaction
 	observers          []PromiseObserver
+	settlement_observers []PromiseSettlementObserver
 	already_resolved   bool
 }
 
@@ -192,6 +204,33 @@ fn (mut promise Promise) settle(state PromiseState, value Value) {
 			}
 		})
 	}
+	mut sinks := promise.settlement_observers.clone()
+	promise.settlement_observers.clear()
+	for mut sink in sinks { sink.native_promise_settled(state, value) }
+}
+
+pub fn (mut promise Promise) observe_native_settlement(mut observer PromiseSettlementObserver) {
+	promise.mark_as_handled()
+	if promise.state != .pending {
+		observer.native_promise_settled(promise.state, promise.result)
+		return
+	}
+	for current in promise.settlement_observers {
+		if current.promise_observer_identity() == observer.promise_observer_identity() { return }
+	}
+	persistent := platform.enter_persistent()
+	defer { platform.leave_persistent(persistent) }
+	promise.settlement_observers << observer
+}
+
+pub fn (mut promise Promise) remove_native_settlement_observer(identity voidptr) bool {
+	for index, observer in promise.settlement_observers {
+		if observer.promise_observer_identity() == identity {
+			promise.settlement_observers.delete(index)
+			return true
+		}
+	}
+	return false
 }
 
 fn (promise &Promise) enqueue_job(job fn ()) {
