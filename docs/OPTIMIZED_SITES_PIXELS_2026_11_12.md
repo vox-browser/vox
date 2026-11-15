@@ -2574,3 +2574,88 @@ contains preliminary lossy helper bytes, so it cannot validate `df3fea85d`.
 Earlier managed attempts reject a concurrent `tools/gc_allocation_sampler.c`
 edit and retain the previous bundle; those failures remain recorded. Full
 catalog equality and production validation of the final lossy fix stay open.
+
+
+## Production confirmation of lossy WebP controls, 2026-11-15
+
+The final `df3fea85d` helpers are now verified in production executable
+`7f651f2d86709866c45ec1f069dcf17ed7aed25f201861a5dc0e3be23a2d98be`,
+receipt `20261115-093837-2119e81e`, C, literal V `-prod`, one C unit. All
+consumed V files in GG, ggshape, images, imageraster and yuv match, including
+the final lossy helpers. The 44-workload, 88-capture cohort retains every
+preceding reference count: four WebP controls and four archived sites exact,
+vlang.io 27, CNN 175,866. All native guards, driver and outer guard exit zero,
+with 133 selected compiled witnesses and 160 stable source/tool/shader pins.
+Forty-three native pairs repeat exactly; CNN's pair differs at 1,554 pixels.
+This supersedes the preceding lossy fix's pending-production status.
+
+## Magnified alpha WebP sampling, 2026-11-15
+
+`59d71dca9` samples simple, untagged VP8L images at native or larger sizes through
+the existing GG image shader. Marker 7 already owns premultiplied rows; the
+helper borrows those rows without applying alpha again, and leaves existing
+resize history intact. The existing opaque minification path is retained.
+Source/target bounds and existing paint-state restrictions still apply; alpha
+minification, extended/profiled streams and unsupported paint states decline.
+No native painter or shader changes are shipped.
+
+The three untagged images in the unchanged alpha fixture become exact. Its
+whole-document result improves from **10,274 to 2,658 differing pixels**, twice:
+**7,616 corrected, zero introduced**. All remaining differences lie in the
+profiled image at (320, 20), size 76×38. That image remains on the previous
+renderer. A separate decoder probe also exposes RGB changes from the 8-bit
+premultiply/unpremultiply round trip; interpolation and decoder work remain.
+Ignoring its profile is not an accepted correction.
+
+Two fresh Brave processes match the original reference exactly. The initial
+probe incorrectly used 80×40 for the last two images; the `img + img` rule
+actually sizes every later sibling to 76×38. The corrected dimensions agree
+with Brave's recorded DOM rectangles. Rounded premultiplication and using the
+authored fractional top instead of its existing paint snap fail calibration.
+Those attempts are retained. Another focused compile fails after shared cleanup
+prunes its old font dependency; it is rerun with the current published build's
+font stage, preserving the sparse-font option.
+
+Three browser-focused tests cover format eligibility, borrowed rows, persistent
+resize-cache ownership and unchanged resize history. The GPU test matches all
+three untagged images at both 1× and 4× sampling. Final arena-poisoned focused
+runtime guards exit zero. An early prototype changed resize history on a native
+upload; that side effect was removed before final validation, with its exact
+consumed sources and non-final test results retained separately.
+
+Diagnostic executable
+`569d4bd3cb50decef3f3a5e74945dddfdbec33b61c4c6f3e4d9eea278ac49a31`
+completes 44 workloads/88 captures, with all 89 capture/startup guards and both
+enclosing exits zero. It has 100 compiled V witnesses and 162 stable source/tool
+pins. Forty-three pairs repeat exactly; CNN differs at 551 pixels between
+captures. Every stable non-alpha workload's pixels match the production
+baseline exactly, beyond merely preserving its reference-difference count.
+
+Production executable
+`36f72f4aa98fc2734d6765842446a01a0a8aca92404c2e6bb932bb999944ab8f`,
+receipt `20261115-112056-6ae3f0ff`, contains the final helper bytes and uses C,
+literal V `-prod`, one C unit. A second 44-workload/88-capture cohort confirms
+**2,658 alpha pixels twice**, all earlier reference counts and exact agreement
+with the diagnostic PNGs for every workload except unstable CNN. All 88 native
+guards, driver and outer guard exit zero; 133 compiled witnesses and 160 stable
+source/tool/shader pins pass. Forty-three pairs repeat exactly; CNN's pair
+still differs at 1,520 pixels. The final helper was consumed before the commit;
+its byte witnesses establish code identity independently of the receipt's HEAD.
+
+Evidence is local under
+`docs/performance/vlang-gradients-20261114/raw/webp-production-alpha-20261115/`:
+production and candidate summaries, source/decoder identities, commands, actual
+exits, failed calibrations and builds, decoded rows, PNGs and archival manifests.
+Native libraries have separate identities; these checks do not establish whole-
+checkout reproducibility or LibJS behavior. No reference or tolerance changes,
+manual production build, live-site acceptance or performance credit are involved.
+Completed scratch archival hashes 9,156 file records across 68
+owned roots, copies and reverifies selected evidence, and removes all job
+outputs, binaries, guards and locks. Temporary probe sources and the owned test
+harness link are removed.
+
+All-site equality remains open: vlang.io retains its 23 JPEG pixels (including
+the historical nine introduced pixels) and four scene pixels; CNN retains
+rendering/source-replay/repeat failures; Reddit's original fixture is missing.
+The historical tall-shadow failure and other retained diagnostic failures also
+remain open. The profiled alpha image is an additional unresolved control.

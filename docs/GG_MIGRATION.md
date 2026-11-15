@@ -3080,3 +3080,19 @@ The earlier `c242016bb` lossless controls are now exact twice in production
 `5171fc6f`, with final helper/caller and all 64 GG V witnesses matching. That
 preview contains older lossy helpers and cannot validate the final new slice.
 See the [audit](OPTIMIZED_SITES_PIXELS_2026_11_12.md#native-size-and-half-size-lossy-webp-sampling-2026-11-15).
+
+
+### Alpha WebP magnification and production confirmation, 2026-11-15
+
+`59d71dca9` borrows premultiplied VP8L rows for native-size/magnified sampling
+without changing resize history. Three untagged alpha images become exact;
+the combined control improves 10,274→2,658 pixels with zero new differences.
+The profiled image remains unresolved. Three browser tests and six GPU draws
+at 1×/4× pass. No new native painter or shader is shipped.
+
+The final lossy fix `df3fea85d` is confirmed in production `7f651f2d` across
+44 workloads. Production `36f72f4a` additionally confirms the alpha correction:
+44 workloads/88 captures, all guards/exits zero, 133 compiled witnesses and
+160 stable input pins. Other stable PNGs match diagnostics exactly; CNN still
+fails repeatability. This supersedes the lossy fix's pending status. See the
+[audit](OPTIMIZED_SITES_PIXELS_2026_11_12.md#magnified-alpha-webp-sampling-2026-11-15).
