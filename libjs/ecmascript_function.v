@@ -154,6 +154,14 @@ fn (mut function ECMAScriptFunction) internal_call(mut vm VM, this_value Value, 
 			environment.initialize_binding(mut vm, name, value, .normal)!
 		} else { environment.set_mutable_binding(mut vm, name, value, false)! }
 	}
+	if function.needs_arguments_binding() {
+		object := create_arguments_object(mut vm, &function, environment, arguments)!
+		name := utf16_string('arguments')
+		if function.data.is_strict_mode {
+			environment.create_immutable_binding(mut vm, name, false)!
+		} else { environment.create_mutable_binding(mut vm, name, false)! }
+		environment.initialize_binding(mut vm, name, Value.from_object(object), .normal)!
+	}
 	for binding in executable.global_bindings {
 		if !environment.has_binding_named(binding.name) {
 			environment.create_mutable_binding(mut vm, binding.name, false)!

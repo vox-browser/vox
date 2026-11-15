@@ -160,6 +160,8 @@ pub mut:
 	regexp_object ?&RegExpObject
 	host_properties ?HostProperties
 	array_object         ?&ArrayObject
+	arguments_object     ?&ArgumentsObject
+	is_arguments_object  bool // Also brands ordinary strict/unmapped arguments.
 	keyed_collection     ?&KeyedCollection
 	keyed_iterator       ?&KeyedCollectionIterator
 	weak_map             ?&WeakMapObject
@@ -350,7 +352,7 @@ pub fn (object &Object) internal_get_own_property(key PropertyName) ?PropertyDes
 		}
 	}
 	return PropertyDescriptor{
-		value:        property.value
+		value:        if arguments := object.arguments_object { arguments.mapped_value(key) or { property.value } } else { property.value }
 		writable:     property.writable
 		enumerable:   property.enumerable
 		configurable: property.configurable
@@ -359,6 +361,7 @@ pub fn (object &Object) internal_get_own_property(key PropertyName) ?PropertyDes
 
 // 10.1.6 [[DefineOwnProperty]] ( P, Desc ), https://tc39.es/ecma262/#sec-ordinary-object-internal-methods-and-internal-slots-defineownproperty-p-desc
 pub fn (mut object Object) internal_define_own_property(mut vm VM, key PropertyName, descriptor PropertyDescriptor) !bool {
+	if mut arguments := object.arguments_object { return arguments.define_own_property(mut object, key, descriptor) }
 	if mut array := object.typed_array { return array.internal_define_own_property(mut vm, key, descriptor) }
 	if mut array := object.array_object {
 		return array.internal_define_own_property(mut vm, key, descriptor)
@@ -516,6 +519,9 @@ pub fn (mut object Object) internal_delete(key PropertyName) bool {
 		return false
 	}
 	object.properties.delete(index)
+	if mut arguments := object.arguments_object {
+		if key.is_number() { arguments.parameter_map.delete(key.number) }
+	}
 	return true
 }
 

@@ -31,6 +31,7 @@ pub mut:
 	function_prototype             ?&Object                 // %Function.prototype%
 	async_function_prototype ?&Object
 	array_prototype ?&Object
+	array_prototype_values Value // Intrinsic identity, independent of user mutations.
 	array_constructor ?&Object
 	map_prototype ?&Object
 	map_constructor ?&Object

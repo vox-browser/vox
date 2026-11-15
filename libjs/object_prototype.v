@@ -52,6 +52,7 @@ pub fn object_prototype_to_string(mut vm VM, primitives PrimitiveObjectPrototype
 	if value.is_null() { return Value.from_string(vm.create_string_from_str('[object Null]')) }
 	object := value.to_object_with_prototypes(mut vm, primitives)!
 	builtin_tag := if Value.from_object(object).is_array(mut vm)! { 'Array' }
+		else if object.is_arguments_object { 'Arguments' }
 		else if object.callable != none { 'Function' }
 		else if object.error_data != none { 'Error' }
 		else if object.date_object != none { 'Date' }

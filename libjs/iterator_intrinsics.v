@@ -32,6 +32,7 @@ fn initialize_iterator_intrinsics(mut vm VM, mut realm Realm) {
 		array.define_direct_property(PropertyName.from_str(name), Value.from_object(function.object),
 			attribute_writable | attribute_configurable)
 		if kind == .value {
+			realm.array_prototype_values = Value.from_object(function.object)
 			array.define_direct_property(PropertyName.from_symbol(vm.well_known_symbol_iterator()),
 				Value.from_object(function.object), attribute_writable | attribute_configurable)
 		}
