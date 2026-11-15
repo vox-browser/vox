@@ -32,6 +32,7 @@ fn (mut host Host) install_urls() ! {
 	mut global := host.realm.global_object_record()
 	global.define_direct_property(libjs.PropertyName.from_str('URL'), libjs.Value.from_object(constructor), libjs.attribute_writable | libjs.attribute_configurable)
 	location := domurl.DOMURL.construct_impl(host.document.url.serialize(), none)!
+	host.location_url = location
 	global.define_direct_property(libjs.PropertyName.from_str('location'), libjs.Value.from_object(host.wrap_url(location, true)), libjs.attribute_enumerable)
 }
 
@@ -43,11 +44,12 @@ fn (mut host Host) wrap_url(url &domurl.DOMURL, location bool) &libjs.Object {
 	})
 	object.class_name = if location { 'Location' } else { 'URL' }
 	for name in ['href', 'pathname', 'hash', 'search', 'origin'] {
-		host.accessor(mut object, name, fn [host, url, name, object] (mut vm libjs.VM) !libjs.Value {
+		host.accessor(mut object, name, fn [host, url, name, object, location] (mut vm libjs.VM) !libjs.Value {
 			host.require_open(mut vm)!
 			if !vm.this_value().is_object() || voidptr(vm.this_value().as_object()) != voidptr(object) {
 				return vm.throw_error(.type_error, 'URL property called on incompatible receiver')
 			}
+			if location { host.refresh_location()! }
 			text := match name {
 				'href' { url.href() }
 				'pathname' { url.pathname() }
@@ -69,14 +71,25 @@ fn (mut host Host) wrap_url(url &domurl.DOMURL, location bool) &libjs.Object {
 			return libjs.js_undefined()
 		} } else { unsafe { nil } })
 	}
-	host.method(mut object, 'toString', 0, fn [host, url, object] (mut vm libjs.VM) !libjs.Value {
+	host.method(mut object, 'toString', 0, fn [host, url, object, location] (mut vm libjs.VM) !libjs.Value {
 		host.require_open(mut vm)!
 		if !vm.this_value().is_object() || voidptr(vm.this_value().as_object()) != voidptr(object) {
 			return vm.throw_error(.type_error, 'URL method called on incompatible receiver')
 		}
-		return libjs.Value.from_string(vm.create_string_from_str(url.href()))
+		return libjs.Value.from_string(vm.create_string_from_str(if location { host.document.url.serialize() } else { url.href() }))
 	})
 	params := url.search_params()
 	object.define_direct_property(libjs.PropertyName.from_str('searchParams'), host.wrap_query(params, none), libjs.attribute_enumerable)
 	return object
+}
+
+// Same-document history and native traversal update Document's actual URL.
+fn (host &Host) refresh_location() ! {
+	if host.location_url == unsafe { nil } { return }
+	text := host.document.url.serialize()
+	if host.location_url.href() == text { return }
+	persistent := platform.enter_persistent()
+	defer { platform.leave_persistent(persistent) }
+	mut url := host.location_url
+	url.set_href(text)!
 }

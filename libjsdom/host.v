@@ -63,6 +63,9 @@ mut:
 	resize_entry_wrappers map[voidptr]&libjs.Object
 	resize_sizes map[voidptr]resizeobserver.ResizeObserverSize
 	url_prototype        &libjs.Object = unsafe { nil }
+	location_url &domurl.DOMURL = unsafe { nil }
+	history_object &libjs.Object = unsafe { nil }
+	history_binding ?&HistoryBinding
 	query_prototype &libjs.Object = unsafe { nil }
 	query_iterator_prototype &libjs.Object = unsafe { nil }
 	queries map[voidptr]&domurl.URLSearchParams
@@ -150,6 +153,7 @@ pub fn Host.create(vm &libjs.VM, realm &libjs.Realm, document &dom.Document, hoo
 	host.install_styles()
 	host.install_query_params()!
 	host.install_urls()!
+	host.install_history()
 	host.install_headers()!
 	mut global := realm.global_object_record()
 	global.define_direct_property(libjs.PropertyName.from_str('document'), host.wrap_node(document.as_node()), libjs.attribute_enumerable)
@@ -229,6 +233,13 @@ pub fn (mut host Host) close() {
 	host.navigator_native = unsafe { nil }
 	host.navigator_frozen_languages = unsafe { nil }
 	host.navigator_languages = []
+	if mut binding := host.history_binding {
+		binding.state = libjs.js_undefined()
+		binding.state_cached = false
+	}
+	host.history_binding = none
+	host.history_object = unsafe { nil }
+	host.location_url = unsafe { nil }
 	host.close_fetch()
 	for listener in host.listeners {
 		if signal := listener.abort_signal {
