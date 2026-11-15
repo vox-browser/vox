@@ -32,6 +32,8 @@ struct HNEngineVisit {
 	activity          libjs.NativeCodeActivity
 	lookup_activity   libjs.PropertyLookupActivity
 	argument_activity libjs.ArgumentAllocationActivity
+	builtin_key_activity libjs.BuiltinKeyActivity
+	context_activity libjs.ContextAllocationActivity
 }
 
 fn hn_engine_toggle(document &dom.Document, runtime &browserjs.Runtime, button &dom.Element) ! {
@@ -58,6 +60,7 @@ fn hn_engine_visit(mode string, cycles int, diagnostic bool) !HNEngineVisit {
 	engine := if mode == 'v8' { browserjs.Engine.javascriptcore } else { browserjs.Engine.libjs }
 	libjs.diagnose_property_lookup_hints_for_testing(diagnostic)
 	libjs.diagnose_argument_allocation_for_testing(diagnostic)
+	libjs.diagnose_builtin_keys_for_testing(diagnostic)
 	started := time.sys_mono_now()
 	address := dom.URL{ value: 'https://news.ycombinator.com/item?id=50231722' }
 	mut document := html.parse_navigation_document(markup, address, address.origin(), none)!
@@ -80,6 +83,8 @@ fn hn_engine_visit(mode string, cycles int, diagnostic bool) !HNEngineVisit {
 	classes := rows.map(it.get_attribute_value('class'))
 	button := css.query_selector(rows[0].as_node(), '.togg') or { return error('Missing toggle') }
 	mut vm := runtime.libjs_vm()
+	libjs.diagnose_builtin_keys_for_testing(diagnostic)
+	libjs.diagnose_context_allocation_for_testing(diagnostic)
 	if diagnostic && engine == .libjs { vm.diagnose_native_code(true)! }
 	first_started := time.sys_mono_now()
 	hn_engine_toggle(document, runtime, button)!
@@ -98,6 +103,8 @@ fn hn_engine_visit(mode string, cycles int, diagnostic bool) !HNEngineVisit {
 	callback_ms := f64(time.sys_mono_now() - callback_started) / 1e6
 	lookup_activity := libjs.diagnose_property_lookup_hints_for_testing(false)
 	argument_activity := libjs.diagnose_argument_allocation_for_testing(false)
+	builtin_key_activity := libjs.diagnose_builtin_keys_for_testing(false)
+	context_activity := libjs.diagnose_context_allocation_for_testing(false)
 	activity := if engine == .libjs {
 		vm.diagnose_native_code(false)!
 	} else {
@@ -136,6 +143,8 @@ fn hn_engine_visit(mode string, cycles int, diagnostic bool) !HNEngineVisit {
 		activity:          activity
 		lookup_activity:   lookup_activity
 		argument_activity: argument_activity
+		builtin_key_activity: builtin_key_activity
+		context_activity: context_activity
 	}
 }
 
@@ -145,6 +154,8 @@ fn test_hacker_news_engine_benchmark() {
 	libjs.set_property_lookup_hints_for_testing(os.getenv('VOX_LIBJS_LOOKUP_HINTS') != '0')
 	libjs.set_argument_elision_for_testing(os.getenv('VOX_LIBJS_ARGUMENT_ELISION') != '0')
 	libjs.set_register_bindings_for_testing(os.getenv('VOX_LIBJS_REGISTER_BINDINGS') != '0')
+	libjs.set_builtin_key_cache_for_testing(os.getenv('VOX_LIBJS_BUILTIN_KEYS') != '0')
+	libjs.set_exact_context_capacity_for_testing(os.getenv('VOX_LIBJS_EXACT_CONTEXT') != '0')
 	// Keep this author-script/DOM workload independent of filter-list startup.
 	adblock.set_enabled(false)
 	$if !vox_v8 ? {

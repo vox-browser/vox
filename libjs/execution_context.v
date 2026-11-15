@@ -120,36 +120,12 @@ fn (mut context ExecutionContext) leave_lexical_scope() ! {
 	if context.lexical_scope_depth > 0 { context.lexical_scope_depth-- }
 }
 
-// ExecutionContextAllocator rounds the value tail up to a size class so freed
-// frames can be reused.
-fn tail_allocation_size(tail_size int) int {
-	if tail_size <= 4 {
-		return 4
-	}
-	if tail_size <= 16 {
-		return 16
-	}
-	if tail_size <= 64 {
-		return 64
-	}
-	if tail_size <= 128 {
-		return 128
-	}
-	if tail_size <= 256 {
-		return 256
-	}
-	if tail_size <= 512 {
-		return 512
-	}
-	return tail_size
-}
-
 pub fn ExecutionContext.create(registers_and_locals_count u32, constants []Value, arguments_count u32) &ExecutionContext {
 	total := u64(registers_and_locals_count) + u64(constants.len) + u64(arguments_count)
 	if total > u64(0xFFFFFFFF) {
 		panic('ExecutionContext.create: value tail overflows u32')
 	}
-	mut values := []Value{len: int(total), cap: tail_allocation_size(int(total))}
+	mut values := []Value{len: int(total), cap: context_value_capacity(int(total))}
 	// NB: Enter initializes the remaining registers and locals; the reserved
 	//     registers start out as the special empty value.
 	reserved := if registers_and_locals_count < reserved_register_count {

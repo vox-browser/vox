@@ -56,6 +56,11 @@ UTF-16 key, and array algorithms reuse a VM-owned immutable length key. Actual
 property operations still dispatch through getters, setters and exotic hooks;
 focused tests exercise these behaviors with both allocation paths and GC modes.
 
+Execution-context value arrays now reserve their exact fixed layout. The old
+size-class rounding had no free list to reuse those extra slots. Value layout,
+copies, stack accounting, budgets and async/generator suspension are exercised
+in both GC modes; upstream contiguous/bump frame allocation remains separate.
+
 Set/Map operations and live iterators, WeakMap weak keys, ordinary arguments
 objects, default/rest/destructured function parameters, class inheritance,
 super construction (including explicit iterator-based argument spread),

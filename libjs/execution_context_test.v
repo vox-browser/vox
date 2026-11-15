@@ -17,7 +17,7 @@ fn test_execution_contexts_lay_out_registers_locals_constants_and_arguments() {
 	assert context.arguments().len == 2
 	assert context.yield_continuation == no_yield_continuation
 	assert context.caller_frame == none
-	assert context.values.cap == 16
+	assert context.values.cap == context.values.len
 	mut executable := &Executable{
 		registers_and_locals_count: 6
 		local_variable_names:       [utf16_string('a')]
