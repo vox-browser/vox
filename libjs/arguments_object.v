@@ -56,7 +56,7 @@ fn create_arguments_object(mut vm VM, function &ECMAScriptFunction, environment 
 	// Use the intrinsic, even if user code replaces Array.prototype.values.
 	object.define_direct_property(PropertyName.from_symbol(vm.well_known_symbol_iterator()),
 		realm.array_prototype_values, attribute_writable | attribute_configurable)
-	if function.data.is_strict_mode {
+	if function.data.is_strict_mode || !function.data.simple_parameters() {
 		thrower := realm.throw_type_error_function or { panic('Missing ThrowTypeError intrinsic') }
 		object.define_direct_property(PropertyName.from_str('callee'),
 			Value.from_accessor(Accessor.create(thrower, thrower, none)), 0)
@@ -83,8 +83,9 @@ fn (function &ECMAScriptFunction) needs_arguments_binding() bool {
 	if function.data.is_arrow_function { return false }
 	scope := function.data.body.kind.scope or { return false }
 	if data := scope.function_scope_data {
-		return !data.has_argument_parameter && !data.has_function_named_arguments
-			&& !data.has_lexically_declared_arguments
+		if data.has_argument_parameter { return false }
+		return !function.data.simple_parameters() || (!data.has_function_named_arguments
+			&& !data.has_lexically_declared_arguments)
 	}
 	return true
 }

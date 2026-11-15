@@ -50,6 +50,16 @@ fn (mut vm VM) execute_instruction(instruction Instruction, executable &Executab
 	}
 	mut result := js_undefined()
 	match instruction.op {
+		.get_argument { result = frame.argument(instruction.identifier) }
+		.get_rest_arguments {
+			mut values := []Value{}
+			for index := instruction.identifier; index < frame.passed_argument_count; index++ {
+				vm.consume_execution_budget()!
+				values << frame.argument(index)
+			}
+			result = Value.from_object(ArrayObject.create_from(mut vm, vm.realm(), values, vm.realm().array_prototype_record())!.object)
+		}
+		.enter_function_body { enter_function_body(mut vm, mut frame, executable)! }
 		.sync_iterator_step_value, .sync_iterator_elide, .sync_iterator_to_array {
 			if !left.is_object() { return vm.throw_error(.internal_error, 'Invalid iterator record') }
 			mut record := left.as_object().iterator_record or { return vm.throw_error(.internal_error, 'Invalid iterator record') }

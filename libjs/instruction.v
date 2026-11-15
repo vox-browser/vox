@@ -82,6 +82,9 @@ pub enum OpCode {
 	new_class
 	new_class_method
 	define_class_method
+	get_argument
+	get_rest_arguments
+	enter_function_body
 }
 
 pub struct Instruction {
@@ -143,7 +146,7 @@ fn (instruction Instruction) input_operand(index int) Operand {
 
 fn (instruction Instruction) writes_operand() bool {
 	return instruction.op !in [.put_property, .define_property, .define_class_method, .set_binding, .set_variable, .initialize_binding,
-		.create_mutable_binding, .create_immutable_binding, .enter_scope, .leave_scope, .jump,
+		.create_mutable_binding, .create_immutable_binding, .enter_scope, .leave_scope, .enter_function_body, .jump,
 		.require_object_coercible, .set_object_literal_prototype,
 		.close_sync_iterator, .close_sync_iterator_throw,
 		.sync_iterator_elide,

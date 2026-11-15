@@ -93,12 +93,8 @@ fn (mut function ECMAScriptFunction) compile(mut vm VM) !&Executable {
 		range: function.data.body.range
 		function_body: true
 	}
-	for parameter in function.data.parameters {
-		if parameter.binding !is IdentifierBinding || parameter.default_value != none || parameter.is_rest {
-			return generator.unsupported('non-simple function parameters')
-		}
-	}
 	generator.collect_vars(&function.data.body)!
+	if !function.data.simple_parameters() { generator.initialize_function_parameters(mut vm, function.data)! }
 	scope := function.data.body.kind.scope or { return error('Missing function body') }
 	generator.lexical_declarations(scope.children, false)!
 	generator.initialize_functions(scope.children)
@@ -114,6 +110,7 @@ fn (mut function ECMAScriptFunction) internal_call(mut vm VM, this_value Value, 
 	// Creating a function does not evaluate its body. Do not execute an async
 	// body as an ordinary function while Promise/await execution is pending.
 	if function.data.kind != .normal { return error('LibJS async function execution is not translated yet') }
+	simple_parameters := function.data.simple_parameters()
 	executable := function.compile(mut vm)!
 	mut stack := vm.interpreter_stack()
 	mark := stack.top()
@@ -147,12 +144,15 @@ fn (mut function ECMAScriptFunction) internal_call(mut vm VM, this_value Value, 
 		frame.this_value = bound_this
 	}
 	for index, parameter in function.data.parameters {
-		binding := parameter.binding as IdentifierBinding
-		name := binding.identifier.name
-		value := if index < arguments.len { arguments[index] } else { js_undefined() }
-		if !environment.has_binding_named(name) { environment.create_mutable_binding(mut vm, name, false)!
-			environment.initialize_binding(mut vm, name, value, .normal)!
-		} else { environment.set_mutable_binding(mut vm, name, value, false)! }
+		for name in parameter_bound_names(parameter) {
+			if !environment.has_binding_named(name) { environment.create_mutable_binding(mut vm, name, false)! }
+			if simple_parameters {
+				value := if index < arguments.len { arguments[index] } else { js_undefined() }
+				binding_index := environment.find_binding_index(name)
+				if environment.bindings[binding_index].initialized { environment.set_mutable_binding(mut vm, name, value, false)! }
+				else { environment.initialize_binding(mut vm, name, value, .normal)! }
+			}
+		}
 	}
 	if function.needs_arguments_binding() {
 		object := create_arguments_object(mut vm, &function, environment, arguments)!
@@ -162,7 +162,7 @@ fn (mut function ECMAScriptFunction) internal_call(mut vm VM, this_value Value, 
 		} else { environment.create_mutable_binding(mut vm, name, false)! }
 		environment.initialize_binding(mut vm, name, Value.from_object(object), .normal)!
 	}
-	for binding in executable.global_bindings {
+	for binding in if simple_parameters { executable.global_bindings } else { []GlobalBinding{} } {
 		if !environment.has_binding_named(binding.name) {
 			environment.create_mutable_binding(mut vm, binding.name, false)!
 			environment.initialize_binding(mut vm, binding.name, js_undefined(), .normal)!
