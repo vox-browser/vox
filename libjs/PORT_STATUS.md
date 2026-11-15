@@ -72,6 +72,11 @@ nested argument operands, handlers and layout. Mutable bytecode is compared on
 every reuse; mutations fall back to full validation. Invalidation and the 64 KiB
 snapshot bound have focused coverage; no immutable-bytecode contract is assumed.
 
+Blocks without lexical/class declarations, direct eval or Annex B names avoid
+empty environment allocation. Budgeted no-ops retain ordinary boundary ticks;
+the native tier executes them directly. Catch/finally unwinding, retained lexical
+scopes, closures and loop budget cleanup have focused coverage in both GC modes.
+
 Set/Map operations and live iterators, WeakMap weak keys, ordinary arguments
 objects, default/rest/destructured function parameters, class inheritance,
 super construction (including explicit iterator-based argument spread),

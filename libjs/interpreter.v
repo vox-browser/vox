@@ -51,6 +51,7 @@ fn (mut vm VM) execute_instruction(instruction Instruction, executable &Executab
 	}
 	mut result := js_undefined()
 	match instruction.op {
+		.nop {}
 		.generator_start {
 			mut execution := frame.generator_execution or { return error('Generator start requires a generator frame') }
 			function := execution.function or { return error('Generator start requires its creating function') }

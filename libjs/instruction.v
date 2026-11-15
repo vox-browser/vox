@@ -119,6 +119,7 @@ pub enum OpCode {
 	get_generator_resume_value
 	yield_iterator_result
 	generator_delegate_step
+	nop
 }
 
 pub struct Instruction {
@@ -182,7 +183,7 @@ fn (instruction Instruction) input_operand(index int) Operand {
 }
 
 fn (instruction Instruction) writes_operand() bool {
-	return instruction.op !in [.put_property, .put_super_property, .put_binding_reference, .define_property, .define_class_method, .set_binding, .set_variable, .initialize_binding,
+	return instruction.op !in [.nop, .put_property, .put_super_property, .put_binding_reference, .define_property, .define_class_method, .set_binding, .set_variable, .initialize_binding,
 		.put_private, .record_private_class_method, .enter_class_private_environment,
 		.create_mutable_binding, .create_immutable_binding, .enter_scope, .leave_scope, .enter_function_body, .jump,
 		.require_object_coercible, .set_object_literal_prototype, .copy_data_properties,

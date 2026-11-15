@@ -285,7 +285,7 @@ fn native_source(executables []&Executable) !(string, int) {
 }
 
 fn native_fast_instruction(instruction Instruction, executable &Executable) !string {
-	if instruction.op == .jump { return 'BUDGET' }
+	if instruction.op in [.jump, .nop] { return 'BUDGET' }
 	if instruction.op !in [.mov, .end, .jump_if_true, .jump_if_false, .jump_if_nullish, .add, .sub,
 		.mul, .div, .less_than, .less_than_equals, .greater_than, .greater_than_equals, .strict_equals,
 		.strict_inequals, .increment, .decrement, .to_numeric, .unary_plus, .unary_minus, .not_op] {

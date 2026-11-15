@@ -758,6 +758,14 @@ fn (mut generator BytecodeGenerator) statement(mut vm VM, statement &Statement) 
 			if scope.children.any(it.kind.tag == .function_declaration) {
 				return generator.unsupported('block-scoped function declarations')
 			}
+			if elide_empty_block(scope) {
+				// Keep budgeted boundary operations, without allocating an empty
+				// environment or changing the actual lexical-depth metadata.
+				generator.emit(Instruction{op: .nop})
+				for child in scope.children { generator.statement(mut vm, &child)! }
+				generator.emit(Instruction{op: .nop})
+				return
+			}
 			generator.emit(Instruction{ op: .enter_scope })
 			generator.scope_depth++
 			generator.lexical_declarations(scope.children, false)!
