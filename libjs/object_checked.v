@@ -21,6 +21,14 @@ pub fn (object &Object) get_own_property_checked(mut vm VM, key PropertyName) !O
 
 pub fn (object &Object) own_property_keys_checked(mut vm VM) ![]PropertyName {
 	if proxy := object.proxy_object { return proxy.own_keys(mut vm) }
+	if array := object.typed_array {
+		record := make_typed_array_with_buffer_witness_record(array, .seq_cst)
+		if !is_typed_array_out_of_bounds(record) {
+			// Charge the dense key list before allocating it. Native own-key
+			// enumeration has no author callbacks between this witness and copy.
+			for _ in 0 .. typed_array_length(record) { vm.consume_execution_budget()! }
+		}
+	}
 	return object.own_property_keys()
 }
 

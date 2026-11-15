@@ -1,7 +1,7 @@
 module libjs
 
-// Runtime/TypedArrayConstructor.{h,cpp}. The abstract constructor/prototype
-// dependency is explicit until the concrete TypedArray intrinsic graph exists.
+// Runtime/TypedArrayConstructor.{h,cpp}. The retained adapter accepts explicit
+// dependencies; production installation shares these native algorithms.
 @[heap]
 pub struct TypedArrayConstructor {
 pub:
@@ -83,6 +83,7 @@ pub fn typed_array_constructor_from(mut vm VM, prototypes PrimitiveObjectPrototy
 		])!
 		mut object := array.object
 		for index, value in values {
+			vm.consume_execution_budget()!
 			mapped := if map_fn.is_undefined() { value } else { call(mut vm, map_fn, this_arg, [
 					value,
 					Value.from_f64(f64(index)),
@@ -91,13 +92,14 @@ pub fn typed_array_constructor_from(mut vm VM, prototypes PrimitiveObjectPrototy
 		}
 		return Value.from_object(object)
 	}
-	array_like := source.to_object_with_prototypes(mut vm, prototypes) or { panic(err) }
+	array_like := source.to_object_with_prototypes(mut vm, prototypes)!
 	length := length_of_array_like(mut vm, array_like)!
 	array := typed_array_create(mut vm, constructor.as_object(), [
 		Value.from_f64(f64(length)),
 	])!
 	mut object := array.object
 	for index := u64(0); index < length; index++ {
+		vm.consume_execution_budget()!
 		key := PropertyName.from_number(u32(index))
 		value := array_like.get(mut vm, key)!
 		mapped := if map_fn.is_undefined() { value } else { call(mut vm, map_fn, this_arg, [
@@ -120,6 +122,7 @@ pub fn typed_array_constructor_of(mut vm VM) !Value {
 	])!
 	mut object := array.object
 	for index := u32(0); index < length; index++ {
+		vm.consume_execution_budget()!
 		object.set(mut vm, PropertyName.from_number(index), vm.argument(index), .yes)!
 	}
 	return Value.from_object(object)

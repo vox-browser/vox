@@ -1,5 +1,7 @@
 module libjs
 
+import platform
+
 // Runtime/ArrayIterator.{h,cpp}: CreateArrayIterator and next, including the
 // TypedArray witness path and the ordinary-array-like observable length path.
 pub enum PropertyKind {
@@ -19,6 +21,8 @@ pub mut:
 }
 
 pub fn ArrayIterator.create(realm &Realm, array Value, kind PropertyKind, prototype &Object) &ArrayIterator {
+	persistent := platform.enter_persistent()
+	defer { platform.leave_persistent(persistent) }
 	mut object := Object.create(realm, prototype)
 	object.class_name = 'ArrayIterator'
 	iterator := &ArrayIterator{object: object, array: array, iteration_kind: kind}

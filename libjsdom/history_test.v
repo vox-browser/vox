@@ -181,3 +181,9 @@ fn test_history_rejects_native_url_state_before_author_getters() {
 	defer { host.close() }
 	assert history_eval(mut vm, 'var u=new URL("https://example.com/"),reads=0,rejected=false;Object.defineProperty(u,"visible",{enumerable:true,get(){reads++;throw 1}});try{history.replaceState(u,"")}catch(e){rejected=e instanceof DOMException&&e.name==="DataCloneError"}rejected&&reads===0&&history.state===null')!.as_bool()
 }
+
+fn test_history_rejects_native_typed_array_state_before_author_getters() {
+	mut host, mut vm, _ := history_fixture()!
+	defer { host.close() }
+	assert history_eval(mut vm, 'var a=new Uint8Array([1,2]),reads=0,rejected=false;Object.defineProperty(a,"visible",{enumerable:true,get(){reads++;throw 1}});try{history.replaceState(a,"")}catch(e){rejected=e instanceof DOMException&&e.name==="DataCloneError"}rejected&&reads===0&&history.state===null')!.as_bool()
+}

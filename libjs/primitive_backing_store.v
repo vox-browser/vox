@@ -4,6 +4,7 @@
 module libjs
 
 import libgc
+import platform
 
 // The source move-only owner keeps one actual PrimitiveStorage handle. V
 // owners call destroy at their native-storage lifetime boundary. DataBlock's
@@ -15,6 +16,8 @@ mut:
 }
 
 pub fn OwnedPrimitiveBackingStore.create_zeroed(size uint) !&OwnedPrimitiveBackingStore {
+	persistent := platform.enter_persistent()
+	defer { platform.leave_persistent(persistent) }
 	mut buffer := &OwnedPrimitiveBackingStore{}
 	if size > 0 {
 		mut storage := libgc.PrimitiveStorage.the()
@@ -24,6 +27,8 @@ pub fn OwnedPrimitiveBackingStore.create_zeroed(size uint) !&OwnedPrimitiveBacki
 }
 
 pub fn OwnedPrimitiveBackingStore.create_uninitialized(size uint) !&OwnedPrimitiveBackingStore {
+	persistent := platform.enter_persistent()
+	defer { platform.leave_persistent(persistent) }
 	mut buffer := &OwnedPrimitiveBackingStore{}
 	if size > 0 {
 		mut storage := libgc.PrimitiveStorage.the()
@@ -33,6 +38,8 @@ pub fn OwnedPrimitiveBackingStore.create_uninitialized(size uint) !&OwnedPrimiti
 }
 
 pub fn OwnedPrimitiveBackingStore.create_zeroed_with_capacity(size uint, capacity uint) !&OwnedPrimitiveBackingStore {
+	persistent := platform.enter_persistent()
+	defer { platform.leave_persistent(persistent) }
 	mut buffer := &OwnedPrimitiveBackingStore{}
 	if capacity > 0 {
 		mut storage := libgc.PrimitiveStorage.the()

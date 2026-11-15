@@ -94,6 +94,10 @@ pub mut:
 	symbol_constructor             ?&Object
 	array_buffer_prototype         ?&Object
 	array_buffer_constructor       ?&Object
+	typed_array_prototype          ?&Object
+	typed_array_constructor        ?&Object
+	typed_array_prototypes         map[BufferElementType]&Object
+	typed_array_constructors       map[BufferElementType]&Object
 	data_view_prototype            ?&Object
 	data_view_constructor          ?&Object
 	shared_array_buffer_prototype  ?&Object
@@ -250,6 +254,7 @@ pub fn initialize_host_defined_realm(mut vm VM, hooks RealmGlobalHooks) !&Execut
 	initialize_bigint_intrinsics(mut vm, mut realm)
 	realm.reflect_object = ReflectObject.create(mut vm, realm, realm.object_prototype_record(), realm.array_prototype_record()).object
 	initialize_iterator_intrinsics(mut vm, mut realm)
+	initialize_typed_array_intrinsics(mut vm, mut realm)
 	initialize_generator_creation_intrinsics(mut vm, mut realm)
 	initialize_set_intrinsics(mut vm, mut realm)
 	initialize_map_intrinsics(mut vm, mut realm)
@@ -317,6 +322,7 @@ pub fn initialize_host_defined_realm(mut vm VM, hooks RealmGlobalHooks) !&Execut
 		attribute_writable | attribute_configurable)
 	global.define_direct_property(PropertyName.from_str('BigInt'),
 		Value.from_object(realm.bigint_constructor or { panic('Missing BigInt constructor') }), attribute_writable | attribute_configurable)
+	for kind, constructor in realm.typed_array_constructors { global.define_direct_property(PropertyName.from_str(kind.typed_array_name()), Value.from_object(constructor), attribute_writable | attribute_configurable) }
 	global.define_direct_property(PropertyName.from_str('DataView'),
 		Value.from_object(realm.data_view_constructor_record()),
 		attribute_writable | attribute_configurable)

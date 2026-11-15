@@ -74,10 +74,12 @@ fn set_typed_array_from_typed_array(mut vm VM, mut target TypedArray, target_off
 	}
 	limit := target_index + uint(source_length) * target_size
 	if typed_array_element_types_have_same_bit_encoding(source, target) {
+		typed_array_charge_byte_work(mut vm, limit - target_index)!
 		source_buffer.copy_data_to(mut target_buffer, source_index, target_index,
 			limit - target_index)
 	} else {
 		for target_index < limit {
+			vm.consume_execution_budget()!
 			// Preserve the pinned active body: it reads through the original
 			// source view even when the local source_buffer was cloned above.
 			value := source.get_value_from_buffer(mut vm, source_index, .unordered, true)
@@ -100,6 +102,7 @@ fn set_typed_array_from_array_like(mut vm VM, mut target TypedArray, target_offs
 	source_length := length_of_array_like(mut vm, source_object)!
 	check_typed_array_set_range(mut vm, target_offset, source_length, target_length)!
 	for k := u64(0); k < source_length; k++ {
+		vm.consume_execution_budget()!
 		value := source_object.get(mut vm, PropertyName.from_number(u32(k)))!
 		index := CanonicalIndex.from_double(mut vm, .index, target_offset + f64(k)) or {
 			panic(err)

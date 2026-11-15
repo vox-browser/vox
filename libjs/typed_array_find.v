@@ -21,6 +21,7 @@ fn typed_array_find_via_predicate(mut vm VM, array &TypedArray, length u32, dire
 	// Visit the snapshot range lazily: an early match must not allocate an
 	// index list proportional to the view's length.
 	for visited := u32(0); visited < length; visited++ {
+		vm.consume_execution_budget()!
 		k := if direction == .ascending { visited } else { length - 1 - visited }
 		value := array.object.get(mut vm, PropertyName.from_number(k))!
 		result := call(mut vm, Value.from_object(predicate), this_arg, [value, Value.from_f64(f64(k)),

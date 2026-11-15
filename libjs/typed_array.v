@@ -1,5 +1,7 @@
 module libjs
 
+import platform
+
 // Runtime/TypedArray.{h,cpp}: concrete template records use BufferElementType
 // dispatch. Factories take an explicit prototype until the TypedArray intrinsic
 // graph is installed. Cached caged views remain pending.
@@ -38,6 +40,8 @@ pub fn (kind BufferElementType) typed_array_name() string {
 }
 
 pub fn TypedArray.create(realm &Realm, kind BufferElementType, length u32, buffer &ArrayBufferObject, prototype &Object) &TypedArray {
+	persistent := platform.enter_persistent()
+	defer { platform.leave_persistent(persistent) }
 	assert length <= u32(0xffffffff) / u32(kind.size())
 	assert length == 0 || (!buffer.is_detached() && buffer.byte_length() > 0)
 	mut object := Object.create(realm, prototype)
