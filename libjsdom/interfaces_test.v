@@ -16,9 +16,9 @@ fn test_node_element_and_document_interface_objects_use_native_wrapper_identity(
 	libjs.create_simple_execution_context(mut vm)
 	mut host := Host.create(vm, vm.realm(), document, Hooks{})!
 	defer { host.close() }
-	assert interface_eval(mut vm, 'var e=document.getElementById("target");e instanceof Element&&e instanceof Node&&document instanceof Document&&document instanceof Node&&Object.getPrototypeOf(e)===Element.prototype&&Object.getPrototypeOf(Element.prototype)===Node.prototype&&Object.getPrototypeOf(Document.prototype)===Node.prototype&&Object.getPrototypeOf(Element)===Node&&Object.getPrototypeOf(Document)===Node&&e.constructor===Element&&document.constructor===Document')!.as_bool()
-	assert interface_eval(mut vm, 'var d=Object.getOwnPropertyDescriptor(Node,"ELEMENT_NODE");Node.ELEMENT_NODE===1&&Node.prototype.DOCUMENT_NODE===9&&Element.DOCUMENT_POSITION_CONTAINS===8&&d.enumerable&&!d.writable&&!d.configurable&&Element.length===0&&Object.prototype.toString.call(e)==="[object Element]"')!.as_bool()
-	for source in ['Node()', 'new Node()', 'Element()', 'new Element()', 'Document()'] {
+	assert interface_eval(mut vm, 'var e=document.getElementById("target");e instanceof HTMLElement&&e instanceof Element&&e instanceof Node&&document instanceof Document&&document instanceof Node&&Object.getPrototypeOf(e)===HTMLElement.prototype&&Object.getPrototypeOf(HTMLElement.prototype)===Element.prototype&&Object.getPrototypeOf(Element.prototype)===Node.prototype&&Object.getPrototypeOf(Document.prototype)===Node.prototype&&Object.getPrototypeOf(Element)===Node&&Object.getPrototypeOf(Document)===Node&&Object.getPrototypeOf(HTMLElement)===Element&&e.constructor===HTMLElement&&document.constructor===Document')!.as_bool()
+	assert interface_eval(mut vm, 'var d=Object.getOwnPropertyDescriptor(Node,"ELEMENT_NODE");Node.ELEMENT_NODE===1&&Node.prototype.DOCUMENT_NODE===9&&Element.DOCUMENT_POSITION_CONTAINS===8&&d.enumerable&&!d.writable&&!d.configurable&&Element.length===0&&Object.prototype.toString.call(e)==="[object HTMLElement]"')!.as_bool()
+	for source in ['Node()', 'new Node()', 'Element()', 'new Element()', 'Document()', 'HTMLElement()', 'new HTMLElement()'] {
 		assert interface_eval(mut vm, 'var caught=false;try{'+source+'}catch(e){caught=e instanceof TypeError};caught')!.as_bool()
 	}
 }
@@ -29,7 +29,7 @@ fn test_document_constructor_creates_independent_native_xml_document_and_support
 	libjs.create_simple_execution_context(mut vm)
 	mut host := Host.create(vm, vm.realm(), document, Hooks{})!
 	defer { host.close() }
-	assert interface_eval(mut vm, 'class D extends Document{value=42}var d=new D(),e=d.createElement("root");d instanceof D&&d instanceof Document&&d instanceof Node&&d.value===42&&d.URL==="about:blank"&&d.nodeType===9&&d.ownerDocument===null&&d.body===null&&d.documentElement===null&&e.ownerDocument===d&&e instanceof Element&&d.getElementById("main")===null&&document.getElementById("main")!==null')!.as_bool()
+	assert interface_eval(mut vm, 'class D extends Document{value=42}var d=new D(),e=d.createElement("root");d instanceof D&&d instanceof Document&&d instanceof Node&&d.value===42&&d.URL==="about:blank"&&d.nodeType===9&&d.ownerDocument===null&&d.body===null&&d.documentElement===null&&e.ownerDocument===d&&e instanceof Element&&!(e instanceof HTMLElement)&&d.getElementById("main")===null&&document.getElementById("main")!==null')!.as_bool()
 	assert host.owned_documents.len == 1
 	native := host.owned_documents[0]
 	assert native.document_type() == dom.DocumentType_.xml

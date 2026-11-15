@@ -24,6 +24,7 @@ pub struct Host {
 mut:
 	node_prototype       &libjs.Object = unsafe { nil }
 	element_prototype    &libjs.Object = unsafe { nil }
+	html_element_prototype &libjs.Object = unsafe { nil }
 	document_prototype   &libjs.Object = unsafe { nil }
 	collection_prototype &libjs.Object = unsafe { nil }
 	event_prototype      &libjs.Object = unsafe { nil }

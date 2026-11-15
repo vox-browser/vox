@@ -6,16 +6,19 @@ import libjs
 import platform
 
 // WebIDL interface objects share the exact native wrapper prototypes used by
-// document queries and mutations. Specialized HTML/SVG interfaces and the
+// document queries and mutations. Specialized HTML tag/SVG interfaces and the
 // EventTarget prototype ancestry remain separate binding slices.
 fn (mut host Host) install_node_interfaces() ! {
 	mut vm := host.vm
 	mut global := host.realm.global_object_record()
 	mut node_constructor := &libjs.Object(unsafe { nil })
-	for name in ['Node', 'Element', 'Document'] {
+	mut element_constructor := &libjs.Object(unsafe { nil })
+	host.html_element_prototype = libjs.Object.create(host.realm, host.element_prototype)
+	for name in ['Node', 'Element', 'HTMLElement', 'Document'] {
 		mut prototype := match name {
 			'Node' { host.node_prototype }
 			'Element' { host.element_prototype }
+			'HTMLElement' { host.html_element_prototype }
 			else { host.document_prototype }
 		}
 		construct := fn [host, name] (mut vm libjs.VM, new_target &libjs.Object) !&libjs.Object {
@@ -36,7 +39,8 @@ fn (mut host Host) install_node_interfaces() ! {
 			fn (mut vm libjs.VM) !libjs.Value { return vm.throw_error(.type_error, 'DOM interface constructor requires new') },
 			construct, 0, libjs.PropertyName.from_str(name)).object
 		if name == 'Node' { node_constructor = constructor }
-		else { if !constructor.internal_set_prototype_of(node_constructor) { return error('Unable to set DOM interface ancestry') } }
+		else { if !constructor.internal_set_prototype_of(if name == 'HTMLElement' { element_constructor } else { node_constructor }) { return error('Unable to set DOM interface ancestry') } }
+		if name == 'Element' { element_constructor = constructor }
 		constructor.define_direct_property(libjs.PropertyName.from_str('prototype'), libjs.Value.from_object(prototype), 0)
 		prototype.define_direct_property(libjs.PropertyName.from_str('constructor'), libjs.Value.from_object(constructor), libjs.attribute_writable | libjs.attribute_configurable)
 		prototype.define_direct_property(libjs.PropertyName.from_symbol(vm.well_known_symbol_to_string_tag()), libjs.Value.from_string(vm.create_string_from_str(name)), libjs.attribute_configurable)

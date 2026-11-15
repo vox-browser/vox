@@ -9,8 +9,9 @@ fn (mut host Host) wrap_node(node &dom.Node) libjs.Value {
 	if wrapper := host.wrappers[node.unique_id()] { return libjs.Value.from_object(wrapper) }
 	persistent := platform.enter_persistent()
 	defer { platform.leave_persistent(persistent) }
+	is_html := if element := node.as_element() { element.is_html_element() } else { false }
 	prototype := if node.is_element() {
-		host.element_prototype
+		if is_html { host.html_element_prototype } else { host.element_prototype }
 	} else if node.is_document() {
 		host.document_prototype
 	} else {
@@ -18,7 +19,7 @@ fn (mut host Host) wrap_node(node &dom.Node) libjs.Value {
 	}
 	mut object := libjs.Object.create(host.realm, prototype)
 	object.class_name = if node.is_element() {
-		'Element'
+		if is_html { 'HTMLElement' } else { 'Element' }
 	} else if node.is_document() {
 		'Document'
 	} else {
