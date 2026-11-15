@@ -38,7 +38,7 @@ fn selection_direction_from_string(value ?string) SelectionDirection {
 }
 
 fn normalize_form_newlines(value string) string {
-	return value.replace('\r\n', '\n').replace('\r', '\n').replace('\n', '\r\n')
+	return value.replace('\r\n', '\n').replace('\r', '\n')
 }
 
 fn form_element_input_type(element &dom.Element) string {
@@ -110,9 +110,16 @@ fn add_associated_element_to_form(form &dom.HTMLFormElement, element &dom.Elemen
 	mutable_form.associated_elements_ << element
 }
 
+pub interface ConstraintValidationOwner {
+mut:
+	update_validity()
+}
+
 @[heap]
 pub struct FormAssociatedElement {
 	dom.FormAssociatedElement
+mut:
+	constraint_validation_owner_ ?ConstraintValidationOwner
 pub:
 	element &dom.Element
 pub mut:
@@ -453,11 +460,17 @@ pub fn (control &FormAssociatedElement) is_candidate_for_constraint_validation()
 	if control.element.local_name() == 'textarea' && control.element.has_attribute('readonly') {
 		return false
 	}
+	if control.custom_element_ && control.element.has_attribute('readonly') { return false }
 	return true
 }
 
+fn (control &FormAssociatedElement) refresh_constraint_validation() {
+	if mut owner := control.constraint_validation_owner_ { owner.update_validity() }
+}
+
 pub fn (control &FormAssociatedElement) satisfies_its_constraints() bool {
-	return !(control.suffering_from_being_missing() || control.suffering_from_a_type_mismatch() || control.suffering_from_a_pattern_mismatch() || control.suffering_from_being_too_long() || control.suffering_from_being_too_short() || control.suffering_from_an_underflow() || control.suffering_from_an_overflow() || control.suffering_from_a_step_mismatch() || control.suffering_from_bad_input() || control.suffering_from_a_custom_error())
+	control.refresh_constraint_validation()
+	return !(control.missing_ || control.type_mismatch_ || control.pattern_mismatch_ || control.too_long_ || control.too_short_ || control.underflow_ || control.overflow_ || control.step_mismatch_ || control.bad_input_ || control.suffering_from_a_custom_error())
 }
 
 pub fn (control &FormAssociatedElement) novalidate_state() bool {
@@ -474,38 +487,47 @@ pub fn (control &FormAssociatedElement) novalidate_state() bool {
 }
 
 pub fn (control &FormAssociatedElement) suffering_from_being_missing() bool {
+	control.refresh_constraint_validation()
 	return control.missing_
 }
 
 pub fn (control &FormAssociatedElement) suffering_from_a_type_mismatch() bool {
+	control.refresh_constraint_validation()
 	return control.type_mismatch_
 }
 
 pub fn (control &FormAssociatedElement) suffering_from_a_pattern_mismatch() bool {
+	control.refresh_constraint_validation()
 	return control.pattern_mismatch_
 }
 
 pub fn (control &FormAssociatedElement) suffering_from_being_too_long() bool {
+	control.refresh_constraint_validation()
 	return control.too_long_
 }
 
 pub fn (control &FormAssociatedElement) suffering_from_being_too_short() bool {
+	control.refresh_constraint_validation()
 	return control.too_short_
 }
 
 pub fn (control &FormAssociatedElement) suffering_from_an_underflow() bool {
+	control.refresh_constraint_validation()
 	return control.underflow_
 }
 
 pub fn (control &FormAssociatedElement) suffering_from_an_overflow() bool {
+	control.refresh_constraint_validation()
 	return control.overflow_
 }
 
 pub fn (control &FormAssociatedElement) suffering_from_a_step_mismatch() bool {
+	control.refresh_constraint_validation()
 	return control.step_mismatch_
 }
 
 pub fn (control &FormAssociatedElement) suffering_from_bad_input() bool {
+	control.refresh_constraint_validation()
 	return control.bad_input_
 }
 
@@ -523,6 +545,21 @@ pub fn (control &FormAssociatedElement) is_mutable() bool {
 
 pub fn (mut control FormAssociatedElement) set_custom_validity(message string) {
 	control.custom_validity_error_message = normalize_form_newlines(message)
+	mut node := control.element.as_node()
+	node.invalidate_style(.style_change)
+	// A control also contributes to the validity of its form and fieldsets.
+	if form := control.form() {
+		mut form_node := unsafe { &dom.Element(form) }.as_node()
+		form_node.invalidate_style(.style_change)
+	}
+	mut ancestor := control.element.parent_element()
+	for {
+		element := ancestor or { break }
+		if element.is_html_element() && element.local_name() == 'fieldset' {
+			mut ancestor_node := element.as_node(); ancestor_node.invalidate_style(.style_change)
+		}
+		ancestor = element.parent_element()
+	}
 }
 
 @[heap]

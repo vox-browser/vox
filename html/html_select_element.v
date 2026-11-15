@@ -89,17 +89,24 @@ pub fn HTMLSelectElementModel.create(element &dom.HTMLSelectElement) &HTMLSelect
 	if element.select_element_model_ != unsafe { nil } {
 		return unsafe { &HTMLSelectElementModel(element.select_element_model_) }
 	}
-	model := &HTMLSelectElementModel{
+	mut model := &HTMLSelectElementModel{
 		element: element
 		control: FormAssociatedElement.create(select_dom_element(element))
 	}
 	mut mutable_element := unsafe { &dom.HTMLSelectElement(element) }
 	mutable_element.select_element_model_ = voidptr(model)
+	mut control := model.control
+	control.constraint_validation_owner_ = ConstraintValidationOwner(model)
 	// Concrete owners are lazy; insertion has conceptually established initial
 	// selectedness before an IDL getter or submission can observe this model.
 	// Do this only on creation so later explicit no-selection states survive.
 	html_select_element_update_selectedness(element)
 	return model
+}
+
+pub fn (mut model HTMLSelectElementModel) update_validity() {
+	mut control := model.control
+	control.missing_ = html_select_element_suffering_from_being_missing(model.element)
 }
 
 pub fn (mut model HTMLSelectElementModel) set_picker_hook(hook ?SelectPickerHook) {

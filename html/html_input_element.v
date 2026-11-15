@@ -289,6 +289,7 @@ pub fn HTMLInputElementModel.create(element &dom.HTMLInputElement) &HTMLInputEle
 	// this element again while that sibling is initialized.
 	attach_html_input_element_model(element, model)
 	model.text_control.value_owner_ = TextControlValueOwner(model)
+	model.control.constraint_validation_owner_ = ConstraintValidationOwner(model)
 	model.control.reset_form_owner()
 	model.value_ = model.sanitize_value(dom_element.get_attribute_value('value'))
 	model.text_control.did_edit_target_ = voidptr(model)
@@ -648,12 +649,12 @@ pub fn (model &HTMLInputElementModel) checked() bool {
 }
 
 fn same_radio_group(a &HTMLInputElementModel, b &HTMLInputElementModel) bool {
-	if a == b || a.type_state_ != .radio_button || b.type_state_ != .radio_button {
+	if voidptr(a) == voidptr(b) || a.type_state_ != .radio_button || b.type_state_ != .radio_button {
 		return false
 	}
 	a_element := input_element(a)
 	b_element := input_element(b)
-	if a_element.as_node().root() != b_element.as_node().root() {
+	if voidptr(a_element.as_node().root()) != voidptr(b_element.as_node().root()) {
 		return false
 	}
 	a_form := a.control.form()

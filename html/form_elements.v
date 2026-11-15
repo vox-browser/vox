@@ -106,6 +106,7 @@ pub fn HTMLTextAreaElementModel.create(element &dom.HTMLTextAreaElement) &HTMLTe
 	model.text.did_edit_callback_ = html_text_area_element_did_edit_callback
 	mut mutable_element := unsafe { &dom.HTMLTextAreaElement(element) }
 	mutable_element.text_area_element_model_ = voidptr(model)
+	model.control.constraint_validation_owner_ = ConstraintValidationOwner(model)
 	model.control.value_ = api_value
 	model.update_validity()
 	install_form_control_selected_text_callback(dom_element.document())
