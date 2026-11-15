@@ -331,7 +331,13 @@ fn (mut host Host) install_nodes() ! {
 @[heap]
 struct Collection {
 	host       &Host
-	collection &dom.HTMLCollection
+	collection NativeHTMLCollectionView
+}
+
+interface NativeHTMLCollectionView {
+	length() int
+	item(int) ?&dom.Element
+	named_item(string) ?&dom.Element
 }
 
 fn (collection &Collection) get_own_property(key libjs.PropertyName) ?libjs.PropertyDescriptor {
@@ -357,16 +363,20 @@ fn (mut host Host) wrap_collection(collection &dom.HTMLCollection) libjs.Value {
 }
 
 fn (mut host Host) wrap_collection_with_prototype(collection &dom.HTMLCollection, prototype &libjs.Object, class_name string) libjs.Value {
-	if object := host.collection_wrappers[voidptr(collection)] { return libjs.Value.from_object(object) }
+	return host.wrap_collection_view(voidptr(collection), NativeHTMLCollectionView(collection), prototype, class_name)
+}
+
+fn (mut host Host) wrap_collection_view(identity voidptr, collection NativeHTMLCollectionView, prototype &libjs.Object, class_name string) libjs.Value {
+	if object := host.collection_wrappers[identity] { return libjs.Value.from_object(object) }
 	persistent := platform.enter_persistent(); defer { platform.leave_persistent(persistent) }
 	mut object := libjs.Object.create(host.realm, prototype)
 	object.class_name = class_name
 	object.host_properties = libjs.HostProperties(&Collection{ host: host, collection: collection })
-	host.collection_wrappers[voidptr(collection)] = object
+	host.collection_wrappers[identity] = object
 	return libjs.Value.from_object(object)
 }
 
-fn (host &Host) collection_receiver(mut vm libjs.VM) !&dom.HTMLCollection {
+fn (host &Host) collection_receiver(mut vm libjs.VM) !NativeHTMLCollectionView {
 	host.require_open(mut vm)!
 	if vm.this_value().is_object() {
 		if provider := vm.this_value().as_object().host_properties {
