@@ -37,6 +37,8 @@ mut:
 	collection_prototype &libjs.Object = unsafe { nil }
 	node_list_prototype &libjs.Object = unsafe { nil }
 	node_list_wrappers map[voidptr]&libjs.Object
+	token_list_prototype &libjs.Object = unsafe { nil }
+	token_list_wrappers map[voidptr]&libjs.Object
 	event_prototype      &libjs.Object = unsafe { nil }
 	event_target_prototype &libjs.Object = unsafe { nil }
 	event_target_constructor &libjs.Object = unsafe { nil }
@@ -110,6 +112,7 @@ pub fn Host.create(vm &libjs.VM, realm &libjs.Realm, document &dom.Document, hoo
 	host.install_node_interfaces()!
 	host.install_html_element_interfaces()!
 	host.install_node_lists()!
+	host.install_token_lists()!
 	host.install_dom_exceptions()!
 	host.install_custom_elements()!
 	host.install_navigator()!
@@ -215,6 +218,7 @@ pub fn (mut host Host) close() {
 	host.nodes.clear()
 	host.wrappers.clear()
 	host.node_list_wrappers.clear()
+	host.token_list_wrappers.clear()
 	host.events.clear()
 	host.event_wrappers.clear()
 	host.event_targets.clear()
