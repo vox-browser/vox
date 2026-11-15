@@ -57,6 +57,9 @@ fn test_intrinsic_constructors_exist_before_the_host_creates_its_global_object()
 			assert realm.array_constructor != none
 			assert realm.string_constructor != none
 			assert realm.regexp_constructor != none
+			assert realm.number_constructor != none
+			assert realm.number_prototype != none
+			assert realm.parse_int_function != none && realm.parse_float_function != none
 			return Object.create(realm, realm.object_prototype)
 		}
 	})!

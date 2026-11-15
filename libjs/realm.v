@@ -63,6 +63,8 @@ pub mut:
 	boolean_constructor            ?&Object
 	number_prototype               ?&Object
 	number_constructor             ?&Object
+	parse_int_function             ?&Object
+	parse_float_function           ?&Object
 	symbol_prototype               ?&Object
 	symbol_constructor             ?&Object
 	array_buffer_prototype         ?&Object
@@ -219,6 +221,7 @@ pub fn initialize_host_defined_realm(mut vm VM, hooks RealmGlobalHooks) !&Execut
 	shared_array_buffer_prototype_object.define_direct_property(PropertyName.from_str('constructor'),
 		Value.from_object(shared_array_buffer_constructor.object), attribute_writable | attribute_configurable)
 	initialize_collection_intrinsics(mut vm, mut realm)!
+	initialize_number_intrinsics(mut vm, mut realm)
 	initialize_iterator_intrinsics(mut vm, mut realm)
 	initialize_generator_creation_intrinsics(mut vm, mut realm)
 	initialize_set_intrinsics(mut vm, mut realm)
@@ -264,7 +267,6 @@ pub fn initialize_host_defined_realm(mut vm VM, hooks RealmGlobalHooks) !&Execut
 	realm.set_global_environment(GlobalEnvironment.create(global, this_value))
 	// 18. Perform ? SetDefaultGlobalBindings(realm).
 	set_default_global_numeric_functions(mut vm, realm)
-	initialize_number_intrinsics(mut vm, mut realm)!
 	set_default_global_uri_functions(mut vm, realm)
 	set_default_global_value_bindings(realm)
 	// GlobalObject.cpp installs intrinsic constructor properties after values.
@@ -288,6 +290,8 @@ pub fn initialize_host_defined_realm(mut vm VM, hooks RealmGlobalHooks) !&Execut
 		Value.from_object(realm.map_constructor or { panic('Missing Map constructor') }), attribute_writable | attribute_configurable)
 	global.define_direct_property(PropertyName.from_str('Object'),
 		Value.from_object(realm.object_constructor_record()), attribute_writable | attribute_configurable)
+	global.define_direct_property(PropertyName.from_str('Number'),
+		Value.from_object(realm.number_constructor or { panic('Missing Number constructor') }), attribute_writable | attribute_configurable)
 	for kind in [ErrorKind.range_error, .reference_error] {
 		global.define_direct_property(PropertyName.from_str(kind.name()), Value.from_object(realm.error_constructors[kind] or { panic('Missing error constructor') }), attribute_writable | attribute_configurable)
 	}
