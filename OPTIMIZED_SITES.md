@@ -59,6 +59,11 @@ and makes the Watch dot exact in diagnostics: **163,862→163,854 differences**,
 corrected and zero introduced. All 45 other existing PNGs are unchanged, and
 all 47 pairs repeat exactly, including a new exact eight-case control. Its
 production confirmation remains pending the managed rebuild.
+The subsequent `58846cb2e` native continuation fix makes the archived CNN header
+exact: **163,854→163,830 differences**, 24 corrected and zero introduced. The
+existing opaque mask-gap reftest improves 7→0. All 46 other prior PNGs are
+unchanged and all 48 pairs repeat exactly. Production confirmation of the native
+fix is pending the managed rebuild.
 See the
 [current audit, capture scopes and retained failures](docs/OPTIMIZED_SITES_PIXELS_2026_11_12.md).
 

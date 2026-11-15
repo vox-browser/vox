@@ -3197,3 +3197,13 @@ repeat exactly. All 44 non-CNN PNGs are unchanged. Eight missing MP4 requests
 reach the replay proxy and return 404. Production confirmation remains pending.
 No raster, reference, tolerance, scripting or performance acceptance changes
 are claimed. See the [audit](OPTIMIZED_SITES_PIXELS_2026_11_12.md#native-media-routing-in-frozen-cnn-replay-2026-11-15).
+
+### Opaque compositor continuation, 2026-11-15
+
+`58846cb2e` reconnects the V compositor's proved opaque continuation to the native
+painter. CNN's archived header is exact (24 corrected pixels, zero introduced),
+and the existing mask-gap ellipse control improves 7→0. All 46 other prior PNGs
+are unchanged in 48 workloads/96 stable captures. Native scope ownership and all
+15 existing mask/opacity continuation proof tests pass under arena poisoning.
+Production confirmation is pending; see the
+[audit](OPTIMIZED_SITES_PIXELS_2026_11_12.md#opaque-compositor-continuation-in-the-native-painter-2026-11-15).

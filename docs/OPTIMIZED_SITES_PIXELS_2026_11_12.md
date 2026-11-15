@@ -3365,3 +3365,72 @@ The shared production bundle and dependencies are retained.
 The later rejected production precheck, formatter proof and frozen receipt are
 also retained in that evidence directory. Its one additional job root, two top
 files and guards are archived with verified hashes and removed from `Build/`.
+
+## Opaque compositor continuation in the native painter, 2026-11-15
+
+`58846cb2e` restores a native graphics operation left empty during migration.
+The V compositor already proves that a picture may safely resume over its
+opaque prefix after a disjoint mask/effect, but the native continuation setter
+ignored that request. The resumed header therefore started on a new transparent
+bitmap. Its white button background and gray stroke were quantized there before
+being composited over the already painted white header.
+
+The native boundary now consumes the one-shot request at the next effect begin.
+A normal, unit-opacity continuation on a readable bitmap preserves its parent
+canvas and the existing balanced graphics-state scope. Other effects keep their
+isolated surfaces. A failed begin consumes its request too. Paint ownership,
+opaque coverage, disjoint ink and supported scopes remain decisions of the
+existing V proofs; no site, color, coordinate, shader, reference or tolerance
+selection is added to rendering.
+
+Independent GG and Skia Metal probes reproduce the rounded stroke exactly over
+an opaque backdrop. Retained native raster dumps show the old resumed backdrop
+is entirely transparent. Replaying the same white underlay and stroke over that
+transparent input, then compositing over white, reproduces all 24 erroneous
+border pixels. The captured rectangle, radii and stroke width were already
+correct. Temporary tracing and exploratory controls are removed from the
+canonical source; no Skia code is linked into the browser.
+
+Diagnostic executable
+`a3c9083e3df310bb0a5ee57646d8ee8016dc4b9e7433ffda4195c7b5e2228df4`
+(C/O0/prealloc/no-GC) completes **48 workloads and 96 fresh captures**, plus
+startup smoke, with all pairs repeating byte for byte. CNN improves
+**163,854→163,830**: 24 corrected pixels, zero introduced. Its archived header
+is now exact. The existing `opaque-svg-mask-ellipse-resume` reference improves
+**7→0**. All **46 other previous PNGs are unchanged**, including the four exact
+archived sites and Vlang's 27 differences. Existing inexact controls retain their
+previous counts. All 96 capture guards, startup, driver, outer guard and guarded
+pixel analysis exit zero. All 822 consumed rendering/CSS/DOM/layout V witnesses
+and 825 source pins stay stable through the final cohort.
+
+The new native regression checks actual canvas/backdrop ownership, painting and
+clip restoration, request consumption, cancellation, null-context failure,
+translucency and screen blending. Its executable
+`82e8dffd663b8b4fa6824555817616e6ff8ba845d19cd76b7e4c3bc9cb78d198`
+passes under arena poisoning and a 3 GiB guard. The eight existing mask-gap and
+seven existing opacity-gap proof tests also execute successfully under the same
+runtime guard and poison policy, with matching parsed V input witnesses.
+
+The earlier 49-workload cohort is retained without acceptance: its post-check
+caught an edit to the uncompiled test helper while captures ran. The helper's
+Objective-C initialization/goto compile error was corrected before the final
+unit run; the subsequent 48-workload cohort freezes all final test sources too.
+An exploratory CSS circle-mask control retains 160 differences before and after
+this fix, all in the mask, and is not claimed as solved. Both reference captures,
+failed attempts, native traces, probe sources/results and intermediate outputs
+remain in local evidence. No original screenshot reference changes.
+
+Available production `b5ecb480`, receipt `20261115-191824-6ba7d19a`, does not
+contain the native continuation implementation by its frozen C input hash.
+Production confirmation remains pending. The managed commit hook requests the
+coalesced C/literal V `-prod`/single-unit rebuild; no duplicate manual build is
+queued. CNN's remaining image/scaling differences and source/replay gate, Vlang,
+the missing Reddit fixture and previously inexact controls keep catalog-wide
+parity open. No live-site or performance acceptance is claimed.
+
+Evidence is local under
+`docs/performance/vlang-gradients-20261114/raw/cnn-border-20261115/`. Cleanup
+records 7,991 file hashes across 20 owned job roots and preserves 1,982 selected
+files (42,531,758 bytes). Copies are hashed again before deleting owned binaries,
+generated intermediates, profiles, guards, locks and three test aliases. Shared
+production bundles and dependencies are retained.
