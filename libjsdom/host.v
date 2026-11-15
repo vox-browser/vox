@@ -12,6 +12,7 @@ import intersectionobserver
 import libjs
 import platform
 import resizeobserver
+import streams
 import webidl
 
 pub struct Hooks {
@@ -80,6 +81,15 @@ mut:
 	blobs map[voidptr]&fileapi.Blob
 	blob_wrappers map[voidptr]&libjs.Object
 	blob_reads map[u64]&BlobReadBinding
+	readable_stream_prototype &libjs.Object = unsafe { nil }
+	default_reader_prototype &libjs.Object = unsafe { nil }
+	readable_streams map[voidptr]&streams.ReadableStream
+	readable_stream_wrappers map[voidptr]&libjs.Object
+	stream_readers map[voidptr]&streams.ReadableStreamDefaultReader
+	stream_reader_wrappers map[voidptr]&libjs.Object
+	stream_reads map[voidptr]&StreamReadRequestBinding
+	stream_promises map[voidptr]&StreamPromiseBinding
+	stream_errors map[voidptr]libjs.Value
 	history_object &libjs.Object = unsafe { nil }
 	history_binding ?&HistoryBinding
 	query_prototype &libjs.Object = unsafe { nil }
@@ -186,6 +196,7 @@ pub fn Host.create(vm &libjs.VM, realm &libjs.Realm, document &dom.Document, hoo
 	host.install_urls()!
 	host.install_text_encoding()
 	host.install_binary_string_codecs()
+	host.install_readable_streams()
 	host.install_blobs()
 	host.install_history()
 	host.install_headers()!
@@ -284,6 +295,7 @@ pub fn (mut host Host) close() {
 	host.blobs.clear()
 	host.blob_wrappers.clear()
 	host.close_fetch()
+	host.close_readable_streams()
 	for listener in host.listeners {
 		if signal := listener.abort_signal {
 			if id := listener.abort_algorithm { mut owner := unsafe { &dom.AbortSignal(signal) }; owner.remove_abort_algorithm(id) }

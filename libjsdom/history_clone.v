@@ -29,6 +29,7 @@ fn (host &Host) history_platform_object(object &libjs.Object) bool {
 		|| key in host.resize_observers || key in host.resize_entries || key in host.resize_sizes
 		|| key in host.text_encoders || key in host.text_decoders
 		|| key in host.blobs
+		|| key in host.readable_streams || key in host.stream_readers
 }
 
 fn (mut clone HistoryClone) project(mut vm libjs.VM, value libjs.Value, depth int) !dom.JSValue {

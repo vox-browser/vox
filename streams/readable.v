@@ -525,7 +525,7 @@ fn (mut stream ReadableStream) cancel_internal(reason Value) &VoidPromise {
 
 pub fn (mut stream ReadableStream) cancel(reason Value) &VoidPromise {
 	if stream.locked() {
-		return VoidPromise.rejected_in(stream.realm_, 'TypeError: Cannot cancel a locked ReadableStream')
+		return VoidPromise.rejected_value_in(stream.realm_, webidl.simple_exception_value(webidl.SimpleException{type_: .type_error, message: 'Cannot cancel a locked ReadableStream'}))
 	}
 	return stream.cancel_internal(reason)
 }
@@ -635,7 +635,7 @@ pub fn (mut reader ReadableStreamDefaultReader) read() &ReadPromise {
 
 pub fn (mut reader ReadableStreamDefaultReader) cancel(reason Value) &VoidPromise {
 	if reader.released_ || isnil(reader.stream_) {
-		return VoidPromise.rejected_in(reader.closed_promise_realm(), 'TypeError: Reader has no associated stream')
+		return VoidPromise.rejected_value_in(reader.closed_promise_realm(), webidl.simple_exception_value(webidl.SimpleException{type_: .type_error, message: 'Reader has no associated stream'}))
 	}
 	mut stream := reader.stream_
 	return stream.cancel_internal(reason)
@@ -661,9 +661,9 @@ fn readable_stream_default_reader_generic_release(mut reader ReadableStreamDefau
 	mut stream := reader.stream_
 	if stream.state_ == .readable {
 		mut closed := reader.closed_
-		closed.reject('TypeError: Reader has been released')
+		closed.reject_value(webidl.simple_exception_value(webidl.SimpleException{type_: .type_error, message: 'Reader has been released'}))
 	} else {
-		reader.closed_ = VoidPromise.rejected_in(reader.closed_promise_realm(), 'TypeError: Reader has been released')
+		reader.closed_ = VoidPromise.rejected_value_in(reader.closed_promise_realm(), webidl.simple_exception_value(webidl.SimpleException{type_: .type_error, message: 'Reader has been released'}))
 	}
 	if stream.byte_stream_ && !isnil(stream.byte_controller_) {
 		mut controller := stream.byte_controller_
