@@ -101,6 +101,7 @@ mut:
 	closed               bool
 	animation_frames map[u32]&AnimationFrameBinding
 	retired_frame_closures []voidptr
+	microtasks map[u64]&QueuedMicrotaskBinding
 	timer_scope_ ?&html.WindowOrWorkerGlobalScopeMixin
 	timers map[i32]&TimerBinding
 	timer_callback_depth int
@@ -157,6 +158,7 @@ pub fn Host.create(vm &libjs.VM, realm &libjs.Realm, document &dom.Document, hoo
 	host.install_resize_observers()
 	host.install_animation_frames()
 	host.install_timers()
+	host.install_microtasks()
 	host.install_media_queries()!
 	host.install_styles()
 	host.install_css_namespace()
@@ -227,6 +229,7 @@ fn (mut host Host) changed() {
 pub fn (mut host Host) close() {
 	if host.closed { return }
 	host.closed = true
+	host.close_microtasks()
 	host.close_timers()
 	host.close_animation_frames()
 	host.close_mutation_observers()

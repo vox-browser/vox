@@ -126,6 +126,7 @@ mut:
 	document_ ?&dom.Document
 	timer_nesting_level_ u32
 	allocation_owner &platform.RetainedArena = unsafe { nil }
+	owns_steps bool
 }
 
 pub fn Task.create(source TaskSource, document ?&dom.Document, steps fn()) &Task {
@@ -136,6 +137,15 @@ pub fn Task.create(source TaskSource, document ?&dom.Document, steps fn()) &Task
 	}
 	if source == .rendering { owner = unsafe { nil } }
 	return Task.create_with_storage(source, document, steps, owner)
+}
+
+// Transfer a captured callback to a one-shot task. Existing create() callers
+// retain their callback ownership; this path releases it after execution or
+// discard, never while its trampoline is on the native stack.
+pub fn Task.create_owned(source TaskSource, document ?&dom.Document, steps fn()) &Task {
+	mut task := Task.create(source, document, steps)
+	task.owns_steps = true
+	return task
 }
 
 fn Task.create_with_storage(source TaskSource, document ?&dom.Document, steps fn(), storage &platform.RetainedArena) &Task {
@@ -168,6 +178,12 @@ pub fn (task &Task) execute() {
 
 fn (task &Task) cancel() {
 	mut mutable_task := unsafe { &Task(task) }
+	if mutable_task.owns_steps {
+		mutable_task.owns_steps = false
+		steps := mutable_task.steps
+		mutable_task.steps = fn () {}
+		platform.release_closure(voidptr(steps))
+	}
 	mut owner := mutable_task.allocation_owner
 	mutable_task.allocation_owner = unsafe { nil }
 	if owner != unsafe { nil } { owner.release() }
@@ -511,6 +527,18 @@ pub fn (mut event_loop EventLoop) enqueue_microtask(task &Task) {
 	persistent := platform.enter_persistent()
 	defer { platform.leave_persistent(persistent) }
 	event_loop.microtask_queue << task
+}
+
+// Only pending tasks can be discarded. A callback currently executing owns
+// its steps until Task.execute() returns, including shutdown inside a callback.
+pub fn (mut event_loop EventLoop) discard_microtask(task &Task) bool {
+	for index, pending in event_loop.microtask_queue {
+		if voidptr(pending) != voidptr(task) { continue }
+		event_loop.microtask_queue.delete(index)
+		task.cancel()
+		return true
+	}
+	return false
 }
 
 pub fn (event_loop &EventLoop) microtask_queue_empty() bool {
