@@ -486,6 +486,7 @@ pub fn (mut runtime Runtime) close() {
 	}
 	mut vm := unsafe { &libjs.VM(runtime.agent_vm) }
 	vm.clear_execution_context_stack()
+	vm.clear_kept_objects()
 	// Binding callbacks are closures written at their definitions. The
 	// runtime that owns them can no longer call them, and they would otherwise
 	// keep their hosts, and through them the document, alive.

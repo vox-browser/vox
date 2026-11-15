@@ -6,6 +6,11 @@ import html
 import libjs
 import platform
 
+$if gcboehm ? {
+	#include "@VMODROOT/libjs/weak_cells_test.h"
+	fn C.vox_libjs_weak_test_collect()
+}
+
 @[heap]
 struct LibJSJobObservations {
 mut:
@@ -95,4 +100,24 @@ fn test_queued_libjs_jobs_respect_document_scripting_and_runtime_shutdown() {
 	runtime.close()
 	loop.perform_a_microtask_checkpoint()
 	assert seen.order.len == 0 && !vm.has_running_execution_context()
+}
+
+fn test_libjs_weak_ref_targets_survive_gc_across_the_full_document_checkpoint() {
+	address := dom.URL{value: 'https://libjs-jobs.test/weak-ref'}
+	mut document := html.create_navigation_document(address, address.origin(), none)!
+	mut runtime := Runtime.create_with_engine(.libjs)
+	defer { runtime.close(); document.finalize() }
+	settings := unsafe { &html.EnvironmentSettingsObject(document.relevant_settings_object()) }
+	mut vm := runtime.agent_vm
+	collect := libjs.NativeFunction.create(mut vm, runtime.realm, runtime.realm.function_prototype, fn (mut vm libjs.VM) !libjs.Value {
+		$if gcboehm ? { for _ in 0 .. 5 { C.vox_libjs_weak_test_collect() } }
+		return libjs.js_undefined()
+	}, 0, libjs.PropertyName.from_str('collect'), none)
+	mut global := runtime.realm.global_object_record()
+	global.define_direct_property(libjs.PropertyName.from_str('collect'), libjs.Value.from_object(collect.object), 0)
+	runtime.bind_scripting_environment(settings)!
+	runtime.evaluate('var reference=new WeakRef({answer:42}),first=0,last=0;collect();first=reference.deref().answer;Promise.resolve().then(()=>{collect();last=reference.deref().answer})')!
+	assert global.get(mut vm, libjs.PropertyName.from_str('first'))!.number == 42
+	assert global.get(mut vm, libjs.PropertyName.from_str('last'))!.number == 42
+	assert runtime.take_libjs_messages() == []string{} && !runtime.native_context_initialized()
 }

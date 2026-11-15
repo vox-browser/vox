@@ -11,6 +11,7 @@ import platform
 fn (mut runtime Runtime) install_libjs_promise_jobs(settings &html.EnvironmentSettingsObject) {
 	owner := &runtime
 	mut vm := runtime.agent_vm
+	vm.set_external_promise_job_queue(true)
 	vm.host_enqueue_promise_job = fn [owner, settings] (job libjs.PromiseJob, _ ?&libjs.Realm) {
 		if owner.closed { return }
 		persistent := platform.enter_persistent()

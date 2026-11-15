@@ -1016,12 +1016,15 @@ pub fn (mut event_loop EventLoop) perform_a_microtask_checkpoint() {
 		}
 	}
 	indexeddb.cleanup_indexed_database_transactions(voidptr(&event_loop))
-	// ClearKeptObjects is represented by the real VM's execution generation.
+	// ClearKeptObjects follows all reactions in this checkpoint. A WeakRef
+	// target stays stable across separate jobs in the same microtask drain.
 	for vm_pointer in event_loop.embedding_vms_ {
 		mut vm := unsafe { &libjs.VM(vm_pointer) }
+		vm.clear_kept_objects()
 		vm.finish_execution_generation()
 	}
 	if mut primary := event_loop.primary_vm_not_embedded() {
+		primary.clear_kept_objects()
 		primary.finish_execution_generation()
 	}
 	// clear() alone leaves scanned pointers in the retained backing allocation.

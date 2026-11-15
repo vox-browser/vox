@@ -271,6 +271,8 @@ mut:
 	global_symbol_registry_ map[string]GlobalSymbolRegistryEntry
 
 	promise_jobs                       []PromiseJob
+	promise_jobs_external bool
+	kept_objects []Value
 	running_promise_jobs bool
 	promise_job_errors []IError
 	finalization_registry_cleanup_jobs []FinalizationRegistry
@@ -1106,7 +1108,10 @@ pub fn (mut vm VM) run_queued_promise_jobs() {
 	// the current reaction (including resolving its result) before the next job.
 	if vm.running_promise_jobs { return }
 	vm.running_promise_jobs = true
-	defer { vm.running_promise_jobs = false }
+	defer {
+		vm.running_promise_jobs = false
+		if !vm.promise_jobs_external { vm.clear_kept_objects() }
+	}
 	for vm.promise_jobs.len > 0 {
 		job := vm.promise_jobs[0]
 		vm.promise_jobs.delete(0)
