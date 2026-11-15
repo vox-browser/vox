@@ -3106,3 +3106,62 @@ Cleanup verifies 3,085 file records across 28 owned job roots and preserves
 986 selected files (22,264,713 bytes). Hashes are rechecked before deleting
 the diagnostic library, capture profiles, scratch directories, guards and locks.
 The shared production bundle and dependencies are retained.
+
+## CNN decoder isolation and production recheck, 2026-11-15
+
+`085e9ad57` adds the decoder regression, subsequently scoped to macOS in
+`images/cnn_webp_planes_darwin_test.v`. Five frozen CNN resources cover
+Sullivan, Trump, Netanyahu, the CNN logo and peptides. Each case validates the
+encoded bytes, dimensions, packed I420 layout and three independent plane
+SHA-256 witnesses. The witnesses come from Brave `157.1.99.57`'s WebCodecs
+`ImageDecoder`, using a fresh private process and the same encoded resources.
+All fifteen planes match the browser's complete-YUV decoder entry point exactly.
+CNN's arbitrary-scale photographs continue through RGBA fallback painting.
+The planar checks supply decoder regression coverage; HTML image filtering
+remains a separate check.
+
+The final C/preallocated/no-GC test executable passes under a 3 GiB guard with
+arena poisoning and no skips. Its compiler buffers match 25 selected consumed V
+inputs, including the test, image helpers, native bindings and main caller.
+The first test compile rejects an unhandled Result in the new assertion helper;
+the corrected helper is retained. A second compile encounters an intervening
+shared LibJS type error. Successful subsequent compiles and actual executions
+are recorded; this change includes no LibJS edits. The platform filename change
+preserves the test body and receives its own successful compile and execution.
+
+Further isolated checks distinguish CPU resizing, GPU sampling and capture
+context. The prototype's CPU plane reductions match existing test-only Skia
+libraries byte for byte. Metal fragment rendering into an 8-bit target, WebGL, and Skia
+Metal/Dawn oracles still retain residual errors. Half precision and converting
+to floating RGB before filtering do not establish equality. Rounded clipping
+changes sampling results but does not make the candidates exact. No rendering
+candidate is accepted and no pixel reference or tolerance changes.
+
+Two fresh Brave captures of a minimal five-image page repeat exactly. Four
+image interiors match the original CNN reference; Sullivan's interior differs
+at 29,572 pixels, maximum channel error three. Interiors exclude four pixels
+at each edge. This reduced page has a different context from the archived
+homepage and does not clear its source/replay gate or establish a live-site fix.
+
+The latest completed shared bundle at the new cohort's launch is
+`7083f309c32ccdf8288453c74b120e950dbd6316beb84f1ea24680a0c6da3de1`, receipt
+`20261115-170146-0ceea77c`, C/literal V `-prod`/single C unit. All **45 workloads
+and 90 fresh captures** retain the preceding diagnostic outputs exactly; every
+pair repeats exactly. CNN remains **164,021** and Vlang **27**. GitHub, Hacker
+News, Lobsters and Wikipedia remain exact. The driver checks 192 feature-input
+witnesses and 312 stable pins. All 90 native guards, driver, outer guard and
+guarded summarizer exit zero. Eight missing MP4 requests return replay 404s.
+This rechecks a newer bundle; it supplies no new rendering or performance credit.
+
+Evidence is local under
+`docs/performance/vlang-gradients-20261114/raw/cnn-fragment-scale-20261115/`:
+decoder metadata and plane comparisons, source revisions, all rejected attempts,
+focused-test receipts, production identities, captures and verified cleanup
+manifests. All-site pixel parity remains open, including CNN rendering and
+source/replay, Vlang, missing Reddit evidence and the prior controls.
+
+Probe cleanup verifies 801 file records across 72 owned roots and preserves
+156 selected files (16,237,816 bytes). Final cleanup verifies 3,096 records
+across 25 roots and preserves 999 files (23,909,000 bytes). Copies are hashed
+again before removing binaries, capture profiles, jobs, guards and locks.
+The owned test alias is removed; shared bundles and dependencies are retained.

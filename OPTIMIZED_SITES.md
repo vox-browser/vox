@@ -7,7 +7,7 @@ Results apply to the frozen page and pinned build in each linked report.
 Provisional entries retain unresolved acceptance checks.
 
 **Pixel recheck, 2026-11-15:** Vox does **not** pass pixel equality across
-this catalog. Production build `0d895b01` confirms GitHub, Hacker News,
+this catalog. Production build `7083f309` confirms GitHub, Hacker News,
 Lobsters and Wikipedia exact in two fresh captures each. Vlang.io has **27 differing
 pixels in production**, down from the previously verified 810. The heading fix
 removes its final text difference. Its 23 JPEG pixels still include nine
@@ -38,6 +38,9 @@ gate remains open. Production `0d895b01` now confirms this correction in 90 fres
 captures: all 45 pairs repeat exactly and every PNG matches the accepted
 diagnostic build. CNN retains 164,021 differences; the four exact archived
 sites and Vlang's 27 differences remain unchanged.
+The subsequent `7083f309` recheck retains all 45 outputs in 90 fresh captures.
+Independent Brave decoder checks now pin all fifteen YUV planes of five CNN
+images exactly. Arbitrary-scale painting remains unresolved.
 See the
 [current audit, capture scopes and retained failures](docs/OPTIMIZED_SITES_PIXELS_2026_11_12.md).
 
