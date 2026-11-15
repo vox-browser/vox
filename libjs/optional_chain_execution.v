@@ -45,12 +45,7 @@ fn (mut generator BytecodeGenerator) optional_chain_reference(mut vm VM, express
 		}
 		if optional { exits << generator.emit(Instruction{ op: .jump_if_nullish, lhs: value }) }
 		if reference is OptionalChainCall {
-			mut call_arguments := []Operand{cap: reference.arguments.len}
-			for argument in reference.arguments {
-				if argument.is_spread { return generator.unsupported('spread call arguments') }
-				call_arguments << generator.expression(mut vm, &argument.value)!
-			}
-			generator.emit(Instruction{ op: .call, dst: value, lhs: value, rhs: receiver, arguments: call_arguments })
+			generator.emit_call_arguments(mut vm, value, value, receiver, reference.arguments, false)!
 			generator.emit(Instruction{ op: .mov, dst: receiver, lhs: generator.constant(js_undefined()) })
 		} else {
 			key := match reference {

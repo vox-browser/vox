@@ -102,6 +102,8 @@ pub enum OpCode {
 	await_value
 	resume_async
 	get_template_object
+	call_with_array
+	construct_with_array
 }
 
 pub struct Instruction {
@@ -135,7 +137,7 @@ fn (instruction Instruction) input_count() int {
 		.get_property, .get_private, .has_private, .delete_property, .new_regexp, .set_object_literal_prototype, .close_sync_iterator_throw, .new_class_method, .copy_data_properties, .super_construct_with_array {
 			2
 		}
-		.put_property, .put_private, .record_private_class_method, .define_property, .define_class_method, .new_class, .record_empty_class_field {
+		.put_property, .put_private, .record_private_class_method, .define_property, .define_class_method, .new_class, .record_empty_class_field, .call_with_array, .construct_with_array {
 			3
 		}
 		.mov, .unary_plus, .unary_minus, .bitwise_not, .not_op, .typeof_op, .to_numeric, .to_string,

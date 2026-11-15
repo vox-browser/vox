@@ -185,6 +185,12 @@ fn (mut vm VM) execute_instruction(instruction Instruction, executable &Executab
 			arguments := create_argument_list_from_array_like(mut vm, right)!
 			result = construct_super(mut vm, left, arguments)!
 		}
+		.call_with_array, .construct_with_array {
+			arguments := create_argument_list_from_array_like(mut vm, source)!
+			result = if instruction.op == .construct_with_array {
+				Value.from_object(construct(mut vm, left, arguments, none)!)
+			} else { call(mut vm, left, right, arguments)! }
+		}
 		.call, .construct, .super_construct {
 			mut call_arguments := []Value{cap: instruction.arguments.len}
 			if instruction.op == .super_construct && instruction.strict {
