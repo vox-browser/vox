@@ -271,6 +271,7 @@ mut:
 	global_symbol_registry_ map[string]GlobalSymbolRegistryEntry
 
 	promise_jobs                       []PromiseJob
+	running_promise_jobs bool
 	finalization_registry_cleanup_jobs []FinalizationRegistry
 
 	empty_string_                  &PrimitiveString = unsafe { nil }
@@ -1100,6 +1101,11 @@ pub fn (vm &VM) get_global_object() &Object {
 // Jobs
 
 pub fn (mut vm VM) run_queued_promise_jobs() {
+	// A handler's RunExecutable cleanup may request another checkpoint. Finish
+	// the current reaction (including resolving its result) before the next job.
+	if vm.running_promise_jobs { return }
+	vm.running_promise_jobs = true
+	defer { vm.running_promise_jobs = false }
 	for vm.promise_jobs.len > 0 {
 		job := vm.promise_jobs[0]
 		vm.promise_jobs.delete(0)

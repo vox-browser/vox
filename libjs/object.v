@@ -175,6 +175,7 @@ pub mut:
 	array_iterator       ?&ArrayIterator
 	property_name_iterator ?&PropertyNameIterator
 	iterator_record      ?&IteratorRecord // Inaccessible bytecode record wrapper
+	promise_record ?&Promise
 	array_buffer         ?&ArrayBufferObject
 	data_view            ?&DataView
 	typed_array          ?&TypedArray

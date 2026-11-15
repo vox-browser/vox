@@ -38,6 +38,8 @@ pub mut:
 	map_iterator_prototype ?&Object
 	weak_map_prototype ?&Object
 	weak_map_constructor ?&Object
+	promise_prototype ?&Object
+	promise_constructor ?&Object
 	set_prototype ?&Object
 	set_constructor ?&Object
 	set_iterator_prototype ?&Object
@@ -79,6 +81,10 @@ pub fn (realm &Realm) object_prototype_record() &Object {
 
 pub fn (realm &Realm) object_constructor_record() &Object {
 	return realm.object_constructor or { panic('Realm has no Object constructor yet') }
+}
+
+pub fn (realm &Realm) promise_constructor_record() &Object {
+	return realm.promise_constructor or { panic('Realm has no Promise constructor yet') }
 }
 
 pub fn (realm &Realm) math_object_record() &Object {
@@ -210,6 +216,7 @@ pub fn initialize_host_defined_realm(mut vm VM, hooks RealmGlobalHooks) !&Execut
 	initialize_regexp_intrinsics(mut vm, mut realm)
 	realm.json_object = create_json_object(mut vm, realm)
 	initialize_date_intrinsics(mut vm, mut realm)
+	initialize_promise_intrinsics(mut vm, mut realm)
 	// 4. Set realm.[[GlobalObject]] to undefined.
 	// 5. Set realm.[[GlobalEnv]] to undefined.
 	// 7. Let newContext be a new execution context.
@@ -292,6 +299,8 @@ pub fn initialize_host_defined_realm(mut vm VM, hooks RealmGlobalHooks) !&Execut
 		Value.from_object(realm.weak_map_constructor or { panic('Missing WeakMap constructor') }), attribute_writable | attribute_configurable)
 	global.define_direct_property(PropertyName.from_str('Date'),
 		Value.from_object(realm.date_constructor or { panic('Missing Date constructor') }), attribute_writable | attribute_configurable)
+	global.define_direct_property(PropertyName.from_str('Promise'),
+		Value.from_object(realm.promise_constructor or { panic('Missing Promise constructor') }), attribute_writable | attribute_configurable)
 	global.define_direct_property(PropertyName.from_str('JSON'),
 		Value.from_object(realm.json_object or { panic('Missing JSON object') }), attribute_writable | attribute_configurable)
 	global.define_direct_property(PropertyName.from_str('Math'),

@@ -89,7 +89,7 @@ pub fn (vm &VM) native_code_cache_stats() NativeCacheStats {
 }
 
 pub fn (vm &VM) native_code_cache_is_idle() bool {
-	return vm.run_executable_depth == 0 && vm.external_budget_depth == 0
+	return vm.run_executable_depth == 0 && vm.external_budget_depth == 0 && !vm.running_promise_jobs
 }
 
 fn native_key_u32(mut bytes []u8, value u32) {
