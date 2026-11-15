@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: BSD-2-Clause
 module libjs
 
-// Runtime/ObjectConstructor.{h,cpp}. The iterator-dependent fromEntries and
-// groupBy algorithms remain separate slices; the installed methods below use
+// Runtime/ObjectConstructor.{h,cpp}. The groupBy algorithm remains a separate
+// slice; the installed methods below use
 // the ordinary/exotic object operations rather than a browser-specific shim.
 @[heap]
 pub struct ObjectConstructor {
@@ -19,8 +19,8 @@ pub fn ObjectConstructor.create(mut vm VM, realm &Realm) &ObjectConstructor {
 	names := ['defineProperty', 'defineProperties', 'is', 'getOwnPropertyDescriptor',
 		'getOwnPropertyDescriptors', 'getOwnPropertyNames', 'getOwnPropertySymbols', 'getPrototypeOf',
 		'setPrototypeOf', 'isExtensible', 'isFrozen', 'isSealed', 'preventExtensions', 'freeze',
-		'seal', 'keys', 'values', 'entries', 'create', 'hasOwn', 'assign']
-	lengths := [3, 2, 2, 2, 1, 1, 1, 1, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2]
+		'seal', 'keys', 'values', 'entries', 'create', 'hasOwn', 'assign', 'fromEntries']
+	lengths := [3, 2, 2, 2, 1, 1, 1, 1, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 1]
 	behaviours := [NativeFunctionPointer(object_constructor_define_property),
 		object_constructor_define_properties, object_constructor_is,
 		object_constructor_get_own_property_descriptor,
@@ -30,7 +30,8 @@ pub fn ObjectConstructor.create(mut vm VM, realm &Realm) &ObjectConstructor {
 		object_constructor_is_frozen, object_constructor_is_sealed,
 		object_constructor_prevent_extensions, object_constructor_freeze, object_constructor_seal,
 		object_constructor_keys, object_constructor_values, object_constructor_entries,
-		object_constructor_create, object_constructor_has_own, object_constructor_assign]
+		object_constructor_create, object_constructor_has_own, object_constructor_assign,
+		object_constructor_from_entries]
 	for index, name in names {
 		install_intrinsic_method(mut vm, realm, mut object, name, lengths[index], behaviours[index])
 	}
