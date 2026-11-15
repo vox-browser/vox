@@ -3339,10 +3339,17 @@ and transform bounds with a visible elliptical stroke. The earlier failing
 expectation, a corrected stack-pointer declaration and transient shared LibJS
 compile errors are retained. Foreign edits are preserved.
 
-The available production bundle still predates the SVG leaf fix (`d86c965a2`).
-Its normal commit hook requests the coalesced C/literal V `-prod`/single-unit rebuild;
-no duplicate manual build is queued. This new result remains diagnostic pending
-production confirmation. CNN still has image scaling and rounded-border
+After the diagnostic checks, production `b5ecb480` completed, receipt
+`20261115-191824-6ba7d19a`. It contains the exact raster/native inputs and the
+previous formatted classifier variant, retained with the passing focused test.
+Of 822 consumed V witnesses, 821 match byte for byte; running both classifier
+versions through the same pinned V formatter yields identical bytes. The default
+production conformance driver nevertheless rejects the differing classifier hash
+before capturing any pages (`Frozen build input changed`). That rejection is
+retained, and no production acceptance is claimed or gate bypassed. The normal
+commit hook requests the coalesced C/literal V `-prod`/single-unit rebuild;
+no duplicate manual build is queued. The SVG leaf result remains diagnostic
+pending production confirmation with matching final source witnesses. CNN still has image scaling and rounded-border
 mismatches and an open source/replay gate; Vlang and the missing Reddit fixture
 also keep catalog parity open. No live-site or performance acceptance is claimed.
 
@@ -3354,3 +3361,7 @@ records 9,547 file hashes across 14 owned job roots and preserves 2,579 selected
 files (50,371,653 bytes). Copies are hashed again before deleting
 owned binaries, generated intermediates, profiles, guards, locks and test aliases.
 The shared production bundle and dependencies are retained.
+
+The later rejected production precheck, formatter proof and frozen receipt are
+also retained in that evidence directory. Its one additional job root, two top
+files and guards are archived with verified hashes and removed from `Build/`.
