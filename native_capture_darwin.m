@@ -53,6 +53,7 @@ int native_gpu_tile_compositor_enabled(void) {
 #include "native/include/native_opacity_canvas_pool_darwin.h"
 #include "native/include/native_bitmap_snapshot_darwin.h"
 #include "native/include/native_svg_mask_opacity_darwin.h"
+#include "native/include/native_svg_mask_path_darwin.h"
 
 int native_prefers_overlay_scrollbars(void) {
 	return [NSScroller preferredScrollerStyle] == NSScrollerStyleOverlay;
@@ -5178,6 +5179,24 @@ void native_add_svg_content_mask_path(const float *data, int segment_count,
 		canvas_height - page_y + scroll_y - transform_f);
 	CGContextSaveGState(native_svg_clip_build_context);
 	CGContextConcatCTM(native_svg_clip_build_context, to_canvas);
+	if (has_fill != has_stroke) {
+		VoxGraphitePath draw = {0};
+		gg__Color color = has_fill ? fill_color : stroke_color;
+		draw.segments = data;
+		draw.segment_count = segment_count;
+		draw.even_odd = even_odd;
+		draw.red = color.r; draw.green = color.g; draw.blue = color.b; draw.alpha = color.a;
+		draw.opacity = 1;
+		draw.stroke = has_stroke;
+		draw.stroke_width = stroke_width;
+		draw.line_cap = line_cap; draw.line_join = line_join; draw.miter_limit = miter_limit;
+		if (native_raster_svg_mask_path(native_svg_clip_build_context, &draw,
+			vox_draw_document_path_pixels)) {
+			CGContextRestoreGState(native_svg_clip_build_context);
+			CGPathRelease(path);
+			return;
+		}
+	}
 	CGColorRef fill = NULL;
 	CGColorRef stroke = NULL;
 	if (has_fill) {
