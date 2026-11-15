@@ -47,6 +47,9 @@ fn initialize_collection_intrinsics(mut vm VM, mut realm Realm) ! {
 		'charCodeAt': string_prototype_char_code_at
 		'indexOf': string_prototype_index_of
 		'lastIndexOf': string_prototype_last_index_of
+		'includes': string_prototype_includes
+		'startsWith': string_prototype_starts_with
+		'endsWith': string_prototype_ends_with
 		'slice': string_prototype_slice
 		'substring': string_prototype_substring
 		'substr': string_prototype_substr
