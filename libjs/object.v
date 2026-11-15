@@ -193,6 +193,8 @@ pub mut:
 	array_buffer         ?&ArrayBufferObject
 	data_view            ?&DataView
 	typed_array          ?&TypedArray
+mut:
+	property_lookup_hints ?&PropertyLookupHints
 }
 
 // 10.1.12 OrdinaryObjectCreate ( proto [ , additionalInternalSlotsList ] ), https://tc39.es/ecma262/#sec-ordinaryobjectcreate
@@ -204,6 +206,16 @@ pub fn Object.create(realm &Realm, prototype ?&Object) &Object {
 }
 
 fn (object &Object) find_own_property(key PropertyName) int {
+	$if test {
+		if property_lookup_hints_disabled_for_test { return object.find_own_property_linear(key) }
+	}
+	if object.properties.len >= property_lookup_hint_minimum {
+		return object.find_own_property_with_hints(key)
+	}
+	return object.find_own_property_linear(key)
+}
+
+fn (object &Object) find_own_property_linear(key PropertyName) int {
 	for index, property in object.properties {
 		if property.key.equals(key) {
 			return index
