@@ -83,6 +83,15 @@ jobs:
             --report "$RUNNER_TEMP/vox-tab-process.json" --limit-gib 3 --timeout 60 -- \
             python3 tools/test_tab_process_lifecycle.py
 
+      - name: Check portable binary16 conversions
+        if: ${{ !cancelled() && steps.system_dependencies.outcome == 'success' && matrix.gc == 'boehm' }}
+        timeout-minutes: 2
+        run: |
+          python3 tools/run_memory_bounded.py \
+            --lock "$RUNNER_TEMP/vox-float16.lock" \
+            --report "$RUNNER_TEMP/vox-float16.json" --limit-gib 3 --timeout 90 -- \
+            python3 libjs/float16_test.py
+
       - name: Add swap for the C compilation
         if: ${{ !cancelled() && steps.system_dependencies.outcome == 'success' }}
         run: |
