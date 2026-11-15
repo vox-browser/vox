@@ -579,12 +579,7 @@ pub fn (model &HTMLInputElementModel) value_sanitization_algorithm(value string)
 pub fn (model &HTMLInputElementModel) value() string {
 	return match model.type_state_ {
 		.checkbox, .radio_button {
-			value := input_element(model).get_attribute_value('value')
-			if value == '' {
-				'on'
-			} else {
-				value
-			}
+			input_element(model).get_attribute('value') or { 'on' }
 		}
 		.file_upload {
 			if files := model.selected_files_ {
