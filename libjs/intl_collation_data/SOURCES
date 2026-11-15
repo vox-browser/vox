@@ -1,0 +1,11 @@
+Unicode CLDR release-48, Unicode 17.0.0, unicode-org/cldr commit acd6d88ae493633240e19a87a721076a8a75c310
+Source: https://github.com/unicode-org/cldr/tree/acd6d88ae493633240e19a87a721076a8a75c310
+UCD inputs: https://www.unicode.org/Public/17.0.0/ucd/
+Generated with tools/generate_libjs_collation_data.py; pinned input SHA-256:
+c0edefaf1a19771e830a82735472716af6bf3c3975f6c2a23ffbe2580fbbcb15  Blocks.txt
+b4c0ae8ef04f7059f96ce5bbe0467f9fe6f6d81bbe13517701dfeb961fb4d0b6  LICENSE
+2e1efc1dcb59c575eedf5ccae60f95229f706ee6d031835247d843c11d96470c  UnicodeData.txt
+593948669f284ed65c798778b82b8eafae492f759c48a17a4551421d18e4d665  common/collation/en.xml
+af6784292b2ec2576efcfdc5e1073f272edc1265a2dc5286ba9bd16b2d7a1ed9  common/collation/root.xml
+f6f8961f6c51373bdc00b09fb61cc8c07bec4122bc4b8bcb50ff71c4b0901ab5  common/uca/allkeys_CLDR.txt
+39761 mappings; 39762 trie nodes; 45860 elements; 770 decimal digits; 8 implicit ranges
