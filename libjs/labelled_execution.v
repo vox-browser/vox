@@ -61,6 +61,12 @@ fn (mut generator BytecodeGenerator) loop_control_statement(statement &Statement
 		return error('Unknown loop-control label')
 	}
 	if generator.loops.len == 0 { return error('Loop control outside loop') }
+	if is_continue {
+		for index := generator.loops.len - 1; index >= 0; index-- {
+			if generator.loops[index].is_iteration { return generator.emit_loop_control(index, none, true) }
+		}
+		return error('Continue outside iteration statement')
+	}
 	generator.emit_loop_control(generator.loops.len - 1, none, is_continue)!
 }
 

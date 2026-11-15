@@ -7,6 +7,7 @@ module libjs
 // Unsupported top-level syntax fails before the program executes.
 struct BytecodeLoop {
 mut:
+	is_iteration bool = true
 	breaks      []u32
 	continues   []u32
 	scope_depth int
@@ -651,6 +652,13 @@ fn (mut generator BytecodeGenerator) collect_vars(statement &Statement) ! {
 		if lhs := kind.for_in_of_lhs {
 			if lhs is ForInOfLhsDeclaration { generator.collect_vars(lhs.statement)! }
 		}
+	} else if kind.tag == .switch_stmt {
+		data := kind.switch_data or { return error('Missing switch statement') }
+		for clause in data.cases {
+			for child in clause.scope.children {
+				if child.kind.tag != .function_declaration { generator.collect_vars(&child)! }
+			}
+		}
 	} else if kind.tag==.try_stmt {
 		data := kind.try_data or { return error('Missing try statement') }
 		generator.collect_vars(&data.block)!
@@ -719,6 +727,7 @@ fn (mut generator BytecodeGenerator) statement(mut vm VM, statement &Statement) 
 			generator.emit(Instruction{ op: .initialize_binding, lhs: value, identifier: generator.identifier(name.name), strict: true })
 		}
 		.for_in_of { generator.for_in_statement(mut vm, statement)! }
+		.switch_stmt { generator.switch_statement(mut vm, statement)! }
 		.try_stmt { generator.try_catch_statement(mut vm,statement)! }
 		.labelled { generator.labelled_statement(mut vm, statement)! }
 		.function_declaration {
