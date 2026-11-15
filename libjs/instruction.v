@@ -193,6 +193,7 @@ fn (instruction Instruction) writes_operand() bool {
 }
 
 pub fn (executable &Executable) validate(arguments_count u32) ! {
+	if executable.reuse_validation(arguments_count) { return }
 	if executable.instructions.len == 0
 		|| executable.bytecode_length != u32(executable.instructions.len) {
 		return error('Executable has no valid instruction stream')
@@ -251,4 +252,5 @@ pub fn (executable &Executable) validate(arguments_count u32) ! {
 		}
 		previous_end = handler.end_offset
 	}
+	executable.remember_validation(arguments_count)
 }

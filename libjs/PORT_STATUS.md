@@ -67,6 +67,11 @@ for method/property lookup; explicit receiver overrides and internal values keep
 the general path. Strict/sloppy getters, prototype proxies, foreign realms and
 compiler-free native-cache revisits have focused coverage in both GC modes.
 
+Hot executable validation uses bounded exact snapshots of the instruction stream,
+nested argument operands, handlers and layout. Mutable bytecode is compared on
+every reuse; mutations fall back to full validation. Invalidation and the 64 KiB
+snapshot bound have focused coverage; no immutable-bytecode contract is assumed.
+
 Set/Map operations and live iterators, WeakMap weak keys, ordinary arguments
 objects, default/rest/destructured function parameters, class inheritance,
 super construction (including explicit iterator-based argument spread),
