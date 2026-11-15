@@ -3215,3 +3215,67 @@ transitions and cleanup receipts. Cleanup hashes 3,491 file records across
 11 owned roots and preserves 900 selected files (18,085,437 bytes). Copies
 are verified before removing the owned binaries, profiles, jobs, guards and
 locks. Shared production bundles and dependencies are retained.
+
+## Declared custom properties and production mask confirmation, 2026-11-15
+
+`d8e280439` preserves an element's own custom-property declarations when an
+ancestor's variable environment changes. The inheritance shortcut previously
+checked whether ordinary computed properties used `var()` or `inherit()`, then
+replaced the element's complete variable environment with its parent's. Literal
+declarations could disappear even while descendants needed them. CNN's Watch
+dot consequently had an empty background and a 0×0 generated box. A declaration
+flag now makes those elements recascade; elements that only inherit retain the
+shortcut. The flag includes pseudo-element rules and resets on a full cascade.
+
+The focused regression reproduces the missing own variable before the fix.
+The final C/O0/preallocated/no-GC test executable
+`7c612810ab89289d25d3b4ff6909a14e89d0073a2e3a7fc8a1d4bad346179c4d`
+passes under a 3 GiB guard with arena poisoning. It checks preserved own values,
+updated inherited values, pseudo-element geometry, and resumed inheritance after
+declarations are removed. All four feature/test compiler-buffer witnesses match.
+An intermediate test expected the viewport width despite the UA body margins;
+the corrected assertion compares the flex box with its containing box.
+
+Diagnostic browser
+`0d608f015398a8ea6f781a5f87625b58ba9b23d958f2983b1051921936129e10`
+completes **46 workloads and 92 fresh captures**, plus a separate startup smoke.
+Every pair repeats byte for byte. CNN improves **163,914→163,862**: 52 corrected
+pixels, zero introduced, and eight changed pixels that remain one level from the
+reference. All changes lie in the restored dot. Both CNN audits confirm its 8×8
+generated box and the link's 61.5-pixel width. All **45 non-CNN PNGs are unchanged**.
+GitHub, Hacker News, Lobsters and Wikipedia remain exact; Vlang remains at 27.
+The candidate checks 822 consumed GG/rendering/CSS/DOM/layout V witnesses and
+826 stable source pins. All 92 capture guards, startup, driver, outer guard and
+guarded pixel analysis exit zero. No original reference or tolerance changes.
+
+Production executable
+`395539f070321dc8cb06f44467d591253d9dafffe61d55687bd37c08ba2b0859`, receipt
+`20261115-175250-61270ea8`, independently confirms the earlier `1d32867a2` mask
+fix using C, literal V `-prod` and one C unit. All 46 workloads and 92 captures
+match that accepted diagnostic's PNGs exactly, with exact native repeats and
+zero capture/driver/guard exits. Its 192 feature witnesses and the two native
+mask input hashes match the frozen compilation. This completes the mask fix's
+previously pending production validation.
+
+The newer available `0729cf11` bundle, receipt `20261115-180802-4c486722`, also
+contains the mask inputs but predates the inheritance fix by all three changed
+implementation hashes. It cannot validate `d8e280439`. The commit's normal hook
+requests a coalesced C/literal V `-prod`/single-unit rebuild; no duplicate manual
+build is queued. The inheritance result remains diagnostic, pending production
+confirmation. No live-site or performance acceptance is claimed.
+
+Local evidence is under
+`docs/performance/vlang-gradients-20261114/raw/cnn-watch-20261115/`: production
+receipts, source witnesses, commands, all capture outputs, pixel transitions,
+the before/after regression and failed probes. Reduction isolates a triggering
+theme/font environment; temporary tracing identifies the subsequent inheritance
+overwrite. Positive `unset` controls, rejected over-budget standalone compiles,
+failed helper attempts and an intervening shared LibJS compile error are retained.
+The provisional controls and tracing are removed from the canonical source.
+
+Cleanup verifies 6,772 file records across 21 owned roots and preserves 2,034
+selected files (41,048,842 bytes). Copies are hashed again before removing the
+owned binaries, profiles, jobs, guards, locks and test alias. Shared production
+bundles and dependencies are retained. Catalog-wide parity remains open for
+CNN's remaining rendering/source differences, Vlang, the missing Reddit fixture
+and the previously inexact controls.
