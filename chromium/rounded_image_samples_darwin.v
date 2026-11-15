@@ -11,13 +11,17 @@ fn document_image_sample_count(first_x i32, first_y i32, width i32, height i32) 
 	if grid.width <= 2 || grid.height <= 2 || grid.columns <= 0 || grid.rows <= 0 { return 1 }
 	x := int(first_x) - int(math.round(grid.origin_x))
 	y := int(first_y) - int(math.round(grid.origin_y))
-	if x < 0 || y < 0 || x + width > grid.columns * (grid.width - 2) + 2
-		|| y + height > grid.rows * (grid.height - 2) + 2 {
+	if !geometry_grid_covers_leaf(grid, x, y, int(width), int(height)) {
 		return 0
 	}
+	// Native readbacks add a two-pixel backdrop fringe. Choose samples from
+	// the picture it intersects; padding outside its grid owns no tile.
+	left, top := math.max(0, x), math.max(0, y)
+	right := math.min(x + int(width), grid.columns * (grid.width - 2) + 2)
+	bottom := math.min(y + int(height), grid.rows * (grid.height - 2) + 2)
 	mut samples := i32(0)
-	for row in geometry_tile_owner(y, grid.height, grid.rows) .. geometry_tile_owner(y + height - 1, grid.height, grid.rows) + 1 {
-		for col in geometry_tile_owner(x, grid.width, grid.columns) .. geometry_tile_owner(x + width - 1, grid.width, grid.columns) + 1 {
+	for row in geometry_tile_owner(top, grid.height, grid.rows) .. geometry_tile_owner(bottom - 1, grid.height, grid.rows) + 1 {
+		for col in geometry_tile_owner(left, grid.width, grid.columns) .. geometry_tile_owner(right - 1, grid.width, grid.columns) + 1 {
 			current := if i32(row * grid.columns + col) in grid.cells { i32(4) } else { i32(1) }
 			if samples != 0 && samples != current { return 0 }
 			samples = current
