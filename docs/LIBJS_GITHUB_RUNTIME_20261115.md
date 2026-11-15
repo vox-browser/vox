@@ -1783,3 +1783,93 @@ five module errors, predating these slices. Acceptance still requires 33 rows,
 Brave content audit and zero differing pixels, followed by matched performance
 evidence. Full GitHub execution, faster compiled revisits and Brave pixel parity
 remain unverified and unachieved.
+
+## Native Blob, object-URL and Fetch continuation
+
+The user's test hold remains active: no test source was compiled or run,
+no JavaScript was evaluated, and no browser process, capture, comparison or
+performance cohort was launched. The following four implementation slices
+were committed separately:
+
+| Commit | Implemented behavior |
+| --- | --- |
+| `112982c70` | Bind native Blob construction, sequence/union conversion, USV strings, line endings, type normalization, view windows, clamped slicing and metadata. Byte copies follow later option/prototype getters. text()/arrayBuffer()/bytes() queue owned FileReading tasks and return actual native Promise/buffer results; host close discards pending tasks and roots. |
+| `2b0cf1295` | Bind URL.createObjectURL/revokeObjectURL to the existing native store with actual document settings and partition checks. Entries retain native Blob bytes independently of VM wrappers and are removed by native document unloading or revocation. |
+| `f584a58f7` | Bind Blob, DataView and URLSearchParams Fetch bodies. Preserve conversion order and defer native snapshots until after dictionary and NewTarget prototype getters. Request/Response bytes() and blob() return intrinsic Uint8Array/Blob results with MIME type and body-use rules. |
+| `25487fa1a` | Bind Request.signal and Fetch AbortSignal input, including explicit-null signal independence. Pre-aborted requests reject before transport; active aborts stop the native controller and preserve arbitrary author reasons. Unread response bodies retain their signal association after network delivery. Completion/close removes hooks, retired abort trampolines wait for native return, and synchronous Fetch settlement captures are released. |
+
+The frozen original scripts contain five direct new-Blob matches in three
+distinct bodies, four URL.createObjectURL call matches in three, and five
+URL.revokeObjectURL matches in two. There are 64 AbortController textual
+references across twelve bodies and four AbortSignal references across two.
+Two .blob() call matches occur in two bodies; three .bytes() matches occur in
+two, without attributing those method names to a particular receiver. This
+static audit retains body hashes and contexts in local
+`docs/performance/libjs-blob-bindings-20261115/static-source-scan.json`.
+These counts do not establish runtime reachability or a first failure.
+
+Thirty-six focused regression functions are prepared: twelve Blob, six object
+URL, nine Fetch binary, eight Fetch signal and one typed Request-null-signal
+case. They cover native storage and MIME values, UTF-16 replacement, getter/
+iterator ordering and closing, buffer/prototype mutation, detached/shared/
+resizable restrictions, clamped slices, Promise task timing, intrinsic results,
+VM/arena/document lifetime, original object/symbol/BigInt abort reasons,
+post-delivery unread bodies, signal cleanup and second-VM revisits with the
+compiler disabled. Every assertion remains uncompiled and unexecuted.
+
+All ten compiler-only attempts completed with child exit zero. Raw logs and
+reports were preserved byte-identically with a hashed index before removing
+their completed per-job Build reports and locks:
+
+| Compiler-only check | Child exit | Seconds | Peak sampled RSS bytes |
+| --- | ---: | ---: | ---: |
+| Blob normal | 0 | 27.892 | 5,291,229,184 |
+| Blob production/prealloc/no-GC | 0 | 26.119 | 5,571,624,960 |
+| Object URLs normal | 0 | 27.971 | 5,285,822,464 |
+| Object URLs production/prealloc/no-GC | 0 | 33.723 | 5,566,251,008 |
+| Fetch binary normal | 0 | 30.414 | 5,296,046,080 |
+| Fetch binary production/prealloc/no-GC | 0 | 27.483 | 5,566,251,008 |
+| Fetch signal initial normal | 0 | 21.601 | 5,286,674,432 |
+| Fetch signal initial production | 0 | 26.149 | 5,567,594,496 |
+| Fetch signal final normal | 0 | 25.705 | 5,285,756,928 |
+| Fetch signal final production | 0 | 26.140 | 5,565,857,792 |
+
+The command is the normal-program import check `/Users/alex/code/v/v -w -n
+-b c -no-parallel -cc clang -check -memory-limit 10G -enable-globals
+tools/libjs_github_revisit.v`, using `V3_STR_CAP=1 VJOBS=1` and a unique
+`run_memory_bounded` lock/report with its default 12 GiB process-tree budget.
+Production adds `-prod -prealloc -gc none`. Final checks include the controller
+assignment/reentry cancellation guard and all preceding implementation slices.
+They exclude `_test.v`, C linking and execution; compiler durations are not
+JavaScript performance measurements.
+
+At implementation revision `25487fa1ad1098085f0aaba60b92e33e51da6f72`, the latest
+completed production executable inspected statically is still
+`48b7a9440fd5c1ae8b1b57080e347fe365adb604348327438438bf33c4577854`.
+The actual executable hash matches
+`Build/production-build/receipts/20261115-220911-056313d0/frozen-compile.json`,
+using one C unit and literal V `-prod`. None of eleven selected current
+implementation files matches its sealed consumed-source manifest. Both the
+latest receipt and executable identities stayed unchanged during the audit.
+This bundle cannot validate the new code. Each commit requested the managed
+coalesced production rebuild; no duplicate manual build or fresh launch was
+introduced.
+
+This is partial FileAPI/Fetch/WebIDL integration. Blob.stream and Fetch body
+stream bindings, FormData, native LibJS File/FileReader, foreign-realm WebIDL
+fallback, Blob History serialization and complete native callback/GC ownership
+remain open. The existing 32-bit native byte-vector bound is retained. Additional
+JS/Web/Intl behavior, async generators, top-level await and full page rendering
+also remain open; the prepared cache cases supply no measured reuse evidence.
+
+The original fixture manifest remains
+`893e042c4f31e1b7fb984c81cf8f6a2a7eb65d790f7c3f4cc3e372c065de302d`;
+the unchanged Brave PNG remains
+`649abff51549508516e2e0681866ba81ce69e7112cfa8dc3446b9b76c99be3d3`.
+The last executed GitHub observation is still the historical 672 warm native
+entries, 51 frontend hits, zero compiler calls, 33 rows, zero commit links and
+five module errors, before these slices. Acceptance still requires 33 rows,
+56 commit links, current README, active controls, no errors, the unchanged
+Brave content audit and zero differing pixels, then matched performance
+evidence. Full GitHub execution, faster compiled revisits and pixel-perfect
+Brave rendering remain unverified and unachieved.

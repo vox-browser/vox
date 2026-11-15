@@ -2813,3 +2813,26 @@ pixel results. The latest inspected production receipt contains none of the
 Web/Intl behavior, async generators, top-level await and full GitHub hydration/
 Brave pixel equality remain open. See the
 [native binary-runtime continuation](../docs/LIBJS_GITHUB_RUNTIME_20261115.md#native-bigint-typed-array-and-text-encoding-continuation).
+
+The next DOM-host slice installs native Blob parts, owned byte storage, slicing,
+metadata and asynchronous file-reading Promise methods. Object URLs use the
+existing native store and real document settings for origin, partition and
+unload lifetime. Fetch accepts Blob/DataView/URLSearchParams bodies and produces
+intrinsic bytes()/blob() results. Buffer snapshots follow later dictionary and
+NewTarget prototype getters. Request.signal wraps the native dependent signal,
+including explicit-null independence; Fetch preserves arbitrary abort reasons,
+stops native controllers, errors unread response bodies after network delivery,
+and retires signal callbacks outside their active native stack. Synchronous
+Fetch settlement callbacks release their trampoline capture after return.
+
+Thirty-six regression functions are prepared, including native-cache revisits,
+task/arena lifetime, body snapshots, MIME handling, original abort-value identity
+and close cleanup. None were compiled or run under the user's hold. All ten
+normal-program compiler-only import checks passed, including final normal and
+production/preallocation GC-none checks. This does not establish execution,
+cache speed or browser pixels. Blob.stream/Fetch body-stream bindings, FormData,
+foreign-realm WebIDL behavior, complete native ownership/collection and the
+remaining JS/Web/Intl/rendering work are still open. The latest inspected
+production bundle lacks all eleven selected changed implementation inputs.
+The GitHub/Brave compiled-JS parity goal remains incomplete; see the
+[Blob/Fetch continuation](../docs/LIBJS_GITHUB_RUNTIME_20261115.md#native-blob-object-url-and-fetch-continuation).
