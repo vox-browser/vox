@@ -1,3 +1,4 @@
+// vtest build: macos
 module main
 
 import gg
