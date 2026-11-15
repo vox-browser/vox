@@ -107,6 +107,7 @@ fn initialize_regexp_intrinsics(mut vm VM, mut realm Realm) {
 	install_intrinsic_method(mut vm, &realm, mut text, 'replaceAll', 2, string_prototype_replace_all)
 	initialize_regexp_match_all_intrinsics(mut vm, mut realm)
 	initialize_regexp_search_intrinsics(mut vm, mut realm)
+	initialize_regexp_split_intrinsics(mut vm, mut realm)
 }
 
 fn regexp_receiver(mut vm VM) !&RegExpObject {
