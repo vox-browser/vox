@@ -65,6 +65,7 @@ fn initialize_collection_intrinsics(mut vm VM, mut realm Realm) ! {
 		'replace': string_prototype_replace
 	} { install_intrinsic_method(mut vm, &realm, mut text, name, if name in ['toString','valueOf','toLowerCase','toUpperCase'] { 0 } else if name in ['slice','substring','substr','replace'] { 2 } else { 1 }, behaviour) }
 	install_intrinsic_method(mut vm, &realm, mut text, 'split', 2, fn (mut vm VM) !Value { return string_prototype_split(mut vm, vm.realm().array_prototype_record()) })
+	initialize_string_text_methods(mut vm, &realm, mut text)
 	string_constructor := StringConstructor.create(mut vm, &realm, StringConstructorDependencies{
 		prototype: text
 		prototype_getter: fn (realm &Realm) &Object { return realm.string_prototype or { panic('String prototype absent') } }
