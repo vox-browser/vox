@@ -39,31 +39,49 @@ Set/Map operations and live iterators, WeakMap weak keys, ordinary arguments
 objects, default/rest/destructured function parameters, class inheritance and
 super construction, public field initializers, private fields/methods/accessors,
 lexical brands, object literal accessors/methods,
-Array concat/fill, ordinary template literals and native element CSSOM bindings
+Array concat/fill and literal spread, object literal spread, ordinary template
+literals and native element CSSOM bindings
 are implemented. Native Promise construction, resolving functions, then/catch,
 resolve/reject, generic species capabilities and FIFO reactions execute. Window
 listeners use the associated native Window. Headers uses actual native Fetch
-records with ByteString conversion and live iteration. Native DOM
+records with ByteString conversion and live iteration. Fetch now uses the module loader's
+actual native transport, Request/Response records, stream body consumption and
+Promise settlement. AbortSignal/ReadableStream exposure, remaining body variants
+and interface factories remain pending. Native DOM
 Event construction preserves subclass prototypes and actual native event records.
-Promise finally/combinators, async/generator execution, object/call spread, class
+Promise finally/combinators, async/generator execution, call spread, class
 static blocks, super property
 references, anonymous class assignment/field-name
 inference, Set algebra, Map extensions and remaining weak-reference APIs remain
-incomplete. CSSOM constructor ancestry and custom-element reaction wrapping remain
-separate work.
+incomplete. Node/Element/HTMLElement/Document/DocumentFragment and native HTML tag
+interfaces share native wrapper prototypes. Custom-element definitions, HTML constructors,
+upgrades, lifecycle callbacks, whenDefined promises and DOMException records are
+bound, including registered customized built-ins. Named HTML constructors,
+specialized interface members, cross-realm wrapper worlds and a complete
+CEReactions stack remain separate work. CSSOM constructor ancestry
+remains incomplete. Navigator ID, language preferences and system-state getters
+use the actual owning Window's Navigator; optional capability placeholders are
+not exposed as functional APIs.
+Native static/live NodeList collections, variadic ParentNode mutations and
+MutationObserver records/delivery are bound. Observer jobs share the VM FIFO with
+Promise reactions and native HTML microtasks bridge writes outside JavaScript.
 
-The latest complete core checkpoint passes 296/296 package files in each GC mode,
-with 790 unchanged source/fixture/compiler inputs. The unchanged canonical AST
+The latest complete core checkpoint passes 300/300 package files in each GC mode,
+with 796 unchanged source/fixture/compiler inputs, using four workers within the
+unchanged 12 GiB guard. Earlier resource failures and obsolete-fixture failures
+are retained in the continuation report. The unchanged canonical AST
 driver previously passed all 100 upstream cases exactly; the subsequent runtime
 changes do not change parsing. Public field initializers also pass AddressSanitizer
 with stack-use-after-return detection and GC disabled. The later Promise slice has nine focused cases plus five VM/realm/module
-neighbors passing in both modes and an AddressSanitizer pass; it is not a full
-297-file checkpoint. Headers has six focused cases passing in both modes, plus
+neighbors passing in both modes and an AddressSanitizer pass, followed by the
+300-file checkpoint. Headers has six focused cases passing in both modes, plus
 five native-model cases per mode. Native Event's three cases and the four original Hacker News
 DOM/event cases pass in both modes. Cache checks load native code in fresh VMs
-with the compiler disabled. Original GitHub scripts reuse 161 native executables
-and 51 parsed sources on the second opening, but module evaluation next lacks
-the Fetch binding; 33 directory rows remain and no commit links hydrate.
+with the compiler disabled. The observer-stage original GitHub scripts
+reuse 200 native executables and 51 parsed sources on the second opening, but
+module evaluation next fails at an unbound String.prototype.includes; 33 directory
+rows remain and no commit links hydrate. These counts come from initialization diagnostics without layout
+or paint, and do not establish completed-page speedup.
 A full native LibJS browser capture completes under the default 12 GiB guard,
 retaining module errors and placeholders; the earlier 3 GiB failures are focused
 small-budget diagnostics. The diagnostic image differs from Brave. Pixel equality,
@@ -2582,3 +2600,22 @@ system-ICU probes. Their references remain unchanged, and no full-suite pass
 or additional VM/runtime parity is claimed. See the
 [encoding evidence](../docs/performance/chatgpt-utf16-prefix-20261104.json)
 for exact counts, retained failures and production-validation limits.
+
+
+The host Promise checkpoint follow-up adds four focused VM cases and one browser
+case passing in both GC modes; unsupported jobs now reach document diagnostics.
+Native Fetch has eight cases passing in both modes and AddressSanitizer, including
+fresh-VM cached callbacks with the compiler disabled. Node/Element/Document
+interface objects and standalone XML document construction have two focused cases
+passing in both modes, including the subsequent typed HTMLElement wrappers.
+Six custom-element cases pass in both GC modes and AddressSanitizer; two native
+DOMException, three Navigator and three DocumentFragment cases pass in both modes.
+The Navigator-stage source pair next lacks DocumentFragment and reuses 191
+native entries; a later fragment query fix installs the actual CSS matching hook.
+The later core checkpoint passes all 300 package files in both GC modes with 796
+stable inputs. Array/object spread each have five cases passing in both modes
+and sanitizer. Native variadic mutations and NodeLists each have three cases in
+both modes; MutationObserver has six in both modes and sanitizer. The newest
+original-script pair reuses 200 entries and next lacks String.prototype.includes.
+Full-repository coverage, production validation of the observer binding and
+pixel acceptance remain open.

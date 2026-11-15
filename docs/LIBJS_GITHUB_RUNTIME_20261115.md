@@ -357,5 +357,222 @@ native capability now obtains the constructor through the explicit realm record
 accessor, and the rejection observer retains a heap log instead of a copied
 array capture. Fresh second VMs execute all three cached script/callback entries
 with the compiler disabled. These checks follow the complete 296-file checkpoint;
-a complete 297-file sweep is not claimed. Fetch remains unbound, so the latest
-full-browser rendering result remains a failure.
+a complete 297-file sweep is not claimed. Fetch was still unbound at that
+checkpoint, so its full-browser rendering result remains a failure.
+
+### Fetch and DOM interface continuation
+
+`bfc166ab1` defers Promise checkpoints until an entire host entry returns,
+including the exceptional path. Unsupported job failures remain VM roots until
+consumed and now reach the document's LibJS diagnostics. Four focused VM cases
+and a browser integration case pass in both GC modes, alongside the Promise/VM
+neighbors. The initial browser compile rejected a mutable array alias; messages
+are now appended before the existing take/reset boundary. Its failed compile
+and unsuccessful launch of the absent binary remain retained.
+
+`94c6a27a6` binds Fetch to the module loader's actual transport and relevant
+settings. Native Request/Response records retain guarded Headers and stream
+bodies. Constructors, cloning, request dictionary conversion, text/JSON/
+ArrayBuffer consumption, network rejection and native stream completion execute
+without JSC. Eight cases pass in each GC mode and with AddressSanitizer's stack-
+use-after-return detection. Their cache case reopens in a fresh VM with its
+compiler disabled and executes all three cached script/callback entries.
+AbortSignal exposure, DataView/Blob/FormData/URLSearchParams body variants,
+ReadableStream wrappers, remaining Body methods and Response static factories
+remain pending; this is not complete Fetch/WebIDL parity.
+
+`7a99d17ca` extends the source-only diagnostic to read and authenticate every
+requested response body, including archived non-script responses, and waits for
+native Fetch operations before completing. Its pair reuses 172 native entries
+and 51 frontend sources with zero compiler invocations on reopening. It still
+retains five module failures, now missing Element, 33 rows and zero commit links.
+The input pins now include every archived response body. This expanded functional
+scope is not a matched performance comparison with earlier initialization runs.
+
+`85e6878f6` exposes Node, Element and Document interface objects on the exact
+native wrapper prototype graph, plus Node constants and standalone XML Document
+construction/subclassing. Two focused cases pass in both GC modes. The original
+cleanup assertion failed because finalize alone does not destroy a document;
+owned documents now run destroy before finalization at Host.close. The first
+interface source pair predates that cleanup correction and supplies no final-
+teardown credit. It reuses 162 entries and next fails at missing HTMLElement:
+exposing Document activates an earlier polyfill branch, changing the executed
+cohort. This smaller cache count does not establish a speedup. All visits retain
+33 rows and zero commit links. Raw records remain local under
+`docs/performance/libjs-{fetch,interfaces}-github-20261115/` and the benchmark cache.
+
+`1e7f2eb4f` adds the native HTMLElement wrapper prototype and constructor ancestry;
+XML elements remain ordinary Element wrappers. Both interface cases pass in each
+GC mode. Its authenticated source-only pair reuses 162 native entries and 51
+frontend sources without starting the compiler. The next missing global is
+customElements. It still has five module failures, 33 rows and zero commit links.
+Raw records are local in `docs/performance/libjs-html-interface-github-20261115/`.
+
+`aa0b098ca` binds the real html.CustomElementRegistry,
+constructor metadata/validation, scoped definitions, native upgrade queues,
+autonomous HTMLElement construction and captured lifecycle callbacks. Registry
+errors use actual webidl.DOMException records and whenDefined uses real LibJS
+Promises. Six registry cases pass in both GC modes and AddressSanitizer with
+stack-use-after-return detection. Two DOMException cases pass in both modes.
+The fresh-VM cache case executes the constructor/field/callback entries with the
+compiler disabled. Specialized customized-built-in interface constructors,
+cross-realm wrapper worlds and complete CEReactions stack semantics remain
+separate work; this uses the existing native backup reaction queue boundaries.
+
+The initial failed constructor test incorrectly expected a failed state after
+the precustomized transition. The unchanged upstream algorithm retains that
+state; the corrected test checks cleared definition/reactions and reported
+exception. The initial sanitizer launch preceded compilation and found no
+binary. The completed sanitizer execution passes; both attempts remain retained.
+No DOM algorithm, guard, fixture or reference was changed to satisfy the tests.
+DOMException, DOM interface and original Hacker News regression files also pass
+in both GC modes, with unchanged binding source hashes throughout those checks.
+
+The next authenticated original-script pair reuses 178 native entries and all
+51 frontend sources, with zero compiler calls and no JSC context. Both visits
+still retain five module failures, now missing navigator, 33 rows and zero commit
+links. Local records are in
+`docs/performance/libjs-custom-elements-github-20261115/`. These are failed
+initialization diagnostics without a native window, layout or paint, and are
+not completed-page performance or pixel acceptance results.
+
+`69706e3ce` binds Navigator ID, language preferences, system-state getters and
+the replaceable clientInformation alias to the owning native Window's Navigator.
+Its three cases pass in both GC modes. Frozen language arrays retain their prior
+values across preference changes. Clipboard/Permissions capability placeholders
+are not exposed as functional APIs. The first fixture incorrectly constructed a
+second Window; the next entered the VM after Host.close had retired its closure
+storage. Those failed attempts are retained. The corrected teardown check inspects
+retired host storage without entering the closed VM, as the embedding requires.
+Its authenticated source-only pair reuses 191 native entries and all 51 frontend
+sources, with no compiler invocations or JSC context; five module failures now
+report missing DocumentFragment, still with 33 rows and zero commit links.
+
+Two newer shared production bundles have also been observed in fresh processes:
+
+| Sealed feature / executable SHA-256 | Native observation | Result |
+| --- | --- | --- |
+| HTMLElement `1e7f2eb4f` / `eab1011ace894dc97cdcfe08231f7496fc0127941491abe0b9a065a63ee58da1` | PID 70187, 31.194 s, 4,370,055,168 sampled peak bytes | 33 rows, README, zero latest/commit links; five missing-customElements failures; LibJS generation 428, JSC context absent |
+| Registry `aa0b098ca` / `ab8a3e6d913f5d696656f7054358c2394c792664fad04dc0708a5298865821a4` | PID 77570, default 12 GiB guard, 4,400,250,880 sampled peak bytes | 33 rows, README, zero latest/commit links; missing navigator; LibJS generation 428, JSC context absent |
+
+All selected 283/286 Darwin engine/binding implementation inputs respectively
+match their sealed source manifests. Both browser/controller/guard executions
+exit zero, with unchanged executable/native/resource inputs and adopted browser
+PIDs. Both documents are visible, fully active and complete at 1024×768. The
+unchanged retained Brave content validator rejects script/native errors; the
+whole-window captures visibly retain loading placeholders. These observations
+remain failed correctness diagnoses, not pixel or performance acceptance. Host
+load and simultaneous compilation are retained in the raw records. Local evidence
+is in `docs/performance/libjs-{html-interface,custom-elements}-native-20261115/`
+and the corresponding `native-*` benchmark cache directories. Neither production
+bundle contains the subsequent Navigator/fragment changes.
+
+`3a74c8699` binds actual DocumentFragment construction/subclassing, native
+document factories, prototype identity, child transfer and scoped ID lookup.
+The initial selector extension was committed before its failed results were
+inspected: it reached the DOM-only matcher without installing the CSS bridge.
+`4ae038303` installs the real CSS query hook before fragment scope matching.
+All three fragment cases now pass in both GC modes, including native child
+identity and SyntaxError DOMException behavior. The original failing executions
+remain retained; neither selector inputs nor expected results were weakened.
+The final fragment source pair authenticates unchanged inputs and reuses 191
+native entries plus 51 frontend sources. Its next missing interface is
+HTMLButtonElement; rows/commit links remain 33/0.
+
+`70a9a1677` gives native HTML tags their public interface prototypes, including
+the HTMLMediaElement ancestry of audio/video and HTMLUnknownElement identity.
+The constructor path also validates registered customized built-in subclasses
+against their native local name. Two focused cases and the DOM interface,
+custom-element, fragment and original Hacker News files pass in both GC modes;
+all binding sources remain unchanged throughout those regression checks. The
+earlier generic-div assertions now require HTMLDivElement identity because the
+wrapper has its actual public tag interface. Specialized interface members,
+named constructors and cross-realm wrapper worlds remain incomplete.
+
+Its authenticated original-script pair reuses 192 native entries/51 frontend
+sources, without compiler calls or JSC, and next rejects an array spread in the
+popover polyfill. Both visits still retain five module failures and 33/0 rows/
+commit links. Local records remain in
+`docs/performance/libjs-{fragment,specialized-html}-github-20261115/`.
+
+`d1651fb8f` lowers array spread into the existing budgeted synchronous-iterator
+bytecode. Elisions remain holes, yielded holes become undefined properties,
+Unicode strings follow their iterator, and native cached loops execute in a fresh
+VM with the compiler disabled. Five cases pass in both GC modes and sanitizer.
+The initial recovery assertion used the still-unbound Array.reduce; the corrected
+fixture sums the actual resulting elements. The script-evaluation regression now
+checks array spread's runtime failure after earlier declarations, while retaining
+pre-execution rejection checks for genuinely unsupported constructs.
+
+`90f48579f` binds actual ParentNode append/prepend/replaceChildren algorithms,
+including full variadic Node-or-string conversion before mutation, native
+hierarchy errors and custom reactions. Three cases pass in both GC modes.
+`faf86aab0` binds native static querySelectorAll lists and live childNodes,
+stable wrapper identity and value iteration; three cases pass in both modes.
+The existing host-property adapter conservatively keeps indexed properties
+non-configurable; complete WebIDL indexed define/delete semantics remain pending.
+
+`59317d4bf` adds ordered enumerable-own-property copying for object spread,
+sharing the budgeted copy path with object rest. Nullish sources, UTF-16 string
+indices, symbols, getter ordering, live descriptor changes, original exceptions
+and __proto__ data properties are covered by five cases in both GC modes and
+sanitizer. Four neighboring runtime/cache files pass in each mode. Initial paired
+cache checks failed their unchanged compiler-call assertion; isolated diagnostic
+checks and the complete five-file reruns pass in both modes. The assertion retains
+its cold-one/warm-zero requirement and now includes failure details. Those early
+failures remain retained; no cache requirement was relaxed.
+
+`0e61c1934` binds native MutationObserver/MutationRecord records and delivery
+queues to the VM's FIFO beside Promise reactions. Native HTML microtasks also
+checkpoint changes originating outside JS. Callback budgets, native record and
+NodeList identity, option dictionary order, observer retirement and error reporting
+have six cases passing in both GC modes and sanitizer. Custom-element and NodeList
+regressions also pass in both modes with unchanged binding inputs. Record wrapping
+uses persistent storage; host teardown retires native delivery before releasing
+callback closures. Cross-realm wrapper worlds and complete inactive-realm job
+policy remain separate work.
+
+The authenticated source-only pairs after array spread, variadic mutations,
+object spread and MutationObserver respectively reuse 193, 197, 198 and 200 native
+entries on reopening, with all 51 frontend sources cached, zero compiler calls,
+no JSC context and no changed archived input. Every visit still has 33 rows,
+zero commit links and five module failures. The newest failure is a missing
+String.prototype.includes call in the selector polyfill. Raw records remain local
+in the corresponding `docs/performance/libjs-*-github-20261115/` directories.
+These changing, failed initialization workloads establish no completed-page
+performance or pixel acceptance.
+
+A further fresh production observation uses executable
+`bd5bd15774faf21c35bbb34e99829569c93d3c2d6866bc87ea65bd7d797795ee`;
+all 291 selected Darwin implementation files match sealed `59317d4bf` inputs.
+PID 45140 observes a visible, fully active 1024×768 document for 30 seconds.
+Browser/controller/guard exits are zero, identities remain unchanged, browser
+adoption succeeds and sampled aggregate peak RSS is 4,421,500,928 bytes under the
+default 12 GiB guard. LibJS generation is 437 over 51 modules; JSC remains absent.
+Five missing-MutationObserver failures leave 33 rows, README and zero commit/
+latest links, and the unchanged Brave content validator rejects the capture.
+The bundle predates the observer feature. Local evidence is in
+`docs/performance/libjs-object-spread-native-20261115/` and the
+`native-object-spread` benchmark cache. Its whole-window PNG supplies no canonical
+document-pixel gate or page-performance acceptance.
+
+The broad follow-up retains all failed/interrupted attempts. The eight-worker
+299-file run (`r5`) exceeds 12 GiB at 12,908,249,088 sampled bytes. The four-worker
+`r6` default run completes at 297/299: its two obsolete fixtures omit Promise
+and still reject array spread. The unfinished GC-disabled sweep is deliberately
+stopped before correcting them; the guard records child exit 143 and owns the
+remaining-child cleanup. `f0ca8aaec` adds Promise to the expected installed globals;
+the array feature updates the obsolete unsupported fixture and adds its positive
+runtime-error regression. Both corrected files pass in both modes. The later
+six-worker 300-file attempt (`r7`) exceeds the same 12 GiB cap at 12,971,819,008
+sampled bytes. No memory budget or guard is weakened.
+
+The final four-worker `r8` checkpoint passes **300/300 files in both GC modes**,
+with 796 unchanged source/fixture/compiler inputs, no changed inputs, and all
+browser-independent test/guard exits zero. Default/no-GC sweeps take 767.406 and
+761.726 seconds; the guard records 1,529.825 seconds and 9,489,645,568 sampled peak
+bytes within the unchanged 12 GiB cap. This includes the original cache-counter
+gate. All 100 unchanged upstream AST fixtures also match exactly; later changes
+affect execution/bindings, not parsing. AST actuals, guard receipts and failed
+cohorts remain local. Complete LibJS/WebIDL parity, production validation of the
+observer feature, live-site behavior and pixel-perfect Brave rendering remain open.
