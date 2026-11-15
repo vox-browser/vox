@@ -68,6 +68,11 @@ pub fn (mut runtime Runtime) take_libjs_messages() []string {
 	return messages
 }
 
+pub fn (runtime &Runtime) has_pending_libjs_fetches() bool {
+	if host := runtime.libjs_document_host_ { return host.has_pending_fetches() }
+	return false
+}
+
 pub fn (runtime &Runtime) dispatch_libjs_event(name string, element &dom.Element) !bool {
 	if runtime.closed || runtime.libjs_document_host_ == none {
 		return error('LibJS document runtime is unavailable')

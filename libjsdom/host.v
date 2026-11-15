@@ -34,6 +34,15 @@ mut:
 	headers map[voidptr]&fetch.Headers
 	headers_wrappers map[voidptr]&libjs.Object
 	headers_iterators map[voidptr]&HeadersIteratorState
+	fetch_client ?fetch.RequestClient
+	fetch_transport &fetch.FetchHost = unsafe { nil }
+	request_prototype &libjs.Object = unsafe { nil }
+	response_prototype &libjs.Object = unsafe { nil }
+	fetch_requests map[voidptr]&fetch.RequestObject
+	fetch_responses map[voidptr]&fetch.ResponseObject
+	fetch_wrappers map[voidptr]&libjs.Object
+	fetch_operations []&DocumentFetchOperation
+	fetch_json_parse libjs.Value
 	style_wrappers       map[u32]&libjs.Object
 	style_elements       map[voidptr]&dom.Element
 	wrappers             map[u32]&libjs.Object
@@ -116,6 +125,7 @@ fn (mut host Host) changed() {
 pub fn (mut host Host) close() {
 	if host.closed { return }
 	host.closed = true
+	host.close_fetch()
 	for listener in host.listeners {
 		if listener.attribute {
 			listener.target.set_event_handler_attribute(listener.type_, none)

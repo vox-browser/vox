@@ -2,6 +2,7 @@
 module browserjs
 
 import dom
+import fetch
 import html
 import libjs
 import platform
@@ -15,6 +16,9 @@ struct LibJSModuleImport {
 fn (mut host ModuleHost) install_libjs(mut runtime Runtime) ! {
 	if runtime.module_host_ != none { return error('A module loader is already installed') }
 	host.runtime=&runtime
+	if mut document_host := runtime.libjs_document_host_ {
+		document_host.install_fetch(fetch.RequestClient(host.settings), host.transport)!
+	}
 	owner := &host
 	mut vm := runtime.agent_vm
 	vm.host_load_imported_module=fn [owner] (referrer libjs.ImportedModuleReferrer,request libjs.ModuleRequest,_ voidptr,payload libjs.ImportedModulePayload) {
