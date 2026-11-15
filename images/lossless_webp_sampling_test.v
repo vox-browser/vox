@@ -12,11 +12,13 @@ fn test_opaque_lossless_webp_sampling_rejects_other_formats_and_alpha() {
 		for i, v in 'WEBPVP8L'.bytes() { bytes[i + 8] = v }
 		bytes[20] = 0x2f
 		assert opaque_lossless_webp_sampling_supported(bytes)
+		assert lossless_webp_sampling_supported(bytes)
 		assert !opaque_lossless_webp_sampling_supported(bytes[..24])
 		for flag in [u8(16), 32, 64, 128] {
 			mut other := bytes.clone()
 			other[24] = flag
 			assert !opaque_lossless_webp_sampling_supported(other)
+			assert lossless_webp_sampling_supported(other) == (flag == 16)
 		}
 		for kind in ['VP8 ', 'VP8X'] {
 			mut other := bytes.clone()
@@ -51,6 +53,35 @@ fn test_lossless_webp_upload_keeps_owned_pixels_and_decode_scope() {
 		set_chromium_image_decode_scope(1)
 		separate := app.sampled_lossless_webp_decode(address, &image, 240, 135) or { panic('separate scope') }
 		assert separate.width == 240 && separate.height == 135 && separate.id != cached.id
-		assert app.sampled_lossless_webp_decode(address, &image, 960, 540) == none
+		native := app.sampled_lossless_webp_decode(address, &image, 960, 540) or { panic('native upload') }
+		assert native.id == image.id && voidptr(native.data) == voidptr(image.data)
+		assert (app.sampled_lossless_webp_decode(address, &image, 240, 135) or { panic('retain resize history') }).id == separate.id
+	}
+}
+
+fn test_lossless_webp_alpha_upload_preserves_existing_premultiplication() {
+	$if macos {
+		mut document := html.parse_document('<!doctype html>')
+		defer { document.finalize() }
+		document.set_font_rendering_policy(.chromium)
+		mut app := BrowserApp{ document: document, ctx: gg.new_context(native_rendering: true) }
+		fixture := os.read_file(os.join_path(@VMODROOT, 'Tests/Browser/Brave/input/webp-alpha-premultiplication.html'))!
+		for i, source in fixture.split('src="')[1..] {
+			address := source.all_before('"')
+			bytes := app.background_image_bytes(address)!
+			image := app.create_image_from_resource_bytes(address, bytes)!
+			if i == 3 {
+				assert image.nr_channels == 6
+				assert app.sampled_lossless_webp_decode(address, &image, 76, 38) == none
+				continue
+			}
+			assert image.nr_channels == 7 && image.width == 4 && image.height == 2
+			before := unsafe { (&u8(image.data)).vbytes(32).clone() }
+			upload := app.sampled_lossless_webp_decode(address, &image, 76, 38) or { panic('alpha upload') }
+			assert upload.id == image.id && voidptr(upload.data) == voidptr(image.data)
+			assert unsafe { (&u8(upload.data)).vbytes(32) } == before
+			assert app.sampled_lossless_webp_decode(address, &image, 2, 1) == none
+			assert app.sampled_lossless_webp_decode(address, &image, 4097, 40) == none
+		}
 	}
 }

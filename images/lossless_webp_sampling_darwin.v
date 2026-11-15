@@ -4,23 +4,42 @@ import crypto.sha256
 import gg
 import imageraster
 import layout
+import math
 import painting
 import platform
 
-// Simple VP8L streams have no color profile or animation. Their packed header
-// records alpha in bit 28 and the format version in bits 29..31.
-fn opaque_lossless_webp_sampling_supported(bytes []u8) bool {
+// Simple VP8L streams have no color profile or animation. Alpha is bit 28;
+// bits 29..31 encode the format version.
+fn lossless_webp_sampling_supported(bytes []u8) bool {
 	return bytes.len >= 25 && bytes[..4].bytestr() == 'RIFF'
 		&& bytes[8..16].bytestr() == 'WEBPVP8L' && bytes[20] == 0x2f
-		&& bytes[24] & 0xf0 == 0
+		&& bytes[24] & 0xe0 == 0
+}
+
+fn opaque_lossless_webp_sampling_supported(bytes []u8) bool {
+	return lossless_webp_sampling_supported(bytes) && bytes[24] & 0x10 == 0
 }
 
 fn (mut app BrowserApp) sampled_lossless_webp_decode(url string, image &gg.Image,
 	width f64, height f64) ?&gg.Image {
-	if image.path != '' || image.nr_channels != 7 || image.data == unsafe { nil } { return none }
-	dw, dh := imageraster.decode_size(image.width, image.height, width, height) or { return none }
+	if image.path != '' || image.nr_channels != 7 || image.data == unsafe { nil }
+		|| image.width <= 0 || image.height <= 0 || image.width > 4096 || image.height > 4096
+		|| image.width * image.height > 4 * 1024 * 1024
+		|| !math.is_finite(width) || !math.is_finite(height) || width <= 0 || height <= 0 {
+		return none
+	}
 	bytes := app.background_image_bytes(url) or { return none }
+	if !lossless_webp_sampling_supported(bytes) { return none }
+	if width >= image.width && height >= image.height {
+		if width > 4096 || height > 4096 { return none }
+		// Marker 7 already owns libwebp-style premultiplied rows. Sample them
+		// directly, including alpha; premultiplying again darkens edge colors.
+		return image
+	}
+	// The existing resize path takes straight, opaque input. Alpha minification
+	// needs its own verified filtering path instead of another multiplication.
 	if !opaque_lossless_webp_sampling_supported(bytes) { return none }
+	dw, dh := imageraster.decode_size(image.width, image.height, width, height) or { return none }
 	key := '\x00sampled-lossless-webp:${u64(voidptr(app.document))}:${app.navigation_generation}:${png_decode_scope.scope}:${url}:${sha256.hexhash(bytes.bytestr())}'
 	if id := app.background_image_ids[key] {
 		previous := app.ctx.get_cached_image_by_idx(id)
