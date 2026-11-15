@@ -3205,5 +3205,9 @@ painter. CNN's archived header is exact (24 corrected pixels, zero introduced),
 and the existing mask-gap ellipse control improves 7→0. All 46 other prior PNGs
 are unchanged in 48 workloads/96 stable captures. Native scope ownership and all
 15 existing mask/opacity continuation proof tests pass under arena poisoning.
-Production confirmation is pending; see the
+Production `c19672ae` confirms both this fix and the preceding SVG tile sample
+count correction across 48 workloads/96 fresh captures. Every PNG matches the
+accepted diagnostic; the CNN header and both focused controls are exact.
+Startup smoke passes. CNN's image/source differences, Vlang and missing Reddit
+evidence remain open; see the
 [audit](OPTIMIZED_SITES_PIXELS_2026_11_12.md#opaque-compositor-continuation-in-the-native-painter-2026-11-15).

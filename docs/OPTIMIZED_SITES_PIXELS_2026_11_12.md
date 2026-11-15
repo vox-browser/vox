@@ -3434,3 +3434,55 @@ records 7,991 file hashes across 20 owned job roots and preserves 1,982 selected
 files (42,531,758 bytes). Copies are hashed again before deleting owned binaries,
 generated intermediates, profiles, guards, locks and three test aliases. Shared
 production bundles and dependencies are retained.
+
+## Production header confirmation and CNN decoder isolation, 2026-11-15
+
+Production executable
+`c19672aeee65b4f3124a25ee13490f450616c040cb1ce4106a0f08f1eb2a5e41`,
+receipt `20261115-203517-3ad4c231` (C/literal V `-prod`/single unit), now
+confirms both `d86c965a2` and `58846cb2e`. Their consumed SVG/native input
+hashes match. All **48 workloads and 96 fresh captures** complete successfully;
+every pair repeats byte for byte, and every PNG equals the preceding accepted
+diagnostic. The driver's 192 input witnesses remain matched throughout.
+Startup smoke, all capture guards, driver, outer guard and guarded analysis
+exit zero.
+
+CNN retains **163,830 differences**, with its archived header exact. The SVG
+analytic-edge and opaque mask-gap ellipse controls are exact. GitHub, Hacker
+News, Lobsters and Wikipedia remain exact; Vlang retains 27. Existing inexact
+controls retain their counts. This closes the preceding two production holds;
+it supplies no new renderer improvement or catalog-wide acceptance.
+
+`312cf5094` adds independent natural-size **RGBA** references for all five CNN
+photographs to the existing decoder regression. Two fresh Brave `157.1.99.57`
+processes produce identical Canvas2D `getImageData` bytes with sRGB/unorm8 and
+`willReadFrequently=true`; the second run pins the executable and native
+framework identities. All five outputs equal libwebp's straight RGBA bytes.
+The test now checks those five images alongside the fifteen existing exact
+WebCodecs YUV planes. Its C/preallocated/no-GC executable
+`4e8c1809b6fbe90259a5247bcbaa4c0d3304ab3c1a7b6c2a6f4ec5f18039d62d`
+actually runs successfully under arena poisoning and a 3 GiB guard. Seventeen
+consumed image/decoder/test V input hashes match. No decoder or painter changes.
+
+Post-navigation LayerTree command logs confirm full source dimensions and the
+snapped photo rectangles. These instrumented diagnostics apply the recorded
+cosmetic CSS separately; they do **not** reproduce the complete uBO oracle or
+replace its reference. The initial stale-layer attempt, missing-filter capture,
+and their outputs remain retained. The filtered diagnostic's Sullivan interior
+still differs from the original reference at 29,572 pixels (maximum error
+three). Reproducing the recorded transforms in independent Skia/Dawn oracles
+does not establish equality. Generating plane mips on the GPU rather than in
+the CPU upload reduces that one oracle's Sullivan residual to 1,833 one-level
+pixels, but worsens other photos; no universal fix is accepted. An unsupported
+R8 surface attempt and two zero-data/dropped-draw variants remain invalid even
+where their processes exited zero. Decoder-byte agreement does not establish
+HTML filtering, decode-cache selection or source/replay equality.
+
+CNN's rendering/source gate, Vlang, missing Reddit evidence and prior inexact
+controls remain open. No original reference, tolerance, live-site, scripting
+or performance claim changes. Local evidence is under
+`docs/performance/vlang-gradients-20261114/raw/cnn-picture-20261115/`.
+Cleanup hashes 3,474 files across 61 owned roots, preserves and reverifies
+1,038 selected files (57,126,231 bytes), and removes the owned binaries,
+generated intermediates, profiles, jobs, guards, locks and test alias. Shared
+production bundles and dependencies are retained.
