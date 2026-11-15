@@ -20,6 +20,13 @@ fn (mut host Host) wrap_node(node &dom.Node) libjs.Value {
 		host.document_prototype
 	} else if node.is_document_fragment() {
 		host.fragment_prototype
+	} else if node.is_character_data() {
+		match node.node_type_value() {
+			3 { host.text_prototype }
+			4 { host.cdata_prototype }
+			8 { host.comment_prototype }
+			else { host.character_data_prototype }
+		}
 	} else {
 		host.node_prototype
 	}
@@ -30,6 +37,8 @@ fn (mut host Host) wrap_node(node &dom.Node) libjs.Value {
 		'Document'
 	} else if node.is_document_fragment() {
 		'DocumentFragment'
+	} else if node.is_character_data() {
+		match node.node_type_value() { 3 { 'Text' } 4 { 'CDATASection' } 8 { 'Comment' } else { 'CharacterData' } }
 	} else {
 		'Node'
 	}
