@@ -47,6 +47,7 @@ fn initialize_promise_intrinsics(mut vm VM, mut realm Realm) {
 	install_intrinsic_method(mut vm, &realm, mut function, 'all', 1, promise_constructor_all)
 	install_intrinsic_method(mut vm, &realm, mut function, 'race', 1, promise_constructor_race)
 	install_intrinsic_method(mut vm, &realm, mut function, 'allSettled', 1, promise_constructor_all_settled)
+	install_intrinsic_method(mut vm, &realm, mut function, 'withResolvers', 0, promise_constructor_with_resolvers)
 	install_intrinsic_method(mut vm, &realm, mut function, 'resolve', 1, fn (mut vm VM) !Value {
 		return promise_resolve(mut vm, vm.this_value(), vm.argument(0))
 	})
