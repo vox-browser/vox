@@ -178,7 +178,8 @@ fn (host &Host) event(mut vm libjs.VM) !&dom.Event {
 
 fn (mut host Host) wrap_event(event &dom.Event) libjs.Value {
 	if object := host.event_wrappers[voidptr(event)] { return libjs.Value.from_object(object) }
-	prototype := if event.interface_ == .media_query_list_event { host.media_event_prototype } else { host.event_prototype }
+	prototype := if event.interface_ == .media_query_list_event { host.media_event_prototype }
+		else if event.interface_ == .form_data_event { host.form_data_event_prototype } else { host.event_prototype }
 	mut object := libjs.Object.create(host.realm, prototype)
 	return host.register_event_wrapper(mut object, event)
 }
