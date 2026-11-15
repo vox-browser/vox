@@ -95,3 +95,9 @@ fn test_proxy_dispatch_runs_from_reused_native_code_without_the_compiler() {
 		vm.close_native_code()!
 	}
 }
+
+fn test_proxy_array_species_and_abrupt_trap_lookup_are_observable() {
+	mut vm := VM.create(); create_simple_execution_context(mut vm)
+	assert proxy_eval(mut vm, 'var calls=0;class A extends Array{static get [Symbol.species](){calls++;return Array}}var a=new Proxy(new A(1,2),{});a.map(x=>x*2).join() === "2,4"&&a.slice().join() === "1,2"&&calls===2')!.as_bool()
+	assert proxy_eval(mut vm, 'var marker={},reads=0,handler={get get(){reads++;throw marker}},p=new Proxy({},handler),caught=false;try{p.x}catch(e){caught=e===marker}var errors=0;try{new Proxy({},{get:1}).x}catch(e){if(e instanceof TypeError)errors++}caught&&reads===1&&errors===1&&new Proxy({x:42},{get:null}).x===42')!.as_bool()
+}

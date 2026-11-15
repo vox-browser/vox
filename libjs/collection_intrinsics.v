@@ -214,7 +214,7 @@ fn array_prototype_unshift(mut vm VM) !Value {
 
 fn array_species_create(mut vm VM, original &Object, length u64) !&Object {
 	mut constructor := js_undefined()
-	if original.array_object != none {
+	if Value.from_object(original).is_array(mut vm)! {
 		constructor = original.get(mut vm, PropertyName.from_str('constructor'))!
 		if constructor.is_object() {
 			constructor = constructor.as_object().get(mut vm, PropertyName.from_symbol(vm.well_known_symbol_species()))!
