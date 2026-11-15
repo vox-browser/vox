@@ -223,10 +223,26 @@ fn (mut generator BytecodeGenerator) expression(mut vm VM, expression &Expressio
 	match kind.tag {
 		.class_expr { return generator.class_expression(mut vm, kind.class_data or { return error('Missing class expression') }) }
 		.meta_property {
-			if kind.meta_property_type!=.import_meta { return generator.unsupported('new.target') }
 			dst := generator.temporary()
-			generator.emit(Instruction{op:.get_import_meta,dst:dst})
+			generator.emit(Instruction{op: if kind.meta_property_type == .import_meta { OpCode.get_import_meta } else { OpCode.get_new_target },dst:dst})
 			return dst
+		}
+		.super_call {
+			data := kind.super_call_data or { return error('Missing super call data') }
+			callee := generator.temporary()
+			generator.emit(Instruction{op: .get_super_constructor, dst: callee})
+			mut arguments := []Operand{}
+			if !data.is_synthetic {
+				for argument in data.arguments {
+					if argument.is_spread { return generator.unsupported('spread super arguments') }
+					arguments << generator.expression(mut vm, &argument.value)!
+				}
+			}
+			result := generator.temporary()
+			// A default derived constructor forwards the actual argument list;
+			// its synthetic spread must not consult Array's iterator.
+			generator.emit(Instruction{op: .super_construct, dst: result, lhs: callee, arguments: arguments, strict: data.is_synthetic})
+			return result
 		}
 		.regexp_literal {
 			data := kind.regexp_data or { return error('Missing regular expression') }

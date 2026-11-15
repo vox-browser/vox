@@ -85,6 +85,9 @@ pub enum OpCode {
 	get_argument
 	get_rest_arguments
 	enter_function_body
+	get_new_target
+	get_super_constructor
+	super_construct
 }
 
 pub struct Instruction {
@@ -115,10 +118,10 @@ fn (instruction Instruction) input_count() int {
 		.in_op, .instance_of, .call {
 			2
 		}
-		.get_property, .delete_property, .new_regexp, .set_object_literal_prototype, .close_sync_iterator_throw, .new_class, .new_class_method {
+		.get_property, .delete_property, .new_regexp, .set_object_literal_prototype, .close_sync_iterator_throw, .new_class_method {
 			2
 		}
-		.put_property, .define_property, .define_class_method {
+		.put_property, .define_property, .define_class_method, .new_class {
 			3
 		}
 		.mov, .unary_plus, .unary_minus, .bitwise_not, .not_op, .typeof_op, .to_numeric,
@@ -127,7 +130,7 @@ fn (instruction Instruction) input_count() int {
 		.get_object_property_iterator, .property_name_iterator_next,
 		.get_sync_iterator, .sync_iterator_next, .close_sync_iterator,
 		.sync_iterator_step_value, .sync_iterator_elide, .sync_iterator_to_array,
-		.jump_if_false, .jump_if_nullish, .end, .throw_op, .construct, .new_array, .new_function_with_name {
+		.jump_if_false, .jump_if_nullish, .end, .throw_op, .construct, .super_construct, .new_array, .new_function_with_name {
 			1
 		}
 		else {
@@ -178,7 +181,7 @@ pub fn (executable &Executable) validate(arguments_count u32) ! {
 		if instruction.op == .get_callee_and_this {
 			instruction.rhs.slot(executable, arguments_count, true)!
 		}
-		if instruction.op in [.call, .construct, .copy_object_excluding_keys] {
+		if instruction.op in [.call, .construct, .super_construct, .copy_object_excluding_keys] {
 			for argument in instruction.arguments {
 				argument.slot(executable, arguments_count, false)!
 			}

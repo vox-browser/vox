@@ -2,10 +2,9 @@
 module libjs
 
 // ClassDefinitionEvaluation / Rust bytecode codegen.rs: base classes with
-// ordinary, static and accessor methods. Heritage, fields, private names,
-// static blocks and super references remain explicit unsupported boundaries.
+// ordinary, static and accessor methods. Public/private fields, static blocks
+// and super property references remain explicit unsupported boundaries.
 fn (mut generator BytecodeGenerator) class_expression(mut vm VM, data &ClassData) !Operand {
-	if data.super_class != none { return generator.unsupported('class heritage') }
 	previous_strict := generator.strict
 	generator.strict = true
 	defer { generator.strict = previous_strict }
@@ -18,11 +17,12 @@ fn (mut generator BytecodeGenerator) class_expression(mut vm VM, data &ClassData
 	generator.scope_depth++
 	name := if identifier := data.name { identifier.name } else { Utf16String.new() }
 	if data.name != none { generator.emit(Instruction{ op: .create_immutable_binding, identifier: generator.identifier(name) }) }
+	parent := if expression := data.super_class { generator.expression(mut vm, &expression)! } else { generator.constant(js_undefined()) }
 	body := if expression := data.constructor { generator.expression(mut vm, &expression)! } else { generator.constant(js_undefined()) }
 	result := generator.temporary()
 	source_index := u32(generator.executable.class_source_spans.len)
 	generator.executable.class_source_spans << ClassSourceSpan{ start: data.source_text_start, end: data.source_text_end }
-	generator.emit(Instruction{ op: .new_class, dst: result, lhs: body, rhs: generator.constant(Value.from_string(vm.create_string(name))), identifier: source_index })
+	generator.emit(Instruction{ op: .new_class, dst: result, lhs: body, rhs: generator.constant(Value.from_string(vm.create_string(name))), src: parent, strict: data.super_class != none, identifier: source_index })
 	prototype := generator.temporary()
 	generator.emit(Instruction{ op: .get_property, dst: prototype, lhs: result, rhs: generator.constant(Value.from_string(vm.create_string_from_str('prototype'))) })
 	for element in data.elements {
@@ -49,6 +49,7 @@ struct BaseClassFunction {
 	realm_ &Realm
 	body Value
 	name Utf16String
+	derived bool
 }
 
 fn (function &BaseClassFunction) realm() ?&Realm { return function.realm_ }
@@ -59,17 +60,44 @@ fn (mut function BaseClassFunction) internal_call(mut vm VM, this_value Value, a
 }
 
 fn (mut function BaseClassFunction) internal_construct(mut vm VM, arguments []Value, new_target &Object) !&Object {
+	if function.derived {
+		if function.body.is_undefined() {
+			parent := function.object.internal_get_prototype_of() or { return vm.throw_error(.type_error, 'Superclass is not a constructor') }
+			return construct(mut vm, Value.from_object(parent), arguments, new_target)
+		}
+		mut body := function.body.as_function()
+		if mut body is ECMAScriptFunction {
+			return body.call_with_new_target(mut vm, js_undefined(), arguments, Value.from_object(new_target), &function)!.as_object()
+		}
+		return error('Invalid class constructor body')
+	}
 	prototype := get_prototype_from_constructor(mut vm, new_target, fn (realm &Realm) &Object { return realm.object_prototype_record() })!
 	object := Object.create(function.realm_, prototype)
 	if function.body.is_undefined() { return object }
-	returned := call(mut vm, function.body, Value.from_object(object), arguments)!
-	return if returned.is_object() { returned.as_object() } else { object }
+	mut body := function.body.as_function()
+	if mut body is ECMAScriptFunction {
+		returned := body.call_with_new_target(mut vm, Value.from_object(object), arguments, Value.from_object(new_target), &function)!
+		return if returned.is_object() { returned.as_object() } else { object }
+	}
+	return error('Invalid class constructor body')
 }
 
-fn create_base_class(mut vm VM, executable &Executable, index u32, body Value, name Value) !Value {
-	mut object := Object.create(vm.realm(), vm.realm().function_prototype)
+fn create_base_class(mut vm VM, executable &Executable, index u32, body Value, name Value, parent Value, derived bool) !Value {
+	mut constructor_parent := vm.realm().function_prototype
+	mut prototype_parent := vm.realm().object_prototype
+	if derived {
+		if parent.is_null() { prototype_parent = none }
+		else {
+			if !parent.is_constructor() { return vm.throw_error(.type_error, 'Superclass is not a constructor or null') }
+			constructor_parent = parent.as_object()
+			prototype := parent.as_object().get(mut vm, PropertyName.from_str('prototype'))!
+			if !prototype.is_object() && !prototype.is_null() { return vm.throw_error(.type_error, 'Superclass prototype must be an object or null') }
+			prototype_parent = if prototype.is_object() { ?&Object(prototype.as_object()) } else { none }
+		}
+	}
+	mut object := Object.create(vm.realm(), constructor_parent)
 	object.class_name = 'Function'
-	function := &BaseClassFunction{ object: object, realm_: vm.realm(), body: body, name: name.as_string().utf16 }
+	function := &BaseClassFunction{ object: object, realm_: vm.realm(), body: body, name: name.as_string().utf16, derived: derived }
 	object.callable = FunctionObject(function)
 	object.constructor = ConstructorFunction(function)
 	length := if body.is_function() { body.as_object().get(mut vm, PropertyName.from_str('length'))!.number } else { 0.0 }
@@ -80,7 +108,7 @@ fn create_base_class(mut vm VM, executable &Executable, index u32, body Value, n
 	units := code.code.as_slice()
 	if span.start > span.end || span.end > u32(units.len) { return error('Class source range is out of bounds') }
 	object.function_source_text = utf16_string_from_code_units(units[int(span.start)..int(span.end)])
-	mut prototype := Object.create(vm.realm(), vm.realm().object_prototype)
+	mut prototype := Object.create(vm.realm(), prototype_parent)
 	prototype.define_direct_property(PropertyName.from_str('constructor'), Value.from_object(object), attribute_writable | attribute_configurable)
 	object.define_direct_property(PropertyName.from_str('prototype'), Value.from_object(prototype), 0)
 	return Value.from_object(object)

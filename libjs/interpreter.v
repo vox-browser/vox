@@ -50,6 +50,8 @@ fn (mut vm VM) execute_instruction(instruction Instruction, executable &Executab
 	}
 	mut result := js_undefined()
 	match instruction.op {
+		.get_new_target { result = vm.get_new_target() }
+		.get_super_constructor { result = get_super_constructor(mut vm)! }
 		.get_argument { result = frame.argument(instruction.identifier) }
 		.get_rest_arguments {
 			mut values := []Value{}
@@ -141,13 +143,16 @@ fn (mut vm VM) execute_instruction(instruction Instruction, executable &Executab
 			prefix := if right.number == 1 { ?string('get') } else if right.number == 2 { ?string('set') } else { none }
 			result = Value.from_object(create_ecmascript_function(mut vm, executable, instruction.identifier, false, make_function_name(left.to_property_key(mut vm)!, prefix), false)!)
 		}
-		.new_class { result = create_base_class(mut vm, executable, instruction.identifier, left, right)! }
+		.new_class { result = create_base_class(mut vm, executable, instruction.identifier, left, right, source, instruction.strict)! }
 		.define_class_method { define_class_method(mut vm, left, right, source, instruction.identifier)! }
 		.mov {
 			result = left
 		}
-		.call, .construct {
+		.call, .construct, .super_construct {
 			mut call_arguments := []Value{cap: instruction.arguments.len}
+			if instruction.op == .super_construct && instruction.strict {
+				for index in 0 .. frame.passed_argument_count { call_arguments << frame.argument(index) }
+			}
 			for operand in instruction.arguments {
 				argument := frame.values[operand.slot(executable, frame.argument_count, false)!]
 				if argument.is_special_empty_value() {
@@ -156,7 +161,9 @@ fn (mut vm VM) execute_instruction(instruction Instruction, executable &Executab
 				}
 				call_arguments << argument
 			}
-			if instruction.op == .construct {
+			if instruction.op == .super_construct {
+				result = construct_super(mut vm, left, call_arguments)!
+			} else if instruction.op == .construct {
 				// Interpreter/SlowPaths.cpp::execute_asm_call, Construct branch.
 				object := construct(mut vm, left, call_arguments, none)!
 				result = Value.from_object(object)

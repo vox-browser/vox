@@ -107,6 +107,10 @@ fn (mut function ECMAScriptFunction) compile(mut vm VM) !&Executable {
 }
 
 fn (mut function ECMAScriptFunction) internal_call(mut vm VM, this_value Value, arguments []Value) !Value {
+	return function.call_with_new_target(mut vm, this_value, arguments, js_undefined(), none)
+}
+
+fn (mut function ECMAScriptFunction) call_with_new_target(mut vm VM, this_value Value, arguments []Value, new_target Value, class_constructor ?&BaseClassFunction) !Value {
 	// Creating a function does not evaluate its body. Do not execute an async
 	// body as an ordinary function while Promise/await execution is pending.
 	if function.data.kind != .normal { return error('LibJS async function execution is not translated yet') }
@@ -120,6 +124,8 @@ fn (mut function ECMAScriptFunction) internal_call(mut vm VM, this_value Value, 
 	defer { stack.deallocate(mark) }
 	mut environment := FunctionEnvironment.create(function.environment)
 	environment.set_function_object(FunctionObject(&function))
+	environment.set_new_target(new_target)
+	environment.class_constructor = class_constructor
 	frame.function = FunctionObject(&function)
 	frame.realm = function.realm_
 	frame.script_or_module = function.script_or_module
@@ -132,7 +138,7 @@ fn (mut function ECMAScriptFunction) internal_call(mut vm VM, this_value Value, 
 	defer { vm.pop_execution_context() }
 	if function.data.is_arrow_function {
 		environment.set_this_binding_status(.lexical)
-	} else {
+	} else if !(if constructor := class_constructor { constructor.derived } else { false }) {
 		bound_this := if function.data.is_strict_mode || this_value.is_object() {
 			this_value
 		} else if this_value.is_nullish() {
@@ -168,12 +174,20 @@ fn (mut function ECMAScriptFunction) internal_call(mut vm VM, this_value Value, 
 			environment.initialize_binding(mut vm, binding.name, js_undefined(), .normal)!
 		}
 	}
-	return vm.run_executable(mut frame, executable, 0, ExecutionLimits{})
+	returned := vm.run_executable(mut frame, executable, 0, ExecutionLimits{})!
+	if constructor := class_constructor {
+		if constructor.derived {
+			if returned.is_object() { return returned }
+			if !returned.is_undefined() { return vm.throw_error(.type_error, 'Derived constructor returned a non-object value') }
+			return environment.get_this_binding(mut vm)
+		}
+	}
+	return returned
 }
 
 fn (mut function ECMAScriptFunction) internal_construct(mut vm VM, arguments []Value, new_target &Object) !&Object {
-	prototype := new_target.get(mut vm, PropertyName.from_str('prototype'))!
-	object := Object.create(function.realm_, if prototype.is_object() { prototype.as_object() } else { function.realm_.object_prototype_record() })
-	value := function.internal_call(mut vm, Value.from_object(object), arguments)!
+	prototype := get_prototype_from_constructor(mut vm, new_target, fn (realm &Realm) &Object { return realm.object_prototype_record() })!
+	object := Object.create(function.realm_, prototype)
+	value := function.call_with_new_target(mut vm, Value.from_object(object), arguments, Value.from_object(new_target), none)!
 	return if value.is_object() { value.as_object() } else { object }
 }

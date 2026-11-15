@@ -11,6 +11,7 @@ pub mut:
 	this_value      Value           // [[ThisValue]]
 	function_object ?FunctionObject // [[FunctionObject]]
 	new_target      Value = js_undefined() // [[NewTarget]]
+	class_constructor ?&BaseClassFunction // Active class wrapper for super().
 }
 
 pub fn FunctionEnvironment.create(outer ?Environment) &FunctionEnvironment {
