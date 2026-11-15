@@ -2,6 +2,7 @@ module libjsdom
 
 import dom
 import domurl
+import encoding
 import css
 import fetch
 import geometry
@@ -70,6 +71,10 @@ mut:
 	urls map[voidptr]&domurl.DOMURL
 	url_wrappers map[voidptr]&libjs.Object
 	location_url &domurl.DOMURL = unsafe { nil }
+	text_encoder_prototype &libjs.Object = unsafe { nil }
+	text_decoder_prototype &libjs.Object = unsafe { nil }
+	text_encoders map[voidptr]&encoding.TextEncoder
+	text_decoders map[voidptr]&encoding.TextDecoder
 	history_object &libjs.Object = unsafe { nil }
 	history_binding ?&HistoryBinding
 	query_prototype &libjs.Object = unsafe { nil }
@@ -171,6 +176,7 @@ pub fn Host.create(vm &libjs.VM, realm &libjs.Realm, document &dom.Document, hoo
 	host.install_css_namespace()
 	host.install_query_params()!
 	host.install_urls()!
+	host.install_text_encoding()
 	host.install_history()
 	host.install_headers()!
 	mut global := realm.global_object_record()
@@ -262,6 +268,8 @@ pub fn (mut host Host) close() {
 	host.location_url = unsafe { nil }
 	host.urls.clear()
 	host.url_wrappers.clear()
+	host.text_encoders.clear()
+	host.text_decoders.clear()
 	host.close_fetch()
 	for listener in host.listeners {
 		if signal := listener.abort_signal {
