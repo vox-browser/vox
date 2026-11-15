@@ -20,6 +20,7 @@ fn initialize_collection_intrinsics(mut vm VM, mut realm Realm) ! {
 		'splice': array_prototype_splice
 		'forEach': array_prototype_for_each
 		'map': array_prototype_map
+		'reverse': array_prototype_reverse
 		'shift': array_prototype_shift
 		'includes': array_prototype_includes
 		'every': array_prototype_every
