@@ -61,6 +61,8 @@ pub mut:
 	throw_type_error_function      ?&Object
 	boolean_prototype              ?&Object
 	boolean_constructor            ?&Object
+	number_prototype               ?&Object
+	number_constructor             ?&Object
 	symbol_prototype               ?&Object
 	symbol_constructor             ?&Object
 	array_buffer_prototype         ?&Object
@@ -262,6 +264,7 @@ pub fn initialize_host_defined_realm(mut vm VM, hooks RealmGlobalHooks) !&Execut
 	realm.set_global_environment(GlobalEnvironment.create(global, this_value))
 	// 18. Perform ? SetDefaultGlobalBindings(realm).
 	set_default_global_numeric_functions(mut vm, realm)
+	initialize_number_intrinsics(mut vm, mut realm)!
 	set_default_global_uri_functions(mut vm, realm)
 	set_default_global_value_bindings(realm)
 	// GlobalObject.cpp installs intrinsic constructor properties after values.

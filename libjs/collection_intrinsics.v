@@ -81,7 +81,7 @@ fn install_intrinsic_method(mut vm VM, realm &Realm, mut object Object, name str
 fn realm_primitive_prototypes() PrimitiveObjectPrototypes {
 	return PrimitiveObjectPrototypes{
 		string: fn (realm &Realm) &Object { return realm.string_prototype or { panic('String prototype absent') } }
-		number: fn (realm &Realm) &Object { return realm.object_prototype_record() }
+		number: fn (realm &Realm) &Object { return realm.number_prototype or { realm.object_prototype_record() } }
 		bigint: fn (realm &Realm) &Object { return realm.object_prototype_record() }
 	}
 }
