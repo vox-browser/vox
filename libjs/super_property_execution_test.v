@@ -37,6 +37,7 @@ fn test_super_writes_define_receiver_properties_and_keep_native_errors() {
 	mut vm := VM.create(); create_simple_execution_context(mut vm)
 	assert super_property_eval(mut vm, 'class A{}A.prototype.value=1;class B extends A{write(){super.value=42}remove(){return delete super.value}}var b=new B();b.write();var rejected=false;try{b.remove()}catch(e){rejected=e instanceof ReferenceError}b.value===42&&A.prototype.value===1&&Object.hasOwn(b,"value")&&rejected')!.as_bool()
 	assert super_property_eval(mut vm, 'var marker={},o={__proto__:{get value(){throw marker}},read(){return super.value}},same=false;try{o.read()}catch(e){same=e===marker}same')!.as_bool()
+	assert super_property_eval(mut vm, 'var evaluated=0,converted=0,o={__proto__:null,remove(){return delete super[(evaluated++,{toString(){converted++;throw 1}})]}},rejected=false;try{o.remove()}catch(e){rejected=e instanceof ReferenceError}rejected&&evaluated===1&&converted===0')!.as_bool()
 }
 
 fn test_cached_super_properties_and_finally_run_without_compiler() {
