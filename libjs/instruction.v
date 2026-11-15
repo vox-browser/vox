@@ -112,6 +112,7 @@ pub enum OpCode {
 	record_class_static_block
 	get_binding_reference
 	put_binding_reference
+	import_call
 }
 
 pub struct Instruction {
@@ -139,7 +140,7 @@ fn (instruction Instruction) input_count() int {
 		.add, .sub, .mul, .div, .mod_, .exp, .strict_equals, .strict_inequals, .loose_equals,
 		.loose_inequals, .less_than, .less_than_equals, .greater_than, .greater_than_equals,
 		.bitwise_and, .bitwise_or, .bitwise_xor, .left_shift, .right_shift, .unsigned_right_shift,
-		.in_op, .instance_of, .call, .put_binding_reference {
+		.in_op, .instance_of, .call, .put_binding_reference, .import_call {
 			2
 		}
 		.get_property, .get_private, .has_private, .delete_property, .get_super_property, .delete_super_property, .record_class_static_block, .new_regexp, .set_object_literal_prototype, .close_sync_iterator_throw, .new_class_method, .copy_data_properties, .super_construct_with_array {

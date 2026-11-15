@@ -237,6 +237,13 @@ fn (mut generator BytecodeGenerator) expression(mut vm VM, expression &Expressio
 	defer { generator.range = previous_range }
 	kind := expression.kind
 	match kind.tag {
+		.import_call {
+			specifier := generator.expression(mut vm, kind.specifier or { return error('Missing import specifier') })!
+			options := if options_expression := kind.options { generator.expression(mut vm, options_expression)! } else { generator.constant(js_undefined()) }
+			result := generator.temporary()
+			generator.emit(Instruction{op: .import_call, dst: result, lhs: specifier, rhs: options})
+			return result
+		}
 		.tagged_template_literal { return generator.tagged_template(mut vm, expression) }
 		.template_literal {
 			data := kind.template_data or { return error('Missing template literal') }

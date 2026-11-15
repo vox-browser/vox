@@ -51,6 +51,7 @@ fn (mut vm VM) execute_instruction(instruction Instruction, executable &Executab
 	}
 	mut result := js_undefined()
 	match instruction.op {
+		.import_call { result = perform_import_call(mut vm, left, right)! }
 		.get_template_object { result = vm.get_template_object(executable, instruction)! }
 		.await_value {
 			mut execution := frame.async_execution or { return error('Await requires an async function execution context') }
