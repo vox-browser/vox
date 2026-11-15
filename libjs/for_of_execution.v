@@ -62,6 +62,8 @@ fn (mut generator BytecodeGenerator) for_of_statement(mut vm VM, statement &Stat
 	item := generator.temporary()
 	finished := generator.emit(Instruction{ op: .sync_iterator_next, dst: item, lhs: iterator })
 	base_depth := generator.scope_depth
+	// LHS defaults/computed targets can suspend before the body starts.
+	generator.loops << BytecodeLoop{ scope_depth: base_depth, iterator: iterator }
 	if lhs is ForInOfLhsDeclaration {
 		if lexical {
 			generator.emit(Instruction{ op: .enter_scope })
@@ -75,7 +77,6 @@ fn (mut generator BytecodeGenerator) for_of_statement(mut vm VM, statement &Stat
 	} else if lhs is ForInOfLhsPattern {
 		generator.assignment_pattern(mut vm, lhs.pattern, item)!
 	}
-	generator.loops << BytecodeLoop{ scope_depth: base_depth, iterator: iterator }
 	generator.statement(mut vm, kind.body or { return error('Missing for-of body') })!
 	loop := generator.loops.pop()
 	if lexical {

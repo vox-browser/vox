@@ -9,6 +9,8 @@ fn (mut generator BytecodeGenerator) array_binding_pattern(mut vm VM, pattern Bi
 	iterator := generator.temporary()
 	generator.emit(Instruction{ op: .get_sync_iterator, dst: iterator, lhs: value })
 	start := u32(generator.executable.instructions.len)
+	depth := generator.scope_depth
+	generator.loops << BytecodeLoop{is_iteration: false, scope_depth: depth, iterator: iterator}
 	for entry in pattern.entries {
 		if entry.alias.kind == .none_kind && entry.name.kind == .none_kind {
 			generator.emit(Instruction{ op: .sync_iterator_elide, lhs: iterator })
@@ -37,6 +39,7 @@ fn (mut generator BytecodeGenerator) array_binding_pattern(mut vm VM, pattern Bi
 		}
 		generator.initialize_binding_entry(mut vm, entry, item, lexical)!
 	}
+	cleanup := generator.loops.pop()
 	end := u32(generator.executable.instructions.len)
 	generator.emit(Instruction{ op: .close_sync_iterator, lhs: iterator })
 	finished := generator.emit(Instruction{ op: .jump })
@@ -45,6 +48,18 @@ fn (mut generator BytecodeGenerator) array_binding_pattern(mut vm VM, pattern Bi
 	generator.emit(Instruction{ op: .catch_op, dst: caught })
 	generator.emit(Instruction{ op: .close_sync_iterator_throw, lhs: iterator, rhs: caught })
 	generator.emit(Instruction{ op: .throw_op, lhs: caught })
+	generator.emit_pattern_iterator_returns(iterator, cleanup.returns, depth)
 	generator.patch(finished)
-	generator.protect_range(start, end, catch_start, generator.scope_depth)
+	generator.protect_range(start, end, catch_start, depth)
+}
+
+// A yield inside a pattern initializer can resume with ReturnCompletion. Route
+// that return through IteratorClose just like a return from a for-of body.
+fn (mut generator BytecodeGenerator) emit_pattern_iterator_returns(iterator Operand, returns []LoopReturnExit, depth int) {
+	for exit in returns {
+		generator.patch(exit.jump)
+		for _ in depth .. exit.scope_depth { generator.emit(Instruction{op: .leave_scope}) }
+		generator.emit(Instruction{op: .close_sync_iterator, lhs: iterator})
+		generator.emit_return(exit.value)
+	}
 }
