@@ -14473,7 +14473,12 @@ fn install_custom_property_data_for_style(abstract_element dom.AbstractElement, 
 	// overlays still use the ordinary path to retain their separate sampled layer.
 	previous_data := abstract_element.custom_property_data()
 	has_overlay := if data := previous_data { data.is_animation_overlay() } else { false }
-	if !has_overlay && !has_cascaded_custom_property_declarations(abstract_element, matching_rule_set) {
+	has_declarations := has_cascaded_custom_property_declarations(abstract_element, matching_rule_set)
+	if has_declarations {
+		mut element := unsafe { &dom.Element(abstract_element.element()) }
+		element.set_style_declares_custom_properties()
+	}
+	if !has_overlay && !has_declarations {
 		mut inherited := ?&dom.CSSCustomPropertyData_(none)
 		if parent := abstract_element.element_to_inherit_style_from() {
 			inherited = inheritable_custom_property_data(parent)

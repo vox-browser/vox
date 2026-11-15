@@ -1978,7 +1978,8 @@ fn update_style_recursively(mut style_computer StyleComputer, node &dom.Node, ne
 			|| parent_display_changed
 			|| ancestor_needs_descendant_style_recompute
 			|| (recompute_elements_depending_on_custom_properties
-				&& (element.style_uses_var_css_function() || element.style_uses_inherit_css_function()))
+				&& (element.style_uses_var_css_function() || element.style_uses_inherit_css_function()
+					|| element.style_declares_custom_properties()))
 			|| needs_style_update_due_to_if_media
 		if should_recompute {
             reason := if needs_full_style_update { 0 } else if node.needs_style_update() { 1 }

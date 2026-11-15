@@ -1727,6 +1727,7 @@ pub mut:
 	rendered_in_top_layer                                                           bool
 	style_uses_attr_css_function                                                    bool
 	style_uses_var_css_function                                                     bool
+	style_declares_custom_properties_                                              bool
 	style_uses_tree_counting_function                                               bool
 	style_uses_if_css_function                                                      bool
 	style_uses_inherit_css_function                                                 bool
@@ -2903,6 +2904,7 @@ pub fn (mut e Element) recompute_style() RequiredInvalidationAfterStyleChange {
 pub fn (mut e Element) reset_style_dependency_flags() {
 	e.style_uses_attr_css_function = false
 	e.style_uses_var_css_function = false
+	e.style_declares_custom_properties_ = false
 	e.style_uses_tree_counting_function = false
 	e.style_uses_if_css_function = false
 	e.style_uses_inherit_css_function = false
@@ -2917,6 +2919,12 @@ pub fn (mut e Element) set_style_uses_attr_css_function() {
 
 pub fn (mut e Element) set_style_uses_var_css_function() {
 	e.style_uses_var_css_function = true
+}
+
+// Literal declarations still own a custom-property environment. An ancestor
+// update must recascade them rather than replace that environment by inheritance.
+pub fn (mut e Element) set_style_declares_custom_properties() {
+	e.style_declares_custom_properties_ = true
 }
 
 pub fn (mut e Element) set_style_uses_if_css_function() {
@@ -3016,6 +3024,10 @@ pub fn (e &Element) style_uses_attr_css_function() bool {
 
 pub fn (e &Element) style_uses_var_css_function() bool {
 	return e.style_uses_var_css_function
+}
+
+pub fn (e &Element) style_declares_custom_properties() bool {
+	return e.style_declares_custom_properties_
 }
 
 pub fn (e &Element) style_uses_if_css_function() bool {
