@@ -101,6 +101,7 @@ pub enum OpCode {
 	super_construct_with_array
 	await_value
 	resume_async
+	get_template_object
 }
 
 pub struct Instruction {

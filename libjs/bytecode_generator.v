@@ -225,6 +225,7 @@ fn (mut generator BytecodeGenerator) expression(mut vm VM, expression &Expressio
 	defer { generator.range = previous_range }
 	kind := expression.kind
 	match kind.tag {
+		.tagged_template_literal { return generator.tagged_template(mut vm, expression) }
 		.template_literal {
 			data := kind.template_data or { return error('Missing template literal') }
 			mut text := generator.constant(Value.from_string(vm.create_string(Utf16String.new())))

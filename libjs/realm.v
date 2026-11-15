@@ -38,6 +38,7 @@ pub mut:
 	array_prototype ?&Object
 	array_prototype_values Value // Intrinsic identity, independent of user mutations.
 	array_constructor ?&Object
+	template_objects map[string]&TemplateObjectEntry
 	map_prototype ?&Object
 	map_constructor ?&Object
 	map_iterator_prototype ?&Object
