@@ -3,7 +3,7 @@ module libjs
 
 // Promise.cpp, PromiseConstructor.cpp and PromisePrototype.cpp. Ordinary
 // constructor/resolution/reaction paths share the VM's FIFO job queue. Promise
-// combinators and finally remain separate slices. Async/await uses the internal
+// combinators use separate native entrypoints. Async/await uses the internal
 // PerformPromiseThen path without an observable result capability.
 @[heap]
 pub struct JSPromiseCapability {
@@ -53,6 +53,7 @@ fn initialize_promise_intrinsics(mut vm VM, mut realm Realm) {
 		return capability.promise
 	})
 	install_intrinsic_method(mut vm, &realm, mut prototype, 'then', 2, promise_prototype_then)
+	install_intrinsic_method(mut vm, &realm, mut prototype, 'finally', 1, promise_prototype_finally)
 	install_intrinsic_method(mut vm, &realm, mut prototype, 'catch', 1, fn (mut vm VM) !Value {
 		receiver := vm.this_value()
 		method := receiver.get_with_prototypes(mut vm, PropertyName.from_str('then'), realm_primitive_prototypes())!
