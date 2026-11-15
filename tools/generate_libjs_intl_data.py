@@ -86,6 +86,7 @@ def generate(source: Path, destination: Path):
             'meta_zone_names': {key: names(value) for key, value in zones.get('metazone', {}).items()},
             'gmt_format': zones['gmtFormat'], 'gmt_zero': zones['gmtZeroFormat'],
             'hour_format': zones['hourFormat'], 'region_format': zones['regionFormat'],
+            'list_patterns': read(f'cldr-json/cldr-misc-full/main/{locale}/listPatterns.json')['main'][locale]['listPatterns'],
             'numbering_system': numbers['defaultNumberingSystem'],
             'decimal': {key.removeprefix('symbols-numberSystem-'): value.get('decimal', '.')
                         for key, value in numbers.items() if key.startswith('symbols-numberSystem-')},

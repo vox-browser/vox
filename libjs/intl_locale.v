@@ -220,3 +220,13 @@ fn intl_supported_locales(mut vm VM, locales Value, options Value) !Value {
 	}
 	return intl_string_array(mut vm, supported)
 }
+
+fn intl_resolve_locale(mut vm VM, requested []string) !(string, IntlLocaleIdentifier) {
+	core := intl_core_data(mut vm)!
+	for tag in requested {
+		id := intl_canonicalize_language_tag(mut vm, utf16_string(tag))!
+		if available := intl_best_available_locale(core, id.base_name()) { return available, id }
+	}
+	default_id := intl_canonicalize_language_tag(mut vm, utf16_string(vm.realm().intl_default_locale))!
+	return intl_best_available_locale(core, default_id.base_name()) or { 'en-US' }, default_id
+}

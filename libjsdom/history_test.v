@@ -151,3 +151,9 @@ fn test_history_rejects_native_intl_date_formatter_state_before_getters() {
 	defer { host.close() }
 	assert history_eval(mut vm, 'var f=new Intl.DateTimeFormat("en-US"),reads=0,rejected=false;Object.defineProperty(f,"visible",{enumerable:true,get(){reads++;throw 1}});try{history.replaceState(f,"")}catch(e){rejected=e instanceof DOMException&&e.name==="DataCloneError"}rejected&&reads===0&&history.state===null')!.as_bool()
 }
+
+fn test_history_rejects_native_intl_list_formatter_state_before_getters() {
+	mut host, mut vm, _ := history_fixture()!
+	defer { host.close() }
+	assert history_eval(mut vm, 'var f=new Intl.ListFormat("en-US"),reads=0,rejected=false;Object.defineProperty(f,"visible",{enumerable:true,get(){reads++;throw 1}});try{history.replaceState(f,"")}catch(e){rejected=e instanceof DOMException&&e.name==="DataCloneError"}rejected&&reads===0&&history.state===null')!.as_bool()
+}

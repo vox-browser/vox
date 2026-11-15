@@ -30,16 +30,6 @@ fn intl_date_time_format_this(mut vm VM) !&IntlDateTimeFormat {
 	return vm.throw_error(.type_error, 'Intl.DateTimeFormat member called on incompatible receiver')
 }
 
-fn intl_resolve_date_locale(mut vm VM, requested []string) !(string, IntlLocaleIdentifier) {
-	core := intl_core_data(mut vm)!
-	for tag in requested {
-		id := intl_canonicalize_language_tag(mut vm, utf16_string(tag))!
-		if available := intl_best_available_locale(core, id.base_name()) { return available, id }
-	}
-	default_id := intl_canonicalize_language_tag(mut vm, utf16_string(vm.realm().intl_default_locale))!
-	return intl_best_available_locale(core, default_id.base_name()) or { 'en-US' }, default_id
-}
-
 fn intl_default_hour_cycle(mut vm VM, id IntlLocaleIdentifier) !string {
 	core := intl_core_data(mut vm)!
 	maximized := intl_maximize_identifier(mut vm, id)!
@@ -69,7 +59,7 @@ fn intl_date_time_format_construct(mut vm VM, new_target &Object) !&Object {
 	if !numbering_value.is_undefined() && !intl_type_identifier(intl_ascii(mut vm, numbering_value.as_string().utf16)!) { return vm.throw_error(.range_error, 'Invalid Intl numbering system') }
 	hour12 := options.get(mut vm, PropertyName.from_str('hour12'))!
 	hour_cycle_value := intl_string_option(mut vm, options, 'hourCycle', ['h11', 'h12', 'h23', 'h24'])!
-	data_locale, requested_id := intl_resolve_date_locale(mut vm, requested)!
+	data_locale, requested_id := intl_resolve_locale(mut vm, requested)!
 	data := intl_date_locale_data(mut vm, data_locale)!
 	core := intl_core_data(mut vm)!
 	mut calendar := 'gregory'

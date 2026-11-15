@@ -44,6 +44,7 @@ pub struct IntlDateLocaleData {
 	available map[string]string
 	zone_names map[string]map[string]string
 	meta_zone_names map[string]map[string]string
+	list_patterns map[string]map[string]string
 	gmt_format string
 	gmt_zero string
 	hour_format string
@@ -99,6 +100,7 @@ fn intl_date_locale_data(mut vm VM, locale string) !&IntlDateLocaleData {
 		available: intl_overlay(base.available, own.available, own.removed['available'])
 		zone_names: intl_overlay(base.zone_names, own.zone_names, own.removed['zone_names'])
 		meta_zone_names: intl_overlay(base.meta_zone_names, own.meta_zone_names, own.removed['meta_zone_names'])
+		list_patterns: intl_overlay(base.list_patterns, own.list_patterns, own.removed['list_patterns'])
 		decimal: intl_overlay(base.decimal, own.decimal, own.removed['decimal'])
 		gmt_format: if own.gmt_format != '' { own.gmt_format } else { base.gmt_format }
 		gmt_zero: if own.gmt_zero != '' { own.gmt_zero } else { base.gmt_zero }
