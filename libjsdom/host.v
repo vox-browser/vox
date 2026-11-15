@@ -1,6 +1,7 @@
 module libjsdom
 
 import dom
+import fetch
 import libjs
 import platform
 
@@ -28,6 +29,11 @@ mut:
 	event_prototype      &libjs.Object = unsafe { nil }
 	url_prototype        &libjs.Object = unsafe { nil }
 	style_prototype      &libjs.Object = unsafe { nil }
+	headers_prototype &libjs.Object = unsafe { nil }
+	headers_iterator_prototype &libjs.Object = unsafe { nil }
+	headers map[voidptr]&fetch.Headers
+	headers_wrappers map[voidptr]&libjs.Object
+	headers_iterators map[voidptr]&HeadersIteratorState
 	style_wrappers       map[u32]&libjs.Object
 	style_elements       map[voidptr]&dom.Element
 	wrappers             map[u32]&libjs.Object
@@ -46,6 +52,7 @@ pub fn Host.create(vm &libjs.VM, realm &libjs.Realm, document &dom.Document, hoo
 	host.install_nodes()!
 	host.install_styles()
 	host.install_urls()!
+	host.install_headers()!
 	mut global := realm.global_object_record()
 	global.define_direct_property(libjs.PropertyName.from_str('document'), host.wrap_node(document.as_node()), libjs.attribute_enumerable)
 	for name in ['window', 'self'] {
@@ -67,9 +74,13 @@ pub fn Host.create(vm &libjs.VM, realm &libjs.Realm, document &dom.Document, hoo
 }
 
 fn (mut host Host) method(mut object libjs.Object, name string, length int, callback libjs.NativeFunctionPointer) {
+	host.method_attributes(mut object, name, length, callback, libjs.attribute_writable | libjs.attribute_configurable)
+}
+
+fn (mut host Host) method_attributes(mut object libjs.Object, name string, length int, callback libjs.NativeFunctionPointer, attributes u8) {
 	mut vm := host.vm
 	method := libjs.NativeFunction.create(mut vm, host.realm, host.realm.function_prototype, callback, f64(length), libjs.PropertyName.from_str(name), none)
-	object.define_direct_property(libjs.PropertyName.from_str(name), libjs.Value.from_object(method.object), libjs.attribute_writable | libjs.attribute_configurable)
+	object.define_direct_property(libjs.PropertyName.from_str(name), libjs.Value.from_object(method.object), attributes)
 	host.closures << voidptr(callback)
 }
 
@@ -121,6 +132,9 @@ pub fn (mut host Host) close() {
 	host.event_wrappers.clear()
 	host.style_wrappers.clear()
 	host.style_elements.clear()
+	host.headers.clear()
+	host.headers_wrappers.clear()
+	host.headers_iterators.clear()
 	for callback in [host.hooks.before_callback, host.hooks.after_callback, host.hooks.changed] {
 		if function := callback { platform.release_closure(voidptr(function)) }
 	}

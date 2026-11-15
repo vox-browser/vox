@@ -8,7 +8,8 @@ pub:
 	max_instructions u64
 }
 
-fn (mut vm VM) consume_execution_budget() ! {
+// Native host algorithms share the caller's budget with bytecode and callbacks.
+pub fn (mut vm VM) consume_execution_budget() ! {
 	if vm.instruction_budget_active {
 		if vm.instruction_budget == 0 { return vm.throw_error(.internal_error, 'LibJS instruction budget exceeded') }
 		vm.instruction_budget--
