@@ -25,6 +25,7 @@ fn initialize_collection_intrinsics(mut vm VM, mut realm Realm) ! {
 		'findLastIndex': array_prototype_find_last_index
 		'at': array_prototype_at
 		'sort': array_prototype_sort
+		'toSorted': array_prototype_to_sorted
 		'reverse': array_prototype_reverse
 		'shift': array_prototype_shift
 		'includes': array_prototype_includes
