@@ -80,6 +80,12 @@ fn (mut host Host) install_fetch_objects() ! {
 			if is_request { return owner.wrap_request(host.request_receiver(mut vm)!.clone() or { return libjs.throw_completion(host.fetch_error_value(mut vm, err)) }, none) }
 			return owner.wrap_response(host.response_receiver(mut vm)!.clone() or { return libjs.throw_completion(host.fetch_error_value(mut vm, err)) }, none)
 		}, libjs.attribute_writable | libjs.attribute_enumerable | libjs.attribute_configurable)
+		host.accessor(mut prototype, 'body', fn [host, is_request] (mut vm libjs.VM) !libjs.Value {
+			native := if is_request { host.request_receiver(mut vm)!.body_mixin() } else { host.response_receiver(mut vm)!.body_mixin() }
+			stream := native.body_stream() or { return libjs.js_null() }
+			mut owner := unsafe { &Host(host) }
+			return owner.wrap_readable_stream(stream, none)
+		}, unsafe { nil })
 		for method in ['text', 'json', 'arrayBuffer', 'bytes', 'blob'] {
 			host.method_attributes(mut prototype, method, 0, fn [host, is_request, method] (mut vm libjs.VM) !libjs.Value {
 				host.require_open(mut vm)!

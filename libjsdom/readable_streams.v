@@ -144,6 +144,8 @@ fn (mut host Host) close_readable_streams() {
 		binding.capability = none
 	}
 	for _, mut reader in host.stream_readers { reader.release_lock() or {} }
+	reason := webidl.simple_exception_value(webidl.SimpleException{type_: .type_error, message: 'Document stream runtime is closed'})
+	for _, mut native in host.readable_streams { native.error_value(reason) }
 	for _, mut request in host.stream_reads { request.capability = none }
 	host.stream_reads.clear()
 	host.stream_promises.clear()

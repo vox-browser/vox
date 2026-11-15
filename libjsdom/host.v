@@ -81,6 +81,7 @@ mut:
 	blobs map[voidptr]&fileapi.Blob
 	blob_wrappers map[voidptr]&libjs.Object
 	blob_reads map[u64]&BlobReadBinding
+	blob_stream_tasks map[voidptr]&BlobStreamTaskBinding
 	readable_stream_prototype &libjs.Object = unsafe { nil }
 	default_reader_prototype &libjs.Object = unsafe { nil }
 	readable_streams map[voidptr]&streams.ReadableStream
@@ -264,6 +265,7 @@ pub fn (mut host Host) close() {
 	if host.closed { return }
 	host.closed = true
 	host.close_blob_reads()
+	host.close_blob_stream_tasks()
 	host.close_idle_callbacks()
 	host.close_microtasks()
 	host.close_timers()

@@ -6,6 +6,7 @@ import domurl
 import fetch
 import fileapi
 import libjs
+import streams
 import webidl
 
 struct FetchOptionalText { value ?string }
@@ -14,6 +15,7 @@ struct FetchBodyValue {
 	blob ?&fileapi.Blob
 	query ?&domurl.URLSearchParams
 	buffer ?&libjs.Object
+	stream ?&streams.ReadableStream
 }
 
 fn fetch_dictionary(mut vm libjs.VM, value libjs.Value) ! {
@@ -41,6 +43,7 @@ fn (host &Host) fetch_body_init(mut vm libjs.VM, value libjs.Value) !FetchBodyVa
 	if value.is_nullish() { return FetchBodyValue{} }
 	if value.is_object() {
 		object := value.as_object()
+		if stream := host.readable_streams[voidptr(object)] { return FetchBodyValue{stream: stream} }
 		if blob := host.blobs[voidptr(object)] { return FetchBodyValue{blob: blob} }
 		if query := host.queries[voidptr(object)] { return FetchBodyValue{query: query} }
 		if object.array_buffer != none || object.typed_array != none || object.data_view != none {
@@ -51,6 +54,9 @@ fn (host &Host) fetch_body_init(mut vm libjs.VM, value libjs.Value) !FetchBodyVa
 }
 
 fn (body FetchBodyValue) materialize(mut vm libjs.VM) !FetchBodyValue {
+	if stream := body.stream {
+		return FetchBodyValue{value: fetch.BodyInit{kind: .readable_stream, stream: stream, stream_locked: stream.locked(), stream_disturbed: stream.is_disturbed()}}
+	}
 	if blob := body.blob {
 		charge_buffer_source_work(mut vm, blob.size())!
 		return FetchBodyValue{value: fetch.BodyInit{kind: .blob, bytes: blob.raw_bytes(), type_: blob.type_()}}

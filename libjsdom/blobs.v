@@ -153,6 +153,13 @@ fn (mut host Host) install_blobs() {
 		mut owner := unsafe { &Host(host) }
 		return owner.wrap_blob(native.slice_blob(start, end, type_), none)
 	}, attributes)
+	host.method_attributes(mut prototype, 'stream', 0, fn [host] (mut vm libjs.VM) !libjs.Value {
+		native := host.blob_receiver(mut vm)!
+		persistent := platform.enter_persistent()
+		defer { platform.leave_persistent(persistent) }
+		mut owner := unsafe { &Host(host) }
+		return owner.blob_stream(mut vm, native)
+	}, attributes)
 	for method in ['text', 'arrayBuffer', 'bytes'] {
 		host.method_attributes(mut prototype, method, 0, fn [host, method] (mut vm libjs.VM) !libjs.Value {
 			// Promise-returning WebIDL operations reject receiver failures.
