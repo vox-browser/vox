@@ -1,8 +1,8 @@
 module libjs
 
-// Number, BigInt and String production intrinsic graphs remain pending. These
-// getters retain explicit Intrinsics dependencies without substitute objects.
-// Boolean and Symbol use the existing current-realm intrinsic records.
+// Retained Intrinsics dependencies used by the translated operations. The
+// production getter set resolves Number, BigInt and String from the realm;
+// Boolean and Symbol use their current-realm records directly.
 pub struct PrimitiveObjectPrototypes {
 pub:
 	number IntrinsicPrototypeGetter = unsafe { nil }

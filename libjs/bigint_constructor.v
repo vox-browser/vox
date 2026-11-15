@@ -2,8 +2,7 @@ module libjs
 
 // Runtime/BigIntConstructor.{h,cpp}. The pinned has_constructor() is true,
 // although [[Construct]] always throws. Creating this complete record requires
-// its retained prototype; production global installation awaits the remaining
-// Object/Intl intrinsic graph.
+// its retained prototype. bigint_intrinsics.v installs the production graph.
 @[heap]
 pub struct BigIntConstructor {
 pub:

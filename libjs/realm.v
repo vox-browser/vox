@@ -86,6 +86,8 @@ pub mut:
 	boolean_constructor            ?&Object
 	number_prototype               ?&Object
 	number_constructor             ?&Object
+	bigint_prototype               ?&Object
+	bigint_constructor             ?&Object
 	parse_int_function             ?&Object
 	parse_float_function           ?&Object
 	symbol_prototype               ?&Object
@@ -245,6 +247,7 @@ pub fn initialize_host_defined_realm(mut vm VM, hooks RealmGlobalHooks) !&Execut
 		Value.from_object(shared_array_buffer_constructor.object), attribute_writable | attribute_configurable)
 	initialize_collection_intrinsics(mut vm, mut realm)!
 	initialize_number_intrinsics(mut vm, mut realm)
+	initialize_bigint_intrinsics(mut vm, mut realm)
 	realm.reflect_object = ReflectObject.create(mut vm, realm, realm.object_prototype_record(), realm.array_prototype_record()).object
 	initialize_iterator_intrinsics(mut vm, mut realm)
 	initialize_generator_creation_intrinsics(mut vm, mut realm)
@@ -312,6 +315,8 @@ pub fn initialize_host_defined_realm(mut vm VM, hooks RealmGlobalHooks) !&Execut
 	global.define_direct_property(PropertyName.from_str('Boolean'),
 		Value.from_object(realm.boolean_constructor_record()),
 		attribute_writable | attribute_configurable)
+	global.define_direct_property(PropertyName.from_str('BigInt'),
+		Value.from_object(realm.bigint_constructor or { panic('Missing BigInt constructor') }), attribute_writable | attribute_configurable)
 	global.define_direct_property(PropertyName.from_str('DataView'),
 		Value.from_object(realm.data_view_constructor_record()),
 		attribute_writable | attribute_configurable)

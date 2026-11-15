@@ -99,7 +99,7 @@ fn realm_primitive_prototypes() PrimitiveObjectPrototypes {
 	return PrimitiveObjectPrototypes{
 		string: fn (realm &Realm) &Object { return realm.string_prototype or { panic('String prototype absent') } }
 		number: fn (realm &Realm) &Object { return realm.number_prototype or { realm.object_prototype_record() } }
-		bigint: fn (realm &Realm) &Object { return realm.object_prototype_record() }
+		bigint: fn (realm &Realm) &Object { return realm.bigint_prototype or { panic('BigInt prototype absent') } }
 	}
 }
 

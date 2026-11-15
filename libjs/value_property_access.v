@@ -1,7 +1,7 @@
 module libjs
 
 // Value.cpp::get (GetV), including its direct primitive-prototype lookup.
-// Number, BigInt and String intrinsic dependencies are explicit until installed.
+// Number, BigInt and String intrinsic dependencies use the supplied getter set.
 pub fn (value Value) get_with_prototypes(mut vm VM, key PropertyName, prototypes PrimitiveObjectPrototypes) !Value {
 	realm := vm.realm()
 	object := if value.is_string() && key != PropertyName.from_str('length') {
