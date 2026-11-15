@@ -2149,3 +2149,109 @@ predating these changes. Acceptance still requires 33 rows, 56 commit links,
 current README, active controls, zero errors, the unchanged Brave content audit
 and zero differing pixels, followed by matched performance evidence. New full
 GitHub execution, faster compiled revisits and Brave pixel parity are unverified.
+
+## Native control state and form action continuation
+
+The 2026-11-16 continuation retains the user's hold. No tests were compiled or
+executed, no JS was evaluated, and no browser, capture, comparison or performance
+trial was launched. GitHub/Brave compiled-JS parity remains incomplete.
+
+| Commit | Implemented behavior |
+| --- | --- |
+| `cefbf0a6c` | Preserve explicit empty checkbox/radio values; "on" applies only when the value attribute is absent. |
+| `27563fc78` | Bind input/textarea values/defaults, checkedness/indeterminate state, select values/indices, option state, button values/types, common reflected members and native form owners. Empty checked values reach FormData unchanged; lazy select initialization supplies initial selectedness once. Native mutations notify the host and frame scheduler. |
+| `e18c888d8` | Bind form action/method/encoding/autocomplete, length/relList, submitter overrides, reset/validation and submit/requestSubmit. Bind SubmitEvent with original submitter identity and public-constructor trust rules. Install a traced browser submission service that forwards native GET/POST bodies/targets to the existing navigation owner. |
+
+Live text values and default attributes remain separate. Legacy null-to-empty
+conversion applies to input/textarea value; other string members use their
+IDL conversion. Actual HTML models perform sanitization, radio grouping,
+selectedness and reset. Explicit no-selection survives model reuse. Form owners
+are resolved from native DOM identity and wrappers retain their identity.
+
+Form requestSubmit without a button now respects noValidate. Public SubmitEvent
+construction clears trust while native submission events retain native trust.
+Submitter eligibility is checked before creating a control for an unrelated
+HTMLElement. The submission service borrows a temporary native hook only when
+the model lacks one, releases it after the call and preserves existing hooks.
+Its browser record is allocated persistently and carries no VM callback capture.
+Target attributes are read at native handoff after author handlers. relList's
+PutForwards setter observes ordinary JS getters/setters before string coercion;
+reportValidity also notifies the host after native focus changes.
+
+The frozen original scripts contain 92 textual HTMLInputElement references in
+11 bodies, 35 HTMLTextAreaElement references in six bodies, four .requestSubmit
+references in two bodies and seven .formAction references in two bodies. The
+static scan also records 68 .checked references in eight bodies and 38
+.defaultValue references in seven bodies. Property names alone do not establish
+object brands, runtime reachability or the current first module error. The
+same scan finds 12 .setSelectionRange references in six bodies; that binding
+remains unfinished. Source hashes/contexts remain local in static-source-scan.json.
+
+Thirty-five focused functions are prepared: six native HTML, 14 control-binding,
+14 form/event/service and one main-browser integration case. They cover live
+state/defaults, coercion/brands/UTF-16, FormData snapshots, selection, radio
+groups, attribute reactions, mutation notification, arena lifetime, action/
+encoding overrides, reset cancellation, validation bypass, submitter identity,
+POST body/target handoff, late target mutation, existing-hook preservation,
+PutForwards, shell navigation and compiler-disabled second-VM cache revisits.
+All remain uncompiled and unexecuted; their assertions supply no cache or pixel
+evidence.
+
+Fourteen compiler-only attempts and raw logs are preserved byte-identically
+with a hashed index in local docs/performance/libjs-form-controls-20261116/:
+
+| Compiler-only check | Child exit | Seconds | Peak sampled RSS bytes |
+| --- | ---: | ---: | ---: |
+| Empty input value normal | 0 | 18.428 | 5,378,424,832 |
+| Empty input value production | 0 | 18.971 | 5,656,608,768 |
+| Controls initial normal | 1 | 1.584 | 653,410,304 |
+| Controls corrected normal | 0 | 19.846 | 5,386,027,008 |
+| Controls production | 0 | 18.063 | 5,661,802,496 |
+| Form properties normal | 0 | 19.123 | 5,392,564,224 |
+| Form service normal | 0 | 21.895 | 5,398,773,760 |
+| Browser embedding normal | 0 | 27.555 | 6,679,150,592 |
+| Browser embedding production | 0 | 27.880 | 6,963,249,152 |
+| Browser callback lifetime normal | 0 | 26.341 | 6,679,019,520 |
+| Browser forwarding/focus final normal | 0 | 28.524 | 6,672,400,384 |
+| Browser forwarding/focus final production | 0 | 31.985 | 6,957,711,360 |
+| Submitter eligibility final import normal | 0 | 19.977 | 5,383,749,632 |
+| Submitter eligibility final import production | 0 | 16.560 | 5,672,878,080 |
+
+The failed attempt used V's reserved select keyword as a variable name; it was
+corrected before the controls commit. Import checks use current V with
+`V3_STR_CAP=1 VJOBS=1`, a unique default 12 GiB run_memory_bounded guard and
+`-w -n -b c -no-parallel -cc clang -check -memory-limit 10G -enable-globals
+tools/libjs_github_revisit.v`. Production adds -prod -prealloc -gc none.
+Whole-browser checks instead target '.', with vox_production/vox_ui2/
+vox_sparse_ttf definitions, the native-zoneinfo exclusion and existing shared
+font/HTTP/UI2 module paths. They do not schedule a production build. Exact
+commands/exits are retained; each guard reports reason=completed. Checks
+exclude _test.v, C linking and execution. Compiler durations are not JS timings.
+The last import pair covers the submitter-tag guard added after the browser
+pair. Own completed Build reports/locks were removed after preservation.
+
+At implementation revision e18c888d8, the latest completed production
+executable inspected statically is
+`195b51717bc5195ec40257d10c96e22bcddbbb432a757d232c93c74352d36e0c`.
+Its actual hash matches
+`Build/production-build/receipts/20261116-014301-d3498b0e/frozen-compile.json`,
+using one C unit and literal V -prod. Ten of twelve selected implementation
+files match its consumed-source manifest. libjsdom/forms.v and
+document/form_submission.v differ, so it cannot validate the final form-service
+revision. Receipt/executable identities stayed unchanged during the audit.
+Commits requested coalesced managed rebuilds; no duplicate manual build or fresh
+process was introduced.
+
+Full control validation/selection/FileList bindings, options/form collections
+and named properties, remaining IDL, foreign-realm rules, native collection and
+broader JS/Web/Intl/rendering behavior remain open. These source additions do
+not establish full HTML or form-navigation conformance. The original manifest
+remains `893e042c4f31e1b7fb984c81cf8f6a2a7eb65d790f7c3f4cc3e372c065de302d`,
+and the Brave PNG remains
+`649abff51549508516e2e0681866ba81ce69e7112cfa8dc3446b9b76c99be3d3`.
+The last actual GitHub observation is still 672 warm native entries, 51 frontend
+hits, zero compiler calls, 33 rows, zero commit links and five module errors,
+predating these changes. Acceptance remains 33 rows, 56 commit links, current
+README, active controls, zero errors, the unchanged Brave content audit and zero
+differing pixels, followed by matched performance evidence. New full GitHub
+execution, faster compiled revisits and Brave pixel parity remain unverified.

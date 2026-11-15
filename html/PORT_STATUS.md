@@ -2,10 +2,23 @@
 
 Upstream reference: `~/code/3rd/ladybird/Libraries/LibWeb/HTML`
 
-Translation workspace: `~/code/vox2/html`
+Translation workspace: `~/code/vox/html`
 Source pin: `963d46a829f3e1b79f44dba9d02afb70654300fa`
 Historical mapping inventory: 2026-09-08
 Selected Source owner slices reviewed: 2026-10-13
+
+The 2026-11-16 native LibJS bridge now forwards common control values, defaults,
+checkedness/indeterminate state, select/option selection and form ownership to
+these HTML models. It also binds form properties, reset/validation/submission,
+submitter overrides and native SubmitEvent, with a traced browser navigation
+service. Empty checked values survive submission, lazy select initialization
+runs once, and requestSubmit without a button honors form noValidate.
+Thirty-five focused functions remain uncompiled and unexecuted under the
+user's hold. Normal and production/preallocation compiler-only import and
+browser checks pass; runtime and pixel parity remain unverified. Full control
+IDL, collections/named properties, validation/selection/FileList bindings and
+native ownership remain open. See the
+[control/form-action continuation](../docs/LIBJS_GITHUB_RUNTIME_20261115.md#native-control-state-and-form-action-continuation).
 
 The historical inventory below found candidate V mappings for 261 HTML source
 files. Its file/symbol/LOC counts and 107-file test result describe that earlier

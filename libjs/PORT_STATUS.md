@@ -2934,3 +2934,29 @@ foreign-realm rules, collection and remaining JS/Web/Intl/rendering behavior
 remain open. The latest inspected production manifest matches none of 12
 selected changed inputs. GitHub/Brave compiled-JS parity remains incomplete;
 see the [File/FormData continuation](../docs/LIBJS_GITHUB_RUNTIME_20261115.md#native-file-formdata-and-fetch-continuation).
+
+The next native LibJS slice exposes input/textarea live and default values,
+checkedness, indeterminate state, select/option selection, button values/types,
+common reflected attributes and native form owners. Script writes reach the
+HTML models used by rendering and FormData. Empty checkbox/radio values now
+remain empty in both getters and submission; lazy select owners establish
+initial selection once and preserve explicit later no-selection states.
+
+Form action/method/encoding properties, submitter overrides, reset/validation
+methods and SubmitEvent are bound to native owners. A traced embedding service
+routes completed submissions to the browser's existing GET/POST/target
+navigation path. Temporary hooks preserve existing native hooks and are
+released after each call. Targets are read after submit/formdata handlers;
+form noValidate applies to requestSubmit without a button. relList forwarding
+uses ordinary JS property access.
+
+Thirty-five focused functions remain uncompiled and unexecuted under the
+user's hold. Fourteen compiler-only attempts, including one corrected parser
+failure, are retained. Import and whole-browser checks pass in normal and
+production/preallocation modes; the final import pair also covers subsequent
+submitter-tag rejection. This establishes typing, not runtime or pixel parity.
+Full collections/named properties, control validation/selection/FileList
+bindings, remaining IDL and broader JS/Web/rendering behavior remain open.
+The latest inspected production manifest matches ten of twelve selected
+implementation inputs and lacks the final forms/provider revisions. See the
+[control/form-action continuation](../docs/LIBJS_GITHUB_RUNTIME_20261115.md#native-control-state-and-form-action-continuation).

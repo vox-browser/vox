@@ -96,3 +96,15 @@ LibJS XMLHttpRequest, full form-control property bindings, foreign-realm rules,
 native collection and inherited parser/serializer limits remain separate;
 GitHub execution and Brave pixels are unverified. See the
 [File/FormData continuation](../docs/LIBJS_GITHUB_RUNTIME_20261115.md#native-file-formdata-and-fetch-continuation).
+
+The following native LibJS control/form slice connects live input/textarea
+values, checkedness and select/option selection to the same owners read by
+FormData construction. Explicit empty checked values remain empty during
+submission. Form reset, requestSubmit, native SubmitEvent.submitter and
+submitter overrides now use the HTML owners; the browser embedding routes
+completed form submissions through its existing body/target navigation path.
+Thirty-five new cases remain uncompiled/unexecuted under the user's hold;
+compiler-only checks do not establish browser or XHR conformance. Full control
+IDL, collections, FileList, native LibJS XMLHttpRequest and broader runtime/
+rendering behavior remain open. See the
+[control/form-action continuation](../docs/LIBJS_GITHUB_RUNTIME_20261115.md#native-control-state-and-form-action-continuation).
