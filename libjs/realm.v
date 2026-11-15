@@ -25,6 +25,8 @@ pub mut:
 	math_object                    ?&Object
 	reflect_object                 ?&Object
 	proxy_constructor              ?&Object
+	intl_core_data ?&IntlCoreData
+	intl_date_locales map[string]&IntlDateLocaleData
 	json_object                    ?&Object
 	date_prototype                 ?&Object
 	date_constructor               ?&Object
