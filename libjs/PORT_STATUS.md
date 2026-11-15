@@ -2682,3 +2682,17 @@ still fails. A fresh ClassList-stage production browser has the same 33 rows and
 zero commit links; its first compiler diagnostic is explicit spread super calls.
 Full-repository coverage, validation of later bindings in a current production build and
 pixel acceptance remain open.
+
+The later implementation-only continuation adds destructuring assignment,
+dynamic-import promise continuations, Object.fromEntries, Array.flatMap/flat/
+toSorted and WeakRef. Native browser bindings also expose CSS escaping/support
+queries and schedule LibJS reactions on the actual HTML microtask queue. WeakRef
+reuses the collector's disappearing links with an explicit job-lifetime kept
+list; non-collecting builds retain target identity without simulating GC.
+Compiler-only checking of the browser diagnostic import graph succeeds with
+default GC and GC-none. The user's test hold keeps all new runtime, ownership,
+cached-revisit and browser regressions unexecuted. Proxy exotics, generator
+execution, top-level await, Intl, remaining RegExp/Web APIs and full GitHub
+hydration/rendering parity remain incomplete. See the
+[continuation record](../docs/LIBJS_GITHUB_RUNTIME_20261115.md#assignment-dynamic-loading-and-native-api-continuation)
+for commits, exact evidence boundaries and the unchanged Brave reference.

@@ -1035,3 +1035,70 @@ is available under this hold. The last actual GitHub observation is still the
 language implementations or establish a completion percentage. Dynamic imports,
 generator execution, top-level await, remaining assignment forms/builtins and
 Web APIs still require work before the requested GitHub/Brave parity outcome.
+
+## Assignment, dynamic loading and native API continuation
+
+The user's verification hold remains in effect. This continuation performs
+source inspection and compiler-only checking of the normal
+`tools/libjs_github_revisit.v` program. It does not execute the diagnostic,
+JavaScript tests, AST fixtures, browser captures or comparison cohorts.
+
+| Commit | Implementation | Prepared verification |
+| --- | --- | --- |
+| `467a0628f` | Object/array destructuring assignment retains identifier and member references before getters or iterator steps, applies defaults/rest/nesting, returns the original RHS and closes iterators on abrupt completion. For-in/of assignment resolves outer lexical bindings and supports private/super targets. | Reference ordering, abrupt identity, sparse iteration, lexical scope and compiler-disabled native-cache cases remain unexecuted. |
+| `10dd04645` | Object.fromEntries consumes actual iterators, reads both entry properties before key conversion, defines ordinary own data properties and closes on entry-processing errors. | Symbol/prototype keys, getters, iterator failures and budgets remain unexecuted. |
+| `17dc548bd` | Dynamic import emits native bytecode and returns an intrinsic Promise. Attribute conversion, host loading, graph loading, linking, evaluation and namespace resolution use native records and promise continuations. | Deferred root/dependency completion, live namespaces, error identity, attributes, filesystem gating and native reuse remain unexecuted. Non-JavaScript module namespace support and top-level await remain separate. |
+| `1c911eabf` | Document-bound LibJS promise reactions enter the owning HTML microtask queue. They retain FIFO order with native microtasks, restore currentScript, check document execution permission and share a bounded job budget. Imports use the existing Fetch/import-map/module-map host. | Browser cases wait for native event-loop progress without evaluate() polling, which could conceal stalled reactions. These cases remain unexecuted. |
+| `dc27037f9`, `7442d00c0` | Array.flatMap/flat share native FlattenIntoArray with live sparse reads, species targets, data-property writes, safe index bounds and stack/execution budgets. Mapping applies only at the root; flat converts depth before species creation. | Sparse/live reads, aliasing species targets, inherited setters, recursive depth and budgets remain unexecuted. Proxy IsArray behavior remains pending with Proxy exotics. |
+| `c1f963f97` | Array.toSorted uses the translated stable sorter, reads through holes into a dense intrinsic array and avoids source writes or species access. | Validation/getter ordering, stable comparison, sparse input and abrupt identity remain unexecuted. |
+| `75a333592` | The native CSS namespace exposes CSS.escape and both CSS.supports overloads. Escaping preserves raw UTF-16, including lone surrogates; support decisions use the existing document CSS parser. | Code-unit boundaries and overload conversion cases remain unexecuted. This does not add CSS.registerProperty or change existing parser support. |
+| `bb216bb7e` | WeakRef construction/deref uses the existing disappearing-link collector adapter. Successful targets stay strongly kept through the complete microtask checkpoint; cleanup clears retained backing slots and runtime shutdown roots. | Brand, prototype ordering, symbol identity, collector lifetime and compiler-disabled reuse cases remain unexecuted. |
+| `771c58991` | History storage cloning rejects the WeakRef internal slot before invoking any own enumerable getters. Direct or nested weak references cannot silently become ordinary objects. | The state-preservation and getter-side-effect regression remains unexecuted. |
+
+WeakRef's collector adaptation uses an explicit per-job kept-object list in
+place of upstream WeakRef's generation-conditioned tracing edges. The HTML
+queue clears that list after all reactions, while standalone VM checkpoints
+clear it after draining their own queue. Non-collecting builds retain encoded
+target identity and do not simulate collection. The already existing weak-cell
+adapter's historical checks do not validate these new WeakRef lifetime paths.
+
+A read-only textual scan of the unchanged original fixture finds 29
+Object.fromEntries call matches in nine bodies, 25 flatMap matches in eleven,
+ten flat matches in seven, one toSorted match, two dynamic-import matches,
+six CSS.escape matches in four, six CSS.supports matches in three and four
+WeakRef constructor matches in four. These are source occurrences, not executed
+or reachable coverage. The same scan finds six Proxy constructor matches,
+eleven generator declarations, nineteen Intl references and three matchAll
+calls. Proxy exotics, generator execution, Intl, remaining RegExp operations,
+top-level await and other Web APIs still require work. No completion percentage
+can be inferred from these counts.
+
+The final native import-graph compiler-only check exits zero with default GC
+(26.415 seconds, sampled peak RSS 5,243,879,424 bytes). The preceding WeakRef
+integration also checks successfully with `-gc none` (23.750 seconds,
+5,241,487,360 bytes). Both use V's C backend, `-n -check`,
+`-memory-limit 10G` and the default 12-GiB process-tree guard; neither emits or
+runs a test executable. Fifteen completed guard reports are retained
+byte-for-byte in local
+`docs/performance/libjs-assignment-imports-implementation-20261115/` before their
+Build reports/locks are removed. The three failed attempts are retained:
+dynamic-import lowering initially shadows its expression parameter, and two
+CSS binding checks use private UTF-16 APIs before switching to the existing
+public code-unit boundary. Compiler logs remain in the local benchmark cache.
+These compiler durations are not JavaScript or browser performance results.
+
+The latest statically inspected completed production executable is
+`395539f070321dc8cb06f44467d591253d9dafffe61d55687bd37c08ba2b0859`,
+single-unit C with literal V `-prod`. Its sealed input manifest differs from
+`771c58991` on eleven of 359 selected implementation paths, including WeakRef,
+checkpoint cleanup, CSS bindings and History cloning. It cannot validate those changes. Commit
+requests remain coalesced under the managed production worker; no additional
+manual build or browser launch was requested by this continuation.
+
+The original fixture manifest, source map and Brave PNG hashes remain unchanged.
+The last actual GitHub source-pair observation remains the historical 672-entry
+incomplete initialization run: 51 frontend hits, zero compiler invocations,
+33 rows and zero commit links. It does not identify the current first failure
+or validate subsequent implementations. Completed hydration, live-site
+behavior, final GC/ownership checks, completed-page cache speedup and unchanged
+zero-pixel Brave conformance remain open.
