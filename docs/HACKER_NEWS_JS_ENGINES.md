@@ -142,6 +142,83 @@ checked throughout. The raw local receipts retain every attempt, commands,
 environment, PIDs, outputs, exits, exact timings, native/cache counters and host
 load/timestamps.
 
+## Property lookup optimization — 2026-11-16
+
+The follow-up removes repeated scans of long ordinary-object property lists.
+Objects with at least 16 properties lazily retain up to 64 successful hash-to-
+position hints. Every hit checks the live key and array bounds; collisions,
+deletion/compaction and replacement fall back to the ordered lookup. Values,
+descriptors and absence are never cached. Prototype/accessor behavior and
+enumeration order stay in their existing implementations. Small objects keep
+linear lookup without allocating a cache. Ordinary own keys remain unique.
+
+A test-only switch compares the old linear path and hints in the **same**
+optimized executable, with identical native-code libraries and fresh processes.
+Both LibJS modes are warm native-cache restarts; the V8 mode uses the same
+compiled browser bindings and frozen-image replay as above. Seven alternating
+control/candidate/V8 groups time 500 collapse/expand cycles each. Diagnostics
+run separately, and all timed native/hint counters are zero.
+
+| Median interval, ms | LibJS linear control | LibJS property hints | V8 |
+| --- | ---: | ---: | ---: |
+| Initialization | 38.277 | 35.025 | 116.072 |
+| 500 collapse/expand cycles | 1795.796 | 1284.017 | 1156.145 |
+| Total measured spans | 1835.079 | 1323.643 | 1287.218 |
+| Callback minimum–maximum | 1502.540–1944.539 | 1139.371–1402.071 | 924.358–1605.005 |
+
+The callback median decreases **28.5%** (1.40× speedup). The median paired
+candidate/control ratio is **0.756527**, and highest-candidate/lowest-control is
+**0.933134**. Every candidate beats its paired control, and even the slowest
+candidate beats the fastest control. Control/host variation remains in the
+report; no retired-instruction savings or universal site-speed claim is made.
+
+This does **not** establish that compiled LibJS is faster than V8. Its callback
+median is still 11.1% higher, and V8 varies considerably: highest-candidate/
+lowest-V8 is 1.516805. The total medians differ by only 2.8%. The native tier
+still uses dynamic interpreter helpers for most operations.
+
+The separate candidate diagnostic records **722,224 property-hint hits** and
+17,052 fallbacks. Both LibJS modes load all 27 compiled executables with zero
+compiler invocations or native-cache misses. All 101 comment classes restore,
+collapse/cancellation checks pass, and no JavaScript errors or fallback occur.
+The 25 browser-test processes, driver and 3 GiB guard exit zero; sampled peak
+aggregate RSS is 593,182,720 bytes. The cohort takes 52.785 s on 18 logical CPUs,
+with one-minute host load 10.50–11.45. A separate before/after sample identifies
+property scanning first and allocation/GC after the cache; neither sampled run
+supplies timing credit. Other sessions were active; this session's full-suite
+compilation was stopped before the timed cohort.
+
+Executable SHA-256:
+`f08c021280e1935b67941200c3728e9e921e6cab8cafdec69355e7a57f069e6c`.
+The build retains the earlier C/clang, single-unit, `-prod -no-prod-options`,
+`-O2`, no-LTO, default-GC configuration. It finishes in 304.147 s, guard/compiler
+exit zero, sampled peak 11,692,670,976 bytes under 12 GiB. Raw results, every
+attempt, hashes, native libraries, replay routes, diagnostics and guard receipts
+remain local under `docs/performance/libjs-hn-optimization-20261115/`.
+
+All **45 focused functions across nine files** pass in default and GC-disabled
+modes, covering the cache, ordinary objects, property keys/references/mutations,
+Array.map and the three corrected fixtures;
+the exact upstream AST corpus matches **100/100**. The full package remains
+red for unrelated baseline expectations and Intl execution. After fixing three
+existing test compiler issues (literal JavaScript templates, fixture mutability
+and uint/u64 arguments), the 364-file aggregate reaches 503 passing functions
+and five failed expectations, then aborts in Intl `formatToParts`. Both GC
+modes stop at the same point. A separate same-executable probe with hints
+disabled/enabled reproduces the same five failures and exception. The ordinary
+per-file suite also has two retained 12 GiB guard failures. No full-suite pass
+is claimed; raw failures and partial coverage are retained.
+
+Reproduce the comparison using the newly built HN executable:
+
+```sh
+sh tools/run_v_tool.sh run_memory_bounded --limit-gib 3 \
+    --lock Build/hn-lookup-UNIQUE.lock --report Build/hn-lookup-UNIQUE.json -- \
+  python3 tools/benchmark_hn_property_lookup.py \
+    --binary /tmp/vox-hn-engines/hn-engines \
+    --output docs/performance/hn-lookup-UNIQUE --pairs 7 --cycles 500
+```
+
 ## Reproduction
 
 Build the V8 adapter and one source-built executable containing both backends.
