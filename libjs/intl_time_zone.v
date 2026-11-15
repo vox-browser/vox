@@ -23,7 +23,7 @@ fn intl_parse_time_zone(mut vm VM, value Value) !IntlTimeZone {
 			return IntlTimeZone{identifier: core.zone_alias[location.name.to_lower()] or { location.name }, location: location}
 		}
 		zone := location.zone_at(time.now().unix()) or { return vm.throw_error(.internal_error, 'Unable to resolve system time zone') }
-		return IntlTimeZone{identifier: intl_offset_identifier(zone.offset), location: location}
+		return IntlTimeZone{identifier: intl_offset_identifier(zone.offset), offset_seconds: zone.offset}
 	}
 	text := intl_ascii(mut vm, value.to_primitive_string(mut vm)!.utf16)!
 	if text.starts_with('+') || text.starts_with('-') {
@@ -48,12 +48,18 @@ fn intl_zone_offset_name(data &IntlDateLocaleData, offset int, long bool) string
 	if offset == 0 { return data.gmt_zero }
 	abs := if offset < 0 { -offset } else { offset }
 	patterns := data.hour_format.split(';')
-	pattern := patterns[if offset < 0 && patterns.len > 1 { 1 } else { 0 }]
-	mut text := pattern.replace('HH', if long { '${abs / 3600:02}' } else { '${abs / 3600}' }).replace('mm', '${abs % 3600 / 60:02}')
+	mut pattern := patterns[if offset < 0 && patterns.len > 1 { 1 } else { 0 }]
+	// CLDR includes H:mm, HH.mm and HHmm, plus directional marks. Remove
+	// the minute field structurally so short offsets preserve each locale.
+	hour_end := (pattern.last_index('H') or { 0 }) + 1
+	minute_start := pattern.index('mm') or { hour_end }
+	separator := pattern[hour_end..minute_start]
 	if !long && abs % 3600 == 0 {
-		text = text.replace(':00', '').replace('.00', '')
+		pattern = pattern[..hour_end] + pattern[minute_start + 2..]
+	} else if abs % 60 != 0 {
+		pattern = pattern[..minute_start + 2] + separator + 'ss' + pattern[minute_start + 2..]
 	}
-	if abs % 60 != 0 { text += ':${abs % 60:02}' }
+	text := pattern.replace('HH', if long { '${abs / 3600:02}' } else { '${abs / 3600}' }).replace('H', '${abs / 3600}').replace('mm', '${abs % 3600 / 60:02}').replace('ss', '${abs % 60:02}')
 	return data.gmt_format.replace('{0}', text)
 }
 
