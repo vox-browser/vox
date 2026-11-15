@@ -12,8 +12,8 @@ struct PendingDynamicImport {
 
 @[heap]
 struct DynamicImportFixture {
-	vm &VM
 mut:
+	vm &VM
 	modules map[string]&SourceTextModule
 	pending []PendingDynamicImport
 	requests []PendingDynamicImport

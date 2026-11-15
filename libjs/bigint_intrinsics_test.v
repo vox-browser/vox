@@ -25,7 +25,7 @@ fn test_bigint_boxing_and_prototype_methods_use_real_native_slots() {
 
 fn test_bigint_width_methods_and_github_style_string_interpolation_are_exact() {
 	mut vm := VM.create(); create_simple_execution_context(mut vm)
-	assert bigint_intrinsic_eval(mut vm, 'BigInt.asIntN(8,255n)===-1n&&BigInt.asUintN(8,-1n)===255n&&BigInt.asIntN(0,1n)===0n&&BigInt.asUintN(64,18446744073709551617n)===1n&&BigInt.asIntN.length===2&&BigInt.asUintN.length===2&&(function(v){return typeof v==="bigint"?`$bigint:${v}`:v})(900719925474099312345n)==="$bigint:900719925474099312345"')!.as_bool()
+	assert bigint_intrinsic_eval(mut vm, r'BigInt.asIntN(8,255n)===-1n&&BigInt.asUintN(8,-1n)===255n&&BigInt.asIntN(0,1n)===0n&&BigInt.asUintN(64,18446744073709551617n)===1n&&BigInt.asIntN.length===2&&BigInt.asUintN.length===2&&(function(v){return typeof v==="bigint"?`$bigint:${v}`:v})(900719925474099312345n)==="$bigint:900719925474099312345"')!.as_bool()
 }
 
 fn test_bigint_locale_formatting_retains_intrinsic_and_checks_brand_before_options() {
@@ -54,7 +54,7 @@ fn test_cached_bigint_native_constructors_revisit_without_compiler() {
 		mut vm := VM.create(); create_simple_execution_context(mut vm)
 		vm.enable_native_code_cache(directory, if visit == 0 { '/usr/bin/clang' } else { '/usr/bin/false' })!
 		vm.diagnose_native_code(true)!
-		assert bigint_intrinsic_eval(mut vm, 'function canonical(v){return typeof v==="bigint"?`$bigint:${v}`:v}canonical(BigInt("900719925474099312345"))==="$bigint:900719925474099312345"')!.as_bool()
+		assert bigint_intrinsic_eval(mut vm, r'function canonical(v){return typeof v==="bigint"?`$bigint:${v}`:v}canonical(BigInt("900719925474099312345"))==="$bigint:900719925474099312345"')!.as_bool()
 		activity := vm.diagnose_native_code(false)!; stats := vm.flush_native_code_cache()!
 		if visit == 1 { assert stats.cache_hits >= 2 && stats.compiler_invocations == 0 && activity.entries >= 2 }
 		vm.close_native_code()!
