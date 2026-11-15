@@ -52,6 +52,7 @@ mut:
 	listeners            []Listener
 	closures             []voidptr
 	closed               bool
+	owned_documents []&dom.Document
 }
 
 pub fn Host.create(vm &libjs.VM, realm &libjs.Realm, document &dom.Document, hooks Hooks) !&Host {
@@ -59,6 +60,7 @@ pub fn Host.create(vm &libjs.VM, realm &libjs.Realm, document &dom.Document, hoo
 	defer { platform.leave_persistent(persistent) }
 	mut host := &Host{ vm: vm, realm: realm, document: document, hooks: hooks }
 	host.install_nodes()!
+	host.install_node_interfaces()!
 	host.install_styles()
 	host.install_urls()!
 	host.install_headers()!
@@ -134,6 +136,11 @@ pub fn (mut host Host) close() {
 		}
 	}
 	host.listeners = []
+	for mut document in host.owned_documents {
+		document.destroy()
+		document.finalize()
+	}
+	host.owned_documents = []
 	for callback in host.closures { platform.release_closure(callback) }
 	host.closures = []
 	host.nodes.clear()
