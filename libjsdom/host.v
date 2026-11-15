@@ -93,6 +93,9 @@ mut:
 	form_data_iterators map[voidptr]&FormDataIteratorBinding
 	form_event_data map[voidptr]&xhr.FormData
 	form_submission_host ?FormSubmissionHost
+	validity_state_prototype &libjs.Object = unsafe { nil }
+	validity_states map[voidptr]&html.ValidityState
+	validity_state_wrappers map[voidptr]&libjs.Object
 	blob_reads map[u64]&BlobReadBinding
 	blob_stream_tasks map[voidptr]&BlobStreamTaskBinding
 	readable_stream_prototype &libjs.Object = unsafe { nil }
@@ -228,6 +231,7 @@ pub fn Host.create(vm &libjs.VM, realm &libjs.Realm, document &dom.Document, hoo
 	host.install_form_data()!
 	host.install_form_controls()!
 	host.install_text_control_selection()!
+	host.install_constraint_validation()!
 	host.install_forms()!
 	host.install_history()
 	host.install_headers()!
@@ -333,6 +337,8 @@ pub fn (mut host Host) close() {
 	host.form_data_iterators.clear()
 	host.form_event_data.clear()
 	host.form_submission_host = none
+	host.validity_states.clear()
+	host.validity_state_wrappers.clear()
 	host.close_fetch()
 	host.close_readable_streams()
 	for listener in host.listeners {

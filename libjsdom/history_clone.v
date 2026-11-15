@@ -30,6 +30,7 @@ fn (host &Host) history_platform_object(object &libjs.Object) bool {
 		|| key in host.text_encoders || key in host.text_decoders
 		|| key in host.blobs
 		|| key in host.form_data || key in host.form_data_iterators
+		|| key in host.validity_states
 		|| key in host.readable_streams || key in host.stream_readers
 		|| key in host.stream_default_controllers || key in host.stream_byte_controllers
 }
