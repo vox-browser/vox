@@ -3225,6 +3225,6 @@ The C/O0 diagnostic improves CNN 163,830→88,752: 75,105 corrected and 27
 introduced one-level differences. All changes are inside two image rectangles.
 All 47 other PNGs are unchanged across 48 workloads/96 stable captures. CPU,
 GPU, native preparation and Python preparation checks pass. No original
-reference or tolerance changes. Production confirmation and catalog parity
-remain open; see the
+reference or tolerance changes. Production `44f9e0ff` confirms every diagnostic
+PNG in 48 workloads/96 fresh captures; catalog parity remains open. See the
 [audit](OPTIMIZED_SITES_PIXELS_2026_11_12.md#bounded-minified-webp-plane-filtering-2026-11-15).

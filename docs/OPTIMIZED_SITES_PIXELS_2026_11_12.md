@@ -3556,3 +3556,30 @@ Cleanup hashes 7,087 files across 119 owned roots and preserves/reverifies
 1,511 selected files (45,667,837 bytes). Owned binaries, generated intermediates,
 profiles, jobs, guards, locks and exploratory fixtures are removed. Shared
 production bundles and dependencies remain.
+
+
+## Production confirmation of bounded WebP, 2026-11-15
+
+Production executable
+`44f9e0ff55791443cd9b5bd7fef8809412951f838f560eef935314d6aff461ae`,
+receipt `20261115-215405-67b64854` (C/literal V `-prod`/single unit), confirms
+`d1799617e` by its consumed implementation hashes. All **48 workloads and 96
+fresh captures** complete successfully. Every pair repeats byte for byte, and
+**every production PNG equals the accepted diagnostic PNG**. The driver's 194
+input witnesses remain matched. Startup smoke, all capture guards, driver,
+outer guard and guarded analysis exit zero.
+
+CNN retains **88,752 differing pixels**, including the same 27 introduced
+one-level differences. All changes from the preceding accepted build remain
+inside the two image rectangles; its header is exact. GitHub, Hacker News,
+Lobsters and Wikipedia remain exact, Vlang stays at 27, and the other existing
+controls retain their previous PNGs. This closes the production hold above.
+It does not clear CNN's other rendering/source failures, missing Reddit
+verification, prior inexact controls or catalog-wide equality. No original
+reference, tolerance, live-site, scripting or performance acceptance changes.
+
+Evidence remains under `raw/cnn-planar-20261115/` in the local performance
+folder described above. Additional cleanup hashes 3,058 records across eight
+owned roots, preserves/reverifies 955 files (19,545,245 bytes), and removes the
+production capture jobs, profiles, guards and locks. The shared bundle and its
+dependencies are retained.
