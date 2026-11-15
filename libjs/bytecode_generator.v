@@ -12,6 +12,7 @@ mut:
 	scope_depth int
 	iterator    ?Operand
 	returns     []LoopReturnExit
+	abrupts     []LoopAbruptExit
 }
 
 struct BytecodeGenerator {
@@ -22,6 +23,7 @@ mut:
 	range         SourceRange
 	scope_depth   int
 	loops         []BytecodeLoop
+	labels        []BytecodeLabel
 	function_body bool
 	initialized_functions []u32
 	compile_stack_ ?StackInfo
@@ -663,6 +665,8 @@ fn (mut generator BytecodeGenerator) collect_vars(statement &Statement) ! {
 		generator.collect_vars(&data.block)!
 		if handler := data.handler { generator.collect_vars(&handler.body)! }
 		if finalizer := data.finalizer { generator.collect_vars(&finalizer)! }
+	} else if kind.tag == .labelled {
+		generator.collect_vars(kind.labelled_item or { return error('Missing labelled statement') })!
 	}
 }
 
@@ -725,6 +729,7 @@ fn (mut generator BytecodeGenerator) statement(mut vm VM, statement &Statement) 
 		}
 		.for_in_of { generator.for_in_statement(mut vm, statement)! }
 		.try_stmt { generator.try_catch_statement(mut vm,statement)! }
+		.labelled { generator.labelled_statement(mut vm, statement)! }
 		.function_declaration {
 			if kind.function_id.id !in generator.initialized_functions {
 				return generator.unsupported('conditional function declarations')
@@ -831,18 +836,7 @@ fn (mut generator BytecodeGenerator) statement(mut vm VM, statement &Statement) 
 			}
 		}
 		.break_stmt, .continue_stmt {
-			if kind.target_label != none { return generator.unsupported('labelled loop control') }
-			if generator.loops.len == 0 { return error('Loop control outside loop') }
-			loop_index := generator.loops.len - 1
-			for _ in generator.loops[loop_index].scope_depth .. generator.scope_depth {
-				generator.emit(Instruction{ op: .leave_scope })
-			}
-			jump := generator.emit(Instruction{ op: .jump })
-			if kind.tag == .break_stmt {
-				generator.loops[loop_index].breaks << jump
-			} else {
-				generator.loops[loop_index].continues << jump
-			}
+			generator.loop_control_statement(statement)!
 		}
 		.throw_stmt {
 			value := generator.expression(mut vm, kind.throw_expr or {

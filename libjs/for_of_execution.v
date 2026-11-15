@@ -91,6 +91,12 @@ fn (mut generator BytecodeGenerator) for_of_statement(mut vm VM, statement &Stat
 		generator.emit(Instruction{ op: .close_sync_iterator, lhs: iterator })
 		generator.emit_return(exit.value)
 	}
+	for exit in loop.abrupts {
+		generator.patch(exit.jump)
+		for _ in base_depth .. exit.scope_depth { generator.emit(Instruction{ op: .leave_scope }) }
+		generator.emit(Instruction{ op: .close_sync_iterator, lhs: iterator })
+		generator.emit_loop_control(exit.target_loop, exit.target_label, exit.is_continue)!
+	}
 	generator.patch(finished)
 	generator.patch(closed)
 	for jump in loop.breaks { generator.executable.instructions[jump].target = close }
