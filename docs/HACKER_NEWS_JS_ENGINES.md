@@ -219,6 +219,99 @@ sh tools/run_v_tool.sh run_memory_bounded --limit-gib 3 \
     --output docs/performance/hn-lookup-UNIQUE --pairs 7 --cycles 500
 ```
 
+## Unobserved arguments allocation — 2026-11-16
+
+The next profile showed allocation/GC after property scanning was reduced.
+The runtime still created an `arguments` object, indexed properties, parameter
+mapping and an environment binding for every ordinary HN function call, although
+this `hn.js` never references `arguments`.
+
+Parser-owned functions now use existing parsing/scope insights to omit an
+unobservable arguments binding. Explicit access, arrow captures, parameter
+initializers and possible eval access keep the existing behavior. Parserless
+embedder records remain conservative. Parameter/shadowing rules still run first.
+No AST metadata, bytecode budget, source/cache key or author-script bytes change.
+
+Two additional seven-group cohorts use one executable and unchanged native
+libraries. Each uses fresh processes, 500 callback cycles, archived images and
+separate diagnostics. All timed activity counters are disabled. The combined
+control disables both optimizations; the candidate enables both. Its medians:
+
+| Interval, ms | Original LibJS paths | Optimized LibJS | V8 |
+| --- | ---: | ---: | ---: |
+| Initialization | 29.295 | 26.664 | 95.418 |
+| 500 collapse/expand cycles | 1372.608 | **676.465** | 815.618 |
+| Total measured spans | 1404.110 | **706.809** | 912.402 |
+| Callback minimum–maximum | 1337.521–1685.259 | 642.609–699.754 | 754.702–885.746 |
+
+Combined callback time decreases **50.7%**, approximately **2.03× faster** than
+the original compiled-LibJS paths in this same executable. Candidate/control is
+0.492832 by ratio of medians, 0.501718 by median paired ratio and 0.523172 by
+highest-candidate/lowest-control.
+
+Against V8, optimized callback time is **17.1% lower** and the total is **22.5%
+lower** by ratios of medians. The paired callback ratio is 0.857943; the
+highest-candidate/lowest-V8 ratio is **0.927192**. The total's conservative ratio
+is 0.852904. Every candidate beats both its matched control and V8; even the
+slowest candidate callback trial is faster than the fastest V8 trial.
+The conservative callback ratio supports a smaller margin than the medians;
+these observations do not establish a universal engine advantage.
+
+| Group | Original LibJS callbacks ms | Optimized callbacks ms | V8 callbacks ms |
+| --- | ---: | ---: | ---: |
+| 1 | 1685.259333 | 642.608583 | 878.631166 |
+| 2 | 1374.494417 | 682.407666 | 773.085833 |
+| 3 | 1337.521125 | 672.933167 | 878.969000 |
+| 4 | 1342.401625 | 675.152500 | 754.702167 |
+| 5 | 1372.607708 | 676.464750 | 885.745500 |
+| 6 | 1394.716292 | 699.753666 | 815.617584 |
+| 7 | 1356.158750 | 683.051583 | 767.788125 |
+
+The independent allocation-only cohort keeps property hints enabled in both
+LibJS modes. Callback medians are **1057.950 ms control / 713.685 ms candidate**:
+a further **32.5% reduction** from elision. The median paired ratio is 0.692604,
+and highest-candidate/lowest-control is 0.776606. V8's callback median is
+880.044 ms in that cohort; candidate/V8 is 0.810965 by medians, 0.784593 paired,
+and **0.980583** conservatively. Its total medians are 1090.043 / 748.011 /
+983.136 ms (control/candidate/V8). Every candidate beats V8 in this cohort too,
+with a small worst-case margin. Keep comparisons within each cohort; do not
+multiply medians from changing source epochs or host conditions.
+
+Diagnostics in both cohorts change **185,875 arguments objects created** into
+**zero created / 185,875 elided**. The candidate still executes the same 185,871
+native entries, 880,257 fast steps and 1,698,390 dynamic-helper steps as its
+control. Thus it avoids helper-side allocation rather than skipping bytecode or
+changing the workload. Both LibJS modes reuse all 27 native executables without
+compiler invocations or cache misses; the compiler is disabled for warm visits.
+All cancellation, first-subtree collapse, 101-row restoration, no-error and
+frame-cleanup checks pass. Each cohort retains all 25 process attempts; all
+processes, drivers and runtime guards exit zero. Their sampled peak aggregate
+RSS is 593,870,848 / 593,707,008 bytes under 3 GiB. Durations are 39.955 / 35.919 s;
+one-minute host loads are 8.41–9.61 / 8.02–8.28 on 18 logical CPUs.
+
+**53 distinct focused functions** pass in default and GC-disabled modes: the
+36-function arguments/parameters/ECMAScript/native-tier/cache group and the
+23-function async/generator group share the six new regressions. These cover
+strict/sloppy mapping, defaults and arrow captures, eval conservatism, parserless
+records, native-cache reopen, generators/async calls and all 99 tested budget
+boundaries with identical completion and restored frames. The unchanged AST
+corpus again matches **100/100**. The broader baseline failures described above
+remain a validation limitation; this is not a new full-package pass.
+
+The final executable SHA-256 is
+`662ec7307a8fbfc0c996c9c719496a1b1ebc139b006e20a492a1ec8ee31d49e6`.
+It retains the same optimized C mode, default GC and V8 adapter as the earlier
+cohorts; build/compiler/guard exit zero, 260.382 s, sampled peak 11,158,962,176
+bytes under 12 GiB. The canonical installed production bundle has not supplied
+these measurements; managed commit hooks request its rebuild. The complete
+local receipts are `libjs-hn-optimization-20261115/{combined,arguments}/results.json`
+under `docs/performance/`, with guard logs and focused checks beside them.
+
+Use the previous comparison command with `--optimization combined` or
+`--optimization arguments` and the newly built executable to reproduce these
+cohorts. The result remains an archived HN script/DOM measurement, excluding
+browser launch, rendering, physical input/presentation and live navigation.
+
 ## Reproduction
 
 Build the V8 adapter and one source-built executable containing both backends.
