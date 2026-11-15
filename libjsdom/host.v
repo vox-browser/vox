@@ -71,6 +71,12 @@ mut:
 	navigator_native &html.Navigator = unsafe { nil }
 	navigator_languages []string
 	navigator_frozen_languages &libjs.Object = unsafe { nil }
+	mutation_observer_prototype &libjs.Object = unsafe { nil }
+	mutation_record_prototype &libjs.Object = unsafe { nil }
+	mutation_queue &dom.MutationObserverDeliveryQueue = unsafe { nil }
+	mutation_observers map[voidptr]&ObserverBinding
+	mutation_records map[voidptr]&MutationRecordBinding
+	mutation_record_wrappers map[voidptr]&libjs.Object
 }
 
 pub fn Host.create(vm &libjs.VM, realm &libjs.Realm, document &dom.Document, hooks Hooks) !&Host {
@@ -84,6 +90,7 @@ pub fn Host.create(vm &libjs.VM, realm &libjs.Realm, document &dom.Document, hoo
 	host.install_dom_exceptions()!
 	host.install_custom_elements()!
 	host.install_navigator()!
+	host.install_mutation_observers()!
 	host.install_styles()
 	host.install_urls()!
 	host.install_headers()!
@@ -150,6 +157,7 @@ fn (mut host Host) changed() {
 pub fn (mut host Host) close() {
 	if host.closed { return }
 	host.closed = true
+	host.close_mutation_observers()
 	mut owner_document := unsafe { &dom.Document(host.document) }
 	owner_document.clear_custom_element_construction_hook(voidptr(&host))
 	host.registries.clear()

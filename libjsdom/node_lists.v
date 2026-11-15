@@ -40,6 +40,8 @@ fn (host &Host) node_list_receiver(mut vm libjs.VM) !&dom.NodeList {
 
 fn (mut host Host) wrap_node_list(native &dom.NodeList) libjs.Value {
 	if object := host.node_list_wrappers[voidptr(native)] { return libjs.Value.from_object(object) }
+	persistent := platform.enter_persistent()
+	defer { platform.leave_persistent(persistent) }
 	mut object := libjs.Object.create(host.realm, host.node_list_prototype)
 	object.class_name = 'NodeList'
 	object.host_properties = libjs.HostProperties(&NodeListCollection{host: &host, native: native})

@@ -35,7 +35,7 @@ fn (mut host Host) construct_html_element(mut vm libjs.VM, new_target &libjs.Obj
 // A native reaction can enter from the browser or nest inside an existing JS
 // operation. call_with_limits keeps nested construction in the current budget
 // and checkpoints jobs only when the outer host entry has completed.
-fn (mut host Host) custom_element_entry(callback libjs.NativeFunctionPointer) !libjs.Value {
+fn (mut host Host) callback_entry(callback libjs.NativeFunctionPointer) !libjs.Value {
 	defer { platform.release_closure(voidptr(callback)) }
 	host.require_open(mut host.vm)!
 	if can_run := host.hooks.can_run_callback {
@@ -46,7 +46,7 @@ fn (mut host Host) custom_element_entry(callback libjs.NativeFunctionPointer) !l
 	if before := host.hooks.before_callback { before() }
 	defer { if after := host.hooks.after_callback { after() } }
 	mut vm := host.vm
-	function := libjs.NativeFunction.create(mut vm, host.realm, host.realm.function_prototype, callback, 0, libjs.PropertyName.from_str('customElementReaction'), none).object
+	function := libjs.NativeFunction.create(mut vm, host.realm, host.realm.function_prototype, callback, 0, libjs.PropertyName.from_str('documentCallback'), none).object
 	defer { host.changed() }
 	return vm.call_with_limits(libjs.Value.from_object(function), libjs.js_undefined(), [], libjs.ExecutionLimits{max_instructions: 1000000})
 }
@@ -58,7 +58,7 @@ fn (mut host Host) construct_custom_element(definition &dom.CustomElementDefinit
 	previous := host.active_registries[id] or { unsafe { nil } }
 	host.active_registries[id] = handle
 	defer { if previous != unsafe { nil } { host.active_registries[id] = previous } else { host.active_registries.delete(id) } }
-	return host.custom_element_entry(fn [constructor] (mut vm libjs.VM) !libjs.Value {
+	return host.callback_entry(fn [constructor] (mut vm libjs.VM) !libjs.Value {
 		return libjs.Value.from_object(libjs.construct(mut vm, constructor, [], none)!)
 	})
 }
@@ -106,7 +106,7 @@ fn invoke_libjs_custom_element_callback(owner voidptr, element &dom.Element, rea
 	} else {
 		for text in reaction.arguments { arguments << libjs.Value.from_string(vm.create_string_from_str(text)) }
 	}
-	host.custom_element_entry(fn [callback, receiver, arguments] (mut vm libjs.VM) !libjs.Value {
+	host.callback_entry(fn [callback, receiver, arguments] (mut vm libjs.VM) !libjs.Value {
 		return libjs.call(mut vm, callback, receiver, arguments)
 	})!
 }
