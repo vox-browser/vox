@@ -14,6 +14,7 @@ pub type ArraySortCompare = fn (mut vm VM, x Value, y Value) !f64
 pub fn sort_indexed_properties(mut vm VM, object &Object, length u64, compare ArraySortCompare, holes ArrayHoles) ![]Value {
 	mut items := []Value{}
 	for index := u64(0); index < length; index++ {
+		vm.consume_execution_budget()!
 		key := if index < 0xffffffff {
 			PropertyName.from_number(u32(index))
 		} else {
