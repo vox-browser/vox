@@ -7,6 +7,7 @@ import html
 import intersectionobserver
 import libjs
 import platform
+import resizeobserver
 import webidl
 
 pub struct Hooks {
@@ -49,6 +50,14 @@ mut:
 	intersection_observers map[voidptr]&IntersectionBinding
 	intersection_entries map[voidptr]&intersectionobserver.IntersectionObserverEntry
 	intersection_entry_wrappers map[voidptr]&libjs.Object
+	resize_observer_prototype &libjs.Object = unsafe { nil }
+	resize_entry_prototype &libjs.Object = unsafe { nil }
+	resize_size_prototype &libjs.Object = unsafe { nil }
+	resize_observers map[voidptr]&resizeobserver.ResizeObserver
+	resize_targets map[u32]&resizeobserver.ResizeTarget
+	resize_entries map[voidptr]&ResizeEntryBinding
+	resize_entry_wrappers map[voidptr]&libjs.Object
+	resize_sizes map[voidptr]resizeobserver.ResizeObserverSize
 	url_prototype        &libjs.Object = unsafe { nil }
 	style_prototype      &libjs.Object = unsafe { nil }
 	headers_prototype &libjs.Object = unsafe { nil }
@@ -107,6 +116,7 @@ pub fn Host.create(vm &libjs.VM, realm &libjs.Realm, document &dom.Document, hoo
 	host.install_mutation_observers()!
 	host.install_read_only_rects()
 	host.install_intersection_observers()
+	host.install_resize_observers()
 	host.install_styles()
 	host.install_urls()!
 	host.install_headers()!
@@ -175,6 +185,7 @@ pub fn (mut host Host) close() {
 	host.closed = true
 	host.close_mutation_observers()
 	host.close_intersection_observers()
+	host.close_resize_observers()
 	mut owner_document := unsafe { &dom.Document(host.document) }
 	owner_document.clear_custom_element_construction_hook(voidptr(&host))
 	host.registries.clear()
