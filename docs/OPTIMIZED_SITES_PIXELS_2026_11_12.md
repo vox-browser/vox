@@ -3055,3 +3055,54 @@ records across 35 owned job roots and preserves 1,054 selected files
 (27,215,541 bytes). Copies are verified before deleting owned outputs,
 generated C, binaries, guards and locks. The test alias and Python bytecode
 are removed. Shared bundles, libraries and dependencies are retained.
+
+## Production confirmation of native media routing, 2026-11-15
+
+Production executable
+`0d895b01829a9bb4631354d8c148d7e646912a35ce41e6abeecc5c9449da31ba`
+confirms `de138d5e5`. Receipt `20261115-160857-ecd32b48` records the C backend,
+literal V `-prod` and one C unit. The completed shared bundle is reused without
+another manual build. Its consumed inputs match the final persistent-error
+ownership fix, rather than an earlier work in progress. The precheck verifies
+177 consumed V inputs across the rendering, media, networking and settings
+packages plus the main caller; the capture driver records 192 feature-input
+witnesses and 311 stable source, resource and tool pins. This is scoped
+rendering validation, rather than whole-checkout validation of concurrent work.
+
+All **45 workloads and 90 fresh native captures** complete successfully.
+Every pair repeats exactly, and all 45 PNGs match the accepted diagnostic
+build `05a631a5` exactly. CNN retains **164,021** reference differences, with
+1,558 corrected and zero introduced against the preceding production result.
+GitHub, Hacker News, Lobsters and Wikipedia remain exact; Vlang retains 27.
+The complete sampled sRGB WebP control remains exact. All 90 native guards,
+the capture driver, its outer guard and the guarded summarizer exit zero.
+All eight MP4 requests reach the replay proxy and receive the expected
+unarchived 404s. The source/replay limitation remains open; missing video bytes
+are not supplied from the live network. No reference or tolerance changes.
+
+The next image investigation isolates five existing CNN image interiors,
+excluding four pixels at each edge. It compares decoded RGB filtering with
+per-plane YUV filtering, CPU and GPU mips, mip selection, arithmetic precision
+and coordinate evaluation. CPU plane mips with nearest-level selection reduce
+Netanyahu's interior from 52,702 differing pixels to 540, Trump's from 15,507
+to 283, and the CNN logo's from 18,505 to 253. Each remaining error is one
+level. These are isolated compute-probe results, not browser captures or an
+accepted rendering change. The same policy still leaves 32,147 differences
+in Sullivan's interior; no universal scaling fix is established. Altered
+arithmetic and coordinate expressions do not make these controls exact.
+A pixel-coordinate sampler attempt fails Metal compilation because that
+sampler cannot use mip filtering; its failed guard and compiler log are
+retained. None of these experiments changes shipped code.
+
+Local evidence is under
+`docs/performance/vlang-gradients-20261114/raw/cnn-plane-scale-20261115/`:
+production receipt, before/after pins, all captures and exits, unchanged
+reference comparisons, probe source revisions, decoder identities and rejected
+attempts. All-site equality remains open: CNN rendering and source/replay,
+Vlang's JPEG/scene pixels, missing Reddit evidence and the prior controls.
+No live-site, script-runtime or performance acceptance is claimed.
+
+Cleanup verifies 3,085 file records across 28 owned job roots and preserves
+986 selected files (22,264,713 bytes). Hashes are rechecked before deleting
+the diagnostic library, capture profiles, scratch directories, guards and locks.
+The shared production bundle and dependencies are retained.

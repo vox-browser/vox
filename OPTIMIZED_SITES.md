@@ -7,13 +7,13 @@ Results apply to the frozen page and pinned build in each linked report.
 Provisional entries retain unresolved acceptance checks.
 
 **Pixel recheck, 2026-11-15:** Vox does **not** pass pixel equality across
-this catalog. Production build `2e089712` confirms GitHub, Hacker News,
+this catalog. Production build `0d895b01` confirms GitHub, Hacker News,
 Lobsters and Wikipedia exact in two fresh captures each. Vlang.io has **27 differing
 pixels in production**, down from the previously verified 810. The heading fix
 removes its final text difference. Its 23 JPEG pixels still include nine
 one-level differences introduced by the fractional-texture slice; four scene
 pixels also remain. CNN retains rendering and source/replay failures; its
-native-repeat correction is verified in diagnostics, pending production.
+native-repeat correction now passes in production.
 Reddit remains unverified (missing historical fixture, earlier live
 HTTP 403). A separate tall-shadow control has a retained baseline repeat failure.
 Lossless and native-size/half-size lossy WebP controls now pass in production.
@@ -34,7 +34,10 @@ to **164,021 differences**, repeats exactly in both focused and 45-workload
 cohorts, and introduces zero new differences. All 44 non-CNN PNGs are unchanged.
 The archive has no MP4 responses: those requests now receive the same 404s
 that Brave receives. No reference or tolerance changed, and the source/replay
-gate remains open. Production confirmation of this last correction is pending.
+gate remains open. Production `0d895b01` now confirms this correction in 90 fresh
+captures: all 45 pairs repeat exactly and every PNG matches the accepted
+diagnostic build. CNN retains 164,021 differences; the four exact archived
+sites and Vlang's 27 differences remain unchanged.
 See the
 [current audit, capture scopes and retained failures](docs/OPTIMIZED_SITES_PIXELS_2026_11_12.md).
 
