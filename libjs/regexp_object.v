@@ -48,6 +48,8 @@ fn create_regexp_object(mut vm VM, pattern Utf16String, text Utf16String) !&Obje
 fn initialize_regexp_intrinsics(mut vm VM, mut realm Realm) {
 	mut prototype := Object.create(&realm, realm.object_prototype)
 	realm.regexp_prototype = prototype
+	replacement := NativeFunction.create(mut vm, &realm, realm.function_prototype, regexp_symbol_replace, 2, PropertyName.from_symbol(vm.well_known_symbol_replace()), none)
+	prototype.define_direct_property(PropertyName.from_symbol(vm.well_known_symbol_replace()), Value.from_object(replacement.object), attribute_writable | attribute_configurable)
 	install_intrinsic_method(mut vm, &realm, mut prototype, 'exec', 1, regexp_prototype_exec)
 	install_intrinsic_method(mut vm, &realm, mut prototype, 'test', 1, fn (mut vm VM) !Value {
 		object := vm.this_value()
