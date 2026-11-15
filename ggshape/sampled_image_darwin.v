@@ -55,7 +55,7 @@ fn draw_sampled_image(pixels &u8,width i32,height i32,pitch i32,backdrop i32,sou
 	extent_y := f32(natural_height) * (f32(source_height) / f32(natural_height))
 	byte_source := if colors.len>0 {colors.map(u8(math.floor(it*255+.5)))} else {source}
 	mut levels := [byte_source]
-	if !yuv_mode && destination_width < source_width && destination_height < source_height
+	if (!yuv_mode || gpu_mips) && destination_width < source_width && destination_height < source_height
 		&& extent_x >= source_width && extent_y >= source_height {
 		image := imageraster.Image{ width: source_width, height: source_height, pixels: byte_source }
 		chain := if gpu_mips {
@@ -105,7 +105,12 @@ fn draw_sampled_image(pixels &u8,width i32,height i32,pitch i32,backdrop i32,sou
 
 pub fn draw_sampled_yuv_clipped(pixels &u8, width i32, height i32, pitch i32, backdrop i32,
  source []u8, sw int, sh int, x f32, y f32, dw f32, dh f32, samples int, nw int, nh int, clip [12]f32) i32 {
+ return draw_sampled_yuv_with_mips_clipped(pixels,width,height,pitch,backdrop,source,sw,sh,x,y,dw,dh,samples,nw,nh,clip,false)
+}
+
+pub fn draw_sampled_yuv_with_mips_clipped(pixels &u8, width i32, height i32, pitch i32, backdrop i32,
+ source []u8, sw int, sh int, x f32, y f32, dw f32, dh f32, samples int, nw int, nh int, clip [12]f32, gpu_mips bool) i32 {
  if sw <= 0 || sh <= 0 || sw > 4096 || sh > 4096 || sw * sh > 4 * 1024 * 1024 || source.len != sw * sh * 4 { return 0 }
  for i := 3; i < source.len; i += 4 { if source[i] != 255 { return 0 } }
- return draw_sampled_image(pixels,width,height,pitch,backdrop,source,[],sw,sh,x,y,dw,dh,samples,nw,nh,clip,false,unsafe{nil},true)
+ return draw_sampled_image(pixels,width,height,pitch,backdrop,source,[],sw,sh,x,y,dw,dh,samples,nw,nh,clip,gpu_mips,unsafe{nil},true)
 }

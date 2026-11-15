@@ -88,23 +88,23 @@ fn document_sampled_png_pixels(pixels &u8, width i32, height i32, pitch i32, bac
 		return 0
 	}
 	samples := document_image_sample_count(int(first_x), int(first_y), int(width), int(height))
-	if samples == 0 && gpu_mips != 3 { return 0 }
+	if samples == 0 && gpu_mips !in [3, 4] { return 0 }
 	if clip == unsafe { nil } { return 0 }
 	mut clipping := [12]f32{}
 	unsafe { vmemcpy(&clipping[0], clip, 12 * int(sizeof(f32))) }
 	swap_document_raster_channels(pixels, width, height, pitch)
-	// Transfer flag 2 selects straight opaque RGBA32F; 3 selects packed YUV444.
+	// Flag 2 selects opaque RGBA32F; 3/4 select packed YUV444 without/with mips.
 	mut result := i32(0)
-	if gpu_mips == 3 {
+	if gpu_mips in [3, 4] {
         packed := unsafe { source.vbytes(int(source_width) * int(source_height) * 4) }
         if samples == 0 {
             result = draw_document_sampled_yuv_tiles(pixels, width, height, pitch, backdrop,
                 int(first_x), int(first_y), packed, int(source_width), int(source_height),
-                x, y, destination_width, destination_height, int(natural_width), int(natural_height), clipping)
+                x, y, destination_width, destination_height, int(natural_width), int(natural_height), clipping, gpu_mips == 4)
         } else {
-            result = ggshape.draw_sampled_yuv_clipped(pixels, width, height, pitch, backdrop,
+            result = ggshape.draw_sampled_yuv_with_mips_clipped(pixels, width, height, pitch, backdrop,
                 packed, source_width, source_height, x, y, destination_width, destination_height,
-                int(samples), int(natural_width), int(natural_height), clipping)
+                int(samples), int(natural_width), int(natural_height), clipping, gpu_mips == 4)
         }
     } else if gpu_mips == 2 {
 		mut values := []f32{len: int(source_width) * int(source_height) * 4}

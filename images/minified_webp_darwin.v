@@ -36,11 +36,8 @@ fn (mut app BrowserApp) draw_minified_webp(command &layout.PaintCommand, image &
 		return false
 	}
 	uw, uh := imageraster.decode_size(image.width, image.height, destination.width, destination.height) or { return false }
-	// Keep the verified scaled-upload case. Extra mip selection and rounded-up
-	// plane dimensions need their own filtering proof before using this route.
-	if math.log2(math.max(f64(uw) / destination.width, f64(uh) / destination.height)) >= .5 {
-		return false
-	}
+	// Additional levels filter the packed planes before color conversion.
+	use_mips := math.log2(math.max(f64(uw) / destination.width, f64(uh) / destination.height)) >= .5
 	tw, th := uw, uh
 	if image.width % tw != 0 || image.height % th != 0 || image.width / tw != image.height / th {
 		return false
@@ -90,7 +87,7 @@ fn (mut app BrowserApp) draw_minified_webp(command &layout.PaintCommand, image &
 	if os.getenv('VOX_DIAGNOSTIC_PNG') != '' {
 		eprintln('VOX_PLANAR_READY ok=${decoded.ok} upload=${decoded.width}x${decoded.height} nil=${decoded.data == unsafe { nil }}')
 	}
-	drawn := C.native_draw_sampled_png(decoded.data, i32(tw), i32(th), i32(image.width), i32(image.height), 3,
+	drawn := C.native_draw_sampled_png(decoded.data, i32(tw), i32(th), i32(image.width), i32(image.height), if use_mips { i32(4) } else { i32(3) },
 		f32(destination.x) + f32(matrix[4]), f32(destination.y) + f32(matrix[5]), f32(destination.width), f32(destination.height),
 		&clipping[0], page_x, page_y, f32(scroll_y), f32(app.ctx.width), f32(app.ctx.height)) != 0
 	if os.getenv('VOX_DIAGNOSTIC_PNG') != '' {
