@@ -274,16 +274,6 @@ fn (mut host Host) install_nodes() ! {
 		mut owner := unsafe { &Host(host) }
 		return owner.wrap_node(unsafe { &dom.Node(actual.document().create_document_fragment()) })
 	})
-	host.method(mut document, 'createElement', 1, fn [host] (mut vm libjs.VM) !libjs.Value {
-		actual := host.node(mut vm)!
-		if !actual.is_document() {
-			return vm.throw_error(.type_error, 'createElement requires a document')
-		}
-		element := actual.document().create_element(vm.argument(0).to_primitive_string(mut vm)!.str())!
-		mut owner := unsafe { &Host(host) }
-		owner.drain_custom_elements()
-		return owner.wrap_node(element.as_node())
-	})
 	for name in ['body', 'head', 'currentScript', 'documentElement', 'URL', 'readyState'] {
 		host.accessor(mut document, name, fn [host, name] (mut vm libjs.VM) !libjs.Value {
 			actual := host.node(mut vm)!
@@ -330,6 +320,7 @@ fn (mut host Host) install_nodes() ! {
 	}
 	host.install_events(mut node)!
 	host.install_parent_node_mutations()
+	host.install_element_factories()
 }
 
 @[heap]
