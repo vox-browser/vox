@@ -4,6 +4,7 @@ import dom
 import fetch
 import libjs
 import platform
+import webidl
 
 pub struct Hooks {
 pub:
@@ -54,6 +55,11 @@ mut:
 	closures             []voidptr
 	closed               bool
 	owned_documents []&dom.Document
+	dom_exception_prototype &libjs.Object = unsafe { nil }
+	dom_exceptions map[voidptr]&webidl.DOMException
+	registry_prototype &libjs.Object = unsafe { nil }
+	registries map[voidptr]&RegistryBinding
+	active_registries map[u64]voidptr
 }
 
 pub fn Host.create(vm &libjs.VM, realm &libjs.Realm, document &dom.Document, hooks Hooks) !&Host {
@@ -62,6 +68,8 @@ pub fn Host.create(vm &libjs.VM, realm &libjs.Realm, document &dom.Document, hoo
 	mut host := &Host{ vm: vm, realm: realm, document: document, hooks: hooks }
 	host.install_nodes()!
 	host.install_node_interfaces()!
+	host.install_dom_exceptions()!
+	host.install_custom_elements()!
 	host.install_styles()
 	host.install_urls()!
 	host.install_headers()!
@@ -128,6 +136,10 @@ fn (mut host Host) changed() {
 pub fn (mut host Host) close() {
 	if host.closed { return }
 	host.closed = true
+	mut owner_document := unsafe { &dom.Document(host.document) }
+	owner_document.clear_custom_element_construction_hook(voidptr(&host))
+	host.registries.clear()
+	host.active_registries.clear()
 	host.close_fetch()
 	for listener in host.listeners {
 		if listener.attribute {
@@ -153,6 +165,7 @@ pub fn (mut host Host) close() {
 	host.headers.clear()
 	host.headers_wrappers.clear()
 	host.headers_iterators.clear()
+	host.dom_exceptions.clear()
 	for callback in [host.hooks.before_callback, host.hooks.after_callback, host.hooks.changed] {
 		if function := callback { platform.release_closure(voidptr(function)) }
 	}

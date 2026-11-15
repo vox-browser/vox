@@ -23,6 +23,10 @@ fn (mut host Host) install_node_interfaces() ! {
 		}
 		construct := fn [host, name] (mut vm libjs.VM, new_target &libjs.Object) !&libjs.Object {
 			host.require_open(mut vm)!
+			if name == 'HTMLElement' {
+				mut owner := unsafe { &Host(host) }
+				return owner.construct_html_element(mut vm, new_target)
+			}
 			if name != 'Document' { return vm.throw_error(.type_error, 'Illegal ' + name + ' constructor') }
 			persistent := platform.enter_persistent()
 			defer { platform.leave_persistent(persistent) }

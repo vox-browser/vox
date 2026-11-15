@@ -124,6 +124,7 @@ fn (mut host Host) install_nodes() ! {
 				}
 				actual.set_text_content(text)!
 				mut owner := unsafe { &Host(host) }
+				owner.drain_custom_elements()
 				owner.changed()
 				return libjs.js_undefined()
 			})
@@ -166,6 +167,7 @@ fn (mut host Host) install_nodes() ! {
 					}
 				}
 				mut owner := unsafe { &Host(host) }
+				owner.drain_custom_elements()
 				owner.changed()
 				return libjs.js_undefined()
 			})
@@ -191,6 +193,7 @@ fn (mut host Host) install_nodes() ! {
 				actual.remove_attribute(key)
 			}
 			mut owner := unsafe { &Host(host) }
+			owner.drain_custom_elements()
 			owner.changed()
 			return libjs.js_undefined()
 		})
@@ -243,6 +246,7 @@ fn (mut host Host) install_nodes() ! {
 		}
 		element := actual.document().create_element(vm.argument(0).to_primitive_string(mut vm)!.str())!
 		mut owner := unsafe { &Host(host) }
+		owner.drain_custom_elements()
 		return owner.wrap_node(element.as_node())
 	})
 	for name in ['body', 'head', 'currentScript', 'documentElement', 'URL', 'readyState'] {
@@ -284,6 +288,7 @@ fn (mut host Host) install_nodes() ! {
 				actual.remove_child(child)!
 			}
 			mut owner := unsafe { &Host(host) }
+			owner.drain_custom_elements()
 			owner.changed()
 			return value
 		})
