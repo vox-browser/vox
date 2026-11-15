@@ -2370,3 +2370,97 @@ five module errors; it predates these changes. Acceptance remains 33 rows,
 Brave content audit and zero differing pixels, followed by matched performance
 evidence. No new full execution, compiled-revisit speed or pixel-parity claim
 is established.
+
+## Native form and select collection continuation
+
+The user's execution hold remains in force: no tests were compiled or run,
+no JavaScript runtime was initialized, and no browser, capture or performance
+trial was launched. This continuation closes additional source binding gaps;
+full GitHub execution and Brave pixel parity remain incomplete.
+
+- `eba665855` makes native form length count its live elements collection,
+  including lazy and external controls, and changes RadioNodeList value writes
+  to select the actual target's radio group. Equal IDs in unrelated groups no
+  longer cause those groups to be unchecked; group members outside the named
+  list are handled by the concrete input owner. Native list/base-collection
+  views are exposed for inherited binding operations.
+- `d033c168a` binds form.elements/form.length, HTMLFormControlsCollection and
+  RadioNodeList to native owners. namedItem returns null, the real Element, or
+  a native live radio list. Inherited length/item/iteration methods share the
+  same native records. HTMLCollection is published with its illegal public
+  constructor and iterator; wrappers are cached by native identity. Collection
+  reads enter persistent allocation before native cache updates, and ownership
+  maps clear on host close. Required arguments, brands and author conversion
+  errors retain their native binding paths.
+- `b17e0ee4b` binds select.options/selectedOptions, HTMLOptionsCollection,
+  length/selectedIndex, add/remove and select item/namedItem operations. Both
+  saved views read the real option owner; selectedOptions recomputes current
+  selectedness even when no DOM/attribute generation changes. The before
+  HTMLElement/long union is resolved before native insertion. Select remove's
+  zero-argument ChildNode overload remains distinct from indexed removal.
+  DOM exceptions and author-thrown values are preserved, and successful native
+  mutations drain reactions and notify the document host.
+
+Twenty-three focused functions are prepared: three native collection-owner,
+ten form/radio binding and ten select/options binding cases. They cover live
+membership, external owners, hierarchy/identity, radio groups, explicit empty
+values, iteration, conversion side effects, brands/arity, add/remove overloads,
+selection without attribute mutation, native exceptions, clone rejection and
+arena lifetime. They remain uncompiled and unexecuted and provide no runtime
+or compiled-cache coverage evidence.
+
+All nine compiler-only attempts passed. Exact commands, byte-identical logs
+and guard reports are retained with a hashed index in local
+`docs/performance/libjs-form-collections-20261116/`:
+
+| Compiler-only check | Child exit | Seconds | Peak sampled RSS bytes |
+| --- | ---: | ---: | ---: |
+| Form collections initial normal | 0 | 15.538 | 5,380,980,736 |
+| Form collection owners/ancestry normal | 0 | 15.561 | 5,401,395,200 |
+| Form collections production | 0 | 15.435 | 5,669,224,448 |
+| Form collections persistent reads final normal | 0 | 15.255 | 5,402,525,696 |
+| Form collections persistent reads final production | 0 | 15.420 | 5,669,486,592 |
+| Select collections normal | 0 | 15.906 | 5,400,510,464 |
+| Select collections production | 0 | 16.926 | 5,674,647,552 |
+| Whole browser final normal | 0 | 25.907 | 6,673,252,352 |
+| Whole browser final production | 0 | 27.991 | 6,966,870,016 |
+
+Import checks use current V with `V3_STR_CAP=1 VJOBS=1`, unique default 12 GiB
+memory guards and `-w -n -b c -no-parallel -cc clang -check -memory-limit 10G
+-enable-globals tools/libjs_github_revisit.v`. Production adds
+`-prod -prealloc -gc none`. Whole-browser checks target `.` with
+vox_production/vox_ui2/vox_sparse_ttf, the native-zoneinfo exclusion and existing
+shared font/HTTP/UI2 module paths. Every guard reports reason=completed and
+child_exit_code=0. Own Build reports/locks were removed after hash-verified
+preservation. These checks establish typing, not execution or C code generation.
+
+Static inspection of the hash-verified original 87 JS URLs / 86 bodies finds
+38 .elements references in three bodies, 16 .namedItem in two, 371 .options in
+twelve and three .selectedOptions in one. Contexts include
+form.elements.namedItem("utf8") and Array.from(select.selectedOptions). Property
+text does not establish receiver brands, reachability or the first module error;
+the bounded contexts remain local in static-source-scan.json.
+
+The inspected completed executable is SHA-256
+`de425d522698020cf02909ac88fb8a6547e597e21e2c61638bfd475012308a5c`,
+receipt `20261116-023116-834ed845`, single-C-unit / v_prod. Its identity and
+receipt remained stable during the audit. Only three of ten selected current
+inputs match the consumed-source manifest; all seven changed collection inputs
+differ or are absent. It cannot validate these changes. Commits requested
+coalesced managed production rebuilds; no duplicate manual build was scheduled.
+
+Legacy named properties, indexed option assignment and select indexed reads,
+collection descriptor/integrity semantics, collection roots across form moves,
+broader IDL, FileList, reporting UI, foreign realms and native ownership remain
+open. These additions do not establish complete collection or HTML conformance.
+The original fixture manifest remains
+`893e042c4f31e1b7fb984c81cf8f6a2a7eb65d790f7c3f4cc3e372c065de302d`;
+the Brave PNG remains
+`649abff51549508516e2e0681866ba81ce69e7112cfa8dc3446b9b76c99be3d3`.
+The last actual GitHub observation is still the historical 672 warm native
+entries, 51 frontend hits, zero compiler calls, 33 rows, zero commit links and
+five module errors, predating these additions. Acceptance remains 33 rows,
+56 commit links, current README, active controls, zero errors, the unchanged
+Brave content audit and zero differing pixels, followed by matched performance
+evidence. Full execution, faster compiled revisits and pixel parity remain
+unverified.

@@ -2982,3 +2982,18 @@ properties, reporting UI and broader JS/Web/rendering behavior remain open.
 GitHub execution, compiled-revisit speed and Brave pixel parity remain
 unverified; see the
 [selection/validation continuation](../docs/LIBJS_GITHUB_RUNTIME_20261115.md#native-text-selection-and-constraint-validation-continuation).
+
+Native form collections and RadioNodeList now expose live length/item/namedItem,
+iteration, value and native identity. Select options/selectedOptions expose
+native option lookups and explicit add/remove/length/selectedIndex mutations;
+selected views query current selectedness without requiring attribute changes.
+Collection reads keep native cache allocations persistent. The native form
+count and radio-group owner bugs are corrected. Twenty-three focused functions
+remain uncompiled and unexecuted under the user's hold. Nine compiler-only
+checks pass, including final whole-browser normal and production/preallocation
+checks. The inspected production receipt matches three of ten selected inputs
+and lacks these collection revisions. Legacy named/indexed property semantics,
+form-move collection roots, broader IDL and JS/Web/rendering behavior remain
+open; full GitHub execution, compiled-revisit speed and Brave pixel parity are
+unverified. See the
+[collection continuation](../docs/LIBJS_GITHUB_RUNTIME_20261115.md#native-form-and-select-collection-continuation).

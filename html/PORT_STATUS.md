@@ -26,6 +26,16 @@ UI and broader native ownership remain open. See the
 [selection/validation continuation](../docs/LIBJS_GITHUB_RUNTIME_20261115.md#native-text-selection-and-constraint-validation-continuation)
 and earlier [control/form-action continuation](../docs/LIBJS_GITHUB_RUNTIME_20261115.md#native-control-state-and-form-action-continuation).
 
+The collection follow-up binds native form.elements/length, radio lists and
+select options/selectedOptions, with live iteration, lookup and explicit option
+mutators. Form length now discovers lazy/external controls, and radio-list value
+writes use the actual input group. Twenty-three additional functions remain
+uncompiled and unexecuted. Import and whole-browser compiler-only checks pass
+in normal and production/preallocation modes; runtime and pixel parity remain
+unverified. Legacy named/indexed property semantics and collection roots across
+form moves still need work. See the
+[collection continuation](../docs/LIBJS_GITHUB_RUNTIME_20261115.md#native-form-and-select-collection-continuation).
+
 The historical inventory below found candidate V mappings for 261 HTML source
 files. Its file/symbol/LOC counts and 107-file test result describe that earlier
 inventory, not current logic, generated-binding or browser parity. The current
