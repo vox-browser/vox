@@ -24,6 +24,7 @@ def main():
     parser.add_argument('--output', type=Path, required=True)
     parser.add_argument('--pairs', type=int, default=7)
     parser.add_argument('--cycles', type=int, default=500)
+    parser.add_argument('--optimization', choices=['property', 'arguments', 'combined'], default='property')
     args = parser.parse_args()
     if args.pairs < 7 or args.cycles < 1:
         parser.error('Use at least seven pairs and positive cycle counts')
@@ -42,8 +43,15 @@ def main():
                        'window, layout, paint and teardown; V8 includes local image host setup',
                   control='test-only switch disables successful property-position hints',
                   candidate='bounded live-key-validated successful property-position hints',
+                  optimization=args.optimization,
                   attempts=[], inputs={}, replay=replay.ready, image_aliases=aliases,
                   host_before=hn.host())
+    report['control'] = {'property': 'linear property lookup; arguments elision disabled',
+                         'arguments': 'property hints enabled; arguments elision disabled',
+                         'combined': 'linear property lookup; arguments elision disabled'}[args.optimization]
+    report['candidate'] = {'property': 'validated property hints; arguments elision disabled',
+                           'arguments': 'property hints enabled; unobserved arguments elided',
+                           'combined': 'validated property hints and unobserved arguments elided'}[args.optimization]
 
     def save():
         (output / 'results.json').write_text(json.dumps(report, indent=2) + '\n')
@@ -62,9 +70,19 @@ def main():
                    VOX_HN_ENGINE_DIAGNOSTIC=str(int(diagnostic)),
                    VOX_PROFILE_DIR=str(output / (label + '-profile')),
                    LADYBIRD_CACHE_DIR=str(output / (label + '-http-cache')), VOX_TEST_WINDOW='1')
+        if args.optimization == 'property':
+            env['VOX_LIBJS_ARGUMENT_ELISION'] = '0'
+        elif args.optimization == 'arguments':
+            env['VOX_LIBJS_LOOKUP_HINTS'] = '1'
+            env['VOX_LIBJS_ARGUMENT_ELISION'] = '0' if config == 'control' else '1'
+        else:
+            env['VOX_LIBJS_ARGUMENT_ELISION'] = '0' if config == 'control' else '1'
+        attempt_policy = dict(property_hints=env['VOX_LIBJS_LOOKUP_HINTS'],
+                              argument_elision=env['VOX_LIBJS_ARGUMENT_ELISION'])
         if diagnostic and config == 'v8':
             env['VOX_V8_DIAGNOSTICS'] = '1'
         attempt = dict(configuration=config, label=label, diagnostic=diagnostic, seed=seed,
+                       policy=attempt_policy,
                        command=[str(binary)], environment={k: v for k, v in env.items()
                            if k.startswith(('VOX_', 'LADYBIRD_')) or k == 'SSL_CERT_FILE'},
                        host_before=hn.host())
@@ -95,6 +113,12 @@ def main():
                     raise ValueError('Lookup diagnostics enabled in timed trial')
                 if diagnostic and config == 'candidate' and activity['hits'] <= 0:
                     raise ValueError('Candidate did not exercise property hints')
+                argument_activity = visit['argument_activity']
+                if not diagnostic and any(argument_activity.values()):
+                    raise ValueError('Argument allocation counters enabled during timing')
+                if diagnostic and config == 'candidate' and args.optimization != 'property':
+                    if argument_activity['elided'] <= 0 or argument_activity['created'] != 0:
+                        raise ValueError('HN candidate did not elide all unobserved arguments objects')
             if seed:
                 libraries = sorted(cache.rglob('*.dylib'))
                 if not libraries:

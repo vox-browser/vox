@@ -43,6 +43,7 @@ fn (mut arguments ArgumentsObject) define_own_property(mut object Object, key Pr
 }
 
 fn create_arguments_object(mut vm VM, function &ECMAScriptFunction, environment &FunctionEnvironment, values []Value) !&Object {
+	$if test { if argument_allocation_diagnostic_for_test { argument_objects_created_for_test++ } }
 	realm := function.realm_
 	mut object := Object.create(realm, realm.object_prototype)
 	object.class_name = 'Arguments'
@@ -84,8 +85,8 @@ fn (function &ECMAScriptFunction) needs_arguments_binding() bool {
 	scope := function.data.body.kind.scope or { return false }
 	if data := scope.function_scope_data {
 		if data.has_argument_parameter { return false }
-		return !function.data.simple_parameters() || (!data.has_function_named_arguments
-			&& !data.has_lexically_declared_arguments)
+		if function.data.simple_parameters() && (data.has_function_named_arguments
+			|| data.has_lexically_declared_arguments) { return false }
 	}
-	return true
+	return !function.elide_unobserved_arguments(scope)
 }

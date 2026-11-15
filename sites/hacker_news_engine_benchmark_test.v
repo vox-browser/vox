@@ -31,6 +31,7 @@ struct HNEngineVisit {
 	frontend          browserjs.LibJSFrontendCacheStats
 	activity          libjs.NativeCodeActivity
 	lookup_activity   libjs.PropertyLookupActivity
+	argument_activity libjs.ArgumentAllocationActivity
 }
 
 fn hn_engine_toggle(document &dom.Document, runtime &browserjs.Runtime, button &dom.Element) ! {
@@ -56,6 +57,7 @@ fn hn_engine_visit(mode string, cycles int, diagnostic bool) !HNEngineVisit {
 	script := $embed_file('@VMODROOT/Tests/Browser/Brave/hn-home-instructions/bodies/2e38ff883bd36dc4cc26f129f19169b0357cf32059988c926a4f73e5bfaa37f0').to_string()
 	engine := if mode == 'v8' { browserjs.Engine.javascriptcore } else { browserjs.Engine.libjs }
 	libjs.diagnose_property_lookup_hints_for_testing(diagnostic)
+	libjs.diagnose_argument_allocation_for_testing(diagnostic)
 	started := time.sys_mono_now()
 	address := dom.URL{ value: 'https://news.ycombinator.com/item?id=50231722' }
 	mut document := html.parse_navigation_document(markup, address, address.origin(), none)!
@@ -95,6 +97,7 @@ fn hn_engine_visit(mode string, cycles int, diagnostic bool) !HNEngineVisit {
 	}
 	callback_ms := f64(time.sys_mono_now() - callback_started) / 1e6
 	lookup_activity := libjs.diagnose_property_lookup_hints_for_testing(false)
+	argument_activity := libjs.diagnose_argument_allocation_for_testing(false)
 	activity := if engine == .libjs {
 		vm.diagnose_native_code(false)!
 	} else {
@@ -132,6 +135,7 @@ fn hn_engine_visit(mode string, cycles int, diagnostic bool) !HNEngineVisit {
 		frontend:          runtime.frontend_code_cache_stats()
 		activity:          activity
 		lookup_activity:   lookup_activity
+		argument_activity: argument_activity
 	}
 }
 
@@ -139,6 +143,7 @@ fn test_hacker_news_engine_benchmark() {
 	choice := os.getenv('VOX_HN_ENGINE_BENCHMARK')
 	if choice == '' { return }
 	libjs.set_property_lookup_hints_for_testing(os.getenv('VOX_LIBJS_LOOKUP_HINTS') != '0')
+	libjs.set_argument_elision_for_testing(os.getenv('VOX_LIBJS_ARGUMENT_ELISION') != '0')
 	// Keep this author-script/DOM workload independent of filter-list startup.
 	adblock.set_enabled(false)
 	$if !vox_v8 ? {
