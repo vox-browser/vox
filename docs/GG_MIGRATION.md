@@ -3120,3 +3120,19 @@ one C unit) now confirms `a5b29f604`: all four alpha images exact twice,
 44 workloads/88 captures, 134 compiled V witnesses, 164 stable pins and all
 native/driver/outer guards zero. All 43 non-CNN PNGs match diagnostics exactly;
 CNN retains its repeat failure. This supersedes the pending-production status.
+
+### Sampled sRGB WebP curves and RGB minification, 2026-11-15
+
+`1e1ffdd4e` recognizes dense numerical sRGB ICC curves and retains full RGB
+WebP rows for the existing GPU mip sampler. Tagged VP8 stays outside the YUV
+upload path. Six parser tests, the browser decode/eligibility test and six GPU
+draws at sample counts 1 and 4 pass; no shader or native painter changes ship.
+
+The new frozen control improves 5,059→588 pixels (4,471 corrected, zero
+introduced). Its native-size and small images are exact; its clipped bottom
+image remains open despite the isolated sampler being exact. The C/O0 browser
+cohort covers 45 workloads/90 captures, 101 compiled V witnesses, 171 stable
+pins and 91 successful native guards. CNN improves 175,866→165,579 and repeats
+exactly; all 45 pairs repeat exactly and the other 43 existing PNGs match the
+previous production captures. Production confirmation is pending. See the
+[audit](OPTIMIZED_SITES_PIXELS_2026_11_12.md#sampled-srgb-profiles-and-rgb-webp-minification-2026-11-15).

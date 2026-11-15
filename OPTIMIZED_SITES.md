@@ -19,6 +19,14 @@ Lossless and native-size/half-size lossy WebP controls now pass in production.
 All four images in the alpha WebP control are also exact in production after
 the numerical sRGB-profile correction. Other ICC/rescaling controls still have
 known differences. These results apply to pinned builds and frozen page bytes.
+
+The subsequent `1e1ffdd4e` C/O0 diagnostic checks 45 workloads twice. Sampled
+sRGB-profiled WebP thumbnails improve 5,059→588 pixels, with zero introduced
+differences; the viewport-clipped bottom image remains unresolved. CNN improves
+175,866→165,579 and repeats exactly in this cohort, while its historical
+source/replay gate remains open. All 43 other existing PNGs are unchanged and
+all 45 native pairs repeat exactly. Production validation of this slice is
+pending; the latest completed bundle lacks its new sampler.
 See the
 [current audit, capture scopes and retained failures](docs/OPTIMIZED_SITES_PIXELS_2026_11_12.md).
 

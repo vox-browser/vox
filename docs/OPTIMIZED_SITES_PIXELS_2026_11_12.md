@@ -2756,3 +2756,85 @@ preserving 955 selected files (22,601,407 bytes).
 All owned scratch outputs, binaries, guards and locks are removed. All-site
 pixel equality, live behavior, scripting and performance acceptance remain open
 as described above.
+
+## Sampled sRGB profiles and RGB WebP minification, 2026-11-15
+
+`1e1ffdd4e` extends the numerical ICC classifier to dense `curv` tables with
+256–4,096 knots. Every knot must be monotonic and within 1/4096 of the sRGB
+transfer curve, alongside the existing conservative RGB/XYZ matrix checks.
+Sparse, malformed, animated, alpha-VP8 and other color spaces retain their
+prior paths. An independent test-only Skia oracle identifies nine of ten CNN
+ICC images as sRGB; the wide-gamut negative remains rejected. Descriptions,
+dates and image identities do not select the rendering path.
+
+Opaque profiled VP8 retains full decoded RGB rows and uses the existing GPU
+mip sampler for supported full-source, identity-linear-transform draws.
+Chromium's WebP decoder disables YUV when ICCP is present, including canonical
+sRGB, so the untagged YUV path remains ineligible. No shader, native painter
+or browser dependency is added. Blink source/download records are retained
+with the probe sources. Scaled-codec and CPU-mip probes against the unchanged
+control failed; full RGB GPU-mip draws are exact at sample counts 1 and 4.
+An independent Skia RGB resize probe agrees with the existing CPU resize
+bytes; no CPU resize arithmetic changed.
+
+The new `webp-srgb-table` reference was captured twice in fresh Brave
+157.1.99.57 processes, with exact repeat, before the renderer correction.
+It draws the tracked train WebP at native size, as a 104×58.5 CSS-pixel
+thumbnail and clipped by the bottom of the viewport. Its reference SHA-256 is
+`141711ca2cdcd062dc1cbfaf031df00d6366141ea67a1713b3b1abc20b0a9c1e`.
+No existing reference or tolerance changed.
+
+The final diagnostic browser is C/O0 executable
+`4b282d362c7381e81bb09c40b11f951aee892eb8dc10f0b158482132bb1e5d40`.
+Its compiler buffers witness 101 consumed V rendering inputs, including the
+new helper. Six profile tests, one final browser decode/eligibility test and
+six GPU draws pass through the required guards. The browser test has 102
+consumed renderer/test witnesses. It rejects the lossless and untagged YUV
+routes for this image, invalid upload markers, dimensions and file-backed
+images.
+
+The new control improves **5,059→588 pixels twice: 4,471 corrected, zero
+introduced**. Its native-size and small images are exact. All 588 remaining
+pixels belong to the bottom-clipped image: the browser does not yet match
+the isolated sampler there. This is **not** a full-viewport pass.
+Classification alone retained all 5,059 differences and earns no sampling
+correction credit.
+
+The final **45-workload/90-capture** cohort retains 171 stable source/tool/shader
+pins. All 91 native startup/capture guards, the driver and enclosing guard exit
+zero. **All 45 native pairs repeat exactly**, including CNN, whose reference
+difference improves **175,866→165,579**. This supersedes the preceding native
+repeat failure for this diagnostic cohort; it does not repair CNN's historical
+source/replay mismatch. All **43 other existing workloads' PNGs** match the
+preceding production captures exactly. GitHub, Hacker News, Wikipedia and
+Lobsters remain exact. Vlang remains at 27 pixels, including its historical
+nine introduced JPEG differences. Engadget's ICC control retains 124,925 and
+the root-raster WebP control retains 541,745 differences.
+
+The latest completed production executable checked here is `4a0da515ac04…`;
+its sealed source manifest lacks the new helper and retains the older
+classifier. It cannot validate this code. The commit hook requests the
+coalesced C/literal V `-prod` rebuild. **Production confirmation is pending**;
+no duplicate production build was queued.
+
+The earlier JPEG investigation found exact agreement between Skia R8
+nearest-mipmap scaling and V's retained planes. Twenty-one of 23 residual
+JPEG pixels are fully opaque. A private half-precision shader-output probe
+worsened the calibrated control from 23 to 34. These probes were rejected,
+results retained, and shared GG/shaders were not edited.
+
+Evidence, failed disk-space attempts, commands/exits, compiler witnesses,
+reference transitions and cleanup manifests are local under
+`docs/performance/vlang-gradients-20261114/raw/webp-table-20261115/` and
+`raw/jpeg-oracle-20261115/`. Disk space recovered before the final normal
+V/C compile; the intermediate C-only output was not linked or modified.
+All-site equality remains open: the clipped image, Vlang, CNN's remaining
+rendering/source-replay failures, the missing Reddit fixture and the earlier
+controls. No live-site, scripting or performance acceptance is claimed.
+
+The initial verified archive hashes 700 file records across 105 owned roots
+and preserves 239 selected files (32,588,709 bytes). The final archive hashes
+3,520 file records across 25 owned roots and preserves 1,045 selected files
+(28,648,574 bytes). Copies are hash-verified before deleting owned scratch
+outputs, generated C, binaries, guards and locks. The temporary test alias is
+also removed. Shared production bundles, libraries and dependencies are retained.
