@@ -16,9 +16,6 @@ fn (mut generator BytecodeGenerator) try_catch_body(mut vm VM, data &TryStatemen
 		generator.statement(mut vm, &data.block)!
 		return
 	}
-	if parameter := handler.parameter {
-		if parameter is CatchBindingPattern { return generator.unsupported('destructuring catch parameter') }
-	}
 	generator.clear_completion()
 	depth := generator.scope_depth
 	start := u32(generator.executable.instructions.len)
@@ -30,12 +27,19 @@ fn (mut generator BytecodeGenerator) try_catch_body(mut vm VM, data &TryStatemen
 	generator.emit(Instruction{op:.catch_op,dst:caught})
 	generator.clear_completion()
 	if parameter := handler.parameter {
-		binding := parameter as CatchBindingIdentifier
-		identifier := generator.identifier(binding.identifier.name)
 		generator.emit(Instruction{op:.enter_scope})
 		generator.scope_depth++
-		generator.emit(Instruction{op:.create_mutable_binding,identifier:identifier})
-		generator.emit(Instruction{op:.initialize_binding,identifier:identifier,lhs:caught})
+		if parameter is CatchBindingIdentifier {
+			identifier := generator.identifier(parameter.identifier.name)
+			generator.emit(Instruction{op:.create_mutable_binding,identifier:identifier})
+			generator.emit(Instruction{op:.initialize_binding,identifier:identifier,lhs:caught})
+		} else {
+			pattern := (parameter as CatchBindingPattern).pattern
+			mut names := []Utf16String{}
+			collect_pattern_names(pattern, mut names)
+			for name in names { generator.emit(Instruction{op: .create_mutable_binding, identifier: generator.identifier(name)}) }
+			generator.binding_pattern(mut vm, pattern, caught, true)!
+		}
 	}
 	generator.statement(mut vm,&handler.body)!
 	if handler.parameter!=none {
