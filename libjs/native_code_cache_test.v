@@ -37,7 +37,7 @@ fn test_second_vm_uses_native_code_on_its_first_execution_without_a_compiler_or_
 			assert activity.entries == 3 && activity.fast_steps > 0 && activity.slow_steps > 0
 		}
 		after := vm.flush_native_code_cache()!
-		assert after.compiler_invocations == u64(if visit == 0 { 1 } else { 0 })
+		assert after.compiler_invocations == u64(if visit == 0 { 1 } else { 0 }), 'visit ${visit}: compiler calls ${after.compiler_invocations}, compiled ${after.compiled_executables}, pending ${after.pending_executables}, directory ${directory}'
 		assert vm.flush_native_code_cache()!.compiler_invocations == after.compiler_invocations
 		assert revisit_script(mut vm, 'read({x:"changed"})')!.as_string().str() == 'changed'
 		assert revisit_script(mut vm, 'inc("x")')!.as_string().str() == 'x1'

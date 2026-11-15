@@ -51,6 +51,13 @@ fn (mut vm VM) execute_instruction(instruction Instruction, executable &Executab
 	}
 	mut result := js_undefined()
 	match instruction.op {
+		.copy_data_properties {
+			if !right.is_nullish() {
+				mut target := left.as_object()
+				object := right.to_object_with_prototypes(mut vm, realm_primitive_prototypes())!
+				copy_enumerable_own_properties(mut vm, mut target, object, [])!
+			}
+		}
 		.to_string { result = Value.from_string(left.to_primitive_string(mut vm)!) }
 		.get_new_target { result = vm.get_new_target() }
 		.get_super_constructor { result = get_super_constructor(mut vm)! }

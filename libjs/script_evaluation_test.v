@@ -131,7 +131,7 @@ fn test_runtime_errors_preserve_tdz_const_strictness_tracebacks_and_stack_cleanu
 fn test_unsupported_programs_are_rejected_before_any_execution_or_declarations() {
 	for source in ['var changed=1; class C { static {} }', 'var changed=1; false && class { static {} };',
 		'var changed=1; f(...a);', 'var changed=1; try {} catch(e) {} finally {}',
-		'var changed=1; tag`text`;', 'var changed=1; ({...a});'] {
+		'var changed=1; tag`text`;', 'var changed=1; new C(...a);'] {
 		mut vm := VM.create()
 		create_simple_execution_context(mut vm)
 		if _ := run_test_source(mut vm, source) {

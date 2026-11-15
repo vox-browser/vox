@@ -97,6 +97,13 @@ fn (mut generator BytecodeGenerator) binding_pattern(mut vm VM, pattern BindingP
 fn copy_object_excluding_keys(mut vm VM, source Value, excluded []PropertyName) !&Object {
 	mut target := Object.create(vm.realm(), vm.realm().object_prototype)
 	object := source.to_object_with_prototypes(mut vm, realm_primitive_prototypes())!
+	copy_enumerable_own_properties(mut vm, mut target, object, excluded)!
+	return target
+}
+
+// CopyDataProperties snapshots own keys, then checks each live descriptor
+// before Get and CreateDataProperty. Object rest and spread share this path.
+fn copy_enumerable_own_properties(mut vm VM, mut target Object, object &Object, excluded []PropertyName) ! {
 	for key in object.own_property_keys() {
 		vm.consume_execution_budget()!
 		if excluded.any(it.equals(key)) { continue }
@@ -105,5 +112,4 @@ fn copy_object_excluding_keys(mut vm VM, source Value, excluded []PropertyName) 
 		value := object.get(mut vm, key)!
 		target.create_data_property_or_throw(mut vm, key, value)!
 	}
-	return target
 }

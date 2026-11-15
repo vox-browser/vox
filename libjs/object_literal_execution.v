@@ -13,7 +13,11 @@ fn (mut generator BytecodeGenerator) object_literal(mut vm VM, properties []Obje
 			generator.emit(Instruction{ op: .set_object_literal_prototype, lhs: dst, rhs: value })
 			continue
 		}
-		if property.property_type == .spread { return generator.unsupported('object spread') }
+		if property.property_type == .spread {
+			value := generator.expression(mut vm, &property.key)!
+			generator.emit(Instruction{op: .copy_data_properties, lhs: dst, rhs: value})
+			continue
+		}
 		raw_key := if !property.is_computed && property.key.kind.tag == .identifier_expr {
 			generator.constant(Value.from_string(vm.create_string(identifier_name(&property.key)!)))
 		} else {
