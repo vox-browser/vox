@@ -2744,3 +2744,21 @@ currently shares BasicFormatMatcher behavior; no ICU or full Intl parity is
 claimed. See [native Intl design](../docs/LIBJS_INTL.md) and the
 [Intl continuation](../docs/LIBJS_GITHUB_RUNTIME_20261115.md#native-intl-locale-date-and-list-continuation).
 The compiled-JS GitHub/Brave pixel goal remains incomplete.
+
+The following native Intl slice installs NumberFormat with exact decimal
+mathematical values/rounding, CLDR symbols/grouping/compact forms/currencies/units,
+bound format, parts and resolved/supported locales. Number.toLocaleString uses
+the retained intrinsic. RelativeTimeFormat adds CLDR numeric-auto literals,
+past/future patterns, plural categories, signed zero and unit-bearing parts.
+String.toLocaleLowerCase/toLocaleUpperCase now use checked first-locale selection
+and the existing V Unicode contextual mappings. History rejects both new Intl
+records before author getters. Twenty-seven new regression functions, including
+native-cache revisits and temporary-arena ownership cases, remain uncompiled and
+unexecuted under the user's hold. Normal and production/preallocation GC-none
+compiler-only import checks pass after three retained/corrected failures.
+These are partial implementations: Collator/String.localeCompare, public
+PluralRules, BigInt's production intrinsic graph, ranges and remaining Intl/Web
+behavior are still open. Six localeCompare calls in four archived GitHub bodies
+are a static missing binding, not a measured first runtime failure. No new
+GitHub hydration, native-cache performance or Brave pixel result is claimed.
+See the [number/relative-time continuation](../docs/LIBJS_GITHUB_RUNTIME_20261115.md#native-number-relative-time-and-locale-case-continuation).

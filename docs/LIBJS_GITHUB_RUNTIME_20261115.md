@@ -1431,3 +1431,117 @@ compiler calls, 33 rows, zero commit links and five cascading module errors.
 No new hydration count, warm-revisit speedup, live behavior or zero-pixel
 GitHub/Brave match is established. Strict content and pixel acceptance gates
 remain unchanged.
+
+## Native number, relative-time and locale-case continuation
+
+**The compiled-JS GitHub/Brave task remains incomplete.** The user's test hold
+remains in force. This continuation did not execute JavaScript, initialization
+probes, tests, AST fixtures, browsers, screenshots or performance trials. New
+`_test.v` files were neither compiled nor run. Compiler-only checks of the
+normal `tools/libjs_github_revisit.v` import graph are not runtime evidence.
+
+Implementation commits:
+
+- `1486157d9`: native `Intl.NumberFormat`, exact decimal mathematical values and
+  rounding, CLDR number data, parts, bound format, resolved/supported locales,
+  Number.toLocaleString and History rejection of NumberFormat state.
+- `f0bff63a5`: native `Intl.RelativeTimeFormat`, numeric-auto literals, styles,
+  plural-sensitive past/future patterns, signed zero, parts with singular units,
+  retained NumberFormat intrinsic and History rejection.
+- `67a72a49e`: String.toLocaleLowerCase/toLocaleUpperCase using canonical locale
+  lists and the existing native Unicode contextual mappings. Only the first
+  requested language is used after validating the entire list; receiver
+  coercion precedes locale-list effects, including for unchanged ASCII text.
+
+The pinned CLDR generator now consumes number symbols/patterns, compact forms,
+currencies and fraction digits, sanctioned units, relative date fields and
+cardinal/ordinal rules. Generated parent-delta records cover the same 1,121
+locale identifiers: 21,477,685 locale bytes and 347,131 core bytes. Tables remain
+lazy, per-realm, generated source assets with consumed-file hashes and Unicode
+license. No direct ICU, host formatter, JSC or V8 bridge was added. A source-only
+Unicode-dependency scan succeeds; no library/symbol audit was run.
+
+Number inputs follow the current
+[ToIntlMathematicalValue algorithm](https://tc39.es/ecma402/#sec-tointlmathematicalvalue),
+starting from their shortest decimal spelling. BigInts and finite decimal
+Strings retain their digits. Native decimal arithmetic implements the nine
+rounding modes, fraction/significant priorities, sanctioned increments and
+trailing-zero display. Plural modulo/comparison does not narrow large integer
+digits to binary64, and visible fraction zeroes remain plural operands. Bound
+number-format functions use traced records and their own callee contexts rather
+than escaping formatter-capturing V closures. Number.toLocaleString retains the
+intrinsic constructor even if the author replaces Intl.NumberFormat.
+
+Twenty-seven new regression functions are prepared but uncompiled/unexecuted:
+three decimal/plural cases, ten NumberFormat cases, seven relative-time cases,
+five locale-case cases and two History cases. They include original GitHub
+compact options, localized grouping/digits, exact large values, rounding/signs,
+parts, abrupt coercion ordering, arena retention and compiler-disabled native
+cache revisits. These are pending assertions, not measured cache hits or passes.
+
+Eleven memory-guarded compiler-only attempts are retained byte-identically under
+local `docs/performance/libjs-intl-number-20261115/`, with raw logs and a hashed
+receipt index. Eight completed successfully and three failed before correction:
+the decimal/plural syntax attempt used an invalid tuple expression, the digit
+options attempt used nonexistent unqualified min/max functions, and the first
+NumberFormat attempt omitted explicit clones when unwrapping nested maps. Each
+was corrected before the implementing feature commit. Selected receipts:
+
+| Compiler-only check | Child exit | Seconds | Peak sampled RSS bytes |
+| --- | ---: | ---: | ---: |
+| Decimal/plural corrected normal | 0 | 15.031 | 5,282,201,600 |
+| Digit options corrected normal | 0 | 15.123 | 5,259,788,288 |
+| NumberFormat corrected normal | 0 | 17.263 | 5,284,544,512 |
+| NumberFormat production/prealloc/no-GC | 0 | 17.934 | 5,545,050,112 |
+| RelativeTimeFormat normal | 0 | 17.789 | 5,279,449,088 |
+| RelativeTimeFormat production/prealloc/no-GC | 0 | 18.139 | 5,543,329,792 |
+| Locale case production/prealloc/no-GC | 0 | 17.536 | 5,551,800,320 |
+| Locale case final normal | 0 | 17.580 | 5,269,667,840 |
+
+The common check uses `V3_STR_CAP=1 VJOBS=1`, the 12-GiB sampled process-tree
+guard, current V, `-w -n -b c -no-parallel -cc clang -check -memory-limit 10G
+-enable-globals tools/libjs_github_revisit.v`. Production checks also pass
+`-prod -prealloc -gc none`. All guards report `reason=completed`; the table
+records the actual child exit. No C compilation/link or JS evaluation is implied.
+Completed job locks/reports were removed from Build after preserving evidence.
+
+The static scan of the original archived JS still finds five Intl constructor
+names: DateTimeFormat (11 references in five bodies), ListFormat (two/two),
+NumberFormat (two/two), RelativeTimeFormat (three/one) and Locale (one/one).
+Each now has a native binding. Source matches are not reachability or execution
+coverage. The source's compact-count call requests en-US, compact notation,
+maximumFractionDigits=1 and maximumSignificantDigits=2. Relative-time code calls
+the native formatter directly and uppercases a date label's first character.
+
+The same scan exposes a separate unfinished API: six `localeCompare` calls in
+four bodies (primer-react, app-runtime, gl and ekd). Native collation and
+String.localeCompare remain missing; a lexical stub was not installed. Public
+PluralRules, number/date ranges, complex compound-unit/currency-spacing details,
+legacy chained NumberFormat construction, other Intl APIs, async generators,
+top-level await and remaining Web behavior are still open. See
+[the Intl implementation scope](LIBJS_INTL.md) for limits. No new execution
+establishes which missing behavior is now the first GitHub failure.
+
+At implementation revision `67a72a49e9f83ad9948bbfc07ffcf382f82e65c5`, the latest
+completed production executable inspected statically is
+`a29214bc09337794f4f8e15f94a51670fe39281e43c304228e7ee376f46f0bf2`, single C unit
+with literal V `-prod`. Its receipt is
+`Build/production-build/receipts/20261115-204745-385a0d38/frozen-compile.json`.
+The actual executable hash matches that receipt. Its sealed consumed-input
+manifest matches nine of 28 selected Intl assets/implementation/adaptor files;
+the 19 differing or missing paths include the new formatter/case files, updated
+CLDR assets, object/realm bindings, Number adapters and History projection.
+The exact selected paths/hashes are in local `production-source-verification.json`.
+The older bundle cannot exercise or validate this new code, and no process was
+launched. Commits requested coalesced rebuilds through the managed hook; the
+pending request records `67a72a49e`, and no duplicate manual build was queued.
+
+The original fixture manifest and Brave PNG were rehashed unchanged:
+`893e042c4f31e1b7fb984c81cf8f6a2a7eb65d790f7c3f4cc3e372c065de302d`
+and `649abff51549508516e2e0681866ba81ce69e7112cfa8dc3446b9b76c99be3d3`.
+The last executed GitHub observation remains the historical 672 warm native
+entries, 51 frontend hits, zero compiler calls, 33 rows, zero commit links and
+five module errors, predating these changes. The strict gates remain 33 rows,
+56 commit links, the current README, active controls, no errors, the unchanged
+Brave content audit and zero differing pixels. Compiled revisit speed and
+GitHub/Brave pixel parity remain unmeasured and unachieved for the new source.
