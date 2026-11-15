@@ -17,7 +17,7 @@ fn test_intl_list_format_cldr_types_styles_and_empty_iterables() {
 
 fn test_intl_list_format_parts_preserve_utf16_and_original_element_positions() {
 	mut vm := VM.create(); create_simple_execution_context(mut vm)
-	assert intl_list_eval(mut vm, r'var f=new Intl.ListFormat("en-US"),list=["\ud800","😀","\udc00"],p=f.formatToParts(list);p.map(x=>x.value).join("")===f.format(list)&&p.map(x=>x.type).join()==="element,literal,element,literal,element"&&p[0].value===list[0]&&p[2].value===list[1]&&p[4].value===list[2]&&Object.getPrototypeOf(p[0])===Object.prototype')!.as_bool()
+	assert intl_list_eval(mut vm, r'var f=new Intl.ListFormat("en-US"),list=["\\ud800","😀","\\udc00"],p=f.formatToParts(list);p.map(x=>x.value).join("")===f.format(list)&&p.map(x=>x.type).join()==="element,literal,element,literal,element"&&p[0].value===list[0]&&p[2].value===list[1]&&p[4].value===list[2]&&Object.getPrototypeOf(p[0])===Object.prototype')!.as_bool()
 	assert intl_list_eval(mut vm, 'var f=new Intl.ListFormat("en-US"),p=f.formatToParts(["",""]);p.length===3&&p[0].type==="element"&&p[0].value===""&&p[1].value===" and "&&p[2].type==="element"&&p[2].value===""')!.as_bool()
 }
 

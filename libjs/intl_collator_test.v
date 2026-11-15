@@ -78,6 +78,11 @@ fn test_intl_collator_native_normalization_work_obeys_the_vm_budget() {
 	else { assert thrown_value(err).as_object().error_message()?.contains('instruction budget') }
 }
 
+fn test_locale_compare_preserves_escaped_lone_surrogates_through_native_bound_calls() {
+	mut vm := VM.create(); create_simple_execution_context(mut vm)
+	assert intl_collator_eval(mut vm, 'var c=new Intl.Collator("en-US");c.compare("\\ud800","\\ud801")<0&&"\\ud800".localeCompare("\\ud801")<0&&c.compare("é","e\\u0301")===0')!.as_bool()
+}
+
 fn test_cached_github_style_locale_compare_executes_without_compiler_on_revisit() {
 	directory := os.join_path(os.temp_dir(), 'vox-intl-collation-' + rand.uuid_v4())
 	defer { os.rmdir_all(directory) or {} }

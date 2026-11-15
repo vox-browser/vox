@@ -29,7 +29,7 @@ fn test_string_locale_case_coerces_receiver_before_locale_list_even_for_unchange
 
 fn test_string_locale_case_preserves_utf16_surrogates_expansions_and_native_metadata() {
 	mut vm := VM.create(); create_simple_execution_context(mut vm)
-	assert string_locale_case_eval(mut vm, '"\ud800ß\udfff".toLocaleUpperCase("en")==="\ud800SS\udfff"&&"𐐨".toLocaleUpperCase("en")==="𐐀"&&"İ".toLocaleLowerCase("en")==="i\u0307"&&String.prototype.toLocaleUpperCase.length===0&&String.prototype.toLocaleLowerCase.length===0&&!("prototype" in String.prototype.toLocaleUpperCase)')!.as_bool()
+	assert string_locale_case_eval(mut vm, '"\\ud800ß\\udfff".toLocaleUpperCase("en")==="\\ud800SS\\udfff"&&"𐐨".toLocaleUpperCase("en")==="𐐀"&&"İ".toLocaleLowerCase("en")==="i\u0307"&&String.prototype.toLocaleUpperCase.length===0&&String.prototype.toLocaleLowerCase.length===0&&!("prototype" in String.prototype.toLocaleUpperCase)')!.as_bool()
 }
 
 fn test_cached_string_locale_case_runs_without_compiler_on_revisit() {
