@@ -1,0 +1,156 @@
+module main
+
+// Opt-in benchmark of the browser's actual engine/DOM integration. The driver
+// runs this source-built executable; ordinary test sweeps do no benchmark work.
+import adblock
+import browserjs
+import crypto.sha256
+import css
+import dom
+import html
+import json2
+import libjs
+import os
+import time
+
+struct HNEngineVisit {
+	mode              string
+	cycles            int
+	initialization_ms f64
+	first_cycle_ms    f64
+	callback_ms       f64
+	compile_finish_ms f64
+	total_ms          f64
+	rows              int
+	classes_restored  bool
+	collapse_verified bool
+	native_context    bool
+	script_sha256     string
+	page_sha256       string
+	cache             libjs.NativeCacheStats
+	frontend          browserjs.LibJSFrontendCacheStats
+	activity          libjs.NativeCodeActivity
+}
+
+fn hn_engine_toggle(document &dom.Document, runtime &browserjs.Runtime, button &dom.Element) ! {
+	if runtime.engine == .libjs {
+		if !runtime.dispatch_libjs_event('click', button)! {
+			return error('LibJS toggle did not cancel navigation')
+		}
+	} else {
+		// HN deliberately gives the row and its anchor the same ID. Browser
+		// input uses the registry key to retain the actual hit element.
+		key := runtime.canvas_element_key_for_binding(button) or { return error('Missing toggle identity key') }
+		encoded := runtime.evaluate_host('__ladybirdDispatch("click","",{key:${json2.encode(key)}})')!
+		mut messages := []string{}
+		commit := apply_compact_dom_task(document, encoded, runtime, mut messages)!
+		if !javascript_default_prevented(encoded) || commit.navigation != none || messages.len != 0 {
+			return error('V8 toggle failed cancellation, navigation or script audit: ${encoded}; ${messages}')
+		}
+	}
+}
+
+fn hn_engine_visit(mode string, cycles int, diagnostic bool) !HNEngineVisit {
+	markup := $embed_file('@VMODROOT/Tests/Browser/Brave/input/hacker-news-item-50231722-complete.html').to_string()
+	script := $embed_file('@VMODROOT/Tests/Browser/Brave/hn-home-instructions/bodies/2e38ff883bd36dc4cc26f129f19169b0357cf32059988c926a4f73e5bfaa37f0').to_string()
+	engine := if mode == 'v8' { browserjs.Engine.javascriptcore } else { browserjs.Engine.libjs }
+	started := time.sys_mono_now()
+	address := dom.URL{ value: 'https://news.ycombinator.com/item?id=50231722' }
+	mut document := html.parse_navigation_document(markup, address, address.origin(), none)!
+	document.set_browsing_context(&dom.BrowsingContext{ active_document_: document })
+	mut runtime := browserjs.Runtime.create_with_engine(engine)
+	defer {
+		runtime.close()
+		document.finalize()
+	}
+	mut messages := []string{}
+	run_document_script_sources(document, document.url.serialize(), [browserjs.ScriptSource{
+		code: script
+		url:  'https://news.ycombinator.com/hn.js'
+	}], runtime, mut messages)
+	if messages.len != 0 { return error(messages.join('\n')) }
+	initialization_ms := f64(time.sys_mono_now() - started) / 1e6
+	// Fixture/correctness queries are excluded from the reported intervals.
+	rows := css.query_selector_all(document.as_node(), '.comtr')
+	if rows.len != 101 { return error('Expected 101 archived comments') }
+	classes := rows.map(it.get_attribute_value('class'))
+	button := css.query_selector(rows[0].as_node(), '.togg') or { return error('Missing toggle') }
+	mut vm := runtime.libjs_vm()
+	if diagnostic && engine == .libjs { vm.diagnose_native_code(true)! }
+	first_started := time.sys_mono_now()
+	hn_engine_toggle(document, runtime, button)!
+	first_collapse_ms := f64(time.sys_mono_now() - first_started) / 1e6
+	if !rows[0].class_names().contains('coll') || css.query_selector_all(document.as_node(), '.noshow').len <= 1 {
+		return error('First toggle did not collapse descendants')
+	}
+	second_started := time.sys_mono_now()
+	hn_engine_toggle(document, runtime, button)!
+	first_cycle_ms := first_collapse_ms + f64(time.sys_mono_now() - second_started) / 1e6
+	callback_started := time.sys_mono_now()
+	for _ in 0 .. cycles {
+		hn_engine_toggle(document, runtime, button)!
+		hn_engine_toggle(document, runtime, button)!
+	}
+	callback_ms := f64(time.sys_mono_now() - callback_started) / 1e6
+	activity := if engine == .libjs {
+		vm.diagnose_native_code(false)!
+	} else {
+		libjs.NativeCodeActivity{}
+	}
+	finish_started := time.sys_mono_now()
+	cache := if engine == .libjs { vm.flush_native_code_cache()! } else { libjs.NativeCacheStats{} }
+	compile_finish_ms := f64(time.sys_mono_now() - finish_started) / 1e6
+	for index, row in rows {
+		if row.get_attribute_value('class') != classes[index] {
+			return error('Comment classes not restored')
+		}
+	}
+	if runtime.take_libjs_messages().len != 0 || vm.interpreter_stack().depth() != 0 {
+		return error('Script errors or retained frames')
+	}
+	if engine == .libjs && runtime.native_context_initialized() {
+		return error('Unexpected native engine fallback')
+	}
+	return HNEngineVisit{
+		mode:              mode
+		cycles:            cycles
+		initialization_ms: initialization_ms
+		first_cycle_ms:    first_cycle_ms
+		callback_ms:       callback_ms
+		compile_finish_ms: compile_finish_ms
+		total_ms:          initialization_ms + first_cycle_ms + callback_ms + compile_finish_ms
+		rows:              rows.len
+		classes_restored:  true
+		collapse_verified: true
+		native_context:    runtime.native_context_initialized()
+		script_sha256:     sha256.hexhash(script)
+		page_sha256:       sha256.hexhash(markup)
+		cache:             cache
+		frontend:          runtime.frontend_code_cache_stats()
+		activity:          activity
+	}
+}
+
+fn test_hacker_news_engine_benchmark() {
+	choice := os.getenv('VOX_HN_ENGINE_BENCHMARK')
+	if choice == '' { return }
+	// Keep this author-script/DOM workload independent of filter-list startup.
+	adblock.set_enabled(false)
+	$if !vox_v8 ? {
+		panic('Build this benchmark with -d vox_v8')
+	}
+	if choice !in ['v8', 'libjs', 'libjs-warm'] { panic('Expected v8, libjs or libjs-warm') }
+	cycles := os.getenv('VOX_HN_ENGINE_CYCLES').int()
+	if cycles < 1 { panic('Set positive VOX_HN_ENGINE_CYCLES') }
+	diagnostic := os.getenv('VOX_HN_ENGINE_DIAGNOSTIC') == '1'
+	if choice == 'v8' {
+		println(json2.encode(hn_engine_visit('v8', cycles, diagnostic)!))
+	} else if choice == 'libjs-warm' {
+		os.setenv('VOX_LIBJS_NATIVE_COMPILER', '/usr/bin/false', true)
+		println(json2.encode(hn_engine_visit('libjs-warm', cycles, diagnostic)!))
+	} else {
+		println(json2.encode(hn_engine_visit('libjs-cold', cycles, diagnostic)!))
+		os.setenv('VOX_LIBJS_NATIVE_COMPILER', '/usr/bin/false', true)
+		println(json2.encode(hn_engine_visit('libjs-process-warm', cycles, diagnostic)!))
+	}
+}
