@@ -75,8 +75,10 @@ fn initialize_collection_intrinsics(mut vm VM, mut realm Realm) ! {
 		'substr': string_prototype_substr
 		'toLowerCase': string_prototype_to_lowercase
 		'toUpperCase': string_prototype_to_uppercase
+		'toLocaleLowerCase': string_prototype_to_locale_lowercase
+		'toLocaleUpperCase': string_prototype_to_locale_uppercase
 		'replace': string_prototype_replace
-	} { install_intrinsic_method(mut vm, &realm, mut text, name, if name in ['toString','valueOf','toLowerCase','toUpperCase'] { 0 } else if name in ['slice','substring','substr','replace'] { 2 } else { 1 }, behaviour) }
+	} { install_intrinsic_method(mut vm, &realm, mut text, name, if name in ['toString','valueOf','toLowerCase','toUpperCase','toLocaleLowerCase','toLocaleUpperCase'] { 0 } else if name in ['slice','substring','substr','replace'] { 2 } else { 1 }, behaviour) }
 	install_intrinsic_method(mut vm, &realm, mut text, 'split', 2, fn (mut vm VM) !Value { return string_prototype_split(mut vm, vm.realm().array_prototype_record()) })
 	initialize_string_text_methods(mut vm, &realm, mut text)
 	string_constructor := StringConstructor.create(mut vm, &realm, StringConstructorDependencies{
