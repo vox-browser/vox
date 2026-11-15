@@ -56,9 +56,12 @@ fn (mut host Host) install_events(mut node libjs.Object) ! {
 		})
 	}
 	host.install_event_constructor(mut prototype)
-	host.install_event_target_methods(mut node)
 	mut global := host.realm.global_object_record()
-	host.install_event_target_methods(mut global)
+	for name in ['addEventListener', 'removeEventListener', 'dispatchEvent'] {
+		global.define_direct_property(libjs.PropertyName.from_str(name),
+			host.event_target_prototype.get(mut host.vm, libjs.PropertyName.from_str(name))!,
+			libjs.attribute_writable | libjs.attribute_configurable | libjs.attribute_enumerable)
+	}
 	for type_ in ['click', 'input', 'change', 'load'] {
 		host.accessor(mut node, 'on' + type_, fn [host, type_] (mut vm libjs.VM) !libjs.Value {
 			target := unsafe { &dom.EventTarget(host.node(mut vm)!) }
@@ -99,13 +102,14 @@ fn (host &Host) event_target(mut vm libjs.VM) !&dom.EventTarget {
 	}
 	if receiver.is_object() {
 		if node := host.nodes[voidptr(receiver.as_object())] { return unsafe { &dom.EventTarget(node) } }
+		if target := host.event_targets[voidptr(receiver.as_object())] { return target }
 	}
 	return vm.throw_error(.type_error, 'EventTarget method called on incompatible receiver')
 }
 
 fn (mut host Host) install_event_target_methods(mut object libjs.Object) {
 	for name in ['addEventListener', 'removeEventListener'] {
-		host.method(mut object, name, 2, fn [host, name] (mut vm libjs.VM) !libjs.Value {
+		host.method_attributes(mut object, name, 2, fn [host, name] (mut vm libjs.VM) !libjs.Value {
 			target := host.event_target(mut vm)!
 			if vm.argument_count() < 2 {
 				return vm.throw_error(.type_error, name + ' requires two arguments')
@@ -138,8 +142,16 @@ fn (mut host Host) install_event_target_methods(mut object libjs.Object) {
 				owner.remove_listener(target, type_, callback, capture)
 			}
 			return libjs.js_undefined()
-		})
+		}, libjs.attribute_writable | libjs.attribute_configurable | libjs.attribute_enumerable)
 	}
+	host.method_attributes(mut object, 'dispatchEvent', 1, fn [host] (mut vm libjs.VM) !libjs.Value {
+		target := host.event_target(mut vm)!
+		if vm.argument_count() < 1 || !vm.argument(0).is_object() { return vm.throw_error(.type_error, 'dispatchEvent requires an Event') }
+		event := host.events[voidptr(vm.argument(0).as_object())] or { return vm.throw_error(.type_error, 'dispatchEvent requires an Event') }
+		mut owner := unsafe { &Host(host) }
+		result := target.dispatch_event_binding(event) or { return owner.dom_error(mut vm, err) }
+		return libjs.Value.from_bool(result)
+	}, libjs.attribute_writable | libjs.attribute_configurable | libjs.attribute_enumerable)
 }
 
 fn (mut host Host) wrap_target(target &dom.EventTarget) libjs.Value {
@@ -147,6 +159,7 @@ fn (mut host Host) wrap_target(target &dom.EventTarget) libjs.Value {
 	if target.data.kind == .window {
 		return libjs.Value.from_object(host.realm.global_object_record())
 	}
+	if object := host.event_target_wrappers[voidptr(target)] { return libjs.Value.from_object(object) }
 	return libjs.js_null()
 }
 

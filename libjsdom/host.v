@@ -35,6 +35,10 @@ mut:
 	node_list_prototype &libjs.Object = unsafe { nil }
 	node_list_wrappers map[voidptr]&libjs.Object
 	event_prototype      &libjs.Object = unsafe { nil }
+	event_target_prototype &libjs.Object = unsafe { nil }
+	event_target_constructor &libjs.Object = unsafe { nil }
+	event_targets map[voidptr]&dom.EventTarget
+	event_target_wrappers map[voidptr]&libjs.Object
 	url_prototype        &libjs.Object = unsafe { nil }
 	style_prototype      &libjs.Object = unsafe { nil }
 	headers_prototype &libjs.Object = unsafe { nil }
@@ -189,6 +193,8 @@ pub fn (mut host Host) close() {
 	host.node_list_wrappers.clear()
 	host.events.clear()
 	host.event_wrappers.clear()
+	host.event_targets.clear()
+	host.event_target_wrappers.clear()
 	host.style_wrappers.clear()
 	host.style_elements.clear()
 	host.headers.clear()

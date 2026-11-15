@@ -52,7 +52,8 @@ fn (host &Host) element(mut vm libjs.VM) !&dom.Element {
 }
 
 fn (mut host Host) install_nodes() ! {
-	mut node := libjs.Object.create(host.realm, host.realm.object_prototype)
+	host.install_event_target_interface()
+	mut node := libjs.Object.create(host.realm, host.event_target_prototype)
 	host.node_prototype = node
 	mut element := libjs.Object.create(host.realm, node)
 	host.element_prototype = element

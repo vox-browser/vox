@@ -6,8 +6,7 @@ import libjs
 import platform
 
 // WebIDL interface objects share the exact native wrapper prototypes used by
-// document queries and mutations. SVG interfaces and EventTarget prototype
-// ancestry remain separate binding slices.
+// document queries and mutations. SVG interfaces remain separate binding work.
 fn (mut host Host) install_node_interfaces() ! {
 	mut vm := host.vm
 	mut global := host.realm.global_object_record()
@@ -53,7 +52,10 @@ fn (mut host Host) install_node_interfaces() ! {
 		mut constructor := libjs.NativeFunction.create_constructor(mut vm, host.realm, host.realm.function_prototype,
 			fn (mut vm libjs.VM) !libjs.Value { return vm.throw_error(.type_error, 'DOM interface constructor requires new') },
 			construct, 0, libjs.PropertyName.from_str(name)).object
-		if name == 'Node' { node_constructor = constructor }
+		if name == 'Node' {
+			node_constructor = constructor
+			if !constructor.internal_set_prototype_of(host.event_target_constructor) { return error('Unable to set EventTarget interface ancestry') }
+		}
 		else { if !constructor.internal_set_prototype_of(if name == 'HTMLElement' { element_constructor } else { node_constructor }) { return error('Unable to set DOM interface ancestry') } }
 		if name == 'Element' { element_constructor = constructor }
 		constructor.define_direct_property(libjs.PropertyName.from_str('prototype'), libjs.Value.from_object(prototype), 0)
