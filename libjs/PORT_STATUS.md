@@ -2710,3 +2710,19 @@ Proxy, Intl, async generators, top-level await and browser parity remain open.
 The [generator/regexp continuation](../docs/LIBJS_GITHUB_RUNTIME_20261115.md#generator-and-regexp-execution-continuation)
 records exact commits, the retained/corrected checker failure and production
 source mismatch boundaries.
+
+
+The subsequent Proxy/JSON/scheduling implementation adds all thirteen Proxy
+internal operations, revocation, checked script-visible object reflection,
+proxied-array species selection and lazy for-in traversal. Native JSON.stringify
+now implements replacers, toJSON, primitive wrappers, UTF-16 quoting and resource
+bounds. The native DOM host binds Window queueMicrotask and idle callbacks to
+HTML scheduling, with owned one-shot Task cleanup and IdleDeadline objects.
+Forty-one new regression functions are prepared but unexecuted under the user's
+hold; normal and production/preallocation GC-none compiler-only import checks
+pass. These checks do not compile the new test files or establish runtime/cache,
+HTML callback, rendering or speed parity. Intl, async generators, top-level await,
+remaining Web APIs and the strict GitHub/Brave pixel goal remain open. The
+[Proxy/JSON/scheduling continuation](../docs/LIBJS_GITHUB_RUNTIME_20261115.md#proxy-json-serialization-and-scheduling-continuation)
+records commits, both corrected checker failures, unchanged fixtures and the
+latest production bundle's sealed-source gaps.

@@ -1168,3 +1168,129 @@ The last executed GitHub observation remains the historical 672-entry pair with
 33 rows and zero commit links. All new focused, ownership, cache-revisit and
 pixel checks remain held. Completed hydration, live-site behavior, whole-page
 speedup and zero-pixel GitHub/Brave parity remain unachieved.
+
+## Proxy, JSON serialization and scheduling continuation
+
+**Implementation progressed; GitHub/Brave parity is still incomplete.** The
+user's test hold remains in force. No new JS execution, initialization probe,
+focused or broad test, browser launch, capture, pixel comparison or performance
+trial was run for these changes. The new regression cases are prepared source,
+not passing runtime evidence. Compiler-only checks below compile a normal
+program's import graph and do not include `_test.v` files.
+
+The focused implementation commits are:
+
+- `9317e0ac2`: native `Proxy` and `Proxy.revocable`, all thirteen internal
+  operations, callable/constructor forwarding and immutable-property,
+  extensibility, descriptor and own-key invariants. Revocation clears target
+  and handler; a revoker releases its captured proxy after the first call.
+  Trap lookup, argument receivers, post-trap validation and abrupt values are
+  preserved. A VM-local depth guard bounds transparent recursive forwarding.
+- `a84553026`: proxied arrays participate in ArraySpeciesCreate, including
+  constructor/species getters, instead of falling through to ordinary arrays.
+- `ccfb036bf`: native `JSON.stringify`, with `toJSON`, function/array replacers,
+  primitive-wrapper conversion, property-list deduplication, indentation,
+  key/length snapshots, live getters, array holes, cycle detection, BigInt
+  errors/hooks and UTF-16 quoting. This uses VM operations and a bounded UTF-16
+  builder; no host JSON serializer or JSC execution is introduced.
+- `8e0506849`: charge JSON quoting budget after crossing each chunk boundary,
+  including surrogate pairs following an odd-length prefix. Exact-index modulo
+  checks could otherwise skip all later boundaries on that input.
+- `a00a085b3`: native Window `queueMicrotask` uses the owning HTML microtask
+  queue. HTML Tasks can explicitly take ownership of one-shot captured steps;
+  execution or pending-task discard releases them after safe native return.
+  Closing a host discards its pending microtasks and clears their JS roots.
+- `45515baf6`: native Window `requestIdleCallback`/`cancelIdleCallback`, using
+  the existing Window scheduler, timeouts, unsigned handle/dictionary conversion
+  and native `IdleDeadline` arithmetic. Deadline objects retain the current
+  period's end; timed-out callbacks report zero remaining time. Cancellation,
+  callback completion and host close retire callback roots and trampolines.
+
+Object operations that can now invoke traps have checked entry points carrying
+VM exceptions, with separate descriptor/prototype absence. Script-visible
+Reflect/Object methods, operators, arrays, destructuring/spread, dynamic import
+options, descriptor conversion, binding/super/instanceof operations and Headers/
+URLSearchParams record conversion use them. Concrete engine-record storage and
+side-effect-free diagnostics retain ordinary helpers. `for…in` now obtains each
+prototype level lazily and checks descriptors without inventing `has` calls;
+breaking a loop does not invoke later traps. History cloning rejects proxies
+before invoking their getters or traps. The thirteen trap implementations are
+source translations of the local upstream `Runtime/ProxyObject.cpp`; their
+correct execution is still awaiting the held regressions.
+
+Native scheduling callbacks use bounded VM entry, document/script policy,
+callback setup/cleanup and exception reporting. Results are ignored without
+thenable adoption. Microtasks temporarily clear `document.currentScript` and
+restore the previous value. The browser's external Promise-job scheduler and
+`queueMicrotask` enqueue into the same HTML FIFO. All of these integration and
+ordering claims describe the implementation, not executed assertions.
+
+There are 41 newly prepared regression functions: fifteen Proxy/DOM cases,
+twelve JSON cases, eight owned-task/microtask cases and six idle-callback cases.
+They include compiler-disabled second-VM native-cache checks, trap exceptions
+and ordering, ownership across temporary arenas, callback policy, shutdown,
+cooperative instruction limits and native idle-period delivery. They remain
+unexecuted, including the new test files' own compilation.
+
+Compiler-only checks used current V, `V3_STR_CAP=1`, `VJOBS=1`, C backend,
+`-no-parallel -cc clang -check -memory-limit 10G -enable-globals` against
+`tools/libjs_github_revisit.v`. Production checks additionally used
+`-prod -prealloc -gc none`. Each ran through its own default 12 GiB memory
+guard. Checker elapsed time and RSS below are **not** browser performance:
+
+| Compiler-only attempt | Exit | Seconds | Sampled peak RSS bytes |
+| --- | ---: | ---: | ---: |
+| Proxy normal | 0 | 20.919 | 5,261,361,152 |
+| Proxy production/prealloc/no-GC | 0 | 20.065 | 5,416,812,544 |
+| Proxy array species | 0 | 15.041 | 5,265,227,776 |
+| JSON first normal attempt | 1 | 16.293 | 1,512,030,208 |
+| JSON corrected normal | 0 | 31.377 | 5,262,540,800 |
+| JSON production/prealloc/no-GC | 0 | 24.013 | 5,425,905,664 |
+| Microtasks first normal attempt | 1 | 15.038 | 1,512,439,808 |
+| Microtasks corrected production/prealloc/no-GC | 0 | 26.992 | 5,431,443,456 |
+| Microtasks corrected normal | 0 | 28.023 | 5,257,920,512 |
+| Idle callbacks normal | 0 | 26.369 | 5,254,152,192 |
+| Idle callbacks production/prealloc/no-GC | 0 | 27.463 | 5,422,481,408 |
+| JSON surrogate budget production/prealloc/no-GC | 0 | 26.479 | 5,425,070,080 |
+
+Both failed attempts are retained. The first JSON check rejected a mutable
+array alias; it was replaced with a property-list clone. The first microtask
+check caught an accidental pointer-to-pointer cast; it was changed to the
+explicit Document pointer cast. The corrected normal and production checks
+passed before their respective feature commits. All twelve completed guard
+reports, including these two failures, were copied byte-for-byte into local
+`docs/performance/libjs-proxy-json-scheduling-20261115/`; their hashes and
+commands are recorded there. Only this continuation's completed Build reports
+and locks were then deleted. No required runtime test is being reported as run.
+
+A static scan rehashed all 164 original-response entries and left the pinned
+manifest, HTML, source map and Brave reference unchanged. Across 86 distinct JS
+bodies it finds six `new Proxy` occurrences in three bodies, 108
+`JSON.stringify` references in 26, twenty `queueMicrotask` occurrences in eleven
+and 35 `requestIdleCallback` occurrences in nine. Those textual counts establish
+neither reachability nor successful execution. `Intl` remains untranslated:
+nineteen references occur in five bodies, including eleven DateTimeFormat
+references and top-level constructor calls. Other Intl formats, async generators,
+top-level await, remaining Web APIs and complete browser rendering still need
+work; adding these APIs does not establish complete GitHub initialization.
+
+At implementation revision `8e0506849713d8d1c27212677158a03191330f50`, the latest
+completed production executable inspected statically was
+`b5ecb480052a760c2d5214455068605f45e22418a1b8cf2ea7d0ceba464949b9`,
+single C unit with literal V `-prod`. Its sealed parsed-source buffers match
+366 of 373 selected macOS implementation paths. Seven differ or are absent:
+`html/event_loop.v`, `libjs/collection_intrinsics.v`, `libjs/json_parse.v`,
+`libjs/json_stringify.v`, `libjsdom/host.v`, `libjsdom/idle_callbacks.v` and
+`libjsdom/microtasks.v`. The raw all-platform selection additionally records two
+expected absent Linux/Windows stack-info files; they are excluded from the
+macOS counts. The newer bundle contains the Proxy source slice, but cannot
+validate the latest species/JSON/scheduling changes. No fresh process was
+launched. Each commit requested a managed coalesced rebuild through the normal
+hook; no duplicate manual build was scheduled.
+
+The last actual GitHub observation remains the historical native-cache pair
+with 672 warm native entries, 51 frontend hits, zero compiler invocations,
+33 rows, zero commit links and five cascading module errors. It predates all
+these changes. Completed hydration, live behavior, a faster compiled revisit
+and zero differing pixels against Brave remain unachieved and unmeasured for
+the new source. The original strict content and pixel gates are unchanged.
