@@ -465,7 +465,7 @@ pub fn (mut vm VM) run_executable(mut frame ExecutionContext, executable &Execut
 		vm.set_reg(register_this_value, frame.this_value or { js_special_empty_value() })
 	}
 	defer {
-		if vm.run_executable_depth == 1 && !vm.is_executing_module() {
+		if vm.run_executable_depth == 1 && vm.external_budget_depth == 0 && !vm.is_executing_module() {
 			vm.run_queued_promise_jobs()
 			vm.finish_execution_generation()
 		}
@@ -528,6 +528,7 @@ pub fn (mut vm VM) call_with_limits(function Value, this_value Value, arguments 
 	if outer { vm.instruction_budget = limits.max_instructions; vm.instruction_budget_active = limits.max_instructions != 0 }
 	vm.external_budget_depth++
 	defer {
+		if outer && !vm.is_executing_module() { vm.run_queued_promise_jobs() }
 		vm.external_budget_depth--
 		if outer { vm.instruction_budget = previous_budget; vm.instruction_budget_active = previous_active }
 	}

@@ -272,6 +272,7 @@ mut:
 
 	promise_jobs                       []PromiseJob
 	running_promise_jobs bool
+	promise_job_errors []IError
 	finalization_registry_cleanup_jobs []FinalizationRegistry
 
 	empty_string_                  &PrimitiveString = unsafe { nil }
@@ -1109,9 +1110,16 @@ pub fn (mut vm VM) run_queued_promise_jobs() {
 	for vm.promise_jobs.len > 0 {
 		job := vm.promise_jobs[0]
 		vm.promise_jobs.delete(0)
-		// The job result is intentionally ignored.
-		job() or {}
+		// Normal reaction results are ignored; unsupported runtime operations
+		// and other job failures must remain observable to the embedding.
+		job() or { vm.promise_job_errors << err }
 	}
+}
+
+pub fn (mut vm VM) take_promise_job_errors() []IError {
+	errors := vm.promise_job_errors
+	vm.promise_job_errors = []
+	return errors
 }
 
 // 9.5.4 HostEnqueuePromiseJob ( job, realm ), https://tc39.es/ecma262/#sec-hostenqueuepromisejob
@@ -1254,6 +1262,9 @@ pub fn (vm &VM) gather_roots(mut roots HeapRoots) {
 		}
 	}
 	// Promise jobs are V closures managed by the V runtime rather than GC cells.
+	for err in vm.promise_job_errors {
+		if is_throw_completion(err) { roots.add_value(thrown_value(err)) }
+	}
 }
 
 // 9.4.1 GetActiveScriptOrModule ( ), https://tc39.es/ecma262/#sec-getactivescriptormodule

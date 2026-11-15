@@ -57,6 +57,12 @@ pub fn (mut runtime Runtime) install_libjs_document(document &dom.Document) ! {
 }
 
 pub fn (mut runtime Runtime) take_libjs_messages() []string {
+	if runtime.engine == .libjs {
+		mut vm := runtime.agent_vm
+		for err in vm.take_promise_job_errors() {
+			runtime.libjs_messages_ << 'JavaScript (LibJS): Promise job: ' + libjs_exception_message(err)
+		}
+	}
 	messages := runtime.libjs_messages_
 	runtime.libjs_messages_ = []
 	return messages
