@@ -959,7 +959,7 @@ regression cases are written but have not been executed in their final form.
 | `eb14b5022`, `3bdb68fa5` | Number constructor/predicates/constants, intrinsic boxing, radix and fixed formatting; original parse-function identities exist before host realm hooks. | Scientific decimal and Intl adapters remain uninstalled. |
 | `8d6b94558` | Native CharacterData/Text/Comment factories and prototypes, text mutation/splitting, nodeValue, containment, roots, cloning and ChildNode operations. | Native character storage's existing surrogate normalization is unchanged; broader DOM interfaces remain incomplete. |
 | `2751e5fa7` | Generic RegExp replacement with observable flags/exec, ordered captures, callbacks, substitutions and bounded empty-match advancement. | Other RegExp symbol methods remain separate. |
-| `4868f3ce5` | Spread in ordinary/new/optional calls, retaining receivers and iterator ordering through both execution tiers. | Generator execution, finally statements, super properties and other language gaps remain. |
+| `4868f3ce5` | Spread in ordinary/new/optional calls, retaining receivers and iterator ordering through both execution tiers. | Generator execution and other language gaps remain; the following continuation adds cleanup and super references. |
 | `3b5caae3e` | Default-realm Reflect installs all thirteen existing translated methods. | This does not add Proxy exotic behavior. |
 | `dfe44a124` | Promise.finally species and cleanup chaining. | Runtime verification held. |
 | `099055fdb`, `fa2d2f10d`, `f46d7a14a`, `0ab92f02a` | Generic Promise.all/race/allSettled/withResolvers, ordered aggregation, once guards and abrupt iterator closing. | Promise.any and later proposals remain pending. |
@@ -992,3 +992,46 @@ Array/String and document/selector bindings. It cannot validate those changes.
 No browser was launched after the hold. Commit rebuild requests remain coalesced;
 full GitHub hydration, live validation, completed-page speed and unchanged
 zero-pixel Brave conformance remain unachieved.
+
+## Control-flow and class compilation continuation
+
+The verification hold remains in effect. This continuation inspects the native
+compiler/runtime and the local upstream algorithms, without running tests,
+executing page JavaScript or launching a browser.
+
+| Commit | Implementation | Pending verification/boundary |
+| --- | --- | --- |
+| `f580c2779` | Try/finally routes normal, thrown, returned and labelled loop-control completions through one finalizer body. It restores lexical depth, preserves pending values across await, and orders cleanup relative to nested iterator closing. A finalizer's abrupt completion replaces the pending one. | Eight focused cases are written but unexecuted, including async cleanup and compiler-disabled native-cache reuse. |
+| `7a66f90fb` | Switch evaluates its discriminant once, performs strict case selection, defers default until all failed tests, and falls through without evaluating later tests. Case-block lexical bindings and strict function declarations initialize in their native scope; continue targets an iteration instead of the switch break context. | Six focused cases are written but unexecuted. Sloppy Annex B switch function declarations remain explicitly unsupported. |
+| `ff4321800`, `82f5392ab` | Function home objects are retained for ordinary/object-literal/private/class methods, constructors and field initializers. Super reads/writes/updates, optional/tagged calls and extracted methods use the actual receiver. Delete rejects a Super Reference before key coercion. | Six focused cases are written but unexecuted, including observable computed-key ordering and native-cache reuse. |
+| `02e9c7bfb` | Strict hidden static-block functions retain class this, super and private scope, isolate their var declarations and run in order among static fields after method installation. Abrupt completion stops later initialization; no synthetic constructor property is created. | Four focused cases are written but unexecuted. |
+| `7e2e788a6` | Catch object/array patterns reuse native binding-pattern bytecode for defaults, computed keys, rest, TDZ bindings and required iterator closing before the catch body. Initialization errors reach outer catches/finalizers. | Four focused cases are written but unexecuted. |
+
+Super reference lowering follows the current
+[ECMAScript evaluation and MakeSuperPropertyReference algorithms](https://tc39.es/ecma262/multipage/ecmascript-language-expressions.html#sec-super-keyword-runtime-semantics-evaluation):
+the receiver is obtained before evaluating a computed expression; the home
+prototype is read afterward, and key coercion remains at the consuming
+operation. This also avoids copying a method's new receiver into its home object.
+The existing reference deletion algorithm rejects super before coercion or
+null-base conversion. No JavaScriptCore or host-script fallback was added.
+
+Compiler-only checking of `tools/libjs_github_revisit.v` and its native runtime/
+DOM dependencies succeeds after integration: V C backend, `-n -check`,
+`-memory-limit 10G`, default 12-GiB process-tree guard, child/guard exit zero,
+19.559 seconds and sampled peak RSS 5,238,226,944 bytes. These are compiler costs,
+not JavaScript or browser timings. Earlier passes cover finally, switch and
+super integration separately. A bool-to-Value wiring error and a static-block
+local-name collision fail the initial compiler attempts; their logs are retained
+alongside the corrected passes. All seven completed guard reports were copied
+byte-for-byte into local `docs/performance/libjs-language-implementation-20261115/`
+evidence before their Build reports and job locks were removed. Compiler logs
+remain in the local benchmark cache.
+
+The new instruction layouts participate in the existing native-cache ABI hash;
+second-VM compiler-disabled cases are prepared, not claimed as passing. No new
+runtime, AST-corpus, GC/ownership, hydration, live-site, speedup or pixel result
+is available under this hold. The last actual GitHub observation is still the
+672-entry incomplete initialization pair above; it cannot validate these later
+language implementations or establish a completion percentage. Dynamic imports,
+generator execution, top-level await, remaining assignment forms/builtins and
+Web APIs still require work before the requested GitHub/Brave parity outcome.

@@ -13,7 +13,7 @@ The browser uses native Fetch/import maps without a JavaScriptCore context.
 Namespace reads have stable identity and sorted live exports, but their accessor
 descriptor adapter does not implement full namespace data-descriptor/freeze
 semantics. `import.meta` bytecode and synchronous `try/catch` also execute;
-`finally`, dynamic imports, top-level await, remaining language/builtin/Web APIs,
+Dynamic imports, top-level await, remaining language/builtin/Web APIs,
 React hydration and pixel-perfect GitHub rendering remain open.
 The ten-fix checkpoint has 261-file default-GC coverage (184 retained plus 77
 recovered after a host restart), a full 261/261 GC-disabled pass and 100/100 exact
@@ -66,10 +66,11 @@ reactions, including persisted native entries. Labelled blocks and loop control
 close crossed iterators in order; Annex B labelled functions remain pending.
 Promise finally, all/allSettled/race and withResolvers now have committed native
 implementations, with their later runtime checks held. Ordinary/new/optional
-spread calls compile through ordered iterator bytecode. Promise.any,
-generator execution, top-level await, class
-static blocks, super property
-references, anonymous class assignment/field-name
+spread calls compile through ordered iterator bytecode. Try/finally completion
+routing, switch dispatch, destructured catch parameters, super property
+references and class static blocks now have committed implementations; their
+runtime regressions remain held. Promise.any, generator execution, dynamic
+imports, top-level await, destructuring assignment, anonymous class assignment/field-name
 inference, Set algebra, Map extensions and remaining weak-reference APIs remain
 incomplete. Node/Element/HTMLElement/Document/DocumentFragment and native HTML tag
 interfaces share native wrapper prototypes. Custom-element definitions, HTML constructors,
