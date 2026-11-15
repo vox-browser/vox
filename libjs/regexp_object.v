@@ -104,6 +104,7 @@ fn initialize_regexp_intrinsics(mut vm VM, mut realm Realm) {
 	realm.regexp_constructor = object
 	mut text := realm.string_prototype or { panic('Missing String prototype') }
 	install_intrinsic_method(mut vm, &realm, mut text, 'match', 1, string_prototype_match)
+	initialize_regexp_match_all_intrinsics(mut vm, mut realm)
 }
 
 fn regexp_receiver(mut vm VM) !&RegExpObject {

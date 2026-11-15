@@ -61,6 +61,7 @@ pub mut:
 	string_constructor ?&Object
 	regexp_prototype ?&Object
 	regexp_constructor ?&Object
+	regexp_string_iterator_prototype ?&Object
 	throw_type_error_function      ?&Object
 	boolean_prototype              ?&Object
 	boolean_constructor            ?&Object

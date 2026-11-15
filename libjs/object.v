@@ -161,6 +161,7 @@ pub mut:
 	bound_function       ?&BoundFunction
 	function_source_text ?Utf16String // [[SourceText]] on ECMAScript callables
 	regexp_object ?&RegExpObject
+	regexp_string_iterator ?&RegExpStringIterator
 	host_properties ?HostProperties
 	array_object         ?&ArrayObject
 	arguments_object     ?&ArgumentsObject

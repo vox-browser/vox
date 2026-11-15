@@ -91,6 +91,12 @@ fn test_history_rejects_generator_frames_before_running_body_or_own_getters() {
 	assert history_eval(mut vm, 'var body=0,reads=0;function* g(){body++;yield 42}var it=g(),rejected=false;Object.defineProperty(it,"visible",{enumerable:true,get(){reads++;return 1}});try{history.replaceState(it,"")}catch(e){rejected=e instanceof DOMException&&e.name==="DataCloneError"}rejected&&body===0&&reads===0&&history.state===null')!.as_bool()
 }
 
+fn test_history_rejects_regexp_match_iterators_before_enumerable_getters() {
+	mut host, mut vm, _ := history_fixture()!
+	defer { host.close() }
+	assert history_eval(mut vm, 'var reads=0,it="a".matchAll(/a/g),rejected=false;Object.defineProperty(it,"visible",{enumerable:true,get(){reads++;return 1}});try{history.replaceState(it,"")}catch(e){rejected=e instanceof DOMException&&e.name==="DataCloneError"}rejected&&reads===0&&history.state===null')!.as_bool()
+}
+
 fn test_history_retains_cloned_state_after_temporary_allocation_scope() {
 	mut host, mut vm, _ := history_fixture()!
 	defer { host.close() }
