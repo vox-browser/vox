@@ -5,6 +5,7 @@ import domurl
 import encoding
 import css
 import fetch
+import fileapi
 import geometry
 import html
 import intersectionobserver
@@ -75,6 +76,10 @@ mut:
 	text_decoder_prototype &libjs.Object = unsafe { nil }
 	text_encoders map[voidptr]&encoding.TextEncoder
 	text_decoders map[voidptr]&encoding.TextDecoder
+	blob_prototype &libjs.Object = unsafe { nil }
+	blobs map[voidptr]&fileapi.Blob
+	blob_wrappers map[voidptr]&libjs.Object
+	blob_reads map[u64]&BlobReadBinding
 	history_object &libjs.Object = unsafe { nil }
 	history_binding ?&HistoryBinding
 	query_prototype &libjs.Object = unsafe { nil }
@@ -178,6 +183,7 @@ pub fn Host.create(vm &libjs.VM, realm &libjs.Realm, document &dom.Document, hoo
 	host.install_urls()!
 	host.install_text_encoding()
 	host.install_binary_string_codecs()
+	host.install_blobs()
 	host.install_history()
 	host.install_headers()!
 	mut global := realm.global_object_record()
@@ -243,6 +249,7 @@ fn (mut host Host) changed() {
 pub fn (mut host Host) close() {
 	if host.closed { return }
 	host.closed = true
+	host.close_blob_reads()
 	host.close_idle_callbacks()
 	host.close_microtasks()
 	host.close_timers()
@@ -271,6 +278,8 @@ pub fn (mut host Host) close() {
 	host.url_wrappers.clear()
 	host.text_encoders.clear()
 	host.text_decoders.clear()
+	host.blobs.clear()
+	host.blob_wrappers.clear()
 	host.close_fetch()
 	for listener in host.listeners {
 		if signal := listener.abort_signal {
