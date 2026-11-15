@@ -56,9 +56,57 @@ fn (mut host Host) install_events(mut node libjs.Object) ! {
 		})
 	}
 	host.install_event_constructor(mut prototype)
+	host.install_event_target_methods(mut node)
+	mut global := host.realm.global_object_record()
+	host.install_event_target_methods(mut global)
+	for type_ in ['click', 'input', 'change', 'load'] {
+		host.accessor(mut node, 'on' + type_, fn [host, type_] (mut vm libjs.VM) !libjs.Value {
+			target := unsafe { &dom.EventTarget(host.node(mut vm)!) }
+			for listener in host.listeners {
+				if listener.attribute && listener.type_ == type_ && voidptr(listener.target) == voidptr(target) {
+					return listener.callback
+				}
+			}
+			return libjs.js_null()
+		}, fn [host, type_] (mut vm libjs.VM) !libjs.Value {
+			target := unsafe { &dom.EventTarget(host.node(mut vm)!) }
+			mut owner := unsafe { &Host(host) }
+			for index := owner.listeners.len - 1; index >= 0; index-- {
+				listener := owner.listeners[index]
+				if listener.attribute && listener.type_ == type_ && voidptr(listener.target) == voidptr(target) {
+					owner.listeners.delete(index)
+				}
+			}
+			target.set_event_handler_attribute(type_, none)
+			value := vm.argument(0)
+			if value.is_function() {
+				owner.add_listener(target, type_, value, dom.AddEventListenerOptions{}, true)
+			}
+			return libjs.js_undefined()
+		})
+	}
+}
+
+// EventTarget methods accept both native nodes and the document's actual Window.
+// WebIDL uses the associated global object for an undefined/null receiver.
+fn (host &Host) event_target(mut vm libjs.VM) !&dom.EventTarget {
+	host.require_open(mut vm)!
+	receiver := vm.this_value()
+	if receiver.is_nullish() || (receiver.is_object()
+		&& voidptr(receiver.as_object()) == voidptr(host.realm.global_object_record())) {
+		if window := host.document.get_window() { return unsafe { &dom.EventTarget(window) } }
+		return vm.throw_error(.type_error, 'Document has no associated Window')
+	}
+	if receiver.is_object() {
+		if node := host.nodes[voidptr(receiver.as_object())] { return unsafe { &dom.EventTarget(node) } }
+	}
+	return vm.throw_error(.type_error, 'EventTarget method called on incompatible receiver')
+}
+
+fn (mut host Host) install_event_target_methods(mut object libjs.Object) {
 	for name in ['addEventListener', 'removeEventListener'] {
-		host.method(mut node, name, 2, fn [host, name] (mut vm libjs.VM) !libjs.Value {
-			actual := host.node(mut vm)!
+		host.method(mut object, name, 2, fn [host, name] (mut vm libjs.VM) !libjs.Value {
+			target := host.event_target(mut vm)!
 			if vm.argument_count() < 2 {
 				return vm.throw_error(.type_error, name + ' requires two arguments')
 			}
@@ -84,37 +132,10 @@ fn (mut host Host) install_events(mut node libjs.Object) ! {
 				capture = options.to_boolean()
 			}
 			mut owner := unsafe { &Host(host) }
-			target := unsafe { &dom.EventTarget(actual) }
 			if name == 'addEventListener' {
 				owner.add_listener(target, type_, callback, dom.AddEventListenerOptions{ capture: capture, once: once, passive: passive }, false)
 			} else {
 				owner.remove_listener(target, type_, callback, capture)
-			}
-			return libjs.js_undefined()
-		})
-	}
-	for type_ in ['click', 'input', 'change', 'load'] {
-		host.accessor(mut node, 'on' + type_, fn [host, type_] (mut vm libjs.VM) !libjs.Value {
-			target := unsafe { &dom.EventTarget(host.node(mut vm)!) }
-			for listener in host.listeners {
-				if listener.attribute && listener.type_ == type_ && voidptr(listener.target) == voidptr(target) {
-					return listener.callback
-				}
-			}
-			return libjs.js_null()
-		}, fn [host, type_] (mut vm libjs.VM) !libjs.Value {
-			target := unsafe { &dom.EventTarget(host.node(mut vm)!) }
-			mut owner := unsafe { &Host(host) }
-			for index := owner.listeners.len - 1; index >= 0; index-- {
-				listener := owner.listeners[index]
-				if listener.attribute && listener.type_ == type_ && voidptr(listener.target) == voidptr(target) {
-					owner.listeners.delete(index)
-				}
-			}
-			target.set_event_handler_attribute(type_, none)
-			value := vm.argument(0)
-			if value.is_function() {
-				owner.add_listener(target, type_, value, dom.AddEventListenerOptions{}, true)
 			}
 			return libjs.js_undefined()
 		})
