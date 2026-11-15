@@ -44,6 +44,7 @@ fn initialize_promise_intrinsics(mut vm VM, mut realm Realm) {
 	prototype.define_direct_property(PropertyName.from_str('constructor'), Value.from_object(constructor), attribute_writable | attribute_configurable)
 	prototype.define_direct_property(PropertyName.from_symbol(vm.well_known_symbol_to_string_tag()), Value.from_string(vm.create_string_from_str('Promise')), attribute_configurable)
 	function.define_native_accessor(mut vm, &realm, PropertyName.from_symbol(vm.well_known_symbol_species()), fn (mut vm VM) !Value { return vm.this_value() }, unsafe { nil }, attribute_configurable, realm.function_prototype)
+	install_intrinsic_method(mut vm, &realm, mut function, 'all', 1, promise_constructor_all)
 	install_intrinsic_method(mut vm, &realm, mut function, 'resolve', 1, fn (mut vm VM) !Value {
 		return promise_resolve(mut vm, vm.this_value(), vm.argument(0))
 	})
