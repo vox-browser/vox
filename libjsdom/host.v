@@ -67,6 +67,8 @@ mut:
 	resize_entry_wrappers map[voidptr]&libjs.Object
 	resize_sizes map[voidptr]resizeobserver.ResizeObserverSize
 	url_prototype        &libjs.Object = unsafe { nil }
+	urls map[voidptr]&domurl.DOMURL
+	url_wrappers map[voidptr]&libjs.Object
 	location_url &domurl.DOMURL = unsafe { nil }
 	history_object &libjs.Object = unsafe { nil }
 	history_binding ?&HistoryBinding
@@ -258,6 +260,8 @@ pub fn (mut host Host) close() {
 	host.history_binding = none
 	host.history_object = unsafe { nil }
 	host.location_url = unsafe { nil }
+	host.urls.clear()
+	host.url_wrappers.clear()
 	host.close_fetch()
 	for listener in host.listeners {
 		if signal := listener.abort_signal {

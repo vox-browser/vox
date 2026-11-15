@@ -175,3 +175,9 @@ fn test_history_rejects_native_collator_state_before_author_getters() {
 	defer { host.close() }
 	assert history_eval(mut vm, 'var c=new Intl.Collator("en-US"),reads=0,rejected=false;Object.defineProperty(c,"visible",{enumerable:true,get(){reads++;throw 1}});try{history.replaceState(c,"")}catch(e){rejected=e instanceof DOMException&&e.name==="DataCloneError"}rejected&&reads===0&&history.state===null')!.as_bool()
 }
+
+fn test_history_rejects_native_url_state_before_author_getters() {
+	mut host, mut vm, _ := history_fixture()!
+	defer { host.close() }
+	assert history_eval(mut vm, 'var u=new URL("https://example.com/"),reads=0,rejected=false;Object.defineProperty(u,"visible",{enumerable:true,get(){reads++;throw 1}});try{history.replaceState(u,"")}catch(e){rejected=e instanceof DOMException&&e.name==="DataCloneError"}rejected&&reads===0&&history.state===null')!.as_bool()
+}

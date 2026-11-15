@@ -22,7 +22,7 @@ fn (host &Host) history_platform_object(object &libjs.Object) bool {
 		|| key == voidptr(host.navigator_object) || key in host.nodes || key in host.events
 		|| key in host.event_targets || key in host.style_elements || key in host.registries
 		|| key in host.abort_controllers || key in host.abort_signals || key in host.dom_exceptions
-		|| key in host.headers || key in host.headers_iterators || key in host.queries || key in host.query_iterators
+		|| key in host.headers || key in host.headers_iterators || key in host.urls || key in host.queries || key in host.query_iterators
 		|| key in host.fetch_requests || key in host.fetch_responses || key in host.mutation_observers
 		|| key in host.mutation_records || key in host.media_queries || key in host.read_only_rects
 		|| key in host.intersection_observers || key in host.intersection_entries
