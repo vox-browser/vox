@@ -16,6 +16,7 @@ fn initialize_collection_intrinsics(mut vm VM, mut realm Realm) ! {
 		'unshift': array_prototype_unshift
 		'slice': array_prototype_slice
 		'concat': array_prototype_concat
+		'fill': array_prototype_fill
 		'splice': array_prototype_splice
 		'forEach': array_prototype_for_each
 	} { install_intrinsic_method(mut vm, &realm, mut array, name, if name in ['slice','splice'] { 2 } else if name == 'pop' { 0 } else { 1 }, behaviour) }
