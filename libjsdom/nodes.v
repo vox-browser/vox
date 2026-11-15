@@ -88,7 +88,7 @@ fn (mut host Host) install_nodes() ! {
 			return if found := element { owner.wrap_node(found.as_node()) } else { libjs.js_null() }
 		})
 	}
-	for name in ['parentNode', 'parentElement', 'nextSibling', 'nextElementSibling',
+	for name in ['parentNode', 'parentElement', 'firstChild', 'lastChild', 'previousSibling', 'nextSibling', 'nextElementSibling',
 		'previousElementSibling', 'ownerDocument', 'nodeName', 'nodeType', 'textContent'] {
 		getter := fn [host, name] (mut vm libjs.VM) !libjs.Value {
 			mut owner := unsafe { &Host(host) }
@@ -115,6 +115,15 @@ fn (mut host Host) install_nodes() ! {
 				}
 				'nextSibling' {
 					if sibling := actual.next_sibling() { return owner.wrap_node(sibling) }
+				}
+				'previousSibling' {
+					if sibling := actual.previous_sibling() { return owner.wrap_node(sibling) }
+				}
+				'firstChild' {
+					if child := actual.first_child() { return owner.wrap_node(child) }
+				}
+				'lastChild' {
+					if child := actual.last_child() { return owner.wrap_node(child) }
 				}
 				'nextElementSibling' {
 					if sibling := actual.next_element_sibling() {
@@ -301,23 +310,7 @@ fn (mut host Host) install_nodes() ! {
 			return libjs.js_null()
 		}, unsafe { nil })
 	}
-	for name in ['appendChild', 'removeChild'] {
-		host.method(mut node, name, 1, fn [host, name] (mut vm libjs.VM) !libjs.Value {
-			mut actual := unsafe { &dom.Node(host.node(mut vm)!) }
-			value := vm.argument(0)
-			if !value.is_object() { return vm.throw_error(.type_error, 'Node argument required') }
-			child := host.nodes[voidptr(value.as_object())] or { return vm.throw_error(.type_error, 'Node argument required') }
-			if name == 'appendChild' {
-				actual.append_child(child)!
-			} else {
-				actual.remove_child(child)!
-			}
-			mut owner := unsafe { &Host(host) }
-			owner.drain_custom_elements()
-			owner.changed()
-			return value
-		})
-	}
+	host.install_tree_mutations(mut node)
 	host.install_events(mut node)!
 	host.install_parent_node_mutations()
 	host.install_element_factories()
