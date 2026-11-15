@@ -328,6 +328,7 @@ fn (mut host Host) install_nodes() ! {
 		})
 	}
 	host.install_events(mut node)!
+	host.install_parent_node_mutations()
 }
 
 @[heap]
