@@ -63,8 +63,10 @@ fn (mut host ModuleHost) load_libjs_import(imported LibJSModuleImport) ! {
 	// This runtime executes JavaScript modules. Other module types must fail
 	// before fetching rather than treating their response body as JavaScript.
 	if imported.request.attributes.len>0 { return error('LibJS import attributes are not supported by the JavaScript module host') }
-	parent := imported.referrer.filename()
-	base := if source := host.sources[parent] { source.base } else { parent }
+	parent := if imported.referrer.kind == .realm { host.settings.api_base_url().serialize() } else { imported.referrer.filename() }
+	base := if source := host.sources[parent] { source.base } else {
+		if parent == '' || parent == '<script>' { host.settings.api_base_url().serialize() } else { parent }
+	}
 	key := host.resolve(imported.request.module_specifier.str(),base,parent)!
 	mut runtime := unsafe { &Runtime(host.runtime) }
 	if cached := runtime.libjs_modules_[key] {

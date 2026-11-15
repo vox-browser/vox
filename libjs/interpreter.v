@@ -597,3 +597,18 @@ pub fn (mut vm VM) call_with_limits(function Value, this_value Value, arguments 
 	}
 	return call(mut vm, function, this_value, arguments)
 }
+
+// Run one embedding-scheduled Promise job with a budget shared by its native
+// algorithms and nested author functions. The host owns microtask ordering.
+pub fn (mut vm VM) run_promise_job_with_limits(job PromiseJob, limits ExecutionLimits) !Value {
+	outer := vm.run_executable_depth == 0 && vm.external_budget_depth == 0
+	previous_budget, previous_active := vm.instruction_budget, vm.instruction_budget_active
+	if outer { vm.instruction_budget = limits.max_instructions; vm.instruction_budget_active = limits.max_instructions != 0 }
+	vm.external_budget_depth++
+	defer {
+		vm.external_budget_depth--
+		if outer { vm.instruction_budget = previous_budget; vm.instruction_budget_active = previous_active }
+	}
+	vm.consume_execution_budget()!
+	return job()
+}

@@ -228,6 +228,7 @@ pub fn (mut runtime Runtime) bind_scripting_environment(settings &html.Environme
 	mut event_loop := unsafe { &html.EventLoop(settings.responsible_event_loop()) }
 	event_loop.attach_embedding_vm(vm)
 	runtime.scripting_settings_ = settings
+	if runtime.engine == .libjs { runtime.install_libjs_promise_jobs(settings) }
 	runtime.install_source_location_provider(realm)
 	runtime.install_inline_script_evaluator(realm)
 	runtime.install_string_compilation_policy(realm)
