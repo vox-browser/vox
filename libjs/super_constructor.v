@@ -19,8 +19,9 @@ fn construct_super(mut vm VM, constructor Value, arguments []Value) !Value {
 	if mut environment is FunctionEnvironment {
 		if class_constructor := environment.class_constructor {
 			if !class_constructor.derived { return vm.throw_error(.reference_error, 'Super call requires a derived constructor') }
-			object := construct(mut vm, constructor, arguments, environment.new_target.as_object())!
+			mut object := construct(mut vm, constructor, arguments, environment.new_target.as_object())!
 			environment.bind_this_value(mut vm, Value.from_object(object))!
+			class_constructor.initialize_empty_instance_fields(mut vm, mut object)!
 			return Value.from_object(object)
 		}
 	}

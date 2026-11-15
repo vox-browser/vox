@@ -2,16 +2,22 @@
 module libjs
 
 // ClassDefinitionEvaluation / Rust bytecode codegen.rs: base classes with
-// ordinary, static and accessor methods. Public/private fields, static blocks
-// and super property references remain explicit unsupported boundaries.
+// ordinary, static and accessor methods and empty public fields. Field
+// initializers/private elements, static blocks and super property references
+// remain explicit unsupported boundaries.
 fn (mut generator BytecodeGenerator) class_expression(mut vm VM, data &ClassData) !Operand {
 	previous_strict := generator.strict
 	generator.strict = true
 	defer { generator.strict = previous_strict }
 	for element in data.elements {
-		method := element.kind
-		if method !is ClassElementMethod { return generator.unsupported('class fields or static initialization') }
-		if method.key.kind.tag == .private_identifier_expr { return generator.unsupported('private class methods') }
+		match element.kind {
+			ClassElementMethod { if element.kind.key.kind.tag == .private_identifier_expr { return generator.unsupported('private class methods') } }
+			ClassElementField {
+				if element.kind.key.kind.tag == .private_identifier_expr { return generator.unsupported('private class fields') }
+				if element.kind.initializer != none { return generator.unsupported('class field initializers') }
+			}
+			ClassElementStaticInit { return generator.unsupported('class static initialization') }
+		}
 	}
 	generator.emit(Instruction{ op: .enter_scope })
 	generator.scope_depth++
@@ -26,9 +32,17 @@ fn (mut generator BytecodeGenerator) class_expression(mut vm VM, data &ClassData
 	prototype := generator.temporary()
 	generator.emit(Instruction{ op: .get_property, dst: prototype, lhs: result, rhs: generator.constant(Value.from_string(vm.create_string_from_str('prototype'))) })
 	for element in data.elements {
-		method := element.kind as ClassElementMethod
 		previous_range := generator.range
 		generator.range = element.range
+		if element.kind is ClassElementField {
+			raw_key := generator.expression(mut vm, &element.kind.key)!
+			key := generator.temporary()
+			generator.emit(Instruction{op: .to_property_key, dst: key, lhs: raw_key})
+			generator.emit(Instruction{op: .record_empty_class_field, lhs: result, rhs: key, identifier: if element.kind.is_static { u32(1) } else { 0 }})
+			generator.range = previous_range
+			continue
+		}
+		method := element.kind as ClassElementMethod
 		raw_key := generator.expression(mut vm, &method.key)!
 		key := generator.temporary()
 		generator.emit(Instruction{ op: .to_property_key, dst: key, lhs: raw_key })
@@ -38,6 +52,7 @@ fn (mut generator BytecodeGenerator) class_expression(mut vm VM, data &ClassData
 		generator.range = previous_range
 	}
 	if data.name != none { generator.emit(Instruction{ op: .initialize_binding, lhs: result, identifier: generator.identifier(name), strict: true }) }
+	generator.emit(Instruction{op: .initialize_empty_static_fields, lhs: result})
 	generator.scope_depth--
 	generator.emit(Instruction{ op: .leave_scope })
 	return result
@@ -50,6 +65,9 @@ struct BaseClassFunction {
 	body Value
 	name Utf16String
 	derived bool
+mut:
+	instance_fields []PropertyName
+	static_fields []PropertyName
 }
 
 fn (function &BaseClassFunction) realm() ?&Realm { return function.realm_ }
@@ -63,7 +81,9 @@ fn (mut function BaseClassFunction) internal_construct(mut vm VM, arguments []Va
 	if function.derived {
 		if function.body.is_undefined() {
 			parent := function.object.internal_get_prototype_of() or { return vm.throw_error(.type_error, 'Superclass is not a constructor') }
-			return construct(mut vm, Value.from_object(parent), arguments, new_target)
+			mut object := construct(mut vm, Value.from_object(parent), arguments, new_target)!
+			function.initialize_empty_instance_fields(mut vm, mut object)!
+			return object
 		}
 		mut body := function.body.as_function()
 		if mut body is ECMAScriptFunction {
@@ -72,7 +92,8 @@ fn (mut function BaseClassFunction) internal_construct(mut vm VM, arguments []Va
 		return error('Invalid class constructor body')
 	}
 	prototype := get_prototype_from_constructor(mut vm, new_target, fn (realm &Realm) &Object { return realm.object_prototype_record() })!
-	object := Object.create(function.realm_, prototype)
+	mut object := Object.create(function.realm_, prototype)
+	function.initialize_empty_instance_fields(mut vm, mut object)!
 	if function.body.is_undefined() { return object }
 	mut body := function.body.as_function()
 	if mut body is ECMAScriptFunction {

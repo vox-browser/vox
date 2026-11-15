@@ -88,6 +88,8 @@ pub enum OpCode {
 	get_new_target
 	get_super_constructor
 	super_construct
+	record_empty_class_field
+	initialize_empty_static_fields
 }
 
 pub struct Instruction {
@@ -118,7 +120,7 @@ fn (instruction Instruction) input_count() int {
 		.in_op, .instance_of, .call {
 			2
 		}
-		.get_property, .delete_property, .new_regexp, .set_object_literal_prototype, .close_sync_iterator_throw, .new_class_method {
+		.get_property, .delete_property, .new_regexp, .set_object_literal_prototype, .close_sync_iterator_throw, .new_class_method, .record_empty_class_field {
 			2
 		}
 		.put_property, .define_property, .define_class_method, .new_class {
@@ -127,6 +129,7 @@ fn (instruction Instruction) input_count() int {
 		.mov, .unary_plus, .unary_minus, .bitwise_not, .not_op, .typeof_op, .to_numeric,
 		.increment, .decrement, .set_binding, .set_variable, .initialize_binding, .jump_if_true,
 		.require_object_coercible, .to_property_key, .copy_object_excluding_keys,
+		.initialize_empty_static_fields,
 		.get_object_property_iterator, .property_name_iterator_next,
 		.get_sync_iterator, .sync_iterator_next, .close_sync_iterator,
 		.sync_iterator_step_value, .sync_iterator_elide, .sync_iterator_to_array,
@@ -151,6 +154,7 @@ fn (instruction Instruction) writes_operand() bool {
 	return instruction.op !in [.put_property, .define_property, .define_class_method, .set_binding, .set_variable, .initialize_binding,
 		.create_mutable_binding, .create_immutable_binding, .enter_scope, .leave_scope, .enter_function_body, .jump,
 		.require_object_coercible, .set_object_literal_prototype,
+		.record_empty_class_field, .initialize_empty_static_fields,
 		.close_sync_iterator, .close_sync_iterator_throw,
 		.sync_iterator_elide,
 		.jump_if_true, .jump_if_false, .jump_if_nullish, .end, .throw_op]
@@ -192,6 +196,7 @@ pub fn (executable &Executable) validate(arguments_count u32) ! {
 		}
 		if instruction.op == .new_class && instruction.identifier >= u32(executable.class_source_spans.len) { return error('Class source index out of range') }
 		if instruction.op == .define_class_method && instruction.identifier > 2 { return error('Invalid class method kind') }
+		if instruction.op == .record_empty_class_field && instruction.identifier > 1 { return error('Invalid class field kind') }
 		if instruction.op in [.get_binding, .get_callee_and_this, .typeof_binding, .delete_binding, .set_binding, .set_variable, .initialize_binding, .create_mutable_binding, .create_immutable_binding]
 			&& instruction.identifier >= u32(executable.identifier_table.len) {
 			return error('Identifier out of range')

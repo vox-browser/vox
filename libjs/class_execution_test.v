@@ -70,15 +70,16 @@ fn test_untranslated_class_slices_fail_before_executing_author_effects() {
 fn test_class_bytecode_rejects_invalid_source_records_and_method_kinds() {
 	mut vm := VM.create()
 	create_simple_execution_context(mut vm)
-	for corrupt in ['source', 'method'] {
-		mut script := Script.parse('class C{read(){return 42}}', vm.realm(), 'class-bytecode.js', unsafe { nil })!
+	for corrupt in ['source', 'method', 'field'] {
+		mut script := Script.parse('class C{field;read(){return 42}}', vm.realm(), 'class-bytecode.js', unsafe { nil })!
 		mut executable := script.compile(mut vm)!
 		for mut instruction in executable.instructions {
 			if corrupt == 'source' && instruction.op == .new_class { instruction.identifier = 0xffffffff }
 			if corrupt == 'method' && instruction.op == .define_class_method { instruction.identifier = 3 }
+			if corrupt == 'field' && instruction.op == .record_empty_class_field { instruction.identifier = 2 }
 		}
 		if _ := executable.validate(0) { assert false } else {
-			assert err.msg() == if corrupt == 'source' { 'Class source index out of range' } else { 'Invalid class method kind' }
+			assert err.msg() == if corrupt == 'source' { 'Class source index out of range' } else if corrupt == 'method' { 'Invalid class method kind' } else { 'Invalid class field kind' }
 		}
 	}
 }

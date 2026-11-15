@@ -52,6 +52,8 @@ fn (mut vm VM) execute_instruction(instruction Instruction, executable &Executab
 	match instruction.op {
 		.get_new_target { result = vm.get_new_target() }
 		.get_super_constructor { result = get_super_constructor(mut vm)! }
+		.record_empty_class_field { record_empty_class_field(mut vm, left, right.to_property_key(mut vm)!, instruction.identifier == 1)! }
+		.initialize_empty_static_fields { initialize_empty_static_fields(mut vm, left)! }
 		.get_argument { result = frame.argument(instruction.identifier) }
 		.get_rest_arguments {
 			mut values := []Value{}
