@@ -8,6 +8,7 @@ import math
 pub struct DocumentImageColorTransform {
 pub:
 	yuv_rec601_limited bool
+	yuv420_atlas bool
 	gamma f32
 	gamut [9]f32
 }
@@ -57,6 +58,9 @@ pub fn (mut s GpuSurface) draw_document_color_rgba(levels [][]u8, width int, hei
 	}
 	if color_transform.yuv_rec601_limited && !document_image_yuv_upload_supported() {
 		return error('gg.canvas: YUV shader is unavailable')
+	}
+	if color_transform.yuv420_atlas && (!color_transform.yuv_rec601_limited || !document_image_yuv_atlas_upload_supported()) {
+		return error('gg.canvas: YUV atlas shader is unavailable')
 	}
 	mut desc := gfx.ImageDesc{ width: width, height: height, pixel_format: .rgba8, num_mipmaps: levels.len }
 	for index, level in levels {

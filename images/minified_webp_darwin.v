@@ -16,6 +16,8 @@ fn (mut app BrowserApp) draw_minified_webp(command &layout.PaintCommand, image &
 	if os.getenv('VOX_DIAGNOSTIC_PNG') != '' {
 		eprintln('VOX_PLANAR_INPUT ${image.width}x${image.height} channels=${image.nr_channels} dest=${destination.x},${destination.y},${destination.width},${destination.height} source=${source} matrix=${matrix} url=${url[..math.min(url.len, 180)]}')
 	}
+	atlas := destination.width * 2 > image.width && destination.height * 2 > image.height
+        && destination.width < image.width && destination.height < image.height
 	if app.document == unsafe { nil } || app.document.font_rendering_policy() != .chromium
 		|| command.apply_force_dark_to_image || nearest || command.opacity != 1
 		|| image.path != '' || image.nr_channels != 7 || image.data == unsafe { nil }
@@ -23,7 +25,7 @@ fn (mut app BrowserApp) draw_minified_webp(command &layout.PaintCommand, image &
 		|| image.width * image.height > 4 * 1024 * 1024 || image.width % 2 != 0 || image.height % 2 != 0
 		|| matrix[0] != 1 || matrix[1] != 0 || matrix[2] != 0 || matrix[3] != 1
 		|| destination.width <= 0 || destination.height <= 0
-		|| destination.width * 2 > image.width || destination.height * 2 > image.height
+		|| (!atlas && (destination.width * 2 > image.width || destination.height * 2 > image.height))
 		|| source != [f32(0), 0, f32(image.width), f32(image.height)]! {
 		return false
 	}
@@ -46,7 +48,7 @@ fn (mut app BrowserApp) draw_minified_webp(command &layout.PaintCommand, image &
 	if os.getenv('VOX_DIAGNOSTIC_PNG') != '' {
 		eprintln('VOX_PLANAR_UPLOAD ${image.width}x${image.height}->${tw}x${th} body=${digest}')
 	}
-	key := '\x00minified-yuv:${u64(voidptr(app.document))}:${app.navigation_generation}:${png_decode_scope.scope}:${url}:${digest}:${tw}x${th}'
+	key := '\x00minified-yuv:${u64(voidptr(app.document))}:${app.navigation_generation}:${png_decode_scope.scope}:${url}:${digest}:${tw}x${th}:atlas=${atlas}'
 	mut decoded := &gg.Image{}
 	if id := app.background_image_ids[key] {
 		previous := app.ctx.get_cached_image_by_idx(id)
@@ -63,7 +65,11 @@ fn (mut app BrowserApp) draw_minified_webp(command &layout.PaintCommand, image &
 			return false
 		}
 		packed := if w == image.width && h == image.height {
-			yuv.webp_minified_upload(unsafe { planes.vbytes(size) }, w, h, tw, th) or { []u8{} }
+			if atlas {
+                yuv.webp_420_atlas_upload(unsafe { planes.vbytes(size) }, w, h) or { []u8{} }
+            } else {
+                yuv.webp_minified_upload(unsafe { planes.vbytes(size) }, w, h, tw, th) or { []u8{} }
+            }
 		} else {
 			[]u8{}
 		}
@@ -87,7 +93,7 @@ fn (mut app BrowserApp) draw_minified_webp(command &layout.PaintCommand, image &
 	if os.getenv('VOX_DIAGNOSTIC_PNG') != '' {
 		eprintln('VOX_PLANAR_READY ok=${decoded.ok} upload=${decoded.width}x${decoded.height} nil=${decoded.data == unsafe { nil }}')
 	}
-	drawn := C.native_draw_sampled_png(decoded.data, i32(tw), i32(th), i32(image.width), i32(image.height), if use_mips { i32(4) } else { i32(3) },
+	drawn := C.native_draw_sampled_png(decoded.data, i32(tw), i32(th), i32(image.width), i32(image.height), if atlas { i32(5) } else if use_mips { i32(4) } else { i32(3) },
 		f32(destination.x) + f32(matrix[4]), f32(destination.y) + f32(matrix[5]), f32(destination.width), f32(destination.height),
 		&clipping[0], page_x, page_y, f32(scroll_y), f32(app.ctx.width), f32(app.ctx.height)) != 0
 	if os.getenv('VOX_DIAGNOSTIC_PNG') != '' {

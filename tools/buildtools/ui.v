@@ -35,6 +35,17 @@ fn prepare_gg_canvas(canvas string) ! {
 	if image_helper.contains('yuv_rec601_limited') && !read(layer)!.contains('document_image_yuv_upload_supported') {
 		gg_patches(canvas, 'prepare_gg_yuv')!
 	}
+    if image_helper.contains('yuv420_atlas') {
+        if !read(layer)!.contains('u.color_transform.yuv420_atlas') {
+            gg_patches(canvas, 'prepare_gg_yuv_atlas_uniform')!
+        }
+        if !read(layer)!.contains('fn document_image_yuv_atlas_upload_supported()') {
+            gg_patches(canvas, 'prepare_gg_yuv_atlas_support')!
+        }
+        if !read(join(canvas, 'shaders/paint_snippets.metal'))!.contains('gammaParameters_7.z > 0.0f') {
+            gg_patches(canvas, 'prepare_gg_yuv_atlas_shader')!
+        }
+    }
 	write_changed(join(canvas, 'vox_document_image.v'), image_helper)!
 }
 

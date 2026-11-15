@@ -1,5 +1,6 @@
 """Apply limited-range YUV conversion after document texture filtering."""
 from pathlib import Path
+import json
 from prepare_http_compat import write_if_changed
 from prepare_gg_shadow import replace_once
 
@@ -25,6 +26,16 @@ def prepare(canvas):
                                   1.164384f * yuv.x + 2.017232f * yuv.y - 1.085631f), 0.0f, 1.0f), 1.0f);
 }
 ''')
+    patches = json.loads((Path(__file__).parent / 'buildtools/gg_patches.json').read_text())
+    for group, marker in [('prepare_gg_yuv_atlas_uniform', 'u.color_transform.yuv420_atlas'),
+                          ('prepare_gg_yuv_atlas_support', 'fn document_image_yuv_atlas_upload_supported()'),
+                          ('prepare_gg_yuv_atlas_shader', 'gammaParameters_7.z > 0.0f')]:
+        for operation in patches[group]:
+            if operation['file'] == 'gpu_layer.v':
+                if marker not in layer:
+                    layer = replace_once(layer, operation['old'], operation['new'])
+            elif marker not in snippets:
+                snippets = replace_once(snippets, operation['old'], operation['new'])
     for path, value in [(layer_path, layer), (snippets_path, snippets)]:
         if path.is_symlink():
             path.unlink()
