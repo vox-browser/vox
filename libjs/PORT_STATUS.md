@@ -35,23 +35,40 @@ visit followed in `7ec82b601`, and browser parsed-source reuse in `07902ae2d`.
 LibJS documents now enable that persistent cache automatically; the earlier
 manual HN experiment above is historical, not the current document-cache policy.
 
-Set/Map core operations and live ordered iterators, lazy async-function creation,
-native element CSSOM bindings, and base classes with static/instance methods and
-accessors are implemented. Async execution and its constructor link, class
-heritage/fields/private/super/static blocks, anonymous class assignment-name
-inference, Set algebra, Map extensions and weak collections remain incomplete.
-The CSSOM wrapper uses the actual native declarations; full interface constructor
-ancestry and custom-element reaction wrapping remain separate work.
+Set/Map operations and live iterators, WeakMap weak keys, ordinary arguments
+objects, default/rest/destructured function parameters, class inheritance and
+super construction, public field initializers, private fields/methods/accessors,
+lexical brands, object literal accessors/methods,
+Array concat/fill, ordinary template literals and native element CSSOM bindings
+are implemented. Native Promise construction, resolving functions, then/catch,
+resolve/reject, generic species capabilities and FIFO reactions execute. Window
+listeners use the associated native Window. Headers uses actual native Fetch
+records with ByteString conversion and live iteration. Native DOM
+Event construction preserves subclass prototypes and actual native event records.
+Promise finally/combinators, async/generator execution, object/call spread, class
+static blocks, super property
+references, anonymous class assignment/field-name
+inference, Set algebra, Map extensions and remaining weak-reference APIs remain
+incomplete. CSSOM constructor ancestry and custom-element reaction wrapping remain
+separate work.
 
-The current checkpoint passes 283/283 package files in each GC mode and 100/100
-exact upstream AST cases, with 721 unchanged source/fixture/compiler inputs.
-Focused cache tests load native code in fresh VMs with the compiler disabled.
-Original GitHub scripts reuse 119 native executables on the second opening,
-but all five failing entries now stop at missing WeakMap and no commit links
-hydrate. Native LibJS observations exceed the unchanged 3 GiB guard before
-capture; a same-build JSC control completes the content audit. Pixel equality
-and live-site acceptance remain open. Commits, deviations, retained failures,
-identities and scope are in the
+The latest complete core checkpoint passes 296/296 package files in each GC mode,
+with 790 unchanged source/fixture/compiler inputs. The unchanged canonical AST
+driver previously passed all 100 upstream cases exactly; the subsequent runtime
+changes do not change parsing. Public field initializers also pass AddressSanitizer
+with stack-use-after-return detection and GC disabled. The later Promise slice has nine focused cases plus five VM/realm/module
+neighbors passing in both modes and an AddressSanitizer pass; it is not a full
+297-file checkpoint. Headers has six focused cases passing in both modes, plus
+five native-model cases per mode. Native Event's three cases and the four original Hacker News
+DOM/event cases pass in both modes. Cache checks load native code in fresh VMs
+with the compiler disabled. Original GitHub scripts reuse 161 native executables
+and 51 parsed sources on the second opening, but module evaluation next lacks
+the Fetch binding; 33 directory rows remain and no commit links hydrate.
+A full native LibJS browser capture completes under the default 12 GiB guard,
+retaining module errors and placeholders; the earlier 3 GiB failures are focused
+small-budget diagnostics. The diagnostic image differs from Brave. Pixel equality,
+live-site behavior and completed-page speedup acceptance remain open. Commits,
+deviations, retained failures, identities and scopes are in the
 [runtime continuation report](../docs/LIBJS_GITHUB_RUNTIME_20261115.md).
 
 ## Synchronous iteration and array declarations — 2026-11-15

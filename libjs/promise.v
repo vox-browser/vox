@@ -78,7 +78,8 @@ pub fn (mut promise Promise) reject(mut vm VM, reason Value) {
 
 // 27.2.1.1 PromiseCapability Records, https://tc39.es/ecma262/#sec-promisecapability-records
 @[heap]
-// Resolve and reject are optional until promise resolving functions are translated.
+// Module loading permits absent resolving hooks; generic JavaScript capabilities
+// retain their callable values in JSPromiseCapability.
 pub struct PromiseCapability {
 pub:
 	promise &Promise

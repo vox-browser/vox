@@ -1,9 +1,13 @@
 # GitHub compiled-JavaScript continuation, 2026-11-15
 
-**Pixel-perfect GitHub rendering remains unachieved.** The native LibJS page
-exceeds the unchanged 3 GiB runtime guard before an audit or PNG. A source-built
-DOM/module diagnostic gets further through initialization, but all five failing
-entries now stop on missing `WeakMap`, and no commit links hydrate.
+**Pixel-perfect GitHub rendering remains unachieved.** A full native LibJS
+capture completes under the repository's default 12 GiB browser guard, but
+module failures leave loading placeholders and prevent commit links from
+hydrating. Earlier 3 GiB runs are retained small-budget diagnostics; the
+scope correction below explains why they cannot block a full browser capture.
+The follow-up records WeakMap,
+arguments, parameter, inheritance and parser-allocation work after the original
+283-file checkpoint; the earlier failing cohorts remain historical evidence.
 
 The native compiler first appeared in `5ed3e8155`, despite that commit's
 object-literal title: concurrent staged native-tier work was included. Persistent
@@ -21,9 +25,9 @@ and its limited performance scope are in [the revisit report](LIBJS_REVISIT_CACH
 | `a8c7ba38c` | `element.style` uses the real retained native CSS declaration block; property accessors, priorities, serialization, indexed declarations, mutations and feature detection are live. | Full CSS interface constructor/prototype ancestry and custom-element reaction wrapping. |
 | `1ec8f2467` | Base-class construction, static/instance methods, accessors, strict computed keys, immutable inner names, mutable outer declarations and cached native execution. | Heritage, fields, private methods, super, static blocks and anonymous assignment-name inference. |
 
-These are partial translations, without JavaScriptCore fallback. In particular,
-async creation does not pretend to implement async execution, and WeakMap has
-not been replaced with a strongly retaining Map shim.
+These are partial translations, without JavaScriptCore fallback. Async calls
+remain unsupported. The follow-up below implements WeakMap with native weak
+keys, retaining the upstream collector model for values.
 
 The Set/Map and class tests execute the same scripts in two fresh VMs. The second
 VM uses `/usr/bin/false` as its compiler, attaches persisted native entries and
@@ -92,8 +96,8 @@ Its retained directory rows, latest commit, README and commit-link text/identiti
 also pass the existing `github_hydrated_render.validate` check against the fixed
 Brave audit, without changing the expected content.
 Its PNG is a whole-window diagnostic, not a document-only pixel comparison.
-There is no new LibJS PNG to compare with Brave. The missing runtime behavior
-and the native LibJS memory failure both remain required work.
+At this historical checkpoint no LibJS PNG was available. The later default-budget
+capture below supersedes that limitation; hydration and pixel equality remain open.
 
 ## Verification checkpoint
 
@@ -120,3 +124,238 @@ Local receipts are in `docs/performance/libjs-classes-checkpoint-20261115/`;
 native observations are retained under
 `~/Library/Caches/Vox/benchmarks/libjs-runtime-20261115/`. These checks do not
 reset the browser's unresolved memory, hydration or pixel-conformance gates.
+
+## Runtime and allocation follow-up
+
+| Commit | Behavior | Remaining boundary |
+| --- | --- | --- |
+| `8243d460f` | WeakMap construction, weak object/non-global-symbol keys, core operations and upsert methods; retired interpreter/context slots clear conservative roots. | Like upstream's current collector model, values are visited strongly. Dead-key pruning runs at VM checkpoints or subsequent collection operations after a GC epoch. WeakSet, WeakRef and finalization APIs remain pending. |
+| `2de9dbe08` | Ordinary function arguments objects, mapped sloppy parameters, strict isolation, descriptor detachment, escaped environments and the intrinsic Array iterator. | Direct eval and its effects on function instantiation remain pending. |
+| `ab92c7d3b` | Speculative scope rollback discards its private buffer tail in place, preserving capacity and clearing retired roots. | Does not establish that native GitHub fits the memory guard. |
+| `52b684734` | Array concat preserves holes, live getters, spreadability, custom species, data descriptors and the shared instruction budget. | The shared species helper's foreign-intrinsic exception and Proxy exotics remain pending. |
+| `493847550` | Default, rest and destructured parameters initialize in order with TDZ and a separate body environment; non-simple arguments stay unmapped. | Async/generator execution, direct eval and spread call arguments remain pending. |
+| `ccb9484f9` | Derived construction, superclass/prototype validation, inherited statics, super calls, new.target, return rules and native-cache reuse. Synthetic default constructors forward actual arguments without Array iteration. | Public/private fields, super property references, static blocks and remaining native-builtin subclass behavior remain pending. |
+| `66daa8c55` | Regex, template and private-name AST payloads have explicit heap ownership instead of occupying space in every expression node. | Reduces cumulative allocations; the GC-managed RSS trials below regress. |
+| `ff7b5b1be` | Fixed ASCII parser comparisons avoid decoding the same keyword for every token and scope entry, preserving escaped identifier behavior. | General UTF-16 comparisons and names retain their existing semantics. |
+| `740285c56` | Empty public fields retain computed keys once and define own data properties before base bodies, after derived super calls, and after static method installation. | Field initializers, private elements and static blocks remain pending. |
+| `8e12522ec` | Event construction creates real native DOM Events, supports subclass prototypes, dictionary flags, constants, native methods, unforgeable trust and WTF-8 type round trips. | Foreign-realm WebIDL prototype fallback, EventTarget construction/dispatch binding and the remaining Event interface remain separate work. |
+| `987f12637` | Object literal getters, setters and concise methods execute with computed keys and native cache reuse; methods are enumerable and nonconstructible. | Object spread and super property references remain pending. |
+| `20339c56b` | Array fill snapshots length, converts observable bounds, and performs ordinary ascending Set operations with budget checks. | Proxy exotics remain pending. |
+| `9d7364e13` | Window add/remove listeners use the associated native Window, including node propagation, callback objects, capture/once/passive options and cleanup. | AbortSignal options, Window handler attributes and EventTarget construction/dispatch bindings remain pending. |
+| `83e9e1e2d` | Ordinary template substitutions convert with the string hint, preserving evaluation order, abrupt completion and UTF-16. | Tagged template call-site objects remain pending. |
+| `39d44e548` | Public field initializers retain class environments, run per receiver with their own this/new.target, and preserve base/super/static ordering and anonymous function names. | Anonymous class name inference, super properties and static blocks remain pending. |
+| `5e45435c9` | Private fields, methods, accessor pairs, lexical brands, read/write/update/in, optional access and abrupt private-scope restoration execute. | Static blocks and super property references remain pending. |
+| `89e30cc73` | Native Headers groups names in one pass, combining ordinary values and retaining separate Set-Cookie values in sorted iteration. | Does not supply a GitHub load or performance result. |
+| `15d2848f0` | Headers construction, ByteString and iterable/record conversion, guards, live iteration, forEach, native identity and cleanup bind directly to Fetch records. | Fetch, Request, Response and foreign-realm WebIDL prototype fallback remain pending. |
+| `8d370c84a` | Promise construction, shared once-only resolving functions, thenable adoption, FIFO reactions, then/catch, resolve/reject, generic species capabilities and native settlement execute. Nested checkpoints finish the current reaction before draining another job. | Finally, combinators, async/await and DOM rejection events remain pending. |
+
+Focused checks pass in both GC modes. Each runtime feature's cache test uses a
+fresh second VM with its compiler set to `/usr/bin/false`. Arguments include
+descriptor and duplicate-parameter cases; parameter tests include abrupt iterator
+closing and default closures that cannot see body declarations. Existing parser
+heritage tests remain intact beside the new execution tests.
+
+### Parser measurements
+
+These are parser-only diagnostics for all 86 unique original GitHub JavaScript
+bodies (5,287,700 source bytes), with recursion limit 256. Fresh single-unit C
+`-prod` processes use dynamic Boehm; filesystem caches are retained. No VM,
+document window, layout or paint runs. Both cohorts retain every alternating
+unprofiled attempt; the allocation samples come from separate instrumented runs.
+Executable, collector, sampler and original response hashes remain unchanged
+within each comparison, and every process returns the same parser output.
+
+| Change | Unprofiled control seconds | Candidate seconds | Control maximum RSS bytes | Candidate maximum RSS bytes |
+| --- | --- | --- | --- | --- |
+| Scope rollback | 3.035, 3.167 | 1.450, 1.415 | 2,828,861,440; 3,182,329,856 | 1,219,035,136; 1,273,004,032 |
+| Rare literal records | 1.108, 0.942 | 1.035, 0.833 | 1,327,054,848; 1,183,711,232 | 1,405,698,048; 1,503,608,832 |
+| Fixed ASCII comparisons | 0.907, 0.882 | 0.961, 0.762 | 1,441,742,848; 1,405,698,048 | 1,206,550,528; 1,188,577,280 |
+
+Sampled cumulative allocation falls from **29,908,533,248** to **4,610,588,672**
+bytes after scope rollback. Separately allocating regex, template and private-name
+payloads reduces that to **3,645,898,752** bytes; fixed keyword comparisons reduce
+it further to **3,400,531,968** bytes. These payloads previously occupied
+space in every expression node. The second change's GC-managed RSS regresses in
+both trials; reduced cumulative allocations do not guarantee a lower resident
+peak. The first ASCII candidate also regresses in elapsed time. Host load and
+concurrent compilation are recorded locally; these cohorts
+supply no browser rendering, instruction-count or completed-page speedup credit.
+
+The initial static-collector interposer captured no samples and is explicitly
+invalid. A direct-wrapper build then failed to link and supplies no runtime
+evidence. The validated profiles use V's supported `-d dynamic_boehm` mode and
+nonzero allocation samples. Raw commands, identities, host readings, outputs and
+receipts remain local in `docs/performance/libjs-scope-rollback-20261115/` and
+`docs/performance/libjs-ast-storage-20261115/` and
+`docs/performance/libjs-parser-ascii-20261115/`.
+
+### Additional native observations
+
+The completed production executable
+`5171fc6f3e1a086aaf72b11bcae0379e5a8bc7b7eaa74bc970f9b034619b2f89`
+uses single-unit C, literal `-prod`, and `-prealloc -gc none`. Its sealed source
+manifest contains WeakMap, arguments and the scope rollback fix, verified against
+`ab92c7d3b`; it predates the literal-record storage change.
+
+| Attempt | PID | Sampled aggregate RSS bytes | Result |
+| --- | ---: | ---: | --- |
+| Fresh LibJS, unprofiled | 77497 | 3,597,287,424 | Guard 125; controller 137; no audit or PNG. |
+| Separate early stack diagnostic | 95439 | 3,411,394,560 | Same guard outcome; completed one-second stack sample includes LibJS imported-module parsing. |
+
+Both use private profiles and the unchanged original-origin replay. PID adoption
+succeeds, and all launch-pinned inputs still match after guard termination.
+The browser's terminal exit status is unavailable after the controller is killed.
+Neither failed attempt is excluded. The sampled guard can overshoot its unchanged
+3,221,225,472-byte budget between observations. Local records are in
+`docs/performance/libjs-scope-native-20261115/` and the persistent benchmark cache.
+
+### Full browser scope correction and capture
+
+The 3 GiB limit above belongs to focused engine/runtime checks. Applying it as
+the blocker for a full windowed browser capture was a protocol error: repository
+instructions specify a default 12 GiB aggregate guard for broader work. The
+earlier failures remain valid small-budget observations. Changing the capture
+scope earns no memory or performance optimization credit.
+
+Executable `1497b1a1214ceb7e04b03e6048cf289e110a64dfbb6e85e72e58f93ce5fb1a6d`
+contains the literal-payload changes, verified against the sealed manifest.
+Its 3 GiB observation (PID 42277) still fails: peak 3,788,668,928 bytes,
+controller 137, guard 125, no audit/PNG. A separate injected mapping trace
+(PID 44918) also fails that budget. Its 1,057 anonymous mapping events record
+4,497,736,752 bytes of **virtual capacities**, not live allocations or RSS.
+Arena-block creation stacks cannot attribute all subsequent allocations in
+those blocks; the trace does not establish a memory optimization.
+
+The fresh full-browser capture of the same executable (PID 47567) completes
+under the default 12,884,901,888-byte guard. Browser/controller/guard exits are
+zero; sampled aggregate RSS peaks at 4,617,912,320 bytes. Executable, libraries,
+observer and archive pins match throughout the controller's bundle lease.
+Later bundle publication changes the executable on disk after the run; the
+controller's completed in-lease identity checks remain the run boundary.
+
+The active document is the original GitHub URL, visible and complete, with a
+1024×768 viewport, 33 directory rows and one README. Latest-commit content and
+commit links are both absent. LibJS reports execution generation 477 and 51
+module records, including five rejected entries with the class-field error;
+JSC's native context stays uninitialized. A zero native-error counter does not
+erase those module/console errors. Strict retained-content validation against
+the unchanged Brave audit (`708ab912…`) fails with `GitHub script/native errors`.
+The whole-window PNG shows placeholders and supplies no pixel-conformance credit.
+
+Local observations, the full-window PNG, trace and summaries are under
+`~/Library/Caches/Vox/benchmarks/libjs-weak-map-20261115/`; validation and receipts
+are local in `docs/performance/libjs-native-full-20261115/`. Capturing subsequent runtime fixes in a newer production bundle remains pending.
+
+A diagnostic crop of that full-window image differs from the unchanged Brave PNG
+in **142,851 of 786,432 pixels (18.1644%)**, with maximum channel error 242,
+MAE 3.1072 and RMSE 16.0078. The crop includes the native toolbar boundary
+overlay at its first row and is not a canonical document-only capture. The failed
+content audit independently prevents conformance acceptance. The existing pixel
+tool was pinned and checked on identical and one-pixel controls after its old
+verification receipt was found to describe a different executable. No reference,
+tolerance or capture offset was adjusted to obtain a pass.
+
+### Updated core verification
+
+The final core sweep passes **291/291 package files in each GC mode**, with
+**783 unchanged source/fixture/compiler inputs** across the checks. The exact
+AST driver passes all **100/100** upstream cases after the parser changes.
+Literal ownership also passes AddressSanitizer with stack-use-after-return
+detection and GC disabled. The Event binding and its three focused cases run
+as separately compiled binaries under the 3 GiB runtime guard in both GC modes;
+all four original Hacker News native DOM/event cases still pass in both modes,
+including restoration of all 101 archived comment rows.
+
+The earlier full follow-up sweeps each retain 288 passes and one failure: the
+old unsupported-program test still expected `class extends Object` to fail.
+`93314e7f2` changes both obsolete examples to untranslated private fields while
+retaining the pre-execution rejection assertions. Focused checks pass in both
+modes, followed by both complete 291-file sweeps. Raw source pins, all attempts
+and guard/process exits remain local in
+`docs/performance/libjs-runtime-checkpoint-20261115-r2/` and `-r3/`.
+
+### Subsequent original-response diagnostics
+
+Every functional pair retains all original responses, unchanged input pins and
+both failing visits. The compiler is `/usr/bin/false` on the second opening;
+JSC remains uninitialized. The progression below is diagnostic evidence, not
+completed-page timing or rendering acceptance.
+
+| Runtime checkpoint | Reused native executables | First remaining failure |
+| --- | ---: | --- |
+| WeakMap | 120 | Arguments objects and class heritage. |
+| Arguments | 124 | Array concat and class heritage. |
+| Parameters and heritage | 134 | Public class fields. |
+| Empty public fields | 135 | Missing Event. |
+| Native Event | 140 | Object literal accessors. |
+| Object methods | 158 | Missing Array fill. |
+| Array fill | 158 | Missing Window addEventListener. |
+| Native Window listeners | 159 | Ordinary template literals. |
+| Template literals | 159 | Class field initializers. |
+| Public field initializers | 159 | Private class methods. |
+| Private class elements | 161 | Missing Fetch binding. |
+
+All pairs retain 33 directory rows and zero commit links. The latest fill binary
+uses unoptimized single-unit C/clang for functional diagnostics; earlier binaries
+use literal `-prod`. Their timings cannot be compared as a performance cohort.
+The subsequent core features have focused default/GC-disabled passes, in addition
+to the preceding 291-file full checkpoint. Window listeners have three focused
+cases passing as standalone binaries in each GC mode. Their original failed
+compile (a helper in a different test file was unavailable) and test crash
+(calling a released host closure after close) remain retained. Tests now stop
+entry into retired bindings, as required by the embedding lifecycle. Raw results remain local under
+`docs/performance/libjs-{event,object-methods,fill-debug,window,template}-github-20261115/`.
+Completed job guard receipts are preserved locally under
+`docs/performance/libjs-runtime-followup-20261115/guards/`; their Build scratch
+files and locks are removed after completion.
+
+The public-field initializer selection passes seven focused cases, empty-field,
+heritage and class execution neighbors in both GC modes, plus AddressSanitizer
+with stack-use-after-return detection. The original fixture reused a top-level
+class name in separate scripts in the same VM; those attempts correctly failed
+with redeclaration errors and are retained. Independent cases now use fresh VMs.
+Private-element checks cover nine cases, with eight neighboring files passing
+in each GC mode. Both features execute cached native entries in fresh second VMs
+with the compiler disabled. The subsequent complete checkpoint passes **296/296 files in both GC modes**,
+with **790 unchanged source/fixture/compiler inputs**, at `5e45435c9`. The two
+sweeps take 231.65 and 234.49 seconds; test/controller/guard exits are zero,
+and sampled aggregate RSS peaks at 6,790,791,168 bytes under the default
+12 GiB guard. All attempts remain local in
+`docs/performance/libjs-runtime-checkpoint-20261115-r4/`.
+The latest original-response pair still has five module errors, 33 directory rows
+and zero commit links; no complete GitHub or pixel-perfect rendering claim follows.
+
+### Native private-class capture and Fetch prerequisites
+
+The subsequent production executable
+`411d96ea582ed2b7e49017b078ae5030ed27e1a4c1056907a72697940c3edb61`
+contains all 18 required implementation changes since the parser checkpoint,
+verified against `5e45435c9` and the sealed source manifest. Fresh PID 17078
+completes under the default 12 GiB guard, with peak aggregate RSS 4,398,170,112
+bytes and browser/controller/guard exits zero. Pins match throughout the run.
+Its visible, active 1024×768 original GitHub document retains 33 rows and one
+README, but no latest commit or commit links. LibJS execution generation is 477;
+JSC stays uninitialized. The five errors now report missing fetch, matching the
+source-only diagnostic. Strict content validation against the unchanged Brave
+audit still fails with `GitHub script/native errors`. This whole-window capture
+supplies no document-pixel or completed-load performance acceptance.
+Local records are in `docs/performance/libjs-private-native-20261115/` and
+`~/Library/Caches/Vox/benchmarks/libjs-weak-map-20261115/native-private/`.
+
+Headers' six focused cases pass in both GC modes; the native Fetch Headers
+model's five cases pass in both modes. The initial GC-disabled stress run is
+retained: the 3 GiB guard stops it at 3,306,700,800 sampled bytes. The same input
+passes after grouping sorted values in one pass, with 349,011,968 sampled bytes
+in the GC-disabled run. These focused, differently contended diagnostics are
+not a browser or page-performance acceptance cohort. No budget, input or guard
+was changed to obtain that pass.
+
+Promise's nine focused cases and five neighboring VM/realm/module files pass
+in both GC modes. The nine cases also pass AddressSanitizer with stack-use-after-
+return detection. Early failed fixtures retain their original receipts: the
+native capability now obtains the constructor through the explicit realm record
+accessor, and the rejection observer retains a heap log instead of a copied
+array capture. Fresh second VMs execute all three cached script/callback entries
+with the compiler disabled. These checks follow the complete 296-file checkpoint;
+a complete 297-file sweep is not claimed. Fetch remains unbound, so the latest
+full-browser rendering result remains a failure.
