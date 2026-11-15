@@ -110,6 +110,8 @@ pub enum OpCode {
 	delete_super_property
 	get_super_this
 	record_class_static_block
+	get_binding_reference
+	put_binding_reference
 }
 
 pub struct Instruction {
@@ -137,7 +139,7 @@ fn (instruction Instruction) input_count() int {
 		.add, .sub, .mul, .div, .mod_, .exp, .strict_equals, .strict_inequals, .loose_equals,
 		.loose_inequals, .less_than, .less_than_equals, .greater_than, .greater_than_equals,
 		.bitwise_and, .bitwise_or, .bitwise_xor, .left_shift, .right_shift, .unsigned_right_shift,
-		.in_op, .instance_of, .call {
+		.in_op, .instance_of, .call, .put_binding_reference {
 			2
 		}
 		.get_property, .get_private, .has_private, .delete_property, .get_super_property, .delete_super_property, .record_class_static_block, .new_regexp, .set_object_literal_prototype, .close_sync_iterator_throw, .new_class_method, .copy_data_properties, .super_construct_with_array {
@@ -173,7 +175,7 @@ fn (instruction Instruction) input_operand(index int) Operand {
 }
 
 fn (instruction Instruction) writes_operand() bool {
-	return instruction.op !in [.put_property, .put_super_property, .define_property, .define_class_method, .set_binding, .set_variable, .initialize_binding,
+	return instruction.op !in [.put_property, .put_super_property, .put_binding_reference, .define_property, .define_class_method, .set_binding, .set_variable, .initialize_binding,
 		.put_private, .record_private_class_method, .enter_class_private_environment,
 		.create_mutable_binding, .create_immutable_binding, .enter_scope, .leave_scope, .enter_function_body, .jump,
 		.require_object_coercible, .set_object_literal_prototype, .copy_data_properties,
@@ -224,7 +226,7 @@ pub fn (executable &Executable) validate(arguments_count u32) ! {
 		if instruction.op == .define_class_method && instruction.identifier > 2 { return error('Invalid class method kind') }
 		if instruction.op == .record_empty_class_field && instruction.identifier > 1 { return error('Invalid class field kind') }
 		if instruction.op == .record_private_class_method && (instruction.identifier > 2 || instruction.target > 1) { return error('Invalid private class method kind') }
-		if instruction.op in [.get_binding, .get_callee_and_this, .typeof_binding, .delete_binding, .set_binding, .set_variable, .initialize_binding, .create_mutable_binding, .create_immutable_binding]
+		if instruction.op in [.get_binding, .get_binding_reference, .get_callee_and_this, .typeof_binding, .delete_binding, .set_binding, .set_variable, .initialize_binding, .create_mutable_binding, .create_immutable_binding]
 			&& instruction.identifier >= u32(executable.identifier_table.len) {
 			return error('Identifier out of range')
 		}

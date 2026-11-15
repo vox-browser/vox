@@ -385,6 +385,21 @@ fn (mut vm VM) execute_instruction(instruction Instruction, executable &Executab
 		.typeof_op {
 			result = Value.from_string(vm.create_string_from_str(typeof_value(left)))
 		}
+		.get_binding_reference {
+			reference := vm.resolve_binding(executable.get_identifier(instruction.identifier),
+				instruction.strict, none)!
+			mut holder := Object.create(vm.realm(), none)
+			holder.class_name = '#BindingReference'
+			holder.binding_reference = &Reference{ ...reference }
+			result = Value.from_object(holder)
+		}
+		.put_binding_reference {
+			if !left.is_object() { return vm.throw_error(.internal_error, 'Invalid binding reference') }
+			reference := left.as_object().binding_reference or {
+				return vm.throw_error(.internal_error, 'Missing binding reference')
+			}
+			reference.put_value(mut vm, right)!
+		}
 		.get_binding, .typeof_binding {
 			reference := vm.resolve_binding(executable.get_identifier(instruction.identifier),
 				instruction.strict, none)!

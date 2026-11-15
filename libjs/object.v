@@ -147,6 +147,7 @@ pub mut:
 	class_name string = 'Object'
 	home_object ?&Object // Function [[HomeObject]], retained independently of .prototype.
 	super_property_base ?&SuperPropertyBase // Internal bytecode record, never author-visible.
+	binding_reference ?&Reference // Retained ResolveBinding result for assignment evaluation.
 	// ObjectPrototype's immutable-prototype exotic [[SetPrototypeOf]] override.
 	// The intrinsic record that selects this override remains a separate slice.
 	immutable_prototype bool

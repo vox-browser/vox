@@ -494,8 +494,14 @@ fn (mut generator BytecodeGenerator) expression(mut vm VM, expression &Expressio
 		}
 		.assignment {
 			target := kind.assignment_lhs or { return error('Missing assignment target') }
+			if target is AssignmentLhsPattern {
+				if kind.assignment_op != .assignment { return error('Invalid destructuring assignment operator') }
+				value := generator.expression(mut vm, kind.rhs or { return error('Missing assignment rhs') })!
+				generator.assignment_pattern(mut vm, target.pattern, value)!
+				return value
+			}
 			if target !is AssignmentLhsExpression {
-				return generator.unsupported('destructuring assignment')
+				return error('Invalid assignment target')
 			}
 			if target.expression.kind.tag == .member {
 				return generator.member_assignment(mut vm, target.expression, kind.assignment_op, kind.rhs or {

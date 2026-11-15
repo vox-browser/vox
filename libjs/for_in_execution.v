@@ -25,8 +25,6 @@ fn (mut generator BytecodeGenerator) for_in_statement(mut vm VM, statement &Stat
 			value := generator.expression(mut vm, &initializer)!
 			generator.initialize_declaration_target(mut vm, declaration.kind.declarations[0].target, value, false)!
 		}
-	} else if lhs is ForInOfLhsPattern {
-		return generator.unsupported('for-in destructuring assignment')
 	}
 	value := generator.expression(mut vm, kind.rhs or { return error('Missing for-in value') })!
 	if lexical {
@@ -49,14 +47,10 @@ fn (mut generator BytecodeGenerator) for_in_statement(mut vm VM, statement &Stat
 		}
 		generator.initialize_declaration_target(mut vm, lhs.statement.kind.declarations[0].target, key, lexical)!
 	} else if lhs is ForInOfLhsExpression {
-		target := lhs.expression
-		if target.kind.tag == .member {
-			base, property := generator.member_reference(mut vm, target)!
-			generator.emit(Instruction{ op: .put_property, lhs: base, rhs: property, src: key, strict: generator.strict })
-		} else {
-			name := identifier_name(target) or { return generator.unsupported('for-in assignment target') }
-			generator.emit(Instruction{ op: .set_variable, lhs: key, identifier: generator.identifier(name), strict: generator.strict })
-		}
+		target := generator.prepare_expression_assignment(mut vm, lhs.expression)!
+		generator.store_assignment_target(mut vm, target, key)!
+	} else if lhs is ForInOfLhsPattern {
+		generator.assignment_pattern(mut vm, lhs.pattern, key)!
 	}
 	generator.loops << BytecodeLoop{ scope_depth: base_depth }
 	generator.statement(mut vm, kind.body or { return error('Missing for-in body') })!
