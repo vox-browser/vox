@@ -3165,3 +3165,53 @@ Probe cleanup verifies 801 file records across 72 owned roots and preserves
 across 25 roots and preserves 999 files (23,909,000 bytes). Copies are hashed
 again before removing binaries, capture profiles, jobs, guards and locks.
 The owned test alias is removed; shared bundles and dependencies are retained.
+
+## Solid SVG mask coverage, 2026-11-15
+
+`1d32867a2` corrects the antialiasing of filled-only and stroked-only paths
+inside SVG content masks. Those paths previously used Quartz coverage while
+ordinary document SVGs used V/GG. The native graphics adapter now supplies the
+mask bitmap's device transform to the existing V/GG path renderer and publishes
+its transparent result through the mask's original Quartz context. This keeps
+the parent's clipping and opacity. Unsupported inputs and allocation failures
+retain the existing renderer; combined fill/stroke and gradient paths are
+unchanged. No original reference or tolerance changes.
+
+The C/O0/preallocated/no-GC diagnostic browser is
+`f0897a3d040676ed896fe5461063874652bd493947bf1919d5ea74c50992e987`.
+All **46 workloads, 92 fresh captures** complete successfully and every pair
+repeats exactly. CNN improves **164,021→163,914**: all 107 changed pixels are
+corrections in the header's headphone icon, with zero introduced differences.
+All 44 other existing workload PNGs match the preceding accepted outputs
+exactly. GitHub, Hacker News, Lobsters and Wikipedia remain exact; Vlang
+remains at 27. All 92 native guards, the startup smoke, driver and outer guard
+exit zero. The feature inputs remain unchanged through the cohort; fourteen
+selected consumed V source witnesses also match the candidate.
+
+The new `svg-mask-solid-coverage` control has two independent, identical Brave
+`157.1.99.57` captures at scale 1. Its isolated icon, scaled icon, even-odd fill
+and stroke become exact. The expanded control improves 906→275 differences;
+28 overlapping-path seam pixels and 247 transformed-opacity pixels remain
+open. Its reference retains those failures. The focused GPU test compares four
+independent Brave RGBA crop hashes and checks parent clipping and opacity.
+The final formatted test compiles and actually runs under a 3 GiB guard with
+arena poisoning, exit zero; 31 selected consumed GG/SVG/test inputs match.
+Earlier test-helper naming and coordinate-space mistakes, their failed runs,
+and the corrected final execution are retained. The existing native mask
+pixel-conversion and layer suites also pass.
+
+The latest completed production browser is still `6addbda0`, receipt
+`20261115-171520-4a8b8f38`, and does not contain this fix. The normal commit hook
+requests a coalesced C/literal V `-prod`/single-unit rebuild. Production
+validation remains pending; these results establish frozen-page diagnostic
+correctness, with no live-site or performance claim. CNN's photographs and
+source/replay gate, Vlang, missing Reddit evidence and the prior inexact
+controls keep catalog-wide pixel parity open.
+
+Local evidence is under
+`docs/performance/vlang-gradients-20261114/raw/cnn-mask-20261115/`, including
+commands, all attempts, identities, source witnesses, captures, pixel
+transitions and cleanup receipts. Cleanup hashes 3,491 file records across
+11 owned roots and preserves 900 selected files (18,085,437 bytes). Copies
+are verified before removing the owned binaries, profiles, jobs, guards and
+locks. Shared production bundles and dependencies are retained.

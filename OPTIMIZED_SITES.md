@@ -41,6 +41,12 @@ sites and Vlang's 27 differences remain unchanged.
 The subsequent `7083f309` recheck retains all 45 outputs in 90 fresh captures.
 Independent Brave decoder checks now pin all fifteen YUV planes of five CNN
 images exactly. Arbitrary-scale painting remains unresolved.
+The subsequent `1d32867a2` mask fix makes CNN's headphone icon exact in
+diagnostic captures: **164,021→163,914 differences**, 107 corrected and zero
+introduced. All 44 other existing workload PNGs are unchanged, and all 46
+pairs (including a new mask control) repeat exactly. Focused GG mask tests
+pass against independent Brave samples. Production validation of this change
+is pending the managed rebuild; the available `6addbda0` bundle predates it.
 See the
 [current audit, capture scopes and retained failures](docs/OPTIMIZED_SITES_PIXELS_2026_11_12.md).
 
