@@ -3096,3 +3096,20 @@ The final lossy fix `df3fea85d` is confirmed in production `7f651f2d` across
 160 stable input pins. Other stable PNGs match diagnostics exactly; CNN still
 fails repeatability. This supersedes the lossy fix's pending status. See the
 [audit](OPTIMIZED_SITES_PIXELS_2026_11_12.md#magnified-alpha-webp-sampling-2026-11-15).
+
+
+### Numerical sRGB WebP profiles, 2026-11-15
+
+`a5b29f604` interprets ICC RGB/XYZ matrix profiles and parametric curves before
+canonicalizing a conservative numerical sRGB subset. Original straight decode
+rows then use the existing alpha multiplication and magnified image sampler;
+other profiles and alpha minification retain their prior paths. No new native
+painter, shader or browser dependency is introduced.
+
+The alpha control becomes exact twice (2,658 corrected, zero introduced).
+Three profile tests, seven browser checks and eight GPU draws pass. The
+44-workload/88-capture diagnostic retains every other reference count and all
+42 stable non-alpha/non-CNN PNGs; CNN still fails repeatability. All 89 native
+guards and enclosing exits are zero, with 100 compiled V witnesses and 166
+stable pins. Production confirmation is pending. See the
+[audit](OPTIMIZED_SITES_PIXELS_2026_11_12.md#numerical-srgb-profiles-in-lossless-webp-2026-11-15).

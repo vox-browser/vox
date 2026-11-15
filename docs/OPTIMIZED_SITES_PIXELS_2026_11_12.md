@@ -2659,3 +2659,72 @@ the historical nine introduced pixels) and four scene pixels; CNN retains
 rendering/source-replay/repeat failures; Reddit's original fixture is missing.
 The historical tall-shadow failure and other retained diagnostic failures also
 remain open. The profiled alpha image is an additional unresolved control.
+
+
+## Numerical sRGB profiles in lossless WebP, 2026-11-15
+
+`a5b29f604` fixes the remaining 2,658 pixels in the alpha WebP control. V now
+interprets a conservative subset of ICC RGB/XYZ matrix profiles: every primary
+and every channel's parametric transfer curve must agree with named sRGB.
+The 1/4096 numerical bound is stricter than Skia's canonicalization bounds.
+Descriptions, producer strings, timestamps and fixture/profile hashes do not
+select this path. Malformed/ambiguous tags, LUTs, CICP, other primaries or curves,
+lossy and animated streams retain their previous decoder and renderer.
+
+For the recognized color space, libwebp supplies its original straight rows,
+avoiding the previous 8-bit premultiply/unpremultiply round trip. Chromium paint
+then uses its existing truncated alpha multiplication and bounded GG sampling
+at native or larger sizes. Alpha minification still declines; existing resize
+history is unchanged. The native change factors out a straight decoder service;
+no painter, shader or new browser dependency is introduced.
+
+This follows the numerical canonicalization in
+[SkColorSpace](https://skia.googlesource.com/skia/+/main/src/core/SkColorSpace.cpp)
+and the no-transform decode path in
+[SkWebpCodec](https://skia.googlesource.com/skia/+/main/src/codec/SkWebpCodec.cpp).
+Local source copies retain their hashes. A separate test-only Skia oracle
+recognizes both the original and renamed profiles as sRGB, and rejects the
+changed primaries. It is not linked into the browser. Three profile tests cover
+numbers, unsupported representations and malformed/truncated containers. Seven
+browser checks exercise straight rows, local/fetched parity, borrowed uploads,
+cache history, bounds and the non-sRGB fallback. All pass with arena poisoning
+and 3 GiB runtime guards. Eight GPU draws, covering all four images at both 1×
+and 4× sampling, match the unchanged Brave pixels.
+
+Diagnostic executable
+`6d8bc17fb89814f58977813fafb64c958ba95edfd74619f88ec5d8a856a5b5a6`
+(C/O0, prealloc, GC none) completes 44 workloads and 88 fresh captures. The
+alpha control is **exact twice: 2,658 corrected pixels, zero introduced**.
+The preceding 7,616-pixel correction is retained. Two fresh Brave captures also
+match the original reference exactly. All other reference-difference counts
+are unchanged; all 42 non-alpha/non-CNN workloads' PNGs match the preceding
+production captures pixel for pixel. The four exact site archives remain exact.
+Vlang.io stays at 27 pixels, including the historical nine introduced JPEG
+pixels. CNN stays at 175,866 and fails its native repeat at 1,534 pixels.
+Forty-three native pairs repeat exactly.
+
+All 89 capture/startup guards, the driver and outer guard exit zero, with
+100 consumed V witnesses and 166 stable source/tool/shader pins. Native
+libraries and the decoder header have separate identities. These are selected
+rendering-source checks, not whole-checkout or LibJS validation. The completed
+production baseline `dee877bf591a539e1d6c9b59582291ab8fbd0805dd8baed845918fb28dc5fb5f`,
+receipt `20261115-121056-e24d3a67`, still has the previous helper bytes and
+reproduces 2,658 alpha pixels twice. It cannot validate the new code.
+**The new correction remains diagnostic pending production.** The ordinary
+commit hook requests the coalesced C backend/literal V `-prod` rebuild; no
+manual duplicate is queued.
+
+Evidence is local under
+`docs/performance/vlang-gradients-20261114/raw/webp-srgb-profile-20261115/`,
+including consumed-source identities, commands, actual exits, oracle profiles,
+unchanged-reference comparisons, transition coordinates and cleanup manifests.
+All-site equality remains open: Vlang's JPEG/scene pixels, CNN's rendering,
+source/replay and repeatability failures, the missing Reddit fixture, the other
+ICC/rescaling controls and historical diagnostic failures remain unresolved.
+No live-site, scripting or performance acceptance is claimed.
+
+
+Scratch archival hashes 3,134 file records across 50 owned roots, preserves
+1,027 selected evidence files (23,929,728 bytes), reverifies the copies, and
+removes all owned job outputs, binaries, guards and locks. The temporary
+Skia oracle source and three test-harness links are also removed.

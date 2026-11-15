@@ -16,9 +16,10 @@ pixels also remain. CNN retains its rendering, source/replay and native-repeat
 failures. Reddit remains unverified (missing historical fixture, earlier live
 HTTP 403). A separate tall-shadow control has a retained baseline repeat failure.
 Lossless and native-size/half-size lossy WebP controls now pass in production.
-The alpha WebP control is down from 10,274 to 2,658 differing pixels; its
-color-profiled image remains unresolved. These results apply to the pinned
-bundle and frozen page bytes. See the
+The alpha WebP control has 2,658 differing pixels in production. A new numerical
+sRGB-profile correction makes it exact in two diagnostic captures; production
+validation is pending. These results apply to pinned builds and frozen page
+bytes. See the
 [current audit, capture scopes and retained failures](docs/OPTIMIZED_SITES_PIXELS_2026_11_12.md).
 
 | Site | Recorded date | Trials per browser | Statistic | Vox instructions | Brave observed instructions | Fewer instructions | Vox RAM (MiB)‡ | Brave RAM (MiB)‡ | Vox scroll FPS§ | Vox GPU canvas FPS§ | Brave scroll FPS† | Evidence |
