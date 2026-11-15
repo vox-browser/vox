@@ -20,6 +20,8 @@ fn initialize_collection_intrinsics(mut vm VM, mut realm Realm) ! {
 		'splice': array_prototype_splice
 		'forEach': array_prototype_for_each
 		'map': array_prototype_map
+		'find': array_prototype_find
+		'some': array_prototype_some
 	} { install_intrinsic_method(mut vm, &realm, mut array, name, if name in ['slice','splice'] { 2 } else if name == 'pop' { 0 } else { 1 }, behaviour) }
 	install_intrinsic_method(mut vm, &realm, mut array, 'toString', 0, fn (mut vm VM) !Value {
 		object := vm.this_value().to_object_with_prototypes(mut vm, realm_primitive_prototypes())!
