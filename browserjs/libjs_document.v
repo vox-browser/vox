@@ -73,6 +73,12 @@ pub fn (runtime &Runtime) has_pending_libjs_fetches() bool {
 	return false
 }
 
+pub fn (mut runtime Runtime) set_libjs_form_submission_host(service libjsdom.FormSubmissionHost) ! {
+	if runtime.closed { return error('LibJS document runtime is closed') }
+	mut host := runtime.libjs_document_host_ or { return error('LibJS document runtime is unavailable') }
+	host.set_form_submission_host(service)
+}
+
 pub fn (runtime &Runtime) dispatch_libjs_event(name string, element &dom.Element) !bool {
 	if runtime.closed || runtime.libjs_document_host_ == none {
 		return error('LibJS document runtime is unavailable')

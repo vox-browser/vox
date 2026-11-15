@@ -734,7 +734,7 @@ pub fn (mut form HTMLFormElementModel) submit_form(submitter ?&FormAssociatedEle
 			mut mutable_control := unsafe { &FormAssociatedElement(control) }
 			mutable_control.user_validity_ = true
 		}
-		should_validate := if control := submitter { !control.novalidate_state() } else { true }
+		should_validate := if control := submitter { !control.novalidate_state() } else { !element.has_attribute('novalidate') }
 		if should_validate && !form.interactively_validate_constraints() {
 			form.firing_submission_events_ = false
 			return

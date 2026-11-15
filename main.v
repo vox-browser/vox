@@ -2904,6 +2904,10 @@ fn initialize_document_script_runtime(document &dom.Document, current_url string
 			messages << 'LibJS DOM bindings: ${err.msg()}'
 			return false
 		}
+		install_libjs_form_submission_host(mut mutable_runtime) or {
+			messages << 'LibJS form submission: ${err.msg()}'
+			return false
+		}
 		install_compact_module_host(document,mut mutable_runtime) or {
 			messages << 'LibJS module bindings: ${err.msg()}'
 			return false

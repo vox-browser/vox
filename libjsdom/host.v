@@ -87,10 +87,12 @@ mut:
 	form_data_prototype &libjs.Object = unsafe { nil }
 	form_data_iterator_prototype &libjs.Object = unsafe { nil }
 	form_data_event_prototype &libjs.Object = unsafe { nil }
+	submit_event_prototype &libjs.Object = unsafe { nil }
 	form_data map[voidptr]&xhr.FormData
 	form_data_wrappers map[voidptr]&libjs.Object
 	form_data_iterators map[voidptr]&FormDataIteratorBinding
 	form_event_data map[voidptr]&xhr.FormData
+	form_submission_host ?FormSubmissionHost
 	blob_reads map[u64]&BlobReadBinding
 	blob_stream_tasks map[voidptr]&BlobStreamTaskBinding
 	readable_stream_prototype &libjs.Object = unsafe { nil }
@@ -225,6 +227,7 @@ pub fn Host.create(vm &libjs.VM, realm &libjs.Realm, document &dom.Document, hoo
 	host.install_files()
 	host.install_form_data()!
 	host.install_form_controls()!
+	host.install_forms()!
 	host.install_history()
 	host.install_headers()!
 	mut global := realm.global_object_record()
@@ -328,6 +331,7 @@ pub fn (mut host Host) close() {
 	host.form_data_wrappers.clear()
 	host.form_data_iterators.clear()
 	host.form_event_data.clear()
+	host.form_submission_host = none
 	host.close_fetch()
 	host.close_readable_streams()
 	for listener in host.listeners {
