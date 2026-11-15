@@ -278,9 +278,13 @@ fn (mut sc ScopeCollector) save_state() ScopeCollectorState {
 
 fn (mut sc ScopeCollector) load_state(state ScopeCollectorState) {
 	saved_len := state.records_len
-	sc.records = sc.records[..saved_len]
+	// These are private growable buffers, not shared views. A slice loses
+	// spare capacity and makes every subsequent append copy the whole scope
+	// prefix after speculative arrow parsing. Delete the discarded tail in
+	// place, also clearing its conservative GC roots.
+	sc.records.delete_many(saved_len, sc.records.len - saved_len)
 	sc.current = state.current
-	sc.errors = sc.errors[..state.errors_len]
+	sc.errors.delete_many(state.errors_len, sc.errors.len - state.errors_len)
 	// Remove any child indices that pointed to now-truncated records.
 	if sc.current >= 0 {
 		mut kept := []int{}
