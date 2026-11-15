@@ -77,6 +77,7 @@ fn initialize_collection_intrinsics(mut vm VM, mut realm Realm) ! {
 		'toUpperCase': string_prototype_to_uppercase
 		'toLocaleLowerCase': string_prototype_to_locale_lowercase
 		'toLocaleUpperCase': string_prototype_to_locale_uppercase
+		'localeCompare': string_prototype_locale_compare
 		'replace': string_prototype_replace
 	} { install_intrinsic_method(mut vm, &realm, mut text, name, if name in ['toString','valueOf','toLowerCase','toUpperCase','toLocaleLowerCase','toLocaleUpperCase'] { 0 } else if name in ['slice','substring','substr','replace'] { 2 } else { 1 }, behaviour) }
 	install_intrinsic_method(mut vm, &realm, mut text, 'split', 2, fn (mut vm VM) !Value { return string_prototype_split(mut vm, vm.realm().array_prototype_record()) })

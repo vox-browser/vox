@@ -161,6 +161,7 @@ pub mut:
 	intl_list_format ?&IntlListFormat
 	intl_number_format ?&IntlNumberFormat
 	intl_relative_time_format ?&IntlRelativeTimeFormat
+	intl_collator ?&IntlCollator
 	intl_date_time_format ?&IntlDateTimeFormat
 	intl_locale          ?&IntlLocaleObject
 	proxy_object         ?&ProxyObject
