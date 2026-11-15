@@ -2,11 +2,18 @@
 module libjsdom
 
 import dom
+import domurl
 import fetch
+import fileapi
 import libjs
 
 struct FetchOptionalText { value ?string }
-struct FetchBodyValue { value ?fetch.BodyInit }
+struct FetchBodyValue {
+	value ?fetch.BodyInit
+	blob ?&fileapi.Blob
+	query ?&domurl.URLSearchParams
+	buffer ?&libjs.Object
+}
 
 fn fetch_dictionary(mut vm libjs.VM, value libjs.Value) ! {
 	if !value.is_nullish() && !value.is_object() { return vm.throw_error(.type_error, 'Fetch dictionary must be an object') }
@@ -29,22 +36,31 @@ fn fetch_enum(mut vm libjs.VM, value libjs.Value, allowed []string) !FetchOption
 	return FetchOptionalText{value: text}
 }
 
-fn fetch_body_init(mut vm libjs.VM, value libjs.Value) !FetchBodyValue {
+fn (host &Host) fetch_body_init(mut vm libjs.VM, value libjs.Value) !FetchBodyValue {
 	if value.is_nullish() { return FetchBodyValue{} }
 	if value.is_object() {
 		object := value.as_object()
-		if buffer := object.array_buffer {
-			if buffer.is_detached() { return vm.throw_error(.type_error, 'Detached Fetch body buffer') }
-			return FetchBodyValue{value: fetch.BodyInit{kind: .bytes, bytes: buffer.data_block().read_bytes(0, buffer.byte_length())}}
+		if blob := host.blobs[voidptr(object)] { return FetchBodyValue{blob: blob} }
+		if query := host.queries[voidptr(object)] { return FetchBodyValue{query: query} }
+		if object.array_buffer != none || object.typed_array != none || object.data_view != none {
+			return FetchBodyValue{buffer: native_buffer_source(mut vm, value, false)!}
 		}
-		if array := object.typed_array {
-			record := libjs.make_typed_array_with_buffer_witness_record(array, .seq_cst)
-			if libjs.is_typed_array_out_of_bounds(record) { return vm.throw_error(.type_error, 'Out of bounds Fetch body view') }
-			return FetchBodyValue{value: fetch.BodyInit{kind: .bytes, bytes: array.viewed_buffer.data_block().read_bytes(uint(array.byte_offset), uint(libjs.typed_array_byte_length(record)))}}
-		}
-		if object.data_view != none { return vm.throw_error(.type_error, 'DataView Fetch bodies are not translated yet') }
 	}
-	return FetchBodyValue{value: fetch.BodyInit{kind: .string_, text: value.to_primitive_string(mut vm)!.utf16.to_well_formed().str()}}
+	return FetchBodyValue{value: fetch.BodyInit{kind: .string_, text: value.to_primitive_string(mut vm)!.utf16.to_well_formed_utf8()}}
+}
+
+fn (body FetchBodyValue) materialize(mut vm libjs.VM) !FetchBodyValue {
+	if blob := body.blob {
+		charge_buffer_source_work(mut vm, blob.size())!
+		return FetchBodyValue{value: fetch.BodyInit{kind: .blob, bytes: blob.raw_bytes(), type_: blob.type_()}}
+	}
+	if query := body.query {
+		text := query.to_string()
+		charge_buffer_source_work(mut vm, u64(text.len))!
+		return FetchBodyValue{value: fetch.BodyInit{kind: .url_search_params, text: text}}
+	}
+	if buffer := body.buffer { return FetchBodyValue{value: fetch.BodyInit{kind: .bytes, bytes: copy_native_buffer_source(mut vm, buffer)!}} }
+	return body
 }
 
 fn (host &Host) fetch_error_value(mut vm libjs.VM, err IError) libjs.Value {
@@ -54,7 +70,7 @@ fn (host &Host) fetch_error_value(mut vm libjs.VM, err IError) libjs.Value {
 	return libjs.Value.from_object(libjs.create_error(mut vm, host.realm, kind, libjs.utf16_string(message.all_after(': '))))
 }
 
-fn (host &Host) fetch_request(mut vm libjs.VM, input libjs.Value, options libjs.Value) !&fetch.RequestObject {
+fn (host &Host) fetch_request(mut vm libjs.VM, input libjs.Value, options libjs.Value, new_target ?&libjs.Object) !(&fetch.RequestObject, ?&libjs.Object) {
 	client := host.fetch_client or { return vm.throw_error(.type_error, 'Fetch has no owning environment') }
 	mut source := fetch.RequestInput{environment: client}
 	if input.is_object() {
@@ -66,7 +82,7 @@ fn (host &Host) fetch_request(mut vm libjs.VM, input libjs.Value, options libjs.
 	// WebIDL converts dictionary members in lexicographic order, before the
 	// native Request constructor validates and applies the resulting snapshot.
 	body_value := fetch_member(mut vm, options, 'body')!
-	body := fetch_body_init(mut vm, body_value)!.value
+	converted_body := host.fetch_body_init(mut vm, body_value)!
 	cache := fetch_enum(mut vm, fetch_member(mut vm, options, 'cache')!, ['default','no-store','reload','no-cache','force-cache','only-if-cached'])!.value
 	credentials := fetch_enum(mut vm, fetch_member(mut vm, options, 'credentials')!, ['omit','same-origin','include'])!.value
 	duplex := fetch_enum(mut vm, fetch_member(mut vm, options, 'duplex')!, ['half'])!.value
@@ -83,10 +99,16 @@ fn (host &Host) fetch_request(mut vm libjs.VM, input libjs.Value, options libjs.
 	signal := fetch_member(mut vm, options, 'signal')!
 	if !signal.is_nullish() { return vm.throw_error(.type_error, 'AbortSignal Fetch binding is not translated yet') }
 	window := fetch_member(mut vm, options, 'window')!
+	mut prototype := ?&libjs.Object(none)
+	if target := new_target {
+		parent := target.get(mut vm, libjs.PropertyName.from_str('prototype'))!
+		if parent.is_object() { prototype = parent.as_object() }
+	}
 	if source.request == none {
 		url := dom.dom_url_parse(address, client.fetch_request_client_api_base_url(), 'UTF-8') or { return vm.throw_error(.type_error, 'Invalid request URL') }
 		source = fetch.RequestInput{url: url, environment: client}
 	}
+	body := converted_body.materialize(mut vm)!.value
 	return fetch.RequestObject.construct(source, fetch.RequestInit{
 		body: body, body_present: !body_value.is_undefined(), headers: headers,
 		cache: if text := cache { ?fetch.CacheMode(match text { 'no-store'{.no_store} 'reload'{.reload} 'no-cache'{.no_cache} 'force-cache'{.force_cache} 'only-if-cached'{.only_if_cached} else{.default} }) } else { none },
@@ -97,7 +119,7 @@ fn (host &Host) fetch_request(mut vm libjs.VM, input libjs.Value, options libjs.
 		priority: if text := priority { ?fetch.Priority(match text { 'high'{.high} 'low'{.low} else{.auto} }) } else { none },
 		redirect: if text := redirect { ?fetch.RedirectMode(match text { 'error'{.error} 'manual'{.manual} else{.follow} }) } else { none },
 		referrer: referrer, referrer_policy: referrer_policy, window_present: !window.is_undefined(), window_non_null: !window.is_nullish(),
-	})
+	})!, prototype
 }
 
 fn fetch_response_init(mut vm libjs.VM, dictionary libjs.Value) !fetch.ResponseInit {

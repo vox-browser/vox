@@ -3,6 +3,7 @@ module libjsdom
 
 import encoding
 import fetch
+import fileapi
 import libjs
 import platform
 import webidl
@@ -53,14 +54,14 @@ fn (mut host Host) install_fetch_objects() ! {
 			mut owner := unsafe { &Host(host) }
 			if is_request {
 				if vm.argument_count() < 1 { return vm.throw_error(.type_error, 'Request requires an input') }
-				native := host.fetch_request(mut vm, vm.argument(0), vm.argument(1)) or { return libjs.throw_completion(host.fetch_error_value(mut vm, err)) }
-				parent := new_target.get(mut vm, libjs.PropertyName.from_str('prototype'))!
-				return owner.wrap_request(native, if parent.is_object() { ?&libjs.Object(parent.as_object()) } else { none }).as_object()
+				native, parent := host.fetch_request(mut vm, vm.argument(0), vm.argument(1), new_target) or { return libjs.throw_completion(host.fetch_error_value(mut vm, err)) }
+				return owner.wrap_request(native, parent).as_object()
 			}
-			body := fetch_body_init(mut vm, vm.argument(0))!.value
+			converted_body := host.fetch_body_init(mut vm, vm.argument(0))!
 			init := fetch_response_init(mut vm, vm.argument(1))!
-			native := fetch.ResponseObject.construct(body, init) or { return libjs.throw_completion(host.fetch_error_value(mut vm, err)) }
 			parent := new_target.get(mut vm, libjs.PropertyName.from_str('prototype'))!
+			body := converted_body.materialize(mut vm)!.value
+			native := fetch.ResponseObject.construct(body, init) or { return libjs.throw_completion(host.fetch_error_value(mut vm, err)) }
 			return owner.wrap_response(native, if parent.is_object() { ?&libjs.Object(parent.as_object()) } else { none }).as_object()
 		}
 		host.closures << voidptr(construct)
@@ -79,7 +80,7 @@ fn (mut host Host) install_fetch_objects() ! {
 			if is_request { return owner.wrap_request(host.request_receiver(mut vm)!.clone() or { return libjs.throw_completion(host.fetch_error_value(mut vm, err)) }, none) }
 			return owner.wrap_response(host.response_receiver(mut vm)!.clone() or { return libjs.throw_completion(host.fetch_error_value(mut vm, err)) }, none)
 		}, libjs.attribute_writable | libjs.attribute_enumerable | libjs.attribute_configurable)
-		for method in ['text', 'json', 'arrayBuffer'] {
+		for method in ['text', 'json', 'arrayBuffer', 'bytes', 'blob'] {
 			host.method_attributes(mut prototype, method, 0, fn [host, is_request, method] (mut vm libjs.VM) !libjs.Value {
 				host.require_open(mut vm)!
 				capability := libjs.new_promise_capability(mut vm, libjs.Value.from_object(host.realm.promise_constructor_record()))!
@@ -138,12 +139,13 @@ fn (mut host Host) consume_fetch_body(body fetch.BodyMixin, method string, capab
 	mut stream := if native := body.body { native.stream() } else { fetch.Body.from_bytes([], .bytes).stream() }
 	mut reader := stream.get_default_reader() or { host.settle_fetch_error(capability, err); return }
 	owner := &host
-	reader.read_all_bytes_with_steps(fn [owner, method, capability] (bytes []u8) {
+	content_type := if mime := body.mime_type { mime.serialized() } else { '' }
+	reader.read_all_bytes_with_steps(fn [owner, method, capability, content_type] (bytes []u8) {
 		mut host := unsafe { &Host(owner) }
 		if host.closed { return }
-		host.invoke_fetch_callback(fn [owner, method, capability, bytes] (mut vm libjs.VM) !libjs.Value {
-			host := unsafe { &Host(owner) }
-			value := host.fetch_body_result(mut vm, method, bytes) or {
+		host.invoke_fetch_callback(fn [owner, method, capability, content_type, bytes] (mut vm libjs.VM) !libjs.Value {
+			mut host := unsafe { &Host(owner) }
+			value := host.fetch_body_result(mut vm, method, bytes, content_type) or {
 				return libjs.call(mut vm, capability.reject, libjs.js_undefined(), [host.fetch_error_value(mut vm, err)])
 			}
 			return libjs.call(mut vm, capability.resolve, libjs.js_undefined(), [value])
@@ -154,7 +156,10 @@ fn (mut host Host) consume_fetch_body(body fetch.BodyMixin, method string, capab
 	})
 }
 
-fn (host &Host) fetch_body_result(mut vm libjs.VM, method string, bytes []u8) !libjs.Value {
+fn (mut host Host) fetch_body_result(mut vm libjs.VM, method string, bytes []u8, content_type string) !libjs.Value {
+	charge_buffer_source_work(mut vm, u64(bytes.len))!
+	if method == 'bytes' { return host.uint8_array_from_bytes(bytes) }
+	if method == 'blob' { return host.wrap_blob(fileapi.Blob.create(bytes, content_type), none) }
 	if method == 'arrayBuffer' {
 		prototype := host.realm.array_buffer_prototype or { return error('Missing ArrayBuffer prototype') }
 		return libjs.Value.from_object(libjs.ArrayBufferObject.create_from_bytes(host.realm, bytes, false, prototype).object)

@@ -37,7 +37,7 @@ pub fn (mut host Host) install_fetch(client fetch.RequestClient, transport &fetc
 		mut owner := unsafe { &Host(host) }
 		capability := libjs.new_promise_capability(mut vm, libjs.Value.from_object(host.realm.promise_constructor_record()))!
 		if vm.argument_count() < 1 { owner.settle_fetch_error(capability, error('TypeError: fetch requires an input')); return capability.promise }
-		request := host.fetch_request(mut vm, vm.argument(0), vm.argument(1)) or { owner.settle_fetch_error(capability, err); return capability.promise }
+		request, _ := host.fetch_request(mut vm, vm.argument(0), vm.argument(1), none) or { owner.settle_fetch_error(capability, err); return capability.promise }
 		mut operation := &DocumentFetchOperation{host: owner, request: request, capability: capability}
 		owner.fetch_operations << operation
 		algorithms := fetch.FetchAlgorithms.create(fetch.FetchAlgorithmsInput{
