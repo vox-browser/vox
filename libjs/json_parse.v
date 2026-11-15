@@ -4,10 +4,11 @@ module libjs
 // Runtime/JSONObject.cpp::parse/parse_json/InternalizeJSONProperty. The native
 // simdjson dependency is replaced by a strict UTF-16 JSON grammar; JavaScript
 // conversion, ordinary property creation and reviver semantics stay in the VM.
-// stringify/rawJSON are separate runtime slices, not host JSON substitutes.
+// Stringification is implemented separately; rawJSON remains untranslated.
 fn create_json_object(mut vm VM, realm &Realm) &Object {
 	mut object := Object.create(realm, realm.object_prototype)
 	install_intrinsic_method(mut vm, realm, mut object, 'parse', 2, json_parse)
+	install_intrinsic_method(mut vm, realm, mut object, 'stringify', 3, json_stringify)
 	object.define_direct_property(PropertyName.from_symbol(vm.well_known_symbol_to_string_tag()),
 		Value.from_string(vm.create_string_from_str('JSON')), attribute_configurable)
 	return object
