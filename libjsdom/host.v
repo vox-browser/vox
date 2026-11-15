@@ -101,6 +101,10 @@ mut:
 	closed               bool
 	animation_frames map[u32]&AnimationFrameBinding
 	retired_frame_closures []voidptr
+	idle_callbacks map[u32]&IdleCallbackBinding
+	retired_idle_closures []voidptr
+	idle_deadline_prototype &libjs.Object = unsafe { nil }
+	idle_deadlines map[voidptr]&IdleDeadlineBinding
 	microtasks map[u64]&QueuedMicrotaskBinding
 	timer_scope_ ?&html.WindowOrWorkerGlobalScopeMixin
 	timers map[i32]&TimerBinding
@@ -159,6 +163,7 @@ pub fn Host.create(vm &libjs.VM, realm &libjs.Realm, document &dom.Document, hoo
 	host.install_animation_frames()
 	host.install_timers()
 	host.install_microtasks()
+	host.install_idle_callbacks()
 	host.install_media_queries()!
 	host.install_styles()
 	host.install_css_namespace()
@@ -229,6 +234,7 @@ fn (mut host Host) changed() {
 pub fn (mut host Host) close() {
 	if host.closed { return }
 	host.closed = true
+	host.close_idle_callbacks()
 	host.close_microtasks()
 	host.close_timers()
 	host.close_animation_frames()
