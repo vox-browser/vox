@@ -30,6 +30,11 @@ pub mut:
 	error_constructors             map[ErrorKind]&Object
 	function_prototype             ?&Object                 // %Function.prototype%
 	async_function_prototype ?&Object
+	generator_function_prototype ?&Object
+	generator_prototype ?&Object
+	async_generator_function_prototype ?&Object
+	async_generator_prototype ?&Object
+	async_iterator_prototype ?&Object
 	array_prototype ?&Object
 	array_prototype_values Value // Intrinsic identity, independent of user mutations.
 	array_constructor ?&Object
@@ -212,6 +217,7 @@ pub fn initialize_host_defined_realm(mut vm VM, hooks RealmGlobalHooks) !&Execut
 		Value.from_object(shared_array_buffer_constructor.object), attribute_writable | attribute_configurable)
 	initialize_collection_intrinsics(mut vm, mut realm)!
 	initialize_iterator_intrinsics(mut vm, mut realm)
+	initialize_generator_creation_intrinsics(mut vm, mut realm)
 	initialize_set_intrinsics(mut vm, mut realm)
 	initialize_map_intrinsics(mut vm, mut realm)
 	initialize_weak_map_intrinsics(mut vm, mut realm)

@@ -24,9 +24,14 @@ fn create_ecmascript_function(mut vm VM, source &Executable, index u32, named_ex
 }
 
 fn create_ecmascript_function_data(mut vm VM, source &Executable, data &JsFunctionData, named_expression bool, inferred_name ?Utf16String, ordinary bool) !&Object {
-	if data.kind in [.generator, .async_generator] { return error('LibJS generator functions are not translated yet') }
 	realm := vm.realm()
-	mut object := Object.create(realm, if data.kind == .async_kind { realm.async_function_prototype } else { realm.function_prototype })
+	function_prototype := match data.kind {
+		.normal { realm.function_prototype }
+		.async_kind { realm.async_function_prototype }
+		.generator { realm.generator_function_prototype }
+		.async_generator { realm.async_generator_function_prototype }
+	}
+	mut object := Object.create(realm, function_prototype)
 	object.class_name = 'Function'
 	mut environment := vm.running_execution_context().lexical_environment
 	// Named function expressions have a private immutable self binding.
@@ -69,6 +74,10 @@ fn create_ecmascript_function_data(mut vm VM, source &Executable, data &JsFuncti
 		mut prototype := Object.create(realm, realm.object_prototype)
 		prototype.define_direct_property(PropertyName.from_str('constructor'), Value.from_object(object), attribute_writable | attribute_configurable)
 		object.define_direct_property(PropertyName.from_str('prototype'), Value.from_object(prototype), attribute_writable)
+	} else if data.kind in [.generator, .async_generator] {
+		// Generator methods also own a prototype, but have no [[Construct]].
+		parent := if data.kind == .generator { realm.generator_prototype } else { realm.async_generator_prototype }
+		object.define_direct_property(PropertyName.from_str('prototype'), Value.from_object(Object.create(realm, parent)), attribute_writable)
 	}
 	return object
 }
@@ -129,7 +138,8 @@ fn (mut function ECMAScriptFunction) internal_call(mut vm VM, this_value Value, 
 fn (mut function ECMAScriptFunction) call_with_new_target(mut vm VM, this_value Value, arguments []Value, new_target Value, class_constructor ?&BaseClassFunction) !Value {
 	// Creating a function does not evaluate its body. Do not execute an async
 	// body as an ordinary function while Promise/await execution is pending.
-	if function.data.kind != .normal { return error('LibJS async function execution is not translated yet') }
+	if function.data.kind in [.generator, .async_generator] { return error('LibJS generator execution is not translated yet') }
+	if function.data.kind == .async_kind { return error('LibJS async function execution is not translated yet') }
 	simple_parameters := function.data.simple_parameters()
 	executable := function.compile(mut vm)!
 	mut stack := vm.interpreter_stack()
