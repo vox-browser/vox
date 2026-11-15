@@ -45,6 +45,8 @@ fn (mut host Host) install_readable_streams() {
 	mut prototype := libjs.Object.create(host.realm, host.realm.object_prototype)
 	mut reader_prototype := libjs.Object.create(host.realm, host.realm.object_prototype)
 	host.readable_stream_prototype, host.default_reader_prototype = prototype, reader_prototype
+	host.install_stream_controllers()
+	host.install_readable_stream_constructor(mut prototype)
 	for name, object in {'ReadableStream': prototype, 'ReadableStreamDefaultReader': reader_prototype} {
 		mut target := object
 		target.define_direct_property(libjs.PropertyName.from_symbol(vm.well_known_symbol_to_string_tag()), libjs.Value.from_string(vm.create_string_from_str(name)), libjs.attribute_configurable)
@@ -138,6 +140,7 @@ fn (mut host Host) install_readable_streams() {
 fn (mut host Host) close_readable_streams() {
 	persistent := platform.enter_persistent()
 	defer { platform.leave_persistent(persistent) }
+	host.close_stream_sources()
 	for _, mut binding in host.stream_promises {
 		mut promise := unsafe { &webidl.Promise(binding.native) }
 		promise.remove_native_settlement_observer(binding.promise_observer_identity())
@@ -154,4 +157,7 @@ fn (mut host Host) close_readable_streams() {
 	host.readable_streams.clear()
 	host.readable_stream_wrappers.clear()
 	host.stream_errors.clear()
+	host.stream_default_controllers.clear()
+	host.stream_byte_controllers.clear()
+	host.stream_controller_wrappers.clear()
 }

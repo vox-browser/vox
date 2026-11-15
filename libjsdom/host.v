@@ -91,6 +91,18 @@ mut:
 	stream_reads map[voidptr]&StreamReadRequestBinding
 	stream_promises map[voidptr]&StreamPromiseBinding
 	stream_errors map[voidptr]libjs.Value
+	stream_source_realm ?streams.StreamRealm
+	stream_sources map[voidptr]&StreamSourceBinding
+	stream_source_jobs map[voidptr]&StreamSourceJob
+	retired_stream_source_jobs []voidptr
+	stream_source_job_depth int
+	stream_inline_native_job bool
+	stream_adoptions map[voidptr]&StreamPromiseAdoption
+	default_controller_prototype &libjs.Object = unsafe { nil }
+	byte_controller_prototype &libjs.Object = unsafe { nil }
+	stream_default_controllers map[voidptr]&streams.ReadableStreamDefaultController
+	stream_byte_controllers map[voidptr]&streams.ReadableByteStreamController
+	stream_controller_wrappers map[voidptr]&libjs.Object
 	history_object &libjs.Object = unsafe { nil }
 	history_binding ?&HistoryBinding
 	query_prototype &libjs.Object = unsafe { nil }
