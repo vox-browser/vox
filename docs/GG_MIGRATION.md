@@ -3065,3 +3065,18 @@ production baseline passes 122 rendering witnesses including all 64 consumed GG
 V sources; the experimental shader bundle is explicitly rejected. Embedded
 shader/library identity remains a separate check. See the
 [audit](OPTIMIZED_SITES_PIXELS_2026_11_12.md#opaque-lossless-webp-sampling-2026-11-15).
+
+
+### Limited-range WebP plane sampling, 2026-11-15
+
+`df3fea85d` preserves fractional limited-range RGB for native-size and half-size
+opaque VP8 images. Unchanged Brave controls improve from 9,981/3,288 differing
+pixels to zero, twice. Six YUV test files, cache/ownership and historical-policy
+checks, and both GPU references at 1×/4× pass. A 44-workload diagnostic cohort
+retains every other reference count. General rescaling probes remain rejected;
+no new native sampler is shipped. Production validation of this fix is pending.
+
+The earlier `c242016bb` lossless controls are now exact twice in production
+`5171fc6f`, with final helper/caller and all 64 GG V witnesses matching. That
+preview contains older lossy helpers and cannot validate the final new slice.
+See the [audit](OPTIMIZED_SITES_PIXELS_2026_11_12.md#native-size-and-half-size-lossy-webp-sampling-2026-11-15).

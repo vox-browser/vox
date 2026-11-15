@@ -2490,3 +2490,87 @@ unchanged-reference PNGs and verified archival manifests. All 99 owned scratch
 roots (10,073 file records) were hashed; selected evidence was copied and
 reverified before removing jobs, binaries and guard files. Temporary source and
 test-harness links are removed.
+
+
+## Native-size and half-size lossy WebP sampling, 2026-11-15
+
+`df3fea85d` samples simple opaque VP8 planes before RGB conversion. Native-size
+images interpolate 4:2:0 chroma at luma centers; half-size images first reduce
+luma to bytes, then use the original chroma at full resolution. Fractional RGB
+survives until coverage and final framebuffer rounding. The normalized limited-
+range matrix follows [SkYUVMath](https://raw.githubusercontent.com/google/skia/main/src/core/SkYUVMath.cpp).
+Chromium's [WebP decoder](https://raw.githubusercontent.com/chromium/chromium/main/third_party/blink/renderer/platform/image-decoders/webp/webp_image_decoder.cc)
+identifies this YUV color space and plane layout; the comparison still depends
+on the pinned Brave references, not an assumption that its installed source is
+identical to current upstream.
+
+| Unchanged Brave reference | Before | After, each of two fresh native captures |
+| --- | ---: | ---: |
+| Native-size lossy WebP, 140×94 | 9,981 | **0** |
+| Half-size lossy WebP, 70×47 | 3,288 | **0** |
+
+The path accepts bounded even-sized images, complete matching frame dimensions,
+full source rectangles, integral placement, identity linear transforms and
+opaque Chromium-policy painting at those two sizes. Unsupported scales,
+subpixel placement, other formats and paint states retain their existing path.
+The cache separates output sizes and document/navigation/resource/compositor
+scope, owns its floating pixels beyond scratch lifetime, and respects the
+historical incremental-RGB policy. The dormant generic YUV image capability
+remains disabled. CNN's arbitrary-scale photographs are outside this fix.
+
+All six YUV test files pass with GC disabled, including three new cases for
+luma reduction, fractional chroma and rejected inputs. Two browser tests pass
+with arena poisoning under both normal and historical paint policies. The GPU
+test matches both references at 1× and 4× sampling. Its first compile fails on
+untyped pointer arithmetic; the corrected element-address version passes.
+
+Diagnostic executable
+`227764bee14ac9ce6ccdcd10871fc4c05d03213f68a667efe3bea79a02020b92`
+completes 44 workloads and 88 fresh captures. All 89 native/startup guards,
+driver and outer guard exit zero. There are 117 compiler-parsed rendering V
+witnesses, including all 64 GG sources, and 164 stable source/tool/shader pins.
+Native inputs have separate witnesses; this is not whole-checkout or LibJS
+validation. All other reference counts remain unchanged, including the exact
+lossless controls and four archived sites, vlang.io at 27 and CNN at 175,866.
+Forty-three pairs repeat exactly; CNN's pair differs at 1,517 pixels. Brave's
+identity is unchanged from the preceding independent repeated-reference check.
+
+Broader rescaling is not accepted. An isolated Metal plane sampler leaves
+182–185 enlarged-image differences without fast math, or 171 with it, all one
+level; the initial mode introduces three previously exact pixels. A higher-
+precision matrix regresses the native-size/half-size controls to four/one and
+the enlarged control to 331–332. A double-precision CPU enlarged sampler leaves
+79,757 differences. These attempts are retained; no native sampler or shader
+experiment is shipped by this commit.
+
+The new fix is **diagnostic pending production**. A completed production
+preview contains earlier bytes of the two lossy helpers and is rejected for
+final implementation validation. Future production checks now verify all
+consumed V files in `gg`, `ggshape`, `images`, `imageraster` and `yuv`, rather
+than adding only individual image helpers to the manual shortlist. This
+expansion happened after the captured cohort; the captured driver's original
+bytes are retained.
+Normal commit hooks request coalesced rebuilds; no manual duplicate is queued.
+
+Local evidence, including every failed probe, source scopes, identities,
+commands, actual exits, PNGs and verified scratch archival, is under
+`docs/performance/vlang-gradients-20261114/raw/lossy-webp-20261115/`.
+Vlang.io's 23 JPEG pixels (including the earlier nine introduced pixels) and
+four scene pixels remain. CNN's rendering, source/replay and native-repeat
+failures, missing Reddit fixture and historical tall-shadow failure remain
+open. No live-site, scripting or performance acceptance is claimed.
+
+## Production confirmation of the lossless WebP controls, 2026-11-15
+
+The preceding `c242016bb` lossless correction is now confirmed in production
+executable `5171fc6f3e1a086aaf72b11bcae0379e5a8bc7b7eaa74bc970f9b034619b2f89`,
+receipt `20261115-032000-dd2d60f6`, C, literal V `-prod`, one C unit. Its main
+caller, final lossless helper and all 64 consumed GG V sources match. The two
+lossless controls are exact in two fresh captures each; all four capture guards
+and the outer guard exit zero, with 112 selected compiled witnesses.
+
+This focused confirmation covers the lossless controls only. The same preview
+contains preliminary lossy helper bytes, so it cannot validate `df3fea85d`.
+Earlier managed attempts reject a concurrent `tools/gc_allocation_sampler.c`
+edit and retain the previous bundle; those failures remain recorded. Full
+catalog equality and production validation of the final lossy fix stay open.
