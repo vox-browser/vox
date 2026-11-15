@@ -797,6 +797,7 @@ typedef struct {
 static NativeOpacityGroup native_opacity_groups[NATIVE_OPACITY_GROUP_MAX_DEPTH];
 static int native_opacity_group_depth;
 static int native_opacity_group_overflow_depth;
+VOX_NATIVE_STATE int native_opaque_layer_continuation;
 
 static int native_compositing_canvas_is_readable(CGContextRef context) {
 	if (context == NULL) return 0;
@@ -920,6 +921,8 @@ static void native_end_offscreen_opacity_group(NativeOpacityGroup *group) {
 }
 
 void native_begin_css_effect_layer(float opacity, int blend_mode) {
+    int continue_opaque = native_opaque_layer_continuation;
+    native_opaque_layer_continuation = 0;
 	CGContextRef context = [[NSGraphicsContext currentContext] CGContext];
 	if (context == NULL) {
 		return;
@@ -928,6 +931,17 @@ void native_begin_css_effect_layer(float opacity, int blend_mode) {
 	if (native_opacity_group_depth < NATIVE_OPACITY_GROUP_MAX_DEPTH) {
 		NativeOpacityGroup *group = &native_opacity_groups[native_opacity_group_depth++];
 		*group = (NativeOpacityGroup){ .parent = context };
+        // V has proved that the resumed picture is covered by an opaque
+        // prefix and does not overlap the intervening child's ink. Keep that
+        // prefix available to leaf rasterization instead of quantizing a
+        // second transparent surface over it.
+        if (continue_opaque && opacity == 1.0f && blend_mode == 0
+            && native_compositing_canvas_is_readable(context)) {
+            group->passthrough = 1;
+            CGContextSetAlpha(context, 1.0f);
+            CGContextSetBlendMode(context, kCGBlendModeNormal);
+            return;
+        }
 		if ((blend_mode == 0 || blend_mode == 3)
 			&& native_begin_offscreen_opacity_group(group, context, opacity, blend_mode)) {
 			return;
@@ -942,6 +956,7 @@ void native_begin_css_effect_layer(float opacity, int blend_mode) {
 }
 
 void native_set_chromium_opaque_layer_continuation(int enabled) {
+    native_opaque_layer_continuation = enabled != 0;
 }
 
 void native_end_css_effect_layer(void) {
