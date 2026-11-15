@@ -11,6 +11,8 @@ struct Listener {
 	native    &dom.IDLEventListener
 	capture   bool
 	attribute bool
+	abort_signal ?&dom.AbortSignal
+	abort_algorithm ?u64
 }
 
 fn (mut host Host) install_events(mut node libjs.Object) ! {
@@ -116,14 +118,14 @@ fn (mut host Host) install_event_target_methods(mut object libjs.Object) {
 			}
 			type_ := vm.argument(0).to_primitive_string(mut vm)!.str()
 			callback := vm.argument(1)
-			if callback.is_nullish() { return libjs.js_undefined() }
-			if !callback.is_object() {
+			if !callback.is_nullish() && !callback.is_object() {
 				return vm.throw_error(.type_error, 'Event listener must be an object')
 			}
 			options := vm.argument(2)
 			mut capture := false
 			mut once := false
 			mut passive := ?bool(none)
+			mut signal := ?&dom.AbortSignal(none)
 			if options.is_object() {
 				object := options.as_object()
 				capture = object.get(mut vm, libjs.PropertyName.from_str('capture'))!.to_boolean()
@@ -131,13 +133,16 @@ fn (mut host Host) install_event_target_methods(mut object libjs.Object) {
 					once = object.get(mut vm, libjs.PropertyName.from_str('once'))!.to_boolean()
 					value := object.get(mut vm, libjs.PropertyName.from_str('passive'))!
 					if !value.is_undefined() { passive = value.to_boolean() }
+					value_signal := object.get(mut vm, libjs.PropertyName.from_str('signal'))!
+					if !value_signal.is_undefined() { signal = host.signal_value(mut vm, value_signal)! }
 				}
 			} else {
 				capture = options.to_boolean()
 			}
+			if callback.is_nullish() { return libjs.js_undefined() }
 			mut owner := unsafe { &Host(host) }
 			if name == 'addEventListener' {
-				owner.add_listener(target, type_, callback, dom.AddEventListenerOptions{ capture: capture, once: once, passive: passive }, false)
+				owner.add_listener(target, type_, callback, dom.AddEventListenerOptions{ capture: capture, once: once, passive: passive, signal: signal }, false)
 			} else {
 				owner.remove_listener(target, type_, callback, capture)
 			}
@@ -190,6 +195,7 @@ fn (mut host Host) register_event_wrapper(mut object libjs.Object, event &dom.Ev
 }
 
 fn (mut host Host) add_listener(target &dom.EventTarget, type_ string, callback libjs.Value, options dom.AddEventListenerOptions, attribute bool) {
+	if signal := options.signal { if signal.aborted() { return } }
 	if !attribute {
 		for listener in host.listeners {
 			if !listener.attribute && voidptr(listener.target) == voidptr(target) && listener.type_ == type_
@@ -238,13 +244,26 @@ fn (mut host Host) add_listener(target &dom.EventTarget, type_ string, callback 
 	} else {
 		target.add_event_listener(type_, native, options)
 	}
-	host.listeners << Listener{ target: target, type_: type_.clone(), callback: callback, native: native, capture: options.capture, attribute: attribute }
+	mut abort_id := ?u64(none)
+	if signal := options.signal {
+		remove := fn [host, target, type_, callback, options] () {
+			mut owner := unsafe { &Host(host) }
+			if !owner.closed { owner.remove_listener(target, type_, callback, options.capture) }
+		}
+		host.closures << voidptr(remove)
+		mut owner := unsafe { &dom.AbortSignal(signal) }
+		abort_id = owner.add_abort_algorithm(remove)
+	}
+	host.listeners << Listener{ target: target, type_: type_.clone(), callback: callback, native: native, capture: options.capture, attribute: attribute, abort_signal: options.signal, abort_algorithm: abort_id }
 }
 
 fn (mut host Host) remove_listener(target &dom.EventTarget, type_ string, callback libjs.Value, capture bool) {
 	for index, listener in host.listeners {
 		if !listener.attribute && listener.type_ == type_ && listener.capture == capture
 			&& voidptr(listener.target) == voidptr(target) && libjs.is_strictly_equal(listener.callback, callback) {
+			if signal := listener.abort_signal {
+				if id := listener.abort_algorithm { mut owner := unsafe { &dom.AbortSignal(signal) }; owner.remove_abort_algorithm(id) }
+			}
 			target.remove_event_listener(type_, listener.native, dom.EventListenerOptions{ capture: capture })
 			host.listeners.delete(index)
 			return

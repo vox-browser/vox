@@ -91,9 +91,15 @@ mut:
 	media_query_prototype &libjs.Object = unsafe { nil }
 	media_event_prototype &libjs.Object = unsafe { nil }
 	media_queries map[voidptr]&css.MediaQueryList
+	abort_controller_prototype &libjs.Object = unsafe { nil }
+	abort_signal_prototype &libjs.Object = unsafe { nil }
+	abort_controllers map[voidptr]&dom.AbortController
+	abort_signals map[voidptr]&dom.AbortSignal
+	abort_signal_wrappers map[voidptr]&libjs.Object
 	owned_documents []&dom.Document
 	dom_exception_prototype &libjs.Object = unsafe { nil }
 	dom_exceptions map[voidptr]&webidl.DOMException
+	dom_exception_wrappers map[voidptr]&libjs.Object
 	registry_prototype &libjs.Object = unsafe { nil }
 	registries map[voidptr]&RegistryBinding
 	active_registries map[u64]voidptr
@@ -121,6 +127,7 @@ pub fn Host.create(vm &libjs.VM, realm &libjs.Realm, document &dom.Document, hoo
 	host.install_node_lists()!
 	host.install_token_lists()!
 	host.install_dom_exceptions()!
+	host.install_abort_signals()!
 	host.install_custom_elements()!
 	host.install_navigator()!
 	host.install_mutation_observers()!
@@ -211,6 +218,9 @@ pub fn (mut host Host) close() {
 	host.navigator_languages = []
 	host.close_fetch()
 	for listener in host.listeners {
+		if signal := listener.abort_signal {
+			if id := listener.abort_algorithm { mut owner := unsafe { &dom.AbortSignal(signal) }; owner.remove_abort_algorithm(id) }
+		}
 		if listener.attribute {
 			listener.target.set_event_handler_attribute(listener.type_, none)
 		} else {
@@ -233,6 +243,10 @@ pub fn (mut host Host) close() {
 	host.event_wrappers.clear()
 	host.event_targets.clear()
 	host.media_queries.clear()
+	host.abort_controllers.clear()
+	host.abort_signals.clear()
+	host.abort_signal_wrappers.clear()
+	host.dom_exception_wrappers.clear()
 	host.event_target_wrappers.clear()
 	host.read_only_rects.clear()
 	host.read_only_rect_wrappers.clear()

@@ -5,8 +5,10 @@ import libjs
 import webidl
 
 fn (mut host Host) wrap_dom_exception(native &webidl.DOMException, prototype &libjs.Object) libjs.Value {
+	if object := host.dom_exception_wrappers[voidptr(native)] { return libjs.Value.from_object(object) }
 	object := libjs.Object.create(host.realm, prototype)
 	host.dom_exceptions[voidptr(object)] = native
+	host.dom_exception_wrappers[voidptr(native)] = object
 	return libjs.Value.from_object(object)
 }
 
