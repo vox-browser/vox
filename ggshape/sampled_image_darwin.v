@@ -3,6 +3,7 @@ module ggshape
 import gg.canvas
 import imageraster
 import math
+import os
 
 pub fn draw_sampled_rgba(pixels &u8, width i32, height i32, pitch i32, backdrop i32,
 	source []u8, source_width int, source_height int, x f32, y f32,
@@ -23,16 +24,16 @@ pub fn draw_sampled_rgba_with_shadow(pixels &u8, width i32, height i32, pitch i3
 	source []u8, source_width int, source_height int, x f32, y f32,
 	destination_width f32, destination_height f32, samples int, natural_width int, natural_height int,
 	clip [12]f32, gpu_mips bool, shadow &C.VoxGraphiteShape) i32 {
- return draw_sampled_image(pixels,width,height,pitch,backdrop,source,[],source_width,source_height,x,y,destination_width,destination_height,samples,natural_width,natural_height,clip,gpu_mips,shadow)
+ return draw_sampled_image(pixels,width,height,pitch,backdrop,source,[],source_width,source_height,x,y,destination_width,destination_height,samples,natural_width,natural_height,clip,gpu_mips,shadow,false)
 }
 
 pub fn draw_sampled_colors_clipped(pixels &u8,width i32,height i32,pitch i32,backdrop i32,colors []f32,sw int,sh int,x f32,y f32,dw f32,dh f32,samples int,nw int,nh int,clip [12]f32) i32 {
  if sw<=0 || sh<=0 || sw>4096 || sh>4096 || sw*sh>4*1024*1024 || colors.len!=sw*sh*4 {return 0}
  for i,v in colors {if !math.is_finite(v) || v<0 || v>1 || (i%4==3 && v!=1) {return 0}}
- return draw_sampled_image(pixels,width,height,pitch,backdrop,[],colors,sw,sh,x,y,dw,dh,samples,nw,nh,clip,false,unsafe{nil})
+ return draw_sampled_image(pixels,width,height,pitch,backdrop,[],colors,sw,sh,x,y,dw,dh,samples,nw,nh,clip,false,unsafe{nil},false)
 }
 
-fn draw_sampled_image(pixels &u8,width i32,height i32,pitch i32,backdrop i32,source []u8,colors []f32,source_width int,source_height int,x f32,y f32,destination_width f32,destination_height f32,samples int,natural_width int,natural_height int,clip [12]f32,gpu_mips bool,shadow &C.VoxGraphiteShape) i32 {
+fn draw_sampled_image(pixels &u8,width i32,height i32,pitch i32,backdrop i32,source []u8,colors []f32,source_width int,source_height int,x f32,y f32,destination_width f32,destination_height f32,samples int,natural_width int,natural_height int,clip [12]f32,gpu_mips bool,shadow &C.VoxGraphiteShape,yuv_mode bool) i32 {
 	if shadow != unsafe { nil } && (shadow.fill != 9 || shadow.thickness != 0 || !supported(shadow)) {
 		return 0
 	}
@@ -54,7 +55,7 @@ fn draw_sampled_image(pixels &u8,width i32,height i32,pitch i32,backdrop i32,sou
 	extent_y := f32(natural_height) * (f32(source_height) / f32(natural_height))
 	byte_source := if colors.len>0 {colors.map(u8(math.floor(it*255+.5)))} else {source}
 	mut levels := [byte_source]
-	if destination_width < source_width && destination_height < source_height
+	if !yuv_mode && destination_width < source_width && destination_height < source_height
 		&& extent_x >= source_width && extent_y >= source_height {
 		image := imageraster.Image{ width: source_width, height: source_height, pixels: byte_source }
 		chain := if gpu_mips {
@@ -95,9 +96,16 @@ fn draw_sampled_image(pixels &u8,width i32,height i32,pitch i32,backdrop i32,sou
   for level in levels[1..] {floats << level.map(f32(it)/255)}
   surface.draw_document_scaled_float_rgba(floats,source_width,source_height,natural_width,natural_height,x,y,destination_width,destination_height) or {return 0}
  } else {
-	surface.draw_document_scaled_rgba(levels, source_width, source_height, natural_width, natural_height, x, y,
-		destination_width, destination_height) or { return 0 }
+	surface.draw_document_color_rgba(levels, source_width, source_height, natural_width, natural_height, x, y,
+		destination_width, destination_height, canvas.DocumentImageColorTransform{ yuv_rec601_limited: yuv_mode }) or { if os.getenv('VOX_GG_DIAGNOSTICS') != '' { eprintln('VOX_YUV_IMAGE ${err}') }; return 0 }
  }
 	surface.read_pixels(pixels, pitch) or { return 0 }
 	return 1
+}
+
+pub fn draw_sampled_yuv_clipped(pixels &u8, width i32, height i32, pitch i32, backdrop i32,
+ source []u8, sw int, sh int, x f32, y f32, dw f32, dh f32, samples int, nw int, nh int, clip [12]f32) i32 {
+ if sw <= 0 || sh <= 0 || sw > 4096 || sh > 4096 || sw * sh > 4 * 1024 * 1024 || source.len != sw * sh * 4 { return 0 }
+ for i := 3; i < source.len; i += 4 { if source[i] != 255 { return 0 } }
+ return draw_sampled_image(pixels,width,height,pitch,backdrop,source,[],sw,sh,x,y,dw,dh,samples,nw,nh,clip,false,unsafe{nil},true)
 }

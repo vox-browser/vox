@@ -6817,6 +6817,8 @@ fn (mut app BrowserApp) draw_command(source_command &layout.PaintCommand, page_x
 						|| app.draw_profiled_webp(command,image,image_data.image_url,draw_rect,source_rect,clip_data,matrix,
 							page_x,page_y,scroll_y,result.bitmap.scaling == .nearest_neighbor)
 						|| app.draw_sampled_lossy_webp(command,image,image_data.image_url,draw_rect,source_rect,clip_data,matrix,
+						page_x,page_y,scroll_y,result.bitmap.scaling == .nearest_neighbor)
+						|| app.draw_minified_webp(command,image,image_data.image_url,draw_rect,source_rect,clip_data,matrix,
 						page_x,page_y,scroll_y,result.bitmap.scaling == .nearest_neighbor) {
 						clear_chromium_image_resource_identity()
 						C.native_end_clip()

@@ -93,9 +93,13 @@ fn document_sampled_png_pixels(pixels &u8, width i32, height i32, pitch i32, bac
 	mut clipping := [12]f32{}
 	unsafe { vmemcpy(&clipping[0], clip, 12 * int(sizeof(f32))) }
 	swap_document_raster_channels(pixels, width, height, pitch)
-	// Transfer flag 2 selects straight, opaque RGBA32F JPEG source rows.
+	// Transfer flag 2 selects straight opaque RGBA32F; 3 selects packed YUV444.
 	mut result := i32(0)
-	if gpu_mips == 2 {
+	if gpu_mips == 3 {
+        result = ggshape.draw_sampled_yuv_clipped(pixels, width, height, pitch, backdrop,
+            unsafe { source.vbytes(int(source_width) * int(source_height) * 4) }, source_width, source_height,
+            x, y, destination_width, destination_height, int(samples), int(natural_width), int(natural_height), clipping)
+    } else if gpu_mips == 2 {
 		mut values := []f32{len: int(source_width) * int(source_height) * 4}
 		unsafe { vmemcpy(values.data, source, values.len * int(sizeof(f32))) }
 		result = ggshape.draw_sampled_colors_clipped(pixels, width, height, pitch, backdrop, values, source_width, source_height, x, y, destination_width, destination_height, int(samples), int(natural_width), int(natural_height), clipping)

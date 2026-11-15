@@ -7,6 +7,7 @@ import math
 // Zero gamma retains the ordinary image shader.
 pub struct DocumentImageColorTransform {
 pub:
+	yuv_rec601_limited bool
 	gamma f32
 	gamut [9]f32
 }
@@ -32,6 +33,12 @@ fn document_image_sampler() gfx.Sampler {
 	return state.sampler
 }
 
+// Lazy embedded resources retain their byte cache. The owner calls this with
+// its persistent arena active before any paint scope can load the shared file.
+pub fn prepare_document_shader_resources() {
+ _ = gradient_snippet_file.data()
+}
+
 // Decoded document pixels are already premultiplied. The ordinary image
 // shader performs the final bilinear sample and destination blend once.
 pub fn (mut s GpuSurface) draw_document_scaled_rgba(levels [][]u8, width int, height int,
@@ -47,6 +54,9 @@ pub fn (mut s GpuSurface) draw_document_color_rgba(levels [][]u8, width int, hei
 		|| width * height > 4 * 1024 * 1024 || levels.len == 0 || levels.len > 13
 		|| natural_width <= 0 || natural_height <= 0 || destination_width <= 0 || destination_height <= 0 {
 		return error('gg.canvas: invalid document image')
+	}
+	if color_transform.yuv_rec601_limited && !document_image_yuv_upload_supported() {
+		return error('gg.canvas: YUV shader is unavailable')
 	}
 	mut desc := gfx.ImageDesc{ width: width, height: height, pixel_format: .rgba8, num_mipmaps: levels.len }
 	for index, level in levels {

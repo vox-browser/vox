@@ -67,6 +67,7 @@ fn context() !&canvas.GpuContext {
 		defer {
 			platform.leave_persistent(persistent)
 		}
+		canvas.prepare_document_shader_resources()
 		mut ctx := canvas.new_gpu_context()!
 		ctx.precompile()
 		state.ctx = ctx

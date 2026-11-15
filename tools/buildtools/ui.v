@@ -32,6 +32,9 @@ fn prepare_gg_canvas(canvas string) ! {
 	if image_helper.contains('struct DocumentImageColorTransform') && !read(layer)!.contains('color_transform') {
 		gg_patches(canvas, 'prepare_gg_gamma')!
 	}
+	if image_helper.contains('yuv_rec601_limited') && !read(layer)!.contains('document_image_yuv_upload_supported') {
+		gg_patches(canvas, 'prepare_gg_yuv')!
+	}
 	write_changed(join(canvas, 'vox_document_image.v'), image_helper)!
 }
 

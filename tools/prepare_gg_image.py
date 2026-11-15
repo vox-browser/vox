@@ -3,6 +3,7 @@ from pathlib import Path
 from prepare_http_compat import write_if_changed
 from prepare_gg_shadow import replace_once
 from prepare_gg_gamma import prepare as prepare_gamma
+from prepare_gg_yuv import prepare as prepare_yuv
 
 
 def prepare(canvas):
@@ -11,6 +12,7 @@ def prepare(canvas):
     layer = layer_path.read_text()
     if 'document_linear_filter' in layer:
         prepare_gamma(canvas)
+        prepare_yuv(canvas)
         return
     layer = replace_once(layer, '\timage gfx.Image\n}',
                          '\timage gfx.Image\n\tdocument_linear_filter bool\n}')
@@ -31,3 +33,4 @@ def prepare(canvas):
             path.unlink()
         write_if_changed(path, value)
     prepare_gamma(canvas)
+    prepare_yuv(canvas)
