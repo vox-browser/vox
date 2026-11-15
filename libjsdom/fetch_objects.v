@@ -86,7 +86,7 @@ fn (mut host Host) install_fetch_objects() ! {
 			mut owner := unsafe { &Host(host) }
 			return owner.wrap_readable_stream(stream, none)
 		}, unsafe { nil })
-		for method in ['text', 'json', 'arrayBuffer', 'bytes', 'blob'] {
+		for method in ['text', 'json', 'arrayBuffer', 'bytes', 'blob', 'formData'] {
 			host.method_attributes(mut prototype, method, 0, fn [host, is_request, method] (mut vm libjs.VM) !libjs.Value {
 				host.require_open(mut vm)!
 				capability := libjs.new_promise_capability(mut vm, libjs.Value.from_object(host.realm.promise_constructor_record()))!
@@ -171,6 +171,7 @@ fn (mut host Host) consume_fetch_body(body fetch.BodyMixin, method string, capab
 
 fn (mut host Host) fetch_body_result(mut vm libjs.VM, method string, bytes []u8, content_type string) !libjs.Value {
 	charge_buffer_source_work(mut vm, u64(bytes.len))!
+	if method == 'formData' { return host.fetch_form_data_result(mut vm, bytes, content_type) }
 	if method == 'bytes' { return host.uint8_array_from_bytes(bytes) }
 	if method == 'blob' { return host.wrap_blob(fileapi.Blob.create(bytes, content_type), none) }
 	if method == 'arrayBuffer' {

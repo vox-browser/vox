@@ -8,6 +8,7 @@ import fileapi
 import libjs
 import streams
 import webidl
+import xhr
 
 struct FetchOptionalText { value ?string }
 struct FetchBodyValue {
@@ -16,6 +17,7 @@ struct FetchBodyValue {
 	query ?&domurl.URLSearchParams
 	buffer ?&libjs.Object
 	stream ?&streams.ReadableStream
+	form ?&xhr.FormData
 }
 
 fn fetch_dictionary(mut vm libjs.VM, value libjs.Value) ! {
@@ -45,6 +47,7 @@ fn (host &Host) fetch_body_init(mut vm libjs.VM, value libjs.Value) !FetchBodyVa
 		object := value.as_object()
 		if stream := host.readable_streams[voidptr(object)] { return FetchBodyValue{stream: stream} }
 		if blob := host.blobs[voidptr(object)] { return FetchBodyValue{blob: blob} }
+		if form := host.form_data[voidptr(object)] { return FetchBodyValue{form: form} }
 		if query := host.queries[voidptr(object)] { return FetchBodyValue{query: query} }
 		if object.array_buffer != none || object.typed_array != none || object.data_view != none {
 			return FetchBodyValue{buffer: native_buffer_source(mut vm, value, false)!}
@@ -54,6 +57,7 @@ fn (host &Host) fetch_body_init(mut vm libjs.VM, value libjs.Value) !FetchBodyVa
 }
 
 fn (body FetchBodyValue) materialize(mut vm libjs.VM) !FetchBodyValue {
+	if form := body.form { return materialize_form_data_body(mut vm, form) }
 	if stream := body.stream {
 		return FetchBodyValue{value: fetch.BodyInit{kind: .readable_stream, stream: stream, stream_locked: stream.locked(), stream_disturbed: stream.is_disturbed()}}
 	}
