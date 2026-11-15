@@ -84,6 +84,10 @@ pub mut:
 	async_resuming bool
 	async_resume_value Value
 	async_resume_rejected bool
+	generator_execution ?&GeneratorExecution
+	generator_resuming bool
+	generator_resume_kind GeneratorResumeKind
+	generator_resume_value Value
 
 	this_value ?Value
 	executable ?&Executable
@@ -219,6 +223,10 @@ pub fn (context &ExecutionContext) copy() &ExecutionContext {
 	duplicate.async_resuming = context.async_resuming
 	duplicate.async_resume_value = context.async_resume_value
 	duplicate.async_resume_rejected = context.async_resume_rejected
+	duplicate.generator_execution = context.generator_execution
+	duplicate.generator_resuming = context.generator_resuming
+	duplicate.generator_resume_kind = context.generator_resume_kind
+	duplicate.generator_resume_value = context.generator_resume_value
 	duplicate.this_value = context.this_value
 	duplicate.executable = context.executable
 	duplicate.passed_argument_count = context.passed_argument_count
@@ -237,6 +245,8 @@ pub fn (context &ExecutionContext) copy() &ExecutionContext {
 pub fn (context &ExecutionContext) visit_roots(mut roots HeapRoots) {
 	roots.add_value(context.async_resume_value)
 	if execution := context.async_execution { roots.add(voidptr(execution)) }
+	if execution := context.generator_execution { roots.add(voidptr(execution)) }
+	roots.add_value(context.generator_resume_value)
 	if function := context.function {
 		roots.add(function_object_identity(function))
 	}

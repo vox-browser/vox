@@ -27,6 +27,7 @@ mut:
 	labels        []BytecodeLabel
 	finalizers    []BytecodeFinally
 	function_body bool
+	generator_function bool
 	initialized_functions []u32
 	compile_stack_ ?StackInfo
 }
@@ -237,6 +238,7 @@ fn (mut generator BytecodeGenerator) expression(mut vm VM, expression &Expressio
 	defer { generator.range = previous_range }
 	kind := expression.kind
 	match kind.tag {
+		.yield_expr { return generator.yield_expression(mut vm, expression) }
 		.import_call {
 			specifier := generator.expression(mut vm, kind.specifier or { return error('Missing import specifier') })!
 			options := if options_expression := kind.options { generator.expression(mut vm, options_expression)! } else { generator.constant(js_undefined()) }

@@ -35,13 +35,13 @@ fn test_generator_exports_instantiate_and_are_not_constructors() {
 	assert generator_creation_eval(mut vm, 'var effects=0,n=0;function* g(){effects++;yield 1}async function* a(){effects++;yield 2}for(var f of [g,a])try{new f()}catch(e){if(e instanceof TypeError)n++}n===2&&effects===0')!.as_bool()
 }
 
-fn test_generator_execution_remains_explicitly_unsupported_without_running_body() {
+fn test_async_generator_execution_remains_explicitly_unsupported_without_running_body() {
 	mut vm := VM.create()
 	create_simple_execution_context(mut vm)
 	generator_creation_eval(mut vm, 'var effects=0;function* g(){effects++;yield 1}async function* a(){effects++;yield 2}')!
-	for name in ['g', 'a'] {
+	for name in ['a'] {
 		if _ := generator_creation_eval(mut vm, name+'()') { assert false } else {
-			assert err.msg() == 'LibJS generator execution is not translated yet'
+			assert err.msg() == 'LibJS async generator execution is not translated yet'
 		}
 	}
 	assert generator_creation_eval(mut vm, 'effects')!.number == 0

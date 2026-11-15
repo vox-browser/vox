@@ -2,8 +2,8 @@
 module libjs
 
 // Runtime/{Generator,AsyncGenerator}FunctionPrototype.cpp and the prototype
-// ancestry in Intrinsics.cpp. Dynamic constructors and resume operations are
-// separate translations; creating a function never executes its body.
+// ancestry in Intrinsics.cpp. Synchronous resume operations share the generator
+// execution record; dynamic constructors and async resume remain separate.
 fn initialize_generator_creation_intrinsics(mut vm VM, mut realm Realm) {
 	mut async_iterator := Object.create(realm, realm.object_prototype)
 	realm.async_iterator_prototype = async_iterator
@@ -26,6 +26,17 @@ fn initialize_generator_creation_intrinsics(mut vm VM, mut realm Realm) {
 		} else {
 			realm.generator_function_prototype = function
 			realm.generator_prototype = generator
+			for name, kind in {'next': GeneratorResumeKind.normal, 'return': .return_, 'throw': .throw_} {
+				install_intrinsic_method(mut vm, realm, mut generator, name, 1, fn [kind] (mut vm VM) !Value {
+					value := vm.this_value()
+					if value.is_object() {
+						if mut execution := value.as_object().generator_execution {
+							return execution.resume(mut vm, vm.argument(0), kind)
+						}
+					}
+					return vm.throw_error(.type_error, 'Generator method called on incompatible receiver')
+				})
+			}
 		}
 	}
 }

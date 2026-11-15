@@ -170,6 +170,7 @@ pub mut:
 	weak_map             ?&WeakMapObject
 	weak_set             ?&WeakSetObject
 	weak_ref             ?&WeakRefObject
+	generator_execution  ?&GeneratorExecution
 	boolean_object       ?&BooleanObject // [[BooleanData]]
 	date_object          ?&DateObject // [[DateValue]]
 	number_object        ?&NumberObject  // [[NumberData]]

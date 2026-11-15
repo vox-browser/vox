@@ -106,6 +106,7 @@ fn (mut function ECMAScriptFunction) compile(mut vm VM) !&Executable {
 		starting_line: function.source.starting_line
 		range: function.data.body.range
 		function_body: true
+		generator_function: function.data.kind == .generator
 	}
 	if function.data.body.kind.tag == .class_field_initializer {
 		expression := function.data.body.kind.expression or { return error('Missing field initializer') }
@@ -122,6 +123,7 @@ fn (mut function ECMAScriptFunction) compile(mut vm VM) !&Executable {
 		scope := function.data.body.kind.scope or { return error('Missing function body') }
 		generator.lexical_declarations(scope.children, false)!
 		generator.initialize_functions(scope.children)
+		if function.data.kind == .generator { generator.emit(Instruction{op: .generator_start}) }
 		for statement in scope.children { generator.statement(mut vm, &statement)! }
 		generator.emit(Instruction{op: .end, lhs: generator.constant(js_undefined())})
 	}
@@ -141,7 +143,7 @@ fn (mut function ECMAScriptFunction) call_with_new_target(mut vm VM, this_value 
 }
 
 fn (mut function ECMAScriptFunction) call_body(mut vm VM, this_value Value, arguments []Value, new_target Value, class_constructor ?&BaseClassFunction, async_execution ?&AsyncExecution) !Value {
-	if function.data.kind in [.generator, .async_generator] { return error('LibJS generator execution is not translated yet') }
+	if function.data.kind == .async_generator { return error('LibJS async generator execution is not translated yet') }
 	simple_parameters := function.data.simple_parameters()
 	executable := function.compile(mut vm)!
 	mut stack := vm.interpreter_stack()
@@ -163,6 +165,9 @@ fn (mut function ECMAScriptFunction) call_body(mut vm VM, this_value Value, argu
 	frame.variable_environment = Environment(environment)
 	frame.passed_argument_count = u32(arguments.len)
 	frame.async_execution = async_execution
+	if function.data.kind == .generator {
+		frame.generator_execution = &GeneratorExecution{function: &function, realm: function.realm_, state: .executing}
+	}
 	for index, argument in arguments { frame.set_argument(u32(index), argument) }
 	vm.push_execution_context_checked(mut frame)!
 	defer { vm.pop_execution_context() }

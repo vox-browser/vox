@@ -51,6 +51,23 @@ fn (mut vm VM) execute_instruction(instruction Instruction, executable &Executab
 	}
 	mut result := js_undefined()
 	match instruction.op {
+		.generator_start {
+			mut execution := frame.generator_execution or { return error('Generator start requires a generator frame') }
+			prototype := execution.function.object.get(mut vm, PropertyName.from_str('prototype'))!
+			mut object := Object.create(execution.realm, if prototype.is_object() { ?&Object(prototype.as_object()) } else { execution.realm.generator_prototype })
+			object.generator_execution = execution
+			execution.suspend(mut frame, .suspended_start)
+			vm.set_reg(register_return_value, Value.from_object(object))
+			return executable.bytecode_length
+		}
+		.yield_value {
+			mut execution := frame.generator_execution or { return error('Yield requires a generator frame') }
+			execution.suspend(mut frame, .suspended_yield)
+			vm.set_reg(register_return_value, left)
+			return executable.bytecode_length
+		}
+		.get_generator_resume_kind { result = Value.from_i32(i32(frame.generator_resume_kind)) }
+		.get_generator_resume_value { result = frame.generator_resume_value }
 		.import_call { result = perform_import_call(mut vm, left, right)! }
 		.get_template_object { result = vm.get_template_object(executable, instruction)! }
 		.await_value {
@@ -510,7 +527,7 @@ pub fn (mut vm VM) run_executable(mut frame ExecutionContext, executable &Execut
 	previous_environment := frame.lexical_environment
 	previous_private_environment := frame.private_environment
 	previous_scope_depth := frame.lexical_scope_depth
-	if !frame.async_resuming { frame.lexical_scope_depth=0 }
+	if !frame.async_resuming && !frame.generator_resuming { frame.lexical_scope_depth=0 }
 	own_budget := vm.run_executable_depth == 0 && vm.external_budget_depth == 0
 	previous_budget := vm.instruction_budget
 	previous_budget_active := vm.instruction_budget_active
@@ -577,7 +594,7 @@ pub fn (mut vm VM) run_executable(mut frame ExecutionContext, executable &Execut
 			return err
 		}
 		frame.program_counter = next
-		if instruction.op in [.end, .await_value] { return vm.reg(register_return_value) }
+		if instruction.op in [.end, .await_value, .generator_start, .yield_value] { return vm.reg(register_return_value) }
 	}
 	return vm.throw_error(.internal_error, 'Bytecode fell off the end without End')
 }

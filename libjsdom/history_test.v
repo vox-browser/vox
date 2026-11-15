@@ -85,6 +85,12 @@ fn test_history_rejects_weak_references_before_reading_their_own_state_propertie
 	assert history_eval(mut vm, 'history.replaceState({safe:true},"");var saved=history.state,reads=0,ref=new WeakRef({}),errors=0;Object.defineProperty(ref,"visible",{enumerable:true,get(){reads++;return 1}});for(var state of [ref,{nested:ref}])try{history.pushState(state,"","/invalid")}catch(e){if(e instanceof DOMException&&e.name==="DataCloneError")errors++}errors===2&&reads===0&&history.state===saved&&history.state.safe&&history.length===1')!.as_bool()
 }
 
+fn test_history_rejects_generator_frames_before_running_body_or_own_getters() {
+	mut host, mut vm, _ := history_fixture()!
+	defer { host.close() }
+	assert history_eval(mut vm, 'var body=0,reads=0;function* g(){body++;yield 42}var it=g(),rejected=false;Object.defineProperty(it,"visible",{enumerable:true,get(){reads++;return 1}});try{history.replaceState(it,"")}catch(e){rejected=e instanceof DOMException&&e.name==="DataCloneError"}rejected&&body===0&&reads===0&&history.state===null')!.as_bool()
+}
+
 fn test_history_retains_cloned_state_after_temporary_allocation_scope() {
 	mut host, mut vm, _ := history_fixture()!
 	defer { host.close() }
