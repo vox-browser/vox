@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: BSD-2-Clause
 module libjs
 
+import platform
+
 // Promise.cpp, PromiseConstructor.cpp and PromisePrototype.cpp. Ordinary
 // constructor/resolution/reaction paths share the VM's FIFO job queue. Promise
 // combinators use separate native entrypoints. Async/await uses the internal
@@ -172,6 +174,16 @@ fn promise_prototype_then(mut vm VM) !Value {
 	fulfilled, rejected := vm.argument(0), vm.argument(1)
 	perform_promise_then(mut vm, mut promise, fulfilled, rejected, capability)
 	return capability.promise
+}
+
+// Engine services use PerformPromiseThen without creating a result promise or
+// consulting author-visible then/constructor/@@species properties.
+pub fn observe_promise_settlement(mut vm VM, value Value, fulfilled Value, rejected Value) ! {
+	if !value.is_object() { return vm.throw_error(.type_error, 'Promise observation requires a Promise') }
+	mut promise := value.as_object().promise_record or { return vm.throw_error(.type_error, 'Promise observation requires a Promise') }
+	persistent := platform.enter_persistent()
+	defer { platform.leave_persistent(persistent) }
+	perform_promise_then(mut vm, mut promise, fulfilled, rejected, unsafe { nil })
 }
 
 // PerformPromiseThen permits an absent result capability for await's internal
