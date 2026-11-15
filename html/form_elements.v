@@ -69,6 +69,7 @@ pub:
 pub mut:
 	control                &FormAssociatedElement
 	text                   &FormAssociatedTextControlElement
+	raw_value_             string
 	dirty_value            bool
 	// Whether the value was last changed by a user edit rather than by script.
 	value_user_edited      bool
@@ -90,18 +91,23 @@ pub fn HTMLTextAreaElementModel.create(element &dom.HTMLTextAreaElement) &HTMLTe
 	dom_element := unsafe { &dom.Element(element) }
 	default_value := dom_element.as_node().child_text_content()
 	control := FormAssociatedElement.create(dom_element)
-	mut text := FormAssociatedTextControlElement.create(control, default_value)
+	api_value := normalize_textarea_api_newlines(default_value)
+	mut text := FormAssociatedTextControlElement.create(control, api_value)
 	// Initializing the model's value is not a DOM selection operation.
-	text.set_the_selection_range(u32(form_string_to_utf16(default_value).len), u32(form_string_to_utf16(default_value).len), .none, .value_change)
+	text.set_the_selection_range(u32(form_string_to_utf16(api_value).len), u32(form_string_to_utf16(api_value).len), .none, .value_change)
 	mut model := &HTMLTextAreaElementModel{
 		element: element
 		control: control
 		text: text
+		raw_value_: default_value
 	}
+	model.text.value_owner_ = TextControlValueOwner(model)
 	model.text.did_edit_target_ = voidptr(model)
 	model.text.did_edit_callback_ = html_text_area_element_did_edit_callback
 	mut mutable_element := unsafe { &dom.HTMLTextAreaElement(element) }
 	mutable_element.text_area_element_model_ = voidptr(model)
+	model.control.value_ = api_value
+	model.update_validity()
 	install_form_control_selected_text_callback(dom_element.document())
 	return model
 }
@@ -128,7 +134,7 @@ pub fn (mut model HTMLTextAreaElementModel) set_default_value(value string) {
 }
 
 pub fn (model &HTMLTextAreaElementModel) value() string {
-	return normalize_textarea_api_newlines(model.text.relevant_value())
+	return model.api_value()
 }
 
 pub fn (mut model HTMLTextAreaElementModel) set_value(value string) {

@@ -288,6 +288,7 @@ pub fn HTMLInputElementModel.create(element &dom.HTMLInputElement) &HTMLInputEle
 	// algorithms walk the live DOM tree, and creating a sibling model may query
 	// this element again while that sibling is initialized.
 	attach_html_input_element_model(element, model)
+	model.text_control.value_owner_ = TextControlValueOwner(model)
 	model.control.reset_form_owner()
 	model.value_ = model.sanitize_value(dom_element.get_attribute_value('value'))
 	model.text_control.did_edit_target_ = voidptr(model)

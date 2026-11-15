@@ -615,9 +615,19 @@ fn form_utf16_to_string(units []u16) string {
 	return runes.string()
 }
 
+// The C++ base calls these virtual owner operations during range replacement.
+// Traced records preserve that dispatch without an escaping V callback.
+pub interface TextControlValueOwner {
+mut:
+	set_dirty_value_flag(bool)
+	set_relevant_value(string) !
+}
+
 @[heap]
 pub struct FormAssociatedTextControlElement {
 	dom.InputEventsTarget
+mut:
+	value_owner_ ?TextControlValueOwner
 pub:
 	control &FormAssociatedElement
 pub mut:
@@ -836,8 +846,9 @@ fn (text &FormAssociatedTextControlElement) selection_or_range_applies() bool {
 }
 
 pub fn (mut text FormAssociatedTextControlElement) select() {
-	if !text.selection_or_range_applies() {
-		return
+	if text.control.element.local_name() == 'input' {
+		model := HTMLInputElementModel.create(unsafe { &dom.HTMLInputElement(text.control.element) })
+		if !model.select_applies() || !model.has_selectable_text() { return }
 	}
 	text.set_the_selection_range(0, max_u32, .none, .dom)
 }
@@ -922,10 +933,11 @@ pub fn (mut text FormAssociatedTextControlElement) set_range_text_with_source(re
 	if !text.selection_or_range_applies() {
 		return error('InvalidStateError: setRangeText does not apply')
 	}
+	text.dirty_value_flag = true
+	if mut owner := text.value_owner_ { owner.set_dirty_value_flag(true) }
 	if start > end {
 		return error('IndexSizeError: start must be less than or equal to end')
 	}
-	text.dirty_value_flag = true
 	mut value_units := form_string_to_utf16(text.relevant_value_)
 	replacement_units := form_string_to_utf16(replacement)
 	actual_start := if int(start) > value_units.len { value_units.len } else { int(start) }
@@ -935,9 +947,9 @@ pub fn (mut text FormAssociatedTextControlElement) set_range_text_with_source(re
 	mut result := value_units[..actual_start].clone()
 	result << replacement_units
 	result << value_units[actual_end..]
-	text.relevant_value_ = form_utf16_to_string(result)
-	mut control := text.control
-	control.value_ = text.relevant_value_
+	value := form_utf16_to_string(result)
+	if mut owner := text.value_owner_ { owner.set_relevant_value(value)! }
+	else { text.set_relevant_value(value) }
 	new_end := actual_start + replacement_units.len
 	mut selection_start := old_selection_start
 	mut selection_end := old_selection_end
