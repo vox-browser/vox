@@ -104,8 +104,12 @@ fn (mut state JSONStringifyState) quote(mut vm VM, text Utf16String) ! {
 	units := text.data
 	mut index := 0
 	mut start := 0
+	mut next_budget_check := 0
 	for index < units.len {
-		if index % 64 == 0 { vm.consume_execution_budget()! }
+		if index >= next_budget_check {
+			vm.consume_execution_budget()!
+			next_budget_check = index + 64
+		}
 		unit := units[index]
 		escaped := match unit {
 			u16(`"`) { '\\"' }

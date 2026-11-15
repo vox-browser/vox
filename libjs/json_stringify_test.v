@@ -88,3 +88,12 @@ fn test_json_stringify_executes_through_reused_native_code_without_a_compiler() 
 		vm.close_native_code()!
 	}
 }
+
+fn test_json_stringify_charges_budget_for_surrogate_pairs_after_an_odd_length_prefix() {
+	mut vm := VM.create(); create_simple_execution_context(mut vm)
+	json_stringify_eval(mut vm, 'var longText="x"+"😀".repeat(10000)')!
+	mut script := Script.parse('JSON.stringify(longText)', vm.realm(), 'json-surrogate-budget.js', unsafe { nil })!
+	if _ := vm.run_with_limits(mut script, ExecutionLimits{max_instructions: 100}) { assert false }
+	else { assert thrown_value(err).as_object().error_message()?.contains('instruction budget') }
+	assert json_stringify_eval(mut vm, 'JSON.stringify("x😀")')!.as_string().str() == '"x😀"'
+}
