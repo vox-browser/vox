@@ -146,7 +146,7 @@ fn (mut vm VM) execute_instruction(instruction Instruction, executable &Executab
 			result = Value.from_object(create_ecmascript_function(mut vm, executable, instruction.identifier, false, make_function_name(left.to_property_key(mut vm)!, prefix), false)!)
 		}
 		.new_class { result = create_base_class(mut vm, executable, instruction.identifier, left, right, source, instruction.strict)! }
-		.define_class_method { define_class_method(mut vm, left, right, source, instruction.identifier)! }
+		.define_class_method { define_class_method(mut vm, left, right, source, instruction.identifier, instruction.strict)! }
 		.mov {
 			result = left
 		}

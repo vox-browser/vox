@@ -13,9 +13,7 @@ fn (mut generator BytecodeGenerator) object_literal(mut vm VM, properties []Obje
 			generator.emit(Instruction{ op: .set_object_literal_prototype, lhs: dst, rhs: value })
 			continue
 		}
-		if property.property_type != .key_value {
-			return generator.unsupported('object accessor or spread')
-		}
+		if property.property_type == .spread { return generator.unsupported('object spread') }
 		raw_key := if !property.is_computed && property.key.kind.tag == .identifier_expr {
 			generator.constant(Value.from_string(vm.create_string(identifier_name(&property.key)!)))
 		} else {
@@ -25,7 +23,16 @@ fn (mut generator BytecodeGenerator) object_literal(mut vm VM, properties []Obje
 		generator.emit(Instruction{ op: .to_property_key, dst: key, lhs: raw_key })
 		expression := property.value or { return error('Missing property value') }
 		mut value := Operand{}
-		if !property.is_method && expression.kind.tag == .function_expr && generator.executable.parsed_source.function_table.get(expression.kind.function_id).name == none {
+		if property.is_method {
+			value = generator.temporary()
+			generator.emit(Instruction{op: .new_class_method, dst: value, lhs: key,
+				rhs: generator.constant(Value.from_i32(i32(property.property_type))), identifier: expression.kind.function_id.id})
+			// The shared method-definition instruction's flag selects enumerable
+			// object-literal descriptors; class methods leave it false.
+			generator.emit(Instruction{op: .define_class_method, lhs: dst, rhs: key, src: value,
+				identifier: u32(property.property_type), strict: true})
+			continue
+		} else if expression.kind.tag == .function_expr && generator.executable.parsed_source.function_table.get(expression.kind.function_id).name == none {
 			value = generator.temporary()
 			generator.emit(Instruction{ op: .new_function_with_name, dst: value, identifier: expression.kind.function_id.id, lhs: key })
 		} else {

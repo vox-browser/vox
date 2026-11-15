@@ -135,14 +135,14 @@ fn create_base_class(mut vm VM, executable &Executable, index u32, body Value, n
 	return Value.from_object(object)
 }
 
-fn define_class_method(mut vm VM, target Value, name Value, function_value Value, kind u32) ! {
+fn define_class_method(mut vm VM, target Value, name Value, function_value Value, kind u32, enumerable bool) ! {
 	mut target_object := target.as_object()
 	key := name.to_property_key(mut vm)!
 	if kind == 0 {
-		target_object.define_property_or_throw(mut vm, key, PropertyDescriptor{ value: function_value, writable: true, enumerable: false, configurable: true })!
+		target_object.define_property_or_throw(mut vm, key, PropertyDescriptor{ value: function_value, writable: true, enumerable: enumerable, configurable: true })!
 	} else if kind == 1 {
-		target_object.define_property_or_throw(mut vm, key, PropertyDescriptor{ getter: function_value, enumerable: false, configurable: true })!
+		target_object.define_property_or_throw(mut vm, key, PropertyDescriptor{ getter: function_value, enumerable: enumerable, configurable: true })!
 	} else {
-		target_object.define_property_or_throw(mut vm, key, PropertyDescriptor{ setter: function_value, enumerable: false, configurable: true })!
+		target_object.define_property_or_throw(mut vm, key, PropertyDescriptor{ setter: function_value, enumerable: enumerable, configurable: true })!
 	}
 }
