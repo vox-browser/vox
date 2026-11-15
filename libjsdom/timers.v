@@ -69,27 +69,38 @@ fn (mut host Host) timer_scope(mut vm libjs.VM) !&html.WindowOrWorkerGlobalScope
 	scope.set_timer_removed_handler(removed)
 	evaluate := fn [host] (source string, realm &html.ScriptingRealm) !dom.JSValue {
 		mut owner := unsafe { &Host(host) }
-		if owner.closed { return dom.js_undefined() }
-		classic := realm.active_classic_script_ or { return error('Timer source requires its native ClassicScript') }
-		address := (classic.base_url() or { return error('Timer source requires its native base URL') }).serialize()
-		owner.callback_entry(fn [host, source, address] (mut vm libjs.VM) !libjs.Value {
-			mut script := libjs.Script.parse(source, host.realm, address, unsafe { nil }) or { return libjs.throw_completion(host.fetch_error_value(mut vm, err)) }
-			return vm.run_with_limits(mut script, libjs.ExecutionLimits{max_instructions: 1000000})
-		}) or {
-			if report := owner.hooks.exception { report(exception_message(err)) }
-			return webidl.throw_value(owner.native_abort_reason(owner.fetch_error_value(mut owner.vm, err)).as_webidl_value()!)
-		}
-		return dom.js_undefined()
+		return owner.evaluate_timer_source(source, realm)
 	}
 	host.closures << voidptr(evaluate)
 	scope.set_timer_classic_script_evaluator(evaluate)
 	convert_error := fn [host] (err IError) webidl.Value {
 		mut owner := unsafe { &Host(host) }
-		return owner.native_abort_reason(owner.fetch_error_value(mut owner.vm, err)).as_webidl_value() or { webidl.exception_value(err) }
+		return owner.timer_exception_value(err)
 	}
 	host.closures << voidptr(convert_error)
 	scope.set_timer_compilation_exception_value_converter(convert_error)
 	return scope
+}
+fn (mut host Host) evaluate_timer_source(source string, realm &html.ScriptingRealm) !dom.JSValue {
+	persistent := platform.enter_persistent()
+	defer { platform.leave_persistent(persistent) }
+	if host.closed { return dom.js_undefined() }
+	classic := realm.active_classic_script_ or { return error('Timer source requires its native ClassicScript') }
+	address := (classic.base_url() or { return error('Timer source requires its native base URL') }).serialize()
+	host.callback_entry(fn [host, source, address] (mut vm libjs.VM) !libjs.Value {
+		mut script := libjs.Script.parse(source, host.realm, address, unsafe { nil }) or { return libjs.throw_completion(host.fetch_error_value(mut vm, err)) }
+		return vm.run_with_limits(mut script, libjs.ExecutionLimits{max_instructions: 1000000})
+	}) or {
+		if report := host.hooks.exception { report(exception_message(err)) }
+		return webidl.throw_value(host.native_abort_reason(host.fetch_error_value(mut host.vm, err)).as_webidl_value()!)
+	}
+	return dom.js_undefined()
+}
+
+fn (mut host Host) timer_exception_value(err IError) webidl.Value {
+	persistent := platform.enter_persistent()
+	defer { platform.leave_persistent(persistent) }
+	return host.native_abort_reason(host.fetch_error_value(mut host.vm, err)).as_webidl_value() or { webidl.exception_value(err) }
 }
 
 fn (mut host Host) fire_timer(record &TimerBinding, arguments []webidl.Value) !webidl.Value {

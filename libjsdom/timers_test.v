@@ -9,6 +9,7 @@ import os
 import platform
 import rand
 import time
+import webidl
 
 fn timers_fixture() !(&Host, &libjs.VM, &html.WindowModel) {
 	address := dom.URL{value: 'https://libjs-timers.test/document.html'}
@@ -140,6 +141,35 @@ fn test_native_clock_delivers_timer_callbacks_without_manual_clock_adapters() {
 	}
 	assert vm.global_object().get(mut vm, libjs.PropertyName.from_str('actualClock'))!.as_bool()
 	assert window.window_or_worker_global_scope().active_timer_count() == 0 && host.timers.len == 0
+}
+
+fn test_timer_exception_values_and_source_evaluation_outlive_native_scratch_arenas() {
+	mut host, mut vm, _ := timers_fixture()!
+	defer { host.close() }
+	timers_eval(mut vm, 'var marker={toString(){throw 99}}')!
+	settings := unsafe { &html.EnvironmentSettingsObject(host.document.relevant_settings_object()) }
+	mut realm := settings.realm()
+	previous := realm.active_classic_script_
+	defer { realm.active_classic_script_ = previous }
+	realm.active_classic_script_ = html.ClassicScript.create('timer', 'throw marker', realm, host.document.url, 1, .no)
+	mut scratch := platform.new_arena('native-timer-source-errors')
+	entry := scratch.enter()
+	mut reasons := []webidl.Value{}
+	if _ := host.evaluate_timer_source('throw marker', realm) { assert false }
+	else { assert err is webidl.ValueException; reasons << (err as webidl.ValueException).value }
+	reasons << host.timer_exception_value(libjs.throw_completion(vm.global_object().get(mut vm, libjs.PropertyName.from_str('marker'))!))
+	scratch.leave(entry)
+	assert !scratch.contains(host.closures.data)
+	// Copy the test's own collection before retiring its temporary arena.
+	retained := reasons.clone()
+	for reason in retained {
+		actual := reason.runtime_value_ or { panic('Missing original timer value') }
+		assert !scratch.contains(actual.value)
+	}
+	scratch.reset()
+	scratch.release()
+	marker := vm.global_object().get(mut vm, libjs.PropertyName.from_str('marker'))!
+	for reason in retained { assert libjs.is_strictly_equal(host.abort_reason_value(mut vm, reason)!, marker) }
 }
 
 fn test_cached_native_timer_callbacks_run_without_compiler_and_close_cancels_pending_work() {
