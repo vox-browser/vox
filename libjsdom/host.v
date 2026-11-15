@@ -2,6 +2,7 @@ module libjsdom
 
 import dom
 import fetch
+import html
 import libjs
 import platform
 import webidl
@@ -60,6 +61,11 @@ mut:
 	registry_prototype &libjs.Object = unsafe { nil }
 	registries map[voidptr]&RegistryBinding
 	active_registries map[u64]voidptr
+	navigator_prototype &libjs.Object = unsafe { nil }
+	navigator_object &libjs.Object = unsafe { nil }
+	navigator_native &html.Navigator = unsafe { nil }
+	navigator_languages []string
+	navigator_frozen_languages &libjs.Object = unsafe { nil }
 }
 
 pub fn Host.create(vm &libjs.VM, realm &libjs.Realm, document &dom.Document, hooks Hooks) !&Host {
@@ -70,6 +76,7 @@ pub fn Host.create(vm &libjs.VM, realm &libjs.Realm, document &dom.Document, hoo
 	host.install_node_interfaces()!
 	host.install_dom_exceptions()!
 	host.install_custom_elements()!
+	host.install_navigator()!
 	host.install_styles()
 	host.install_urls()!
 	host.install_headers()!
@@ -140,6 +147,10 @@ pub fn (mut host Host) close() {
 	owner_document.clear_custom_element_construction_hook(voidptr(&host))
 	host.registries.clear()
 	host.active_registries.clear()
+	host.navigator_object = unsafe { nil }
+	host.navigator_native = unsafe { nil }
+	host.navigator_frozen_languages = unsafe { nil }
+	host.navigator_languages = []
 	host.close_fetch()
 	for listener in host.listeners {
 		if listener.attribute {
