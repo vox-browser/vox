@@ -252,10 +252,15 @@ fn (mut generator BytecodeGenerator) expression(mut vm VM, expression &Expressio
 			data := kind.super_call_data or { return error('Missing super call data') }
 			callee := generator.temporary()
 			generator.emit(Instruction{op: .get_super_constructor, dst: callee})
+			if !data.is_synthetic && data.arguments.any(it.is_spread) {
+				arguments := generator.arguments_array(mut vm, data.arguments)!
+				result := generator.temporary()
+				generator.emit(Instruction{op: .super_construct_with_array, dst: result, lhs: callee, rhs: arguments})
+				return result
+			}
 			mut arguments := []Operand{}
 			if !data.is_synthetic {
 				for argument in data.arguments {
-					if argument.is_spread { return generator.unsupported('spread super arguments') }
 					arguments << generator.expression(mut vm, &argument.value)!
 				}
 			}

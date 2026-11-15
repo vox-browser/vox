@@ -15,26 +15,50 @@ fn (mut generator BytecodeGenerator) array_literal_with_spread(mut vm VM, elemen
 		if expression := element {
 			if expression.kind.tag == .spread {
 				operand := expression.kind.operand or { return error('Missing array spread operand') }
-				value := generator.expression(mut vm, operand)!
-				iterator := generator.temporary()
-				generator.emit(Instruction{op: .get_sync_iterator, dst: iterator, lhs: value})
-				loop_start := u32(generator.executable.instructions.len)
-				item := generator.temporary()
-				finished := generator.emit(Instruction{op: .sync_iterator_next, dst: item, lhs: iterator})
-				generator.emit(Instruction{op: .define_property, lhs: array, rhs: index, src: item})
-				generator.emit(Instruction{op: .add, dst: index, lhs: index, rhs: one})
-				generator.emit(Instruction{op: .jump, target: loop_start})
-				generator.patch(finished)
-				continue
+				generator.append_array_expression(mut vm, array, index, one, operand, true)!
+			} else {
+				generator.append_array_expression(mut vm, array, index, one, &expression, false)!
 			}
-			value := generator.expression(mut vm, &expression)!
-			generator.emit(Instruction{op: .define_property, lhs: array, rhs: index, src: value})
+		} else {
+			// An elision advances length without creating an indexed property.
+			generator.emit(Instruction{op: .add, dst: index, lhs: index, rhs: one})
 		}
-		// An elision advances length without creating an indexed property.
-		generator.emit(Instruction{op: .add, dst: index, lhs: index, rhs: one})
 	}
 	// DefineProperty grows length for values; a trailing elision still needs
 	// the final length write. Array literals always create intrinsic arrays.
 	generator.emit(Instruction{op: .put_property, lhs: array, rhs: generator.constant(Value.from_string(vm.create_string_from_str('length'))), src: index, strict: true})
 	return array
+}
+
+// ArgumentListEvaluation uses the same ordered iteration as array spread.
+// The private intrinsic array has no holes or observable prototype setters.
+fn (mut generator BytecodeGenerator) arguments_array(mut vm VM, arguments []CallArgument) !Operand {
+	array := generator.temporary()
+	zero := generator.constant(Value.from_i32(0))
+	one := generator.constant(Value.from_i32(1))
+	index := generator.temporary()
+	generator.emit(Instruction{op: .new_array, dst: array, lhs: zero})
+	generator.emit(Instruction{op: .mov, dst: index, lhs: zero})
+	for argument in arguments {
+		generator.append_array_expression(mut vm, array, index, one, &argument.value, argument.is_spread)!
+	}
+	return array
+}
+
+fn (mut generator BytecodeGenerator) append_array_expression(mut vm VM, array Operand, index Operand, one Operand, expression &Expression, spread bool) ! {
+	value := generator.expression(mut vm, expression)!
+	if spread {
+		iterator := generator.temporary()
+		generator.emit(Instruction{op: .get_sync_iterator, dst: iterator, lhs: value})
+		loop_start := u32(generator.executable.instructions.len)
+		item := generator.temporary()
+		finished := generator.emit(Instruction{op: .sync_iterator_next, dst: item, lhs: iterator})
+		generator.emit(Instruction{op: .define_property, lhs: array, rhs: index, src: item})
+		generator.emit(Instruction{op: .add, dst: index, lhs: index, rhs: one})
+		generator.emit(Instruction{op: .jump, target: loop_start})
+		generator.patch(finished)
+	} else {
+		generator.emit(Instruction{op: .define_property, lhs: array, rhs: index, src: value})
+		generator.emit(Instruction{op: .add, dst: index, lhs: index, rhs: one})
+	}
 }
