@@ -45,8 +45,8 @@ fn radio_node_list_element_checked(element &dom.Element) bool {
 }
 
 fn radio_node_list_set_element_checked(element &dom.Element, checked bool) {
-	mut input := unsafe { &dom.HTMLInputElement(element) }
-	html_input_element_set_checked(mut input, checked)
+	mut model := HTMLInputElementModel.create(unsafe { &dom.HTMLInputElement(element) })
+	model.set_checked_binding(checked)
 }
 
 @[heap]
@@ -67,6 +67,11 @@ pub fn (list &RadioNodeList) collection() []&dom.Node {
 
 pub fn (list &RadioNodeList) length() int {
 	return list.list.length()
+}
+
+// The JS bridge shares the concrete list with inherited NodeList operations.
+pub fn (list &RadioNodeList) node_list() &dom.NodeList {
+	return list.list
 }
 
 pub fn (list &RadioNodeList) item(index int) ?&dom.Node {
@@ -98,13 +103,9 @@ pub fn (mut list RadioNodeList) set_value(value string) {
 		}
 	}
 	target := matching or { return }
-	// RadioNodeList's value setter explicitly updates the named group. This uses
-	// HTMLInputElement::set_checked(), whose C++ counterpart only changes one
-	// element; radio-group exclusivity belongs to the caller here.
-	for node in list.list.collection() {
-		element := radio_node_list_radio_element(node) or { continue }
-		radio_node_list_set_element_checked(element, voidptr(element) == voidptr(target))
-	}
+	// The named list can contain equal IDs from different radio groups. Update
+	// only the target; the concrete input owner enforces its actual radio group.
+	radio_node_list_set_element_checked(target, true)
 }
 
 pub struct HTMLFormControlsCollectionEmpty {}
@@ -137,6 +138,10 @@ pub fn HTMLFormControlsCollection.create(root &dom.ParentNode, scope dom.HTMLCol
 
 pub fn (collection &HTMLFormControlsCollection) length() int {
 	return collection.collection.length()
+}
+
+pub fn (collection &HTMLFormControlsCollection) html_collection() &dom.HTMLCollection {
+	return collection.collection
 }
 
 pub fn (collection &HTMLFormControlsCollection) item(index int) ?&dom.Element {

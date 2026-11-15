@@ -592,13 +592,8 @@ pub fn (form &HTMLFormElementModel) controls() []&FormAssociatedElement {
 }
 
 pub fn (form &HTMLFormElementModel) length() u32 {
-	mut count := 0
-	for control in form.controls_ {
-		if control.is_listed() && !(control.element.local_name() == 'input' && form_element_input_type(control.element) == 'image') {
-			count++
-		}
-	}
-	return u32(count)
+	mut owner := unsafe { &HTMLFormElementModel(form) }
+	return u32(owner.elements().length())
 }
 
 pub fn (mut form HTMLFormElementModel) set_submission_hook(hook ?FormSubmissionHook) {
