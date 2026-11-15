@@ -46,7 +46,7 @@ fn generator_delegate_step(mut vm VM, wrapper Value, received Value, kind_value 
 	if !wrapper.is_object() { return vm.throw_error(.internal_error, 'Invalid delegated iterator record') }
 	mut iterator := wrapper.as_object().iterator_record or { return vm.throw_error(.internal_error, 'Missing delegated iterator record') }
 	if !kind_value.is_number() || kind_value.number !in [f64(0), 1, 2] { return vm.throw_error(.internal_error, 'Invalid generator resume completion') }
-	kind := GeneratorResumeKind(int(kind_value.number))
+	kind := if kind_value.number == 0 { GeneratorResumeKind.normal } else if kind_value.number == 1 { GeneratorResumeKind.return_ } else { GeneratorResumeKind.throw_ }
 	mut result := js_undefined()
 	if kind == .normal {
 		result = call(mut vm, iterator.next_method, Value.from_object(iterator.iterator), [received])!
@@ -57,7 +57,8 @@ fn generator_delegate_step(mut vm VM, wrapper Value, received Value, kind_value 
 				iterator.done = true
 				return generator_delegate_packet(mut vm, received, true, true)
 			}
-			iterator_close(mut vm, iterator, normal_completion(js_undefined())).release_error()!
+			closed := iterator_close(mut vm, iterator, normal_completion(js_undefined()))
+			if closed.is_error() { return closed.release_error() }
 			return vm.throw_error(.type_error, 'Delegated iterator does not have a throw method')
 		}
 		result = call(mut vm, method, Value.from_object(iterator.iterator), [received])!

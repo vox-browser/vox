@@ -31,6 +31,8 @@ fn test_yield_from_missing_throw_closes_with_no_arguments_and_preserves_close_er
 	mut vm := VM.create(); create_simple_execution_context(mut vm)
 	assert delegation_eval(mut vm, 'var closed=0,args=-1,source={};source[Symbol.iterator]=()=>({next(){return {value:1}},return(){closed++;args=arguments.length;return {}}});function* g(){yield* source}var i=g();i.next();var rejected=false;try{i.throw(9)}catch(e){rejected=e instanceof TypeError}rejected&&closed===1&&args===0&&i.next().done')!.as_bool()
 	assert delegation_eval(mut vm, 'var marker={},same=false;source[Symbol.iterator]=()=>({next(){return {value:1}},return(){throw marker}});var i=g();i.next();try{i.throw(9)}catch(e){same=e===marker}same')!.as_bool()
+	assert delegation_eval(mut vm, 'source[Symbol.iterator]=()=>({next(){return {value:1}},return(){return 0}});var i=g(),rejected=false;i.next();try{i.throw(9)}catch(e){rejected=e instanceof TypeError}rejected&&i.next().done')!.as_bool()
+	assert delegation_eval(mut vm, 'source[Symbol.iterator]=()=>({next(){return {value:1}},get return(){throw marker}});var i=g(),same=false;i.next();try{i.throw(9)}catch(e){same=e===marker}same')!.as_bool()
 }
 
 fn test_yield_from_return_without_method_and_suspending_delegate_cleanup() {
