@@ -77,12 +77,12 @@ fn main() {
 	for visit in 0 .. visits {
 		// The second opening must work even when starting a compiler is impossible.
 		if visit > 0 { os.setenv('VOX_LIBJS_NATIVE_COMPILER', '/usr/bin/false', true) }
-		result := open_github(manifest, sources)
+		result := open_github(manifest, sources, archive)
 		println(json2.encode(result))
 	}
 }
 
-fn open_github(manifest RevisitManifest, sources map[string]string) GithubRevisitResult {
+fn open_github(manifest RevisitManifest, sources map[string]string, archive string) GithubRevisitResult {
 	markup := sources[manifest.url] or { panic('Missing original HTML') }
 	started := time.sys_mono_now()
 	address := dom.URL{ value: manifest.url }
@@ -99,19 +99,20 @@ fn open_github(manifest RevisitManifest, sources map[string]string) GithubRevisi
 	runtime.install_performance_binding() or { panic(err) }
 	seen := &RevisitRequests{}
 	transport := &fetch.FetchHost{
-		perform: fn [sources, manifest, seen] (request &fetch.Request) !&fetch.Response {
+		perform: fn [archive, manifest, seen] (request &fetch.Request) !&fetch.Response {
 			mut requests := unsafe { &RevisitRequests(seen) }
 			url := request.current_url().serialize()
 			requests.urls << url
 			metadata := manifest.responses[url] or { return error('Unarchived request: ${url}') }
-			body := sources[url] or { return error('Unmapped source: ${url}') }
+			body := os.read_bytes(os.join_path(archive, 'bodies', metadata.sha256))!
+			if sha256.sum(body).hex() != metadata.sha256 { return error('Changed response body: ${url}') }
 			mut response := fetch.Response.create()
 			response.status = metadata.status
 			response.url_list = request.url_list.clone()
 			for header in metadata.headers {
 				response.header_list.append(http.Header{ name: header.name, value: header.value })
 			}
-			response.set_body_bytes(body.bytes())
+			response.set_body_bytes(body)
 			return response
 		}
 	}
@@ -152,7 +153,8 @@ fn open_github(manifest RevisitManifest, sources map[string]string) GithubRevisi
 	loop.spin_until(fn [runtime, deadline] () bool {
 		stats := runtime.native_code_cache_stats()
 		return time.sys_mono_now() >= deadline
-			|| (!runtime.has_pending_module_scripts() && (stats.pending_executables == 0 || stats.last_error != ''))
+			|| (!runtime.has_pending_module_scripts() && !runtime.has_pending_libjs_fetches()
+				&& (stats.pending_executables == 0 || stats.last_error != ''))
 	})
 	script_ms := f64(time.sys_mono_now() - script_start) / 1e6
 	finish_start := time.sys_mono_now()
