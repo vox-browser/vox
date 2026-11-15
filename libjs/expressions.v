@@ -122,7 +122,7 @@ fn (mut p Parser) parse_expression(min_precedence int, associativity Associativi
 	// Check for freestanding `arguments` references after parse_primary_expression.
 	if expression.kind.tag == .identifier_expr {
 		if id := expression.kind.identifier {
-			if utf16_equals(id.name.data, utf16('arguments')) && !p.flags.strict_mode
+			if utf16_equals_ascii(id.name.data, 'arguments') && !p.flags.strict_mode
 				&& !p.scope_collector.has_declaration_in_current_function(id.name.data) {
 				p.scope_collector.set_contains_access_to_arguments_object_in_non_strict_mode()
 			}
@@ -282,7 +282,7 @@ fn (mut p Parser) parse_primary_expression(min_precedence int, forbidden Forbidd
 		.bool_literal {
 			bl_token := p.consume()
 			value := p.token_value(bl_token)
-			is_true := utf16_equals(value, utf16('true'))
+			is_true := utf16_equals_ascii(value, 'true')
 			return p.expression(start, ExpressionKind{
 				tag:        .boolean_literal
 				bool_value: is_true
@@ -792,7 +792,7 @@ fn (mut p Parser) parse_new_expression() Expression {
 		p.consume()
 		target_token := p.current_token
 		p.consume_token(.identifier)
-		if !utf16_equals(p.token_original_value(target_token), utf16('target')) {
+		if !utf16_equals_ascii(p.token_original_value(target_token), 'target') {
 			p.syntax_error("Expected 'target' after 'new.'")
 		}
 		if !p.flags.new_target_is_valid && !p.in_eval_function_context {
@@ -857,7 +857,7 @@ fn (mut p Parser) parse_call_expression(callee Expression) Expression {
 	// Check for direct call to eval.
 	if callee.kind.tag == .identifier_expr {
 		if id := callee.kind.identifier {
-			if utf16_equals(id.name.data, utf16('eval')) {
+			if utf16_equals_ascii(id.name.data, 'eval') {
 				p.scope_collector.set_contains_direct_call_to_eval()
 				p.scope_collector.set_uses_this()
 			}
@@ -1103,13 +1103,13 @@ fn (mut p Parser) parse_object_property(obj_start Position) ObjectProperty {
 
 	if p.match_identifier_name() {
 		value := p.token_original_value(p.current_token).clone()
-		if utf16_equals(value, utf16('get')) && p.match_property_key_ahead() {
+		if utf16_equals_ascii(value, 'get') && p.match_property_key_ahead() {
 			is_getter = true
 			p.consume()
-		} else if utf16_equals(value, utf16('set')) && p.match_property_key_ahead() {
+		} else if utf16_equals_ascii(value, 'set') && p.match_property_key_ahead() {
 			is_setter = true
 			p.consume()
-		} else if utf16_equals(value, utf16('async')) {
+		} else if utf16_equals_ascii(value, 'async') {
 			next := p.next_token()
 			if !next.trivia_has_line_terminator && next.token_type != .paren_open
 				&& next.token_type != .colon && next.token_type != .comma
@@ -1339,7 +1339,7 @@ fn (mut p Parser) parse_property_key() PropertyKey {
 		.private_identifier {
 			pi_token := p.consume()
 			value := Utf16String.from_slice(p.token_value(pi_token))
-			if utf16_equals(value.data, utf16('#constructor')) {
+			if utf16_equals_ascii(value.data, '#constructor') {
 				p.syntax_error("Private property with name '#constructor' is not allowed")
 			}
 			key_start := start
@@ -1769,7 +1769,7 @@ fn (mut p Parser) try_parse_arrow_function_expression_impl(expect_parens bool, i
 	} else if p.match_identifier() || p.match_token(.await_kw) {
 		param_token := p.consume()
 		value := p.token_value(param_token).clone()
-		if utf16_equals(value, utf16('await'))
+		if utf16_equals_ascii(value, 'await')
 			&& (is_async || p.program_type == .module || p.flags.in_class_static_init_block) {
 			p.syntax_error("'await' is a reserved identifier in async functions")
 		}

@@ -390,12 +390,12 @@ fn (mut p Parser) check_arguments_or_eval(token Token) {
 				[]u16{}
 			}
 		}
-		if utf16_equals(value, utf16('arguments')) {
+		if utf16_equals_ascii(value, 'arguments') {
 			if p.flags.in_class_field_initializer {
 				p.syntax_error("'arguments' is not allowed in class field initializer")
 			}
 			p.flags.function_might_need_arguments_object = true
-		} else if utf16_equals(value, utf16('eval')) {
+		} else if utf16_equals_ascii(value, 'eval') {
 			p.flags.function_might_need_arguments_object = true
 		}
 	}
@@ -622,25 +622,25 @@ fn (p &Parser) match_invalid_escaped_keyword() bool {
 		return false
 	}
 	value := p.token_value(p.current_token)
-	if utf16_equals(value, utf16('await')) {
+	if utf16_equals_ascii(value, 'await') {
 		return p.program_type == .module || p.flags.await_expression_is_valid
 			|| p.flags.in_class_static_init_block
 	}
-	if utf16_equals(value, utf16('async')) {
+	if utf16_equals_ascii(value, 'async') {
 		return false
 	}
-	if utf16_equals(value, utf16('yield')) {
+	if utf16_equals_ascii(value, 'yield') {
 		return p.flags.in_generator_function_context
 	}
 	if p.flags.strict_mode {
 		return true
 	}
-	return !utf16_equals(value, utf16('let')) && !utf16_equals(value, utf16('static'))
+	return !utf16_equals_ascii(value, 'let') && !utf16_equals_ascii(value, 'static')
 }
 
 fn (mut p Parser) check_identifier_name_for_assignment_validity(name []u16, force_strict bool) {
 	if p.flags.strict_mode || force_strict {
-		if utf16_equals(name, utf16('arguments')) || utf16_equals(name, utf16('eval')) {
+		if utf16_equals_ascii(name, 'arguments') || utf16_equals_ascii(name, 'eval') {
 			p.syntax_error("Binding pattern target may not be called 'arguments' or 'eval' in strict mode")
 		} else if is_strict_reserved_word(name) {
 			name_str := string_from_utf16_lossy(name)
@@ -1021,7 +1021,7 @@ fn (mut p Parser) match_declaration() bool {
 		}
 		.identifier {
 			value := p.token_value(p.current_token)
-			if !utf16_equals(value, utf16('using')) {
+			if !utf16_equals_ascii(value, 'using') {
 				false
 			} else {
 				next := p.next_token()
@@ -1036,7 +1036,7 @@ fn (mut p Parser) match_declaration() bool {
 
 fn (mut p Parser) try_match_let_declaration() bool {
 	next := p.next_token()
-	if next.token_type.is_identifier_name() && !utf16_equals(p.token_value(next), utf16('in')) {
+	if next.token_type.is_identifier_name() && !utf16_equals_ascii(p.token_value(next), 'in') {
 		return true
 	}
 	if next.token_type == .curly_open || next.token_type == .bracket_open {

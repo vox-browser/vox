@@ -110,7 +110,7 @@ fn (mut p Parser) parse_declaration() Statement {
 		}
 		else {
 			if p.match_token(.identifier)
-				&& utf16_equals(p.token_value(p.current_token), utf16('using')) {
+				&& utf16_equals_ascii(p.token_value(p.current_token), 'using') {
 				if !p.scope_collector.can_have_using_declaration() {
 					p.syntax_error("'using' not allowed outside of block, for loop or function")
 				}
@@ -160,7 +160,7 @@ fn (mut p Parser) parse_variable_declaration(is_for_loop bool) Statement {
 			token := p.consume()
 			value := p.token_value(token).clone()
 			p.check_identifier_name_for_assignment_validity(value, false)
-			if kind != .var_kind && utf16_equals(value, utf16('let')) {
+			if kind != .var_kind && utf16_equals_ascii(value, 'let') {
 				p.syntax_error("Lexical binding may not be called 'let'")
 			}
 			id := p.make_identifier(declaration_start, Utf16String.from_slice(value.clone()))
@@ -184,7 +184,7 @@ fn (mut p Parser) parse_variable_declaration(is_for_loop bool) Statement {
 
 			for bn in bound_names {
 				p.check_identifier_name_for_assignment_validity(bn.name.data, false)
-				if kind != .var_kind && utf16_equals(bn.name.data, utf16('let')) {
+				if kind != .var_kind && utf16_equals_ascii(bn.name.data, 'let') {
 					p.syntax_error("Lexical binding may not be called 'let'")
 				}
 			}
@@ -287,7 +287,7 @@ fn (mut p Parser) parse_using_declaration(is_for_loop bool) Statement {
 		name := p.token_value(token).clone()
 
 		p.check_identifier_name_for_assignment_validity(name, false)
-		if utf16_equals(name, utf16('let')) {
+		if utf16_equals_ascii(name, 'let') {
 			p.syntax_error("Lexical binding may not be called 'let'")
 		}
 
@@ -424,7 +424,7 @@ fn (mut p Parser) parse_function_expression() Expression {
 	}
 
 	// Register the function expression name in the outer scope.
-	if kind == .generator && utf16_equals(fn_name_value.data, utf16('yield')) {
+	if kind == .generator && utf16_equals_ascii(fn_name_value.data, 'yield') {
 		p.syntax_error("'yield' is not allowed as a generator function expression name")
 	}
 
@@ -453,13 +453,13 @@ fn (mut p Parser) parse_function_expression() Expression {
 fn (mut p Parser) parse_function_common(name ?&Identifier, fn_name Utf16String, kind FunctionKind, is_async bool, is_generator bool, start Position, saved_might_need_arguments bool) JsFunctionData {
 	// Validate name against async generator and class static init restrictions.
 	if name != none {
-		if kind == .async_generator && (utf16_equals(fn_name.data, utf16('await'))
-			|| utf16_equals(fn_name.data, utf16('yield'))) {
+		if kind == .async_generator && (utf16_equals_ascii(fn_name.data, 'await')
+			|| utf16_equals_ascii(fn_name.data, 'yield')) {
 			name_str := string_from_utf16_lossy(fn_name.data)
 			p.syntax_error("async generator function is not allowed to be called '${name_str}'")
 		}
 		if p.flags.in_class_static_init_block && is_async
-			&& utf16_equals(fn_name.data, utf16('await')) {
+			&& utf16_equals_ascii(fn_name.data, 'await') {
 			p.syntax_error("'await' is a reserved word")
 		}
 	}
@@ -563,7 +563,7 @@ fn (mut p Parser) parse_class_expression(expect_name bool) Expression {
 
 	if name_id != none {
 		p.check_identifier_name_for_assignment_validity(name_value.data, true)
-		if p.flags.in_class_static_init_block && utf16_equals(name_value.data, utf16('await')) {
+		if p.flags.in_class_static_init_block && utf16_equals_ascii(name_value.data, 'await') {
 			p.syntax_error("Identifier must not be a reserved word in modules ('await')")
 		}
 	}
@@ -771,7 +771,7 @@ mut:
 fn (mut p Parser) parse_class_element(class_start Position, mut found_private_names map[string]FoundPrivateName) (?ClassElementNode, ?Expression) {
 	// Check for static keyword.
 	mut is_static := if p.match_identifier()
-		&& utf16_equals(p.token_original_value(p.current_token), utf16('static')) {
+		&& utf16_equals_ascii(p.token_original_value(p.current_token), 'static') {
 		p.consume()
 		// ClassStaticBlock : `static` `{` ClassStaticBlockBody `}`
 		if p.match_token(.curly_open) {
@@ -824,13 +824,13 @@ fn (mut p Parser) parse_class_element(class_start Position, mut found_private_na
 	// Check modifiers.
 	if p.match_identifier_name() {
 		value := p.token_original_value(p.current_token).clone()
-		if utf16_equals(value, utf16('get')) && p.match_property_key_ahead() {
+		if utf16_equals_ascii(value, 'get') && p.match_property_key_ahead() {
 			is_getter = true
 			p.consume()
-		} else if utf16_equals(value, utf16('set')) && p.match_property_key_ahead() {
+		} else if utf16_equals_ascii(value, 'set') && p.match_property_key_ahead() {
 			is_setter = true
 			p.consume()
-		} else if utf16_equals(value, utf16('async')) {
+		} else if utf16_equals_ascii(value, 'async') {
 			next := p.next_token()
 			if !next.trivia_has_line_terminator && next.token_type != .paren_open
 				&& next.token_type != .colon && next.token_type != .comma
@@ -884,7 +884,7 @@ fn (mut p Parser) parse_class_element(class_start Position, mut found_private_na
 	// Static prototype check.
 	if is_static {
 		if kn := key.name {
-			if utf16_equals(kn.data, utf16('prototype')) {
+			if utf16_equals_ascii(kn.data, 'prototype') {
 				p.syntax_error("Classes may not have a static property named 'prototype'")
 			}
 		}
@@ -987,7 +987,7 @@ fn (mut p Parser) parse_class_element(class_start Position, mut found_private_na
 
 	// Field definition: constructor name check.
 	if kn := key.name {
-		if utf16_equals(kn.data, utf16('constructor')) {
+		if utf16_equals_ascii(kn.data, 'constructor') {
 			p.syntax_error("Class cannot have field named 'constructor'")
 		}
 	}
@@ -1894,12 +1894,12 @@ fn (p &Parser) match_imported_binding() bool {
 
 fn (p &Parser) match_as() bool {
 	return p.match_token(.identifier)
-		&& utf16_equals(p.token_original_value(p.current_token), utf16('as'))
+		&& utf16_equals_ascii(p.token_original_value(p.current_token), 'as')
 }
 
 fn (p &Parser) match_from() bool {
 	return p.match_token(.identifier)
-		&& utf16_equals(p.token_original_value(p.current_token), utf16('from'))
+		&& utf16_equals_ascii(p.token_original_value(p.current_token), 'from')
 }
 
 fn (mut p Parser) consume_module_specifier() Utf16String {

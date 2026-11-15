@@ -894,14 +894,13 @@ fn (mut sc ScopeCollector) resolve_identifiers(index int, initiated_by_eval bool
 		}
 
 		// Non-arrow functions implicitly declare `arguments` as a local.
-		arguments_u16 := utf16('arguments')
 		name_u16 := if group.identifiers.len > 0 {
 			group.identifiers[0].name.data
 		} else {
 			[]u16{}
 		}
 		if sc.records[index].scope_type == .function_scope && !sc.records[index].is_arrow_function
-			&& utf16_equals(name_u16, arguments_u16) {
+			&& utf16_equals_ascii(name_u16, 'arguments') {
 			local_var_kind = int(LocalVarKind.arguments_object)
 		}
 
@@ -1102,8 +1101,7 @@ fn (mut sc ScopeCollector) resolve_identifiers(index int, initiated_by_eval bool
 fn (mut sc ScopeCollector) build_function_scope_data(index int) {
 	scope_data := sc.records[index].scope_data or { return }
 
-	arguments_u16 := utf16('arguments')
-	has_argument_parameter := if v := sc.records[index].variables[string_from_utf16_lossy(arguments_u16)] {
+	has_argument_parameter := if v := sc.records[index].variables['arguments'] {
 		v.flags & var_flag_forbidden_lexical != 0
 	} else {
 		false
@@ -1199,7 +1197,7 @@ fn (mut sc ScopeCollector) build_function_scope_data(index int) {
 		return 0
 	})
 
-	arguments_key := string_from_utf16_lossy(arguments_u16)
+	arguments_key := 'arguments'
 	for fn_name, _ in seen_function_names {
 		if fn_name == arguments_key {
 			has_function_named_arguments = true
@@ -1251,10 +1249,9 @@ fn (mut sc ScopeCollector) hoist_functions(index int) {
 			}
 			// AnnexB.3.3.1: Skip hoisting if the function name is "arguments"
 			// and the function needs an arguments object.
-			arguments_u16 := utf16('arguments')
-			if utf16_equals(function.name.data, arguments_u16)
+			if utf16_equals_ascii(function.name.data, 'arguments')
 				&& sc.records[index].contains_access_to_arguments_object_in_non_strict_mode
-				&& !sc.records[index].has_flag(arguments_u16, var_flag_forbidden_lexical) {
+				&& sc.records[index].variables['arguments'].flags & var_flag_forbidden_lexical == 0 {
 				continue
 			}
 			// Reached function/program scope — register the hoisted function name.

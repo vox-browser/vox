@@ -120,6 +120,17 @@ fn utf16_equals(a []u16, b []u16) bool {
 	return true
 }
 
+// Compare decoded identifier units with a fixed ASCII spelling without
+// allocating and decoding the same keyword for every token/scope entry.
+@[inline]
+fn utf16_equals_ascii(units []u16, spelling string) bool {
+	if units.len != spelling.len { return false }
+	for index, byte in spelling {
+		if byte > 0x7f || units[index] != u16(byte) { return false }
+	}
+	return true
+}
+
 // Source offsets remain UTF-16 code-unit offsets, including supplementary text.
 pub fn utf16(s string) []u16 {
 	mut result := []u16{cap: s.len}
