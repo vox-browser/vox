@@ -3246,3 +3246,22 @@ row padding and rejection under arena poisoning. No original reference or
 tolerance changes. Production confirmation remains pending the managed build;
 CNN and catalog-wide parity remain open. See the
 [audit](OPTIMIZED_SITES_PIXELS_2026_11_12.md#sampled-yuv-images-across-mixed-msaa-tiles-2026-11-15).
+
+
+### Additional mip filtering before YUV conversion, 2026-11-15
+
+`262c477c1` keeps supported scaled WebP uploads as packed planes through GPU mip
+generation and the existing canvas sampler, then converts the final sample to
+RGB. It retains the single-level path, original scale/source restrictions,
+non-YUV paths, tile sample counts and existing shader/sampler policy. The native
+callback carries the mip flag through uniform and mixed-sample regions.
+
+CNN improves 71,925→58,062 in diagnostics: 14,488 corrected and 625 introduced
+pixels, each new error at most two channel levels. Every change lies inside
+Sullivan's image; its interior maximum error improves 88→2. All 47 other PNGs
+are unchanged across 48 workloads/96 repeatable captures. Five focused test
+functions pass under arena poisoning, including clipped YUV mip arithmetic,
+native callback routing across seams and the existing reclaimed-scope checks.
+Production confirmation remains pending the managed build; full equality is
+open. No original reference or tolerance changes. See the
+[audit](OPTIMIZED_SITES_PIXELS_2026_11_12.md#additional-yuv-mip-filtering-2026-11-15).

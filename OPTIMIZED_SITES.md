@@ -87,6 +87,16 @@ All 47 other PNGs are unchanged across 48 workloads/96 repeatable captures.
 Focused V/native-callback checks pass under arena poisoning. Production
 confirmation is pending the managed rebuild; completed production `48b7a944`
 does not contain this change. No original reference or tolerance changes.
+The subsequent `262c477c1` YUV mip correction reduces CNN to **58,062 in
+diagnostics**, from 71,925: 14,488 corrected and 625 introduced differences,
+each new error at most two channel levels. All changes are inside Sullivan's
+image, whose interior maximum error improves 88→2. Supported scaled uploads
+now retain planes through additional GPU mip filtering and final sampling.
+All 47 other PNGs are unchanged across 48 workloads/96 repeatable captures;
+the four exact sites and Vlang's 27 pixels retain their results. Focused GPU
+and native callback checks pass with arena poisoning. Production confirmation
+of both new fixes remains pending the managed rebuild. CNN still differs at
+58,062 pixels; no original reference or tolerance changed.
 See the
 [current audit, capture scopes and retained failures](docs/OPTIMIZED_SITES_PIXELS_2026_11_12.md).
 
