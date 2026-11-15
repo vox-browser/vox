@@ -14,6 +14,8 @@ fn (mut host Host) wrap_node(node &dom.Node) libjs.Value {
 		if is_html { host.html_element_prototype } else { host.element_prototype }
 	} else if node.is_document() {
 		host.document_prototype
+	} else if node.is_document_fragment() {
+		host.fragment_prototype
 	} else {
 		host.node_prototype
 	}
@@ -22,6 +24,8 @@ fn (mut host Host) wrap_node(node &dom.Node) libjs.Value {
 		if is_html { 'HTMLElement' } else { 'Element' }
 	} else if node.is_document() {
 		'Document'
+	} else if node.is_document_fragment() {
+		'DocumentFragment'
 	} else {
 		'Node'
 	}
@@ -50,6 +54,17 @@ fn (mut host Host) install_nodes() ! {
 	host.element_prototype = element
 	mut document := libjs.Object.create(host.realm, node)
 	host.document_prototype = document
+	mut fragment := libjs.Object.create(host.realm, node)
+	host.fragment_prototype = fragment
+	host.method(mut fragment, 'getElementById', 1, fn [host] (mut vm libjs.VM) !libjs.Value {
+		actual := host.node(mut vm)!
+		if !actual.is_document_fragment() { return vm.throw_error(.type_error, 'getElementById requires a document fragment') }
+		if vm.argument_count() < 1 { return vm.throw_error(.type_error, 'getElementById requires an id') }
+		key := vm.argument(0).to_primitive_string(mut vm)!.str()
+		parent := unsafe { &dom.ParentNode(actual) }
+		mut owner := unsafe { &Host(host) }
+		return if found := parent.get_element_by_id(key) { owner.wrap_node(found.as_node()) } else { libjs.js_null() }
+	})
 	mut collection_prototype := libjs.Object.create(host.realm, host.realm.object_prototype)
 	host.collection_prototype = collection_prototype
 	host.accessor(mut collection_prototype, 'length', fn [host] (mut vm libjs.VM) !libjs.Value {
@@ -200,6 +215,7 @@ fn (mut host Host) install_nodes() ! {
 	}
 	for name in ['getElementsByClassName', 'getElementsByTagName', 'querySelector'] {
 		mut prototypes := [element, document]
+		if name == 'querySelector' { prototypes << fragment }
 		for mut prototype in prototypes {
 			host.method(mut prototype, name, 1, fn [host, name] (mut vm libjs.VM) !libjs.Value {
 				actual := host.node(mut vm)!
@@ -209,6 +225,11 @@ fn (mut host Host) install_nodes() ! {
 				key := vm.argument(0).to_primitive_string(mut vm)!.str()
 				mut owner := unsafe { &Host(host) }
 				if name == 'querySelector' {
+					if actual.is_document_fragment() {
+						parent := unsafe { &dom.ParentNode(actual) }
+						list := parent.query_selector_all(key) or { return owner.dom_error(mut vm, err) }
+						return if found := list.item(0) { owner.wrap_node(found) } else { libjs.js_null() }
+					}
 					return if found := css.query_selector(actual, key) {
 						owner.wrap_node(found.as_node())
 					} else {
@@ -238,6 +259,14 @@ fn (mut host Host) install_nodes() ! {
 		} else {
 			libjs.js_null()
 		}
+	})
+	host.method(mut document, 'createDocumentFragment', 0, fn [host] (mut vm libjs.VM) !libjs.Value {
+		actual := host.node(mut vm)!
+		if !actual.is_document() { return vm.throw_error(.type_error, 'createDocumentFragment requires a document') }
+		persistent := platform.enter_persistent()
+		defer { platform.leave_persistent(persistent) }
+		mut owner := unsafe { &Host(host) }
+		return owner.wrap_node(unsafe { &dom.Node(actual.document().create_document_fragment()) })
 	})
 	host.method(mut document, 'createElement', 1, fn [host] (mut vm libjs.VM) !libjs.Value {
 		actual := host.node(mut vm)!

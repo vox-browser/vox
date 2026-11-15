@@ -28,6 +28,7 @@ mut:
 	element_prototype    &libjs.Object = unsafe { nil }
 	html_element_prototype &libjs.Object = unsafe { nil }
 	document_prototype   &libjs.Object = unsafe { nil }
+	fragment_prototype   &libjs.Object = unsafe { nil }
 	collection_prototype &libjs.Object = unsafe { nil }
 	event_prototype      &libjs.Object = unsafe { nil }
 	url_prototype        &libjs.Object = unsafe { nil }

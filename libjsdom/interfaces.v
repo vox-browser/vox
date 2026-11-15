@@ -14,11 +14,12 @@ fn (mut host Host) install_node_interfaces() ! {
 	mut node_constructor := &libjs.Object(unsafe { nil })
 	mut element_constructor := &libjs.Object(unsafe { nil })
 	host.html_element_prototype = libjs.Object.create(host.realm, host.element_prototype)
-	for name in ['Node', 'Element', 'HTMLElement', 'Document'] {
+	for name in ['Node', 'Element', 'HTMLElement', 'Document', 'DocumentFragment'] {
 		mut prototype := match name {
 			'Node' { host.node_prototype }
 			'Element' { host.element_prototype }
 			'HTMLElement' { host.html_element_prototype }
+			'DocumentFragment' { host.fragment_prototype }
 			else { host.document_prototype }
 		}
 		construct := fn [host, name] (mut vm libjs.VM, new_target &libjs.Object) !&libjs.Object {
@@ -26,6 +27,16 @@ fn (mut host Host) install_node_interfaces() ! {
 			if name == 'HTMLElement' {
 				mut owner := unsafe { &Host(host) }
 				return owner.construct_html_element(mut vm, new_target)
+			}
+			if name == 'DocumentFragment' {
+				persistent := platform.enter_persistent()
+				defer { platform.leave_persistent(persistent) }
+				parent := new_target.get(mut vm, libjs.PropertyName.from_str('prototype'))!
+				mut owner := unsafe { &Host(host) }
+				fragment := dom.DocumentFragment.construct_impl(host.document)!
+				mut object := owner.wrap_node(unsafe { &dom.Node(fragment) }).as_object()
+				if parent.is_object() { object.internal_set_prototype_of(parent.as_object()) }
+				return object
 			}
 			if name != 'Document' { return vm.throw_error(.type_error, 'Illegal ' + name + ' constructor') }
 			persistent := platform.enter_persistent()
