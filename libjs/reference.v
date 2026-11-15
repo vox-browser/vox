@@ -196,6 +196,14 @@ pub fn (reference Reference) get_value(mut vm VM) !Value {
 				return value
 			}
 		}
+		// Primitive wrappers have no other own properties. Keep the primitive
+		// receiver while querying its current-realm prototype, as GetV does.
+		// Explicit receiver overrides retain the general Reference path.
+		if reference.base_value.tag in [.boolean, .int32, .double, .string, .symbol, .bigint]
+			&& reference.this_value == none
+			&& direct_primitive_read() {
+			return reference.base_value.get_with_prototypes(mut vm, reference.name, realm_primitive_prototypes())
+		}
 		base_obj := reference.base_object(mut vm)!
 		// c. Return ? baseObj.[[Get]](V.[[ReferencedName]], GetThisValue(V)).
 		return base_obj.internal_get(mut vm, reference.name, reference.get_this_value())!

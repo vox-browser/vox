@@ -4,7 +4,7 @@ module libjs
 // Number, BigInt and String intrinsic dependencies use the supplied getter set.
 pub fn (value Value) get_with_prototypes(mut vm VM, key PropertyName, prototypes PrimitiveObjectPrototypes) !Value {
 	realm := vm.realm()
-	object := if value.is_string() && key != PropertyName.from_str('length') {
+	object := if value.is_string() && !key.is_length_property() {
 		assert prototypes.string != unsafe { nil }
 		prototypes.string(realm)
 	} else if value.is_boolean() {

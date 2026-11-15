@@ -61,6 +61,12 @@ size-class rounding had no free list to reuse those extra slots. Value layout,
 copies, stack accounting, budgets and async/generator suspension are exercised
 in both GC modes; upstream contiguous/bump frame allocation remains separate.
 
+Primitive Reference reads check string characters/length first, then query the
+current realm prototype with the original receiver. This avoids an unused box
+for method/property lookup; explicit receiver overrides and internal values keep
+the general path. Strict/sloppy getters, prototype proxies, foreign realms and
+compiler-free native-cache revisits have focused coverage in both GC modes.
+
 Set/Map operations and live iterators, WeakMap weak keys, ordinary arguments
 objects, default/rest/destructured function parameters, class inheritance,
 super construction (including explicit iterator-based argument spread),
