@@ -2696,3 +2696,17 @@ execution, top-level await, Intl, remaining RegExp/Web APIs and full GitHub
 hydration/rendering parity remain incomplete. See the
 [continuation record](../docs/LIBJS_GITHUB_RUNTIME_20261115.md#assignment-dynamic-loading-and-native-api-continuation)
 for commits, exact evidence boundaries and the unchanged Brave reference.
+
+The subsequent generator/regexp implementation adds synchronous generator
+execution and yield delegation, including return/throw cleanup during suspended
+destructuring and for-of initialization. Completed frames release their creating
+function's scope. RegExp construction now honors IsRegExp, call identity,
+NewTarget and species ordering; lazy matchAll, replaceAll, search and native
+regex splitting are installed. History cloning rejects generator and regexp
+iterator records. Default-GC and production/preallocation GC-none compiler-only
+checks of the browser import graph succeed; all new runtime, ownership,
+native-cache and page comparisons remain unexecuted under the user's hold.
+Proxy, Intl, async generators, top-level await and browser parity remain open.
+The [generator/regexp continuation](../docs/LIBJS_GITHUB_RUNTIME_20261115.md#generator-and-regexp-execution-continuation)
+records exact commits, the retained/corrected checker failure and production
+source mismatch boundaries.

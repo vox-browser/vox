@@ -1102,3 +1102,69 @@ incomplete initialization run: 51 frontend hits, zero compiler invocations,
 or validate subsequent implementations. Completed hydration, live-site
 behavior, final GC/ownership checks, completed-page cache speedup and unchanged
 zero-pixel Brave conformance remain open.
+
+## Generator and regexp execution continuation
+
+The verification hold is unchanged. This continuation inspects the implementation
+and local upstream sources, writes regressions and checks the normal
+`tools/libjs_github_revisit.v` import graph with V `-check`. It runs no JavaScript
+tests, page initialization probes, browser captures or performance cohorts.
+
+| Commits | Implemented native behavior | Unexecuted verification |
+| --- | --- | --- |
+| `54a87750f` | Synchronous generator parameters initialize at call time, while body execution waits for next. Saved frames retain locals, this, arguments, private scope and method homes independently of the bounded interpreter stack. Next/throw/return handle reentry, completed state, catches, finalizers and iterator cleanup. | Independent frames, injected completions, suspending finalizers, private/super methods, budgets and compiler-disabled cached resumption. Async generator execution and dynamic generator constructors remain separate. |
+| `09e034e64`, `f3bbae84c` | Yield delegation caches next, looks up throw/return live, preserves delegate result identity without prematurely reading value, closes when throw is absent and forwards return completions through outer cleanup. | Recursive delegation, exact call arguments/receivers, missing methods, close errors, result getters and native-cache reuse. |
+| `7ae42c503` | The saved frame owns the creating function while suspended; completion releases it without retaining that function's lexical environment through a separate record field. Escaped author closures retain their own environment. | Completed-frame ownership and escaped closures. |
+| `eef85d906` | Generator returns from destructuring defaults or computed targets close active pattern iterators before enclosing for-of iterators and finalizers. The for-of cleanup context covers LHS initialization. | Binding/assignment defaults, suspension before iterator stepping, nested closing order and close errors overriding a pending return. |
+| `e0de13b38` | RegExp construction shares observable IsRegExp with String predicates, checks call identity, copies original native slots, reads generic source/flags in order and resolves NewTarget prototype before coercion. The native species getter supports subclasses. | Constructor identity, generic getters, subclass prototypes and abrupt coercion. |
+| `4db05a6e1` | String.matchAll and RegExp@@matchAll create lazy native RegExp string iterators. They use species, copy lastIndex, preserve exec result identity, advance Unicode empty matches and validate global flags before delegation. History storage rejects iterator internal slots. | Lazy/custom exec, species ordering, flags, captures/indices, Unicode, retry after abrupt next, native reuse and History rejection. |
+| `6591f4c40` | String.replaceAll validates global regex flags before delegating the original receiver. Literal matching gathers non-overlapping UTF-16 positions, then runs callbacks or substitutions with bounded output growth. | Receiver/argument identity, empty searches, substitutions, conversion errors and native reuse. |
+| `15b1b91f3` | String.search delegates before receiver coercion; RegExp@@search preserves raw lastIndex with SameValue semantics and restores it before reading a successful result index. Abrupt exec propagates directly. | Signed zero, read-only zero, raw result indices, restoration order and thrown identity. |
+| `fb45c35ed` | RegExp@@split supplies the existing String.split symbol path with a species-created sticky matcher. Native RegExpExec drives Unicode progress, raw captures, limits and empty-input behavior without changing source regexp state. | Regex separators, capture values, zero/finite limits, species/limit ordering, subclass exec and compiler-disabled native reuse. |
+
+Both dispatch tiers recognize generator suspension as a control transfer. Saved
+frames and iterator records are VM-owned values; cached libraries contain code
+and layout rather than saved realm pointers. The instruction/native-dispatch
+changes participate in the existing native-cache ABI hash. New two-VM cache
+cases are prepared, not claimed as passing.
+
+The original delegation feature commit was made before its failed compiler
+result was noticed; its commit message's pass claim is incorrect. The retained
+failure reports an unchecked numeric-to-enum cast and misuse of release_error
+on a non-result completion. `f3bbae84c` corrects both: resume-kind selection is
+validated and IteratorClose releases only a thrown completion. The corrected
+compiler-only check passes. Shared history was not rewritten.
+
+Thirteen completed compiler guard reports are retained byte-for-byte locally
+under `docs/performance/libjs-generator-regexp-implementation-20261115/`,
+including that failure; their Build reports and locks have been removed. The
+final default-GC check exits zero in 19.941 seconds with sampled peak RSS
+5,260,296,192 bytes. The final production/preallocation GC-none check also exits
+zero: `-n -prod -prealloc -b c -no-parallel -cc clang -check -gc none
+-memory-limit 10G -enable-globals`, 35.537 seconds and 5,421,613,056 bytes. Both
+use the default 12-GiB process-tree guard. These type checks emit/run no test
+binary and establish no JavaScript, GC, rendering or speed result.
+
+A textual scan of the unchanged original script bodies finds eleven function*
+declarations in five bodies, seven yield-delegation occurrences in one, three
+matchAll calls in two, eighteen replaceAll calls in eight, nineteen literal
+regex-separator split calls in ten and nine .search calls in five. Receiver
+types and execution reachability are not established by those counts. Six
+Proxy constructor occurrences and nineteen Intl references remain in the same
+source scan. Proxy exotics, Intl, async generators, top-level await, remaining
+Web APIs and full browser integration still require work.
+
+At implementation revision `0b81687bc`, the latest completed production
+executable inspected statically is
+`a7918541efb0271c0388a5f7319ef8b8e00234bb13a5fed1c8bac5a0b2de9589`,
+single-unit C with literal V `-prod`. Six of 366 selected implementation paths
+differ from its sealed manifest: array binding/assignment and for-of cleanup,
+RegExp installation, search and split. This subset comparison cannot validate
+those changes or the entire browser. Managed rebuild requests remain coalesced;
+no additional manual build or browser launch was requested here.
+
+The fixture manifest, source map and Brave reference PNG hashes are unchanged.
+The last executed GitHub observation remains the historical 672-entry pair with
+33 rows and zero commit links. All new focused, ownership, cache-revisit and
+pixel checks remain held. Completed hydration, live-site behavior, whole-page
+speedup and zero-pixel GitHub/Brave parity remain unachieved.
