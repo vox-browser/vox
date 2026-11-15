@@ -55,15 +55,17 @@ fn test_yuv_readback_preserves_each_tiles_sample_count_and_backdrop_fringe() {
 	assert callback == pixels
 	// The native mip flag must also reach both sample modes across the seams.
 	// Constant planes isolate routing/coverage from texture reconstruction.
-	mut mip_source := []u8{cap: 128 * 128 * 4}
-	for _ in 0 .. 128 * 128 { mip_source << [u8(128), 120, 145, 255] }
-	mut mip_callback := []u8{len: 130 * 532, init: 173}
-	for flag in [i32(4), 5] {
-		for i in 0 .. mip_callback.len { mip_callback[i] = 173 }
-		assert document_sampled_png_pixels(mip_callback.data, 130, 130, 532, 1, 29, -9,
-			mip_source.data, 128, 128, 512, 512, flag, 20.375, 22.375, 79.25, 77.25, &clip[0]) == 1
-		swap_document_raster_channels(mip_callback.data, 130, 130, 532)
-		assert mip_callback == pixels
+	for source_size in [128, 256] {
+		mut mip_source := []u8{cap: source_size * source_size * 4}
+		for _ in 0 .. source_size * source_size { mip_source << [u8(128), 120, 145, 255] }
+		for flag in [i32(4), 5] {
+			mut mip_callback := []u8{len: 130 * 532, init: 173}
+			assert document_sampled_png_pixels(mip_callback.data, 130, 130, 532, 1, 29, -9,
+				mip_source.data, i32(source_size), i32(source_size), i32(source_size), i32(source_size), flag,
+				20.375, 22.375, 79.25, 77.25, &clip[0]) == 1
+			swap_document_raster_channels(mip_callback.data, 130, 130, 532)
+			assert mip_callback == pixels
+		}
 	}
 }
 

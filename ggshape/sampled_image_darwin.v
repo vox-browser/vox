@@ -4,6 +4,7 @@ import gg.canvas
 import imageraster
 import math
 import os
+import yuv
 
 pub fn draw_sampled_rgba(pixels &u8, width i32, height i32, pitch i32, backdrop i32,
 	source []u8, source_width int, source_height int, x f32, y f32,
@@ -64,6 +65,12 @@ fn draw_sampled_image(pixels &u8,width i32,height i32,pitch i32,backdrop i32,sou
 			imageraster.mip_chain(image) or { return 0 }
 		}
 		levels = chain.map(it.pixels)
+        if yuv_atlas && destination_width*2<source_width && destination_height*2<source_height {
+            // Only chroma levels 0 and 1 are selected in this aligned domain.
+            // Extend the generated level's own edge before trilinear sampling.
+            levels[1]=yuv.webp_atlas_extend_mip_chroma(levels[1],source_width/2,source_height/2,
+                source_width/4,source_height/4) or {return 0}
+        }
 	}
 	mut ctx := context() or { return 0 }
 	mut surface := ctx.new_surface(width: width, height: height, sample_count: samples) or { return 0 }
@@ -115,13 +122,11 @@ pub fn draw_sampled_yuv_with_mips_clipped(pixels &u8, width i32, height i32, pit
  return draw_sampled_image(pixels,width,height,pitch,backdrop,source,[],sw,sh,x,y,dw,dh,samples,nw,nh,clip,gpu_mips,unsafe{nil},true,false)
 }
 
-// Chroma is sampled from the top-left quarter at its own resolution. Keep
-// this route within the full-upload, near-half domain: chroma uses level zero
-// and luma needs at most the first mip, whose even dimensions align the atlas.
+// Chroma is sampled from the top-left quarter at its own resolution. The
+// full-upload bounds preserve alignment of the selected chroma and luma mips.
 pub fn draw_sampled_yuv_atlas_clipped(pixels &u8, width i32, height i32, pitch i32, backdrop i32,
  source []u8, sw int, sh int, x f32, y f32, dw f32, dh f32, samples int, nw int, nh int, clip [12]f32) i32 {
- if sw<=0 || sh<=0 || sw>4096 || sh>4096 || sw*sh>4*1024*1024 || sw%2!=0 || sh%2!=0
-  || source.len!=sw*sh*4 || dw*2<=sw || dh*2<=sh || dw>=sw || dh>=sh {return 0}
+ if !yuv.webp_atlas_sampling_supported(sw,sh,f64(dw),f64(dh)) || source.len!=sw*sh*4 {return 0}
  for i:=3;i<source.len;i+=4 {if source[i]!=255 {return 0}}
  return draw_sampled_image(pixels,width,height,pitch,backdrop,source,[],sw,sh,x,y,dw,dh,samples,nw,nh,clip,true,unsafe{nil},true,true)
 }

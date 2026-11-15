@@ -58,3 +58,55 @@ fn test_yuv_atlas_rejects_unverified_scales_and_alpha_without_painting() {
 		0, 0, 3, 3, 1, 4, 4, [12]f32{}) == 0
 	assert pixels.all(it == 97)
 }
+
+fn test_full_plane_atlas_filters_the_first_chroma_mip_before_rgb_clipping() {
+	mut planes := []u8{len: 12 * 12 * 3 / 2, init: 128}
+	for py in 0 .. 6 {
+		for px in 0 .. 6 {
+			value := [u8(100), 250, 250, 0][(py % 2) * 2 + px % 2]
+			planes[144 + py * 6 + px] = value
+			planes[180 + py * 6 + px] = value
+		}
+	}
+	atlas := yuv.webp_420_atlas_upload(planes, 12, 12) or { panic('full-plane atlas') }
+	for samples in [1, 4] {
+		mut pixels := []u8{len: 8 * 8 * 4, init: 255}
+		assert draw_sampled_yuv_atlas_clipped(pixels.data, 8, 8, 32, 1, atlas, 12, 12, 2, 2, 4, 4, samples, 12, 12, [12]f32{}) == 1
+		// At these centers the independent base sample and first mip both
+		// equal 150. This isolates plane filtering from implicit LOD precision;
+		// clipping RGB texels first would produce a different color.
+		for col in [0, 1] {
+			i := (3 * 8 + 2 + col) * 4
+			assert pixels[i..i + 4] == [u8(175), 104, 166, 255], 'samples=${samples}, column=${col}'
+		}
+		assert pixels[..4] == [u8(255), 255, 255, 255]
+	}
+}
+
+fn test_full_plane_atlas_mip_edges_match_an_independent_chroma_texture() {
+	mut planes := []u8{len: 12 * 12 * 3 / 2, init: 128}
+	mut chroma := []u8{cap: 6 * 6 * 4}
+	for py in 0 .. 6 {
+		for px in 0 .. 6 {
+			u, v := u8((px * 43 + py * 17) % 256), u8((px * 19 + py * 47 + 13) % 256)
+			planes[144 + py * 6 + px] = u
+			planes[180 + py * 6 + px] = v
+			chroma << [u8(128), u, v, u8(255)]
+		}
+	}
+	atlas := yuv.webp_420_atlas_upload(planes, 12, 12) or { panic('edge atlas') }
+	for samples in [1, 4] {
+		mut actual := []u8{len: 8 * 8 * 4, init: 255}
+		mut expected := actual.clone()
+		assert draw_sampled_yuv_atlas_clipped(actual.data, 8, 8, 32, 1, atlas, 12, 12, 2, 2, 4, 4, samples, 12, 12, [12]f32{}) == 1
+		// Constant luma lets a separate 6x6 texture supply independently filtered
+		// chroma. Its physical texture edge clamps each mip at the correct texel.
+		assert draw_sampled_yuv_with_mips_clipped(expected.data, 8, 8, 32, 1, chroma, 6, 6, 2, 2, 4, 4, samples, 6, 6, [12]f32{}, true) == 1
+		for py in 0 .. 8 {
+			for px in 0 .. 8 {
+				i := (py * 8 + px) * 4
+				assert actual[i..i + 4] == expected[i..i + 4], 'samples=${samples}, pixel=${px},${py}'
+			}
+		}
+	}
+}

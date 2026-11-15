@@ -16,8 +16,8 @@ fn (mut app BrowserApp) draw_minified_webp(command &layout.PaintCommand, image &
 	if os.getenv('VOX_DIAGNOSTIC_PNG') != '' {
 		eprintln('VOX_PLANAR_INPUT ${image.width}x${image.height} channels=${image.nr_channels} dest=${destination.x},${destination.y},${destination.width},${destination.height} source=${source} matrix=${matrix} url=${url[..math.min(url.len, 180)]}')
 	}
-	atlas := destination.width * 2 > image.width && destination.height * 2 > image.height
-        && destination.width < image.width && destination.height < image.height
+	atlas := yuv.webp_atlas_sampling_supported(image.width, image.height,
+        f64(destination.width), f64(destination.height))
 	if app.document == unsafe { nil } || app.document.font_rendering_policy() != .chromium
 		|| command.apply_force_dark_to_image || nearest || command.opacity != 1
 		|| image.path != '' || image.nr_channels != 7 || image.data == unsafe { nil }
@@ -37,10 +37,13 @@ fn (mut app BrowserApp) draw_minified_webp(command &layout.PaintCommand, image &
 	if !lossy_webp_sampling_dimensions_match(bytes, image.width, image.height) || !app.webp_complete_yuv_allowed(url, bytes) {
 		return false
 	}
-	uw, uh := imageraster.decode_size(image.width, image.height, destination.width, destination.height) or { return false }
-	// Additional levels filter the packed planes before color conversion.
-	use_mips := math.log2(math.max(f64(uw) / destination.width, f64(uh) / destination.height)) >= .5
-	tw, th := uw, uh
+    mut tw, mut th := image.width, image.height
+    if !atlas {
+        tw, th = imageraster.decode_size(image.width, image.height, destination.width, destination.height) or { return false }
+    }
+    // Retain the full planes for aligned atlas mips; other uploads retain
+    // their existing decode reduction and single/multiple-level selection.
+    use_mips := math.log2(math.max(f64(tw) / destination.width, f64(th) / destination.height)) >= .5
 	if image.width % tw != 0 || image.height % th != 0 || image.width / tw != image.height / th {
 		return false
 	}
