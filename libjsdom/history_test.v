@@ -139,3 +139,9 @@ fn test_history_rejects_live_and_revoked_proxies_without_running_traps() {
 	defer { host.close() }
 	assert history_eval(mut vm, 'var reads=0,handler={get(){reads++;throw 1},ownKeys(){reads++;throw 2},getPrototypeOf(){reads++;throw 3}},p=new Proxy({},handler),r=Proxy.revocable([],handler);r.revoke();var errors=0;for(var state of [p,{nested:p},r.proxy])try{history.replaceState(state,"")}catch(e){if(e instanceof DOMException&&e.name==="DataCloneError")errors++}errors===3&&reads===0&&history.state===null')!.as_bool()
 }
+
+fn test_history_rejects_native_intl_locale_state_without_running_author_getters() {
+	mut host, mut vm, _ := history_fixture()!
+	defer { host.close() }
+	assert history_eval(mut vm, 'var l=new Intl.Locale("en-US"),reads=0,rejected=false;Object.defineProperty(l,"visible",{enumerable:true,get(){reads++;throw 1}});try{history.replaceState(l,"")}catch(e){rejected=e instanceof DOMException&&e.name==="DataCloneError"}rejected&&reads===0&&history.state===null')!.as_bool()
+}

@@ -48,7 +48,7 @@ fn (mut clone HistoryClone) project(mut vm libjs.VM, value libjs.Value, depth in
 	if clone.host.history_platform_object(object) || object.callable != none || object.constructor != none
 		|| object.host_properties != none || object.is_arguments_object
 		|| object.regexp_object != none || object.regexp_string_iterator != none || object.keyed_collection != none || object.keyed_iterator != none
-		|| object.proxy_object != none || object.weak_map != none || object.weak_set != none || object.weak_ref != none || object.boolean_object != none
+		|| object.intl_locale != none || object.proxy_object != none || object.weak_map != none || object.weak_set != none || object.weak_ref != none || object.boolean_object != none
 		|| object.date_object != none || object.number_object != none || object.bigint_object != none
 		|| object.symbol_object != none || object.string_object != none || object.string_iterator != none
 		|| object.array_iterator != none || object.property_name_iterator != none || object.iterator_record != none

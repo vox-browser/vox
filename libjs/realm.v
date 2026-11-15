@@ -25,6 +25,10 @@ pub mut:
 	math_object                    ?&Object
 	reflect_object                 ?&Object
 	proxy_constructor              ?&Object
+	intl_object ?&Object
+	intl_locale_prototype ?&Object
+	intl_locale_constructor ?&Object
+	intl_default_locale string = 'en-US'
 	intl_core_data ?&IntlCoreData
 	intl_date_locales map[string]&IntlDateLocaleData
 	json_object                    ?&Object
@@ -238,6 +242,7 @@ pub fn initialize_host_defined_realm(mut vm VM, hooks RealmGlobalHooks) !&Execut
 	initialize_weak_set_intrinsics(mut vm, mut realm)
 	initialize_weak_ref_intrinsics(mut vm, mut realm)
 	initialize_proxy_intrinsics(mut vm, mut realm)
+	initialize_intl_intrinsics(mut vm, mut realm)
 	initialize_regexp_intrinsics(mut vm, mut realm)
 	realm.json_object = create_json_object(mut vm, realm)
 	initialize_date_intrinsics(mut vm, mut realm)
@@ -334,6 +339,7 @@ pub fn initialize_host_defined_realm(mut vm VM, hooks RealmGlobalHooks) !&Execut
 		Value.from_object(realm.promise_constructor or { panic('Missing Promise constructor') }), attribute_writable | attribute_configurable)
 	global.define_direct_property(PropertyName.from_str('JSON'),
 		Value.from_object(realm.json_object or { panic('Missing JSON object') }), attribute_writable | attribute_configurable)
+	global.define_direct_property(PropertyName.from_str('Intl'), Value.from_object(realm.intl_object or { panic('Missing Intl namespace') }), attribute_writable | attribute_configurable)
 	global.define_direct_property(PropertyName.from_str('Math'),
 		Value.from_object(realm.math_object_record()), attribute_writable | attribute_configurable)
 	global.define_direct_property(PropertyName.from_str('Proxy'),
