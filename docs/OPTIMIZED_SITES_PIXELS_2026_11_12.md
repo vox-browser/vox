@@ -3826,3 +3826,110 @@ Cleanup hashes **6,588 files across 66 owned roots**, preserves/reverifies 1,978
 selected files (42,198,904 bytes), and removes owned binaries, generated
 intermediates, capture profiles/jobs, guards, locks and the test alias. Shared
 production bundles and dependencies remain.
+
+## Production confirmation of the near-half atlas, 2026-11-16
+
+Production executable
+`419ad8d777319bd5b8605799a59da05b59e20ae596bc3f50594babb87db2ba56`,
+receipt `20261116-002422-18914df3` (C/literal V `-prod`/single unit), confirms
+`5995502f5` by consumed source hashes. All **48 workloads/96 fresh captures**
+pass the unchanged driver's **196 source checks**. Every pair repeats and every
+PNG matches the accepted atlas diagnostic. CNN stays at **54,627**, Vlang at
+**27**, and GitHub, Hacker News, Lobsters and Wikipedia stay exact. Startup
+smoke, all native guards, driver, outer guard and guarded analysis exit zero.
+This closes the preceding atlas production hold.
+
+The six owned candidate files were temporarily restored to their committed
+`a87e95b89` inputs in the canonical checkout, and the real V GG preparer ran.
+After validation, the candidate checkpoint was restored atomically and staged
+again; all **852 checkpoint pins** matched. This transaction preceded the
+additional mip-edge correction below. No foreign changes were reverted, no
+production gate was bypassed, and no separate production build was requested.
+
+## Full-plane aligned YUV mips, 2026-11-16
+
+`69e1fce6c` preserves the original YUV420 planes for a further bounded scale
+domain: natural dimensions divisible by four, destination dimensions strictly
+between quarter and half size on both axes, and the previously reduced upload
+requiring another mip under the existing sampler policy. The original luma
+levels 0–2 and chroma levels 0–1 then retain aligned grids. The earlier near-half
+atlas and promoted/reduced-upload paths keep their selection outside this
+domain. Full source, complete opaque untagged VP8, integer translation, unit
+opacity and existing size restrictions remain. No site, resource hash or pixel
+coordinate selects this behavior; no shader or sampler policy changes.
+
+Generated mip padding also needs correction: averaging the original padded
+edge does not necessarily repeat the newly averaged logical UV edge texel.
+The first generated UV mip now extends its own last row and column; generated
+luma and alpha bytes stay unchanged. An independent 6×6 chroma texture supplies
+the exact edge oracle for a 12×12 atlas drawn at 4×4. That regression fails
+before the edge correction and passes byte for byte afterward with both
+single-sample and four-sample rasterization. A separate exact-color test checks
+plane filtering before RGB clipping without depending on implicit LOD precision.
+
+Accepted diagnostic executable
+`4eb066fc6eeb12d3c6b5ae2fc6045d2b8a4b7ea301efb3bb0e413f27d111a544`
+(C/O0/preallocated/no-GC) completes **48 workloads/96 fresh captures**, plus
+startup smoke. Every pair repeats exactly, and **all 47 non-CNN PNGs are
+unchanged** from the preceding accepted atlas cohort. CNN improves
+**54,627→33,409**: **21,724 corrected** and **506 introduced** pixels. Every new
+error is at most one channel level; every changed pixel lies inside Sullivan's
+image. Its interior, excluding four pixels at each edge, improves
+**22,366→2,698**, maximum error **2→1**. The other four measured photo interiors
+retain 115/383/230/1,048 differences, each with maximum error one. GitHub,
+Hacker News, Lobsters and Wikipedia remain exact, and Vlang stays at 27.
+
+The logged focused and unlogged broad CNN PNGs agree. All **826 consumed
+rendering/CSS/DOM/layout V witnesses and 852 input pins** stay matched. All 96
+native guards, driver, outer guard, startup and guarded analysis exit zero.
+Ten focused V test functions pass under arena poisoning and 3 GiB runtime
+guards: four CPU packing/eligibility/mip-padding checks, four GPU sampling and
+edge checks, and two native-callback checks. The callback exercises original
+and stronger minification across both tile seam directions, preserving sample
+counts, fringe and row padding. The CPU, GPU and callback executables have
+11/54/165 matched V witnesses respectively. Their hashes are
+`bf111a91fa4e65b7c7de7ada5cd1cfc06586d99a3f1f59a0a0ea90685bf11360`,
+`c75551e314ae91fd85babb9bdd8ad918c346042b016db63743aa7c58f07b0311`, and
+`0b744e0a6fdec5e3e7d13a2868df0ee97aafb3772247b9021b8679ae09a35488`.
+
+The initial prototype's 33,412 result, its complete 48-workload cohort, a failed
+test arithmetic estimate of implicit LOD blending and the failing mip-edge
+control remain in local evidence. The arithmetic test now uses inputs whose
+independent base and mip samples coincide; it does not alter rendering or a
+tolerance. The edge regression exposed a real defect and led to the padding
+repair. Only the corrected 33,409 result, after rerunning all focused checks
+and the full 48-workload cohort, supplies this feature's diagnostic acceptance.
+
+Production confirmation passes on completed shared executable
+`99957e17381616eafd23c961e391677980d05c30240dedcf75a5f49f759ed5d0`,
+receipt `20261116-011251-c8495e02` (C/literal V `-prod`/single unit). Its consumed
+implementation hashes match the final edge-corrected source, despite a requested
+head predating this commit. All **48 workloads/96 fresh captures** pass the
+unchanged driver's **196 source checks**. Every pair repeats byte for byte, and
+every PNG equals the accepted final diagnostic. CNN stays at **33,409**, Vlang
+at **27**, and the four exact archived sites stay exact. Startup smoke, all 96
+native guards, driver, outer guard and guarded analysis exit zero. This closes
+the full-plane feature's production validation. No duplicate manual build was
+queued; the shared completed bundle was reused.
+
+Residual analysis accounts for all 33,409 CNN differences inside eight image
+rectangles, with zero outside. The right-column ice-cap photo contributes
+**27,345** (26,927 with maximum channel error one, 418 with error two).
+Two partly visible bottom images contribute 986 and 372, with maximum errors
+58 and nine. The five other full image rectangles contribute
+2,825/131/388/241/1,121, each at most one channel level. These full rectangles
+include borders and differ from the interior statistics above. This identifies
+remaining work; no pixels are masked from the equality gate.
+
+These are frozen-page rendering results, without a performance, instruction,
+live-site or scripting claim. CNN's remaining rendering/source failures,
+Vlang's residuals, missing Reddit evidence and prior inexact controls keep
+catalog-wide equality open. No original reference or tolerance changes.
+Local evidence is under
+`docs/performance/vlang-gradients-20261114/raw/cnn-full-plane-20261116/`.
+Cleanup hashes **13,115 files across 85 owned roots**, preserves and reverifies
+**3,919 selected files (83,816,153 bytes)**, then removes owned binaries,
+generated intermediates, profiles, capture jobs, guards, locks and the focused
+test alias. The archive guard and lock are separately preserved, verified and
+removed after completion. No owned scratch remains; the shared production
+bundle and dependencies are retained.

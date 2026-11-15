@@ -3293,5 +3293,28 @@ one-level photo pixels also become exact. All 47 other PNGs are unchanged in
 48 workloads/96 repeatable captures. Ten focused V test functions and a Python
 preparer check pass, including odd chroma dimensions, clamping, reclaimed paint
 scopes, tile seams and source/shader restoration after production validation.
-Production confirmation of this new slice remains pending. See the
+Production `419ad8d7` now confirms this slice across 48 workloads/96 fresh
+captures: every PNG matches the accepted diagnostic, with CNN at 54,627 and
+all pairs repeating. Startup smoke and all guards pass. See the
 [audit](OPTIMIZED_SITES_PIXELS_2026_11_12.md#native-chroma-sampling-for-near-half-webp-2026-11-16).
+
+### Full YUV planes through aligned mip filtering, 2026-11-16
+
+`69e1fce6c` extends the atlas path to aligned stronger minification: natural
+dimensions divisible by four, both destination dimensions strictly between
+quarter and half size, and the reduced upload requiring another mip. It keeps
+the original planes through GPU filtering and preserves the earlier near-half
+and promoted paths. Generated UV mip padding repeats that mip's averaged edge;
+luma and alpha bytes remain unchanged. The existing shader and sampler suffice.
+
+CNN improves 54,627→33,409 in diagnostics: 21,724 corrected and 506 introduced
+one-level differences, all inside Sullivan's image. Its interior improves
+22,366→2,698, maximum error 2→1. All 47 other PNGs are unchanged across 48
+workloads/96 repeatable captures. Ten focused V test functions pass with arena
+poisoning and 3 GiB runtime guards. An independent chroma-texture comparison
+fails before the mip-edge correction and passes exactly afterward in both
+sample modes. Production `99957e17` confirms the final correction across all 48
+workloads/96 fresh captures: every PNG matches its accepted diagnostic and all
+pairs repeat. Startup smoke and all guards pass; full equality remains open.
+No original reference or tolerance changes.
+See the [audit](OPTIMIZED_SITES_PIXELS_2026_11_12.md#full-plane-aligned-yuv-mips-2026-11-16).

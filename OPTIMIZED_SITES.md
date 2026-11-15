@@ -7,7 +7,7 @@ Results apply to the frozen page and pinned build in each linked report.
 Provisional entries retain unresolved acceptance checks.
 
 **Pixel recheck, 2026-11-16:** Vox does **not** pass pixel equality across
-this catalog. Production build `523e30dd` confirms GitHub, Hacker News,
+this catalog. Production build `99957e17` confirms GitHub, Hacker News,
 Lobsters and Wikipedia exact in two fresh captures each. Vlang.io has **27 differing
 pixels in production**, down from the previously verified 810. The heading fix
 removes its final text difference. Its 23 JPEG pixels still include nine
@@ -106,8 +106,20 @@ pixels in other photos also become exact. Full-resolution luma and native
 half-resolution chroma retain their independent sampling grids in one padded
 texture. All 47 other PNGs are unchanged across 48 workloads/96 repeatable
 captures. Focused packing, GPU, callback and preparer checks pass. Production
-confirmation of this new slice awaits the managed rebuild; `523e30dd` lacks
-it. Catalog-wide parity remains open, with unchanged references and tolerances.
+`419ad8d7` confirms this slice in 48 workloads/96 fresh captures: every PNG
+matches its accepted diagnostic and every pair repeats. CNN retains 54,627
+differences, Vlang 27, and the four exact archived sites stay exact.
+The subsequent `69e1fce6c` full-plane mip correction reduces CNN to **33,409
+in diagnostics**, from 54,627: 21,724 corrected and 506 introduced one-level
+differences, all inside Sullivan's image. Its interior improves 22,366→2,698
+and maximum error 2→1. Aligned stronger minification now preserves the original
+YUV planes through GPU filtering; generated chroma mip padding repeats the
+averaged edge. All 47 other PNGs are unchanged in 48 workloads/96 repeatable
+captures. Ten focused V test functions pass under arena poisoning, including
+an independent chroma-texture edge regression. Production `99957e17` confirms
+the final fix across 48 workloads/96 fresh captures: every PNG matches its
+accepted diagnostic and every pair repeats. CNN retains 33,409 differences;
+catalog-wide parity remains open, with unchanged references and tolerances.
 See the
 [current audit, capture scopes and retained failures](docs/OPTIMIZED_SITES_PIXELS_2026_11_12.md).
 
