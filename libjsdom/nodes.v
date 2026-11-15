@@ -82,11 +82,14 @@ fn (mut host Host) install_nodes() ! {
 	mut collection_prototype := libjs.Object.create(host.realm, host.realm.object_prototype)
 	host.collection_prototype = collection_prototype
 	host.accessor(mut collection_prototype, 'length', fn [host] (mut vm libjs.VM) !libjs.Value {
+		persistent := platform.enter_persistent(); defer { platform.leave_persistent(persistent) }
 		return libjs.Value.from_f64(f64(host.collection_receiver(mut vm)!.length()))
 	}, unsafe { nil })
 	for name in ['item', 'namedItem'] {
-		host.method(mut collection_prototype, name, 1, fn [host, name] (mut vm libjs.VM) !libjs.Value {
+		host.method_attributes(mut collection_prototype, name, 1, fn [host, name] (mut vm libjs.VM) !libjs.Value {
 			collection := host.collection_receiver(mut vm)!
+			if vm.argument_count() == 0 { return vm.throw_error(.type_error, 'HTMLCollection.${name} requires an argument') }
+			persistent := platform.enter_persistent(); defer { platform.leave_persistent(persistent) }
 			mut owner := unsafe { &Host(host) }
 			mut element := ?&dom.Element(none)
 			if name == 'item' {
@@ -95,7 +98,7 @@ fn (mut host Host) install_nodes() ! {
 				element = collection.named_item(vm.argument(0).to_primitive_string(mut vm)!.str())
 			}
 			return if found := element { owner.wrap_node(found.as_node()) } else { libjs.js_null() }
-		})
+		}, libjs.attribute_writable | libjs.attribute_enumerable | libjs.attribute_configurable)
 	}
 	for name in ['parentNode', 'parentElement', 'firstChild', 'lastChild', 'previousSibling', 'nextSibling', 'nextElementSibling',
 		'previousElementSibling', 'ownerDocument', 'nodeName', 'nodeType', 'textContent'] {
@@ -333,6 +336,7 @@ struct Collection {
 
 fn (collection &Collection) get_own_property(key libjs.PropertyName) ?libjs.PropertyDescriptor {
 	if collection.host.closed { return none }
+	persistent := platform.enter_persistent(); defer { platform.leave_persistent(persistent) }
 	mut host := unsafe { &Host(collection.host) }
 	if key.is_number() {
 		if element := collection.collection.item(int(key.number)) {
@@ -344,13 +348,21 @@ fn (collection &Collection) get_own_property(key libjs.PropertyName) ?libjs.Prop
 
 fn (collection &Collection) own_property_keys() []libjs.PropertyName {
 	if collection.host.closed { return [] }
+	persistent := platform.enter_persistent(); defer { platform.leave_persistent(persistent) }
 	return []libjs.PropertyName{len: collection.collection.length(), init: libjs.PropertyName.from_number(u32(index))}
 }
 
 fn (mut host Host) wrap_collection(collection &dom.HTMLCollection) libjs.Value {
-	mut object := libjs.Object.create(host.realm, host.collection_prototype)
-	object.class_name = 'HTMLCollection'
+	return host.wrap_collection_with_prototype(collection, host.collection_prototype, 'HTMLCollection')
+}
+
+fn (mut host Host) wrap_collection_with_prototype(collection &dom.HTMLCollection, prototype &libjs.Object, class_name string) libjs.Value {
+	if object := host.collection_wrappers[voidptr(collection)] { return libjs.Value.from_object(object) }
+	persistent := platform.enter_persistent(); defer { platform.leave_persistent(persistent) }
+	mut object := libjs.Object.create(host.realm, prototype)
+	object.class_name = class_name
 	object.host_properties = libjs.HostProperties(&Collection{ host: host, collection: collection })
+	host.collection_wrappers[voidptr(collection)] = object
 	return libjs.Value.from_object(object)
 }
 

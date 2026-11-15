@@ -45,6 +45,11 @@ mut:
 	comment_prototype &libjs.Object = unsafe { nil }
 	cdata_prototype &libjs.Object = unsafe { nil }
 	collection_prototype &libjs.Object = unsafe { nil }
+	collection_wrappers map[voidptr]&libjs.Object
+	form_controls_collection_prototype &libjs.Object = unsafe { nil }
+	form_controls_collections map[voidptr]&html.HTMLFormControlsCollection
+	radio_node_list_prototype &libjs.Object = unsafe { nil }
+	radio_node_lists map[voidptr]&html.RadioNodeList
 	node_list_prototype &libjs.Object = unsafe { nil }
 	node_list_wrappers map[voidptr]&libjs.Object
 	token_list_prototype &libjs.Object = unsafe { nil }
@@ -230,6 +235,7 @@ pub fn Host.create(vm &libjs.VM, realm &libjs.Realm, document &dom.Document, hoo
 	host.install_files()
 	host.install_form_data()!
 	host.install_form_controls()!
+	host.install_form_collections()!
 	host.install_text_control_selection()!
 	host.install_constraint_validation()!
 	host.install_forms()!
@@ -362,6 +368,9 @@ pub fn (mut host Host) close() {
 	host.nodes.clear()
 	host.wrappers.clear()
 	host.node_list_wrappers.clear()
+	host.collection_wrappers.clear()
+	host.form_controls_collections.clear()
+	host.radio_node_lists.clear()
 	host.token_list_wrappers.clear()
 	host.events.clear()
 	host.event_wrappers.clear()

@@ -14,6 +14,7 @@ struct NodeListCollection {
 
 fn (list &NodeListCollection) get_own_property(key libjs.PropertyName) ?libjs.PropertyDescriptor {
 	if list.host.closed || !key.is_number() { return none }
+	persistent := platform.enter_persistent(); defer { platform.leave_persistent(persistent) }
 	if native := list.native.item(int(key.number)) {
 		mut host := unsafe { &Host(list.host) }
 		return libjs.PropertyDescriptor{value: host.wrap_node(native), writable: false, enumerable: true, configurable: false}
@@ -23,6 +24,7 @@ fn (list &NodeListCollection) get_own_property(key libjs.PropertyName) ?libjs.Pr
 
 fn (list &NodeListCollection) own_property_keys() []libjs.PropertyName {
 	if list.host.closed { return [] }
+	persistent := platform.enter_persistent(); defer { platform.leave_persistent(persistent) }
 	return []libjs.PropertyName{len: list.native.length(), init: libjs.PropertyName.from_number(u32(index))}
 }
 
@@ -39,11 +41,15 @@ fn (host &Host) node_list_receiver(mut vm libjs.VM) !&dom.NodeList {
 }
 
 fn (mut host Host) wrap_node_list(native &dom.NodeList) libjs.Value {
+	return host.wrap_node_list_with_prototype(native, host.node_list_prototype, 'NodeList')
+}
+
+fn (mut host Host) wrap_node_list_with_prototype(native &dom.NodeList, prototype &libjs.Object, class_name string) libjs.Value {
 	if object := host.node_list_wrappers[voidptr(native)] { return libjs.Value.from_object(object) }
 	persistent := platform.enter_persistent()
 	defer { platform.leave_persistent(persistent) }
-	mut object := libjs.Object.create(host.realm, host.node_list_prototype)
-	object.class_name = 'NodeList'
+	mut object := libjs.Object.create(host.realm, prototype)
+	object.class_name = class_name
 	object.host_properties = libjs.HostProperties(&NodeListCollection{host: &host, native: native})
 	host.node_list_wrappers[voidptr(native)] = object
 	return libjs.Value.from_object(object)
@@ -55,11 +61,13 @@ fn (mut host Host) install_node_lists() ! {
 	host.node_list_prototype = prototype
 	prototype.define_direct_property(libjs.PropertyName.from_symbol(vm.well_known_symbol_to_string_tag()), libjs.Value.from_string(vm.create_string_from_str('NodeList')), libjs.attribute_configurable)
 	host.accessor(mut prototype, 'length', fn [host] (mut vm libjs.VM) !libjs.Value {
+		persistent := platform.enter_persistent(); defer { platform.leave_persistent(persistent) }
 		return libjs.Value.from_f64(f64(host.node_list_receiver(mut vm)!.length()))
 	}, unsafe { nil })
 	host.method_attributes(mut prototype, 'item', 1, fn [host] (mut vm libjs.VM) !libjs.Value {
 		list := host.node_list_receiver(mut vm)!
 		if vm.argument_count() < 1 { return vm.throw_error(.type_error, 'NodeList.item requires an index') }
+		persistent := platform.enter_persistent(); defer { platform.leave_persistent(persistent) }
 		index := vm.argument(0).to_u32(mut vm)!
 		mut owner := unsafe { &Host(host) }
 		return if native := list.item(int(index)) { owner.wrap_node(native) } else { libjs.js_null() }
