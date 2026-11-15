@@ -6,8 +6,8 @@ fewer instructions measure CPU work, rather than elapsed rendering time.
 Results apply to the frozen page and pinned build in each linked report.
 Provisional entries retain unresolved acceptance checks.
 
-**Pixel recheck, 2026-11-15:** Vox does **not** pass pixel equality across
-this catalog. Production build `c19672ae` confirms GitHub, Hacker News,
+**Pixel recheck, 2026-11-16:** Vox does **not** pass pixel equality across
+this catalog. Production build `523e30dd` confirms GitHub, Hacker News,
 Lobsters and Wikipedia exact in two fresh captures each. Vlang.io has **27 differing
 pixels in production**, down from the previously verified 810. The heading fix
 removes its final text difference. Its 23 JPEG pixels still include nine
@@ -85,8 +85,8 @@ pixels, with remaining channel errors at most one. The sampler now preserves
 each crossed tile's sample count instead of falling back for the whole image.
 All 47 other PNGs are unchanged across 48 workloads/96 repeatable captures.
 Focused V/native-callback checks pass under arena poisoning. Production
-confirmation is pending the managed rebuild; completed production `48b7a944`
-does not contain this change. No original reference or tolerance changes.
+`523e30dd` now confirms this fix and the following mip fix across 48 workloads
+and 96 fresh captures. No original reference or tolerance changes.
 The subsequent `262c477c1` YUV mip correction reduces CNN to **58,062 in
 diagnostics**, from 71,925: 14,488 corrected and 625 introduced differences,
 each new error at most two channel levels. All changes are inside Sullivan's
@@ -94,9 +94,20 @@ image, whose interior maximum error improves 88→2. Supported scaled uploads
 now retain planes through additional GPU mip filtering and final sampling.
 All 47 other PNGs are unchanged across 48 workloads/96 repeatable captures;
 the four exact sites and Vlang's 27 pixels retain their results. Focused GPU
-and native callback checks pass with arena poisoning. Production confirmation
-of both new fixes remains pending the managed rebuild. CNN still differs at
-58,062 pixels; no original reference or tolerance changed.
+and native callback checks pass with arena poisoning. Production `523e30dd`
+confirms both fixes: every PNG matches the accepted diagnostic. CNN retains
+58,062 differences in that production build; no original reference or tolerance
+changed.
+The subsequent `5995502f5` near-half YUV420 correction reduces CNN to **54,627
+in diagnostics**, from 58,062: 3,508 corrected and 73 introduced one-level
+differences. All introduced pixels lie inside the peptides image, whose
+interior improves 4,106→1,048 and maximum error 26→1. Three existing one-level
+pixels in other photos also become exact. Full-resolution luma and native
+half-resolution chroma retain their independent sampling grids in one padded
+texture. All 47 other PNGs are unchanged across 48 workloads/96 repeatable
+captures. Focused packing, GPU, callback and preparer checks pass. Production
+confirmation of this new slice awaits the managed rebuild; `523e30dd` lacks
+it. Catalog-wide parity remains open, with unchanged references and tolerances.
 See the
 [current audit, capture scopes and retained failures](docs/OPTIMIZED_SITES_PIXELS_2026_11_12.md).
 

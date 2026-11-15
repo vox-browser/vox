@@ -3723,3 +3723,106 @@ Cleanup hashes 3,504 files across 38 owned roots, preserves/reverifies 1,007
 selected files (22,661,361 bytes), and removes owned executables, generated
 intermediates, capture jobs/profiles, guards, locks and the test alias. Shared
 production bundles and dependencies remain.
+
+
+## Production confirmation of sampled YUV tiles and mips, 2026-11-16
+
+Production executable
+`523e30ddb154f3a25f336661a213bc912b3eaddd409226ab886f19f440cff6f7`,
+receipt `20261115-234808-804cb6d9` (C/literal V `-prod`/single unit), confirms
+`59c259a55` and `262c477c1`. The consumed hashes of the callback, minified WebP,
+sampled-image and tile implementations match those committed fixes. The
+receipt's requested head predates their commits; the actual consumed buffers
+establish which code ran.
+
+All **48 workloads and 96 fresh captures** pass the unchanged production driver.
+Every pair repeats byte for byte, and **every PNG equals the prior accepted mip
+diagnostic** `fcc31b7d`. CNN remains **58,062**, Vlang **27**, and GitHub, Hacker
+News, Lobsters and Wikipedia remain exact. Existing inexact controls retain
+their previous outputs. All 96 native guards, driver, outer guard, startup smoke
+and guarded analysis exit zero. The default source gate's **195 checks** stay
+active throughout. No original reference or tolerance changes.
+
+This validation uses the matching prior committed source (`f19ce6055`) and GG
+preparation inputs for the owned files. The atlas candidate's source and shader
+inputs are then restored exactly: **857 pins match**, and its focused GPU,
+callback and preparer checks pass again. Both the production and candidate
+identities, commands, transaction states and complete results remain local.
+This closes the two preceding production holds. It supplies no production
+acceptance for the new atlas slice below, which the bundle does not contain.
+CNN's source/replay and residual rendering gates, Vlang, missing Reddit evidence
+and catalog-wide equality remain open.
+
+
+## Native chroma sampling for near-half WebP, 2026-11-16
+
+`5995502f5` handles the full-upload case where both destination dimensions lie
+strictly between half and native size. The existing promoted 4:4:4 upload path
+requires a power-of-two reduction and does not cover CNN's 256×144 peptides
+image drawn at 130×73. The new upload preserves Y at full size and U/V at their
+native half size in the top-left quarter of two channels of one RGBA8 texture.
+Chroma edges extend over the remaining texels. The shader samples Y at ordinary
+coordinates and chroma at half coordinates, giving the planes independent
+sampling derivatives, then applies the existing limited-range Rec.601 matrix.
+With the existing sampler policy this domain uses chroma level zero and at most
+the first luma mip, preserving alignment even when the chroma dimensions are odd.
+
+The rendering path retains complete opaque untagged VP8, full source rectangle,
+integer translation, unit opacity and existing size bounds. The native callback
+carries its new mode through uniform and mixed-sample tiles. The 112-byte
+uniform uses a reserved component; texture bindings and sampler policy remain.
+Both Python and production V preparers install the same uniform flag, shader
+branch and runtime support check. Each atlas component can be repaired without
+duplicating the others. No site, resource hash or pixel coordinate selects the
+correction. No native application UI or new graphics dependency is added.
+
+Diagnostic executable
+`69792131a50c2bdf87f8a316288a7f38bb810c97b12b7ef6e37dcbea45d7d84c`
+(C/O0/preallocated/no-GC) completes **48 workloads and 96 fresh captures**, plus
+startup smoke. All pairs repeat byte for byte; **all 47 non-CNN PNGs are
+unchanged** from the accepted mip cohort. CNN improves **58,062→54,627**:
+**3,508 corrected** and **73 introduced** pixels, with every introduced error
+at most one channel level and inside the peptides image. Its interior,
+excluding four pixels at each edge, improves **4,106→1,048**, maximum error
+**26→1**. Three pre-existing one-level photo pixels also become exact: one each
+in Trump, Netanyahu and the CNN logo. All other changed pixels are in peptides.
+Sullivan stays at 22,366/max2 in its interior; Trump is now 115/max1, Netanyahu
+383/max1 and the logo 230/max1. The archived header stays exact. GitHub, Hacker
+News, Lobsters and Wikipedia remain exact; Vlang stays at 27.
+
+The logged focused and unlogged broad CNN PNGs are identical. All **826 consumed
+rendering/CSS/DOM/layout V witnesses and 857 input pins** stay matched. All 96
+native guards, startup, driver, outer guard and guarded analysis exit zero.
+Ten focused V test functions run successfully under arena poisoning and 3 GiB
+runtime guards, plus the Python preparer test. They cover exact plane bytes and
+edge extension, independent sampling/clipping, 3×3 chroma from even 6×6 luma,
+invalid input/alpha/scales, reclaimed paint scopes, both tile seam directions,
+native channel conversion, existing mip arithmetic and both preparers. The
+native preparer also repairs each partially missing atlas component.
+
+The final GPU test is
+`7320cca13a012e87a524f65d348c424bbafd9551e30dcafbb7d4698bc3075b8b`;
+its 54 consumed V witnesses match. CPU packing uses
+`a8df194488bde83c7466d98d1a02e9c2037d8aa1507748d9d308b8ad0fa78b04`
+(11 witnesses), and the native callback uses
+`c1cac50d4b6ed58dd54c6695064fc86da440f9414877339534fd544f2e3ad1a5`
+(165 witnesses). The preparer and existing GPU checks retain their identities
+and 19/44/44 witness sets in local evidence. Initial test-only range-assignment
+compile errors and an incomplete minimal staging fixture remain recorded;
+accepted checks use corrected test syntax and the actual uniform layout. No
+original golden or tolerance changes.
+
+Completed production `523e30dd` lacks the atlas code by consumed hashes. The
+feature commit requests the coalesced C/literal V `-prod`/single-unit rebuild;
+production confirmation remains pending, with no duplicate manual build queued.
+These are frozen-page rendering results. They do not establish live-site,
+scripting, instruction, performance or catalog-wide equality. CNN's remaining
+rendering/source failures, Vlang's residuals, Reddit's missing evidence and prior
+inexact controls keep the overall task open.
+
+Local evidence is under
+`docs/performance/vlang-gradients-20261114/raw/cnn-yuv-atlas-20261115/`.
+Cleanup hashes **6,588 files across 66 owned roots**, preserves/reverifies 1,978
+selected files (42,198,904 bytes), and removes owned binaries, generated
+intermediates, capture profiles/jobs, guards, locks and the test alias. Shared
+production bundles and dependencies remain.

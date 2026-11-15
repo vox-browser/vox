@@ -3265,3 +3265,33 @@ native callback routing across seams and the existing reclaimed-scope checks.
 Production confirmation remains pending the managed build; full equality is
 open. No original reference or tolerance changes. See the
 [audit](OPTIMIZED_SITES_PIXELS_2026_11_12.md#additional-yuv-mip-filtering-2026-11-15).
+
+
+### Production confirmation of sampled YUV tiles and mips, 2026-11-16
+
+Production `523e30dd` (C/literal V `-prod`/single unit) confirms `59c259a55` and
+`262c477c1` through matching consumed implementation hashes and 48 workloads/96
+fresh captures. Every pair repeats and every PNG matches the accepted mip
+diagnostic. CNN remains at 58,062, Vlang at 27 and the four exact archived sites
+at zero. Startup smoke and all guards pass. The driver's 195 source checks stay
+active. This closes both production holds above; full equality remains open.
+
+### Native chroma grid for near-half WebP, 2026-11-16
+
+`5995502f5` packs full-size Y and edge-extended half-size U/V into separate
+channels of one texture. The shader samples chroma at half coordinates before
+limited-range RGB conversion. Selection is bounded to even full-source opaque
+VP8 images drawn strictly between half and native size on both axes. Existing
+bindings, the 112-byte uniform, sampler policy and scaled-upload paths remain;
+the new flag uses a reserved uniform component. Both preparers stage the same
+flag, capability check and shader branch, including partial-staging repair.
+
+CNN improves 58,062→54,627 in diagnostics: 3,508 corrected and 73 introduced
+one-level differences. All introduced pixels are in the peptides image; its
+interior improves 4,106→1,048 with maximum error 26→1. Three other existing
+one-level photo pixels also become exact. All 47 other PNGs are unchanged in
+48 workloads/96 repeatable captures. Ten focused V test functions and a Python
+preparer check pass, including odd chroma dimensions, clamping, reclaimed paint
+scopes, tile seams and source/shader restoration after production validation.
+Production confirmation of this new slice remains pending. See the
+[audit](OPTIMIZED_SITES_PIXELS_2026_11_12.md#native-chroma-sampling-for-near-half-webp-2026-11-16).
