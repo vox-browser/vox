@@ -16,7 +16,7 @@ fn resolve_super_reference(mut vm VM, receiver Value) !Value {
 		if !environment.has_super_binding() { return vm.throw_error(.reference_error, 'Super property requires a method home object') }
 		mut object := Object.create(vm.realm(), none)
 		object.class_name = '#SuperReference'
-		object.super_property_base = &SuperPropertyBase{base: environment.get_super_base(), receiver: receiver}
+		object.super_property_base = &SuperPropertyBase{base: environment.get_super_base_checked(mut vm)!, receiver: receiver}
 		return Value.from_object(object)
 	}
 	return vm.throw_error(.reference_error, 'Super property requires a function environment')

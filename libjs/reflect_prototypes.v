@@ -4,21 +4,21 @@ module libjs
 pub fn reflect_get_prototype_of(mut vm VM) !Value {
 	target := vm.argument(0)
 	if !target.is_object() { return vm.throw_error_type(.type_error, .not_an_object, target.str()) }
-	prototype := target.as_object().internal_get_prototype_of() or { return js_null() }
+	prototype := target.as_object().get_prototype_of_checked(mut vm)!.prototype or { return js_null() }
 	return Value.from_object(prototype)
 }
 
 pub fn reflect_is_extensible(mut vm VM) !Value {
 	target := vm.argument(0)
 	if !target.is_object() { return vm.throw_error_type(.type_error, .not_an_object, target.str()) }
-	return Value.from_bool(target.as_object().internal_is_extensible())
+	return Value.from_bool(target.as_object().is_extensible_checked(mut vm)!)
 }
 
 pub fn reflect_prevent_extensions(mut vm VM) !Value {
 	target := vm.argument(0)
 	if !target.is_object() { return vm.throw_error_type(.type_error, .not_an_object, target.str()) }
 	mut object := target.as_object()
-	return Value.from_bool(object.internal_prevent_extensions())
+	return Value.from_bool(object.prevent_extensions_checked(mut vm)!)
 }
 
 pub fn reflect_set_prototype_of(mut vm VM) !Value {
@@ -31,5 +31,5 @@ pub fn reflect_set_prototype_of(mut vm VM) !Value {
 	mut proposed := ?&Object(none)
 	if prototype.is_object() { proposed = prototype.as_object() }
 	mut object := target.as_object()
-	return Value.from_bool(object.internal_set_prototype_of(proposed))
+	return Value.from_bool(object.set_prototype_of_checked(mut vm, proposed)!)
 }

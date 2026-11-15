@@ -271,7 +271,7 @@ pub fn (reference Reference) delete_(mut vm VM) !bool {
 		}
 		mut base_obj := reference.base_object(mut vm)!
 		// d. Let deleteStatus be ? baseObj.[[Delete]](ref.[[ReferencedName]]).
-		delete_status := base_obj.internal_delete(reference.name)
+		delete_status := base_obj.delete_checked(mut vm, reference.name)!
 		// e. If deleteStatus is false and ref.[[Strict]] is true, throw a TypeError exception.
 		if !delete_status && reference.strict {
 			return vm.throw_error_type(.type_error, .reference_nullish_delete_property,

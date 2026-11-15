@@ -1,53 +1,55 @@
 // SPDX-License-Identifier: BSD-2-Clause
 module libjs
 
-// Interpreter/SlowPaths.cpp::asm_get_object_property_iterator and
-// Bytecode/PropertyNameIterator.cpp's uncached path. Capture names once, without
-// calling value getters, and skip names deleted before the next step.
+// EnumerateObjectProperties / CreateForInIterator. Snapshot each level's keys
+// when reaching it. Breaking a loop must not run later Proxy traps or getters.
 @[heap]
 pub struct PropertyNameIterator {
 pub:
-	object     &Object
-	target     &Object
-	properties []PropertyName
+	object &Object
+	target &Object
 mut:
+	current ?&Object
+	properties []PropertyName
 	next_property int
+	keys_loaded bool
+	visited_names map[string]bool
+	visited_objects map[voidptr]bool
 }
 
 fn create_property_name_iterator(mut vm VM, value Value) !&Object {
 	target := value.to_object_with_prototypes(mut vm, realm_primitive_prototypes())!
-	mut properties := []PropertyName{}
-	mut visited_names := map[string]bool{}
-	mut visited_objects := map[voidptr]bool{}
-	mut current := ?&Object(target)
-	for {
-		object := current or { break }
-		vm.consume_execution_budget()!
-		if visited_objects[voidptr(object)] { break }
-		visited_objects[voidptr(object)] = true
-		for key in object.own_property_keys() {
-			vm.consume_execution_budget()!
-			if key.is_symbol() || visited_names[key.str()] { continue }
-			descriptor := object.internal_get_own_property(key) or { continue }
-			visited_names[key.str()] = true
-			if descriptor.enumerable or { false } { properties << key }
-		}
-		current = object.internal_get_prototype_of()
-	}
 	mut object := Object.create(vm.realm(), none)
 	object.class_name = 'PropertyNameIterator'
-	object.property_name_iterator = &PropertyNameIterator{ object: object, target: target, properties: properties }
+	object.property_name_iterator = &PropertyNameIterator{object: object, target: target, current: target}
 	return object
 }
 
 fn (mut iterator PropertyNameIterator) next(mut vm VM) !IteratorStepValue {
-	for iterator.next_property < iterator.properties.len {
+	for {
+		holder := iterator.current or { break }
 		vm.consume_execution_budget()!
-		key := iterator.properties[iterator.next_property]
-		iterator.next_property++
-		if iterator.target.has_property(key) {
-			return IteratorStepValue{ value: key.to_value(mut vm) }
+		if !iterator.keys_loaded {
+			if iterator.visited_objects[voidptr(holder)] { iterator.current = none; break }
+			iterator.visited_objects[voidptr(holder)] = true
+			iterator.properties = holder.own_property_keys_checked(mut vm)!
+			iterator.next_property = 0
+			iterator.keys_loaded = true
 		}
+		for iterator.next_property < iterator.properties.len {
+			vm.consume_execution_budget()!
+			key := iterator.properties[iterator.next_property]
+			iterator.next_property++
+			if key.is_symbol() { continue }
+			identity := property_name_identity(key)
+			if iterator.visited_names[identity] { continue }
+			descriptor := holder.get_own_property_checked(mut vm, key)!.descriptor or { continue }
+			iterator.visited_names[identity] = true
+			if descriptor.enumerable or { false } { return IteratorStepValue{value: key.to_value(mut vm)} }
+		}
+		iterator.current = holder.get_prototype_of_checked(mut vm)!.prototype
+		iterator.keys_loaded = false
+		iterator.properties = []PropertyName{}
 	}
-	return IteratorStepValue{ done: true, value: js_undefined() }
+	return IteratorStepValue{done: true, value: js_undefined()}
 }

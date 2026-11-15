@@ -66,9 +66,9 @@ fn headers_init(mut vm libjs.VM, value libjs.Value) ![]fetch.HeaderPair {
 		}
 	}
 	object := value.as_object()
-	for key in object.own_property_keys() {
+	for key in object.own_property_keys_checked(mut vm)! {
 		vm.consume_execution_budget()!
-		if descriptor := object.internal_get_own_property(key) {
+		if descriptor := object.get_own_property_checked(mut vm, key)!.descriptor {
 			if descriptor.enumerable or { false } {
 				name := headers_byte_string(mut vm, key.to_value(mut vm))!
 				text := headers_byte_string(mut vm, object.get(mut vm, key)!)!

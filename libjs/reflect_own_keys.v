@@ -16,7 +16,7 @@ pub fn (key PropertyName) to_value(mut vm VM) Value {
 pub fn reflect_own_keys(mut vm VM, array_prototype &Object) !Value {
 	target := vm.argument(0)
 	if !target.is_object() { return vm.throw_error_type(.type_error, .not_an_object, target.str()) }
-	keys := target.as_object().own_property_keys()
+	keys := target.as_object().own_property_keys_checked(mut vm)!
 	mut values := []Value{cap: keys.len}
 	for key in keys {
 		values << key.to_value(mut vm)

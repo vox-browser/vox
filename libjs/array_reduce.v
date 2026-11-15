@@ -20,7 +20,7 @@ fn array_reduce(mut vm VM, reverse bool) !Value {
 		index := if reverse { remaining - 1 } else { length - remaining }
 		remaining--
 		key := array_index_key(index)
-		if !object.internal_has_property(key) { continue }
+		if !object.has_property_checked(mut vm, key)! { continue }
 		value := object.get(mut vm, key)!
 		if !seeded {
 			accumulator = value

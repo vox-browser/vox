@@ -35,7 +35,7 @@ pub fn (environment &ObjectEnvironment) with_base_object() ?&Object {
 pub fn (environment &ObjectEnvironment) has_binding(mut vm VM, name Utf16String) !(bool, ?int) {
 	key := PropertyName.from_utf16(name)
 	// 2. Let foundBinding be ? HasProperty(bindingObject, N).
-	found_binding := environment.binding_object.has_property(key)
+	found_binding := environment.binding_object.has_property_checked(mut vm, key)!
 	// 3. If foundBinding is false, return false.
 	if !found_binding {
 		return false, none
@@ -98,7 +98,7 @@ pub fn (mut environment ObjectEnvironment) set_mutable_binding(mut vm VM, name U
 		return environment.binding_object.set(mut vm, key, value, .no)
 	}
 	// 2. Let stillExists be ? HasProperty(bindingObject, N).
-	still_exists := environment.binding_object.has_property(key)
+	still_exists := environment.binding_object.has_property_checked(mut vm, key)!
 	// 3. If stillExists is false and S is true, throw a ReferenceError exception.
 	if !still_exists && strict {
 		return vm.throw_error_type(.reference_error, .unknown_identifier, name.str())
@@ -107,8 +107,8 @@ pub fn (mut environment ObjectEnvironment) set_mutable_binding(mut vm VM, name U
 	environment.binding_object.set(mut vm, key, value, if strict { .yes } else { .no }) or {
 		// Nothing like this in the spec; upstream produces a nicer error than the
 		// generic Object::set() failure when the property is read-only.
-		if strict {
-			if property := environment.binding_object.internal_get_own_property(key) {
+		if strict && environment.binding_object.proxy_object == none {
+			if property := environment.binding_object.get_own_property_checked(mut vm, key)!.descriptor {
 				if !(property.writable or { true }) {
 					return vm.throw_error_type(.type_error, .desc_write_non_writable, name.str())
 				}
@@ -127,7 +127,7 @@ pub fn (mut environment ObjectEnvironment) get_binding_value(mut vm VM, name Utf
 		return environment.binding_object.get(mut vm, key)!
 	}
 	// 2. Let value be ? HasProperty(bindingObject, N).
-	value := environment.binding_object.has_property(key)
+	value := environment.binding_object.has_property_checked(mut vm, key)!
 	// 3. If value is false, then
 	if !value {
 		// a. If S is false, return undefined; otherwise throw a ReferenceError exception.
@@ -143,5 +143,5 @@ pub fn (mut environment ObjectEnvironment) get_binding_value(mut vm VM, name Utf
 // 9.1.1.2.7 DeleteBinding ( N ), https://tc39.es/ecma262/#sec-object-environment-records-deletebinding-n
 pub fn (mut environment ObjectEnvironment) delete_binding(mut vm VM, name Utf16String) !bool {
 	// 2. Return ? bindingObject.[[Delete]](N).
-	return environment.binding_object.internal_delete(PropertyName.from_utf16(name))
+	return environment.binding_object.delete_checked(mut vm, PropertyName.from_utf16(name))!
 }

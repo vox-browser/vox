@@ -86,3 +86,10 @@ fn test_cached_query_params_callbacks_reopen_without_compiler_and_close_releases
 		assert host.queries.len == 0 && host.query_wrappers.len == 0 && host.query_iterators.len == 0
 	}
 }
+
+fn test_query_record_conversion_uses_proxy_own_keys_descriptors_and_gets() {
+	mut host, mut vm := query_fixture()!
+	defer { host.close() }
+	assert query_eval(mut vm, 'var log="",p=new Proxy({a:1,b:2},{ownKeys(){log+="keys;";return ["b","a"]},getOwnPropertyDescriptor(t,k){log+="desc:"+k+";";return Reflect.getOwnPropertyDescriptor(t,k)},get(t,k,r){if(typeof k==="string")log+="get:"+k+";";return Reflect.get(t,k,r)}}),q=new URLSearchParams(p);q.get("a")==="1"&&q.get("b")==="2"&&log==="keys;desc:b;get:b;desc:a;get:a;"')!.as_bool()
+	assert query_eval(mut vm, 'var marker={},p=new Proxy({a:1},{getOwnPropertyDescriptor(){throw marker}}),caught=false;try{new URLSearchParams(p)}catch(e){caught=e===marker}caught')!.as_bool()
+}

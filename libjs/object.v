@@ -158,6 +158,7 @@ pub mut:
 	constructor          ?ConstructorFunction
 	native_callable      bool
 	native_initial_name  ?Utf16String
+	proxy_object         ?&ProxyObject
 	bound_function       ?&BoundFunction
 	function_source_text ?Utf16String // [[SourceText]] on ECMAScript callables
 	regexp_object ?&RegExpObject
@@ -205,8 +206,8 @@ fn (object &Object) find_own_property(key PropertyName) int {
 	return -1
 }
 
-// Object.cpp::OrdinaryGetPrototypeOf / OrdinarySetPrototypeOf, with the
-// ObjectPrototype immutable-prototype override. ProxyObject is pending.
+// Concrete ordinary-object operations. Script-visible exotic dispatch lives in
+// object_checked.v; these nonthrowing helpers are for known engine records.
 pub fn (object &Object) internal_get_prototype_of() ?&Object {
 	return object.prototype
 }
@@ -225,6 +226,8 @@ pub fn (mut object Object) internal_set_prototype_of(new_prototype ?&Object) boo
 	for {
 		current := prototype or { break }
 		if voidptr(current) == voidptr(&object) { return false }
+		// OrdinarySetPrototypeOf stops at an exotic [[GetPrototypeOf]].
+		if current.proxy_object != none { break }
 		prototype = current.prototype
 	}
 	object.prototype = new_prototype
@@ -244,15 +247,15 @@ pub fn (mut object Object) internal_prevent_extensions() bool {
 
 // 7.3.16 SetIntegrityLevel ( O, level ).
 pub fn (mut object Object) set_integrity_level(mut vm VM, level IntegrityLevel) !bool {
-	if !object.internal_prevent_extensions() { return false }
-	keys := object.own_property_keys()
+	if !object.prevent_extensions_checked(mut vm)! { return false }
+	keys := object.own_property_keys_checked(mut vm)!
 	if level == .sealed {
 		for key in keys {
 			object.define_property_or_throw(mut vm, key, PropertyDescriptor{ configurable: false })!
 		}
 	} else {
 		for key in keys {
-			if current := object.internal_get_own_property(key) {
+			if current := object.get_own_property_checked(mut vm, key)!.descriptor {
 				if current.is_accessor_descriptor() {
 					object.define_property_or_throw(mut vm, key, PropertyDescriptor{
 						configurable: false
@@ -369,6 +372,7 @@ pub fn (object &Object) internal_get_own_property(key PropertyName) ?PropertyDes
 
 // 10.1.6 [[DefineOwnProperty]] ( P, Desc ), https://tc39.es/ecma262/#sec-ordinary-object-internal-methods-and-internal-slots-defineownproperty-p-desc
 pub fn (mut object Object) internal_define_own_property(mut vm VM, key PropertyName, descriptor PropertyDescriptor) !bool {
+	if proxy := object.proxy_object { return proxy.define_own_property(mut vm, key, descriptor) }
 	if mut arguments := object.arguments_object { return arguments.define_own_property(mut object, key, descriptor) }
 	if mut array := object.typed_array { return array.internal_define_own_property(mut vm, key, descriptor) }
 	if mut array := object.array_object {
@@ -404,6 +408,7 @@ pub fn (object &Object) internal_has_property(key PropertyName) bool {
 // 10.1.8 [[Get]] ( P, Receiver ), https://tc39.es/ecma262/#sec-ordinary-object-internal-methods-and-internal-slots-get-p-receiver
 pub fn (object &Object) internal_get(mut vm VM, key PropertyName, receiver Value) !Value {
 	assert !receiver.is_special_empty_value()
+	if proxy := object.proxy_object { return proxy.get(mut vm, key, receiver) }
 	if array := object.typed_array {
 		if index := typed_array_property_index(key) { return typed_array_get_element(array, index) }
 	}
@@ -468,6 +473,8 @@ pub fn (object &Object) internal_get(mut vm VM, key PropertyName, receiver Value
 // 10.1.9.2 OrdinarySetWithOwnDescriptor.
 pub fn (mut object Object) internal_set(mut vm VM, key PropertyName, value Value, receiver Value) !bool {
 	assert !value.is_special_empty_value() && !receiver.is_special_empty_value()
+	if proxy := object.proxy_object { return proxy.set(mut vm, key, value, receiver) }
+	if vm.did_reach_stack_space_limit() { return vm.throw_error_type(.internal_error, .call_stack_size_exceeded) }
 	if mut array := object.typed_array {
 		if index := typed_array_property_index(key) {
 			if same_value(Value.from_object(&object), receiver) {
@@ -500,7 +507,7 @@ pub fn (mut object Object) internal_set(mut vm VM, key PropertyName, value Value
 		return false
 	}
 	mut receiver_object := receiver.as_object()
-	if existing := receiver_object.internal_get_own_property(key) {
+	if existing := receiver_object.get_own_property_checked(mut vm, key)!.descriptor {
 		if existing.is_accessor_descriptor() || !(existing.writable or { false }) {
 			return false
 		}
@@ -603,7 +610,7 @@ pub fn (mut object Object) define_property_or_throw(mut vm VM, key PropertyName,
 
 // 7.3.10 DeletePropertyOrThrow ( O, P ), https://tc39.es/ecma262/#sec-deletepropertyorthrow
 pub fn (mut object Object) delete_property_or_throw(mut vm VM, key PropertyName) ! {
-	success := object.internal_delete(key)
+	success := object.delete_checked(mut vm, key)!
 	if !success {
 		return vm.throw_error_type(.type_error, .object_delete_returned_false)
 	}

@@ -14,7 +14,11 @@ pub:
 
 pub fn BoundFunction.create(realm &Realm, target &Object, bound_this Value, arguments []Value) &BoundFunction {
 	assert target.callable != none
-	mut object := Object.create(realm, target.internal_get_prototype_of())
+	return bound_function_with_prototype(realm, target, bound_this, arguments, target.internal_get_prototype_of())
+}
+
+fn bound_function_with_prototype(realm &Realm, target &Object, bound_this Value, arguments []Value, prototype ?&Object) &BoundFunction {
+	mut object := Object.create(realm, prototype)
 	object.class_name = 'Function'
 	function := &BoundFunction{
 		object:                object

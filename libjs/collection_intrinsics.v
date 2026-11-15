@@ -140,7 +140,7 @@ fn array_prototype_index_of(mut vm VM) !Value {
 	for index < length {
 		vm.consume_execution_budget()!
 		key := array_index_key(index)
-		if object.internal_has_property(key) && is_strictly_equal(search, object.get(mut vm, key)!) { return Value.from_f64(f64(index)) }
+		if object.has_property_checked(mut vm, key)! && is_strictly_equal(search, object.get(mut vm, key)!) { return Value.from_f64(f64(index)) }
 		index++
 	}
 	return Value.from_i32(-1)
@@ -171,7 +171,7 @@ fn array_prototype_for_each(mut vm VM) !Value {
 	for index := u64(0); index < length; index++ {
 		vm.consume_execution_budget()!
 		key := array_index_key(index)
-		if object.internal_has_property(key) { call(mut vm, callback, this_argument, [object.get(mut vm, key)!, Value.from_f64(f64(index)), Value.from_object(object)])! }
+		if object.has_property_checked(mut vm, key)! { call(mut vm, callback, this_argument, [object.get(mut vm, key)!, Value.from_f64(f64(index)), Value.from_object(object)])! }
 	}
 	return js_undefined()
 }
@@ -204,7 +204,7 @@ fn array_prototype_unshift(mut vm VM) !Value {
 			vm.consume_execution_budget()!
 			from := array_index_key(index - 1)
 			to := array_index_key(index + count - 1)
-			if object.internal_has_property(from) { object.set(mut vm, to, object.get(mut vm, from)!, .yes)! } else { object.delete_property_or_throw(mut vm, to)! }
+			if object.has_property_checked(mut vm, from)! { object.set(mut vm, to, object.get(mut vm, from)!, .yes)! } else { object.delete_property_or_throw(mut vm, to)! }
 		}
 		for index in 0 .. vm.argument_count() { object.set(mut vm, array_index_key(index), vm.argument(index), .yes)! }
 	}
@@ -234,7 +234,7 @@ fn array_prototype_slice(mut vm VM) !Value {
 	for index := u64(0); index < count; index++ {
 		vm.consume_execution_budget()!
 		from := array_index_key(start + index)
-		if object.internal_has_property(from) { result.create_data_property_or_throw(mut vm, array_index_key(index), object.get(mut vm, from)!)! }
+		if object.has_property_checked(mut vm, from)! { result.create_data_property_or_throw(mut vm, array_index_key(index), object.get(mut vm, from)!)! }
 	}
 	result.set(mut vm, PropertyName.from_str('length'), Value.from_f64(f64(count)), .yes)!
 	return Value.from_object(result)
@@ -250,7 +250,7 @@ fn array_prototype_splice(mut vm VM) !Value {
 	for index := u64(0); index < deleted; index++ {
 		vm.consume_execution_budget()!
 		from := array_index_key(start + index)
-		if object.internal_has_property(from) { result.create_data_property_or_throw(mut vm, array_index_key(index), object.get(mut vm, from)!)! }
+		if object.has_property_checked(mut vm, from)! { result.create_data_property_or_throw(mut vm, array_index_key(index), object.get(mut vm, from)!)! }
 	}
 	result.set(mut vm, PropertyName.from_str('length'), Value.from_f64(f64(deleted)), .yes)!
 	if insert_count < deleted {
@@ -267,5 +267,5 @@ fn array_prototype_splice(mut vm VM) !Value {
 fn move_array_property(mut vm VM, mut object Object, from u64, to u64) ! {
 	vm.consume_execution_budget()!
 	key := array_index_key(from)
-	if object.internal_has_property(key) { object.set(mut vm, array_index_key(to), object.get(mut vm, key)!, .yes)! } else { object.delete_property_or_throw(mut vm, array_index_key(to))! }
+	if object.has_property_checked(mut vm, key)! { object.set(mut vm, array_index_key(to), object.get(mut vm, key)!, .yes)! } else { object.delete_property_or_throw(mut vm, array_index_key(to))! }
 }

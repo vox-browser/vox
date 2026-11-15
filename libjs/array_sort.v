@@ -20,7 +20,7 @@ pub fn sort_indexed_properties(mut vm VM, object &Object, length u64, compare Ar
 		} else {
 			PropertyName.from_str(index.str())
 		}
-		if holes == .skip_holes && !object.has_property(key) { continue
+		if holes == .skip_holes && !object.has_property_checked(mut vm, key)! { continue
 		 }
 		items << object.get(mut vm, key)!
 	}

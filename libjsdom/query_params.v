@@ -50,9 +50,9 @@ fn query_init(mut vm libjs.VM, value libjs.Value) !&domurl.URLSearchParams {
 		return domurl.URLSearchParams.from_sequence(pairs) or { return vm.throw_error(.type_error, 'Expected each pair to contain exactly 2 items') }
 	}
 	mut record := map[string]string{}
-	for key in object.own_property_keys() {
+	for key in object.own_property_keys_checked(mut vm)! {
 		vm.consume_execution_budget()!
-		if descriptor := object.internal_get_own_property(key) {
+		if descriptor := object.get_own_property_checked(mut vm, key)!.descriptor {
 			if descriptor.enumerable or { false } {
 				name := query_usv(mut vm, key.to_value(mut vm))!
 				text := query_usv(mut vm, object.get(mut vm, key)!)!

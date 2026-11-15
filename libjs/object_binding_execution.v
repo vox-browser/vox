@@ -104,10 +104,10 @@ fn copy_object_excluding_keys(mut vm VM, source Value, excluded []PropertyName) 
 // CopyDataProperties snapshots own keys, then checks each live descriptor
 // before Get and CreateDataProperty. Object rest and spread share this path.
 fn copy_enumerable_own_properties(mut vm VM, mut target Object, object &Object, excluded []PropertyName) ! {
-	for key in object.own_property_keys() {
+	for key in object.own_property_keys_checked(mut vm)! {
 		vm.consume_execution_budget()!
 		if excluded.any(it.equals(key)) { continue }
-		descriptor := object.internal_get_own_property(key) or { continue }
+		descriptor := object.get_own_property_checked(mut vm, key)!.descriptor or { continue }
 		if !(descriptor.enumerable or { false }) { continue }
 		value := object.get(mut vm, key)!
 		target.create_data_property_or_throw(mut vm, key, value)!

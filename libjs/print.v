@@ -110,12 +110,12 @@ fn (mut context PrintContext) print_object(object &Object) ! {
 	// discard removed keys and symbols, shadow inherited keys even when hidden.
 	for {
 		holder := target or { break }
-		keys := holder.own_property_keys()
+		keys := holder.own_property_keys_checked(mut context.vm)!
 		for key in keys {
 			if key.is_symbol() { continue }
 			name := if key.is_number() { utf16_string(key.number.str()) } else { key.as_string() }
 			if name in visited { continue }
-			descriptor := holder.internal_get_own_property(key) or { continue }
+			descriptor := holder.get_own_property_checked(mut context.vm, key)!.descriptor or { continue }
 			visited << name
 			if !(descriptor.enumerable or { false }) { continue }
 			context.out(if first { ' ' } else { ', ' })
@@ -128,7 +128,7 @@ fn (mut context PrintContext) print_object(object &Object) ! {
 			context.print_value(value)!
 			if context.seen_objects.len > original_seen_count + 20 { return }
 		}
-		target = holder.internal_get_prototype_of()
+		target = holder.get_prototype_of_checked(mut context.vm)!.prototype
 	}
 	if !first { context.out(' ') }
 	context.out('}')

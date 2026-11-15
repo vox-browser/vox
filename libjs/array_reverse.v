@@ -7,9 +7,9 @@ fn array_prototype_reverse(mut vm VM) !Value {
 		vm.consume_execution_budget()!
 		low := array_index_key(lower)
 		high := array_index_key(length - lower - 1)
-		low_exists := object.internal_has_property(low)
+		low_exists := object.has_property_checked(mut vm, low)!
 		low_value := if low_exists { object.get(mut vm, low)! } else { js_undefined() }
-		high_exists := object.internal_has_property(high)
+		high_exists := object.has_property_checked(mut vm, high)!
 		high_value := if high_exists { object.get(mut vm, high)! } else { js_undefined() }
 		if low_exists && high_exists {
 			object.set(mut vm, low, high_value, .yes)!

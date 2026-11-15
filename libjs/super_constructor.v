@@ -7,7 +7,7 @@ fn get_super_constructor(mut vm VM) !Value {
 	environment := get_this_environment(vm)
 	if environment is FunctionEnvironment {
 		if constructor := environment.class_constructor {
-			if parent := constructor.object.internal_get_prototype_of() { return Value.from_object(parent) }
+			if parent := constructor.object.get_prototype_of_checked(mut vm)!.prototype { return Value.from_object(parent) }
 			return js_null()
 		}
 	}

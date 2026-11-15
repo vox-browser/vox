@@ -47,10 +47,10 @@ fn dynamic_import_attributes(mut vm VM, options Value) ![]ImportAttribute {
 		mut values := []Value{}
 		// EnumerableOwnProperties snapshots keys and reads all enumerable string
 		// values before validating their types. Symbol getters are not invoked.
-		for key in object.own_property_keys() {
+		for key in object.own_property_keys_checked(mut vm)! {
 			vm.consume_execution_budget()!
 			if key.is_symbol() { continue }
-			descriptor := object.internal_get_own_property(key) or { continue }
+			descriptor := object.get_own_property_checked(mut vm, key)!.descriptor or { continue }
 			if !(descriptor.enumerable or { false }) { continue }
 			names << key.to_value(mut vm).as_string().utf16_string()
 			values << object.get(mut vm, key)!

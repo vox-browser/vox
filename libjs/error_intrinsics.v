@@ -66,7 +66,7 @@ fn error_constructor_construct(mut vm VM, target &Object, kind ErrorKind) !&Obje
 	}
 	options := vm.argument(1)
 	key := PropertyName.from_str('cause')
-	if options.is_object() && options.as_object().has_property(key) {
+	if options.is_object() && options.as_object().has_property_checked(mut vm, key)! {
 		cause := options.as_object().get(mut vm, key)!
 		object.define_direct_property(key, cause, attribute_writable | attribute_configurable)
 	}

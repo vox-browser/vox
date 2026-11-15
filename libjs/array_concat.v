@@ -3,7 +3,7 @@ module libjs
 
 // Runtime/ArrayPrototype.cpp::concat, ordinary algorithm. The shared
 // ArraySpeciesCreate helper currently covers the port's single-realm graph;
-// the foreign-intrinsic constructor exception and Proxy exotics remain pending.
+// the foreign-intrinsic constructor exception remains pending.
 fn array_prototype_concat(mut vm VM) !Value {
 	object := vm.this_value().to_object_with_prototypes(mut vm, realm_primitive_prototypes())!
 	mut result := array_species_create(mut vm, object, 0)!
@@ -33,7 +33,7 @@ fn append_concat_item(mut vm VM, mut result Object, item Value, offset u64) !u64
 		for index := u64(0); index < count; index++ {
 			vm.consume_execution_budget()!
 			key := array_index_key(index)
-			if object.internal_has_property(key) {
+			if object.has_property_checked(mut vm, key)! {
 				value := object.get(mut vm, key)!
 				result.create_data_property_or_throw(mut vm, array_index_key(length), value)!
 			}

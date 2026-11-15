@@ -100,15 +100,15 @@ fn object_constructor_create(mut vm VM) !Value {
 fn object_constructor_get_own_property_descriptor(mut vm VM) !Value {
 	object := vm.argument(0).to_object_with_prototypes(mut vm, realm_primitive_prototypes())!
 	key := vm.argument(1).to_property_key(mut vm)!
-	return from_property_descriptor(mut vm, object.internal_get_own_property(key), vm.realm().object_prototype)
+	return from_property_descriptor(mut vm, object.get_own_property_checked(mut vm, key)!.descriptor, vm.realm().object_prototype)
 }
 
 fn object_constructor_get_own_property_descriptors(mut vm VM) !Value {
 	object := vm.argument(0).to_object_with_prototypes(mut vm, realm_primitive_prototypes())!
 	mut descriptors := Object.create(vm.realm(), vm.realm().object_prototype)
-	for key in object.own_property_keys() {
+	for key in object.own_property_keys_checked(mut vm)! {
 		vm.consume_execution_budget()!
-		descriptor := from_property_descriptor(mut vm, object.internal_get_own_property(key), vm.realm().object_prototype)
+		descriptor := from_property_descriptor(mut vm, object.get_own_property_checked(mut vm, key)!.descriptor, vm.realm().object_prototype)
 		if !descriptor.is_undefined() {
 			descriptors.create_data_property_or_throw(mut vm, key, descriptor)!
 		}
@@ -119,7 +119,7 @@ fn object_constructor_get_own_property_descriptors(mut vm VM) !Value {
 fn object_constructor_get_own_keys(mut vm VM, symbols bool) !Value {
 	object := vm.argument(0).to_object_with_prototypes(mut vm, realm_primitive_prototypes())!
 	mut keys := []Value{}
-	for key in object.own_property_keys() {
+	for key in object.own_property_keys_checked(mut vm)! {
 		vm.consume_execution_budget()!
 		if key.is_symbol() == symbols { keys << key.to_value(mut vm) }
 	}
@@ -137,10 +137,10 @@ fn object_constructor_get_own_property_symbols(mut vm VM) !Value {
 fn object_constructor_enumerable_properties(mut vm VM, kind PropertyKind) !Value {
 	object := vm.argument(0).to_object_with_prototypes(mut vm, realm_primitive_prototypes())!
 	mut values := []Value{}
-	for key in object.own_property_keys() {
+	for key in object.own_property_keys_checked(mut vm)! {
 		vm.consume_execution_budget()!
 		if key.is_symbol() { continue }
-		descriptor := object.internal_get_own_property(key) or { continue }
+		descriptor := object.get_own_property_checked(mut vm, key)!.descriptor or { continue }
 		if !(descriptor.enumerable or { false }) { continue }
 		name := key.to_value(mut vm)
 		if kind == .key {
@@ -176,9 +176,9 @@ fn object_constructor_assign(mut vm VM) !Value {
 		value := vm.argument(index)
 		if value.is_nullish() { continue }
 		source := value.to_object_with_prototypes(mut vm, realm_primitive_prototypes())!
-		for key in source.own_property_keys() {
+		for key in source.own_property_keys_checked(mut vm)! {
 			vm.consume_execution_budget()!
-			descriptor := source.internal_get_own_property(key) or { continue }
+			descriptor := source.get_own_property_checked(mut vm, key)!.descriptor or { continue }
 			if !(descriptor.enumerable or { false }) { continue }
 			target.set(mut vm, key, source.get(mut vm, key)!, .yes)!
 		}
@@ -188,7 +188,7 @@ fn object_constructor_assign(mut vm VM) !Value {
 
 fn object_constructor_get_prototype_of(mut vm VM) !Value {
 	object := vm.argument(0).to_object_with_prototypes(mut vm, realm_primitive_prototypes())!
-	prototype := object.internal_get_prototype_of() or { return js_null() }
+	prototype := object.get_prototype_of_checked(mut vm)!.prototype or { return js_null() }
 	return Value.from_object(prototype)
 }
 
@@ -201,11 +201,11 @@ fn object_constructor_set_prototype_of(mut vm VM) !Value {
 	}
 	if !value.is_object() { return value }
 	mut object := value.as_object()
-	if !object.internal_set_prototype_of(if prototype.is_object() {
+	if !object.set_prototype_of_checked(mut vm, if prototype.is_object() {
 		?&Object(prototype.as_object())
 	} else {
 		none
-	}) {
+	})! {
 		return vm.throw_error_type(.type_error, .object_set_prototype_of_returned_false)
 	}
 	return value
@@ -214,7 +214,7 @@ fn object_constructor_set_prototype_of(mut vm VM) !Value {
 fn object_constructor_has_own(mut vm VM) !Value {
 	object := vm.argument(0).to_object_with_prototypes(mut vm, realm_primitive_prototypes())!
 	key := vm.argument(1).to_property_key(mut vm)!
-	return Value.from_bool(object.has_own_property(key))
+	return Value.from_bool(object.has_own_property_checked(mut vm, key)!)
 }
 
 fn object_constructor_is(mut vm VM) !Value {
@@ -223,24 +223,24 @@ fn object_constructor_is(mut vm VM) !Value {
 
 fn object_constructor_is_extensible(mut vm VM) !Value {
 	value := vm.argument(0)
-	return Value.from_bool(value.is_object() && value.as_object().internal_is_extensible())
+	return Value.from_bool(value.is_object() && value.as_object().is_extensible_checked(mut vm)!)
 }
 
 fn object_constructor_is_frozen(mut vm VM) !Value {
 	value := vm.argument(0)
-	return Value.from_bool(!value.is_object() || value.as_object().test_integrity_level(.frozen))
+	return Value.from_bool(!value.is_object() || value.as_object().test_integrity_level_checked(mut vm, .frozen)!)
 }
 
 fn object_constructor_is_sealed(mut vm VM) !Value {
 	value := vm.argument(0)
-	return Value.from_bool(!value.is_object() || value.as_object().test_integrity_level(.sealed))
+	return Value.from_bool(!value.is_object() || value.as_object().test_integrity_level_checked(mut vm, .sealed)!)
 }
 
 fn object_constructor_prevent_extensions(mut vm VM) !Value {
 	value := vm.argument(0)
 	if !value.is_object() { return value }
 	mut object := value.as_object()
-	if !object.internal_prevent_extensions() {
+	if !object.prevent_extensions_checked(mut vm)! {
 		return vm.throw_error_type(.type_error, .object_prevent_extensions_returned_false)
 	}
 	return value

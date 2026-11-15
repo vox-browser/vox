@@ -18,7 +18,7 @@ fn flatten_into_array(mut vm VM, mut target Object, source &Object, length u64, 
 	for index := u64(0); index < length; index++ {
 		vm.consume_execution_budget()!
 		key := array_index_key(index)
-		if !source.internal_has_property(key) { continue }
+		if !source.has_property_checked(mut vm, key)! { continue }
 		mut value := source.get(mut vm, key)!
 		if !mapper.is_undefined() {
 			value = call(mut vm, mapper, this_argument, [value, Value.from_f64(f64(index)), Value.from_object(source)])!

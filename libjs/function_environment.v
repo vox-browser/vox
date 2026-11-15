@@ -90,3 +90,11 @@ pub fn (environment &FunctionEnvironment) get_this_binding(mut vm VM) !Value {
 	// 3. Return envRec.[[ThisValue]].
 	return environment.this_value
 }
+
+// Script-visible GetSuperBase may throw when the home object's prototype
+// operation is exotic. The ordinary helper remains for concrete VM records.
+pub fn (environment &FunctionEnvironment) get_super_base_checked(mut vm VM) !Value {
+	home := environment.home_object or { return js_undefined() }
+	if prototype := home.get_prototype_of_checked(mut vm)!.prototype { return Value.from_object(prototype) }
+	return js_null()
+}

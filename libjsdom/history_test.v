@@ -133,3 +133,9 @@ fn test_cached_github_style_history_replace_executes_with_compiler_disabled() {
 		host.close()
 	}
 }
+
+fn test_history_rejects_live_and_revoked_proxies_without_running_traps() {
+	mut host, mut vm, _ := history_fixture()!
+	defer { host.close() }
+	assert history_eval(mut vm, 'var reads=0,handler={get(){reads++;throw 1},ownKeys(){reads++;throw 2},getPrototypeOf(){reads++;throw 3}},p=new Proxy({},handler),r=Proxy.revocable([],handler);r.revoke();var errors=0;for(var state of [p,{nested:p},r.proxy])try{history.replaceState(state,"")}catch(e){if(e instanceof DOMException&&e.name==="DataCloneError")errors++}errors===3&&reads===0&&history.state===null')!.as_bool()
+}

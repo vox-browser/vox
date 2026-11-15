@@ -14,7 +14,7 @@ fn array_predicate_query(mut vm VM, find bool) !Value {
 	for index := u64(0); index < length; index++ {
 		vm.consume_execution_budget()!
 		key := array_index_key(index)
-		if !find && !object.internal_has_property(key) { continue }
+		if !find && !object.has_property_checked(mut vm, key)! { continue }
 		value := object.get(mut vm, key)!
 		if call(mut vm, callback, this_argument, [value, Value.from_f64(f64(index)), Value.from_object(object)])!.to_boolean() {
 			return if find { value } else { Value.from_bool(true) }

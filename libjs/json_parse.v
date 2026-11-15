@@ -226,10 +226,10 @@ fn internalize_json_property(mut vm VM, holder &Object, key PropertyName, revive
 				keys << PropertyName.from_str(index.str())
 			}
 		} else {
-			for name in object.own_property_keys() {
+			for name in object.own_property_keys_checked(mut vm)! {
 				vm.consume_execution_budget()!
 				if name.is_symbol() { continue }
-				descriptor := object.internal_get_own_property(name) or { continue }
+				descriptor := object.get_own_property_checked(mut vm, name)!.descriptor or { continue }
 				if descriptor.enumerable or { false } { keys << name }
 			}
 		}
@@ -241,7 +241,7 @@ fn internalize_json_property(mut vm VM, holder &Object, key PropertyName, revive
 			}
 			replacement := internalize_json_property(mut vm, object, name, reviver, child, text, stack, depth + 1)!
 			if replacement.is_undefined() {
-				object.internal_delete(name)
+				object.delete_checked(mut vm, name)!
 			} else {
 				object.create_data_property(mut vm, name, replacement)!
 			}

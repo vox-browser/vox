@@ -100,10 +100,11 @@ fn function_prototype_bind(mut vm VM) !Value {
 	for index in 1 .. int(vm.argument_count()) {
 		call_arguments << vm.argument(u32(index))
 	}
-	function := BoundFunction.create(vm.realm(), target.as_object(), vm.argument(0), call_arguments)
+	prototype := target.as_object().get_prototype_of_checked(mut vm)!.prototype
+	function := bound_function_with_prototype(vm.realm(), target.as_object(), vm.argument(0), call_arguments, prototype)
 	mut object := function.object
 	mut length := 0.0
-	if target.as_object().has_own_property(PropertyName.from_str('length')) {
+	if target.as_object().has_own_property_checked(mut vm, PropertyName.from_str('length'))! {
 		target_length := target.as_object().get(mut vm, PropertyName.from_str('length'))!
 		if target_length.is_number() {
 			if math.is_inf(target_length.number, 1) {

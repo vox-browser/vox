@@ -113,7 +113,7 @@ fn (mut function BaseClassFunction) internal_call(mut vm VM, this_value Value, a
 fn (mut function BaseClassFunction) internal_construct(mut vm VM, arguments []Value, new_target &Object) !&Object {
 	if function.derived {
 		if function.body.is_undefined() {
-			parent := function.object.internal_get_prototype_of() or { return vm.throw_error(.type_error, 'Superclass is not a constructor') }
+			parent := function.object.get_prototype_of_checked(mut vm)!.prototype or { return vm.throw_error(.type_error, 'Superclass is not a constructor') }
 			mut object := construct(mut vm, Value.from_object(parent), arguments, new_target)!
 			function.initialize_empty_instance_fields(mut vm, mut object)!
 			return object

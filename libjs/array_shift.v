@@ -12,7 +12,7 @@ fn array_prototype_shift(mut vm VM) !Value {
 		vm.consume_execution_budget()!
 		from := array_index_key(index)
 		to := array_index_key(index - 1)
-		if object.internal_has_property(from) { object.set(mut vm, to, object.get(mut vm, from)!, .yes)! }
+		if object.has_property_checked(mut vm, from)! { object.set(mut vm, to, object.get(mut vm, from)!, .yes)! }
 		else { object.delete_property_or_throw(mut vm, to)! }
 	}
 	object.delete_property_or_throw(mut vm, array_index_key(length - 1))!

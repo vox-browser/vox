@@ -97,3 +97,12 @@ fn test_headers_native_cache_reopens_without_a_compiler() {
 		host.close()
 	}
 }
+
+fn test_headers_record_conversion_preserves_proxy_traps_and_original_exceptions() {
+	mut document := html.parse_document('<body></body>')
+	mut vm := libjs.VM.create(); libjs.create_simple_execution_context(mut vm)
+	mut host := Host.create(vm, vm.realm(), document, Hooks{})!
+	defer { host.close() }
+	assert headers_eval(mut vm, 'var log="",p=new Proxy({"x-a":"one","x-b":"two"},{ownKeys(){log+="keys;";return ["x-b","x-a"]},getOwnPropertyDescriptor(t,k){log+="desc:"+k+";";return Reflect.getOwnPropertyDescriptor(t,k)},get(t,k,r){if(typeof k==="string")log+="get:"+k+";";return Reflect.get(t,k,r)}}),h=new Headers(p);h.get("x-a")==="one"&&h.get("x-b")==="two"&&log==="keys;desc:x-b;get:x-b;desc:x-a;get:x-a;"')!.as_bool()
+	assert headers_eval(mut vm, 'var marker={},p=new Proxy({a:1},{getOwnPropertyDescriptor(){throw marker}}),caught=false;try{new Headers(p)}catch(e){caught=e===marker}caught')!.as_bool()
+}

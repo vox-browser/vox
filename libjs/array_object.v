@@ -120,9 +120,15 @@ pub fn (mut array ArrayObject) internal_define_own_property(mut vm VM, key Prope
 	return object.ordinary_define_own_property(key, descriptor)
 }
 
-// Runtime/Value.cpp::IsArray. Proxy validation belongs to the pending Proxy
-// exotic record; all concrete objects currently available use this path.
+// Runtime/Value.cpp::IsArray. Revoked proxies throw even for non-array targets.
 pub fn (value Value) is_array(mut vm VM) !bool {
 	if !value.is_object() { return false }
-	return value.as_object().array_object != none
+	mut object := value.as_object()
+	for {
+		vm.consume_execution_budget()!
+		if object.array_object != none { return true }
+		proxy := object.proxy_object or { return false }
+		object = proxy.operands(mut vm)!.target
+	}
+	return false
 }

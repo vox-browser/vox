@@ -12,7 +12,7 @@ fn array_prototype_map(mut vm VM) !Value {
 	for index := u64(0); index < length; index++ {
 		vm.consume_execution_budget()!
 		key := array_index_key(index)
-		if !object.internal_has_property(key) { continue }
+		if !object.has_property_checked(mut vm, key)! { continue }
 		value := object.get(mut vm, key)!
 		mapped := call(mut vm, callback, this_argument, [value, Value.from_f64(f64(index)), Value.from_object(object)])!
 		result.create_data_property_or_throw(mut vm, key, mapped)!
