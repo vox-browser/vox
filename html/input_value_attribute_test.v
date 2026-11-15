@@ -29,3 +29,19 @@ fn test_default_on_value_attribute_does_not_change_dirty_checkedness() {
 	element.set_attribute_value('value', 'v')
 	assert input.checked() && input.value() == 'v'
 }
+
+fn test_form_entry_construction_preserves_explicit_empty_checked_value() {
+	mut document := dom.Document.create(dom.url_about_blank())
+	mut form_element := document.create_element('form')!
+	mut input_element := document.create_element('input')!
+	form_element.as_node().append_child(input_element.as_node())!
+	input_element.set_attribute_value('name', 'chosen')
+	input_element.set_attribute_value('type', 'checkbox')
+	input_element.set_attribute_value('checked', '')
+	input_element.set_attribute_value('value', '')
+	form := HTMLFormElementModel.create(unsafe { &dom.HTMLFormElement(form_element) })
+	entries := form.construct_entry_list(none)
+	assert entries.len == 1
+	assert entries[0].value is string
+	assert (entries[0].value as string) == ''
+}

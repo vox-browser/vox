@@ -95,6 +95,10 @@ pub fn HTMLSelectElementModel.create(element &dom.HTMLSelectElement) &HTMLSelect
 	}
 	mut mutable_element := unsafe { &dom.HTMLSelectElement(element) }
 	mutable_element.select_element_model_ = voidptr(model)
+	// Concrete owners are lazy; insertion has conceptually established initial
+	// selectedness before an IDL getter or submission can observe this model.
+	// Do this only on creation so later explicit no-selection states survive.
+	html_select_element_update_selectedness(element)
 	return model
 }
 
