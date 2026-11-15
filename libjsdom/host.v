@@ -2,6 +2,7 @@ module libjsdom
 
 import dom
 import fetch
+import geometry
 import html
 import libjs
 import platform
@@ -39,6 +40,9 @@ mut:
 	event_target_constructor &libjs.Object = unsafe { nil }
 	event_targets map[voidptr]&dom.EventTarget
 	event_target_wrappers map[voidptr]&libjs.Object
+	read_only_rect_prototype &libjs.Object = unsafe { nil }
+	read_only_rects map[voidptr]&geometry.DOMRectReadOnly
+	read_only_rect_wrappers map[voidptr]&libjs.Object
 	url_prototype        &libjs.Object = unsafe { nil }
 	style_prototype      &libjs.Object = unsafe { nil }
 	headers_prototype &libjs.Object = unsafe { nil }
@@ -95,6 +99,7 @@ pub fn Host.create(vm &libjs.VM, realm &libjs.Realm, document &dom.Document, hoo
 	host.install_custom_elements()!
 	host.install_navigator()!
 	host.install_mutation_observers()!
+	host.install_read_only_rects()
 	host.install_styles()
 	host.install_urls()!
 	host.install_headers()!
@@ -195,6 +200,8 @@ pub fn (mut host Host) close() {
 	host.event_wrappers.clear()
 	host.event_targets.clear()
 	host.event_target_wrappers.clear()
+	host.read_only_rects.clear()
+	host.read_only_rect_wrappers.clear()
 	host.style_wrappers.clear()
 	host.style_elements.clear()
 	host.headers.clear()
