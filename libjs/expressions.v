@@ -478,7 +478,7 @@ fn (mut p Parser) parse_regex_literal(start Position, token Token) Expression {
 	_ = p.compile_regex_pattern(pattern, flags)
 	return p.expression(start, ExpressionKind{
 		tag:         .regexp_literal
-		regexp_data: RegExpLiteralData{
+		regexp_data: &RegExpLiteralData{
 			pattern: Utf16String.from_slice(pattern)
 			flags:   Utf16String.from_slice(flags)
 		}
@@ -1345,7 +1345,7 @@ fn (mut p Parser) parse_property_key() PropertyKey {
 			key_start := start
 			expression := p.expression(key_start, ExpressionKind{
 				tag:                .private_identifier_expr
-				private_identifier: PrivateIdentifier{
+				private_identifier: &PrivateIdentifier{
 					range: p.range_from(key_start)
 					name:  value.clone()
 				}
@@ -1515,7 +1515,7 @@ fn (mut p Parser) parse_template_literal(is_tagged bool) Expression {
 
 	return p.expression(start, ExpressionKind{
 		tag:           .template_literal
-		template_data: TemplateLiteralData{
+		template_data: &TemplateLiteralData{
 			expressions: expressions
 			raw_strings: raw_strings
 		}

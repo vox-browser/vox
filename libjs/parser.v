@@ -503,7 +503,7 @@ fn (mut p Parser) register_referenced_private_name(name []u16) bool {
 	return false
 }
 
-fn (mut p Parser) parse_private_identifier(range_start Position) PrivateIdentifier {
+fn (mut p Parser) parse_private_identifier(range_start Position) &PrivateIdentifier {
 	value := p.token_value(p.current_token)
 	if !p.register_referenced_private_name(value) {
 		name := string_from_utf16_lossy(value)
@@ -511,7 +511,7 @@ fn (mut p Parser) parse_private_identifier(range_start Position) PrivateIdentifi
 	}
 	token := p.consume()
 	value2 := p.token_value(token)
-	return PrivateIdentifier{
+	return &PrivateIdentifier{
 		range: p.range_from(range_start)
 		name:  Utf16String.from_slice(value2)
 	}

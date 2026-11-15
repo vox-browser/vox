@@ -201,6 +201,7 @@ fn (id &Identifier) is_local() bool {
 	return id.local_type != 0
 }
 
+@[heap]
 struct PrivateIdentifier {
 mut:
 	range SourceRange
@@ -984,6 +985,7 @@ mut:
 // Template literal types
 // =============================================================================
 
+@[heap]
 struct TemplateLiteralData {
 mut:
 	expressions []Expression
@@ -994,6 +996,7 @@ mut:
 // RegExp literal
 // =============================================================================
 
+@[heap]
 struct RegExpLiteralData {
 mut:
 	pattern Utf16String
@@ -1268,10 +1271,12 @@ mut:
 	string_value  Utf16String
 	bool_value    bool
 	big_int_value string
-	regexp_data   ?RegExpLiteralData
+	// Rare literal payloads must not inflate every identifier/operator node.
+	// Their explicit heap records also outlive parser and speculative frames.
+	regexp_data   ?&RegExpLiteralData
 	// Identifier data
 	identifier         ?&Identifier
-	private_identifier ?PrivateIdentifier
+	private_identifier ?&PrivateIdentifier
 	// Operator data
 	binary_op     BinaryOp
 	logical_op    LogicalOp
@@ -1314,7 +1319,7 @@ mut:
 	// Optional chain
 	references []OptionalChainReference
 	// Template
-	template_data ?TemplateLiteralData
+	template_data ?&TemplateLiteralData
 	// Meta property
 	meta_property_type MetaPropertyType
 }
