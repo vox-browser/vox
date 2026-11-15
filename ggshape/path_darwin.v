@@ -177,14 +177,21 @@ fn is_finite(v f32) bool {
 // returns 1, or returns 0 without touching the pixels. It runs only on the
 // main thread.
 pub fn draw_path(pixels &u8, width i32, height i32, pitch i32, has_background i32, path &C.VoxGraphitePath) i32 {
-	result := draw_path_pixels(pixels, width, height, pitch, has_background, path)
+	result := draw_path_pixels(pixels, width, height, pitch, has_background, path, false)
 	if diagnostics && path != unsafe { nil } {
 		eprintln('VOX_GG path stroke=${path.stroke} non_scaling=${path.non_scaling_stroke} gradient=${path.gradient} even_odd=${path.even_odd} drawn=${result}')
 	}
 	return result
 }
 
-fn draw_path_pixels(pixels &u8, width i32, height i32, pitch i32, has_background i32, path &C.VoxGraphitePath) i32 {
+// A leaf in a multisampled picture retains that pass even when the path itself
+// is an analytic oval or rectangle and would not request MSAA on its own.
+pub fn draw_multisampled_path(pixels &u8, width i32, height i32, pitch i32,
+	has_background i32, path &C.VoxGraphitePath) i32 {
+	return draw_path_pixels(pixels, width, height, pitch, has_background, path, true)
+}
+
+fn draw_path_pixels(pixels &u8, width i32, height i32, pitch i32, has_background i32, path &C.VoxGraphitePath, multisampled bool) i32 {
 	if pixels == unsafe { nil } || path == unsafe { nil } || width <= 0 || height <= 0
 		|| pitch < width * 4 || !path_supported(path) || C.pthread_main_np() == 0 {
 		return 0
@@ -199,6 +206,7 @@ fn draw_path_pixels(pixels &u8, width i32, height i32, pitch i32, has_background
 	} else {
 		target.clear(canvas.Color4f{})
 	}
+	if multisampled { target.draw_msaa_trigger() }
 	draw_descriptor(mut target, path, none) or { return 0 }
 	target.read_pixels(pixels, int(pitch)) or { return 0 }
 	return 1

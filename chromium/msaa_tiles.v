@@ -235,6 +235,13 @@ fn chromium_msaa_trigger_rect_with_transform(command &layout.PaintCommand,
 			if svg_data.path_data.len < stride {
 				return none
 			}
+			// Graphite recognizes an isolated filled oval and uses analytic
+			// coverage; it joins an existing MSAA pass but cannot create one.
+			if !has_stroke && svg_data.path_data.len == stride
+				&& svg_data.path_data[0] == 6 && command.clip_outs.len == 0
+				&& (command.clip_list == unsafe { nil } || command.clip_list.items.len == 0) {
+				return none
+			}
 			mut min_x := math.inf(1)
 			mut min_y := math.inf(1)
 			mut max_x := math.inf(-1)

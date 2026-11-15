@@ -1254,10 +1254,11 @@ int native_draw_document_shape(const VoxGraphiteShape* shape, const float* matri
 }
 
 extern int vox_draw_document_path_pixels(uint8_t*, int, int, int, int, VoxGraphitePath*);
+extern int vox_draw_document_tiled_path_pixels(uint8_t*, int, int, int, int, int, int, VoxGraphitePath*);
 static int native_try_v_svg_path(CGPathRef path, const float* segments, int count, int even_odd,
     const float* matrix, float canvas_width, float canvas_height, gg__Color color,
     const float* components, int stroke, float stroke_width, int cap, int join,
-    float miter, int non_scaling) {
+    float miter, int non_scaling, float page_x, float page_y, float scroll_y) {
     if ([[NSGraphicsContext currentContext] CGContext] != native_font_compositing_context) return 0;
     CGRect bounds=CGPathGetPathBoundingBox(path);
     float pad=stroke ? fmaxf(stroke_width,0)*fmaxf(miter,1) : 0;
@@ -1290,7 +1291,9 @@ static int native_try_v_svg_path(CGPathRef path, const float* segments, int coun
     draw.opacity=1;
     draw.has_float_color=components!=NULL;
     if(components)memcpy(draw.float_color,components,4*sizeof(float));
-    int drawn=vox_draw_document_path_pixels(pixels,w,h,w*4,backdrop,&draw);
+    int drawn=vox_draw_document_tiled_path_pixels(pixels,w,h,w*4,backdrop,
+        (int)lround((geometry[0]-page_x)*scale),
+        (int)lround((geometry[1]-page_y+scroll_y)*scale), &draw);
     if(drawn)drawn=native_text_raster_finish(pixels,geometry[0],geometry[1],w,h,
         geometry[5],geometry[6],canvas_height,backdrop);
     free(pixels);return drawn;
@@ -1849,7 +1852,7 @@ void native_draw_svg_path_srgb(const float *data, int segment_count, int even_od
             page_x+transform_e,page_y-scroll_y+transform_f};
         if(native_try_v_svg_path(path,data,segment_count,even_odd,matrix,canvas_width,canvas_height,
             has_stroke?stroke_color:fill_color,has_stroke?stroke_components:fill_components,
-            has_stroke,stroke_width,line_cap,line_join,miter_limit,non_scaling_stroke)) {
+            has_stroke,stroke_width,line_cap,line_join,miter_limit,non_scaling_stroke,page_x,page_y,scroll_y)) {
             CGPathRelease(path);return;
         }
     }
