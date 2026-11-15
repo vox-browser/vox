@@ -111,6 +111,7 @@ pub fn Host.create(vm &libjs.VM, realm &libjs.Realm, document &dom.Document, hoo
 	host.install_nodes()!
 	host.install_node_interfaces()!
 	host.install_html_element_interfaces()!
+	host.install_template_elements()!
 	host.install_node_lists()!
 	host.install_token_lists()!
 	host.install_dom_exceptions()!

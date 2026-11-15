@@ -6952,7 +6952,10 @@ pub fn (mut e Element) moved_from_with_context(is_subtree_root NodeIsSubtreeRoot
 // inserted() resolves the reference again after the use element connects.
 // Building a clone here would add new nodes to the ongoing adopting traversal.
 // The V implementation walks the live document rather than keeping an observer.
-pub fn (mut e Element) adopted_from(_ &Document) {
+pub fn (mut e Element) adopted_from(old_document &Document) {
+	if e.is_html_element() && e.local_name() == 'template' {
+		html_template_element_adopted_from(unsafe { &HTMLTemplateElement(&e) }, old_document)
+	}
 	if e.is_html_element() && e.local_name() == 'img' {
 		mut image := unsafe { &HTMLImageElement(&e) }
 		image.is_image_document_image_ = false
