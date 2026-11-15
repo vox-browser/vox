@@ -2899,3 +2899,22 @@ open. The latest inspected production manifest matches none of 17 selected
 changed inputs. Full GitHub execution, compiled revisit speed and Brave pixel
 parity remain unverified; see the
 [authored-source continuation](../docs/LIBJS_GITHUB_RUNTIME_20261115.md#native-readable-source-and-controller-continuation).
+
+The next slice adds native File construction/Blob inheritance, FormData
+methods/live iteration/form construction, FormDataEvent and shared native
+entry-list mutation. Request/Response accept native FormData bodies after
+later argument getters, serialize native multipart data and expose formData
+results with actual File values. Text decoding stays outside uploaded file
+bytes. Signed WebIDL integer conversion now avoids losing small negative
+lastModified values in an unsigned-double round trip.
+
+Twenty-nine focused functions are prepared but uncompiled and unexecuted.
+Eleven compiler-only attempts are retained, including one corrected production
+pointer-map failure; final normal and production/preallocation import checks
+pass. These do not establish execution or performance. The frozen original
+GitHub bodies contain 63 textual FormData references in 11 bodies, with no
+reachability claim. Full form-control IDL, FileReader, native XMLHttpRequest,
+foreign-realm rules, collection and remaining JS/Web/Intl/rendering behavior
+remain open. The latest inspected production manifest matches none of 12
+selected changed inputs. GitHub/Brave compiled-JS parity remains incomplete;
+see the [File/FormData continuation](../docs/LIBJS_GITHUB_RUNTIME_20261115.md#native-file-formdata-and-fetch-continuation).

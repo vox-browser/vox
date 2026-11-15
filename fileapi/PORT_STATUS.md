@@ -34,7 +34,10 @@ Blob.stream to the native HTML byte stream and owned FileReading task, including
 default-reader Promises, cancellation and teeing. Host close discards outstanding
 delivery tasks. A later slice binds public ReadableStream/source/controller
 construction and Promise-returning source callbacks to the native Streams
-records. BYOB/pipe/async-iterator bindings, native LibJS File/FileReader,
+records. The next native LibJS slice adds File construction, real File/Blob
+inheritance, name/lastModified and shared native Blob backing, plus File-valued
+FormData entries and Fetch multipart bodies/results. BYOB/pipe/async-iterator
+bindings, native LibJS FileReader,
 foreign-realm WebIDL fallback and Blob
 History serialization remain open. New focused regression source is uncompiled
 and unexecuted under the user's hold; normal/production compiler-only checks do not establish runtime
@@ -45,6 +48,8 @@ records the later compiler-only evidence and remaining runtime boundaries.
 The [authored-source continuation](../docs/LIBJS_GITHUB_RUNTIME_20261115.md#native-readable-source-and-controller-continuation)
 records the constructor/controller additions, their prepared regression source
 and the continuing runtime-test hold.
+The [File/FormData continuation](../docs/LIBJS_GITHUB_RUNTIME_20261115.md#native-file-formdata-and-fetch-continuation)
+records the later constructor, body-conversion and signed-timestamp work.
 
 Blob/File public constructors now follow File API's printable-ASCII gate and
 ASCII lowercase conversion, including parameter values and non-MIME strings.

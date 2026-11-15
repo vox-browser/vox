@@ -2062,3 +2062,90 @@ current README, active controls, zero errors, the unchanged Brave content audit
 and zero differing pixels, followed by matched performance evidence. BYOB,
 pipe/async iteration, other stream classes, FormData and remaining
 JS/Web/Intl/rendering behavior remain unfinished.
+
+## Native File FormData and Fetch continuation
+
+This 2026-11-16 continuation retains the user's hold. No tests were compiled
+or executed, no JS was evaluated, and no browser, capture, comparison or
+performance trial was launched. GitHub/Brave compiled-JS parity remains
+incomplete.
+
+| Commit | Implemented behavior |
+| --- | --- |
+| `9f2d64cfa` | Native File construction, File/Blob prototype and backing identity, name/lastModified, inherited Blob reads and owned wrappers. File parts are copied after later options/new-target conversions. |
+| `50fe7541e` | Native FormData methods, Blob/File overload conversion, actual File entry identity, live iterators/forEach and form/submitter construction. FormDataEvent exposes the native mutable entry owner, so formdata handler mutations reach entry-list construction. History rejects FormData and its iterators. |
+| `62dc0ffe0` | Native FormData Fetch bodies, late multipart serialization and Request/Response.formData. The native URL-encoded byte parser preserves leading '?'; multipart text fields are decoded separately, preserving uploaded file bytes. Result wrappers do not consult replaced public constructors. |
+| `21807ad29` | Preserve mathematical signed WebIDL remainder without an unsigned-double round trip that loses small negative values such as File.lastModified=-1. EnforceRange/Clamp are unchanged; exact unsigned-64 representation is still limited by the f64 boundary. |
+
+The unchanged original fixture has 87 JS URLs / 86 distinct JS bodies. A static
+scan finds 63 textual FormData identifiers in 11 bodies, including repository,
+core, React, codespaces and code-view scripts. Source hashes, first-match
+contexts and counts remain local in `static-source-scan.json`. These are
+source references, not execution coverage or evidence of the current first
+module failure.
+
+Twenty-nine regression functions are prepared: six File, 13 FormData/event,
+six Fetch-body and four signed-integer cases. They cover conversion ordering,
+native identity, USVString normalization, duplicates/overloads, mutation during
+iteration, form/submitter errors, trusted/native and constructed formdata
+events, arena/teardown roots, late body snapshots, binary file bytes, invalid
+MIME/multipart data, body-use rules and compiler-disabled second-VM cache
+revisits. All remain uncompiled and unexecuted. Cache assertions are pending
+source and provide no speed or reuse evidence.
+
+Eleven compiler-only attempts and raw logs are preserved byte-identically with
+a hashed index in local `docs/performance/libjs-form-data-20261116/`:
+
+| Compiler-only check | Child exit | Seconds | Peak sampled RSS bytes |
+| --- | ---: | ---: | ---: |
+| File normal | 0 | 22.013 | 5,360,435,200 |
+| File production/prealloc/no-GC | 0 | 20.308 | 5,640,880,128 |
+| FormData initial normal | 0 | 26.055 | 5,370,265,600 |
+| FormData initial production | 1 | 13.468 | 1,799,028,736 |
+| FormData corrected normal | 0 | 19.272 | 5,367,283,712 |
+| FormData final normal | 0 | 19.098 | 5,376,737,280 |
+| FormData final production | 0 | 21.471 | 5,640,896,512 |
+| Fetch form bodies normal | 0 | 24.071 | 5,379,080,192 |
+| Fetch form bodies production | 0 | 23.646 | 5,641,093,120 |
+| Signed integer final normal | 0 | 22.581 | 5,365,776,384 |
+| Signed integer final production | 0 | 25.409 | 5,642,240,000 |
+
+The production failure identified a pointer-map lookup without an optional
+branch; it was corrected before the FormData commit. The final normal check
+also includes avoiding byte-copy work for an unchanged File append. Commands
+use `V3_STR_CAP=1 VJOBS=1`, unique default 12 GiB `run_memory_bounded` guards and
+`/Users/alex/code/v/v -w -n -b c -no-parallel -cc clang -check
+-memory-limit 10G -enable-globals tools/libjs_github_revisit.v`; production adds
+`-prod -prealloc -gc none`. Every guard reports reason=completed and the exit
+above. Checks exclude `_test.v`, C linking and runtime execution. Compiler
+durations are not JS timings. Completed own Build reports/locks were removed
+after preservation.
+
+At implementation revision `21807ad29`, the latest completed production
+executable inspected statically remains
+`419ad8d777319bd5b8605799a59da05b59e20ae596bc3f50594babb87db2ba56`.
+Its actual hash matches
+`Build/production-build/receipts/20261116-002422-18914df3/frozen-compile.json`,
+using one C unit and literal V -prod. Its exact consumed-source manifest matches
+none of 12 selected changed implementation files. Receipt/executable identities
+stayed unchanged during the audit; this bundle cannot validate the additions.
+Each commit requested a coalesced managed rebuild. No duplicate manual build or
+fresh browser launch was introduced.
+
+This remains partial native integration. Full form-control property bindings,
+FileReader, native LibJS XMLHttpRequest, foreign-realm rules, physical collection
+and remaining JS/Web/Intl/rendering work are unfinished. The existing multipart
+lexer constraints remain; body serialization uses the native byte-vector limit
+and a conservative bound before allocation. This is not complete FileAPI,
+FormData, Fetch or WebIDL conformance.
+
+The original manifest remains
+`893e042c4f31e1b7fb984c81cf8f6a2a7eb65d790f7c3f4cc3e372c065de302d`,
+and the Brave reference remains
+`649abff51549508516e2e0681866ba81ce69e7112cfa8dc3446b9b76c99be3d3`.
+The last actual GitHub observation remains 672 warm native entries, 51 frontend
+hits, zero compiler calls, 33 rows, zero commit links and five module errors,
+predating these changes. Acceptance still requires 33 rows, 56 commit links,
+current README, active controls, zero errors, the unchanged Brave content audit
+and zero differing pixels, followed by matched performance evidence. New full
+GitHub execution, faster compiled revisits and Brave pixel parity are unverified.

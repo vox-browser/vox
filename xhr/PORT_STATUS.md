@@ -2,7 +2,7 @@
 
 Upstream reference: `~/code/3rd/ladybird/Libraries/LibWeb/XHR`
 
-Translation workspace: `~/code/vox2/xhr`
+Translation workspace: `~/code/vox/xhr`
 Audited: 2026-09-11
 
 All seven upstream implementation units, eight headers, and five WebIDL files
@@ -80,3 +80,19 @@ pending a source-matching completed shared build. These focused results do not
 establish full XHR, FormData or WPT parity; see the
 [WPT progress report](../docs/WPT_CONFORMANCE_PROGRESS.md) for evidence and
 remaining scope.
+
+The 2026-11-16 native LibJS bridge in libjsdom now exposes FormData construction
+from native forms/submitters, append/set/delete/get/getAll/has, live iteration
+and forEach, actual File entry wrappers and FormDataEvent. Native form-entry
+construction dispatches its trusted event; the JS formData getter binds the
+same mutable native entry owner, so handler changes reach the constructor's
+result. Fetch bodies use the native multipart serializer, and Request/Response
+formData methods use native multipart or URL-encoded parsing. These additions
+use LibJS and typed owners without a JavaScriptCore adapter.
+
+The new regression source is uncompiled and unexecuted under the user's hold.
+Final normal and production/preallocation compiler-only checks pass. Native
+LibJS XMLHttpRequest, full form-control property bindings, foreign-realm rules,
+native collection and inherited parser/serializer limits remain separate;
+GitHub execution and Brave pixels are unverified. See the
+[File/FormData continuation](../docs/LIBJS_GITHUB_RUNTIME_20261115.md#native-file-formdata-and-fetch-continuation).
