@@ -306,6 +306,7 @@ mut:
 
 	dynamic_imports_allowed bool
 pub mut:
+	length_property_key PropertyName
 	cached_strings CachedStrings
 
 	on_promise_unhandled_rejection   fn (mut promise Promise) = unsafe { nil }
@@ -349,6 +350,7 @@ const nanoseconds_max_instant = '8640000000000000000000'
 
 pub fn VM.create() &VM {
 	mut vm := &VM{
+		length_property_key: PropertyName.from_str('length')
 		stack_info_:                StackInfo.new()
 		interpreter_stack_:         InterpreterStack.new()
 		string_to_atom_cache:       []StringToAtomCacheEntry{len: string_to_atom_cache_size}

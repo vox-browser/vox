@@ -48,7 +48,7 @@ fn create_arguments_object(mut vm VM, function &ECMAScriptFunction, environment 
 	mut object := Object.create(realm, realm.object_prototype)
 	object.class_name = 'Arguments'
 	object.is_arguments_object = true
-	object.define_direct_property(PropertyName.from_str('length'), Value.from_i32(values.len),
+	object.define_direct_property(vm.length_key(), Value.from_i32(values.len),
 		attribute_writable | attribute_configurable)
 	for index, value in values {
 		object.define_direct_property(PropertyName.from_number(u32(index)), value,

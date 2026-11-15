@@ -12,7 +12,7 @@ fn array_prototype_concat(mut vm VM) !Value {
 	for index in 0 .. vm.argument_count() {
 		length = append_concat_item(mut vm, mut result, vm.argument(index), length)!
 	}
-	result.set(mut vm, PropertyName.from_str('length'), Value.from_f64(f64(length)), .yes)!
+	result.set(mut vm, vm.length_key(), Value.from_f64(f64(length)), .yes)!
 	return Value.from_object(result)
 }
 

@@ -4,7 +4,7 @@ pub type ArrayLikeValueCheck = fn (mut vm VM, value Value) !
 
 // Runtime/AbstractOperations.cpp::LengthOfArrayLike, ordinary object path.
 pub fn length_of_array_like(mut vm VM, object &Object) !u64 {
-	return object.get(mut vm, PropertyName.from_str('length'))!.to_length(mut vm)
+	return object.get(mut vm, vm.length_key())!.to_length(mut vm)
 }
 
 // Runtime/AbstractOperations.cpp::CreateListFromArrayLike.

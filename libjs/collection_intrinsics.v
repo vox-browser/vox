@@ -184,17 +184,17 @@ fn array_prototype_push(mut vm VM) !Value {
 	count := u64(vm.argument_count())
 	if length + count > 9007199254740991 { return vm.throw_error(.type_error, 'Array-like length exceeds maximum safe integer') }
 	for index in 0 .. vm.argument_count() { object.set(mut vm, array_index_key(length + index), vm.argument(index), .yes)! }
-	object.set(mut vm, PropertyName.from_str('length'), Value.from_f64(f64(length + count)), .yes)!
+	object.set(mut vm, vm.length_key(), Value.from_f64(f64(length + count)), .yes)!
 	return Value.from_f64(f64(length + count))
 }
 
 fn array_prototype_pop(mut vm VM) !Value {
 	mut object, length := array_receiver(mut vm)!
-	if length == 0 { object.set(mut vm, PropertyName.from_str('length'), Value.from_i32(0), .yes)!; return js_undefined() }
+	if length == 0 { object.set(mut vm, vm.length_key(), Value.from_i32(0), .yes)!; return js_undefined() }
 	key := array_index_key(length - 1)
 	value := object.get(mut vm, key)!
 	object.delete_property_or_throw(mut vm, key)!
-	object.set(mut vm, PropertyName.from_str('length'), Value.from_f64(f64(length - 1)), .yes)!
+	object.set(mut vm, vm.length_key(), Value.from_f64(f64(length - 1)), .yes)!
 	return value
 }
 
@@ -211,7 +211,7 @@ fn array_prototype_unshift(mut vm VM) !Value {
 		}
 		for index in 0 .. vm.argument_count() { object.set(mut vm, array_index_key(index), vm.argument(index), .yes)! }
 	}
-	object.set(mut vm, PropertyName.from_str('length'), Value.from_f64(f64(length + count)), .yes)!
+	object.set(mut vm, vm.length_key(), Value.from_f64(f64(length + count)), .yes)!
 	return Value.from_f64(f64(length + count))
 }
 
@@ -239,7 +239,7 @@ fn array_prototype_slice(mut vm VM) !Value {
 		from := array_index_key(start + index)
 		if object.has_property_checked(mut vm, from)! { result.create_data_property_or_throw(mut vm, array_index_key(index), object.get(mut vm, from)!)! }
 	}
-	result.set(mut vm, PropertyName.from_str('length'), Value.from_f64(f64(count)), .yes)!
+	result.set(mut vm, vm.length_key(), Value.from_f64(f64(count)), .yes)!
 	return Value.from_object(result)
 }
 
@@ -255,7 +255,7 @@ fn array_prototype_splice(mut vm VM) !Value {
 		from := array_index_key(start + index)
 		if object.has_property_checked(mut vm, from)! { result.create_data_property_or_throw(mut vm, array_index_key(index), object.get(mut vm, from)!)! }
 	}
-	result.set(mut vm, PropertyName.from_str('length'), Value.from_f64(f64(deleted)), .yes)!
+	result.set(mut vm, vm.length_key(), Value.from_f64(f64(deleted)), .yes)!
 	if insert_count < deleted {
 		for index := start; index < length - deleted; index++ { move_array_property(mut vm, mut object, index + deleted, index + insert_count)! }
 		for index := length; index > length - deleted + insert_count; index-- { object.delete_property_or_throw(mut vm, array_index_key(index - 1))! }
@@ -263,7 +263,7 @@ fn array_prototype_splice(mut vm VM) !Value {
 		for index := length - deleted; index > start; index-- { move_array_property(mut vm, mut object, index + deleted - 1, index + insert_count - 1)! }
 	}
 	for index := u64(0); index < insert_count; index++ { object.set(mut vm, array_index_key(start + index), vm.argument(u32(index + 2)), .yes)! }
-	object.set(mut vm, PropertyName.from_str('length'), Value.from_f64(f64(length - deleted + insert_count)), .yes)!
+	object.set(mut vm, vm.length_key(), Value.from_f64(f64(length - deleted + insert_count)), .yes)!
 	return Value.from_object(result)
 }
 

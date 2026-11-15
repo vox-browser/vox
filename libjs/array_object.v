@@ -24,7 +24,7 @@ pub fn ArrayObject.create(mut vm VM, realm &Realm, length u64, prototype &Object
 	object.array_object = array
 	// Array.cpp uses MUST here: defining length is an operation, even when
 	// production builds omit assertions.
-	length_defined := object.internal_define_own_property(mut vm, PropertyName.from_str('length'), PropertyDescriptor{
+	length_defined := object.internal_define_own_property(mut vm, vm.length_key(), PropertyDescriptor{
 		value:        Value.from_f64(f64(length))
 		writable:     true
 		enumerable:   false
@@ -112,7 +112,7 @@ fn (mut array ArrayObject) set_array_like_size(new_length u32) bool {
 }
 
 pub fn (mut array ArrayObject) internal_define_own_property(mut vm VM, key PropertyName, descriptor PropertyDescriptor) !bool {
-	if key.equals(PropertyName.from_str('length')) { return array.set_length(mut vm, descriptor) }
+	if key.is_length_property() { return array.set_length(mut vm, descriptor) }
 	if key.is_number() && key.number >= array.length && !array.length_writable { return false }
 	mut object := array.object
 	// Object.cpp::indexed_put, reached through ordinary descriptor storage,

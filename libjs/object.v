@@ -363,7 +363,7 @@ pub fn (object &Object) internal_get_own_property(key PropertyName) ?PropertyDes
 		}
 	}
 	if array := object.array_object {
-		if key.equals(PropertyName.from_str('length')) { return array.length_descriptor() }
+		if key.is_length_property() { return array.length_descriptor() }
 	}
 	index := object.find_own_property(key)
 	if index < 0 {
@@ -575,7 +575,7 @@ pub fn (object &Object) get_without_side_effects(key PropertyName) Value {
 	for {
 		holder := current or { return js_special_empty_value() }
 		if array := holder.array_object {
-			if key.equals(PropertyName.from_str('length')) {
+			if key.is_length_property() {
 				return Value.from_f64(f64(array.length))
 			}
 		}
@@ -639,7 +639,7 @@ pub fn (mut object Object) define_direct_property(key PropertyName, value Value,
 	if mut array := object.array_object {
 		// Object.cpp::storage_set/indexed_put grows the magical array length
 		// even when an engine-private caller bypasses descriptor validation.
-		assert !key.equals(PropertyName.from_str('length'))
+		assert !key.is_length_property()
 		if key.is_number() && key.number >= array.length { array.length = key.number + 1 }
 	}
 	property := OwnProperty{

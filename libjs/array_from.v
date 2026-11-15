@@ -20,7 +20,7 @@ fn array_constructor_from(mut vm VM) !Value {
 			}
 			step := iterator_step_value(mut vm, mut iterator)!
 			if step.done {
-				result.set(mut vm, PropertyName.from_str('length'), Value.from_f64(f64(index)), .yes)!
+				result.set(mut vm, vm.length_key(), Value.from_f64(f64(index)), .yes)!
 				return Value.from_object(result)
 			}
 			mapped := if mapper.is_undefined() { step.value } else {
@@ -44,7 +44,7 @@ fn array_constructor_from(mut vm VM) !Value {
 		mapped := if mapper.is_undefined() { value } else { call(mut vm, mapper, receiver, [value, Value.from_f64(f64(index))])! }
 		result.create_data_property_or_throw(mut vm, key, mapped)!
 	}
-	result.set(mut vm, PropertyName.from_str('length'), Value.from_f64(f64(length)), .yes)!
+	result.set(mut vm, vm.length_key(), Value.from_f64(f64(length)), .yes)!
 	return Value.from_object(result)
 }
 

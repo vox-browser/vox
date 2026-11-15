@@ -51,6 +51,11 @@ environment paths. Focused tests cover assignments, destructuring, shadowing,
 budgets and compiler-free native-cache revisits in both GC modes. This is a
 runtime optimization, not additional language or DOM parity.
 
+Array length comparisons now check the ASCII spelling without constructing a
+UTF-16 key, and array algorithms reuse a VM-owned immutable length key. Actual
+property operations still dispatch through getters, setters and exotic hooks;
+focused tests exercise these behaviors with both allocation paths and GC modes.
+
 Set/Map operations and live iterators, WeakMap weak keys, ordinary arguments
 objects, default/rest/destructured function parameters, class inheritance,
 super construction (including explicit iterator-based argument spread),
