@@ -1,6 +1,7 @@
 module libjsdom
 
 import dom
+import domurl
 import css
 import fetch
 import geometry
@@ -62,6 +63,11 @@ mut:
 	resize_entry_wrappers map[voidptr]&libjs.Object
 	resize_sizes map[voidptr]resizeobserver.ResizeObserverSize
 	url_prototype        &libjs.Object = unsafe { nil }
+	query_prototype &libjs.Object = unsafe { nil }
+	query_iterator_prototype &libjs.Object = unsafe { nil }
+	queries map[voidptr]&domurl.URLSearchParams
+	query_wrappers map[voidptr]&libjs.Object
+	query_iterators map[voidptr]&QueryIteratorBinding
 	style_prototype      &libjs.Object = unsafe { nil }
 	headers_prototype &libjs.Object = unsafe { nil }
 	headers_iterator_prototype &libjs.Object = unsafe { nil }
@@ -137,6 +143,7 @@ pub fn Host.create(vm &libjs.VM, realm &libjs.Realm, document &dom.Document, hoo
 	host.install_animation_frames()
 	host.install_media_queries()!
 	host.install_styles()
+	host.install_query_params()!
 	host.install_urls()!
 	host.install_headers()!
 	mut global := realm.global_object_record()
@@ -255,6 +262,9 @@ pub fn (mut host Host) close() {
 	host.headers.clear()
 	host.headers_wrappers.clear()
 	host.headers_iterators.clear()
+	host.queries.clear()
+	host.query_wrappers.clear()
+	host.query_iterators.clear()
 	host.dom_exceptions.clear()
 	for callback in [host.hooks.before_callback, host.hooks.after_callback, host.hooks.changed] {
 		if function := callback { platform.release_closure(voidptr(function)) }

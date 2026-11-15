@@ -2,6 +2,7 @@ module libjsdom
 
 import domurl
 import libjs
+import platform
 
 fn (mut host Host) install_urls() ! {
 	mut vm := host.vm
@@ -55,7 +56,18 @@ fn (mut host Host) wrap_url(url &domurl.DOMURL, location bool) &libjs.Object {
 				else { url.origin() }
 			}
 			return libjs.Value.from_string(vm.create_string_from_str(text))
-		}, unsafe { nil })
+		}, if !location && name in ['href', 'search'] { fn [host, url, name, object] (mut vm libjs.VM) !libjs.Value {
+			host.require_open(mut vm)!
+			if !vm.this_value().is_object() || voidptr(vm.this_value().as_object()) != voidptr(object) {
+				return vm.throw_error(.type_error, 'URL property called on incompatible receiver')
+			}
+			text := query_usv(mut vm, vm.argument(0))!
+			persistent := platform.enter_persistent()
+			defer { platform.leave_persistent(persistent) }
+			mut owner := unsafe { &domurl.DOMURL(url) }
+			if name == 'href' { owner.set_href(text) or { return vm.throw_error(.type_error, err.msg()) } } else { owner.set_search(text) }
+			return libjs.js_undefined()
+		} } else { unsafe { nil } })
 	}
 	host.method(mut object, 'toString', 0, fn [host, url, object] (mut vm libjs.VM) !libjs.Value {
 		host.require_open(mut vm)!
@@ -65,20 +77,6 @@ fn (mut host Host) wrap_url(url &domurl.DOMURL, location bool) &libjs.Object {
 		return libjs.Value.from_string(vm.create_string_from_str(url.href()))
 	})
 	params := url.search_params()
-	mut search_params := libjs.Object.create(host.realm, host.realm.object_prototype)
-	search_params.class_name = 'URLSearchParams'
-	host.method(mut search_params, 'get', 1, fn [host, params, search_params] (mut vm libjs.VM) !libjs.Value {
-		host.require_open(mut vm)!
-		if !vm.this_value().is_object() || voidptr(vm.this_value().as_object()) != voidptr(search_params) {
-			return vm.throw_error(.type_error, 'URLSearchParams method called on incompatible receiver')
-		}
-		key := vm.argument(0).to_primitive_string(mut vm)!.str()
-		return if value := params.get(key) {
-			libjs.Value.from_string(vm.create_string_from_str(value))
-		} else {
-			libjs.js_null()
-		}
-	})
-	object.define_direct_property(libjs.PropertyName.from_str('searchParams'), libjs.Value.from_object(search_params), libjs.attribute_enumerable)
+	object.define_direct_property(libjs.PropertyName.from_str('searchParams'), host.wrap_query(params, none), libjs.attribute_enumerable)
 	return object
 }
