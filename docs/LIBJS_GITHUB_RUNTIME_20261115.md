@@ -1680,3 +1680,106 @@ five module errors, before these implementation slices. Acceptance still needs
 unchanged Brave content audit and zero differing pixels, followed by matched
 performance evidence. New GitHub hydration, native-cache speed and Brave pixel
 parity remain unmeasured and unachieved.
+
+## Native BigInt, typed-array and text-encoding continuation
+
+This continuation keeps the user's test hold in force. No regression source
+was compiled or run, no JavaScript was evaluated and no browser process,
+capture, comparison or performance trial was launched for this work. The
+shared automatic production worker operates independently; its activity is
+not validation of these changes.
+
+Four focused implementation commits are complete:
+
+| Commit | Implemented native surface |
+| --- | --- |
+| `4a0e92b45` | Install BigInt's global, ordinary prototype, primitive boxing and methods. Locale formatting uses the retained native NumberFormat and propagates errors. BigInt cells copy arbitrary-precision magnitude storage before it can escape a temporary arena. |
+| `399153a3f` | Install all twelve concrete typed-array constructors and their abstract constructor/prototype ancestry, accessors, species, iterators, copying and Uint8Array encoding methods. Creator realm and element kind are traced constructor fields. Native storage records persist, temporary synchronous factories/comparators are released, lengths are checked before narrowing, and native loops/copies/dense key enumeration charge VM limits. |
+| `c85bcb788` | Bind TextEncoder/TextDecoder to the existing native encoding records. Encoding produces actual intrinsic Uint8Arrays and encodeInto respects destination offsets and complete scalar boundaries. Decoder input copies follow option getters; streaming/BOM/fatal state is retained in the native decoder. Fixed-length WebIDL checks, shared byte access, brand checks and host teardown are explicit. |
+| `747f63540` | Expose atob/btoa through the existing HTML binary-string codecs, sharing the pure codec without creating a Window. Preserve DOMString coercion, required arguments, Window receivers, all Latin-1 byte values, forgiving base64 validation and InvalidCharacterError DOM exceptions. |
+
+The original cached GitHub response bodies contain 15 TextEncoder textual
+references in twelve distinct bodies and four TextDecoder references in three.
+The dp bundle has a top-level TextEncoder construction; its hashing helpers
+also use Uint8Array and BigInt. The same frozen bodies contain six atob
+references in four bodies and four btoa references in four. This is a static
+source audit, not runtime reachability or a measured first initialization
+failure. The raw scan retains original response-body hashes and contexts in
+local `docs/performance/libjs-binary-intrinsics-20261115/`.
+
+Forty-two regression functions are prepared: six BigInt, fifteen typed-array,
+one History typed-array rejection, twelve text-encoding and eight binary-string
+codec cases. Coverage includes metadata/brands, coercion and getter ordering,
+foreign NewTarget fallback, integer and BigInt storage, resizable native
+typed-array witnesses, WebIDL fixed-length restrictions, live buffer aliases,
+shared windows, native-work budgets, temporary-arena ownership, decoder
+streaming/reset, invalid UTF-16 replacement, DOM exceptions, fixed callback
+counts, host close and second-VM revisits with `/usr/bin/false` as compiler.
+Every assertion remains pending; the proposed cache-hit assertions are not
+observed cache hits.
+
+Fourteen compiler-only attempts and logs are preserved byte-identically with
+a hashed index. Twelve succeeded. The first typed-array production attempt
+needed three explicit unsigned-width casts; the first text-encoding check
+referred to a nonexistent property-attribute constant. Both errors were fixed
+before their implementation commits; all failures remain in the evidence.
+
+| Compiler-only check | Child exit | Seconds | Peak sampled RSS bytes |
+| --- | ---: | ---: | ---: |
+| BigInt initial normal | 0 | 14.427 | 5,275,238,400 |
+| BigInt production/prealloc/no-GC | 0 | 16.740 | 5,553,438,720 |
+| BigInt final normal | 0 | 15.485 | 5,264,228,352 |
+| Typed-array initial normal | 0 | 18.528 | 5,286,641,664 |
+| Typed-array first production | 1 | 10.200 | 1,797,521,408 |
+| Typed-array corrected production | 0 | 17.115 | 5,562,466,304 |
+| Typed-array native limits normal | 0 | 17.733 | 5,277,941,760 |
+| Typed-array final production | 0 | 27.146 | 5,566,824,448 |
+| Text-encoding initial normal | 1 | 15.712 | 1,521,025,024 |
+| Text-encoding corrected normal | 0 | 19.122 | 5,285,494,784 |
+| Text-encoding initial production | 0 | 17.987 | 5,567,021,056 |
+| Text-encoding final production | 0 | 19.976 | 5,567,381,504 |
+| Binary-string codecs final normal | 0 | 28.200 | 5,282,430,976 |
+| Binary-string codecs final production | 0 | 25.524 | 5,570,330,624 |
+
+The command shape is `env V3_STR_CAP=1 VJOBS=1 sh tools/run_v_tool.sh
+run_memory_bounded --lock Build/UNIQUE.lock --report Build/UNIQUE.json --
+/Users/alex/code/v/v -w -n -b c -no-parallel -cc clang -check
+-memory-limit 10G -enable-globals tools/libjs_github_revisit.v`, with
+`-prod -prealloc -gc none` for production checks. Each guard used its default
+12 GiB process-tree RSS limit and reports `reason=completed` with the child
+exit above. These are normal-program checks excluding `_test.v`, native
+linking and execution. The final codec checks include the committed encoding
+restrictions. Compiler durations are not JS speed measurements. Completed
+per-job Build locks/reports were removed after evidence preservation.
+
+At implementation revision `747f635401b6b591141a2e9f34e0225fe632e341`, the latest
+completed production executable inspected statically has SHA-256
+`48b7a9440fd5c1ae8b1b57080e347fe365adb604348327438438bf33c4577854`.
+Its actual hash matches
+`Build/production-build/receipts/20261115-220911-056313d0/frozen-compile.json`;
+the receipt uses one C unit and literal V `-prod`. The sealed consumed-input
+manifest matches zero of the 41 selected current implementation paths.
+Executable/latest identities stayed unchanged throughout this audit. The
+available bundle cannot exercise the new code. All four commits requested the
+managed coalesced production rebuild; no duplicate manual build was queued
+and no fresh browser was launched.
+
+The typed-array algorithms retain the translated buffer representation's
+32-bit bounds and existing maximum-byte policy. This is not complete agent,
+GC or SharedArrayBuffer parity. The encoder/decoder bridge reuses the existing
+codec coverage and does not establish complete legacy-encoding or foreign-realm
+WebIDL conformance. Remaining native encoding helper work is not universally
+budgeted. Blob construction/object URLs, Fetch AbortSignal/body-stream bindings,
+additional Web/Intl behavior, async generators and top-level await remain open.
+
+The original fixture manifest is still
+`893e042c4f31e1b7fb984c81cf8f6a2a7eb65d790f7c3f4cc3e372c065de302d`,
+and the unchanged Brave PNG is
+`649abff51549508516e2e0681866ba81ce69e7112cfa8dc3446b9b76c99be3d3`.
+The last executed GitHub observation is still the historical 672 warm native
+entries, 51 frontend hits, zero compiler calls, 33 rows, zero commit links and
+five module errors, predating these slices. Acceptance still requires 33 rows,
+56 commit links, current README, active controls, zero errors, the unchanged
+Brave content audit and zero differing pixels, followed by matched performance
+evidence. Full GitHub execution, faster compiled revisits and Brave pixel parity
+remain unverified and unachieved.

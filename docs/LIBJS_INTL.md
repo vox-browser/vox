@@ -79,8 +79,12 @@ sanctioned increments and trailing-zero display. Decimal digit division keeps
 rounding and plural modulo operations independent of binary64 precision. Plural
 operands retain visible trailing zeroes. Number bound functions use traced
 records and their own callee contexts, as date bound functions do. The legacy
-injected Number/BigInt adapter surfaces remain available; BigInt's production
-intrinsic graph is still pending.
+injected Number/BigInt adapter surfaces remain available. The production BigInt
+constructor, primitive boxing prototype and methods are now installed in the
+native realm. BigInt.toLocaleString uses the retained NumberFormat intrinsic
+and preserves its exact integer payload and errors. Its new regression cases
+remain uncompiled and unexecuted under the user's test hold; this wiring does
+not establish complete BigInt/Intl conformance or GitHub rendering parity.
 
 Relative-time formatting retains the native NumberFormat intrinsic and uses
 CLDR plural-specific past/future templates or numeric-auto literals. Negative

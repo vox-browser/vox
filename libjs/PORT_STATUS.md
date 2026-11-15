@@ -2784,3 +2784,32 @@ BigInt constructor graphs (24 Uint8Array call matches in five original bodies,
 three Float64Array matches in two and 18 BigInt matches in two); these are not
 measured first failures. See the
 [collation/URL continuation](../docs/LIBJS_GITHUB_RUNTIME_20261115.md#native-collation-and-url-continuation).
+
+The next native-realm slice installs BigInt's actual global/prototype graph,
+primitive boxing and locale formatting through the retained NumberFormat
+intrinsic. BigInt cells copy their arbitrary-precision magnitude into persistent
+storage. All twelve concrete typed-array constructors now inherit the shared
+TypedArray constructor/prototype and native algorithms, including species,
+iterators, copying methods and Uint8Array encoding helpers. Concrete constructor
+records trace their creator realm and kind without escaping V captures.
+Typed-array/view-buffer/iterator and backing-owner records outlive temporary
+arenas; synchronous species/sort closures are released. Lengths are checked
+before narrowing, native loops/copies/dense own keys charge execution limits,
+and conversion errors propagate. The existing 32-bit buffer representation and
+byte-size policy remain; this is not full buffer/agent/heap parity.
+
+The DOM host now binds the existing native TextEncoder/TextDecoder algorithms
+to real BufferSource windows and typed-array results, with fixed-length WebIDL
+checks, shared byte access, streaming decoder state, owned wrapper maps and
+teardown. It also exposes atob/btoa through the HTML codecs, preserving binary
+strings, forgiving validation and native DOM exceptions. Forty-two new focused
+regression functions are prepared across these slices, including History
+rejection and compiler-disabled cached revisits. None were compiled or run.
+Fourteen compiler-only normal-program import attempts are retained; twelve
+succeeded, with both final compiler modes passing after two corrected failures.
+These checks do not execute JavaScript or establish cache, ownership, browser or
+pixel results. The latest inspected production receipt contains none of the
+41 selected current implementation inputs. Blob/object URLs, remaining Fetch/
+Web/Intl behavior, async generators, top-level await and full GitHub hydration/
+Brave pixel equality remain open. See the
+[native binary-runtime continuation](../docs/LIBJS_GITHUB_RUNTIME_20261115.md#native-bigint-typed-array-and-text-encoding-continuation).
