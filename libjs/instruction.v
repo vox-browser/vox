@@ -91,6 +91,7 @@ pub enum OpCode {
 	record_empty_class_field
 	initialize_empty_static_fields
 	to_string
+	new_class_field_initializer
 }
 
 pub struct Instruction {
@@ -121,16 +122,17 @@ fn (instruction Instruction) input_count() int {
 		.in_op, .instance_of, .call {
 			2
 		}
-		.get_property, .delete_property, .new_regexp, .set_object_literal_prototype, .close_sync_iterator_throw, .new_class_method, .record_empty_class_field {
+		.get_property, .delete_property, .new_regexp, .set_object_literal_prototype, .close_sync_iterator_throw, .new_class_method {
 			2
 		}
-		.put_property, .define_property, .define_class_method, .new_class {
+		.put_property, .define_property, .define_class_method, .new_class, .record_empty_class_field {
 			3
 		}
 		.mov, .unary_plus, .unary_minus, .bitwise_not, .not_op, .typeof_op, .to_numeric, .to_string,
 		.increment, .decrement, .set_binding, .set_variable, .initialize_binding, .jump_if_true,
 		.require_object_coercible, .to_property_key, .copy_object_excluding_keys,
 		.initialize_empty_static_fields,
+		.new_class_field_initializer,
 		.get_object_property_iterator, .property_name_iterator_next,
 		.get_sync_iterator, .sync_iterator_next, .close_sync_iterator,
 		.sync_iterator_step_value, .sync_iterator_elide, .sync_iterator_to_array,
@@ -178,6 +180,9 @@ pub fn (executable &Executable) validate(arguments_count u32) ! {
 		return error('Executable has an invalid local layout')
 	}
 	for instruction in executable.instructions {
+		if instruction.op == .new_class_field_initializer && instruction.identifier >= u32(executable.class_field_initializers.len) {
+			return error('Class field initializer index out of range')
+		}
 		for index in 0 .. instruction.input_count() {
 			operand := instruction.input_operand(index)
 			operand.slot(executable, arguments_count, false)!

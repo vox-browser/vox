@@ -15,10 +15,15 @@ struct ECMAScriptFunction {
 	inferred_name ?Utf16String
 mut:
 	executable ?&Executable
+	field_initializer_name ?PropertyName
 }
 
 fn create_ecmascript_function(mut vm VM, source &Executable, index u32, named_expression bool, inferred_name ?Utf16String, ordinary bool) !&Object {
 	data := source.parsed_source.function_table.get(FunctionId{id: index})
+	return create_ecmascript_function_data(mut vm, source, data, named_expression, inferred_name, ordinary)
+}
+
+fn create_ecmascript_function_data(mut vm VM, source &Executable, data &JsFunctionData, named_expression bool, inferred_name ?Utf16String, ordinary bool) !&Object {
 	if data.kind in [.generator, .async_generator] { return error('LibJS generator functions are not translated yet') }
 	realm := vm.realm()
 	mut object := Object.create(realm, if data.kind == .async_kind { realm.async_function_prototype } else { realm.function_prototype })
@@ -93,13 +98,24 @@ fn (mut function ECMAScriptFunction) compile(mut vm VM) !&Executable {
 		range: function.data.body.range
 		function_body: true
 	}
-	generator.collect_vars(&function.data.body)!
-	if !function.data.simple_parameters() { generator.initialize_function_parameters(mut vm, function.data)! }
-	scope := function.data.body.kind.scope or { return error('Missing function body') }
-	generator.lexical_declarations(scope.children, false)!
-	generator.initialize_functions(scope.children)
-	for statement in scope.children { generator.statement(mut vm, &statement)! }
-	generator.emit(Instruction{op: .end, lhs: generator.constant(js_undefined())})
+	if function.data.body.kind.tag == .class_field_initializer {
+		expression := function.data.body.kind.expression or { return error('Missing field initializer') }
+		mut value := Operand{}
+		if expression.kind.tag == .function_expr && generator.executable.parsed_source.function_table.get(expression.kind.function_id).name == none {
+			value = generator.temporary()
+			key := (function.field_initializer_name or { return error('Missing initializer field name') }).to_value(mut vm)
+			generator.emit(Instruction{op: .new_function_with_name, dst: value, lhs: generator.constant(key), identifier: expression.kind.function_id.id})
+		} else { value = generator.expression(mut vm, expression)! }
+		generator.emit(Instruction{op: .end, lhs: value})
+	} else {
+		generator.collect_vars(&function.data.body)!
+		if !function.data.simple_parameters() { generator.initialize_function_parameters(mut vm, function.data)! }
+		scope := function.data.body.kind.scope or { return error('Missing function body') }
+		generator.lexical_declarations(scope.children, false)!
+		generator.initialize_functions(scope.children)
+		for statement in scope.children { generator.statement(mut vm, &statement)! }
+		generator.emit(Instruction{op: .end, lhs: generator.constant(js_undefined())})
+	}
 	generator.executable.bytecode_length = u32(generator.executable.instructions.len)
 	generator.executable.validate(0)!
 	function.executable = generator.executable

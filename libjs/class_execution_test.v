@@ -58,7 +58,7 @@ fn test_base_class_module_exports_and_persisted_native_execution() {
 }
 
 fn test_untranslated_class_slices_fail_before_executing_author_effects() {
-	for source in ['class Field{value=1}', 'class Private{#read(){}}', 'class Static{static{effect=1}}'] {
+	for source in ['class Field{#value=1}', 'class Private{#read(){}}', 'class Static{static{effect=1}}'] {
 		mut vm := VM.create()
 		create_simple_execution_context(mut vm)
 		class_eval(mut vm, 'var effect=0')!

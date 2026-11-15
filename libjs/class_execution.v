@@ -2,8 +2,8 @@
 module libjs
 
 // ClassDefinitionEvaluation / Rust bytecode codegen.rs: base classes with
-// ordinary, static and accessor methods and empty public fields. Field
-// initializers/private elements, static blocks and super property references
+// ordinary, static and accessor methods and public fields. Private
+// elements, static blocks and super property references
 // remain explicit unsupported boundaries.
 fn (mut generator BytecodeGenerator) class_expression(mut vm VM, data &ClassData) !Operand {
 	previous_strict := generator.strict
@@ -14,7 +14,6 @@ fn (mut generator BytecodeGenerator) class_expression(mut vm VM, data &ClassData
 			ClassElementMethod { if element.kind.key.kind.tag == .private_identifier_expr { return generator.unsupported('private class methods') } }
 			ClassElementField {
 				if element.kind.key.kind.tag == .private_identifier_expr { return generator.unsupported('private class fields') }
-				if element.kind.initializer != none { return generator.unsupported('class field initializers') }
 			}
 			ClassElementStaticInit { return generator.unsupported('class static initialization') }
 		}
@@ -38,7 +37,19 @@ fn (mut generator BytecodeGenerator) class_expression(mut vm VM, data &ClassData
 			raw_key := generator.expression(mut vm, &element.kind.key)!
 			key := generator.temporary()
 			generator.emit(Instruction{op: .to_property_key, dst: key, lhs: raw_key})
-			generator.emit(Instruction{op: .record_empty_class_field, lhs: result, rhs: key, identifier: if element.kind.is_static { u32(1) } else { 0 }})
+			mut initializer := generator.constant(js_undefined())
+			if expression := element.kind.initializer {
+				index := u32(generator.executable.class_field_initializers.len)
+				generator.executable.class_field_initializers << &JsFunctionData{
+					source_text_start: expression.range.start.offset
+					source_text_end: expression.range.end_.offset
+					body: Statement{range: expression.range, kind: StatementKind{tag: .class_field_initializer, expression: &Expression{...expression}}}
+					is_strict_mode: true
+				}
+				initializer = generator.temporary()
+				generator.emit(Instruction{op: .new_class_field_initializer, dst: initializer, lhs: key, identifier: index})
+			}
+			generator.emit(Instruction{op: .record_empty_class_field, lhs: result, rhs: key, src: initializer, identifier: if element.kind.is_static { u32(1) } else { 0 }})
 			generator.range = previous_range
 			continue
 		}
@@ -66,8 +77,8 @@ struct BaseClassFunction {
 	name Utf16String
 	derived bool
 mut:
-	instance_fields []PropertyName
-	static_fields []PropertyName
+	instance_fields []ClassFieldDefinition
+	static_fields []ClassFieldDefinition
 }
 
 fn (function &BaseClassFunction) realm() ?&Realm { return function.realm_ }

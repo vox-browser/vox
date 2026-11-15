@@ -76,6 +76,7 @@ pub mut:
 	instructions    []Instruction
 	global_bindings []GlobalBinding
 	class_source_spans []ClassSourceSpan
+	class_field_initializers []&JsFunctionData
 	parsed_source &ParsedSource = unsafe { nil }
 	starting_line u32 = 1
 	// Stable role inside the owning source, used only by the disk code cache.

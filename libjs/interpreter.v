@@ -53,7 +53,8 @@ fn (mut vm VM) execute_instruction(instruction Instruction, executable &Executab
 		.to_string { result = Value.from_string(left.to_primitive_string(mut vm)!) }
 		.get_new_target { result = vm.get_new_target() }
 		.get_super_constructor { result = get_super_constructor(mut vm)! }
-		.record_empty_class_field { record_empty_class_field(mut vm, left, right.to_property_key(mut vm)!, instruction.identifier == 1)! }
+		.record_empty_class_field { record_class_field(mut vm, left, right.to_property_key(mut vm)!, source, instruction.identifier == 1)! }
+		.new_class_field_initializer { result = Value.from_object(create_class_field_initializer(mut vm, executable, instruction.identifier, left.to_property_key(mut vm)!)!) }
 		.initialize_empty_static_fields { initialize_empty_static_fields(mut vm, left)! }
 		.get_argument { result = frame.argument(instruction.identifier) }
 		.get_rest_arguments {
