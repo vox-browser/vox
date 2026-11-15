@@ -82,6 +82,9 @@ timestamps, bounded callback entry and persistent retirement storage. Native
 matchMedia/MediaQueryList and typed change events are bound. AbortController and
 AbortSignal use native dependencies, arbitrary reason identity, timeouts and
 abortable event listeners; Fetch RequestInit.signal remains explicitly unsupported.
+Window timers now use actual native clocks/tasks and ClassicScript source
+evaluation, bounded callbacks, cancellation and exception roots that survive
+temporary arenas. Nine focused cases pass in both GC modes and sanitizer.
 URLSearchParams now wraps the native parser/serializer and live iterators,
 including URL.searchParams identity and bidirectional href/search synchronization.
 Their focused cases cover both GC modes and persisted execution without a compiler.
@@ -113,8 +116,11 @@ inserting template contents, including compiler-disabled cache reuse. Array
 find/some and labelled execution each have six cases in both modes and sanitizer.
 Array.from has eight focused cases and tagged templates have six, all in both GC
 modes and sanitizer; the latter preserves realm/site identity, frozen raw/cooked
-arrays, uncoerced substitutions and await operands. A new 310-file core sweep
-remains pending; an earlier interrupted selection has only 25 completed files.
+arrays, uncoerced substitutions and await operands. The new 310-file no-GC
+selection times out after 164 passes and 87 pre-runtime failures amid disk-full
+diagnostics, leaving 59 files unresolved; default GC never starts. All 816 inputs
+remain stable and a fresh canonical AST run passes 100/100 exactly. The earlier
+25-file interrupted attempt also remains incomplete.
 The tagged-template-stage original GitHub scripts reuse 615 native entries and
 51 parsed sources on the second opening with zero compiler calls, then fail at
 missing Array.reduce;

@@ -873,3 +873,37 @@ pending. A fresh canonical AST run matches all 100 cases exactly, with all
 bytes. Host load subsequently reaches about 94–102 on 18 CPUs with no swap,
 so these runs supply correctness checks only. Full execution, live behavior,
 completed-page speedup and zero-pixel Brave conformance remain open.
+
+
+## Window timers and current verification limits
+
+`13e0a3efc` adds setTimeout/setInterval and the shared clear methods through the
+actual WindowOrWorkerGlobalScope timer owner. Native HTML retains clocks, queued
+tasks, nesting, clamping, CSP and ClassicScript base URLs. The bridge preserves
+Window receivers and argument values, ignores callback thenables, shares bounded
+VM entry, retires running closures safely and removes owned roots on cancellation
+and close. String callbacks execute through LibJS without a JSC context.
+
+Eight focused cases pass in both GC modes. The first sanitizer build fails
+creating object files because the main disk is full; its private 512-MiB RAM
+scratch recovery builds and runs successfully, then detaches its verified volume.
+`a0994d536` additionally keeps source-timer exception boxes and converter roots
+outside native temporary arenas. Its ninth case retires an actual scratch arena
+and verifies original JavaScript reason identity afterward. The final nine cases
+pass in default GC, GC-none and AddressSanitizer with unchanged memory guards;
+the second private volume also detaches successfully. Initial integer-index and
+private-field fixture compilation failures remain recorded.
+
+The recorded 615-entry GitHub pair predates these timer bindings. Its Array.reduce
+startup failure and zero hydrated commit links remain the latest original-script
+result; there is no new full-page or pixel acceptance claim. The timer commits
+request the usual coalesced rebuild, and current production validation remains
+open. A full runtime completion percentage cannot be inferred from cached entries.
+
+The r14 no-GC attempt is now terminal: the 1,800.072-second guard expires with
+child 137 and controller 125, peaking at 9,754,132,480 bytes. It records 164 passes,
+87 failures before any recorded test runtime, and 59 files without a completed
+result. The log contains 124 disk-full diagnostics; default GC never starts. All
+816 pinned inputs still match after termination. This is a failed, incomplete
+checkpoint, not a replacement for the earlier source-stable 308-file functional
+union. Resource failures and all raw component receipts remain local.
