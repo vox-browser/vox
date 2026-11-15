@@ -74,6 +74,19 @@ fn (mut vm VM) execute_instruction(instruction Instruction, executable &Executab
 		.to_string { result = Value.from_string(left.to_primitive_string(mut vm)!) }
 		.get_new_target { result = vm.get_new_target() }
 		.get_super_constructor { result = get_super_constructor(mut vm)! }
+		.resolve_super_reference { result = resolve_super_reference(mut vm, left)! }
+		.get_super_this { result = super_property_base(mut vm, left)!.receiver }
+		.get_super_property, .put_super_property, .delete_super_property {
+			base := super_property_base(mut vm, left)!
+			if instruction.op != .delete_super_property && base.base.is_nullish() {
+				return vm.throw_error_type(.type_error, .to_object_null_or_undefined)
+			}
+			key := right.to_property_key(mut vm)!
+			reference := Reference.for_value(base.base, key, base.receiver, instruction.strict)
+			if instruction.op == .put_super_property { reference.put_value(mut vm, source)! }
+			else if instruction.op == .delete_super_property { result = Value.from_bool(reference.delete_(mut vm)!) }
+			else { result = reference.get_value(mut vm)! }
+		}
 		.record_empty_class_field { record_class_field(mut vm, left, right.to_property_key(mut vm)!, source, instruction.identifier == 1, instruction.strict)! }
 		.enter_class_private_environment { enter_class_private_environment(mut vm, executable, instruction)! }
 		.record_private_class_method { record_private_class_method(mut vm, left, right, source, instruction.identifier, instruction.target == 1)! }

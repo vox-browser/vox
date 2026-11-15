@@ -34,6 +34,10 @@ fn (function &BaseClassFunction) initialize_empty_instance_fields(mut vm VM, mut
 fn record_class_field(mut vm VM, target Value, key PropertyName, initializer Value, is_static bool, is_private bool) ! {
 	mut function := target.as_function()
 	if mut function is BaseClassFunction {
+		if initializer.is_object() {
+			mut method := initializer.as_object()
+			method.home_object = if is_static { function.object } else { function.object.get(mut vm, PropertyName.from_str('prototype'))!.as_object() }
+		}
 		field := ClassFieldDefinition{key: key, initializer: initializer, private_name: if is_private { ?PrivateName(resolve_class_private_name(mut vm, key.to_value(mut vm))!) } else { none }}
 		if is_static { function.static_fields << field } else { function.instance_fields << field }
 		return

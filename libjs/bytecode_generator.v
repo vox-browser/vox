@@ -141,7 +141,12 @@ fn compound_assignment_opcode(op AssignmentOp) !OpCode {
 // base before evaluating a computed key and reuse it as a method's receiver.
 fn (mut generator BytecodeGenerator) member_reference(mut vm VM, expression &Expression) !(Operand, Operand) {
 	kind := expression.kind
-	base := generator.expression(mut vm, kind.object or { return error('Missing member base') })!
+	object := kind.object or { return error('Missing member base') }
+	mut base := Operand{}
+	if object.kind.tag == .super_expr {
+		base = generator.temporary()
+		generator.emit(Instruction{op: .resolve_this_binding, dst: base})
+	} else { base = generator.expression(mut vm, object)! }
 	property := kind.property or { return error('Missing member property') }
 	key := if kind.computed {
 		generator.expression(mut vm, property)!
@@ -152,6 +157,11 @@ fn (mut generator BytecodeGenerator) member_reference(mut vm VM, expression &Exp
 			return generator.unsupported('private property access')
 		}
 		generator.constant(Value.from_string(vm.create_string(name)))
+	}
+	if object.kind.tag == .super_expr {
+		receiver := base
+		base = generator.temporary()
+		generator.emit(Instruction{op: .resolve_super_reference, dst: base, lhs: receiver})
 	}
 	return base, key
 }
@@ -457,7 +467,7 @@ fn (mut generator BytecodeGenerator) expression(mut vm VM, expression &Expressio
 				} else if operand.kind.tag == .member {
 					base, key := generator.member_reference(mut vm, operand)!
 					generator.emit(Instruction{
-						op:     .delete_property
+						op:     member_property_opcode(operand, .delete_property)
 						dst:    dst
 						lhs:    base
 						rhs:    key

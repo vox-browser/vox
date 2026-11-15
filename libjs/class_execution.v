@@ -3,8 +3,7 @@ module libjs
 
 // ClassDefinitionEvaluation / Rust bytecode codegen.rs: base classes with
 // ordinary, static and accessor methods and public/private fields. Static
-// blocks and super property references
-// remain explicit unsupported boundaries.
+// blocks remain an explicit unsupported boundary.
 fn (mut generator BytecodeGenerator) class_expression(mut vm VM, data &ClassData) !Operand {
 	previous_strict := generator.strict
 	generator.strict = true
@@ -153,12 +152,16 @@ fn create_base_class(mut vm VM, executable &Executable, index u32, body Value, n
 	mut prototype := Object.create(vm.realm(), prototype_parent)
 	prototype.define_direct_property(PropertyName.from_str('constructor'), Value.from_object(object), attribute_writable | attribute_configurable)
 	object.define_direct_property(PropertyName.from_str('prototype'), Value.from_object(prototype), 0)
+	object.home_object = prototype
+	if body.is_object() { mut method := body.as_object(); method.home_object = prototype }
 	return Value.from_object(object)
 }
 
 fn define_class_method(mut vm VM, target Value, name Value, function_value Value, kind u32, enumerable bool) ! {
 	mut target_object := target.as_object()
 	key := name.to_property_key(mut vm)!
+	mut method := function_value.as_object()
+	method.home_object = target_object
 	if kind == 0 {
 		target_object.define_property_or_throw(mut vm, key, PropertyDescriptor{ value: function_value, writable: true, enumerable: enumerable, configurable: true })!
 	} else if kind == 1 {

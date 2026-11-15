@@ -11,6 +11,13 @@ fn (mut generator BytecodeGenerator) call_reference(mut vm VM, expression &Expre
 		base, key := generator.member_reference(mut vm, expression)!
 		value := generator.temporary()
 		generator.emit(Instruction{ op: member_property_opcode(expression, .get_property), dst: value, lhs: base, rhs: key, strict: generator.strict })
+		if object := expression.kind.object {
+			if object.kind.tag == .super_expr {
+				receiver := generator.temporary()
+				generator.emit(Instruction{op: .get_super_this, dst: receiver, lhs: base})
+				return value, receiver
+			}
+		}
 		return value, base
 	}
 	if expression.kind.tag == .identifier_expr {

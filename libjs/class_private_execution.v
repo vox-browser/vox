@@ -37,6 +37,8 @@ fn record_private_class_method(mut vm VM, target Value, name Value, method Value
 	key := resolve_class_private_name(mut vm, name)!
 	mut function := target.as_function()
 	if mut function is BaseClassFunction {
+		mut method_object := method.as_object()
+		method_object.home_object = if is_static { function.object } else { function.object.get(mut vm, PropertyName.from_str('prototype'))!.as_object() }
 		mut elements := if is_static { function.static_private_methods } else { function.instance_private_methods }
 		if kind == 0 {
 			elements << PrivateElement{key: key, kind: .method, value: method}
@@ -65,6 +67,11 @@ fn initialize_class_private_methods(mut vm VM, mut object Object, elements []Pri
 }
 
 fn member_property_opcode(expression &Expression, ordinary OpCode) OpCode {
+	if base := expression.kind.object {
+		if base.kind.tag == .super_expr {
+			return if ordinary == .put_property { OpCode.put_super_property } else if ordinary == .delete_property { OpCode.delete_super_property } else { OpCode.get_super_property }
+		}
+	}
 	if property := expression.kind.property {
 		if property.kind.tag == .private_identifier_expr {
 			return if ordinary == .put_property { OpCode.put_private } else { OpCode.get_private }

@@ -104,6 +104,11 @@ pub enum OpCode {
 	get_template_object
 	call_with_array
 	construct_with_array
+	resolve_super_reference
+	get_super_property
+	put_super_property
+	delete_super_property
+	get_super_this
 }
 
 pub struct Instruction {
@@ -134,10 +139,10 @@ fn (instruction Instruction) input_count() int {
 		.in_op, .instance_of, .call {
 			2
 		}
-		.get_property, .get_private, .has_private, .delete_property, .new_regexp, .set_object_literal_prototype, .close_sync_iterator_throw, .new_class_method, .copy_data_properties, .super_construct_with_array {
+		.get_property, .get_private, .has_private, .delete_property, .get_super_property, .delete_super_property, .new_regexp, .set_object_literal_prototype, .close_sync_iterator_throw, .new_class_method, .copy_data_properties, .super_construct_with_array {
 			2
 		}
-		.put_property, .put_private, .record_private_class_method, .define_property, .define_class_method, .new_class, .record_empty_class_field, .call_with_array, .construct_with_array {
+		.put_property, .put_private, .put_super_property, .record_private_class_method, .define_property, .define_class_method, .new_class, .record_empty_class_field, .call_with_array, .construct_with_array {
 			3
 		}
 		.mov, .unary_plus, .unary_minus, .bitwise_not, .not_op, .typeof_op, .to_numeric, .to_string,
@@ -145,6 +150,7 @@ fn (instruction Instruction) input_count() int {
 		.require_object_coercible, .to_property_key, .copy_object_excluding_keys,
 		.initialize_empty_static_fields,
 		.new_class_field_initializer,
+		.get_super_this, .resolve_super_reference,
 		.get_object_property_iterator, .property_name_iterator_next,
 		.get_sync_iterator, .sync_iterator_next, .close_sync_iterator,
 		.sync_iterator_step_value, .sync_iterator_elide, .sync_iterator_to_array,
@@ -166,7 +172,7 @@ fn (instruction Instruction) input_operand(index int) Operand {
 }
 
 fn (instruction Instruction) writes_operand() bool {
-	return instruction.op !in [.put_property, .define_property, .define_class_method, .set_binding, .set_variable, .initialize_binding,
+	return instruction.op !in [.put_property, .put_super_property, .define_property, .define_class_method, .set_binding, .set_variable, .initialize_binding,
 		.put_private, .record_private_class_method, .enter_class_private_environment,
 		.create_mutable_binding, .create_immutable_binding, .enter_scope, .leave_scope, .enter_function_body, .jump,
 		.require_object_coercible, .set_object_literal_prototype, .copy_data_properties,

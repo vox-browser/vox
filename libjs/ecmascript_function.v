@@ -154,6 +154,7 @@ fn (mut function ECMAScriptFunction) call_body(mut vm VM, this_value Value, argu
 	environment.set_function_object(FunctionObject(&function))
 	environment.set_new_target(new_target)
 	environment.class_constructor = class_constructor
+	environment.home_object = function.object.home_object
 	frame.function = FunctionObject(&function)
 	frame.realm = function.realm_
 	frame.script_or_module = function.script_or_module
