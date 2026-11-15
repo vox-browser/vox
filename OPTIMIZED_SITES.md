@@ -69,6 +69,14 @@ Vlang at 27. Startup smoke passes. No original reference or tolerance changed.
 The decoder checks now also pin five complete RGBA images against independent
 Brave Canvas2D readbacks, alongside the fifteen exact YUV planes. These decoder
 checks do not establish arbitrary-scale image or catalog-wide equality.
+The subsequent `d1799617e` planar-filtering correction reduces CNN to **88,752
+differences in diagnostics**, from 163,830: 75,105 corrected and 27 introduced
+one-level differences, all within two image rectangles. It filters supported
+power-of-two YUV uploads before RGB conversion. All 47 other PNGs are unchanged
+in 48 workloads/96 repeatable captures, including the four exact archived sites
+and Vlang's 27 pixels. Unsupported scales retain their existing rendering.
+Production confirmation remains pending the managed rebuild; CNN and the
+catalog still do not pass equality. No original reference or tolerance changes.
 See the
 [current audit, capture scopes and retained failures](docs/OPTIMIZED_SITES_PIXELS_2026_11_12.md).
 

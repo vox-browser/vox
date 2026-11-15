@@ -3211,3 +3211,20 @@ accepted diagnostic; the CNN header and both focused controls are exact.
 Startup smoke passes. CNN's image/source differences, Vlang and missing Reddit
 evidence remain open; see the
 [audit](OPTIMIZED_SITES_PIXELS_2026_11_12.md#opaque-compositor-continuation-in-the-native-painter-2026-11-15).
+
+### Filtering minified WebP planes before RGB, 2026-11-15
+
+`d1799617e` adds a bounded YUV444 upload and post-filter RGB conversion through
+the existing V/GG image backend. Exact power-of-two plane reductions requiring
+only the final bilinear sample are supported; other cases keep their renderer.
+Both preparation tools stage the same uniform/shader change. Lazy shared shader
+bytes load in the persistent arena; an explicit old-initialization control
+traps under poisoning, while the regression survives reclaimed paint scopes.
+
+The C/O0 diagnostic improves CNN 163,830→88,752: 75,105 corrected and 27
+introduced one-level differences. All changes are inside two image rectangles.
+All 47 other PNGs are unchanged across 48 workloads/96 stable captures. CPU,
+GPU, native preparation and Python preparation checks pass. No original
+reference or tolerance changes. Production confirmation and catalog parity
+remain open; see the
+[audit](OPTIMIZED_SITES_PIXELS_2026_11_12.md#bounded-minified-webp-plane-filtering-2026-11-15).

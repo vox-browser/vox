@@ -3486,3 +3486,73 @@ Cleanup hashes 3,474 files across 61 owned roots, preserves and reverifies
 1,038 selected files (57,126,231 bytes), and removes the owned binaries,
 generated intermediates, profiles, jobs, guards, locks and test alias. Shared
 production bundles and dependencies are retained.
+
+
+## Bounded minified WebP plane filtering, 2026-11-15
+
+`d1799617e` filters scaled opaque WebP planes before converting them to RGB.
+The prior arbitrary-scale fallback filtered already converted/clipped RGB,
+which changes chroma reconstruction and color extrema. The new V decoder
+adapter retains a packed YUV444 upload, and the existing V/GG texture backend
+applies limited-range Rec.601 conversion after bilinear sampling and before
+coverage/blending. Selection requires a complete simple VP8 resource, full
+source rectangle, opaque Chromium rendering, integer translation, an exact
+power-of-two plane reduction and no additional mip selection. Native/half-size
+sampling stays on its preceding path. Rounded-up upload sizes, extra mips,
+profiles, alpha, unsupported geometry and unreadable native targets retain
+existing rendering. No site, resource hash, reference or coordinate selects
+pixel corrections.
+
+Both the Python and production V preparers now install the same YUV uniform and
+shader patch. The backend checks shader support before accepting a YUV upload.
+GG also loads the shared lazy shader payload while its persistent arena is
+active. Without this preparation, non-production embedded-file loading caches
+bytes from a disposable paint scope. A negative control recreating the former
+context initialization triggers an arena-poison fault in
+`EmbedFileData.to_string`, exit 138. The accepted regression draws through
+reclaimed scopes at sample counts 1 and 4 without that fault. This is a
+controlled diagnostic failure, not a production crash claim; literal V `-prod`
+embeds the uncompressed shader bytes.
+
+Diagnostic executable
+`3192431be7a0347489991879929472f8f43bfabd58d540287d648bdf19fe93ca`
+(C/O0/preallocated/no-GC) completes **48 workloads and 96 fresh captures** plus
+startup smoke. Every pair repeats byte for byte. **All 47 non-CNN PNGs are
+unchanged**, including exact GitHub, Hacker News, Lobsters and Wikipedia, and
+Vlang's 27 differences. CNN improves **163,830→88,752**: 75,105 corrected pixels,
+27 introduced pixels, each introduced channel error at most one. All 75,711
+changed pixels lie within the Netanyahu and CNN-logo image rectangles; the
+header and other image regions are unchanged. Those images still have
+residual differences. This remains partial rendering progress, not pixel
+parity or source/replay acceptance.
+
+All 824 consumed rendering/CSS/DOM/layout V witnesses and 860 pins, including
+shader inputs, stay matched throughout the accepted cohort. All 96 capture
+guards, driver, outer guard, startup and guarded analysis exit zero. CPU plane
+packing/domain checks, GPU filtering/clip/alpha and frame-ownership checks, the
+production V preparation regression and Python partial-staging/idempotence
+checks actually pass. Positive V runs use arena poisoning and 3 GiB runtime
+guards. Their 44 GG, 10 YUV and 19 build-tool V input witnesses match.
+
+Earlier mismatched preparation attempts, failed guards and the broader
+minification prototype are retained without acceptance. That broader path
+regresses a new irregular-size exploratory control, 804→805 pixels. The bounded
+path restores its prior PNG byte for byte and leaves that case unsupported;
+both independent Brave captures and the inexact control remain in local
+evidence. The temporary fixture/reference and negative-control source are
+removed from the canonical tree. No original reference or tolerance changes.
+
+Available production `a29214bc`, receipt `20261115-204745-385a0d38`, lacks the
+new implementation by frozen source hashes. The commit hook requests the
+coalesced C/literal V `-prod`/single-unit rebuild. Production confirmation is
+pending; no duplicate manual production build is queued. CNN's other images
+and source/replay gate, Vlang, missing Reddit evidence and prior inexact
+controls keep catalog-wide equality open. No live-site, scripting or
+performance acceptance is claimed.
+
+Local evidence is under
+`docs/performance/vlang-gradients-20261114/raw/cnn-planar-20261115/`.
+Cleanup hashes 7,087 files across 119 owned roots and preserves/reverifies
+1,511 selected files (45,667,837 bytes). Owned binaries, generated intermediates,
+profiles, jobs, guards, locks and exploratory fixtures are removed. Shared
+production bundles and dependencies remain.
