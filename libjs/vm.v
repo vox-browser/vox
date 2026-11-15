@@ -1278,9 +1278,7 @@ pub fn (mut vm VM) handle_exception(program_counter_argument u32, exception Valu
 				mut frame := vm.running_execution_context()
 				if depth>frame.lexical_scope_depth { vm.set_reg(register_exception,exception);return .exit_from_executable }
 				for frame.lexical_scope_depth>depth {
-					environment := frame.lexical_environment or { return .exit_from_executable }
-					frame.lexical_environment=environment.outer_environment()
-					frame.lexical_scope_depth--
+					frame.leave_lexical_scope() or { return .exit_from_executable }
 				}
 			}
 			vm.set_reg(register_exception, exception)

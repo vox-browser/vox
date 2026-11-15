@@ -100,6 +100,18 @@ pub mut:
 	stack_allocated bool
 }
 
+fn (mut context ExecutionContext) leave_lexical_scope() ! {
+	environment := context.lexical_environment or { return error('Frame has no lexical environment') }
+	if !environment.is_declarative_environment() || environment.is_function_environment() {
+		return error('Cannot leave a non-block environment')
+	}
+	if environment is DeclarativeEnvironment {
+		if environment.restores_private_environment { context.private_environment = environment.outer_private_environment }
+	}
+	context.lexical_environment = environment.outer_environment()
+	if context.lexical_scope_depth > 0 { context.lexical_scope_depth-- }
+}
+
 // ExecutionContextAllocator rounds the value tail up to a size class so freed
 // frames can be reused.
 fn tail_allocation_size(tail_size int) int {

@@ -10,7 +10,7 @@ fn (mut generator BytecodeGenerator) call_reference(mut vm VM, expression &Expre
 	if expression.kind.tag == .member {
 		base, key := generator.member_reference(mut vm, expression)!
 		value := generator.temporary()
-		generator.emit(Instruction{ op: .get_property, dst: value, lhs: base, rhs: key, strict: generator.strict })
+		generator.emit(Instruction{ op: member_property_opcode(expression, .get_property), dst: value, lhs: base, rhs: key, strict: generator.strict })
 		return value, base
 	}
 	if expression.kind.tag == .identifier_expr {
@@ -41,9 +41,7 @@ fn (mut generator BytecodeGenerator) optional_chain_reference(mut vm VM, express
 			OptionalChainCall { reference.mode == .optional }
 			OptionalChainComputedRef { reference.mode == .optional }
 			OptionalChainMemberRef { reference.mode == .optional }
-			OptionalChainPrivateMemberRef {
-				return generator.unsupported('private optional-chain access')
-			}
+			OptionalChainPrivateMemberRef { reference.mode == .optional }
 		}
 		if optional { exits << generator.emit(Instruction{ op: .jump_if_nullish, lhs: value }) }
 		if reference is OptionalChainCall {
@@ -60,11 +58,12 @@ fn (mut generator BytecodeGenerator) optional_chain_reference(mut vm VM, express
 				OptionalChainMemberRef {
 					generator.constant(Value.from_string(vm.create_string(reference.identifier.name)))
 				}
+				OptionalChainPrivateMemberRef { generator.constant(Value.from_string(vm.create_string(reference.private_identifier.name))) }
 				else { return generator.unsupported('optional-chain reference') }
 			}
 			generator.emit(Instruction{ op: .mov, dst: receiver, lhs: value })
 			generator.emit(Instruction{
-				op:     if deleting && index == expression.kind.references.len - 1 {
+				op:     if reference is OptionalChainPrivateMemberRef { OpCode.get_private } else if deleting && index == expression.kind.references.len - 1 {
 					OpCode.delete_property
 				} else {
 					OpCode.get_property

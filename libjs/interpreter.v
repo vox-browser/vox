@@ -53,7 +53,15 @@ fn (mut vm VM) execute_instruction(instruction Instruction, executable &Executab
 		.to_string { result = Value.from_string(left.to_primitive_string(mut vm)!) }
 		.get_new_target { result = vm.get_new_target() }
 		.get_super_constructor { result = get_super_constructor(mut vm)! }
-		.record_empty_class_field { record_class_field(mut vm, left, right.to_property_key(mut vm)!, source, instruction.identifier == 1)! }
+		.record_empty_class_field { record_class_field(mut vm, left, right.to_property_key(mut vm)!, source, instruction.identifier == 1, instruction.strict)! }
+		.enter_class_private_environment { enter_class_private_environment(mut vm, executable, instruction)! }
+		.record_private_class_method { record_private_class_method(mut vm, left, right, source, instruction.identifier, instruction.target == 1)! }
+		.get_private { result = make_private_reference(vm, left, resolve_class_private_name(mut vm, right)!.description).get_value(mut vm)! }
+		.put_private { make_private_reference(vm, left, resolve_class_private_name(mut vm, right)!.description).put_value(mut vm, source)! }
+		.has_private {
+			if !left.is_object() { return vm.throw_error(.type_error, 'Private in requires an object') }
+			result = Value.from_bool(left.as_object().private_element_find(resolve_class_private_name(mut vm, right)!) != none)
+		}
 		.new_class_field_initializer { result = Value.from_object(create_class_field_initializer(mut vm, executable, instruction.identifier, left.to_property_key(mut vm)!)!) }
 		.initialize_empty_static_fields { initialize_empty_static_fields(mut vm, left)! }
 		.get_argument { result = frame.argument(instruction.identifier) }
@@ -377,15 +385,7 @@ fn (mut vm VM) execute_instruction(instruction Instruction, executable &Executab
 			frame.lexical_scope_depth++
 		}
 		.leave_scope {
-			environment := frame.lexical_environment or {
-				return error('Frame has no lexical environment')
-			}
-
-			if !environment.is_declarative_environment() || environment.is_function_environment() {
-				return error('Cannot leave a non-block environment')
-			}
-			frame.lexical_environment = environment.outer_environment()
-			if frame.lexical_scope_depth>0 { frame.lexical_scope_depth-- }
+			frame.leave_lexical_scope()!
 		}
 		.resolve_this_binding {
 			result = vm.resolve_this_binding()!
@@ -444,6 +444,7 @@ pub fn (mut vm VM) run_executable(mut frame ExecutionContext, executable &Execut
 	}
 	previous_context := vm.running_execution_context_
 	previous_environment := frame.lexical_environment
+	previous_private_environment := frame.private_environment
 	previous_scope_depth := frame.lexical_scope_depth
 	frame.lexical_scope_depth=0
 	own_budget := vm.run_executable_depth == 0 && vm.external_budget_depth == 0
@@ -468,6 +469,7 @@ pub fn (mut vm VM) run_executable(mut frame ExecutionContext, executable &Execut
 			vm.finish_execution_generation()
 		}
 		frame.lexical_environment = previous_environment
+		frame.private_environment = previous_private_environment
 		frame.lexical_scope_depth=previous_scope_depth
 		vm.run_executable_depth--
 		vm.running_execution_context_ = previous_context

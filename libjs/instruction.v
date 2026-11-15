@@ -92,6 +92,11 @@ pub enum OpCode {
 	initialize_empty_static_fields
 	to_string
 	new_class_field_initializer
+	enter_class_private_environment
+	record_private_class_method
+	get_private
+	put_private
+	has_private
 }
 
 pub struct Instruction {
@@ -122,10 +127,10 @@ fn (instruction Instruction) input_count() int {
 		.in_op, .instance_of, .call {
 			2
 		}
-		.get_property, .delete_property, .new_regexp, .set_object_literal_prototype, .close_sync_iterator_throw, .new_class_method {
+		.get_property, .get_private, .has_private, .delete_property, .new_regexp, .set_object_literal_prototype, .close_sync_iterator_throw, .new_class_method {
 			2
 		}
-		.put_property, .define_property, .define_class_method, .new_class, .record_empty_class_field {
+		.put_property, .put_private, .record_private_class_method, .define_property, .define_class_method, .new_class, .record_empty_class_field {
 			3
 		}
 		.mov, .unary_plus, .unary_minus, .bitwise_not, .not_op, .typeof_op, .to_numeric, .to_string,
@@ -155,6 +160,7 @@ fn (instruction Instruction) input_operand(index int) Operand {
 
 fn (instruction Instruction) writes_operand() bool {
 	return instruction.op !in [.put_property, .define_property, .define_class_method, .set_binding, .set_variable, .initialize_binding,
+		.put_private, .record_private_class_method, .enter_class_private_environment,
 		.create_mutable_binding, .create_immutable_binding, .enter_scope, .leave_scope, .enter_function_body, .jump,
 		.require_object_coercible, .set_object_literal_prototype,
 		.record_empty_class_field, .initialize_empty_static_fields,
@@ -191,7 +197,7 @@ pub fn (executable &Executable) validate(arguments_count u32) ! {
 		if instruction.op == .get_callee_and_this {
 			instruction.rhs.slot(executable, arguments_count, true)!
 		}
-		if instruction.op in [.call, .construct, .super_construct, .copy_object_excluding_keys] {
+		if instruction.op in [.call, .construct, .super_construct, .copy_object_excluding_keys, .enter_class_private_environment] {
 			for argument in instruction.arguments {
 				argument.slot(executable, arguments_count, false)!
 			}
@@ -203,6 +209,7 @@ pub fn (executable &Executable) validate(arguments_count u32) ! {
 		if instruction.op == .new_class && instruction.identifier >= u32(executable.class_source_spans.len) { return error('Class source index out of range') }
 		if instruction.op == .define_class_method && instruction.identifier > 2 { return error('Invalid class method kind') }
 		if instruction.op == .record_empty_class_field && instruction.identifier > 1 { return error('Invalid class field kind') }
+		if instruction.op == .record_private_class_method && (instruction.identifier > 2 || instruction.target > 1) { return error('Invalid private class method kind') }
 		if instruction.op in [.get_binding, .get_callee_and_this, .typeof_binding, .delete_binding, .set_binding, .set_variable, .initialize_binding, .create_mutable_binding, .create_immutable_binding]
 			&& instruction.identifier >= u32(executable.identifier_table.len) {
 			return error('Identifier out of range')

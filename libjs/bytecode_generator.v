@@ -141,6 +141,8 @@ fn (mut generator BytecodeGenerator) member_reference(mut vm VM, expression &Exp
 	property := kind.property or { return error('Missing member property') }
 	key := if kind.computed {
 		generator.expression(mut vm, property)!
+	} else if identifier := property.kind.private_identifier {
+		generator.constant(Value.from_string(vm.create_string(identifier.name)))
 	} else {
 		name := identifier_name(property) or {
 			return generator.unsupported('private property access')
@@ -174,7 +176,7 @@ fn (mut generator BytecodeGenerator) member_assignment(mut vm VM, target &Expres
 	mut jumps := []u32{}
 	if op != .assignment {
 		generator.emit(Instruction{
-			op:     .get_property
+			op:     member_property_opcode(target, .get_property)
 			dst:    dst
 			lhs:    base
 			rhs:    key
@@ -202,7 +204,7 @@ fn (mut generator BytecodeGenerator) member_assignment(mut vm VM, target &Expres
 		})
 	}
 	generator.emit(Instruction{
-		op:     .put_property
+		op:     member_property_opcode(target, .put_property)
 		lhs:    base
 		rhs:    key
 		src:    dst
@@ -363,7 +365,7 @@ fn (mut generator BytecodeGenerator) expression(mut vm VM, expression &Expressio
 			base, key := generator.member_reference(mut vm, expression)!
 			dst := generator.temporary()
 			generator.emit(Instruction{
-				op:     .get_property
+				op:     member_property_opcode(expression, .get_property)
 				dst:    dst
 				lhs:    base
 				rhs:    key
@@ -372,6 +374,16 @@ fn (mut generator BytecodeGenerator) expression(mut vm VM, expression &Expressio
 			return dst
 		}
 		.binary {
+			if kind.binary_op == .in_op {
+				if lhs := kind.lhs {
+					if identifier := lhs.kind.private_identifier {
+						base := generator.expression(mut vm, kind.rhs or { return error('Missing private in object') })!
+						dst := generator.temporary()
+						generator.emit(Instruction{op: .has_private, dst: dst, lhs: base, rhs: generator.constant(Value.from_string(vm.create_string(identifier.name)))})
+						return dst
+					}
+				}
+			}
 			op := binary_opcode(kind.binary_op)
 			left :=
 				generator.expression(mut vm, kind.lhs or { return error('Missing binary lhs') })!
@@ -533,7 +545,7 @@ fn (mut generator BytecodeGenerator) expression(mut vm VM, expression &Expressio
 				base, key := generator.member_reference(mut vm, operand)!
 				old := generator.temporary()
 				generator.emit(Instruction{
-					op:     .get_property
+					op:     member_property_opcode(operand, .get_property)
 					dst:    old
 					lhs:    base
 					rhs:    key
@@ -551,7 +563,7 @@ fn (mut generator BytecodeGenerator) expression(mut vm VM, expression &Expressio
 					lhs: old
 				})
 				generator.emit(Instruction{
-					op:     .put_property
+					op:     member_property_opcode(operand, .put_property)
 					lhs:    base
 					rhs:    key
 					src:    dst

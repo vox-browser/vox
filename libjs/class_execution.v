@@ -2,27 +2,29 @@
 module libjs
 
 // ClassDefinitionEvaluation / Rust bytecode codegen.rs: base classes with
-// ordinary, static and accessor methods and public fields. Private
-// elements, static blocks and super property references
+// ordinary, static and accessor methods and public/private fields. Static
+// blocks and super property references
 // remain explicit unsupported boundaries.
 fn (mut generator BytecodeGenerator) class_expression(mut vm VM, data &ClassData) !Operand {
 	previous_strict := generator.strict
 	generator.strict = true
 	defer { generator.strict = previous_strict }
-	for element in data.elements {
-		match element.kind {
-			ClassElementMethod { if element.kind.key.kind.tag == .private_identifier_expr { return generator.unsupported('private class methods') } }
-			ClassElementField {
-				if element.kind.key.kind.tag == .private_identifier_expr { return generator.unsupported('private class fields') }
-			}
-			ClassElementStaticInit { return generator.unsupported('class static initialization') }
-		}
-	}
+	for element in data.elements { if element.kind is ClassElementStaticInit { return generator.unsupported('class static initialization') } }
 	generator.emit(Instruction{ op: .enter_scope })
 	generator.scope_depth++
 	name := if identifier := data.name { identifier.name } else { Utf16String.new() }
 	if data.name != none { generator.emit(Instruction{ op: .create_immutable_binding, identifier: generator.identifier(name) }) }
 	parent := if expression := data.super_class { generator.expression(mut vm, &expression)! } else { generator.constant(js_undefined()) }
+	mut private_names := []Operand{}
+	for element in data.elements {
+		key := match element.kind {
+			ClassElementMethod { element.kind.key }
+			ClassElementField { element.kind.key }
+			ClassElementStaticInit { continue }
+		}
+		if identifier := key.kind.private_identifier { private_names << generator.constant(Value.from_string(vm.create_string(identifier.name))) }
+	}
+	if private_names.len > 0 { generator.emit(Instruction{op: .enter_class_private_environment, arguments: private_names}) }
 	body := if expression := data.constructor { generator.expression(mut vm, &expression)! } else { generator.constant(js_undefined()) }
 	result := generator.temporary()
 	source_index := u32(generator.executable.class_source_spans.len)
@@ -34,7 +36,9 @@ fn (mut generator BytecodeGenerator) class_expression(mut vm VM, data &ClassData
 		previous_range := generator.range
 		generator.range = element.range
 		if element.kind is ClassElementField {
-			raw_key := generator.expression(mut vm, &element.kind.key)!
+			is_private := element.kind.key.kind.tag == .private_identifier_expr
+			raw_key := if identifier := element.kind.key.kind.private_identifier { generator.constant(Value.from_string(vm.create_string(identifier.name))) }
+				else { generator.expression(mut vm, &element.kind.key)! }
 			key := generator.temporary()
 			generator.emit(Instruction{op: .to_property_key, dst: key, lhs: raw_key})
 			mut initializer := generator.constant(js_undefined())
@@ -49,17 +53,21 @@ fn (mut generator BytecodeGenerator) class_expression(mut vm VM, data &ClassData
 				initializer = generator.temporary()
 				generator.emit(Instruction{op: .new_class_field_initializer, dst: initializer, lhs: key, identifier: index})
 			}
-			generator.emit(Instruction{op: .record_empty_class_field, lhs: result, rhs: key, src: initializer, identifier: if element.kind.is_static { u32(1) } else { 0 }})
+			generator.emit(Instruction{op: .record_empty_class_field, lhs: result, rhs: key, src: initializer, strict: is_private, identifier: if element.kind.is_static { u32(1) } else { 0 }})
 			generator.range = previous_range
 			continue
 		}
 		method := element.kind as ClassElementMethod
-		raw_key := generator.expression(mut vm, &method.key)!
+		is_private := method.key.kind.tag == .private_identifier_expr
+		raw_key := if identifier := method.key.kind.private_identifier { generator.constant(Value.from_string(vm.create_string(identifier.name))) }
+			else { generator.expression(mut vm, &method.key)! }
 		key := generator.temporary()
 		generator.emit(Instruction{ op: .to_property_key, dst: key, lhs: raw_key })
 		function := generator.temporary()
 		generator.emit(Instruction{ op: .new_class_method, dst: function, lhs: key, rhs: generator.constant(Value.from_i32(i32(method.method_kind))), identifier: method.function.kind.function_id.id })
-		generator.emit(Instruction{ op: .define_class_method, lhs: if method.is_static { result } else { prototype }, rhs: key, src: function, identifier: u32(method.method_kind) })
+		if is_private {
+			generator.emit(Instruction{op: .record_private_class_method, lhs: result, rhs: key, src: function, identifier: u32(method.method_kind), target: if method.is_static { u32(1) } else { 0 }})
+		} else { generator.emit(Instruction{ op: .define_class_method, lhs: if method.is_static { result } else { prototype }, rhs: key, src: function, identifier: u32(method.method_kind) }) }
 		generator.range = previous_range
 	}
 	if data.name != none { generator.emit(Instruction{ op: .initialize_binding, lhs: result, identifier: generator.identifier(name), strict: true }) }
@@ -79,6 +87,8 @@ struct BaseClassFunction {
 mut:
 	instance_fields []ClassFieldDefinition
 	static_fields []ClassFieldDefinition
+	instance_private_methods []PrivateElement
+	static_private_methods []PrivateElement
 }
 
 fn (function &BaseClassFunction) realm() ?&Realm { return function.realm_ }

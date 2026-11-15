@@ -22,6 +22,10 @@ pub mut:
 	bindings          []DeclarativeBinding
 	catch_environment bool
 	serial_number     u64
+	// ClassDefinitionEvaluation restores its private environment together with
+	// this lexical scope, including catch unwinding after a computed key throws.
+	restores_private_environment bool
+	outer_private_environment ?&PrivateEnvironment
 }
 
 pub fn DeclarativeEnvironment.create(outer ?Environment) &DeclarativeEnvironment {
