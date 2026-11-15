@@ -227,6 +227,7 @@ pub fn Host.create(vm &libjs.VM, realm &libjs.Realm, document &dom.Document, hoo
 	host.install_files()
 	host.install_form_data()!
 	host.install_form_controls()!
+	host.install_text_control_selection()!
 	host.install_forms()!
 	host.install_history()
 	host.install_headers()!
