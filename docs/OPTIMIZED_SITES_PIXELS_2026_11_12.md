@@ -3279,3 +3279,78 @@ owned binaries, profiles, jobs, guards, locks and test alias. Shared production
 bundles and dependencies are retained. Catalog-wide parity remains open for
 CNN's remaining rendering/source differences, Vlang, the missing Reddit fixture
 and the previously inexact controls.
+
+## SVG leaf sample counts and production inheritance confirmation, 2026-11-15
+
+Production executable `a7918541efb0271c0388a5f7319ef8b8e00234bb13a5fed1c8bac5a0b2de9589`,
+receipt `20261115-184113-f64340c2`, now independently confirms `d8e280439`.
+All three changed inheritance implementation hashes match the frozen compilation.
+Its C/literal V `-prod`/single-unit recheck completes 46 workloads and 92 fresh
+captures. Every pair repeats byte for byte, and every PNG matches the accepted
+inheritance diagnostic. CNN remains 163,862; the four exact archived sites and
+Vlang's 27 differences are retained. All capture, driver and outer-guard exits
+are zero, with 822 consumed rendering/CSS/DOM/layout V witnesses and stable source
+pins. This closes the inheritance fix's previously pending production validation.
+
+The eight remaining Watch-dot pixels came from SVG leaf rasterization losing
+the owning picture's sample count. An analytic oval does not itself request
+MSAA, but joins a multisampled tile when another path requires it. The native
+leaf bridge previously always created a fresh single-sample surface. It now
+passes the cropped document coordinates to V, which replays the path in each
+owning tile and preserves that tile's sample count. The separate mask callback
+keeps its existing image-local raster policy. Tile classification also stops
+using isolated, unclipped filled ovals as MSAA triggers; strokes and compound
+or clipped paths retain conservative classification.
+
+The new `svg-promoted-analytic-edges` control has eight cases covering opaque
+and transparent backgrounds, promoted pictures, curves, and rounded borders.
+Two fresh Brave captures agree byte for byte with stable executable identity.
+Independent Skia Metal GPU probes match GG's circle pixels over opaque and
+transparent backdrops in both single-sample and explicitly multisampled passes.
+They confirm that this is a pass-selection difference, without changing shader
+precision. The first candidate fixes CNN but introduces 16 control pixels by
+incorrectly promoting the two otherwise single-sample pictures; that complete
+47-workload/94-capture cohort is retained as rejected evidence. The oval trigger
+correction removes all 16 introduced pixels.
+
+Final diagnostic executable
+`deb05301af34f3c233e43dcf3f9fb8570ceca364834b753f7b4f6f0cc2ceddac`
+(C/O0/prealloc/no-GC) completes **47 workloads and 94 fresh captures**, plus
+startup smoke. Every pair repeats byte for byte. CNN improves
+**163,862→163,854**, with exactly eight corrected pixels and zero introduced;
+the Watch dot is exact. All **45 other existing PNGs are unchanged**, including
+GitHub, Hacker News, Lobsters and Wikipedia at zero and Vlang at 27. The new
+control is exact twice. All 94 capture guards, startup, driver and outer guard
+exit zero; 822 consumed rendering/CSS/DOM/layout V witnesses and the feature,
+native and fixture source pins remain stable. Original references and tolerances
+are unchanged.
+
+Focused tests compare both sample counts against independent Brave crops with
+two tile columns and zero/nonzero picture origins, and retain compound/stroked
+path classification. Final focused executable
+`d729e8e3292fd2e8dbf2b4b7ffa348cafc0ef990a7fb13bd4921bb5377cd71a4`
+passes under a 3 GiB guard with `VOX_ARENA_POISON=1`; all four implementation/test
+V witnesses match the consumed buffers. All 22 existing MSAA tests also pass
+under arena poisoning and a 3 GiB guard; their implementation/test source
+witnesses match the consumed buffers.
+The previous ellipse bounds test had classified a filled oval as an MSAA
+trigger; it now checks that the fill remains analytic and preserves both-corner
+and transform bounds with a visible elliptical stroke. The earlier failing
+expectation, a corrected stack-pointer declaration and transient shared LibJS
+compile errors are retained. Foreign edits are preserved.
+
+The available production bundle still predates the SVG leaf fix (`d86c965a2`).
+Its normal commit hook requests the coalesced C/literal V `-prod`/single-unit rebuild;
+no duplicate manual build is queued. This new result remains diagnostic pending
+production confirmation. CNN still has image scaling and rounded-border
+mismatches and an open source/replay gate; Vlang and the missing Reddit fixture
+also keep catalog parity open. No live-site or performance acceptance is claimed.
+
+Local evidence is under
+`docs/performance/vlang-gradients-20261114/raw/cnn-edge-20261115/`, including both
+catalog candidates, production confirmation, reference captures, GPU probe
+sources/results, actual source witnesses and all guard/exit receipts. Cleanup
+records 9,547 file hashes across 14 owned job roots and preserves 2,579 selected
+files (50,371,653 bytes). Copies are hashed again before deleting
+owned binaries, generated intermediates, profiles, guards, locks and test aliases.
+The shared production bundle and dependencies are retained.

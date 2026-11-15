@@ -7,7 +7,7 @@ Results apply to the frozen page and pinned build in each linked report.
 Provisional entries retain unresolved acceptance checks.
 
 **Pixel recheck, 2026-11-15:** Vox does **not** pass pixel equality across
-this catalog. Production build `395539f0` confirms GitHub, Hacker News,
+this catalog. Production build `a7918541` confirms GitHub, Hacker News,
 Lobsters and Wikipedia exact in two fresh captures each. Vlang.io has **27 differing
 pixels in production**, down from the previously verified 810. The heading fix
 removes its final text difference. Its 23 JPEG pixels still include nine
@@ -51,8 +51,14 @@ The subsequent `d8e280439` inheritance fix preserves declared CSS variables
 during ancestor updates and restores CNN's Watch dot. Diagnostic captures
 improve CNN to **163,862 differences**: 52 corrected, zero introduced, with
 eight one-level dot-edge differences remaining. All 45 non-CNN PNGs are
-unchanged and all 46 pairs repeat exactly. Production validation of this new
-inheritance fix remains pending the managed rebuild.
+unchanged and all 46 pairs repeat exactly. Production `a7918541` now confirms
+this inheritance correction across 46 workloads and 92 fresh captures; every
+PNG matches the accepted diagnostic.
+The next SVG leaf fix (`d86c965a2`) retains the owning raster tile's sample count
+and makes the Watch dot exact in diagnostics: **163,862→163,854 differences**, eight
+corrected and zero introduced. All 45 other existing PNGs are unchanged, and
+all 47 pairs repeat exactly, including a new exact eight-case control. Its
+production confirmation remains pending the managed rebuild.
 See the
 [current audit, capture scopes and retained failures](docs/OPTIMIZED_SITES_PIXELS_2026_11_12.md).
 
