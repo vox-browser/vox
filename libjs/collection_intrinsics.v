@@ -30,12 +30,14 @@ fn initialize_collection_intrinsics(mut vm VM, mut realm Realm) ! {
 		return object_prototype_to_string(mut vm, realm_primitive_prototypes())
 	})
 	constructor := NativeFunction.create_constructor(mut vm, &realm, realm.function_prototype,
-		array_constructor_call, fn (mut vm VM, _ &Object) !&Object {
-			return array_constructor_call(mut vm)!.as_object()
+		array_constructor_call, fn (mut vm VM, new_target &Object) !&Object {
+			parent := get_prototype_from_constructor(mut vm, new_target, fn (realm &Realm) &Object { return realm.array_prototype_record() })!
+			return array_constructor_with_prototype(mut vm, parent)!.as_object()
 		}, 1, PropertyName.from_str('Array'))
 	mut array_constructor := constructor.object
 	array_constructor.define_direct_property(PropertyName.from_str('prototype'), Value.from_object(array), 0)
 	array.define_direct_property(PropertyName.from_str('constructor'), Value.from_object(array_constructor), attribute_writable | attribute_configurable)
+	install_intrinsic_method(mut vm, &realm, mut array_constructor, 'from', 1, array_constructor_from)
 	install_intrinsic_method(mut vm, &realm, mut array_constructor, 'isArray', 1, fn (mut vm VM) !Value {
 		return Value.from_bool(vm.argument(0).is_array(mut vm)!)
 	})
@@ -83,17 +85,21 @@ fn realm_primitive_prototypes() PrimitiveObjectPrototypes {
 }
 
 fn array_constructor_call(mut vm VM) !Value {
+	return array_constructor_with_prototype(mut vm, vm.realm().array_prototype_record())
+}
+
+fn array_constructor_with_prototype(mut vm VM, prototype &Object) !Value {
 	realm := vm.realm()
 	if vm.argument_count() == 1 && vm.argument(0).is_number() {
 		length := vm.argument(0).number
 		if length < 0 || length > 0xffffffff || math.trunc(length) != length || math.is_nan(length) {
 			return vm.throw_error_type(.range_error, .invalid_length, 'array')
 		}
-		return Value.from_object(ArrayObject.create(mut vm, realm, u64(length), realm.array_prototype_record())!.object)
+		return Value.from_object(ArrayObject.create(mut vm, realm, u64(length), prototype)!.object)
 	}
 	mut values := []Value{}
 	for index in 0 .. vm.argument_count() { values << vm.argument(index) }
-	return Value.from_object(ArrayObject.create_from(mut vm, realm, values, realm.array_prototype_record())!.object)
+	return Value.from_object(ArrayObject.create_from(mut vm, realm, values, prototype)!.object)
 }
 
 fn array_index_key(index u64) PropertyName { return PropertyName.from_str(index.str()) }
