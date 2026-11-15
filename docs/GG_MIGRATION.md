@@ -3136,3 +3136,37 @@ pins and 91 successful native guards. CNN improves 175,866→165,579 and repeats
 exactly; all 45 pairs repeat exactly and the other 43 existing PNGs match the
 previous production captures. Production confirmation is pending. See the
 [audit](OPTIMIZED_SITES_PIXELS_2026_11_12.md#sampled-srgb-profiles-and-rgb-webp-minification-2026-11-15).
+
+Production `73cc5a36` (receipt `20261115-140919-8b8a4fe0`, C/literal V `-prod`,
+one unit) now confirms `1e1ffdd4e`: 45 workloads/90 captures, 135 compiled
+witnesses, 167 stable pins, all native/driver/outer exits zero. All reference
+counts are retained and all native pairs repeat exactly within that cohort.
+The 44 non-CNN PNGs match diagnostics; CNN has a retained 1,558-pixel cross-build
+gap. This supersedes that slice's pending-production status.
+
+### Sampled-image compositor fringes, 2026-11-15
+
+`78f1fcf3b` uses the existing two-pixel geometry-fringe rule for image readbacks
+and selects samples from their intersection with the owning compositor grid.
+Mixed tile selections, larger overhangs and empty intersections retain replay.
+Three regression functions fail before the fix and pass afterward, including
+the actual WebP callback at sample counts 1 and 4. No native or shader change
+ships. The full browser control becomes exact twice: 588 corrected, zero
+introduced; its original 5,059 differences are now resolved in diagnostics.
+
+The 45-workload/90-capture recheck has 161 compiled V witnesses, 209 stable
+pins and 91 successful native guards. The other 43 existing non-CNN PNGs are
+unchanged. CNN retains 165,579 reference differences but its native repeat
+fails at 1,558 pixels, in the historical bottom photograph region. The failed
+repeat is retained; equal counts do not establish stability. Production
+confirmation of this fringe correction is pending. See the
+[audit](OPTIMIZED_SITES_PIXELS_2026_11_12.md#sampled-image-compositor-readback-fringes-2026-11-15).
+
+Production `2e089712` (receipt `20261115-142738-638a0adf`, C/literal V `-prod`,
+one unit) confirms `78f1fcf3b`: the complete WebP control is exact twice and
+all 44 non-CNN PNGs match diagnostics. The 45-workload/90-capture cohort has
+136 per-capture selected source witnesses, 160 consumed package V witnesses,
+209 stable pins and all native/driver/outer exits zero. CNN retains 165,579
+reference differences and fails its repeat at 1,484 pixels. An earlier
+interrupted production attempt is retained without acceptance. This supersedes
+the fringe correction's pending-production status; all-site equality remains open.

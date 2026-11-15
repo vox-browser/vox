@@ -7,7 +7,7 @@ Results apply to the frozen page and pinned build in each linked report.
 Provisional entries retain unresolved acceptance checks.
 
 **Pixel recheck, 2026-11-15:** Vox does **not** pass pixel equality across
-this catalog. Production build `a542533f` confirms GitHub, Hacker News,
+this catalog. Production build `2e089712` confirms GitHub, Hacker News,
 Lobsters and Wikipedia exact in two fresh captures each. Vlang.io has **27 differing
 pixels in production**, down from the previously verified 810. The heading fix
 removes its final text difference. Its 23 JPEG pixels still include nine
@@ -20,13 +20,13 @@ All four images in the alpha WebP control are also exact in production after
 the numerical sRGB-profile correction. Other ICC/rescaling controls still have
 known differences. These results apply to pinned builds and frozen page bytes.
 
-The subsequent `1e1ffdd4e` C/O0 diagnostic checks 45 workloads twice. Sampled
-sRGB-profiled WebP thumbnails improve 5,059→588 pixels, with zero introduced
-differences; the viewport-clipped bottom image remains unresolved. CNN improves
-175,866→165,579 and repeats exactly in this cohort, while its historical
-source/replay gate remains open. All 43 other existing PNGs are unchanged and
-all 45 native pairs repeat exactly. Production validation of this slice is
-pending; the latest completed bundle lacks its new sampler.
+Production also confirms `1e1ffdd4e`: the sampled sRGB WebP control improves
+5,059→588 pixels. Production then confirms `78f1fcf3b`: the complete control
+is exact twice, including the viewport-clipped image, with zero introduced
+differences. Its 45-workload recheck retains all 43 other non-CNN PNGs.
+CNN stays at 165,579 reference differences and fails its production native
+repeat at 1,484 pixels (1,558 in diagnostics); earlier exact-repeat cohorts do
+not clear this recurring failure.
 See the
 [current audit, capture scopes and retained failures](docs/OPTIMIZED_SITES_PIXELS_2026_11_12.md).
 

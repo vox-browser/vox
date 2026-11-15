@@ -2838,3 +2838,131 @@ and preserves 239 selected files (32,588,709 bytes). The final archive hashes
 (28,648,574 bytes). Copies are hash-verified before deleting owned scratch
 outputs, generated C, binaries, guards and locks. The temporary test alias is
 also removed. Shared production bundles, libraries and dependencies are retained.
+
+## Production confirmation of sampled sRGB WebP, 2026-11-15
+
+The preceding `1e1ffdd4e` correction is confirmed in production executable
+`73cc5a369ba8dcf011521ec9ea5bb00038a62a82a1f8f0c926fca57f8f48e54b`,
+receipt `20261115-140919-8b8a4fe0`, C/literal V `-prod`, one C unit. The sealed
+buffers contain the final helper, classifier, premultiplication helper and main
+caller; their bytes establish identity independently of the receipt's HEAD.
+The new 45-workload/90-capture cohort retains 135 selected compiled witnesses
+and 167 source/tool/shader pins. All 90 native guards and driver/outer exits
+are zero. All 45 pairs repeat exactly and every reference-difference count
+matches the accepted diagnostic, including the WebP control's retained 588.
+
+All 44 non-CNN PNGs match the accepted diagnostic exactly. CNN retains 165,579
+reference differences and repeats exactly within production, but its PNG
+has 1,558 differences from the preceding C/O0 diagnostic. The first summary's
+cross-build-zero assertion failed on CNN. That failure is retained; the later
+analysis records this gap explicitly and does not claim cross-build CNN
+identity. No successful capture was repeated or excluded to change the result.
+This supersedes the prior pending-production status for `1e1ffdd4e`; the
+remaining clipped-image defect is addressed separately below.
+
+Evidence is local under
+`docs/performance/vlang-gradients-20261114/raw/webp-clipped-20261115/`.
+
+## Sampled-image compositor readback fringes, 2026-11-15
+
+`78f1fcf3b` resolves the new control's remaining clipped image. A temporary
+browser trace identifies its compositor origin as (460, 753), while the native
+backdrop readback begins at (458, 751), size 108×41. The image sample selector
+rejects this two-pixel fringe, returning zero and forcing the older painter.
+Standalone full, small and tile-sized GPU surfaces all match the same Brave
+pixels at sample counts 1 and 4; their size is not the cause.
+
+The correction reuses `geometry_grid_covers_leaf`, already used by other leaf
+painters. It chooses samples from the readback's intersection with its owning
+grid; the fringe owns no additional tile. More than two pixels of overhang,
+empty intersections and mixed sample selections still decline. Three focused
+regression functions reproduce the old failure and pass after the V change.
+The callback regression uses the real tracked WebP and unchanged Brave PNG,
+including both sample counts. Temporary V/native logging is reverted before
+the final compile; no native painter, shader or decode changes ship.
+
+The final C/O0 diagnostic executable is
+`ab5bd846e3e8404e7f850b0ef16fcc0f45e4749fd110fafb88b1fca78b5270ec`.
+Its compiler buffers witness 161 consumed V inputs across Chromium, images,
+GG, GGShape, imageraster, YUV and the main caller. The final focused binary has
+162 renderer/test witnesses. The complete `webp-srgb-table` browser control is
+**exact twice: 588 corrected, zero introduced**, resolving the original 5,059
+control differences across the two corrections. The reference, decoder library
+and native adapter retain their earlier hashes.
+
+The complete 45-workload/90-capture cohort retains 209 stable source/tool/shader
+pins. All 91 native startup/capture guards, the driver and enclosing guard exit
+zero. All 43 existing non-CNN/non-control PNGs match both preceding production
+and diagnostic captures exactly. GitHub, Hacker News, Wikipedia and Lobsters
+remain exact; Vlang retains 27, Engadget's ICC control 124,925 and the root-raster
+WebP control 541,745 reference differences.
+
+**CNN's native repeat fails again at 1,558 pixels**, bounds (460, 753)–(563, 767),
+maximum channel error 146. Both captures retain 165,579 reference differences.
+Its first capture differs by 1,521 pixels from the preceding production and by
+1,557 from the preceding diagnostic. The first final-summary assertion failed
+on this repeat; the failed analysis, captures and comparison remain retained.
+The completed analysis records the failure explicitly. No successful capture
+was repeated or excluded, and no CNN stability or all-site pass is claimed.
+The matching photograph region has recurring repeat failures in earlier
+cohorts; this observation does not attribute the failure to a specific fix.
+Forty-four native pairs, including the corrected control, repeat exactly.
+
+The available production bundle `73cc5a36` still has the previous sample-selector
+bytes. It establishes the preceding correction's production result, but cannot
+validate this one. The managed commit hook requests the coalesced C/literal V
+`-prod` rebuild. **Production confirmation of `78f1fcf3b` remains pending**;
+no additional production build is manually queued.
+
+Raw commands, actual exits, original regression failures, diagnostic sources,
+compiler witnesses, reference transitions, both summary failures and cleanup
+records remain local under
+`docs/performance/vlang-gradients-20261114/raw/webp-clipped-20261115/`.
+All-site equality remains open: Vlang, CNN rendering/source-replay/repeatability,
+the missing Reddit fixture and earlier controls. No live-site, scripting or
+performance acceptance is claimed.
+
+The verified cleanup hashes 6,703 file records across 48 owned job roots and
+preserves 2,131 selected files (55,080,253 bytes). Copies are hash-verified
+before removing owned generated C, binaries, job outputs, guards and locks.
+The temporary test alias and GPU probe source are removed; shared production
+bundles, libraries and dependencies remain intact.
+
+## Production confirmation of sampled-image fringes, 2026-11-15
+
+The final `78f1fcf3b` correction is confirmed in production executable
+`2e08971261e0625d26c1005f1dcd859421619ae6b19ff16c9e9f2459e7d256fc`,
+receipt `20261115-142738-638a0adf`, C/literal V `-prod`, one C unit. The
+sealed sample-selector bytes match the committed correction, independently
+of the receipt's earlier HEAD. The new guard-complete 45-workload/90-capture
+cohort preserves 136 selected per-capture source witnesses, 160 consumed
+package V witnesses (including Chromium), and 209 stable source/tool/shader
+pins. All 90 native guards, the comparison driver and enclosing guard exit zero.
+
+**The complete WebP control is exact twice in production.** All 44 non-CNN
+PNGs match the final diagnostic exactly, including the four exact site archives;
+all 44 non-CNN pairs repeat exactly. Every reference-difference count is
+retained. CNN remains at 165,579 differences twice, but its native repeat
+fails at **1,484 pixels**, maximum channel error 150, in the same (460, 753)
+to (563, 767) photograph region. Its first production PNG matches the final
+diagnostic's first PNG exactly. No CNN stability or global pixel pass is claimed.
+
+The preceding production attempt completed all 90 native captures with zero
+individual guard exits, but lost its outer completion receipt during the user
+continuation; no process remained and the report was empty. It is retained
+without production acceptance. Its CNN pair differed at 685 pixels in the same
+region. The complete fresh recovery cohort uses separate output/receipt names;
+no original attempt was overwritten. Recovery establishes the correction's
+production control result and retains CNN's failure, rather than clearing it.
+
+This supersedes the preceding pending-production status for `78f1fcf3b`.
+Receipts, original/recovery commands and exits, all captures, compiled-source
+witnesses and comparisons remain in the same local evidence directory.
+The shared completed bundle was reused; no additional manual production build
+was queued. All-site equality, live behavior, scripting and performance
+acceptance remain open.
+
+The second verified archive hashes 6,014 file records across 11 production
+job roots and preserves 1,859 selected files (44,225,272 bytes), including
+the interrupted attempt. Copies are hash-verified before deleting all owned
+production outputs, guards and locks. No owned scratch jobs remain.

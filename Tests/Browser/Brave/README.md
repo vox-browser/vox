@@ -6,8 +6,10 @@ and viewport-clipped copies at 1024×768, scale 1, without scripts. Two fresh
 Brave 157.1.99.57 processes produced identical references before the renderer
 change; the retained PNG SHA-256 is
 `141711ca2cdcd062dc1cbfaf031df00d6366141ea67a1713b3b1abc20b0a9c1e`.
-The GPU regression is exact at sample counts 1 and 4. The browser control
-improves 5,059→588 differences; its clipped bottom copy remains open. See the
+The GPU regression is exact at sample counts 1 and 4. Production `1e1ffdd4e`
+improves the browser control 5,059→588 differences. Correction `78f1fcf3b`
+then makes the complete browser capture exact twice, including its clipped
+bottom copy, now confirmed in production `2e089712`. See the
 [profiled WebP audit](../../../docs/OPTIMIZED_SITES_PIXELS_2026_11_12.md#sampled-srgb-profiles-and-rgb-webp-minification-2026-11-15).
 
 Many fixtures below were first matched through the Skia text bridge and the
