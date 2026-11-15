@@ -38,6 +38,7 @@ fn (mut host Host) install_urls() ! {
 	constructor.define_direct_property(libjs.PropertyName.from_str('prototype'), libjs.Value.from_object(prototype), 0)
 	prototype.define_direct_property(libjs.PropertyName.from_str('constructor'), libjs.Value.from_object(constructor), libjs.attribute_writable | libjs.attribute_configurable)
 	host.install_url_members(mut prototype, mut constructor)
+	host.install_object_urls(mut constructor)
 	mut global := host.realm.global_object_record()
 	global.define_direct_property(libjs.PropertyName.from_str('URL'), libjs.Value.from_object(constructor), libjs.attribute_writable | libjs.attribute_configurable)
 	location := domurl.DOMURL.construct_impl(host.document.url.serialize(), none)!
