@@ -4,6 +4,7 @@ import dom
 import fetch
 import geometry
 import html
+import intersectionobserver
 import libjs
 import platform
 import webidl
@@ -43,6 +44,11 @@ mut:
 	read_only_rect_prototype &libjs.Object = unsafe { nil }
 	read_only_rects map[voidptr]&geometry.DOMRectReadOnly
 	read_only_rect_wrappers map[voidptr]&libjs.Object
+	intersection_observer_prototype &libjs.Object = unsafe { nil }
+	intersection_entry_prototype &libjs.Object = unsafe { nil }
+	intersection_observers map[voidptr]&IntersectionBinding
+	intersection_entries map[voidptr]&intersectionobserver.IntersectionObserverEntry
+	intersection_entry_wrappers map[voidptr]&libjs.Object
 	url_prototype        &libjs.Object = unsafe { nil }
 	style_prototype      &libjs.Object = unsafe { nil }
 	headers_prototype &libjs.Object = unsafe { nil }
@@ -100,6 +106,7 @@ pub fn Host.create(vm &libjs.VM, realm &libjs.Realm, document &dom.Document, hoo
 	host.install_navigator()!
 	host.install_mutation_observers()!
 	host.install_read_only_rects()
+	host.install_intersection_observers()
 	host.install_styles()
 	host.install_urls()!
 	host.install_headers()!
@@ -167,6 +174,7 @@ pub fn (mut host Host) close() {
 	if host.closed { return }
 	host.closed = true
 	host.close_mutation_observers()
+	host.close_intersection_observers()
 	mut owner_document := unsafe { &dom.Document(host.document) }
 	owner_document.clear_custom_element_construction_hook(voidptr(&host))
 	host.registries.clear()
