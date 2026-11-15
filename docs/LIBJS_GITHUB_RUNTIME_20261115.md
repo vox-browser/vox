@@ -1960,3 +1960,105 @@ requires 33 rows, 56 commit links, current README, active controls, zero errors,
 the unchanged Brave content audit and zero differing pixels, followed by
 matched performance evidence. GitHub hydration, faster compiled revisits and
 pixel-perfect Brave rendering remain unverified and unachieved.
+
+## Native readable source and controller continuation
+
+The 2026-11-16 continuation preserves the user's hold: no tests were compiled
+or executed, no JS was evaluated, and no browser, screenshot, comparison or
+performance trial was launched. The compiled-JS GitHub/Brave objective remains
+incomplete.
+
+| Commit | Implemented behavior |
+| --- | --- |
+| `876589c37` | Expose internal PerformPromiseThen observation without a result capability or additional public then/constructor/species lookup. Ordinary public Promise behavior retains its existing lookups. |
+| `7b34dedd9` | Add traced native readable-source and size-algorithm records. Start/pull/cancel receive the actual controller/reason; readable, writable and transform strategies retain the size record and clear it with their algorithms. |
+| `3eb8bef4a` | Bind public ReadableStream construction, default/byte controller wrappers, source callback this/argument values, native desired size/queue/close/error operations, author Promise results and the owning VM's FIFO Promise queue. Extend native Fetch byte aggregation to actual authored Uint8Array chunks. |
+
+Constructor conversion retains strategy-member ordering before the new-target
+prototype getter, followed by native underlying-source dictionary conversion.
+Start executes synchronously; its completion enables later pulls. Start's
+thrown author value remains synchronous, while pull/cancel failures become
+native rejected Promises carrying the same value. An escaped controller is
+errored before a failed constructor detaches its source record.
+
+Upstream WebIDL/Promise.cpp creates a fresh intrinsic capability and resolves
+it with a callback result. The bridge therefore retains Get(result, "then"),
+including a replaced or throwing getter on an intrinsic Promise; it does not
+apply PromiseResolve's same-constructor shortcut. Only later internal
+observation avoids another public lookup. Pending settlement uses traced
+callable records. A JS settlement reaction executes its immediate native
+reaction in that turn; subsequent native jobs enter the normal VM/HTML FIFO.
+Temporary job captures are retained until safe release, and VM teardown
+detaches pending source/adoption records and job roots. This is not a complete
+native garbage-collection audit.
+
+Default controllers preserve actual object, symbol, BigInt and other chunk/
+error identities. Size callbacks use undefined this and ToNumber once. Byte
+enqueue accepts actual fixed, non-shared ArrayBufferViews, copies the selected
+window and detaches the original buffer before completing pending reads.
+Native auto-allocation beyond the byte-vector bound rejects the affected read
+before queuing it, preserving the readable stream; it does not reject the
+constructor. Full BYOB request/view bindings, buffer-sharing metadata and
+cross-realm semantics remain open.
+
+Thirty-two regression functions are prepared: four LibJS internal-observation,
+six native callback/allocation and 22 public-source/controller cases. They cover
+FIFO/start gating, pending pull serialization, callback this/arguments, getter
+ordering, thrown/rejected value identity, size coercion/errors, controller
+brands, History rejection, byte transfer/view windows, read allocation failure,
+native Fetch consumption, arena/teardown ownership and compiler-disabled
+second-VM cache revisits. These are uncompiled, unexecuted source; the cache
+assertions provide no measured reuse or performance evidence.
+
+All ten compiler-only attempts and logs are preserved byte-identically in
+local `docs/performance/libjs-stream-source-20261116/`, with a hashed index:
+
+| Compiler-only check | Child exit | Seconds | Peak sampled RSS bytes |
+| --- | ---: | ---: | ---: |
+| Internal Promise observation normal | 0 | 19.466 | 5,355,241,472 |
+| Internal Promise observation production | 0 | 20.463 | 5,646,548,992 |
+| Native callback records normal | 0 | 19.677 | 5,356,191,744 |
+| Native callback records production | 0 | 15.621 | 5,636,603,904 |
+| Public bindings initial normal | 1 | 9.816 | 1,525,858,304 |
+| Public bindings corrected normal | 0 | 17.386 | 5,362,384,896 |
+| Public bindings callback-result record normal | 0 | 20.913 | 5,374,902,272 |
+| Read-allocation bound initial normal | 1 | 13.868 | 1,526,087,680 |
+| Public bindings final normal | 0 | 22.985 | 5,374,672,896 |
+| Public bindings final production/prealloc/no-GC | 0 | 23.758 | 5,638,733,824 |
+
+The first failure identified numeric Value conversion and an explicit optional
+interface cast; the allocation-bound failure identified a missing WebIDL
+import. Both were corrected before the bindings commit. Checks use
+`V3_STR_CAP=1 VJOBS=1`, a unique default 12 GiB `run_memory_bounded` guard and
+`/Users/alex/code/v/v -w -n -b c -no-parallel -cc clang -check
+-memory-limit 10G -enable-globals tools/libjs_github_revisit.v`; production adds
+`-prod -prealloc -gc none`. Every guard reports reason=completed and the child
+exit above. These normal-program import checks exclude `_test.v`, C linking and
+execution. Compiler durations do not measure JS performance. Completed own
+Build reports and locks were deleted after evidence preservation.
+
+At implementation revision `3eb8bef4a`, the latest completed production
+executable inspected statically has SHA-256
+`419ad8d777319bd5b8605799a59da05b59e20ae596bc3f50594babb87db2ba56`.
+Its actual hash matches
+`Build/production-build/receipts/20261116-002422-18914df3/frozen-compile.json`;
+the C mode is single with literal V -prod. Its exact consumed-source manifest
+matches none of 17 selected current implementation files. Receipt and executable
+identities stayed unchanged during the audit. This older bundle cannot validate
+the additions. The managed post-commit hook requested coalesced production
+rebuilds; no duplicate manual build or fresh launch was introduced.
+
+The original fixture manifest remains
+`893e042c4f31e1b7fb984c81cf8f6a2a7eb65d790f7c3f4cc3e372c065de302d`,
+and the Brave PNG remains
+`649abff51549508516e2e0681866ba81ce69e7112cfa8dc3446b9b76c99be3d3`.
+The earlier frozen-source scan contains no textual ReadableStream identifier
+or .stream() call. These constructor additions therefore supply no demonstrated
+progress on a reachable GitHub path. No new run identifies the next first
+failure. The last actual observation remains 672 warm native entries, 51
+frontend hits, zero compiler calls, 33 rows, zero commit links and five module
+errors, predating these changes. Acceptance remains 33 rows, 56 commit links,
+current README, active controls, zero errors, the unchanged Brave content audit
+and zero differing pixels, followed by matched performance evidence. BYOB,
+pipe/async iteration, other stream classes, FormData and remaining
+JS/Web/Intl/rendering behavior remain unfinished.

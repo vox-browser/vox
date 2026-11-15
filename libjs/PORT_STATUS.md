@@ -42,6 +42,15 @@ visit followed in `7ec82b601`, and browser parsed-source reuse in `07902ae2d`.
 LibJS documents now enable that persistent cache automatically; the earlier
 manual HN experiment above is historical, not the current document-cache policy.
 
+The function compiler maps parser-proven uncaptured parameters and function `var`
+bindings to bytecode local slots for ordinary, simple-parameter functions with
+unobservable arguments. Reads copy into temporaries to preserve evaluation order;
+the native tier lowers these accesses to direct slot moves. Captures, eval/with,
+lexical/TDZ bindings, complex parameters and observable arguments retain their
+environment paths. Focused tests cover assignments, destructuring, shadowing,
+budgets and compiler-free native-cache revisits in both GC modes. This is a
+runtime optimization, not additional language or DOM parity.
+
 Set/Map operations and live iterators, WeakMap weak keys, ordinary arguments
 objects, default/rest/destructured function parameters, class inheritance,
 super construction (including explicit iterator-based argument spread),
@@ -2859,3 +2868,24 @@ The latest inspected production manifest matches none of thirteen selected
 changed inputs. No new cache speed, full GitHub execution or Brave pixel
 result is claimed. See the
 [stream continuation](../docs/LIBJS_GITHUB_RUNTIME_20261115.md#native-default-readers-and-blob-fetch-stream-continuation).
+
+The 2026-11-16 authored-source slice adds capability-free internal Promise
+observation, traced source/size callback records, public ReadableStream
+construction and default/byte controller bindings. Start/pull/cancel returns
+use fresh intrinsic Promise resolution, including the public then getter,
+before internal observation. Native reactions join the owning VM/HTML Promise
+queue; an existing JS settlement reaction consumes its immediate native
+reaction without inserting another turn. Controller operations preserve actual
+chunks/reasons and transfer byte enqueue buffers. Native Fetch aggregation can
+consume authored Uint8Array chunks through the owning realm's witness.
+
+Thirty-two focused functions are prepared but uncompiled and unexecuted.
+Ten compiler-only attempts are retained, including two corrected failures;
+the final normal and production/preallocation GC-none import checks pass.
+These checks exclude tests, C linking and runtime execution. BYOB request/view
+wrappers and buffer metadata, pipe/async iteration, other stream classes,
+foreign-realm rules, FormData and remaining JS/Web/rendering behavior remain
+open. The latest inspected production manifest matches none of 17 selected
+changed inputs. Full GitHub execution, compiled revisit speed and Brave pixel
+parity remain unverified; see the
+[authored-source continuation](../docs/LIBJS_GITHUB_RUNTIME_20261115.md#native-readable-source-and-controller-continuation).

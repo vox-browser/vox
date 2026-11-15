@@ -116,14 +116,25 @@ rejections retain typed SimpleException records and diagnostic strings.
 Blob delivery tasks now own their closures, and VM teardown removes them,
 detaches pending observers, releases reader locks and clears wrapper roots.
 
-This LibJS bridge is partial. Public ReadableStream construction and source/
-controller callbacks, BYOB wrappers, pipeTo/pipeThrough, async iteration,
-WritableStream/TransformStream and general cross-realm behavior remain open.
+The next slice exposes public ReadableStream construction, default/byte
+controller wrappers, traced source/size callback records and asynchronous
+start/pull/cancel return values. Native jobs use the owning VM's Promise queue;
+author return assimilation retains the required public then getter. Byte
+enqueue transfers the source view's buffer and retains its selected bytes.
+Oversized auto-allocation rejects the affected read before it is queued.
+
+This LibJS bridge is partial. BYOB request/view wrappers and buffer metadata,
+pipeTo/pipeThrough, async iteration, WritableStream/TransformStream and general
+cross-realm behavior remain open.
 Twenty-four regression functions across WebIDL and libjsdom are prepared but
 uncompiled and unexecuted under the user's hold. Final normal and production/
 preallocation GC-none compiler-only import checks pass; these do not establish
 runtime or browser parity. See the
 [native reader/Blob/Fetch continuation](../docs/LIBJS_GITHUB_RUNTIME_20261115.md#native-default-readers-and-blob-fetch-stream-continuation).
+The [authored-source continuation](../docs/LIBJS_GITHUB_RUNTIME_20261115.md#native-readable-source-and-controller-continuation)
+adds 32 prepared functions across LibJS, Streams and libjsdom, all still
+uncompiled and unexecuted. It records final compiler-only checks and retained
+failed attempts separately from runtime evidence.
 
 Ladybird represents chunks as arbitrary LibJS values. The V package now also
 carries real owning JSC value references through its WebIDL/Streams boundary;
