@@ -2762,3 +2762,25 @@ behavior are still open. Six localeCompare calls in four archived GitHub bodies
 are a static missing binding, not a measured first runtime failure. No new
 GitHub hydration, native-cache performance or Brave pixel result is claimed.
 See the [number/relative-time continuation](../docs/LIBJS_GITHUB_RUNTIME_20261115.md#native-number-relative-time-and-locale-case-continuation).
+
+The following collation slice implements a native Unicode 17/CLDR root trie,
+NFD normalization, contiguous/discontiguous contractions, expansions, implicit
+weights, numeric digit runs, shifted punctuation and sensitivity/case levels.
+Intl.Collator and String.localeCompare now bind that engine, with traced bound
+compare functions, retained/default intrinsic caching, checked coercion/options,
+resolved/supported locales and History rejection. Collator advertises the
+implemented English locale set; other languages negotiate to a supported
+default. Language/search tailorings and full ICU/Brave conformance remain open.
+The DOM bridge also binds URL.canParse/parse, native URL component prototypes,
+string/JSON serialization, lazy live searchParams, subclass prototypes and owned
+URL wrapper caches released on Host.close. Twenty-eight new regression functions
+remain uncompiled and unexecuted, including cache revisits, budget/arena cases and
+History rejection. Two older pending Intl cases had their JavaScript surrogate
+escapes corrected in source. Normal and production/preallocation GC-none
+compiler-only checks pass after a retained/corrected pointer-map access failure.
+No new runtime, hydration, speed or pixel result is claimed under the user's
+test hold. Static source also exposes the pending production typed-array and
+BigInt constructor graphs (24 Uint8Array call matches in five original bodies,
+three Float64Array matches in two and 18 BigInt matches in two); these are not
+measured first failures. See the
+[collation/URL continuation](../docs/LIBJS_GITHUB_RUNTIME_20261115.md#native-collation-and-url-continuation).

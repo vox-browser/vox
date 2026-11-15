@@ -1545,3 +1545,138 @@ five module errors, predating these changes. The strict gates remain 33 rows,
 56 commit links, the current README, active controls, no errors, the unchanged
 Brave content audit and zero differing pixels. Compiled revisit speed and
 GitHub/Brave pixel parity remain unmeasured and unachieved for the new source.
+
+## Native collation and URL continuation
+
+**The compiled-JS GitHub/Brave task remains incomplete.** The user's runtime-test
+hold remains in force. This continuation did not launch tests, JavaScript
+evaluation, initialization probes, AST corpora, browsers, screenshots, pixel
+comparisons or performance trials. New and corrected `_test.v` files remain
+uncompiled as well as unexecuted. The managed production worker runs
+independently; its build activity does not substitute for this task's pending
+runtime and page acceptance.
+
+Implementation commits:
+
+- `27c3c4f6a`: native CLDR-root collation engine and pinned generated data,
+  canonical normalization, contractions/expansions, implicit weights, exact
+  numeric runs, shifted punctuation and sensitivity/case settings.
+- `6e7636eed`: native Intl.Collator, traced bound compare functions, checked
+  construction/options/locales, resolved/supported locales, retained
+  String.localeCompare/default cache and History rejection.
+- `417654f27`: native URL.canParse/parse, prototype component accessors/setters,
+  string/JSON serialization, lazy live searchParams, subclass prototypes, USV
+  conversion/argument ordering and owned wrapper maps cleared at Host.close.
+  Location exposes live component reads; navigation setters remain pending.
+- `9e3309e1b`: correct JavaScript lone-surrogate escapes in two older pending
+  Intl cases and add native/bound locale-comparison surrogate coverage. This
+  source correction was not a test compilation or execution pass.
+
+Collation is implemented in V using
+[CLDR release-48](https://github.com/unicode-org/cldr/tree/acd6d88ae493633240e19a87a721076a8a75c310),
+commit `acd6d88ae493633240e19a87a721076a8a75c310`, and official Unicode 17 UCD
+inputs. The generator checks six fixed input hashes and preserves the Unicode
+license/provenance. The data contains 39,761 mappings, 39,762 trie nodes, 45,860
+collation elements, 770 decimal digits and eight implicit ranges. The root asset
+is 1,529,016 bytes, decimal digits 6,160 bytes and implicit ranges 128 bytes.
+Immutable little-endian lookup tables do not require decoding an entire JSON
+map in each VM. No ICU, system formatter/collator, JSC or V8 bridge was added.
+The source-only Unicode dependency scan passes; no linked-binary audit ran.
+
+The engine follows
+[UCA 17 normalization/matching/weight comparison](https://www.unicode.org/reports/tr10/tr10-53.html)
+and the
+[CLDR case parameters](https://www.unicode.org/reports/tr35/tr35-77/tr35-collation.html#Case_Parameters).
+Normalization charges for canonical reordering and contraction work against the
+VM budget. Numeric runs use significant decimal digits and lengths, preserving
+large values and cross-script equality without binary64 conversion. Shifted
+punctuation also skips following primary-ignorable elements. Bound functions
+retain ordinary traced collator/realm edges and establish their callee contexts.
+String.localeCompare converts both arguments before locale/options effects;
+explicit options are processed even for identical strings. Only the no-options
+path caches a collator, keyed by the embedding's current default locale.
+
+This is a partial collation implementation. The available set is en, en-US and
+en-GB, whose standard order inherits the CLDR root. English regional requests
+can negotiate to en; other languages fall back to an implemented default.
+Supported-locales queries use this actual smaller set. Other language/alternate
+tailorings, search-specific tailorings, Han radical/stroke ordering and a full
+collation corpus remain open. Search usage currently uses root comparison and
+variant sensitivity. No full Intl, ICU or Brave collation equality is claimed.
+
+The URL bindings use the existing native DOMURL/LibURL parser, including failure
+for an invalid base even with an absolute input. Required arguments and USV
+conversion precede parser execution. Construction reads NewTarget.prototype
+after argument conversion and before parser failure. Native component getters
+and setters validate the receiver before author conversion. SearchParams is a
+lazy SameObject projection of the retained native URL; href/search replacements
+update its live list. URL wrappers use shared prototype callbacks and
+host-scoped native/wrapper maps, rather than per-instance callback captures.
+The maps are released at Host.close. Cross-realm fallback details, Location
+navigation setters, Blob constructors and object-URL APIs remain pending; no
+full URL/WebIDL conformance claim is made.
+
+Twenty-eight new regression functions are prepared: six collation-engine cases,
+eleven Collator/String cases, nine URL cases and two History cases. They cover
+GitHub-style name/entry sorting, numeric precision, Unicode levels and
+contractions, USV conversion, coercion/prototype ordering, lazy query identity,
+fixed callback counts, arena retention, native-work budgets, brand checks and
+compiler-disabled revisits. Every new assertion remains pending under the hold.
+
+Eight compiler-only attempts and raw logs are preserved byte-identically in
+local `docs/performance/libjs-collation-20261115/`, with a hashed receipt index.
+Seven succeeded; the first production binding attempt rejected a Value-map read
+without an explicit missing-key branch. That access was corrected before the
+binding commit, and both compiler modes then passed:
+
+| Compiler-only check | Child exit | Seconds | Peak sampled RSS bytes |
+| --- | ---: | ---: | ---: |
+| Root collation normal | 0 | 15.250 | 5,278,138,368 |
+| Root collation production/prealloc/no-GC | 0 | 15.234 | 5,559,484,416 |
+| Collator bindings initial normal | 0 | 18.449 | 5,269,356,544 |
+| Collator bindings first production | 1 | 10.388 | 1,796,505,600 |
+| Collator bindings corrected production | 0 | 22.928 | 5,556,256,768 |
+| Collator bindings final normal | 0 | 24.739 | 5,281,710,080 |
+| URL bindings normal | 0 | 16.270 | 5,263,949,824 |
+| URL bindings production/prealloc/no-GC | 0 | 18.250 | 5,559,517,184 |
+
+Each guarded check uses `V3_STR_CAP=1 VJOBS=1`, current V,
+`-w -n -b c -no-parallel -cc clang -check -memory-limit 10G -enable-globals
+tools/libjs_github_revisit.v`; production mode adds `-prod -prealloc -gc none`.
+All guards report `reason=completed` with the actual child exits above. These
+normal-program import checks exclude `_test.v`, C compilation/linking and
+JavaScript execution. Completed per-job Build reports/locks were removed after
+preserving their evidence. Compiler times are not JavaScript performance data.
+
+The static original-source audit still finds six localeCompare call matches in
+four bodies; that missing native binding is now implemented. URL.canParse has
+four direct call matches in one original dp schema-validation body, now bound
+to the native parser. A wider source scan finds 24 Uint8Array call matches in
+five bodies, three Float64Array matches in two and 18 BigInt matches in two.
+The production typed-array and BigInt constructor graphs are still pending,
+despite retained translated records/helpers. These are source-level gaps, not
+runtime reachability counts or a measured first initialization failure. Remaining
+Intl/Web APIs, async generators, top-level await and full page behavior are
+also open.
+
+At implementation revision `9e3309e1b3031d5471463d252d48233249e32ba2`, the latest
+completed production executable inspected statically is still
+`a29214bc09337794f4f8e15f94a51670fe39281e43c304228e7ee376f46f0bf2`, single C unit
+with literal V `-prod`. Its actual executable hash matches the receipt at
+`Build/production-build/receipts/20261115-204745-385a0d38/frozen-compile.json`.
+The sealed consumed-input manifest matches zero of the 18 selected changed
+implementation/data/provenance paths. The raw audit retains every selected
+committed/sealed hash. The available bundle cannot exercise this new code; no
+fresh process was launched. Each commit requested the managed coalesced rebuild,
+and no duplicate manual build or long wait for publication was introduced.
+
+The original fixture manifest remains
+`893e042c4f31e1b7fb984c81cf8f6a2a7eb65d790f7c3f4cc3e372c065de302d`.
+Brave references, tolerance and strict content gates were not changed. The last
+actually executed GitHub observation remains the historical 672 warm native
+entries, 51 frontend hits, zero compiler calls, 33 rows, zero commit links and
+five module errors, before these implementation slices. Acceptance still needs
+33 rows, 56 commit links, the current README, active controls, no errors, the
+unchanged Brave content audit and zero differing pixels, followed by matched
+performance evidence. New GitHub hydration, native-cache speed and Brave pixel
+parity remain unmeasured and unachieved.
