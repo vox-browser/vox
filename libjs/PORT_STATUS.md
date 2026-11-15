@@ -2965,3 +2965,20 @@ bindings, remaining IDL and broader JS/Web/rendering behavior remain open.
 The latest inspected production manifest matches ten of twelve selected
 implementation inputs and lacks the final forms/provider revisions. See the
 [control/form-action continuation](../docs/LIBJS_GITHUB_RUNTIME_20261115.md#native-control-state-and-form-action-continuation).
+
+The text-control follow-up binds selectionStart/End/Direction, select,
+setSelectionRange and setRangeText to concrete native owners. Range writes
+preserve live values and dirty state; textarea raw text is separate from its
+newline-normalized selection value. Constraint reads refresh input/textarea/
+select owners, and live ValidityState plus control validation methods retain
+native invalid-event dispatch. Custom messages normalize to LF and invalidate
+the affected native style owners. Thirty-six additional functions are prepared
+but remain uncompiled and unexecuted under the user's hold. Fifteen
+compiler-only attempts retain both corrected failures; final import and whole
+browser checks pass in normal and production/preallocation modes. The inspected
+production manifest matches only five of fourteen selected current inputs;
+the bundle was not launched. Full control IDL, FileList, collections/named
+properties, reporting UI and broader JS/Web/rendering behavior remain open.
+GitHub execution, compiled-revisit speed and Brave pixel parity remain
+unverified; see the
+[selection/validation continuation](../docs/LIBJS_GITHUB_RUNTIME_20261115.md#native-text-selection-and-constraint-validation-continuation).

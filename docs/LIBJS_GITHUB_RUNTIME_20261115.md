@@ -2255,3 +2255,118 @@ predating these changes. Acceptance remains 33 rows, 56 commit links, current
 README, active controls, zero errors, the unchanged Brave content audit and zero
 differing pixels, followed by matched performance evidence. New full GitHub
 execution, faster compiled revisits and Brave pixel parity remain unverified.
+
+## Native text selection and constraint validation continuation
+
+The user's hold on tests and execution remains in force. This continuation ran
+only compiler checks of non-test programs and static source/hash audits. It did
+not compile or execute tests, initialize a JavaScript runtime, launch a browser,
+capture pixels or collect performance measurements. GitHub/Brave parity remains
+incomplete.
+
+Four focused commits add the following source behavior:
+
+- `a5cc02c99` restores concrete input/textarea owner dispatch for range
+  replacement. The live value, dirty flags, user-edit state, validation and
+  editing text reach the same owner used by rendering and FormData. Textareas
+  retain their raw value separately while selection offsets count the
+  newline-normalized API value. `select()` also handles the broader native
+  input applicability set, including email.
+- `c9a5a05b2` binds selectionStart, selectionEnd, selectionDirection, select,
+  setSelectionRange and both setRangeText overloads on the native input and
+  textarea prototypes. Receiver and overload checks precede author conversion;
+  nullable input attributes, unsigned-long wrapping, enum rejection, conversion
+  side effects and native DOM errors follow their IDL paths. Native selection
+  tasks remain responsible for select/selectionchange events.
+- `023f3c67c` restores live constraint-owner dispatch for inputs, textareas and
+  selects, including form-level checks. Select required/placeholder checks no
+  longer depend on stale base flags. Radio group comparisons use pointer
+  identity. Custom messages normalize CRLF/CR to LF and invalidate the control,
+  owning form and ancestor fieldsets; readonly custom controls are barred.
+- `86bf060b1` exposes the eleven readonly ValidityState flags and control
+  willValidate, validity, validationMessage, checkValidity, reportValidity and
+  setCustomValidity on input, textarea, select and button prototypes. Wrappers
+  retain the actual native state/control, survive the transient arena, reject
+  forged/Proxy receivers and History cloning, and clear ownership maps on close.
+  Public ValidityState construction is illegal. Native invalid-event dispatch
+  and its cancellation/return semantics are retained.
+
+These additions do not establish complete text-control or validation conformance.
+In particular, reportValidity uses the existing native reporting path; platform
+validation-message UI remains unfinished. Broader control IDL, FileList bindings,
+form/options collections and named properties, foreign-realm behavior, native
+ownership and wider JS/Web/rendering work remain open.
+
+Thirty-six additional focused functions are prepared: seven native range-owner,
+eleven selection-binding, seven native validation-owner and eleven
+validation-binding cases. They cover normalized newline/UTF-16 offsets, dirty
+owners, clamping and wrapping, arity/brands/conversion order, replacement modes,
+FormData values, live selectedness/defaults/radio groups, constraint flags,
+invalid-event behavior, submission prevention, custom messages, descriptors,
+clone rejection and persistent lifetime. They remain uncompiled and unexecuted.
+
+All fifteen compiler-only attempts are retained byte-identically, including the
+two corrected failures, with a hashed index in local
+`docs/performance/libjs-control-editing-20261116/`:
+
+| Compiler-only check | Child exit | Seconds | Peak sampled RSS bytes |
+| --- | ---: | ---: | ---: |
+| Range owner initial normal | 0 | 16.555 | 5,370,429,440 |
+| Range owner final normal | 0 | 19.400 | 5,384,142,848 |
+| Range owner production | 0 | 18.348 | 5,663,948,800 |
+| Selection bindings normal | 0 | 19.055 | 5,389,565,952 |
+| Selection bindings production | 0 | 18.599 | 5,660,573,696 |
+| Validation owner initial normal | 1 | 1.382 | 764,198,912 |
+| Validation owner corrected syntax normal | 1 | 8.916 | 1,531,396,096 |
+| Validation owner corrected mutability normal | 0 | 15.854 | 5,391,826,944 |
+| Validation owner production | 0 | 15.802 | 5,666,406,400 |
+| Validation owner final normal | 0 | 15.566 | 5,395,939,328 |
+| Validation owner final production | 0 | 16.621 | 5,662,539,776 |
+| Validation bindings normal | 0 | 15.645 | 5,394,317,312 |
+| Validation bindings production | 0 | 15.482 | 5,670,371,328 |
+| Whole browser final normal | 0 | 24.584 | 6,688,276,480 |
+| Whole browser final production | 0 | 25.142 | 6,965,460,992 |
+
+The failures were an unsupported optional-unwrapping loop syntax and mutation
+through an immutable select control field; both were corrected before commit.
+Each guard reports reason=completed, with the child exits above. Import checks
+use current V, `V3_STR_CAP=1 VJOBS=1`, a unique default 12 GiB memory guard and
+`-w -n -b c -no-parallel -cc clang -check -memory-limit 10G -enable-globals
+tools/libjs_github_revisit.v`. Production adds `-prod -prealloc -gc none`.
+Whole-browser checks target `.` with vox_production/vox_ui2/vox_sparse_ttf,
+the native-zoneinfo exclusion and the existing shared font/HTTP/UI2 module
+paths. Exact commands, logs and guard reports remain local. Own Build job
+reports and locks were removed after hash-verified preservation. Compiler
+success establishes source typing, not execution or native-cache behavior.
+
+The static scan verifies all bodies before reading the original 87 JS URLs /
+86 distinct bodies. It finds 66 .selectionStart references in five bodies,
+62 .selectionEnd in five, four .selectionDirection in two, twelve
+.setSelectionRange in six, eleven .checkValidity in one, seventeen
+.setCustomValidity in two, and one each .validity/.validationMessage in one.
+The .validity context reads customError before saving validationMessage.
+Textual property names do not establish receiver brands or runtime reachability.
+No .setRangeText, .willValidate or .reportValidity dot references were found;
+those APIs complete the exposed selection/validation families. Counts and
+bounded contexts remain local in static-source-scan.json.
+
+The inspected completed production executable is SHA-256
+`9b721c8a10c11bb7e3e0de505993ce69fe79113e3a14edcd89c2b6e481641262`,
+receipt `20261116-021306-0ff8edb4`, single-C-unit / v_prod. Five of fourteen
+selected current implementation inputs match its consumed-source manifest;
+the nine selection/validation inputs differ or are absent. Receipt and
+executable identities stayed stable during the audit. The available bundle
+cannot validate this continuation. Commits requested coalesced managed builds;
+no duplicate manual build or browser launch was introduced.
+
+The original fixture manifest remains
+`893e042c4f31e1b7fb984c81cf8f6a2a7eb65d790f7c3f4cc3e372c065de302d`,
+and Brave reference PNG remains
+`649abff51549508516e2e0681866ba81ce69e7112cfa8dc3446b9b76c99be3d3`.
+The last actual GitHub observation is still the historical 672 warm native
+entries, 51 frontend hits, zero compiler calls, 33 rows, zero commit links and
+five module errors; it predates these changes. Acceptance remains 33 rows,
+56 commit links, current README, active controls, zero errors, the unchanged
+Brave content audit and zero differing pixels, followed by matched performance
+evidence. No new full execution, compiled-revisit speed or pixel-parity claim
+is established.

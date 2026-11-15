@@ -13,12 +13,18 @@ these HTML models. It also binds form properties, reset/validation/submission,
 submitter overrides and native SubmitEvent, with a traced browser navigation
 service. Empty checked values survive submission, lazy select initialization
 runs once, and requestSubmit without a button honors form noValidate.
-Thirty-five focused functions remain uncompiled and unexecuted under the
-user's hold. Normal and production/preallocation compiler-only import and
-browser checks pass; runtime and pixel parity remain unverified. Full control
-IDL, collections/named properties, validation/selection/FileList bindings and
-native ownership remain open. See the
-[control/form-action continuation](../docs/LIBJS_GITHUB_RUNTIME_20261115.md#native-control-state-and-form-action-continuation).
+
+The follow-up binds native input/textarea selection and live control validation,
+including ValidityState and invalid-event dispatch. Range replacement updates
+the concrete value/dirty owner; textarea selection counts normalized newlines.
+Constraint reads refresh input/textarea/select owners, and custom messages
+normalize to LF. Thirty-six additional focused functions remain uncompiled and
+unexecuted under the user's hold. Normal and production/preallocation
+compiler-only import and browser checks pass; runtime and pixel parity remain
+unverified. Full control IDL, FileList, collections/named properties, reporting
+UI and broader native ownership remain open. See the
+[selection/validation continuation](../docs/LIBJS_GITHUB_RUNTIME_20261115.md#native-text-selection-and-constraint-validation-continuation)
+and earlier [control/form-action continuation](../docs/LIBJS_GITHUB_RUNTIME_20261115.md#native-control-state-and-form-action-continuation).
 
 The historical inventory below found candidate V mappings for 261 HTML source
 files. Its file/symbol/LOC counts and 107-file test result describe that earlier
