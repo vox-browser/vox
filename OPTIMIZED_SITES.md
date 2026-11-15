@@ -7,7 +7,7 @@ Results apply to the frozen page and pinned build in each linked report.
 Provisional entries retain unresolved acceptance checks.
 
 **Pixel recheck, 2026-11-15:** Vox does **not** pass pixel equality across
-this catalog. Production build `36f72f4a` confirms GitHub, Hacker News,
+this catalog. Production build `a542533f` confirms GitHub, Hacker News,
 Lobsters and Wikipedia exact in two fresh captures each. Vlang.io has **27 differing
 pixels in production**, down from the previously verified 810. The heading fix
 removes its final text difference. Its 23 JPEG pixels still include nine
@@ -16,10 +16,10 @@ pixels also remain. CNN retains its rendering, source/replay and native-repeat
 failures. Reddit remains unverified (missing historical fixture, earlier live
 HTTP 403). A separate tall-shadow control has a retained baseline repeat failure.
 Lossless and native-size/half-size lossy WebP controls now pass in production.
-The alpha WebP control has 2,658 differing pixels in production. A new numerical
-sRGB-profile correction makes it exact in two diagnostic captures; production
-validation is pending. These results apply to pinned builds and frozen page
-bytes. See the
+All four images in the alpha WebP control are also exact in production after
+the numerical sRGB-profile correction. Other ICC/rescaling controls still have
+known differences. These results apply to pinned builds and frozen page bytes.
+See the
 [current audit, capture scopes and retained failures](docs/OPTIMIZED_SITES_PIXELS_2026_11_12.md).
 
 | Site | Recorded date | Trials per browser | Statistic | Vox instructions | Brave observed instructions | Fewer instructions | Vox RAM (MiB)‡ | Brave RAM (MiB)‡ | Vox scroll FPS§ | Vox GPU canvas FPS§ | Brave scroll FPS† | Evidence |

@@ -3113,3 +3113,10 @@ Three profile tests, seven browser checks and eight GPU draws pass. The
 guards and enclosing exits are zero, with 100 compiled V witnesses and 166
 stable pins. Production confirmation is pending. See the
 [audit](OPTIMIZED_SITES_PIXELS_2026_11_12.md#numerical-srgb-profiles-in-lossless-webp-2026-11-15).
+
+
+Production `a542533f` (receipt `20261115-122533-7861f9dc`, C/literal V `-prod`,
+one C unit) now confirms `a5b29f604`: all four alpha images exact twice,
+44 workloads/88 captures, 134 compiled V witnesses, 164 stable pins and all
+native/driver/outer guards zero. All 43 non-CNN PNGs match diagnostics exactly;
+CNN retains its repeat failure. This supersedes the pending-production status.

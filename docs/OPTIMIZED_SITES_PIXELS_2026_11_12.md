@@ -2728,3 +2728,31 @@ Scratch archival hashes 3,134 file records across 50 owned roots, preserves
 1,027 selected evidence files (23,929,728 bytes), reverifies the copies, and
 removes all owned job outputs, binaries, guards and locks. The temporary
 Skia oracle source and three test-harness links are also removed.
+
+
+## Production confirmation of numerical sRGB WebP, 2026-11-15
+
+The final `a5b29f604` correction is now confirmed in production executable
+`a542533fba25473552d7afb35fd50cc49caea8a42ff4159c89b3ba3119d4f91e`,
+receipt `20261115-122533-7861f9dc`, C, literal V `-prod`, one C unit. Its final
+helper, parser, main caller and decoder header match the sealed build inputs.
+The code was consumed before the commit; byte witnesses establish identity
+independently of the receipt's HEAD. The new 44-workload/88-capture cohort has
+134 selected compiled V witnesses and 164 stable source/tool/shader pins.
+All 88 native guards, the driver and outer guard exit zero.
+
+**The complete alpha control is exact twice in production**, including its
+profiled fourth image. Every other reference count is retained, and all
+43 non-CNN workloads' PNGs agree exactly with the accepted diagnostic build.
+Forty-three pairs repeat exactly. CNN retains 175,866 reference differences and
+fails its native repeat at 1,511 pixels. The four exact site archives stay exact;
+Vlang.io retains 27 pixels. This supersedes the preceding pending-production
+status. The optional decoder's library identity also remains unchanged.
+
+The production summary, receipt metadata and source witnesses are retained in
+the same local evidence directory. A second verified archive removes
+9 production job roots after hashing 3,026 file records and
+preserving 955 selected files (22,601,407 bytes).
+All owned scratch outputs, binaries, guards and locks are removed. All-site
+pixel equality, live behavior, scripting and performance acceptance remain open
+as described above.
