@@ -20,6 +20,7 @@ fn initialize_collection_intrinsics(mut vm VM, mut realm Realm) ! {
 		'splice': array_prototype_splice
 		'forEach': array_prototype_for_each
 		'map': array_prototype_map
+		'shift': array_prototype_shift
 		'includes': array_prototype_includes
 		'every': array_prototype_every
 		'filter': array_prototype_filter
@@ -27,7 +28,7 @@ fn initialize_collection_intrinsics(mut vm VM, mut realm Realm) ! {
 		'some': array_prototype_some
 		'reduce': array_prototype_reduce
 		'reduceRight': array_prototype_reduce_right
-	} { install_intrinsic_method(mut vm, &realm, mut array, name, if name in ['slice','splice'] { 2 } else if name == 'pop' { 0 } else { 1 }, behaviour) }
+	} { install_intrinsic_method(mut vm, &realm, mut array, name, if name in ['slice','splice'] { 2 } else if name in ['pop','shift','reverse'] { 0 } else { 1 }, behaviour) }
 	install_intrinsic_method(mut vm, &realm, mut array, 'toString', 0, fn (mut vm VM) !Value {
 		object := vm.this_value().to_object_with_prototypes(mut vm, realm_primitive_prototypes())!
 		join := object.get(mut vm, PropertyName.from_str('join'))!
