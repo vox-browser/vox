@@ -1,6 +1,7 @@
 module libjsdom
 
 import dom
+import css
 import fetch
 import geometry
 import html
@@ -87,6 +88,9 @@ mut:
 	closed               bool
 	animation_frames map[u32]&AnimationFrameBinding
 	retired_frame_closures []voidptr
+	media_query_prototype &libjs.Object = unsafe { nil }
+	media_event_prototype &libjs.Object = unsafe { nil }
+	media_queries map[voidptr]&css.MediaQueryList
 	owned_documents []&dom.Document
 	dom_exception_prototype &libjs.Object = unsafe { nil }
 	dom_exceptions map[voidptr]&webidl.DOMException
@@ -124,6 +128,7 @@ pub fn Host.create(vm &libjs.VM, realm &libjs.Realm, document &dom.Document, hoo
 	host.install_intersection_observers()
 	host.install_resize_observers()
 	host.install_animation_frames()
+	host.install_media_queries()!
 	host.install_styles()
 	host.install_urls()!
 	host.install_headers()!
@@ -227,6 +232,7 @@ pub fn (mut host Host) close() {
 	host.events.clear()
 	host.event_wrappers.clear()
 	host.event_targets.clear()
+	host.media_queries.clear()
 	host.event_target_wrappers.clear()
 	host.read_only_rects.clear()
 	host.read_only_rect_wrappers.clear()

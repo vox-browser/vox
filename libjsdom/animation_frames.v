@@ -27,11 +27,11 @@ fn (mut host Host) frame_window(mut vm libjs.VM) !&html.WindowModel {
 	return html.WindowModel.create_top_level(host.document, none, '') or { return host.dom_error(mut vm, err) }
 }
 
-fn (host &Host) frame_receiver(mut vm libjs.VM) ! {
+fn (host &Host) window_receiver(mut vm libjs.VM) ! {
 	host.require_open(mut vm)!
 	receiver := vm.this_value()
 	if !receiver.is_nullish() && (!receiver.is_object() || voidptr(receiver.as_object()) != voidptr(host.realm.global_object_record())) {
-		return vm.throw_error(.type_error, 'AnimationFrameProvider requires a Window receiver')
+		return vm.throw_error(.type_error, 'Window member requires a Window receiver')
 	}
 }
 
@@ -61,7 +61,7 @@ fn (mut host Host) install_animation_frames() {
 	mut global := host.realm.global_object_record()
 	attributes := libjs.attribute_writable | libjs.attribute_enumerable | libjs.attribute_configurable
 	host.method_attributes(mut global, 'requestAnimationFrame', 1, fn [host] (mut vm libjs.VM) !libjs.Value {
-		host.frame_receiver(mut vm)!
+		host.window_receiver(mut vm)!
 		if vm.argument_count() == 0 || !vm.argument(0).is_function() { return vm.throw_error(.type_error, 'FrameRequestCallback must be callable') }
 		persistent := platform.enter_persistent()
 		defer { platform.leave_persistent(persistent) }
@@ -79,7 +79,7 @@ fn (mut host Host) install_animation_frames() {
 		return libjs.Value.from_f64(f64(record.handle))
 	}, attributes)
 	host.method_attributes(mut global, 'cancelAnimationFrame', 1, fn [host] (mut vm libjs.VM) !libjs.Value {
-		host.frame_receiver(mut vm)!
+		host.window_receiver(mut vm)!
 		if vm.argument_count() == 0 { return vm.throw_error(.type_error, 'cancelAnimationFrame requires 1 argument') }
 		handle := vm.argument(0).to_u32(mut vm)!
 		mut owner := unsafe { &Host(host) }
