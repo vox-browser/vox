@@ -144,6 +144,7 @@ fn test_hacker_news_engine_benchmark() {
 	if choice == '' { return }
 	libjs.set_property_lookup_hints_for_testing(os.getenv('VOX_LIBJS_LOOKUP_HINTS') != '0')
 	libjs.set_argument_elision_for_testing(os.getenv('VOX_LIBJS_ARGUMENT_ELISION') != '0')
+	libjs.set_register_bindings_for_testing(os.getenv('VOX_LIBJS_REGISTER_BINDINGS') != '0')
 	// Keep this author-script/DOM workload independent of filter-list startup.
 	adblock.set_enabled(false)
 	$if !vox_v8 ? {

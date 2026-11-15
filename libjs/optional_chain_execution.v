@@ -21,6 +21,11 @@ fn (mut generator BytecodeGenerator) call_reference(mut vm VM, expression &Expre
 		return value, base
 	}
 	if expression.kind.tag == .identifier_expr {
+		if local := generator.expression_register(expression) {
+			value := generator.temporary()
+			generator.emit(Instruction{op: .mov, dst: value, lhs: local})
+			return value, generator.constant(js_undefined())
+		}
 		value, receiver := generator.temporary(), generator.temporary()
 		generator.emit(Instruction{
 			op:         .get_callee_and_this

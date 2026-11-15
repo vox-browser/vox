@@ -5,6 +5,7 @@ module libjs
 // mode. Resolve references before GetV/IteratorStepValue, then retain them across
 // getters and default expressions. A declaration's InitializeBinding is distinct.
 struct PreparedAssignmentTarget {
+	local ?Operand
 	is_binding bool
 	binding Operand
 	base Operand
@@ -24,6 +25,7 @@ fn (mut generator BytecodeGenerator) prepare_expression_assignment(mut vm VM, ex
 		base, key := generator.member_reference(mut vm, expression)!
 		return PreparedAssignmentTarget{base: base, key: key, property_op: member_property_opcode(expression, .put_property)}
 	}
+	if local := generator.expression_register(expression) { return PreparedAssignmentTarget{local: local} }
 	if name := identifier_name(expression) { return generator.prepare_identifier_assignment(name) }
 	return generator.unsupported('assignment target')
 }
@@ -31,13 +33,22 @@ fn (mut generator BytecodeGenerator) prepare_expression_assignment(mut vm VM, ex
 fn (mut generator BytecodeGenerator) prepare_assignment_entry(mut vm VM, entry BindingEntry) !PreparedAssignmentTarget {
 	if pattern := entry.alias.binding_pattern { return PreparedAssignmentTarget{pattern: pattern} }
 	if expression := entry.alias.expression { return generator.prepare_expression_assignment(mut vm, &expression) }
+	if identifier := entry.alias.identifier {
+		if local := generator.identifier_register(identifier) { return PreparedAssignmentTarget{local: local} }
+	} else if entry.alias.kind == .none_kind {
+		if identifier := entry.name.identifier {
+			if local := generator.identifier_register(identifier) { return PreparedAssignmentTarget{local: local} }
+		}
+	}
 	if name := generator.binding_entry_name(entry) { return generator.prepare_identifier_assignment(name) }
 	return error('Missing destructuring assignment target')
 }
 
 fn (mut generator BytecodeGenerator) store_assignment_target(mut vm VM, target PreparedAssignmentTarget, value Operand) ! {
 	if pattern := target.pattern { return generator.assignment_pattern(mut vm, pattern, value) }
-	if target.is_binding {
+	if local := target.local {
+		generator.emit(Instruction{op: .mov, dst: local, lhs: value})
+	} else if target.is_binding {
 		generator.emit(Instruction{op: .put_binding_reference, lhs: target.binding, rhs: value})
 	} else {
 		generator.emit(Instruction{op: target.property_op, lhs: target.base, rhs: target.key, src: value, strict: generator.strict})

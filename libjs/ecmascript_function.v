@@ -14,6 +14,7 @@ struct ECMAScriptFunction {
 	script_or_module ScriptOrModule
 	inferred_name ?Utf16String
 mut:
+	register_bindings []FunctionRegisterBinding
 	executable ?&Executable
 	field_initializer_name ?PropertyName
 }
@@ -108,6 +109,7 @@ fn (mut function ECMAScriptFunction) compile(mut vm VM) !&Executable {
 		function_body: true
 		generator_function: function.data.kind == .generator
 	}
+	function.prepare_register_bindings(mut generator)
 	if function.data.body.kind.tag == .class_field_initializer {
 		expression := function.data.body.kind.expression or { return error('Missing field initializer') }
 		mut value := Operand{}
@@ -185,6 +187,13 @@ fn (mut function ECMAScriptFunction) call_body(mut vm VM, this_value Value, argu
 		frame.this_value = bound_this
 	}
 	for index, parameter in function.data.parameters {
+		if function.parameter_in_register(index) {
+			value := if index < arguments.len { arguments[index] } else { js_undefined() }
+			for binding in function.register_bindings {
+				if binding.parameter_index == index { frame.values[executable.local_index_base + binding.slot] = value }
+			}
+			continue
+		}
 		for name in parameter_bound_names(parameter) {
 			if !environment.has_binding_named(name) { environment.create_mutable_binding(mut vm, name, false)! }
 			if simple_parameters {
@@ -204,6 +213,7 @@ fn (mut function ECMAScriptFunction) call_body(mut vm VM, this_value Value, argu
 		environment.initialize_binding(mut vm, name, Value.from_object(object), .normal)!
 	}
 	for binding in if simple_parameters { executable.global_bindings } else { []GlobalBinding{} } {
+		if function.variable_in_register(binding.name) { continue }
 		if !environment.has_binding_named(binding.name) {
 			environment.create_mutable_binding(mut vm, binding.name, false)!
 			environment.initialize_binding(mut vm, binding.name, js_undefined(), .normal)!

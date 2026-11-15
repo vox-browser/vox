@@ -25,7 +25,7 @@ $if test {
 	}
 }
 
-fn (function &ECMAScriptFunction) elide_unobserved_arguments(scope &ScopeData) bool {
+fn (function &ECMAScriptFunction) arguments_are_unobservable(scope &ScopeData) bool {
 	$if test {
 		if argument_elision_disabled_for_test { return false }
 	}
@@ -39,6 +39,11 @@ fn (function &ECMAScriptFunction) elide_unobserved_arguments(scope &ScopeData) b
 		|| scope.contains_direct_call_to_eval || scope.contains_access_to_arguments_object {
 		return false
 	}
+	return true
+}
+
+fn (function &ECMAScriptFunction) elide_unobserved_arguments(scope &ScopeData) bool {
+	if !function.arguments_are_unobservable(scope) { return false }
 	$if test {
 		if argument_allocation_diagnostic_for_test { argument_objects_elided_for_test++ }
 	}

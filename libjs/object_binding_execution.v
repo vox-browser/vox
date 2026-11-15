@@ -16,6 +16,12 @@ fn (mut generator BytecodeGenerator) initialize_declaration_target(mut vm VM, ta
 }
 
 fn (mut generator BytecodeGenerator) store_declared_binding(name Utf16String, value Operand, lexical bool) {
+	if !lexical {
+		if local := generator.variable_register(name) {
+			generator.emit(Instruction{op: .mov, dst: local, lhs: value})
+			return
+		}
+	}
 	generator.emit(Instruction{ op: if lexical {
 		OpCode.initialize_binding
 	} else {

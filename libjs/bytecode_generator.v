@@ -18,6 +18,7 @@ mut:
 
 struct BytecodeGenerator {
 mut:
+	register_bindings []FunctionRegisterBinding
 	executable    &Executable
 	strict        bool
 	starting_line u32 = 1
@@ -355,12 +356,7 @@ fn (mut generator BytecodeGenerator) expression(mut vm VM, expression &Expressio
 		}
 		.identifier_expr {
 			dst := generator.temporary()
-			generator.emit(Instruction{
-				op:         .get_binding
-				dst:        dst
-				identifier: generator.identifier(identifier_name(expression)!)
-				strict:     generator.strict
-			})
+			generator.load_identifier(expression, dst)!
 			return dst
 		}
 		.this_expr {
@@ -452,6 +448,10 @@ fn (mut generator BytecodeGenerator) expression(mut vm VM, expression &Expressio
 			operand := kind.operand or { return error('Missing unary operand') }
 			dst := generator.temporary()
 			if kind.unary_op == .typeof_op && operand.kind.tag == .identifier_expr {
+				if local := generator.expression_register(operand) {
+					generator.emit(Instruction{op: .typeof_op, dst: dst, lhs: local})
+					return dst
+				}
 				generator.emit(Instruction{
 					op:         .typeof_binding
 					dst:        dst
@@ -464,6 +464,10 @@ fn (mut generator BytecodeGenerator) expression(mut vm VM, expression &Expressio
 				// codegen.rs::emit_delete_reference: identifiers are resolved
 				// without GetValue; non-references run only for their side effects.
 				if operand.kind.tag == .identifier_expr {
+					if _ := generator.expression_register(operand) {
+						generator.emit(Instruction{op: .mov, dst: dst, lhs: generator.constant(Value.from_bool(false))})
+						return dst
+					}
 					generator.emit(Instruction{
 						op:         .delete_binding
 						dst:        dst
@@ -517,10 +521,9 @@ fn (mut generator BytecodeGenerator) expression(mut vm VM, expression &Expressio
 					return error('Missing assignment rhs')
 				})
 			}
-			name := identifier_name(target.expression) or {
+			_ := identifier_name(target.expression) or {
 				return generator.unsupported('property assignment')
 			}
-			identifier := generator.identifier(name)
 			dst := generator.temporary()
 			if kind.assignment_op == .assignment {
 				right := generator.expression(mut vm, kind.rhs or {
@@ -528,12 +531,7 @@ fn (mut generator BytecodeGenerator) expression(mut vm VM, expression &Expressio
 				})!
 				generator.emit(Instruction{ op: .mov, dst: dst, lhs: right })
 			} else {
-				generator.emit(Instruction{
-					op:         .get_binding
-					dst:        dst
-					identifier: identifier
-					strict:     generator.strict
-				})
+				generator.load_identifier(target.expression, dst)!
 				mut jumps := []u32{}
 				if kind.assignment_op in [.and_assignment, .or_assignment, .nullish_assignment] {
 					logical := match kind.assignment_op {
@@ -554,23 +552,13 @@ fn (mut generator BytecodeGenerator) expression(mut vm VM, expression &Expressio
 
 					generator.emit(Instruction{ op: actual, dst: dst, lhs: dst, rhs: right })
 				}
-				generator.emit(Instruction{
-					op:         .set_binding
-					lhs:        dst
-					identifier: identifier
-					strict:     generator.strict
-				})
+				generator.store_identifier(target.expression, dst)!
 				for jump in jumps {
 					generator.patch(jump)
 				}
 				return dst
 			}
-			generator.emit(Instruction{
-				op:         .set_binding
-				lhs:        dst
-				identifier: identifier
-				strict:     generator.strict
-			})
+			generator.store_identifier(target.expression, dst)!
 			return dst
 		}
 		.update {
@@ -607,15 +595,9 @@ fn (mut generator BytecodeGenerator) expression(mut vm VM, expression &Expressio
 				})
 				return if kind.prefixed { dst } else { old }
 			}
-			name := identifier_name(operand) or { return generator.unsupported('property update') }
-			identifier := generator.identifier(name)
+			_ := identifier_name(operand) or { return generator.unsupported('property update') }
 			old := generator.temporary()
-			generator.emit(Instruction{
-				op:         .get_binding
-				dst:        old
-				identifier: identifier
-				strict:     generator.strict
-			})
+			generator.load_identifier(operand, old)!
 			generator.emit(Instruction{ op: .to_numeric, dst: old, lhs: old })
 			dst := generator.temporary()
 			generator.emit(Instruction{
@@ -623,12 +605,7 @@ fn (mut generator BytecodeGenerator) expression(mut vm VM, expression &Expressio
 				dst: dst
 				lhs: old
 			})
-			generator.emit(Instruction{
-				op:         .set_binding
-				lhs:        dst
-				identifier: identifier
-				strict:     generator.strict
-			})
+			generator.store_identifier(operand, dst)!
 			return if kind.prefixed { dst } else { old }
 		}
 		else {
