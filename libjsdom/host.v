@@ -80,6 +80,9 @@ mut:
 	blob_prototype &libjs.Object = unsafe { nil }
 	blobs map[voidptr]&fileapi.Blob
 	blob_wrappers map[voidptr]&libjs.Object
+	file_prototype &libjs.Object = unsafe { nil }
+	files map[voidptr]&fileapi.File
+	file_wrappers map[voidptr]&libjs.Object
 	blob_reads map[u64]&BlobReadBinding
 	blob_stream_tasks map[voidptr]&BlobStreamTaskBinding
 	readable_stream_prototype &libjs.Object = unsafe { nil }
@@ -211,6 +214,7 @@ pub fn Host.create(vm &libjs.VM, realm &libjs.Realm, document &dom.Document, hoo
 	host.install_binary_string_codecs()
 	host.install_readable_streams()
 	host.install_blobs()
+	host.install_files()
 	host.install_history()
 	host.install_headers()!
 	mut global := realm.global_object_record()
@@ -308,6 +312,8 @@ pub fn (mut host Host) close() {
 	host.text_decoders.clear()
 	host.blobs.clear()
 	host.blob_wrappers.clear()
+	host.files.clear()
+	host.file_wrappers.clear()
 	host.close_fetch()
 	host.close_readable_streams()
 	for listener in host.listeners {
