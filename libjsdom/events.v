@@ -16,16 +16,23 @@ struct Listener {
 fn (mut host Host) install_events(mut node libjs.Object) ! {
 	mut prototype := libjs.Object.create(host.realm, host.realm.object_prototype)
 	host.event_prototype = prototype
-	for name in ['target', 'currentTarget', 'type', 'defaultPrevented'] {
+	prototype.define_direct_property(libjs.PropertyName.from_symbol(host.vm.well_known_symbol_to_string_tag()),
+		libjs.Value.from_string(host.vm.create_string_from_str('Event')), libjs.attribute_configurable)
+	for name in ['target', 'currentTarget', 'type', 'defaultPrevented', 'bubbles', 'cancelable', 'composed', 'eventPhase', 'timeStamp'] {
 		host.accessor(mut prototype, name, fn [host, name] (mut vm libjs.VM) !libjs.Value {
 			event := host.event(mut vm)!
 			mut owner := unsafe { &Host(host) }
 			if name == 'type' {
-				return libjs.Value.from_string(vm.create_string_from_str(event.type_))
+				return libjs.Value.from_string(vm.create_string(libjs.utf16_string_from_utf8_without_validation(event.type_)))
 			}
 			if name == 'defaultPrevented' {
 				return libjs.Value.from_bool(event.default_prevented())
 			}
+			if name == 'bubbles' { return libjs.Value.from_bool(event.bubbles()) }
+			if name == 'cancelable' { return libjs.Value.from_bool(event.cancelable()) }
+			if name == 'composed' { return libjs.Value.from_bool(event.composed()) }
+			if name == 'eventPhase' { return libjs.Value.from_i32(i32(event.event_phase())) }
+			if name == 'timeStamp' { return libjs.Value.from_f64(event.time_stamp()) }
 			mut event_target := event.target()
 			if name == 'currentTarget' { event_target = event.current_target() }
 			if target := event_target {
@@ -48,6 +55,7 @@ fn (mut host Host) install_events(mut node libjs.Object) ! {
 			return libjs.js_undefined()
 		})
 	}
+	host.install_event_constructor(mut prototype)
 	for name in ['addEventListener', 'removeEventListener'] {
 		host.method(mut node, name, 2, fn [host, name] (mut vm libjs.VM) !libjs.Value {
 			actual := host.node(mut vm)!
@@ -132,9 +140,17 @@ fn (host &Host) event(mut vm libjs.VM) !&dom.Event {
 fn (mut host Host) wrap_event(event &dom.Event) libjs.Value {
 	if object := host.event_wrappers[voidptr(event)] { return libjs.Value.from_object(object) }
 	mut object := libjs.Object.create(host.realm, host.event_prototype)
+	return host.register_event_wrapper(mut object, event)
+}
+
+fn (mut host Host) register_event_wrapper(mut object libjs.Object, event &dom.Event) libjs.Value {
 	object.class_name = 'Event'
 	host.events[voidptr(object)] = event
 	host.event_wrappers[voidptr(event)] = object
+	// Event.idl's LegacyUnforgeable attribute belongs on each instance.
+	host.accessor_attributes(mut object, 'isTrusted', fn [host] (mut vm libjs.VM) !libjs.Value {
+		return libjs.Value.from_bool(host.event(mut vm)!.is_trusted())
+	}, unsafe { nil }, libjs.attribute_enumerable)
 	return libjs.Value.from_object(object)
 }
 
