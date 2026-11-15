@@ -11,12 +11,25 @@ struct LoopReturnExit {
 }
 
 fn (mut generator BytecodeGenerator) emit_return(value Operand) {
+	mut iterator := -1
 	for i := generator.loops.len - 1; i >= 0; i-- {
 		if generator.loops[i].iterator != none {
-			jump := generator.emit(Instruction{ op: .jump })
-			generator.loops[i].returns << LoopReturnExit{ jump: jump, value: value, scope_depth: generator.scope_depth }
+			iterator = i
+			break
+		}
+	}
+	if generator.finalizers.len > 0 {
+		last := generator.finalizers.len - 1
+		if iterator < generator.finalizers[last].loop_depth {
+			jump := generator.emit(Instruction{op: .jump})
+			generator.finalizers[last].returns << LoopReturnExit{jump: jump, value: value, scope_depth: generator.scope_depth}
 			return
 		}
+	}
+	if iterator >= 0 {
+		jump := generator.emit(Instruction{op: .jump})
+		generator.loops[iterator].returns << LoopReturnExit{jump: jump, value: value, scope_depth: generator.scope_depth}
+		return
 	}
 	generator.emit(Instruction{ op: .end, lhs: value })
 }

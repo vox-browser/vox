@@ -71,10 +71,25 @@ fn (mut generator BytecodeGenerator) emit_loop_control(target_loop ?int, target_
 		// for-of remains live when break leaves a label inside its body.
 		label.loop_depth - 1
 	}
+	mut finalizer := -1
+	if generator.finalizers.len > 0 {
+		last := generator.finalizers.len - 1
+		context := generator.finalizers[last]
+		exits := if loop := target_loop { loop < context.loop_depth } else {
+			(target_label or { return error('Missing abrupt target') }) < context.label_depth
+		}
+		if exits { finalizer = last }
+	}
 	for index := generator.loops.len - 1; index > boundary; index-- {
 		if generator.loops[index].iterator == none { continue }
+		if finalizer >= 0 && index < generator.finalizers[finalizer].loop_depth { break }
 		jump := generator.emit(Instruction{op: .jump})
 		generator.loops[index].abrupts << LoopAbruptExit{jump: jump, scope_depth: generator.scope_depth, target_loop: target_loop, target_label: target_label, is_continue: is_continue}
+		return
+	}
+	if finalizer >= 0 {
+		jump := generator.emit(Instruction{op: .jump})
+		generator.finalizers[finalizer].abrupts << LoopAbruptExit{jump: jump, scope_depth: generator.scope_depth, target_loop: target_loop, target_label: target_label, is_continue: is_continue}
 		return
 	}
 	depth := if loop := target_loop { generator.loops[loop].scope_depth } else { generator.labels[target_label or { return error('Missing label target') }].scope_depth }

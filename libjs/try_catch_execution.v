@@ -6,8 +6,16 @@ module libjs
 // scope depth; it does not share upstream's packed bytecode/environment cells.
 fn (mut generator BytecodeGenerator) try_catch_statement(mut vm VM,statement &Statement) ! {
 	data := statement.kind.try_data or { return error('Missing try statement') }
-	if data.finalizer!=none { return generator.unsupported('try/finally') }
-	handler := data.handler or { return error('Try requires a catch or finally') }
+	if finalizer := data.finalizer { return generator.try_finally_statement(mut vm, data, &finalizer) }
+	generator.try_catch_body(mut vm, data)!
+}
+
+fn (mut generator BytecodeGenerator) try_catch_body(mut vm VM, data &TryStatementData) ! {
+	handler := data.handler or {
+		generator.clear_completion()
+		generator.statement(mut vm, &data.block)!
+		return
+	}
 	if parameter := handler.parameter {
 		if parameter is CatchBindingPattern { return generator.unsupported('destructuring catch parameter') }
 	}

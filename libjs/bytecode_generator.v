@@ -24,6 +24,7 @@ mut:
 	scope_depth   int
 	loops         []BytecodeLoop
 	labels        []BytecodeLabel
+	finalizers    []BytecodeFinally
 	function_body bool
 	initialized_functions []u32
 	compile_stack_ ?StackInfo
