@@ -85,6 +85,8 @@ mut:
 	listeners            []Listener
 	closures             []voidptr
 	closed               bool
+	animation_frames map[u32]&AnimationFrameBinding
+	retired_frame_closures []voidptr
 	owned_documents []&dom.Document
 	dom_exception_prototype &libjs.Object = unsafe { nil }
 	dom_exceptions map[voidptr]&webidl.DOMException
@@ -121,6 +123,7 @@ pub fn Host.create(vm &libjs.VM, realm &libjs.Realm, document &dom.Document, hoo
 	host.install_read_only_rects()
 	host.install_intersection_observers()
 	host.install_resize_observers()
+	host.install_animation_frames()
 	host.install_styles()
 	host.install_urls()!
 	host.install_headers()!
@@ -187,6 +190,7 @@ fn (mut host Host) changed() {
 pub fn (mut host Host) close() {
 	if host.closed { return }
 	host.closed = true
+	host.close_animation_frames()
 	host.close_mutation_observers()
 	host.close_intersection_observers()
 	host.close_resize_observers()
