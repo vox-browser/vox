@@ -159,6 +159,7 @@ pub fn Host.create(vm &libjs.VM, realm &libjs.Realm, document &dom.Document, hoo
 	host.install_timers()
 	host.install_media_queries()!
 	host.install_styles()
+	host.install_css_namespace()
 	host.install_query_params()!
 	host.install_urls()!
 	host.install_history()
