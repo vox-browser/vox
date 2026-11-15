@@ -79,6 +79,12 @@ fn test_history_scroll_restoration_and_state_cache_follow_native_restored_entrie
 	assert history_eval(mut vm, 'history.state===19&&history.state!==previous&&history.length===3&&location.href===document.URL&&location.href==="https://history.test/restored"')!.as_bool()
 }
 
+fn test_history_rejects_weak_references_before_reading_their_own_state_properties() {
+	mut host, mut vm, _ := history_fixture()!
+	defer { host.close() }
+	assert history_eval(mut vm, 'history.replaceState({safe:true},"");var saved=history.state,reads=0,ref=new WeakRef({}),errors=0;Object.defineProperty(ref,"visible",{enumerable:true,get(){reads++;return 1}});for(var state of [ref,{nested:ref}])try{history.pushState(state,"","/invalid")}catch(e){if(e instanceof DOMException&&e.name==="DataCloneError")errors++}errors===2&&reads===0&&history.state===saved&&history.state.safe&&history.length===1')!.as_bool()
+}
+
 fn test_history_retains_cloned_state_after_temporary_allocation_scope() {
 	mut host, mut vm, _ := history_fixture()!
 	defer { host.close() }
