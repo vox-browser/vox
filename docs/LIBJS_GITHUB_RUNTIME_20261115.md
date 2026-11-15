@@ -1294,3 +1294,140 @@ with 672 warm native entries, 51 frontend hits, zero compiler invocations,
 these changes. Completed hydration, live behavior, a faster compiled revisit
 and zero differing pixels against Brave remain unachieved and unmeasured for
 the new source. The original strict content and pixel gates are unchanged.
+
+## Native Intl locale, date and list continuation
+
+**The compiled-JS GitHub/Brave task remains incomplete.** The user's runtime-test
+hold remains in force. No new JavaScript execution, page-initialization probe,
+focused/broad test, AST-corpus run, browser launch, capture, pixel comparison or
+performance trial was launched for this continuation. All new test functions,
+including their own `_test.v` compilation, remain unexecuted. The shared managed
+production worker runs independently; its receipts are not substitute page or
+runtime verification for this task.
+
+The implementation commits are:
+
+- `86d0e3506`: pinned Unicode CLDR JSON data and native Unicode locale grammar,
+  canonical alias rules, extension ordering and lazy per-realm locale data.
+- `2ffaea8d0`: native `Intl.getCanonicalLocales` and `Intl.Locale`, including
+  checked list access, coercion/error ordering, option getters, native slots,
+  likely-subtag maximize/minimize and History clone rejection.
+- `8866109e1`: native Gregorian/ISO `Intl.DateTimeFormat`, construction and option
+  ordering, styles/fields, numbering digits, hour cycles, fractional seconds,
+  TZif time zones, localized zone names, bound `format`, `formatToParts`,
+  `resolvedOptions` and `supportedLocalesOf`.
+- `c913a7b04`: native `Intl.ListFormat`, resolved/supported locales, CLDR
+  conjunction/disjunction/unit patterns and styles, checked iterable strings,
+  abrupt iterator completion, UTF-16 output and iterative string/part emission.
+  It includes the UTS #35 Spanish/Hebrew contextual list conditions.
+- `e3eeefaf4`: preserve single-hour, dot-separated and separator-free CLDR GMT
+  patterns; retain directional marks and seconds. A system zone without an IANA
+  name reports and uses a consistent fixed offset.
+
+This replaces the missing namespace and several source-visible Intl classes
+with real VM implementations. It does not install NumberFormat, RelativeTimeFormat
+or a host/JSC formatter substitute. Calendar support is currently Gregorian and
+ISO only; unsupported valid calendar/numbering-system requests negotiate to
+supported data. Date range methods, other Intl classes, additional Locale
+metadata APIs and ICU-equivalent matching remain open. Best-fit currently uses
+the BasicFormatMatcher policy. The embedding default locale is `en-US` unless
+`Realm.intl_default_locale` is changed. TZif data comes from the host/V loader;
+future cohorts must pin locale, default time zone and actual rule-file identity.
+See [native Intl scope and data design](LIBJS_INTL.md).
+
+The data is generated from [Unicode CLDR JSON 48.2.0](https://github.com/unicode-org/cldr-json/tree/bb334e8d6250c9363e957e131bf7e6d08ec72f91),
+commit `bb334e8d6250c9363e957e131bf7e6d08ec72f91`. The downloaded source archive is
+86,340,353 bytes with SHA-256
+`651c9700cf1ffb545299e50cedc968ae056b5f3913524b31009cbfa00c3bcd50`;
+it remains in the local cache, not Git or Build. `libjs/intl_data/SOURCES` records
+all consumed original file hashes and the Unicode license is retained. The final
+core index is 329,709 bytes and locale records are 7,411,174 bytes. There are
+766 data records and 1,121 locale identifiers including default-content aliases.
+Parent deltas avoid embedding the full repeated locale trees; only requested
+locale data is decoded. The generator performs no host locale queries, JS
+execution or page-fixture substitutions.
+
+Runtime implementation code stays in V, using `vunicode` properties and the V
+TZif reader. The source-only `tools/check_unicode_dependency.py` scan passed.
+No executable was supplied to that scanner, so this is not a binary/symbol
+verification claim. The bound date-format function uses a traced FunctionObject
+and native callee context. It does not capture the formatter in a V closure
+whose trampoline registry would retain it after its JS lifetime. Locale and
+formatter data are allocated outside temporary arenas. List partitioning uses
+an explicit stack, preserving individual UTF-16 elements without native-stack
+recursion. These are implementation properties, not executed ownership evidence.
+
+Thirty-four regression functions were prepared: language/data ownership and
+canonicalization cases, Locale option/brand cases, date patterns/parts/time-zone
+cases, list/iterator/UTF-16 cases and three History clone regressions. They include
+three second-VM cache-reuse cases with the compiler set to `/usr/bin/false`.
+None of those cases ran. Their expected results must still be validated in both
+GC modes and the relevant ownership/sanitizer and browser checks after the hold.
+
+Compiler-only checks used the current V with `V3_STR_CAP=1`, `VJOBS=1`,
+`-b c -no-parallel -cc clang -check -memory-limit 10G -enable-globals` against
+the normal program `tools/libjs_github_revisit.v`. Production checks additionally
+used `-prod -prealloc -gc none`. Every attempt used a separate default 12 GiB
+sampled memory guard. These times and RSS are checker costs, not JS/browser
+performance, and do not establish successful C linking or execution:
+
+| Compiler-only attempt | Exit | Seconds | Sampled peak RSS bytes |
+| --- | ---: | ---: | ---: |
+| Locale data, first attempt | 1 | 16.746 | 3,120,021,504 |
+| Locale data, corrected normal | 0 | 21.046 | 5,269,979,136 |
+| Locale data, production/prealloc/no-GC | 0 | 20.496 | 5,467,062,272 |
+| Locale API, normal | 0 | 24.286 | 5,268,291,584 |
+| Locale API, production/prealloc/no-GC | 0 | 26.257 | 5,468,160,000 |
+| DateTimeFormat, first attempt | 1 | 13.622 | 1,514,881,024 |
+| DateTimeFormat, second attempt | 1 | 12.963 | 1,514,569,728 |
+| DateTimeFormat, corrected normal | 0 | 23.835 | 5,266,833,408 |
+| DateTimeFormat, production/prealloc/no-GC | 0 | 24.619 | 5,467,045,888 |
+| DateTimeFormat, period/width correction | 0 | 25.803 | 5,465,735,168 |
+| DateTimeFormat, traced bound-function ownership | 0 | 26.386 | 5,475,581,952 |
+| ListFormat, normal | 0 | 15.176 | 5,268,979,712 |
+| ListFormat, production/prealloc/no-GC | 0 | 15.538 | 5,453,348,864 |
+| GMT patterns, production/prealloc/no-GC | 0 | 15.561 | 5,461,655,552 |
+| GMT patterns and zone fallback, final production | 0 | 18.014 | 5,471,977,472 |
+
+All fifteen attempts are retained. The first data check selected the removed
+`json` module; it was corrected to `json2`. The first DateTimeFormat check found
+reserved `char` variable names and a copied optional map; the second still found
+the map copy, which was changed to an explicit clone. Corrected checks passed
+before their feature commits. Twelve attempts pass and three fail; none is
+silently discarded. Completed guard receipts were copied byte-for-byte into
+local `docs/performance/libjs-intl-implementation-20261115/`, with commands and
+receipt hashes, then only this continuation's completed Build reports/locks
+were deleted. No broad suite or runtime pass is claimed.
+
+The pinned original-response fixture still has 164 verified response entries
+and 86 distinct JS bodies. Textual scans find eleven `Intl.DateTimeFormat`
+references in five bodies, two `Intl.ListFormat` references in two and one
+`Intl.Locale` reference in one. Three RelativeTimeFormat references in one body
+and two NumberFormat references in two bodies remain. These are source matches,
+not receiver, reachability or execution coverage. Module initialization contains
+DateTimeFormat constructor calls, but there is no new execution result proving
+which earlier or later blocker is now first.
+
+At implementation revision `e3eeefaf489852612680147f8d99c3b4ad4d9be3`, the latest completed
+production executable inspected statically is
+`c19672aeee65b4f3124a25ee13490f450616c040cb1ce4106a0f08f1eb2a5e41`,
+single C unit with literal V `-prod`. Its sealed consumed-input manifest matches
+385 of 386 selected macOS implementation/data paths. The remaining
+1 paths are:
+
+- `libjs/intl_time_zone.v`
+
+The raw audit also records the expected absent Linux/Windows stack-info files,
+which are excluded from those macOS counts. Embedded CLDR assets are included
+in the sealed-input comparison, not inferred from the receipt's HEAD. The bundle
+cannot validate these latest changes, and no fresh process was launched. Each
+commit requested its normal coalesced managed production rebuild; no duplicate
+manual build or wait for a newer bundle was introduced.
+
+The fixture manifest, original HTML, source map, Brave reference PNG and Brave
+content-audit hashes are unchanged. The last actually executed GitHub result is
+still the historical 672-entry warm native pair with 51 frontend hits, zero
+compiler calls, 33 rows, zero commit links and five cascading module errors.
+No new hydration count, warm-revisit speedup, live behavior or zero-pixel
+GitHub/Brave match is established. Strict content and pixel acceptance gates
+remain unchanged.

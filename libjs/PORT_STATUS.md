@@ -2726,3 +2726,21 @@ remaining Web APIs and the strict GitHub/Brave pixel goal remain open. The
 [Proxy/JSON/scheduling continuation](../docs/LIBJS_GITHUB_RUNTIME_20261115.md#proxy-json-serialization-and-scheduling-continuation)
 records commits, both corrected checker failures, unchanged fixtures and the
 latest production bundle's sealed-source gaps.
+
+
+The native Intl continuation adds pinned CLDR JSON 48.2.0 data, lazy per-realm
+locale records, Unicode language-tag canonicalization and Intl.Locale. Gregorian/
+ISO DateTimeFormat now exposes bound format, parts, resolved/supported locales,
+styles/fields, numbering digits and TZif time zones. Bound format is a traced
+FunctionObject rather than an escaping captured formatter closure. ListFormat
+uses CLDR patterns and an iterative UTF-16 partition; History cloning rejects all
+three native Intl object records before author getters. Thirty-four new regression
+functions remain uncompiled and unexecuted under the user's hold. Normal and
+production/preallocation GC-none compiler-only import checks pass after three
+retained/corrected failures; no linking, runtime, cache, ownership or browser pass
+is claimed. NumberFormat, RelativeTimeFormat, non-Gregorian calendars, date ranges,
+additional Locale metadata and other Intl constructors remain open. Best-fit
+currently shares BasicFormatMatcher behavior; no ICU or full Intl parity is
+claimed. See [native Intl design](../docs/LIBJS_INTL.md) and the
+[Intl continuation](../docs/LIBJS_GITHUB_RUNTIME_20261115.md#native-intl-locale-date-and-list-continuation).
+The compiled-JS GitHub/Brave pixel goal remains incomplete.
