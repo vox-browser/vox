@@ -32,6 +32,8 @@ pub mut:
 	intl_date_time_format_constructor ?&Object
 	intl_list_format_prototype ?&Object
 	intl_list_format_constructor ?&Object
+	intl_number_format_prototype ?&Object
+	intl_number_format_constructor ?&Object
 	intl_default_locale string = 'en-US'
 	intl_core_data ?&IntlCoreData
 	intl_date_locales map[string]&IntlDateLocaleData
@@ -249,6 +251,7 @@ pub fn initialize_host_defined_realm(mut vm VM, hooks RealmGlobalHooks) !&Execut
 	initialize_intl_intrinsics(mut vm, mut realm)
 	initialize_intl_date_time_format(mut vm, mut realm)
 	initialize_intl_list_format(mut vm, mut realm)
+	initialize_intl_number_format(mut vm, mut realm)
 	initialize_regexp_intrinsics(mut vm, mut realm)
 	realm.json_object = create_json_object(mut vm, realm)
 	initialize_date_intrinsics(mut vm, mut realm)

@@ -11,6 +11,7 @@ import json
 
 REVISION = 'bb334e8d6250c9363e957e131bf7e6d08ec72f91'
 RELEASE = '48.2.0'
+UNITS = set('acre bit byte celsius centimeter day degree fahrenheit fluid-ounce foot gallon gigabit gigabyte gram hectare hour inch kilobit kilobyte kilogram kilometer liter megabit megabyte meter microsecond mile mile-scandinavian milliliter millimeter millisecond minute month nanosecond ounce percent petabyte pound second stone terabit terabyte week yard year'.split())
 
 
 def generate(source: Path, destination: Path):
@@ -69,6 +70,22 @@ def generate(source: Path, destination: Path):
         calendar = read(calendar_path)['main'][locale]['dates']['calendars']['gregorian']
         zones = read(f'cldr-json/cldr-dates-full/main/{locale}/timeZoneNames.json')['main'][locale]['dates']['timeZoneNames']
         numbers = read(f'cldr-json/cldr-numbers-full/main/{locale}/numbers.json')['main'][locale]['numbers']
+        units = read(f'cldr-json/cldr-units-full/main/{locale}/units.json')['main'][locale]['units']
+        fields = read(f'cldr-json/cldr-dates-full/main/{locale}/dateFields.json')['main'][locale]['dates']['fields']
+        number_patterns, compact = {}, {}
+        for key, value in numbers.items():
+            for kind in ['decimal', 'percent', 'currency', 'scientific']:
+                prefix = kind + 'Formats-numberSystem-'
+                if not key.startswith(prefix):
+                    continue
+                system = key.removeprefix(prefix)
+                for name, pattern in value.items():
+                    if isinstance(pattern, str):
+                        number_patterns[f'{system}:{kind}:{name}'] = pattern
+                for width in ['short', 'long']:
+                    if width in value:
+                        formats = value[width].get('decimalFormat' if kind == 'decimal' else 'standard', {})
+                        compact[f'{system}:{kind}:{width}'] = {k: v for k, v in formats.items() if '-alt-' not in k}
         record = {
             'months': {f'{context}_{width}': [values[str(i)] for i in range(1, 13)]
                        for context, widths in calendar['months'].items() for width, values in widths.items()},
@@ -90,6 +107,23 @@ def generate(source: Path, destination: Path):
             'numbering_system': numbers['defaultNumberingSystem'],
             'decimal': {key.removeprefix('symbols-numberSystem-'): value.get('decimal', '.')
                         for key, value in numbers.items() if key.startswith('symbols-numberSystem-')},
+            'number_symbols': {key.removeprefix('symbols-numberSystem-'): value
+                               for key, value in numbers.items() if key.startswith('symbols-numberSystem-')},
+            'number_patterns': number_patterns,
+            'number_compact': compact,
+            'number_currencies': read(f'cldr-json/cldr-numbers-full/main/{locale}/currencies.json')['main'][locale]['numbers']['currencies'],
+            'number_units': {f'{width}:{key.split("-", 1)[-1]}': strings(value)
+                             for width in ['long', 'short', 'narrow'] for key, value in units[width].items()
+                             if key.split('-', 1)[-1] in UNITS and isinstance(value, dict)},
+            'number_per': {width: units[width].get('per', {}).get('compoundUnitPattern', '{0}/{1}')
+                           for width in ['long', 'short', 'narrow']},
+            'relative_time': {key: {**{k: v for k, v in value.items() if k.startswith('relative-type-')},
+                                   **{f'{tense}:{category.removeprefix("relativeTimePattern-count-")}': pattern
+                                      for tense in ['past', 'future']
+                                      for category, pattern in value.get('relativeTime-type-' + tense, {}).items()}}
+                              for key, value in fields.items()
+                              if key.split('-')[0] in ['year', 'quarter', 'month', 'week', 'day', 'hour', 'minute', 'second']},
+            'minimum_grouping': str(numbers['minimumGroupingDigits']),
         }
         for name, value in list(record['zone_names'].items()):
             primary = zone_aliases.get(name.lower(), name)
@@ -199,6 +233,14 @@ def generate(source: Path, destination: Path):
         'day_periods': {locale: [{'name': name, 'at': value.get('_at', ''), 'start': value.get('_from', ''),
                                   'end': value.get('_before', '')} for name, value in rules.items()]
                        for locale, rules in periods.items()},
+        'cardinal_rules': {locale: {key.removeprefix('pluralRule-count-'): rule.split('@')[0].strip()
+                                   for key, rule in rules.items()}
+                           for locale, rules in supplemental('plurals')['plurals-type-cardinal'].items()},
+        'ordinal_rules': {locale: {key.removeprefix('pluralRule-count-'): rule.split('@')[0].strip()
+                                  for key, rule in rules.items()}
+                          for locale, rules in supplemental('ordinals')['plurals-type-ordinal'].items()},
+        'currency_digits': {currency: int(value['_digits'])
+                            for currency, value in supplemental('currencyData')['currencyData']['fractions'].items()},
     }
     (destination / 'core.dat').write_bytes(encode(core) + b'\n')
     (destination / 'locales.dat').write_bytes(records)

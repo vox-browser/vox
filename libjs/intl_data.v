@@ -27,6 +27,9 @@ pub struct IntlCoreData {
 	zone_alias map[string]string
 	meta_zones map[string][]IntlMetaZonePeriod
 	day_periods map[string][]IntlDayPeriodRule
+	cardinal_rules map[string]map[string]string
+	ordinal_rules map[string]map[string]string
+	currency_digits map[string]int
 }
 
 @[heap]
@@ -51,6 +54,14 @@ pub struct IntlDateLocaleData {
 	region_format string
 	numbering_system string
 	decimal map[string]string
+	number_symbols map[string]map[string]string
+	number_patterns map[string]string
+	number_compact map[string]map[string]string
+	number_currencies map[string]map[string]string
+	number_units map[string]map[string]string
+	number_per map[string]string
+	relative_time map[string]map[string]string
+	minimum_grouping string
 }
 
 fn intl_core_data(mut vm VM) !&IntlCoreData {
@@ -102,6 +113,14 @@ fn intl_date_locale_data(mut vm VM, locale string) !&IntlDateLocaleData {
 		meta_zone_names: intl_overlay(base.meta_zone_names, own.meta_zone_names, own.removed['meta_zone_names'])
 		list_patterns: intl_overlay(base.list_patterns, own.list_patterns, own.removed['list_patterns'])
 		decimal: intl_overlay(base.decimal, own.decimal, own.removed['decimal'])
+		number_symbols: intl_overlay(base.number_symbols, own.number_symbols, own.removed['number_symbols'])
+		number_patterns: intl_overlay(base.number_patterns, own.number_patterns, own.removed['number_patterns'])
+		number_compact: intl_overlay(base.number_compact, own.number_compact, own.removed['number_compact'])
+		number_currencies: intl_overlay(base.number_currencies, own.number_currencies, own.removed['number_currencies'])
+		number_units: intl_overlay(base.number_units, own.number_units, own.removed['number_units'])
+		number_per: intl_overlay(base.number_per, own.number_per, own.removed['number_per'])
+		relative_time: intl_overlay(base.relative_time, own.relative_time, own.removed['relative_time'])
+		minimum_grouping: if own.minimum_grouping != '' { own.minimum_grouping } else { base.minimum_grouping }
 		gmt_format: if own.gmt_format != '' { own.gmt_format } else { base.gmt_format }
 		gmt_zero: if own.gmt_zero != '' { own.gmt_zero } else { base.gmt_zero }
 		hour_format: if own.hour_format != '' { own.hour_format } else { base.hour_format }

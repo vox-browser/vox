@@ -159,6 +159,7 @@ pub mut:
 	native_callable      bool
 	native_initial_name  ?Utf16String
 	intl_list_format ?&IntlListFormat
+	intl_number_format ?&IntlNumberFormat
 	intl_date_time_format ?&IntlDateTimeFormat
 	intl_locale          ?&IntlLocaleObject
 	proxy_object         ?&ProxyObject

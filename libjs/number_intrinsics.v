@@ -2,8 +2,8 @@
 module libjs
 
 // Install the translated Number constructor, predicates and exact radix/fixed
-// methods into the actual realm. Decimal-exponential and Intl adapters remain
-// separate dependencies; do not replace them with synthetic host callbacks.
+// methods into the actual realm, including native Intl locale formatting.
+// Decimal-exponential helpers retain their explicit dependencies.
 fn initialize_number_intrinsics(mut vm VM, mut realm Realm) {
 	mut prototype := NumberObject.create(&realm, 0, realm.object_prototype_record()).object
 	realm.number_prototype = prototype
@@ -11,8 +11,9 @@ fn initialize_number_intrinsics(mut vm VM, mut realm Realm) {
 		'toString': NativeFunctionPointer(number_prototype_to_string)
 		'valueOf': number_prototype_value_of
 		'toFixed': number_prototype_to_fixed
+		'toLocaleString': number_prototype_to_intl_locale_string
 	} {
-		install_intrinsic_method(mut vm, &realm, mut prototype, name, if name == 'valueOf' { 0 } else { 1 }, callback)
+		install_intrinsic_method(mut vm, &realm, mut prototype, name, if name in ['valueOf', 'toLocaleString'] { 0 } else { 1 }, callback)
 	}
 	realm.parse_int_function = NativeFunction.create_raw(mut vm, &realm, realm.function_prototype, global_parse_int, 2, PropertyName.from_str('parseInt'), none).object
 	realm.parse_float_function = NativeFunction.create_raw(mut vm, &realm, realm.function_prototype, global_parse_float, 1, PropertyName.from_str('parseFloat'), none).object
