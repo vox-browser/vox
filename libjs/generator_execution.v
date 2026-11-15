@@ -47,6 +47,11 @@ fn (mut execution GeneratorExecution) resume(mut vm VM, value Value, kind Genera
 		return err
 	}
 	done := execution.state != .suspended_yield
+	if !done {
+		if saved := execution.context {
+			if saved.yield_value_is_iterator_result { return returned }
+		}
+	}
 	if done { execution.state = .completed; execution.context = none }
 	return Value.from_object(create_iterator_result_object(vm.realm(), returned, done, vm.realm().object_prototype))
 }
@@ -77,8 +82,8 @@ fn (mut execution GeneratorExecution) resume_frame(mut vm VM, value Value, kind 
 
 fn (mut generator BytecodeGenerator) yield_expression(mut vm VM, expression &Expression) !Operand {
 	if !generator.generator_function { return generator.unsupported('yield outside a synchronous generator') }
-	if expression.kind.is_yield_from { return generator.unsupported('delegated yield') }
 	value := if argument := expression.kind.argument { generator.expression(mut vm, argument)! } else { generator.constant(js_undefined()) }
+	if expression.kind.is_yield_from { return generator.yield_from_expression(mut vm, value) }
 	generator.emit(Instruction{op: .yield_value, lhs: value})
 	received := generator.temporary()
 	kind := generator.temporary()

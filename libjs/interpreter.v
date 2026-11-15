@@ -60,14 +60,16 @@ fn (mut vm VM) execute_instruction(instruction Instruction, executable &Executab
 			vm.set_reg(register_return_value, Value.from_object(object))
 			return executable.bytecode_length
 		}
-		.yield_value {
+		.yield_value, .yield_iterator_result {
 			mut execution := frame.generator_execution or { return error('Yield requires a generator frame') }
+			frame.yield_value_is_iterator_result = instruction.op == .yield_iterator_result
 			execution.suspend(mut frame, .suspended_yield)
 			vm.set_reg(register_return_value, left)
 			return executable.bytecode_length
 		}
 		.get_generator_resume_kind { result = Value.from_i32(i32(frame.generator_resume_kind)) }
 		.get_generator_resume_value { result = frame.generator_resume_value }
+		.generator_delegate_step { result = generator_delegate_step(mut vm, left, right, source)! }
 		.import_call { result = perform_import_call(mut vm, left, right)! }
 		.get_template_object { result = vm.get_template_object(executable, instruction)! }
 		.await_value {
@@ -594,7 +596,7 @@ pub fn (mut vm VM) run_executable(mut frame ExecutionContext, executable &Execut
 			return err
 		}
 		frame.program_counter = next
-		if instruction.op in [.end, .await_value, .generator_start, .yield_value] { return vm.reg(register_return_value) }
+		if instruction.op in [.end, .await_value, .generator_start, .yield_value, .yield_iterator_result] { return vm.reg(register_return_value) }
 	}
 	return vm.throw_error(.internal_error, 'Bytecode fell off the end without End')
 }

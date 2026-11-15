@@ -225,7 +225,7 @@ fn native_slow_step(opaque voidptr, pc u32) u32 {
 		return 0xffffffff
 	}
 	frame.program_counter = next
-	if instruction.op in [.end, .await_value, .generator_start, .yield_value] { invocation.ended = true }
+	if instruction.op in [.end, .await_value, .generator_start, .yield_value, .yield_iterator_result] { invocation.ended = true }
 	return next
 }
 

@@ -117,6 +117,8 @@ pub enum OpCode {
 	yield_value
 	get_generator_resume_kind
 	get_generator_resume_value
+	yield_iterator_result
+	generator_delegate_step
 }
 
 pub struct Instruction {
@@ -150,7 +152,7 @@ fn (instruction Instruction) input_count() int {
 		.get_property, .get_private, .has_private, .delete_property, .get_super_property, .delete_super_property, .record_class_static_block, .new_regexp, .set_object_literal_prototype, .close_sync_iterator_throw, .new_class_method, .copy_data_properties, .super_construct_with_array {
 			2
 		}
-		.put_property, .put_private, .put_super_property, .record_private_class_method, .define_property, .define_class_method, .new_class, .record_empty_class_field, .call_with_array, .construct_with_array {
+		.put_property, .put_private, .put_super_property, .record_private_class_method, .define_property, .define_class_method, .new_class, .record_empty_class_field, .call_with_array, .construct_with_array, .generator_delegate_step {
 			3
 		}
 		.mov, .unary_plus, .unary_minus, .bitwise_not, .not_op, .typeof_op, .to_numeric, .to_string,
@@ -162,7 +164,7 @@ fn (instruction Instruction) input_count() int {
 		.get_object_property_iterator, .property_name_iterator_next,
 		.get_sync_iterator, .sync_iterator_next, .close_sync_iterator,
 		.sync_iterator_step_value, .sync_iterator_elide, .sync_iterator_to_array,
-		.jump_if_false, .jump_if_nullish, .end, .throw_op, .construct, .super_construct, .new_array, .new_function_with_name, .await_value, .yield_value {
+		.jump_if_false, .jump_if_nullish, .end, .throw_op, .construct, .super_construct, .new_array, .new_function_with_name, .await_value, .yield_value, .yield_iterator_result {
 			1
 		}
 		else {
@@ -186,7 +188,7 @@ fn (instruction Instruction) writes_operand() bool {
 		.require_object_coercible, .set_object_literal_prototype, .copy_data_properties,
 		.record_empty_class_field, .record_class_static_block, .initialize_empty_static_fields,
 		.close_sync_iterator, .close_sync_iterator_throw,
-		.sync_iterator_elide, .await_value, .yield_value, .generator_start,
+		.sync_iterator_elide, .await_value, .yield_value, .yield_iterator_result, .generator_start,
 		.jump_if_true, .jump_if_false, .jump_if_nullish, .end, .throw_op]
 }
 
