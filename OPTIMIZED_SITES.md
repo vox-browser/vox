@@ -82,6 +82,13 @@ control improves 2,440→471 pixels, with maximum channel error one. Remaining t
 shadow/edge differences and production/live checks stay open. See the
 [alpha-image audit](docs/OPTIMIZED_SITES_PIXELS_2026_11_12.md#slashdot-transparent-lossless-webp-sampling-2026-11-17).
 
+**Slashdot shadow-alpha follow-up:** `891fe707b` applies retained glyph-shadow
+opacity once. Frozen Slashdot improves **429→390 pixels twice**. The opacity
+property passes, while the new shadow fixture remains inexact at 4,083 pixels.
+All **76 workloads/152 captures** preserve the 75 prior PNGs; BBC, Guardian and
+Verge remain zero twice. Glyph-mask/blur differences and production/live checks
+stay open. See the [shadow opacity audit](docs/OPTIMIZED_SITES_PIXELS_2026_11_12.md#slashdot-retained-shadow-opacity-2026-11-17).
+
 **Remaining forum/news screen, November 17:** the exact Verge fix does not
 finish the catalog. A separate diagnostic screen finds open Slashdot, Stack
 Overflow, TechCrunch and Register differences; Engadget's fresh Brave references

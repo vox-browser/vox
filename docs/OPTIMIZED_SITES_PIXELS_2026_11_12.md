@@ -6781,3 +6781,40 @@ C/literal-`-prod`/single-unit rebuild. No timing or instruction credit is claime
 Raw accepted and rejected builds, witnesses, images, commands, actual exits,
 guards and cleanup inventory remain local in
 `docs/performance/slashdot-procedural-20261117/`.
+
+
+### Slashdot retained-shadow opacity, 2026-11-17
+
+The native retained-glyph shadow path uses the same translucent color for its
+source glyphs and CoreGraphics shadow. A half-alpha shadow is consequently
+multiplied twice. Its displaced offscreen glyphs should supply opaque coverage,
+with the requested color/alpha applied once by the shadow. `891fe707b` sets
+an opaque source only inside the existing blurred-shadow branch, preserving the
+ordinary glyph and zero-blur paths.
+
+The new public fixture has twelve combinations of zero/quarter/half/full alpha
+and zero/one/three-pixel blur, including fractional positions. Two independent
+fresh Brave references agree byte for byte. The focused opacity check validates
+integrated half/full shadow coverage against byte-rounding bounds, separately
+from exact PNG comparison. It passes Brave, fails both old native captures at
+blur one (15,608 integrated error against a 1,014 bound), then passes both fixed
+captures (80 against 1,014). Its initial per-pixel probe also failed Brave at
+blur three; that assumption was rejected, without changing PNG references or
+pixel tolerances. Fixed opacity results and the rejected probe remain local.
+
+The unchanged public reference improves 4,306→4,083 pixels twice. A glyph-mask
+and blur mismatch remains, including at full opacity; this is no exact-control
+claim. Slashdot improves **429→390 pixels twice**. Both full-uBO request streams
+pass (47 decisions each, no mismatches or oracle disagreements). BBC, Guardian
+and Verge remain **zero twice**. Document/readiness/image audits and pinned
+executable/native-library/runtime-shader checks pass. Raw commands, actual
+exits, captures, probes, compiler inputs and guards remain local under
+`docs/performance/slashdot-procedural-20261117/`.
+
+Accepted C/O0 browser `1f4fb6c4` preserves all **75 prior PNGs** across
+**76 workloads/152 repeated captures**. The native correction has a matching
+before/after compiler-source pin. The new fixture remains inexact at 4,083
+pixels. No reference or pixel tolerance changes. Its focused opacity property
+passes both fixed captures; no timing or instruction credit is claimed. The
+managed hook requests the shared C/literal-`-prod`/single-unit rebuild. Production,
+live-site, historical source-version and catalog-wide checks remain open.
