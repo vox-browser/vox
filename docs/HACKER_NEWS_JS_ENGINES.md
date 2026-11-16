@@ -2,12 +2,157 @@
 
 This compares Vox's JavaScript/DOM integrations on the archived 101-comment HN
 discussion, using the complete unchanged `hn.js`. It measures HTML parsing,
-runtime/binding setup, script initialization, a first collapse/expand, 100 more
-collapse/expand cycles, and an explicit native-cache checkpoint. It excludes
+runtime/binding setup, script initialization, a first collapse/expand, repeated
+collapse/expand cycles (500 in the latest cohorts), and an explicit native-cache checkpoint. It excludes
 process startup, external network, a native window, document layout/painting, PNG capture,
 correctness audits and teardown. The reported total sums those measured spans;
 it is not a continuous browser navigation or rendering time.
 Adblock is disabled in every mode to exclude filter-list initialization.
+
+## Latest: compiled LibJS exceeds 2× V8 on HN callbacks — 2026-11-16
+
+The final executable passes seven alternating matched control/candidate/V8
+triplets and an independent seven-group cold/warm comparison. **Restarted warm
+LibJS takes 299.834 ms versus V8’s 747.341 ms for 500 collapse/expand cycles:
+2.4925× by medians.** This is the archived discussion’s actual script/DOM
+integration workload, not an isolated JavaScript benchmark, rendering time,
+live-site navigation or a universal LibJS/V8 claim. Both engines keep their
+existing, different DOM bridges. The earlier results below remain historical.
+
+| Median measured interval, ms | V8 | LibJS cold | LibJS warm, restarted | LibJS warm, same process |
+| --- | ---: | ---: | ---: | ---: |
+| HTML/runtime/script initialization | 82.221 | 20.280 | 21.575 | 31.921 |
+| First collapse/expand | 3.814 | 1.062 | 1.413 | 1.558 |
+| Next 500 collapse/expand cycles | **747.341** | **324.071** | **299.834** | **369.425** |
+| Cache compilation/finish checkpoint | 0.000041 | 487.621 | 0.000250 | 0.000250 |
+| **Total measured spans** | **832.771** | **834.128** | **322.994** | **403.109** |
+| Callback minimum–maximum | 723.869–781.256 | 322.804–328.893 | 297.194–305.707 | 366.819–374.492 |
+
+Every restarted warm trial exceeds 2× its paired V8 trial. The independent
+cohort also passes `2 * max(LibJS callback ns) <= min(V8 callback ns)`;
+fastest-V8/slowest-LibJS is **2.3679×**. Cold includes native compilation:
+its total is approximately tied with V8 here, not 2× faster. Same-process
+warm callbacks reach 2.0230× by medians but do not pass the all-extremes gate
+(1.9329×). These independently computed medians need not sum to total medians.
+
+| Pair | V8 callbacks ms | LibJS cold ms | LibJS restarted ms | LibJS same-process ms |
+| --- | ---: | ---: | ---: | ---: |
+| 1 | 752.915125 | 328.892750 | 305.706750 | 374.492417 |
+| 2 | 743.862459 | 323.594084 | 299.945958 | 369.424792 |
+| 3 | 746.772084 | 322.803625 | 297.194375 | 366.819000 |
+| 4 | 747.341084 | 323.100459 | 300.614917 | 367.741292 |
+| 5 | 781.255917 | 324.070583 | 299.771000 | 371.094917 |
+| 6 | 751.542958 | 325.110500 | 299.834334 | 368.491000 |
+| 7 | 723.869458 | 324.269333 | 299.830125 | 370.244709 |
+
+### Changes and matched controls
+
+The implementation removes runtime allocation and helper work without replacing
+HN code or changing V8 settings:
+
+* Scope analysis lowers uncaptured simple-function parameter/`var` accesses to
+  native value-slot moves; captures, eval, TDZ and observable arguments retain
+  environment handling (`beb51a568`). Reads snapshot values to preserve order.
+* Array length tests compare ASCII directly and algorithms reuse the VM’s length
+  key (`8102c8510`). Exact execution-context value capacity removes unused
+  rounding (`3ee6e119c`). Getter/proxy access remains observable.
+* Primitive property reads avoid unused wrappers (`e57e16936`). Hot bytecode
+  validation compares bounded exact snapshots, including nested operand arrays
+  and handlers (`c4e61779b`); mutable bytecode still invalidates the snapshot.
+* Empty lexical scopes become budgeted native no-ops (`f783c6de7`), and numeric
+  array keys avoid decimal/UTF-16 conversion below 2^32−1 (`25917c375`).
+* Private synchronous calls reuse cleared frames and fixed value buffers
+  (`cbe1263c4`) in a pool bounded to 64 frames/1 MiB. Escaped public frames, views, traces and saved
+  stacks preserve their old lifetime. Suspensions/inline-linked frames stay on
+  fresh storage. Reuse clears all values/metadata, retains stack limits and
+  assigns a fresh frame ID; new layouts can evict old unused pool entries.
+
+The final `frames` cohort toggles only frame reuse in the same executable and
+native-code cache. Callback medians are **375.289 ms control / 299.100 ms
+candidate / 747.502 ms V8**, a **20.3%** reduction from reuse alone. Ranges are
+373.139–378.307 / 298.615–300.880 / 710.093–755.144 ms. Every candidate beats
+every control; even fastest-V8/slowest-candidate is **2.3601×**.
+
+Separate diagnostics count **417,313 reused private frames and 20 new private
+allocations**. Total fresh contexts fall from 422,343 to 5,030 and allocated
+value capacity from 4,984,449 to 6,845 slots; public allocations remain fresh.
+Native callback activity is identical: 185,871 entries, 1,675,845 direct steps,
+902,802 helper steps. Earlier diagnostics verify 725,949 accesses moved to native
+slot moves, 654,306 length-key constructions avoided, 24,048 unused primitive
+boxes avoided, 184,848 validation snapshot hits with 2,046 full validations,
+15 empty blocks elided and 108,216 numeric-key string conversions avoided.
+Counters are disabled and zero in every timed visit.
+
+Both final cohorts verify collapse/navigation cancellation, restoration of all
+101 comment classes, no script errors, empty interpreter frames and unchanged
+input hashes. Each cold run compiles 27 executables in one clang invocation;
+all warm runs load the full 27 with zero misses, invalid entries or compiler
+invocations (warm compiler path is `/usr/bin/false`). LibJS does not initialize
+the native V8 context; the separate V8 diagnostic confirms actual V8 execution.
+
+### Retained earlier cohorts and limits
+
+All earlier results remain local under `docs/performance/libjs-hn-2x-20261116/`.
+Timing changes across source epochs/host conditions are not combined into one
+speedup. The `register-cohort` callback medians are control 680.467 / candidate
+571.162 / V8 798.961 ms. `storage-cohort` gives 766.326 / 599.778 / 1247.259 ms:
+its apparent 2.08× median fails the conservative gate and two paired trials,
+with load 12.53–14.24 on 18 logical CPUs. A lower-load independent `final-engines`
+then gives warm LibJS 394.776 / V8 629.911 ms (1.60×), so work continued.
+
+`dispatch-cohort` gives 396.435 / 369.541 / 696.417 ms; `indices-cohort` gives
+355.943 / 348.941 / 673.190 ms. Independent `optimized-engines` still falls
+short at warm 347.002 / V8 674.350 ms (1.94×). A last-property-slot experiment
+(`last-cohort`) produces 353.091 / 352.153 ms with a worse candidate maximum;
+its implementation was removed and earns no performance credit.
+
+The first frame-pool cohort (`reuse-cohort`) gives 346.296 / 275.153 / 572.988 ms,
+passing the all-extremes 2× gate at 2.0330×. Its independent `reuse-engines`
+gives warm 273.582 / V8 572.524 ms (2.0927×); all paired trials pass 2× but
+its all-extremes ratio is 1.9325×. The final refinement admits new frame layouts
+after pool saturation. Both final cohorts above measure that exact code.
+Earlier and final absolute timings differ; no performance credit is assigned
+to the eviction refinement, which does not execute on this HN workload.
+
+The 257-function focused/lifecycle aggregate passes with default GC and
+`-gc none`, including escaping native callbacks/value views, stack walks/traces,
+saved stacks, errors, closures, async/generator frames and stack exhaustion.
+The earlier full-package aggregate remains failing: five existing assertions
+(class/construction expectations, global names, Intl patterns/formatting) and
+an uncaught Intl ReferenceError prevent a green full-suite claim. A separate
+proxy fixture’s missing Function binding reproduces with optimizations off/on;
+classic `for(let…)` capture also fails with scope elision off/on. These are
+retained limitations, not claimed fixes. AST fixtures compare exactly 100/100;
+eight Python evidence-validation tests pass. The final AST rerun uses C/clang;
+an initial default-FastC attempt fails on its unsupported generic parser syntax
+and is retained as `final-ast2.log`. The compatibility compiler was
+not available; these checks use current V `0.5.2 cbfc1be`.
+
+### Final artifact and receipts
+
+The final headless executable is SHA-256
+`a7eea82ba7d077cb0a5f2ba81e107863df9c1c93f2da1482a0c7621017d121ad`.
+It uses C/clang, literal V `-prod -no-prod-options`, `-O2`, one C unit, no LTO
+and default Boehm GC. Build/guard exit zero; 174.137 s, peak sampled aggregate
+RSS 11,764,088,832 bytes under 12 GiB. This is source-built benchmark evidence,
+not validation of the installed production bundle’s allocator/configuration.
+The shared checkout contains concurrent work; executable and pinned input
+hashes identify the measured artifact. V8 is **14.6.202.34-node.40**; the `-O3`
+adapter and libnode hashes below are unchanged from the original comparison.
+
+`final-frames/results.json` retains every seed, diagnostic and timed attempt
+(25 processes); `final-engines2/results.json` retains all 24 processes. Every
+process, driver and guard exits zero. Guard peaks are 504,152,064 and
+505,167,872 bytes under 3 GiB; durations 21.577 and 26.415 s. The 18-CPU host’s
+one-minute load changes 4.741→4.577 and 4.771→4.847 respectively. OS filesystem
+and loader caches remain warm; private per-process profiles/HTTP caches and
+private native caches follow the policy below. Local replay serves unchanged
+archived images without external forwarding. Exact commands, exits, PIDs,
+cache/library/fixture/source hashes, replay requests, build context and all
+prior failed/rejected attempts remain beside these local receipts. Guards are
+retained under `guards/`; temporary Build job outputs are removed. Benchmark
+controls are committed as `1dd95e61c`. Each feature commit requests the managed production rebuild; no duplicate manual browser
+build was queued. The installed bundle is not used to validate new runtime code.
 
 ## Results — 2026-11-15
 
@@ -344,7 +489,14 @@ sh tools/run_v_tool.sh run_memory_bounded --limit-gib 3 \
     --lock Build/hn-run-UNIQUE.lock --report Build/hn-run-UNIQUE.json -- \
   python3 tools/benchmark_hn_engines.py \
     --binary /tmp/vox-hn-engines/hn-engines \
-    --output docs/performance/hn-engines-UNIQUE --pairs 7 --cycles 100
+    --output docs/performance/hn-engines-UNIQUE --pairs 7 --cycles 500
+
+sh tools/run_v_tool.sh run_memory_bounded --limit-gib 3 \
+    --lock Build/hn-frames-UNIQUE.lock --report Build/hn-frames-UNIQUE.json -- \
+  python3 tools/benchmark_hn_property_lookup.py \
+    --binary /tmp/vox-hn-engines/hn-engines \
+    --output docs/performance/hn-frames-UNIQUE \
+    --optimization frames --pairs 7 --cycles 500
 
 python3 -m unittest discover -s tools -p benchmark_hn_engines_test.py
 ```
