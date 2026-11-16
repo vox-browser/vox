@@ -110,6 +110,7 @@ pub enum SetNeedsLayoutTreeUpdateReason {
 	none
 	shadow_root_set_inner_html
 	style_change
+	svg_resource_content_change
 	svg_resource_element_removed
 	table_cell_span_attribute
 }
@@ -135,6 +136,7 @@ pub fn set_needs_layout_tree_update_reason_to_string(reason SetNeedsLayoutTreeUp
 		.none { 'None' }
 		.shadow_root_set_inner_html { 'ShadowRootSetInnerHTML' }
 		.style_change { 'StyleChange' }
+		.svg_resource_content_change { 'SVGResourceContentChange' }
 		.svg_resource_element_removed { 'SVGResourceElementRemoved' }
 		.table_cell_span_attribute { 'TableCellSpanAttribute' }
 	}
@@ -3341,6 +3343,16 @@ pub fn (mut n Node) set_needs_layout_tree_update(value bool, reason SetNeedsLayo
 			}
 			current.child_needs_layout_tree_update = true
 			ancestor = current.flat_tree_parent()
+		}
+		// SVG resource boxes live below their referencers, so changes inside a
+		// mask, clipPath or pattern must also rebuild those layout subtrees.
+		mut resource_node := if n.is_svg_element() { ?&Node(&n) } else { n.parent() }
+		for resource_node != none {
+			current := resource_node or { break }
+			if !current.is_svg_element() { break }
+			mut resource := current.as_element() or { break }
+			resource.mark_svg_resource_box_referencing_elements_for_content_change()
+			resource_node = current.parent()
 		}
 		// If this is an element with display: contents, we need to propagate the layout tree update to the parent.
 		if element := n.as_element() {

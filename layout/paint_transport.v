@@ -110,6 +110,7 @@ pub:
 // empty text-shadow suppresses the fragment's ordinary shadows.
 pub struct TextSelectionStyle {
 pub:
+	colors_authored  bool
 	background_color css.Color
 	text_color       css.Color
 	text_color_set   bool
@@ -3671,6 +3672,7 @@ fn paint_text_shadow(mut commands []PaintCommand, fragment TextFragment,
 			rtl: fragment.rtl
 			opacity: opacity
 			blur: layer.blur
+			glyph_orientation: fragment.paintable_fragment.orientation
 		}
 		if retained_run := glyph_run {
 			shadow_command.glyph_run = retained_run

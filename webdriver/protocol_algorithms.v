@@ -77,9 +77,7 @@ pub fn find_navigable_with_handle(contexts []BrowsingContext, handle string, sho
 }
 
 pub fn represents_a_web_frame(value json2.Any) bool {
-	// Preserve the current upstream implementation, including its lookup of the
-	// web-window identifier in this predicate.
-	return represents_web_window(value)
+	return represents_web_frame(value)
 }
 
 pub fn represents_a_web_window(value json2.Any) bool {

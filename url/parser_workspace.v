@@ -25,6 +25,7 @@ fn own_url_optional_string(value ?string) ?string {
 fn own_url_host(host Host) Host {
 	match host {
 		string { return Host(host.clone()) }
+		OpaqueHost { return Host.opaque(host.value.clone()) }
 		Ipv6Host { return Host.ipv6(host.pieces.clone()) }
 		Ipv4Host { return Host.ipv4(host.address) }
 	}

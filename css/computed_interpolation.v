@@ -1659,6 +1659,8 @@ pub enum WithAnimationsApplied as u8 {
 pub struct ComputedProperties {
 mut:
 	highlight_originating_color_ ?Color
+	highlight_colors_authored_ bool
+	highlight_color_is_current_color_ bool
 pub mut:
 	property_store_                          &ComputedPropertyStore = unsafe { nil }
 	property_important_                      [computed_property_flag_byte_count]u8

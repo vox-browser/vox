@@ -129,15 +129,15 @@ pub fn html_script_element_model_for_dom_element(element &dom.HTMLScriptElement)
 	}
 	dom_element := script_dom_element(element)
 	mut model := HTMLScriptElementModel.create(dom_element.document().base_url())
-	model.src_ = dom_element.get_attribute('src')
+	model.src_ = dom_element.get_attribute_ns(none, 'src')
 	model.text_ = dom_element.as_node().child_text_content()
 	model.type_attribute_ = dom_element.get_attribute_ns(none, 'type')
 	model.language_attribute_ = dom_element.get_attribute('language')
 	model.async_attribute_ = dom_element.has_attribute('async')
 	model.nomodule_ = dom_element.has_attribute('nomodule')
 	model.connected_ = dom_element.as_node().is_connected()
-	model.crossorigin_ = cors_setting_attribute_from_keyword(dom_element.get_attribute('crossorigin'))
-	model.referrer_policy_ = ascii_lowercase_string(dom_element.get_attribute_value('referrerpolicy'))
+	model.crossorigin_ = cors_setting_attribute_from_keyword(dom_element.get_attribute_ns(none, 'crossorigin'))
+	model.referrer_policy_ = ascii_lowercase_string(dom_element.get_attribute_ns(none, 'referrerpolicy') or { '' })
 	attach_html_script_element_model(element, model)
 	return model
 }
@@ -263,10 +263,10 @@ pub fn (script &HTMLScriptElementModel) script_type() ScriptElementType {
 	return script.script_type_
 }
 
-fn (script &HTMLScriptElementModel) determine_type() ScriptElementType {
-	type_value := if value := script.type_attribute_ {
+fn script_element_type_from_attributes(type_attribute ?string, language_attribute ?string) ScriptElementType {
+	type_value := if value := type_attribute {
 		if value == '' { 'text/javascript' } else { value }
-	} else if language := script.language_attribute_ {
+	} else if language := language_attribute {
 		if language == '' { 'text/javascript' } else { 'text/${language}' }
 	} else {
 		'text/javascript'
@@ -274,7 +274,7 @@ fn (script &HTMLScriptElementModel) determine_type() ScriptElementType {
 	// Whitespace is stripped only for the type attribute's classic MIME check.
 	// In particular, it remains significant for module and import-map scripts.
 	if mimesniff.is_javascript_mime_type_essence_match(type_value)
-		|| mimesniff.is_javascript_mime_type_essence_match((script.type_attribute_ or { '' }).trim('\t\n\f\r ')) {
+		|| mimesniff.is_javascript_mime_type_essence_match((type_attribute or { '' }).trim('\t\n\f\r ')) {
 		return .classic
 	}
 	return match ascii_lowercase_string(type_value) {
@@ -282,6 +282,10 @@ fn (script &HTMLScriptElementModel) determine_type() ScriptElementType {
 		'importmap' { .import_map }
 		else { .null_ }
 	}
+}
+
+fn (script &HTMLScriptElementModel) determine_type() ScriptElementType {
+	return script_element_type_from_attributes(script.type_attribute_, script.language_attribute_)
 }
 
 pub fn (mut script HTMLScriptElementModel) prepare_script(document ?&dom.Document) {
@@ -659,9 +663,9 @@ pub fn html_script_element_attribute_changed(element &dom.HTMLScriptElement, nam
 		return
 	}
 	mut model := unsafe { &HTMLScriptElementModel(html_script_element_model_for_dom_element(element)) }
-	if name == 'crossorigin' {
+	if namespace_ == none && name == 'crossorigin' {
 		model.crossorigin_ = cors_setting_attribute_from_keyword(value)
-	} else if name == 'referrerpolicy' {
+	} else if namespace_ == none && name == 'referrerpolicy' {
 		model.referrer_policy_ = ascii_lowercase_string(value or { '' })
 	} else if name == 'src' {
 		if namespace_ != none || value == none {
@@ -738,13 +742,13 @@ pub fn html_script_element_post_connection(element &dom.HTMLScriptElement) {
 
 pub fn html_script_element_src(element &dom.HTMLScriptElement) string {
 	dom_element := script_dom_element(element)
-	raw := dom_element.get_attribute('src') or { return '' }
+	raw := dom_element.get_attribute_ns(none, 'src') or { return '' }
 	return dom_element.document().encoding_parse_and_serialize_url(raw) or { return '' }
 }
 
 pub fn set_html_script_element_src(element &dom.HTMLScriptElement, value string) {
 	mut dom_element := script_dom_element(element)
-	old_value := dom_element.get_attribute('src')
+	old_value := dom_element.get_attribute_ns(none, 'src')
 	dom_element.set_attribute_value('src', value)
 	html_script_element_attribute_changed(element, 'src', old_value, value, none)
 }

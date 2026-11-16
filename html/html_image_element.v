@@ -305,7 +305,7 @@ pub fn html_image_element_model_for_dom_element(element &dom.HTMLImageElement) &
 	} else {
 		.eager
 	}
-	model.cors_setting_ = cors_setting_attribute_from_keyword(dom_element.get_attribute('crossorigin'))
+	model.cors_setting_ = cors_setting_attribute_from_keyword(dom_element.get_attribute_ns(none, 'crossorigin'))
 	model.form_control_ = FormAssociatedElement.create(dom_element)
 	attach_html_image_element_model(element, model)
 	model.update_alt_text_shadow_tree()

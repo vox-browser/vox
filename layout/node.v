@@ -248,10 +248,9 @@ pub fn (n &Node) is_grid_item() bool {
 }
 
 pub fn (n &Node) vertical_align_applies() bool {
-	// vertical-align has no effect on flex or grid items. Other applicability
-	// remains intentionally broad until the generic baseline path is narrowed
-	// to inline-level boxes and table cells.
-	return !n.is_flex_item_ && !n.is_grid_item_
+	// CSS2 limits vertical-align to inline-level boxes and table cells.
+	return n.is_box() && (n.display().is_inline_outside() || n.display().is_table_cell())
+		&& !n.is_flex_item_ && !n.is_grid_item_
 }
 
 pub fn (mut n Node) set_grid_item(value bool) {

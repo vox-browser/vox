@@ -1036,6 +1036,11 @@ pub fn compute_required_invalidation(old_style &ComputedProperties, new_style &C
 	}
 	invalidation = required_invalidation_after_style_change_or(invalidation,
 		compute_raw_property_invalidation(old_style, new_style))
+	if old_style.highlight_colors_authored_ != new_style.highlight_colors_authored_
+		|| old_style.highlight_color_is_current_color_ != new_style.highlight_color_is_current_color_ {
+		invalidation.ensure_at_least(.repaint)
+		invalidation.recompute_descendant_styles = true
+	}
 	// A counter style is resolved from the element's current style scope. Its effective
 	// definition can therefore change while the computed property text remains identical.
 	// Generated pseudo-elements do not expose an independently addressable layout-node

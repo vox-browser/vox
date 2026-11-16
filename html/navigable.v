@@ -1389,9 +1389,9 @@ fn parse_navigated_text_document(document &dom.Document, source string, type_ mi
 
 fn parse_navigated_xml_document(document &dom.Document, source string) {
 	mut owner := unsafe { &dom.Document(document) }
-	// A malformed document keeps what was built before the error, as no
-	// error document is translated for this path yet.
-	parse_xml_document_source(document, source) or {}
+	parse_xml_document_source(document, source) or {
+		dom.convert_to_xml_error_document(mut owner, 'Failed to parse XML document: ${err}')
+	}
 	// The end steps of the HTML parser, which the XML parser has no state for.
 	owner.update_readiness(.interactive)
 	owner.update_readiness(.complete)
@@ -1721,7 +1721,7 @@ pub fn perform_url_and_history_update_steps(document &dom.Document, new_url dom.
 	// The navigable's session history outlives the document whose script
 	// pushed or replaced this entry; keep the entry and its payload persistent.
 	persistent := platform.enter_persistent()
-	new_entry := &SessionHistoryEntry{
+	mut new_entry := &SessionHistoryEntry{
 		url: persistent_session_history_url(new_url)
 		classic_history_api_state: persistent_serialization_record(serialized_data or {
 			active_entry.classic_history_api_state
@@ -1735,6 +1735,9 @@ pub fn perform_url_and_history_update_steps(document &dom.Document, new_url dom.
 		HistoryHandlingBehavior.replace
 	} else {
 		history_handling_
+	}
+	if history_handling == .replace {
+		new_entry.navigation_api_key = active_entry.navigation_api_key
 	}
 	mut mutable_document := unsafe { &dom.Document(document) }
 	if history_handling == .push {
@@ -2072,7 +2075,9 @@ pub fn (mut model NavigableModel) inform_the_navigation_api_about_child_navigabl
 fn (mut model NavigableModel) inform_the_navigation_api_about_aborting_navigation() {
 	if mut window := model.active_window() {
 		mut navigation := unsafe { &Navigation(window.navigation()) }
-		navigation.abort_the_ongoing_navigation(dom.js_string('AbortError: navigation aborted'))
+		for navigation.ongoing_navigate_event() != none {
+			navigation.abort_the_ongoing_navigation(dom.js_string('AbortError: navigation aborted'))
+		}
 	}
 }
 

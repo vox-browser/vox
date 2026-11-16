@@ -1018,8 +1018,15 @@ pub fn scheme_fetch(params &FetchParams, host &FetchHost) &PendingResponse {
 		origin := request.origin.origin or {
 			return PendingResponse.create(mut request, Response.network_error("Request with 'file:' or 'resource:' URL blocked"))
 		}
-		if (!origin.is_opaque() && !origin.serialize().starts_with('file:') && !origin.serialize().starts_with('resource:'))
-			|| request.destination == none {
+		origin_is_allowed := if scheme == 'file' {
+			origin.is_file_origin()
+		} else {
+			origin.is_opaque() || origin.serialize().starts_with('file:')
+				|| origin.serialize().starts_with('resource:')
+		}
+		browser_initiated_navigation := request.client == none && !request.client_present
+			&& request.mode == .navigate
+		if (!browser_initiated_navigation && !origin_is_allowed) || request.destination == none {
 			return PendingResponse.create(mut request, Response.network_error("Request with 'file:' or 'resource:' URL blocked"))
 		}
 		return nonstandard_resource_loader_file_or_http_network_fetch(params, host)
@@ -1108,7 +1115,7 @@ pub fn main_fetch(params &FetchParams, host &FetchHost) &PendingResponse {
 			}
 			is_file_to_file_font_load := if request_origin := origin {
 				is_font := if destination := request.destination { destination == .font } else { false }
-				request_origin.is_opaque_file_origin() && request.current_url().scheme() == 'file'
+				request_origin.is_file_origin() && request.current_url().scheme() == 'file'
 					&& is_font
 			} else { false }
 			if (is_same_origin && request.response_tainting == .basic) || is_file_to_file_font_load || request.current_url().scheme() == 'data' || request.mode in [

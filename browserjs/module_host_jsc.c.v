@@ -240,11 +240,11 @@ fn (mut host ModuleHost) execute(source ScriptSource, stringify_result bool) !st
 		mut options := html.default_script_fetch_options()
 		mut external := false
 		if element := source.element {
-			external = element.has_attribute('src')
+			external = element.has_attribute_ns(none, 'src')
 			options.cryptographic_nonce = element.cryptographic_nonce()
-			options.integrity_metadata = element.get_attribute_value('integrity')
-			options.referrer_policy = element.get_attribute_value('referrerpolicy')
-			options.credentials_mode = if element.get_attribute_value('crossorigin').to_lower() == 'use-credentials' {
+			options.integrity_metadata = (element.get_attribute_ns(none, 'integrity') or { '' })
+			options.referrer_policy = (element.get_attribute_ns(none, 'referrerpolicy') or { '' })
+			options.credentials_mode = if (element.get_attribute_ns(none, 'crossorigin') or { '' }).to_lower() == 'use-credentials' {
 				.include
 			} else {
 				.same_origin

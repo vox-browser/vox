@@ -151,6 +151,10 @@ fn append_host(mut output []u8, host url.Host) {
 			output << u8(2)
 			append_string(mut output, host)
 		}
+		url.OpaqueHost {
+			output << u8(3)
+			append_string(mut output, host.value)
+		}
 	}
 }
 
@@ -168,6 +172,9 @@ fn decode_host(mut decoder ByteDecoder) !url.Host {
 		}
 		2 {
 			url.Host.from_string(decoder.string_value()!)
+		}
+		3 {
+			url.Host.opaque(decoder.string_value()!)
 		}
 		else {
 			return error('Invalid host tag in serialized CSP')
@@ -214,7 +221,7 @@ fn decode_origin(mut decoder ByteDecoder) !url.Origin {
 			nonce[index] = decoder.byte()!
 		}
 		type_byte := decoder.byte()!
-		if type_byte > u8(url.OpaqueOriginType.file) {
+		if type_byte > u8(url.OpaqueOriginType.sandboxed_file) {
 			return error('Invalid opaque origin type')
 		}
 		return url.Origin.opaque(nonce, unsafe { url.OpaqueOriginType(type_byte) })
