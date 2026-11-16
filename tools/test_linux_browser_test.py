@@ -188,6 +188,21 @@ class LinuxBrowserSmokeTest(unittest.TestCase):
                 predicate = mock.Mock(side_effect=[False, "ready"])
                 self.assertEqual(smoke.wait_for("phase", predicate, timeout=1), "ready")
 
+    def test_emulated_window_deadline_is_configurable_and_bounded(self):
+        with mock.patch.dict(smoke.os.environ, {}, clear=True):
+            self.assertEqual(smoke.window_wait_seconds(), 20)
+        with mock.patch.dict(smoke.os.environ, {"VOX_LINUX_TEST_WAIT_SECONDS": "120"}):
+            clock = mock.Mock(side_effect=[0, 0, 21])
+            with mock.patch.object(smoke.time, "monotonic", clock), mock.patch.object(smoke.time, "sleep"):
+                self.assertTrue(smoke.wait_for("slow VM paint", mock.Mock(side_effect=[False, True])))
+            with mock.patch.object(smoke.time, "monotonic", side_effect=[0, 0, 2]), mock.patch.object(smoke.time, "sleep"):
+                with self.assertRaisesRegex(AssertionError, 'explicit deadline'):
+                    smoke.wait_for("explicit deadline", lambda: False, timeout=1)
+        for value in ("0", "-1", "nan", "inf", "3601", "invalid"):
+            with mock.patch.dict(smoke.os.environ, {"VOX_LINUX_TEST_WAIT_SECONDS": value}):
+                with self.assertRaisesRegex(RuntimeError, 'positive, finite'):
+                    smoke.window_wait_seconds()
+
     def test_wait_rejects_early_exit_even_if_window_predicate_would_pass(self):
         browser = mock.Mock(returncode=7)
         browser.poll.return_value = 7

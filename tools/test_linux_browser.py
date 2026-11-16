@@ -8,6 +8,7 @@ import functools
 import hashlib
 import http.server
 import json
+import math
 import os
 import re
 import select
@@ -268,7 +269,19 @@ def check_webgl_browser(binary, artifacts, temporary):
     print('PASS: native GLES WebGL1/WebGL2 shaders, readback and canvas presentation', flush=True)
 
 
-def wait_for(description, predicate, browser=None, timeout=20):
+def window_wait_seconds():
+    value = os.environ.get("VOX_LINUX_TEST_WAIT_SECONDS", "20")
+    try:
+        seconds = float(value)
+    except ValueError as error:
+        raise RuntimeError("VOX_LINUX_TEST_WAIT_SECONDS must be positive, finite and at most 3600") from error
+    if not math.isfinite(seconds) or not 0 < seconds <= 3600:
+        raise RuntimeError("VOX_LINUX_TEST_WAIT_SECONDS must be positive, finite and at most 3600")
+    return seconds
+
+
+def wait_for(description, predicate, browser=None, timeout=None):
+    timeout = window_wait_seconds() if timeout is None else timeout
     deadline = time.monotonic() + timeout
     while time.monotonic() < deadline:
         if browser is not None and browser.poll() is not None:
@@ -520,6 +533,7 @@ def main():
     parser.add_argument("binary", nargs="?", type=Path, default=repo / "Build/linux/vox")
     parser.add_argument("--output", type=Path, default=repo / "Build/linux/browser-smoke")
     args = parser.parse_args()
+    wait_seconds = window_wait_seconds()
     binary = args.binary.resolve()
     artifacts = args.output.resolve()
     require_tools()
@@ -564,7 +578,7 @@ def main():
             print(run_windowed([sys.executable,
                        str(Path(__file__).resolve()), "--window", str(binary), str(page),
                        f"http://127.0.0.1:{server.server_port}/keyboard", str(artifacts)],
-                      screen="1280x960x24", env=environment, timeout=300,
+                      screen="1280x960x24", env=environment, timeout=max(300, 15 * wait_seconds),
                       log_path=artifacts / "window-driver.log"), end="")
         finally:
             server.shutdown()
