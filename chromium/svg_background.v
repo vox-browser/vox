@@ -72,6 +72,26 @@ struct ChromiumSVGBackgroundReplay {
 	layout_height   f64
 }
 
+// CSS can allow repetition while one recorded image covers the snapped clip.
+// Test its rounded recording area, keeping the fractional SVG layout separate.
+fn chromium_svg_background_single_picture(plan painting.BackgroundTilePlan, clip painting.Rect) bool {
+	if !plan.repeat_x && !plan.repeat_y { return true }
+	tile := plan.first_tile
+	if clip.width <= 0 || clip.height <= 0 || tile.width <= 0 || tile.height <= 0 { return false }
+	for value in [tile.x,tile.y,tile.width,tile.height,clip.x,clip.y,clip.width,clip.height] {
+		if !math.is_finite(value) { return false }
+	}
+	converter := painting.new_device_pixel_converter(1) or { return false }
+	image := converter.rounded_device_rect(tile)
+	area := converter.rounded_device_rect(clip)
+	// Different frame and destination sizes need the repeated-image sampler.
+	// Replaying that frame directly would stretch its internal SVG geometry.
+	recording := chromium_svg_background_replay(tile, [f64(1),0,0,1,0,0]!)
+	if image.width != recording.viewport_width || image.height != recording.viewport_height { return false }
+	return image.x <= area.x && image.y <= area.y
+		&& image.right() >= area.right() && image.bottom() >= area.bottom()
+}
+
 fn svg_background_paint_commands_for_replay(image &layout.PaintImageData,
 	replay ChromiumSVGBackgroundReplay) ?[]layout.PaintCommand {
 	return svg_background_paint_commands_for_viewport(image, replay.content_width(), replay.content_height())
@@ -115,7 +135,7 @@ fn chromium_svg_background_can_share_recording(command &layout.PaintCommand) boo
 		count++
 		if count > 4096 { return false }
 		destination := converter.rounded_device_rect(tile)
-		replay := if !plan.repeat_x && !plan.repeat_y {
+		replay := if chromium_svg_background_single_picture(plan, clip) {
 			chromium_svg_background_replay(tile, normalized_paint_transform(command.transform))
 		} else {
 			ChromiumSVGBackgroundReplay{

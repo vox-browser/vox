@@ -43,7 +43,8 @@ fn append_chromium_svg_background_msaa_triggers(command &layout.PaintCommand, in
 	for {
 		tile := tiles.next() or { break }
 		destination := converter.rounded_device_rect(tile)
-		replay := if !plan.repeat_x && !plan.repeat_y {
+		single_picture := chromium_svg_background_single_picture(plan, clip)
+		replay := if single_picture {
 			chromium_svg_background_replay(tile, outer)
 		} else {
 			ChromiumSVGBackgroundReplay{
@@ -52,7 +53,7 @@ fn append_chromium_svg_background_msaa_triggers(command &layout.PaintCommand, in
 				transform: outer
 			}
 		}
-		offset := if !plan.repeat_x && !plan.repeat_y {
+		offset := if single_picture {
 			painting.IntPoint{}
 		} else {
 			painting.IntPoint{destination.x, destination.y}

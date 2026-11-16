@@ -7259,7 +7259,7 @@ fn (mut app BrowserApp) draw_command(source_command &layout.PaintCommand, page_x
 					}
 					chromium_svg := app.document != unsafe { nil }
 						&& app.document.font_rendering_policy() == .chromium
-						&& !plan.repeat_x && !plan.repeat_y
+						&& chromium_svg_background_single_picture(plan, image_bounds)
 					replay := if chromium_svg { chromium_svg_background_replay(tile, command.transform) } else {
 						ChromiumSVGBackgroundReplay{
 							viewport_width: destination.width
