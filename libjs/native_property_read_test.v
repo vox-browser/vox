@@ -137,6 +137,7 @@ fn test_native_property_plan_checks_live_storage_and_post_getter_destination() {
 	assert native_property_step(voidptr(&invocation), plan.data) == 1
 	assert frame.values[7].number == 42
 	// Layout-valid operands still require actual backing storage checks.
+	executable.instructions[0] = Instruction{...executable.instructions[0], dst: Operand.register(6)}
 	frame.values = []Value{len: 4, init: Value{}}
 	assert native_property_step(voidptr(&invocation), plan.data) == 0xffffffff
 	assert invocation.failure?.msg().contains('frame value index')
