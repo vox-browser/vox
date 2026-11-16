@@ -34,10 +34,7 @@ fn (mut vm VM) own_global_data_binding(environment Environment, name Utf16String
 		if object.proxy_object != none || object.host_properties != none || object.typed_array != none
 			|| object.string_object != none || object.arguments_object != none
 			|| object.legacy_platform_object != none || object.array_object != none { return none }
-		index := object.find_own_property(vm.binding_property_key(name))
-		if index < 0 { return none }
-		value := object.properties[index].value
-		if value.is_accessor() { return none }
+		value := vm.live_global_data_binding(object, name) or { return none }
 		if mut tier := vm.native_tier { if tier.diagnostics { tier.activity.own_global_binding_reads++ } }
 		return value
 	}

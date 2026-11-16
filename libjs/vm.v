@@ -247,6 +247,7 @@ pub struct VM {
 mut:
 	short_utf8_strings map[string]&PrimitiveString
 	generated_string_cache []?&PrimitiveString
+	global_binding_hints []GlobalBindingHint
 	string_to_atom_cache       []StringToAtomCacheEntry
 	fly_string_cache           []?&PrimitiveString
 	numeric_string_cache       []?&PrimitiveString
@@ -1247,6 +1248,10 @@ pub fn (vm &VM) dump_backtrace() {
 }
 
 pub fn (vm &VM) gather_roots(mut roots HeapRoots) {
+	for hint in vm.global_binding_hints {
+		if hint.owner != unsafe { nil } { roots.add(voidptr(hint.owner)) }
+		if hint.object != unsafe { nil } { roots.add(voidptr(hint.object)) }
+	}
 	for buffer in vm.interpreter_stack_.call_argument_workspaces {
 		for value in buffer.values { roots.add_value(value) }
 	}

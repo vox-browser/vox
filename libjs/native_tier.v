@@ -51,6 +51,7 @@ pub mut:
 	own_global_binding_reads u64
 	compact_reference_reads u64
 	direct_slow_steps u64
+	global_binding_hint_hits u64
 }
 
 pub struct NativeCodeStats {
