@@ -85,7 +85,7 @@ pub fn (mut vm VM) create_string(text Utf16String) &PrimitiveString {
 }
 
 pub fn (mut vm VM) create_string_from_str(text string) &PrimitiveString {
-	return vm.create_string(utf16_string(text))
+	return vm.create_cached_utf8_string(text)
 }
 
 // PrimitiveString::create(VM&, Utf16FlyString const&)
