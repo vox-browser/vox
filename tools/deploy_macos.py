@@ -110,7 +110,7 @@ def deploy(root=ROOT, output=None, package_only=False):
         # FastC for development, which cannot supply the single-C release build.
         # Drop inherited supervision/profiling overrides before entering it. The
         # build targets Info.plist's LSMinimumSystemVersion itself.
-        run([sys.executable, root / 'tools/rebuild_browser.py', '--build', '--backend', 'c',
+        run(['sh', root / 'tools/run_v_tool.sh', 'rebuild_browser', '--build', '--backend', 'c',
              '--prod', '--no-parallel-cc'],
             root, env=production_environment(os.environ))
 

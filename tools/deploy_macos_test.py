@@ -92,8 +92,8 @@ class MacOSDeployTests(unittest.TestCase):
         with patch.dict(os.environ, VOX_BUILD_SUPERVISED='1', VOX_BUILD_BACKEND='fastc',
                         LADYBIRD_V_PROFILE='profile'):
             self.package(package_only=False)
-        self.assertEqual(self.commands[0], [sys.executable, str(self.root / 'tools/rebuild_browser.py'),
-                                           '--build', '--backend', 'c',
+        self.assertEqual(self.commands[0], ['sh', str(self.root / 'tools/run_v_tool.sh'),
+                                           'rebuild_browser', '--build', '--backend', 'c',
                                            '--prod', '--no-parallel-cc'])
         self.assertNotIn('VOX_BUILD_SUPERVISED', self.environments[0])
         self.assertNotIn('VOX_BUILD_BACKEND', self.environments[0])
@@ -101,7 +101,7 @@ class MacOSDeployTests(unittest.TestCase):
 
     def test_failed_release_build_stops_before_staging_or_using_an_older_bundle(self):
         before = deploy.bundle_identity(self.app)
-        self.fail = str(self.root / 'tools/rebuild_browser.py')
+        self.fail = 'rebuild_browser'
         with self.assertRaises(subprocess.CalledProcessError):
             self.package(package_only=False)
         self.assertEqual(len(self.commands), 1)
