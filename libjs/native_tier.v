@@ -39,6 +39,8 @@ pub mut:
 	entries    u64
 	fast_steps u64
 	slow_steps u64
+	empty_binding_environments_skipped u64
+	own_global_binding_reads u64
 	compact_reference_reads u64
 	direct_slow_steps u64
 }

@@ -1,6 +1,8 @@
 module libjs
 
 $if test {
+	__global fast_binding_reads_disabled bool
+	pub fn set_fast_binding_reads_for_testing(enabled bool) { fast_binding_reads_disabled = !enabled }
 	__global native_dynamic_dispatch_disabled bool
 	__global compact_reference_reads_disabled bool
 	pub fn set_compact_reference_reads_for_testing(enabled bool) { compact_reference_reads_disabled = !enabled }
@@ -17,6 +19,29 @@ fn use_compact_reference_reads() bool {
 }
 fn (mut vm VM) record_compact_reference_read() {
 	if mut tier := vm.native_tier { if tier.diagnostics { tier.activity.compact_reference_reads++ } }
+}
+
+fn use_fast_binding_reads() bool {
+	$if test { if fast_binding_reads_disabled { return false } }
+	return true
+}
+
+fn (mut vm VM) own_global_data_binding(environment Environment, name Utf16String) ?Value {
+	if environment is GlobalEnvironment {
+		if environment.object_record.with_environment { return none }
+		if environment.declarative_record.bindings.len != 0 && environment.declarative_record.has_binding_named(name) { return none }
+		object := environment.object_record.binding_object
+		if object.proxy_object != none || object.host_properties != none || object.typed_array != none
+			|| object.string_object != none || object.arguments_object != none
+			|| object.legacy_platform_object != none || object.array_object != none { return none }
+		index := object.find_own_property(vm.binding_property_key(name))
+		if index < 0 { return none }
+		value := object.properties[index].value
+		if value.is_accessor() { return none }
+		if mut tier := vm.native_tier { if tier.diagnostics { tier.activity.own_global_binding_reads++ } }
+		return value
+	}
+	return none
 }
 
 // Shared with the interpreter: native dynamic operations retain the same
@@ -103,6 +128,26 @@ fn (mut vm VM) resolve_compact_read(name Utf16String, strict bool, callee bool, 
 	mut environment := ?Environment(initial)
 	for {
 		mut current := environment or { break }
+		if use_fast_binding_reads() {
+			if mut current is FunctionEnvironment {
+				if current.bindings.len == 0 {
+					if mut tier := vm.native_tier { if tier.diagnostics { tier.activity.empty_binding_environments_skipped++ } }
+					environment = current.outer_environment()
+					continue
+				}
+			} else if mut current is DeclarativeEnvironment {
+				if current.bindings.len == 0 {
+					if mut tier := vm.native_tier { if tier.diagnostics { tier.activity.empty_binding_environments_skipped++ } }
+					environment = current.outer_environment()
+					continue
+				}
+			} else if mut current is GlobalEnvironment {
+				if value := vm.own_global_data_binding(current, name) {
+					vm.record_compact_reference_read()
+					return value, js_undefined()
+				}
+			}
+		}
 		exists, _ := current.has_binding(mut vm, name)!
 		if exists {
 			value := current.get_binding_value(mut vm, name, strict)!
