@@ -133,6 +133,33 @@ pub fn (mut vm VM) compile_native_code(directory string, compiler string, minimu
 }
 
 fn native_compile_library(selected []&Executable, directory string, compiler string) !NativeCompiledLibrary {
+	$if prealloc {
+		// Source builders, compiler diagnostics and library-hash input are batch
+		// work, not VM state. Nothing in this synchronous operation mutates an
+		// executable or retains V data outside its returned library record.
+		scope := unsafe { prealloc_scope_begin() }
+		defer { unsafe { prealloc_scope_free_after(scope) } }
+		compiled := native_compile_library_in_workspace(selected, directory, compiler) or {
+			unsafe { prealloc_scope_leave(scope) }
+			message := err.msg().clone()
+			return error_with_code(message, err.code())
+		}
+		// Keep the workspace alive while copying the small retained result into
+		// the caller's arena. dlopen owns the machine code independently.
+		unsafe { prealloc_scope_leave(scope) }
+		return NativeCompiledLibrary{
+			handle: compiled.handle
+			entries: compiled.entries.clone()
+			stats: NativeCodeStats{...compiled.stats,
+				library: compiled.stats.library.clone()
+				library_sha256: compiled.stats.library_sha256.clone()
+			}
+		}
+	}
+	return native_compile_library_in_workspace(selected, directory, compiler)
+}
+
+fn native_compile_library_in_workspace(selected []&Executable, directory string, compiler string) !NativeCompiledLibrary {
 	source, fast_count := native_source(selected)!
 	// The generated ABI, opcodes, target and optimization flags are part of the
 	// key. No function pointer or process-specific payload is embedded in the file.
