@@ -87,7 +87,8 @@ fn open_github(manifest RevisitManifest, sources map[string]string, archive stri
 	started := time.sys_mono_now()
 	address := dom.URL{ value: manifest.url }
 	mut document := html.parse_navigation_document(markup, address, address.origin(), none) or { panic(err) }
-	document.set_browsing_context(&dom.BrowsingContext{ active_document_: document })
+	// parse_navigation_document already establishes the real Window/Navigable
+	// pair. Preserve its browsing-context identity for author History updates.
 	mut runtime := browserjs.Runtime.create_with_engine(.libjs)
 	defer {
 		runtime.close()
