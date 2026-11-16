@@ -3159,8 +3159,9 @@ capture-scale, shared rectangle/clip and finite compositor-footprint corrections
 a border resampling regression is removed. A guarded Display P3 document-space
 experiment initially reaches 343 differing pixels; guarded PNG decode density,
 mipmaps, thin-rectangle rasterization and destination-space blending now reach
-25 differing pixels against the unchanged original reference, after preserving
-fractional percentage transform origins and shared scaled PNG/shadow samples;
+24 differing pixels against the unchanged original reference, after preserving
+fractional percentage transform origins, shared scaled PNG/shadow samples and
+GPU-owned containing rectangle clips;
 it is not pixel-perfect acceptance. Covered MSAA samples now quantize before
 resolving coverage, with regression sources held uncompiled/unrun.
 The 862d ABI also completes a separate empty-cache first opening and fresh
@@ -3190,3 +3191,11 @@ attempts execute bytecode and are not compiled acceptance. The new ABI is
 being prepared through an actual first opening. Safe arithmetic and shared
 button underlays change no pixels; centroid interpolation and a current-upstream
 mesh counterfactual regress and are rejected. No reference or tolerance changes.
+
+The rectangle-clip correction reaches 24 differing pixels, maximum 10, with
+4,245 native hits/482,836 entries and zero misses/compiler calls on the 0130
+ABI. Its off control reproduces 25 pixels exactly. The ecad preparation also
+finishes after retained interrupted/ENOSPC attempts; a fresh compiler-disabled
+reopen has 4,244 hits/474,379 native entries, zero misses/compiler calls and
+the unchanged 25-pixel output. Canonical ABI sources independently revert to
+0130. Test suites remain held and pixel-perfect parity is still incomplete.

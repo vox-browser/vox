@@ -4606,3 +4606,93 @@ The active native preparation is excluded. Regression sources for the PNG
 change are committed but remain uncompiled/unrun at the user's request.
 Pixel-perfect parity, a current-ABI compiled reopen, and matched revisit
 performance remain open.
+
+### Rectangle clip ownership: 24 differing pixels, 2026-11-17
+
+`60880e94e` transfers an eligible containing rectangular ancestor from Quartz
+publication into GG's clip stack. The initial scope is an antialiased plain
+fill, a shared local transform, finite containing bounds, no rounded/path/SVG
+clip, and a root grid with zero origin. GG receives the actual intersection;
+Quartz restores it if GPU replay declines. The opt-in is
+`VOX_DIAGNOSTIC_GPU_RECTANGLE_CLIP=1`. Defaults remain unchanged, and the
+regression sources are committed but uncompiled/unrun under the test hold.
+
+The blue URL corner at (719,439) was already correct in the GPU readback:
+`240,244,252`. Publication used a native clip starting at x=720 and discarded
+that pixel. The source trace identifies the authored rectangle
+`1440,490,544,1204` under the same 0.5 transform as the fill. Brave's independent
+picture records that same antialiased clip. GG can simplify the containing
+clip before rasterization and retain the antialias footprint; clipping the
+finished bitmap again in Quartz loses that footprint. Saved URL glyph
+backdrops show the pixel is already white before text compositing, so the
+later glyph blend is not its cause.
+
+Read-only extraction from the retained installed-Brave GraphiteDawnCache finds
+54 MSL text segments, with source-file hashes, offsets and output hashes.
+Using its ordinary rectangle vertex and fragment shaders, changing only entry
+names and buffer slots to the existing GG bindings, reproduces all 25 prior
+mismatches exactly. This original-page shader counterfactual uses 4,245 native
+hits/482,832 entries and no misses or compiler calls. It is diagnostic evidence
+about this cached program, not performance credit. Explicit contraction-off
+and precise FP32 function variants also change zero pixels, with 4,245 hits
+and 482,957/482,953 native entries respectively. Their compiler controls follow
+[Apple's Metal specification](https://developer.apple.com/metal/Metal-Shading-Language-Specification.pdf).
+
+The accepted clip build uses sealed production inputs, 3,760 sources and zero
+tests, and exits zero in 274.5400425 seconds, peak 8,979,955,712 bytes. Its
+executable SHA-256 is
+`a9bf45c4dee83d712c4491a8087a2d5c9d93d130568895882c77773394005d2b`.
+The matched-registry on/off captures both use the actual 0130 native cache and
+`/usr/bin/false`, complete exact content, no author/native errors, unchanged
+input pins, successful PID adoption, and zero browser/controller/guard exits.
+On records 4,245 hits/482,836 native entries; off 4,245/482,537. Both have zero
+misses/compiler invocations/pending/invalid entries and an uninitialized page
+JavaScriptCore context. Elapsed/peak are 39.302211625 seconds/8,660,434,944
+bytes and 39.837779584 seconds/8,556,150,784 bytes; no speedup is attributed.
+
+On resolves the one changed pixel without regression: **24 differing pixels,
+maximum 10, MAE 0.0001, RMSE 0.0191** against the original zero/zero reference.
+Off reproduces the prior 25 pixels exactly. The normalized compiled PNG is
+`github-frozen-libjs-compiled-24px.png`, SHA-256
+`655a9a4886dbabe70ed0e00236693a307ab634ab3e5be46c140e20c43ff07a3f`.
+The direct-live screenshot remains separately named
+`current-live-libjs-compiled.png`; this frozen result does not replace it.
+
+The ecad ABI preparation also finishes, without renaming any partition. Its
+original attempt loses its process without a completion/final-exit receipt;
+11,008 manifests are present, but that attempt is not acceptance. The resumed
+opening adds 10,112 executables in 79 compiler invocations, then hits compiler
+ENOSPC with 2,658 pending entries. The next fresh opening compiles those 2,658
+in 21 invocations, prepares all 81 modules, and ends with zero pending,
+unsupported or invalid entries and no cache error. Elapsed/peak for that final
+drain are 267.530289459 seconds/10,797,137,920 bytes. A fresh compiler-disabled
+reopen then records 4,244 hits, 474,379 native entries and zero misses/compiler
+calls/pending/invalid entries, complete exact content, no errors, fixed pins
+and zero exits. Its decoded output equals the trimmed 25-pixel renderer.
+Elapsed/peak are 53.623060625 seconds/8,987,541,504 bytes. Canonical runtime
+sources have meanwhile independently reverted to the compatible 0130 ABI;
+the clip build verifies all embedded ABI source hashes against that cache.
+These interrupted and resumed preparations are not a single empty-cache
+first-opening cohort or a matched speed result.
+
+All failed diagnostics remain visible. The first publication hook recurses
+and exits 138 before capture; the corrected read-only hook succeeds. A later
+source-coordinate probe records its geometry but disk exhaustion leaves an
+empty PNG and no content audit, so that capture is rejected despite process
+exit zero. The first clip root build also fails writing generated C with
+ENOSPC (89.91188525 seconds, peak 8,974,401,536 bytes). The first candidate
+capture uses an old output/registry name and has no adopted PID; its 24-pixel
+image is retained as diagnosis only, followed by the correctly named pair
+above. Completed shader/publication/cache-failure jobs move to
+`scratch-receipts/continued-20261117-r16` with idle locks and verified hashes
+(50 roots/235 entries); the incomplete original guard stays empty and is
+explicitly marked incomplete in the move manifest.
+
+Disk cleanup is hash-journaled. Old completed/rejected private executables and
+generated inputs are pruned after retaining their identities and source/
+validation receipts; the current live executable, compiled controls/candidates,
+native caches and newest accepted generated inputs remain. Historical paths
+whose executables were pruned are not launchable validation inputs. No source
+checkout or app bundle is copied. The remaining Code-tab fringe and button
+corners are still open, as are full pixel parity and matched revisit speed.
+Automated tests remain held.

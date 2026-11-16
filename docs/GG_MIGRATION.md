@@ -3641,3 +3641,15 @@ Fourteen focused V functions and both Python staging tests pass, including an
 exact full-reference SVG test with one and four destination samples. Production
 and live-site confirmation remain open. See the
 [merge audit](OPTIMIZED_SITES_PIXELS_2026_11_12.md#verge-svg-merge-allocation-and-transparent-borders-2026-11-17).
+
+### Containing rectangle clips in document rasterization, 2026-11-17
+
+`60880e94e` moves eligible ordinary containing clips into GG before a plain
+antialiased fill, avoiding a second Quartz clip that removed the GPU's correct
+fringe pixel. Native fallback restores the authored clip. Guarded original-page
+compiled-LibJS captures improve 25 to 24 pixels (maximum 15 to 10) with one
+resolved pixel and no regressions; the off control is exact to the prior
+image. The 3,760-source production build parses zero tests. Regression sources
+are committed but remain uncompiled/unrun by request; defaults and the original
+zero-tolerance Brave reference remain unchanged. See the
+[GitHub runtime report](LIBJS_GITHUB_RUNTIME_20261115.md#rectangle-clip-ownership-24-differing-pixels-2026-11-17).
