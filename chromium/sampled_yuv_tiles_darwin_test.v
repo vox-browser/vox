@@ -1,14 +1,65 @@
 // vtest build: macos
 module main
 
+import crypto.sha256
 import ggshape
+import yuv
+
+#flag darwin -L/opt/homebrew/lib -I/opt/homebrew/include -lwebpdecoder
+#include <webp/decode.h>
+
+fn C.WebPDecodeYUVInto(&u8, uint, &u8, uint, i32, &u8, uint, i32, &u8, uint, i32) &u8
+
+fn test_uniform_yuv_callback_preserves_native_tile_coordinate_space() {
+	previous := document_geometry_grid
+	defer { document_geometry_grid = previous }
+	bytes := $embed_file('@VMODROOT/Tests/Browser/Brave/sites/cnn/bodies/781d2b9c3ec6b401a4b2e9dbdce964f4ba3f6ecdb9880466d85dc30df6227139').to_bytes()
+	mut planes := []u8{len: 960 * 540 * 3 / 2}
+	decoded := unsafe {
+		C.WebPDecodeYUVInto(bytes.data, uint(bytes.len), planes.data, 960 * 540, 960,
+			&planes[960 * 540], 480 * 270, 480, &planes[960 * 540 + 480 * 270], 480 * 270, 480)
+	}
+	assert decoded != unsafe { nil }
+	atlas := yuv.webp_420_atlas_upload(planes, 960, 540) or { panic('native atlas') }
+	clip := [f32(2), 2, 269, 151, 4, 4, 4, 4, 4, 4, 4, 4]!
+	document_geometry_grid = DocumentGeometryGrid{
+		width:   1024
+		height:  256
+		columns: 1
+		rows:    4
+	}
+	assert document_image_sample_count(30, 125, 273, 155) == 1
+	mut actual := []u8{len: 273 * 155 * 4, init: 255}
+	assert document_sampled_png_pixels(actual.data, 273, 155, 1092, 1, 30, 125,
+		atlas.data, 960, 540, 960, 540, 5, 2, 2, 269, 151, &clip[0]) == 1
+	swap_document_raster_channels(actual.data, 273, 155, 1092)
+	// Crop of independently rendered native Graphite/Metal R8-plane tiles.
+	// Tile zero owns rows through 254; tile one starts publication at 255.
+	assert sha256.sum(actual).hex() == 'a35a8597defe242feac2eb5ef0677e97b6286dfa3b18f450acd80cf4a260fdd2'
+
+	// Without document geometry, the uniform callback retains direct drawing.
+	document_geometry_grid = DocumentGeometryGrid{}
+	mut fallback := []u8{len: actual.len, init: 255}
+	mut direct := fallback.clone()
+	assert ggshape.draw_sampled_yuv_atlas_clipped(direct.data, 273, 155, 1092, 1,
+		atlas, 960, 540, 2, 2, 269, 151, 1, 960, 540, clip) == 1
+	assert document_sampled_png_pixels(fallback.data, 273, 155, 1092, 1, 30, 125,
+		atlas.data, 960, 540, 960, 540, 5, 2, 2, 269, 151, &clip[0]) == 1
+	swap_document_raster_channels(fallback.data, 273, 155, 1092)
+	assert fallback == direct
+}
 
 fn test_jpeg_native_callback_preserves_full_range_color_and_tile_sample_ownership() {
 	previous := document_geometry_grid
 	defer { document_geometry_grid = previous }
 	document_geometry_grid = DocumentGeometryGrid{
-		width: 64, height: 64, columns: 2, rows: 2, origin_x: 31, origin_y: -7,
-		cells: [i32(1), 2]
+		width:    64
+		height:   64
+		columns:  2
+		rows:     2
+		origin_x: 31
+		origin_y: -7
+		cells:    [i32(1), 2]
 	}
 	source := []u8{len: 4 * 4 * 4, init: [u8(128), 120, 145, 255][index % 4]}
 	clip := [f32(12), 15, 95, 90, 0, 0, 0, 0, 0, 0, 0, 0]!
