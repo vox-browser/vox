@@ -3110,9 +3110,12 @@ module preparations and zero pending entries under the 12 GiB guard. Its fresh
 reopen has 4,245 hits and zero misses/compiler invocations, with exact content
 and identical output. Native input executes 849,296 native entries but exposes
 two omitted synthetic class-field bodies and hits the memory guard before
-completion. Recursive initializer/static-block preparation and temporary native
-lookup workspaces are now committed; their combined literal -prod browser
-builds with no test sources, and a fresh first/reopen/control cohort is pending. Font-strike rounding gives the same 156-pixel Go to
+completion. Recursive initializer/static-block preparation compiles 23,778 entries,
+but that candidate's fresh reopen crashes after temporary lookup storage frees
+JSON decoder metadata. The decoder boundary is corrected and native callback
+records now reuse storage by active depth. A new literal -prod browser builds
+from 3,735 sources with zero tests; its partial-cache reader completes without
+the crash, with expected misses. The full first/reopen/control cohort is pending. Font-strike rounding gives the same 156-pixel Go to
 file input as Brave. The unchanged
 historical windowed pixel gate still fails at 25,399 pixels. This is not full-site,
 live-site, historical pixel or performance acceptance. Automated suites remain held. See [the resumed diagnostic report](../docs/LIBJS_GITHUB_RUNTIME_20261115.md#browser-diagnostics-resumed-2026-11-16).

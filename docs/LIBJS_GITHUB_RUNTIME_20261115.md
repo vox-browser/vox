@@ -9,9 +9,12 @@ cohort exposed mutable development cache identity; that fix is now implemented.
 The full 60-second interpreter control sequence passes. An all-module native
 first opening compiles 23,669 executables and its fresh reopen reuses 4,245
 entries with zero misses. Native controls expose two missing field-initializer
-templates and hit the memory guard; initializer and lookup-storage fixes are now
-committed and undergoing a fresh cohort. Speed and the original frozen-reference
-pixel gate remain open.
+templates and hit the memory guard. The initializer candidate compiles 23,778
+entries, but its first fresh reopen crashes in record decoding. Decoder lifetime
+and native invocation storage fixes are committed; a new first/reopen/control
+cohort is running. A partial-cache reader completes without that crash, with
+expected misses, and cannot establish completed-cache acceptance. Speed and the
+original frozen-reference pixel gate remain open.
 
 **Full GitHub acceptance remains unachieved.** The latest initial native LibJS capture
 has 33 rows, 56 commit links, latest commit and README, zero page errors and an
@@ -3626,3 +3629,110 @@ does not establish a small-path-atlas explanation for the search edge mismatch.
 Neither the original references nor comparison tolerances change. Four completed
 older generated C files are removed after retaining hashes/sizes and source
 proofs, releasing 540,464,802 bytes as shared host disk space tightens again.
+
+
+### Production cache decoder failure and bounded invocation records
+
+The completed `cache-load-window` first opening renders exactly the original
+Brave content audit, with no author/native errors and unchanged input pins.
+It prepares all **81 modules, 25,643 bodies (including synthetic initializers),
+19,533 queued templates and zero reported unsupported bodies**. Final draining
+records **23,778 compiled executables, 186 compiler invocations, zero pending or
+invalid entries and no cache error**. Compilation records 1,379,919.561493 ms;
+loading records 40,079.175337 ms. The browser/controller/guard all exit zero;
+guard elapsed is 1,446.227871583 seconds and sampled aggregate peak is
+11,173,871,616 bytes, below the unchanged 12 GiB cap.
+
+Its fresh compiler-disabled reopen **fails**, browser exit 139, controller one,
+guard completion in 2.834923875 seconds, peak 1,261,436,928 bytes. Pins remain
+unchanged, but there is no audit or PNG. The stack enters
+`json2__Decoder__next_decoded_struct_field` from native cache loading during
+module initialization. This is a deterministic decoder ownership failure, not
+an AppKit launch retry. JSON2's typed decoder retains a per-type field cache;
+initializing it inside the temporary lookup arena and freeing that arena leaves
+cached metadata dangling. The earlier compiler-disabled success belongs to a
+different binary and does not validate this candidate.
+
+`f6c96dbc0` narrows temporary lookup storage to library-file bytes and SHA-256
+work. Record decoding and mapping setup remain in caller storage, with owned
+returned digests/errors. Record fields are decoded through Map/Any with explicit
+field/type/range checks, avoiding typed reflection-cache initialization. The
+missing-symbol handle-close fix remains. The root non-test C check passes in
+30.4366205 seconds, sampled peak 7,478,607,872 bytes. Regression sources cover
+record/owner/error lifetimes and repeated 1 MiB digest input, but remain
+uncompiled and unrun under the user's hold.
+
+`d7b59b4af` replaces per-entry native callback-record allocation with one stable
+record per maximum active native depth. Reentrant calls receive distinct records;
+release verifies LIFO order and clears source, error and control state. Generated
+C confirms that record allocation occurs only when the pool grows, rather than
+on every native entry. The non-test root check passes in 36.422551375 seconds,
+peak 7,472,349,184 bytes. Standalone non-test CLI C generation and compilation
+also succeed (4.033222375 / 12.136096667 seconds, sampled peaks 731,021,312 /
+1,015,791,616 bytes); that CLI is never executed. Focused bounded-growth and
+nested throw/return sources remain uncompiled/unrun. A transient earlier root
+check fails on an immutable argument in a concurrent argument-buffer change;
+the corrected canonical source passes. The separate bounded argument-buffer
+implementation is `ebf6894b3`.
+
+The first corrected-browser build fails because Clang's temporary object file
+runs out of disk space: 123.864221334 seconds, peak 12,019,351,552 bytes, compiler
+and guard child exit one. After hashing and removing this session's completed
+generated C outputs, a fresh literal V `-prod`, single-C-unit retry succeeds in
+206.389120875 seconds, sampled peak 11,993,464,832 bytes. Parsed-source proof lists
+3,735 sources and **zero test sources**. Executable SHA-256 is
+`046c1341685e61c6ccd5f05a69c50014d4fb62f0a4c8fb630924fd4381ee524d`;
+its fresh production ABI partition is
+`ecff4d2f520c528fa405f54897a75d69f7659a33bf5d69a1d1357f52b410f264`.
+No prior ABI partition is relabeled or copied.
+
+A separate fresh process reads that **incomplete, actively compiling cache**
+with `/usr/bin/false`. It completes the exact original content audit without
+page/native errors or a decoder crash, with 251 cache hits and 4,014 expected
+misses. It retains the failed compiler-request error and 3,994 pending entries;
+zero successful compiler invocations is not compiler-free acceptance. Browser,
+controller and guard exit zero, unchanged pins, 38.180261792 seconds and
+8,385,871,872-byte sampled peak. This diagnoses decoder survival only. The
+normal first opening must finish before its acceptance reopen and control
+sequence. No timing or memory saving is attributed from these partial-cache
+observations.
+
+### SVG origin counterfactuals and the filtered foreground boundary
+
+A same-executable, original-page diagnostic compares existing SVG root snapping
+with an unrounded origin. Both complete exact content audits, no page errors,
+unchanged pins and normal exits. After converting only derived actual PNGs into
+the original reference's extracted P3 profile, the strict `0 0` comparison is:
+
+| SVG origin | Different pixels | Maximum channel error | MAE | RMSE |
+| --- | ---: | ---: | ---: | ---: |
+| Existing rounded origin | 25,399 | 64 | 0.0220 | 0.5678 |
+| Unrounded origin | 25,541 | 128 | 0.0362 | 0.9954 |
+
+The unrounding experiment is removed from canonical source. A separate 2x
+raster/capture-density observation, averaged into a derived 1x diagnostic PNG,
+also worsens the strict comparison: 51,496 pixels, maximum 133, MAE 0.8115,
+RMSE 5.6591. Its full content audit matches; guard/browser/controller exit zero,
+elapsed 37.269024792 seconds, sampled peak 7,994,130,432 bytes. Neither resampling
+nor a changed density supplies pixel acceptance. The original reference,
+fixtures, tolerance and production snapping are unchanged.
+
+Fresh Brave read-only style diagnostics identify `backdrop-filter: blur(20px)`
+on the search button, with no SVG/ancestor transform or opacity reduction. In a
+separate counterfactual capture, disabling only that button's backdrop filter
+makes its 16x16 search icon **pixel-exact with the existing native icon**. The
+untouched initial Brave icon remains pixel-exact with the historical reference;
+the difference is confined to this independent filtered-foreground diagnostic.
+This points to compositing rather than author JS or an unconditional SVG origin
+change. The counterfactual is not a replacement reference or a live-site fix.
+
+An initial LayerTree snapshot attempt sees stale pre-navigation layers and
+returns “No layer matching given id found”; that failed attempt is retained.
+Enabling LayerTree after hydration obtains the actual picture: a backdrop-filter
+layer with physical translation **(1521,32)** and dimensions **85x72** on the
+2x presenting grid. Its command log translates by one physical pixel, then draws
+the SVG with scale two and translation (26,20). Thus the picture origin is
+**x=760.5** at 1x capture, while the SVG's resulting global paint origin remains
+x=774. The native foreground currently loses the fractional picture phase.
+A guarded disjoint-SVG phase experiment is underway; it is not yet a production
+fix or pixel acceptance. All automated tests remain held.
