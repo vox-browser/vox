@@ -93,12 +93,12 @@ pub fn (mut s GpuSurface) draw_document_repeated_rgba(pixels []u8, width int, he
 pub fn (mut s GpuSurface) draw_document_scaled_rgba(levels [][]u8, width int, height int,
 	natural_width int, natural_height int, x f32, y f32, destination_width f32, destination_height f32) ! {
 	s.draw_document_color_rgba(levels, width, height, natural_width, natural_height,
-		x, y, destination_width, destination_height, DocumentImageColorTransform{})!
+		x, y, destination_width, destination_height, DocumentImageColorTransform{}, false)!
 }
 
 pub fn (mut s GpuSurface) draw_document_color_rgba(levels [][]u8, width int, height int,
 	natural_width int, natural_height int, x f32, y f32, destination_width f32, destination_height f32,
-	color_transform DocumentImageColorTransform) ! {
+	color_transform DocumentImageColorTransform, destination_frame bool) ! {
 	if width <= 0 || height <= 0 || width > 4096 || height > 4096
 		|| width * height > 4 * 1024 * 1024 || levels.len == 0 || levels.len > 13
 		|| natural_width <= 0 || natural_height <= 0 || destination_width <= 0 || destination_height <= 0 {
@@ -140,7 +140,16 @@ pub fn (mut s GpuSurface) draw_document_color_rgba(levels [][]u8, width int, hei
 	}
 	saved := s.transform
 	defer { s.transform = saved }
-	s.transform = Transform.new(Matrix.values([sx, f32(0), x, 0, sy, y, 0, 0, 1]!))
+	if destination_frame {
+		// Image draws use their destination rectangle as geometry. Keeping an
+		// ellipse in that frame avoids warping texture coordinates when the
+		// analytic rrect renderer expands its antialiasing vertices.
+		s.transform = Transform.new(Matrix.translate(x, y))
+		sample_x, sample_y = extent_x / destination_width, extent_y / destination_height
+		draw_width, draw_height = destination_width, destination_height
+	} else {
+		s.transform = Transform.new(Matrix.values([sx, f32(0), x, 0, sy, y, 0, 0, 1]!))
+	}
 	s.draw_shape(ShapeGeometry{ kind: .rect, rect: Rect.ltrb(0, 0, draw_width, draw_height) }, Paint{
 		anti_alias:  true
 		layer_image: LayerImage{

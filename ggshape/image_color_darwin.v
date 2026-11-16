@@ -20,7 +20,7 @@ pub fn convert_image_color(source imageraster.Image, profile imageraster.PNGSamp
 	defer { target.free() }
 	target.draw_document_color_rgba([source.pixels], source.width, source.height,
 		source.width, source.height, 0, 0, f32(source.width), f32(source.height),
-		canvas.DocumentImageColorTransform{ gamma: profile.gamma, gamut: profile.gamut }) or { return none }
+		canvas.DocumentImageColorTransform{ gamma: profile.gamma, gamut: profile.gamut }, false) or { return none }
 	mut pixels := []u8{len: source.pixels.len}
 	target.read_pixels(pixels.data, source.width * 4) or { return none }
 	for i in 0 .. source.width * source.height {

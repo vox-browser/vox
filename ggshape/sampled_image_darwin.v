@@ -104,7 +104,10 @@ fn draw_sampled_image(pixels &u8,width i32,height i32,pitch i32,backdrop i32,sou
   surface.draw_document_scaled_float_rgba(floats,source_width,source_height,natural_width,natural_height,x,y,destination_width,destination_height) or {return 0}
  } else {
 	surface.draw_document_color_rgba(levels, source_width, source_height, natural_width, natural_height, x, y,
-		destination_width, destination_height, canvas.DocumentImageColorTransform{ yuv_rec601_limited: yuv_mode == 1, yuv_jpeg_full: yuv_mode == 2, yuv420_atlas: yuv_atlas }) or { if os.getenv('VOX_GG_DIAGNOSTICS') != '' { eprintln('VOX_YUV_IMAGE ${err}') }; return 0 }
+		destination_width, destination_height, canvas.DocumentImageColorTransform{ yuv_rec601_limited: yuv_mode == 1, yuv_jpeg_full: yuv_mode == 2, yuv420_atlas: yuv_atlas },
+		samples == 1 && clip[0] == x && clip[1] == y && clip[2] == destination_width
+			&& clip[3] == destination_height
+			&& (clip[4] != clip[5] || clip[6] != clip[7] || clip[8] != clip[9] || clip[10] != clip[11])) or { if os.getenv('VOX_GG_DIAGNOSTICS') != '' { eprintln('VOX_YUV_IMAGE ${err}') }; return 0 }
  }
 	surface.read_pixels(pixels, pitch) or { return 0 }
 	return 1

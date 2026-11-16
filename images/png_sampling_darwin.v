@@ -34,11 +34,23 @@ fn (mut app BrowserApp) sampled_png_decode(url string, image &gg.Image, width f6
 	dw, dh := imageraster.decode_size(image.width, image.height, width, height) or { return none }
 	bytes := app.background_image_bytes(url) or { return none }
 	profile := imageraster.png_sampling_profile(bytes) or { return none }
-	key := '\x00sampled-png:${u64(voidptr(app.document))}:${app.navigation_generation}:${png_decode_scope.scope}:${url}:${sha256.hexhash(bytes.bytestr())}'
+	mut key := '\x00sampled-png:${u64(voidptr(app.document))}:${app.navigation_generation}:${png_decode_scope.scope}:${url}:${sha256.hexhash(bytes.bytestr())}'
 	if id := app.background_image_ids[key] {
 		previous := app.ctx.get_cached_image_by_idx(id)
 		if previous.ok && previous.width >= dw && previous.height >= dh {
 			return SampledPNGUpload{ image: previous, gpu_mips: profile.gamma > 0 }
+		}
+		// A larger request must not replace the first usable decoded frame.
+		// Later small draws retain that frame instead of selecting different
+		// GPU mip levels from the enlarged upload.
+		if previous.ok {
+			key += ':${dw}x${dh}'
+			if upgrade_id := app.background_image_ids[key] {
+				upgrade := app.ctx.get_cached_image_by_idx(upgrade_id)
+				if upgrade.ok && upgrade.width >= dw && upgrade.height >= dh {
+					return SampledPNGUpload{ image: upgrade, gpu_mips: profile.gamma > 0 }
+				}
+			}
 		}
 	}
 	mut scratch := platform.begin_thread_scratch('PNG upload resize and color conversion')

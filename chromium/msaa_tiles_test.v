@@ -520,19 +520,35 @@ fn test_msaa_preparation_reuses_layer_storage_and_clears_removed_triggers() {
 	$if prealloc { assert platform.thread_arena_usage().used == before }
 }
 
-fn test_replaced_images_select_msaa_for_nonanalytic_rounded_clips() {
+fn test_replaced_images_absorb_their_own_elliptical_clip_without_multisampling() {
 	for radii in [painting.BorderRadiusData{4.5, 10}, painting.BorderRadiusData{4.5, 4.5},
 		painting.BorderRadiusData{0.25, 10}, painting.BorderRadiusData{}] {
 		command := layout.PaintCommand{
-			kind: 'draw_replaced_image'
+			kind:            'draw_replaced_image'
 			image_paintable: &painting.ImagePaintable{
-				image_rect: painting.Rect{16, 260, 9, 20}
+				image_rect:   painting.Rect{16, 260, 9, 20}
 				border_radii: painting.BorderRadiiData{radii, radii, radii, radii}
 			}
 		}
-		expected := if radii == painting.BorderRadiusData{4.5, 10} { [1] } else { []int{} }
-		assert chromium_msaa_tiles([command], 1, 256) == expected
-		shifted := layout.PaintCommand{...command, transform: [f64(1), 0, 0, 1, 0, 254]!}
-		assert chromium_msaa_tiles([shifted], 1, 256) == if expected.len == 1 { [2] } else { []int{} }
+		assert chromium_msaa_tiles([command], 1, 256) == []int{}
+		assert chromium_msaa_tiles([layout.PaintCommand{ ...command, transform: [
+			f64(0.5),
+			0,
+			0,
+			0.5,
+			0,
+			0,
+		]! }], 1, 256) == []int{}
+		// An independent path still selects the tile's shared four-sample pass.
+		assert chromium_msaa_tiles([command, msaa_test_svg_path(270, 280, 'svg')], 1, 256) == [1]
+		image := command.image_paintable or { panic('image') }
+		for constrained in [
+			layout.PaintCommand{ ...command, has_clip: true, clip_width: 9, clip_height: 20 },
+			layout.PaintCommand{ ...command, image_paintable: &painting.ImagePaintable{ ...image, object_fit: .contain } },
+			layout.PaintCommand{ ...command, image_paintable: &painting.ImagePaintable{ ...image, is_svg_image: true } },
+		] {
+			expected := if radii == painting.BorderRadiusData{4.5, 10} { [1] } else { []int{} }
+			assert chromium_msaa_tiles([constrained], 1, 256) == expected
+		}
 	}
 }
