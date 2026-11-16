@@ -2464,3 +2464,117 @@ five module errors, predating these additions. Acceptance remains 33 rows,
 Brave content audit and zero differing pixels, followed by matched performance
 evidence. Full execution, faster compiled revisits and pixel parity remain
 unverified.
+
+## Native indexed property continuation
+
+The user's hold remains in force. This continuation ran compiler-only checks
+of non-test targets and static source/hash audits. It did not compile or run
+tests, initialize JavaScript, launch a browser, capture pixels or measure
+performance. Full GitHub/Brave parity remains incomplete.
+
+- `495bbc224` adds opt-in legacy platform-object metadata and typed native
+  index/setter services in LibJS. The indexed portions of upstream
+  Bindings/PlatformObject.cpp now govern GetOwnProperty, Set, DefineOwnProperty,
+  Delete and PreventExtensions. Supported indices expose configurable/enumerable
+  descriptors and the native setter's writability, while deleting supported
+  indices and preventing extensions fail. Definitions invoke the native setter;
+  alternate assignment receivers retain ordinary assignment semantics. Other
+  HostProperties families do not acquire WebIDL behavior merely by providing
+  native properties.
+- `bc730ee49` marks native NodeList, HTMLCollection and DOMTokenList wrappers
+  with their live indexed owners. This includes derived radio/form/option
+  views. Readonly numeric definitions are rejected, and supported index
+  descriptors are not writable. Nonindex expandos remain ordinary properties.
+  Token-list reads retain persistent native allocation scope. Configurable descriptors now feed
+  the existing Proxy invariant checks correctly.
+- `19ee01341` replaces an indexed option through its actual parent. This fixes
+  replacement inside optgroups. It intentionally differs from the inspected
+  upstream HTMLOptionsCollection.cpp root.replace_child call: the native DOM
+  replacement algorithm requires the old node to be a child of that parent.
+- `7438f1f00` binds native option setters to both select[index] and
+  select.options[index]. Null/undefined remove an option; other values require
+  a real HTMLOptionElement before mutation. Native gap creation, replacement,
+  selection updates, DOM errors and custom-element reactions are retained.
+  Select indexed getters/keys share the lazy native option owner. Mutation
+  notification also runs after a native error that leaves earlier insertions
+  in place. The native 100,000-index cap is retained.
+- `4bb6db210` prepares a focused native-cache revisit case: the first VM runs
+  synthetic indexed operations and flushes their native cache; the second VM
+  executes the same source with /usr/bin/false as its compiler. Assertions
+  require cache hits, native fast/slow steps and zero compiler calls on revisit.
+  This test remains uncompiled and unexecuted.
+
+Twenty-one focused functions are prepared: four engine protocol, five readonly
+collection, two native option-owner and ten select/options binding cases.
+They cover descriptors, deletion, extensibility, Proxy invariants, direct and
+alternate receivers, native throws, nullish removal, gap insertion, optgroup
+replacement, argument brands without coercion, ignored definition flags,
+prototype interception, partial native failure and arena/closed-host lifetime.
+They remain uncompiled and unexecuted and provide no runtime evidence.
+
+A static cache-boundary audit records the native tier source hash and its
+fast-opcode allowlist. Generated code carries NV values and an opaque Slow
+callback; property operations dispatch through native_slow_step to the current
+VM.execute_instruction. The emitter does not declare an Object structure whose
+layout would embed these new metadata fields. This is source reasoning about
+the cache boundary, not proof that cached GitHub code exercises the hooks.
+The audit remains local in native-cache-boundary-audit.json; no native cache
+was loaded or compiled during it.
+
+All ten compiler-only attempts passed. Exact commands, byte-identical raw logs
+and guard reports are retained with a hashed index in local
+`docs/performance/libjs-indexed-properties-20261116/`:
+
+| Compiler-only check | Child exit | Seconds | Peak sampled RSS bytes |
+| --- | ---: | ---: | ---: |
+| Indexed engine protocol normal | 0 | 15.410 | 5,374,083,072 |
+| Indexed engine protocol production | 0 | 15.520 | 5,685,428,224 |
+| Readonly bindings initial normal | 0 | 15.738 | 5,411,373,056 |
+| Readonly bindings final normal | 0 | 15.530 | 5,404,393,472 |
+| Readonly bindings production | 0 | 15.948 | 5,667,028,992 |
+| Select indexed bindings initial normal | 0 | 16.289 | 5,405,589,504 |
+| Select indexed bindings final normal | 0 | 15.951 | 5,403,459,584 |
+| Select indexed bindings production | 0 | 17.315 | 5,675,319,296 |
+| Whole browser final normal | 0 | 25.653 | 6,694,748,160 |
+| Whole browser final production | 0 | 27.177 | 6,971,359,232 |
+
+Import checks use current V with `V3_STR_CAP=1 VJOBS=1`, unique default 12 GiB
+memory guards and `-w -n -b c -no-parallel -cc clang -check -memory-limit 10G
+-enable-globals tools/libjs_github_revisit.v`. Production adds
+`-prod -prealloc -gc none`. Whole-browser checks target `.` with
+vox_production/vox_ui2/vox_sparse_ttf, the native-zoneinfo exclusion and existing
+shared font/HTTP/UI2 module paths. Each guard reports reason=completed and
+child_exit_code=0. Own Build reports/locks were removed after hash-verified
+preservation. These results establish source typing, not execution or C code
+generation.
+
+The static scan re-verifies the original 87 JS URLs / 86 bodies. It finds
+371 .options references in twelve bodies and three textual .options[index]
+expressions in two bodies. No direct .options[index] assignment matches were
+found. Aliased/computed accesses, receiver brands and runtime reachability are
+not established by this scan, so the new setter path earns no execution or
+performance claim. Counts and bounded contexts remain local.
+
+The inspected production executable is SHA-256
+`c23c0d0a98ad945b7f6ffb581c1dc91172ed39b99aa5a37eecf23641607c8fa8`,
+receipt `20261116-030137-13ee3df8`, single-C-unit / v_prod. Executable and
+receipt identities stayed stable during the audit. Two of eight selected
+current inputs match its consumed-source manifest; six differ or are absent,
+so it cannot validate the full continuation. Commits requested coalesced
+managed rebuilds; no duplicate manual build was scheduled. Concurrent engine
+work remains outside these commits.
+
+Named-property visibility, form named/indexed bindings, collection roots across
+form moves, broader IDL, FileList, reporting UI, foreign realms and native
+ownership remain open. These changes do not establish complete WebIDL, HTML,
+LibJS or GitHub conformance. The original fixture manifest remains
+`893e042c4f31e1b7fb984c81cf8f6a2a7eb65d790f7c3f4cc3e372c065de302d`;
+the Brave PNG remains
+`649abff51549508516e2e0681866ba81ce69e7112cfa8dc3446b9b76c99be3d3`.
+The last actual GitHub observation is still the historical 672 warm native
+entries, 51 frontend hits, zero compiler calls, 33 rows, zero commit links and
+five module errors, predating these additions. Acceptance remains 33 rows,
+56 commit links, current README, active controls, zero errors, the unchanged
+Brave content audit and zero differing pixels, followed by matched performance
+evidence. Full execution, faster compiled revisits and pixel parity remain
+unverified.

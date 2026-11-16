@@ -36,6 +36,17 @@ unverified. Legacy named/indexed property semantics and collection roots across
 form moves still need work. See the
 [collection continuation](../docs/LIBJS_GITHUB_RUNTIME_20261115.md#native-form-and-select-collection-continuation).
 
+The indexed-property follow-up adds WebIDL engine hooks for live native index
+descriptors, definitions, assignment, deletion and extensibility. Native select
+and options indices now share the actual option setter, including nullish
+removal and gap creation; nested options are replaced in their real parent.
+Readonly list/collection/token indices use the same engine protocol. Twenty-one
+focused functions remain uncompiled and unexecuted under the user's hold.
+Normal and production/preallocation compiler-only import and whole-browser
+checks pass; runtime and pixel parity remain unverified. Named-property
+visibility, form indexed/named access and broader ownership remain open. See the
+[indexed-property continuation](../docs/LIBJS_GITHUB_RUNTIME_20261115.md#native-indexed-property-continuation).
+
 The historical inventory below found candidate V mappings for 261 HTML source
 files. Its file/symbol/LOC counts and 107-file test result describe that earlier
 inventory, not current logic, generated-binding or browser parity. The current
