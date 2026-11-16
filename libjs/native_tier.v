@@ -70,6 +70,7 @@ pub mut:
 struct NativeInvocation {
 	vm         &VM
 	executable &Executable
+	primitive_type_names voidptr
 mut:
 	failure ?IError
 	ended   bool
@@ -93,6 +94,7 @@ pub fn (mut vm VM) profile_native_code() ! {
 		return error('Native profiling must begin outside JavaScript execution')
 	}
 	if vm.native_tier != none { return error('Native tier already initialized') }
+	vm.ensure_native_type_names()
 	vm.native_tier = &NativeTier{}
 }
 
@@ -341,12 +343,16 @@ fn native_fast_instruction(instruction Instruction, executable &Executable) !str
 	if instruction.op in [.jump, .nop] { return 'BUDGET' }
 	if instruction.op !in [.mov, .end, .jump_if_true, .jump_if_false, .jump_if_nullish, .add, .sub,
 		.mul, .div, .less_than, .less_than_equals, .greater_than, .greater_than_equals, .strict_equals,
-		.strict_inequals, .loose_equals, .loose_inequals, .increment, .decrement, .to_numeric, .unary_plus, .unary_minus, .not_op] {
+		.strict_inequals, .loose_equals, .loose_inequals, .increment, .decrement, .to_numeric, .unary_plus, .unary_minus, .not_op, .typeof_op] {
 		return ''
 	}
+	if instruction.op == .typeof_op && !use_native_primitive_ops() { return '' }
 	lhs := native_slot(instruction.lhs, executable)!
 	left := 'v[${lhs}]'
 	mut code := 'if(${left}.tag==${int(ValueTag.empty)}) goto SLOW;\n'
+	if instruction.op == .typeof_op {
+		return code + '{ void *type_name=primitive_typeof(state,${left}); if(!type_name) goto SLOW; BUDGET v[${native_slot(instruction.dst, executable)!}]=(NV){.cell=type_name,.tag=${int(ValueTag.string)}}; }'
+	}
 	if instruction.op == .end {
 		return code + 'BUDGET v[${register_return_value}]=${left}; v[${register_exception}]=(NV){.tag=${int(ValueTag.empty)}};'
 	}

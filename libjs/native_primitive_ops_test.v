@@ -13,11 +13,16 @@ fn test_native_primitive_operations_preserve_strings_identity_coercion_and_truth
 		mut vm := VM.create()
 		create_simple_execution_context(mut vm)
 		vm.profile_native_code()!
-		mut setup := Script.parse('function eq(a,b){return a==b}function ne(a,b){return a!=b}function same(a,b){return a===b}function diff(a,b){return a!==b}function truth(a){if(a)return !a;return !a}eq(1,1);ne(1,1);same(1,1);diff(1,1);truth(1)', vm.realm(), 'native-primitives.js', unsafe { nil })!
+		mut setup := Script.parse('function eq(a,b){return a==b}function ne(a,b){return a!=b}function same(a,b){return a===b}function diff(a,b){return a!==b}function type(a){return typeof a}function truth(a){if(a)return !a;return !a}type(1);eq(1,1);ne(1,1);same(1,1);diff(1,1);truth(1)', vm.realm(), 'native-primitives.js', unsafe { nil })!
 		vm.run(mut setup)!
 		vm.compile_native_code(cache, '/usr/bin/clang', 1)!
+		assert vm.native_type_names.len == 7
+		for name in vm.native_type_names { assert vm.heap_roots().contains(voidptr(name)) }
 		vm.diagnose_native_code(true)!
 		for source in [
+			'type(undefined)==="undefined" && type(null)==="object" && type(false)==="boolean" && type(42)==="number" && type("x")==="string" && type(Symbol())==="symbol" && type(1n)==="bigint"',
+			'type({})==="object" && type(function(){})==="function" && type(new Proxy(function(){},{}))==="function"',
+
 			'same("","") && ne("","x") && ne("x","xy") && same("long class name","long "+"class name")',
 			'eq("function","function") && !ne("a","a") && ne("a","b")',
 			'same("x\\u0000y","x\\u0000y") && diff("x\\u0000y","x\\u0000z")',
@@ -54,7 +59,7 @@ fn test_native_primitive_operations_preserve_exact_budget_exhaustion() {
 		mut vm := VM.create()
 		create_simple_execution_context(mut vm)
 		vm.profile_native_code()!
-		mut script := Script.parse('function check(a,b){if(a){return a==b && a===b}return a!=b}check("class name","class name")', vm.realm(), 'native-primitives-budget.js', unsafe { nil })!
+		mut script := Script.parse('function check(a,b){if(a){return typeof a==="string" && a==b && a===b}return a!=b}check("class name","class name")', vm.realm(), 'native-primitives-budget.js', unsafe { nil })!
 		assert vm.run(mut script)!.to_boolean()
 		vm.compile_native_code(cache, '/usr/bin/clang', 1)!
 		vm.use_native_code(mode != 0)!

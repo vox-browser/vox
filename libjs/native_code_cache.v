@@ -102,6 +102,7 @@ pub fn (mut vm VM) enable_native_code_cache(directory string, compiler string) !
 	abi := native_cache_abi()!
 	path := os.join_path(directory, abi)
 	os.mkdir_all(path)!
+	vm.ensure_native_type_names()
 	vm.native_tier = &NativeTier{
 		enabled:    true
 		profiling:  false

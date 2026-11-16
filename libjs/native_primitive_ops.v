@@ -14,7 +14,8 @@ fn use_native_primitive_ops() bool {
 // layouts. Source identity alone does not capture compiler layout decisions.
 fn native_primitive_layout_identity() string {
 	sample := PrimitiveString{}
-	return '${sizeof(int)}:${uint(&sample.utf16.data.len) - uint(&sample)}:${uint(&sample.utf16.data.data) - uint(&sample)}'
+	invocation := NativeInvocation{vm: unsafe { nil }, executable: unsafe { nil }}
+	return '${sizeof(int)}:${uint(&sample.utf16.data.len) - uint(&sample)}:${uint(&sample.utf16.data.data) - uint(&sample)}:${uint(&invocation.primitive_type_names) - uint(&invocation)}'
 }
 
 // Generated code reads immutable UTF-16 storage using offsets from this exact
@@ -24,6 +25,8 @@ fn native_primitive_helpers() string {
 	sample := PrimitiveString{}
 	length_offset := uint(&sample.utf16.data.len) - uint(&sample)
 	data_offset := uint(&sample.utf16.data.data) - uint(&sample)
+	invocation := NativeInvocation{vm: unsafe { nil }, executable: unsafe { nil }}
+	types_offset := uint(&invocation.primitive_type_names) - uint(&invocation)
 	return '
 #include <string.h>
 static int${sizeof(int) * 8}_t string_length(NV v) {
@@ -36,6 +39,20 @@ static int string_equal(NV a,NV b) {
  if(!n) return 1;
  void *x,*y; memcpy(&x,(char*)a.cell+${data_offset},sizeof(x)); memcpy(&y,(char*)b.cell+${data_offset},sizeof(y));
  return memcmp(x,y,(size_t)n*sizeof(uint16_t))==0;
+}
+static void *primitive_typeof(void *state,NV v) {
+ void *const *names; memcpy(&names,(char*)state+${types_offset},sizeof(names));
+ if(!names) return 0;
+ switch(v.tag) {
+ case ${int(ValueTag.undefined)}: return names[0];
+ case ${int(ValueTag.null)}: return names[1];
+ case ${int(ValueTag.boolean)}: return names[2];
+ case ${int(ValueTag.int32)}: case ${int(ValueTag.double)}: return names[3];
+ case ${int(ValueTag.string)}: return names[4];
+ case ${int(ValueTag.symbol)}: return names[5];
+ case ${int(ValueTag.bigint)}: return names[6];
+ default: return 0;
+ }
 }
 static int primitive_equal(NV a,NV b) {
  if(number(a)&&number(b)) return a.number==b.number;
@@ -64,4 +81,16 @@ fn native_primitive_equality(instruction Instruction, executable &Executable, le
 	negate := if instruction.op in [.strict_inequals, .loose_inequals] { '!' } else { '' }
 	equal := if loose { '(${nullish} || primitive_equal(${left},${right}))' } else { 'primitive_equal(${left},${right})' }
 	return code + 'BUDGET v[${dst}]=boolean(${negate}${equal});'
+}
+
+// Created outside execution, then kept fixed and rooted for the VM lifetime.
+// Native libraries obtain current-VM cells through invocation state, never
+// through addresses retained from compilation or another realm/process.
+fn (mut vm VM) ensure_native_type_names() {
+	if vm.native_type_names.len == 7 { return }
+	mut names := []&PrimitiveString{cap: 7}
+	for spelling in ['undefined', 'object', 'boolean', 'number', 'string', 'symbol', 'bigint'] {
+		names << vm.create_string_from_str(spelling)
+	}
+	vm.native_type_names = names
 }
