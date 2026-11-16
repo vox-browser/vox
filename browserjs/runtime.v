@@ -133,6 +133,9 @@ mut:
 	libjs_native_cache_enabled_ bool
 	libjs_native_cache_pending_ bool
 	libjs_native_cache_timer_ &platform.Timer = unsafe { nil }
+	libjs_native_template_jobs_ []&NativeModulePreparationJob
+	libjs_native_template_seen_ map[voidptr]bool
+	libjs_native_template_audit_ NativeModulePreparationAudit
 	libjs_native_cache_failed_ bool
 	libjs_native_cache_partition_ string
 	libjs_frontend_cache_hits_ u64
@@ -464,6 +467,8 @@ pub fn (mut runtime Runtime) close() {
 	}
 	runtime.closed = true
 	runtime.libjs_modules_.clear()
+	runtime.libjs_native_template_jobs_.clear()
+	runtime.libjs_native_template_seen_.clear()
 	if wakeup := runtime.document_state_wakeup_ {
 		runtime.document_state_wakeup_ = none
 		platform.release_closure(voidptr(wakeup))

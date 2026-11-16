@@ -70,6 +70,7 @@ fn (mut host ModuleHost) load_libjs_import(imported LibJSModuleImport) ! {
 	key := host.resolve(imported.request.module_specifier.str(),base,parent)!
 	mut runtime := unsafe { &Runtime(host.runtime) }
 	if cached := runtime.libjs_modules_[key] {
+		if imported.payload.kind==.promise_capability { runtime.queue_native_module_templates(cached) }
 		libjs.finish_loading_imported_module(imported.referrer,imported.request,imported.payload,
 			libjs.ModuleLoadResult.from_module(libjs.Module(cached)))
 		return
@@ -124,6 +125,11 @@ fn (mut host ModuleHost) consume_libjs_script(operation &BrowserModuleOperation,
 		if waiter.finished { continue }
 		waiter.finished=true
 		if imported := waiter.libjs_import {
+			if imported.payload.kind==.promise_capability {
+				if loaded := result.module_record {
+					if loaded is libjs.SourceTextModule { runtime.queue_native_module_templates(loaded) }
+				}
+			}
 			libjs.finish_loading_imported_module(imported.referrer,imported.request,imported.payload,result)
 		}
 	}
