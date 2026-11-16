@@ -5657,10 +5657,14 @@ previously inexact controls whose reference counts remain unchanged. The six
 available frozen catalog archives are exact twice each. Two additional fresh
 captures of the recovered older Reddit page remain exact against the retained
 independently repeated full-uBO reference, with all 25 post identities in order.
-The seven selected feature V inputs and all 56 consumed V files in the GG,
-GGShape, Images, ImageRaster and YUV packages match their compiler manifests;
-the native callback source is unchanged through compilation. The diagnostic
-shader experiment is removed and canonical GG staging matches its source.
+At compilation and capture time, the seven selected V inputs and all 56
+consumed V files in the GG, GGShape, Images, ImageRaster and YUV packages match
+their compiler manifests; the native callback source is unchanged through
+compilation. The diagnostic shader experiment is removed and canonical GG
+staging matches its source. After the feature commit, a concurrent edit changes
+`chromium/gpu_raster_darwin.v` again. Its later bytes are recorded separately;
+the completed cohort qualifies the pinned executable and PNG fix, rather than
+that later checkout state.
 Production confirmation of these new PNG changes remains pending. The older
 production result above continues to qualify its pinned artifact. The missing newer Reddit fixture, default Brave
 Lobsters repeatability and CNN's historical source/replay gate remain open.
