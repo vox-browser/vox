@@ -277,6 +277,30 @@ class ReleaseInputTests(unittest.TestCase):
             with self.assertRaisesRegex(RuntimeError, 'Frozen build input changed'):
                 self.verify()
 
+    def test_sealed_release_survives_external_vlib_edits_and_keeps_native_checks(self):
+        with tempfile.TemporaryDirectory(prefix='vox-external-compiler-') as directory:
+            external = Path(directory) / 'text_ops.v'
+            native = Path(directory) / 'native.h'
+            external.write_text('original vlib source')
+            native.write_text('original native header')
+            inputs = dict(self.inputs, repository_sha256='identical complete tree')
+            self.build['inputs'] = inputs
+            self.frozen.update(source_inputs=inputs,
+                               source_inventory=dict(protocol='production-source-inventory-v1',
+                                                     names=['main.v'],
+                                                     early_inputs={str(self.proof): release.sha256(self.proof)}),
+                               exact_source_manifest={str(self.proof): release.sha256(self.proof),
+                                                      str(external): release.sha256(external),
+                                                      str(native): release.sha256(native)})
+            self.receipt.write_text(json.dumps(self.frozen))
+            external.write_text('next compiler revision after the build')
+            with patch.object(release, 'matches_compiled_checkout', return_value=False), \
+                    patch.object(release, 'repository_state', return_value=inputs):
+                self.verify()
+                native.write_text('changed native header')
+                with self.assertRaisesRegex(RuntimeError, 'Frozen build input changed'):
+                    self.verify()
+
     def test_changed_checkout_or_consumed_files_are_never_released(self):
         for current, matching in [(dict(self.inputs, head='another-commit'), True),
                                   (dict(self.inputs, build_inputs_sha256='changed bytes'), True),

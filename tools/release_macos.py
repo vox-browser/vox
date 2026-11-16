@@ -295,7 +295,16 @@ def matches_release_checkout(checkout, frozen, inputs, current):
             or not frozen.get('exact_source_manifest')):
         return False
     check_fingerprints(inventory['early_inputs'])
-    check_fingerprints(frozen['exact_source_manifest'])
+    # The complete sealed C/linker inputs are verified by the caller. Shared
+    # compiler vlib sources may advance after that successful compilation;
+    # only the release checkout's V buffers must still match its commit.
+    # Keep every native/non-V input check, including external dependencies.
+    retained = {name: digest for name, digest in frozen['exact_source_manifest'].items()
+                if Path(name).is_relative_to(checkout)
+                or Path(name).suffix not in {'.v', '.vv', '.vsh'}}
+    if not any(Path(name).is_relative_to(checkout) for name in retained):
+        return False
+    check_fingerprints(retained)
     return True
 
 
