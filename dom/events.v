@@ -717,6 +717,7 @@ pub fn CustomEvent.construct_impl(event_name string, event_init CustomEventInit)
 fn CustomEvent.new(event_name string, event_init CustomEventInit) &CustomEvent {
 	return &CustomEvent{
 		Event:   Event{
+			interface_: .custom_event
 			type_:        event_name
 			bubbles_:     event_init.bubbles
 			cancelable_:  event_init.cancelable
