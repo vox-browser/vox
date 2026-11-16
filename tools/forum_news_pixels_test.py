@@ -7,7 +7,7 @@ from unittest.mock import patch
 
 from forum_news_pixels import (CATALOG, VOX_BUNDLED_ADBLOCK_ASSETS, VOX_RUNTIME_ASSETS, brave_identity, capture_replay_references, capture_site_archive, check_filters, check_native,
                                check_oracle_page_cache,
-                               executable_identity, archive_animation_policy,
+                               executable_identity, archive_animation_policy, archive_decode_preparation, check_oracle_decode_preparation,
                                captured_focus_state,
                                native_capture_environment, oracle_command, pixel_status, run_case, seal_capture,
                                warm_native_cache, warm_oracle_cache, write_json)
@@ -15,6 +15,41 @@ from page_archive import digest, load_archive
 
 
 class ForumNewsPixelTests(unittest.TestCase):
+    def test_decode_preparation_preserves_legacy_and_explicit_source_policies(self):
+        self.assertEqual(archive_decode_preparation({}, {}), 'load-and-paint')
+        for policy in ['load-and-paint', 'visible-image-decode']:
+            report = dict(oracle=dict(image_decode_preparation=policy),
+                          archive=dict(source_pixels=dict(image_decode_preparation=policy)))
+            self.assertEqual(archive_decode_preparation({}, report), policy)
+            self.assertEqual(archive_decode_preparation(dict(image_decode_preparation=policy), report, policy), policy)
+            other = 'load-and-paint' if policy == 'visible-image-decode' else 'visible-image-decode'
+            with self.assertRaisesRegex(RuntimeError, 'Source and archive'):
+                archive_decode_preparation(dict(image_decode_preparation=other), report)
+            with self.assertRaisesRegex(RuntimeError, 'Requested'):
+                archive_decode_preparation({}, report, other)
+            report['archive']['source_pixels']['image_decode_preparation'] = other
+            with self.assertRaisesRegex(RuntimeError, 'Source and archive'):
+                archive_decode_preparation({}, report)
+        with self.assertRaisesRegex(RuntimeError, 'Unsupported'):
+            archive_decode_preparation(dict(image_decode_preparation='unknown'), {})
+
+    def test_decode_preparation_command_and_oracle_receipts_must_agree(self):
+        args = SimpleNamespace(extension=Path('/extension'), checker=Path('/checker'),
+            brave=Path('/brave'), settle=5, profile_template=None,
+            image_decode_preparation='load-and-paint')
+        command = oracle_command(dict(url='https://example.test/'), args)
+        self.assertEqual(command[command.index('--image-decode-preparation') + 1], 'load-and-paint')
+        report = dict(oracle=dict(image_decode_preparation='load-and-paint'),
+                      pixel_reference=dict(image_decode_preparation='load-and-paint'))
+        check_oracle_decode_preparation(report, command)
+        for section in ['oracle', 'pixel_reference']:
+            bad = json.loads(json.dumps(report))
+            bad[section]['image_decode_preparation'] = 'visible-image-decode'
+            with self.assertRaisesRegex(RuntimeError, 'did not preserve'):
+                check_oracle_decode_preparation(bad, command)
+        with self.assertRaisesRegex(RuntimeError, 'did not preserve'):
+            check_oracle_decode_preparation({}, command)
+
     def test_animation_policy_requires_matching_source_provenance(self):
         report = dict(oracle=dict(image_animation_policy='none'))
         self.assertEqual(archive_animation_policy({}, {}), 'allowed')
@@ -580,6 +615,7 @@ class ForumNewsPixelTests(unittest.TestCase):
             seal_capture(capture, archive, report)
             manifest = load_archive(archive)
             self.assertEqual(manifest['source_document_request_method'], 'POST')
+            self.assertEqual(manifest['image_decode_preparation'], 'load-and-paint')
             self.assertEqual(set(manifest['responses']), {url})
             entry = manifest['responses'][url]
             self.assertEqual((archive / 'bodies' / entry['sha256']).read_bytes(), html)
@@ -596,6 +632,22 @@ class ForumNewsPixelTests(unittest.TestCase):
             self.assertEqual(static_manifest['image_animation_policy'], 'none')
             self.assertEqual(archive_animation_policy(static_manifest, static_report), 'none')
             self.assertEqual((static_archive / 'bodies' / entry['sha256']).read_bytes(), html)
+            decoded_metadata = json.loads((capture / 'archive.json').read_text())
+            decoded_metadata['source_pixels'] = dict(image_decode_preparation='visible-image-decode')
+            write_json(capture / 'archive.json', decoded_metadata)
+            decoded_report = self.report()
+            decoded_report['archive'] = dict(source_pixels=dict(image_decode_preparation='visible-image-decode'))
+            write_json(report, decoded_report)
+            decoded_archive = root / 'decoded-archive'
+            seal_capture(capture, decoded_archive, report)
+            self.assertEqual(load_archive(decoded_archive)['image_decode_preparation'], 'visible-image-decode')
+            decoded_report['oracle'] = dict(image_decode_preparation='load-and-paint')
+            write_json(report, decoded_report)
+            with self.assertRaisesRegex(RuntimeError, 'Source and archive'):
+                seal_capture(capture, root / 'mismatched-archive', report)
+            self.assertFalse((root / 'mismatched-archive').exists())
+            write_json(capture / 'archive.json', {k:v for k,v in decoded_metadata.items() if k != 'source_pixels'})
+            write_json(report, self.report())
             with self.assertRaises(FileExistsError):
                 seal_capture(capture, archive, report)
             (archive / 'bodies' / entry['sha256']).write_bytes(b'changed')

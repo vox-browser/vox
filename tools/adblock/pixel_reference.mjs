@@ -32,11 +32,12 @@ export function referenceLaunchArguments(options) {
     return args;
 }
 
-export async function pixelReferenceState() {
+export async function pixelReferenceState(imageDecodePreparation='visible-image-decode') {
+    if (!['load-and-paint','visible-image-decode'].includes(imageDecodePreparation))
+        throw Error('Unsupported image decode preparation');
     await document.fonts.ready;
-    // A complete response and natural dimensions do not establish decode
-    // completion. Await visible bitmaps before the paint checkpoint; a
-    // deferred decode can otherwise change pixels between fresh processes.
+    // Explicit decode preparation can populate a different image upload cache.
+    // Older captures require load/paint readiness; preserve their policy.
     const visible=[...document.images].filter(image=>{
         const r=image.getBoundingClientRect(),style=getComputedStyle(image);
         return image.complete && image.naturalWidth>0 && r.width>0 && r.height>0
@@ -44,15 +45,16 @@ export async function pixelReferenceState() {
             && style.visibility==='visible' && style.display!=='none';
     });
     const decodeErrors=[];
-    await Promise.all(visible.map(async image=>{
+    if(imageDecodePreparation==='visible-image-decode') await Promise.all(visible.map(async image=>{
         try {await image.decode();}
         catch(error) {decodeErrors.push({url:image.currentSrc||image.src,
             error:error?.message||String(error)});}
     }));
     await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
     return {url:location.href,title:document.title,ready:document.readyState,
-        image_decode_preparation:'visible-image-decode',
-        decoded_images:visible.map(image=>image.currentSrc||image.src),
+        image_decode_preparation:imageDecodePreparation,
+        decoded_images:imageDecodePreparation==='visible-image-decode'
+            ? visible.map(image=>image.currentSrc||image.src) : [],
         image_decode_errors:decodeErrors,
         active_element:document.activeElement ? {tag:document.activeElement.tagName,
             id:document.activeElement.id||'',focus_visible:document.activeElement.matches(':focus-visible')} : null,
@@ -70,7 +72,10 @@ export async function pixelReferenceState() {
                 x:r.x,y:r.y,width:r.width,height:r.height};})};
 }
 
-export async function capturePixelReference(page, file, navigation) {
+export async function capturePixelReference(page, file, navigation,
+    {imageDecodePreparation='visible-image-decode'}={}) {
+    if (!['load-and-paint','visible-image-decode'].includes(imageDecodePreparation))
+        throw Error('Unsupported image decode preparation');
     if (navigation?.coverage !== 'page') {
         // A failed/challenge navigation never reaches the readiness snapshot.
         // Keep its identity and classification rather than losing the actual
@@ -79,10 +84,12 @@ export async function capturePixelReference(page, file, navigation) {
             navigation:navigation??null},null,2)+'\n');
         throw new Error('Pixel reference requires successful page coverage');
     }
-    const state = await page.evaluate(`(${pixelReferenceState.toString()})()`);
+    const state = await page.evaluate(`(${pixelReferenceState.toString()})(${JSON.stringify(imageDecodePreparation)})`);
     // Retain readiness and resource failures even when no PNG can qualify as
     // a reference. A failed run must never leave a sidecar claiming stability.
     await fs.writeFile(file+'.json',JSON.stringify({...state,stable:false},null,2)+'\n');
+    if(state.image_decode_preparation!==imageDecodePreparation)
+        throw Error('Pixel reference image decode preparation differs from the request');
     if (state.ready !== 'complete' || state.fonts !== 'loaded' || state.text.length < 1000
         || state.width !== 1024 || state.height !== 768 || state.scale !== 1
         || state.url !== navigation.url) throw new Error('Pixel reference is not ready at the required viewport');

@@ -85,7 +85,7 @@ test('failed navigation, incomplete pages and missing visible images cannot beco
     const directory=await fs.mkdtemp(path.join(os.tmpdir(),'vox-pixel-reference-failure-'));
     t.after(()=>fs.rm(directory,{recursive:true,force:true}));
     const file=path.join(directory,'brave.png');
-    const state={url:'https://example.test/',title:'News',ready:'complete',fonts:'loaded',
+    const state={url:'https://example.test/',title:'News',ready:'complete',fonts:'loaded',image_decode_preparation:'visible-image-decode',
         text:'story '.repeat(300),width:1024,height:768,scale:1,images:[]};
     const nav={coverage:'page',url:state.url};
     const page={evaluate:async()=>state,send:()=>{throw Error('Unexpected screenshot');}};
@@ -125,7 +125,7 @@ test('changing frames cannot leave a passing reference, while offscreen lazy ima
     const directory=await fs.mkdtemp(path.join(os.tmpdir(),'vox-pixel-reference-'));
     t.after(()=>fs.rm(directory,{recursive:true,force:true}));
     const file=path.join(directory,'brave.png');
-    const state={url:'https://example.test/',title:'News',ready:'complete',fonts:'loaded',
+    const state={url:'https://example.test/',title:'News',ready:'complete',fonts:'loaded',image_decode_preparation:'visible-image-decode',
         text:'story '.repeat(300),width:1024,height:768,scale:1,
         images:[{width:10,height:10,x:0,y:1000,complete:false,naturalWidth:0}]};
     let count=0;
@@ -143,4 +143,41 @@ test('changing frames cannot leave a passing reference, while offscreen lazy ima
     assert.equal(await fs.readFile(file,'utf8'),'stable');
     assert.equal(JSON.parse(await fs.readFile(file+'.json','utf8')).title,'News');
     assert.equal(JSON.parse(await fs.readFile(file+'.json','utf8')).stable,true);
+});
+
+
+test('load and paint audits visible resources without changing the decode cache',async()=>{
+    const calls=[];
+    const image={src:'https://example.test/photo.webp',complete:true,naturalWidth:100,
+        getBoundingClientRect:()=>({x:10,y:10,width:100,height:100}),
+        decode:()=>{throw Error('decode must remain untouched');}};
+    const document={fonts:{ready:Promise.resolve(),status:'loaded'},images:[image],
+        readyState:'complete',title:'News',body:{innerText:'story '.repeat(300)},activeElement:null,
+        querySelectorAll:()=>[]};
+    const context={document,location:{href:'https://example.test/'},innerWidth:1024,innerHeight:768,
+        devicePixelRatio:1,getComputedStyle:()=>({display:'block',visibility:'visible'}),
+        requestAnimationFrame:callback=>{calls.push('paint');callback();}};
+    const state=await vm.runInNewContext('('+pixelReferenceState.toString()+')("load-and-paint")',context);
+    assert.deepEqual(calls,['paint','paint']);
+    assert.equal(state.image_decode_preparation,'load-and-paint');
+    assert.equal(state.images.length,1);
+    assert.equal(state.images[0].complete,true);
+    assert.equal(state.decoded_images.length,0);
+    await assert.rejects(vm.runInNewContext('('+pixelReferenceState.toString()+')("unknown")',context),
+        /Unsupported image decode preparation/);
+});
+
+test('a reference cannot claim a preparation the page did not perform',async t=>{
+    const directory=await fs.mkdtemp(path.join(os.tmpdir(),'vox-pixel-preparation-'));
+    t.after(()=>fs.rm(directory,{recursive:true,force:true}));
+    const file=path.join(directory,'brave.png');
+    const state={image_decode_preparation:'visible-image-decode'};
+    const page={evaluate:async expression=>{assert.match(expression,/load-and-paint/);return state;},
+        send:()=>{throw Error('Must not capture a mismatched policy');}};
+    await assert.rejects(capturePixelReference(page,file,{coverage:'page'},
+        {imageDecodePreparation:'load-and-paint'}),/differs from the request/);
+    assert.equal(JSON.parse(await fs.readFile(file+'.json','utf8')).stable,false);
+    await assert.rejects(fs.stat(file),{code:'ENOENT'});
+    await assert.rejects(capturePixelReference(page,file,{coverage:'page'},
+        {imageDecodePreparation:'unknown'}),/Unsupported image decode preparation/);
 });

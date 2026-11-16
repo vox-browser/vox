@@ -39,6 +39,7 @@ const options = {
     'focus-state': '',
     'profile-template': '',
     'image-animation-policy': 'allowed',
+    'image-decode-preparation': 'visible-image-decode',
     'http-cache-policy': 'preserve',
     'service-worker-policy': 'allow',
     'profile-output': '',
@@ -56,6 +57,8 @@ for (let i = 2; i < process.argv.length; i += 2) {
 }
 options.settle = Number(options.settle);
 validatePostCaptureTrace(options);
+if(!['load-and-paint','visible-image-decode'].includes(options['image-decode-preparation']))
+    throw Error('Unsupported image decode preparation');
 const archiveFocus=parseArchiveFocus(options['focus-state']);
 if (!(options.settle > 0 && options.settle <= 120)) throw new Error('--settle must be 1..120 seconds');
 const recordedVox = options['vox-log']
@@ -308,14 +311,16 @@ try {
         };
     }
     const pixelReference = options['pixel-reference']
-        ? await capturePixelReference(page, path.resolve(options['pixel-reference']), navigation) : null;
+        ? await capturePixelReference(page, path.resolve(options['pixel-reference']), navigation,
+            {imageDecodePreparation:options['image-decode-preparation']}) : null;
     const cachePreparation=options['cache-preparation-dir'] && navigation?.coverage==='page' && pixelReference
         ? await captureEncodedResponseCache(page,path.resolve(options['cache-preparation-dir']),options.url,{mainFrameID}) : null;
     // Retain the navigation/filter report for inaccessible sites as well. A
     // challenge must fail coverage without replacing a previously valid archive.
     const archive = options['capture-dir'] && navigation?.coverage === 'page'
         ? await captureArchive(page, path.resolve(options['capture-dir']), options.url,
-            {mainFrameID,headerCache:options['cached-response-headers']||undefined}) : null;
+            {mainFrameID,headerCache:options['cached-response-headers']||undefined,
+                imageDecodePreparation:options['image-decode-preparation']}) : null;
     const documentURL = navigation?.url && /^https?:/.test(navigation.url) ? navigation.url : options.url;
     const raw = await background.evaluate(`(async()=> (await import('./js/logger.js')).default.readAll('vox-parity'))()`);
     const browserLogs = raw.map(JSON.parse).filter(entry => entry.realm === 'network' && /^https?:/.test(entry.url));
@@ -441,7 +446,7 @@ try {
         ...(archive ? {archive} : {}),
         visibility,
         input: recordedVox ? { mode: 'recorded-vox-network', file: path.resolve(options['vox-log']) } : requestedCorpus ? { mode: 'fixture-request-stream', file: path.resolve(options.requests) } : { mode: 'live-brave-network' },
-        oracle: { browser: execFileSync(options.brave, ['--version'], { encoding: 'utf8' }).trim(), extension: 'uBlock Origin (full, Manifest V2)', version: extensionManifest.version, shields: 'disabled in isolated profile', settings: 'repository-selected lists; identical snapshots; empty user filters', image_animation_policy:options['image-animation-policy'], profile: options['profile-template'] ? { kind: 'temporary-copy', template: path.resolve(options['profile-template']) } : { kind: 'fresh-temporary' } },
+        oracle: { browser: execFileSync(options.brave, ['--version'], { encoding: 'utf8' }).trim(), extension: 'uBlock Origin (full, Manifest V2)', version: extensionManifest.version, shields: 'disabled in isolated profile', settings: 'repository-selected lists; identical snapshots; empty user filters', image_animation_policy:options['image-animation-policy'], image_decode_preparation:options['image-decode-preparation'], profile: options['profile-template'] ? { kind: 'temporary-copy', template: path.resolve(options['profile-template']) } : { kind: 'fresh-temporary' } },
         engine: manifest.engine,
         lists: manifest.lists.map(({ name, sha256 }) => ({ name, sha256 })),
         list_identity:listIdentity,
