@@ -4,13 +4,19 @@
 initialization diagnostics resumed on November 16; see the
 [runtime continuation](#browser-diagnostics-resumed-2026-11-16). Historical
 source-only checkpoints below retain their original verification boundaries.
-No completed hydration, speedup or pixel acceptance is claimed.
+Initial hydration and one compiler-disabled reopen complete. A later same-binary
+cohort exposed mutable development cache identity; that fix is now implemented.
+The full 60-second interpreter control sequence now passes. Current-binary
+compiled reopening, speed and the original frozen-reference pixel gate remain open.
 
-**Pixel-perfect GitHub rendering remains unachieved.** A full native LibJS
-capture completes under the repository's default 12 GiB browser guard, but
-module failures leave loading placeholders and prevent commit links from
-hydrating. Earlier 3 GiB runs are retained small-budget diagnostics; the
-scope correction below explains why they cannot block a full browser capture.
+**Full GitHub acceptance remains unachieved.** The latest initial native LibJS capture
+has 33 rows, 56 commit links, latest commit and README, zero page errors and an
+exact unchanged content audit. One fresh compiler-disabled reopen has zero
+native misses and matches a fresh headless Brave PNG exactly. The historical
+windowed PNG, interactions, live behavior and matched performance remain separate
+gates. Earlier failing captures and 3 GiB runs remain historical diagnostics;
+the scope correction below explains why the smaller guard cannot block a full
+browser capture.
 The follow-up records WeakMap,
 arguments, parameter, inheritance and parser-allocation work after the original
 283-file checkpoint; the earlier failing cohorts remain historical evidence.
@@ -2781,3 +2787,672 @@ README, active controls, zero errors, unchanged Brave content audit and zero
 differing pixels**, followed by matched first/reopened performance evidence.
 The document instruction-policy change must be recorded consistently in those
 cohorts. Full GitHub execution and pixel parity remain incomplete.
+
+### Windowed rendering follow-up
+
+Windowed diagnosis exposed an allocator problem in the standalone binaries:
+ordinary `-prealloc -gc none` compilation without the browser's patched
+`v_realloc` can crash during PNG decoding. Initialization-only cache observations
+from those binaries, including the later 2,733-hit/53-frontend-hit reopen, are
+not heap-safety or rendering validation. The retained older prepared runtime
+uses compiler `2655544`; its first initialization succeeds, but its
+compiler-disabled second VM fails cache compilation before producing its old
+result JSON. That failed attempt is retained. The revisit tool now reports
+flush failures and counters before returning failure.
+
+New windowed diagnostics use prepared runtime
+`b55745acc97cfa239ffabebd699dcd85b496a72d1f41d3e8468adc6fce7d0621`,
+matching current V `cbfc1be`. They build canonical sources into standalone
+diagnostic executables without copying an app bundle. These initial builds use
+unoptimized generated C and are not production/performance acceptance builds.
+
+| Commit | Original-page finding and change |
+| --- | --- |
+| `133864412` | Native event entry now respects the document's recorded instruction policy. |
+| `d0c28bab3` | Real ParentNode children/first/last/count getters remove the clipboard template's missing `children[0]` failure. |
+| `3895dd2d2` | Console and queued-callback errors retain native ErrorData stacks; render failures now identify their original source locations. |
+| `3ca8d7632`, `4a8193d9a` | Legacy named setters/deleters and native HTMLElement.dataset reflection remove GitHub's missing `documentElement.dataset.colorMode` failure. |
+| `2660c91a4` | Native live Document.getElementsByName removes the page-load fragment lookup failure. |
+| `9e46ea43b` | The Function intrinsic and translated dynamic constructor remove Primer's `instanceof Function` ReferenceError. Dynamic functions use global scope, separate parameter/body validation and the existing bytecode/native cache. |
+| `31f6c9d3f`, `31307be7d` | Intrinsic Date locale formatting removes the commit-date call failure; native Window scrolling removes React Router's missing scrollTo failure. |
+| `c51999aca` | Closures in one realm share bytecode/register layouts for identical function syntax, source owner, location and name. Instance-specific field initializers remain separate. The audit records successful compilations and reuse. |
+
+The dataset/name-lookup browser
+`5913414cbe1f6df4889718561ce232571be0fd984db9f44d4e726f5fb9413229`
+gets past those two failures and renders GitHub's error boundary for the missing
+Function intrinsic. Its follow-up
+`d3156d23498ddbc40dcdc60b835a66381ebf0af1df502705c0569b45c385e602`
+gets past Function and exposes the missing locale-Date/scrollTo calls. Both
+publish active 1024×768 document audits, whole-window PNGs, unchanged inputs
+and browser/controller/guard exit zero; neither has the required page content.
+
+After locale/scroll bindings, two original-page attempts exceed the unchanged
+12 GiB guard: sampled peaks 12,978,388,992 and 12,952,649,728 bytes, guard exit
+125/child exit 137. The first interim audit has 33 rows, README and zero
+reported JavaScript errors. Both commit-data endpoints are requested from the
+unchanged replay archive. Neither attempt completes capture, so neither passes.
+The second omits periodic audits and separately samples the native stack. It
+finds repeated bytecode generation during React work; disabling audit polling
+does not remove the memory failure.
+
+With realm-local bytecode sharing, the subsequent 30-second original-page
+observation completes: **3,705 successful function compilations, 3,584 shared
+entries and 24,376 reuses**. Sampled aggregate peak is 7,873,150,976 bytes;
+browser/controller/guard exits are zero and input pins remain unchanged. It has
+33 rows and README, but zero latest-commit entries/commit links and a call-stack
+limit error in React's recursive `uN`/`uC` commit traversal. This confirms cache
+execution and an improved bounded diagnostic outcome; it is not a matched
+performance result. An optimized diagnostic build is the next check before
+attributing that stack failure to engine semantics.
+
+Automated tests remain uncompiled and unrun. Focused regression sources accompany
+each feature. Non-test browser builds use the memory guard and 10 GiB V limit.
+A separate diagnostic-driver check initially hits that compiler limit; repeating
+with the browser's `V3_STR_CAP=1`, `VJOBS=1` configuration succeeds at a sampled
+5,474,369,536 bytes. The limit was not raised. The latest available shared
+production bundle remains separate evidence and cannot validate later changes
+until its consumed-source proof contains them. All unsuccessful attempts remain
+local. Compiled full-page execution, control behavior and unchanged Brave pixel
+parity still require validation.
+
+The optimized diagnostic (`-cflags -O2`, not a literal V `-prod` production
+bundle), SHA-256
+`1790f0f0a33495833882110c5f757ea5a7683b7b5b39b2e7772ac7ed0266c23b`,
+finishes the 30-second interpreter control with **33 rows, 56 commit links,
+latest commit and README, zero JavaScript/native errors and no JSC context**.
+All reference audit scalar fields, selection counts, element texts and expected
+attributes match exactly. The unoptimized build's stack failure does not recur.
+Function-bytecode counters are 4,167 compilations / 4,045 shared entries / 44,436
+reuses; browser/controller/guard exit zero, input hashes stay fixed, and sampled
+aggregate RSS peaks at 9,954,017,280 bytes. This diagnostic build's C optimization
+mode differs from the shared production acceptance protocol.
+
+Its first cached opening blocks the event loop in compilation: the capture
+contains 33 rows/README but no commit content, despite zero reported script
+errors. The audit records 3,887 compiled executables, four compiler calls,
+355,483.844707 ms compilation and 22 still pending. Guard/browser/controller exit
+zero with 10,790,043,648-byte sampled peak. A compiler-disabled fresh-process
+reopen reaches all required content, with **3,995 native hits and 255 misses**,
+146.181623 ms recorded loading and a failed `/usr/bin/false` compile attempt.
+It reports zero author-script errors, but cache `last_error` is nonempty and 255
+entries remain pending. Its guard/browser/controller exits are zero and sampled
+peak is 9,182,183,424 bytes. This pair fails compiler-free second-opening
+acceptance; zero successful compiler invocations alone does not mean a compiler
+was never requested. The first capture did not finish initial hydration.
+
+`9e86dba0f` routes remaining Fetch/stream/string-timer entry limits through the
+owning Host policy and preserves fetch error stacks. `ec9ec4353` bounds each
+native compiler batch to 128 executables / 32,768 bytecode instructions (one
+oversized function may occupy its own batch); explicit flush still drains every
+pending entry. `77b9fd1c9` waits for a one-second quiet interval with no pending
+module/Fetch work, then yields to the event loop between batches. Closing stops
+the timer and completes remaining compilation. The fresh original-page first
+opening now reaches all content before compilation begins; its final reopen
+result is still pending. A current-V non-test browser check passes with sampled
+6,779,994,112-byte peak. Focused cases remain uncompiled/unrun under the hold.
+
+The unchanged Brave PNG carries **Display P3 Gamut with sRGB Transfer**, while the
+native PNG carries **sRGB IEC61966-2.1**. A raw-channel diagnostic comparison of
+the cropped native document reports 115,201 / 786,432 differing pixels (14.6486%,
+MAE 1.6340). Converting only a derived native PNG into the reference's extracted
+ICC profile leaves 107,522 differing pixels (13.6721%, MAE 1.5508); the explicit
+zero-tolerance comparison exits one. The original PNGs and reference hash remain
+unchanged. These are retained diagnostic comparisons, not pixel acceptance. The
+whole-window crop uses the audited 1024×768 document, an 88-pixel toolbar/bookmark
+area and 24-pixel status area. Direct document capture and capture-density checks
+remain necessary. A relative-date label also differs from the November 15
+reference; clock/capture conditions must match before attributing that to JS.
+
+The fresh batched candidate, SHA-256
+`9dc5acd23b4cc38d87d092cd8639d30a0b771a2ef684911fc583e8f244ed39f8`,
+reaches 33/56 rows/commit links, latest commit and README before compilation.
+Its first capture records 3,328 compiled entries / 26 compiler calls /
+320,029.212459 ms compilation / 929 still pending. Shutdown finishes those
+entries; 4,257 native cache records exist after the first process exits.
+The complete lifecycle takes 425.022397 seconds, including the requested
+360-second observer delay, capture and remaining shutdown compilation.
+Browser/controller/guard exit zero, input pins remain unchanged and sampled
+aggregate peak is 12,106,203,136 bytes, below the unchanged 12 GiB guard.
+
+The compiler-disabled second process has the same complete content and zero
+JavaScript/native errors, **4,246 native hits, four misses, zero successful
+compiler calls and 176.720873 ms loading**. Its cache error reports the attempted
+`/usr/bin/false` compiler; the four entries remain pending. Browser/controller/
+guard exit zero, unchanged pins, sampled peak 9,194,766,336 bytes. Both attempts
+use driver SHA-256
+`d2cfbdcdac79dfd41f43b03119b94d36bea377d8c87ca522cdfb56417fae30b6`.
+This narrows the cache defect but **still fails** the zero-miss/zero-compiler-
+request requirement. The unequal fixed observation delays cannot establish a
+matched launch-time speedup. Bounded pending-source diagnostics are the next
+step. The separate native document-capture mode now supports a readiness
+selector and direct viewport PNG; its pixel result is pending.
+
+### Lazy modules, compiler-disabled reopening and capture grids
+
+Bounded pending-source diagnostics identify four uncompiled functions in the
+GHCC consent lazy chunk and `Dg` in `chunk-7d`. Two intervening observations
+happen to have 4,250 hits and no misses; they do not erase the earlier failed
+pair. A later direct document capture reproduces five misses. Native functions
+are now prepared from each dynamically imported module's parsed function table
+while the VM is idle, without calling those bodies. Preparation preserves
+observed hit/miss counters, yields between batches and reports unsupported
+bodies explicitly. The engine and browser changes are `6f7f9d106` and
+`bd84e0c81`; regression sources accompany both and remain uncompiled/unrun.
+
+The new diagnostic executable's source proof and raw evidence are retained
+locally under `libjs-github-observe-20261116/module-templates-window` in the
+benchmark cache; finished scratch receipts are in
+`docs/performance/libjs-github-browser-20261116/scratch-receipts/`.
+The first process starts with an empty native cache, completes all selected
+content with zero errors, and exits with **8,363 cache records / 66 native
+libraries**. All five previously missing identities are present. Its sampled
+aggregate peak is **11,373,150,208 bytes**, lifecycle **717.493885458 seconds**,
+and browser/controller/guard exits are zero. The capture-time audit precedes
+shutdown draining: 4,299 observed misses, 4,480 compiled entries, 35 compiler
+calls, 484,691.362754 ms compilation and 3,010 pending entries. A separate stack
+sample catches the main thread waiting for Clang on a 128-function batch;
+bounded batch count does not guarantee a short compiler pause.
+
+The second fresh process uses the same executable and `/usr/bin/false`:
+**4,250 native hits, zero misses, zero compiler calls, no pending entries, no
+cache error, 226.853961 ms loading**. It retains 33 rows, 56 commit links, latest
+commit and README, zero JavaScript/native errors, no JSC context, unchanged pins
+and zero browser/controller/guard exits. Sampled peak is **8,399,618,048 bytes**,
+lifecycle **37.306369417 seconds**, including the requested 30-second observer
+delay. Both fresh processes still parse 83 sources; the frontend cache is
+process-local. Unequal observer delays and first-visit compilation prevent
+claiming a matched page-execution speedup from these lifecycle durations.
+
+A fresh **headless sRGB** Brave capture matches the compiler-disabled reopen
+with **zero differing pixels / zero maximum channel error across 786,432
+pixels**, using the existing pixel tool's explicit `0 0` gate. This is additional
+diagnostic evidence, not replacement of the historical windowed PNG. Brave's
+binary is still `019e37a757d8dca6dadf7d8e2407d90bd52a0ac31a4e5a49d1cf0a444ab3d3d0`,
+Chrome `157.0.8103.79`, revision `52886f99c599c22139930531da30c7c8be9f38a`.
+The new headless PNG is
+`cf9a0f2d58d4b08f286d01d650b6b37add96dcb6b7f605876e7267b079edaa77`;
+the native reopened PNG is
+`448e8cd56ce4281f612055d58dca607f51a9882b9024d02c8f4dbdad94e20380`.
+PNG encodings differ; decoded pixels are exact.
+
+The historical windowed reference remains unchanged. A direct native sRGB
+capture converted to its extracted P3 profile still differs at 48,550 pixels
+(6.1735%). Read-only paint diagnostics (`a24fc5df9`) show display DPR 1, layout
+scale 1 and Chromium font policy. Further fresh Brave observations isolate a
+capture-condition difference: the same `.github` text range is **17 CSS pixels
+high headless and 16.5 windowed**, although both expose script DPR 1. The
+windowed screenshot is P3; the headless screenshot is sRGB. A new windowed Brave
+PNG differs from the unchanged historical PNG at only **587 pixels**, all within
+`583,705`–`662,718`, the relative-date label that has advanced from “last week”
+to “2 weeks ago.” Matching rendering-grid and clock conditions is pending; no
+reference, source body or tolerance has been changed.
+
+Native entry/fast/slow counters and post-shutdown cache receipts are opt-in
+diagnostics (`9723b4788`), outside timing runs. The first instrumented follow-up
+uses a newer binary after shared native-tier/value changes, correctly selects a
+new ABI partition and has zero native entries with compiler-disabled misses.
+It cannot establish native eligibility or invalidate the earlier pinned pair.
+A new cache cohort is required for that binary. Original failing attempts,
+including two Brave diagnostic-controller/proxy failures, remain retained.
+
+No automated unit or broad suite has resumed. Non-test root builds and guarded
+browser diagnostics provide the evidence above; control interactions, live
+validation, the unchanged historical pixel gate and matched performance remain
+open.
+
+
+## Development cache identity and control continuation — 2026-11-16
+
+The rendering-grid first/reopen attempt is retained as a **failed cache cohort**.
+Its first process compiles 8,356 executables in 66 Clang invocations, with zero
+pending entries or compiler errors at shutdown. Native compilation takes
+1,402,211.925206 ms; complete browser lifecycle is 1,439.6342395 seconds and
+sampled aggregate peak is 11,265,327,104 bytes. All 30 queued module-template
+jobs complete, preparing 4,426 functions and queueing 4,106, without unsupported
+functions or preparation diagnostics. Content remains 33 rows, 56 commit links,
+latest commit and README, with zero page errors and no JSC initialization.
+The compiler-disabled second process instead records **zero hits / 4,272
+misses**, and requests the disabled compiler. Its lifecycle is 72.794124625
+seconds and sampled peak is 10,075,455,488 bytes. Normal process exits and full
+content do not make this cache attempt pass.
+
+Both processes use the same executable, but the selected cache partition changes
+from `24c8be60810b8706cccf77ead32675a9c327d087604e73e2fdc611258d079998`
+to `03b41df63c4ca9386626e664ceb5612111ce40084ddb7eaaccb086af6c0f0f89`.
+Local compiler inspection explains why: without literal V `-prod`,
+`$embed_file(...).to_string()` reads current source files at runtime. Shared
+native-tier edits therefore changed the ABI of an unchanged diagnostic binary.
+The executable/library pins did not cover this extra runtime input. The earlier
+successful pair remains an observation under its recorded source conditions,
+not evidence that this identity was immutable.
+
+`ba7cd6a57` binds development cache ABI to executable bytes and fails closed if
+they cannot be read. Production still hashes its embedded compiler/layout
+sources, allowing reuse across unrelated browser rebuilds. Cache audits now
+include the actual ABI. No old cache records are copied or relabeled. Its
+focused identity regression source is included and remains uncompiled/unrun.
+An optimized non-test C browser build succeeds in 274.201277416 seconds, peak
+12,500,140,032 bytes; executable SHA-256 is
+`ae20aafa27c394ca0f0c3e0842cfe2a3cc5d7930116fcf7f1e28a97744b9f7d2`.
+This diagnostic is C `-O2`, not the managed literal V `-prod` acceptance build.
+A fresh populated-cache pair is still required for this executable.
+
+### Original clock and unchanged pixel gate
+
+The reference under `libjs-revisit-20261115/reference` was copied after capture;
+its copied mtime, previously used as epoch `1794695786712`, was incorrect.
+Read-only inspection of the original
+`libjs-github-20261114/evidence.tar.gz` recovers the actual PNG member timestamp:
+**2026-11-14T15:21:59.568014Z**, epoch **1794669719568 ms**. That archived PNG's
+SHA-256 is still `649abff51549508516e2e0681866ba81ce69e7112cfa8dc3446b9b76c99be3d3`.
+Earlier wrong-clock captures are retained; no reference is changed.
+
+A fresh document-only initial capture with that epoch, media DPR 1, rendering
+DPR 2 and layout scale 2 completes all content, reports zero script/native errors
+and keeps all input pins unchanged. After converting only the actual sRGB PNG
+to the reference's extracted P3 profile, the explicit zero-tolerance pixel gate
+**fails: 25,962 differing pixels / 786,432 (3.3012%)**, maximum channel error 164,
+MAE 0.0763, RMSE 2.5389; 2,704 pixels exceed channel error 3. The Go to file input
+has a remaining horizontal geometry difference. Color quantization, antialiasing
+and the search-button shadow also differ. This capture is interpreter-only and
+cannot establish compiled-path pixel acceptance or performance.
+
+### Native input reaches additional control code
+
+The initial native-input diagnostic sends actual mouse/keyboard events through
+the native document view. Focus changes identify the intended Code and master
+buttons, but controls never expand. JavaScript diagnostics (separate from the
+native-error array) expose missing `Event.composedPath`, `MouseEvent` and
+`window.getSelection`. A zero native-error count alone missed these failures.
+
+Native bindings now use the existing DOM records:
+
+| Commit | Binding |
+| --- | --- |
+| `c907549f6` | Fresh composed-path arrays, native targets and closed-shadow visibility. |
+| `89a811c22` | UIEvent constructor/inheritance, owning Window, detail and descendant which. |
+| `123a31ce0` | MouseEvent constructor, coordinates, modifier state and platform-event wrappers. |
+| `d53983c36` | KeyboardEvent key/code/modifiers and platform-event wrappers. |
+| `e9ac78bc9` | Window/Document getSelection, native range identity and selection state/mutations. |
+
+The non-test root compiler check passes (53.653970416 seconds, sampled peak
+6,801,702,912 bytes); focused regression sources accompany each slice and remain
+uncompiled/unrun. Selection Range wrappers remain unsupported.
+
+The next native-input process no longer reports those earlier errors. Opening
+Code instead reaches GitHub's focus traversal and throws **ReferenceError:
+NodeFilter is not defined** from `pb-25305857c53068ff.js:347:20103`. React Router
+then replaces repository content with its error state: final rows/commits/latest/
+README counts are all zero. No expanded controls are observed. Browser exit 0
+and unchanged pins do not establish working controls; the diagnostic controller
+now marks this attempt failed and retains every JavaScript diagnostic.
+Native TreeWalker/NodeFilter bindings (`657eb47ac`) then remove that missing API.
+Their optimized C build succeeds (281.460768333 seconds, peak 12,607,537,152
+bytes). The next control process instead reports missing `focus()` and
+`getComputedStyle()`, and still reaches React Router's error state.
+
+Raw evidence remains local in
+`libjs-github-observe-20261116/{render-grid-window,native-events-selection-window}`
+and `docs/performance/libjs-github-browser-20261116/scratch-receipts/`. Automated
+suites remain held. Full compiled control behavior, historical pixel equality,
+live validation and matched unprofiled performance remain open.
+
+
+### Focus, computed style and native CSS lifetime
+
+`c4cf803f9` adds native mutable DOMRect/DOMRectList snapshots and element client
+geometry; `c9ec625dd` adds native focusing/unfocusing steps, synchronous focus
+events, tabindex reflection and preventScroll; `793414061` exposes native element
+offset/client/scroll dimensions; `fc657b75d` binds live, readonly native computed
+styles. Explicit focusVisible currently retains the existing native document
+indication policy. Each slice includes focused regression sources, still
+uncompiled/unrun. A non-test root check succeeds in 43.540818584 seconds, peak
+6,804,815,872 bytes; its first attempt catches and fixes a reference-field
+initializer error before building.
+
+The combined diagnostic C build succeeds in 171.531881666 seconds, peak
+12,569,493,504 bytes. Its native-input run is **a crash**, not a control pass:
+browser exit **139**, controller/guard exit 1, lifecycle 12.440621917 seconds,
+peak 9,876,520,960 bytes. Only the first of five planned actions is delivered.
+The last audit still has full content and no script diagnostics; this does not
+supersede the abnormal exit. The stack enters `Element.scrollIntoView` from the
+new native focus binding, then synchronous layout and
+`collect_native_equal_text_inputs`.
+
+A debugger launch stalls before executing the browser, produces no input events
+and is stopped; it supplies no runtime validation. A separate, pinned native
+signal recorder reproduces the click failure and captures the actual fault
+context. The faulting instruction reads the DOM style's mutation state at
+collector offset 364; the style handle is `0x0101010101010101`. The captured stack
+pointer lies well within the main stack bounds, excluding stack exhaustion for
+this failure. Signal-handler instrumentation supplies diagnosis only, with no
+pixel or performance credit.
+
+Inspection finds that computed-style property reads can recompute native document
+styles while using the caller's transient allocation arena. CSSOM property,
+method and index reads/writes now use persistent allocation scopes (`7fba25965`),
+including length and computed-style index bounds. A regression source explicitly
+checks native style/placeholder ownership across caller-arena reset; it remains
+uncompiled/unrun. The non-test root check succeeds (25.17818125 seconds, peak
+6,780,452,864 bytes), followed by a diagnostic C rebuild (167.267816459 seconds,
+peak 12,494,209,024 bytes). The next valid native-input repeat reaches a second lifetime fault in
+`computed_properties_to_dom`, called by anchor-position fallback layout. An
+earlier repeat used an unsupported audit depth of six, delivered no actions and
+provides no control validation; it is retained with the other attempts.
+
+The input controller now requires all five scheduled actions and the explicit
+completion marker before accepting controls, as well as normal browser exit and
+observed Code/master expansion with no JavaScript diagnostics. No full compiled
+reopen, interaction or historical pixel acceptance is claimed by these builds.
+
+
+### Anchor-position ownership, font strike grid and the memory gate
+
+`f2960ddde` retains anchor-position fallback state, computed styles, DOM mirrors,
+anchor maps and stored option strings across temporary geometry workspaces.
+Allocation scopes end before geometry scratch work. A broad earlier ownership
+candidate and the final narrower implementation both open Code and master
+without script errors, but exceed the 12 GiB aggregate memory guard before all
+five actions. These are failed runs, not interaction acceptance:
+
+| Candidate | Guard/child exits | Seconds | Sampled peak RSS bytes |
+| --- | --- | --- | --- |
+| Broad retained position-try scope | 125 / 137 | 23.317173208 | 12,894,896,128 |
+| Narrow scope plus font strike correction | 125 / 137 | 24.976510084 | 12,999,704,576 |
+
+A partial Code-popup diagnosis exits normally at 19.281562875 seconds, peak
+10,810,228,736 bytes; its one-second main-thread sample is idle. It does not
+complete the full schedule. Branch-picker expansion, rather than a steady idle
+Code-popup loop, precedes the large RSS increase. These observations do not
+justify assuming an anchor-style cache leak.
+
+`e0b349df7` rounds the text-control average advance on the physical font strike
+before projecting to CSS pixels. Fresh original-response Brave geometry measures
+Go to file at x=390.1484375, width=156, height=30; the wrapper is x=357.1484375,
+width=206, height=32. Vox now matches those measurements; its earlier width was
+153 with a 203-pixel wrapper. The font fallback heuristic and measurement source
+remain shared platform behavior, without page-specific rules. Focused regression
+sources remain uncompiled/unrun.
+
+An initial-document capture after this correction has the complete 33/56/1/1
+content audit, zero JavaScript/native errors and no JSC initialization. Its guard
+exits zero, elapsed 24.871378292 seconds, peak 9,979,002,880 bytes. After converting
+only the actual sRGB PNG to the original reference's Display P3 profile, the
+unchanged strict historical gate remains **25,399 of 786,432 differing pixels
+(3.2296%)**, maximum channel error **64**, MAE **0.0220**, RMSE **0.5678**;
+2,001 pixels exceed error three. The explicit zero/zero pixel gate exits one.
+The earlier 25,962-pixel/max-164 result remains historical evidence. No reference
+or tolerance changed. Color/blend quantization, antialiasing and the remaining
+search-control shadow still need diagnosis; this is not pixel parity.
+
+### Independent parser policy and allocation diagnosis
+
+`b0a4488af` adds an explicit `VOX_LIBJS_FRONTEND_CACHE=on|off` override while
+preserving the default policy. `d624a672b` exposes it in the browser diagnostic
+controller. This permits syntax reuse in an interpreter control without native
+lookup or compilation. The non-test root check succeeds (25.782382459 seconds,
+peak 6,811,303,936 bytes); optimized diagnostic C compilation succeeds
+(322.646945375 seconds, peak 12,558,008,320 bytes). These private C -O2 builds are
+not literal V -prod production acceptance. The frontend regression source is
+included but remains uncompiled/unrun; the Python controller passes AST parsing.
+
+The full frontend-only native-input run records **34 syntax hits / 83 misses**,
+4,506 compiled bytecode functions and 48,892 reused function bodies. Native cache
+ABI, hits, misses and compiler requests all remain empty/zero. Both menus expand
+without script errors and content remains complete, but the memory guard kills
+the run: guard/child 125/137, 26.819848334 seconds, peak 12,938,838,016 bytes.
+No completion marker or final summary is available. Parser reuse alone therefore
+does not resolve the memory gate. The RSS series is steady around 9.7 GiB while
+Code is idle, then rises after branch-picker input.
+
+A subsequent stack-sampling attempt also hits the guard (22.6155835 seconds,
+peak 12,909,330,432 bytes), before a usable sample is written. A lower-overhead
+anonymous-mapping probe retains stacks through another guarded failure. Its
+reported capacities are virtual mappings, not live allocation totals or RSS;
+reusable geometry scopes can map repeatedly. Native allocator restart produces
+two image identities, so symbolization uses the final executable image at
+0x102cec000, not injected image zero or the pre-restart image. Across the final
+process, 2,112 MiB of new mapping capacity has `VM.execute_instruction` as the
+first nonallocator frame. Inspection of its generated C confirms an unconditional
+`memdup` of the Instruction value parameter on every dispatch, caused by passing
+it to reference-taking helpers. Interpreter and native fallback dispatch now borrow executable-owned instruction
+records (`6c43920fb`). The first non-test
+check catches one obsolete address-of at a callee helper; it is corrected before
+repeating the check. No automated test source is compiled or executed.
+
+Local raw evidence, including every failure, is retained under
+`docs/performance/libjs-github-browser-20261116/scratch-receipts/` and
+`/Users/alex/Library/Caches/Vox/benchmarks/libjs-github-observe-20261116/`.
+Fresh current-binary compiled first/reopen, completed controls, the original
+windowed zero-pixel gate, live behavior and matched performance all remain open.
+
+
+### Borrowed dispatch, Escape routing and a corrected interaction claim
+
+The borrowing change passes the non-test root compiler check on its corrected
+second attempt (27.834560416 seconds, peak 7,187,365,888 bytes), then an optimized
+C browser build (297.648176833 seconds, peak 12,517,982,208 bytes). Generated C
+has neither the old Instruction `memdup` in `execute_instruction` nor a copied
+instruction in `native_slow_step`. An allocation regression source covers both
+paths but remains uncompiled/unrun. One concurrent function-environment change
+and a native declaration input also differ from the prior browser proof, so the
+memory difference is not an isolated performance attribution.
+
+The next full input schedule delivers six actions, including separate m/a keys,
+and records the branch input's **value attribute** changing to `m`, then `ma`.
+This is not yet the native-model value audit. Both menus expand and no script
+errors appear, but the guard kills the process at 38.157388875 seconds, peak
+12,959,514,624 bytes (guard/child 125/137). All delivered actions alone cannot
+establish successful control behavior. A separate 36-second mapping diagnosis
+exits normally with stable pins (37.386566958 seconds, peak 12,873,121,792 bytes),
+but its screenshot still shows the branch picker open after Escape. Its earlier
+controller's `controls_accepted=true` field used the incomplete opening/delivery
+gate and is explicitly **not accepted** here. The full 60-second gate is retained.
+
+Inspection finds that browser editing dispatch consumes unmapped keys when an
+input has focus; Escape never reaches page listeners. Escape now reaches the
+active document before editing defaults, while browser-owned shortcut/address
+handling retains precedence. A new read-only input audit (`50f3dd30c`) observes
+only existing native models, without initializing controls or emitting events.
+The corresponding source check succeeds after correcting an Element-versus-
+HTMLInputElement field access (36.843781542 seconds, peak 7,201,357,824 bytes),
+and the optimized browser build succeeds (217.968861917 seconds, peak
+12,529,664,000 bytes). No `_test.v` source appears in the parsed-buffer proof.
+
+**Correction to the progress update and `50f3dd30c` commit message:** this build
+closes Code, but the new return-focus path scrolls the document by 313 pixels.
+The next fixed-coordinate click therefore misses master; there is no native
+branch-input value sample and no verified native `ma` input in this run. The
+commit message's assertion of that observation is incorrect. All pinned launch
+inputs still match after the guard stops the process at 44.14927625 seconds,
+peak 12,945,211,392 bytes, guard/child 125/137. No script errors appear, but neither
+that fact nor empty expanded-control arrays establishes the full sequence.
+
+A fresh Brave CDP interaction diagnosis on the unchanged replay closes both
+menus with Escape and reads actual branch input value `ma`. Its branch input is
+x=196.8984375, y=67, width=270, height=30, matching the earlier Vox geometry.
+Browser/controller/guard exit zero and all pinned inputs match. CDP input is
+separate functional reference evidence, without native-input or performance
+acceptance credit. Its screenshots do not replace the original pixel reference.
+
+The native focus bridge had called default scrollIntoView (block start), unlike
+upstream Focus.cpp's nearest/nearest reveal policy. It is being corrected to
+leave an already visible target still, skip redundant focus and avoid scrolling
+a target whose focus handler redirected focus. The corrected run must actually
+open the branch picker and read its native model before claiming input success.
+
+A post-dismissal mapping probe attributes 1,145 MiB of new mapping capacity to
+SVG/shape tile callbacks, mostly through native frame replay. Deferred pictures
+and UI2 chrome can invoke those callbacks after the ordinary document replay
+workspace has ended. The callbacks synchronously copy their result into
+caller-owned pixels, but their result/tile arrays otherwise enter the surrounding
+long-lived arena. Each exported raster callback is being given a temporary
+thread workspace, including rejected draws; existing GPU context initialization
+already redirects its retained state to persistent storage. This remains a
+candidate under non-test checking and original-page diagnosis, without a memory
+or pixel pass. Mapping capacity is not RSS or a live-byte count.
+
+The shared-index audit also finds that `50f3dd30c` contains concurrently staged
+updates to OPTIMIZED_SITES.md and two rendering reports in addition to the three
+input-audit files. Those updates were not authored by this continuation; shared
+linear history is preserved. Subsequent commits of wholly owned files use an
+explicit path list to avoid consuming another session's staged files.
+
+
+### Full interpreter control sequence completes
+
+`c8ef90374` applies nearest focus reveal and avoids scrolling a redirected or
+already focused target. `fe20abd4f` reclaims synchronous native raster callback
+work even outside the frame replay workspace. Both have focused regression
+sources, still uncompiled/unrun. The non-test root check succeeds in
+36.281749125 seconds, peak 7,188,430,848 bytes; the optimized C browser rebuild
+succeeds in 207.297199042 seconds, peak 12,534,349,824 bytes. Its verified parsed
+manifest contains 3,728 source files and no `_test.v` files. The latest completed
+shared production bundle is still SHA-256 7515422c0006a9451ea33a2d7d2f71f15e98cfb9865ef4aa27f4c50b82b7d4e4
+(from request 7fba25965); it cannot exercise these later fixes. Normal commit
+hooks coalesce their production rebuild requests.
+
+The **unchanged full 60-second interpreter observation now completes**:
+
+- Browser/controller/guard exit zero; no changed pinned inputs.
+- Native mouse/keyboard input opens Code, closes it with Escape, opens master,
+  types m and a separately, and closes master with Escape. All six actions and
+  the explicit completion marker are recorded.
+- The new native input-model audit reads `m`, then **`ma`**, with selection
+  offsets one and two. The final expanded-control and visible-overlay lists are
+  empty. Master remains at y=261, avoiding the earlier 313-pixel viewport jump.
+- All 33 rows, 56 commit links, latest commit and README remain present; the
+  complete frozen Brave content audit matches exactly. No JavaScript or native
+  errors appear.
+- Guard elapsed 61.771742042 seconds, sampled aggregate peak **12,336,431,104
+  bytes (11.49 GiB)**. This establishes the full diagnostic interval under its
+  12 GiB guard; it is not a long-duration bound or isolated optimization claim.
+
+This run explicitly disables native execution and enables frontend caching.
+It therefore establishes control behavior only, not compiled control acceptance.
+The fixes share one diagnostic binary, and host/source contention is recorded;
+no timing improvement is attributed from these runs.
+
+A fresh native cache is now being populated by that exact immutable executable,
+using the original replay, correct historical Date origin, render grid two,
+frontend cache on and an active document-only capture. The initial capture has
+an exact complete content audit and zero page errors. Its native ABI is
+964b367e4da21eb9b4b5ddb24bc5563f85e2ecf97ea034ca660b41a4a9daef9c;
+the capture observes compilation in progress, and shutdown must finish the
+remaining module templates and compiler batches before reopening. No warm result
+or speed claim is available yet.
+
+The new first-opening PNG, converted only on the actual side to the original P3
+profile, retains exactly the same strict mismatch statistics: **25,399 pixels,
+maximum error 64, MAE 0.0220 and RMSE 0.5678**. The zero/zero gate exits one;
+reference SHA-256 remains 649abff51549508516e2e0681866ba81ce69e7112cfa8dc3446b9b76c99be3d3.
+The memory/interaction changes introduce no change to this diagnostic image,
+but the historical pixel goal remains unachieved. Full native reopening and
+controls, live behavior, historical zero-pixel equality and matched performance
+are still required. Finished job receipts are archived with verified hashes and
+symlinks under `scratch-receipts/continued-20261116-r4` and `-r5`; the running
+native-cache job remains in Build until completion.
+
+
+### Fresh native cache reopen and injected-image identity follow-up
+
+The bounded-control executable completes its fresh original-page cache cohort.
+Its final first-opening audit contains **8,351 compiled executables, 66 successful
+compiler invocations, zero pending entries, zero invalid entries and no cache
+error**. All 30 requested lazy module preparations complete, covering 4,426
+function templates with 4,106 new entries and zero unsupported functions.
+Recorded compiler time is 806,599.218709 milliseconds; the guarded lifecycle is
+836.441192667 seconds, peak 9,865,281,536 bytes. Browser/controller/guard exit zero
+and every pinned input remains unchanged.
+
+The **same executable's fresh compiler-disabled reopen** has **4,245 native cache
+hits, zero misses, zero compiler invocations, zero invalid entries and zero
+pending entries**, with no cache error. Native library loading records
+789.274276 milliseconds. Browser/controller/guard exit zero; lifecycle
+39.510249542 seconds includes the fixed 30-second observation interval and
+capture/teardown, and peak RSS is 8,605,974,528 bytes. Complete frozen content
+matches exactly and no script/native errors occur. Both captures retain the same
+25,399-pixel historical mismatch, max 64, MAE 0.0220 and RMSE 0.5678, with strict
+pixel gate exit one and unchanged reference. This one functional pair does not
+establish isolated JS speed or matched browser performance.
+
+The following injected native-input eligibility run **fails compiled acceptance**
+even though all control checks pass: no native entries execute, 4,746 cache misses
+appear, 4,802 entries remain pending and `/usr/bin/false` produces a compiler
+error. The successful-compilation counter remains zero; it does not prove that
+no failed compiler request occurred. The controller explicitly rejects this
+result. JSC remains uninitialized, so executing the controls through the
+interpreter does not establish compiled control execution.
+
+The cold/plain reopen ABI is
+964b367e4da21eb9b4b5ddb24bc5563f85e2ecf97ea034ca660b41a4a9daef9c,
+but the input run selects c6026dacefc02ca8e31de62ade5060bf9062ffd09bc385b964ed73e5c9e35b00.
+The exact executable and injected-library bytes independently reproduce those
+two ABI hashes. Current V's macOS `os.executable()` returns
+`_dyld_get_image_name(0)`, which names the injected input library in that launch.
+The development cache identity fix is being completed with `_NSGetExecutablePath`
+and a checked, canonicalized process-executable path; lookup fails closed if the
+path cannot be obtained. Production's embedded source identity remains separate.
+No old cache is relabeled or copied. A focused injected-image regression source
+is added but remains uncompiled/unrun.
+
+The other coverage boundary is now explicit: only dynamic-import roots had
+queued uncalled templates. Initial and statically imported JavaScript modules
+now queue their function tables too, without running those bodies or changing
+import evaluation order. A focused static-dependency first/reopen regression
+source is included, still uncompiled/unrun. Non-test root checks pass for the
+identity fix alone (38.958534875 seconds, peak 7,195,639,808 bytes) and both changes
+(39.109591583 seconds, peak 7,192,838,144 bytes). Their optimized browser rebuild
+and a new native first/reopen/control diagnosis remain pending.
+
+The SVG edge geometry diagnosis finds identical header search SVG viewports in
+both engines: x=773.7578125, y=26, width=height=16, and Brave's screen transform has
+identity scale with that translation. Its path bounds differ: Brave reports
+x=774.7588500976562, y=27.001007080078125, width=14.018310546875,
+height=14.017444610595703; the native audit reports conservative conic-control
+bounds. Existing Chromium-mode path conversion already rounds relative operands
+in float32; that behavior must not be duplicated or replaced based on the edge
+mismatch alone. A first Brave query incorrectly calls SVGMatrix.toJSON and fails;
+the corrected read-only query records scalar matrix fields and exits normally
+with unchanged pins. Neither query changes the historical reference.
+
+
+### Full-module compile guard and temporary compiler storage
+
+The executable-identity/all-static-module diagnostic browser builds successfully
+in 180.352651459 seconds, sampled aggregate peak 12,568,838,144 bytes. Its parsed
+manifest covers 3,729 sources and no `_test.v` files. A separate injected-image
+identity observation confirms ABI
+480a41bcafb34bf8761e768ff65c1fe43bcc231a8776b18a4a93f6cf3b31061e,
+exactly the hash derived from the actual executable despite the input probe
+being dyld image zero. That observation deliberately uses an empty cache and no
+actions: it proves identity only and fails the compiled-control gate.
+
+The new full-module first opening **fails the 12 GiB memory guard** after
+1,280.984547 seconds. Controller exit is 137, guard reason memory_limit, sampled
+aggregate peak 12,885,475,328 bytes against 12,884,901,888. It leaves 21,888 cache
+records, 171 libraries and an interrupted compiler job. No final cache audit or
+controller summary exists. At capture, all 81 module records are requested, but
+preparation and compilation are incomplete. The complete content audit and zero
+page errors at that early capture do not make the first opening successful. Its
+partial cache is retained separately and receives no acceptance credit.
+
+The synchronous native compiler previously put C-source builders, temporary
+strings, process diagnostics and library-hash input in the surrounding prealloc
+arena across batches. `1690dec4f` gives that operation a temporary workspace and
+copies only the loaded entry array, library path and digest into caller-owned
+storage after leaving it. Failure messages are copied before releasing their
+workspace. The OS owns dlopen mappings independently; selected executable state
+is read-only, with validation completed by callers before this boundary. A
+non-test root compiler check passes in 30.775948792 seconds, sampled aggregate
+peak 7,193,378,816 bytes. Focused success/error lifetime and repeated-batch memory
+regression sources are included, still uncompiled/unrun. The new browser build
+and a fresh full-module cohort are pending; no old cache is renamed or copied.
+
+The host also exhausts disk space during this continuation. Thirty-six obsolete
+generated diagnostic C files in the continuation's external cache are removed
+after retaining sizes and SHA-256 hashes; canonical sources, binaries and
+measurement receipts remain. This releases 3,789,740,749 bytes. Finished Build
+jobs are archived with recursive hashes and symlink verification under
+`scratch-receipts/continued-20261116-r6` (46 entries); the interrupted full-module
+job remains separate until its failure receipt is archived.

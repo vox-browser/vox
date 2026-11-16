@@ -30,12 +30,12 @@ and does not establish a browser load/rendering improvement or additional parity
 
 ## GitHub runtime checkpoint — 2026-11-15
 
-**Current verification hold:** the user requested no tests until the GitHub
-compiled-JavaScript parity implementation is complete. The running sweep was
-stopped after 103 passing files; no subsequent runtime tests or page comparisons
-have run. Later committed slices have compiler-only checking and pending focused
-coverage. See the [implementation checkpoint](../docs/LIBJS_GITHUB_RUNTIME_20261115.md#implementation-checkpoint-with-runtime-verification-held)
-for commits, boundaries and the last actual GitHub observation.
+**Current verification hold:** automated suites remain off until the GitHub
+compiled-JavaScript parity implementation is complete. The earlier sweep stopped
+after 103 passing files. Original-page browser/runtime diagnostics and non-test
+builds have resumed; later focused regression sources remain uncompiled and
+unrun. See the [resumed diagnostic report](../docs/LIBJS_GITHUB_RUNTIME_20261115.md#browser-diagnostics-resumed-2026-11-16)
+for current observations and their limits.
 
 The native compiler was introduced in `5ed3e8155`; persistent reuse on a new
 visit followed in `7ec82b601`, and browser parsed-source reuse in `07902ae2d`.
@@ -3077,7 +3077,37 @@ suspensions, exhausted entries preserve their first error/trace, and strict bloc
 functions initialize in their actual lexical environment. Sloppy Annex B block
 functions remain explicitly unsupported. Native shadow attachment, User Timing
 measures/ordinary detail cloning, Crypto random UUID/integer views and CustomEvent
-bindings are partial API slices. Automated suites remain held; original-response
-diagnostics and non-test builds resumed. A production initialization pair reuses
-1,546 native entries and 51 frontends without compilation, but hydration and
-pixel parity remain incomplete. See [the resumed diagnostic report](../docs/LIBJS_GITHUB_RUNTIME_20261115.md#browser-diagnostics-resumed-2026-11-16).
+bindings are partial API slices. Native ParentNode collections, HTMLElement
+datasets with WebIDL named setters/deleters, Document.getElementsByName, the
+Function intrinsic/dynamic constructor, Date locale strings and Window scrolling
+now let an optimized diagnostic browser reach the original 33 rows, 56 commit
+links, latest commit and README with an exact content-audit match and no reported
+JavaScript errors. JSC stays uninitialized. Realm-local function bytecode reuse
+avoids recompiling sibling closures; instance-specific field initializers remain
+separate. An early incomplete first capture leaves 255 warm misses. Compilation
+now waits for quiet module/fetch work and returns to the event loop between
+bounded batches. An earlier fresh reopen has 4,250 native hits and zero misses, with full content
+and exact additional headless Brave pixels. A later same-binary pair exposes
+mutable development cache ABI inputs; development caches now use executable
+identity, while production retains embedded source identity. Initial content
+remains correct. Native composed paths, UI/mouse/keyboard events and Selection
+bindings advance controls to native TreeWalker focus traversal. Native computed
+styles, element geometry and focus/blur bindings reach synchronous scrolling
+layout. CSSOM and anchor-position fallback allocation ownership fixes now let
+Code/master expand without script errors. Independent frontend-only caching
+records 34 hits and 83 misses with native execution disabled, but initially still
+exceeds the guard. Borrowed bytecode dispatch, document Escape routing, nearest
+focus reveal and temporary native raster callback workspaces now let the full
+60-second interpreter input sequence complete under the 12 GiB guard (11.49 GiB
+sampled peak). It observes native filter value ma, closes both menus, preserves
+all content and reports no errors. This is not compiled-control acceptance or
+a long-duration memory bound. An earlier first/reopen pair compiles 8,351 executables and reuses 4,245
+entries with zero misses, but injected native input exposes dyld image-zero
+identity confusion. The macOS cache now uses the actual executable path, and
+all loaded modules queue uncalled templates. The new full-module first opening
+hits the 12 GiB guard after 21,888 records; its incomplete cache is not accepted.
+Temporary native compiler workspaces are now committed with a passing non-test
+compiler check; a fresh rebuilt cohort and compiled controls remain pending. Font-strike rounding gives the same 156-pixel Go to
+file input as Brave. The unchanged
+historical windowed pixel gate still fails at 25,399 pixels. This is not full-site,
+live-site, historical pixel or performance acceptance. Automated suites remain held. See [the resumed diagnostic report](../docs/LIBJS_GITHUB_RUNTIME_20261115.md#browser-diagnostics-resumed-2026-11-16).
