@@ -8,6 +8,7 @@ the document, and quits normally. Use the memory guard with the same PID registr
 import argparse
 import hashlib
 import json
+import math
 import os
 from pathlib import Path
 import subprocess
@@ -59,6 +60,8 @@ def run(args):
         environment['VOX_LIBJS_NATIVE_COMPILER'] = str(args.native_compiler.resolve())
     if args.native_diagnostics:
         environment['VOX_LIBJS_NATIVE_DIAGNOSTICS'] = '1'
+    if args.date_epoch_ms is not None:
+        environment['VOX_LIBJS_DATE_EPOCH_MS'] = str(args.date_epoch_ms)
     if args.audit_interval_ms is not None:
         environment['VOX_NATIVE_OBSERVATION_INTERVAL_MS'] = str(args.audit_interval_ms)
     if args.document_capture:
@@ -83,6 +86,7 @@ def run(args):
                'active-window functional diagnosis; whole-window PNG; no pixel/performance gate'),
         document_capture=args.document_capture, ready_selector=args.ready_selector,
         text_geometry=args.text_geometry, native_diagnostics=args.native_diagnostics,
+        date_epoch_ms=args.date_epoch_ms,
         observer_sha256=digest(Path(__file__)), sample_after=args.sample_after,
         host_before=dict(cpu_count=os.cpu_count(), load=os.getloadavg(), unix=time.time()))
     process = None
@@ -175,6 +179,8 @@ def main():
                         help='Enable native entry/fast/slow counters in a separate eligibility diagnostic')
     parser.add_argument('--text-geometry', action='store_true',
                         help='Record bounded retained text paint positions and font metrics')
+    parser.add_argument('--date-epoch-ms', type=float,
+                        help='LibJS Date origin for a clock-matched replay; real elapsed time is retained')
     parser.add_argument('--observe-ms', type=int, default=15000)
     parser.add_argument('--audit-interval-ms', type=int,
                         help='Rewrite the active document audit while waiting for the final capture')
@@ -195,6 +201,10 @@ def main():
         parser.error('Sample delay must be nonnegative')
     if args.ready_selector is not None and not args.document_capture:
         parser.error('A readiness selector requires --document-capture')
+    if args.date_epoch_ms is not None and (args.engine != 'libjs'
+            or not math.isfinite(args.date_epoch_ms) or abs(args.date_epoch_ms) > 8_640_000_000_000_000
+            or not args.date_epoch_ms.is_integer()):
+        parser.error('A Date epoch requires LibJS and integer milliseconds in the Date range')
     raise SystemExit(run(args))
 
 

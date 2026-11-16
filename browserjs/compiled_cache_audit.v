@@ -15,6 +15,7 @@ pub:
 	pending_native             []libjs.NativePendingExecutableDiagnostic
 	module_preparation         NativeModulePreparationAudit
 	native_execution           ?libjs.NativeCodeActivity
+	date_clock_epoch_ms        ?f64
 }
 
 // Read counters without creating a context, running JavaScript or flushing
@@ -30,10 +31,14 @@ pub fn (runtime &Runtime) compiled_code_cache_audit() CompiledJavaScriptCacheAud
 		function_bytecode:          runtime.realm.function_compilation_stats()
 		pending_native:             runtime.agent_vm.pending_native_code_cache_diagnostics(16)
 		native_execution:           runtime.agent_vm.native_code_activity()
-		module_preparation:         NativeModulePreparationAudit{ ...runtime.libjs_native_template_audit_, pending_modules: if runtime.has_pending_native_module_templates() {
-			runtime.libjs_native_template_jobs_.len
-		} else {
-			0
-		} }
+		date_clock_epoch_ms:        runtime.agent_vm.date_clock_epoch_milliseconds()
+		module_preparation:         NativeModulePreparationAudit{
+			...runtime.libjs_native_template_audit_
+			pending_modules: if runtime.has_pending_native_module_templates() {
+				runtime.libjs_native_template_jobs_.len
+			} else {
+				0
+			}
+		}
 	}
 }

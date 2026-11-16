@@ -191,6 +191,7 @@ fn Runtime.create_with_global_kind(engine Engine, global_kind int) &Runtime {
 		realm_context: realm_context
 		context:  context
 	}
+	runtime.configure_replay_date_clock()
 	$if darwin || linux || windows {
 		if engine == .javascriptcore && context != unsafe { nil } {
 			runtime.initialize_javascript_value_intrinsics() or { panic(err) }
