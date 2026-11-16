@@ -3456,3 +3456,67 @@ measurement receipts remain. This releases 3,789,740,749 bytes. Finished Build
 jobs are archived with recursive hashes and symlink verification under
 `scratch-receipts/continued-20261116-r6` (46 entries); the interrupted full-module
 job remains separate until its failure receipt is archived.
+
+
+### Compiler workspace build, failure lifetime and rejected MSAA experiment
+
+The workspace browser builds successfully in 172.358018084 seconds, sampled
+aggregate peak 12,534,071,296 bytes. Its parsed manifest contains 3,729 sources
+and no `_test.v` files. Executable SHA-256 is
+c3c8fb58ac32ac53560adeedeb980195a275c0e6ecd70f3251861fe225563f98;
+its native ABI is d46bb8de112ee7692e050307638250a2426ee0ddec423d146e8b893d484feaa2.
+A fresh all-module first opening is running with an empty ABI partition and the
+original 12 GiB guard. Its early capture has exact complete content and no page
+errors. The PNG remains byte-identical to the earlier first/reopen captures
+(SHA-256 05ede3eae524f64796fe08bfa6406c6703006026387a94d816d3e832807cbb70).
+Final completion and warm native-control acceptance remain pending.
+
+A **separate original-page failure diagnostic** uses this executable with an
+empty cache and `/usr/bin/false`. It closes normally, preserves the complete
+exact Brave content audit and reports no author/native page errors. The retained
+cache error is still `Native compiler exited 1: ` after later script/raster work;
+zero native executables are compiled. Browser/controller/guard exit zero,
+elapsed 40.818625125 seconds, sampled peak 8,462,499,840 bytes. This exercises
+error-message ownership and interpreter fallback after temporary compilation
+storage is reclaimed; it supplies no compiled or performance acceptance.
+
+The SVG coverage investigation first verifies that a fresh Brave header and the
+search/avatar/commit/Code regions match the unchanged original reference exactly.
+The browser reports GraphiteDawnMetal and maxMsaaSamples=8. The white search icon
+has eighth-coverage gray levels in Brave versus quarter levels in Vox, prompting
+a counterfactual eight-sample GG context experiment. Its patch, executable and
+sealed source proof are retained locally. Both captures use the same experimental
+executable, original response, historical clock, grid two, frontend caching and
+native execution disabled. Both preserve the complete exact content audit, have
+no page errors and exit normally with unchanged pinned inputs.
+
+| Internal MSAA | Strict differing pixels | Maximum channel error | MAE | RMSE | Sampled aggregate peak |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| 4 (control) | 25,399 | 64 | 0.0220 | 0.5678 | 8,154,628,096 bytes |
+| 8 (counterfactual) | 26,378 | 96 | 0.0527 | 1.0632 | 8,152,334,336 bytes |
+
+Both zero/zero pixel gates fail. The four-sample raw PNG is byte-identical to the
+existing diagnostic image. Eight samples introduce 108 differing pixels in the
+previously exact GitHub mark and still leave 79 search-icon pixels different,
+with maximum search error 64. The global eight-sample candidate is **rejected
+and removed from the canonical implementation**; no default, reference or
+tolerance changes. Simple adjacent-pixel filtering also fails to explain the
+search coverage. These findings do not establish an alternative renderer fix.
+
+The experimental non-test browser check passes in 43.550800875 seconds, peak
+7,206,191,104 bytes; its C build passes in 211.206327042 seconds, peak
+12,583,649,280 bytes, with 3,730 parsed sources and no tests. An initial build-tool
+check omits `-b c` and fails because the repository selects FastC; the explicit
+C-backend check passes in 0.680860375 seconds, peak 206,749,696 bytes. The first
+color conversion uses a nonexistent sips option and fails before comparing
+pixels; the corrected conversion uses `--matchTo` with the original extracted
+profile. Both failures are retained. Independent production compilation runs
+during these functional observations, so no timing attribution is made.
+
+Finished job data, including the interrupted full-module cohort and both
+counterfactual images, move with verified recursive hashes/symlinks to
+`scratch-receipts/continued-20261116-r7` (32 entries). The active fresh cohort is
+left in Build. Thirty-six more obsolete private executables are removed after
+retaining their sizes and SHA-256 hashes, releasing 1,352,163,168 bytes; current
+executables and the latest comparison baseline remain. Automated suites remain
+held, and newly written regression sources remain uncompiled/unrun.
