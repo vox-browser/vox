@@ -18,3 +18,12 @@ fn test_development_native_cache_identity_tracks_binary_bytes_and_rejects_missin
 		assert false, 'An unreadable executable must not share a native cache identity'
 	}
 }
+
+fn test_native_cache_identity_uses_the_process_executable_even_with_an_injected_library() {
+	executable := native_cache_executable()!
+	assert os.is_file(executable)
+	assert executable == os.real_path(os.args[0])
+	$if !prod {
+		assert native_cache_abi()! == native_cache_binary_abi(executable)!
+	}
+}

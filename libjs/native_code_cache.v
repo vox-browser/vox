@@ -63,7 +63,7 @@ fn native_cache_abi() !string {
 		// Value layout. Bind their cache to the executable instead, and fail
 		// closed if its identity cannot be read. Production embeds the sources
 		// below, so unrelated browser rebuilds can still share native code.
-		return native_cache_binary_abi(os.executable())
+		return native_cache_binary_abi(native_cache_executable()!)
 	} $else {
 		// Invalidate machine code when the ABI or generated fast-path semantics
 		// change, without invalidating it for unrelated browser/docs commits.
