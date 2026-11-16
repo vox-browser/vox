@@ -1,0 +1,38 @@
+module browserjs
+
+import html
+import libjs
+import os
+import rand
+
+fn test_frontend_only_control_reuses_syntax_without_enabling_native_execution() {
+	native_choice := os.getenv_opt('VOX_LIBJS_NATIVE_CACHE')
+	frontend_choice := os.getenv_opt('VOX_LIBJS_FRONTEND_CACHE')
+	defer {
+		if value := native_choice {
+			os.setenv('VOX_LIBJS_NATIVE_CACHE', value, true)
+		} else {
+			os.unsetenv('VOX_LIBJS_NATIVE_CACHE')
+		}
+		if value := frontend_choice {
+			os.setenv('VOX_LIBJS_FRONTEND_CACHE', value, true)
+		} else {
+			os.unsetenv('VOX_LIBJS_FRONTEND_CACHE')
+		}
+	}
+	os.setenv('VOX_LIBJS_NATIVE_CACHE', '0', true)
+	os.setenv('VOX_LIBJS_FRONTEND_CACHE', '1', true)
+	mut runtime := Runtime.create_with_engine(.libjs)
+	defer { runtime.close() }
+	runtime.install_libjs_document(html.parse_document('<body></body>'))!
+	code := 'var unique_' + rand.uuid_v4().replace('-', '') + '=42'
+	first := runtime.prepare_libjs_frontend(code, .script, libjs.ParseOptions{ max_recursion_depth: 256 })
+	second := runtime.prepare_libjs_frontend(code, .script, libjs.ParseOptions{ max_recursion_depth: 256 })
+	assert !first.has_errors() && voidptr(first) == voidptr(second)
+	assert runtime.frontend_code_cache_stats().misses == 1 && runtime.frontend_code_cache_stats().hits == 1
+	assert !runtime.libjs_native_cache_enabled_
+	assert runtime.native_code_cache_stats().abi == '' && runtime.native_code_cache_stats().compiler_invocations == 0
+	os.setenv('VOX_LIBJS_FRONTEND_CACHE', '0', true)
+	third := runtime.prepare_libjs_frontend(code, .script, libjs.ParseOptions{ max_recursion_depth: 256 })
+	assert voidptr(third) != voidptr(first) && runtime.frontend_code_cache_stats().misses == 2
+}

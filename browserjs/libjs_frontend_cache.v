@@ -3,6 +3,7 @@ module browserjs
 
 import crypto.sha256
 import libjs
+import os
 import platform
 import sync
 
@@ -38,11 +39,19 @@ pub fn (runtime &Runtime) frontend_code_cache_stats() LibJSFrontendCacheStats {
 	return LibJSFrontendCacheStats{ hits: runtime.libjs_frontend_cache_hits_, misses: runtime.libjs_frontend_cache_misses_ }
 }
 
+fn (runtime &Runtime) use_libjs_frontend_cache() bool {
+	return match os.getenv('VOX_LIBJS_FRONTEND_CACHE') {
+		'1', 'on' { true }
+		'0', 'off' { false }
+		else { runtime.libjs_native_cache_enabled_ }
+	}
+}
+
 fn (runtime &Runtime) prepare_libjs_frontend(source string, kind libjs.SourceType, options libjs.ParseOptions) &libjs.ParsedSource {
 	persistent := platform.enter_persistent()
 	defer { platform.leave_persistent(persistent) }
 	mut owner := unsafe { &Runtime(runtime) }
-	if !owner.libjs_native_cache_enabled_ || source.len > libjs_frontend_cache_source_limit {
+	if !runtime.use_libjs_frontend_cache() || source.len > libjs_frontend_cache_source_limit {
 		owner.libjs_frontend_cache_misses_++
 		return libjs.parse_source_with_options(source.clone(), kind, options)
 	}
