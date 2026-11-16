@@ -109,6 +109,7 @@ def run(args):
                      'viewport_width', 'viewport_height']}
                 result['counts'] = {group['name']: group['count'] for group in audit['selections']}
                 result['javascript_diagnostics'] = audit.get('javascript_diagnostics', [])
+                result['compiled_javascript_cache'] = audit.get('compiled_javascript_cache')
                 result['native_errors'] = audit.get('native_reported_errors', [])
                 result['native_error_count'] = audit.get('native_reported_error_count', 0)
                 result['native_error_information'] = audit.get('native_reported_error_information', [])
