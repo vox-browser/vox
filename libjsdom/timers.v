@@ -88,7 +88,7 @@ fn (mut host Host) evaluate_timer_source(source string, realm &html.ScriptingRea
 	address := (classic.base_url() or { return error('Timer source requires its native base URL') }).serialize()
 	host.callback_entry(fn [host, source, address] (mut vm libjs.VM) !libjs.Value {
 		mut script := libjs.Script.parse(source, host.realm, address, unsafe { nil }) or { return libjs.throw_completion(host.fetch_error_value(mut vm, err)) }
-		return vm.run_with_limits(mut script, libjs.ExecutionLimits{max_instructions: 1000000})
+		return vm.run_with_limits(mut script, host.hooks.execution_limits)
 	}) or {
 		if report := host.hooks.exception { report(exception_message_with_stack(err)) }
 		return webidl.throw_value(host.native_abort_reason(host.fetch_error_value(mut host.vm, err)).as_webidl_value()!)

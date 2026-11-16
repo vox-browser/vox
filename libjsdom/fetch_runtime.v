@@ -121,14 +121,15 @@ fn (mut host Host) settle_fetch_promise(capability &libjs.JSPromiseCapability, v
 fn (mut host Host) invoke_fetch_callback(callback libjs.NativeFunctionPointer) {
 	defer { platform.release_closure(voidptr(callback)) }
 	if host.closed || host.document.has_been_destroyed() { return }
+	if can_run := host.hooks.can_run_callback { if !can_run() { return } }
 	persistent := platform.enter_persistent()
 	defer { platform.leave_persistent(persistent) }
 	if before := host.hooks.before_callback { before() }
 	defer { if after := host.hooks.after_callback { after() } }
 	mut vm := host.vm
 	function := libjs.NativeFunction.create(mut vm, host.realm, host.realm.function_prototype, callback, 0, libjs.PropertyName.from_str('fetchCallback'), none).object
-	vm.call_with_limits(libjs.Value.from_object(function), libjs.js_undefined(), [], libjs.ExecutionLimits{max_instructions: 1000000}) or {
-		if report := host.hooks.exception { report(exception_message(err)) }
+	vm.call_with_limits(libjs.Value.from_object(function), libjs.js_undefined(), [], host.hooks.execution_limits) or {
+		if report := host.hooks.exception { report(exception_message_with_stack(err)) }
 	}
 	host.changed()
 }

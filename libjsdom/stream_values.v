@@ -76,5 +76,5 @@ fn (mut host Host) stream_entry(callback libjs.NativeFunctionPointer) !libjs.Val
 	job := fn [mut vm, function] () !libjs.Value { return libjs.call(mut vm, libjs.Value.from_object(function), libjs.js_undefined(), []) }
 	defer { platform.release_closure(voidptr(job)) }
 	defer { host.changed() }
-	return vm.run_promise_job_with_limits(job, libjs.ExecutionLimits{max_instructions: 1000000})
+	return vm.run_promise_job_with_limits(job, host.hooks.execution_limits)
 }
