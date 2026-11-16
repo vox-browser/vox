@@ -172,8 +172,11 @@ fn compositor_msaa_coverage(source []u8, path &C.VoxGraphitePath) []f64 {
 	}
 	if path.has_float_alpha != 0 { color[3] = f64(path.opacity) }
 	if color[3] != 1 { return []f64{} }
-	for value in color {
+	mut encoded := [4]f64{}
+	for channel, value in color {
 		if !math.is_finite(value) || value < 0 || value > 1 { return []f64{} }
+		// Covered samples are stored in UNORM8 before resolving the surface.
+		encoded[channel] = math.floor(value * 255 + 0.5)
 	}
 	mut result := []f64{len: source.len}
 	for pixel in 0 .. source.len / 4 {
@@ -186,7 +189,7 @@ fn compositor_msaa_coverage(source []u8, path &C.VoxGraphitePath) []f64 {
 			else { return []f64{} }
 		}
 		for channel in 0 .. 4 {
-			value := color[channel] * f64(count) * 255 / 4
+			value := encoded[channel] * f64(count) / 4
 			if u8(math.floor(value + 0.5)) != source[pixel * 4 + channel] { return []f64{} }
 			result[pixel * 4 + channel] = value
 		}

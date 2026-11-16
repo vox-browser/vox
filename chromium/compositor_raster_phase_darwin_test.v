@@ -60,6 +60,18 @@ fn test_compositor_svg_declines_unrecoverable_or_translucent_sample_data() {
 	}
 }
 
+fn test_compositor_resolve_quantizes_each_covered_unorm_sample_first() {
+	segments := [f32(3), 1, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0]
+	path := C.VoxGraphitePath{
+		segments:        segments.data
+		segment_count:   1
+		has_float_color: 1
+		float_color:     [f32(1), 0.99999, 0.99998, 1]!
+	}
+	coverage := compositor_msaa_coverage([u8(128), 128, 128, 128], &path)
+	assert coverage == [f64(127.5), 127.5, 127.5, 127.5]
+}
+
 fn test_analytic_border_does_not_bleed_past_its_straight_edge() {
 	old_phase := compositor_raster_phase
 	old_grid := document_geometry_grid
