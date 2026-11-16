@@ -6086,7 +6086,7 @@ No `Build/guardian-dither*` job output remains.
 correcting **422** pixels and introducing **zero**. All three circular photos
 now match the retained independent Brave reference exactly. The remaining
 pixels are (978,223), (980,223) and (979,224), maximum channel error two, in the
-edition picker's rotated CSS border. Its `::after` uses a 5×5 content box,
+edition picker's rotated CSS border. Its `::after` uses a 5×5 border box,
 1-pixel right/bottom borders, `translateY(-2px) rotate(45deg)` and white current
 color. This is a remaining rendering gate, not a full Guardian pass.
 
@@ -6146,3 +6146,66 @@ Local evidence: `docs/performance/guardian-circles-20261116/`. Cleanup inventori
 profiles/caches, replay keys, guards and locks. No `Build/guardian-circles*` job
 output remains. The separate downloaded uBO/checker resources are removed with
 the completed dither job above.
+
+
+### Guardian solid border sample ownership, 2026-11-16
+
+`aca448d3c` removes the remaining **3→0 pixels twice** in the complete archived
+Guardian viewport, correcting all three and introducing zero. Adjacent opaque
+sides from one transformed CSS border now keep their multisample coverage until
+one resolve. Previously each rectangle was resolved and read back before the
+next side, losing their common samples where they overlap. The existing V GPU
+shape-group adapter supplies the shared pass; no shader or native boundary
+changes are needed.
+
+The border painter records the side count alongside its shared box-local data.
+The V replay matcher requires the complete two- or three-side sequence, pointer
+identity, common transform and raster layer, matching opaque color and full
+opacity. Complex clips, effects, invalid geometry and incomplete groups retain
+the existing replay. This does not group neighboring boxes or change side order.
+
+The reduced `rotated-border-join` control includes a transparent four-sample
+layer and an opaque single-sample root. Its two independently captured Brave
+PNGs are byte-identical, SHA-256
+`f8a1afc3e6eafac9cf1ae243740486650ae7c0a48b04b8f0d0dea4720f7dd591`;
+the upper arrow matches the original Guardian reference region exactly.
+The available production browser differs by three pixels twice; the candidate
+is zero twice. Initial GPU experiments on an opaque backdrop retain seven
+pixels even when grouped. Reproducing the transparent layer exposes the actual
+three-pixel failure, and grouping then matches exactly. These attempts remain
+in the local evidence. No existing reference or tolerance changes.
+
+C/O0 diagnostic executable:
+`a3fa7dda2b1e1b15ed294829593a17f871321311add249d8e0bad3ae4cda299a`.
+Five consumed V implementation buffers match the compiler manifest; selected
+source/native inputs stay unchanged throughout successful compilation. A prior
+compile overlapping formatting is retained and rejected. Seven focused V test
+functions pass, including two/three-side painter order, group fallbacks and GPU
+pixels in both sample modes. All **64 workloads/128 fresh captures** repeat,
+and all **63 preceding PNGs remain byte-identical**. Existing inexact controls
+retain their counts. Both separate Guardian loads pass document/content audits
+and full-uBO checks: 55 requests each, all allowed, zero mismatches or oracle
+disagreements. The pinned uBO release and 59 vendor files verify. Accepted
+compile/test/capture/filter/guard exits are zero.
+
+The additional existing `layout/chromium_partial_border_test.v` check remains
+unvalidated: C compilation exceeds the unchanged 12 GiB aggregate guard, even
+with serial code generation; a separate 3 GiB attempt also hits its cap.
+FastC attempts instead encounter unrelated generated-C errors, including
+`CSSPixelPoint` expressions and LibJS value/object operations, after an initial
+Objective-C mode error. These are recorded failed checks, not passing tests.
+The new end-to-end painter/group tests and browser captures above do pass.
+
+The latest completed production executable remains `93adced1`; it cannot
+validate these newer source fixes. The managed post-commit hook requests the
+coalesced C/literal V `-prod` rebuild. Production confirmation, the existing
+source/replay browser-version qualification and remaining catalog gates stay
+open. The next pinned Verge captures still differ by **262,012 twice**: the
+visible differences cover the hero image and the vertical logo's shadow.
+No Verge fix, live-site pass or instruction-performance acceptance is claimed.
+
+Local evidence: `docs/performance/guardian-border-20261116/`.
+Cleanup inventories **67 owned roots/5,568 files**, preserves and SHA-verifies
+**1,423 evidence files/35,799,211 bytes**, then removes owned programs, generated
+C, private profiles/caches, downloaded extensions, replay keys, guards and locks.
+No `Build/guardian-border*` job output remains.
