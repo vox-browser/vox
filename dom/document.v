@@ -5383,6 +5383,7 @@ pub mut:
 	layout_coordinate_scale_ f64
 	svg_use_resource_hook_ ?DocumentSVGUseResourceHook
 	display_device_pixel_ratio_ f64
+	rendering_device_pixel_ratio_ f64
 	embedder_window_inactive_ bool
 
 	// Encoding
