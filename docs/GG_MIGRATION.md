@@ -3609,5 +3609,8 @@ workloads/144 captures** repeat; all 69 preceding PNGs outside the logo are
 byte-identical. Fifteen focused V functions and five Python staging tests pass,
 including actual GPU execution and typed scope/clip checks. Executable,
 native-library, fixture/reference and 24 runtime shader hashes stay pinned.
-Production confirmation and live/catalog acceptance remain open. See the
+New production `0cae86c8` separately repeats the 14-pixel logo and 14,916-pixel
+Verge baseline, but contains the earlier implementation without the final
+geometry-enclosure guard. Production confirmation of that guard and live/catalog
+acceptance remain open. See the
 [SVG filter audit](OPTIMIZED_SITES_PIXELS_2026_11_12.md#verge-local-svg-drop-shadows-2026-11-16).

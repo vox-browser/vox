@@ -6429,14 +6429,20 @@ has no filter boundaries; the corrected live-display-list check passes.
 An in-progress bitmap-decoration expansion also exposes a positional
 initializer error; `16d36c4` switches that independent call to named fields.
 
-The latest completed production bundle remains `93adced1`; it cannot validate
-this feature. Managed hooks request the coalesced C/literal V `-prod` rebuild.
+Production available at validation start was `93adced1`. During validation,
+C/literal V `-prod`, single-unit build `0cae86c8` became available. Four checked
+V buffers match the pre-enclosure diagnostic snapshot; its SVG implementation
+lacks the final geometry-enclosure guard. Fresh production captures reproduce
+**14/12/0** pixels for the logo/rectangle/source controls and **14,916** for the
+complete Verge viewport, twice each. This is baseline evidence for that earlier
+renderer, not production validation of the final guard. Managed hooks request
+the coalesced rebuild containing the committed feature.
 Production confirmation, source/replay version qualification, remaining catalog
 checks and live behavior remain open. No instruction-performance acceptance
 is claimed.
 
 Local evidence: `docs/performance/verge-svg-20261116/`.
-Cleanup inventories **178 owned roots/11,807 files**, preserves and SHA-verifies
-**3,374 job evidence files/87,097,752 bytes**, then removes owned programs,
+Cleanup inventories **184 owned roots/12,673 files**, preserves and SHA-verifies
+**3,460 job evidence files/90,170,525 bytes**, then removes owned programs,
 generated C, private profiles/caches, downloaded extensions, replay keys, guards
 and locks. No `Build/verge-svg*` job output remains.
