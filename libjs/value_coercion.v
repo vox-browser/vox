@@ -77,5 +77,5 @@ pub fn (value Value) to_property_key(mut vm VM) !PropertyName {
 	key := value.to_primitive_with_hint(mut vm, .string)!
 	if key.is_symbol() { return PropertyName.from_symbol(key.as_symbol()) }
 	text := key.to_primitive_string(mut vm)!
-	return PropertyName.from_utf16(text.utf16)
+	return PropertyName.from_primitive_string(text)
 }

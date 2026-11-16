@@ -6,44 +6,51 @@ module libjs
 // and other exotic hooks remain pending.
 // The parser owns the name PropertyKey, so the runtime key is PropertyName.
 
-pub enum PropertyNameKind {
+pub enum PropertyNameKind as u8 {
 	string_key
 	symbol_key
 	number_key
 }
 
-pub struct PropertyName {
+// Only the selected payload is live. Keep keys small enough for the register
+// ABI; ordinary construction owns a string header, primitive-string conversion
+// retains the immutable string cell's header (its first field).
+pub union PropertyNamePayload {
 pub:
-	kind         PropertyNameKind = .string_key
-	string_value Utf16String
-	symbol       ?&Symbol
-	number       u32
+	string_value &Utf16String = unsafe { nil }
+	symbol &Symbol = unsafe { nil }
+	number u32
+}
+
+pub struct PropertyName {
+	PropertyNamePayload
+pub:
+	kind PropertyNameKind = .string_key
+}
+
+@[inline]
+fn property_name_array_index(name &Utf16String) u32 {
+	if name.data.len == 0 || name.data[0] < u16(`0`) || name.data[0] > u16(`9`)
+		|| (name.data[0] == u16(`0`) && name.data.len > 1) { return 0xffffffff }
+	mut number := u64(0)
+	for unit in name.data {
+		if unit < u16(`0`) || unit > u16(`9`) { return 0xffffffff }
+		number = number * 10 + u64(unit - u16(`0`))
+		if number >= 0xffffffff { return 0xffffffff }
+	}
+	return u32(number)
 }
 
 pub fn PropertyName.from_utf16(name Utf16String) PropertyName {
-	// Runtime/PropertyKey.h: canonical decimal indices share numeric storage
-	// with integer keys. Leading zeros and 2^32-1 remain string keys.
-	if name.data.len > 0 && name.data[0] >= u16(`0`) && name.data[0] <= u16(`9`)
-		&& !(name.data[0] == u16(`0`) && name.data.len > 1) {
-		mut number := u64(0)
-		mut valid := true
-		for unit in name.data {
-			if unit < u16(`0`) || unit > u16(`9`) {
-				valid = false
-				break
-			}
-			number = number * 10 + u64(unit - u16(`0`))
-			if number >= 0xffffffff {
-				valid = false
-				break
-			}
-		}
-		if valid { return PropertyName.from_number(u32(number)) }
-	}
-	return PropertyName{
-		kind:         .string_key
-		string_value: name
-	}
+	index := property_name_array_index(&name)
+	if index != 0xffffffff { return PropertyName.from_number(index) }
+	return PropertyName{string_value: &Utf16String{...name}}
+}
+
+fn PropertyName.from_primitive_string(text &PrimitiveString) PropertyName {
+	index := property_name_array_index(&text.utf16)
+	if index != 0xffffffff { return PropertyName.from_number(index) }
+	return PropertyName{string_value: &text.utf16}
 }
 
 pub fn PropertyName.from_str(name string) PropertyName {
@@ -81,11 +88,12 @@ pub fn (name PropertyName) as_string() Utf16String {
 	if name.kind != .string_key {
 		panic('PropertyName.as_string() called on a ${name.kind} key')
 	}
-	return name.string_value
+	return if name.string_value == unsafe { nil } { Utf16String.new() } else { *name.string_value }
 }
 
 pub fn (name PropertyName) as_symbol() &Symbol {
-	return name.symbol or { panic('PropertyName.as_symbol() called on a ${name.kind} key') }
+	if name.kind != .symbol_key || name.symbol == unsafe { nil } { panic('PropertyName.as_symbol() called on a ${name.kind} key') }
+	return name.symbol
 }
 
 pub fn (a PropertyName) equals(b PropertyName) bool {
@@ -93,7 +101,12 @@ pub fn (a PropertyName) equals(b PropertyName) bool {
 		return false
 	}
 	return match a.kind {
-		.string_key { a.string_value == b.string_value }
+		.string_key {
+			if voidptr(a.string_value) == voidptr(b.string_value) { true }
+			else if a.string_value == unsafe { nil } { b.string_value.data.len == 0 }
+			else if b.string_value == unsafe { nil } { a.string_value.data.len == 0 }
+			else { utf16_equals(a.string_value.data, b.string_value.data) }
+		}
 		.number_key { a.number == b.number }
 		.symbol_key { voidptr(a.as_symbol()) == voidptr(b.as_symbol()) }
 	}
@@ -101,7 +114,7 @@ pub fn (a PropertyName) equals(b PropertyName) bool {
 
 pub fn (name PropertyName) str() string {
 	return match name.kind {
-		.string_key { name.string_value.str() }
+		.string_key { if name.string_value == unsafe { nil } { '' } else { (*name.string_value).str() } }
 		.number_key { name.number.str() }
 		.symbol_key { name.as_symbol().descriptive_string().str() }
 	}

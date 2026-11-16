@@ -37,7 +37,7 @@ fn (key PropertyName) is_length_property() bool {
 		}
 		if builtin_key_diagnostic_for_test { builtin_keys_compared_for_test++ }
 	}
-	return key.is_string() && utf16_equals_ascii(key.string_value.data, 'length')
+	return key.is_string() && key.string_value != unsafe { nil } && utf16_equals_ascii(key.string_value.data, 'length')
 }
 
 fn (vm &VM) length_key() PropertyName {

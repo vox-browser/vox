@@ -46,7 +46,7 @@ fn property_lookup_hash(key PropertyName) u64 {
 		.symbol_key { return u64(uint(key.as_symbol())) * 1099511628211 + 2 }
 		.string_key {
 			mut hash := u64(14695981039346656037)
-			for unit in key.string_value.data {
+			for unit in if key.string_value == unsafe { nil } { []u16{} } else { key.string_value.data } {
 				hash = (hash ^ u64(unit)) * 1099511628211
 			}
 			return hash

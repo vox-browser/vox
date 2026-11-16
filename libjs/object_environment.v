@@ -23,6 +23,14 @@ pub fn (environment &ObjectEnvironment) is_with_environment() bool {
 	return environment.with_environment
 }
 
+// Short binding names reuse the VM's bounded immutable string cache. Keep
+// arbitrarily large names on the owning-header path rather than retaining them
+// in the 1024-entry cache. This caches names only, never binding presence/value.
+fn (mut vm VM) binding_property_key(name Utf16String) PropertyName {
+	if name.data.len <= 64 { return PropertyName.from_primitive_string(vm.create_fly_string(name)) }
+	return PropertyName.from_utf16(name)
+}
+
 // 9.1.1.2.10 WithBaseObject ( ), https://tc39.es/ecma262/#sec-object-environment-records-withbaseobject
 pub fn (environment &ObjectEnvironment) with_base_object() ?&Object {
 	if environment.with_environment {
@@ -33,7 +41,7 @@ pub fn (environment &ObjectEnvironment) with_base_object() ?&Object {
 
 // 9.1.1.2.1 HasBinding ( N ), https://tc39.es/ecma262/#sec-object-environment-records-hasbinding-n
 pub fn (environment &ObjectEnvironment) has_binding(mut vm VM, name Utf16String) !(bool, ?int) {
-	key := PropertyName.from_utf16(name)
+	key := vm.binding_property_key(name)
 	// 2. Let foundBinding be ? HasProperty(bindingObject, N).
 	found_binding := environment.binding_object.has_property_checked(mut vm, key)!
 	// 3. If foundBinding is false, return false.
@@ -62,7 +70,7 @@ pub fn (environment &ObjectEnvironment) has_binding(mut vm VM, name Utf16String)
 // 9.1.1.2.2 CreateMutableBinding ( N, D ), https://tc39.es/ecma262/#sec-object-environment-records-createmutablebinding-n-d
 pub fn (mut environment ObjectEnvironment) create_mutable_binding(mut vm VM, name Utf16String, can_be_deleted bool) ! {
 	// 2. Perform ? DefinePropertyOrThrow(bindingObject, N, PropertyDescriptor { [[Value]]: undefined, [[Writable]]: true, [[Enumerable]]: true, [[Configurable]]: D }).
-	environment.binding_object.define_property_or_throw(mut vm, PropertyName.from_utf16(name),
+	environment.binding_object.define_property_or_throw(mut vm, vm.binding_property_key(name),
 		PropertyDescriptor{
 		value:        js_undefined()
 		writable:     true
@@ -91,7 +99,7 @@ pub fn (mut environment ObjectEnvironment) initialize_binding(mut vm VM, name Ut
 
 // 9.1.1.2.5 SetMutableBinding ( N, V, S ), https://tc39.es/ecma262/#sec-object-environment-records-setmutablebinding-n-v-s
 pub fn (mut environment ObjectEnvironment) set_mutable_binding(mut vm VM, name Utf16String, value Value, strict bool) ! {
-	key := PropertyName.from_utf16(name)
+	key := vm.binding_property_key(name)
 	// OPTIMIZATION: Non-with environments in sloppy mode skip the HasProperty
 	//               check because it only feeds strict-mode errors.
 	if !environment.with_environment && !strict {
@@ -121,7 +129,7 @@ pub fn (mut environment ObjectEnvironment) set_mutable_binding(mut vm VM, name U
 
 // 9.1.1.2.6 GetBindingValue ( N, S ), https://tc39.es/ecma262/#sec-object-environment-records-getbindingvalue-n-s
 pub fn (mut environment ObjectEnvironment) get_binding_value(mut vm VM, name Utf16String, strict bool) !Value {
-	key := PropertyName.from_utf16(name)
+	key := vm.binding_property_key(name)
 	// OPTIMIZATION: Non-with environments in sloppy mode combine HasProperty and Get.
 	if !environment.with_environment && !strict {
 		return environment.binding_object.get(mut vm, key)!
@@ -143,5 +151,5 @@ pub fn (mut environment ObjectEnvironment) get_binding_value(mut vm VM, name Utf
 // 9.1.1.2.7 DeleteBinding ( N ), https://tc39.es/ecma262/#sec-object-environment-records-deletebinding-n
 pub fn (mut environment ObjectEnvironment) delete_binding(mut vm VM, name Utf16String) !bool {
 	// 2. Return ? bindingObject.[[Delete]](N).
-	return environment.binding_object.delete_checked(mut vm, PropertyName.from_utf16(name))!
+	return environment.binding_object.delete_checked(mut vm, vm.binding_property_key(name))!
 }

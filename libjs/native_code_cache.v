@@ -59,6 +59,7 @@ fn native_cache_abi() string {
 		$embed_file('@VMODROOT/libjs/native_code_cache.v').to_string() +
 		$embed_file('@VMODROOT/libjs/instruction.v').to_string() +
 		$embed_file('@VMODROOT/libjs/value.v').to_string() +
+		$embed_file('@VMODROOT/libjs/object.v').to_string() +
 		$embed_file('@VMODROOT/libjs/utf16_utils.v').to_string() +
 		$embed_file('@VMODROOT/libjs/utf16_ascii_storage.v').to_string() +
 		$embed_file('@VMODROOT/libjs/operand.v').to_string())

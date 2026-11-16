@@ -50,7 +50,7 @@ pub fn Reference.for_environment(environment Environment, name Utf16String, stri
 		// Environment bindings retain a string [[ReferencedName]], including
 		// strings supplied through the runtime API that resemble an index.
 		name:                   PropertyName{
-			string_value: name
+			string_value: &Utf16String{...name}
 		}
 		strict:                 strict
 		base_environment:       environment
