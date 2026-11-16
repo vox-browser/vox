@@ -40,6 +40,7 @@ pub mut:
 	fast_steps u64
 	slow_steps u64
 	forwarded_call_slices u64
+	direct_array_search_reads u64
 	empty_binding_environments_skipped u64
 	direct_accessor_gets u64
 	direct_accessor_sets u64

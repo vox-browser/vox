@@ -141,7 +141,12 @@ fn array_prototype_index_of(mut vm VM) !Value {
 	for index < length {
 		vm.consume_execution_budget()!
 		key := array_index_key(index)
-		if object.has_property_checked(mut vm, key)! && is_strictly_equal(search, object.get(mut vm, key)!) { return Value.from_f64(f64(index)) }
+		if value := object.own_array_search_value(key) {
+			// Charge HasProperty's first holder just as the checked path does.
+			vm.consume_execution_budget()!
+			if mut tier := vm.native_tier { if tier.diagnostics { tier.activity.direct_array_search_reads++ } }
+			if is_strictly_equal(search, value) { return Value.from_f64(f64(index)) }
+		} else if object.has_property_checked(mut vm, key)! && is_strictly_equal(search, object.get(mut vm, key)!) { return Value.from_f64(f64(index)) }
 		index++
 	}
 	return Value.from_i32(-1)
