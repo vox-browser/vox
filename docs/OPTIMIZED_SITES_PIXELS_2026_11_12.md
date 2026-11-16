@@ -4030,3 +4030,93 @@ binaries, intermediates, profiles, capture jobs, guards, locks and the temporary
 test alias. Independent decoded RGBA readbacks are retained locally. The
 archive guards and locks are separately copied, verified and removed after
 completion. No owned scratch remains; shared bundles and dependencies stay.
+
+## Normalized R8 plane resampling, 2026-11-16
+
+`f09630164` corrects the single-channel resizer used after CPU plane mip
+selection. The previous implementation interpolated byte-valued floats and
+rounded halfway values upward. The R8 raster pipeline normalizes bytes first,
+accumulates four weighted samples with fused multiply-add, and stores UNORM8
+with nearest-even rounding. Merely changing the final rounding is insufficient:
+normalization can move an apparent byte-space tie slightly above the midpoint.
+The new V sampler reuses the existing raster-pipeline arithmetic helpers;
+RGBA lowp sampling, CPU mip construction, browser upload eligibility, shaders,
+native UI and original references/tolerances remain unchanged.
+
+An independent test-only Skia library supplies exact R8 references. Before the
+fix, **ten of 24,480 scaled plane bytes** differ, each by one; afterward all
+24,480 agree byte for byte. Ten additional cases cover 1D planes, enlargement,
+reduction, odd extents and anisotropic scales: **all 9,493 output bytes agree**.
+The final oracle compile and execution retain **2,028 source/header/library/data
+input hashes**, checked before and after, plus the executable identity. Skia
+is a local diagnostic dependency, not a new browser dependency.
+
+Ten focused V functions pass under arena poisoning and 3 GiB runtime guards:
+seven existing/new plane-scaling checks and three R8 sampler checks. They
+include both midpoint parities, normalized-byte roundtrips, clamped constant
+planes, independent reference dimensions, invalid extents and incomplete
+buffers. The plane test executable is
+`05b72cd1eefecbf108032244995682540b0757cf08315aee237df8c5d6d647dc`
+with **71 matched V witnesses**; the R8 primitive test is
+`fcd917a00648b30435404965af4e36f661f6d48bd24bb4f639bd558190100fc3`
+with **61**. All focused guards exit zero.
+
+The three R8 primitive functions also execute successfully with literal V
+`-prod` and C `-O2`, under arena poisoning and a 3 GiB guard. This executable is
+`8ea6d6ecaae001ace50c5cb6cb28e1ebc4b8681763d28572cc5cce627579a47d`;
+its **61 V witnesses** and executable hash remain stable during execution.
+
+The final C/O0/preallocated/no-GC diagnostic completes **50 workloads/100 fresh
+captures**, plus startup smoke. Its executable is
+`6f5887b82c59cfc7ad43f67c1a8ac9c66c7754de117e9637635992a1f9dfa367`.
+Every pair repeats, and **every PNG is byte
+identical to the preceding accepted cohort**. The logged focused and unlogged
+broad results agree. All **886 consumed rendering/CSS/DOM/layout/raster V
+witnesses and 935 source/runtime-asset pins** stay matched. All 100 native
+guards, driver, outer guard, startup and guarded analysis exit zero. CNN stays
+at **6,091**, Vlang at **27**, and GitHub, Hacker News, Lobsters and Wikipedia
+stay exact. **This fix receives no site-level pixel or performance credit.**
+
+The original investigation concerned CNN's partly visible 480×270 image whose
+requested quarter upload rounds to 120×68. Fresh baseline production `d0fa860e`
+reproduces CNN's 6,091 pixels twice. All **194,400 decoded I420 bytes** of this
+additional image agree with independent fresh Brave WebCodecs readback. The
+rounded-upload experiment changes CNN 6,091→6,062, but corrects only 187 pixels
+and introduces 158; its separate new photo control still has 5,526 differences,
+maximum error 33. That expansion is rejected and fully reverted. No new
+reference or nonzero tolerance makes it pass. The experimental HTML, stable
+Brave references, source snapshots, outputs and failed GPU comparison remain
+local. They supply no implementation or pixel acceptance.
+
+The independent oracle revealed the narrower R8 bug above during that rejected
+experiment. A rounding-only attempt leaves twelve differing scaled bytes and
+is also superseded by the complete normalized sampler. Initial test pointer
+syntax errors and an attempted launch of its absent executable are retained;
+neither establishes a browser crash. An initial browser compile caught an
+unrelated form edit mid-change; the retry compiles after that edit is committed.
+No foreign edits were reverted or incorporated into this feature.
+
+The initially available production executable `7674999d`, receipt
+`20261116-024427-5b398122`, contains the earlier rounding-only diagnostic and
+lacks the final helper; it cannot validate the fix. The subsequently completed
+shared production executable
+`c23c0d0a98ad945b7f6ffb581c1dc91172ed39b99aa5a37eecf23641607c8fa8`,
+receipt `20261116-030137-13ee3df8`, contains the final implementation by consumed
+source hashes (C/literal V `-prod`/single C unit). Its **50 workloads/100 fresh
+captures all repeat and match the accepted diagnostic byte for byte**, with the
+default **196 source checks active**. All native capture guards, startup,
+driver, outer guard and guarded analysis exit zero; executable, native library,
+runtime assets and all 935 source/runtime pins stay unchanged throughout.
+The normal coalesced build is reused; no duplicate manual build is requested.
+These are frozen workloads, without a live-site, scripting, scrolling or
+instruction claim.
+CNN, Vlang, missing Reddit evidence and the prior inexact controls keep the
+overall equality gate open. Local evidence is under
+`docs/performance/vlang-gradients-20261114/raw/cnn-rounded-yuv-20261116/`.
+
+Cleanup inventories **135 owned roots/8,233 files** across the diagnostic and
+production phases. **2,307 selected evidence files/55,860,721 bytes** are copied
+locally and SHA-verified before deleting job binaries, intermediates, profiles,
+capture jobs, guards and locks. Archive guards and locks are separately copied,
+verified and removed. Temporary test sources and the rejected photo control
+are removed; no owned scratch remains. Shared bundles and dependencies stay.

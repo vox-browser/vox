@@ -3338,3 +3338,22 @@ workloads/100 fresh captures, with all pairs repeating. Startup and all guards
 pass. No original reference or tolerance changes; catalog parity remains open.
 See the
 [audit](OPTIMIZED_SITES_PIXELS_2026_11_12.md#profiled-rgb-webp-half-uploads-2026-11-16).
+
+### Normalized highp R8 plane resampling, 2026-11-16
+
+`f09630164` uses the existing raster-pipeline arithmetic for single-channel
+plane resizing: normalized bytes, four fused bilinear contributions and the
+UNORM8 store. It replaces interpolation in byte space followed by half-up
+rounding. CPU mip construction and supported browser upload ranges remain.
+
+The independent Skia oracle now agrees on all 24,480 real scaled-plane bytes
+(previously ten differed) and 9,493 bytes across ten additional dimension cases.
+Ten focused V functions pass with arena poisoning and 3 GiB runtime guards.
+All 50 existing PNGs remain unchanged in 100 repeatable diagnostic captures.
+This establishes a resampler correction, with no site-level pixel gain.
+Production `c23c0d0a` confirms all 50 workloads/100 fresh captures with all
+196 source checks active; startup and all guards pass. The three primitive
+checks also pass with literal V `-prod` and C `-O2`. The unsupported
+rounded-upload experiment is reverted; original references and tolerances
+remain unchanged.
+See the [audit](OPTIMIZED_SITES_PIXELS_2026_11_12.md#normalized-r8-plane-resampling-2026-11-16).
