@@ -75,6 +75,7 @@ fn prepare_gg_canvas(canvas string) ! {
 	if !read(join(canvas, 'gpu_surface.v'))!.contains('layer.document_opaque') { gg_patches(canvas, 'prepare_gg_opaque_surface')! }
 	gg_repair_patches(canvas, 'prepare_gg_yuv_coordinates')!
 	write_changed(join(canvas, 'vox_document_image.v'), image_helper)!
+	write_changed(join(canvas, 'vox_document_clip.v'), read(join(root_dir(), 'tools/ui2/gg_document_clip.v'))!)!
 }
 
 fn prepare_gg_gradient(modules string, vlib string) ! {

@@ -95,6 +95,8 @@ def prepare_gg_gradient(modules, vlib):
 
         document_image = Path(__file__).parent / 'ui2/gg_document_image.v'
         write_if_changed(canvas / 'vox_document_image.v', document_image.read_text())
+        document_clip = Path(__file__).parent / 'ui2/gg_document_clip.v'
+        write_if_changed(canvas / 'vox_document_clip.v', document_clip.read_text())
 
 
 def prepare_ui2_source(source, target):
