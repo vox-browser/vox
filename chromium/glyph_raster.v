@@ -100,10 +100,10 @@ fn f32_finite(value f32) bool {
 fn draw_document_glyph_raster(glyphs []u16, positions []f64, font_path string, face_index int,
 	font_size f32, font_weight int, baseline_x f32, baseline_y f32, matrix [6]f32,
 	page_x f32, page_y f32, scroll_y f32, canvas_width f32, canvas_height f32,
-	color u32, font_smoothing int, paint_color ?[4]f32) bool {
+	color u32, font_smoothing int, paint_color ?[4]f32, clip_bounds ?[4]f32) bool {
 	reason := draw_document_glyph_raster_run(glyphs, positions, font_path, face_index, font_size,
 		font_weight, baseline_x, baseline_y, matrix, page_x, page_y, scroll_y, canvas_width,
-		canvas_height, color, font_smoothing, paint_color)
+		canvas_height, color, font_smoothing, paint_color, clip_bounds)
 	if reason != '' && document_glyph_raster_dump != '' {
 		eprintln('VOX_TEXT_RASTER fallback=${reason} font=${font_path}#${face_index} size=${font_size} weight=${font_weight} smoothing=${font_smoothing}')
 	}
@@ -138,7 +138,7 @@ fn document_glyph_raster_record(run cpuraster.CanvasGlyphRun, transform [6]f32, 
 fn draw_document_glyph_raster_run(glyphs []u16, positions []f64, font_path string, face_index int,
 	font_size f32, font_weight int, baseline_x f32, baseline_y f32, matrix [6]f32,
 	page_x f32, page_y f32, scroll_y f32, canvas_width f32, canvas_height f32,
-	color u32, font_smoothing int, paint_color ?[4]f32) string {
+	color u32, font_smoothing int, paint_color ?[4]f32, clip_bounds ?[4]f32) string {
 	$if macos {
 		if glyphs.len == 0 || positions.len < glyphs.len * 2 || font_path == '' || !(font_size >= 0) {
 			return 'empty run'
@@ -247,13 +247,31 @@ fn draw_document_glyph_raster_run(glyphs []u16, positions []f64, font_path strin
 			document_glyph_raster_record(run, transform, geometry, scale, color, font_smoothing, pixels,
 				backdrop)
 		}
-		if !cpuraster.fill_canvas_glyphs_cached(mut cache, mut pixels, width, height, width * 4, 2, run,
-			transform, color, none, 1, .src_over, [], none) {
-			return 'cpuraster declined'
+		if bounds := clip_bounds {
+			ink := effective_color or { source_color }
+			if ink[3] != 1 { return 'clipped glyph requires opaque A8 ink' }
+			mask_run := cpuraster.CanvasGlyphRun{...run, paint_color: ink}
+			mut coverage := []u8{len: pixels.len}
+			if !cpuraster.fill_canvas_glyphs_cached(mut cache, mut coverage, width, height, width * 4, 2,
+				mask_run, transform, color, none, 1, .src_over, [], none) { return 'clipped glyph mask declined' }
+			mask := []u8{len: width * height, init: coverage[index * 4 + 3]}
+			mut clipped := pixels.clone()
+			if !cpuraster.fill_canvas_glyphs_cached(mut cache, mut pixels, width, height, width * 4, 2, run,
+				transform, color, none, 1, .src_over, [], none) { return 'clipped glyph interior declined' }
+			if !draw_document_clipped_glyph_mask(mut clipped, width, height, mask, ink, bounds,
+				geometry, scale_x, scale_y, page_x, page_y, scroll_y) { return 'clipped glyph GPU declined' }
+			clip := document_glyph_device_clip(bounds, geometry, scale_x, scale_y, page_x, page_y, scroll_y)
+			if !merge_clipped_glyph_edges(mut pixels, clipped, width, height, clip) { return 'clipped glyph merge declined' }
+		} else {
+			if !cpuraster.fill_canvas_glyphs_cached(mut cache, mut pixels, width, height, width * 4, 2, run,
+				transform, color, none, 1, .src_over, [], none) { return 'cpuraster declined' }
 		}
 		if C.native_document_text_raster_finish(pixels.data, geometry[0], geometry[1], i32(width), i32(height),
 			geometry[5], geometry[6], canvas_height, i32(backdrop)) == 0 {
 			return 'composite failed'
+		}
+		if bounds := clip_bounds {
+			eprintln('VOX_GLYPH_RECTANGLE_CLIP bounds=${bounds} raster=${geometry[..]} backend=gpu')
 		}
 		return ''
 	}

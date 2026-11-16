@@ -4424,7 +4424,7 @@ fn (mut app BrowserApp) draw_portable_shadow(command layout.PaintCommand, page_x
 }
 
 fn native_draw_retained_glyph_run(command layout.PaintCommand, page_x f32, page_y f32,
-	scroll_y f64, canvas_width f32, canvas_height f32, glyph_color gg.Color, blur f32, shadow_only bool) bool {
+	scroll_y f64, canvas_width f32, canvas_height f32, glyph_color gg.Color, blur f32, shadow_only bool, clip_bounds ?[4]f32) bool {
 	$if macos {
 		glyph_run := command.glyph_run or { return false }
 		if command.glyph_orientation != .horizontal {
@@ -4451,9 +4451,12 @@ fn native_draw_retained_glyph_run(command layout.PaintCommand, page_x f32, page_
 				f32(command.glyph_translation_y), [f32(matrix[0]), f32(matrix[1]), f32(matrix[2]),
 				f32(matrix[3]), f32(matrix[4]), f32(matrix[5])]!, page_x, page_y, f32(scroll_y),
 				canvas_width, canvas_height, u32(glyph_color.a) << 24 | u32(glyph_color.r) << 16 | u32(glyph_color.g) << 8 | u32(glyph_color.b),
-				smoothing, chromium_retained_paint_color(command)) {
+				smoothing, chromium_retained_paint_color(command), clip_bounds) {
 				return true
 			}
+		}
+		if clip_bounds != none {
+			native_restore_document_glyph_clips(&command, page_x, page_y, f32(scroll_y), canvas_height)
 		}
 		unsafe {
 			return C.native_draw_document_glyph_run_srgb(&glyphs[0], &positions[0], glyphs.len, glyph_run.font().point_size, glyph_run.font().weight, int(glyph_run.face() == .emoji), f32(command.glyph_translation_x), f32(command.glyph_translation_y), f32(matrix[0]), f32(matrix[1]), f32(matrix[2]), f32(matrix[3]), f32(matrix[4]), f32(matrix[5]), page_x, page_y, f32(scroll_y), canvas_width, canvas_height, font_path, glyph_run.font().face_index(), glyph_color, blur, int(shadow_only), smoothing) != 0
@@ -6142,7 +6145,12 @@ fn (mut app BrowserApp) draw_command(source_command &layout.PaintCommand, page_x
 		chromium_gradient_gpu_ancestor_clip_index(command)
 	} else { -1 }
 	mut gpu_rectangle_clip := -1
+	mut glyph_rectangle_clip := ?[4]f32(none)
 	$if macos {
+		if app.ctx.native_rendering && app.page_zoom == 1 && app.document != unsafe { nil }
+			&& app.document.font_rendering_policy() == .chromium {
+			glyph_rectangle_clip = chromium_glyph_rectangle_clip(command)
+		}
 		gpu_rectangle_clip = app.document_rectangle_clip_index(command)
 		if gpu_rectangle_clip >= 0 {
 			bounds := chromium_rectangle_clip_bounds(command, gpu_rectangle_clip)
@@ -6166,6 +6174,7 @@ fn (mut app BrowserApp) draw_command(source_command &layout.PaintCommand, page_x
 				C.native_begin_clip()
 				if command.clip_list != unsafe { nil } && command.clip_list.items.len > 0 {
 					for clip_index, clip in command.clip_list.items {
+						if glyph_rectangle_clip != none && chromium_transferable_glyph_clip(clip) { continue }
 						if document_rectangle_clip_dedup && app.document != unsafe { nil }
 							&& app.document.font_rendering_policy() == .chromium
 							&& chromium_duplicate_rectangle_clip(command, clip_index) {
@@ -7542,7 +7551,7 @@ fn (mut app BrowserApp) draw_command(source_command &layout.PaintCommand, page_x
 					if app.ctx.native_rendering {
 						set_native_chromium_paint_color(*command)
 						defer { C.native_set_unrounded_paint_color(unsafe { nil }) }
-						if native_draw_retained_glyph_run(*command, page_x, page_y, scroll_y, f32(app.ctx.width), f32(app.ctx.height), text_color, 0, false) {
+						if native_draw_retained_glyph_run(*command, page_x, page_y, scroll_y, f32(app.ctx.width), f32(app.ctx.height), text_color, 0, false, glyph_rectangle_clip) {
 							return
 						}
 						if app.use_document_font {
@@ -7568,7 +7577,7 @@ fn (mut app BrowserApp) draw_command(source_command &layout.PaintCommand, page_x
 				shadow_color := app.paint_colors.color(command.color, command.opacity)
 				$if macos {
 					if app.ctx.native_rendering {
-						if native_draw_retained_glyph_run(*command, page_x, page_y, scroll_y, f32(app.ctx.width), f32(app.ctx.height), shadow_color, f32(command.blur * font_scale), true) {
+						if native_draw_retained_glyph_run(*command, page_x, page_y, scroll_y, f32(app.ctx.width), f32(app.ctx.height), shadow_color, f32(command.blur * font_scale), true, none) {
 							return
 						}
 						if app.use_document_font {
