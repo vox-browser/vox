@@ -4696,3 +4696,102 @@ whose executables were pruned are not launchable validation inputs. No source
 checkout or app bundle is copied. The remaining Code-tab fringe and button
 corners are still open, as are full pixel parity and matched revisit speed.
 Automated tests remain held.
+
+
+### Fractional fills and nested clip ownership: 21 differing pixels, 2026-11-17
+
+`b2ce3a8e5` preserves the original geometry of fractional thin fills when
+transferring their containing rectangle to GG. Previously Quartz's shared-edge
+conditioning changed the Code-tab underline before replay. Its compiler-disabled
+0130-ABI capture improves 24 to **22 pixels**, maximum 10, MAE 0.0000,
+RMSE 0.0180; both changed pixels resolve with no regression. The off control
+reproduces 24 pixels exactly. The sealed 3,760-source/zero-test production build
+exits zero in 293.158253708 seconds, sampled peak 8,936,095,744 bytes; executable
+SHA-256 `fd9499cd84bb5b2232d212f2a831043e71e746dcf3f3d317aabca2bba20a32aa`.
+On/off native hits are 4,244/4,245 and entries 474,385/472,379. Guard elapsed/peak
+are 51.725183417 seconds/8,941,076,480 bytes and 38.340494584 seconds/
+8,484,388,864 bytes. The normalized 22-pixel PNG SHA-256 is
+`05154b72deb7d8fe0aac7a57cc379b6727630dfe5b69701ece1a7352caa8c19c`.
+
+`968d162f9` then intersects every eligible containing rectangle in the same
+GPU stack. Leaving an outer ancestor in Quartz still removed the bottom tab
+fringe after GG resolved it. It improves 22 to **21 pixels**, maximum 10,
+MAE 0.0000, RMSE 0.0164: one pixel resolves, none regress or become newly wrong.
+This build consumes 3,761 sources and zero tests; guard/compiler exits are zero,
+271.412727125 seconds, peak 8,984,707,072 bytes. Executable SHA-256 is
+`afee4141853b175aa44c5261b354386e24b883a36e3b7146d09d53eb0e049a30`.
+The on capture has 4,245 hits/482,927 native entries, native load 613.123057 ms,
+guard 39.261126792 seconds/8,559,788,032 bytes. Its same-binary off control has
+4,245 hits/482,345 entries, 39.11032675 seconds/8,449,556,480 bytes and reproduces
+the prior 25-pixel image exactly. Off disables the entire GPU rectangle transfer,
+so it does not isolate just nested ancestors from the separate 22-pixel build.
+No performance improvement is attributed to these timings.
+
+All four captures preserve exact full content, pinned inputs, an uninitialized
+page JavaScriptCore context, successful browser PID adoption and zero browser,
+controller and guard exits. Each uses `/usr/bin/false` as native compiler and
+records zero misses, compiler invocations, pending or invalid entries and no
+cache/native/author errors. The original reference and zero/zero tolerance stay
+unchanged. The normalized best image is `github-frozen-libjs-compiled-21px.png`,
+SHA-256 `7501754cc5720a538b82c40c805e645b40380702ad8a0981471bbf004973bfa2`.
+It remains separate from the direct-live `current-live-libjs-compiled.png`.
+
+Read-only publication and actual Metal instance-buffer probes repeat the
+22-pixel output. The remaining button corner colors are already different in
+GPU readback under a full-viewport publication clip. Actual shadow/background/
+stroke instance geometry, radii, transforms and paint colors agree with the
+independent Brave picture. Changing both the analytic mesh to 73 indices and
+its depth compare/write state increases the 21-pixel baseline to 66: 46 pixels
+regress, 45 newly wrong, none improve. That instrumented original-page run has
+4,246 hits/472,384 native entries, zero cache misses/compiler calls, exact content,
+fixed pins and zero exits (40.131119709 seconds, peak 8,423,620,608 bytes).
+The depth/mesh counterfactual is rejected; no production depth change is made.
+
+Completed jobs move with idle-lock checks and verified before/after hashes to
+`scratch-receipts/continued-20261117-r17` (60 roots/332 entries). The ongoing
+shadow-contribution diagnosis is excluded. Regression sources are committed but
+remain uncompiled/unrun at the user's request. Default rendering is unchanged;
+these opt-ins have **21 remaining differences**, so full Brave parity and matched
+compiled-revisit performance are still open.
+
+
+Further read-only pipeline mapping repeats 21 pixels exactly twice. The actual
+button background/border use `analytic_rrect_solid`, the shadow uses its clipped
+variant, all with four samples and alpha-to-coverage disabled. Thus the earlier
+plain-shader replacement does exercise the background/border path. The intrinsic
+uniforms describe a 2,048×416 surface; this is an observation of Vox, not proof
+of Brave's GPU attachment dimensions. These captures have 4,244/4,243 native hits
+and 474,166/477,441 native entries, zero misses/compiler calls, exact content,
+fixed pins and zero exits; elapsed/peak are 55.752793792 seconds/8,826,060,800
+bytes and 59.452539208 seconds/8,905,687,040 bytes. Instrumentation supplies no
+performance acceptance.
+
+Omitting positive-radii analytic fills with alpha below 0.1 changes 907 pixels
+and is strictly a component diagnosis, not a candidate fix. The four largest
+button-corner discrepancies are unchanged, so they are not caused by the omitted
+shadow. Two smaller bottom-corner discrepancies improve but do not resolve.
+The run records 4,245 hits/472,620 native entries, zero misses/compiler calls,
+complete exact content, fixed pins and zero exits (38.703446458 seconds,
+8,419,196,928 bytes sampled peak). Hash-journaled removal of the superseded thin-
+rectangle generated C/preprocessed C reclaims 710,771,187 bytes; the newer accepted
+all-ancestor inputs, both executables, source proofs, receipts and native caches
+remain available.
+
+
+Discarding fully transparent analytic rectangle fragments before depth writes
+resolves all six original remaining button-corner pixels, but introduces 17
+new discrepancies elsewhere. The strict result is therefore **32 differing
+pixels**, maximum 67, and is rejected as a production change. Its shader,
+69-index mesh, four samples, depth compare/write policy and positive-color
+arithmetic otherwise remain unchanged. This narrows the investigation to
+transparent-fragment/depth interaction; it does not prove a general discard
+rule is correct. The diagnostic records 4,244 native hits/474,393 entries,
+zero misses/compiler calls/pending/invalid entries, exact content, fixed pins,
+successful PID adoption and zero browser/controller/guard exits
+(61.098319334 seconds, peak 8,795,783,168 bytes). The best committed rendering
+remains 21 pixels from the original reference. No production shader change is
+retained.
+
+The completed shadow/pipeline/discard probes are archived with hash verification
+and idle locks in `scratch-receipts/continued-20261117-r18` (24 roots/116 entries).
+Automated tests remain held.

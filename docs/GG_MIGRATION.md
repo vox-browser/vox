@@ -3653,3 +3653,17 @@ image. The 3,760-source production build parses zero tests. Regression sources
 are committed but remain uncompiled/unrun by request; defaults and the original
 zero-tolerance Brave reference remain unchanged. See the
 [GitHub runtime report](LIBJS_GITHUB_RUNTIME_20261115.md#rectangle-clip-ownership-24-differing-pixels-2026-11-17).
+
+
+### Fractional fills and all containing ancestors, 2026-11-17
+
+`b2ce3a8e5` retains fractional thin-fill geometry in GPU paint space; `968d162f9`
+intersects every eligible containing rectangle there. This avoids both Quartz
+shared-edge conditioning and a remaining outer publication clip discarding the
+correct tab fringe. Guarded original-page compiled-LibJS captures improve
+24→22→21 differing pixels with no newly wrong pixels, maximum error 10. The
+21-pixel build consumes 3,761 production sources and zero tests; all captures
+have exact content and zero native misses/compiler calls. Defaults and the
+zero-tolerance original reference are unchanged. Regression sources are committed
+but uncompiled/unrun under the requested hold. Full parity remains open. See the
+[GitHub runtime report](LIBJS_GITHUB_RUNTIME_20261115.md#fractional-fills-and-nested-clip-ownership-21-differing-pixels-2026-11-17).

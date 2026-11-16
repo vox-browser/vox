@@ -3169,7 +3169,7 @@ capture-scale, shared rectangle/clip and finite compositor-footprint corrections
 a border resampling regression is removed. A guarded Display P3 document-space
 experiment initially reaches 343 differing pixels; guarded PNG decode density,
 mipmaps, thin-rectangle rasterization and destination-space blending now reach
-24 differing pixels against the unchanged original reference, after preserving
+21 differing pixels against the unchanged original reference, after preserving
 fractional percentage transform origins, shared scaled PNG/shadow samples and
 GPU-owned containing rectangle clips;
 it is not pixel-perfect acceptance. Covered MSAA samples now quantize before
@@ -3209,3 +3209,13 @@ finishes after retained interrupted/ENOSPC attempts; a fresh compiler-disabled
 reopen has 4,244 hits/474,379 native entries, zero misses/compiler calls and
 the unchanged 25-pixel output. Canonical ABI sources independently revert to
 0130. Test suites remain held and pixel-perfect parity is still incomplete.
+
+
+Fractional thin-fill geometry and transfer of all containing rectangle ancestors
+further improve the guarded original-page capture from 24 to 22 to 21 pixels,
+maximum 10. The accepted 21-pixel build has 4,245 hits/482,927 native entries and
+zero misses/compiler calls/pending/invalid entries on its compatible 0130 ABI.
+Its full-transfer off control reproduces 25 pixels exactly. GPU button inputs
+match Brave's recorded geometry/colors; a combined mesh/depth counterfactual
+regresses to 66 pixels and is rejected. Defaults, reference and tolerance remain
+unchanged; automated tests remain held and full parity remains incomplete.
