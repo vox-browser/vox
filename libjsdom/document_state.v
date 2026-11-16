@@ -15,7 +15,7 @@ fn (host &Host) document_receiver(mut vm libjs.VM) !&dom.Document {
 // and native non-HTTP cookie policy rather than keeping a script-side jar.
 fn (mut host Host) install_document_state() {
 	mut prototype := host.document_prototype
-	for name in ['documentURI','contentType','characterSet','charset','inputEncoding','title','cookie','hidden','visibilityState','activeElement','defaultView','location'] {
+	for name in ['documentURI','contentType','characterSet','charset','inputEncoding','title','cookie','domain','hidden','visibilityState','activeElement','defaultView','location'] {
 		host.accessor(mut prototype, name, fn [host, name] (mut vm libjs.VM) !libjs.Value {
 			mut native := host.document_receiver(mut vm)!
 			persistent := platform.enter_persistent()
@@ -34,16 +34,18 @@ fn (mut host Host) install_document_state() {
 				'characterSet','charset','inputEncoding' { native.character_set() }
 				'title' { native.title() }
 				'cookie' { native.cookie() or { return owner.dom_error(mut vm, err) } }
+				'domain' { native.domain() }
 				else { native.visibility_state() }
 			}
 			return libjs.Value.from_string(vm.create_string_from_str(text))
-		}, if name in ['title','cookie'] { fn [host, name] (mut vm libjs.VM) !libjs.Value {
+		}, if name in ['title','cookie','domain'] { fn [host, name] (mut vm libjs.VM) !libjs.Value {
 			mut native := host.document_receiver(mut vm)!
 			persistent := platform.enter_persistent()
 			defer { platform.leave_persistent(persistent) }
 			text := vm.argument(0).to_primitive_string(mut vm)!.str()
 			mut owner := unsafe { &Host(host) }
 			if name == 'title' { native.set_title(text) or { return owner.dom_error(mut vm, err) }; owner.changed() }
+			else if name == 'domain' { native.set_domain(text) or { return owner.dom_error(mut vm, err) } }
 			else { native.set_cookie(text) or { return owner.dom_error(mut vm, err) } }
 			return libjs.js_undefined()
 		} } else { unsafe { nil } })

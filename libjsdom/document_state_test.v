@@ -71,3 +71,29 @@ fn test_document_state_brand_checks_and_detached_document_default_view() {
 	defer { host.close() }
 	assert document_state_eval(mut vm, 'var foreign=new Document(),n=0;for(var name of ["title","cookie","visibilityState","activeElement","defaultView"])try{Object.getOwnPropertyDescriptor(Document.prototype,name).get.call({})}catch(e){if(e instanceof TypeError)n++}foreign.defaultView===null&&foreign.location===null&&foreign.cookie===""&&n===5')!.as_bool()
 }
+
+fn test_document_domain_reads_the_native_effective_origin() {
+	mut host, mut vm, mut document := document_state_fixture()!
+	defer { host.close() }
+	assert document_state_eval(mut vm, 'document.domain==="document-state.test"&&new Document().domain===""')!.as_bool()
+	document.set_origin(dom.URL{value:'https://other.example:8443/path'}.origin())
+	assert document_state_eval(mut vm, 'document.domain==="other.example"')!.as_bool()
+	document.set_origin(dom.URL{value:'data:text/plain,opaque'}.origin())
+	assert document_state_eval(mut vm, 'document.domain===""')!.as_bool()
+}
+
+fn test_document_domain_setter_uses_native_security_checks() {
+	mut host, mut vm, mut document := document_state_fixture()!
+	defer { host.close() }
+	assert document_state_eval(mut vm, 'var denied=false;try{document.domain="document-state.test"}catch(e){denied=e instanceof DOMException&&e.name==="SecurityError"}denied')!.as_bool()
+	document.set_browsing_context(&dom.BrowsingContext{active_document_:document})
+	assert document_state_eval(mut vm, 'document.domain="document-state.test";var denied=false;try{document.domain="unrelated.example"}catch(e){denied=e instanceof DOMException&&e.name==="SecurityError"}denied&&document.domain==="document-state.test"')!.as_bool()
+	document.set_active_sandboxing_flag_set(dom.SandboxingFlagSet{sandboxed_document_domain:true})
+	assert document_state_eval(mut vm, 'var denied=false;try{document.domain="document-state.test"}catch(e){denied=e.name==="SecurityError"}denied')!.as_bool()
+}
+
+fn test_document_domain_checks_receiver_before_converting_setter_argument() {
+	mut host, mut vm, _ := document_state_fixture()!
+	defer { host.close() }
+	assert document_state_eval(mut vm, 'var d=Object.getOwnPropertyDescriptor(Document.prototype,"domain"),n=0,converted=0,arg={toString(){converted++;return "document-state.test"}};try{d.get.call({})}catch(e){if(e instanceof TypeError)n++}try{d.set.call({},arg)}catch(e){if(e instanceof TypeError)n++}var sentinel={};try{d.set.call(document,{toString(){throw sentinel}})}catch(e){if(e===sentinel)n++}n===3&&converted===0&&d.enumerable&&d.configurable')!.as_bool()
+}
