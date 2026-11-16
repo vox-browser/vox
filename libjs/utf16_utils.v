@@ -2,15 +2,21 @@ module libjs
 
 // Utf16String wraps []u16 to provide UTF-16 string functionality. Public
 // intrinsic-operation dependencies can return it without exposing its storage.
+@[heap]
+struct Utf16Storage {
+	bytes []u8
+	raw_ascii bool
+	ascii bool
+}
+
 pub struct Utf16String {
 	// AK's unchecked ASCII constructor owns bytes independently of their
 	// code-unit projection. Utf16View::to_utf8 returns these bytes verbatim.
-	ascii_bytes_ ?[]u8
+	// Only unchecked byte and IPC constructors need storage metadata. Keep
+	// it off ordinary code-unit strings and every PropertyName/Reference copy.
+	storage_ &Utf16Storage = unsafe { nil }
 mut:
 	data []u16
-	// IPC strings retain their actual ASCII/UTF16 storage form even when all
-	// units happen to be ASCII. Ordinary standalone strings infer the form.
-	ascii_storage_ ?bool
 }
 
 fn Utf16String.new() Utf16String {
@@ -29,7 +35,7 @@ pub fn utf16_string_from_code_units(units []u16) Utf16String {
 	// AK/Utf16String::from_utf16 delegates long input to
 	// Utf16StringData::from_utf16, which also compresses all-ASCII code units.
 	mut text := Utf16String.from_slice(units)
-	text.ascii_storage_ = text.has_ascii_storage()
+	text = Utf16String{data: text.data, storage_: &Utf16Storage{ascii: text.has_ascii_storage()}}
 	return text
 }
 
@@ -44,13 +50,15 @@ pub fn utf16_string_from_code_units_with_storage(units []u16, ascii bool) !Utf16
 			if unit >= 128 { return error('Stream contains invalid ASCII data') }
 		}
 	}
-	return Utf16String{data: units.clone(), ascii_storage_: ascii}
+	return Utf16String{data: units.clone(), storage_: &Utf16Storage{ascii: ascii}}
 }
 
 pub fn (text Utf16String) has_ascii_storage() bool {
-	if text.ascii_bytes_ != none {
-		if _ := text.retained_ascii_bytes() { return true }
-	} else if storage := text.ascii_storage_ { return storage }
+	if text.storage_ != unsafe { nil } {
+		if text.storage_.raw_ascii {
+			if _ := text.retained_ascii_bytes() { return true }
+		} else { return text.storage_.ascii }
+	}
 	for unit in text.data { if unit >= 128 { return false } }
 	return true
 }
@@ -74,15 +82,14 @@ fn (u Utf16String) as_slice() []u16 {
 }
 
 fn (u Utf16String) clone() Utf16String {
-	mut ascii_bytes := ?[]u8(none)
-	if bytes := u.retained_ascii_bytes() { ascii_bytes = bytes.clone() }
-	mut storage := u.ascii_storage_
-	if u.ascii_bytes_ != none { storage = u.has_ascii_storage() }
-	return Utf16String{
-		data: u.data.clone()
-		ascii_storage_: storage
-		ascii_bytes_: ascii_bytes
+	mut storage := unsafe { &Utf16Storage(nil) }
+	if u.storage_ != unsafe { nil } {
+		storage = &Utf16Storage{ascii: u.has_ascii_storage()}
+		if bytes := u.retained_ascii_bytes() {
+			storage = &Utf16Storage{bytes: bytes.clone(), raw_ascii: true, ascii: true}
+		}
 	}
+	return Utf16String{data: u.data.clone(), storage_: storage}
 }
 
 // WTF-8 preserves even unpaired UTF-16 surrogates in internal map keys.

@@ -58,7 +58,7 @@ pub fn utf16_string_from_utf8_without_validation(text string) Utf16String {
 	}
 	return Utf16String{
 		data:           units
-		ascii_storage_: ascii_storage
+		storage_: &Utf16Storage{ascii: ascii_storage}
 	}
 }
 
