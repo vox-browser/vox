@@ -100,6 +100,11 @@ fn (function &ECMAScriptFunction) realm() ?&Realm { return function.realm_ }
 
 fn (mut function ECMAScriptFunction) compile(mut vm VM) !&Executable {
 	if executable := function.executable { return executable }
+	if cached := function.cached_function_compilation() {
+		function.executable = cached.executable
+		function.register_bindings = cached.register_bindings
+		return cached.executable
+	}
 	mut generator := BytecodeGenerator{
 		executable: &Executable{
 			name: function.name_for_call_stack()
@@ -138,6 +143,7 @@ fn (mut function ECMAScriptFunction) compile(mut vm VM) !&Executable {
 	generator.executable.bytecode_length = u32(generator.executable.instructions.len)
 	generator.executable.validate(0)!
 	function.executable = generator.executable
+	function.remember_function_compilation(generator.executable)
 	return generator.executable
 }
 

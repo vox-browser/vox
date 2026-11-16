@@ -50,6 +50,8 @@ pub mut:
 	error_constructors             map[ErrorKind]&Object
 	function_prototype             ?&Object                 // %Function.prototype%
 	function_constructor           ?&Object
+	function_executable_cache map[voidptr][]FunctionExecutableCacheEntry
+	function_compilation_activity FunctionCompilationActivity
 	async_function_prototype ?&Object
 	generator_function_prototype ?&Object
 	generator_prototype ?&Object

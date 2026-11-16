@@ -11,6 +11,7 @@ pub:
 	max_instructions_per_entry u64
 	native                     libjs.NativeCacheStats
 	frontend                   LibJSFrontendCacheStats
+	function_bytecode          libjs.FunctionCompilationActivity
 }
 
 // Read counters without creating a context, running JavaScript or flushing
@@ -23,5 +24,6 @@ pub fn (runtime &Runtime) compiled_code_cache_audit() CompiledJavaScriptCacheAud
 		max_instructions_per_entry: runtime.libjs_execution_limits().max_instructions
 		native:                     runtime.native_code_cache_stats()
 		frontend:                   runtime.frontend_code_cache_stats()
+		function_bytecode:          runtime.realm.function_compilation_stats()
 	}
 }
