@@ -452,6 +452,13 @@ def main():
                         or candidate['slow_steps'] >= control['slow_steps']):
                     raise ValueError('Lowering did not replace helper steps with native steps')
                 report['lowering_diagnostic'] = diagnostics
+            if args.optimization == 'entry-cache':
+                diagnostics = {a['configuration']: a['visits'][0]['activity']
+                               for a in report['attempts'] if a['diagnostic']}
+                if any(diagnostics['control'][key] != diagnostics['candidate'][key]
+                       for key in ['entries', 'fast_steps', 'slow_steps']):
+                    raise ValueError('Entry dispatch cache changed executed instruction counts')
+                report['entry_cache_diagnostic'] = diagnostics
             for index in range(args.pairs):
                 order = ['control', 'candidate', 'v8'] if index % 2 == 0 else ['v8', 'candidate', 'control']
                 for config in order:
