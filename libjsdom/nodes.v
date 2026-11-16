@@ -44,6 +44,11 @@ fn (mut host Host) wrap_node(node &dom.Node) libjs.Value {
 	}
 	host.wrappers[node.unique_id()] = object
 	host.nodes[voidptr(object)] = node
+	if is_html {
+		if element := node.as_element() {
+			if element.local_name() == 'select' { host.attach_select_indices(mut object, element) }
+		}
+	}
 	return libjs.Value.from_object(object)
 }
 

@@ -52,7 +52,12 @@ fn (mut host Host) wrap_select_collection(native &html.HTMLOptionsCollection, se
 	view := &SelectCollectionView{native: native, selected: selected}
 	value := host.wrap_collection_view(if selected { voidptr(view) } else { voidptr(native) }, NativeHTMLCollectionView(view), if selected { host.collection_prototype } else { host.options_collection_prototype }, if selected { 'HTMLCollection' } else { 'HTMLOptionsCollection' })
 	if selected { host.selected_options_wrappers[voidptr(native.select_element)] = value.as_object() }
-	else { host.options_collections[voidptr(value.as_object())] = native }
+	else {
+		host.options_collections[voidptr(value.as_object())] = native
+		mut object := value.as_object()
+		legacy := object.legacy_platform_object or { libjs.LegacyPlatformObject{} }
+		object.legacy_platform_object = libjs.LegacyPlatformObject{...legacy, indexed_setter: libjs.LegacyIndexedPropertySetter(&OptionIndexedSetter{host: &host, native: native})}
+	}
 	return value
 }
 
