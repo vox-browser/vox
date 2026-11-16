@@ -34,11 +34,15 @@ fn (mut app BrowserApp) sampled_png_decode(url string, image &gg.Image, width f6
 	dw, dh := imageraster.decode_size(image.width, image.height, width, height) or { return none }
 	bytes := app.background_image_bytes(url) or { return none }
 	profile := imageraster.png_sampling_profile(bytes) or { return none }
+	mut gpu_mips := profile.gamma > 0
+	$if vox_diagnostic_png_render_density ? {
+		if os.getenv('VOX_DIAGNOSTIC_PNG_GPU_MIPS') == '1' { gpu_mips = true }
+	}
 	mut key := '\x00sampled-png:${u64(voidptr(app.document))}:${app.navigation_generation}:${png_decode_scope.scope}:${url}:${sha256.hexhash(bytes.bytestr())}'
 	if id := app.background_image_ids[key] {
 		previous := app.ctx.get_cached_image_by_idx(id)
 		if previous.ok && previous.width >= dw && previous.height >= dh {
-			return SampledPNGUpload{ image: previous, gpu_mips: profile.gamma > 0 }
+			return SampledPNGUpload{ image: previous, gpu_mips: gpu_mips }
 		}
 		// A larger request must not replace the first usable decoded frame.
 		// Later small draws retain that frame instead of selecting different
@@ -48,7 +52,7 @@ fn (mut app BrowserApp) sampled_png_decode(url string, image &gg.Image, width f6
 			if upgrade_id := app.background_image_ids[key] {
 				upgrade := app.ctx.get_cached_image_by_idx(upgrade_id)
 				if upgrade.ok && upgrade.width >= dw && upgrade.height >= dh {
-					return SampledPNGUpload{ image: upgrade, gpu_mips: profile.gamma > 0 }
+					return SampledPNGUpload{ image: upgrade, gpu_mips: gpu_mips }
 				}
 			}
 		}
@@ -67,7 +71,7 @@ fn (mut app BrowserApp) sampled_png_decode(url string, image &gg.Image, width f6
 	mut result := gg.Image{ width: data.width, height: data.height, nr_channels: 5, ok: true, data: retained.data }
 	result.id = app.ctx.cache_image(result)
 	app.background_image_ids[key.clone()] = result.id
-	return SampledPNGUpload{ image: app.ctx.get_cached_image_by_idx(result.id), gpu_mips: profile.gamma > 0 }
+	return SampledPNGUpload{ image: app.ctx.get_cached_image_by_idx(result.id), gpu_mips: gpu_mips }
 }
 
 fn (mut app BrowserApp) draw_sampled_png(command &layout.PaintCommand, image &gg.Image, url string,
@@ -79,14 +83,21 @@ fn (mut app BrowserApp) draw_sampled_png(command &layout.PaintCommand, image &gg
 		return false
 	}
 	geometry := sampled_png_paint_geometry(destination, clip, matrix) or { return false }
-	upload := app.sampled_png_decode(url, image, f64(geometry.width),
-		f64(geometry.height)) or { return false }
+	mut decode_extent := [f64(geometry.width), f64(geometry.height)]!
+	$if vox_diagnostic_png_render_density ? {
+		if os.getenv('VOX_DIAGNOSTIC_PNG_RENDER_DENSITY') == '1' {
+			decode_extent = sampled_png_decode_extent(decode_extent,
+				app.document.rendering_device_pixel_ratio(),
+				app.document.display_device_pixel_ratio()) or { return false }
+		}
+	}
+	upload := app.sampled_png_decode(url, image, decode_extent[0], decode_extent[1]) or { return false }
 	decoded := upload.image
 	drawn := C.native_draw_sampled_png(decoded.data, i32(decoded.width), i32(decoded.height), i32(image.width), i32(image.height), i32(upload.gpu_mips),
 		geometry.x, geometry.y, geometry.width, geometry.height, &geometry.clip[0], page_x, page_y, f32(scroll_y),
 		f32(app.ctx.width), f32(app.ctx.height)) != 0
 	if drawn && os.getenv('VOX_DIAGNOSTIC_SCALED_PNG') == '1' {
-		eprintln('VOX_SCALED_PNG scale=${matrix[0]} source=${image.width}x${image.height} decode=${decoded.width}x${decoded.height} destination=${geometry.x},${geometry.y},${geometry.width},${geometry.height}')
+		eprintln('VOX_SCALED_PNG scale=${matrix[0]} source=${image.width}x${image.height} decode=${decoded.width}x${decoded.height} gpu_mips=${upload.gpu_mips} destination=${geometry.x},${geometry.y},${geometry.width},${geometry.height}')
 	}
 	return drawn
 }
