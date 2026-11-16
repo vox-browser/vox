@@ -87,6 +87,10 @@ fn test_compact_property_keys_retain_owned_or_immutable_string_headers_and_empty
 	key := PropertyName.from_utf16(source)
 	source = utf16_string('replacement')
 	assert key.str() == 'owned'
+	assert key == PropertyName.from_str('owned')
+	assert [key, PropertyName.from_number(7)] == [PropertyName.from_str('owned'), PropertyName.from_number(7)]
+	assert PropertyName{} == PropertyName.from_str('')
+	assert PropertyName.from_number(0) != PropertyName.from_str('')
 	mut vm := VM.create()
 	create_simple_execution_context(mut vm)
 	text := vm.create_string_from_str('immutable')

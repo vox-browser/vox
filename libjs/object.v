@@ -96,6 +96,10 @@ pub fn (name PropertyName) as_symbol() &Symbol {
 	return name.symbol
 }
 
+pub fn (a PropertyName) == (b PropertyName) bool {
+	return a.equals(b)
+}
+
 pub fn (a PropertyName) equals(b PropertyName) bool {
 	if a.kind != b.kind {
 		return false
