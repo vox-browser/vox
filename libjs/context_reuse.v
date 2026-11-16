@@ -10,6 +10,7 @@ pub:
 	reused    u64
 	allocated u64
 	exposed   u64
+	direct_initializations u64
 }
 
 $if test {
@@ -18,17 +19,53 @@ $if test {
 	__global contexts_reused_for_test u64
 	__global contexts_allocated_for_test u64
 	__global contexts_exposed_for_test u64
+	__global direct_context_initialization_disabled bool
+	__global contexts_initialized_directly_for_test u64
+	pub fn set_direct_context_initialization_for_testing(enabled bool) {
+		direct_context_initialization_disabled = !enabled
+	}
 	pub fn set_context_reuse_for_testing(enabled bool) {
 		context_reuse_disabled_for_test = !enabled
 	}
 	pub fn diagnose_context_reuse_for_testing(enabled bool) ContextReuseActivity {
-		previous := ContextReuseActivity{contexts_reused_for_test, contexts_allocated_for_test, contexts_exposed_for_test}
+		previous := ContextReuseActivity{contexts_reused_for_test, contexts_allocated_for_test, contexts_exposed_for_test, contexts_initialized_directly_for_test}
 		contexts_reused_for_test = 0
 		contexts_allocated_for_test = 0
 		contexts_exposed_for_test = 0
+		contexts_initialized_directly_for_test = 0
 		context_reuse_diagnostic_for_test = enabled
 		return previous
 	}
+}
+
+fn use_direct_context_initialization() bool {
+	$if test { if direct_context_initialization_disabled { return false } }
+	return true
+}
+
+// The pool has already checked the complete value count. Check the prefix once
+// before using typed stores, and copy nonoverlapping constants as one block.
+// Aliased constants retain the original reserved-reset/forward-copy ordering.
+@[inline]
+fn (mut context ExecutionContext) initialize_reused_values(registers u32, constants []Value) bool {
+	if constants.len < 0 || context.values.len < 0
+		|| u64(registers) + u64(constants.len) > u64(context.values.len) { return false }
+	reserved := if registers < reserved_register_count { registers } else { reserved_register_count }
+	unsafe {
+		mut values := &Value(context.values.data)
+		for slot in 0 .. int(reserved) { values[slot] = js_special_empty_value() }
+		if constants.len > 0 {
+			mut target := &values[registers]
+			source := &Value(constants.data)
+			bytes := uint(constants.len) * uint(sizeof(Value))
+			if uint(source) + bytes <= uint(target) || uint(target) + bytes <= uint(source) {
+				vmemcpy(target, source, int(bytes))
+			} else {
+				for slot in 0 .. constants.len { target[slot] = source[slot] }
+			}
+		}
+	}
+	return true
 }
 
 fn use_context_reuse() bool {
@@ -71,14 +108,18 @@ fn (mut stack InterpreterStack) allocate_reusable(registers u32, constants []Val
 		stack.recycled.delete(index)
 		stack.recycled_bytes -= context.recycled_context_bytes()
 		context.argument_count = arguments
-		for slot in 0 .. int(if registers < reserved_register_count {
-			registers
+		if use_direct_context_initialization() && context.initialize_reused_values(registers, constants) {
+			$if test { if context_reuse_diagnostic_for_test { contexts_initialized_directly_for_test++ } }
 		} else {
-			reserved_register_count
-		}) {
-			context.values[slot] = js_special_empty_value()
+			for slot in 0 .. int(if registers < reserved_register_count {
+				registers
+			} else {
+				reserved_register_count
+			}) {
+				context.values[slot] = js_special_empty_value()
+			}
+			for slot, value in constants { context.values[int(registers) + slot] = value }
 		}
-		for slot, value in constants { context.values[int(registers) + slot] = value }
 		context.frame_id = stack.next_frame_id
 		stack.next_frame_id++
 		context.stack_offset = stack.top_
