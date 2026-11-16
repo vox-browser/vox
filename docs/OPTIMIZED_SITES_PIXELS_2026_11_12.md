@@ -5979,3 +5979,63 @@ Local evidence: `docs/performance/webp-crop-20261116/`. Cleanup inventories
 files/31,250,366 bytes**, then removes owned programs, generated C, downloaded
 extension/ZIP, private profiles/caches, replay keys, guards and locks. No
 `Build/webp-crop*` job output remains.
+
+
+### Even WebP atlas clips and BBC rendering parity, 2026-11-16
+
+`bdcad8eaa` removes BBC's remaining **11 pixels**: three in the 640×360 hero
+photo and eight in a 320×180 lower photo. The complete archived BBC document
+now matches the retained independent Brave reference **exactly in two fresh
+diagnostic captures**, with 11 corrected and zero introduced pixels. The earlier
+production gap of 32,482 pixels is fully corrected by the three WebP slices in
+the diagnostic browser. Production and source-version qualification remain open.
+
+The redundant full-image rectangle clip perturbs float32 inverse coordinates
+before planar sampling. The existing odd-plane omission now also covers even
+planes at near-half scales when every clip coordinate is integral and the clip
+matches the complete image rectangle without rounded corners. Other clips and
+minification ranges retain their prior processing. The original image transform
+is preserved. An experiment using an absolute destination frame instead worsens
+the hero control to 47 pixels and is rejected; that experiment is retained.
+
+Two new public controls reproduce the image positions and dimensions across
+three raster tiles, with four-sample and single-sample references respectively.
+Both references repeat across two fresh Brave processes and are promoted
+unchanged. Their SHA-256 values are
+`d782bd01c4d74b101cdb825ccbf19b208e55576558206a89cb168ef2fe5fc749` and
+`7c9099876fccbf81020ed9a933edbdb9740eacd9bc84cf089d4aaa5fbb0fee43`.
+The published browser differs by **11 pixels twice for each control**; the
+candidate gives **zero twice for each**. The GPU regression checks the published
+parts of every intersected tile and an exterior ring in both sample modes.
+
+C/O0 diagnostic executable:
+`28744a1ba6eb376079e95facdffce843f69e5872264df145bbb0d805110fabcf`.
+Selected compilation inputs remain unchanged; five consumed feature/staged-GG
+buffers match their compiler manifest. All **62 workloads/124 fresh captures**
+repeat, and all **60 preceding PNGs remain byte-identical**. Existing inexact
+controls retain their recorded counts. Fifteen focused V functions and one
+Python staging check pass. Actual compile, runtime and controller exits are zero
+under the required memory guards. Both BBC streams pass full-uBO 1.75.0 checks:
+44 requests each, all allowed, zero mismatches and oracle disagreements. The
+release ZIP and 59 retained vendor files verify. No old reference or tolerance
+changes, live-site acceptance or performance credit are claimed.
+
+Additional Guardian captures still fail and vary: **207,975 and 186,856 pixels**.
+Their investigation has a separate ownership probe: poisoning the first JPEG XL
+output arena traps a subsequent quantization read through the lazily cached
+dither table, exit 138. The ordinary unpoisoned probe passes and does not disprove
+the dangling read. Those failures are retained for the next fix; they are not
+included among the passing 62-workload repeat checks.
+
+The managed hook requests the coalesced C/literal V `-prod` rebuild. The available
+`93adced1` production bundle supplies the control captures and cannot validate
+these newer WebP changes. No duplicate manual production build is queued.
+BBC's frozen rendering gap is closed in diagnostics; the matching-version source
+gate, production confirmation, Guardian/Verge gaps and other catalog checkpoints
+still need work.
+
+Local evidence: `docs/performance/even-webp-20261116/`. Cleanup SHA-verifies and
+preserves **1,347 evidence files/33,217,001 bytes**, inventories **41 owned roots/
+4,624 files**, and removes the owned browser/checker/test programs, generated C,
+private caches/profiles, downloaded extension/ZIP, replay keys, guards and locks.
+No `Build/even-webp*` job output remains.
