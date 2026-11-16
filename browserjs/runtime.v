@@ -462,6 +462,7 @@ pub fn (mut runtime Runtime) close() {
 	}
 	runtime.stop_document_native_cache_timer()
 	runtime.flush_document_native_cache()
+	runtime.write_final_native_cache_audit()
 	runtime.agent_vm.close_native_code() or {
 		eprintln('LibJS native cache close deferred: ${err.msg()}')
 	}

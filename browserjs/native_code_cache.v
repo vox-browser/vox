@@ -2,6 +2,7 @@ module browserjs
 
 import browsersettings
 import libjs
+import json2
 import os
 import platform
 
@@ -23,6 +24,11 @@ fn (mut runtime Runtime) initialize_document_native_cache() {
 	}
 	runtime.libjs_native_cache_enabled_ = true
 	runtime.libjs_native_cache_partition_ = os.real_path(directory)
+	if os.getenv('VOX_LIBJS_NATIVE_DIAGNOSTICS') == '1' {
+		runtime.agent_vm.diagnose_native_code(true) or {
+			eprintln('LibJS native cache diagnostics unavailable: ${err.msg()}')
+		}
+	}
 }
 
 pub fn (runtime &Runtime) native_code_cache_stats() libjs.NativeCacheStats {
@@ -37,6 +43,14 @@ fn (mut runtime Runtime) flush_document_native_cache() {
 		// or retry its side effects. Existing cached entries remain usable.
 		runtime.libjs_native_cache_failed_ = true
 		eprintln('LibJS native cache compilation failed: ${err.msg()}')
+	}
+}
+
+fn (runtime &Runtime) write_final_native_cache_audit() {
+	path := os.getenv('VOX_LIBJS_NATIVE_CACHE_FINAL_AUDIT_PATH')
+	if path == '' || !runtime.libjs_native_cache_enabled_ { return }
+	os.write_file(path, json2.encode(runtime.compiled_code_cache_audit()) + '\n') or {
+		eprintln('LibJS final native cache audit failed: ${err.msg()}')
 	}
 }
 

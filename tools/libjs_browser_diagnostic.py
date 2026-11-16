@@ -50,12 +50,15 @@ def run(args):
         VOX_NATIVE_OBSERVATION_SCREENSHOT=str(capture_png),
         VOX_CAPTURE_AUDIT_CONFIG=str(output / 'audit-config.json'),
         VOX_CAPTURE_AUDIT_PATH=str(output / 'audit.json'), LADYBIRD_SCREENSHOT_SCALE='1')
+    environment['VOX_LIBJS_NATIVE_CACHE_FINAL_AUDIT_PATH'] = str(output / 'native-cache-final.json')
     if args.native_cache is not None:
         environment['VOX_LIBJS_NATIVE_CACHE'] = str(args.native_cache.resolve())
     if args.disable_native_cache:
         environment['VOX_LIBJS_NATIVE_CACHE'] = '0'
     if args.native_compiler is not None:
         environment['VOX_LIBJS_NATIVE_COMPILER'] = str(args.native_compiler.resolve())
+    if args.native_diagnostics:
+        environment['VOX_LIBJS_NATIVE_DIAGNOSTICS'] = '1'
     if args.audit_interval_ms is not None:
         environment['VOX_NATIVE_OBSERVATION_INTERVAL_MS'] = str(args.audit_interval_ms)
     if args.document_capture:
@@ -79,7 +82,7 @@ def run(args):
                if args.document_capture else
                'active-window functional diagnosis; whole-window PNG; no pixel/performance gate'),
         document_capture=args.document_capture, ready_selector=args.ready_selector,
-        text_geometry=args.text_geometry,
+        text_geometry=args.text_geometry, native_diagnostics=args.native_diagnostics,
         observer_sha256=digest(Path(__file__)), sample_after=args.sample_after,
         host_before=dict(cpu_count=os.cpu_count(), load=os.getloadavg(), unix=time.time()))
     process = None
@@ -123,6 +126,9 @@ def run(args):
             result['changed_inputs'] = [path for path, expected in pins.items()
                 if not Path(path).is_file() or digest(Path(path)) != expected]
             load_archive(archive)
+            if (output / 'native-cache-final.json').is_file():
+                result['compiled_javascript_cache_final'] = json.loads(
+                    (output / 'native-cache-final.json').read_text())
             if (output / 'audit.json').is_file():
                 audit = json.loads((output / 'audit.json').read_text())
                 result['document'] = {key: audit.get(key) for key in
@@ -165,6 +171,8 @@ def main():
                        help='Use the interpreter as a separate diagnostic control')
     parser.add_argument('--native-compiler', type=Path,
                         help='Use /usr/bin/false on reopen to detect unexpected compilation')
+    parser.add_argument('--native-diagnostics', action='store_true',
+                        help='Enable native entry/fast/slow counters in a separate eligibility diagnostic')
     parser.add_argument('--text-geometry', action='store_true',
                         help='Record bounded retained text paint positions and font metrics')
     parser.add_argument('--observe-ms', type=int, default=15000)
