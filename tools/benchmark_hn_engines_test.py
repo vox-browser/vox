@@ -9,7 +9,7 @@ from tempfile import TemporaryDirectory
 from types import SimpleNamespace
 import unittest
 
-from benchmark_hn_engines import PAGE, SCRIPT, add_image_aliases, validate, validate_memory, validate_visit_memory, build_receipts
+from benchmark_hn_engines import PAGE, SCRIPT, add_image_aliases, validate, validate_memory, validate_visit_memory, build_receipts, evaluate_memory_target
 
 
 class HNEngineEvidenceTest(unittest.TestCase):
@@ -28,6 +28,24 @@ class HNEngineEvidenceTest(unittest.TestCase):
 
     def check_pair(self, cold=None, warm=None, diagnostic=False):
         validate([cold or self.cold, warm or self.warm], 'libjs', 100, diagnostic, self.pins)
+
+    def test_memory_target_uses_both_warm_maxima_and_exact_integer_boundaries(self):
+        summary = {'v8': {'min': 1000}, 'libjs-warm': {'max': 499},
+                   'libjs-process-warm': {'max': 500}, 'libjs-cold': {'max': 100000}}
+        self.assertTrue(evaluate_memory_target(summary, 50)['passed'])
+        summary['libjs-process-warm']['max'] = 501
+        self.assertFalse(evaluate_memory_target(summary, 50)['passed'])
+        summary['libjs-process-warm']['max'] = 400
+        summary['libjs-warm']['max'] = 501
+        self.assertFalse(evaluate_memory_target(summary, 50)['passed'])
+        for percent in [0, 101, 50.0, True]:
+            with self.subTest(percent=percent), self.assertRaises(ValueError):
+                evaluate_memory_target(summary, percent)
+
+    def test_timed_cohort_rejects_builtin_profile_even_when_other_counters_are_zero(self):
+        cold = dict(self.cold, builtin_profile=[dict(name='split', calls=1)])
+        with self.assertRaises(ValueError):
+            self.check_pair(cold=cold)
 
     def test_sealed_build_receipts_bind_source_provenance_to_the_measured_output(self):
         with TemporaryDirectory() as temporary:

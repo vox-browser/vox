@@ -74,6 +74,9 @@ def validate(visits, engine, cycles, diagnostic, pins):
     if [v['mode'] for v in visits] != expected:
         raise ValueError('Missing or unexpected visit receipts')
     for visit in visits:
+        # A diagnostic builtin profile must never enter a timing cohort.
+        if not diagnostic and visit.get('builtin_profile'):
+            raise ValueError('Builtin profiling enabled in timed visit')
         if (visit['rows'] != 101 or not visit['collapse_verified']
                 or not visit['classes_restored'] or visit['cycles'] != cycles
                 or visit['native_context'] != (engine in ['v8', 'jsc'])
@@ -88,7 +91,7 @@ def validate(visits, engine, cycles, diagnostic, pins):
             raise ValueError('Argument storage counters enabled during timing')
         if not diagnostic and any(visit['activity'].values()):
             raise ValueError('Diagnostic counters enabled in timed visit')
-        for counter in ['lookup_activity', 'argument_activity', 'builtin_key_activity', 'context_activity',
+        for counter in ['fragment_text_activity', 'lookup_activity', 'argument_activity', 'builtin_key_activity', 'context_activity',
                         'primitive_activity', 'validation_activity', 'empty_scope_activity', 'index_key_activity', 'context_reuse_activity']:
             if not diagnostic and any(visit.get(counter, {}).values()):
                 raise ValueError('Diagnostic counters enabled in timed visit: ' + counter)
@@ -152,11 +155,26 @@ def validate_visit_memory(visits, process, required):
         raise ValueError('Missing or inconsistent root-process memory checkpoint')
 
 
+def evaluate_memory_target(summary, percent):
+    """Compare both compiled warm peaks with the lowest V8 process peak."""
+    if type(percent) is not int or not 1 <= percent <= 100:
+        raise ValueError('Use a whole percentage between 1 and 100')
+    warm = max(summary[mode]['max'] for mode in ['libjs-warm', 'libjs-process-warm'])
+    v8 = summary['v8']['min']
+    if any(type(value) is not int or value <= 0 for value in [warm, v8]):
+        raise ValueError('Invalid peak resident byte counts')
+    return dict(target_percent=percent, warm_max_bytes=warm, v8_min_bytes=v8,
+                passed=100 * warm <= percent * v8,
+                scope='highest root-process peak of both compiled warm modes / lowest V8 root-process peak')
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--memory', action='store_true', help='Separate memory cohort: record root RUSAGE_SELF high-water RSS at each visit checkpoint')
     parser.add_argument('--binary', type=Path, required=True)
     parser.add_argument('--target-v8-speedup', type=int, default=3)
+    parser.add_argument('--target-v8-memory-percent', type=int,
+                        help='Require both compiled warm peaks at or below this integer percentage of V8; --memory only')
     parser.add_argument('--v8-binary', type=Path, help='Optional pinned V8 control executable with matching C mode')
     parser.add_argument('--jsc-binary', type=Path, help='Matching C-mode build linked to system JavaScriptCore')
     parser.add_argument('--output', type=Path, required=True)
@@ -166,6 +184,8 @@ def main():
     args = parser.parse_args()
     if args.pairs < 7 or args.cycles < 1 or args.timeout <= 0 or args.target_v8_speedup < 1:
         parser.error('Use at least seven pairs, positive cycles and timeout')
+    if args.target_v8_memory_percent is not None and (not args.memory or not 1 <= args.target_v8_memory_percent <= 100):
+        parser.error('--target-v8-memory-percent requires --memory and a percentage from 1 to 100')
     output, binary = args.output.resolve(), args.binary.resolve()
     output.mkdir(parents=True, exist_ok=False)
     jsc_binary = args.jsc_binary.resolve() if args.jsc_binary else None
@@ -370,6 +390,8 @@ def main():
             if args.memory:
                 report['memory_summary'] = {mode: dict(median=statistics.median(v['self_peak_rss_bytes'] for v in visits if v['mode'] == mode), min=min(v['self_peak_rss_bytes'] for v in visits if v['mode'] == mode), max=max(v['self_peak_rss_bytes'] for v in visits if v['mode'] == mode)) for mode in report['summary']}
                 report['memory_scope'] = 'RUSAGE_SELF peak resident bytes, process startup through each visit checkpoint after cache finish and before final audits; compiler/replay/wrapper excluded; same-process warm retains cold history'
+                if args.target_v8_memory_percent is not None:
+                    report['memory_target'] = evaluate_memory_target(report['memory_summary'], args.target_v8_memory_percent)
             report['target_v8_speedup'] = args.target_v8_speedup
             report['target_v8_passed'] = not args.memory and args.target_v8_speedup * warm_ns <= v8_ns
             report['verified'] = True

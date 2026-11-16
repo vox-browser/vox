@@ -164,6 +164,9 @@ pub fn (mut function NativeFunction) internal_call(mut vm VM, this_value Value, 
 	} else {
 		function.behaviour
 	}
+	$if test {
+		if builtin_profile_enabled { return invoke_profiled_builtin(&function, mut vm, behaviour) }
+	}
 	return behaviour(mut vm)
 }
 
