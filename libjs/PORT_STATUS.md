@@ -3133,9 +3133,23 @@ menus under the unchanged 12 GiB guard (11.78 GiB peak). Native callback records
 reuse storage by active depth. No live or matched performance acceptance is
 claimed. Font-strike rounding gives the same 156-pixel Go to
 file input as Brave. The unchanged
-windowed pixel gate is 25,224 pixels after default SVG, PNG capture-scale and
-shared rectangle/clip corrections; a border resampling regression is removed.
+windowed pixel gate is 25,176 pixels (maximum 23) after default SVG, PNG
+capture-scale, shared rectangle/clip and finite compositor-footprint corrections;
+a border resampling regression is removed. A guarded Display P3 document-space
+experiment reaches 343 differing pixels against the unchanged original reference;
+it is not pixel-perfect acceptance. Covered MSAA samples now quantize before
+resolving coverage, with regression sources held uncompiled/unrun.
 The 862d ABI also completes a separate empty-cache first opening and fresh
 compiler-disabled reopen/controls, with exact content and no misses or compiler
-calls. The later af0a ABI has a new first opening in progress. This is not full-site,
+calls. The later af0a ABI also completes 23,778 native executables and 81 module
+preparations, a compiler-disabled 4,245-hit/zero-miss reopen, and the complete
+native control sequence with 4,690 hits and no misses or compiler calls. A fresh
+live GitHub screenshot executes LibJS and cached native code. Its first opening
+compiles 23,077 new executables and prepares all 77 modules; GitHub then changes
+13 module URLs, so the fresh compiler-disabled live reopen has 1,095 misses and
+does not pass the compiled-cache gate. Compiling the changed resource graph adds
+7,655 executables; the next fresh direct-live, compiler-disabled screenshot then
+passes with 4,300 hits, zero misses/compiler calls/pending entries, 348,912 native
+entries and all 77 loaded modules evaluated, with complete content and no errors.
+This is not full-site,
 live-site, historical pixel or performance acceptance. Automated suites remain held. See [the resumed diagnostic report](../docs/LIBJS_GITHUB_RUNTIME_20261115.md#browser-diagnostics-resumed-2026-11-16).

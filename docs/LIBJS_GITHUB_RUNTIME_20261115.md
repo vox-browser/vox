@@ -4148,3 +4148,175 @@ files from Build into local `scratch-receipts/continued-20261116-r10`. Active
 first-opening and bounded-picture jobs stay in Build. Cache partitions, browser
 executables, source proofs, original references and every failed attempt remain
 retained. Pixel-perfect, live-site and matched-speed acceptance remain open.
+
+### Finite compositor footprint and completed af0a native reuse
+
+`c6ac1122d` retains a compositor picture's unsnapped size and clips supported
+foreground resampling to its separately snapped texture footprint. The actual
+search-button path executes in the original-page diagnostic. Same-binary
+off/on captures change 205 pixels: 201 improve, 48 mismatches disappear, and
+**zero previously exact pixels become wrong**. The final default production
+executable is `0219ea33a4d9cbb0d9f072c66a6e940e9b6eb47a0204385e7cddc9d770414cc6`;
+its 218.259318083-second build peaks at 12,010,438,656 bytes and seals 3,744 V
+sources with zero tests. A fresh capture reproduces the candidate exactly:
+`c14f8003edb4e87832ea4d89dd943cdf24a1a707c6aad04ebd88b3992220b4f0`.
+The unchanged zero/zero reference gate is **25,176 pixels, maximum 23,
+MAE 0.0134, RMSE 0.1959**. Browser/controller/guard exits are zero, inputs stay
+pinned, content is exact and errors are absent.
+
+The previously pending af0a empty-cache opening also completes normally:
+23,778 compiled executables in 186 compiler calls, 81 completed modules,
+25,643 prepared bodies and 19,533 queued bodies, with zero unsupported bodies,
+pending/invalid entries or diagnostics. Guard elapsed is 1,306.245397 seconds,
+sampled peak 11,068,964,864 bytes. Compilation totals 1,241,446.872909 ms;
+native loading totals 45,763.804788 ms. A fresh `/usr/bin/false` reopen records
+4,245 native hits, **zero misses and compiler calls**, 472,538 native entries,
+11,204,322 fast steps, 6,628,995 slow steps and 442,272 entry-cache hits. Native
+loading totals 840.043829 ms; guard elapsed is 38.7776475 seconds and peak
+8,452,587,520 bytes. Both captures are identical to the earlier rectangle
+PNG `507e18ea…`, with exact content, unchanged inputs, no errors and all exits
+zero. These elapsed intervals include fixed observation delays and shutdown;
+they do not establish an isolated performance ratio.
+
+The same af0a browser completes the native Code/master/filter/close sequence
+with `/usr/bin/false`: 4,690 hits, zero misses/compiler calls/pending/invalid
+entries, 857,558 native entries, 27,095,747 fast steps, 12,639,264 slow steps
+and 792,726 entry-cache hits. Both acceptance flags are true; native input
+reaches `ma`, all six actions finish, menus close, content stays exact and
+errors remain absent. Guard elapsed is 61.2177735 seconds, peak 12,489,621,504
+bytes, all exits zero. The bounded-footprint default browser independently
+reopens this unchanged ABI's completed cache: 4,245 hits and zero misses or
+compiler calls, 482,921 native entries, 11,505,915 fast steps and 6,777,947 slow
+steps. It reproduces `c14f8003…`, with exact content, fixed inputs and all exits
+zero (39.081343584 seconds, 8,600,125,440-byte peak).
+
+### Destination color-space experiment and current live screenshot
+
+The document-color candidate is guarded by `vox_diagnostic_document_p3` and
+`VOX_DIAGNOSTIC_DOCUMENT_P3=1`; the default remains sRGB. Its V implementation
+constructs a standard Display P3 matrix/TRC profile from canonical Skia gamut
+and transfer coefficients, then converts text and solid paints **before
+blending** into that document space. It does not read the reference image or
+remap its pixels. The native boundary supplies the selected bitmap/IOSurface
+profile and preserves that profile in the direct document capture. All seven
+numeric matrix/TRC tags match the original Brave profile; the original PNG,
+fixture bytes, clock, viewport, capture scale and strict tolerance stay fixed.
+
+The first candidate reduces the strict count to 932 but introduces an avatar
+regression (maximum 43) when compatibility image leaves lose their backdrop.
+The second preserves that backdrop in the image leaf's sRGB working space:
+**808 differing pixels, maximum 23, MAE 0.0009, RMSE 0.0646**. Search-icon
+coverage is exact again after `3d01c98fb` quantizes each covered UNORM8 sample
+before resolving MSAA coverage. The focused regression source is added but
+remains uncompiled/unrun. Same-binary mode-off captures retain the exact
+default `c14f8003…` PNG. The r2 candidate executable is
+`d62f8734338ce5f94ecd2b0976b2b52adca158150a461b18a9b4398ace3644e7`;
+its sealed production proof contains 3,746 V sources and zero tests. Mode-on
+and mode-off browser/controller/guard exits are zero, inputs unchanged,
+content exact, and script/native errors absent. This is a guarded rendering
+experiment, not pixel-perfect acceptance.
+
+At the user's request, a fresh direct-HTTPS opening of the **current live**
+`https://github.com/vlang/v` is captured at 1024×768 using that r2 LibJS
+executable, actual current responses and clock, and an eight-second ready
+settle. The page has 34 rows, 53 commit links, latest commit and README, with
+no reported author/native errors. The live bundles differ from the frozen
+fixture: its initial capture has 443 native-cache hits and 3,863 misses,
+138,770 native entries, and JavaScriptCore uninitialized. The missing live
+templates are still compiling normally at this checkpoint. The first PNG is
+retained locally as `current-live-libjs-first.png` (SHA-256
+`376de5c7413194a4c3ea5b5609d5d44998edb7209605d73f59c903a60d5a9947`).
+It must not be labeled a completed-cache capture. A fresh compiler-disabled
+live reopen, exact pixels and matched speed remain outstanding; automated
+tests remain held by the user's instruction.
+
+The scalar conversion is committed in `3fe85bb00`, after the independent MSAA
+fix `3d01c98fb`. It adapts the scalar, non-FMA skcms transfer approximation,
+inverse-transfer endpoint adjustment, double-intermediate matrix inversion and
+preconcatenated gamut transform from [skcms](https://skia.googlesource.com/skcms/+/refs/heads/main/skcms.cc)
+and [SkColorSpaceXformSteps](https://skia.googlesource.com/skia/+/refs/heads/main/src/core/SkColorSpaceXformSteps.cpp).
+The BSD notice and license accompany the implementation. The first non-test
+root attempt encounters an in-progress independent native-property source
+change; the second rejects changed generated-C inventory membership. Both
+failures are retained. The third check passes in 41.510880166 seconds, peak
+7,493,517,312 bytes. The single-C literal `-prod` build passes in 296.755507917
+seconds, peak 12,023,545,856 bytes, sealing 3,747 V sources and zero tests.
+Executable SHA-256 is
+`eac43c1167aeb57a94043794a7b601d023d7e0272285b23140d6cde75a1e378d`.
+
+Fresh same-binary mode-on/off captures preserve all input fingerprints, exact
+original content and zero script/native errors, with browser/controller/guard
+exits zero. On-mode elapsed/peak are 39.474668417 seconds/8,168,833,024 bytes;
+off-mode 40.671691125 seconds/8,274,821,120 bytes. The off PNG remains exactly
+`c14f8003…`. The on PNG is
+`7e13e529b6d2cb9771e933cb5f380583d65e554287ff85331cc51f68fd051af6`;
+the unchanged strict reference gate falls **808→343 pixels**, maximum 23,
+MAE 0.0008, RMSE 0.0634. Of these, 312 are in the two avatar regions and 31
+elsewhere. A separate empty-cache opening is preparing native code for the
+newer property-plan ABI; it is not yet a completed compiled-rendering result.
+
+The first **live** opening finishes normally after 1,476.374767833 seconds,
+10,741,661,696-byte peak: 23,077 new executables, 181 compiler calls, 77/77
+modules, 25,930 prepared bodies, 19,214 queued bodies, zero unsupported bodies,
+pending/invalid entries or diagnostics. Compilation totals 1,386,857.691880 ms,
+native loading 60,223.266809 ms. All browser/controller/guard exits are zero
+and executable/library/tool fingerprints stay fixed.
+
+Its immediately following fresh live `/usr/bin/false` screenshot **fails the
+cache acceptance check**: GitHub changes 13 module URLs between visits,
+including code-view, core, repositories and webpack runtime. The observed
+resource graph changes; this could reflect deployment or response variants and
+does not permit reusing old code under new keys. The page
+still loads with 34 rows, 53 commit links, latest/README, no script/native
+errors and unchanged pinned inputs. It executes 371,463 native entries with
+3,233 hits, but has 1,095 misses and 7,655 pending templates; the deliberately
+disabled compiler reports exit 1. Browser exit is zero; controller/guard exit
+is one, elapsed 25.253570834 seconds, peak 9,998,057,472 bytes. The screenshot
+therefore establishes live native execution, **not a zero-miss compiled
+reopen**. Both attempts are retained, and the newly deployed bundles are now
+being compiled before another immediate fresh reopen. No speed claim follows
+from these changing-resource live intervals.
+
+The live refresh completes with 7,655 additional executables in 60 compiler
+calls, 77 completed modules, 25,968 prepared bodies, zero unsupported bodies,
+pending/invalid entries or diagnostics. Native compilation totals
+840,450.378252 ms and loading 22,544.864307 ms. Browser/controller/guard exits
+are zero; elapsed is 887.275987125 seconds, sampled peak 11,746,328,576 bytes.
+It retains exact live document identity, 34 rows/53 commit links/latest/README,
+no errors and unchanged pinned inputs.
+
+An immediate fresh direct-HTTPS live opening with `/usr/bin/false` then passes:
+**4,300 native hits, zero misses/compiler calls/pending/invalid entries**, no
+cache error, 348,912 native entries, 7,091,708 fast steps, 4,910,683 slow steps
+and 322,844 entry-cache hits. JavaScriptCore stays uninitialized, all 77 loaded
+modules are evaluated, content is complete and there are no author/native
+errors. The process, controller and guard exit zero; all inputs stay pinned.
+Guard elapsed is 23.76610925 seconds, peak 7,820,935,168 bytes; native loading
+totals 3,357.921702 ms. These are a ready-selector plus eight-second screenshot
+observation and native execution diagnosis, not matched performance acceptance.
+The current-live compiled screenshot is retained locally at
+`docs/performance/libjs-github-browser-20261116/current-live-libjs-compiled.png`,
+SHA-256 `5835af684c22e95150436f87e3d91c47bddf9c2ad7ac6bc54c5443ead818585f`.
+It uses the pinned r2 P3 executable, not later source or the frozen reference.
+
+A further guarded PNG experiment selects decode dimensions at rendering
+density instead of capture density. Its original-page log confirms full
+60×60/40×40 uploads, matching the independently observed Brave picture data.
+The root check passes in 42.775259042 seconds, peak 7,480,623,104 bytes; the
+production build passes in 300.675811792 seconds, peak 11,959,009,280 bytes.
+Same-binary off mode retains exactly the scalar candidate's decoded pixels
+(PNG metadata bytes differ); on mode reaches **284 differing pixels, maximum
+15**. Of 302 changed pixels, 231 improve, 80 resolve, 23 worsen and 21 become
+new one-level mismatches. Avatar maxima fall to two levels. This is kept
+experimental rather than accepted solely on an aggregate count. The image
+reference, numeric profile tags and zero tolerance remain unchanged. A GPU
+mipmap follow-up passes its root check but its build fails when an independent
+native JPEG XL bridge appears during compilation; the retry also verifies
+native input fingerprints after C compilation. No automated test is run.
+
+Another 88 completed owned scratch roots/789 entries move out of Build with
+idle-lock and SHA-256/symlink verification into local
+`scratch-receipts/continued-20261116-r11`. Nineteen older completed generated C
+files (6,565,659,623 bytes) are pruned with a retained hash/size manifest;
+executables, exact source proofs, references and failed-attempt receipts stay.
+Active native preparation and rendering jobs remain under their guards.
