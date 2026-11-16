@@ -40,6 +40,7 @@ mut:
 	html_element_tags map[string]string
 	document_prototype   &libjs.Object = unsafe { nil }
 	fragment_prototype   &libjs.Object = unsafe { nil }
+	shadow_root_prototype &libjs.Object = unsafe { nil }
 	character_data_prototype &libjs.Object = unsafe { nil }
 	text_prototype &libjs.Object = unsafe { nil }
 	comment_prototype &libjs.Object = unsafe { nil }
@@ -207,6 +208,7 @@ pub fn Host.create(vm &libjs.VM, realm &libjs.Realm, document &dom.Document, hoo
 	mut host := &Host{ vm: vm, realm: realm, document: document, hooks: hooks }
 	host.install_nodes()!
 	host.install_node_interfaces()!
+	host.install_shadow_roots()!
 	host.install_character_data()!
 	host.install_node_utilities()
 	host.install_document_state()

@@ -18,6 +18,8 @@ fn (mut host Host) wrap_node(node &dom.Node) libjs.Value {
 		if is_html { host.html_element_prototypes[interface_name] or { host.html_element_prototype } } else { host.element_prototype }
 	} else if node.is_document() {
 		host.document_prototype
+	} else if node.is_shadow_root() {
+		host.shadow_root_prototype
 	} else if node.is_document_fragment() {
 		host.fragment_prototype
 	} else if node.is_character_data() {
@@ -35,6 +37,8 @@ fn (mut host Host) wrap_node(node &dom.Node) libjs.Value {
 		if is_html { interface_name } else { 'Element' }
 	} else if node.is_document() {
 		'Document'
+	} else if node.is_shadow_root() {
+		'ShadowRoot'
 	} else if node.is_document_fragment() {
 		'DocumentFragment'
 	} else if node.is_character_data() {
