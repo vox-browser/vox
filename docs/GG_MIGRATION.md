@@ -3513,3 +3513,21 @@ captures repeat, and all 53 prior PNGs are unchanged. New public marker referenc
 agree in two fresh Brave processes; existing references and tolerances stay.
 Production confirmation and the newer missing Reddit workload remain open.
 See the [recovery audit](OPTIMIZED_SITES_PIXELS_2026_11_12.md#recovered-reddit-html-and-filled-marker-coverage-2026-11-16).
+
+### Repeated background and border composition, 2026-11-16
+
+`5b52ceaab` lets repeated straight-RGBA backgrounds share a rounded clip, opaque
+background and adjacent opaque border in one owning-tile pass. The image shader
+keeps repeat filtering and derives local coordinates after the analytic
+geometry's antialiasing outset. This correction is selected only for repeated
+backgrounds; a broader experiment changed five prior controls and is rejected.
+Unsupported transforms, scales and effect scopes keep their existing fallback.
+
+The recovered older Reddit page improves **6→0 pixels** twice against two fresh
+full-uBO Brave captures. The unchanged public multisample reference and a new
+independently repeated single-sample reference are exact. All **56 workloads/
+112 captures** repeat, with all 54 prior PNGs unchanged. Ten focused V functions
+pass, including native callbacks across tile gutters and an invalid-stride
+fallback. Production confirmation, the newer missing Reddit fixture, Lobsters'
+fresh-Brave repeatability and CNN's historical source/replay gate remain open.
+See the [sprite audit](OPTIMIZED_SITES_PIXELS_2026_11_12.md#repeated-reddit-sprite-backgrounds-and-adjacent-borders-2026-11-16).

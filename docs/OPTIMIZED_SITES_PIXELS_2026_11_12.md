@@ -5425,3 +5425,73 @@ and lock are separately preserved, verified and removed. No owned
 sources are removed; canonical GG staging is restored to the committed code.
 Production confirmation, the newer Reddit fixture, default Brave Lobsters
 repeatability and CNN's historical source/replay gate remain open.
+
+### Repeated Reddit sprite backgrounds and adjacent borders, 2026-11-16
+
+`5b52ceaab` fixes the six remaining subscribe-button pixels on the recovered
+older Reddit page. Brave's CDP `LayerTree.snapshotCommandLog` records an outer
+rounded clip at (719,186), size 35×16, radius 3; a white rectangle and repeated
+image shader within it; and a separate 1px border centered at
+(719.5,186.5), size 34×15, radius 2.5. The diagnostic capture still matches the
+unchanged reference byte for byte at the pixel level. The neighboring SVG curve
+requires the tile's four-sample pass.
+
+The native painter previously resolved an image clip before drawing the border.
+The replacement retains the repeated image shader, clipped background and border
+in one pass, using the existing owning-tile transfer and sample selection. It
+also derives image coordinates from the analytic geometry's final device
+position: its antialiasing outset otherwise moves texture sampling near the
+sprite's transparent seam. A uniform selects this coordinate rule only for the
+new repeated-background path. The implementation currently accepts unscaled,
+straight RGBA, repetition in both axes, an opaque paired background/border,
+translation-only placement and a 1x native readback; unsupported cases retain
+their existing painter. Native code transfers the backdrop; V owns composition.
+
+An earlier global coordinate correction is retained as a rejected cohort. It
+changed CNN by 17 pixels, GitHub by 6, Vlang by 8, the forced profiled-WebP rounded
+control by 2 and the elliptical-avatar control by 3. The scoped final candidate
+restores every prior PNG. Neither references nor tolerances were changed to
+accept that experiment.
+
+Final diagnostic executable SHA-256:
+`3aa13d5d7ed892b2662889e87aab5eb7a938c4942a23c044baf0f7cf6b59e7bf`.
+The C diagnostic compile, browser launches and checks exit 0 under the memory
+guards. Native, shader and feature input hashes agree before/after compilation;
+68 consumed GG/feature V buffers match the compiler's manifest. These are pixel
+checks on an unoptimized diagnostic executable, with no performance claim.
+
+- The recovered 2026-11-01 source and script-free derivative retain the hashes
+  documented above. Its reconstructed 120-response archive is replayed offline
+  at the original origin. Two fresh full-uBO Brave captures and two fresh Vox
+  captures agree exactly. Each oracle checks 39 requests: 1 blocked, 38 allowed,
+  zero decision mismatches and zero oracle disagreements. Content audits retain
+  all 25 post identities in order. Private page markup and captures remain local.
+- `rounded-repeated-sprite-border` moves from diagnostic to conformance with
+  unchanged reference SHA-256
+  `ee25d9a3d176ac384b1406d886d48e690c281d2385db56efc2f1384f1e63c632`.
+  Two fresh Brave captures and two fresh Vox captures are exact.
+- The curve-free `rounded-repeated-sprite-border-single-sample` independently
+  checks the ordinary one-sample pass. Two fresh Brave references agree at
+  `4b2bb5e844b255b99684a82257fdc67207dc926a955d0604937a6daf2d1f7b44`;
+  two fresh Vox captures are exact.
+- The 55-workload broad check plus the single-sample companion gives 56 workloads
+  and 112 fresh Vox captures. Every pair repeats byte for byte; all 54 prior
+  workload PNGs remain pixel-identical. All six available catalog archives
+  remain exact. Existing nonzero diagnostic controls retain their prior results.
+- Ten focused V functions pass: three repeat/background GPU tests, two native
+  callback tests and five existing rounded-image tests. The callbacks compare
+  the fixed Brave crop in the first tile, across its gutter and in a lower tile,
+  and reject an invalid stride before touching pixels. Runtime guards use 3 GiB.
+
+Commands, counters, exits, source proofs, failed attempts and PNGs are retained
+locally in `docs/performance/sprite-paint-20261116/`; job directories, generated
+C, executables, guards and locks are removed from `Build/` after preservation.
+The initial C declaration mismatch and a disk-full interruption are retained;
+no failed attempt is counted as acceptance.
+
+The latest published production bundle remains `7515422c`, which predates these
+fixes. The managed post-commit rebuild is coalesced with the shared worker; no
+manual production build is queued. Production confirmation remains pending.
+The recovered page still does not supply the missing 2026-11-04 Reddit catalog
+workload or its historical resource cohort. Lobsters' fresh-Brave repeat failure
+and CNN's historical source/replay mismatch also remain open.

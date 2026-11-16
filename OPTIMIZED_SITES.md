@@ -35,13 +35,13 @@ artifacts, and passes 18 lease/selection tests. See the
 
 **Recovered Reddit follow-up:** the older 2026-11-01 HTML and its script-free
 derivative are recovered with their exact documented hashes. With reconstructed
-static assets, fresh full-uBO Brave references agree. `57c86c2f7` fixes filled
-list-marker coverage, reducing Vox **18→6 pixels** twice. The public marker
-control improves **92→0**; **54 workloads/108 captures** repeat exactly and all
-53 prior PNGs remain unchanged. The remaining six button pixels have a public
-diagnostic fixture. This older page does not restore the newer catalog fixture
-or certify its historical resource cache. See the
-[recovery and marker audit](docs/OPTIMIZED_SITES_PIXELS_2026_11_12.md#recovered-reddit-html-and-filled-marker-coverage-2026-11-16).
+static assets, fresh full-uBO Brave references agree. Filled-marker coverage
+reduces Vox 18→6 pixels; repeated-image and border composition now makes it
+**6→0 twice**. Both public sprite controls are exact. **56 workloads/112 captures**
+repeat exactly, and all 54 prior workload PNGs remain unchanged. This older page
+does not restore the newer catalog fixture or certify its historical resource
+cache. See the
+[sprite composition audit](docs/OPTIMIZED_SITES_PIXELS_2026_11_12.md#repeated-reddit-sprite-backgrounds-and-adjacent-borders-2026-11-16).
 
 The latest fixes make CNN **94→73→46→0**: `a6edd14de` preserves fractional SVG
 background layout, `fb71abe2d` renders rounded RGBA in owning-tile coordinates,
