@@ -1,7 +1,11 @@
 module ggshape
 
 import gg.canvas
+import imageraster
 import math
+import os
+
+const sampled_gamut_before_filter = os.getenv('VOX_DIAGNOSTIC_IMAGE_GAMUT_BEFORE_FILTER') == '1'
 
 // Mipmaps and hardware filtering remain in the image's sRGB encoding. The
 // sampled, unpremultiplied color converts before destination-space blending.
@@ -12,6 +16,17 @@ pub fn draw_sampled_srgb_gamut_clipped(pixels &u8, width i32, height i32, pitch 
 		|| sw > 4096 || sh > 4096 || sw * sh > 4 * 1024 * 1024
 		|| source.len != sw * sh * 4 || gamut.any(!math.is_finite(it)) {
 		return 0
+	}
+	if sampled_gamut_before_filter {
+		converted := convert_image_srgb_gamut(imageraster.Image{
+			width: sw
+			height: sh
+			pixels: source
+		}, gamut) or { return 0 }
+		eprintln('VOX_IMAGE_GAMUT_BEFORE_FILTER source=${sw}x${sh} gpu_mips=${gpu_mips}')
+		return draw_sampled_image_color(pixels, width, height, pitch, backdrop,
+			converted, [], sw, sh, x, y, dw, dh, samples, nw, nh, clip, gpu_mips,
+			unsafe { nil }, 0, false, [2]f32{}, false, canvas.DocumentImageColorTransform{})
 	}
 	return draw_sampled_image_color(pixels, width, height, pitch, backdrop,
 		source, [], sw, sh, x, y, dw, dh, samples, nw, nh, clip, gpu_mips,
