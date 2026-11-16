@@ -16,6 +16,8 @@ import time
 
 #include "@VMODROOT/sites/engine_peak_rss.h"
 fn C.vox_hn_self_peak_rss_bytes() u64
+#include "@VMODROOT/sites/engine_callback_cpu.h"
+fn C.vox_hn_thread_cpu_ns() u64
 
 struct HNEngineVisit {
 	builtin_profile []libjs.BuiltinProfileSample
@@ -33,6 +35,7 @@ struct HNEngineVisit {
 	initialization_ms f64
 	first_cycle_ms    f64
 	callback_ms       f64
+	callback_thread_cpu_ns u64
 	compile_finish_ms f64
 	total_ms          f64
 	rows              int
@@ -77,6 +80,7 @@ fn hn_engine_visit(mode string, cycles int, diagnostic bool) !HNEngineVisit {
 	markup := $embed_file('@VMODROOT/Tests/Browser/Brave/input/hacker-news-item-50231722-complete.html').to_string()
 	script := $embed_file('@VMODROOT/Tests/Browser/Brave/hn-home-instructions/bodies/2e38ff883bd36dc4cc26f129f19169b0357cf32059988c926a4f73e5bfaa37f0').to_string()
 	measure_memory := os.getenv('VOX_HN_ENGINE_MEMORY') == '1'
+	measure_callback_cpu := os.getenv('VOX_HN_CALLBACK_CPU') == '1'
 	engine := if mode in ['v8', 'jsc'] { browserjs.Engine.javascriptcore } else { browserjs.Engine.libjs }
 	libjs.diagnose_property_lookup_hints_for_testing(diagnostic)
 	libjs.diagnose_argument_allocation_for_testing(diagnostic)
@@ -129,12 +133,16 @@ fn hn_engine_visit(mode string, cycles int, diagnostic bool) !HNEngineVisit {
 	libjs.profile_builtin_calls_for_testing(diagnostic && os.getenv('VOX_HN_PROFILE_BUILTINS') == '1')
 	html.diagnose_fragment_text_for_testing(diagnostic)
 	libjs.diagnose_primitive_property_keys_for_testing(diagnostic)
+	callback_cpu_started := if measure_callback_cpu { C.vox_hn_thread_cpu_ns() } else { u64(0) }
 	callback_started := time.sys_mono_now()
 	for _ in 0 .. cycles {
 		hn_engine_toggle(document, runtime, button)!
 		hn_engine_toggle(document, runtime, button)!
 	}
 	callback_ms := f64(time.sys_mono_now() - callback_started) / 1e6
+	callback_cpu_finished := if measure_callback_cpu { C.vox_hn_thread_cpu_ns() } else { u64(0) }
+	if measure_callback_cpu && (callback_cpu_started == ~u64(0) || callback_cpu_finished == ~u64(0)
+		|| callback_cpu_finished < callback_cpu_started) { return error('Callback thread CPU clock failed') }
 	builtin_profile := libjs.profile_builtin_calls_for_testing(false)
 	fragment_text_activity := html.diagnose_fragment_text_for_testing(false)
 	property_key_activity := libjs.diagnose_primitive_property_keys_for_testing(false)
@@ -189,6 +197,7 @@ fn hn_engine_visit(mode string, cycles int, diagnostic bool) !HNEngineVisit {
 		initialization_ms: initialization_ms
 		first_cycle_ms:    first_cycle_ms
 		callback_ms:       callback_ms
+		callback_thread_cpu_ns: callback_cpu_finished - callback_cpu_started
 		compile_finish_ms: compile_finish_ms
 		total_ms:          initialization_ms + first_cycle_ms + callback_ms + compile_finish_ms
 		rows:              rows.len
@@ -235,6 +244,7 @@ fn test_hacker_news_engine_benchmark() {
 	libjs.set_primitive_property_keys_for_testing(os.getenv('VOX_LIBJS_PRIMITIVE_PROPERTY_KEYS') != '0')
 	libjs.set_native_entry_cache_for_testing(os.getenv('VOX_LIBJS_NATIVE_ENTRY_CACHE') != '0')
 	libjs.set_native_property_reads_for_testing(os.getenv('VOX_LIBJS_NATIVE_PROPERTY_READS') != '0')
+	libjs.set_native_lengths_for_testing(os.getenv('VOX_LIBJS_NATIVE_LENGTHS') != '0')
 	libjs.set_fast_binding_reads_for_testing(os.getenv('VOX_LIBJS_FAST_BINDINGS') != '0')
 	libjs.set_function_environment_reuse_for_testing(os.getenv('VOX_LIBJS_REUSE_FUNCTION_ENVIRONMENTS') != '0')
 	libjs.set_call_argument_forwarding_for_testing(os.getenv('VOX_LIBJS_FORWARD_CALL_ARGUMENTS') != '0')

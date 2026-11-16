@@ -68,7 +68,7 @@ def add_image_aliases(replay, assets=ASSETS):
     return aliases
 
 
-def validate(visits, engine, cycles, diagnostic, pins):
+def validate(visits, engine, cycles, diagnostic, pins, callback_cpu=False):
     expected = {'v8': ['v8'], 'jsc': ['jsc'], 'libjs': ['libjs-cold', 'libjs-process-warm'],
                 'libjs-warm': ['libjs-warm']}[engine]
     if [v['mode'] for v in visits] != expected:
@@ -85,6 +85,11 @@ def validate(visits, engine, cycles, diagnostic, pins):
             raise ValueError('Engine, fixture, cancellation or DOM audit failed')
         if any(not math.isfinite(visit[key]) or visit[key] < 0 for key in METRICS):
             raise ValueError('Invalid timing')
+        cpu_ns = visit.get('callback_thread_cpu_ns', 0)
+        if (type(cpu_ns) is not int or cpu_ns < 0
+                or (callback_cpu and (cpu_ns <= 0 or cpu_ns > round(visit['callback_ms'] * 1e6) + 10000000))
+                or (not callback_cpu and cpu_ns != 0)):
+            raise ValueError('Invalid or unexpectedly enabled callback thread CPU clock')
         if visit['cache']['last_error'] or visit['cache']['invalid_entries']:
             raise ValueError('Native cache failed')
         if not diagnostic and any(visit.get(k, 0) for k in ['borrowed_arguments', 'short_string_hits', 'direct_property_reads', 'fresh_arrays_initialized', 'class_collection_hits', 'direct_collection_walks']):

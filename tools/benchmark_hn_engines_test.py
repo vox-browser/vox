@@ -46,6 +46,44 @@ class HNEngineEvidenceTest(unittest.TestCase):
         with self.assertRaises(ValueError):
             self.check_pair(warm=dict(self.warm, property_key_activity=dict(strings=1, symbols=0)))
 
+    def test_callback_cpu_requires_explicit_mode_and_valid_clock_samples(self):
+        warm = dict(self.warm, callback_thread_cpu_ns=500000)
+        cold = dict(self.cold, callback_thread_cpu_ns=500000)
+        with self.assertRaises(ValueError):
+            self.check_pair(warm=warm)
+        validate([cold, warm], 'libjs', 100, False, self.pins, callback_cpu=True)
+        for value in [0, -1, True, 1.5, 11000001]:
+            with self.subTest(value=value), self.assertRaises(ValueError):
+                validate([cold, dict(warm, callback_thread_cpu_ns=value)], 'libjs', 100,
+                         False, self.pins, callback_cpu=True)
+
+    @unittest.skipUnless(sys.platform in ('darwin', 'linux') and shutil.which('clang'), 'Unix clang needed')
+    def test_callback_cpu_clock_uses_nanoseconds_and_excludes_sleep(self):
+        header = Path(__file__).resolve().parents[1] / 'sites/engine_callback_cpu.h'
+        source = '#define _POSIX_C_SOURCE 200809L\n#include "' + str(header) + '"\n' + r'''
+#include <stdio.h>
+int main(void) {
+    uint64_t start = vox_hn_thread_cpu_ns();
+    volatile uint64_t n = 1;
+    for (uint64_t i = 0; i < 1000000; ++i) n = n * 3 + i;
+    uint64_t busy = vox_hn_thread_cpu_ns();
+    struct timespec delay = {0, 50000000};
+    nanosleep(&delay, 0);
+    uint64_t done = vox_hn_thread_cpu_ns();
+    printf("%llu %llu %llu\n", (unsigned long long)start,
+           (unsigned long long)busy, (unsigned long long)done);
+    return 0;
+}
+'''
+        with TemporaryDirectory() as temporary:
+            path = Path(temporary) / 'clock.c'
+            path.write_text(source)
+            binary = Path(temporary) / 'clock'
+            subprocess.run(['clang', '-O2', '-std=c11', str(path), '-o', str(binary)], check=True)
+            start, busy, done = map(int, subprocess.check_output([str(binary)], text=True).split())
+        self.assertTrue(0 <= start < busy <= done < 2**64 - 1)
+        self.assertLess(done - busy, 10000000)
+
     def test_timed_cohort_rejects_builtin_profile_even_when_other_counters_are_zero(self):
         cold = dict(self.cold, builtin_profile=[dict(name='split', calls=1)])
         with self.assertRaises(ValueError):

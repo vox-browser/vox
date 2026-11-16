@@ -26,13 +26,15 @@ def main():
     parser.add_argument('--pairs', type=int, default=7)
     parser.add_argument('--cycles', type=int, default=500)
     parser.add_argument('--target-v8-speedup', type=int, default=2)
-    parser.add_argument('--optimization', choices=['property', 'arguments', 'combined', 'registers', 'keys', 'capacity', 'storage', 'dispatch', 'indices', 'frames', 'calls', 'reads', 'arrays', 'collections', 'walk', 'helpers', 'references', 'bindings', 'accessors', 'forward', 'search', 'forward-search', 'envs', 'instruction-borrowing', 'generated-strings', 'fragment-text', 'call-workspaces', 'global-bindings', 'native-primitives', 'property-keys', 'entry-cache', 'native-property', 'layout', 'frame-access', 'values', 'key-records'], default='property')
+    parser.add_argument('--callback-thread-cpu', action='store_true',
+                        help='Separate calling-thread CPU diagnostic; wall-time gate is unchanged')
+    parser.add_argument('--optimization', choices=['property', 'arguments', 'combined', 'registers', 'keys', 'capacity', 'storage', 'dispatch', 'indices', 'frames', 'calls', 'reads', 'arrays', 'collections', 'walk', 'helpers', 'references', 'bindings', 'accessors', 'forward', 'search', 'forward-search', 'envs', 'instruction-borrowing', 'generated-strings', 'fragment-text', 'call-workspaces', 'global-bindings', 'native-primitives', 'property-keys', 'entry-cache', 'native-property', 'native-length', 'layout', 'frame-access', 'values', 'key-records'], default='property')
     args = parser.parse_args()
     if args.pairs < 7 or args.cycles < 1 or args.target_v8_speedup < 1:
         parser.error('Use at least seven pairs and positive cycle counts')
     if args.optimization in ['layout', 'frame-access', 'values', 'key-records', 'instruction-borrowing'] and not args.control_binary:
         parser.error('Cross-binary comparisons require --control-binary')
-    separate_cache = bool(args.control_binary) or args.optimization in ['native-property', 'native-primitives', 'registers', 'dispatch', 'layout', 'frame-access', 'values', 'key-records']
+    separate_cache = bool(args.control_binary) or args.optimization in ['native-property', 'native-length', 'native-primitives', 'registers', 'dispatch', 'layout', 'frame-access', 'values', 'key-records']
     binary, output = args.binary.resolve(), args.output.resolve()
     output.mkdir(parents=True, exist_ok=False)
     replay = Replay(hn.ARCHIVE, output / 'replay')
@@ -52,6 +54,8 @@ def main():
                   optimization=args.optimization,
                   attempts=[], inputs={}, replay=replay.ready, image_aliases=aliases,
                   host_before=hn.host())
+    report['callback_thread_cpu'] = dict(enabled=args.callback_thread_cpu,
+        scope='Calling thread during the existing callback span; excludes other threads and scheduling waits; wall-time target unchanged')
     report['control'] = {'property': 'linear property lookup; arguments elision disabled',
                          'arguments': 'property hints enabled; arguments elision disabled',
                          'combined': 'linear property lookup; arguments elision disabled',
@@ -74,6 +78,7 @@ def main():
                          'global-bindings': 'all prior optimizations; reconstruct and hash global binding keys',
                          'native-primitives': 'all prior optimizations; VM string truthiness, typeof and nonnumeric equality',
                          'property-keys': 'all prior optimizations; generic ToPrimitive and ToString for property keys',
+                         'native-length': 'compiled property plans; VM length reads',
                          'native-property': 'all prior optimizations; generic operand decoding for property reads',
                          'entry-cache': 'all prior optimizations; repeated map lookups for native entry preparation and dispatch',
                          'references': 'shared dynamic handlers; materialized Reference records',
@@ -91,6 +96,7 @@ def main():
     report['candidate'] = {'global-bindings': 'bounded content-and-live-key-validated own global data hints',
                            'native-primitives': 'native UTF16 truthiness, primitive typeof and equality; coercive fallback',
                            'property-keys': 'direct string/symbol property keys with generic coercion fallback',
+                           'native-length': 'guarded native string and ordinary array length reads',
                            'native-property': 'compiled property operand plans with live runtime semantics',
                            'entry-cache': 'bounded tier-owned exact-executable native entry table',
                            'property': 'validated property hints; arguments elision disabled',
@@ -151,6 +157,8 @@ def main():
                    VOX_LIBJS_VALIDATION_CACHE='0', VOX_LIBJS_EMPTY_SCOPES='0', VOX_LIBJS_NUMERIC_KEYS='0', VOX_LIBJS_CONTEXT_REUSE='0',
                    VOX_PROFILE_DIR=str(output / (label + '-profile')),
                    LADYBIRD_CACHE_DIR=str(output / (label + '-http-cache')), VOX_TEST_WINDOW='1')
+        env['VOX_LIBJS_NATIVE_LENGTHS'] = '0' if args.optimization == 'native-length' and config == 'control' else '1'
+        env['VOX_HN_CALLBACK_CPU'] = '1' if args.callback_thread_cpu else '0'
         env['VOX_LIBJS_ARGUMENT_WORKSPACES'] = '0' if args.optimization == 'call-workspaces' and config == 'control' else '1'
         env['VOX_LIBJS_GLOBAL_BINDING_HINTS'] = '0' if args.optimization == 'global-bindings' and config == 'control' else '1'
         env['VOX_LIBJS_NATIVE_PRIMITIVES'] = '0' if args.optimization == 'native-primitives' and config == 'control' else '1'
@@ -159,11 +167,11 @@ def main():
         env['VOX_LIBJS_NATIVE_ENTRY_CACHE'] = '0' if args.optimization == 'entry-cache' and config == 'control' else '1'
         env['VOX_HTML_FRAGMENT_TEXT'] = '0' if args.optimization == 'fragment-text' and config == 'control' else '1'
         env['VOX_LIBJS_GENERATED_STRINGS'] = '0' if args.optimization == 'generated-strings' and config == 'control' else '1'
-        env['VOX_LIBJS_FAST_BINDINGS'] = '1' if args.optimization in ['accessors', 'forward', 'search', 'forward-search', 'envs', 'instruction-borrowing', 'generated-strings', 'fragment-text', 'call-workspaces', 'global-bindings', 'native-primitives', 'property-keys', 'entry-cache', 'native-property'] or (args.optimization == 'bindings' and config != 'control') else '0'
-        env['VOX_LIBJS_DIRECT_ACCESSORS'] = '1' if args.optimization in ['forward', 'search', 'forward-search', 'envs', 'instruction-borrowing', 'generated-strings', 'fragment-text', 'call-workspaces', 'global-bindings', 'native-primitives', 'property-keys', 'entry-cache', 'native-property'] or (args.optimization == 'accessors' and config != 'control') else '0'
-        env['VOX_LIBJS_FORWARD_CALL_ARGUMENTS'] = '1' if args.optimization in ['search', 'envs', 'instruction-borrowing', 'generated-strings', 'fragment-text', 'call-workspaces', 'global-bindings', 'native-primitives', 'property-keys', 'entry-cache', 'native-property'] or (args.optimization in ['forward', 'forward-search'] and config != 'control') else '0'
-        env['VOX_LIBJS_ARRAY_SEARCH_READS'] = '1' if args.optimization in ['envs', 'instruction-borrowing', 'generated-strings', 'fragment-text', 'call-workspaces', 'global-bindings', 'native-primitives', 'property-keys', 'entry-cache', 'native-property'] or (args.optimization in ['search', 'forward-search'] and config != 'control') else '0'
-        env['VOX_LIBJS_REUSE_FUNCTION_ENVIRONMENTS'] = '1' if args.optimization in ['instruction-borrowing', 'generated-strings', 'fragment-text', 'call-workspaces', 'global-bindings', 'native-primitives', 'property-keys', 'entry-cache', 'native-property'] or (args.optimization == 'envs' and config != 'control') else '0'
+        env['VOX_LIBJS_FAST_BINDINGS'] = '1' if args.optimization in ['accessors', 'forward', 'search', 'forward-search', 'envs', 'instruction-borrowing', 'generated-strings', 'fragment-text', 'call-workspaces', 'global-bindings', 'native-primitives', 'property-keys', 'entry-cache', 'native-property', 'native-length'] or (args.optimization == 'bindings' and config != 'control') else '0'
+        env['VOX_LIBJS_DIRECT_ACCESSORS'] = '1' if args.optimization in ['forward', 'search', 'forward-search', 'envs', 'instruction-borrowing', 'generated-strings', 'fragment-text', 'call-workspaces', 'global-bindings', 'native-primitives', 'property-keys', 'entry-cache', 'native-property', 'native-length'] or (args.optimization == 'accessors' and config != 'control') else '0'
+        env['VOX_LIBJS_FORWARD_CALL_ARGUMENTS'] = '1' if args.optimization in ['search', 'envs', 'instruction-borrowing', 'generated-strings', 'fragment-text', 'call-workspaces', 'global-bindings', 'native-primitives', 'property-keys', 'entry-cache', 'native-property', 'native-length'] or (args.optimization in ['forward', 'forward-search'] and config != 'control') else '0'
+        env['VOX_LIBJS_ARRAY_SEARCH_READS'] = '1' if args.optimization in ['envs', 'instruction-borrowing', 'generated-strings', 'fragment-text', 'call-workspaces', 'global-bindings', 'native-primitives', 'property-keys', 'entry-cache', 'native-property', 'native-length'] or (args.optimization in ['search', 'forward-search'] and config != 'control') else '0'
+        env['VOX_LIBJS_REUSE_FUNCTION_ENVIRONMENTS'] = '1' if args.optimization in ['instruction-borrowing', 'generated-strings', 'fragment-text', 'call-workspaces', 'global-bindings', 'native-primitives', 'property-keys', 'entry-cache', 'native-property', 'native-length'] or (args.optimization == 'envs' and config != 'control') else '0'
         env['VOX_LIBJS_COMPACT_REFERENCES'] = '0' if config == 'control' and args.optimization == 'references' else '1'
         env['VOX_LIBJS_NATIVE_DYNAMIC'] = '0' if config == 'control' and args.optimization == 'helpers' else '1'
         env['VOX_LIBJS_DIRECT_COLLECTION_WALK'] = '0'
@@ -172,22 +180,22 @@ def main():
         env['VOX_LIBJS_SHORT_STRINGS'] = '0'
         env['VOX_LIBJS_DIRECT_READS'] = '0'
         env['VOX_LIBJS_BORROW_ARGUMENTS'] = '0'
-        if args.optimization in ['frames', 'calls', 'reads', 'arrays', 'collections', 'walk', 'helpers', 'references', 'bindings', 'accessors', 'forward', 'search', 'forward-search', 'envs', 'instruction-borrowing', 'generated-strings', 'fragment-text', 'call-workspaces', 'global-bindings', 'native-primitives', 'property-keys', 'entry-cache', 'native-property', 'layout', 'frame-access', 'values', 'key-records']:
+        if args.optimization in ['frames', 'calls', 'reads', 'arrays', 'collections', 'walk', 'helpers', 'references', 'bindings', 'accessors', 'forward', 'search', 'forward-search', 'envs', 'instruction-borrowing', 'generated-strings', 'fragment-text', 'call-workspaces', 'global-bindings', 'native-primitives', 'property-keys', 'entry-cache', 'native-property', 'native-length', 'layout', 'frame-access', 'values', 'key-records']:
             for setting in ['LOOKUP_HINTS', 'ARGUMENT_ELISION', 'REGISTER_BINDINGS', 'BUILTIN_KEYS',
                             'EXACT_CONTEXT', 'PRIMITIVE_READS', 'VALIDATION_CACHE', 'EMPTY_SCOPES', 'NUMERIC_KEYS']:
                 env['VOX_LIBJS_' + setting] = '1'
             env['VOX_LIBJS_CONTEXT_REUSE'] = '0' if config == 'control' and args.optimization == 'frames' else '1'
             env['VOX_LIBJS_SHORT_STRINGS'] = '0'
             env['VOX_LIBJS_DIRECT_READS'] = '0'
-            if args.optimization in ['reads', 'arrays', 'collections', 'walk', 'helpers', 'references', 'bindings', 'accessors', 'forward', 'search', 'forward-search', 'envs', 'instruction-borrowing', 'generated-strings', 'fragment-text', 'call-workspaces', 'global-bindings', 'native-primitives', 'property-keys', 'entry-cache', 'native-property', 'layout', 'frame-access', 'values', 'key-records']:
+            if args.optimization in ['reads', 'arrays', 'collections', 'walk', 'helpers', 'references', 'bindings', 'accessors', 'forward', 'search', 'forward-search', 'envs', 'instruction-borrowing', 'generated-strings', 'fragment-text', 'call-workspaces', 'global-bindings', 'native-primitives', 'property-keys', 'entry-cache', 'native-property', 'native-length', 'layout', 'frame-access', 'values', 'key-records']:
                 env['VOX_LIBJS_BORROW_ARGUMENTS'] = '1'
                 env['VOX_LIBJS_SHORT_STRINGS'] = '0' if config == 'control' and args.optimization == 'reads' else '1'
                 env['VOX_LIBJS_DIRECT_READS'] = '0' if config == 'control' and args.optimization == 'reads' else '1'
-                if args.optimization in ['arrays', 'collections', 'walk', 'helpers', 'references', 'bindings', 'accessors', 'forward', 'search', 'forward-search', 'envs', 'instruction-borrowing', 'generated-strings', 'fragment-text', 'call-workspaces', 'global-bindings', 'native-primitives', 'property-keys', 'entry-cache', 'native-property', 'layout', 'frame-access', 'values', 'key-records']:
+                if args.optimization in ['arrays', 'collections', 'walk', 'helpers', 'references', 'bindings', 'accessors', 'forward', 'search', 'forward-search', 'envs', 'instruction-borrowing', 'generated-strings', 'fragment-text', 'call-workspaces', 'global-bindings', 'native-primitives', 'property-keys', 'entry-cache', 'native-property', 'native-length', 'layout', 'frame-access', 'values', 'key-records']:
                     env['VOX_LIBJS_FRESH_ARRAYS'] = '0' if config == 'control' and args.optimization == 'arrays' else '1'
-                if args.optimization in ['collections', 'walk', 'helpers', 'references', 'bindings', 'accessors', 'forward', 'search', 'forward-search', 'envs', 'instruction-borrowing', 'generated-strings', 'fragment-text', 'call-workspaces', 'global-bindings', 'native-primitives', 'property-keys', 'entry-cache', 'native-property', 'layout', 'frame-access', 'values', 'key-records']:
+                if args.optimization in ['collections', 'walk', 'helpers', 'references', 'bindings', 'accessors', 'forward', 'search', 'forward-search', 'envs', 'instruction-borrowing', 'generated-strings', 'fragment-text', 'call-workspaces', 'global-bindings', 'native-primitives', 'property-keys', 'entry-cache', 'native-property', 'native-length', 'layout', 'frame-access', 'values', 'key-records']:
                     env['VOX_LIBJS_CLASS_QUERY_CACHE'] = '0' if config == 'control' and args.optimization == 'collections' else '1'
-                if args.optimization in ['walk', 'helpers', 'references', 'bindings', 'accessors', 'forward', 'search', 'forward-search', 'envs', 'instruction-borrowing', 'generated-strings', 'fragment-text', 'call-workspaces', 'global-bindings', 'native-primitives', 'property-keys', 'entry-cache', 'native-property', 'layout', 'frame-access', 'values', 'key-records']:
+                if args.optimization in ['walk', 'helpers', 'references', 'bindings', 'accessors', 'forward', 'search', 'forward-search', 'envs', 'instruction-borrowing', 'generated-strings', 'fragment-text', 'call-workspaces', 'global-bindings', 'native-primitives', 'property-keys', 'entry-cache', 'native-property', 'native-length', 'layout', 'frame-access', 'values', 'key-records']:
                     env['VOX_LIBJS_DIRECT_COLLECTION_WALK'] = '0' if config == 'control' and args.optimization == 'walk' else '1'
             if args.optimization == 'calls':
                 env['VOX_LIBJS_BORROW_ARGUMENTS'] = '0' if config == 'control' else '1'
@@ -270,7 +278,9 @@ def main():
                 raise RuntimeError(f'{label} exited {process.returncode}')
             visits = [json.loads(line) for line in stdout.splitlines() if line.startswith('{')]
             attempt['visits'] = visits
-            hn.validate(visits, engine, args.cycles, diagnostic, report['inputs'])
+            hn.validate(visits, engine, args.cycles, diagnostic, report['inputs'], callback_cpu=args.callback_thread_cpu)
+            for visit in visits:
+                visit['callback_thread_cpu_ms'] = visit.get('callback_thread_cpu_ns', 0) / 1e6
             for visit in visits:
                 activity = visit['lookup_activity']
                 if not diagnostic and any(activity.values()):
@@ -296,6 +306,9 @@ def main():
                 if diagnostic and config != 'v8' and args.optimization == 'instruction-borrowing':
                     if visit['activity'].get('function_environments_reused', 0) <= 0:
                         raise ValueError('Both instruction controls must retain environment reuse')
+                if diagnostic and config != 'v8' and args.optimization == 'native-length':
+                    if (visit['activity'].get('native_length_steps', 0) > 0) != (config == 'candidate'):
+                        raise ValueError('Native length lowering eligibility mismatch')
                 if diagnostic and config != 'v8' and args.optimization == 'native-property':
                     if (visit['activity'].get('specialized_property_steps', 0) > 0) != (config == 'candidate'):
                         raise ValueError('Compiled property plan eligibility differs from requested mode')
@@ -418,6 +431,7 @@ def main():
                      hn.ARCHIVE / 'manifest.json', *sorted((hn.ARCHIVE / 'bodies').iterdir()),
                      hn.ASSETS / 's.gif', hn.ASSETS / 'y18.svg', Path(__file__), Path(hn.__file__),
                      hn.ROOT / 'sites/hacker_news_engine_benchmark_test.v',
+                     hn.ROOT / 'sites/engine_callback_cpu.h',
                      hn.ROOT / 'tools/page_archive.py',
                      *sorted((hn.ROOT / 'Build/v').glob('*.dylib'))]
             report['frozen_builds'] = {}
@@ -449,7 +463,7 @@ def main():
                 run('candidate', 'seed-candidate', seed=True)
             for config in ['control', 'candidate', 'v8']:
                 run(config, 'diagnostic-' + config, True)
-            if args.optimization in ['registers', 'dispatch', 'native-primitives']:
+            if args.optimization in ['registers', 'dispatch', 'native-primitives', 'native-property', 'native-length']:
                 diagnostics = {a['configuration']: a['visits'][0]['activity']
                                for a in report['attempts'] if a['diagnostic']}
                 control, candidate = diagnostics['control'], diagnostics['candidate']
@@ -458,13 +472,13 @@ def main():
                         or candidate['slow_steps'] >= control['slow_steps']):
                     raise ValueError('Lowering did not replace helper steps with native steps')
                 report['lowering_diagnostic'] = diagnostics
-            if args.optimization in ['entry-cache', 'native-property']:
+            if args.optimization == 'entry-cache':
                 diagnostics = {a['configuration']: a['visits'][0]['activity']
                                for a in report['attempts'] if a['diagnostic']}
                 if any(diagnostics['control'][key] != diagnostics['candidate'][key]
                        for key in ['entries', 'fast_steps', 'slow_steps']):
-                    raise ValueError('Entry dispatch cache changed executed instruction counts')
-                report['entry_cache_diagnostic'] = diagnostics
+                    raise ValueError('Native specialization changed executed instruction counts')
+                report['entry_cache_diagnostic' if args.optimization == 'entry-cache' else 'native_property_diagnostic'] = diagnostics
             for index in range(args.pairs):
                 order = ['control', 'candidate', 'v8'] if index % 2 == 0 else ['v8', 'candidate', 'control']
                 for config in order:
@@ -474,7 +488,7 @@ def main():
                 median=statistics.median(a['visits'][0][metric] for a in trials if a['configuration'] == config),
                 min=min(a['visits'][0][metric] for a in trials if a['configuration'] == config),
                 max=max(a['visits'][0][metric] for a in trials if a['configuration'] == config))
-                for metric in hn.METRICS} for config in ['control', 'candidate', 'v8']}
+                for metric in hn.METRICS + (['callback_thread_cpu_ms'] if args.callback_thread_cpu else [])} for config in ['control', 'candidate', 'v8']}
             candidate_ns = int(round(report['summary']['candidate']['callback_ms']['max'] * 1e6))
             v8_ns = int(round(report['summary']['v8']['callback_ms']['min'] * 1e6))
             report['twice_v8_conservative'] = 2 * candidate_ns <= v8_ns
