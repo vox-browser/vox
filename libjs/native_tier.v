@@ -225,7 +225,13 @@ fn native_slow_step(opaque voidptr, pc u32) u32 {
 		return 0xffffffff
 	}
 	frame.program_counter = next
-	if instruction.op in [.end, .await_value, .generator_start, .yield_value, .yield_iterator_result] { invocation.ended = true }
+	if instruction.op in [.end, .await_value, .generator_start, .yield_value, .yield_iterator_result] {
+		// These instructions return control to the caller even when their saved
+		// resume PC is inside the executable. Returning that PC to generated C
+		// would continue past await/yield before the VM has resumed the frame.
+		invocation.ended = true
+		return 0xffffffff
+	}
 	return next
 }
 

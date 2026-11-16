@@ -14,6 +14,47 @@ fn revisit_script(mut vm VM, source string) !Value {
 	return vm.run_with_limits(mut script, ExecutionLimits{ max_instructions: 100000 })
 }
 
+fn test_cached_generator_exits_native_code_at_start_yield_and_delegated_yield() {
+	directory := revisit_cache_directory()
+	defer { os.rmdir_all(directory) or {} }
+	for visit in 0 .. 2 {
+		mut vm := VM.create()
+		create_simple_execution_context(mut vm)
+		vm.enable_native_code_cache(directory, if visit == 0 { '/usr/bin/clang' } else { '/usr/bin/false' })!
+		vm.diagnose_native_code(true)!
+		assert revisit_script(mut vm, 'var events=[];function* sequence(){events.push("start");var input=yield 7;events.push(input);yield* [8,9];return 42}var iterator=sequence();var lazy=events.length===0;var first=iterator.next();var paused=events.join() === "start";var second=iterator.next("resume"),third=iterator.next(),last=iterator.next();lazy&&paused&&first.value===7&&!first.done&&second.value===8&&!second.done&&third.value===9&&!third.done&&last.value===42&&last.done&&events.join()==="start,resume"')!.as_bool()
+		activity := vm.diagnose_native_code(false)!
+		stats := vm.flush_native_code_cache()!
+		if visit == 1 {
+			assert stats.cache_hits >= 2 && stats.cache_misses == 0 && stats.compiler_invocations == 0
+			assert activity.entries >= 2 && activity.slow_steps > 0
+		}
+		vm.close_native_code()!
+	}
+}
+
+fn test_cached_async_body_leaves_native_code_until_its_pending_await_resumes() {
+	directory := revisit_cache_directory()
+	defer { os.rmdir_all(directory) or {} }
+	for visit in 0 .. 2 {
+		mut vm := VM.create()
+		create_simple_execution_context(mut vm)
+		vm.enable_native_code_cache(directory, if visit == 0 { '/usr/bin/clang' } else { '/usr/bin/false' })!
+		vm.diagnose_native_code(true)!
+		revisit_script(mut vm, 'var events=[],release,observed=0;var gate=new Promise(resolve=>{release=resolve});async function work(){events.push("before");var value=await gate;events.push(value);return value+1}var promise=work();var paused=events.join()==="before";release(41);promise.then(value=>{observed=value})')!
+		global := vm.realm().global_object_record()
+		assert global.get(mut vm, PropertyName.from_str('paused'))!.as_bool()
+		assert global.get(mut vm, PropertyName.from_str('observed'))!.number == 42
+		activity := vm.diagnose_native_code(false)!
+		stats := vm.flush_native_code_cache()!
+		if visit == 1 {
+			assert stats.cache_hits >= 4 && stats.cache_misses == 0 && stats.compiler_invocations == 0
+			assert activity.entries >= 4 && activity.slow_steps > 0
+		}
+		vm.close_native_code()!
+	}
+}
+
 fn test_second_vm_uses_native_code_on_its_first_execution_without_a_compiler_or_warmup() {
 	directory := revisit_cache_directory()
 	defer { os.rmdir_all(directory) or {} }
