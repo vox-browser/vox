@@ -90,13 +90,21 @@ fn draw_sampled_image(pixels &u8,width i32,height i32,pitch i32,backdrop i32,sou
 	if clip[4..12].any(it < 0) { return 0 }
 	if clip[2] > 0 && clip[3] > 0 {
 		if samples == 4 { surface.draw_msaa_trigger() }
-		rect := canvas.Rect.xywh(clip[0], clip[1], clip[2], clip[3])
-		surface.clip_rrect(canvas.RRect.rect_radii(rect, [
-			canvas.Point{clip[4], clip[5]},
-			canvas.Point{clip[6], clip[7]},
-			canvas.Point{clip[8], clip[9]},
-			canvas.Point{clip[10], clip[11]},
-		]!), .intersect, true) or { return 0 }
+		// Odd-plane atlases already draw this exact full-image rectangle.
+		// Intersecting it again in image coordinates perturbs the sampler's
+		// float32 inverse transform. Retain the shared MSAA trigger above.
+		full_odd_atlas := yuv_atlas && (source_width % 2 != 0 || source_height % 2 != 0)
+			&& clip[0] == x && clip[1] == y && clip[2] == destination_width
+			&& clip[3] == destination_height && clip[4..12].all(it == 0)
+		if !full_odd_atlas {
+			rect := canvas.Rect.xywh(clip[0], clip[1], clip[2], clip[3])
+			surface.clip_rrect(canvas.RRect.rect_radii(rect, [
+				canvas.Point{clip[4], clip[5]},
+				canvas.Point{clip[6], clip[7]},
+				canvas.Point{clip[8], clip[9]},
+				canvas.Point{clip[10], clip[11]},
+			]!), .intersect, true) or { return 0 }
+		}
 	}
  if colors.len>0 {
   mut floats:=[colors]

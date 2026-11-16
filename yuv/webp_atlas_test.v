@@ -18,7 +18,7 @@ fn test_webp_atlas_keeps_plane_bytes_and_extends_chroma_edges() {
 	}
 }
 
-fn test_webp_atlas_rejects_incomplete_odd_or_unbounded_planes() {
+fn test_webp_atlas_rejects_incomplete_or_unbounded_planes() {
 	planes := []u8{len: 24}
 	assert webp_420_atlas_upload(planes[..23], 4, 4) == none
 	assert webp_420_atlas_upload(planes, 3, 4) == none
@@ -69,4 +69,28 @@ fn test_atlas_mip_padding_repeats_averaged_chroma_and_preserves_other_channels()
 	assert webp_atlas_extend_mip_chroma(pixels[..60], 4, 4, 2, 2) == none
 	assert webp_atlas_extend_mip_chroma(pixels, 4, 4, 0, 2) == none
 	assert webp_atlas_extend_mip_chroma(pixels, 4, 4, 5, 2) == none
+}
+
+
+fn test_webp_atlas_keeps_ceiling_sized_chroma_for_odd_luma_edges() {
+	// A 3x5 luma plane owns 2x3 chroma planes, not 1x2.
+	mut planes := []u8{len: 27}
+	for i in 0 .. 15 { planes[i] = u8(i + 16) }
+	for i in 0 .. 6 {
+		planes[15 + i] = u8(40 + i)
+		planes[21 + i] = u8(80 + i)
+	}
+	packed := webp_420_atlas_upload(planes, 3, 5) or { panic('odd atlas') }
+	for py in 0 .. 5 {
+		for px in 0 .. 3 {
+			ci := (if py < 3 { py } else { 2 }) * 2 + if px < 2 { px } else { 1 }
+			i := (py * 3 + px) * 4
+			assert packed[i..i + 4] == [planes[py * 3 + px], planes[15 + ci], planes[21 + ci], u8(255)]
+		}
+	}
+	assert webp_420_atlas_upload(planes[..26], 3, 5) == none
+	assert webp_atlas_sampling_supported(320, 179, 173, 97)
+	assert webp_atlas_sampling_supported(319, 179, 173, 97)
+	assert !webp_atlas_sampling_supported(320, 179, 150, 80)
+	assert !webp_atlas_sampling_supported(319, 179, 150, 80)
 }

@@ -22,7 +22,8 @@ fn (mut app BrowserApp) draw_minified_webp(command &layout.PaintCommand, image &
 		|| command.apply_force_dark_to_image || nearest || command.opacity != 1
 		|| image.path != '' || image.nr_channels != 7 || image.data == unsafe { nil }
 		|| image.width <= 0 || image.height <= 0 || image.width > 4096 || image.height > 4096
-		|| image.width * image.height > 4 * 1024 * 1024 || image.width % 2 != 0 || image.height % 2 != 0
+		|| image.width * image.height > 4 * 1024 * 1024
+		|| (!atlas && (image.width % 2 != 0 || image.height % 2 != 0))
 		|| matrix[0] != 1 || matrix[1] != 0 || matrix[2] != 0 || matrix[3] != 1
 		|| destination.width <= 0 || destination.height <= 0
 		|| (!atlas && (destination.width * 2 > image.width || destination.height * 2 > image.height))

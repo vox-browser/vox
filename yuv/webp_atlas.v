@@ -8,11 +8,11 @@ import math
 // its own derivatives and filtering without first reconstructing RGB.
 pub fn webp_420_atlas_upload(planes []u8, width int, height int) ?[]u8 {
 	if width <= 0 || height <= 0 || width > 4096 || height > 4096
-		|| width * height > 4 * 1024 * 1024 || width % 2 != 0 || height % 2 != 0 {
+		|| width * height > 4 * 1024 * 1024 {
 		return none
 	}
 	ys := width * height
-	cw, ch := width / 2, height / 2
+	cw, ch := (width + 1) / 2, (height + 1) / 2
 	cs := cw * ch
 	if planes.len != ys + 2 * cs { return none }
 	mut packed := []u8{len: ys * 4}
@@ -30,13 +30,15 @@ pub fn webp_420_atlas_upload(planes []u8, width int, height int) ?[]u8 {
 	return packed
 }
 
-// Near-half draws use chroma level zero. A stronger minification can also
-// retain the original planes when the scaled decode would need another mip.
+// Near-half draws use chroma level zero, including ceiling-sized planes for
+// odd luma dimensions. Sampling still maps luma texel coordinates by one half.
+// Stronger minification retains original planes only when the scaled decode
+// would need another mip.
 // Multiples of four align luma levels 0..2 and chroma levels 0..1 in the atlas;
 // strict quarter/half bounds keep later odd-sized chroma levels unselected.
 pub fn webp_atlas_sampling_supported(width int, height int, dw f64, dh f64) bool {
 	if width <= 0 || height <= 0 || width > 4096 || height > 4096 || width * height > 4 * 1024 * 1024
-		|| width % 2 != 0 || height % 2 != 0 || !math.is_finite(dw) || !math.is_finite(dh)
+		|| !math.is_finite(dw) || !math.is_finite(dh)
 		|| dw <= 0 || dh <= 0 || dw >= width || dh >= height {
 		return false
 	}
