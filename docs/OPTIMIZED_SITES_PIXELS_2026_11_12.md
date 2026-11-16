@@ -5246,3 +5246,91 @@ Cleanup inventories **33 owned roots/786 files**, preserves and SHA-verifies
 checker binary, intermediates, replay state, guards and locks from `Build/`.
 The archive guard/lock are separately retained, verified and removed. No owned
 `Build/cnn-replay-refresh*` scratch remains; shared bundles/dependencies stay.
+
+### Lobsters raster history and completed browser selection, 2026-11-16
+
+The 101 differing Lobsters pixels are **54 rounded tag/background pixels and
+47 avatar/anchor-fringe pixels**, within the first 1024×256 raster tile. This
+corrects the earlier working hypothesis about text glyphs: the changed pixels
+are pale rounded edges and image samples. The maximum channel error is 13;
+text, rectangles and resource bodies remain unchanged. Three avatars are
+involved, including a JPEG response served with a PNG name/type. Their body
+bytes remain pinned.
+
+Four alternating pairs use the same sealed original-origin replay, recorded
+load/paint preparation, full uBlock Origin 1.75.0 and installed Brave
+157.1.99.57. Each capture launches a fresh private process. The release ZIP and
+all 59 retained vendor files match the preceding audit. Source/reference,
+browser/framework/helper, extension, checker and list identities stay unchanged.
+No reference, tolerance, page bytes or engine implementation changes.
+
+| Pair | Brave raster control | Differences from historical PNG, in capture order | Cross-process repeat |
+| --- | --- | --- | ---: |
+| A | Default | 101, 0 | 101 |
+| B | Partial raster disabled | 0, 0 | 0 |
+| C | Default | 0, 0 | 0 |
+| D | Partial raster disabled | 0, 0 | 0 |
+
+All eight full-uBO audits pass. All eight separate post-capture traces complete
+without errors and retain the captured PNG. Tile snapshots confirm the first
+tile's 1024×256 extent and origin (0,0). The diagnostic flag is Chromium's
+[`--disable-partial-raster`](https://chromium.googlesource.com/chromium/src.git/+/refs/heads/main/third_party/blink/common/switches.cc).
+These observations support a raster-history hypothesis; they do not establish
+the exact MSAA configuration or clear default-path repeatability. Every attempt
+is retained. Disabled-partial-raster controls supply no default conformance or
+performance acceptance.
+
+Four fresh Vox captures on published **`7515422c`**, in two guarded pairs, match
+the unchanged Lobsters reference exactly. Native audits, startup/capture guards
+and outer guards exit zero; each pair repeats byte for byte. The second pair
+also exercises automatic completed-browser selection in the canonical command.
+This is current baseline evidence for Lobsters. That older browser does not
+contain the latest CNN rendering fixes and cannot validate them.
+
+`ef02df435` promotes the existing archived-site driver into
+`tools/check_archived_site_pixels.py` and leases the actual selected executable.
+`5bd532ff2` makes discovery and artifact leasing atomic: it checks the newest
+available completed artifact under its shared artifact lock, verifies its hash,
+and otherwise uses the published bundle under its publication lock. Removed,
+busy, failed, superseded or malformed staging candidates cannot be launched.
+Explicit stale staging paths fail. Published receipts and compiled source
+witnesses remain mandatory for production claims. All **18 lease/selection
+tests pass** under a 3 GiB guard; the integrated command passes two fresh
+Lobsters captures. No application bundle or canonical tool is copied into
+measurement scratch.
+
+Example (unique output, existing completed browser, unchanged references):
+
+```sh
+sh tools/run_v_tool.sh run_memory_bounded \
+  --lock Build/archive-pixels-UNIQUE.lock \
+  --report Build/archive-pixels-UNIQUE.json -- \
+  python3 tools/check_archived_site_pixels.py \
+    --output Build/archive-pixels-UNIQUE lobsters
+```
+
+Production confirmation of the latest CNN fixes remains pending. Completed
+staging receipts `20261116-134046-b115eb01` (`544de6b5`) and
+`20261116-141326-d95b5aa4` (`3edf3c34`) were superseded before pinning. The first
+launch attempt fails before measurement (outer exit 1); the later bounded
+discovery run finds only the older published browser. Neither earns validation
+credit. Build `20261116-143822-6dccd969` exits 1 because
+`tools/buildtools/gg_patches.json` changed after its input inventory. The managed
+worker receives coalesced commit requests; no duplicate manual build is queued.
+
+An out-of-space error interrupts one analysis command. Removing this job's
+downloaded extension and checker recovers scratch; their recorded identities
+and all completed observations remain. The canonical 12-hour prune reports
+`Operation not permitted` for an unrelated old BBC directory; no manual deletion
+or permission bypass follows. These diagnostics are retained too.
+
+Local evidence:
+`docs/performance/vlang-gradients-20261114/raw/lobsters-repeat-20261116/`.
+Cleanup inventories **35 owned roots/827 files**, preserves and SHA-verifies
+**228 evidence files/17,034,147 bytes**, and removes this job's outputs,
+profiles, replay keys, locks and guards. The archive guard and lock are separately
+preserved, verified and removed; no owned `Build/lobsters-repeat*` scratch remains.
+The temporary diagnostic wrapper is retained as text and removed from the
+canonical diagnostic directory. Shared bundles and production state remain.
+Catalog acceptance still requires stable default Brave references, the missing
+Reddit workload, CNN's historical source/replay gate and production confirmation.

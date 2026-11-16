@@ -24,6 +24,15 @@ the second differs. Their text, geometry and image inventories agree. New full-u
 acceptance remains open; no reference or tolerance changes. See the
 [decode-preparation audit](docs/OPTIMIZED_SITES_PIXELS_2026_11_12.md#preserve-recorded-image-decode-preparation-2026-11-16).
 
+**Lobsters follow-up:** the 101 pixels belong to rounded tag backgrounds and
+avatars within the first raster tile. Alternating default/disabled-partial-raster
+Brave pairs retain one default mismatch; all four disabled-partial captures
+match. These controls do not clear default Brave repeatability. Four fresh Vox
+captures on published `7515422c` match the retained reference exactly. The new
+archived-site checker pins completed bundles before launching, including staged
+artifacts, and passes 18 lease/selection tests. See the
+[raster and bundle-selection audit](docs/OPTIMIZED_SITES_PIXELS_2026_11_12.md#lobsters-raster-history-and-completed-browser-selection-2026-11-16).
+
 The latest fixes make CNN **94→73→46→0**: `a6edd14de` preserves fractional SVG
 background layout, `fb71abe2d` renders rounded RGBA in owning-tile coordinates,
 and `9b326517b` folds CPU-resized YUV into its decoded image frame. The final
