@@ -7845,6 +7845,10 @@ fn (mut app BrowserApp) draw() {
 					}
 				}
 				$if macos {
+					if !gpu_leaf && command.kind == 'begin_css_filter_layer' {
+						shared_svg_end = app.draw_svg_drop_shadow(command_index, page_y)
+						if shared_svg_end > command_index { continue }
+					}
 					if !gpu_leaf && command.kind == 'fill_rect' {
 						shared_svg_end = app.draw_solid_border_group(command_index, page_y)
 						if shared_svg_end > command_index { continue }

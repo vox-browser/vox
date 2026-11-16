@@ -11,6 +11,12 @@ def replace_once(source, old, new):
 
 def prepare(canvas):
     canvas = Path(canvas)
+    # The ABI patch is one-time; the V helper evolves independently.
+    helper = Path(__file__).parent / 'ui2/gg_shadow_mask.v'
+    target = canvas / 'vox_shadow_mask.v'
+    if target.is_symlink():
+        target.unlink()
+    write_if_changed(target, helper.read_text())
     layer_path = canvas / 'gpu_layer.v'
     layer = layer_path.read_text()
     if 'mask_color' in layer:
@@ -42,8 +48,3 @@ float4 outColor_1 = _10_mask * _globals._anonInterface0->combinedUniformData[_gl
         if path.is_symlink():
             path.unlink()
         write_if_changed(path, text)
-    helper = Path(__file__).parent / 'ui2/gg_shadow_mask.v'
-    target = canvas / 'vox_shadow_mask.v'
-    if target.is_symlink():
-        target.unlink()
-    write_if_changed(target, helper.read_text())

@@ -64,7 +64,11 @@ fn test_native_preparer_keeps_yuv_uniform_and_shader_together() ! {
 	assert first_shader.contains('float4 lumaBounds')
 	assert first_surface.contains('layer.color_transform.image_quad_coords')
 	assert read(join(canvas, 'vox_document_image.v'))!.contains('!document_image_yuv_upload_supported()')
+	mask_helper := join(canvas, 'vox_shadow_mask.v')
+	assert read(mask_helper)!.contains('pub fn (mut s GpuSurface) draw_linear_premultiplied_layer(')
+	os.write_file(mask_helper, '// stale helper from an earlier staged module\n')!
 	prepare_gg_canvas(canvas)!
+	assert read(mask_helper)! == read(join(root_dir(), 'tools/ui2/gg_shadow_mask.v'))!
 	assert read(layer)! == first_layer
 	assert read(shader)! == first_shader
 	// Repair either new atlas half independently without duplicating the

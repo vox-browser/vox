@@ -12,6 +12,34 @@ pub fn (mut s GpuSurface) draw_linear_alpha_mask(mask []u8, width int, height in
 	s.draw_alpha_mask_image(mask, width, height, paint, true)!
 }
 
+// Keep a filter's RGBA resolve separate from its final affine sample.
+pub fn (mut s GpuSurface) draw_linear_premultiplied_layer(bgra []u8, width int, height int, anti_alias bool) ! {
+	if width <= 0 || height <= 0 || width > 4096 || height > 4096
+		|| width * height > 4 * 1024 * 1024 || bgra.len != width * height * 4 {
+		return error('gg.canvas: invalid premultiplied layer')
+	}
+	if s.layer != unsafe { nil } {
+		mut top := s.layer
+		top.draw_linear_premultiplied_layer(bgra, width, height, anti_alias)!
+		return
+	}
+	mut image := s.ctx.new_surface(width: width, height: height)!
+	s.retired << image
+	image.write_pixels(bgra.data, width * 4)!
+	s.draw_shape(ShapeGeometry{
+		kind: .rect
+		rect: Rect.ltrb(0, 0, f32(width), f32(height))
+	}, Paint{
+		anti_alias:  anti_alias
+		layer_image: LayerImage{
+			image:                  image.color
+			texture_width:          width
+			texture_height:         height
+			document_linear_filter: true
+		}
+	})!
+}
+
 fn (mut s GpuSurface) draw_alpha_mask_image(mask []u8, width int, height int, paint Paint,
 	linear bool) ! {
 	if width <= 0 || height <= 0 || mask.len != width * height {

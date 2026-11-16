@@ -17,6 +17,7 @@ struct ShadowMask {
 struct ShadowFilterLayer {
 	mask ShadowMask
 	origin canvas.Point
+	scale canvas.Point = canvas.Point{1, 1}
 }
 
 struct ShadowBounds {
@@ -193,6 +194,13 @@ fn shadow_filter_mask(shape &C.VoxGraphiteShape, width int, height int,
 
 fn shadow_filter_layer(shape &C.VoxGraphiteShape, width int, height int,
 	source_path ?canvas.Path, source_offset canvas.Point, desired_output ?ShadowBounds) !ShadowFilterLayer {
+	return shadow_filter_layer_with_path_matrix(shape, width, height, source_path, source_offset,
+		desired_output, [f32(1), 0, 0, 0, 1, 0, 0, 0, 1]!, false)
+}
+
+fn shadow_filter_layer_with_path_matrix(shape &C.VoxGraphiteShape, width int, height int,
+	source_path ?canvas.Path, source_offset canvas.Point, desired_output ?ShadowBounds,
+	path_matrix [9]f32, image_filter bool) !ShadowFilterLayer {
 	scale_factor := shadow_filter_scale(shape) or { return error('Unsupported shadow filter transform') }
 	m := shape.matrix
 	sigma := shape.thickness * f32(0.5) * scale_factor
@@ -201,17 +209,24 @@ fn shadow_filter_layer(shape &C.VoxGraphiteShape, width int, height int,
 	for i in 0 .. 4 {
 		x := shape.rect[0] + if i & 1 != 0 { shape.rect[2] } else { f32(0) }
 		y := shape.rect[1] + if i & 2 != 0 { shape.rect[3] } else { f32(0) }
-		dx, dy := x*m[0] + y*m[1] + m[2], x*m[3] + y*m[4] + m[5]
-		x0, y0 = math.min(x0,dx), math.min(y0,dy)
-		x1, y1 = math.max(x1,dx), math.max(y1,dy)
+		dx, dy := x * m[0] + y * m[1] + m[2], x * m[3] + y * m[4] + m[5]
+		x0, y0 = math.min(x0, dx), math.min(y0, dy)
+		x1, y1 = math.max(x1, dx), math.max(y1, dy)
 	}
-	mut left, mut top := f32(math.floor(f64(x0))), f32(math.floor(f64(y0)))
-	mut right, mut bottom := f32(math.ceil(f64(x1))), f32(math.ceil(f64(y1)))
+	// Image-filter bounds use near-integer rounding before source allocation.
+	epsilon := if image_filter { f32(.001) } else { f32(0) }
+	mut left, mut top := f32(math.floor(f64(x0+epsilon))), f32(math.floor(f64(y0+epsilon)))
+	mut right, mut bottom := f32(math.ceil(f64(x1-epsilon))), f32(math.ceil(f64(y1-epsilon)))
 	if affine_shadow_supported(shape) {
 		// The filter layer needs only the tile's input footprint. Keeping the
 		// whole offscreen box changes the centered downsampling grid. Rotated
 		// filter layers need their own layer-space bounds and retain replay.
-		pad := f32(math.ceil(f64(f32(3) * sigma)))
+		// The image-filter offset uses linear sampling, including integer offsets.
+		pad := f32(math.ceil(f64(f32(3) * sigma))) + if image_filter {
+			f32(1)
+		} else {
+			f32(0)
+		}
 		left, top = math.max(left, -pad), math.max(top, -pad)
 		right, bottom = math.min(right, f32(width) + pad), math.min(bottom, f32(height) + pad)
 	}
@@ -233,6 +248,9 @@ fn shadow_filter_layer(shape &C.VoxGraphiteShape, width int, height int,
 	source.set_matrix(canvas.Matrix.values(source_matrix))
 	white := canvas.Paint{ color: canvas.Color4f{1, 1, 1, 1}, anti_alias: shape.anti_alias != 0 }
 	if path := source_path {
+		if path_matrix != [f32(1), 0, 0, 0, 1, 0, 0, 0, 1]! {
+			source.concat(canvas.Matrix.values(path_matrix))
+		}
 		source.draw_path(path, white)!
 	} else {
 		source.draw_rrect(rounded_rect(shape.rect), white)!
@@ -293,6 +311,13 @@ fn shadow_filter_layer(shape &C.VoxGraphiteShape, width int, height int,
 	pixels = ShadowBounds{pixels.left - radius, pixels.top - radius, pixels.right + radius, pixels.bottom + radius}
 	sx := (bounds.right - bounds.left) / (original.right - original.left)
 	sy := (bounds.bottom - bounds.top) / (original.bottom - original.top)
+	if image_filter {
+		ix := (original.right - original.left) / (bounds.right - bounds.left)
+		iy := (original.bottom - original.top) / (bounds.bottom - bounds.top)
+		tx := original.left - bounds.left * ix
+		ty := original.top - bounds.top * iy
+		return ShadowFilterLayer{image, canvas.Point{f32(f64(pixels.left) * f64(ix) + f64(tx)), f32(f64(pixels.top) * f64(iy) + f64(ty))}, canvas.Point{ix, iy}}
+	}
 	// Resolve back to an A8 image before the paint color is applied. Fusing
 	// upscale and color multiplication skips this required quantization.
 	mut output := ShadowBounds{0, 0, f32(width), f32(height)}
@@ -300,17 +325,15 @@ fn shadow_filter_layer(shape &C.VoxGraphiteShape, width int, height int,
 		// Downsampling rounds the low-resolution image out to whole texels.
 		// Its blurred support can therefore exceed the nominal 3-sigma bounds.
 		// Resolve that support against the original desired output before rotating.
-		output = ShadowBounds{
-			math.max(desired.left, f32(math.floor(f64((pixels.left - bounds.left) / sx + original.left + f32(.001))))),
-			math.max(desired.top, f32(math.floor(f64((pixels.top - bounds.top) / sy + original.top + f32(.001))))),
-			math.min(desired.right, f32(math.ceil(f64((pixels.right - bounds.left) / sx + original.left - f32(.001))))),
-			math.min(desired.bottom, f32(math.ceil(f64((pixels.bottom - bounds.top) / sy + original.top - f32(.001)))))
-		}
+		output = ShadowBounds{math.max(desired.left, f32(math.floor(f64((pixels.left - bounds.left) / sx + original.left + f32(.001))))), math.max(desired.top, f32(math.floor(f64((pixels.top - bounds.top) / sy + original.top + f32(.001))))), math.min(desired.right, f32(math.ceil(f64((pixels.right - bounds.left) / sx + original.left - f32(.001))))), math.min(desired.bottom, f32(math.ceil(f64((pixels.bottom - bounds.top) / sy + original.top - f32(.001)))))}
 	}
-	resolved := shadow_mask_pass(image, int(output.right - output.left), int(output.bottom - output.top), [sx, sy,
+	resolved := shadow_mask_pass(image, int(output.right - output.left), int(output.bottom - output.top), [
+		sx,
+		sy,
 		bounds.left + (output.left - original.left) * sx - pixels.left,
-		bounds.top + (output.top - original.top) * sy - pixels.top]!, [56]f32{}, 0, 0)!
-	return ShadowFilterLayer{resolved, canvas.Point{output.left, output.top}}
+		bounds.top + (output.top - original.top) * sy - pixels.top,
+	]!, [56]f32{}, 0, 0)!
+	return ShadowFilterLayer{resolved, canvas.Point{output.left, output.top}, canvas.Point{1, 1}}
 }
 
 // Graphite AnalyticBlurMask::MakeRRect: blur a small rounded rectangle, then

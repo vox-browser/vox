@@ -1291,6 +1291,8 @@ int native_draw_document_shape_group(VoxGraphiteShape* shapes, int count, float*
     free(pixels);return drawn;
 }
 
+#include "native/include/native_svg_drop_shadow_darwin.h"
+
 static int native_try_v_rounded_rect(float x, float y, float width, float height,
     const float* radii, const float* matrix, float canvas_width, float canvas_height,
     gg__Color color, int fill, float thickness, int anti_alias,

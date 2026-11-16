@@ -39,7 +39,6 @@ fn prepare_gg_canvas(canvas string) ! {
 			return error('Unsupported GG image shader tail')
 		}
 		write_changed(path, text.all_before(marker) + marker + snippet('gg_image_shader'))!
-		write_changed(join(canvas, 'vox_shadow_mask.v'), read(join(root_dir(), 'tools/ui2/gg_shadow_mask.v'))!)!
 	}
 	if !read(layer)!.contains('document_linear_filter') { gg_patches(canvas, 'prepare_gg_image')! }
 	image_helper := read(join(root_dir(), 'tools/ui2/gg_document_image.v'))!
@@ -80,6 +79,7 @@ fn prepare_gg_canvas(canvas string) ! {
 	gg_repair_patches(canvas, 'prepare_gg_image_quad')!
 	gg_repair_patches(canvas, 'prepare_gg_srgb_gamut')!
 	write_changed(join(canvas, 'vox_document_image.v'), image_helper)!
+	write_changed(join(canvas, 'vox_shadow_mask.v'), read(join(root_dir(), 'tools/ui2/gg_shadow_mask.v'))!)!
 	write_changed(join(canvas, 'vox_document_clip.v'), read(join(root_dir(), 'tools/ui2/gg_document_clip.v'))!)!
 }
 

@@ -114,6 +114,11 @@ typedef struct {
     int gradient_premul;
 } VoxGraphitePath;
 
+typedef struct {
+    VoxGraphitePath path;
+    float frame[9], bounds[4], shadow[7];
+} VoxGraphiteSvgShadow;
+
 // Retained compositor tiles: each RGBA IOSurface's rectangle maps to the
 // specified canvas rectangle, starting from `previous` (same dimensions).
 typedef struct {
