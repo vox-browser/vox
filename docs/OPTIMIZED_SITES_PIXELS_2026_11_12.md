@@ -5167,3 +5167,82 @@ intermediates, profiles, guards and locks. Both temporary canonical probes are
 removed. The archive guard and lock are separately preserved, verified and
 removed; no owned `Build/rgb-tiles-*` scratch remains. Shared production bundles
 and native dependencies stay.
+
+### Preserve recorded image decode preparation, 2026-11-16
+
+`597984bc6` makes the reference's image-decode preparation explicit through the
+full-uBO oracle, source capture and frozen replay. The recent `img.decode()`
+readiness check changes the shared image upload cache and sampled pixels. A
+fixture captured before that preparation cannot silently inherit it. Direct
+oracle/source captures keep the existing `visible-image-decode` default. Frozen
+comparisons select their source's recorded policy; older receipts preserve
+`load-and-paint`. Loaded-font/resource audits, paint checkpoints and consecutive
+identical PNG requirements remain. New source manifests record the preparation.
+Contradictory source or replay metadata fails before qualification. Follow-up
+`a9e6df6cf` also validates the source's separate pixel-reference receipt.
+No rendering implementation, PNG reference, tolerance or filter snapshot changes.
+
+The independent reference audit uses installed **Brave 157.1.99.57**, original-
+origin sealed replay, sRGB, 1024×768 at scale 1, five seconds of settling, fresh
+private profiles/empty HTTP caches and bypassed service workers. OS caches are
+retained. Full uBlock Origin **1.75.0** is restored from its release package;
+all **59 retained vendor files** agree exactly, including the relocated assets
+manifest. The release ZIP's SHA-256 is
+`393cf95709d1074d4022970e9014e434395c53a822387f1e25f43be97cf4b582`.
+Browser/framework/helper, oracle, extension, checker, list and fixture inputs
+stay pinned. No proxy request is forwarded to the live network.
+
+| Observation | Differences from retained replay PNG | Fresh-process repeat |
+| --- | ---: | ---: |
+| CNN, explicit visible-image decoding | 31,766 | 0 |
+| CNN, preserved load/paint preparation | **0** | **0** |
+| Lobsters, preserved preparation, first process | 0 | — |
+| Lobsters, preserved preparation, second process | 101 | **101** |
+
+Both CNN preparations pass full-uBO page/filter audits: 105 checks each, six
+blocked and 99 allowed, with zero decision disagreements and matching cosmetics,
+procedural filters and scriptlet selections. Preserved CNN references match the
+prior `be35784f` diagnostic Vox PNG exactly. All **960 prior selected rendering/
+resource input hashes** still match the checkout. This is reference compatibility
+with the retained Vox capture; no new Vox process or production result is claimed.
+The original live CNN PNG still differs by **107,289 pixels**. Its historical
+source/replay gate remains open; changing preparation earns no engine or
+performance credit.
+
+Each Lobsters process is stable across its consecutive PNGs, with loaded fonts,
+identical text, identical element rectangles and identical image inventories.
+Across fresh processes, 101 pixels differ within x=68..670, y=75..253, maximum
+channel error 13. Both full-uBO audits pass all 69 checks with zero disagreements
+and matching cosmetics/procedural/scriptlet selections. The first reference
+matches the retained PNG, while the second differs at those same 101 pixels.
+This reference-repeat failure invalidates new acceptance. Both observations and
+the prior exact diagnostic result are retained; no retry is excluded or replaces
+the reference.
+
+**35 JavaScript and 35 Python tests pass** under 3 GiB guards. Coverage includes
+non-mutating readiness, explicit decoding and failures, source capture forwarding,
+sealed policy provenance, mismatched receipts/overrides, stable frames and cache
+warmup. An unchanged catalog test initially fails because `bd5d3f9bd` replaced
+Reddit with ChatGPT but left the test and fixture coverage behind. Separate
+`389327728` aligns the test with the existing registration and adds an explicit
+missing-archive status for ChatGPT, without asserting a capture or HTTP outcome.
+Earlier suite/setup failures remain retained. The registry change does not
+supply Reddit or ChatGPT page coverage.
+
+The latest published production is still `7515422c`; it predates the three latest
+rendering fixes. Receipt `20261116-125455-46077f6a` completed successfully but was
+superseded while a prior comparison held the bundle reader lease. The following
+`20261116-132205-1611d6ef` build correctly failed its input guard when this task
+changed `brave_parity.mjs`. The shared worker is active with coalesced commit
+requests; no duplicate manual production build is queued or awaited. This audit
+launches only Brave and holds no Vox bundle reader lease. Production confirmation,
+Reddit access, historical CNN source/replay and current Lobsters repeatability
+remain open.
+
+Local evidence:
+`docs/performance/vlang-gradients-20261114/raw/cnn-replay-refresh-20261116/`.
+Cleanup inventories **33 owned roots/786 files**, preserves and SHA-verifies
+**100 evidence files/8,356,471 bytes**, and removes the downloaded extension,
+checker binary, intermediates, replay state, guards and locks from `Build/`.
+The archive guard/lock are separately retained, verified and removed. No owned
+`Build/cnn-replay-refresh*` scratch remains; shared bundles/dependencies stay.

@@ -14,6 +14,16 @@ anonymous Brave navigation to `/r/programming/` redirects to a blocked login
 page, with no posts. CNN's historical source/replay verification also remains
 open. These frozen checks establish no live-site or performance acceptance.
 
+**Fresh Brave reference audit:** `597984bc6` preserves each archive's recorded
+image-decode preparation. Recent readiness calls to `img.decode()` changed CNN
+by 31,766 pixels; preserving its original load/paint protocol reproduces the
+retained reference exactly in two fresh full-uBO Brave processes. CNN's earlier
+diagnostic Vox PNG matches these references too. Fresh Lobsters references expose
+a **101-pixel cross-process repeat failure**: the first matches the retained PNG,
+the second differs. Their text, geometry and image inventories agree. New full-uBO
+acceptance remains open; no reference or tolerance changes. See the
+[decode-preparation audit](docs/OPTIMIZED_SITES_PIXELS_2026_11_12.md#preserve-recorded-image-decode-preparation-2026-11-16).
+
 The latest fixes make CNN **94→73→46→0**: `a6edd14de` preserves fractional SVG
 background layout, `fb71abe2d` renders rounded RGBA in owning-tile coordinates,
 and `9b326517b` folds CPU-resized YUV into its decoded image frame. The final
