@@ -437,6 +437,29 @@ pub fn (object &Object) internal_get(mut vm VM, key PropertyName, receiver Value
 	if array := object.typed_array {
 		if index := typed_array_property_index(key) { return typed_array_get_element(array, index) }
 	}
+	// Ordinary reads need only a value. Avoid constructing a complete optional
+	// descriptor on this path; exotic providers and accessor caching stay below.
+	if use_direct_property_reads() && object.host_properties == none
+		&& object.typed_array == none && object.string_object == none
+		&& object.arguments_object == none && object.legacy_platform_object == none {
+		if array := object.array_object {
+			if key.is_length_property() { return Value.from_f64(f64(array.length)) }
+		}
+		index := object.find_own_property(key)
+		if index >= 0 {
+			value := object.properties[index].value
+			if !value.is_accessor() {
+				record_direct_property_read()
+				return value
+			}
+		} else {
+			if parent := object.prototype {
+				if vm.did_reach_stack_space_limit() { return vm.throw_error_type(.internal_error, .call_stack_size_exceeded) }
+				return parent.internal_get(mut vm, key, receiver)
+			}
+			return js_undefined()
+		}
+	}
 	descriptor := object.internal_get_own_property(key) or {
 		if parent := object.prototype {
 			if vm.did_reach_stack_space_limit() {
