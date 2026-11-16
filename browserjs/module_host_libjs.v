@@ -145,6 +145,9 @@ fn (mut host ModuleHost) parse_libjs_module(key string,code string,starting_line
 		host_defined:voidptr(runtime), parsed:parsed}
 	created.module_starting_line=u32(starting_line)
 	runtime.libjs_modules_[key.clone()]=created
+	// Initial and statically imported modules also contain uncalled event
+	// handlers needed on later visits. Queue their syntax without running it.
+	runtime.queue_native_module_templates(created)
 	return created
 }
 
