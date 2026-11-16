@@ -624,6 +624,8 @@ void native_cache_browser_snapshot(string path_value) {
 	native_request_browser_redraw();
 }
 
+extern void vox_condition_native_rect_coverage(float*, float*, float*);
+
 static void native_draw_solid_rect_srgb(float x, float y, float width, float height,
 	gg__Color color, int caret) {
 	if (width <= 0 || height <= 0) {
@@ -647,6 +649,15 @@ static void native_draw_solid_rect_srgb(float x, float y, float width, float hei
 	CGColorRef cgColor = CGColorCreate(colorSpace, components);
 	CGContextSetFillColorWithColor(context, cgColor);
 	CGRect rect = CGRectMake(x, y, width, height);
+	if (!caret) {
+		CGRect clip = CGContextGetClipBoundingBox(context);
+		CGAffineTransform transform = CGContextGetCTM(context);
+		float bounds[4] = {x, y, width, height};
+		float clipping[4] = {clip.origin.x, clip.origin.y, clip.size.width, clip.size.height};
+		float matrix[6] = {transform.a, transform.b, transform.c, transform.d, transform.tx, transform.ty};
+		vox_condition_native_rect_coverage(bounds, clipping, matrix);
+		rect = CGRectMake(bounds[0], bounds[1], bounds[2], bounds[3]);
+	}
 	if (!vox_initial_document_clear(&native_layer_initial_document_clear, context, rect,
 		color.r, color.g, color.b, color.a)) CGContextFillRect(context, rect);
 	CGColorRelease(cgColor);
