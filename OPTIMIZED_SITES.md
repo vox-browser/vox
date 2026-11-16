@@ -22,6 +22,15 @@ All **57 workloads/114 captures** repeat; all 56 prior PNGs are unchanged.
 All 30 focused tests pass. Production confirmation of `40d8c41ed` is pending. See the
 [PNG follow-up](docs/OPTIMIZED_SITES_PIXELS_2026_11_12.md#uniform-png-scales-decoded-frame-history-and-elliptical-geometry-2026-11-16).
 
+**Source browser audit:** CNN's retained live PNG was captured with Brave
+156.1.98.60; its replay references use 157.1.99.56/57. `86220ffbe` now records
+both replay versions and rejects source/replay acceptance across versions,
+even when pixels match. Missing version evidence also fails. The original
+107,289 differences remain; this check does not attribute them to the upgrade.
+The available production bundle still matches all six archived site references
+twice, but retains the PNG control's 1,412 differences. See the
+[version audit](docs/OPTIMIZED_SITES_PIXELS_2026_11_12.md#source-and-replay-browser-version-qualification-2026-11-16).
+
 **Fresh Brave reference audit:** `597984bc6` preserves each archive's recorded
 image-decode preparation. Recent readiness calls to `img.decode()` changed CNN
 by 31,766 pixels; preserving its original load/paint protocol reproduces the

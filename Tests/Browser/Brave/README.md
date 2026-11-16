@@ -25,6 +25,15 @@ opaque shader/text-blob contents. Instrumentation can change raster history:
 on Lobsters it repaired five captured 101-pixel failures. The later PNG never
 replaces the saved reference or supplies default-path acceptance.
 
+`tools/forum_news_pixels.py` writes `source-replay-browser-versions.json` and
+includes its fields in the site summary. Strict acceptance requires the recorded
+source version and both fresh replay versions to match. Different versions return
+`source-browser-mismatch`; missing or malformed versions return
+`source-browser-unverified`. A reference-repeat failure retains priority, and
+all source/native pixel counts and PNGs remain in the evidence. Matching versions
+are necessary; executable and library hash checks remain separate requirements.
+See the [version audit](../../../docs/OPTIMIZED_SITES_PIXELS_2026_11_12.md#source-and-replay-browser-version-qualification-2026-11-16).
+
 `diagnostic/webp-srgb-table` reuses the tracked CNN train WebP with its original
 1024-entry ICC sRGB transfer table. It draws native-size, 104×58.5 CSS-pixel
 and viewport-clipped copies at 1024×768, scale 1, without scripts. Two fresh

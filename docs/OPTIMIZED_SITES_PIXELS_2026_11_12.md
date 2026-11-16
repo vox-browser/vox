@@ -5679,3 +5679,57 @@ generated C, profiles, replay keys, guard reports and locks. No owned
 `Build/capture-scale-recheck*` scratch remains. The managed hook requests a
 single-C-unit literal V `-prod` rebuild for `40d8c41ed`; no manual duplicate is
 queued.
+
+
+### Source and replay browser version qualification, 2026-11-16
+
+`86220ffbe` fixes an acceptance gap in `tools/forum_news_pixels.py`: it previously
+compared the retained live PNG with new replay PNGs without requiring the source
+and replay Brave versions to match. Identical pixels could therefore pass that
+part of the gate across different versions. The driver now records the source
+and both replay version labels in `source-replay-browser-versions.json` and the
+site summary. A version mismatch yields `source-browser-mismatch`; missing or
+malformed evidence yields `source-browser-unverified`. Two complete replay
+receipts are required. Reference-repeat failures retain priority. No pixel
+comparison, full-uBO check, PNG, tolerance or executable/library identity guard
+is removed or relaxed. Version equality is a necessary condition, not proof of
+complete browser identity.
+
+CNN's sealed source report records **Brave 156.1.98.60**. The November 12 replay
+reports record **157.1.99.56**, and the retained preparation-preserving November
+16 pair records **157.1.99.57**. Reanalysis of those independently repeated,
+full-uBO November 16 references preserves the original **107,289-pixel** source
+mismatch, their **zero-pixel** repeat, and their **zero-pixel** difference from
+the retained replay reference. This is reanalysis of existing evidence; no fresh
+Brave or live capture is claimed. The version mismatch is an additional
+qualification failure. It does not establish that the upgrade caused all
+107,289 differences, and it does not clear CNN's historical source/replay gate.
+A matched source/replay browser remains necessary for that claim.
+
+All **37 focused Python tests** pass under the 3 GiB memory guard. They reject
+identical source/native/replay PNG verdicts when versions differ, a version
+change between replay processes, absent/malformed versions and incomplete
+replay cohorts. Existing reference-variation, pixel-failure, cache-preparation,
+filter and archive-provenance checks continue to pass.
+
+The default completed-browser selector chooses the published single-C-unit,
+literal V `-prod` executable
+`bbd4703576665b62c43c763fa6e75c767ec867b4e33b8b7595a7dbcca231a208`.
+The newer `20261116-171233-fd0968a3` artifact is marked superseded, so it is not
+selected. Fourteen fresh native captures verify that CNN, GitHub, Hacker News,
+Lobsters, Wikipedia and Vlang remain exact twice against the unchanged archived
+references. The newer uniform PNG control retains **1,412 differences twice**,
+as expected for this older artifact. These captures do not confirm `40d8c41ed`.
+Production receipts `20261116-173931-b63ac897` and `20261116-180118-e6072ca4`
+fail the frozen-input guard because `native_capture_darwin.m` changed while
+building. Their failure receipts are retained. Managed commit rebuild requests
+remain coalesced; no duplicate manual production build is queued or awaited.
+
+Production confirmation of the PNG fix, the missing newer Reddit fixture,
+default Brave Lobsters repeatability and matched-version CNN source/replay
+qualification remain open. No live-site or performance acceptance is claimed.
+
+Local evidence: `docs/performance/catalog-followup-20261116/`. Cleanup
+inventories **10 owned roots/1,953 files**, preserves and SHA-verifies **171
+evidence files/6,861,330 bytes**, and removes owned profiles, replay keys,
+guards and locks. No owned `Build/catalog-followup*` scratch remains.
