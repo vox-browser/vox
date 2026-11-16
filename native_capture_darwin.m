@@ -627,6 +627,8 @@ void native_cache_browser_snapshot(string path_value) {
 }
 
 extern void vox_condition_native_rect_coverage(float*, float*, float*);
+extern int vox_document_analytic_rect_enabled(void);
+extern int vox_draw_document_analytic_rect(float*, float*, float*, uint32_t, int, int);
 
 static void native_draw_solid_rect_srgb(float x, float y, float width, float height,
 	gg__Color color, int caret) {
@@ -646,17 +648,27 @@ static void native_draw_solid_rect_srgb(float x, float y, float width, float hei
 	CGColorRef cgColor = native_document_srgb_components(components);
 	CGContextSetFillColorWithColor(context, cgColor);
 	CGRect rect = CGRectMake(x, y, width, height);
+	float original[4] = {x, y, width, height};
+	CGAffineTransform transform = CGContextGetCTM(context);
+	float matrix[6] = {transform.a, transform.b, transform.c, transform.d, transform.tx, transform.ty};
 	if (!caret) {
 		CGRect clip = CGContextGetClipBoundingBox(context);
-		CGAffineTransform transform = CGContextGetCTM(context);
 		float bounds[4] = {x, y, width, height};
 		float clipping[4] = {clip.origin.x, clip.origin.y, clip.size.width, clip.size.height};
-		float matrix[6] = {transform.a, transform.b, transform.c, transform.d, transform.tx, transform.ty};
 		vox_condition_native_rect_coverage(bounds, clipping, matrix);
 		rect = CGRectMake(bounds[0], bounds[1], bounds[2], bounds[3]);
 	}
 	if (!vox_initial_document_clear(&native_layer_initial_document_clear, context, rect,
-		color.r, color.g, color.b, color.a)) CGContextFillRect(context, rect);
+		color.r, color.g, color.b, color.a)) {
+		float bounds[4] = {rect.origin.x, rect.origin.y, rect.size.width, rect.size.height};
+		uint32_t packed = ((uint32_t)color.a << 24) | ((uint32_t)color.r << 16)
+			| ((uint32_t)color.g << 8) | color.b;
+		if (caret || !vox_document_analytic_rect_enabled()
+			|| !native_document_raster_uses_p3()
+			|| !vox_draw_document_analytic_rect(bounds, original, matrix, packed,
+			(int)CGBitmapContextGetWidth(context), (int)CGBitmapContextGetHeight(context)))
+			CGContextFillRect(context, rect);
+	}
 	CGColorRelease(cgColor);
 }
 
