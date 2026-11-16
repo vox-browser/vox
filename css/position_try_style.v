@@ -1,6 +1,7 @@
 module css
 
 import dom
+import platform
 
 struct PositionTryStyleOverride {
 	target dom.AbstractElement
@@ -8,6 +9,8 @@ struct PositionTryStyleOverride {
 }
 
 pub fn compute_position_try_style(target dom.AbstractElement, declaration &CSSStyleProperties) &ComputedProperties {
+	mut retained := platform.enter_retained_allocations()
+	defer { retained.finish() }
 	mut computer := css_style_computer_for(target.element().document())
 	previous := computer.position_try_override_
 	computer.position_try_override_ = PositionTryStyleOverride{target:target,declaration:declaration}
@@ -16,6 +19,8 @@ pub fn compute_position_try_style(target dom.AbstractElement, declaration &CSSSt
 }
 
 pub fn install_position_try_style(mut target dom.AbstractElement, properties &ComputedProperties) {
+	mut retained := platform.enter_retained_allocations()
+	defer { retained.finish() }
 	target.set_computed_properties(computed_properties_to_dom(properties))
 }
 
