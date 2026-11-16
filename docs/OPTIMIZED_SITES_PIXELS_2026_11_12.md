@@ -6274,3 +6274,90 @@ Cleanup inventories **38 owned roots/6,425 files**, preserves and SHA-verifies
 **1,576 evidence files/39,385,729 bytes**, then removes owned programs, generated
 C, private profiles/caches, downloaded extensions, replay keys, guards and locks.
 No `Build/verge-shadow*` job output remains.
+
+
+### Verge enlarged WebP crops and runtime shader pins, 2026-11-16
+
+`efc8321e7` admits integral, uniform WebP enlargement above 1× through 2× in
+the original-plane atlas path. The complete archived Verge viewport improves
+**174,100→32,035 pixels twice**, correcting **143,509** and introducing **1,444**.
+The remaining overlays are still inexact; this is an incomplete site fix.
+Separate complete BBC and Guardian captures remain **zero twice** each.
+
+The hero's source is (45,0,450.00003,360) in the tracked 540×360 VP8 body
+`dfffe5e6ef2ca7d69e140c3d35089fbd7e66f83fd27e3d9be70742843abd28a1`.
+It maps to (222,204,580,464), with a full-image destination of (164,204,696,464).
+The new enlargement branch normalizes source-coordinate float32 roundoff at
+integer edges; meaningful fractional crops retain their fallback. Other existing
+image, opacity, profile, transform and clip checks remain active. Minification
+keeps its established eligibility. Enlargements keep the original luma/chroma
+planes and need no mip chain.
+
+Initial direct GPU probes differ by **115,814 pixels** when filtering decoded
+RGB and **215** when sampling the YUV planes. All 215 sit at the enlarged crop's
+luma boundary: magnification can sample beyond the subset's outer texel centers.
+The shader now clamps luma as well as chroma. Its luma bounds use the planar
+variant's spare gamut-payload slots, preserving the uniform ABI. The payload
+stays zero for the earlier minification paths. The source-subset GPU test now
+matches exactly in both sample modes, including tile ownership and an exterior
+ring. An additional full-image control verifies the original plane edges.
+
+The three new public controls reuse the tracked body. Each gets two fresh,
+byte-identical Brave references; expected PNGs are promoted unchanged:
+
+| Control | SHA-256 | Available production | Candidate |
+| --- | --- | ---: | ---: |
+| `upscaled-webp-atlas` | `8b7da5d01835e5171d7546c191a73bc4a6cefac6b7b511d68c46c277b4c685b5` | 181,255 twice | 0 twice |
+| `upscaled-webp-atlas-single-sample` | `3b30d6e622d6ef22fbf8f4e739af22bd0b89896fa8e60482427b7b369e12ef2f` | 181,255 twice | 0 twice |
+| `upscaled-webp-atlas-full` | `13e30bf6b6efda864fb00b587a4b4f4ef43a8b09b60e67e01f537a852d1b2e0b` | 193,075 twice | 0 twice |
+
+A separate diagnostic verifies actual path execution: the hero uploads its
+540×360 planes, paints successfully, and uses four samples in all three root
+tile rows. These logging captures also differ by 32,035 twice. The isolated SVG
+filter control remains at 31,489; image/overlay intersections retain further
+errors. No previous reference or tolerance changes.
+
+Validation exposed a shared-input problem. Generated diagnostic C initializes
+`gradient_snippet_file` with null embedded-data pointers and an absolute file
+path; shaders are loaded at runtime. During the first 70-workload run another
+shared precision experiment changes that file and introduces an invalid
+float3/scalar `half4` constructor. Later captures fall back to the old renderer.
+That entire unpinned run is retained and rejected, despite controller exit zero.
+The initial claim that executable identity alone pins these shader inputs is
+withdrawn. `f9e29e413` adds all 24 runtime Metal shader hashes to the pixel driver's
+scope and checks them after every capture. The explicit half-vector constructor
+repair remains within the other unfinished precision block; it cannot be
+committed separately without taking that unrelated experiment. Only the new YUV
+shader/staging changes are included in the WebP feature commit.
+
+The rerun uses pinned runtime shaders throughout. All **70 workloads/140 fresh
+captures** repeat, all **67 preceding PNGs remain byte-identical**, and all three
+new controls are exact. Nineteen focused V functions and three Python staging
+tests pass, with the GPU tests' runtime shaders, references and body inputs
+pinned before and after. V and Python preparers cover cold installation,
+independent luma-shader repair and idempotence. The first native staging fixture
+lacks a later shared gamma anchor and fails; its corrected fixture and actual
+GPU runs pass. All failed probes and compiler attempts remain in evidence.
+
+C/O0 diagnostic executable:
+`7032db3a81d6ba492cb21f41484192725c7516310ed40892aae0895ff5ecfef5`.
+Six consumed V buffers match the captured compiler manifest at the successful
+build; later checkout edits are outside that binary's validation. Both final
+Verge streams pass full-uBO checks: 178 requests each, all allowed, zero
+mismatches and oracle disagreements. The pinned release ZIP and 59 vendor files
+verify. Accepted build/test/capture/filter/guard exits are zero under the
+unchanged 12 GiB build and 3 GiB focused runtime caps. The 24 runtime shader
+files are preserved with their hashes in local evidence.
+
+The latest completed production bundle remains `93adced1`; it cannot validate
+these newer fixes. The managed hooks request coalesced C/literal V `-prod`
+rebuilds. Production confirmation, the 32,035 remaining Verge pixels, other
+catalog rechecks, source/replay version qualification and live behavior remain
+open. No instruction-performance acceptance is claimed.
+
+Local evidence: `docs/performance/verge-webp-20261116/`.
+Cleanup inventories **72 owned roots/11,450 files**, preserves and SHA-verifies
+**3,146 job evidence files/92,074,904 bytes**, then removes owned programs,
+generated C, private profiles/caches, downloaded extensions, replay keys, guards
+and locks. Runtime shader snapshots remain in the local evidence directory.
+No `Build/verge-webp*` job output remains.
