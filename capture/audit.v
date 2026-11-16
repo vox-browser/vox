@@ -1,6 +1,7 @@
 module main
 
 import adblock
+import browserjs
 import crypto.sha256
 import css
 import dom
@@ -183,6 +184,7 @@ struct CaptureAudit {
 	paint_geometry         []CaptureAuditPaintGeometry
 	active_element         CaptureAuditActiveElement
 	javascript_diagnostics []string
+	compiled_javascript_cache ?browserjs.CompiledJavaScriptCacheAudit
 	// Native HTML timer/event exceptions bypass the compact bridge log.
 	native_reported_error_count int
 	native_reported_errors      []string
@@ -331,6 +333,7 @@ fn (app &BrowserApp) collect_capture_audit(config CaptureAuditConfig) !CaptureAu
 		paint_geometry:              paint_geometry
 		active_element:              capture_audit_active_element(app.document)
 		javascript_diagnostics:      app.js_messages.clone()
+		compiled_javascript_cache: if app.js_runtime != unsafe { nil } { ?browserjs.CompiledJavaScriptCacheAudit(app.js_runtime.compiled_code_cache_audit()) } else { none }
 		native_reported_error_count: native_reported_error_count
 		native_reported_errors:      native_reported_errors
 		native_reported_error_information: native_reported_error_information
