@@ -132,6 +132,7 @@ mut:
 	next_libjs_inline_module_ u64
 	libjs_native_cache_enabled_ bool
 	libjs_native_cache_pending_ bool
+	libjs_native_cache_timer_ &platform.Timer = unsafe { nil }
 	libjs_native_cache_failed_ bool
 	libjs_native_cache_partition_ string
 	libjs_frontend_cache_hits_ u64
@@ -456,6 +457,7 @@ pub fn (mut runtime Runtime) close() {
 	if runtime.closed {
 		return
 	}
+	runtime.stop_document_native_cache_timer()
 	runtime.flush_document_native_cache()
 	runtime.agent_vm.close_native_code() or {
 		eprintln('LibJS native cache close deferred: ${err.msg()}')

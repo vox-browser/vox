@@ -92,10 +92,10 @@ fn test_bound_document_coalesces_first_visit_compilation_and_has_no_second_visit
 			assert runtime.libjs_native_cache_pending_
 			assert runtime.frontend_code_cache_stats().misses == 2
 			mut loop := settings.responsible_event_loop()
-			for _ in 0 .. 16 {
-				if !runtime.libjs_native_cache_pending_ { break }
-				loop.process()
-			}
+			deadline := time.sys_mono_now() + 5 * time.second
+			loop.spin_until(fn [runtime,deadline] () bool {
+				return !runtime.libjs_native_cache_pending_ || time.sys_mono_now()>=deadline
+			})
 			assert !runtime.libjs_native_cache_pending_
 			assert runtime.native_code_cache_stats().compiler_invocations == 1
 			assert runtime.native_code_cache_stats().compiled_executables == 3

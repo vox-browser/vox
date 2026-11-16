@@ -1,7 +1,6 @@
 module browserjs
 
 import browsersettings
-import html
 import libjs
 import os
 import platform
@@ -42,7 +41,7 @@ fn (mut runtime Runtime) flush_document_native_cache() {
 
 fn (runtime &Runtime) schedule_document_native_cache() {
 	mut owner := unsafe { &Runtime(runtime) }
-	if !owner.libjs_native_cache_enabled_ || owner.libjs_native_cache_pending_
+	if !owner.libjs_native_cache_enabled_
 		|| owner.libjs_native_cache_failed_ || owner.closed {
 		return
 	}
@@ -50,18 +49,52 @@ fn (runtime &Runtime) schedule_document_native_cache() {
 		|| owner.native_code_cache_stats().pending_executables == 0 {
 		return
 	}
-	if settings := owner.scripting_settings_ {
+	if owner.scripting_settings_ != none {
 		persistent := platform.enter_persistent()
 		defer { platform.leave_persistent(persistent) }
 		owner.libjs_native_cache_pending_ = true
-		html.queue_a_task(.idle_task, settings.responsible_event_loop(), settings.responsible_document(), fn [owner] () {
-			mut runtime := unsafe { &Runtime(owner) }
-			runtime.libjs_native_cache_pending_ = false
-			if !runtime.closed { runtime.flush_document_native_cache() }
-		})
+		// An idle task can run between asynchronous module/fetch deliveries.
+		// Coalesce until author work is quiet so compilation does not interrupt
+		// initial hydration while the next response is still in flight.
+		if owner.libjs_native_cache_timer_ == unsafe { nil } {
+			owner.libjs_native_cache_timer_ = platform.Timer.create_single_shot(1000, fn [owner] () {
+				mut runtime := unsafe { &Runtime(owner) }
+				if runtime.closed { return }
+				if !runtime.agent_vm.native_code_cache_is_idle() || runtime.has_pending_module_scripts() || runtime.has_pending_libjs_fetches() {
+					runtime.libjs_native_cache_timer_.start()
+					return
+				}
+				runtime.libjs_native_cache_pending_ = false
+				runtime.flush_document_native_cache_batch()
+				if !runtime.libjs_native_cache_failed_ && runtime.native_code_cache_stats().pending_executables>0 {
+					runtime.libjs_native_cache_pending_ = true
+					runtime.libjs_native_cache_timer_.start()
+				}
+			})
+		}
+		owner.libjs_native_cache_timer_.restart()
 	} else {
 		// Embedders without an HTML event loop still get the same first/second
 		// visit semantics, with compilation after the outer script returns.
 		owner.flush_document_native_cache()
 	}
+}
+
+fn (mut runtime Runtime) flush_document_native_cache_batch() {
+	if !runtime.libjs_native_cache_enabled_ || runtime.libjs_native_cache_failed_ { return }
+	runtime.agent_vm.flush_native_code_cache_batch() or {
+		runtime.libjs_native_cache_failed_ = true
+		eprintln('LibJS native cache compilation failed: ${err.msg()}')
+	}
+}
+
+fn (mut runtime Runtime) stop_document_native_cache_timer() {
+	if runtime.libjs_native_cache_timer_ == unsafe { nil } { return }
+	mut timer := runtime.libjs_native_cache_timer_
+	timer.stop()
+	callback := timer.on_timeout
+	timer.on_timeout = unsafe { nil }
+	runtime.libjs_native_cache_timer_ = unsafe { nil }
+	runtime.libjs_native_cache_pending_ = false
+	platform.release_closure(voidptr(callback))
 }
