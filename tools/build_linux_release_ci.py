@@ -24,6 +24,16 @@ def run(arguments, **kwargs):
     return subprocess.run(list(map(str, arguments)), check=True, **kwargs)
 
 
+def verify_c_compiler(compiler):
+    result = subprocess.run([compiler, '-Werror=implicit-function-declaration',
+                            '-x', 'c', '-fsyntax-only', '-'],
+        input='double vox_round_even(double x) { return __builtin_roundeven(x); }\n',
+        text=True, capture_output=True)
+    if result.returncode:
+        raise RuntimeError('The release C compiler must support __builtin_roundeven; '
+                           'use Clang 19 with its matching LLD.\n' + result.stderr)
+
+
 def checkout(repository, revision, target):
     target.mkdir(parents=True)
     run(['git', 'init', '-q', target])
@@ -65,6 +75,8 @@ def main():
     source, toolchain = args.source.resolve(), args.toolchain.resolve()
     if subprocess.check_output(['dpkg', '--print-architecture'], text=True).strip() != 'amd64':
         raise RuntimeError('This release job requires a native AMD64 Debian environment')
+    native_cc = os.environ.get('CC', 'clang')
+    verify_c_compiler(native_cc)
     run(['git', 'config', '--global', '--add', 'safe.directory', source])
     head = subprocess.check_output(['git', '-C', source, 'rev-parse', 'HEAD'], text=True).strip()
     if head != args.expected_commit:
@@ -88,12 +100,12 @@ def main():
     checkout('https://github.com/vlang/vc.git', VC_REVISION, compiler / 'vc')
     checkout('https://github.com/vlang/ui2.git', UI2_REVISION, toolchain / 'ui2')
     environment = dict(os.environ, VFLAGS='', V_MACOS_V3_NO_FALLBACK='1',
-                       UI2_SOURCE_DIR=str(toolchain / 'ui2'))
+                       CC=native_cc, UI2_SOURCE_DIR=str(toolchain / 'ui2'))
     # Bootstrap the current frontend directly; make's legacy fallback currently
     # fails while compiling the newer compiler's typed AST array operations.
-    guarded(['cc', '-std=gnu11', '-w', '-o', compiler / 'v-seed', compiler / 'vc/v.c',
+    guarded([native_cc, '-std=gnu11', '-w', '-o', compiler / 'v-seed', compiler / 'vc/v.c',
              '-lm', '-lpthread'], 'compiler-seed', environment=environment)
-    environment.update(VOX_MATCH_SCOPE_CC='clang',
+    environment.update(VOX_MATCH_SCOPE_CC=native_cc,
                        VOX_MATCH_SCOPE_RECEIPT=str(compiler / 'patched.txt'))
     scope_adapter = Path(__file__).with_name('v_match_scope_cc.py')
     command = [compiler / 'v-seed', '-b', 'c', '-memory-limit', '10G', '-nocache',

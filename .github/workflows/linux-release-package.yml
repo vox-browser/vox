@@ -46,13 +46,16 @@ jobs:
             --env RELEASE_COMMIT="$release_commit" debian:12-slim sh -eu -c '
               apt-get update -qq
               apt-get install -y --no-install-recommends \
-                build-essential clang pkg-config git ca-certificates python3 dpkg-dev procps \
+                build-essential clang-19 lld-19 pkg-config git ca-certificates python3 dpkg-dev procps \
                 libjavascriptcoregtk-4.1-dev libglib2.0-dev libharfbuzz-dev \
                 libcurl4-openssl-dev libssl-dev libegl1-mesa-dev libgles2-mesa-dev \
                 libgl1-mesa-dev libxi-dev libxcursor-dev libxrandr-dev libx11-dev \
                 libasound2-dev libgc-dev libfreetype-dev libfontconfig-dev \
                 libwebp-dev libpng-dev libjpeg-dev fonts-dejavu-core \
                 xvfb xauth xdotool scrot openssl
+              printf "%s\n" "#!/bin/sh" "exec /usr/bin/clang-19 -fuse-ld=/usr/bin/ld.lld-19 \"\$@\"" > /usr/local/bin/vox-release-cc
+              chmod +x /usr/local/bin/vox-release-cc
+              export CC=/usr/local/bin/vox-release-cc
               python3 -u /workspace/tooling/tools/build_linux_release_ci.py \
                 --source /workspace/source --toolchain /opt/vox-release-toolchain \
                 --expected-commit "$RELEASE_COMMIT"
