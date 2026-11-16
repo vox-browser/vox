@@ -121,9 +121,20 @@ fn document_sampled_png_pixels(pixels &u8, width i32, height i32, pitch i32, bac
 		unsafe { vmemcpy(values.data, source, values.len * int(sizeof(f32))) }
 		result = ggshape.draw_sampled_colors_clipped(pixels, width, height, pitch, backdrop, values, source_width, source_height, x, y, destination_width, destination_height, int(samples), int(natural_width), int(natural_height), clipping)
 	} else {
-		result = ggshape.draw_sampled_rgba_clipped(pixels, width, height, pitch, backdrop,
-			unsafe { source.vbytes(int(source_width) * int(source_height) * 4) }, source_width, source_height,
-			x, y, destination_width, destination_height, int(samples), int(natural_width), int(natural_height), clipping, gpu_mips != 0)
+		packed := unsafe { source.vbytes(int(source_width) * int(source_height) * 4) }
+		// Rounded RGBA draws retain the owning tile's interpolation space.
+		// Plain rectangles and mixed samples keep their existing fallback.
+		if gpu_mips in [0, 1] && clipping[4..12].any(it > 0) {
+			result = draw_document_sampled_image_tiles(pixels, width, height, pitch, backdrop,
+				int(first_x), int(first_y), packed, int(source_width), int(source_height),
+				x, y, destination_width, destination_height, int(natural_width), int(natural_height),
+				clipping, .rgba, gpu_mips != 0)
+		}
+		if result == 0 {
+			result = ggshape.draw_sampled_rgba_clipped(pixels, width, height, pitch, backdrop,
+				packed, source_width, source_height, x, y, destination_width, destination_height,
+				int(samples), int(natural_width), int(natural_height), clipping, gpu_mips != 0)
+		}
 	}
 	swap_document_raster_channels(pixels, width, height, pitch)
 	return result

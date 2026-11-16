@@ -3,12 +3,44 @@ module main
 
 import crypto.sha256
 import ggshape
+import imageraster
 import yuv
 
 #flag darwin -L/opt/homebrew/lib -I/opt/homebrew/include -lwebpdecoder
 #include <webp/decode.h>
 
 fn C.WebPDecodeYUVInto(&u8, uint, &u8, uint, i32, &u8, uint, i32, &u8, uint, i32) &u8
+
+fn C.WebPDecodeRGBAInto(&u8, uint, &u8, uint, i32) &u8
+
+fn test_uniform_rgba_callback_preserves_owning_tile_samples() {
+	previous := document_geometry_grid
+	defer { document_geometry_grid = previous }
+	bytes := $embed_file('@VMODROOT/Tests/Browser/Brave/sites/cnn/bodies/fbe3994f267a5bfabc1f8856b9adcce31ba8350b3853265605ecbeadc6a52d12').to_bytes()
+	mut decoded := []u8{len: 780 * 438 * 4}
+	assert C.WebPDecodeRGBAInto(bytes.data, uint(bytes.len), decoded.data, uint(decoded.len), 780 * 4) != unsafe { nil }
+	image := imageraster.decode_rgba(decoded, 780, 438, 390, 219) or { panic('RGBA upload') }
+	assert sha256.sum(image.pixels).hex() == '195df442a89e036cbff58b3abf90525de21b58d8988cf6407995a7ff2243ba83'
+	document_geometry_grid = DocumentGeometryGrid{ width: 1024, height: 256, columns: 1, rows: 4 }
+	clip := [f32(2), 2, 269, 151, 4, 4, 4, 4, 4, 4, 4, 4]!
+	mut actual := []u8{len: 273 * 155 * 4, init: 255}
+	assert document_sampled_png_pixels(actual.data, 273, 155, 1092, 1, 721, 343, image.pixels.data, 390, 219, 780, 438, 0, 2, 2, 269, 151, &clip[0]) == 1
+	swap_document_raster_channels(actual.data, 273, 155, 1092)
+	// Original Brave image pixels, including rounded coverage, on white padding.
+	assert sha256.sum(actual).hex() == '7874f283117acce8eb15649c145686af0980098bfa52ef10aef1dbc0f88536d3'
+	document_geometry_grid = DocumentGeometryGrid{}
+	mut direct := []u8{len: actual.len, init: 255}
+	mut fallback := direct.clone()
+	assert ggshape.draw_sampled_rgba_clipped(direct.data, 273, 155, 1092, 1, image.pixels, 390, 219, 2, 2, 269, 151, 1, 780, 438, clip, false) == 1
+	assert document_sampled_png_pixels(fallback.data, 273, 155, 1092, 1, 721, 343, image.pixels.data, 390, 219, 780, 438, 0, 2, 2, 269, 151, &clip[0]) == 1
+	swap_document_raster_channels(fallback.data, 273, 155, 1092)
+	assert sha256.sum(fallback) == sha256.sum(direct)
+	// Mixed sample ownership retains the native fallback and its input pixels.
+	document_geometry_grid = DocumentGeometryGrid{ width: 64, height: 64, columns: 2, rows: 2, cells: [i32(1)] }
+	mut rejected := []u8{len: 130 * 130 * 4, init: 97}
+	assert document_sampled_png_pixels(rejected.data, 130, 130, 520, 1, 0, 0, image.pixels.data, 390, 219, 780, 438, 0, 2, 2, 269, 151, &clip[0]) == 0
+	assert rejected.all(it == 97)
+}
 
 fn test_uniform_yuv_callback_preserves_native_tile_coordinate_space() {
 	previous := document_geometry_grid
