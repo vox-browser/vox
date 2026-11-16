@@ -56,6 +56,8 @@ def run(args):
         environment['VOX_LIBJS_NATIVE_CACHE'] = str(args.native_cache.resolve())
     if args.disable_native_cache:
         environment['VOX_LIBJS_NATIVE_CACHE'] = '0'
+    if args.frontend_cache is not None:
+        environment['VOX_LIBJS_FRONTEND_CACHE'] = args.frontend_cache
     if args.native_compiler is not None:
         environment['VOX_LIBJS_NATIVE_COMPILER'] = str(args.native_compiler.resolve())
     if args.native_diagnostics:
@@ -82,6 +84,7 @@ def run(args):
     result = dict(command=command, configuration=args.configuration,
         native_cache=environment.get('VOX_LIBJS_NATIVE_CACHE', 'profile default'),
         native_compiler=environment.get('VOX_LIBJS_NATIVE_COMPILER', 'clang'),
+        frontend_cache=environment.get('VOX_LIBJS_FRONTEND_CACHE', 'native-cache policy'),
         audit_interval_ms=args.audit_interval_ms,
         scope=('active document-only native capture; no pixel/performance gate'
                if args.document_capture else
@@ -178,6 +181,8 @@ def main():
                        help='Use the interpreter as a separate diagnostic control')
     parser.add_argument('--native-compiler', type=Path,
                         help='Use /usr/bin/false on reopen to detect unexpected compilation')
+    parser.add_argument('--frontend-cache', choices=['on', 'off'],
+                        help='Control syntax reuse independently of native execution for matched diagnostics')
     parser.add_argument('--native-diagnostics', action='store_true',
                         help='Enable native entry/fast/slow counters in a separate eligibility diagnostic')
     parser.add_argument('--text-geometry', action='store_true',
