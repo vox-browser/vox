@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Build a pinned Linux release in a native Debian CI container, then test its DEB."""
+"""Build a pinned Linux release in native Debian, then test its DEB."""
 import argparse
 import hashlib
 import json
@@ -57,6 +57,8 @@ def main():
     parser.add_argument('--source', type=Path, required=True)
     parser.add_argument('--toolchain', type=Path, required=True)
     parser.add_argument('--expected-commit', required=True)
+    parser.add_argument('--compiler-no-prod', action='store_true',
+                        help='speed up the compiler bootstrap in an emulated VM; the browser still uses -prod')
     args = parser.parse_args()
     if not re.fullmatch('[0-9a-f]{40}', args.expected_commit):
         parser.error('--expected-commit must be a full Git commit ID')
@@ -96,7 +98,9 @@ def main():
     scope_adapter = Path(__file__).with_name('v_match_scope_cc.py')
     command = [compiler / 'v-seed', '-b', 'c', '-memory-limit', '10G', '-nocache',
                '-d', 'dynamic_boehm', '-cc', scope_adapter,
-               '-prod', '-o', compiler / 'v']
+               '-o', compiler / 'v']
+    if not args.compiler_no_prod:
+        command.append('-prod')
     for backend in ('fastc', 'x64', 'amd64', 'arm64', 'ssa', 'eval', 'wasm'):
         command += ['-d', 'skip_' + backend]
     guarded([*command, compiler / 'cmd/v'], 'compiler', environment=environment)
