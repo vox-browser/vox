@@ -105,3 +105,12 @@ fn (mut s GpuSurface) draw_alpha_mask_image(mask []u8, width int, height int, pa
 		}
 	})!
 }
+
+// Graphite image-filter devices use the same approximate backing allocation
+// as save-layer devices. Its viewport still clips to the logical dimensions.
+pub fn (mut ctx GpuContext) new_filter_surface(width int, height int) !&GpuSurface {
+	if width <= 0 || height <= 0 || width > 4096 || height > 4096 || width * height > 4 * 1024 * 1024 {
+		return error('gg.canvas: invalid filter surface')
+	}
+	return ctx.new_layer_surface(width, height)!
+}

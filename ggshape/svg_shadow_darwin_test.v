@@ -48,42 +48,6 @@ fn svg_shadow_test_path() canvas.Path {
 	return b.detach()
 }
 
-// Independent Brave samples exercise the blur, local RGBA merge and final
-// rotation across source and raster-tile boundaries. Full PNG equality remains
-// an end-to-end gate, including the separately reported residual pixels.
-fn test_svg_shadow_local_filter_samples() {
-	bytes := $embed_file('@VMODROOT/Tests/Browser/Brave/expected/verge-svg-filter-space.png').to_bytes()
-	expected := stbi.load_from_memory(bytes.data, bytes.len, desired_channels: 4) or { panic(err) }
-	defer { expected.free() }
-	path := svg_shadow_test_path()
-	for row in 0 .. 3 {
-		oy := row * 254
-		mut pixels := []u8{len: 1024 * 256 * 4, init: 255}
-		for y in 0 .. 256 {
-			for x in 222 .. 802 {
-				if y + oy >= 204 && y + oy < 724 {
-					i := (y * 1024 + x) * 4
-					pixels[i], pixels[i + 1], pixels[i + 2] = 138, 118, 89
-				}
-			}
-		}
-		assert draw_svg_shadow_pixels(pixels.data, 1024, 256, 4096, 4, path,
-			[f32(1.6828125), 0, .00546875, 0, 1.6828125, 0, 0, 0, 1]!,
-			[f32(0), 1, 143.203125, -1, 0, f32(729.796875 - oy), 0, 0, 1]!,
-			[f32(.00546875), 0, 519.994506835938, 117.796875]!, [f32(0), 35, 35, 1, 1, 1, .6]!) == 1
-		for point in [[230, 250]!, [245, 250]!, [290, 250]!, [245, 350]!, [275, 350]!, [290, 450]!,
-			[230, 550]!, [290, 550]!, [260, 650]!, [350, 650]!] {
-			if point[1] < oy || point[1] >= oy + 256 { continue }
-			i := ((point[1] - oy) * 1024 + point[0]) * 4
-			j := (point[1] * 1024 + point[0]) * 4
-			for channel in 0 .. 4 {
-				reference := unsafe { expected.data[j + if channel < 3 { 2 - channel } else { 3 }] }
-				assert pixels[i + channel] == reference, 'x=${point[0]} y=${point[1]} channel=${channel}'
-			}
-		}
-	}
-}
-
 fn test_svg_shadow_declines_unsupported_transforms_without_changing_pixels() {
 	path := svg_shadow_test_path()
 	source := [f32(1), 0, 0, 0, 1, 0, 0, 0, 1]!
@@ -134,4 +98,50 @@ fn test_svg_shadow_local_source() {
 		}
 	}
 	assert different == 0, 'source pixels=${different} maximum error=${largest}'
+}
+
+// Compare complete published root-tile interiors against the unchanged Brave
+// reference. Offscreen source/filter work and both destination sample counts
+// must retain the merge device's backing allocation and transparent border.
+fn test_svg_shadow_local_filter_matches_brave() {
+	bytes := $embed_file('@VMODROOT/Tests/Browser/Brave/expected/verge-svg-filter-space.png').to_bytes()
+	expected := stbi.load_from_memory(bytes.data, bytes.len, desired_channels: 4) or { panic(err) }
+	defer { expected.free() }
+	path := svg_shadow_test_path()
+	for samples in [1, 4] {
+		mut different, mut largest := 0, 0
+		for row in 0 .. 4 {
+			oy := row * 254
+			mut pixels := []u8{len: 1024 * 256 * 4, init: 255}
+			for y in 0 .. 256 {
+				for x in 222 .. 802 {
+					if y + oy >= 204 && y + oy < 724 {
+						i := (y * 1024 + x) * 4
+						pixels[i], pixels[i + 1], pixels[i + 2] = 138, 118, 89
+					}
+				}
+			}
+			assert draw_svg_shadow_pixels(pixels.data, 1024, 256, 4096, samples, path,
+				[f32(1.6828125), 0, .00546875, 0, 1.6828125, 0, 0, 0, 1]!,
+				[f32(0), 1, 143.203125, -1, 0, f32(729.796875 - oy), 0, 0, 1]!,
+				[f32(.00546875), 0, 519.994506835938, 117.796875]!, [f32(0), 35, 35, 1, 1, 1, .6]!) == 1
+			for y in (if row == 0 { 0 } else { 1 }) .. (if row == 3 { 6 } else { 255 }) {
+				for x in 0 .. 1024 {
+					i := (y * 1024 + x) * 4
+					j := ((y + oy) * 1024 + x) * 4
+					ref := unsafe { [expected.data[j + 2], expected.data[j + 1], expected.data[j],
+						expected.data[j + 3]] }
+					if pixels[i..i + 4] != ref {
+						different++
+						for c in 0 .. 4 {
+							delta := int(pixels[i + c]) - int(ref[c])
+							absolute := if delta < 0 { -delta } else { delta }
+							if absolute > largest { largest = absolute }
+						}
+					}
+				}
+			}
+		}
+		assert different == 0, 'samples=${samples} different=${different} maximum error=${largest}'
+	}
 }

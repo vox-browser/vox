@@ -83,11 +83,15 @@ fn svg_shadow_pixels(pixels &u8, width int, height int, pitch int, samples int,
 	defer { target.free() }
 	target.write_pixels(pixels, pitch)!
 	if samples == 4 { target.draw_msaa_trigger() }
-	mut merged := ctx.new_surface(width: w, height: h)!
+	// FilterResult::AutoSurface preserves a transparent pixel around the merge
+	// and allocates an approximate backing texture. The device origin changes
+	// with that border; both affect the interpolated filter sample coordinates.
+	mut merged := ctx.new_filter_surface(w + 2, h + 2)!
 	defer { merged.free() }
 	merged.clear(canvas.Color4f{})
-	merged.set_matrix(canvas.Matrix.values([blurred.scale.x, f32(0), blurred.origin.x, 0,
-		blurred.scale.y, blurred.origin.y, 0, 0, 1]!))
+	merged.clip_rect(canvas.Rect.xywh(1, 1, f32(w), f32(h)), .intersect, false)!
+	merged.set_matrix(canvas.Matrix.values([blurred.scale.x, f32(0), blurred.origin.x + 1, 0,
+		blurred.scale.y, blurred.origin.y + 1, 0, 0, 1]!))
 	merged.draw_linear_alpha_mask(blurred.mask.pixels, blurred.mask.width, blurred.mask.height,
 		canvas.Paint{ color: canvas.Color4f{shadow[3], shadow[4], shadow[5], shadow[6]}, anti_alias: true })!
 	// Resolve source edge coverage in the filter's local space before rotation.
@@ -106,10 +110,15 @@ fn svg_shadow_pixels(pixels &u8, width int, height int, pitch int, samples int,
 	source.read_pixels(rgba.data, sw * 4)!
 	mut alpha := []u8{len: sw * sh}
 	for i in 0 .. alpha.len { alpha[i] = rgba[i * 4 + 3] }
-	merged.set_matrix(canvas.Matrix.translate(sx - left, sy - top))
+	merged.set_matrix(canvas.Matrix.translate(sx - left + 1, sy - top + 1))
 	merged.draw_linear_alpha_mask(alpha, sw, sh, canvas.Paint{ color: canvas.Color4f{0, 0, 0, 1}, anti_alias: true })!
+	// Snap the logical subset, excluding the guaranteed transparent border.
 	mut combined := []u8{len: w * h * 4}
-	merged.read_pixels(combined.data, w * 4)!
+	mut padded := []u8{len: (w + 2) * (h + 2) * 4}
+	merged.read_pixels(padded.data, (w + 2) * 4)!
+	for y in 0 .. h {
+		copy(mut combined[y * w * 4..(y + 1) * w * 4], padded[((y + 1) * (w + 2) + 1) * 4..((y + 1) * (w + 2) + 1 + w) * 4])
+	}
 	target.set_matrix(canvas.Matrix.values(frame))
 	target.concat(canvas.Matrix.translate(left, top))
 	target.draw_linear_premultiplied_layer(combined, w, h, true)!
