@@ -9,24 +9,24 @@ from pathlib import Path
 R=Path(__file__).resolve().parents[1];sys.path.insert(0,str(R/'tools'))
 from page_archive import Replay,load_archive
 from forum_news_pixels import native_capture_environment,guarded,check_native,executable_identity,write_json
-from browser_bundle_lease import browser_executable_lease
+from completed_browser import completed_browser_lease
 from check_pixel_equality import compare
 from production_source_manifest import compiled_package_witnesses
-p=argparse.ArgumentParser();p.add_argument('--output',required=True);p.add_argument('--binary',type=Path,default=R/'Build/v/Vox.app/Contents/MacOS/Vox');p.add_argument('--diagnostic',action='store_true');p.add_argument('--grid-log',action='store_true');p.add_argument('--shape-log',action='store_true');p.add_argument('--png-log',action='store_true');p.add_argument('--retain-intrinsic-lines',action='store_true');p.add_argument('--audit-selectors',type=Path);p.add_argument('--feature-revision');p.add_argument('--glyph-log',action='store_true');p.add_argument('sites',nargs='+');args=p.parse_args()
+p=argparse.ArgumentParser();p.add_argument('--output',required=True);p.add_argument('--binary',type=Path);p.add_argument('--diagnostic',action='store_true');p.add_argument('--grid-log',action='store_true');p.add_argument('--shape-log',action='store_true');p.add_argument('--png-log',action='store_true');p.add_argument('--retain-intrinsic-lines',action='store_true');p.add_argument('--audit-selectors',type=Path);p.add_argument('--feature-revision');p.add_argument('--glyph-log',action='store_true');p.add_argument('sites',nargs='+');args=p.parse_args()
 for name in args.sites:
  if name not in ['wikipedia','vlang','lobsters','github','hn','cnn']:
   source=R/f'Tests/Browser/Brave/input/{name}.html';ref=R/f'Tests/Browser/Brave/expected/{name}.png'
   if not source.exists():source=R/f'Tests/Browser/Brave/diagnostic/{name}.html';ref=source.with_suffix('.png')
   assert source.is_file() and ref.is_file(),f'Missing fixture/reference: {name}'
 out=R/args.output;out.mkdir(exist_ok=False)
-binary=args.binary.resolve()
-shared={str(q):hashlib.sha256(q.read_bytes()).hexdigest() for q in sorted((R/'Build/v').glob('libVox*.dylib'))}
-write_json(out/'scope.json',dict(diagnostic=args.diagnostic,production_scope=not args.diagnostic,shared_native_libraries=shared))
 old=R/'docs/performance/optimized-pixels-20261112/raw/optimized-pixels-20261112'
-with browser_executable_lease(binary):
+with completed_browser_lease(R,args.binary) as selected:
+ binary=selected.executable
+ shared={str(q):hashlib.sha256(q.read_bytes()).hexdigest() for q in sorted((R/'Build/v').glob('libVox*.dylib'))}
+ write_json(out/'scope.json',dict(diagnostic=args.diagnostic,production_scope=not args.diagnostic,completed_artifact=selected.staged,shared_native_libraries=shared))
  pin=executable_identity(binary);write_json(out/'identity.json',pin)
  if not args.diagnostic:
-  receipt=json.loads((R/'Build/production-build/latest.json').read_bytes());assert receipt['executable_sha256']==pin[str(binary)]
+  receipt=selected.receipt or json.loads((R/'Build/production-build/latest.json').read_bytes());expected=receipt['ready_executable_sha256'] if selected.staged else receipt['executable_sha256'];assert expected==pin[str(binary)]
   frozen_path=Path(receipt['frozen_compilation']);frozen_path=frozen_path if frozen_path.exists() else R / frozen_path.relative_to('/Users/alex/code/vox2');frozen=json.loads(frozen_path.read_bytes());features=['layout/chromium_partial_border.v','layout/chromium_shadow_pixel_scale.v','layout/table_formatting_context.v','paint/replaced_image_clip.v','chromium/msaa_tiles.v','layout/flex_measurement_layout.v','layout/chromium_raster_layers.v','chromium/gradient_gpu_darwin.v','native/include/native_css_gradient_gpu_darwin.h','chromium/svg_image_group.v','native_capture_darwin.m','ggshape/blur_filter_darwin.v','ggshape/blur_filter_darwin.m','chromium/image_decode.v','layout/video_paint_facts.v','main.v','images/png_sampling_darwin.v','ggshape/sampled_image_darwin.v','imageraster/rgba.v','imageraster/png_profile.v','ggshape/image_color_darwin.v','chromium/background_text_raster_darwin.v','cpuraster/resize_pixels.v','native/include/native_sampled_png_darwin.h','Build/v/modules/gg/canvas/vox_document_image.v','Build/v/modules/gg/canvas/gpu_layer.v','Build/v/modules/gg/canvas/gpu_surface.v','chromium/inner_shadow_gpu_darwin.v','ggshape/shape_darwin.v','chromium/rounded_outer_group_darwin.v','cpuraster/inner_shadow.v','layout/paint_transport.v','chromium/gpu_raster_darwin.v','chromium/shadowed_png_group_darwin.v','chromium/outer_decorations.v','chromium/elliptical_outer_group_darwin.v','ggshape/rotated_filter_darwin.v','native/include/native_graphite_bridge.h','chromium/rect_prefetch.v','Build/v/modules/gg/canvas/vox_shadow_mask.v','chromium/rounded_background_pair.v','chromium/rounded_background_group_darwin.v','chromium/inset_decorations.v','chromium/inset_group_darwin.v','chromium/filter_clip.v','chromium/svg_compositor_layer.v','chromium/elliptical_text_group_darwin.v','images/jpeg_sampling_darwin.v','yuv/jpeg_scaled.v','yuv/jpeg_orientation.v','ggshape/gradient_local_coordinates_darwin.v','images/lossless_webp_sampling_darwin.v','chromium/rounded_image_samples_darwin.v']
   witness={str(R/f):dict(current=hashlib.sha256(subprocess.check_output(['git','show',args.feature_revision+':'+f]) if args.feature_revision and not f.startswith('Build/') else (R/f).read_bytes()).hexdigest(),compiled=frozen['exact_source_manifest'].get(str(R/f),frozen['exact_source_manifest'].get('/Users/alex/code/vox2/'+f))) for f in features}
   for package in ['gg','ggshape','images','imageraster','yuv','chromium','media','browsernet','browsersettings']:
