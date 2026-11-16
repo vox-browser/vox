@@ -14,7 +14,7 @@ fn (mut host Host) wrap_dom_exception(native &webidl.DOMException, prototype &li
 
 // Preserve author-thrown values. Native DOM algorithm errors use their WebIDL
 // exception name; ECMAScript conversion errors remain ordinary TypeErrors.
-fn (mut host Host) dom_error(mut vm libjs.VM, err IError) IError {
+pub fn (mut host Host) dom_error(mut vm libjs.VM, err IError) IError {
 	if libjs.is_throw_completion(err) { return err }
 	message := err.msg()
 	if message.starts_with('TypeError:') { return vm.throw_error(.type_error, message.all_after('TypeError:').trim_space()) }
