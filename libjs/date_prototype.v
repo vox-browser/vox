@@ -26,6 +26,9 @@ fn initialize_date_prototype(mut vm VM, realm &Realm, mut prototype Object) {
 		prototype.define_direct_property(PropertyName.from_str(name), Value.from_object(function.object), attribute_writable | attribute_configurable)
 	}
 	install_intrinsic_method(mut vm, realm, mut prototype, 'toJSON', 1, date_prototype_to_json)
+	for name in ['toLocaleString','toLocaleDateString','toLocaleTimeString'] {
+		install_intrinsic_method(mut vm,realm,mut prototype,name,0,fn [name] (mut vm VM) !Value { return date_prototype_locale_string(mut vm,name) })
+	}
 	primitive := NativeFunction.create_raw(mut vm, realm, realm.function_prototype, date_prototype_to_primitive,
 		1, PropertyName.from_symbol(vm.well_known_symbol_to_primitive()), none)
 	prototype.define_direct_property(PropertyName.from_symbol(vm.well_known_symbol_to_primitive()), Value.from_object(primitive.object), attribute_configurable)

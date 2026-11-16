@@ -47,11 +47,18 @@ fn intl_date_component_values(name string) []string {
 }
 
 fn intl_date_time_format_construct(mut vm VM, new_target &Object) !&Object {
+	prototype := get_prototype_from_constructor(mut vm, new_target, fn (realm &Realm) &Object { return realm.intl_date_time_format_prototype or { panic('Missing Intl.DateTimeFormat prototype') } })!
+	return create_intl_date_time_format(mut vm, prototype, vm.argument(0), vm.argument(1), .any, .date)
+}
+
+enum IntlDateRequired { any date time }
+enum IntlDateDefaults { date time all }
+
+fn create_intl_date_time_format(mut vm VM, prototype &Object, locales Value, options_value Value, required IntlDateRequired, defaults IntlDateDefaults) !&Object {
 	persistent := platform.enter_persistent()
 	defer { platform.leave_persistent(persistent) }
-	prototype := get_prototype_from_constructor(mut vm, new_target, fn (realm &Realm) &Object { return realm.intl_date_time_format_prototype or { panic('Missing Intl.DateTimeFormat prototype') } })!
-	requested := intl_canonicalize_locale_list(mut vm, vm.argument(0))!
-	options := intl_options_object(mut vm, vm.argument(1))!
+	requested := intl_canonicalize_locale_list(mut vm, locales)!
+	options := intl_options_object(mut vm, options_value)!
 	intl_string_option(mut vm, options, 'localeMatcher', ['lookup', 'best fit'])!
 	calendar_value := intl_string_option(mut vm, options, 'calendar', [])!
 	if !calendar_value.is_undefined() && !intl_type_identifier(intl_ascii(mut vm, calendar_value.as_string().utf16)!) { return vm.throw_error(.range_error, 'Invalid Intl calendar') }
@@ -116,6 +123,8 @@ fn intl_date_time_format_construct(mut vm VM, new_target &Object) !&Object {
 	time_style_value := intl_string_option(mut vm, options, 'timeStyle', ['full', 'long', 'medium', 'short'])!
 	date_style := if date_style_value.is_undefined() { '' } else { date_style_value.as_string().str() }
 	time_style := if time_style_value.is_undefined() { '' } else { time_style_value.as_string().str() }
+	if required == .date && time_style != '' { return vm.throw_error(.type_error, 'timeStyle is not allowed for toLocaleDateString') }
+	if required == .time && date_style != '' { return vm.throw_error(.type_error, 'dateStyle is not allowed for toLocaleTimeString') }
 	mut pattern := []IntlDatePatternToken{}
 	if date_style != '' || time_style != '' {
 		if wanted.len > 0 { return vm.throw_error(.type_error, 'dateStyle/timeStyle cannot be combined with explicit date components') }
@@ -126,8 +135,16 @@ fn intl_date_time_format_construct(mut vm VM, new_target &Object) !&Object {
 		pattern = intl_combine_date_patterns(mut vm, date, clock, combination)!
 	} else {
 		mut need_defaults := true
-		for name in ['weekday', 'year', 'month', 'day', 'dayPeriod', 'hour', 'minute', 'second', 'fractionalSecondDigits'] { if name in wanted { need_defaults = false } }
-		if need_defaults { wanted['year'] = 'numeric'; wanted['month'] = 'numeric'; wanted['day'] = 'numeric' }
+		if required in [.any,.date] {
+			for name in ['weekday','year','month','day'] { if name in wanted { need_defaults = false } }
+		}
+		if required in [.any,.time] {
+			for name in ['dayPeriod','hour','minute','second','fractionalSecondDigits'] { if name in wanted { need_defaults = false } }
+		}
+		if need_defaults {
+			if defaults in [.date,.all] { wanted['year'] = 'numeric'; wanted['month'] = 'numeric'; wanted['day'] = 'numeric' }
+			if defaults in [.time,.all] { wanted['hour'] = 'numeric'; wanted['minute'] = 'numeric'; wanted['second'] = 'numeric' }
+		}
 		mut date_wanted := map[string]string{}
 		mut time_wanted := map[string]string{}
 		for name, value in wanted {
