@@ -1,0 +1,5 @@
+{
+  "status": "coverage-failure",
+  "reason": "No sealed guest-page archive or pixel reference is available for the registered ChatGPT workload.",
+  "qualification": "Catalog registration does not establish a successful capture, page coverage, or pixel equality."
+}

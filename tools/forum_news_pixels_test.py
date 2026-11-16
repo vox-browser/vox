@@ -501,17 +501,21 @@ class ForumNewsPixelTests(unittest.TestCase):
 
     def test_all_sixteen_sites_are_registered_once(self):
         sites = json.loads(CATALOG.read_text())['sites']
-        expected = {'hacker-news', 'reddit', 'lobsters', 'slashdot', 'stackoverflow',
+        expected = {'hacker-news', 'chatgpt', 'lobsters', 'slashdot', 'stackoverflow',
                     'bbc', 'cnn', 'guardian', 'theverge', 'pikabu',
                     'techcrunch', 'engadget', 'theregister', 'slate', 'wired', 'discord'}
         self.assertEqual(len(sites), len(expected))
         self.assertEqual(len({s['url'] for s in sites}), len(expected))
         self.assertEqual({s['id'] for s in sites}, expected)
         self.assertEqual(sites[0]['id'], 'hacker-news')
-        self.assertIn('reddit', {s['id'] for s in sites})
+        self.assertIn('chatgpt', {s['id'] for s in sites})
         for site in sites:
             directory = CATALOG.parent / 'sites' / site['id']
             self.assertTrue((directory / 'manifest.json').is_file() or (directory / 'status.json').is_file(), site['id'])
+            if not (directory / 'manifest.json').is_file():
+                status = json.loads((directory / 'status.json').read_text())
+                self.assertEqual(status['status'], 'coverage-failure')
+                self.assertTrue(status['reason'])
 
     def test_five_news_additions_have_sealed_full_ubo_guest_pages(self):
         for site in ['techcrunch', 'engadget', 'theregister', 'slate', 'wired']:
