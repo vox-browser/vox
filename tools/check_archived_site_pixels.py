@@ -23,7 +23,10 @@ old=R/'docs/performance/optimized-pixels-20261112/raw/optimized-pixels-20261112'
 with completed_browser_lease(R,args.binary) as selected:
  binary=selected.executable
  shared={str(q):hashlib.sha256(q.read_bytes()).hexdigest() for q in sorted((R/'Build/v').glob('libVox*.dylib'))}
- write_json(out/'scope.json',dict(diagnostic=args.diagnostic,production_scope=not args.diagnostic,completed_artifact=selected.staged,shared_native_libraries=shared))
+ # Diagnostic C builds may retain lazy $embed_file paths rather than sealed
+ # shader bytes. Those shared files can change independently of the executable.
+ shaders={str(q):hashlib.sha256(q.read_bytes()).hexdigest() for q in sorted((R/'Build/v/modules/gg/canvas/shaders').glob('*.metal'))}
+ write_json(out/'scope.json',dict(diagnostic=args.diagnostic,production_scope=not args.diagnostic,completed_artifact=selected.staged,shared_native_libraries=shared,runtime_shader_inputs=shaders))
  pin=executable_identity(binary);write_json(out/'identity.json',pin)
  if not args.diagnostic:
   receipt=selected.receipt or json.loads((R/'Build/production-build/latest.json').read_bytes());expected=receipt['ready_executable_sha256'] if selected.staged else receipt['executable_sha256'];assert expected==pin[str(binary)]
@@ -95,6 +98,7 @@ with completed_browser_lease(R,args.binary) as selected:
     if not args.diagnostic:
      assert all(hashlib.sha256(Path(name).read_bytes()).hexdigest()==value['current'] for name,value in witness.items())
     for name,digest in shared.items():assert hashlib.sha256(Path(name).read_bytes()).hexdigest()==digest
+    for name,digest in shaders.items():assert hashlib.sha256(Path(name).read_bytes()).hexdigest()==digest, f'Runtime shader changed: {name}'
     for name,digest in hashes.items():assert hashlib.sha256(Path(name).read_bytes()).hexdigest()==digest
   finally:
    if replay:replay.server.shutdown();replay.server.server_close();thread.join()
