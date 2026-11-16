@@ -3,6 +3,7 @@ module main
 import ggshape
 import math
 import os
+import platform
 
 struct DocumentGeometryGrid {
 	width                 int
@@ -325,6 +326,10 @@ fn swap_document_raster_channels(pixels &u8, width i32, height i32, pitch i32) {
 @[export: 'vox_draw_document_shape_pixels']
 fn draw_document_shape_pixels(pixels &u8, width i32, height i32, pitch i32, backdrop i32,
 	first_x i32, first_y i32, shape &C.VoxGraphiteShape) i32 {
+	// Deferred pictures and chrome can call outside the frame replay arena.
+	// All raster work is synchronous; only the caller-owned pixels survive.
+	work := platform.begin_thread_scratch('native raster callback')
+	defer { work.finish() }
 	swap_document_raster_channels(pixels, width, height, pitch)
 	result := draw_document_shape_tiles(pixels, width, height, pitch, backdrop, first_x, first_y, shape)
 	swap_document_raster_channels(pixels, width, height, pitch)
@@ -334,6 +339,10 @@ fn draw_document_shape_pixels(pixels &u8, width i32, height i32, pitch i32, back
 @[export: 'vox_draw_document_tiled_path_pixels']
 fn draw_document_tiled_path_pixels(pixels &u8, width i32, height i32, pitch i32, backdrop i32,
 	first_x i32, first_y i32, path &C.VoxGraphitePath) i32 {
+	// Deferred pictures and chrome can call outside the frame replay arena.
+	// All raster work is synchronous; only the caller-owned pixels survive.
+	work := platform.begin_thread_scratch('native raster callback')
+	defer { work.finish() }
 	swap_document_raster_channels(pixels, width, height, pitch)
 	result := draw_document_path_tiles(pixels, width, height, pitch, backdrop, first_x, first_y, path)
 	swap_document_raster_channels(pixels, width, height, pitch)
@@ -343,6 +352,10 @@ fn draw_document_tiled_path_pixels(pixels &u8, width i32, height i32, pitch i32,
 @[export: 'vox_draw_document_path_pixels']
 fn draw_document_path_pixels(pixels &u8, width i32, height i32, pitch i32, backdrop i32,
 	path &C.VoxGraphitePath) i32 {
+	// Deferred pictures and chrome can call outside the frame replay arena.
+	// All raster work is synchronous; only the caller-owned pixels survive.
+	work := platform.begin_thread_scratch('native raster callback')
+	defer { work.finish() }
 	swap_document_raster_channels(pixels, width, height, pitch)
 	result := ggshape.draw_path(pixels, width, height, pitch, backdrop, path)
 	swap_document_raster_channels(pixels, width, height, pitch)
@@ -354,6 +367,10 @@ fn draw_document_path_pixels(pixels &u8, width i32, height i32, pitch i32, backd
 @[export: 'vox_draw_document_svg_pixels']
 fn draw_document_svg_pixels(pixels &u8, width i32, height i32, pitch i32, backdrop i32,
 	paths &C.VoxGraphitePath, count i32, parent &f32, viewport &f32, rounded_clip &f32) i32 {
+	// Deferred pictures and chrome can call outside the frame replay arena.
+	// All raster work is synchronous; only the caller-owned pixels survive.
+	work := platform.begin_thread_scratch('native raster callback')
+	defer { work.finish() }
 	swap_document_raster_channels(pixels, width, height, pitch)
 	result := ggshape.draw_svg_image(pixels, width, height, pitch, (if backdrop != 0 {
 		i32(1)
@@ -366,6 +383,10 @@ fn draw_document_svg_pixels(pixels &u8, width i32, height i32, pitch i32, backdr
 
 @[export: 'vox_draw_document_shape_group_pixels']
 fn draw_document_shape_group_pixels(pixels &u8, width i32, height i32, pitch i32, backdrop i32, first_x i32, first_y i32, shapes &C.VoxGraphiteShape, count i32) i32 {
+	// Deferred pictures and chrome can call outside the frame replay arena.
+	// All raster work is synchronous; only the caller-owned pixels survive.
+	work := platform.begin_thread_scratch('native raster callback')
+	defer { work.finish() }
 	swap_document_raster_channels(pixels, width, height, pitch)
 	result := draw_document_shape_group_tiles(pixels, width, height, pitch, backdrop, first_x, first_y, shapes, count)
 	swap_document_raster_channels(pixels, width, height, pitch)
