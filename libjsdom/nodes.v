@@ -272,7 +272,7 @@ fn (mut host Host) install_nodes() ! {
 
 				mut parent := unsafe { &dom.ParentNode(actual) }
 				collection := if name == 'getElementsByClassName' {
-					owner.class_collection(actual, key)
+					parent.get_elements_by_class_name(key)
 				} else {
 					parent.get_elements_by_tag_name(key)
 				}
