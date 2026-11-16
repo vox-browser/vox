@@ -84,6 +84,9 @@ fn function_prototype_call(mut vm VM) !Value {
 		return vm.throw_error_type(.type_error, .not_a_function, function.str())
 	}
 	this_argument := vm.argument(0)
+	if arguments := vm.forwarded_call_arguments(function) {
+		return call(mut vm, function, this_argument, arguments)
+	}
 	mut call_arguments := []Value{}
 	for index in 1 .. int(vm.argument_count()) {
 		call_arguments << vm.argument(u32(index))
