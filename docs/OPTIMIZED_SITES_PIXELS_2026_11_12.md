@@ -5908,3 +5908,74 @@ Cleanup inventories **98 owned roots/10,928 files**, preserves and SHA-verifies
 binaries, generated C, downloaded extensions, private profiles/caches, replay
 keys, guard reports and locks. No owned `Build/forum-sweep*` scratch remains.
 Shared bundles, dependencies and production receipts remain in place.
+
+
+### Cropped WebP plane sampling, 2026-11-16
+
+`3ab0294c6` fixes BBC's cropped right-hand photo. The full frozen page improves
+**23,822→11 pixels twice**, correcting **23,811** pixels and introducing **zero**.
+The remaining differences are the same three hero-photo pixels and eight
+lower-photo pixels, each with maximum channel error one. Together with the
+preceding odd-height fix, 32,471 of the 32,482 production differences are now
+corrected in diagnostics. This is not yet a complete BBC pixel pass.
+
+The image dispatcher folds an in-bounds source subset into the full plane
+rectangle and retains the original rectangular destination clip. For the
+recorded 317.31094×179 source subset at (1.3445379,0), the full plane rectangle
+is (771,251), size 238×133, with the original (772,251), size 236×133 crop.
+The new path requires near-half minification, integral expanded geometry,
+translation-only transforms, full opacity, and a rectangular clip contained
+in the original destination. Unsupported crops keep their existing fallback.
+
+The GPU draw uses the crop's actual rectangle as geometry and retains the
+document-space origin across raster tiles. Normalizing each tile's geometry
+before calculating texture coordinates changes float32 interpolation on one
+single-sample scanline; retaining the document frame removes those errors.
+Chroma sampling also follows Chromium's symmetric source-subset inset, including
+the odd-height final row. The planar shader carries its four chroma bounds in
+its otherwise inactive RGB gamut payload; ordinary RGB/gamma draws retain their
+existing payload and the uniform size is unchanged. Both V and Python staging
+repair the sampler and serializer together. Their partial-repair checks cover
+missing uniforms, shader branches and the new subset payload independently.
+
+The public `cropped-webp-atlas` control reuses the existing tracked 320×179 BBC
+WebP and includes separate four-sample and single-sample tile draws. Two fresh
+Brave 157.1.99.57 captures agree. The new reference is promoted unchanged, with
+SHA-256 `4a422959aed386404d750dcba9808cae0efbbd9fefd09f7309cce921e841a6b0`.
+The published browser differs by **50,390 pixels twice**; the final diagnostic
+is **zero twice**, and the GPU regression compares both sample modes plus an
+exterior ring exactly. No existing reference or tolerance changes.
+
+Final C/O0 diagnostic executable:
+`6fe34d8e3fe2b01bdd6ba9c6b56a9243727383c4043b01b8810cf67e529a5e3f`.
+All 378 selected inputs remain unchanged during its successful compilation;
+six consumed implementation/staged-GG buffers match their compiler manifest.
+All **60 workloads/120 fresh captures** repeat exactly. All **59 previous PNGs
+are byte-identical** to the preceding accepted captures, including the six main
+catalog archives; pre-existing inexact controls keep their recorded counts.
+Fourteen focused V test functions and one Python staging test pass. The browser
+compile, focused checks and complete capture controller exit zero under the
+required memory guards. Rejected compiles, intermediate pixel failures, and
+staging-test failures remain in the local evidence.
+
+Both BBC native request streams pass full-uBO 1.75.0 checks: 44 requests each,
+44 allowed, zero blocked, zero mismatches and zero oracle disagreements. The
+release ZIP hash and all 59 retained vendor files verify. A local controller's
+report-key typo occurs after the first successful checker run; that result is
+retained and validated, without rerunning the first request stream.
+
+Production confirmation remains pending. The managed commit hook requests the
+coalesced C/literal V `-prod` rebuild. The latest available published bundle
+remains `93adced1`; retained builds abort on changing sealed inputs, including
+`native_document_color_darwin.h` and the edited `gg_document_image.v` helper. No duplicate
+manual production build is queued, and the older bundle is not used to validate
+this fix. Source-browser version qualification, BBC's remaining 11 pixels,
+Guardian/Verge rendering gaps and the other previously documented catalog gates
+remain open. Guardian's earlier diagnostic instability is not resolved by this
+check, and no live-site or performance acceptance is claimed.
+
+Local evidence: `docs/performance/webp-crop-20261116/`. Cleanup inventories
+**97 owned roots/4,581 files**, SHA-verifies and preserves **1,371 evidence
+files/31,250,366 bytes**, then removes owned programs, generated C, downloaded
+extension/ZIP, private profiles/caches, replay keys, guards and locks. No
+`Build/webp-crop*` job output remains.
