@@ -18,6 +18,8 @@ fn test_fractional_filtered_picture_keeps_origin_before_capture_enclosure() {
 	assert layer.composited_contents && !layer.legacy_raster
 	origin := layer.compositor_origin or { panic('lost fractional compositor origin') }
 	assert origin == [f64(40.75), 30.25]!
+	size := layer.compositor_size or { panic('lost compositor extent') }
+	assert size == [f64(42), 36]!
 	assert layer.bounds.x == 40 && layer.bounds.y == 30
 
 	// A reused plan must not attach the old effect origin to the root picture.
@@ -29,4 +31,5 @@ fn test_fractional_filtered_picture_keeps_origin_before_capture_enclosure() {
 	update_chromium_raster_layer_plan(plain, plain_commands, 1, mut plan)
 	assert plan.layers.len == 1
 	assert plan.layers[0].compositor_origin == none
+	assert plan.layers[0].compositor_size == none
 }

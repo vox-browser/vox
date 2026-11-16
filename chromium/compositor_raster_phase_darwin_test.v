@@ -63,11 +63,17 @@ fn test_compositor_svg_declines_unrecoverable_or_translucent_sample_data() {
 fn test_analytic_border_does_not_bleed_past_its_straight_edge() {
 	old_phase := compositor_raster_phase
 	old_grid := document_geometry_grid
+	old_bounds := compositor_capture_bounds
+	old_basis := compositor_shape_basis
 	defer {
 		compositor_raster_phase = old_phase
 		document_geometry_grid = old_grid
+		compositor_capture_bounds = old_bounds
+		compositor_shape_basis = old_basis
 	}
 	document_geometry_grid = DocumentGeometryGrid{}
+	compositor_capture_bounds = [f64(760), 16, 803, 52]!
+	compositor_shape_basis = 1
 	shape := C.VoxGraphiteShape{
 		matrix:     [f32(1), 0, -759, 0, 1, -14, 0, 0, 1]!
 		rect:       [f32(761.5), 16.5, 41, 35, 5.5, 5.5, 5.5, 5.5, 5.5, 5.5, 5.5, 5.5]!
@@ -92,4 +98,26 @@ fn test_analytic_border_does_not_bleed_past_its_straight_edge() {
 			assert pixels[i..i + 4] == [u8(0), 0, 0, 255]
 		}
 	}
+}
+
+fn test_compositor_picture_size_snaps_independently_of_its_origin() {
+	bounds := compositor_picture_capture_bounds([f64(760.7578125), 16]!,
+		[f64(42.25), 36]!, 2, 1) or { panic('expected presenting raster extent') }
+	assert bounds == [f64(760), 16, 803, 52]!
+	negative := compositor_picture_capture_bounds([f64(-0.25), -0.75]!,
+		[f64(2.25), 2.25]!, 2, 1) or { panic('expected negative raster extent') }
+	assert negative == [f64(-1), -1, 2, 2]!
+	assert compositor_picture_capture_bounds([f64(0), 0]!, [f64(2), 2]!, 2, 2) == none
+	assert compositor_picture_capture_bounds([f64(0), 0]!, [f64(0), 2]!, 2, 1) == none
+}
+
+fn test_compositor_foreground_respects_its_texture_footprint() {
+	previous := compositor_raster_phase
+	defer { compositor_raster_phase = previous }
+	compositor_raster_phase = [f64(0.5), 0]!
+	source := []u8{len: 4 * 3 * 4, init: 255}
+	mut pixels := [u8(0), 0, 0, 255, 0, 0, 0, 255]
+	assert publish_compositor_phase_with_bounds(pixels.data, 2, 1, 8, source, [],
+		[f64(0), 0, 1, 1]!)
+	assert pixels == [u8(255), 255, 255, 255, 0, 0, 0, 255]
 }

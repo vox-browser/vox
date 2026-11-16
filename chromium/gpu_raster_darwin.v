@@ -331,6 +331,10 @@ fn draw_document_shape_pixels(pixels &u8, width i32, height i32, pitch i32, back
 	work := platform.begin_thread_scratch('native raster callback')
 	defer { work.finish() }
 	swap_document_raster_channels(pixels, width, height, pitch)
+	if draw_bounded_compositor_phase_shape(pixels, width, height, pitch, first_x, first_y, shape) {
+		swap_document_raster_channels(pixels, width, height, pitch)
+		return 1
+	}
 	result := draw_document_shape_tiles(pixels, width, height, pitch, backdrop, first_x, first_y, shape)
 	swap_document_raster_channels(pixels, width, height, pitch)
 	return result

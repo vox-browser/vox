@@ -20,6 +20,7 @@ pub mut:
 	composited_contents bool
 	// Retain the picture's unsnapped origin before capture-space enclosure.
 	compositor_origin ?[2]f64
+	compositor_size ?[2]f64
 	// A rounded clip below the picture's common property state is rasterized
 	// inside that picture, preventing the single-image raster optimization.
 	picture_local_rounded_clip bool
@@ -176,6 +177,7 @@ fn (mut plan ChromiumRasterLayerPlan) prepare(count int) {
 	for index in 0 .. plan.layer_storage.len {
 		plan.layer_storage[index].bounds = LayoutRect{}
 		plan.layer_storage[index].compositor_origin = none
+		plan.layer_storage[index].compositor_size = none
 		plan.layer_storage[index].recorded_bounds = LayoutRect{}
 		plan.layer_storage[index].fixed_bounds_extended = false
 		plan.layer_storage[index].has_fixed_opacity_paint_origin = false
@@ -873,6 +875,8 @@ fn update_chromium_raster_layer_plan_with_cull(document &dom.Document, commands 
 		if state.effect_scope != 0 && !state.legacy_effect {
 			plan.layers[layer_index].compositor_origin = [plan.layers[layer_index].bounds.x,
 				plan.layers[layer_index].bounds.y]!
+			plan.layers[layer_index].compositor_size = [plan.layers[layer_index].bounds.width,
+				plan.layers[layer_index].bounds.height]!
 			// Compositor rasters enclose fractional geometry, independently of
 			// paint's nearest-pixel snapping. Round after unioning descendant ink.
 			plan.layers[layer_index].bounds = chromium_enclosing_raster_rect(plan.layers[layer_index].bounds)

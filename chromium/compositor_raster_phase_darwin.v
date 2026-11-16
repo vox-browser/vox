@@ -7,8 +7,11 @@ import os
 // A compositor picture snaps its origin in the presenting device's grid.
 // A lower-density capture can therefore sample that picture between texels.
 __global compositor_raster_phase = [2]f64{}
+__global compositor_capture_bounds = ?[4]f64(none)
+__global compositor_shape_basis = f32(1)
 
 const compositor_phase_diagnostics = os.getenv('VOX_DIAGNOSTIC_COMPOSITOR_PHASE') == '1'
+const compositor_shape_diagnostics = os.getenv('VOX_DIAGNOSTIC_BOUNDED_COMPOSITOR_SHAPES') == '1'
 
 fn select_compositor_raster_phase(x f64, y f64, device_scale f64, capture_scale f64, enabled bool) {
 	compositor_raster_phase = [2]f64{}
@@ -35,6 +38,11 @@ fn select_compositor_raster_phase(x f64, y f64, device_scale f64, capture_scale 
 // Disjoint SVG foregrounds and a uniform opaque backdrop are independent of
 // the other leaves' coverage. Overlaps need a shared unresolved surface.
 fn publish_compositor_svg_phase(pixels &u8, width int, height int, pitch int, source []u8, precise []f64) bool {
+	return publish_compositor_phase_with_bounds(pixels, width, height, pitch, source, precise, none)
+}
+
+fn publish_compositor_phase_with_bounds(pixels &u8, width int, height int, pitch int,
+	source []u8, precise []f64, bounds ?[4]f64) bool {
 	phase := compositor_raster_phase
 	source_width := width + 2
 	x0 := int(math.floor(1 - phase[0]))
@@ -46,6 +54,11 @@ fn publish_compositor_svg_phase(pixels &u8, width int, height int, pitch int, so
 	mut backdrop := ?[4]u8(none)
 	for y in 0 .. height {
 		for x in 0 .. width {
+			if clipping := bounds {
+				if x < clipping[0] || y < clipping[1] || x >= clipping[2] || y >= clipping[3] {
+					continue
+				}
+			}
 			mut sample := [4]f64{}
 			for k in 0 .. 4 {
 				ia := ((y + y0) * source_width + x + x0) * 4 + k
@@ -80,6 +93,58 @@ fn publish_compositor_svg_phase(pixels &u8, width int, height int, pitch int, so
 		eprintln('VOX_COMPOSITOR_SVG_PHASE x=${phase[0]} y=${phase[1]} width=${width} height=${height} precise=${precise.len == source.len}')
 	}
 	return true
+}
+
+// A picture's raster origin and size snap independently on the presenting
+// grid. Enclosing its world-space ink instead can add a spurious final texel.
+fn compositor_picture_capture_bounds(origin [2]f64, size [2]f64, device f64, capture f64) ?[4]f64 {
+	if device <= capture || capture <= 0 { return none }
+	for value in [origin[0], origin[1], size[0], size[1], device, capture] {
+		if !math.is_finite(value) { return none }
+	}
+	if size[0] <= 0 || size[1] <= 0 { return none }
+	mut bounds := [4]f64{}
+	for axis in 0 .. 2 {
+		start := math.floor(origin[axis] * device) / device
+		end := start + math.ceil(size[axis] * device) / device
+		bounds[axis] = math.floor(start * capture)
+		bounds[axis + 2] = math.ceil(end * capture)
+		if !math.is_finite(bounds[axis]) || !math.is_finite(bounds[axis + 2])
+			|| bounds[axis + 2] <= bounds[axis] {
+			return none
+		}
+	}
+	return bounds
+}
+
+fn draw_bounded_compositor_phase_shape(pixels &u8, width i32, height i32, pitch i32,
+	first_x i32, first_y i32, shape &C.VoxGraphiteShape) bool {
+	phase := compositor_raster_phase
+	mut bounds := compositor_capture_bounds or { return false }
+	if phase == [f64(0), 0]! || shape.has_underlay != 0 || shape.clip_out_count != 0
+		|| shape.has_filter_clip != 0 || shape.fill !in [0, 1, 8]
+		|| shape.matrix[0] != compositor_shape_basis || shape.matrix[4] != compositor_shape_basis
+		|| shape.matrix[1] != 0 || shape.matrix[3] != 0
+		|| shape.matrix[6] != 0 || shape.matrix[7] != 0 || shape.matrix[8] != 1 {
+		return false
+	}
+	for axis in 0 .. 2 {
+		offset := if axis == 0 { first_x } else { first_y }
+		bounds[axis] -= offset
+		bounds[axis + 2] -= offset
+	}
+	mut source := []u8{len: (int(width) + 2) * (int(height) + 2) * 4}
+	mut draw := *shape
+	draw.matrix[2] += f32(1 - phase[0])
+	draw.matrix[5] += f32(1 - phase[1])
+	if ggshape.draw(source.data, width + 2, height + 2, (width + 2) * 4, 0, &draw) == 0 {
+		return false
+	}
+	result := publish_compositor_phase_with_bounds(pixels, int(width), int(height), int(pitch), source, [], bounds)
+	if result && compositor_shape_diagnostics {
+		eprintln('VOX_BOUNDED_COMPOSITOR_SHAPE phase=${phase} local_clip=${bounds} first=${first_x},${first_y} size=${width},${height}')
+	}
+	return result
 }
 
 // An opaque solid curve's four MSAA samples carry an integer coverage count.
