@@ -3104,10 +3104,15 @@ all content and reports no errors. This is not compiled-control acceptance or
 a long-duration memory bound. An earlier first/reopen pair compiles 8,351 executables and reuses 4,245
 entries with zero misses, but injected native input exposes dyld image-zero
 identity confusion. The macOS cache now uses the actual executable path, and
-all loaded modules queue uncalled templates. The new full-module first opening
-hits the 12 GiB guard after 21,888 records; its incomplete cache is not accepted.
-Temporary native compiler workspaces are now committed with a passing non-test
-compiler check; a fresh rebuilt cohort and compiled controls remain pending. Font-strike rounding gives the same 156-pixel Go to
+all loaded modules queue uncalled templates. Temporary compiler workspaces let
+a fresh all-module first opening finish with 23,669 executables, 81 completed
+module preparations and zero pending entries under the 12 GiB guard. Its fresh
+reopen has 4,245 hits and zero misses/compiler invocations, with exact content
+and identical output. Native input executes 849,296 native entries but exposes
+two omitted synthetic class-field bodies and hits the memory guard before
+completion. Recursive initializer/static-block preparation and temporary native
+lookup workspaces are now committed; their combined literal -prod browser
+builds with no test sources, and a fresh first/reopen/control cohort is pending. Font-strike rounding gives the same 156-pixel Go to
 file input as Brave. The unchanged
 historical windowed pixel gate still fails at 25,399 pixels. This is not full-site,
 live-site, historical pixel or performance acceptance. Automated suites remain held. See [the resumed diagnostic report](../docs/LIBJS_GITHUB_RUNTIME_20261115.md#browser-diagnostics-resumed-2026-11-16).

@@ -6,8 +6,12 @@ initialization diagnostics resumed on November 16; see the
 source-only checkpoints below retain their original verification boundaries.
 Initial hydration and one compiler-disabled reopen complete. A later same-binary
 cohort exposed mutable development cache identity; that fix is now implemented.
-The full 60-second interpreter control sequence now passes. Current-binary
-compiled reopening, speed and the original frozen-reference pixel gate remain open.
+The full 60-second interpreter control sequence passes. An all-module native
+first opening compiles 23,669 executables and its fresh reopen reuses 4,245
+entries with zero misses. Native controls expose two missing field-initializer
+templates and hit the memory guard; initializer and lookup-storage fixes are now
+committed and undergoing a fresh cohort. Speed and the original frozen-reference
+pixel gate remain open.
 
 **Full GitHub acceptance remains unachieved.** The latest initial native LibJS capture
 has 33 rows, 56 commit links, latest commit and README, zero page errors and an
@@ -3520,3 +3524,105 @@ left in Build. Thirty-six more obsolete private executables are removed after
 retaining their sizes and SHA-256 hashes, releasing 1,352,163,168 bytes; current
 executables and the latest comparison baseline remain. Automated suites remain
 held, and newly written regression sources remain uncompiled/unrun.
+
+
+### All-module first/reopen completes; controls reveal synthetic initializer gaps
+
+The compiler-workspace executable completes its fresh all-module first opening
+under the unchanged 12 GiB guard: **23,669 compiled executables, 185 successful
+compiler invocations, zero pending/invalid entries and no cache error**. All
+81 requested module preparations finish, with 25,412 reported prepared functions,
+19,424 newly queued functions and zero reported unsupported functions. Those
+counts cover the ordinary function table; the later interaction exposes omitted
+synthetic initializer bodies, so this is not a claim that every callable body
+was prepared. Compilation records 1,389,924.803132 milliseconds and library
+loading 40,285.051243 milliseconds. Browser/controller/guard exit zero, elapsed
+1,457.510650291 seconds, sampled aggregate peak **11,099,521,024 bytes (10.34 GiB)**.
+No pinned inputs change. The earlier 21,888-record memory failure remains retained.
+
+The same executable's fresh compiler-disabled reopen records **4,245 native hits,
+zero misses, zero pending/invalid entries, zero compiler invocations and no cache
+error**. Loading records 1,011.903766 milliseconds; browser/controller/guard exit
+zero, elapsed 39.684485125 seconds, peak 8,738,488,320 bytes. Both complete content
+audits match the original Brave audit exactly with no author/native errors.
+The two PNGs are byte-identical to each other and the previous image, SHA-256
+05ede3eae524f64796fe08bfa6406c6703006026387a94d816d3e832807cbb70.
+All shared pinned inputs match across the pair. The historical pixel gate remains
+25,399 differing pixels, maximum 64; no pixel acceptance or isolated timing
+credit is earned. The first lifecycle includes compilation after capture.
+PNG filesystem write timestamps relative to the controller's host-before wall
+clock are 47.022697687 and 38.755912781 seconds, respectively; both include a
+fixed 30-second observation. These single-pair diagnostics and contended host
+loads do not establish a matched performance result.
+
+The following full native-input sequence **fails**. Its ABI correctly remains
+d46bb8de112ee7692e050307638250a2426ee0ddec423d146e8b893d484feaa2
+under input injection. Before the guard terminates it, the audit records 4,676
+native hits and actual execution of **849,296 native entries, 24,362,017 fast
+steps and 14,694,726 slow steps**, with JSC uninitialized. Two bodies miss:
+`priority` at function:243947:243947:true:false and `#r` at
+function:244900:244917:true:false, both in pb-25305857c53068ff.js.
+`/usr/bin/false` reports a compiler failure; the successful-compilation counter
+of zero does not mean no failed compiler request occurred. Those entries remain
+pending. The 12 GiB guard kills the process before final Escape/completion:
+34.106804667 seconds, peak 12,906,774,528 bytes, controller 137/guard 125. No final
+controller summary exists, and this is neither complete control nor compiled
+acceptance despite the substantial native execution observed.
+
+`698a407e9` now traverses the synthetic field-initializer and static-block records
+emitted into module/function bytecode, recursively including nested classes.
+It compiles those bodies without evaluating author expressions, class side
+effects or computed keys. The anonymous-function name placeholder supplies a
+constant slot only; actual invocations read their own property key, including
+Symbols. A focused first/reopen source covers side effects, public/private fields,
+computed Symbol names, static blocks and nested class fields; it remains
+uncompiled/unrun. The first non-test check fails on the retired experimental GG
+adapter left in generated modules. Managed staging removes that adapter
+(`34a4c0e96`); the corrected root C check succeeds in 31.872546375 seconds, peak
+7,469,154,304 bytes. Its separate literal V -prod single-unit C build succeeds
+in 317.059106958 seconds, peak 12,764,823,552 bytes; it is not a browser execution
+result.
+
+### Warm native lookup ownership and the next fresh production-mode cohort
+
+A separate native branch mapping-stack diagnostic reproduces the guard failure
+at 34.459935916 seconds, peak 12,901,269,504 bytes. It records 1,599 anonymous
+RW mapping events totaling 3,781,553,984 capacity bytes after branch opening;
+2,628,710,208 bytes remain mapped at termination. These capacities are neither
+live-byte nor RSS attribution. The probe verifies the actual executable image
+across allocator-policy exec and does not use dyld image zero for symbolization.
+Observed sites include layout relayout snapshots, glyph-run cloning and raster/
+backdrop-filter work; no single cause or isolated memory saving is established.
+
+Source inspection also finds that native cache lookup retains decoded records
+and entire library-file inputs to digest checks in its surrounding prealloc
+arena. The completed partition contains 185 libraries totaling 87,971,224 bytes.
+`3476d907a` makes that synchronous lookup temporary, then retains only owned
+library identity strings and the OS mapping owner after leaving the workspace.
+A newly opened library with a missing symbol is closed before returning its
+owned error, rather than being retained without a usable entry. Focused repeated
+lookup, owner/error lifetime and missing-symbol regression sources are included,
+still uncompiled/unrun. The non-test root C check passes in 53.403152041 seconds,
+peak 7,474,135,040 bytes. No RSS improvement is attributed from inspection alone.
+
+The combined literal V -prod single-C-unit diagnostic browser builds in
+309.032466042 seconds, sampled peak 12,027,150,336 bytes, with 3,733 parsed sources
+and no tests. Its executable SHA-256 is
+e66828fe55aafd90fcffc05bbbb088ef971cd91811176e994bddbd805082d35e,
+and its production source ABI is
+3a8e5e6a914cd6a22e8427e537e7859c6a12adb397f19edefa365fdcc0432725.
+It begins a fresh cache partition with the original response/clock/grid and the
+unchanged 12 GiB guard. Early capture is complete and error-free; final first/
+reopen/control results remain pending. No old partition is copied or relabeled.
+Production's immutable embedded source identity allows unrelated rendering
+rebuilds to reuse compatible native code, unlike development's whole-binary
+identity. The shared managed worker remains responsible for normal publication;
+this private bundle is needed because the latest completed shared bundle still
+predates these fixes.
+
+Disabling Brave's small-path-atlas feature in another fresh original-page
+counterfactual leaves the header pixel-identical to the original reference. It
+does not establish a small-path-atlas explanation for the search edge mismatch.
+Neither the original references nor comparison tolerances change. Four completed
+older generated C files are removed after retaining hashes/sizes and source
+proofs, releasing 540,464,802 bytes as shared host disk space tightens again.
