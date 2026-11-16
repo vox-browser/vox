@@ -11,12 +11,19 @@ struct TokenListCollection {
 	native &dom.DOMTokenList
 }
 
+fn (list &TokenListCollection) is_supported_property_index(index u32) bool {
+	if list.host.closed { return false }
+	persistent := platform.enter_persistent(); defer { platform.leave_persistent(persistent) }
+	return u64(index) < u64(list.native.length())
+}
+
 fn token_string(mut vm libjs.VM, text string) libjs.Value {
 	return libjs.Value.from_string(vm.create_string(libjs.utf16_string_from_utf8_without_validation(text)))
 }
 
 fn (list &TokenListCollection) get_own_property(key libjs.PropertyName) ?libjs.PropertyDescriptor {
 	if list.host.closed || !key.is_number() { return none }
+	persistent := platform.enter_persistent(); defer { platform.leave_persistent(persistent) }
 	if token := list.native.item(int(key.number)) {
 		mut vm := list.host.vm
 		return libjs.PropertyDescriptor{value: token_string(mut vm, token), writable: false, enumerable: true, configurable: false}
@@ -26,6 +33,7 @@ fn (list &TokenListCollection) get_own_property(key libjs.PropertyName) ?libjs.P
 
 fn (list &TokenListCollection) own_property_keys() []libjs.PropertyName {
 	if list.host.closed { return [] }
+	persistent := platform.enter_persistent(); defer { platform.leave_persistent(persistent) }
 	return []libjs.PropertyName{len: list.native.length(), init: libjs.PropertyName.from_number(u32(index))}
 }
 
@@ -47,7 +55,9 @@ fn (mut host Host) wrap_token_list(native &dom.DOMTokenList) libjs.Value {
 	defer { platform.leave_persistent(persistent) }
 	mut object := libjs.Object.create(host.realm, host.token_list_prototype)
 	object.class_name = 'DOMTokenList'
-	object.host_properties = libjs.HostProperties(&TokenListCollection{host: &host, native: native})
+	provider := &TokenListCollection{host: &host, native: native}
+	object.host_properties = libjs.HostProperties(provider)
+	object.legacy_platform_object = libjs.LegacyPlatformObject{indexed_properties: libjs.LegacyIndexedProperties(provider)}
 	host.token_list_wrappers[voidptr(native)] = object
 	return libjs.Value.from_object(object)
 }

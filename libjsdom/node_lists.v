@@ -12,6 +12,12 @@ struct NodeListCollection {
 	native &dom.NodeList
 }
 
+fn (list &NodeListCollection) is_supported_property_index(index u32) bool {
+	if list.host.closed { return false }
+	persistent := platform.enter_persistent(); defer { platform.leave_persistent(persistent) }
+	return u64(index) < u64(list.native.length())
+}
+
 fn (list &NodeListCollection) get_own_property(key libjs.PropertyName) ?libjs.PropertyDescriptor {
 	if list.host.closed || !key.is_number() { return none }
 	persistent := platform.enter_persistent(); defer { platform.leave_persistent(persistent) }
@@ -50,7 +56,9 @@ fn (mut host Host) wrap_node_list_with_prototype(native &dom.NodeList, prototype
 	defer { platform.leave_persistent(persistent) }
 	mut object := libjs.Object.create(host.realm, prototype)
 	object.class_name = class_name
-	object.host_properties = libjs.HostProperties(&NodeListCollection{host: &host, native: native})
+	provider := &NodeListCollection{host: &host, native: native}
+	object.host_properties = libjs.HostProperties(provider)
+	object.legacy_platform_object = libjs.LegacyPlatformObject{indexed_properties: libjs.LegacyIndexedProperties(provider)}
 	host.node_list_wrappers[voidptr(native)] = object
 	return libjs.Value.from_object(object)
 }

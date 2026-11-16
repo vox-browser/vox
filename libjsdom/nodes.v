@@ -340,6 +340,12 @@ interface NativeHTMLCollectionView {
 	named_item(string) ?&dom.Element
 }
 
+fn (collection &Collection) is_supported_property_index(index u32) bool {
+	if collection.host.closed { return false }
+	persistent := platform.enter_persistent(); defer { platform.leave_persistent(persistent) }
+	return u64(index) < u64(collection.collection.length())
+}
+
 fn (collection &Collection) get_own_property(key libjs.PropertyName) ?libjs.PropertyDescriptor {
 	if collection.host.closed { return none }
 	persistent := platform.enter_persistent(); defer { platform.leave_persistent(persistent) }
@@ -371,7 +377,9 @@ fn (mut host Host) wrap_collection_view(identity voidptr, collection NativeHTMLC
 	persistent := platform.enter_persistent(); defer { platform.leave_persistent(persistent) }
 	mut object := libjs.Object.create(host.realm, prototype)
 	object.class_name = class_name
-	object.host_properties = libjs.HostProperties(&Collection{ host: host, collection: collection })
+	provider := &Collection{host: host, collection: collection}
+	object.host_properties = libjs.HostProperties(provider)
+	object.legacy_platform_object = libjs.LegacyPlatformObject{indexed_properties: libjs.LegacyIndexedProperties(provider)}
 	host.collection_wrappers[identity] = object
 	return libjs.Value.from_object(object)
 }
