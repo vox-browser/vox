@@ -15,6 +15,14 @@ fn (host &Host) document_receiver(mut vm libjs.VM) !&dom.Document {
 // and native non-HTTP cookie policy rather than keeping a script-side jar.
 fn (mut host Host) install_document_state() {
 	mut prototype := host.document_prototype
+	host.method_attributes(mut prototype,'getElementsByName',1,fn [host] (mut vm libjs.VM) !libjs.Value {
+		native := host.document_receiver(mut vm)!
+		if vm.argument_count()==0 { return vm.throw_error(.type_error,'getElementsByName requires a name') }
+		persistent := platform.enter_persistent(); defer { platform.leave_persistent(persistent) }
+		name := vm.argument(0).to_primitive_string(mut vm)!.str()
+		mut owner := unsafe { &Host(host) }
+		return owner.wrap_node_list(native.get_elements_by_name(name))
+	},libjs.attribute_writable|libjs.attribute_enumerable|libjs.attribute_configurable)
 	for name in ['documentURI','contentType','characterSet','charset','inputEncoding','title','cookie','domain','hidden','visibilityState','activeElement','defaultView','location'] {
 		host.accessor(mut prototype, name, fn [host, name] (mut vm libjs.VM) !libjs.Value {
 			mut native := host.document_receiver(mut vm)!
