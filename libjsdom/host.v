@@ -263,7 +263,7 @@ pub fn Host.create(vm &libjs.VM, realm &libjs.Realm, document &dom.Document, hoo
 		host.method(mut console, name, 0, fn [host] (mut vm libjs.VM) !libjs.Value {
 			mut messages := []string{}
 			for index in 0 .. vm.argument_count() {
-				messages << vm.argument(index).to_primitive_string(mut vm)!.str()
+				messages << console_argument(mut vm, vm.argument(index))!
 			}
 			if callback := host.hooks.console { callback(messages.join(' ')) }
 			return libjs.js_undefined()

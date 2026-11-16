@@ -3,6 +3,17 @@ module libjsdom
 
 import libjs
 
+fn console_argument(mut vm libjs.VM, value libjs.Value) !string {
+	text := value.to_primitive_string(mut vm)!.str()
+	if value.is_object() {
+		if data := value.as_object().error_data {
+			trace := data.stack_string(false).trim_right('\n')
+			if trace != '' { return text + '\n' + trace }
+		}
+	}
+	return text
+}
+
 fn exception_message_with_stack(err IError) string {
 	message := exception_message(err)
 	if libjs.is_throw_completion(err) {

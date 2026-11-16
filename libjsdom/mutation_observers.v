@@ -90,7 +90,7 @@ fn (mut host Host) install_mutation_observers() ! {
 			mut owner := unsafe { &Host(host) }
 			if owner.closed { return }
 			owner.callback_entry(fn (mut vm libjs.VM) !libjs.Value { return libjs.js_undefined() }) or {
-				if report := host.hooks.exception { report(exception_message(err)) }
+				if report := host.hooks.exception { report(exception_message_with_stack(err)) }
 				return
 			}
 		})
@@ -110,7 +110,7 @@ fn (mut host Host) install_mutation_observers() ! {
 				mut owner := unsafe { &Host(host) }
 				values := owner.mutation_record_array(mut vm, records)!
 				return libjs.call(mut vm, callback, libjs.Value.from_object(object), [values, libjs.Value.from_object(object)])
-			}) or { if report := host.hooks.exception { report(exception_message(err)) }; return }
+			}) or { if report := host.hooks.exception { report(exception_message_with_stack(err)) }; return }
 		}})!
 		mut observer := unsafe { &dom.MutationObserver(native) }
 		observer.delivery_queue_ = host.mutation_queue

@@ -237,7 +237,7 @@ fn (mut host Host) add_listener(target &dom.EventTarget, type_ string, callback 
 		return if value.is_boolean() { dom.js_bool(value.as_bool()) } else { dom.js_undefined() }
 	}
 	report := fn [host] (err IError) {
-		if callback := host.hooks.exception { callback(exception_message(err)) }
+		if callback := host.hooks.exception { callback(exception_message_with_stack(err)) }
 	}
 	host.closures << voidptr(invoke)
 	host.closures << voidptr(report)

@@ -54,7 +54,7 @@ fn (mut host Host) fire_animation_frame(mut record AnimationFrameBinding, now f6
 	if host.closed { return }
 	host.callback_entry(fn [callback, now] (mut vm libjs.VM) !libjs.Value {
 		return libjs.call(mut vm, callback, libjs.js_undefined(), [libjs.Value.from_f64(now)])
-	}) or { if report := host.hooks.exception { report(exception_message(err)) } }
+	}) or { if report := host.hooks.exception { report(exception_message_with_stack(err)) } }
 }
 
 fn (mut host Host) install_animation_frames() {
