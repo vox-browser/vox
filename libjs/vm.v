@@ -283,6 +283,8 @@ mut:
 	error_messages                 []Utf16String
 
 	loaded_modules []StoredModule
+	date_clock_epoch_ms_ ?f64
+	date_clock_started_ns_ i64
 
 	well_known_symbols_ []&Symbol
 

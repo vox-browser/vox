@@ -2,7 +2,6 @@
 module libjs
 
 import math
-import time
 
 // Runtime/DateConstructor.cpp. Intl/Temporal integration and implementation-
 // defined legacy date-string formats remain separate slices.
@@ -24,11 +23,11 @@ fn initialize_date_intrinsics(mut vm VM, mut realm Realm) {
 }
 
 fn date_constructor_call(mut vm VM) !Value {
-	return Value.from_string(vm.create_string_from_str(date_to_string(f64(time.utc().unix_milli()))))
+	return Value.from_string(vm.create_string_from_str(date_to_string(vm.current_time_milliseconds())))
 }
 
 fn date_constructor_now(mut vm VM) !Value {
-	return Value.from_f64(f64(time.utc().unix_milli()))
+	return Value.from_f64(vm.current_time_milliseconds())
 }
 
 fn date_constructor_parse(mut vm VM) !Value {
@@ -55,7 +54,7 @@ fn date_constructor_utc(mut vm VM) !Value {
 fn date_constructor_construct(mut vm VM, new_target &Object) !&Object {
 	mut value := 0.0
 	if vm.argument_count() == 0 {
-		value = f64(time.utc().unix_milli())
+		value = vm.current_time_milliseconds()
 	} else if vm.argument_count() == 1 {
 		argument := vm.argument(0)
 		if argument.is_object() && argument.as_object().date_object != none {

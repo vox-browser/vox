@@ -44,7 +44,7 @@ fn intl_flexible_day_period(core &IntlCoreData, locale string, clock time.Time) 
 }
 
 fn intl_format_date_parts(mut vm VM, formatter &IntlDateTimeFormat, input Value) ![]IntlDatePart {
-	value := if input.is_undefined() { f64(time.now().unix_milli()) } else { input.to_number(mut vm)!.number }
+	value := if input.is_undefined() { vm.current_time_milliseconds() } else { input.to_number(mut vm)!.number }
 	stamp := date_time_clip(value)
 	if math.is_nan(stamp) { return vm.throw_error(.range_error, 'Invalid time value for Intl.DateTimeFormat') }
 	core := intl_core_data(mut vm)!
