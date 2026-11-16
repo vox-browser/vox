@@ -300,6 +300,7 @@ fn native_source(executables []&Executable) !(string, int) {
 	source.writeln('static int number(NV v) { return v.tag==${int(ValueTag.int32)} || v.tag==${int(ValueTag.double)}; }')
 	source.writeln('static NV num(double x) { NV v={.number=x,.tag=${int(ValueTag.double)}}; if(x>=-2147483648.0 && x<=2147483647.0 && x==(int32_t)x && !(x==0 && signbit(x))) v.tag=${int(ValueTag.int32)}; return v; }')
 	source.writeln('static NV boolean(int x) { NV v={.number=!!x,.tag=${int(ValueTag.boolean)}}; return v; }')
+	source.writeln(native_primitive_helpers())
 	mut fast_count := 0
 	for index, executable in executables {
 		source.writeln('void vox_native_${index}(void *state,NV *v,uint64_t *budget,uint8_t limited,uint32_t *pc,Slow slow,uint64_t *fast_steps) { uint32_t next=*pc; goto dispatch;')
@@ -340,7 +341,7 @@ fn native_fast_instruction(instruction Instruction, executable &Executable) !str
 	if instruction.op in [.jump, .nop] { return 'BUDGET' }
 	if instruction.op !in [.mov, .end, .jump_if_true, .jump_if_false, .jump_if_nullish, .add, .sub,
 		.mul, .div, .less_than, .less_than_equals, .greater_than, .greater_than_equals, .strict_equals,
-		.strict_inequals, .increment, .decrement, .to_numeric, .unary_plus, .unary_minus, .not_op] {
+		.strict_inequals, .loose_equals, .loose_inequals, .increment, .decrement, .to_numeric, .unary_plus, .unary_minus, .not_op] {
 		return ''
 	}
 	lhs := native_slot(instruction.lhs, executable)!
@@ -356,13 +357,21 @@ fn native_fast_instruction(instruction Instruction, executable &Executable) !str
 		return code + 'BUDGET if(${left}.tag==${int(ValueTag.undefined)} || ${left}.tag==${int(ValueTag.null)}) goto L${instruction.target};'
 	}
 	if instruction.op in [.jump_if_true, .jump_if_false, .not_op] {
-		// Strings and BigInts need their existing truthiness implementation.
-		code += 'if(${left}.tag==${int(ValueTag.string)} || ${left}.tag==${int(ValueTag.bigint)}) goto SLOW;\n'
-		truth := '(${left}.tag==${int(ValueTag.object)} || ${left}.tag==${int(ValueTag.symbol)} || ${left}.tag==${int(ValueTag.accessor)} || ((${left}.tag==${int(ValueTag.boolean)} || number(${left})) && ${left}.number!=0 && ${left}.number==${left}.number))'
+		if use_native_primitive_ops() {
+			code += 'if(${left}.tag==${int(ValueTag.bigint)}) goto SLOW;\n'
+		} else {
+			code += 'if(${left}.tag==${int(ValueTag.string)} || ${left}.tag==${int(ValueTag.bigint)}) goto SLOW;\n'
+		}
+		string_truth := if use_native_primitive_ops() { '(${left}.tag==${int(ValueTag.string)} && string_length(${left})!=0) || ' } else { '' }
+		truth := '(${string_truth}${left}.tag==${int(ValueTag.object)} || ${left}.tag==${int(ValueTag.symbol)} || ${left}.tag==${int(ValueTag.accessor)} || ((${left}.tag==${int(ValueTag.boolean)} || number(${left})) && ${left}.number!=0 && ${left}.number==${left}.number))'
 		if instruction.op == .not_op {
 			return code + 'BUDGET v[${native_slot(instruction.dst, executable)!}]=boolean(!${truth});'
 		}
 		return code + 'BUDGET if(${if instruction.op == .jump_if_false { '!' } else { '' }}${truth}) goto L${instruction.target};'
+	}
+	if instruction.op in [.strict_equals, .strict_inequals, .loose_equals, .loose_inequals] {
+		if use_native_primitive_ops() { return code + native_primitive_equality(instruction, executable, left)! }
+		if instruction.op in [.loose_equals, .loose_inequals] { return '' }
 	}
 	dst := native_slot(instruction.dst, executable)!
 	code += 'if(!number(${left})) goto SLOW;\n'

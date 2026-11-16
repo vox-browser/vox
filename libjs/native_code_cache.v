@@ -76,13 +76,15 @@ fn native_cache_abi() !string {
 	} $else {
 		// Invalidate machine code when the ABI or generated fast-path semantics
 		// change, without invalidating it for unrelated browser/docs commits.
-		return sha256.hexhash('native-disk-v1:${os.user_os()}:${os.uname().machine}:' +
+		return sha256.hexhash('native-disk-v2:${os.user_os()}:${os.uname().machine}:${native_primitive_layout_identity()}:' +
 			$embed_file('@VMODROOT/libjs/native_tier.v').to_string() +
 			$embed_file('@VMODROOT/libjs/native_dynamic_dispatch.v').to_string() +
 			$embed_file('@VMODROOT/libjs/native_code_cache.v').to_string() +
 			$embed_file('@VMODROOT/libjs/instruction.v').to_string() +
 			$embed_file('@VMODROOT/libjs/value.v').to_string() +
 			$embed_file('@VMODROOT/libjs/object.v').to_string() +
+			$embed_file('@VMODROOT/libjs/primitive_string.v').to_string() +
+			$embed_file('@VMODROOT/libjs/native_primitive_ops.v').to_string() +
 			$embed_file('@VMODROOT/libjs/utf16_utils.v').to_string() +
 			$embed_file('@VMODROOT/libjs/utf16_ascii_storage.v').to_string() +
 			$embed_file('@VMODROOT/libjs/operand.v').to_string())
