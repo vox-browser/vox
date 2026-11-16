@@ -5,14 +5,7 @@ module libjs
 
 $if test {
 	__global native_property_reads_disabled bool
-	__global native_numeric_keys_disabled bool
 	pub fn set_native_property_reads_for_testing(enabled bool) { native_property_reads_disabled = !enabled }
-	pub fn set_native_numeric_keys_for_testing(enabled bool) { native_numeric_keys_disabled = !enabled }
-}
-
-fn use_native_numeric_keys() bool {
-	$if test { if native_numeric_keys_disabled { return false } }
-	return true
 }
 
 fn use_native_property_reads() bool {
@@ -112,18 +105,6 @@ fn (mut vm VM) execute_planned_property(executable &Executable, plan &u32, stric
 			if tier.diagnostics { tier.activity.specialized_object_property_steps++ }
 		}
 		result = left.as_object().internal_get(mut vm, PropertyName.from_primitive_string(right.as_string()), left)!
-	} else if left.is_object() && right.is_number() && use_compact_reference_reads()
-		&& use_primitive_property_keys() && use_native_numeric_keys()
-		&& right.number >= 0 && right.number < f64(0xffffffff)
-		&& f64(u32(right.number)) == right.number {
-		// ToPropertyKey(number) has no author hooks. Canonical array indices
-		// (including numeric -0 -> "0") need neither formatting nor reparsing.
-		// Keep Object.[[Get]] for proxies, accessors, host providers and exotics.
-		vm.record_compact_reference_read()
-		if mut tier := vm.native_tier {
-			if tier.diagnostics { tier.activity.native_numeric_key_reads++ }
-		}
-		result = left.as_object().internal_get(mut vm, PropertyName.from_number(u32(right.number)), left)!
 	} else {
 		result = vm.execute_property_read(left, right, strict)!
 	}
