@@ -96,6 +96,12 @@ fn prepare_gg_gradient(modules string, vlib string) ! {
 	}
 	canvas := join(target, 'canvas')
 	mkdir(canvas)!
+	// The retired MSAA experiment added an adapter outside the source GG tree.
+	// Re-staging restores GpuContext, so retaining that adapter breaks compilation.
+	obsolete_msaa := join(canvas, 'vox_document_msaa.v')
+	if exists(obsolete_msaa) && !exists(join(source, 'canvas/vox_document_msaa.v')) {
+		remove(obsolete_msaa)!
+	}
 	for entry in listing(join(source, 'canvas'))! {
 		output := join(canvas, os.file_name(entry))
 		if entry == gradient {
