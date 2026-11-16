@@ -4,6 +4,7 @@ package a macOS DMG or Linux DEB and upload it to a new GitHub release.
 macOS releases also update vox-browser.org/version."""
 
 import argparse
+import functools
 import hashlib
 import json
 import os
@@ -103,7 +104,7 @@ def guarded(command, root, reports, name, limit_gib=12, **kwargs):
          '--limit-gib', str(limit_gib), '--', *command], root, **kwargs)
 
 
-def deploy(root=ROOT, output=None, package_only=False):
+def deploy(root=ROOT, output=None, package_only=False, library_directory=None):
     if not package_only:
         # The canonical supervisor supplies the memory guard and build receipts.
         # Pin the C backend as automatic production builds do: v.mod may select
@@ -131,7 +132,13 @@ def deploy(root=ROOT, output=None, package_only=False):
 
         # The build links Homebrew libraries by absolute build-machine
         # paths. Carry them inside the release and drop those search paths.
-        bundle_libraries(app)
+        library_identity = bundle_identity(library_directory) if library_directory is not None else None
+        if library_directory is None:
+            bundle_libraries(app)
+        else:
+            bundle_libraries(app, library_directory=library_directory)
+            if bundle_identity(library_directory) != library_identity:
+                raise RuntimeError('The release dependency directory changed while bundling')
         info = plistlib.loads((app / 'Contents/Info.plist').read_bytes())
         verify_deployment_target(app, info.get('LSMinimumSystemVersion', ''))
         version = info['CFBundleShortVersionString']
@@ -189,6 +196,9 @@ def deploy(root=ROOT, output=None, package_only=False):
                             sizes=sizes, memory_reports=str(reports),
                             bundled_libraries=sorted(path.name for path in (app / 'Contents/Frameworks').glob('*')),
                             signing='ad-hoc; no Developer ID certificate or Apple notarization')
+            if library_directory is not None:
+                manifest['library_directory'] = dict(path=str(library_directory.resolve()),
+                                                     sha256=library_identity)
             manifest_path = Path(image_directory) / 'manifest.json'
             manifest_path.write_text(json.dumps(manifest, indent=2) + '\n')
             os.replace(image, output)
@@ -216,12 +226,18 @@ def main():
                         help='only build and package; leave the version, GitHub and the website alone')
     parser.add_argument('--website-only', action='store_true',
                         help='point vox-browser.org/version at the released version in Info.plist')
+    parser.add_argument('--library-dir', type=Path,
+                        help='macOS: package external dylibs from this directory (no Homebrew fallback)')
     args = parser.parse_args()
     if sys.platform not in ('darwin', 'linux'):
         parser.error('Deployment requires macOS or Linux')
+    if args.library_dir:
+        if linux or not args.library_dir.is_dir():
+            parser.error('--library-dir requires a macOS library directory')
+        package = functools.partial(deploy, library_directory=args.library_dir.resolve())
     if args.website_only and linux:
         parser.error('--website-only requires macOS (the website tracks the macOS download)')
-    if args.website_only and (args.no_publish or args.package_only or args.output or args.version):
+    if args.website_only and (args.no_publish or args.package_only or args.output or args.version or args.library_dir):
         parser.error('--website-only takes no other options')
     if args.no_publish and args.version:
         parser.error('--version publishes a release; omit --no-publish')

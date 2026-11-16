@@ -8,7 +8,15 @@ import sys
 import tempfile
 import unittest
 
-from bundle_macos_libraries import Image, bundle_libraries, macho_files, verify_self_contained
+from bundle_macos_libraries import Image, bundle_libraries, macho_files, runtime_libraries, verify_self_contained
+
+
+class RuntimeLibrariesTests(unittest.TestCase):
+    def test_literal_and_formatted_ffmpeg_names_are_discovered(self):
+        self.assertEqual(runtime_libraries(b'@rpath/libcrypto.3.dylib\0%slibavformat.63.dylib\0'
+                                          b'%slibswscale.10.dylib\0'),
+                         {'@rpath/libcrypto.3.dylib', '@rpath/libavformat.63.dylib',
+                          '@rpath/libswscale.10.dylib'})
 
 MAIN = r'''
 #include <dlfcn.h>
@@ -110,6 +118,49 @@ class BundleLibrariesTests(unittest.TestCase):
         (self.brew / 'libabsolute.dylib').unlink()
         with self.assertRaisesRegex(RuntimeError, 'MacOS/Vox links .*libabsolute.dylib'):
             self.bundle()
+
+    def test_private_dependencies_replace_homebrew_and_run_without_the_originals(self):
+        sdk = self.root / 'sdk'
+        shutil.copytree(self.vendor, sdk, symlinks=True)
+        self.dylib(sdk / 'libabsolute.dylib', 'int absolute_value(void) { return 2000; }',
+                   install_name=str(self.brew / 'libabsolute.dylib'))
+        bundle_libraries(self.app, library_directory=sdk)
+        verify_self_contained(self.app)
+        self.sign()
+        shutil.rmtree(self.vendor)
+        shutil.rmtree(self.brew)
+        shutil.rmtree(sdk)
+        self.assertEqual(self.run_app(), '2122')
+
+    def test_private_directory_never_falls_back_to_incompatible_host_libraries(self):
+        sdk = self.root / 'sdk'
+        sdk.mkdir()
+        with self.assertRaisesRegex(RuntimeError, 'dependency directory is missing'):
+            bundle_libraries(self.app, library_directory=sdk)
+
+    def test_formatted_ffmpeg_library_is_carried_and_loaded_without_host_libraries(self):
+        self.dylib(self.vendor / 'libavformat.63.dylib', 'int ffmpeg_value(void) { return 7; }')
+        source = self.root / 'ffmpeg-main.c'
+        source.write_text('''#include <dlfcn.h>
+#include <stdio.h>
+int main(void) {
+    char path[256];
+    snprintf(path, sizeof(path), "%slibavformat.63.dylib", "@rpath/");
+    void *library = dlopen(path, RTLD_NOW | RTLD_LOCAL);
+    int (*value)(void) = library ? dlsym(library, "ffmpeg_value") : 0;
+    if (!value) return 1;
+    printf("%d\\n", value());
+    return 0;
+}
+''')
+        subprocess.run(['clang', str(source), '-Wl,-rpath,' + str(self.vendor),
+                        '-o', str(self.executable)], check=True)
+        self.bundle()
+        verify_self_contained(self.app)
+        self.sign()
+        shutil.rmtree(self.vendor)
+        shutil.rmtree(self.brew)
+        self.assertEqual(self.run_app(), '7')
 
 
 if __name__ == '__main__':
