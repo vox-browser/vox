@@ -3149,7 +3149,8 @@ capture-scale, shared rectangle/clip and finite compositor-footprint corrections
 a border resampling regression is removed. A guarded Display P3 document-space
 experiment initially reaches 343 differing pixels; guarded PNG decode density,
 mipmaps, thin-rectangle rasterization and destination-space blending now reach
-48 differing pixels against the unchanged original reference;
+42 differing pixels against the unchanged original reference, after preserving
+fractional percentage transform origins;
 it is not pixel-perfect acceptance. Covered MSAA samples now quantize before
 resolving coverage, with regression sources held uncompiled/unrun.
 The 862d ABI also completes a separate empty-cache first opening and fresh

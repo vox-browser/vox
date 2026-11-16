@@ -4467,3 +4467,63 @@ probe and resource inputs, no errors and normal exits. No permanent renderer
 change is made for either. A layout-basis experiment for the elliptical avatar
 clip is pending. Full Brave pixel parity remains open and automated suites
 remain held as requested.
+
+
+The next round retains 64 completed roots/361 entries in local archive r13,
+then 58 roots/1,835 entries in r14, with idle-lock, SHA-256 and symlink checks.
+The compiled 48-pixel PNG is retained as
+`docs/performance/libjs-github-browser-20261116/github-frozen-libjs-compiled-48px.png`
+(SHA-256 `47ca454b437b8c8eb4032bdb9649fc7bc5e4b2b27236b31d5eaa05c4d33c5f6d`).
+Vertex-position invariance changes no pixels; its actual-page guard exits zero,
+elapsed 36.97094575 seconds, peak 8,042,807,296 bytes. The initial ellipse-basis
+build cannot exercise the avatar because that branch is single-sampled while
+the real image uses 4x MSAA; no capture acceptance is claimed. An eligible
+MSAA destination-frame follow-up confirms execution but changes zero pixels;
+its control reproduces the same 48-pixel result. Both are rejected and their
+owned code is removed. The on/off captures exit zero, elapsed/peak
+38.816847917 seconds/8,168,570,880 bytes and 38.650611375 seconds/
+8,130,101,248 bytes, with exact content, no errors and unchanged pins.
+
+Repeated native edits during optimization invalidate two direct diagnostic
+builds, both retained. The next private diagnostic build uses the existing
+production `preprocessed-c-v1` protocol from `freeze_browser_compile.py`:
+it verifies parsed V buffers and native/resource inputs, preprocesses them,
+then optimizes the sealed translation units while continuing to pin live link
+inputs. It does not copy source trees, bypass checks or change the 12 GiB
+guard. That build passes in 242.200517416 seconds, peak 8,968,585,216 bytes.
+A later native-header edit before sealing is correctly rejected as well.
+
+`ce128d06c` adds guarded precise percentage transform origins for Chromium
+geometry. The breadcrumb separator is a rotated border, not a glyph. Its
+22.390625-unit height has a 50% center at 11.1953125; the old fixed-point
+resolution truncates that to 11.1875. Preserving the fractional center makes
+all six float32 matrix components match Brave's independently recorded picture
+exactly. Non-percentage origins and other geometry policies retain their
+previous resolution; calculated-origin precision is not expanded by this slice.
+
+The accepted origin build seals 3,758 V sources and zero tests, finishes in
+270.689518708 seconds with peak 8,899,723,264 bytes, and produces executable
+`d17bf2f22fb6cfc42ec0b74ed11fcd2ded9f407fbd0efc00412192a44adbf9f4`.
+Both fresh captures use the actual 0130 native cache with `/usr/bin/false`.
+On mode has 4,244 hits/473,185 native entries; off has 4,245 hits/482,576 entries.
+Both have zero misses/compiler calls/pending/invalid entries, no author/native
+errors, complete exact content, fixed input pins and zero exits. On elapsed/peak
+are 53.616901542 seconds/8,843,198,464 bytes; off are 38.507044708 seconds/
+8,447,754,240 bytes. These contended diagnostic intervals are not a speed claim.
+Off reproduces 48 pixels. On reaches **42 differing pixels, maximum 15,
+MAE 0.0001, RMSE 0.0222**: nine pixels resolve and three new one-level
+mismatches appear. The guarded path is retained because its transform agrees
+with the independent paint record; the remaining raster differences are open.
+Its regression source is committed but uncompiled/unrun. The compiled on PNG
+is retained locally as `github-frozen-libjs-compiled-42px.png`, SHA-256
+`4eefb0221d7baffecf8ef7b5b352695ee754aab379b41faaa83a41c74fd50410`.
+
+A shared shadow/PNG multisample replay follow-up is still pending. Its first
+root compile catches a positional decoration initializer that must be changed
+to named fields; the next build passes but its capture lacks an execution
+marker, so no optimization credit is attributed. Caller/eligibility tracing is
+being built. A separate Brave shader-log diagnosis fails because its injected
+clock attempts to annotate the document before the HTML root exists; that
+failure belongs to the diagnostic, not GitHub. It is retained and does not
+replace the original reference. Tests remain held and pixel-perfect parity
+remains incomplete.
