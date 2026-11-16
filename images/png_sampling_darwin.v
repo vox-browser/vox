@@ -193,9 +193,25 @@ fn document_shadowed_png_pixels(pixels &u8, width i32, height i32, pitch i32, ba
 	mut clipping := [12]f32{}
 	unsafe { vmemcpy(&clipping[0], clip, 12 * int(sizeof(f32))) }
 	swap_document_raster_channels(pixels, width, height, pitch)
-	result := ggshape.draw_sampled_rgba_with_shadow(pixels, width, height, pitch, backdrop,
-		unsafe { source.vbytes(int(source_width) * int(source_height) * 4) }, source_width, source_height,
-		x, y, destination_width, destination_height, int(samples), int(natural_width), int(natural_height), clipping, gpu_mips != 0, shadow)
+	packed := unsafe { source.vbytes(int(source_width) * int(source_height) * 4) }
+	mut result := i32(0)
+	if shadow != unsafe { nil } && document_png_space_is_p3() != 0 {
+		draw := document_p3_shape(*shadow)
+		result = draw_document_sampled_image_tiles_with_decoration(pixels, width, height, pitch, backdrop,
+			int(first_x), int(first_y), packed, int(source_width), int(source_height), x, y,
+			destination_width, destination_height, int(natural_width), int(natural_height), clipping,
+			.rgba_p3_shadow, gpu_mips != 0, DocumentBitmapDecoration{shadow: draw})
+		if result == 0 {
+			result = ggshape.draw_sampled_srgb_gamut_with_shadow(pixels, width, height, pitch, backdrop,
+				packed, source_width, source_height, x, y, destination_width, destination_height,
+				int(samples), int(natural_width), int(natural_height), clipping, gpu_mips != 0,
+				document_srgb_to_p3_gamut, &draw)
+		}
+	} else {
+		result = ggshape.draw_sampled_rgba_with_shadow(pixels, width, height, pitch, backdrop,
+			packed, source_width, source_height, x, y, destination_width, destination_height,
+			int(samples), int(natural_width), int(natural_height), clipping, gpu_mips != 0, shadow)
+	}
 	swap_document_raster_channels(pixels, width, height, pitch)
 	return result
 }

@@ -10,6 +10,7 @@ enum DocumentSampledTileKind {
 	jpeg
 	rgba
 	rgba_p3
+	rgba_p3_shadow
 	rgba_quad
 	repeated_background
 }
@@ -17,6 +18,7 @@ enum DocumentSampledTileKind {
 struct DocumentBitmapDecoration {
 	color  [4]u8
 	border C.VoxGraphiteShape
+	shadow C.VoxGraphiteShape
 }
 
 // A cropped native readback can cross tiles with different sample counts.
@@ -87,6 +89,13 @@ fn draw_document_sampled_image_tiles_with_decoration(pixels &u8, width i32, heig
 			} else if kind == .rgba_quad {
 				ggshape.draw_sampled_image_quad_rgba(tile.data, i32(grid.width), i32(grid.height),
 					i32(grid.width * 4), backdrop, source, sw, sh, x + dx, y + dy, samples, local_clip)
+			} else if kind == .rgba_p3_shadow {
+				mut shadow := decoration.shadow
+				shadow.matrix[2] += dx
+				shadow.matrix[5] += dy
+				ggshape.draw_sampled_srgb_gamut_with_shadow(tile.data, i32(grid.width), i32(grid.height),
+					i32(grid.width * 4), backdrop, source, sw, sh, x + dx, y + dy, dw, dh,
+					samples, nw, nh, local_clip, gpu_mips, document_srgb_to_p3_gamut, &shadow)
 			} else if kind == .rgba_p3 {
 				ggshape.draw_sampled_srgb_gamut_clipped(tile.data, i32(grid.width), i32(grid.height),
 					i32(grid.width * 4), backdrop, source, sw, sh, x + dx, y + dy, dw, dh,
