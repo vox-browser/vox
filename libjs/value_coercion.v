@@ -74,6 +74,17 @@ pub fn (object &Object) ordinary_to_primitive(mut vm VM, preferred_type Preferre
 
 // Runtime/Value.cpp::ToPropertyKey.
 pub fn (value Value) to_property_key(mut vm VM) !PropertyName {
+	if use_primitive_property_keys() {
+		if value.is_string() {
+			$if test { if primitive_property_keys_diagnostic { primitive_property_keys_strings++ } }
+			return PropertyName.from_primitive_string(value.as_string())
+		}
+		if value.is_symbol() {
+			$if test { if primitive_property_keys_diagnostic { primitive_property_keys_symbols++ } }
+			return PropertyName.from_symbol(value.as_symbol())
+		}
+	}
+
 	key := value.to_primitive_with_hint(mut vm, .string)!
 	if key.is_symbol() { return PropertyName.from_symbol(key.as_symbol()) }
 	text := key.to_primitive_string(mut vm)!
