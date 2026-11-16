@@ -58,6 +58,15 @@ repeat, preserving the other 72 PNGs. Production confirmation and live-site
 acceptance remain pending. See the
 [merge audit](docs/OPTIMIZED_SITES_PIXELS_2026_11_12.md#verge-svg-merge-allocation-and-transparent-borders-2026-11-17).
 
+**Slashdot invalidation follow-up:** `df849839c` refreshes stale rule plans
+before procedural marker attributes change. Frozen Slashdot improves
+**232,234→41,281 pixels twice**; it remains inexact. BBC, Guardian and Verge
+remain zero twice, and all **74 workloads/148 captures** preserve their previous
+PNGs. Newly completed production `cd9930f9` now confirms the preceding Verge
+fix at zero twice, but lacks the new invalidation fix. Its production check,
+remaining Slashdot layout/image differences and catalog-wide acceptance stay
+open. See the [invalidation audit](docs/OPTIMIZED_SITES_PIXELS_2026_11_12.md#slashdot-procedural-filter-invalidation-2026-11-17).
+
 **Remaining forum/news screen, November 17:** the exact Verge fix does not
 finish the catalog. A separate diagnostic screen finds open Slashdot, Stack
 Overflow, TechCrunch and Register differences; Engadget's fresh Brave references

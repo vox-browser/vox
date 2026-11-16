@@ -6634,3 +6634,64 @@ files are untouched. Raw source/reference/native PNGs, audits, commands, failed
 receipts, recovered input checks and cleanup inventory remain ignored under
 `docs/performance/verge-filter-20261117/`. The successfully completed Verge,
 BBC, Guardian and 74-workload merge checks precede this separate failure.
+
+
+### Slashdot procedural-filter invalidation, 2026-11-17
+
+`df849839c` rebuilds a style scope's invalidation plans before applying an
+attribute invalidation. A targeted user-sheet replacement can leave all current
+subjects clean when none yet matches. Procedural filtering then adds empty
+`data-vox-adblock-*` attributes, but the metadata optimization was consulting
+stale plans, so the newly matching user-important hiding rule never reached the
+subject. The filters themselves, their budgets and references are unchanged.
+
+The archived Slashdot probe confirms that `.grid_24:has-text(Featured Content)`
+finds the card and installs both marker attributes. JavaScriptCore initializes,
+no script errors occur and the procedural budget stays available. Disabling
+metadata style reuse diagnoses the stale-plan path; that override is absent
+from the final browser. A focused user-sheet/attribute test fails before the
+fix and passes afterward. Data and ARIA attribute pairs, marker removal,
+descendant and sibling selectors, and unchanged bystander style identity are
+covered. A separate empty-attribute presence test preserves the already-working
+cached-rule path. User-sheet, metadata, static-filter, attribute-value,
+stylesheet and procedural-prime checks all compile and execute successfully.
+The initial single-file static-filter command omitted its shared test helper;
+its corrected explicit file-list command passes. Failed diagnostic attempts
+remain local alongside the successful checks.
+
+C/O0 diagnostic executable `a8114429` contains the fixed compiler-read bridge
+source. Every row below has two fresh native processes, original-origin replay,
+private empty profiles/caches, the recorded image policy, a 1024×768 document
+viewport and a five-second settle. Archive bytes, references, executable/native
+libraries and all 24 runtime shaders are pinned before and after. Document,
+readiness and image inventories pass; no shader compilation failures appear.
+
+| Frozen archive | Before, pixels | With invalidation fix, pixels |
+| --- | ---: | ---: |
+| Slashdot | 232,234 twice, production `cd9930f9` | 41,281 twice |
+| TechCrunch | 173,970 | 173,970 twice |
+| BBC | 0 | 0 twice |
+| Guardian | 0 | 0 twice |
+| Verge | 0 | 0 twice |
+
+Both fixed Slashdot request streams pass full uBO 1.75.0: 47 decisions, one
+blocked request, zero engine mismatches and zero oracle disagreements each.
+All **74 workloads/148 captures** repeat byte for byte, and all 74 prior PNGs
+are unchanged. This preserves the six frozen catalog pages and the previous
+shadow/filter controls; it does not make every control pixel-exact.
+
+The latest completed C/literal-`-prod`/single-unit bundle `cd9930f9` also gives
+**zero Verge pixels twice** in fresh processes. Receipt
+`20261117-003431-b936b83c` contains the preceding shadow/merge implementation;
+this closes that fix's production screenshot check. The same bundle reproduces
+Slashdot's 232,234-pixel baseline and lacks `df849839c`. The managed commit hook
+requests its coalesced production rebuild; no duplicate build is queued.
+
+Slashdot still has a separate 10-pixel story-spacing difference and image
+pixels to diagnose. These frozen results establish neither live-site parity nor
+performance credit. The historical source Brave 156 versus replay Brave 157
+qualification remains open. Catalog-wide acceptance remains open. Raw captures,
+input pins, compiler witnesses, commands, exits, rejected probes and guard
+receipts are retained locally in
+`docs/performance/slashdot-procedural-20261117/`; owned Build outputs are removed
+after evidence preservation.
