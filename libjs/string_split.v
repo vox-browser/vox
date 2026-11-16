@@ -35,7 +35,7 @@ pub fn string_prototype_split(mut vm VM, array_prototype &Object) !Value {
 	if separator_length == 0 {
 		out_length := if limit < u32(string_length) { int(limit) } else { string_length }
 		for index in 0 .. out_length {
-			unit := vm.create_string(Utf16String.from_slice(text.utf16.data[index..index + 1]))
+			unit := vm.create_generated_string(text.utf16.data[index..index + 1])
 			array.append_split_value(mut vm, Value.from_string(unit))!
 		}
 		return Value.from_object(object)
@@ -49,13 +49,13 @@ pub fn string_prototype_split(mut vm VM, array_prototype &Object) !Value {
 	for {
 		index := match_index or { break }
 		substring :=
-			vm.create_string(Utf16String.from_slice(text.utf16.data[search_start..int(index)]))
+			vm.create_generated_string(text.utf16.data[search_start..int(index)])
 		array.append_split_value(mut vm, Value.from_string(substring))!
 		if array.length == limit { return Value.from_object(object) }
 		search_start = int(index) + separator_length
 		match_index = string_index_of(text.utf16, separator, uint(search_start))
 	}
-	substring := vm.create_string(Utf16String.from_slice(text.utf16.data[search_start..]))
+	substring := vm.create_generated_string(text.utf16.data[search_start..])
 	array.append_split_value(mut vm, Value.from_string(substring))!
 	return Value.from_object(object)
 }

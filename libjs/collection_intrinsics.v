@@ -166,7 +166,7 @@ fn array_prototype_join(mut vm VM) !Value {
 		value := object.get(mut vm, array_index_key(index))!
 		if !value.is_nullish() { parts << value.to_primitive_string(mut vm)!.utf16 }
 	}
-	return Value.from_string(vm.create_string(utf16_concat(parts)))
+	return Value.from_string(vm.create_generated_join(parts))
 }
 
 fn array_prototype_for_each(mut vm VM) !Value {

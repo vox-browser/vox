@@ -246,6 +246,7 @@ pub fn (mut scope TypeErrorRealmScope) restore() {
 pub struct VM {
 mut:
 	short_utf8_strings map[string]&PrimitiveString
+	generated_string_cache []?&PrimitiveString
 	string_to_atom_cache       []StringToAtomCacheEntry
 	fly_string_cache           []?&PrimitiveString
 	numeric_string_cache       []?&PrimitiveString
@@ -1247,6 +1248,7 @@ pub fn (vm &VM) dump_backtrace() {
 
 pub fn (vm &VM) gather_roots(mut roots HeapRoots) {
 	for _, cached in vm.short_utf8_strings { roots.add(voidptr(cached)) }
+	for entry in vm.generated_string_cache { if cached := entry { roots.add(voidptr(cached)) } }
 	roots.add(voidptr(vm.empty_string_))
 	for cached in vm.single_ascii_character_strings {
 		roots.add(voidptr(cached))
