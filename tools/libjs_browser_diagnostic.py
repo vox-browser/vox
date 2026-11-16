@@ -53,11 +53,14 @@ def run(args):
         environment['VOX_LIBJS_NATIVE_CACHE'] = str(args.native_cache.resolve())
     if args.native_compiler is not None:
         environment['VOX_LIBJS_NATIVE_COMPILER'] = str(args.native_compiler.resolve())
+    if args.audit_interval_ms is not None:
+        environment['VOX_NATIVE_OBSERVATION_INTERVAL_MS'] = str(args.audit_interval_ms)
     command = [str(binary), '--enable-javascript', '--js-engine=' + args.engine,
                '--window-width', '1024', '--window-height', '880', replay.manifest['url']]
     result = dict(command=command, configuration=args.configuration,
         native_cache=environment.get('VOX_LIBJS_NATIVE_CACHE', 'profile default'),
         native_compiler=environment.get('VOX_LIBJS_NATIVE_COMPILER', 'clang'),
+        audit_interval_ms=args.audit_interval_ms,
         scope='active-window functional diagnosis; whole-window PNG; no pixel/performance gate',
         observer_sha256=digest(Path(__file__)), sample_after=args.sample_after,
         host_before=dict(cpu_count=os.cpu_count(), load=os.getloadavg(), unix=time.time()))
@@ -141,6 +144,8 @@ def main():
     parser.add_argument('--native-compiler', type=Path,
                         help='Use /usr/bin/false on reopen to detect unexpected compilation')
     parser.add_argument('--observe-ms', type=int, default=15000)
+    parser.add_argument('--audit-interval-ms', type=int,
+                        help='Rewrite the active document audit while waiting for the final capture')
     parser.add_argument('--timeout', type=float, default=150)
     parser.add_argument('--configuration', default='diagnostic browser; see its compile receipt')
     parser.add_argument('--sample-after', type=float,
@@ -148,6 +153,8 @@ def main():
     args = parser.parse_args()
     if args.observe_ms <= 0 or args.timeout <= args.observe_ms / 1000:
         parser.error('Timeout must exceed the positive observation delay')
+    if args.audit_interval_ms is not None and args.audit_interval_ms <= 0:
+        parser.error('Audit interval must be positive')
     if args.sample_after is not None and args.sample_after < 0:
         parser.error('Sample delay must be nonnegative')
     raise SystemExit(run(args))
