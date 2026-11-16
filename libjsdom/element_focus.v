@@ -49,10 +49,17 @@ fn (mut host Host) install_element_focus() {
 			if name == 'blur' {
 				html.run_unfocusing_steps(mut manager, element.as_node())
 			} else if document.allow_focus() && element.is_focusable() {
+				if focused := document.focused_area() {
+					if voidptr(focused) == voidptr(element.as_node()) { return libjs.js_undefined() }
+				}
 				html.run_focusing_steps(mut manager, element.as_node(), none, .other)
-				if !prevent_scroll {
-					mut mutable := unsafe { &dom.Element(element) }
-					_ = mutable.scroll_into_view()
+				// Focus handlers may redirect focus. Only reveal the element that
+				// this call actually focused, keeping an already visible box still.
+				if focused := document.focused_area() {
+					if !prevent_scroll && voidptr(focused) == voidptr(element.as_node()) {
+						mut mutable := unsafe { &dom.Element(element) }
+						_ = mutable.scroll_into_view_with_options(dom.ScrollIntoViewOptions{block: .nearest, inline_: .nearest})
+					}
 				}
 			}
 			mut owner := unsafe { &Host(host) }
