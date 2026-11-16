@@ -3,6 +3,7 @@ module libjs
 import crypto.sha256
 import dl
 import json2
+import math
 import os
 import rand
 import time
@@ -160,19 +161,27 @@ fn valid_native_digest(value string) bool {
 }
 
 fn (mut cache NativeCodeCache) load(key string) !NativeEntry {
+	// The typed JSON decoder lazily retains per-type metadata. Keep decoding
+	// outside the temporary file-hashing workspace so that cache stays alive.
+	return cache.retain_entry(cache.read_entry(key)!)
+}
+
+fn native_library_digest(path string) !string {
 	$if prealloc {
-		// Record decoding and hashing the library are lookup work. Retain only
-		// the mapping owner/digest after returning to the caller's arena.
 		scope := unsafe { prealloc_scope_begin() }
 		defer { unsafe { prealloc_scope_free_after(scope) } }
-		loaded := cache.read_entry(key) or {
+		digest := native_library_digest_in_workspace(path) or {
 			unsafe { prealloc_scope_leave(scope) }
 			return error_with_code(err.msg().clone(), err.code())
 		}
 		unsafe { prealloc_scope_leave(scope) }
-		return cache.retain_entry(loaded)
+		return digest.clone()
 	}
-	return cache.retain_entry(cache.read_entry(key)!)
+	return native_library_digest_in_workspace(path)
+}
+
+fn native_library_digest_in_workspace(path string) !string {
+	return sha256.hexhash(os.read_file(path)!)
 }
 
 fn (mut cache NativeCodeCache) retain_entry(loaded NativeLoadedEntry) NativeEntry {
@@ -191,7 +200,7 @@ fn (cache &NativeCodeCache) read_entry(key string) !NativeLoadedEntry {
 	// diagnostics and get replaced only after a successful compilation.
 	text := os.read_file(path)!
 	if text.len > 16384 { return error('Native cache record is too large') }
-	record := json2.decode[NativeCacheRecord](text)!
+	record := decode_native_cache_record(text)!
 	if record.key != key || record.abi != cache.abi || record.symbol < 0
 		|| record.symbol > 1000000 || !valid_native_digest(record.library_sha256)
 		|| !record.library.ends_with(dl.dl_ext)
@@ -207,7 +216,7 @@ fn (cache &NativeCodeCache) read_entry(key string) !NativeLoadedEntry {
 		handle = loaded.handle
 	} else {
 		library := os.join_path(cache.directory, record.library)
-		if sha256.hexhash(os.read_file(library)!) != record.library_sha256 {
+		if native_library_digest(library)! != record.library_sha256 {
 			return error('Native cache library digest mismatch')
 		}
 		handle = dl.open_opt(library, dl.rtld_now | dl.rtld_local)!
@@ -224,6 +233,33 @@ fn (cache &NativeCodeCache) read_entry(key string) !NativeLoadedEntry {
 		digest: record.library_sha256
 		opened: opened
 	}
+}
+
+fn native_record_string(fields map[string]json2.Any, name string) !string {
+	value := fields[name] or { return error('Missing native cache field: ${name}') }
+	if value is string { return value }
+	return error('Invalid native cache string: ${name}')
+}
+
+// Typed struct decoding caches process-wide reflection metadata in the current
+// allocator. A first decode inside load's temporary arena would leave that
+// cache dangling. Map/Any decoding has no retained struct metadata. Require the
+// canonical record field types and keep all decoded values inside this lookup.
+fn decode_native_cache_record(text string) !NativeCacheRecord {
+	fields := json2.decode[map[string]json2.Any](text)!
+	key := native_record_string(fields, 'key')!
+	abi := native_record_string(fields, 'abi')!
+	library := native_record_string(fields, 'library')!
+	digest := native_record_string(fields, 'library_sha256')!
+	symbol := fields['symbol'] or { return error('Missing native cache field: symbol') }
+	if symbol !is int && symbol !is i64 && symbol !is u64 && symbol !is f64 {
+		return error('Invalid native cache symbol type')
+	}
+	number := symbol.f64()
+	if math.is_nan(number) || number < 0 || number > 1000000 || math.trunc(number) != number {
+		return error('Invalid native cache symbol')
+	}
+	return NativeCacheRecord{key: key, abi: abi, library: library, library_sha256: digest, symbol: int(number)}
 }
 
 fn (mut tier NativeTier) prepare_cached_entry(executable &Executable) {
