@@ -4445,3 +4445,78 @@ Cleanup inventories **86 owned roots/4,111 files**, preserves and SHA-verifies
 intermediates, profiles, guards and locks. Both temporary canonical probes are
 removed. The archive guard and lock are separately copied, verified and removed;
 no owned scratch remains. Shared production bundles and dependencies stay.
+
+
+## Rounded WebP uploads and legacy CPU mips, 2026-11-16
+
+`eb35365d2` permits minified VP8 uploads whose two dimensions are rounded up
+from the same power-of-two decode level. It also corrects the shared CPU plane
+mip selector: Chromium's legacy Skia configuration uses the geometric mean of
+the two scales, preserving f32 rounding, rather than the stronger reduction.
+For 480×270→120×68, the former selector incorrectly chose one extra mip for
+both luma and chroma. Source, opacity, profile, transform and size restrictions
+remain. No shader, reference, tolerance, site exception or application UI changes.
+
+Current upstream [decode-cache policy](https://github.com/chromium/chromium/blob/main/cc/tiles/gpu_image_decode_cache.cc)
+and [decode-size rounding](https://github.com/chromium/chromium/blob/main/cc/tiles/mipmap_util.cc)
+motivated the investigation; those sources alone do not identify the pinned
+Brave path. A fresh instrumented Brave capture repeats the earlier rounded-photo
+control byte for byte. Its detailed memory dump records **24,480 upload bytes**,
+consistent with three 120×68 unorm8 planes. The independent native Skia build's
+recorded arguments explicitly enable legacy anisotropic mip selection. Its
+nearest-mip Gray8 draw reduces the isolated control's large errors to one level;
+the alternate fractional source-extent hypothesis is rejected and retained.
+The earlier CPU oracle used a different Skia build and did not establish this
+legacy mip choice; its R8 store comparisons remain separate numerical evidence.
+
+All **24,480 resized plane bytes** from the corrected V code match the native
+Gray8 oracle exactly. Ten synthetic isotropic, rounded and anisotropic cases
+add **135 exact bytes**. Twelve focused V functions execute successfully with
+arena poisoning and 3 GiB guards, including exact reference arrays and rejection
+of mismatched decode levels, invalid dimensions and incomplete planes. The
+plane/upload executables are `6cbe877a6b952d2632f2c5f86fac3fe235967662f29c845ce2a9af485d1a53be` and
+`75e592f21795062d381ef510bc049bf963fab20f3c49ddf2b773a270678a204a`, each with **72 matched V witnesses**.
+An additional literal V `-prod` C executable, `a7239c87df06ef095e1ee47074611260121f44a9401821bb4b6664621799cf12`,
+writes all 24,480 real plane bytes; an external byte comparison confirms equality.
+This check executes the scaler outside assertions. Native header/library,
+configuration, source, fixture and executable pins remain matched.
+
+Final C/O0/preallocated/no-GC browser
+`42f2ee25fa12b5767c5929b9318a15029f23f8fc289e5833e3bcd2a190453c45`
+completes **50 workloads/100 fresh captures**, plus startup. All pairs repeat;
+**all 49 non-CNN PNGs remain unchanged**. All **889 consumed V witnesses and
+942 source/runtime pins** stay matched. Startup, all 100 capture guards, driver,
+outer guard and guarded analysis exit zero. Logged focused PNGs agree with the
+broad result, and confirm the 120×68 planar upload executes on CNN.
+
+| Scope | Previous differences | Final differences | Maximum channel error |
+| --- | ---: | ---: | ---: |
+| Complete CNN viewport | 6,091 | **5,160** | **58→9** |
+| Partly visible 480×270 photo | 986 | **55** | **58→1** |
+| Vlang / GitHub / Hacker News / Lobsters / Wikipedia | 0 each | **0 each** | 0 |
+
+The change corrects **934 pixels and introduces three one-level differences**;
+981 pixels change, all inside the partly visible photo at x=333..435, y=753..767.
+It does not make that photo or CNN exact. The other partly visible ICC photo
+retains **372 differences/max9**; the remaining six image regions are unchanged.
+CNN's missing archived MP4 responses and source/replay gate remain open.
+
+A newly completed shared production executable,
+`3c6be545f32f9e495767cd91f5ea53c019603cf52d4f500f335260f6cedee909`,
+receipt `20261116-062906-c6814bce` (C/literal V `-prod`/single C unit), now contains
+the final CSS-only, allocation-free gradient fix by consumed source hashes.
+Six fresh baseline captures repeat and match the corresponding prior diagnostics:
+Vlang **1**, orbit underlay **0**, CNN **6,091**. Startup and all native guards
+exit zero; selected source/shader/runtime/executable pins remain matched. This
+is focused production confirmation of the gradient slice. The bundle lacks the
+resolved-shadow and current mip fixes by source hash and cannot validate them.
+Their managed rebuild requests remain coalesced; no duplicate production build
+is requested or awaited. Frozen results supply no live-site, scripting,
+scrolling or instruction-performance acceptance. Catalog-wide equality remains open.
+Local evidence is under
+`docs/performance/vlang-gradients-20261114/raw/cnn-rounded-sampling-20261116/`.
+Cleanup inventories **50 owned roots/4,754 files**, preserves and SHA-verifies
+**1,199 evidence files/37,363,776 bytes**, and removes owned binaries,
+intermediates, profiles, guards and locks. All three temporary canonical probes
+are removed. The archive guard and lock are separately copied, verified and
+removed; no owned scratch remains. Shared bundles and dependencies stay.

@@ -13,12 +13,16 @@ all four exact. Vlang.io is now **pixel-exact in diagnostics** after preserving
 the resolved blur support before rotating shadow masks (`bd6bfd3f7`). The clipped
 orbit and rotated-ellipse shadow controls are also exact. All 50 workload pairs
 repeat, with zero introduced differences and 47 other PNGs unchanged. Its JPEG
-remains exact. Production `4488b888` still captures Vlang at one pixel using an
-earlier generic gradient clip-elision variant; the final CSS-only gradient and
-resolved-shadow implementations await production confirmation. See the
+remains exact. Production `3c6be545` now exercises the final CSS-only gradient
+fix: Vlang retains one pixel and the orbit underlay is exact in two fresh captures
+each. The resolved-shadow implementation awaits production confirmation. See the
 [resolved-shadow audit](docs/OPTIMIZED_SITES_PIXELS_2026_11_12.md#preserve-resolved-blur-support-before-rotation-2026-11-16).
-CNN retains rendering and source/replay failures; its
-native-repeat correction now passes in production.
+CNN improves **6,091→5,160 differing pixels in diagnostics** (`eb35365d2`),
+with maximum channel error **58→9** after correcting rounded-upload CPU mip
+selection. All 50 pairs repeat; 49 other PNGs are unchanged. The fix corrects
+934 pixels and introduces three one-level differences. Production remains at
+6,091; the new source awaits its managed rebuild. CNN retains rendering and
+source/replay failures; its native-repeat correction passes in production.
 Reddit remains unverified (missing historical fixture, earlier live
 HTTP 403). A separate tall-shadow control has a retained baseline repeat failure.
 Lossless and native-size/half-size lossy WebP controls now pass in production.
@@ -162,7 +166,13 @@ The subsequent `bd6bfd3f7` preserves resolved blur support and its origin before
 rotation. Diagnostics make Vlang **1→0**, the clipped orbit **1→0**, and the
 rotated-ellipse control **5→0**. All 50 pairs repeat, with zero introduced pixels
 and 47 other PNGs unchanged; CNN stays at 6,091. Its production confirmation is
-also pending. References and tolerances remain unchanged and catalog parity is open.
+also pending. `eb35365d2` then corrects rounded WebP upload mip selection:
+CNN improves **6,091→5,160**, with 934 corrected and three introduced one-level
+pixels, while all 49 other PNGs remain unchanged in 100 repeatable captures.
+Its maximum channel error drops **58→9**. New production `3c6be545` confirms
+the final CSS gradient source in six focused baseline captures (Vlang one,
+underlay zero, CNN 6,091); it lacks the shadow and mip changes. References and
+tolerances remain unchanged and catalog parity is open.
 See the
 [current audit, capture scopes and retained failures](docs/OPTIMIZED_SITES_PIXELS_2026_11_12.md).
 
