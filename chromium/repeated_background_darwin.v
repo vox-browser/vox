@@ -24,5 +24,5 @@ fn document_repeated_background_pixels(pixels &u8, width i32, height i32, pitch 
 	return draw_document_sampled_image_tiles_with_decoration(pixels, width, height, pitch, 1,
 		int(first_x), int(first_y), unsafe { source.vbytes(int(sw) * int(sh) * 4) }, int(sw), int(sh),
 		x, y, f32(sw), f32(sh), int(sw), int(sh), bounds, .repeated_background, false,
-		DocumentBitmapDecoration{rgba, *border})
+		DocumentBitmapDecoration{color: rgba, border: *border})
 }
