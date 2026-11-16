@@ -4382,3 +4382,22 @@ used. Another 96 completed scratch roots/437 entries are archived with SHA-256,
 symlink and idle-lock verification under local
 `scratch-receipts/continued-20261116-r12`. Tests remain held, and full Brave
 pixel parity and matched compiled-revisit speed remain open.
+
+
+The GPU precision retry passes in 311.581433125 seconds, peak
+12,036,276,224 bytes, sealing 3,755 V sources and zero tests. Executable SHA-256
+is `573c6fe1fffa434cd6a2c5e32db76d8fc7f39dc9cf1f0662ec3b89c404f55df0`.
+All three fresh original-page captures preserve exact content and input hashes,
+have no script/native errors, and exit zero throughout. Each confirms its
+requested shader mode is active. Mode 0 reproduces the prior 130-pixel output
+exactly. The legacy combined half-uniform model worsens it to 138 pixels
+(5 improve, 13 regress/new); staged half intermediates worsen it to 224
+(5 improve, 99 regress/new). Maximum error remains 15 in both. Guard
+elapsed/peak are 39.638516792 seconds/8,141,029,376 bytes for control,
+38.580221625 seconds/8,139,849,728 bytes for legacy and
+38.119425667 seconds/8,137,342,976 bytes for staged. Both experiments are
+rejected and their owned implementation is removed, preserving independent
+YUV changes. Exact source proofs, the observed checkout patch and all failed
+and successful attempt receipts remain local. No Brave GPU precision setting
+is inferred from these results. Eight completed generated C files totaling
+2,766,619,811 bytes are pruned with a retained hash/size manifest.
