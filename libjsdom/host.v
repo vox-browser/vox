@@ -46,6 +46,7 @@ mut:
 	cdata_prototype &libjs.Object = unsafe { nil }
 	collection_prototype &libjs.Object = unsafe { nil }
 	collection_wrappers map[voidptr]&libjs.Object
+	class_query_cache map[u64]ClassQueryCacheEntry
 	form_controls_collection_prototype &libjs.Object = unsafe { nil }
 	form_controls_collections map[voidptr]&html.HTMLFormControlsCollection
 	radio_node_list_prototype &libjs.Object = unsafe { nil }
@@ -373,6 +374,7 @@ pub fn (mut host Host) close() {
 	host.wrappers.clear()
 	host.node_list_wrappers.clear()
 	host.collection_wrappers.clear()
+	host.class_query_cache.clear()
 	host.form_controls_collections.clear()
 	host.radio_node_lists.clear()
 	host.options_collections.clear()
