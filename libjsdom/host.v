@@ -171,6 +171,7 @@ mut:
 	fetch_json_parse libjs.Value
 	style_wrappers       map[u32]&libjs.Object
 	style_elements       map[voidptr]&dom.Element
+	computed_styles      map[voidptr]&css.CSSStyleProperties
 	wrappers             map[u32]&libjs.Object
 	nodes                map[voidptr]&dom.Node
 	events               map[voidptr]&dom.Event
@@ -259,6 +260,7 @@ pub fn Host.create(vm &libjs.VM, realm &libjs.Realm, document &dom.Document, hoo
 	host.install_idle_callbacks()
 	host.install_media_queries()!
 	host.install_styles()
+	host.install_computed_styles()
 	host.install_css_namespace()
 	host.install_query_params()!
 	host.install_urls()!
@@ -417,6 +419,7 @@ pub fn (mut host Host) close() {
 	host.selection_wrappers.clear()
 	host.tree_walkers.clear()
 	host.dom_rects.clear()
+	host.computed_styles.clear()
 	host.event_targets.clear()
 	host.media_queries.clear()
 	host.abort_controllers.clear()

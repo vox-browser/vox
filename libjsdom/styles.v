@@ -18,8 +18,8 @@ fn (mut host Host) install_styles() {
 		return libjs.Value.from_string(vm.create_string_from_str(host.style_receiver(mut vm)!.css_text()))
 	}, fn [host] (mut vm libjs.VM) !libjs.Value {
 		mut style := host.style_receiver(mut vm)!
-		style.set_css_text(vm.argument(0).to_primitive_string(mut vm)!.str())!
 		mut owner := unsafe { &Host(host) }
+		style.set_css_text(vm.argument(0).to_primitive_string(mut vm)!.str()) or { return owner.dom_error(mut vm,err) }
 		owner.changed()
 		return libjs.js_undefined()
 	})
@@ -38,16 +38,16 @@ fn (mut host Host) install_styles() {
 				'getPropertyValue' { return libjs.Value.from_string(vm.create_string_from_str(style.get_property_value(property))) }
 				'getPropertyPriority' { return libjs.Value.from_string(vm.create_string_from_str(style.get_property_priority(property))) }
 				'removeProperty' {
-					removed := style.remove_property(property)!
 					mut owner := unsafe { &Host(host) }
+					removed := style.remove_property(property) or { return owner.dom_error(mut vm,err) }
 					owner.changed()
 					return libjs.Value.from_string(vm.create_string_from_str(removed))
 				}
 				else {
 					value := if vm.argument(1).is_null() { '' } else { vm.argument(1).to_primitive_string(mut vm)!.str() }
 					priority := if vm.argument(2).is_nullish() { '' } else { vm.argument(2).to_primitive_string(mut vm)!.str() }
-					style.set_property(property, value, priority)!
 					mut owner := unsafe { &Host(host) }
+					style.set_property(property, value, priority) or { return owner.dom_error(mut vm,err) }
 					owner.changed()
 					return libjs.js_undefined()
 				}
@@ -70,8 +70,8 @@ fn (mut host Host) install_styles() {
 			}, fn [host, css_name] (mut vm libjs.VM) !libjs.Value {
 				mut style := host.style_receiver(mut vm)!
 				value := if vm.argument(0).is_null() { '' } else { vm.argument(0).to_primitive_string(mut vm)!.str() }
-				style.set_property(css_name, value, '')!
 				mut owner := unsafe { &Host(host) }
+				style.set_property(css_name, value, '') or { return owner.dom_error(mut vm,err) }
 				owner.changed()
 				return libjs.js_undefined()
 			}, if name == 'cssFloat' { libjs.attribute_enumerable | libjs.attribute_configurable } else { libjs.attribute_configurable })
@@ -105,6 +105,7 @@ fn css_property_camel_case(name string) string {
 fn (host &Host) style_receiver(mut vm libjs.VM) !&css.CSSStyleProperties {
 	host.require_open(mut vm)!
 	if vm.this_value().is_object() {
+		if native:=host.computed_styles[voidptr(vm.this_value().as_object())] { return native }
 		if element := host.style_elements[voidptr(vm.this_value().as_object())] { return css.element_style(element) }
 	}
 	return vm.throw_error(.type_error, 'CSSStyleDeclaration method called on incompatible receiver')
