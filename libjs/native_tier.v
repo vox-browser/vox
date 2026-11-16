@@ -39,6 +39,8 @@ pub mut:
 	entries    u64
 	fast_steps u64
 	slow_steps u64
+	compact_reference_reads u64
+	direct_slow_steps u64
 }
 
 pub struct NativeCodeStats {
@@ -217,7 +219,12 @@ fn native_slow_step(opaque voidptr, pc u32) u32 {
 		return 0xffffffff
 	}
 	instruction := invocation.executable.instructions[pc]
-	next := vm.execute_instruction(instruction, invocation.executable) or {
+	direct := use_native_dynamic_dispatch() && instruction.op in [.call, .construct, .super_construct, .get_property, .get_binding, .typeof_binding, .get_callee_and_this]
+	if direct {
+		if mut tier := vm.native_tier { if tier.diagnostics { tier.activity.direct_slow_steps++ } }
+	}
+	next := (if direct { vm.execute_native_dynamic(instruction, invocation.executable) }
+		else { vm.execute_instruction(instruction, invocation.executable) }) or {
 		if is_throw_completion(err) && vm.handle_exception(pc, thrown_value(err)) == .continue_in_this_executable {
 			return frame.program_counter
 		}

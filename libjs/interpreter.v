@@ -241,56 +241,10 @@ fn (mut vm VM) execute_instruction(instruction Instruction, executable &Executab
 			} else { call(mut vm, left, right, arguments)! }
 		}
 		.call, .construct, .super_construct {
-			// These concrete callees copy their arguments into owned frames before
-			// executing user code. Custom callables and constructors may retain
-			// their input slice and therefore keep the owning allocation path.
-			mut local_arguments := [8]Value{}
-			borrow := instruction.op == .call && instruction.arguments.len <= 8
-				&& can_borrow_call_arguments(left)
-			mut call_arguments := if borrow { unsafe { borrow_argument_values(&local_arguments[0], instruction.arguments.len) } }
-				else { []Value{len: instruction.arguments.len} }
-			if instruction.op == .super_construct && instruction.strict {
-				call_arguments = []Value{cap: int(frame.passed_argument_count) + instruction.arguments.len}
-			}
-			if instruction.op == .super_construct && instruction.strict {
-				for index in 0 .. frame.passed_argument_count { call_arguments << frame.argument(index) }
-			}
-			for argument_index, operand in instruction.arguments {
-				argument := frame.values[operand.slot(executable, frame.argument_count, false)!]
-				if argument.is_special_empty_value() {
-					return vm.throw_error(.internal_error,
-						'Bytecode read an uninitialized argument')
-				}
-				if instruction.op == .super_construct && instruction.strict { call_arguments << argument }
-				else { call_arguments[argument_index] = argument }
-			}
-			if instruction.op == .super_construct {
-				result = construct_super(mut vm, left, call_arguments)!
-			} else if instruction.op == .construct {
-				// Interpreter/SlowPaths.cpp::execute_asm_call, Construct branch.
-				object := construct(mut vm, left, call_arguments, none)!
-				result = Value.from_object(object)
-			} else {
-				result = call(mut vm, left, right, call_arguments)!
-			}
+			result = vm.execute_call_instruction(instruction, executable, left, right)!
 		}
 		.get_property {
-			// PropertyAccess.h::get_by_id and SlowPaths.cpp::get_by_value.
-			// Nullish bases fail before invoking the key's coercion hooks.
-			if left.is_nullish() {
-				name := if right.is_string() { right.as_string().str() } else { right.str() }
-				return vm.throw_error_type(.type_error, .to_object_null_or_undefined_with_property,
-					name, left.str())
-			}
-			key := right.to_property_key(mut vm)!
-			if left.is_string() {
-				if own := left.as_string().get_own_property(mut vm, key) {
-					result = own
-					frame.values[instruction.dst.slot(executable, frame.argument_count, true)!] = result
-					return next
-				}
-			}
-			result = Reference.for_value(left, key, none, instruction.strict).get_value(mut vm)!
+			result = vm.execute_property_read(left, right, instruction.strict)!
 		}
 		.put_property {
 			// SlowPaths.cpp::asm_slow_path_put_by_value and PropertyAccess.h's
@@ -325,19 +279,8 @@ fn (mut vm VM) execute_instruction(instruction Instruction, executable &Executab
 			result = Value.from_bool(reference.delete_(mut vm)!)
 		}
 		.get_callee_and_this {
-			// SlowPaths.cpp::asm_dynamic_get_callee_and_this_from_environment.
-			reference := vm.resolve_binding(executable.get_identifier(instruction.identifier),
-				instruction.strict, none)!
-			result = reference.get_value(mut vm)!
-			mut this_value := js_undefined()
-			if reference.is_property_reference() {
-				this_value = reference.get_this_value()
-			} else if reference.is_environment_reference() {
-				if base := reference.base_environment_record().with_base_object() {
-					this_value = Value.from_object(base)
-				}
-			}
-			frame.values[instruction.dst.slot(executable, frame.argument_count, true)!] = result
+			value, this_value := vm.execute_callee_read(&instruction, executable)!
+			frame.values[instruction.dst.slot(executable, frame.argument_count, true)!] = value
 			frame.values[instruction.rhs.slot(executable, frame.argument_count, true)!] = this_value
 			return next
 		}
@@ -444,18 +387,7 @@ fn (mut vm VM) execute_instruction(instruction Instruction, executable &Executab
 			reference.put_value(mut vm, right)!
 		}
 		.get_binding, .typeof_binding {
-			reference := vm.resolve_binding(executable.get_identifier(instruction.identifier),
-				instruction.strict, none)!
-			if instruction.op == .typeof_binding && reference.is_unresolvable() {
-				result = Value.from_string(vm.create_string_from_str('undefined'))
-			} else {
-				value := reference.get_value(mut vm)!
-				result = if instruction.op == .typeof_binding {
-					Value.from_string(vm.create_string_from_str(typeof_value(value)))
-				} else {
-					value
-				}
-			}
+			result = vm.execute_binding_read(instruction, executable)!
 		}
 		.set_binding, .set_variable, .initialize_binding {
 			name := executable.get_identifier(instruction.identifier)

@@ -40,12 +40,14 @@ pub fn (operand Operand) index() u32 {
 	return operand.raw & 0x1fffffff
 }
 
+@[inline]
 pub fn (operand Operand) operand_type() !OperandType {
 	tag := operand.raw >> 29
 	if tag > 3 { return error('Invalid bytecode operand ${operand.raw}') }
 	return unsafe { OperandType(tag) }
 }
 
+@[inline]
 fn (operand Operand) slot(executable &Executable, arguments_count u32, writing bool) !u32 {
 	index := operand.index()
 	kind := operand.operand_type()!
