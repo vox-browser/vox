@@ -234,6 +234,7 @@ fn test_hacker_news_engine_benchmark() {
 	libjs.set_native_primitive_ops_for_testing(os.getenv('VOX_LIBJS_NATIVE_PRIMITIVES') != '0')
 	libjs.set_primitive_property_keys_for_testing(os.getenv('VOX_LIBJS_PRIMITIVE_PROPERTY_KEYS') != '0')
 	libjs.set_native_entry_cache_for_testing(os.getenv('VOX_LIBJS_NATIVE_ENTRY_CACHE') != '0')
+	libjs.set_native_property_reads_for_testing(os.getenv('VOX_LIBJS_NATIVE_PROPERTY_READS') != '0')
 	libjs.set_fast_binding_reads_for_testing(os.getenv('VOX_LIBJS_FAST_BINDINGS') != '0')
 	libjs.set_function_environment_reuse_for_testing(os.getenv('VOX_LIBJS_REUSE_FUNCTION_ENVIRONMENTS') != '0')
 	libjs.set_call_argument_forwarding_for_testing(os.getenv('VOX_LIBJS_FORWARD_CALL_ARGUMENTS') != '0')
