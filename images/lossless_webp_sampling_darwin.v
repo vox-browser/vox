@@ -36,10 +36,14 @@ fn (mut app BrowserApp) sampled_lossless_webp_decode(url string, image &gg.Image
 		// directly, including alpha; premultiplying again darkens edge colors.
 		return image
 	}
-	// The existing resize path takes straight, opaque input. Alpha minification
-	// needs its own verified filtering path instead of another multiplication.
-	if !opaque_lossless_webp_sampling_supported(bytes) { return none }
 	dw, dh := imageraster.decode_size(image.width, image.height, width, height) or { return none }
+	// Uniform near-native minification retains the decoder's premultiplied
+	// rows. The image shader can sample their mip chain without multiplying
+	// alpha again. Keep other reductions on the existing opaque resize path.
+	if dw == image.width && dh == image.height
+		&& width < image.width && height < image.height
+		&& width * image.height == height * image.width { return image }
+	if !opaque_lossless_webp_sampling_supported(bytes) { return none }
 	key := '\x00sampled-lossless-webp:${u64(voidptr(app.document))}:${app.navigation_generation}:${png_decode_scope.scope}:${url}:${sha256.hexhash(bytes.bytestr())}'
 	if id := app.background_image_ids[key] {
 		previous := app.ctx.get_cached_image_by_idx(id)

@@ -75,6 +75,10 @@ fn test_lossless_webp_alpha_upload_preserves_existing_premultiplication() {
 			upload := app.sampled_lossless_webp_decode(address, &image, 76, 38) or { panic('alpha upload') }
 			assert upload.id == image.id && voidptr(upload.data) == voidptr(image.data)
 			assert unsafe { (&u8(upload.data)).vbytes(32) } == before
+			near_native := app.sampled_lossless_webp_decode(address, &image, 3, 1.5) or { panic('alpha mip upload') }
+			assert near_native.id == image.id && voidptr(near_native.data) == voidptr(image.data)
+			assert unsafe { (&u8(near_native.data)).vbytes(32) } == before
+			assert app.sampled_lossless_webp_decode(address, &image, 3, 2) == none
 			assert app.sampled_lossless_webp_decode(address, &image, 2, 1) == none
 			assert app.sampled_lossless_webp_decode(address, &image, 4097, 40) == none
 		}
