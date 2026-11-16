@@ -28,6 +28,20 @@ Three seven-pair HN native-DOM cohorts show cache reuse and correct collapse/res
 but no reliable callback speedup. This tier is not enabled by browser settings
 and does not establish a browser load/rendering improvement or additional parity.
 
+The [HN optimization continuation](../docs/HACKER_NEWS_LIBJS_4X.md) adds bounded
+split/join string reuse, per-depth synchronous argument buffers, a bounded
+tier-owned native-entry table, live global own-data position hints, direct primitive property keys and native UTF-16
+truthiness/equality/primitive `typeof`. Type names are rooted per VM and supplied
+through invocation state; compiler-free fresh-VM reuse is covered. The HTML
+text-fragment shortcut retains parser fallback and document ownership. Native
+cache record/digest ownership regressions cover scratch reuse after a real reopen
+crash; cache identity now includes compiler string-layout facts. HN-focused
+checks pass with current V in normal, GC-disabled and preallocated modes; they
+do not change the separate GitHub verification hold or establish language/DOM
+parity. Both compiled modes pass the 50%-of-V8 peak-RAM gate; the strict 4×
+callback gate remains open despite a 4.70× matching-current median. The exact
+gates and retained failing cohorts are in the linked report.
+
 ## GitHub runtime checkpoint — 2026-11-15
 
 **Current verification hold:** automated suites remain off until the GitHub

@@ -1,5 +1,8 @@
 # Hacker News: compiled LibJS speed and RAM
 
+The next optimization and the 4× / 50%-peak-RAM protocol are recorded in
+[the continuation](HACKER_NEWS_LIBJS_4X.md). This report retains the earlier 3× result.
+
 This continues [the JSC/V8 comparison](HACKER_NEWS_JSC_COMPARISON.md).
 The requested target is three times V8's speed on the unchanged archived
 101-comment discussion's 500 collapse/expand cycles. This is Vox's script/DOM
