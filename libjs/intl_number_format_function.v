@@ -26,7 +26,7 @@ fn (function &IntlNumberFormatFunction) realm() ?&Realm { return function.realm_
 fn (function &IntlNumberFormatFunction) name_for_call_stack() Utf16String { return Utf16String.new() }
 
 fn (mut function IntlNumberFormatFunction) internal_call(mut vm VM, this_value Value, arguments []Value) !Value {
-	caller := vm.running_execution_context()
+	caller := vm.current_context()
 	mut stack := vm.interpreter_stack()
 	mark := stack.top()
 	mut callee := stack.allocate(0, []Value{}, u32(arguments.len)) or { return vm.throw_error_type(.internal_error, .call_stack_size_exceeded) }
@@ -36,7 +36,7 @@ fn (mut function IntlNumberFormatFunction) internal_call(mut vm VM, this_value V
 	callee.function = FunctionObject(&function); callee.realm = function.realm_; callee.this_value = this_value
 	callee.lexical_environment = caller.lexical_environment; callee.variable_environment = caller.variable_environment; callee.private_environment = caller.private_environment
 	vm.push_execution_context_checked(mut callee)!
-	defer { vm.pop_execution_context() }
+	defer { vm.pop_current_context() }
 	value := intl_mathematical_value(mut vm, if arguments.len > 0 { arguments[0] } else { js_undefined() })!
 	return intl_number_parts_string(mut vm, intl_format_number_parts(mut vm, function.formatter, value)!)
 }

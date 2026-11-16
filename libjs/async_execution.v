@@ -87,7 +87,7 @@ fn (mut execution AsyncExecution) resume_body(mut vm VM, value Value, rejected b
 	frame.async_resume_rejected = rejected
 	execution.context = none
 	vm.push_execution_context_checked(mut frame)!
-	defer { vm.pop_execution_context() }
+	defer { vm.pop_current_context() }
 	returned := vm.run_executable(mut frame, executable, saved.program_counter, ExecutionLimits{})!
 	return if frame.yield_is_await { js_special_empty_value() } else { returned }
 }

@@ -30,7 +30,7 @@ fn typeof_value(value Value) string {
 }
 
 fn (mut vm VM) execute_instruction(instruction Instruction, executable &Executable) !u32 {
-	mut frame := vm.running_execution_context()
+	mut frame := vm.current_context()
 	mut next := frame.program_counter + 1
 	mut left := js_undefined()
 	mut right := js_undefined()

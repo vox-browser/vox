@@ -106,6 +106,9 @@ pub mut:
 	// InterpreterStack bookkeeping: the byte offset of this frame on the stack.
 	stack_offset    uint
 	stack_allocated bool
+mut:
+	reusable bool
+	exposed bool
 }
 
 fn (mut context ExecutionContext) leave_lexical_scope() ! {
@@ -161,6 +164,7 @@ fn (context &ExecutionContext) arguments_offset() int {
 }
 
 pub fn (context &ExecutionContext) arguments() []Value {
+	expose_execution_context(context)
 	return context.values[context.arguments_offset()..]
 }
 
@@ -172,6 +176,7 @@ pub fn (mut context ExecutionContext) set_argument(index u32, value Value) {
 }
 
 pub fn (context &ExecutionContext) local_variables() []Value {
+	expose_execution_context(context)
 	executable := context.executable or { panic('local_variables() requires an executable') }
 	start := int(executable.local_index_base)
 	return context.values[start..start + executable.local_variable_names.len]
@@ -260,8 +265,8 @@ pub fn (context &ExecutionContext) visit_roots(mut roots HeapRoots) {
 		for index in 0 .. live_registers {
 			roots.add_value(context.values[index])
 		}
-		for value in context.arguments() {
-			roots.add_value(value)
+		for index in 0 .. context.argument_count {
+			roots.add_value(context.argument(index))
 		}
 	}
 	match context.script_or_module.kind {

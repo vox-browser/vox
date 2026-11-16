@@ -12,6 +12,8 @@ pub const maximum_argument_count = u64(interpreter_stack_size) / u64(sizeof(Valu
 pub struct InterpreterStack {
 mut:
 	contexts      []&ExecutionContext
+	recycled      []&ExecutionContext
+	recycled_bytes uint
 	top_          uint
 	limit         uint = interpreter_stack_size
 	next_frame_id u64   = 1
@@ -66,6 +68,7 @@ pub fn (mut stack InterpreterStack) deallocate(mark uint) {
 		// by a conservative collector after the frame has stopped executing.
 		stack.contexts.delete_last()
 		released.stack_allocated = false
+		stack.recycle_context(mut released)
 	}
 	stack.top_ = mark
 }

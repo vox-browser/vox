@@ -24,7 +24,7 @@ pub fn construct(mut vm VM, function Value, arguments []Value, new_target ?&Obje
 // NativeJavaScriptBackedFunction's function-environment path remains separate.
 pub fn (mut function NativeFunction) internal_construct(mut vm VM, arguments []Value, new_target &Object) !&Object {
 	assert function.has_constructor()
-	caller := vm.running_execution_context()
+	caller := vm.current_context()
 	mut stack := vm.interpreter_stack()
 	mark := stack.top()
 	mut callee := stack.allocate(0, []Value{}, u32(arguments.len)) or {
@@ -39,6 +39,6 @@ pub fn (mut function NativeFunction) internal_construct(mut vm VM, arguments []V
 	callee.variable_environment = caller.variable_environment
 	// [[ThisValue]] stays uninitialized, and ScriptOrModule stays empty.
 	vm.push_execution_context_checked(mut callee)!
-	defer { vm.pop_execution_context() }
+	defer { vm.pop_current_context() }
 	return function.construct_behaviour(mut vm, new_target)
 }

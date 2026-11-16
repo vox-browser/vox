@@ -4,7 +4,7 @@ module libjs
 // ClassDefinitionEvaluation creates one lexical private-name identity per
 // evaluation. Methods and initializer closures capture that environment.
 fn enter_class_private_environment(mut vm VM, executable &Executable, instruction Instruction) ! {
-	mut frame := vm.running_execution_context()
+	mut frame := vm.current_context()
 	mut lexical := frame.lexical_environment or { return error('Class has no lexical scope') }
 	if mut lexical is DeclarativeEnvironment {
 		if lexical.restores_private_environment { return error('Class scope already has a private environment') }
@@ -24,7 +24,7 @@ fn enter_class_private_environment(mut vm VM, executable &Executable, instructio
 
 fn resolve_class_private_name(mut vm VM, value Value) !PrivateName {
 	if value.is_string() {
-		if environment := vm.running_execution_context().private_environment {
+		if environment := vm.current_context().private_environment {
 			if environment.contains_private_identifier(value.as_string().utf16) {
 				return environment.resolve_private_identifier(value.as_string().utf16)
 			}

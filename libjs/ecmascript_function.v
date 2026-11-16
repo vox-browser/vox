@@ -34,7 +34,7 @@ fn create_ecmascript_function_data(mut vm VM, source &Executable, data &JsFuncti
 	}
 	mut object := Object.create(realm, function_prototype)
 	object.class_name = 'Function'
-	mut environment := vm.running_execution_context().lexical_environment
+	mut environment := vm.current_context().lexical_environment
 	// Named function expressions have a private immutable self binding.
 	mut named := ?&DeclarativeEnvironment(none)
 	if named_expression {
@@ -50,8 +50,8 @@ fn create_ecmascript_function_data(mut vm VM, source &Executable, data &JsFuncti
 		data: data
 		source: source
 		environment: environment
-		private_environment: vm.running_execution_context().private_environment
-		script_or_module: vm.running_execution_context().script_or_module
+		private_environment: vm.current_context().private_environment
+		script_or_module: vm.current_context().script_or_module
 		inferred_name: inferred_name
 	}
 	object.callable = FunctionObject(function)
@@ -150,7 +150,9 @@ fn (mut function ECMAScriptFunction) call_body(mut vm VM, this_value Value, argu
 	executable := function.compile(mut vm)!
 	mut stack := vm.interpreter_stack()
 	mark := stack.top()
-	mut frame := stack.allocate(executable.registers_and_locals_count, executable.constants, u32(arguments.len)) or {
+	mut frame := (if function.data.kind == .normal && async_execution == none {
+		stack.allocate_reusable(executable.registers_and_locals_count, executable.constants, u32(arguments.len))
+	} else { stack.allocate(executable.registers_and_locals_count, executable.constants, u32(arguments.len)) }) or {
 		return vm.throw_error_type(.internal_error, .call_stack_size_exceeded)
 	}
 	defer { stack.deallocate(mark) }
@@ -172,7 +174,7 @@ fn (mut function ECMAScriptFunction) call_body(mut vm VM, this_value Value, argu
 	}
 	for index, argument in arguments { frame.set_argument(u32(index), argument) }
 	vm.push_execution_context_checked(mut frame)!
-	defer { vm.pop_execution_context() }
+	defer { vm.pop_current_context() }
 	if function.data.is_arrow_function {
 		environment.set_this_binding_status(.lexical)
 	} else if !(if constructor := class_constructor { constructor.derived } else { false }) {

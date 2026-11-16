@@ -210,7 +210,7 @@ fn native_slow_step(opaque voidptr, pc u32) u32 {
 	if mut tier := vm.native_tier {
 		if tier.diagnostics { tier.activity.slow_steps++ }
 	}
-	mut frame := vm.running_execution_context()
+	mut frame := vm.current_context()
 	frame.program_counter = pc
 	vm.consume_execution_budget() or {
 		invocation.failure = err

@@ -41,7 +41,7 @@ fn realm_typed_array_dependencies(realm &Realm) TypedArrayPrototypeDependencies 
 }
 
 fn typed_array_intrinsic_operation(mut vm VM) !string {
-	function := vm.running_execution_context().function or { return vm.throw_error(.internal_error, 'Missing typed-array callee') }
+	function := vm.current_context().function or { return vm.throw_error(.internal_error, 'Missing typed-array callee') }
 	// This is the native record's immutable initial name, independent of the
 	// author-visible configurable .name property and of a bound/proxy caller.
 	match function {

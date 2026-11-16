@@ -694,6 +694,12 @@ pub fn (mut vm VM) push_execution_context(mut context ExecutionContext) {
 }
 
 pub fn (mut vm VM) pop_execution_context() &ExecutionContext {
+	context := vm.pop_current_context()
+	expose_execution_context(context)
+	return context
+}
+
+fn (mut vm VM) pop_current_context() &ExecutionContext {
 	if vm.execution_context_stack_.len == 0 {
 		panic('pop_execution_context on an empty execution context stack')
 	}
@@ -712,6 +718,12 @@ pub fn (mut vm VM) pop_execution_context() &ExecutionContext {
 // At any point in time, there is at most one execution context per agent that
 // is actually executing code. This is the agent's running execution context.
 pub fn (vm &VM) running_execution_context() &ExecutionContext {
+	context := vm.current_context()
+	expose_execution_context(context)
+	return context
+}
+
+fn (vm &VM) current_context() &ExecutionContext {
 	return vm.running_execution_context_ or { panic('no running execution context') }
 }
 
@@ -730,6 +742,7 @@ pub fn (mut vm VM) set_running_execution_context(context ?&ExecutionContext) {
 // frames are threaded through ExecutionContext.caller_frame starting at the
 // running execution context.
 pub fn (vm &VM) execution_context_stack() []&ExecutionContext {
+	for context in vm.execution_context_stack_ { expose_execution_context(context) }
 	return vm.execution_context_stack_
 }
 
@@ -774,6 +787,12 @@ fn collect_execution_contexts_top_to_bottom(stack []&ExecutionContext, previous_
 // for_each_execution_context_top_to_bottom: the running context first, inline
 // frames through caller_frame, then each earlier base push.
 pub fn (vm &VM) execution_contexts_top_to_bottom() []&ExecutionContext {
+	contexts := vm.context_chain()
+	for context in contexts { expose_execution_context(context) }
+	return contexts
+}
+
+fn (vm &VM) context_chain() []&ExecutionContext {
 	return collect_execution_contexts_top_to_bottom(vm.execution_context_stack_, vm.execution_context_stack_previous_running_contexts,
 		vm.running_execution_context_)
 }
@@ -797,6 +816,7 @@ pub fn (vm &VM) previous_execution_context() ?&ExecutionContext {
 }
 
 pub fn (mut vm VM) save_execution_context_stack() {
+	for context in vm.context_chain() { expose_execution_context(context) }
 	vm.saved_execution_context_stacks << SavedExecutionContextStack{
 		stack:                           vm.execution_context_stack_
 		previous_running_contexts:       vm.execution_context_stack_previous_running_contexts
@@ -839,7 +859,7 @@ pub fn (vm &VM) saved_execution_context_stack_count() int {
 // Running-context accessors
 
 pub fn (vm &VM) realm() &Realm {
-	return vm.running_execution_context().realm or { panic('running execution context has no realm') }
+	return vm.current_context().realm or { panic('running execution context has no realm') }
 }
 
 pub fn (vm &VM) global_object() &Object {
@@ -853,45 +873,45 @@ pub fn (vm &VM) global_declarative_environment() &DeclarativeEnvironment {
 }
 
 pub fn (vm &VM) lexical_environment() ?Environment {
-	return vm.running_execution_context().lexical_environment
+	return vm.current_context().lexical_environment
 }
 
 pub fn (vm &VM) variable_environment() ?Environment {
-	return vm.running_execution_context().variable_environment
+	return vm.current_context().variable_environment
 }
 
 // https://tc39.es/ecma262/#current-realm
 // The value of the Realm component of the running execution context is also called the current Realm Record.
 pub fn (vm &VM) current_realm() ?&Realm {
-	return vm.running_execution_context().realm
+	return vm.current_context().realm
 }
 
 // https://tc39.es/ecma262/#active-function-object
 // The value of the Function component of the running execution context is also called the active function object.
 pub fn (vm &VM) active_function_object() ?FunctionObject {
-	return vm.running_execution_context().function
+	return vm.current_context().function
 }
 
 pub fn (vm &VM) argument_count() u32 {
-	return vm.running_execution_context().argument_count
+	return vm.current_context().argument_count
 }
 
 pub fn (vm &VM) argument(index u32) Value {
-	return vm.running_execution_context().argument(index)
+	return vm.current_context().argument(index)
 }
 
 pub fn (vm &VM) this_value() Value {
-	return vm.running_execution_context().this_value or {
+	return vm.current_context().this_value or {
 		panic('running execution context has no this value')
 	}
 }
 
 pub fn (vm &VM) reg(index u32) Value {
-	return vm.running_execution_context().values[index]
+	return vm.current_context().values[index]
 }
 
 pub fn (mut vm VM) set_reg(index u32, value Value) {
-	mut context := vm.running_execution_context()
+	mut context := vm.current_context()
 	context.values[index] = value
 }
 
@@ -913,7 +933,7 @@ pub fn (mut vm VM) do_return(value_argument Value) {
 }
 
 pub fn (vm &VM) current_executable() &Executable {
-	return vm.running_execution_context().executable or {
+	return vm.current_context().executable or {
 		panic('running execution context has no executable')
 	}
 }
@@ -1030,7 +1050,7 @@ pub fn (mut vm VM) resolve_binding(name Utf16String, strict bool, environment ?E
 	// 1. If env is not present or if env is undefined, then
 	env := environment or {
 		// a. Set env to the running execution context's LexicalEnvironment.
-		vm.running_execution_context().lexical_environment or {
+		vm.current_context().lexical_environment or {
 			// 2. Assert: env is an Environment Record.
 			panic('ResolveBinding: the running execution context has no lexical environment')
 		}
@@ -1198,7 +1218,7 @@ pub fn (vm &VM) stack_trace() []StackTraceElement {
 
 pub fn (vm &VM) backtrace_lines() []string {
 	mut lines := []string{}
-	for frame in vm.execution_contexts_top_to_bottom() {
+	for frame in vm.context_chain() {
 		name := if function := frame.function { function.name_for_call_stack().str() } else { '' }
 		if executable := frame.executable {
 			if source_range := executable.source_range_at(frame.program_counter) {
@@ -1251,7 +1271,7 @@ pub fn (vm &VM) gather_roots(mut roots HeapRoots) {
 	for registry in vm.finalization_registry_cleanup_jobs {
 		roots.add(finalization_registry_identity(registry))
 	}
-	for context in vm.execution_contexts_top_to_bottom() {
+	for context in vm.context_chain() {
 		context.visit_roots(mut roots)
 	}
 	for saved_stack in vm.saved_execution_context_stacks {
@@ -1282,7 +1302,7 @@ pub fn (vm &VM) get_active_script_or_module() ScriptOrModule {
 		return ScriptOrModule{}
 	}
 	// 2. Let ec be the topmost execution context on the execution context stack whose ScriptOrModule component is not null.
-	for context in vm.execution_contexts_top_to_bottom() {
+	for context in vm.context_chain() {
 		if !context.script_or_module.is_empty() {
 			// 3. Otherwise, return ec's ScriptOrModule.
 			return context.script_or_module
@@ -1300,19 +1320,19 @@ pub fn (mut vm VM) handle_exception(program_counter_argument u32, exception Valu
 	for {
 		if handlers := vm.current_executable().exception_handlers_for_offset(program_counter) {
 			if depth := handlers.restore_scope_depth {
-				mut frame := vm.running_execution_context()
+				mut frame := vm.current_context()
 				if depth>frame.lexical_scope_depth { vm.set_reg(register_exception,exception);return .exit_from_executable }
 				for frame.lexical_scope_depth>depth {
 					frame.leave_lexical_scope() or { return .exit_from_executable }
 				}
 			}
 			vm.set_reg(register_exception, exception)
-			mut running := vm.running_execution_context()
+			mut running := vm.current_context()
 			running.program_counter = handlers.handler_offset
 			return .continue_in_this_executable
 		}
 		// If we're in an inline frame, unwind to the caller and try its handlers.
-		callee_frame := vm.running_execution_context()
+		callee_frame := vm.current_context()
 		if caller_frame := callee_frame.caller_frame {
 			caller_pc := callee_frame.caller_return_pc
 			vm.interpreter_stack_.deallocate_context(callee_frame)
@@ -1332,7 +1352,7 @@ pub fn (mut vm VM) handle_exception(program_counter_argument u32, exception Valu
 }
 
 pub fn (mut vm VM) unwind_inline_frame_for_exception() {
-	callee_frame := vm.running_execution_context()
+	callee_frame := vm.current_context()
 	caller_frame := callee_frame.caller_frame or {
 		panic('unwind_inline_frame_for_exception: the running frame has no caller frame')
 	}

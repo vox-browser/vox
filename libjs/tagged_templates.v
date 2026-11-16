@@ -44,7 +44,7 @@ fn (mut vm VM) get_template_object(executable &Executable, instruction Instructi
 	if entry := realm.template_objects[key] { return Value.from_object(entry.object) }
 	if instruction.arguments.len % 2 != 0 { return vm.throw_error(.internal_error, 'Unpaired template strings') }
 	count := instruction.arguments.len / 2
-	frame := vm.running_execution_context()
+	frame := vm.current_context()
 	mut cooked := []Value{cap: count}
 	mut raw := []Value{cap: count}
 	for index, operand in instruction.arguments {

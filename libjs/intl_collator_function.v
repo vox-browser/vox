@@ -26,7 +26,7 @@ fn (function &IntlCollatorCompareFunction) realm() ?&Realm { return function.rea
 fn (function &IntlCollatorCompareFunction) name_for_call_stack() Utf16String { return Utf16String.new() }
 
 fn (mut function IntlCollatorCompareFunction) internal_call(mut vm VM, this_value Value, arguments []Value) !Value {
-	caller := vm.running_execution_context()
+	caller := vm.current_context()
 	mut stack := vm.interpreter_stack()
 	mark := stack.top()
 	mut callee := stack.allocate(0, []Value{}, u32(arguments.len)) or { return vm.throw_error_type(.internal_error, .call_stack_size_exceeded) }
@@ -36,7 +36,7 @@ fn (mut function IntlCollatorCompareFunction) internal_call(mut vm VM, this_valu
 	callee.function = FunctionObject(&function); callee.realm = function.realm_; callee.this_value = this_value
 	callee.lexical_environment = caller.lexical_environment; callee.variable_environment = caller.variable_environment; callee.private_environment = caller.private_environment
 	vm.push_execution_context_checked(mut callee)!
-	defer { vm.pop_execution_context() }
+	defer { vm.pop_current_context() }
 	left := vm.argument(0).to_primitive_string(mut vm)!
 	right := vm.argument(1).to_primitive_string(mut vm)!
 	return Value.from_i32(i32(intl_collation_compare(mut vm, left.utf16, right.utf16, function.collator.settings)!))

@@ -82,6 +82,16 @@ Array algorithms and iterators construct numeric property keys directly below
 indices retain complete string keys; proxy/getter ordering and large-index
 regressions pass in both GC modes.
 
+Private synchronous calls now reuse cleared execution-context records and exact
+value buffers in a pool bounded to 64 frames and 1 MiB. Public allocations,
+returned frames/value views, stack traces and saved stacks preserve their old
+lifetimes; async/generator suspension and inline-linked frames keep fresh storage.
+Every reuse resets values/metadata, assigns a new frame ID and retains stack
+limits. Lifecycle, callbacks, errors, closures and suspensions have 257 focused
+functions passing with default GC and GC disabled. The [HN comparison](../docs/HACKER_NEWS_JS_ENGINES.md)
+records matched compiled-cache controls and separately measured cold/warm runs;
+this establishes neither full engine parity nor browser rendering performance.
+
 Set/Map operations and live iterators, WeakMap weak keys, ordinary arguments
 objects, default/rest/destructured function parameters, class inheritance,
 super construction (including explicit iterator-based argument spread),

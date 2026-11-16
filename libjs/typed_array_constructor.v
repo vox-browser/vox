@@ -50,7 +50,7 @@ pub fn TypedArrayConstructor.create(mut vm VM, realm &Realm, typed_array_prototy
 fn typed_array_constructor_call(mut vm VM) !Value {
 	// The active call body delegates to Construct with an empty argument list,
 	// allocating the nested constructor frame before the abstract-class error.
-	function := vm.running_execution_context().function or { panic('missing TypedArray callee') }
+	function := vm.current_context().function or { panic('missing TypedArray callee') }
 	match function {
 		NativeFunction { return Value.from_object(construct(mut vm,
 				Value.from_object(function.object), []Value{}, none)!) }

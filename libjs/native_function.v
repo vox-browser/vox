@@ -139,10 +139,10 @@ pub fn (function &NativeFunction) has_constructor() bool {
 }
 
 pub fn (mut function NativeFunction) internal_call(mut vm VM, this_value Value, arguments []Value) !Value {
-	caller := vm.running_execution_context()
+	caller := vm.current_context()
 	mut stack := vm.interpreter_stack()
 	mark := stack.top()
-	mut callee := stack.allocate(0, []Value{}, u32(arguments.len)) or {
+	mut callee := stack.allocate_reusable(0, []Value{}, u32(arguments.len)) or {
 		return vm.throw_error_type(.internal_error, .call_stack_size_exceeded)
 	}
 	defer { stack.deallocate(mark) }
@@ -157,7 +157,7 @@ pub fn (mut function NativeFunction) internal_call(mut vm VM, this_value Value, 
 	callee.variable_environment = caller.variable_environment
 	callee.private_environment = caller.private_environment
 	vm.push_execution_context_checked(mut callee)!
-	defer { vm.pop_execution_context() }
+	defer { vm.pop_current_context() }
 	behaviour := if index := function.raw_function_index {
 		vm.native_function(index, .raw_native_function)
 	} else {

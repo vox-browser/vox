@@ -56,7 +56,7 @@ pub fn (mut vm VM) run_with_limits(mut script Script, limits ExecutionLimits) !V
 	context.variable_environment = context.lexical_environment
 	vm.push_execution_context_checked(mut context)!
 	defer {
-		vm.pop_execution_context()
+		vm.pop_current_context()
 		vm.finish_execution_generation()
 	}
 	script.global_declaration_instantiation(mut vm, executable)!

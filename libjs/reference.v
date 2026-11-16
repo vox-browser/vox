@@ -79,7 +79,7 @@ pub fn Reference.for_private(base Value, name PrivateName) Reference {
 
 // Reference.cpp::MakePrivateReference.
 pub fn make_private_reference(vm &VM, base Value, identifier Utf16String) Reference {
-	environment := vm.running_execution_context().private_environment or {
+	environment := vm.current_context().private_environment or {
 		panic('MakePrivateReference requires a private environment')
 	}
 	return Reference.for_private(base, environment.resolve_private_identifier(identifier))

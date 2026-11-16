@@ -117,7 +117,7 @@ fn (mut module_record SourceTextModule) run_module_frame(mut vm VM, executable &
 	context.lexical_environment = Environment(environment)
 	context.variable_environment = context.lexical_environment
 	vm.push_execution_context_checked(mut context)!
-	defer { vm.pop_execution_context(); vm.finish_execution_generation() }
+	defer { vm.pop_current_context(); vm.finish_execution_generation() }
 	vm.run_executable(mut context, executable, start, limits)!
 }
 

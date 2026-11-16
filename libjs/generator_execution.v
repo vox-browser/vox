@@ -76,7 +76,7 @@ fn (mut execution GeneratorExecution) resume_frame(mut vm VM, value Value, kind 
 	frame.yield_continuation = no_yield_continuation
 	execution.context = none
 	vm.push_execution_context_checked(mut frame)!
-	defer { vm.pop_execution_context() }
+	defer { vm.pop_current_context() }
 	return vm.run_executable(mut frame, executable, saved.program_counter, ExecutionLimits{})
 }
 
