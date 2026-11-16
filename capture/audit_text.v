@@ -31,7 +31,7 @@ fn capture_text_geometry_excerpt(text string) string {
 
 fn (app &BrowserApp) capture_audit_text_geometry() []CaptureAuditTextGeometry {
 	mut records := []CaptureAuditTextGeometry{}
-	scale := app.document.display_device_pixel_ratio() / app.document.layout_coordinate_scale()
+	scale := app.document.rendering_device_pixel_ratio() / app.document.layout_coordinate_scale()
 	for index, command in app.paint_commands {
 		if records.len >= 128 { break }
 		if command.kind != 'draw_text' || command.y + command.height < 0 || command.y > app.viewport_height {

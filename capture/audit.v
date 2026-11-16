@@ -179,6 +179,7 @@ struct CaptureAudit {
 	viewport_width         int
 	viewport_height        int
 	display_device_pixel_ratio f64
+	rendering_device_pixel_ratio f64
 	layout_coordinate_scale f64
 	font_rendering_policy string
 	font_set_present       bool
@@ -332,6 +333,7 @@ fn (app &BrowserApp) collect_capture_audit(config CaptureAuditConfig) !CaptureAu
 		viewport_width:              app.viewport_width
 		viewport_height:             app.viewport_height
 		display_device_pixel_ratio: app.document.display_device_pixel_ratio()
+		rendering_device_pixel_ratio: app.document.rendering_device_pixel_ratio()
 		layout_coordinate_scale: app.document.layout_coordinate_scale()
 		font_rendering_policy: app.document.font_rendering_policy().str()
 		font_set_present:            font_set_present

@@ -6114,7 +6114,7 @@ pub fn (c &ComputedProperties) line_height() CSSPixels {
 		font := computed_font.font_for_metrics()
 		mut scale := 1.0
 		if subject := c.subject_element_ {
-			scale = subject.document().display_device_pixel_ratio() / c.layout_coordinate_scale()
+			scale = subject.document().rendering_device_pixel_ratio() / c.layout_coordinate_scale()
 		}
 		metrics := font.inline_metrics_at_scale(scale)
 		if metrics.floor_inline_leading && metrics.inline_leading_scale != 1 {

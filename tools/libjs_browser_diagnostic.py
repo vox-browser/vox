@@ -60,6 +60,8 @@ def run(args):
         environment['VOX_LIBJS_NATIVE_COMPILER'] = str(args.native_compiler.resolve())
     if args.native_diagnostics:
         environment['VOX_LIBJS_NATIVE_DIAGNOSTICS'] = '1'
+    if args.render_device_scale is not None:
+        environment['VOX_CAPTURE_RENDER_DEVICE_PIXEL_RATIO'] = str(args.render_device_scale)
     if args.date_epoch_ms is not None:
         environment['VOX_LIBJS_DATE_EPOCH_MS'] = str(args.date_epoch_ms)
     if args.audit_interval_ms is not None:
@@ -86,6 +88,7 @@ def run(args):
                'active-window functional diagnosis; whole-window PNG; no pixel/performance gate'),
         document_capture=args.document_capture, ready_selector=args.ready_selector,
         text_geometry=args.text_geometry, native_diagnostics=args.native_diagnostics,
+        render_device_scale=args.render_device_scale,
         date_epoch_ms=args.date_epoch_ms,
         observer_sha256=digest(Path(__file__)), sample_after=args.sample_after,
         host_before=dict(cpu_count=os.cpu_count(), load=os.getloadavg(), unix=time.time()))
@@ -138,7 +141,7 @@ def run(args):
                 result['document'] = {key: audit.get(key) for key in
                     ['url', 'title', 'ready', 'visibility', 'fully_active',
                      'viewport_width', 'viewport_height', 'display_device_pixel_ratio',
-                     'layout_coordinate_scale', 'font_rendering_policy']}
+                     'rendering_device_pixel_ratio', 'layout_coordinate_scale', 'font_rendering_policy']}
                 result['counts'] = {group['name']: group['count'] for group in audit['selections']}
                 result['javascript_diagnostics'] = audit.get('javascript_diagnostics', [])
                 result['compiled_javascript_cache'] = audit.get('compiled_javascript_cache')
@@ -179,6 +182,8 @@ def main():
                         help='Enable native entry/fast/slow counters in a separate eligibility diagnostic')
     parser.add_argument('--text-geometry', action='store_true',
                         help='Record bounded retained text paint positions and font metrics')
+    parser.add_argument('--render-device-scale', type=float,
+                        help='Preserve this windowed font/paint grid while capturing a 1x PNG')
     parser.add_argument('--date-epoch-ms', type=float,
                         help='LibJS Date origin for a clock-matched replay; real elapsed time is retained')
     parser.add_argument('--observe-ms', type=int, default=15000)
@@ -201,6 +206,9 @@ def main():
         parser.error('Sample delay must be nonnegative')
     if args.ready_selector is not None and not args.document_capture:
         parser.error('A readiness selector requires --document-capture')
+    if args.render_device_scale is not None and (not args.document_capture
+            or not math.isfinite(args.render_device_scale) or args.render_device_scale <= 0):
+        parser.error('A positive finite render device scale requires --document-capture')
     if args.date_epoch_ms is not None and (args.engine != 'libjs'
             or not math.isfinite(args.date_epoch_ms) or abs(args.date_epoch_ms) > 8_640_000_000_000_000
             or not args.date_epoch_ms.is_integer()):
