@@ -68,6 +68,10 @@ def validate(visits, engine, cycles, diagnostic, pins):
             raise ValueError('Native cache failed')
         if not diagnostic and any(visit['activity'].values()):
             raise ValueError('Diagnostic counters enabled in timed visit')
+        for counter in ['lookup_activity', 'argument_activity', 'builtin_key_activity', 'context_activity',
+                        'primitive_activity', 'validation_activity', 'empty_scope_activity', 'index_key_activity', 'context_reuse_activity']:
+            if not diagnostic and any(visit.get(counter, {}).values()):
+                raise ValueError('Diagnostic counters enabled in timed visit: ' + counter)
     if engine == 'libjs':
         cold, warm = visits
         if (cold['cache']['compiler_invocations'] < 1

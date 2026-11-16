@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Same-executable alternating HN lookup-cache controls, candidates and V8.
+"""Same-executable alternating HN runtime controls, candidates and V8.
 
 Use the HN source-built test executable and run_memory_bounded --limit-gib 3.
 This is the script/DOM workload documented in HACKER_NEWS_JS_ENGINES.md.
@@ -24,7 +24,7 @@ def main():
     parser.add_argument('--output', type=Path, required=True)
     parser.add_argument('--pairs', type=int, default=7)
     parser.add_argument('--cycles', type=int, default=500)
-    parser.add_argument('--optimization', choices=['property', 'arguments', 'combined'], default='property')
+    parser.add_argument('--optimization', choices=['property', 'arguments', 'combined', 'registers', 'keys', 'capacity', 'storage', 'dispatch', 'indices', 'frames'], default='property')
     args = parser.parse_args()
     if args.pairs < 7 or args.cycles < 1:
         parser.error('Use at least seven pairs and positive cycle counts')
@@ -33,7 +33,8 @@ def main():
     replay = Replay(hn.ARCHIVE, output / 'replay')
     aliases = hn.add_image_aliases(replay)
     threading.Thread(target=replay.server.serve_forever, daemon=True).start()
-    cache = output / 'native-cache'
+    shared_cache = output / 'native-cache'
+    report_native_counts = {}
     environment = {k: v for k, v in os.environ.items()
                    if not k.startswith(('VOX_', 'LADYBIRD_', 'DYLD_', 'JSC_', 'GC_'))
                    and 'proxy' not in k.lower()}
@@ -48,10 +49,24 @@ def main():
                   host_before=hn.host())
     report['control'] = {'property': 'linear property lookup; arguments elision disabled',
                          'arguments': 'property hints enabled; arguments elision disabled',
-                         'combined': 'linear property lookup; arguments elision disabled'}[args.optimization]
+                         'combined': 'linear property lookup; arguments elision disabled',
+                         'registers': 'property hints and arguments elision enabled; environment bindings',
+                         'keys': 'property hints, arguments elision and register bindings; rebuild length keys',
+                         'capacity': 'all prior runtime optimizations; rounded frame capacity',
+                         'storage': 'property hints, arguments elision and register bindings; legacy keys/capacity',
+                         'dispatch': 'all prior optimizations; primitive wrappers, full validation and empty block environments',
+                         'indices': 'all prior optimizations; decimal/UTF16 array index keys',
+                         'frames': 'all prior optimizations; fresh synchronous frames'}[args.optimization]
     report['candidate'] = {'property': 'validated property hints; arguments elision disabled',
                            'arguments': 'property hints enabled; unobserved arguments elided',
-                           'combined': 'validated property hints and unobserved arguments elided'}[args.optimization]
+                           'combined': 'validated property hints and unobserved arguments elided',
+                           'registers': 'property hints and arguments elision enabled; scope-proven register bindings',
+                           'keys': 'property hints, arguments elision and register bindings; reuse length keys',
+                           'capacity': 'all prior runtime optimizations; exact frame capacity',
+                           'storage': 'property hints, arguments elision and register bindings; cached keys/exact capacity',
+                           'dispatch': 'all prior optimizations; direct primitive reads, validation reuse and empty block no-ops',
+                           'indices': 'all prior optimizations; canonical numeric array index keys',
+                           'frames': 'all prior optimizations; bounded reuse of unexposed synchronous frames'}[args.optimization]
 
     def save():
         (output / 'results.json').write_text(json.dumps(report, indent=2) + '\n')
@@ -63,14 +78,59 @@ def main():
 
     def run(config, label, diagnostic=False, seed=False):
         verify()
+        cache_key = config if args.optimization in ['registers', 'dispatch'] else 'shared'
+        cache = output / ('native-cache-' + config) if args.optimization in ['registers', 'dispatch'] else shared_cache
         engine = 'libjs' if seed else 'v8' if config == 'v8' else 'libjs-warm'
         env = dict(environment, VOX_HN_ENGINE_BENCHMARK=engine,
                    VOX_HN_ENGINE_CYCLES=str(args.cycles), VOX_LIBJS_NATIVE_CACHE=str(cache),
                    VOX_LIBJS_LOOKUP_HINTS='0' if config == 'control' else '1',
                    VOX_HN_ENGINE_DIAGNOSTIC=str(int(diagnostic)),
+                   VOX_LIBJS_REGISTER_BINDINGS='0', VOX_LIBJS_BUILTIN_KEYS='0',
+                   VOX_LIBJS_EXACT_CONTEXT='0', VOX_LIBJS_PRIMITIVE_READS='0',
+                   VOX_LIBJS_VALIDATION_CACHE='0', VOX_LIBJS_EMPTY_SCOPES='0', VOX_LIBJS_NUMERIC_KEYS='0', VOX_LIBJS_CONTEXT_REUSE='0',
                    VOX_PROFILE_DIR=str(output / (label + '-profile')),
                    LADYBIRD_CACHE_DIR=str(output / (label + '-http-cache')), VOX_TEST_WINDOW='1')
-        if args.optimization == 'property':
+        if args.optimization == 'frames':
+            for setting in ['LOOKUP_HINTS', 'ARGUMENT_ELISION', 'REGISTER_BINDINGS', 'BUILTIN_KEYS',
+                            'EXACT_CONTEXT', 'PRIMITIVE_READS', 'VALIDATION_CACHE', 'EMPTY_SCOPES', 'NUMERIC_KEYS']:
+                env['VOX_LIBJS_' + setting] = '1'
+            env['VOX_LIBJS_CONTEXT_REUSE'] = '0' if config == 'control' else '1'
+        elif args.optimization == 'indices':
+            for setting in ['LOOKUP_HINTS', 'ARGUMENT_ELISION', 'REGISTER_BINDINGS', 'BUILTIN_KEYS',
+                            'EXACT_CONTEXT', 'PRIMITIVE_READS', 'VALIDATION_CACHE', 'EMPTY_SCOPES']:
+                env['VOX_LIBJS_' + setting] = '1'
+            env['VOX_LIBJS_NUMERIC_KEYS'] = '0' if config == 'control' else '1'
+        elif args.optimization == 'dispatch':
+            env['VOX_LIBJS_LOOKUP_HINTS'] = '1'
+            env['VOX_LIBJS_ARGUMENT_ELISION'] = '1'
+            env['VOX_LIBJS_REGISTER_BINDINGS'] = '1'
+            env['VOX_LIBJS_BUILTIN_KEYS'] = '1'
+            env['VOX_LIBJS_EXACT_CONTEXT'] = '1'
+            env['VOX_LIBJS_PRIMITIVE_READS'] = '0' if config == 'control' else '1'
+            env['VOX_LIBJS_VALIDATION_CACHE'] = '0' if config == 'control' else '1'
+            env['VOX_LIBJS_EMPTY_SCOPES'] = '0' if config == 'control' else '1'
+        elif args.optimization == 'storage':
+            env['VOX_LIBJS_LOOKUP_HINTS'] = '1'
+            env['VOX_LIBJS_ARGUMENT_ELISION'] = '1'
+            env['VOX_LIBJS_REGISTER_BINDINGS'] = '1'
+            env['VOX_LIBJS_BUILTIN_KEYS'] = '0' if config == 'control' else '1'
+            env['VOX_LIBJS_EXACT_CONTEXT'] = '0' if config == 'control' else '1'
+        elif args.optimization == 'capacity':
+            env['VOX_LIBJS_LOOKUP_HINTS'] = '1'
+            env['VOX_LIBJS_ARGUMENT_ELISION'] = '1'
+            env['VOX_LIBJS_REGISTER_BINDINGS'] = '1'
+            env['VOX_LIBJS_BUILTIN_KEYS'] = '1'
+            env['VOX_LIBJS_EXACT_CONTEXT'] = '0' if config == 'control' else '1'
+        elif args.optimization == 'keys':
+            env['VOX_LIBJS_LOOKUP_HINTS'] = '1'
+            env['VOX_LIBJS_ARGUMENT_ELISION'] = '1'
+            env['VOX_LIBJS_REGISTER_BINDINGS'] = '1'
+            env['VOX_LIBJS_BUILTIN_KEYS'] = '0' if config == 'control' else '1'
+        elif args.optimization == 'registers':
+            env['VOX_LIBJS_LOOKUP_HINTS'] = '1'
+            env['VOX_LIBJS_ARGUMENT_ELISION'] = '1'
+            env['VOX_LIBJS_REGISTER_BINDINGS'] = '0' if config == 'control' else '1'
+        elif args.optimization == 'property':
             env['VOX_LIBJS_ARGUMENT_ELISION'] = '0'
         elif args.optimization == 'arguments':
             env['VOX_LIBJS_LOOKUP_HINTS'] = '1'
@@ -78,7 +138,15 @@ def main():
         else:
             env['VOX_LIBJS_ARGUMENT_ELISION'] = '0' if config == 'control' else '1'
         attempt_policy = dict(property_hints=env['VOX_LIBJS_LOOKUP_HINTS'],
-                              argument_elision=env['VOX_LIBJS_ARGUMENT_ELISION'])
+                              argument_elision=env['VOX_LIBJS_ARGUMENT_ELISION'],
+                              register_bindings=env['VOX_LIBJS_REGISTER_BINDINGS'],
+                              builtin_keys=env['VOX_LIBJS_BUILTIN_KEYS'],
+                              exact_context=env['VOX_LIBJS_EXACT_CONTEXT'],
+                              primitive_reads=env['VOX_LIBJS_PRIMITIVE_READS'],
+                              validation_cache=env['VOX_LIBJS_VALIDATION_CACHE'],
+                              empty_scopes=env['VOX_LIBJS_EMPTY_SCOPES'],
+                              numeric_keys=env['VOX_LIBJS_NUMERIC_KEYS'],
+                              context_reuse=env['VOX_LIBJS_CONTEXT_REUSE'])
         if diagnostic and config == 'v8':
             env['VOX_V8_DIAGNOSTICS'] = '1'
         attempt = dict(configuration=config, label=label, diagnostic=diagnostic, seed=seed,
@@ -113,6 +181,48 @@ def main():
                     raise ValueError('Lookup diagnostics enabled in timed trial')
                 if diagnostic and config == 'candidate' and activity['hits'] <= 0:
                     raise ValueError('Candidate did not exercise property hints')
+                if diagnostic and args.optimization == 'dispatch':
+                    primitive, validation = visit['primitive_activity'], visit['validation_activity']
+                    if config == 'candidate' and (primitive['direct'] <= 0 or primitive['boxed'] != 0
+                                                  or validation['hits'] <= 0
+                                                  or visit['empty_scope_activity']['elided'] <= 0):
+                        raise ValueError('HN candidate did not exercise primitive reads and validation reuse')
+                    if config == 'control' and (primitive['boxed'] <= 0 or primitive['direct'] != 0
+                                                or validation['hits'] != 0
+                                                or visit['empty_scope_activity']['elided'] != 0):
+                        raise ValueError('HN dispatch control did not execute legacy paths')
+                if diagnostic and args.optimization == 'indices':
+                    index_activity = visit['index_key_activity']
+                    if config == 'candidate' and (index_activity['numeric'] <= 0 or index_activity['strings'] != 0):
+                        raise ValueError('HN did not exercise numeric keys without string fallback')
+                    if config == 'control' and (index_activity['strings'] <= 0 or index_activity['numeric'] != 0):
+                        raise ValueError('HN control did not construct decimal/UTF16 index keys')
+                if diagnostic and args.optimization == 'frames':
+                    reuse = visit['context_reuse_activity']
+                    if config == 'candidate' and reuse['reused'] <= 0:
+                        raise ValueError('HN candidate did not reuse synchronous frames')
+                    if config == 'control' and any(reuse.values()):
+                        raise ValueError('HN control unexpectedly exercised context reuse')
+                context_activity = visit['context_activity']
+                if not diagnostic and any(context_activity.values()):
+                    raise ValueError('Context allocation diagnostics enabled during timing')
+                if diagnostic and config == 'candidate' and args.optimization in ['capacity', 'storage']:
+                    if context_activity['frames'] <= 0 or context_activity['slots'] != context_activity['capacity']:
+                        raise ValueError('HN callbacks did not exercise exact frame allocation')
+                if diagnostic and config == 'control' and args.optimization in ['capacity', 'storage']:
+                    if context_activity['capacity'] <= context_activity['slots']:
+                        raise ValueError('HN control did not use rounded frame capacity')
+                key_activity = visit['builtin_key_activity']
+                if not diagnostic and any(key_activity.values()):
+                    raise ValueError('Builtin-key diagnostics enabled during timing')
+                if diagnostic and config == 'candidate' and args.optimization in ['keys', 'storage']:
+                    if (key_activity['cached'] <= 0 or key_activity['ascii_compares'] <= 0
+                            or key_activity['legacy'] != 0):
+                        raise ValueError('HN callbacks did not exercise cached keys and ASCII comparisons')
+                if diagnostic and config == 'control' and args.optimization in ['keys', 'storage']:
+                    if (key_activity['legacy'] <= 0 or key_activity['cached'] != 0
+                            or key_activity['ascii_compares'] != 0):
+                        raise ValueError('Key-cache control did not execute legacy key construction')
                 argument_activity = visit['argument_activity']
                 if not diagnostic and any(argument_activity.values()):
                     raise ValueError('Argument allocation counters enabled during timing')
@@ -124,8 +234,9 @@ def main():
                 if not libraries:
                     raise ValueError('Seed did not produce native code')
                 report['inputs'].update({str(p): hn.digest(p) for p in libraries})
-                report['native_executables'] = visits[0]['cache']['compiled_executables']
-            elif config != 'v8' and visits[0]['cache']['cache_hits'] != report['native_executables']:
+                report_native_counts[cache_key] = visits[0]['cache']['compiled_executables']
+                report['native_executables'] = report_native_counts.copy()
+            elif config != 'v8' and visits[0]['cache']['cache_hits'] != report_native_counts[cache_key]:
                 raise ValueError('Incomplete native-code reuse')
             if diagnostic and config == 'v8' and 'Vox V8 backend: V8 ' not in stderr:
                 raise ValueError('Missing V8 backend diagnostic')
@@ -149,6 +260,17 @@ def main():
                      hn.ARCHIVE / 'manifest.json', *sorted((hn.ARCHIVE / 'bodies').iterdir()),
                      hn.ASSETS / 's.gif', hn.ASSETS / 'y18.svg', Path(__file__), Path(hn.__file__),
                      hn.ROOT / 'libjs/property_lookup.v', hn.ROOT / 'libjs/object.v',
+                     *[hn.ROOT / ('libjs/' + name) for name in [
+                         'register_bindings.v', 'ecmascript_function.v', 'bytecode_generator.v',
+                         'arguments_elision.v', 'destructuring_assignment.v',
+                         'object_binding_execution.v', 'optional_chain_execution.v',
+                         'builtin_property_keys.v', 'vm.v', 'array_object.v', 'array_like.v',
+                         'collection_intrinsics.v', 'primitive_string.v', 'context_capacity.v',
+                         'execution_context.v', 'reference.v', 'value_property_access.v',
+                         'primitive_reads.v', 'validation_cache.v', 'instruction.v', 'executable.v',
+                         'empty_scopes.v', 'interpreter.v', 'native_tier.v', 'array_index_keys.v',
+                         'array_iterator.v', 'context_reuse.v', 'interpreter_stack.v',
+                         'native_function.v']],
                      hn.ROOT / 'sites/hacker_news_engine_benchmark_test.v',
                      hn.ROOT / 'tools/page_archive.py',
                      *sorted((hn.ROOT / 'Build/v').glob('*.dylib'))]
@@ -166,9 +288,20 @@ def main():
             for symbol in ['_JSGlobalContextCreate', '_JSEvaluateScript']:
                 if not any(symbol + ' ' in line and '(from libVoxJSCOnV8)' in line for line in imports.splitlines()):
                     raise ValueError('JavaScript entry does not bind to V8: ' + symbol)
-            run('control', 'seed', seed=True)
+            run('control', 'seed-control', seed=True)
+            if args.optimization in ['registers', 'dispatch']:
+                run('candidate', 'seed-candidate', seed=True)
             for config in ['control', 'candidate', 'v8']:
                 run(config, 'diagnostic-' + config, True)
+            if args.optimization in ['registers', 'dispatch']:
+                diagnostics = {a['configuration']: a['visits'][0]['activity']
+                               for a in report['attempts'] if a['diagnostic']}
+                control, candidate = diagnostics['control'], diagnostics['candidate']
+                if (candidate['entries'] != control['entries']
+                        or candidate['fast_steps'] <= control['fast_steps']
+                        or candidate['slow_steps'] >= control['slow_steps']):
+                    raise ValueError('Lowering did not replace helper steps with native steps')
+                report['lowering_diagnostic'] = diagnostics
             for index in range(args.pairs):
                 order = ['control', 'candidate', 'v8'] if index % 2 == 0 else ['v8', 'candidate', 'control']
                 for config in order:
@@ -179,6 +312,9 @@ def main():
                 min=min(a['visits'][0][metric] for a in trials if a['configuration'] == config),
                 max=max(a['visits'][0][metric] for a in trials if a['configuration'] == config))
                 for metric in hn.METRICS} for config in ['control', 'candidate', 'v8']}
+            candidate_ns = int(round(report['summary']['candidate']['callback_ms']['max'] * 1e6))
+            v8_ns = int(round(report['summary']['v8']['callback_ms']['min'] * 1e6))
+            report['twice_v8_conservative'] = 2 * candidate_ns <= v8_ns
             report['verified'] = True
             print(json.dumps(report['summary'], indent=2))
     finally:

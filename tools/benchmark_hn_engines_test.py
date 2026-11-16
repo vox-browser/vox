@@ -51,6 +51,12 @@ class HNEngineEvidenceTest(unittest.TestCase):
         with self.assertRaises(ValueError):
             self.check_pair(warm=warm)
 
+    def test_rejects_runtime_allocation_instrumentation_in_timed_visits(self):
+        for counter in ['lookup_activity', 'argument_activity', 'builtin_key_activity', 'context_activity',
+                        'primitive_activity', 'validation_activity', 'empty_scope_activity', 'index_key_activity', 'context_reuse_activity']:
+            with self.subTest(counter=counter), self.assertRaises(ValueError):
+                self.check_pair(warm=dict(self.warm, **{counter: dict(count=1)}))
+
     def test_missing_or_reordered_visits(self):
         for visits in [[self.cold], [self.warm, self.cold]]:
             with self.assertRaises(ValueError):

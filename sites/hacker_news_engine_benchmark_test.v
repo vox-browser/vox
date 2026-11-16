@@ -34,6 +34,11 @@ struct HNEngineVisit {
 	argument_activity libjs.ArgumentAllocationActivity
 	builtin_key_activity libjs.BuiltinKeyActivity
 	context_activity libjs.ContextAllocationActivity
+	primitive_activity libjs.PrimitiveReadActivity
+	validation_activity libjs.ValidationActivity
+	empty_scope_activity libjs.EmptyScopeActivity
+	index_key_activity libjs.ArrayIndexKeyActivity
+	context_reuse_activity libjs.ContextReuseActivity
 }
 
 fn hn_engine_toggle(document &dom.Document, runtime &browserjs.Runtime, button &dom.Element) ! {
@@ -85,6 +90,11 @@ fn hn_engine_visit(mode string, cycles int, diagnostic bool) !HNEngineVisit {
 	mut vm := runtime.libjs_vm()
 	libjs.diagnose_builtin_keys_for_testing(diagnostic)
 	libjs.diagnose_context_allocation_for_testing(diagnostic)
+	libjs.diagnose_primitive_reads_for_testing(diagnostic)
+	libjs.diagnose_validation_cache_for_testing(diagnostic)
+	libjs.diagnose_empty_scopes_for_testing(diagnostic)
+	libjs.diagnose_array_index_keys_for_testing(diagnostic)
+	libjs.diagnose_context_reuse_for_testing(diagnostic)
 	if diagnostic && engine == .libjs { vm.diagnose_native_code(true)! }
 	first_started := time.sys_mono_now()
 	hn_engine_toggle(document, runtime, button)!
@@ -105,6 +115,11 @@ fn hn_engine_visit(mode string, cycles int, diagnostic bool) !HNEngineVisit {
 	argument_activity := libjs.diagnose_argument_allocation_for_testing(false)
 	builtin_key_activity := libjs.diagnose_builtin_keys_for_testing(false)
 	context_activity := libjs.diagnose_context_allocation_for_testing(false)
+	primitive_activity := libjs.diagnose_primitive_reads_for_testing(false)
+	validation_activity := libjs.diagnose_validation_cache_for_testing(false)
+	empty_scope_activity := libjs.diagnose_empty_scopes_for_testing(false)
+	index_key_activity := libjs.diagnose_array_index_keys_for_testing(false)
+	context_reuse_activity := libjs.diagnose_context_reuse_for_testing(false)
 	activity := if engine == .libjs {
 		vm.diagnose_native_code(false)!
 	} else {
@@ -145,6 +160,11 @@ fn hn_engine_visit(mode string, cycles int, diagnostic bool) !HNEngineVisit {
 		argument_activity: argument_activity
 		builtin_key_activity: builtin_key_activity
 		context_activity: context_activity
+		primitive_activity: primitive_activity
+		validation_activity: validation_activity
+		empty_scope_activity: empty_scope_activity
+		index_key_activity: index_key_activity
+		context_reuse_activity: context_reuse_activity
 	}
 }
 
@@ -156,6 +176,11 @@ fn test_hacker_news_engine_benchmark() {
 	libjs.set_register_bindings_for_testing(os.getenv('VOX_LIBJS_REGISTER_BINDINGS') != '0')
 	libjs.set_builtin_key_cache_for_testing(os.getenv('VOX_LIBJS_BUILTIN_KEYS') != '0')
 	libjs.set_exact_context_capacity_for_testing(os.getenv('VOX_LIBJS_EXACT_CONTEXT') != '0')
+	libjs.set_primitive_reads_for_testing(os.getenv('VOX_LIBJS_PRIMITIVE_READS') != '0')
+	libjs.set_validation_cache_for_testing(os.getenv('VOX_LIBJS_VALIDATION_CACHE') != '0')
+	libjs.set_empty_scope_elision_for_testing(os.getenv('VOX_LIBJS_EMPTY_SCOPES') != '0')
+	libjs.set_numeric_array_keys_for_testing(os.getenv('VOX_LIBJS_NUMERIC_KEYS') != '0')
+	libjs.set_context_reuse_for_testing(os.getenv('VOX_LIBJS_CONTEXT_REUSE') != '0')
 	// Keep this author-script/DOM workload independent of filter-list startup.
 	adblock.set_enabled(false)
 	$if !vox_v8 ? {
