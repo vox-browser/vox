@@ -1422,6 +1422,9 @@ static int native_draw_retained_glyph_run(CGContextRef context,
 	native_configure_glyph_rasterization(context, font_smoothing);
 	CGContextSetFillColorWithColor(context, color);
 	if (shadow_only && blur > 0.0f) {
+		// The glyphs supply coverage; the shadow color supplies alpha once.
+		// A translucent source would multiply the shadow opacity a second time.
+		CGContextSetRGBFillColor(context, 0.0, 0.0, 0.0, 1.0);
 		CGRect clip_bounds = CGContextGetClipBoundingBox(context);
 		CGFloat displacement = clip_bounds.size.width + 8192.0;
 		glyph_to_canvas.tx += displacement;
