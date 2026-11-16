@@ -13,9 +13,9 @@ templates and hit the memory guard. The subsequent initializer candidate exposes
 a decoder ownership crash. After correction, a fresh first opening compiles
 23,778 entries, its compiler-disabled reopen has 4,245 hits and zero misses, and
 the complete native mouse/keyboard sequence passes with 4,690 hits, zero misses
-and actual native execution. The compositor, PNG capture-scale and border fixes
-are enabled by default; the unchanged windowed-reference gate is now 25,206
-differing pixels. Exact content is preserved throughout. Speed, live validation
+and actual native execution. The SVG compositor, PNG capture-scale and shared rectangle/clip corrections
+are enabled by default. A border-phase regression is removed; the unchanged
+windowed-reference gate currently has 25,224 differing pixels. Exact content is preserved throughout. Speed, live validation
 and pixel-perfect acceptance remain open.
 
 **Full GitHub acceptance remains unachieved.** The latest initial native LibJS capture
@@ -3926,7 +3926,7 @@ correction, but cannot establish a complete cache.
 
 The default production SVG/PNG executable is SHA-256
 `48743078b353f9c37771b5f0d230724bde51458eeff511534a26812e21be130e`.
-All nine native-ABI source hashes agree with that candidate, so it can use the
+The native-ABI source hashes agree with that candidate, so it can use the
 same retained partition without conversion. A recovery opening finishes the
 missing templates: 2,018 compiled entries in 16 compiler calls, no pending or
 invalid entries and no error; all 81 module preparations complete, zero
@@ -3979,3 +3979,172 @@ the orange rectangle bypasses that GPU callback and uses the direct solid-rect
 boundary. This prototype supplies no rendering credit; its patch and both
 captures are retained. The callback changes are removed, and the next guarded
 experiment applies the same device-space rule at the actual solid-rect boundary.
+
+
+### Completed empty-cache first/reopen/control cohort for the SVG/PNG browser
+
+The separate empty-cache opening completes normally under the extended
+3,600-second wall-clock limit and unchanged 12 GiB aggregate memory cap.
+It compiles **23,778 entries in 186 compiler invocations**, with zero pending or
+invalid entries and no cache error. All 81 module preparations complete:
+25,643 prepared bodies, 19,533 queued uncalled templates, zero unsupported
+bodies and zero preparation diagnostics. Compilation records
+1,611,187.718865 ms; native loading 39,278.060091 ms. Browser/controller/guard
+exit zero, fixed pins, full exact content and zero author/native errors.
+Guard elapsed is **1,676.399337084 seconds**, sampled peak **10,946,527,232
+bytes**. The earlier 1,800-second failed attempt remains retained; the successful
+run has different host contention and is not a speed comparison or an excluded
+retry of that attempt.
+
+Its fresh `/usr/bin/false` reopen has **4,245 hits, zero misses, zero compiler
+calls, zero pending/invalid entries and no cache error**. Native loading is
+617.106142 ms. It executes **482,882 native entries, 11,505,373 fast steps and
+6,777,473 slow steps**; JSC stays uninitialized. Exact content passes, all pins
+are fixed, no errors, and all exits are zero. Guard elapsed is 38.369853458
+seconds, sampled peak **8,491,728,896 bytes**. First/reopen raw PNGs agree at
+`eef33d71212f5ef8dbb444c6d378295f3ba7926d5505d993fdb642dd8ba9e328`.
+
+The complete 60-second native input sequence also passes against this genuinely
+fresh partition, with `/usr/bin/false`: Code/master open, native filter value
+`ma`, all actions/completion received, terminal menus and overlays closed, full
+exact content, no errors, no changed pins. Both control flags are true. It has
+**4,690 hits, zero misses or compiler calls, zero pending/invalid entries**, and
+**857,556 native entries, 27,095,679 fast steps and 12,639,083 slow steps**.
+Native loading is 621.698818 ms. All exits are zero; guard elapsed is
+61.645732917 seconds and sampled peak **12,500,566,016 bytes**. All **28 shared
+executable/library/archive fingerprints agree** across first/reopen/controls;
+the canonical first/reopen observer remains SHA-256
+`019574fce1afd03f0741b2bb0d74d639fe977d7903c08e21c6404be5a873e544`.
+These are functional and native-execution observations, with little memory
+headroom. Fixed observation delays and shutdown compilation are included;
+there is no isolated speed ratio, long-duration memory bound or matched
+performance acceptance.
+
+### Border-phase regression and direct rectangle/clip correction
+
+A full changed-pixel audit catches a regression in `8641a3868`: **235 pixels
+change; 48 mismatches resolve but 30 previously exact pixels become wrong**.
+The new mismatches form the search button's straight right edge at x=803,
+including 24 pixels with channel error 16. Bilinearly sampling already analytic
+stroke coverage creates an extra fringe. The aggregate count improves by 18,
+but that does not establish a correct border change. The border-phase path is
+removed; the separate SVG path/coverage correction stays. A regression source
+exercises a retained analytic border through the exported callback with zero
+and half-pixel SVG phases, requiring the exterior straight-edge pixels to stay
+black. It remains uncompiled/unrun.
+
+That earlier commit also carried a pre-existing image-MSAA selection hunk.
+The rollback preserves it. Intermediate builds made during its temporary
+removal are retained and cannot validate the final source. Each later browser
+build seals the restored source digest before its C compilation. This avoids
+silently dropping the independent image-sampling behavior during the rollback.
+
+The direct-rectangle candidate explicitly logs eligibility for the actual
+underline: user-space bounds (16,624,75.5,2), clip (16,624,75.5,40), identity
+native device transform, revised width 76. Only the redundant shared edge is
+expanded; the active native clip still resolves the half pixel. Its non-test
+root check completes in 33.273963084 seconds, 7,484,588,032-byte peak; candidate
+C build in 209.229657875 seconds, 12,031,655,936-byte peak, sealed 3,744 sources,
+zero tests. Matched same-binary off/on original-page captures preserve exact
+content and all pins, with zero errors and normal browser/controller/guard exits.
+
+Exactly **two pixels** change, both improving: at (91,166), reference
+(242,197,186), before (243,222,217), after (240,196,184); at (91,167), reference
+(224,181,172), before (215,198,197), after (222,180,171). Under the then-current
+border candidate, the full mismatch count stays 25,206 but maximum channel
+error falls **31→23**, pixels over ten **47→45**, and over 25 **1→0**.
+The default-path rectangle build completes in 215.553503208 seconds,
+12,033,523,712-byte peak; its fresh capture (37.560894917 seconds,
+8,065,531,904-byte peak) reproduces candidate output exactly:
+`b728060a060a5e9abbe68a98d2f6bb8233d4ece3b6f8c3de457ce09d45ed5b78`.
+
+The rectangle policy lives in V, with native code only transferring context
+bounds and transform. It declines non-axis transforms, empty/invalid or
+collapsed geometry, and overflow in both device and inverse mappings. Focused
+sources cover shared edges, unchanged independent edges, device scale and
+translation, flipped Y and invalid/extreme mappings; they remain uncompiled
+and unrun. The final non-test root compiler check passes in 31.998921083
+seconds, sampled peak 7,486,210,048 bytes. The final exact-source production
+capture combining this correction with the border rollback is complete below.
+
+### Color-conversion precision diagnosis; original pixel gate retained
+
+The native PNG has the standard sRGB chunk. The original Brave PNG embeds its
+520-byte Display P3 matrix/TRC profile. At 3,253 opaque text pixels, native
+sRGB is correctly (31,35,40), while the existing ColorSync conversion yields
+P3 (32,35,39) and Brave stores (32,35,40). A numerical matrix/TRC calculation
+using the embedded profile and canonical sRGB XYZD50 matrix gives (32,35,40).
+All four ColorSync rendering intents give the same existing result, so changing
+intent does not fix the discrepancy.
+
+The numerical transform is a **separate artifact diagnosis**. It produces
+22,340 mismatches against the original reference in that retained image, still
+maximum 31, rather than the existing comparison's 25,206. Neither number is a
+new renderer result; the original ColorSync-derived comparison stays unchanged
+and failing. Converting already quantized sRGB pixels also cannot establish
+that text and overlapping paints blend in the same destination space as Brave.
+No inverse color remap, replacement reference, tolerance change or rendering
+credit is taken from this experiment.
+
+Completed scratch jobs move out of Build with idle-lock checks and full
+SHA-256/symlink verification: 154 owned roots, 1,880 files, in local
+`scratch-receipts/continued-20261116-r9`. Native cache partitions, source proofs
+and original references are retained. Newer independent native compiler entry
+lookup changes alter the ABI again; later rendering executables cannot borrow
+an older partition by renaming it. Full compiled rendering with the final
+source, live behavior, exact original-reference pixels and matched speed remain
+open. All automated tests remain held.
+
+
+### Committed rollback and rectangle correction; final-source observation
+
+`a39b66400` removes the unbounded solid-border resampling and adds the exterior
+edge regression source. `373e0b083` enables the shared rectangle/clip-edge
+correction by default, with its V geometry/invalid-transform regression sources.
+The independent image-MSAA selection is preserved. Tests remain uncompiled and
+unrun; normal commit hooks request coalesced production rebuilds.
+
+The final private literal `-prod`, single-C executable is SHA-256
+`e4805fce68555f8da380e07dce60eea5e6878c3942b82cf8247f88950e5096f8`.
+Its sealed proof contains 3,744 V sources and **zero test sources**; the owned
+implementation digests match the checkout. Build elapsed is 212.691658375
+seconds, sampled peak **12,030,574,592 bytes**, compiler/guard exit zero.
+Its fresh original-page capture preserves exact content and all pins, no
+errors, browser/controller/guard exits zero, elapsed **38.343840334 seconds**,
+sampled peak **8,140,701,696 bytes**. Raw PNG SHA-256 is
+`507e18ea74d07b35938a579d6d82361afa5975ad9c8d82e53e487def01ea98e0`.
+The prior intermediate builds and their exact consumed buffers remain retained;
+they are not used to validate later mapping guards or the restored image hunk.
+
+The two improved underline pixels retain their candidate values. Previously
+exact black exterior pixels at x=803 are black again. The strict unchanged
+reference comparison is **25,224 differing pixels, maximum 31, MAE 0.0162,
+RMSE 0.3122**, with 1,730 pixels over three levels, 158 over ten, 52 over 25 and
+none over 50. This deliberately does not retain a lower aggregate count at the
+cost of new exterior errors. Remaining maximum errors now occur inside the
+unadjusted search-button border, rather than at the corrected underline.
+
+A next guarded experiment retains the effect picture's **unsnapped size** as
+well as its origin. Brave's independent picture log has physical width 85 and
+origin x=1521: its texture ends at document x=803. The former phase publisher
+had no corresponding finite texture footprint. The candidate snaps the origin
+and size independently on the presenting grid, encloses that footprint for
+capture, and limits supported foreground sampling to it. A non-test compiler
+check passes (29.916952875 seconds, 7,478,542,336-byte peak); original-page
+eligibility and same-binary off/on captures are pending. This is not another
+accepted border correction.
+
+The new native-compiler executable's ABI is
+`af0aaf736a2b968092fe845c9270847b777a642fb11b8782276e1d35ec8310d4`.
+A separate empty-cache original-page opening is running against the final
+rectangle/rollback executable under the same 3,600-second/12 GiB guard. Its
+initial capture already has exact content and zero errors, with compilation
+still pending; it does not yet establish completed-cache reuse. The earlier
+complete 862d first/reopen/control cohort remains valid for its pinned SVG/PNG
+browser and is not relabeled as this new ABI's result.
+
+A second verified scratch move removes another 52 completed owned roots/226
+files from Build into local `scratch-receipts/continued-20261116-r10`. Active
+first-opening and bounded-picture jobs stay in Build. Cache partitions, browser
+executables, source proofs, original references and every failed attempt remain
+retained. Pixel-perfect, live-site and matched-speed acceptance remain open.

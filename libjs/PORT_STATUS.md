@@ -3133,8 +3133,9 @@ menus under the unchanged 12 GiB guard (11.78 GiB peak). Native callback records
 reuse storage by active depth. No live or matched performance acceptance is
 claimed. Font-strike rounding gives the same 156-pixel Go to
 file input as Brave. The unchanged
-windowed pixel gate improves to 25,206 pixels after default SVG, PNG capture-scale
-and border-phase corrections. The newer native ABI passes compiler-disabled
-reopen and controls after recovery from a retained first-opening timeout; a
-separate empty-cache opening remains pending. This is not full-site,
+windowed pixel gate is 25,224 pixels after default SVG, PNG capture-scale and
+shared rectangle/clip corrections; a border resampling regression is removed.
+The 862d ABI also completes a separate empty-cache first opening and fresh
+compiler-disabled reopen/controls, with exact content and no misses or compiler
+calls. The later af0a ABI has a new first opening in progress. This is not full-site,
 live-site, historical pixel or performance acceptance. Automated suites remain held. See [the resumed diagnostic report](../docs/LIBJS_GITHUB_RUNTIME_20261115.md#browser-diagnostics-resumed-2026-11-16).
