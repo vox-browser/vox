@@ -79,9 +79,9 @@ fn draw_document_sampled_image_tiles_with_decoration(pixels &u8, width i32, heig
 					i32(grid.width * 4), backdrop, source, sw, sh, x + dx, y + dy, dw, dh,
 					samples, nw, nh, local_clip)
 			} else if kind == .yuv_atlas {
-				ggshape.draw_sampled_yuv_atlas_with_mips_clipped(tile.data, i32(grid.width), i32(grid.height),
+				ggshape.draw_sampled_yuv_atlas_at_origin(tile.data, i32(grid.width), i32(grid.height),
 					i32(grid.width * 4), backdrop, source, sw, sh, x + dx, y + dy, dw, dh,
-					samples, nw, nh, local_clip, gpu_mips)
+					samples, nw, nh, local_clip, gpu_mips, [f32(ox), f32(oy)]!)
 			} else if kind == .rgba {
 				ggshape.draw_sampled_rgba_clipped(tile.data, i32(grid.width), i32(grid.height),
 					i32(grid.width * 4), backdrop, source, sw, sh, x + dx, y + dy, dw, dh,

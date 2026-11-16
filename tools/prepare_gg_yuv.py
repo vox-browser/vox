@@ -27,7 +27,7 @@ def prepare(canvas):
 }
 ''')
     patches = json.loads((Path(__file__).parent / 'buildtools/gg_patches.json').read_text())
-    for group, marker in [('prepare_gg_yuv_atlas_uniform', 'u.color_transform.yuv420_atlas'),
+    for group, marker in [('prepare_gg_yuv_atlas_uniform', 'out << if u.color_transform.yuv420_atlas {'),
                           ('prepare_gg_yuv_atlas_support', 'fn document_image_yuv_atlas_upload_supported()'),
                           ('prepare_gg_yuv_atlas_shader', 'gammaParameters_7.z > 0.0f')]:
         for operation in patches[group]:
@@ -47,6 +47,11 @@ def prepare(canvas):
                 snippets = replace_once(snippets, operation['old'], operation['new'])
     for operation in patches['prepare_gg_yuv_coordinates']:
         if operation['new'] not in snippets:
+            snippets = replace_once(snippets, operation['old'], operation['new'])
+    for operation in patches['prepare_gg_yuv_subset']:
+        if operation['file'] == 'gpu_layer.v' and operation['new'] not in layer:
+            layer = replace_once(layer, operation['old'], operation['new'])
+        elif operation['file'] == 'shaders/paint_snippets.metal' and operation['new'] not in snippets:
             snippets = replace_once(snippets, operation['old'], operation['new'])
     for path, value in [(layer_path, layer), (snippets_path, snippets)]:
         if path.is_symlink():

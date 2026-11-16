@@ -12,7 +12,7 @@ class YuvStagingTests(unittest.TestCase):
             (canvas / 'shaders').mkdir()
             layer = canvas / 'gpu_layer.v'
             shader = canvas / 'shaders/paint_snippets.metal'
-            original_layer = 'const image_uniform_size = 112\n\tout << u.color_transform.gamma\n\tout << 0\n\tout << 0\n\tout << 0\n'
+            original_layer = 'const image_uniform_size = 112\n\t\tfor row in 0 .. 3 { out << u.color_transform.gamut[column * 3 + row] }\n\tout << u.color_transform.gamma\n\tout << 0\n\tout << 0\n\tout << 0\n'
             patches = json.loads((Path(__file__).parent / 'buildtools/gg_patches.json').read_text())
             coordinates = patches['prepare_gg_yuv_coordinates']
             original_shader = coordinates[0]['old'] + '\n' + 'float4 _10_mask = sample(_globals.image_4, _in.CoordNormalize_3_Var);\n'
@@ -32,6 +32,13 @@ class YuvStagingTests(unittest.TestCase):
             self.assertIn(b'documentImageCoords * 0.5f', expected[1])
             for operation in coordinates:
                 shader.write_text(shader.read_text().replace(operation['new'], operation['old'], 1))
+                prepare(canvas)
+                self.assertEqual((layer.read_bytes(), shader.read_bytes()), expected)
+            self.assertIn(b'yuv_chroma_bounds[index]', expected[0])
+            self.assertIn(b'float4 chromaBounds', expected[1])
+            for operation in patches['prepare_gg_yuv_subset']:
+                target = canvas / operation['file']
+                target.write_text(target.read_text().replace(operation['new'], operation['old'], 1))
                 prepare(canvas)
                 self.assertEqual((layer.read_bytes(), shader.read_bytes()), expected)
             for reset in [layer, shader]:

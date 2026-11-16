@@ -25,16 +25,16 @@ pub fn draw_sampled_rgba_with_shadow(pixels &u8, width i32, height i32, pitch i3
 	source []u8, source_width int, source_height int, x f32, y f32,
 	destination_width f32, destination_height f32, samples int, natural_width int, natural_height int,
 	clip [12]f32, gpu_mips bool, shadow &C.VoxGraphiteShape) i32 {
- return draw_sampled_image(pixels,width,height,pitch,backdrop,source,[],source_width,source_height,x,y,destination_width,destination_height,samples,natural_width,natural_height,clip,gpu_mips,shadow,0,false)
+ return draw_sampled_image(pixels,width,height,pitch,backdrop,source,[],source_width,source_height,x,y,destination_width,destination_height,samples,natural_width,natural_height,clip,gpu_mips,shadow,0,false,[2]f32{})
 }
 
 pub fn draw_sampled_colors_clipped(pixels &u8,width i32,height i32,pitch i32,backdrop i32,colors []f32,sw int,sh int,x f32,y f32,dw f32,dh f32,samples int,nw int,nh int,clip [12]f32) i32 {
  if sw<=0 || sh<=0 || sw>4096 || sh>4096 || sw*sh>4*1024*1024 || colors.len!=sw*sh*4 {return 0}
  for i,v in colors {if !math.is_finite(v) || v<0 || v>1 || (i%4==3 && v!=1) {return 0}}
- return draw_sampled_image(pixels,width,height,pitch,backdrop,[],colors,sw,sh,x,y,dw,dh,samples,nw,nh,clip,false,unsafe{nil},0,false)
+ return draw_sampled_image(pixels,width,height,pitch,backdrop,[],colors,sw,sh,x,y,dw,dh,samples,nw,nh,clip,false,unsafe{nil},0,false,[2]f32{})
 }
 
-fn draw_sampled_image(pixels &u8,width i32,height i32,pitch i32,backdrop i32,source []u8,colors []f32,source_width int,source_height int,x f32,y f32,destination_width f32,destination_height f32,samples int,natural_width int,natural_height int,clip [12]f32,gpu_mips bool,shadow &C.VoxGraphiteShape,yuv_mode int,yuv_atlas bool) i32 {
+fn draw_sampled_image(pixels &u8,width i32,height i32,pitch i32,backdrop i32,source []u8,colors []f32,source_width int,source_height int,x f32,y f32,destination_width f32,destination_height f32,samples int,natural_width int,natural_height int,clip [12]f32,gpu_mips bool,shadow &C.VoxGraphiteShape,yuv_mode int,yuv_atlas bool,origin [2]f32) i32 {
 	if shadow != unsafe { nil } && (shadow.fill != 9 || shadow.thickness != 0 || !supported(shadow)) {
 		return 0
 	}
@@ -88,6 +88,16 @@ fn draw_sampled_image(pixels &u8,width i32,height i32,pitch i32,backdrop i32,sou
 	}
 	for value in clip { if !math.is_finite(value) { return 0 } }
 	if clip[4..12].any(it < 0) { return 0 }
+	// Keep a rectangular source-subset clip in destination coordinates. An
+	// inverse image-scale round trip otherwise moves its sampling grid.
+	partial_atlas_clip := yuv_atlas && destination_width * 2 > source_width
+		&& destination_height * 2 > source_height
+		&& clip[2] > 0 && clip[3] > 0 && clip[0..4].all(it == math.floor(it))
+		&& clip[0] >= x && clip[1] >= y
+		&& clip[0] + clip[2] <= x + destination_width
+		&& clip[1] + clip[3] <= y + destination_height
+		&& (clip[0] != x || clip[1] != y || clip[2] != destination_width || clip[3] != destination_height)
+		&& clip[4..12].all(it == 0)
 	if clip[2] > 0 && clip[3] > 0 {
 		if samples == 4 { surface.draw_msaa_trigger() }
 		// Odd-plane atlases already draw this exact full-image rectangle.
@@ -96,7 +106,7 @@ fn draw_sampled_image(pixels &u8,width i32,height i32,pitch i32,backdrop i32,sou
 		full_odd_atlas := yuv_atlas && (source_width % 2 != 0 || source_height % 2 != 0)
 			&& clip[0] == x && clip[1] == y && clip[2] == destination_width
 			&& clip[3] == destination_height && clip[4..12].all(it == 0)
-		if !full_odd_atlas {
+		if !full_odd_atlas && !partial_atlas_clip {
 			rect := canvas.Rect.xywh(clip[0], clip[1], clip[2], clip[3])
 			surface.clip_rrect(canvas.RRect.rect_radii(rect, [
 				canvas.Point{clip[4], clip[5]},
@@ -111,11 +121,29 @@ fn draw_sampled_image(pixels &u8,width i32,height i32,pitch i32,backdrop i32,sou
   for level in levels[1..] {floats << level.map(f32(it)/255)}
   surface.draw_document_scaled_float_rgba(floats,source_width,source_height,natural_width,natural_height,x,y,destination_width,destination_height) or {return 0}
  } else {
-	surface.draw_document_color_rgba(levels, source_width, source_height, natural_width, natural_height, x, y,
-		destination_width, destination_height, canvas.DocumentImageColorTransform{ yuv_rec601_limited: yuv_mode == 1, yuv_jpeg_full: yuv_mode == 2, yuv420_atlas: yuv_atlas },
-		samples == 1 && clip[0] == x && clip[1] == y && clip[2] == destination_width
+	mut chroma_bounds := [4]f32{}
+	if partial_atlas_clip {
+		source_clip := [(clip[0] - x) * f32(source_width) / destination_width,
+			(clip[1] - y) * f32(source_height) / destination_height,
+			(clip[0] + clip[2] - x) * f32(source_width) / destination_width,
+			(clip[1] + clip[3] - y) * f32(source_height) / destination_height]!
+		// Chromium intersects UV texel-center bounds with the luma subset,
+		// then applies the larger inset symmetrically on each axis.
+		for axis in 0 .. 2 {
+			lo, hi := source_clip[axis], source_clip[axis + 2]
+			inset_lo := math.max(lo + .5, (f32(math.floor(lo * .5)) + .5) * 2)
+			inset_hi := math.min(hi - .5, (f32(math.ceil(hi * .5)) - .5) * 2)
+			inset := math.max(inset_lo - lo, hi - inset_hi)
+			chroma_bounds[axis], chroma_bounds[axis + 2] = lo + inset, hi - inset
+		}
+	}
+	destination_subset := if partial_atlas_clip { [clip[0], clip[1], clip[2], clip[3]]! } else { [4]f32{} }
+	surface.draw_document_color_rgba_subset(levels, source_width, source_height, natural_width, natural_height, x, y,
+		destination_width, destination_height, canvas.DocumentImageColorTransform{ yuv_rec601_limited: yuv_mode == 1, yuv_jpeg_full: yuv_mode == 2, yuv420_atlas: yuv_atlas, yuv_chroma_bounds: chroma_bounds },
+		partial_atlas_clip || (samples == 1 && clip[0] == x && clip[1] == y && clip[2] == destination_width
 			&& clip[3] == destination_height
-			&& (clip[4] != clip[5] || clip[6] != clip[7] || clip[8] != clip[9] || clip[10] != clip[11])) or { if os.getenv('VOX_GG_DIAGNOSTICS') != '' { eprintln('VOX_YUV_IMAGE ${err}') }; return 0 }
+			&& (clip[4] != clip[5] || clip[6] != clip[7] || clip[8] != clip[9] || clip[10] != clip[11])),
+		destination_subset, origin) or { if os.getenv('VOX_GG_DIAGNOSTICS') != '' { eprintln('VOX_YUV_IMAGE ${err}') }; return 0 }
  }
 	surface.read_pixels(pixels, pitch) or { return 0 }
 	return 1
@@ -130,7 +158,7 @@ pub fn draw_sampled_yuv_with_mips_clipped(pixels &u8, width i32, height i32, pit
  source []u8, sw int, sh int, x f32, y f32, dw f32, dh f32, samples int, nw int, nh int, clip [12]f32, gpu_mips bool) i32 {
  if sw <= 0 || sh <= 0 || sw > 4096 || sh > 4096 || sw * sh > 4 * 1024 * 1024 || source.len != sw * sh * 4 { return 0 }
  for i := 3; i < source.len; i += 4 { if source[i] != 255 { return 0 } }
- return draw_sampled_image(pixels,width,height,pitch,backdrop,source,[],sw,sh,x,y,dw,dh,samples,nw,nh,clip,gpu_mips,unsafe{nil},1,false)
+ return draw_sampled_image(pixels,width,height,pitch,backdrop,source,[],sw,sh,x,y,dw,dh,samples,nw,nh,clip,gpu_mips,unsafe{nil},1,false,[2]f32{})
 }
 
 // Chroma is sampled from the top-left quarter at its own resolution. The
@@ -143,9 +171,15 @@ pub fn draw_sampled_yuv_atlas_clipped(pixels &u8, width i32, height i32, pitch i
 // New pixmap uploads can carry CPU byte mips; retained textures use GPU mips.
 pub fn draw_sampled_yuv_atlas_with_mips_clipped(pixels &u8, width i32, height i32, pitch i32, backdrop i32,
  source []u8, sw int, sh int, x f32, y f32, dw f32, dh f32, samples int, nw int, nh int, clip [12]f32, gpu_mips bool) i32 {
+ return draw_sampled_yuv_atlas_at_origin(pixels,width,height,pitch,backdrop,source,sw,sh,x,y,dw,dh,samples,nw,nh,clip,gpu_mips,[2]f32{})
+}
+
+pub fn draw_sampled_yuv_atlas_at_origin(pixels &u8, width i32, height i32, pitch i32, backdrop i32,
+ source []u8, sw int, sh int, x f32, y f32, dw f32, dh f32, samples int, nw int, nh int, clip [12]f32, gpu_mips bool, origin [2]f32) i32 {
+ if origin.any(!math.is_finite(it)) { return 0 }
  if !yuv.webp_atlas_sampling_supported(sw,sh,f64(dw),f64(dh)) || source.len!=sw*sh*4 {return 0}
  for i:=3;i<source.len;i+=4 {if source[i]!=255 {return 0}}
- return draw_sampled_image(pixels,width,height,pitch,backdrop,source,[],sw,sh,x,y,dw,dh,samples,nw,nh,clip,gpu_mips,unsafe{nil},1,true)
+ return draw_sampled_image(pixels,width,height,pitch,backdrop,source,[],sw,sh,x,y,dw,dh,samples,nw,nh,clip,gpu_mips,unsafe{nil},1,true,origin)
 }
 
 // JPEG uploads have full-range 4:4:4 planes and retain CPU byte mips.
@@ -153,5 +187,5 @@ pub fn draw_sampled_jpeg_clipped(pixels &u8, width i32, height i32, pitch i32, b
  source []u8, sw int, sh int, x f32, y f32, dw f32, dh f32, samples int, nw int, nh int, clip [12]f32) i32 {
  if sw <= 0 || sh <= 0 || sw > 4096 || sh > 4096 || sw * sh > 4 * 1024 * 1024 || source.len != sw * sh * 4 { return 0 }
  for i := 3; i < source.len; i += 4 { if source[i] != 255 { return 0 } }
- return draw_sampled_image(pixels,width,height,pitch,backdrop,source,[],sw,sh,x,y,dw,dh,samples,nw,nh,clip,false,unsafe{nil},2,false)
+ return draw_sampled_image(pixels,width,height,pitch,backdrop,source,[],sw,sh,x,y,dw,dh,samples,nw,nh,clip,false,unsafe{nil},2,false,[2]f32{})
 }

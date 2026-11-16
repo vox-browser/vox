@@ -10,6 +10,9 @@ pub:
 	yuv_rec601_limited bool
 	yuv_jpeg_full bool
 	yuv420_atlas bool
+	// Strict source-subset bounds in luma coordinates. The YUV variant uses
+	// the otherwise inactive gamut payload for these four values.
+	yuv_chroma_bounds [4]f32
 	gamma f32
 	gamut [9]f32
 }
@@ -99,10 +102,33 @@ pub fn (mut s GpuSurface) draw_document_scaled_rgba(levels [][]u8, width int, he
 pub fn (mut s GpuSurface) draw_document_color_rgba(levels [][]u8, width int, height int,
 	natural_width int, natural_height int, x f32, y f32, destination_width f32, destination_height f32,
 	color_transform DocumentImageColorTransform, destination_frame bool) ! {
+	s.draw_document_color_rgba_subset(levels, width, height, natural_width, natural_height,
+		x, y, destination_width, destination_height, color_transform, destination_frame, [4]f32{}, [2]f32{})!
+}
+
+pub fn (mut s GpuSurface) draw_document_color_rgba_subset(levels [][]u8, width int, height int,
+	natural_width int, natural_height int, x f32, y f32, destination_width f32, destination_height f32,
+	color_transform DocumentImageColorTransform, destination_frame bool, subset [4]f32, origin [2]f32) ! {
 	if width <= 0 || height <= 0 || width > 4096 || height > 4096
 		|| width * height > 4 * 1024 * 1024 || levels.len == 0 || levels.len > 13
 		|| natural_width <= 0 || natural_height <= 0 || destination_width <= 0 || destination_height <= 0 {
 		return error('gg.canvas: invalid document image')
+	}
+	if subset.any(!math.is_finite(it)) || origin.any(!math.is_finite(it)) {
+		return error('gg.canvas: invalid document subset frame')
+	}
+	if subset != [4]f32{} && (subset[2] <= 0 || subset[3] <= 0
+		|| subset[0] < x || subset[1] < y
+		|| subset[0] + subset[2] > x + destination_width
+		|| subset[1] + subset[3] > y + destination_height) {
+		return error('gg.canvas: document subset exceeds image')
+	}
+	bounds := color_transform.yuv_chroma_bounds
+	if bounds != [4]f32{} && (!color_transform.yuv420_atlas || color_transform.gamma != 0
+		|| bounds.any(!math.is_finite(it)) || bounds[0] < 0 || bounds[1] < 0
+		|| bounds[2] <= bounds[0] || bounds[3] <= bounds[1]
+		|| bounds[2] > width || bounds[3] > height) {
+		return error('gg.canvas: invalid document chroma subset')
 	}
 	if color_transform.yuv_jpeg_full && (color_transform.yuv_rec601_limited || color_transform.yuv420_atlas
         || !document_image_jpeg_upload_supported()) {
@@ -132,6 +158,8 @@ pub fn (mut s GpuSurface) draw_document_color_rgba(levels [][]u8, width int, hei
 	mut draw_width, mut draw_height := f32(natural_width), f32(natural_height)
 	mut sx, mut sy := destination_width / f32(natural_width), destination_height / f32(natural_height)
 	mut sample_x, mut sample_y := extent_x / f32(natural_width), extent_y / f32(natural_height)
+	mut sample_translation := [2]f32{}
+	mut geometry_x, mut geometry_y := f32(0), f32(0)
 	if levels.len > 1 {
 		sx *= f32(natural_width) / extent_x
 		sy *= f32(natural_height) / extent_y
@@ -150,13 +178,21 @@ pub fn (mut s GpuSurface) draw_document_color_rgba(levels [][]u8, width int, hei
 	} else {
 		s.transform = Transform.new(Matrix.values([sx, f32(0), x, 0, sy, y, 0, 0, 1]!))
 	}
-	s.draw_shape(ShapeGeometry{ kind: .rect, rect: Rect.ltrb(0, 0, draw_width, draw_height) }, Paint{
+	if subset[2] > 0 && subset[3] > 0 {
+		s.transform = Transform.new(Matrix.translate(-origin[0], -origin[1]))
+		geometry_x, geometry_y = subset[0] + origin[0], subset[1] + origin[1]
+		sample_x, sample_y = extent_x / destination_width, extent_y / destination_height
+		sample_translation = [-(x + origin[0]) * sample_x, -(y + origin[1]) * sample_y]!
+		draw_width, draw_height = subset[2], subset[3]
+	}
+	s.draw_shape(ShapeGeometry{ kind: .rect, rect: Rect.xywh(geometry_x, geometry_y, draw_width, draw_height) }, Paint{
 		anti_alias:  true
 		layer_image: LayerImage{
 			image:                  image
 			texture_width:          width
 			texture_height:         height
 			document_scale:         [sample_x, sample_y]!
+			document_translation:   sample_translation
 			document_linear_filter: true
 			document_opaque:        color_transform.yuv_rec601_limited || color_transform.yuv_jpeg_full
 			color_transform:        color_transform

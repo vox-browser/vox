@@ -256,5 +256,17 @@
       "old": "\t\tout << 0\n\t}\n}\n\n// LayerImage",
       "new": "\t\tout << if column == 2 && u.document_local_coords { f32(1) } else { f32(0) }\n\t}\n}\n\n// LayerImage"
     }
+  ],
+  "prepare_gg_yuv_subset": [
+    {
+      "file": "gpu_layer.v",
+      "old": "\t\tfor row in 0 .. 3 { out << u.color_transform.gamut[column * 3 + row] }",
+      "new": "\t\tfor row in 0 .. 3 {\n\t\t\tindex := column * 3 + row\n\t\t\t// The planar variant has no RGB gamut transform. Reuse that\n\t\t\t// payload for its strict chroma bounds without changing the ABI.\n\t\t\tout << if u.color_transform.yuv420_atlas && index < 4 {\n\t\t\t\tu.color_transform.yuv_chroma_bounds[index]\n\t\t\t} else { u.color_transform.gamut[index] }\n\t\t}"
+    },
+    {
+      "file": "shaders/paint_snippets.metal",
+      "old": "        yuv.yz = sample(_globals.image_4, documentImageCoords * 0.5f).yz;",
+      "new": "        float4 chromaBounds = float4(_globals._anonInterface0->combinedUniformData[_globals.uniformSsboIndex].gamutColumn0_8.xyz,\n                                    _globals._anonInterface0->combinedUniformData[_globals.uniformSsboIndex].gamutColumn1_8.x);\n        if (chromaBounds.z > chromaBounds.x && chromaBounds.w > chromaBounds.y) {\n            float2 chromaImageCoords = clamp(_in.CoordNormalize_3_Var, chromaBounds.xy, chromaBounds.zw)\n                * _globals._anonInterface0->combinedUniformData[_globals.uniformSsboIndex].invDimensions_3 * 0.5f;\n            yuv.yz = sample(_globals.image_4, chromaImageCoords).yz;\n        } else {\n        yuv.yz = sample(_globals.image_4, documentImageCoords * 0.5f).yz;\n        }"
+    }
   ]
 }

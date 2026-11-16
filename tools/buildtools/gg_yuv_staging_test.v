@@ -14,10 +14,23 @@ fn test_native_preparer_keeps_yuv_uniform_and_shader_together() ! {
 	patches := json.parse($embed_file('gg_patches.json').to_string())!.as_map()
 	opaque_surface := patches['prepare_gg_opaque_surface']!.as_array()[0].as_map()
 	os.write_file(surface, opaque_surface['old']!.str())!
-	os.write_file(layer, '// mask_color document_linear_filter color_transform\n\tdocument_scale [2]f32 = [f32(1),1]!\nconst image_uniform_size = 112\n\tout << u.color_transform.gamma\n\tout << 0\n\tout << 0\n\tout << 0\n')!
+	os.write_file(layer, '// mask_color document_linear_filter color_transform\n\tdocument_scale [2]f32 = [f32(1),1]!\nconst image_uniform_size = 112\n\t\tfor row in 0 .. 3 { out << u.color_transform.gamut[column * 3 + row] }\n\tout << u.color_transform.gamma\n\tout << 0\n\tout << 0\n\tout << 0\n')!
 	coordinates := patches['prepare_gg_yuv_coordinates']!.as_array()
 	vertex := coordinates[0].as_map()['old']!.str()
 	os.write_file(shader, vertex + '\n' + 'float4 _10_mask = sample(_globals.image_4, _in.CoordNormalize_3_Var);\n')!
+	// Seed the independent opaque and repeating-image adapters in their real
+	// order; this fixture intentionally omits unrelated upstream GPU code.
+	for group in ['prepare_gg_opaque_layer', 'prepare_gg_opaque_surface', 'prepare_gg_image_repeat'] {
+		for installed in patches[group]!.as_array() {
+			row := installed.as_map()
+			path := join(canvas, row['file']!.str())
+			text := read(path)!
+			before, after := row['old']!.str(), row['new']!.str()
+			if text.contains(after) { continue }
+			os.write_file(path, if text.contains(before) { text.replace_once(before, after) } else { text + '\n' + after })!
+		}
+	}
+
 	prepare_gg_canvas(canvas)!
 	first_layer, first_shader := read(layer)!, read(shader)!
 	first_surface := read(surface)!
@@ -34,6 +47,8 @@ fn test_native_preparer_keeps_yuv_uniform_and_shader_together() ! {
 	assert first_shader.contains('gammaParameters_7.w > 0.0f')
 	assert first_shader.contains('float2 documentImageCoords')
 	assert first_shader.contains('documentImageCoords * 0.5f')
+	assert first_layer.contains('u.color_transform.yuv_chroma_bounds[index]')
+	assert first_shader.contains('float4 chromaBounds')
 	assert read(join(canvas, 'vox_document_image.v'))!.contains('!document_image_yuv_upload_supported()')
 	prepare_gg_canvas(canvas)!
 	assert read(layer)! == first_layer
@@ -50,10 +65,18 @@ fn test_native_preparer_keeps_yuv_uniform_and_shader_together() ! {
 			row := coordinate.as_map()
 			staged_new = staged_new.replace(row['old']!.str(), row['new']!.str())
 		}
+		for repeat in patches['prepare_gg_image_repeat']!.as_array() {
+			row := repeat.as_map()
+			staged_new = staged_new.replace(row['old']!.str(), row['new']!.str())
+		}
+		for subset in patches['prepare_gg_yuv_subset']!.as_array() {
+			row := subset.as_map()
+			staged_new = staged_new.replace(row['old']!.str(), row['new']!.str())
+		}
 		os.write_file(path, read(path)!.replace_once(staged_new, operation['old']!.str()))!
 		prepare_gg_canvas(canvas)!
-		assert read(layer)! == first_layer
-		assert read(shader)! == first_shader
+		assert read(layer)! == first_layer, group
+		assert read(shader)! == first_shader, group
 		assert read(surface)! == first_surface
 	}
 	for coordinate in coordinates {
@@ -63,4 +86,13 @@ fn test_native_preparer_keeps_yuv_uniform_and_shader_together() ! {
 		assert read(shader)! == first_shader
 		assert read(layer)! == first_layer
 	}
+	for subset in patches['prepare_gg_yuv_subset']!.as_array() {
+		row := subset.as_map()
+		path := join(canvas, row['file']!.str())
+		os.write_file(path, read(path)!.replace_once(row['new']!.str(), row['old']!.str()))!
+		prepare_gg_canvas(canvas)!
+		assert read(layer)! == first_layer
+		assert read(shader)! == first_shader
+	}
+
 }
