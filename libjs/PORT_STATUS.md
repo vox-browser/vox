@@ -653,8 +653,9 @@ includes comments and blank lines. This package is counted separately from the
 `Script.parse()` retains its frontend tree and original source. `Script.compile()`
 generates and caches an `Executable`; `VM.run()` executes it through the V loop,
 with no JavaScriptCore dependency. `VM.run_with_limits()` and `run_executable()`
-accept an optional instruction budget (zero is unlimited). Browser execution and
-the standalone runner use a one-million-instruction limit.
+accept an optional instruction budget (zero is unlimited). Bare Runtime entries
+use a one-million-instruction limit; document script/module/callback entries use
+a bounded ten-million-instruction policy, recorded in native capture audits.
 
 Supported programs include primitive and BigInt literals, identifiers, `this`, numeric and
 bitwise operators, comparisons, primitive string concatenation, unary operators,
@@ -3059,3 +3060,14 @@ deleters, foreign realms and broader JS/Web/rendering conformance remain open.
 GitHub full execution, compiled-revisit speed and Brave pixel parity remain
 unverified. See the
 [named-property continuation](../docs/LIBJS_GITHUB_RUNTIME_20261115.md#native-named-property-continuation).
+
+
+November 16 runtime continuation: cached native execution stops at await/yield
+suspensions, exhausted entries preserve their first error/trace, and strict block
+functions initialize in their actual lexical environment. Sloppy Annex B block
+functions remain explicitly unsupported. Native shadow attachment, User Timing
+measures/ordinary detail cloning, Crypto random UUID/integer views and CustomEvent
+bindings are partial API slices. Automated suites remain held; original-response
+diagnostics and non-test builds resumed. A production initialization pair reuses
+1,546 native entries and 51 frontends without compilation, but hydration and
+pixel parity remain incomplete. See [the resumed diagnostic report](../docs/LIBJS_GITHUB_RUNTIME_20261115.md#browser-diagnostics-resumed-2026-11-16).

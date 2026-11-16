@@ -1,10 +1,10 @@
 # GitHub compiled-JavaScript continuation, 2026-11-15
 
-**Verification is on hold at the user's request.** The running r16 sweep was
-stopped; subsequent work uses source inspection and compiler-only checking.
-The later implementation checkpoint below has no runtime, hydration, speedup or
-pixel acceptance. Tests and page comparisons must remain held until the GitHub
-parity implementation is ready for final verification.
+**Automated test suites remain held at the user's request.** Browser and native
+initialization diagnostics resumed on November 16; see the
+[runtime continuation](#browser-diagnostics-resumed-2026-11-16). Historical
+source-only checkpoints below retain their original verification boundaries.
+No completed hydration, speedup or pixel acceptance is claimed.
 
 **Pixel-perfect GitHub rendering remains unachieved.** A full native LibJS
 capture completes under the repository's default 12 GiB browser guard, but
@@ -2686,3 +2686,98 @@ five module errors, predating these additions. Acceptance remains 33 rows,
 Brave content audit and zero differing pixels, followed by matched performance
 evidence. Full execution, faster compiled revisits and pixel parity remain
 unverified.
+
+## Browser diagnostics resumed, 2026-11-16
+
+Automated suites remain off. Fresh browser processes, original-response replay
+and standalone initialization diagnostics resumed with the existing 12 GiB
+aggregate memory guard. The fixture, content gates, Brave PNG and pixel
+tolerance are unchanged. All failed attempts are retained locally.
+
+| Commit | Change | Verification boundary |
+| --- | --- | --- |
+| `c47f79420` | `document.domain` reads the native effective origin and delegates setter validation to native Document. | The missing-domain failure disappears in subsequent original-response initialization. Origin relaxation remains the native model's existing limitation. |
+| `292ed4206`, `3949d1e80` | Deferred native error/reason string conversion enters its owning callback scope; primitive conversion stays direct, and disabled script conversion fails explicitly. | Source builds succeed. A prior compiler-disabled browser attempt crashed during error description without an execution context; it remains a failed attempt. |
+| `a3fb4aff4` | Cached native execution returns to its caller at `await`, generator start and yield, preserving the resume PC. | Static defect correction and subsequent cached GitHub execution; no isolated performance attribution. |
+| `2b1f7ca13`, `18e0926c9` | Budget exhaustion retains its first error/trace while unwinding; native callback diagnostics retain error stacks. | Original GitHub traces now identify the first factory/callback failure. No instruction limit was changed by these commits. |
+| `ff2806bce` | Native shadow attachment, ShadowRoot identity/ancestry, open/closed visibility, option conversion and shadow-tree HTML. | A fresh production browser no longer reports the polyfill's missing `attachShadow` failure. Broader ShadowRoot/ElementInternals bindings remain incomplete. |
+| `ae1c8f9fa` | Native `performance.measure`, mark/measure ordinary-value detail cloning and native timestamps; failed detail cloning publishes no entry. | Production initialization reaches the next actual missing API, `crypto`, instead of failing at `performance.measure`. Other structured-clone families and PerformanceObserver remain incomplete. |
+| `f7178d6d2` | Document script/module/callback entries use a bounded ten-million-instruction policy; bare Runtime entries retain one million. The capture audit records the limit. | An interpreter control gets through Primer/React initialization with zero module errors. This is an execution-policy change, not an optimization or matched speed result. |
+| `9fd264af7` | Crypto uses the owning native global's secure random UUID/bytes and actual integer-view storage; insecure exposure, brands, fixed-buffer conversion and native quota/type errors are preserved. | An interpreter control advances past the missing-crypto failure to missing CustomEvent. SubtleCrypto is still a separate binding. |
+| `5405548d5`, `28d124637` | Native CustomEvent details/dispatch identity and strict block-function lexical initialization. | Non-test compiler checking succeeds; the next interpreter control has no module errors or JavaScript diagnostics. Compiled/windowed follow-up remains pending. Sloppy Annex B block functions remain explicitly unsupported. |
+
+The standalone revisit driver now preserves the actual Window/Navigable pair
+created by `parse_navigation_document`. Its obsolete placeholder context caused
+a native History identity panic. One attempted replacement created a second
+Window and also failed; both attempts remain recorded. `3844b1c48` removes the
+replacement and preserves the existing identity.
+
+The browser runner accepts explicit shared native-cache/compiler paths and
+retains compiled-cache counters. `3349dd763` corrects a staging mistake in
+`7853bc8ab`: another session's runtime-audit file remains in its working tree,
+while the committed cache audit uses an independent source file. Shared history
+was not rewritten.
+
+### Observed page/cache state
+
+The original production bundle
+`aa91e7cc1c8c2c3ebe083a96582817e16f1de903c8a81ff43a4a3674bc5b1a64`
+loads a 1024×768 active document viewport, with 33 rows, README, zero latest
+commit entries and zero commit links. The errors are missing `document.domain`
+and a polyfill call. Browser/controller/guard exit zero, input hashes are stable,
+and sampled aggregate RSS peaks at 5,752,356,864 bytes. Its compiler-disabled
+reopen fails cache compilation and panics during error string conversion; it
+does not establish reuse correctness.
+
+A later production browser
+`4488b888297c87a05424c6b5c6fcd32d76a15c901c1b0ee099a9a6bb65b863a7`
+contains the shadow and deferred-string fixes, preceding Performance.measure.
+It publishes an active 1024×768 document audit and whole-window PNG, still with
+33/0 rows/commit links. The shadow-polyfill error is gone. The audit selects
+LibJS, records no JSC context, 1,527 compiled native executables, three compiler
+calls and no pending entries/cache error. Remaining diagnostics are missing
+Performance.measure and the one-million-instruction cutoff in Primer factories.
+Browser/controller/guard exit zero, identities stay fixed, and sampled aggregate
+RSS peaks at 6,536,101,888 bytes. A whole-window PNG is not the document pixel gate.
+
+The production standalone driver with Performance.measure has SHA-256
+`1ae9caf4e22edfaefabfebcd4400c52acbd3acc5dde1e49abadb92763ce40d6b`.
+One first/reopened pair compiles 1,620 executables on its first visit; its second
+VM gets **1,546 native cache hits, zero cache misses, 51 frontend hits and zero
+compiler calls**, with `/usr/bin/false` selected. Both visits have the same one
+module failure, missing-crypto diagnostic, 33 rows and zero commit links. The
+process/guard exits are zero, pins stay unchanged, and sampled aggregate RSS
+peaks at 5,532,205,056 bytes. This driver has no window/layout/paint. The earlier
+non-production driver pair (1,524 warm native hits) and incompatible-cache reuse
+failure remain separate diagnostics, with no performance credit.
+
+The subsequent cache-disabled interpreter control, SHA-256
+`3ea20881616345d76383e2748540e23030cd04b902ca8634104b84af2e482313`,
+uses the recorded ten-million instruction limit. It reports zero module errors,
+but missing CustomEvent and unsupported block-function bytecode still interrupt
+callbacks. Rows/commit links remain 33/0. It has no native cache activity, no
+JSC context, unchanged inputs and process/guard exits zero. It is useful for
+finding errors without repeatedly compiling incomplete startup, and supplies no
+compiled-path or rendering acceptance.
+
+After CustomEvent and block-function integration, the interpreter control
+`ce66d3c47fa1d91b049b23d74215571f7687b379e0bf0b94e1dee87134279bd9`
+reports **zero module errors and zero JavaScript diagnostics**, with the same
+ten-million limit, no native cache activity, no JSC context, unchanged inputs
+and process/guard exits zero. Sampled aggregate RSS peaks at 3,936,452,608 bytes.
+It still has 33 rows and zero commit links. Its initialization-only driver has
+no browser window/frame pump; successful module initialization does not prove
+that scheduled React rendering, interactions or completed hydration work.
+
+Raw guards, logs and browser captures are local under
+`docs/performance/libjs-github-browser-20261116/`. Initialization binaries,
+parsed-buffer proofs, commands and results remain in the local benchmark cache
+at `libjs-github-observe-20261116/`. Completed jobs' Build scratch is removed.
+The new focused cases remain uncompiled and unexecuted while suites are held;
+non-test V checking and diagnostic builds are recorded separately.
+
+Acceptance still requires the original **33 rows, 56 commit links, current
+README, active controls, zero errors, unchanged Brave content audit and zero
+differing pixels**, followed by matched first/reopened performance evidence.
+The document instruction-policy change must be recorded consistently in those
+cohorts. Full GitHub execution and pixel parity remain incomplete.
