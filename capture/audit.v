@@ -56,6 +56,7 @@ struct CaptureAuditConfig {
 	selectors               []CaptureAuditSelector
 	describe_native_errors  bool
 	describe_paint_geometry bool
+	describe_text_geometry bool
 }
 
 struct CaptureAuditPaintGeometry {
@@ -177,11 +178,15 @@ struct CaptureAudit {
 	fully_active           bool
 	viewport_width         int
 	viewport_height        int
+	display_device_pixel_ratio f64
+	layout_coordinate_scale f64
+	font_rendering_policy string
 	font_set_present       bool
 	fonts_status           string
 	font_faces             []CaptureAuditFontFace
 	paint_commands         int
 	paint_geometry         []CaptureAuditPaintGeometry
+	text_geometry          []CaptureAuditTextGeometry
 	active_element         CaptureAuditActiveElement
 	javascript_diagnostics []string
 	compiled_javascript_cache ?browserjs.CompiledJavaScriptCacheAudit
@@ -326,11 +331,15 @@ fn (app &BrowserApp) collect_capture_audit(config CaptureAuditConfig) !CaptureAu
 		fully_active:                app.document.is_fully_active()
 		viewport_width:              app.viewport_width
 		viewport_height:             app.viewport_height
+		display_device_pixel_ratio: app.document.display_device_pixel_ratio()
+		layout_coordinate_scale: app.document.layout_coordinate_scale()
+		font_rendering_policy: app.document.font_rendering_policy().str()
 		font_set_present:            font_set_present
 		fonts_status:                fonts_status
 		font_faces:                  font_faces
 		paint_commands:              app.paint_commands.len
 		paint_geometry:              paint_geometry
+		text_geometry:               if config.describe_text_geometry { app.capture_audit_text_geometry() } else { []CaptureAuditTextGeometry{} }
 		active_element:              capture_audit_active_element(app.document)
 		javascript_diagnostics:      app.js_messages.clone()
 		compiled_javascript_cache: if app.js_runtime != unsafe { nil } { ?browserjs.CompiledJavaScriptCacheAudit(app.js_runtime.compiled_code_cache_audit()) } else { none }

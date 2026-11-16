@@ -37,7 +37,7 @@ def run(args):
     output.mkdir(exist_ok=False, parents=True)
     replay = Replay(archive, output / 'replay')
     threading.Thread(target=replay.server.serve_forever, daemon=True).start()
-    config = dict(describe_native_errors=True, selectors=[
+    config = dict(describe_native_errors=True, describe_text_geometry=args.text_geometry, selectors=[
         dict(name=name, selector=selector, limit=200, attributes=['id', 'href'])
         for name, selector in SELECTORS])
     (output / 'audit-config.json').write_text(json.dumps(config, indent=2) + '\n')
@@ -79,6 +79,7 @@ def run(args):
                if args.document_capture else
                'active-window functional diagnosis; whole-window PNG; no pixel/performance gate'),
         document_capture=args.document_capture, ready_selector=args.ready_selector,
+        text_geometry=args.text_geometry,
         observer_sha256=digest(Path(__file__)), sample_after=args.sample_after,
         host_before=dict(cpu_count=os.cpu_count(), load=os.getloadavg(), unix=time.time()))
     process = None
@@ -126,7 +127,8 @@ def run(args):
                 audit = json.loads((output / 'audit.json').read_text())
                 result['document'] = {key: audit.get(key) for key in
                     ['url', 'title', 'ready', 'visibility', 'fully_active',
-                     'viewport_width', 'viewport_height']}
+                     'viewport_width', 'viewport_height', 'display_device_pixel_ratio',
+                     'layout_coordinate_scale', 'font_rendering_policy']}
                 result['counts'] = {group['name']: group['count'] for group in audit['selections']}
                 result['javascript_diagnostics'] = audit.get('javascript_diagnostics', [])
                 result['compiled_javascript_cache'] = audit.get('compiled_javascript_cache')
@@ -163,6 +165,8 @@ def main():
                        help='Use the interpreter as a separate diagnostic control')
     parser.add_argument('--native-compiler', type=Path,
                         help='Use /usr/bin/false on reopen to detect unexpected compilation')
+    parser.add_argument('--text-geometry', action='store_true',
+                        help='Record bounded retained text paint positions and font metrics')
     parser.add_argument('--observe-ms', type=int, default=15000)
     parser.add_argument('--audit-interval-ms', type=int,
                         help='Rewrite the active document audit while waiting for the final capture')
