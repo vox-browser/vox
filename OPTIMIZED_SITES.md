@@ -67,6 +67,13 @@ fix at zero twice, but lacks the new invalidation fix. Its production check,
 remaining Slashdot layout/image differences and catalog-wide acceptance stay
 open. See the [invalidation audit](docs/OPTIMIZED_SITES_PIXELS_2026_11_12.md#slashdot-procedural-filter-invalidation-2026-11-17).
 
+**Slashdot spacing follow-up:** `07adc126d` keeps nonempty zero-height lines
+from collapsing margins. The second story now matches Brave's position, reducing
+**41,281→2,325 pixels twice**. BBC, Guardian and Verge remain zero twice; all
+**74 workloads/148 captures** preserve prior PNGs. Transparent image sampling,
+other isolated pixels and production/live checks remain open. See the
+[zero-height line audit](docs/OPTIMIZED_SITES_PIXELS_2026_11_12.md#slashdot-zero-height-line-margins-2026-11-17).
+
 **Remaining forum/news screen, November 17:** the exact Verge fix does not
 finish the catalog. A separate diagnostic screen finds open Slashdot, Stack
 Overflow, TechCrunch and Register differences; Engadget's fresh Brave references

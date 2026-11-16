@@ -6695,3 +6695,42 @@ input pins, compiler witnesses, commands, exits, rejected probes and guard
 receipts are retained locally in
 `docs/performance/slashdot-procedural-20261117/`; owned Build outputs are removed
 after evidence preservation.
+
+
+### Slashdot zero-height line margins, 2026-11-17
+
+The next Slashdot mismatch is a 10-pixel vertical shift before the second
+story. The first article's text body and footer have matching rectangles, but
+Vox reports article height 531.40625 instead of Brave's 541.40625. The footer's
+clearfix produces a nonempty line with zero font size and zero height. Such a
+line still separates adjoining margins; the collapse-through test was checking
+only border-box height and child boxes and missed its line content.
+
+`07adc126d` rejects collapse-through when a retained line is nonempty. The focused
+browser regression covers actual zero-size text and an atomic inline, plus
+empty and collapsible-whitespace controls. A fresh Brave control gives the
+expected 120/130/120/130 heights. The old browser test fails (110 instead of 130
+for the text case); the fixed test compiles and executes successfully under the
+12 GiB compiler / 3 GiB runtime guards. Direct layout-module test compilation
+attempts exceed their guards (first 3 GiB, then 12 GiB), and remain recorded as
+failures. The compact browser harness completes with a 7,154,106,368-byte peak.
+
+Diagnostic C/O0 browser `ac844180` contains compiler-read copies of both this
+layout fix and `df849839c`, with pinned native libraries and all 24 runtime
+shaders. Two fresh original-origin Slashdot replays reduce **41,281 to 2,325
+pixels**. The first article is now 541.40625 high, and the second starts at
+633.40625, matching Brave exactly. Both captures pass document/readiness/image
+audits and full uBO request-stream checks (47 decisions each; zero mismatches
+or oracle disagreements). BBC, Guardian and Verge remain **zero twice**.
+
+The residual consists mainly of two transparent lossless-WebP icons and the
+Submit label, plus isolated edge pixels. Source/replay browser-version, live
+behavior and production checks remain open. These are correctness diagnostics,
+not instruction or timing measurements. Baseline and fixed PNGs, geometry,
+compiler witnesses, commands, actual exits and all rejected attempts remain
+local under `docs/performance/slashdot-procedural-20261117/`.
+
+All **74 workloads/148 captures** repeat byte for byte; all 74 prior PNGs are
+unchanged. The managed post-commit hook requests the coalesced production
+rebuild. The available production browser predates both Slashdot fixes and
+cannot validate them.
