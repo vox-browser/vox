@@ -6,6 +6,7 @@ import os
 
 const document_gpu_rectangle_clip = os.getenv('VOX_DIAGNOSTIC_GPU_RECTANGLE_CLIP') == '1'
 const document_gpu_thin_rectangle_clip = os.getenv('VOX_DIAGNOSTIC_GPU_THIN_RECTANGLE_CLIP') == '1'
+const document_rectangle_clip_dedup = os.getenv('VOX_DIAGNOSTIC_RECTANGLE_CLIP_DEDUP') == '1'
 
 fn C.native_set_shape_intersect_clip(&f32)
 
@@ -82,4 +83,30 @@ fn (app &BrowserApp) document_rectangle_clip_index(command &layout.PaintCommand)
 		|| app.rounded_rect_underlay != none || document_geometry_grid.origin_x != 0
 		|| document_geometry_grid.origin_y != 0 { return -1 }
 	return chromium_rectangle_clip_index(command)
+}
+
+
+// Geometric intersection is idempotent. Reapplying an identical antialiased
+// Quartz clip multiplies its fractional coverage instead of intersecting it.
+fn chromium_duplicate_rectangle_clip(command &layout.PaintCommand, index int) bool {
+	if command.clip_list == unsafe { nil } || index <= 0 || index >= command.clip_list.items.len { return false }
+	clip := command.clip_list.items[index]
+	if !chromium_ordinary_rectangle_clip(clip) { return false }
+	matrix := normalized_paint_transform(clip.transform)
+	for previous in command.clip_list.items[..index] {
+		if chromium_ordinary_rectangle_clip(previous) && previous.rect == clip.rect
+			&& normalized_paint_transform(previous.transform) == matrix { return true }
+	}
+	return false
+}
+
+fn chromium_ordinary_rectangle_clip(clip layout.PaintClip) bool {
+	if clip.is_path || clip.is_svg_mask || clip.is_svg_content_mask { return false }
+	r := clip.corner_radii
+	if [r.top_left.x, r.top_left.y, r.top_right.x, r.top_right.y,
+		r.bottom_left.x, r.bottom_left.y, r.bottom_right.x, r.bottom_right.y].any(it != 0) { return false }
+	c := clip.rect
+	return c.width > 0 && c.height > 0
+		&& [c.x, c.y, c.width, c.height, c.x + c.width, c.y + c.height].all(math.is_finite(it))
+		&& normalized_paint_transform(clip.transform).all(math.is_finite(it))
 }

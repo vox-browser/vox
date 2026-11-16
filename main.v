@@ -6166,6 +6166,12 @@ fn (mut app BrowserApp) draw_command(source_command &layout.PaintCommand, page_x
 				C.native_begin_clip()
 				if command.clip_list != unsafe { nil } && command.clip_list.items.len > 0 {
 					for clip_index, clip in command.clip_list.items {
+						if document_rectangle_clip_dedup && app.document != unsafe { nil }
+							&& app.document.font_rendering_policy() == .chromium
+							&& chromium_duplicate_rectangle_clip(command, clip_index) {
+							eprintln('VOX_RECTANGLE_CLIP_DEDUP index=${clip_index} rect=${clip.rect}')
+							continue
+						}
 						if clip_index == gpu_image_ancestor_clip || clip_index == gpu_gradient_ancestor_clip
 							|| (gpu_rectangle_clip >= 0 && chromium_rectangle_clip_contains(command, clip_index)) { continue }
 						matrix := normalized_paint_transform(clip.transform)

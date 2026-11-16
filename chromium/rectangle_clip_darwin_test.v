@@ -37,3 +37,26 @@ fn test_rectangle_clip_transfer_requires_a_containing_ordinary_clip_in_paint_spa
 		assert chromium_rectangle_clip_index(&candidate) == -1
 	}
 }
+
+
+fn test_duplicate_rectangle_clips_require_identical_finite_geometry_and_paint_space() {
+	clip := layout.PaintClip{rect: layout.LayoutRect{150, 1499, 127, 42},
+		transform: [f64(0.5), 0, 0, 0.5, 0, 0]!}
+	other := layout.PaintClip{...clip, rect: layout.LayoutRect{0, 0, 2048, 4096}}
+	command := layout.PaintCommand{kind: 'draw_text', clip_list: &layout.PaintClipList{items: [clip, other, clip]}}
+	assert !chromium_duplicate_rectangle_clip(&command, 0)
+	assert !chromium_duplicate_rectangle_clip(&command, 1)
+	assert chromium_duplicate_rectangle_clip(&command, 2)
+	for distinct in [
+		layout.PaintClip{...clip, rect: layout.LayoutRect{150, 1499, 128, 42}},
+		layout.PaintClip{...clip, transform: [f64(0.5), 0, 0, 0.5, 1, 0]!},
+		layout.PaintClip{...clip, corner_radii: layout.BoxRadii{top_left: layout.CornerRadius{1, 1}}},
+		layout.PaintClip{...clip, is_path: true},
+		layout.PaintClip{...clip, is_svg_mask: true},
+		layout.PaintClip{...clip, is_svg_content_mask: true},
+		layout.PaintClip{...clip, rect: layout.LayoutRect{150, 1499, 0, 42}},
+	] {
+		paired := layout.PaintCommand{...command, clip_list: &layout.PaintClipList{items: [clip, distinct]}}
+		assert !chromium_duplicate_rectangle_clip(&paired, 1)
+	}
+}
