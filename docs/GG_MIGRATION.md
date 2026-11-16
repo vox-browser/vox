@@ -3628,3 +3628,16 @@ captures** repeat, with all 72 previous PNGs byte-identical. Fourteen focused V
 functions and both Python staging tests pass. Production validation and exact
 Verge equality remain open. See the
 [rectangular shadow audit](OPTIMIZED_SITES_PIXELS_2026_11_12.md#analytic-rectangular-shadows-on-verge-2026-11-17).
+
+
+### SVG filter merge allocation and transparent borders, 2026-11-17
+
+`b2f198209` uses GG's approximate save-layer backing allocation for the SVG
+filter merge, with a one-pixel transparent boundary and matching origin/crop.
+The complete frozen Verge viewport improves **8→0 pixels twice**; the isolated
+logo and rectangle improve **14/12→0**. BBC and Guardian remain exact. All **74
+workloads/148 captures** repeat; all 72 other previous PNGs are byte-identical.
+Fourteen focused V functions and both Python staging tests pass, including an
+exact full-reference SVG test with one and four destination samples. Production
+and live-site confirmation remain open. See the
+[merge audit](OPTIMIZED_SITES_PIXELS_2026_11_12.md#verge-svg-merge-allocation-and-transparent-borders-2026-11-17).

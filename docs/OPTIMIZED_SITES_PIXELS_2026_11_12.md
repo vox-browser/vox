@@ -6522,3 +6522,64 @@ shader snapshots and SHA-verified cleanup inventory stay ignored under
 (74,512,708 bytes)** before deleting all **83** owned Build roots, including
 per-job programs, caches, profiles, locks and guards. No `Build/verge-rect*`
 entries remain.
+
+
+### Verge SVG merge allocation and transparent borders, 2026-11-17
+
+`b2f198209` makes the SVG drop-shadow merge use an approximate backing allocation
+and a one-pixel transparent boundary, including the corresponding device-origin
+translation and logical-subset readback. V owns the bounded surface request,
+clip, transforms and readback crop; the existing GG save-layer allocator supplies
+the backing size. It matches Graphite's image-filter
+[backend allocation](https://github.com/google/skia/blob/886e42fda11610a56dd1b22e8697e27f9d1e34f2/src/gpu/graphite/TextureUtils.cpp)
+and [AutoSurface boundary](https://github.com/google/skia/blob/886e42fda11610a56dd1b22e8697e27f9d1e34f2/src/core/SkImageFilterTypes.cpp).
+The allocation and one-pixel origin change the interpolation phase when the
+low-resolution blur is sampled into the merge. Kernels, paint colors, fixtures,
+reference PNGs and tolerances stay unchanged.
+
+The complete frozen Verge viewport improves **8→0 pixels twice**, correcting
+all eight with none introduced. Its isolated logo improves **14→0 twice**, and
+the SVG rectangle control improves **12→0 twice**. Complete BBC and Guardian
+captures separately remain **zero twice** each. All **74 workloads/148 fresh
+captures** repeat; all **72 prior PNGs outside those two SVG controls are
+byte-identical**. The six available catalog archives remain zero. Other inexact
+controls retain their counts, including the single card-shadow pixel and the
+fractional scaled rectangle's 7,050 differences. This is archived document
+viewport conformance; live-site, scrolling and performance acceptance are
+unchanged.
+
+The strengthened SVG GPU test compares every published tile-interior pixel of
+the unchanged Brave reference at both one and four destination samples, including
+the last partial root tile. It replaces the earlier small list of sampled
+pixels with exact full-viewport assertions. All **14 focused V functions** and
+both Python helper-staging tests pass. Actual GPU draws exercise merge sampling,
+source coverage, unsupported transforms, overflowing ink and prior blur hashes.
+Compilation and checks use the required 12/3 GiB guards; accepted compiler,
+runtime, browser and guard exits are zero. Both full-uBO request-stream checks
+also pass: **178 requests each**, all allowed, zero mismatches or oracle
+disagreements. The official release ZIP hash and all 59 vendor-file pins verify.
+
+C/O0 diagnostic executable:
+`26157dfd3fb1bef1486427a5f6c69036fc9a37f708db82cfcb4015f71e828939`.
+The implementation and staged helper match the compiler-read buffer witnesses;
+canonical helper, executable/native-library, archive/reference and all **24
+runtime Metal shader** hashes stay pinned. Accepted shader text is retained.
+The intermediate allocation-only candidate has three isolated-logo differences
+and **two** full-page differences, twice. Adding the transparent boundary makes
+both exact. Normalized blur sampling, stricter blur arithmetic, source-surface
+rounding and final-upload rounding do not remove the baseline 14 logo pixels;
+those diagnostics remain local. No unsuccessful experiment remains in the code.
+
+The latest completed production browser at validation is still `0cae86c8`,
+which predates both the rectangular-shadow fix and this merge fix. The managed
+hooks request a coalesced C/literal V `-prod`, single-unit rebuild. Production
+confirmation, historical source/replay qualification gaps and live acceptance
+remain open. Raw commands, outputs, screenshots, compiler/guard receipts,
+intermediate pixels and SHA-verified cleanup inventory stay ignored under
+`docs/performance/verge-filter-20261117/`.
+
+Cleanup SHA-verifies **1,940 evidence files (103,742,671 bytes)** before removing
+all **74** owned Build roots. The disk-full recovery also removes completed
+programs and generated C before copying evidence: 140,291,536 and 132,699,155
+bytes respectively. No `Build/verge-filter*` entries remain. The later catalog
+screen and its separate failures do not invalidate the completed merge cohort.
