@@ -4401,3 +4401,69 @@ YUV changes. Exact source proofs, the observed checkout patch and all failed
 and successful attempt receipts remain local. No Brave GPU precision setting
 is inferred from these results. Eight completed generated C files totaling
 2,766,619,811 bytes are pruned with a retained hash/size manifest.
+
+
+`9f2952508` adds guarded destination-gamut conversion **before mipmap generation
+and filtering**, following Chromium's
+[image transfer-cache order](https://chromium.googlesource.com/chromium/src/+/HEAD/cc/paint/image_transfer_cache_entry.cc).
+The decoded source converts once into an 8-bit destination-space texture;
+its mip levels and final blend retain that encoding. This resolves all 82
+remaining repository-logo pixels, with **82 improved/resolved, zero regressed
+or new mismatches**. The strict unchanged reference now differs in **48 pixels,
+maximum 15, MAE 0.0001, RMSE 0.0223**: 18 around the commit avatar's rounded
+edge and 30 elsewhere. Same-binary off mode reproduces all 130 prior pixels.
+The single-C literal production build completes in 323.992851 seconds, peak
+12,030,541,824 bytes, sealing 3,755 V sources and zero tests. Its executable is
+`917d9cde83fafa12786fc49733ec61ca7e90d0807794ec9fe5b9b2d02d603571`.
+On/off capture elapsed/peak are 39.808384833 seconds/8,033,124,352 bytes and
+38.48223875 seconds/8,030,044,160 bytes. Both retain complete exact content,
+unchanged input fingerprints, no author/native errors and zero exits. The
+new regression source is included but remains uncompiled/unrun.
+
+The newer native ABI
+`0130530796c7d77dd62a7dc3c73b0941cf2cfd99e4d0a026077c70ab789bf404`
+finishes its empty-cache preparation on the accepted image-space r3 executable:
+23,778 executables, 186 compiler calls, 81/81 modules, 25,643 prepared bodies,
+19,533 queued bodies, no unsupported bodies, pending/invalid entries or errors.
+Compilation totals 1,998,037.089997 ms and native loading 45,287.154337 ms.
+Guard elapsed/peak are 2,062.870794417 seconds/11,020,910,592 bytes. The fresh
+compiler-disabled reopen uses the later prefilter renderer and the **same
+actual ABI**; it does not rename an incompatible cache partition. It passes
+with 4,245 hits, zero misses/compiler calls/pending/invalid entries, 482,600
+native entries, 11,583,516 fast steps, 6,674,036 slow steps and 449,529
+entry-cache hits. Page JavaScriptCore stays uninitialized. Guard elapsed/peak
+are 39.813248833 seconds/8,451,145,728 bytes; native loading totals
+1,357.496826 ms. Its full exact content and decoded PNG match the 48-pixel
+interpreter candidate exactly. All browser/controller/guard exits are zero and
+all measured inputs stay fixed. These are different renderer executables with
+compatible native runtime code, not a same-executable timing comparison.
+
+The new ABI's compiler-disabled original-page native control sequence also
+passes all six actions, Code/master menu expansion and closure, `ma` filtering,
+complete 33-row/56-commit/latest/README content, both acceptance flags, no
+script/native errors and unchanged input pins. It records 4,690 hits, zero
+misses/compiler calls/pending entries, 771,763 native entries, 23,789,538 fast
+steps and 11,154,694 slow steps. Guard elapsed/peak are 61.235857042 seconds/
+11,659,198,464 bytes; browser/controller/guard exits are zero. This is native
+input diagnosis, not an automated unit suite or matched performance result.
+
+`1d59ddfc6` corrects a density mismatch in the paint diagnostic's visibility
+filter and logs each visible command's transform and clipping geometry. Its
+production build passes in 332.489109667 seconds, sampled peak
+12,780,093,440 bytes under the unchanged 12 GiB guard, sealing 3,756 V sources
+and zero tests. The fresh trace preserves complete content and the exact
+48-pixel output, with normal exits and fixed inputs. It exposes the URL
+underline as a 214.9375-by-3 rectangle under a 0.5 transform, without clip-outs;
+the GPU trace confirms its owning tile and 4x multisampling. The one remaining
+pale-blue corner pixel is not used to adjust the reference or tolerance.
+
+Two further original-page shader diagnoses are rejected. Explicit Metal
+relaxed math (as in Dawn's compiler) changes zero pixels; guard elapsed/peak
+are 41.55228475 seconds/8,143,831,040 bytes. Quantizing final edge coverage to
+half precision worsens the gap to 72 pixels, resolving one but introducing
+25 mismatches; elapsed/peak are 36.831856125 seconds/8,042,315,776 bytes.
+Both confirm actual shader interception, full exact content, fixed executable,
+probe and resource inputs, no errors and normal exits. No permanent renderer
+change is made for either. A layout-basis experiment for the elliptical avatar
+clip is pending. Full Brave pixel parity remains open and automated suites
+remain held as requested.
