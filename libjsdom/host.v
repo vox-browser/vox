@@ -41,6 +41,8 @@ mut:
 	html_element_tags map[string]string
 	document_prototype   &libjs.Object = unsafe { nil }
 	fragment_prototype   &libjs.Object = unsafe { nil }
+	dataset_prototype &libjs.Object = unsafe { nil }
+	dataset_wrappers map[u64]&libjs.Object
 	shadow_root_prototype &libjs.Object = unsafe { nil }
 	character_data_prototype &libjs.Object = unsafe { nil }
 	text_prototype &libjs.Object = unsafe { nil }
@@ -216,6 +218,7 @@ pub fn Host.create(vm &libjs.VM, realm &libjs.Realm, document &dom.Document, hoo
 	host.install_document_state()
 	host.install_element_selectors()
 	host.install_html_element_interfaces()!
+	host.install_datasets()!
 	host.install_template_elements()!
 	host.install_node_lists()!
 	host.install_parent_node_properties()
@@ -387,6 +390,7 @@ pub fn (mut host Host) close() {
 	host.options_collections.clear()
 	host.selected_options_wrappers.clear()
 	host.token_list_wrappers.clear()
+	host.dataset_wrappers.clear()
 	host.events.clear()
 	host.event_wrappers.clear()
 	host.event_targets.clear()
