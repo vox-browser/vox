@@ -17,11 +17,13 @@ remains exact. Production `3c6be545` now exercises the final CSS-only gradient
 fix: Vlang retains one pixel and the orbit underlay is exact in two fresh captures
 each. The resolved-shadow implementation awaits production confirmation. See the
 [resolved-shadow audit](docs/OPTIMIZED_SITES_PIXELS_2026_11_12.md#preserve-resolved-blur-support-before-rotation-2026-11-16).
-CNN improves **6,091→5,160 differing pixels in diagnostics** (`eb35365d2`),
-with maximum channel error **58→9** after correcting rounded-upload CPU mip
-selection. All 50 pairs repeat; 49 other PNGs are unchanged. The fix corrects
-934 pixels and introduces three one-level differences. Production remains at
-6,091; the new source awaits its managed rebuild. CNN retains rendering and
+CNN improves to **4,788 differing pixels in diagnostics**, all one channel
+level off. After the planar mip fix (`eb35365d2`, 6,091→5,160), `6840391d5`
+makes the profiled train photo exact: **372 corrected, zero introduced**, with
+viewport maximum error **9→1**. All 51 pairs repeat; 49 other existing PNGs are
+unchanged and the new rounded/clipped control is exact. A separate forced
+four-sample diagnostic retains seven one-level differences. Production remains
+at 6,091; the new source awaits its managed rebuild. CNN retains rendering and
 source/replay failures; its native-repeat correction passes in production.
 Reddit remains unverified (missing historical fixture, earlier live
 HTTP 403). A separate tall-shadow control has a retained baseline repeat failure.
@@ -173,6 +175,13 @@ Its maximum channel error drops **58→9**. New production `3c6be545` confirms
 the final CSS gradient source in six focused baseline captures (Vlang one,
 underlay zero, CNN 6,091); it lacks the shadow and mip changes. References and
 tolerances remain unchanged and catalog parity is open.
+The subsequent `6840391d5` supports rounded profiled RGB uploads and preserves
+native-size upload history across raster scopes. CNN improves **5,160→4,788**:
+372 corrected and zero introduced pixels; the profiled train photo is exact and
+the complete viewport's maximum error is now one. All 51 workloads/102 captures
+repeat, all 49 other prior PNGs are unchanged, and the new clipped-image control
+is exact. The rejected first cohort's 371-pixel native-reuse regression is retained
+and corrected in the final source. Production validation remains pending.
 See the
 [current audit, capture scopes and retained failures](docs/OPTIMIZED_SITES_PIXELS_2026_11_12.md).
 

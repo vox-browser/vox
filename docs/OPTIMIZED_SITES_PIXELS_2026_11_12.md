@@ -4520,3 +4520,88 @@ Cleanup inventories **50 owned roots/4,754 files**, preserves and SHA-verifies
 intermediates, profiles, guards and locks. All three temporary canonical probes
 are removed. The archive guard and lock are separately copied, verified and
 removed; no owned scratch remains. Shared bundles and dependencies stay.
+
+
+## Rounded profiled WebP uploads and native reuse, 2026-11-16
+
+`6840391d5` extends the supported opaque, numerically sRGB-profiled VP8 path to
+rounded power-of-two CPU uploads. The RGBA scaler now uses the legacy Skia
+geometric-mean mip rule already established for byte planes. For the partly
+visible train photo, 480×270→120×68 preserves the appropriate larger CPU mip
+before resizing. Existing profile, source, opacity, transform and size bounds
+remain. No existing reference, tolerance, shader or application UI changes.
+
+Native-size upload history now follows the document, navigation, resource and
+body digest across raster scopes; smaller CPU decodes retain their raster scope.
+This matters when a native-size image appears in an earlier tile and its thumbnail
+appears near the viewport bottom. The first candidate forgot that native upload
+at the scope boundary: its complete **51-workload/102-capture** cohort repeats,
+but regresses the existing sRGB-table edge by **371 pixels/max10**. That cohort
+is rejected and retained. The final history correction restores the unchanged
+reference. Unit checks cover CPU-scope separation, native reuse across scopes,
+navigation isolation, larger-decode reuse, scratch lifetime and invalid targets.
+
+An independent native Skia build with recorded legacy-mip configuration produces
+**32,640 resized RGBA bytes**, all matching V exactly. Ten synthetic cases add
+**540 exact bytes**, represented by independent hashes in the focused test.
+All **400 native source/header/library/configuration/fixture/executable pins**
+remain matched. Seven focused V functions pass with arena poisoning and 3 GiB
+runtime guards. Their executables are:
+
+| Check | Executable SHA-256 | Matched V witnesses |
+| --- | --- | ---: |
+| RGBA scaler | `bfe39daccd55b67495f3fa64c06bbb35a783f6c52e1d6c1d3462854448a11f76` | 66 |
+| Upload history and lifetime | `130e7754ea66ea512b3c955bca4b6a5e103484c7382da59a9f75ce8eaef4554f` | 143 |
+| Complete GPU control, one sample | `30415ebe7e7a20ec3335b5f6b7be9d2f9be7c60fce9c2f3d5300974278520b49` | 110 |
+| Same GPU control, literal V `-prod` C build | `e0391b5cc7e4ef57f9242a0a6cdafa1b6eb05c38d2da5a5d14fb3e7eb8ab169d` | 110 |
+
+The new rounded/clipped control captures a complete image and a second image
+crossing the viewport bottom. Two fresh Brave processes reproduce it exactly
+with source/body/tool/executable pins; their PNG also equals the preceding pair.
+Its original decoded image bytes and strict reference are unchanged afterward.
+Both ordinary and optimized GPU checks invoke decoding/drawing outside assertions
+and externally verify the logged full-frame difference count of zero.
+The first optimized compilation rejects a deprecated test-only `usize` spelling;
+the final native call uses `uint`. The failed attempt remains recorded.
+
+A forced four-sample diagnostic differs at **seven pixels, maximum error one**.
+Its BGRA output, source and failed assertion are retained. It supplies no passing
+four-sample parity claim. The permanent direct comparison is scoped to one sample;
+the complete browser captures below also pass this new reference exactly.
+
+Final C/O0/preallocated/no-GC browser
+`5221336050ae2a5437b37ea8cf278aa6c953850cf42064b0bbe1070eb1cbd8d4`
+completes **51 workloads/102 fresh captures**, plus startup. All pairs repeat;
+all **49 other existing workload PNGs are unchanged**, and the new control is exact.
+All **889 consumed V witnesses and 945 source/runtime pins** remain matched.
+Startup, 102 native guards, driver, outer guard and guarded analysis exit zero.
+Focused captures agree and record the corrected 120×68 RGB upload on CNN, plus
+native-size reuse for all three sRGB-table placements.
+
+| Scope | Previous differences | Final differences | Maximum channel error |
+| --- | ---: | ---: | ---: |
+| Complete CNN viewport | 5,160 | **4,788** | **9→1** |
+| Partly visible profiled train photo | 372 | **0** | **9→0** |
+| Existing sRGB-table control | 0 | **0** | 0 |
+| New rounded-upload control | — | **0** | 0 |
+| Vlang / GitHub / Hacker News / Lobsters / Wikipedia | 0 each | **0 each** | 0 |
+
+All **372 changed pixels are corrected**, with **zero introduced differences**,
+at x=588..690, y=753..767. CNN still fails strict equality at 4,788 one-level
+pixels. Its source/replay failures, missing Reddit evidence, the forced-sample
+diagnostic and other prior inexact controls keep full parity open.
+
+Available production remains `3c6be545`, receipt `20261116-062906-c6814bce`, and
+lacks this source, the preceding planar mip fix and the resolved-shadow fix by
+consumed source hashes. Prior focused baseline captures remain valid; this older
+bundle cannot validate the new source. The managed commit hook requests the
+coalesced C/literal V `-prod`/single-unit rebuild; production validation is pending.
+No duplicate production build is requested or awaited. Frozen checks establish
+no live-site, scripting, scrolling or instruction-performance acceptance.
+Local evidence is under
+`docs/performance/vlang-gradients-20261114/raw/cnn-profiled-rounded-20261116/`.
+Cleanup inventories **83 owned roots/7,731 files**, preserves and SHA-verifies
+**2,315 evidence files/55,206,570 bytes**, and removes owned binaries,
+intermediates, profiles, guards and locks. All three temporary canonical probes
+are removed. The archive guard and lock are separately copied, verified and
+removed; no owned scratch remains. Shared bundles and dependencies stay.
