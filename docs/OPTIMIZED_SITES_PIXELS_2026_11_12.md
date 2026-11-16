@@ -4308,3 +4308,78 @@ job binaries, intermediates, profiles, captures, guards and locks. All six
 temporary canonical probes are removed. The archive guard and lock are
 separately copied, verified and removed; no owned scratch remains. Shared
 production bundles and dependencies stay.
+
+
+## Preserve CSS gradient destination geometry, 2026-11-16
+
+`6003e7627` removes an identical rectangular clip at the CSS gradient boundary.
+Brave's recorded picture draws the snapped gradient rectangle under its rounded
+parent clip. Vox additionally clipped the fill to that same rectangle, allowing
+Graphite to replace its geometry with a cover draw and changing interpolated
+coordinates. The new scalar proof requires five segments forming the same closed
+rectangle, four distinct corners, straight edges, finite positive clip geometry,
+zero radii and a fill. It preserves rounded, smaller, nonrectangular and stroked
+clips. SVG's recording path stays unchanged. No reference, tolerance, shader,
+gradient coefficient, source/site exception or coordinate adjustment changes.
+
+Final C/O0/preallocated/no-GC diagnostic executable
+`f3f3369ed8b23d736b98c984b5a5f22c1634cbb234c3637fdb2ce2b39a1d5f1b`
+completes **50 workloads/100 fresh captures**, plus startup:
+
+| Workload | Previous differences | Final differences | Corrected / introduced |
+| --- | ---: | ---: | ---: |
+| Vlang | 4 | **1** | **3 / 0** |
+| Orbit underlay | 3 | **0** | **3 / 0** |
+| Complete clipped orbit | 4 | **1** | **3 / 0** |
+| Rotated-ellipse shadow control | 19 | **5** | **14 / 0** |
+| CNN | 6,091 | **6,091** | 0 / 0 |
+| GitHub / Hacker News / Lobsters / Wikipedia | 0 each | **0 each** | 0 / 0 |
+
+Every pair repeats byte for byte. **46 workload PNGs remain unchanged**, and no
+workload introduces a differing pixel. All final PNGs also equal those of both
+preceding 100-capture candidates. All **889 consumed V witnesses and 942
+source/runtime pins** stay matched. Startup, 100 capture guards, driver, outer
+guard and guarded analysis exit zero. The one remaining scene pixel is
+`(630,617)`, green 34 versus Brave's 33; it reproduces with only the blurred
+orbit shadow. Changing border color normalization does not correct it.
+
+Two new focused functions verify the unchanged Brave scene's interior and
+conservative clip rejection, including corner order, diagonal/duplicate points,
+invalid segment kinds, open paths, strokes, mismatched extents and nonfinite clips. Three existing
+coordinate-localization/filter-clip functions also execute successfully. The new
+functions additionally pass with literal V `-prod` and C `-O2`; its executable
+is `0ccec714f6e207e530397b8345dd9ad20ab69021923bfe71ae1dfdf2e44ae5af`.
+All V runtime checks use arena poisoning and 3 GiB guards. A dedicated arena
+shows **zero growth across 100 calls**. The intermediate by-value adapter and
+fixed-array slice allocated; the final borrowed descriptor and indexed radius
+loop remove both sources. The failed allocation assertion is retained.
+
+Three fresh Brave captures reproduce the original underlay reference exactly.
+The first two LayerTree attempts retain stale/empty-layer evidence; the third
+obtains the picture after a zero-width outline invalidation following PNG
+capture. Its command log confirms the snapped rectangle and rounded parent
+clip. These logs are diagnostics, not a replacement reference or an unchanged
+live workload. An existing independent Skia Metal library reproduces the
+clipped/unclipped gradient differences. The CPU-only Skia library's missing
+Graphite linker symbols, initial probe syntax/API failures and a full-layout
+probe stopped by the 12 GiB guard remain recorded without passing credit.
+
+Production `4488b888297c87a05424c6b5c6fcd32d76a15c901c1b0ee099a9a6bb65b863a7`,
+receipt `20261116-052137-95504e65` (C/literal V `-prod`/single C unit), contains
+Gray8 and the earlier generic clip-elision variant by consumed source hashes.
+Two fresh captures each show Vlang at **one** and the isolated JPEG at **zero**;
+Vlang's PNG equals the final diagnostic. This validates that production result,
+**not the final CSS-only allocation-free implementation**, whose managed rebuild
+is requested by the normal commit hook. No duplicate production build is queued
+or awaited. The earlier `c07ab59e` identity check alone supplies no capture result.
+
+All-site equality remains open: the remaining Vlang pixel, CNN, missing Reddit
+evidence and prior inexact controls persist. Frozen PNG checks supply no
+live-site, author-script, scrolling or instruction-performance acceptance.
+Local evidence is under
+`docs/performance/vlang-gradients-20261114/raw/scene-precision-20261116/`.
+Cleanup inventories **154 owned roots/10,778 files**, preserves and SHA-verifies
+**3,328 evidence files/122,876,618 bytes**, and removes all job binaries,
+intermediates, profiles, guards and locks. Four temporary canonical probes are
+removed. The archive guard and lock are separately copied, verified and removed;
+no owned scratch remains. Shared production bundles and dependencies stay.

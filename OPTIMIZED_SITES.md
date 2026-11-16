@@ -8,12 +8,13 @@ Provisional entries retain unresolved acceptance checks.
 
 **Pixel recheck, 2026-11-16:** Vox does **not** pass pixel equality across
 this catalog. Production build `aa91e7cc` confirms GitHub, Hacker News,
-Lobsters and Wikipedia exact in two fresh captures each. Vlang.io has **four
-differing pixels in diagnostics**, down from five in verified production.
-Filtering JPEG planes before color conversion corrects 22 pixels with zero
-introduced differences, including all nine historical introduced JPEG pixels.
-The Gray8 store correction removes its final JPEG difference; four scene pixels
-remain. Production confirmation of this last correction is pending.
+Lobsters and Wikipedia exact in two fresh captures each; final diagnostics keep
+all four exact. Vlang.io now has **one differing scene pixel in diagnostics**,
+down from four, and its JPEG is exact. The CSS-only redundant-clip correction
+introduces zero differences across 50 repeatable workloads. Production
+`4488b888` also captures Vlang at one pixel using an earlier generic clip-elision
+variant; the final CSS-only, allocation-free implementation awaits production
+confirmation.
 CNN retains rendering and source/replay failures; its
 native-repeat correction now passes in production.
 Reddit remains unverified (missing historical fixture, earlier live
@@ -147,8 +148,15 @@ are unchanged. Eighteen focused V functions and the Python staging check pass.
 Production `aa91e7cc` now confirms that five-pixel result in 100 fresh captures.
 The subsequent `293c8abed` Gray8 CPU-plane store correction reduces Vlang **5→4**,
 with its JPEG now exact and zero new differences. All 49 other PNGs are unchanged
-in another 100 repeatable diagnostic captures. The new correction's production
-check is pending; references and tolerances remain unchanged and parity is open.
+in another 100 repeatable diagnostic captures. Production `4488b888` contains
+Gray8 and an earlier generic clip-elision variant: two fresh captures each confirm
+Vlang at one scene pixel and its isolated JPEG at zero. `6003e7627` then keeps
+clip elision at the CSS boundary and removes its arena allocations. Final
+C/O0 diagnostics reduce Vlang **4→1**, the orbit underlay **3→0**, the complete
+orbit scene **4→1**, and the rotated-ellipse control **19→5**, with zero new
+differences. All 50 workloads/100 captures repeat; 46 PNGs are unchanged.
+The final scoped implementation's production confirmation remains pending.
+References and tolerances remain unchanged and parity is open.
 See the
 [current audit, capture scopes and retained failures](docs/OPTIMIZED_SITES_PIXELS_2026_11_12.md).
 
