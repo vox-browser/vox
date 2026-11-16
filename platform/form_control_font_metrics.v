@@ -39,6 +39,7 @@ pub fn (font &Font) form_control_character_widths(coordinate_scale f64) (f32, f3
 			average = font.glyph_width(u32(`x`))
 		}
 	}
+	strike_average := average
 	average /= f32(coordinate_scale)
 	maximum /= f32(coordinate_scale)
 	if average <= 0 || average > zero_strike * 1.7 || family in [
@@ -79,5 +80,7 @@ pub fn (font &Font) form_control_character_widths(coordinate_scale f64) (f32, f3
 	] {
 		return zero, zero
 	}
-	return f32(math.max(f64(average), math.round(average))), maximum
+	// Blink applies its compatibility rounding to the font strike metric.
+	// Projecting to CSS pixels first rounds on the wrong grid on Retina.
+	return f32(math.max(f64(strike_average), math.round(strike_average)) / coordinate_scale), maximum
 }
