@@ -39,6 +39,31 @@ def png(background=b"\x2c\xa0\x5a", stale_edge=False, text=True, chrome=False):
 
 
 class LinuxBrowserSmokeTest(unittest.TestCase):
+    def test_png_filter_golden_scanlines(self):
+        expected = [bytes([10, 20, 30, 40, 50, 60]), bytes([11, 22, 33, 44, 55, 66])]
+        filtered = {
+            0: [[10, 20, 30, 40, 50, 60], [11, 22, 33, 44, 55, 66]],
+            1: [[10, 20, 30, 30, 30, 30], [11, 22, 33, 33, 33, 33]],
+            2: [[10, 20, 30, 40, 50, 60], [1, 2, 3, 4, 5, 6]],
+            3: [[10, 20, 30, 35, 40, 45], [6, 12, 18, 19, 19, 20]],
+            4: [[10, 20, 30, 30, 30, 30], [1, 2, 3, 4, 5, 6]],
+        }
+        for kind, rows in filtered.items():
+            previous = bytearray(6)
+            for encoded, wanted in zip(rows, expected):
+                previous = smoke.unfilter_png_row(kind, bytearray(encoded), previous, 3)
+                self.assertEqual(bytes(previous), wanted, (kind, encoded))
+        self.assertEqual(smoke.unfilter_png_row(1, bytearray([10, 20, 30, 40, 40, 40, 40, 40]),
+                         bytearray(8), 4), bytearray([10, 20, 30, 40, 50, 60, 70, 80]))
+
+    def test_png_paeth_selection_and_byte_wrap(self):
+        self.assertEqual(smoke.unfilter_png_row(4, bytearray([2, 255, 7, 4, 1, 248]),
+                         bytes([7, 3, 1, 10, 5, 4]), 3), bytearray([9, 2, 8, 14, 6, 0]))
+        self.assertEqual(smoke.unfilter_png_row(4, bytearray([251, 3]), bytes([15, 20]), 1),
+                         bytearray([10, 18]))
+        with self.assertRaisesRegex(AssertionError, 'Unsupported PNG filter'):
+            smoke.unfilter_png_row(5, bytearray(3), bytes(3), 3)
+
     def test_webgl_capture_requires_a_new_script_audit(self):
         with tempfile.TemporaryDirectory() as directory:
             artifacts = Path(directory)

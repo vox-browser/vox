@@ -104,6 +104,31 @@ def require_tools():
         raise RuntimeError("Missing Linux smoke dependencies: " + ", ".join(missing))
 
 
+def unfilter_png_row(kind, row, previous, channels):
+    """Reconstruct a scanline without computing unused filter predictors."""
+    assert 0 <= kind <= 4, "Unsupported PNG filter"
+    if kind == 1:
+        for x in range(channels, len(row)):
+            row[x] = (row[x] + row[x - channels]) & 255
+    elif kind == 2:
+        for x in range(len(row)):
+            row[x] = (row[x] + previous[x]) & 255
+    elif kind == 3:
+        for x in range(len(row)):
+            left = row[x - channels] if x >= channels else 0
+            row[x] = (row[x] + (left + previous[x]) // 2) & 255
+    elif kind == 4:
+        for x in range(len(row)):
+            a = row[x - channels] if x >= channels else 0
+            b = previous[x]
+            c = previous[x - channels] if x >= channels else 0
+            p = a + b - c
+            pa, pb, pc = abs(p - a), abs(p - b), abs(p - c)
+            predictor = a if pa <= pb and pa <= pc else b if pb <= pc else c
+            row[x] = (row[x] + predictor) & 255
+    return row
+
+
 def check_rendered_pixels(data, background=b"\x2c\xa0\x5a", size=None):
     assert data[:8] == b"\x89PNG\r\n\x1a\n", "Missing PNG signature"
     width, height, depth, kind = struct.unpack(">IIBB", data[16:26])
@@ -125,15 +150,8 @@ def check_rendered_pixels(data, background=b"\x2c\xa0\x5a", size=None):
     for y in range(height):
         start = y * (stride + 1)
         filter_type = raw[start]
-        row = bytearray(raw[start + 1:start + 1 + stride])
-        for x in range(stride):
-            a = row[x - channels] if x >= channels else 0
-            b = previous[x]
-            c = previous[x - channels] if x >= channels else 0
-            p = a + b - c
-            paeth = min((a, b, c), key=lambda value: abs(p - value))
-            predictor = (0, a, b, (a + b) // 2, paeth)[filter_type]
-            row[x] = (row[x] + predictor) & 255
+        row = unfilter_png_row(filter_type, bytearray(raw[start + 1:start + 1 + stride]),
+                               previous, channels)
         row_colored = row_white = 0
         for x in range(0, stride, channels):
             matches = row[x:x + 3] == background
@@ -174,14 +192,8 @@ def check_webgl_pixels(data):
         start = y * (stride + 1)
         filter_type = raw[start]
         assert filter_type <= 4
-        row = bytearray(raw[start + 1:start + 1 + stride])
-        for x in range(stride):
-            a = row[x - channels] if x >= channels else 0
-            b = previous[x]
-            c = previous[x - channels] if x >= channels else 0
-            p = a + b - c
-            paeth = min((a, b, c), key=lambda value: abs(p - value))
-            row[x] = (row[x] + (0, a, b, (a + b) // 2, paeth)[filter_type]) & 255
+        row = unfilter_png_row(filter_type, bytearray(raw[start + 1:start + 1 + stride]),
+                               previous, channels)
         rows.append(bytes(row))
         previous = row
     def pixel(rgb):
