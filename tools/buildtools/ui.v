@@ -57,6 +57,8 @@ fn prepare_gg_canvas(canvas string) ! {
             gg_patches(canvas, 'prepare_gg_jpeg_shader')!
         }
     }
+	if !read(layer)!.contains('document_opaque bool') { gg_patches(canvas, 'prepare_gg_opaque_layer')! }
+	if !read(join(canvas, 'gpu_surface.v'))!.contains('layer.document_opaque') { gg_patches(canvas, 'prepare_gg_opaque_surface')! }
 	write_changed(join(canvas, 'vox_document_image.v'), image_helper)!
 }
 

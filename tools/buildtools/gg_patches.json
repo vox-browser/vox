@@ -163,5 +163,19 @@
       "old": "const image_uniform_size = 112",
       "new": "const image_uniform_size = 112\n\nfn document_image_jpeg_upload_supported() bool {\n\treturn gradient_snippet_file.to_string().contains('gammaParameters_7.w > 0.0f')\n}\n"
     }
+  ],
+  "prepare_gg_opaque_layer": [
+    {
+      "file": "gpu_layer.v",
+      "old": "\tdocument_scale [2]f32 = [f32(1),1]!\n",
+      "new": "\tdocument_scale [2]f32 = [f32(1),1]!\n\tdocument_opaque bool\n"
+    }
+  ],
+  "prepare_gg_opaque_surface": [
+    {
+      "file": "gpu_surface.v",
+      "old": "\tmut image := ImageUniforms{}\n\tmut texture := TextureBinding{}\n\tif layer := paint.layer_image {\n\t\tshading = .image\n\t\timage = ImageUniforms{\n\t\t\t// The identity local matrix of drawSpecial()'s Rect2Rect(src, dst).\n\t\t\tupper2x2:       [layer.document_scale[0],f32(0),0,layer.document_scale[1]]!\n\t\t\tinv_dimensions: [f32(1) / f32(layer.texture_width), f32(1) / f32(layer.texture_height)]!\n\t\t\tmask_color: layer.mask_color\n\t\t\tcolor_transform: layer.color_transform\n\t\t}\n\t\ttexture = TextureBinding{\n\t\t\tkind:  .image\n\t\t\timage: layer.image\n\t\t\tdocument_linear_filter: layer.document_linear_filter\n\t\t}\n\t}\n\topaque := color.is_opaque() && shading != .image\n\t\t&& (!shading.is_gradient() || gradient.opaque)",
+      "new": "\tmut image_opaque := false\n\tmut image := ImageUniforms{}\n\tmut texture := TextureBinding{}\n\tif layer := paint.layer_image {\n\t\tshading = .image\n\t\timage_opaque = layer.document_opaque && layer.mask_color.a == 1\n\t\timage = ImageUniforms{\n\t\t\t// The identity local matrix of drawSpecial()'s Rect2Rect(src, dst).\n\t\t\tupper2x2:       [layer.document_scale[0],f32(0),0,layer.document_scale[1]]!\n\t\t\tinv_dimensions: [f32(1) / f32(layer.texture_width), f32(1) / f32(layer.texture_height)]!\n\t\t\tmask_color: layer.mask_color\n\t\t\tcolor_transform: layer.color_transform\n\t\t}\n\t\ttexture = TextureBinding{\n\t\t\tkind:  .image\n\t\t\timage: layer.image\n\t\t\tdocument_linear_filter: layer.document_linear_filter\n\t\t}\n\t}\n\topaque := color.is_opaque() && (shading != .image || image_opaque)\n\t\t&& (!shading.is_gradient() || gradient.opaque)"
+    }
   ]
 }

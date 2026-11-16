@@ -102,6 +102,7 @@ pub fn (mut s GpuSurface) draw_document_color_rgba(levels [][]u8, width int, hei
 			texture_height:         height
 			document_scale:         [sample_x, sample_y]!
 			document_linear_filter: true
+			document_opaque:        color_transform.yuv_rec601_limited || color_transform.yuv_jpeg_full
 			color_transform:        color_transform
 		}
 	})!
