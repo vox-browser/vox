@@ -2,8 +2,8 @@
 """Observe an active native page against an unchanged offline response archive.
 
 This is a functional diagnostic, not a performance or pixel-conformance gate.
-The native observation timer writes the audit, captures the whole window, and
-quits normally. Run through the memory guard with the same private PID registry.
+The native observer captures the window, or the screenshot path captures only
+the document, and quits normally. Use the memory guard with the same PID registry.
 """
 import argparse
 import hashlib
@@ -33,6 +33,7 @@ def digest(path):
 
 def run(args):
     output, binary, archive = args.output.resolve(), args.binary.resolve(), args.archive.resolve()
+    capture_png = output / ('document.png' if args.document_capture else 'window.png')
     output.mkdir(exist_ok=False, parents=True)
     replay = Replay(archive, output / 'replay')
     threading.Thread(target=replay.server.serve_forever, daemon=True).start()
@@ -46,7 +47,7 @@ def run(args):
     environment.update(VOX_PROFILE_DIR=str(output / 'profile'), VOX_TEST_WINDOW='1',
         VOX_PROXY=replay.ready['proxy'], SSL_CERT_FILE=replay.ready['ca'],
         VOX_NATIVE_OBSERVATION_DELAY_MS=str(args.observe_ms),
-        VOX_NATIVE_OBSERVATION_SCREENSHOT=str(output / 'window.png'),
+        VOX_NATIVE_OBSERVATION_SCREENSHOT=str(capture_png),
         VOX_CAPTURE_AUDIT_CONFIG=str(output / 'audit-config.json'),
         VOX_CAPTURE_AUDIT_PATH=str(output / 'audit.json'), LADYBIRD_SCREENSHOT_SCALE='1')
     if args.native_cache is not None:
@@ -57,13 +58,27 @@ def run(args):
         environment['VOX_LIBJS_NATIVE_COMPILER'] = str(args.native_compiler.resolve())
     if args.audit_interval_ms is not None:
         environment['VOX_NATIVE_OBSERVATION_INTERVAL_MS'] = str(args.audit_interval_ms)
+    if args.document_capture:
+        environment.pop('VOX_NATIVE_OBSERVATION_DELAY_MS')
+        environment.pop('VOX_NATIVE_OBSERVATION_SCREENSHOT')
+        environment.update(VOX_CAPTURE_DOCUMENT_ONLY='1', VOX_CAPTURE_DOCUMENT_ACTIVE='1',
+            LADYBIRD_SCREENSHOT_DELAY_SECONDS=str(args.observe_ms / 1000))
+        if args.ready_selector is not None:
+            environment['VOX_CAPTURE_READY_SELECTOR'] = args.ready_selector
     command = [str(binary), '--enable-javascript', '--js-engine=' + args.engine,
-               '--window-width', '1024', '--window-height', '880', replay.manifest['url']]
+               '--window-width', '1024', '--window-height',
+               '852' if args.document_capture else '880']
+    if args.document_capture:
+        command.extend(['--screenshot', str(capture_png)])
+    command.append(replay.manifest['url'])
     result = dict(command=command, configuration=args.configuration,
         native_cache=environment.get('VOX_LIBJS_NATIVE_CACHE', 'profile default'),
         native_compiler=environment.get('VOX_LIBJS_NATIVE_COMPILER', 'clang'),
         audit_interval_ms=args.audit_interval_ms,
-        scope='active-window functional diagnosis; whole-window PNG; no pixel/performance gate',
+        scope=('active document-only native capture; no pixel/performance gate'
+               if args.document_capture else
+               'active-window functional diagnosis; whole-window PNG; no pixel/performance gate'),
+        document_capture=args.document_capture, ready_selector=args.ready_selector,
         observer_sha256=digest(Path(__file__)), sample_after=args.sample_after,
         host_before=dict(cpu_count=os.cpu_count(), load=os.getloadavg(), unix=time.time()))
     process = None
@@ -118,7 +133,7 @@ def run(args):
                 result['native_errors'] = audit.get('native_reported_errors', [])
                 result['native_error_count'] = audit.get('native_reported_error_count', 0)
                 result['native_error_information'] = audit.get('native_reported_error_information', [])
-            result['png_present'] = (output / 'window.png').is_file()
+            result['png_present'] = capture_png.is_file()
     finally:
         if process is not None and process.poll() is None:
             process.kill()
@@ -155,6 +170,10 @@ def main():
     parser.add_argument('--configuration', default='diagnostic browser; see its compile receipt')
     parser.add_argument('--sample-after', type=float,
                         help='Collect a separate one-second macOS stack diagnostic after this delay')
+    parser.add_argument('--document-capture', action='store_true',
+                        help='Capture only the document through the native screenshot path at 1x')
+    parser.add_argument('--ready-selector',
+                        help='Wait for this selector before a document-only capture')
     args = parser.parse_args()
     if args.observe_ms <= 0 or args.timeout <= args.observe_ms / 1000:
         parser.error('Timeout must exceed the positive observation delay')
@@ -162,6 +181,8 @@ def main():
         parser.error('Audit interval must be positive')
     if args.sample_after is not None and args.sample_after < 0:
         parser.error('Sample delay must be nonnegative')
+    if args.ready_selector is not None and not args.document_capture:
+        parser.error('A readiness selector requires --document-capture')
     raise SystemExit(run(args))
 
 
