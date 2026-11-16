@@ -1,5 +1,20 @@
 module yuv
 
+fn test_plane_resizing_matches_normalized_r8_store_rounding() {
+	// Independent SkPixmap R8 scalePixels results: each source row is enlarged
+	// from two texels to three, placing its middle sample exactly halfway.
+	source := [u8(0), 1, 1, 2, 2, 3, 3, 4]
+	// Normalization/interpolation makes the 2/3 midpoint slightly greater
+	// than 2.5 on byte storage. Rounding the unnormalized bytes misses it.
+	horizontal := jpeg_scale_plane(source, 2, 4, 3, 4) or { panic('horizontal scale') }
+	assert horizontal == [u8(0), 0, 1, 1, 2, 2, 2, 3, 3, 3, 4, 4]
+	// Exercise the same store after vertical interpolation and clamped edges.
+	vertical := jpeg_scale_plane([u8(0), 1], 1, 2, 1, 3) or { panic('vertical scale') }
+	assert vertical == [u8(0), 0, 1]
+	normalized := jpeg_scale_plane([u8(2), 3], 1, 2, 1, 3) or { panic('normalized scale') }
+	assert normalized == [u8(2), 3, 3]
+}
+
 fn test_scaled_jpeg_planes_keep_box_mips_and_neutral_chroma() {
 	mut planes := []u8{len: 24, init: 128}
 	for i in 0 .. 16 { planes[i] = u8(i * 4) }
