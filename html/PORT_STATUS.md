@@ -47,6 +47,18 @@ checks pass; runtime and pixel parity remain unverified. Named-property
 visibility, form indexed/named access and broader ownership remain open. See the
 [indexed-property continuation](../docs/LIBJS_GITHUB_RUNTIME_20261115.md#native-indexed-property-continuation).
 
+The named-property follow-up now exposes form/collection/option names through
+checked WebIDL visibility, including prototype Proxy traps and the native
+LegacyOverrideBuiltIns/LegacyUnenumerableNamedProperties flags. Forms also have
+native indexed access. Past-name aliases leave with the control's owner;
+same-owner queries preserve them. Saved form collections and radio views follow
+root moves, including external controls and conversion side effects. Twenty-six
+focused functions remain uncompiled and unexecuted under the user's hold.
+Final import and whole-browser compiler-only checks pass in normal and
+production/preallocation modes; runtime and pixel parity remain unverified.
+Global named objects and broader cross-document ownership remain open. See the
+[named-property continuation](../docs/LIBJS_GITHUB_RUNTIME_20261115.md#native-named-property-continuation).
+
 The historical inventory below found candidate V mappings for 261 HTML source
 files. Its file/symbol/LOC counts and 107-file test result describe that earlier
 inventory, not current logic, generated-binding or browser parity. The current

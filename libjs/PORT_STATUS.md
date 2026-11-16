@@ -3007,3 +3007,21 @@ form-move collection roots, broader IDL and JS/Web/rendering behavior remain
 open; full GitHub execution, compiled-revisit speed and Brave pixel parity are
 unverified. See the
 [collection continuation](../docs/LIBJS_GITHUB_RUNTIME_20261115.md#native-form-and-select-collection-continuation).
+
+
+The named-property continuation adds checked readonly WebIDL visibility to
+GetOwnProperty/HasProperty, definitions, deletion and key enumeration. Engine
+names retain UTF-16 identity; native collection/form/option records supply live
+values, builtin override/unenumerability flags and radio-list results. Prototype
+Proxy traps and native mutations retain their observable ordering. Native form
+past names are cleared on owner changes, and saved collections/radio views track
+root moves. Twenty-six focused functions, including a compiler-disabled native
+cache revisit, remain uncompiled and unexecuted under the user's hold. Final
+normal and production/preallocation import and browser compiler checks pass;
+one concurrent-source compiler failure is retained with all eleven attempts.
+Fourteen selected committed feature inputs match the inspected production
+manifest, but the bundle was not launched. Global named objects, named setters/
+deleters, foreign realms and broader JS/Web/rendering conformance remain open.
+GitHub full execution, compiled-revisit speed and Brave pixel parity remain
+unverified. See the
+[named-property continuation](../docs/LIBJS_GITHUB_RUNTIME_20261115.md#native-named-property-continuation).

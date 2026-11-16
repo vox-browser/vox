@@ -2578,3 +2578,111 @@ five module errors, predating these additions. Acceptance remains 33 rows,
 Brave content audit and zero differing pixels, followed by matched performance
 evidence. Full execution, faster compiled revisits and pixel parity remain
 unverified.
+
+## Native named property continuation
+
+The user's execution hold remains in force. This continuation ran compiler-only
+checks of non-test targets and static source/hash audits. It did not compile or
+run tests, initialize JavaScript, launch a browser, capture pixels or measure
+performance. GitHub/Brave parity remains incomplete.
+
+- `ee1a89ff1` implements readonly WebIDL named-property visibility in the
+  engine. Native supported names, ordinary own storage, LegacyOverrideBuiltIns,
+  prototype own properties and named-properties objects follow the inspected
+  Bindings/PlatformObject.cpp algorithms. Prototype queries use checked VM
+  operations, retaining author Proxy traps, mutations and thrown values.
+  GetOwnProperty/HasProperty, definitions, deletion and key enumeration share
+  the protocol; Set continues to ignore virtual names while resolving ordinary
+  setters. The engine boundary preserves UTF-16 name identity.
+- `d23c23222` clears native past-name aliases when a control leaves its owner
+  and preserves them during lazy same-owner queries. Control registration and
+  removal compare record identity. Native form collections and their saved
+  radio/image lists follow the form's current root and refresh collection caches
+  when the root changes. This closes the detached-form cache issue exposed by
+  named-property lookup, including discovery of later external controls.
+- `e86bede9d` exposes named properties on native HTMLCollection/form/option/
+  selected-option views, plus indexed and named form access. Collections obey
+  LegacyUnenumerableNamedProperties; forms also obey LegacyOverrideBuiltIns,
+  including fields named elements/action/submit. Duplicate fields return real
+  live RadioNodeList records, and native past-name lookup is retained. Form
+  view identity survives root changes, inherited NodeList operations retain
+  their radio owner, and item conversion observes root moves performed by
+  author callbacks. All native cache allocations enter persistent scope.
+
+One concurrent class-query routing hunk was inadvertently included in the
+binding commit. `05b26204b` restores independent committed routing in a linear
+follow-up; that concurrent working-tree change and its implementation remain
+preserved outside this feature. No shared history was rewritten.
+
+Twenty-six focused functions are prepared: eight engine protocol, four native
+form-owner/root and fourteen binding cases. They cover visibility/override
+flags, descriptors, ordinary expandos, UTF-16/symbol/index distinctions,
+prototype Proxy behavior, native name mutations, radio results, builtin
+collisions, past-name cleanup, external owners, saved root views, conversion
+side effects and arena lifetime. A synthetic first/second-VM native-cache case
+requires native hits/fast/slow steps and zero compiler invocations with
+/usr/bin/false on revisit. All remain uncompiled and unexecuted; their
+assertions provide no cache coverage or GitHub execution evidence.
+
+Eleven compiler-only attempts are retained byte-identically, including the
+failed production attempt, with a hashed index in local
+`docs/performance/libjs-named-properties-20261116/`:
+
+| Compiler-only check | Child exit | Seconds | Peak sampled RSS bytes |
+| --- | ---: | ---: | ---: |
+| Named engine protocol normal | 0 | 16.619 | 5,383,487,488 |
+| Named engine protocol production | 0 | 16.680 | 5,683,724,288 |
+| Named bindings initial normal | 0 | 19.074 | 5,409,832,960 |
+| Past-name owners normal | 0 | 16.927 | 5,398,167,552 |
+| Control identity normal | 0 | 16.914 | 5,404,737,536 |
+| Form/radio roots final normal | 0 | 15.403 | 5,375,262,720 |
+| Named bindings production | 0 | 16.024 | 5,683,527,680 |
+| Whole browser initial normal | 0 | 25.132 | 6,672,302,080 |
+| Whole browser initial production | 1 | 1.606 | 1,033,551,872 |
+| Whole browser final normal | 0 | 24.559 | 6,678,167,552 |
+| Whole browser final production | 0 | 26.001 | 6,977,503,232 |
+
+The failed attempt caught a deprecated usize cast in concurrent, uncommitted
+class-query work. That source changed to uint before the final pair passed;
+the failed receipt remains preserved. Import checks use current V with
+`V3_STR_CAP=1 VJOBS=1`, unique default 12 GiB guards and
+`-w -n -b c -no-parallel -cc clang -check -memory-limit 10G -enable-globals
+tools/libjs_github_revisit.v`. Production adds `-prod -prealloc -gc none`.
+Whole-browser checks target `.` with vox_production/vox_ui2/vox_sparse_ttf,
+the native-zoneinfo exclusion and existing shared font/HTTP/UI2 module paths.
+All guards report reason=completed, with child exits above. Own Build job
+reports and locks were removed after hash-verified preservation. Compiler
+success establishes typing, not execution or C code generation.
+
+Static inspection verifies all original 87 JS URLs / 86 bodies before scanning.
+It finds 38 .elements references in three bodies, 16 .namedItem in two,
+30 .elements.member expressions in three and three .selectedOptions references
+in one. No direct .elements[...] regex matches were found. Aliases, receiver
+brands, runtime reachability and the current first module error remain unknown;
+counts and bounded contexts remain local. No native fast-path or performance
+credit follows from these textual matches.
+
+The inspected production executable is SHA-256
+`aa91e7cc1c8c2c3ebe083a96582817e16f1de903c8a81ff43a4a3674bc5b1a64`,
+receipt `20261116-035309-fefe9f5d`, single-C-unit / v_prod. Its executable and
+receipt stayed stable during the audit. All fourteen selected committed feature
+inputs at `05b26204bc3c33c5f5d58078e398ce053a1d6fbb` match its consumed-source
+manifest. Thirteen current working inputs match; nodes.v differs by the
+concurrent class-query routing change. This is selected source-identity
+evidence only; the bundle was not launched. Commits requested coalesced managed
+rebuilds and no duplicate manual production build was scheduled.
+
+Global/window named objects, named setters/deleters, broader IDL, FileList,
+reporting UI, foreign realms, adoption/cross-document ownership and wider
+JS/Web/rendering behavior remain open. These source additions do not establish
+full WebIDL, HTML or LibJS conformance. The original fixture manifest remains
+`893e042c4f31e1b7fb984c81cf8f6a2a7eb65d790f7c3f4cc3e372c065de302d`;
+the Brave PNG remains
+`649abff51549508516e2e0681866ba81ce69e7112cfa8dc3446b9b76c99be3d3`.
+The last actual GitHub observation remains the historical 672 warm native
+entries, 51 frontend hits, zero compiler calls, 33 rows, zero commit links and
+five module errors, predating these additions. Acceptance remains 33 rows,
+56 commit links, current README, active controls, zero errors, the unchanged
+Brave content audit and zero differing pixels, followed by matched performance
+evidence. Full execution, faster compiled revisits and pixel parity remain
+unverified.
