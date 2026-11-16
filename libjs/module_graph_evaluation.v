@@ -49,11 +49,12 @@ fn (mut module_record SourceTextModule) evaluate_module_graph(mut vm VM,limits E
 	if module_record.module_status!=.linked { return vm.throw_error(.internal_error,'Module must be linked before evaluation') }
 	outer := vm.run_executable_depth==0 && vm.external_budget_depth==0
 	previous_budget,previous_active := vm.instruction_budget,vm.instruction_budget_active
-	if outer { vm.instruction_budget=limits.max_instructions;vm.instruction_budget_active=limits.max_instructions!=0 }
+	previous_error := vm.instruction_budget_error
+	if outer { vm.instruction_budget=limits.max_instructions;vm.instruction_budget_active=limits.max_instructions!=0;vm.instruction_budget_error=none }
 	vm.external_budget_depth++
 	defer {
 		vm.external_budget_depth--
-		if outer { vm.instruction_budget=previous_budget;vm.instruction_budget_active=previous_active }
+		if outer { vm.instruction_budget=previous_budget;vm.instruction_budget_active=previous_active;vm.instruction_budget_error=previous_error }
 	}
 	mut state := ModuleEvaluationState{}
 	module_record.inner_module_evaluate(mut vm,mut state) or {

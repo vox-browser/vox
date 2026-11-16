@@ -11,7 +11,14 @@ pub:
 // Native host algorithms share the caller's budget with bytecode and callbacks.
 pub fn (mut vm VM) consume_execution_budget() ! {
 	if vm.instruction_budget_active {
-		if vm.instruction_budget == 0 { return vm.throw_error(.internal_error, 'LibJS instruction budget exceeded') }
+		if vm.instruction_budget == 0 {
+			// Unwinding an exhausted entry can revisit this guard through catch or
+			// finally. Keep the original failure and traceback at its first site.
+			if failure := vm.instruction_budget_error { return failure }
+			failure := vm.throw_error(.internal_error, 'LibJS instruction budget exceeded')
+			vm.instruction_budget_error = failure
+			return failure
+		}
 		vm.instruction_budget--
 	}
 }
@@ -549,7 +556,9 @@ pub fn (mut vm VM) run_executable(mut frame ExecutionContext, executable &Execut
 	own_budget := vm.run_executable_depth == 0 && vm.external_budget_depth == 0
 	previous_budget := vm.instruction_budget
 	previous_budget_active := vm.instruction_budget_active
+	previous_budget_error := vm.instruction_budget_error
 	if own_budget {
+		vm.instruction_budget_error = none
 		vm.instruction_budget = limits.max_instructions
 		vm.instruction_budget_active = limits.max_instructions != 0
 	}
@@ -573,6 +582,7 @@ pub fn (mut vm VM) run_executable(mut frame ExecutionContext, executable &Execut
 		vm.run_executable_depth--
 		vm.running_execution_context_ = previous_context
 		if own_budget {
+			vm.instruction_budget_error = previous_budget_error
 			vm.instruction_budget = previous_budget
 			vm.instruction_budget_active = previous_budget_active
 		}
@@ -623,12 +633,13 @@ pub fn (mut vm VM) call_with_limits(function Value, this_value Value, arguments 
 	outer := vm.run_executable_depth == 0 && vm.external_budget_depth == 0
 	previous_budget := vm.instruction_budget
 	previous_active := vm.instruction_budget_active
-	if outer { vm.instruction_budget = limits.max_instructions; vm.instruction_budget_active = limits.max_instructions != 0 }
+	previous_error := vm.instruction_budget_error
+	if outer { vm.instruction_budget = limits.max_instructions; vm.instruction_budget_active = limits.max_instructions != 0; vm.instruction_budget_error = none }
 	vm.external_budget_depth++
 	defer {
 		if outer && !vm.is_executing_module() { vm.run_queued_promise_jobs() }
 		vm.external_budget_depth--
-		if outer { vm.instruction_budget = previous_budget; vm.instruction_budget_active = previous_active }
+		if outer { vm.instruction_budget = previous_budget; vm.instruction_budget_active = previous_active; vm.instruction_budget_error = previous_error }
 	}
 	return call(mut vm, function, this_value, arguments)
 }
@@ -638,11 +649,12 @@ pub fn (mut vm VM) call_with_limits(function Value, this_value Value, arguments 
 pub fn (mut vm VM) run_promise_job_with_limits(job PromiseJob, limits ExecutionLimits) !Value {
 	outer := vm.run_executable_depth == 0 && vm.external_budget_depth == 0
 	previous_budget, previous_active := vm.instruction_budget, vm.instruction_budget_active
-	if outer { vm.instruction_budget = limits.max_instructions; vm.instruction_budget_active = limits.max_instructions != 0 }
+	previous_error := vm.instruction_budget_error
+	if outer { vm.instruction_budget = limits.max_instructions; vm.instruction_budget_active = limits.max_instructions != 0; vm.instruction_budget_error = none }
 	vm.external_budget_depth++
 	defer {
 		vm.external_budget_depth--
-		if outer { vm.instruction_budget = previous_budget; vm.instruction_budget_active = previous_active }
+		if outer { vm.instruction_budget = previous_budget; vm.instruction_budget_active = previous_active; vm.instruction_budget_error = previous_error }
 	}
 	vm.consume_execution_budget()!
 	return job()

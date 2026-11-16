@@ -295,6 +295,7 @@ mut:
 	weak_collection_registry ?&WeakCollectionRegistry
 	instruction_budget u64
 	instruction_budget_active bool
+	instruction_budget_error ?IError
 	proxy_operation_depth u32
 	external_budget_depth u32
 	array_join_objects map[voidptr]bool
