@@ -8,6 +8,7 @@ import math
 pub struct DocumentImageColorTransform {
 pub:
 	yuv_rec601_limited bool
+	yuv_jpeg_full bool
 	yuv420_atlas bool
 	gamma f32
 	gamut [9]f32
@@ -56,6 +57,10 @@ pub fn (mut s GpuSurface) draw_document_color_rgba(levels [][]u8, width int, hei
 		|| natural_width <= 0 || natural_height <= 0 || destination_width <= 0 || destination_height <= 0 {
 		return error('gg.canvas: invalid document image')
 	}
+	if color_transform.yuv_jpeg_full && (color_transform.yuv_rec601_limited || color_transform.yuv420_atlas
+        || !document_image_jpeg_upload_supported()) {
+        return error('gg.canvas: invalid or unavailable full-range YUV shader')
+    }
 	if color_transform.yuv_rec601_limited && !document_image_yuv_upload_supported() {
 		return error('gg.canvas: YUV shader is unavailable')
 	}

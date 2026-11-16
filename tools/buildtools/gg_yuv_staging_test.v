@@ -20,6 +20,9 @@ fn test_native_preparer_keeps_yuv_uniform_and_shader_together() ! {
 	assert first_layer.contains('u.color_transform.yuv420_atlas')
 	assert first_layer.contains('fn document_image_yuv_atlas_upload_supported()')
 	assert first_shader.contains('gammaParameters_7.z > 0.0f')
+	assert first_layer.contains('u.color_transform.yuv_jpeg_full')
+	assert first_layer.contains('fn document_image_jpeg_upload_supported()')
+	assert first_shader.contains('gammaParameters_7.w > 0.0f')
 	assert read(join(canvas, 'vox_document_image.v'))!.contains('!document_image_yuv_upload_supported()')
 	prepare_gg_canvas(canvas)!
 	assert read(layer)! == first_layer
@@ -28,7 +31,8 @@ fn test_native_preparer_keeps_yuv_uniform_and_shader_together() ! {
 	// already-installed uniform, capability check or shader branch.
 	patches := json.parse($embed_file('gg_patches.json').to_string())!.as_map()
 	for group in ['prepare_gg_yuv_atlas_uniform', 'prepare_gg_yuv_atlas_support',
-		'prepare_gg_yuv_atlas_shader'] {
+		'prepare_gg_yuv_atlas_shader', 'prepare_gg_jpeg_uniform', 'prepare_gg_jpeg_support',
+		'prepare_gg_jpeg_shader'] {
 		operation := patches[group]!.as_array()[0].as_map()
 		path := join(canvas, operation['file']!.str())
 		os.write_file(path, read(path)!.replace_once(operation['new']!.str(), operation['old']!.str()))!

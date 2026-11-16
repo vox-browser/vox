@@ -3,6 +3,41 @@ module main
 
 import ggshape
 
+fn test_jpeg_native_callback_preserves_full_range_color_and_tile_sample_ownership() {
+	previous := document_geometry_grid
+	defer { document_geometry_grid = previous }
+	document_geometry_grid = DocumentGeometryGrid{
+		width: 64, height: 64, columns: 2, rows: 2, origin_x: 31, origin_y: -7,
+		cells: [i32(1), 2]
+	}
+	source := []u8{len: 4 * 4 * 4, init: [u8(128), 120, 145, 255][index % 4]}
+	clip := [f32(12), 15, 95, 90, 0, 0, 0, 0, 0, 0, 0, 0]!
+	mut single := []u8{len: 130 * 532, init: 173}
+	mut multi := single.clone()
+	assert ggshape.draw_sampled_jpeg_clipped(single.data, 130, 130, 532, 1,
+		source, 4, 4, 20.375, 22.375, 79.25, 77.25, 1, 16, 16, clip) == 1
+	assert ggshape.draw_sampled_jpeg_clipped(multi.data, 130, 130, 532, 1,
+		source, 4, 4, 20.375, 22.375, 79.25, 77.25, 4, 16, 16, clip) == 1
+	assert single != multi
+	mut actual := []u8{len: 130 * 532, init: 173}
+	assert document_sampled_png_pixels(actual.data, 130, 130, 532, 1, 29, -9,
+		source.data, 4, 4, 16, 16, 6, 20.375, 22.375, 79.25, 77.25, &clip[0]) == 1
+	swap_document_raster_channels(actual.data, 130, 130, 532)
+	for y in 0 .. 130 {
+		for x in 0 .. 133 {
+			for c in 0 .. 4 {
+				i := y * 532 + x * 4 + c
+				if x < 2 || y < 2 || x >= 128 || y >= 128 {
+					assert actual[i] == 173
+				} else {
+					expected := if (x >= 65) != (y >= 65) { multi[i] } else { single[i] }
+					assert actual[i] == expected, 'pixel ${x},${y},${c}'
+				}
+			}
+		}
+	}
+}
+
 fn test_yuv_readback_preserves_each_tiles_sample_count_and_backdrop_fringe() {
 	previous := document_geometry_grid
 	defer { document_geometry_grid = previous }
@@ -32,7 +67,7 @@ fn test_yuv_readback_preserves_each_tiles_sample_count_and_backdrop_fringe() {
 		source, 4, 4, 20.375, 22.375, 79.25, 77.25, 4, 16, 16, clip) == 1
 	assert single != multisampled
 	assert draw_document_sampled_yuv_tiles(pixels.data, 130, 130, 532, 1,
-		29, -9, source, 4, 4, 20.375, 22.375, 79.25, 77.25, 16, 16, clip, false, false) == 1
+		29, -9, source, 4, 4, 20.375, 22.375, 79.25, 77.25, 16, 16, clip, false, false, false) == 1
 	for py in 0 .. 130 {
 		for px in 0 .. 133 {
 			for c in 0 .. 4 {
@@ -83,11 +118,15 @@ fn test_yuv_tile_rejection_leaves_the_native_destination_unchanged() {
 	for first_x in [0, 60, 124, -3] {
 		assert draw_document_sampled_yuv_tiles(pixels.data, 16, 16, 64, 1,
 			first_x, 0, [u8(80), 128, 128, 0], 1, 1, 0, 0, 16, 16,
-			1, 1, [12]f32{}, false, false) == 0
+			1, 1, [12]f32{}, false, false, false) == 0
 		assert pixels.all(it == 97)
 	}
 	assert document_sampled_png_pixels(pixels.data, 16, 16, 64, 1, 60, 0,
 		[u8(80), 128, 128, 0].data, 1, 1, 1, 1, 3, 0, 0, 16, 16,
+		&[12]f32{}[0]) == 0
+	assert pixels.all(it == 97)
+	assert document_sampled_png_pixels(pixels.data, 16, 16, 64, 1, 60, 0,
+		[u8(80), 128, 128, 0].data, 1, 1, 1, 1, 6, 0, 0, 16, 16,
 		&[12]f32{}[0]) == 0
 	assert pixels.all(it == 97)
 }

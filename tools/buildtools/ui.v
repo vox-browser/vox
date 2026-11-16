@@ -46,6 +46,17 @@ fn prepare_gg_canvas(canvas string) ! {
             gg_patches(canvas, 'prepare_gg_yuv_atlas_shader')!
         }
     }
+    if image_helper.contains('yuv_jpeg_full') {
+        if !read(layer)!.contains('u.color_transform.yuv_jpeg_full') {
+            gg_patches(canvas, 'prepare_gg_jpeg_uniform')!
+        }
+        if !read(layer)!.contains('fn document_image_jpeg_upload_supported()') {
+            gg_patches(canvas, 'prepare_gg_jpeg_support')!
+        }
+        if !read(join(canvas, 'shaders/paint_snippets.metal'))!.contains('gammaParameters_7.w > 0.0f') {
+            gg_patches(canvas, 'prepare_gg_jpeg_shader')!
+        }
+    }
 	write_changed(join(canvas, 'vox_document_image.v'), image_helper)!
 }
 

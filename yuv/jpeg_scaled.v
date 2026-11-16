@@ -3,6 +3,20 @@ module yuv
 import math
 import cpuraster
 
+// Preserve independent full-range components until the GPU's final sample.
+pub fn jpeg_scaled_upload(planes []u8, width int, height int, tw int, th int, subsampled bool) ?[]u8 {
+	scaled := jpeg_scaled_planes(planes, width, height, tw, th, subsampled) or { return none }
+	size := tw * th
+	mut packed := []u8{len: size * 4}
+	for i in 0 .. size {
+		packed[i * 4] = scaled[i]
+		packed[i * 4 + 1] = scaled[size + i]
+		packed[i * 4 + 2] = scaled[size * 2 + i]
+		packed[i * 4 + 3] = 255
+	}
+	return packed
+}
+
 // Chromium's scaled YUV decode promotes chroma to 4:4:4 at the upload size.
 // Filter each plane before RGB conversion; filtering converted RGB changes
 // both chroma reconstruction and clipping of out-of-gamut samples.

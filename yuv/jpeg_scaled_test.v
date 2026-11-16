@@ -1,5 +1,20 @@
 module yuv
 
+fn test_scaled_jpeg_upload_preserves_plane_values_before_rgb_clipping() {
+	mut planes := []u8{len: 24, init: 128}
+	for i, value in [0, 255, 0, 255] { planes[16 + i] = u8(value) }
+	packed := jpeg_scaled_upload(planes, 4, 4, 2, 2, true) or { panic('upload') }
+	assert packed == [u8(128), 0, 128, 255, 128, 255, 128, 255, 128, 0, 128, 255,
+		128, 255, 128, 255]
+	assert jpeg_scaled_upload(planes[..23], 4, 4, 2, 2, true) == none
+	assert jpeg_scaled_upload(planes, 4, 4, 0, 2, true) == none
+	assert jpeg_scaled_upload(planes, 4, 4, 5, 2, true) == none
+	assert jpeg_scaled_upload(planes, 3, 4, 2, 2, true) == none
+	// A 4:4:4 upload must not interpret its U and V as subsampled planes.
+	single := jpeg_scaled_upload([u8(70), 90, 110], 1, 1, 1, 1, false) or { panic('4:4:4 upload') }
+	assert single == [u8(70), 90, 110, 255]
+}
+
 fn test_plane_resizing_matches_normalized_r8_store_rounding() {
 	// Independent SkPixmap R8 scalePixels results: each source row is enlarged
 	// from two texels to three, placing its middle sample exactly halfway.

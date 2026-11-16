@@ -36,6 +36,15 @@ def prepare(canvas):
                     layer = replace_once(layer, operation['old'], operation['new'])
             elif marker not in snippets:
                 snippets = replace_once(snippets, operation['old'], operation['new'])
+    for group, marker in [('prepare_gg_jpeg_uniform', 'u.color_transform.yuv_jpeg_full'),
+                          ('prepare_gg_jpeg_support', 'fn document_image_jpeg_upload_supported()'),
+                          ('prepare_gg_jpeg_shader', 'gammaParameters_7.w > 0.0f')]:
+        for operation in patches[group]:
+            if operation['file'] == 'gpu_layer.v':
+                if marker not in layer:
+                    layer = replace_once(layer, operation['old'], operation['new'])
+            elif marker not in snippets:
+                snippets = replace_once(snippets, operation['old'], operation['new'])
     for path, value in [(layer_path, layer), (snippets_path, snippets)]:
         if path.is_symlink():
             path.unlink()

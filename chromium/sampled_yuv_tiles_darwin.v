@@ -10,7 +10,7 @@ import os
 // if any tile fails, so the caller can safely use its existing fallback.
 fn draw_document_sampled_yuv_tiles(pixels &u8, width i32, height i32, pitch i32,
 	backdrop i32, first_x int, first_y int, source []u8, sw int, sh int,
-	x f32, y f32, dw f32, dh f32, nw int, nh int, clip [12]f32, gpu_mips bool, atlas bool) i32 {
+	x f32, y f32, dw f32, dh f32, nw int, nh int, clip [12]f32, gpu_mips bool, atlas bool, jpeg_full bool) i32 {
 	grid := document_geometry_grid
 	x0 := first_x - int(math.round(grid.origin_x))
 	y0 := first_y - int(math.round(grid.origin_y))
@@ -48,7 +48,11 @@ fn draw_document_sampled_yuv_tiles(pixels &u8, width i32, height i32, pitch i32,
 			if os.getenv('VOX_DIAGNOSTIC_PNG') != '' {
 				eprintln('VOX_YUV_TILE col=${col} row=${row} samples=${samples} origin=${grid.origin_x},${grid.origin_y}')
 			}
-			drawn := if atlas {
+			drawn := if jpeg_full {
+                ggshape.draw_sampled_jpeg_clipped(tile.data, i32(grid.width), i32(grid.height),
+                    i32(grid.width * 4), backdrop, source, sw, sh, x + dx, y + dy, dw, dh,
+                    samples, nw, nh, local_clip)
+            } else if atlas {
 				ggshape.draw_sampled_yuv_atlas_clipped(tile.data, i32(grid.width), i32(grid.height),
 					i32(grid.width * 4), backdrop, source, sw, sh, x + dx, y + dy, dw, dh,
 					samples, nw, nh, local_clip)

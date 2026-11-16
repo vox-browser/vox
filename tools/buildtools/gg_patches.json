@@ -139,8 +139,29 @@
   "prepare_gg_yuv_atlas_shader": [
     {
       "file": "shaders/paint_snippets.metal",
-      "old": "    float3 yuv = _10_mask.xyz;\n",
-      "new": "    float3 yuv = _10_mask.xyz;\n    if (_globals._anonInterface0->combinedUniformData[_globals.uniformSsboIndex].gammaParameters_7.z > 0.0f) {\n        yuv.yz = sample(_globals.image_4, _in.CoordNormalize_3_Var * 0.5f).yz;\n    }\n"
+      "old": "if (_globals._anonInterface0->combinedUniformData[_globals.uniformSsboIndex].gammaParameters_7.y > 0.0f) {\n    float3 yuv = _10_mask.xyz;\n",
+      "new": "if (_globals._anonInterface0->combinedUniformData[_globals.uniformSsboIndex].gammaParameters_7.y > 0.0f) {\n    float3 yuv = _10_mask.xyz;\n    if (_globals._anonInterface0->combinedUniformData[_globals.uniformSsboIndex].gammaParameters_7.z > 0.0f) {\n        yuv.yz = sample(_globals.image_4, _in.CoordNormalize_3_Var * 0.5f).yz;\n    }\n"
+    }
+  ],
+  "prepare_gg_jpeg_uniform": [
+    {
+      "file": "gpu_layer.v",
+      "old": "\tout << if u.color_transform.yuv420_atlas { f32(1) } else { f32(0) }\n\tout << 0\n",
+      "new": "\tout << if u.color_transform.yuv420_atlas { f32(1) } else { f32(0) }\n\tout << if u.color_transform.yuv_jpeg_full { f32(1) } else { f32(0) }\n"
+    }
+  ],
+  "prepare_gg_jpeg_shader": [
+    {
+      "file": "shaders/paint_snippets.metal",
+      "old": "if (_globals._anonInterface0->combinedUniformData[_globals.uniformSsboIndex].gammaParameters_7.y > 0.0f) {",
+      "new": "if (_globals._anonInterface0->combinedUniformData[_globals.uniformSsboIndex].gammaParameters_7.w > 0.0f) {\n    float3 yuv = _10_mask.xyz;\n    _10_mask = float4(clamp(float3(yuv.x + 1.402000f * yuv.z - 0.703749f,\n                                  yuv.x - 0.344136f * yuv.y - 0.714136f * yuv.z + 0.531211f,\n                                  yuv.x + 1.772000f * yuv.y - 0.889475f), 0.0f, 1.0f), 1.0f);\n} else if (_globals._anonInterface0->combinedUniformData[_globals.uniformSsboIndex].gammaParameters_7.y > 0.0f) {"
+    }
+  ],
+  "prepare_gg_jpeg_support": [
+    {
+      "file": "gpu_layer.v",
+      "old": "const image_uniform_size = 112",
+      "new": "const image_uniform_size = 112\n\nfn document_image_jpeg_upload_supported() bool {\n\treturn gradient_snippet_file.to_string().contains('gammaParameters_7.w > 0.0f')\n}\n"
     }
   ]
 }

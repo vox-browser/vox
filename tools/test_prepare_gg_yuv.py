@@ -22,6 +22,9 @@ class YuvStagingTests(unittest.TestCase):
             self.assertIn(b'document_image_yuv_atlas_upload_supported', expected[0])
             self.assertIn(b'gammaParameters_7.z > 0.0f', expected[1])
             self.assertIn(b'gammaParameters_7.y > 0.0f', expected[1])
+            self.assertIn(b'color_transform.yuv_jpeg_full', expected[0])
+            self.assertIn(b'document_image_jpeg_upload_supported', expected[0])
+            self.assertIn(b'gammaParameters_7.w > 0.0f', expected[1])
             for reset in [layer, shader]:
                 reset.write_text(original_layer if reset == layer else original_shader)
                 prepare(canvas)
