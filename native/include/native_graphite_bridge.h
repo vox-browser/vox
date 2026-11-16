@@ -83,6 +83,10 @@ typedef struct {
     // Other paints and legacy filter paths ignore these optional values.
     int has_filter_clip;
     float filter_clip[4];
+    // An ordinary ancestor intersection in the shape's local coordinates.
+    // GG must simplify it before rasterization, without a second Quartz clip.
+    int has_intersect_clip;
+    float intersect_clip[4];
 } VoxGraphiteShape;
 
 // An SVG path in the browser's serialized segment format: twelve floats per

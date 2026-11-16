@@ -1189,6 +1189,11 @@ int native_document_text_raster_finish(const uint8_t *pixels, int left, int top,
 extern int vox_draw_document_shape_pixels(uint8_t*, int, int, int, int, int, int, VoxGraphiteShape*);
 VOX_NATIVE_STATE VoxGraphiteShape native_v_shape_state;
 
+void native_set_shape_intersect_clip(const float *rect) {
+    native_v_shape_state.has_intersect_clip = rect != NULL;
+    if (rect) memcpy(native_v_shape_state.intersect_clip, rect, 4 * sizeof(float));
+}
+
 static void native_v_shape_filter_clip(VoxGraphiteShape* shape, int32_t* geometry,
     float canvas_height, float sx, float sy, float page_x, float page_y, float scroll_y) {
     if(shape->fill==10 && shape->has_filter_clip==2) {
@@ -5598,6 +5603,17 @@ void native_draw_rounded_rect_srgb(float x, float y, float width, float height,
 		canvas_height - page_y + scroll_y - transform_f);
 	CGPathRef canvas_path = CGPathCreateCopyByTransformingPath(local_path, &to_canvas);
 	CGColorRef cg_color = native_srgb_color(color);
+	// GPU replay owns this intersection. Preserve the same authored clip if
+	// that replay declines and this leaf falls back to Quartz.
+	int intersect_fallback = native_v_shape_state.has_intersect_clip;
+	if (intersect_fallback) {
+		const float *c = native_v_shape_state.intersect_clip;
+		CGContextSaveGState(context);
+		CGPathRef clipped = CGPathCreateWithRect(CGRectMake(c[0], c[1], c[2]-c[0], c[3]-c[1]), &to_canvas);
+		CGContextAddPath(context, clipped);
+		CGContextClip(context);
+		CGPathRelease(clipped);
+	}
 	// The Skia leaf honors the caller's coverage choice; keep it here too.
 	if (native_quartz_scrollbar_leaves) {
 		CGContextSaveGState(context);
@@ -5613,6 +5629,7 @@ void native_draw_rounded_rect_srgb(float x, float y, float width, float height,
 		CGContextStrokePath(context);
 	}
 	if (native_quartz_scrollbar_leaves) CGContextRestoreGState(context);
+	if (intersect_fallback) CGContextRestoreGState(context);
 	CGColorRelease(cg_color);
 	CGPathRelease(canvas_path);
 	CGPathRelease(local_path);

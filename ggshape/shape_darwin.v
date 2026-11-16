@@ -47,6 +47,8 @@ pub mut:
 	has_contour_reference    i32
 	has_filter_clip          i32
 	filter_clip              [4]f32
+	has_intersect_clip       i32
+	intersect_clip           [4]f32
 }
 
 struct GpuState {
@@ -154,6 +156,10 @@ fn draw_shape_pixels(pixels &u8, width i32, height i32, pitch i32, has_backgroun
 
 fn draw_shape_descriptor(mut target canvas.GpuSurface, shape &C.VoxGraphiteShape, width int, height int) ! {
 	target.set_matrix(canvas.Matrix.values(shape.matrix))
+	if shape.has_intersect_clip != 0 {
+		c := shape.intersect_clip
+		target.clip_rect(canvas.Rect.ltrb(c[0], c[1], c[2], c[3]), .intersect, true)!
+	}
 	// Rectangles clipped out without antialiasing, in local coordinates.
 	for i in 0 .. int(shape.clip_out_count) {
 		c := unsafe { &shape.clip_outs[4 * i] }
