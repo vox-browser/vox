@@ -90,7 +90,7 @@ fn (mut host Host) evaluate_timer_source(source string, realm &html.ScriptingRea
 		mut script := libjs.Script.parse(source, host.realm, address, unsafe { nil }) or { return libjs.throw_completion(host.fetch_error_value(mut vm, err)) }
 		return vm.run_with_limits(mut script, libjs.ExecutionLimits{max_instructions: 1000000})
 	}) or {
-		if report := host.hooks.exception { report(exception_message(err)) }
+		if report := host.hooks.exception { report(exception_message_with_stack(err)) }
 		return webidl.throw_value(host.native_abort_reason(host.fetch_error_value(mut host.vm, err)).as_webidl_value()!)
 	}
 	return dom.js_undefined()
@@ -116,7 +116,7 @@ fn (mut host Host) fire_timer(record &TimerBinding, arguments []webidl.Value) !w
 	host.callback_entry(fn [callback, receiver, values] (mut vm libjs.VM) !libjs.Value {
 		return libjs.call(mut vm, callback, receiver, values)
 	}) or {
-		if report := host.hooks.exception { report(exception_message(err)) }
+		if report := host.hooks.exception { report(exception_message_with_stack(err)) }
 		return webidl.throw_value(host.native_abort_reason(host.fetch_error_value(mut host.vm, err)).as_webidl_value()!)
 	}
 	// Timer callback return values are ignored; in particular no thenable adoption.

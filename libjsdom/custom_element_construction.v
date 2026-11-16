@@ -83,7 +83,7 @@ fn upgrade_libjs_custom_element(owner voidptr, element &dom.Element, definition 
 
 fn report_libjs_custom_element_error(owner voidptr, err IError) {
 	host := unsafe { &Host(owner) }
-	if callback := host.hooks.exception { callback(exception_message(err)) }
+	if callback := host.hooks.exception { callback(exception_message_with_stack(err)) }
 }
 
 fn invoke_libjs_custom_element_callback(owner voidptr, element &dom.Element, reaction dom.CustomElementCallbackReaction) ! {
