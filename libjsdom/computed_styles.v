@@ -12,11 +12,12 @@ struct ComputedStyleIndices {
 }
 
 fn (indices &ComputedStyleIndices) get_own_property(key libjs.PropertyName) ?libjs.PropertyDescriptor {
-	if indices.host.closed || !key.is_number() || key.number >= u32(indices.native.length()) {
+	if indices.host.closed || !key.is_number() {
 		return none
 	}
 	persistent := platform.enter_persistent()
 	defer { platform.leave_persistent(persistent) }
+	if key.number >= u32(indices.native.length()) { return none }
 	mut vm := indices.host.vm
 	return libjs.PropertyDescriptor{ value: libjs.Value.from_string(vm.create_string_from_str(indices.native.item(uint(key.number)))), writable: false, enumerable: true, configurable: true }
 }

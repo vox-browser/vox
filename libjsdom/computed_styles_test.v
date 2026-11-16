@@ -5,6 +5,7 @@ import css
 import dom
 import html
 import libjs
+import platform
 
 fn computed_binding_fixture() !(&Host, &libjs.VM) {
 	document := html.parse_document_with_url('<body><div id="target" style="display:block;position:relative;color:red;--answer:42"></div></body>', dom.URL{ value: 'https://computed-style.test/' })
@@ -33,4 +34,19 @@ fn test_computed_style_validates_window_element_and_original_pseudo_conversion()
 	mut host, mut vm := computed_binding_fixture()!
 	defer { host.close() }
 	assert computed_binding_eval(mut vm, 'var e=document.getElementById("target"),marker={},same=false;try{getComputedStyle(e,{toString(){throw marker}})}catch(error){same=error===marker}var count=0;for(var run of [()=>getComputedStyle(),()=>getComputedStyle({}),()=>getComputedStyle(document),()=>getComputedStyle.call({},e)])try{run()}catch(error){if(error instanceof TypeError)count++}same&&count===4')!.as_bool()
+}
+
+fn test_computed_style_queries_keep_document_styles_outside_the_callers_transient_arena() {
+	mut host, mut vm := computed_binding_fixture()!
+	defer { host.close() }
+	mut arena := platform.new_arena('computed style query caller')
+	entry := arena.enter()
+	assert computed_binding_eval(mut vm, 'var e=document.getElementById("target"),s=getComputedStyle(e);s.position==="relative"&&s.length>0&&s[0]===s.item(0)')!.as_bool()
+	arena.leave(entry)
+	element := host.document.get_element_by_id('target')?
+	placeholder := dom.AbstractElement.new(element, none).computed_properties() or { panic('Missing native style view') }
+	native := css.computed_properties_for_element(element) or { panic('Missing computed style') }
+	assert !arena.contains(placeholder) && !arena.contains(native)
+	arena.reset()
+	assert computed_binding_eval(mut vm, 's.position==="relative"&&getComputedStyle(e).display==="block"')!.as_bool()
 }
