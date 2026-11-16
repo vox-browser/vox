@@ -19,6 +19,7 @@ class ForumNewsPixelTests(unittest.TestCase):
         self.assertEqual(archive_decode_preparation({}, {}), 'load-and-paint')
         for policy in ['load-and-paint', 'visible-image-decode']:
             report = dict(oracle=dict(image_decode_preparation=policy),
+                          pixel_reference=dict(image_decode_preparation=policy),
                           archive=dict(source_pixels=dict(image_decode_preparation=policy)))
             self.assertEqual(archive_decode_preparation({}, report), policy)
             self.assertEqual(archive_decode_preparation(dict(image_decode_preparation=policy), report, policy), policy)
@@ -27,6 +28,10 @@ class ForumNewsPixelTests(unittest.TestCase):
                 archive_decode_preparation(dict(image_decode_preparation=other), report)
             with self.assertRaisesRegex(RuntimeError, 'Requested'):
                 archive_decode_preparation({}, report, other)
+            report['pixel_reference']['image_decode_preparation'] = other
+            with self.assertRaisesRegex(RuntimeError, 'Source and archive'):
+                archive_decode_preparation({}, report)
+            report['pixel_reference']['image_decode_preparation'] = policy
             report['archive']['source_pixels']['image_decode_preparation'] = other
             with self.assertRaisesRegex(RuntimeError, 'Source and archive'):
                 archive_decode_preparation({}, report)

@@ -227,6 +227,7 @@ def archive_decode_preparation(manifest, report, requested=None):
     # Replaying those through decode() changes the shared image upload cache.
     recorded = [value for value in [
         report.get('oracle', {}).get('image_decode_preparation'),
+        report.get('pixel_reference', {}).get('image_decode_preparation'),
         report.get('archive', {}).get('source_pixels', {}).get('image_decode_preparation'),
     ] if value is not None]
     source = recorded[0] if recorded else 'load-and-paint'
