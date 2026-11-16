@@ -280,6 +280,25 @@ def publish_website_version(version, host=WEBSITE_HOST, path=WEBSITE_VERSION_FIL
                            'support, then run: v run deploy.vsh --website-only' % (url, served, version))
 
 
+def matches_release_checkout(checkout, frozen, inputs, current):
+    if matches_compiled_checkout(checkout, frozen):
+        return True
+    # The V and Python inventory builders also filter test fixtures differently.
+    # An identical complete checkout proves membership without translating that
+    # filter; retain both early-input and every consumed-file digest check.
+    inventory = frozen.get('source_inventory', {})
+    if (not inputs.get('repository_sha256')
+            or current.get('repository_sha256') != inputs['repository_sha256']
+            or current.get('head') != inputs.get('head') or current.get('dirty') is not False
+            or inventory.get('protocol') != 'production-source-inventory-v1'
+            or not inventory.get('names') or not inventory.get('early_inputs')
+            or not frozen.get('exact_source_manifest')):
+        return False
+    check_fingerprints(inventory['early_inputs'])
+    check_fingerprints(frozen['exact_source_manifest'])
+    return True
+
+
 def verify_release_inputs(checkout, build, commit, expected):
     """Bind the consumed compiler inputs to the clean release checkout."""
     failure = 'The build did not compile the release commit %s; run deploy.vsh again' % commit
@@ -317,7 +336,7 @@ def verify_release_inputs(checkout, build, commit, expected):
                 or frozen.get('source_inputs_at_sealing', inputs) != compiled
                 or current.get('head') != commit or current.get('dirty') is not False
                 or current.get('build_inputs_sha256') != expected
-                or not matches_compiled_checkout(checkout, frozen)):
+                or not matches_release_checkout(checkout, frozen, inputs, current)):
             raise RuntimeError(failure)
 
 

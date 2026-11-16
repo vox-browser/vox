@@ -261,6 +261,22 @@ class ReleaseInputTests(unittest.TestCase):
                 with self.assertRaisesRegex(RuntimeError, 'did not compile the release commit'):
                     self.verify()
 
+    def test_inventory_filter_difference_keeps_all_consumed_file_checks(self):
+        inputs = dict(self.inputs, repository_sha256='identical complete tree')
+        self.build['inputs'] = inputs
+        self.frozen.update(source_inputs=inputs,
+                           source_inventory=dict(protocol='production-source-inventory-v1',
+                                                 names=['main.v'],
+                                                 early_inputs={str(self.proof): release.sha256(self.proof)}),
+                           exact_source_manifest={str(self.proof): release.sha256(self.proof)})
+        self.receipt.write_text(json.dumps(self.frozen))
+        with patch.object(release, 'matches_compiled_checkout', return_value=False), \
+                patch.object(release, 'repository_state', return_value=inputs):
+            self.verify()
+            self.proof.write_text('changed compiler input')
+            with self.assertRaisesRegex(RuntimeError, 'Frozen build input changed'):
+                self.verify()
+
     def test_changed_checkout_or_consumed_files_are_never_released(self):
         for current, matching in [(dict(self.inputs, head='another-commit'), True),
                                   (dict(self.inputs, build_inputs_sha256='changed bytes'), True),
