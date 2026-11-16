@@ -4521,7 +4521,6 @@ intermediates, profiles, guards and locks. All three temporary canonical probes
 are removed. The archive guard and lock are separately copied, verified and
 removed; no owned scratch remains. Shared bundles and dependencies stay.
 
-
 ## Rounded profiled WebP uploads and native reuse, 2026-11-16
 
 `6840391d5` extends the supported opaque, numerically sRGB-profiled VP8 path to
@@ -4605,3 +4604,76 @@ Cleanup inventories **83 owned roots/7,731 files**, preserves and SHA-verifies
 intermediates, profiles, guards and locks. All three temporary canonical probes
 are removed. The archive guard and lock are separately copied, verified and
 removed; no owned scratch remains. Shared bundles and dependencies stay.
+
+## Native YUV sampler isolation, 2026-11-16
+
+`d78d83dc3` adds two focused GPU regressions in
+`ggshape/yuv_native_sampling_darwin_test.v`. Three complete 260×260 BGRA frames
+match independent native Skia Graphite/Metal R8-plane draws exactly. They cover
+256×144→130×73 and 320×180→245×138 near-half sampling, plus 640×360→200×113
+full-plane sampling through original 1280×720 image coordinates. The source
+patterns include rapidly varying luma/chroma and out-of-gamut conversion.
+Twelve independent R8 channel hashes also pin two mip levels each for odd
+13×9 and even 256×144 textures, including halfway byte averages. These are
+component oracles; they do not establish Brave screenshot equality.
+
+The native oracle uses the existing Skia archive revision
+`29ed1e87a0a50f3d8347e988842d9d59e7573efa`, with static-library SHA-256
+`179544f74bb6ebeecc6633e3dd55cf2129d14f0e05e28e8b13503a138f81a97c`.
+Each R8 plane is uploaded without mips, then passed through `TextureFromImage`
+with mipmaps required, forcing GPU generation. Wrapped plane textures supply a
+Rec601-limited YUV image. Linear mip sampling, white sRGB BGRA8 output and a
+single-sample draw supply the frame references. The byte oracle reads actual
+Metal mip textures through a blit; it does not calculate the expected bytes
+with Vox's algorithm. Two fresh native processes reproduce the frame hashes.
+Native sources, commands, header/library pins and readbacks remain in local
+evidence. No existing PNG reference or tolerance changes.
+
+Seven distinct focused V test functions pass: the two new regressions, four
+existing atlas checks and the existing mip check. The new tests also pass with
+literal V `-prod`. Every runtime uses arena poisoning and a 3 GiB memory guard;
+compiler buffers match all 167 selected V witnesses, and shader/executable pins
+remain stable. The C/O0 and `-prod` new-test executable hashes are
+`4d87aa2926b83ebd90dbd0ce52f9bef454c6fd3306b04b5367d0831815e39303`
+and `9c9e30a9c95e9c8d9f8aa55eb3755c27bf47db9629e19ae75fda50d06f27b75b`.
+
+The preceding isolation checks find exact native agreement for the 327,680
+Rec601 palette pixels and for synthetic GPU R8 mips across two patterns and
+256×144, 960×540 and 13×9 dimensions. The real Sullivan image's selected luma
+levels 0–2 and chroma levels 0–1 are also byte-identical. This rules out the
+tested mip-generation and conversion hypotheses, not all sampling behavior.
+For Sullivan's 37,323-pixel interior, native Metal and native Dawn GPU oracles
+each retain **1,836/max1** Brave differences. Vox's isolated full-viewport draw
+retains **1,819/max1**, and differs from the complete native frame at 24 pixels.
+These isolated draws have a different capture context from the homepage.
+Enabling Dawn ShaderF16 produces 18,031/max2 interior differences; changing
+the native sampler bias to -0.5 produces 13,315/max3. Neither is accepted.
+A fresh, pinned Brave process confirms `GraphiteDawnMetal` on this host.
+
+Two C/O0 browser prototypes each complete four workloads/eight fresh captures:
+CNN, Vlang and the two YUV controls. Every pair repeats; Vlang and both controls
+stay exact and unchanged. Both prototypes are rejected:
+
+| Prototype | CNN differences | Corrected | Introduced |
+| --- | ---: | ---: | ---: |
+| Always draw uniform-sample YUV in its document tiles | 4,788→4,788 | 4 | 4 |
+| Normalize limited-YUV coordinates in the fragment shader | 4,788→4,799 | 2 | 13 |
+
+Their executables are
+`4141d1627df743fb32d558261c8d9625e4acf4b3066abbc6ecc2d7fc6bd180c3`
+and `1717c6f3d8e639bdadafcaa7a866f5e8dcd18df69581da7c74216decd457615f`.
+Both retain 889 consumed V witnesses and stable input pins throughout their
+cohorts (945/946 pins). Driver completion does not clear the pixel gate.
+The browser implementation, both preparers and staged shaders are restored
+before the regression commit. **No rendering fix is accepted in this slice;
+CNN remains at 4,788 one-level differences.** Source/replay, Reddit and earlier
+production-validation gates remain open. Available production is unchanged at
+`3c6be545`; no manual production build or new production acceptance is claimed.
+
+Local evidence is under
+`docs/performance/vlang-gradients-20261114/raw/yuv-matrix-20261116/`.
+Cleanup inventories 128 owned roots/2,240 files and preserves and SHA-verifies
+593 evidence files/31,159,021 bytes. Five temporary canonical probes are
+preserved and removed. Owned binaries, intermediates, profiles, guards and
+locks are deleted; the archive guard and lock are separately copied, verified
+and removed. Shared production assets and dependencies remain.

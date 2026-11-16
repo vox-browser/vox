@@ -22,7 +22,10 @@ level off. After the planar mip fix (`eb35365d2`, 6,091→5,160), `6840391d5`
 makes the profiled train photo exact: **372 corrected, zero introduced**, with
 viewport maximum error **9→1**. All 51 pairs repeat; 49 other existing PNGs are
 unchanged and the new rounded/clipped control is exact. A separate forced
-four-sample diagnostic retains seven one-level differences. Production remains
+four-sample diagnostic retains seven one-level differences. Further
+[native YUV sampler isolation](docs/OPTIMIZED_SITES_PIXELS_2026_11_12.md#native-yuv-sampler-isolation-2026-11-16)
+adds exact component regression coverage; both rendering prototypes are rejected
+and CNN's count stays at 4,788. Production remains
 at 6,091; the new source awaits its managed rebuild. CNN retains rendering and
 source/replay failures; its native-repeat correction passes in production.
 Reddit remains unverified (missing historical fixture, earlier live
