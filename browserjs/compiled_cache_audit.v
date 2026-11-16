@@ -12,6 +12,7 @@ pub:
 	native                     libjs.NativeCacheStats
 	frontend                   LibJSFrontendCacheStats
 	function_bytecode          libjs.FunctionCompilationActivity
+	pending_native             []libjs.NativePendingExecutableDiagnostic
 }
 
 // Read counters without creating a context, running JavaScript or flushing
@@ -25,5 +26,6 @@ pub fn (runtime &Runtime) compiled_code_cache_audit() CompiledJavaScriptCacheAud
 		native:                     runtime.native_code_cache_stats()
 		frontend:                   runtime.frontend_code_cache_stats()
 		function_bytecode:          runtime.realm.function_compilation_stats()
+		pending_native:             runtime.agent_vm.pending_native_code_cache_diagnostics(16)
 	}
 }
