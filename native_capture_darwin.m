@@ -3376,6 +3376,9 @@ static CIImage *native_apply_css_blur(CIImage *input, CGFloat radius) {
 	return [filter valueForKey:kCIOutputImageKey];
 }
 
+// Colorize blurred alpha in the unpremultiplied Core Image color domain.
+#include "native/include/native_css_drop_shadow_darwin.h"
+
 static CIImage *native_apply_css_drop_shadow(CIImage *input,
 	NativeCSSFilterOperation operation, CGFloat scale) {
 	CGFloat alpha_matrix[20] = {
@@ -3386,12 +3389,9 @@ static CIImage *native_apply_css_drop_shadow(CIImage *input,
 	};
 	CIImage *shadow = native_css_filter_color_matrix(input, alpha_matrix);
 	shadow = native_apply_css_blur(shadow, operation.third * scale);
-	CGFloat color_matrix[20] = {
-		0, 0, 0, operation.red, 0,
-		0, 0, 0, operation.green, 0,
-		0, 0, 0, operation.blue, 0,
-		0, 0, 0, operation.alpha, 0,
-	};
+	CGFloat color_matrix[20];
+	native_css_drop_shadow_color_matrix(color_matrix, operation.red,
+		operation.green, operation.blue, operation.alpha);
 	shadow = native_css_filter_color_matrix(shadow, color_matrix);
 	CIFilter *offset = [CIFilter filterWithName:@"CIAffineTransform"];
 	[offset setValue:shadow forKey:kCIInputImageKey];
