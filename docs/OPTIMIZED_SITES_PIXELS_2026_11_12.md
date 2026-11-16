@@ -4950,3 +4950,97 @@ Cleanup inventories 71 owned roots/6,362 files, preserving and SHA-verifying
 binaries, intermediates, profiles, guards and locks are removed. Archive guard
 evidence is separately preserved and removed. Shared production bundles and
 native dependencies remain.
+
+### Single visible SVG background pictures, 2026-11-16
+
+`a6edd14de` keeps fractional SVG layout separate from the rounded image recording
+when CSS permits repetition but one recorded tile covers the complete snapped
+clip. The renderer previously retained this distinction only for `no-repeat`.
+The new selection is shared by playback, recording eligibility and MSAA bounds.
+Actual multi-tile backgrounds retain their existing replay. The recording frame
+must match the painted tile dimensions; a 104-pixel recording in a 103-pixel
+painted tile retains the sampler fallback. Non-finite and empty repeat geometry
+are rejected. No image decoder, color matrix, reference or tolerance changes.
+
+The remaining logo/Trump edge errors came from their SVG video placeholder,
+not the foreground YUV image. Exact browser callback captures reveal the loaded
+foreground blends over that placeholder. Its `#f8f8f8` boundary had become 249
+because a fractional SVG container was rounded before viewBox fitting. The new
+path preserves the LayoutUnit container and applies the existing residual scale
+to its independently rounded recording. The placeholder boundary becomes 248,
+and all five complete untagged image rectangles now match the original Brave
+PNG. Initial foreground-only native/GUI probes matched each other but did not
+model the actual backdrop; those diagnostics remain retained and are not new
+references.
+
+Final C/O0/preallocated/no-GC executable
+`da5ce96176a9a6d9bfa2e20bc44d3944ba58ce3b9a7963e52b4338e319252cfa`
+completes **53 workloads/106 fresh captures** plus startup smoke. Every pair
+repeats byte for byte; **all 50 existing non-CNN PNGs are unchanged** from the
+accepted CPU-atlas-mip cohort. CNN improves **94→73**: **21 corrected, zero
+introduced**, maximum channel error one. Sullivan, Trump, Netanyahu, the logo
+and peptides are entirely exact. The remaining 73 pixels are 27 in the profiled
+ice image and 46 in the cropped image at the bottom. All 891 consumed rendering/
+CSS/DOM/layout witnesses and 955 selected pins stay stable. Native guards,
+driver, outer guard and analyses exit zero.
+
+The two new independent Brave controls use a single visible SVG tile with
+fractional container/origin values. Both references repeat byte for byte in two
+fresh private profiles, then are independently reproduced in two more fresh
+processes each while pinning the installed Brave executable, framework Mach-O
+files, active-version aliases, application version, fixture and capture script.
+The installed version is `157.1.99.57`, sRGB, DPR 1, 1024×768, no author scripts.
+Verified captures match the committed new references exactly; no old reference
+is replaced. The flat control improves **490→0** pixels. The nonuniform control
+improves **755→265**, with **490 corrected and zero introduced**; its unsupported
+frame/destination mismatch remains an explicit strict-equality failure.
+
+Fourteen focused V functions pass with arena poisoning and 3 GiB runtime guards:
+six SVG recording/rounding functions (including the new containment and frame
+mismatch regression), five recording/fallback functions and three fractional
+background/MSAA functions. Their executables are
+`6575a226ea5aec0a104752b96957fb30733919084d19bbdd615a7b1c41985512`,
+`eed65be4ea73fe48a7d3a74dddae29bccbd1bc51ccc5e81a2123e15baa9d28e1`
+and `16c1c6e85d4fd7cb5dff5a3e77871a45c1c8f5265fb78eca8fbb9f21c8a61d33`.
+Each retains 275 selected V witnesses. The full screenshot cohort supplies the
+pixel verification; the geometry tests alone do not establish conformance.
+
+Earlier attempts remain retained. Raw floating-point containment selected no
+new path and left CNN/control outputs unchanged. Comparing rounded areas without
+checking recording dimensions fixed CNN but introduced 35 colored-control pixels
+(up to 97 channel levels) in the 104/103 case; that prototype is rejected.
+The accepted size guard restores that case's previous PNG region byte for byte.
+A focused check caught a concurrent platform-font-metrics edit before runtime;
+it was recompiled. A standalone layout probe hit the default 12 GiB compile
+guard and was discarded; successful main-module focused checks keep the guard.
+Diagnostic builds retain their keyword/JSON-import errors and a temporary JSON
+metadata encoder failure. A scalar dump writer recovered the complete draw
+inputs, and all capture-probe source is removed from the canonical checkout.
+No failed or rejected attempt earns pixel/performance credit.
+
+Production advanced while this work ran. Fresh captures on
+`499d9907fe53c55f35882e060e602debb173b3fd8a8778df36c98652e1f03ec6`
+reproduce the preceding tile-coordinate CNN result, 1,197 twice. The subsequently
+completed bundle `7515422c0006a9451ea33a2d7d2f71f15e98cfb9865ef4aa27f4c50b82b7d4e4`
+(C/literal V `-prod`/single C unit, receipt `20261116-114004-5bc27bfa`) contains
+the CPU-atlas-mip implementation and the prior SVG replay. Six sites/twelve
+fresh captures reproduce the accepted CPU-mip diagnostic PNGs exactly:
+CNN **94 twice**, with Vlang, GitHub, Hacker News, Lobsters and Wikipedia zero
+twice each. Executable/native-library/reference/driver pins stay stable.
+
+That shared production build also captured the temporary, inactive draw-input
+probe. Its callback and probe hashes match the retained diagnostic source; the
+capture environment removes the probe variable, so it returns before dump I/O.
+The production evidence applies to this pinned default environment and does not
+establish a clean release build or validate the new SVG source. The probe is
+removed before the feature commit; its managed hook requests the next clean,
+coalesced rebuild. No duplicate manual production build is queued or awaited.
+Frozen-page checks establish no live-site, scripting, scrolling or instruction
+performance acceptance. CNN rendering/source/replay, missing Reddit evidence,
+the new nonuniform fallback and prior inexact controls keep catalog parity open.
+Local evidence: `docs/performance/vlang-gradients-20261114/raw/cnn-single-level-20261116/`.
+Cleanup inventories 136 owned roots/7,849 files, preserving and SHA-verifying
+1,764 evidence files/98,909,232 bytes. All four temporary canonical probe files,
+owned binaries, intermediates, profiles, guards and locks are removed. Archive
+guard evidence is separately retained and removed. Shared production bundles
+and native dependencies remain.

@@ -3451,3 +3451,22 @@ across 51 workloads/102 fresh captures, all matching accepted diagnostics:
 CNN 1,311 twice, and five other archived sites exact. Its compiled source and
 embedded shader predate tile routing and CPU atlas mips; those await the managed
 rebuild. See the [audit](OPTIMIZED_SITES_PIXELS_2026_11_12.md#cpu-byte-mips-for-native-size-near-half-atlases-2026-11-16).
+
+### One recorded SVG background image, 2026-11-16
+
+`a6edd14de` preserves fractional SVG layout when CSS permits repetition but one
+rounded recording covers the snapped clip. Playback and recording/MSAA planning
+share the selection. Mismatched recording/destination sizes keep the sampler
+fallback. CNN improves **94→73**: **21 corrected, zero introduced**. All five
+complete untagged image rectangles are now exact. All 53 pairs repeat; 50 existing
+non-CNN PNGs stay unchanged. Fourteen focused V functions pass under arena
+poisoning and 3 GiB guards. Independently repeated/pinned Brave references add
+an exact flat control and a nonuniform control improving 755→265 with no
+introduced pixels; that control retains an explicit fallback limitation.
+
+Production default captures on `7515422c` confirm the preceding CPU-mip result:
+CNN 94 twice, five other archived sites exact, all twelve PNGs matching accepted
+diagnostics. That shared build contains an inactive capture probe, removed from
+the checkout before this commit. The clean managed rebuild and new SVG production
+validation remain pending. Original references/tolerances are unchanged. See the
+[audit](OPTIMIZED_SITES_PIXELS_2026_11_12.md#single-visible-svg-background-pictures-2026-11-16).

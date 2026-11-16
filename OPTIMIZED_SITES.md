@@ -7,21 +7,22 @@ Results apply to the frozen page and pinned build in each linked report.
 Provisional entries retain unresolved acceptance checks.
 
 **Pixel recheck, 2026-11-16:** Vox does **not** pass pixel equality across
-this catalog. Production `2ba33ee7` confirms the opaque planar-image and fragment
-coordinate fixes: **51 workloads/102 fresh captures** match the preceding
-accepted diagnostics byte for byte. CNN retains **1,311** pixels twice; GitHub,
-Hacker News, Lobsters, Wikipedia and Vlang.io remain exact. Consumed source hashes
-and the complete embedded shader identify those fixes; this bundle predates tile
-routing and the CPU-mip correction below.
+this catalog. Production default captures on `7515422c` now reproduce the CPU
+atlas-mip result: **CNN 94 pixels twice**, with GitHub, Hacker News, Lobsters,
+Wikipedia and Vlang.io exact in two fresh captures each. All twelve PNGs match
+the accepted CPU-mip diagnostics. This shared build contains an inactive capture
+probe; it is removed from the checkout and the clean managed rebuild is queued.
 
-CNN now improves to **94 differing pixels in diagnostics**. After `a56efe4fd`
-retains tile coordinates (1,311→1,197), `9331c0681` preserves CPU byte mips for
-native-size near-half planar uploads: **1,103 corrected, zero introduced**,
-with maximum channel error one. Sullivan, Netanyahu and peptides are entirely
-exact. All **51 workloads/102 fresh captures** repeat exactly, and the other
-**50 PNGs remain unchanged**. Fifteen focused V functions pass; the new native
-frame regression also passes with literal V `-prod`. The managed production
-rebuild is pending. See the [CPU atlas mip audit](docs/OPTIMIZED_SITES_PIXELS_2026_11_12.md#cpu-byte-mips-for-native-size-near-half-atlases-2026-11-16).
+CNN improves further to **73 differing pixels in diagnostics** after `a6edd14de`
+preserves fractional SVG layout when one recorded background image covers the
+snapped clip. This fixes the placeholder beneath the logo and Trump images:
+**21 corrected, zero introduced**, with maximum channel error one. Five complete
+untagged image rectangles are now exact. All **53 workloads/106 fresh captures**
+repeat, and the **50 existing non-CNN PNGs remain unchanged**. Fourteen focused
+V functions pass. A new flat SVG control becomes exact; a nonuniform control
+improves 755→265 without introduced pixels, retaining a known mismatched-frame
+fallback. No existing reference or tolerance changes. The SVG fix awaits the
+managed production rebuild. See the [single-picture SVG audit](docs/OPTIMIZED_SITES_PIXELS_2026_11_12.md#single-visible-svg-background-pictures-2026-11-16).
 
 CNN retains rendering and source/replay failures. Reddit remains unverified
 (missing historical fixture, earlier live HTTP 403). A separate tall-shadow
