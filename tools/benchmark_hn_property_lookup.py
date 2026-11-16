@@ -26,10 +26,13 @@ def main():
     parser.add_argument('--pairs', type=int, default=7)
     parser.add_argument('--cycles', type=int, default=500)
     parser.add_argument('--target-v8-speedup', type=int, default=2)
-    parser.add_argument('--optimization', choices=['property', 'arguments', 'combined', 'registers', 'keys', 'capacity', 'storage', 'dispatch', 'indices', 'frames', 'calls', 'reads', 'arrays', 'collections', 'walk', 'helpers', 'references', 'layout', 'frame-access'], default='property')
+    parser.add_argument('--optimization', choices=['property', 'arguments', 'combined', 'registers', 'keys', 'capacity', 'storage', 'dispatch', 'indices', 'frames', 'calls', 'reads', 'arrays', 'collections', 'walk', 'helpers', 'references', 'bindings', 'accessors', 'forward', 'search', 'forward-search', 'envs', 'instruction-borrowing', 'layout', 'frame-access', 'values', 'key-records'], default='property')
     args = parser.parse_args()
     if args.pairs < 7 or args.cycles < 1 or args.target_v8_speedup < 1:
         parser.error('Use at least seven pairs and positive cycle counts')
+    if args.optimization in ['layout', 'frame-access', 'values', 'key-records', 'instruction-borrowing'] and not args.control_binary:
+        parser.error('Cross-binary comparisons require --control-binary')
+    separate_cache = bool(args.control_binary) or args.optimization in ['registers', 'dispatch', 'layout', 'frame-access', 'values', 'key-records']
     binary, output = args.binary.resolve(), args.output.resolve()
     output.mkdir(parents=True, exist_ok=False)
     replay = Replay(hn.ARCHIVE, output / 'replay')
@@ -49,8 +52,6 @@ def main():
                   optimization=args.optimization,
                   attempts=[], inputs={}, replay=replay.ready, image_aliases=aliases,
                   host_before=hn.host())
-    if args.optimization in ['layout', 'frame-access'] and not args.control_binary:
-        parser.error('Cross-binary comparisons require --control-binary')
     report['control'] = {'property': 'linear property lookup; arguments elision disabled',
                          'arguments': 'property hints enabled; arguments elision disabled',
                          'combined': 'linear property lookup; arguments elision disabled',
@@ -60,8 +61,17 @@ def main():
                          'storage': 'property hints, arguments elision and register bindings; legacy keys/capacity',
                          'dispatch': 'all prior optimizations; primitive wrappers, full validation and empty block environments',
                          'indices': 'all prior optimizations; decimal/UTF16 array index keys',
+                         'bindings': 'compact references; ordinary environment resolution',
+                         'accessors': 'all prior optimizations; full ordinary accessor/data-write descriptors',
+                         'forward': 'ordinary accessor dispatch; owning Function.prototype.call forwarding',
+                         'search': 'forwarded call slices; separate array HasProperty and Get',
+                         'forward-search': 'ordinary accessors; owning call forwarding and separate array reads',
+                         'envs': 'forwarded calls and own array reads; new function environments',
+                         'instruction-borrowing': 'all prior optimizations; copied dispatch instruction records',
                          'references': 'shared dynamic handlers; materialized Reference records',
                          'helpers': 'shared dynamic handlers disabled',
+                         'key-records': '16-byte values; wide property keys and owning name headers',
+                         'values': 'all prior optimizations; 24-byte separate number/cell values',
                          'frame-access': 'shared native handlers; generic frame arrays and out-of-line slot checks',
                          'layout': 'all runtime optimizations; prior UTF16 record layout',
                          'walk': 'all prior optimizations; capturing collection traversal adapter',
@@ -79,8 +89,17 @@ def main():
                            'storage': 'property hints, arguments elision and register bindings; cached keys/exact capacity',
                            'dispatch': 'all prior optimizations; direct primitive reads, validation reuse and empty block no-ops',
                            'indices': 'all prior optimizations; canonical numeric array index keys',
+                           'bindings': 'compact references; skip empty concrete environments and read live own global data',
+                           'accessors': 'live ordinary accessor dispatch and own data writes',
+                           'forward': 'copying callees borrow Function.prototype.call frame tails',
+                           'search': 'forwarded calls and combined live own array data reads',
+                           'forward-search': 'borrowed call forwarding and combined live own array data reads',
+                           'envs': 'reuse empty function environments with dynamic escape guards',
+                           'instruction-borrowing': 'all prior optimizations; borrowed executable instruction records',
                            'references': 'shared dynamic handlers; direct object/environment reads',
                            'helpers': 'shared dynamic handlers enabled',
+                           'key-records': '16-byte values; compact tagged keys and bounded binding-name reuse',
+                           'values': 'all prior optimizations; 16-byte shared number/cell payload',
                            'frame-access': 'shared native handlers; checked typed frame access and inline slot validation',
                            'layout': 'all runtime optimizations; compact optional ASCII payload',
                            'walk': 'all prior optimizations; direct collection traversal',
@@ -100,8 +119,8 @@ def main():
 
     def run(config, label, diagnostic=False, seed=False):
         verify()
-        cache_key = config if args.optimization in ['registers', 'dispatch', 'layout', 'frame-access'] else 'shared'
-        cache = output / ('native-cache-' + config) if args.optimization in ['registers', 'dispatch', 'layout', 'frame-access'] else shared_cache
+        cache_key = config if separate_cache else 'shared'
+        cache = output / ('native-cache-' + config) if separate_cache else shared_cache
         engine = 'libjs' if seed else 'v8' if config == 'v8' else 'libjs-warm'
         env = dict(environment, VOX_HN_ENGINE_BENCHMARK=engine,
                    VOX_HN_ENGINE_CYCLES=str(args.cycles), VOX_LIBJS_NATIVE_CACHE=str(cache),
@@ -112,6 +131,11 @@ def main():
                    VOX_LIBJS_VALIDATION_CACHE='0', VOX_LIBJS_EMPTY_SCOPES='0', VOX_LIBJS_NUMERIC_KEYS='0', VOX_LIBJS_CONTEXT_REUSE='0',
                    VOX_PROFILE_DIR=str(output / (label + '-profile')),
                    LADYBIRD_CACHE_DIR=str(output / (label + '-http-cache')), VOX_TEST_WINDOW='1')
+        env['VOX_LIBJS_FAST_BINDINGS'] = '1' if args.optimization in ['accessors', 'forward', 'search', 'forward-search', 'envs', 'instruction-borrowing'] or (args.optimization == 'bindings' and config != 'control') else '0'
+        env['VOX_LIBJS_DIRECT_ACCESSORS'] = '1' if args.optimization in ['forward', 'search', 'forward-search', 'envs', 'instruction-borrowing'] or (args.optimization == 'accessors' and config != 'control') else '0'
+        env['VOX_LIBJS_FORWARD_CALL_ARGUMENTS'] = '1' if args.optimization in ['search', 'envs', 'instruction-borrowing'] or (args.optimization in ['forward', 'forward-search'] and config != 'control') else '0'
+        env['VOX_LIBJS_ARRAY_SEARCH_READS'] = '1' if args.optimization in ['envs', 'instruction-borrowing'] or (args.optimization in ['search', 'forward-search'] and config != 'control') else '0'
+        env['VOX_LIBJS_REUSE_FUNCTION_ENVIRONMENTS'] = '1' if args.optimization == 'instruction-borrowing' or (args.optimization == 'envs' and config != 'control') else '0'
         env['VOX_LIBJS_COMPACT_REFERENCES'] = '0' if config == 'control' and args.optimization == 'references' else '1'
         env['VOX_LIBJS_NATIVE_DYNAMIC'] = '0' if config == 'control' and args.optimization == 'helpers' else '1'
         env['VOX_LIBJS_DIRECT_COLLECTION_WALK'] = '0'
@@ -120,22 +144,22 @@ def main():
         env['VOX_LIBJS_SHORT_STRINGS'] = '0'
         env['VOX_LIBJS_DIRECT_READS'] = '0'
         env['VOX_LIBJS_BORROW_ARGUMENTS'] = '0'
-        if args.optimization in ['frames', 'calls', 'reads', 'arrays', 'collections', 'walk', 'helpers', 'references', 'layout', 'frame-access']:
+        if args.optimization in ['frames', 'calls', 'reads', 'arrays', 'collections', 'walk', 'helpers', 'references', 'bindings', 'accessors', 'forward', 'search', 'forward-search', 'envs', 'instruction-borrowing', 'layout', 'frame-access', 'values', 'key-records']:
             for setting in ['LOOKUP_HINTS', 'ARGUMENT_ELISION', 'REGISTER_BINDINGS', 'BUILTIN_KEYS',
                             'EXACT_CONTEXT', 'PRIMITIVE_READS', 'VALIDATION_CACHE', 'EMPTY_SCOPES', 'NUMERIC_KEYS']:
                 env['VOX_LIBJS_' + setting] = '1'
             env['VOX_LIBJS_CONTEXT_REUSE'] = '0' if config == 'control' and args.optimization == 'frames' else '1'
             env['VOX_LIBJS_SHORT_STRINGS'] = '0'
             env['VOX_LIBJS_DIRECT_READS'] = '0'
-            if args.optimization in ['reads', 'arrays', 'collections', 'walk', 'helpers', 'references', 'layout', 'frame-access']:
+            if args.optimization in ['reads', 'arrays', 'collections', 'walk', 'helpers', 'references', 'bindings', 'accessors', 'forward', 'search', 'forward-search', 'envs', 'instruction-borrowing', 'layout', 'frame-access', 'values', 'key-records']:
                 env['VOX_LIBJS_BORROW_ARGUMENTS'] = '1'
                 env['VOX_LIBJS_SHORT_STRINGS'] = '0' if config == 'control' and args.optimization == 'reads' else '1'
                 env['VOX_LIBJS_DIRECT_READS'] = '0' if config == 'control' and args.optimization == 'reads' else '1'
-                if args.optimization in ['arrays', 'collections', 'walk', 'helpers', 'references', 'layout', 'frame-access']:
+                if args.optimization in ['arrays', 'collections', 'walk', 'helpers', 'references', 'bindings', 'accessors', 'forward', 'search', 'forward-search', 'envs', 'instruction-borrowing', 'layout', 'frame-access', 'values', 'key-records']:
                     env['VOX_LIBJS_FRESH_ARRAYS'] = '0' if config == 'control' and args.optimization == 'arrays' else '1'
-                if args.optimization in ['collections', 'walk', 'helpers', 'references', 'layout', 'frame-access']:
+                if args.optimization in ['collections', 'walk', 'helpers', 'references', 'bindings', 'accessors', 'forward', 'search', 'forward-search', 'envs', 'instruction-borrowing', 'layout', 'frame-access', 'values', 'key-records']:
                     env['VOX_LIBJS_CLASS_QUERY_CACHE'] = '0' if config == 'control' and args.optimization == 'collections' else '1'
-                if args.optimization in ['walk', 'helpers', 'references', 'layout', 'frame-access']:
+                if args.optimization in ['walk', 'helpers', 'references', 'bindings', 'accessors', 'forward', 'search', 'forward-search', 'envs', 'instruction-borrowing', 'layout', 'frame-access', 'values', 'key-records']:
                     env['VOX_LIBJS_DIRECT_COLLECTION_WALK'] = '0' if config == 'control' and args.optimization == 'walk' else '1'
             if args.optimization == 'calls':
                 env['VOX_LIBJS_BORROW_ARGUMENTS'] = '0' if config == 'control' else '1'
@@ -241,6 +265,26 @@ def main():
                         raise ValueError('HN did not exercise numeric keys without string fallback')
                     if config == 'control' and (index_activity['strings'] <= 0 or index_activity['numeric'] != 0):
                         raise ValueError('HN control did not construct decimal/UTF16 index keys')
+                if diagnostic and config != 'v8' and args.optimization == 'instruction-borrowing':
+                    if visit['activity'].get('function_environments_reused', 0) <= 0:
+                        raise ValueError('Both instruction controls must retain environment reuse')
+                if diagnostic and config != 'v8' and args.optimization == 'envs':
+                    if (visit['activity'].get('function_environments_reused', 0) > 0) != (config == 'candidate'):
+                        raise ValueError('Function environment reuse eligibility mismatch')
+                if diagnostic and config != 'v8' and args.optimization in ['forward', 'search', 'forward-search']:
+                    activity = visit['activity']
+                    if args.optimization in ['forward', 'forward-search'] and ((activity.get('forwarded_call_slices', 0) > 0) != (config == 'candidate')):
+                        raise ValueError('Forwarded call eligibility mismatch')
+                    if args.optimization in ['search', 'forward-search'] and ((activity.get('direct_array_search_reads', 0) > 0) != (config == 'candidate')):
+                        raise ValueError('Array search read eligibility mismatch')
+                if diagnostic and config != 'v8' and args.optimization == 'accessors':
+                    used = visit['activity'].get('direct_accessor_gets', 0) > 0 and visit['activity'].get('direct_accessor_sets', 0) > 0
+                    if used != (config == 'candidate'):
+                        raise ValueError('Direct accessor eligibility mismatch')
+                if diagnostic and config != 'v8' and args.optimization == 'bindings':
+                    used = visit['activity']['own_global_binding_reads'] > 0 and visit['activity']['empty_binding_environments_skipped'] > 0
+                    if used != (config == 'candidate'):
+                        raise ValueError('Fast binding read eligibility mismatch')
                 if diagnostic and config != 'v8' and args.optimization == 'references':
                     if (visit['activity']['compact_reference_reads'] > 0) != (config == 'candidate'):
                         raise ValueError('Compact reference read eligibility mismatch')
@@ -324,23 +368,17 @@ def main():
             paths = [binary, binary.parent / 'libVoxJSCOnV8.dylib', hn.SCRIPT, hn.PAGE,
                      hn.ARCHIVE / 'manifest.json', *sorted((hn.ARCHIVE / 'bodies').iterdir()),
                      hn.ASSETS / 's.gif', hn.ASSETS / 'y18.svg', Path(__file__), Path(hn.__file__),
-                     hn.ROOT / 'libjs/property_lookup.v', hn.ROOT / 'libjs/object.v',
-                     *[hn.ROOT / ('libjs/' + name) for name in [
-                         'register_bindings.v', 'ecmascript_function.v', 'bytecode_generator.v',
-                         'arguments_elision.v', 'destructuring_assignment.v',
-                         'object_binding_execution.v', 'optional_chain_execution.v',
-                         'builtin_property_keys.v', 'vm.v', 'array_object.v', 'array_like.v',
-                         'collection_intrinsics.v', 'primitive_string.v', 'context_capacity.v',
-                         'execution_context.v', 'reference.v', 'value_property_access.v',
-                         'primitive_reads.v', 'validation_cache.v', 'instruction.v', 'executable.v',
-                         'empty_scopes.v', 'interpreter.v', 'native_tier.v', 'native_dynamic_dispatch.v', 'array_index_keys.v',
-                         'array_iterator.v', 'context_reuse.v', 'interpreter_stack.v',
-                         'native_function.v', 'native_code_cache.v', 'utf16_utils.v', 'utf16_ascii_storage.v', 'call_argument_storage.v', 'direct_property_reads.v', 'short_string_cache.v', 'fresh_array_storage.v', 'array_object.v', 'string_split.v']],
-                     hn.ROOT / 'dom/collection_walk.v', hn.ROOT / 'dom/collections_ranges.v',
-                     hn.ROOT / 'libjsdom/class_query_cache.v', hn.ROOT / 'libjsdom/host.v', hn.ROOT / 'libjsdom/nodes.v',
                      hn.ROOT / 'sites/hacker_news_engine_benchmark_test.v',
                      hn.ROOT / 'tools/page_archive.py',
                      *sorted((hn.ROOT / 'Build/v').glob('*.dylib'))]
+            report['frozen_builds'] = {}
+            receipt_images = [binary] + ([args.control_binary.resolve()] if args.control_binary else [])
+            for built_image in receipt_images:
+                receipts, metadata = hn.build_receipts(built_image)
+                if metadata is None:
+                    raise ValueError('Use build_hn_engine_benchmark.py for sealed source provenance')
+                paths.extend(receipts)
+                report['frozen_builds'][str(built_image)] = metadata
             report['linked_libraries'] = {}
             if args.control_binary:
                 paths.append(args.control_binary.resolve())
@@ -358,7 +396,7 @@ def main():
                 if not any(symbol + ' ' in line and '(from libVoxJSCOnV8)' in line for line in imports.splitlines()):
                     raise ValueError('JavaScript entry does not bind to V8: ' + symbol)
             run('control', 'seed-control', seed=True)
-            if args.optimization in ['registers', 'dispatch', 'layout', 'frame-access']:
+            if separate_cache:
                 run('candidate', 'seed-candidate', seed=True)
             for config in ['control', 'candidate', 'v8']:
                 run(config, 'diagnostic-' + config, True)

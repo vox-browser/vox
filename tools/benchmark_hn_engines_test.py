@@ -1,11 +1,15 @@
 import copy
 import hashlib
+import json
+import shutil
+import subprocess
+import sys
 from pathlib import Path
 from tempfile import TemporaryDirectory
 from types import SimpleNamespace
 import unittest
 
-from benchmark_hn_engines import PAGE, SCRIPT, add_image_aliases, validate
+from benchmark_hn_engines import PAGE, SCRIPT, add_image_aliases, validate, validate_memory, validate_visit_memory, build_receipts
 
 
 class HNEngineEvidenceTest(unittest.TestCase):
@@ -24,6 +28,92 @@ class HNEngineEvidenceTest(unittest.TestCase):
 
     def check_pair(self, cold=None, warm=None, diagnostic=False):
         validate([cold or self.cold, warm or self.warm], 'libjs', 100, diagnostic, self.pins)
+
+    def test_sealed_build_receipts_bind_source_provenance_to_the_measured_output(self):
+        with TemporaryDirectory() as temporary:
+            binary = (Path(temporary) / 'benchmark').resolve()
+            self.assertEqual(build_receipts(binary), ([], None))
+            directory = binary.with_name(binary.name + '.build')
+            directory.mkdir()
+            (directory / 'configuration.json').write_text(json.dumps(dict(c_mode='single')))
+            (directory / 'source-manifest.json').write_text(json.dumps({'source.v': 'sha'}))
+            frozen = dict(complete=True, compiler_exit=0, compiler_command=['clang', '-o', str(binary)], source_inputs={'head': 'commit'})
+            path = directory / 'frozen-compile.json'
+            path.write_text(json.dumps(frozen))
+            files, metadata = build_receipts(binary)
+            self.assertEqual(len(files), 3)
+            self.assertEqual(metadata['source_inputs']['head'], 'commit')
+            for change in [dict(complete=False), dict(compiler_exit=1), dict(compiler_command=['clang', '-o']), dict(compiler_command=['clang', '-o', '/another/binary'])]:
+                path.write_text(json.dumps(dict(frozen, **change)))
+                with self.subTest(change=change), self.assertRaises(ValueError):
+                    build_receipts(binary)
+
+    def test_rejects_missing_inconsistent_or_accidentally_enabled_memory_probe(self):
+        process = dict(peak_rss_bytes=1000)
+        visits = [dict(self_peak_rss_bytes=500), dict(self_peak_rss_bytes=700)]
+        validate_visit_memory(visits, process, True)
+        validate_visit_memory([{}], process, False)
+        for values in [[{}, {}], [dict(self_peak_rss_bytes=-1)],
+                       [dict(self_peak_rss_bytes=1001)], list(reversed(visits))]:
+            with self.subTest(values=values), self.assertRaises(ValueError):
+                validate_visit_memory(values, process, True)
+        with self.assertRaises(ValueError):
+            validate_visit_memory(visits, process, False)
+
+    @unittest.skipUnless(sys.platform in ('darwin', 'linux') and shutil.which('clang'), 'Unix clang needed')
+    def test_self_peak_excludes_compiler_child_and_uses_bytes(self):
+        header = Path(__file__).resolve().parents[1] / 'sites/engine_peak_rss.h'
+        source = '#include "' + str(header) + '"\n' + r'''
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <sys/wait.h>
+int main(void) {
+    pid_t pid = fork();
+    if (pid < 0) return 2;
+    if (pid == 0) {
+        volatile char *data = malloc(64 * 1024 * 1024);
+        if (!data) _exit(3);
+        for (size_t n = 0; n < 64 * 1024 * 1024; n += 4096) data[n] = 1;
+        _exit(0);
+    }
+    struct rusage child; int status;
+    if (wait4(pid, &status, 0, &child) != pid || status) return 4;
+    uint64_t peak = child.ru_maxrss;
+#if !defined(__APPLE__)
+    peak *= 1024;
+#endif
+    printf("%llu %llu", (unsigned long long)vox_hn_self_peak_rss_bytes(), (unsigned long long)peak);
+}
+'''
+        with TemporaryDirectory() as directory:
+            binary = Path(directory) / 'rss'
+            subprocess.run(['clang', '-O0', '-x', 'c', '-', '-o', str(binary)], input=source,
+                           text=True, capture_output=True, check=True)
+            result = subprocess.run([str(binary)], text=True, capture_output=True, check=True)
+            own, child = map(int, result.stdout.split())
+            self.assertGreater(own, 0)
+            self.assertGreater(child, 32 * 1024 * 1024)
+            self.assertLess(own, child // 2)
+
+    def test_wait4_receipt_preserves_output_exit_and_reports_child_peak_ram(self):
+        with TemporaryDirectory() as directory:
+            report = Path(directory) / 'process.json'
+            command = [sys.executable, '-c', 'data=bytearray(8*1024*1024);print("child-output");raise SystemExit(0)']
+            result = subprocess.run([sys.executable, str(Path(__file__).with_name('benchmark_hn_engines.py')),
+                                     '--measure-child', str(report), *command], text=True, capture_output=True)
+            self.assertEqual(result.returncode, 0)
+            self.assertEqual(result.stdout.strip(), 'child-output')
+            record = json.loads(report.read_text())
+            validate_memory(record, command)
+            self.assertGreater(record['peak_rss_bytes'], 8*1024*1024)
+            for key, value in [('peak_rss_bytes', 0), ('exit', 1), ('pid', -1), ('command', [])]:
+                with self.subTest(key=key), self.assertRaises(ValueError):
+                    validate_memory(dict(record, **{key: value}), command)
+            failure = subprocess.run([sys.executable, str(Path(__file__).with_name('benchmark_hn_engines.py')),
+                                     '--measure-child', str(report), sys.executable, '-c', 'raise SystemExit(7)'])
+            self.assertEqual(failure.returncode, 7)
+            self.assertEqual(json.loads(report.read_text())['exit'], 7)
 
     def test_jsc_requires_native_context_and_exact_visit(self):
         visit = dict(self.cold, mode='jsc', native_context=True, cache=dict(last_error='', invalid_entries=0))

@@ -9,8 +9,10 @@ import hashlib
 import json
 import math
 import os
+import signal
 from pathlib import Path
 import statistics
+import sys
 import subprocess
 import threading
 import time
@@ -29,6 +31,22 @@ METRICS = ['initialization_ms', 'first_cycle_ms', 'callback_ms', 'compile_finish
 def digest(path):
     with Path(path).open('rb') as file:
         return hashlib.file_digest(file, 'sha256').hexdigest()
+
+
+def build_receipts(binary):
+    """Pin sealed build provenance; runtime trials do not consume live V sources."""
+    binary = Path(binary).resolve()
+    directory = binary.with_name(binary.name + '.build')
+    if not directory.is_dir():
+        return [], None
+    files = [directory / name for name in ['configuration.json', 'source-manifest.json', 'frozen-compile.json']]
+    configuration, sources, frozen = [json.loads(path.read_text()) for path in files]
+    command = frozen.get('compiler_command', [])
+    if (frozen.get('complete') is not True or frozen.get('compiler_exit') != 0
+            or '-o' not in command or command[command.index('-o') + 1:command.index('-o') + 2] != [str(binary)]
+            or not sources):
+        raise ValueError('Missing or inconsistent sealed build: ' + str(binary))
+    return files, dict(configuration=configuration, source_inputs=frozen['source_inputs'])
 
 
 def host():
@@ -98,8 +116,45 @@ def validate(visits, engine, cycles, diagnostic, pins):
             raise ValueError('Restart did not execute cached native code')
 
 
+def measure_child(report_path, command):
+    """Wait for one directly launched benchmark; no polling in timed regions."""
+    report_path = Path(report_path)
+    process = subprocess.Popen(command, cwd=ROOT, start_new_session=True)
+    report = dict(pid=process.pid, command=command, new_session=True,
+                  metric='wait4 peak including the largest reaped descendant; not aggregate tree RSS; cold/same-process warm share one process')
+    report_path.write_text(json.dumps(report, indent=2) + '\n')
+    _, status, usage = os.wait4(process.pid, 0)
+    process.returncode = os.waitstatus_to_exitcode(status)
+    report.update(exit=process.returncode,
+                  peak_rss_bytes=int(usage.ru_maxrss) * (1 if sys.platform == 'darwin' else 1024),
+                  process_cpu_ns=round((usage.ru_utime + usage.ru_stime) * 1e9),
+                  cpu_scope='wait4 user+system time, including reaped descendant accounting')
+    report_path.write_text(json.dumps(report, indent=2) + '\n')
+    return process.returncode if process.returncode >= 0 else 128 - process.returncode
+
+
+def validate_memory(report, command):
+    if (report.get('command') != command or report.get('exit') != 0
+            or type(report.get('pid')) is not int or report['pid'] <= 0
+            or type(report.get('peak_rss_bytes')) is not int or report['peak_rss_bytes'] <= 0
+            or type(report.get('process_cpu_ns')) is not int or report['process_cpu_ns'] <= 0):
+        raise ValueError('Missing or invalid per-process memory receipt')
+
+
+def validate_visit_memory(visits, process, required):
+    values = [v.get('self_peak_rss_bytes', 0) for v in visits]
+    if not required:
+        if any(values):
+            raise ValueError('Memory probe enabled in timing cohort')
+        return
+    if (any(type(v) is not int or v <= 0 or v > process['peak_rss_bytes'] for v in values)
+            or any(b < a for a, b in zip(values, values[1:]))):
+        raise ValueError('Missing or inconsistent root-process memory checkpoint')
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--memory', action='store_true', help='Separate memory cohort: record root RUSAGE_SELF high-water RSS at each visit checkpoint')
     parser.add_argument('--binary', type=Path, required=True)
     parser.add_argument('--target-v8-speedup', type=int, default=3)
     parser.add_argument('--v8-binary', type=Path, help='Optional pinned V8 control executable with matching C mode')
@@ -147,6 +202,7 @@ def main():
         env = dict(environment, VOX_HN_ENGINE_BENCHMARK=engine,
                    VOX_HN_ENGINE_CYCLES=str(args.cycles),
                    VOX_HN_ENGINE_DIAGNOSTIC=str(int(diagnostic)),
+                   VOX_HN_ENGINE_MEMORY=str(int(args.memory)),
                    VOX_LIBJS_NATIVE_CACHE=str(output / ((cache_label or label) + '-cache')),
                    LADYBIRD_CACHE_DIR=str(output / (label + '-http-cache')),
                    VOX_PROFILE_DIR=str(output / (label + '-profile')),
@@ -160,23 +216,49 @@ def main():
         save()
         began = time.monotonic_ns()
         try:
-            process = subprocess.Popen(attempt['command'], cwd=ROOT, env=env, text=True,
+            memory_report = output / (label + '-process.json')
+            attempt['measurement_command'] = [sys.executable, str(Path(__file__).resolve()), '--measure-child', str(memory_report), *attempt['command']]
+            process = subprocess.Popen(attempt['measurement_command'], cwd=ROOT, env=env, text=True,
                                        stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-            attempt['pid'] = process.pid
+            attempt['measurement_pid'] = process.pid
             save()
             try:
                 stdout, stderr = process.communicate(timeout=args.timeout)
             except subprocess.TimeoutExpired:
-                process.kill()
-                stdout, stderr = process.communicate()
+                # Kill the measured task and compiler descendants together; keep
+                # the waiter alive so it can retain the actual task exit/rusage.
+                child = json.loads(memory_report.read_text()) if memory_report.exists() else None
+                if child:
+                    try:
+                        os.killpg(child['pid'], signal.SIGTERM)
+                    except ProcessLookupError:
+                        pass
+                else:
+                    process.terminate()
+                try:
+                    stdout, stderr = process.communicate(timeout=5)
+                except subprocess.TimeoutExpired:
+                    if child:
+                        try:
+                            os.killpg(child['pid'], signal.SIGKILL)
+                        except ProcessLookupError:
+                            pass
+                    process.kill()
+                    stdout, stderr = process.communicate()
                 attempt.update(timeout=True, exit=process.returncode, stdout=stdout, stderr=stderr)
+                if memory_report.exists():
+                    attempt['process'] = json.loads(memory_report.read_text())
                 raise
             attempt.update(exit=process.returncode, stdout=stdout, stderr=stderr)
             if process.returncode:
                 raise RuntimeError(f'{label} exited {process.returncode}')
+            attempt['process'] = json.loads(memory_report.read_text())
+            validate_memory(attempt['process'], attempt['command'])
+            attempt['pid'] = attempt['process']['pid']
             visits = [json.loads(line) for line in stdout.splitlines() if line.startswith('{')]
             attempt['visits'] = visits
             validate(visits, engine, args.cycles, diagnostic, report['inputs'])
+            validate_visit_memory(visits, attempt['process'], args.memory)
             if diagnostic and engine == 'v8' and 'Vox V8 backend: V8 ' not in stderr:
                 raise ValueError('Missing V8 backend diagnostic')
             cache = Path(env['VOX_LIBJS_NATIVE_CACHE'])
@@ -213,6 +295,12 @@ def main():
                      ASSETS / 's.gif', ASSETS / 'y18.svg',
                      binary.parent / 'libVoxJSCOnV8.dylib',
                      *sorted((ROOT / 'Build/v').glob('*.dylib'))]
+            report['frozen_builds'] = {}
+            for built_image in dict.fromkeys([binary, v8_binary] + ([jsc_binary] if jsc_binary else [])):
+                receipts, metadata = build_receipts(built_image)
+                paths.extend(receipts)
+                if metadata is not None:
+                    report['frozen_builds'][str(built_image)] = metadata
             if v8_binary != binary:
                 paths.append(v8_binary)
                 control_imports = subprocess.check_output(['nm', '-m', '-u', str(v8_binary)], text=True)
@@ -267,8 +355,23 @@ def main():
                 for mode in ['v8', 'libjs-cold', 'libjs-warm', 'libjs-process-warm'] + (['jsc'] if jsc_binary else [])}
             warm_ns = max(round(v['callback_ms'] * 1e6) for v in visits if v['mode'] == 'libjs-warm')
             v8_ns = min(round(v['callback_ms'] * 1e6) for v in visits if v['mode'] == 'v8')
+            report['wait4_peak_summary'] = {mode: dict(
+                median=statistics.median(a['process']['peak_rss_bytes'] for a in report['attempts']
+                    if not a['diagnostic'] and any(v['mode'] == mode for v in a['visits'])),
+                min=min(a['process']['peak_rss_bytes'] for a in report['attempts']
+                    if not a['diagnostic'] and any(v['mode'] == mode for v in a['visits'])),
+                max=max(a['process']['peak_rss_bytes'] for a in report['attempts']
+                    if not a['diagnostic'] and any(v['mode'] == mode for v in a['visits'])))
+                for mode in report['summary']}
+            report['wait4_peak_scope'] = ('Kernel wait4 peak RSS (bytes), including largest reaped descendant, through exit; '
+                'cold and same-process warm share one peak for their two-visit process; '
+                'may include compiler peak; excludes replay/measurement wrapper; not aggregate tree RAM')
+            report['memory_instrumented'] = args.memory
+            if args.memory:
+                report['memory_summary'] = {mode: dict(median=statistics.median(v['self_peak_rss_bytes'] for v in visits if v['mode'] == mode), min=min(v['self_peak_rss_bytes'] for v in visits if v['mode'] == mode), max=max(v['self_peak_rss_bytes'] for v in visits if v['mode'] == mode)) for mode in report['summary']}
+                report['memory_scope'] = 'RUSAGE_SELF peak resident bytes, process startup through each visit checkpoint after cache finish and before final audits; compiler/replay/wrapper excluded; same-process warm retains cold history'
             report['target_v8_speedup'] = args.target_v8_speedup
-            report['target_v8_passed'] = args.target_v8_speedup * warm_ns <= v8_ns
+            report['target_v8_passed'] = not args.memory and args.target_v8_speedup * warm_ns <= v8_ns
             report['verified'] = True
             load_archive(ARCHIVE)
             print(json.dumps(report['summary'], indent=2))
@@ -280,4 +383,6 @@ def main():
 
 
 if __name__ == '__main__':
+    if len(sys.argv) > 3 and sys.argv[1] == '--measure-child':
+        raise SystemExit(measure_child(sys.argv[2], sys.argv[3:]))
     main()

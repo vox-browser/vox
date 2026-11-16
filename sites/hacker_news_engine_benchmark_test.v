@@ -14,7 +14,11 @@ import libjsdom
 import os
 import time
 
+#include "@VMODROOT/sites/engine_peak_rss.h"
+fn C.vox_hn_self_peak_rss_bytes() u64
+
 struct HNEngineVisit {
+	self_peak_rss_bytes u64
 	direct_collection_walks u64
 	class_collection_hits u64
 	fresh_arrays_initialized u64
@@ -69,6 +73,7 @@ fn hn_engine_toggle(document &dom.Document, runtime &browserjs.Runtime, button &
 fn hn_engine_visit(mode string, cycles int, diagnostic bool) !HNEngineVisit {
 	markup := $embed_file('@VMODROOT/Tests/Browser/Brave/input/hacker-news-item-50231722-complete.html').to_string()
 	script := $embed_file('@VMODROOT/Tests/Browser/Brave/hn-home-instructions/bodies/2e38ff883bd36dc4cc26f129f19169b0357cf32059988c926a4f73e5bfaa37f0').to_string()
+	measure_memory := os.getenv('VOX_HN_ENGINE_MEMORY') == '1'
 	engine := if mode in ['v8', 'jsc'] { browserjs.Engine.javascriptcore } else { browserjs.Engine.libjs }
 	libjs.diagnose_property_lookup_hints_for_testing(diagnostic)
 	libjs.diagnose_argument_allocation_for_testing(diagnostic)
@@ -147,6 +152,7 @@ fn hn_engine_visit(mode string, cycles int, diagnostic bool) !HNEngineVisit {
 	finish_started := time.sys_mono_now()
 	cache := if engine == .libjs { vm.flush_native_code_cache()! } else { libjs.NativeCacheStats{} }
 	compile_finish_ms := f64(time.sys_mono_now() - finish_started) / 1e6
+	self_peak_rss_bytes := if measure_memory { C.vox_hn_self_peak_rss_bytes() } else { u64(0) }
 	for index, row in rows {
 		if row.get_attribute_value('class') != classes[index] {
 			return error('Comment classes not restored')
@@ -159,6 +165,7 @@ fn hn_engine_visit(mode string, cycles int, diagnostic bool) !HNEngineVisit {
 		return error('Unexpected native engine fallback')
 	}
 	return HNEngineVisit{
+		self_peak_rss_bytes: self_peak_rss_bytes
 		direct_collection_walks: direct_collection_walks
 		class_collection_hits: class_collection_hits
 		fresh_arrays_initialized: fresh_arrays_initialized
@@ -208,6 +215,11 @@ fn test_hacker_news_engine_benchmark() {
 	libjs.set_context_reuse_for_testing(os.getenv('VOX_LIBJS_CONTEXT_REUSE') != '0')
 	libjs.set_borrowed_call_arguments_for_testing(os.getenv('VOX_LIBJS_BORROW_ARGUMENTS') != '0')
 	libjs.set_short_string_cache_for_testing(os.getenv('VOX_LIBJS_SHORT_STRINGS') != '0')
+	libjs.set_fast_binding_reads_for_testing(os.getenv('VOX_LIBJS_FAST_BINDINGS') != '0')
+	libjs.set_function_environment_reuse_for_testing(os.getenv('VOX_LIBJS_REUSE_FUNCTION_ENVIRONMENTS') != '0')
+	libjs.set_call_argument_forwarding_for_testing(os.getenv('VOX_LIBJS_FORWARD_CALL_ARGUMENTS') != '0')
+	libjs.set_array_search_reads_for_testing(os.getenv('VOX_LIBJS_ARRAY_SEARCH_READS') != '0')
+	libjs.set_direct_accessor_dispatch_for_testing(os.getenv('VOX_LIBJS_DIRECT_ACCESSORS') != '0')
 	libjs.set_compact_reference_reads_for_testing(os.getenv('VOX_LIBJS_COMPACT_REFERENCES') != '0')
 	libjs.set_native_dynamic_dispatch_for_testing(os.getenv('VOX_LIBJS_NATIVE_DYNAMIC') != '0')
 	libjs.set_direct_property_reads_for_testing(os.getenv('VOX_LIBJS_DIRECT_READS') != '0')
