@@ -3470,3 +3470,16 @@ diagnostics. That shared build contains an inactive capture probe, removed from
 the checkout before this commit. The clean managed rebuild and new SVG production
 validation remain pending. Original references/tolerances are unchanged. See the
 [audit](OPTIMIZED_SITES_PIXELS_2026_11_12.md#single-visible-svg-background-pictures-2026-11-16).
+
+### Rounded RGBA owning-tile coordinates, 2026-11-16
+
+`fb71abe2d` shares the existing planar tile renderer with rounded RGBA uploads.
+A cropped target changed interpolation even with uniform sample counts. Rendering
+in the owning tile makes CNN's ice image exact: **73→46** overall, **27 corrected,
+zero introduced**. All 53 workloads/106 fresh captures repeat; 52 other PNGs are
+unchanged. Eleven focused V functions pass under arena poisoning and 3 GiB runtime
+guards, including an independently sourced Brave crop hash. The old callback
+fails the new regression. Unrounded and mixed-sample RGBA fallback is preserved;
+an earlier broader prototype regressed an unrounded control and is rejected.
+Existing references/tolerances are unchanged. Managed production confirmation
+and catalog parity remain open. See the [audit](OPTIMIZED_SITES_PIXELS_2026_11_12.md#rounded-rgba-draws-in-owning-tile-coordinates-2026-11-16).

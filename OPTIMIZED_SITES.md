@@ -24,6 +24,14 @@ improves 755→265 without introduced pixels, retaining a known mismatched-frame
 fallback. No existing reference or tolerance changes. The SVG fix awaits the
 managed production rebuild. See the [single-picture SVG audit](docs/OPTIMIZED_SITES_PIXELS_2026_11_12.md#single-visible-svg-background-pictures-2026-11-16).
 
+`fb71abe2d` subsequently makes the rounded RGBA ice image exact in diagnostics:
+CNN **73→46**, **27 corrected, zero introduced**. All **53 workloads/106 captures**
+repeat; all **52 non-CNN PNGs remain unchanged**. Eleven focused V functions
+pass. Plain rectangular and mixed-sample RGBA draws retain their existing path;
+a broader prototype regressed a control and is rejected. The remaining CNN
+pixels are in the bottom clipped image. Managed production confirmation remains
+pending. See the [rounded RGBA tile audit](docs/OPTIMIZED_SITES_PIXELS_2026_11_12.md#rounded-rgba-draws-in-owning-tile-coordinates-2026-11-16).
+
 CNN retains rendering and source/replay failures. Reddit remains unverified
 (missing historical fixture, earlier live HTTP 403). A separate tall-shadow
 control has a retained baseline repeat failure. Lossless and native-size/

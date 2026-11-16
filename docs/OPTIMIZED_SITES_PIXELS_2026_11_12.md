@@ -5044,3 +5044,50 @@ Cleanup inventories 136 owned roots/7,849 files, preserving and SHA-verifying
 owned binaries, intermediates, profiles, guards and locks are removed. Archive
 guard evidence is separately retained and removed. Shared production bundles
 and native dependencies remain.
+
+### Rounded RGBA draws in owning tile coordinates, 2026-11-16
+
+`fb71abe2d` extends the existing owning-tile planar readback to rounded RGBA
+uploads. The callback renders each owning tile with its gutter and sample count,
+then publishes only that tile's pixels. Failed tile draws remain atomic. Plain
+rectangles, mixed-sample RGBA, missing geometry and unsupported grids preserve
+their existing fallback. The generic helper retains the planar/JPEG dispatch;
+no decoder, mip policy, shader, reference or tolerance changes.
+
+For CNN's profiled 780×438 ice image, the actual CPU upload is 390×219. The same
+upload and clip have 27 one-level differences in the 273×155 readback, zero in
+the owning 1024×256 tile, and 22 in a full 1024×768 target. The permanent callback
+regression pins its decoded source and original Brave crop, including rounded
+coverage and white padding. It fails against the old callback and passes the
+fix, alongside direct fallback and untouched mixed-grid rejection checks.
+
+Final C/O0/preallocated/no-GC executable
+`c78d2a91462b70d7696346d246e3aae628bf98b60f0b92047250e8a4304c4b23`
+completes **53 workloads/106 fresh captures** plus startup smoke. Every pair
+repeats and **all 52 non-CNN PNGs are unchanged**. CNN improves **73→46**:
+**27 corrected, zero introduced**, maximum channel error one. The complete ice
+rectangle is exact; the remaining errors are in the bottom clipped image.
+All 892 consumed rendering/CSS/DOM/layout witnesses and 959 selected pins stay
+matched, including selected compiler-buffer witnesses. All 107 native guards,
+driver and outer guard exit zero. Eleven focused functions pass under arena
+poisoning and 3 GiB guards: six tile/callback functions, one rounded RGBA upload,
+two sampled-image and two floating-color functions.
+
+A broader prototype changed unrounded controls: half-upload 18→8 (14 corrected,
+4 introduced), native-first 24→29 (18 corrected, 23 introduced). It is rejected;
+those outputs return byte for byte to their accepted baseline with the rounded
+selection. That first full pass also detects a concurrent `main.v` edit and
+cannot provide stable-input acceptance. Compilation failures for enum inference
+and concurrent audit integration are retained; the audit correction was supplied
+by the other work, with no edits to its files by this task. No failed attempt
+supplies pixel or performance credit.
+
+The latest completed production remains `7515422c`, confirming the preceding
+CPU-mip result (CNN 94), with its previously documented inactive-probe limitation.
+The shared managed build is already active and the normal commit hook requests
+a coalesced rebuild; no duplicate manual production build is queued. The new
+RGBA and preceding SVG changes await production validation. Frozen checks give
+no live-site, script-runtime, scrolling or instruction acceptance. CNN source/
+replay, missing Reddit evidence and prior inexact controls keep catalog parity
+open. Local evidence:
+`docs/performance/vlang-gradients-20261114/raw/cnn-rgb-tiles-20261116/`.

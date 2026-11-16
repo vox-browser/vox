@@ -50,6 +50,7 @@ struct CaptureAuditSelector {
 	limit        int = 100
 	attributes   []string
 	layout_depth int
+	input_state  bool
 }
 
 struct CaptureAuditConfig {
@@ -109,6 +110,7 @@ struct CaptureAuditElement {
 	image           ?CaptureAuditImage
 	media           ?CaptureAuditMedia
 	layout          []CaptureAuditLayout
+	input           ?CaptureAuditInput
 }
 
 struct CaptureAuditMedia {
@@ -262,6 +264,7 @@ fn (app &BrowserApp) collect_capture_audit(config CaptureAuditConfig) !CaptureAu
 				image:           app.capture_audit_image(element)
 				media:           app.capture_audit_media(element)
 				layout:          app.capture_audit_layout(element, query.layout_depth)
+				input:           capture_audit_input(element, query.input_state)
 			}
 		}
 		selections << CaptureAuditSelection{query.name, query.selector, list.length(), elements}
