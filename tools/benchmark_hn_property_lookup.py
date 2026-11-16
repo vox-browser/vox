@@ -21,12 +21,14 @@ from page_archive import Replay
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--binary', type=Path, required=True)
+    parser.add_argument('--control-binary', type=Path, help='Matched older C build for the layout comparison')
     parser.add_argument('--output', type=Path, required=True)
     parser.add_argument('--pairs', type=int, default=7)
     parser.add_argument('--cycles', type=int, default=500)
-    parser.add_argument('--optimization', choices=['property', 'arguments', 'combined', 'registers', 'keys', 'capacity', 'storage', 'dispatch', 'indices', 'frames'], default='property')
+    parser.add_argument('--target-v8-speedup', type=int, default=2)
+    parser.add_argument('--optimization', choices=['property', 'arguments', 'combined', 'registers', 'keys', 'capacity', 'storage', 'dispatch', 'indices', 'frames', 'calls', 'reads', 'arrays', 'collections', 'walk', 'helpers', 'references', 'layout', 'frame-access'], default='property')
     args = parser.parse_args()
-    if args.pairs < 7 or args.cycles < 1:
+    if args.pairs < 7 or args.cycles < 1 or args.target_v8_speedup < 1:
         parser.error('Use at least seven pairs and positive cycle counts')
     binary, output = args.binary.resolve(), args.output.resolve()
     output.mkdir(parents=True, exist_ok=False)
@@ -39,7 +41,7 @@ def main():
                    if not k.startswith(('VOX_', 'LADYBIRD_', 'DYLD_', 'JSC_', 'GC_'))
                    and 'proxy' not in k.lower()}
     environment.update(VOX_PROXY=replay.ready['proxy'], SSL_CERT_FILE=replay.ready['ca'])
-    report = dict(scope='same optimized test executable; HN native DOM, cached script initialization '
+    report = dict(scope='matching C-mode optimized test executables; HN native DOM, cached script initialization '
                        'and synchronous collapse/expand; excludes process startup, external network, '
                        'window, layout, paint and teardown; V8 includes local image host setup',
                   control='test-only switch disables successful property-position hints',
@@ -47,6 +49,8 @@ def main():
                   optimization=args.optimization,
                   attempts=[], inputs={}, replay=replay.ready, image_aliases=aliases,
                   host_before=hn.host())
+    if args.optimization in ['layout', 'frame-access'] and not args.control_binary:
+        parser.error('Cross-binary comparisons require --control-binary')
     report['control'] = {'property': 'linear property lookup; arguments elision disabled',
                          'arguments': 'property hints enabled; arguments elision disabled',
                          'combined': 'linear property lookup; arguments elision disabled',
@@ -56,6 +60,15 @@ def main():
                          'storage': 'property hints, arguments elision and register bindings; legacy keys/capacity',
                          'dispatch': 'all prior optimizations; primitive wrappers, full validation and empty block environments',
                          'indices': 'all prior optimizations; decimal/UTF16 array index keys',
+                         'references': 'shared dynamic handlers; materialized Reference records',
+                         'helpers': 'shared dynamic handlers disabled',
+                         'frame-access': 'shared native handlers; generic frame arrays and out-of-line slot checks',
+                         'layout': 'all runtime optimizations; prior UTF16 record layout',
+                         'walk': 'all prior optimizations; capturing collection traversal adapter',
+                         'collections': 'all prior optimizations; new native class collection on every query',
+                         'arrays': 'all prior optimizations; generic fresh array element definitions',
+                         'reads': 'all prior optimizations; full descriptors and UTF16 conversion',
+                         'calls': 'all prior optimizations; owning call argument arrays',
                          'frames': 'all prior optimizations; fresh synchronous frames'}[args.optimization]
     report['candidate'] = {'property': 'validated property hints; arguments elision disabled',
                            'arguments': 'property hints enabled; unobserved arguments elided',
@@ -66,6 +79,15 @@ def main():
                            'storage': 'property hints, arguments elision and register bindings; cached keys/exact capacity',
                            'dispatch': 'all prior optimizations; direct primitive reads, validation reuse and empty block no-ops',
                            'indices': 'all prior optimizations; canonical numeric array index keys',
+                           'references': 'shared dynamic handlers; direct object/environment reads',
+                           'helpers': 'shared dynamic handlers enabled',
+                           'frame-access': 'shared native handlers; checked typed frame access and inline slot validation',
+                           'layout': 'all runtime optimizations; compact optional ASCII payload',
+                           'walk': 'all prior optimizations; direct collection traversal',
+                           'collections': 'all prior optimizations; bounded native live class collection reuse',
+                           'arrays': 'all prior optimizations; direct fresh dense array storage',
+                           'reads': 'all prior optimizations; direct data reads and cached short strings',
+                           'calls': 'all prior optimizations; borrowed small concrete call arguments',
                            'frames': 'all prior optimizations; bounded reuse of unexposed synchronous frames'}[args.optimization]
 
     def save():
@@ -78,8 +100,8 @@ def main():
 
     def run(config, label, diagnostic=False, seed=False):
         verify()
-        cache_key = config if args.optimization in ['registers', 'dispatch'] else 'shared'
-        cache = output / ('native-cache-' + config) if args.optimization in ['registers', 'dispatch'] else shared_cache
+        cache_key = config if args.optimization in ['registers', 'dispatch', 'layout', 'frame-access'] else 'shared'
+        cache = output / ('native-cache-' + config) if args.optimization in ['registers', 'dispatch', 'layout', 'frame-access'] else shared_cache
         engine = 'libjs' if seed else 'v8' if config == 'v8' else 'libjs-warm'
         env = dict(environment, VOX_HN_ENGINE_BENCHMARK=engine,
                    VOX_HN_ENGINE_CYCLES=str(args.cycles), VOX_LIBJS_NATIVE_CACHE=str(cache),
@@ -90,11 +112,33 @@ def main():
                    VOX_LIBJS_VALIDATION_CACHE='0', VOX_LIBJS_EMPTY_SCOPES='0', VOX_LIBJS_NUMERIC_KEYS='0', VOX_LIBJS_CONTEXT_REUSE='0',
                    VOX_PROFILE_DIR=str(output / (label + '-profile')),
                    LADYBIRD_CACHE_DIR=str(output / (label + '-http-cache')), VOX_TEST_WINDOW='1')
-        if args.optimization == 'frames':
+        env['VOX_LIBJS_COMPACT_REFERENCES'] = '0' if config == 'control' and args.optimization == 'references' else '1'
+        env['VOX_LIBJS_NATIVE_DYNAMIC'] = '0' if config == 'control' and args.optimization == 'helpers' else '1'
+        env['VOX_LIBJS_DIRECT_COLLECTION_WALK'] = '0'
+        env['VOX_LIBJS_CLASS_QUERY_CACHE'] = '0'
+        env['VOX_LIBJS_FRESH_ARRAYS'] = '0'
+        env['VOX_LIBJS_SHORT_STRINGS'] = '0'
+        env['VOX_LIBJS_DIRECT_READS'] = '0'
+        env['VOX_LIBJS_BORROW_ARGUMENTS'] = '0'
+        if args.optimization in ['frames', 'calls', 'reads', 'arrays', 'collections', 'walk', 'helpers', 'references', 'layout', 'frame-access']:
             for setting in ['LOOKUP_HINTS', 'ARGUMENT_ELISION', 'REGISTER_BINDINGS', 'BUILTIN_KEYS',
                             'EXACT_CONTEXT', 'PRIMITIVE_READS', 'VALIDATION_CACHE', 'EMPTY_SCOPES', 'NUMERIC_KEYS']:
                 env['VOX_LIBJS_' + setting] = '1'
-            env['VOX_LIBJS_CONTEXT_REUSE'] = '0' if config == 'control' else '1'
+            env['VOX_LIBJS_CONTEXT_REUSE'] = '0' if config == 'control' and args.optimization == 'frames' else '1'
+            env['VOX_LIBJS_SHORT_STRINGS'] = '0'
+            env['VOX_LIBJS_DIRECT_READS'] = '0'
+            if args.optimization in ['reads', 'arrays', 'collections', 'walk', 'helpers', 'references', 'layout', 'frame-access']:
+                env['VOX_LIBJS_BORROW_ARGUMENTS'] = '1'
+                env['VOX_LIBJS_SHORT_STRINGS'] = '0' if config == 'control' and args.optimization == 'reads' else '1'
+                env['VOX_LIBJS_DIRECT_READS'] = '0' if config == 'control' and args.optimization == 'reads' else '1'
+                if args.optimization in ['arrays', 'collections', 'walk', 'helpers', 'references', 'layout', 'frame-access']:
+                    env['VOX_LIBJS_FRESH_ARRAYS'] = '0' if config == 'control' and args.optimization == 'arrays' else '1'
+                if args.optimization in ['collections', 'walk', 'helpers', 'references', 'layout', 'frame-access']:
+                    env['VOX_LIBJS_CLASS_QUERY_CACHE'] = '0' if config == 'control' and args.optimization == 'collections' else '1'
+                if args.optimization in ['walk', 'helpers', 'references', 'layout', 'frame-access']:
+                    env['VOX_LIBJS_DIRECT_COLLECTION_WALK'] = '0' if config == 'control' and args.optimization == 'walk' else '1'
+            if args.optimization == 'calls':
+                env['VOX_LIBJS_BORROW_ARGUMENTS'] = '0' if config == 'control' else '1'
         elif args.optimization == 'indices':
             for setting in ['LOOKUP_HINTS', 'ARGUMENT_ELISION', 'REGISTER_BINDINGS', 'BUILTIN_KEYS',
                             'EXACT_CONTEXT', 'PRIMITIVE_READS', 'VALIDATION_CACHE', 'EMPTY_SCOPES']:
@@ -151,14 +195,14 @@ def main():
             env['VOX_V8_DIAGNOSTICS'] = '1'
         attempt = dict(configuration=config, label=label, diagnostic=diagnostic, seed=seed,
                        policy=attempt_policy,
-                       command=[str(binary)], environment={k: v for k, v in env.items()
+                       command=[str(args.control_binary.resolve() if config == 'control' and args.control_binary else binary)], environment={k: v for k, v in env.items()
                            if k.startswith(('VOX_', 'LADYBIRD_')) or k == 'SSL_CERT_FILE'},
                        host_before=hn.host())
         report['attempts'].append(attempt)
         save()
         started = time.monotonic_ns()
         try:
-            process = subprocess.Popen([str(binary)], cwd=hn.ROOT, env=env, text=True,
+            process = subprocess.Popen(attempt['command'], cwd=hn.ROOT, env=env, text=True,
                                        stdout=subprocess.PIPE, stderr=subprocess.PIPE)
             attempt['pid'] = process.pid
             save()
@@ -197,6 +241,27 @@ def main():
                         raise ValueError('HN did not exercise numeric keys without string fallback')
                     if config == 'control' and (index_activity['strings'] <= 0 or index_activity['numeric'] != 0):
                         raise ValueError('HN control did not construct decimal/UTF16 index keys')
+                if diagnostic and config != 'v8' and args.optimization == 'references':
+                    if (visit['activity']['compact_reference_reads'] > 0) != (config == 'candidate'):
+                        raise ValueError('Compact reference read eligibility mismatch')
+                if diagnostic and config != 'v8' and args.optimization == 'helpers':
+                    if (visit['activity']['direct_slow_steps'] > 0) != (config == 'candidate'):
+                        raise ValueError('Native dynamic handler eligibility mismatch')
+                if diagnostic and config != 'v8' and args.optimization == 'walk':
+                    if (visit['direct_collection_walks'] > 0) != (config == 'candidate'):
+                        raise ValueError('Direct collection traversal mismatch')
+                if diagnostic and args.optimization == 'collections':
+                    if (visit['class_collection_hits'] > 0) != (config == 'candidate'):
+                        raise ValueError('Native live class collection reuse mismatch')
+                if diagnostic and args.optimization == 'arrays':
+                    if (visit['fresh_arrays_initialized'] > 0) != (config == 'candidate'):
+                        raise ValueError('Fresh-array eligibility mismatch')
+                if diagnostic and args.optimization == 'reads':
+                    if (visit['short_string_hits'] > 0 and visit['direct_property_reads'] > 0) != (config == 'candidate'):
+                        raise ValueError('Direct-read/string-cache eligibility mismatch')
+                if diagnostic and args.optimization == 'calls':
+                    if (visit['borrowed_arguments'] > 0) != (config == 'candidate'):
+                        raise ValueError('Borrowed-argument path eligibility mismatch')
                 if diagnostic and args.optimization == 'frames':
                     reuse = visit['context_reuse_activity']
                     if config == 'candidate' and reuse['reused'] <= 0:
@@ -268,14 +333,18 @@ def main():
                          'collection_intrinsics.v', 'primitive_string.v', 'context_capacity.v',
                          'execution_context.v', 'reference.v', 'value_property_access.v',
                          'primitive_reads.v', 'validation_cache.v', 'instruction.v', 'executable.v',
-                         'empty_scopes.v', 'interpreter.v', 'native_tier.v', 'array_index_keys.v',
+                         'empty_scopes.v', 'interpreter.v', 'native_tier.v', 'native_dynamic_dispatch.v', 'array_index_keys.v',
                          'array_iterator.v', 'context_reuse.v', 'interpreter_stack.v',
-                         'native_function.v']],
+                         'native_function.v', 'native_code_cache.v', 'utf16_utils.v', 'utf16_ascii_storage.v', 'call_argument_storage.v', 'direct_property_reads.v', 'short_string_cache.v', 'fresh_array_storage.v', 'array_object.v', 'string_split.v']],
+                     hn.ROOT / 'dom/collection_walk.v', hn.ROOT / 'dom/collections_ranges.v',
+                     hn.ROOT / 'libjsdom/class_query_cache.v', hn.ROOT / 'libjsdom/host.v', hn.ROOT / 'libjsdom/nodes.v',
                      hn.ROOT / 'sites/hacker_news_engine_benchmark_test.v',
                      hn.ROOT / 'tools/page_archive.py',
                      *sorted((hn.ROOT / 'Build/v').glob('*.dylib'))]
             report['linked_libraries'] = {}
-            for image in [binary, binary.parent / 'libVoxJSCOnV8.dylib']:
+            if args.control_binary:
+                paths.append(args.control_binary.resolve())
+            for image in [binary, binary.parent / 'libVoxJSCOnV8.dylib'] + ([args.control_binary.resolve()] if args.control_binary else []):
                 linked = subprocess.check_output(['otool', '-L', str(image)], text=True)
                 report['linked_libraries'][str(image)] = linked
                 for line in linked.splitlines()[1:]:
@@ -289,7 +358,7 @@ def main():
                 if not any(symbol + ' ' in line and '(from libVoxJSCOnV8)' in line for line in imports.splitlines()):
                     raise ValueError('JavaScript entry does not bind to V8: ' + symbol)
             run('control', 'seed-control', seed=True)
-            if args.optimization in ['registers', 'dispatch']:
+            if args.optimization in ['registers', 'dispatch', 'layout', 'frame-access']:
                 run('candidate', 'seed-candidate', seed=True)
             for config in ['control', 'candidate', 'v8']:
                 run(config, 'diagnostic-' + config, True)
@@ -315,6 +384,8 @@ def main():
             candidate_ns = int(round(report['summary']['candidate']['callback_ms']['max'] * 1e6))
             v8_ns = int(round(report['summary']['v8']['callback_ms']['min'] * 1e6))
             report['twice_v8_conservative'] = 2 * candidate_ns <= v8_ns
+            report['target_v8_speedup'] = args.target_v8_speedup
+            report['target_v8_passed'] = args.target_v8_speedup * candidate_ns <= v8_ns
             report['verified'] = True
             print(json.dumps(report['summary'], indent=2))
     finally:

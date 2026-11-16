@@ -25,6 +25,20 @@ class HNEngineEvidenceTest(unittest.TestCase):
     def check_pair(self, cold=None, warm=None, diagnostic=False):
         validate([cold or self.cold, warm or self.warm], 'libjs', 100, diagnostic, self.pins)
 
+    def test_jsc_requires_native_context_and_exact_visit(self):
+        visit = dict(self.cold, mode='jsc', native_context=True, cache=dict(last_error='', invalid_entries=0))
+        validate([visit], 'jsc', 100, False, self.pins)
+        with self.assertRaises(ValueError):
+            validate([dict(visit, native_context=False)], 'jsc', 100, False, self.pins)
+        with self.assertRaises(ValueError):
+            validate([dict(visit, mode='v8')], 'jsc', 100, False, self.pins)
+
+    def test_rejects_borrowed_argument_diagnostics_during_timing(self):
+        for key in ['borrowed_arguments', 'short_string_hits', 'direct_property_reads',
+                    'fresh_arrays_initialized', 'class_collection_hits', 'direct_collection_walks']:
+            with self.subTest(counter=key), self.assertRaises(ValueError):
+                self.check_pair(warm=dict(self.warm, **{key: 1}))
+
     def test_compiler_free_reopen(self):
         self.check_pair()
 

@@ -10,10 +10,17 @@ import dom
 import html
 import json2
 import libjs
+import libjsdom
 import os
 import time
 
 struct HNEngineVisit {
+	direct_collection_walks u64
+	class_collection_hits u64
+	fresh_arrays_initialized u64
+	short_string_hits u64
+	direct_property_reads u64
+	borrowed_arguments u64
 	mode              string
 	cycles            int
 	initialization_ms f64
@@ -62,7 +69,7 @@ fn hn_engine_toggle(document &dom.Document, runtime &browserjs.Runtime, button &
 fn hn_engine_visit(mode string, cycles int, diagnostic bool) !HNEngineVisit {
 	markup := $embed_file('@VMODROOT/Tests/Browser/Brave/input/hacker-news-item-50231722-complete.html').to_string()
 	script := $embed_file('@VMODROOT/Tests/Browser/Brave/hn-home-instructions/bodies/2e38ff883bd36dc4cc26f129f19169b0357cf32059988c926a4f73e5bfaa37f0').to_string()
-	engine := if mode == 'v8' { browserjs.Engine.javascriptcore } else { browserjs.Engine.libjs }
+	engine := if mode in ['v8', 'jsc'] { browserjs.Engine.javascriptcore } else { browserjs.Engine.libjs }
 	libjs.diagnose_property_lookup_hints_for_testing(diagnostic)
 	libjs.diagnose_argument_allocation_for_testing(diagnostic)
 	libjs.diagnose_builtin_keys_for_testing(diagnostic)
@@ -96,6 +103,12 @@ fn hn_engine_visit(mode string, cycles int, diagnostic bool) !HNEngineVisit {
 	libjs.diagnose_array_index_keys_for_testing(diagnostic)
 	libjs.diagnose_context_reuse_for_testing(diagnostic)
 	if diagnostic && engine == .libjs { vm.diagnose_native_code(true)! }
+	libjs.diagnose_borrowed_call_arguments_for_testing(diagnostic)
+	libjs.diagnose_short_string_cache_for_testing(diagnostic)
+	libjs.diagnose_direct_property_reads_for_testing(diagnostic)
+	libjs.diagnose_fresh_array_storage_for_testing(diagnostic)
+	libjsdom.diagnose_class_query_cache_for_testing(diagnostic)
+	dom.diagnose_direct_collection_walk_for_testing(diagnostic)
 	first_started := time.sys_mono_now()
 	hn_engine_toggle(document, runtime, button)!
 	first_collapse_ms := f64(time.sys_mono_now() - first_started) / 1e6
@@ -111,6 +124,12 @@ fn hn_engine_visit(mode string, cycles int, diagnostic bool) !HNEngineVisit {
 		hn_engine_toggle(document, runtime, button)!
 	}
 	callback_ms := f64(time.sys_mono_now() - callback_started) / 1e6
+	direct_collection_walks := dom.diagnose_direct_collection_walk_for_testing(false)
+	class_collection_hits := libjsdom.diagnose_class_query_cache_for_testing(false)
+	fresh_arrays_initialized := libjs.diagnose_fresh_array_storage_for_testing(false)
+	short_string_hits := libjs.diagnose_short_string_cache_for_testing(false)
+	direct_property_reads := libjs.diagnose_direct_property_reads_for_testing(false)
+	borrowed_arguments := libjs.diagnose_borrowed_call_arguments_for_testing(false)
 	lookup_activity := libjs.diagnose_property_lookup_hints_for_testing(false)
 	argument_activity := libjs.diagnose_argument_allocation_for_testing(false)
 	builtin_key_activity := libjs.diagnose_builtin_keys_for_testing(false)
@@ -140,6 +159,12 @@ fn hn_engine_visit(mode string, cycles int, diagnostic bool) !HNEngineVisit {
 		return error('Unexpected native engine fallback')
 	}
 	return HNEngineVisit{
+		direct_collection_walks: direct_collection_walks
+		class_collection_hits: class_collection_hits
+		fresh_arrays_initialized: fresh_arrays_initialized
+		short_string_hits: short_string_hits
+		direct_property_reads: direct_property_reads
+		borrowed_arguments: borrowed_arguments
 		mode:              mode
 		cycles:            cycles
 		initialization_ms: initialization_ms
@@ -181,17 +206,27 @@ fn test_hacker_news_engine_benchmark() {
 	libjs.set_empty_scope_elision_for_testing(os.getenv('VOX_LIBJS_EMPTY_SCOPES') != '0')
 	libjs.set_numeric_array_keys_for_testing(os.getenv('VOX_LIBJS_NUMERIC_KEYS') != '0')
 	libjs.set_context_reuse_for_testing(os.getenv('VOX_LIBJS_CONTEXT_REUSE') != '0')
+	libjs.set_borrowed_call_arguments_for_testing(os.getenv('VOX_LIBJS_BORROW_ARGUMENTS') != '0')
+	libjs.set_short_string_cache_for_testing(os.getenv('VOX_LIBJS_SHORT_STRINGS') != '0')
+	libjs.set_compact_reference_reads_for_testing(os.getenv('VOX_LIBJS_COMPACT_REFERENCES') != '0')
+	libjs.set_native_dynamic_dispatch_for_testing(os.getenv('VOX_LIBJS_NATIVE_DYNAMIC') != '0')
+	libjs.set_direct_property_reads_for_testing(os.getenv('VOX_LIBJS_DIRECT_READS') != '0')
+	libjs.set_fresh_array_storage_for_testing(os.getenv('VOX_LIBJS_FRESH_ARRAYS') != '0')
+	libjsdom.set_class_query_cache_for_testing(os.getenv('VOX_LIBJS_CLASS_QUERY_CACHE') != '0')
+	dom.set_direct_collection_walk_for_testing(os.getenv('VOX_LIBJS_DIRECT_COLLECTION_WALK') != '0')
 	// Keep this author-script/DOM workload independent of filter-list startup.
 	adblock.set_enabled(false)
-	$if !vox_v8 ? {
-		panic('Build this benchmark with -d vox_v8')
+	$if vox_v8 ? {
+		if choice == 'jsc' { panic('JSC requires a build without vox_v8') }
+	} $else {
+		if choice == 'v8' { panic('V8 requires -d vox_v8') }
 	}
-	if choice !in ['v8', 'libjs', 'libjs-warm'] { panic('Expected v8, libjs or libjs-warm') }
+	if choice !in ['v8', 'jsc', 'libjs', 'libjs-warm'] { panic('Expected v8, jsc, libjs or libjs-warm') }
 	cycles := os.getenv('VOX_HN_ENGINE_CYCLES').int()
 	if cycles < 1 { panic('Set positive VOX_HN_ENGINE_CYCLES') }
 	diagnostic := os.getenv('VOX_HN_ENGINE_DIAGNOSTIC') == '1'
-	if choice == 'v8' {
-		println(json2.encode(hn_engine_visit('v8', cycles, diagnostic)!))
+	if choice in ['v8', 'jsc'] {
+		println(json2.encode(hn_engine_visit(choice, cycles, diagnostic)!))
 	} else if choice == 'libjs-warm' {
 		os.setenv('VOX_LIBJS_NATIVE_COMPILER', '/usr/bin/false', true)
 		println(json2.encode(hn_engine_visit('libjs-warm', cycles, diagnostic)!))
