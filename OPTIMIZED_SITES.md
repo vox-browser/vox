@@ -6,40 +6,34 @@ fewer instructions measure CPU work, rather than elapsed rendering time.
 Results apply to the frozen page and pinned build in each linked report.
 Provisional entries retain unresolved acceptance checks.
 
-**Pixel recheck, 2026-11-16:** Vox does **not** pass pixel equality across
-this catalog. Production default captures on `7515422c` now reproduce the CPU
-atlas-mip result: **CNN 94 pixels twice**, with GitHub, Hacker News, Lobsters,
-Wikipedia and Vlang.io exact in two fresh captures each. All twelve PNGs match
-the accepted CPU-mip diagnostics. This shared build contains an inactive capture
-probe; it is removed from the checkout and the clean managed rebuild is queued.
+**Pixel recheck, 2026-11-16:** The six available frozen catalog workloads now
+match their archived Brave references in diagnostics: **CNN, GitHub, Hacker News,
+Lobsters, Wikipedia and Vlang.io are zero pixels twice each**. Catalog-wide
+acceptance remains open. Old Reddit's historical fixture is missing; a fresh
+anonymous Brave navigation to `/r/programming/` redirects to a blocked login
+page, with no posts. CNN's historical source/replay verification also remains
+open. These frozen checks establish no live-site or performance acceptance.
 
-CNN improves further to **73 differing pixels in diagnostics** after `a6edd14de`
-preserves fractional SVG layout when one recorded background image covers the
-snapped clip. This fixes the placeholder beneath the logo and Trump images:
-**21 corrected, zero introduced**, with maximum channel error one. Five complete
-untagged image rectangles are now exact. All **53 workloads/106 fresh captures**
-repeat, and the **50 existing non-CNN PNGs remain unchanged**. Fourteen focused
-V functions pass. A new flat SVG control becomes exact; a nonuniform control
-improves 755→265 without introduced pixels, retaining a known mismatched-frame
-fallback. No existing reference or tolerance changes. The SVG fix awaits the
-managed production rebuild. See the [single-picture SVG audit](docs/OPTIMIZED_SITES_PIXELS_2026_11_12.md#single-visible-svg-background-pictures-2026-11-16).
+The latest fixes make CNN **94→73→46→0**: `a6edd14de` preserves fractional SVG
+background layout, `fb71abe2d` renders rounded RGBA in owning-tile coordinates,
+and `9b326517b` folds CPU-resized YUV into its decoded image frame. The final
+**53 workloads/106 fresh captures** repeat byte for byte, with **all 52 non-CNN
+PNGs unchanged** and **46 corrected, zero introduced** in the last step. Seven
+final tile/callback functions and five unchanged GG functions pass. Existing
+references and tolerances are unchanged. See the [decoded-frame audit](docs/OPTIMIZED_SITES_PIXELS_2026_11_12.md#decoded-image-frames-for-cpu-resized-planar-uploads-2026-11-16).
 
-`fb71abe2d` subsequently makes the rounded RGBA ice image exact in diagnostics:
-CNN **73→46**, **27 corrected, zero introduced**. All **53 workloads/106 captures**
-repeat; all **52 non-CNN PNGs remain unchanged**. Eleven focused V functions
-pass. Plain rectangular and mixed-sample RGBA draws retain their existing path;
-a broader prototype regressed a control and is rejected. The remaining CNN
-pixels are in the bottom clipped image. Managed production confirmation remains
-pending. See the [rounded RGBA tile audit](docs/OPTIMIZED_SITES_PIXELS_2026_11_12.md#rounded-rgba-draws-in-owning-tile-coordinates-2026-11-16).
+The latest completed production `7515422c` still confirms the earlier CPU-mip
+result: **CNN 94 pixels twice**, with the other five available archived sites
+exact. That build contains the previously documented inactive capture probe,
+removed from the checkout. The SVG, rounded RGBA and decoded-frame fixes await
+the shared managed production rebuild. Commit requests are coalesced; no
+duplicate manual build is queued. Older production captures cannot validate
+these new changes.
 
-CNN retains rendering and source/replay failures. Reddit remains unverified
-(missing historical fixture, earlier live HTTP 403). A separate tall-shadow
-control has a retained baseline repeat failure. Lossless and native-size/
-half-size lossy WebP controls were previously confirmed in production, as were
-all four alpha WebP images. Other ICC/rescaling controls retain known differences,
-and the separate forced four-sample profiled-image diagnostic remains open.
-References and tolerances are unchanged. These results apply to pinned builds
-and frozen page bytes.
+Separate ICC/rescaling and other diagnostic controls retain known differences,
+including the forced four-sample profiled-image case. A tall-shadow control has
+a retained historical repeat failure. Results apply to the pinned builds and
+frozen page bytes in the linked report.
 
 Production also confirms `1e1ffdd4e`: the sampled sRGB WebP control improves
 5,059→588 pixels. Production then confirms `78f1fcf3b`: the complete control

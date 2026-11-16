@@ -3483,3 +3483,21 @@ fails the new regression. Unrounded and mixed-sample RGBA fallback is preserved;
 an earlier broader prototype regressed an unrounded control and is rejected.
 Existing references/tolerances are unchanged. Managed production confirmation
 and catalog parity remain open. See the [audit](OPTIMIZED_SITES_PIXELS_2026_11_12.md#rounded-rgba-draws-in-owning-tile-coordinates-2026-11-16).
+
+### Decoded frame for CPU-resized planar uploads, 2026-11-16
+
+`9b326517b` folds CPU-resized YUV444 into the decoded image frame before building
+the GPU matrix. A 480×270 source reduced to 120×68 previously kept an unnecessary
+natural-image scale; its rounding left CNN's final 46 one-level differences.
+Independent native R8-plane rendering agrees exactly in three complete frames
+with the decoded-frame path. The actual callback crop pins their stitched output
+across a 4x MSAA seam and rejects invalid natural metadata. The old implementation
+fails the new regression; seven focused functions pass under arena poisoning and
+3 GiB guards. Shader, decoder and mip construction stay unchanged.
+
+CNN becomes **46→0**, with **46 corrected, zero introduced**. All 53 workloads/
+106 fresh captures repeat, and 52 other PNGs are unchanged. Six available archived
+catalog workloads are exact. Production confirmation, Reddit's unavailable
+workload and CNN's historical source/replay verification remain open. A fresh
+anonymous Old Reddit probe reaches a blocked login page with no posts. References
+and tolerances are unchanged. See the [audit](OPTIMIZED_SITES_PIXELS_2026_11_12.md#decoded-image-frames-for-cpu-resized-planar-uploads-2026-11-16).

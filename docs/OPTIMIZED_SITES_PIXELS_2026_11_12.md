@@ -27,6 +27,10 @@ reference is stable across two fresh Brave processes, so native image stability
 also remains open. Every counted comparison uses the full RGBA viewport without
 masks or a nonzero tolerance.
 
+The subsequent `9b326517b` diagnostic cohort makes all six available archived
+catalog workloads exact, including CNN. Production confirmation, CNN's historical
+source/replay check and Reddit remain open; see the [latest decoded-frame result](#decoded-image-frames-for-cpu-resized-planar-uploads-2026-11-16).
+
 ## Executable identity and conditions
 
 - Vox executable SHA-256:
@@ -5091,3 +5095,75 @@ no live-site, script-runtime, scrolling or instruction acceptance. CNN source/
 replay, missing Reddit evidence and prior inexact controls keep catalog parity
 open. Local evidence:
 `docs/performance/vlang-gradients-20261114/raw/cnn-rgb-tiles-20261116/`.
+
+### Decoded image frames for CPU-resized planar uploads, 2026-11-16
+
+`9b326517b` folds a CPU-resized YUV444 upload into its decoded image frame before
+constructing the GPU image matrix. CNN's final cropped photo decodes 480×270 to
+120×68. Retaining the original frame carried a rounded vertical scale through
+the shader; using the decoded frame first clears its 46 one-level differences.
+The mode-3 policy is shared, with no site, resource or coordinate exceptions.
+Natural-image metadata retains its original positive/4096 limits. Other image
+modes, CPU plane resizing, mip construction, color conversion and shaders stay
+unchanged. Existing PNG references and tolerances are unchanged.
+
+Independent Skia Graphite/Metal tests use the actual three 120×68 R8 planes,
+linear sampling, device-space rounded clipping and sRGB BGRA8 targets. Recorded
+render passes establish 4x MSAA in the viewport and both owning tiles. The old
+natural-frame transform reproduces Vox's 46 visible errors. The decoded-frame
+transform agrees with Brave's visible photo and with V/GG at **every byte of
+three complete native frames**. Their stitched 107×41 callback crop, including
+white padding and the ownership seam, has SHA-256
+`496cc60bd21aeb50fe399f94de9b8feca5a7db9b3959468533d17197267552f5`.
+The packed CPU source is independently pinned; no new browser reference is added.
+
+The permanent regression decodes the original WebP, verifies the complete upload,
+then checks the real callback against that native crop. The old implementation
+fails with crop hash `f2f12c2043c191370b45d9acbe954d8797b9ab7f2bbc2875f35118ccf9b19bbc`.
+Seven focused V functions pass with arena poisoning and 3 GiB runtime guards,
+including unchanged planar/JPEG/RGBA dispatch, fallback and rejection tests.
+Six invalid natural-dimension cases leave sentinel destinations untouched.
+The final focused executable is
+`e19423a54b8c5132d38bc437674d560b40c2765566a77381429c8997f3a3d8b0`,
+with 276 consumed V witnesses. Five unchanged GG functions passed earlier in this
+same task. A concurrent raster-arena edit is detected before an earlier focused
+execution; that executable is recompiled. The original negative run, all
+intermediate cohorts and boundary-validation follow-up remain retained.
+
+Final C/O0/preallocated/no-GC browser executable
+`be35784f4597343841094f7bc40607a1387888f849b145bc26a03681ba867c84`
+completes **53 workloads/106 fresh captures** plus startup smoke. Every pair
+repeats byte for byte; **all 52 non-CNN PNGs are unchanged** from the accepted
+rounded-RGBA cohort. CNN improves **46→0**, **46 corrected, zero introduced**.
+CNN, GitHub, Hacker News, Lobsters, Wikipedia and Vlang are zero twice each.
+All 892 selected compiled rendering/CSS/DOM/layout witnesses and 960 selected
+pins stay matched. All 107 native guards, driver, outer guard and analysis exit
+zero. Prior inexact diagnostic controls remain inexact at their existing counts.
+These frozen results establish no live-site, scripting, scrolling or instruction
+acceptance. CNN's historical source/replay verification remains open.
+
+A fresh anonymous headless Brave availability check requests
+`https://old.reddit.com/r/programming/` in an empty private profile, without
+ambient proxies. It redirects to `/login/?reason=lor2&dest=…` and displays a
+network-security block, with no posts and `logged_in=false`. Browser/tool inputs
+stay pinned; browser and 3 GiB guard exit zero. Successful capture of that page
+provides no programming-page coverage. The historical account-bearing fixture
+is still absent. Earlier HTTP 403 evidence is retained; this observation records
+the current redirect and document rather than asserting an unmeasured HTTP code.
+
+The latest completed production remains `7515422c`, with its preceding CNN-94
+result and documented inactive-probe limitation. The shared worker is already
+active; both implementation commits request the normal coalesced C/literal
+V `-prod` rebuild. No duplicate manual build is queued or awaited. New production
+validation remains pending. The rounded-RGBA documentation was picked up by
+concurrent commit `50f3dd30c` during a HEAD race; no shared history was rewritten.
+This report records the final feature in a separate documentation commit.
+
+Local evidence:
+`docs/performance/vlang-gradients-20261114/raw/cnn-rgb-tiles-20261116/`.
+Cleanup inventories **107 owned roots/12,930 files**, preserves and SHA-verifies
+**4,307 evidence files/139,028,148 bytes**, and removes owned binaries,
+intermediates, profiles, guards and locks. Both temporary canonical probes are
+removed. The archive guard and lock are separately preserved, verified and
+removed; no owned `Build/rgb-tiles-*` scratch remains. Shared production bundles
+and native dependencies stay.
