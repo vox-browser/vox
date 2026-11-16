@@ -6583,3 +6583,54 @@ all **74** owned Build roots. The disk-full recovery also removes completed
 programs and generated C before copying evidence: 140,291,536 and 132,699,155
 bytes respectively. No `Build/verge-filter*` entries remain. The later catalog
 screen and its separate failures do not invalidate the completed merge cohort.
+
+
+### Remaining forum and news archive screen, 2026-11-17
+
+After completing the Verge fix, a separate nine-site diagnostic screen uses
+C/O0 `26157dfd`, cold private caches, full uBO and each archive's recorded
+animation/decode preparation. Every completed row below has two fresh Brave
+references and one fresh Vox capture. These single Vox captures are preliminary;
+no repeatability, live-site, production or performance acceptance is claimed.
+
+| Archive | Vox vs first Brave, pixels | Brave repeat, pixels | Saved source vs first Brave, pixels |
+| --- | ---: | ---: | ---: |
+| Slashdot | 232,234 | 0 | 0 |
+| Stack Overflow | 3,297 | 0 | 0 |
+| TechCrunch | 173,970 | 0 | 0 |
+| Engadget | 66,383 | 9,363 | 100,163 |
+| The Register | 6 | 0 | 0 |
+
+All five completed cases have matching executable/framework identities before
+and after, successful document/readiness audits and full-uBO request-stream
+checks. The source provenance records Brave **156.1.98.60** while both new
+replays use **157.1.99.57**. The source/replay version gate remains open even
+where source pixels match; Engadget additionally fails reference repeatability.
+Archive bytes, native libraries and all 24 runtime shaders match the initial
+pins when recovered after the interrupted run. The later deletion of the
+completed executable is recorded separately from those input checks.
+
+Slashdot visibly retains a featured-content card that both Brave replays hide.
+The publisher's procedural rules include `.grid_24:has-text(Featured Content)`;
+the native audit reports an initialized JavaScriptCore runtime with no JavaScript
+diagnostics. Procedural filtering needs further diagnosis. No change to those
+filters, their timing budgets, the DOM bridge or the reference has been made.
+
+Pikabu's native process is stopped by the harness's **3 GiB** RSS guard after
+56.995 seconds, with a sampled peak of **3,226,632,192 bytes** and exit -9. It
+produces no valid completed capture. Slate's request-stream oracle times out in
+CDP `Runtime.evaluate`; its native PNG alone cannot establish acceptance. Wired's
+attempt is interrupted by filesystem exhaustion, and Discord is not reached.
+The outer driver then fails with **errno 28, No space left on device**, leaving
+its on-disk exit/guard files empty. Those files and partial logs are retained;
+they are not treated as successful receipts. The CLI's returned guard metadata
+records outer exit one, with the 12 GiB guard itself not exceeded.
+
+This interrupted screen supplies no all-site pass. Completed C files, programs,
+profiles and caches belonging to this job are removed, and the remaining
+evidence is SHA-verified before deleting all owned Build roots. The filesystem
+still reports about **1.2 GiB free on a 1.8 TiB volume** afterward. Other sessions'
+files are untouched. Raw source/reference/native PNGs, audits, commands, failed
+receipts, recovered input checks and cleanup inventory remain ignored under
+`docs/performance/verge-filter-20261117/`. The successfully completed Verge,
+BBC, Guardian and 74-workload merge checks precede this separate failure.
