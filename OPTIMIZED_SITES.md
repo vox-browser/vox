@@ -41,6 +41,15 @@ the 14,916-pixel Verge baseline, but lacks the final geometry-enclosure guard.
 Remaining pixels, that guard's production check and live acceptance stay open.
 See the [local SVG filter audit](docs/OPTIMIZED_SITES_PIXELS_2026_11_12.md#verge-local-svg-drop-shadows-2026-11-16).
 
+**Rectangular shadow follow-up:** `da4e91d4f` reduces the complete frozen
+Verge viewport from 14,916 to **eight pixels twice**, with maximum channel error
+one. BBC and Guardian remain exact in both captures. All **74 workloads/148
+captures** repeat, preserving all 72 prior PNGs. The isolated card improves
+18,935→1; a new fractional scaled control remains inexact. Production `0cae86c8`
+lacks this fix; the coalesced rebuild and production checks remain pending.
+Pixel-perfect catalog and live-site acceptance remain open. See the
+[rectangular shadow audit](docs/OPTIMIZED_SITES_PIXELS_2026_11_12.md#analytic-rectangular-shadows-on-verge-2026-11-17).
+
 **Source browser audit:** CNN's retained live PNG was captured with Brave
 156.1.98.60; its replay references use 157.1.99.56/57. `86220ffbe` now records
 both replay versions and rejects source/replay acceptance across versions,

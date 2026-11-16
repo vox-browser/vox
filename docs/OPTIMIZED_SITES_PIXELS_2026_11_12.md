@@ -6446,3 +6446,79 @@ Cleanup inventories **184 owned roots/12,673 files**, preserves and SHA-verifies
 **3,460 job evidence files/90,170,525 bytes**, then removes owned programs,
 generated C, private profiles/caches, downloaded extensions, replay keys, guards
 and locks. No `Build/verge-svg*` job output remains.
+
+
+### Analytic rectangular shadows on Verge, 2026-11-17
+
+`da4e91d4f` draws supported rectangular box shadows with the Gaussian
+integral profile instead of the Core Graphics fallback. V builds the power-of-two
+A8 lookup table and device geometry. A bounded Metal sampling pass evaluates
+horizontal and vertical coverage, including rectangles narrower than six sigma.
+The GG helper retains that coverage as RGBA32f until paint and destination
+blending; an intermediate A8 resolve loses visible precision. Existing clip-outs,
+underlay cuts and owning root-tile phase stay in the draw. Rounded, sheared,
+anisotropic and unsupported-sigma descriptors retain their existing paths.
+Filter-transfer metadata continues to be ignored by this unrotated box-shadow
+path, as specified by the descriptor contract.
+
+The complete frozen Verge viewport improves **14,916→8 differing pixels twice**,
+with maximum channel error **two→one**. It corrects **14,909** pixels and introduces
+**one**; 14,912 changed pixels lie within x=238…831, y=567…767. The eight residuals
+remain failures of pixel equality. Complete BBC and Guardian captures remain
+**zero twice** each. These are archived document captures, not live-site or
+performance acceptance.
+
+Two new controls use independently repeated Brave **157.1.99.57** references,
+with executable/framework and fixture hashes pinned. The card improves
+**18,935→1 pixel twice**, with maximum error one. The small/narrow/fractional
+variants improve **15,490→7,050 twice**, with maximum error two; its small and
+narrow rectangles are exact, while the fractional scaled rectangle remains
+open. Reference hashes are respectively
+`ccb6f79aacfd1905274f1ca21629baa2ac7dd6eaff96f2aee238c6e7036d2f54` and
+`1674bce1d3b9be56cabd3dcfb17329cc9fe9b245da1a470cc80fc96260a53803`.
+Existing references and tolerances are unchanged. The new GPU card test records
+its single one-level residual explicitly rather than claiming exact equality.
+
+The final **74 workloads/148 fresh captures** repeat. All **72 prior PNGs are
+byte-identical**, including CNN, GitHub, Hacker News, Lobsters, Wikipedia and
+Vlang.io at zero; existing inexact controls retain their counts, including the
+14-pixel isolated SVG logo. Fourteen focused V functions pass with actual GPU
+execution, existing blur hashes, both card sample counts, and eligibility checks.
+Both Python cached-helper staging tests pass. Compile/runtime jobs use the
+required 12/3 GiB guards. Both final Verge request streams pass full-uBO checks:
+**178 requests each**, all allowed, zero mismatches or oracle disagreements.
+The release ZIP hash and 59 vendor-file pins verify. Accepted compiler, runtime,
+capture, filter and guard exits are zero.
+
+C/O0 diagnostic executable:
+`a0c6ea9e593ae603102b6aab59ffc1dc8f43b87c146843c1a018f1dc061cbca9`.
+The four implementation/helper files and staged helper match its pinned inputs;
+compiler-read feature buffers match too. Executable/native-library, archive,
+reference and all **24 runtime Metal shader** hashes stay pinned through captures.
+Accepted shader text is retained locally. A disabled-path control reproduces the
+14,916/18,935/15,490 baselines and preserves all 72 prior PNGs. Its selected
+renderer/native/helper inputs differ only in the eligibility gate; the compiler
+also records unrelated LibJS edits, so this supplies no matched performance
+claim. The browser's default backend remains JavaScriptCore.
+
+Rejected diagnostics remain local: half-precision coverage produces 441 card
+errors, and one earlier shader experiment fails compilation. A reciprocal-alpha
+experiment retains the one-pixel error. A guard that incorrectly treats filter
+transfer metadata as an unsupported shadow disables the fix; the final code
+removes it and exactly matches the first pinned candidate's implementation.
+One focused compilation overlaps an unrelated rounded-group edit and fails its
+input pin; the unchanged feature is recompiled and its tests pass. A managed
+production attempt also rejects changing experimental shader inputs rather than
+publishing mixed code.
+
+The latest completed production browser at validation is still `0cae86c8`;
+its new-control baselines are 18,935/15,490 and it lacks this fix. Hooks request
+the coalesced C/literal V `-prod`, single-unit rebuild. Production validation,
+the eight Verge pixels, the fractional control, catalog source/version gaps and
+live-site acceptance remain open. Raw commands, complete outputs, receipts,
+shader snapshots and SHA-verified cleanup inventory stay ignored under
+`docs/performance/verge-rect-20261116/`.
+ Cleanup SHA-verifies **3,171 evidence files
+(74,512,708 bytes)** before deleting all **83** owned Build roots, including
+per-job programs, caches, profiles, locks and guards. No `Build/verge-rect*`
+entries remain.

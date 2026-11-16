@@ -3614,3 +3614,17 @@ Verge baseline, but contains the earlier implementation without the final
 geometry-enclosure guard. Production confirmation of that guard and live/catalog
 acceptance remain open. See the
 [SVG filter audit](OPTIMIZED_SITES_PIXELS_2026_11_12.md#verge-local-svg-drop-shadows-2026-11-16).
+
+
+### Analytic rectangular box shadows, 2026-11-17
+
+`da4e91d4f` constructs the Gaussian integral profile and device geometry in V,
+samples float coverage through a bounded Metal pass, and blends it with the paint
+through a floating-point GG mask. The full frozen Verge capture improves
+**14,916→8 pixels twice**, with maximum channel error one; BBC and Guardian
+remain exact. The isolated card improves **18,935→1**. Small and narrow controls
+are exact; a fractional scaled rectangle remains open. All **74 workloads/148
+captures** repeat, with all 72 previous PNGs byte-identical. Fourteen focused V
+functions and both Python staging tests pass. Production validation and exact
+Verge equality remain open. See the
+[rectangular shadow audit](OPTIMIZED_SITES_PIXELS_2026_11_12.md#analytic-rectangular-shadows-on-verge-2026-11-17).
