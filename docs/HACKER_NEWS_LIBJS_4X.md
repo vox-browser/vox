@@ -1,5 +1,8 @@
 # Hacker News: compiled LibJS speed and peak RAM
 
+See the latest [call-argument copy continuation](HACKER_NEWS_ARGUMENT_COPIES.md)
+for subsequent measurements and the current speed/RAM gates.
+
 The latest [call-frame initialization continuation](HACKER_NEWS_FRAME_INITIALIZATION.md)
 records further matched CPU measurements and the current speed/RAM gates.
 

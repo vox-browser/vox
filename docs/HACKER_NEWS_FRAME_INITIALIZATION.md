@@ -1,5 +1,8 @@
 # Hacker News: reused call-frame initialization
 
+The subsequent [call-argument copy report](HACKER_NEWS_ARGUMENT_COPIES.md) records
+the latest comparison and its additional net-change control.
+
 Measured 2026-11-16/17, following [native indexed reads](HACKER_NEWS_NATIVE_PROPERTY_READS.md).
 The retained change replaces generic array setters with bounded typed stores for
 reserved slots and a bulk copy for nonoverlapping constants in reused frames.

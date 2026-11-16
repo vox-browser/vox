@@ -63,6 +63,16 @@ was reverted after mixed controls. RAM passes at 48.7291% of V8; the conservativ
 4× wall-time gate remains open at 3.2703×. The separate verification hold and
 language/DOM parity limits are unchanged.
 
+The [call-argument copy continuation](../docs/HACKER_NEWS_ARGUMENT_COPIES.md)
+replaces per-argument setters during private ECMAScript/native call setup with
+bounded typed copies and bulk copying, preserving overlapping-input order,
+public views, exposure barriers and exact budgets. Fifty-seven focused tests
+pass in all three ownership modes. The preceding-build diagnostic records 1.27%
+lower median calling-thread CPU with six improving pairs and one retained large
+regression; the short same-binary result remains mixed. RAM passes at 48.7143%
+of V8; the conservative restarted-warm speed ratio is 3.8310×, leaving the strict
+4× gate open. The separate verification hold and parity limits are unchanged.
+
 ## GitHub runtime checkpoint — 2026-11-15
 
 **Current verification hold:** automated suites remain off until the GitHub
