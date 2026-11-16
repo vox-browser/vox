@@ -153,6 +153,7 @@ pub fn (mut function NativeFunction) internal_call(mut vm VM, this_value Value, 
 	callee.function = FunctionObject(&function)
 	callee.realm = function.realm_
 	callee.this_value = this_value
+	callee.call_environment = caller.call_environment
 	callee.lexical_environment = caller.lexical_environment
 	callee.variable_environment = caller.variable_environment
 	callee.private_environment = caller.private_environment

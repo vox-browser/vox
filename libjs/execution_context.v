@@ -107,6 +107,8 @@ pub mut:
 	stack_offset    uint
 	stack_allocated bool
 mut:
+	cached_call_environment ?&FunctionEnvironment
+	call_environment ?&FunctionEnvironment
 	reusable bool
 	exposed bool
 }
@@ -183,6 +185,7 @@ pub fn (context &ExecutionContext) local_variables() []Value {
 }
 
 pub fn (context &ExecutionContext) copy() &ExecutionContext {
+	expose_call_environment(context)
 	// NB: The entire non-argument count is passed as registers_and_locals_count with 0 constants.
 	non_argument_count := u32(context.values.len) - context.argument_count
 	mut duplicate := ExecutionContext.create(non_argument_count, []Value{}, context.argument_count)
@@ -224,6 +227,8 @@ pub fn (context &ExecutionContext) copy() &ExecutionContext {
 
 // ExecutionContext::visit_edges: report the cells this frame keeps alive.
 pub fn (context &ExecutionContext) visit_roots(mut roots HeapRoots) {
+	expose_call_environment(context)
+	if cached := context.cached_call_environment { expose_function_environment(cached); roots.add(voidptr(cached)) }
 	roots.add_value(context.async_resume_value)
 	if execution := context.async_execution { roots.add(voidptr(execution)) }
 	if execution := context.generator_execution { roots.add(voidptr(execution)) }

@@ -13,6 +13,8 @@ pub mut:
 	new_target      Value = js_undefined() // [[NewTarget]]
 	class_constructor ?&BaseClassFunction // Active class wrapper for super().
 	home_object ?&Object
+mut:
+	call_reuse_exposed bool
 }
 
 pub fn FunctionEnvironment.create(outer ?Environment) &FunctionEnvironment {

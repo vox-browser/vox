@@ -688,6 +688,7 @@ pub fn (mut vm VM) push_execution_context_checked(mut context ExecutionContext) 
 }
 
 pub fn (mut vm VM) push_execution_context(mut context ExecutionContext) {
+	vm.inherit_call_environment(mut context)
 	context.caller_frame = none
 	context.caller_return_pc = 0
 	context.caller_dst_raw = 0
@@ -877,10 +878,12 @@ pub fn (vm &VM) global_declarative_environment() &DeclarativeEnvironment {
 }
 
 pub fn (vm &VM) lexical_environment() ?Environment {
+	vm.expose_current_call_environment()
 	return vm.current_context().lexical_environment
 }
 
 pub fn (vm &VM) variable_environment() ?Environment {
+	vm.expose_current_call_environment()
 	return vm.current_context().variable_environment
 }
 
@@ -1023,6 +1026,7 @@ pub fn (mut vm VM) throw_error_type(kind ErrorKind, error_type ErrorType, args .
 
 // 9.1.2.1 GetIdentifierReference ( env, name, strict ), https://tc39.es/ecma262/#sec-getidentifierreference
 pub fn (mut vm VM) get_identifier_reference(environment ?Environment, name Utf16String, strict bool, hops u32) !Reference {
+	vm.expose_current_call_environment()
 	// 1. If env is the value null, then
 	env := environment or {
 		// a. Return the Reference Record { [[Base]]: unresolvable, [[ReferencedName]]: name, [[Strict]]: strict, [[ThisValue]]: empty }.
@@ -1278,6 +1282,9 @@ pub fn (vm &VM) gather_roots(mut roots HeapRoots) {
 	}
 	for context in vm.context_chain() {
 		context.visit_roots(mut roots)
+	}
+	for context in vm.interpreter_stack_.recycled {
+		if cached := context.cached_call_environment { expose_function_environment(cached); roots.add(voidptr(cached)) }
 	}
 	for saved_stack in vm.saved_execution_context_stacks {
 		for context in collect_execution_contexts_top_to_bottom(saved_stack.stack, saved_stack.previous_running_contexts,

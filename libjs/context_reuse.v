@@ -42,6 +42,7 @@ fn expose_execution_context(context &ExecutionContext) {
 	mut current := ?&ExecutionContext(context)
 	for {
 		frame := current or { break }
+		expose_call_environment(frame)
 		mut owner := unsafe { &ExecutionContext(frame) }
 		if owner.exposed { break }
 		owner.exposed = true
@@ -54,7 +55,8 @@ fn (mut context ExecutionContext) clear_for_reuse() {
 	// The loop is bounded by this array's own length; no user code runs here.
 	for index in 0 .. context.values.len { context.values[index] = js_undefined() }
 	values := context.values
-	unsafe { *context = ExecutionContext{ values: values, reusable: true } }
+	environment := context.recycle_call_environment()
+	unsafe { *context = ExecutionContext{ values: values, reusable: true, cached_call_environment: environment } }
 }
 
 fn (mut stack InterpreterStack) allocate_reusable(registers u32, constants []Value, arguments u32) ?&ExecutionContext {
@@ -67,7 +69,7 @@ fn (mut stack InterpreterStack) allocate_reusable(registers u32, constants []Val
 		mut context := stack.recycled[index]
 		if u64(context.values.len) != count { continue }
 		stack.recycled.delete(index)
-		stack.recycled_bytes -= size
+		stack.recycled_bytes -= context.recycled_context_bytes()
 		context.argument_count = arguments
 		for slot in 0 .. int(if registers < reserved_register_count {
 			registers
@@ -110,14 +112,14 @@ fn (mut stack InterpreterStack) recycle_context(mut context ExecutionContext) {
 		|| context.values.cap != context.values.len {
 		return
 	}
-	size := frame_size_in_bytes(u64(context.values.len))
+	size := frame_size_in_bytes(u64(context.values.len)) + if context.can_recycle_call_environment() { uint(sizeof(FunctionEnvironment)) } else { uint(0) }
 	if size > reusable_context_bytes_limit { return }
 	// Admit new layouts when the pool is full instead of keeping a permanent
 	// set of cold layouts. Every evicted record is already cleared/unexposed.
 	for stack.recycled.len >= reusable_context_count_limit
 		|| stack.recycled_bytes + size > reusable_context_bytes_limit {
 		oldest := stack.recycled[0]
-		stack.recycled_bytes -= frame_size_in_bytes(u64(oldest.values.len))
+		stack.recycled_bytes -= oldest.recycled_context_bytes()
 		stack.recycled.delete(0)
 	}
 	context.clear_for_reuse()

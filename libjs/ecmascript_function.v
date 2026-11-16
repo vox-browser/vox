@@ -31,6 +31,7 @@ fn create_ecmascript_function_data(mut vm VM, source &Executable, data &JsFuncti
 
 fn create_ecmascript_function_in_environment(mut vm VM, source &Executable, data &JsFunctionData, named_expression bool, inferred_name ?Utf16String, ordinary bool,
 	defining_environment ?Environment, private_environment ?&PrivateEnvironment, script_or_module ScriptOrModule) !&Object {
+	vm.expose_current_call_environment()
 	realm := vm.realm()
 	function_prototype := match data.kind {
 		.normal { realm.function_prototype }
@@ -168,7 +169,7 @@ fn (mut function ECMAScriptFunction) call_body(mut vm VM, this_value Value, argu
 		return vm.throw_error_type(.internal_error, .call_stack_size_exceeded)
 	}
 	defer { stack.deallocate(mark) }
-	mut environment := FunctionEnvironment.create(function.environment)
+	mut environment := vm.obtain_call_environment(mut frame, function.environment)
 	environment.set_function_object(FunctionObject(&function))
 	environment.set_new_target(new_target)
 	environment.class_constructor = class_constructor
