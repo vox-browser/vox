@@ -42,6 +42,7 @@ struct GithubRevisitResult {
 	initialization_ms   f64
 	script_ms           f64
 	cache_finish_ms     f64
+	cache_flush_error   string
 	scripts             int
 	requests            []string
 	initial_errors      []string
@@ -75,12 +76,15 @@ fn main() {
 	os.setenv('VOX_LIBJS_NATIVE_CACHE', cache, true)
 	visits := if os.args.len == 4 { os.args[3].int() } else { 2 }
 	if visits < 1 || visits > 2 { panic('Use one or two visits') }
+	mut cache_failed := false
 	for visit in 0 .. visits {
 		// The second opening must work even when starting a compiler is impossible.
 		if visit > 0 { os.setenv('VOX_LIBJS_NATIVE_COMPILER', '/usr/bin/false', true) }
 		result := open_github(manifest, sources, archive)
 		println(json2.encode(result))
+		cache_failed = cache_failed || result.cache_flush_error != ''
 	}
+	if cache_failed { exit(1) }
 }
 
 fn open_github(manifest RevisitManifest, sources map[string]string, archive string) GithubRevisitResult {
@@ -161,7 +165,11 @@ fn open_github(manifest RevisitManifest, sources map[string]string, archive stri
 	script_ms := f64(time.sys_mono_now() - script_start) / 1e6
 	finish_start := time.sys_mono_now()
 	mut vm := runtime.libjs_vm()
-	stats := vm.flush_native_code_cache() or { panic(err) }
+	mut flush_error := ''
+	stats := vm.flush_native_code_cache() or {
+		flush_error = err.msg()
+		vm.native_code_cache_stats()
+	}
 	finish_ms := f64(time.sys_mono_now() - finish_start) / 1e6
 	total_ms := f64(time.sys_mono_now() - started) / 1e6
 	links := parent.get_elements_by_tag_name('a')
@@ -176,6 +184,7 @@ fn open_github(manifest RevisitManifest, sources map[string]string, archive stri
 		initialization_ms:   initialization_ms
 		script_ms:           script_ms
 		cache_finish_ms:     finish_ms
+		cache_flush_error:   flush_error
 		scripts:             scripts.len
 		requests:            seen.urls
 		initial_errors:      errors
