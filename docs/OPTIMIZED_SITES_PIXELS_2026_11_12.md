@@ -6039,3 +6039,110 @@ preserves **1,347 evidence files/33,217,001 bytes**, inventories **41 owned root
 4,624 files**, and removes the owned browser/checker/test programs, generated C,
 private caches/profiles, downloaded extension/ZIP, replay keys, guards and locks.
 No `Build/even-webp*` job output remains.
+
+
+### JPEG XL dither ownership and diagnostic stability, 2026-11-16
+
+`e41b2bff0` fixes the unstable JPEG XL diagnostic captures. V development
+builds lazily read the embedded 1,024-byte dither table in the first reader's
+allocation scope. JPEG XL output can first read it inside a disposable decode
+arena; its cached pointer then outlives that arena. A fresh scope-poisoning probe
+traps the next quantization read through `quantize_output_row_into`, exit 138.
+The ordinary probe passes because its allocation pattern does not overwrite the
+old buffer; that pass does not establish correct ownership.
+
+The module now initializes a fixed-size immutable table by value, checking its
+length before copying. Quantization reads that module-owned array. The source
+binary remains unchanged at SHA-256
+`6247b14297fdc698d699d1e1fa2331e4da69215d852e2493af27009b9effc93e`.
+Its attribution and rounding/dither arithmetic remain unchanged. The poisoning
+regression passes with and without literal V `-prod`; the two existing output
+functions also pass in both modes, covering 62 integer rows, 4,096 quantized rows
+and 768 premultiplied rows, plus bounds/wrap cases. These focused test invocations
+are not production-browser validation.
+
+Before this fix, two retained Guardian C/O0 captures differ by **207,975 and
+186,856 pixels** and do not repeat. Fixed C/O0 executable
+`6fb81def653641d81c8544d11732ae15580bc154337ff395e94b681019159818`
+gives **425 twice**, with both complete PNGs pixel-identical to the available
+production baseline. The consumed output module matches its compiler witness;
+selected inputs remain unchanged during compilation. Both 55-request streams
+pass full-uBO 1.75.0 checks, with zero blocked requests, mismatches or oracle
+disagreements. The release ZIP and 59 retained vendor files verify.
+All **62 workloads/124 fresh captures** repeat, and every PNG remains byte-identical
+to the preceding even-WebP cohort. The Guardian load is a separate retained
+failure, outside that repeat suite; its 425 rendering differences remain open
+at this point. No existing reference/tolerance or performance claim changes.
+
+Local evidence: `docs/performance/guardian-dither-20261116/`. Cleanup inventories
+**27 owned roots/4,376 files**, preserves and SHA-verifies **1,258 evidence files/
+27,754,733 bytes**, then removes per-job programs, generated C, private
+profiles/caches, downloaded extension/ZIP, replay keys, guard reports and locks.
+No `Build/guardian-dither*` job output remains.
+
+### Guardian JPEG XL circles and remaining dropdown border, 2026-11-16
+
+`b0856f720` improves the complete archived Guardian page **425→3 pixels twice**,
+correcting **422** pixels and introducing **zero**. All three circular photos
+now match the retained independent Brave reference exactly. The remaining
+pixels are (978,223), (980,223) and (979,224), maximum channel error two, in the
+edition picker's rotated CSS border. Its `::after` uses a 5×5 content box,
+1-pixel right/bottom borders, `translateY(-2px) rotate(45deg)` and white current
+color. This is a remaining rendering gate, not a full Guardian pass.
+
+The new V dispatch admits only opaque, unscaled, integral-positioned sRGB JPEG XL
+circles up to 128×128, under Chromium rendering policy, full opacity and a
+translation-only transform. Other corner shapes and crops, transparent pixels
+and Display P3 rendering retain their existing fallback. The native change only
+routes the shared readback boundary's new mode to its V callback; V owns its
+eligibility, tile selection and image drawing.
+
+The image and rounded clip now share one GPU draw, avoiding a separately
+quantized platform clip mask. A direct GPU control initially retains 31 pixels
+in the four-sample pass: its analytic rounded geometry perturbs interpolated
+texture coordinates. Recovering those coordinates from device vertices removes
+all 31. A dedicated color-transform flag selects the existing coordinate adapter
+without changing texture wrapping. Single-sample draws leave that coordinate
+adapter disabled; other image paths keep their existing selection. Opaque-image and absolute-frame experiments do not fix
+those residual pixels; their failures remain in evidence.
+
+The new `unscaled-jpegxl-circles` fixture reuses three tracked Guardian JPEG XL
+responses and includes upper/lower circle sets. All four fresh Brave references
+agree byte for byte; the final pair pins all three asset bodies and browser
+inputs before and after capture. The expected PNG is promoted unchanged:
+SHA-256 `fe498dae06577de321c944fd316ea7c16b2048d91609175915246277c55f853d`.
+The control browser differs by **992 pixels twice**; the candidate is **zero
+twice**. The GPU regression checks all three pictures in both sample modes plus
+an exterior ring, and rejects translucent input without touching the backdrop.
+V/Python staging checks cover installation and independent repair of the new
+coordinate selection. No previous reference or tolerance changes.
+
+Final C/O0 diagnostic executable:
+`3590aada0059f7d0d9261af71a230c05b4e1d8f91690f572b19ccecb20867dd0`.
+Six consumed implementation/staged-GG buffers match their compiler manifest;
+selected source/native inputs remain unchanged during successful compilation.
+An earlier compile whose inputs change is retained and rejected. Seventeen
+focused V functions and four Python staging tests pass. All **63 workloads/
+126 fresh captures** repeat; all **62 preceding PNGs remain byte-identical**,
+including the six main catalog archives and the new BBC controls. Existing
+inexact controls retain their recorded counts. Complete Guardian captures are
+separately audited and still fail by the three dropdown pixels. Both new native
+streams pass full-uBO checks: 55 requests each, all allowed, zero mismatches and
+oracle disagreements. Actual accepted compile, test, capture and guard exits
+are zero under the required memory caps.
+
+The latest available completed production browser remains `93adced1`, selected
+through its lease and completed receipt. It cannot validate the newer WebP or
+JPEG XL fixes. Every source commit requests the normal coalesced C/literal V
+`-prod` rebuild; no duplicate manual production build is queued. BBC's exact
+frozen rendering is established by its earlier pinned diagnostic cohort;
+Guardian's remaining three pixels, production confirmation, source-browser
+version qualification, Verge and the other catalog gates remain open. No
+live-site or instruction-performance acceptance is claimed.
+
+Local evidence: `docs/performance/guardian-circles-20261116/`. Cleanup inventories
+**50 owned roots/3,831 files**, preserves and SHA-verifies **1,338 evidence files/
+30,001,450 bytes**, then removes owned programs, generated C, private
+profiles/caches, replay keys, guards and locks. No `Build/guardian-circles*` job
+output remains. The separate downloaded uBO/checker resources are removed with
+the completed dither job above.
