@@ -236,6 +236,10 @@ fn collect_nodes_for_scope(root &Node, scope CollectionScope, filter fn(&Node) b
 
 fn collect_elements_for_scope(root &Node, scope CollectionScope, filter fn(&Element) bool) []&Element {
 	mut elements := []&Element{}
+	if use_direct_collection_walk() {
+		append_collection_elements(root, scope, filter, mut elements)
+		return elements
+	}
 	elements_ptr := &elements
 	node_filter := fn [elements_ptr, filter] (node &Node) TraversalDecision {
 		if element := node.as_element() {
