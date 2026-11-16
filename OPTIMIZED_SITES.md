@@ -9,7 +9,7 @@ Provisional entries retain unresolved acceptance checks.
 **Pixel recheck, 2026-11-16:** The six available frozen catalog workloads now
 match their archived Brave references in diagnostics: **CNN, GitHub, Hacker News,
 Lobsters, Wikipedia and Vlang.io are zero pixels twice each**. Catalog-wide
-acceptance remains open. Old Reddit's historical fixture is missing; a fresh
+acceptance remains open. Old Reddit's 2026-11-04 catalog fixture is missing; a fresh
 anonymous Brave navigation to `/r/programming/` redirects to a blocked login
 page, with no posts. CNN's historical source/replay verification also remains
 open. These frozen checks establish no live-site or performance acceptance.
@@ -32,6 +32,16 @@ captures on published `7515422c` match the retained reference exactly. The new
 archived-site checker pins completed bundles before launching, including staged
 artifacts, and passes 18 lease/selection tests. See the
 [raster and bundle-selection audit](docs/OPTIMIZED_SITES_PIXELS_2026_11_12.md#lobsters-raster-history-and-completed-browser-selection-2026-11-16).
+
+**Recovered Reddit follow-up:** the older 2026-11-01 HTML and its script-free
+derivative are recovered with their exact documented hashes. With reconstructed
+static assets, fresh full-uBO Brave references agree. `57c86c2f7` fixes filled
+list-marker coverage, reducing Vox **18→6 pixels** twice. The public marker
+control improves **92→0**; **54 workloads/108 captures** repeat exactly and all
+53 prior PNGs remain unchanged. The remaining six button pixels have a public
+diagnostic fixture. This older page does not restore the newer catalog fixture
+or certify its historical resource cache. See the
+[recovery and marker audit](docs/OPTIMIZED_SITES_PIXELS_2026_11_12.md#recovered-reddit-html-and-filled-marker-coverage-2026-11-16).
 
 The latest fixes make CNN **94→73→46→0**: `a6edd14de` preserves fractional SVG
 background layout, `fb71abe2d` renders rounded RGBA in owning-tile coordinates,

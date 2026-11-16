@@ -5334,3 +5334,94 @@ The temporary diagnostic wrapper is retained as text and removed from the
 canonical diagnostic directory. Shared bundles and production state remain.
 Catalog acceptance still requires stable default Brave references, the missing
 Reddit workload, CNN's historical source/replay gate and production confirmation.
+
+### Recovered Reddit HTML and filled marker coverage, 2026-11-16
+
+The default Vox page cache still contains the older `/r/programming/` source:
+**137,106 bytes**, SHA-256
+`4107cafa0e130f6f604ee2763c575669748a8ff21269d39b4a85cddb1d23fa40`.
+Removing its 17 script elements and inserting the documented base URL reproduces
+the **117,609-byte** historical derivative exactly, SHA-256
+`a432e6846a949c02957b4e880300e588c1e0b4829276daee44d4c9ae100a7e90`.
+Both agree with the [2026-11-03 report](OLD_REDDIT_PROGRAMMING_RECHECK.md).
+The source, derivative and account-bearing captures remain local in a mode-0700
+evidence directory, excluded from Git. No browser session or cookie jar is imported.
+
+The retained cache supplies 23 resource responses. All 96 missing static-asset
+fetches return 200, yielding a sealed **120-response candidate**, including the
+document. Both browsers replay these same pinned bytes at the original HTTPS
+origin through a private certificate/proxy, with no live fallback. This restores
+a runnable older page; it does **not** certify the historical sealed resource
+cache or restore the separate 2026-11-04 source. A scan of 746 cached page bodies
+(288,714,643 bytes) finds neither documented hash of that newer source/derivative.
+Its historical 2,046-pixel wrapping difference remains unverified.
+
+Installed Brave **157.1.99.57**, full uBlock Origin **1.75.0** and all 59 retained
+vendor files stay pinned. Each browser has fresh private profiles/HTTP caches,
+1024×768 at scale 1 and five seconds of settling. Replay preserves load/paint
+preparation; OS caches remain. Each cohort follows Brave/Vox/Vox/Brave order.
+All four full-uBO observations pass **39 checks**, one blocked and 38 allowed,
+with zero disagreements and matching cosmetics, procedural filters and scriptlets.
+Native audits retain the original URL, `programming` title, complete readiness,
+viewport and all 25 source post IDs in order. Browser and guard exits are zero.
+
+| Browser | Differences from that cohort's unchanged Brave PNG, in capture order | Fresh-process repeat |
+| --- | --- | ---: |
+| Published Vox `7515422c` | 18, 18 | 0 |
+| Marker-fix diagnostic Vox `9912b0a8` | **6, 6** | **0** |
+| Brave, before the fix | 0, 0 | 0 |
+| Brave, after the fix | 0, 0 | 0 |
+
+Twelve changed pixels belong to a filled disc marker; six belong to the rounded
+subscribe button. `57c86c2f7` sends filled ellipses through the document shape
+rasterizer, retaining the owning tile's coverage and normal transform. Unsupported
+geometry keeps the existing fallback. Two focused functions pass under a 3 GiB
+runtime guard. The raster callback agrees with independent Brave coverage exactly.
+The new public marker control improves **92→0** in both captures. The complete
+**54-workload/108-capture** check repeats byte for byte, with **all 53 prior PNGs
+unchanged**, including CNN at zero. Parsed source hashes prove that the fresh
+diagnostic executable contains the implementation. Existing PNGs and tolerances
+are unchanged; these are pixel results, with no instruction/FPS credit.
+
+`8a324ac63` retains a public diagnostic for the remaining six pixels. Its original
+Reddit UI sprite is SHA-256
+`3151728340f566d1400cd9437ae64e8d95583d066712fa1d7c0718b8d10f5527`.
+An inline button and an SVG curve reproduce the page's tile context; the complete
+button region agrees with the recovered-page Brave reference. Two fresh references
+agree, SHA-256
+`ee25d9a3d176ac384b1406d886d48e690c281d2385db56efc2f1384f1e63c632`.
+Fresh diagnostic Vox captures retain six differences, maximum channel error 9.
+Initial block-only and curve-free reductions have different corner coverage;
+their observations remain retained and do not replace the final reference.
+
+A sample-aware image-mask counterfactual retains all six differences while
+reducing maximum error 9→2. Standalone GPU pattern experiments also fail exact
+equality; later variants still fail at a one-level blue-channel difference in
+the first checked corner. Grouped/separate passes, wrapped texels, repeat sampling
+and [SkSL half-color precision](https://skia.googlesource.com/skia/+/refs/heads/main/src/sksl/sksl_graphite_frag.sksl)
+are investigated separately. The first pattern test exceeds a small-image API's
+supported dimensions; a later shader fails compilation on an incorrect uniform
+name. These failures and corrected diagnostics are retained. None supplies an
+accepted button fix or establishes the exact cause. All experimental runtime and
+staging changes are reverted; only the verified marker fix and public fixture stay.
+
+`34a4c0e96` also fixes a concrete production build failure: a generated adapter
+from the rejected MSAA experiment references a removed `GpuContext` field.
+Staging removes the orphan unless the actual GG source supplies that module.
+Both focused staging functions pass, and canonical staging removes the orphan.
+Completed production `98f13265` is subsequently superseded before pinning; the
+published bundle remains `7515422c`. Managed commit requests stay coalesced;
+no duplicate manual production build is queued. This older published executable
+cannot validate the latest CNN or marker code.
+
+Local evidence: `docs/performance/reddit-recovery-20261116/`.
+Accepted cohort source/resource/browser pins, commands, parsed-source receipts,
+PNGs, audits and actual guard exits remain local, alongside failed diagnostic
+logs and source snapshots. Cleanup inventories **136 owned roots/4,787 files**,
+preserves and SHA-verifies **1,644 evidence files/28,767,537 bytes**, and removes
+owned build outputs, binaries, profiles, replay keys and locks. The archive guard
+and lock are separately preserved, verified and removed. No owned
+`Build/reddit-recovery*` scratch remains. Temporary probes and rejected runtime
+sources are removed; canonical GG staging is restored to the committed code.
+Production confirmation, the newer Reddit fixture, default Brave Lobsters
+repeatability and CNN's historical source/replay gate remain open.

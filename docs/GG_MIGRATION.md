@@ -3501,3 +3501,15 @@ catalog workloads are exact. Production confirmation, Reddit's unavailable
 workload and CNN's historical source/replay verification remain open. A fresh
 anonymous Old Reddit probe reaches a blocked login page with no posts. References
 and tolerances are unchanged. See the [audit](OPTIMIZED_SITES_PIXELS_2026_11_12.md#decoded-image-frames-for-cpu-resized-planar-uploads-2026-11-16).
+
+### Filled list-marker coverage, 2026-11-16
+
+`57c86c2f7` routes filled ellipses through the document shape rasterizer instead
+of CoreGraphics. Two focused functions pass, including exact independent Brave
+pixels at the actual raster callback and invalid-geometry fallbacks. The public
+marker fixture improves 92→0 pixels twice. A recovered older Reddit page improves
+18→6; only its rounded subscribe-button pixels remain. All 54 workloads/108 fresh
+captures repeat, and all 53 prior PNGs are unchanged. New public marker references
+agree in two fresh Brave processes; existing references and tolerances stay.
+Production confirmation and the newer missing Reddit workload remain open.
+See the [recovery audit](OPTIMIZED_SITES_PIXELS_2026_11_12.md#recovered-reddit-html-and-filled-marker-coverage-2026-11-16).

@@ -1,5 +1,19 @@
 # Brave rendering fixtures
 
+`small-list-symbol-coverage` checks small filled list discs and square markers
+at three font sizes, including a lower document tile. Two fresh Brave references
+agree. `57c86c2f7` routes filled ellipses through document shape rasterization:
+the public control improves 92→0 pixels twice, and the recovered older Reddit
+page improves 18→6. Its 54-workload recheck preserves every prior PNG.
+
+`diagnostic/rounded-repeated-sprite-border` retains those remaining six pixels
+without private page data. Its inline button uses the original public Reddit
+sprite and an SVG curve in the same tile, preserving the source raster context.
+Two fresh Brave captures agree, and the button region matches the recovered
+page's reference exactly. Vox currently differs by six pixels, maximum channel
+error 9. The reference and zero tolerance remain fixed. See the
+[recovery audit](../../../docs/OPTIMIZED_SITES_PIXELS_2026_11_12.md#recovered-reddit-html-and-filled-marker-coverage-2026-11-16).
+
 `diagnostic/webp-srgb-table` reuses the tracked CNN train WebP with its original
 1024-entry ICC sRGB transfer table. It draws native-size, 104×58.5 CSS-pixel
 and viewport-clipped copies at 1024×768, scale 1, without scripts. Two fresh
