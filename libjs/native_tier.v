@@ -54,6 +54,7 @@ pub mut:
 	direct_slow_steps u64
 	global_binding_hint_hits u64
 	entry_cache_hits u64
+	specialized_property_steps u64
 }
 
 pub struct NativeCodeStats {
@@ -73,6 +74,7 @@ struct NativeInvocation {
 	vm         &VM
 	executable &Executable
 	primitive_type_names voidptr
+	property_read_step voidptr
 mut:
 	failure ?IError
 	ended   bool
@@ -306,12 +308,21 @@ fn native_source(executables []&Executable) !(string, int) {
 	source.writeln('static NV num(double x) { NV v={.number=x,.tag=${int(ValueTag.double)}}; if(x>=-2147483648.0 && x<=2147483647.0 && x==(int32_t)x && !(x==0 && signbit(x))) v.tag=${int(ValueTag.int32)}; return v; }')
 	source.writeln('static NV boolean(int x) { NV v={.number=!!x,.tag=${int(ValueTag.boolean)}}; return v; }')
 	source.writeln(native_primitive_helpers())
+	source.writeln(native_property_helpers())
 	mut fast_count := 0
 	for index, executable in executables {
-		source.writeln('void vox_native_${index}(void *state,NV *v,uint64_t *budget,uint8_t limited,uint32_t *pc,Slow slow,uint64_t *fast_steps) { uint32_t next=*pc; goto dispatch;')
+		mut has_properties := false
+		for offset, instruction in executable.instructions {
+			if _ := native_property_plan(instruction, executable, u32(offset)) { has_properties = true; break }
+		}
+		property_reader := if has_properties { 'PropertyRead property=property_reader(state);' } else { '' }
+		source.writeln('void vox_native_${index}(void *state,NV *v,uint64_t *budget,uint8_t limited,uint32_t *pc,Slow slow,uint64_t *fast_steps) { uint32_t next=*pc; ${property_reader} goto dispatch;')
 		for offset, instruction in executable.instructions {
 			fast := native_fast_instruction(instruction, executable)!
 			source.writeln('L${offset}:;')
+			if plan := native_property_plan(instruction, executable, u32(offset)) {
+				source.writeln('if(property) { static const uint32_t plan[]={${plan}}; *pc=${offset}; next=property(state,(void*)plan); if(next==${offset + 1}) goto L${offset + 1}; goto dispatch; }')
+			}
 			if fast != '' {
 				fast_count++
 				// Budget is shared with all nested calls. An exhausted budget is

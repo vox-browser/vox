@@ -15,7 +15,7 @@ fn use_native_primitive_ops() bool {
 fn native_primitive_layout_identity() string {
 	sample := PrimitiveString{}
 	invocation := NativeInvocation{vm: unsafe { nil }, executable: unsafe { nil }}
-	return '${sizeof(int)}:${uint(&sample.utf16.data.len) - uint(&sample)}:${uint(&sample.utf16.data.data) - uint(&sample)}:${uint(&invocation.primitive_type_names) - uint(&invocation)}'
+	return '${sizeof(int)}:${uint(&sample.utf16.data.len) - uint(&sample)}:${uint(&sample.utf16.data.data) - uint(&sample)}:${uint(&invocation.primitive_type_names) - uint(&invocation)}:${uint(&invocation.property_read_step) - uint(&invocation)}:${sizeof(voidptr)}'
 }
 
 // Generated code reads immutable UTF-16 storage using offsets from this exact
