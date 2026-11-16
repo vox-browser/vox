@@ -576,13 +576,13 @@ fn form_model_element(form &HTMLFormElementModel) &dom.Element {
 
 pub fn (mut form HTMLFormElementModel) add_control(mut control FormAssociatedElement) {
 	control.set_form(form.element)
-	if control !in form.controls_ {
+	if !form.controls_.any(voidptr(it) == voidptr(&control)) {
 		form.controls_ << control
 	}
 }
 
 pub fn (mut form HTMLFormElementModel) remove_control(control &FormAssociatedElement) {
-	form.controls_ = form.controls_.filter(it != control)
+	form.controls_ = form.controls_.filter(voidptr(it) != voidptr(control))
 	mut mutable_control := unsafe { &FormAssociatedElement(control) }
 	mutable_control.set_form(none)
 }

@@ -203,7 +203,11 @@ pub fn (_ &FormAssociatedElement) form_associated_element_was_moved(_old_parent 
 pub fn (_ &FormAssociatedElement) form_associated_element_attribute_changed(_name string, _old_value ?string, _value ?string, _namespace ?string) {}
 
 pub fn (mut control FormAssociatedElement) set_form(form ?&dom.HTMLFormElement) {
+	if current := control.form_ {
+		if target := form { if voidptr(current) == voidptr(target) { return } }
+	} else if form == none { return }
 	if old_form := control.form_ {
+		if mut model := html_form_element_model_for(old_form) { model.forget_past_names_for_element(control.element) }
 		remove_associated_element_from_form(old_form, control.element)
 	}
 	control.form_ = form
