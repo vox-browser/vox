@@ -200,18 +200,31 @@ fn (mut tier NativeTier) prepare_cached_entry(executable &Executable) {
 // Run after the outer script/callback/module entry has finished, or before
 // disposing its runtime. Never run a compiler from the interpreter hot loop.
 pub fn (mut vm VM) flush_native_code_cache() !NativeCacheStats {
+	mut stats := vm.flush_native_code_cache_batch()!
+	for stats.pending_executables>0 { stats=vm.flush_native_code_cache_batch()! }
+	return stats
+}
+
+// Bound each compiler invocation by function count and bytecode size. HTML
+// embedders can return to their event loop between batches; a full flush still
+// completes every pending entry before shutdown or an explicit checkpoint.
+pub fn (mut vm VM) flush_native_code_cache_batch() !NativeCacheStats {
 	if vm.run_executable_depth != 0 || vm.external_budget_depth != 0 {
 		return error('Native disk cache compilation requires an idle VM')
 	}
 	mut tier := vm.native_tier or { return NativeCacheStats{} }
 	mut cache := tier.persistent or { return NativeCacheStats{} }
-	if cache.pending.len == 0 { return cache.stats }
-	keys := cache.pending.keys().sorted()
-	mut selected := []&Executable{cap: keys.len}
-	for key in keys {
+	if cache.pending.len == 0 { return vm.native_code_cache_stats() }
+	mut keys := []string{}
+	mut selected := []&Executable{}
+	mut instructions := u64(0)
+	for key in cache.pending.keys().sorted() {
 		executable := cache.pending[key] or { return error('Missing pending native executable') }
+		if selected.len>0 && (selected.len>=128 || instructions+u64(executable.instructions.len)>32768) { break }
 		executable.validate(0)!
+		keys << key
 		selected << executable
+		instructions += u64(executable.instructions.len)
 	}
 	compiled := native_compile_library(selected, cache.directory, cache.compiler) or {
 		cache.stats.last_error = err.msg()
@@ -255,5 +268,5 @@ pub fn (mut vm VM) flush_native_code_cache() !NativeCacheStats {
 			tier.entries[voidptr(executable)] = entry
 		}
 	}
-	return cache.stats
+	return vm.native_code_cache_stats()
 }
