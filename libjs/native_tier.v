@@ -56,6 +56,7 @@ pub mut:
 	entry_cache_hits u64
 	specialized_property_steps u64
 	specialized_object_property_steps u64
+	native_length_steps u64
 }
 
 pub struct NativeCodeStats {
@@ -76,6 +77,7 @@ struct NativeInvocation {
 	executable &Executable
 	primitive_type_names voidptr
 	property_read_step voidptr
+	property_length_step voidptr
 mut:
 	failure ?IError
 	ended   bool
@@ -310,6 +312,7 @@ fn native_source(executables []&Executable) !(string, int) {
 	source.writeln('static NV boolean(int x) { NV v={.number=!!x,.tag=${int(ValueTag.boolean)}}; return v; }')
 	source.writeln(native_primitive_helpers())
 	source.writeln(native_property_helpers())
+	source.writeln(native_length_helpers())
 	mut fast_count := 0
 	for index, executable in executables {
 		mut has_properties := false
@@ -319,11 +322,9 @@ fn native_source(executables []&Executable) !(string, int) {
 		property_reader := if has_properties { 'PropertyRead property=property_reader(state);' } else { '' }
 		source.writeln('void vox_native_${index}(void *state,NV *v,uint64_t *budget,uint8_t limited,uint32_t *pc,Slow slow,uint64_t *fast_steps) { uint32_t next=*pc; ${property_reader} goto dispatch;')
 		for offset, instruction in executable.instructions {
-			fast := native_fast_instruction(instruction, executable)!
+			length_fast := native_length_instruction(instruction, executable, u32(offset))
+			fast := if length_fast != '' { length_fast } else { native_fast_instruction(instruction, executable)! }
 			source.writeln('L${offset}:;')
-			if plan := native_property_plan(instruction, executable, u32(offset)) {
-				source.writeln('if(property) { static const uint32_t plan[]={${plan}}; *pc=${offset}; next=property(state,(void*)plan); if(next==${offset + 1}) goto L${offset + 1}; goto dispatch; }')
-			}
 			if fast != '' {
 				fast_count++
 				// Budget is shared with all nested calls. An exhausted budget is
@@ -339,7 +340,11 @@ fn native_source(executables []&Executable) !(string, int) {
 					source.writeln('goto L${offset + 1};')
 				}
 			}
-			source.writeln('S${offset}: *pc=${offset}; next=slow(state,${offset});')
+			source.writeln('S${offset}:;')
+			if plan := native_property_plan(instruction, executable, u32(offset)) {
+				source.writeln('if(property) { static const uint32_t plan[]={${plan}}; *pc=${offset}; next=property(state,(void*)plan); if(next==${offset + 1}) goto L${offset + 1}; goto dispatch; }')
+			}
+			source.writeln('*pc=${offset}; next=slow(state,${offset});')
 			source.writeln('if(next==${offset + 1}) goto L${offset + 1}; goto dispatch;')
 		}
 		source.writeln('L${executable.bytecode_length}: *pc=${executable.bytecode_length}; return;')

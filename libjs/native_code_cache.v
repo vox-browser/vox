@@ -80,6 +80,7 @@ fn native_cache_abi() !string {
 			$embed_file('@VMODROOT/libjs/native_tier.v').to_string() +
 			$embed_file('@VMODROOT/libjs/native_dynamic_dispatch.v').to_string() +
 			$embed_file('@VMODROOT/libjs/native_property_read.v').to_string() +
+			$embed_file('@VMODROOT/libjs/native_property_length.v').to_string() +
 			$embed_file('@VMODROOT/libjs/native_code_cache.v').to_string() +
 			$embed_file('@VMODROOT/libjs/instruction.v').to_string() +
 			$embed_file('@VMODROOT/libjs/value.v').to_string() +
