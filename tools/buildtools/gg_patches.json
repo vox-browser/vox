@@ -153,8 +153,8 @@
   "prepare_gg_jpeg_shader": [
     {
       "file": "shaders/paint_snippets.metal",
-      "old": "if (_globals._anonInterface0->combinedUniformData[_globals.uniformSsboIndex].gammaParameters_7.y > 0.0f) {",
-      "new": "if (_globals._anonInterface0->combinedUniformData[_globals.uniformSsboIndex].gammaParameters_7.w > 0.0f) {\n    float3 yuv = _10_mask.xyz;\n    _10_mask = float4(clamp(float3(yuv.x + 1.402000f * yuv.z - 0.703749f,\n                                  yuv.x - 0.344136f * yuv.y - 0.714136f * yuv.z + 0.531211f,\n                                  yuv.x + 1.772000f * yuv.y - 0.889475f), 0.0f, 1.0f), 1.0f);\n} else if (_globals._anonInterface0->combinedUniformData[_globals.uniformSsboIndex].gammaParameters_7.y > 0.0f) {"
+      "old": "if (_globals._anonInterface0->combinedUniformData[_globals.uniformSsboIndex].gammaParameters_7.y > 0.0f) {\n    float3 yuv = _10_mask.xyz;",
+      "new": "if (_globals._anonInterface0->combinedUniformData[_globals.uniformSsboIndex].gammaParameters_7.w > 0.0f) {\n    float3 yuv = _10_mask.xyz;\n    _10_mask = float4(clamp(float3(yuv.x + 1.402000f * yuv.z - 0.703749f,\n                                  yuv.x - 0.344136f * yuv.y - 0.714136f * yuv.z + 0.531211f,\n                                  yuv.x + 1.772000f * yuv.y - 0.889475f), 0.0f, 1.0f), 1.0f);\n} else if (_globals._anonInterface0->combinedUniformData[_globals.uniformSsboIndex].gammaParameters_7.y > 0.0f) {\n    float3 yuv = _10_mask.xyz;"
     }
   ],
   "prepare_gg_jpeg_support": [
@@ -176,6 +176,23 @@
       "file": "gpu_surface.v",
       "old": "\tmut image := ImageUniforms{}\n\tmut texture := TextureBinding{}\n\tif layer := paint.layer_image {\n\t\tshading = .image\n\t\timage = ImageUniforms{\n\t\t\t// The identity local matrix of drawSpecial()'s Rect2Rect(src, dst).\n\t\t\tupper2x2:       [layer.document_scale[0],f32(0),0,layer.document_scale[1]]!\n\t\t\tinv_dimensions: [f32(1) / f32(layer.texture_width), f32(1) / f32(layer.texture_height)]!\n\t\t\tmask_color: layer.mask_color\n\t\t\tcolor_transform: layer.color_transform\n\t\t}\n\t\ttexture = TextureBinding{\n\t\t\tkind:  .image\n\t\t\timage: layer.image\n\t\t\tdocument_linear_filter: layer.document_linear_filter\n\t\t}\n\t}\n\topaque := color.is_opaque() && shading != .image\n\t\t&& (!shading.is_gradient() || gradient.opaque)",
       "new": "\tmut image_opaque := false\n\tmut image := ImageUniforms{}\n\tmut texture := TextureBinding{}\n\tif layer := paint.layer_image {\n\t\tshading = .image\n\t\timage_opaque = layer.document_opaque && layer.mask_color.a == 1\n\t\timage = ImageUniforms{\n\t\t\t// The identity local matrix of drawSpecial()'s Rect2Rect(src, dst).\n\t\t\tupper2x2:       [layer.document_scale[0],f32(0),0,layer.document_scale[1]]!\n\t\t\tinv_dimensions: [f32(1) / f32(layer.texture_width), f32(1) / f32(layer.texture_height)]!\n\t\t\tmask_color: layer.mask_color\n\t\t\tcolor_transform: layer.color_transform\n\t\t}\n\t\ttexture = TextureBinding{\n\t\t\tkind:  .image\n\t\t\timage: layer.image\n\t\t\tdocument_linear_filter: layer.document_linear_filter\n\t\t}\n\t}\n\topaque := color.is_opaque() && (shading != .image || image_opaque)\n\t\t&& (!shading.is_gradient() || gradient.opaque)"
+    }
+  ],
+  "prepare_gg_yuv_coordinates": [
+    {
+      "file": "shaders/paint_snippets.metal",
+      "old": "_out.CoordNormalize_3_Var = _globals._anonInterface0->combinedUniformData[_globals.uniformSsboIndex].invDimensions_3 * LocalMatrix_1_Var;",
+      "new": "_out.CoordNormalize_3_Var = _globals._anonInterface0->combinedUniformData[_globals.uniformSsboIndex].gammaParameters_7.y > 0.0f\n    ? LocalMatrix_1_Var\n    : _globals._anonInterface0->combinedUniformData[_globals.uniformSsboIndex].invDimensions_3 * LocalMatrix_1_Var;"
+    },
+    {
+      "file": "shaders/paint_snippets.metal",
+      "old": "float4 _10_mask = sample(_globals.image_4, _in.CoordNormalize_3_Var);",
+      "new": "float2 documentImageCoords = _in.CoordNormalize_3_Var;\nif (_globals._anonInterface0->combinedUniformData[_globals.uniformSsboIndex].gammaParameters_7.y > 0.0f) {\n    documentImageCoords *= _globals._anonInterface0->combinedUniformData[_globals.uniformSsboIndex].invDimensions_3;\n}\nfloat4 _10_mask = sample(_globals.image_4, documentImageCoords);"
+    },
+    {
+      "file": "shaders/paint_snippets.metal",
+      "old": "yuv.yz = sample(_globals.image_4, _in.CoordNormalize_3_Var * 0.5f).yz;",
+      "new": "yuv.yz = sample(_globals.image_4, documentImageCoords * 0.5f).yz;"
     }
   ]
 }

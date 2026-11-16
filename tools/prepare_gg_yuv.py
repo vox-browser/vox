@@ -45,6 +45,9 @@ def prepare(canvas):
                     layer = replace_once(layer, operation['old'], operation['new'])
             elif marker not in snippets:
                 snippets = replace_once(snippets, operation['old'], operation['new'])
+    for operation in patches['prepare_gg_yuv_coordinates']:
+        if operation['new'] not in snippets:
+            snippets = replace_once(snippets, operation['old'], operation['new'])
     for path, value in [(layer_path, layer), (snippets_path, snippets)]:
         if path.is_symlink():
             path.unlink()

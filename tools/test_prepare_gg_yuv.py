@@ -1,3 +1,4 @@
+import json
 import tempfile
 import unittest
 from pathlib import Path
@@ -12,7 +13,9 @@ class YuvStagingTests(unittest.TestCase):
             layer = canvas / 'gpu_layer.v'
             shader = canvas / 'shaders/paint_snippets.metal'
             original_layer = 'const image_uniform_size = 112\n\tout << u.color_transform.gamma\n\tout << 0\n\tout << 0\n\tout << 0\n'
-            original_shader = 'float4 _10_mask = sample(_globals.image_4, _in.CoordNormalize_3_Var);\n'
+            patches = json.loads((Path(__file__).parent / 'buildtools/gg_patches.json').read_text())
+            coordinates = patches['prepare_gg_yuv_coordinates']
+            original_shader = coordinates[0]['old'] + '\n' + 'float4 _10_mask = sample(_globals.image_4, _in.CoordNormalize_3_Var);\n'
             layer.write_text(original_layer)
             shader.write_text(original_shader)
             prepare(canvas)
@@ -25,6 +28,12 @@ class YuvStagingTests(unittest.TestCase):
             self.assertIn(b'color_transform.yuv_jpeg_full', expected[0])
             self.assertIn(b'document_image_jpeg_upload_supported', expected[0])
             self.assertIn(b'gammaParameters_7.w > 0.0f', expected[1])
+            self.assertIn(b'float2 documentImageCoords', expected[1])
+            self.assertIn(b'documentImageCoords * 0.5f', expected[1])
+            for operation in coordinates:
+                shader.write_text(shader.read_text().replace(operation['new'], operation['old'], 1))
+                prepare(canvas)
+                self.assertEqual((layer.read_bytes(), shader.read_bytes()), expected)
             for reset in [layer, shader]:
                 reset.write_text(original_layer if reset == layer else original_shader)
                 prepare(canvas)

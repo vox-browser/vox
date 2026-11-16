@@ -13,6 +13,20 @@ fn gg_patches(canvas string, name string) ! {
 	}
 }
 
+// A shader may contain only some coordinate patches after staging stops.
+// Repair each operation independently before accepting its completion marker.
+fn gg_repair_patches(canvas string, name string) ! {
+	all := json.parse($embed_file('gg_patches.json').to_string())!.as_map()
+	for operation in (all[name] or { json.Null{} }).as_array() {
+		row := operation.as_map()
+		path := join(canvas, (row['file'] or { json.Null{} }).str())
+		replacement := (row['new'] or { json.Null{} }).str()
+		source := read(path)!
+		if source.contains(replacement) { continue }
+		write_changed(path, replace_once(source, (row['old'] or { json.Null{} }).str(), replacement)!)!
+	}
+}
+
 fn prepare_gg_canvas(canvas string) ! {
 	layer := join(canvas, 'gpu_layer.v')
 	if !os.is_file(layer) { return }
@@ -59,6 +73,7 @@ fn prepare_gg_canvas(canvas string) ! {
     }
 	if !read(layer)!.contains('document_opaque bool') { gg_patches(canvas, 'prepare_gg_opaque_layer')! }
 	if !read(join(canvas, 'gpu_surface.v'))!.contains('layer.document_opaque') { gg_patches(canvas, 'prepare_gg_opaque_surface')! }
+	gg_repair_patches(canvas, 'prepare_gg_yuv_coordinates')!
 	write_changed(join(canvas, 'vox_document_image.v'), image_helper)!
 }
 
