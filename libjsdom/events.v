@@ -57,6 +57,13 @@ fn (mut host Host) install_events(mut node libjs.Object) ! {
 			return libjs.js_undefined()
 		})
 	}
+	host.method_attributes(mut prototype, 'composedPath', 0, fn [host] (mut vm libjs.VM) !libjs.Value {
+		event := host.event(mut vm)!
+		mut owner := unsafe { &Host(host) }
+		mut targets := []libjs.Value{}
+		for target in event.composed_path() { targets << owner.wrap_target(target) }
+		return libjs.Value.from_object(libjs.ArrayObject.create_from(mut vm, host.realm, targets, host.realm.array_prototype_record())!.object)
+	}, libjs.attribute_writable | libjs.attribute_enumerable | libjs.attribute_configurable)
 	host.install_event_constructor(mut prototype)
 	mut global := host.realm.global_object_record()
 	for name in ['addEventListener', 'removeEventListener', 'dispatchEvent'] {
