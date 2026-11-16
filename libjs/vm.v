@@ -1247,6 +1247,9 @@ pub fn (vm &VM) dump_backtrace() {
 }
 
 pub fn (vm &VM) gather_roots(mut roots HeapRoots) {
+	for buffer in vm.interpreter_stack_.call_argument_workspaces {
+		for value in buffer.values { roots.add_value(value) }
+	}
 	for _, cached in vm.short_utf8_strings { roots.add(voidptr(cached)) }
 	for entry in vm.generated_string_cache { if cached := entry { roots.add(voidptr(cached)) } }
 	roots.add(voidptr(vm.empty_string_))

@@ -48,6 +48,10 @@ fn (mut vm VM) own_global_data_binding(environment Environment, name Utf16String
 // conversions, argument ownership and error paths without entering its large
 // all-opcode switch. Budget and exception dispatch stay in native_slow_step.
 fn (mut vm VM) execute_call_instruction(instruction &Instruction, executable &Executable, left Value, right Value) !Value {
+	if use_call_argument_workspaces() && instruction.op == .call && instruction.arguments.len <= 8
+		&& can_borrow_call_arguments(left) {
+		return vm.execute_reused_argument_call(instruction, executable, left, right)
+	}
 	frame := vm.current_context()
 	// These concrete callees copy their arguments into owned frames before
 	// executing user code. Custom callables and constructors may retain

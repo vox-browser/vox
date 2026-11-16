@@ -41,6 +41,7 @@ pub mut:
 	slow_steps u64
 	function_environments_reused u64
 	generated_string_hits u64
+	argument_workspace_calls u64
 	function_environments_allocated u64
 	forwarded_call_slices u64
 	direct_array_search_reads u64
