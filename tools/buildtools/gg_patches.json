@@ -268,5 +268,12 @@
       "old": "        yuv.yz = sample(_globals.image_4, documentImageCoords * 0.5f).yz;",
       "new": "        float4 chromaBounds = float4(_globals._anonInterface0->combinedUniformData[_globals.uniformSsboIndex].gamutColumn0_8.xyz,\n                                    _globals._anonInterface0->combinedUniformData[_globals.uniformSsboIndex].gamutColumn1_8.x);\n        if (chromaBounds.z > chromaBounds.x && chromaBounds.w > chromaBounds.y) {\n            float2 chromaImageCoords = clamp(_in.CoordNormalize_3_Var, chromaBounds.xy, chromaBounds.zw)\n                * _globals._anonInterface0->combinedUniformData[_globals.uniformSsboIndex].invDimensions_3 * 0.5f;\n            yuv.yz = sample(_globals.image_4, chromaImageCoords).yz;\n        } else {\n        yuv.yz = sample(_globals.image_4, documentImageCoords * 0.5f).yz;\n        }"
     }
+  ],
+  "prepare_gg_image_quad": [
+    {
+      "file": "gpu_surface.v",
+      "old": "document_local_coords: layer.document_repeat_filter",
+      "new": "document_local_coords: layer.document_repeat_filter || layer.color_transform.image_quad_coords"
+    }
   ]
 }

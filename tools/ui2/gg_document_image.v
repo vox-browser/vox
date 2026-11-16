@@ -7,6 +7,7 @@ import math
 // Zero gamma retains the ordinary image shader.
 pub struct DocumentImageColorTransform {
 pub:
+	image_quad_coords bool
 	yuv_rec601_limited bool
 	yuv_jpeg_full bool
 	yuv420_atlas bool

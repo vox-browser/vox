@@ -49,6 +49,7 @@ fn test_native_preparer_keeps_yuv_uniform_and_shader_together() ! {
 	assert first_shader.contains('documentImageCoords * 0.5f')
 	assert first_layer.contains('u.color_transform.yuv_chroma_bounds[index]')
 	assert first_shader.contains('float4 chromaBounds')
+	assert first_surface.contains('layer.color_transform.image_quad_coords')
 	assert read(join(canvas, 'vox_document_image.v'))!.contains('!document_image_yuv_upload_supported()')
 	prepare_gg_canvas(canvas)!
 	assert read(layer)! == first_layer
@@ -91,6 +92,16 @@ fn test_native_preparer_keeps_yuv_uniform_and_shader_together() ! {
 		path := join(canvas, row['file']!.str())
 		os.write_file(path, read(path)!.replace_once(row['new']!.str(), row['old']!.str()))!
 		prepare_gg_canvas(canvas)!
+		assert read(layer)! == first_layer
+		assert read(shader)! == first_shader
+	}
+
+	for quad in patches['prepare_gg_image_quad']!.as_array() {
+		row := quad.as_map()
+		path := join(canvas, row['file']!.str())
+		os.write_file(path, read(path)!.replace_once(row['new']!.str(), row['old']!.str()))!
+		prepare_gg_canvas(canvas)!
+		assert read(surface)! == first_surface
 		assert read(layer)! == first_layer
 		assert read(shader)! == first_shader
 	}

@@ -25,16 +25,27 @@ pub fn draw_sampled_rgba_with_shadow(pixels &u8, width i32, height i32, pitch i3
 	source []u8, source_width int, source_height int, x f32, y f32,
 	destination_width f32, destination_height f32, samples int, natural_width int, natural_height int,
 	clip [12]f32, gpu_mips bool, shadow &C.VoxGraphiteShape) i32 {
- return draw_sampled_image(pixels,width,height,pitch,backdrop,source,[],source_width,source_height,x,y,destination_width,destination_height,samples,natural_width,natural_height,clip,gpu_mips,shadow,0,false,[2]f32{})
+ return draw_sampled_image(pixels,width,height,pitch,backdrop,source,[],source_width,source_height,x,y,destination_width,destination_height,samples,natural_width,natural_height,clip,gpu_mips,shadow,0,false,[2]f32{},false)
 }
 
 pub fn draw_sampled_colors_clipped(pixels &u8,width i32,height i32,pitch i32,backdrop i32,colors []f32,sw int,sh int,x f32,y f32,dw f32,dh f32,samples int,nw int,nh int,clip [12]f32) i32 {
  if sw<=0 || sh<=0 || sw>4096 || sh>4096 || sw*sh>4*1024*1024 || colors.len!=sw*sh*4 {return 0}
  for i,v in colors {if !math.is_finite(v) || v<0 || v>1 || (i%4==3 && v!=1) {return 0}}
- return draw_sampled_image(pixels,width,height,pitch,backdrop,[],colors,sw,sh,x,y,dw,dh,samples,nw,nh,clip,false,unsafe{nil},0,false,[2]f32{})
+ return draw_sampled_image(pixels,width,height,pitch,backdrop,[],colors,sw,sh,x,y,dw,dh,samples,nw,nh,clip,false,unsafe{nil},0,false,[2]f32{},false)
 }
 
-fn draw_sampled_image(pixels &u8,width i32,height i32,pitch i32,backdrop i32,source []u8,colors []f32,source_width int,source_height int,x f32,y f32,destination_width f32,destination_height f32,samples int,natural_width int,natural_height int,clip [12]f32,gpu_mips bool,shadow &C.VoxGraphiteShape,yuv_mode int,yuv_atlas bool,origin [2]f32) i32 {
+// The caller supplies premultiplied rows; opaque rows also have straight RGB.
+// Preserve image-quad coordinates through the analytic rounded clip renderer.
+pub fn draw_sampled_image_quad_rgba(pixels &u8, width i32, height i32, pitch i32, backdrop i32,
+	source []u8, sw int, sh int, x f32, y f32, samples int, clip [12]f32) i32 {
+	if sw <= 0 || sh != sw || sw > 128 || source.len != sw * sh * 4 { return 0 }
+	for i := 3; i < source.len; i += 4 { if source[i] != 255 { return 0 } }
+	if clip[0] != x || clip[1] != y || clip[2] != sw || clip[3] != sh
+		|| clip[4..12].any(it != f32(sw) * .5) { return 0 }
+	return draw_sampled_image(pixels,width,height,pitch,backdrop,source,[],sw,sh,x,y,f32(sw),f32(sh),samples,sw,sh,clip,false,unsafe{nil},0,false,[2]f32{},true)
+}
+
+fn draw_sampled_image(pixels &u8,width i32,height i32,pitch i32,backdrop i32,source []u8,colors []f32,source_width int,source_height int,x f32,y f32,destination_width f32,destination_height f32,samples int,natural_width int,natural_height int,clip [12]f32,gpu_mips bool,shadow &C.VoxGraphiteShape,yuv_mode int,yuv_atlas bool,origin [2]f32, image_quad bool) i32 {
 	if shadow != unsafe { nil } && (shadow.fill != 9 || shadow.thickness != 0 || !supported(shadow)) {
 		return 0
 	}
@@ -143,7 +154,7 @@ fn draw_sampled_image(pixels &u8,width i32,height i32,pitch i32,backdrop i32,sou
 	}
 	destination_subset := if partial_atlas_clip { [clip[0], clip[1], clip[2], clip[3]]! } else { [4]f32{} }
 	surface.draw_document_color_rgba_subset(levels, source_width, source_height, natural_width, natural_height, x, y,
-		destination_width, destination_height, canvas.DocumentImageColorTransform{ yuv_rec601_limited: yuv_mode == 1, yuv_jpeg_full: yuv_mode == 2, yuv420_atlas: yuv_atlas, yuv_chroma_bounds: chroma_bounds },
+		destination_width, destination_height, canvas.DocumentImageColorTransform{ image_quad_coords: image_quad && samples == 4, yuv_rec601_limited: yuv_mode == 1, yuv_jpeg_full: yuv_mode == 2, yuv420_atlas: yuv_atlas, yuv_chroma_bounds: chroma_bounds },
 		partial_atlas_clip || (samples == 1 && clip[0] == x && clip[1] == y && clip[2] == destination_width
 			&& clip[3] == destination_height
 			&& (clip[4] != clip[5] || clip[6] != clip[7] || clip[8] != clip[9] || clip[10] != clip[11])),
@@ -162,7 +173,7 @@ pub fn draw_sampled_yuv_with_mips_clipped(pixels &u8, width i32, height i32, pit
  source []u8, sw int, sh int, x f32, y f32, dw f32, dh f32, samples int, nw int, nh int, clip [12]f32, gpu_mips bool) i32 {
  if sw <= 0 || sh <= 0 || sw > 4096 || sh > 4096 || sw * sh > 4 * 1024 * 1024 || source.len != sw * sh * 4 { return 0 }
  for i := 3; i < source.len; i += 4 { if source[i] != 255 { return 0 } }
- return draw_sampled_image(pixels,width,height,pitch,backdrop,source,[],sw,sh,x,y,dw,dh,samples,nw,nh,clip,gpu_mips,unsafe{nil},1,false,[2]f32{})
+ return draw_sampled_image(pixels,width,height,pitch,backdrop,source,[],sw,sh,x,y,dw,dh,samples,nw,nh,clip,gpu_mips,unsafe{nil},1,false,[2]f32{},false)
 }
 
 // Chroma is sampled from the top-left quarter at its own resolution. The
@@ -183,7 +194,7 @@ pub fn draw_sampled_yuv_atlas_at_origin(pixels &u8, width i32, height i32, pitch
  if origin.any(!math.is_finite(it)) { return 0 }
  if !yuv.webp_atlas_sampling_supported(sw,sh,f64(dw),f64(dh)) || source.len!=sw*sh*4 {return 0}
  for i:=3;i<source.len;i+=4 {if source[i]!=255 {return 0}}
- return draw_sampled_image(pixels,width,height,pitch,backdrop,source,[],sw,sh,x,y,dw,dh,samples,nw,nh,clip,gpu_mips,unsafe{nil},1,true,origin)
+ return draw_sampled_image(pixels,width,height,pitch,backdrop,source,[],sw,sh,x,y,dw,dh,samples,nw,nh,clip,gpu_mips,unsafe{nil},1,true,origin,false)
 }
 
 // JPEG uploads have full-range 4:4:4 planes and retain CPU byte mips.
@@ -191,5 +202,5 @@ pub fn draw_sampled_jpeg_clipped(pixels &u8, width i32, height i32, pitch i32, b
  source []u8, sw int, sh int, x f32, y f32, dw f32, dh f32, samples int, nw int, nh int, clip [12]f32) i32 {
  if sw <= 0 || sh <= 0 || sw > 4096 || sh > 4096 || sw * sh > 4 * 1024 * 1024 || source.len != sw * sh * 4 { return 0 }
  for i := 3; i < source.len; i += 4 { if source[i] != 255 { return 0 } }
- return draw_sampled_image(pixels,width,height,pitch,backdrop,source,[],sw,sh,x,y,dw,dh,samples,nw,nh,clip,false,unsafe{nil},2,false,[2]f32{})
+ return draw_sampled_image(pixels,width,height,pitch,backdrop,source,[],sw,sh,x,y,dw,dh,samples,nw,nh,clip,false,unsafe{nil},2,false,[2]f32{},false)
 }

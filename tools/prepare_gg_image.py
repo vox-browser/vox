@@ -15,6 +15,7 @@ def prepare(canvas):
         prepare_gamma(canvas)
         prepare_yuv(canvas)
         prepare_opaque(canvas)
+        prepare_image_quad(canvas)
         return
     layer = replace_once(layer, '\timage gfx.Image\n}',
                          '\timage gfx.Image\n\tdocument_linear_filter bool\n}')
@@ -37,6 +38,7 @@ def prepare(canvas):
     prepare_gamma(canvas)
     prepare_yuv(canvas)
     prepare_opaque(canvas)
+    prepare_image_quad(canvas)
 
 
 def prepare_opaque(canvas):
@@ -52,3 +54,17 @@ def prepare_opaque(canvas):
             if path.is_symlink():
                 path.unlink()
             write_if_changed(path, value)
+
+
+def prepare_image_quad(canvas):
+    patches = json.loads((Path(__file__).parent / 'buildtools/gg_patches.json').read_text())
+    for operation in patches['prepare_gg_image_quad']:
+        path = Path(canvas) / operation['file']
+        source = path.read_text()
+        # Earlier GG versions have no image-quad/repeat coordinate adapter.
+        if 'document_local_coords:' not in source or operation['new'] in source:
+            continue
+        value = replace_once(source, operation['old'], operation['new'])
+        if path.is_symlink():
+            path.unlink()
+        write_if_changed(path, value)
