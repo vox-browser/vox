@@ -51,6 +51,8 @@ def run(args):
         VOX_CAPTURE_AUDIT_PATH=str(output / 'audit.json'), LADYBIRD_SCREENSHOT_SCALE='1')
     if args.native_cache is not None:
         environment['VOX_LIBJS_NATIVE_CACHE'] = str(args.native_cache.resolve())
+    if args.disable_native_cache:
+        environment['VOX_LIBJS_NATIVE_CACHE'] = '0'
     if args.native_compiler is not None:
         environment['VOX_LIBJS_NATIVE_COMPILER'] = str(args.native_compiler.resolve())
     if args.audit_interval_ms is not None:
@@ -139,8 +141,11 @@ def main():
     parser.add_argument('--output', type=Path, required=True)
     parser.add_argument('--memory-guard-registry', type=Path, required=True)
     parser.add_argument('--engine', choices=['libjs', 'javascriptcore'], default='libjs')
-    parser.add_argument('--native-cache', type=Path,
-                        help='Explicit persistent cache shared by first/reopened diagnostics')
+    cache = parser.add_mutually_exclusive_group()
+    cache.add_argument('--native-cache', type=Path,
+                       help='Explicit persistent cache shared by first/reopened diagnostics')
+    cache.add_argument('--disable-native-cache', action='store_true',
+                       help='Use the interpreter as a separate diagnostic control')
     parser.add_argument('--native-compiler', type=Path,
                         help='Use /usr/bin/false on reopen to detect unexpected compilation')
     parser.add_argument('--observe-ms', type=int, default=15000)
