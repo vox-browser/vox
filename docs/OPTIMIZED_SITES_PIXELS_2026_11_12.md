@@ -4120,3 +4120,32 @@ locally and SHA-verified before deleting job binaries, intermediates, profiles,
 capture jobs, guards and locks. Archive guards and locks are separately copied,
 verified and removed. Temporary test sources and the rejected photo control
 are removed; no owned scratch remains. Shared bundles and dependencies stay.
+
+## Rejected general gradient localization, 2026-11-16
+
+The four remaining Vlang scene differences reproduce in the reduced orbit
+fixture. Three are already present with the orbit hidden. Fresh production
+controls repeat the underlay at **three** and the scene at **four** differences,
+with PNGs identical to the accepted production cohort. This separates those
+three background differences from the JPEG and orbit geometry.
+
+A diagnostic expands the existing text-only gradient coordinate localization
+to ordinary linear/radial CSS gradient tiles. It **corrects zero pixels and
+introduces one** in each workload: Vlang **27→28**, underlay **3→4**, scene
+**4→5**. Each changes only `(492,557)`, red 20→19 against Brave's 20. The
+candidate is rejected and both source changes are restored byte for byte;
+there is no accepted gradient fix or reference/tolerance change.
+
+Executable `3e95f3dc3aaaeb3bb4c678ab3fbb12455b1464ef1ec31785ff9c8c861f02b842`
+uses C/O0/preallocated/no-GC. Six fresh candidate captures repeat, in addition
+to four fresh production controls. All **886 consumed V witnesses and 935
+source/runtime pins** remain matched through candidate compilation/capture.
+Startup, ten capture guards, both drivers, compilation and guarded analysis
+exit zero; those successful executions do not clear the visual regression.
+Local commands, identities, transitions, candidate source snapshots and PNGs
+are retained under
+`docs/performance/vlang-gradients-20261114/raw/vlang-scene-grid-20261116/`.
+Cleanup inventories **11 owned roots/480 files**, preserving and SHA-verifying
+**117 evidence files/3,660,230 bytes** before removing all job scratch. The
+archive guard and lock are separately copied, verified and removed. No owned
+scratch or experimental source changes remain.
