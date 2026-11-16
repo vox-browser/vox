@@ -26,13 +26,13 @@ def main():
     parser.add_argument('--pairs', type=int, default=7)
     parser.add_argument('--cycles', type=int, default=500)
     parser.add_argument('--target-v8-speedup', type=int, default=2)
-    parser.add_argument('--optimization', choices=['property', 'arguments', 'combined', 'registers', 'keys', 'capacity', 'storage', 'dispatch', 'indices', 'frames', 'calls', 'reads', 'arrays', 'collections', 'walk', 'helpers', 'references', 'bindings', 'accessors', 'forward', 'search', 'forward-search', 'envs', 'instruction-borrowing', 'generated-strings', 'fragment-text', 'call-workspaces', 'layout', 'frame-access', 'values', 'key-records'], default='property')
+    parser.add_argument('--optimization', choices=['property', 'arguments', 'combined', 'registers', 'keys', 'capacity', 'storage', 'dispatch', 'indices', 'frames', 'calls', 'reads', 'arrays', 'collections', 'walk', 'helpers', 'references', 'bindings', 'accessors', 'forward', 'search', 'forward-search', 'envs', 'instruction-borrowing', 'generated-strings', 'fragment-text', 'call-workspaces', 'global-bindings', 'native-primitives', 'layout', 'frame-access', 'values', 'key-records'], default='property')
     args = parser.parse_args()
     if args.pairs < 7 or args.cycles < 1 or args.target_v8_speedup < 1:
         parser.error('Use at least seven pairs and positive cycle counts')
     if args.optimization in ['layout', 'frame-access', 'values', 'key-records', 'instruction-borrowing'] and not args.control_binary:
         parser.error('Cross-binary comparisons require --control-binary')
-    separate_cache = bool(args.control_binary) or args.optimization in ['registers', 'dispatch', 'layout', 'frame-access', 'values', 'key-records']
+    separate_cache = bool(args.control_binary) or args.optimization in ['native-primitives', 'registers', 'dispatch', 'layout', 'frame-access', 'values', 'key-records']
     binary, output = args.binary.resolve(), args.output.resolve()
     output.mkdir(parents=True, exist_ok=False)
     replay = Replay(hn.ARCHIVE, output / 'replay')
@@ -71,6 +71,8 @@ def main():
                          'generated-strings': 'all prior optimizations; cloned split/join results',
                          'fragment-text': 'all LibJS optimizations; full HTML text fragment parser',
                          'call-workspaces': 'all prior optimizations and native callback reuse; heap argument buffers',
+                         'global-bindings': 'all prior optimizations; reconstruct and hash global binding keys',
+                         'native-primitives': 'all prior optimizations; VM string truthiness and nonnumeric equality',
                          'references': 'shared dynamic handlers; materialized Reference records',
                          'helpers': 'shared dynamic handlers disabled',
                          'key-records': '16-byte values; wide property keys and owning name headers',
@@ -83,7 +85,9 @@ def main():
                          'reads': 'all prior optimizations; full descriptors and UTF16 conversion',
                          'calls': 'all prior optimizations; owning call argument arrays',
                          'frames': 'all prior optimizations; fresh synchronous frames'}[args.optimization]
-    report['candidate'] = {'property': 'validated property hints; arguments elision disabled',
+    report['candidate'] = {'global-bindings': 'bounded content-and-live-key-validated own global data hints',
+                           'native-primitives': 'native UTF16 string truthiness and same-type primitive equality; coercive fallback',
+                           'property': 'validated property hints; arguments elision disabled',
                            'arguments': 'property hints enabled; unobserved arguments elided',
                            'combined': 'validated property hints and unobserved arguments elided',
                            'registers': 'property hints and arguments elision enabled; scope-proven register bindings',
@@ -142,13 +146,15 @@ def main():
                    VOX_PROFILE_DIR=str(output / (label + '-profile')),
                    LADYBIRD_CACHE_DIR=str(output / (label + '-http-cache')), VOX_TEST_WINDOW='1')
         env['VOX_LIBJS_ARGUMENT_WORKSPACES'] = '0' if args.optimization == 'call-workspaces' and config == 'control' else '1'
+        env['VOX_LIBJS_GLOBAL_BINDING_HINTS'] = '0' if args.optimization == 'global-bindings' and config == 'control' else '1'
+        env['VOX_LIBJS_NATIVE_PRIMITIVES'] = '0' if args.optimization == 'native-primitives' and config == 'control' else '1'
         env['VOX_HTML_FRAGMENT_TEXT'] = '0' if args.optimization == 'fragment-text' and config == 'control' else '1'
         env['VOX_LIBJS_GENERATED_STRINGS'] = '0' if args.optimization == 'generated-strings' and config == 'control' else '1'
-        env['VOX_LIBJS_FAST_BINDINGS'] = '1' if args.optimization in ['accessors', 'forward', 'search', 'forward-search', 'envs', 'instruction-borrowing', 'generated-strings', 'fragment-text', 'call-workspaces'] or (args.optimization == 'bindings' and config != 'control') else '0'
-        env['VOX_LIBJS_DIRECT_ACCESSORS'] = '1' if args.optimization in ['forward', 'search', 'forward-search', 'envs', 'instruction-borrowing', 'generated-strings', 'fragment-text', 'call-workspaces'] or (args.optimization == 'accessors' and config != 'control') else '0'
-        env['VOX_LIBJS_FORWARD_CALL_ARGUMENTS'] = '1' if args.optimization in ['search', 'envs', 'instruction-borrowing', 'generated-strings', 'fragment-text', 'call-workspaces'] or (args.optimization in ['forward', 'forward-search'] and config != 'control') else '0'
-        env['VOX_LIBJS_ARRAY_SEARCH_READS'] = '1' if args.optimization in ['envs', 'instruction-borrowing', 'generated-strings', 'fragment-text', 'call-workspaces'] or (args.optimization in ['search', 'forward-search'] and config != 'control') else '0'
-        env['VOX_LIBJS_REUSE_FUNCTION_ENVIRONMENTS'] = '1' if args.optimization in ['instruction-borrowing', 'generated-strings', 'fragment-text', 'call-workspaces'] or (args.optimization == 'envs' and config != 'control') else '0'
+        env['VOX_LIBJS_FAST_BINDINGS'] = '1' if args.optimization in ['accessors', 'forward', 'search', 'forward-search', 'envs', 'instruction-borrowing', 'generated-strings', 'fragment-text', 'call-workspaces', 'global-bindings', 'native-primitives'] or (args.optimization == 'bindings' and config != 'control') else '0'
+        env['VOX_LIBJS_DIRECT_ACCESSORS'] = '1' if args.optimization in ['forward', 'search', 'forward-search', 'envs', 'instruction-borrowing', 'generated-strings', 'fragment-text', 'call-workspaces', 'global-bindings', 'native-primitives'] or (args.optimization == 'accessors' and config != 'control') else '0'
+        env['VOX_LIBJS_FORWARD_CALL_ARGUMENTS'] = '1' if args.optimization in ['search', 'envs', 'instruction-borrowing', 'generated-strings', 'fragment-text', 'call-workspaces', 'global-bindings', 'native-primitives'] or (args.optimization in ['forward', 'forward-search'] and config != 'control') else '0'
+        env['VOX_LIBJS_ARRAY_SEARCH_READS'] = '1' if args.optimization in ['envs', 'instruction-borrowing', 'generated-strings', 'fragment-text', 'call-workspaces', 'global-bindings', 'native-primitives'] or (args.optimization in ['search', 'forward-search'] and config != 'control') else '0'
+        env['VOX_LIBJS_REUSE_FUNCTION_ENVIRONMENTS'] = '1' if args.optimization in ['instruction-borrowing', 'generated-strings', 'fragment-text', 'call-workspaces', 'global-bindings', 'native-primitives'] or (args.optimization == 'envs' and config != 'control') else '0'
         env['VOX_LIBJS_COMPACT_REFERENCES'] = '0' if config == 'control' and args.optimization == 'references' else '1'
         env['VOX_LIBJS_NATIVE_DYNAMIC'] = '0' if config == 'control' and args.optimization == 'helpers' else '1'
         env['VOX_LIBJS_DIRECT_COLLECTION_WALK'] = '0'
@@ -157,22 +163,22 @@ def main():
         env['VOX_LIBJS_SHORT_STRINGS'] = '0'
         env['VOX_LIBJS_DIRECT_READS'] = '0'
         env['VOX_LIBJS_BORROW_ARGUMENTS'] = '0'
-        if args.optimization in ['frames', 'calls', 'reads', 'arrays', 'collections', 'walk', 'helpers', 'references', 'bindings', 'accessors', 'forward', 'search', 'forward-search', 'envs', 'instruction-borrowing', 'generated-strings', 'fragment-text', 'call-workspaces', 'layout', 'frame-access', 'values', 'key-records']:
+        if args.optimization in ['frames', 'calls', 'reads', 'arrays', 'collections', 'walk', 'helpers', 'references', 'bindings', 'accessors', 'forward', 'search', 'forward-search', 'envs', 'instruction-borrowing', 'generated-strings', 'fragment-text', 'call-workspaces', 'global-bindings', 'native-primitives', 'layout', 'frame-access', 'values', 'key-records']:
             for setting in ['LOOKUP_HINTS', 'ARGUMENT_ELISION', 'REGISTER_BINDINGS', 'BUILTIN_KEYS',
                             'EXACT_CONTEXT', 'PRIMITIVE_READS', 'VALIDATION_CACHE', 'EMPTY_SCOPES', 'NUMERIC_KEYS']:
                 env['VOX_LIBJS_' + setting] = '1'
             env['VOX_LIBJS_CONTEXT_REUSE'] = '0' if config == 'control' and args.optimization == 'frames' else '1'
             env['VOX_LIBJS_SHORT_STRINGS'] = '0'
             env['VOX_LIBJS_DIRECT_READS'] = '0'
-            if args.optimization in ['reads', 'arrays', 'collections', 'walk', 'helpers', 'references', 'bindings', 'accessors', 'forward', 'search', 'forward-search', 'envs', 'instruction-borrowing', 'generated-strings', 'fragment-text', 'call-workspaces', 'layout', 'frame-access', 'values', 'key-records']:
+            if args.optimization in ['reads', 'arrays', 'collections', 'walk', 'helpers', 'references', 'bindings', 'accessors', 'forward', 'search', 'forward-search', 'envs', 'instruction-borrowing', 'generated-strings', 'fragment-text', 'call-workspaces', 'global-bindings', 'native-primitives', 'layout', 'frame-access', 'values', 'key-records']:
                 env['VOX_LIBJS_BORROW_ARGUMENTS'] = '1'
                 env['VOX_LIBJS_SHORT_STRINGS'] = '0' if config == 'control' and args.optimization == 'reads' else '1'
                 env['VOX_LIBJS_DIRECT_READS'] = '0' if config == 'control' and args.optimization == 'reads' else '1'
-                if args.optimization in ['arrays', 'collections', 'walk', 'helpers', 'references', 'bindings', 'accessors', 'forward', 'search', 'forward-search', 'envs', 'instruction-borrowing', 'generated-strings', 'fragment-text', 'call-workspaces', 'layout', 'frame-access', 'values', 'key-records']:
+                if args.optimization in ['arrays', 'collections', 'walk', 'helpers', 'references', 'bindings', 'accessors', 'forward', 'search', 'forward-search', 'envs', 'instruction-borrowing', 'generated-strings', 'fragment-text', 'call-workspaces', 'global-bindings', 'native-primitives', 'layout', 'frame-access', 'values', 'key-records']:
                     env['VOX_LIBJS_FRESH_ARRAYS'] = '0' if config == 'control' and args.optimization == 'arrays' else '1'
-                if args.optimization in ['collections', 'walk', 'helpers', 'references', 'bindings', 'accessors', 'forward', 'search', 'forward-search', 'envs', 'instruction-borrowing', 'generated-strings', 'fragment-text', 'call-workspaces', 'layout', 'frame-access', 'values', 'key-records']:
+                if args.optimization in ['collections', 'walk', 'helpers', 'references', 'bindings', 'accessors', 'forward', 'search', 'forward-search', 'envs', 'instruction-borrowing', 'generated-strings', 'fragment-text', 'call-workspaces', 'global-bindings', 'native-primitives', 'layout', 'frame-access', 'values', 'key-records']:
                     env['VOX_LIBJS_CLASS_QUERY_CACHE'] = '0' if config == 'control' and args.optimization == 'collections' else '1'
-                if args.optimization in ['walk', 'helpers', 'references', 'bindings', 'accessors', 'forward', 'search', 'forward-search', 'envs', 'instruction-borrowing', 'generated-strings', 'fragment-text', 'call-workspaces', 'layout', 'frame-access', 'values', 'key-records']:
+                if args.optimization in ['walk', 'helpers', 'references', 'bindings', 'accessors', 'forward', 'search', 'forward-search', 'envs', 'instruction-borrowing', 'generated-strings', 'fragment-text', 'call-workspaces', 'global-bindings', 'native-primitives', 'layout', 'frame-access', 'values', 'key-records']:
                     env['VOX_LIBJS_DIRECT_COLLECTION_WALK'] = '0' if config == 'control' and args.optimization == 'walk' else '1'
             if args.optimization == 'calls':
                 env['VOX_LIBJS_BORROW_ARGUMENTS'] = '0' if config == 'control' else '1'
@@ -281,6 +287,9 @@ def main():
                 if diagnostic and config != 'v8' and args.optimization == 'instruction-borrowing':
                     if visit['activity'].get('function_environments_reused', 0) <= 0:
                         raise ValueError('Both instruction controls must retain environment reuse')
+                if diagnostic and config != 'v8' and args.optimization == 'global-bindings':
+                    if (visit['activity'].get('global_binding_hint_hits', 0) > 0) != (config == 'candidate'):
+                        raise ValueError('Global binding hint eligibility mismatch')
                 if diagnostic and config != 'v8' and args.optimization == 'call-workspaces':
                     if (visit['activity'].get('argument_workspace_calls', 0) > 0) != (config == 'candidate'):
                         raise ValueError('Call argument workspace eligibility mismatch')
@@ -422,7 +431,7 @@ def main():
                 run('candidate', 'seed-candidate', seed=True)
             for config in ['control', 'candidate', 'v8']:
                 run(config, 'diagnostic-' + config, True)
-            if args.optimization in ['registers', 'dispatch']:
+            if args.optimization in ['registers', 'dispatch', 'native-primitives']:
                 diagnostics = {a['configuration']: a['visits'][0]['activity']
                                for a in report['attempts'] if a['diagnostic']}
                 control, candidate = diagnostics['control'], diagnostics['candidate']
