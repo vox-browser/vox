@@ -22,6 +22,7 @@ import { createOracleTarget } from './oracle_target.mjs';
 import { oracleTabEntries } from './oracle_network.mjs';
 import { installOracleLists, oracleAssetIdentities } from './oracle_assets.mjs';
 import {capturePostReferenceTrace,validatePostCaptureTrace} from './post_capture_trace.mjs';
+import {capturePostReferencePaint,validatePostCapturePaint} from './post_capture_paint.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 const options = {
@@ -45,6 +46,7 @@ const options = {
     'profile-output': '',
     'pixel-reference': '',
     'post-capture-trace-dir': '',
+    'post-capture-paint-dir': '',
     'proxy-server': '',
     'replay-spki': '',
     settle: 15,
@@ -57,6 +59,7 @@ for (let i = 2; i < process.argv.length; i += 2) {
 }
 options.settle = Number(options.settle);
 validatePostCaptureTrace(options);
+validatePostCapturePaint(options);
 if(!['load-and-paint','visible-image-decode'].includes(options['image-decode-preparation']))
     throw Error('Unsupported image decode preparation');
 const archiveFocus=parseArchiveFocus(options['focus-state']);
@@ -472,6 +475,11 @@ try {
     if (mismatches.length || oracleDisagreements.length || !capture.common_stream.matches || (visibility && !visibility.matches) || (cosmeticComparison && (!cosmeticComparison.css_matches || !cosmeticComparison.procedural_matches || !cosmeticComparison.scriptlet_filters_match))) process.exitCode = 1;
     else if (!requests.length || (navigation && navigation.coverage !== 'page')) process.exitCode = 2;
     completed = !process.exitCode;
+    if (completed && options['post-capture-paint-dir']) {
+        const diagnostic=await capturePostReferencePaint(page,path.resolve(options['post-capture-paint-dir']),
+            archive?.source_pixels || pixelReference);
+        if (!diagnostic.success) {process.exitCode=1;completed=false;}
+    }
     if (completed && options['post-capture-trace-dir']) {
         // Preserve the completed reference and filtering report first. Keep
         // the page client attached so its viewport override still applies.
