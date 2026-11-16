@@ -45,7 +45,7 @@ fn test_readonly_legacy_indices_are_configurable_but_cannot_be_deleted_or_define
 	mut object, owner := legacy_indexed_fixture(mut vm, false)
 	key := PropertyName.from_number(0)
 	descriptor := object.get_own_property_checked(mut vm, key)!.descriptor or { panic('Missing index') }
-	assert descriptor.configurable == true && descriptor.enumerable == true && descriptor.writable == false
+	assert descriptor.configurable? == true && descriptor.enumerable? == true && descriptor.writable? == false
 	assert !object.internal_delete(key) && object.internal_delete(PropertyName.from_number(3))
 	assert !object.internal_define_own_property(mut vm, key, PropertyDescriptor{value: Value.from_i32(20)})!
 	assert !object.internal_define_own_property(mut vm, PropertyName.from_number(3), PropertyDescriptor{value: Value.from_i32(20)})!
@@ -62,7 +62,7 @@ fn test_writable_legacy_indices_use_native_setter_before_prototype_properties() 
 	assert object.internal_set(mut vm, PropertyName.from_number(2), Value.from_i32(42), Value.from_object(object))!
 	assert owner.values.len == 3 && owner.values[2].number == 42 && owner.writes == [u32(2)]
 	descriptor := object.internal_get_own_property(PropertyName.from_number(2)) or { panic('Missing native index') }
-	assert descriptor.writable == true && descriptor.configurable == true
+	assert descriptor.writable? == true && descriptor.configurable? == true
 	assert !object.internal_define_own_property(mut vm, PropertyName.from_number(0), PropertyDescriptor{getter: js_undefined()})!
 	assert owner.writes.len == 1
 	assert object.internal_define_own_property(mut vm, PropertyName.from_number(0), PropertyDescriptor{writable: true})!
@@ -95,5 +95,5 @@ fn test_legacy_platform_objects_stay_extensible_and_keep_nonindex_expandos_ordin
 	ordinary.host_properties = object.host_properties
 	assert ordinary.internal_prevent_extensions() && !ordinary.internal_is_extensible()
 	descriptor := ordinary.internal_get_own_property(PropertyName.from_number(0)) or { panic('Missing native property') }
-	assert descriptor.configurable == false
+	assert descriptor.configurable? == false
 }

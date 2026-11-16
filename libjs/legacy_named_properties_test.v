@@ -51,7 +51,7 @@ fn test_legacy_named_getters_are_live_readonly_unenumerable_and_configurable() {
 	fixture.values[0] = Value.from_i32(43)
 	assert object.get(mut vm, key)!.number == 43 && fixture.reads == 2
 	descriptor := object.get_own_property_checked(mut vm, key)!.descriptor or { panic('Missing name') }
-	assert descriptor.writable == false && descriptor.enumerable == false && descriptor.configurable == true
+	assert descriptor.writable? == false && descriptor.enumerable? == false && descriptor.configurable? == true
 	assert object.has_property_checked(mut vm, key)! && object.has_own_property_checked(mut vm, key)!
 }
 
