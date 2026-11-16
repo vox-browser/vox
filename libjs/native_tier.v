@@ -55,6 +55,7 @@ pub mut:
 	global_binding_hint_hits u64
 	entry_cache_hits u64
 	specialized_property_steps u64
+	specialized_object_property_steps u64
 }
 
 pub struct NativeCodeStats {

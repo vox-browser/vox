@@ -36,6 +36,7 @@ fn test_native_property_plans_keep_live_keys_receivers_exotics_and_unwinding() {
 		] { assert property_native_run(mut vm, source)!.to_boolean(), source }
 		activity := vm.diagnose_native_code(false)!
 		assert (activity.specialized_property_steps > 0) == enabled
+		assert (activity.specialized_object_property_steps > 0) == enabled
 		assert vm.execution_context_stack().len == 1 && vm.interpreter_stack().depth() == 0
 		assert vm.interpreter_stack().native_depth == 0
 		activities << activity
@@ -86,6 +87,32 @@ fn test_native_property_plan_rejects_argument_and_invalid_write_slots() {
 		Instruction{...valid, lhs: Operand.register(8)},
 	] {
 		if _ := native_property_plan(instruction, executable, 0) { assert false }
+	}
+}
+
+fn test_native_object_string_reads_respect_conversion_and_reference_controls() {
+	defer {
+		set_primitive_property_keys_for_testing(true)
+		set_compact_reference_reads_for_testing(true)
+	}
+	cache := os.join_path(os.temp_dir(), 'vox-property-controls-' + rand.uuid_v4())
+	defer { os.rmdir_all(cache) or {} }
+	mut vm := VM.create()
+	create_simple_execution_context(mut vm)
+	vm.profile_native_code()!
+	defer { vm.close_native_code() or {} }
+	property_native_run(mut vm, 'function read(o,k){return o[k]}read({x:42},"x")')!
+	vm.compile_native_code(cache, '/usr/bin/clang', 1)!
+	for keys in [false, true] {
+		for references in [false, true] {
+			set_primitive_property_keys_for_testing(keys)
+			set_compact_reference_reads_for_testing(references)
+			vm.diagnose_native_code(true)!
+			assert property_native_run(mut vm, 'read({get x(){return 42}},"x")')!.number == 42
+			activity := vm.diagnose_native_code(false)!
+			assert activity.specialized_property_steps > 0
+			assert (activity.specialized_object_property_steps > 0) == (keys && references)
+		}
 	}
 }
 

@@ -94,7 +94,20 @@ fn (mut vm VM) execute_planned_property(executable &Executable, plan &u32, stric
 	if right.is_special_empty_value() {
 		return vm.throw_error(.internal_error, 'Bytecode read an uninitialized operand')
 	}
-	result := vm.execute_property_read(left, right, strict)!
+	mut result := js_undefined()
+	if left.is_object() && right.is_string() && use_compact_reference_reads() && use_primitive_property_keys() {
+		// A string key needs no coercion. Keep the ordinary object machinery
+		// (including proxies and host getters) without packaging a ToPropertyKey
+		// result or redispatching the primitive/nullish cases.
+		$if test { if primitive_property_keys_diagnostic { primitive_property_keys_strings++ } }
+		vm.record_compact_reference_read()
+		if mut tier := vm.native_tier {
+			if tier.diagnostics { tier.activity.specialized_object_property_steps++ }
+		}
+		result = left.as_object().internal_get(mut vm, PropertyName.from_primitive_string(right.as_string()), left)!
+	} else {
+		result = vm.execute_property_read(left, right, strict)!
+	}
 	// A getter/coercion hook can call the embedder. Resolve a changed destination
 	// after that callback just as the generic instruction handler does.
 	instruction := &executable.instructions[unsafe { plan[0] }]
