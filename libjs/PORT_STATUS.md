@@ -3147,7 +3147,9 @@ file input as Brave. The unchanged
 windowed pixel gate is 25,176 pixels (maximum 23) after default SVG, PNG
 capture-scale, shared rectangle/clip and finite compositor-footprint corrections;
 a border resampling regression is removed. A guarded Display P3 document-space
-experiment reaches 343 differing pixels against the unchanged original reference;
+experiment initially reaches 343 differing pixels; guarded PNG decode density,
+mipmaps, thin-rectangle rasterization and destination-space blending now reach
+130 differing pixels against the unchanged original reference;
 it is not pixel-perfect acceptance. Covered MSAA samples now quantize before
 resolving coverage, with regression sources held uncompiled/unrun.
 The 862d ABI also completes a separate empty-cache first opening and fresh
@@ -3162,5 +3164,7 @@ does not pass the compiled-cache gate. Compiling the changed resource graph adds
 7,655 executables; the next fresh direct-live, compiler-disabled screenshot then
 passes with 4,300 hits, zero misses/compiler calls/pending entries, 348,912 native
 entries and all 77 loaded modules evaluated, with complete content and no errors.
-This is not full-site,
-live-site, historical pixel or performance acceptance. Automated suites remain held. See [the resumed diagnostic report](../docs/LIBJS_GITHUB_RUNTIME_20261115.md#browser-diagnostics-resumed-2026-11-16).
+The b72b ABI also completes an empty-cache 23,778-executable/81-module opening,
+a compiler-disabled 4,245-hit/zero-miss reopen with unchanged scalar-P3 pixels,
+and all six original-page native control actions with 4,691 hits and no misses
+or compiler calls. This is not full-site, live-site, historical pixel or performance acceptance. Automated suites remain held. See [the resumed diagnostic report](../docs/LIBJS_GITHUB_RUNTIME_20261115.md#browser-diagnostics-resumed-2026-11-16).

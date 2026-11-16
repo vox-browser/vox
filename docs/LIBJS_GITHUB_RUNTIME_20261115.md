@@ -4320,3 +4320,65 @@ idle-lock and SHA-256/symlink verification into local
 files (6,565,659,623 bytes) are pruned with a retained hash/size manifest;
 executables, exact source proofs, references and failed-attempt receipts stay.
 Active native preparation and rendering jobs remain under their guards.
+
+
+The b72b scalar-P3 native cohort has now completed. Its empty-cache opening
+compiles 23,778 executables in 186 compiler calls and prepares all 81 modules,
+with no pending/invalid entries or diagnostics. Guard elapsed is
+2,063.079582959 seconds, peak 11,035,934,720 bytes; compilation totals
+2,001,024.809537 ms. A fresh `/usr/bin/false` reopen records 4,245 hits and zero
+misses/compiler calls/pending entries, 482,662 native entries and 11,490,671
+fast steps. Its decoded PNG is identical to the 343-pixel scalar candidate.
+Guard elapsed/peak are 41.016731583 seconds/8,373,698,560 bytes. The subsequent
+original-page native mouse/keyboard sequence completes all six actions, opens
+and closes the Code/branch menus, observes the master branch and `ma` filter,
+and finishes with exact 33-row/56-commit/latest/README content. It records
+4,691 hits, zero misses/compiler calls, 777,359 native entries, and both control
+acceptance flags true. Guard elapsed/peak are 61.447283459 seconds/
+12,044,402,688 bytes. All three browser/controller/guard exits are zero, there
+are no author/native errors, and 28 common input fingerprints match across
+the cohort. This instrumented observation establishes execution eligibility;
+it is not a matched speed comparison.
+
+The guarded rendering experiments continue against the original Brave PNG
+`649abff5…` and the unchanged zero-tolerance gate. Rendering-density PNG decode
+plus hardware-generated mipmaps reduces the gap to 150 pixels, maximum 15;
+its same-binary off mode reproduces the prior 284-pixel result. A guarded
+analytic thin-rectangle path then resolves one additional pixel: 149 remain.
+The underline geometry diagnostic confirms that the actual page takes this
+path. These changes are committed separately as `be9dbf81d` and `19e3b1248`.
+
+The next guarded path converts sampled PNG colors to the document's Display P3
+space before blending. Its validated build and fresh on/off captures reach
+**130 differing pixels, maximum 15, MAE 0.0001, RMSE 0.0230**. Off mode
+reproduces the 149-pixel output. Of 103 changed pixels, 47 improve, 28 retain
+the same error, and 28 regress or become new one-level mismatches; the path
+therefore remains experimental. Remaining differences comprise 82 logo pixels
+(maximum one level), 18 grayscale-avatar pixels (maximum two), and 30 other
+pixels. The reference, viewport, date, response bytes and tolerance stay fixed.
+This is committed as `204fcfdf6`, with focused regression source held
+uncompiled/unrun as requested.
+
+That path's first prototype accidentally updates only the Python shader
+stager; production uses the V stager. Its capability check correctly refuses
+the old shader and the capture regresses to 434 pixels. Updating both staging
+paths fixes that mismatch. A subsequent build produces an executable but fails
+its final source-integrity check when another session changes native rendering
+code; its exploratory capture is explicitly ineligible for acceptance. The
+final r3 build seals its native and shader inputs and independently reproduces
+the 130-pixel result. It completes in 276.815531917 seconds, peak
+11,870,257,152 bytes; both accepted captures have zero browser/controller/guard
+exits, complete content, no script/native errors and unchanged input hashes.
+All failed and exploratory attempts are retained. The pruned older prepared
+compiler is replaced through the official runtime stager; current V SHA-256 is
+`6a620b108a2ab5d64bcfa55cf03aaf80bd3ccffc762aa4b66621af470cfa30c5`.
+The accepted image-space binary starts a new empty-cache preparation for its
+actual native ABI; it does not relabel or reuse an incompatible partition.
+
+A further GPU precision experiment is pending. Its first build fails the final
+source-integrity check because shared shader-staging JSON changes during the
+build; the retry retains the same guard. No result from that rejected build is
+used. Another 96 completed scratch roots/437 entries are archived with SHA-256,
+symlink and idle-lock verification under local
+`scratch-receipts/continued-20261116-r12`. Tests remain held, and full Brave
+pixel parity and matched compiled-revisit speed remain open.
