@@ -58,6 +58,7 @@ pub mut:
 	specialized_object_property_steps u64
 	native_length_steps u64
 	native_index_steps u64
+	native_numeric_key_reads u64
 }
 
 pub struct NativeCodeStats {
