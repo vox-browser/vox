@@ -91,7 +91,7 @@ def validate(visits, engine, cycles, diagnostic, pins):
             raise ValueError('Argument storage counters enabled during timing')
         if not diagnostic and any(visit['activity'].values()):
             raise ValueError('Diagnostic counters enabled in timed visit')
-        for counter in ['fragment_text_activity', 'lookup_activity', 'argument_activity', 'builtin_key_activity', 'context_activity',
+        for counter in ['property_key_activity', 'fragment_text_activity', 'lookup_activity', 'argument_activity', 'builtin_key_activity', 'context_activity',
                         'primitive_activity', 'validation_activity', 'empty_scope_activity', 'index_key_activity', 'context_reuse_activity']:
             if not diagnostic and any(visit.get(counter, {}).values()):
                 raise ValueError('Diagnostic counters enabled in timed visit: ' + counter)

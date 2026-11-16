@@ -42,6 +42,10 @@ class HNEngineEvidenceTest(unittest.TestCase):
             with self.subTest(percent=percent), self.assertRaises(ValueError):
                 evaluate_memory_target(summary, percent)
 
+    def test_timed_cohort_rejects_primitive_property_key_diagnostics(self):
+        with self.assertRaises(ValueError):
+            self.check_pair(warm=dict(self.warm, property_key_activity=dict(strings=1, symbols=0)))
+
     def test_timed_cohort_rejects_builtin_profile_even_when_other_counters_are_zero(self):
         cold = dict(self.cold, builtin_profile=[dict(name='split', calls=1)])
         with self.assertRaises(ValueError):

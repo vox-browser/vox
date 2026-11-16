@@ -20,6 +20,7 @@ fn C.vox_hn_self_peak_rss_bytes() u64
 struct HNEngineVisit {
 	builtin_profile []libjs.BuiltinProfileSample
 	fragment_text_activity html.FragmentTextActivity
+	property_key_activity libjs.PrimitivePropertyKeyActivity
 	self_peak_rss_bytes u64
 	direct_collection_walks u64
 	class_collection_hits u64
@@ -127,6 +128,7 @@ fn hn_engine_visit(mode string, cycles int, diagnostic bool) !HNEngineVisit {
 	first_cycle_ms := first_collapse_ms + f64(time.sys_mono_now() - second_started) / 1e6
 	libjs.profile_builtin_calls_for_testing(diagnostic && os.getenv('VOX_HN_PROFILE_BUILTINS') == '1')
 	html.diagnose_fragment_text_for_testing(diagnostic)
+	libjs.diagnose_primitive_property_keys_for_testing(diagnostic)
 	callback_started := time.sys_mono_now()
 	for _ in 0 .. cycles {
 		hn_engine_toggle(document, runtime, button)!
@@ -135,6 +137,7 @@ fn hn_engine_visit(mode string, cycles int, diagnostic bool) !HNEngineVisit {
 	callback_ms := f64(time.sys_mono_now() - callback_started) / 1e6
 	builtin_profile := libjs.profile_builtin_calls_for_testing(false)
 	fragment_text_activity := html.diagnose_fragment_text_for_testing(false)
+	property_key_activity := libjs.diagnose_primitive_property_keys_for_testing(false)
 	direct_collection_walks := dom.diagnose_direct_collection_walk_for_testing(false)
 	class_collection_hits := libjsdom.diagnose_class_query_cache_for_testing(false)
 	fresh_arrays_initialized := libjs.diagnose_fresh_array_storage_for_testing(false)
@@ -173,6 +176,7 @@ fn hn_engine_visit(mode string, cycles int, diagnostic bool) !HNEngineVisit {
 	return HNEngineVisit{
 		builtin_profile: builtin_profile
 		fragment_text_activity: fragment_text_activity
+		property_key_activity: property_key_activity
 		self_peak_rss_bytes: self_peak_rss_bytes
 		direct_collection_walks: direct_collection_walks
 		class_collection_hits: class_collection_hits
@@ -228,6 +232,7 @@ fn test_hacker_news_engine_benchmark() {
 	libjs.set_call_argument_workspaces_for_testing(os.getenv('VOX_LIBJS_ARGUMENT_WORKSPACES') != '0')
 	libjs.set_global_binding_hints_for_testing(os.getenv('VOX_LIBJS_GLOBAL_BINDING_HINTS') != '0')
 	libjs.set_native_primitive_ops_for_testing(os.getenv('VOX_LIBJS_NATIVE_PRIMITIVES') != '0')
+	libjs.set_primitive_property_keys_for_testing(os.getenv('VOX_LIBJS_PRIMITIVE_PROPERTY_KEYS') != '0')
 	libjs.set_fast_binding_reads_for_testing(os.getenv('VOX_LIBJS_FAST_BINDINGS') != '0')
 	libjs.set_function_environment_reuse_for_testing(os.getenv('VOX_LIBJS_REUSE_FUNCTION_ENVIRONMENTS') != '0')
 	libjs.set_call_argument_forwarding_for_testing(os.getenv('VOX_LIBJS_FORWARD_CALL_ARGUMENTS') != '0')
