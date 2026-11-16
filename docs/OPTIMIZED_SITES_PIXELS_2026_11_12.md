@@ -4219,3 +4219,92 @@ files/30,095,832 bytes** are copied locally and SHA-verified before removing
 job binaries, intermediates, profiles, captures, guards and locks. The archive
 guard and lock are separately copied, verified and removed. The temporary probe
 is removed; no owned scratch remains. Shared bundles and dependencies stay.
+
+## Production confirmation of full-range JPEG planes, 2026-11-16
+
+Production executable
+`aa91e7cc1c8c2c3ebe083a96582817e16f1de903c8a81ff43a4a3674bc5b1a64`,
+receipt `20261116-035309-fefe9f5d` (C/literal V `-prod`/single C unit), contains
+`8c2e79555` by consumed source hashes. Its executable also embeds the unchanged
+complete shader source byte for byte. **50 workloads/100 fresh captures** all
+repeat and match the accepted five-pixel diagnostic. All **196 default feature
+checks** remain active; **60 additional selected source/runtime pins** stay
+unchanged. Startup, all capture guards, driver, outer guard and guarded analysis
+exit zero. Vlang is **five**, CNN **6,091**, and the four previously exact
+archived sites remain exact. This confirms the JPEG slice in that production
+bundle, without validating other uncompiled checkout edits. The normal completed
+bundle is reused, with no duplicate production build.
+
+## Gray8 CPU-plane stores, 2026-11-16
+
+`293c8abed` corrects the CPU plane's storage format. Although its GPU texture is
+R8, `SkYUVAPixmapInfo::DefaultColorTypeForDataType(kUnorm8,1)` selects **Gray8**
+for CPU pixmaps. Gray8 applies the raster pipeline's BT.709 luma stage after
+interpolating equal RGB components. The separate products and additions can
+round differently from a direct R8 store. V now reuses that existing luma stage
+for CPU YUV-plane resizing, preserving the R8 API's original behavior. No
+source/site/coordinate exceptions, matrix tuning, shader or mip-kernel changes.
+
+Independent test-only Skia checks cover every pair of byte values, resized from
+two samples to three: **196,608 Gray8 bytes and 196,608 R8 bytes** agree exactly.
+The reference formats differ at **1,600 bytes**; for example, the 0/13 midpoint
+stores as Gray8 6 versus R8 7. Ten additional Gray8 dimension cases agree at all
+**9,493 bytes**. A real three-plane 120×68 upload agrees at all **24,480 bytes**;
+R8 and Gray8 references differ at three of them. The final oracle rerun pins
+**2,032 source/header/library/data/executable inputs** before and after both
+native executions. Skia remains a diagnostic dependency only.
+
+Fifteen permanent focused V functions pass: four Gray8, three existing R8 and
+eight plane checks. The four Gray8 functions also pass with literal V `-prod`
+and C `-O2`; both modes retain exact midpoint/reference hashes. A separate
+real-plane diagnostic also executes successfully. V runtime checks use arena
+poisoning and 3 GiB guards. The optimized test executable is
+`043fb9ea16925ae66c2e5626cad7002ae252fcfa94f9bc645ef6c9a62db9814c`.
+
+The JPEG's uploaded U texel `(8,12)` changes **123→122**, correcting green
+**239→240** at document pixel `(47,169)`. The isolated JPEG now has **zero**
+reference differences. Final C/O0/preallocated/no-GC browser executable
+`cb6a2dd2cc6465abf1ea35522863d779cc368b5f85e1f01fa3d6de7d37a01e16`
+improves Vlang **5→4**, with **one corrected, zero introduced and one changed**
+pixel. Its four scene differences remain. All **50 workloads/100 fresh captures
+repeat**, with **all 49 other PNGs byte-identical** to the accepted production
+cohort. Logged focused and unlogged broad captures agree. All **888 consumed V
+witnesses and 941 source/runtime pins** stay matched. All 100 native capture
+guards, startup, driver, outer guard and guarded analysis exit zero. CNN stays
+at **6,091**; GitHub, Hacker News, Lobsters and Wikipedia stay exact.
+
+The available production `aa91e7cc` validates the preceding five-pixel result,
+not this subsequent Gray8 correction. **Production confirmation remains
+pending**; the new feature requests the normal coalesced rebuild. Existing
+references and tolerances remain unchanged. These frozen checks establish no
+live-site, scripting, scrolling or instruction result. Four Vlang scene pixels,
+CNN, missing Reddit evidence and prior controls keep overall equality open.
+Local evidence is under
+`docs/performance/vlang-gradients-20261114/raw/gray8-planes-20261116/`.
+
+## Retained matrix and Brave decode diagnostics, 2026-11-16
+
+A matrix-constructor experiment changes neither the isolated JPEG's one-pixel
+result nor any PNG in six focused browser captures (Vlang five, CNN 6,091 and
+the JPEG control zero). Both source edits are reverted byte for byte before
+the accepted work. It receives no implementation or pixel credit.
+
+A separate Brave trace initially uses `img.decode()` for readiness and changes
+the original script policy. That protocol retains full 480×270 luma and 240×135
+chroma textures. Its PNG differs from the unchanged control at **5,401 pixels**,
+maximum 29.
+Polling normal completion under the original script-disabled policy instead
+reproduces that reference **exactly**, with three 120×68 R8 GPU textures. Both
+runs retain identical Brave executable/library identities. This diagnostic
+also illustrates why GPU texture format alone does not identify the CPU
+pixmap's store. The changed-workload trace is retained without acceptance;
+no page reference or production readiness code is changed. Commands, traces,
+identities, source snapshots and PNGs are local under
+`docs/performance/vlang-gradients-20261114/raw/yuv-matrix-order-20261116/`.
+
+Cleanup for both phases inventories **95 owned roots/8,224 files**, preserving
+and SHA-verifying **2,231 evidence files/68,371,224 bytes** locally before deleting
+job binaries, intermediates, profiles, captures, guards and locks. All six
+temporary canonical probes are removed. The archive guard and lock are
+separately copied, verified and removed; no owned scratch remains. Shared
+production bundles and dependencies stay.

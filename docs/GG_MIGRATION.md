@@ -3372,6 +3372,23 @@ PNGs are unchanged in 50 workloads/100 repeatable diagnostic captures.
 Eighteen focused V functions and the Python staging check pass with 3 GiB
 runtime guards; V checks use arena poisoning. The staging repair leaves all
 93 staged canvas inputs byte-identical to the accepted capture inputs.
-Production confirmation is pending; available `7c47d4f3` lacks the change.
+Production `aa91e7cc` now confirms this five-pixel result across 50 workloads/
+100 fresh captures, with all 196 feature checks active and every PNG matching.
 No reference/tolerance changes or live-site/performance claim. See the
 [audit](OPTIMIZED_SITES_PIXELS_2026_11_12.md#full-range-jpeg-plane-sampling-2026-11-16).
+
+### Gray8 CPU-plane stores, 2026-11-16
+
+`293c8abed` uses Gray8 storage for resized CPU YUV planes, matching
+`SkYUVAPixmapInfo`. The existing highp interpolation feeds the existing BT.709
+luma stage before byte storage. The R8 API preserves its previous arithmetic.
+
+Vlang improves **5→4 pixels**: its JPEG becomes exact, with one corrected pixel
+and zero introduced differences. All 49 other PNGs are unchanged across 50
+workloads/100 repeatable diagnostic captures. Fifteen permanent focused V
+functions pass; the four Gray8 functions also pass with literal V `-prod` and
+C `-O2`, under arena poisoning and 3 GiB guards. Independent Skia references
+cover 393,216 midpoint bytes, 9,493 additional Gray8 bytes and 24,480 real plane
+bytes, with exact agreement. Production confirmation of this correction remains
+pending. No reference, tolerance, shader or mip-kernel change. See the
+[audit](OPTIMIZED_SITES_PIXELS_2026_11_12.md#gray8-cpu-plane-stores-2026-11-16).

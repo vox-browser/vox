@@ -7,12 +7,13 @@ Results apply to the frozen page and pinned build in each linked report.
 Provisional entries retain unresolved acceptance checks.
 
 **Pixel recheck, 2026-11-16:** Vox does **not** pass pixel equality across
-this catalog. Production build `c23c0d0a` confirms GitHub, Hacker News,
-Lobsters and Wikipedia exact in two fresh captures each. Vlang.io has **five
-differing pixels in diagnostics**, down from 27 in verified production.
+this catalog. Production build `aa91e7cc` confirms GitHub, Hacker News,
+Lobsters and Wikipedia exact in two fresh captures each. Vlang.io has **four
+differing pixels in diagnostics**, down from five in verified production.
 Filtering JPEG planes before color conversion corrects 22 pixels with zero
 introduced differences, including all nine historical introduced JPEG pixels.
-One JPEG pixel and four scene pixels remain; production confirmation is pending.
+The Gray8 store correction removes its final JPEG difference; four scene pixels
+remain. Production confirmation of this last correction is pending.
 CNN retains rendering and source/replay failures; its
 native-repeat correction now passes in production.
 Reddit remains unverified (missing historical fixture, earlier live
@@ -143,8 +144,11 @@ rejected and reverted after its visual checks failed.
 The subsequent `8c2e79555` full-range JPEG plane upload reduces Vlang **27→5**
 in 100 repeatable diagnostic captures across 50 workloads. All 49 other PNGs
 are unchanged. Eighteen focused V functions and the Python staging check pass.
-The available production `7c47d4f3` lacks this change; the normal managed rebuild
-is requested. References and tolerances remain unchanged; full parity is open.
+Production `aa91e7cc` now confirms that five-pixel result in 100 fresh captures.
+The subsequent `293c8abed` Gray8 CPU-plane store correction reduces Vlang **5→4**,
+with its JPEG now exact and zero new differences. All 49 other PNGs are unchanged
+in another 100 repeatable diagnostic captures. The new correction's production
+check is pending; references and tolerances remain unchanged and parity is open.
 See the
 [current audit, capture scopes and retained failures](docs/OPTIMIZED_SITES_PIXELS_2026_11_12.md).
 
