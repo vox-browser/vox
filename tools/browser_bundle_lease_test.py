@@ -8,7 +8,7 @@ import time
 import unittest
 from unittest.mock import patch
 
-from browser_bundle_lease import canonical_bundle_lease, publication_lease
+from browser_bundle_lease import browser_executable_lease, canonical_bundle_lease, publication_lease
 from build_platform import production_state_dir
 
 
@@ -93,6 +93,41 @@ with publication_lease(Path(sys.argv[1]), shared=True):
             with canonical_bundle_lease(Path('/historical/Vox.app')):
                 pass
             lease.assert_not_called()
+
+    def test_executable_reader_protects_canonical_apps_and_standalone_helpers(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            for executable in [root / 'Build/v/Vox.app/Contents/MacOS/Vox',
+                               root / 'Build/focused/test']:
+                with self.subTest(executable=executable), patch('browser_bundle_lease.ROOT', root):
+                    with browser_executable_lease(executable):
+                        with (production_state_dir(root) / 'bundle.lock').open('a') as writer:
+                            with self.assertRaises(BlockingIOError):
+                                fcntl.flock(writer, fcntl.LOCK_EX | fcntl.LOCK_NB)
+                    with publication_lease(root):
+                        pass
+
+    def test_independent_app_does_not_lock_the_published_bundle(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            with patch('browser_bundle_lease.ROOT', root):
+                with browser_executable_lease(root / 'stage/Vox.app/Contents/MacOS/Vox'):
+                    with publication_lease(root):
+                        pass
+
+    def test_executable_symlink_to_published_bundle_keeps_its_reader_lock(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            executable = root / 'Build/v/Vox.app/Contents/MacOS/Vox'
+            executable.parent.mkdir(parents=True)
+            executable.touch()
+            alias = root / 'diagnostic'
+            alias.symlink_to(executable)
+            with patch('browser_bundle_lease.ROOT', root):
+                with browser_executable_lease(alias):
+                    with (production_state_dir(root) / 'bundle.lock').open('a') as writer:
+                        with self.assertRaises(BlockingIOError):
+                            fcntl.flock(writer, fcntl.LOCK_EX | fcntl.LOCK_NB)
 
 
 class InheritedPublicationLeaseTest(unittest.TestCase):
