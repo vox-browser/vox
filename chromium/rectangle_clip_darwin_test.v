@@ -21,6 +21,12 @@ fn test_rectangle_clip_transfer_requires_a_containing_ordinary_clip_in_paint_spa
 	assert chromium_rectangle_clip_index_with_thin_rectangles(&plain, true) == 0
 	integer := layout.PaintCommand{...plain, width: 20}
 	assert chromium_rectangle_clip_index_with_thin_rectangles(&integer, true) == -1
+	nested := layout.PaintCommand{...command, clip_list: &layout.PaintClipList{items: [
+		layout.PaintClip{rect: layout.LayoutRect{0, 0, 40, 13}}, clip,
+	]}}
+	assert chromium_rectangle_clip_contains(&nested, 0)
+	assert chromium_rectangle_clip_contains(&nested, 1)
+	assert chromium_rectangle_clip_bounds(&nested, 1) == [f32(10), 0, 40, 13]!
 	for excluded in [
 		layout.PaintClip{...clip, rect: layout.LayoutRect{11, 0, 60, 50}},
 		layout.PaintClip{...clip, transform: [f64(1), 0, 0, 1, 1, 0]!},

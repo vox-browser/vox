@@ -6145,8 +6145,7 @@ fn (mut app BrowserApp) draw_command(source_command &layout.PaintCommand, page_x
 	$if macos {
 		gpu_rectangle_clip = app.document_rectangle_clip_index(command)
 		if gpu_rectangle_clip >= 0 {
-			clip := command.clip_list.items[gpu_rectangle_clip].rect
-			bounds := [f32(clip.x), f32(clip.y), f32(clip.x + clip.width), f32(clip.y + clip.height)]!
+			bounds := chromium_rectangle_clip_bounds(command, gpu_rectangle_clip)
 			C.native_set_shape_intersect_clip(&bounds[0])
 			defer { C.native_set_shape_intersect_clip(unsafe { nil }) }
 			eprintln('VOX_GPU_RECTANGLE_CLIP kind=${command.kind} bounds=${bounds}')
@@ -6168,7 +6167,7 @@ fn (mut app BrowserApp) draw_command(source_command &layout.PaintCommand, page_x
 				if command.clip_list != unsafe { nil } && command.clip_list.items.len > 0 {
 					for clip_index, clip in command.clip_list.items {
 						if clip_index == gpu_image_ancestor_clip || clip_index == gpu_gradient_ancestor_clip
-							|| clip_index == gpu_rectangle_clip { continue }
+							|| (gpu_rectangle_clip >= 0 && chromium_rectangle_clip_contains(command, clip_index)) { continue }
 						matrix := normalized_paint_transform(clip.transform)
 						if clip.is_svg_mask || clip.is_svg_content_mask {
 							app.prepare_native_svg_layer_mask(clip, page_x, page_y, f32(scroll_y), true)
