@@ -11,6 +11,7 @@ pub:
 	allocated u64
 	exposed   u64
 	direct_initializations u64
+	direct_argument_values u64
 }
 
 $if test {
@@ -28,11 +29,12 @@ $if test {
 		context_reuse_disabled_for_test = !enabled
 	}
 	pub fn diagnose_context_reuse_for_testing(enabled bool) ContextReuseActivity {
-		previous := ContextReuseActivity{contexts_reused_for_test, contexts_allocated_for_test, contexts_exposed_for_test, contexts_initialized_directly_for_test}
+		previous := ContextReuseActivity{contexts_reused_for_test, contexts_allocated_for_test, contexts_exposed_for_test, contexts_initialized_directly_for_test, directly_copied_argument_values}
 		contexts_reused_for_test = 0
 		contexts_allocated_for_test = 0
 		contexts_exposed_for_test = 0
 		contexts_initialized_directly_for_test = 0
+		directly_copied_argument_values = 0
 		context_reuse_diagnostic_for_test = enabled
 		return previous
 	}

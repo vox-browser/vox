@@ -185,7 +185,7 @@ fn (mut function ECMAScriptFunction) call_body(mut vm VM, this_value Value, argu
 	if function.data.kind == .generator {
 		frame.generator_execution = &GeneratorExecution{function: &function, realm: function.realm_, state: .executing}
 	}
-	for index, argument in arguments { frame.set_argument(u32(index), argument) }
+	frame.copy_call_arguments(arguments)
 	vm.push_execution_context_checked(mut frame)!
 	defer { vm.pop_current_context() }
 	if function.data.is_arrow_function {

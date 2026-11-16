@@ -146,9 +146,7 @@ pub fn (mut function NativeFunction) internal_call(mut vm VM, this_value Value, 
 		return vm.throw_error_type(.internal_error, .call_stack_size_exceeded)
 	}
 	defer { stack.deallocate(mark) }
-	for i, argument in arguments {
-		callee.set_argument(u32(i), argument)
-	}
+	callee.copy_call_arguments(arguments)
 	callee.passed_argument_count = u32(arguments.len)
 	callee.function = FunctionObject(&function)
 	callee.realm = function.realm_
