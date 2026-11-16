@@ -344,6 +344,10 @@ fn draw_document_tiled_path_pixels(pixels &u8, width i32, height i32, pitch i32,
 	work := platform.begin_thread_scratch('native raster callback')
 	defer { work.finish() }
 	swap_document_raster_channels(pixels, width, height, pitch)
+	if draw_compositor_phase_path(pixels, width, height, pitch, path) {
+		swap_document_raster_channels(pixels, width, height, pitch)
+		return 1
+	}
 	result := draw_document_path_tiles(pixels, width, height, pitch, backdrop, first_x, first_y, path)
 	swap_document_raster_channels(pixels, width, height, pitch)
 	return result
@@ -372,6 +376,10 @@ fn draw_document_svg_pixels(pixels &u8, width i32, height i32, pitch i32, backdr
 	work := platform.begin_thread_scratch('native raster callback')
 	defer { work.finish() }
 	swap_document_raster_channels(pixels, width, height, pitch)
+	if draw_compositor_phase_svg(pixels, width, height, pitch, paths, count, parent, viewport, rounded_clip) {
+		swap_document_raster_channels(pixels, width, height, pitch)
+		return 1
+	}
 	result := ggshape.draw_svg_image(pixels, width, height, pitch, (if backdrop != 0 {
 		i32(1)
 	} else {

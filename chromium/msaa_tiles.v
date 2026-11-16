@@ -550,6 +550,7 @@ fn (mut app BrowserApp) set_chromium_msaa_tiles() {
 fn (mut app BrowserApp) select_chromium_raster_layer(index int) {
 	$if macos {
 		document_geometry_grid = DocumentGeometryGrid{}
+		compositor_raster_phase = [2]f64{}
 		if index < 0 || index >= app.chromium_raster_plan.layers.len
 			|| index >= app.chromium_raster_tiles.len {
 			return
@@ -562,6 +563,10 @@ fn (mut app BrowserApp) select_chromium_raster_layer(index int) {
 		layer := app.chromium_raster_plan.layers[raster_index]
 		app.chromium_background_uses_local_origin = raster_index > 0 && !layer.legacy_raster
 		scale := C.native_display_device_pixel_ratio()
+		phase_origin := layer.compositor_origin or { [layer.bounds.x, layer.bounds.y]! }
+		select_compositor_raster_phase(phase_origin[0], phase_origin[1],
+			app.document.rendering_device_pixel_ratio(), scale,
+			raster_index > 0 && layer.composited_contents && !layer.legacy_raster)
 		x := if raster_index == 0 || layer.legacy_raster {
 			0.0
 		} else {
