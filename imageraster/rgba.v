@@ -55,9 +55,11 @@ pub fn decode_rgba(source []u8, width int, height int, decoded_width int, decode
 		}
 	}
 	mut image := Image{ width: width, height: height, pixels: pixels }
-	ratio := math.max(f64(width) / decoded_width, f64(height) / decoded_height)
+	// Match Chromium's legacy Skia mip selection for rounded decode extents.
+	sx, sy := f32(decoded_width) / f32(width), f32(decoded_height) / f32(height)
+	scale := f32(math.sqrt(f64(sx * sy)))
 	mut divisor := 1
-	for f64(divisor * 2) <= ratio && divisor < 4096 {
+	for f32(divisor * 2) * scale <= 1 && divisor < 4096 {
 		image = halve(image)
 		divisor *= 2
 	}

@@ -40,10 +40,17 @@ fn (mut app BrowserApp) sampled_profiled_webp_decode(url string, image &gg.Image
 	mut dw, mut dh := image.width, image.height
 	if width < image.width || height < image.height {
 		tw, th := imageraster.decode_size(image.width, image.height, width, height) or { return none }
-		// An exact half upload preserves the CPU mip's integer averages. Odd
-		// rounded uploads and stronger reductions retain their existing path.
-		if tw * 2 == image.width && th * 2 == image.height {
-			dw, dh = tw, th
+		// Preserve the CPU mip and resize at the shared rounded decode level.
+		dw, dh = tw, th
+	}
+	// A native-size GPU upload is reusable across raster scopes. Keep smaller
+	// CPU decodes scoped, but do not forget a full upload when changing tiles.
+	native_key := '\x00profiled-webp-native-upload:${u64(voidptr(app.document))}:${app.navigation_generation}:${url}:${sha256.hexhash(bytes.bytestr())}'
+	if id := app.background_image_ids[native_key] {
+		previous := app.ctx.get_cached_image_by_idx(id)
+		if previous.ok && previous.data != unsafe { nil }
+			&& previous.width == image.width && previous.height == image.height {
+			return ProfiledWebPUpload{previous, true}
 		}
 	}
 	key := '\x00profiled-webp-upload:${u64(voidptr(app.document))}:${app.navigation_generation}:${png_decode_scope.scope}:${url}:${sha256.hexhash(bytes.bytestr())}'
@@ -58,9 +65,10 @@ fn (mut app BrowserApp) sampled_profiled_webp_decode(url string, image &gg.Image
 		persistent := platform.enter_persistent()
 		defer { platform.leave_persistent(persistent) }
 		app.background_image_ids[key.clone()] = image.id
+		app.background_image_ids[native_key.clone()] = image.id
 		return ProfiledWebPUpload{image, true}
 	}
-	mut scratch := platform.begin_thread_scratch('Profiled WebP half upload')
+	mut scratch := platform.begin_thread_scratch('Profiled WebP scaled upload')
 	defer { scratch.finish() }
 	data := imageraster.decode_rgba(unsafe { (&u8(image.data)).vbytes(image.width * image.height * 4) },
 		image.width, image.height, dw, dh) or { return none }
