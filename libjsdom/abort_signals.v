@@ -35,9 +35,8 @@ fn (mut host Host) native_abort_reason(value libjs.Value) dom.JSValue {
 	if value.is_undefined() { return dom.js_undefined() }
 	boxed := &libjs.Value{...value}
 	stringify := fn [host, boxed] () !string {
-		mut vm := host.vm
-		host.require_open(mut vm)!
-		return boxed.to_primitive_string(mut vm)!.str()
+		mut owner := unsafe { &Host(host) }
+		return owner.native_value_string(*boxed)
 	}
 	host.closures << voidptr(stringify)
 	return dom.js_webidl_value(webidl.runtime_value(webidl.RuntimeValue{

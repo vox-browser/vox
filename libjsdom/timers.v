@@ -46,9 +46,8 @@ fn (mut host Host) remove_timer(id i32) {
 fn (mut host Host) timer_argument(mut record TimerBinding, value libjs.Value) dom.JSValue {
 	boxed := &libjs.Value{...value}
 	stringify := fn [host, boxed] () !string {
-		mut vm := host.vm
-		host.require_open(mut vm)!
-		return boxed.to_primitive_string(mut vm)!.str()
+		mut owner := unsafe { &Host(host) }
+		return owner.native_value_string(*boxed)
 	}
 	record.conversions << voidptr(stringify)
 	return dom.js_webidl_value(webidl.runtime_value(webidl.RuntimeValue{context: voidptr(&host), value: voidptr(boxed), is_undefined: value.is_undefined(), number_primitive: if value.is_number() { ?f64(value.number) } else { none }, string_conversion: stringify}))
