@@ -277,7 +277,7 @@ fn (mut tier NativeTier) prepare_cached_entry(executable &Executable) {
 	cache.checked << executable
 	cache.keys[address] = key
 	if entry := cache.entries[key] {
-		tier.entries[address] = entry
+		tier.set_native_entry(executable, entry)
 		return
 	}
 	if os.is_file(os.join_path(cache.directory, key + '.json')) {
@@ -285,7 +285,7 @@ fn (mut tier NativeTier) prepare_cached_entry(executable &Executable) {
 		if entry := cache.load(key) {
 			cache.stats.load_ms += f64(time.sys_mono_now() - started) / 1e6
 			cache.entries[key] = entry
-			tier.entries[address] = entry
+			tier.set_native_entry(executable, entry)
 			cache.stats.cache_hits++
 			return
 		} else {
@@ -365,7 +365,7 @@ pub fn (mut vm VM) flush_native_code_cache_batch() !NativeCacheStats {
 	}
 	for executable in cache.checked {
 		if entry := cache.entries[cache.keys[voidptr(executable)]] {
-			tier.entries[voidptr(executable)] = entry
+			tier.set_native_entry(executable, entry)
 		}
 	}
 	return vm.native_code_cache_stats()

@@ -21,6 +21,7 @@ mut:
 	indices     map[voidptr]int
 	calls       []u64
 	entries     map[voidptr]NativeEntry
+	entry_cache []NativeEntryCacheSlot
 	handle      voidptr
 	stats       NativeCodeStats
 	diagnostics bool
@@ -52,6 +53,7 @@ pub mut:
 	compact_reference_reads u64
 	direct_slow_steps u64
 	global_binding_hint_hits u64
+	entry_cache_hits u64
 }
 
 pub struct NativeCodeStats {
@@ -131,6 +133,7 @@ pub fn (mut vm VM) compile_native_code(directory string, compiler string, minimu
 	mut entries := map[voidptr]NativeEntry{}
 	for index, executable in selected { entries[voidptr(executable)] = compiled.entries[index] }
 	tier.entries = entries.move()
+	tier.entry_cache = []NativeEntryCacheSlot{}
 	tier.handle = compiled.handle
 	tier.stats = NativeCodeStats{...compiled.stats, observed_executables: tier.observed.len}
 	tier.enabled = true

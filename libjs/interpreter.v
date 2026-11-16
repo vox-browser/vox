@@ -522,19 +522,13 @@ pub fn (mut vm VM) run_executable(mut frame ExecutionContext, executable &Execut
 		}
 	}
 	if mut tier := vm.native_tier {
-		if tier.persistent != none { tier.prepare_cached_entry(executable) }
-		if tier.profiling {
-			tier.observe(executable)
-		}
-		if tier.enabled {
-			if entry := tier.entries[voidptr(executable)] {
-				mut fast_steps := &u64(unsafe { nil })
-				if tier.diagnostics {
-					tier.activity.entries++
-					fast_steps = &tier.activity.fast_steps
-				}
-				return vm.invoke_native_entry(entry, executable, fast_steps)
+		if entry := tier.entry_for_execution(executable) {
+			mut fast_steps := &u64(unsafe { nil })
+			if tier.diagnostics {
+				tier.activity.entries++
+				fast_steps = &tier.activity.fast_steps
 			}
+			return vm.invoke_native_entry(entry, executable, fast_steps)
 		}
 	}
 	for frame.program_counter < executable.bytecode_length {

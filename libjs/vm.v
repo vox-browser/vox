@@ -1249,6 +1249,9 @@ pub fn (vm &VM) dump_backtrace() {
 }
 
 pub fn (vm &VM) gather_roots(mut roots HeapRoots) {
+	if tier := vm.native_tier {
+		for slot in tier.entry_cache { roots.add(voidptr(slot.executable)) }
+	}
 	for name in vm.native_type_names { roots.add(voidptr(name)) }
 	for hint in vm.global_binding_hints {
 		if hint.owner != unsafe { nil } { roots.add(voidptr(hint.owner)) }
