@@ -170,6 +170,7 @@ pub mut:
 	regexp_object ?&RegExpObject
 	regexp_string_iterator ?&RegExpStringIterator
 	host_properties ?HostProperties
+	legacy_platform_object ?LegacyPlatformObject
 	array_object         ?&ArrayObject
 	arguments_object     ?&ArgumentsObject
 	is_arguments_object  bool // Also brands ordinary strict/unmapped arguments.
@@ -258,6 +259,7 @@ pub fn (object &Object) internal_is_extensible() bool {
 }
 
 pub fn (mut object Object) internal_prevent_extensions() bool {
+	if object.legacy_platform_object != none { return false }
 	if array := object.typed_array { if !is_typed_array_fixed_length(array) { return false } }
 	object.extensible = false
 	return true
@@ -354,7 +356,7 @@ pub fn (object &Object) own_property_keys() []PropertyName {
 
 // 10.1.5 [[GetOwnProperty]] ( P ), https://tc39.es/ecma262/#sec-ordinary-object-internal-methods-and-internal-slots-getownproperty-p
 pub fn (object &Object) internal_get_own_property(key PropertyName) ?PropertyDescriptor {
-	if host := object.host_properties { if descriptor := host.get_own_property(key) { return descriptor } }
+	if host := object.host_properties { if descriptor := host.get_own_property(key) { return object.legacy_indexed_descriptor(key, descriptor) } }
 	if array := object.typed_array {
 		if index := typed_array_property_index(key) {
 			value := typed_array_get_element(array, index)
@@ -391,6 +393,11 @@ pub fn (object &Object) internal_get_own_property(key PropertyName) ?PropertyDes
 // 10.1.6 [[DefineOwnProperty]] ( P, Desc ), https://tc39.es/ecma262/#sec-ordinary-object-internal-methods-and-internal-slots-defineownproperty-p-desc
 pub fn (mut object Object) internal_define_own_property(mut vm VM, key PropertyName, descriptor PropertyDescriptor) !bool {
 	if proxy := object.proxy_object { return proxy.define_own_property(mut vm, key, descriptor) }
+	if key.is_number() {
+		if legacy := object.legacy_platform_object {
+			if legacy.indexed_properties != none { return object.legacy_define_indexed_property(mut vm, key, descriptor) }
+		}
+	}
 	if mut arguments := object.arguments_object { return arguments.define_own_property(mut object, key, descriptor) }
 	if mut array := object.typed_array { return array.internal_define_own_property(mut vm, key, descriptor) }
 	if mut array := object.array_object {
@@ -493,6 +500,14 @@ pub fn (mut object Object) internal_set(mut vm VM, key PropertyName, value Value
 	assert !value.is_special_empty_value() && !receiver.is_special_empty_value()
 	if proxy := object.proxy_object { return proxy.set(mut vm, key, value, receiver) }
 	if vm.did_reach_stack_space_limit() { return vm.throw_error_type(.internal_error, .call_stack_size_exceeded) }
+	if key.is_number() && receiver.is_object() && voidptr(receiver.as_object()) == voidptr(&object) {
+		if legacy := object.legacy_platform_object {
+			if setter := legacy.indexed_setter {
+				setter.set_indexed_property(mut vm, key.number, value)!
+				return true
+			}
+		}
+	}
 	if mut array := object.typed_array {
 		if index := typed_array_property_index(key) {
 			if same_value(Value.from_object(&object), receiver) {
@@ -538,6 +553,11 @@ pub fn (mut object Object) internal_set(mut vm VM, key PropertyName, value Value
 
 // 10.1.10 [[Delete]] ( P ), https://tc39.es/ecma262/#sec-ordinary-object-internal-methods-and-internal-slots-delete-p
 pub fn (mut object Object) internal_delete(key PropertyName) bool {
+	if key.is_number() {
+		if legacy := object.legacy_platform_object {
+			if indexed := legacy.indexed_properties { return !indexed.is_supported_property_index(key.number) }
+		}
+	}
 	if array := object.typed_array {
 		if index := typed_array_property_index(key) { return !is_valid_integer_index(array, index) }
 	}
