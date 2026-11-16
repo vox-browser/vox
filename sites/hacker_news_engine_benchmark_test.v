@@ -235,6 +235,7 @@ fn test_hacker_news_engine_benchmark() {
 	libjs.set_empty_scope_elision_for_testing(os.getenv('VOX_LIBJS_EMPTY_SCOPES') != '0')
 	libjs.set_numeric_array_keys_for_testing(os.getenv('VOX_LIBJS_NUMERIC_KEYS') != '0')
 	libjs.set_context_reuse_for_testing(os.getenv('VOX_LIBJS_CONTEXT_REUSE') != '0')
+	libjs.set_direct_context_initialization_for_testing(os.getenv('VOX_LIBJS_DIRECT_CONTEXT_INIT') != '0')
 	libjs.set_borrowed_call_arguments_for_testing(os.getenv('VOX_LIBJS_BORROW_ARGUMENTS') != '0')
 	libjs.set_short_string_cache_for_testing(os.getenv('VOX_LIBJS_SHORT_STRINGS') != '0')
 	libjs.set_generated_strings_for_testing(os.getenv('VOX_LIBJS_GENERATED_STRINGS') != '0')
