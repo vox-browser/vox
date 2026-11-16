@@ -223,7 +223,7 @@ fn native_slow_step(opaque voidptr, pc u32) u32 {
 		invocation.failure = err
 		return 0xffffffff
 	}
-	instruction := invocation.executable.instructions[pc]
+	instruction := &invocation.executable.instructions[pc]
 	direct := use_native_dynamic_dispatch() && instruction.op in [.call, .construct, .super_construct, .get_property, .get_binding, .typeof_binding, .get_callee_and_this]
 	if direct {
 		if mut tier := vm.native_tier { if tier.diagnostics { tier.activity.direct_slow_steps++ } }

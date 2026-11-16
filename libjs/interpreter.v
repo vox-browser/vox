@@ -36,7 +36,9 @@ fn typeof_value(value Value) string {
 	}
 }
 
-fn (mut vm VM) execute_instruction(instruction Instruction, executable &Executable) !u32 {
+// Borrow the executable-owned instruction. A value parameter passed on to
+// reference-taking slow paths makes V heap-copy it on every dispatched step.
+fn (mut vm VM) execute_instruction(instruction &Instruction, executable &Executable) !u32 {
 	mut frame := vm.current_context()
 	mut next := frame.program_counter + 1
 	mut left := js_undefined()
@@ -279,7 +281,7 @@ fn (mut vm VM) execute_instruction(instruction Instruction, executable &Executab
 			result = Value.from_bool(reference.delete_(mut vm)!)
 		}
 		.get_callee_and_this {
-			value, this_value := vm.execute_callee_read(&instruction, executable)!
+			value, this_value := vm.execute_callee_read(instruction, executable)!
 			frame.values[instruction.dst.slot(executable, frame.argument_count, true)!] = value
 			frame.values[instruction.rhs.slot(executable, frame.argument_count, true)!] = this_value
 			return next
@@ -546,7 +548,7 @@ pub fn (mut vm VM) run_executable(mut frame ExecutionContext, executable &Execut
 	}
 	for frame.program_counter < executable.bytecode_length {
 		vm.consume_execution_budget()!
-		instruction := executable.instructions[frame.program_counter]
+		instruction := &executable.instructions[frame.program_counter]
 		next := vm.execute_instruction(instruction, executable) or {
 			if !is_throw_completion(err) { return err }
 			if vm.handle_exception(frame.program_counter, thrown_value(err)) == .continue_in_this_executable { continue
