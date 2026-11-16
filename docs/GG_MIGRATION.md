@@ -3572,3 +3572,21 @@ page in two separate captures with all 25 post identities. Existing inexact
 controls retain their recorded counts. Production confirmation of `40d8c41ed`
 is pending. See the
 [PNG audit](OPTIMIZED_SITES_PIXELS_2026_11_12.md#uniform-png-scales-decoded-frame-history-and-elliptical-geometry-2026-11-16).
+
+
+### Odd-height WebP chroma planes, 2026-11-16
+
+`4924a3389` retains ceiling-sized 4:2:0 chroma planes for odd luma dimensions.
+The newly supported near-half atlas range preserves edge texels and keeps
+stronger, unverified odd-plane minification on its existing fallback. An exact
+full-image rectangular clip is redundant for this path; omitting its inverse
+transform avoids two remaining one-level sampling errors while retaining the
+tile's MSAA trigger.
+
+The independent public control improves **17,320→0 pixels** twice. The complete
+BBC frozen viewport improves **32,482→23,822**, correcting 8,660 pixels with none
+introduced. Ten focused CPU/GPU functions pass. All **59 workloads/118 captures**
+repeat, and all 58 prior PNGs remain unchanged. BBC's cropped photo, Guardian and
+Verge rendering gaps remain open. Production `93adced1` separately confirms the
+earlier PNG scaling/cache fix in 58 workloads/116 captures; production validation
+of this newer WebP change is pending. See the [audit](OPTIMIZED_SITES_PIXELS_2026_11_12.md#odd-height-webp-planes-in-bbc-photos-2026-11-16).

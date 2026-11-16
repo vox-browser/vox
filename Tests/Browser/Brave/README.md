@@ -1462,3 +1462,14 @@ the missing account-bearing November 4 Reddit workload or verify its original
 2,046 differences. Run `python3 tools/check_archived_site_pixels.py --diagnostic
 --output Build/UNIQUE reddit-title-domain-wrap`. See the
 [wrapping check](../../../docs/OPTIMIZED_SITES_PIXELS_2026_11_12.md#public-reddit-title-domain-wrapping-2026-11-16).
+
+
+`input/odd-height-webp-atlas.html` reuses a tracked BBC 320×179 WebP and draws
+it in single-sample and four-sample document tiles. Its independent, repeated
+1024×768 scale-1 Brave reference is unchanged. `4924a3389` makes the control
+**17,320→0 pixels** twice by retaining ceiling-sized chroma planes and avoiding
+a redundant full-image rectangular clip that perturbed sampling. The complete
+BBC archive improves **32,482→23,822** twice, with 8,660 corrected pixels and none
+introduced. The cropped right-hand photo remains open. All 58 prior PNGs remain
+unchanged in the 59-workload diagnostic sweep; production confirmation of this
+new WebP change is pending. See the [odd-plane audit](../../../docs/OPTIMIZED_SITES_PIXELS_2026_11_12.md#odd-height-webp-planes-in-bbc-photos-2026-11-16).

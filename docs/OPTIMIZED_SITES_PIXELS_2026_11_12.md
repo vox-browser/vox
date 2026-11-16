@@ -5785,3 +5785,126 @@ Local evidence: `docs/performance/reddit-wrap-20261116/`. Cleanup inventories
 **16 owned roots/126 files**, preserves and SHA-verifies **90 evidence files/
 405,193 bytes**, and removes owned profiles, programs, guard reports and locks.
 No owned `Build/reddit-wrap*` scratch remains.
+
+
+### Published PNG fix and expanded forum coverage, 2026-11-16
+
+The managed worker successfully completes receipt `20261116-182007-1a934292`
+and publishes the single-C-unit literal V `-prod` executable
+`93adced1156f0bc5e7c6c059caff8f235b5c5688b7eb75026a3a210faf46fdd8`.
+All six selected implementation inputs, including the own-clip tile rule,
+match their pinned `40d8c41ed` versions in the sealed compiler manifest. The
+uniform PNG control and public Reddit wrapping control are exact twice. The
+complete **58-workload/116-capture** production sweep repeats, with all 57 prior
+accepted diagnostic PNGs byte-identical. The six available instruction-catalog
+site archives remain exact twice. The recovered older Reddit page is also
+exact in two fresh production processes with all 25 post identities. This closes
+production confirmation of the earlier PNG fix, while qualifying the sealed
+artifact rather than all later shared-checkout edits.
+
+An initial explicit staging-path check fails before any capture when publication
+moves the completed app to the canonical bundle. That attempt is retained.
+Subsequent checks acquire the completed-browser lease before resolving and
+launching the executable. No extra production build or bundle copy is needed.
+
+`OPTIMIZED_SITES.md` also lists forum/news rendering checkpoints beyond the six
+instruction-comparison archives. Fresh full-uBO rechecks of the first three
+additional sites reveal these current rendering gaps:
+
+| Site | Published Vox versus fresh Brave | Brave replay repeat | Saved source versus replay |
+| --- | ---: | ---: | ---: |
+| BBC | 32,482 | 0 | 0 |
+| The Guardian | 425 | 0 | 0 |
+| The Verge | 262,012 | 0 | 0 |
+
+The earlier `bbd47035` and new `93adced1` cohorts reproduce these counts. Both
+fresh Brave references for each site agree and pass the full-uBO request/header,
+cosmetic, procedural and scriptlet checks. They use original-origin sealed
+replay, a cold private cache, bypassed service workers, the archived load/paint
+image preparation, scale 1, sRGB and five seconds of settling. The original
+source reports name Brave 156.1.98.60 while these replays use 157.1.99.57, so the
+strict driver correctly returns `source-browser-mismatch` even though the
+source/replay PNGs match. No new strict pass is claimed. These are frozen-page
+rendering gaps; previous zero-pixel checkpoints in the coverage table remain
+historical. Other forum/news entries still need a fresh recheck.
+
+The full MV2 uBO 1.75.0 release is downloaded again with its retained ZIP hash;
+all 59 vendor files match. The canonical checker compiles under the memory
+guard. Each cohort records its actual strict-driver exit 1, separately from its
+controller/guard exits. All failures and reference PNGs are retained. The source
+version guard is not bypassed to obtain rendering credit.
+
+### Odd-height WebP planes in BBC photos, 2026-11-16
+
+`4924a3389` fixes the first BBC photo-sampling slice. Two images account for
+32,471 of the 32,482 original differences: their WebP frames have size 320×179,
+and the atlas path rejected odd dimensions. The uncropped lower image accounts
+for 8,660 pixels; the cropped right-hand image accounts for 23,811. The remaining
+11 differences are in even-sized images.
+
+libwebp supplies ceiling-sized chroma planes for odd luma dimensions. The V
+atlas now packs `(width+1)/2` by `(height+1)/2` chroma samples and extends their
+own final edge texels. Near-half sampling keeps chroma at level zero; its
+coordinates still map by one half, consistent with the upstream YUVA sampling
+boundary. Stronger odd-plane minification remains outside the verified range.
+The image dispatcher admits the newly supported atlas case while retaining
+its previous fallbacks for unsupported source rectangles, encodings, transforms,
+opacity, animation and color profiles.
+
+The public `odd-height-webp-atlas` fixture reuses the existing tracked BBC WebP,
+without copying the encoded asset. Two fresh Brave processes agree on its
+1024×768 scale-1 reference. The expected PNG is promoted unchanged:
+SHA-256 `2f1663309ecd3d003c344a80cc2a972bb0ac72fdcfc8f9b91708204a2102c573`.
+It includes separate single-sample and four-sample image draws. Odd-plane packing
+reduces the original **17,320** differences to **two**. A focused GPU test then
+reproduces those two errors when the caller's identical full-image rectangular
+clip is included: its inverse transform perturbs float32 sampling coordinates.
+The final path omits that redundant clip only for the new odd-plane atlas case,
+retains the shared MSAA trigger, and makes the complete public fixture **zero
+pixels twice**. Rounded and partial clips keep their existing processing.
+
+Final C diagnostic executable:
+`ea045827a87765979f4e8d694b0c5a3099180f5133c23eed411db3d67cca3827`.
+The four selected implementation buffers match their compiler manifest, and
+selected feature/native inputs remain unchanged throughout compilation. The
+complete BBC page improves **32,482→23,822 pixels twice**, with **8,660 corrected,
+zero introduced**. Both recorded candidate request streams pass full-uBO checks:
+44 requests each, all allowed, with zero mismatches or oracle disagreements.
+The cropped right-hand photo remains unsupported by this slice. Its recorded
+source rectangle is (1.3445379,0), size 317.31094×179, mapped to (772,251),
+size 236×133; the atlas currently accepts only the complete source rectangle.
+
+All **59 workloads/118 fresh diagnostic captures** repeat exactly; all 58 prior
+PNG files are byte-identical to the accepted production captures. Existing
+inexact controls retain their recorded counts. Ten focused V functions pass:
+five CPU atlas checks, the new two-sample-mode GPU regression, and four existing
+GPU atlas checks. Actual compiles and runtimes exit zero under the required
+memory guards; failed test compiles and intermediate two-pixel results remain
+in the evidence. No existing PNG reference or tolerance changes.
+
+Additional candidate captures preserve The Verge's 262,012 differences twice.
+Guardian diagnostic captures instead differ by **208,511 and 205,681 pixels**
+and do not repeat; their maximum channel error is two. These are retained
+failures outside the established 59-workload suite. The Guardian archive
+contains **no simple VP8 WebP responses**, so the new odd-WebP dispatcher path
+is ineligible there. Its visible image responses are JPEG XL. This establishes
+path ineligibility, not the cause of the diagnostic variation; no Guardian
+improvement or acceptance is claimed. Two additional fresh production captures
+remain at **425 pixels each**.
+The diagnostic JPEG XL variation remains unresolved and is not attributed to
+this WebP fix. Further matched investigation is required.
+
+Production confirmation of this newer WebP fix remains pending. The managed
+hook requests the normal coalesced C/literal V `-prod` rebuild; no manual duplicate
+is queued. BBC's cropped photo and residual even-image pixels, Guardian and
+Verge rendering gaps, the remaining forum/news rechecks, the missing newer
+Reddit fixture, default Brave Lobsters repeatability and matched-version source
+qualification remain open. No live-site or performance acceptance is claimed.
+
+Local evidence: `docs/performance/forum-sweep-20261116/`.
+
+Cleanup inventories **98 owned roots/10,928 files**, preserves and SHA-verifies
+**2,885 evidence files/87,622,354 bytes**, and removes owned browser/checker/test
+binaries, generated C, downloaded extensions, private profiles/caches, replay
+keys, guard reports and locks. No owned `Build/forum-sweep*` scratch remains.
+Shared bundles, dependencies and production receipts remain in place.
