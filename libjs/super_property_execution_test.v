@@ -30,7 +30,7 @@ fn test_super_computed_keys_resolve_this_before_key_and_base_after_key_evaluatio
 fn test_super_updates_logical_assignments_and_optional_calls_preserve_references() {
 	mut vm := VM.create(); create_simple_execution_context(mut vm)
 	assert super_property_eval(mut vm, 'class A{get value(){return this.number}set value(v){this.number=v}method(x){return this.number+x}}class B extends A{number=40;run(){var old=super.value++;super.value+=1;var skipped=0;super.value||=(skipped++,99);return old===40&&this.number===42&&skipped===0&&super.method?.(0)===42&&super.missing?.(skipped++)===undefined&&skipped===0}}new B().run()')!.as_bool()
-	assert super_property_eval(mut vm, 'class A{method(s,v){return this.number+v}}class B extends A{number=40;run(){return super.method`x\${2}`}}new B().run()===42')!.as_bool()
+	assert super_property_eval(mut vm, 'class TaggedA{method(s,v){return this.number+v}}class TaggedB extends TaggedA{number=40;run(){return super.method`x\${2}`}}new TaggedB().run()===42')!.as_bool()
 }
 
 fn test_super_writes_define_receiver_properties_and_keep_native_errors() {
