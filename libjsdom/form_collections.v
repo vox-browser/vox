@@ -7,16 +7,25 @@ import libjs
 import platform
 
 fn (mut host Host) wrap_radio_node_list(native &html.RadioNodeList) libjs.Value {
-	value := host.wrap_node_list_with_prototype(native.node_list(), host.radio_node_list_prototype, 'RadioNodeList')
+	persistent := platform.enter_persistent(); defer { platform.leave_persistent(persistent) }
+	value := host.wrap_node_list_with_radio(native.node_list(), host.radio_node_list_prototype, 'RadioNodeList', native)
 	host.radio_node_lists[voidptr(value.as_object())] = native
 	return value
 }
 
 fn (mut host Host) wrap_form_controls_collection(native &html.HTMLFormControlsCollection) libjs.Value {
-	value := host.wrap_collection_with_prototype(native.html_collection(), host.form_controls_collection_prototype, 'HTMLFormControlsCollection')
+	persistent := platform.enter_persistent(); defer { platform.leave_persistent(persistent) }
+	value := host.wrap_collection_view(voidptr(native), NativeHTMLCollectionView(&FormControlsView{native: native}), host.form_controls_collection_prototype, 'HTMLFormControlsCollection')
 	host.form_controls_collections[voidptr(value.as_object())] = native
 	return value
 }
+
+@[heap]
+struct FormControlsView { native &html.HTMLFormControlsCollection }
+fn (view &FormControlsView) length() int { return view.native.length() }
+fn (view &FormControlsView) item(index int) ?&dom.Element { return view.native.item(index) }
+fn (view &FormControlsView) named_item(name string) ?&dom.Element { return view.native.html_collection().named_item(name) }
+fn (view &FormControlsView) supported_property_names() []string { return view.native.html_collection().supported_property_names() }
 
 fn (host &Host) form_controls_collection_receiver(mut vm libjs.VM) !&html.HTMLFormControlsCollection {
 	host.require_open(mut vm)!

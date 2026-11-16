@@ -42,6 +42,20 @@ fn (view &SelectCollectionView) named_item(name string) ?&dom.Element {
 	return none
 }
 
+fn (view &SelectCollectionView) supported_property_names() []string {
+	options := if view.selected { html.html_select_element_selected_options(view.native.select_element) } else { html.html_select_element_list_of_options(view.native.select_element) }
+	mut names := []string{}
+	mut seen := map[string]bool{}
+	for option in options {
+		element := unsafe { &dom.Element(option) }
+		for attribute in ['id', 'name'] {
+			name := element.get_attribute_value(attribute)
+			if name != '' && !seen[name] { names << name; seen[name] = true }
+		}
+	}
+	return names
+}
+
 fn (mut host Host) wrap_select_collection(native &html.HTMLOptionsCollection, selected bool) libjs.Value {
 	if selected {
 		if object := host.selected_options_wrappers[voidptr(native.select_element)] { return libjs.Value.from_object(object) }

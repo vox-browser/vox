@@ -3,6 +3,7 @@ module libjsdom
 
 import css
 import dom
+import html
 import libjs
 import platform
 
@@ -10,18 +11,24 @@ import platform
 struct NodeListCollection {
 	host &Host
 	native &dom.NodeList
+	radio ?&html.RadioNodeList
+}
+
+fn (list &NodeListCollection) owner_list() &dom.NodeList {
+	if native := list.radio { return native.node_list() }
+	return list.native
 }
 
 fn (list &NodeListCollection) is_supported_property_index(index u32) bool {
 	if list.host.closed { return false }
 	persistent := platform.enter_persistent(); defer { platform.leave_persistent(persistent) }
-	return u64(index) < u64(list.native.length())
+	return u64(index) < u64(list.owner_list().length())
 }
 
 fn (list &NodeListCollection) get_own_property(key libjs.PropertyName) ?libjs.PropertyDescriptor {
 	if list.host.closed || !key.is_number() { return none }
 	persistent := platform.enter_persistent(); defer { platform.leave_persistent(persistent) }
-	if native := list.native.item(int(key.number)) {
+	if native := list.owner_list().item(int(key.number)) {
 		mut host := unsafe { &Host(list.host) }
 		return libjs.PropertyDescriptor{value: host.wrap_node(native), writable: false, enumerable: true, configurable: false}
 	}
@@ -31,7 +38,7 @@ fn (list &NodeListCollection) get_own_property(key libjs.PropertyName) ?libjs.Pr
 fn (list &NodeListCollection) own_property_keys() []libjs.PropertyName {
 	if list.host.closed { return [] }
 	persistent := platform.enter_persistent(); defer { platform.leave_persistent(persistent) }
-	return []libjs.PropertyName{len: list.native.length(), init: libjs.PropertyName.from_number(u32(index))}
+	return []libjs.PropertyName{len: list.owner_list().length(), init: libjs.PropertyName.from_number(u32(index))}
 }
 
 fn (host &Host) node_list_receiver(mut vm libjs.VM) !&dom.NodeList {
@@ -39,7 +46,7 @@ fn (host &Host) node_list_receiver(mut vm libjs.VM) !&dom.NodeList {
 	if vm.this_value().is_object() {
 		if provider := vm.this_value().as_object().host_properties {
 			if provider is NodeListCollection {
-				if voidptr(provider.host) == voidptr(host) { return provider.native }
+				if voidptr(provider.host) == voidptr(host) { return provider.owner_list() }
 			}
 		}
 	}
@@ -51,12 +58,16 @@ fn (mut host Host) wrap_node_list(native &dom.NodeList) libjs.Value {
 }
 
 fn (mut host Host) wrap_node_list_with_prototype(native &dom.NodeList, prototype &libjs.Object, class_name string) libjs.Value {
+	return host.wrap_node_list_with_radio(native, prototype, class_name, none)
+}
+
+fn (mut host Host) wrap_node_list_with_radio(native &dom.NodeList, prototype &libjs.Object, class_name string, radio ?&html.RadioNodeList) libjs.Value {
 	if object := host.node_list_wrappers[voidptr(native)] { return libjs.Value.from_object(object) }
 	persistent := platform.enter_persistent()
 	defer { platform.leave_persistent(persistent) }
 	mut object := libjs.Object.create(host.realm, prototype)
 	object.class_name = class_name
-	provider := &NodeListCollection{host: &host, native: native}
+	provider := &NodeListCollection{host: &host, native: native, radio: radio}
 	object.host_properties = libjs.HostProperties(provider)
 	object.legacy_platform_object = libjs.LegacyPlatformObject{indexed_properties: libjs.LegacyIndexedProperties(provider)}
 	host.node_list_wrappers[voidptr(native)] = object
@@ -73,10 +84,11 @@ fn (mut host Host) install_node_lists() ! {
 		return libjs.Value.from_f64(f64(host.node_list_receiver(mut vm)!.length()))
 	}, unsafe { nil })
 	host.method_attributes(mut prototype, 'item', 1, fn [host] (mut vm libjs.VM) !libjs.Value {
-		list := host.node_list_receiver(mut vm)!
+		mut list := host.node_list_receiver(mut vm)!
 		if vm.argument_count() < 1 { return vm.throw_error(.type_error, 'NodeList.item requires an index') }
 		persistent := platform.enter_persistent(); defer { platform.leave_persistent(persistent) }
 		index := vm.argument(0).to_u32(mut vm)!
+		list = host.node_list_receiver(mut vm)!
 		mut owner := unsafe { &Host(host) }
 		return if native := list.item(int(index)) { owner.wrap_node(native) } else { libjs.js_null() }
 	}, libjs.attribute_writable | libjs.attribute_enumerable | libjs.attribute_configurable)

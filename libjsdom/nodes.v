@@ -47,6 +47,7 @@ fn (mut host Host) wrap_node(node &dom.Node) libjs.Value {
 	if is_html {
 		if element := node.as_element() {
 			if element.local_name() == 'select' { host.attach_select_indices(mut object, element) }
+			if element.local_name() == 'form' { host.attach_form_properties(mut object, element) }
 		}
 	}
 	return libjs.Value.from_object(object)
@@ -271,7 +272,7 @@ fn (mut host Host) install_nodes() ! {
 
 				mut parent := unsafe { &dom.ParentNode(actual) }
 				collection := if name == 'getElementsByClassName' {
-					parent.get_elements_by_class_name(key)
+					owner.class_collection(actual, key)
 				} else {
 					parent.get_elements_by_tag_name(key)
 				}
@@ -337,12 +338,14 @@ fn (mut host Host) install_nodes() ! {
 struct Collection {
 	host       &Host
 	collection NativeHTMLCollectionView
+	object &libjs.Object
 }
 
 interface NativeHTMLCollectionView {
 	length() int
 	item(int) ?&dom.Element
 	named_item(string) ?&dom.Element
+	supported_property_names() []string
 }
 
 fn (collection &Collection) is_supported_property_index(index u32) bool {
@@ -382,9 +385,9 @@ fn (mut host Host) wrap_collection_view(identity voidptr, collection NativeHTMLC
 	persistent := platform.enter_persistent(); defer { platform.leave_persistent(persistent) }
 	mut object := libjs.Object.create(host.realm, prototype)
 	object.class_name = class_name
-	provider := &Collection{host: host, collection: collection}
+	provider := &Collection{host: host, collection: collection, object: object}
 	object.host_properties = libjs.HostProperties(provider)
-	object.legacy_platform_object = libjs.LegacyPlatformObject{indexed_properties: libjs.LegacyIndexedProperties(provider)}
+	object.legacy_platform_object = libjs.LegacyPlatformObject{indexed_properties: libjs.LegacyIndexedProperties(provider), named_properties: libjs.LegacyNamedProperties(provider), legacy_unenumerable_named_properties: true}
 	host.collection_wrappers[identity] = object
 	return libjs.Value.from_object(object)
 }
