@@ -529,18 +529,21 @@ fn (mut app BrowserApp) set_chromium_msaa_tiles() {
 		document_geometry_grid = DocumentGeometryGrid{}
 		app.chromium_background_uses_local_origin = false
 		app.begin_chromium_image_decode_frame()
+		scale := C.native_display_device_pixel_ratio()
+		layout_scale := if app.document != unsafe { nil } { app.document.layout_coordinate_scale() } else { 1.0 }
 		if os.getenv('VOX_DIAGNOSTIC_PAINT_LAYER') != '' {
+			top := app.scroll_y * layout_scale
+			bottom := (app.scroll_y + app.viewport_height) * layout_scale
 			for index, command in app.paint_commands {
 				owner := app.chromium_raster_plan.command_layers[index]
-				if owner >= 0 && (command.y + command.height < app.scroll_y || command.y > app.scroll_y + app.viewport_height) { continue }
+				if owner >= 0 && (command.y + command.height < top || command.y > bottom) { continue }
 				eprintln('VOX_PAINT_COMMAND index=${index} kind=${command.kind} owner=${owner} xywh=${command.x},${command.y},${command.width},${command.height}')
+				eprintln('VOX_PAINT_GEOMETRY index=${index} matrix=${normalized_paint_transform(command.transform)} aa=${command.antialiased_rect} radius=${command.radius} clip_outs=${command.clip_outs}')
 				if effect := command.visual_layer_data {
 					eprintln('VOX_PAINT_EFFECT index=${index} kind=${effect.kind} opacity=${effect.opacity} blend=${effect.blend_mode} filter=${effect.filter != none} scope=${effect.scope_id}')
 				}
 			}
 		}
-		scale := C.native_display_device_pixel_ratio()
-		layout_scale := if app.document != unsafe { nil } { app.document.layout_coordinate_scale() } else { 1.0 }
 		app.chromium_msaa_storage.update_for_device_viewport(app.paint_commands, app.chromium_raster_plan,
 			app.viewport_width, app.viewport_height,
 			int(math.ceil(app.viewport_width * layout_scale)), int(math.ceil(app.viewport_height * layout_scale)),
