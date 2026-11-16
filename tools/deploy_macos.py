@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
-"""Release Vox: commit the version bump, build that commit with literal -prod / single C
-unit in the ../vox2-release checkout, package a stripped macOS DMG, upload it to a new
-GitHub release and update vox-browser.org/version. Uncommitted work is never released."""
+"""Release Vox: build committed sources with literal -prod / single C unit, strip,
+package a macOS DMG or Linux DEB and upload it to a new GitHub release.
+macOS releases also update vox-browser.org/version."""
 
 import argparse
 import hashlib
@@ -198,11 +198,18 @@ def deploy(root=ROOT, output=None, package_only=False):
 
 
 def main():
+    linux = sys.platform == 'linux'
+    target = 'linux' if linux else 'macos'
+    if linux:
+        from deploy_linux import deploy as package
+    else:
+        package = deploy
     parser = argparse.ArgumentParser(prog='deploy.vsh', description=__doc__)
-    parser.add_argument('--output', type=Path, help='DMG path (default: Build/deploy/Vox-VERSION-ARCH.dmg)')
+    parser.add_argument('--output', type=Path, help='package path (default: Build/deploy/Vox-VERSION-ARCH.'
+                        + ('deb)' if linux else 'dmg)'))
     parser.add_argument('--package-only', action='store_true',
                         help="reuse the release checkout's completed build (with --no-publish: "
-                        "the canonical Build/v build)")
+                        "the canonical Build/" + ('linux' if linux else 'v') + " build)")
     parser.add_argument('--version', help='release this version (for example 0.2.0) instead of '
                         'the next patch version')
     parser.add_argument('--no-publish', action='store_true',
@@ -210,8 +217,10 @@ def main():
     parser.add_argument('--website-only', action='store_true',
                         help='point vox-browser.org/version at the released version in Info.plist')
     args = parser.parse_args()
-    if sys.platform != 'darwin':
-        parser.error('DMG deployment requires macOS')
+    if sys.platform not in ('darwin', 'linux'):
+        parser.error('Deployment requires macOS or Linux')
+    if args.website_only and linux:
+        parser.error('--website-only requires macOS (the website tracks the macOS download)')
     if args.website_only and (args.no_publish or args.package_only or args.output or args.version):
         parser.error('--website-only takes no other options')
     if args.no_publish and args.version:
@@ -220,9 +229,10 @@ def main():
         if args.website_only:
             release_macos.publish_website_only(ROOT)
         elif args.no_publish:
-            deploy(output=args.output, package_only=args.package_only)
+            package(output=args.output, package_only=args.package_only)
         else:
-            release_macos.release(ROOT, deploy, args.output, args.package_only, args.version)
+            release_macos.release(ROOT, package, args.output, args.package_only, args.version,
+                                  target=target)
     except subprocess.CalledProcessError as error:
         if error.returncode == 75:
             print('Deploy: the shared production build is busy; run again after it finishes, '

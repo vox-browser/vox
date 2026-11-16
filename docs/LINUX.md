@@ -84,6 +84,42 @@ Clang is the default C compiler. Set `CC=gcc` to build with GCC instead:
 CC=gcc sh build-prod-browser.sh
 ```
 
+## Debian packages
+
+Run the deploy script on Linux to build with the C backend and literal V `-prod`,
+strip the executable and optional AVIF helper, and create a native `.deb`:
+
+```sh
+sudo apt-get install dpkg-dev binutils
+./deploy.vsh --no-publish
+sudo apt-get install ./Build/deploy/Vox-VERSION-ARCH.deb
+```
+
+The version comes from `packaging/Info.plist`; `ARCH` is Debian's native
+architecture (`amd64`, `arm64`, etc.). The package installs `vox` in `/usr/bin`,
+its executable and optional helper in `/usr/lib/vox`, and a desktop launcher and
+icon. Runtime library dependencies are derived from the build host with
+`dpkg-shlibdeps`. Build on the oldest Debian/Ubuntu release you intend to support;
+the package depends on that host's library ABIs. Packaging extracts the finished
+archive and runs its stripped executable with `--headless-smoke` under the memory
+guard before replacing the output. A `.deb.json` receipt records source and
+package hashes, build mode, sizes and guard results.
+
+`./deploy.vsh --no-publish --package-only` reuses a completed canonical Linux
+build whose receipt proves `--backend c --prod --no-parallel-cc`. Older receipts
+without the compile mode require a new build. `--output PATH.deb` selects an
+output path. Without `--no-publish`, deployment follows the macOS release flow:
+commit the next version, build committed sources in the release checkout and
+publish a new GitHub release with the DEB. Linux releases leave the website's
+macOS version/download pointer unchanged. `--website-only` is macOS-specific.
+
+The packaging and release regressions run without a browser build:
+
+```sh
+python3 tools/deploy_linux_test.py
+python3 tools/release_macos_test.py
+```
+
 Canvas 2D drawing and portable shadows use the V `cpuraster` module. Its exact
 Skia ports are compared against a pinned Linux Skia only by the external
 differential suite (`tools/raster_tests.py`); `tools/build_linux_skia.py` builds

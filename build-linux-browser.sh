@@ -121,3 +121,12 @@ echo "Building Vox ($gc_mode) with: $*"
 "$v_compiler" "$@" -show-c-output -cflags "-D_GNU_SOURCE=1 ${VOX_LINUX_CFLAGS:--O2}" -o "$build_dir/vox" "$browser_source"
 echo "Built Vox: $build_dir/vox"
 echo "Run: '$build_dir/vox' https://example.com"
+if [ -n "${VOX_BUILD_RECEIPT_DIR:-}" ]; then
+    v_prod=false
+    if [ "$gc_mode" = none ] || [ "${VOX_BUILD_V_PROD:-0}" = 1 ]; then
+        v_prod=true
+    fi
+    printf '{"backend":"%s","mode":"single","requested":"%s","v_prod":%s}\n' \
+        "$v_backend" "${VOX_BUILD_C_MODE:-single}" "$v_prod" \
+        > "$VOX_BUILD_RECEIPT_DIR/c-compile.json"
+fi

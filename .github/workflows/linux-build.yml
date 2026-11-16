@@ -50,6 +50,8 @@ jobs:
       - name: Check the Linux build entrypoint
         run: |
           python3 tools/build_linux_browser_test.py
+          python3 tools/deploy_linux_test.py
+          python3 tools/release_macos_test.py
           python3 tools/rebuild_browser_test.py
           python3 tools/prepare_http_compat_test.py
           python3 tools/prepare_ui2_test.py

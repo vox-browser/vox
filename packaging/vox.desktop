@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=Vox
+Comment=Browse the web
+Exec=vox %U
+Icon=vox
+Terminal=false
+Categories=Network;WebBrowser;
+MimeType=text/html;application/xhtml+xml;x-scheme-handler/http;x-scheme-handler/https;
+StartupWMClass=Vox

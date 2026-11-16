@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
-"""Publish a packaged Vox DMG as the next release.
+"""Publish a packaged Vox DMG or DEB as the next release.
 
 packaging/Info.plist holds the version. A release commits the version bump
 alone on master, builds that commit in a dedicated release checkout, creates
-the GitHub release tagged with the bare version (for example 0.1.1), then
-points vox-browser.org/version, which the browser's update check reads, at it.
+the GitHub release tagged with the bare version (for example 0.1.1). macOS releases
+also point vox-browser.org/version, which the browser's update check reads, at it.
 
 The release checkout is a clone next to the canonical one with its own Build/
 caches and build queue. Building there compiles only committed sources, while
@@ -152,17 +152,19 @@ def release_assets(repository, version):
     return {asset['name']: asset.get('digest') for asset in json.loads(output)['assets']}
 
 
-def publish_release(repository, version, dmg, minimum):
-    digest = sha256(dmg)
+def publish_release(repository, version, artifact, minimum):
+    digest = sha256(artifact)
     machine = 'Apple silicon' if platform.machine() == 'arm64' else platform.machine()
-    notes = ('Vox %s for macOS %s or later on %s.\n\nSHA-256 of %s: `%s`\n'
-             % (version, minimum, machine, dmg.name, digest))
-    print('Creating the %s release on %s with %s' % (version, repository, dmg.name), flush=True)
-    command(['gh', 'release', 'create', version, str(dmg), '-R', repository,
+    system = ('Linux (Debian package)' if artifact.suffix == '.deb'
+              else 'macOS %s or later on %s' % (minimum, machine))
+    notes = ('Vox %s for %s.\n\nSHA-256 of %s: `%s`\n'
+             % (version, system, artifact.name, digest))
+    print('Creating the %s release on %s with %s' % (version, repository, artifact.name), flush=True)
+    command(['gh', 'release', 'create', version, str(artifact), '-R', repository,
              '--title', version, '--notes', notes])
-    if release_assets(repository, version).get(dmg.name) != 'sha256:' + digest:
+    if release_assets(repository, version).get(artifact.name) != 'sha256:' + digest:
         raise RuntimeError('The GitHub release %s does not carry %s with SHA-256 %s'
-                           % (version, dmg.name, digest))
+                           % (version, artifact.name, digest))
 
 
 def commit_version(root, version):
@@ -194,7 +196,8 @@ def commit_version(root, version):
 
 def release_checkout(root):
     # A sibling keeps the checkout-relative ../3rd dependency paths valid.
-    return root.parent / (root.name + '-release')
+    # Keep the established release checkout after the canonical vox2 -> vox rename.
+    return root.parent / 'vox2-release'
 
 
 def prepare_checkout(root, checkout, commit):
@@ -308,15 +311,19 @@ def verify_release_inputs(checkout, build, commit, expected):
 
 
 def release(root, deploy, output=None, package_only=False, requested=None,
-            repository=REPOSITORY, host=WEBSITE_HOST, checkout=None):
-    """Bump, build the committed sources, package and publish; return the DMG path."""
+            repository=REPOSITORY, host=WEBSITE_HOST, checkout=None, target='macos'):
+    """Bump, build the committed sources, package and publish; return the package path."""
+    if target not in ('macos', 'linux'):
+        raise ValueError('Unsupported release target: ' + target)
+    extension = '.deb' if target == 'linux' else '.dmg'
     checkout = checkout or release_checkout(root)
     with release_lock(root):
         released = released_version(repository)
         version = next_version(bundle_version(root / INFO_PLIST), released, requested)
         # Fail before committing or building when the release cannot be published.
         check_unreleased(repository, version)
-        check_website(host)
+        if target == 'macos':
+            check_website(host)
         if package_only:
             # Repackage the release checkout's commit; its receipt is checked below.
             if not (checkout / '.git').is_dir() or bundle_version(checkout / INFO_PLIST) != version:
@@ -331,17 +338,21 @@ def release(root, deploy, output=None, package_only=False, requested=None,
         print('Releasing Vox %s from %s (previous release: %s)' % (version, commit[:12], released),
               flush=True)
         if output is None:
-            output = root / 'Build/deploy' / ('Vox-%s-%s.dmg' % (version, platform.machine()))
-        dmg = deploy(checkout, output, package_only)
-        manifest = json.loads(dmg.with_suffix('.dmg.json').read_text())
+            architecture = (command(['dpkg', '--print-architecture']).strip()
+                            if target == 'linux' else platform.machine())
+            output = root / 'Build/deploy' / ('Vox-%s-%s%s' % (version, architecture, extension))
+        artifact = deploy(checkout, output, package_only)
+        manifest = json.loads(artifact.with_suffix(extension + '.json').read_text())
         if manifest['version'] != version:
-            raise RuntimeError('The DMG contains Vox %s, not %s' % (manifest['version'], version))
+            raise RuntimeError('The package contains Vox %s, not %s' % (manifest['version'], version))
         verify_release_inputs(checkout, manifest.get('source_build', {}), commit, expected)
-        minimum = plistlib.loads((checkout / INFO_PLIST).read_bytes())['LSMinimumSystemVersion']
-        publish_release(repository, version, dmg, minimum)
-        publish_website_version(version, host)
-        check_download(repository, version, dmg.name)
-    return dmg
+        minimum = (plistlib.loads((checkout / INFO_PLIST).read_bytes())['LSMinimumSystemVersion']
+                   if target == 'macos' else None)
+        publish_release(repository, version, artifact, minimum)
+        if target == 'macos':
+            publish_website_version(version, host)
+            check_download(repository, version, artifact.name)
+    return artifact
 
 
 def publish_website_only(root, repository=REPOSITORY, host=WEBSITE_HOST):

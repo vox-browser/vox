@@ -23,6 +23,10 @@ def info_plist(version='0.1', build='1'):
 
 
 class VersionTests(unittest.TestCase):
+    def test_renamed_canonical_checkout_keeps_the_established_release_checkout(self):
+        self.assertEqual(release.release_checkout(Path('/Users/alex/code/vox')),
+                         Path('/Users/alex/code/vox2-release'))
+
     def test_next_release_is_a_patch_bump_unless_info_plist_or_the_caller_chose_one(self):
         self.assertEqual(release.next_version('0.1', '0.1.0'), '0.1.1')
         self.assertEqual(release.next_version('0.1.0', '0.1.9'), '0.1.10')
@@ -151,6 +155,19 @@ class ReleaseFlowTests(unittest.TestCase):
         self.assertEqual(self.calls[5][1], (release.REPOSITORY, '0.1.1', dmg, '15.0'))
         self.assertEqual(self.calls[6][1], ('0.1.1', release.WEBSITE_HOST))
         self.assertEqual(self.calls[7][1], (release.REPOSITORY, '0.1.1', dmg.name))
+
+    def test_linux_release_packages_deb_and_publishes_without_advancing_macos_website(self):
+        def package(root, output, package_only):
+            artifact = self.deploy(root, output, package_only)
+            artifact.with_suffix('.dmg.json').rename(artifact.with_suffix('.deb.json'))
+            return artifact
+
+        with patch.object(release, 'command', return_value='amd64'), redirect_stdout(io.StringIO()):
+            deb = release.release(self.root, package, checkout=self.checkout, target='linux')
+        self.assertEqual(deb.name, 'Vox-0.1.1-amd64.deb')
+        self.assertEqual(self.names(), ['check_unreleased', 'commit_version', 'prepare_checkout',
+                                        'deploy', 'publish_release'])
+        self.assertEqual(self.calls[-1][1][:3], (release.REPOSITORY, '0.1.1', deb))
 
     def test_failed_build_or_upload_publishes_nothing_further_and_a_rerun_keeps_the_version(self):
         for failure, published in [('deploy', []), ('publish_release', ['publish_release'])]:
@@ -368,6 +385,20 @@ class PublishingTests(unittest.TestCase):
                 self.assertIn('macOS 15.0 or later', commands[0][commands[0].index('--notes') + 1])
                 with self.assertRaisesRegex(RuntimeError, 'does not carry'):
                     release.publish_release('owner/repo', '0.1.1', dmg, '15.0')
+
+    def test_deb_release_notes_identify_linux_and_verify_uploaded_digest(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            deb = Path(temporary) / 'Vox-0.1.1-amd64.deb'
+            deb.write_bytes(b'deb')
+            digest = 'sha256:' + release.sha256(deb)
+            with patch.object(release, 'command') as command, \
+                    patch.object(release, 'release_assets', return_value={deb.name: digest}), \
+                    redirect_stdout(io.StringIO()):
+                release.publish_release('owner/repo', '0.1.1', deb, None)
+            arguments = command.call_args.args[0]
+            notes = arguments[arguments.index('--notes') + 1]
+            self.assertIn('Linux (Debian package)', notes)
+            self.assertNotIn('macOS', notes)
 
     def test_site_download_must_redirect_to_the_uploaded_dmg(self):
         uploaded = 'https://github.com/owner/repo/releases/download/0.1.1/Vox-0.1.1-arm64.dmg'
