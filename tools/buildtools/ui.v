@@ -77,6 +77,7 @@ fn prepare_gg_canvas(canvas string) ! {
 	gg_repair_patches(canvas, 'prepare_gg_yuv_subset')!
 	gg_repair_patches(canvas, 'prepare_gg_image_repeat')!
 	gg_repair_patches(canvas, 'prepare_gg_image_quad')!
+	gg_repair_patches(canvas, 'prepare_gg_srgb_gamut')!
 	write_changed(join(canvas, 'vox_document_image.v'), image_helper)!
 	write_changed(join(canvas, 'vox_document_clip.v'), read(join(root_dir(), 'tools/ui2/gg_document_clip.v'))!)!
 }

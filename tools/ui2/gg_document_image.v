@@ -4,7 +4,8 @@ import sokol.gfx
 import math
 
 // Power transfer followed by a column-major linear-light gamut transform.
-// Zero gamma retains the ordinary image shader.
+// Zero gamma retains the ordinary image shader. Negative gamma selects the
+// standard piecewise sRGB curve before converting into the destination gamut.
 pub struct DocumentImageColorTransform {
 pub:
 	image_quad_coords bool
@@ -16,6 +17,10 @@ pub:
 	yuv_chroma_bounds [4]f32
 	gamma f32
 	gamut [9]f32
+}
+
+pub fn document_image_srgb_gamut_supported() bool {
+	return gradient_snippet_file.to_string().contains('_11_gamma < 0.0f')
 }
 
 struct DocumentImageSampler {

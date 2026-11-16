@@ -9,6 +9,7 @@ enum DocumentSampledTileKind {
 	yuv_atlas
 	jpeg
 	rgba
+	rgba_p3
 	rgba_quad
 	repeated_background
 }
@@ -86,6 +87,10 @@ fn draw_document_sampled_image_tiles_with_decoration(pixels &u8, width i32, heig
 			} else if kind == .rgba_quad {
 				ggshape.draw_sampled_image_quad_rgba(tile.data, i32(grid.width), i32(grid.height),
 					i32(grid.width * 4), backdrop, source, sw, sh, x + dx, y + dy, samples, local_clip)
+			} else if kind == .rgba_p3 {
+				ggshape.draw_sampled_srgb_gamut_clipped(tile.data, i32(grid.width), i32(grid.height),
+					i32(grid.width * 4), backdrop, source, sw, sh, x + dx, y + dy, dw, dh,
+					samples, nw, nh, local_clip, gpu_mips, document_srgb_to_p3_gamut)
 			} else if kind == .rgba {
 				ggshape.draw_sampled_rgba_clipped(tile.data, i32(grid.width), i32(grid.height),
 					i32(grid.width * 4), backdrop, source, sw, sh, x + dx, y + dy, dw, dh,

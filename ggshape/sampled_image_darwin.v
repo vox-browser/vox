@@ -46,6 +46,10 @@ pub fn draw_sampled_image_quad_rgba(pixels &u8, width i32, height i32, pitch i32
 }
 
 fn draw_sampled_image(pixels &u8,width i32,height i32,pitch i32,backdrop i32,source []u8,colors []f32,source_width int,source_height int,x f32,y f32,destination_width f32,destination_height f32,samples int,natural_width int,natural_height int,clip [12]f32,gpu_mips bool,shadow &C.VoxGraphiteShape,yuv_mode int,yuv_atlas bool,origin [2]f32, image_quad bool) i32 {
+	return draw_sampled_image_color(pixels,width,height,pitch,backdrop,source,colors,source_width,source_height,x,y,destination_width,destination_height,samples,natural_width,natural_height,clip,gpu_mips,shadow,yuv_mode,yuv_atlas,origin,image_quad,canvas.DocumentImageColorTransform{})
+}
+
+fn draw_sampled_image_color(pixels &u8,width i32,height i32,pitch i32,backdrop i32,source []u8,colors []f32,source_width int,source_height int,x f32,y f32,destination_width f32,destination_height f32,samples int,natural_width int,natural_height int,clip [12]f32,gpu_mips bool,shadow &C.VoxGraphiteShape,yuv_mode int,yuv_atlas bool,origin [2]f32, image_quad bool, destination_color canvas.DocumentImageColorTransform) i32 {
 	if shadow != unsafe { nil } && (shadow.fill != 9 || shadow.thickness != 0 || !supported(shadow)) {
 		return 0
 	}
@@ -154,7 +158,7 @@ fn draw_sampled_image(pixels &u8,width i32,height i32,pitch i32,backdrop i32,sou
 	}
 	destination_subset := if partial_atlas_clip { [clip[0], clip[1], clip[2], clip[3]]! } else { [4]f32{} }
 	surface.draw_document_color_rgba_subset(levels, source_width, source_height, natural_width, natural_height, x, y,
-		destination_width, destination_height, canvas.DocumentImageColorTransform{ image_quad_coords: image_quad && samples == 4, yuv_rec601_limited: yuv_mode == 1, yuv_jpeg_full: yuv_mode == 2, yuv420_atlas: yuv_atlas, yuv_chroma_bounds: chroma_bounds },
+		destination_width, destination_height, canvas.DocumentImageColorTransform{ ...destination_color, image_quad_coords: image_quad && samples == 4, yuv_rec601_limited: yuv_mode == 1, yuv_jpeg_full: yuv_mode == 2, yuv420_atlas: yuv_atlas, yuv_chroma_bounds: chroma_bounds },
 		partial_atlas_clip || (samples == 1 && clip[0] == x && clip[1] == y && clip[2] == destination_width
 			&& clip[3] == destination_height
 			&& (clip[4] != clip[5] || clip[6] != clip[7] || clip[8] != clip[9] || clip[10] != clip[11])),

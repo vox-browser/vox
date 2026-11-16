@@ -275,5 +275,17 @@
       "old": "document_local_coords: layer.document_repeat_filter",
       "new": "document_local_coords: layer.document_repeat_filter || layer.color_transform.image_quad_coords"
     }
+  ],
+  "prepare_gg_srgb_gamut": [
+    {
+      "file": "shaders/paint_snippets.metal",
+      "old": "if (_11_gamma > 0.0f) {",
+      "new": "if (_11_gamma != 0.0f) {"
+    },
+    {
+      "file": "shaders/paint_snippets.metal",
+      "old": "    float3 _13_linear = powr(max(_12_rgb, 0.0f), float3(_11_gamma));",
+      "new": "    float3 _13_linear;\n    if (_11_gamma < 0.0f) {\n        float3 encoded = max(_12_rgb, 0.0f);\n        _13_linear = select(powr(encoded * (1.0f / 1.055f) + (0.055f / 1.055f), float3(2.4f)),\n                            encoded * (1.0f / 12.92f), encoded < 0.04045f);\n    } else {\n        _13_linear = powr(max(_12_rgb, 0.0f), float3(_11_gamma));\n    }"
+    }
   ]
 }

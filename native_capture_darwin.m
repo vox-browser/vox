@@ -1132,9 +1132,11 @@ int native_document_text_raster_read_backdrop(uint8_t *pixels, int left, int top
 	return 1;
 }
 
+extern int vox_document_png_space_is_p3(void);
+
 int native_text_raster_read_backdrop(uint8_t *pixels, int left, int top, int width, int height, float scale) {
     int result = native_document_text_raster_read_backdrop(pixels, left, top, width, height, scale);
-    if (result && native_document_raster_uses_p3())
+    if (result && native_document_raster_uses_p3() && !vox_document_png_space_is_p3())
         vox_document_p3_to_srgb_pixels(pixels, width, height, width * 4);
     return result;
 }
@@ -1172,7 +1174,7 @@ static int native_text_raster_finish_in_space(const uint8_t *pixels, int left, i
 int native_text_raster_finish(const uint8_t *pixels, int left, int top, int width, int height,
     int logical_width, int logical_height, float canvas_height, int backdrop) {
     return native_text_raster_finish_in_space(pixels, left, top, width, height,
-        logical_width, logical_height, canvas_height, backdrop, 0);
+        logical_width, logical_height, canvas_height, backdrop, vox_document_png_space_is_p3());
 }
 
 int native_document_text_raster_finish(const uint8_t *pixels, int left, int top, int width, int height,

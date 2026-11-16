@@ -93,11 +93,13 @@ fn (mut app BrowserApp) draw_sampled_png(command &layout.PaintCommand, image &gg
 	}
 	upload := app.sampled_png_decode(url, image, decode_extent[0], decode_extent[1]) or { return false }
 	decoded := upload.image
+	previous_color_scope := select_document_png_color_space()
+	defer { document_png_p3_scope = previous_color_scope }
 	drawn := C.native_draw_sampled_png(decoded.data, i32(decoded.width), i32(decoded.height), i32(image.width), i32(image.height), i32(upload.gpu_mips),
 		geometry.x, geometry.y, geometry.width, geometry.height, &geometry.clip[0], page_x, page_y, f32(scroll_y),
 		f32(app.ctx.width), f32(app.ctx.height)) != 0
 	if drawn && os.getenv('VOX_DIAGNOSTIC_SCALED_PNG') == '1' {
-		eprintln('VOX_SCALED_PNG scale=${matrix[0]} source=${image.width}x${image.height} decode=${decoded.width}x${decoded.height} gpu_mips=${upload.gpu_mips} destination=${geometry.x},${geometry.y},${geometry.width},${geometry.height}')
+		eprintln('VOX_SCALED_PNG scale=${matrix[0]} source=${image.width}x${image.height} decode=${decoded.width}x${decoded.height} gpu_mips=${upload.gpu_mips} p3=${document_png_space_is_p3()} destination=${geometry.x},${geometry.y},${geometry.width},${geometry.height}')
 	}
 	return drawn
 }
@@ -154,13 +156,19 @@ fn document_sampled_png_pixels(pixels &u8, width i32, height i32, pitch i32, bac
 		packed := unsafe { source.vbytes(int(source_width) * int(source_height) * 4) }
 		// Rounded RGBA draws retain the owning tile's interpolation space.
 		// Plain rectangles and mixed samples keep their existing fallback.
+		p3 := gpu_mips in [0, 1] && document_png_space_is_p3() != 0
 		if gpu_mips in [0, 1] && clipping[4..12].any(it > 0) {
 			result = draw_document_sampled_image_tiles(pixels, width, height, pitch, backdrop,
 				int(first_x), int(first_y), packed, int(source_width), int(source_height),
 				x, y, destination_width, destination_height, int(natural_width), int(natural_height),
-				clipping, .rgba, gpu_mips != 0)
+				clipping, if p3 { .rgba_p3 } else { .rgba }, gpu_mips != 0)
 		}
-		if result == 0 {
+		if result == 0 && p3 {
+			result = ggshape.draw_sampled_srgb_gamut_clipped(pixels, width, height, pitch, backdrop,
+				packed, source_width, source_height, x, y, destination_width, destination_height,
+				int(samples), int(natural_width), int(natural_height), clipping, gpu_mips != 0,
+				document_srgb_to_p3_gamut)
+		} else if result == 0 {
 			result = ggshape.draw_sampled_rgba_clipped(pixels, width, height, pitch, backdrop,
 				packed, source_width, source_height, x, y, destination_width, destination_height,
 				int(samples), int(natural_width), int(natural_height), clipping, gpu_mips != 0)
