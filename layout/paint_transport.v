@@ -5498,20 +5498,26 @@ fn resolved_computed_transform_matrix(computed &css.ComputedProperties, border_l
 	}
 	origin := computed.transform_origin()
 	context := computed.length_resolution_context()
-	origin_x := origin.x.to_px(context, css.CSSPixels.nearest_value_for(border_width)).to_double()
-	origin_y := origin.y.to_px(context, css.CSSPixels.nearest_value_for(border_height)).to_double()
+	origin_x := resolved_transform_origin_offset(origin.x, context, border_width, precise_transform_origin_diagnostic)
+	origin_y := resolved_transform_origin_offset(origin.y, context, border_height, precise_transform_origin_diagnostic)
 	return affine_around_origin(matrix, border_left + origin_x, border_top + origin_y)
 }
 
 fn resolved_computed_transform_4x4_matrix(computed &css.ComputedProperties, border_left f64,
 	border_top f64, border_width f64, border_height f64) css.FloatMatrix4x4 {
+	return resolved_computed_transform_with_origin_precision(computed, border_left, border_top,
+		border_width, border_height, precise_transform_origin_diagnostic)
+}
+
+fn resolved_computed_transform_with_origin_precision(computed &css.ComputedProperties, border_left f64,
+	border_top f64, border_width f64, border_height f64, precise bool) css.FloatMatrix4x4 {
 	matrix := css.resolve_computed_transform_4x4_matrix(computed, border_width, border_height) or {
 		return css.FloatMatrix4x4.identity()
 	}
 	origin := computed.transform_origin()
 	context := computed.length_resolution_context()
-	origin_x := border_left + origin.x.to_px(context, css.CSSPixels.nearest_value_for(border_width)).to_double()
-	origin_y := border_top + origin.y.to_px(context, css.CSSPixels.nearest_value_for(border_height)).to_double()
+	origin_x := border_left + resolved_transform_origin_offset(origin.x, context, border_width, precise)
+	origin_y := border_top + resolved_transform_origin_offset(origin.y, context, border_height, precise)
 	return css.translation_matrix_4x4(origin_x, origin_y, 0).multiply(matrix).multiply(css.translation_matrix_4x4(-origin_x, -origin_y, 0))
 }
 
