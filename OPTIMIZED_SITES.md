@@ -9,12 +9,14 @@ Provisional entries retain unresolved acceptance checks.
 **Pixel recheck, 2026-11-16:** Vox does **not** pass pixel equality across
 this catalog. Production build `aa91e7cc` confirms GitHub, Hacker News,
 Lobsters and Wikipedia exact in two fresh captures each; final diagnostics keep
-all four exact. Vlang.io now has **one differing scene pixel in diagnostics**,
-down from four, and its JPEG is exact. The CSS-only redundant-clip correction
-introduces zero differences across 50 repeatable workloads. Production
-`4488b888` also captures Vlang at one pixel using an earlier generic clip-elision
-variant; the final CSS-only, allocation-free implementation awaits production
-confirmation.
+all four exact. Vlang.io is now **pixel-exact in diagnostics** after preserving
+the resolved blur support before rotating shadow masks (`bd6bfd3f7`). The clipped
+orbit and rotated-ellipse shadow controls are also exact. All 50 workload pairs
+repeat, with zero introduced differences and 47 other PNGs unchanged. Its JPEG
+remains exact. Production `4488b888` still captures Vlang at one pixel using an
+earlier generic gradient clip-elision variant; the final CSS-only gradient and
+resolved-shadow implementations await production confirmation. See the
+[resolved-shadow audit](docs/OPTIMIZED_SITES_PIXELS_2026_11_12.md#preserve-resolved-blur-support-before-rotation-2026-11-16).
 CNN retains rendering and source/replay failures; its
 native-repeat correction now passes in production.
 Reddit remains unverified (missing historical fixture, earlier live
@@ -156,7 +158,11 @@ C/O0 diagnostics reduce Vlang **4→1**, the orbit underlay **3→0**, the compl
 orbit scene **4→1**, and the rotated-ellipse control **19→5**, with zero new
 differences. All 50 workloads/100 captures repeat; 46 PNGs are unchanged.
 The final scoped implementation's production confirmation remains pending.
-References and tolerances remain unchanged and parity is open.
+The subsequent `bd6bfd3f7` preserves resolved blur support and its origin before
+rotation. Diagnostics make Vlang **1→0**, the clipped orbit **1→0**, and the
+rotated-ellipse control **5→0**. All 50 pairs repeat, with zero introduced pixels
+and 47 other PNGs unchanged; CNN stays at 6,091. Its production confirmation is
+also pending. References and tolerances remain unchanged and catalog parity is open.
 See the
 [current audit, capture scopes and retained failures](docs/OPTIMIZED_SITES_PIXELS_2026_11_12.md).
 

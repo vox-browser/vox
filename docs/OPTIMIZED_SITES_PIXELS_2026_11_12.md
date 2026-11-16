@@ -4383,3 +4383,65 @@ Cleanup inventories **154 owned roots/10,778 files**, preserves and SHA-verifies
 intermediates, profiles, guards and locks. Four temporary canonical probes are
 removed. The archive guard and lock are separately copied, verified and removed;
 no owned scratch remains. Shared production bundles and dependencies stay.
+
+
+## Preserve resolved blur support before rotation, 2026-11-16
+
+`bd6bfd3f7` fixes Vlang's last differing pixel by retaining the actual rounded
+low-resolution blur support and its origin when resolving a rotated shadow.
+The input footprint still uses the nominal three-sigma bounds; the final A8
+resolve now intersects the mapped blurred-image bounds with the original desired
+output. The previous resolve cropped back to the nominal footprint, changing the
+image origin and final sampling. Axis-aligned callers retain their output bounds.
+No reference, tolerance, shader, kernel, application UI or site exception changes.
+
+An independent native Skia Metal mask-filter draw matches Brave's orbit interior
+at both compositor origins. All **669,752 A8 bytes** of the two original-sized
+mask comparisons also match. Capturing the oracle's own Metal draw parameters
+then identifies native resolved sizes **953×264 / 959×446**, versus Vox's prior
+**953×258 / 959×442**. The new generic bounds calculation reproduces the native
+sizes and corrects the remaining `(630,617)` pixel. Texture-padding, coverage-quad
+and shader-precision experiments did not correct it and are fully reverted.
+The optimized probe that skipped a draw embedded in an assertion receives no
+passing credit; the final focused test invokes the draw outside its assertion.
+
+Final C/O0/preallocated/no-GC diagnostic executable
+`74ff34d9c5d68d27d0e68671d30107d48b6a8919d4f8e73aaeb66187aed5b39a`
+completes **50 workloads/100 fresh captures**, plus startup:
+
+| Workload | Previous differences | Final differences | Corrected / introduced |
+| --- | ---: | ---: | ---: |
+| Vlang | 1 | **0** | **1 / 0** |
+| Complete clipped orbit | 1 | **0** | **1 / 0** |
+| Rotated-ellipse shadow control | 5 | **0** | **5 / 0** |
+| CNN | 6,091 | **6,091** | 0 / 0 |
+| GitHub / Hacker News / Lobsters / Wikipedia | 0 each | **0 each** | 0 / 0 |
+
+Every pair repeats byte for byte. **47 other workload PNGs are unchanged**;
+no workload introduces a differing pixel. All **889 consumed V witnesses and
+942 source/runtime pins** stay matched. Startup, all 100 capture guards,
+driver, outer guard and guarded analysis exit zero. The separate logged focused
+captures also make Vlang, the underlay and the complete clipped orbit exact.
+
+The focused test covers both tile origins, verifies the resolved dimensions,
+compares the unchanged Brave scene's rectangular interior, and retains the
+truncated-window negative control (**486 differences**). Ordinary and literal V
+`-prod` C builds both execute successfully with arena poisoning and 3 GiB guards,
+with executables `97930db9742cdebdeb5073bdbd75c244d1b8651307e3b30330d72ac281760a08`
+and `e853487f080f38aa061ebadc8ef93469a32ad29175dae6e0fac822ce1f118fe4`
+respectively. Both retain 45 matched V witnesses.
+
+Production `4488b888`, receipt `20261116-052137-95504e65`, remains the latest
+completed bundle checked here. It cannot validate this new source. The managed
+commit hook requests a coalesced C/literal V `-prod`/single-unit rebuild; no
+duplicate production build is requested or awaited. Production confirmation
+remains pending. CNN's image/source failures, missing Reddit evidence and prior
+inexact controls keep catalog-wide equality open. These frozen checks establish
+no live-site, scripting, scrolling or instruction-performance acceptance.
+Local evidence is under
+`docs/performance/vlang-gradients-20261114/raw/orbit-shadow-20261116/`.
+Cleanup inventories **86 owned roots/4,111 files**, preserves and SHA-verifies
+**1,604 evidence files/130,148,886 bytes**, and removes job binaries,
+intermediates, profiles, guards and locks. Both temporary canonical probes are
+removed. The archive guard and lock are separately copied, verified and removed;
+no owned scratch remains. Shared production bundles and dependencies stay.
