@@ -1,5 +1,8 @@
 # Hacker News: compiled LibJS speed and peak RAM
 
+The latest [call-frame initialization continuation](HACKER_NEWS_FRAME_INITIALIZATION.md)
+records further matched CPU measurements and the current speed/RAM gates.
+
 The subsequent [native property-read continuation](HACKER_NEWS_NATIVE_PROPERTY_READS.md)
 records guarded indexed-read lowering, matched CPU diagnostics, and newer five-mode
 timing/RAM cohorts. The entry-cache measurements below remain historical evidence.

@@ -53,6 +53,16 @@ path. The latest RAM gate passes at 48.7152% of V8; the conservative 4× wall-ti
 gate remains open. These results do not establish general engine throughput or
 additional language/DOM parity.
 
+The [call-frame continuation](../docs/HACKER_NEWS_FRAME_INITIALIZATION.md) uses
+bounded typed stores and bulk constant copies to initialize reused contexts,
+preserving alias order, exposure barriers, pool limits and exact budgets.
+Forty-seven focused tests pass in all three ownership modes. A longer matched
+HN diagnostic records 2.42% lower median calling-thread CPU time, with all seven
+pairs improving and identical instruction/reuse counts. The numeric-key trial
+was reverted after mixed controls. RAM passes at 48.7291% of V8; the conservative
+4× wall-time gate remains open at 3.2703×. The separate verification hold and
+language/DOM parity limits are unchanged.
+
 ## GitHub runtime checkpoint — 2026-11-15
 
 **Current verification hold:** automated suites remain off until the GitHub

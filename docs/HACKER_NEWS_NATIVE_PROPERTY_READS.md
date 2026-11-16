@@ -1,5 +1,9 @@
 # Hacker News: compiled property-read continuation
 
+The subsequent [call-frame initialization report](HACKER_NEWS_FRAME_INITIALIZATION.md)
+contains the latest comparison and records the rejected numeric-key experiment.
+The property-read measurements below remain historical evidence.
+
 This follows [the 4×/50% comparison](HACKER_NEWS_LIBJS_4X.md). Guarded native
 indexed reads replace **13,026 generic slow steps** in the eligibility diagnostic
 without changing total JavaScript instruction or native-entry counts. The longer
