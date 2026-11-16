@@ -222,6 +222,7 @@ pub fn Host.create(vm &libjs.VM, realm &libjs.Realm, document &dom.Document, hoo
 	host.install_abort_signals()!
 	host.install_custom_elements()!
 	host.install_navigator()!
+	host.install_crypto()
 	host.install_mutation_observers()!
 	host.install_read_only_rects()
 	host.install_intersection_observers()
