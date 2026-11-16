@@ -57,6 +57,7 @@ pub mut:
 	specialized_property_steps u64
 	specialized_object_property_steps u64
 	native_length_steps u64
+	native_index_steps u64
 }
 
 pub struct NativeCodeStats {
@@ -78,6 +79,7 @@ struct NativeInvocation {
 	primitive_type_names voidptr
 	property_read_step voidptr
 	property_length_step voidptr
+	property_index_step voidptr
 mut:
 	failure ?IError
 	ended   bool
@@ -313,6 +315,7 @@ fn native_source(executables []&Executable) !(string, int) {
 	source.writeln(native_primitive_helpers())
 	source.writeln(native_property_helpers())
 	source.writeln(native_length_helpers())
+	source.writeln(native_index_helpers())
 	mut fast_count := 0
 	for index, executable in executables {
 		mut has_properties := false
@@ -323,7 +326,8 @@ fn native_source(executables []&Executable) !(string, int) {
 		source.writeln('void vox_native_${index}(void *state,NV *v,uint64_t *budget,uint8_t limited,uint32_t *pc,Slow slow,uint64_t *fast_steps) { uint32_t next=*pc; ${property_reader} goto dispatch;')
 		for offset, instruction in executable.instructions {
 			length_fast := native_length_instruction(instruction, executable, u32(offset))
-			fast := if length_fast != '' { length_fast } else { native_fast_instruction(instruction, executable)! }
+			index_fast := native_index_instruction(instruction, executable, u32(offset))
+			fast := if length_fast != '' { length_fast } else if index_fast != '' { index_fast } else { native_fast_instruction(instruction, executable)! }
 			source.writeln('L${offset}:;')
 			if fast != '' {
 				fast_count++

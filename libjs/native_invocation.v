@@ -2,10 +2,10 @@ module libjs
 
 fn (mut stack InterpreterStack) acquire_native_invocation(vm &VM, executable &Executable) &NativeInvocation {
 	if stack.native_depth == stack.native_calls.len {
-		stack.native_calls << &NativeInvocation{ vm: vm, executable: executable, property_read_step: voidptr(native_property_step), property_length_step: voidptr(native_length_read), primitive_type_names: if vm.native_type_names.len == 7 { vm.native_type_names.data } else { unsafe { nil } } }
+		stack.native_calls << &NativeInvocation{ vm: vm, executable: executable, property_read_step: voidptr(native_property_step), property_length_step: voidptr(native_length_read), property_index_step: voidptr(native_index_read), primitive_type_names: if vm.native_type_names.len == 7 { vm.native_type_names.data } else { unsafe { nil } } }
 	}
 	invocation := stack.native_calls[stack.native_depth]
-	unsafe { *invocation = NativeInvocation{ vm: vm, executable: executable, property_read_step: voidptr(native_property_step), property_length_step: voidptr(native_length_read), primitive_type_names: if vm.native_type_names.len == 7 { vm.native_type_names.data } else { unsafe { nil } } } }
+	unsafe { *invocation = NativeInvocation{ vm: vm, executable: executable, property_read_step: voidptr(native_property_step), property_length_step: voidptr(native_length_read), property_index_step: voidptr(native_index_read), primitive_type_names: if vm.native_type_names.len == 7 { vm.native_type_names.data } else { unsafe { nil } } } }
 	stack.native_depth++
 	return invocation
 }

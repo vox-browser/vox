@@ -10,6 +10,8 @@ fn property_native_run(mut vm VM, source string) !Value {
 
 fn test_native_property_plans_keep_live_keys_receivers_exotics_and_unwinding() {
 	defer { set_native_property_reads_for_testing(true) }
+	set_native_indices_for_testing(false)
+	defer { set_native_indices_for_testing(true) }
 	cache := os.join_path(os.temp_dir(), 'vox-property-native-' + rand.uuid_v4())
 	defer { os.rmdir_all(cache) or {} }
 	mut vm := VM.create()
