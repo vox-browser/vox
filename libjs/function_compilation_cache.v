@@ -41,7 +41,8 @@ fn (function &ECMAScriptFunction) cached_function_compilation() ?FunctionExecuta
 	if !function.can_share_function_compilation() { return none }
 	code := function.source.source_code or { return none }
 	name := function.name_for_call_stack()
-	for entry in function.realm_.function_executable_cache[voidptr(function.data)] {
+	entries := function.realm_.function_executable_cache[voidptr(function.data)] or { return none }
+	for entry in entries {
 		if voidptr(entry.source_code) == voidptr(code) && entry.starting_line == function.source.starting_line
 			&& entry.name == name && entry.registers_enabled == register_compilation_enabled() {
 			mut realm := unsafe { &Realm(function.realm_) }
@@ -57,7 +58,8 @@ fn (function &ECMAScriptFunction) remember_function_compilation(executable &Exec
 	realm.function_compilation_activity.compiled++
 	if !function.can_share_function_compilation() { return }
 	code := function.source.source_code or { return }
-	realm.function_executable_cache[voidptr(function.data)] << FunctionExecutableCacheEntry{
+	mut entries := realm.function_executable_cache[voidptr(function.data)] or { []FunctionExecutableCacheEntry{} }
+	entries << FunctionExecutableCacheEntry{
 		source_code:       code
 		starting_line:     function.source.starting_line
 		name:              function.name_for_call_stack()
@@ -65,5 +67,6 @@ fn (function &ECMAScriptFunction) remember_function_compilation(executable &Exec
 		executable:        executable
 		register_bindings: function.register_bindings
 	}
+	realm.function_executable_cache[voidptr(function.data)] = entries
 	realm.function_compilation_activity.entries++
 }
