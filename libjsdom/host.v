@@ -72,6 +72,9 @@ mut:
 	selection_wrappers map[voidptr]&libjs.Object
 	tree_walker_prototype &libjs.Object = unsafe { nil }
 	tree_walkers map[voidptr]&TreeWalkerBinding
+	dom_rect_prototype &libjs.Object = unsafe { nil }
+	client_rect_list_prototype &libjs.Object = unsafe { nil }
+	dom_rects map[voidptr]&geometry.DOMRect
 	event_target_prototype &libjs.Object = unsafe { nil }
 	event_target_constructor &libjs.Object = unsafe { nil }
 	event_targets map[voidptr]&dom.EventTarget
@@ -244,6 +247,7 @@ pub fn Host.create(vm &libjs.VM, realm &libjs.Realm, document &dom.Document, hoo
 	host.install_crypto()
 	host.install_mutation_observers()!
 	host.install_read_only_rects()
+	host.install_client_rects()!
 	host.install_intersection_observers()
 	host.install_resize_observers()
 	host.install_animation_frames()
@@ -410,6 +414,7 @@ pub fn (mut host Host) close() {
 	host.selections.clear()
 	host.selection_wrappers.clear()
 	host.tree_walkers.clear()
+	host.dom_rects.clear()
 	host.event_targets.clear()
 	host.media_queries.clear()
 	host.abort_controllers.clear()
