@@ -7,6 +7,7 @@ import imageraster
 import layout
 import painting
 import platform
+import os
 
 fn C.native_draw_sampled_png(&u8, i32, i32, i32, i32, i32, f32, f32, f32, f32, &f32, f32, f32, f32, f32, f32) i32
 
@@ -62,20 +63,20 @@ fn (mut app BrowserApp) draw_sampled_png(command &layout.PaintCommand, image &gg
 	page_x f32, page_y f32, scroll_y f64, nearest bool) bool {
 	if app.document == unsafe { nil } || app.document.font_rendering_policy() != .chromium
 		|| command.apply_force_dark_to_image || nearest || command.opacity != 1
-		|| matrix[0] != 1 || matrix[1] != 0 || matrix[2] != 0 || matrix[3] != 1
 		|| source != [f32(0), 0, f32(image.width), f32(image.height)]! {
 		return false
 	}
-	upload := app.sampled_png_decode(url, image, f64(destination.width),
-		f64(destination.height)) or { return false }
+	geometry := sampled_png_paint_geometry(destination, clip, matrix) or { return false }
+	upload := app.sampled_png_decode(url, image, f64(geometry.width),
+		f64(geometry.height)) or { return false }
 	decoded := upload.image
-	mut translated_clip := clip
-	translated_clip[0] += f32(matrix[4])
-	translated_clip[1] += f32(matrix[5])
-	return C.native_draw_sampled_png(decoded.data, i32(decoded.width), i32(decoded.height), i32(image.width), i32(image.height), i32(upload.gpu_mips),
-		f32(destination.x) + f32(matrix[4]), f32(destination.y) + f32(matrix[5]),
-		f32(destination.width), f32(destination.height), &translated_clip[0], page_x, page_y, f32(scroll_y),
+	drawn := C.native_draw_sampled_png(decoded.data, i32(decoded.width), i32(decoded.height), i32(image.width), i32(image.height), i32(upload.gpu_mips),
+		geometry.x, geometry.y, geometry.width, geometry.height, &geometry.clip[0], page_x, page_y, f32(scroll_y),
 		f32(app.ctx.width), f32(app.ctx.height)) != 0
+	if drawn && os.getenv('VOX_DIAGNOSTIC_SCALED_PNG') == '1' {
+		eprintln('VOX_SCALED_PNG scale=${matrix[0]} source=${image.width}x${image.height} decode=${decoded.width}x${decoded.height} destination=${geometry.x},${geometry.y},${geometry.width},${geometry.height}')
+	}
+	return drawn
 }
 
 @[export:'vox_document_sampled_png_pixels']
