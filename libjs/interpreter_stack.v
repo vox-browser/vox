@@ -11,12 +11,16 @@ pub const maximum_argument_count = u64(interpreter_stack_size) / u64(sizeof(Valu
 
 pub struct InterpreterStack {
 mut:
+	call_argument_workspaces []&CallArgumentWorkspace
+	call_argument_depth int
 	contexts      []&ExecutionContext
 	recycled      []&ExecutionContext
 	recycled_bytes uint
 	top_          uint
 	limit         uint = interpreter_stack_size
 	next_frame_id u64   = 1
+	native_calls  []&NativeInvocation
+	native_depth  int
 }
 
 pub fn InterpreterStack.new() InterpreterStack {
