@@ -14,6 +14,14 @@ anonymous Brave navigation to `/r/programming/` redirects to a blocked login
 page, with no posts. CNN's historical source/replay verification also remains
 open. These frozen checks establish no live-site or performance acceptance.
 
+**Uniform PNG follow-up:** a new independently repeated Brave control is now
+exact with half/double scaling and mixed tile sample counts. Its published
+baseline has 1,412 differences; scale folding, own-clip planning, destination
+geometry and retained decode history together reduce that to **zero twice**.
+All **57 workloads/114 captures** repeat; all 56 prior PNGs are unchanged.
+All 30 focused tests pass. Production confirmation of `40d8c41ed` is pending. See the
+[PNG follow-up](docs/OPTIMIZED_SITES_PIXELS_2026_11_12.md#uniform-png-scales-decoded-frame-history-and-elliptical-geometry-2026-11-16).
+
 **Fresh Brave reference audit:** `597984bc6` preserves each archive's recorded
 image-decode preparation. Recent readiness calls to `img.decode()` changed CNN
 by 31,766 pixels; preserving its original load/paint protocol reproduces the

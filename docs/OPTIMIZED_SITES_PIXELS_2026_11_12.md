@@ -5602,3 +5602,76 @@ Cleanup inventories 37 owned roots/4,548 files, preserves and SHA-verifies
 1,463 evidence files/42,554,486 bytes, and removes owned executables, generated
 C, profiles, guards, locks and the temporary GPU probe. Shared bundles and
 dependencies remain.
+
+
+### Uniform PNG scales, decoded-frame history and elliptical geometry, 2026-11-16
+
+The completed production artifacts available at the start of this follow-up
+still reject non-identity PNG scales before calling the geometry helper from
+`12fc9e48b`. The newest frozen generated C confirms that early return. A bounded
+C diagnostic build is therefore required to exercise the newer implementation;
+no additional manual production build is queued. Commits request the managed
+production rebuild. The initial diagnostic reproduces all 56 prior accepted PNGs in 112 fresh captures.
+
+The new public `uniform-scaled-png` control draws one 40×40 PNG at 9×20 and
+18×40, both directly and through uniform half/double CSS scales. A separate SVG
+curve requires the upper tile's multisampled pass; the lower tile has no such
+trigger. Two fresh official Brave captures agree exactly at 1024×768, scale 1,
+with a five-second settle. Its PNG is promoted unchanged from diagnostics to
+`expected/`: SHA-256
+`09bec91dbbf65b709f7e043be50b4b86b3e8d3c0bcb397d449c0ebc6306333e1`.
+
+The published baseline differs by **1,412 pixels** twice. Uniform scale folding
+alone reduces this to **318**. Testing an ellipse only as a standalone clip
+incorrectly forces a shared multisampled tile: the bitmap's full rectangle can
+absorb its own rounded clip. Fixing that planning decision reduces the result
+to **270**. SVGs, object-fit cropping, ancestor clips and rotated, reflected or
+skewed transforms retain conservative selection; independent paths still force
+multisampling.
+The planning hunk is already present in shared commit `8641a3868`.
+
+`40d8c41ed` completes the fix. Two remaining details matter together. For a fully
+clipped elliptical image in a single-sample tile, the GPU now uses the destination rectangle as geometry,
+with texture sampling mapped back to the upload. This preserves interpolation
+when the analytic rrect expands its antialiasing vertices. Separately, a larger
+PNG request retains an additional upload instead of replacing the first usable
+decoded frame. Later small draws keep their earlier frame rather than selecting
+different GPU mip levels from the enlarged upload. Existing resource and
+compositor scope keys and larger-first reuse remain intact. A broader shader
+coordinate experiment leaves one pixel in the isolated regression and is
+retained as rejected evidence; its staging change is removed.
+
+The final diagnostic executable is
+`fd57fb51b25c8da9215f5c65271d10253352fdbfec02bbbcdacd67e807612022`.
+It makes the complete new fixture **zero pixels twice**. Thirty focused V
+functions pass: 22 tile-planning tests, three PNG cache/ownership tests, two uniform-geometry tests, two unchanged sampled-image
+GPU tests, and one GPU regression covering both ellipse sizes and both sample
+counts. All compiles and actual test executions use the required
+memory guards. Two failed compiles caused by a concurrently changing native
+callback declaration remain in the local evidence; final builds and tests exit
+0 after that interface is consistent.
+
+The final **57 workloads/114 fresh captures** repeat exactly. Every one of the
+56 prior PNGs is byte-identical to its earlier accepted capture, including
+previously inexact controls whose reference counts remain unchanged. The six
+available frozen catalog archives are exact twice each. Two additional fresh
+captures of the recovered older Reddit page remain exact against the retained
+independently repeated full-uBO reference, with all 25 post identities in order.
+The seven selected feature V inputs and all 56 consumed V files in the GG,
+GGShape, Images, ImageRaster and YUV packages match their compiler manifests;
+the native callback source is unchanged through compilation. The diagnostic
+shader experiment is removed and canonical GG staging matches its source.
+Production confirmation of these new PNG changes remains pending. The older
+production result above continues to qualify its pinned artifact. The missing newer Reddit fixture, default Brave
+Lobsters repeatability and CNN's historical source/replay gate remain open.
+This follow-up establishes no live-site or performance acceptance.
+
+Local raw commands, source manifests, browser identities, guard exits, original
+failures and PNGs: `docs/performance/capture-scale-recheck-20261116/`.
+
+Cleanup inventories **88 owned roots/10,313 files**, preserves and SHA-verifies
+**3,513 evidence files/70,405,692 bytes**, and removes owned browser/test binaries,
+generated C, profiles, replay keys, guard reports and locks. No owned
+`Build/capture-scale-recheck*` scratch remains. The managed hook requests a
+single-C-unit literal V `-prod` rebuild for `40d8c41ed`; no manual duplicate is
+queued.

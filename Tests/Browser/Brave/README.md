@@ -1428,3 +1428,16 @@ sample ownership through browser replay, improving vlang.io from 341 to 284
 pixels with zero new differences. The reduced scene and underlay retain four
 and three differences; production confirmation is pending. See the
 [shape/glyph audit](../../../docs/OPTIMIZED_SITES_PIXELS_2026_11_12.md#shape-and-glyph-samples-in-one-pass-2026-11-14).
+
+
+`input/uniform-scaled-png.html` uses the same 40×40 PNG at 9×20 and 18×40,
+through direct, half-scale and double-scale draws. A separate SVG curve makes
+only the upper tile multisampled; the lower tile checks ordinary analytic
+antialiasing after a larger draw of the same resource. Its unchanged 1024×768,
+scale-1 expected PNG agrees in two independent fresh Brave captures. `40d8c41ed` matches twice in the final diagnostic, improving the published
+baseline **1,412→0 pixels**. All 56 prior PNGs remain byte-identical in the
+57-workload/114-capture cohort.
+The focused GPU regression checks both ellipse sizes at one and four samples;
+cache and tile-planning tests preserve constrained clips and decode history.
+Production confirmation remains pending. See the
+[PNG audit](../../../docs/OPTIMIZED_SITES_PIXELS_2026_11_12.md#uniform-png-scales-decoded-frame-history-and-elliptical-geometry-2026-11-16).

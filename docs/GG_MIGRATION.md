@@ -3553,3 +3553,22 @@ The post-capture paint tool passes 57 related JavaScript tests and never replace
 the saved reference. Default Brave repeatability, the missing newer Reddit
 fixture and CNN's historical source/replay audit remain open. See the
 [audit](OPTIMIZED_SITES_PIXELS_2026_11_12.md#published-production-confirmation-and-lobsters-sample-history-2026-11-16).
+
+
+### Elliptical image geometry and PNG decode history, 2026-11-16
+
+Full elliptical image clips in single-sample tiles use destination geometry
+instead of a nonuniformly transformed natural image rectangle. Larger PNG
+requests retain separate decoded uploads so later small draws keep their first
+usable frame. The own-clip tile-planning hunk is already in `8641a3868`; object-fit,
+SVG and ancestor-clip cases retain conservative multisampling.
+
+The independently repeated `uniform-scaled-png` control improves **1,412→0
+pixels twice**, with no reference or tolerance change. All 30 focused V functions
+pass, including actual GPU execution and small/large/small cache reuse. The final
+57 workloads/114 captures repeat; all 56 prior PNGs are unchanged. The six
+available catalog archives remain exact, as does the recovered older Reddit
+page in two separate captures with all 25 post identities. Existing inexact
+controls retain their recorded counts. Production confirmation of `40d8c41ed`
+is pending. See the
+[PNG audit](OPTIMIZED_SITES_PIXELS_2026_11_12.md#uniform-png-scales-decoded-frame-history-and-elliptical-geometry-2026-11-16).
