@@ -14,6 +14,11 @@ struct ShadowMask {
 	height int
 }
 
+struct ShadowFilterLayer {
+	mask ShadowMask
+	origin canvas.Point
+}
+
 struct ShadowBounds {
 	left   f32
 	top    f32
@@ -183,6 +188,11 @@ fn rounded_shadow_mask(shape &C.VoxGraphiteShape, width int, height int) ![]u8 {
 
 fn shadow_filter_mask(shape &C.VoxGraphiteShape, width int, height int,
 	source_path ?canvas.Path, source_offset canvas.Point) ![]u8 {
+	return shadow_filter_layer(shape, width, height, source_path, source_offset, none)!.mask.pixels
+}
+
+fn shadow_filter_layer(shape &C.VoxGraphiteShape, width int, height int,
+	source_path ?canvas.Path, source_offset canvas.Point, desired_output ?ShadowBounds) !ShadowFilterLayer {
 	scale_factor := shadow_filter_scale(shape) or { return error('Unsupported shadow filter transform') }
 	m := shape.matrix
 	sigma := shape.thickness * f32(0.5) * scale_factor
@@ -285,9 +295,22 @@ fn shadow_filter_mask(shape &C.VoxGraphiteShape, width int, height int,
 	sy := (bounds.bottom - bounds.top) / (original.bottom - original.top)
 	// Resolve back to an A8 image before the paint color is applied. Fusing
 	// upscale and color multiplication skips this required quantization.
-	resolved := shadow_mask_pass(image, width, height, [sx, sy,
-		bounds.left - original.left * sx - pixels.left, bounds.top - original.top * sy - pixels.top]!, [56]f32{}, 0, 0)!
-	return resolved.pixels
+	mut output := ShadowBounds{0, 0, f32(width), f32(height)}
+	if desired := desired_output {
+		// Downsampling rounds the low-resolution image out to whole texels.
+		// Its blurred support can therefore exceed the nominal 3-sigma bounds.
+		// Resolve that support against the original desired output before rotating.
+		output = ShadowBounds{
+			math.max(desired.left, f32(math.floor(f64((pixels.left - bounds.left) / sx + original.left + f32(.001))))),
+			math.max(desired.top, f32(math.floor(f64((pixels.top - bounds.top) / sy + original.top + f32(.001))))),
+			math.min(desired.right, f32(math.ceil(f64((pixels.right - bounds.left) / sx + original.left - f32(.001))))),
+			math.min(desired.bottom, f32(math.ceil(f64((pixels.bottom - bounds.top) / sy + original.top - f32(.001)))))
+		}
+	}
+	resolved := shadow_mask_pass(image, int(output.right - output.left), int(output.bottom - output.top), [sx, sy,
+		bounds.left + (output.left - original.left) * sx - pixels.left,
+		bounds.top + (output.top - original.top) * sy - pixels.top]!, [56]f32{}, 0, 0)!
+	return ShadowFilterLayer{resolved, canvas.Point{output.left, output.top}}
 }
 
 // Graphite AnalyticBlurMask::MakeRRect: blur a small rounded rectangle, then

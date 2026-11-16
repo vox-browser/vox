@@ -15,74 +15,93 @@ fn test_rotated_filter_keeps_the_author_clip_beyond_the_window() {
 	// The picture starts at y=384, so its last visible tile starts at 638.
 	// The author clip ends at ceil(840.59375)=841, beyond the window's 792.
 	// Preserve that extent while preparing the input, then publish visible rows.
-	for window_clip in [true, false] {
-		matrix := [f32(.9135454), .40673664, 45.936813, -.40673664, .9135454, f32(541.7629) - 286,
-			0, 0, 1]!
-		hole := [f32(0), 0, 1000, 680, 500, 340, 500, 340, 500, 340, 500, 340]!
-		unblurred := C.VoxGraphiteShape{
-			matrix:          matrix
-			rect:            [f32(0), -1, 1000, 680, 500, 340, 500, 340, 500, 340, 500, 340]!
-			underlay_rect:   hole
-			fill:            9
-			anti_alias:      1
-			force_msaa:      1
-			has_float_color: 1
-			float_color:     [f32(166) / 255, f32(198) / 255, f32(244) / 255, f32(13) / 255]!
-		}
-		blurred := C.VoxGraphiteShape{
-			...unblurred
-			rect:            [f32(0), -15, 1000, 680, 500, 340, 500, 340, 500, 340, 500, 340]!
-			fill:            10
-			thickness:       60
-			float_color:     [f32(121) / 255, f32(168) / 255, f32(243) / 255, f32(9) / 255]!
-			has_filter_clip: 1
-			filter_clip:     [f32(33), -187, 991, if window_clip { f32(154) } else { f32(203) }]!
-		}
-		border := C.VoxGraphiteShape{
-			matrix:        matrix
-			rect:          [f32(.5), .5, 999, 679, 499.5, 339.5, 499.5, 339.5, 499.5, 339.5, 499.5,
-				339.5]!
-			fill:          6
-			thickness:     1
-			border_widths: [f32(1), 1, 1, 1]!
-			anti_alias:    1
-			force_msaa:    1
-			red:           166
-			green:         198
-			blue:          244
-			alpha:         21
-		}
-		shapes := [unblurred, blurred, border]
-		mut pixels := []u8{len: 1024 * 256 * 4}
-		for y in 0 .. 130 {
-			for x in 0 .. 1024 {
-				i := (y * 1024 + x) * 4
-				j := ((y + 638) * 1024 + x) * 4
-				pixels[i] = unsafe { back.data[j + 2] }
-				pixels[i + 1] = unsafe { back.data[j + 1] }
-				pixels[i + 2] = unsafe { back.data[j] }
-				pixels[i + 3] = 255
+	for origin in [384, 638] {
+		for window_clip in [true, false] {
+			if origin == 384 && window_clip { continue }
+			rows := if origin == 384 { 256 } else { 130 }
+			matrix := [f32(.9135454), .40673664, 45.936813, -.40673664, .9135454,
+				f32(541.7629) + 352 - f32(origin), 0, 0, 1]!
+			hole := [f32(0), 0, 1000, 680, 500, 340, 500, 340, 500, 340, 500, 340]!
+			unblurred := C.VoxGraphiteShape{
+				matrix:          matrix
+				rect:            [f32(0), -1, 1000, 680, 500, 340, 500, 340, 500, 340, 500, 340]!
+				underlay_rect:   hole
+				fill:            9
+				anti_alias:      1
+				force_msaa:      1
+				has_float_color: 1
+				float_color:     [f32(166) / 255, f32(198) / 255, f32(244) / 255, f32(13) / 255]!
 			}
-		}
-		assert draw_shapes(pixels.data, 1024, 256, 4096, 1, shapes.data, 3) == 1
-		mut different := 0
-		for y in 1 .. 130 {
-			for x in 33 .. 991 {
-				i := (y * 1024 + x) * 4
-				j := ((y + 638) * 1024 + x) * 4
-				if pixels[i] != unsafe { ref.data[j + 2] }
-					|| pixels[i + 1] != unsafe { ref.data[j + 1] }
-					|| pixels[i + 2] != unsafe { ref.data[j] }
-					|| pixels[i + 3] != unsafe { ref.data[j + 3] } {
-					different++
+			blurred := C.VoxGraphiteShape{
+				...unblurred
+				rect:            [f32(0), -15, 1000, 680, 500, 340, 500, 340, 500, 340, 500, 340]!
+				fill:            10
+				thickness:       60
+				float_color:     [f32(121) / 255, f32(168) / 255, f32(243) / 255, f32(9) / 255]!
+				has_filter_clip: 1
+				filter_clip:     [f32(33), f32(451 - origin), 991,
+					if window_clip { f32(154) } else { f32(841 - origin) }]!
+			}
+			border := C.VoxGraphiteShape{
+				matrix:        matrix
+				rect:          [f32(.5), .5, 999, 679, 499.5, 339.5, 499.5, 339.5, 499.5, 339.5,
+					499.5, 339.5]!
+				fill:          6
+				thickness:     1
+				border_widths: [f32(1), 1, 1, 1]!
+				anti_alias:    1
+				force_msaa:    1
+				red:           166
+				green:         198
+				blue:          244
+				alpha:         21
+			}
+			if !window_clip {
+				layer := rotated_shadow_filter_layer(&blurred, 1024, 256) or { panic(err) }
+				// Native Skia resolves the rounded low-resolution blur support.
+				// Nominal 3-sigma clipping dropped six/four rows from these layers.
+				assert layer.mask.width == if origin == 384 { 953 } else { 959 }
+				assert layer.mask.height == if origin == 384 { 264 } else { 446 }
+			}
+			shapes := [unblurred, blurred, border]
+			mut pixels := []u8{len: 1024 * 256 * 4}
+			for y in 0 .. rows {
+				for x in 0 .. 1024 {
+					i := (y * 1024 + x) * 4
+					j := ((y + origin) * 1024 + x) * 4
+					pixels[i] = unsafe { back.data[j + 2] }
+					pixels[i + 1] = unsafe { back.data[j + 1] }
+					pixels[i + 2] = unsafe { back.data[j] }
+					pixels[i + 3] = 255
 				}
 			}
-		}
-		eprintln('ROTATED_FILTER window_clip=${window_clip} different=${different}')
-		if window_clip {
-			assert different > 0
-		} else {
-			assert different == 0
+			status := draw_shapes(pixels.data, 1024, 256, 4096, 1, shapes.data, 3)
+			assert status == 1
+			mut different := 0
+			// The first tile also intersects the parent's rounded top corners.
+			// Compare its rectangular interior; the page capture covers the clip.
+			first_row := if origin == 384 { 68 } else { 1 }
+			left := if origin == 384 { 46 } else { 33 }
+			right := if origin == 384 { 978 } else { 991 }
+			last_row := if origin == 384 { 255 } else { rows }
+			for y in first_row .. last_row {
+				for x in left .. right {
+					i := (y * 1024 + x) * 4
+					j := ((y + origin) * 1024 + x) * 4
+					if pixels[i] != unsafe { ref.data[j + 2] }
+						|| pixels[i + 1] != unsafe { ref.data[j + 1] }
+						|| pixels[i + 2] != unsafe { ref.data[j] }
+						|| pixels[i + 3] != unsafe { ref.data[j + 3] } {
+						different++
+					}
+				}
+			}
+			eprintln('ROTATED_FILTER origin=${origin} window_clip=${window_clip} different=${different}')
+			if window_clip {
+				assert different > 0
+			} else {
+				assert different == 0
+			}
 		}
 	}
 }
