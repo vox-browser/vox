@@ -20,6 +20,21 @@ mut:
 }
 
 const document_image_sampling = &DocumentImageSampler{}
+const document_image_repeating = &DocumentImageSampler{}
+
+fn document_image_repeat_sampler() gfx.Sampler {
+	mut state := unsafe { document_image_repeating }
+	if state.sampler.id == 0 {
+		state.sampler = gfx.make_sampler(&gfx.SamplerDesc{
+			min_filter:    .linear
+			mag_filter:    .linear
+			mipmap_filter: .linear
+			wrap_u:        .repeat
+			wrap_v:        .repeat
+		})
+	}
+	return state.sampler
+}
 
 fn document_image_sampler() gfx.Sampler {
 	mut state := unsafe { document_image_sampling }
@@ -39,6 +54,38 @@ fn document_image_sampler() gfx.Sampler {
 // its persistent arena active before any paint scope can load the shared file.
 pub fn prepare_document_shader_resources() {
  _ = gradient_snippet_file.data()
+}
+
+// Pattern coordinates retain the natural image frame; the hardware sampler
+// interpolates across repeated edges instead of clamping each materialized tile.
+pub fn (mut s GpuSurface) draw_document_repeated_rgba(pixels []u8, width int, height int,
+	x f32, y f32, bounds Rect) ! {
+	if width <= 0 || height <= 0 || width > 4096 || height > 4096
+		|| width * height > 4 * 1024 * 1024 || pixels.len != width * height * 4 {
+		return error('gg.canvas: invalid repeated document image')
+	}
+	mut image := s.ctx.new_surface(width: width, height: height)!
+	s.retired << image
+	mut bgra := pixels.clone()
+	for i in 0 .. width * height { bgra[i * 4], bgra[i * 4 + 2] = bgra[i * 4 + 2], bgra[i * 4] }
+	image.write_pixels(bgra.data, width * 4)!
+	saved := s.transform
+	defer { s.transform = saved }
+	s.transform = Transform.new(Matrix.identity())
+	s.draw_shape(ShapeGeometry{
+		kind: .rect
+		rect: bounds
+	}, Paint{
+		anti_alias:  false
+		layer_image: LayerImage{
+			image:                  image.color
+			texture_width:          width
+			texture_height:         height
+			document_linear_filter: true
+			document_repeat_filter: true
+			document_translation:   [-x, -y]!
+		}
+	})!
 }
 
 // Decoded document pixels are already premultiplied. The ordinary image

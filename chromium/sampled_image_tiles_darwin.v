@@ -9,6 +9,12 @@ enum DocumentSampledTileKind {
 	yuv_atlas
 	jpeg
 	rgba
+	repeated_background
+}
+
+struct DocumentBitmapDecoration {
+	color  [4]u8
+	border C.VoxGraphiteShape
 }
 
 // A cropped native readback can cross tiles with different sample counts.
@@ -18,6 +24,13 @@ enum DocumentSampledTileKind {
 fn draw_document_sampled_image_tiles(pixels &u8, width i32, height i32, pitch i32,
 	backdrop i32, first_x int, first_y int, source []u8, sw int, sh int,
 	x f32, y f32, dw f32, dh f32, nw int, nh int, clip [12]f32, kind DocumentSampledTileKind, gpu_mips bool) i32 {
+	return draw_document_sampled_image_tiles_with_decoration(pixels, width, height, pitch, backdrop, first_x, first_y,
+		source, sw, sh, x, y, dw, dh, nw, nh, clip, kind, gpu_mips, DocumentBitmapDecoration{})
+}
+
+fn draw_document_sampled_image_tiles_with_decoration(pixels &u8, width i32, height i32, pitch i32,
+	backdrop i32, first_x int, first_y int, source []u8, sw int, sh int,
+	x f32, y f32, dw f32, dh f32, nw int, nh int, clip [12]f32, kind DocumentSampledTileKind, gpu_mips bool, decoration DocumentBitmapDecoration) i32 {
 	grid := document_geometry_grid
 	x0 := first_x - int(math.round(grid.origin_x))
 	y0 := first_y - int(math.round(grid.origin_y))
@@ -55,7 +68,13 @@ fn draw_document_sampled_image_tiles(pixels &u8, width i32, height i32, pitch i3
 			if os.getenv('VOX_DIAGNOSTIC_PNG') != '' {
 				eprintln('VOX_YUV_TILE col=${col} row=${row} samples=${samples} origin=${grid.origin_x},${grid.origin_y}')
 			}
-			drawn := if kind == .jpeg {
+			drawn := if kind == .repeated_background {
+				mut border := decoration.border
+				border.matrix[2] += dx
+				border.matrix[5] += dy
+				i32(ggshape.draw_repeated_background(tile.data, grid.width, grid.height, grid.width * 4,
+					source, sw, sh, x + dx, y + dy, local_clip, samples, decoration.color, &border))
+			} else if kind == .jpeg {
 				ggshape.draw_sampled_jpeg_clipped(tile.data, i32(grid.width), i32(grid.height),
 					i32(grid.width * 4), backdrop, source, sw, sh, x + dx, y + dy, dw, dh,
 					samples, nw, nh, local_clip)

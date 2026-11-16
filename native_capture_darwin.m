@@ -2877,11 +2877,21 @@ void native_set_rounded_rect_underlay_color(const float *color) {
     if (color) memcpy(native_v_shape_state.underlay_float_color,color,4*sizeof(float));
 }
 
+VOX_NATIVE_STATE uint8_t native_pattern_background[4];
+VOX_NATIVE_STATE VoxGraphiteShape native_pattern_border;
+
 void native_set_image_background(gg__Color color) {
-	(void)color;
+ native_pattern_background[0]=color.r; native_pattern_background[1]=color.g;
+ native_pattern_background[2]=color.b; native_pattern_background[3]=color.a;
 }
 
 void native_set_image_border(float const* rect, float width, gg__Color color) {
+ memset(&native_pattern_border,0,sizeof(native_pattern_border));
+ if (!rect) return;
+ memcpy(native_pattern_border.rect,rect,12*sizeof(float));
+ native_pattern_border.thickness=width; native_pattern_border.anti_alias=1;
+ native_pattern_border.red=color.r; native_pattern_border.green=color.g;
+ native_pattern_border.blue=color.b; native_pattern_border.alpha=color.a;
 }
 
 // Insets retained by a single visible rounded border, including transparent sides.
@@ -6072,6 +6082,8 @@ int native_draw_rounded_masked_image(gg__Image *image, const float *rects,
 
 // A gapless background crossing a tile boundary is one image shader. Cropping
 // and clamping separate tiles loses the bilinear samples from the next repeat.
+#include "native/include/native_repeated_background.h"
+
 int native_draw_image_pattern_transformed(gg__Image *image,
 	float tile_x, float tile_y, float tile_width, float tile_height,
 	float bounds_x, float bounds_y, float bounds_width, float bounds_height,
@@ -6080,7 +6092,10 @@ int native_draw_image_pattern_transformed(gg__Image *image,
 	float transform_e, float transform_f, float page_x, float page_y,
 	float scroll_y, float canvas_width, float canvas_height, float opacity,
 	int nearest_neighbor, float const *clip_radii, int pattern_flags) {
-	return 0;
+	return native_try_v_repeated_background(image,tile_x,tile_y,tile_width,tile_height,
+        bounds_x,bounds_y,bounds_width,bounds_height,clip_x,clip_y,clip_width,clip_height,
+        transform_a,transform_b,transform_c,transform_d,transform_e,transform_f,
+        page_x,page_y,scroll_y,canvas_width,canvas_height,opacity,nearest_neighbor,clip_radii,pattern_flags);
 }
 
 // A background's tiles, eight floats each: the destination and source

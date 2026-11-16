@@ -194,5 +194,67 @@
       "old": "yuv.yz = sample(_globals.image_4, _in.CoordNormalize_3_Var * 0.5f).yz;",
       "new": "yuv.yz = sample(_globals.image_4, documentImageCoords * 0.5f).yz;"
     }
+  ],
+  "prepare_gg_image_repeat": [
+    {
+      "file": "gpu_layer.v",
+      "old": "\tdocument_linear_filter bool\n}\n\nfn same_texture_binding",
+      "new": "\tdocument_linear_filter bool\n\tdocument_repeat_filter bool\n}\n\nfn same_texture_binding"
+    },
+    {
+      "file": "gpu_layer.v",
+      "old": "a.document_linear_filter == b.document_linear_filter",
+      "new": "a.document_linear_filter == b.document_linear_filter && a.document_repeat_filter == b.document_repeat_filter"
+    },
+    {
+      "file": "gpu_layer.v",
+      "old": "\tdocument_linear_filter bool\n\tmask_color",
+      "new": "\tdocument_linear_filter bool\n\tdocument_repeat_filter bool\n\tmask_color"
+    },
+    {
+      "file": "gpu_surface.v",
+      "old": "\t\t\tdocument_linear_filter: layer.document_linear_filter",
+      "new": "\t\t\tdocument_linear_filter: layer.document_linear_filter\n\t\t\tdocument_repeat_filter: layer.document_repeat_filter"
+    },
+    {
+      "file": "gpu_surface.v",
+      "old": "if draw.texture.document_linear_filter { document_image_sampler() } else { ctx.layer_sampler() }",
+      "new": "if draw.texture.document_repeat_filter { document_image_repeat_sampler() } else if draw.texture.document_linear_filter { document_image_sampler() } else { ctx.layer_sampler() }"
+    },
+    {
+      "file": "gpu_layer.v",
+      "old": "\tdocument_scale [2]f32 = [f32(1),1]!",
+      "new": "\tdocument_scale [2]f32 = [f32(1),1]!\n\tdocument_translation [2]f32"
+    },
+    {
+      "file": "gpu_surface.v",
+      "old": "\t\t\tinv_dimensions: [f32(1) / f32(layer.texture_width), f32(1) / f32(layer.texture_height)]!",
+      "new": "\t\t\tinv_dimensions: [f32(1) / f32(layer.texture_width), f32(1) / f32(layer.texture_height)]!\n\t\t\ttranslation: layer.document_translation"
+    },
+    {
+      "file": "gpu_layer.v",
+      "old": "\tv = rename_clip_block(lines.join('\\n'))",
+      "new": "\tv = rename_clip_block(lines.join('\\n'))\n\tif v.contains('analytic_rrect_vertex_fn') {\n\t\tv = v.replace('_out.sk_Position = ', 'if (_globals._anonInterface0->combinedUniformData[_globals.uniformSsboIndex].gamutColumn2_8.w > 0.0f) { stepLocalCoords = (mat3_inverse(float3x3(_in.mat0, _in.mat1, _in.mat2)) * float3(devPosition.xy / devPosition.w, 1.0)).xy; }\\n_out.sk_Position = ')\n\t}"
+    },
+    {
+      "file": "gpu_layer.v",
+      "old": "\tcolor_transform DocumentImageColorTransform\n}\n\n// image_uniform_size",
+      "new": "\tcolor_transform DocumentImageColorTransform\n\tdocument_local_coords bool\n}\n\n// image_uniform_size"
+    },
+    {
+      "file": "gpu_layer.v",
+      "old": "return a.upper2x2 == b.upper2x2 && a.translation == b.translation",
+      "new": "return a.document_local_coords == b.document_local_coords && a.upper2x2 == b.upper2x2 && a.translation == b.translation"
+    },
+    {
+      "file": "gpu_surface.v",
+      "old": "\t\t\ttranslation: layer.document_translation",
+      "new": "\t\t\ttranslation: layer.document_translation\n\t\t\tdocument_local_coords: layer.document_repeat_filter"
+    },
+    {
+      "file": "gpu_layer.v",
+      "old": "\t\tout << 0\n\t}\n}\n\n// LayerImage",
+      "new": "\t\tout << if column == 2 && u.document_local_coords { f32(1) } else { f32(0) }\n\t}\n}\n\n// LayerImage"
+    }
   ]
 }

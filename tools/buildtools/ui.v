@@ -74,6 +74,7 @@ fn prepare_gg_canvas(canvas string) ! {
 	if !read(layer)!.contains('document_opaque bool') { gg_patches(canvas, 'prepare_gg_opaque_layer')! }
 	if !read(join(canvas, 'gpu_surface.v'))!.contains('layer.document_opaque') { gg_patches(canvas, 'prepare_gg_opaque_surface')! }
 	gg_repair_patches(canvas, 'prepare_gg_yuv_coordinates')!
+	gg_repair_patches(canvas, 'prepare_gg_image_repeat')!
 	write_changed(join(canvas, 'vox_document_image.v'), image_helper)!
 	write_changed(join(canvas, 'vox_document_clip.v'), read(join(root_dir(), 'tools/ui2/gg_document_clip.v'))!)!
 }
