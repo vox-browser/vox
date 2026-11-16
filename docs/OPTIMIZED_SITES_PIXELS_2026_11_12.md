@@ -6734,3 +6734,50 @@ All **74 workloads/148 captures** repeat byte for byte; all 74 prior PNGs are
 unchanged. The managed post-commit hook requests the coalesced production
 rebuild. The available production browser predates both Slashdot fixes and
 cannot validate them.
+
+
+### Slashdot transparent lossless-WebP sampling, 2026-11-17
+
+The two story icons are lossless VP8L WebP responses despite their `.png` URL
+suffixes. Their decoded 64×64 images have alpha and render at 40×40. Vox's
+sampled lossless path previously rejected all alpha minification. A uniform
+near-native request can retain the original premultiplied rows and let the
+image shader sample their mip chain; no CPU alpha resize or second alpha
+multiplication is needed. `137b739ef` requires uniform shrinkage and an
+unchanged decoded extent. Other reductions retain their existing eligibility.
+
+The focused test verifies reuse of the same cached image and pixel storage,
+unchanged premultiplied bytes, and continued rejection of unequal-axis and
+half-size alpha reductions. It compiles and executes with the normal compiler
+and 3 GiB runtime guards. The new public control retains the actual lossless
+icon bytes (archive body `b758e0e2…`), integer/fractional positions, native size,
+and two uniform near-native sizes. Two independent fresh Brave references
+agree byte for byte. The unchanged-reference control improves 2,440→471 pixels
+in the exploratory captures; the remaining errors have maximum channel error
+one. The control remains inexact. No tolerance or existing reference changes.
+
+An initial candidate compile finishes but is rejected by the before/after
+source-pin check because five rendering files change concurrently. Its actual
+compiler exit and failed driver/guard result are retained. A later stable
+exploratory candidate gives Slashdot 2,325→429 pixels twice. Final validation
+uses the narrower uniform-only branch, with all inputs pinned again.
+
+Final C/O0 browser `1fdad2ce` contains all three Slashdot fixes, verified against
+its compiler-read V buffers. It repeats **429 Slashdot pixels** and **471 public
+control pixels** twice, with unchanged references. Both request-stream checks
+pass (47 decisions each, zero mismatches/oracle disagreements), as do document,
+readiness and image audits. BBC, Guardian and Verge remain **zero twice**.
+All **75 workloads/150 captures** repeat; all 74 previous PNGs are unchanged.
+The new control remains inexact with maximum channel error one. Executable,
+native libraries, fixture/reference bytes and all 24 runtime shaders are pinned.
+
+The remaining Slashdot Submit label uses a blurred translucent text shadow.
+Its current native retained-glyph path supplies a translucent source as well
+as a translucent shadow color, applying alpha twice; its glyph/blur mask also
+needs comparison. Isolated SVG, text and border edge pixels remain. Production
+and live checks, historical source/replay browser-version qualification and
+catalog-wide acceptance remain open. The managed hook requests the coalesced
+C/literal-`-prod`/single-unit rebuild. No timing or instruction credit is claimed.
+Raw accepted and rejected builds, witnesses, images, commands, actual exits,
+guards and cleanup inventory remain local in
+`docs/performance/slashdot-procedural-20261117/`.

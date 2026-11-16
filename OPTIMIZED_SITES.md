@@ -74,6 +74,14 @@ from collapsing margins. The second story now matches Brave's position, reducing
 other isolated pixels and production/live checks remain open. See the
 [zero-height line audit](docs/OPTIMIZED_SITES_PIXELS_2026_11_12.md#slashdot-zero-height-line-margins-2026-11-17).
 
+**Slashdot alpha-image follow-up:** `137b739ef` samples uniform near-native
+lossless WebP alpha images from their retained premultiplied rows. Frozen
+Slashdot improves **2,325→429 pixels twice**. BBC, Guardian and Verge remain zero
+twice, and **75 workloads/150 captures** preserve all 74 prior PNGs. The new image
+control improves 2,440→471 pixels, with maximum channel error one. Remaining text
+shadow/edge differences and production/live checks stay open. See the
+[alpha-image audit](docs/OPTIMIZED_SITES_PIXELS_2026_11_12.md#slashdot-transparent-lossless-webp-sampling-2026-11-17).
+
 **Remaining forum/news screen, November 17:** the exact Verge fix does not
 finish the catalog. A separate diagnostic screen finds open Slashdot, Stack
 Overflow, TechCrunch and Register differences; Engadget's fresh Brave references
