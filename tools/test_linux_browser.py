@@ -10,6 +10,7 @@ import http.server
 import json
 import os
 import re
+import select
 import shutil
 import signal
 import ssl
@@ -73,6 +74,36 @@ def run(command, **kwargs):
     return result.stdout
 
 
+def run_windowed(command, screen="1024x768x24", **kwargs):
+    """Own and reap Xvfb before the runtime memory guard reaches its endpoint."""
+    environment = dict(kwargs.pop("env", os.environ))
+    read_fd, write_fd = os.pipe()
+    server = None
+    try:
+        server = subprocess.Popen(["Xvfb", "-displayfd", str(write_fd), "-screen", "0",
+                                   screen, "-nolisten", "tcp"], pass_fds=(write_fd,),
+                                  stdout=subprocess.DEVNULL)
+        os.close(write_fd)
+        write_fd = None
+        if not select.select([read_fd], [], [], 10)[0]:
+            raise RuntimeError("Xvfb did not publish its display")
+        display = os.read(read_fd, 64).decode().strip()
+        if not display.isdigit():
+            raise RuntimeError("Xvfb failed to initialize")
+        return run(command, env=dict(environment, DISPLAY=":" + display), **kwargs)
+    finally:
+        os.close(read_fd)
+        if write_fd is not None:
+            os.close(write_fd)
+        if server is not None:
+            server.terminate()
+            try:
+                server.wait(timeout=10)
+            except subprocess.TimeoutExpired:
+                server.kill()
+                server.wait(timeout=10)
+
+
 def smoke_environment(directory, inherited=None):
     """Use fresh browser state and keep fixture traffic off ambient proxies."""
     directory = Path(directory)
@@ -98,7 +129,7 @@ def smoke_environment(directory, inherited=None):
 
 
 def require_tools():
-    missing = [name for name in ("xvfb-run", "Xvfb", "xauth", "xdotool", "scrot", "openssl")
+    missing = [name for name in ("Xvfb", "xdotool", "scrot", "openssl")
                if not shutil.which(name)]
     if missing:
         raise RuntimeError("Missing Linux smoke dependencies: " + ", ".join(missing))
@@ -218,7 +249,7 @@ def check_webgl_browser(binary, artifacts, temporary):
     environment['VOX_CAPTURE_AUDIT_PATH'] = str(audit)
     screenshot.unlink(missing_ok=True)
     audit.unlink(missing_ok=True)
-    run(["xvfb-run", "-a", "-s", "-screen 0 1024x768x24", str(binary),
+    run_windowed([str(binary),
          "--enable-javascript", "--window-width=800", "--window-height=600",
          "--screenshot-viewport-height=600", f"--screenshot={screenshot}", str(fixture)],
         env=environment, timeout=90, log_path=artifacts / "webgl.log")
@@ -521,7 +552,7 @@ def main():
             print("PASS: HTTP navigation, redirect and JavaScript")
             screenshot = artifacts / "smoke.png"
             screenshot.unlink(missing_ok=True)
-            run(["xvfb-run", "-a", "-s", "-screen 0 1024x768x24", str(binary),
+            run_windowed([str(binary),
                  "--enable-javascript", "--window-width=800", "--window-height=600",
                  "--screenshot-viewport-height=600", f"--screenshot={screenshot}", address],
                 env=dict(environment, SCREENSHOT_SETTLE_SECONDS="0.5"))
@@ -530,10 +561,11 @@ def main():
             assert struct.unpack(">II", data[16:24]) == (800, 600)
             check_rendered_pixels(data)
             print(f"PASS: X11 window and 800x600 rendered screenshot ({screenshot})")
-            print(run(["xvfb-run", "-a", "-s", "-screen 0 1280x960x24", sys.executable,
+            print(run_windowed([sys.executable,
                        str(Path(__file__).resolve()), "--window", str(binary), str(page),
                        f"http://127.0.0.1:{server.server_port}/keyboard", str(artifacts)],
-                      env=environment, timeout=300, log_path=artifacts / "window-driver.log"), end="")
+                      screen="1280x960x24", env=environment, timeout=300,
+                      log_path=artifacts / "window-driver.log"), end="")
         finally:
             server.shutdown()
             server.server_close()

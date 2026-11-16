@@ -73,7 +73,7 @@ class LinuxBrowserSmokeTest(unittest.TestCase):
             audit.write_text(json.dumps(dict(title='WebGL GPU smoke PASS', ready='complete',
                 native_reported_error_count=0,
                 javascript_diagnostics=['WEBGL_GPU_SMOKE_PASS ["Mesa","Mesa"]'])))
-            with mock.patch.object(smoke, 'run', return_value=''):
+            with mock.patch.object(smoke, 'run_windowed', return_value=''):
                 with self.assertRaises(FileNotFoundError) as error:
                     smoke.check_webgl_browser(binary, artifacts, artifacts / 'private')
             self.assertEqual(Path(error.exception.filename), audit)
@@ -146,6 +146,40 @@ class LinuxBrowserSmokeTest(unittest.TestCase):
         with mock.patch.object(smoke.shutil, "which", side_effect=lambda name: None if name == "scrot" else name):
             with self.assertRaisesRegex(RuntimeError, "Missing Linux smoke dependencies: scrot"):
                 smoke.require_tools()
+
+    def test_window_runner_reaps_its_display_and_keeps_the_callers_environment(self):
+        server = mock.Mock()
+        inherited = dict(DISPLAY=':old', KEEP='yes')
+        with mock.patch.object(smoke.os, 'pipe', return_value=(31, 32)), \
+                mock.patch.object(smoke.os, 'close') as close, \
+                mock.patch.object(smoke.os, 'read', return_value=b'87\n'), \
+                mock.patch.object(smoke.select, 'select', return_value=([31], [], [])), \
+                mock.patch.object(smoke.subprocess, 'Popen', return_value=server) as start, \
+                mock.patch.object(smoke, 'run', return_value='completed') as execute:
+            self.assertEqual(smoke.run_windowed(['vox'], screen='1280x960x24', env=inherited), 'completed')
+        self.assertEqual(inherited['DISPLAY'], ':old')
+        self.assertEqual(execute.call_args.kwargs['env'], dict(DISPLAY=':87', KEEP='yes'))
+        self.assertIn('1280x960x24', start.call_args.args[0])
+        self.assertEqual(close.call_args_list, [mock.call(32), mock.call(31)])
+        server.terminate.assert_called_once()
+        server.wait.assert_called_once_with(timeout=10)
+
+    def test_window_runner_cleans_up_after_startup_and_client_failures(self):
+        for ready in ([], [31]):
+            server = mock.Mock()
+            server.wait.side_effect = [subprocess.TimeoutExpired('Xvfb', 10), -9]
+            with mock.patch.object(smoke.os, 'pipe', return_value=(31, 32)), \
+                    mock.patch.object(smoke.os, 'close'), \
+                    mock.patch.object(smoke.os, 'read', return_value=b'87\n'), \
+                    mock.patch.object(smoke.select, 'select', return_value=(ready, [], [])), \
+                    mock.patch.object(smoke.subprocess, 'Popen', return_value=server), \
+                    mock.patch.object(smoke, 'run', side_effect=RuntimeError('client failed')) as execute:
+                with self.assertRaisesRegex(RuntimeError, 'client failed' if ready else 'publish its display'):
+                    smoke.run_windowed(['vox'])
+            self.assertEqual(execute.call_count, bool(ready))
+            server.terminate.assert_called_once()
+            server.kill.assert_called_once()
+            self.assertEqual(server.wait.call_args_list, [mock.call(timeout=10), mock.call(timeout=10)])
 
     def test_each_wait_gets_its_own_deadline(self):
         clock = mock.Mock(side_effect=[0, 0, 0.2, 10, 10, 10.2])
