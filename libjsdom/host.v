@@ -66,6 +66,7 @@ mut:
 	custom_event_prototype &libjs.Object = unsafe { nil }
 	ui_event_prototype &libjs.Object = unsafe { nil }
 	mouse_event_prototype &libjs.Object = unsafe { nil }
+	keyboard_event_prototype &libjs.Object = unsafe { nil }
 	event_target_prototype &libjs.Object = unsafe { nil }
 	event_target_constructor &libjs.Object = unsafe { nil }
 	event_targets map[voidptr]&dom.EventTarget
@@ -229,6 +230,7 @@ pub fn Host.create(vm &libjs.VM, realm &libjs.Realm, document &dom.Document, hoo
 	host.install_custom_events()!
 	host.install_ui_events()!
 	host.install_mouse_events()!
+	host.install_keyboard_events()!
 	host.install_abort_signals()!
 	host.install_custom_elements()!
 	host.install_navigator()!
