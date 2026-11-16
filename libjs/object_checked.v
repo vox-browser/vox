@@ -82,7 +82,10 @@ pub fn (mut object Object) delete_checked(mut vm VM, key PropertyName) !bool {
 	if proxy := object.proxy_object { return proxy.delete_property(mut vm, key) }
 	if metadata := object.legacy_platform_object {
 		if !(key.is_number() && metadata.indexed_properties != none) && metadata.named_properties != none {
-			if object.legacy_named_property_exposed(mut vm, key)! { return false }
+			if object.legacy_named_property_exposed(mut vm, key)! {
+				if deleter := metadata.named_deleter { return deleter.delete_named_property(mut vm, legacy_property_name(key)) }
+				return false
+			}
 		}
 	}
 	return object.internal_delete(key)

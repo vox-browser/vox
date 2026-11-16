@@ -33,7 +33,7 @@ fn (object &Object) legacy_get_own_property_checked(mut vm VM, key PropertyName)
 			if object.legacy_named_property_exposed(mut vm, key)! {
 				return OwnPropertyResult{descriptor: PropertyDescriptor{
 					value: native.named_property_value(legacy_property_name(key))
-					writable: false
+					writable: legacy.named_setter != none
 					enumerable: !legacy.legacy_unenumerable_named_properties
 					configurable: true
 				}}
@@ -43,14 +43,24 @@ fn (object &Object) legacy_get_own_property_checked(mut vm VM, key PropertyName)
 	return OwnPropertyResult{descriptor: object.internal_get_own_property(key)}
 }
 
-// These families have no named setter. Existing ordinary own properties can
-// still be redefined unless LegacyOverrideBuiltIns selects the native name.
-fn (object &Object) legacy_named_definition_allowed(key PropertyName) bool {
-	if key.is_symbol() { return true }
-	legacy := object.legacy_platform_object or { return true }
-	native := legacy.named_properties or { return true }
-	if !legacy.legacy_override_builtins && object.find_own_property(key) >= 0 { return true }
-	return !native.is_supported_property_name(legacy_property_name(key))
+struct LegacyNamedDefinition {
+	handled bool
+	success bool
+}
+
+// Native named setters own new as well as existing string names. Existing
+// ordinary own properties retain ordinary definition unless override is enabled.
+fn (object &Object) legacy_define_named_property(mut vm VM, key PropertyName, descriptor PropertyDescriptor) !LegacyNamedDefinition {
+	if key.is_symbol() { return LegacyNamedDefinition{} }
+	legacy := object.legacy_platform_object or { return LegacyNamedDefinition{} }
+	native := legacy.named_properties or { return LegacyNamedDefinition{} }
+	if !legacy.legacy_override_builtins && object.find_own_property(key) >= 0 { return LegacyNamedDefinition{} }
+	if setter := legacy.named_setter {
+		if !descriptor.is_data_descriptor() { return LegacyNamedDefinition{handled:true} }
+		setter.set_named_property(mut vm, legacy_property_name(key), descriptor.value or { js_undefined() })!
+		return LegacyNamedDefinition{handled:true,success:true}
+	}
+	return LegacyNamedDefinition{handled:native.is_supported_property_name(legacy_property_name(key))}
 }
 
 fn (object &Object) legacy_named_property_keys(mut vm VM) ![]PropertyName {

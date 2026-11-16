@@ -398,7 +398,8 @@ pub fn (mut object Object) internal_define_own_property(mut vm VM, key PropertyN
 			if legacy.indexed_properties != none { return object.legacy_define_indexed_property(mut vm, key, descriptor) }
 		}
 	}
-	if !object.legacy_named_definition_allowed(key) { return false }
+	named := object.legacy_define_named_property(mut vm, key, descriptor)!
+	if named.handled { return named.success }
 	if mut arguments := object.arguments_object { return arguments.define_own_property(mut object, key, descriptor) }
 	if mut array := object.typed_array { return array.internal_define_own_property(mut vm, key, descriptor) }
 	if mut array := object.array_object {
@@ -524,11 +525,19 @@ pub fn (mut object Object) internal_set(mut vm VM, key PropertyName, value Value
 	assert !value.is_special_empty_value() && !receiver.is_special_empty_value()
 	if proxy := object.proxy_object { return proxy.set(mut vm, key, value, receiver) }
 	if vm.did_reach_stack_space_limit() { return vm.throw_error_type(.internal_error, .call_stack_size_exceeded) }
-	if key.is_number() && receiver.is_object() && voidptr(receiver.as_object()) == voidptr(&object) {
+	if receiver.is_object() && voidptr(receiver.as_object()) == voidptr(&object) {
 		if legacy := object.legacy_platform_object {
-			if setter := legacy.indexed_setter {
-				setter.set_indexed_property(mut vm, key.number, value)!
-				return true
+			if key.is_number() {
+				if setter := legacy.indexed_setter {
+					setter.set_indexed_property(mut vm, key.number, value)!
+					return true
+				}
+			}
+			if !key.is_symbol() {
+				if setter := legacy.named_setter {
+					setter.set_named_property(mut vm, legacy_property_name(key), value)!
+					return true
+				}
 			}
 		}
 	}

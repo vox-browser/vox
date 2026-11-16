@@ -20,11 +20,21 @@ pub interface LegacyNamedProperties {
 	supported_property_names() []Utf16String
 }
 
+pub interface LegacyNamedPropertySetter {
+	set_named_property(mut VM, Utf16String, Value) !
+}
+
+pub interface LegacyNamedPropertyDeleter {
+	delete_named_property(mut VM, Utf16String) !bool
+}
+
 pub struct LegacyPlatformObject {
 pub:
 	indexed_properties ?LegacyIndexedProperties
 	indexed_setter ?LegacyIndexedPropertySetter
 	named_properties ?LegacyNamedProperties
+	named_setter ?LegacyNamedPropertySetter
+	named_deleter ?LegacyNamedPropertyDeleter
 	legacy_override_builtins bool
 	legacy_unenumerable_named_properties bool
 	is_named_properties_object bool
