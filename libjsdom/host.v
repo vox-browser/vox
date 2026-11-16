@@ -70,6 +70,8 @@ mut:
 	selection_prototype &libjs.Object = unsafe { nil }
 	selections map[voidptr]&dom.Selection
 	selection_wrappers map[voidptr]&libjs.Object
+	tree_walker_prototype &libjs.Object = unsafe { nil }
+	tree_walkers map[voidptr]&TreeWalkerBinding
 	event_target_prototype &libjs.Object = unsafe { nil }
 	event_target_constructor &libjs.Object = unsafe { nil }
 	event_targets map[voidptr]&dom.EventTarget
@@ -231,6 +233,7 @@ pub fn Host.create(vm &libjs.VM, realm &libjs.Realm, document &dom.Document, hoo
 	host.install_parent_node_properties()
 	host.install_token_lists()!
 	host.install_dom_exceptions()!
+	host.install_tree_walkers()!
 	host.install_custom_events()!
 	host.install_ui_events()!
 	host.install_mouse_events()!
@@ -406,6 +409,7 @@ pub fn (mut host Host) close() {
 	host.event_wrappers.clear()
 	host.selections.clear()
 	host.selection_wrappers.clear()
+	host.tree_walkers.clear()
 	host.event_targets.clear()
 	host.media_queries.clear()
 	host.abort_controllers.clear()
