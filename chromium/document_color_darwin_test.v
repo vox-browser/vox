@@ -43,3 +43,25 @@ fn test_document_p3_compatibility_backdrop_keeps_alpha_and_row_padding() {
 	}
 	assert pixels[3..] == [u8(255), 17, 18, 19, 20, 0, 0, 0, 0, 21, 22, 23, 24]
 }
+
+
+// Run with VOX_DIAGNOSTIC_DOCUMENT_P3=1 to exercise the opt-in through the
+// ordinary compiler configuration as well as the default empty-profile path.
+fn test_document_color_profile_bridge_borrows_the_selected_profile_without_custom_defines() {
+	mut size := i32(77)
+	profile := document_display_p3_profile(&size)
+	if document_p3_selected {
+		expected := document_display_p3_icc()
+		assert size == expected.len
+		assert profile != unsafe { nil }
+		assert unsafe { profile.vbytes(int(size)) } == expected
+		mut again_size := i32(0)
+		again := document_display_p3_profile(&again_size)
+		assert voidptr(again) == voidptr(profile)
+		assert again_size == size
+	} else {
+		assert size == 0
+		assert profile == unsafe { nil }
+	}
+	assert document_display_p3_profile(unsafe { nil }) == unsafe { nil }
+}

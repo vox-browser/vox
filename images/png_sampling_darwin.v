@@ -35,9 +35,7 @@ fn (mut app BrowserApp) sampled_png_decode(url string, image &gg.Image, width f6
 	bytes := app.background_image_bytes(url) or { return none }
 	profile := imageraster.png_sampling_profile(bytes) or { return none }
 	mut gpu_mips := profile.gamma > 0
-	$if vox_diagnostic_png_render_density ? {
-		if os.getenv('VOX_DIAGNOSTIC_PNG_GPU_MIPS') == '1' { gpu_mips = true }
-	}
+	if os.getenv('VOX_DIAGNOSTIC_PNG_GPU_MIPS') == '1' { gpu_mips = true }
 	mut key := '\x00sampled-png:${u64(voidptr(app.document))}:${app.navigation_generation}:${png_decode_scope.scope}:${url}:${sha256.hexhash(bytes.bytestr())}'
 	if id := app.background_image_ids[key] {
 		previous := app.ctx.get_cached_image_by_idx(id)
@@ -84,12 +82,10 @@ fn (mut app BrowserApp) draw_sampled_png(command &layout.PaintCommand, image &gg
 	}
 	geometry := sampled_png_paint_geometry(destination, clip, matrix) or { return false }
 	mut decode_extent := [f64(geometry.width), f64(geometry.height)]!
-	$if vox_diagnostic_png_render_density ? {
-		if os.getenv('VOX_DIAGNOSTIC_PNG_RENDER_DENSITY') == '1' {
-			decode_extent = sampled_png_decode_extent(decode_extent,
-				app.document.rendering_device_pixel_ratio(),
-				app.document.display_device_pixel_ratio()) or { return false }
-		}
+	if os.getenv('VOX_DIAGNOSTIC_PNG_RENDER_DENSITY') == '1' {
+		decode_extent = sampled_png_decode_extent(decode_extent,
+			app.document.rendering_device_pixel_ratio(),
+			app.document.display_device_pixel_ratio()) or { return false }
 	}
 	upload := app.sampled_png_decode(url, image, decode_extent[0], decode_extent[1]) or { return false }
 	decoded := upload.image

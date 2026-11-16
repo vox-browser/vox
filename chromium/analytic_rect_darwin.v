@@ -8,11 +8,7 @@ const document_analytic_rect_diagnostic = os.getenv('VOX_DIAGNOSTIC_ANALYTIC_REC
 
 @[export: 'vox_document_analytic_rect_enabled']
 fn document_analytic_rect_enabled() i32 {
-	$if vox_diagnostic_analytic_rect ? {
-		return i32(document_analytic_rect_diagnostic)
-	} $else {
-		return 0
-	}
+	return i32(document_analytic_rect_diagnostic)
 }
 
 // Native solid rectangles use bottom-up bitmap coordinates. Restrict this
@@ -43,28 +39,24 @@ fn document_analytic_rect_geometry(bounds [4]f32, original [4]f32,
 @[export: 'vox_draw_document_analytic_rect']
 fn draw_document_analytic_rect(bounds &f32, original &f32, matrix &f32,
 	color u32, width i32, height i32) i32 {
-	$if vox_diagnostic_analytic_rect ? {
-		if !document_analytic_rect_diagnostic || color >> 24 != 255
-			|| C.native_document_raster_uses_p3() == 0 || bounds == unsafe { nil }
-			|| original == unsafe { nil } || matrix == unsafe { nil } {
-			return 0
-		}
-		mut rectangle := [4]f32{}
-		mut source := [4]f32{}
-		mut transform := [6]f32{}
-		unsafe {
-			for i in 0 .. 4 { rectangle[i], source[i] = bounds[i], original[i] }
-			for i in 0 .. 6 { transform[i] = matrix[i] }
-		}
-		paint := document_analytic_rect_geometry(rectangle, source, transform,
-			int(width), int(height)) or { return 0 }
-		fill := gg.Color{r: u8(color >> 16), g: u8(color >> 8), b: u8(color), a: 255}
-		C.native_draw_rounded_rect_srgb(paint[0], paint[1], paint[2], paint[3],
-			0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0,
-			f32(width), f32(height), fill, 1, 0, 1)
-		eprintln('VOX_DOCUMENT_ANALYTIC_RECT original=${source} conditioned=${rectangle} paint=${paint}')
-		return 1
-	} $else {
+	if !document_analytic_rect_diagnostic || color >> 24 != 255
+		|| C.native_document_raster_uses_p3() == 0 || bounds == unsafe { nil }
+		|| original == unsafe { nil } || matrix == unsafe { nil } {
 		return 0
 	}
+	mut rectangle := [4]f32{}
+	mut source := [4]f32{}
+	mut transform := [6]f32{}
+	unsafe {
+		for i in 0 .. 4 { rectangle[i], source[i] = bounds[i], original[i] }
+		for i in 0 .. 6 { transform[i] = matrix[i] }
+	}
+	paint := document_analytic_rect_geometry(rectangle, source, transform,
+		int(width), int(height)) or { return 0 }
+	fill := gg.Color{r: u8(color >> 16), g: u8(color >> 8), b: u8(color), a: 255}
+	C.native_draw_rounded_rect_srgb(paint[0], paint[1], paint[2], paint[3],
+		0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0,
+		f32(width), f32(height), fill, 1, 0, 1)
+	eprintln('VOX_DOCUMENT_ANALYTIC_RECT original=${source} conditioned=${rectangle} paint=${paint}')
+	return 1
 }

@@ -11,13 +11,9 @@ __global document_png_p3_scope = false
 
 fn select_document_png_color_space() bool {
 	previous := document_png_p3_scope
-	$if vox_diagnostic_document_image_p3 ? {
-		document_png_p3_scope = document_image_p3_diagnostic
-			&& canvas.document_image_srgb_gamut_supported()
-			&& C.native_document_raster_uses_p3() != 0
-	} $else {
-		document_png_p3_scope = false
-	}
+	document_png_p3_scope = document_image_p3_diagnostic
+		&& canvas.document_image_srgb_gamut_supported()
+		&& C.native_document_raster_uses_p3() != 0
 	return previous
 }
 

@@ -83,11 +83,9 @@ fn (mut app BrowserApp) draw_shadowed_png_group(index int, page_y f32, window_he
 		return index
 	}
 	mut decode_extent := [f64(geometry.width), f64(geometry.height)]!
-	$if vox_diagnostic_png_render_density ? {
-		if os.getenv('VOX_DIAGNOSTIC_PNG_RENDER_DENSITY') == '1' {
-			decode_extent = sampled_png_decode_extent(decode_extent,
-				app.document.rendering_device_pixel_ratio(), app.document.display_device_pixel_ratio()) or { return index }
-		}
+	if os.getenv('VOX_DIAGNOSTIC_PNG_RENDER_DENSITY') == '1' {
+		decode_extent = sampled_png_decode_extent(decode_extent,
+			app.document.rendering_device_pixel_ratio(), app.document.display_device_pixel_ratio()) or { return index }
 	}
 	upload := app.sampled_png_decode(data.image_url, image, decode_extent[0], decode_extent[1]) or { return index }
 	fill := app.paint_colors.color(shadow.color, 1)

@@ -23,11 +23,7 @@ fn C.native_document_raster_uses_p3() i32
 
 @[export: 'vox_document_display_p3_enabled']
 fn document_display_p3_enabled() i32 {
-	$if vox_diagnostic_document_p3 ? {
-		return i32(document_p3_selected)
-	} $else {
-		return 0
-	}
+	return i32(document_p3_selected)
 }
 
 // Scalar skcms PortableMath, rather than the NEON raster-pipeline variant.
