@@ -9,7 +9,7 @@ from forum_news_pixels import (CATALOG, VOX_BUNDLED_ADBLOCK_ASSETS, VOX_RUNTIME_
                                check_oracle_page_cache,
                                executable_identity, archive_animation_policy, archive_decode_preparation, check_oracle_decode_preparation,
                                captured_focus_state,
-                               native_capture_environment, oracle_command, pixel_status, run_case, seal_capture,
+                               native_capture_environment, oracle_command, pixel_status, source_replay_browser_versions, run_case, seal_capture,
                                warm_native_cache, warm_oracle_cache, write_json)
 from page_archive import digest, load_archive
 
@@ -140,11 +140,41 @@ class ForumNewsPixelTests(unittest.TestCase):
     def test_a_matching_first_frame_cannot_hide_reference_variation(self):
         exact = dict(exact=True, different_pixels=0)
         different = dict(exact=False, different_pixels=1)
-        self.assertEqual(pixel_status(exact, exact, different), 'reference-replay-mismatch')
-        self.assertEqual(pixel_status(different, different, different), 'reference-replay-mismatch')
-        self.assertEqual(pixel_status(exact, different, exact), 'live-to-frozen-mismatch')
-        self.assertEqual(pixel_status(different, exact, exact), 'pixel-mismatch')
-        self.assertEqual(pixel_status(exact, exact, exact), 'pass')
+        report = dict(oracle=dict(browser='Brave Browser 157.1.99.57'))
+        versions = source_replay_browser_versions(report, [report, report])
+        self.assertEqual(pixel_status(exact, exact, different, versions), 'reference-replay-mismatch')
+        self.assertEqual(pixel_status(different, different, different, versions), 'reference-replay-mismatch')
+        self.assertEqual(pixel_status(exact, different, exact, versions), 'live-to-frozen-mismatch')
+        self.assertEqual(pixel_status(different, exact, exact, versions), 'pixel-mismatch')
+        self.assertEqual(pixel_status(exact, exact, exact, versions), 'pass')
+
+    def test_identical_pixels_cannot_qualify_across_brave_versions(self):
+        exact = dict(exact=True, different_pixels=0)
+        old = dict(oracle=dict(browser='Brave Browser 156.1.98.60'))
+        current = dict(oracle=dict(browser='Brave Browser 157.1.99.57'))
+        versions = source_replay_browser_versions(old, [current, current])
+        self.assertTrue(versions['versions_recorded'])
+        self.assertFalse(versions['versions_match'])
+        self.assertEqual(pixel_status(exact, exact, exact, versions), 'source-browser-mismatch')
+        # A changed browser between replay processes is also disqualifying.
+        versions = source_replay_browser_versions(current, [current, old])
+        self.assertEqual(pixel_status(exact, exact, exact, versions), 'source-browser-mismatch')
+        different = dict(exact=False, different_pixels=101)
+        self.assertEqual(pixel_status(exact, exact, different, versions), 'reference-replay-mismatch')
+
+    def test_missing_or_invalid_browser_versions_fail_closed_without_guessing(self):
+        exact = dict(exact=True, different_pixels=0)
+        current = dict(oracle=dict(browser='Brave Browser 157.1.99.57'))
+        for browser in [None, '', True, 157, 'Brave Browser', '157.1.99.57']:
+            missing = dict(oracle=dict(browser=browser))
+            for source, replays in [(missing, [current, current]),
+                                    (current, [current, missing])]:
+                versions = source_replay_browser_versions(source, replays)
+                self.assertFalse(versions['versions_recorded'])
+                self.assertEqual(pixel_status(exact, exact, exact, versions), 'source-browser-unverified')
+        for replays in [[], [current], [current, current, current]]:
+            versions = source_replay_browser_versions(current, replays)
+            self.assertEqual(pixel_status(exact, exact, exact, versions), 'source-browser-unverified')
 
     def browser_inputs(self, root):
         root = root.resolve()

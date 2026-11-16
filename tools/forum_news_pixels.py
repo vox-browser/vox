@@ -11,6 +11,7 @@ import base64
 import hashlib
 import json
 import os
+import re
 from pathlib import Path
 import shutil
 import subprocess
@@ -392,11 +393,32 @@ def capture_replay_references(common, route, output, timeout, diff_tool):
     return verdict
 
 
-def pixel_status(native, source, reference_repeat):
+def source_replay_browser_versions(source_report, replay_reports):
+    """Version equality is necessary; executable hashes are pinned separately."""
+    def version(report):
+        label = report.get('oracle', {}).get('browser')
+        if not isinstance(label, str) or not re.fullmatch(r'Brave Browser [0-9]+(?:\.[0-9]+){3}', label):
+            return None
+        return label
+
+    source = version(source_report)
+    replays = [version(report) for report in replay_reports]
+    recorded = (source is not None and len(replays) == 2
+                and all(label is not None for label in replays))
+    return dict(source_browser=source, replay_browsers=replays,
+                versions_recorded=bool(recorded),
+                versions_match=bool(recorded and all(label == source for label in replays)))
+
+
+def pixel_status(native, source, reference_repeat, browser_versions):
     # Reference variation invalidates acceptance even if the first reference
     # happens to match both the source and native captures exactly.
     if not reference_repeat['exact']:
         return 'reference-replay-mismatch'
+    if not browser_versions['versions_recorded']:
+        return 'source-browser-unverified'
+    if not browser_versions['versions_match']:
+        return 'source-browser-mismatch'
     if not source['exact']:
         return 'live-to-frozen-mismatch'
     return 'pass' if native['exact'] else 'pixel-mismatch'
@@ -463,6 +485,9 @@ def capture_case(site, args, output):
         reference_command = warm_oracle_cache(common, route, output, args.timeout) if cache_policy == 'complete' else common
         repeat_verdict = capture_replay_references(reference_command, route, output,
                                                     args.timeout, args.diff_tool)
+        browser_versions = source_replay_browser_versions(source_report,
+            [read_json(output / name) for name in ['brave.json', 'brave-repeat.json']])
+        write_json(output / 'source-replay-browser-versions.json', browser_versions)
         state = read_json(Path(str(reference) + '.json'))
         if digest((archive / 'live.png').read_bytes()) != manifest['live_png_sha256']:
             raise RuntimeError('Live capture changed')
@@ -502,8 +527,9 @@ def capture_case(site, args, output):
         check_filters(read_json(output / 'vox.ubo.json'), document=False)
         verdict = compare(reference, actual, output / 'diff.png', args.diff_tool)
         write_json(output / 'pixels.json', verdict)
-        status = pixel_status(verdict, replay_verdict, repeat_verdict)
+        status = pixel_status(verdict, replay_verdict, repeat_verdict, browser_versions)
         return dict(status=status,
+                    source_replay_browser_versions=browser_versions,
                     image_animation_policy=animation_policy,
                     cache_policy=cache_policy,
                     different_pixels=verdict['different_pixels'], artifacts=str(output),
