@@ -29,6 +29,14 @@ struct NativeCachedLibrary {
 	digest string
 }
 
+struct NativeLoadedEntry {
+	entry   NativeEntry
+	handle  voidptr
+	library string
+	digest  string
+	opened  bool
+}
+
 struct NativeCacheRecord {
 	key            string
 	abi            string
@@ -152,6 +160,32 @@ fn valid_native_digest(value string) bool {
 }
 
 fn (mut cache NativeCodeCache) load(key string) !NativeEntry {
+	$if prealloc {
+		// Record decoding and hashing the library are lookup work. Retain only
+		// the mapping owner/digest after returning to the caller's arena.
+		scope := unsafe { prealloc_scope_begin() }
+		defer { unsafe { prealloc_scope_free_after(scope) } }
+		loaded := cache.read_entry(key) or {
+			unsafe { prealloc_scope_leave(scope) }
+			return error_with_code(err.msg().clone(), err.code())
+		}
+		unsafe { prealloc_scope_leave(scope) }
+		return cache.retain_entry(loaded)
+	}
+	return cache.retain_entry(cache.read_entry(key)!)
+}
+
+fn (mut cache NativeCodeCache) retain_entry(loaded NativeLoadedEntry) NativeEntry {
+	if loaded.opened {
+		cache.libraries[loaded.library.clone()] = NativeCachedLibrary{
+			handle: loaded.handle
+			digest: loaded.digest.clone()
+		}
+	}
+	return loaded.entry
+}
+
+fn (cache &NativeCodeCache) read_entry(key string) !NativeLoadedEntry {
 	path := os.join_path(cache.directory, key + '.json')
 	// A missing record is an ordinary first-visit miss. Corrupt records are
 	// diagnostics and get replaced only after a successful compilation.
@@ -165,6 +199,7 @@ fn (mut cache NativeCodeCache) load(key string) !NativeEntry {
 		return error('Invalid native cache identity')
 	}
 	mut handle := unsafe { nil }
+	mut opened := false
 	if loaded := cache.libraries[record.library] {
 		if loaded.digest != record.library_sha256 {
 			return error('Native cache library identity changed')
@@ -176,9 +211,19 @@ fn (mut cache NativeCodeCache) load(key string) !NativeEntry {
 			return error('Native cache library digest mismatch')
 		}
 		handle = dl.open_opt(library, dl.rtld_now | dl.rtld_local)!
-		cache.libraries[record.library] = NativeCachedLibrary{ handle: handle, digest: record.library_sha256 }
+		opened = true
 	}
-	return unsafe { NativeEntry(dl.sym_opt(handle, 'vox_native_${record.symbol}')!) }
+	symbol := dl.sym_opt(handle, 'vox_native_${record.symbol}') or {
+		if opened { dl.close(handle) }
+		return err
+	}
+	return NativeLoadedEntry{
+		entry: unsafe { NativeEntry(symbol) }
+		handle: handle
+		library: record.library
+		digest: record.library_sha256
+		opened: opened
+	}
 }
 
 fn (mut tier NativeTier) prepare_cached_entry(executable &Executable) {
