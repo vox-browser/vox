@@ -51,6 +51,13 @@ image IDs; they describe the later frame, not the original partial redraw.
 Default Brave repeatability remains open. See the
 [production and raster audit](docs/OPTIMIZED_SITES_PIXELS_2026_11_12.md#published-production-confirmation-and-lobsters-sample-history-2026-11-16).
 
+**Reddit title wrapping:** `130817464` adds six public cases for titles followed
+by unbroken parenthesized domain labels. Two fresh Brave captures agree, and
+two fresh captures from the available production browser are exact. This does
+not verify the missing November 4 page. A read-only Git object scan found no
+match for either recorded HTML hash among 8,850 blobs sized 50–300 kB. See the
+[wrapping check](docs/OPTIMIZED_SITES_PIXELS_2026_11_12.md#public-reddit-title-domain-wrapping-2026-11-16).
+
 **Recovered Reddit follow-up:** the older 2026-11-01 HTML and its script-free
 derivative are recovered with their exact documented hashes. With reconstructed
 static assets, fresh full-uBO Brave references agree. Filled-marker coverage

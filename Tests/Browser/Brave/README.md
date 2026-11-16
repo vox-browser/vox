@@ -1450,3 +1450,15 @@ The focused GPU regression checks both ellipse sizes at one and four samples;
 cache and tile-planning tests preserve constrained clips and decode history.
 Production confirmation remains pending. See the
 [PNG audit](../../../docs/OPTIMIZED_SITES_PIXELS_2026_11_12.md#uniform-png-scales-decoded-frame-history-and-elliptical-geometry-2026-11-16).
+
+
+`input/reddit-title-domain-wrap.html` checks six title/domain combinations:
+narrow and wide titles, plain domains, links inside parentheses, nested
+parenthesis spans and a longer domain. The domain's `white-space:nowrap` must
+survive the parent's `overflow-wrap:break-word`. Its unchanged 800×600, scale-1
+reference agrees in two fresh Brave processes and is exact in two fresh
+production captures (`bbd47035`). This public regression does not reconstruct
+the missing account-bearing November 4 Reddit workload or verify its original
+2,046 differences. Run `python3 tools/check_archived_site_pixels.py --diagnostic
+--output Build/UNIQUE reddit-title-domain-wrap`. See the
+[wrapping check](../../../docs/OPTIMIZED_SITES_PIXELS_2026_11_12.md#public-reddit-title-domain-wrapping-2026-11-16).

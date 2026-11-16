@@ -5733,3 +5733,55 @@ Local evidence: `docs/performance/catalog-followup-20261116/`. Cleanup
 inventories **10 owned roots/1,953 files**, preserves and SHA-verifies **171
 evidence files/6,861,330 bytes**, and removes owned profiles, replay keys,
 guards and locks. No owned `Build/catalog-followup*` scratch remains.
+
+
+### Public Reddit title/domain wrapping, 2026-11-16
+
+The missing November 4 catalog report describes 2,046 differences from title
+wrapping, including a break inside `(youtube.com)`. `130817464` adds a public
+regression for this class of behavior without importing account-bearing HTML.
+Its six entries include narrow and wide titles, a plain parenthesized domain,
+a linked domain, separately nested parenthesis spans and a longer domain.
+The title paragraph uses `overflow-wrap:break-word`; the domain uses
+`white-space:nowrap`. The complete fixture is 800×600 at scale 1.
+
+Two fresh independent Brave captures agree exactly after five seconds of
+settling. The expected PNG is promoted unchanged from diagnostics, SHA-256
+`31dc966815b8dfd6b0b419939940382b27bf7822a09fedc53a8b24c94ad801dd`.
+The available published production executable `bbd47035` matches with **zero
+pixels twice**, both before and after promotion to `input/` and `expected/`.
+Its identity is bound to the completed production receipt. Original captures,
+rectangles, reference hashes and guard exits are retained. No rendering patch
+or reference/tolerance adjustment is needed for these cases. Exactness here
+does not establish the missing historical page's current result.
+
+A read-only local Git-object recovery attempt enumerates **113,857 objects**,
+then SHA-256 hashes **8,850 blobs/1,168,535,373 bytes** whose uncompressed blob
+sizes are 50,000–300,000 bytes. Neither recorded November 4 HTML hash matches:
+source `e8ffb950f17bf25a339791238eb7b9618d878fe735b3557deca0c45c4b356f73`,
+frozen `a1b991bdea72f51b02b812012e7691065b67f95e9d5a6b3411f15e67c0a1d2e1`.
+The scan includes unreachable objects available to this repository; other
+sizes, compressed members and external stores are outside this search. It
+changes no Git objects and recovers no page. It does not prove that no copy
+exists elsewhere. The missing fixture and its sealed resource identity remain
+open.
+
+During this check, a concurrent working-tree revert also removes the committed
+own-clip image MSAA eligibility hunk from `8641a3868`. Only that exact verified
+hunk is restored; the other raster changes are preserved. Before/after hashes
+and the prior working diff are retained. This restores the earlier validated
+PNG fix, with no new rendering implementation committed here. Other concurrent
+raster edits and the current checkout are not validated by the older production
+captures.
+
+The newer managed production build remains in progress and has no completed
+artifact at this checkpoint. The prior PNG fix still needs production
+confirmation. No duplicate manual production build is queued or awaited.
+Matched-version CNN source/replay qualification, default Brave Lobsters
+repeatability and the newer missing Reddit fixture remain open. These public
+controls supply no live-site or performance acceptance.
+
+Local evidence: `docs/performance/reddit-wrap-20261116/`. Cleanup inventories
+**16 owned roots/126 files**, preserves and SHA-verifies **90 evidence files/
+405,193 bytes**, and removes owned profiles, programs, guard reports and locks.
+No owned `Build/reddit-wrap*` scratch remains.
