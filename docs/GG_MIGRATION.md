@@ -3392,3 +3392,19 @@ cover 393,216 midpoint bytes, 9,493 additional Gray8 bytes and 24,480 real plane
 bytes, with exact agreement. Production confirmation of this correction remains
 pending. No reference, tolerance, shader or mip-kernel change. See the
 [audit](OPTIMIZED_SITES_PIXELS_2026_11_12.md#gray8-cpu-plane-stores-2026-11-16).
+
+### Opaque planar-image draw semantics, 2026-11-16
+
+`6448185cc` carries the YUV shader's guaranteed opaque alpha into GG's image
+paint classification, enabling native draw ordering and analytic interior fills.
+RGB uploads and restored layers keep their existing conservative metadata.
+Both preparers stage the same change and repair either affected file independently.
+
+CNN improves **4,788→1,414** in diagnostics: 3,450 corrected and 76 introduced
+one-level pixels. All 51 pairs repeat, with 50 other PNGs unchanged. Ten focused
+V functions and two Python checks pass; native YUV sampling and rounded coverage
+also pass with literal V `-prod`. The new complete 64×64 native R8-plane coverage
+oracle is exact. Production `036bf130` confirms the preceding 4,788 CNN result
+and exact Vlang, GitHub, Hacker News, Lobsters and Wikipedia across twelve fresh
+captures; it lacks this new flag. Its managed rebuild is pending. See the
+[audit](OPTIMIZED_SITES_PIXELS_2026_11_12.md#preserve-opaque-planar-image-draws-2026-11-16).

@@ -7,33 +7,31 @@ Results apply to the frozen page and pinned build in each linked report.
 Provisional entries retain unresolved acceptance checks.
 
 **Pixel recheck, 2026-11-16:** Vox does **not** pass pixel equality across
-this catalog. Production build `aa91e7cc` confirms GitHub, Hacker News,
-Lobsters and Wikipedia exact in two fresh captures each; final diagnostics keep
-all four exact. Vlang.io is now **pixel-exact in diagnostics** after preserving
-the resolved blur support before rotating shadow masks (`bd6bfd3f7`). The clipped
-orbit and rotated-ellipse shadow controls are also exact. All 50 workload pairs
-repeat, with zero introduced differences and 47 other PNGs unchanged. Its JPEG
-remains exact. Production `3c6be545` now exercises the final CSS-only gradient
-fix: Vlang retains one pixel and the orbit underlay is exact in two fresh captures
-each. The resolved-shadow implementation awaits production confirmation. See the
-[resolved-shadow audit](docs/OPTIMIZED_SITES_PIXELS_2026_11_12.md#preserve-resolved-blur-support-before-rotation-2026-11-16).
-CNN improves to **4,788 differing pixels in diagnostics**, all one channel
-level off. After the planar mip fix (`eb35365d2`, 6,091→5,160), `6840391d5`
-makes the profiled train photo exact: **372 corrected, zero introduced**, with
-viewport maximum error **9→1**. All 51 pairs repeat; 49 other existing PNGs are
-unchanged and the new rounded/clipped control is exact. A separate forced
-four-sample diagnostic retains seven one-level differences. Further
-[native YUV sampler isolation](docs/OPTIMIZED_SITES_PIXELS_2026_11_12.md#native-yuv-sampler-isolation-2026-11-16)
-adds exact component regression coverage; both rendering prototypes are rejected
-and CNN's count stays at 4,788. Production remains
-at 6,091; the new source awaits its managed rebuild. CNN retains rendering and
-source/replay failures; its native-repeat correction passes in production.
-Reddit remains unverified (missing historical fixture, earlier live
-HTTP 403). A separate tall-shadow control has a retained baseline repeat failure.
-Lossless and native-size/half-size lossy WebP controls now pass in production.
-All four images in the alpha WebP control are also exact in production after
-the numerical sRGB-profile correction. Other ICC/rescaling controls still have
-known differences. These results apply to pinned builds and frozen page bytes.
+this catalog. Production `036bf130` now confirms GitHub, Hacker News, Lobsters,
+Wikipedia and Vlang.io exact in two fresh captures each. CNN retains **4,788**
+differences in both production captures. All twelve PNGs match the preceding
+accepted diagnostics byte for byte, confirming the resolved-shadow and rounded
+WebP fixes in production.
+
+CNN improves further to **1,414 differing pixels in diagnostics** after
+`6448185cc` preserves opaque planar-image draw semantics: **3,450 corrected,
+76 introduced**, with maximum channel error one. All **51 workloads/102 fresh
+captures** repeat exactly; the other **50 PNGs are unchanged**. The new flag
+applies to YUV shaders that guarantee opaque alpha; RGB uploads keep their
+existing metadata. Ten focused V test functions and two Python checks pass;
+the native sampling and rounded-coverage tests also pass with literal V `-prod`.
+The available production bundle lacks this flag by compiled source hashes;
+its managed rebuild is pending. See the
+[opaque planar-image audit](docs/OPTIMIZED_SITES_PIXELS_2026_11_12.md#preserve-opaque-planar-image-draws-2026-11-16).
+
+CNN retains rendering and source/replay failures. Reddit remains unverified
+(missing historical fixture, earlier live HTTP 403). A separate tall-shadow
+control has a retained baseline repeat failure. Lossless and native-size/
+half-size lossy WebP controls were previously confirmed in production, as were
+all four alpha WebP images. Other ICC/rescaling controls retain known differences,
+and the separate forced four-sample profiled-image diagnostic remains open.
+References and tolerances are unchanged. These results apply to pinned builds
+and frozen page bytes.
 
 Production also confirms `1e1ffdd4e`: the sampled sRGB WebP control improves
 5,059→588 pixels. Production then confirms `78f1fcf3b`: the complete control

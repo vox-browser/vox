@@ -4677,3 +4677,90 @@ Cleanup inventories 128 owned roots/2,240 files and preserves and SHA-verifies
 preserved and removed. Owned binaries, intermediates, profiles, guards and
 locks are deleted; the archive guard and lock are separately copied, verified
 and removed. Shared production assets and dependencies remain.
+
+## Preserve opaque planar-image draws, 2026-11-16
+
+`6448185cc` preserves known image opacity in GG's paint classification. The
+limited-range and full-range YUV shaders construct alpha one; their uploads now
+carry that guarantee into draw ordering and the analytic renderer's opaque
+interior fill. Previously every image was classified as potentially transparent.
+Paint alpha and mask alpha still participate, and RGB uploads and restored layer
+textures retain their existing conservative metadata. Both the native V and
+Python preparers install the same field and paint change, repairing either file
+independently. Samplers, decoded bytes, mip kernels and color matrices stay fixed.
+
+Brave's saved picture records a device-space rounded clip, a canvas translate/
+scale, and a draw at natural image size. The earlier direct-destination native
+oracle did not preserve this operation order. Its 1,836-pixel result remains in
+the prior evidence. Replaying the recorded order in native 1024×256 tiles spaced
+254 rows apart makes Sullivan's 37,323-pixel interior exact against the original
+Brave reference. The matching Vox component initially differs from that native
+tile at 2,464 pixels; carrying opacity reduces the prototype residual to 190.
+This isolation establishes the exercised rendering path. The unchanged original
+Brave PNG supplies the browser acceptance comparison below.
+
+Final C/O0/preallocated/no-GC executable
+`5a36d84daffa4cc1b642d407ef60be984f3789baa728ad584c212f601700dd21`
+completes **51 workloads/102 fresh captures** plus startup smoke. Every pair
+repeats byte for byte and **all 50 non-CNN PNGs are unchanged** from the preceding
+accepted 51-workload cohort. CNN improves **4,788→1,414**: **3,450 corrected,
+76 introduced** pixels. Complete-viewport and introduced maximum channel errors
+are both one. The remaining errors are retained; strict CNN equality is open.
+The 890 consumed V witnesses, 948 input pins, executable and shader identities
+remain stable throughout the cohort. Native guards, driver, outer guard and
+analysis all exit zero.
+
+Image interiors exclude four pixels at each edge:
+
+| Region | Prior differences | Accepted differences |
+| --- | ---: | ---: |
+| Sullivan | 2,698 | 206 |
+| Trump | 115 | 0 |
+| Netanyahu | 383 | 0 |
+| CNN logo | 230 | 1 |
+| Ice cap | 27 | 6 |
+| Peptides | 1,048 | 1,030 |
+
+Ten distinct focused V test functions pass with arena poisoning and 3 GiB
+runtime guards: the new rounded YUV oracle, two native sampling/mip checks,
+four atlas checks, the byte-mip regression, the profiled RGB control and the
+native preparer. The three native sampling/coverage functions also pass with
+literal V `-prod`. GG checks retain 167 selected V witnesses; the native preparer
+retains 19. The new complete 64×64 BGRA coverage reference comes from separate
+Graphite/Metal R8 textures and GPU-generated mips, using a rounded clip before
+translate/scale. Its SHA-256 is
+`77a8d85e85d3c547e206571c84040fcbb3bad3873992d595419084da6d8f5199`;
+the C/O0 and `-prod` test executables are
+`3815662624c656e9b024b6314d37b1bbc5e54d1497b32da81f4225e5755cd6f8`
+and `ef0bc95983a26ca899b506388ec4c42b6d1c9725990d29e8a4dfad11d8bf2902`.
+New Python opacity-staging and existing YUV-staging checks pass. No existing
+PNG reference or tolerance changes.
+
+The initial opacity scan also promoted RGB uploads whose observed alpha bytes
+were all 255. Its focused CNN result was 1,488, but it regressed the previously
+exact profiled rounded-upload control to 35 differing pixels. That prototype,
+its failed assertion and its captures remain retained. The accepted selection
+uses the planar shader's opacity guarantee; the RGB control is exact again.
+Plain-Brave layer probes omitted full-uBO cosmetics and do not qualify as new
+references. Their source differences and unavailable snapshot attempts remain
+local diagnostics.
+
+A newly completed production bundle became available during this work:
+`036bf13076fd03b266f2e1a2f7e355a7e8e5f9a4f3fe9832a86954378e54c08f`,
+C/literal V `-prod`/single C unit. Its frozen inputs include the preceding rounded
+WebP and resolved-shadow implementations, and lack this opacity change. Six
+sites/twelve fresh captures reproduce the preceding accepted diagnostic PNGs
+exactly: CNN 4,788 twice; Vlang, GitHub, Hacker News, Lobsters and Wikipedia zero
+twice each. This confirms those preceding fixes in production. The managed
+commit hook requests the new coalesced rebuild; this slice remains diagnostic
+pending production. No duplicate manual build is requested. Full catalog parity,
+CNN source/replay and Reddit gates remain open. No live-site, script-runtime,
+scrolling or instruction-performance acceptance is claimed.
+
+Local evidence is under
+`docs/performance/vlang-gradients-20261114/raw/cnn-yuv-context-20261116/`.
+Cleanup inventories 111 owned roots/6,069 files, preserving and SHA-verifying
+1,392 evidence files/53,345,952 bytes. Two temporary canonical probes are preserved
+and removed. Owned binaries, intermediates, profiles, guards and locks are deleted;
+archive and final-verification guards are separately preserved and removed.
+Shared production assets and native dependencies remain.
