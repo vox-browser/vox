@@ -6361,3 +6361,82 @@ Cleanup inventories **72 owned roots/11,450 files**, preserves and SHA-verifies
 generated C, private profiles/caches, downloaded extensions, replay keys, guards
 and locks. Runtime shader snapshots remain in the local evidence directory.
 No `Build/verge-webp*` job output remains.
+
+
+### Verge local SVG drop shadows, 2026-11-16
+
+`0dd8f7f65` rasterizes an eligible opaque black SVG path before its
+quarter-turn CSS transform. The blur stays at its reduced resolution until
+sampling and shadow coloring into a local RGBA layer; the original source is
+merged there before the final rotation. The linear offset's one-pixel input
+border changes the centered downsampling footprint. Near-integer bounds use
+0.001 rounding, including the SVG viewport's tiny negative top coordinate.
+This follows the [matrix filter's input-border rule](https://github.com/google/skia/blob/886e42fda11610a56dd1b22e8697e27f9d1e34f2/src/effects/imagefilters/SkMatrixTransformImageFilter.cpp).
+
+V owns eligibility, path conversion, filtering and owning-tile replay. Native
+code transfers the backdrop and completed pixels. Source clips must contain
+the SVG viewport; ancestor clips, nested effects, gradients, strokes, colored
+or translucent source paths, other CSS transforms and non-1× readbacks retain
+the existing fallback. A geometry-enclosure check also declines overflowing
+paths without publishing partial output. Filter output beyond the root
+picture keeps the root tile phase. Cached native and Python GG preparation
+refresh the canonical RGBA-layer helper even after the ABI patch is installed.
+
+The existing `verge-svg-filter-space` reference improves **31,489→14 pixels
+twice**, with maximum channel error one. Its unfiltered local source is exact.
+Two new controls have independently repeated Brave 157.1.99.57 references,
+verified again with executable/framework hashes: the rectangle's earlier
+fallback has 41,546 differences and the candidate has **12 twice**; the local
+source is **zero twice**. Reference PNG hashes are respectively
+`c8d3c7b2c9b1214709d1b02b24d14d1c609eaca77a6261cdd4f9e28ca74a5f09`
+and `f5e21b3a7e8e22e0f3540fd23c4c79176da539156ee4451a211a39913f5cb9ba`.
+The existing unblurred transformed-shadow control remains exact. Existing
+references and tolerances are unchanged; the 14/12 residuals remain failures
+of pixel equality.
+
+The complete archived Verge viewport improves **32,035→14,916 twice**,
+correcting **17,394** pixels and introducing **275**. Maximum channel error
+falls from 86 to **two**. All 18,211 changed pixels stay in the SVG transfer
+region; 9,042 remaining differences are at x≥416, beyond that transfer's right
+edge. Photo/overlay differences and the isolated shadow's remaining precision
+errors are open. Complete BBC and Guardian captures separately remain **zero
+twice** each. This is an incomplete Verge fix.
+
+Final C/O0 diagnostic executable:
+`929de69264bd51f69d576416d31741cd60550ab253931ff30b2ca7b3d5df1c83`.
+Five consumed V feature/helper buffers match their compiler manifest. Selected
+V/native inputs stay unchanged through successful compilation; executable,
+shared-library, page/reference and all **24 runtime Metal shader** hashes stay
+pinned during captures. Shader snapshots remain in the local evidence.
+**72 workloads/144 fresh captures** repeat. All **69 preceding PNGs outside
+the SVG control are byte-identical**; existing inexact controls retain their
+counts. A pre-enclosure cohort is retained too: all 72 final PNGs match it.
+Fifteen focused V functions and five Python staging tests pass, including
+real GPU draws, source samples, overflow/transform fallbacks, typed live-list
+scope/clip checks, prior blur hashes and cached-helper refresh. Compilation
+uses the default 12 GiB guard; focused GPU/runtime jobs use 3 GiB guards.
+Both final Verge request streams pass full-uBO checks: **178 requests each**,
+all allowed, zero mismatches or oracle disagreements. The release ZIP and 59
+vendor-file pins verify. Accepted compile/runtime/capture/filter/guard exits
+are zero.
+
+Rejected diagnostics remain local: direct-backdrop A8 compositing, premature
+A8 upscale, tight/cropped layers, shifted/full-source grids and half-precision
+sampling. One shader experiment fails Metal compilation and supplies no
+acceptance evidence. Two browser compilations overlap unrelated layout edits
+and fail input pins. The first scope unit reads a compatibility snapshot that
+has no filter boundaries; the corrected live-display-list check passes.
+An in-progress bitmap-decoration expansion also exposes a positional
+initializer error; `16d36c4` switches that independent call to named fields.
+
+The latest completed production bundle remains `93adced1`; it cannot validate
+this feature. Managed hooks request the coalesced C/literal V `-prod` rebuild.
+Production confirmation, source/replay version qualification, remaining catalog
+checks and live behavior remain open. No instruction-performance acceptance
+is claimed.
+
+Local evidence: `docs/performance/verge-svg-20261116/`.
+Cleanup inventories **178 owned roots/11,807 files**, preserves and SHA-verifies
+**3,374 job evidence files/87,097,752 bytes**, then removes owned programs,
+generated C, private profiles/caches, downloaded extensions, replay keys, guards
+and locks. No `Build/verge-svg*` job output remains.

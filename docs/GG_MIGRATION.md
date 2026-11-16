@@ -3590,3 +3590,24 @@ repeat, and all 58 prior PNGs remain unchanged. BBC's cropped photo, Guardian an
 Verge rendering gaps remain open. Production `93adced1` separately confirms the
 earlier PNG scaling/cache fix in 58 workloads/116 captures; production validation
 of this newer WebP change is pending. See the [audit](OPTIMIZED_SITES_PIXELS_2026_11_12.md#odd-height-webp-planes-in-bbc-photos-2026-11-16).
+
+
+### Local SVG drop-shadow layers, 2026-11-16
+
+`0dd8f7f65` replays one opaque black SVG path in local filter space before its
+quarter-turn CSS transform. The reduced-resolution blur is sampled and colored
+into an RGBA layer, merged with the source, then rotated in the owning root
+tiles. Linear offset sampling retains its extra input border. Source geometry,
+clips, effect nesting and 1× readbacks have conservative eligibility checks;
+overflowing ink keeps native clipping. Cached GG preparation refreshes the
+canonical layer helper in both preparers.
+
+The isolated logo improves **31,489→14 pixels twice**; the complete frozen
+Verge viewport improves **32,035→14,916 twice**, with maximum channel error two.
+It remains inexact. BBC and Guardian remain **zero twice** each. All **72
+workloads/144 captures** repeat; all 69 preceding PNGs outside the logo are
+byte-identical. Fifteen focused V functions and five Python staging tests pass,
+including actual GPU execution and typed scope/clip checks. Executable,
+native-library, fixture/reference and 24 runtime shader hashes stay pinned.
+Production confirmation and live/catalog acceptance remain open. See the
+[SVG filter audit](OPTIMIZED_SITES_PIXELS_2026_11_12.md#verge-local-svg-drop-shadows-2026-11-16).
