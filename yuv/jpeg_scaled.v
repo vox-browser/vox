@@ -65,9 +65,12 @@ fn jpeg_scaled_planes(planes []u8, width int, height int, target_width int, targ
 fn jpeg_scale_plane(source []u8, width int, height int, tw int, th int) ?[]u8 {
 	mut data := source.clone()
 	mut w, mut h := width, height
-	ratio := math.max(f64(width) / tw, f64(height) / th)
+	// Chromium enables Skia's legacy anisotropic mip selection: use the
+	// geometric mean, preserving f32 rounding at power-of-two boundaries.
+	sx, sy := f32(tw) / f32(width), f32(th) / f32(height)
+	scale := f32(math.sqrt(f64(sx * sy)))
 	mut divisor := 1
-	for f64(divisor * 2) <= ratio {
+	for f32(divisor * 2) * scale <= 1 {
 		nw, nh := math.max(1, w / 2), math.max(1, h / 2)
 		wx := if w == 1 {
 			[1]

@@ -4,8 +4,8 @@ fn test_scaled_jpeg_upload_preserves_plane_values_before_rgb_clipping() {
 	mut planes := []u8{len: 24, init: 128}
 	for i, value in [0, 255, 0, 255] { planes[16 + i] = u8(value) }
 	packed := jpeg_scaled_upload(planes, 4, 4, 2, 2, true) or { panic('upload') }
-	assert packed == [u8(128), 0, 128, 255, 128, 255, 128, 255, 128, 0, 128, 255,
-		128, 255, 128, 255]
+	assert packed == [u8(128), 0, 128, 255, 128, 255, 128, 255, 128, 0, 128, 255, 128, 255, 128,
+		255]
 	assert jpeg_scaled_upload(planes[..23], 4, 4, 2, 2, true) == none
 	assert jpeg_scaled_upload(planes, 4, 4, 0, 2, true) == none
 	assert jpeg_scaled_upload(planes, 4, 4, 5, 2, true) == none
@@ -104,4 +104,32 @@ fn test_scaled_jpeg_keeps_fractional_rgb_before_texture_sampling() {
 	assert colors[2] == f32(128.0 / 255)
 	assert colors[3] == 1
 	assert jpeg_scaled_colors(planes[..23], 4, 4, 2, 2, true) == none
+}
+
+fn test_plane_resizing_uses_geometric_mean_for_rounded_mips() {
+	// Independent SkPixmap Gray8 results with Chromium's legacy anisotropic
+	// mip selection. Rounded decode extents must not select a deeper mip.
+	dimensions := [[8, 8, 2, 3]!, [8, 8, 3, 2]!, [8, 8, 8, 1]!, [10, 6, 3, 2]!, [12, 10, 3, 3]!,
+		[3, 5, 2, 2]!, [16, 16, 4, 5]!, [16, 16, 5, 4]!, [32, 18, 8, 5]!, [16, 16, 4, 4]!]
+	expected := [
+		[u8(71), 135, 128, 118, 132, 127],
+		[u8(79), 136, 113, 154, 110, 119],
+		[u8(135), 131, 125, 126, 136, 129, 107, 96],
+		[u8(69), 133, 133, 133, 123, 113],
+		[u8(84), 131, 125, 120, 122, 124, 123, 133, 122],
+		[u8(40), 74, 117, 177],
+		[u8(81), 132, 125, 141, 121, 121, 124, 126, 126, 132, 122, 144, 105, 140, 152, 130, 136,
+			122, 128, 138],
+		[u8(86), 145, 118, 123, 137, 143, 129, 124, 116, 140, 108, 119, 146, 138, 143, 139, 138,
+			120, 131, 146],
+		[u8(89), 130, 125, 140, 123, 112, 140, 161, 122, 123, 123, 130, 131, 99, 131, 157, 118,
+			136, 122, 140, 94, 144, 130, 148, 138, 122, 152, 123, 127, 124, 121, 131, 140, 129,
+			137, 158, 128, 137, 145, 141],
+		[u8(97), 127, 125, 139, 127, 125, 123, 137, 109, 139, 137, 135, 139, 121, 135, 133],
+	]
+	for n, d in dimensions {
+		source := []u8{len: d[0] * d[1], init: u8(((index % d[0]) * 17 + (index / d[0]) * 29 + (index % d[0]) * (index / d[0]) * 7 + 13) & 255)}
+		actual := jpeg_scale_plane(source, d[0], d[1], d[2], d[3]) or { panic('plane scale') }
+		assert actual == expected[n], 'case ${n}'
+	}
 }

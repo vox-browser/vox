@@ -44,7 +44,7 @@ fn (mut app BrowserApp) draw_minified_webp(command &layout.PaintCommand, image &
     // Retain the full planes for aligned atlas mips; other uploads retain
     // their existing decode reduction and single/multiple-level selection.
     use_mips := math.log2(math.max(f64(tw) / destination.width, f64(th) / destination.height)) >= .5
-	if image.width % tw != 0 || image.height % th != 0 || image.width / tw != image.height / th {
+	if !atlas && !yuv.webp_minified_upload_supported(image.width, image.height, tw, th) {
 		return false
 	}
 	digest := sha256.sum(bytes).hex()
