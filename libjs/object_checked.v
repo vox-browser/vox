@@ -16,11 +16,17 @@ pub:
 
 pub fn (object &Object) get_own_property_checked(mut vm VM, key PropertyName) !OwnPropertyResult {
 	if proxy := object.proxy_object { return proxy.get_own_property(mut vm, key) }
+	if metadata := object.legacy_platform_object {
+		if metadata.named_properties != none { return object.legacy_get_own_property_checked(mut vm, key) }
+	}
 	return OwnPropertyResult{descriptor: object.internal_get_own_property(key)}
 }
 
 pub fn (object &Object) own_property_keys_checked(mut vm VM) ![]PropertyName {
 	if proxy := object.proxy_object { return proxy.own_keys(mut vm) }
+	if metadata := object.legacy_platform_object {
+		if metadata.named_properties != none { return object.legacy_named_property_keys(mut vm) }
+	}
 	if array := object.typed_array {
 		record := make_typed_array_with_buffer_witness_record(array, .seq_cst)
 		if !is_typed_array_out_of_bounds(record) {
@@ -46,7 +52,7 @@ pub fn (object &Object) has_property_checked(mut vm VM, key PropertyName) !bool 
 		if array := holder.typed_array {
 			if index := typed_array_property_index(key) { return is_valid_integer_index(array, index) }
 		}
-		if holder.internal_get_own_property(key) != none { return true }
+		if holder.get_own_property_checked(mut vm, key)!.descriptor != none { return true }
 		current = holder.prototype
 	}
 	return false
@@ -74,6 +80,11 @@ pub fn (mut object Object) prevent_extensions_checked(mut vm VM) !bool {
 
 pub fn (mut object Object) delete_checked(mut vm VM, key PropertyName) !bool {
 	if proxy := object.proxy_object { return proxy.delete_property(mut vm, key) }
+	if metadata := object.legacy_platform_object {
+		if !(key.is_number() && metadata.indexed_properties != none) && metadata.named_properties != none {
+			if object.legacy_named_property_exposed(mut vm, key)! { return false }
+		}
+	}
 	return object.internal_delete(key)
 }
 

@@ -12,10 +12,22 @@ pub interface LegacyIndexedPropertySetter {
 	set_indexed_property(mut VM, u32, Value) !
 }
 
+// The initial named families have readonly getters. Keep UTF-16 names intact
+// at the engine boundary; native owners supply their own supported names.
+pub interface LegacyNamedProperties {
+	is_supported_property_name(Utf16String) bool
+	named_property_value(Utf16String) Value
+	supported_property_names() []Utf16String
+}
+
 pub struct LegacyPlatformObject {
 pub:
 	indexed_properties ?LegacyIndexedProperties
 	indexed_setter ?LegacyIndexedPropertySetter
+	named_properties ?LegacyNamedProperties
+	legacy_override_builtins bool
+	legacy_unenumerable_named_properties bool
+	is_named_properties_object bool
 }
 
 fn (object &Object) legacy_indexed_descriptor(key PropertyName, descriptor PropertyDescriptor) PropertyDescriptor {

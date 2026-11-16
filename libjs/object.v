@@ -398,6 +398,7 @@ pub fn (mut object Object) internal_define_own_property(mut vm VM, key PropertyN
 			if legacy.indexed_properties != none { return object.legacy_define_indexed_property(mut vm, key, descriptor) }
 		}
 	}
+	if !object.legacy_named_definition_allowed(key) { return false }
 	if mut arguments := object.arguments_object { return arguments.define_own_property(mut object, key, descriptor) }
 	if mut array := object.typed_array { return array.internal_define_own_property(mut vm, key, descriptor) }
 	if mut array := object.array_object {
@@ -460,7 +461,7 @@ pub fn (object &Object) internal_get(mut vm VM, key PropertyName, receiver Value
 			return js_undefined()
 		}
 	}
-	descriptor := object.internal_get_own_property(key) or {
+	descriptor := object.get_own_property_checked(mut vm, key)!.descriptor or {
 		if parent := object.prototype {
 			if vm.did_reach_stack_space_limit() {
 				return vm.throw_error_type(.internal_error, .call_stack_size_exceeded)
