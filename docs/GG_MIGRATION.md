@@ -3531,3 +3531,25 @@ pass, including native callbacks across tile gutters and an invalid-stride
 fallback. Production confirmation, the newer missing Reddit fixture, Lobsters'
 fresh-Brave repeatability and CNN's historical source/replay gate remain open.
 See the [sprite audit](OPTIMIZED_SITES_PIXELS_2026_11_12.md#repeated-reddit-sprite-backgrounds-and-adjacent-borders-2026-11-16).
+
+### Published production and Lobsters sample history, 2026-11-16
+
+Published single-C-unit V `-prod` executable `bbd47035` reproduces all 56 accepted
+diagnostic outputs in 112 fresh captures, including exact CNN and both repeated
+sprite controls. The recovered older Reddit page is exact against two fresh
+full-uBO Brave references. This qualifies the sealed artifact and recorded fixes;
+a separate current-checkout source guard stops on concurrent image-sampling
+edits, later committed as `12fc9e48b`. That newer code is not validated here. All 187 selected rendering-package V buffers and 23 feature/native/shader
+inputs agree with the accepted diagnostic; embedded shader bytes are extracted
+from receipt-bound generated C.
+
+Eight alternating default/full-raster Brave pairs reproduce five default
+101-pixel failures and no full-raster failures. All failing frames become exact
+after paint instrumentation, so their preserved original PNGs remain essential.
+Standalone GPU predictions reproduce all 54 tag pixels and 47 avatar pixels:
+one sample matches the failures, four samples match the historical reference.
+This is predictive coverage evidence, not a measured Brave GPU sample-count flag.
+The post-capture paint tool passes 57 related JavaScript tests and never replaces
+the saved reference. Default Brave repeatability, the missing newer Reddit
+fixture and CNN's historical source/replay audit remain open. See the
+[audit](OPTIMIZED_SITES_PIXELS_2026_11_12.md#published-production-confirmation-and-lobsters-sample-history-2026-11-16).

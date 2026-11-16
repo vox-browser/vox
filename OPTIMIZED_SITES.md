@@ -7,7 +7,7 @@ Results apply to the frozen page and pinned build in each linked report.
 Provisional entries retain unresolved acceptance checks.
 
 **Pixel recheck, 2026-11-16:** The six available frozen catalog workloads now
-match their archived Brave references in diagnostics: **CNN, GitHub, Hacker News,
+match their archived Brave references in production: **CNN, GitHub, Hacker News,
 Lobsters, Wikipedia and Vlang.io are zero pixels twice each**. Catalog-wide
 acceptance remains open. Old Reddit's 2026-11-04 catalog fixture is missing; a fresh
 anonymous Brave navigation to `/r/programming/` redirects to a blocked login
@@ -24,14 +24,15 @@ the second differs. Their text, geometry and image inventories agree. New full-u
 acceptance remains open; no reference or tolerance changes. See the
 [decode-preparation audit](docs/OPTIMIZED_SITES_PIXELS_2026_11_12.md#preserve-recorded-image-decode-preparation-2026-11-16).
 
-**Lobsters follow-up:** the 101 pixels belong to rounded tag backgrounds and
-avatars within the first raster tile. Alternating default/disabled-partial-raster
-Brave pairs retain one default mismatch; all four disabled-partial captures
-match. These controls do not clear default Brave repeatability. Four fresh Vox
-captures on published `7515422c` match the retained reference exactly. The new
-archived-site checker pins completed bundles before launching, including staged
-artifacts, and passes 18 lease/selection tests. See the
-[raster and bundle-selection audit](docs/OPTIMIZED_SITES_PIXELS_2026_11_12.md#lobsters-raster-history-and-completed-browser-selection-2026-11-16).
+**Lobsters follow-up:** five of eight new default Brave processes differ by
+101 pixels; all eight alternating full-raster controls match. After paint
+instrumentation starts, the five failing frames become exact. The saved failures
+remain intact. Standalone GPU replay predicts every one of the 101 pixels:
+one-sample coverage matches the failures, four-sample coverage matches the
+reference. The post-capture command logs agree after normalizing process-local
+image IDs; they describe the later frame, not the original partial redraw.
+Default Brave repeatability remains open. See the
+[production and raster audit](docs/OPTIMIZED_SITES_PIXELS_2026_11_12.md#published-production-confirmation-and-lobsters-sample-history-2026-11-16).
 
 **Recovered Reddit follow-up:** the older 2026-11-01 HTML and its script-free
 derivative are recovered with their exact documented hashes. With reconstructed
@@ -51,13 +52,17 @@ PNGs unchanged** and **46 corrected, zero introduced** in the last step. Seven
 final tile/callback functions and five unchanged GG functions pass. Existing
 references and tolerances are unchanged. See the [decoded-frame audit](docs/OPTIMIZED_SITES_PIXELS_2026_11_12.md#decoded-image-frames-for-cpu-resized-planar-uploads-2026-11-16).
 
-The latest completed production `7515422c` still confirms the earlier CPU-mip
-result: **CNN 94 pixels twice**, with the other five available archived sites
-exact. That build contains the previously documented inactive capture probe,
-removed from the checkout. The SVG, rounded RGBA and decoded-frame fixes await
-the shared managed production rebuild. Commit requests are coalesced; no
-duplicate manual build is queued. Older production captures cannot validate
-these new changes.
+Published production **`bbd47035`**, built with literal V `-prod` in one C unit,
+now reproduces all **56 accepted diagnostic PNGs in 112 fresh captures**. CNN,
+GitHub, Hacker News, Lobsters, Wikipedia and Vlang are exact twice; the recovered
+older Reddit page also matches two fresh full-uBO Brave captures. This confirms
+the recorded rendering fixes in the sealed production artifact. The current-checkout
+preflight rejected concurrent image-sampling edits, later committed as
+`12fc9e48b`; those newer changes are not validated by this artifact. Its comparison
+instead pins the receipt and verifies 187 rendering-package source buffers plus
+23 feature/native/shader inputs against the accepted diagnostic build. No manual build
+was queued. See the
+[production audit](docs/OPTIMIZED_SITES_PIXELS_2026_11_12.md#published-production-confirmation-and-lobsters-sample-history-2026-11-16).
 
 Separate ICC/rescaling and other diagnostic controls retain known differences,
 including the forced four-sample profiled-image case. A tall-shadow control has

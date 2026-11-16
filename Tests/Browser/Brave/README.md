@@ -17,6 +17,14 @@ image, rounded clip, background and border in one pass and preserves texture
 coordinates after the geometry's antialiasing outset. See the
 [sprite audit](../../../docs/OPTIMIZED_SITES_PIXELS_2026_11_12.md#repeated-reddit-sprite-backgrounds-and-adjacent-borders-2026-11-16).
 
+For full-uBO paint diagnostics, `tools/adblock/brave_parity.mjs` accepts
+`--post-capture-paint-dir PATH` alongside its normal saved reference. It records
+content-layer paint commands and a separate post-instrumentation PNG, releases
+the snapshots and checks that the original PNG is untouched. These logs omit
+opaque shader/text-blob contents. Instrumentation can change raster history:
+on Lobsters it repaired five captured 101-pixel failures. The later PNG never
+replaces the saved reference or supplies default-path acceptance.
+
 `diagnostic/webp-srgb-table` reuses the tracked CNN train WebP with its original
 1024-entry ICC sRGB transfer table. It draws native-size, 104×58.5 CSS-pixel
 and viewport-clipped copies at 1024×768, scale 1, without scripts. Two fresh

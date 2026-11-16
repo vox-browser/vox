@@ -5495,3 +5495,110 @@ manual production build is queued. Production confirmation remains pending.
 The recovered page still does not supply the missing 2026-11-04 Reddit catalog
 workload or its historical resource cohort. Lobsters' fresh-Brave repeat failure
 and CNN's historical source/replay mismatch also remain open.
+
+### Published production confirmation and Lobsters sample history, 2026-11-16
+
+The shared worker has published a completed production executable,
+`bbd4703576665b62c43c763fa6e75c767ec867b4e33b8b7595a7dbcca231a208`,
+from receipt `20261116-164214-b768c752`. Its receipt records literal V `-prod`
+and one C unit. No manual or duplicate production build was requested.
+
+The strict current-checkout invocation correctly stops before capture because
+another session has edited `images/png_sampling_darwin.v` with a diagnostic probe.
+That failed attempt is retained, and the foreign edit is preserved. The changes
+were later committed as `12fc9e48b`; that newer implementation is not validated
+by this artifact. The following
+artifact-baseline invocation uses the driver's `--diagnostic` mode with the
+published executable explicitly selected. It establishes the named compiled
+artifact's rendering, not that the mutable checkout has been built or tested.
+The usual executable/native-library leases, original fixtures/references,
+resource/readiness checks, fresh profiles and memory guards stay enabled.
+
+Separate provenance checks compare 187 consumed V buffers in `gg`, `ggshape`,
+`images`, `imageraster`, `yuv`, `chromium`, `media`, `browsernet` and
+`browsersettings` with the accepted diagnostic executable `3aa13d5d`. All match;
+layout source buffers also have no differences. Eight selected feature/native/staging
+inputs match the production's frozen source manifest. Fifteen embedded Metal
+shader resources match the accepted bytes, extracted from both byte arrays and
+C string literals in generated C whose full SHA-256 is bound by the production
+receipt. Other globbed resources were not resolved by this extraction and are recorded
+separately; no embedded-byte identity claim is made for them. The entire
+browser source sets are not identical; no complete-checkout equivalence is
+claimed.
+
+All **56 workloads/112 fresh production captures** repeat byte for byte, and
+all 56 decoded PNGs are identical to the accepted diagnostic outputs. The six
+available catalog archives—CNN, GitHub, Hacker News, Lobsters, Wikipedia and
+Vlang—are **zero pixels twice each**. Both public repeated-sprite controls are
+exact. Known nonzero diagnostic controls keep every prior result. The outer
+and browser guards exit 0. On the same production executable, two fresh captures
+of the recovered older Reddit fixture agree exactly with two fresh full-uBO
+Brave references. The 120-response reconstructed archive, original-origin sealed
+replay, 25-post content audit and 39-request filter audits remain intact. This
+confirms the recorded fixes in production; it does not restore the newer missing
+Reddit fixture or its historical resource cohort.
+
+For Lobsters, `1e60a660e` adds the optional `--post-capture-paint-dir` diagnostic,
+which runs only
+after the normal full-uBO reference has been completed and saved. It enables
+`LayerTree`, waits for two animation frames, saves a separate PNG, snapshots
+painted content layers, collects command logs and releases every snapshot.
+Stale layer events, unsupported commands, missing logs, changed viewport or a
+changed reference invalidate the diagnostic. Existing output directories are
+never overwritten. The saved reference is never replaced. **57 related
+JavaScript tests pass**, including error cleanup and unchanged default reference
+preparation.
+
+The predeclared experiment uses eight alternating pairs of fresh Brave
+157.1.99.57 processes: default raster policy and `--disable-partial-raster`.
+Both use the sealed Lobsters archive, full uBO 1.75.0, identical repository list
+bytes, load/paint image preparation, empty HTTP caches, bypassed service workers,
+1024×768 at scale 1, sRGB and five seconds of settling. OS caches remain.
+Executable/framework, extension, checker, fixture, reference, list and harness
+identities remain pinned. The release ZIP and all 59 vendor files verify.
+
+| Pair | Default Brave differences | Partial-raster-disabled differences |
+| --- | ---: | ---: |
+| 1 | 0 | 0 |
+| 2 | 0 | 0 |
+| 3 | 101 | 0 |
+| 4 | 101 | 0 |
+| 5 | 101 | 0 |
+| 6 | 0 | 0 |
+| 7 | 101 | 0 |
+| 8 | 101 | 0 |
+
+All 16 full-uBO audits pass 69 request checks with zero decision mismatches or
+oracle disagreements. Each capture is stable across the reference's consecutive
+PNGs. **All five failing default frames change to the historical reference after
+paint instrumentation starts.** The original failures remain unchanged on disk.
+Thus an instrumented later screenshot cannot certify the earlier default frame.
+All 16 later snapshots contain 755 commands in a 1024×1783 content layer.
+Replacing only process-local image `uniqueID` values with first-encounter
+ordinals, preserving reuse identity, makes the recorded command lists identical
+(SHA-256 `460766b80b28aaaefccdc7107d239be1c0bf1912b3fb3b6d3041e27a5aacffba`).
+CDP omits opaque shader and text-blob contents, and the logs describe the later
+frame; they are not a record of the original failing partial redraw.
+
+An independent focused GPU diagnostic replays the five tag background/border
+pairs from those commands and three pinned avatar sources at their actual tile
+coordinates. The JPEG uses its retained YUV planes and fractional RGB. At every
+one of the **101 differing pixels**, sample count 1 predicts the failed Brave
+value and sample count 4 predicts the historical value, with zero exceptions:
+54 tag/background pixels and 47 avatar pixels. This strengthens the raster-history
+explanation to exact sample-coverage agreement. It does not directly observe
+Brave's GPU sample-count flag. Vox's full-paint output matches the stable reference;
+changing it to match the failing one-sample state would regress that output.
+
+The default Brave repeatability gate remains open, and disabled-partial-raster
+or post-instrumentation captures earn no default-path or performance acceptance.
+No page/reference bytes or tolerance changed. CNN's historical source/replay
+mismatch and the newer missing Reddit fixture also remain open. Commands, source
+proofs, successful and failed attempts, logs, counters and PNGs remain local in
+`docs/performance/lobsters-paint-20261116/`; owned job outputs and the temporary
+GPU probe are removed after preservation.
+
+Cleanup inventories 37 owned roots/4,548 files, preserves and SHA-verifies
+1,463 evidence files/42,554,486 bytes, and removes owned executables, generated
+C, profiles, guards, locks and the temporary GPU probe. Shared bundles and
+dependencies remain.
