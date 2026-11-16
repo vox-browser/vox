@@ -42,10 +42,12 @@ def main():
         path = Path(argument)
         if path.suffix != '.c' or not path.is_file():
             continue
-        source = path.read_text()
+        # Generated C can contain binary bytes inside narrow string literals.
+        # The adapter edits ASCII syntax; Latin-1 preserves every other byte.
+        source = path.read_text(encoding='latin-1')
         patched, found = patch_compiler(source)
         if found:
-            path.write_text(patched)
+            path.write_text(patched, encoding='latin-1')
             Path(os.environ['VOX_MATCH_SCOPE_RECEIPT']).write_text('patched\n')
     return subprocess.call([os.environ['VOX_MATCH_SCOPE_CC'], *sys.argv[1:]])
 

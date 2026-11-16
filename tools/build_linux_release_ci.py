@@ -93,8 +93,9 @@ def main():
              '-lm', '-lpthread'], 'compiler-seed', environment=environment)
     environment.update(VOX_MATCH_SCOPE_CC='clang',
                        VOX_MATCH_SCOPE_RECEIPT=str(compiler / 'patched.txt'))
+    scope_adapter = Path(__file__).with_name('v_match_scope_cc.py')
     command = [compiler / 'v-seed', '-b', 'c', '-memory-limit', '10G', '-nocache',
-               '-d', 'dynamic_boehm', '-cc', source / 'tools/v_match_scope_cc.py',
+               '-d', 'dynamic_boehm', '-cc', scope_adapter,
                '-prod', '-o', compiler / 'v']
     for backend in ('fastc', 'x64', 'amd64', 'arm64', 'ssa', 'eval', 'wasm'):
         command += ['-d', 'skip_' + backend]
@@ -133,6 +134,7 @@ def main():
     (output / 'amd64-toolchain.json').write_text(json.dumps(dict(
         source_commit=args.expected_commit, v_revision=V_REVISION, vc_revision=VC_REVISION,
         ui2_revision=UI2_REVISION, compiler_sha256=digest(compiler / 'v'),
+        match_scope_adapter_sha256=digest(scope_adapter),
         portable_clip_sha256=hashlib.sha256(clip.encode()).hexdigest()), indent=2) + '\n')
     print('VERIFIED AMD64 DEBIAN PACKAGE:', package, flush=True)
 
