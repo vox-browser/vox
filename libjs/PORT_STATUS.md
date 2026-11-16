@@ -92,6 +92,40 @@ functions passing with default GC and GC disabled. The [HN comparison](../docs/H
 records matched compiled-cache controls and separately measured cold/warm runs;
 this establishes neither full engine parity nor browser rendering performance.
 
+Small ordinary ECMAScript/native calls can borrow bounded stack argument
+storage because those concrete callees copy values into owned frames. Custom
+callables, constructors, large calls and suspending functions keep owning slices.
+Tests cover retained custom arguments/native views, nested calls, arguments
+objects, exceptions and the stack view’s actual storage identity.
+
+Short UTF-8 creation caches at most 128 inputs of up to 64 bytes per VM, owning
+both input keys and resulting UTF-16 storage and reporting cached strings as
+heap roots. Ordinary data-property reads avoid constructing full descriptors;
+hosts, strings, typed/mapped arrays, proxies and accessors retain their existing
+semantics. The HN comparison includes system JavaScriptCore via a separately
+linked executable; measured targets and remaining limits are recorded in the
+[performance report](../docs/HACKER_NEWS_JSC_COMPARISON.md).
+
+Fresh unpublished arrays initialize dense own data elements directly; String
+split retains conversion/limit order and UTF-16 boundaries. String storage keeps
+rare unchecked-byte/IPC metadata in an owned optional payload, reducing the
+current 64-bit UTF16 record from 112 to 48 bytes without changing code units,
+raw bytes, IPC storage form or independent clone ownership. Native calls,
+property reads, binding reads and callee resolution share semantic helpers with
+the interpreter;
+budgets and exception dispatch remain at the native bridge boundary. Immediately
+consumed object/environment reads avoid retained Reference records while
+preserving with/proxy ordering, receiver identity and TDZ errors. These
+changes have a 294-function aggregate passing with default GC and GC disabled,
+plus 100/100 exact upstream AST fixtures. This is focused coverage, not a green
+full-package result.
+
+The direct DOM host reuses at most 256 live class collections per document,
+validating root, exact query and quirks mode; DOM mutation invalidation still
+refreshes membership. Collection traversal avoids an extra capturing adapter
+for both native JS backends and LibJS. The report retains all timing cohorts,
+including failing 3× targets and discarded experiments.
+
 Set/Map operations and live iterators, WeakMap weak keys, ordinary arguments
 objects, default/rest/destructured function parameters, class inheritance,
 super construction (including explicit iterator-based argument spread),

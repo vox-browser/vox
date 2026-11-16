@@ -1,5 +1,9 @@
 # Hacker News: V8 and cold/warm LibJS
 
+The [JSC continuation](HACKER_NEWS_JSC_COMPARISON.md) adds system JavaScriptCore,
+production-style preallocation and later runtime optimizations. Results here
+retain the earlier build identities and remain historical.
+
 This compares Vox's JavaScript/DOM integrations on the archived 101-comment HN
 discussion, using the complete unchanged `hn.js`. It measures HTML parsing,
 runtime/binding setup, script initialization, a first collapse/expand, repeated
@@ -9,7 +13,7 @@ correctness audits and teardown. The reported total sums those measured spans;
 it is not a continuous browser navigation or rendering time.
 Adblock is disabled in every mode to exclude filter-list initialization.
 
-## Latest: compiled LibJS exceeds 2× V8 on HN callbacks — 2026-11-16
+## Earlier: compiled LibJS exceeds 2× V8 on HN callbacks — 2026-11-16
 
 The final executable passes seven alternating matched control/candidate/V8
 triplets and an independent seven-group cold/warm comparison. **Restarted warm
