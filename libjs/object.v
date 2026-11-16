@@ -471,6 +471,10 @@ pub fn (object &Object) internal_get(mut vm VM, key PropertyName, receiver Value
 				record_direct_property_read()
 				return value
 			}
+			if use_direct_accessor_dispatch() {
+				vm.record_direct_accessor_dispatch(false)
+				return object.get_accessor_value(mut vm, key, receiver, value.as_accessor())
+			}
 		} else {
 			if parent := object.prototype {
 				if vm.did_reach_stack_space_limit() { return vm.throw_error_type(.internal_error, .call_stack_size_exceeded) }
@@ -505,6 +509,14 @@ pub fn (object &Object) internal_get(mut vm VM, key PropertyName, receiver Value
 	if !same_value(getter,accessor_function_value(accessor.getter)) {
 		return call(mut vm,getter,receiver,[]Value{})
 	}
+	return object.get_accessor_value(mut vm, key, receiver, accessor)
+}
+
+// The owned accessor has already been selected and checked. Keep cache
+// eligibility and post-callback identity validation common to both paths.
+fn (object &Object) get_accessor_value(mut vm VM, key PropertyName, receiver Value, accessor &Accessor) !Value {
+	getter := accessor_function_value(accessor.getter)
+	if getter.is_undefined() { return js_undefined() }
 	mut receiver_uses_holder_cache := false
 	if receiver.is_object() {
 		receiver_object := receiver.as_object()
@@ -565,6 +577,33 @@ pub fn (mut object Object) internal_set(mut vm VM, key PropertyName, value Value
 				return true
 			}
 			if !is_valid_integer_index(array, index) { return true }
+		}
+	}
+	// Ordinary holders cannot run author code while selecting an own cell.
+	// Read the live cell on every write and keep foreign/exotic receivers on
+	// OrdinarySetWithOwnDescriptor's checked define-property path.
+	if use_direct_accessor_dispatch() && object.host_properties == none
+		&& object.legacy_platform_object == none && object.typed_array == none
+		&& object.array_object == none && object.string_object == none
+		&& object.arguments_object == none {
+		index := object.find_own_property(key)
+		if index >= 0 {
+			property := object.properties[index]
+			if property.value.is_accessor() {
+				setter := accessor_function_value(property.value.as_accessor().setter)
+				if setter.is_undefined() { return false }
+				vm.record_direct_accessor_dispatch(true)
+				call(mut vm, setter, receiver, [value])!
+				return true
+			}
+			if receiver.is_object() && voidptr(receiver.as_object()) == voidptr(&object) {
+				if !property.writable { return false }
+				object.properties[index].value = value
+				return true
+			}
+		} else if parent := object.prototype {
+			mut parent_object := unsafe { &Object(parent) }
+			return parent_object.internal_set(mut vm, key, value, receiver)
 		}
 	}
 	descriptor := object.internal_get_own_property(key) or {
