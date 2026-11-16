@@ -49,6 +49,30 @@ fn test_uniform_yuv_callback_preserves_native_tile_coordinate_space() {
 	assert fallback == direct
 }
 
+fn test_near_half_yuv_callback_retains_cpu_upload_mips() {
+	previous := document_geometry_grid
+	defer { document_geometry_grid = previous }
+	bytes := $embed_file('@VMODROOT/Tests/Browser/Brave/sites/cnn/bodies/64c0bec89a02c6abf49a57bc3a3723f395d6cb2b7ef76ab0a0d429bf33b2dd8f').to_bytes()
+	mut planes := []u8{len: 256 * 144 * 3 / 2}
+	decoded := unsafe { C.WebPDecodeYUVInto(bytes.data, uint(bytes.len), planes.data, 256 * 144, 256, &planes[256 * 144], 128 * 72, 128, &planes[256 * 144 + 128 * 72], 128 * 72, 128) }
+	assert decoded != unsafe { nil }
+	atlas := yuv.webp_420_atlas_upload(planes, 256, 144) or { panic('native CPU atlas') }
+	document_geometry_grid = DocumentGeometryGrid{ width: 1024, height: 256, columns: 1, rows: 4 }
+	clip := [f32(2), 2, 130, 73, 4, 4, 4, 4, 4, 4, 4, 4]!
+	mut pixels := []u8{len: 134 * 77 * 4, init: 255}
+	assert document_sampled_png_pixels(pixels.data, 134, 77, 536, 1, 721, 627, atlas.data, 256, 144, 256, 144, 5, 2, 2, 130, 73, &clip[0]) == 1
+	swap_document_raster_channels(pixels.data, 134, 77, 536)
+	assert sha256.sum(pixels).hex() == 'fcfdf9b06b11cbcbfbe9f8afe3a1447aba2349179c7fc2d1bee67eccb5d8f5e8'
+	// CPU mip selection also survives the direct fallback without a grid.
+	document_geometry_grid = DocumentGeometryGrid{}
+	mut direct := []u8{len: pixels.len, init: 255}
+	mut fallback := direct.clone()
+	assert ggshape.draw_sampled_yuv_atlas_with_mips_clipped(direct.data, 134, 77, 536, 1, atlas, 256, 144, 2, 2, 130, 73, 1, 256, 144, clip, false) == 1
+	assert document_sampled_png_pixels(fallback.data, 134, 77, 536, 1, 721, 627, atlas.data, 256, 144, 256, 144, 5, 2, 2, 130, 73, &clip[0]) == 1
+	swap_document_raster_channels(fallback.data, 134, 77, 536)
+	assert sha256.sum(fallback) == sha256.sum(direct)
+}
+
 fn test_jpeg_native_callback_preserves_full_range_color_and_tile_sample_ownership() {
 	previous := document_geometry_grid
 	defer { document_geometry_grid = previous }

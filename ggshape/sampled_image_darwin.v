@@ -56,7 +56,7 @@ fn draw_sampled_image(pixels &u8,width i32,height i32,pitch i32,backdrop i32,sou
 	extent_y := f32(natural_height) * (f32(source_height) / f32(natural_height))
 	byte_source := if colors.len>0 {colors.map(u8(math.floor(it*255+.5)))} else {source}
 	mut levels := [byte_source]
-	if (yuv_mode != 1 || gpu_mips) && destination_width < source_width && destination_height < source_height
+	if (yuv_mode != 1 || gpu_mips || yuv_atlas) && destination_width < source_width && destination_height < source_height
 		&& extent_x >= source_width && extent_y >= source_height {
 		image := imageraster.Image{ width: source_width, height: source_height, pixels: byte_source }
 		chain := if gpu_mips {
@@ -126,9 +126,15 @@ pub fn draw_sampled_yuv_with_mips_clipped(pixels &u8, width i32, height i32, pit
 // full-upload bounds preserve alignment of the selected chroma and luma mips.
 pub fn draw_sampled_yuv_atlas_clipped(pixels &u8, width i32, height i32, pitch i32, backdrop i32,
  source []u8, sw int, sh int, x f32, y f32, dw f32, dh f32, samples int, nw int, nh int, clip [12]f32) i32 {
+ return draw_sampled_yuv_atlas_with_mips_clipped(pixels,width,height,pitch,backdrop,source,sw,sh,x,y,dw,dh,samples,nw,nh,clip,true)
+}
+
+// New pixmap uploads can carry CPU byte mips; retained textures use GPU mips.
+pub fn draw_sampled_yuv_atlas_with_mips_clipped(pixels &u8, width i32, height i32, pitch i32, backdrop i32,
+ source []u8, sw int, sh int, x f32, y f32, dw f32, dh f32, samples int, nw int, nh int, clip [12]f32, gpu_mips bool) i32 {
  if !yuv.webp_atlas_sampling_supported(sw,sh,f64(dw),f64(dh)) || source.len!=sw*sh*4 {return 0}
  for i:=3;i<source.len;i+=4 {if source[i]!=255 {return 0}}
- return draw_sampled_image(pixels,width,height,pitch,backdrop,source,[],sw,sh,x,y,dw,dh,samples,nw,nh,clip,true,unsafe{nil},1,true)
+ return draw_sampled_image(pixels,width,height,pitch,backdrop,source,[],sw,sh,x,y,dw,dh,samples,nw,nh,clip,gpu_mips,unsafe{nil},1,true)
 }
 
 // JPEG uploads have full-range 4:4:4 planes and retain CPU byte mips.

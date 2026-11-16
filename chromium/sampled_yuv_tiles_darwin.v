@@ -53,9 +53,9 @@ fn draw_document_sampled_yuv_tiles(pixels &u8, width i32, height i32, pitch i32,
                     i32(grid.width * 4), backdrop, source, sw, sh, x + dx, y + dy, dw, dh,
                     samples, nw, nh, local_clip)
             } else if atlas {
-				ggshape.draw_sampled_yuv_atlas_clipped(tile.data, i32(grid.width), i32(grid.height),
+				ggshape.draw_sampled_yuv_atlas_with_mips_clipped(tile.data, i32(grid.width), i32(grid.height),
 					i32(grid.width * 4), backdrop, source, sw, sh, x + dx, y + dy, dw, dh,
-					samples, nw, nh, local_clip)
+					samples, nw, nh, local_clip, gpu_mips)
 			} else {
 				ggshape.draw_sampled_yuv_with_mips_clipped(tile.data, i32(grid.width), i32(grid.height),
 					i32(grid.width * 4), backdrop, source, sw, sh, x + dx, y + dy, dw, dh,

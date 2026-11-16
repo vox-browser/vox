@@ -98,14 +98,19 @@ fn document_sampled_png_pixels(pixels &u8, width i32, height i32, pitch i32, bac
 	mut result := i32(0)
 	if gpu_mips in [3, 4, 5, 6] {
         packed := unsafe { source.vbytes(int(source_width) * int(source_height) * 4) }
+        // Native-size near-half uploads build byte mips before transfer.
+        // Stronger atlas minification retains the existing GPU plane mips.
+        atlas_cpu_mips := gpu_mips == 5 && destination_width * 2 > source_width
+            && destination_height * 2 > source_height
+        plane_gpu_mips := gpu_mips == 4 || (gpu_mips == 5 && !atlas_cpu_mips)
         // Tile dimensions affect interpolation even when sample counts agree.
         result = draw_document_sampled_yuv_tiles(pixels, width, height, pitch, backdrop,
             int(first_x), int(first_y), packed, int(source_width), int(source_height),
-            x, y, destination_width, destination_height, int(natural_width), int(natural_height), clipping, gpu_mips == 4 || gpu_mips == 5, gpu_mips == 5, gpu_mips == 6)
+            x, y, destination_width, destination_height, int(natural_width), int(natural_height), clipping, plane_gpu_mips, gpu_mips == 5, gpu_mips == 6)
         if result == 0 && samples != 0 && gpu_mips == 5 {
-            result = ggshape.draw_sampled_yuv_atlas_clipped(pixels, width, height, pitch, backdrop,
+            result = ggshape.draw_sampled_yuv_atlas_with_mips_clipped(pixels, width, height, pitch, backdrop,
                 packed, source_width, source_height, x, y, destination_width, destination_height,
-                int(samples), int(natural_width), int(natural_height), clipping)
+                int(samples), int(natural_width), int(natural_height), clipping, plane_gpu_mips)
         } else if result == 0 && samples != 0 && gpu_mips != 6 {
             result = ggshape.draw_sampled_yuv_with_mips_clipped(pixels, width, height, pitch, backdrop,
                 packed, source_width, source_height, x, y, destination_width, destination_height,
