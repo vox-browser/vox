@@ -234,6 +234,7 @@ pub fn Host.create(vm &libjs.VM, realm &libjs.Realm, document &dom.Document, hoo
 	host.install_intersection_observers()
 	host.install_resize_observers()
 	host.install_animation_frames()
+	host.install_window_scrolling()
 	host.install_timers()
 	host.install_microtasks()
 	host.install_idle_callbacks()
