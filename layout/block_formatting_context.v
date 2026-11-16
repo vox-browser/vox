@@ -295,6 +295,13 @@ fn margins_collapse_through(box &NodeWithStyle, state &LayoutState) bool {
 	if box_state.border_box_height().to_double() != 0 {
 		return false
 	}
+	// An in-flow line separates adjoining margins even when its text or
+	// atomic inline content has zero height (for example a clearfix).
+	for line in box_state.line_boxes {
+		if !line.is_empty() {
+			return false
+		}
+	}
 	box_node := unsafe { &Node(box) }
 	for child in box_node.children() {
 		if !child.is_box() || child.is_out_of_flow() {
