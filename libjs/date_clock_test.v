@@ -8,7 +8,7 @@ fn test_emulated_date_clock_retains_elapsed_time_and_explicit_constructor_values
 	mut vm := VM.create()
 	create_simple_execution_context(mut vm)
 	vm.set_date_clock_epoch_milliseconds(946684800000.0)!
-	mut script := Script.parse('Date.now()>=946684800000&&new Date().getUTCFullYear()===2000&&new Date(123).getTime()===123&&Date().includes("2000")', vm.realm(), 'date-clock.js', unsafe { nil })!
+	mut script := Script.parse('Date.now()>=946684800000&&new Date().getUTCFullYear()===2000&&new Date(123).getTime()===123&&Date().includes(String(new Date().getFullYear()))', vm.realm(), 'date-clock.js', unsafe { nil })!
 	assert vm.run(mut script)!.as_bool()
 	vm.date_clock_started_ns_ -= 2 * time.second
 	assert vm.current_time_milliseconds() >= 946684802000
