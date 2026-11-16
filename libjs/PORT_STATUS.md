@@ -3149,8 +3149,8 @@ capture-scale, shared rectangle/clip and finite compositor-footprint corrections
 a border resampling regression is removed. A guarded Display P3 document-space
 experiment initially reaches 343 differing pixels; guarded PNG decode density,
 mipmaps, thin-rectangle rasterization and destination-space blending now reach
-42 differing pixels against the unchanged original reference, after preserving
-fractional percentage transform origins;
+25 differing pixels against the unchanged original reference, after preserving
+fractional percentage transform origins and shared scaled PNG/shadow samples;
 it is not pixel-perfect acceptance. Covered MSAA samples now quantize before
 resolving coverage, with regression sources held uncompiled/unrun.
 The 862d ABI also completes a separate empty-cache first opening and fresh
@@ -3172,3 +3172,11 @@ or compiler calls. The 0130 ABI then completes its own 23,778-executable/81-modu
 a compatible compiler-disabled 4,245-hit/zero-miss reopen whose output equals
 the 48-pixel candidate, and all six native control actions with 4,690 hits and
 no misses or compiler calls. This is not full-site, live-site, historical pixel or performance acceptance. Automated suites remain held. See [the resumed diagnostic report](../docs/LIBJS_GITHUB_RUNTIME_20261115.md#browser-diagnostics-resumed-2026-11-16).
+
+The 25-pixel frozen capture uses the compatible 0130 ABI with 4,244 hits,
+474,023 native entries and zero misses/compiler calls. A trimmed rendering
+rebuild repeats its pixels but has a newer ecad ABI; its incompatible-cache
+attempts execute bytecode and are not compiled acceptance. The new ABI is
+being prepared through an actual first opening. Safe arithmetic and shared
+button underlays change no pixels; centroid interpolation and a current-upstream
+mesh counterfactual regress and are rejected. No reference or tolerance changes.

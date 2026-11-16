@@ -4527,3 +4527,82 @@ clock attempts to annotate the document before the HTML root exists; that
 failure belongs to the diagnostic, not GitHub. It is retained and does not
 replace the original reference. Tests remain held and pixel-perfect parity
 remains incomplete.
+
+### Shared PNG/shadow samples and 25-pixel compiled capture, 2026-11-17
+
+`e17f869cd` keeps an eligible scaled PNG and its zero-blur outer shadow in
+one destination-space sample pass. The guarded path accepts matching positive
+uniform transforms, transforms the shadow and image clip consistently, decodes
+at the selected rendering density, and converts the source image separately
+from the already destination-colored shadow. Each tile keeps its owning sample
+count and the existing unsupported-case fallback. Nonidentity replay requires
+the P3 scope and zero scroll. The switch remains
+`VOX_DIAGNOSTIC_SCALED_PNG_SHADOW_GROUP=1`; the default production pixel gate
+is not changed to the diagnostic result.
+
+The r3 production-mode build seals 3,758 sources and zero tests, finishes in
+255.32481475 seconds with peak 8,981,626,880 bytes, and produces executable
+`9cd41a3e45e786f2518efdfa483d3db88bfa1c8d747c3077620284724f6915d4`.
+Actual-page logs confirm both the 60-by-60 logo and 40-by-40 avatar enter the
+shared path. Early log excerpts alone had missed the later hydrated avatar;
+the earlier r2 attempt remains retained without retrospective acceptance.
+The r3 on/off captures both use the actual 0130 ABI cache with the compiler
+set to `/usr/bin/false`, full exact content, no author/native errors, unchanged
+input pins and zero browser/controller/guard exits. On has 4,244 cache hits,
+474,023 native entries and zero misses/compiler calls/pending/invalid entries;
+off has 4,245 hits and 472,575 entries with the same zero gates. Elapsed/peak
+are 52.745366708 seconds/8,949,743,616 bytes and 38.7811755 seconds/
+8,524,152,832 bytes respectively. These intervals do not establish a speedup.
+
+On resolves all 17 changed pixels with no regressions or new mismatches.
+The unchanged reference and zero/zero tolerance now give **25 differing pixels,
+maximum 15, MAE 0.0001, RMSE 0.0218**. Off reproduces the prior 42-pixel
+image exactly. The compiled P3 PNG is retained locally as
+`github-frozen-libjs-compiled-25px.png`, SHA-256
+`29793c7f747190d05be226f4018cedb553b7637de1c8a91a1c656eb45cfa9b3a`.
+This is the frozen-page diagnostic, distinct from the direct-live compiled
+screenshot `current-live-libjs-compiled.png` documented above.
+
+The trimmed r4 build removes verbose caller/eligibility tracing and seals
+3,758 sources and zero tests in 287.639708458 seconds, peak 8,906,670,080 bytes.
+Its executable is
+`66d5893cd87bf1916fe9064ec91564491b3c7016fbf0bd649ab0d3f5f1afe1ce`.
+Its fresh on/off captures repeat exactly 25/42 pixels, but concurrent LibJS
+runtime work changes its ABI to
+`ecad02d7b83c947931f24c8ea36a2eee083391a21c0653ba5035a00242eb13a9`.
+The old cache cannot load under that ABI: both attempts have zero native
+entries, 4,265 misses, 4,245 pending executables, and a disabled-compiler error.
+They are rendering evidence only, not compiled-JavaScript acceptance. A real
+first opening is now preparing the new ABI before a compiler-disabled reopen;
+no ABI partition is renamed or copied to manufacture compatibility.
+
+Three follow-ups are rejected. Allowing rounded shadow/background/border
+underlays enters the actual page path but changes no pixels in either mode;
+that source experiment is removed. Its captures also have the incompatible
+ABI and supply no compiled-execution evidence. Explicit Metal safe arithmetic
+on the compatible r3 binary changes zero pixels, with 4,244 hits, 473,291 native
+entries and zero misses/compiler calls. Changing interpolation to centroid
+worsens the image to 6,936 differing pixels, with no resolved original pixels;
+it has 4,244 hits and 473,433 entries with the same native zero gates. The
+upstream-current 73-index analytic rectangle strip differs from GG's 69-index
+strip, but a buffer-matched original-page counterfactual worsens the result to
+41 pixels, introducing 16 mismatches and resolving none. It has 4,245 hits and
+472,346 native entries with zero misses/compiler calls. No mesh staging patch
+is retained. These shader/mesh probes are instrumented diagnoses, not
+performance evidence, and do not assert that current upstream matches the
+installed Brave revision. Reference pixels and tolerances remain unchanged.
+
+Safe/centroid/mesh capture elapsed and sampled peak RSS are respectively
+51.777625458 seconds/8,827,682,816 bytes, 56.175325417 seconds/9,031,024,640
+bytes, and 38.637134667 seconds/8,525,561,856 bytes. All retain complete exact
+content, fixed inputs and zero exits. A centroid launcher failure before any
+browser starts is retained separately: the guard compiler runs out of disk
+space. Hash-journaled pruning of 24 completed owned generated compiler inputs
+reclaims 5,631,450,791 bytes; completed receipts, source proofs, executables
+and the latest generated inputs remain available. The next launch succeeds.
+Completed scratch jobs move to `scratch-receipts/continued-20261117-r15` after
+idle-lock checks and before/after hash verification (46 roots/253 entries).
+The active native preparation is excluded. Regression sources for the PNG
+change are committed but remain uncompiled/unrun at the user's request.
+Pixel-perfect parity, a current-ABI compiled reopen, and matched revisit
+performance remain open.
