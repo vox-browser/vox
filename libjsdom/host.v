@@ -64,6 +64,7 @@ mut:
 	token_list_wrappers map[voidptr]&libjs.Object
 	event_prototype      &libjs.Object = unsafe { nil }
 	custom_event_prototype &libjs.Object = unsafe { nil }
+	ui_event_prototype &libjs.Object = unsafe { nil }
 	event_target_prototype &libjs.Object = unsafe { nil }
 	event_target_constructor &libjs.Object = unsafe { nil }
 	event_targets map[voidptr]&dom.EventTarget
@@ -225,6 +226,7 @@ pub fn Host.create(vm &libjs.VM, realm &libjs.Realm, document &dom.Document, hoo
 	host.install_token_lists()!
 	host.install_dom_exceptions()!
 	host.install_custom_events()!
+	host.install_ui_events()!
 	host.install_abort_signals()!
 	host.install_custom_elements()!
 	host.install_navigator()!
