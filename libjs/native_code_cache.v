@@ -39,6 +39,7 @@ struct NativeCacheRecord {
 
 pub struct NativeCacheStats {
 pub mut:
+	abi                  string
 	pending_executables  int
 	cache_hits           u64
 	cache_misses         u64
@@ -50,19 +51,33 @@ pub mut:
 	last_error           string
 }
 
-fn native_cache_abi() string {
-	// Invalidate machine code when the ABI or generated fast-path semantics
-	// change, without invalidating it for unrelated browser/docs commits.
-	return sha256.hexhash('native-disk-v1:${os.user_os()}:${os.uname().machine}:' +
-		$embed_file('@VMODROOT/libjs/native_tier.v').to_string() +
-		$embed_file('@VMODROOT/libjs/native_dynamic_dispatch.v').to_string() +
-		$embed_file('@VMODROOT/libjs/native_code_cache.v').to_string() +
-		$embed_file('@VMODROOT/libjs/instruction.v').to_string() +
-		$embed_file('@VMODROOT/libjs/value.v').to_string() +
-		$embed_file('@VMODROOT/libjs/object.v').to_string() +
-		$embed_file('@VMODROOT/libjs/utf16_utils.v').to_string() +
-		$embed_file('@VMODROOT/libjs/utf16_ascii_storage.v').to_string() +
-		$embed_file('@VMODROOT/libjs/operand.v').to_string())
+fn native_cache_binary_abi(executable string) !string {
+	return sha256.hexhash('native-disk-binary-v1:${os.user_os()}:${os.uname().machine}:' +
+		os.read_file(executable)!)
+}
+
+fn native_cache_abi() !string {
+	$if !prod {
+		// Development builds reload $embed_file inputs from the working tree.
+		// Those files can change without changing this executable's generator or
+		// Value layout. Bind their cache to the executable instead, and fail
+		// closed if its identity cannot be read. Production embeds the sources
+		// below, so unrelated browser rebuilds can still share native code.
+		return native_cache_binary_abi(os.executable())
+	} $else {
+		// Invalidate machine code when the ABI or generated fast-path semantics
+		// change, without invalidating it for unrelated browser/docs commits.
+		return sha256.hexhash('native-disk-v1:${os.user_os()}:${os.uname().machine}:' +
+			$embed_file('@VMODROOT/libjs/native_tier.v').to_string() +
+			$embed_file('@VMODROOT/libjs/native_dynamic_dispatch.v').to_string() +
+			$embed_file('@VMODROOT/libjs/native_code_cache.v').to_string() +
+			$embed_file('@VMODROOT/libjs/instruction.v').to_string() +
+			$embed_file('@VMODROOT/libjs/value.v').to_string() +
+			$embed_file('@VMODROOT/libjs/object.v').to_string() +
+			$embed_file('@VMODROOT/libjs/utf16_utils.v').to_string() +
+			$embed_file('@VMODROOT/libjs/utf16_ascii_storage.v').to_string() +
+			$embed_file('@VMODROOT/libjs/operand.v').to_string())
+	}
 }
 
 // The caller supplies a private executable cache, not the HTTP resource cache.
@@ -73,7 +88,7 @@ pub fn (mut vm VM) enable_native_code_cache(directory string, compiler string) !
 		return error('Cannot enable the native disk cache during JavaScript execution')
 	}
 	if vm.native_tier != none { return error('Native tier already initialized') }
-	abi := native_cache_abi()
+	abi := native_cache_abi()!
 	path := os.join_path(directory, abi)
 	os.mkdir_all(path)!
 	vm.native_tier = &NativeTier{
@@ -86,7 +101,7 @@ pub fn (mut vm VM) enable_native_code_cache(directory string, compiler string) !
 pub fn (vm &VM) native_code_cache_stats() NativeCacheStats {
 	if tier := vm.native_tier {
 		if cache := tier.persistent {
-			return NativeCacheStats{ ...cache.stats, pending_executables: cache.pending.len }
+			return NativeCacheStats{ ...cache.stats, abi: cache.abi, pending_executables: cache.pending.len }
 		}
 	}
 	return NativeCacheStats{}
