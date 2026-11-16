@@ -84,6 +84,8 @@ fn document_sampled_png_pixels(pixels &u8, width i32, height i32, pitch i32, bac
 	x f32, y f32, destination_width f32, destination_height f32, clip &f32) i32 {
 	if source == unsafe { nil } || source_width <= 0 || source_height <= 0
 		|| source_width > 4096 || source_height > 4096
+		|| natural_width <= 0 || natural_height <= 0
+		|| natural_width > 4096 || natural_height > 4096
 		|| int(source_width) * int(source_height) > 4 * 1024 * 1024 {
 		return 0
 	}
@@ -98,6 +100,10 @@ fn document_sampled_png_pixels(pixels &u8, width i32, height i32, pitch i32, bac
 	mut result := i32(0)
 	if gpu_mips in [3, 4, 5, 6] {
         packed := unsafe { source.vbytes(int(source_width) * int(source_height) * 4) }
+        // CPU-resized 4:4:4 uploads have a decoded image frame. Fold the
+        // natural-to-decode scale before constructing the GPU image matrix.
+        frame_width := if gpu_mips == 3 { int(source_width) } else { int(natural_width) }
+        frame_height := if gpu_mips == 3 { int(source_height) } else { int(natural_height) }
         // Native-size near-half uploads build byte mips before transfer.
         // Stronger atlas minification retains the existing GPU plane mips.
         atlas_cpu_mips := gpu_mips == 5 && destination_width * 2 > source_width
@@ -106,15 +112,15 @@ fn document_sampled_png_pixels(pixels &u8, width i32, height i32, pitch i32, bac
         // Tile dimensions affect interpolation even when sample counts agree.
         result = draw_document_sampled_yuv_tiles(pixels, width, height, pitch, backdrop,
             int(first_x), int(first_y), packed, int(source_width), int(source_height),
-            x, y, destination_width, destination_height, int(natural_width), int(natural_height), clipping, plane_gpu_mips, gpu_mips == 5, gpu_mips == 6)
+            x, y, destination_width, destination_height, frame_width, frame_height, clipping, plane_gpu_mips, gpu_mips == 5, gpu_mips == 6)
         if result == 0 && samples != 0 && gpu_mips == 5 {
             result = ggshape.draw_sampled_yuv_atlas_with_mips_clipped(pixels, width, height, pitch, backdrop,
                 packed, source_width, source_height, x, y, destination_width, destination_height,
-                int(samples), int(natural_width), int(natural_height), clipping, plane_gpu_mips)
+                int(samples), frame_width, frame_height, clipping, plane_gpu_mips)
         } else if result == 0 && samples != 0 && gpu_mips != 6 {
             result = ggshape.draw_sampled_yuv_with_mips_clipped(pixels, width, height, pitch, backdrop,
                 packed, source_width, source_height, x, y, destination_width, destination_height,
-                int(samples), int(natural_width), int(natural_height), clipping, gpu_mips == 4)
+                int(samples), frame_width, frame_height, clipping, gpu_mips == 4)
         }
     } else if gpu_mips == 2 {
 		mut values := []f32{len: int(source_width) * int(source_height) * 4}

@@ -13,6 +13,35 @@ fn C.WebPDecodeYUVInto(&u8, uint, &u8, uint, i32, &u8, uint, i32, &u8, uint, i32
 
 fn C.WebPDecodeRGBAInto(&u8, uint, &u8, uint, i32) &u8
 
+fn test_rounded_cpu_yuv_upload_uses_decoded_frame_coordinates() {
+	previous := document_geometry_grid
+	defer { document_geometry_grid = previous }
+	bytes := $embed_file('@VMODROOT/Tests/Browser/Brave/sites/cnn/bodies/3b55183527c54f500074b88bd2e0fb0a9a976358fa04f5a5197b9d1314f005e8').to_bytes()
+	mut planes := []u8{len: 480 * 270 * 3 / 2}
+	decoded := unsafe {
+		C.WebPDecodeYUVInto(bytes.data, uint(bytes.len), planes.data, 480 * 270, 480,
+			&planes[480 * 270], 240 * 135, 240, &planes[480 * 270 + 240 * 135], 240 * 135, 240)
+	}
+	assert decoded != unsafe { nil }
+	upload := yuv.webp_minified_upload(planes, 480, 270, 120, 68) or { panic('rounded CPU upload') }
+	assert sha256.sum(upload).hex() == 'd3592c9e72cd744fabe92d0ff512ce020e67a1ed53a6e39417907c9f9dee3163'
+	document_geometry_grid = DocumentGeometryGrid{ width: 1024, height: 256, columns: 1, rows: 4, cells: [i32(2), 3] }
+	clip := [f32(2), 2, 103, 58, 4, 4, 4, 4, 4, 4, 4, 4]!
+	mut pixels := []u8{len: 107 * 41 * 4, init: 255}
+	assert document_sampled_png_pixels(pixels.data, 107, 41, 428, 1, 331, 751, upload.data,
+		120, 68, 480, 270, 3, 2, 2, 103, 58, &clip[0]) == 1
+	swap_document_raster_channels(pixels.data, 107, 41, 428)
+	// Independent native R8-plane frames, including ownership across a 4x MSAA seam.
+	assert sha256.sum(pixels).hex() == '496cc60bd21aeb50fe399f94de9b8feca5a7db9b3959468533d17197267552f5'
+	// Replacing the image frame must not admit invalid natural metadata.
+	for natural in [[0, 270], [480, 0], [-1, 270], [480, -1], [4097, 270], [480, 4097]] {
+		mut rejected := []u8{len: pixels.len, init: 97}
+		assert document_sampled_png_pixels(rejected.data, 107, 41, 428, 1, 331, 751,
+			upload.data, 120, 68, i32(natural[0]), i32(natural[1]), 3, 2, 2, 103, 58, &clip[0]) == 0
+		assert rejected.all(it == 97)
+	}
+}
+
 fn test_uniform_rgba_callback_preserves_owning_tile_samples() {
 	previous := document_geometry_grid
 	defer { document_geometry_grid = previous }
