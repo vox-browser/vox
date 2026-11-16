@@ -3124,12 +3124,17 @@ module preparations and zero pending entries under the 12 GiB guard. Its fresh
 reopen has 4,245 hits and zero misses/compiler invocations, with exact content
 and identical output. Native input executes 849,296 native entries but exposes
 two omitted synthetic class-field bodies and hits the memory guard before
-completion. Recursive initializer/static-block preparation compiles 23,778 entries,
-but that candidate's fresh reopen crashes after temporary lookup storage frees
-JSON decoder metadata. The decoder boundary is corrected and native callback
-records now reuse storage by active depth. A new literal -prod browser builds
-from 3,735 sources with zero tests; its partial-cache reader completes without
-the crash, with expected misses. The full first/reopen/control cohort is pending. Font-strike rounding gives the same 156-pixel Go to
+completion. Recursive initializer/static-block preparation and the corrected
+decoder boundary now complete a fresh 23,778-entry first opening, a
+compiler-disabled 4,245-hit/zero-miss reopen, and the full 60-second native
+mouse/keyboard sequence. That sequence has 4,690 hits, zero misses or compiler
+requests, and 868,401 native entries; it preserves exact content and closes both
+menus under the unchanged 12 GiB guard (11.78 GiB peak). Native callback records
+reuse storage by active depth. No live or matched performance acceptance is
+claimed. Font-strike rounding gives the same 156-pixel Go to
 file input as Brave. The unchanged
-historical windowed pixel gate still fails at 25,399 pixels. This is not full-site,
+windowed pixel gate improves to 25,206 pixels after default SVG, PNG capture-scale
+and border-phase corrections. The newer native ABI passes compiler-disabled
+reopen and controls after recovery from a retained first-opening timeout; a
+separate empty-cache opening remains pending. This is not full-site,
 live-site, historical pixel or performance acceptance. Automated suites remain held. See [the resumed diagnostic report](../docs/LIBJS_GITHUB_RUNTIME_20261115.md#browser-diagnostics-resumed-2026-11-16).

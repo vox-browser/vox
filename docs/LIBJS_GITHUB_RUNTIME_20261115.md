@@ -9,12 +9,14 @@ cohort exposed mutable development cache identity; that fix is now implemented.
 The full 60-second interpreter control sequence passes. An all-module native
 first opening compiles 23,669 executables and its fresh reopen reuses 4,245
 entries with zero misses. Native controls expose two missing field-initializer
-templates and hit the memory guard. The initializer candidate compiles 23,778
-entries, but its first fresh reopen crashes in record decoding. Decoder lifetime
-and native invocation storage fixes are committed; a new first/reopen/control
-cohort is running. A partial-cache reader completes without that crash, with
-expected misses, and cannot establish completed-cache acceptance. Speed and the
-original frozen-reference pixel gate remain open.
+templates and hit the memory guard. The subsequent initializer candidate exposes
+a decoder ownership crash. After correction, a fresh first opening compiles
+23,778 entries, its compiler-disabled reopen has 4,245 hits and zero misses, and
+the complete native mouse/keyboard sequence passes with 4,690 hits, zero misses
+and actual native execution. The compositor, PNG capture-scale and border fixes
+are enabled by default; the unchanged windowed-reference gate is now 25,206
+differing pixels. Exact content is preserved throughout. Speed, live validation
+and pixel-perfect acceptance remain open.
 
 **Full GitHub acceptance remains unachieved.** The latest initial native LibJS capture
 has 33 rows, 56 commit links, latest commit and README, zero page errors and an
@@ -3736,3 +3738,244 @@ the SVG with scale two and translation (26,20). Thus the picture origin is
 x=774. The native foreground currently loses the fractional picture phase.
 A guarded disjoint-SVG phase experiment is underway; it is not yet a production
 fix or pixel acceptance. All automated tests remain held.
+
+
+### Corrected production first opening, compiler-disabled reopen and native controls
+
+The `decoder-lifetime-window-r2` first opening completes its fresh ABI partition
+without borrowing an older cache. Final results are **23,778 compiled entries,
+186 compiler invocations, no pending/invalid entries and no cache error**.
+All 81 requested modules finish preparation: 25,643 bodies, 19,533 queued
+uncalled templates, zero reported unsupported bodies or preparation diagnostics.
+Compilation records 1,217,822.200678 ms and loading 38,720.570334 ms. Browser,
+controller and guard all exit zero, unchanged pins; guard elapsed is
+**1,275.431115542 seconds**, sampled aggregate peak **10,913,251,328 bytes**.
+The exact original content audit passes with zero author/native errors.
+
+A **fresh compiler-disabled reopen** with the identical executable and cache
+records **4,245 native hits, zero misses, zero pending/invalid entries, zero
+compiler invocations and no cache error**. Recorded native loading is
+650.474350 ms. Browser/controller/guard exit zero, elapsed 38.78540275 seconds,
+sampled peak 8,478,294,016 bytes. The exact original content audit passes with no
+errors, and the first/reopen PNGs are byte-identical:
+`05ede3eae524f64796fe08bfa6406c6703006026387a94d816d3e832807cbb70`.
+The unchanged strict windowed-reference gate still has 25,399 differing pixels
+before the separate compositor-phase candidate. The 30-second observer is
+included in both launch/capture lifecycles; the first lifecycle also drains
+compilation after capture. These durations establish neither an isolated native
+execution speedup nor matched performance acceptance.
+
+The same corrected executable then completes the **entire 60-second native
+mouse/keyboard observation**, with `/usr/bin/false` as compiler. Code and master
+menus are both observed open; the branch input receives native value `ma`; all
+six actions and their completion marker arrive. Final menus/visible overlays
+are closed. The terminal exact content audit retains all 33 rows, 56 commit
+links, latest commit and README, with zero author/native errors. Controller
+`controls_accepted` and `compiled_controls_accepted` are both true.
+
+That sequence has **4,690 cache hits, zero misses, zero pending/invalid entries,
+zero compiler invocations and no cache error**. Actual native counters record
+**868,401 entries, 25,149,987 fast steps and 15,041,224 slow steps**; JSC stays
+uninitialized. The two previously missing synthetic field bodies no longer
+miss. Native loading records 646.676358 ms. Browser/controller/guard exit zero,
+unchanged pins, elapsed 61.41013075 seconds, sampled aggregate peak
+**12,646,662,144 bytes (11.78 GiB)** under the unchanged 12 GiB cap. This is a
+complete interaction checkpoint, with little memory headroom, rather than a
+long-duration memory bound or a native speed claim. The separate mapping probe,
+earlier failed controls and decoder crash remain retained.
+
+All 28 shared executable/native-library/archive pins agree across this
+first/reopen/control cohort. The first/reopen diagnostic observer hashes also
+agree with the current canonical driver:
+`019574fce1afd03f0741b2bb0d74d639fe977d7903c08e21c6404be5a873e544`.
+The selected runtime is LibJS, module evaluations are fulfilled and the native
+context flag remains false. The earlier failed ABI partitions have since been
+removed for disk space after preserving all 47,818 file hashes and sizes in the
+local `superseded-native-cache-cleanup-20261116.json` manifest. Their browser
+executables, parsed source proofs and observation receipts remain; the new
+successful partition is retained unchanged.
+
+### Fractional compositor origin and coverage-precision continuation
+
+The first guarded phase build passes non-test root checking and builds from
+3,737 sources with zero tests: 217.700182542 seconds, sampled peak
+11,993,645,056 bytes. Same-binary phase-off/on captures both reproduce exactly
+the existing native PNG and strict 25,399-pixel mismatch. No phase-publication
+marker appears, so this is an **ineligible fast path**, not a rendering gain.
+A separate retained layer diagnostic identifies the missing state: the layer
+plan encloses fractional bounds before replay receives the origin.
+
+`8bb72fd6b` retains each independent effect picture's raw origin before that
+enclosure, clearing it on reuse. A focused fractional filtered-picture/plan-reuse
+regression source is included but remains uncompiled/unrun. The corrected
+non-test check passes in 43.341212709 seconds, peak 7,474,577,408 bytes. Its
+literal production-mode diagnostic browser builds in 228.96337525 seconds,
+peak 11,996,102,656 bytes. The guarded rendering path now explicitly records
+origin **760.7578125**, presenting scale two, capture scale one and raster phase
+**(0.5,0)**, matching the independent Brave picture-log geometry.
+
+That original-page observation completes the exact content audit with no errors
+or changed pins; browser/controller/guard exit zero, 37.42005125 seconds,
+8,068,268,032-byte sampled peak. The strict unchanged-reference comparison
+improves to **25,349 differing pixels, maximum channel error 43, MAE 0.0185,
+RMSE 0.3819**, with zero pixels over 50. All 83 search-icon pixels previously
+over three levels are corrected. Its remaining 33 differing pixels are exactly
+**159 versus 160 (18 pixels) and 191 versus 192 (15 pixels)**. The GitHub mark
+stays pixel-exact. The complete page still fails pixel acceptance.
+
+These residuals follow from interpolating already rounded four-sample alpha:
+5/8 coverage should become 159, while averaging encoded 128 and 191 gives 160.
+The next candidate recovers the known four-sample count only for an opaque solid
+curved fill whose every stored channel matches that paint/count encoding, then
+interpolates before final byte rounding. It declines gradients, clips,
+translucency and mixed-path recovery. This is a precision experiment, not a
+claim about Brave's internal texture format. Its non-test root check passes in
+39.735511125 seconds, peak 7,478,837,248 bytes; production build/observations are
+pending. A disk-full patch attempt leaves the source unchanged; finished own
+C output is hashed before removal and the patch is reapplied after recovery.
+No automated tests have resumed.
+
+
+### Completed compositor, PNG and border corrections
+
+The clean precision build (`compositor-phase-window-r4`) seals 3,740 parsed
+sources, with zero test sources, before building the single C unit with literal
+`-prod`. It completes in 276.300314708 seconds, sampled peak 12,014,649,344 bytes.
+Its executable is SHA-256
+`cbefd013727b734c93baf9b9fd505a9dff6829cd0c3e36fb5838ab2c2c78ffee`.
+Matched same-binary off/on observations preserve the exact original content and
+all pins, with zero author/native errors and normal browser/controller/guard
+exits. The precision correction makes the search icon **pixel-exact** against
+the original Brave reference. The full page still differs in 25,316 pixels.
+
+The earlier `r3` build is rejected: a C retry reads four changed V buffers,
+including the generated GG image adapter. The final source manifest disagrees
+with its sealed proof. Its executable is never launched and is renamed
+`Vox.unverified-source-buffers`; the failed build and rejection receipt remain.
+The clean `r4` result does not erase that failed attempt.
+
+`8cb27505d` enables the SVG correction by default. A fresh default-path browser
+builds from 3,741 non-test sources in 334.708281958 seconds, sampled peak
+12,015,845,376 bytes. Its original-page capture reproduces the candidate PNG
+byte for byte, with full exact content, unchanged pins, zero errors and normal
+exits. This verifies the production selection independently of the diagnostic
+switch. Disjoint foreground or uniform opaque backgrounds are eligible;
+complex overlaps retain the existing path. Focused regression sources remain
+**uncompiled and unrun**.
+
+`12fc9e48b` folds a positive uniform capture transform into the PNG destination
+and rounded clip **before choosing decoder dimensions**. Previously the 0.5
+capture matrix declined the V sampler and used a different native resize.
+Original-page eligibility logs show the 40×40 commit avatar decoding to 20×20
+and painting at 9×20, (46,326.5), and the 60×60 repository avatar decoding to
+30×30 and painting at 24×24, (32,190). The DOM geometry is unchanged; Brave's
+independent picture log confirms the fractional commit-avatar paint position.
+
+The PNG candidate passes a non-test root compiler check (50.448110791 seconds,
+7,479,427,072-byte peak), then builds from 3,742 non-test sources in
+264.042419209 seconds, peak 12,032,196,608 bytes. Matched same-binary off/on
+captures preserve full exact content and all pins, with zero errors and normal
+exits. The repository-avatar region changes from 253 differing pixels,
+185 over three levels, maximum 40, to 178 differing, 38 over three, maximum 7.
+The commit avatar changes from 165 differing, 80 over three, maximum 43, to
+148 differing, 41 over three, maximum 23. The full strict comparison becomes
+**25,224 differing pixels, maximum 31, MAE 0.0162, RMSE 0.3135**.
+
+A default production-path PNG build completes in 340.845045209 seconds, sampled
+peak 12,043,370,496 bytes. Its fresh original-page capture has identical output
+to the PNG candidate:
+`eef33d71212f5ef8dbb444c6d378295f3ba7926d5505d993fdb642dd8ba9e328`.
+Its content/pins/error/exit checks all pass. The correction needs no diagnostic
+environment setting in production. Regression sources are included but remain
+uncompiled/unrun.
+
+`8641a3868` also preserves the compositor phase for supported solid rounded
+fills and strokes. It uses the retained layout/capture basis and the same
+atomic foreground publisher; unsupported transforms, underlays and clips keep
+the established path. The root compiler check completes in 57.823171833 seconds,
+7,482,392,576-byte peak. Its candidate builds in 321.643241584 seconds,
+12,015,697,920-byte peak. Original-page markers establish eligibility for the
+fractional-origin 46×40 and 76×36 strokes. Matched same-binary off/on captures
+preserve exact content, pins and zero errors. The default production build
+(269.216982667 seconds, 12,020,121,600-byte peak) reproduces the corrected PNG
+byte for byte:
+`4fe168e4d3e66119ec762d4ed47c2da9c4ddd72b7ce22b56242ee1b40fcc3bbe`.
+
+The unchanged original-reference comparison now has **25,206 differing pixels,
+maximum 31, MAE 0.0138 and RMSE 0.2119**. There are 1,589 pixels over three
+levels, 47 over ten, one over 25 and none over 50. Native PNGs are sRGB; only a
+**derived actual** is converted to the reference's existing Display P3 profile
+for comparison. The original PNG, its profile, content audit and zero/zero
+pixel tolerances stay fixed. Small color-quantization differences remain;
+these observations do not establish their complete cause or pixel acceptance.
+
+### Retained timeout, cache recovery and compiler-disabled controls
+
+The newer native ABI is
+`862d89840fed1aca9365c3c9213968204f3f483865fb6262cb3b8d389999a482`.
+Concurrent native compiler changes invalidate the earlier successful ABI;
+no partition is renamed, copied or relabeled to force reuse. The PNG candidate
+executable is SHA-256
+`3cc01b68a39a3b66a27fc4f01d5729af633d5e1010d741a245297bc7027a9bb1`.
+Its fresh-cache first opening reaches the memory guard's **default 1,800-second
+timeout**, after 21,760 entries, before the shutdown compilation drain finishes.
+The guard reports 1,800.120981541 seconds, 11,079,450,624-byte sampled peak and
+child exit 137. This is a retained failure, not successful first-opening
+acceptance. The earlier capture already preserves exact content and the PNG
+correction, but cannot establish a complete cache.
+
+The default production SVG/PNG executable is SHA-256
+`48743078b353f9c37771b5f0d230724bde51458eeff511534a26812e21be130e`.
+All nine native-ABI source hashes agree with that candidate, so it can use the
+same retained partition without conversion. A recovery opening finishes the
+missing templates: 2,018 compiled entries in 16 compiler calls, no pending or
+invalid entries and no error; all 81 module preparations complete, zero
+unsupported bodies. The guard records 184.657093959 seconds and
+11,202,756,608-byte peak, normal browser/controller/guard exits and fixed pins.
+This is **recovery from a partial cache**, not a cold first opening.
+
+A fresh recovery-cache reopen sets the compiler to `/usr/bin/false` and records
+**4,245 native hits, zero misses, zero compiler calls, zero pending/invalid entries
+and no error**. Native counters establish execution: 481,419 entries,
+11,478,579 fast steps and 6,749,953 slow steps. JSC remains uninitialized.
+Exact original content passes, zero author/native errors, all pins fixed and
+all exits zero. Guard elapsed is 43.073832708 seconds, sampled peak
+8,605,188,096 bytes. Recorded loading is 963.666642 ms; the observation includes
+the fixed 30-second capture delay and supplies no speed ratio.
+
+The entire native input sequence then passes with the compiler still disabled:
+Code and master open, branch input receives `ma`, all six actions and completion
+arrive, and terminal menus/overlays close. Exact content is retained with no
+errors or changed pins. Both control acceptance flags are true. It records
+**4,692 hits, zero misses or compiler calls, zero pending/invalid entries**, and
+**872,562 native entries, 27,212,564 fast steps and 12,786,281 slow steps**.
+All exits are zero; guard elapsed is 62.206785666 seconds, sampled peak
+**12,583,337,984 bytes**, under the unchanged 12 GiB cap. This validates compiled
+interaction with this recovered partition, without upgrading the failed cold
+opening into acceptance.
+
+A separate first opening starts with a genuinely empty partition, using this
+same production executable. Only the wall-clock limit is extended to 3,600
+seconds; the aggregate memory cap remains 12 GiB. Its normal completion and a
+fresh compiler-disabled reopen are still pending. Full live-site, zero-pixel
+and matched-performance acceptance also remain open. No automated tests run.
+
+### Rectangle/clip coverage experiment
+
+The largest residual is the orange selected-tab underline at (91,166): original
+reference (242,197,186), current derived actual (243,222,217). Brave's root
+picture log records an antialiased rectangle ending at x=91.5 inside a clip
+ending at that same edge. A prototype removes redundant rectangle coverage
+where a device-space edge exactly matches the active clip edge, leaving the
+clip to resolve that boundary once.
+
+Its first C build fails because the native declaration uses `const float*`
+while V exports `float*`; no executable is used. After correcting the signature,
+the build completes in 389.769992083 seconds, 12,024,922,112-byte peak, with a
+sealed 3,744-source proof and zero test sources. Matched mode-off/on observations
+have full content, fixed pins, zero errors and normal exits, but **identical
+PNGs and no eligibility marker**. A separate original-page GG trace confirms
+the orange rectangle bypasses that GPU callback and uses the direct solid-rect
+boundary. This prototype supplies no rendering credit; its patch and both
+captures are retained. The callback changes are removed, and the next guarded
+experiment applies the same device-space rule at the actual solid-rect boundary.
