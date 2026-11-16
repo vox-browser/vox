@@ -642,6 +642,10 @@ fn (mut generator BytecodeGenerator) collect_vars(statement &Statement) ! {
 		scope := if kind.tag == .program { (kind.program_data or { return error('Missing program') }).scope } else { kind.scope or {
 				return error('Missing block')} }
 		for child in scope.children {
+			if kind.tag == .block && child.kind.tag == .function_declaration {
+				if !generator.strict { return generator.unsupported('Annex B block function declarations') }
+				continue
+			}
 			generator.collect_vars(&child)!
 		}
 	} else if kind.tag in [.if_stmt, .while_stmt, .do_while, .for_stmt, .for_in_of] {
@@ -755,8 +759,8 @@ fn (mut generator BytecodeGenerator) statement(mut vm VM, statement &Statement) 
 		}
 		.block {
 			scope := kind.scope or { return error('Missing block scope') }
-			if scope.children.any(it.kind.tag == .function_declaration) {
-				return generator.unsupported('block-scoped function declarations')
+			if !generator.strict && scope.children.any(it.kind.tag == .function_declaration) {
+				return generator.unsupported('Annex B block function declarations')
 			}
 			if elide_empty_block(scope) {
 				// Keep budgeted boundary operations, without allocating an empty
@@ -769,7 +773,7 @@ fn (mut generator BytecodeGenerator) statement(mut vm VM, statement &Statement) 
 			generator.emit(Instruction{ op: .enter_scope })
 			generator.scope_depth++
 			generator.lexical_declarations(scope.children, false)!
-			generator.initialize_functions(scope.children)
+			generator.initialize_lexical_functions(scope.children)!
 			for child in scope.children {
 				generator.statement(mut vm, &child)!
 			}

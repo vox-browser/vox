@@ -18,20 +18,7 @@ fn (mut generator BytecodeGenerator) switch_statement(mut vm VM, statement &Stat
 	generator.lexical_declarations(children, false)!
 	// Strict case-block functions are lexical declarations, initialized before
 	// case expressions run. They do not create a surrounding var binding.
-	for child in children {
-		if child.kind.tag != .function_declaration { continue }
-		name := child.kind.func_name or { return error('Missing switch function name') }
-		identifier := generator.identifier(name.name)
-		generator.emit(Instruction{op: .create_mutable_binding, identifier: identifier})
-	}
-	for child in children {
-		if child.kind.tag != .function_declaration { continue }
-		name := child.kind.func_name or { return error('Missing switch function name') }
-		function := generator.temporary()
-		generator.emit(Instruction{op: .new_function, dst: function, identifier: child.kind.function_id.id})
-		generator.emit(Instruction{op: .initialize_binding, identifier: generator.identifier(name.name), lhs: function})
-		generator.initialized_functions << child.kind.function_id.id
-	}
+	generator.initialize_lexical_functions(children)!
 	mut tests := []u32{len: data.cases.len, init: u32(0xffffffff)}
 	mut default_case := -1
 	for index, clause in data.cases {
