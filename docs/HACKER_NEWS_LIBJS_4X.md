@@ -1,5 +1,9 @@
 # Hacker News: compiled LibJS speed and peak RAM
 
+The subsequent [native property-read continuation](HACKER_NEWS_NATIVE_PROPERTY_READS.md)
+records guarded indexed-read lowering, matched CPU diagnostics, and newer five-mode
+timing/RAM cohorts. The entry-cache measurements below remain historical evidence.
+
 This continues [the previous 3× comparison](HACKER_NEWS_LIBJS_RAM.md). The target
 is 4× V8 callback speed and at most 50% of V8 peak resident memory for **both**
 compiled LibJS modes. **RAM passes; the strict 4× speed target remains open.**

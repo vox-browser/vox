@@ -42,6 +42,17 @@ parity. Both compiled modes pass the 50%-of-V8 peak-RAM gate; the strict 4×
 callback gate remains open despite a 4.70× matching-current median. The exact
 gates and retained failing cohorts are in the linked report.
 
+The [native property-read continuation](../docs/HACKER_NEWS_NATIVE_PROPERTY_READS.md)
+adds resolved operand plans and guarded native own-indexed-data reads. Exact
+budgets, live values, holes/accessors/exotics, fresh-VM reuse and allocation guards
+pass in all three ownership modes. HN diagnostics replace 13,026 generic slow
+steps without changing total work; a separate longer matched cohort records 2.7%
+lower median calling-thread CPU time with one regressing pair. Native `.length`
+lowering is covered by focused tests but remains ineligible on this HN collapse
+path. The latest RAM gate passes at 48.7152% of V8; the conservative 4× wall-time
+gate remains open. These results do not establish general engine throughput or
+additional language/DOM parity.
+
 ## GitHub runtime checkpoint — 2026-11-15
 
 **Current verification hold:** automated suites remain off until the GitHub
