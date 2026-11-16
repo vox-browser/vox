@@ -2,6 +2,8 @@
 module libjsdom
 
 import platform
+import os
+import rand
 
 fn test_select_and_options_indexed_assignment_share_the_live_option_owner() {
 	mut host, mut vm := text_encoding_fixture()!
@@ -68,4 +70,27 @@ fn test_indexed_select_services_survive_transient_arena_and_reject_closed_host()
 	assert stream_eval(mut vm, 's[1]===a&&o[1]===a&&s.length===2')!.as_bool()
 	host.close()
 	assert stream_eval(mut vm, 'var failed=false;try{o[0]=null}catch(e){failed=e instanceof TypeError}failed')!.as_bool()
+}
+
+fn test_native_cached_select_indices_use_current_owners_on_a_compiler_disabled_second_visit() {
+	directory := os.join_path(os.temp_dir(), 'vox-indexed-revisit-' + rand.uuid_v4())
+	defer { os.rmdir_all(directory) or {} }
+	source := 'function replaceAt(s,n,o){s[n]=o;return s.options[n]===o}var s=document.createElement("select"),a=document.createElement("option"),b=document.createElement("option");var ok=replaceAt(s,1,a)&&replaceAt(s,0,b);s.options[0]=null;var d=Object.getOwnPropertyDescriptor(s,"0");ok&&s[0]===a&&s.length===1&&d.writable&&d.configurable&&!Reflect.deleteProperty(s,"0")'
+	for visit in 0 .. 2 {
+		mut host, mut vm := text_encoding_fixture()!
+		vm.enable_native_code_cache(directory, if visit == 0 { '/usr/bin/clang' } else { '/usr/bin/false' })!
+		vm.diagnose_native_code(true)!
+		assert stream_eval(mut vm, source)!.as_bool()
+		before := vm.native_code_cache_stats()
+		activity := vm.diagnose_native_code(false)!
+		if visit == 0 { assert before.cache_misses > 0 && before.cache_hits == 0 }
+		else {
+			assert before.cache_hits > 0 && before.cache_misses == 0
+			assert activity.entries > 0 && activity.fast_steps > 0 && activity.slow_steps > 0
+		}
+		after := vm.flush_native_code_cache()!
+		assert after.compiler_invocations == u64(if visit == 0 { 1 } else { 0 })
+		vm.close_native_code()!
+		host.close()
+	}
 }
