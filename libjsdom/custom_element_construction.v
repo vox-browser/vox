@@ -48,7 +48,7 @@ fn (mut host Host) callback_entry(callback libjs.NativeFunctionPointer) !libjs.V
 	mut vm := host.vm
 	function := libjs.NativeFunction.create(mut vm, host.realm, host.realm.function_prototype, callback, 0, libjs.PropertyName.from_str('documentCallback'), none).object
 	defer { host.changed() }
-	return vm.call_with_limits(libjs.Value.from_object(function), libjs.js_undefined(), [], libjs.ExecutionLimits{max_instructions: 1000000})
+	return vm.call_with_limits(libjs.Value.from_object(function), libjs.js_undefined(), [], host.hooks.execution_limits)
 }
 
 fn (mut host Host) construct_custom_element(definition &dom.CustomElementDefinition, handle voidptr) !libjs.Value {

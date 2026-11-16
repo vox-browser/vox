@@ -2,6 +2,7 @@ module browserjs
 
 import dom
 import html
+import libjs
 import libjsdom
 
 // The opt-in backend binds translated values directly to native DOM owners.
@@ -15,6 +16,7 @@ pub fn (mut runtime Runtime) install_libjs_document(document &dom.Document) ! {
 	runtime.initialize_document_native_cache()
 	owner := voidptr(&runtime)
 	host := libjsdom.Host.create(runtime.agent_vm, runtime.realm, document, libjsdom.Hooks{
+		execution_limits: libjs.ExecutionLimits{max_instructions:libjs_document_instruction_limit}
 		can_run_callback: fn [owner] () bool {
 			runtime := unsafe { &Runtime(owner) }
 			if runtime.closed { return false }

@@ -8,6 +8,7 @@ pub:
 	engine                     string
 	native_context_initialized bool
 	libjs_execution_generation u32
+	max_instructions_per_entry u64
 	native                     libjs.NativeCacheStats
 	frontend                   LibJSFrontendCacheStats
 }
@@ -19,6 +20,7 @@ pub fn (runtime &Runtime) compiled_code_cache_audit() CompiledJavaScriptCacheAud
 		engine:                     runtime.engine.str()
 		native_context_initialized: runtime.native_context_initialized()
 		libjs_execution_generation: runtime.agent_vm.execution_generation()
+		max_instructions_per_entry: runtime.libjs_execution_limits().max_instructions
 		native:                     runtime.native_code_cache_stats()
 		frontend:                   runtime.frontend_code_cache_stats()
 	}

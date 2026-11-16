@@ -340,7 +340,7 @@ fn (runtime &Runtime) execute_prepared(script &PreparedScript, stringify_result 
 			parsed:         script.frontend
 			is_strict_mode: script.frontend.is_strict_mode
 		}
-		value := vm.run_with_limits(mut record, libjs.ExecutionLimits{ max_instructions: 1000000 }) or {
+		value := vm.run_with_limits(mut record, runtime.libjs_execution_limits()) or {
 			return error(libjs_exception_message(err))
 		}
 		if !stringify_result { return '' }

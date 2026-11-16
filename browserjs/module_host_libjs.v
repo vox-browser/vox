@@ -218,7 +218,7 @@ fn (mut host ModuleHost) evaluate_libjs_execution(mut execution BrowserModuleExe
 	}
 	module_record.link(mut vm) or { host.finish_script(mut execution,libjs_exception_message(err));return }
 	execution.evaluated=true
-	result := module_record.evaluate(mut vm) or { host.finish_script(mut execution,libjs_exception_message(err));return }
+	result := module_record.evaluate_with_limits(mut vm, host.runtime.libjs_execution_limits()) or { host.finish_script(mut execution,libjs_exception_message(err));return }
 	message := if result.promise.state==.rejected { libjs_exception_message(libjs.throw_completion(result.promise.result)) } else { '' }
 	host.finish_script(mut execution,message)
 }

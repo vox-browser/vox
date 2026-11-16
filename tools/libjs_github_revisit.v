@@ -52,6 +52,7 @@ struct GithubRevisitResult {
 	commit_links        u32
 	timeout             bool
 	jsc_initialized     bool
+	instruction_limit   u64
 	cache               libjs.NativeCacheStats
 	frontend            browserjs.LibJSFrontendCacheStats
 }
@@ -185,6 +186,7 @@ fn open_github(manifest RevisitManifest, sources map[string]string, archive stri
 		commit_links:        commit_links
 		timeout:             time.sys_mono_now() >= deadline
 		jsc_initialized:     runtime.native_context_initialized()
+		instruction_limit:   runtime.compiled_code_cache_audit().max_instructions_per_entry
 		cache:               stats
 		frontend:            runtime.frontend_code_cache_stats()
 	}

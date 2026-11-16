@@ -29,7 +29,7 @@ fn (mut runtime Runtime) install_libjs_promise_jobs(settings &html.EnvironmentSe
 				runtime.clean_up_html_callback(settings)
 			}
 			mut vm := runtime.agent_vm
-			vm.run_promise_job_with_limits(job, libjs.ExecutionLimits{max_instructions: 1000000}) or {
+			vm.run_promise_job_with_limits(job, runtime.libjs_execution_limits()) or {
 				runtime.libjs_messages_ << 'JavaScript (LibJS): Promise job: ' + libjs_exception_message(err)
 				runtime.mark_document_state_dirty()
 			}

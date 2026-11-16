@@ -18,6 +18,7 @@ import xhr
 
 pub struct Hooks {
 pub:
+	execution_limits libjs.ExecutionLimits = libjs.ExecutionLimits{max_instructions:1000000}
 	before_callback  ?fn ()
 	after_callback   ?fn ()
 	can_run_callback ?fn () bool
