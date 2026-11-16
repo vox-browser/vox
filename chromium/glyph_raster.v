@@ -14,6 +14,9 @@ import platform
 fn C.native_text_raster_begin(left f32, top f32, right f32, bottom f32, canvas_width f32, canvas_height f32, font_smoothing i32, geometry &i32, scale &f32) i32
 fn C.native_text_raster_read_backdrop(pixels &u8, left i32, top i32, width i32, height i32, scale f32) i32
 fn C.native_text_raster_finish(pixels &u8, left i32, top i32, width i32, height i32, logical_width i32, logical_height i32, canvas_height f32, backdrop i32) i32
+fn C.native_document_text_raster_begin(f32, f32, f32, f32, f32, f32, i32, &i32, &f32) i32
+fn C.native_document_text_raster_finish(&u8, i32, i32, i32, i32, i32, i32, f32, i32) i32
+fn C.native_document_text_raster_read_backdrop(&u8, i32, i32, i32, i32, f32) i32
 
 // The cache keeps typeface facts and glyph masks across frames. Its retained
 // allocations go to their own arena, reset (with the cache) once it has grown
@@ -118,10 +121,15 @@ fn document_glyph_raster_record(run cpuraster.CanvasGlyphRun, transform [6]f32, 
 	if backdrop {
 		os.write_file_array(os.join_path(document_glyph_raster_dump, '${index}.rgba'), pixels) or {}
 	}
+	precise := if components := run.paint_color {
+		'[${components[0]},${components[1]},${components[2]},${components[3]}]'
+	} else { 'null' }
+	display_p3 := $if macos { C.native_document_raster_uses_p3() != 0 } $else { false }
 	line := '{"index":${index},"font":"${run.font_path}","face":${run.face_index},"size":${run.font_size},' +
 		'"glyphs":${run.glyphs},"positions":${run.positions},"translation":${run.translation[..]},' +
 		'"transform":${transform[..]},"geometry":${geometry[..]},"scale":${scale},"color":${color},' +
-		'"smoothing":${font_smoothing},"backdrop":${backdrop}}\n'
+		'"smoothing":${font_smoothing},"backdrop":${backdrop},"paint_color":${precise},' +
+		'"destination_p3":${display_p3}}\n'
 	mut file := os.open_append(os.join_path(document_glyph_raster_dump, 'runs.jsonl')) or { return }
 	file.write_string(line) or {}
 	file.close()
@@ -160,6 +168,13 @@ fn draw_document_glyph_raster_run(glyphs []u16, positions []f64, font_path strin
 				f32(positions[i])
 			}
 		}
+		source_color := paint_color or {
+			[f32((color >> 16) & 255) / 255, f32((color >> 8) & 255) / 255,
+				f32(color & 255) / 255, f32(color >> 24) / 255]!
+		}
+		effective_color := if C.native_document_raster_uses_p3() != 0 {
+			?[4]f32(document_color_to_p3(source_color))
+		} else { paint_color }
 		run := cpuraster.CanvasGlyphRun{
 			font_path:         font_path
 			face_index:        face_index
@@ -171,7 +186,7 @@ fn draw_document_glyph_raster_run(glyphs []u16, positions []f64, font_path strin
 			smoothing:         font_smoothing & 15
 			retained:          true
 			chromium_coverage: chromium
-			paint_color:       paint_color
+			paint_color:       effective_color
 		}
 		// The page matrix: CSS transform after the page offset and scroll.
 		tx := page_x + matrix[4]
@@ -208,7 +223,7 @@ fn draw_document_glyph_raster_run(glyphs []u16, positions []f64, font_path strin
 		}
 		mut geometry := [7]i32{}
 		mut scale := f32(1)
-		prepared := C.native_text_raster_begin(left, top, right, bottom, canvas_width, canvas_height,
+		prepared := C.native_document_text_raster_begin(left, top, right, bottom, canvas_width, canvas_height,
 			i32(font_smoothing), &geometry[0], &scale)
 		if prepared == 2 {
 			return ''
@@ -220,7 +235,7 @@ fn draw_document_glyph_raster_run(glyphs []u16, positions []f64, font_path strin
 		height := int(geometry[3])
 		backdrop := geometry[4] != 0
 		mut pixels := []u8{len: width * height * 4}
-		if backdrop && C.native_text_raster_read_backdrop(pixels.data, geometry[0], geometry[1],
+		if backdrop && C.native_document_text_raster_read_backdrop(pixels.data, geometry[0], geometry[1],
 			i32(width), i32(height), scale) == 0 {
 			return 'backdrop unreadable'
 		}
@@ -236,7 +251,7 @@ fn draw_document_glyph_raster_run(glyphs []u16, positions []f64, font_path strin
 			transform, color, none, 1, .src_over, [], none) {
 			return 'cpuraster declined'
 		}
-		if C.native_text_raster_finish(pixels.data, geometry[0], geometry[1], i32(width), i32(height),
+		if C.native_document_text_raster_finish(pixels.data, geometry[0], geometry[1], i32(width), i32(height),
 			geometry[5], geometry[6], canvas_height, i32(backdrop)) == 0 {
 			return 'composite failed'
 		}

@@ -331,11 +331,12 @@ fn draw_document_shape_pixels(pixels &u8, width i32, height i32, pitch i32, back
 	work := platform.begin_thread_scratch('native raster callback')
 	defer { work.finish() }
 	swap_document_raster_channels(pixels, width, height, pitch)
-	if draw_bounded_compositor_phase_shape(pixels, width, height, pitch, first_x, first_y, shape) {
+	draw := document_p3_shape(*shape)
+	if draw_bounded_compositor_phase_shape(pixels, width, height, pitch, first_x, first_y, &draw) {
 		swap_document_raster_channels(pixels, width, height, pitch)
 		return 1
 	}
-	result := draw_document_shape_tiles(pixels, width, height, pitch, backdrop, first_x, first_y, shape)
+	result := draw_document_shape_tiles(pixels, width, height, pitch, backdrop, first_x, first_y, &draw)
 	swap_document_raster_channels(pixels, width, height, pitch)
 	return result
 }
@@ -348,11 +349,12 @@ fn draw_document_tiled_path_pixels(pixels &u8, width i32, height i32, pitch i32,
 	work := platform.begin_thread_scratch('native raster callback')
 	defer { work.finish() }
 	swap_document_raster_channels(pixels, width, height, pitch)
-	if draw_compositor_phase_path(pixels, width, height, pitch, path) {
+	draw := if document_paths_use_p3(path, 1) != 0 { document_p3_path(*path) } else { *path }
+	if draw_compositor_phase_path(pixels, width, height, pitch, &draw) {
 		swap_document_raster_channels(pixels, width, height, pitch)
 		return 1
 	}
-	result := draw_document_path_tiles(pixels, width, height, pitch, backdrop, first_x, first_y, path)
+	result := draw_document_path_tiles(pixels, width, height, pitch, backdrop, first_x, first_y, &draw)
 	swap_document_raster_channels(pixels, width, height, pitch)
 	return result
 }
@@ -365,7 +367,8 @@ fn draw_document_path_pixels(pixels &u8, width i32, height i32, pitch i32, backd
 	work := platform.begin_thread_scratch('native raster callback')
 	defer { work.finish() }
 	swap_document_raster_channels(pixels, width, height, pitch)
-	result := ggshape.draw_path(pixels, width, height, pitch, backdrop, path)
+	draw := if document_paths_use_p3(path, 1) != 0 { document_p3_path(*path) } else { *path }
+	result := ggshape.draw_path(pixels, width, height, pitch, backdrop, &draw)
 	swap_document_raster_channels(pixels, width, height, pitch)
 	return result
 }
@@ -380,7 +383,12 @@ fn draw_document_svg_pixels(pixels &u8, width i32, height i32, pitch i32, backdr
 	work := platform.begin_thread_scratch('native raster callback')
 	defer { work.finish() }
 	swap_document_raster_channels(pixels, width, height, pitch)
-	if draw_compositor_phase_svg(pixels, width, height, pitch, paths, count, parent, viewport, rounded_clip) {
+	mut converted := []C.VoxGraphitePath{}
+	if document_paths_use_p3(paths, count) != 0 {
+		for i in 0 .. int(count) { converted << document_p3_path(unsafe { paths[i] }) }
+	}
+	draws := if converted.len > 0 { converted.data } else { paths }
+	if draw_compositor_phase_svg(pixels, width, height, pitch, draws, count, parent, viewport, rounded_clip) {
 		swap_document_raster_channels(pixels, width, height, pitch)
 		return 1
 	}
@@ -388,7 +396,7 @@ fn draw_document_svg_pixels(pixels &u8, width i32, height i32, pitch i32, backdr
 		i32(1)
 	} else {
 		i32(0)
-	}) | 2 | 4, paths, count, parent, viewport, rounded_clip)
+	}) | 2 | 4, draws, count, parent, viewport, rounded_clip)
 	swap_document_raster_channels(pixels, width, height, pitch)
 	return result
 }
@@ -400,7 +408,12 @@ fn draw_document_shape_group_pixels(pixels &u8, width i32, height i32, pitch i32
 	work := platform.begin_thread_scratch('native raster callback')
 	defer { work.finish() }
 	swap_document_raster_channels(pixels, width, height, pitch)
-	result := draw_document_shape_group_tiles(pixels, width, height, pitch, backdrop, first_x, first_y, shapes, count)
+	mut converted := []C.VoxGraphiteShape{}
+	if C.native_document_raster_uses_p3() != 0 {
+		for i in 0 .. int(count) { converted << document_p3_shape(unsafe { shapes[i] }) }
+	}
+	draws := if converted.len > 0 { converted.data } else { shapes }
+	result := draw_document_shape_group_tiles(pixels, width, height, pitch, backdrop, first_x, first_y, draws, count)
 	swap_document_raster_channels(pixels, width, height, pitch)
 	return result
 }

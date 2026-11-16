@@ -29,6 +29,8 @@ static void native_capture_instruction_checkpoint(const char *label) {
             (unsigned long long)instructions);
 }
 
+#define VOX_DOCUMENT_COLOR_BRIDGE 1
+#include "native/include/native_document_color_darwin.h"
 #include "native/include/native_layer_presentation_darwin.h"
 #include "native/include/native_presented_capture_darwin.h"
 #include "native/include/native_image_capture_policy_darwin.h"
@@ -635,18 +637,13 @@ static void native_draw_solid_rect_srgb(float x, float y, float width, float hei
 	if (context == NULL) {
 		return;
 	}
-	static CGColorSpaceRef colorSpace;
-	static dispatch_once_t onceToken;
-	dispatch_once(&onceToken, ^{
-		colorSpace = CGColorSpaceCreateWithName(kCGColorSpaceSRGB);
-	});
 	CGFloat components[] = {
 		(CGFloat)color.r / 255.0,
 		(CGFloat)color.g / 255.0,
 		(CGFloat)color.b / 255.0,
 		(CGFloat)color.a / 255.0,
 	};
-	CGColorRef cgColor = CGColorCreate(colorSpace, components);
+	CGColorRef cgColor = native_document_srgb_components(components);
 	CGContextSetFillColorWithColor(context, cgColor);
 	CGRect rect = CGRectMake(x, y, width, height);
 	if (!caret) {
@@ -994,18 +991,13 @@ void native_end_css_effect_layer(void) {
 }
 
 static CGColorRef native_srgb_color(gg__Color color) {
-	static CGColorSpaceRef color_space;
-	static dispatch_once_t once_token;
-	dispatch_once(&once_token, ^{
-		color_space = CGColorSpaceCreateWithName(kCGColorSpaceSRGB);
-	});
 	CGFloat components[] = {
 		(CGFloat)color.r / 255.0,
 		(CGFloat)color.g / 255.0,
 		(CGFloat)color.b / 255.0,
 		(CGFloat)color.a / 255.0,
 	};
-	return CGColorCreate(color_space, components);
+	return native_document_srgb_components(components);
 }
 
 // The display density documents see as their device pixel ratio: the screenshot
@@ -1108,8 +1100,14 @@ int native_text_raster_begin(float left, float top, float right, float bottom,
 	return 1;
 }
 
+int native_document_text_raster_begin(float left, float top, float right, float bottom,
+    float canvas_width, float canvas_height, int flags, int32_t *geometry, float *scale) {
+    return native_text_raster_begin(left, top, right, bottom, canvas_width,
+        canvas_height, flags, geometry, scale);
+}
+
 // Copy the page pixels a backdrop raster covers (premultiplied RGBA rows).
-int native_text_raster_read_backdrop(uint8_t *pixels, int left, int top, int width, int height, float scale) {
+int native_document_text_raster_read_backdrop(uint8_t *pixels, int left, int top, int width, int height, float scale) {
 	CGContextRef context = [[NSGraphicsContext currentContext] CGContext];
 	if (context == NULL || pixels == NULL) return 0;
 	CGContextFlush(context);
@@ -1122,10 +1120,17 @@ int native_text_raster_read_backdrop(uint8_t *pixels, int left, int top, int wid
 	return 1;
 }
 
+int native_text_raster_read_backdrop(uint8_t *pixels, int left, int top, int width, int height, float scale) {
+    int result = native_document_text_raster_read_backdrop(pixels, left, top, width, height, scale);
+    if (result && native_document_raster_uses_p3())
+        vox_document_p3_to_srgb_pixels(pixels, width, height, width * 4);
+    return result;
+}
+
 // Composite a finished raster: a backdrop raster replaces its pixels under
 // the current clip, a transparent one blends over them.
-int native_text_raster_finish(const uint8_t *pixels, int left, int top, int width, int height,
-	int logical_width, int logical_height, float canvas_height, int backdrop) {
+static int native_text_raster_finish_in_space(const uint8_t *pixels, int left, int top, int width, int height,
+	int logical_width, int logical_height, float canvas_height, int backdrop, int p3) {
 	CGContextRef context = [[NSGraphicsContext currentContext] CGContext];
 	if (context == NULL || pixels == NULL) return 0;
 	CFDataRef data = CFDataCreate(kCFAllocatorDefault, pixels, (CFIndex)width * height * 4);
@@ -1133,7 +1138,8 @@ int native_text_raster_finish(const uint8_t *pixels, int left, int top, int widt
 	CGDataProviderRef provider = CGDataProviderCreateWithCFData(data);
 	CFRelease(data);
 	if (provider == NULL) return 0;
-	CGColorSpaceRef space = CGColorSpaceCreateWithName(kCGColorSpaceSRGB);
+	CGColorSpaceRef space = p3 ? native_copy_document_render_space()
+        : CGColorSpaceCreateWithName(kCGColorSpaceSRGB);
 	CGImageRef image = CGImageCreate((size_t)width, (size_t)height, 8, 32, (size_t)width * 4, space,
 		(CGBitmapInfo)kCGImageAlphaPremultipliedLast | kCGBitmapByteOrder32Big, provider, NULL, false,
 		kCGRenderingIntentDefault);
@@ -1149,6 +1155,18 @@ int native_text_raster_finish(const uint8_t *pixels, int left, int top, int widt
 	CGContextRestoreGState(context);
 	CGImageRelease(image);
 	return 1;
+}
+
+int native_text_raster_finish(const uint8_t *pixels, int left, int top, int width, int height,
+    int logical_width, int logical_height, float canvas_height, int backdrop) {
+    return native_text_raster_finish_in_space(pixels, left, top, width, height,
+        logical_width, logical_height, canvas_height, backdrop, 0);
+}
+
+int native_document_text_raster_finish(const uint8_t *pixels, int left, int top, int width, int height,
+    int logical_width, int logical_height, float canvas_height, int backdrop) {
+    return native_text_raster_finish_in_space(pixels, left, top, width, height,
+        logical_width, logical_height, canvas_height, backdrop, native_document_raster_uses_p3());
 }
 
 // The native boundary supplies the destination pixels; geometry and GPU
@@ -1195,7 +1213,7 @@ static int native_try_v_document_shape(VoxGraphiteShape shape, const float* matr
         left=fminf(left,dx); top=fminf(top,dy); right=fmaxf(right,dx); bottom=fmaxf(bottom,dy);
     }
     int32_t geometry[7]; float scale;
-    int prepared = native_text_raster_begin(left, top, right, bottom, canvas_width, canvas_height,
+    int prepared = native_document_text_raster_begin(left, top, right, bottom, canvas_width, canvas_height,
         16, geometry, &scale);
     if (prepared == 2) return 1;
     if (prepared != 1) return 0;
@@ -1203,7 +1221,7 @@ static int native_try_v_document_shape(VoxGraphiteShape shape, const float* matr
     size_t size=(size_t)w*h*4;
     uint8_t* pixels=calloc(size,1);
     if (!pixels) return 0;
-    if (backdrop && !native_text_raster_read_backdrop(pixels,geometry[0],geometry[1],w,h,scale)) {
+    if (backdrop && !native_document_text_raster_read_backdrop(pixels,geometry[0],geometry[1],w,h,scale)) {
         free(pixels); return 0;
     }
     float sx=(float)w/geometry[5], sy=(float)h/geometry[6];
@@ -1214,7 +1232,7 @@ static int native_try_v_document_shape(VoxGraphiteShape shape, const float* matr
     int drawn=vox_draw_document_shape_pixels(pixels,w,h,w*4,backdrop,
         (int)lround((geometry[0]-page_x)*scale),
         (int)lround((geometry[1]-page_y+scroll_y)*scale),&shape);
-    if (drawn) drawn=native_text_raster_finish(pixels,geometry[0],geometry[1],w,h,
+    if (drawn) drawn=native_document_text_raster_finish(pixels,geometry[0],geometry[1],w,h,
         geometry[5],geometry[6],canvas_height,backdrop);
     free(pixels);
     return drawn;
@@ -1237,13 +1255,13 @@ int native_draw_document_shape_group(VoxGraphiteShape* shapes, int count, float*
         }
     }
     int32_t geometry[7];float scale;
-    int prepared=native_text_raster_begin(left,top,right,bottom,canvas_width,canvas_height,16,geometry,&scale);
+    int prepared=native_document_text_raster_begin(left,top,right,bottom,canvas_width,canvas_height,16,geometry,&scale);
     if(prepared==2)return 1;
     if(prepared!=1)return 0;
     int w=geometry[2],h=geometry[3],backdrop=geometry[4];
     uint8_t* pixels=calloc((size_t)w*h*4,1);
     if(!pixels)return 0;
-    if(backdrop&&!native_text_raster_read_backdrop(pixels,geometry[0],geometry[1],w,h,scale)) {free(pixels);return 0;}
+    if(backdrop&&!native_document_text_raster_read_backdrop(pixels,geometry[0],geometry[1],w,h,scale)) {free(pixels);return 0;}
     VoxGraphiteShape copy[32];memcpy(copy,shapes,count*sizeof(*shapes));
     float sx=(float)w/geometry[5],sy=(float)h/geometry[6];
     float cropped[9]={matrix[0]*sx,matrix[2]*sx,(matrix[4]-geometry[0])*sx,
@@ -1255,7 +1273,7 @@ int native_draw_document_shape_group(VoxGraphiteShape* shapes, int count, float*
     extern int vox_draw_document_shape_group_pixels(uint8_t*,int,int,int,int,int,int,VoxGraphiteShape*,int);
     int drawn=vox_draw_document_shape_group_pixels(pixels,w,h,w*4,backdrop,
         (int)lround((geometry[0]-page_x)*scale),(int)lround((geometry[1]-page_y+scroll_y)*scale),copy,count);
-    if(drawn)drawn=native_text_raster_finish(pixels,geometry[0],geometry[1],w,h,geometry[5],geometry[6],canvas_height,backdrop);
+    if(drawn)drawn=native_document_text_raster_finish(pixels,geometry[0],geometry[1],w,h,geometry[5],geometry[6],canvas_height,backdrop);
     free(pixels);return drawn;
 }
 
@@ -1296,13 +1314,13 @@ static int native_try_v_svg_path(CGPathRef path, const float* segments, int coun
         left=fminf(left,dx);top=fminf(top,dy);right=fmaxf(right,dx);bottom=fmaxf(bottom,dy);
     }
     int32_t geometry[7];float scale;
-    int prepared=native_text_raster_begin(left,top,right,bottom,canvas_width,canvas_height,16,geometry,&scale);
+    int prepared=native_document_text_raster_begin(left,top,right,bottom,canvas_width,canvas_height,16,geometry,&scale);
     if(prepared==2)return 1;
     if(prepared!=1)return 0;
     int w=geometry[2],h=geometry[3],backdrop=geometry[4];
     uint8_t* pixels=calloc((size_t)w*h*4,1);
     if(!pixels)return 0;
-    if(backdrop&&!native_text_raster_read_backdrop(pixels,geometry[0],geometry[1],w,h,scale)){
+    if(backdrop&&!native_document_text_raster_read_backdrop(pixels,geometry[0],geometry[1],w,h,scale)){
         free(pixels);return 0;
     }
     float sx=(float)w/geometry[5],sy=(float)h/geometry[6];
@@ -1320,7 +1338,7 @@ static int native_try_v_svg_path(CGPathRef path, const float* segments, int coun
     int drawn=vox_draw_document_tiled_path_pixels(pixels,w,h,w*4,backdrop,
         (int)lround((geometry[0]-page_x)*scale),
         (int)lround((geometry[1]-page_y+scroll_y)*scale), &draw);
-    if(drawn)drawn=native_text_raster_finish(pixels,geometry[0],geometry[1],w,h,
+    if(drawn)drawn=native_document_text_raster_finish(pixels,geometry[0],geometry[1],w,h,
         geometry[5],geometry[6],canvas_height,backdrop);
     free(pixels);return drawn;
 }
@@ -1796,6 +1814,8 @@ int native_draw_svg_path_batch(const VoxGraphitePath *paths, int count,
     const float *rounded_clip) {
     if (!paths || count <= 0 || count > 65536 || !outer || width <= 0 || height <= 0 ||
         [[NSGraphicsContext currentContext] CGContext] != native_font_compositing_context) return 0;
+    extern int vox_document_paths_use_p3(VoxGraphitePath*, int);
+    int p3 = vox_document_paths_use_p3((VoxGraphitePath*)paths, count);
     float matrix[6] = {outer[0],outer[1],outer[2],outer[3],
         page_x+outer[4],page_y-scroll_y+outer[5]};
     float left=INFINITY,top=INFINITY,right=-INFINITY,bottom=-INFINITY;
@@ -1811,7 +1831,9 @@ int native_draw_svg_path_batch(const VoxGraphitePath *paths, int count,
     int w=geometry[2],h=geometry[3],backdrop=geometry[4];
     uint8_t* pixels=calloc((size_t)w*h*4,1);
     if(!pixels)return 0;
-    if(backdrop&&!native_text_raster_read_backdrop(pixels,geometry[0],geometry[1],w,h,scale)) {
+    if(backdrop && !(p3
+        ? native_document_text_raster_read_backdrop(pixels,geometry[0],geometry[1],w,h,scale)
+        : native_text_raster_read_backdrop(pixels,geometry[0],geometry[1],w,h,scale))) {
         free(pixels);return 0;
     }
     float sx=(float)w/geometry[5],sy=(float)h/geometry[6];
@@ -1820,8 +1842,8 @@ int native_draw_svg_path_batch(const VoxGraphitePath *paths, int count,
     const float viewport[4]={x,y,width,height};
     extern int vox_draw_document_svg_pixels(uint8_t*,int,int,int,int,VoxGraphitePath*,int,float*,float*,float*);
     int drawn=vox_draw_document_svg_pixels(pixels,w,h,w*4,backdrop,(VoxGraphitePath*)paths,count,(float*)parent,(float*)viewport,(float*)rounded_clip);
-    if(drawn)drawn=native_text_raster_finish(pixels,geometry[0],geometry[1],w,h,
-        geometry[5],geometry[6],canvas_height,backdrop);
+    if(drawn)drawn=native_text_raster_finish_in_space(pixels,geometry[0],geometry[1],w,h,
+        geometry[5],geometry[6],canvas_height,backdrop,p3);
     free(pixels);return drawn;
 }
 
@@ -1842,11 +1864,8 @@ int native_draw_svg_path_batch_with_rounded_ancestor(const VoxGraphitePath *path
 
 static CGColorRef native_svg_srgb_color(gg__Color color, const float *precise) {
     if (!precise) return native_srgb_color(color);
-    CGColorSpaceRef space = CGColorSpaceCreateWithName(kCGColorSpaceSRGB);
     CGFloat components[] = {precise[0], precise[1], precise[2], precise[3]};
-    CGColorRef result = CGColorCreate(space, components);
-    CGColorSpaceRelease(space);
-    return result;
+    return native_document_srgb_components(components);
 }
 
 void native_draw_svg_path_srgb(const float *data, int segment_count, int even_odd,
@@ -2690,7 +2709,7 @@ void native_prepare_css_filter_renderer(void) {
 		native_css_filter_ci_context != nil, (CACurrentMediaTime() - started) * 1e6);
 }
 
-void native_begin_css_filter_layer(float canvas_width, float canvas_height) {
+static void native_begin_css_filter_layer_in_space(float canvas_width, float canvas_height, int p3) {
 	if (native_css_filter_stack_depth >= NATIVE_CSS_FILTER_MAX_DEPTH) {
 		native_css_filter_overflow_depth++;
 		return;
@@ -2704,7 +2723,8 @@ void native_begin_css_filter_layer(float canvas_width, float canvas_height) {
 	if (layer.destination != NULL && canvas_width > 0.0f && canvas_height > 0.0f) {
 		size_t width = (size_t)MAX(1.0, ceil(canvas_width * layer.scale));
 		size_t height = (size_t)MAX(1.0, ceil(canvas_height * layer.scale));
-		CGColorSpaceRef color_space = CGColorSpaceCreateWithName(kCGColorSpaceSRGB);
+		CGColorSpaceRef color_space = p3 ? native_copy_document_render_space()
+            : CGColorSpaceCreateWithName(kCGColorSpaceSRGB);
 		if (getenv("VOX_SPARSE_CSS_FILTER_INPUTS")) {
             layer.context = native_create_sparse_bitmap_context(width, height, color_space);
             if (layer.context) layer.sparse_input_pixels = (uint8_t *)CGBitmapContextGetData(layer.context);
@@ -2724,6 +2744,10 @@ void native_begin_css_filter_layer(float canvas_width, float canvas_height) {
 		}
 	}
 	native_css_filter_stack[native_css_filter_stack_depth++] = layer;
+}
+
+void native_begin_css_filter_layer(float width, float height) {
+    native_begin_css_filter_layer_in_space(width, height, 0);
 }
 
 void native_end_css_filter_layer(void);
@@ -2954,7 +2978,7 @@ void native_begin_font_compositing_layer(float width, float height) {
 			[NSGraphicsContext graphicsContextWithCGContext:destination flipped:NO]];
 		native_css_filter_stack[native_css_filter_stack_depth++] = layer;
 	} else {
-		native_begin_css_filter_layer(width, height);
+		native_begin_css_filter_layer_in_space(width, height, vox_document_display_p3_enabled());
 	}
 	if (fresh_destination && native_css_filter_stack_depth == previous_depth + 1) {
 		NativeCSSFilterLayer *layer = &native_css_filter_stack[previous_depth];

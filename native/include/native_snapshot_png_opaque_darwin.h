@@ -60,8 +60,8 @@ static NSData *native_encode_opaque_snapshot_png(NSBitmapImageRep *bitmap,
     if (width <= 0 || height <= 0 || width > UINT32_MAX || height > UINT32_MAX
         || width > (64 * 1024 * 1024 - 1) / 4) return nil;
     size_t row_bytes = (size_t)width * 4, filtered_pitch = row_bytes + 1;
-    // A presented capture already verified its bytes as opaque sRGB; read
-    // them directly rather than materializing the wrapping rep's own copy.
+    // A presented capture already verified its opaque RGBA bytes; read them
+    // directly. The named-sRGB eligibility check below still applies.
     NativePresentedPixels presented;
     BOOL trusted = native_presented_pixels_for(bitmap, &presented)
         && presented.width == (size_t)width && presented.height == (size_t)height;
