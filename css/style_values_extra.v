@@ -832,7 +832,7 @@ pub fn (style_value RandomValueSharingStyleValue) random_caching_key(element_id 
 	name := style_value.name_ or { return none }
 	return RandomCachingKey{
 		name: name
-		element_id: if style_value.element_shared_ { none } else { element_id }
+		element_id: if style_value.element_shared_ || !style_value.is_auto_ { none } else { element_id }
 	}
 }
 

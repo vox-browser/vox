@@ -2,7 +2,7 @@ module libjs
 
 // AbstractOperations.cpp::max_js_string_length and checked length arithmetic.
 pub fn max_js_string_length() uint {
-	return uint(0xffffffff)
+	return uint(0xfffffffe)
 }
 
 pub fn checked_js_string_length_sum(mut vm VM, a uint, b uint, error_type ErrorType) !uint {

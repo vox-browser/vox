@@ -683,6 +683,10 @@ pub fn set_sec_fetch_mode_header(mut request Request) {
 }
 
 pub fn set_sec_fetch_site_header(mut request Request) {
+	if request.is_navigation_request() && request.user_agent_initiated {
+		request.header_list.append(http.Header{ name: 'Sec-Fetch-Site', value: 'none' })
+		return
+	}
 	mut value := 'same-origin'
 	for url in request.url_list {
 		origin := request.origin.origin or {
@@ -708,7 +712,7 @@ pub fn set_sec_fetch_user_header(mut request Request) {
 }
 
 pub fn append_fetch_metadata_headers_for_request(mut request Request) {
-	if securecontexts.is_url_potentially_trustworthy(request.url()) != .potentially_trustworthy {
+	if securecontexts.is_url_potentially_trustworthy(request.current_url()) != .potentially_trustworthy {
 		return
 	}
 	set_sec_fetch_dest_header(mut request)

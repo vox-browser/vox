@@ -5628,6 +5628,10 @@ pub mut:
 	visibility_state VisibilityState = .hidden
 	initial_visibility_state_entry_pending_ bool
 
+	// Title setters replace children in several mutations; publish only the result.
+	title_change_report_batch_depth_ int
+	title_change_report_pending_ bool
+
 	// Last modified
 	last_modified_ ?string
 
@@ -6535,6 +6539,11 @@ pub fn (mut d Document) update_readiness(readiness_value DocumentReadyState) {
 		else {}
 	}
 
+	// SVG use forward references must exist before DOMContentLoaded, and
+	// resources discovered by their clones must still be able to delay load.
+	if readiness_value == .interactive {
+		d.refresh_svg_use_shadow_trees()
+	}
 	d.notify_each_document_observer_readiness()
 
 	// Fire a readystatechange event at the document.
@@ -6765,6 +6774,29 @@ pub fn (mut d Document) set_body(new_body &HTMLElement) ! {
 	document_element_node.append_child(new_body_node)!
 }
 
+fn (mut d Document) begin_title_change_report_batch() {
+	d.title_change_report_batch_depth_++
+}
+
+fn (mut d Document) end_title_change_report_batch() {
+	assert d.title_change_report_batch_depth_ > 0
+	d.title_change_report_batch_depth_--
+	if d.title_change_report_batch_depth_ != 0 || !d.title_change_report_pending_ { return }
+	d.title_change_report_pending_ = false
+	d.report_title_change_to_page()
+}
+
+fn (mut d Document) report_title_change_to_page() {
+	navigable := d.navigable() or { return }
+	if !navigable.is_traversable() || d.page() == unsafe { nil } { return }
+	if d.title_change_report_batch_depth_ > 0 {
+		d.title_change_report_pending_ = true
+		return
+	}
+	mut page := unsafe { &Page(d.page()) }
+	page.client_page_did_change_title(d.title())
+}
+
 // https://html.spec.whatwg.org/multipage/dom.html#document.title
 pub fn (d &Document) title() string {
 	mut value := ''
@@ -6803,6 +6835,10 @@ pub fn (mut d Document) set_title(value string) ! {
 	// Sets the document title by creating/updating the title element.
 	// Different behavior for HTML vs SVG documents.
 	document_element := d.document_element() or { return }
+	// Include inserting a new title in the batch, so its empty initial value
+	// cannot be reported before the assigned text.
+	d.begin_title_change_report_batch()
+	defer { d.end_title_change_report_batch() }
 	if document_element.namespace_uri() or { '' } == namespace_svg_uri && document_element.local_name() == 'svg' {
 		mut title_target := ?&Element(none)
 		for child in document_element.as_node().children {
@@ -6821,8 +6857,8 @@ pub fn (mut d Document) set_title(value string) ! {
 			document_element_node.pre_insert(new_title.as_node(), document_element.as_node().first_child())!
 			unsafe { &Element(new_title) }
 		}
-		mut target_node := unsafe { &Node(target.as_node()) }
-		target_node.string_replace_all(value)
+		mut title_element := unsafe { &Element(target) }
+		title_element.set_title_text(value)
 		return
 	}
 
@@ -6842,8 +6878,8 @@ pub fn (mut d Document) set_title(value string) ! {
 			head_node.append_child(new_title.as_node())!
 			unsafe { &Element(new_title) }
 		}
-		mut target_node := unsafe { &Node(target.as_node()) }
-		target_node.string_replace_all(value)
+		mut title_element := unsafe { &Element(target) }
+		title_element.set_title_text(value)
 	}
 }
 
@@ -9195,8 +9231,6 @@ pub fn (mut d Document) completely_finish_loading() {
 	// 1. Assert: document's browsing context is non-null.
 	// 2. The completely loaded time was recorded above even when activation was
 	// deferred.
-	d.refresh_svg_use_shadow_trees()
-
 	// NOTE: Start the active refresh timer if set.
 	if d.active_refresh_timer != unsafe { nil } {
 		d.active_refresh_timer.start()

@@ -436,14 +436,16 @@ pub fn html_table_cell_element_default_role(cell &dom.HTMLTableCellElement) ?ari
 	// Cells outside a table have no implicit role, including header roles.
 	table := table_ancestor or { return none }
 	if element.local_name() == 'th' {
+		scope := element.get_attribute_value('scope').to_lower_ascii()
+		if scope in ['col', 'colgroup'] { return .columnheader }
+		if scope in ['row', 'rowgroup'] { return .rowheader }
 		mut header_ancestor := element.as_node().parent_element()
 		for header_ancestor != none {
 			current := header_ancestor or { break }
-			scope := element.get_attribute_value('scope')
-			if scope == 'columnheader' || current.local_name() == 'thead' {
+			if current.local_name() == 'thead' {
 				return .columnheader
 			}
-			if scope == 'rowheader' || current.local_name() == 'tbody' {
+			if current.local_name() == 'tbody' {
 				return .rowheader
 			}
 			header_ancestor = current.as_node().parent_element()

@@ -361,7 +361,10 @@ pub fn (mut c CharacterData) replace_data_with_mutation_steps(offset int, count 
 		whitespace_changed := character_data_is_ascii_whitespace(old_data) != character_data_is_ascii_whitespace(c.data_)
 		if layout_node := node.unsafe_layout_node() {
 			if layout_node.is_text_node() && layout_node.text_has_source_range_ {
-				if parent := node.parent() {
+				if owner := layout_node.first_letter_owner() {
+					mut owner_node := unsafe { &Node(owner.as_node()) }
+					owner_node.set_needs_layout_tree_update(true, .character_data_replace_data)
+				} else if parent := node.parent() {
 					mut parent_node := unsafe { &Node(parent) }
 					parent_node.set_needs_layout_tree_update(true, .character_data_replace_data)
 				}

@@ -2018,7 +2018,9 @@ pub fn (style_value RandomValueSharingStyleValue) absolutized(context Computatio
 	}
 
 	// A random caching key is a tuple of:
-	element_id := if style_value.element_shared_ {
+	// Named cache keys belong to the document even without element-shared.
+	element_shared := style_value.element_shared_ || !style_value.is_auto_
+	element_id := if element_shared {
 		none
 	} else {
 		// FIXME: Use the pseudo element's unique_id() when that's accessible
@@ -2037,7 +2039,7 @@ pub fn (style_value RandomValueSharingStyleValue) absolutized(context Computatio
 	//    specified in <random-value-sharing>.
 	// 3. A document ID identifying the Document the styles are from.
 	// NB: This is implicit since the cache is stored on the document or the element (which is a child of the document).
-	random_base_value := if style_value.element_shared_ {
+	random_base_value := if element_shared {
 		mut document := unsafe { &dom.Document(abstract_element.document()) }
 		document.ensure_element_shared_css_random_base_value(cache_key)
 	} else {

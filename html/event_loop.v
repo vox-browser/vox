@@ -556,6 +556,26 @@ pub fn (event_loop &EventLoop) running_rendering_task() bool {
 // satisfied by queued work. The browser host can continue waiting when there
 // is no runnable work; the standalone runtime yields back to its caller.
 pub fn (mut event_loop EventLoop) spin_until(goal_condition fn() bool) {
+	// Spinning runs other tasks and microtasks while the caller is suspended.
+	// Checkpoints require all execution context stacks to be empty.
+	mut suspended_vms := event_loop.embedding_vms_.clone()
+	if primary := event_loop.primary_vm_not_embedded() { suspended_vms << primary }
+	for vm in suspended_vms {
+		mut mutable_vm := unsafe { &libjs.VM(vm) }
+		mutable_vm.save_execution_context_stack()
+	}
+	saved_html_contexts := html_scripting_execution_context_stack
+	html_scripting_execution_context_stack = []&ScriptingRealm{}
+	saved_task := event_loop.currently_running_task_
+	event_loop.currently_running_task_ = none
+	defer {
+		for index := suspended_vms.len - 1; index >= 0; index-- {
+			mut vm := unsafe { &libjs.VM(suspended_vms[index]) }
+			vm.restore_execution_context_stack()
+		}
+		html_scripting_execution_context_stack = unsafe { saved_html_contexts }
+		event_loop.currently_running_task_ = saved_task
+	}
 	event_loop.perform_a_microtask_checkpoint()
 	for !goal_condition() {
 		mut queue := event_loop.task_queue_

@@ -149,7 +149,7 @@ fn (mut p Parser) continue_parse_expression(lhs_start Position, expression_ Expr
 	mut expression := expression_
 	mut lhs_is_parenthesized := p.last_primary_was_parenthesized
 	p.last_primary_was_parenthesized = false
-	for p.match_secondary_expression(&forbidden) {
+	for !p.recursion_limit_reached && p.match_secondary_expression(&forbidden) {
 		new_precedence := operator_precedence(p.current_token_type())
 		if new_precedence < min_precedence {
 			break
@@ -1966,10 +1966,11 @@ fn (mut p Parser) parse_method_definition(is_async bool, is_generator bool, meth
 	insights.might_need_arguments_object = p.flags.function_might_need_arguments_object
 	p.flags.function_might_need_arguments_object = saved_might_need_arguments
 
-	// Class constructors always need a function environment for `this` binding.
+	// Only derived constructors always need a function environment for `this`:
+	// super() binds it there. Base constructors retain the body's own insights.
 	if method_kind == .constructor {
 		insights.uses_this = true
-		insights.uses_this_from_environment = true
+		if p.class_has_super_class { insights.uses_this_from_environment = true }
 	}
 
 	function_id := p.function_table.insert(JsFunctionData{

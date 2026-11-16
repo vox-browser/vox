@@ -1208,7 +1208,7 @@ fn paintable_box_paint_box_shadow(mut commands []PaintCommand, shadows []BoxShad
 				height: shadow.shadow_rect.height
 				color: painting_color_string(shadow.color)
 				srgb_color_data: shadows[shadows.len - 1 - index].srgb_color_data
-				force_dark_role: .foreground
+				force_dark_role: .background
 				force_dark_role_set: true
 				opacity: opacity
 				blur: shadow.blur_radius
@@ -1229,7 +1229,7 @@ fn paintable_box_paint_box_shadow(mut commands []PaintCommand, shadows []BoxShad
 				height: shadow.outer_shadow_rect.height
 				color: painting_color_string(shadow.color)
 				srgb_color_data: shadows[shadows.len - 1 - index].srgb_color_data
-				force_dark_role: .foreground
+				force_dark_role: .background
 				force_dark_role_set: true
 				opacity: opacity
 				blur: shadow.blur_radius
@@ -1260,7 +1260,7 @@ fn append_inset_shadow_commands(mut commands []PaintCommand, shadows []BoxShadow
 			width: width
 			height: height
 			color: shadow.color.serialize()
-			force_dark_role: .foreground
+			force_dark_role: .background
 			force_dark_role_set: true
 			opacity: opacity
 			radius: clamp_radius(radius, width, height)
@@ -3662,6 +3662,8 @@ fn paint_text_shadow(mut commands []PaintCommand, fragment TextFragment,
 			width: fragment.width
 			height: fragment.height
 			color: layer.color.serialize()
+			force_dark_role: .none_
+			force_dark_role_set: true
 			text: span_text
 			font_size: fragment.font_size
 			bold: fragment.bold

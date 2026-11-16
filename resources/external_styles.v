@@ -155,7 +155,7 @@ fn complete_browser_link_stylesheet(link &dom.Element, resource PreloadedResourc
 			url:          dom.URL{ value: address }
 			// The browser adapter does not establish a CORS response. Opaque
 			// sheets may style the page, but their rules must remain private.
-			origin_clean: dom.URL{ value: address }.origin().is_same_origin(link.document().origin())
+			origin_clean: resource.error == '' && dom.URL{ value: address }.origin().is_same_origin(link.document().origin())
 		})
 	return previous_sheet != native_link.linked_style_sheet_
 }

@@ -78,11 +78,23 @@ fn test_xml_document_queues_browsing_context_lifecycle_events() {
 		document.finalize()
 	}
 	window := WindowModel.create_top_level(document, none, 'xml-lifecycle')!
+	document.set_load_timing_info(dom.DocumentLoadTimingInfo{
+		load_event_start_time: -1
+		load_event_end_time: -1
+	})
 	observation := &XMLLifecycleObservation{}
 	listener := dom.IDLEventListener.create(&dom.CallbackType{
-		handle_event: fn [observation] (event &dom.Event, _ ?&dom.EventTarget) dom.JSValue {
+		handle_event: fn [observation, document] (event &dom.Event, _ ?&dom.EventTarget) dom.JSValue {
 			mut mutable_observation := unsafe { &XMLLifecycleObservation(observation) }
 			mutable_observation.events << event.type_name()
+			timing := document.document_load_timing_info()
+			if event.type_name() == 'load' {
+				assert timing.load_event_start_time >= 0
+				assert timing.load_event_end_time == -1
+			} else if event.type_name() == 'pageshow' {
+				assert timing.load_event_end_time >= timing.load_event_start_time
+				assert document.document_page_showing()
+			}
 			return dom.js_undefined()
 		}
 	})
@@ -93,8 +105,10 @@ fn test_xml_document_queues_browsing_context_lifecycle_events() {
 
 	parse_xml_document(document, '<root/>')!
 	assert document.readiness() == .interactive
-	assert document.document_ready_for_post_load_tasks()
+	assert !document.document_ready_for_post_load_tasks()
 	assert observation.events.len == 0
+	// A second readiness notification must share the pending completion.
+	finish_xml_document_parsing(document)
 
 	mut event_loop := main_thread_event_loop()
 	for _ in 0 .. 10 {
@@ -103,5 +117,6 @@ fn test_xml_document_queues_browsing_context_lifecycle_events() {
 	}
 	assert document.readiness() == .complete
 	assert observation.events == ['DOMContentLoaded', 'load', 'pageshow']
+	assert document.document_ready_for_post_load_tasks()
 	assert document.is_completely_loaded()
 }

@@ -8,6 +8,7 @@ __global dom_layout_callbacks = dom.LayoutNodeCallbacks{
 	generated_content_text_callback: layout_generated_accessible_text
 	find_matching_text_callback: find_matching_layout_text
 	inline_word_range_callback: layout_inline_word_range
+	first_letter_owner_callback: layout_text_first_letter_owner
 	apply_style_callback: apply_style_to_layout_node
 	apply_animated_style_callback: apply_animated_style_to_layout_node
 	apply_color_style_callback: apply_inherited_color_style_to_layout_node
@@ -17,6 +18,14 @@ __global dom_layout_callbacks = dom.LayoutNodeCallbacks{
 	refresh_empty_text_fragment_callback: refresh_layout_empty_text_fragment
 	anchor_size_value_callback: layout_resolved_anchor_size_property
 	view_transition_properties_callback: layout_view_transition_properties
+}
+
+fn layout_text_first_letter_owner(handle voidptr) ?&dom.Element {
+	if handle == unsafe { nil } { return none }
+	text := unsafe { &Node(handle) }.as_text_node() or { return none }
+	first := text.first_letter_ or { return none }
+	wrapper := first.parent() or { return none }
+	return wrapper.pseudo_element_generator()
 }
 
 // Layout owns tree metadata, style and committed geometry. DOM consumes the

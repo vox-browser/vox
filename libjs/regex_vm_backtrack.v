@@ -12,6 +12,7 @@ pub fn (mut vm RegexVm) backtrack() bool {
 			vm.restore_registers(state.reg_snapshot_offset)
 			vm.scratch.register_pool.trim(int(state.reg_snapshot_offset))
 			vm.modifiers = state.modifiers
+			vm.undo_modifier_changes(state.modifier_trail_len)
 			if state.modifier_stack_len < uint(vm.scratch.modifier_stack.len) {
 				vm.scratch.modifier_stack.trim(int(state.modifier_stack_len))
 			}
@@ -20,6 +21,7 @@ pub fn (mut vm RegexVm) backtrack() bool {
 			vm.restore_registers(state.reg_snapshot_offset)
 			vm.scratch.register_pool.trim(int(state.reg_snapshot_offset))
 			vm.modifiers = state.modifiers
+			vm.undo_modifier_changes(state.modifier_trail_len)
 			if state.modifier_stack_len < uint(vm.scratch.modifier_stack.len) {
 				vm.scratch.modifier_stack.trim(int(state.modifier_stack_len))
 			}
@@ -95,6 +97,7 @@ pub fn (mut vm RegexVm) backtrack() bool {
 						backward:            state.backward
 						modifiers:           state.modifiers
 						modifier_stack_len:  state.modifier_stack_len
+						modifier_trail_len:  state.modifier_trail_len
 					}
 				}
 				vm.pos = new_pos
@@ -175,6 +178,7 @@ pub fn (mut vm RegexVm) backtrack() bool {
 						backward:            state.backward
 						modifiers:           state.modifiers
 						modifier_stack_len:  state.modifier_stack_len
+						modifier_trail_len:  state.modifier_trail_len
 					}
 				}
 				vm.pos = new_pos
@@ -185,6 +189,7 @@ pub fn (mut vm RegexVm) backtrack() bool {
 			vm.restore_registers(state.reg_snapshot_offset)
 			vm.scratch.register_pool.trim(int(state.reg_snapshot_offset))
 			vm.modifiers = state.modifiers
+			vm.undo_modifier_changes(state.modifier_trail_len)
 			if state.modifier_stack_len < uint(vm.scratch.modifier_stack.len) {
 				vm.scratch.modifier_stack.trim(int(state.modifier_stack_len))
 			}

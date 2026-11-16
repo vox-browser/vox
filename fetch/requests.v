@@ -289,6 +289,8 @@ pub mut:
 	reload_navigation            bool
 	history_navigation           bool
 	user_activation              bool
+	// Preserved from the history entry when replaying a browser-UI navigation.
+	user_agent_initiated          bool
 	render_blocking              bool
 	// https://fetch.spec.whatwg.org/#concept-request-url-list
 	url_list []dom.URL
@@ -491,6 +493,7 @@ pub fn (request &Request) clone() &Request {
 		reload_navigation: request.reload_navigation
 		history_navigation: request.history_navigation
 		user_activation: request.user_activation
+		user_agent_initiated: request.user_agent_initiated
 		render_blocking: request.render_blocking
 		url_list: request.url_list.clone()
 		redirect_count: request.redirect_count

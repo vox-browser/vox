@@ -183,6 +183,11 @@ fn format_f64_value(value f64) string {
 	if value == 0 {
 		return '0'
 	}
+	// Exact integers below 2^53 have the same decimal digits without running
+	// the shortest-round-trip conversion or rebuilding its exponent form.
+	if math.trunc(value) == value && math.abs(value) < 9007199254740992.0 {
+		return i64(value).str()
+	}
 	// Use V's shortest round-tripping digits, then apply the ECMAScript
 	// Number::toString decimal/exponent thresholds rather than V's thresholds.
 	sign := if value < 0 { '-' } else { '' }

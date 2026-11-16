@@ -1964,6 +1964,16 @@ pub fn (sheet &CSSStyleSheet) css_rules() &CSSRuleList {
 	return sheet.rules
 }
 
+// Script-facing CSSOM reads must check the response's origin-clean flag. Internal
+// style processing still reads css_rules(), including cross-origin sheets.
+// https://drafts.csswg.org/cssom/#dom-cssstylesheet-cssrules
+pub fn (sheet &CSSStyleSheet) checked_css_rules() !&CSSRuleList {
+	if !sheet.base.origin_clean {
+		return error("SecurityError: Can't access the rules of cross-origin stylesheets")
+	}
+	return sheet.rules
+}
+
 pub fn (sheet &CSSStyleSheet) href() ?string {
 	return sheet.base.href()
 }
@@ -1999,7 +2009,10 @@ pub fn (sheet &CSSStyleSheet) make_parsing_params() ParsingParams {
 
 // https://www.w3.org/TR/cssom/#dom-cssstylesheet-insertrule
 pub fn (mut sheet CSSStyleSheet) insert_rule(rule string, index u32) !u32 {
-	// FIXME: 1. If the origin-clean flag is unset, throw a SecurityError exception.
+	// 1. If the origin-clean flag is unset, throw a SecurityError exception.
+	if !sheet.base.origin_clean {
+		return error("SecurityError: Can't call insert_rule() on cross-origin stylesheets")
+	}
 
 	// If the disallow modification flag is set, throw a NotAllowedError DOMException.
 	if sheet.disallow_modification {
@@ -2043,7 +2056,10 @@ pub fn (mut sheet CSSStyleSheet) insert_rule(rule string, index u32) !u32 {
 
 // https://www.w3.org/TR/cssom/#dom-cssstylesheet-deleterule
 pub fn (mut sheet CSSStyleSheet) delete_rule(index u32) ! {
-	// FIXME: 1. If the origin-clean flag is unset, throw a SecurityError exception.
+	// 1. If the origin-clean flag is unset, throw a SecurityError exception.
+	if !sheet.base.origin_clean {
+		return error("SecurityError: Can't call delete_rule() on cross-origin stylesheets")
+	}
 
 	// 2. If the disallow modification flag is set, throw a NotAllowedError DOMException.
 	if sheet.disallow_modification {
