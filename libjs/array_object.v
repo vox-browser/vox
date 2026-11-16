@@ -35,6 +35,18 @@ pub fn ArrayObject.create(mut vm VM, realm &Realm, length u64, prototype &Object
 }
 
 pub fn ArrayObject.create_from(mut vm VM, realm &Realm, elements []Value, prototype &Object) !&ArrayObject {
+	if use_fresh_array_storage() && u64(elements.len) < u64(0xffffffff) {
+		array := ArrayObject.create(mut vm, realm, u64(elements.len), prototype)!
+		mut object := array.object
+		mut properties := []OwnProperty{len: elements.len}
+		for index, value in elements {
+			properties[index] = OwnProperty{key: PropertyName.from_number(u32(index)), value: value,
+				writable: true, enumerable: true, configurable: true}
+		}
+		object.properties = properties
+		record_fresh_array_storage()
+		return array
+	}
 	array := ArrayObject.create(mut vm, realm, 0, prototype)!
 	mut object := array.object
 	for index, element in elements {
