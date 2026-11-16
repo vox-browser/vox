@@ -49,9 +49,15 @@ def run(args):
         VOX_NATIVE_OBSERVATION_SCREENSHOT=str(output / 'window.png'),
         VOX_CAPTURE_AUDIT_CONFIG=str(output / 'audit-config.json'),
         VOX_CAPTURE_AUDIT_PATH=str(output / 'audit.json'), LADYBIRD_SCREENSHOT_SCALE='1')
+    if args.native_cache is not None:
+        environment['VOX_LIBJS_NATIVE_CACHE'] = str(args.native_cache.resolve())
+    if args.native_compiler is not None:
+        environment['VOX_LIBJS_NATIVE_COMPILER'] = str(args.native_compiler.resolve())
     command = [str(binary), '--enable-javascript', '--js-engine=' + args.engine,
                '--window-width', '1024', '--window-height', '880', replay.manifest['url']]
     result = dict(command=command, configuration=args.configuration,
+        native_cache=environment.get('VOX_LIBJS_NATIVE_CACHE', 'profile default'),
+        native_compiler=environment.get('VOX_LIBJS_NATIVE_COMPILER', 'clang'),
         scope='active-window functional diagnosis; whole-window PNG; no pixel/performance gate',
         observer_sha256=digest(Path(__file__)), sample_after=args.sample_after,
         host_before=dict(cpu_count=os.cpu_count(), load=os.getloadavg(), unix=time.time()))
@@ -129,6 +135,10 @@ def main():
     parser.add_argument('--output', type=Path, required=True)
     parser.add_argument('--memory-guard-registry', type=Path, required=True)
     parser.add_argument('--engine', choices=['libjs', 'javascriptcore'], default='libjs')
+    parser.add_argument('--native-cache', type=Path,
+                        help='Explicit persistent cache shared by first/reopened diagnostics')
+    parser.add_argument('--native-compiler', type=Path,
+                        help='Use /usr/bin/false on reopen to detect unexpected compilation')
     parser.add_argument('--observe-ms', type=int, default=15000)
     parser.add_argument('--timeout', type=float, default=150)
     parser.add_argument('--configuration', default='diagnostic browser; see its compile receipt')
