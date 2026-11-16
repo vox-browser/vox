@@ -3408,3 +3408,16 @@ oracle is exact. Production `036bf130` confirms the preceding 4,788 CNN result
 and exact Vlang, GitHub, Hacker News, Lobsters and Wikipedia across twelve fresh
 captures; it lacks this new flag. Its managed rebuild is pending. See the
 [audit](OPTIMIZED_SITES_PIXELS_2026_11_12.md#preserve-opaque-planar-image-draws-2026-11-16).
+
+### Planar fragment-coordinate normalization, 2026-11-16
+
+`3d3b3c6d2` normalizes limited-range YUV coordinates after interpolation, matching
+the native plane sampler. Both staging paths repair each operation independently.
+CNN improves **1,414→1,311** in diagnostics: 105 corrected and two introduced
+one-level differences. All 51 pairs repeat; 50 other PNGs stay unchanged.
+Native full-frame viewport/tile residuals improve 194/190→0/0; the new regression
+fails with the control shader. Eleven focused V functions and two Python checks
+pass; the coordinate and native sampling functions also pass with literal V
+`-prod`. Production confirmation remains pending through the managed hook.
+References/tolerances are unchanged. See the
+[audit](OPTIMIZED_SITES_PIXELS_2026_11_12.md#planar-fragment-coordinate-normalization-2026-11-16).

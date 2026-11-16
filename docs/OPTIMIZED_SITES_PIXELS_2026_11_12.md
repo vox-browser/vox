@@ -4764,3 +4764,53 @@ Cleanup inventories 111 owned roots/6,069 files, preserving and SHA-verifying
 and removed. Owned binaries, intermediates, profiles, guards and locks are deleted;
 archive and final-verification guards are separately preserved and removed.
 Shared production assets and native dependencies remain.
+
+### Planar fragment-coordinate normalization, 2026-11-16
+
+`3d3b3c6d2` delays limited-range YUV coordinate normalization until the fragment
+shader, matching the native plane sampler's operation order. Vertex interpolation
+retains natural-image coordinates; luma and atlas chroma use the resulting
+normalized coordinates. RGB and full-range JPEG retain their prior path. Both
+preparers repair each coordinate operation independently. The JPEG insertion
+marker now includes its conversion statement, avoiding an ambiguous normalization
+condition during partial staging repair; final staged shader bytes stay fixed.
+
+A fresh matched source control reproduces CNN at **1,414** twice and retains
+exact Vlang and both YUV controls. Candidate executable
+`e0b0e34c63b83f2983f9d77045f53f187e8994be7f5680657389d1b08ed07adb`
+(C/O0/preallocated/no-GC) completes **51 workloads/102 captures** with byte-identical
+repeats and **50 other PNGs unchanged**. CNN improves **1,414→1,311**:
+**105 corrected, two introduced** pixels, all errors at most one. Sullivan's
+interior improves 206→105 and the logo 1→0; Trump/Netanyahu remain zero,
+ice six and peptides 1,030. The 890 consumed V witnesses and 949 selected pins
+stay stable. Driver, capture and memory guards exit zero.
+
+The new full-frame regression decodes the frozen Sullivan WebP, pins its source
+and luma bytes, and renders the recorded rounded clip and natural-image
+transform at both 1024×768 and 1024×256. Independent native Graphite/Metal
+R8-plane frame hashes are exact: the previous **194/190** differences become
+**zero/zero**. The complete viewport hash is
+`7f28b70276ba342b68d3a914b6c588a474e968dcedb223e628e0b43c0cfc04bb`;
+the tile hash is `10ce2be37045e9278e4d6c0e2cb692f8be97862dc9f59344fa634f9fd3c88ed7`.
+The unchanged control shader fails this regression as expected after passing
+the decoder assertions. That failure and initial compiler diagnostics are retained.
+
+Eleven distinct focused V functions pass under arena poisoning and 3 GiB runtime
+guards: the new coordinate regression, two native sampling checks, four atlas
+checks, byte-mip, profiled RGB, opaque rounded YUV and native staging. The new
+coordinate function and two native sampling functions also pass with literal V
+`-prod`. The two Python staging checks pass, including partial-coordinate repair.
+Two browser build attempts failed on concurrent LibJS edits; those failures and
+the separate fixes are retained. The final candidate builds successfully.
+No original PNG reference or tolerance changes.
+
+Production remains `036bf130` and does not contain this change. The managed hook
+requests its coalesced rebuild; no duplicate build is queued. This is frozen-page
+diagnostic evidence, with no live-site, scrolling or instruction-performance
+claim. CNN equality, source/replay, Reddit and the catalog's other open controls
+remain unresolved. Cropped readback surface dimensions remain a sampling lead.
+Local raw evidence: `docs/performance/vlang-gradients-20261114/raw/cnn-yuv-fragment-20261116/`.
+Cleanup inventories 81 owned roots/4,050 files, preserving and SHA-verifying
+1,164 evidence files/35,941,633 bytes. The temporary canonical probe, binaries,
+intermediates, profiles, guards and locks are removed; archive guard evidence is
+separately preserved. Shared production assets and dependencies remain.
