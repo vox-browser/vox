@@ -45,6 +45,11 @@ class YuvStagingTests(unittest.TestCase):
                 reset.write_text(original_layer if reset == layer else original_shader)
                 prepare(canvas)
                 self.assertEqual((layer.read_bytes(), shader.read_bytes()), expected)
+            self.assertIn(b'float4 lumaBounds', expected[1])
+            for operation in patches['prepare_gg_yuv_luma_subset']:
+                shader.write_text(shader.read_text().replace(operation['new'], operation['old'], 1))
+                prepare(canvas)
+                self.assertEqual((layer.read_bytes(), shader.read_bytes()), expected)
             prepare(canvas)
             self.assertEqual((layer.read_bytes(), shader.read_bytes()), expected)
 

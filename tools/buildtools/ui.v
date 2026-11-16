@@ -75,6 +75,7 @@ fn prepare_gg_canvas(canvas string) ! {
 	if !read(join(canvas, 'gpu_surface.v'))!.contains('layer.document_opaque') { gg_patches(canvas, 'prepare_gg_opaque_surface')! }
 	gg_repair_patches(canvas, 'prepare_gg_yuv_coordinates')!
 	gg_repair_patches(canvas, 'prepare_gg_yuv_subset')!
+	gg_repair_patches(canvas, 'prepare_gg_yuv_luma_subset')!
 	gg_repair_patches(canvas, 'prepare_gg_image_repeat')!
 	gg_repair_patches(canvas, 'prepare_gg_image_quad')!
 	gg_repair_patches(canvas, 'prepare_gg_srgb_gamut')!

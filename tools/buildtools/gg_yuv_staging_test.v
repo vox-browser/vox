@@ -17,7 +17,15 @@ fn test_native_preparer_keeps_yuv_uniform_and_shader_together() ! {
 	os.write_file(layer, '// mask_color document_linear_filter color_transform\n\tdocument_scale [2]f32 = [f32(1),1]!\nconst image_uniform_size = 112\n\t\tfor row in 0 .. 3 { out << u.color_transform.gamut[column * 3 + row] }\n\tout << u.color_transform.gamma\n\tout << 0\n\tout << 0\n\tout << 0\n')!
 	coordinates := patches['prepare_gg_yuv_coordinates']!.as_array()
 	vertex := coordinates[0].as_map()['old']!.str()
-	os.write_file(shader, vertex + '\n' + 'float4 _10_mask = sample(_globals.image_4, _in.CoordNormalize_3_Var);\n')!
+	mut color_source := ''
+	// Include optional color-adapter anchors when the shared preparer has
+	// them, so this minimal shader remains valid across adapter additions.
+	if gamma := patches['prepare_gg_srgb_gamut'] {
+		for operation in gamma.as_array() {
+			color_source += operation.as_map()['old']!.str() + '\n'
+		}
+	}
+	os.write_file(shader, vertex + '\n' + 'float4 _10_mask = sample(_globals.image_4, _in.CoordNormalize_3_Var);\n' + color_source)!
 	// Seed the independent opaque and repeating-image adapters in their real
 	// order; this fixture intentionally omits unrelated upstream GPU code.
 	for group in ['prepare_gg_opaque_layer', 'prepare_gg_opaque_surface', 'prepare_gg_image_repeat'] {
@@ -27,7 +35,11 @@ fn test_native_preparer_keeps_yuv_uniform_and_shader_together() ! {
 			text := read(path)!
 			before, after := row['old']!.str(), row['new']!.str()
 			if text.contains(after) { continue }
-			os.write_file(path, if text.contains(before) { text.replace_once(before, after) } else { text + '\n' + after })!
+			os.write_file(path, if text.contains(before) {
+				text.replace_once(before, after)
+			} else {
+				text + '\n' + after
+			})!
 		}
 	}
 
@@ -49,6 +61,7 @@ fn test_native_preparer_keeps_yuv_uniform_and_shader_together() ! {
 	assert first_shader.contains('documentImageCoords * 0.5f')
 	assert first_layer.contains('u.color_transform.yuv_chroma_bounds[index]')
 	assert first_shader.contains('float4 chromaBounds')
+	assert first_shader.contains('float4 lumaBounds')
 	assert first_surface.contains('layer.color_transform.image_quad_coords')
 	assert read(join(canvas, 'vox_document_image.v'))!.contains('!document_image_yuv_upload_supported()')
 	prepare_gg_canvas(canvas)!
@@ -72,6 +85,10 @@ fn test_native_preparer_keeps_yuv_uniform_and_shader_together() ! {
 		}
 		for subset in patches['prepare_gg_yuv_subset']!.as_array() {
 			row := subset.as_map()
+			staged_new = staged_new.replace(row['old']!.str(), row['new']!.str())
+		}
+		for luma in patches['prepare_gg_yuv_luma_subset']!.as_array() {
+			row := luma.as_map()
 			staged_new = staged_new.replace(row['old']!.str(), row['new']!.str())
 		}
 		os.write_file(path, read(path)!.replace_once(staged_new, operation['old']!.str()))!
@@ -106,4 +123,11 @@ fn test_native_preparer_keeps_yuv_uniform_and_shader_together() ! {
 		assert read(shader)! == first_shader
 	}
 
+	for luma in patches['prepare_gg_yuv_luma_subset']!.as_array() {
+		row := luma.as_map()
+		os.write_file(shader, read(shader)!.replace_once(row['new']!.str(), row['old']!.str()))!
+		prepare_gg_canvas(canvas)!
+		assert read(shader)! == first_shader
+		assert read(layer)! == first_layer
+	}
 }

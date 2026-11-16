@@ -94,3 +94,12 @@ fn test_webp_atlas_keeps_ceiling_sized_chroma_for_odd_luma_edges() {
 	assert !webp_atlas_sampling_supported(320, 179, 150, 80)
 	assert !webp_atlas_sampling_supported(319, 179, 150, 80)
 }
+
+fn test_webp_atlas_admits_only_bounded_integral_uniform_enlargement() {
+	assert webp_atlas_sampling_supported(540, 360, 696, 464)
+	assert webp_atlas_sampling_supported(540, 360, 1080, 720)
+	for target in [[f64(1083), 722], [f64(696), 465], [f64(695.99994), 464], [f64(540), 360],
+		[f64(696), 300]] {
+		assert !webp_atlas_sampling_supported(540, 360, target[0], target[1])
+	}
+}

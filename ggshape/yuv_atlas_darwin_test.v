@@ -48,7 +48,7 @@ fn test_near_half_yuv_atlas_filters_chroma_at_its_own_resolution() {
 fn test_yuv_atlas_rejects_unverified_scales_and_alpha_without_painting() {
 	atlas := []u8{len: 64, init: 255}
 	mut pixels := []u8{len: 64, init: 97}
-	for size in [f32(0), 2, 4, 5] {
+	for size in [f32(0), 2, 4, 9] {
 		assert draw_sampled_yuv_atlas_clipped(pixels.data, 4, 4, 16, 1, atlas, 4, 4,
 			0, 0, size, size, 1, 4, 4, [12]f32{}) == 0
 	}

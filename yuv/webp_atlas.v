@@ -39,9 +39,17 @@ pub fn webp_420_atlas_upload(planes []u8, width int, height int) ?[]u8 {
 pub fn webp_atlas_sampling_supported(width int, height int, dw f64, dh f64) bool {
 	if width <= 0 || height <= 0 || width > 4096 || height > 4096 || width * height > 4 * 1024 * 1024
 		|| !math.is_finite(dw) || !math.is_finite(dh)
-		|| dw <= 0 || dh <= 0 || dw >= width || dh >= height {
+		|| dw <= 0 || dh <= 0 {
 		return false
 	}
+	// Uniform magnification uses the original planes without mips. Keep its
+	// destination integral and bounded to the verified one-to-two scale range.
+	if dw > width && dh > height {
+		return dw <= width * 2 && dh <= height * 2
+			&& dw == math.floor(dw) && dh == math.floor(dh)
+			&& dw * height == dh * width
+	}
+	if dw >= width || dh >= height { return false }
 	if dw * 2 > width && dh * 2 > height { return true }
 	return width % 4 == 0 && height % 4 == 0 && dw * 4 > width && dh * 4 > height && dw * 2 < width && dh * 2 < height
 		&& math.log2(math.max(f64(width) / 2 / dw, f64(height) / 2 / dh)) >= .5

@@ -141,11 +141,18 @@ fn draw_sampled_image_color(pixels &u8,width i32,height i32,pitch i32,backdrop i
   surface.draw_document_scaled_float_rgba(floats,source_width,source_height,natural_width,natural_height,x,y,destination_width,destination_height) or {return 0}
  } else {
 	mut chroma_bounds := [4]f32{}
+	mut planar_gamut := destination_color.gamut
 	if partial_atlas_clip {
 		source_clip := [(clip[0] - x) * f32(source_width) / destination_width,
 			(clip[1] - y) * f32(source_height) / destination_height,
 			(clip[0] + clip[2] - x) * f32(source_width) / destination_width,
 			(clip[1] + clip[3] - y) * f32(source_height) / destination_height]!
+		if destination_width >= source_width && destination_height >= source_height {
+			// The planar shader's unused gamut tail carries the luma subset.
+			// Magnification can sample outside its outer texel centers.
+			planar_gamut[4], planar_gamut[5] = source_clip[0] + .5, source_clip[1] + .5
+			planar_gamut[6], planar_gamut[7] = source_clip[2] - .5, source_clip[3] - .5
+		}
 		// Chromium intersects UV texel-center bounds with the luma subset,
 		// then applies the larger inset symmetrically on each axis.
 		for axis in 0 .. 2 {
@@ -158,7 +165,7 @@ fn draw_sampled_image_color(pixels &u8,width i32,height i32,pitch i32,backdrop i
 	}
 	destination_subset := if partial_atlas_clip { [clip[0], clip[1], clip[2], clip[3]]! } else { [4]f32{} }
 	surface.draw_document_color_rgba_subset(levels, source_width, source_height, natural_width, natural_height, x, y,
-		destination_width, destination_height, canvas.DocumentImageColorTransform{ ...destination_color, image_quad_coords: image_quad && samples == 4, yuv_rec601_limited: yuv_mode == 1, yuv_jpeg_full: yuv_mode == 2, yuv420_atlas: yuv_atlas, yuv_chroma_bounds: chroma_bounds },
+		destination_width, destination_height, canvas.DocumentImageColorTransform{ ...destination_color, image_quad_coords: image_quad && samples == 4, yuv_rec601_limited: yuv_mode == 1, yuv_jpeg_full: yuv_mode == 2, yuv420_atlas: yuv_atlas, yuv_chroma_bounds: chroma_bounds, gamut: planar_gamut },
 		partial_atlas_clip || (samples == 1 && clip[0] == x && clip[1] == y && clip[2] == destination_width
 			&& clip[3] == destination_height
 			&& (clip[4] != clip[5] || clip[6] != clip[7] || clip[8] != clip[9] || clip[10] != clip[11])),
