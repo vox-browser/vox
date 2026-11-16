@@ -6209,3 +6209,68 @@ Cleanup inventories **67 owned roots/5,568 files**, preserves and SHA-verifies
 **1,423 evidence files/35,799,211 bytes**, then removes owned programs, generated
 C, private profiles/caches, downloaded extensions, replay keys, guards and locks.
 No `Build/guardian-border*` job output remains.
+
+
+### Verge CSS shadow color, 2026-11-16
+
+`15fefe590` corrects the native Core Image drop-shadow color matrix. Its RGB
+channels now stay at the selected color while blurred source alpha controls
+opacity. Previously RGB also followed alpha, so the shadow faded toward black
+at low coverage. Core Image color filters operate on unpremultiplied channels;
+see [Apple's filter reference](https://developer.apple.com/library/archive/documentation/GraphicsImaging/Reference/CoreImageFilterReference/index.html#//apple_ref/doc/filter/ci/CIColorMatrix).
+The existing alpha extraction, blur, offset and composition remain in the same
+order. The focused native helper is shared by the browser and its real Core
+Image test.
+
+The complete frozen Verge viewport improves **262,012→174,100 pixels twice**
+relative to the preceding diagnostic cohort. **88,341 pixels are corrected and
+429 newly differ**; this is an incomplete rendering fix. The retained
+`verge-svg-filter-space` control improves **137,990→31,489 twice**, with residual
+blur/antialiasing differences. The transformed no-blur control stays exact.
+Two new independent Brave processes for each existing control reproduce its
+unchanged reference byte for byte. No reference or tolerance is relaxed.
+
+The new `constant-color-drop-shadow` control uses black HTML/SVG shapes over
+white, red and blue panels, with matching shadow hues. Correct shadows blend
+into these panels without dark halos. Two independent Brave references agree,
+SHA-256 `262b496c97acab249ce359b25cb0639d8fe5d991bc550d0e12620b8fac74ed1b`.
+Production differs by **103,570 pixels twice**; the candidate is **zero twice**.
+The direct native test covers **3,072 alpha/color samples**: every byte alpha,
+white/red/blue/black and zero/0.6/full shadow opacity. The old matrix fails the
+RGB/alpha assertion; the fixed matrix passes. A typed paint-list test verifies
+white, hexadecimal alpha, functional alpha and red resolve correctly before
+reaching the native boundary. An initial test using the compatibility snapshot
+finds no filter and is retained as a failed harness attempt.
+
+Accepted C/O0 executable:
+`4ed15f604761d5f443232e1d184708df32caa43e565be75fe092b9cc2265bbd6`.
+Four consumed V paint/filter buffers match the compiler manifest; selected
+V/native inputs remain unchanged during compilation, including the new helper.
+Native compilation and real Core Image checks pass under the 3 GiB guard;
+V compilation uses the unchanged 12 GiB aggregate guard and focused runtime
+also passes under 3 GiB. All **67 workloads/134 fresh captures** repeat; all
+**64 preceding PNGs remain byte-identical**. Existing inexact controls retain
+their counts. Complete BBC and Guardian captures separately remain **zero twice**
+each. Both Verge streams pass full-uBO checks: **178 requests each**, all
+allowed, zero mismatches or oracle disagreements. The pinned release ZIP and
+59 vendor files verify. Accepted compile, runtime, capture, filter and guard
+exits are zero; failed controls remain in the local evidence.
+
+The hero response is the tracked 540×360 VP8 WebP
+`dfffe5e6ef2ca7d69e140c3d35089fbd7e66f83fd27e3d9be70742843abd28a1`;
+both browsers report density-adjusted natural width 512 and a 580×464 displayed
+box. A separate logging run repeats 174,100 twice and records source rectangle
+(45,0,450.00003,360) mapped to that box, with a 540×360 channel-7 decoded image.
+The expanded full-image draw needs enlargement, outside the current minifying
+atlas gate. Its sampling and the remaining SVG filter raster differences stay open.
+The latest completed production executable remains `93adced1`, which lacks
+this fix. The managed hook requests the coalesced C/literal V `-prod` rebuild.
+Production confirmation, the earlier source/replay browser-version guard,
+remaining catalog rechecks and live-site behavior are still unverified. No
+instruction-performance acceptance is claimed.
+
+Local evidence: `docs/performance/verge-shadow-20261116/`.
+Cleanup inventories **38 owned roots/6,425 files**, preserves and SHA-verifies
+**1,576 evidence files/39,385,729 bytes**, then removes owned programs, generated
+C, private profiles/caches, downloaded extensions, replay keys, guards and locks.
+No `Build/verge-shadow*` job output remains.
