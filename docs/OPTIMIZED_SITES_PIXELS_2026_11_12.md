@@ -4149,3 +4149,73 @@ Cleanup inventories **11 owned roots/480 files**, preserving and SHA-verifying
 **117 evidence files/3,660,230 bytes** before removing all job scratch. The
 archive guard and lock are separately copied, verified and removed. No owned
 scratch or experimental source changes remain.
+
+## Full-range JPEG plane sampling, 2026-11-16
+
+`8c2e79555` keeps eligible scaled JPEG uploads as packed full-range Y/U/V
+components. Previously, the floating upload converted and clipped each texel
+to RGB before interpolation and built RGB byte mips. CPU mip construction and
+texture filtering now operate on the independent components; the full-range
+matrix and clipping follow sampling. The matrix uses Skia's default
+[Rec601 full-range constants](https://raw.githubusercontent.com/google/skia/main/src/core/SkYUVMath.cpp).
+The cache namespace distinguishes this byte payload from earlier float uploads.
+Existing JPEG decode/shape guards remain, while the V tile bridge preserves
+each tile's sample selection even across mixed readbacks. Native UI is untouched.
+
+The isolated GPU control reproduces the old **23 JPEG differences**. The
+CPU-plane-mip path retains **one**, correcting **22 with zero introduced**.
+Base-only sampling instead gives 169 differences (maximum three), and GPU plane
+mips give 18 (maximum one); neither variant is selected. The final browser
+diagnostic, C/O0/preallocated/no-GC executable
+`82898a136e1754e1809152f252b84a0858b59cb9ee61125c55a3db7db1df4ecb`,
+verifies the live code path's **540×540→34×34** upload in its diagnostic log.
+
+Vlang improves **27→5**, with **22 corrected, zero introduced and 22 changed**.
+The remaining JPEG pixel `(47,169)` is green 239 against Brave's 240; its
+unchanged four scene differences remain separate. This pixel was already
+incorrect before the earlier fractional-RGB slice, so **all nine pixels
+introduced by that historical slice are now corrected**. Focused and broad
+PNGs match. The final **50 workloads/100 fresh captures** all repeat, with
+**all 49 other PNGs byte-identical** to the preceding accepted production
+cohort. CNN stays at **6,091**; GitHub, Hacker News, Lobsters and Wikipedia
+remain exact. All 100 native capture guards, startup smoke, driver, outer guard
+and guarded analysis exit zero. **886 consumed V witnesses and 939
+source/runtime pins** stay matched throughout this cohort.
+
+Eighteen focused V functions execute under arena poisoning and 3 GiB guards:
+eight plane checks, three full-range GPU checks, three existing limited-range
+GPU checks, three tile/native-callback checks and one native-preparer check.
+The Python preparer check also passes under a 3 GiB guard. They exercise
+unclipped plane values, odd-sized CPU mip weights, full-range filtering,
+malformed payload rejection, native channel conversion, mixed sample ownership,
+backdrop/pitch padding and partial staging repair. The tile test executable is
+`6776e29fe45648956c1e588cf5724f66832cc9c36e44afe9ff0126714e05d8be`.
+
+The first probe's full-range shader was not enabled because the two preparers
+disagreed; its 484-pixel outputs do not establish this path's behavior. The
+corrected probe calibrates the old 23-pixel control before comparing variants.
+A focused native-preparer test then catches an ambiguous atlas repair marker
+after adding the JPEG branch. Restricting that marker to its limited-range
+branch fixes repair without changing the generated shader. After this tooling
+correction, **all 93 staged canvas inputs are byte-identical** to the accepted
+capture inputs; both preparer tests pass. The failed staging run, an early
+driver read before its executable existed, and an incomplete verification
+command are retained separately from successful checks. A Python/V preparer
+newline difference is resolved through the canonical native preparer and
+verified by those 93 hashes. No failed attempt is counted as a pass.
+
+Available production `7c47d4f3`, receipt `20261116-032112-8cff4a11`, lacks the
+JPEG plane change by consumed source hashes. **Production confirmation remains
+pending**; the feature requests the normal coalesced C/literal V `-prod`/
+single-unit rebuild, with no duplicate manual build. These are frozen captures,
+without a live-site, scripting, scrolling or instruction claim. CNN, five
+Vlang pixels, missing Reddit evidence and prior inexact controls keep full
+equality open. Local commands, identities, transitions, source witnesses,
+PNGs and failures are under
+`docs/performance/vlang-gradients-20261114/raw/jpeg-planar-20261116/`.
+
+Cleanup inventories **65 owned roots/3,974 files**. **1,114 selected evidence
+files/30,095,832 bytes** are copied locally and SHA-verified before removing
+job binaries, intermediates, profiles, captures, guards and locks. The archive
+guard and lock are separately copied, verified and removed. The temporary probe
+is removed; no owned scratch remains. Shared bundles and dependencies stay.

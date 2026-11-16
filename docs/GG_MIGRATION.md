@@ -3357,3 +3357,21 @@ checks also pass with literal V `-prod` and C `-O2`. The unsupported
 rounded-upload experiment is reverted; original references and tolerances
 remain unchanged.
 See the [audit](OPTIMIZED_SITES_PIXELS_2026_11_12.md#normalized-r8-plane-resampling-2026-11-16).
+
+### Full-range JPEG planes through final sampling, 2026-11-16
+
+`8c2e79555` retains scaled JPEG Y/U/V bytes through CPU mip construction and
+texture filtering. The full-range matrix and RGB clipping now follow the final
+sample. The V tile bridge keeps each compositor tile's sample count; both
+preparers install the uniform, capability check and shader together, including
+repair of partially staged atlas/JPEG inputs.
+
+Vlang improves **27→5 pixels**, with **22 corrected and zero introduced**;
+its remaining JPEG pixel and four scene pixels are unchanged. All 49 other
+PNGs are unchanged in 50 workloads/100 repeatable diagnostic captures.
+Eighteen focused V functions and the Python staging check pass with 3 GiB
+runtime guards; V checks use arena poisoning. The staging repair leaves all
+93 staged canvas inputs byte-identical to the accepted capture inputs.
+Production confirmation is pending; available `7c47d4f3` lacks the change.
+No reference/tolerance changes or live-site/performance claim. See the
+[audit](OPTIMIZED_SITES_PIXELS_2026_11_12.md#full-range-jpeg-plane-sampling-2026-11-16).

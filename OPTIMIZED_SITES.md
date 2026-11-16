@@ -8,11 +8,12 @@ Provisional entries retain unresolved acceptance checks.
 
 **Pixel recheck, 2026-11-16:** Vox does **not** pass pixel equality across
 this catalog. Production build `c23c0d0a` confirms GitHub, Hacker News,
-Lobsters and Wikipedia exact in two fresh captures each. Vlang.io has **27 differing
-pixels in production**, down from the previously verified 810. The heading fix
-removes its final text difference. Its 23 JPEG pixels still include nine
-one-level differences introduced by the fractional-texture slice; four scene
-pixels also remain. CNN retains rendering and source/replay failures; its
+Lobsters and Wikipedia exact in two fresh captures each. Vlang.io has **five
+differing pixels in diagnostics**, down from 27 in verified production.
+Filtering JPEG planes before color conversion corrects 22 pixels with zero
+introduced differences, including all nine historical introduced JPEG pixels.
+One JPEG pixel and four scene pixels remain; production confirmation is pending.
+CNN retains rendering and source/replay failures; its
 native-repeat correction now passes in production.
 Reddit remains unverified (missing historical fixture, earlier live
 HTTP 403). A separate tall-shadow control has a retained baseline repeat failure.
@@ -139,6 +140,11 @@ fix supplies no site-level pixel or instruction credit. Production `c23c0d0a`
 contains the final sampler and confirms all 50 workloads in 100 fresh captures,
 with every PNG matching the diagnostic. The rounded-upload expansion was
 rejected and reverted after its visual checks failed.
+The subsequent `8c2e79555` full-range JPEG plane upload reduces Vlang **27→5**
+in 100 repeatable diagnostic captures across 50 workloads. All 49 other PNGs
+are unchanged. Eighteen focused V functions and the Python staging check pass.
+The available production `7c47d4f3` lacks this change; the normal managed rebuild
+is requested. References and tolerances remain unchanged; full parity is open.
 See the
 [current audit, capture scopes and retained failures](docs/OPTIMIZED_SITES_PIXELS_2026_11_12.md).
 
