@@ -49,6 +49,7 @@ pub mut:
 	error_prototypes               map[ErrorKind]&Object
 	error_constructors             map[ErrorKind]&Object
 	function_prototype             ?&Object                 // %Function.prototype%
+	function_constructor           ?&Object
 	async_function_prototype ?&Object
 	generator_function_prototype ?&Object
 	generator_prototype ?&Object
@@ -199,6 +200,10 @@ pub fn initialize_host_defined_realm(mut vm VM, hooks RealmGlobalHooks) !&Execut
 	realm.object_prototype = object_prototype.object
 	function_prototype := FunctionPrototype.create(mut vm, realm, object_prototype.object)
 	realm.function_prototype = function_prototype.object
+	realm.function_constructor = FunctionConstructor.create(mut vm, realm).object
+	mut function_prototype_object := function_prototype.object
+	function_prototype_object.define_direct_property(PropertyName.from_str('constructor'),
+		Value.from_object(realm.function_constructor or { panic('Missing Function constructor') }), attribute_writable | attribute_configurable)
 	mut async_function_prototype := Object.create(realm, realm.function_prototype)
 	async_function_prototype.define_direct_property(PropertyName.from_symbol(vm.well_known_symbol_to_string_tag()),
 		Value.from_string(vm.create_string_from_str('AsyncFunction')), attribute_configurable)
@@ -311,6 +316,8 @@ pub fn initialize_host_defined_realm(mut vm VM, hooks RealmGlobalHooks) !&Execut
 	set_default_global_value_bindings(realm)
 	// GlobalObject.cpp installs intrinsic constructor properties after values.
 	// Eager materialization replaces the engine-private intrinsic accessor map.
+	global.define_direct_property(PropertyName.from_str('Function'),
+		Value.from_object(realm.function_constructor or { panic('Missing Function constructor') }), attribute_writable | attribute_configurable)
 	global.define_direct_property(PropertyName.from_str('Array'),
 		Value.from_object(realm.array_constructor or { panic('Missing Array constructor') }),
 		attribute_writable | attribute_configurable)

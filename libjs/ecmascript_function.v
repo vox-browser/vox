@@ -25,6 +25,12 @@ fn create_ecmascript_function(mut vm VM, source &Executable, index u32, named_ex
 }
 
 fn create_ecmascript_function_data(mut vm VM, source &Executable, data &JsFunctionData, named_expression bool, inferred_name ?Utf16String, ordinary bool) !&Object {
+	return create_ecmascript_function_in_environment(mut vm, source, data, named_expression, inferred_name, ordinary,
+		vm.current_context().lexical_environment, vm.current_context().private_environment, vm.current_context().script_or_module)
+}
+
+fn create_ecmascript_function_in_environment(mut vm VM, source &Executable, data &JsFunctionData, named_expression bool, inferred_name ?Utf16String, ordinary bool,
+	defining_environment ?Environment, private_environment ?&PrivateEnvironment, script_or_module ScriptOrModule) !&Object {
 	realm := vm.realm()
 	function_prototype := match data.kind {
 		.normal { realm.function_prototype }
@@ -34,7 +40,7 @@ fn create_ecmascript_function_data(mut vm VM, source &Executable, data &JsFuncti
 	}
 	mut object := Object.create(realm, function_prototype)
 	object.class_name = 'Function'
-	mut environment := vm.current_context().lexical_environment
+	mut environment := defining_environment
 	// Named function expressions have a private immutable self binding.
 	mut named := ?&DeclarativeEnvironment(none)
 	if named_expression {
@@ -50,8 +56,8 @@ fn create_ecmascript_function_data(mut vm VM, source &Executable, data &JsFuncti
 		data: data
 		source: source
 		environment: environment
-		private_environment: vm.current_context().private_environment
-		script_or_module: vm.current_context().script_or_module
+		private_environment: private_environment
+		script_or_module: script_or_module
 		inferred_name: inferred_name
 	}
 	object.callable = FunctionObject(function)
