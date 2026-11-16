@@ -4795,3 +4795,124 @@ retained.
 The completed shadow/pipeline/discard probes are archived with hash verification
 and idle locks in `scratch-receipts/continued-20261117-r18` (24 roots/116 entries).
 Automated tests remain held.
+
+
+### Runtime raster opt-ins in ordinary production builds, 2026-11-17
+
+`05c41f8bf` removes the four custom compile-time raster switches while retaining
+the existing explicit runtime environment opt-ins for document P3, image P3,
+analytic thin fills, PNG decode density and GPU mipmaps. The runtime-disabled
+path preserves the preceding behavior. The profile bridge now has a regression
+source checking absent-profile output, borrowed bytes, repeat-pointer stability
+and a null size pointer; it remains uncompiled/unrun under the requested hold.
+
+The latest completed shared bundle, SHA-256
+`5d1aeeb92a46bc8e8cd474007c0c8842223461ce548ea8273e0713be91dd7116`,
+has 4,246 native hits/476,464 entries and zero misses/compiler calls but lacks
+the former raster defines. Its initial P3-path assertion therefore fails:
+there is no gamut-before-filter marker. The recorded **25,171 differing pixels**
+are a legacy/off-path baseline with the other diagnostic switches enabled,
+not reproduction of the 21-pixel experiment or evidence that P3 regressed.
+The failed eligibility assertion and observed-image analysis are both retained.
+
+The new sealed single-unit production build uses only the ordinary
+`vox_production`, `vox_ui2` and `vox_sparse_ttf` defines, consumes 3,761 V sources
+and zero tests, and verifies its parsed buffers and sealed native inputs before
+and after compilation. Build/guard exits are zero: 389.48326475 seconds, sampled
+peak 8,803,074,048 bytes. Executable SHA-256 is
+`df9efc0209e7d675637d88148c11bf42de262319087ed0863ef6663628befc1e`.
+The runtime-on capture is decoded-pixel-identical to the accepted **21-pixel**
+image (maximum 10); runtime-off is identical to that shared-bundle **25,171-pixel**
+baseline. Off disables the newly available options while retaining the same
+other diagnostics; this is not a wholly unconfigured launch comparison.
+The on PNG is `github-frozen-libjs-compiled-runtime-optin.png`, SHA-256
+`5daf06a1b6c4c055ac33e5ca58b32ae4e81d85938455280ada1a92b9c3803ca7`.
+
+Both use the actual 0130 native partition, `/usr/bin/false`, complete exact
+33-row/56-commit/latest/README content, fixed pins, no errors, successful PID
+adoption and zero browser/controller/guard exits. Page JavaScriptCore stays
+uninitialized; cache misses/compiler calls/pending/invalid entries stay zero.
+On/off native hits are 4,243/4,246 and entries 481,057/476,463. Elapsed/peak are
+56.311067 seconds/8,926,052,352 bytes and 55.836197208 seconds/8,952,725,504 bytes.
+These are diagnostic timings, not matched speed acceptance. The commit requests
+the managed production rebuild; the private consumed executable validates this
+change, not an earlier installed bundle.
+
+Further original-page depth/mesh counterfactuals preserve all content, input
+pins, native-cache gates, PID adoption and zero exits:
+
+| Analytic rectangle counterfactual | Differing pixels | Resolved/new vs 21 | Native hits/entries | Guard seconds / sampled peak bytes |
+| --- | ---: | --- | --- | --- |
+| Original mesh, LessEqual with writes | 38 | 6 / 23 | 4,243 / 480,941 | 58.936967792 / 8,851,062,784 |
+| 73 indices, LessEqual with writes | 37 | 0 / 16 | 4,244 / 473,528 | 55.612614417 / 8,835,956,736 |
+| Exact strip-to-list expansion | 21 | 0 / 0 | 4,243 / 477,250 | 63.474231666 / 9,037,430,784 |
+| Unique nondegenerate triangles | 21 | 6 / 6 | 4,246 / 482,258 | 38.707302084 / 8,457,027,584 |
+
+The 73-index/LessEqual pair follows current upstream
+[ShaderInfo.cpp](https://skia.googlesource.com/skia/+/refs/heads/main/src/gpu/graphite/ShaderInfo.cpp)
+and the no-self-intersections mesh; this does not establish the installed
+Brave revision's policy. A requested Chromium DEPS revision is unavailable
+(HTTP 404). None of these variants improves the complete reference, so no
+production mesh/depth change is retained.
+
+Read-only glyph publication tracing repeats the 21-pixel image. At (138,749),
+the source is 237 gray while the published result is 251 and the reference is
+246. Two identical paths, rectangle `75,29.5,63.5,21`, are applied successively
+on the same destination context from `BrowserApp__draw_command`; the second
+already has exactly that clip as its prior bounds. The readback becomes 251
+immediately after publication, with alpha 255. This identifies repeated
+fractional clipping, rather than final screenshot encoding, as this pixel's
+cause. The two read-only captures have 4,245 hits each, 483,022/482,356 native
+entries and zero misses/compiler calls, fixed pins, exact content and zero exits
+(39.729933625 seconds/8,469,708,800 bytes and 40.209927875 seconds/8,473,526,272
+bytes). A guarded V-side exact-rectangle deduplication is being built; no claim
+for that candidate is made yet.
+
+Completed jobs move with idle-lock checks and before/after hash verification to
+`scratch-receipts/continued-20261117-r19` (46 roots/254 entries). The active
+clip-dedup build is excluded. The original Brave reference and zero/zero
+tolerance remain unchanged. Full pixel parity and matched revisit speed remain
+open; automated suites remain held.
+
+
+### Identical rectangular clips: 20 differing pixels, 2026-11-17
+
+`26b30df0b` skips an exact repeat of a finite ordinary rectangular clip in
+Chromium native replay when `VOX_DIAGNOSTIC_RECTANGLE_CLIP_DEDUP=1`. Geometry
+and normalized transform must match an earlier clip in that same list; rounded,
+path and SVG mask clips remain on the existing path. This is geometric
+intersection before antialiased coverage, not removal of an authored boundary.
+The selected native mode remains explicit, and regression sources for repeated,
+nonadjacent, transformed and unsupported clips are committed but uncompiled/unrun.
+
+The sealed ordinary production build consumes 3,761 V sources and zero tests;
+compiler/guard exits are zero in 410.411355625 seconds, sampled peak
+8,905,867,264 bytes. Executable SHA-256 is
+`4632da9274d0b17039999a9da26d90a8c9990485d71f3800b4ba262eed80296b`.
+The staged main-file change is isolated from an unrelated working-tree hunk;
+the isolated staged file exactly matches the consumed source hash.
+
+On improves **21→20 differing pixels**, maximum 10, MAE 0.0000, RMSE 0.0157. Only the
+file-name edge (138,749) changes and it becomes exact; no pixels regress or
+become newly wrong. Off is decoded-pixel-identical to the preceding 21-pixel
+image. The normalized compiled PNG is `github-frozen-libjs-compiled-20px.png`,
+SHA-256 `a01cd432fbf64e3b7b67f3ff0472746f754f768e9ce1489a0e1c0d4476ca5f2b`.
+The direct-live screenshot remains separately named and is not replaced by
+this frozen-page result.
+
+Both use the compatible 0130 native partition and `/usr/bin/false`, complete
+exact full content, fixed pins, no author/native/cache errors, successful PID
+adoption and zero browser/controller/guard exits. Each records 4,244 native
+hits, zero misses/compiler calls/pending/invalid entries and an uninitialized
+page JavaScriptCore context. Native entries are 472,809 on/472,792 off.
+Guard elapsed/peak are 59.512364042 seconds/8,875,868,160 bytes and 58.239936333
+seconds/8,892,727,296 bytes. Timings receive no performance credit.
+
+Completed build/capture jobs move with idle-lock checks and hash verification
+to `scratch-receipts/continued-20261117-r20` (10 roots/56 entries). A separate guarded
+candidate is being built to apply ordinary rectangular text clips in the
+existing cpuraster antialiased clip before glyph blending, with restoration of
+the original native clips if rasterization declines. No result for that
+candidate is claimed yet. The original reference and zero/zero tolerance remain
+unchanged; full parity and matched compiled-revisit speed are still open.
+Automated tests remain held.

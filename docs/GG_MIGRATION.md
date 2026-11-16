@@ -3667,3 +3667,27 @@ have exact content and zero native misses/compiler calls. Defaults and the
 zero-tolerance original reference are unchanged. Regression sources are committed
 but uncompiled/unrun under the requested hold. Full parity remains open. See the
 [GitHub runtime report](LIBJS_GITHUB_RUNTIME_20261115.md#fractional-fills-and-nested-clip-ownership-21-differing-pixels-2026-11-17).
+
+
+### Raster runtime opt-ins without custom defines, 2026-11-17
+
+`05c41f8bf` makes the existing document/image P3, thin-fill and PNG density/mipmap
+experiments available through runtime environment options in ordinary production
+builds. The sealed 3,761-source/zero-test build repeats the 21-pixel compiled-LibJS
+GitHub image exactly; options off repeat the preceding shared bundle's off-path
+image. The profile-bridge regression source remains uncompiled/unrun under the
+requested hold. No mesh/depth counterfactual improves the complete reference;
+full parity is still open. See the
+[GitHub runtime report](LIBJS_GITHUB_RUNTIME_20261115.md#runtime-raster-opt-ins-in-ordinary-production-builds-2026-11-17).
+
+
+### Repeated fractional rectangle clips, 2026-11-17
+
+`26b30df0b` coalesces identical finite ordinary rectangular clips before native
+publication in the explicit diagnostic mode. A traced half-pixel file-name
+clip had been applied twice, reducing coverage to a quarter. The complete
+compiled-LibJS GitHub comparison improves 21→20 pixels with one exact correction
+and no regressions; off repeats 21 exactly. Source, native-cache, full-content,
+PID-adoption and exit gates pass. Regression sources remain uncompiled/unrun by
+request, and the original zero-tolerance reference is unchanged. See the
+[GitHub runtime report](LIBJS_GITHUB_RUNTIME_20261115.md#identical-rectangular-clips-20-differing-pixels-2026-11-17).

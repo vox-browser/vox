@@ -3169,7 +3169,7 @@ capture-scale, shared rectangle/clip and finite compositor-footprint corrections
 a border resampling regression is removed. A guarded Display P3 document-space
 experiment initially reaches 343 differing pixels; guarded PNG decode density,
 mipmaps, thin-rectangle rasterization and destination-space blending now reach
-21 differing pixels against the unchanged original reference, after preserving
+20 differing pixels against the unchanged original reference, after preserving
 fractional percentage transform origins, shared scaled PNG/shadow samples and
 GPU-owned containing rectangle clips;
 it is not pixel-perfect acceptance. Covered MSAA samples now quantize before
@@ -3219,3 +3219,22 @@ Its full-transfer off control reproduces 25 pixels exactly. GPU button inputs
 match Brave's recorded geometry/colors; a combined mesh/depth counterfactual
 regresses to 66 pixels and is rejected. Defaults, reference and tolerance remain
 unchanged; automated tests remain held and full parity remains incomplete.
+
+
+`05c41f8bf` makes the explicit raster runtime opt-ins available in ordinary
+production builds without custom compiler defines. Its compiler-disabled
+GitHub capture repeats the 21-pixel image exactly, with 4,243 native hits/
+481,057 entries and zero misses/compiler calls; off matches the preceding
+shared bundle's 25,171-pixel off-path image. A profile-bridge regression source
+is committed but remains uncompiled/unrun. Additional mesh/depth variants fail
+to improve the complete reference; repeated fractional glyph clipping is under
+investigation. Defaults, original reference and tolerance remain unchanged.
+
+
+`26b30df0b` coalesces identical finite ordinary rectangular clips in guarded
+Chromium native replay. It fixes the repeated half-pixel file-name clip and
+improves the complete original reference from 21 to 20 pixels with no regression.
+Both on/off captures have 4,244 native hits and zero misses/compiler calls;
+off exactly repeats 21 pixels. The new ordinary production build parses zero
+tests. The original reference/tolerance stay fixed; regression sources and
+all automated suites remain held, and pixel-perfect parity remains incomplete.
