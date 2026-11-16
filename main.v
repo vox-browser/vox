@@ -6550,6 +6550,7 @@ fn (mut app BrowserApp) draw_command(source_command &layout.PaintCommand, page_x
 			fill := app.paint_colors.color(command.color, command.opacity)
 			$if macos {
 				if app.ctx.native_rendering {
+					if app.draw_chromium_filled_ellipse(*command, page_x, page_y, scroll_y) { return }
 					C.native_draw_ellipse_srgb(f32(command.x), f32(command.y), f32(command.width), f32(command.height), f32(matrix[0]), f32(matrix[1]), f32(matrix[2]), f32(matrix[3]), f32(matrix[4]), f32(matrix[5]), page_x, page_y, f32(scroll_y), f32(app.ctx.height), fill, 1, 0)
 					return
 				}
