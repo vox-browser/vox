@@ -3421,3 +3421,16 @@ pass; the coordinate and native sampling functions also pass with literal V
 `-prod`. Production confirmation remains pending through the managed hook.
 References/tolerances are unchanged. See the
 [audit](OPTIMIZED_SITES_PIXELS_2026_11_12.md#planar-fragment-coordinate-normalization-2026-11-16).
+
+### Uniform planar draws in tile coordinates, 2026-11-16
+
+`a56efe4fd` uses each owning tile's raster space for uniform planar draws as well
+as mixed-sample draws. It retains direct fallback without usable document geometry.
+CNN improves **1,311→1,197** in diagnostics: 115 corrected and one introduced
+one-level difference. Sullivan's interior becomes exact. All 51 pairs repeat;
+50 other PNGs stay unchanged. Four callback functions pass with arena poisoning
+and a 3 GiB guard, including native-tile crop equality, no-grid fallback, mixed
+sampling, JPEG, backdrop margins and rejection. The new crop regression fails
+with the control implementation. Production confirmation remains pending.
+References and tolerances stay fixed. See the
+[audit](OPTIMIZED_SITES_PIXELS_2026_11_12.md#uniform-planar-draws-in-tile-coordinates-2026-11-16).

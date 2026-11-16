@@ -4814,3 +4814,59 @@ Cleanup inventories 81 owned roots/4,050 files, preserving and SHA-verifying
 1,164 evidence files/35,941,633 bytes. The temporary canonical probe, binaries,
 intermediates, profiles, guards and locks are removed; archive guard evidence is
 separately preserved. Shared production assets and dependencies remain.
+
+### Uniform planar draws in tile coordinates, 2026-11-16
+
+`a56efe4fd` retains the owning document tile's raster space even when every tile
+uses the same sample count. Previously uniform limited-range planar images used
+a smaller cropped readback surface; its interpolation can differ from the full
+tile. Mixed samples and JPEG already used tile routing. Uniform limited-range
+draws retain their direct fallback when no usable grid exists. Failed tiled draws
+remain atomic, preserving the backdrop before fallback. No sampler, decoder,
+color matrix, reference, tolerance or resource-specific rendering rule changes.
+
+C/O0/preallocated/no-GC diagnostic executable
+`e2079a6008ecfee56405ee4b0a6e71c4ca723a00fbdc41c42253978907479480`
+completes **51 workloads/102 captures** plus startup smoke. All pairs repeat
+byte for byte, and **all 50 non-CNN PNGs remain unchanged** from the preceding
+coordinate-normalization cohort. CNN improves **1,311→1,197**: **115 corrected,
+one introduced**, with maximum channel error one. Sullivan's interior improves
+105→0; Trump, Netanyahu and the logo stay exact. Ice retains six and peptides
+1,030 interior differences. The 890 consumed V witnesses and 949 selected pins
+remain stable. Native guards, driver, outer guard and analysis exit zero.
+
+Four focused callback functions pass under arena poisoning and a 3 GiB guard
+(executable `028ad3862b059eb1eeef84a4dfc99f4df47110c83c5751615dd6e659f149ae77`,
+274 consumed V witnesses). They exercise uniform and mixed sample ownership,
+full-range JPEG, native channel conversion, both tile seams, backdrop margins,
+atomic rejection and direct fallback without a grid. The new test compares a
+273×155 crop crossing the 254/255 publication seam against independently rendered
+native R8-plane tiles. Its complete BGRA hash is
+`a35a8597defe242feac2eb5ef0677e97b6286dfa3b18f450acd80cf4a260fdd2`.
+The unchanged control implementation fails that assertion as expected; the
+candidate matches exactly. The initial driver failure from a removed probe in
+its pin list is retained, followed by corrected successful compile receipts.
+
+An independent native Graphite/Metal render of the real 256×144 peptides planes,
+recorded rounded clip and natural-image transform matches Vox's interior exactly
+in both full-viewport and owning-tile targets. It retains the same 1,030 one-level
+differences from the original Brave PNG. This narrows the remaining investigation
+to the selected native sampling/decode setup rather than establishing equality.
+The native diagnostic supplies no browser acceptance on its own.
+
+Production remains `036bf130`; it cannot validate the newer source. The managed
+hook requests a coalesced rebuild without a duplicate manual build. Catalog
+parity, remaining CNN rendering and source/replay checks, Reddit and other open
+controls remain unresolved. No live-site, scripting, scrolling or instruction
+performance acceptance is claimed. Raw evidence is local under
+`docs/performance/vlang-gradients-20261114/raw/cnn-yuv-tiles-20261116/` and
+`docs/performance/vlang-gradients-20261114/raw/cnn-yuv-peptides-20261116/`.
+Native alternatives remain retained: omitting mips yields 3,309 peptide interior
+differences (maximum 29); nearest mip sampling yields 3,261 (maximum 28).
+Neither clears the residual, and neither is applied to the renderer.
+Cleanup inventories 22 tile-job roots/3,158 files and 13 native-diagnostic
+roots/50 files. It preserves and SHA-verifies 1,021 tile evidence files
+(22,601,986 bytes) and 43 native files (54,619,059 bytes). The temporary canonical
+native probe, owned binaries, profiles, intermediates, guards and locks are
+removed; archive guards are separately retained and removed. Shared production
+assets and dependencies remain.

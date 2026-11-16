@@ -13,15 +13,17 @@ differences in both production captures. All twelve PNGs match the preceding
 accepted diagnostics byte for byte, confirming the resolved-shadow and rounded
 WebP fixes in production.
 
-CNN improves further to **1,311 differing pixels in diagnostics**. After
+CNN improves further to **1,197 differing pixels in diagnostics**. After
 `6448185cc` preserves opaque planar-image draws (4,788→1,414), `3d3b3c6d2`
-normalizes limited-range planar texture coordinates after interpolation:
-**105 corrected, two introduced**, with maximum channel error one.
-All **51 workloads/102 fresh captures** repeat exactly; the other **50 PNGs
-are unchanged**. Eleven focused V functions and two Python checks pass; three
-native sampling/coordinate functions also pass with literal V `-prod`.
-The available production bundle lacks these two fixes; the managed rebuild is
-pending. See the [fragment-coordinate audit](docs/OPTIMIZED_SITES_PIXELS_2026_11_12.md#planar-fragment-coordinate-normalization-2026-11-16).
+normalizes planar coordinates after interpolation (1,414→1,311), and
+`a56efe4fd` retains tile coordinates for uniform planar draws (1,311→1,197).
+The last slice corrects **115 pixels and introduces one**, with maximum channel
+error one. Sullivan, Trump, Netanyahu and the logo interiors are now exact.
+All **51 workloads/102 fresh captures** repeat exactly after each slice; the
+other **50 PNGs are unchanged**. Four focused callback functions pass, including
+a new native-tile crop regression and the retained no-grid fallback.
+The available production bundle lacks these fixes; the managed rebuild is
+pending. See the [tile-coordinate audit](docs/OPTIMIZED_SITES_PIXELS_2026_11_12.md#uniform-planar-draws-in-tile-coordinates-2026-11-16).
 
 CNN retains rendering and source/replay failures. Reddit remains unverified
 (missing historical fixture, earlier live HTTP 403). A separate tall-shadow
