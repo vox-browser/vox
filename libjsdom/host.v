@@ -67,6 +67,9 @@ mut:
 	ui_event_prototype &libjs.Object = unsafe { nil }
 	mouse_event_prototype &libjs.Object = unsafe { nil }
 	keyboard_event_prototype &libjs.Object = unsafe { nil }
+	selection_prototype &libjs.Object = unsafe { nil }
+	selections map[voidptr]&dom.Selection
+	selection_wrappers map[voidptr]&libjs.Object
 	event_target_prototype &libjs.Object = unsafe { nil }
 	event_target_constructor &libjs.Object = unsafe { nil }
 	event_targets map[voidptr]&dom.EventTarget
@@ -219,6 +222,7 @@ pub fn Host.create(vm &libjs.VM, realm &libjs.Realm, document &dom.Document, hoo
 	host.install_character_data()!
 	host.install_node_utilities()
 	host.install_document_state()
+	host.install_selections()!
 	host.install_element_selectors()
 	host.install_html_element_interfaces()!
 	host.install_datasets()!
@@ -400,6 +404,8 @@ pub fn (mut host Host) close() {
 	host.dataset_wrappers.clear()
 	host.events.clear()
 	host.event_wrappers.clear()
+	host.selections.clear()
+	host.selection_wrappers.clear()
 	host.event_targets.clear()
 	host.media_queries.clear()
 	host.abort_controllers.clear()
