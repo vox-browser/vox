@@ -233,7 +233,7 @@ fn (mut host Host) add_listener(target &dom.EventTarget, type_ string, callback 
 			function = callback.as_object().get(mut vm, libjs.PropertyName.from_str('handleEvent'))!
 			receiver = callback
 		}
-		value := vm.call_with_limits(function, receiver, [owner.wrap_event(event)], libjs.ExecutionLimits{ max_instructions: 1000000 })!
+		value := vm.call_with_limits(function, receiver, [owner.wrap_event(event)], host.hooks.execution_limits)!
 		return if value.is_boolean() { dom.js_bool(value.as_bool()) } else { dom.js_undefined() }
 	}
 	report := fn [host] (err IError) {
