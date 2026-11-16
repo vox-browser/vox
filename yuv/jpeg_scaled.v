@@ -103,5 +103,6 @@ fn jpeg_scale_plane(source []u8, width int, height int, tw int, th int) ?[]u8 {
 		divisor *= 2
 	}
 	if w == tw && h == th { return data }
-	return cpuraster.resize_r8(data, w, h, tw, th)
+	// SkYUVAPixmapInfo selects Gray8 for single-channel unorm8 CPU planes.
+	return cpuraster.resize_gray8(data, w, h, tw, th)
 }

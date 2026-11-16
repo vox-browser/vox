@@ -15,8 +15,8 @@ fn test_scaled_jpeg_upload_preserves_plane_values_before_rgb_clipping() {
 	assert single == [u8(70), 90, 110, 255]
 }
 
-fn test_plane_resizing_matches_normalized_r8_store_rounding() {
-	// Independent SkPixmap R8 scalePixels results: each source row is enlarged
+fn test_plane_resizing_matches_normalized_gray8_store_rounding() {
+	// Independent SkPixmap Gray8 scalePixels results: each source row is enlarged
 	// from two texels to three, placing its middle sample exactly halfway.
 	source := [u8(0), 1, 1, 2, 2, 3, 3, 4]
 	// Normalization/interpolation makes the 2/3 midpoint slightly greater

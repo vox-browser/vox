@@ -1,9 +1,14 @@
 module cpuraster
 
-// Single-channel image planes use the highp raster pipeline: normalize bytes,
+// R8 image planes use the highp raster pipeline: normalize bytes,
 // accumulate four bilinear taps with fused multiply-add, then store to UNORM8.
 // The RGBA8 lowp sampler has different intermediate rounding.
 pub fn resize_r8(pixels []u8, source_width int, source_height int, width int, height int) ?[]u8 {
+	return resize_single_channel(pixels, source_width, source_height, width, height, false)
+}
+
+fn resize_single_channel(pixels []u8, source_width int, source_height int, width int, height int,
+	gray bool) ?[]u8 {
 	if source_width <= 0 || source_height <= 0 || source_width > 4096 || source_height > 4096
 		|| source_width * source_height > 4 * 1024 * 1024 || pixels.len != source_width * source_height
 		|| width <= 0 || height <= 0 || width > 4096 || height > 4096
@@ -30,7 +35,9 @@ pub fn resize_r8(pixels []u8, source_width int, source_height int, width int, he
 					value = mad(scale, sample, value)
 				}
 			}
-			output[y * width + x] = u8(to_unorm(value, 255))
+			pixel := FloatPixel{r: value, g: value, b: value, a: 1}
+			stored := if gray { pixel.luminance() } else { value }
+			output[y * width + x] = u8(to_unorm(stored, 255))
 		}
 	}
 	return output
