@@ -141,3 +141,21 @@ fn test_metadata_changes_keep_sibling_and_shadow_host_selectors_live() {
 	assert metadata_style_color(target) == 'rgb(0, 0, 255)'
 	assert metadata_style_color(inner) == 'rgb(0, 0, 255)'
 }
+
+fn test_empty_metadata_attribute_presence_changes_still_invalidate_styles() {
+	for name in ['data-hidden', 'aria-hidden', 'class'] {
+		mut document, _, mut target := metadata_style_fixture('span {color:blue} span[' + name + '] {color:red!important}')
+		defer { document.finalize() }
+		if name == 'class' {
+			target.remove_attribute('class')
+			document.update_style()
+		}
+		assert metadata_style_color(target) == 'rgb(0, 0, 255)'
+		target.set_attribute_value(name, '')
+		document.update_style()
+		assert metadata_style_color(target) == 'rgb(255, 0, 0)', name + ' empty attribute added'
+		target.remove_attribute(name)
+		document.update_style()
+		assert metadata_style_color(target) == 'rgb(0, 0, 255)', name + ' empty attribute removed'
+	}
+}
