@@ -144,6 +144,15 @@ fn chromium_msaa_trigger_rect_with_transform(command &layout.PaintCommand,
 	match command.kind {
 		'draw_replaced_image' {
 			paintable := command.image_paintable or { return none }
+			m := normalized_paint_transform(transform)
+			// A full bitmap rectangle can absorb its own rounded clip as an
+			// analytic rrect draw. Testing the clip alone incorrectly selects
+			// MSAA for an ellipse and changes every other draw in its tile.
+			// Cropped images, SVGs and ancestor clips keep their existing path.
+			if !command.has_clip && !paintable.is_svg_image && paintable.object_fit == .fill
+				&& m[0] > 0 && m[3] > 0 && m[1] == 0 && m[2] == 0 {
+				return none
+			}
 			converter := painting.new_device_pixel_converter(1) or { return none }
 			rect := converter.rounded_device_rect(painting.Rect{
 				paintable.image_rect.x + paintable.paint_offset_adjustment.x,
@@ -564,6 +573,7 @@ fn (mut app BrowserApp) select_chromium_raster_layer(index int) {
 		app.chromium_background_uses_local_origin = raster_index > 0 && !layer.legacy_raster
 		scale := C.native_display_device_pixel_ratio()
 		phase_origin := layer.compositor_origin or { [layer.bounds.x, layer.bounds.y]! }
+		compositor_shape_basis = f32(1 / app.document.layout_coordinate_scale())
 		select_compositor_raster_phase(phase_origin[0], phase_origin[1],
 			app.document.rendering_device_pixel_ratio(), scale,
 			raster_index > 0 && layer.composited_contents && !layer.legacy_raster)

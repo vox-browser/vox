@@ -59,3 +59,42 @@ fn test_compositor_svg_declines_unrecoverable_or_translucent_sample_data() {
 		assert compositor_msaa_coverage([u8(128), 128, 128, 128], &guarded).len == 0
 	}
 }
+
+fn test_fractional_compositor_border_keeps_uniform_and_overlapping_backdrops_distinct() {
+	previous_phase, previous_basis := compositor_raster_phase, compositor_shape_basis
+	defer {
+		compositor_raster_phase = previous_phase
+		compositor_shape_basis = previous_basis
+	}
+	compositor_raster_phase = [f64(0.5), 0]!
+	compositor_shape_basis = 0.5
+	shape := C.VoxGraphiteShape{
+		matrix:     [f32(0.5), 0, 0, 0, 0.5, 0, 0, 0, 1]!
+		rect:       [f32(2), 2, 20, 20, 6, 6, 6, 6, 6, 6, 6, 6]!
+		thickness:  2
+		red:        255
+		green:      255
+		blue:       255
+		alpha:      255
+		fill:       0
+		anti_alias: 1
+		force_msaa: 1
+	}
+	mut uniform := []u8{len: 12 * 12 * 4}
+	for pixel in 0 .. 144 { uniform[pixel * 4 + 3] = 255 }
+	assert draw_compositor_phase_shape(uniform.data, 12, 12, 48, &shape)
+	assert uniform[0..4] == [u8(0), 0, 0, 255]
+	assert uniform[(6 * 12 + 6) * 4..(6 * 12 + 6) * 4 + 4] == [u8(0), 0, 0, 255]
+	assert uniform.any(it > 0 && it < 255)
+
+	mut overlapping := []u8{len: uniform.len}
+	for pixel in 0 .. 144 {
+		for channel in 0 .. 3 {
+			overlapping[pixel * 4 + channel] = if pixel % 2 == 0 { u8(0) } else { u8(64) }
+		}
+		overlapping[pixel * 4 + 3] = 255
+	}
+	snapshot := overlapping.clone()
+	assert !draw_compositor_phase_shape(overlapping.data, 12, 12, 48, &shape)
+	assert overlapping == snapshot
+}
