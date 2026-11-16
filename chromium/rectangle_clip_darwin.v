@@ -5,13 +5,19 @@ import math
 import os
 
 const document_gpu_rectangle_clip = os.getenv('VOX_DIAGNOSTIC_GPU_RECTANGLE_CLIP') == '1'
+const document_gpu_thin_rectangle_clip = os.getenv('VOX_DIAGNOSTIC_GPU_THIN_RECTANGLE_CLIP') == '1'
 
 fn C.native_set_shape_intersect_clip(&f32)
 
 // A containing rectangular ancestor can be simplified by Graphite's clip
 // stack. Reapplying it in Quartz after readback removes the shape's AA fringe.
 fn chromium_rectangle_clip_index(command &layout.PaintCommand) int {
-	if command.kind != 'fill_rect' || !command.antialiased_rect || command.disable_antialias
+	return chromium_rectangle_clip_index_with_thin_rectangles(command, document_gpu_thin_rectangle_clip)
+}
+
+fn chromium_rectangle_clip_index_with_thin_rectangles(command &layout.PaintCommand,
+	allow_thin bool) int {
+	if command.kind != 'fill_rect' || command.disable_antialias
 		|| command.radius != 0 || command.underlays_next || !command.has_clip
 		|| command.clip_list == unsafe { nil } || command.recording_clip != none
 		|| command.width <= 0 || command.height <= 0 { return -1 }
@@ -20,6 +26,17 @@ fn chromium_rectangle_clip_index(command &layout.PaintCommand) int {
 	for value in [command.x, command.y, command.width, command.height,
 		command.x + command.width, command.y + command.height] {
 		if !math.is_finite(value) { return -1 }
+	}
+	if !command.antialiased_rect {
+		// The plain native fill conditions a shared fractional clip edge for
+		// Quartz. GPU replay must retain the original rectangle and its AA.
+		if !allow_thin || matrix[0] <= 0 || matrix[0] != matrix[3]
+			|| matrix[1] != 0 || matrix[2] != 0
+			|| (command.width * matrix[0] > 4 && command.height * matrix[3] > 4) { return -1 }
+		edges := [command.x * matrix[0] + matrix[4], command.y * matrix[3] + matrix[5],
+			(command.x + command.width) * matrix[0] + matrix[4],
+			(command.y + command.height) * matrix[3] + matrix[5]]
+		if edges.any(!math.is_finite(it)) || edges.all(it == math.floor(it)) { return -1 }
 	}
 	for index := command.clip_list.items.len - 1; index >= 0; index-- {
 		clip := command.clip_list.items[index]
