@@ -3434,3 +3434,20 @@ sampling, JPEG, backdrop margins and rejection. The new crop regression fails
 with the control implementation. Production confirmation remains pending.
 References and tolerances stay fixed. See the
 [audit](OPTIMIZED_SITES_PIXELS_2026_11_12.md#uniform-planar-draws-in-tile-coordinates-2026-11-16).
+
+### CPU byte mips for native-size planar atlases, 2026-11-16
+
+`9331c0681` carries CPU byte mips through native-size near-half YUV atlas uploads,
+including owning tiles and direct fallback. Stronger atlas minification keeps
+GPU mip construction. CNN improves **1,197→94** in diagnostics: **1,103 corrected,
+zero introduced**. Sullivan, Netanyahu and peptides are entirely exact.
+All 51 pairs repeat; 50 other PNGs stay unchanged. Fifteen focused V functions
+pass under arena poisoning and 3 GiB guards; the new complete native CPU-frame
+regression also passes with literal V `-prod`. GPU-control assertions fail as
+expected. Original references and tolerances stay fixed.
+
+Production `2ba33ee7` confirms the preceding opacity/fragment-coordinate result
+across 51 workloads/102 fresh captures, all matching accepted diagnostics:
+CNN 1,311 twice, and five other archived sites exact. Its compiled source and
+embedded shader predate tile routing and CPU atlas mips; those await the managed
+rebuild. See the [audit](OPTIMIZED_SITES_PIXELS_2026_11_12.md#cpu-byte-mips-for-native-size-near-half-atlases-2026-11-16).

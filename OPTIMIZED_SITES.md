@@ -7,23 +7,21 @@ Results apply to the frozen page and pinned build in each linked report.
 Provisional entries retain unresolved acceptance checks.
 
 **Pixel recheck, 2026-11-16:** Vox does **not** pass pixel equality across
-this catalog. Production `036bf130` now confirms GitHub, Hacker News, Lobsters,
-Wikipedia and Vlang.io exact in two fresh captures each. CNN retains **4,788**
-differences in both production captures. All twelve PNGs match the preceding
-accepted diagnostics byte for byte, confirming the resolved-shadow and rounded
-WebP fixes in production.
+this catalog. Production `2ba33ee7` confirms the opaque planar-image and fragment
+coordinate fixes: **51 workloads/102 fresh captures** match the preceding
+accepted diagnostics byte for byte. CNN retains **1,311** pixels twice; GitHub,
+Hacker News, Lobsters, Wikipedia and Vlang.io remain exact. Consumed source hashes
+and the complete embedded shader identify those fixes; this bundle predates tile
+routing and the CPU-mip correction below.
 
-CNN improves further to **1,197 differing pixels in diagnostics**. After
-`6448185cc` preserves opaque planar-image draws (4,788→1,414), `3d3b3c6d2`
-normalizes planar coordinates after interpolation (1,414→1,311), and
-`a56efe4fd` retains tile coordinates for uniform planar draws (1,311→1,197).
-The last slice corrects **115 pixels and introduces one**, with maximum channel
-error one. Sullivan, Trump, Netanyahu and the logo interiors are now exact.
-All **51 workloads/102 fresh captures** repeat exactly after each slice; the
-other **50 PNGs are unchanged**. Four focused callback functions pass, including
-a new native-tile crop regression and the retained no-grid fallback.
-The available production bundle lacks these fixes; the managed rebuild is
-pending. See the [tile-coordinate audit](docs/OPTIMIZED_SITES_PIXELS_2026_11_12.md#uniform-planar-draws-in-tile-coordinates-2026-11-16).
+CNN now improves to **94 differing pixels in diagnostics**. After `a56efe4fd`
+retains tile coordinates (1,311→1,197), `9331c0681` preserves CPU byte mips for
+native-size near-half planar uploads: **1,103 corrected, zero introduced**,
+with maximum channel error one. Sullivan, Netanyahu and peptides are entirely
+exact. All **51 workloads/102 fresh captures** repeat exactly, and the other
+**50 PNGs remain unchanged**. Fifteen focused V functions pass; the new native
+frame regression also passes with literal V `-prod`. The managed production
+rebuild is pending. See the [CPU atlas mip audit](docs/OPTIMIZED_SITES_PIXELS_2026_11_12.md#cpu-byte-mips-for-native-size-near-half-atlases-2026-11-16).
 
 CNN retains rendering and source/replay failures. Reddit remains unverified
 (missing historical fixture, earlier live HTTP 403). A separate tall-shadow

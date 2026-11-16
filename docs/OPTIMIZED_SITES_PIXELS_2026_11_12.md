@@ -4870,3 +4870,83 @@ roots/50 files. It preserves and SHA-verifies 1,021 tile evidence files
 native probe, owned binaries, profiles, intermediates, guards and locks are
 removed; archive guards are separately retained and removed. Shared production
 assets and dependencies remain.
+
+### CPU byte mips for native-size near-half atlases, 2026-11-16
+
+`9331c0681` retains CPU byte-mip construction for native-size near-half planar
+uploads. The atlas shader, plane bytes, color matrix and sampler stay fixed.
+The renderer can now select CPU or GPU mip construction explicitly, carrying
+that choice through owning tiles and direct fallback. Near-half full uploads
+select CPU byte mips; stronger atlas minification retains GPU mip behavior.
+The existing direct GG atlas API retains its GPU default. No site/resource hash
+selects this behavior, and no original reference or tolerance changes.
+
+An independent native Graphite/Metal `TextureFromYUVAPixmaps` upload builds CPU
+mips before transfer. With the recorded rounded clip and natural-image transform,
+it makes the real 256×144 peptides interior exact against the original Brave
+PNG at both full-viewport and owning-tile sizes. The preceding wrapped R8 textures
+with GPU-generated mips retain 1,030 one-level differences and match the old Vox
+interior exactly. The new renderer matches both complete native CPU frames:
+`4e7e3266040e010ab512d21555c1356ccd90160216e2b9384dd8bbd4717dc7e1`
+and `40fdfe0389164a1caf140c27212d2b0c1eabcd4ce6961830aa838c3ef362494c`.
+Its focused test also pins all 55,296 decoded Y/U/V bytes to
+`dceb5bf634152414d8eb379359cb3b1a680cd5bd1b7bacb15153577f030ff4e3`.
+The independent native source, headers, library identities, commands and frames
+are retained locally. No native dependency is rebuilt or added.
+
+Final C/O0/preallocated/no-GC diagnostic executable
+`1ddba79fd798a0640478e1bc7c88544d8f80433c9a76a3a1ecf4474f2d8d0515`
+completes **51 workloads/102 fresh captures** plus startup smoke. Every pair
+repeats byte for byte; **all 50 non-CNN PNGs are unchanged** from the accepted
+tile-coordinate cohort. CNN improves **1,197→94**, with **1,103 corrected and
+zero introduced** pixels. Every remaining channel error is at most one.
+All 891 consumed rendering/CSS/DOM/layout V witnesses and 951 selected pins stay
+stable. Native capture guards, driver, outer guard and analyses exit zero.
+
+Sullivan, Netanyahu and peptides are entirely exact. Trump and the logo interiors
+remain exact, with 11 and 10 edge pixels respectively. The profiled ice image has
+27 differences (six in its interior), and the cropped image at the bottom has
+46. These 94 differences remain open; the native oracle does not waive them.
+
+Fifteen distinct focused V functions pass under arena poisoning and 3 GiB runtime
+guards: the new CPU-frame regression; two native GPU sampling/mip checks; five
+callback tests; four existing atlas checks; fragment coordinates; opaque rounded
+YUV; and the byte-mip regression. The new CPU-frame function also passes with
+literal V `-prod` and C `-O2`. Its C/O0 and `-prod` executables are
+`0a5d113377a27004a5d3d84bbbb5fe25a3c7194324a87420bdef549f889f3465`
+and `701537742020107ec9d8273afb07e714e6863d07ac30bc53a6c1d0085394fc01`.
+The five-function callback executable is
+`1483ca2f9f7d776997c16c23a2e7a3546941b3c3404ca463817da6e2554d37b3`.
+GG checks retain 168 selected V witnesses; callback checks retain 275. The new
+callback compares the entire 134×77 native crop, then verifies CPU mip selection
+through the no-grid fallback. Its BGRA crop hash is
+`fcfdf9b06b11cbcbfbe9f8afe3a1447aba2349179c7fc2d1bee67eccb5d8f5e8`.
+Two expected GPU-control assertion failures are logged; a fresh uniquely named
+control retains its source and witness manifest and fails with unchanged pixels.
+
+A newer completed production bundle is available:
+`2ba33ee7775ab067a96f4b78107bc8fab855843bea554b6d52ffa05ebef26e66`,
+C/literal V `-prod`/single C unit, receipt `20261116-095551-bf007c38`.
+Its consumed paint classification/image helper matches the opaque implementation,
+and its executable contains the complete normalized-coordinate shader bytes
+(SHA-256 `7f18331dd0962f1116989367b04c4bbfc49925f989185c79e049b5ba94b664cc`).
+Its PNG callback matches the preceding source, without `a56efe4fd` tile routing.
+A separate fresh-process **51-workload/102-capture** production-binary check
+matches every preceding coordinate-normalization diagnostic PNG exactly:
+CNN **1,311 twice**, with GitHub, Hacker News, Lobsters, Wikipedia and Vlang exact.
+All pairs repeat, and executable/native-library/reference/driver pins stay stable.
+The diagnostic driver permits these recorded historical sources; the older
+bundle does not validate current source it lacks. Its frozen manifest and
+feature proof are retained. This confirms the opacity and coordinate result in
+production, while tile routing and this CPU-mip slice await the coalesced managed
+rebuild. No duplicate manual production build is requested.
+
+Frozen-page checks establish no live-site, scripting, scrolling or instruction
+performance acceptance. CNN source/replay checks, Reddit's missing evidence and
+other previously inexact controls keep catalog parity open. Raw evidence is local:
+`docs/performance/vlang-gradients-20261114/raw/cnn-peptides-followup-20261116/`.
+Cleanup inventories 71 owned roots/6,362 files, preserving and SHA-verifying
+2,073 evidence files/57,717,927 bytes. Both temporary canonical probes, owned
+binaries, intermediates, profiles, guards and locks are removed. Archive guard
+evidence is separately preserved and removed. Shared production bundles and
+native dependencies remain.
