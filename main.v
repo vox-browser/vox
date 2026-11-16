@@ -8456,6 +8456,7 @@ fn (mut app BrowserApp) handle_key(key gg.KeyCode, modifier gg.Modifier) {
 		return
 	}
 	if app.should_defer_page_input() { return }
+	if key == .escape && app.handle_page_escape_key(modifier) { return }
 	if app.handle_page_editing_key(key, modifier) { return }
 	if key == .left && modifier == .super {
 		app.activate_browser_chrome('back')

@@ -57,6 +57,23 @@ fn browser_editing_key(key gg.KeyCode) int {
 	}
 }
 
+// Escape belongs to the focused document even when that target is an input.
+// It has no text-editing default action, but author listeners use it to dismiss
+// popups and stop their animation/positioning callbacks.
+fn (mut app BrowserApp) handle_page_escape_key(modifier gg.Modifier) bool {
+ if app.document == unsafe { nil } || app.page_model == unsafe { nil }
+  || !app.document.is_fully_active() { return false }
+ mut heap_scope := platform.begin_browser_activity_heap_scope_for_scripting(app.document_scripting_enabled_for_heap())
+ defer { heap_scope.finish() }
+ mut navigation_work := app.begin_navigation_work()
+ defer { navigation_work.finish() }
+ mut handler := app.page_model.event_handler
+ handler.set_document_state(true, app.document.layout_node() != none)
+ app.page_model.handle_keydown(int(dom.KeyCode.escape), browser_pointer_modifiers(u32(modifier)), 0, false)
+ app.finish_page_editing_input()
+ return true
+}
+
 fn (mut app BrowserApp) handle_page_editing_key(key gg.KeyCode, modifier gg.Modifier) bool {
 	if app.document == unsafe { nil } || app.page_model == unsafe { nil }
 		|| !app.document.is_fully_active() {
