@@ -251,16 +251,17 @@ fn native_slot(operand Operand, executable &Executable) !u32 {
 fn native_source(executables []&Executable) !(string, int) {
 	mut source := strings.new_builder(16384)
 	sample := Value{}
+	tag_offset := uint(&sample.tag) - uint(&sample)
 	number_offset := uint(&sample.number) - uint(&sample)
 	cell_offset := uint(&sample.cell) - uint(&sample)
 	source.writeln('#include <stdint.h>\n#include <stddef.h>\n#include <math.h>')
-	source.writeln('typedef struct { uint8_t tag; double number; void *cell; } NV;')
+	source.writeln('typedef struct { union { double number; void *cell; }; uint8_t tag; } NV;')
 	source.writeln('_Static_assert(sizeof(NV)==${sizeof(Value)}, "Value size");')
-	source.writeln('_Static_assert(offsetof(NV,number)==${number_offset} && offsetof(NV,cell)==${cell_offset}, "Value offsets");')
+	source.writeln('_Static_assert(offsetof(NV,tag)==${tag_offset} && offsetof(NV,number)==${number_offset} && offsetof(NV,cell)==${cell_offset}, "Value offsets");')
 	source.writeln('typedef uint32_t (*Slow)(void*,uint32_t);')
 	source.writeln('static int number(NV v) { return v.tag==${int(ValueTag.int32)} || v.tag==${int(ValueTag.double)}; }')
-	source.writeln('static NV num(double x) { NV v={${int(ValueTag.double)},x,0}; if(x>=-2147483648.0 && x<=2147483647.0 && x==(int32_t)x && !(x==0 && signbit(x))) v.tag=${int(ValueTag.int32)}; return v; }')
-	source.writeln('static NV boolean(int x) { NV v={${int(ValueTag.boolean)},!!x,0}; return v; }')
+	source.writeln('static NV num(double x) { NV v={.number=x,.tag=${int(ValueTag.double)}}; if(x>=-2147483648.0 && x<=2147483647.0 && x==(int32_t)x && !(x==0 && signbit(x))) v.tag=${int(ValueTag.int32)}; return v; }')
+	source.writeln('static NV boolean(int x) { NV v={.number=!!x,.tag=${int(ValueTag.boolean)}}; return v; }')
 	mut fast_count := 0
 	for index, executable in executables {
 		source.writeln('void vox_native_${index}(void *state,NV *v,uint64_t *budget,uint8_t limited,uint32_t *pc,Slow slow,uint64_t *fast_steps) { uint32_t next=*pc; goto dispatch;')
@@ -308,7 +309,7 @@ fn native_fast_instruction(instruction Instruction, executable &Executable) !str
 	left := 'v[${lhs}]'
 	mut code := 'if(${left}.tag==${int(ValueTag.empty)}) goto SLOW;\n'
 	if instruction.op == .end {
-		return code + 'BUDGET v[${register_return_value}]=${left}; v[${register_exception}]=(NV){${int(ValueTag.empty)},0,0};'
+		return code + 'BUDGET v[${register_return_value}]=${left}; v[${register_exception}]=(NV){.tag=${int(ValueTag.empty)}};'
 	}
 	if instruction.op == .mov {
 		return code + 'BUDGET v[${native_slot(instruction.dst, executable)!}]=${left};'

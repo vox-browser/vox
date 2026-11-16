@@ -107,7 +107,9 @@ fn test_context_pool_bounds_and_stack_exhaustion_remain_enforced() {
 	stack.deallocate(0)
 	assert stack.recycled.len <= reusable_context_count_limit && stack.recycled_bytes <= reusable_context_bytes_limit
 	before := stack.recycled_bytes
-	assert stack.allocate_reusable(50000, [], 0) != none
+	oversized_values := u32(reusable_context_bytes_limit / uint(sizeof(Value)) + 1)
+	assert frame_size_in_bytes(oversized_values) > reusable_context_bytes_limit
+	assert stack.allocate_reusable(oversized_values, [], 0) != none
 	stack.deallocate(0)
 	assert stack.recycled_bytes == before
 	assert stack.allocate_reusable(1 << 20, [], 0) == none
