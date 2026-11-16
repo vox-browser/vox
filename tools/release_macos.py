@@ -289,8 +289,19 @@ def verify_release_inputs(checkout, build, commit, expected):
     # stream. Validate that proof and compare its consumed files with checkout;
     # comparing the two different digest formats rejects every parsed build.
     inputs = build.get('inputs', {}) if frozen_path else compiled
-    if inputs.get('head') != commit or inputs.get('build_inputs_sha256') != expected:
+    if inputs.get('head') != commit:
         raise RuntimeError(failure)
+    if inputs.get('build_inputs_sha256') != expected:
+        # V's supervisor excludes Python tools from its build-input digest.
+        # The legacy Python supervisor includes them. Their full repository
+        # digest uses the same byte protocol, so require that stronger proof
+        # against the clean checkout when the filtered digests differ.
+        current = repository_state(checkout)
+        if (not inputs.get('repository_sha256')
+                or current.get('repository_sha256') != inputs['repository_sha256']
+                or current.get('head') != commit or current.get('dirty') is not False
+                or current.get('build_inputs_sha256') != expected):
+            raise RuntimeError(failure)
     if frozen_path:
         frozen = json.loads(Path(frozen_path).read_text())
         if (frozen.get('protocol') != FROZEN_COMPILE_PROTOCOL

@@ -246,6 +246,21 @@ class ReleaseInputTests(unittest.TestCase):
             self.verify()
         matches.assert_called_once_with(self.checkout, self.frozen)
 
+    def test_different_supervisor_filters_require_identical_complete_checkout_bytes(self):
+        current = dict(self.inputs, repository_sha256='same complete tree')
+        recorded = dict(current, build_inputs_sha256='V filtered inputs')
+        self.build['inputs'] = recorded
+        self.frozen['source_inputs'] = recorded
+        self.receipt.write_text(json.dumps(self.frozen))
+        with patch.object(release, 'matches_compiled_checkout', return_value=True), \
+                patch.object(release, 'repository_state', return_value=current):
+            self.verify()
+        for change in (dict(repository_sha256='changed'), dict(dirty=True), dict(head='changed')):
+            with self.subTest(change=change), \
+                    patch.object(release, 'repository_state', return_value=dict(current, **change)):
+                with self.assertRaisesRegex(RuntimeError, 'did not compile the release commit'):
+                    self.verify()
+
     def test_changed_checkout_or_consumed_files_are_never_released(self):
         for current, matching in [(dict(self.inputs, head='another-commit'), True),
                                   (dict(self.inputs, build_inputs_sha256='changed bytes'), True),
