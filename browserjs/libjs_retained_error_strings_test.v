@@ -9,7 +9,8 @@ import webidl
 fn retained_error_fixture() !(&Runtime, &dom.Document, &html.WindowModel) {
 	address := dom.URL{value: 'https://retained-error.test/'}
 	mut document := html.parse_navigation_document('<body></body>', address, address.origin(), none)!
-	window := html.WindowModel.create_top_level(document, none, 'retained errors')!
+	window_target := document.get_window() or { return error('Missing navigation Window') }
+	window := unsafe { &html.WindowModel(window_target) }
 	mut runtime := Runtime.create_with_engine(.libjs)
 	settings := unsafe { &html.EnvironmentSettingsObject(document.relevant_settings_object()) }
 	runtime.bind_scripting_environment(settings)!
