@@ -7,10 +7,8 @@ import os
 // A compositor picture snaps its origin in the presenting device's grid.
 // A lower-density capture can therefore sample that picture between texels.
 __global compositor_raster_phase = [2]f64{}
-__global compositor_shape_basis = f32(1)
 
 const compositor_phase_diagnostics = os.getenv('VOX_DIAGNOSTIC_COMPOSITOR_PHASE') == '1'
-const compositor_shape_diagnostics = os.getenv('VOX_DIAGNOSTIC_COMPOSITOR_SHAPES') == '1'
 
 fn select_compositor_raster_phase(x f64, y f64, device_scale f64, capture_scale f64, enabled bool) {
 	compositor_raster_phase = [2]f64{}
@@ -180,27 +178,4 @@ fn compositor_phase_translation(matrix [9]f32) bool {
 	return matrix[0] == 1 && matrix[1] == 0 && matrix[3] == 0 && matrix[4] == 1
 		&& matrix[6] == 0 && matrix[7] == 0 && matrix[8] == 1
 		&& math.is_finite(matrix[2]) && math.is_finite(matrix[5])
-}
-
-fn draw_compositor_phase_shape(pixels &u8, width i32, height i32, pitch i32, shape &C.VoxGraphiteShape) bool {
-	phase := compositor_raster_phase
-	if phase == [f64(0), 0]! || shape.has_underlay != 0 || shape.clip_out_count != 0
-		|| shape.has_filter_clip != 0 || shape.fill !in [0, 1, 8]
-		|| shape.matrix[0] != compositor_shape_basis || shape.matrix[4] != compositor_shape_basis
-		|| shape.matrix[1] != 0 || shape.matrix[3] != 0
-		|| shape.matrix[6] != 0 || shape.matrix[7] != 0 || shape.matrix[8] != 1 {
-		return false
-	}
-	mut source := []u8{len: (int(width) + 2) * (int(height) + 2) * 4}
-	mut draw := *shape
-	draw.matrix[2] += f32(1 - phase[0])
-	draw.matrix[5] += f32(1 - phase[1])
-	if ggshape.draw(source.data, width + 2, height + 2, (width + 2) * 4, 0, &draw) == 0 {
-		return false
-	}
-	result := publish_compositor_svg_phase(pixels, int(width), int(height), int(pitch), source, [])
-	if result && compositor_shape_diagnostics {
-		eprintln('VOX_COMPOSITOR_SHAPE_PHASE x=${phase[0]} y=${phase[1]} kind=${shape.fill} width=${width} height=${height}')
-	}
-	return result
 }

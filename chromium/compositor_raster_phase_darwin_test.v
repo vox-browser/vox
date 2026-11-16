@@ -60,41 +60,36 @@ fn test_compositor_svg_declines_unrecoverable_or_translucent_sample_data() {
 	}
 }
 
-fn test_fractional_compositor_border_keeps_uniform_and_overlapping_backdrops_distinct() {
-	previous_phase, previous_basis := compositor_raster_phase, compositor_shape_basis
+fn test_analytic_border_does_not_bleed_past_its_straight_edge() {
+	old_phase := compositor_raster_phase
+	old_grid := document_geometry_grid
 	defer {
-		compositor_raster_phase = previous_phase
-		compositor_shape_basis = previous_basis
+		compositor_raster_phase = old_phase
+		document_geometry_grid = old_grid
 	}
-	compositor_raster_phase = [f64(0.5), 0]!
-	compositor_shape_basis = 0.5
+	document_geometry_grid = DocumentGeometryGrid{}
 	shape := C.VoxGraphiteShape{
-		matrix:     [f32(0.5), 0, 0, 0, 0.5, 0, 0, 0, 1]!
-		rect:       [f32(2), 2, 20, 20, 6, 6, 6, 6, 6, 6, 6, 6]!
-		thickness:  2
-		red:        255
-		green:      255
-		blue:       255
-		alpha:      255
+		matrix:     [f32(1), 0, -759, 0, 1, -14, 0, 0, 1]!
+		rect:       [f32(761.5), 16.5, 41, 35, 5.5, 5.5, 5.5, 5.5, 5.5, 5.5, 5.5, 5.5]!
 		fill:       0
+		thickness:  1
 		anti_alias: 1
 		force_msaa: 1
+		red:        53
+		green:      61
+		blue:       55
+		alpha:      255
 	}
-	mut uniform := []u8{len: 12 * 12 * 4}
-	for pixel in 0 .. 144 { uniform[pixel * 4 + 3] = 255 }
-	assert draw_compositor_phase_shape(uniform.data, 12, 12, 48, &shape)
-	assert uniform[0..4] == [u8(0), 0, 0, 255]
-	assert uniform[(6 * 12 + 6) * 4..(6 * 12 + 6) * 4 + 4] == [u8(0), 0, 0, 255]
-	assert uniform.any(it > 0 && it < 255)
-
-	mut overlapping := []u8{len: uniform.len}
-	for pixel in 0 .. 144 {
-		for channel in 0 .. 3 {
-			overlapping[pixel * 4 + channel] = if pixel % 2 == 0 { u8(0) } else { u8(64) }
+	for phase in [f64(0), 0.5] {
+		compositor_raster_phase = [phase, f64(0)]!
+		mut pixels := []u8{len: 46 * 40 * 4}
+		for i in 0 .. 46 * 40 { pixels[i * 4 + 3] = 255 }
+		assert draw_document_shape_pixels(pixels.data, 46, 40, 184, 1, 759, 14, &shape) == 1
+		// The right outer edge is exactly x=803. Its exterior pixel must stay
+		// black; resampling the analytic coverage would introduce a new fringe.
+		for y in 8 .. 32 {
+			i := (y * 46 + 44) * 4
+			assert pixels[i..i + 4] == [u8(0), 0, 0, 255]
 		}
-		overlapping[pixel * 4 + 3] = 255
 	}
-	snapshot := overlapping.clone()
-	assert !draw_compositor_phase_shape(overlapping.data, 12, 12, 48, &shape)
-	assert overlapping == snapshot
 }
