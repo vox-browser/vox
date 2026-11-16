@@ -1,5 +1,8 @@
 # Hacker News: JSC, V8 and compiled LibJS
 
+Follow-up: [further LibJS optimization and measured RAM](HACKER_NEWS_LIBJS_RAM.md)
+retains the results below and adds a separately collected peak-RSS comparison.
+
 This continues the [archived HN comparison](HACKER_NEWS_JS_ENGINES.md), adding
 system JavaScriptCore and further LibJS optimizations. The workload is the
 unchanged 101-comment discussion and complete author `hn.js`, with 500 complete

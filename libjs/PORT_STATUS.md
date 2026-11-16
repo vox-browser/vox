@@ -126,6 +126,16 @@ refreshes membership. Collection traversal avoids an extra capturing adapter
 for both native JS backends and LibJS. The report retains all timing cohorts,
 including failing 3× targets and discarded experiments.
 
+The [HN speed/RAM follow-up](../docs/HACKER_NEWS_LIBJS_RAM.md) records compact
+16-byte Value/property-key records, bounded binding-name reuse, live ordinary
+global/accessor dispatch, copying-callee argument forwarding, combined own-data
+array searches and dynamically guarded empty function-environment reuse.
+Environment records count toward the existing 1 MiB frame pool; escaping
+closures, exposed environments/frames, root inspection and child scopes protect
+their lifetime. Focused coverage passes 134 functions with default GC and GC
+disabled, plus 100 exact upstream AST fixtures. RAM is collected separately
+from timing as root-process peak RSS; the full runtime aggregate is not green.
+
 Set/Map operations and live iterators, WeakMap weak keys, ordinary arguments
 objects, default/rest/destructured function parameters, class inheritance,
 super construction (including explicit iterator-based argument spread),
