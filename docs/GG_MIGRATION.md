@@ -3705,3 +3705,20 @@ the receipts. Focused geometry/merge and one/four-sample mask test sources are
 committed but uncompiled/unrun by request. Reference and zero tolerance are fixed;
 full parity remains open. See the
 [GitHub runtime report](LIBJS_GITHUB_RUNTIME_20261115.md#fractional-glyph-clip-edges-15-differing-pixels-2026-11-17).
+
+
+### Retained Chromium glyph-shadow masks, 2026-11-17
+
+`12924db35` retains fractional author color, separates filtered linear-coverage
+strikes, applies the existing fixed-point mask filter per glyph, then blends
+float paint color once through GG. Eligibility is bounded to translated black
+shadows with blur ≤3 at document scale one and an opaque backdrop; other cases
+keep native replay. No shader changes. All 17 focused V functions execute,
+including the existing retained-glyph, shadow and Skia blur golden hashes.
+The unchanged twelve-case public shadow control improves 4,083→zero twice;
+archived Slashdot improves 390→12 twice. All 76 workloads/152 captures repeat,
+with the other 75 PNGs unchanged. BBC, Guardian and Verge remain zero twice,
+also confirmed on production `8dbf43a2`; that production build contains an older
+shadow prototype and cannot validate the final glyph filter. Remaining Slashdot
+edge pixels, final production and live/catalog acceptance stay open. See the
+[glyph-mask audit](OPTIMIZED_SITES_PIXELS_2026_11_12.md#slashdot-per-glyph-shadow-masks-2026-11-17).

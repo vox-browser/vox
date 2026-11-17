@@ -6818,3 +6818,77 @@ pixels. No reference or pixel tolerance changes. Its focused opacity property
 passes both fixed captures; no timing or instruction credit is claimed. The
 managed hook requests the shared C/literal-`-prod`/single-unit rebuild. Production,
 live-site, historical source-version and catalog-wide checks remain open.
+
+
+### Slashdot per-glyph shadow masks, 2026-11-17
+
+`12924db35` gives the retained Chromium text-shadow path a matching mask filter. It now builds each glyph's coverage mask,
+filters it with the existing fixed-point mask blur, then blends that halo before
+the next glyph. Filtered strikes bypass paint-dependent gamma preblending and
+use separate cache entries; zero-blur text keeps ordinary coverage. Author sRGB
+components travel with the shadow command, preserving modern fractional alpha
+and the existing legacy rgba byte quantization. The destination blend applies
+color/alpha once without a translucent RGBA intermediate. This follows Skia's
+[scaler mask-filter path](https://skia.googlesource.com/skia/+/2daf164f6d51/src/core/SkScalerContext.cpp)
+and Chromium's [radius-to-sigma mapping](https://chromium.googlesource.com/chromium/src/+/b8fa54319e902f372603a30005227aaa9e5957b2/third_party/blink/renderer/platform/graphics/skia/skia_utils.h).
+
+Eligibility is deliberately bounded: macOS native Chromium rendering at document
+scale one, translated horizontal runs, black shadows with blur at most three,
+no emoji or synthetic styles, at most 64 glyphs, opaque readable backdrop, and
+a four-megapixel aggregate mask-work bound. Unsupported cases retain native
+replay. No additional native UI or shader source is introduced.
+
+The unchanged twelve-case public reference (four opacities, three blur radii,
+fractional positions) improves **4,083→zero pixels twice**. Complete archived
+Slashdot improves **390→12 pixels twice**, or 232,234→12 across this pass's five
+fixes. The remaining coordinates are outside Submit: two logo-edge pixels and
+ten icon, text or border-edge pixels. No reference or pixel tolerance changes.
+
+Rejected attempts remain in the local evidence: an ineligible CPU path stayed
+at 390; an executing whole-mask CPU path regressed to 409; an image-filter GPU
+Gaussian gave 406; removing preblend gave 206; per-glyph Gaussian filtering gave
+192. Reusing the correct fixed-point glyph-mask filter gives 12. The early
+incorrect impulse-test expectation failed (2 observed, 3 expected); the corrected
+independent fixed-point calculation and existing Skia blur golden hashes pass.
+The earlier invalid per-pixel opacity probe and source-snapshot recovery are
+retained as rejected diagnostics, not acceptance evidence.
+
+Final C/O0 executable `d5dab8c9` repeats all **76 workloads/152 captures**;
+all 75 previous PNGs are unchanged and the shadow control is now exact.
+The compiler-read V witnesses match the final feature files. All **17 focused
+V test functions** compile and execute successfully: color transport/layer
+order, filtered strike cache isolation, fixed-point impulse/invalid bounds,
+retained glyph and legacy shadow/blur golden hashes, and GPU alpha/overlap/
+invalid-input/constant-mask checks. The strict Python pixel test rejects the
+previous native captures (4,306 pixels) and alpha-only captures (4,083), then
+passes both final controls; the opacity property also passes. The final
+full-page checks repeat **Slashdot 12**, **BBC zero**, **Guardian zero**, and
+**Verge zero**. Both full-uBO 1.75.0 request streams pass (47 decisions each,
+one blocked, zero mismatches/oracle disagreements). The separate diagnostic
+confirms the new path executes at rendering scale one on the scale-two display.
+Executable/native-library, archive/reference and all 24 runtime shader pins
+remain unchanged; no shader compiler errors occur. All final compile, runtime,
+capture, oracle, driver and guard exits are zero.
+
+Visible-image audit qualification: earlier sections' image-audit statements
+refer to the captured document viewport, not complete offscreen decode parity.
+The stored inventories have matching image counts and matching visible sources,
+completion and natural width: Slashdot 2/21, BBC 6/28, Guardian 3/123, Verge 1/154.
+Offscreen lazy state differs for BBC, Guardian and Verge. The native
+`paint_decoded` field omits other decoder caches, including planar YUV; it is not
+a complete decode test. Native textContent and Brave innerText are not compared
+as equal hashes. Offline rechecks of the preceding margin, alpha-image and
+shadow-opacity stages retain these qualifications.
+
+Newly completed production `8dbf43a2` (receipt
+`20261117-023902-6f3ae70a`, C/literal `-prod`/single unit) repeats **Slashdot 206**
+and **BBC, Guardian and Verge zero** twice each in fresh processes. Its compiler manifest contains the
+first three Slashdot fixes and an earlier whole-mask/linear shadow prototype;
+it cannot validate the final per-glyph fixed-point path. A newer managed build
+is requested by the feature commit, without a duplicate manual build or wait.
+Production confirmation of the final fix, live-site checks, historical
+source/replay Brave-version qualification and catalog-wide acceptance remain
+open. No instruction or timing credit is claimed. Raw accepted/rejected commands,
+compiler-read witnesses, pins, images, actual exits, guards and SHA-verified
+cleanup inventory remain local under
+`docs/performance/slashdot-procedural-20261117/`.
