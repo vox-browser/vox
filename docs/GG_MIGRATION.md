@@ -3759,3 +3759,17 @@ header edge resolved and none new. Same-binary off reproduces 13; native cache
 misses/compiler calls are zero. Defaults and translucent conversions keep their
 existing behavior. Focused regression sources remain unrun under the test hold.
 See the [shape-color audit](LIBJS_GITHUB_RUNTIME_20261115.md#extended-p3-shape-source-12-differing-pixels-2026-11-17).
+
+### Root capture pixel width, 17 November 2026
+
+`77db37b0e` adds an opt-in capture-width projection for a single root raster
+column when layout density exceeds capture density. Actual Brave rectangle
+buffers replay identically with Dawn and GG shaders; changing only attachment
+width isolates five separator errors. The final frozen compiled-LibJS GitHub
+capture improves 12→7 pixels, five resolved and none new; same-binary off repeats
+12. Both fresh processes have 4,245 native hits and zero misses/compiler calls
+in the new 812a ABI partition. Sealed production inputs include zero tests;
+focused regression sources remain unrun under the test hold. Broad shader-width
+and compiler-language probes are rejected. Six button corners and an avatar
+edge remain; live parity and matched performance are open. See the
+[capture-width audit](LIBJS_GITHUB_RUNTIME_20261115.md#captured-rectangle-replay-and-root-capture-width-7-pixels-2026-11-17).

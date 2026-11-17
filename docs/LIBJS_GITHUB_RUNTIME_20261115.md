@@ -5201,3 +5201,118 @@ before deletion; binaries, source proofs and receipts remain. The newest accepte
 shape build retains its full sealed compiler inputs. Twelve differences remain:
 six rounded-button corners, five separator pixels and one commit-avatar edge.
 Full parity, live validation and matched compiled-revisit speed remain open.
+
+### Captured rectangle replay and root capture width: 7 pixels, 2026-11-17
+
+`8b3ca8517` extends the Metal trace decoder to retain inline vertex/fragment
+bytes, buffer bindings, attachment blending and serialized library options,
+and export selected rectangle draws with hash-verified inputs. Dawn's projection
+is inline slot 30; slot zero is unused by these shaders. The captured static
+buffer starts at base vertex 12: the export explicitly zero-pads only the unused
+prefix and verifies every referenced vertex. Export regression sources are
+committed but unrun under the continuing test hold. The final real-trace decode
+exits zero: 21,747 records, 296 indexed draws, seven depth states,
+0.517326541 guard seconds and 32,587,776 sampled peak bytes. Earlier exporter
+failures involving the unused prefix/binding and resource key are retained.
+
+The finalized r4 Brave trace still matches the original reference exactly.
+Standalone Metal replays use actual button draw 5,172,380 (base instance 66,
+nine instances) and separator draw 5,154,768 (base instance 57, four instances),
+with reconstructed uniform backdrops. Captured Dawn shaders and current GG
+shaders produce byte-identical complete tiles: button BGRA SHA-256
+`b552685a16a2889c0ef36d035660b2fe6f3b9ef8266a0ca8092f133c26df3722`,
+separator `73c33adadfa6fca7879f6cbcf908fef990fad6e4c2f254fca1e3b8f0599058ba`.
+Replacing button depths with Vox's values also leaves the tile unchanged.
+These selected-draw replays reproduce four large button corners; the two lower
+shadow-dependent corners cannot be accepted from the uniform-backdrop replay.
+They are diagnostics, not complete-page replay or performance acceptance.
+
+Keeping the separator buffers, shaders and geometry fixed isolates attachment
+width. Both 1,024×256 and 1,024×416 produce the five correct reference pixels;
+2,048×256 and 2,048×416 reproduce Vox's five one-level errors. Changing height
+alone does not. A full-page MSL 4.0 probe leaves the shared bundle's 13 pixels
+unchanged in both modes (4,243/4,244 native hits, zero misses/compiler calls).
+An unrestricted half-width shader probe regresses to 2,489 pixels: five resolved,
+2,481 new and one previously wrong pixel worse. Restricting that diagnostic to
+the root attachment gives 13→8 with five resolved and none new; off repeats 13.
+Those probes use the available shared bundle
+`2c5e6da342aa8778cfe070fa6dd4f71cf7e17c82110376cca17d6a0d6f23b72e`,
+which contains the glyph fix but lacks the later header-color fix. They do not
+validate the implementation below. Read-only pipeline and buffer probes repeat
+13 exactly and confirm the template vertex hash
+`6ae52526e98f52f72020c5521e63db4f1c52f747e00ca30e8c67ee97d6f17b30`,
+geometry, four samples, BGRA attachment, source-over blending and full scissor.
+The remaining button cause is unresolved.
+
+`77db37b0e` adds `VOX_DIAGNOSTIC_ROOT_CAPTURE_WIDTH=1`. When the root has one
+column and layout density exceeds capture density, its raster projection uses
+the capture pixel width. Rows, sample ownership and other layer grids remain
+intact. Selection uses viewport/density inputs, with no page coordinates or
+reference colors. Disabled mode, ordinary density, multiple columns, an already
+narrower grid and invalid inputs keep existing behavior. Focused regression
+sources cover those boundaries and borrowed cell ownership; they remain
+uncompiled/unrun by request.
+
+The final canonical-source single-unit C `-prod` executable is SHA-256
+`3f72b920de27b227b1b20c678544feecb6381ea26af517a0d8474750400467a3`.
+Verified parsed buffers contain 3,773 V sources and zero tests, and both changed
+implementation files match their consumed hashes. Initial build attempts run
+out of disk during generated C/object output. The successful retry compiles the
+same sealed input and command, exiting zero in 196.092329792 guard seconds,
+sampled peak 6,521,683,968 bytes. Generated C and preprocessed inputs use lossless
+filesystem compression with unchanged SHA-256; no compiler flags are altered.
+The superseded broad coordinate prototype is reverted and its patch retained.
+Its first build was deliberately stopped for review; the next encounters an
+unrelated syntax error, subsequently fixed by its owner. All attempts remain
+in the receipts, including the successful prototype baseline build.
+
+Concurrent LibJS changes require native ABI
+`812aba8dedf9cfb6996a8cdf0aab5f04d4a1aa23b1dd32894d1f102632c5f972`;
+the old 0130 partition is not relabelled. Preparation uses an isolated cache at
+`~/Library/Caches/Vox/benchmarks/libjs-github-capture-grid-20261117/native-cache`
+with the ordinary Clang native compiler. The first preparation hits the guard's
+1,800-second wall limit after 18,304 valid records: child exit 137, wrapper 125,
+sampled peak 11,220,058,112 bytes. Its provisional PNG is ineligible. Resuming
+valid records with a 3,600-second timeout succeeds: PID 12909, zero browser/
+controller/guard exits, 386.491729334 seconds, peak 10,986,913,792 bytes.
+It compiles 5,474 additional executables in 43 invocations; all 81 requested
+modules complete, with zero pending/invalid entries or errors. The final cache
+contains 23,778 record JSONs and 186 libraries. Cache preparation gives no
+compiler-disabled or performance credit.
+
+| Final same-binary mode | Pixels | Native hits / entries | Guard seconds / sampled peak bytes |
+| --- | ---: | --- | --- |
+| Root capture width, PID 34352 | **7** | 4,245 / 470,258 | 38.23962725 / 8,537,391,104 |
+| Off, PID 41180 | 12, unchanged | 4,245 / 472,272 | 38.198960167 / 8,582,971,392 |
+
+Both fresh processes select `/usr/bin/false` as native compiler, execute the new
+ABI cache, and record zero misses/compiler calls/compiled executables/pending/
+invalid entries. Page JavaScriptCore stays uninitialized. The complete content
+audit remains 33 rows, 56 commit links, latest and README; pinned inputs remain
+unchanged, PID adoption succeeds, and author/native/cache errors and browser/
+controller/guard exits are zero. Both modes also repeat the same 7/12 images
+with native caching disabled, explicitly without claiming native execution for
+that diagnostic. The original Brave PNG, frozen clock, 1,024×768 viewport,
+layout/render density two, PNG density one, P3 normalization and zero/zero
+tolerance remain unchanged.
+
+Exactly five separator pixels resolve with no new or regressed pixels; maximum
+channel error remains ten. The accepted frozen screenshot is
+`github-frozen-libjs-compiled-7px.png`, SHA-256
+`85c80b02bf5208a65a07405a77bea03f14eb5f5e5731a585570703cde085efe8`.
+The direct-live screenshot remains separate. Seven pixels remain: six button
+corners and one commit-avatar edge. Full parity, current live validation and
+matched compiled-revisit performance remain open; these diagnostic timings
+give no speed credit.
+
+Completed job outputs, guards, registries and logs move with idle-lock and
+SHA-256 checks to `scratch-receipts/continued-20261117-r31`; private builds and
+probe/replay scripts remain under `metal-language-5204`, `button-state-5204*`,
+`capture-width-probe-5204*`, `capture-grid-5204*` and `root-capture-width-5204*`.
+Disk recovery journals identify removed superseded generated compiler files;
+their executable/source proofs remain. The incomplete earlier Brave r3 trace
+is compressed locally only after verifying all member hashes and symlink
+targets; the finalized r4 trace stays unpacked. Failed diagnostic arguments,
+compression and disabled-cache audit assumptions are retained with corrected
+attempts. The managed commit hook requests the coalesced production rebuild;
+no duplicate shared build was queued.
