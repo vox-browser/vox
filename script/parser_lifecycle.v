@@ -1,5 +1,6 @@
 module main
 
+import browserextensions
 import browserjs
 import dom
 import html
@@ -26,6 +27,7 @@ mut:
 	initialization_attempted bool
 	closed            bool
 	parser_generation u64
+	extension_scripts []browserextensions.Injection
 }
 
 fn install_browser_parser_script_host(document &dom.Document, engine browserjs.Engine,
@@ -82,6 +84,13 @@ fn browser_parser_created(target voidptr, parser &html.HTMLParser) {
 		mut binding := unsafe { &BrowserParserScriptHost(host) }
 		binding.did_finish_parsing()
 	})
+	if host.parser_generation == 1 && host.extension_scripts.len > 0 {
+		owner.set_navigation_readiness_callback(fn [host] (readiness dom.DocumentReadyState) {
+			mut binding := unsafe { &BrowserParserScriptHost(host) }
+			binding.run_browser_extensions(if readiness == .interactive { .document_end } else { .document_idle })
+		})
+		host.run_browser_extensions(.document_start)
+	}
 }
 
 fn (mut host BrowserParserScriptHost) initialize() bool {

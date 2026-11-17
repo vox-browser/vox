@@ -470,10 +470,14 @@ fn document_theme_color_media_matches_callback(target voidptr, value string) boo
 // — the html parser can't build css.CSSStyleSheet objects (it doesn't import css), so author sheets are
 // attached here by css-aware callers.
 pub fn add_document_author_style_sheet(document &dom.Document, css_text string) {
+	add_document_author_style_sheet_at(document, css_text, none)
+}
+
+pub fn add_document_author_style_sheet_at(document &dom.Document, css_text string, location ?string) {
 	mut allocations := document.enter_native_storage()
 	defer { allocations.finish() }
 	holder := css_author_style_sheets_for(document)
-	mut sheet := parse_css_stylesheet_with_params(ParsingParams{document: document}, css_text, none)
+	mut sheet := parse_css_stylesheet_with_params(ParsingParams{document: document}, css_text, location)
 	sheet.add_owning_document_or_shadow_root(unsafe { &dom.Node(document) })
 	// The holder is @[heap] (stable address) reached through a cached handle; append through the pointer.
 	unsafe {

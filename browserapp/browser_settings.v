@@ -49,6 +49,7 @@ fn browser_settings_elements(proxy browsersettings.Proxy) ui2.Element {
 		ui2.label('settings-browsing-heading', 'Browsing', ui2.rect(24, 20, 452, 24), ui2.TextStyle{ size: 18 }),
 		ui2.checkbox('settings-tab-coloring', 'Enable tab coloring', proxy.enable_tab_coloring, ui2.rect(24, 56, 452, 24), ui2.TextStyle{ size: 13 }),
 		ui2.checkbox('settings-custom-tab-titles', 'Enable custom tab titles', proxy.enable_custom_tab_titles, ui2.rect(24, 86, 452, 24), ui2.TextStyle{ size: 13 }),
+		browser_extensions_button('extensions-open', 'Extensions…', 24, 110, 112),
 		ui2.label('settings-heading', 'Network', ui2.rect(24, 140, 452, 24), ui2.TextStyle{ size: 18 }),
 		ui2.checkbox('settings-enabled', 'Use SOCKS5 proxy', proxy.enabled, ui2.rect(24, 180, 452, 24), ui2.TextStyle{ size: 13 }),
 		ui2.label('settings-host-label', 'Host', ui2.rect(24, 219, 320, 20), ui2.TextStyle{ size: 13 }),

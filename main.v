@@ -4020,9 +4020,10 @@ fn (mut app BrowserApp) install_loaded_page(input_loaded LoadedPage, add_history
 	app.image_request_loader = image_loader
 	mut script_loader := new_browser_script_request_loader(app.document, parser_resources)
 	app.script_request_loader = script_loader
+	extension_scripts := app.prepare_browser_extension_injections(loaded)
 	mut parser_host := ?&BrowserParserScriptHost(none)
 	if app.document.as_node().is_scripting_enabled() {
-		parser_host = install_browser_parser_script_host(app.document, app.js_engine,
+		mut host := install_browser_parser_script_host(app.document, app.js_engine,
 			image_loader, script_loader, parser_resources, fn [incoming] (element &dom.Element) {
 				mut owner := unsafe { &DocumentSession(incoming) }
 				owner.install_media_playback(element)
@@ -4030,6 +4031,8 @@ fn (mut app BrowserApp) install_loaded_page(input_loaded LoadedPage, add_history
 				mut owner := unsafe { &DocumentSession(incoming) }
 				owner.adopt_runtime(runtime)
 			})
+		host.extension_scripts = extension_scripts
+		parser_host = host
 	}
 	parse_prepared_browser_navigation_document(prepared_document)
 	prepare_site_document_stylesheets(app.document)

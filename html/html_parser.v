@@ -145,6 +145,7 @@ pub mut:
 	ready_for_more_input_callback      ?HTMLParserCallback
 	parsing_complete_callback          ?HTMLParserCallback
 	parsing_complete_callbacks         []HTMLParserCallback
+	navigation_readiness_callback      ?fn (dom.DocumentReadyState)
 
 	character_insertion_node    ?&dom.Text
 	character_insertion_builder []rune
@@ -325,6 +326,10 @@ pub fn (mut p HTMLParser) set_parsing_complete_callback(callback HTMLParserCallb
 // buffer cleanup, which installs its own callback after creating the parser.
 pub fn (mut p HTMLParser) add_parsing_complete_callback(callback HTMLParserCallback) {
 	p.parsing_complete_callbacks << callback
+}
+
+pub fn (mut p HTMLParser) set_navigation_readiness_callback(callback fn (dom.DocumentReadyState)) {
+	p.navigation_readiness_callback = callback
 }
 
 // https://html.spec.whatwg.org/multipage/parsing.html#parsing-main-inhead
@@ -955,6 +960,11 @@ fn (mut state HTMLParserEndState) complete() {
 		if end_state.document_stream_generation != document.html_parser_stream_generation() { return }
 		mutable_document.set_page_showing(true)
 		mutable_document.completely_finish_loading()
+		if concrete_parser := parser {
+			if callback := concrete_parser.navigation_readiness_callback {
+				callback(.complete)
+			}
+		}
 	})
 }
 
@@ -976,6 +986,10 @@ pub fn HTMLParser.the_end(document &dom.Document, parser ?&HTMLParser) {
 	mutable_document.update_readiness(.interactive)
 	if generation != document.html_parser_stream_generation() { return }
 	if concrete_parser := parser {
+		if callback := concrete_parser.navigation_readiness_callback {
+			callback(.interactive)
+			if generation != document.html_parser_stream_generation() { return }
+		}
 		mut mutable_parser := unsafe { &HTMLParser(concrete_parser) }
 		for !mutable_parser.stack_of_open_elements.is_empty() {
 			mutable_parser.stack_of_open_elements.pop()

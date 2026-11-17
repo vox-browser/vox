@@ -227,6 +227,7 @@ $if vox_ui2 ? {
 			title: 'Browser'
 			items: [
 				ui2.menu_item_with_shortcut('settings-open', 'Settings…', 'cmd+,'),
+				ui2.menu_item('extensions-open', 'Extensions…'),
 				ui2.menu_item_with_shortcut('history', 'History', 'cmd+y'),
 				ui2.menu_item_with_shortcut('devtools-toggle', 'Developer Tools', 'cmd+alt+i'),
 				ui2.menu_item_with_shortcut('devtools-inspect', 'Inspect Element', 'cmd+shift+c'),
