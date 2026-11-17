@@ -74,9 +74,12 @@ fn (mut host Host) install_events(mut node libjs.Object) ! {
 	for type_ in ['click', 'input', 'change', 'load'] {
 		host.accessor(mut node, 'on' + type_, fn [host, type_] (mut vm libjs.VM) !libjs.Value {
 			target := unsafe { &dom.EventTarget(host.node(mut vm)!) }
-			for listener in host.listeners {
-				if listener.attribute && listener.type_ == type_ && voidptr(listener.target) == voidptr(target) {
-					return listener.callback
+			if callback := target.event_handler_attribute(type_) {
+				for listener in host.listeners {
+					if listener.attribute && voidptr(listener.native.callback()) == voidptr(callback) { return listener.callback }
+				}
+				for handler in host.inline_handlers {
+					if voidptr(handler.callback) == voidptr(callback) { return handler.function }
 				}
 			}
 			return libjs.js_null()
@@ -208,16 +211,7 @@ fn (mut host Host) register_event_wrapper(mut object libjs.Object, event &dom.Ev
 	return libjs.Value.from_object(object)
 }
 
-fn (mut host Host) add_listener(target &dom.EventTarget, type_ string, callback libjs.Value, options dom.AddEventListenerOptions, attribute bool) {
-	if signal := options.signal { if signal.aborted() { return } }
-	if !attribute {
-		for listener in host.listeners {
-			if !listener.attribute && voidptr(listener.target) == voidptr(target) && listener.type_ == type_
-				&& listener.capture == options.capture && libjs.is_strictly_equal(listener.callback, callback) {
-				return
-			}
-		}
-	}
+fn (mut host Host) event_callback(target &dom.EventTarget, type_ string, callback libjs.Value, options dom.AddEventListenerOptions, attribute bool) &dom.CallbackType {
 	invoke := fn [host, callback, target, type_, options, attribute] (event &dom.Event, current ?&dom.EventTarget) !dom.JSValue {
 		if host.closed || host.document.has_been_destroyed() || !host.document.as_node().is_scripting_enabled() {
 			return dom.js_undefined()
@@ -252,7 +246,20 @@ fn (mut host Host) add_listener(target &dom.EventTarget, type_ string, callback 
 	}
 	host.closures << voidptr(invoke)
 	host.closures << voidptr(report)
-	native := dom.IDLEventListener.create(&dom.CallbackType{ handle_event_with_exception: invoke, report_exception: report, callback_identity_: voidptr(callback.as_object()) })
+	return &dom.CallbackType{ handle_event_with_exception: invoke, report_exception: report, callback_identity_: voidptr(callback.as_object()), associated_window: host.document.get_window() }
+}
+
+fn (mut host Host) add_listener(target &dom.EventTarget, type_ string, callback libjs.Value, options dom.AddEventListenerOptions, attribute bool) {
+	if signal := options.signal { if signal.aborted() { return } }
+	if !attribute {
+		for listener in host.listeners {
+			if !listener.attribute && voidptr(listener.target) == voidptr(target) && listener.type_ == type_
+				&& listener.capture == options.capture && libjs.is_strictly_equal(listener.callback, callback) {
+				return
+			}
+		}
+	}
+	native := dom.IDLEventListener.create(host.event_callback(target, type_, callback, options, attribute))
 	if attribute {
 		target.set_event_handler_attribute(type_, native.callback())
 	} else {

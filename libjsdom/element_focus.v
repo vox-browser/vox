@@ -14,6 +14,15 @@ fn (host &Host) html_element_receiver(mut vm libjs.VM) !&dom.HTMLElement {
 
 fn (mut host Host) install_element_focus() {
 	mut prototype := host.html_element_prototype
+	host.method_attributes(mut prototype, 'click', 0, fn [host] (mut vm libjs.VM) !libjs.Value {
+		element := host.html_element_receiver(mut vm)!
+		persistent := platform.enter_persistent()
+		defer { platform.leave_persistent(persistent) }
+		html.html_element_click(element)
+		mut owner := unsafe { &Host(host) }
+		owner.changed()
+		return libjs.js_undefined()
+	}, libjs.attribute_writable | libjs.attribute_enumerable | libjs.attribute_configurable)
 	host.accessor(mut prototype, 'tabIndex', fn [host] (mut vm libjs.VM) !libjs.Value {
 		return libjs.Value.from_f64(f64(host.html_element_receiver(mut vm)!.tab_index()))
 	}, fn [host] (mut vm libjs.VM) !libjs.Value {

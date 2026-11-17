@@ -6,6 +6,7 @@ pub type InlineEventHandlerSupport = fn (&EventTarget, string) bool
 
 pub struct InlineEventHandlerCompiler {
 pub:
+	owner_identity voidptr
 	supports_handler ?InlineEventHandlerSupport
 	@[required]
 	can_compile fn (&EventTarget) bool
@@ -17,6 +18,15 @@ pub:
 
 pub fn (mut document Document) set_inline_event_handler_compiler(compiler InlineEventHandlerCompiler) {
 	document.inline_event_handler_compiler_ = compiler
+}
+
+pub fn (mut document Document) clear_inline_event_handler_compiler(owner voidptr) {
+	if compiler := document.inline_event_handler_compiler_ {
+		if compiler.owner_identity == owner {
+			document.inline_event_handler_compiler_ = none
+			document.event_callback_exception_reporter_ = none
+		}
+	}
 }
 
 pub fn (mut document Document) set_event_callback_exception_reporter(reporter EventCallbackExceptionReporter) {

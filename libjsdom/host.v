@@ -51,6 +51,7 @@ mut:
 	collection_prototype &libjs.Object = unsafe { nil }
 	collection_wrappers map[voidptr]&libjs.Object
 	class_query_cache map[u64]ClassQueryCacheEntry
+	inline_handlers []InlineHandler
 	form_controls_collection_prototype &libjs.Object = unsafe { nil }
 	form_controls_collections map[voidptr]&html.HTMLFormControlsCollection
 	radio_node_list_prototype &libjs.Object = unsafe { nil }
@@ -295,6 +296,7 @@ pub fn Host.create(vm &libjs.VM, realm &libjs.Realm, document &dom.Document, hoo
 		})
 	}
 	global.define_direct_property(libjs.PropertyName.from_str('console'), libjs.Value.from_object(console), libjs.attribute_writable | libjs.attribute_configurable)
+	host.install_inline_event_handlers()
 	return host
 }
 
@@ -351,6 +353,13 @@ pub fn (mut host Host) close() {
 	host.close_intersection_observers()
 	host.close_resize_observers()
 	mut owner_document := unsafe { &dom.Document(host.document) }
+	owner_document.clear_inline_event_handler_compiler(voidptr(&host))
+	for handler in host.inline_handlers {
+		if callback := handler.target.get_current_value_of_event_handler(handler.name) {
+			if voidptr(callback) == voidptr(handler.callback) { handler.target.set_event_handler_attribute(handler.name, none) }
+		}
+	}
+	host.inline_handlers = []
 	owner_document.clear_custom_element_construction_hook(voidptr(&host))
 	host.registries.clear()
 	host.active_registries.clear()
