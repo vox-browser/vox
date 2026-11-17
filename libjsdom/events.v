@@ -190,6 +190,7 @@ fn (mut host Host) wrap_event(event &dom.Event) libjs.Value {
 	if object := host.event_wrappers[voidptr(event)] { return libjs.Value.from_object(object) }
 	prototype := if event.interface_ == .media_query_list_event { host.media_event_prototype }
 		else if event.interface_ == .custom_event { host.custom_event_prototype }
+		else if event.interface_ == .pop_state_event { host.pop_state_event_prototype }
 		else if event.interface_ == .form_data_event { host.form_data_event_prototype }
 		else if event.interface_ == .submit_event { host.submit_event_prototype }
 		else if event.interface_ == .keyboard_event { host.keyboard_event_prototype }
@@ -201,7 +202,11 @@ fn (mut host Host) wrap_event(event &dom.Event) libjs.Value {
 }
 
 fn (mut host Host) register_event_wrapper(mut object libjs.Object, event &dom.Event) libjs.Value {
-	object.class_name = if event.interface_ == .custom_event { 'CustomEvent' } else { 'Event' }
+	object.class_name = match event.interface_ {
+		.custom_event { 'CustomEvent' }
+		.pop_state_event { 'PopStateEvent' }
+		else { 'Event' }
+	}
 	host.events[voidptr(object)] = event
 	host.event_wrappers[voidptr(event)] = object
 	// Event.idl's LegacyUnforgeable attribute belongs on each instance.

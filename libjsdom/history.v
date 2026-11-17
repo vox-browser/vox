@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: BSD-2-Clause
 module libjsdom
 
+import dom
 import html
 import libjs
 import platform
@@ -36,6 +37,18 @@ fn (host &Host) history_receiver(mut vm libjs.VM) ! {
 	}
 }
 
+fn (mut host Host) history_state_value(mut vm libjs.VM, mut binding HistoryBinding, state dom.JSValue) !libjs.Value {
+	entry := host.document.get_latest_entry() or { unsafe { nil } }
+	if !binding.state_cached || binding.state_revision != binding.native.state_revision() || binding.state_entry != voidptr(entry) {
+		mut clone := HistoryClone{host: &host}
+		binding.state = clone.reconstruct(mut vm, state, 0) or { return host.dom_error(mut vm, err) }
+		binding.state_revision = binding.native.state_revision()
+		binding.state_entry = voidptr(entry)
+		binding.state_cached = true
+	}
+	return binding.state
+}
+
 // The synchronous History.idl surface delegates to the owning Window. Native
 // session entries, URL security and navigation cancellation retain ownership.
 // Traversal scheduling and the other structured-clone families are separate.
@@ -61,15 +74,7 @@ fn (mut host Host) install_history() {
 			if name == 'length' { return libjs.Value.from_f64(f64(native.length() or { return owner.dom_error(mut vm, err) })) }
 			if name == 'scrollRestoration' { return libjs.Value.from_string(vm.create_string_from_str((native.scroll_restoration() or { return owner.dom_error(mut vm, err) }).str())) }
 			state := native.state() or { return owner.dom_error(mut vm, err) }
-			entry := owner.document.get_latest_entry() or { unsafe { nil } }
-			if !binding.state_cached || binding.state_revision != native.state_revision() || binding.state_entry != voidptr(entry) {
-				mut clone := HistoryClone{host: owner}
-				binding.state = clone.reconstruct(mut vm, state, 0) or { return owner.dom_error(mut vm, err) }
-				binding.state_revision = native.state_revision()
-				binding.state_entry = voidptr(entry)
-				binding.state_cached = true
-			}
-			return binding.state
+			return owner.history_state_value(mut vm, mut binding, state)
 		}, if name == 'scrollRestoration' { fn [host] (mut vm libjs.VM) !libjs.Value {
 			host.history_receiver(mut vm)!
 			text := vm.argument(0).to_primitive_string(mut vm)!.str()

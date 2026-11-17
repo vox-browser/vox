@@ -126,8 +126,8 @@ fn (app &BrowserApp) browser_chrome_state(width int, height int) BrowserChromeSt
 		address:                app.address
 		status:                 app.status
 		footer:                 app.chrome_footer()
-		back:                   app.history_index > 0
-		forward:                app.history_index + 1 < app.history.len
+		back:                   app.can_traverse_history(-1)
+		forward:                app.can_traverse_history(1)
 		reload:                 app.history_index >= 0
 		debug:                  app.chrome_debug
 		bookmarks_visible:      app.bookmark_bar_visible()

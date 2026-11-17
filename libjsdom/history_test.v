@@ -39,6 +39,35 @@ fn test_history_push_replace_update_actual_native_entries_and_live_document_loca
 	assert document.history().state.number_data == 42
 }
 
+fn test_same_document_traversal_updates_history_and_dispatches_popstate() {
+	mut host, mut vm, mut document := history_fixture()!
+	defer { host.close() }
+	history_eval(mut vm, r'var visits=[];addEventListener("popstate",e=>visits.push([e,e.state===history.state,location.pathname]));
+		history.replaceState({page:"start"},"");history.pushState({page:"file"},"","/file");history.pushState({page:"second"},"","/file");')!
+	window := host.frame_window(mut vm)!
+	mut model := window.navigable_model()
+	assert model.traverse_same_document_history(mut document, -1)
+	assert model.traverse_same_document_history(mut document, -1)
+	assert !model.can_traverse_same_document_history(document, -1)
+	assert model.traverse_same_document_history(mut document, 1)
+	assert history_eval(mut vm, r'visits.length===3&&visits.every(v=>v[0] instanceof PopStateEvent&&v[0].isTrusted&&v[1])&&
+		visits[0][0].state.page==="file"&&visits[0][2]==="/file"&&visits[1][0].state.page==="start"&&visits[1][2]==="/start"&&
+		history.state===visits[2][0].state&&history.length===3&&location.pathname==="/file"')!.as_bool()
+	assert history_eval(mut vm, r'addEventListener("popstate",()=>history.pushState({page:"new"},"","/new"),{once:true});true')!.as_bool()
+	assert model.traverse_same_document_history(mut document, -1)
+	assert history_eval(mut vm, 'history.length===2&&history.state.page==="new"&&location.pathname==="/new"')!.as_bool()
+	assert !model.can_traverse_same_document_history(document, 1)
+	assert model.get_session_history_entries().len == 2
+}
+
+fn test_pop_state_event_construction_preserves_author_state() {
+	mut host, mut vm, _ := history_fixture()!
+	defer { host.close() }
+	assert history_eval(mut vm, r'var state={file:true},event=new PopStateEvent("popstate",{state,bubbles:true,hasUAVisualTransition:true});
+		new PopStateEvent("popstate").state===null&&event instanceof Event&&event.state===state&&
+		event.bubbles&&event.hasUAVisualTransition&&!event.isTrusted')!.as_bool()
+}
+
 fn test_history_storage_clone_preserves_cycles_aliases_sparse_arrays_utf16_and_bigints() {
 	mut host, mut vm, _ := history_fixture()!
 	defer { host.close() }

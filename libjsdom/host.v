@@ -67,6 +67,8 @@ mut:
 	token_list_wrappers map[voidptr]&libjs.Object
 	event_prototype      &libjs.Object = unsafe { nil }
 	custom_event_prototype &libjs.Object = unsafe { nil }
+	pop_state_event_prototype &libjs.Object = unsafe { nil }
+	pop_state_values map[voidptr]libjs.Value
 	ui_event_prototype &libjs.Object = unsafe { nil }
 	mouse_event_prototype &libjs.Object = unsafe { nil }
 	keyboard_event_prototype &libjs.Object = unsafe { nil }
@@ -242,6 +244,7 @@ pub fn Host.create(vm &libjs.VM, realm &libjs.Realm, document &dom.Document, hoo
 	host.install_dom_exceptions()!
 	host.install_tree_walkers()!
 	host.install_custom_events()!
+	host.install_pop_state_events()!
 	host.install_ui_events()!
 	host.install_mouse_events()!
 	host.install_keyboard_events()!
@@ -428,6 +431,7 @@ pub fn (mut host Host) close() {
 	host.dataset_wrappers.clear()
 	host.events.clear()
 	host.event_wrappers.clear()
+	host.pop_state_values.clear()
 	host.selections.clear()
 	host.selection_wrappers.clear()
 	host.tree_walkers.clear()

@@ -12721,6 +12721,10 @@ pub fn (mut d Document) restore_the_history_object_state(entry &SessionHistoryEn
 
 // https://html.spec.whatwg.org/multipage/browsing-the-web.html#update-document-for-history-step-application
 pub fn (mut d Document) update_for_history_step_application(entry &SessionHistoryEntry, do_not_reactivate bool, script_history_length int, script_history_index int, navigation_type ?NavigationType) {
+	d.apply_history_step(entry, do_not_reactivate, script_history_length, script_history_index, navigation_type, none)
+}
+
+pub fn (mut d Document) apply_history_step(entry &SessionHistoryEntry, do_not_reactivate bool, script_history_length int, script_history_index int, navigation_type ?NavigationType, before_popstate ?fn ()) {
 	// 1. Let documentIsNew be true if document's latest entry is null; otherwise false.
 	document_is_new := d.latest_entry == unsafe { nil }
 
@@ -12744,11 +12748,13 @@ pub fn (mut d Document) update_for_history_step_application(entry &SessionHistor
 		// 4. If documentIsNew is false:
 		if !document_is_new {
 			// Update document URL
-			d.url = entry.url
+			d.set_url(entry.url)
+			state := d.history().state
+			if update := before_popstate { update() }
 
 			// Fire popstate event at document's relevant global object
 			if d.window != unsafe { nil } {
-				d.window.dispatch_popstate_event(d.history().state)
+				d.window.dispatch_popstate_event(state)
 			}
 
 			// 5. If oldURL's fragment differs from entry's URL's fragment, fire hashchange event.
