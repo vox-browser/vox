@@ -52,6 +52,8 @@ mut:
 	collection_wrappers map[voidptr]&libjs.Object
 	class_query_cache map[u64]ClassQueryCacheEntry
 	inline_handlers []InlineHandler
+	screen_prototype &libjs.Object = unsafe { nil }
+	screens map[voidptr]&css.Screen
 	form_controls_collection_prototype &libjs.Object = unsafe { nil }
 	form_controls_collections map[voidptr]&html.HTMLFormControlsCollection
 	radio_node_list_prototype &libjs.Object = unsafe { nil }
@@ -256,6 +258,7 @@ pub fn Host.create(vm &libjs.VM, realm &libjs.Realm, document &dom.Document, hoo
 	host.install_resize_observers()
 	host.install_animation_frames()
 	host.install_window_scrolling()
+	host.install_window_geometry()
 	host.install_timers()
 	host.install_microtasks()
 	host.install_idle_callbacks()
@@ -360,6 +363,7 @@ pub fn (mut host Host) close() {
 		}
 	}
 	host.inline_handlers = []
+	host.screens.clear()
 	owner_document.clear_custom_element_construction_hook(voidptr(&host))
 	host.registries.clear()
 	host.active_registries.clear()
