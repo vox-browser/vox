@@ -5483,3 +5483,117 @@ page correctness or performance. Completed jobs move with idle-lock and hash
 verification to `scratch-receipts/continued-20261117-r34`; private source/build
 proofs and probe scripts remain under `rounded-cohort-5204` and
 `rounded-batch-5204*`. Every attempt remains in the evidence.
+
+
+### Image draw decoding and shared three-pixel confirmation, 2026-11-17
+
+`2fa964251` extends the retained Metal trace reader with nonindexed image-quad
+calls, fragment texture/sampler bindings, texture descriptor dimensions and
+mip counts. Each draw snapshots descriptor identity before pointer reuse.
+Unknown texture descriptor versions and changed command signatures decline;
+GPU-written texture contents are explicitly **not reconstructed**. Focused
+regression sources cover these boundaries and remain unrun under the test hold.
+Python syntax parsing and actual-trace decoding pass. All 296 earlier indexed
+records retain every prior field exactly; the same 21,747-record capture adds
+755 nonindexed draws, 113 textures and 55 samplers. Guard elapsed/peak are
+0.354418917 seconds/23,314,432 bytes, exit zero. Decoder SHA-256 is
+`50e0dde5bad197e52355f82634f647eb3280ec0ec13b7ffd7900039943921e9e`.
+
+The avatar's indexed draw at stream offset 5,532,036 uses a 40×40 texture with
+six mip levels. Its source circle has radius 20, transform scales
+0.22499999403953552/0.5 and AA radius 4.44444465637207. Read-only Vox vertex
+tracing verifies the same values. Its shadow color's four float32 words match
+Brave exactly: `3c980abb,3ca6fbc4,3cbd3936,3e189899`, including alpha
+0.14901961386203766. Captured zero-filled initialization uploads cannot supply
+final image-color evidence; their extraction is retained as ineligible. The
+first local inspection script exits one on a string-handle conversion and is
+retained beside the corrected reader.
+
+The latest completed shared production executable is SHA-256
+`2a6d72159438040cf72553c0eac3d52d03e55b74722a41e2c6944824abb01256`.
+Its sealed source manifest matches all three committed batching implementation
+files. A fresh PID 85877 reproduces the accepted **three-pixel** image exactly (decoded RGB),
+with complete 33-row/56-commit/latest/README content, 4,245 native hits,
+472,282 native entries and zero misses/compiler calls/pending/invalid entries.
+Page JavaScriptCore stays uninitialized; all input pins remain unchanged, PID
+adoption succeeds, and browser/controller/guard exits are zero. Guard
+elapsed/peak are 37.968199875 seconds/8,530,690,048 bytes. This is the shared
+production confirmation; it supplies no performance credit.
+
+Two canonical-source candidates are rejected and fully reverted:
+
+| Candidate / same-binary control | Strict differing pixels | Native hits / entries | Guard seconds / sampled peak bytes |
+| --- | ---: | --- | --- |
+| Natural-size PNG mip frame | 3, unchanged | 4,245 / 472,408 | 39.406334 / 8,546,238,464 |
+| Its off control | 3, unchanged | 4,245 / 468,910 | 38.169274917 / 8,508,702,720 |
+| Capture-density root tile rows | 13 | 4,245 / 472,334 | 39.051120834 / 8,446,001,152 |
+| Its off control | 3, unchanged | 4,245 / 472,340 | 38.656541458 / 8,420,950,016 |
+
+The PNG candidate uploads the full 60×60 logo and 40×40 avatar before color
+conversion and mip generation instead of retaining the earlier reduced decode.
+It changes zero page pixels. Its single-unit C `-prod` build consumes 3,774 V
+sources/zero tests, exits zero in 238.352015542 seconds, peak 9,000,042,496
+bytes; executable SHA-256 is
+`76e538d286a77cd8c825c3d8c76827f7335e98e383f3df3135e6740b0ea0bbdd`.
+
+The row candidate follows the observed 256-row Brave tiles instead of Vox's
+416-row capture grid, regenerating MSAA ownership from the retained native ink
+triggers. It leaves all three old errors unchanged and introduces ten one-level
+border errors at the viewport bottom. Its build also consumes 3,774 V sources
+and zero tests, exits zero in 237.913781041 seconds, peak 8,999,731,200 bytes;
+executable SHA-256 is
+`28ca1f1e3fade6436dd4d68d73adb6ffa3daaf850689617d9cf8e934fa0fc828`.
+The off control exactly preserves the accepted image. Its proposed ownership
+regression source remains only in the rejected local patch and is not compiled.
+All four captures preserve complete content and unchanged inputs, use the actual
+812a native ABI partition with `/usr/bin/false`, execute native code with zero
+cache/compiler/error gates, adopt their PIDs and exit zero throughout.
+
+A separate read-only Vox avatar-input capture preserves the same three pixels,
+with 4,245 hits/470,080 native entries and no compiler calls or misses; guard
+elapsed/peak are 38.306938458 seconds/8,545,779,712 bytes. Four derived button
+draw groupings retain the original captured geometry and shaders. Adding the
+underline to pair-ordered buttons does not fix Notifications; the original
+captured nine-instance order still reproduces its two corners. These selected
+draws over white are diagnostics, not page acceptance or performance evidence.
+
+
+Publication tracing retains every attempt. The first two symbol-resolution
+startup checks abort before document capture (browser -6, controller/guard one);
+they are diagnostic failures and supply no rendering evidence. The next three
+captures run normally but do not select the intended pixel because the filter
+assumes the wrong native chrome geometry; they are explicitly ineligible for
+publication attribution and retain their unchanged three-pixel metrics. A
+selected-readback follow-up and the final calibrated trace both preserve the
+accepted image, fixed inputs, complete content and zero exits. The final run
+has 4,245 native hits/472,265 native entries, no compiler calls or misses;
+guard elapsed/peak are 38.179727042 seconds/8,523,055,104 bytes.
+
+The native bitmap is 1,024×852: a 60-pixel top chrome inset, 768 document rows
+and 24 status rows. The calibrated hook follows document pixel (54,339) at
+native memory row 399. The avatar's 15×27 readback publishes source
+`(97,98,98,255)` unchanged. A later 156×60 text raster spanning that point
+already contains `(94,96,96,255)`, which publication also copies unchanged.
+The text begins at layout x=108 (capture x=54), so it can overlap the avatar's
+right edge. This localizes Vox's observed change to the text raster, but does
+**not** establish whether its coverage/blend or Brave's underlying avatar
+sample is responsible: the independent pre-text Brave pixel is not yet known.
+No glyph or image correction is inferred from this observation.
+
+The accepted screenshot and original Brave reference remain unchanged at three
+pixels, maximum error ten. The direct-live capture remains separate. All
+rejected implementation edits are reverted. Raw attempts, source pins, guards,
+images and commands are retained locally under `metal-image-5204`,
+`rounded-cohort-5204-r2`, `png-native-mips-5204`, `root-capture-rows-5204` and
+`scratch-receipts/continued-20261117-r35`. The archive verifies idle locks,
+SHA-256s and symlinks before removing its completed Build entries. Automated
+tests remain paused; full pixel parity, current live validation and matched
+compiled-revisit performance remain open.
+
+The initial post-capture file-hash assertion rejects differently encoded PNG
+files; the retained follow-up compares decoded RGB SHA-256s and confirms exact
+image identity for the shared bundle, row-grid off control and calibrated
+publication trace. Neither the captures nor reference are replaced. The archive
+moves 106 completed roots/298 files, verifies all member identities and exits
+zero in 0.165635541 seconds, sampled peak 851,968 bytes. Renderer source files
+are clean after both candidate reverts.
