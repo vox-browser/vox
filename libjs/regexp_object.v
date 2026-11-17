@@ -38,6 +38,10 @@ fn compile_regexp_engine(pattern Utf16String, text Utf16String) !&RegexEngine {
 
 fn create_regexp_object(mut vm VM, pattern Utf16String, text Utf16String) !&Object {
 	engine := compile_regexp_engine(pattern, text) or { return vm.throw_error(.syntax_error, err.msg()) }
+	return create_regexp_object_with_engine(mut vm, pattern, text, engine)
+}
+
+fn create_regexp_object_with_engine(mut vm VM, pattern Utf16String, text Utf16String, engine &RegexEngine) &Object {
 	mut object := Object.create(vm.realm(), vm.realm().regexp_prototype)
 	object.class_name = 'RegExp'
 	object.regexp_object = &RegExpObject{object: object, pattern: pattern, flags_text: text, flags: regexp_to_flag_bits(text), engine: engine}

@@ -305,9 +305,17 @@ fn (mut generator BytecodeGenerator) expression(mut vm VM, expression &Expressio
 		}
 		.regexp_literal {
 			data := kind.regexp_data or { return error('Missing regular expression') }
-			compile_regexp_engine(data.pattern, data.flags) or { return error('SyntaxError: ' + err.msg()) }
+			engine := compile_regexp_engine(data.pattern, data.flags) or {
+				return error('SyntaxError: ' + err.msg())
+			}
 			dst := generator.temporary()
-			generator.emit(Instruction{op: .new_regexp, dst: dst, lhs: generator.constant(Value.from_string(vm.create_string(data.pattern))), rhs: generator.constant(Value.from_string(vm.create_string(data.flags)))})
+			pattern := generator.constant(Value.from_string(vm.create_string(data.pattern)))
+			flags := generator.constant(Value.from_string(vm.create_string(data.flags)))
+			generator.executable.regexp_literal_programs << RegExpLiteralProgram{
+				constant_index: pattern.index()
+				engine: engine
+			}
+			generator.emit(Instruction{op: .new_regexp, dst: dst, lhs: pattern, rhs: flags})
 			return dst
 		}
 		.array_expr {

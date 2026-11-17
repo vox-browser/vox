@@ -84,6 +84,7 @@ pub mut:
 mut:
 	validation_snapshot ?&ValidationSnapshot
 	validation_successes u32
+	regexp_literal_programs []RegExpLiteralProgram
 }
 
 pub fn (executable &Executable) get_identifier(index u32) Utf16String {

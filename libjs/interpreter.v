@@ -205,7 +205,17 @@ fn (mut vm VM) execute_instruction(instruction &Instruction, executable &Executa
 			}
 			result=Value.from_object(copy_object_excluding_keys(mut vm,left,excluded)!)
 		}
-		.new_regexp { result = Value.from_object(create_regexp_object(mut vm, left.as_string().utf16, right.as_string().utf16)!) }
+		.new_regexp {
+			pattern := left.as_string().utf16
+			flags := right.as_string().utf16
+			if template := executable.regexp_literal_engine(instruction.lhs.index()) {
+				engine := &RegexEngine{ ...template, scratch: RegexVmScratch.new() }
+				result = Value.from_object(create_regexp_object_with_engine(mut vm, pattern, flags,
+					engine))
+			} else {
+				result = Value.from_object(create_regexp_object(mut vm, pattern, flags)!)
+			}
+		}
 		.new_object { result = Value.from_object(Object.create(vm.realm(), vm.realm().object_prototype)) }
 		.new_array { result = Value.from_object(ArrayObject.create(mut vm, vm.realm(), u64(left.number), vm.realm().array_prototype_record())!.object) }
 		.define_property {
