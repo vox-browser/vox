@@ -3691,3 +3691,17 @@ and no regressions; off repeats 21 exactly. Source, native-cache, full-content,
 PID-adoption and exit gates pass. Regression sources remain uncompiled/unrun by
 request, and the original zero-tolerance reference is unchanged. See the
 [GitHub runtime report](LIBJS_GITHUB_RUNTIME_20261115.md#identical-rectangular-clips-20-differing-pixels-2026-11-17).
+
+
+### Fractional glyph clip boundaries, 2026-11-17
+
+`86324739d` intersects ordinary axis-aligned text clips and blends their boundary
+coverage through GG's A8 glyph mask. Fully covered pixels retain the existing
+blitter; complex clips remain native and fallback restores deferred rectangles.
+The opt-in compiled-LibJS GitHub capture improves 20→15 pixels with five resolved,
+zero regressed/new pixels; off repeats 20. The sealed production build consumes
+3,765 V sources and zero tests. CPU-clip and full-GG attempts remain rejected in
+the receipts. Focused geometry/merge and one/four-sample mask test sources are
+committed but uncompiled/unrun by request. Reference and zero tolerance are fixed;
+full parity remains open. See the
+[GitHub runtime report](LIBJS_GITHUB_RUNTIME_20261115.md#fractional-glyph-clip-edges-15-differing-pixels-2026-11-17).

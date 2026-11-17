@@ -4916,3 +4916,85 @@ the original native clips if rasterization declines. No result for that
 candidate is claimed yet. The original reference and zero/zero tolerance remain
 unchanged; full parity and matched compiled-revisit speed are still open.
 Automated tests remain held.
+
+
+### Fractional glyph clip edges: 15 differing pixels, 2026-11-17
+
+`86324739d` intersects eligible ordinary axis-aligned text clips in document
+space, then applies their fractional boundaries with the existing GG A8-mask
+blend. Fully covered pixels retain the established glyph blitter. Other native
+clips stay active, and the deferred rectangles are restored before native fallback
+if mask generation, sample selection or GG replay declines. Selection is explicit:
+`VOX_DIAGNOSTIC_GLYPH_RECTANGLE_CLIP=1`, together with the preceding raster
+opt-ins. Opaque A8 ink and a consistent one/four-sample selection are required.
+No reference coordinates or colors participate in this selection.
+
+The complete original reference improves **20→15 differing pixels**, maximum
+10, MAE 0.0000, RMSE 0.0156. All five changed pixels resolve, with zero regressions
+or newly wrong pixels: two repository-title clip-edge pixels and three directory
+commit-text clip-edge pixels. The same-binary off capture is decoded-pixel-
+identical to the prior 20-pixel image. The normalized result is
+`github-frozen-libjs-compiled-15px.png`, SHA-256
+`134a10dd9e6ce6621ca48e82f0afb15b5409f8a4b73d7e0db872cd49ede0e483`.
+The older direct-live screenshot remains separately named; this is a frozen-page
+result, not a new live-site acceptance claim.
+
+The ordinary single-unit `-prod` build consumes 3,765 V sources and zero tests,
+verifies parsed buffers and sealed native inputs, and exits zero in 238.311652167
+seconds, sampled peak 8,987,213,824 bytes. Executable SHA-256 is
+`d466cae2f6fe193662ab63023852090297fceda2ee8b2530548dd2b227fd6376`.
+The validated snapshot includes unrelated working-tree lines; only the feature's
+changes are staged. Geometry/mapping/coverage-merge regression sources and the
+one/four-sample GG mask test source are committed but remain uncompiled/unrun.
+The managed post-commit rebuild is requested normally.
+
+Both captures execute the compatible 0130 native cache with `/usr/bin/false`,
+4,245 hits each, zero misses/compiler invocations/pending/invalid entries and no
+cache, author or native errors. On/off native entries are 470,476/472,394. Exact
+33-row/56-commit/latest/README content, input hashes and successful PID adoption
+hold; page JavaScriptCore stays uninitialized. Browser/controller/guard exits
+are zero. Guard elapsed/peak are 39.16719875 seconds/8,634,957,824 bytes and
+38.356668083 seconds/8,547,762,176 bytes. Timings supply no performance credit.
+
+The earlier attempts remain visible and are not production selections:
+
+| Text-clip diagnosis | Strict result | Changes vs 20 | Native hits/entries | Guard seconds / sampled peak bytes |
+| --- | ---: | --- | --- | --- |
+| CPU antialiased clip | 21 | 1 resolved, 2 new, 1 changed with equal error | 4,244 / 473,542 | 52.45179725 / 8,896,266,240 |
+| CPU-clip off | 20 | unchanged | 4,245 / 472,405 | 38.288256417 / 8,549,941,248 |
+| GG blend over the complete glyph raster | 20 | 5 resolved, 5 new interior pixels | 4,245 / 472,317 | 38.952149125 / 8,447,115,264 |
+| Full-GG off | 20 | unchanged | 4,245 / 472,223 | 38.354561375 / 8,552,497,152 |
+
+Their sealed builds also exclude tests and exit zero. CPU/full-GG executable
+identities are `612102df7056be9a4059cd66c16708b3bdf26bc448f0cf4bc39a46bb898396df`
+and `86ca37bb8c922d0fa69f5b32c1ebc33ced6f23331910ec4fecfddbc4c092158c`;
+build elapsed/peak are 246.058507125 seconds/8,925,921,280 bytes and
+242.809548791 seconds/8,932,933,632 bytes. Each capture preserves exact content,
+fixed inputs, the native-cache gates, PID adoption and zero exits. The accepted
+implementation applies GG only where clipping affects coverage, avoiding the
+unrelated interior rounding changes of the whole-raster variant.
+
+The newer completed shared bundle is also checked in a fresh process:
+SHA-256 `212567863b8f1e818f58b4813073436d54e4e5920f0c13dc5dcd06d75ac0a0c7`.
+It contains the committed runtime options and rectangle deduplication, and
+reproduces **20 pixels exactly** with 4,244 native hits/473,903 entries and zero
+misses/compiler calls. It does not contain the later glyph-edge implementation;
+the private consumed executable above validates 15. The read-only shared-bundle
+separator probe records the complex-inset AA sentinel `-1` (`bf800000`) and
+matrix bits matching the retained float paint transform. It changes no pixels,
+has exact content/fixed pins/zero exits and a 52.718228917-second guard with
+8,822,308,864-byte sampled peak. No AA-radius or transform adjustment is retained.
+
+Completed/rejected jobs are archived with idle locks and verified hashes in
+`scratch-receipts/continued-20261117-r21` (26 roots/141 entries) and accepted
+edge jobs in `continued-20261117-r22` (10 roots/56 entries). Owned superseded
+compiler inputs are hash-journaled before pruning: 20 files/3,579,384,010 bytes.
+The newest accepted generated inputs, private executables, patches, source proofs,
+receipts and native-cache partitions remain. Build scratch jobs and guards are
+removed after archival.
+
+The fifteen residuals are six rounded-button corner pixels, five rotated
+separator pixels, two white-on-green Code-label pixels, one latest-commit avatar/
+text-area pixel and one header edge. The original reference and zero/zero
+tolerance stay fixed. Defaults remain unchanged, full pixel parity and matched
+compiled-revisit performance remain open, and automated tests remain held.

@@ -3169,7 +3169,7 @@ capture-scale, shared rectangle/clip and finite compositor-footprint corrections
 a border resampling regression is removed. A guarded Display P3 document-space
 experiment initially reaches 343 differing pixels; guarded PNG decode density,
 mipmaps, thin-rectangle rasterization and destination-space blending now reach
-20 differing pixels against the unchanged original reference, after preserving
+15 differing pixels against the unchanged original reference, after preserving
 fractional percentage transform origins, shared scaled PNG/shadow samples and
 GPU-owned containing rectangle clips;
 it is not pixel-perfect acceptance. Covered MSAA samples now quantize before
@@ -3238,3 +3238,14 @@ Both on/off captures have 4,244 native hits and zero misses/compiler calls;
 off exactly repeats 21 pixels. The new ordinary production build parses zero
 tests. The original reference/tolerance stay fixed; regression sources and
 all automated suites remain held, and pixel-perfect parity remains incomplete.
+
+
+`86324739d` handles fractional ordinary text-clip boundaries through GG's mask
+blend while preserving fully covered glyph pixels. The guarded complete GitHub
+comparison improves 20→15 pixels with five exact corrections and no regressions;
+off repeats 20 exactly. Both have 4,245 native hits, zero misses/compiler calls,
+exact content and zero exits. The ordinary production build consumes zero tests.
+Earlier CPU and whole-glyph GG variants introduce new differences and are rejected.
+The latest completed shared bundle separately confirms the preceding 20-pixel
+mode; 15 is validated by its pinned private production executable. Regression
+sources remain uncompiled/unrun, and full parity/performance acceptance stay open.
