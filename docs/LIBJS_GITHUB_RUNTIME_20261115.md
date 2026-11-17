@@ -5077,3 +5077,71 @@ browser build was queued. Local captures, traces, source probes, commands, hashe
 and guards are retained in `scratch-receipts/continued-20261117-r28` and
 `metal-trace-5204` beneath `docs/performance/libjs-github-browser-20261116`.
 Full pixel parity and matched compiled-revisit speed remain open.
+
+### Extended P3 glyph source: 13 differing pixels, 2026-11-17
+
+`2624eace7` preserves extended transformed RGB through opaque A8 glyph coverage
+and source-over blending, clamping only at the destination byte store. Selection
+is explicit: `VOX_DIAGNOSTIC_EXTENDED_GLYPH_COLOR=1`, with the preceding P3/raster
+options. Ordinary Canvas blitters and the bounded conversion keep their existing
+behavior. Finite transformed RGB outside [0,1] selects the new CPU blend; author
+alpha must be one. Fractional text-clip edges retain GG coverage and native
+fallback restoration. No page coordinates or reference colors select the path.
+
+The actual Brave text draw at stream offset 5,514,452 has four Code glyph
+instances, 453–456. Its uniform color is
+`[1.0000991821289062, 0.9999618530273438, 0.9999465942382812, 1]`.
+Vox previously clamped red to one during P3 conversion. With A8 coverage 199
+over red 66, keeping that source gives 213.51385 before byte rounding; clamping
+first gives 213.49412. That explains both one-level red errors without changing
+the glyph mask. The retained extraction script verifies its capture resources
+and links the uniforms to the captured text vertex shader.
+
+The complete original reference improves **15→13 differing pixels**, maximum
+10. Exactly the two Code-label pixels change and resolve, with no new or
+regressed pixels. The same-binary off capture exactly reproduces 15. The result
+is `github-frozen-libjs-compiled-13px.png`, SHA-256
+`95c69221d0b83f25ef6e6df9bafb3ce556787392205ca755d88f52cadc0cb894`.
+It is a frozen-page result; the earlier direct-live screenshot remains separate.
+
+The accepted canonical-source single-unit `-prod` build consumes 3,768 V sources
+and zero tests, verifies parsed buffers and sealed native inputs, and exits zero
+in 230.880658875 seconds with 8,988,229,632 sampled peak bytes. Executable SHA-256
+is `1d828086c9e24ca8161fad859e893535df39ba487c90600d05f5b3c3fd397153`.
+Every changed implementation file matches its consumed source hash. Conversion,
+eligibility, extended A8 blending/alpha/padding and GG extended-color regression
+sources are committed, but remain uncompiled/unrun under the test hold.
+
+| Same-binary mode | Pixels | Native hits / entries | Guard seconds / sampled peak bytes |
+| --- | ---: | --- | --- |
+| Extended CPU blend, PID 65867 | **13** | 4,245 / 472,200 | 38.70957475 / 8,434,548,736 |
+| Off, PID 66244 | 15 | 4,245 / 472,312 | 38.221539667 / 8,424,505,344 |
+
+Both captures have exact 33-row/56-commit/latest/README content, unchanged pinned
+inputs, no author/native/cache errors, successful PID adoption and zero browser/
+controller/guard exits. Cache misses/compiler calls/pending/invalid entries are
+zero, and page JavaScriptCore stays uninitialized. The compatible 0130 native
+partition and `/usr/bin/false` remain selected. The original Brave PNG and
+zero/zero tolerance are unchanged; these diagnostic timings give no speed credit.
+
+The earlier full-GG variant also fixes the two target pixels, but introduces
+253 Sign in text differences: 266 pixels total, maximum 84. It is rejected.
+Its build exits zero in 229.475797292 seconds, peak 8,992,718,848 bytes,
+executable `af1e7c2df724fd6fecfb063d17054b1c0d901ab0f1fac11dec124597764dac4b`.
+GPU-on/off captures have 4,244/4,246 native hits, 474,179/470,142 entries,
+zero cache misses/compiler calls and successful content/input/exit gates;
+guard elapsed/peak are 52.026341667 seconds/8,896,233,472 bytes and
+38.557416458 seconds/8,427,241,472 bytes. Off matches 15 exactly. The final CPU
+blend avoids that GPU text resampling discrepancy. An initial V compilation
+rejects an array alias assignment before C generation; that failed attempt is
+retained, and the final implementation does not use that assignment.
+
+The shared completed bundle available at the start of this investigation,
+`bae97d63343c06b6218311b6eb97624ab8037e9197f31dfb8ca2bc278264f2cf`, predates
+this feature; the consumed private executable above validates it. The commit
+requests the managed production rebuild normally. Capture/guard receipts move
+with idle-lock and SHA-256 checks to `scratch-receipts/continued-20261117-r29`;
+private build/extraction records remain in `extended-glyph-p3-5204*` beneath
+`docs/performance/libjs-github-browser-20261116`. Thirteen residuals remain:
+six button corners, five separator pixels, one header edge and one avatar/text
+edge. Full parity, live validation and matched revisit speed remain open.

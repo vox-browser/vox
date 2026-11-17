@@ -3739,3 +3739,13 @@ regression and complete earlier cohort remain in the evidence. Production
 news pages at zero; it lacks this viewport fix. Final production, remaining
 pixels and live/catalog acceptance stay open. See the
 [viewport audit](OPTIMIZED_SITES_PIXELS_2026_11_12.md#slashdot-svg-background-viewport-clipping-2026-11-17).
+
+### Extended P3 glyph ink, 17 November 2026
+
+`2624eace7` adds an opt-in CPU A8 blend that preserves transformed RGB outside
+[0,1] until the destination store, with GG retaining fractional clip edges.
+The compiled-LibJS frozen GitHub page improves 15→13 pixels, exactly two resolved
+and none new; same-binary off remains 15. Native compiler calls/misses are zero.
+The full-GG alternative regresses Sign in and is rejected. New regression sources
+remain unrun under the requested test hold. See the
+[source-color audit](LIBJS_GITHUB_RUNTIME_20261115.md#extended-p3-glyph-source-13-differing-pixels-2026-11-17).
