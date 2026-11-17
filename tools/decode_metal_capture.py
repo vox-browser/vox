@@ -4,7 +4,8 @@
 This is a diagnostic for the GPUTools format recorded on macOS 26. It decodes
 only the listed commands, preserves unknown opcode counts, and rejects changed
 type signatures. It does not claim to decode every Metal command or to replay
-the captured rendering. No private frameworks or GPU are needed.
+the captured rendering. Selected rectangle draws can be exported with their
+captured shaders, buffers and inline data. No private frameworks or GPU are needed.
 """
 import argparse
 from collections import Counter
@@ -115,17 +116,40 @@ def pipeline_descriptor(raw):
         cursor += 8 + count * 24
     samples, mask, coverage_bits, alpha_coverage, alpha_one, raster, depth, stencil = unpack(
         raw, cursor, '8Q')
+    cursor += 64
+    count, = unpack(raw, cursor, 'Q')
+    if count != 8:
+        raise ValueError('Unsupported pipeline color attachment array')
+    colors = []
+    for i in range(count):
+        (enabled, source_rgb, destination_rgb, operation_rgb, source_alpha,
+         destination_alpha, operation_alpha, write_mask, pixel_format) = unpack(
+            raw, cursor + 8 + i * 72, '9Q')
+        if enabled > 1 or write_mask > 15:
+            raise ValueError('Invalid pipeline color attachment')
+        colors.append(dict(blend_enabled=bool(enabled), source_rgb=source_rgb,
+                           destination_rgb=destination_rgb, operation_rgb=operation_rgb,
+                           source_alpha=source_alpha, destination_alpha=destination_alpha,
+                           operation_alpha=operation_alpha, write_mask=write_mask,
+                           pixel_format=pixel_format))
     return dict(vertex_function=hex(vertex), fragment_function=hex(fragment),
                 samples=samples, sample_mask=hex(mask),
                 sample_coverage=struct.unpack('<f', struct.pack('<I', coverage_bits))[0],
                 alpha_to_coverage=bool(alpha_coverage), alpha_to_one=bool(alpha_one),
-                rasterization_enabled=bool(raster), depth_format=depth, stencil_format=stencil)
+                rasterization_enabled=bool(raster), depth_format=depth, stencil_format=stencil,
+                color_attachments=colors)
 
 
-def decode(capture, graphite_rectangles=False):
+def decode(capture, graphite_rectangles=False, rectangle_exports=None):
     counts = Counter()
     states, names, depths, draws, pipelines, copies = {}, {}, {}, [], {}, {}
     libraries, functions = {}, {}
+    rectangle_exports = rectangle_exports or {}
+    pending_exports = []
+    exported = set()
+    for directory in rectangle_exports.values():
+        if directory.exists() or directory.resolve().is_relative_to(capture.root):
+            raise ValueError('Rectangle export needs a new directory outside the capture')
 
     def binding(pointer, position):
         return dict(pointer=hex(pointer), offset=position, **names.get(pointer, {}))
@@ -162,8 +186,11 @@ def decode(capture, graphite_rectangles=False):
             0xffffc06b: None,  # Variable array sizes are checked below.
             0xffffc072: 'C@6d',
             0xffffc077: 'C@4l',
+            0xffffc07a: None,
             0xffffc082: 'Ct',
             0xffffc08a: 'C',
+            0xffffc09f: 'CU<b>ulul',
+            0xffffc0a1: 'CU<b>ulul',
             0xffffc0a7: 'Cululultulullul',
         }
         if tag not in expected:
@@ -188,11 +215,16 @@ def decode(capture, graphite_rectangles=False):
             end = data.index(0, 8)
             source = text_at(data, 8, end - 8 + 1)
             options_end = data.index(0, end + 1)
+            options = text_at(data, end + 1, options_end - end)
             marker, library = unpack(data, ((options_end + 4) & ~3) + 8, 'IQ')
             if marker != ord('t'):
                 raise ValueError('Unsupported library return encoding')
+            options_raw = capture.resource(options)
             libraries[library] = dict(source=source, source_sha256=hashlib.sha256(
-                capture.resource(source)).hexdigest())
+                capture.resource(source)).hexdigest(), compile_options_resource=options,
+                compile_options_sha256=hashlib.sha256(options_raw).hexdigest())
+            if len(options_raw) == 136 and unpack(options_raw, 0, 'Q')[0] == 225:
+                libraries[library]['language_version'] = unpack(options_raw, 32, 'Q')[0]
         elif tag == 0xffffc05e:
             library, = unpack(data, 0, 'Q')
             end = data.index(0, 8)
@@ -234,14 +266,27 @@ def decode(capture, graphite_rectangles=False):
                 state['viewport'] = unpack(data, 8, '6d')
             elif tag == 0xffffc077:
                 state['scissor'] = unpack(data, 8, '4Q')
-            elif tag == 0xffffc06b:
+            elif tag in (0xffffc06b, 0xffffc07a):
                 # The current capture uses singleton arrays. Do not guess other layouts.
                 if signature != 'C@1t@1ul@2ul':
-                    raise ValueError('Unsupported vertex-buffer array: ' + signature)
+                    raise ValueError('Unsupported shader-buffer array: ' + signature)
                 buffer, start, slot, count = unpack(data, 8, '4Q')
                 if count != 1:
-                    raise ValueError('Vertex-buffer array count mismatch')
-                state['vertex_buffers'][slot] = (buffer, start)
+                    raise ValueError('Shader-buffer array count mismatch')
+                stage = 'vertex' if tag == 0xffffc06b else 'fragment'
+                state.setdefault(stage + '_buffers', {})[slot] = (buffer, start)
+                state.setdefault(stage + '_inline_bytes', {}).pop(slot, None)
+            elif tag in (0xffffc09f, 0xffffc0a1):
+                end = data.index(0, 8)
+                resource = text_at(data, 8, end - 8 + 1)
+                length, slot = unpack(data, (end + 4) & ~3, 'QQ')
+                contents = capture.resource(resource)
+                if len(contents) != length or slot > 30:
+                    raise ValueError('Invalid inline shader bytes')
+                stage = 'vertex' if tag == 0xffffc09f else 'fragment'
+                state.setdefault(stage + '_inline_bytes', {})[slot] = dict(
+                    file=resource, length=length, sha256=hashlib.sha256(contents).hexdigest())
+                state.setdefault(stage + '_buffers', {}).pop(slot, None)
             elif tag == 0xffffc0a7:
                 primitive, count, index_type, buffer, start, instances, vertex, instance = unpack(
                     data, 8, '6QqQ')
@@ -253,9 +298,13 @@ def decode(capture, graphite_rectangles=False):
                                   depth=depths.get(state.get('depth')),
                                   viewport=state.get('viewport'),
                                   scissor=state.get('scissor'),
+                                  vertex_inline_bytes=dict(state.get('vertex_inline_bytes', {})),
+                                  fragment_inline_bytes=dict(state.get('fragment_inline_bytes', {})),
                                   vertex_buffers={str(slot): binding(*value)
-                                                  for slot, value in state['vertex_buffers'].items()})
-                if graphite_rectangles and (primitive, count, index_type, vertex) == (4, 69, 0, 12):
+                                                  for slot, value in state['vertex_buffers'].items()},
+                                  fragment_buffers={str(slot): binding(*value)
+                                                    for slot, value in state.get('fragment_buffers', {}).items()})
+                if (graphite_rectangles or rectangle_exports) and (primitive, count, index_type, vertex) == (4, 69, 0, 12):
                     # Dawn's captured Graphite shader uses buffers 2/3 for vertex pulling.
                     static, static_start = state['vertex_buffers'][2]
                     dynamic, dynamic_start = state['vertex_buffers'][3]
@@ -266,8 +315,55 @@ def decode(capture, graphite_rectangles=False):
                         instances=[dict(index=i, values=unpack(buffer_bytes(
                             dynamic, dynamic_start + i * 108, 108), 0, '27f'))
                             for i in range(instance, instance + instances)])
+                    if offset in rectangle_exports:
+                        if max(draw['graphite_rectangles']['indices']) >= 36:
+                            raise ValueError('Rectangle indices exceed the captured template')
+                        directory = rectangle_exports[offset]
+                        files = {}
+                        payloads = {}
+
+                        def save(name, contents):
+                            payloads[name] = contents
+                            files[name] = dict(size=len(contents), sha256=hashlib.sha256(contents).hexdigest())
+
+                        save('indices.bin', buffer_bytes(buffer, start, count * 2))
+                        # The capture may upload only this template's range.
+                        # Prefix vertices are unreferenced; preserve baseVertex
+                        # with zero padding instead of inventing captured bytes.
+                        save('vertices.bin', bytes(vertex * 28) + buffer_bytes(
+                            static, static_start + vertex * 28, 36 * 28))
+                        save('instances.bin', buffer_bytes(dynamic, dynamic_start, (instance + instances) * 108))
+                        uniform, uniform_start = state['vertex_buffers'][1]
+                        paints = [unpack(buffer_bytes(dynamic, dynamic_start + i * 108 + 68, 4), 0, 'I')[0]
+                                  for i in range(instance, instance + instances)]
+                        save('uniforms.bin', buffer_bytes(uniform, uniform_start, (max(paints) + 1) * 16))
+                        for stage in ('vertex', 'fragment'):
+                            for slot, entry in state.get(stage + '_inline_bytes', {}).items():
+                                save(f'{stage}-bytes-{slot}.bin', capture.resource(entry['file']))
+                        pipeline = pipelines[state['pipeline']]
+                        pending_exports.append(dict(offset=offset, directory=directory,
+                            draw=draw, pipeline=pipeline, files=files, payloads=payloads))
                 draws.append(draw)
+    for entry in pending_exports:
+        entry['functions'] = {}
+        for stage in ('vertex', 'fragment'):
+            function = functions[int(entry['pipeline'][stage + '_function'], 0)]
+            entry['functions'][stage] = function
+            entry['payloads'][stage + '.metal'] = capture.resource(function['source']).rstrip(b'\0')
+            entry['payloads'][stage + '-options.bin'] = capture.resource(function['compile_options_resource'])
+        exported.add(entry['offset'])
     capture.verify()
+    if exported != set(rectangle_exports):
+        raise ValueError('Requested rectangle draw offsets were not exported')
+    for entry in pending_exports:
+        directory = entry['directory']
+        directory.mkdir(parents=True)
+        for name, contents in entry['payloads'].items():
+            (directory / name).write_bytes(contents)
+            entry['files'][name] = dict(size=len(contents), sha256=hashlib.sha256(contents).hexdigest())
+        (directory / 'draw.json').write_text(json.dumps(dict(
+            draw=entry['draw'], pipeline=entry['pipeline'], functions=entry['functions'],
+            unreferenced_vertex_prefix='zero padding', files=entry['files']), indent=2) + '\n')
     return dict(format='MTSP 0x400; selected commands only', trace=str(capture.root),
                 decoder_sha256=hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
                 record_count=total, opcode_counts=dict(sorted(counts.items())),
@@ -283,8 +379,16 @@ def main():
     parser.add_argument('--output', required=True, type=Path)
     parser.add_argument('--graphite-rectangles', action='store_true',
                         help='Read the captured Dawn Graphite 69-index rectangle buffers')
+    parser.add_argument('--export-rectangle-draw', nargs=2, action='append', default=[],
+                        metavar=('OFFSET', 'NEW_DIRECTORY'),
+                        help='Export one selected rectangle draw with its shaders and captured buffers')
     args = parser.parse_args()
-    result = decode(Capture(args.trace), args.graphite_rectangles)
+    exports = {int(offset, 0): Path(directory) for offset, directory in args.export_rectangle_draw}
+    if len(exports) != len(args.export_rectangle_draw):
+        parser.error('Duplicate rectangle draw offset')
+    if len(set(path.resolve() for path in exports.values())) != len(exports):
+        parser.error('Duplicate rectangle export directory')
+    result = decode(Capture(args.trace), args.graphite_rectangles, exports)
     args.output.write_text(json.dumps(result, indent=2) + '\n')
     print(json.dumps(dict(records=result['record_count'], indexed_draws=len(result['indexed_draws']),
                           depth_states=len(result['depth_states']), output=str(args.output))))
