@@ -801,6 +801,7 @@ fn (mut generator BytecodeGenerator) statement(mut vm VM, statement &Statement) 
 		.while_stmt, .do_while, .for_stmt {
 			generator.clear_completion()
 			mut for_scope := false
+			mut per_iteration := []Utf16String{}
 			if init := kind.for_init {
 				if init is ForInitDeclaration {
 					if init.statement.kind.decl_kind != .var_kind {
@@ -808,12 +809,18 @@ fn (mut generator BytecodeGenerator) statement(mut vm VM, statement &Statement) 
 						generator.emit(Instruction{ op: .enter_scope })
 						generator.scope_depth++
 						generator.lexical_declarations([*init.statement], false)!
+						if init.statement.kind.decl_kind == .let_kind {
+							for declaration in init.statement.kind.declarations {
+								per_iteration << declaration_bound_names(declaration)
+							}
+						}
 					}
 					generator.statement(mut vm, init.statement)!
 				} else if init is ForInitExpression {
 					generator.expression(mut vm, init.expression)!
 				}
 			}
+			generator.copy_for_iteration_bindings(per_iteration)
 			start := u32(generator.executable.instructions.len)
 			mut exit_jump := ?u32(none)
 			if kind.tag != .do_while {
@@ -827,6 +834,7 @@ fn (mut generator BytecodeGenerator) statement(mut vm VM, statement &Statement) 
 			}
 			generator.statement(mut vm, kind.body or { return error('Missing loop body') })!
 			continue_target := u32(generator.executable.instructions.len)
+			generator.copy_for_iteration_bindings(per_iteration)
 			if update := kind.update { generator.expression(mut vm, update)! }
 			if kind.tag == .do_while {
 				value := generator.expression(mut vm, kind.test or {
