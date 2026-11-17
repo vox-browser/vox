@@ -9,6 +9,7 @@ import fetch
 import html
 import http
 import json2
+import libjs
 import os
 import time
 
@@ -111,6 +112,18 @@ fn main() {
 	loop.spin_until(fn [deadline] () bool { return time.sys_mono_now() >= deadline })
 	for message in runtime.take_libjs_messages() { eprintln(message) }
 	println(runtime.evaluate_host('JSON.stringify({jquery:typeof $,togglecomment:typeof togglecomment,open_menu:typeof open_menu,close_menu:typeof close_menu})')!)
+	$if test {
+		if os.getenv('VOX_REDDIT_BUILTIN_PROFILE') != '' {
+			libjs.profile_builtin_calls_for_testing(true)
+			libjs.profile_regexp_patterns_for_testing(true)
+		}
+	}
 	if os.args.len == 3 { println(runtime.evaluate_host(os.read_file(os.args[2])!)!) }
+	$if test {
+		if path := os.getenv_opt('VOX_REDDIT_BUILTIN_PROFILE') {
+			os.write_file(path, json2.encode(libjs.profile_builtin_calls_for_testing(false)))!
+			os.write_file(path + '.regex.json', json2.encode(libjs.profile_regexp_patterns_for_testing(false)))!
+		}
+	}
 	println(json2.encode(runtime.compiled_code_cache_audit()))
 }

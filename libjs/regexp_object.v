@@ -145,7 +145,7 @@ fn (mut regex RegExpObject) builtin_exec(mut vm VM, text &PrimitiveString) !Valu
 	if start <= u64(text.utf16.len()) {
 		// Execution is synchronous and the engine only reads the immutable
 		// PrimitiveString. The public code_units() copy is unnecessary here.
-		status := regex.engine.exec(RegexUtf16Input{units: text.utf16.data}, uint(start), mut slots)
+		status := regex.execute_engine(text, uint(start), mut slots)
 		if status == .limit_exceeded { return vm.throw_error(.internal_error, 'LibJS regular expression execution limit exceeded') }
 		matched = status == .match
 	}
