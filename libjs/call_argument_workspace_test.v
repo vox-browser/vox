@@ -66,6 +66,31 @@ fn test_adjacent_call_arguments_borrow_only_initialized_live_registers() {
 	assert frame.adjacent_call_registers(executable, regs) == none
 }
 
+fn test_argumentless_native_calls_skip_workspaces_with_an_exposed_caller() {
+	set_call_argument_workspaces_for_testing(true)
+	mut vm := VM.create()
+	create_simple_execution_context(mut vm)
+	function := NativeFunction.create(mut vm, vm.realm(), vm.realm().function_prototype,
+		fn (mut vm VM) !Value {
+			assert vm.argument_count() == 0
+			assert vm.argument(0).is_undefined()
+			return vm.this_value()
+		}, 0, PropertyName.from_str('receiver'), none)
+	executable := &Executable{registers_and_locals_count: 5, instructions: [Instruction{op: .call}]}
+	mut frame := ExecutionContext.create(5, []Value{}, 0)
+	frame.realm = vm.realm()
+	vm.push_execution_context_checked(mut frame)!
+	defer { vm.pop_execution_context() }
+	for exposed in [false, true] {
+		frame.exposed = exposed
+		result := vm.execute_call_instruction(&executable.instructions[0], executable,
+			Value.from_object(function.object), Value.from_i32(42))!
+		assert result.as_i32() == 42
+		assert vm.interpreter_stack().call_argument_workspaces.len == 0
+		assert vm.interpreter_stack().call_argument_depth == 0
+	}
+}
+
 fn test_call_argument_workspace_pool_is_bounded_and_releases_references() {
 	mut vm := VM.create()
 	create_simple_execution_context(mut vm)

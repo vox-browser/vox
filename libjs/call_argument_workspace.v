@@ -57,12 +57,15 @@ fn (frame &ExecutionContext) adjacent_call_registers(executable &Executable, ope
 	return unsafe { borrow_argument_values(&values[first], operands.len) }
 }
 
-// Concrete callees copy before author code runs. An adjacent register run can
-// be read directly during that copy. Other layouts use independent scratch
-// buffers, which are cleared before a later call can reuse them.
+// Concrete callees copy before author code runs. Empty calls need no backing
+// storage, and adjacent registers can be read directly during the copy. Other
+// layouts use independent scratch buffers that are cleared after the call.
 fn (mut vm VM) execute_reused_argument_call(instruction &Instruction, executable &Executable, target Value, receiver Value) !Value {
 	count := instruction.arguments.len
 	if count < 0 || count > 8 { return error('Call argument workspace count out of range') }
+	if count == 0 {
+		return call(mut vm, target, receiver, unsafe { borrow_argument_values(nil, 0) })
+	}
 	frame := vm.current_context()
 	if arguments := frame.adjacent_call_registers(executable, instruction.arguments) {
 		return call(mut vm, target, receiver, arguments)
