@@ -405,3 +405,40 @@ the frozen repository landing page.
 
 Raw receipts and input fingerprints remain local under
 `docs/performance/libjs-github-browser-20261116/libjs-github-registers-after-20261118/`.
+
+## Argumentless synchronous calls, 2026-11-18
+
+A separate instrumented pair on `23ba3183…3bb` passes the pinned GitHub
+image, repository audit and all 81 module completions in both modes. The
+native capture records 2,947 hits with zero misses or compiler calls. Its
+main-thread trace contains 129 samples under native invocation, 128 under
+the slow callback and 127 under call handling. These are inclusive stacks
+that contain nested callee work. The interpreter sample window falls after
+JavaScript execution. Both samplers, browsers and the 12-GiB guard exit
+zero, with a sampled peak of 7,899,856,896 bytes over 19.230 seconds.
+
+`2da4ea24d` passes an empty view directly to the existing concrete
+synchronous callees when a bytecode call has zero arguments. The view
+needs no backing storage and works with an exposed caller. The callee still
+sets up its own frame, with zero passed arguments and the original receiver.
+
+Two focused `-prod -prealloc -gc none` executables run the same 750,000-call
+loop with an exact shared optimized native library. The generated host C
+diff contains the empty-call branch and a reordered pair of declarations.
+Both reopens return 42, checking the receiver and the missing first
+argument on every call. They report one native entry, 750,000 slow call
+steps, one cache hit, and zero misses or compiler calls. Workspace usage
+falls from 750,000 to zero. A separate script passes default arguments,
+`arguments.length`, bound and proxy calls, receiver binding, and exception
+propagation. The focused regression source includes exposed callers and
+remains unrun under the automated-suite hold.
+
+Seven alternating fresh-process pairs disable the diagnostic counters.
+Median retired instruction counts are **1,105,955,657** before and
+**1,050,183,390** after, **5.04% fewer** for this loop. All 14 processes and
+the 3-GiB guard exit zero. The guard records 2.213 seconds and a sampled
+peak of 85,065,728 bytes. The production hook requests the new build. The
+GitHub startup effect awaits that build.
+
+Raw captures, stacks, exact counts, input hashes and guard receipts stay
+local under `docs/performance/libjs-github-browser-20261116/libjs-github-dispatch-23ba-20261118/`.
