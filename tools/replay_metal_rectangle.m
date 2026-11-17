@@ -5,6 +5,9 @@
 // float4 paint slots, inline slot 30), BGRA8 four-sample targets and the observed
 // v225 relaxed-math options/default stencil. The viewport defines target size.
 // OUTPUT is premultiplied BGRA8, top row first; --background is premultiplied RGBA8.
+// --samples-output adds an unblended diagnostic attachment for the retained
+// Dawn solid-rectangle fragment ABI. Each pixel has four float4 sample records:
+// primitive ID, source alpha/coverage, fragment-position Z, fragment-position W.
 #import <Foundation/Foundation.h>
 #import <Metal/Metal.h>
 #include <CommonCrypto/CommonDigest.h>
@@ -91,15 +94,61 @@ static void publish(NSData *pixels, NSString *output) {
     require(success, @"Cannot publish output without overwriting");
 }
 
+static NSString *replace_once(NSString *source, NSString *before, NSString *after) {
+    require([source componentsSeparatedByString:before].count == 2,
+        @"Unsupported fragment ABI for sample diagnostics");
+    return [source stringByReplacingOccurrencesOfString:before withString:after];
+}
+
+static NSString *sample_fragment(NSString *source) {
+    // Deliberately require this captured ABI; do not guess other shader outputs.
+    source = replace_once(source, @"float4 tint_member_9 [[color(0)]];",
+        @"float4 tint_member_9 [[color(0)]]; float4 diagnostic [[color(1)]];");
+    source = replace_once(source, @"float4 v_62 [[position]],",
+        @"float4 v_62 [[position]], uint diagnosticPrimitive [[primitive_id]],");
+    return replace_once(source, @"  return v_64;",
+        @"  v_64.diagnostic = float4(float(diagnosticPrimitive), v_64.tint_member_9.w, v_62.z, v_62.w); return v_64;");
+}
+
+static id<MTLBuffer> copy_samples(id<MTLDevice> device, id<MTLCommandBuffer> command,
+    id<MTLTexture> texture, NSUInteger width, NSUInteger height) {
+    NSString *source = @"#include <metal_stdlib>\nusing namespace metal; "
+        "kernel void samples(texture2d_ms<float, access::read> t [[texture(0)]], "
+        "device float4* o [[buffer(0)]], uint2 p [[thread_position_in_grid]]) { "
+        "if(p.x>=t.get_width() || p.y>=t.get_height()) return; "
+        "for(uint s=0;s<4;s++) o[(p.y*t.get_width()+p.x)*4+s]=t.read(p,s); }";
+    NSError *error = nil;
+    id<MTLLibrary> library = [device newLibraryWithSource:source options:nil error:&error];
+    require(library != nil, [@"Sample shader compilation failed: " stringByAppendingString:error.description ?: @""]);
+    id<MTLComputePipelineState> pipeline = [device newComputePipelineStateWithFunction:
+        [library newFunctionWithName:@"samples"] error:&error];
+    require(pipeline != nil, [@"Sample pipeline creation failed: " stringByAppendingString:error.description ?: @""]);
+    id<MTLBuffer> output = [device newBufferWithLength:width * height * 4 * 16
+        options:MTLResourceStorageModeShared];
+    require(output != nil, @"Cannot allocate sample output");
+    id<MTLComputeCommandEncoder> encoder = [command computeCommandEncoder];
+    require(encoder != nil, @"Cannot create sample encoder");
+    [encoder setComputePipelineState:pipeline]; [encoder setTexture:texture atIndex:0];
+    [encoder setBuffer:output offset:0 atIndex:0];
+    [encoder dispatchThreads:MTLSizeMake(width, height, 1) threadsPerThreadgroup:MTLSizeMake(8, 8, 1)];
+    [encoder endEncoding];
+    return output;
+}
+
 int main(int argc, char **argv) { @autoreleasepool { @try {
     if (argc < 3) {
-        fprintf(stderr, "usage: replay_metal_rectangle SNAPSHOT OUTPUT.bgra [--split-instances] [--background RRGGBBAA]\n");
+        fprintf(stderr, "usage: replay_metal_rectangle SNAPSHOT OUTPUT.bgra [--split-instances] [--background RRGGBBAA] [--samples-output OUTPUT.rgba32f]\n");
         return 2;
     }
     BOOL split = NO;
+    NSString *sample_output = nil;
     unsigned long background = 0xffffffff;
     for (int i = 3; i < argc; i++) {
         if (!strcmp(argv[i], "--split-instances")) split = YES;
+        else if (!strcmp(argv[i], "--samples-output") && i + 1 < argc) {
+            require(sample_output == nil, @"Duplicate sample output option");
+            sample_output = [[NSString stringWithUTF8String:argv[++i]] stringByStandardizingPath];
+        }
         else if (!strcmp(argv[i], "--background") && i + 1 < argc) {
             const char *color = argv[++i]; char *end;
             require(strlen(color) == 8 && strspn(color, "0123456789abcdefABCDEF") == 8,
@@ -113,6 +162,11 @@ int main(int argc, char **argv) { @autoreleasepool { @try {
     struct stat existing;
     require(lstat(output.fileSystemRepresentation, &existing) != 0 && errno == ENOENT,
         @"Output already exists or cannot be inspected");
+    if (sample_output) {
+        require(![sample_output isEqual:output], @"Sample and pixel outputs must differ");
+        require(lstat(sample_output.fileSystemRepresentation, &existing) != 0 && errno == ENOENT,
+            @"Sample output already exists or cannot be inspected");
+    }
     NSData *metadata_bytes = read_file([directory stringByAppendingPathComponent:@"draw.json"]);
     NSDictionary *metadata = [NSJSONSerialization JSONObjectWithData:metadata_bytes options:0 error:NULL];
     require([metadata isKindOfClass:[NSDictionary class]], @"Invalid snapshot JSON");
@@ -145,6 +199,8 @@ int main(int argc, char **argv) { @autoreleasepool { @try {
         && floor(width_value) == width_value && floor(height_value) == height_value
         && width_value * height_value <= 16 * 1024 * 1024, @"Unsupported viewport dimensions");
     NSUInteger width = width_value, height = height_value;
+    require(!sample_output || width * height <= 1024 * 1024,
+        @"Sample diagnostics exceed one million pixels");
     double near = [viewport[4] doubleValue], far = [viewport[5] doubleValue];
     require(isfinite(near) && isfinite(far) && near >= 0 && far <= 1 && near <= far,
         @"Unsupported viewport depth range");
@@ -200,6 +256,7 @@ int main(int argc, char **argv) { @autoreleasepool { @try {
         NSString *source = [[NSString alloc] initWithData:data[[stage stringByAppendingString:@".metal"]]
             encoding:NSUTF8StringEncoding];
         require(source != nil && [info[@"entry_point"] isKindOfClass:[NSString class]], @"Invalid shader source or entry point");
+        if (sample_output && i == 1) source = sample_fragment(source);
         id<MTLLibrary> library = [device newLibraryWithSource:source options:options error:&error];
         require(library != nil, [@"Metal library compilation failed: " stringByAppendingString:error.description ?: @""]);
         functions[i] = [library newFunctionWithName:info[@"entry_point"]];
@@ -208,6 +265,10 @@ int main(int argc, char **argv) { @autoreleasepool { @try {
     MTLRenderPipelineDescriptor *pipeline = [MTLRenderPipelineDescriptor new];
     pipeline.vertexFunction = functions[0]; pipeline.fragmentFunction = functions[1];
     pipeline.rasterSampleCount = samples;
+    if (sample_output) {
+        pipeline.colorAttachments[1].pixelFormat = MTLPixelFormatRGBA32Float;
+        pipeline.inputPrimitiveTopology = MTLPrimitiveTopologyClassTriangle;
+    }
     pipeline.alphaToCoverageEnabled = [state[@"alpha_to_coverage"] boolValue];
     pipeline.alphaToOneEnabled = [state[@"alpha_to_one"] boolValue];
     pipeline.depthAttachmentPixelFormat = integer(state, @"depth_format");
@@ -235,6 +296,14 @@ int main(int argc, char **argv) { @autoreleasepool { @try {
     texture.storageMode = MTLStorageModePrivate; texture.textureType = MTLTextureType2DMultisample;
     texture.sampleCount = samples;
     id<MTLTexture> msaa = [device newTextureWithDescriptor:texture];
+    id<MTLTexture> diagnostic_msaa = nil;
+    if (sample_output) {
+        texture.pixelFormat = MTLPixelFormatRGBA32Float;
+        texture.usage = MTLTextureUsageRenderTarget | MTLTextureUsageShaderRead;
+        diagnostic_msaa = [device newTextureWithDescriptor:texture];
+        require(diagnostic_msaa != nil, @"Cannot allocate sample diagnostic attachment");
+        texture.usage = MTLTextureUsageRenderTarget;
+    }
     texture.pixelFormat = pipeline.depthAttachmentPixelFormat;
     id<MTLTexture> depth_texture = [device newTextureWithDescriptor:texture];
     require(resolved && msaa && depth_texture && depth_state, @"Cannot allocate replay targets");
@@ -244,6 +313,12 @@ int main(int argc, char **argv) { @autoreleasepool { @try {
     pass.colorAttachments[0].storeAction = MTLStoreActionMultisampleResolve;
     pass.colorAttachments[0].clearColor = MTLClearColorMake(((background >> 24) & 255) / 255.0,
         ((background >> 16) & 255) / 255.0, ((background >> 8) & 255) / 255.0, (background & 255) / 255.0);
+    if (sample_output) {
+        pass.colorAttachments[1].texture = diagnostic_msaa;
+        pass.colorAttachments[1].loadAction = MTLLoadActionClear;
+        pass.colorAttachments[1].clearColor = MTLClearColorMake(-1, -1, -1, -1);
+        pass.colorAttachments[1].storeAction = MTLStoreActionStore;
+    }
     pass.depthAttachment.texture = depth_texture; pass.depthAttachment.loadAction = MTLLoadActionClear;
     pass.depthAttachment.clearDepth = 1; pass.depthAttachment.storeAction = MTLStoreActionDontCare;
     pass.stencilAttachment.texture = depth_texture; pass.stencilAttachment.loadAction = MTLLoadActionClear;
@@ -281,7 +356,10 @@ int main(int argc, char **argv) { @autoreleasepool { @try {
     for (NSUInteger i = 0; i < instances; i += stride)
         [encoder drawIndexedPrimitives:primitive indexCount:count indexType:MTLIndexTypeUInt16
             indexBuffer:indices indexBufferOffset:0 instanceCount:stride baseVertex:base_vertex baseInstance:first + i];
-    [encoder endEncoding]; [command commit]; [command waitUntilCompleted];
+    [encoder endEncoding];
+    id<MTLBuffer> diagnostic_buffer = nil;
+    if (sample_output) diagnostic_buffer = copy_samples(device, command, diagnostic_msaa, width, height);
+    [command commit]; [command waitUntilCompleted];
     require(command.status == MTLCommandBufferStatusCompleted,
         [@"Metal replay failed: " stringByAppendingString:command.error.description ?: @""]);
     NSMutableData *pixels = [NSMutableData dataWithLength:width * height * 4];
@@ -291,10 +369,19 @@ int main(int argc, char **argv) { @autoreleasepool { @try {
         require([sha256(read_file([directory stringByAppendingPathComponent:name])) isEqual:pins[name]],
             @"Snapshot changed during replay");
     publish(pixels, output);
-    NSDictionary *receipt = @{@"width":@(width), @"height":@(height), @"draw_offset":@(draw_offset),
+    NSMutableDictionary *receipt = [@{@"width":@(width), @"height":@(height), @"draw_offset":@(draw_offset),
         @"split_instances":@(split), @"instances":@(instances), @"output_sha256":sha256(pixels),
         @"input_sha256":pins, @"background_rgba":@(background), @"gpu_status":@(command.status),
-        @"scope":@"Selected captured rectangle draw; uniform backdrop, relaxed math, default stencil; omits other passes and publication"};
+        @"scope":@"Selected captured rectangle draw; uniform backdrop, relaxed math, default stencil; omits other passes and publication"} mutableCopy];
+    if (sample_output) {
+        NSData *values = [NSData dataWithBytes:diagnostic_buffer.contents length:diagnostic_buffer.length];
+        publish(values, sample_output);
+        receipt[@"sample_diagnostics"] = @{@"path":sample_output, @"sha256":sha256(values),
+            @"bytes":@(values.length), @"format":@"pixel-major, then four samples, then four native float32 components",
+            @"components":@[@"primitive_id", @"source_alpha_coverage", @"fragment_position_z", @"fragment_position_w"],
+            @"untouched_sample":@[@(-1), @(-1), @(-1), @(-1)],
+            @"limitation":@"Position Z is fragment-reported, not the depth attachment or a depth-test result. Instrumentation must reproduce the uninstrumented BGRA control."};
+    }
     NSData *encoded = [NSJSONSerialization dataWithJSONObject:receipt options:NSJSONWritingSortedKeys error:NULL];
     printf("%s\n", [[NSString alloc] initWithData:encoded encoding:NSUTF8StringEncoding].UTF8String);
     return 0;

@@ -17,9 +17,45 @@ BINARY = os.environ.get('VOX_METAL_RECTANGLE_REPLAY_BINARY')
 
 @unittest.skipUnless(BINARY, 'requires the separately built Metal replay helper')
 class SnapshotInputTests(unittest.TestCase):
-    def invoke(self, source, output):
-        return subprocess.run([BINARY, str(source), str(output)],
+    def invoke(self, source, output, *options):
+        return subprocess.run([BINARY, str(source), str(output), *map(str, options)],
                               capture_output=True, text=True, timeout=10)
+
+    def test_existing_sample_evidence_is_never_replaced(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            output = root / 'pixels.bgra'
+            samples = root / 'samples.rgba32f'
+            samples.write_bytes(b'keep sample evidence')
+            result = self.invoke(root / 'missing-snapshot', output,
+                                 '--samples-output', samples)
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn('Sample output already exists', result.stderr)
+            self.assertEqual(samples.read_bytes(), b'keep sample evidence')
+            self.assertFalse(output.exists())
+
+    def test_sample_and_pixel_outputs_cannot_alias(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            output = root / 'pixels.bgra'
+            result = self.invoke(root / 'missing-snapshot', output,
+                                 '--samples-output', output)
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn('Sample and pixel outputs must differ', result.stderr)
+            self.assertFalse(output.exists())
+
+    def test_repeated_sample_output_option_declines_before_publication(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            output = root / 'pixels.bgra'
+            samples = root / 'samples.rgba32f'
+            result = self.invoke(root / 'missing-snapshot', output,
+                                 '--samples-output', samples,
+                                 '--samples-output', root / 'other.rgba32f')
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn('Duplicate sample output option', result.stderr)
+            self.assertFalse(output.exists())
+            self.assertFalse(samples.exists())
 
     def test_corrupt_snapshot_cannot_publish_pixels(self):
         with tempfile.TemporaryDirectory() as temporary:
