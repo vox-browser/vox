@@ -86,6 +86,8 @@ def run(args):
     archive = args.archive.resolve() if args.archive is not None else None
     capture_png = output / ('document.png' if args.document_capture else 'window.png')
     output.mkdir(exist_ok=False, parents=True)
+    http_cache = output / 'http-cache'
+    http_cache.mkdir()
     replay = Replay(archive, output / 'replay') if archive is not None else None
     if replay is not None:
         threading.Thread(target=replay.server.serve_forever, daemon=True).start()
@@ -97,7 +99,8 @@ def run(args):
     environment = {k: v for k, v in os.environ.items()
                    if not k.startswith(('VOX_', 'LADYBIRD_', 'JSC_', 'GC_', 'DYLD_'))
                    and 'proxy' not in k.lower()}
-    environment.update(VOX_PROFILE_DIR=str(output / 'profile'), VOX_TEST_WINDOW='1',
+    environment.update(VOX_PROFILE_DIR=str(output / 'profile'),
+        LADYBIRD_CACHE_DIR=str(http_cache), VOX_TEST_WINDOW='1',
         VOX_NATIVE_OBSERVATION_DELAY_MS=str(args.observe_ms),
         VOX_NATIVE_OBSERVATION_SCREENSHOT=str(capture_png),
         VOX_CAPTURE_AUDIT_CONFIG=str(output / 'audit-config.json'),
@@ -141,6 +144,9 @@ def run(args):
         command.extend(['--screenshot', str(capture_png)])
     command.append(target_url)
     result = dict(command=command, configuration=args.configuration,
+        http_cache=dict(directory=str(http_cache),
+                        policy='empty private HTTP resource cache per process',
+                        initial_entries=len(list(http_cache.iterdir()))),
         source=dict(mode='archive' if replay is not None else 'live', url=target_url,
                     response_policy='frozen response archive' if replay is not None
                     else 'current direct HTTP(S) responses; page bytes may change'),
@@ -169,6 +175,8 @@ def run(args):
                 paths.append(archive / 'manifest.json')
             pins = {str(path): digest(path) for path in paths}
             result['inputs_before'] = pins
+            if any(http_cache.iterdir()):
+                raise ValueError('Diagnostic HTTP cache must be empty before launch')
             with (output / 'browser.log').open('w') as log:
                 process = subprocess.Popen(command, stdout=log, stderr=subprocess.STDOUT,
                                            cwd=ROOT, env=environment)
@@ -241,7 +249,7 @@ def run(args):
         result['host_after'] = dict(load=os.getloadavg(), unix=time.time())
         (output / 'summary.json').write_text(json.dumps(result, indent=2) + '\n')
     print(json.dumps({key: result.get(key) for key in
-        ['pid', 'browser_exit', 'document', 'counts', 'png_present', 'changed_inputs',
+        ['pid', 'browser_exit', 'document', 'counts', 'png_present', 'changed_inputs', 'http_cache',
          'javascript_diagnostics', 'native_reuse', 'generated_code_cache_verified']}, ensure_ascii=False))
     return 0 if (result.get('browser_exit') == 0 and result.get('png_present')
                  and not result.get('changed_inputs')

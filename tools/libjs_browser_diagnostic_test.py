@@ -3,8 +3,11 @@ import argparse
 import contextlib
 import copy
 import io
+import json
+import os
 from pathlib import Path
 import sys
+import tempfile
 import unittest
 from unittest.mock import patch
 
@@ -122,6 +125,72 @@ class NativeReuseAuditTests(unittest.TestCase):
         final = self.receipt()
         final['native']['abi'] = 'another-abi'
         self.assertTrue(diagnostic.native_reuse_errors(self.receipt(), final))
+
+
+class HttpCacheIsolationTests(unittest.TestCase):
+    def test_fresh_browser_processes_cannot_inherit_http_cache_state(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            shared = root / 'shared-cache'
+            shared.mkdir()
+            (shared / 'retained').write_text('ambient response')
+            binary = root / 'fake-browser'
+            binary.write_text('''#!/usr/bin/env python3
+import json, os
+from pathlib import Path
+output = Path(os.environ['VOX_CAPTURE_AUDIT_PATH']).parent
+cache = Path(os.environ['LADYBIRD_CACHE_DIR'])
+before = sorted(p.name for p in cache.iterdir()) if cache.exists() else []
+cache.mkdir(parents=True, exist_ok=True)
+(cache / 'retained').write_text('private response')
+(output / 'cache-launch.json').write_text(json.dumps(dict(cache=str(cache), before=before)))
+Path(os.environ['VOX_NATIVE_OBSERVATION_SCREENSHOT']).write_bytes(b'fixture capture')
+''')
+            binary.chmod(0o755)
+            with patch.dict(os.environ, {'LADYBIRD_CACHE_DIR': str(shared)}), \
+                    patch.object(diagnostic, 'canonical_bundle_lease',
+                                 return_value=contextlib.nullcontext()), \
+                    patch.object(diagnostic, 'runtime_input_paths', return_value=[]), \
+                    patch.object(diagnostic, 'publish_adopted_processes'):
+                for name in ['first', 'second']:
+                    output = root / name
+                    arguments = ['diagnostic', '--binary', str(binary), '--output', str(output),
+                                 '--url', 'https://example.com/', '--observe-ms', '1',
+                                 '--timeout', '10', '--memory-guard-registry', str(root / 'pids.json')]
+                    with patch.object(sys, 'argv', arguments), \
+                            contextlib.redirect_stdout(io.StringIO()), \
+                            self.assertRaises(SystemExit) as result:
+                        diagnostic.main()
+                    self.assertEqual(result.exception.code, 0)
+                    launch = json.loads((output / 'cache-launch.json').read_text())
+                    self.assertEqual(launch, dict(cache=str(output / 'http-cache'), before=[]))
+                    summary = json.loads((output / 'summary.json').read_text())
+                    self.assertEqual(summary['http_cache']['initial_entries'], 0)
+                    self.assertEqual((output / 'http-cache/retained').read_text(), 'private response')
+            self.assertEqual((shared / 'retained').read_text(), 'ambient response')
+            self.assertEqual(sorted(p.name for p in shared.iterdir()), ['retained'])
+
+    def test_preseeded_private_cache_declines_before_browser_launch(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            binary = root / 'fake-browser'
+            binary.write_bytes(b'fixture identity')
+            output = root / 'output'
+
+            @contextlib.contextmanager
+            def seed_cache(_):
+                (output / 'http-cache/retained').write_text('unexpected preseed')
+                yield
+
+            arguments = ['diagnostic', '--binary', str(binary), '--output', str(output),
+                         '--url', 'https://example.com/', '--memory-guard-registry', str(root / 'pids.json')]
+            with patch.object(sys, 'argv', arguments), \
+                    patch.object(diagnostic, 'canonical_bundle_lease', side_effect=seed_cache), \
+                    patch.object(diagnostic, 'runtime_input_paths', return_value=[]), \
+                    patch.object(diagnostic.subprocess, 'Popen') as process:
+                with self.assertRaisesRegex(ValueError, 'HTTP cache must be empty'):
+                    diagnostic.main()
+                process.assert_not_called()
 
 
 if __name__ == '__main__':
