@@ -83,7 +83,7 @@ fn (mut runtime Runtime) install_libjs_performance() ! {
 	prototype.define_direct_accessor(libjs.PropertyName.from_str('timeOrigin'), time_origin.object, none,
 		libjs.attribute_enumerable | libjs.attribute_configurable)
 	for name in ['now', 'mark', 'measure', 'getEntries', 'getEntriesByType', 'getEntriesByName', 'clearMarks',
-		'clearMeasures'] {
+		'clearMeasures', 'clearResourceTimings'] {
 		length := if name in ['mark', 'measure', 'getEntriesByType', 'getEntriesByName'] { 1 } else { 0 }
 		method := libjs.NativeFunction.create(mut vm, runtime.realm, runtime.realm.function_prototype,
 			fn [host, name] (mut vm libjs.VM) !libjs.Value {
@@ -221,6 +221,10 @@ fn (mut host LibJSPerformanceHost) operation(mut vm libjs.VM, name string) !libj
 				?string(vm.argument(1).to_primitive_string(mut vm)!.str())
 			}
 			return host.entry_array(mut vm, native.get_entries_by_name(entry_name, kind))
+		}
+		'clearResourceTimings' {
+			native.clear_resource_timings()
+			return libjs.js_undefined()
 		}
 		else {
 			entry_name := if vm.argument(0).is_undefined() {

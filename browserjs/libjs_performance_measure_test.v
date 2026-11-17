@@ -4,6 +4,7 @@ module browserjs
 import dom
 import html
 import os
+import performancetimeline
 import rand
 
 fn libjs_measure_fixture(cache string, compiler string) !(&Runtime, &dom.Document, &html.GlobalScopePerformance) {
@@ -46,6 +47,26 @@ fn test_libjs_measure_does_not_publish_failed_clone_or_invalid_native_mark() {
 	defer { runtime.close(); document.finalize() }
 	assert runtime.evaluate('var failures=0,cloned=0;try{performance.measure("clone",{start:0,detail:()=>0})}catch(e){if(e instanceof DOMException&&e.name==="DataCloneError")failures++}try{performance.measure("missing",{start:"unknown mark",detail:{get value(){cloned++;return 1}}})}catch(e){if(e instanceof DOMException&&e.name==="SyntaxError")failures++}try{performance.measure("invalid",{start:0,end:3,duration:3})}catch(e){if(e instanceof TypeError)failures++}failures===3&&cloned===0&&performance.getEntriesByType("measure").length===0')! == 'true'
 	assert native.get_entries_by_type('measure').len == 0
+}
+
+fn test_libjs_clear_resource_timings_clears_only_the_native_resource_buffer() {
+	mut runtime, mut document, mut native := libjs_measure_fixture('0', '/usr/bin/false')!
+	defer { runtime.close(); document.finalize() }
+	native.add_entry(performancetimeline.PerformanceEntry.new('script.js', 'resource', 1, 2))
+	assert runtime.evaluate(r'
+		performance.mark("keep");
+		var resource = performance.getEntriesByType("resource")[0];
+		var branded = false;
+		try { performance.clearResourceTimings.call({}); } catch (error) { branded = error instanceof TypeError; }
+		var before = performance.getEntriesByType("resource").length;
+		var result = performance.clearResourceTimings({toString(){throw new Error("unused argument");}});
+		branded && before === 1 && result === undefined && performance.clearResourceTimings.length === 0
+			&& performance.getEntriesByType("resource").length === 0 && resource.name === "script.js"
+			&& performance.getEntriesByType("mark")[0].name === "keep"
+	')! == 'true'
+	assert native.get_entries_by_type('resource').len == 0
+	assert native.get_entries_by_type('mark').len == 1
+	assert !runtime.native_context_initialized()
 }
 
 fn test_libjs_mark_clones_detail_and_measure_reopens_without_compilation() {
