@@ -2,6 +2,13 @@ module libjs
 
 // Runtime/Iterator.{h,cpp}: synchronous iterator records, stepping, closing,
 // and collection. Async iterators and Iterator helpers are separate slices.
+
+// Share immutable protocol keys across iterator steps and result objects.
+const iterator_next_key = PropertyName.from_str('next')
+const iterator_done_key = PropertyName.from_str('done')
+const iterator_value_key = PropertyName.from_str('value')
+const iterator_return_key = PropertyName.from_str('return')
+
 @[heap]
 pub struct IteratorRecord {
 pub:
@@ -34,7 +41,7 @@ pub:
 }
 
 pub fn get_iterator_direct(mut vm VM, object &Object) !&IteratorRecord {
-	next_method := object.get(mut vm, PropertyName.from_str('next'))!
+	next_method := object.get(mut vm, iterator_next_key)!
 	return &IteratorRecord{iterator: object, next_method: next_method}
 }
 
@@ -68,11 +75,11 @@ pub fn iterator_next(mut vm VM, mut record IteratorRecord, value ?Value) !&Objec
 }
 
 pub fn iterator_complete(mut vm VM, result &Object) !bool {
-	return result.get(mut vm, PropertyName.from_str('done'))!.to_boolean()
+	return result.get(mut vm, iterator_done_key)!.to_boolean()
 }
 
 pub fn iterator_value(mut vm VM, result &Object) !Value {
-	return result.get(mut vm, PropertyName.from_str('value'))
+	return result.get(mut vm, iterator_value_key)
 }
 
 pub fn iterator_step(mut vm VM, mut record IteratorRecord) !IteratorStep {
@@ -82,7 +89,7 @@ pub fn iterator_step(mut vm VM, mut record IteratorRecord) !IteratorStep {
 fn iterator_step_impl(mut vm VM, mut record IteratorRecord, with_value bool) !IteratorStep {
 	// Builtin marker fast paths are pending; this is the source's ordinary path.
 	result := iterator_next(mut vm, mut record, none)!
-	done := result.get(mut vm, PropertyName.from_str('done')) or {
+	done := result.get(mut vm, iterator_done_key) or {
 		record.done = true
 		return err
 	}
@@ -111,7 +118,7 @@ pub fn iterator_step_value(mut vm VM, mut record IteratorRecord) !IteratorStepVa
 }
 
 pub fn iterator_close(mut vm VM, record &IteratorRecord, completion Completion) Completion {
-	method := record.iterator.get_method(mut vm, PropertyName.from_str('return')) or {
+	method := record.iterator.get_method(mut vm, iterator_return_key) or {
 		if completion.is_error() { return completion }
 		return completion_from_error(err)
 	}
@@ -142,8 +149,8 @@ pub fn iterator_close_all(mut vm VM, records []&IteratorRecord, completion Compl
 pub fn create_iterator_result_object(realm &Realm, value Value, done bool, prototype ?&Object) &Object {
 	mut object := Object.create(realm, prototype)
 	attributes := attribute_writable | attribute_enumerable | attribute_configurable
-	object.define_direct_property(PropertyName.from_str('value'), value, attributes)
-	object.define_direct_property(PropertyName.from_str('done'), Value.from_bool(done), attributes)
+	object.define_direct_property(iterator_value_key, value, attributes)
+	object.define_direct_property(iterator_done_key, Value.from_bool(done), attributes)
 	return object
 }
 
