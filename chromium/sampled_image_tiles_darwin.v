@@ -19,6 +19,7 @@ struct DocumentBitmapDecoration {
 	color  [4]u8
 	border C.VoxGraphiteShape
 	shadow C.VoxGraphiteShape
+	glyphs []ggshape.GlyphCoverage
 }
 
 // A cropped native readback can cross tiles with different sample counts.
@@ -93,9 +94,21 @@ fn draw_document_sampled_image_tiles_with_decoration(pixels &u8, width i32, heig
 				mut shadow := decoration.shadow
 				shadow.matrix[2] += dx
 				shadow.matrix[5] += dy
-				ggshape.draw_sampled_srgb_gamut_with_shadow(tile.data, i32(grid.width), i32(grid.height),
+				mut glyphs := []ggshape.GlyphCoverage{cap: decoration.glyphs.len}
+				for glyph in decoration.glyphs {
+					if glyph.pixels.len != int(width) * int(height) { return 0 }
+					mut mask := []u8{len: grid.width * grid.height}
+					for py in top .. bottom {
+						unsafe {
+							vmemcpy(&mask[(py - oy) * grid.width + left - ox],
+								&glyph.pixels[(py - y0) * int(width) + left - x0], right - left)
+						}
+					}
+					glyphs << ggshape.GlyphCoverage{ pixels: mask, color: glyph.color }
+				}
+				ggshape.draw_sampled_srgb_gamut_with_shadow_and_glyphs(tile.data, i32(grid.width), i32(grid.height),
 					i32(grid.width * 4), backdrop, source, sw, sh, x + dx, y + dy, dw, dh,
-					samples, nw, nh, local_clip, gpu_mips, document_srgb_to_p3_gamut, &shadow)
+					samples, nw, nh, local_clip, gpu_mips, document_srgb_to_p3_gamut, &shadow, glyphs)
 			} else if kind == .rgba_p3 {
 				ggshape.draw_sampled_srgb_gamut_clipped(tile.data, i32(grid.width), i32(grid.height),
 					i32(grid.width * 4), backdrop, source, sw, sh, x + dx, y + dy, dw, dh,

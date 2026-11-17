@@ -105,6 +105,9 @@ fn (mut app BrowserApp) draw_shadowed_png_group(index int, page_y f32, window_he
 	previous_color_scope := select_document_png_color_space()
 	defer { document_png_p3_scope = previous_color_scope }
 	if matrix != [f64(1), 0, 0, 1, 0, 0]! && document_png_space_is_p3() == 0 { return index }
+	text_end := app.draw_shadowed_png_text(index, page_y, decoded, image.width, image.height,
+		upload.gpu_mips, geometry, shape)
+	if text_end > index { return text_end }
 	drawn := C.native_draw_shadowed_png(decoded.data, i32(decoded.width), i32(decoded.height), i32(image.width), i32(image.height), i32(upload.gpu_mips), geometry.x, geometry.y, geometry.width, geometry.height, &geometry.clip[0], 0, page_y, 0, f32(app.ctx.width), f32(app.ctx.height), &shape)
 	if drawn != 0 && scaled_png_shadow_group_diagnostic {
 		eprintln('VOX_SCALED_PNG_SHADOW_GROUP scale=${matrix[0]} source=${image.width}x${image.height} decode=${decoded.width}x${decoded.height} p3=${document_png_space_is_p3()}')

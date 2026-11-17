@@ -50,8 +50,16 @@ fn draw_sampled_image(pixels &u8,width i32,height i32,pitch i32,backdrop i32,sou
 }
 
 fn draw_sampled_image_color(pixels &u8,width i32,height i32,pitch i32,backdrop i32,source []u8,colors []f32,source_width int,source_height int,x f32,y f32,destination_width f32,destination_height f32,samples int,natural_width int,natural_height int,clip [12]f32,gpu_mips bool,shadow &C.VoxGraphiteShape,yuv_mode int,yuv_atlas bool,origin [2]f32, image_quad bool, destination_color canvas.DocumentImageColorTransform) i32 {
+	return draw_sampled_image_color_with_glyphs(pixels,width,height,pitch,backdrop,source,colors,source_width,source_height,x,y,destination_width,destination_height,samples,natural_width,natural_height,clip,gpu_mips,shadow,yuv_mode,yuv_atlas,origin,image_quad,destination_color,[])
+}
+
+fn draw_sampled_image_color_with_glyphs(pixels &u8,width i32,height i32,pitch i32,backdrop i32,source []u8,colors []f32,source_width int,source_height int,x f32,y f32,destination_width f32,destination_height f32,samples int,natural_width int,natural_height int,clip [12]f32,gpu_mips bool,shadow &C.VoxGraphiteShape,yuv_mode int,yuv_atlas bool,origin [2]f32, image_quad bool, destination_color canvas.DocumentImageColorTransform, glyphs []GlyphCoverage) i32 {
 	if shadow != unsafe { nil } && (shadow.fill != 9 || shadow.thickness != 0 || !supported(shadow)) {
 		return 0
+	}
+	for glyph in glyphs {
+		if glyph.pixels.len != int(width) * int(height) || glyph.color.any(!math.is_finite(it))
+			|| glyph.color[3] < 0 || glyph.color[3] > 1 { return 0 }
 	}
 	if pixels == unsafe { nil } || width <= 0 || height <= 0 || width > 4096 || height > 4096
 		|| int(width) * int(height) > 4 * 1024 * 1024 || pitch < width * 4 || samples !in [
@@ -103,6 +111,7 @@ fn draw_sampled_image_color(pixels &u8,width i32,height i32,pitch i32,backdrop i
 	}
 	for value in clip { if !math.is_finite(value) { return 0 } }
 	if clip[4..12].any(it < 0) { return 0 }
+	if glyphs.len > 0 { surface.save() }
 	// Keep a rectangular source-subset clip in destination coordinates. An
 	// inverse image-scale round trip otherwise moves its sampling grid.
 	partial_atlas_clip := yuv_atlas && destination_width * 2 > source_width
@@ -171,6 +180,15 @@ fn draw_sampled_image_color(pixels &u8,width i32,height i32,pitch i32,backdrop i
 			&& (clip[4] != clip[5] || clip[6] != clip[7] || clip[8] != clip[9] || clip[10] != clip[11])),
 		destination_subset, origin) or { if os.getenv('VOX_GG_DIAGNOSTICS') != '' { eprintln('VOX_YUV_IMAGE ${err}') }; return 0 }
  }
+	if glyphs.len > 0 {
+		surface.restore()
+		surface.set_matrix(canvas.Matrix.identity())
+		for glyph in glyphs {
+			surface.draw_alpha_mask(glyph.pixels, int(width), int(height), canvas.Paint{
+				color: canvas.Color4f{glyph.color[0], glyph.color[1], glyph.color[2], glyph.color[3]}
+			}) or { return 0 }
+		}
+	}
 	surface.read_pixels(pixels, pitch) or { return 0 }
 	return 1
 }
