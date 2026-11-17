@@ -11,6 +11,8 @@ import math
 // three box passes above) before the blitter draws it.
 
 const max_blur_sigma = f32(128)
+// Three rings for box blur at sigma <= 135.
+const max_box_blur_ring_entries = 768
 
 // SkMaskFilter::MakeBlur(): a finite, positive sigma.
 fn new_blur_sigma(sigma f32) ?f32 {
@@ -298,7 +300,7 @@ fn (p &PlanGauss) final_scale(sum u32) u8 {
 
 // PlanGauss::Scan::blur(): count source values from src[src_start] into
 // dst_count destination values dst_stride apart from dst[dst_start].
-fn (p &PlanGauss) scan(src []u8, src_start int, count int, mut dst []u8, dst_start int, dst_stride int, dst_count int, mut buffer []u32) {
+fn (p &PlanGauss) scan(src []u8, src_start int, count int, mut dst []u8, dst_start int, dst_stride int, dst_count int, mut buffer [max_box_blur_ring_entries]u32) {
 	b0 := 0
 	b0_end := p.pass0
 	b1 := b0_end
@@ -362,6 +364,29 @@ fn (p &PlanGauss) scan(src []u8, src_start int, count int, mut dst []u8, dst_sta
 	}
 }
 
+struct MaskBlurScan {
+	plan            PlanGauss
+	source          []u8
+	target          []u8
+	source_offset   int
+	source_pitch    int
+	source_samples int
+	target_stride   int
+	target_samples  int
+}
+
+fn scan_mask_blur(context voidptr, first i32, end i32) {
+	pass := unsafe { &MaskBlurScan(context) }
+	// Copy the array header so no worker passes shared mutable metadata.
+	mut target := unsafe { pass.target }
+	mut buffer := [max_box_blur_ring_entries]u32{}
+	for line in int(first) .. int(end) {
+		pass.plan.scan(pass.source, pass.source_offset + line * pass.source_pitch,
+			pass.source_samples, mut target, line, pass.target_stride, pass.target_samples,
+			mut buffer)
+	}
+}
+
 // SkMaskBlurFilter::blur() for sigma >= 2: rows into a transposed buffer,
 // then its rows into the destination's columns.
 fn box_blur(plan PlanGauss, src &Mask, mut dst Mask) {
@@ -369,17 +394,28 @@ fn box_blur(plan PlanGauss, src &Mask, mut dst Mask) {
 	src_h := src.bounds.height()
 	dst_w := dst.bounds.width()
 	dst_h := dst.bounds.height()
-	mut buffer := []u32{len: plan.pass0 + plan.pass1 + plan.pass2}
-	tmp_w := src_h
-	tmp_h := dst_w
-	mut tmp := []u8{len: tmp_w * tmp_h}
-	for y in 0 .. src_h {
-		plan.scan(src.image, src.index(src.bounds.left, src.bounds.top + y), src_w, mut tmp,
-			y, tmp_w, tmp_h, mut buffer)
+	tmp := []u8{len: src_h * dst_w}
+	horizontal := MaskBlurScan{
+		plan:           plan
+		source:         src.image
+		target:         tmp
+		source_offset:  src.offset
+		source_pitch:   src.row_bytes
+		source_samples: src_w
+		target_stride:  src_h
+		target_samples: dst_w
 	}
-	for y in 0 .. tmp_h {
-		plan.scan(tmp, y * tmp_w, tmp_w, mut dst.image, y, dst.row_bytes, dst_h, mut buffer)
+	run_raster_scans(&horizontal, src_h, dst_w, scan_mask_blur)
+	vertical := MaskBlurScan{
+		plan:           plan
+		source:         tmp
+		target:         dst.image
+		source_pitch:   src_h
+		source_samples: src_h
+		target_stride:  dst.row_bytes
+		target_samples: dst_h
 	}
+	run_raster_scans(&vertical, dst_w, dst_h, scan_mask_blur)
 }
 
 // SkBlurMask's gaussianIntegral(): the integral of a box-cubed kernel

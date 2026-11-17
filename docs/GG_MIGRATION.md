@@ -3882,3 +3882,20 @@ and no renderer change is retained. The frozen two-pixel image and original
 Brave reference stay unchanged. The pinned live native-cache cohort still
 fails its zero-miss gate as module URLs change. See the
 [cohort report](LIBJS_GITHUB_RUNTIME_20261115.md#fixed-bundle-live-cohort-changing-module-graphs-2026-11-17).
+
+### Parallel CPU blur
+
+Large Canvas2D image-filter blurs and box-filtered shadow masks split their
+horizontal and vertical scans across up to four CPU threads. Each participant
+needs at least 128 Ki pixels of work. The caller waits for each pass before
+starting the next one or publishing the pixels. Every participant owns its
+scratch state, and the vertical pass reads and writes only its assigned columns.
+`VOX_SERIAL_CPU_RASTER=1` runs these passes serially for diagnostic comparisons.
+
+The focused serial/parallel comparisons pass byte for byte on macOS and Linux,
+including single-axis and in-place RGBA passes and a padded alpha mask. The
+existing macOS blur fixtures pass with production preallocation. ThreadSanitizer
+passes the focused tests, and a native macOS probe observes four distinct
+threads covering all rows at the caller's rounding mode.
+The pinned raster differential suite passes with its default count and seed,
+including 10,000 pixel-exact blurred Canvas2D shadow draws.
