@@ -7203,3 +7203,36 @@ in 101.962594875 seconds at 7,104,118,784 sampled peak bytes. The regression
 source remains unrun under the automated-test hold. The published browser
 predates the NodeList fix. Local commands, input pins, guard receipts and
 raw mappings remain under `repository-navigation-5204-r73`.
+
+### LibJS RegExp literal programs
+
+The same published replay attributes 192 MiB of tracked virtual mapping
+capacity to the runtime RegExp literal compilation stack. Commit `13dcaf2cb`
+retains the program produced during bytecode syntax validation with its
+executable. Each evaluation creates a fresh RegExp object and match scratch
+with an independent `lastIndex`. The executable's opcodes and operands
+retain their existing bytecode cache identity.
+
+Three alternating fresh-process pairs use matching single-C prealloc
+builds. The 492 control source and fixture pins and 493 candidate pins
+differ only in the five implementation inputs. Every launch evaluates
+3,000 RegExp literals. All controls grow the caller arena by 38,272,280
+bytes. All candidates grow it by 7,840,280 bytes, **79.5% less**. The
+manual checks cover distinct objects, captures, flags, independent
+`lastIndex`, and syntax errors.
+
+A fresh native-cache reopen with `/usr/bin/false` matches all 3,000
+literals and verifies independent state. It records two cache hits,
+3,003 native entries, 48,025 helper steps, and zero misses, compiler
+calls, pending executables or invalid entries. The seed compiles two
+executables with one compiler call. All runtime processes and guards
+exit zero. The production type check passes in 48.795497375 seconds at
+7,107,100,672 sampled peak bytes. The regression source remains unrun
+under the automated-test hold.
+
+These byte counts cover standalone literal evaluation. Full GitHub
+Back restoration under the 12 GiB guard remains unverified. Managed
+build `20261118-022652-880e7db2` captured the earlier realm-cache
+prototype. The commit hook requested a build containing the final
+executable-owned implementation. Exact pins, commands and receipts
+remain local under `repository-navigation-5204-r74`.
