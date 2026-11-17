@@ -16,6 +16,7 @@ fn C.native_set_chromium_paint_origin(f64, f64, i32)
 // tiles, adds one border texel on each side, rounds up to 32 rows and keeps at
 // least 256, so a 768-row viewport uses 256-row tiles spaced 254 rows apart.
 const chromium_min_gpu_raster_tile_rows = 256
+const chromium_root_capture_width = os.getenv('VOX_DIAGNOSTIC_ROOT_CAPTURE_WIDTH') == '1'
 
 fn chromium_gpu_raster_tile_rows(viewport_device_height int) int {
 	quarter := (viewport_device_height + 3) / 4 + 2
@@ -616,7 +617,14 @@ fn (mut app BrowserApp) select_chromium_raster_layer(index int) {
 			}
 		}
 		if raster_index < app.chromium_raster_grids.len {
-			grid := app.chromium_raster_grids[raster_index]
+			original_grid := app.chromium_raster_grids[raster_index]
+			grid := if raster_index == 0 {
+				chromium_root_capture_grid(original_grid, app.viewport_width, scale,
+					app.document.layout_coordinate_scale(), chromium_root_capture_width)
+			} else { original_grid }
+			if grid.tile_width != original_grid.tile_width {
+				eprintln('VOX_ROOT_CAPTURE_WIDTH from=${original_grid.tile_width} to=${grid.tile_width} rows=${grid.tile_height} columns=${grid.columns}')
+			}
 			if grid.columns > 0 {
 				set_document_geometry_grid(grid, x, y, layer.bounds.height, scale, raster_index == 0)
 				cell_pointer := if grid.native_cells.len > 0 {
