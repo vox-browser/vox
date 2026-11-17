@@ -102,13 +102,20 @@ fn test_module_graph_cycles_hoist_functions_and_preserve_lexical_tdz() {
 fn test_module_graph_namespace_reads_are_live_readonly_and_have_stable_identity() {
 	mut fixture := new_module_graph_fixture({
 		'/a.js':'let ten=10,two=2;export {ten as "10",two as "2"};export let n=1;export function inc(){n++}'
-		'/bridge.js':'export * as bag from "./a.js";'
+		'/bridge.js':'export * as bag from "./a.js";export {n as alias} from "./a.js";'
 		'/main.js':'import * as ns from "./a.js";import {bag} from "./bridge.js";export function current(){return ns.n+bag.n}export {ns};'
 	})!
 	mut entry := fixture.load_and_link('/main.js')!
-	assert entry.evaluate(mut fixture.vm)!.promise.state==.fulfilled
 	mut a := fixture.modules['/a.js']!
+	mut bridge := fixture.modules['/bridge.js']!
 	mut namespace := a.get_module_namespace(mut fixture.vm)!
+	mut bridge_namespace := bridge.get_module_namespace(mut fixture.vm)!
+	if _ := bridge_namespace.get(mut fixture.vm,PropertyName.from_str('alias')) {
+		assert false,'Namespace getter must observe the uninitialized binding'
+	} else {
+		assert thrown_value(err).as_object().error_kind()?==.reference_error
+	}
+	assert entry.evaluate(mut fixture.vm)!.promise.state==.fulfilled
 	assert voidptr(namespace)==voidptr(a.get_module_namespace(mut fixture.vm)!)
 	assert namespace.internal_get_prototype_of()==none
 	assert !namespace.internal_is_extensible()
@@ -116,9 +123,12 @@ fn test_module_graph_namespace_reads_are_live_readonly_and_have_stable_identity(
 	assert keys[0].equals(PropertyName.from_str('10'))
 	assert keys[1].equals(PropertyName.from_str('2'))
 	assert namespace.get(mut fixture.vm,PropertyName.from_str('n'))!.number==1
+	assert bridge_namespace.get(mut fixture.vm,PropertyName.from_str('alias'))!.number==1
+	assert voidptr(bridge_namespace.get(mut fixture.vm,PropertyName.from_str('bag'))!.as_object())==voidptr(namespace)
 	assert !namespace.internal_set(mut fixture.vm,PropertyName.from_str('n'),Value.from_i32(9),Value.from_object(namespace))!
 	call(mut fixture.vm,a.export_value(mut fixture.vm,utf16_string('inc'))!,js_undefined(),[])!
 	assert namespace.get(mut fixture.vm,PropertyName.from_str('n'))!.number==2
+	assert bridge_namespace.get(mut fixture.vm,PropertyName.from_str('alias'))!.number==2
 	assert call(mut fixture.vm,entry.export_value(mut fixture.vm,utf16_string('current'))!,js_undefined(),[])!.number==4
 	assert voidptr(entry.export_value(mut fixture.vm,utf16_string('ns'))!.as_object())==voidptr(namespace)
 }
