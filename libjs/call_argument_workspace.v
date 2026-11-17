@@ -40,17 +40,37 @@ fn (mut stack InterpreterStack) release_call_argument_workspace(mut buffer CallA
 	for index in 0 .. count { buffer.values[index] = js_undefined() }
 }
 
-// Concrete callees copy before author code runs. Nested calls get independent
-// buffers; deep calls beyond the retained bound get fresh storage. Callee copies
-// may outlive the call; clear our private slots before making the buffer reusable.
+fn (frame &ExecutionContext) adjacent_call_registers(executable &Executable, operands []Operand) ?[]Value {
+	if frame.exposed || operands.len == 0 { return none }
+	first := operands[0].raw
+	end := u64(first) + u64(operands.len)
+	// A register run stays in operand tag zero and inside the live frame.
+	if end > 0x20000000 || end > executable.registers_and_locals_count
+		|| end > u64(frame.values.len) { return none }
+	values := unsafe { &Value(frame.values.data) }
+	for index, operand in operands {
+		slot := first + u32(index)
+		if operand.raw != slot || unsafe { values[slot].is_special_empty_value() } {
+			return none
+		}
+	}
+	return unsafe { borrow_argument_values(&values[first], operands.len) }
+}
+
+// Concrete callees copy before author code runs. An adjacent register run can
+// be read directly during that copy. Other layouts use independent scratch
+// buffers, which are cleared before a later call can reuse them.
 fn (mut vm VM) execute_reused_argument_call(instruction &Instruction, executable &Executable, target Value, receiver Value) !Value {
 	count := instruction.arguments.len
 	if count < 0 || count > 8 { return error('Call argument workspace count out of range') }
+	frame := vm.current_context()
+	if arguments := frame.adjacent_call_registers(executable, instruction.arguments) {
+		return call(mut vm, target, receiver, arguments)
+	}
 	mut stack := vm.interpreter_stack()
 	mut buffer := stack.acquire_call_argument_workspace()
 	defer { stack.release_call_argument_workspace(mut buffer, count) }
 	mut arguments := unsafe { borrow_argument_values(&buffer.values[0], count) }
-	frame := vm.current_context()
 	for index, operand in instruction.arguments {
 		value := frame.checked_dispatch_value(operand.slot(executable, frame.argument_count, false)!)!
 		if value.is_special_empty_value() { return vm.throw_error(.internal_error, 'Bytecode read an uninitialized argument') }

@@ -45,6 +45,27 @@ fn test_call_argument_workspaces_preserve_nested_calls_retained_views_and_owning
 	set_call_argument_workspaces_for_testing(true)
 }
 
+fn test_adjacent_call_arguments_borrow_only_initialized_live_registers() {
+	executable := &Executable{
+		registers_and_locals_count: 8
+		constants: [Value.from_i32(99)]
+	}
+	mut frame := ExecutionContext.create(8, executable.constants, 0)
+	frame.values[5] = Value.from_i32(11)
+	frame.values[6] = Value.from_i32(31)
+	frame.values[7] = js_special_empty_value()
+	regs := [Operand.register(5), Operand.register(6)]
+	arguments := frame.adjacent_call_registers(executable, regs) or { panic('Expected adjacent registers') }
+	assert arguments.data == unsafe { voidptr(&frame.values[5]) }
+	assert arguments[0].as_i32() == 11 && arguments[1].as_i32() == 31
+	assert frame.adjacent_call_registers(executable, [regs[1], regs[0]]) == none
+	assert frame.adjacent_call_registers(executable, [regs[1], Operand.register(7)]) == none
+	assert frame.adjacent_call_registers(executable, [Operand.constant(0)]) == none
+	assert frame.adjacent_call_registers(executable, [Operand.register(8)]) == none
+	frame.exposed = true
+	assert frame.adjacent_call_registers(executable, regs) == none
+}
+
 fn test_call_argument_workspace_pool_is_bounded_and_releases_references() {
 	mut vm := VM.create()
 	create_simple_execution_context(mut vm)
