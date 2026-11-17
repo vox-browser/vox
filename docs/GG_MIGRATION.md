@@ -3722,3 +3722,20 @@ also confirmed on production `8dbf43a2`; that production build contains an older
 shadow prototype and cannot validate the final glyph filter. Remaining Slashdot
 edge pixels, final production and live/catalog acceptance stay open. See the
 [glyph-mask audit](OPTIMIZED_SITES_PIXELS_2026_11_12.md#slashdot-per-glyph-shadow-masks-2026-11-17).
+
+
+### SVG background image viewport clips, 2026-11-17
+
+`2d65e5d97` retains the viewport in each supported fill's GPU clip stack, before
+coverage, instead of clipping the resolved pixels again in Quartz. Authored
+clips and local viewBox precision remain; analytic ovals keep their existing
+sampling policy. All 34 focused V functions execute. Frozen Slashdot improves
+12→10 pixels twice; BBC, Guardian and Verge remain zero twice. All 77 workloads/
+154 captures repeat with the 76 prior PNGs unchanged. The new logo region is
+exact and 9,720 outside-viewport samples pass; its complete compound control
+retains 18 unchanged interior edge differences. A rejected 16-pixel circle
+regression and complete earlier cohort remain in the evidence. Production
+`ad081765` confirms the previous shadow fix at 12 Slashdot pixels and the three
+news pages at zero; it lacks this viewport fix. Final production, remaining
+pixels and live/catalog acceptance stay open. See the
+[viewport audit](OPTIMIZED_SITES_PIXELS_2026_11_12.md#slashdot-svg-background-viewport-clipping-2026-11-17).

@@ -6892,3 +6892,77 @@ open. No instruction or timing credit is claimed. Raw accepted/rejected commands
 compiler-read witnesses, pins, images, actual exits, guards and SHA-verified
 cleanup inventory remain local under
 `docs/performance/slashdot-procedural-20261117/`.
+
+
+### Slashdot SVG background viewport clipping, 2026-11-17
+
+`2d65e5d97` retains a simple SVG background's image viewport in each path's
+GPU clip stack. The old extra Quartz clip ran after GPU readback and discarded
+valid antialiasing fringe at the logo's bottom edge. The new replay keeps local
+viewBox coordinates, authored clips and all path samples through one resolve.
+Its batch safety enclosure includes the fringe; every path still carries the
+actual viewport. Skia's [per-draw clip simplification](https://skia.googlesource.com/skia.git/+/e159882c6ce0d8e40bd05385ead7194ad6a7d734/src/gpu/graphite/ClipStack.cpp)
+explains why applying the same boundary again after rasterization differs.
+
+The path is bounded to positive axis-aligned transforms, supported fills and
+content already requiring the path renderer. Analytic ovals retain their prior
+sampling policy. Non-unit outer opacity, forced image darkening, strokes and unsupported SVG
+clip/mask/effect commands keep the existing replay. Limits remain 32,768
+paths, an 8,192-pixel dimension and four-megapixel image area. No native or shader
+source changes.
+
+The new public fixture retains the actual archived logo bytes in four background
+size/position variants, plus three compound overflow probes (default, hidden and
+visible SVG overflow). Four independent fresh Brave references agree byte for
+byte. The fixed reference is created before final validation. Its whole-image
+result improves **26→18 pixels**: all eight logo differences disappear; the
+remaining 18 interior rectangle-edge pixels, maximum channel error eight, are
+unchanged. This is not a whole-control exactness claim. The strict viewport
+property rejects both old captures at eight logo pixels and passes both fixed
+captures: the complete logo region is exact, and all **9,720 outside-viewport
+samples** remain background. Full-image zero-tolerance metrics stay separate.
+The earlier five-case diagnostic improves 11→three, leaving only its SVG img
+variant inexact; the new code handles backgrounds.
+
+Final C/O0 executable `f3121380` improves the complete archived Slashdot
+viewport **12→10 pixels twice**, with maximum channel error one. BBC, Guardian
+and Verge remain **zero twice**. Both full-uBO 1.75.0 request streams pass
+(47 decisions each, one blocked, zero mismatches/oracle disagreements).
+All **77 workloads/154 captures** repeat byte for byte; all **76 prior PNGs are
+unchanged**, including the restored zero-pixel promoted-circle control. That
+control also passes a separate focused pair. All **34 focused V functions**
+compile and execute, covering viewport/authored-clip coordinates, effects and
+stroke fallbacks, outer opacity/color policy, analytic sampling policy, and the
+existing SVG background/image/rounded-clip tests. The new strict viewport
+property passes both final captures; the shadow pixel test still passes with
+the PNG reader's unchanged default size. Compiler-read witnesses match the
+feature sources; executable/native-library, fixture/reference and all 24 runtime
+shader pins remain unchanged. No shader compiler errors occur. Final build,
+runtime, capture, oracle, driver and guard exits are zero.
+
+Rejected evidence remains intact. A root-layout diagnostic disproves the
+assumption that every path already carries an image viewport. A conservative
+whole-image containment attempt leaves all 11 diagnostic pixels unchanged.
+One compiled candidate is rejected after a shared renderer source disappears
+between source checks; its captures are diagnostic only. The first complete
+77-workload cohort repeats but regresses the previously exact promoted-circle
+control to **16 pixels twice**, while preserving the other 75 prior PNGs.
+The native sampling-policy guard corrects this; no references or tolerances
+are changed, and the complete cohort is rerun. That failing cohort and its
+source snapshot are retained separately.
+
+Production `b0c00814` repeats the preceding shadow fix's 12-pixel Slashdot result
+and matches all seven V feature inputs of its earlier accepted unformatted
+prototype. New production `ad081765` (receipt `20261117-032309-e9a0575f`,
+C/literal `-prod`/single unit) matches those seven files from committed
+`12924db35` exactly. It repeats **Slashdot 12** and **BBC, Guardian and Verge zero**, twice each. It lacks this new background replay, so
+it cannot validate the final 10-pixel candidate. The managed hook requests the
+coalesced production rebuild. Remaining Slashdot pixels, final production,
+live-site checks, historical source/replay browser-version qualification and
+catalog-wide acceptance stay open. No timing or instruction credit is claimed.
+
+Commands, actual exits, input/compiler-read witnesses, shaders, requests,
+accepted/rejected PNGs, memory guards and SHA-verified cleanup manifests remain
+local in `docs/performance/slashdot-edge-20261117/`. Image audits retain the
+preceding section's visible-viewport qualification, including offscreen lazy
+state differences and the textContent/innerText distinction.
