@@ -1,6 +1,7 @@
 """Diagnostic source-selection regression sources; held with automated tests."""
 import argparse
 import contextlib
+import copy
 import io
 from pathlib import Path
 import sys
@@ -56,6 +57,59 @@ class DiagnosticSourceTests(unittest.TestCase):
                 with self.assertRaises(SystemExit) as error:
                     self.invoke(source)
                 self.assertEqual(error.exception.code, 2)
+
+    def test_strict_reuse_requires_native_cache_diagnostics_and_libjs(self):
+        for extra in [[], ['--native-cache', '/tmp/cache'],
+                      ['--native-diagnostics'], ['--native-cache', '/tmp/cache',
+                       '--native-diagnostics', '--engine', 'javascriptcore']]:
+            with self.subTest(extra=extra), contextlib.redirect_stderr(io.StringIO()):
+                with self.assertRaises(SystemExit) as error:
+                    self.invoke(['--url', 'https://github.com/vlang/v',
+                                 '--require-native-reuse', *extra])
+                self.assertEqual(error.exception.code, 2)
+        result, arguments = self.invoke(['--url', 'https://github.com/vlang/v',
+                                        '--require-native-reuse', '--native-cache', '/tmp/cache',
+                                        '--native-diagnostics'])
+        self.assertEqual(result, 0)
+        self.assertTrue(arguments.require_native_reuse)
+
+
+class NativeReuseAuditTests(unittest.TestCase):
+    def receipt(self):
+        return dict(engine='libjs', native_context_initialized=False,
+                    native=dict(abi='pinned-abi', cache_hits=2, cache_misses=0,
+                                invalid_entries=0, pending_executables=0,
+                                compiled_executables=0, compiler_invocations=0, last_error=''),
+                    native_execution=dict(entries=3))
+
+    def test_both_capture_and_shutdown_must_prove_clean_native_execution(self):
+        self.assertEqual(diagnostic.native_reuse_errors(self.receipt(), self.receipt()), [])
+        for phase in [0, 1]:
+            for key, value in [('cache_misses', 1), ('pending_executables', 1),
+                               ('invalid_entries', 1), ('compiler_invocations', 1),
+                               ('compiled_executables', 1), ('cache_hits', 0),
+                               ('last_error', 'Native compiler exited 1: '), ('abi', '')]:
+                with self.subTest(phase=phase, key=key):
+                    receipts = [self.receipt(), self.receipt()]
+                    receipts[phase]['native'][key] = value
+                    self.assertTrue(diagnostic.native_reuse_errors(*receipts))
+
+    def test_missing_counters_and_zero_activity_cannot_pass(self):
+        for phase in [0, 1]:
+            variants = [None, {}, self.receipt(), self.receipt(), self.receipt()]
+            variants[2]['native_execution']['entries'] = 0
+            variants[3]['native_context_initialized'] = True
+            del variants[4]['native']['compiler_invocations']
+            for variant in variants:
+                with self.subTest(phase=phase, variant=variant):
+                    receipts = [self.receipt(), self.receipt()]
+                    receipts[phase] = copy.deepcopy(variant)
+                    self.assertTrue(diagnostic.native_reuse_errors(*receipts))
+
+    def test_shutdown_cannot_change_the_abi(self):
+        final = self.receipt()
+        final['native']['abi'] = 'another-abi'
+        self.assertTrue(diagnostic.native_reuse_errors(self.receipt(), final))
 
 
 if __name__ == '__main__':

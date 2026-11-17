@@ -46,6 +46,41 @@ def live_http_url(value):
     return value
 
 
+def native_reuse_errors(observed, final):
+    """Require execution and a clean cache both at capture and after shutdown."""
+    errors = []
+    for phase, receipt in [('capture', observed), ('shutdown', final)]:
+        if not isinstance(receipt, dict):
+            errors.append(f'{phase}: missing compiled-cache receipt')
+            continue
+        if receipt.get('engine') != 'libjs' or receipt.get('native_context_initialized') is not False:
+            errors.append(f'{phase}: LibJS without JavaScriptCore is unverified')
+        native = receipt.get('native')
+        activity = receipt.get('native_execution')
+        if not isinstance(native, dict) or not isinstance(activity, dict):
+            errors.append(f'{phase}: missing native cache or execution counters')
+            continue
+        if not native.get('abi'):
+            errors.append(f'{phase}: missing native ABI')
+        hits = native.get('cache_hits')
+        if type(hits) is not int or hits <= 0:
+            errors.append(f'{phase}: cache_hits must be positive')
+        entries = activity.get('entries')
+        if type(entries) is not int or entries <= 0:
+            errors.append(f'{phase}: native execution entries must be positive')
+        for key in ['cache_misses', 'invalid_entries', 'pending_executables',
+                    'compiled_executables', 'compiler_invocations']:
+            if type(native.get(key)) is not int or native[key] != 0:
+                errors.append(f'{phase}: {key} must be zero')
+        if native.get('last_error') != '':
+            errors.append(f'{phase}: native compiler/cache error is present or unverified')
+    if (isinstance(observed, dict) and isinstance(final, dict)
+            and isinstance(observed.get('native'), dict) and isinstance(final.get('native'), dict)
+            and observed['native'].get('abi') != final['native'].get('abi')):
+        errors.append('native ABI changed between capture and shutdown')
+    return errors
+
+
 def run(args):
     output, binary = args.output.resolve(), args.binary.resolve()
     archive = args.archive.resolve() if args.archive is not None else None
@@ -116,6 +151,7 @@ def run(args):
                'active-window functional diagnosis; whole-window PNG; no pixel/performance gate'),
         document_capture=args.document_capture, ready_selector=args.ready_selector,
         text_geometry=args.text_geometry, native_diagnostics=args.native_diagnostics,
+        require_native_reuse=args.require_native_reuse,
         render_device_scale=args.render_device_scale,
         date_epoch_ms=args.date_epoch_ms,
         observer_sha256=digest(Path(__file__)), sample_after=args.sample_after,
@@ -180,6 +216,11 @@ def run(args):
                 result['native_error_count'] = audit.get('native_reported_error_count', 0)
                 result['native_error_information'] = audit.get('native_reported_error_information', [])
             result['png_present'] = capture_png.is_file()
+            if args.require_native_reuse:
+                errors = native_reuse_errors(result.get('compiled_javascript_cache'),
+                                             result.get('compiled_javascript_cache_final'))
+                result['native_reuse'] = dict(passed=not errors, errors=errors,
+                    scope='Native cache/execution only; content, pixels and performance require separate checks')
     finally:
         if process is not None and process.poll() is None:
             process.kill()
@@ -191,9 +232,11 @@ def run(args):
         (output / 'summary.json').write_text(json.dumps(result, indent=2) + '\n')
     print(json.dumps({key: result.get(key) for key in
         ['pid', 'browser_exit', 'document', 'counts', 'png_present', 'changed_inputs',
-         'javascript_diagnostics']}, ensure_ascii=False))
+         'javascript_diagnostics', 'native_reuse']}, ensure_ascii=False))
     return 0 if (result.get('browser_exit') == 0 and result.get('png_present')
-                 and not result.get('changed_inputs')) else 1
+                 and not result.get('changed_inputs')
+                 and (not args.require_native_reuse
+                      or result.get('native_reuse', {}).get('passed') is True)) else 1
 
 
 def main():
@@ -217,6 +260,8 @@ def main():
                         help='Control syntax reuse independently of native execution for matched diagnostics')
     parser.add_argument('--native-diagnostics', action='store_true',
                         help='Enable native entry/fast/slow counters in a separate eligibility diagnostic')
+    parser.add_argument('--require-native-reuse', action='store_true',
+                        help='Fail unless capture and shutdown prove native execution with clean cache hits and no compilation')
     parser.add_argument('--text-geometry', action='store_true',
                         help='Record bounded retained text paint positions and font metrics')
     parser.add_argument('--render-device-scale', type=float,
@@ -235,6 +280,9 @@ def main():
     parser.add_argument('--ready-selector',
                         help='Wait for this selector before a document-only capture')
     args = parser.parse_args()
+    if args.require_native_reuse and (args.engine != 'libjs' or args.native_cache is None
+            or not args.native_diagnostics):
+        parser.error('--require-native-reuse requires LibJS, --native-cache and --native-diagnostics')
     if args.observe_ms <= 0 or args.timeout <= args.observe_ms / 1000:
         parser.error('Timeout must exceed the positive observation delay')
     if args.audit_interval_ms is not None and args.audit_interval_ms <= 0:
