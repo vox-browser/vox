@@ -372,7 +372,7 @@ def verify_release_inputs(checkout, build, commit, expected):
 
 
 def release(root, deploy, output=None, package_only=False, requested=None,
-            repository=REPOSITORY, host=WEBSITE_HOST, checkout=None, target='macos'):
+            repository=REPOSITORY, host=WEBSITE_HOST, checkout=None, target='macos', publish=True):
     """Bump, build the committed sources, package and publish; return the package path."""
     if target not in ('macos', 'linux', 'linux-arch'):
         raise ValueError('Unsupported release target: ' + target)
@@ -383,7 +383,7 @@ def release(root, deploy, output=None, package_only=False, requested=None,
         version = next_version(bundle_version(root / INFO_PLIST), released, requested)
         # Fail before committing or building when the release cannot be published.
         check_unreleased(repository, version)
-        if target == 'macos':
+        if target == 'macos' and publish:
             check_website(host)
         if package_only:
             # Repackage the release checkout's commit; its receipt is checked below.
@@ -409,6 +409,9 @@ def release(root, deploy, output=None, package_only=False, requested=None,
         if manifest['version'] != version:
             raise RuntimeError('The package contains Vox %s, not %s' % (manifest['version'], version))
         verify_release_inputs(checkout, manifest.get('source_build', {}), commit, expected)
+        if not publish:
+            print('Validated release package without publishing: %s' % artifact, flush=True)
+            return artifact
         minimum = (plistlib.loads((checkout / INFO_PLIST).read_bytes())['LSMinimumSystemVersion']
                    if target == 'macos' else None)
         publish_release(repository, version, artifact, minimum)

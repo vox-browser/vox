@@ -181,6 +181,14 @@ class ReleaseFlowTests(unittest.TestCase):
                                         'deploy', 'publish_release'])
         self.assertEqual(self.calls[-1][1][:3], (release.REPOSITORY, '0.1.1', deb))
 
+    def test_staging_builds_and_validates_committed_sources_without_publishing(self):
+        artifact = self.release(publish=False)
+        self.assertEqual(self.names(), ['check_unreleased', 'commit_version', 'prepare_checkout', 'deploy'])
+        self.assertTrue(artifact.is_file())
+        self.compiled['head'] = 'wrong commit'
+        with self.assertRaisesRegex(RuntimeError, 'did not compile the release commit'):
+            self.release(publish=False)
+
     def test_arch_release_uses_native_filename_manifest_and_skips_macos_website(self):
         def package(root, output, package_only):
             artifact = self.deploy(root, output, package_only)

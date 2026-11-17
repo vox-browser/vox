@@ -1,4 +1,4 @@
-name: Linux AMD64 release package
+name: Linux Debian release packages
 
 on:
   workflow_dispatch:
@@ -17,7 +17,15 @@ concurrency:
 
 jobs:
   package:
-    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - architecture: amd64
+            runner: ubuntu-24.04
+          - architecture: arm64
+            runner: ubuntu-24.04-arm
+    runs-on: ${{ matrix.runner }}
     timeout-minutes: 90
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
@@ -43,7 +51,8 @@ jobs:
           release_commit=$(git -C source rev-parse HEAD)
           docker run --rm --memory=12g --memory-swap=20g \
             --volume "$GITHUB_WORKSPACE:/workspace" \
-            --env RELEASE_COMMIT="$release_commit" debian:12-slim sh -eu -c '
+            --env RELEASE_COMMIT="$release_commit" \
+            --env RELEASE_ARCHITECTURE='${{ matrix.architecture }}' debian:12-slim sh -eu -c '
               apt-get update -qq
               apt-get install -y --no-install-recommends \
                 build-essential clang-19 lld-19 pkg-config git ca-certificates python3 dpkg-dev procps \
@@ -58,14 +67,14 @@ jobs:
               export CC=/usr/local/bin/vox-release-cc
               python3 -u /workspace/tooling/tools/build_linux_release_ci.py \
                 --source /workspace/source --toolchain /opt/vox-release-toolchain \
-                --expected-commit "$RELEASE_COMMIT"
+                --expected-commit "$RELEASE_COMMIT" --architecture "$RELEASE_ARCHITECTURE"
             '
 
       - name: Preserve package and validation evidence
         if: ${{ always() }}
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
-          name: vox-amd64-debian-${{ inputs.release_tag }}
+          name: vox-${{ matrix.architecture }}-debian-${{ inputs.release_tag }}
           path: |
             source/Build/deploy/
             source/Build/linux/production-build/

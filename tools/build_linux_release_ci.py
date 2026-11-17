@@ -90,17 +90,20 @@ def main():
     parser.add_argument('--toolchain', type=Path, required=True)
     parser.add_argument('--expected-commit', required=True)
     parser.add_argument('--distribution', choices=('debian', 'arch'), default='debian')
+    parser.add_argument('--architecture', choices=('amd64', 'arm64'), default='amd64')
     parser.add_argument('--compiler-no-prod', action='store_true',
                         help='speed up the compiler bootstrap in an emulated VM; the browser still uses -prod')
     args = parser.parse_args()
     if not re.fullmatch('[0-9a-f]{40}', args.expected_commit):
         parser.error('--expected-commit must be a full Git commit ID')
     source, toolchain = args.source.resolve(), args.toolchain.resolve()
-    architecture = 'x86_64' if args.distribution == 'arch' else 'amd64'
+    if args.distribution == 'arch' and args.architecture != 'amd64':
+        parser.error('Arch releases currently require --architecture amd64')
+    architecture = 'x86_64' if args.distribution == 'arch' else args.architecture
     host_architecture = subprocess.check_output(
         ['uname', '-m'] if args.distribution == 'arch' else ['dpkg', '--print-architecture'], text=True).strip()
     if host_architecture != architecture:
-        raise RuntimeError('This release job requires an x86_64 Linux environment')
+        raise RuntimeError('This release job requires a native %s Linux environment' % architecture)
     native_cc = os.environ.get('CC', 'clang')
     verify_c_compiler(native_cc)
     run(['git', 'config', '--global', '--add', 'safe.directory', source])
@@ -166,11 +169,11 @@ def main():
     run(package_command, cwd=source, env=environment)
     version = plistlib.loads((source / 'packaging/Info.plist').read_bytes())['CFBundleShortVersionString']
     package = output / ('vox-%s-1-x86_64.pkg.tar.zst' % version if args.distribution == 'arch'
-                        else 'Vox-%s-amd64.deb' % version)
+                        else 'Vox-%s-%s.deb' % (version, architecture))
     manifest = json.loads(package.with_name(package.name + '.json').read_text())
     verify_package_manifest(manifest, args.expected_commit, architecture)
     validate_package(source, reports, package, manifest, args.distribution, guarded, environment)
-    (output / 'amd64-toolchain.json').write_text(json.dumps(dict(
+    (output / (architecture + '-toolchain.json')).write_text(json.dumps(dict(
         source_commit=args.expected_commit, v_revision=V_REVISION, vc_revision=VC_REVISION,
         ui2_revision=UI2_REVISION, compiler_sha256=digest(compiler / 'v'),
         match_scope_adapter_sha256=digest(scope_adapter),

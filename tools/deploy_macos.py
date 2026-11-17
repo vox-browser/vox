@@ -232,6 +232,9 @@ def main():
                         'the next patch version')
     parser.add_argument('--no-publish', action='store_true',
                         help='only build and package; leave the version, GitHub and the website alone')
+    parser.add_argument('--stage-release', action='store_true',
+                        help='commit the release version and build its clean release checkout; '
+                             'leave GitHub and the website unchanged until all platform packages are ready')
     parser.add_argument('--website-only', action='store_true',
                         help='point vox-browser.org/version at the released version in Info.plist')
     parser.add_argument('--library-dir', type=Path,
@@ -257,18 +260,23 @@ def main():
         package = functools.partial(deploy, library_directory=args.library_dir.resolve())
     if args.website_only and linux:
         parser.error('--website-only requires macOS (the website tracks the macOS download)')
-    if args.website_only and (args.no_publish or args.package_only or args.output or args.version or args.library_dir or args.format):
+    if args.website_only and (args.no_publish or args.stage_release or args.package_only or args.output or args.version or args.library_dir or args.format):
         parser.error('--website-only takes no other options')
     if args.no_publish and args.version:
         parser.error('--version publishes a release; omit --no-publish')
+    if args.no_publish and args.stage_release:
+        parser.error('--stage-release and --no-publish are mutually exclusive')
     try:
         if args.website_only:
             release_macos.publish_website_only(ROOT)
         elif args.no_publish:
             package(output=args.output, package_only=args.package_only)
         else:
+            options = dict(target=target)
+            if args.stage_release:
+                options['publish'] = False
             release_macos.release(ROOT, package, args.output, args.package_only, args.version,
-                                  target=target)
+                                  **options)
     except subprocess.CalledProcessError as error:
         if error.returncode == 75:
             print('Deploy: the shared production build is busy; run again after it finishes, '

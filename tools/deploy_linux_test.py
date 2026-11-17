@@ -246,6 +246,15 @@ class DeployPlatformTests(unittest.TestCase):
             with patch.object(os, 'freedesktop_os_release', return_value=release, create=True):
                 self.assertEqual(deploy_macos.linux_package_format(), expected)
 
+    def test_staged_arch_release_builds_clean_sources_without_publishing(self):
+        import deploy_arch
+        import deploy_macos
+        with patch.object(deploy_arch, 'deploy') as package, \
+                patch.object(deploy_macos.release_macos, 'release') as release:
+            self.assertEqual(self.main('linux', ['--format', 'arch', '--stage-release', '--version', '0.1.5']), 0)
+        release.assert_called_once_with(deploy_macos.ROOT, package, None, False, '0.1.5',
+                                        target='linux-arch', publish=False)
+
 
 if __name__ == '__main__':
     unittest.main()
