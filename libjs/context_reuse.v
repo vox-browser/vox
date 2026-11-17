@@ -104,11 +104,14 @@ fn (mut stack InterpreterStack) allocate_reusable(registers u32, constants []Val
 	size := frame_size_in_bytes(count)
 	new_top := stack.top_ + size
 	if new_top > stack.limit { return none }
-	for index := stack.recycled.len - 1; index >= 0; index-- {
+	index := stack.find_recycled_context(count)
+	if index >= 0 {
 		mut context := stack.recycled[index]
-		if u64(context.values.len) != count { continue }
 		stack.recycled.delete(index)
 		stack.recycled_bytes -= context.recycled_context_bytes()
+		// Pool entries start with an exact-sized allocation. Recycling clears
+		// the used prefix, and private execution never writes into its spare tail.
+		unsafe { context.values.len = int(count) }
 		context.argument_count = arguments
 		if use_direct_context_initialization() && context.initialize_reused_values(registers, constants) {
 			$if test { if context_reuse_diagnostic_for_test { contexts_initialized_directly_for_test++ } }
@@ -141,6 +144,21 @@ fn (mut stack InterpreterStack) allocate_reusable(registers u32, constants []Val
 	return context
 }
 
+fn (stack &InterpreterStack) find_recycled_context(count u64) int {
+	mut best := -1
+	// Allow up to 25% spare capacity so small calls leave larger frames available.
+	mut best_capacity := count + count / 4 + 1
+	for index := stack.recycled.len - 1; index >= 0; index-- {
+		capacity := u64(stack.recycled[index].values.cap)
+		if capacity == count { return index }
+		if capacity > count && capacity < best_capacity {
+			best = index
+			best_capacity = capacity
+		}
+	}
+	return best
+}
+
 fn (mut stack InterpreterStack) recycle_context(mut context ExecutionContext) {
 	if !use_context_reuse() || !context.reusable { return }
 	if context.exposed {
@@ -151,11 +169,10 @@ fn (mut stack InterpreterStack) recycle_context(mut context ExecutionContext) {
 	}
 	// Suspensions own saved copies, and inline linkage is kept on the ordinary
 	// allocator. Do not retain an oversized buffer or an unbounded free list.
-	if context.async_execution != none || context.generator_execution != none || context.caller_frame != none
-		|| context.values.cap != context.values.len {
+	if context.async_execution != none || context.generator_execution != none || context.caller_frame != none {
 		return
 	}
-	size := frame_size_in_bytes(u64(context.values.len)) + if context.can_recycle_call_environment() { uint(sizeof(FunctionEnvironment)) } else { uint(0) }
+	size := frame_size_in_bytes(u64(context.values.cap)) + if context.can_recycle_call_environment() { uint(sizeof(FunctionEnvironment)) } else { uint(0) }
 	if size > reusable_context_bytes_limit { return }
 	// Admit new layouts when the pool is full instead of keeping a permanent
 	// set of cold layouts. Every evicted record is already cleared/unexposed.

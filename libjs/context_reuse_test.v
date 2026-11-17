@@ -52,6 +52,28 @@ fn test_public_allocations_and_argument_views_keep_independent_lifetimes() {
 	stack.deallocate(0)
 }
 
+fn test_reused_contexts_use_larger_backing_with_exact_logical_boundaries() {
+	mut stack := InterpreterStack.new()
+	mut wide := stack.allocate_reusable(6, [Value.from_i32(1)], 3) or { panic('wide') }
+	wide.set_argument(2, Value.from_i32(42))
+	frame := voidptr(wide)
+	backing := wide.values.data
+	stack.deallocate(0)
+	mut short := stack.allocate_reusable(5, [Value.from_i32(2)], 2) or { panic('short') }
+	assert voidptr(short) == frame && short.values.data == backing
+	assert short.values.len == 8 && short.values.cap == 10
+	assert stack.top() == frame_size_in_bytes(8) && stack.recycled_bytes == 0
+	assert short.values[5].number == 2 && short.argument(0).is_undefined()
+	short.set_argument(1, Value.from_i32(99))
+	stack.deallocate(0)
+	assert stack.recycled_bytes == frame_size_in_bytes(10)
+	again := stack.allocate_reusable(6, [Value.from_i32(3)], 3) or { panic('again') }
+	assert voidptr(again) == frame && again.values.data == backing && again.values.len == 10
+	assert again.values[6].number == 3
+	assert again.argument(0).is_undefined() && again.argument(2).is_undefined()
+	stack.deallocate(0)
+}
+
 fn test_native_callbacks_can_retain_public_contexts_and_value_views() {
 	mut vm := VM.create()
 	create_simple_execution_context(mut vm)

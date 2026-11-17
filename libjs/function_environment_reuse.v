@@ -69,7 +69,7 @@ fn (context &ExecutionContext) can_recycle_call_environment() bool {
 }
 
 fn (context &ExecutionContext) recycled_context_bytes() uint {
-	return frame_size_in_bytes(u64(context.values.len)) + if context.cached_call_environment != none { uint(sizeof(FunctionEnvironment)) } else { uint(0) }
+	return frame_size_in_bytes(u64(context.values.cap)) + if context.cached_call_environment != none { uint(sizeof(FunctionEnvironment)) } else { uint(0) }
 }
 
 fn (context &ExecutionContext) recycle_call_environment() ?&FunctionEnvironment {
