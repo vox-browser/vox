@@ -7296,6 +7296,14 @@ fn (mut app BrowserApp) draw_command(source_command &layout.PaintCommand, page_x
 							transform: command.transform
 						}
 					}
+					nested_commands := svg_background_paint_commands_for_replay(&image_data, replay)
+					if chromium_svg {
+						if commands := nested_commands {
+							if app.draw_chromium_svg_background_viewport(command, commands, replay, page_x, page_y, scroll_y) {
+								continue
+							}
+						}
+					}
 					// An SVG background is an image bounded by its own viewport,
 					// including when an unsized SVG child extends beyond that viewport.
 					$if macos {
@@ -7307,7 +7315,6 @@ fn (mut app BrowserApp) draw_command(source_command &layout.PaintCommand, page_x
 							C.native_add_image_viewport_clip(f32(clip_x), f32(clip_y), f32(replay.content_width()), f32(replay.content_height()), f32(m[0]), f32(m[1]), f32(m[2]), f32(m[3]), f32(m[4]), f32(m[5]), page_x, page_y, f32(scroll_y), f32(app.ctx.height))
 						}
 					}
-					nested_commands := svg_background_paint_commands_for_replay(&image_data, replay)
 					if commands := nested_commands {
 						app.draw_nested_svg_commands(commands, replay.transform,
 							if chromium_svg { painting.IntPoint{} } else { painting.IntPoint{destination.x, destination.y} },

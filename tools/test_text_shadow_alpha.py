@@ -9,11 +9,11 @@ import zlib
 from test_linux_browser import unfilter_png_row
 
 
-def png_rows(path):
+def png_rows(path, size=(400, 180)):
     data = path.read_bytes()
     assert data[:8] == b'\x89PNG\r\n\x1a\n'
     width, height, depth, color, _, _, interlace = struct.unpack('>IIBBBBB', data[16:29])
-    assert (width, height) == (400, 180)
+    assert (width, height) == size
     assert depth == 8 and color in (2, 6) and interlace == 0
     channels = 4 if color == 6 else 3
     offset, compressed = 8, bytearray()
