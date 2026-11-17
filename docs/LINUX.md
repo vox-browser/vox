@@ -84,9 +84,75 @@ Clang is the default C compiler. Set `CC=gcc` to build with GCC instead:
 CC=gcc sh build-prod-browser.sh
 ```
 
+## Arch Linux packages
+
+On Arch Linux x86-64, install the build dependencies, then configure V and UI2
+as described above:
+
+```sh
+sudo pacman -Syu --needed base-devel clang lld pkgconf git python libarchive zstd \
+    webkit2gtk-4.1 glib2 harfbuzz curl openssl libglvnd mesa libxi libxcursor \
+    libxrandr libx11 alsa-lib gc freetype2 fontconfig libwebp libpng \
+    libjpeg-turbo ca-certificates ttf-dejavu
+./deploy.vsh --no-publish
+sudo pacman -U ./Build/deploy/vox-VERSION-1-x86_64.pkg.tar.zst
+```
+
+Deployment detects Arch and Arch derivatives through `/etc/os-release`.
+`--format arch` selects it explicitly; `--format deb` retains Debian packaging.
+Build on Arch itself: selecting a format does not translate another
+distribution's executable or dependencies. Run deployment as a regular user;
+[makepkg](https://man.archlinux.org/man/makepkg.8.en) creates the native package
+from the staged production executable. Only installation needs root.
+
+The build uses the C backend, literal V `-prod`, and one C unit. Packaging
+verifies the build receipt and executable hash, strips the staged executable and
+optional AVIF helper, and resolves their direct ELF dependencies to installed
+Arch packages with `readelf`, `ldd` and `pacman`. Unresolved or unowned libraries
+stop packaging. The archive includes `/usr/bin/vox`, `/usr/lib/vox`, the desktop
+launcher, icon, license and third-party notices. The finished archive is
+extracted and its executable runs `--headless-smoke` under the 3 GiB memory guard.
+The adjacent `.pkg.tar.zst.json` receipt records source/package hashes, native
+dependencies, sizes and guard results. Staging and guard files are removed.
+
+`./deploy.vsh --no-publish --package-only` reuses a matching completed production
+build. `--output PATH.pkg.tar.zst` selects the output. Without `--no-publish`,
+deployment commits both version sources, builds the release commit in the
+established release checkout, and publishes the native package to GitHub.
+Arch releases leave the macOS website version pointer unchanged.
+
+The **Arch Linux x86_64 release package** workflow accepts a source commit/tag
+containing Arch deployment support. It builds in an Arch container on an x86-64
+runner with pinned V/UI2 revisions and the existing memory limits, installs the
+package using `pacman -U`, verifies the installed executable hash, and runs
+`tools/test_linux_browser.py`, including the Xvfb rendering and input checks.
+It preserves the package and validation receipts as workflow artifacts; it does
+not upload a GitHub release automatically.
+
+Focused packaging regressions run with:
+
+```sh
+python3 tools/deploy_arch_test.py
+```
+
+On Arch, this also builds, extracts and executes a real package containing a
+small ELF fixture. In a disposable VM without Vox installed, set
+`VOX_ARCH_TEST_INSTALL=1` to test `pacman -U`, installed-file integrity and
+execution through `/usr/bin/vox`; the test removes the fixture package afterwards.
+This fixture checks packaging, not browser rendering or startup behavior.
+
+Validation on 2026-11-17 used the isolated Lima `vox-arch-release` x86-64 VM,
+with sources mounted from the canonical checkout. All ten Arch packaging tests
+passed with `VOX_ARCH_TEST_INSTALL=1`: native archive creation/extraction,
+`pacman -U`, `pacman -Qkk` (20 files, none altered), installed-command execution,
+and removal all succeeded. The guest test guard exited 0 and sampled a peak of
+94,388,224 bytes under its 3 GiB limit. Local deployment/release and CI-driver
+regressions also passed. No full Vox browser was built or run on Arch during
+these fixture checks; the native browser CI workflow remains to be run.
+
 ## Debian packages
 
-Run the deploy script on Linux to build with the C backend and literal V `-prod`,
+Run the deploy script on Debian/Ubuntu to build with the C backend and literal V `-prod`,
 strip the executable and optional AVIF helper, and create a native `.deb`:
 
 ```sh
