@@ -30,6 +30,7 @@ mut:
 	function_body bool
 	generator_function bool
 	initialized_functions []u32
+	annex_b_function_names []Utf16String
 	compile_stack_ ?StackInfo
 }
 
@@ -642,11 +643,18 @@ fn (mut generator BytecodeGenerator) collect_vars(statement &Statement) ! {
 		scope := if kind.tag == .program { (kind.program_data or { return error('Missing program') }).scope } else { kind.scope or {
 				return error('Missing block')} }
 		for child in scope.children {
-			if kind.tag == .block && child.kind.tag == .function_declaration {
-				if !generator.strict { return generator.unsupported('Annex B block function declarations') }
+			if kind.tag == .block && child.function_declaration_for_labelled_item() != none {
 				continue
 			}
 			generator.collect_vars(&child)!
+		}
+		if kind.tag in [.program, .function_body] && !generator.strict {
+			generator.annex_b_function_names = scope.annexb_function_names.clone()
+			for name in scope.annexb_function_names {
+				if !generator.executable.global_bindings.any(it.name == name && !it.is_lexical) {
+					generator.executable.global_bindings << GlobalBinding{name: name.clone(), is_annex_b: true}
+				}
+			}
 		}
 	} else if kind.tag in [.if_stmt, .while_stmt, .do_while, .for_stmt, .for_in_of] {
 		if body := kind.body { generator.collect_vars(body)! }
@@ -662,7 +670,7 @@ fn (mut generator BytecodeGenerator) collect_vars(statement &Statement) ! {
 		data := kind.switch_data or { return error('Missing switch statement') }
 		for clause in data.cases {
 			for child in clause.scope.children {
-				if child.kind.tag != .function_declaration { generator.collect_vars(&child)! }
+				if child.function_declaration_for_labelled_item() == none { generator.collect_vars(&child)! }
 			}
 		}
 	} else if kind.tag==.try_stmt {
@@ -710,11 +718,11 @@ fn (mut generator BytecodeGenerator) clear_completion() {
 
 fn (mut generator BytecodeGenerator) initialize_functions(children []Statement) {
 	for child in children {
-		if child.kind.tag != .function_declaration { continue }
-		generator.initialized_functions << child.kind.function_id.id
-		name := child.kind.func_name or { continue }
+		declaration := child.function_declaration_for_labelled_item() or { continue }
+		generator.initialized_functions << declaration.kind.function_id.id
+		name := declaration.kind.func_name or { continue }
 		dst := generator.temporary()
-		generator.emit(Instruction{op: .new_function, dst: dst, identifier: child.kind.function_id.id})
+		generator.emit(Instruction{op: .new_function, dst: dst, identifier: declaration.kind.function_id.id})
 		generator.emit(Instruction{op: .set_variable, lhs: dst, identifier: generator.identifier(name.name), strict: generator.strict})
 	}
 }
@@ -740,6 +748,9 @@ fn (mut generator BytecodeGenerator) statement(mut vm VM, statement &Statement) 
 			if kind.function_id.id !in generator.initialized_functions {
 				return generator.unsupported('conditional function declarations')
 			}
+			if kind.is_hoisted && !generator.strict {
+				generator.copy_annex_b_function(statement)!
+			}
 		}
 		.return_stmt {
 			if !generator.function_body { return generator.unsupported('return outside function') }
@@ -759,9 +770,6 @@ fn (mut generator BytecodeGenerator) statement(mut vm VM, statement &Statement) 
 		}
 		.block {
 			scope := kind.scope or { return error('Missing block scope') }
-			if !generator.strict && scope.children.any(it.kind.tag == .function_declaration) {
-				return generator.unsupported('Annex B block function declarations')
-			}
 			if elide_empty_block(scope) {
 				// Keep budgeted boundary operations, without allocating an empty
 				// environment or changing the actual lexical-depth metadata.

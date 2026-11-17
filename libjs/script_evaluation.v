@@ -5,6 +5,7 @@ module libjs
 pub fn (script &Script) global_declaration_instantiation(mut vm VM, executable &Executable) ! {
 	mut environment := script.realm.global_environment_record()
 	for binding in executable.global_bindings {
+		if binding.is_annex_b { continue }
 		if environment.has_lexical_declaration(binding.name) {
 			return vm.throw_error_type(.syntax_error, .top_level_variable_already_declared,
 				binding.name.str())
@@ -30,6 +31,8 @@ pub fn (script &Script) global_declaration_instantiation(mut vm VM, executable &
 	}
 	for binding in executable.global_bindings {
 		if !binding.is_lexical {
+			if binding.is_annex_b && (environment.has_lexical_declaration(binding.name)
+				|| !environment.can_declare_global_function(binding.name)) { continue }
 			environment.create_global_var_binding(mut vm, binding.name, false)!
 		}
 	}

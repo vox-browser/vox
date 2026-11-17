@@ -132,6 +132,7 @@ pub mut:
 	identifier u32
 	target     u32
 	strict     bool
+	annex_b    bool
 	arguments  []Operand
 }
 
@@ -140,6 +141,7 @@ pub:
 	name        Utf16String
 	is_lexical  bool
 	is_constant bool
+	is_annex_b  bool
 }
 
 fn (instruction Instruction) input_count() int {

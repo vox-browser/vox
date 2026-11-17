@@ -27,7 +27,7 @@ $if test {
 fn elide_empty_block(scope &ScopeData) bool {
 	mut eligible := !scope.contains_direct_call_to_eval && scope.annexb_function_names.len == 0
 	for child in scope.children {
-		if child.kind.tag in [.class_declaration, .function_declaration]
+		if child.kind.tag == .class_declaration || child.function_declaration_for_labelled_item() != none
 			|| (child.kind.tag == .variable_declaration && child.kind.decl_kind != .var_kind) {
 			eligible = false
 			break

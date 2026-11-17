@@ -10,9 +10,6 @@ fn (mut generator BytecodeGenerator) switch_statement(mut vm VM, statement &Stat
 	discriminant := generator.expression(mut vm, &data.discriminant)!
 	mut children := []Statement{}
 	for clause in data.cases { children << clause.scope.children }
-	if !generator.strict && children.any(it.kind.tag == .function_declaration) {
-		return generator.unsupported('Annex B switch function declarations')
-	}
 	generator.emit(Instruction{op: .enter_scope})
 	generator.scope_depth++
 	generator.lexical_declarations(children, false)!
@@ -34,7 +31,17 @@ fn (mut generator BytecodeGenerator) switch_statement(mut vm VM, statement &Stat
 	for index, clause in data.cases {
 		if tests[index] != 0xffffffff { generator.patch(tests[index]) }
 		if index == default_case { generator.patch(no_match) }
-		for child in clause.scope.children { generator.statement(mut vm, &child)! }
+		for child in clause.scope.children {
+			if declaration := child.function_declaration_for_labelled_item() {
+				if !generator.strict && !declaration.kind.is_hoisted {
+					name := declaration.kind.func_name or { return error('Missing switch function name') }
+					if generator.annex_b_function_names.any(it == name.name) {
+						generator.copy_annex_b_function(declaration)!
+					}
+				}
+			}
+			generator.statement(mut vm, &child)!
+		}
 	}
 	context := generator.loops.pop()
 	if default_case < 0 { generator.patch(no_match) }

@@ -147,7 +147,7 @@ fn (mut cache NativeCodeCache) key(executable &Executable) string {
 	for instruction in executable.instructions {
 		for value in [u32(instruction.op), instruction.dst.raw, instruction.lhs.raw,
 			instruction.rhs.raw, instruction.src.raw, instruction.identifier, instruction.target,
-			u32(instruction.strict), u32(instruction.arguments.len)] {
+			u32(instruction.strict), u32(instruction.annex_b), u32(instruction.arguments.len)] {
 			native_key_u32(mut bytes, value)
 		}
 		for argument in instruction.arguments { native_key_u32(mut bytes, argument.raw) }

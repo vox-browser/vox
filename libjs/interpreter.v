@@ -397,6 +397,12 @@ fn (mut vm VM) execute_instruction(instruction &Instruction, executable &Executa
 				mut environment := frame.variable_environment or {
 					return error('Frame has no variable environment')
 				}
+				if instruction.annex_b && environment.is_global_environment() {
+					global := unsafe { &GlobalEnvironment(environment_identity(environment)) }
+					if global.has_lexical_declaration(name) || !global.can_declare_global_function(name) {
+						return next
+					}
+				}
 
 				environment.set_mutable_binding(mut vm, name, left, instruction.strict)!
 			} else {
