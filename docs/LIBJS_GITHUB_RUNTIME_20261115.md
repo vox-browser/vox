@@ -6498,3 +6498,28 @@ different cache. The live PNG, input pins, compiler arguments, exact commands,
 and guard reports are local in
 `docs/performance/libjs-github-browser-20261116/libjs-github-o2-20261117/live-and-pilot-receipts/`
 and its parent directory.
+
+### Live Go to file interaction, 2026-11-17
+
+On the same build, native mouse and keyboard events open Code and master,
+enter `ma` in the branch filter, dismiss the menus, then enter `v` in
+Go to file. The compiled LibJS run keeps all audited repository content and
+completes the nine input events. It records 3,422 cache hits and 1,173,973
+native entries, with no cache misses or compiler calls. GitHub reports that
+Web Workers are unavailable. Its synchronous file-search fallback then throws
+`InternalError: LibJS instruction budget exceeded`, and the final overlays
+still say “Loading”. The input value alone does not establish working search.
+
+The JavaScriptCore control delivers the same nine events and preserves
+repository content. It reports an earlier `showPopover` TypeError and fails
+the error-free interaction gate. Both Vox browsers exit zero and their
+controllers/guards exit one. The guards record 60.140548917 and 57.491421292
+seconds, with sampled peaks of 11,242,864,640 and 6,231,769,088 bytes,
+respectively. Executable and cache pins stay fixed.
+
+A fresh Brave CDP control on the live page enters `v`, observes the visible
+`v.mod` result, and dismisses the search with Escape. It has no recorded page
+exceptions. Browser/controller/guard exit zero, with 15.267308709 seconds
+and sampled aggregate peak 951,058,432 bytes. These are functional observations
+with different input instrumentation. Commands, input events, audit timelines,
+and error stacks are in the local `libjs-github-o2-20261117/interaction-receipts/`.
