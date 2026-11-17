@@ -25,19 +25,17 @@ fn (mut app BrowserApp) navigate_javascript_url(address url.URL) {
 	}
 	mut runtime := app.js_runtime
 	source := url.percent_decode(address.serialize(false)['javascript:'.len..]).bytestr()
-	value := runtime.evaluate_host_value(source) or {
+	completion := runtime.evaluate_javascript_url(source) or {
 		app.js_messages << 'JavaScript URL: ${err.msg()}'
 		runtime.mark_document_state_dirty()
 		app.poll_javascript_tasks()
 		return
 	}
-	// Read the completion without coercing objects or undefined to markup.
-	markup := if text := runtime.native_utf16_string(value) { ?string(text.str()) } else { none }
+	markup := completion.markup
 	retained_markup := markup or { '' }
 	defer {
 		$if gcboehm ? { C.GC_reachable_here(retained_markup.str) }
 	}
-	runtime.release_javascript_value(value)
 	generation := app.navigation_generation
 	current_url := app.document.url.serialize()
 	runtime.mark_document_state_dirty()
