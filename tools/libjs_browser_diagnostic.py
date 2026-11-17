@@ -100,7 +100,7 @@ def run(args):
                    if not k.startswith(('VOX_', 'LADYBIRD_', 'JSC_', 'GC_', 'DYLD_'))
                    and 'proxy' not in k.lower()}
     environment.update(VOX_PROFILE_DIR=str(output / 'profile'),
-        LADYBIRD_CACHE_DIR=str(http_cache), VOX_TEST_WINDOW='1',
+        LADYBIRD_CACHE_DIR=str(http_cache), VOX_COOKIE_FILE='', VOX_TEST_WINDOW='1',
         VOX_NATIVE_OBSERVATION_DELAY_MS=str(args.observe_ms),
         VOX_NATIVE_OBSERVATION_SCREENSHOT=str(capture_png),
         VOX_CAPTURE_AUDIT_CONFIG=str(output / 'audit-config.json'),
@@ -147,6 +147,7 @@ def run(args):
         http_cache=dict(directory=str(http_cache),
                         policy='empty private HTTP resource cache per process',
                         initial_entries=len(list(http_cache.iterdir()))),
+        imported_cookies='disabled',
         source=dict(mode='archive' if replay is not None else 'live', url=target_url,
                     response_policy='frozen response archive' if replay is not None
                     else 'current direct HTTP(S) responses; page bytes may change'),

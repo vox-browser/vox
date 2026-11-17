@@ -143,11 +143,13 @@ cache = Path(os.environ['LADYBIRD_CACHE_DIR'])
 before = sorted(p.name for p in cache.iterdir()) if cache.exists() else []
 cache.mkdir(parents=True, exist_ok=True)
 (cache / 'retained').write_text('private response')
-(output / 'cache-launch.json').write_text(json.dumps(dict(cache=str(cache), before=before)))
+(output / 'cache-launch.json').write_text(json.dumps(dict(cache=str(cache), before=before,
+    imported_cookie_file=os.environ.get('VOX_COOKIE_FILE', 'unset'))))
 Path(os.environ['VOX_NATIVE_OBSERVATION_SCREENSHOT']).write_bytes(b'fixture capture')
 ''')
             binary.chmod(0o755)
-            with patch.dict(os.environ, {'LADYBIRD_CACHE_DIR': str(shared)}), \
+            with patch.dict(os.environ, {'LADYBIRD_CACHE_DIR': str(shared),
+                                        'VOX_COOKIE_FILE': str(root / 'ambient-cookies.txt')}), \
                     patch.object(diagnostic, 'canonical_bundle_lease',
                                  return_value=contextlib.nullcontext()), \
                     patch.object(diagnostic, 'runtime_input_paths', return_value=[]), \
@@ -163,9 +165,11 @@ Path(os.environ['VOX_NATIVE_OBSERVATION_SCREENSHOT']).write_bytes(b'fixture capt
                         diagnostic.main()
                     self.assertEqual(result.exception.code, 0)
                     launch = json.loads((output / 'cache-launch.json').read_text())
-                    self.assertEqual(launch, dict(cache=str(output / 'http-cache'), before=[]))
+                    self.assertEqual(launch, dict(cache=str(output / 'http-cache'), before=[],
+                                                  imported_cookie_file=''))
                     summary = json.loads((output / 'summary.json').read_text())
                     self.assertEqual(summary['http_cache']['initial_entries'], 0)
+                    self.assertEqual(summary['imported_cookies'], 'disabled')
                     self.assertEqual((output / 'http-cache/retained').read_text(), 'private response')
             self.assertEqual((shared / 'retained').read_text(), 'ambient response')
             self.assertEqual(sorted(p.name for p in shared.iterdir()), ['retained'])
