@@ -6599,3 +6599,69 @@ input identities, elapsed 1.694646042 seconds and sampled peak 100,466,688
 bytes. The replays use a white backdrop. They rule out strip topology alone as
 the cause and leave the frozen whole-page comparison at two differing pixels.
 The raw tiles and draw hashes remain local in `metal-triangle-list-5204-r53`.
+
+### Optimized generated-code cache at the PNG endpoint, 2026-11-17
+
+Seven alternating pairs compare cached `-O2` native LibJS with interpreted
+LibJS on the same `d2f42448…abe6` production executable. Both use the frozen
+shared-script fixture, a fresh process/profile/HTTP cache, disabled imported
+cookies, a 1024×768 active document, a one-second readiness settle, and standard
+Vox raster settings. OS filesystem and shader caches are retained. Each launch
+validates the complete 33-row, 56-commit, latest-commit and README audit, all
+81 fulfilled modules, the three compatibility response hashes, and exact
+pixels against the pre-measurement standard-raster Vox reference
+`c14f8003edb4e87832ea4d89dd943cdf24a1a707c6aad04ebd88b3992220b4f0`.
+That reference differs from the retained Brave image at 59,867 pixels. The
+earlier two-pixel comparison used raster diagnostic options.
+
+The preparation retains 109 browser-emitted C units from a private staging
+visit. The optimized cache contains 28 completed units from ordinary Clang
+preparation and 81 units compiled separately with the same `-O2 -std=c11
+-fno-strict-aliasing -dynamiclib` flags. The separate linker output paths can
+shift Mach-O layout. Source hashes, cache keys, exported symbol indices and
+optimized library hashes verify for all 13,915 entries. The staging and
+parallel guards exit zero in 179.066663292 and 783.389549291 seconds, with
+sampled peaks of 9,788,620,800 and 3,841,015,808 bytes. After the optimized
+cache passes eligibility, the redundant serial seed is stopped. Its browser
+exit is -15 and its controller/guard exit is one, with 1,777.8847875 seconds
+and sampled peak 9,350,873,088 bytes retained in the receipt.
+
+The separate instrumented optimized reopen records 2,924 hits and 411,817
+native entries, with zero misses or compiler calls. It uses `/usr/bin/false`
+and matches the frozen reference. Its guard exits zero in 42.221999958 seconds
+at a sampled peak of 7,993,327,616 bytes. Native entry diagnostics are disabled
+for the measured pairs. Their capture and shutdown receipts record 2,948–2,949
+hits, with zero misses, compiler calls, new entries or pending/invalid entries.
+
+| Pair | Interpreted instructions | Cached native instructions |
+| --- | ---: | ---: |
+| 1 | 75,876,183,196 | 81,870,047,391 |
+| 2 | 76,143,070,911 | 81,863,921,836 |
+| 3 | 76,128,471,110 | 75,987,323,229 |
+| 4 | 68,446,894,133 | 83,511,866,222 |
+| 5 | 75,965,375,496 | 81,841,276,537 |
+| 6 | 70,145,197,213 | 74,325,290,481 |
+| 7 | 68,185,597,125 | 81,868,686,894 |
+
+The medians are **75,876,183,196** and **81,863,921,836** instructions,
+respectively. Cached native uses **7.89% more** by the ratio of medians.
+The median paired ratio is **1.07735**, the highest-native/lowest-interpreter
+ratio is **1.22477**, and native uses fewer instructions in one of seven pairs.
+These results establish the startup cost of the two modes on this fixture.
+They do not isolate the native cache lookup, script execution, or rendering.
+
+The measured endpoint is the cumulative exclusive Vox resource coalition
+through native PNG encoding. It includes startup and owned helper work,
+including aggregate exited tasks. PNG file writing, subsequent auditing,
+shutdown, GPU work and outside services are excluded. The stable live
+ownership audits pass and individual exited task identities remain unavailable.
+All 14 browsers, the controller and guard exit zero with fixed inputs and
+successful PID adoption. The 12-GiB guard records 134.354363083 seconds and
+8,169,291,776 sampled peak bytes. The 18-CPU host's before-trial one-minute
+loads range from 8.79 to 12.12, so no wall-time comparison is inferred.
+
+Raw counts, commands, fixture/browser/library identities, rejected pilots,
+PNG files and the optimized cache manifest are local in
+`docs/performance/libjs-github-browser-20261116/libjs-github-o2-20261117/`.
+The completed optimized cache remains private and reusable for this ABI.
+Cleanup archives 18 completed Build entries with 251 verified file identities.
