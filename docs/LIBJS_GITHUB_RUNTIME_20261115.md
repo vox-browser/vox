@@ -5690,3 +5690,83 @@ Raw commands, source proofs and rejected variants remain under
 `scratch-receipts/continued-20261117-r36` with idle-lock, SHA-256 and symlink
 verification. The archive moves 50 roots/158 files, exits zero in 0.166135208
 seconds and peaks at 393,216 sampled bytes. All automated suites remain held.
+
+
+### Per-sample rectangle replay; two pixels remain, 2026-11-17
+
+`796583540` adds `--samples-output OUTPUT.rgba32f` to the canonical
+`tools/replay_metal_rectangle.m`. For the retained Dawn solid-rectangle fragment
+ABI, a separate unblended RGBA32F attachment records each sample's primitive ID,
+source alpha/coverage, fragment-position Z and W. Pixel-major records contain
+four samples of four native float32 components; untouched samples contain -1.
+The option caps captures at 1,048,576 pixels, rejects unsupported fragment ABIs,
+preflights both output names and publishes without replacing evidence. Its
+receipt hashes the sample output and states its interpretation limits. Normal
+replay stays unchanged. Existing-sample preservation, output-alias rejection
+and duplicate-option regression sources are included but remain unrun under
+the continuing automated-test hold.
+
+The canonical tool compiles with `clang -Wall -Wextra` under a 3-GiB guard:
+exit zero, 0.408541625 seconds, sampled peak 93,143,040 bytes. Four retained-draw
+diagnostics also exit zero, 0.63794225 seconds, peak 64,438,272 bytes. Ordinary
+unified replay and instrumented unified replay both reproduce the complete
+`b552685a16a2889c0ef36d035660b2fe6f3b9ef8266a0ca8092f133c26df3722` BGRA tile.
+Instrumented split and eight-instance replays reproduce their earlier complete
+`51266e02fad22c8b2dcff03c55dfcaf3e4d1b09f52bfd7540aeb76f81dac9a06` and
+`bd5f7c2dde2265200a8c71a07d96d12ccfa5989cf9112ac4979c5bba64190169` tiles.
+Every captured resource, tool source, executable and output hash verifies.
+These are selected draws over white, omitting shadows, other passes and page
+publication; they provide no page-correctness or performance acceptance.
+
+At (646,190), the captured nine-instance draw records primitive IDs `[1,30,30,30]`
+with respective coverage `0.45864123 / 0.80638552 / 0.80638552 / 0.80638552`.
+Splitting the draw, or removing the independent underline instance, records
+`[1,1,1,1]` with coverage 0.45864123 throughout. Fragment-reported Z is exactly
+0.9996795654296875 and W is one in every record. At (648,188), the nine-instance
+case gives one low-coverage sample and three higher-coverage samples; the split
+case gives two of each. This isolates a sample-ownership difference while
+preserving the original complete BGRA controls. Reported fragment Z is not a
+readback of the depth attachment or the hardware depth-test result; the probe
+does not establish a safe replacement depth rule.
+
+A canonical-source candidate tries commuting a later compatible fractional thin
+fill into the disjoint rounded-decoration resolve. Every containing clip stays
+with the fill; every crossed leaf remains in place and must have bounded,
+disjoint ink. The 1,024-command/32-descriptor scan selects the actual late Code
+underline. The source-sealed single-C `-prod` build consumes 3,781 V sources and
+zero tests, exits zero in 279.14085175 seconds, sampled peak 8,946,008,064 bytes.
+Executable SHA-256 is
+`d6599ab0dddf4fcd81e4058cee9a21f323a96f11ef4b30a1605af5919bee919e`.
+The latest completed shared bundles were inspected first; they cannot exercise
+this new path, so no duplicate shared build was requested.
+
+| Candidate mode | PID | Strict pixels | Guard seconds / sampled peak bytes |
+| --- | ---: | ---: | --- |
+| Future fill enabled | 25141 | 2, unchanged | 39.236031292 / 8,141,864,960 |
+| Off control | 26894 | 2, unchanged | 38.208654667 / 8,095,662,080 |
+| Generalized read-only draw trace | 29829 | 2, unchanged | 38.485656958 / 8,012,365,824 |
+
+Native-tier inputs differ from the accepted executable, so these three runs
+explicitly disable the native cache. They receive no compiled-execution credit.
+Each preserves complete 33-row/56-commit/latest/README content, unchanged input
+hashes, PID adoption, no author/native errors and zero browser/controller/guard
+exits. The original Brave reference, frozen clock, viewport, density and zero
+tolerance remain unchanged. The first comparison incorrectly expects a final
+native-cache receipt while caching is disabled and exits one; a separate
+corrected image-only comparison retains that failure and passes the actual
+cache-disabled policy. The first read-only GPU filter observes no viewports
+because it hooks the singular setter; its images remain valid, but it supplies
+no draw-order attribution. A follow-up removes that filter and records the
+actual nine-instance draw: underline, Sponsor/Notifications/Fork/Star fills,
+then those four borders. This differs from Brave's captured whole-list order.
+Appending the underline alone therefore supplies no fix. The candidate is
+fully reverted; its source patch, sealed executable and all attempts remain.
+
+Raw commands, source proofs and per-sample records remain locally under
+`metal-samples-5204`, `metal-sample-tool-5204` and `rounded-future-5204`.
+Idle-lock, SHA-256 and symlink verification moves 35 completed roots/80 files to
+`scratch-receipts/continued-20261117-r37`, exit zero in 0.162606292 seconds,
+peak 540,672 sampled bytes. The retained compiled screenshot remains exactly
+`github-frozen-libjs-compiled-2px.png`; both Notifications corners, full parity,
+current live validation and matched compiled-revisit performance remain open.
+No renderer change is retained, and automated suites remain paused.

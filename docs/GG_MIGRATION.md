@@ -3812,3 +3812,19 @@ normally before those checks. Focused selection, clip and transactional-failure
 regression sources are committed but unrun under the test hold. The two
 Notifications corners, live parity and matched speed remain open. See the
 [two-pixel audit](LIBJS_GITHUB_RUNTIME_20261115.md#shared-image-and-overlapping-text-samples-2-differing-pixels-2026-11-17).
+
+
+### Per-sample rectangle diagnostics, 17 November 2026
+
+`796583540` adds optional per-sample primitive/coverage/fragment-position output
+to `tools/replay_metal_rectangle.m`. Four retained-draw diagnostics reproduce
+all complete control tile hashes, including normal replay. The split draw
+changes triangle ownership at equal fragment-reported depth. The diagnostic
+explicitly does not read the hardware depth-test result. Regression sources
+for preserving sample evidence and rejecting conflicting outputs remain unrun.
+
+A bounded late-fill batching candidate selects the Code underline but leaves
+both Notifications corner errors unchanged in on/off/full-page trace captures.
+It is reverted. These cache-disabled diagnostics provide no compiled-cache or
+performance credit; the accepted frozen native-cache result stays at two pixels.
+See [the runtime report](LIBJS_GITHUB_RUNTIME_20261115.md#per-sample-rectangle-replay-two-pixels-remain-2026-11-17).
