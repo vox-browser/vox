@@ -3,11 +3,20 @@ from pathlib import Path
 import subprocess
 import tempfile
 import unittest
+from unittest.mock import patch
 
 import build_linux_release_ci as release
 
 
 class ReleaseBuildTests(unittest.TestCase):
+    def test_native_packaging_uses_current_tools_with_the_pinned_source_and_environment(self):
+        source = Path('/clean/release')
+        environment = dict(V_BIN='/pinned/v', CC='/pinned/clang')
+        for distribution, module in [('arch', 'deploy_arch'), ('debian', 'deploy_linux')]:
+            with patch(module + '.deploy', return_value=Path('/release/package')) as deploy:
+                self.assertEqual(release.build_native_package(source, distribution, environment),
+                                 Path('/release/package'))
+                deploy.assert_called_once_with(root=source, build_environment=environment)
     def test_json2_field_adapter_preserves_the_generic_pointer_and_rejects_unknown_layouts(self):
         field = 'mut target := unsafe { field }\n\t\t\tdecoder.decode_value(mut target)!'
         source = 'module json2\n' + field + '\nmut target := unsafe { field }\n target.clear()\n'

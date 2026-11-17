@@ -74,6 +74,16 @@ def verify_package_manifest(manifest, expected_commit, architecture):
             raise RuntimeError('Release build does not match the clean requested commit')
 
 
+def build_native_package(source, distribution, environment):
+    # Build the pinned clean sources, using the current packaging tools rather
+    # than retaining packaging bugs from an older release tag.
+    if distribution == 'arch':
+        from deploy_arch import deploy
+    else:
+        from deploy_linux import deploy
+    return deploy(root=source, build_environment=environment)
+
+
 def validate_package(source, reports, package, manifest, distribution, guarded, environment,
                      installed_executable=Path('/usr/bin/vox')):
     package_digest = manifest['package_sha256' if distribution == 'arch' else 'deb_sha256']
@@ -179,14 +189,7 @@ def main():
         environment.pop(key, None)
     guarded([sys.executable, source / 'tools/test_linux_native.py', '--gc', 'boehm',
              'browsercookies/profile_test.v'], 'cookie-profile', environment=environment)
-    package_command = [sys.executable, source / 'tools/deploy_macos.py', '--no-publish']
-    if args.distribution == 'arch':
-        package_command += ['--format', 'arch']
-    elif '--format' in (source / 'tools/deploy_macos.py').read_text():
-        # Pin Debian when the release supports format selection, including tags
-        # predating the os-release detector fix. Older tags have only DEB support.
-        package_command += ['--format', 'deb']
-    run(package_command, cwd=source, env=environment)
+    build_native_package(source, args.distribution, environment)
     version = plistlib.loads((source / 'packaging/Info.plist').read_bytes())['CFBundleShortVersionString']
     package = output / ('vox-%s-1-x86_64.pkg.tar.zst' % version if args.distribution == 'arch'
                         else 'Vox-%s-%s.deb' % (version, architecture))

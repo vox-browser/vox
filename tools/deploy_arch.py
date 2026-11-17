@@ -28,6 +28,9 @@ def dependencies(root, binaries):
                 continue
             match = re.search(r'^\s*' + re.escape(library) + r'\s+=>\s+(/\S+)', linked, re.M)
             if not match:
+                # ldd prints the ELF interpreter as an absolute path without =>.
+                match = re.search(r'^\s*(/\S*/' + re.escape(library) + r')\s+\(', linked, re.M)
+            if not match:
                 raise RuntimeError('Unresolved runtime library: ' + library)
             owner = capture(['pacman', '-Qqo', Path(match[1]).resolve()], root)
             if not re.fullmatch(r'[a-zA-Z0-9@._+-]+', owner):
@@ -47,7 +50,7 @@ def pkgbuild(version, architecture, runtime_dependencies):
                ' '.join(map(shlex.quote, runtime_dependencies))))
 
 
-def deploy(root=ROOT, output=None, package_only=False):
+def deploy(root=ROOT, output=None, package_only=False, build_environment=None):
     version = packaging_version(root)
     if os.geteuid() == 0:
         raise RuntimeError('Run Arch deployment as a regular user; makepkg refuses root')
@@ -63,7 +66,7 @@ def deploy(root=ROOT, output=None, package_only=False):
     if (not output.name.endswith('.pkg.tar.zst')
             or output.is_relative_to((root / 'Build/linux').resolve())):
         raise RuntimeError('Choose a .pkg.tar.zst output path outside the canonical Linux build')
-    environment = production_environment(os.environ)
+    environment = production_environment(os.environ if build_environment is None else build_environment)
     if not package_only:
         run(['sh', root / 'tools/run_v_tool.sh', 'rebuild_browser', '--build',
              '--backend', 'c', '--prod', '--no-parallel-cc'], root, env=environment)

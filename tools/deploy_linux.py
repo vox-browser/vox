@@ -61,7 +61,7 @@ def dependencies(work, binaries):
     raise RuntimeError('dpkg-shlibdeps did not produce runtime dependencies')
 
 
-def deploy(root=ROOT, output=None, package_only=False):
+def deploy(root=ROOT, output=None, package_only=False, build_environment=None):
     version = packaging_version(root)
     # Check tools before starting an expensive production build.
     for tool in ('dpkg', 'dpkg-deb', 'dpkg-shlibdeps', 'strip'):
@@ -76,7 +76,7 @@ def deploy(root=ROOT, output=None, package_only=False):
     output = Path(output or root / 'Build/deploy' / ('Vox-%s-%s.deb' % (version, architecture))).resolve()
     if output.suffix.lower() != '.deb' or output.is_relative_to((root / 'Build/linux').resolve()):
         raise RuntimeError('Choose a .deb output path outside the canonical Linux build')
-    environment = production_environment(os.environ)
+    environment = production_environment(os.environ if build_environment is None else build_environment)
     if not package_only:
         run(['sh', root / 'tools/run_v_tool.sh', 'rebuild_browser', '--build',
              '--backend', 'c', '--prod', '--no-parallel-cc'], root, env=environment)

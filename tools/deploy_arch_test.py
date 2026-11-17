@@ -44,6 +44,7 @@ class ArchDeployTests(unittest.TestCase):
         self.environments = []
         self.package_identity = 'vox 0.1.4-1'
         self.corrupt_payload = False
+        self.needed = ['libc.so.6']
 
     def fake_run(self, command, root, **kwargs):
         command = list(map(str, command))
@@ -55,7 +56,7 @@ class ArchDeployTests(unittest.TestCase):
         if command[0] == 'strip':
             Path(command[-1]).write_bytes(b'stripped ELF')
         elif command[:2] == ['readelf', '--dynamic']:
-            stdout = ' 0x0000000000000001 (NEEDED) Shared library: [libc.so.6]\n'
+            stdout = ''.join(' 0x0000000000000001 (NEEDED) Shared library: [%s]\n' % lib for lib in self.needed)
         elif command[0] == 'ldd':
             stdout = self.linked
         elif command[:2] == ['pacman', '-Qqo']:
@@ -131,6 +132,13 @@ class ArchDeployTests(unittest.TestCase):
         with self.assertRaisesRegex(RuntimeError, 'Invalid runtime package owner'):
             self.package()
         self.assertFalse(self.output.exists())
+
+    def test_elf_interpreter_without_an_ldd_arrow_resolves_to_glibc(self):
+        self.needed.append('ld-linux-x86-64.so.2')
+        self.linked += '\t/lib64/ld-linux-x86-64.so.2 (0x456)\n'
+        self.package()
+        self.assertTrue(any(command[:2] == ['pacman', '-Qqo']
+                            and command[-1].endswith('ld-linux-x86-64.so.2') for command in self.commands))
 
     def test_failure_preserves_previous_output_and_cleans_all_staging(self):
         self.output.parent.mkdir()

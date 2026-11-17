@@ -90,5 +90,7 @@ jobs:
           path: |
             source/Build/deploy/
             source/Build/linux/production-build/
+            source/Build/linux/vox
+            source/Build/linux/libVoxAVIF.so
           if-no-files-found: error
           retention-days: 14
