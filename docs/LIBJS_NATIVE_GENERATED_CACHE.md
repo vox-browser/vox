@@ -352,3 +352,53 @@ The complete comparison, PNGs, hash receipts and build logs are local in
 `docs/performance/libjs-github-browser-20261116/libjs-github-key-after-20261118/`.
 The private optimized cache is retained. Cleanup archives 14 completed Build
 entries and verifies 235 file identities.
+
+## Fast instruction template emission, 2026-11-18
+
+A separate matched profile of `09e4dcb3…9e76` samples each mode during the
+frozen GitHub replay. Both captures match the same 1024×768 Vox reference,
+pass the repository audit, and fulfill all 81 modules. The native process
+records 2,948 cache hits with zero misses or compiler calls, 475,466 native
+entries, 13,038,591 fast steps and 4,974,251 slow steps. Both browser and
+sampler pairs exit zero. The 12-GiB guard adopts all four browser processes
+and exits zero at 7,990,001,664 sampled peak bytes over 24.465 seconds.
+
+The native trace attributes 297 of 659 main-thread samples to native
+invocation. Of those, 294 also contain a slow step. These inclusive stacks
+contain nested author and host calls. Separately, 13 main-thread samples
+contain C source emission. The profiles are instrumented observations.
+
+`df9fa709d` writes template spans and the slow-label and budget expansions
+directly to the existing C source builder. The previous formatter made two
+intermediate replacement strings for every fast instruction. A focused
+single-C `-prod -prealloc -gc none` VM probe verifies the actual emission path.
+Both versions produce the same 14,896 C bytes with SHA-256
+`e9afb9d4976643f8c259fdd108f4940551cc0c5665b495c5e38887af9e5350d5`, and
+the compiled `__TEXT,__text` bytes agree with equal-length install paths.
+An independent hash of the generated function bytes verifies both cache
+keys. The existing ABI fingerprint includes `native_tier.v`, so the cache
+partition changes with this edit. Each variant seeds its own partition and
+reopens with `/usr/bin/false`, one cache hit and zero misses or compiler
+calls. The reopen changes the script URL and result constant and produces
+the expected new result through a native entry.
+
+Seven alternating fresh-process formatter pairs each expand the same 35
+templates extracted from the retained C source 8,000 times. Both formatters
+produce the same expected 5,161 bytes per round. Median retired instructions
+are **670,736,247** for replacement and **372,407,578** for direct emission,
+**44.48% fewer** for the isolated formatter workload. All 14 processes and
+the 3-GiB guard exit zero. The guard records 0.850 seconds and 274,169,856
+sampled peak bytes. A standalone check covers 25 empty, adjacent, repeated,
+and partial marker cases and multiple decimal label widths. The focused
+regression source remains unrun under the automated-suite hold.
+
+The retained attempts include two failed formatter harnesses that used
+manual allocation scopes, an initial whole-library comparison that included
+path-dependent Mach-O install names, and a later comparison with different
+text segment placement. The successful checks compare exact C, then verify
+the code section with matched linker layout. The GitHub performance effect
+awaits a production build containing the change. The managed hook requested
+the build.
+
+Raw stacks, C source, exact counts and guard receipts stay local under
+`docs/performance/libjs-github-browser-20261116/libjs-github-native-profile-09e4-20261118/`.
