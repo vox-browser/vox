@@ -4,6 +4,22 @@ module libjs
 import os
 import rand
 
+fn test_map_bucket_collisions_preserve_distinct_keys_and_iterator_order() {
+	mut vm := VM.create()
+	create_simple_execution_context(mut vm)
+	assert map_eval(mut vm, '
+		var m=new Map(), tiny=Number.MIN_VALUE;
+		m.set(undefined,7).set(tiny,8);
+		var iterator=m.keys();
+		var first=iterator.next().value===undefined;
+		var tail=m.delete(undefined)&&m.size===1&&m.get(tiny)===8;
+		m.set(undefined,9);
+		var head=m.delete(undefined)&&m.get(tiny)===8;
+		var remaining=iterator.next().value===tiny&&iterator.next().done;
+		first&&tail&&head&&remaining&&m.delete(tiny)&&m.size===0;
+	')!.as_bool()
+}
+
 fn map_eval(mut vm VM, source string) !Value {
 	mut script := Script.parse(source, vm.realm(), 'map.js', unsafe { nil })!
 	return vm.run_with_limits(mut script, ExecutionLimits{ max_instructions: 100000 }) or {

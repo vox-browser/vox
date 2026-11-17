@@ -11,6 +11,7 @@ mut:
 	key Value
 	value Value
 	active bool = true
+	next int
 }
 
 @[heap]
@@ -20,7 +21,8 @@ pub:
 	is_map bool
 mut:
 	entries []KeyedCollectionEntry
-	buckets map[string][]int
+	// Heads and links are entry indices plus one. Zero ends the chain.
+	buckets map[u64]int
 	size u64
 }
 
@@ -35,51 +37,77 @@ mut:
 	done bool
 }
 
-fn keyed_collection_hash(value Value) string {
-	if value.is_number() {
-		if value.number == 0 { return 'n0' }
-		if math.is_nan(value.number) { return 'nan' }
-		return 'n${math.f64_bits(value.number)}'
-	}
+fn keyed_collection_hash(value Value) u64 {
 	return match value.tag {
-		.string { 's' + value.as_string().str() }
-		.bigint { 'b' + value.as_bigint().big_integer.str() }
-		.object, .symbol { '${value.tag}:${u64(value.cell)}' }
-		else { '${value.tag}:${value.number}' }
+		.int32, .double {
+			if value.number == 0 {
+				u64(0)
+			} else if math.is_nan(value.number) {
+				u64(0x7ff8000000000000)
+			} else {
+				math.f64_bits(value.number)
+			}
+		}
+		.string { binding_lookup_hash(value.as_string().utf16) }
+		.bigint {
+			magnitude, sign := value.as_bigint().big_integer.bytes()
+			mut hash := u64(14695981039346656037) ^ u64(sign)
+			for byte in magnitude {
+				hash = (hash ^ u64(byte)) * 1099511628211
+			}
+			hash
+		}
+		.boolean { u64(value.tag) + if value.number == 0 { u64(0) } else { u64(1) } }
+		.object, .symbol, .accessor { u64(value.cell) ^ u64(value.tag) }
+		else { u64(value.tag) }
 	}
+}
+
+fn (collection &KeyedCollection) find_link(key Value, head int) (int, int) {
+	mut previous := 0
+	mut link := head
+	for link != 0 {
+		entry := &collection.entries[link - 1]
+		if same_value_zero(entry.key, key) { return link, previous }
+		previous = link
+		link = entry.next
+	}
+	return 0, 0
 }
 
 fn (collection &KeyedCollection) find(key Value) int {
-	for index in collection.buckets[keyed_collection_hash(key)] {
-		entry := collection.entries[index]
-		if entry.active && same_value_zero(entry.key, key) { return index }
-	}
-	return -1
+	link, _ := collection.find_link(key, collection.buckets[keyed_collection_hash(key)])
+	return link - 1
 }
 
 fn (mut collection KeyedCollection) put(key Value, value Value) {
-	index := collection.find(key)
-	if index >= 0 {
-		collection.entries[index].value = value
+	hash := keyed_collection_hash(key)
+	head := collection.buckets[hash]
+	link, _ := collection.find_link(key, head)
+	if link != 0 {
+		collection.entries[link - 1].value = value
 		return
 	}
 	canonical_key := if key.is_number() && key.number == 0 { Value.from_i32(0) } else { key }
-	hash := keyed_collection_hash(canonical_key)
-	mut bucket := collection.buckets[hash].clone()
-	bucket << collection.entries.len
-	collection.buckets[hash] = bucket
-	collection.entries << KeyedCollectionEntry{ key: canonical_key, value: value }
+	collection.entries << KeyedCollectionEntry{key: canonical_key, value: value, next: head}
+	collection.buckets[hash] = collection.entries.len
 	collection.size++
 }
 
 fn (mut collection KeyedCollection) remove(key Value) bool {
-	index := collection.find(key)
-	if index < 0 { return false }
-	collection.entries[index] = KeyedCollectionEntry{ active: false }
-	collection.size--
 	hash := keyed_collection_hash(key)
-	remaining := collection.buckets[hash].filter(it != index)
-	if remaining.len == 0 { collection.buckets.delete(hash) } else { collection.buckets[hash] = remaining }
+	link, previous := collection.find_link(key, collection.buckets[hash])
+	if link == 0 { return false }
+	next := collection.entries[link - 1].next
+	if previous != 0 {
+		collection.entries[previous - 1].next = next
+	} else if next != 0 {
+		collection.buckets[hash] = next
+	} else {
+		collection.buckets.delete(hash)
+	}
+	collection.entries[link - 1] = KeyedCollectionEntry{active: false}
+	collection.size--
 	return true
 }
 
