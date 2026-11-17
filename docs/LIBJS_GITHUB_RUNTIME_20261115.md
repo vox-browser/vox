@@ -6665,3 +6665,69 @@ PNG files and the optimized cache manifest are local in
 `docs/performance/libjs-github-browser-20261116/libjs-github-o2-20261117/`.
 The completed optimized cache remains private and reusable for this ABI.
 Cleanup archives 18 completed Build entries with 251 verified file identities.
+
+### README navigation after the LibJS timing binding, 2026-11-18
+
+The published `d2f42448…` bundle reproduces the `clearResourceTimings()`
+failure after keyboard selection, with 3,169 native-cache hits and zero
+misses or compiler calls. The guarded run exits with browser zero and
+controller/guard one in 49.521418375 seconds at 11,275,534,336 sampled peak
+bytes. The newer production build was queued. The private C `-O0` executable
+`f8e37a149c12292672137b3040a76e0e1b82a4f0d145370110d830add6fe91ed`
+contains the exact `481a848d8` binding source. Its sealed build passes in
+250.94093425 seconds at 8,609,136,640 sampled peak bytes.
+
+The private executable reaches the native stack limit while hydrating with
+the host's 8,176 KiB soft limit. Running the same executable with the host's
+65,520 KiB hard limit as its process-local soft limit restores the complete
+33-row, 56-commit, latest-commit and README audit. The full 18,376-path file
+list remains difficult for the main-thread fallback. One cache-disabled
+attempt stays at “Loading” and a longer one reports a React instruction-budget
+error. Their browser processes exit zero but their acceptance controllers and
+guards exit one. The longer attempt peaks at 9,757,114,368 sampled bytes.
+
+Partial native preparation renders the exact `readme.md` results and shows
+`file-result-0` already selected. Arrow Down therefore selects `ci/README.md`.
+The subsequent Enter changes the URL and sends the file request past the old
+timing exception. That destination is unarchived and returns 404. Preparation
+records 385 compiled entries, 45,936 native entries and 2,936 pending entries
+before the 12-GiB guard stops it at 152.277659125 seconds and 12,888,457,216
+sampled peak bytes, child exit 137 and guard exit 125. There is no clean
+compiler-disabled reopen of this diagnostic ABI.
+
+For a narrower navigation check, the frozen search response is reduced to its
+existing root `README.md` entry. The root document and script bodies stay
+fixed. GitHub's reader requests JSON at the HTML document URL. The real JSON
+body, SHA-256 `9aa3d3b95f8bf65bef4e74fdb9ec28cf2c66bc095b3b8c6e6b953781cffa35bf`,
+is byte-identical with just `Accept: application/json` and with the additional
+router headers. Matching the actual request instead of requiring those extra
+headers advances the diagnostic build to the root README URL and title without
+the original timing exception. The initial file view says “Unable to load
+page”. The replay returns 404 for the tree list of the destination commit
+`eeee53a268261d8cd15a831b55704628ba710def`. The Command–Left action is delivered
+from that error page, and the terminal URL remains the file URL. A correct
+title and URL alone cannot verify file content or history return.
+
+The follow-up adds the destination's original 18,551-path response. All
+observed README-layout and file-tree requests then replay with status 200.
+React still renders “Unable to load page”. Its stack points to the
+`e.scrollTo(...)` call in `360-fd75fa985cb61e08.js` at line 2, column 473.
+The same run reports instruction-budget exhaustion in a separate callback.
+Browser PID 79719 exits zero and the controller/guard exit one, with
+60.748026917 seconds and 11,857,231,872 sampled peak bytes. The Back input now
+waits for the visible README heading anchor and therefore stays pending.
+
+`7bccf9906` exposes the existing native Element scroll offsets and scrolling
+methods. The Window and Element bindings share argument conversion and the
+native Promise bridge. The production type check exits zero in 38.215097666
+seconds at 6,506,283,008 sampled peak bytes. Focused regression sources cover
+native viewport offsets, conversion order, and rejected Promises. End-to-end
+file rendering and Back still require a bundle containing the Element
+binding. The diagnostic builds and replays provide no performance comparison
+or new pixel result. The automated-test hold remains in effect.
+
+Commands, source and binary hashes, exact process exits, original responses
+and snapshots are retained locally under `repository-navigation-5204-r61`
+and the three navigation replay archives. An isolated literal HTML capture
+also fails before script execution due to an `about:srcdoc` origin panic. It
+supplies no timing-binding evidence.
