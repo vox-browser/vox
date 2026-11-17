@@ -212,7 +212,7 @@ def deploy(root=ROOT, output=None, package_only=False, library_directory=None):
 
 def linux_package_format():
     try:
-        release = os.freedesktop_os_release()
+        release = platform.freedesktop_os_release()
     except OSError:
         return 'deb'
     families = (release.get('ID', '') + ' ' + release.get('ID_LIKE', '')).split()

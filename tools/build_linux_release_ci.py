@@ -166,6 +166,10 @@ def main():
     package_command = [sys.executable, source / 'tools/deploy_macos.py', '--no-publish']
     if args.distribution == 'arch':
         package_command += ['--format', 'arch']
+    elif '--format' in (source / 'tools/deploy_macos.py').read_text():
+        # Pin Debian when the release supports format selection, including tags
+        # predating the os-release detector fix. Older tags have only DEB support.
+        package_command += ['--format', 'deb']
     run(package_command, cwd=source, env=environment)
     version = plistlib.loads((source / 'packaging/Info.plist').read_bytes())['CFBundleShortVersionString']
     package = output / ('vox-%s-1-x86_64.pkg.tar.zst' % version if args.distribution == 'arch'

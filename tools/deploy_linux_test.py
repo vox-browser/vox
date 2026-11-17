@@ -243,8 +243,13 @@ class DeployPlatformTests(unittest.TestCase):
         for release, expected in ((dict(ID='arch'), 'arch'),
                                   (dict(ID='endeavouros', ID_LIKE='arch'), 'arch'),
                                   (dict(ID='debian'), 'deb'), (dict(ID='ubuntu', ID_LIKE='debian'), 'deb')):
-            with patch.object(os, 'freedesktop_os_release', return_value=release, create=True):
+            with patch.object(deploy_macos.platform, 'freedesktop_os_release', return_value=release):
                 self.assertEqual(deploy_macos.linux_package_format(), expected)
+
+    def test_distro_detection_defaults_to_debian_when_os_release_is_unavailable(self):
+        import deploy_macos
+        with patch.object(deploy_macos.platform, 'freedesktop_os_release', side_effect=OSError('no os-release')):
+            self.assertEqual(deploy_macos.linux_package_format(), 'deb')
 
     def test_staged_arch_release_builds_clean_sources_without_publishing(self):
         import deploy_arch
