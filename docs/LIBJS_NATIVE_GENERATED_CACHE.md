@@ -287,3 +287,68 @@ matched cohort. The managed hook requested the build.
 Stack samples, command and memory-guard receipts, raw instruction counts,
 and the single-function key proof remain local in
 `docs/performance/libjs-github-browser-20261116/libjs-github-key-profile-20261117/`.
+
+## Published bundle and frozen GitHub startup, 2026-11-18
+
+The managed worker published single-C-unit V `-prod` executable
+`fa6b0d0c8fe0943d518ba2d43b804d36c25b3dd5f70b2e3624e5df9bae2147c9`.
+Its sealed manifest includes the hashing change. Thirteen source hashes differ
+from `d2f42448…abe6`, including bytecode generation and runtime code. The
+published manifest and full source comparison remain in the local receipts.
+
+The staging visit emits 109 C units and 13,915 records for ABI
+`8de10f8472f7f5c449c9bb03b99b7bf95fd688e163bc4e32c0cdd6393711d1e7`.
+Independent SHA-256 recomputation using the exact shared prologue and
+symbol-normalized function bodies matches every key. Recomputing against the
+previous ABI for diagnosis gives 6,976 identical generated identities and 6,939
+changed identities. Clang compiles all 109 units with `-O2` in ten parallel
+worker slots. Library hashes verify and every record is written in the new
+partition. Staging and optimized compilation exit zero, with 139.245520042 and
+682.980682042 guarded seconds and peaks of 9,710,747,648 and 4,317,052,928 bytes.
+
+The separate instrumented reopen has 2,925 hits and 411,660 native entries.
+Capture and shutdown record zero misses and compiler calls with
+`/usr/bin/false`. It matches the retained standard-raster Vox image exactly.
+Browser, controller and guard exit zero, with 39.33335625 guarded seconds
+and sampled aggregate peak 7,855,472,640 bytes.
+
+Seven alternating pairs use the same frozen original-origin responses, the
+same three compatibility script hashes and one-second readiness settle as the
+previous cohort. Every run starts a fresh browser, profile and HTTP cache.
+Imported cookies stay disabled, OS caches are retained and the page's
+JavaScriptCore context stays uninitialized. The document is active at
+1024×768 with the standard Vox raster policy. Every image matches the same
+unchanged Vox reference. Complete content and all 81 fulfilled modules verify.
+Native entry diagnostics are disabled. Capture and shutdown record 2,948 or
+2,949 hits with zero misses, compiler calls, or pending/invalid entries.
+
+| Pair | Interpreted instructions | Cached native instructions |
+| --- | ---: | ---: |
+| 1 | 75,811,306,769 | 76,637,824,109 |
+| 2 | 76,059,102,036 | 78,164,185,575 |
+| 3 | 75,725,043,716 | 78,056,711,924 |
+| 4 | 76,148,129,942 | 76,598,156,220 |
+| 5 | 69,832,325,229 | 72,266,476,963 |
+| 6 | 74,361,605,121 | 78,752,376,178 |
+| 7 | 70,044,552,294 | 80,112,496,375 |
+
+The medians are **75,725,043,716** interpreted and **78,056,711,924** native
+instructions. The native overhead narrows from **7.89% to 3.08%** by the ratio
+of medians. Across builds the native median falls **4.65%** and the interpreted
+median falls **0.20%**. Native uses more instructions in all seven current
+pairs. The median paired ratio is 1.03079 and the highest-native/lowest-
+interpreter ratio is 1.14721. The cross-build change includes the other
+source changes and the separately compiled native libraries.
+
+The endpoint is cumulative exclusive Vox coalition work through native PNG
+encoding, before file writing, audit and shutdown. It includes aggregate
+exited helper work. GPU and outside-service instructions are excluded.
+Stable ownership, PID adoption and input pins pass for all 14 runs and all
+browser/controller/guard exits are zero. The unchanged 12-GiB guard records
+154.3151655 seconds and sampled aggregate peak 8,130,871,296 bytes. The
+host has 18 logical CPUs and before-trial one-minute loads of 8.98–13.87.
+
+The complete comparison, PNGs, hash receipts and build logs are local in
+`docs/performance/libjs-github-browser-20261116/libjs-github-key-after-20261118/`.
+The private optimized cache is retained. Cleanup archives 14 completed Build
+entries and verifies 235 file identities.
