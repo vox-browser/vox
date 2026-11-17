@@ -5597,3 +5597,96 @@ publication trace. Neither the captures nor reference are replaced. The archive
 moves 106 completed roots/298 files, verifies all member identities and exits
 zero in 0.165635541 seconds, sampled peak 851,968 bytes. Renderer source files
 are clean after both candidate reverts.
+
+
+### Shared image and overlapping text samples: 2 differing pixels, 2026-11-17
+
+`289da9c02` adds `VOX_DIAGNOSTIC_SHADOWED_PNG_TEXT=1` alongside the preceding
+P3/raster options. An eligible unblurred shadow, PNG and adjacent horizontal
+A8 text run share one GPU pass when the text's retained ink intersects the
+image. Resolving the image before blending the glyph loses its individual
+multisample background values. Keeping both until the final resolve corrects
+the avatar/text pixel at (54,339), from `(94,96,96)` to the reference's
+`(95,95,96)`, without changing any other pixel.
+
+Selection requires the same root owner, transform and viewport policy, opaque
+ordinary text, no separate text clips/effects, native capture density one,
+zoom one and zero scroll. The existing A8 path preserves face selection,
+smoothing, snapping and mask-cache behavior. Unsupported masks and native
+preflight failures retain original replay. The union crop is capped at
+2,048×256. The native backdrop preflight requires the active bitmap context,
+no transparency depth, valid RGBA storage and a compatible transform. Each
+owning tile receives the rebased glyph mask; the image clip is restored before
+drawing text outside the image. Source-image gamut conversion stays separate
+from destination-space shadow and glyph colors. Native failure consumes none
+of the commands.
+
+The focused sources cover selection exclusions, foreign owners, image-clip
+isolation for later text, and failure without destination mutation. They are
+formatted and committed but remain uncompiled/unrun under the test hold.
+The canonical-source single-C `-prod` build consumes 3,776 parsed V sources,
+zero tests, verifies all five implementation hashes, and exits zero in
+252.203100916 guard seconds with 9,001,254,912 sampled peak bytes. Executable
+SHA-256 is `e4b517d588c1443e579fa57d184a1d29437123197d7999cb041249cc7b512f8a`.
+The shared completed bundle was inspected first and cannot exercise this new
+path; the feature commit requests its normal coalesced production rebuild.
+
+The checkout's newer native-tier inputs produce ABI
+`94180d7aef29ad2a8c9bc758e1ad87846f4794a7d41896b8c65d242e7a4609ce`.
+The initial compiler-disabled on/off attempts cannot use the historical 812a
+partition: they have zero native hits/entries, 4,265 misses and a failed
+`/usr/bin/false` compiler attempt. The strict native comparison rejects them.
+Separately labelled interpreter-only image comparisons show 2/3 pixels,
+respectively, and receive no compiled-cache or performance credit.
+
+Ordinary `/usr/bin/clang` preparation of this executable's actual 9418 partition
+passes: 23,778 compiled executables, 186 compiler invocations, 81/81 modules,
+25,643 prepared functions, 19,533 queued functions, zero unsupported functions,
+zero pending/invalid entries and an empty error. Compilation totals
+1,853,759.456411 ms and loading 40,688.159622 ms. The guard exits zero in
+1,913.443418583 seconds, sampled peak 11,270,619,136 bytes; browser/controller
+also exit zero, full content is present and input identities stay fixed.
+
+Fresh compiler-disabled reopens then establish the retained result:
+
+| Same-binary mode | Pixels | Native hits / entries | Guard seconds / sampled peak bytes |
+| --- | ---: | --- | --- |
+| Shared image/text, PID 8964 | **2** | 4,245 / 473,486 | 38.446940375 / 8,455,307,264 |
+| Off, PID 10065 | 3, unchanged | 4,245 / 472,741 | 38.402479458 / 8,446,345,216 |
+
+Both runs use `/usr/bin/false` with the same reported 9418 ABI, positive native
+execution, zero misses/compiler invocations/compiled executables/pending/invalid
+entries and an empty error. Page JavaScriptCore stays uninitialized. Complete
+33-row/56-commit/latest/README content, native path markers, fixed input hashes,
+PID adoption and zero browser/controller/guard exits pass. The original Brave
+reference, frozen clock, 1,024×768 viewport, density-two layout/rendering,
+density-one capture, P3 normalization and zero/zero tolerance remain fixed.
+The candidate resolves exactly one pixel, with zero new or regressed mismatches.
+These instrumented functional captures and preparation timings provide no
+performance acceptance.
+
+The accepted frozen compiled screenshot is `github-frozen-libjs-compiled-2px.png`,
+SHA-256 `eabcdbc15a70621ea17d33745e5f039ff1ae4a4075b218308a3f050691a0476d`.
+Two Notifications corners remain: (648,188), error four, and (646,190), error
+ten. Maximum error is ten and RMSE 0.0091. The earlier three-pixel and direct-live
+screenshots remain separate. Full parity, current live validation and matched
+compiled-revisit speed remain open.
+
+A separate unshadowed-background batch experiment is rejected and reverted.
+Its build consumes zero tests and exits zero in 336.999326417 seconds, peak
+8,988,917,760 bytes. On/off captures both retain two pixels with no changes;
+the partially prepared cache yields 1,971/2,304 hits and 254,871/313,582 native
+entries, plus misses and failed disabled-compiler attempts, so they are
+ineligible for compiled-cache acceptance. Their guards exit zero in
+39.718093833/39.547725958 seconds, peak 8,405,893,120/8,447,311,872 bytes.
+One comparison correctly fails its nonunique index-14 marker assertion: after
+hydration Sponsor can gain a shadow, selecting the original shadow batch at
+that index. The corrected pixel-only comparison retains this limitation rather
+than attributing the result to the new path. The original failed assertion,
+source patch and every capture remain local.
+
+Raw commands, source proofs and rejected variants remain under
+`shadowed-png-text-5204` and `plain-rounded-batch-5204`; completed jobs move to
+`scratch-receipts/continued-20261117-r36` with idle-lock, SHA-256 and symlink
+verification. The archive moves 50 roots/158 files, exits zero in 0.166135208
+seconds and peaks at 393,216 sampled bytes. All automated suites remain held.

@@ -3796,3 +3796,19 @@ build consumes zero test sources; focused classification/mask regression sources
 remain unrun under the test hold. Four ineligible candidates remain in the
 receipts. Notifications corners, an avatar edge, live parity and matched speed
 remain open. See the [three-pixel audit](LIBJS_GITHUB_RUNTIME_20261115.md#disjoint-rounded-decorations-3-differing-pixels-2026-11-17).
+
+
+### Shadowed PNG and overlapping text samples, 17 November 2026
+
+`289da9c02` adds an opt-in shared pass for an adjacent supported A8 text run
+whose ink overlaps a shadowed PNG. The image, shadow and glyph keep their
+multisample values until one resolve; each tile receives the rebased mask,
+and the image's clip ends before the text draw. Unsupported text clips,
+effects, ownership and native destinations keep ordinary replay. Frozen GitHub
+improves **3→2** pixels, fixing the avatar/text edge without regressions.
+Same-binary compiler-disabled on/off runs each use 4,245 native hits, zero
+misses/compiler calls and complete content. The new actual ABI is prepared
+normally before those checks. Focused selection, clip and transactional-failure
+regression sources are committed but unrun under the test hold. The two
+Notifications corners, live parity and matched speed remain open. See the
+[two-pixel audit](LIBJS_GITHUB_RUNTIME_20261115.md#shared-image-and-overlapping-text-samples-2-differing-pixels-2026-11-17).
