@@ -6956,3 +6956,47 @@ binding is committed as `8e73206e2`. Live GitHub, the shared production build,
 generated-cache reuse with the binding, and exact Brave parity remain open.
 The guarded runs, source hashes, modified scheduler fixture and window
 artifacts are retained locally under `repository-navigation-5204-r67`.
+
+### LibJS document budget and exact GitHub return
+
+A private single-C `-O1` Boehm browser used one sealed executable,
+SHA-256 `6bcd9aeb49764ce5251732869e40bc8a42f531745682c93c985b728eee87044c`,
+for three fresh launches with empty profiles and HTTP caches. The build
+passed its guard in 204.868994917 seconds at 8,633,221,120 sampled peak
+bytes. A compile-time diagnostic switch selected the audited instruction
+ceiling per launch. The archived full file lists, router variants, unmodified
+author scripts, and native input were common across all three replays. Each
+launch used a 120-second observation window and reported unchanged pins.
+
+| Document ceiling | PID | Browser / controller / guard exit | Guard seconds | Sampled peak bytes | Observed result |
+| ---: | ---: | --- | ---: | ---: | --- |
+| 10,000,000 | 95931 | 0 / 1 / 1 | 121.439517167 | 3,487,154,176 | React exhausted the budget during initial hydration. The input gate stayed closed with zero commit links. |
+| 20,000,000 | 6766 | 0 / 0 / 0 | 122.278184083 | 5,736,267,776 | File search opened README.md, and toolbar Back restored the complete audited repository content. |
+| 30,000,000 | 93068 | 0 / 0 / 0 | 122.018696 | 5,633,376,256 | The same file search and Back sequence passed. |
+
+At both higher ceilings, the initial and returned snapshots match the Brave
+control on all 33 row identities and texts, 56 commit links, the latest
+commit, and the exact 20,773-character README text. The file destination
+reaches readiness before Back. JavaScriptCore remains uninitialized and the
+only author diagnostic is GitHub's Worker fallback warning. The 10-million
+trial failed earlier than the previous attempt that exhausted the budget
+during Back.
+
+A separate native-click fixture runs a synchronous listener that increments
+a counter one million times. The 10-million ceiling leaves the marker at
+`ready` and reports budget exhaustion. At 20 million the marker reaches
+`1000000` with no script errors. Both browsers exit zero. The failing and
+passing controller and 3 GiB guard exits are one and zero respectively, at
+264,175,616 and 264,503,296 sampled peak bytes.
+
+Commit `ceec95fd5` uses 20 million, the lowest passing ceiling of the three.
+It applies to document execution entries and their nested callbacks. Standalone
+LibJS entries retain a one-million ceiling. The production type check exits
+zero in 69.6198835 seconds at 7,103,905,792 sampled peak bytes. The updated
+regression sources remain unrun under the automated-test hold.
+
+The frozen navigation result covers the private interpreter build. Shared
+production validation, generated-cache reuse at the new ceiling, live
+navigation, Worker support, and pixel parity remain open. The diagnostic
+patch, commands, input fingerprints, audits, and guard receipts remain
+local under `repository-navigation-5204-r68`.
