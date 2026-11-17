@@ -7,6 +7,7 @@ import re
 import shlex
 import shutil
 import subprocess
+import sys
 import tempfile
 
 from browser_bundle_lease import publication_lease
@@ -40,7 +41,9 @@ def verified_build(root, executable):
 
 
 def guarded(command, root, work, name, limit_gib=12, **kwargs):
-    run(['sh', root / 'tools/run_v_tool.sh', 'run_memory_bounded',
+    # Packaging an existing executable also works in a fresh native container
+    # without a V compiler. Keep the same process-tree RSS guard and limits.
+    run([sys.executable, root / 'tools/run_memory_bounded.py',
          '--lock', work / (name + '.lock'), '--report', work / (name + '.json'),
          '--limit-gib', str(limit_gib), '--', *command], root, **kwargs)
     return json.loads((work / (name + '.json')).read_text())

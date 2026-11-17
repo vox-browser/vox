@@ -102,6 +102,10 @@ class LinuxDeployTests(unittest.TestCase):
         self.assertEqual(manifest['source_binaries_sha256'], before)
         self.assertEqual(manifest['source_build'], self.receipt)
         self.assertEqual(manifest['deb_sha256'], deploy.sha256(self.output))
+        guarded_commands = [command for command in self.commands if '--report' in command]
+        self.assertEqual(len(guarded_commands), 3)
+        for command in guarded_commands:
+            self.assertEqual(command[:2], [sys.executable, str(self.root / 'tools/run_memory_bounded.py')])
         self.assertLess(manifest['sizes']['vox']['stripped'], manifest['sizes']['vox']['before'])
         self.assertEqual(set(manifest['memory_reports']), {'create', 'extract', 'smoke'})
         self.assertFalse(any('rebuild_browser' in command for command in self.commands))
