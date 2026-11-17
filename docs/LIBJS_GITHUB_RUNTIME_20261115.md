@@ -7122,3 +7122,31 @@ unrun under the automated-test hold.
 Browser validation awaits the shared production build. Commands, executable
 identities, source pins and guard receipts remain local under
 `repository-navigation-5204-r71`.
+
+### LibJS closure source spans
+
+The published GitHub trace tags 304 MiB of virtual mapping capacity to
+UTF-16 copies made during closure creation. Commit `bc35d273e` stores an
+exact view of each closure's source. The callable retains the immutable
+source through its executable, and `Function.prototype.toString` creates
+an owned primitive from the view.
+
+Three alternating fresh-process pairs use single-C prealloc builds.
+The 492 recorded source and fixture pins differ only in
+`libjs/ecmascript_function.v`. Every launch creates 2,000 closures with
+a body containing 6,000 ASCII characters and non-ASCII text. All control
+launches grow the caller arena by 29,980,505 bytes. All candidate launches
+grow it by 5,660,521 bytes, **81.1% less**. The manual checks verify exact
+source text across astral UTF-16 offsets, subsequent script evaluation,
+and source modules. A Boehm launch also verifies the text after explicitly
+collecting. All runs and guards exit zero. The byte counts describe the
+standalone closure-creation workload.
+
+A fresh native-cache reopen uses `/usr/bin/false` and verifies the same
+closure behavior and exact source text. Its audit records three cache
+hits, 2,002 native entries, 18,017 helper steps, and zero misses, compiler
+calls, pending or invalid entries. The seed compiles three executables
+in one compiler call. The production type check passes in 38.812599375
+seconds at 7,098,286,080 sampled peak bytes. The source-sharing regression
+remains unrun under the automated-test hold. Commands, pins and receipts
+remain local under `repository-navigation-5204-r72`.
