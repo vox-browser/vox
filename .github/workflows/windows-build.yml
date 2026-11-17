@@ -136,4 +136,4 @@ jobs:
         run: '"$RUNNER_TEMP/v/v" -b c -memory-limit 10G run tools/build_windows_browser.vsh --help'
 
       - name: Show x.imp build flows
-        run: '"$RUNNER_TEMP/v/v" run build_browser.vsh --help'
+        run: '"$RUNNER_TEMP/v/v" -b c -memory-limit 10G run build_browser.vsh --help'
