@@ -5,6 +5,15 @@ Audited: 2026-10-02.
 The opt-in browser backend and its 2026-11-14 validation are documented in
 [`docs/LIBJS_ENGINE.md`](../docs/LIBJS_ENGINE.md). JavaScriptCore remains the default.
 
+The [November 17 Old Reddit fixes](../docs/LIBJS_OLD_REDDIT.md) add Annex B block
+functions, independent `for (let)` iteration bindings, native inline handlers and
+`HTMLElement.click()`, owning-Window geometry and LibJS `javascript:` completions.
+Original Reddit scripts now pass the representative comment/menu probe, including
+a compiler-disabled native-cache reopen. Focused regressions pass with default
+GC and `-gc none`, and the exact upstream AST corpus passes all 100 cases.
+Updated production-browser native-input validation remains pending; broad-suite
+resource/test failures and unverified site behavior are recorded in that report.
+
 The [GitHub continuation](../docs/LIBJS_GITHUB.md) adds bounded deeper browser
 parsing, iterative conditional alternatives and synchronous module graphs.
 Graph loading supports asynchronous host completion; linking/evaluation preserve
@@ -3129,7 +3138,8 @@ unverified. See the
 November 16 runtime continuation: cached native execution stops at await/yield
 suspensions, exhausted entries preserve their first error/trace, and strict block
 functions initialize in their actual lexical environment. Sloppy Annex B block
-functions remain explicitly unsupported. Native shadow attachment, User Timing
+functions were explicitly unsupported at this checkpoint; the November 17
+continuation above implements them. Native shadow attachment, User Timing
 measures/ordinary detail cloning, Crypto random UUID/integer views and CustomEvent
 bindings are partial API slices. Native ParentNode collections, HTMLElement
 datasets with WebIDL named setters/deleters, Document.getElementsByName, the

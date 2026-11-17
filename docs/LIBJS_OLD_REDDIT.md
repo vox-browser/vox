@@ -1,6 +1,87 @@
 # Old Reddit LibJS verification — 2026-11-17
 
-Old Reddit does **not** pass the LibJS functionality check. Native compiled-cache
+## Compatibility fixes
+
+The original Reddit-script diagnostic now passes comment collapse/expansion and
+dropdown opening/closing with LibJS, including a fresh-process native-cache
+reopen with the compiler disabled. A live native-input check of the updated
+production browser remains pending; the earlier live failure below remains the
+baseline evidence.
+
+The implementation adds:
+
+* Annex B block functions, including declaration-time copies into the outer var
+  environment, unexecuted branches, lexical/parameter conflicts, labelled and
+  switch declarations, and native-cache identity for the copy flag (`2b7eadb`).
+* Independent `for (let …)` iteration environments, preserving closures created
+  by initializers, bodies, `continue` paths and updates (`d5b8a312f`).
+* Lazy native inline-handler compilation against the actual element/form/
+  Document/global environment chain, native callback routing, handler getters
+  and replacement, teardown, and `HTMLElement.click()` (`1a0eabcec`).
+* Native owning-Window viewport and Screen geometry, eliminating Reddit's
+  startup analytics exception (`0c8471e1b`).
+* LibJS `javascript:` completion handling, preserving the document for
+  `javascript:void(0)` and other non-string results without invoking object
+  coercion hooks (`e821c4ea0`).
+
+The focused block-function, loop-environment, inline-handler, geometry and URL
+checks pass with both ordinary GC and `-gc none`. Native-cache tests include
+fresh realms/documents and compiler-disabled reopens. The unchanged upstream AST
+comparison matches all 100 cases. Full-package attempts did not pass: parallel
+and combined compilation exceeded the memory guard, other builds exhausted disk,
+and one batch exposed a date-test helper defined in another file. An exploratory
+date-locale check also failed an assertion; its test-only edit was reverted.
+Attempts and interruptions are retained. These focused results do not establish
+complete LibJS or browser conformance.
+
+The source-built diagnostic uses `tools/libjs_reddit.v`, the same original
+response fixture and the native browser's DOM/module/performance bindings.
+It has no JavaScriptCore context, window, layout or paint. All four real Reddit
+handlers are functions; the added representative DOM probe reports correct
+collapsed/expanded classes, `[+]` / `[–]` labels, and menu `inuse` transitions.
+No LibJS initialization/callback exceptions remain in this probe. The incomplete offline
+fixture still produces the same badge-fetch console message as the JSC control.
+
+| Final native-cache snapshot | First process | Compiler-disabled fresh process |
+| --- | ---: | ---: |
+| Hits | 0 | 1,364 |
+| Misses | 1,365 | 0 |
+| Compiled executables | 1,364 | 0 |
+| Compiler invocations | 11 | 0 |
+| Invalid / pending entries | 0 / 0 | 0 / 0 |
+| Native execution entries | 0 | 13,758 |
+
+The pending-key map deduplicates identical missed executables, so first-visit
+misses need not equal the final compiled count. Both runs preserve the successful
+interaction probe and exit zero under the 3 GiB process-tree guard. The reopen
+uses `/usr/bin/false`; this establishes native code reuse and functional behavior,
+not a throughput or page-load performance claim. The diagnostic executable is
+an optimized C build (`-cflags -O1`), separate from the production browser.
+Its temporary executable was removed before its hash could be collected;
+build/run commands, exits, fixture hashes and compiled-cache artifacts remain
+available. This evidence does not establish an installed-browser result.
+
+The latest completed production executable still predates these fixes. Managed
+rebuilds first failed on the HTTP adapter below, then rejected a changed shared
+Chromium source input. A later freeze rejected this session's diagnostic-tool
+formatting change; that tool is now committed and stable. The managed rebuild
+remains requested; no duplicate manual build was queued. A completed bundle containing the fixes is needed before the
+live native mouse check can establish collapse/expansion and menu behavior.
+Voting, posting, additional-comment loading, broader network APIs and full-page
+rendering parity are outside the verified result.
+
+An updated V checkout already supplies HTTP/2 admission locking. Browser
+compatibility staging now recognizes and reuses that exact checked gate instead
+of rejecting its changed field layout (`af3c8d919`). The real V preparer and its
+V/Python regression checks pass. This removes the observed production rebuild
+blocker while preserving the existing TLS wake/timeout adapters.
+
+Current local fix evidence is under `docs/performance/libjs-old-reddit-fix-20261117/`;
+its original-response fixtures remain in the cache location described below.
+
+## Original failing production baseline
+
+At the original production baseline, Old Reddit does **not** pass the LibJS functionality check. Native compiled-cache
 reuse works, but Reddit's initialization bundles fail before their handlers are
 installed. Disabling the cache produces the same failures.
 
@@ -20,13 +101,13 @@ Both `reddit-init.en.Jre8Hvy5gDE.js` and `reddit.en.nBLA_HYpm1I.js` fail with:
 Annex B block function declarations is not translated yet
 ```
 
-The explicit rejection remains in `libjs/bytecode_generator.v` in `collect_vars`
-and block-statement generation. Reddit's sloppy-mode block functions are not
-supported by the current bytecode generator. Subsequent scripts report missing
+The baseline rejection was in `libjs/bytecode_generator.v` in `collect_vars`
+and block-statement generation. Reddit's sloppy-mode block functions were not
+supported by that bytecode generator. Subsequent scripts report missing
 `r` and `$`. The server-rendered page reaching `ready=complete` and the browser
 exiting successfully do not establish successful JavaScript initialization.
 
-## First visit and compiled reopen
+### First visit and compiled reopen
 
 Fresh processes used the same private native-cache directory. The reopen set
 `VOX_LIBJS_NATIVE_COMPILER=/usr/bin/false` and enabled separate native execution
@@ -47,7 +128,7 @@ The cache successfully executes supported code from the other scripts on reopen.
 It cannot supply semantics rejected before bytecode generation. A separate
 `VOX_LIBJS_NATIVE_CACHE=0` run has the same eight initialization errors.
 
-## Comment and menu probe
+### Comment and menu probe
 
 A separate fixture adds representative nested-comment and dropdown markup plus
 a diagnostic script to the saved HTML, leaving all original author script
@@ -67,7 +148,7 @@ validates the representative markup against Reddit's actual handlers; it does
 not validate LibJS or a live discussion. JSC also reports a badge-indicator fetch
 failure against the incomplete offline resource set.
 
-## Live discussion and native mouse input
+### Live discussion and native mouse input
 
 Fresh Vox processes with the existing imported read-only cookie jar load
 `https://old.reddit.com/r/UkraineRussiaReport/comments/1xls5ou/ua_pov_ukraine_hits_10_of_russias_oil_refining/`
@@ -94,7 +175,7 @@ are retained. Both browsers and both 3 GiB guards exit zero with unchanged
 executable/native-library hashes. This directly fails the requested LibJS
 comment-collapse check, independently of the synthetic probe's missing `.click()`.
 
-## Identity, limits and local evidence
+### Identity, limits and local evidence
 
 All five replay processes use the canonical completed production browser:
 
