@@ -72,15 +72,21 @@ fn (host &Host) event_modifier_dictionary(mut vm libjs.VM, options libjs.Value) 
 fn (mut host Host) register_event_interface(mut prototype libjs.Object, name string, parent string,
 	construct fn (mut libjs.VM, &libjs.Object) !&libjs.Object) ! {
 	mut vm := host.vm
+	constructor := host.realm.global_object_record().get(mut vm, libjs.PropertyName.from_str(parent))!
+	host.register_platform_constructor(mut prototype, name, constructor.as_object(), 1, construct)
+}
+
+fn (mut host Host) register_platform_constructor(mut prototype libjs.Object, name string, parent ?&libjs.Object, length int,
+	construct fn (mut libjs.VM, &libjs.Object) !&libjs.Object) {
+	mut vm := host.vm
 	host.closures << voidptr(construct)
 	mut global := host.realm.global_object_record()
-	parent_constructor := global.get(mut vm, libjs.PropertyName.from_str(parent))!
 	call := fn [name] (mut vm libjs.VM) !libjs.Value {
 		return vm.throw_error(.type_error, name + ' requires new')
 	}
 	host.closures << voidptr(call)
-	mut constructor := libjs.NativeFunction.create_constructor(mut vm, host.realm, parent_constructor.as_object(),
-		call, construct, 1, libjs.PropertyName.from_str(name)).object
+	mut constructor := libjs.NativeFunction.create_constructor(mut vm, host.realm, parent,
+		call, construct, f64(length), libjs.PropertyName.from_str(name)).object
 	constructor.define_direct_property(libjs.PropertyName.from_str('prototype'), libjs.Value.from_object(prototype), 0)
 	prototype.define_direct_property(libjs.PropertyName.from_str('constructor'), libjs.Value.from_object(constructor), libjs.attribute_writable | libjs.attribute_configurable)
 	prototype.define_direct_property(libjs.PropertyName.from_symbol(vm.well_known_symbol_to_string_tag()), libjs.Value.from_string(vm.create_string_from_str(name)), libjs.attribute_configurable)

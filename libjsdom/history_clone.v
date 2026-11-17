@@ -11,6 +11,7 @@ import webidl
 // families fail explicitly rather than silently losing their data.
 struct HistoryClone {
 	host &Host
+	message_ports bool
 mut:
 	input map[voidptr]&dom.JSValue
 	output map[voidptr]libjs.Value
@@ -104,6 +105,12 @@ fn (mut clone HistoryClone) reconstruct(mut vm libjs.VM, value dom.JSValue, dept
 		.object {}
 	}
 	native := html.structured_object_from_value(value)!
+	if clone.message_ports && native.kind == .message_port {
+		if port := native.message_port_ {
+			mut owner := unsafe { &Host(clone.host) }
+			return owner.wrap_message_port(port)
+		}
+	}
 	if previous := clone.output[voidptr(native)] { return previous }
 	if depth >= 128 { return error('DataCloneError: History state nesting limit exceeded') }
 	if native.kind !in [.object, .array] { return error('DataCloneError: unsupported stored History object') }

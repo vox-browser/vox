@@ -108,6 +108,10 @@ fn structured_transfer_identity(item StructuredTransfer) u64 {
 }
 
 pub fn structured_serialize_with_transfer(message dom.JSValue, transfer []StructuredTransfer) !SerializedTransferRecord {
+	return serialize_message_with_transfer(message, transfer, none)
+}
+
+fn serialize_message_with_transfer(message dom.JSValue, transfer []StructuredTransfer, transfer_memory ?[]&StructuredObject) !SerializedTransferRecord {
 	mut seen := map[u64]bool{}
 	for item in transfer {
 		identity := structured_transfer_identity(item)
@@ -130,7 +134,11 @@ pub fn structured_serialize_with_transfer(message dom.JSValue, transfer []Struct
 	}
 
 	// Serialization must complete before any transfer steps mutate their source.
-	serialized := structured_serialize(message)!
+	serialized := if memory := transfer_memory {
+		structured_serialize_with_transfer_memory(message, memory)!
+	} else {
+		structured_serialize(message)!
+	}
 	mut transfers := []SerializedTransferItem{cap: transfer.len}
 	for item in transfer {
 		match item {
@@ -150,6 +158,7 @@ pub fn structured_serialize_with_transfer(message dom.JSValue, transfer []Struct
 	return SerializedTransferRecord{
 		serialized: serialized
 		transfers:  transfers
+		uses_transfer_memory: transfer_memory != none
 	}
 }
 
@@ -384,7 +393,15 @@ pub fn (mut port MessagePort) transfer_receiving_steps(item SerializedTransferIt
 
 pub fn (port &MessagePort) post_message(message dom.JSValue, options StructuredSerializeOptions) ! {
 	mut mutable_port := unsafe { &MessagePort(port) }
-	mutable_port.message_port_post_message_steps(message, options)!
+	mutable_port.message_port_post_message_steps(message, options, none)!
+}
+
+pub fn (port &MessagePort) post_message_with_transfer_memory(message dom.JSValue, options StructuredSerializeOptions, memory []&StructuredObject) ! {
+	if memory.len != options.transfer.len {
+		return error('DataCloneError: transfer memory does not match the transfer list')
+	}
+	mut target := unsafe { &MessagePort(port) }
+	target.message_port_post_message_steps(message, options, memory)!
 }
 
 pub fn (port &MessagePort) post_message_without_transfer(message dom.JSValue) ! {
@@ -400,7 +417,7 @@ fn transfer_contains_port(transfer []StructuredTransfer, needle &MessagePort) bo
 	return false
 }
 
-fn (mut port MessagePort) message_port_post_message_steps(message dom.JSValue, options StructuredSerializeOptions) ! {
+fn (mut port MessagePort) message_port_post_message_steps(message dom.JSValue, options StructuredSerializeOptions, transfer_memory ?[]&StructuredObject) ! {
 	persistent := platform.enter_persistent()
 	defer { platform.leave_persistent(persistent) }
 	if transfer_contains_port(options.transfer, &port) {
@@ -408,12 +425,12 @@ fn (mut port MessagePort) message_port_post_message_steps(message dom.JSValue, o
 	}
 	target := port.remote_port_ or {
 		// The structured serialization still occurs even for a disentangled port.
-		_ = structured_serialize_with_transfer(message, options.transfer)!
+		_ = serialize_message_with_transfer(message, options.transfer, transfer_memory)!
 		return
 	}
 
 	doomed := transfer_contains_port(options.transfer, target)
-	record := structured_serialize_with_transfer(message, options.transfer)!
+	record := serialize_message_with_transfer(message, options.transfer, transfer_memory)!
 	if doomed {
 		return
 	}
@@ -540,6 +557,20 @@ pub fn (mut port MessagePort) close() {
 	port.detached_ = true
 	port.discard_pending_messages()
 	port.disentangle()
+}
+
+// A destroyed embedding realm will never receive another port task. Remove
+// its endpoints from the registry after invalidating their pending messages.
+pub fn retire_message_ports_for_settings(settings &EnvironmentSettingsObject) {
+	for index := html_all_message_ports.len - 1; index >= 0; index-- {
+		mut port := html_all_message_ports[index]
+		if owner := port.settings_ {
+			if voidptr(owner) == voidptr(settings) {
+				port.close()
+				html_all_message_ports.delete(index)
+			}
+		}
+	}
 }
 
 pub fn (mut port MessagePort) discard_pending_messages() {

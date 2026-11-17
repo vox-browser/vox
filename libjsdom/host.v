@@ -69,6 +69,13 @@ mut:
 	custom_event_prototype &libjs.Object = unsafe { nil }
 	pop_state_event_prototype &libjs.Object = unsafe { nil }
 	pop_state_values map[voidptr]libjs.Value
+	message_event_prototype &libjs.Object = unsafe { nil }
+	message_port_prototype &libjs.Object = unsafe { nil }
+	message_channel_prototype &libjs.Object = unsafe { nil }
+	message_ports map[voidptr]&html.MessagePort
+	message_channels map[voidptr]&html.MessageChannel
+	message_event_data map[voidptr]libjs.Value
+	message_event_ports map[voidptr]libjs.Value
 	ui_event_prototype &libjs.Object = unsafe { nil }
 	mouse_event_prototype &libjs.Object = unsafe { nil }
 	keyboard_event_prototype &libjs.Object = unsafe { nil }
@@ -245,6 +252,7 @@ pub fn Host.create(vm &libjs.VM, realm &libjs.Realm, document &dom.Document, hoo
 	host.install_tree_walkers()!
 	host.install_custom_events()!
 	host.install_pop_state_events()!
+	host.install_message_channels()!
 	host.install_ui_events()!
 	host.install_mouse_events()!
 	host.install_keyboard_events()!
@@ -411,6 +419,7 @@ pub fn (mut host Host) close() {
 		}
 	}
 	host.listeners = []
+	host.close_message_channels()
 	for mut document in host.owned_documents {
 		document.destroy()
 		document.finalize()
