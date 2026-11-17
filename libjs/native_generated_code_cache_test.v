@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: BSD-2-Clause
 module libjs
 
+import crypto.sha256
 import os
 import platform
 import rand
@@ -52,6 +53,22 @@ fn test_generated_code_identity_includes_fast_instruction_semantics_and_operand_
 	assert native_generated_code_identity(first)! != native_generated_code_identity(changed)!
 	different_slot := &Executable{ ...*first, registers_and_locals_count: 7 }
 	assert native_generated_code_identity(first)! != native_generated_code_identity(different_slot)!
+}
+
+fn test_generated_code_identity_matches_portable_sha256_of_the_emitted_source() {
+	executable := &Executable{
+		registers_and_locals_count: 5
+		constants:                  [Value.from_i32(42)]
+		instructions:               [Instruction{op: .end, lhs: Operand.constant(0)}]
+		bytecode_length:            1
+	}
+	source, _ := native_source([executable])!
+	expected := sha256.hexhash('native-generated-function-v1:' + source)
+	defer { set_native_cache_digests_for_testing(true) }
+	for enabled in [false, true] {
+		set_native_cache_digests_for_testing(enabled)
+		assert native_generated_code_identity(executable)! == expected
+	}
 }
 
 fn test_generated_code_reuse_reads_the_current_closure_bindings_and_error_constants() {

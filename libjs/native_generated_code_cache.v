@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: BSD-2-Clause
 module libjs
 
-import crypto.sha256
-
 // Normalize only the entry's symbol index by generating it as the sole function.
 // Hash the exact C, including helper definitions, operand slots and property
 // plans. Constants, environments and exception tables remain with the current
@@ -25,5 +23,5 @@ fn native_generated_code_identity(executable &Executable) !string {
 
 fn native_generated_code_identity_in_workspace(executable &Executable) !string {
 	source, _ := native_source([executable])!
-	return sha256.hexhash('native-generated-function-v1:' + source)
+	return native_cache_digest_string('native-generated-function-v1:' + source)
 }
