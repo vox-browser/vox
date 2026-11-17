@@ -1,11 +1,12 @@
 // SPDX-License-Identifier: BSD-2-Clause
 module libjsdom
 
+import dom
 import html
 import libjs
 import platform
 
-fn window_scroll_options(mut vm libjs.VM) !html.ScrollToOptions {
+fn scroll_options(mut vm libjs.VM) !html.ScrollToOptions {
 	if vm.argument_count() >= 2 {
 		x := vm.argument(0).to_number(mut vm)!.number
 		y := vm.argument(1).to_number(mut vm)!.number
@@ -39,10 +40,14 @@ fn (mut host Host) window_scroll(mut vm libjs.VM, name string) !libjs.Value {
 	host.window_receiver(mut vm)!
 	persistent := platform.enter_persistent()
 	defer { platform.leave_persistent(persistent) }
-	options := window_scroll_options(mut vm)!
+	options := scroll_options(mut vm)!
 	mut window := host.frame_window(mut vm)!
 	native := if name == 'scrollBy' { window.scroll_by(options) } else { window.scroll(options) }
 	host.changed()
+	return host.wrap_scroll_promise(mut vm, native)
+}
+
+fn (mut host Host) wrap_scroll_promise(mut vm libjs.VM, native &dom.Promise) !libjs.Value {
 	if promise := native.webidl_promise() { return host.wrap_stream_promise(mut vm, promise) }
 	capability := libjs.new_promise_capability(mut vm, libjs.Value.from_object(host.realm.promise_constructor_record()))!
 	if native.state() == .pending {
@@ -59,6 +64,25 @@ fn (mut host Host) window_scroll(mut vm libjs.VM, name string) !libjs.Value {
 		capability.resolve
 	}, libjs.js_undefined(), [result])!
 	return capability.promise
+}
+
+fn (host &Host) reject_scroll_promise(mut vm libjs.VM, err IError) !libjs.Value {
+	if !libjs.is_throw_completion(err) { return err }
+	capability := libjs.new_promise_capability(mut vm, libjs.Value.from_object(host.realm.promise_constructor_record()))!
+	libjs.call(mut vm, capability.reject, libjs.js_undefined(), [libjs.thrown_value(err)])!
+	return capability.promise
+}
+
+fn (mut host Host) install_scroll_methods(mut receiver libjs.Object, viewport bool) {
+	for name in ['scroll', 'scrollTo', 'scrollBy'] {
+		host.method_attributes(mut receiver, name, 0, fn [host, name, viewport] (mut vm libjs.VM) !libjs.Value {
+			mut owner := unsafe { &Host(host) }
+			if viewport {
+				return owner.window_scroll(mut vm, name) or { return owner.reject_scroll_promise(mut vm, err) }
+			}
+			return owner.element_scroll(mut vm, name) or { return owner.reject_scroll_promise(mut vm, err) }
+		}, libjs.attribute_writable | libjs.attribute_enumerable | libjs.attribute_configurable)
+	}
 }
 
 fn (mut host Host) install_window_scrolling() {
@@ -80,15 +104,5 @@ fn (mut host Host) install_window_scrolling() {
 			return libjs.js_undefined()
 		})
 	}
-	for name in ['scroll', 'scrollTo', 'scrollBy'] {
-		host.method_attributes(mut global, name, 0, fn [host, name] (mut vm libjs.VM) !libjs.Value {
-			mut owner := unsafe { &Host(host) }
-			return owner.window_scroll(mut vm, name) or {
-				if !libjs.is_throw_completion(err) { return err }
-				capability := libjs.new_promise_capability(mut vm, libjs.Value.from_object(host.realm.promise_constructor_record()))!
-				libjs.call(mut vm, capability.reject, libjs.js_undefined(), [libjs.thrown_value(err)])!
-				capability.promise
-			}
-		}, libjs.attribute_writable | libjs.attribute_enumerable | libjs.attribute_configurable)
-	}
+	host.install_scroll_methods(mut global, true)
 }

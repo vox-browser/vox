@@ -44,4 +44,5 @@ fn (mut host Host) install_element_offsets() {
 			}))
 		}, unsafe { nil })
 	}
+	host.install_element_scrolling()
 }
