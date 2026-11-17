@@ -6407,3 +6407,62 @@ a different branch, following files/directories, Go to file and history/back
 navigation still need an end-to-end acceptance matrix before claiming complete
 repository-page behavior. The two remaining frozen screenshot pixels measure
 rendering conformance, independently of that functional coverage.
+
+### Compiled LibJS and shared-script browser controls, 2026-11-17
+
+`1d31e348e` adds the frozen-page driver in `tools/benchmark_github_page.py`.
+It prepares a private generated-code cache, checks capture and shutdown on a
+fresh compiler-disabled reopen, and compares complete repository content and
+document PNGs. The replay receipt must contain the declared compatibility
+script URLs and body hashes. A private Vox filter bundle cancels the three
+bundled redirects so all engines fetch the same archived replacements. The
+archived CSS runtime also carries the shared advancing Date prefix. The
+original HTTPS origins, fixture bodies and Brave reference are retained.
+
+The shared single-C-unit V `-prod` executable is
+`d2f42448a39c16687c5889c3513dd539c6d18b8edc25d239b14ce749b970abe6`.
+Its generated-code ABI is
+`835bbc6baf5c17ddc3771b08c7cef1b86623a7ed1465aa00429cb18aa085840f`.
+The earlier cache eligibility attempt had zero hits under that ABI. Fresh
+preparation produces 13,915 entries in 109 Clang invocations. The private
+compiler substitutes `-O0` for `-O2` for this functional run. The preparation
+guard exits zero in 136.057630917 seconds at 9,623,126,016 sampled peak bytes.
+The cache files remain unchanged through the following reopens.
+
+One matched functional pass launches each browser with a fresh profile and
+HTTP cache, a 1024×768 document viewport, and a one-second settle. Vox's
+document render scale is two with a 1× PNG. The OS caches are retained and
+imported cookies are disabled. All captures retain the same 33 directory rows,
+56 commit links, latest commit and README, with no recorded script or native
+page errors. Both LibJS modes fulfill the same 81 modules. JavaScriptCore
+initializes for its own control and remains uninitialized for both LibJS modes.
+
+| Mode | PID | Pixels differing from the retained Brave image |
+| --- | ---: | ---: |
+| Compiled LibJS | 58138 | 2 |
+| Interpreted LibJS | 58247 | 2 |
+| JavaScriptCore | 58348 | 2 |
+| Brave | 58420 | 0 |
+
+The three Vox captures have identical RGBA pixels. Their two differing pixels
+against Brave have a maximum channel error of ten. The compiled capture and
+shutdown report 2,948 hits and 475,046 native entries, with zero misses,
+compiler calls, pending entries or invalid entries. The compiled PNG SHA-256 is
+`452b7ac13e03e6666d0f49fcd1abbfba16786123d7320e727e3c9bd7384a9bb0`.
+Every browser, controller and guard exits zero, all four PIDs are adopted, and
+the 12-GiB guard records 27.878634125 seconds and 8,192,458,752 sampled peak bytes.
+
+The default-filter control loads complete content and exits zero, while the
+driver and guard exit one because all three script URLs bypass the common
+replay. The previous missing-Pillow pilot, interrupted comparison and
+empty-ABI attempt are retained. The sampled instruction counters include
+startup, capture and shutdown, and the Brave run includes CDP setup and
+auditing. The native run uses instrumented counters and unoptimized libraries.
+The one-pass results supply functional evidence. Optimized performance, live
+behavior for this executable, and deeper repository navigation remain open.
+
+The commands, compiler arguments, process receipts, script hashes, pixel
+comparisons and PNGs are local in
+`docs/performance/libjs-github-browser-20261116/libjs-github-continue-20261117/`.
+Cleanup moves 34 completed Build entries and verifies 243 file identities.
+Disposable profiles, HTTP caches, and job locks are removed from Build.
