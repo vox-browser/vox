@@ -6142,7 +6142,7 @@ position plus varyings and then for position alone. Both change the unified,
 split and eight-instance controls by 3/9/5 pixels, maximum error ten. Their
 ordinary replays reproduce the complete known BGRA hashes. The logged variants
 therefore fail image invariance and are rejected for original-draw attribution.
-All twelve compile/replay processes succeed; the guards exit zero in
+Both helper compilations and all twelve replays succeed; the guards exit zero in
 0.804136958 / 1.103519125 seconds, sampled peaks 99,516,416 / 121,389,056 bytes.
 Probe and regression-source changes are fully reverted, with their source
 patches, executable identities and failed invariance receipts retained locally.
