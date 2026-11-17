@@ -306,3 +306,42 @@ overwritten the throwing instruction. The fix leaves that PC installed. The
 six-case focused file passes in both GC modes; the completed default-GC sweep
 above covered the earlier five-case file. The measured cohorts above predate
 this exception-only correction; a corrected-build cohort is recorded separately.
+
+## Adjacent argument registers, 2026-11-18
+
+A frozen GitHub startup sample on `fa6b0d0c…47c9` observes 123 samples
+under the outer native entry, 122 under the slow callback and 110 under call
+handling. These are inclusive stacks that include callee work. The first
+native sampling attempt times out and is retained. The shorter retry collects
+its stack while the browser completes a clean compiler-disabled capture.
+
+`8f3436768` lets the existing synchronous-call path borrow a checked span of
+initialized adjacent registers. The permitted ECMAScript and native callees
+copy the incoming values into their own frames before author code runs.
+Exposed frames, nonadjacent operands, other operand types and failed bounds
+or initialization checks use the existing workspace path. The argument
+workspace counter continues to count uses of the workspace itself.
+
+A focused V `-prod -prealloc -gc none` diagnostic compiles and reuses one
+native entry containing 750,000 two-argument calls. Both modes execute the
+same bytecode, native library, budget and callee, returning 42. Separate
+instrumented runs record 750,000 workspaces with an explicitly exposed
+caller frame and zero with adjacent registers in a private frame. Both
+report one cache hit with zero misses or compiler invocations on reopen.
+An earlier probe placed exposure inside an assertion and failed the
+workspace-count check in production mode. The corrected probe calls it
+explicitly and verifies the return value and counters.
+
+Seven alternating fresh-process pairs have native counters disabled.
+Median retired instructions are **1,325,381,467** on the exposed workspace
+path and **1,123,529,478** with adjacent register borrowing, **15.23% fewer**
+for this isolated call loop. Every run exits zero with unchanged inputs.
+The focused build exits zero under the 12-GiB guard. The 3-GiB diagnostic
+guard records 2.139045041 seconds and 114,966,528 sampled peak bytes.
+The regression source covers address identity and fallback predicates, and
+remains unrun under the automated-suite hold.
+
+The installed browser predates the borrowing change. Its GitHub startup
+effect awaits the build requested by the managed hook. Sample files,
+commands, exact counts, run and guard receipts remain local in
+`docs/performance/libjs-github-browser-20261116/libjs-github-native-dispatch-20261118/`.
