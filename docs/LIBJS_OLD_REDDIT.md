@@ -1,5 +1,10 @@
 # Old Reddit LibJS verification — 2026-11-17
 
+The subsequent [three-engine performance measurement](LIBJS_OLD_REDDIT_PERFORMANCE.md)
+records compiled LibJS at 657.184 ms per 100 representative collapse/expand
+cycles, versus V8 266.793 ms and JSC 409.549 ms. It separately records cache-fill
+cost, process RSS, complete attempt data and the headless workload's limits.
+
 ## Compatibility fixes
 
 The original Reddit-script diagnostic now passes comment collapse/expansion and
