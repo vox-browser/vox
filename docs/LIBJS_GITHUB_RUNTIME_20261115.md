@@ -7053,3 +7053,41 @@ type check passes that code and the hooks have queued a newer build.
 Browser-level memory and generated-cache navigation with the new sources
 remain unverified. Commands, source pins and raw receipts are local under
 `repository-navigation-5204-r69`.
+
+### LibJS property enumeration allocations
+
+The published GitHub mapping trace attributes 192 MiB of tracked virtual
+mapping capacity to formatting property-name identities inside
+`PropertyNameIterator::next` on a native execution stack. Commit
+`15108e295` compares canonical keys using the existing property-name hash
+and exact key equality. It uses the existing string identity to distinguish
+hash collisions. The point at which a key becomes visited stays after the
+successful own-property descriptor lookup.
+
+Three alternating fresh-process pairs use single-C prealloc builds and
+verify 492 source and fixture pins. Only `libjs/property_name_iterator.v`
+differs between the pinned inputs. Each process completes 25,000 property
+visits. All three control runs grow the caller arena by 112,085,189 bytes.
+All three candidate runs grow it by 30,405,168 bytes, **72.9% less**.
+The manual checks preserve distinct lone surrogates, an embedded zero
+unit, numeric key ordering, prototype shadowing, and lazy Proxy traversal
+when the loop breaks. All six paired trials and their guard exit zero.
+The first control attempt exposed a reversed expected order for the two
+inherited names in the probe. All measured runs use the corrected fixture.
+These byte counts measure the standalone caller arena.
+
+A separate fresh-process native cache reopen performs the same 25,000
+visits with `/usr/bin/false` as the compiler. Its audit records two cache
+hits, two native entries, 35,031 helper steps, and zero misses, compiler
+calls, pending or invalid entries. The earlier seeding process compiles
+two executables in one compiler call. The guarded production type check
+exits zero in 37.790387375 seconds at 7,091,470,336 sampled peak bytes.
+The collision regression source remains unrun under the automated-test
+hold.
+
+The running production build seals the earlier document budget, namespace
+and resource URL changes. The managed hook queues the enumeration change
+for a subsequent build. A browser-level allocation comparison and strict
+GitHub navigation replay remain open. Raw commands, source identities,
+allocation observations and guard receipts remain local under
+`repository-navigation-5204-r70`.
