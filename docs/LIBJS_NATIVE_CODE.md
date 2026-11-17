@@ -442,3 +442,20 @@ GitHub startup effect awaits that build.
 
 Raw captures, stacks, exact counts, input hashes and guard receipts stay
 local under `docs/performance/libjs-github-browser-20261116/libjs-github-dispatch-23ba-20261118/`.
+
+### Budget and unwind verification
+
+A separate `-prod -prealloc -gc none` probe runs a nested zero-argument
+call chain with a caught exception, a default parameter and a checked
+receiver. Interpreter and cached-native execution agree at each instruction
+limit from 1 through 160. Limits through 58 report instruction-budget
+exhaustion, and limits from 59 return 42. Each execution restores the
+context stack to its starting depth.
+
+The compiler-disabled native probe records five cache hits, 732 native
+entries and zero workspace calls. It has zero misses, invalid or pending
+entries, and compiler calls. The executable and cache files match their
+initial hashes after the run. Seed, interpreter, native and memory guard
+exit zero. The 3-GiB guard records 0.773 seconds and 119,652,352 sampled
+peak bytes. The exact outcomes and receipts stay local under
+`docs/performance/libjs-github-browser-20261116/libjs-github-empty-calls-after-20261118/`.
