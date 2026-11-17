@@ -13,7 +13,8 @@ mut:
 	properties []PropertyName
 	next_property int
 	keys_loaded bool
-	visited_names map[string]bool
+	visited_names map[u64]PropertyName
+	colliding_names map[string]bool
 	visited_objects map[voidptr]bool
 }
 
@@ -41,10 +42,21 @@ fn (mut iterator PropertyNameIterator) next(mut vm VM) !IteratorStepValue {
 			key := iterator.properties[iterator.next_property]
 			iterator.next_property++
 			if key.is_symbol() { continue }
-			identity := property_name_identity(key)
-			if iterator.visited_names[identity] { continue }
+			hash := property_lookup_hash(key)
+			mut collision := ?string(none)
+			if prior := iterator.visited_names[hash] {
+				if prior.equals(key) { continue }
+				// Use the exact encoding only for distinct names with the same hash.
+				identity := property_name_identity(key)
+				if iterator.colliding_names[identity] { continue }
+				collision = identity
+			}
 			descriptor := holder.get_own_property_checked(mut vm, key)!.descriptor or { continue }
-			iterator.visited_names[identity] = true
+			if identity := collision {
+				iterator.colliding_names[identity] = true
+			} else {
+				iterator.visited_names[hash] = key
+			}
 			if descriptor.enumerable or { false } { return IteratorStepValue{value: key.to_value(mut vm)} }
 		}
 		iterator.current = holder.get_prototype_of_checked(mut vm)!.prototype

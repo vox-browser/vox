@@ -21,6 +21,24 @@ fn test_for_in_snapshots_names_skips_deletions_and_does_not_add_new_names() {
 	assert for_in_eval(mut vm, 'var a=[];for(var k in [1,,3]){a.push(k)};a.join(",")')!.as_string().str() == '0,2'
 }
 
+fn test_for_in_keeps_distinct_names_with_the_same_hash() {
+	mut vm := VM.create()
+	create_simple_execution_context(mut vm)
+	key := PropertyName.from_str('shared')
+	mut prototype := Object.create(vm.realm(), none)
+	prototype.define_direct_property(key, Value.from_i32(1), attribute_enumerable)
+	mut object := Object.create(vm.realm(), prototype)
+	object.define_direct_property(key, Value.from_i32(2), attribute_enumerable)
+	iterator_object := create_property_name_iterator(mut vm, Value.from_object(object))!
+	mut iterator := iterator_object.property_name_iterator or { panic('Missing property iterator') }
+	// Seed a different name in the bucket to exercise both the collision and
+	// the duplicate check when the iterator reaches the prototype.
+	iterator.visited_names[property_lookup_hash(key)] = PropertyName.from_str('distinct')
+	first := iterator.next(mut vm)!
+	assert !first.done && first.value.as_string().str() == 'shared'
+	assert iterator.next(mut vm)!.done
+}
+
 fn test_for_in_var_hoisting_primitive_wrapping_nullish_and_assignment_targets() {
 	mut vm := VM.create()
 	create_simple_execution_context(mut vm)
