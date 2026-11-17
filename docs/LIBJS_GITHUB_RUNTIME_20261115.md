@@ -7150,3 +7150,56 @@ in one compiler call. The production type check passes in 38.812599375
 seconds at 7,098,286,080 sampled peak bytes. The source-sharing regression
 remains unrun under the automated-test hold. Commands, pins and receipts
 remain local under `repository-navigation-5204-r72`.
+
+### Published replay and NodeList reads
+
+The shared single-C `-prod` browser
+`23ba3183f6c6446597823e434ba9016fc6949940758a6bcbcba91991b782b3bb`
+contains the 20-million document budget, resolved namespace bindings, and
+resource URL scratch changes. Two fresh interpreter launches use the archived
+full file lists and native input. Both match Brave's initial audited directory
+rows, commit links, latest commit and README text. Each opens the ready README
+destination and delivers toolbar Back. JavaScriptCore stays uninitialized.
+The final observed URL matches the repository, with the file view still
+present and three commit links. The memory guard ends both runs before
+React restores the directory. Both keep their input pins and show only
+GitHub's Worker fallback warning before termination.
+
+| Replay | Browser PID | Guard seconds | Sampled peak bytes | Controller / guard exit |
+| --- | ---: | ---: | ---: | --- |
+| Native input and content audit | 16377 | 27.85490875 | 12,997,951,488 | 137 / 125 |
+| Separate mapping trace | 18543 | 28.81390225 | 12,904,677,376 | 137 / 125 |
+
+A separate launch uses the finalized generated-code cache with
+`/usr/bin/false` as the compiler and the same published browser. The
+last audit shows 3,542 hits, 1,160,855 native entries, zero misses and
+compiler calls, and an uninitialized JavaScriptCore context. All 139
+input pins match after termination. The README is ready when the input
+driver delivers Back, and the last audit still shows the file URL.
+The guard stops browser PID 41787 before a restored-page or shutdown
+audit. Controller and guard exit 137 and 125 respectively. The guard
+records 51.453372917 seconds and a 12,951,355,392-byte sampled peak.
+
+The mapping trace attributes 96 MiB of tracked virtual mapping capacity
+to the native `NodeList.length` getter. Both `length()` and `item()`
+materialized the entire native list per read.
+Commit `6005c7d15` reads static lists and unfiltered child lists directly.
+The full `collection()` operation keeps returning an independent snapshot.
+Filtered lists retain the existing traversal and ordering.
+
+Three alternating fresh-process pairs use matching single-C prealloc
+builds, with only `dom/collections_ranges.v` changing across the 1,176
+recorded source and fixture pins. Every pair reports the same arena counts.
+
+| Standalone workload on 800-node lists | Prior caller-arena growth | Direct-read caller-arena growth |
+| --- | ---: | ---: |
+| 8,000 native list reads | 99,711,994 bytes | 0 bytes |
+| 4,000 JavaScript list reads through LibJS DOM | 50,054,597 bytes | 198,600 bytes |
+
+The probes cover static and live identity, out-of-range reads, independent
+snapshots, and live list updates after removing and adding a child. All six
+paired processes and their guard exit zero. The production type check passes
+in 101.962594875 seconds at 7,104,118,784 sampled peak bytes. The regression
+source remains unrun under the automated-test hold. The published browser
+predates the NodeList fix. Local commands, input pins, guard receipts and
+raw mappings remain under `repository-navigation-5204-r73`.
