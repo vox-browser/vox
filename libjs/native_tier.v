@@ -58,6 +58,8 @@ pub mut:
 	specialized_object_property_steps u64
 	native_length_steps u64
 	native_index_steps u64
+	binding_lookup_cache_hits u64
+	binding_lookup_cache_misses u64
 }
 
 pub struct NativeCodeStats {
@@ -92,7 +94,12 @@ pub fn (mut vm VM) diagnose_native_code(enabled bool) !NativeCodeActivity {
 	}
 	mut tier := vm.native_tier or { return error('Native tier is not initialized') }
 	tier.diagnostics = enabled
-	previous := tier.activity
+	mut previous := tier.activity
+	$if test {
+		bindings := diagnose_binding_lookup_for_testing(enabled)
+		previous.binding_lookup_cache_hits = bindings.hits
+		previous.binding_lookup_cache_misses = bindings.misses
+	}
 	tier.activity = NativeCodeActivity{}
 	return previous
 }

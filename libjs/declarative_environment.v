@@ -26,6 +26,8 @@ pub mut:
 	// this lexical scope, including catch unwinding after a computed key throws.
 	restores_private_environment bool
 	outer_private_environment ?&PrivateEnvironment
+mut:
+	binding_lookup_hints ?&BindingLookupHints
 }
 
 pub fn DeclarativeEnvironment.create(outer ?Environment) &DeclarativeEnvironment {
@@ -37,6 +39,16 @@ pub fn DeclarativeEnvironment.create(outer ?Environment) &DeclarativeEnvironment
 }
 
 fn (environment &DeclarativeEnvironment) find_binding_index(name Utf16String) int {
+	$if test {
+		if binding_lookup_hints_disabled { return environment.find_binding_index_linear(name) }
+	}
+	if environment.bindings.len >= binding_lookup_hint_minimum {
+		return environment.find_binding_index_with_hints(name)
+	}
+	return environment.find_binding_index_linear(name)
+}
+
+fn (environment &DeclarativeEnvironment) find_binding_index_linear(name Utf16String) int {
 	for index, binding in environment.bindings {
 		if !binding.deleted && binding.name == name {
 			return index
