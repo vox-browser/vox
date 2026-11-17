@@ -7829,6 +7829,7 @@ fn (mut app BrowserApp) draw() {
 			mut text_scroll_layer := false
 			mut replay_scratch := app.begin_native_replay_scratch()
 			mut early_partial_headers := []int{}
+			mut early_rounded_decorations := []int{}
 			mut shared_svg_end := 0
 			mut rect_prefetch_end := 0
 			mut leaf_timing := new_leaf_timing()
@@ -7841,6 +7842,7 @@ fn (mut app BrowserApp) draw() {
 					continue
 				}
 				if command_index in early_partial_headers { continue }
+				if command_index in early_rounded_decorations { continue }
 				$if macos {
 					if app.ctx.native_rendering && command_index < app.chromium_raster_plan.command_layers.len
 						&& app.chromium_raster_plan.command_layers[command_index] < 0 { continue }
@@ -7930,6 +7932,11 @@ fn (mut app BrowserApp) draw() {
 				}
 				if !gpu_leaf && command.kind == 'paint_outer_box_shadow' {
 					$if macos {
+						batch := app.draw_disjoint_rounded_batch(command_index, page_y)
+						if batch.len > 0 {
+							early_rounded_decorations << batch
+							continue
+						}
 						shared_svg_end = app.draw_contoured_group(command_index, page_y)
 						if shared_svg_end > command_index { continue }
 					}
