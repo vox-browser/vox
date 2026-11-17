@@ -140,6 +140,13 @@ class ArchDeployTests(unittest.TestCase):
         self.assertTrue(any(command[:2] == ['pacman', '-Qqo']
                             and command[-1].endswith('ld-linux-x86-64.so.2') for command in self.commands))
 
+    def test_absolute_loader_alias_resolves_the_arrow_target(self):
+        self.needed.append('ld-linux-x86-64.so.2')
+        self.linked += '\t/lib64/ld-linux-x86-64.so.2 => /usr/lib/ld-linux-x86-64.so.2 (0x456)\n'
+        self.package()
+        self.assertIn(['pacman', '-Qqo', str(Path('/usr/lib/ld-linux-x86-64.so.2').resolve())],
+                      self.commands)
+
     def test_failure_preserves_previous_output_and_cleans_all_staging(self):
         self.output.parent.mkdir()
         self.output.write_bytes(b'previous package')

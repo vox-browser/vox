@@ -74,14 +74,41 @@ def verify_package_manifest(manifest, expected_commit, architecture):
             raise RuntimeError('Release build does not match the clean requested commit')
 
 
-def build_native_package(source, distribution, environment):
+def build_native_package(source, distribution, environment, package_only=False):
     # Build the pinned clean sources, using the current packaging tools rather
     # than retaining packaging bugs from an older release tag.
     if distribution == 'arch':
         from deploy_arch import deploy
     else:
         from deploy_linux import deploy
-    return deploy(root=source, build_environment=environment)
+    options = dict(package_only=True) if package_only else {}
+    return deploy(root=source, build_environment=environment, **options)
+
+
+def repackage_native_build(source, reports, expected_commit, architecture, distribution, guarded):
+    receipt_path = source / 'Build/linux/production-build/latest.json'
+    receipt = json.loads(receipt_path.read_text())
+    verify_package_manifest(dict(source_build=receipt, architecture=architecture),
+                            expected_commit, architecture)
+    evidence = {}
+    for name in ('compiler-seed', 'compiler', 'cookie-profile'):
+        path = reports / (name + '.json')
+        result = json.loads(path.read_text())
+        if result.get('reason') != 'completed' or result.get('child_exit_code') != 0:
+            raise RuntimeError('Repackaging requires successful original ' + name + ' validation')
+        evidence[name] = digest(path)
+    package = build_native_package(source, distribution, dict(os.environ), package_only=True)
+    manifest = json.loads(package.with_name(package.name + '.json').read_text())
+    verify_package_manifest(manifest, expected_commit, architecture)
+    validate_package(source, reports, package, manifest, distribution, guarded, dict(os.environ))
+    # Retain the original compiler/cookie evidence rather than inventing a new
+    # compiler identity when recovering an already compiled CI artifact.
+    (package.parent / (architecture + '-toolchain.json')).write_text(json.dumps(dict(
+        source_commit=expected_commit, reused_production_build=True,
+        source_build_receipt_sha256=digest(receipt_path), original_validation_sha256=evidence),
+        indent=2) + '\n')
+    print('VERIFIED %s PACKAGE:' % distribution.upper(), package, flush=True)
+    return package
 
 
 def validate_package(source, reports, package, manifest, distribution, guarded, environment,
@@ -115,6 +142,8 @@ def main():
     parser.add_argument('--architecture', choices=('amd64', 'arm64'), default='amd64')
     parser.add_argument('--compiler-no-prod', action='store_true',
                         help='speed up the compiler bootstrap in an emulated VM; the browser still uses -prod')
+    parser.add_argument('--package-only', action='store_true',
+                        help='repackage a hash-verified production build downloaded from an earlier CI run')
     args = parser.parse_args()
     if not re.fullmatch('[0-9a-f]{40}', args.expected_commit):
         parser.error('--expected-commit must be a full Git commit ID')
@@ -138,13 +167,18 @@ def main():
     output = source / 'Build/deploy'
     output.mkdir(parents=True, exist_ok=True)
     reports = output / 'validation'
-    reports.mkdir()
+    reports.mkdir(exist_ok=args.package_only)
 
     def guarded(command, name, limit=12, environment=None):
         run([sys.executable, source / 'tools/run_memory_bounded.py',
              '--lock', reports / (name + '.lock'), '--report', reports / (name + '.json'),
              '--limit-gib', limit, '--timeout', '2700', '--', *command],
             cwd=source, env=environment)
+
+    if args.package_only:
+        repackage_native_build(source, reports, args.expected_commit, architecture,
+                               args.distribution, guarded)
+        return
 
     compiler = toolchain / 'v'
     checkout('https://github.com/vlang/v.git', V_REVISION, compiler)

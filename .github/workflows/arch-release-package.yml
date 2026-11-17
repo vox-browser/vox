@@ -7,9 +7,14 @@ on:
         description: Commit or tag containing Arch deployment support
         required: true
         default: master
+      reuse_build_run:
+        description: Optional successful production build artifact run ID to repackage and revalidate
+        required: false
+        default: ''
 
 permissions:
   contents: read
+  actions: read
 
 concurrency:
   group: arch-release-${{ inputs.release_ref }}
@@ -31,7 +36,18 @@ jobs:
           path: source
           persist-credentials: false
 
+      - name: Retrieve an earlier compiled release artifact
+        if: ${{ inputs.reuse_build_run != '' }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REUSE_BUILD_RUN: ${{ inputs.reuse_build_run }}
+        run: |
+          case "$REUSE_BUILD_RUN" in *[!0-9]*|'') exit 1 ;; esac
+          gh run download "$REUSE_BUILD_RUN" --repo "$GITHUB_REPOSITORY" \
+            --name "vox-arch-x86_64-$REUSE_BUILD_RUN" --dir source/Build
+
       - name: Add swap within the existing process memory budget
+        if: ${{ inputs.reuse_build_run == '' }}
         run: |
           sudo fallocate -l 8G "$RUNNER_TEMP/vox-arch.swap"
           sudo chmod 600 "$RUNNER_TEMP/vox-arch.swap"
@@ -39,11 +55,14 @@ jobs:
           sudo swapon "$RUNNER_TEMP/vox-arch.swap"
 
       - name: Build and validate in native Arch Linux
+        env:
+          REUSE_BUILD_RUN: ${{ inputs.reuse_build_run }}
         run: |
           release_commit=$(git -C source rev-parse HEAD)
           docker run --rm --memory=12g --memory-swap=20g \
             --volume "$GITHUB_WORKSPACE:/workspace" \
-            --env RELEASE_COMMIT="$release_commit" archlinux:base-devel sh -eu -c '
+            --env RELEASE_COMMIT="$release_commit" \
+            --env REUSE_BUILD_RUN archlinux:base-devel sh -eu -c '
               pacman -Syu --noconfirm
               pacman -S --needed --noconfirm \
                 clang lld pkgconf git python procps-ng sudo libarchive zstd \
@@ -58,10 +77,12 @@ jobs:
               chown builder:builder /opt/vox-arch-toolchain
               printf "%s\n" "#!/bin/sh" "exec clang -fuse-ld=lld \"\$@\"" > /usr/local/bin/vox-release-cc
               chmod +x /usr/local/bin/vox-release-cc
+              extra=
+              if [ -n "$REUSE_BUILD_RUN" ]; then extra=--package-only; fi
               sudo -u builder env CC=/usr/local/bin/vox-release-cc \
                 python -u /workspace/tooling/tools/build_linux_release_ci.py \
                   --source /workspace/source --toolchain /opt/vox-arch-toolchain \
-                  --expected-commit "$RELEASE_COMMIT" --distribution arch
+                  --expected-commit "$RELEASE_COMMIT" --distribution arch $extra
             '
 
       - name: Prepare container-owned validation evidence

@@ -26,7 +26,8 @@ def dependencies(root, binaries):
         for library in needed:
             if library in bundled:
                 continue
-            match = re.search(r'^\s*' + re.escape(library) + r'\s+=>\s+(/\S+)', linked, re.M)
+            match = re.search(r'^\s*(?:/\S*/)?' + re.escape(library)
+                              + r'\s+=>\s+(/\S+)', linked, re.M)
             if not match:
                 # ldd prints the ELF interpreter as an absolute path without =>.
                 match = re.search(r'^\s*(/\S*/' + re.escape(library) + r')\s+\(', linked, re.M)

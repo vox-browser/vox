@@ -1,4 +1,5 @@
 import copy
+import json
 from pathlib import Path
 import subprocess
 import tempfile
@@ -17,6 +18,45 @@ class ReleaseBuildTests(unittest.TestCase):
                 self.assertEqual(release.build_native_package(source, distribution, environment),
                                  Path('/release/package'))
                 deploy.assert_called_once_with(root=source, build_environment=environment)
+                deploy.reset_mock()
+                release.build_native_package(source, distribution, environment, package_only=True)
+                deploy.assert_called_once_with(root=source, build_environment=environment, package_only=True)
+
+    def test_repackaging_requires_matching_source_and_successful_original_checks(self):
+        with tempfile.TemporaryDirectory() as directory:
+            source = Path(directory)
+            receipts = source / 'Build/linux/production-build'
+            receipts.mkdir(parents=True)
+            reports = source / 'Build/deploy/validation'
+            reports.mkdir(parents=True)
+            receipt = dict(exit=0, c_compile=dict(backend='c', mode='single', requested='single', v_prod=True),
+                           inputs=dict(head='a' * 40, dirty=False),
+                           verified_inputs=dict(head='a' * 40, dirty=False))
+            (receipts / 'latest.json').write_text(json.dumps(receipt))
+            package = reports.parent / 'vox.pkg.tar.zst'
+            package.write_bytes(b'archive')
+            package.with_name(package.name + '.json').write_text(json.dumps(dict(
+                architecture='x86_64', source_build=receipt)))
+            for name in ('compiler-seed', 'compiler', 'cookie-profile'):
+                (reports / (name + '.json')).write_text(json.dumps(dict(reason='completed', child_exit_code=0)))
+            with patch.object(release, 'build_native_package', return_value=package) as build, \
+                    patch.object(release, 'validate_package') as validate:
+                with self.assertRaisesRegex(RuntimeError, 'clean requested commit'):
+                    release.repackage_native_build(source, reports, 'b' * 40, 'x86_64', 'arch', None)
+                build.assert_not_called()
+                release.repackage_native_build(source, reports, 'a' * 40, 'x86_64', 'arch', None)
+                self.assertTrue(build.call_args.kwargs['package_only'])
+                validate.assert_called_once()
+                metadata = json.loads((package.parent / 'x86_64-toolchain.json').read_text())
+                self.assertTrue(metadata['reused_production_build'])
+                self.assertEqual(metadata['original_validation_sha256']['cookie-profile'],
+                                 release.digest(reports / 'cookie-profile.json'))
+                build.reset_mock()
+                (reports / 'cookie-profile.json').write_text(json.dumps(dict(reason='completed', child_exit_code=1)))
+                with self.assertRaisesRegex(RuntimeError, 'successful original cookie-profile'):
+                    release.repackage_native_build(source, reports, 'a' * 40, 'x86_64', 'arch', None)
+                build.assert_not_called()
+
     def test_json2_field_adapter_preserves_the_generic_pointer_and_rejects_unknown_layouts(self):
         field = 'mut target := unsafe { field }\n\t\t\tdecoder.decode_value(mut target)!'
         source = 'module json2\n' + field + '\nmut target := unsafe { field }\n target.clear()\n'
