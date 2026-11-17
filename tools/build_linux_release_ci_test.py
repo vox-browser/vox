@@ -8,6 +8,17 @@ import build_linux_release_ci as release
 
 
 class ReleaseBuildTests(unittest.TestCase):
+    def test_json2_field_adapter_preserves_the_generic_pointer_and_rejects_unknown_layouts(self):
+        field = 'mut target := unsafe { field }\n\t\t\tdecoder.decode_value(mut target)!'
+        source = 'module json2\n' + field + '\nmut target := unsafe { field }\n target.clear()\n'
+        patched = release.typed_json2_fields(source)
+        self.assertIn('decoder.decode_value[F](mut *field)!', patched)
+        self.assertIn('mut target := unsafe { field }\n target.clear()', patched)
+        self.assertEqual(release.typed_json2_fields(patched), patched)
+        for bad in ('module json2', source + field):
+            with self.assertRaisesRegex(RuntimeError, 'Unsupported JSON2'):
+                release.typed_json2_fields(bad)
+
     def test_portable_clip_preserves_the_release_function_without_gpu_uploads(self):
         function = 'pub fn document_image_clip_requires_msaa(rect Rect, radii [4]Point) bool {\n\treturn true\n}'
         source = 'module canvas\nfn gpu_upload() {}\n' + function + '\nfn another_gpu_upload() {}\n'

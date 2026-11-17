@@ -50,6 +50,18 @@ def portable_clip(source):
     return 'module canvas\n\n' + source[start:end] + '\n'
 
 
+def typed_json2_fields(source):
+    # Keep the field's generic type explicit. Inferring this unsafe alias can
+    # lower a narrow enum pointer to int*, which current Clang correctly rejects.
+    old = 'mut target := unsafe { field }\n\t\t\tdecoder.decode_value(mut target)!'
+    new = 'unsafe {\n\t\t\t\tdecoder.decode_value[F](mut *field)!\n\t\t\t}'
+    if source.count(new) == 1 and old not in source:
+        return source
+    if source.count(old) != 1 or new in source:
+        raise RuntimeError('Unsupported JSON2 generic field decoder; update the release adapter')
+    return source.replace(old, new)
+
+
 def verify_package_manifest(manifest, expected_commit, architecture):
     mode = manifest['source_build'].get('c_compile', {})
     if (manifest['source_build'].get('exit') != 0
@@ -128,6 +140,8 @@ def main():
     checkout('https://github.com/vlang/v.git', V_REVISION, compiler)
     checkout('https://github.com/vlang/vc.git', VC_REVISION, compiler / 'vc')
     checkout('https://github.com/vlang/ui2.git', UI2_REVISION, toolchain / 'ui2')
+    decoder = compiler / 'vlib/json2/decode.v'
+    decoder.write_text(typed_json2_fields(decoder.read_text()))
     environment = dict(os.environ, VFLAGS='', V_MACOS_V3_NO_FALLBACK='1',
                        CC=native_cc, UI2_SOURCE_DIR=str(toolchain / 'ui2'))
     # Bootstrap the current frontend directly; make's legacy fallback currently
@@ -183,6 +197,7 @@ def main():
         source_commit=args.expected_commit, v_revision=V_REVISION, vc_revision=VC_REVISION,
         ui2_revision=UI2_REVISION, compiler_sha256=digest(compiler / 'v'),
         match_scope_adapter_sha256=digest(scope_adapter),
+        json2_decoder_sha256=digest(decoder),
         portable_clip_sha256=hashlib.sha256(clip.encode()).hexdigest()), indent=2) + '\n')
     print('VERIFIED %s PACKAGE:' % args.distribution.upper(), package, flush=True)
 
