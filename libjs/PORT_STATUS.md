@@ -3268,3 +3268,23 @@ Earlier CPU and whole-glyph GG variants introduce new differences and are reject
 The latest completed shared bundle separately confirms the preceding 20-pixel
 mode; 15 is validated by its pinned private production executable. Regression
 sources remain uncompiled/unrun, and full parity/performance acceptance stay open.
+
+
+An experimental `NativeCodeCacheOptions.generated_code_identity` hashes each
+executable's exact canonical generated C, including helper definitions, slots
+and property plans. It shares matching machine code across source URLs and
+edits while the current invocation supplies constants, environments and slow
+operations. The existing source-bound mode remains the default; modes use
+separate ABI partitions and retain library digest/symbol verification. The
+browser opts in with `VOX_LIBJS_NATIVE_GENERATED_CODE_CACHE=1`; diagnostic captures
+use `--generated-code-cache` and verify the reported identity kind.
+
+A sealed single-C `-prod` manual HN diagnostic exercises the actual browser
+Runtime/document bridge and 101-comment collapse/expand callbacks. Changed
+URLs and an appended comment retain 26 hits, zero misses/compiler invocations
+and 747 native entries in the new mode; source-bound controls miss all 27
+entries. Adding an operation correctly misses the changed body and retains
+25 hits. Regression sources cover current constants/closures/errors, changed
+fast code, corruption and temporary storage; they remain uncompiled/unrun
+under the test hold. This establishes functional reuse on that workload, with
+no browser-speed, full GitHub, rendering-parity or full LibJS acceptance.

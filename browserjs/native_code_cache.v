@@ -18,7 +18,9 @@ fn (mut runtime Runtime) initialize_document_native_cache() {
 		os.join_path(os.dir(browsersettings.default_path()), 'libjs-native-code')
 	}
 	compiler := os.getenv_opt('VOX_LIBJS_NATIVE_COMPILER') or { 'clang' }
-	runtime.agent_vm.enable_native_code_cache(directory, compiler) or {
+	runtime.agent_vm.enable_native_code_cache_with_options(directory, compiler, libjs.NativeCodeCacheOptions{
+		generated_code_identity: os.getenv('VOX_LIBJS_NATIVE_GENERATED_CODE_CACHE') == '1'
+	}) or {
 		eprintln('LibJS native cache unavailable: ${err.msg()}')
 		return
 	}

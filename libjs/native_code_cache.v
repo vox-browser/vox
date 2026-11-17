@@ -15,6 +15,7 @@ struct NativeCodeCache {
 	directory string
 	compiler  string
 	abi       string
+	generated_code_identity bool
 mut:
 	checked       []&Executable
 	keys          map[voidptr]string
@@ -49,6 +50,7 @@ struct NativeCacheRecord {
 pub struct NativeCacheStats {
 pub mut:
 	abi                  string
+	identity_kind        string
 	pending_executables  int
 	cache_hits           u64
 	cache_misses         u64
@@ -83,6 +85,7 @@ fn native_cache_abi() !string {
 			$embed_file('@VMODROOT/libjs/native_property_length.v').to_string() +
 			$embed_file('@VMODROOT/libjs/native_property_index.v').to_string() +
 			$embed_file('@VMODROOT/libjs/native_code_cache.v').to_string() +
+			$embed_file('@VMODROOT/libjs/native_generated_code_cache.v').to_string() +
 			$embed_file('@VMODROOT/libjs/instruction.v').to_string() +
 			$embed_file('@VMODROOT/libjs/value.v').to_string() +
 			$embed_file('@VMODROOT/libjs/object.v').to_string() +
@@ -98,25 +101,51 @@ fn native_cache_abi() !string {
 // Enabling lookup never starts a compiler. Compilation is an explicit idle
 // checkpoint, and the next VM needs no warmup or profile to use that result.
 pub fn (mut vm VM) enable_native_code_cache(directory string, compiler string) ! {
+	vm.enable_native_code_cache_with_options(directory, compiler, NativeCodeCacheOptions{})!
+}
+
+pub struct NativeCodeCacheOptions {
+pub:
+	// Experimental reuse of exactly matching generated function code, across
+	// source URLs and edits. The ordinary source-bound cache remains default.
+	generated_code_identity bool
+}
+
+pub fn (mut vm VM) enable_native_code_cache_with_options(directory string, compiler string, options NativeCodeCacheOptions) ! {
 	if vm.run_executable_depth != 0 || vm.external_budget_depth != 0 {
 		return error('Cannot enable the native disk cache during JavaScript execution')
 	}
 	if vm.native_tier != none { return error('Native tier already initialized') }
-	abi := native_cache_abi()!
+	base_abi := native_cache_abi()!
+	abi := if options.generated_code_identity {
+		sha256.hexhash('native-generated-code-v1:' + base_abi)
+	} else {
+		base_abi
+	}
 	path := os.join_path(directory, abi)
 	os.mkdir_all(path)!
 	vm.ensure_native_type_names()
 	vm.native_tier = &NativeTier{
 		enabled:    true
 		profiling:  false
-		persistent: &NativeCodeCache{ directory: os.real_path(path), compiler: compiler, abi: abi }
+		persistent: &NativeCodeCache{
+			directory: os.real_path(path)
+			compiler: compiler
+			abi: abi
+			generated_code_identity: options.generated_code_identity
+		}
 	}
 }
 
 pub fn (vm &VM) native_code_cache_stats() NativeCacheStats {
 	if tier := vm.native_tier {
 		if cache := tier.persistent {
-			return NativeCacheStats{ ...cache.stats, abi: cache.abi, pending_executables: cache.pending.len }
+			return NativeCacheStats{
+				...cache.stats
+				abi: cache.abi
+				identity_kind: if cache.generated_code_identity { 'generated-code' } else { 'source' }
+				pending_executables: cache.pending.len
+			}
 		}
 	}
 	return NativeCacheStats{}
@@ -133,6 +162,13 @@ fn native_key_u32(mut bytes []u8, value u32) {
 fn (mut cache NativeCodeCache) key(executable &Executable) string {
 	parsed := executable.parsed_source
 	if parsed == unsafe { nil } || executable.native_cache_scope == '' { return '' }
+	if cache.generated_code_identity {
+		code := native_generated_code_identity(executable) or {
+			cache.stats.last_error = err.msg()
+			return ''
+		}
+		return sha256.hexhash(cache.abi + ':' + code)
+	}
 	source_hash := cache.source_hashes[voidptr(parsed)] or {
 		hash := sha256.hexhash(parsed.source_text)
 		cache.source_hashes[voidptr(parsed)] = hash

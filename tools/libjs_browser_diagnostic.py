@@ -111,6 +111,8 @@ def run(args):
     environment['VOX_LIBJS_NATIVE_CACHE_FINAL_AUDIT_PATH'] = str(output / 'native-cache-final.json')
     if args.native_cache is not None:
         environment['VOX_LIBJS_NATIVE_CACHE'] = str(args.native_cache.resolve())
+    if args.generated_code_cache:
+        environment['VOX_LIBJS_NATIVE_GENERATED_CODE_CACHE'] = '1'
     if args.disable_native_cache:
         environment['VOX_LIBJS_NATIVE_CACHE'] = '0'
     if args.frontend_cache is not None:
@@ -152,6 +154,7 @@ def run(args):
         document_capture=args.document_capture, ready_selector=args.ready_selector,
         text_geometry=args.text_geometry, native_diagnostics=args.native_diagnostics,
         require_native_reuse=args.require_native_reuse,
+        generated_code_cache=args.generated_code_cache,
         render_device_scale=args.render_device_scale,
         date_epoch_ms=args.date_epoch_ms,
         observer_sha256=digest(Path(__file__)), sample_after=args.sample_after,
@@ -216,6 +219,13 @@ def run(args):
                 result['native_error_count'] = audit.get('native_reported_error_count', 0)
                 result['native_error_information'] = audit.get('native_reported_error_information', [])
             result['png_present'] = capture_png.is_file()
+            if args.generated_code_cache:
+                result['generated_code_cache_verified'] = all(
+                    isinstance(receipt, dict)
+                    and isinstance(receipt.get('native'), dict)
+                    and receipt['native'].get('identity_kind') == 'generated-code'
+                    for receipt in [result.get('compiled_javascript_cache'),
+                                    result.get('compiled_javascript_cache_final')])
             if args.require_native_reuse:
                 errors = native_reuse_errors(result.get('compiled_javascript_cache'),
                                              result.get('compiled_javascript_cache_final'))
@@ -232,9 +242,11 @@ def run(args):
         (output / 'summary.json').write_text(json.dumps(result, indent=2) + '\n')
     print(json.dumps({key: result.get(key) for key in
         ['pid', 'browser_exit', 'document', 'counts', 'png_present', 'changed_inputs',
-         'javascript_diagnostics', 'native_reuse']}, ensure_ascii=False))
+         'javascript_diagnostics', 'native_reuse', 'generated_code_cache_verified']}, ensure_ascii=False))
     return 0 if (result.get('browser_exit') == 0 and result.get('png_present')
                  and not result.get('changed_inputs')
+                 and (not args.generated_code_cache
+                      or result.get('generated_code_cache_verified') is True)
                  and (not args.require_native_reuse
                       or result.get('native_reuse', {}).get('passed') is True)) else 1
 
@@ -262,6 +274,8 @@ def main():
                         help='Enable native entry/fast/slow counters in a separate eligibility diagnostic')
     parser.add_argument('--require-native-reuse', action='store_true',
                         help='Fail unless capture and shutdown prove native execution with clean cache hits and no compilation')
+    parser.add_argument('--generated-code-cache', action='store_true',
+                        help='Opt into identical generated-C reuse and require its identity in capture/shutdown receipts')
     parser.add_argument('--text-geometry', action='store_true',
                         help='Record bounded retained text paint positions and font metrics')
     parser.add_argument('--render-device-scale', type=float,
@@ -280,6 +294,8 @@ def main():
     parser.add_argument('--ready-selector',
                         help='Wait for this selector before a document-only capture')
     args = parser.parse_args()
+    if args.generated_code_cache and (args.engine != 'libjs' or args.native_cache is None):
+        parser.error('--generated-code-cache requires LibJS and --native-cache')
     if args.require_native_reuse and (args.engine != 'libjs' or args.native_cache is None
             or not args.native_diagnostics):
         parser.error('--require-native-reuse requires LibJS, --native-cache and --native-diagnostics')

@@ -73,6 +73,18 @@ class DiagnosticSourceTests(unittest.TestCase):
         self.assertEqual(result, 0)
         self.assertTrue(arguments.require_native_reuse)
 
+    def test_generated_code_identity_requires_an_explicit_libjs_cache(self):
+        for extra in [[], ['--native-cache', '/tmp/cache', '--engine', 'javascriptcore']]:
+            with self.subTest(extra=extra), contextlib.redirect_stderr(io.StringIO()):
+                with self.assertRaises(SystemExit) as error:
+                    self.invoke(['--url', 'https://github.com/vlang/v',
+                                 '--generated-code-cache', *extra])
+                self.assertEqual(error.exception.code, 2)
+        result, arguments = self.invoke(['--url', 'https://github.com/vlang/v',
+                                        '--generated-code-cache', '--native-cache', '/tmp/cache'])
+        self.assertEqual(result, 0)
+        self.assertTrue(arguments.generated_code_cache)
+
 
 class NativeReuseAuditTests(unittest.TestCase):
     def receipt(self):
