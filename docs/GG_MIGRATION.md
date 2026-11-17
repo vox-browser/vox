@@ -12,15 +12,15 @@ the full raster when the ramp cannot represent their coverage.
 On Linux ARM64, the X11 regression exercised both ramp directions and compared
 all fixture content pixel for pixel with `VOX_DISABLE_PORTABLE_GRADIENT_RAMP=1`.
 The pixels matched. The Linux browser smoke suite and live vlang.io capture
-passed. The macOS production-flag V type check passed.
+passed. The macOS and Windows V type checks also passed using their build flags.
 
 Two alternating pairs used [the scrolling gradient fixture](../Tests/Browser/Native/scroll-gradient-ramps.html)
 with software OpenGL in a four-vCPU VM. Each fresh launch delivered 80
 synthetic integer scroll steps at a requested 1024 × 600 document viewport.
 The executable SHA-256 was
 `e381e9ec1de2f89ec57205c36cd2f9485467a7d531c38b6b9a5aa9524ed49bca`.
-This was a single-unit Clang `-O0` diagnostic build. The optimized compiler
-process was killed in the VM. Replay times below end at callback completion.
+This was a single-unit Clang `-O0` diagnostic build. The initial `-O1` compiler
+process was killed in the 6 GiB VM. Replay times below end at callback completion.
 
 | Trial | Replay variant | Median (ms) | p95 (ms) | Max (ms) |
 | --- | --- | ---: | ---: | ---: |
@@ -32,8 +32,24 @@ process was killed in the VM. Replay times below end at callback completion.
 Scroll positions and command counts agreed across all four trials. The guest
 one-minute load averages were 1.15, 1.36, 1.49 and 1.57. The benchmark and
 3 GiB guard exited zero with a peak sampled RSS of 509,161,472 bytes.
-Optimized-build performance, native presentation cadence and a full shared
-compositor remain open.
+
+The `-O1` retry in the 10 GiB VM completed with a peak sampled process-tree
+RSS of 9,984,811,008 bytes under the 12 GiB build guard. The executable
+SHA-256 was `0a7603ca435b9ad5fcb0e16b3e99a046d34f9195854511e868633f9338d0ac41`.
+The browser suite again passed its exact ramp checks. The same fixture and
+four-trial protocol produced the following synthetic callback replay results.
+
+| Trial | Replay variant | Median (ms) | p95 (ms) | Max (ms) |
+| --- | --- | ---: | ---: | ---: |
+| 1 | Full raster | 68.384 | 75.983 | 96.934 |
+| 2 | Ramp | 0.741 | 0.963 | 2.652 |
+| 3 | Full raster | 61.133 | 65.499 | 84.492 |
+| 4 | Ramp | 0.710 | 2.127 | 2.351 |
+
+The scroll traces agreed. The guest one-minute load averages were 1.11, 1.02,
+1.02 and 1.02. The build, browser suite, cohort and their guards exited zero.
+The cohort guard sampled a peak of 496,852,992 bytes. Native presentation
+cadence and the full shared compositor remain open.
 
 ## Original migration plan
 
