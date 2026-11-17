@@ -2,6 +2,16 @@
 
 
 def patch_h2_pooled_transport(source):
+    signature = 'fn (mut t H2PooledTransport) lock_io()'
+    if signature in source:
+        start = source.index(signature)
+        end = source.index('\n}', start) + 2
+        expected = (signature + ' { t.io_admission.lock() '
+                    't.io_mu.lock() t.io_admission.unlock() }')
+        if (''.join(source[start:end].split()) != ''.join(expected.split())
+                or source.count('t.lock_io()') != 4):
+            raise RuntimeError('Unsupported upstream HTTP/2 admission layout')
+        return source + '\nfn (mut t H2PooledTransport) vox_lock_io() { t.lock_io() }\n'
     field = '\tio_mu  &sync.Mutex  = sync.new_mutex()'
     if source.count(field) != 1 or source.count('t.io_mu.lock()') != 4:
         raise RuntimeError('Unsupported V HTTP/2 pooled transport locking layout')

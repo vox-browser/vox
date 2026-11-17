@@ -250,11 +250,26 @@ fn patch_transport(source string) !string {
 	return text[..first] + dial + text[last..] + '\n' + read(join(root_dir(), 'tools/http_tls_dial.v.inc'))!
 }
 
-fn patch_h2_pooled(source string) !string {
+fn patch_h2_admission(source string) !string {
+	if source.contains('fn (mut t H2PooledTransport) lock_io()') {
+		start, end := function_span(source, 'fn (mut t H2PooledTransport) lock_io(')!
+		gate := 'fn (mut t H2PooledTransport) lock_io() { t.io_admission.lock() t.io_mu.lock() t.io_admission.unlock() }'
+		if source[start..end].fields().join('') != gate.fields().join('')
+			|| source.count('t.lock_io()') != 4 {
+			return error('Unsupported upstream HTTP/2 admission layout')
+		}
+		return source + '\nfn (mut t H2PooledTransport) vox_lock_io() { t.lock_io() }\n'
+	}
 	field := '\tio_mu  &sync.Mutex  = sync.new_mutex()'
 	mut text := replace_once(source, field, field + '\n\tvox_admission_mu &sync.Mutex = sync.new_mutex()')!
 	if text.count('t.io_mu.lock()') != 4 { return error('Unsupported HTTP/2 locking layout') }
-	text = text.replace('t.io_mu.lock()', 't.vox_lock_io()') + snippet('h2_admission')
+	return text.replace('t.io_mu.lock()', 't.vox_lock_io()') + snippet('h2_admission')
+}
+
+fn patch_h2_pooled(source string) !string {
+	mut text := patch_h2_admission(source)!
+	// Current vlib aligns the state fields after adding its admission mutex.
+	text = text.replace('\tclosed       bool\n}', '\tclosed bool\n}')
 	text = replace_once(text, '\tclosed bool\n}', '\tvox_wake voidptr\n\tvox_wait_before_read bool\n\tclosed bool\n}')!
 	text += snippet('h2_wake_declarations')
 	text = replace_function(text, 'fn new_h2_pooled_transport(', snippet('h2_transport_new'))!
