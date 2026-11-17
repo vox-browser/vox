@@ -5845,3 +5845,108 @@ move 40 completed roots/72 files there, exit zero in 0.200885333 seconds,
 sampled peak 409,600 bytes. The accepted compiled screenshot remains unchanged
 at two Notifications pixels. Full parity, current live validation and matched
 compiled-revisit performance remain open; automated tests remain paused.
+
+
+### Direct live navigation and partial native-cache reopen, 2026-11-17
+
+`6d9819767` adds mutually exclusive `--url HTTP(S)-URL` and `--archive` sources
+to `tools/libjs_browser_diagnostic.py`. Direct navigation uses current network
+responses and the normal clock, without constructing a replay server or
+inheriting its proxy/private CA. Source metadata explicitly labels mutable
+responses. Fresh profiles, bundle leases, PID adoption, executable/library
+fingerprints and existing document/cache audits remain in place. Invalid URLs,
+credentials and conflicting sources decline before launch. Focused regression
+sources accompany the feature but remain unrun under the automated-test hold.
+Two pre-existing summary-field additions in the tool are excluded from this
+commit and left in the working tree.
+
+The latest completed shared production executable at the start is
+`8aadccc4dce3f76dc5d4bee10ad87a604d58ac10fcc73c7f847a1a52dc0de7aa`,
+with single-C literal `-prod` receipt
+`Build/production-build/receipts/20261117-153839-f494e60b/frozen-compile.json`.
+No additional browser build is requested. Both initial captures explicitly
+disable the native cache and use a 1024×768 document viewport, layout/render
+scale two, capture scale one and the retained raster/profile options.
+
+| Shared production check | PID | Content | Guard seconds / sampled peak bytes |
+| --- | ---: | --- | --- |
+| Direct live GitHub, interpreter | 17632 | 34 rows / 53 commit links / latest / README | 39.655758 / 8,775,483,392 |
+| Original frozen archive, interpreter | 18725 | 33 rows / 56 commit links / latest / README | 38.060907667 / 8,103,837,696 |
+
+Both have zero browser/controller/guard exits, unchanged inputs, no reported
+author/native errors and uninitialized page JavaScriptCore. The live check
+evaluates all 76 modules, with 4,310 function bytecodes compiled, 4,142 entered
+and 60,634 reused. Its image is
+`current-live-libjs-interpreted-20261117.png`, SHA-256
+`cb75768c3f4652df46d9ea10847029717c26f35c12f4babbedca200924d8e86b`.
+This supplies interpreter execution evidence, without compiled-native credit.
+The archive control exactly reproduces the retained two-pixel image with zero
+changed pixels. The original Brave reference, frozen clock, P3 normalization
+and zero tolerance remain unchanged. Its comparison guard exits zero in
+2.323052417 seconds, sampled peak 259,129,344 bytes.
+
+A fresh direct-live process, PID 32709, then prepares the ordinary Clang native
+cache in its actual ABI partition
+`06a04ee8d6666206073e57b0cce172d4a57af55012c8e59801cb0483229b2b19`.
+It compiles **24,099 executables in 189 compiler invocations**, with 4,398 cold
+misses, zero hits, zero pending/invalid executables and no final compiler error.
+All 76 modules finish preparation: 26,042 prepared functions, 19,721 queued
+functions and zero unsupported functions or preparation diagnostics. All 76
+modules evaluate, content remains complete, input hashes remain fixed, PID
+adoption succeeds and browser/controller/guard exits are zero. The 12-GiB
+guard records 2,439.827712208 seconds and a sampled peak of 12,134,825,984 bytes.
+Reported compile/load times are 2,371,566.309037001 / 42,943.372002 milliseconds.
+The PNG is written about 47.988 seconds after launch; subsequent shutdown drains
+the native compilation queue. The 40.7-minute guard interval therefore includes
+preparation after capture and cannot be compared with ordinary page-load time.
+This cold process records zero native entries: it interprets before preparing
+the cache. Earlier ABI partitions are neither renamed nor copied.
+
+The first reopen controller incorrectly requires positive native entries in
+that cold preparation audit, exits one and launches no reopen browser. Its
+41.432815542-second guard and failed audit are retained. The corrected audit
+requires positive entries only for the reopened process and verifies all other
+preparation gates before launching it with the same executable and cache.
+
+The actual compiler-disabled reopen, PID 37951, executes **495,412 native
+entries**, with **2,898 cache hits, 1,490 misses and 1,490 pending executables**.
+All 76 modules evaluate and the full live content audit passes, without reported
+author/native DOM errors or page JavaScriptCore initialization. Fixed inputs,
+PID adoption and zero browser/controller/guard exits pass; the guard records
+43.288264542 seconds and 9,576,316,928 sampled peak bytes. However, the final
+native error is `Native compiler exited 1:` from `/usr/bin/false`. The zero
+successful compiler-invocation counter does not mean no compiler was attempted.
+The strict zero-miss/no-error audit correctly exits one. Eleven module URLs
+change between preparation and reopen, including `code-view`, `code-menu`,
+`core` and `repositories`; both graphs contain 76 URLs. These are mutable live
+responses, so a deployment or response variant cannot be distinguished here.
+This is partial native execution evidence, with no zero-miss or speed claim.
+
+The new explicitly partial image is
+`current-live-libjs-native-partial-20261117.png`, SHA-256
+`98a130a6fa212dbdce393c5e120f10c319888e5ab83a6e3c096f78b721b44796`.
+It does not replace the earlier fully cached live screenshot or the accepted
+frozen compiled two-pixel screenshot.
+
+A planned refresh stops at its executable-identity guard before launching any
+browser: the shared worker has published
+`d166b53e27274390a698704536cd3984a15b1094579e0c0f9fb126616565b56c`,
+whose receipt changes 22 consumed LibJS source hashes. No old ABI is forced
+onto that runtime. Validation of the newer executable requires a fresh pinned
+cohort; these completed checks cannot establish its behavior.
+
+Separately, 15 selected-draw replays change constant color/radius/stroke varyings
+to flat interpolation individually and together, alongside ordinary controls.
+Every ordinary control matches its prior hash; each flat variant exactly
+reproduces the earlier rejected explicit-mask image, with 3/9/5 changed pixels
+for unified/split/eight-instance draws. No renderer change is retained and no
+GPU bug is inferred. Helper compile/replay guards exit zero in 0.917481917 /
+2.814899167 seconds, sampled peaks 122,552,320 / 46,071,808 bytes.
+
+Raw commands, failures, identities, module graphs and captures remain local in
+`live-url-5204`, `metal-constant-varying-5204` and `metal-spec-5204`. Idle-lock,
+SHA-256 and symlink checks move 30 completed roots/62 files to
+`scratch-receipts/continued-20261117-r39`, exit zero in 0.188624458 seconds,
+sampled peak 393,216 bytes; this job's Build outputs and locks are removed.
+Full frozen parity, a current zero-miss live reopen and matched compiled-revisit
+performance remain open. Automated tests remain paused.

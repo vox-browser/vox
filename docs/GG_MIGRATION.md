@@ -3844,3 +3844,16 @@ but introduces 18 new full-page differences, so it is rejected. Both on/off
 processes execute the pinned native cache with 4,245 hits and zero compiler
 calls. The retained result stays at two pixels; no renderer change is kept.
 See [the runtime report](LIBJS_GITHUB_RUNTIME_20261115.md#stored-depth-and-coverage-masks-rejected-whole-page-identity-2026-11-17).
+
+
+### Constant-varying controls and live navigation, 17 November 2026
+
+Fifteen selected-draw diagnostics preserve all ordinary control hashes but show
+that flat constant color/radius/stroke varyings reproduce the rejected coverage
+mask result, with 3/9/5 changed pixels across the three draw groupings. No
+renderer change is retained; the frozen comparison stays at two pixels.
+The latest shared production control at launch reproduces that exact image
+with the native cache disabled. A separate direct-live reopen executes native
+LibJS but fails the zero-miss gate after its module URLs change. These checks
+supply no performance acceptance, and automated tests remain paused. See the
+[live navigation audit](LIBJS_GITHUB_RUNTIME_20261115.md#direct-live-navigation-and-partial-native-cache-reopen-2026-11-17).
