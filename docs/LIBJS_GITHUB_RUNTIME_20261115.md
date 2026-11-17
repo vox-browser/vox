@@ -5754,9 +5754,9 @@ exits. The original Brave reference, frozen clock, viewport, density and zero
 tolerance remain unchanged. The first comparison incorrectly expects a final
 native-cache receipt while caching is disabled and exits one; a separate
 corrected image-only comparison retains that failure and passes the actual
-cache-disabled policy. The first read-only GPU filter observes no viewports
-because it hooks the singular setter; its images remain valid, but it supplies
-no draw-order attribution. A follow-up removes that filter and records the
+cache-disabled policy. The first read-only GPU filter records zero viewport
+dimensions and selects no draws; its images remain valid, but it supplies no
+draw-order attribution. A follow-up removes that filter and records the
 actual nine-instance draw: underline, Sponsor/Notifications/Fork/Star fills,
 then those four borders. This differs from Brave's captured whole-list order.
 Appending the underline alone therefore supplies no fix. The candidate is
