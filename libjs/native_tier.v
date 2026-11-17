@@ -305,6 +305,33 @@ fn native_slot(operand Operand, executable &Executable) !u32 {
 	return operand.slot(executable, 0, false)
 }
 
+const native_fast_budget_check = 'if(limited) --*budget; if(fast_steps) ++*fast_steps;'
+
+// Copy template spans directly into the translation unit. Both substitutions
+// used to allocate intermediate copies of the entire instruction.
+fn write_native_fast_step(mut output strings.Builder, template string, offset int) {
+	mut cursor := 0
+	mut slow := template.index_('SLOW')
+	mut budget := template.index_('BUDGET')
+	for slow >= 0 || budget >= 0 {
+		replace_slow := slow >= 0 && (budget < 0 || slow < budget)
+		marker := if replace_slow { slow } else { budget }
+		unsafe { output.write_ptr(template.str + cursor, marker - cursor) }
+		if replace_slow {
+			output.write_byte(`S`)
+			output.write_decimal(offset)
+			cursor = slow + 'SLOW'.len
+			slow = template.index_after_('SLOW', cursor)
+		} else {
+			output.write_string(native_fast_budget_check)
+			cursor = budget + 'BUDGET'.len
+			budget = template.index_after_('BUDGET', cursor)
+		}
+	}
+	unsafe { output.write_ptr(template.str + cursor, template.len - cursor) }
+	output.write_byte(`\n`)
+}
+
 fn native_source(executables []&Executable) !(string, int) {
 	mut source := strings.new_builder(16384)
 	sample := Value{}
@@ -342,7 +369,7 @@ fn native_source(executables []&Executable) !(string, int) {
 				// reported by the ordinary VM path at precisely this instruction.
 				source.writeln('if(limited && !*budget) goto S${offset};')
 				// Guards precede decrement so a slow exit consumes exactly once.
-				source.writeln(fast.replace('SLOW', 'S${offset}').replace('BUDGET', 'if(limited) --*budget; if(fast_steps) ++*fast_steps;'))
+				write_native_fast_step(mut source, fast, offset)
 				if instruction.op == .jump {
 					source.writeln('goto L${instruction.target};')
 				} else if instruction.op == .end {
