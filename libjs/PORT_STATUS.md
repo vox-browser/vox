@@ -254,6 +254,11 @@ abortable event listeners; Fetch RequestInit.signal remains explicitly unsupport
 Window timers now use actual native clocks/tasks and ClassicScript source
 evaluation, bounded callbacks, cancellation and exception roots that survive
 temporary arenas. Nine focused cases pass in both GC modes and sanitizer.
+LibJS Window exposes MessageChannel, MessagePort and MessageEvent through the
+native HTML posted-message queue. The bindings preserve FIFO delivery, port
+ownership and transfer, structured references to transferred ports, and the
+existing ordinary-object clone support. Worker realms and additional structured
+clone families remain open.
 URLSearchParams now wraps the native parser/serializer and live iterators,
 including URL.searchParams identity and bidirectional href/search synchronization.
 Their focused cases cover both GC modes and persisted execution without a compiler.

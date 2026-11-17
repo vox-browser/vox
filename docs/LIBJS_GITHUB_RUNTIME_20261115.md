@@ -6896,3 +6896,63 @@ partition are retained in the benchmark cache as
 `libjs-github-navigation-20261118-5204-r66`. The shared production build,
 live GitHub, exact full-list restoration and document-only pixel parity
 remain unverified by this run. The automated-test hold remains in effect.
+
+### Brave return control and LibJS MessageChannel
+
+A fresh Brave window uses the same full-list fixture, including the 18,376
+root paths, 18,551 destination paths and recorded router variants. CDP mouse
+and keyboard input opens the first `readme.md` result, and CDP traverses the
+previous history entry after the file renders. The full repository audit
+matches before and after Back. The 20,773-character README and its serialized
+article HTML are byte-identical, and Brave records no script exceptions.
+Browser PID 30585, controller and guard exit zero with fixed input hashes.
+The guard records 3.780595666 seconds and 995,213,312 sampled peak bytes.
+Different input and observation boundaries limit this to a functional control.
+Both captured 1024×768 Brave states remain local. A strict before/after
+comparison differs at 1,315 pixels. The established Brave reference and
+tolerances stay fixed.
+
+The archived React scheduler selects a MessageChannel when one exists and
+otherwise schedules work on a timer. The new LibJS binding uses the existing
+HTML posted-message queue and MessageEvent record. It supports opening and
+closing ports, deferred FIFO delivery, ordinary structured content and
+transferred ports referenced by the payload and the event's frozen port list.
+The production type check for the final sources exits zero in 41.024679667
+seconds at 7,102,709,760 sampled bytes. Focused regression sources remain
+unrun under the automated-test hold.
+
+The private single-C `-O0` Boehm build, SHA-256
+`21a6e6495dbb5cc8800f346169bf05a52540205f9442012baca3062788e64417`,
+seals the messaging source inputs and exits zero in 109.470711917 seconds at
+8,478,425,088 sampled bytes. A controlled window observes FIFO delivery after
+start, cyclic clone identity, transfer and reply, trusted events, and the
+existing Back and Forward behavior. Browser PID 59344, controller and guard
+exit zero in 11.311671583 seconds at 255,836,160 sampled bytes. This binary
+predates the final preflight ordering for rejected transfers.
+
+An instrumented copy of the archived scheduler records its selected branch
+in a document attribute. The earlier private browser reads `timer`, and the
+binding browser reads `message-channel`. The latter 34-second observation
+ends before the full root content audit has hydrated. These branch markers
+establish selection without a load-time or performance comparison.
+
+The first unmodified full-list run finds the root README and delivers Enter.
+The observation ends before the file content gate. Browser PID 61429 exits
+zero, controller and guard exit one, and the 121.479385875-second run peaks at
+4,179,247,104 sampled bytes with unchanged inputs. A longer run retains the
+same binary and replay.
+
+The longer run renders the README, delivers toolbar Back, and restores the
+repository title, all 33 rows, latest commit and 56 commit links. The README
+has 20,110 characters after Back versus 20,773 initially, with identical
+non-whitespace words. React's scheduler callback still hits the document
+instruction budget. Browser PID 64662 exits zero, controller and guard exit
+one, and pins stay fixed. The run records 259.808822167 guard seconds and
+4,657,577,984 sampled peak bytes. A separate two-second sample late in the
+return finds idle garbage collection on 130 of 168 main-thread stacks.
+
+The browser runs use the interpreter and private Boehm builds. The new
+binding is committed as `8e73206e2`. Live GitHub, the shared production build,
+generated-cache reuse with the binding, and exact Brave parity remain open.
+The guarded runs, source hashes, modified scheduler fixture and window
+artifacts are retained locally under `repository-navigation-5204-r67`.
