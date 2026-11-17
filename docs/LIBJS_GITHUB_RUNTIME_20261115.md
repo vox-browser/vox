@@ -7272,3 +7272,34 @@ fixture. The archived GitHub replay from the previous section served
 managed build hook requested a production build. End-to-end Back restoration
 under 12 GiB remains unverified. Local commands, pins and receipts are
 under `repository-navigation-5204-r75`.
+
+### LibJS Map and Set key indexes
+
+Commit `25d48cb0c` stores numeric hashes and collision links in the
+existing ordered entry list. Map and Set compare keys with SameValueZero
+inside each bucket. Tombstones keep live iterator positions stable when
+entries are deleted, reinserted or cleared.
+
+Three alternating fresh-process pairs use single-C prealloc builds, with
+only `libjs/keyed_collection.v` changing across 493 recorded source and
+fixture pins. Each process inserts 9,600 prebuilt keys into each collection
+and verifies 28,800 operation groups. The caller arena grows by 33,727,477
+bytes in each control and 20,038,679 bytes in each candidate, **40.6% less**.
+The manual checks verify number normalization, raw UTF-16 identity,
+BigInt equality, object and symbol identity, and live insertion order.
+
+The native-cache seed compiles two executables in one compiler call. A
+fresh reopen with `/usr/bin/false` verifies 1,500 cycles of collisions,
+head and tail deletion, and iterator order in Map and Set. It records
+two hits, 1,501 native entries, 102,006 helper steps, and zero misses,
+compiler calls, pending executables or invalid entries. All runtime
+processes and guards exit zero. The production type check passes in
+56.713607958 seconds at 7,106,461,696 sampled peak bytes. The collision
+regression source remains unrun under the automated-test hold.
+
+The earlier production attempt `20261118-022652-880e7db2` exited 1 after
+the resource transport header changed during input sealing. The worker
+started `20261118-024638-c98004e8` and the published executable is still
+`23ba3183…3bb`. The full cached-native Back replay under 12 GiB remains
+pending. Local commands, pins and receipts are under
+`repository-navigation-5204-r76`.
