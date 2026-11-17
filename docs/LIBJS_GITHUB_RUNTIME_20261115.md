@@ -5950,3 +5950,83 @@ SHA-256 and symlink checks move 30 completed roots/62 files to
 sampled peak 393,216 bytes; this job's Build outputs and locks are removed.
 Full frozen parity, a current zero-miss live reopen and matched compiled-revisit
 performance remain open. Automated tests remain paused.
+
+
+### Strict native-reuse diagnostics and newer runtime checks, 2026-11-17
+
+`87d29a296` adds `--require-native-reuse` to the browser diagnostic. It requires
+LibJS, an explicit persistent cache and native execution diagnostics. Both the
+capture-time and shutdown receipts must show positive native hits and execution
+entries, a consistent ABI, no initialized page JavaScriptCore, zero misses,
+invalid/pending/compiled executables or compiler invocations, and an empty cache
+error. Missing counters fail the check. A screenshot with a failed compiler
+now exits one when this option is selected, even though the current counter
+reports only successful compiler invocations. The receipt explicitly limits
+the check to cache/execution; page content, pixels and performance remain
+separate checks. CLI, absent-proof, compiler-error and ABI-change regression
+sources are committed but remain unrun under the automated-test hold. The two
+pre-existing summary-field additions remain excluded from the commit.
+
+Fresh processes exercise the previously unvalidated shared executable
+`d166b53e27274390a698704536cd3984a15b1094579e0c0f9fb126616565b56c`
+with its actual native ABI
+`b32c6cda1d21c6618167f155e29fa1f51192c6c09c86208025bcc3c250b24e45`.
+The existing single-C literal `-prod` receipt is
+`Build/production-build/receipts/20261117-173658-4f20c82c/frozen-compile.json`.
+No manual browser build is requested. A controller holds the bundle read lease
+across each preparation/reopen sequence, with separate fresh private profiles,
+guard PID adoption and unchanged executable/library/tool inputs throughout.
+
+| Hacker News homepage check | PID | Native result | Guard seconds / sampled peak bytes |
+| --- | ---: | --- | --- |
+| Archived cold preparation | 69177 | 6 compiled / 1 compiler invocation | 3.014604750 / 444,317,696 |
+| Archived compiler-disabled reopen | 69231 | 6 hits / 6 native entries / zero misses | 2.870169375 / 410,599,424 |
+| Archived empty-cache control, compiler disabled | 69280 | 6 misses / zero entries / expected strict failure | 2.894460916 / 409,960,448 |
+| Direct live cold preparation | 70046 | 6 compiled / 1 compiler invocation | 3.925974750 / 445,251,584 |
+| Direct live compiler-disabled reopen | 70241 | 6 hits / 6 native entries / zero misses | 3.780473833 / 399,720,448 |
+
+Both reopens pass the strict capture/shutdown check with `/usr/bin/false`:
+zero misses, compiler invocations, newly compiled executables, pending/invalid
+entries and errors. The empty-cache control has zero successful compiler
+invocations but retains `Native compiler exited 1:` and six pending entries;
+its diagnostic/guard correctly exit one while its browser exits zero. Its PNG
+is byte-identical to the successful archived captures, showing why image and
+cache acceptance need independent checks. Other browser/controller/guard exits
+are zero, author/native errors are absent and page JavaScriptCore remains
+uninitialized. These homepage initialization checks do not exercise comment
+collapse callbacks or supply a matched performance cohort. Their short guard
+intervals include the fixed two-second capture delay and are not speed credit.
+The direct-live compiled screenshot is
+`current-live-hacker-news-native-20261117.png`; the earlier GitHub images remain
+unchanged. Native partitions are used as generated, without copying old ABI data.
+
+The same shared executable also completes separate GitHub interpreter controls
+with the native cache explicitly disabled, retaining the previous viewport,
+layout/render/capture densities and raster/profile options:
+
+| GitHub check | PID | Evaluated modules / content | Guard seconds / sampled peak bytes |
+| --- | ---: | --- | --- |
+| Original frozen archive | 72446 | 81 / 33 rows / 56 commit links / latest / README | 37.490210500 / 7,930,462,208 |
+| Direct live responses | 74100 | 76 / 34 rows / 53 commit links / latest / README | 38.721670083 / 8,474,279,936 |
+
+All module promises fulfill. Inputs remain fixed, PID adoption succeeds, no
+author/native errors are reported and browser/controller/guard exits are zero.
+The frozen image exactly reproduces the accepted two-pixel image: zero changed
+pixels, maximum reference error ten, unchanged original Brave reference and
+zero tolerance. Its comparison guard exits zero in 2.077626084 seconds, sampled
+peak 261,193,728 bytes. The first controller uses incorrect module-audit field
+names and exits one after the successful archive capture. That failure is
+retained; a corrected controller checks `status` and `promise_state`, verifies
+the original capture without relaunching it, then completes the live capture.
+The new live interpreter image is
+`current-live-libjs-interpreted-d166-20261117.png`, SHA-256
+`8bf5a85b323f19da7a9db7300dfd6b0c1d72fa7dd106b79da217770c69865b2c`.
+These interpreter controls provide no compiled GitHub execution credit.
+
+Raw commands, guards, source pins, rejected control and captures remain locally
+in `strict-native-reuse-5204` and `latest-runtime-5204`. Idle-lock, SHA-256 and
+symlink verification moves 30 completed roots/98 files to
+`scratch-receipts/continued-20261117-r40`, exit zero in 0.182736916 seconds,
+sampled peak 245,760 bytes; this job's Build outputs and locks are removed.
+Full frozen parity, a current zero-miss GitHub live reopen and matched
+compiled-revisit performance remain open. Automated suites remain paused.

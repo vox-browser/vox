@@ -3857,3 +3857,16 @@ with the native cache disabled. A separate direct-live reopen executes native
 LibJS but fails the zero-miss gate after its module URLs change. These checks
 supply no performance acceptance, and automated tests remain paused. See the
 [live navigation audit](LIBJS_GITHUB_RUNTIME_20261115.md#direct-live-navigation-and-partial-native-cache-reopen-2026-11-17).
+
+
+### Newer shared runtime rendering control, 17 November 2026
+
+The shared `d166b53e…` production executable reproduces the accepted frozen
+GitHub image exactly, with the same two remaining Notifications pixels. The
+native cache is explicitly disabled; this establishes interpreter/rendering
+behavior for that newer runtime. Its live GitHub capture evaluates all 76
+modules and retains full content without reported errors. Separately, archived
+and live Hacker News compiler-disabled reopens pass the new strict native-reuse
+check; an identical-image empty-cache control correctly fails it. No renderer
+change or performance acceptance is claimed. Tests remain paused. See the
+[runtime audit](LIBJS_GITHUB_RUNTIME_20261115.md#strict-native-reuse-diagnostics-and-newer-runtime-checks-2026-11-17).
