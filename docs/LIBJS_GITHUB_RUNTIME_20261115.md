@@ -5316,3 +5316,29 @@ targets; the finalized r4 trace stays unpacked. Failed diagnostic arguments,
 compression and disabled-cache audit assumptions are retained with corrected
 attempts. The managed commit hook requests the coalesced production rebuild;
 no duplicate shared build was queued.
+
+The subsequent draw-grouping replay keeps the same captured rectangle data and
+GG shaders. Compacting the static vertex prefix, instance prefix or color slots
+leaves the entire baseline tile byte-identical. Splitting the nine-instance draw
+into one-instance calls changes exactly six pixels, raw BGRA SHA-256
+`51266e02fad22c8b2dcff03c55dfcaf3e4d1b09f52bfd7540aeb76f81dac9a06`.
+The four large corner values now exactly reproduce Vox's errors. The two lower
+values also change, but still omit the real shadow contribution. Substituting
+Vox's depths in the split replay gives the same bytes. Drawing each background/
+border pair together, or separating the five fills and four strokes into two
+calls, also gives those same six changes. Reordering all nine into adjacent
+pairs within one call changes only two pixels. Thus grouping and ordering both
+affect this captured legacy strip; this does not establish a safe general fix.
+All captured resource hashes, control-tile hashes and before/after input pins
+verify. Twelve replay variants finish with zero exits under 3-GiB guards.
+
+A fresh read-only probe of the final implementation confirms that Vox sends
+each button background/border as a two-instance pair. Its full image is exactly
+the accepted seven-pixel image: PID 47669, 4,245 native hits/470,473 entries,
+zero misses/compiler calls/pending/invalid entries, unchanged complete content
+and inputs, and zero browser/controller/guard exits. Guard elapsed/peak are
+38.405868459 seconds/8,461,156,352 bytes. Page JavaScriptCore stays uninitialized.
+The grouping probes add no production renderer change or speed claim. Their
+completed jobs move with hash and idle-lock verification to
+`scratch-receipts/continued-20261117-r32`; scripts and raw tile outputs remain
+under `button-batching-5204` and `metal-language-5204`. Automated tests stay held.
