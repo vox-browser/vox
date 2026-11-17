@@ -1,6 +1,6 @@
 import unittest
 
-from benchmark_reddit_engines import validate
+from benchmark_reddit_engines import faster_than_v8, validate
 
 
 def visit():
@@ -15,6 +15,16 @@ def visit():
 
 
 class RedditReceiptTests(unittest.TestCase):
+    def test_faster_gate_retains_outliers_and_requires_total_as_well_as_callbacks(self):
+        summary = {'v8':{'callback_ms':{'minimum':10},'total_ms':{'minimum':20}},
+                   'libjs-warm':{'callback_ms':{'maximum':9},'total_ms':{'maximum':19}}}
+        self.assertTrue(faster_than_v8(summary)['passed'])
+        summary['libjs-warm']['total_ms']['maximum'] = 20
+        self.assertFalse(faster_than_v8(summary)['passed'])
+        summary['libjs-warm']['total_ms']['maximum'] = 19
+        summary['libjs-warm']['callback_ms']['maximum'] = 11
+        self.assertFalse(faster_than_v8(summary)['passed'])
+
     def test_complete_uninstrumented_reopen_and_separate_diagnostic(self):
         value = visit()
         validate(value, 'libjs-warm', 100, 'fixture')

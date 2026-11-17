@@ -25,6 +25,18 @@ ROOT = Path(__file__).resolve().parents[1]
 METRICS = ['initialization_ms', 'first_cycle_ms', 'callback_ms', 'compile_finish_ms', 'total_ms']
 
 
+def faster_than_v8(summary):
+    """Keep outliers: both complete-span and callback maxima must beat V8 minima."""
+    result = {}
+    for metric in ['callback_ms', 'total_ms']:
+        candidate = round(summary['libjs-warm'][metric]['maximum'] * 1000000)
+        control = round(summary['v8'][metric]['minimum'] * 1000000)
+        result[metric] = dict(candidate_max_ns=candidate, v8_min_ns=control,
+                              passed=candidate < control)
+    result['passed'] = all(result[key]['passed'] for key in ['callback_ms', 'total_ms'])
+    return result
+
+
 def validate(visit, mode, cycles, manifest_sha, diagnostic=False, memory=False):
     if (visit['mode'] != mode or visit['cycles'] != cycles
             or visit['manifest_sha256'] != manifest_sha
@@ -56,6 +68,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--v8-binary', required=True, type=Path)
     parser.add_argument('--jsc-binary', required=True, type=Path)
+    parser.add_argument('--libjs-control-binary', type=Path, help='Optional prior LibJS build for matched control/candidate visits')
     parser.add_argument('--archive', required=True, type=Path)
     parser.add_argument('--output', required=True, type=Path)
     parser.add_argument('--native-cache', required=True, type=Path)
@@ -73,6 +86,9 @@ def main():
         parser.error('Cold seed requires a new native-cache directory')
     binaries = {'v8': args.v8_binary.resolve(), 'jsc': args.jsc_binary.resolve(),
                 'libjs-warm': args.jsc_binary.resolve(), 'libjs-cold': args.jsc_binary.resolve()}
+    if args.libjs_control_binary:
+        binaries['libjs-control'] = args.libjs_control_binary.resolve()
+    engines = ['v8','jsc','libjs-warm'] + (['libjs-control'] if args.libjs_control_binary else [])
     report = dict(scope='Recovered original Reddit listing scripts plus representative two-comment/menu probe; '
                   'HTML/runtime/script initialization, first measured cycle, repeated native click dispatch and DOM synchronization, '
                   'explicit cache finish. Sum of intervals excludes process startup, file hashing, audits, teardown, external network, '
@@ -98,12 +114,13 @@ def main():
     def run(mode, label, diagnostic=False, cycles=None):
         verify()
         count = cycles or args.cycles
-        env = dict(env_base, VOX_REDDIT_ENGINE_BENCHMARK=mode, VOX_REDDIT_ENGINE_CYCLES=str(count),
+        actual_mode = 'libjs-warm' if mode=='libjs-control' else mode
+        env = dict(env_base, VOX_REDDIT_ENGINE_BENCHMARK=actual_mode, VOX_REDDIT_ENGINE_CYCLES=str(count),
                    VOX_REDDIT_ENGINE_ARCHIVE=str(archive), VOX_REDDIT_ENGINE_DIAGNOSTIC=str(int(diagnostic)),
                    VOX_REDDIT_ENGINE_MEMORY=str(int(args.memory)), VOX_LIBJS_NATIVE_CACHE=str(cache),
                    VOX_TEST_WINDOW='1', VOX_PROFILE_DIR=str(output / (label + '-profile')),
                    LADYBIRD_CACHE_DIR=str(output / (label + '-http-cache')))
-        if mode == 'libjs-warm':
+        if actual_mode == 'libjs-warm':
             env['VOX_LIBJS_NATIVE_COMPILER'] = '/usr/bin/false'
         if mode == 'v8' and diagnostic:
             env['VOX_V8_DIAGNOSTICS'] = '1'
@@ -132,7 +149,7 @@ def main():
                 raise ValueError('Expected exactly one visit')
             visit = visits[0]
             attempt['visit'] = visit
-            validate(visit, mode, count, report['inputs'][str(archive / 'manifest.json')], diagnostic, args.memory)
+            validate(visit, actual_mode, count, report['inputs'][str(archive / 'manifest.json')], diagnostic, args.memory)
             if diagnostic and mode=='v8' and 'Vox V8 backend: V8 ' not in stderr:
                 raise ValueError('Missing actual V8 backend diagnostic')
             verify()
@@ -152,7 +169,7 @@ def main():
                      ROOT/'tools/benchmark_hn_engines.py', archive/'manifest.json', *sorted((archive/'bodies').iterdir()),
                      Path(replay.ready['ca'])]
             configurations = []
-            for engine in ['v8','jsc']:
+            for engine in ['v8','jsc'] + (['libjs-control'] if args.libjs_control_binary else []):
                 binary = binaries[engine]
                 receipts, build = build_receipts(binary)
                 if not build:
@@ -170,13 +187,13 @@ def main():
                 for symbol in ['_JSGlobalContextCreate','_JSEvaluateScript']:
                     if not any(symbol+' ' in line and '(from '+origin+')' in line for line in imports.splitlines()):
                         raise ValueError('Wrong native engine linkage')
-            if configurations[0] != configurations[1]:
+            if any(configuration != configurations[0] for configuration in configurations[1:]):
                 raise ValueError('Mismatched allocator/C compilation configurations')
             report['macos_version'] = subprocess.check_output(['sw_vers'], text=True)
             # Include the actual adapter and its libnode dependency, plus the
             # shared native helpers loaded by the browser host. System images
             # residing only in dyld's cache are identified by the OS receipt.
-            images = [binaries['jsc'], binaries['v8'], binaries['v8'].parent/'libVoxJSCOnV8.dylib',
+            images = [*dict.fromkeys(binaries.values()), binaries['v8'].parent/'libVoxJSCOnV8.dylib',
                       *sorted((ROOT/'Build/v').glob('*.dylib'))]
             report['linked_libraries'] = {}
             while images:
@@ -199,24 +216,33 @@ def main():
                 raise ValueError('Missing seeded native libraries')
             report['inputs'].update({str(p):digest(p) for p in cache.rglob('*') if p.is_file()})
             save()
-            for engine in ['v8','jsc','libjs-warm']:
+            for engine in engines:
                 if not run(engine,engine+'-diagnostic',diagnostic=True,cycles=3):
                     raise ValueError('Engine eligibility/correctness diagnostic failed')
+            if args.libjs_control_binary:
+                diagnostics = {a['mode']:a['visit'] for a in report['attempts'] if a['diagnostic']}
+                before, after = diagnostics['libjs-control'], diagnostics['libjs-warm']
+                report['matched_native_activity'] = all(before['activity'][key]==after['activity'][key]
+                    for key in ['entries','fast_steps','slow_steps'])
+                if not report['matched_native_activity'] or before['cache']['cache_hits']!=after['cache']['cache_hits']:
+                    raise ValueError('Control/candidate diagnostic workload or native cohort differs')
             for group in range(args.pairs):
-                order = ['v8','jsc','libjs-warm']
+                order = engines.copy()
                 if group % 2:
                     order.reverse()
                 for engine in order:
                     run(engine,f'group-{group+1}-{engine}')
             timed = [a for a in report['attempts'] if a['label'].startswith('group-')]
-            report['complete'] = len(timed)==3*args.pairs and all('visit' in a and 'error' not in a for a in timed)
+            report['complete'] = len(timed)==len(engines)*args.pairs and all('visit' in a and 'error' not in a for a in timed)
             if report['complete']:
                 report['summary'] = {}
-                for engine in ['v8','jsc','libjs-warm']:
+                for engine in engines:
                     visits = [a['visit'] for a in timed if a['mode']==engine]
                     report['summary'][engine] = {key:dict(median=statistics.median(v[key] for v in visits),
                         minimum=min(v[key] for v in visits),maximum=max(v[key] for v in visits))
                         for key in [*METRICS,'callback_thread_cpu_ns','self_peak_rss_bytes']}
+                if not args.memory:
+                    report['faster_than_v8'] = faster_than_v8(report['summary'])
             verify()
     except Exception as error:
         report.update(error=str(error),complete=False)
