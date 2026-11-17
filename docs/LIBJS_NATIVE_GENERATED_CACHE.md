@@ -402,3 +402,30 @@ the build.
 
 Raw stacks, C source, exact counts and guard receipts stay local under
 `docs/performance/libjs-github-browser-20261116/libjs-github-native-profile-09e4-20261118/`.
+
+### Formatter with the complete frozen GitHub corpus
+
+An untimed seed of the frozen repository on `09e4dcb3…9e76` captures
+all 81 fulfilled modules and exactly matches the pinned 1024×768 Vox
+reference. Its private cache has 13,915 functions across 109 generated C
+units. An independent reconstruction of each canonical function body
+verifies every cache key. The browser and guard exit zero, with a
+9,276,833,792-byte sampled peak for the guarded seed.
+
+The formatter probe extracts all 674,017 fast instruction templates from
+those units. Both variants read the same binary fixture and expand each
+template once. They match all 107,062,309 original emitted bytes, with
+SHA-256 `979ef9b2e38117e6837a105dfc693c46325111ffe2b2cfba3dbe62bebac4736c`.
+The two variants run in the same single-C `-prod -prealloc -gc none` probe,
+which uses the committed formatter body and hashes the completed output.
+
+Seven alternating fresh-process pairs record median retired instruction
+counts of **1,806,739,329** with replacement and **1,026,040,439** with
+direct emission, **43.21% fewer**. All 14 processes and the 3-GiB guard exit
+zero. The guard records 2.444 seconds and a sampled peak of 640,335,872
+bytes. This measures formatting the complete seeded corpus, including
+process startup, input reading and output verification. A browser reopen
+exercises only the functions it looks up on that visit.
+
+Counts, fixture location, compiler receipts and the seed capture stay local
+under `docs/performance/libjs-github-browser-20261116/libjs-github-emitter-control-20261118/`.
