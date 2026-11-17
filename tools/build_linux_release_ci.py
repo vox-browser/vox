@@ -10,8 +10,8 @@ import re
 import subprocess
 import sys
 
-V_REVISION = 'c4dee97041851a8b71c0024aa90163a2b6f2134b'
-VC_REVISION = '0adf6994fb702bb84c6de192317c375efa4b449d'
+V_REVISION = '5a39a4d2f31fda64e7a5ee489e2a291325babcc4'
+VC_REVISION = '99533a7cecef5d59f7bf01ee5034f24b759ce294'
 UI2_REVISION = 'f18e784d96a27991974ef8cfdd25b33830a9f067'
 
 
@@ -163,6 +163,8 @@ def main():
     environment.update(V_BIN=str(wrapper))
     for key in ('VOX_MATCH_SCOPE_CC', 'VOX_MATCH_SCOPE_RECEIPT'):
         environment.pop(key, None)
+    guarded([sys.executable, source / 'tools/test_linux_native.py', '--gc', 'boehm',
+             'browsercookies/profile_test.v'], 'cookie-profile', environment=environment)
     package_command = [sys.executable, source / 'tools/deploy_macos.py', '--no-publish']
     if args.distribution == 'arch':
         package_command += ['--format', 'arch']
