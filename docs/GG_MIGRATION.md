@@ -3773,3 +3773,12 @@ focused regression sources remain unrun under the test hold. Broad shader-width
 and compiler-language probes are rejected. Six button corners and an avatar
 edge remain; live parity and matched performance are open. See the
 [capture-width audit](LIBJS_GITHUB_RUNTIME_20261115.md#captured-rectangle-replay-and-root-capture-width-7-pixels-2026-11-17).
+
+The latest completed shared production bundle now independently repeats seven
+pixels with 4,246 native LibJS hits and zero compiler calls. Captured Dawn shaders
+and GG both reproduce the same six changes when splitting the rectangle batch;
+an auxiliary target preserves both control tiles while tracing primitive coverage.
+`91252e0cf` adds a hash-pinned native replay CLI for exported rectangle draws;
+three real captured draws match their complete raw-tile controls. Its rejection
+regression sources remain unrun by request. No further production raster change
+is accepted. See the [shared-bundle and replay audit](LIBJS_GITHUB_RUNTIME_20261115.md#shared-production-confirmation-and-captured-shader-grouping-2026-11-17).

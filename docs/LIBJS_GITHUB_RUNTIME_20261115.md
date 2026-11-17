@@ -5342,3 +5342,64 @@ The grouping probes add no production renderer change or speed claim. Their
 completed jobs move with hash and idle-lock verification to
 `scratch-receipts/continued-20261117-r32`; scripts and raw tile outputs remain
 under `button-batching-5204` and `metal-language-5204`. Automated tests stay held.
+
+### Shared production confirmation and captured-shader grouping, 2026-11-17
+
+The newest completed shared single-unit C `-prod` browser is now
+`fe18a216c3b5195666de9520722abf986e60a3751c9a1bf0762fc77ea0bfa7fa`,
+receipt `20261117-122951-3be37d4d`. Although its recorded head precedes the
+root-width commit, its sealed consumed hashes include the final root-width
+implementation. A fresh process with all preceding opt-ins reproduces the
+seven-pixel image exactly: PID 57460, 4,246 native hits/470,279 entries in the
+812a ABI partition, zero misses/compiler calls/compiled executables/pending/
+invalid entries, and page JavaScriptCore uninitialized. Complete 33-row/
+56-commit/latest/README content, unchanged input pins, adopted PID and zero
+browser/controller/guard exits are verified. Guard elapsed/peak are
+38.172230542 seconds/8,521,236,480 bytes. No separate production build was queued.
+
+The grouping effect also occurs with **Brave's actual captured Dawn shaders**,
+not only GG's equivalent shaders. The nine-instance captured draw repeats raw
+tile hash `b552685a16a2889c0ef36d035660b2fe6f3b9ef8266a0ca8092f133c26df3722`;
+splitting it repeats `51266e02fad22c8b2dcff03c55dfcaf3e4d1b09f52bfd7540aeb76f81dac9a06`.
+Both match the corresponding GG replay byte for byte, including the same six
+changed pixels. Shader invariance, compiler invariance preservation and disabled
+fast math leave the split result unchanged; invariance leaves the unified
+control unchanged too. Those compiler variants are rejected as fixes.
+
+A second float attachment records primitive IDs and coverage while preserving
+both complete original BGRA control tiles exactly. At (646,190), resolved mean
+primitive ID/coverage change from 22.75/0.71923828125 to 1/0.45849609375 when
+split. These are averages across four samples, not integer fragment IDs. The
+diagnostic confirms different triangles writing the disputed pixels; it does
+not establish a production depth rule. Its initial pipeline creation fails
+because the vertex output declares point size with explicit triangle topology;
+both failed shader runs (exit 5) are retained as ineligible. Removing that unused
+output only in the diagnostic allows the corrected probe to run. No production
+shader change is retained. The native shared-recording setters are currently
+empty compatibility hooks; changing only their V eligibility cannot supply a
+shared root draw pass.
+
+`91252e0cf` adds `tools/replay_metal_rectangle.m` to make this experiment reusable directly
+from `decode_metal_capture.py --export-rectangle-draw` exports. It accepts a
+snapshot and a new raw BGRA output, plus `--split-instances` and an explicit
+premultiplied `--background RRGGBBAA`. It checks resource sizes/hashes before
+GPU work and again before publication, validates referenced vertex/instance/
+paint ranges, rejects unsupported compiler/depth/stencil/sample policies, and
+publishes atomically without replacing existing evidence. The supported ABI is
+unclipped Dawn vertex-pulled rectangles, four-sample BGRA8, inline slot 30 and
+the observed v225 relaxed-math options. Target size comes from the viewport;
+this remains a selected-draw replay with a uniform backdrop, omitting other
+passes, shadows and page publication.
+
+The canonical tool compiles with `clang -Wall -Wextra` and replays the retained
+button batch, split button batch and separator draw to all three known complete
+raw-tile hashes, with zero native/driver/guard exits under 3-GiB guards. Rejection
+regression sources for corrupt inputs, escaping resource paths and output
+replacement are included but remain unrun under the test hold. All completed
+jobs move with idle-lock and SHA-256 verification to
+`scratch-receipts/continued-20261117-r33`; replay scripts and receipts remain
+under `metal-invariance-5204`, `metal-primitive-5204`,
+`metal-captured-split-5204` and `shared-root-width-5204`. The original Brave PNG,
+zero tolerance and accepted seven-pixel screenshot remain unchanged. Full pixel
+parity, current live validation and matched compiled-revisit performance remain
+open; these diagnostics provide no speed credit.
