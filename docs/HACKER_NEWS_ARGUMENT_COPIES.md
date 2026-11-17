@@ -1,6 +1,8 @@
 # Hacker News: private call-argument copies
 
 Measured 2026-11-17, following [frame initialization](HACKER_NEWS_FRAME_INITIALIZATION.md).
+The subsequent [V profiler investigation](HACKER_NEWS_V_PROFILE.md) rejects two
+additional candidates after mixed results and severe host contention.
 ECMAScript and native calls now initialize their private argument slots with
 bounded typed stores for small lists and bulk copying for larger disjoint lists.
 Overlapping input retains the old forward-copy order. Public setters, argument

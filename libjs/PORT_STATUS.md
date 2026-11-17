@@ -73,6 +73,15 @@ regression; the short same-binary result remains mixed. RAM passes at 48.7143%
 of V8; the conservative restarted-warm speed ratio is 3.8310×, leaving the strict
 4× gate open. The separate verification hold and parity limits are unchanged.
 
+The [V profiler investigation](../docs/HACKER_NEWS_V_PROFILE.md) verifies native
+HN execution and identifies UTF-16 equality, property scans and context reuse as
+leads. Both subsequent runtime trials are removed after mixed/regressing matched
+results; each passed 67 focused tests in three ownership modes and an exact
+100-case AST corpus. Host load later exceeds 140 on 18 cores, preventing a new
+wall-time acceptance claim. Profiling build/summary/evidence checks pass; the
+optional old-compiler check rejects the required memory-limit option before
+compilation. No additional runtime gain or 4× completion is claimed.
+
 ## GitHub runtime checkpoint — 2026-11-15
 
 **Current verification hold:** automated suites remain off until the GitHub
