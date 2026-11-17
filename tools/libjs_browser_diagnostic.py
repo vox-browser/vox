@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Observe an active native page against an unchanged offline response archive.
+"""Observe an active native page from an offline archive or a direct HTTP(S) URL.
 
 This is a functional diagnostic, not a performance or pixel-conformance gate.
 The native observer captures the window, or the screenshot path captures only
@@ -14,6 +14,7 @@ from pathlib import Path
 import subprocess
 import threading
 import time
+from urllib.parse import urlsplit
 
 from browser_bundle_lease import canonical_bundle_lease
 from measure_precise_scroll import runtime_input_paths
@@ -32,12 +33,28 @@ def digest(path):
         return hashlib.file_digest(file, 'sha256').hexdigest()
 
 
+def live_http_url(value):
+    try:
+        parsed = urlsplit(value)
+        if (parsed.scheme not in ('http', 'https') or not parsed.hostname
+                or parsed.username is not None or parsed.password is not None
+                or any(character.isspace() or ord(character) < 32 for character in value)):
+            raise ValueError('Expected an HTTP(S) URL without credentials or whitespace')
+        parsed.port
+    except ValueError as error:
+        raise argparse.ArgumentTypeError(str(error)) from error
+    return value
+
+
 def run(args):
-    output, binary, archive = args.output.resolve(), args.binary.resolve(), args.archive.resolve()
+    output, binary = args.output.resolve(), args.binary.resolve()
+    archive = args.archive.resolve() if args.archive is not None else None
     capture_png = output / ('document.png' if args.document_capture else 'window.png')
     output.mkdir(exist_ok=False, parents=True)
-    replay = Replay(archive, output / 'replay')
-    threading.Thread(target=replay.server.serve_forever, daemon=True).start()
+    replay = Replay(archive, output / 'replay') if archive is not None else None
+    if replay is not None:
+        threading.Thread(target=replay.server.serve_forever, daemon=True).start()
+    target_url = replay.manifest['url'] if replay is not None else args.url
     config = dict(describe_native_errors=True, describe_text_geometry=args.text_geometry, selectors=[
         dict(name=name, selector=selector, limit=200, attributes=['id', 'href'])
         for name, selector in SELECTORS])
@@ -46,11 +63,16 @@ def run(args):
                    if not k.startswith(('VOX_', 'LADYBIRD_', 'JSC_', 'GC_', 'DYLD_'))
                    and 'proxy' not in k.lower()}
     environment.update(VOX_PROFILE_DIR=str(output / 'profile'), VOX_TEST_WINDOW='1',
-        VOX_PROXY=replay.ready['proxy'], SSL_CERT_FILE=replay.ready['ca'],
         VOX_NATIVE_OBSERVATION_DELAY_MS=str(args.observe_ms),
         VOX_NATIVE_OBSERVATION_SCREENSHOT=str(capture_png),
         VOX_CAPTURE_AUDIT_CONFIG=str(output / 'audit-config.json'),
         VOX_CAPTURE_AUDIT_PATH=str(output / 'audit.json'), LADYBIRD_SCREENSHOT_SCALE='1')
+    if replay is not None:
+        environment.update(VOX_PROXY=replay.ready['proxy'], SSL_CERT_FILE=replay.ready['ca'])
+    else:
+        # A direct navigation must not inherit an earlier replay's private CA.
+        environment.pop('SSL_CERT_FILE', None)
+        environment.pop('SSL_CERT_DIR', None)
     environment['VOX_LIBJS_NATIVE_CACHE_FINAL_AUDIT_PATH'] = str(output / 'native-cache-final.json')
     if args.native_cache is not None:
         environment['VOX_LIBJS_NATIVE_CACHE'] = str(args.native_cache.resolve())
@@ -80,8 +102,11 @@ def run(args):
                '852' if args.document_capture else '880']
     if args.document_capture:
         command.extend(['--screenshot', str(capture_png)])
-    command.append(replay.manifest['url'])
+    command.append(target_url)
     result = dict(command=command, configuration=args.configuration,
+        source=dict(mode='archive' if replay is not None else 'live', url=target_url,
+                    response_policy='frozen response archive' if replay is not None
+                    else 'current direct HTTP(S) responses; page bytes may change'),
         native_cache=environment.get('VOX_LIBJS_NATIVE_CACHE', 'profile default'),
         native_compiler=environment.get('VOX_LIBJS_NATIVE_COMPILER', 'clang'),
         frontend_cache=environment.get('VOX_LIBJS_FRONTEND_CACHE', 'native-cache policy'),
@@ -100,7 +125,9 @@ def run(args):
         # The standalone diagnostic uses the shared native libraries too.
         with canonical_bundle_lease(ROOT / 'Build/v/Vox.app'):
             paths = [binary, *runtime_input_paths(binary, environment),
-                     *sorted((ROOT / 'Build/v').glob('*.dylib')), archive / 'manifest.json']
+                     *sorted((ROOT / 'Build/v').glob('*.dylib'))]
+            if archive is not None:
+                paths.append(archive / 'manifest.json')
             pins = {str(path): digest(path) for path in paths}
             result['inputs_before'] = pins
             with (output / 'browser.log').open('w') as log:
@@ -135,7 +162,8 @@ def run(args):
                     sampler.join(timeout=12)
             result['changed_inputs'] = [path for path, expected in pins.items()
                 if not Path(path).is_file() or digest(Path(path)) != expected]
-            load_archive(archive)
+            if archive is not None:
+                load_archive(archive)
             if (output / 'native-cache-final.json').is_file():
                 result['compiled_javascript_cache_final'] = json.loads(
                     (output / 'native-cache-final.json').read_text())
@@ -156,8 +184,9 @@ def run(args):
         if process is not None and process.poll() is None:
             process.kill()
             result['browser_exit'] = process.wait()
-        replay.server.shutdown()
-        replay.server.server_close()
+        if replay is not None:
+            replay.server.shutdown()
+            replay.server.server_close()
         result['host_after'] = dict(load=os.getloadavg(), unix=time.time())
         (output / 'summary.json').write_text(json.dumps(result, indent=2) + '\n')
     print(json.dumps({key: result.get(key) for key in
@@ -170,7 +199,10 @@ def run(args):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--binary', type=Path, required=True)
-    parser.add_argument('--archive', type=Path, required=True)
+    source = parser.add_mutually_exclusive_group(required=True)
+    source.add_argument('--archive', type=Path)
+    source.add_argument('--url', type=live_http_url,
+                        help='Capture current direct responses, without replay or a frozen-content claim')
     parser.add_argument('--output', type=Path, required=True)
     parser.add_argument('--memory-guard-registry', type=Path, required=True)
     parser.add_argument('--engine', choices=['libjs', 'javascriptcore'], default='libjs')
