@@ -1,5 +1,42 @@
 # Migrating from Skia to vlib/gg
 
+## Shared CSS background replay
+
+The portable painter and the macOS gradient fallback use the same V raster
+replay. The native macOS gradient path runs first for its supported draws.
+For an axis-aligned linear gradient with full rectangular coverage, the
+portable painter samples one row or column and presents it with a nearest-filtered
+Sokol texture. Text masks, non-axis-aligned gradients and tiled gradients use
+the full raster when the ramp cannot represent their coverage.
+
+On Linux ARM64, the X11 regression exercised both ramp directions and compared
+all fixture content pixel for pixel with `VOX_DISABLE_PORTABLE_GRADIENT_RAMP=1`.
+The pixels matched. The Linux browser smoke suite and live vlang.io capture
+passed. The macOS production-flag V type check passed.
+
+Two alternating pairs used [the scrolling gradient fixture](../Tests/Browser/Native/scroll-gradient-ramps.html)
+with software OpenGL in a four-vCPU VM. Each fresh launch delivered 80
+synthetic integer scroll steps at a requested 1024 × 600 document viewport.
+The executable SHA-256 was
+`e381e9ec1de2f89ec57205c36cd2f9485467a7d531c38b6b9a5aa9524ed49bca`.
+This was a single-unit Clang `-O0` diagnostic build. The optimized compiler
+process was killed in the VM. Replay times below end at callback completion.
+
+| Trial | Replay variant | Median (ms) | p95 (ms) | Max (ms) |
+| --- | --- | ---: | ---: | ---: |
+| 1 | Full raster | 233.936 | 382.445 | 394.999 |
+| 2 | Ramp | 2.422 | 4.962 | 5.500 |
+| 3 | Full raster | 246.396 | 341.972 | 344.777 |
+| 4 | Ramp | 1.876 | 4.005 | 4.161 |
+
+Scroll positions and command counts agreed across all four trials. The guest
+one-minute load averages were 1.15, 1.36, 1.49 and 1.57. The benchmark and
+3 GiB guard exited zero with a peak sampled RSS of 509,161,472 bytes.
+Optimized-build performance, native presentation cadence and a full shared
+compositor remain open.
+
+## Original migration plan
+
 Vox currently renders through two Skia builds: LibWeb's Skia (CPU raster,
 `libLadybirdVSkiaText.dylib`; the `skia/` module was removed on 2026-11-10) and the pinned Chromium
 Skia Graphite builds (`libVoxGraphite.dylib` on Metal and

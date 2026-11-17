@@ -1,5 +1,6 @@
 module main
 
+import gg
 import platform
 
 struct PortableRasterImage {
@@ -9,6 +10,11 @@ struct PortableRasterImage {
 }
 
 fn (mut app BrowserApp) draw_portable_raster_image(x f32, y f32, width int, height int, pixels []u8) {
+	app.draw_portable_raster_texture(gg.Rect{x, y, f32(width) / app.ctx.scale, f32(height) / app.ctx.scale}, width, height, pixels)
+}
+
+fn (mut app BrowserApp) draw_portable_raster_texture(destination gg.Rect, width int, height int,
+	pixels []u8) {
 	// Sokol allows one streaming update per texture per frame.
 	index := app.portable_raster_image_index
 	app.portable_raster_image_index++
@@ -36,7 +42,8 @@ fn (mut app BrowserApp) draw_portable_raster_image(x f32, y f32, width int, heig
 	}
 	platform.leave_persistent(persistent)
 	app.ctx.update_pixel_data(slot.image_id, pixels.data)
-	app.ctx.draw_image_by_id(x, y, f32(width) / app.ctx.scale, f32(height) / app.ctx.scale, slot.image_id)
+	app.ctx.draw_image_by_id(destination.x, destination.y, destination.width, destination.height,
+		slot.image_id)
 }
 
 fn (mut app BrowserApp) finish_portable_raster_images() {

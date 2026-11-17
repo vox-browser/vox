@@ -26,6 +26,15 @@ header {
   color: transparent;
 }
 .icon { position: absolute; top: 0; left: 190px; }
+.ramp { position: absolute; top: 52px; height: 96px; width: 200px; }
+.horizontal {
+  left: 320px;
+  background: linear-gradient(90deg, #f85b16cc, transparent 40%, #448de0 40%, #24af85);
+}
+.vertical {
+  left: 576px;
+  background: linear-gradient(0deg, #f85b16, #448de0aa 45%, #24af85);
+}
 .card {
   position: absolute;
   inset: 170px 0 auto;
@@ -50,4 +59,6 @@ header {
   </svg>
 </header>
 <div class="version"><span>0.5</span></div>
+<div class="ramp horizontal"></div>
+<div class="ramp vertical"></div>
 <div class="card"><div class="marker"></div></div>

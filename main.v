@@ -6268,10 +6268,10 @@ fn (mut app BrowserApp) draw_command(source_command &layout.PaintCommand, page_x
 		return
 	}
 	$if linux {
-		if command.kind == 'fill_gradient'
-			|| (app.portable_background_text_clip != none
-				&& command.kind in ['fill_rect', 'fill_rounded_rect']) {
-			app.draw_portable_background(command, page_x, page_y)
+		if app.portable_background_text_clip != none
+			&& command.kind in ['fill_rect', 'fill_rounded_rect'] {
+			app.draw_raster_background(command, [painting.Rect{command.x, command.y,
+				command.width, command.height}], page_x, page_y)
 			return
 		}
 	}
@@ -6652,6 +6652,10 @@ fn (mut app BrowserApp) draw_command(source_command &layout.PaintCommand, page_x
 				if tiles.len == 0 {
 					return
 				}
+				if !app.ctx.native_rendering {
+					app.draw_raster_background(command, tiles, page_x, page_y)
+					return
+				}
 				gradient_clip := painting.Rect{image_data.image_clip_x, image_data.image_clip_y, image_data.image_clip_width, image_data.image_clip_height}
 				transfer_gradient_clip := app.document != unsafe { nil }
 					&& app.document.font_rendering_policy() == .chromium
@@ -6684,86 +6688,7 @@ fn (mut app BrowserApp) draw_command(source_command &layout.PaintCommand, page_x
 							continue
 						}
 					}
-					screen_left, screen_top := paint_screen_point(*command, tile.x, tile.y, page_x, page_y, scroll_y)
-					screen_right, screen_bottom := paint_screen_point(*command, tile.right(), tile.bottom(), page_x, page_y, scroll_y)
-					columns := int(clamp(math.abs(f64(screen_right - screen_left)) / 4.0, 1.0, 128.0) + 0.5)
-					rows := int(clamp(math.abs(f64(screen_bottom - screen_top)) / 4.0, 1.0, 128.0) + 0.5)
-					cell_width := tile.width / f64(columns)
-					cell_height := tile.height / f64(rows)
-					for row in 0 .. rows {
-						for column in 0 .. columns {
-							u := (f64(column) + 0.5) / f64(columns)
-							v := (f64(row) + 0.5) / f64(rows)
-							center_x := tile.x + u * tile.width
-							center_y := tile.y + v * tile.height
-							if command.gradient_background_layer
-								&& (center_x < gradient_clip.x || center_x >= gradient_clip.right()
-									|| center_y < gradient_clip.y || center_y >= gradient_clip.bottom()) {
-								continue
-							}
-							if !command.gradient_background_layer && command.points.len > 0
-								&& !point_in_paint_polygon(center_x, center_y, command.points) {
-								continue
-							}
-							mut position := 0.0
-							if gradient.kind == 'radial' || gradient.radial {
-								rx := if gradient.radius_x > 0 {
-									gradient.radius_x
-								} else {
-									0.000001
-								}
-								ry := if gradient.radius_y > 0 {
-									gradient.radius_y
-								} else {
-									0.000001
-								}
-								dx := (u - gradient.center_x) / rx
-								dy := (v - gradient.center_y) / ry
-								position = math.sqrt(dx * dx + dy * dy)
-							} else if gradient.kind == 'conic' {
-								angle := math.atan2(v - gradient.center_y, u - gradient.center_x) * 180.0 / math.pi + 90.0 - gradient.start_degrees
-								position = angle / 360.0
-								for position < 0 {
-									position += 1.0
-								}
-								for position >= 1 {
-									position -= 1.0
-								}
-							} else {
-								dx := gradient.x2 - gradient.x1
-								dy := gradient.y2 - gradient.y1
-								length_squared := dx * dx + dy * dy
-								position = if length_squared > 0 {
-									((u - gradient.x1) * dx + (v - gradient.y1) * dy) / length_squared
-								} else {
-									0.0
-								}
-							}
-							sample_color := layout.gradient_color_at(gradient, position)
-							alpha := u8(int(clamp(f64(sample_color.a) * command.opacity, 0.0, 255.0)))
-							cell_left := tile.x + f64(column) * cell_width
-							cell_top := tile.y + f64(row) * cell_height
-							mut cell_points := []f32{cap: 8}
-							for point in [[cell_left, cell_top],
-								[cell_left + cell_width + 0.5, cell_top],
-								[cell_left + cell_width + 0.5, cell_top + cell_height + 0.5],
-								[cell_left, cell_top + cell_height + 0.5]] {
-								point_x, point_y := paint_screen_point(*command, point[0], point[1], page_x, page_y, scroll_y)
-								cell_points << point_x
-								cell_points << point_y
-							}
-							fill := gg.rgba(sample_color.r, sample_color.g, sample_color.b, alpha)
-							$if macos {
-								if app.ctx.native_rendering {
-									unsafe { C.native_draw_polygon_srgb(&cell_points[0], 4, f32(app.ctx.height), fill) }
-								} else {
-									draw_browser_polygon(app.ctx, cell_points, fill)
-								}
-							} $else {
-								draw_browser_polygon(app.ctx, cell_points, fill)
-							}
-						}
-					}
+					app.draw_raster_background(command, [tile], page_x, page_y)
 				}
 				$if macos {
 					if app.ctx.native_rendering && command.gradient_background_layer {

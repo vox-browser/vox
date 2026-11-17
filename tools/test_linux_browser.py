@@ -242,6 +242,8 @@ def check_gradient_pixels(data):
     assert page_top is not None, "Positioned header vanished after gradient replay"
     assert pixel(310, page_top + 260) == b"\x45\xef\x97", "Gradient covered or dropped the card's foreground"
     assert pixel(64, page_top + 330) != pixel(928, page_top + 330), "Large card gradient is flat"
+    assert pixel(330, page_top + 60) != pixel(510, page_top + 60), "Horizontal gradient is flat"
+    assert pixel(585, page_top + 60) != pixel(585, page_top + 140), "Vertical gradient is flat"
     assert pixel(218, page_top + 16) == b"\xee\xc0\x54", "SVG contour was misplaced"
     assert pixel(234, page_top + 32) == b"\x10\x18\x20", "SVG fill covered its interior hole"
     ink = paper = 0
@@ -252,18 +254,32 @@ def check_gradient_pixels(data):
             paper += (r, g, b) == (16, 24, 32)
     assert ink > 400, "Gradient glyphs are missing"
     assert paper > 10000, "Gradient escaped the text mask"
+    return rows[page_top:page_top + 530]
 
 
 def check_gradient_browser(binary, artifacts, temporary):
     fixture = Path(__file__).resolve().parents[1] / "Tests/Browser/Native/portable-gradients.html"
-    screenshot = artifacts / "portable-gradients.png"
-    screenshot.unlink(missing_ok=True)
-    environment = smoke_environment(Path(temporary) / "gradients")
-    run_windowed([str(binary), "--window-width=1024", "--window-height=640",
-                  "--screenshot-viewport-height=640", f"--screenshot={screenshot}", str(fixture)],
-                 env=environment, log_path=artifacts / "portable-gradients.log")
-    check_gradient_pixels(screenshot.read_bytes())
-    print("PASS: clipped gradient text and foreground painting after large gradients", flush=True)
+    documents = []
+    for label in ("gradients", "gradients-full-raster"):
+        screenshot = artifacts / f"portable-{label}.png"
+        screenshot.unlink(missing_ok=True)
+        environment = smoke_environment(Path(temporary) / label)
+        environment.pop("VOX_DISABLE_PORTABLE_GRADIENT_RAMP", None)
+        environment["VOX_PORTABLE_GRADIENT_RAMP_DIAGNOSTICS"] = "1"
+        full_raster = label == "gradients-full-raster"
+        if full_raster:
+            environment["VOX_DISABLE_PORTABLE_GRADIENT_RAMP"] = "1"
+        log = run_windowed([str(binary), "--window-width=1024", "--window-height=640",
+                            "--screenshot-viewport-height=640", f"--screenshot={screenshot}", str(fixture)],
+                           env=environment, log_path=artifacts / f"portable-{label}.log")
+        if full_raster:
+            assert "VOX_GRADIENT_RAMP" not in log, log
+        else:
+            assert "VOX_GRADIENT_RAMP texture=200x1 destination=200x96" in log, log
+            assert "VOX_GRADIENT_RAMP texture=1x96 destination=200x96" in log, log
+        documents.append(check_gradient_pixels(screenshot.read_bytes()))
+    assert documents[0] == documents[1], "Gradient ramps changed document pixels"
+    print("PASS: clipped gradient text, foreground painting and exact gradient ramps", flush=True)
 
 
 def check_webgl_pixels(data):
