@@ -6731,3 +6731,65 @@ and snapshots are retained locally under `repository-navigation-5204-r61`
 and the three navigation replay archives. An isolated literal HTML capture
 also fails before script execution due to an `about:srcdoc` origin panic. It
 supplies no timing-binding evidence.
+
+## README rendering and browser history
+
+The private single-C `-O1` executable with Element scrolling, SHA-256
+`0b13f6f21c9519c9821f83ca5c4062ec077053cb76a67fe61ead9b525d84881c`,
+opens the frozen README from the file picker. The file-specific breadcrumb
+and “The V Programming Language” heading are visible, and layout reports a
+605 × 50.59375 CSS-pixel heading. The replay retains all 18,551 destination
+paths. The 12-GiB guard ends the controller at 29.047305208 seconds and
+12,911,886,336 sampled bytes with controller exit 137 and guard exit 125.
+The browser exit is unavailable. A second control with only the destination
+README path and the original directory list also reaches the memory guard.
+
+On the earlier installed production executable (`d2f42448…`), a controlled
+LibJS `pushState()` page stays on the file URL after native Command–Left and
+records no `popstate`. `1c41c3a2f` routes same-document browser traversal to
+the active navigable's history and exposes the native `PopStateEvent` in
+LibJS. The production type check passes in 36.581525209 seconds at
+7,084,883,968 sampled bytes. The independently built private diagnostic
+executable, SHA-256
+`9cde2a523f6ce806d4d085fadfffadfcfd9441bbed882c2899f02078b9fc11da`,
+is built from the canonical checkout with concurrent local changes. Its
+parsed source manifest pins the history and Element scrolling sources.
+
+On the controlled fixture, native Command–Left restores the repository URL
+and the UI2 Forward button restores the file URL. Both trusted events have
+the same state object as `history.state`. Browser, controller and guard exit
+zero with unchanged input hashes. PID 41376 peaks at 247,660,544 sampled
+bytes over 11.374360125 seconds. The diagnostic first tried Command–Right,
+then a page-view click, before using the enabled toolbar control itself.
+
+The narrower GitHub replay keeps the original root HTML, scripts and README
+router response and selects the original README path in each tree list.
+GitHub leaves a text input focused, where Command–Left is an editing
+shortcut in Vox. Two 24-second toolbar runs finish before the required
+file-content gate. A 29-second run presses the enabled Back button after
+README renders. Audits then show the root URL with the README title and
+content still present. The root route requests `/_sidebar/about`, which
+returns 404 in this replay, and a GitHub mutation observer exhausts the
+LibJS instruction budget. Browser PID 44890 exits zero, controller and
+guard exit one, and input hashes remain fixed. The sample peaks at
+11,695,144,960 bytes over 32.90050475 seconds.
+
+An anonymous live root JSON response identifies a different commit from the
+frozen root page. The follow-up therefore uses the original page's embedded
+repository and sidebar data in the observed JSON response shapes. Capture
+records `Accept: application/json` for the post-Back root request. The root
+JSON, sidebar and other return-route requests return 200. A 29-second run
+ends before file readiness. With a longer observation window, PID 47475
+renders the README and accepts toolbar Back after 24.329640625 seconds of
+input observation. Three subsequent audits show the repository URL with
+the README title, zero repository rows and three commit elements. The
+12-GiB guard stops the controller at 42.203362417 seconds and 12,973,506,560
+sampled bytes. Controller exit is 137, guard exit is 125, and the browser
+exit is unavailable. This run establishes history traversal and correct
+replay routing. Restoration of repository content remains unverified.
+
+Raw commands, source and browser hashes, responses, audit snapshots, actual
+exit records and screenshots are retained locally under
+`repository-navigation-5204-r64`. These are interpreter diagnostics with the
+native cache disabled. Compiled execution, live-site rendering, and pixel
+parity with Brave remain open. The automated-test hold remains in effect.
