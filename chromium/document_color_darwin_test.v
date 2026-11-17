@@ -27,6 +27,16 @@ fn test_document_p3_blending_keeps_the_extended_neutral_source() {
 	assert !document_glyph_requires_extended_blend([math.f32_from_bits(0x7fc00000), f32(0), 0, 1]!)
 }
 
+fn test_document_p3_shape_ink_extends_only_selected_opaque_colors() {
+	white := [f32(1), 1, 1, 1]!
+	extended := document_shape_color_to_p3(white, true)
+	assert extended == document_color_to_p3_for_blending(white)
+	assert extended[0] > 1
+	assert document_shape_color_to_p3(white, false) == document_color_to_p3(white)
+	translucent := [f32(1), 1, 1, 0.5]!
+	assert document_shape_color_to_p3(translucent, true) == document_color_to_p3(translucent)
+}
+
 fn test_document_p3_profile_describes_its_matrix_and_shared_transfer_curve() {
 	profile := document_display_p3_icc()
 	assert profile.len >= 360

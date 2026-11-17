@@ -18,6 +18,7 @@ const document_p3_d50 = [f32(0.515102), 0.291965, 0.157153, 0.241182, 0.692236, 
 const document_srgb_transfer = [f32(2.4), f32(1) / 1.055, f32(0.055) / 1.055, f32(1) / 12.92, 0.04045,
 	0, 0]!
 const document_p3_selected = os.getenv('VOX_DIAGNOSTIC_DOCUMENT_P3') == '1'
+const document_extended_shape_color = os.getenv('VOX_DIAGNOSTIC_EXTENDED_SHAPE_COLOR') == '1'
 
 fn C.native_document_raster_uses_p3() i32
 
@@ -165,6 +166,14 @@ fn document_color_to_p3(color [4]f32) [4]f32 {
 // above one; clamping before coverage changes a later byte-rounding decision.
 fn document_color_to_p3_for_blending(color [4]f32) [4]f32 {
 	return document_color_transform(color, document_srgb_to_p3_gamut)
+}
+
+fn document_shape_color_to_p3(color [4]f32, extended bool) [4]f32 {
+	if extended && color[3] == 1 && color.all(math.is_finite(it)) {
+		result := document_color_to_p3_for_blending(color)
+		if result.all(math.is_finite(it)) { return result }
+	}
+	return document_color_to_p3(color)
 }
 
 fn document_color_from_p3(color [4]f32) [4]f32 {
@@ -315,7 +324,7 @@ fn document_p3_shape(shape C.VoxGraphiteShape) C.VoxGraphiteShape {
 	} else {
 		[f32(shape.red) / 255, f32(shape.green) / 255, f32(shape.blue) / 255, f32(shape.alpha) / 255]!
 	}
-	result.float_color = document_color_to_p3(color)
+	result.float_color = document_shape_color_to_p3(color, document_extended_shape_color)
 	result.has_float_color = 1
 	if shape.has_underlay != 0 {
 		underlay := if shape.has_float_underlay_color != 0 {
@@ -324,7 +333,7 @@ fn document_p3_shape(shape C.VoxGraphiteShape) C.VoxGraphiteShape {
 			[f32(shape.underlay_rgba[0]) / 255, f32(shape.underlay_rgba[1]) / 255,
 				f32(shape.underlay_rgba[2]) / 255, f32(shape.underlay_rgba[3]) / 255]!
 		}
-		result.underlay_float_color = document_color_to_p3(underlay)
+		result.underlay_float_color = document_shape_color_to_p3(underlay, document_extended_shape_color)
 		result.has_float_underlay_color = 1
 	}
 	return result
