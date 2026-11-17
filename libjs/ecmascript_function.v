@@ -65,15 +65,14 @@ fn create_ecmascript_function_in_environment(mut vm VM, source &Executable, data
 	if ordinary && !data.is_arrow_function && data.kind == .normal { object.constructor = ConstructorFunction(function) }
 	object.set_function_length(f64(data.function_length))
 	object.set_function_name(mut vm, PropertyName.from_utf16(function.name_for_call_stack()), none)
-	// SourceCode is already decoded once per script/module and shared by all
-	// of its executables. Converting the whole program here retained one full
-	// UTF-16 copy per created function in the GC-disabled browser.
 	code := source.source_code or { return error('Function executable is missing its source code') }
 	units := code.code.as_slice()
 	if data.source_text_start > data.source_text_end || data.source_text_end > u32(units.len) {
 		return error('Function source range is out of bounds')
 	}
-	object.function_source_text = utf16_string_from_code_units(units[int(data.source_text_start)..int(data.source_text_end)])
+	// The callable retains the immutable SourceCode through its executable.
+	// Function.prototype.toString creates an owned primitive from this view.
+	object.function_source_text = Utf16String{data: units[int(data.source_text_start)..int(data.source_text_end)]}
 	if scope := named {
 		mut binding := scope
 		binding.initialize_binding(mut vm, data.name or { panic('missing function name') }.name, Value.from_object(object), .normal)!
