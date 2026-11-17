@@ -6209,7 +6209,9 @@ The native ABI is
 `feb6c79b232473738a30fb26a06b8443dae8ee6e794be55fdb5bc927c4afabd3`.
 A new private cache partition is populated normally, without copying or
 renaming older entries. Each phase launches a fresh private profile/process,
-using direct current responses and the normal clock. The document viewport
+using direct top-level navigation and the normal clock. This historical harness
+retained the default shared HTTP subresource cache; the correction below adds
+explicit per-process HTTP caches and disables imported cookies. The document viewport
 is 1024×768, layout/render scale two and capture scale one; readiness waits
 for commit links followed by a 30-second observation delay. Retained raster
 options match the preceding live diagnostic. OS filesystem/shader caches are
@@ -6262,3 +6264,146 @@ four roots/four files each, exits zero in 0.1994305 / 0.174742167 seconds,
 sampled peaks 393,216 / 1,949,696 bytes. Disposable profiles, completed Build
 outputs and idle locks are removed. The native cache and full library manifest
 remain private local benchmark evidence.
+
+
+### Network isolation and controlled module-URL revision, 2026-11-17
+
+`f9b3aee9d` fixes the functional diagnostic's HTTP cache isolation. A private
+`VOX_PROFILE_DIR` did not change `browser_cache_root()`: without
+`LADYBIRD_CACHE_DIR`, subresources could come from the default shared cache.
+The diagnostic now creates an empty `OUTPUT/http-cache`, selects it explicitly,
+records its initial state and declines a preseeded cache before launching.
+`a2405c7f8` also selects `VOX_COOKIE_FILE=''`; imported Netscape jars otherwise
+have a default path independent of the private profile. The two process-boundary
+regression sources remain uncompiled/unrun under the automated-test hold.
+
+Earlier GitHub native counters remain valid, with the retained HTTP cache
+qualified above. They do not establish empty-cache network conditions. The HN
+instruction driver already explicitly selected a private HTTP cache and disabled
+imported cookies, so its seven-pair results are unaffected. The native executable
+cache remains separate and intentionally persists across these processes.
+
+Two fresh direct live captures reuse executable `61a7b90fc08b0bdc1ee9e4de0747f7c0d2c37502b058cfbb9f1a5f48ac92ecc4`
+and its actual `feb6c79b232473738a30fb26a06b8443dae8ee6e794be55fdb5bc927c4afabd3`
+native ABI. Both have empty private HTTP caches and `/usr/bin/false` as compiler.
+The second also disables imported cookies explicitly.
+
+| Isolation check | PID | Native hits / entries | Guard seconds / sampled peak bytes |
+| --- | ---: | --- | --- |
+| Private HTTP cache | 93045 | 2,988 / 674,227 | 41.808042291 / 8,512,913,408 |
+| Private HTTP cache and imported cookies disabled | 48464 | 2,987 / 702,260 | 38.418787125 / 8,666,267,648 |
+
+Both strict reuse checks pass at capture/shutdown, with zero misses, new
+compilation, compiler calls, pending/invalid entries and cache errors. Each
+retains 34 directory rows, 53 commit links, latest commit and README; all 78
+module promises fulfill, with no author/native errors or page JavaScriptCore
+context. Module URL sets are unchanged from the preceding live cohort.
+Browser/diagnostic/guard exits and PID adoption pass. The first private HTTP
+cache retains 64 response records, whose bodies/headers are preserved locally.
+
+The older frozen graph initially misses 130 lookups, leaving 126 new C
+identities pending while retaining 2,779 hits and 474,673 native entries.
+Its compiler-disabled gate correctly exits one; the browser exits zero with
+complete 33-row/56-commit/latest/README content and the same two-pixel image.
+One ordinary-Clang refresh compiles 362 entries in four invocations, completing
+all 81 modules and 25,643 templates with no unsupported functions or diagnostics.
+Its guard exits zero in 302.253257208 seconds, sampled peak 9,770,106,880 bytes.
+A fresh disabled-compiler reopen then passes: 2,905 hits, zero misses/compiler
+calls and 474,658 native entries, again with the unchanged two-pixel image.
+Guard exit zero, 39.3032885 seconds, sampled peak 7,923,253,248 bytes. A separate
+one-second stack sample during refresh is retained; these captures supply no
+performance acceptance.
+
+A first renamed-URL fixture preserves all 87 archived JavaScript bodies, but
+URL-specific compatibility redirects cease matching. It retains 2,912 hits
+and misses ten app-runtime identities, despite matching the base pixels and
+complete content. That attempt is rejected for URL-only cache attribution:
+the executed script policy differs. Browser zero, diagnostic/guard one,
+39.8634465 seconds and 7,944,667,136 sampled peak bytes remain in the receipts.
+
+The shared production bundle then advances. The first matched-policy controller
+detects the identity change before launching any browser and exits one. The
+next cohort uses the newly completed single-C-unit, literal V `-prod` executable
+`c8718d8055f24d4d86ca34944c9ba7cbbc454e4d73b73ecececc3291e209ff55`, receipt
+`Build/production-build/receipts/20261117-213143-e9e1ab81/frozen-compile.json`.
+Its native ABI is
+`86c4dd90dce7559306565c15490dd2530117b9ee2a9b4113db0535bf5aebffc5`.
+No older cache records are renamed or copied into this ABI.
+
+For this functional experiment, a pinned compiler wrapper substitutes `-O0`
+for the tier's requested `-O2`, recording every actual argv and C-input hash.
+The separate private functional cache contains 13,911 entries from 109 actual
+Clang invocations. Compilation totals 102,791.474413 ms; the preparation guard
+exits zero in 155.725341292 seconds, sampled peak 8,987,394,048 bytes. This is
+not an ordinary `-O2` cache or a matched compilation-speed comparison. It
+supplies no browser performance or optimization credit.
+
+An incomplete compatibility import retargeting leaves three canonical script
+URLs unarchived. That candidate times out waiting for readiness, has no PNG or
+final cache audit, and is rejected: browser -15, diagnostic/guard one,
+180.851946291 seconds, sampled peak 3,871,719,424 bytes. Its successful base
+capture and every failed request remain. The completed policy retargets all six
+known module-URL strings across the core/CSS compatibility programs, while
+preserving their operations and the standard-URL replacement resources.
+
+The final controlled fixture relocates **all 81 evaluated module URLs** into
+`/assets/__vox_native_revision_5204__/`. Raw archived JavaScript bodies remain
+unchanged. HTML module references/import-map URLs change, with the matching CSP
+hash updated; stylesheet/image references and the original fixture stay intact.
+Both cases use the same private compatibility bundle, including aliases for the
+three replacements. The actual served replacement bytes verify against the
+intended original/retargeted sources. Every normalized module URL matches its
+base counterpart, every module fulfills, and there are no unarchived JavaScript
+requests. Only the previously missing off-viewport Vinix image/favicon requests
+are blocked by the offline replay. Nothing is forwarded live.
+
+| Matched-policy phase | PID | Native hits / entries | Guard seconds / sampled peak bytes |
+| --- | ---: | --- | --- |
+| Warm verification (`prepare` label; no new compilation) | 96222 | 2,944 / 474,444 | 39.025079833 / 7,655,030,784 |
+| Original module URLs; compiler disabled | 96975 | 2,944 / 474,350 | 37.500443667 / 7,444,660,224 |
+| Relocated module URLs; compiler disabled | 97716 | 2,944 / 474,972 | 38.244985709 / 7,660,929,024 |
+
+Both disabled-compiler captures pass strict reuse with zero misses, compiler
+calls, new compilation, pending/invalid entries and errors. Native inputs,
+private policy assets and cached libraries stay fixed under the publication
+lease. Content remains complete, HTTP caches start empty, imported cookies stay
+disabled and page JavaScriptCore stays uninitialized. All browser, diagnostic,
+guard and controller exits are zero; adoption passes under unchanged 12-GiB
+guards. The original and relocated captures differ by **zero pixels**. Each
+still differs from the original Brave reference by exactly the same two pixels,
+maximum error ten, with zero tolerance. This validates controlled URL-only reuse
+on this page/program, not independently changed vendor code or live deployments.
+
+Thirty-four further selected-draw diagnostics append zero through sixteen
+repeated final strip indices, preserving every existing triangle and shader.
+One trailing degenerate index fixes the eight-instance counterfactual tile but
+changes four pixels in the nine-instance control. No tested padding matches
+both controls. Guard exit zero, 2.233861208 seconds, sampled peak 44,941,312
+bytes. No renderer change follows from these selected draws over white.
+
+Full commands, flags, source/binary/library pins, proxy and replacement receipts,
+failed controls, PNGs and exact exits remain local in `live-private-http-5204-r45`,
+`frozen-private-http-5204-r46`, `rebased-modules-5204-r47`,
+`metal-strip-padding-5204-r48`, `matched-policy-5204-r49`,
+`url-reuse-o0-5204-r50` and `url-reuse-complete-policy-5204-r51`.
+The successful relocated PNG is `github-renamed-modules-native.png`, SHA-256
+`7d837ff4a96bf87f703e97faac0c1ac4f3d3ae5a4a028d133fd15ebb67209ac4`.
+Earlier accepted live/frozen PNGs and the Brave reference remain unchanged.
+Automated suites remain paused; full parity and a measured speed gain stay open.
+
+Completed per-job Build outputs move with idle-lock, SHA-256 and symlink
+verification to `scratch-receipts/continued-20261117-r45-r51`: 64 roots and
+3,811 files. The archive guard exits zero in 1.229806541 seconds, sampled peak
+24,641,536 bytes. Disposable profiles and the archive's idle lock are removed;
+no matching completed job roots remain in Build. All three earlier accepted
+live/frozen/reference PNG hashes verify unchanged.
+
+For the repository page specifically, initial load, hydration and native-cache
+reopening are demonstrated. Earlier native mouse/keyboard sequences also open
+the Code and master menus, type `ma` into the branch input and dismiss overlays
+with zero native misses/compiler calls. Those interaction checkpoints belong to
+their recorded builds; the latest isolated captures do not rerun them. Selecting
+a different branch, following files/directories, Go to file and history/back
+navigation still need an end-to-end acceptance matrix before claiming complete
+repository-page behavior. The two remaining frozen screenshot pixels measure
+rendering conformance, independently of that functional coverage.

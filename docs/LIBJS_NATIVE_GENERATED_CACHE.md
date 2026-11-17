@@ -217,3 +217,37 @@ See the [GitHub runtime report](LIBJS_GITHUB_RUNTIME_20261115.md#generated-code-
 for the pinned ABI, source proof, exact endpoints and diagnostics. Frozen parity
 remains two pixels from the original Brave reference; automated suites remain
 paused.
+
+`f9b3aee9d` and `a2405c7f8` correct the diagnostic's network isolation:
+`LADYBIRD_CACHE_DIR` now selects an empty per-process HTTP cache, and
+`VOX_COOKIE_FILE=''` disables the separate imported-cookie jar. The earlier
+GitHub diagnostic retained the default shared HTTP resource cache despite its
+private profile. Its native counters remain valid; its network conditions are
+qualified accordingly. HN's instruction driver already selected both settings,
+so the earlier HN comparison is unaffected. Regression sources remain held.
+
+The corrected live capture still passes with **2,987 native hits, zero
+misses/compiler calls and 702,260 native entries**, complete content and no
+page JavaScriptCore context or author/native errors. Both capture and shutdown
+verify the cache. The executable remains the pinned `61a7…ecc4` above; browser,
+diagnostic and guard exit zero. The new live PNG and receipts remain in
+`live-private-http-5204-r45/` under the existing local performance directory.
+
+A controlled frozen-page experiment subsequently relocates **all 81 module
+URLs** and retains **2,944 hits with zero misses/compiler calls** in both the
+original and revised captures. All module promises fulfill, content stays
+complete and the captures differ by zero pixels. It uses executable
+`c8718d8055f24d4d86ca34944c9ba7cbbc454e4d73b73ecececc3291e209ff55` and a
+separate private cache of explicitly unoptimized (`-O0`) native libraries.
+This is a functional URL-reuse check, without performance acceptance.
+
+Raw archived JavaScript bodies stay unchanged. Module references/import-map
+URLs and the matching CSP hash move together. Both cases use the same private
+compatibility bundle; known module-URL strings in its replacement programs are
+retargeted consistently, and the actual served bytes are verified. Earlier
+unmatched/incompletely retargeted policy attempts are retained and rejected for
+attribution. This controlled revision does not establish reuse across arbitrary
+vendor code changes or live deployments. The original Brave reference remains
+unchanged at two differing pixels. See the
+[runtime report](LIBJS_GITHUB_RUNTIME_20261115.md#network-isolation-and-controlled-module-url-revision-2026-11-17)
+for the complete protocol, failed controls, source proofs and compiler flags.

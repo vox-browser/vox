@@ -3300,3 +3300,10 @@ gate: 2,987 hits, zero misses/compiler invocations and 711,946 native entries,
 with complete content and an uninitialized JavaScriptCore context. Preparation
 costs about 35 minutes. Both visits use the same 78-module graph; deployment
 churn, frozen parity and a measured speed gain remain open for this mode.
+
+The browser diagnostic now isolates HTTP resources as well as its profile and
+disables imported cookies. Its corrected live check retains 2,987 native hits
+with zero misses/compiler calls. A matched-policy frozen replay also relocates
+all 81 module URLs with 2,944 hits, zero misses/compiler calls and identical
+pixels between captures, using a separate private `-O0` native cache. Actual
+vendor changes, two-pixel Brave parity and speed acceptance remain open.
