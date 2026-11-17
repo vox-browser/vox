@@ -251,3 +251,39 @@ vendor code changes or live deployments. The original Brave reference remains
 unchanged at two differing pixels. See the
 [runtime report](LIBJS_GITHUB_RUNTIME_20261115.md#network-isolation-and-controlled-module-url-revision-2026-11-17)
 for the complete protocol, failed controls, source proofs and compiler flags.
+
+## Generated-code hashing on macOS, 2026-11-18
+
+An instrumented follow-up to the [frozen GitHub cohort](LIBJS_GITHUB_RUNTIME_20261115.md#optimized-generated-code-cache-at-the-png-endpoint-2026-11-17)
+samples two fresh processes of executable `d2f42448…abe6` at a requested
+1 ms interval for four seconds. Both captures preserve complete content and
+the standard-raster result. The cached native trace contains 128 samples in
+key generation, including 95 in portable SHA-256 blocks and 23 in C emission.
+It also catches dynamic-loader work, including notifications triggered while
+sampling. These are stack observations from the old executable.
+
+`7fd66548c` sends the exact prefixed generated C bytes through CommonCrypto
+SHA-256 on macOS when the size fits its input type. The digest and emitted C
+stay identical, with portable SHA-256 for other callers. The existing ABI
+fingerprint includes this source file, so rebuilt executables select a new
+partition under the same invalidation policy.
+
+A separate single-C-unit V `-prod -prealloc -gc none` VM probe seeds one
+compiled executable with ordinary Clang, changes the script URL and result
+constant, and reopens with `/usr/bin/false`. It returns the new result through
+an observed native entry, with one hit, zero misses and zero compiler calls.
+An independent SHA-256 calculation from the retained emitted C verifies the
+stored key. The library digest also matches. The focused regression source
+checks exact key parity for both digest paths and remains unrun under the
+automated-suite hold.
+
+Seven alternating pairs in a separate hashing diagnostic each verify 10,000
+digests of the same 9,015-byte emitted C body plus the identity prefix.
+The medians are 4,277,636,089 retired instructions with portable V SHA-256 and
+210,466,675 with CommonCrypto, **95.08% fewer** for this isolated workload.
+The browser startup effect awaits a bundle containing the change and a
+matched cohort. The managed hook requested the build.
+
+Stack samples, command and memory-guard receipts, raw instruction counts,
+and the single-function key proof remain local in
+`docs/performance/libjs-github-browser-20261116/libjs-github-key-profile-20261117/`.
