@@ -3870,3 +3870,15 @@ and live Hacker News compiler-disabled reopens pass the new strict native-reuse
 check; an identical-image empty-cache control correctly fails it. No renderer
 change or performance acceptance is claimed. Tests remain paused. See the
 [runtime audit](LIBJS_GITHUB_RUNTIME_20261115.md#strict-native-reuse-diagnostics-and-newer-runtime-checks-2026-11-17).
+
+
+### Instanced-draw boundaries, 17 November 2026
+
+Seventeen retained-draw diagnostics preserve instance/index order and all
+resources while changing only instance chunk sizes. Full nine/eight controls
+and the nine-instance split control reproduce their known complete hashes;
+intermediate chunks change corner coverage. This supplies no whole-page fix,
+and no renderer change is retained. The frozen two-pixel image and original
+Brave reference stay unchanged. The pinned live native-cache cohort still
+fails its zero-miss gate as module URLs change. See the
+[cohort report](LIBJS_GITHUB_RUNTIME_20261115.md#fixed-bundle-live-cohort-changing-module-graphs-2026-11-17).

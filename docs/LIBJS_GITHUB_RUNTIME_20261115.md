@@ -6030,3 +6030,84 @@ symlink verification moves 30 completed roots/98 files to
 sampled peak 245,760 bytes; this job's Build outputs and locks are removed.
 Full frozen parity, a current zero-miss GitHub live reopen and matched
 compiled-revisit performance remain open. Automated suites remain paused.
+
+
+### Fixed-bundle live cohort: changing module graphs, 2026-11-17
+
+A complete bundle read lease now spans cold preparation, compiler-disabled
+reopen, one incremental refresh and a final compiler-disabled reopen. The
+existing shared `d166b53e27274390a698704536cd3984a15b1094579e0c0f9fb126616565b56c`
+single-C literal `-prod` executable and its native libraries remain unchanged
+throughout. It uses its actual
+`b32c6cda1d21c6618167f155e29fa1f51192c6c09c86208025bcc3c250b24e45`
+ABI partition, without renaming/copying old cache entries. No manual browser
+build is requested. Each phase launches a fresh private profile and process,
+with direct current responses, the normal clock, the same 1024×768 document
+viewport, layout/render scale two, capture scale one and retained raster options.
+
+| Phase | PID | Native result | Guard seconds / sampled peak bytes |
+| --- | ---: | --- | --- |
+| Cold preparation | 92227 | 24,100 compiled / 189 compiler invocations | 1,842.779015459 / 12,185,501,696 |
+| First disabled-compiler reopen | 32412 | 3,381 hits / 1,009 misses / 760,843 native entries | 41.861808000 / 9,498,542,080 |
+| Incremental refresh | 32821 | 3,367 hits / 7,106 compiled / 56 compiler invocations | 775.061122541 / 12,046,204,928 |
+| Final disabled-compiler reopen | 51356 | 468 hits / 3,930 misses / 212,497 native entries | 44.887883958 / 8,929,607,680 |
+
+Both preparation phases finish with zero pending/invalid entries, an empty
+cache error, all 76 requested modules prepared, 26,043 prepared functions and
+zero unsupported functions or preparation diagnostics. The cold phase queues
+19,721 functions; the refresh queues 6,100. Cold compile/load times total
+1,775,014.0688700012 / 44,332.55141399998 ms; refresh totals
+737,738.653878 / 15,112.07980099999 ms. The refresh itself executes 725,099
+native entries. The partition ends with 31,206 records across the source graphs.
+These guard intervals include cache compilation after the page PNG; they are
+preparation costs, without page-load or native-throughput acceptance.
+
+The first reopen changes seven module URLs relative to preparation, including
+`code-view`, `core`, `code-menu` and `repositories`. The final reopen changes
+70 URLs relative to the refresh and evaluates 78 modules instead of 76. Those
+graphs and all source filenames are retained. Current responses may reflect
+deployments or variants; the observations do not distinguish their cause.
+The compiler-disabled reopens retain 1,009 / 3,930 pending executables and
+`Native compiler exited 1:` from `/usr/bin/false`. Both strict native-reuse
+checks correctly fail, with diagnostic/guard exits one. Their zero successful
+compiler-invocation counters do not mean no compiler was attempted. The bounded
+refresh protocol stops after this final failure; its encompassing controller
+also exits one. No zero-miss result is claimed.
+
+Every browser exits zero, PID adoption succeeds, input hashes remain fixed,
+and author/native DOM errors remain absent. Every evaluated module promise
+fulfills, page JavaScriptCore stays uninitialized, and all four content audits
+retain 34 directory rows, 53 commit links, latest commit and README. Preparation
+controllers/guards exit zero. Source churn affects cache eligibility without
+turning these successful content captures into zero-miss acceptance.
+
+The final image is explicitly partial-native evidence:
+`current-live-libjs-native-partial-r41-20261117.png`. The earlier accepted live
+and frozen compiled images are preserved, and no renderer change is retained.
+The original Brave reference and the accepted two-pixel frozen image stay
+unchanged.
+
+Seventeen separate selected-draw diagnostics vary only instance chunk sizes,
+preserving captured instance/index order and all resources. Full nine/eight
+controls and the one-instance nine control reproduce their known complete
+BGRA hashes. For nine instances, chunk sizes one through seven produce the
+same six differences from the unified control; size eight produces four; size
+nine produces zero. For eight instances, sizes one through seven each produce
+four differences from its unified control. This supports draw-boundary
+sensitivity in these captures without establishing a safe whole-page rule.
+No renderer change or GPU bug is inferred. The combined helper compilation and
+replay guard exits zero in 1.942412625 seconds, peak 120,684,544 sampled bytes.
+
+The separate seven-pair [Hacker News browser comparison](LIBJS_HN_NATIVE_BROWSER_20261117.md)
+executes cached native code and preserves exact pixels, but its median startup
+instruction count rises by 0.3653%. It supplies no optimization credit. Its
+measured pairs start after this GitHub compilation finishes.
+
+Raw commands, guards, source pins, progress and failed reopens remain locally
+in `live-cohort-5204-r41` and `metal-chunk-boundaries-5204`, alongside the
+Hacker News report's local receipts. Idle-lock, SHA-256 and symlink verification
+moves 33 completed roots/241 files to
+`scratch-receipts/continued-20261117-r41`, exit zero in 0.28828025 seconds,
+sampled peak 20,348,928 bytes. Disposable profiles, Build outputs and idle locks
+are removed. Automated suites remain paused. Full frozen parity and a current
+zero-miss GitHub live reopen remain open.
