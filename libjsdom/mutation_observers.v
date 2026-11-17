@@ -14,14 +14,27 @@ struct ObserverBinding {
 @[heap]
 struct MutationRecordBinding {
 	native &dom.MutationRecord
-	added &dom.NodeList
-	removed &dom.NodeList
+mut:
+	added ?&dom.NodeList
+	removed ?&dom.NodeList
+}
+
+fn (mut binding MutationRecordBinding) node_list(added bool) &dom.NodeList {
+	previous := if added { binding.added } else { binding.removed }
+	if list := previous { return list }
+	// The record owns an immutable snapshot. Materialize the list only when
+	// requested and retain it to preserve the WebIDL SameObject identity.
+	persistent := platform.enter_persistent()
+	defer { platform.leave_persistent(persistent) }
+	list := dom.StaticNodeList.create(if added { binding.native.added_nodes_() } else { binding.native.removed_nodes_() })
+	if added { binding.added = list } else { binding.removed = list }
+	return list
 }
 
 fn (mut host Host) mutation_record(native &dom.MutationRecord) libjs.Value {
 	if object := host.mutation_record_wrappers[voidptr(native)] { return libjs.Value.from_object(object) }
 	object := libjs.Object.create(host.realm, host.mutation_record_prototype)
-	host.mutation_records[voidptr(object)] = &MutationRecordBinding{native: native, added: dom.StaticNodeList.create(native.added_nodes_()), removed: dom.StaticNodeList.create(native.removed_nodes_())}
+	host.mutation_records[voidptr(object)] = &MutationRecordBinding{native: native}
 	host.mutation_record_wrappers[voidptr(native)] = object
 	return libjs.Value.from_object(object)
 }
@@ -151,14 +164,13 @@ fn (mut host Host) install_mutation_record_interface() ! {
 		host.accessor(mut prototype, name, fn [host, name] (mut vm libjs.VM) !libjs.Value {
 			host.require_open(mut vm)!
 			if !vm.this_value().is_object() { return vm.throw_error(.type_error, 'MutationRecord receiver required') }
-			binding := host.mutation_records[voidptr(vm.this_value().as_object())] or { return vm.throw_error(.type_error, 'MutationRecord receiver required') }
+			mut binding := host.mutation_records[voidptr(vm.this_value().as_object())] or { return vm.throw_error(.type_error, 'MutationRecord receiver required') }
 			native := binding.native
 			mut owner := unsafe { &Host(host) }
 			match name {
 				'type' { return libjs.Value.from_string(vm.create_string_from_str(native.type_())) }
 				'target' { return owner.wrap_node(native.target_()) }
-				'addedNodes' { return owner.wrap_node_list(binding.added) }
-				'removedNodes' { return owner.wrap_node_list(binding.removed) }
+				'addedNodes', 'removedNodes' { return owner.wrap_node_list(binding.node_list(name == 'addedNodes')) }
 				'previousSibling', 'nextSibling' {
 					value := if name == 'previousSibling' { native.previous_sibling_() } else { native.next_sibling_() }
 					return if node := value { owner.wrap_node(node) } else { libjs.js_null() }

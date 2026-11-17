@@ -45,6 +45,21 @@ fn test_native_mutation_records_preserve_added_removed_nodes_and_take_records() 
 	assert seen.errors.len == 0
 }
 
+fn test_mutation_record_node_lists_materialize_independently_on_access() {
+	mut host, mut vm, _, _ := mutation_fixture()!
+	defer { host.close() }
+	mutation_eval(mut vm, 'var record;var o=new MutationObserver(r=>record=r[0]);var target=document.getElementById("target");o.observe(target,{attributes:true});target.setAttribute("value","after")')!
+	attribute := mutation_eval(mut vm, 'record.attributeName')!
+	assert attribute.as_string().str() == 'value'
+	record := mutation_eval(mut vm, 'record')!.as_object()
+	binding := host.mutation_records[voidptr(record)] or { panic('missing MutationRecord binding') }
+	assert binding.added == none && binding.removed == none
+	assert mutation_eval(mut vm, 'record.addedNodes instanceof NodeList&&record.addedNodes===record.addedNodes&&record.addedNodes.length===0')!.as_bool()
+	assert binding.added != none && binding.removed == none
+	assert mutation_eval(mut vm, 'record.removedNodes===record.removedNodes&&record.removedNodes!==record.addedNodes')!.as_bool()
+	assert binding.removed != none
+}
+
 fn test_mutation_observer_options_dictionary_order_original_exceptions_and_brands() {
 	mut host, mut vm, _, seen := mutation_fixture()!
 	defer { host.close() }
