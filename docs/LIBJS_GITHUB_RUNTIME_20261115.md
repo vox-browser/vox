@@ -7303,3 +7303,37 @@ started `20261118-024638-c98004e8` and the published executable is still
 `23ba3183…3bb`. The full cached-native Back replay under 12 GiB remains
 pending. Local commands, pins and receipts are under
 `repository-navigation-5204-r76`.
+
+### LibJS call frame capacity reuse
+
+The published Back replay tags 512 MiB of tracked virtual mapping capacity
+to the reusable interpreter stack allocation path. Commit `ef8e54739`
+can reuse the smallest available private frame with capacity up to 125%
+of the requested value count. The frame's logical length determines its
+stack charge, register layout and argument offsets. The pool charges the
+full backing capacity against its existing 1 MiB limit. Exposed frames
+and saved continuations retain their independent lifetimes.
+
+Three alternating fresh-process pairs use matching single-C prealloc
+builds. The 493 recorded source and fixture pins differ only in the two
+implementation files. Each launch uses the normal VM call entry point
+for 19,200 synchronous calls across 160 argument widths. The control
+caller arena grows by 29,399,039 bytes in each pair. The candidate grows
+it by 1,685,760 bytes, **94.3% less**. The manual probe checks return
+values, exposed frame identities, and retained argument views. The
+separate Boehm probe checks those views after forcing a collection.
+
+The native-cache seed compiles four executables in one compiler call.
+An independent process reopens with `/usr/bin/false` and verifies the
+same calls and views with four hits, 19,365 native entries, 12 helper
+steps, and zero misses, compiler calls, pending or invalid entries.
+All runtime processes and guards exit zero. The production type check
+passes in 43.242286667 seconds at 7,100,071,936 sampled peak bytes.
+The frame reuse regression source remains unrun under the automated-test hold.
+
+The in-flight managed attempt `20261118-024638-c98004e8` records the
+NodeList, RegExp, resource transport and keyed collection source files.
+Its frame pool predates this change. The commit hook queued the updated
+sources. A production cached-native Back replay under 12 GiB remains
+pending. Local commands, pins and receipts are under
+`repository-navigation-5204-r77`.
