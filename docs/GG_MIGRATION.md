@@ -3828,3 +3828,19 @@ both Notifications corner errors unchanged in on/off/full-page trace captures.
 It is reverted. These cache-disabled diagnostics provide no compiled-cache or
 performance credit; the accepted frozen native-cache result stays at two pixels.
 See [the runtime report](LIBJS_GITHUB_RUNTIME_20261115.md#per-sample-rectangle-replay-two-pixels-remain-2026-11-17).
+
+
+### Stored-depth and coverage-mask replay, 17 November 2026
+
+`2dc3bb649` adds depth, raster-coverage and post-depth-coverage sample modes to
+the canonical Metal rectangle replay. All 13 retained-draw diagnostics preserve
+their complete BGRA controls; component labels and untouched values verify.
+Mode-validation regression sources remain unrun. Final depth samples agree at
+the disputed corners, while coverage masks vary with grouping. The flat-varying
+mapping probe changes its control image and is rejected for attribution.
+
+Explicitly returning the input coverage mask fixes the two Notifications pixels
+but introduces 18 new full-page differences, so it is rejected. Both on/off
+processes execute the pinned native cache with 4,245 hits and zero compiler
+calls. The retained result stays at two pixels; no renderer change is kept.
+See [the runtime report](LIBJS_GITHUB_RUNTIME_20261115.md#stored-depth-and-coverage-masks-rejected-whole-page-identity-2026-11-17).

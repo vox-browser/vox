@@ -5770,3 +5770,78 @@ peak 540,672 sampled bytes. The retained compiled screenshot remains exactly
 `github-frozen-libjs-compiled-2px.png`; both Notifications corners, full parity,
 current live validation and matched compiled-revisit performance remain open.
 No renderer change is retained, and automated suites remain paused.
+
+
+### Stored depth and coverage masks: rejected whole-page identity, 2026-11-17
+
+`2dc3bb649` extends the canonical rectangle replay with
+`--sample-mode fragment|depth|coverage|post-depth-coverage`, used alongside
+`--samples-output`. Default fragment output retains its prior four components.
+Depth mode replaces the fourth component with the stored Depth32 sample;
+coverage modes replace the third with the raster coverage mask. The post-depth
+mode requests early fragment tests and `post_depth_coverage`, as defined by the
+[Metal language specification](https://developer.apple.com/metal/Metal-Shading-Language-Specification.pdf).
+Receipts label every component and the mode. Untouched depth samples report the
+clear value one; other untouched components retain -1. Unsupported or duplicate
+modes, or a mode without an output, decline before GPU work. Focused rejection
+sources are included but remain unrun under the automated-test hold.
+
+The canonical helper compiles with `clang -Wall -Wextra`, exit zero, guarded
+elapsed 0.845087833 seconds and sampled peak 118,423,552 bytes. Thirteen manual
+retained-draw replays cover ordinary control plus all four modes on the captured
+nine-instance, split and eight-instance cases. Every complete BGRA tile matches
+its known control hash, every source/resource/output identity remains fixed,
+and all twelve sample outputs agree with their labelled untouched values.
+The guard exits zero in 1.662629833 seconds, peak 78,004,224 sampled bytes.
+These selected draws over white omit real shadows, other passes and publication;
+they supply no whole-page correctness or performance credit.
+
+At (646,190), the final stored depth is exactly 0.9996795654296875 for every
+sample in both unified and split draws, matching the fragment-reported value.
+Both coverage modes record mask 1 for primitive 1 and mask 14 for primitive 30
+in the unified draw; the split draw records mask 15 for primitive 1 throughout.
+Thus the depth readback finds no differing final sample value. It does not
+reconstruct earlier rejected fragments or establish their ordering. Explicit
+early fragment tests and sample-frequency shading separately preserve all
+three known complete controls in each mode.
+
+Six isolated-triangle replays retain their captured inputs and record only one
+covered sample for the extracted triangle 1 at that point, versus three for
+triangle 30. These do not by themselves validate a mapping to full-strip IDs.
+An attempt to add a flat provoking-vertex varying changes the unified, split
+and eight-instance controls by 3/9/5 pixels. Its image-invariance audit correctly
+fails, guard exit one, so those records are rejected for original-draw
+attribution. No rasterizer bug or safe production depth rule is inferred.
+
+A separate explicit coverage-mask return experiment makes the selected split
+and unified rectangle results identical, correcting the target corners but
+changing other pixels. Its full-page diagnostic is rejected: **2→18 differing
+pixels**, two resolved and eighteen newly wrong; maximum error rises to 67.
+It introduces Sponsor/button, header and other edge differences. Its off control
+exactly reproduces the accepted two-pixel image.
+
+| Pinned diagnostic mode | PID | Native hits / entries | Guard seconds / sampled peak bytes |
+| --- | ---: | --- | --- |
+| Explicit mask return | 47696 | 4,245 / 474,674 | 54.889289792 / 9,009,676,288 |
+| Off control | 55143 | 4,245 / 483,499 | 40.798582459 / 8,508,784,640 |
+
+Both fresh processes use the earlier accepted executable
+`e4b517d588c1443e579fa57d184a1d29437123197d7999cb041249cc7b512f8a`,
+its actual 9418 native ABI partition and `/usr/bin/false`. Native execution is
+positive; misses, compiler calls, pending/invalid entries and errors are zero.
+Page JavaScriptCore remains uninitialized. Complete 33-row/56-commit/latest/
+README content, fixed inputs, PID adoption and zero browser/controller/guard
+exits pass. The original Brave reference, frozen clock, viewport, densities,
+P3 normalization and zero tolerance remain unchanged. The injected library
+changes only analytic-rectangle shader source in this instrumented diagnosis;
+these runs are not a new shared-production or performance acceptance. The
+latest completed shared bundle was inspected, and no manual browser build
+was queued. No renderer implementation is retained.
+
+Raw commands, source derivations, failures, controls and sample buffers remain
+locally in the eight new `metal-*-5204` diagnostic directories identified by
+`scratch-receipts/continued-20261117-r38`. Idle-lock, SHA-256 and symlink checks
+move 40 completed roots/72 files there, exit zero in 0.200885333 seconds,
+sampled peak 409,600 bytes. The accepted compiled screenshot remains unchanged
+at two Notifications pixels. Full parity, current live validation and matched
+compiled-revisit performance remain open; automated tests remain paused.
