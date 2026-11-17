@@ -75,7 +75,7 @@ jobs:
             xvfb xauth xdotool scrot
           pkg-config --modversion javascriptcoregtk-4.1
 
-      - name: Check tab process exit diagnostics
+      - name: Check tab process exit diagnostics and X11 focus
         if: ${{ !cancelled() && steps.system_dependencies.outcome == 'success' && matrix.gc == 'boehm' }}
         timeout-minutes: 2
         run: |
@@ -84,6 +84,13 @@ jobs:
             --lock "$RUNNER_TEMP/vox-tab-process.lock" \
             --report "$RUNNER_TEMP/vox-tab-process.json" --limit-gib 3 --timeout 60 -- \
             python3 tools/test_tab_process_lifecycle.py
+          cc -Wall -Wextra -Werror -Wno-unused-function -I. \
+            tools/native_browser_tab_focus_linux_test.c -lX11 -o "$RUNNER_TEMP/vox-tab-focus"
+          PYTHONPATH=tools python3 tools/run_memory_bounded.py \
+            --lock "$RUNNER_TEMP/vox-tab-focus.lock" \
+            --report "$RUNNER_TEMP/vox-tab-focus.json" --limit-gib 3 --timeout 30 -- \
+            python3 -c 'import sys; from test_linux_browser import run_windowed; run_windowed(sys.argv[1:])' \
+            "$RUNNER_TEMP/vox-tab-focus"
 
       - name: Check portable binary16 conversions
         if: ${{ !cancelled() && steps.system_dependencies.outcome == 'success' && matrix.gc == 'boehm' }}
