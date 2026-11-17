@@ -70,6 +70,18 @@ jobs:
                 --expected-commit "$RELEASE_COMMIT" --architecture "$RELEASE_ARCHITECTURE"
             '
 
+      - name: Prepare container-owned validation evidence
+        if: ${{ always() }}
+        run: |
+          if [ -d source/Build ]; then
+            sudo chown -R "$(id -u):$(id -g)" source/Build
+            find source/Build -type f -name '*.lock' -delete
+          fi
+
+      - name: Show failed production build logs
+        if: ${{ failure() }}
+        run: find source/Build/linux/production-build/receipts -name build.log -print -exec tail -n 180 {} \;
+
       - name: Preserve package and validation evidence
         if: ${{ always() }}
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
