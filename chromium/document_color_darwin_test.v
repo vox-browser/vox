@@ -17,6 +17,16 @@ fn test_document_p3_conversion_preserves_alpha_and_neutral_paints() {
 	assert ink[2] * 255 > 39.5 && ink[2] * 255 < 39.6
 }
 
+fn test_document_p3_blending_keeps_the_extended_neutral_source() {
+	ink := document_color_to_p3_for_blending([f32(1), 1, 1, 1]!)
+	assert ink[0] > 1 && ink[0] < 1.001
+	assert ink[1] < 1 && ink[2] < 1 && ink[3] == 1
+	assert document_glyph_requires_extended_blend(ink)
+	assert !document_glyph_requires_extended_blend([f32(1), 1, 1, 1]!)
+	assert !document_glyph_requires_extended_blend([ink[0], ink[1], ink[2], f32(0.5)]!)
+	assert !document_glyph_requires_extended_blend([math.f32_from_bits(0x7fc00000), f32(0), 0, 1]!)
+}
+
 fn test_document_p3_profile_describes_its_matrix_and_shared_transfer_curve() {
 	profile := document_display_p3_icc()
 	assert profile.len >= 360

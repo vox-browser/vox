@@ -160,6 +160,13 @@ fn document_color_to_p3(color [4]f32) [4]f32 {
 	return result
 }
 
+// Graphite keeps the transformed source in floating point through coverage
+// and blending. A matrix/transfer approximation can put neutral ink slightly
+// above one; clamping before coverage changes a later byte-rounding decision.
+fn document_color_to_p3_for_blending(color [4]f32) [4]f32 {
+	return document_color_transform(color, document_srgb_to_p3_gamut)
+}
+
 fn document_color_from_p3(color [4]f32) [4]f32 {
 	return document_color_transform(color, document_p3_to_srgb_gamut)
 }

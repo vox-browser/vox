@@ -10,7 +10,7 @@ pub fn draw_clipped_glyph_mask(pixels &u8, width i32, height i32, pitch i32,
 	if pixels == unsafe { nil } || width <= 0 || height <= 0 || pitch < width * 4
 		|| mask.len != int(width) * int(height) || samples !in [1, 4]
 		|| C.pthread_main_np() == 0 || clip.any(!math.is_finite(f64(it)))
-		|| color.any(!math.is_finite(f64(it)) || it < 0 || it > 1) { return 0 }
+		|| color.any(!math.is_finite(f64(it))) || color[3] < 0 || color[3] > 1 { return 0 }
 	mut ctx := context() or { return 0 }
 	mut target := ctx.new_surface(width: int(width), height: int(height), sample_count: samples) or { return 0 }
 	defer { target.free() }

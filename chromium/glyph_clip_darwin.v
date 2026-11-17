@@ -6,6 +6,12 @@ import math
 import os
 
 const document_glyph_rectangle_clip = os.getenv('VOX_DIAGNOSTIC_GLYPH_RECTANGLE_CLIP') == '1'
+const document_extended_glyph_color = os.getenv('VOX_DIAGNOSTIC_EXTENDED_GLYPH_COLOR') == '1'
+
+fn document_glyph_requires_extended_blend(ink [4]f32) bool {
+	return ink[3] == 1 && ink.all(math.is_finite(it))
+		&& (ink[0] < 0 || ink[0] > 1 || ink[1] < 0 || ink[1] > 1 || ink[2] < 0 || ink[2] > 1)
+}
 
 fn chromium_glyph_rectangle_clip(command &layout.PaintCommand) ?[4]f32 {
 	if !document_glyph_rectangle_clip || command.kind != 'draw_text' || !command.has_clip
@@ -71,13 +77,15 @@ fn native_restore_document_glyph_clips(command &layout.PaintCommand,
 }
 
 
-fn draw_document_clipped_glyph_mask(mut pixels []u8, width int, height int, mask []u8,
-	ink [4]f32, bounds [4]f32, geometry [7]i32, scale_x f32, scale_y f32,
+fn draw_document_glyph_mask(mut pixels []u8, width int, height int, mask []u8,
+	ink [4]f32, bounds ?[4]f32, geometry [7]i32, scale_x f32, scale_y f32,
 	page_x f32, page_y f32, scroll_y f32) bool {
 	samples := document_image_sample_count(i32(math.round((f32(geometry[0]) - page_x) * scale_x)),
 		i32(math.round((f32(geometry[1]) - page_y + scroll_y) * scale_y)), i32(width), i32(height))
 	if samples == 0 { return false }
-	clip := document_glyph_device_clip(bounds, geometry, scale_x, scale_y, page_x, page_y, scroll_y)
+	clip := if selected := bounds {
+		document_glyph_device_clip(selected, geometry, scale_x, scale_y, page_x, page_y, scroll_y)
+	} else { [f32(0), 0, f32(width), f32(height)]! }
 	swap_document_raster_channels(pixels.data, i32(width), i32(height), i32(width * 4))
 	drawn := ggshape.draw_clipped_glyph_mask(pixels.data, i32(width), i32(height), i32(width * 4),
 		geometry[4], mask, ink, clip, int(samples)) != 0

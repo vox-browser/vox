@@ -173,8 +173,12 @@ fn draw_document_glyph_raster_run(glyphs []u16, positions []f64, font_path strin
 				f32(color & 255) / 255, f32(color >> 24) / 255]!
 		}
 		effective_color := if C.native_document_raster_uses_p3() != 0 {
-			?[4]f32(document_color_to_p3(source_color))
+			if document_extended_glyph_color && source_color[3] == 1 {
+				?[4]f32(document_color_to_p3_for_blending(source_color))
+			} else { ?[4]f32(document_color_to_p3(source_color)) }
 		} else { paint_color }
+		ink := effective_color or { source_color }
+		extended_blend := document_extended_glyph_color && document_glyph_requires_extended_blend(ink)
 		run := cpuraster.CanvasGlyphRun{
 			font_path:         font_path
 			face_index:        face_index
@@ -248,7 +252,6 @@ fn draw_document_glyph_raster_run(glyphs []u16, positions []f64, font_path strin
 				backdrop)
 		}
 		if bounds := clip_bounds {
-			ink := effective_color or { source_color }
 			if ink[3] != 1 { return 'clipped glyph requires opaque A8 ink' }
 			mask_run := cpuraster.CanvasGlyphRun{...run, paint_color: ink}
 			mut coverage := []u8{len: pixels.len}
@@ -256,12 +259,24 @@ fn draw_document_glyph_raster_run(glyphs []u16, positions []f64, font_path strin
 				mask_run, transform, color, none, 1, .src_over, [], none) { return 'clipped glyph mask declined' }
 			mask := []u8{len: width * height, init: coverage[index * 4 + 3]}
 			mut clipped := pixels.clone()
-			if !cpuraster.fill_canvas_glyphs_cached(mut cache, mut pixels, width, height, width * 4, 2, run,
+			if extended_blend {
+				if !cpuraster.blend_extended_glyph_mask(mut pixels, width, height, width * 4, mask, ink) {
+					return 'extended glyph interior declined'
+				}
+			} else if !cpuraster.fill_canvas_glyphs_cached(mut cache, mut pixels, width, height, width * 4, 2, run,
 				transform, color, none, 1, .src_over, [], none) { return 'clipped glyph interior declined' }
-			if !draw_document_clipped_glyph_mask(mut clipped, width, height, mask, ink, bounds,
+			if !draw_document_glyph_mask(mut clipped, width, height, mask, ink, bounds,
 				geometry, scale_x, scale_y, page_x, page_y, scroll_y) { return 'clipped glyph GPU declined' }
 			clip := document_glyph_device_clip(bounds, geometry, scale_x, scale_y, page_x, page_y, scroll_y)
 			if !merge_clipped_glyph_edges(mut pixels, clipped, width, height, clip) { return 'clipped glyph merge declined' }
+		} else if extended_blend {
+			mut coverage := []u8{len: pixels.len}
+			if !cpuraster.fill_canvas_glyphs_cached(mut cache, mut coverage, width, height, width * 4, 2,
+				run, transform, color, none, 1, .src_over, [], none) { return 'extended glyph mask declined' }
+			mask := []u8{len: width * height, init: coverage[index * 4 + 3]}
+			if !cpuraster.blend_extended_glyph_mask(mut pixels, width, height, width * 4, mask, ink) {
+				return 'extended glyph blend declined'
+			}
 		} else {
 			if !cpuraster.fill_canvas_glyphs_cached(mut cache, mut pixels, width, height, width * 4, 2, run,
 				transform, color, none, 1, .src_over, [], none) { return 'cpuraster declined' }
@@ -272,6 +287,9 @@ fn draw_document_glyph_raster_run(glyphs []u16, positions []f64, font_path strin
 		}
 		if bounds := clip_bounds {
 			eprintln('VOX_GLYPH_RECTANGLE_CLIP bounds=${bounds} raster=${geometry[..]} backend=gpu')
+		}
+		if extended_blend {
+			eprintln('VOX_EXTENDED_GLYPH_COLOR ink=${ink[..]} raster=${geometry[..]} backend=cpu')
 		}
 		return ''
 	}

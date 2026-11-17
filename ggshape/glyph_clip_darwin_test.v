@@ -17,3 +17,19 @@ fn test_glyph_mask_rectangular_clip_preserves_ink_and_fractional_fringe() {
 		}
 	}
 }
+
+fn test_extended_glyph_ink_blends_before_the_destination_byte_clamp() {
+	for samples in [1, 4] {
+		// BGRA destination and an A8 glyph sample. Clamping the source's
+		// red component first changes its final result from 214 to 213.
+		mut extended := [u8(70), 134, 66, 255]
+		mut bounded := extended.clone()
+		ink := [f32(1.0000991821289062), 0.9999618530273438, 0.9999465942382812, 1]!
+		assert draw_clipped_glyph_mask(extended.data, 1, 1, 4, 1, [u8(199)], ink,
+			[f32(0), 0, 1, 1]!, samples) == 1
+		assert draw_clipped_glyph_mask(bounded.data, 1, 1, 4, 1, [u8(199)],
+			[f32(1), ink[1], ink[2], 1]!, [f32(0), 0, 1, 1]!, samples) == 1
+		assert extended == [u8(214), 228, 214, 255]
+		assert bounded == [u8(214), 228, 213, 255]
+	}
+}
