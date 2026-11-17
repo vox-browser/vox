@@ -396,9 +396,8 @@ The retained attempts include two failed formatter harnesses that used
 manual allocation scopes, an initial whole-library comparison that included
 path-dependent Mach-O install names, and a later comparison with different
 text segment placement. The successful checks compare exact C, then verify
-the code section with matched linker layout. The GitHub performance effect
-awaits a production build containing the change. The managed hook requested
-the build.
+the code section with matched linker layout. The managed hook requested the
+production build used for the browser comparison below.
 
 Raw stacks, C source, exact counts and guard receipts stay local under
 `docs/performance/libjs-github-browser-20261116/libjs-github-native-profile-09e4-20261118/`.
@@ -429,3 +428,60 @@ exercises only the functions it looks up on that visit.
 
 Counts, fixture location, compiler receipts and the seed capture stay local
 under `docs/performance/libjs-github-browser-20261116/libjs-github-emitter-control-20261118/`.
+
+### Published emitter build on frozen GitHub
+
+The managed single-C `-prod` build publishes executable
+`23ba3183f6c6446597823e434ba9016fc6949940758a6bcbcba91991b782b3bb`.
+Its sealed manifest contains the verified emitter. It differs from
+`09e4dcb3…9e76` in 20 sealed inputs, including document callback limits,
+module exports and raster changes. The archive, compatibility policy,
+tools, native dependencies and standard-raster reference have the same hashes
+as in the previous cohort. The two audit configurations also have identical
+bytes.
+
+The fresh seed matches the pinned Vox image. All 13,915 candidate cache keys
+verify, with the same set of canonical generated C bodies as the previous
+build. The candidate uses generated-code ABI
+`e2d10230287cafcdb03bce6df0a228f1f9d1fa04cdae2d2648cbe15c81c2835b`.
+The 109 optimized libraries are compiled anew at `-O2` from the retained C.
+The eligibility capture reopens with `/usr/bin/false`, records 2,928 hits,
+436,570 native entries and 11,876,491 fast steps, and has zero misses or
+compiler calls. Its content and pixels pass.
+
+Seven alternating pairs count retired instructions from fresh exclusive
+browser resource-coalition creation through native PNG encoding. Startup and
+window setup are included. PNG file writing, audit, teardown, GPU work and
+outside services are outside the measurement. Every launch uses a private
+profile and empty HTTP cache. The run retains OS filesystem and shader caches.
+Native diagnostics are disabled during measurement.
+
+| Pair | Interpreter instructions | Cached native instructions |
+| ---: | ---: | ---: |
+| 1 | 71,848,020,595 | 78,348,118,409 |
+| 2 | 70,043,818,443 | 72,071,243,186 |
+| 3 | 69,978,048,367 | 78,043,262,119 |
+| 4 | 77,817,776,958 | 77,903,580,950 |
+| 5 | 71,741,806,871 | 77,875,631,406 |
+| 6 | 62,514,620,779 | 77,977,802,291 |
+| 7 | 68,481,919,419 | 71,917,003,212 |
+| Median | **70,043,818,443** | **77,903,580,950** |
+
+Cached native uses **11.22% more instructions** at the median and more
+instructions in each pair. The median paired ratio is 1.08550 and the
+highest-native/lowest-interpreter ratio is 1.25328. The cached-native median
+falls **0.14%** from the previous build and the interpreter median rises
+**0.08%**. One-minute loads on 18 logical CPUs range from 7.03 to 14.21.
+The instruction comparison covers the complete builds. The formatter-only
+effect is measured by the seeded-corpus probe above.
+
+All 14 captures match the pinned 1024×768 Vox image and pass document
+ownership and repository content checks. Each evaluates all 81 modules with
+fulfilled promises, serves the three pinned compatibility script bodies and
+leaves JavaScriptCore uninitialized. Native capture and shutdown receipts
+show 2,946–2,947 hits with zero misses, compilations, compiler calls, or
+pending or invalid entries. All browsers, harnesses and guards exit zero.
+The measurement guard adopts 28 processes and reports 131.203 seconds and
+a sampled peak of 7,840,956,416 bytes. The optimized cache stays in its
+private benchmark directory. Exact counts, image audits and receipts stay
+local under `docs/performance/libjs-github-browser-20261116/libjs-github-emitter-after-20261118/`.
