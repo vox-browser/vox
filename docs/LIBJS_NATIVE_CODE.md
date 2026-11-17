@@ -459,3 +459,32 @@ initial hashes after the run. Seed, interpreter, native and memory guard
 exit zero. The 3-GiB guard records 0.773 seconds and 119,652,352 sampled
 peak bytes. The exact outcomes and receipts stay local under
 `docs/performance/libjs-github-browser-20261116/libjs-github-empty-calls-after-20261118/`.
+
+### Repeat control on the published emitter build
+
+The worker attempt `20261118-022652-880e7db2` sealed its LibJS sources
+before the empty-call change. Its compiler-input check rejects a concurrent
+edit to `browsernet/cancellable_transport.h`, so the installed production
+executable stays at `23ba3183…3bb`.
+
+While the managed retry is pending, another seven alternating pairs use
+the same pinned executable, optimized native libraries, replay, policy,
+tools and image. All 14 new captures match the pinned Vox image and audit,
+fulfill all 81 modules and serve all three pinned compatibility script
+bodies. JavaScriptCore stays uninitialized. Cached-native runs have
+2,946–2,948 hits with zero misses or compiler calls. All browsers, the
+harness and guard exit zero. The guard adopts 28 processes and records
+124.662 seconds and 7,929,036,800 sampled peak bytes.
+[Original emitter cohort](LIBJS_NATIVE_GENERATED_CACHE.md#published-emitter-build-on-frozen-github)
+
+| Cohort | Interpreter median | Cached-native median | Native above interpreter |
+| --- | ---: | ---: | ---: |
+| Emitter report | 70,043,818,443 | 77,903,580,950 | 11.22% |
+| Same-build repeat | 75,845,204,833 | 77,822,647,059 | 2.61% |
+
+The same executable's native median moves **−0.10%** and its interpreter
+median moves **+8.28%** between cohorts. These counts include the full
+browser startup and capture window. The repeat supplies an observed
+variation check for the later build comparison. Exact counts and receipts
+stay local under
+`docs/performance/libjs-github-browser-20261116/libjs-github-empty-calls-after-20261118/`.
