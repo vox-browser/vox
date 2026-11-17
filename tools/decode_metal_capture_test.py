@@ -42,6 +42,43 @@ class FakeCapture:
 
 
 class CaptureBindingTests(unittest.TestCase):
+    def test_image_bindings_and_nonindexed_draws_snapshot_texture_identity(self):
+        def texture(name):
+            payload = struct.pack('<Q', 9) + name.encode() + b'\0'
+            payload += bytes(-len(payload) % 4)
+            return record(0xffffc04a, 'CU', payload + struct.pack('<IQ', 116, 7))
+
+        bind = record(0xffffc07b, 'Ctul', struct.pack('<3Q', 1, 7, 0))
+        sampler = record(0xffffc07d, 'Ctul', struct.pack('<3Q', 1, 8, 0))
+        quad = record(0xffffc0a6, 'Cululululul', struct.pack('<6Q', 1, 4, 0, 4, 2, 19))
+        commands = texture('first') + bind + sampler + quad + texture('reused') + draw()
+        descriptor = struct.pack('<9Q', 225, 2, 80, 40, 40, 1, 6, 1, 1)
+        with tempfile.TemporaryDirectory() as directory:
+            result = decode(FakeCapture(Path(directory), commands,
+                                        first=descriptor, reused=descriptor))
+        first, = result['nonindexed_draws']
+        self.assertEqual(first['primitive'], 4)
+        self.assertEqual(first['vertex_count'], 4)
+        self.assertEqual(first['instance_count'], 2)
+        self.assertEqual(first['base_instance'], 19)
+        self.assertNotIn('index_buffer', first)
+        self.assertEqual(first['fragment_textures']['0']['descriptor'], 'first')
+        self.assertEqual(first['fragment_samplers']['0']['pointer'], '0x8')
+        second, = result['indexed_draws']
+        self.assertEqual(second['fragment_textures']['0']['descriptor'], 'reused')
+        self.assertEqual(result['textures']['0x7']['width'], 40)
+        self.assertEqual(result['textures']['0x7']['mipmap_levels'], 6)
+        self.assertIn('Not reconstructed', result['texture_contents'])
+
+    def test_unknown_texture_version_and_changed_binding_signature_are_rejected(self):
+        payload = struct.pack('<Q', 9) + b'bad\0' + struct.pack('<IQ', 116, 7)
+        commands = record(0xffffc04a, 'CU', payload)
+        with tempfile.TemporaryDirectory() as directory:
+            with self.assertRaisesRegex(ValueError, 'Unsupported texture descriptor version'):
+                decode(FakeCapture(Path(directory), commands, bad=struct.pack('<9Q', *([0] * 9))))
+            with self.assertRaisesRegex(ValueError, 'Changed signature'):
+                decode(FakeCapture(Path(directory), record(0xffffc07b, 'Ct', bytes(24))))
+
     def test_inline_bytes_replace_buffer_bindings_and_later_buffers_replace_bytes(self):
         bind = lambda tag: record(tag, 'C@1t@1ul@2ul', struct.pack('<5Q', 1, 7, 16, 30, 1))
         commands = (bind(0xffffc06b) + bind(0xffffc07a) + inline('vertex', 'v')
