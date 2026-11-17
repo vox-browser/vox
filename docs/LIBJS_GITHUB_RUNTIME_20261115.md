@@ -6466,3 +6466,35 @@ comparisons and PNGs are local in
 `docs/performance/libjs-github-browser-20261116/libjs-github-continue-20261117/`.
 Cleanup moves 34 completed Build entries and verifies 243 file identities.
 Disposable profiles, HTTP caches, and job locks are removed from Build.
+
+### Live compiled reopen on the same production bundle, 2026-11-17
+
+The same `d2f42448…abe6` executable and `835bbc6b…840f` generated-code ABI
+load the public `https://github.com/vlang/v` directly in two fresh processes.
+Both start with an empty private HTTP cache and imported cookies disabled.
+The browser uses its bundled site policy for direct navigation. The separate
+live cache starts empty and a pinned wrapper selects `-O0` for functional
+preparation. The first visit compiles 14,220 entries in 112 Clang calls with no
+pending/invalid entries at shutdown.
+
+With `/usr/bin/false` as compiler, the live reopen records **3,017 native hits
+and 505,906 native entries** at capture and shutdown. Misses, compiler calls,
+new entries and pending/invalid entries are all zero. Both visits fulfill the
+same 78 modules without initializing page JavaScriptCore. The complete content
+audits agree across all 34 directory rows, 53 commit links, latest commit and
+README. There are no recorded page-script or native errors. Both 1024×768
+document PNGs are byte-identical, with SHA-256
+`f70639d82a0b709c7dc1d09fb3ef49c67044a41e0cb1969c801c6e5d38691ba3`.
+
+| Live phase | PID | Guard seconds | Sampled aggregate peak bytes |
+| --- | ---: | ---: | ---: |
+| Empty cache preparation | 82424 | 160.639825209 | 10,414,063,616 |
+| Compiler-disabled reopen | 87363 | 15.938324 | 8,555,954,176 |
+
+Browser, diagnostic and guard exit zero in both phases. PID adoption and input
+hashes verify. The captures measure one unchanged live module graph and include
+a four-second readiness settle. The separate optimized frozen comparison uses a
+different cache. The live PNG, input pins, compiler arguments, exact commands,
+and guard reports are local in
+`docs/performance/libjs-github-browser-20261116/libjs-github-o2-20261117/live-and-pilot-receipts/`
+and its parent directory.
