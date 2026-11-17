@@ -204,6 +204,7 @@ class DeployPlatformTests(unittest.TestCase):
     def main(self, platform, arguments):
         import deploy_macos
         with patch.object(sys, 'platform', platform), \
+                patch.object(deploy_macos, 'linux_package_format', return_value='deb'), \
                 patch.object(sys, 'argv', ['deploy.vsh', *arguments]):
             return deploy_macos.main()
 
@@ -225,6 +226,25 @@ class DeployPlatformTests(unittest.TestCase):
         with patch.object(deploy_macos, 'deploy') as package:
             self.assertEqual(self.main('darwin', ['--no-publish']), 0)
         package.assert_called_once_with(output=None, package_only=False)
+
+    def test_arch_format_routes_to_native_arch_packager_and_release_target(self):
+        import deploy_arch
+        import deploy_macos
+        with patch.object(deploy_arch, 'deploy') as package:
+            self.assertEqual(self.main('linux', ['--format', 'arch', '--no-publish']), 0)
+        package.assert_called_once_with(output=None, package_only=False)
+        with patch.object(deploy_arch, 'deploy') as package, \
+                patch.object(deploy_macos.release_macos, 'release') as release:
+            self.assertEqual(self.main('linux', ['--format', 'arch']), 0)
+        release.assert_called_once_with(deploy_macos.ROOT, package, None, False, None, target='linux-arch')
+
+    def test_arch_detection_includes_arch_derivatives(self):
+        import deploy_macos
+        for release, expected in ((dict(ID='arch'), 'arch'),
+                                  (dict(ID='endeavouros', ID_LIKE='arch'), 'arch'),
+                                  (dict(ID='debian'), 'deb'), (dict(ID='ubuntu', ID_LIKE='debian'), 'deb')):
+            with patch.object(os, 'freedesktop_os_release', return_value=release, create=True):
+                self.assertEqual(deploy_macos.linux_package_format(), expected)
 
 
 if __name__ == '__main__':

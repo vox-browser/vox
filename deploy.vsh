@@ -1,8 +1,8 @@
 #!/usr/bin/env -S v -memory-limit 10G run
 
-// Release Vox for macOS or Linux: commit packaging/Info.plist at the next patch version,
+// Release Vox for macOS or Linux: commit both packaging versions at the next patch version,
 // build that commit in ../vox2-release (other sessions' uncommitted work is not
-// compiled or disturbed), package a stripped DMG or DEB and upload it to a new
+// compiled or disturbed), package a stripped DMG, DEB or Arch package and upload it to a new
 // vox-browser/vox GitHub release. macOS also updates vox-browser.org/version.
 // Use --help for --version, --package-only, --no-publish and --website-only.
 import os

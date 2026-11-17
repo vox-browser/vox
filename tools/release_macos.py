@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Publish a packaged Vox DMG or DEB as the next release.
+"""Publish a packaged Vox DMG, DEB or Arch archive as the next release.
 
 packaging/Info.plist and packaging/version.txt hold the package and runtime
 versions. A release commits their version bump alone on master, builds that
@@ -166,7 +166,8 @@ def release_assets(repository, version):
 def publish_release(repository, version, artifact, minimum):
     digest = sha256(artifact)
     machine = 'Apple silicon' if platform.machine() == 'arm64' else platform.machine()
-    system = ('Linux (Debian package)' if artifact.suffix == '.deb'
+    system = ('Linux (Arch Linux package)' if artifact.name.endswith('.pkg.tar.zst')
+              else 'Linux (Debian package)' if artifact.suffix == '.deb'
               else 'macOS %s or later on %s' % (minimum, machine))
     notes = ('Vox %s for %s.\n\nSHA-256 of %s: `%s`\n'
              % (version, system, artifact.name, digest))
@@ -373,9 +374,9 @@ def verify_release_inputs(checkout, build, commit, expected):
 def release(root, deploy, output=None, package_only=False, requested=None,
             repository=REPOSITORY, host=WEBSITE_HOST, checkout=None, target='macos'):
     """Bump, build the committed sources, package and publish; return the package path."""
-    if target not in ('macos', 'linux'):
+    if target not in ('macos', 'linux', 'linux-arch'):
         raise ValueError('Unsupported release target: ' + target)
-    extension = '.deb' if target == 'linux' else '.dmg'
+    extension = {'linux': '.deb', 'linux-arch': '.pkg.tar.zst', 'macos': '.dmg'}[target]
     checkout = checkout or release_checkout(root)
     with release_lock(root):
         released = released_version(repository)
@@ -400,9 +401,11 @@ def release(root, deploy, output=None, package_only=False, requested=None,
         if output is None:
             architecture = (command(['dpkg', '--print-architecture']).strip()
                             if target == 'linux' else platform.machine())
-            output = root / 'Build/deploy' / ('Vox-%s-%s%s' % (version, architecture, extension))
+            filename = ('vox-%s-1-%s.pkg.tar.zst' % (version, architecture)
+                        if target == 'linux-arch' else 'Vox-%s-%s%s' % (version, architecture, extension))
+            output = root / 'Build/deploy' / filename
         artifact = deploy(checkout, output, package_only)
-        manifest = json.loads(artifact.with_suffix(extension + '.json').read_text())
+        manifest = json.loads(artifact.with_name(artifact.name + '.json').read_text())
         if manifest['version'] != version:
             raise RuntimeError('The package contains Vox %s, not %s' % (manifest['version'], version))
         verify_release_inputs(checkout, manifest.get('source_build', {}), commit, expected)

@@ -181,6 +181,19 @@ class ReleaseFlowTests(unittest.TestCase):
                                         'deploy', 'publish_release'])
         self.assertEqual(self.calls[-1][1][:3], (release.REPOSITORY, '0.1.1', deb))
 
+    def test_arch_release_uses_native_filename_manifest_and_skips_macos_website(self):
+        def package(root, output, package_only):
+            artifact = self.deploy(root, output, package_only)
+            artifact.with_suffix('.dmg.json').rename(artifact.with_name(artifact.name + '.json'))
+            return artifact
+
+        with patch.object(release.platform, 'machine', return_value='x86_64'), redirect_stdout(io.StringIO()):
+            artifact = release.release(self.root, package, checkout=self.checkout, target='linux-arch')
+        self.assertEqual(artifact.name, 'vox-0.1.1-1-x86_64.pkg.tar.zst')
+        self.assertEqual(self.names(), ['check_unreleased', 'commit_version', 'prepare_checkout',
+                                        'deploy', 'publish_release'])
+        self.assertEqual(self.calls[-1][1][:3], (release.REPOSITORY, '0.1.1', artifact))
+
     def test_failed_build_or_upload_publishes_nothing_further_and_a_rerun_keeps_the_version(self):
         for failure, published in [('deploy', []), ('publish_release', ['publish_release'])]:
             self.calls.clear()
@@ -488,6 +501,17 @@ class PublishingTests(unittest.TestCase):
             notes = arguments[arguments.index('--notes') + 1]
             self.assertIn('Linux (Debian package)', notes)
             self.assertNotIn('macOS', notes)
+
+    def test_arch_release_notes_identify_the_package_and_verify_its_digest(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            artifact = Path(temporary) / 'vox-0.1.4-1-x86_64.pkg.tar.zst'
+            artifact.write_bytes(b'arch')
+            with patch.object(release, 'command') as command, \
+                    patch.object(release, 'release_assets', return_value={artifact.name: 'sha256:' + release.sha256(artifact)}), \
+                    redirect_stdout(io.StringIO()):
+                release.publish_release('owner/repo', '0.1.4', artifact, None)
+            arguments = command.call_args.args[0]
+            self.assertIn('Arch Linux package', arguments[arguments.index('--notes') + 1])
 
     def test_site_download_must_redirect_to_the_uploaded_dmg(self):
         uploaded = 'https://github.com/owner/repo/releases/download/0.1.1/Vox-0.1.1-arm64.dmg'

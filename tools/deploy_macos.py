@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Release Vox: build committed sources with literal -prod / single C unit, strip,
-package a macOS DMG or Linux DEB and upload it to a new GitHub release.
+package a macOS DMG, Linux DEB or Arch archive and upload it to a new GitHub release.
 macOS releases also update vox-browser.org/version."""
 
 import argparse
@@ -210,16 +210,21 @@ def deploy(root=ROOT, output=None, package_only=False, library_directory=None):
     return output
 
 
+def linux_package_format():
+    try:
+        release = os.freedesktop_os_release()
+    except OSError:
+        return 'deb'
+    families = (release.get('ID', '') + ' ' + release.get('ID_LIKE', '')).split()
+    return 'arch' if 'arch' in families else 'deb'
+
+
 def main():
     linux = sys.platform == 'linux'
-    target = 'linux' if linux else 'macos'
-    if linux:
-        from deploy_linux import deploy as package
-    else:
-        package = deploy
     parser = argparse.ArgumentParser(prog='deploy.vsh', description=__doc__)
-    parser.add_argument('--output', type=Path, help='package path (default: Build/deploy/Vox-VERSION-ARCH.'
-                        + ('deb)' if linux else 'dmg)'))
+    parser.add_argument('--format', choices=('deb', 'arch'),
+                        help='Linux package format (default: detect Arch or Debian from /etc/os-release)')
+    parser.add_argument('--output', type=Path, help='package path (default: Build/deploy/ with native package extension)')
     parser.add_argument('--package-only', action='store_true',
                         help="reuse the release checkout's completed build (with --no-publish: "
                         "the canonical Build/" + ('linux' if linux else 'v') + " build)")
@@ -234,13 +239,25 @@ def main():
     args = parser.parse_args()
     if sys.platform not in ('darwin', 'linux'):
         parser.error('Deployment requires macOS or Linux')
+    if args.format and not linux:
+        parser.error('--format requires Linux')
+    target = 'macos'
+    package = deploy
+    if linux:
+        package_format = args.format or linux_package_format()
+        if package_format == 'arch':
+            from deploy_arch import deploy as package
+            target = 'linux-arch'
+        else:
+            from deploy_linux import deploy as package
+            target = 'linux'
     if args.library_dir:
         if linux or not args.library_dir.is_dir():
             parser.error('--library-dir requires a macOS library directory')
         package = functools.partial(deploy, library_directory=args.library_dir.resolve())
     if args.website_only and linux:
         parser.error('--website-only requires macOS (the website tracks the macOS download)')
-    if args.website_only and (args.no_publish or args.package_only or args.output or args.version or args.library_dir):
+    if args.website_only and (args.no_publish or args.package_only or args.output or args.version or args.library_dir or args.format):
         parser.error('--website-only takes no other options')
     if args.no_publish and args.version:
         parser.error('--version publishes a release; omit --no-publish')

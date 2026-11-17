@@ -1,4 +1,7 @@
 import copy
+from pathlib import Path
+import subprocess
+import tempfile
 import unittest
 
 import build_linux_release_ci as release
@@ -32,6 +35,54 @@ class ReleaseBuildTests(unittest.TestCase):
                     release.verify_package_manifest(changed, 'a' * 40, 'amd64')
         with self.assertRaises(RuntimeError):
             release.verify_package_manifest(manifest, 'a' * 40, 'arm64')
+
+    def test_arch_install_must_succeed_and_match_the_package_before_browser_checks(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            package, executable = root / 'vox.pkg.tar.zst', root / 'installed-vox'
+            package.write_bytes(b'archive')
+            executable.write_bytes(b'ELF fixture')
+            manifest = dict(package_sha256=release.digest(package),
+                            packaged_executable_sha256=release.digest(executable))
+            calls = []
+
+            def guarded(command, name, *args):
+                calls.append((command, name, args))
+
+            release.validate_package(root, root, package, manifest, 'arch', guarded, {}, executable)
+            self.assertEqual(calls[0], (['sudo', '-n', 'pacman', '-U', '--noconfirm', package], 'install', ()))
+            self.assertEqual(calls[1][0][2], executable)
+            self.assertEqual(calls[1][1:], ('browser', (3, {})))
+            calls.clear()
+            executable.write_bytes(b'wrong installed bytes')
+            with self.assertRaisesRegex(RuntimeError, 'Installed executable'):
+                release.validate_package(root, root, package, manifest, 'arch', guarded, {}, executable)
+            self.assertEqual(len(calls), 1)
+            executable.write_bytes(b'ELF fixture')
+
+            def failed_install(command, name, *args):
+                raise subprocess.CalledProcessError(1, command)
+
+            with self.assertRaises(subprocess.CalledProcessError):
+                release.validate_package(root, root, package, manifest, 'arch', failed_install, {}, executable)
+
+    def test_changed_package_is_rejected_before_installation_and_after_browser_checks(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            package, executable = root / 'vox.pkg.tar.zst', root / 'installed-vox'
+            package.write_bytes(b'archive')
+            executable.write_bytes(b'ELF fixture')
+            manifest = dict(package_sha256=release.digest(package),
+                            packaged_executable_sha256=release.digest(executable))
+
+            def tamper(command, name, *args):
+                if name == 'browser':
+                    package.write_bytes(b'changed package')
+
+            with self.assertRaisesRegex(RuntimeError, 'changed during validation'):
+                release.validate_package(root, root, package, manifest, 'arch', tamper, {}, executable)
+            with self.assertRaisesRegex(RuntimeError, 'recorded checksum'):
+                release.validate_package(root, root, package, manifest, 'arch', tamper, {}, executable)
 
 
 if __name__ == '__main__':

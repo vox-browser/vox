@@ -1,0 +1,76 @@
+name: Arch Linux x86_64 release package
+
+on:
+  workflow_dispatch:
+    inputs:
+      release_ref:
+        description: Commit or tag containing Arch deployment support
+        required: true
+        default: master
+
+permissions:
+  contents: read
+
+concurrency:
+  group: arch-release-${{ inputs.release_ref }}
+  cancel-in-progress: false
+
+jobs:
+  package:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          path: tooling
+          persist-credentials: false
+
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: ${{ inputs.release_ref }}
+          path: source
+          persist-credentials: false
+
+      - name: Add swap within the existing process memory budget
+        run: |
+          sudo fallocate -l 8G "$RUNNER_TEMP/vox-arch.swap"
+          sudo chmod 600 "$RUNNER_TEMP/vox-arch.swap"
+          sudo mkswap "$RUNNER_TEMP/vox-arch.swap"
+          sudo swapon "$RUNNER_TEMP/vox-arch.swap"
+
+      - name: Build and validate in native Arch Linux
+        run: |
+          release_commit=$(git -C source rev-parse HEAD)
+          docker run --rm --memory=12g --memory-swap=20g \
+            --volume "$GITHUB_WORKSPACE:/workspace" \
+            --env RELEASE_COMMIT="$release_commit" archlinux:base-devel sh -eu -c '
+              pacman -Syu --noconfirm
+              pacman -S --needed --noconfirm \
+                clang lld pkgconf git python procps-ng sudo libarchive zstd \
+                webkit2gtk-4.1 glib2 harfbuzz curl openssl libglvnd mesa \
+                libxi libxcursor libxrandr libx11 alsa-lib gc freetype2 \
+                fontconfig libwebp libpng libjpeg-turbo ttf-dejavu \
+                xorg-server-xvfb xorg-xauth xdotool scrot ca-certificates
+              useradd --create-home builder
+              printf "%s\n" "builder ALL=(ALL) NOPASSWD: /usr/bin/pacman" > /etc/sudoers.d/vox-builder
+              chown -R builder:builder /workspace/source
+              mkdir /opt/vox-arch-toolchain
+              chown builder:builder /opt/vox-arch-toolchain
+              printf "%s\n" "#!/bin/sh" "exec clang -fuse-ld=lld \"\$@\"" > /usr/local/bin/vox-release-cc
+              chmod +x /usr/local/bin/vox-release-cc
+              sudo -u builder env CC=/usr/local/bin/vox-release-cc \
+                python -u /workspace/tooling/tools/build_linux_release_ci.py \
+                  --source /workspace/source --toolchain /opt/vox-arch-toolchain \
+                  --expected-commit "$RELEASE_COMMIT" --distribution arch
+            '
+
+      - name: Preserve package and validation evidence
+        if: ${{ always() }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: vox-arch-x86_64-${{ github.run_id }}
+          path: |
+            source/Build/deploy/
+            source/Build/linux/production-build/
+          if-no-files-found: error
+          retention-days: 14

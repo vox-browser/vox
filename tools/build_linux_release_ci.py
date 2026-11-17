@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Build a pinned Linux release in native Debian, then test its DEB."""
+"""Build a pinned Linux release in Debian or Arch, then test its native package."""
 import argparse
 import hashlib
 import json
@@ -62,19 +62,45 @@ def verify_package_manifest(manifest, expected_commit, architecture):
             raise RuntimeError('Release build does not match the clean requested commit')
 
 
+def validate_package(source, reports, package, manifest, distribution, guarded, environment,
+                     installed_executable=Path('/usr/bin/vox')):
+    package_digest = manifest['package_sha256' if distribution == 'arch' else 'deb_sha256']
+    if digest(package) != package_digest:
+        raise RuntimeError('Package does not match its recorded checksum')
+    if distribution == 'arch':
+        # Exercise dependency resolution and the actual installed layout in the
+        # disposable build container; deployment itself needs no root privileges.
+        guarded(['sudo', '-n', 'pacman', '-U', '--noconfirm', package], 'install')
+        executable = installed_executable
+    else:
+        extracted = reports / 'package'
+        guarded(['dpkg-deb', '--extract', package, extracted], 'extract')
+        executable = extracted / 'usr/bin/vox'
+    if digest(executable.resolve()) != manifest['packaged_executable_sha256']:
+        raise RuntimeError('Installed executable does not match the package')
+    guarded([sys.executable, source / 'tools/test_linux_browser.py', executable,
+             '--output', reports / 'browser'], 'browser', 3, environment)
+    if digest(package) != package_digest or digest(executable.resolve()) != manifest['packaged_executable_sha256']:
+        raise RuntimeError('Package or installed executable changed during validation')
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--source', type=Path, required=True)
     parser.add_argument('--toolchain', type=Path, required=True)
     parser.add_argument('--expected-commit', required=True)
+    parser.add_argument('--distribution', choices=('debian', 'arch'), default='debian')
     parser.add_argument('--compiler-no-prod', action='store_true',
                         help='speed up the compiler bootstrap in an emulated VM; the browser still uses -prod')
     args = parser.parse_args()
     if not re.fullmatch('[0-9a-f]{40}', args.expected_commit):
         parser.error('--expected-commit must be a full Git commit ID')
     source, toolchain = args.source.resolve(), args.toolchain.resolve()
-    if subprocess.check_output(['dpkg', '--print-architecture'], text=True).strip() != 'amd64':
-        raise RuntimeError('This release job requires a native AMD64 Debian environment')
+    architecture = 'x86_64' if args.distribution == 'arch' else 'amd64'
+    host_architecture = subprocess.check_output(
+        ['uname', '-m'] if args.distribution == 'arch' else ['dpkg', '--print-architecture'], text=True).strip()
+    if host_architecture != architecture:
+        raise RuntimeError('This release job requires an x86_64 Linux environment')
     native_cc = os.environ.get('CC', 'clang')
     verify_c_compiler(native_cc)
     run(['git', 'config', '--global', '--add', 'safe.directory', source])
@@ -134,25 +160,22 @@ def main():
     environment.update(V_BIN=str(wrapper))
     for key in ('VOX_MATCH_SCOPE_CC', 'VOX_MATCH_SCOPE_RECEIPT'):
         environment.pop(key, None)
-    run([sys.executable, source / 'tools/deploy_macos.py', '--no-publish'], cwd=source, env=environment)
+    package_command = [sys.executable, source / 'tools/deploy_macos.py', '--no-publish']
+    if args.distribution == 'arch':
+        package_command += ['--format', 'arch']
+    run(package_command, cwd=source, env=environment)
     version = plistlib.loads((source / 'packaging/Info.plist').read_bytes())['CFBundleShortVersionString']
-    package = output / ('Vox-%s-amd64.deb' % version)
-    manifest = json.loads(package.with_suffix('.deb.json').read_text())
-    verify_package_manifest(manifest, args.expected_commit, 'amd64')
-    if digest(package) != manifest['deb_sha256']:
-        raise RuntimeError('Package does not match its recorded checksum')
-    extracted = reports / 'package'
-    guarded(['dpkg-deb', '--extract', package, extracted], 'extract')
-    guarded([sys.executable, source / 'tools/test_linux_browser.py', extracted / 'usr/bin/vox',
-             '--output', reports / 'browser'], 'browser', 3, environment)
-    if digest(package) != manifest['deb_sha256']:
-        raise RuntimeError('Package changed during validation')
+    package = output / ('vox-%s-1-x86_64.pkg.tar.zst' % version if args.distribution == 'arch'
+                        else 'Vox-%s-amd64.deb' % version)
+    manifest = json.loads(package.with_name(package.name + '.json').read_text())
+    verify_package_manifest(manifest, args.expected_commit, architecture)
+    validate_package(source, reports, package, manifest, args.distribution, guarded, environment)
     (output / 'amd64-toolchain.json').write_text(json.dumps(dict(
         source_commit=args.expected_commit, v_revision=V_REVISION, vc_revision=VC_REVISION,
         ui2_revision=UI2_REVISION, compiler_sha256=digest(compiler / 'v'),
         match_scope_adapter_sha256=digest(scope_adapter),
         portable_clip_sha256=hashlib.sha256(clip.encode()).hexdigest()), indent=2) + '\n')
-    print('VERIFIED AMD64 DEBIAN PACKAGE:', package, flush=True)
+    print('VERIFIED %s PACKAGE:' % args.distribution.upper(), package, flush=True)
 
 
 if __name__ == '__main__':
