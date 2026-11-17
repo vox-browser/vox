@@ -7236,3 +7236,39 @@ build `20261118-022652-880e7db2` captured the earlier realm-cache
 prototype. The commit hook requested a build containing the final
 executable-owned implementation. Exact pins, commands and receipts
 remain local under `repository-navigation-5204-r74`.
+
+### Resource transport body buffers
+
+The published GitHub trace shows retained resource-worker arenas. Those
+workers hand completed responses to the browser thread. Commit `62921ad98`
+grows libcurl's temporary body buffer on the native heap and releases it
+after each attempt. The worker arena holds the completed binary string.
+Cancellation, retry and transport errors also release the temporary buffer.
+
+Three alternating fresh-process pairs use single-C prealloc binaries, with
+only the two transport source files changing across 3,746 recorded source
+and fixture pins. The local origin serves exact 8 MiB bodies over HTTP/1.1.
+Each pair reports the same caller-arena growth.
+
+| Response | Control | Native temporary buffer |
+| --- | ---: | ---: |
+| Fixed length, 8 MiB | 25,162,671 bytes | 8,401,505 bytes |
+| Redirect to fixed length, 8 MiB | 25,176,718 bytes | 8,415,504 bytes |
+| Gzip, 8 MiB decoded | 25,163,585 bytes | 8,402,419 bytes |
+| Chunked, 8 MiB | 25,162,702 bytes | 8,401,536 bytes |
+| Truncated after 4 MiB | 8,381,487 bytes | 8,960 bytes |
+
+The manual probes verify the exact binary body, duplicate headers, redirect
+destination, incremental image prefix, empty response and rejection of a
+truncated body. The generated C shows the native buffer released on success,
+cancellation, retry and transport failure. All six paired processes and
+their guard exit zero. The production type check passes in 38.680505541
+seconds at 7,095,255,040 sampled peak bytes. The binary-response regression
+source remains unrun under the automated-test hold.
+
+The table measures retained caller-arena growth for the local transport
+fixture. The archived GitHub replay from the previous section served
+11,515,032 bytes across 168 responses through several transport paths. The
+managed build hook requested a production build. End-to-end Back restoration
+under 12 GiB remains unverified. Local commands, pins and receipts are
+under `repository-navigation-5204-r75`.
