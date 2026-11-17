@@ -6966,3 +6966,77 @@ accepted/rejected PNGs, memory guards and SHA-verified cleanup manifests remain
 local in `docs/performance/slashdot-edge-20261117/`. Image audits retain the
 preceding section's visible-viewport qualification, including offscreen lazy
 state differences and the textContent/innerText distinction.
+
+
+### Slashdot partial-card sample ownership, 2026-11-17
+
+`5e0e5d4fe` keeps a partial rounded border, its inset opaque background and
+its child header in one GPU pass. Their previous independent resolves introduced
+one-channel rounding errors where their antialiasing overlaps. Simple rectangular
+ancestor clips are intersected in each command's local coordinates and retained
+in that shape's GPU clip stack. This includes clips cutting through a corner.
+Rounded, path, SVG-mask, mismatched-transform, empty and nonfinite clips keep
+ordinary replay, as do promoted raster layers and unsupported paint state.
+The existing disjoint-header ordering proof still guards early header replay.
+No native or shader implementation changes.
+
+Final C/O0 executable `b5012b12` reduces the complete archived Slashdot viewport
+**10→three differing pixels twice**, each with maximum channel error one. The
+seven card-edge pixels are gone. The remaining coordinates are `(874,61)`,
+`(137,204)` and `(137,206)`: a social icon and a split text underline. This is
+an archived-page rendering result, not complete site or live-site acceptance.
+
+The isolated card improves **four→zero twice**. Its independently captured
+Brave references agree with the fixed new reference byte for byte. A second,
+clipped-card control has two agreeing fresh Brave references and exposes seven
+pixels in the earlier candidate without clip transfer; it improves **seven→zero
+twice**. The strict equality CLI rejects both baseline controls (exit one),
+then accepts all four final control captures (exit zero). No previous reference
+or tolerance has changed.
+
+All **79 workloads/158 captures** repeat byte for byte. All **76 prior PNGs**
+outside the partial-card control are unchanged. That older control improves
+**seven→three twice**: its promoted second card retains ordinary replay, so the
+whole older fixture remains inexact. Both new controls are exact. The final
+visibility guard's complete cohort also matches the preceding 79-workload
+candidate byte for byte. Final full-page captures repeat **Slashdot three**,
+**BBC zero**, **Guardian zero** and **Verge zero**, twice each. Both full-uBO 1.75.0 streams pass with
+47 decisions, one blocked, zero mismatches and zero oracle disagreements each.
+Document/readiness/visible-image audits pass with the earlier offscreen-lazy
+state qualification. The executable, four shared native libraries, all 24
+runtime shaders, archives and references keep their pinned identities. No
+shader compilation errors occur. Final compile, runtime, capture, driver,
+oracle and memory-guard exits are zero.
+
+All **nine focused V functions** compile and execute successfully under the
+3 GiB runtime guard. Tests cover group membership, partial border geometry,
+disjoint paint ordering, local rectangular clip intersection and conservative
+fallbacks, including empty compatibility visibility clips with nonempty clip
+lists. The final browser's compiler-read witness matches both changed V
+implementation files exactly; its before/after compilation input pins agree.
+
+The first candidate fixes the un-clipped control but leaves the full page at
+ten pixels because ancestor clips make its grouping ineligible. Separate traced
+captures confirm this fallback for both cards. That candidate's receipts and
+captures remain as diagnostic evidence. The last guard preserves ordinary
+replay's rejection of empty compatibility visibility clips; its focused tests
+and full repeated capture cohort pass.
+
+Production `9060d078` (receipt `20261117-044846-30b9eb36`, C/literal `-prod`/single
+unit) repeats **Slashdot ten**, **BBC zero**, **Guardian zero** and **Verge zero**,
+twice each. Its manifest matches the two implementation files from committed
+`2d65e5d97`, confirming that preceding SVG viewport fix in production. It also
+contains the un-clipped card prototype; the accepted clip-transfer and final
+visibility-guard sources differ. It cannot validate the new three-pixel result.
+Production confirmation awaits the managed hook's coalesced rebuild, without
+an additional manual production build or wait.
+Source/replay browser-version qualification, other sites and live acceptance
+remain open. The next focused diagnostic reproduces both remaining underline
+colors at the
+same split position, repeated across three lines: it is exact without an SVG
+trigger and differs at six pixels with tile multisampling. Those diagnostic
+fixtures and their two agreeing Brave captures are retained locally; this
+commit does not change underlines. No instruction or timing credit is claimed.
+Raw commands, actual
+exits, compiler witnesses, input pins, request logs, captures and guard reports
+remain local under `docs/performance/slashdot-corners-20261117/`.
