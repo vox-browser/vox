@@ -11,6 +11,7 @@ import sys
 import tempfile
 
 CASES = [
+    "processmetrics/memory_test.v",
     "css/color_interpolation_test.v", "dom/range_mutation_order_test.v",
     "platform/gc_keepalive_linux_test.v",
     "libjs/stack_info_test.v",
