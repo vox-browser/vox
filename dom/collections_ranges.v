@@ -342,39 +342,49 @@ fn collection_scope_from_live_node_list_scope(scope LiveNodeListScope) Collectio
 	return if scope == .descendants { .descendants } else { .children }
 }
 
-pub fn (nl &NodeList) collection() []&Node {
+// Readers may borrow an unfiltered list for the duration of the operation.
+// Full collection snapshots still own their vector.
+fn (nl &NodeList) unfiltered_nodes() ?[]&Node {
+	if nl.is_live && nl.node_root != unsafe { nil } {
+		if nl.live_scope == .children && voidptr(nl.live_filter) == voidptr(always_accept_node) {
+			return nl.node_root.children
+		}
+		return none
+	}
+	if nl.nodes.len > 0 || (nl.node_root == unsafe { nil } && nl.root == unsafe { nil }) {
+		return nl.nodes
+	}
+	if nl.node_root != unsafe { nil } && nl.name_filter.len == 0 {
+		return nl.node_root.children
+	}
+	return none
+}
+
+fn (nl &NodeList) filtered_nodes() []&Node {
 	if nl.is_live && nl.node_root != unsafe { nil } {
 		return collect_nodes_for_scope(nl.node_root, collection_scope_from_live_node_list_scope(nl.live_scope), nl.live_filter)
 	}
-	if nl.nodes.len > 0 {
-		return nl.nodes.clone()
-	}
-	if nl.node_root != unsafe { nil } {
-		if nl.name_filter.len == 0 {
-			return nl.node_root.children.clone()
-		}
-		return collect_nodes_for_scope(nl.node_root, .descendants, fn [nl] (node &Node) bool {
-			return node_matches_name_filter(node, nl.name_filter)
-		})
-	}
-	if nl.root != unsafe { nil } {
-		root_node := unsafe { &Node(nl.root) }
-		return collect_nodes_for_scope(root_node, .descendants, fn [nl] (node &Node) bool {
-			return node_matches_name_filter(node, nl.name_filter)
-		})
-	}
-	return []
+	root_node := if nl.node_root != unsafe { nil } { nl.node_root } else { unsafe { &Node(nl.root) } }
+	return collect_nodes_for_scope(root_node, .descendants, fn [nl] (node &Node) bool {
+		return node_matches_name_filter(node, nl.name_filter)
+	})
+}
+
+pub fn (nl &NodeList) collection() []&Node {
+	if nodes := nl.unfiltered_nodes() { return nodes.clone() }
+	return nl.filtered_nodes()
 }
 
 // https://dom.spec.whatwg.org/#dom-nodelist-length
 pub fn (nl &NodeList) length() int {
-	return nl.collection().len
+	if nodes := nl.unfiltered_nodes() { return nodes.len }
+	return nl.filtered_nodes().len
 }
 
 // https://dom.spec.whatwg.org/#dom-nodelist-item
 pub fn (nl &NodeList) item(index int) ?&Node {
 	// The item(index) method must return the indexth node in the collection. If there is no indexth node in the collection, then the method must return null.
-	nodes := nl.collection()
+	nodes := nl.unfiltered_nodes() or { nl.filtered_nodes() }
 	if index < 0 || index >= nodes.len {
 		return none
 	}
@@ -415,16 +425,12 @@ pub fn (l &LiveNodeList) first_matching(filter fn(&Node) bool) ?&Node {
 
 // https://dom.spec.whatwg.org/#dom-nodelist-length
 pub fn (l &LiveNodeList) length() int {
-	return l.collection().len
+	return l.NodeList.length()
 }
 
 // https://dom.spec.whatwg.org/#dom-nodelist-item
 pub fn (l &LiveNodeList) item(index int) ?&Node {
-	nodes := l.collection()
-	if index < 0 || index >= nodes.len {
-		return none
-	}
-	return nodes[index]
+	return l.NodeList.item(index)
 }
 
 pub fn StaticNodeList.create(static_nodes []&Node) &NodeList {
