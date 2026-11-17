@@ -101,6 +101,14 @@ int main(void) {
             path = directory / 'frozen-compile.json'
             path.write_text(json.dumps(frozen))
             files, metadata = build_receipts(binary)
+            config_path = directory / 'configuration.json'
+            original_config = config_path.read_text()
+            config = json.loads(original_config)
+            config['generation_command'] = ['v', '-profile', 'profile.txt', 'benchmark.v']
+            config_path.write_text(json.dumps(config))
+            with self.assertRaisesRegex(ValueError, 'diagnostic only'):
+                build_receipts(binary)
+            config_path.write_text(original_config)
             self.assertEqual(len(files), 3)
             self.assertEqual(metadata['source_inputs']['head'], 'commit')
             for change in [dict(complete=False), dict(compiler_exit=1), dict(compiler_command=['clang', '-o']), dict(compiler_command=['clang', '-o', '/another/binary'])]:

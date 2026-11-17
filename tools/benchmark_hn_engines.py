@@ -41,6 +41,8 @@ def build_receipts(binary):
         return [], None
     files = [directory / name for name in ['configuration.json', 'source-manifest.json', 'frozen-compile.json']]
     configuration, sources, frozen = [json.loads(path.read_text()) for path in files]
+    if '-profile' in configuration.get('generation_command', []):
+        raise ValueError('V -profile binaries are diagnostic only: ' + str(binary))
     command = frozen.get('compiler_command', [])
     if (frozen.get('complete') is not True or frozen.get('compiler_exit') != 0
             or '-o' not in command or command[command.index('-o') + 1:command.index('-o') + 2] != [str(binary)]

@@ -10,6 +10,7 @@ import hashlib
 import json
 import os
 from pathlib import Path
+import re
 import shutil
 import subprocess
 
@@ -29,6 +30,20 @@ def v_tool(name, *arguments):
                                     *map(str, arguments)], cwd=ROOT, text=True).strip()
 
 
+def profile_array_return_compat(source):
+    """Preserve fixed-array members in V's profiled optional canvas tuple return.
+
+    V's profile return temporary emits array expressions as positional scalar
+    initializers. Named array members retain the original values and ordering.
+    Restrict this workaround to the known generated type in diagnostic builds.
+    """
+    pattern = (r'\(multi_return_Array_fixed_canvas__Rect_2_Array_fixed_int_2\)\{\s*'
+               r'\(canvas__Rect\[2\]\)\{([^{}]+)\},\s*\(int\[2\]\)\{([^{}]+)\}\}')
+    return re.subn(pattern, lambda m:
+        '(multi_return_Array_fixed_canvas__Rect_2_Array_fixed_int_2){.arg0={'
+        + m[1] + '}, .arg1={' + m[2] + '}}', source)
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--engine', required=True, choices=['v8', 'jsc'])
@@ -38,7 +53,12 @@ def main():
     parser.add_argument('--inline-threshold', type=int, help='LLVM inlining threshold; manual production prealloc builds use 1500')
     parser.add_argument('--compiler', type=Path, default=Path(os.environ.get('V_BIN', str(Path.home() / 'code/v/v'))))
     parser.add_argument('--v8-adapter', type=Path)
+    parser.add_argument('--profile', type=Path,
+                        help='Diagnostic V -profile output; never use this binary for acceptance timing')
+    parser.add_argument('--profile-fns', help='Restrict V profiling to these comma-separated entry functions')
     args = parser.parse_args()
+    if args.profile_fns and not args.profile:
+        parser.error('--profile-fns requires --profile')
     if args.inline_threshold is not None and args.inline_threshold < 1:
         parser.error('Use a positive inlining threshold')
     output = args.output.resolve()
@@ -80,6 +100,11 @@ def main():
                '-no-prod-options', '-nocache', '-skip-running']
     if args.allocator == 'prealloc':
         command += ['-prealloc', '-gc', 'none']
+    if args.profile:
+        args.profile.resolve().parent.mkdir(parents=True, exist_ok=True)
+        command += ['-profile', str(args.profile.resolve())]
+        if args.profile_fns:
+            command += ['-profile-fns', args.profile_fns]
     command += [*backend, '-cflags', cflags, '-dump-c-flags', str(flags), '-o', str(source), str(entry)]
     os.environ['VFLAGS'] = ''
     os.environ['CFLAGS'] = ''
@@ -94,6 +119,13 @@ def main():
     code = compile_component(ROOT, inventory, component, command)
     if code:
         return code
+    if args.profile:
+        original = source.read_text()
+        replacement, count = profile_array_return_compat(original)
+        source.write_text(replacement)
+        save(receipt / 'profile-c-compat.json', dict(
+            fixed_array_returns=count, original_sha256=hashlib.sha256(original.encode()).hexdigest(),
+            replacement_sha256=hashlib.sha256(replacement.encode()).hexdigest()))
     manifest = combine(ROOT, inventory, [component], parsed=True)
     save(receipt / 'source-manifest.json', manifest)
     # Native headers and link objects are sealed by the canonical production
