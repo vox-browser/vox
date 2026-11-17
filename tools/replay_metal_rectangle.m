@@ -8,6 +8,8 @@
 // --samples-output adds an unblended diagnostic attachment for the retained
 // Dawn solid-rectangle fragment ABI. Each pixel has four float4 sample records:
 // primitive ID, source alpha/coverage, fragment-position Z, fragment-position W.
+// --sample-mode depth replaces W with the stored depth sample; coverage and
+// post-depth-coverage replace Z with the corresponding raster coverage mask.
 #import <Foundation/Foundation.h>
 #import <Metal/Metal.h>
 #include <CommonCrypto/CommonDigest.h>
@@ -100,23 +102,40 @@ static NSString *replace_once(NSString *source, NSString *before, NSString *afte
     return [source stringByReplacingOccurrencesOfString:before withString:after];
 }
 
-static NSString *sample_fragment(NSString *source) {
+static NSString *sample_fragment(NSString *source, NSString *mode) {
     // Deliberately require this captured ABI; do not guess other shader outputs.
     source = replace_once(source, @"float4 tint_member_9 [[color(0)]];",
         @"float4 tint_member_9 [[color(0)]]; float4 diagnostic [[color(1)]];");
     source = replace_once(source, @"float4 v_62 [[position]],",
         @"float4 v_62 [[position]], uint diagnosticPrimitive [[primitive_id]],");
-    return replace_once(source, @"  return v_64;",
+    source = replace_once(source, @"  return v_64;",
         @"  v_64.diagnostic = float4(float(diagnosticPrimitive), v_64.tint_member_9.w, v_62.z, v_62.w); return v_64;");
+    if ([mode isEqual:@"coverage"] || [mode isEqual:@"post-depth-coverage"]) {
+        NSString *attribute = [mode isEqual:@"coverage"] ? @"sample_mask" : @"sample_mask, post_depth_coverage";
+        source = replace_once(source, @"uint diagnosticPrimitive [[primitive_id]],",
+            [NSString stringWithFormat:@"uint diagnosticPrimitive [[primitive_id]], uint diagnosticMask [[%@]],", attribute]);
+        source = replace_once(source, @"v_62.z, v_62.w", @"float(diagnosticMask), v_62.w");
+        if ([mode isEqual:@"post-depth-coverage"])
+            source = replace_once(source, @"fragment tint_struct_2 dawn_entry_point",
+                @"[[early_fragment_tests]] fragment tint_struct_2 dawn_entry_point");
+    }
+    return source;
 }
 
 static id<MTLBuffer> copy_samples(id<MTLDevice> device, id<MTLCommandBuffer> command,
-    id<MTLTexture> texture, NSUInteger width, NSUInteger height) {
+    id<MTLTexture> texture, id<MTLTexture> depth_texture, NSUInteger width, NSUInteger height) {
     NSString *source = @"#include <metal_stdlib>\nusing namespace metal; "
         "kernel void samples(texture2d_ms<float, access::read> t [[texture(0)]], "
         "device float4* o [[buffer(0)]], uint2 p [[thread_position_in_grid]]) { "
         "if(p.x>=t.get_width() || p.y>=t.get_height()) return; "
         "for(uint s=0;s<4;s++) o[(p.y*t.get_width()+p.x)*4+s]=t.read(p,s); }";
+    if (depth_texture) {
+        source = [source stringByReplacingOccurrencesOfString:@"device float4* o"
+            withString:@"depth2d_ms<float, access::read> d [[texture(1)]], device float4* o"];
+        source = [source stringByReplacingOccurrencesOfString:
+            @"o[(p.y*t.get_width()+p.x)*4+s]=t.read(p,s);"
+            withString:@"{ float4 v=t.read(p,s); v.w=d.read(p,s); o[(p.y*t.get_width()+p.x)*4+s]=v; }"];
+    }
     NSError *error = nil;
     id<MTLLibrary> library = [device newLibraryWithSource:source options:nil error:&error];
     require(library != nil, [@"Sample shader compilation failed: " stringByAppendingString:error.description ?: @""]);
@@ -129,6 +148,7 @@ static id<MTLBuffer> copy_samples(id<MTLDevice> device, id<MTLCommandBuffer> com
     id<MTLComputeCommandEncoder> encoder = [command computeCommandEncoder];
     require(encoder != nil, @"Cannot create sample encoder");
     [encoder setComputePipelineState:pipeline]; [encoder setTexture:texture atIndex:0];
+    if (depth_texture) [encoder setTexture:depth_texture atIndex:1];
     [encoder setBuffer:output offset:0 atIndex:0];
     [encoder dispatchThreads:MTLSizeMake(width, height, 1) threadsPerThreadgroup:MTLSizeMake(8, 8, 1)];
     [encoder endEncoding];
@@ -137,17 +157,26 @@ static id<MTLBuffer> copy_samples(id<MTLDevice> device, id<MTLCommandBuffer> com
 
 int main(int argc, char **argv) { @autoreleasepool { @try {
     if (argc < 3) {
-        fprintf(stderr, "usage: replay_metal_rectangle SNAPSHOT OUTPUT.bgra [--split-instances] [--background RRGGBBAA] [--samples-output OUTPUT.rgba32f]\n");
+        fprintf(stderr, "usage: replay_metal_rectangle SNAPSHOT OUTPUT.bgra [--split-instances] [--background RRGGBBAA] [--samples-output OUTPUT.rgba32f] [--sample-mode fragment|depth|coverage|post-depth-coverage]\n");
         return 2;
     }
     BOOL split = NO;
     NSString *sample_output = nil;
+    NSString *sample_mode = @"fragment";
+    BOOL sample_mode_given = NO;
     unsigned long background = 0xffffffff;
     for (int i = 3; i < argc; i++) {
         if (!strcmp(argv[i], "--split-instances")) split = YES;
         else if (!strcmp(argv[i], "--samples-output") && i + 1 < argc) {
             require(sample_output == nil, @"Duplicate sample output option");
             sample_output = [[NSString stringWithUTF8String:argv[++i]] stringByStandardizingPath];
+        }
+        else if (!strcmp(argv[i], "--sample-mode") && i + 1 < argc) {
+            require(!sample_mode_given, @"Duplicate sample mode option");
+            sample_mode_given = YES;
+            sample_mode = [NSString stringWithUTF8String:argv[++i]];
+            require([@[@"fragment", @"depth", @"coverage", @"post-depth-coverage"] containsObject:sample_mode],
+                @"Unsupported sample mode");
         }
         else if (!strcmp(argv[i], "--background") && i + 1 < argc) {
             const char *color = argv[++i]; char *end;
@@ -157,6 +186,8 @@ int main(int argc, char **argv) { @autoreleasepool { @try {
             require(!*end, @"Invalid background");
         } else require(NO, @"Unknown or incomplete option");
     }
+    require(!sample_mode_given || sample_output != nil, @"Sample mode requires --samples-output");
+    BOOL sample_depth = sample_output && [sample_mode isEqual:@"depth"];
     NSString *directory = [[NSString stringWithUTF8String:argv[1]] stringByStandardizingPath];
     NSString *output = [[NSString stringWithUTF8String:argv[2]] stringByStandardizingPath];
     struct stat existing;
@@ -200,7 +231,7 @@ int main(int argc, char **argv) { @autoreleasepool { @try {
         && width_value * height_value <= 16 * 1024 * 1024, @"Unsupported viewport dimensions");
     NSUInteger width = width_value, height = height_value;
     require(!sample_output || width * height <= 1024 * 1024,
-        @"Sample diagnostics exceed one million pixels");
+        @"Sample diagnostics exceed 1,048,576 pixels");
     double near = [viewport[4] doubleValue], far = [viewport[5] doubleValue];
     require(isfinite(near) && isfinite(far) && near >= 0 && far <= 1 && near <= far,
         @"Unsupported viewport depth range");
@@ -256,7 +287,7 @@ int main(int argc, char **argv) { @autoreleasepool { @try {
         NSString *source = [[NSString alloc] initWithData:data[[stage stringByAppendingString:@".metal"]]
             encoding:NSUTF8StringEncoding];
         require(source != nil && [info[@"entry_point"] isKindOfClass:[NSString class]], @"Invalid shader source or entry point");
-        if (sample_output && i == 1) source = sample_fragment(source);
+        if (sample_output && i == 1) source = sample_fragment(source, sample_mode);
         id<MTLLibrary> library = [device newLibraryWithSource:source options:options error:&error];
         require(library != nil, [@"Metal library compilation failed: " stringByAppendingString:error.description ?: @""]);
         functions[i] = [library newFunctionWithName:info[@"entry_point"]];
@@ -305,6 +336,7 @@ int main(int argc, char **argv) { @autoreleasepool { @try {
         texture.usage = MTLTextureUsageRenderTarget;
     }
     texture.pixelFormat = pipeline.depthAttachmentPixelFormat;
+    if (sample_depth) texture.usage = MTLTextureUsageRenderTarget | MTLTextureUsageShaderRead;
     id<MTLTexture> depth_texture = [device newTextureWithDescriptor:texture];
     require(resolved && msaa && depth_texture && depth_state, @"Cannot allocate replay targets");
     MTLRenderPassDescriptor *pass = [MTLRenderPassDescriptor renderPassDescriptor];
@@ -320,9 +352,11 @@ int main(int argc, char **argv) { @autoreleasepool { @try {
         pass.colorAttachments[1].storeAction = MTLStoreActionStore;
     }
     pass.depthAttachment.texture = depth_texture; pass.depthAttachment.loadAction = MTLLoadActionClear;
-    pass.depthAttachment.clearDepth = 1; pass.depthAttachment.storeAction = MTLStoreActionDontCare;
+    pass.depthAttachment.clearDepth = 1;
+    pass.depthAttachment.storeAction = sample_depth ? MTLStoreActionStore : MTLStoreActionDontCare;
     pass.stencilAttachment.texture = depth_texture; pass.stencilAttachment.loadAction = MTLLoadActionClear;
-    pass.stencilAttachment.clearStencil = 0; pass.stencilAttachment.storeAction = MTLStoreActionDontCare;
+    pass.stencilAttachment.clearStencil = 0;
+    pass.stencilAttachment.storeAction = sample_depth ? MTLStoreActionStore : MTLStoreActionDontCare;
     id<MTLCommandQueue> queue = [device newCommandQueue];
     id<MTLCommandBuffer> command = [queue commandBuffer];
     id<MTLRenderCommandEncoder> encoder = [command renderCommandEncoderWithDescriptor:pass];
@@ -358,7 +392,8 @@ int main(int argc, char **argv) { @autoreleasepool { @try {
             indexBuffer:indices indexBufferOffset:0 instanceCount:stride baseVertex:base_vertex baseInstance:first + i];
     [encoder endEncoding];
     id<MTLBuffer> diagnostic_buffer = nil;
-    if (sample_output) diagnostic_buffer = copy_samples(device, command, diagnostic_msaa, width, height);
+    if (sample_output) diagnostic_buffer = copy_samples(device, command, diagnostic_msaa,
+        sample_depth ? depth_texture : nil, width, height);
     [command commit]; [command waitUntilCompleted];
     require(command.status == MTLCommandBufferStatusCompleted,
         [@"Metal replay failed: " stringByAppendingString:command.error.description ?: @""]);
@@ -376,11 +411,14 @@ int main(int argc, char **argv) { @autoreleasepool { @try {
     if (sample_output) {
         NSData *values = [NSData dataWithBytes:diagnostic_buffer.contents length:diagnostic_buffer.length];
         publish(values, sample_output);
-        receipt[@"sample_diagnostics"] = @{@"path":sample_output, @"sha256":sha256(values),
+        NSString *third = [sample_mode isEqual:@"coverage"] ? @"raster_coverage_mask"
+            : [sample_mode isEqual:@"post-depth-coverage"] ? @"post_depth_coverage_mask" : @"fragment_position_z";
+        NSString *fourth = sample_depth ? @"stored_depth_sample" : @"fragment_position_w";
+        receipt[@"sample_diagnostics"] = @{@"path":sample_output, @"sha256":sha256(values), @"mode":sample_mode,
             @"bytes":@(values.length), @"format":@"pixel-major, then four samples, then four native float32 components",
-            @"components":@[@"primitive_id", @"source_alpha_coverage", @"fragment_position_z", @"fragment_position_w"],
-            @"untouched_sample":@[@(-1), @(-1), @(-1), @(-1)],
-            @"limitation":@"Position Z is fragment-reported, not the depth attachment or a depth-test result. Instrumentation must reproduce the uninstrumented BGRA control."};
+            @"components":@[@"primitive_id", @"source_alpha_coverage", third, fourth],
+            @"untouched_sample":@[@(-1), @(-1), @(-1), sample_depth ? @1 : @(-1)],
+            @"limitation":@"Fragment position Z is interpolated; stored depth is read after the draw, not at earlier tests. post-depth-coverage requests early tests. Modes do not reconstruct rejected fragment history. Instrumentation must reproduce the uninstrumented BGRA control."};
     }
     NSData *encoded = [NSJSONSerialization dataWithJSONObject:receipt options:NSJSONWritingSortedKeys error:NULL];
     printf("%s\n", [[NSString alloc] initWithData:encoded encoding:NSUTF8StringEncoding].UTF8String);

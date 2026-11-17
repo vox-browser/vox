@@ -57,6 +57,34 @@ class SnapshotInputTests(unittest.TestCase):
             self.assertFalse(output.exists())
             self.assertFalse(samples.exists())
 
+    def test_sample_mode_requires_an_output(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            output = root / 'pixels.bgra'
+            result = self.invoke(root / 'missing-snapshot', output,
+                                 '--sample-mode', 'depth')
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn('Sample mode requires --samples-output', result.stderr)
+            self.assertFalse(output.exists())
+
+    def test_unknown_or_duplicate_sample_mode_cannot_publish(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            output = root / 'pixels.bgra'
+            samples = root / 'samples.rgba32f'
+            for modes, error in [
+                (['--sample-mode', 'unknown'], 'Unsupported sample mode'),
+                (['--sample-mode', 'depth', '--sample-mode', 'fragment'],
+                 'Duplicate sample mode option'),
+            ]:
+                with self.subTest(modes=modes):
+                    result = self.invoke(root / 'missing-snapshot', output,
+                                         '--samples-output', samples, *modes)
+                    self.assertNotEqual(result.returncode, 0)
+                    self.assertIn(error, result.stderr)
+                    self.assertFalse(output.exists())
+                    self.assertFalse(samples.exists())
+
     def test_corrupt_snapshot_cannot_publish_pixels(self):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
