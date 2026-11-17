@@ -5145,3 +5145,59 @@ private build/extraction records remain in `extended-glyph-p3-5204*` beneath
 `docs/performance/libjs-github-browser-20261116`. Thirteen residuals remain:
 six button corners, five separator pixels, one header edge and one avatar/text
 edge. Full parity, live validation and matched revisit speed remain open.
+
+### Extended P3 shape source: 12 differing pixels, 2026-11-17
+
+`2c77167fb` applies the same late-clamping principle to opaque shape and underlay
+colors, selected by `VOX_DIAGNOSTIC_EXTENDED_SHAPE_COLOR=1` with the preceding
+raster/P3/glyph options. Finite transformed RGB stays extended until GPU blending
+and the destination store. Default and translucent conversions retain their
+existing behavior. The focused regression source covers selection, opaque
+extended white and the translucent exclusion; it remains uncompiled/unrun under
+the test hold.
+
+The matching Brave capture identifies the header border at stream offset
+5,067,656, rectangle instance 48, paint index 20 in `MTLBuffer-86-11`. Its RGBA
+is `[1.0000991821289062, 0.9999618530273438, 0.9999465942382812, 1]`, the same
+extended neutral source as the Code glyphs. The retained extraction script
+verifies its capture-resource hashes. A shader-only diagnostic first restores
+the clipped red excess for opaque white rectangles: **13→12 pixels**, one
+resolved and none new. It preserves complete content/input/cache/exit gates,
+records 4,245 native hits/472,290 entries, and exits zero in 38.667009084 guard
+seconds, sampled peak 8,530,083,840 bytes. That injected probe is not the
+implementation validation below.
+
+The canonical-source implementation build consumes 3,768 V sources and zero
+tests, verifies parsed buffers and sealed compiler inputs, and exits zero in
+240.500482167 seconds, sampled peak 8,996,405,248 bytes. Executable SHA-256 is
+`c496b94d43dbc94ac3dd51f62a2cb06aeb58b080b6d2b47d1a1bb223fa717e0c`.
+The changed implementation matches its consumed source hash. An initial attempt
+cannot start because its old compiler snapshot was pruned; the failure is
+retained. The successful retry uses the current managed build's compiler,
+preallocation, font and HTTP module snapshots. No additional shared production
+build was queued; the feature commit requests its normal coalesced rebuild.
+
+| Same-binary mode | Pixels | Native hits / entries | Guard seconds / sampled peak bytes |
+| --- | ---: | --- | --- |
+| Extended shape color, PID 76971 | **12** | 4,244 / 474,375 | 51.933439542 / 9,017,229,312 |
+| Off, PID 78416 | 13, unchanged | 4,245 / 482,955 | 38.494075083 / 8,602,075,136 |
+
+The implementation resolves exactly the header-edge pixel with no new or
+regressed pixels. Both modes keep the earlier glyph correction enabled, exact
+33-row/56-commit/latest/README content, fixed inputs, successful PID adoption,
+no author/native/cache errors and zero browser/controller/guard exits. Native
+cache misses/compiler calls/pending/invalid entries are zero; page
+JavaScriptCore stays uninitialized. The compatible 0130 partition and
+`/usr/bin/false` remain selected. The unchanged Brave reference and zero/zero
+tolerance are retained. These diagnostic elapsed times provide no speed credit.
+
+The normalized result is `github-frozen-libjs-compiled-12px.png`, SHA-256
+`a4442ccdb1f0431c159cf7e9b1cde95ed749335d0dbc2faebba1d6d98e185e03`.
+The live screenshot remains separate. Completed shape jobs move with idle-lock
+and SHA-256 checks to `scratch-receipts/continued-20261117-r30`; private build,
+probe and extraction records remain in `extended-shape-p3-5204*`. Four superseded
+glyph generated/preprocessed compiler files (1,421,896,818 bytes) are hash-journaled
+before deletion; binaries, source proofs and receipts remain. The newest accepted
+shape build retains its full sealed compiler inputs. Twelve differences remain:
+six rounded-button corners, five separator pixels and one commit-avatar edge.
+Full parity, live validation and matched compiled-revisit speed remain open.

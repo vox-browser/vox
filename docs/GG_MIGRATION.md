@@ -3749,3 +3749,13 @@ and none new; same-binary off remains 15. Native compiler calls/misses are zero.
 The full-GG alternative regresses Sign in and is rejected. New regression sources
 remain unrun under the requested test hold. See the
 [source-color audit](LIBJS_GITHUB_RUNTIME_20261115.md#extended-p3-glyph-source-13-differing-pixels-2026-11-17).
+
+### Extended P3 shape ink, 17 November 2026
+
+`2c77167fb` keeps finite opaque shape/underlay colors extended through GPU
+coverage and blending when `VOX_DIAGNOSTIC_EXTENDED_SHAPE_COLOR=1` is selected.
+The frozen compiled-LibJS GitHub comparison improves 13→12 pixels, exactly one
+header edge resolved and none new. Same-binary off reproduces 13; native cache
+misses/compiler calls are zero. Defaults and translucent conversions keep their
+existing behavior. Focused regression sources remain unrun under the test hold.
+See the [shape-color audit](LIBJS_GITHUB_RUNTIME_20261115.md#extended-p3-shape-source-12-differing-pixels-2026-11-17).
