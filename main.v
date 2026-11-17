@@ -7571,6 +7571,11 @@ fn (mut app BrowserApp) draw_command(source_command &layout.PaintCommand, page_x
 		}
 		'draw_text_shadow' {
 			{
+				$if macos {
+					if app.draw_chromium_text_shadow(command, page_x, page_y, scroll_y) {
+						return
+					}
+				}
 				font_scale := math.sqrt(matrix[0] * matrix[0] + matrix[1] * matrix[1])
 				font_size := int(clamp(command.font_size * font_scale, 1.0, 256.0) + 0.5)
 				text_y := $if macos { native_text_draw_y(y, h) } $else { y }

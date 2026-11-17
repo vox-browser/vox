@@ -3662,6 +3662,7 @@ fn paint_text_shadow(mut commands []PaintCommand, fragment TextFragment,
 			width: fragment.width
 			height: fragment.height
 			color: layer.color.serialize()
+			srgb_color_data: layer.srgb_color_data
 			text: span_text
 			font_size: fragment.font_size
 			bold: fragment.bold

@@ -35,6 +35,8 @@ pub:
 	// Chromium's text surface properties: no contrast boost, and a linear
 	// mask gamma (no preblend) for unhinted antialiased text.
 	chromium_coverage bool
+	// Mask filters use linear coverage without the destination gamma preblend.
+	linear_coverage bool
 	// Computed document color before byte serialization, including author alpha.
 	paint_color ?[4]f32
 }
@@ -186,6 +188,11 @@ fn fill_canvas_glyphs_surface(mut pixels []u8, width int, height int, pitch int,
 				smooth_mask_gamma_tables[luminance]
 			}
 		}
+	}
+	if run.linear_coverage {
+		strike.table = identity_mask_gamma_table
+		// Keep filtered masks separate from both ordinary and smooth strikes.
+		smooth_luminance = -2
 	}
 	defer {
 		strike.release()

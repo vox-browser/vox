@@ -979,6 +979,25 @@ fn computed_text_shadows(computed &css.ComputedValues) []BoxShadow {
 	return computed_shadow_transport(shadows, context)
 }
 
+fn computed_chromium_text_shadows(node &Node, computed &css.ComputedValues) []BoxShadow {
+	mut resolved := computed_text_shadows(computed)
+	if resolved.len == 0 || node.document().font_rendering_policy() != .chromium {
+		return resolved
+	}
+	value := computed.typed_property_value(.text_shadow) or { return resolved }
+	if value !is css.StyleValueList { return resolved }
+	for index, layer in value.values() {
+		if index >= resolved.len { break }
+		if layer !is css.ShadowStyleValue { continue }
+		components := (layer as css.ShadowStyleValue).color().srgb_paint_components() or { continue }
+		resolved[index] = BoxShadow{
+			...resolved[index]
+			srgb_color_data: &PaintSRGBColor{resolved[index].color.serialize(), components}
+		}
+	}
+	return resolved
+}
+
 fn compatibility_color_filter_type(operation css.ColorFilterType) painting.ColorFilterType {
 	return match operation {
 		.brightness { .brightness }
@@ -4869,7 +4888,7 @@ fn uncached_text_lines_from_typed_layout(container &Node, used &UsedValues, stat
 					orientation: orientation
 					has_trailing_whitespace: fragment.has_trailing_whitespace()
 				}
-				text_shadows: computed_text_shadows(computed)
+				text_shadows: computed_chromium_text_shadows(fragment.layout_node_, computed)
 				selection_style: selection_style(fragment.layout_node_)
 			}
 		}
