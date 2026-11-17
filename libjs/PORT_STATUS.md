@@ -3288,3 +3288,9 @@ entries. Adding an operation correctly misses the changed body and retains
 fast code, corruption and temporary storage; they remain uncompiled/unrun
 under the test hold. This establishes functional reuse on that workload, with
 no browser-speed, full GitHub, rendering-parity or full LibJS acceptance.
+
+The completed shared production bundle also passes 18 windowed HN captures
+with exact original Brave pixels. Both cache modes reopen with six native hits
+and no misses/compiler calls. Seven alternating pairs show no instruction saving
+for generated-code identity (+0.0577% by medians). See the
+[generated-code cache report](../docs/LIBJS_NATIVE_GENERATED_CACHE.md).

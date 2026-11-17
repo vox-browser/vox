@@ -6111,3 +6111,25 @@ moves 33 completed roots/241 files to
 sampled peak 20,348,928 bytes. Disposable profiles, Build outputs and idle locks
 are removed. Automated suites remain paused. Full frozen parity and a current
 zero-miss GitHub live reopen remain open.
+
+
+### Opt-in generated-code identity, 2026-11-17
+
+`4d06a27db` adds exact generated-C identity as an experimental alternative to
+the default source/file/URL cache key. It uses a separate ABI partition and the
+existing verified library loader; current constants, realms and environments
+remain in the invoking VM. The real 101-comment HN diagnostic retains 26 hits,
+zero misses/compiler invocations and 747 native entries after a changed URL
+and appended comment. Source-bound controls miss all 27 entries. Adding an
+operation correctly misses one body and retains 25 hits. All controls preserve
+real collapse/expand behavior and have no initialized JavaScriptCore context.
+
+The older shared bundle correctly fails explicit new-mode verification. A
+newer completed production bundle contains the exact implementation and passes
+18 windowed HN captures with unchanged Brave pixels. Both modes reopen with
+six native hits and no misses/compiler calls. Seven matched pairs show
+3,536,702,893 source-identity versus 3,538,744,294 generated-identity median
+instructions (+0.0577%); no speed gain is established. Automated suites remain
+held, and full live GitHub/cache and frozen pixel parity remain open. See the
+[generated-code cache report](LIBJS_NATIVE_GENERATED_CACHE.md) for source pins,
+controls, activation, scope and retained evidence.
