@@ -4998,3 +4998,82 @@ separator pixels, two white-on-green Code-label pixels, one latest-commit avatar
 text-area pixel and one header edge. The original reference and zero/zero
 tolerance stay fixed. Defaults remain unchanged, full pixel parity and matched
 compiled-revisit performance remain open, and automated tests remain held.
+
+### Captured Brave draw state and fresh shared control, 2026-11-17
+
+`6e0b8c216` adds `tools/decode_metal_capture.py`, a read-only decoder for the
+captured MTSP 0x400/GPUTools directory format. It follows the base-vertex/
+base-instance indexed draw API and singleton buffer-array bindings actually used
+by Dawn, links shader functions to source resources, and reads pipeline/depth
+descriptors, viewports, scissors and optional Graphite rectangle buffers. It
+checks record/resource boundaries and input hashes, rejects unsupported selected
+signatures, and retains counts for undecoded opcodes. This is selected-state
+inspection, not a general Metal replay or complete command decoder.
+
+The finalized `brave-metal-2026-11-17T04-18-40-c000.gputrace` has **21,747 records,
+296 indexed draws, 46 pipelines, seven depth states and 47 functions**. Optional
+rectangle decoding identifies 113 draws/287 instances. The earlier r3 trace lacks
+final metadata and remains incomplete evidence. The finalized r4 capture's
+browser exit is zero, input hashes are unchanged, author diagnostics are empty,
+full content validates, and its screenshot is pixel-exact against the original
+Brave reference. Brave executable SHA-256 is
+`019e37a757d8dca6dadf7d8e2407d90bd52a0ac31a4e5a49d1cf0a444ab3d3d0`.
+The capture stream SHA-256 is
+`ab768c38cf9f8e180d0a9986cee3e6d37f822788fdbe53fc2fd0906377b1294d`;
+the decoded receipt also pins its index, compressed store and consumed buffers.
+
+The final-scale notification background and border are instances 66 and 73 of
+the draw at stream offset 5,172,380. Its viewport/scissor are 1024×256, with four
+samples, depth/stencil format 260, full sample mask, sample coverage 1, alpha to
+coverage/one disabled, and **Less depth comparison with writes enabled**. This
+supports the current 69-index/Less policy, not the previously rejected
+73-index/LessEqual experiment. Both the 69 indices and all 36 template vertices
+match V's current template exactly; vertex-byte SHA-256 is
+`6ae52526e98f52f72020c5521e63db4f1c52f747e00ca30e8c67ee97d6f17b30`.
+
+The attached vertex/fragment sources are exactly the earlier cached-shader
+diagnostic's sources after renaming entry points and buffer slots. This establishes
+their connection to the actual matching Brave draw. Their captured source hashes,
+including the terminating NUL, are
+`f553c1418456a7c99a72bbbadf6cb90ccb4616acc1e6a249d6bf5462ddd47889` and
+`1304ea9aad83c05f402a002046d2af524f32189dcb92fbca01e0c8875201c76c`.
+The separator's nine matrix float bits match the earlier Vox upload trace. A new
+read-only Vox probe also matches its uploaded RGBA bits exactly:
+`3eb67d80,3ec622c0,3edab280,3f800000`. Neither shader source nor these input bits
+justify a correction; the remaining rasterization discrepancy is unresolved.
+
+The latest completed ordinary single-unit production bundle is reused:
+`20261117-044846-30b9eb36`, executable SHA-256
+`9060d0785fc4127c58709e102eb17bd2c6d271307d0d3242f62ba6806531b651`.
+All four fresh processes use the original frozen GitHub archive/clock, existing
+raster opt-ins, the compatible 0130 native cache and `/usr/bin/false`:
+
+| Diagnostic | Strict differing pixels | Native hits / entries | Guard seconds / sampled peak bytes |
+| --- | ---: | --- | --- |
+| Same-binary off control, PID 20653 | **15**, unchanged | 4,243 / 476,931 | 55.2890875 / 8,985,182,208 |
+| Rectangle vertex depth `j - 0.5`, PID 29291 | 517 | 4,245 / 480,935 | 43.216487291 / 8,588,296,192 |
+| Rectangle vertex depth `j - 20/65536`, PID 33065 | 517 | 4,245 / 479,349 | 44.715683542 / 8,638,349,312 |
+| Read-only color-bit probe, PID 51737 | **15**, unchanged | 4,246 / 482,512 | 42.0811015 / 8,462,991,360 |
+
+Both depth probes produce the same image: zero resolved pixels, 502 newly wrong
+pixels and one existing pixel worsened. They are rejected. They change only
+rectangle vertex depth, leaving other clip/geometry depths intact; they do not
+test a coordinated remapping of the renderer's depth domain and cannot rule out
+every depth interaction. No production depth or shader change is retained.
+
+Every capture has exact 33-row/56-commit/latest/README content, unchanged pinned
+inputs, no author/native/cache errors, successful PID adoption, zero browser/
+controller/guard exits, zero cache misses/compiler calls/pending/invalid entries,
+and an uninitialized page JavaScriptCore context. The original Brave PNG
+(`649abff51549508516e2e0681866ba81ce69e7112cfa8dc3446b9b76c99be3d3`)
+and zero/zero tolerance are unchanged. These diagnostics provide no speed credit.
+
+The final decoder runs against the real trace under a 3 GiB guard, with decoder/
+guard exits zero, 0.225130292 seconds and 30,883,840 sampled peak bytes. Initial
+decoder attempts rejected variable-length resource names/returns; those failed
+receipts remain alongside the successful decode. Automated suites remain held.
+The tooling commit requests the normal coalesced production rebuild; no manual
+browser build was queued. Local captures, traces, source probes, commands, hashes
+and guards are retained in `scratch-receipts/continued-20261117-r28` and
+`metal-trace-5204` beneath `docs/performance/libjs-github-browser-20261116`.
+Full pixel parity and matched compiled-revisit speed remain open.
