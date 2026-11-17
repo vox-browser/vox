@@ -3,7 +3,6 @@
 import json
 import os
 from pathlib import Path
-import plistlib
 import re
 import shlex
 import shutil
@@ -12,7 +11,7 @@ import tempfile
 
 from browser_bundle_lease import publication_lease
 from rebuild_browser import production_environment
-from release_macos import sha256
+from release_macos import packaging_version, sha256
 
 ROOT = Path(__file__).resolve().parents[1]
 MAINTAINER = 'Alexander Medvednikov <alexander@medvednikov.com>'
@@ -63,6 +62,7 @@ def dependencies(work, binaries):
 
 
 def deploy(root=ROOT, output=None, package_only=False):
+    version = packaging_version(root)
     # Check tools before starting an expensive production build.
     for tool in ('dpkg', 'dpkg-deb', 'dpkg-shlibdeps', 'strip'):
         if not shutil.which(tool):
@@ -70,7 +70,6 @@ def deploy(root=ROOT, output=None, package_only=False):
     architecture = capture(['dpkg', '--print-architecture'], root)
     if not re.fullmatch(r'[a-z0-9][a-z0-9-]*', architecture):
         raise RuntimeError('Invalid Debian architecture: ' + architecture)
-    version = plistlib.loads((root / 'packaging/Info.plist').read_bytes())['CFBundleShortVersionString']
     if not re.fullmatch(r'[0-9]+(?:\.[0-9]+){0,2}', version):
         raise RuntimeError('Invalid release version in Info.plist')
     source = root / 'Build/linux/vox'

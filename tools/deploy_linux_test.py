@@ -33,6 +33,7 @@ class LinuxDeployTests(unittest.TestCase):
         packaging = self.root / 'packaging'
         packaging.mkdir()
         (packaging / 'Info.plist').write_bytes(plistlib.dumps(dict(CFBundleShortVersionString='0.1.2')))
+        (packaging / 'version.txt').write_text('0.1.2\n')
         for name in ('Vox.png', 'vox.desktop'):
             shutil.copyfile(deploy.ROOT / 'packaging' / name, packaging / name)
         for name in ('LICENSE', 'THIRD_PARTY_NOTICES.md'):
@@ -115,6 +116,14 @@ class LinuxDeployTests(unittest.TestCase):
                                    '--build', '--backend', 'c', '--prod', '--no-parallel-cc'])
         for key in ('VOX_BUILD_SUPERVISED', 'VOX_BUILD_BACKEND', 'VOX_LINUX_CFLAGS', 'LADYBIRD_V_PROFILE'):
             self.assertNotIn(key, self.environments[1])
+
+    def test_stale_runtime_version_stops_before_building_or_packaging(self):
+        (self.root / 'packaging/version.txt').write_text('0.1\n')
+        for package_only in (True, False):
+            with self.assertRaisesRegex(RuntimeError, 'wrong installed version'):
+                self.package(package_only=package_only)
+        self.assertEqual(self.commands, [])
+        self.assertFalse(self.output.exists())
 
     def test_non_prod_fastc_failed_or_mismatched_build_cannot_be_packaged(self):
         for changes in (dict(exit=1), dict(executable_sha256='changed'),

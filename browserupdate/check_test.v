@@ -33,18 +33,27 @@ fn serve_version(mut listener net.TcpListener, status int, body string, requests
 	connection.write_string('HTTP/1.1 ${status} Test\r\nContent-Type: text/plain\r\nContent-Length: ${body.len}\r\nConnection: close\r\n\r\n${body}') or { panic(err) }
 }
 
-fn local_version_response(status int, body string) string {
+fn local_version_response_for_current(status int, body string, current string) string {
 	mut listener := net.listen_tcp(.ip, '127.0.0.1:0') or { panic(err) }
 	defer { listener.close() or {} }
 	listener.set_accept_timeout(5 * time.second)
 	requests := chan string{cap: 1}
 	worker := spawn serve_version(mut listener, status, body, requests)
-	result := fetch_version('http://${listener.addr() or { panic(err) }}/version', '0.1')
+	result := fetch_version('http://${listener.addr() or { panic(err) }}/version', current)
 	worker.wait()
 	request := <-requests
 	assert request.starts_with('GET /version HTTP/1.1\r\n')
 	assert request.contains('Cache-Control: no-cache')
+	assert request.contains('User-Agent: Vox/${current}')
 	return result
+}
+
+fn local_version_response(status int, body string) string {
+	return local_version_response_for_current(status, body, '0.1')
+}
+
+fn test_fresh_release_does_not_offer_its_own_version_as_an_update() {
+	assert local_version_response_for_current(200, current_version() + '\n', current_version()) == ''
 }
 
 fn test_check_fetches_version_and_ignores_unavailable_invalid_and_unchanged_responses() {

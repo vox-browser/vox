@@ -105,6 +105,7 @@ def guarded(command, root, reports, name, limit_gib=12, **kwargs):
 
 
 def deploy(root=ROOT, output=None, package_only=False, library_directory=None):
+    expected_version = release_macos.packaging_version(root)
     if not package_only:
         # The canonical supervisor supplies the memory guard and build receipts.
         # Pin the C backend as automatic production builds do: v.mod may select
@@ -142,6 +143,8 @@ def deploy(root=ROOT, output=None, package_only=False, library_directory=None):
         info = plistlib.loads((app / 'Contents/Info.plist').read_bytes())
         verify_deployment_target(app, info.get('LSMinimumSystemVersion', ''))
         version = info['CFBundleShortVersionString']
+        if version != expected_version:
+            raise RuntimeError('The built bundle version does not match the packaging version')
         if not version or any(c not in '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz.-+' for c in version):
             raise RuntimeError('Invalid release version in Info.plist')
         if output is None:

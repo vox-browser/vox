@@ -33,6 +33,8 @@ class MacOSDeployTests(unittest.TestCase):
         (self.app / 'Contents/link').symlink_to('MacOS/Vox')
         packaging = self.root / 'packaging'
         packaging.mkdir()
+        (packaging / 'Info.plist').write_bytes((self.app / 'Contents/Info.plist').read_bytes())
+        (packaging / 'version.txt').write_text('0.1\n')
         for name in (deploy.README, 'Vox.entitlements.plist'):
             (packaging / name).write_bytes((deploy.ROOT / 'packaging' / name).read_bytes())
         self.receipt_path = self.root / 'Build/production-build/latest.json'
@@ -106,6 +108,22 @@ class MacOSDeployTests(unittest.TestCase):
             self.package(package_only=False)
         self.assertEqual(len(self.commands), 1)
         self.assertEqual(deploy.bundle_identity(self.app), before)
+        self.assertFalse(self.output.exists())
+
+    def test_stale_runtime_version_stops_before_building_or_packaging(self):
+        (self.root / 'packaging/version.txt').write_text('0.0.9\n')
+        for package_only in (True, False):
+            with self.assertRaisesRegex(RuntimeError, 'wrong installed version'):
+                self.package(package_only=package_only)
+        self.assertEqual(self.commands, [])
+        self.assertFalse(self.output.exists())
+
+    def test_stale_bundle_version_cannot_be_packaged_as_the_current_release(self):
+        (self.root / 'packaging/Info.plist').write_bytes(plistlib.dumps(
+            dict(CFBundleShortVersionString='0.1.4')))
+        (self.root / 'packaging/version.txt').write_text('0.1.4\n')
+        with self.assertRaisesRegex(RuntimeError, 'built bundle version'):
+            self.package()
         self.assertFalse(self.output.exists())
 
     def test_wrong_build_mode_or_changed_executable_never_produces_a_release(self):

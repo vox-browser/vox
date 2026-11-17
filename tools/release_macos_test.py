@@ -53,11 +53,23 @@ class VersionTests(unittest.TestCase):
             self.assertEqual({k: v for k, v in info.items() if not k.startswith('CFBundle') or 'Version' not in k},
                              {k: v for k, v in before.items() if not k.startswith('CFBundle') or 'Version' not in k})
             self.assertEqual(len(updated.splitlines()), len(original.splitlines()))
-            # browserupdate embeds the raw plist and reads the string after the key.
+            # Preserve the bundle's version string for packaging readers.
             self.assertEqual(updated.split('<key>CFBundleShortVersionString</key>')[1]
                              .split('<string>')[1].split('</string>')[0], '0.1.1')
             self.assertFalse(release.set_bundle_version(path, '0.1.1'))
             self.assertEqual(path.read_text(), updated)
+
+    def test_packaging_rejects_a_stale_embedded_runtime_version(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            (root / 'packaging').mkdir()
+            (root / release.INFO_PLIST).write_text(info_plist('0.1.4'))
+            runtime = root / release.VERSION_FILE
+            runtime.write_text('0.1\n')
+            with self.assertRaisesRegex(RuntimeError, 'wrong installed version'):
+                release.packaging_version(root)
+            runtime.write_text('0.1.4\n')
+            self.assertEqual(release.packaging_version(root), '0.1.4')
 
 
 def git(root, *arguments):
@@ -336,7 +348,8 @@ class GitTests(unittest.TestCase):
         upstream = Path(temporary.name) / 'upstream'
         upstream.mkdir()
         repository(upstream, {'.gitignore': '/Build/\n', 'main.v': 'older\n',
-                              'staged.v': 'committed\n', release.INFO_PLIST: info_plist()})
+                              'staged.v': 'committed\n', release.INFO_PLIST: info_plist(),
+                              release.VERSION_FILE: '0.1\n'})
         (upstream / 'main.v').write_text('committed\n')
         git(upstream, 'commit', '-q', '-am', 'second')
         # Like the canonical checkout, the fixture is a shallow clone.
@@ -356,7 +369,10 @@ class GitTests(unittest.TestCase):
         commit = release.commit_version(self.root, '0.1.1')
         self.assertEqual(commit, git(self.root, 'rev-parse', 'HEAD'))
         self.assertEqual(git(self.root, 'log', '-1', '--format=%s'), 'Release Vox 0.1.1')
-        self.assertEqual(git(self.root, 'show', '--format=', '--name-only', 'HEAD'), release.INFO_PLIST)
+        self.assertEqual(git(self.root, 'show', '--format=', '--name-only', 'HEAD').splitlines(),
+                         [release.INFO_PLIST, release.VERSION_FILE])
+        self.assertEqual(git(self.root, 'show', 'HEAD:' + release.VERSION_FILE), '0.1.1')
+        self.assertEqual(release.packaging_version(self.root), '0.1.1')
         self.assertEqual(git(self.root, 'diff', '--cached', '--name-only'), 'staged.v')
         self.assertEqual((self.root / 'main.v').read_text(), 'work in progress\n')
         info = plistlib.loads(git(self.root, 'show', 'HEAD:' + release.INFO_PLIST).encode())
@@ -372,6 +388,24 @@ class GitTests(unittest.TestCase):
         with self.assertRaisesRegex(RuntimeError, 'uncommitted changes besides the version'):
             release.commit_version(self.root, '0.1.3')
         self.assertEqual(git(self.root, 'rev-parse', 'HEAD'), head)
+
+    def test_rerun_repairs_runtime_version_without_advancing_the_existing_bundle_build(self):
+        (self.root / release.INFO_PLIST).write_text(info_plist('0.1.4', '5'))
+        git(self.root, 'commit', '-q', '-am', 'old release bump')
+        before = (self.root / release.INFO_PLIST).read_bytes()
+        commit = release.commit_version(self.root, '0.1.4')
+        self.assertEqual(git(self.root, 'show', '--format=', '--name-only', commit), release.VERSION_FILE)
+        self.assertEqual((self.root / release.INFO_PLIST).read_bytes(), before)
+        self.assertEqual(release.packaging_version(self.root), '0.1.4')
+        self.assertEqual(release.commit_version(self.root, '0.1.4'), commit)
+
+    def test_non_version_runtime_edits_stop_before_either_file_is_written(self):
+        original = (self.root / release.INFO_PLIST).read_bytes()
+        (self.root / release.VERSION_FILE).write_text('0.1\nkeep this note\n')
+        with self.assertRaisesRegex(RuntimeError, 'uncommitted changes besides the version'):
+            release.commit_version(self.root, '0.1.1')
+        self.assertEqual((self.root / release.INFO_PLIST).read_bytes(), original)
+        self.assertEqual(git(self.root, 'rev-parse', 'HEAD'), self.first)
 
     def test_release_checkout_holds_only_committed_sources_and_keeps_its_build_caches(self):
         (self.root / 'main.v').write_text('work in progress\n')

@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 """Publish a packaged Vox DMG or DEB as the next release.
 
-packaging/Info.plist holds the version. A release commits the version bump
-alone on master, builds that commit in a dedicated release checkout, creates
+packaging/Info.plist and packaging/version.txt hold the package and runtime
+versions. A release commits their version bump alone on master, builds that
+commit in a dedicated release checkout, creates
 the GitHub release tagged with the bare version (for example 0.1.1). macOS releases
 also point vox-browser.org/version, which the browser's update check reads, at it.
 
@@ -37,6 +38,7 @@ VERSION_URL = 'https://vox-browser.org/version'
 # The site's download button; it redirects to the DMG of the version /version serves.
 DOWNLOAD_URL = 'https://vox-browser.org/download/macos'
 INFO_PLIST = 'packaging/Info.plist'
+VERSION_FILE = 'packaging/version.txt'
 VERSION = re.compile(r'\d{1,9}(\.\d{1,9}){0,2}')
 SSH_OPTIONS = ['-o', 'BatchMode=yes', '-o', 'ConnectTimeout=15']
 VERSION_KEYS = ('CFBundleShortVersionString', 'CFBundleVersion')
@@ -69,6 +71,15 @@ def next_version(current, released, requested=None):
 
 def bundle_version(path):
     return plistlib.loads(path.read_bytes())['CFBundleShortVersionString']
+
+
+def packaging_version(root):
+    version = bundle_version(root / INFO_PLIST)
+    parse_version(version)
+    if (root / VERSION_FILE).read_text().strip() != version:
+        raise RuntimeError('packaging/version.txt must match packaging/Info.plist; '
+                           'the browser would report the wrong installed version')
+    return version
 
 
 def with_bundle_version(text, version):
@@ -171,21 +182,31 @@ def commit_version(root, version):
     """Commit the version bump alone on master and return the commit to release.
 
     Other sessions' uncommitted and staged work stays where it is. An earlier
-    attempt's uncommitted bump is reused; other uncommitted Info.plist edits stop
-    the release instead of being committed with it.
+    attempt's uncommitted bump is reused; other uncommitted packaging edits stop
+    the release instead of being committed with it. Both version sources are
+    committed together, including when repairing an already-bumped plist.
     """
     git = ['git', '-C', str(root)]
     committed = command([*git, 'show', 'HEAD:' + INFO_PLIST])
-    if plistlib.loads(committed.encode())['CFBundleShortVersionString'] != version:
+    committed_runtime = command([*git, 'show', 'HEAD:' + VERSION_FILE]).strip()
+    if (plistlib.loads(committed.encode())['CFBundleShortVersionString'] != version
+            or committed_runtime != version):
         path = root / INFO_PLIST
         if without_version(path.read_text()) != without_version(committed):
             raise RuntimeError('%s has uncommitted changes besides the version; commit or '
                                'revert them first' % INFO_PLIST)
+        runtime_path = root / VERSION_FILE
+        try:
+            parse_version(runtime_path.read_text().strip())
+        except ValueError as error:
+            raise RuntimeError('%s has uncommitted changes besides the version; commit or '
+                               'revert them first' % VERSION_FILE) from error
         path.write_text(with_bundle_version(committed, version))
+        runtime_path.write_text(version + '\n')
         for attempt in range(30):
             # Pathspec commits leave other staged files out of the release commit.
             result = subprocess.run([*git, 'commit', '--quiet', '-m', 'Release Vox ' + version,
-                                     '--', INFO_PLIST], capture_output=True, text=True)
+                                     '--', INFO_PLIST, VERSION_FILE], capture_output=True, text=True)
             if result.returncode == 0:
                 break
             if 'index.lock' not in result.stderr or attempt == 29:
