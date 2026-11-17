@@ -212,7 +212,7 @@ fn (p Path) segment_mask() int {
 }
 
 // SkRect::Bounds(): fminf/fmaxf over the points; none when any is not finite.
-fn (p Path) bounds() ?Rect {
+pub fn (p Path) bounds() ?Rect {
 	if p.points.len == 0 {
 		return Rect{}
 	}

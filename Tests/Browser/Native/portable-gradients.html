@@ -1,0 +1,53 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Portable gradient replay</title>
+<style>
+body { margin: 0; background: #101820; }
+header {
+  position: absolute;
+  z-index: 2;
+  top: 12px;
+  left: 24px;
+  width: 140px;
+  height: 20px;
+  background: #ea70b5;
+}
+.version {
+  position: absolute;
+  left: 24px;
+  top: 48px;
+  width: 180px;
+  height: 100px;
+  font: bold 78px/100px sans-serif;
+}
+.version span {
+  background: linear-gradient(90deg, #ff3800, #f04639);
+  background-clip: text;
+  color: transparent;
+}
+.icon { position: absolute; top: 0; left: 190px; }
+.card {
+  position: absolute;
+  inset: 170px 0 auto;
+  height: 360px;
+  background: radial-gradient(ellipse at 25% 20%, #b6446040, transparent 60%),
+              radial-gradient(ellipse at 75% 80%, #4444bf40, transparent 50%),
+              radial-gradient(ellipse at center, #60bf4460, transparent 70%),
+              linear-gradient(130deg, #13365a, #152638 55%, #125a71);
+}
+.marker {
+  position: absolute;
+  left: 300px;
+  top: 80px;
+  width: 48px;
+  height: 24px;
+  background: #45ef97;
+}
+</style>
+<header>
+  <svg class="icon" width="40" height="40" viewBox="0 0 40 40">
+    <path fill="#eec054" fill-rule="evenodd" d="M0 0H40V40H0Z M10 10H30V30H10Z"/>
+  </svg>
+</header>
+<div class="version"><span>0.5</span></div>
+<div class="card"><div class="marker"></div></div>

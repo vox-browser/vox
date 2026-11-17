@@ -389,12 +389,6 @@ const demo_markup = '<!doctype html>
 </body>
 </html>'
 
-struct PortableShadowImage {
-	image_id int
-	width int
-	height int
-}
-
 @[heap]
 struct BrowserApp {
 	NavigationController
@@ -455,8 +449,9 @@ mut:
 	force_dark_image_states             map[string]int
 	force_dark_image_bitmaps            map[string]&dom.Bitmap_
 	force_dark_images                   map[string]&gg.Image
-	portable_shadow_images              []PortableShadowImage
-	portable_shadow_image_index         int
+	portable_raster_images              []PortableRasterImage
+	portable_raster_image_index         int
+	portable_background_text_clip       ?PortableBackgroundTextClip
 	portable_canvas_images              []PortableCanvasImage
 	portable_canvas_image_index         int
 	draw_command_depth  int
@@ -4402,28 +4397,8 @@ fn (mut app BrowserApp) draw_portable_shadow(command layout.PaintCommand, page_x
 			return
 		}
 	}
-	index := app.portable_shadow_image_index
-	app.portable_shadow_image_index++
-	mut slot := if index < app.portable_shadow_images.len {
-		app.portable_shadow_images[index]
-	} else {
-		PortableShadowImage{ image_id: -1 }
-	}
-	if slot.image_id < 0 || slot.width != bitmap.width || slot.height != bitmap.height {
-		if slot.image_id >= 0 { app.ctx.remove_cached_image_by_idx(slot.image_id) }
-		slot = PortableShadowImage{
-			image_id: app.ctx.new_streaming_image(bitmap.width, bitmap.height, 4, min_filter: .nearest, mag_filter: .nearest)
-			width: bitmap.width
-			height: bitmap.height
-		}
-	}
-	if index < app.portable_shadow_images.len {
-		app.portable_shadow_images[index] = slot
-	} else {
-		app.portable_shadow_images << slot
-	}
-	app.ctx.update_pixel_data(slot.image_id, bitmap.pixels.data)
-	app.ctx.draw_image_by_id(bitmap.x + page_x, bitmap.y + page_y - f32(scroll_y), f32(bitmap.width) / app.ctx.scale, f32(bitmap.height) / app.ctx.scale, slot.image_id)
+	app.draw_portable_raster_image(bitmap.x + page_x, bitmap.y + page_y - f32(scroll_y),
+		bitmap.width, bitmap.height, bitmap.pixels)
 }
 
 fn native_draw_retained_glyph_run(command layout.PaintCommand, page_x f32, page_y f32,
@@ -6000,6 +5975,9 @@ fn (mut app BrowserApp) draw_command(source_command &layout.PaintCommand, page_x
 		return
 	}
 	if command.kind == 'begin_background_text_clip' {
+		$if linux {
+			app.begin_portable_background_text_clip(command, page_x, page_y)
+		}
 		$if macos {
 			if app.ctx.native_rendering {
 				clip_points := transformed_rect_points(*command, page_x, page_y, 0)
@@ -6061,6 +6039,9 @@ fn (mut app BrowserApp) draw_command(source_command &layout.PaintCommand, page_x
 		return
 	}
 	if command.kind == 'end_background_text_clip' {
+		$if linux {
+			app.portable_background_text_clip = none
+		}
 		$if macos {
 			if app.ctx.native_rendering {
 				C.native_end_background_text_clip()
@@ -6285,6 +6266,14 @@ fn (mut app BrowserApp) draw_command(source_command &layout.PaintCommand, page_x
 	// browser settings for every leaf can also change chrome geometry mid-frame.
 	if cull_bottom < app.paint_replay_viewport_top(page_y) || cull_top > f32(window_height - app.status_height()) {
 		return
+	}
+	$if linux {
+		if command.kind == 'fill_gradient'
+			|| (app.portable_background_text_clip != none
+				&& command.kind in ['fill_rect', 'fill_rounded_rect']) {
+			app.draw_portable_background(command, page_x, page_y)
+			return
+		}
 	}
 	if command.kind == 'apply_backdrop_filter' {
 		$if macos {
@@ -7509,6 +7498,11 @@ fn (mut app BrowserApp) draw_command(source_command &layout.PaintCommand, page_x
 					return
 				}
 			}
+			mut filled := false
+			$if linux {
+				filled = app.draw_portable_solid_svg_fill(command, svg_data, page_x, page_y)
+				if filled && (command.stroke_color == '' || command.stroke_width <= 0) { return }
+			}
 			input_polygons := if svg_data.path_polygons.len > 0 {
 				svg_data.path_polygons
 			} else {
@@ -7524,7 +7518,7 @@ fn (mut app BrowserApp) draw_command(source_command &layout.PaintCommand, page_x
 				}
 				screen_polygons << screen_points
 			}
-			if command.color.len > 0 {
+			if !filled && command.color.len > 0 {
 				for polygon in screen_polygons {
 					if polygon.len >= 6 {
 						draw_browser_polygon(app.ctx, polygon, app.paint_colors.color_with_retained(command.color,
@@ -7720,7 +7714,7 @@ fn (mut app BrowserApp) draw() {
 	// page. Keep its compact policy through native replay and chrome drawing.
 	app.retarget_document_frame_heap_scope(mut heap_scope)
 	app.prepare_overlay_scrollbars()
-	app.portable_shadow_image_index = 0
+	app.portable_raster_image_index = 0
 	app.portable_canvas_image_index = 0
 	app.scroll_profile_prepared()
 	preparation_instructions.finish()
@@ -7759,7 +7753,8 @@ fn (mut app BrowserApp) draw() {
 		// document scripts and rendering opportunities have already run.
 		for replay_attempt in 0 .. 2 {
 			setup_instructions := processmetrics.begin_instruction_stage('raster_frame_setup')
-			app.portable_shadow_image_index = 0
+			app.portable_raster_image_index = 0
+			$if linux { app.portable_background_text_clip = none }
 			$if macos {
 				if app.ctx.native_rendering {
 					// Speculative root pictures publish after the scroll raster ring
@@ -8030,10 +8025,7 @@ fn (mut app BrowserApp) draw() {
 			}
 			leaf_timing.finish(app.paint_commands, &scroll_damage)
 			app.scroll_profile_mark('replay')
-			for index in app.portable_shadow_image_index .. app.portable_shadow_images.len {
-				app.ctx.remove_cached_image_by_idx(app.portable_shadow_images[index].image_id)
-			}
-			app.portable_shadow_images = app.portable_shadow_images[..app.portable_shadow_image_index].clone()
+			app.finish_portable_raster_images()
 			if report_first_paint {
 				paint_checkpoint = debug_timing_checkpoint('first_paint_replay (${app.paint_commands.len} commands)', paint_checkpoint)
 			}

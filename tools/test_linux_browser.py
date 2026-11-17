@@ -203,11 +203,10 @@ def check_rendered_pixels(data, background=b"\x2c\xa0\x5a", size=None):
     assert edge > edge_total * 0.8, "The right edge was not repainted after resize/switch"
 
 
-def check_webgl_pixels(data):
-    """Find both complete shader canvases, excluding unknown browser chrome."""
-    assert data[:8] == b"\x89PNG\r\n\x1a\n", "Missing WebGL PNG"
+def rendered_png_rows(data):
+    assert data[:8] == b"\x89PNG\r\n\x1a\n", "Missing PNG signature"
     width, height, depth, kind = struct.unpack(">IIBB", data[16:26])
-    assert depth == 8 and kind in (2, 6), "Unsupported WebGL capture format"
+    assert depth == 8 and kind in (2, 6), "Unsupported capture format"
     channels = 4 if kind == 6 else 3
     compressed = bytearray()
     offset = 8
@@ -228,6 +227,49 @@ def check_webgl_pixels(data):
                                previous, channels)
         rows.append(bytes(row))
         previous = row
+    return width, height, channels, rows
+
+
+def check_gradient_pixels(data):
+    width, _, channels, rows = rendered_png_rows(data)
+    assert width == 1024
+
+    def pixel(x, y):
+        return rows[y][x * channels:x * channels + 3]
+
+    # The header's stacking context paints after the large gradients.
+    page_top = next((y - 12 for y in range(150) if pixel(30, y) == b"\xea\x70\xb5"), None)
+    assert page_top is not None, "Positioned header vanished after gradient replay"
+    assert pixel(310, page_top + 260) == b"\x45\xef\x97", "Gradient covered or dropped the card's foreground"
+    assert pixel(64, page_top + 330) != pixel(928, page_top + 330), "Large card gradient is flat"
+    assert pixel(218, page_top + 16) == b"\xee\xc0\x54", "SVG contour was misplaced"
+    assert pixel(234, page_top + 32) == b"\x10\x18\x20", "SVG fill covered its interior hole"
+    ink = paper = 0
+    for y in range(page_top + 48, page_top + 148):
+        for x in range(24, 204):
+            r, g, b = pixel(x, y)
+            ink += r > 200 and g < 90 and b < 80
+            paper += (r, g, b) == (16, 24, 32)
+    assert ink > 400, "Gradient glyphs are missing"
+    assert paper > 10000, "Gradient escaped the text mask"
+
+
+def check_gradient_browser(binary, artifacts, temporary):
+    fixture = Path(__file__).resolve().parents[1] / "Tests/Browser/Native/portable-gradients.html"
+    screenshot = artifacts / "portable-gradients.png"
+    screenshot.unlink(missing_ok=True)
+    environment = smoke_environment(Path(temporary) / "gradients")
+    run_windowed([str(binary), "--window-width=1024", "--window-height=640",
+                  "--screenshot-viewport-height=640", f"--screenshot={screenshot}", str(fixture)],
+                 env=environment, log_path=artifacts / "portable-gradients.log")
+    check_gradient_pixels(screenshot.read_bytes())
+    print("PASS: clipped gradient text and foreground painting after large gradients", flush=True)
+
+
+def check_webgl_pixels(data):
+    """Find both complete shader canvases, excluding unknown browser chrome."""
+    width, height, channels, rows = rendered_png_rows(data)
+
     def pixel(rgb):
         return bytes(rgb) + (b"\xff" if channels == 4 else b"")
     top = pixel((255, 0, 0)) * 64 + pixel((0, 255, 0)) * 64
@@ -553,6 +595,7 @@ def main():
         assert "Linux JavaScript rendered" in output, output
         print("PASS: local HTML and scripted layout")
         check_webgl_browser(binary, artifacts, temporary)
+        check_gradient_browser(binary, artifacts, temporary)
         check_https_navigation(binary, temporary, environment)
         print("PASS: HTTPS navigation and certificate verification")
         server = http.server.ThreadingHTTPServer(("127.0.0.1", 0),
