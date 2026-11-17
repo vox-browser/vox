@@ -341,7 +341,67 @@ guard records 2.139045041 seconds and 114,966,528 sampled peak bytes.
 The regression source covers address identity and fallback predicates, and
 remains unrun under the automated-suite hold.
 
-The installed browser predates the borrowing change. Its GitHub startup
-effect awaits the build requested by the managed hook. Sample files,
-commands, exact counts, run and guard receipts remain local in
+The installed browser predated the borrowing change during the isolated
+probe. Sample files, commands, exact counts, run and guard receipts stay local in
 `docs/performance/libjs-github-browser-20261116/libjs-github-native-dispatch-20261118/`.
+
+### Published browser on frozen GitHub
+
+The managed single-C `-prod` build publishes executable
+`09e4dcb3fe88617ba5afe0a6af7a20c957f203f5bc2a000d21917bfbde539e76`.
+Its sealed source manifest contains the exact `8f3436768` caller-register
+implementation. The previous `fa6b0d0c…47c9` executable and this build have 30
+sealed source differences, including DOM and browser changes. The archived
+page, policy, tools, native dependencies, optimized cache, audit config bytes,
+and standard-raster reference have the same hashes in both cohorts.
+
+A separate instrumented launch reuses generated-code ABI
+`8de10f8472f7f5c449c9bb03b99b7bf95fd688e163bc4e32c0cdd6393711d1e7`
+with `/usr/bin/false` as the compiler. It records 2,948 hits and 475,731
+native entries with zero misses, pending or invalid entries, compilations,
+or compiler calls. The previous instrumented capture recorded 664,754
+scratch-buffer calls and 411,660 native entries. This capture records 290,598
+scratch-buffer calls. The different execution counts and source inputs keep
+this a build-level comparison. The isolated call probe measures borrowing
+with the same bytecode and callee.
+
+Seven alternating interpreter and cached-native pairs count instructions
+from fresh exclusive browser resource-coalition creation through the native
+`capture_document_encoded` marker. This includes browser startup, window
+setup, and PNG encoding. File writing, audits, teardown, and GPU and
+outside-service instructions fall outside the measurement. Each launch uses
+a private profile and empty HTTP cache. The run retains OS filesystem and
+shader caches. Native diagnostics are disabled in the measured runs.
+
+| Pair | Interpreter instructions | Cached native instructions |
+| ---: | ---: | ---: |
+| 1 | 75,866,455,189 | 78,011,809,203 |
+| 2 | 69,846,567,542 | 78,242,573,882 |
+| 3 | 75,923,281,070 | 72,410,504,111 |
+| 4 | 69,984,748,343 | 78,073,878,394 |
+| 5 | 75,848,788,670 | 71,959,897,275 |
+| 6 | 69,860,254,794 | 77,919,324,548 |
+| 7 | 68,026,738,479 | 78,364,042,861 |
+| Median | **69,984,748,343** | **78,011,809,203** |
+
+Cached native uses **11.47% more instructions** at the median and wins two
+of seven pairs. The highest native count is 1.152 times the lowest
+interpreter count. Relative to the previous cohort, the cached-native median
+decreases 0.06% and the interpreter median decreases 7.58%. One-minute host
+load ranges from 7.47 to 9.88 on 18 CPUs, versus 8.98 to 13.87 previously.
+
+All 14 captures match the pinned 1024×768 Vox reference pixel for pixel and
+pass document ownership and the repository content audit. Every capture has
+33 file rows, 56 commit links, the latest commit and README, and 81 evaluated
+modules with fulfilled promises. JavaScriptCore stays uninitialized and the
+three replayed compatibility script bodies match their pinned hashes. Each
+native run has 2,948 hits and zero misses, compiler calls, or pending or invalid
+entries at capture and shutdown. All browser, harness, and guard exits are
+zero. The guard adopts 28 browser processes across 14 trials and reports a
+sampled aggregate peak of 8,015,691,776 bytes over 132.040 seconds. The
+instrumented run also exits zero at 8,001,798,144 bytes over 14.459 seconds.
+The regular raster reference is the retained Vox PNG. This cohort covers
+the frozen repository landing page.
+
+Raw receipts and input fingerprints remain local under
+`docs/performance/libjs-github-browser-20261116/libjs-github-registers-after-20261118/`.
