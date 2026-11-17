@@ -148,7 +148,42 @@ passed with `VOX_ARCH_TEST_INSTALL=1`: native archive creation/extraction,
 and removal all succeeded. The guest test guard exited 0 and sampled a peak of
 94,388,224 bytes under its 3 GiB limit. Local deployment/release and CI-driver
 regressions also passed. No full Vox browser was built or run on Arch during
-these fixture checks; the native browser CI workflow remains to be run.
+these fixture checks. Full-browser validation followed for release 0.1.5.
+
+### Release 0.1.5 validation
+
+The native Arch browser was built from clean commit
+`d51c3d575a43c8d0b5254c7b56200a2c9376a16f` with the C backend, literal V
+`-prod`, and one C unit. Its [build run](https://github.com/vox-browser/vox/actions/runs/44114199850)
+completed compilation, startup and cookie-persistence checks, then stopped on
+the packaging tool's ELF-loader alias parsing. The [recovery run](https://github.com/vox-browser/vox/actions/runs/44119891689)
+reused the hash-verified executable and original receipts with the corrected
+packager. It installed the native archive using `pacman -U`, checked the installed
+executable hash, and passed the complete Linux browser smoke suite: JavaScript,
+DOM/events/wheel, local HTML, WebGL1/WebGL2, HTTPS verification, HTTP redirects,
+Xvfb pixels, keyboard navigation, resize, process tabs and normal shutdown.
+The browser guard exited 0 with a sampled peak of 1,131,094,016 bytes under its
+3 GiB limit. The Arch package SHA-256 is
+`0477e096dd8e667c6cc296fc0466be4532addb0e26dd88bad310a67cd73af086`.
+
+The [Debian amd64/arm64 release run](https://github.com/vox-browser/vox/actions/runs/44110380092)
+built the same clean source commit on native runners in Debian 12 containers.
+Both packaged browsers passed the same browser suite and cookie-persistence
+preflight. These release jobs pin V
+`5a39a4d2f31fda64e7a5ee489e2a291325babcc4`, VC
+`99533a7cecef5d59f7bf01ee5034f24b759ce294`, and UI2
+`f18e784d96a27991974ef8cfdd25b33830a9f067`. The release compiler's checked JSON2
+adapter preserves generic field pointer types when decoding narrow enums;
+incompatible-pointer diagnostics remain enabled. Package checksums and runtime
+provenance are attached to [release 0.1.5](https://github.com/vox-browser/vox/releases/tag/0.1.5).
+
+For packaging-only CI recovery, dispatch the Arch workflow with the same
+`release_ref` and the original `reuse_build_run` ID. It verifies the clean source
+receipt, production mode, executable hash and successful original compiler/cookie
+checks before repackaging, then repeats installation and browser validation.
+It preserves the original evidence hashes instead of claiming a new compiler
+binary identity. Packaging uses the Python process-tree memory guard directly,
+so recovery does not require rebuilding V.
 
 ## Debian packages
 
