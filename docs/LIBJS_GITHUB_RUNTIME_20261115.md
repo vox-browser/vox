@@ -6793,3 +6793,106 @@ exit records and screenshots are retained locally under
 `repository-navigation-5204-r64`. These are interpreter diagnostics with the
 native cache disabled. Compiled execution, live-site rendering, and pixel
 parity with Brave remain open. The automated-test hold remains in effect.
+
+### Mutation record allocation and a garbage-collected replay
+
+`62944cca9` moves `MutationRecord.addedNodes` and `removedNodes` creation to
+their first read. Records retain the original node snapshots and cache each
+list separately to preserve the WebIDL `SameObject` guarantee. The production
+type check exits zero in 57.290283709 seconds at 7,085,441,024 sampled bytes.
+The focused regression source covers untouched lists and repeated getters.
+It remains unrun under the automated-test hold.
+
+A private single-C `-O1` browser with Boehm GC and 16-KiB collector blocks
+tests whether the return can settle under the unchanged 12-GiB guard. Its
+sealed executable SHA-256 is
+`90d71f3778e685629a134daa06d85dfa0441b06642def8455898b3ae60faaf2e`.
+The 294.477473542-second build exits zero at 8,599,552,000 sampled bytes. The
+parsed source manifest includes the Back and Element scrolling changes and
+predates the mutation-record allocation change. The controlled history round
+trip again sees both trusted events, equal `history.state` identities and
+unchanged pins. Browser PID 73046, controller and 3-GiB guard exit zero in
+11.853522792 seconds at 254,787,584 sampled bytes.
+
+The same binary completes README search, file navigation and toolbar Back in
+the supplemented frozen replay. After Back, the repository title, 33 rows,
+56 commit elements, latest commit and README return. The terminal content
+audit exactly matches the original root content audit. The same-origin file
+and root JSON responses are selected by their request headers. The browser
+reports its Worker fallback and no other script diagnostics. Browser PID
+73695, controller and guard exit zero, with successful PID adoption and
+unchanged pins. The replay takes 86.872056 guard seconds and peaks at
+5,276,237,824 sampled bytes. The root and destination file lists still contain
+only the archived README path and their original directories. Native code is
+disabled for this observation.
+
+A two-second diagnostic sample after Back captures activity in rendering,
+the LibJS interpreter and Boehm collection. Of 170 main-thread samples with
+the complete window run loop stack, 70 include the idle cleanup's two forced
+collection calls. That sample is diagnostic and supplies no relative timing
+or instruction-count result.
+
+Preparing generated code from an empty partition restores the repository in
+the sampled content, but React's commit callbacks report exhaustion of the
+document instruction budget. The controller times out while flushing the
+cache at shutdown. Browser PID 82676 is terminated with exit -15 and the
+controller and guard exit one. The run retains 9,344 entries across 73
+completed native libraries at 6,018,318,336 sampled peak bytes. The functional
+compiler wrapper uses `-O0` and records the requested flags and C source hash
+for every invocation.
+
+Reopening that partition with `/usr/bin/false` restores the full repository
+content and records 2,456 hits and 1,085,575 native entries at shutdown. It
+has 1,498 misses and 4,571 pending entries, and a compilation attempt fails
+at shutdown. Browser PID 3512 exits zero, and the controller and guard exit
+one at 129.58978775 seconds and 5,863,079,936 sampled bytes. Input hashes are
+fixed. The result demonstrates native code reuse during the interaction
+alongside interpreted fallback.
+
+Resuming preparation on the same partition completes another 4,571 entries
+across 36 Clang calls. Shutdown records zero pending and invalid entries and
+an empty compiler error. The partition now contains 13,915 entries across
+109 libraries. Browser PID 6848 exits zero. The controller and guard exit one
+because the observed return does not pass the content and script gates. The
+run uses 166.526396875 guard seconds and 5,268,996,096 sampled peak bytes.
+
+The fresh compiler-disabled reopen with the completed partition captures the
+README and returns to the exact initial repository content. The browser has
+2,876 hits and 340,638 native entries at root capture, then 3,580 hits and
+1,445,292 native entries at shutdown. Both receipts show zero misses,
+compilations, compiler calls, pending or invalid entries, and page
+JavaScriptCore stays uninitialized. Only the Worker fallback warning is
+reported. Browser PID 9310, controller and guard exit zero with no changed
+inputs. The run records 107.624852417 seconds and 6,044,745,728 sampled peak
+bytes. This is a functional result for the private collector build and
+reduced file lists.
+
+The full-list follow-up restores the original 18,376 root paths and 18,551
+destination paths while preserving the supplemented router responses and
+the prepared native partition. Search opens the README and toolbar Back
+returns the repository title, 33 rows and 56 commit links. The exact content
+gate fails because the restored README text has different whitespace.
+GitHub's mutation observer and React commit callbacks also report
+instruction-budget exhaustion. Shutdown records 3,585 hits and 1,661,177
+native entries with zero cache misses, compiler calls, pending entries or
+invalid entries. Browser PID 11232 exits zero, and the controller and guard
+exit one. Pins remain unchanged over 103.11109025 guard seconds and
+5,912,248,320 sampled peak bytes.
+
+The history diagnostics use whole-window screenshots. Their measured
+document crops differ from the retained Brave PNG at 116,413 pixels for the
+interpreter and 117,091 for the partial-cache reopen. Window compositor
+overlays can enter those captures. The canonical document-only parity
+reference and tolerances stay fixed.
+
+Two attempts to build a separate browser containing `62944cca9` fail source
+verification while other sessions edit the checkout. The first detects a
+package membership change and the second detects a change in `main.v`. The
+production type check remains the verification for the allocation change.
+
+Raw receipts and the cache manifest stay local under
+`repository-navigation-5204-r66`. The private executable and prepared
+partition are retained in the benchmark cache as
+`libjs-github-navigation-20261118-5204-r66`. The shared production build,
+live GitHub, exact full-list restoration and document-only pixel parity
+remain unverified by this run. The automated-test hold remains in effect.
