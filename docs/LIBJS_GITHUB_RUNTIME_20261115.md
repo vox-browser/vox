@@ -7000,3 +7000,56 @@ production validation, generated-cache reuse at the new ceiling, live
 navigation, Worker support, and pixel parity remain open. The diagnostic
 patch, commands, input fingerprints, audits, and guard receipts remain
 local under `repository-navigation-5204-r68`.
+
+### Published native round trip and allocation fixes
+
+The shared single-C `-prod` browser SHA-256
+`09e4dcb3fe88617ba5afe0a6af7a20c957f203f5bc2a000d21917bfbde539e76`
+still reports a 10-million document instruction ceiling. A fresh launch
+with the full-list archive, a private profile and a prewarmed generated
+cache uses `/usr/bin/false` as the compiler. The audit observes 3,544 hits
+and 1,149,437 native entries at the ready README destination, zero misses
+or compiler calls, and an uninitialized JavaScriptCore context. Native
+input reaches the toolbar Back action. The 12 GiB guard stops the run
+before the returned content can be validated. The guard exits 125, its
+controller records exit 137, and the browser has no shutdown receipt.
+Browser PID 19441, guard elapsed 32.230879792 seconds, sampled peak
+12,911,017,984 bytes. All 139 recorded input pins match after termination.
+
+A separate mapping-trace launch uses the same executable, archive and
+cache. PID 22993 opens the README and Back restores the repository URL.
+The final content audit still shows the file view, with zero directory
+rows and three commit links. React and a native callback report instruction
+budget exhaustion. The compiler-disabled cache gate itself passes.
+Shutdown records 3,572 hits and 1,537,387 native entries, zero misses or
+compiler activity, and no pending or invalid entries. Browser, controller
+and guard exit 0, 1 and 1 respectively, with unchanged input hashes. The
+guard records 124.762187375 seconds and 12,404,441,088 sampled peak bytes.
+
+The trace matches the pinned executable's text segment and loaded image
+bases across the browser's self-exec. Among anonymous writable mappings
+still tracked at their exact addresses, 736 MiB has
+`resolve_module_export` under the namespace getter. Two resource fetch
+stacks account for 720 MiB and 576 MiB through URL trimming. These are
+virtual mapping capacities. They do not measure retained objects or
+resident-byte savings.
+
+- `09ad5542a` keeps the resolved module binding in each namespace getter
+  and reads its current value on access. A manual prealloc probe observes
+  `ReferenceError` before initialization, values one and two before and
+  after mutation, and stable namespace re-export identity.
+- `2c5b20868` puts resource URL trimming into the existing scratch scope.
+  With the old and new resolution paths in one manual prealloc executable,
+  the caller arena grows by 1,031,839 and 518,687 bytes respectively for
+  128 long relative URLs. The same result survives scratch poisoning.
+  Both paths preserve the resolved strings and the whitespace-only base
+  case.
+
+Both changed sources pass the guarded production type check in 72.369718
+seconds at 5,561,647,104 sampled peak bytes. Focused regression sources
+remain unrun under the automated-test hold. A preceding shared build
+stopped on a duplicate local in `paint/background_raster.v`. The current
+type check passes that code and the hooks have queued a newer build.
+Browser-level memory and generated-cache navigation with the new sources
+remain unverified. Commands, source pins and raw receipts are local under
+`repository-navigation-5204-r69`.
