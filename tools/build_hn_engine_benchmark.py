@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Build one HN benchmark backend, sealing C before optimizing it.
+"""Build a browser engine benchmark backend, sealing C before optimizing it.
 
 Run through run_memory_bounded (12 GiB). V generation and clang run sequentially
 so the compiler's retained AST does not share the C optimizer's memory budget.
@@ -19,6 +19,28 @@ from production_source_manifest import begin, combine, compile_component
 from rebuild_browser import repository_state
 
 ROOT = Path(__file__).resolve().parents[1]
+
+
+def benchmark_entry(root, source):
+    """Expose canonical main-module sources as links, never source snapshots."""
+    root, source = Path(root).resolve(), Path(source).resolve()
+    if not source.is_relative_to(root) or not source.is_file() or not source.name.endswith('_test.v'):
+        raise ValueError('Benchmark entry must be a canonical repository test source')
+    directory = root / 'Build/v/address-bar-tests'
+    directory.mkdir(parents=True, exist_ok=True)
+    inputs = [root / 'v.mod', *root.glob('*.h'),
+              *(p for p in root.glob('*.v') if not p.name.endswith('_test.v')),
+              *(p for p in root.iterdir() if p.is_dir() and p.name != 'Build'), source]
+    for path in inputs:
+        link = directory / path.name
+        if link.is_symlink():
+            if link.resolve() == path:
+                continue
+            link.unlink()
+        if link.exists():
+            raise ValueError('Refusing to replace a non-link benchmark input: ' + str(link))
+        link.symlink_to(path, target_is_directory=path.is_dir())
+    return directory / source.name
 
 
 def save(path, value):
@@ -47,6 +69,8 @@ def profile_array_return_compat(source):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--engine', required=True, choices=['v8', 'jsc'])
+    parser.add_argument('--entry', type=Path, default=Path('sites/hacker_news_engine_benchmark_test.v'),
+                        help='Canonical main-module benchmark test, relative to repository root')
     parser.add_argument('--output', required=True, type=Path)
     parser.add_argument('--allocator', choices=['prealloc', 'boehm'], default='prealloc')
     parser.add_argument('--optimization', choices=['O2', 'O3'], default='O3')
@@ -73,9 +97,7 @@ def main():
         compiler = runtime / 'compiler/v'
     ui = v_tool('prepare_ui2', compiler)
     http = v_tool('prepare_http_compat', compiler)
-    entry = ROOT / 'Build/v/address-bar-tests/hacker_news_engine_benchmark_test.v'
-    if not entry.is_file():
-        parser.error('Initialize canonical test links with tools/test_address_bar.sh first')
+    entry = benchmark_entry(ROOT, ROOT / args.entry)
     cflags = '-' + args.optimization
     backend = []
     if args.engine == 'v8':

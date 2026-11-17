@@ -1,5 +1,41 @@
 import unittest
-from build_hn_engine_benchmark import profile_array_return_compat
+from pathlib import Path
+import tempfile
+from build_hn_engine_benchmark import benchmark_entry, profile_array_return_compat
+
+
+class BenchmarkEntryTests(unittest.TestCase):
+    def test_sources_remain_canonical_and_existing_links_are_reusable(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp).resolve()
+            (root / 'v.mod').write_text('Module {}')
+            (root / 'main.v').write_text('module main')
+            source = root / 'sites/example_test.v'
+            source.parent.mkdir()
+            source.write_text('module main')
+            entry = benchmark_entry(root, source)
+            self.assertTrue(entry.is_symlink())
+            self.assertEqual(entry.resolve(), source)
+            self.assertEqual((entry.parent / 'main.v').resolve(), root / 'main.v')
+            self.assertEqual(benchmark_entry(root, source), entry)
+            self.assertFalse((entry.parent / 'Build').exists())
+
+    def test_external_source_and_regular_file_collision_are_rejected(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp) / 'repo'
+            root.mkdir()
+            external = Path(temp) / 'external_test.v'
+            external.write_text('module main')
+            with self.assertRaises(ValueError):
+                benchmark_entry(root, external)
+            source = root / 'example_test.v'
+            source.write_text('module main')
+            directory = root / 'Build/v/address-bar-tests'
+            directory.mkdir(parents=True)
+            (directory / source.name).write_text('keep')
+            with self.assertRaises(ValueError):
+                benchmark_entry(root, source)
+            self.assertEqual((directory / source.name).read_text(), 'keep')
 
 
 class ProfileArrayReturnTests(unittest.TestCase):
