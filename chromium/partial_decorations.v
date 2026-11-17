@@ -131,10 +131,15 @@ fn (mut app BrowserApp) draw_chromium_disjoint_partial_header(index int, page_y 
 		header := chromium_disjoint_partial_header_index(app.paint_commands,
 			app.chromium_raster_plan.command_layers,index)
 		if header <= index+2 { return -1 }
-		// A GPU leaf resolves its coverage separately. This decoration group
-		// needs the shared recording and its current backdrop instead.
+		// Preserve the current backdrop before drawing the decoration group.
 		C.native_gpu_canvas_cpu_access()
 		app.flush_rounded_rect_underlay(0,page_y,window_height)
+		triple := [app.paint_commands[index], app.paint_commands[index + 1], app.paint_commands[header]]
+		owner := app.chromium_raster_plan.command_layers[index]
+		if rounded_background_group_end(triple, [owner, owner, owner], 0) == 3
+			&& app.draw_rounded_background_commands(triple, page_y) {
+			return header
+		}
 		grouped := C.native_begin_deferred_inset_decorations(2,page_y+2,
 			f32(app.viewport_width-4),f32(app.viewport_height-4),
 			f32(app.ctx.width),f32(app.ctx.height),page_y,f32(app.scroll_y)) != 0
