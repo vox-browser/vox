@@ -23,6 +23,18 @@ from page_archive import Replay
 
 ROOT = Path(__file__).resolve().parents[1]
 METRICS = ['initialization_ms', 'first_cycle_ms', 'callback_ms', 'compile_finish_ms', 'total_ms']
+OPTIMIZATION_COUNTERS = {'regexp-flags': 'regexp_flag_getter_reads'}
+
+
+def validate_control_diagnostics(before, after, disabled=None):
+    if (any(before['activity'][key] != after['activity'][key]
+            for key in ['entries', 'fast_steps', 'slow_steps'])
+            or before['cache']['cache_hits'] != after['cache']['cache_hits']):
+        raise ValueError('Control/candidate diagnostic workload or native cohort differs')
+    if disabled:
+        key = OPTIMIZATION_COUNTERS[disabled]
+        if after['activity'].get(key, 0) <= 0 or before['activity'].get(key) != 0:
+            raise ValueError('Missing enabled/disabled optimization-path proof: ' + disabled)
 
 
 def faster_than_v8(summary):
@@ -69,6 +81,8 @@ def main():
     parser.add_argument('--v8-binary', required=True, type=Path)
     parser.add_argument('--jsc-binary', required=True, type=Path)
     parser.add_argument('--libjs-control-binary', type=Path, help='Optional prior LibJS build for matched control/candidate visits')
+    parser.add_argument('--libjs-control-disable', choices=OPTIMIZATION_COUNTERS,
+                        help='Use the same LibJS binary with this optimization disabled in test mode')
     parser.add_argument('--archive', required=True, type=Path)
     parser.add_argument('--output', required=True, type=Path)
     parser.add_argument('--native-cache', required=True, type=Path)
@@ -84,12 +98,16 @@ def main():
     output.mkdir(parents=True, exist_ok=False)
     if not args.skip_seed and cache.exists():
         parser.error('Cold seed requires a new native-cache directory')
+    if args.libjs_control_disable and args.libjs_control_binary:
+        parser.error('A disabled-feature control uses the same JSC/LibJS binary')
+    have_control = bool(args.libjs_control_binary or args.libjs_control_disable)
     binaries = {'v8': args.v8_binary.resolve(), 'jsc': args.jsc_binary.resolve(),
                 'libjs-warm': args.jsc_binary.resolve(), 'libjs-cold': args.jsc_binary.resolve()}
-    if args.libjs_control_binary:
-        binaries['libjs-control'] = args.libjs_control_binary.resolve()
-    engines = ['v8','jsc','libjs-warm'] + (['libjs-control'] if args.libjs_control_binary else [])
-    report = dict(scope='Recovered original Reddit listing scripts plus representative two-comment/menu probe; '
+    if have_control:
+        binaries['libjs-control'] = (args.libjs_control_binary or args.jsc_binary).resolve()
+    engines = ['v8','jsc','libjs-warm'] + (['libjs-control'] if have_control else [])
+    report = dict(libjs_control_disable=args.libjs_control_disable,
+                  scope='Recovered original Reddit listing scripts plus representative two-comment/menu probe; '
                   'HTML/runtime/script initialization, first measured cycle, repeated native click dispatch and DOM synchronization, '
                   'explicit cache finish. Sum of intervals excludes process startup, file hashing, audits, teardown, external network, '
                   'window, layout and paint. Fixture self-probe calls the handlers once during initialization.',
@@ -122,6 +140,8 @@ def main():
                    LADYBIRD_CACHE_DIR=str(output / (label + '-http-cache')))
         if actual_mode == 'libjs-warm':
             env['VOX_LIBJS_NATIVE_COMPILER'] = '/usr/bin/false'
+        if mode == 'libjs-control' and args.libjs_control_disable:
+            env['VOX_LIBJS_TEST_DISABLE_OPTIMIZATION'] = args.libjs_control_disable
         if mode == 'v8' and diagnostic:
             env['VOX_V8_DIAGNOSTICS'] = '1'
         measurement = output / (label + '-process.json')
@@ -169,7 +189,7 @@ def main():
                      ROOT/'tools/benchmark_hn_engines.py', archive/'manifest.json', *sorted((archive/'bodies').iterdir()),
                      Path(replay.ready['ca'])]
             configurations = []
-            for engine in ['v8','jsc'] + (['libjs-control'] if args.libjs_control_binary else []):
+            for engine in ['v8','jsc'] + (['libjs-control'] if have_control else []):
                 binary = binaries[engine]
                 receipts, build = build_receipts(binary)
                 if not build:
@@ -219,13 +239,11 @@ def main():
             for engine in engines:
                 if not run(engine,engine+'-diagnostic',diagnostic=True,cycles=3):
                     raise ValueError('Engine eligibility/correctness diagnostic failed')
-            if args.libjs_control_binary:
+            if have_control:
                 diagnostics = {a['mode']:a['visit'] for a in report['attempts'] if a['diagnostic']}
                 before, after = diagnostics['libjs-control'], diagnostics['libjs-warm']
-                report['matched_native_activity'] = all(before['activity'][key]==after['activity'][key]
-                    for key in ['entries','fast_steps','slow_steps'])
-                if not report['matched_native_activity'] or before['cache']['cache_hits']!=after['cache']['cache_hits']:
-                    raise ValueError('Control/candidate diagnostic workload or native cohort differs')
+                validate_control_diagnostics(before, after, args.libjs_control_disable)
+                report['matched_native_activity'] = True
             for group in range(args.pairs):
                 order = engines.copy()
                 if group % 2:

@@ -1,6 +1,6 @@
 import unittest
 
-from benchmark_reddit_engines import faster_than_v8, validate
+from benchmark_reddit_engines import faster_than_v8, validate, validate_control_diagnostics
 
 
 def visit():
@@ -15,6 +15,27 @@ def visit():
 
 
 class RedditReceiptTests(unittest.TestCase):
+    def test_same_binary_control_requires_enabled_disabled_path_and_identical_work(self):
+        before, after = visit(), visit()
+        for value in [before, after]:
+            value['activity'].update(entries=42, fast_steps=100, slow_steps=20)
+        before['activity']['regexp_flag_getter_reads'] = 0
+        after['activity']['regexp_flag_getter_reads'] = 8
+        validate_control_diagnostics(before, after, 'regexp-flags')
+        for key in ['entries', 'fast_steps', 'slow_steps', 'regexp_flag_getter_reads']:
+            saved = before['activity'][key]
+            before['activity'][key] += 1
+            with self.assertRaises(ValueError):
+                validate_control_diagnostics(before, after, 'regexp-flags')
+            before['activity'][key] = saved
+        after['activity']['regexp_flag_getter_reads'] = 0
+        with self.assertRaises(ValueError):
+            validate_control_diagnostics(before, after, 'regexp-flags')
+        after['activity']['regexp_flag_getter_reads'] = 8
+        before['cache']['cache_hits'] -= 1
+        with self.assertRaises(ValueError):
+            validate_control_diagnostics(before, after, 'regexp-flags')
+
     def test_faster_gate_retains_outliers_and_requires_total_as_well_as_callbacks(self):
         summary = {'v8':{'callback_ms':{'minimum':10},'total_ms':{'minimum':20}},
                    'libjs-warm':{'callback_ms':{'maximum':9},'total_ms':{'maximum':19}}}
