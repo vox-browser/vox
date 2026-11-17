@@ -7091,3 +7091,34 @@ for a subsequent build. A browser-level allocation comparison and strict
 GitHub navigation replay remain open. Raw commands, source identities,
 allocation observations and guard receipts remain local under
 `repository-navigation-5204-r70`.
+
+### LibJS iterator protocol keys
+
+The published GitHub mapping trace tags 80 MiB of anonymous mapping capacity
+under `create_iterator_result_object`. Commit `d839c68f6` shares immutable
+`value`, `done`, `next`, and `return` keys across the synchronous iterator
+protocol. Iterator results still own independent mutable properties and use
+the existing descriptor, prototype and user callback operations.
+
+Three alternating fresh-process pairs use matching single-C prealloc
+builds. The 492 recorded source and fixture pins differ only in
+`libjs/iterator.v`. Every process yields 24,000 array elements and sums
+108,000. The control caller arena grows by 65,236,983 bytes in all three
+pairs. The candidate grows it by 41,956,992 bytes in all three pairs,
+**35.7% less**. The checks cover independent writable iterator results,
+own-property order, descriptor flags, prototype identity, and the custom
+`next`, `done`, `value`, and `return` access order. All six paired
+processes and their guard exit zero. The measured bytes describe standalone
+caller-arena growth.
+
+The separate native-cache seed compiles two executables in one compiler
+call. A fresh reopen with `/usr/bin/false` returns the same sum with two hits,
+two native entries and 30,013 helper steps. It records zero misses,
+compiler calls, pending or invalid entries. Seed, reopen and guards exit
+zero. The production type check passes in 56.768562875 seconds at
+7,101,890,560 sampled peak bytes. The updated regression source remains
+unrun under the automated-test hold.
+
+Browser validation awaits the shared production build. Commands, executable
+identities, source pins and guard receipts remain local under
+`repository-navigation-5204-r71`.
