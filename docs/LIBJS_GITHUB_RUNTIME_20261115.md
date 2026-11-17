@@ -6523,3 +6523,79 @@ exceptions. Browser/controller/guard exit zero, with 15.267308709 seconds
 and sampled aggregate peak 951,058,432 bytes. These are functional observations
 with different input instrumentation. Commands, input events, audit timelines,
 and error stacks are in the local `libjs-github-o2-20261117/interaction-receipts/`.
+
+### Frozen file search with compiled LibJS, 2026-11-17
+
+Fresh windowed runs use the same `d2f42448…` bundle and functional `-O0`
+generated-code cache as the earlier frozen four-engine comparison. Native
+mouse and key events pass through the browser's platform view. The root page
+uses the same HTML and compatibility scripts, with imported cookies disabled
+and an empty private HTTP cache per process.
+
+The initial fixture lacks the commit-pinned `tree-list` response. Both inputs
+work (`ma` in the branch filter and `read` in Go to file), but the missing GET
+returns 404 and Go to file shows “Failed to search”. The extended fixture adds
+the original GitHub response for commit `c4863bafb29a66c27044fdc2007ec2321ae228ee`.
+It contains 18,376 paths, with body SHA-256
+`a57d594c88d91a5c45896d4b0d046c87ecad2a9dae1844305633daf7017b6566`.
+Existing response bodies are byte-identical. With the archived GET returning
+200, GitHub's synchronous fallback reaches fuzzy scoring and exhausts the
+10-million-instruction document entry limit while handling the short query.
+The dialog stays at “Loading”. Both runs have zero cache misses and compiler
+calls, and the branch-filter audit observes text entry only.
+
+Entering `readme.md` in one burst against the extended fixture completes
+under the same budget. The initial loading state resolves to visible results,
+including the root `README.md` link at `/vlang/v/blob/master/README.md`.
+The search dialog dismisses normally. Final content remains complete with
+3,155 cache hits, 859,353 native entries, and zero misses or compiler calls.
+The browser, controller and guard exit zero. The 12-GiB guard records
+29.792548666 seconds and 10,288,398,336 sampled peak bytes. GitHub still reports
+the unavailable Worker constructor and uses its synchronous fallback.
+
+JavaScriptCore requests both the same-origin module-worker entry and its CDN
+module. A second fixture extension replays both unchanged responses with status
+200. The `read` query still stays at “Loading” throughout the observed input
+period, with no reported page exception. This supplies no successful
+JavaScriptCore search result. The prior `jsc` launch is retained with browser
+exit two because the CLI requires `javascriptcore`.
+
+Clicking the visible README result closes the overlay but leaves the root URL
+active. Selecting by Arrow Down and Enter reaches the GitHub navigation
+handler but raises a `TypeError` when the handler calls
+`performance.clearResourceTimings()`. Neither run requests the archived
+README destination. The keyboard run records 3,169 hits with zero misses or
+compiler calls, and exits zero after the controller records the navigation
+failure. Its guard exits one in 41.247368458 seconds at 11,498,012,672 sampled
+peak bytes. `481a848d8` binds the operation to the owning native Performance
+timeline's resource buffer, with focused coverage for receiver validation,
+ignored arguments, surviving mark entries and previously returned resource
+entries. The guarded production type check exits zero in 67.850972542 seconds
+at 6,509,002,752 sampled peak bytes. The new regression source remains unrun
+under the test hold. End-to-end navigation remains pending a bundle containing
+the binding.
+
+The fixture extensions preserve the original Brave reference and controlled
+root capture. The original response bodies, audit timelines, input plans,
+cache receipts and process exits remain local in `repository-controls-5204-r54`
+through `repository-controls-5204-r60` and the two interaction replay archives.
+These observations provide functional evidence. They do not establish a
+performance gain or complete repository-page parity. Automated suites remain
+paused.
+
+### Triangle-list rendering control, 2026-11-17
+
+The canonical Metal replay expands the captured 69-index triangle strip into
+67 triangles, preserving winding, primitive order and zero-area triangles.
+The expanded draw is byte-identical to each of the eight-instance, unified
+nine-instance and split nine-instance controls. Omitting the 15 repeated-index
+triangles instead changes two pixels in the eight-instance control at
+`(991, 212)` and `(990, 213)`. It leaves the two nine-instance controls exactly
+unchanged. Both eight-instance changes are outside the remaining Notifications
+corners at `(648, 188)` and `(646, 190)`.
+
+All nine selected draws and the guarded compiler invocation succeed with fixed
+input identities, elapsed 1.694646042 seconds and sampled peak 100,466,688
+bytes. The replays use a white backdrop. They rule out strip topology alone as
+the cause and leave the frozen whole-page comparison at two differing pixels.
+The raw tiles and draw hashes remain local in `metal-triangle-list-5204-r53`.
