@@ -6133,3 +6133,132 @@ instructions (+0.0577%); no speed gain is established. Automated suites remain
 held, and full live GitHub/cache and frozen pixel parity remain open. See the
 [generated-code cache report](LIBJS_NATIVE_GENERATED_CACHE.md) for source pins,
 controls, activation, scope and retained evidence.
+
+
+### Vertex-probe rejection and independent-instance placement, 2026-11-17
+
+Two read-only selected-draw probes add atomic vertex-output logging, first for
+position plus varyings and then for position alone. Both change the unified,
+split and eight-instance controls by 3/9/5 pixels, maximum error ten. Their
+ordinary replays reproduce the complete known BGRA hashes. The logged variants
+therefore fail image invariance and are rejected for original-draw attribution.
+All twelve compile/replay processes succeed; the guards exit zero in
+0.804136958 / 1.103519125 seconds, sampled peaks 99,516,416 / 121,389,056 bytes.
+Probe and regression-source changes are fully reverted, with their source
+patches, executable identities and failed invariance receipts retained locally.
+No automated test source is compiled or run.
+
+Thirteen further selected-draw diagnostics preserve the captured shaders and
+vary only independent instance placement or base instance. The eight/nine
+controls exactly reproduce the known complete
+`bd5f7c2dde2265200a8c71a07d96d12ccfa5989cf9112ac4979c5bba64190169` /
+`b552685a16a2889c0ef36d035660b2fe6f3b9ef8266a0ca8092f133c26df3722`
+tiles. Moving the real underline first preserves the entire nine-instance
+image; moving it last changes only the two Notifications corner pixels. A
+fully clipped copy inserted before the borders or prepended also preserves
+the nine-instance corner values, while appending it preserves the complete
+eight-instance image. The clipped-copy cases intentionally omit the visible
+underline and supply only counterfactual corner evidence.
+
+Shifting the buffer's absolute instance IDs by one through four, using leading
+records plus `base_instance`, exactly reproduces the complete eight-instance
+image in every case. Those leading records are not submitted. This distinguishes
+the effect of a submitted preceding instance from buffer position/absolute ID
+alone. It does not establish a rasterizer defect or a safe whole-page grouping
+rule. The seven/six replay guards exit zero in 0.556053584 / 0.563807 seconds,
+sampled peaks 35,520,512 / 24,608,768 bytes. Input hashes remain fixed.
+
+Eight more replays include both controls and six spatial-order variants. Sorting
+the four disjoint button groups by ascending X changes four pixels with the
+underline first/middle and six with it last; descending X changes two pixels in
+all three positions. None reproduces the unified control. The guard exits zero
+in 0.757909542 seconds, sampled peak 46,399,488 bytes. These spatial sorts supply
+no matching result; raw cases remain in `metal-spatial-order-5204-r44`.
+
+These diagnostics render selected rectangles over white, omitting shadows,
+other passes and publication. They provide no whole-page correctness or speed
+acceptance. Evidence remains local in `metal-vertices-5204-r44`,
+`metal-positions-5204-r44`, `metal-independent-instance-5204-r44` and
+`metal-instance-base-5204-r44`. The accepted frozen compiled PNG and original
+Brave reference remain unchanged, with two differing pixels; no renderer
+implementation is retained.
+
+
+### Generated-code identity: successful current live reopen, 2026-11-17
+
+The opt-in generated-code cache passes the strict native-reuse check on a
+fresh, direct live `https://github.com/vlang/v` reopen: **2,987 cache hits,
+zero misses/compiler invocations, and 711,946 native entries**. Capture and
+shutdown both verify `generated-code` identity, positive native execution,
+no pending/invalid entries, no new compilation and an empty cache error.
+The page JavaScriptCore context remains uninitialized. This closes the
+current-live functional reuse check for this pinned cohort, without a speed
+or rendering-parity claim.
+
+The latest completed shared bundle at launch is reused, with executable
+SHA-256 `61a7b90fc08b0bdc1ee9e4de0747f7c0d2c37502b058cfbb9f1a5f48ac92ecc4`.
+Its single-C-unit, literal V `-prod` receipt is
+`Build/production-build/receipts/20261117-195151-c16c5606/frozen-compile.json`.
+Before launching, the consumed-source manifest verifies the three generated-cache
+implementation files. A bundle publication lease fixes this executable across
+both phases. Later shared checkout edits are outside these sealed inputs;
+the recorded executable and loaded runtime-input hashes stay unchanged.
+No additional browser build is requested.
+
+The native ABI is
+`feb6c79b232473738a30fb26a06b8443dae8ee6e794be55fdb5bc927c4afabd3`.
+A new private cache partition is populated normally, without copying or
+renaming older entries. Each phase launches a fresh private profile/process,
+using direct current responses and the normal clock. The document viewport
+is 1024×768, layout/render scale two and capture scale one; readiness waits
+for commit links followed by a 30-second observation delay. Retained raster
+options match the preceding live diagnostic. OS filesystem/shader caches are
+retained; ambient measurement/proxy settings and private replay TLS trust are
+removed. The frontend cache starts cold per process.
+
+| Phase | PID | Native result | Guard seconds / sampled peak bytes |
+| --- | ---: | --- | --- |
+| Cold preparation | 86797 | 13,921 compiled / 109 compiler invocations | 2,088.782239667 / 10,611,851,264 |
+| Disabled-compiler reopen | 80651 | 2,987 hits / 0 misses / 711,946 entries | 37.908831000 / 8,710,012,928 |
+
+Preparation completes all 78 modules and 26,072 function templates, with
+10,946 queued functions, zero unsupported functions and no preparation
+diagnostics. Compile/load time totals 2,045,404.6514600008 / 23,500.330543 ms.
+The first phase has zero native entries: preparation is paid after author
+execution. Its roughly 35-minute guard interval includes cache compilation
+after PNG capture and supplies no page-load or native-throughput acceptance.
+
+The reopen uses `/usr/bin/false`; it records 20,206,072 fast steps and 8,074,554
+slow steps, with 723.786460999998 ms library loading. Module URLs are identical
+between the two phases: 78 evaluated modules, every promise fulfilled. This
+cohort establishes reuse on that current graph. Deployment/source-graph churn
+on live GitHub remains unverified for this mode; the changed-URL/comment
+evidence remains the separate HN diagnostic. The controller stops after the
+first strict success, so its conditional refresh/final-reopen phases are unused.
+
+Both phases retain 34 directory rows, 53 commit links, latest commit and README,
+a complete/visible/fully-active document, and no author/native page errors.
+Both browsers, diagnostics, guards and the encompassing controller exit zero.
+PID adoption succeeds under the unchanged 12-GiB guards. Native metadata and
+all 109 referenced library hashes verify after the cohort. Browser process
+identities, actual commands, host contention and the full sealed receipt remain
+in the local evidence; no timing optimization is inferred from these
+instrumented functional captures.
+
+The successful native screenshot is local at
+`live-generated-cohort-5204-r44/live-github-generated-code-verified.png`, SHA-256
+`5449dfb07a6353b18b8452c15b9cdbd43a8033f655eba210a05680bea5fac8b7`.
+The earlier accepted live PNG, two-pixel frozen PNG and original Brave reference
+remain unchanged. The strict live-native reuse check passes for this build and
+graph; full frozen parity and a measured speed gain remain open. Automated
+suites remain paused.
+
+Cold/reopen receipts and the spatial-order guard move with idle-lock, SHA-256
+and symlink verification to `scratch-receipts/continued-20261117-r44`:
+ten roots/22 files, exit zero in 0.175552291 seconds, sampled peak 229,376 bytes.
+The vertex probes and instance-placement guards move to the adjacent
+`continued-20261117-r44-gpu` and `continued-20261117-r44-draw-order`:
+four roots/four files each, exits zero in 0.1994305 / 0.174742167 seconds,
+sampled peaks 393,216 / 1,949,696 bytes. Disposable profiles, completed Build
+outputs and idle locks are removed. The native cache and full library manifest
+remain private local benchmark evidence.

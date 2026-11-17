@@ -4,8 +4,9 @@
 for each executable. On the real Hacker News comment workload, changing the
 script URL or appending a comment retains **26 cache hits, zero misses, zero
 compiler invocations and 747 native entries**. The existing source-bound mode
-misses all 27 executables in those controls. This is functional reuse evidence;
-no new browser-speed or live GitHub acceptance is claimed.
+misses all 27 executables in those controls. The production browser also passes
+a strict live GitHub native-reuse check on the same 78-module graph. No speed
+gain is established.
 
 The default remains source/file/URL identity. Enable the experiment with
 `NativeCodeCacheOptions{ generated_code_identity: true }` through
@@ -173,7 +174,7 @@ They remain uncompiled/unrun under the continuing automated-test hold. Other
 GC modes, the compatibility compiler and broad suites have not been exercised
 for this feature. Generating and hashing C adds lookup work; the new mode stays
 opt-in with no measured instruction saving and broader correctness evidence
-still pending. Full live GitHub cache validation remains open. The prior
+still pending. Live deployment/source-graph churn remains unverified. The prior
 [HN startup result](LIBJS_HN_NATIVE_BROWSER_20261117.md) is unchanged.
 
 Exact commands, source/binary/library pins, logs, expected negative controls and
@@ -190,3 +191,29 @@ ownership receipts and PNGs remain there; library hashes also remain in
 `docs/performance/libjs-generated-cache-20261117-5204/hacker-news-generated-code.png`.
 Disposable profiles, Build outputs and idle locks are removed. No renderer or
 pixel reference changes are made.
+
+The same shared production executable subsequently passes a direct live GitHub
+reopen on 17 November: **2,987 hits, zero misses/compiler invocations and
+711,946 native entries**, with clean capture/shutdown receipts, complete
+34-row/53-commit/latest/README content, fulfilled modules and no initialized
+JavaScriptCore context or author/native page errors. Both browsers, diagnostics,
+guards and the controller exit zero; their executable/runtime hashes stay fixed.
+
+Cold preparation compiles 13,921 unique entries in 109 compiler invocations,
+completing 26,072 templates from 78 modules. It costs 2,088.782239667 guarded
+seconds, sampled peak 10,611,851,264 bytes under the unchanged 12-GiB limit.
+The `/usr/bin/false` reopen costs 37.908831 seconds including the configured
+30-second observation delay, sampled peak 8,710,012,928 bytes. These are
+instrumented functional captures and preparation costs, without a performance
+acceptance. Both visits have the same 78 module URLs; live deployment/source
+churn remains unverified for this mode. The controller stops at the first
+strict success, leaving its conditional refresh stages unused.
+
+The successful native-cache screenshot and raw receipts remain local in
+`docs/performance/libjs-github-browser-20261116/live-generated-cohort-5204-r44/`.
+The PNG is `live-github-generated-code-verified.png`, SHA-256
+`5449dfb07a6353b18b8452c15b9cdbd43a8033f655eba210a05680bea5fac8b7`.
+See the [GitHub runtime report](LIBJS_GITHUB_RUNTIME_20261115.md#generated-code-identity-successful-current-live-reopen-2026-11-17)
+for the pinned ABI, source proof, exact endpoints and diagnostics. Frozen parity
+remains two pixels from the original Brave reference; automated suites remain
+paused.

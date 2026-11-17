@@ -3294,3 +3294,9 @@ with exact original Brave pixels. Both cache modes reopen with six native hits
 and no misses/compiler calls. Seven alternating pairs show no instruction saving
 for generated-code identity (+0.0577% by medians). See the
 [generated-code cache report](../docs/LIBJS_NATIVE_GENERATED_CACHE.md).
+
+A direct live GitHub generated-cache cohort also passes the strict native-reuse
+gate: 2,987 hits, zero misses/compiler invocations and 711,946 native entries,
+with complete content and an uninitialized JavaScriptCore context. Preparation
+costs about 35 minutes. Both visits use the same 78-module graph; deployment
+churn, frozen parity and a measured speed gain remain open for this mode.
