@@ -5403,3 +5403,83 @@ under `metal-invariance-5204`, `metal-primitive-5204`,
 zero tolerance and accepted seven-pixel screenshot remain unchanged. Full pixel
 parity, current live validation and matched compiled-revisit performance remain
 open; these diagnostics provide no speed credit.
+
+### Disjoint rounded decorations: 3 differing pixels, 2026-11-17
+
+`753c3b684` adds `VOX_DIAGNOSTIC_DISJOINT_ROUNDED_BATCH=1` with the preceding
+raster/P3 options. Complete opaque rounded decorations with a common root
+owner, transform and viewport policy can share one resolve across intervening
+leaves whose conservative ink is disjoint. The crossed leaves retain their
+original replay positions. Effects, resource boundaries, foreign owners,
+unbounded ink, custom corner shapes and unsupported opacity keep ordinary
+replay. Selection is bounded to 128 commands/32 descriptors and native capture
+density one. Native failure leaves the original commands available for replay.
+The existing single-group path keeps its allocation behavior through a shared
+descriptor constructor; its original eligibility remains unchanged.
+
+Bold/varied fonts deliberately keep face-wide bounds in ordinary layout. On
+the original page these bounds overlap the next button even though the actual
+glyph ink does not. The new separation proof refines them through the existing
+eligible retained A8 raster path, preserving integer crop phase. Declined,
+empty or edge-touching masks keep the original enclosure; ordinary layout and
+culling bounds are unchanged. The Notifications enclosure, for example, spans
+x=666.14453125 with width 104.5546875; its verified mask ink spans x=674 with
+width 73. Crops are capped at 2,048×256. The selected final page batch contains
+Notifications, Fork and Star shadows/backgrounds/borders, nine descriptors;
+their labels, SVG icons and count badges remain in place.
+
+Focused sources cover disjoint gaps, overlapping ink, effects, foreign owners,
+underlays, custom corners, retained inactive SVG strokes, integer mask phase,
+truncated masks and empty/invalid coverage. They and the small two-box fixture
+are committed but remain uncompiled/unrun under the test hold.
+
+The final canonical-source single-unit C `-prod` executable is SHA-256
+`08909c931f26bbb553940b094795e2eb84548311480bdb6a696a01e53de8dc0a`.
+Its sealed build consumes 3,774 parsed V sources and zero tests, verifies all
+three changed implementation hashes, and exits zero in 249.24923125 guard
+seconds with 9,003,352,064 sampled peak bytes. The available shared bundles
+were checked first; neither contained this final candidate. No extra shared
+production build was queued, and the commit requests its normal managed rebuild.
+
+| Same-binary mode | Pixels | Native hits / entries | Guard seconds / sampled peak bytes |
+| --- | ---: | --- | --- |
+| Disjoint batch, PID 50355 | **3** | 4,245 / 472,303 | 38.760738209 / 8,553,529,344 |
+| Off, PID 51450 | 7, unchanged | 4,245 / 472,234 | 38.021087084 / 8,575,107,072 |
+
+Exactly four Star-button corner pixels resolve, with zero newly wrong or
+regressed pixels. The original Brave reference, zero/zero tolerance, frozen
+clock, 1,024×768 viewport, layout/render density two, PNG density one and P3
+normalization remain unchanged. Both fresh processes use the 812a native ABI
+partition with `/usr/bin/false`, positive native execution and zero misses/
+compiler calls/compiled executables/pending/invalid entries. Page JavaScriptCore
+stays uninitialized. Full 33-row/56-commit/latest/README content, unchanged
+inputs, PID adoption, no author/native/cache errors and zero browser/controller/
+guard exits are verified. These diagnostic timings provide no speed credit.
+
+The accepted frozen screenshot is `github-frozen-libjs-compiled-3px.png`, SHA-256
+`871e681957c466696191220fbe3720f17102458b4a8aff57b6a06e28d3084ab9`.
+Maximum channel error remains ten, RMSE 0.0091. The residuals are Notifications
+(648,188), error four; (646,190), error ten; and commit-avatar (54,339), error
+one. The direct-live screenshot stays separate. Full parity, current live
+validation and matched compiled-revisit speed remain open.
+
+Four earlier page captures never enter a combined batch and repeat seven pixels;
+they receive no improvement credit. They have 4,245/4,246/4,245/4,245 native hits,
+472,247/472,346/472,318/472,428 entries, unchanged full content/inputs, zero native
+misses/compiler calls and zero browser/controller/guard exits. Their builds also
+consume 3,774 V sources and zero tests. The first strict candidate comparison
+correctly rejects the missing eligibility marker; separately labelled ineligible
+comparisons retain its image metrics. Subsequent traces isolate the conservative
+glyph-bound overlap instead of relaxing the disjointness check.
+
+Derived captured-draw probes remain separate from page acceptance. Removing
+the underline yields eight button instances; captured order, paint order and
+adjacent-pair order give the same whole tile, SHA-256
+`bd5f7c2dde2265200a8c71a07d96d12ccfa5989cf9112ac4979c5bba64190169`.
+The six-instance subset for shadowed buttons is
+`891aba9516acc6d8bf7d35fe65ca379111c6ceafdd05941cb36ea8058c436b81`.
+Those probes omit real shadows and other passes and cannot establish complete
+page correctness or performance. Completed jobs move with idle-lock and hash
+verification to `scratch-receipts/continued-20261117-r34`; private source/build
+proofs and probe scripts remain under `rounded-cohort-5204` and
+`rounded-batch-5204*`. Every attempt remains in the evidence.

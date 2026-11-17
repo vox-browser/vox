@@ -3782,3 +3782,17 @@ an auxiliary target preserves both control tiles while tracing primitive coverag
 three real captured draws match their complete raw-tile controls. Its rejection
 regression sources remain unrun by request. No further production raster change
 is accepted. See the [shared-bundle and replay audit](LIBJS_GITHUB_RUNTIME_20261115.md#shared-production-confirmation-and-captured-shader-grouping-2026-11-17).
+
+### Disjoint rounded decoration batches, 17 November 2026
+
+`753c3b684` adds an opt-in root batch across conservatively disjoint text/vector
+gaps. Retained A8 ink refines broad bold/varied-font bounds only for this proof;
+declines and truncated masks keep the conservative fallback. Effects/resources,
+foreign owners, custom corners and unsupported opacity retain ordinary replay.
+The compiled-LibJS frozen GitHub page improves 7→3 pixels: four Star corners
+resolve with none new or regressed; same-binary off repeats seven. Both processes
+have 4,245 native hits and zero misses/compiler calls. The sealed production
+build consumes zero test sources; focused classification/mask regression sources
+remain unrun under the test hold. Four ineligible candidates remain in the
+receipts. Notifications corners, an avatar edge, live parity and matched speed
+remain open. See the [three-pixel audit](LIBJS_GITHUB_RUNTIME_20261115.md#disjoint-rounded-decorations-3-differing-pixels-2026-11-17).
