@@ -322,21 +322,42 @@ fn general_byte(v f32) u8 {
 
 // SkImageFilters::Merge: each input source-over the preceding ones.
 fn general_merge(inputs []BlurImage, width int, height int) BlurImage {
-	mut out := BlurImage{[]u8{len: width * height * 4}, width, height}
-	for input in inputs {
-		for i := 0; i + 3 < out.pixels.len; i += 4 {
-			sa := u32(input.pixels[i + 3])
+	output := []u8{len: width * height * 4}
+	scan := FilterMergeScan{
+		inputs:    inputs
+		output:    output
+		row_bytes: width * 4
+	}
+	run_raster_scans(&scan, height, width * inputs.len, scan_filter_merge)
+	return BlurImage{output, width, height}
+}
+
+struct FilterMergeScan {
+	inputs    []BlurImage
+	output    []u8
+	row_bytes int
+}
+
+fn scan_filter_merge(context voidptr, first i32, end i32) {
+	scan := unsafe { &FilterMergeScan(context) }
+	mut output := unsafe { scan.output }
+	start := int(first) * scan.row_bytes
+	stop := int(end) * scan.row_bytes
+	// Each range composites its rows through the complete input list in order.
+	for input in scan.inputs {
+		pixels := input.pixels
+		for i := start; i < stop; i += 4 {
+			sa := u32(pixels[i + 3])
 			if sa == 0 {
 				continue
 			}
 			inv := 255 - sa
 			for c in 0 .. 4 {
-				out.pixels[i + c] = u8(math.min(u32(255), u32(input.pixels[i + c]) +
-					(u32(out.pixels[i + c]) * inv + 127) / 255))
+				output[i + c] = u8(math.min(u32(255), u32(pixels[i + c]) +
+					(u32(output[i + c]) * inv + 127) / 255))
 			}
 		}
 	}
-	return out
 }
 
 // SkColorFilters::Matrix on premultiplied pixels through the ported

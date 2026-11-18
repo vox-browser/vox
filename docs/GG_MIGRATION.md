@@ -4421,3 +4421,31 @@ and produced decoded RGBA SHA-256
 These single observations establish dispatch eligibility for the published
 browser at capture time. A before-and-after site comparison of the new
 offset code awaits the newer production executable.
+
+### Parallel CPU filter compositing
+
+The software `feMerge` and fallback drop-shadow merge composite disjoint
+output row bands on up to four raster workers. Each band processes the
+inputs in drawing order, including repeated inputs. Work sizing uses the
+number of source pixels across all inputs. Premultiplied source-over,
+transparent-pixel skipping and integer rounding use the existing arithmetic.
+
+Seven alternating fresh-process groups used matching macOS single-C
+`-prod` builds with preallocation on an Apple M5 Max. The timed span was a
+Canvas2D path draw with the source and translated copies merged through
+one SVG-reference filter. It included filter-layer creation, integer offsets,
+the merge, cropping and final composition. The one-minute load was 10.56
+on 18 logical CPUs while the shared production build ran.
+
+| Canvas size and inputs | Before median | New serial median | New default median | Default faster than before |
+| --- | ---: | ---: | ---: | ---: |
+| 1031×527, two inputs | 5.123 ms | 5.191 ms | 4.038 ms | 7/7 |
+| 1920×1080, five inputs | 35.386 ms | 35.059 ms | 21.875 ms | 7/7 |
+| 176×128, two inputs | 0.279 ms | 0.282 ms | 0.274 ms | 4/7 |
+
+All 63 draws produced byte-identical output for their workload and every
+timed process and memory guard exited zero. A separate probe confirmed
+four distinct threads for both large workloads. The smallest workload
+stayed serial. Focused macOS and Linux tests covered order, repeated
+inputs, opacity, saturation and unchanged sources. SVG filter graph tests,
+ThreadSanitizer and the pinned CPU raster differential suite passed.
