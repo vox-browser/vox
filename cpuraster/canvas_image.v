@@ -209,7 +209,12 @@ mut:
 }
 
 fn (mut b SpriteBlitter) blit_rect(x int, y int, width int, height int) {
-	if b.span.len < width {
+	if width > 0 && height > 1 && height <= max_i32
+		&& (b.copy || i64(width) * height >= 2 * scan_pixels_per_worker)
+		&& b.blit_disjoint_rect(x, y, width, height) {
+		return
+	}
+	if !b.copy && b.span.len < width {
 		b.span = []u32{len: width}
 	}
 	for row in 0 .. height {
@@ -225,6 +230,82 @@ fn (mut b SpriteBlitter) blit_rect(x int, y int, width int, height int) {
 			b.span[i] = load32(b.source.pixels, src + i * 4)
 		}
 		blit_row_s32a(mut b.pixels, dst, b.span, width, b.alpha)
+	}
+}
+
+fn (mut b SpriteBlitter) blit_disjoint_rect(x int, y int, width int, height int) bool {
+	if width > b.pixels.len / 4 || b.row_bytes < width * 4 {
+		return false
+	}
+	row_bytes := width * 4
+	src := (y - b.top) * b.source.pitch + (x - b.left) * 4
+	dst := y * b.row_bytes + x * 4
+	source_span := raster_row_span(b.source.pixels.len, src, b.source.pitch, row_bytes, height) or { return false }
+	target_span := raster_row_span(b.pixels.len, dst, b.row_bytes, row_bytes, height) or { return false }
+	source := unsafe { &u8(b.source.pixels.data) + src }
+	target := unsafe { &u8(b.pixels.data) + dst }
+	// Keep the original order when a draw can read its own writes.
+	if raster_spans_overlap(u64(uint(source)), source_span, u64(uint(target)), target_span) {
+		return false
+	}
+	if b.copy {
+		scan := RasterCopyScan{
+			source:            source
+			destination:       target
+			source_pitch:      b.source.pitch
+			destination_pitch: b.row_bytes
+			row_bytes:         row_bytes
+		}
+		scan.run(height)
+	} else {
+		scan := SpriteBlendScan{
+			source:       unsafe { b.source.pixels[src..] }
+			target:       unsafe { b.pixels[dst..] }
+			source_pitch: b.source.pitch
+			target_pitch: b.row_bytes
+			width:        width
+			alpha:        b.alpha
+		}
+		run_raster_scans(&scan, height, width, scan_sprite_blend)
+	}
+	return true
+}
+
+struct SpriteBlendScan {
+	source       []u8
+	target       []u8
+	source_pitch int
+	target_pitch int
+	width        int
+	alpha        u32
+}
+
+@[direct_array_access]
+fn scan_sprite_blend(context voidptr, first i32, end i32) {
+	scan := unsafe { &SpriteBlendScan(context) }
+	mut target := unsafe { scan.target }
+	alpha256 := scan.alpha + 1
+	odd := scan.width & 1
+	for row in int(first) .. int(end) {
+		src := row * scan.source_pitch
+		dst := row * scan.target_pitch
+		if scan.alpha == 255 {
+			for i in 0 .. scan.width {
+				s := load32_unchecked(scan.source, src + i * 4)
+				blit_s32a_opaque_pixel(mut target, dst + i * 4, s)
+			}
+			continue
+		}
+		// Partial coverage uses separate rounding for the unpaired first pixel.
+		if odd != 0 {
+			s := load32_unchecked(scan.source, src)
+			blend_scaled_pixel(mut target, dst, s, alpha256, alpha_mul_inv256(s >> 24, alpha256))
+		}
+		for i in odd .. scan.width {
+			s := load32_unchecked(scan.source, src + i * 4)
+			blend_scaled_pixel(mut target, dst + i * 4, s, alpha256,
+				s32a_pair_dst_scale(s >> 24, alpha256))
+		}
 	}
 }
 

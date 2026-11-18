@@ -28,31 +28,38 @@ struct MaskRowOffsets {
 // with workers. A zero source stride repeats the same read-only coverage.
 fn disjoint_mask_row_offsets(mask &Mask, clip IRect, pixels []u8, target_pitch int) ?MaskRowOffsets {
 	width, height := clip.width(), clip.height()
-	if width > pixels.len / 4 || target_pitch < width * 4 || mask.row_bytes < 0 {
+	if width > pixels.len / 4 || target_pitch < width * 4 {
 		return none
 	}
 	source := mask.index(clip.left, clip.top)
 	target := clip.top * target_pitch + clip.left * 4
-	rows_after_first := height - 1
-	if source < 0 || target < 0 || source > mask.image.len - width
-		|| target > pixels.len - width * 4
-		|| mask.row_bytes > (mask.image.len - source - width) / rows_after_first
-		|| target_pitch > (pixels.len - target - width * 4) / rows_after_first {
-		return none
-	}
+	source_span := raster_row_span(mask.image.len, source, mask.row_bytes, width, height) or { return none }
+	target_span := raster_row_span(pixels.len, target, target_pitch, width * 4, height) or { return none }
 	source_address := u64(uint(mask.image.data)) + u64(source)
 	target_address := u64(uint(pixels.data)) + u64(target)
-	source_span := rows_after_first * mask.row_bytes + width
-	target_span := rows_after_first * target_pitch + width * 4
 	// Keep serial order if coverage reads can observe writes to the target.
-	if source_address <= target_address {
-		if target_address - source_address < u64(source_span) {
-			return none
-		}
-	} else if source_address - target_address < u64(target_span) {
+	if raster_spans_overlap(source_address, source_span, target_address, target_span) {
 		return none
 	}
 	return MaskRowOffsets{source, target}
+}
+
+// The enclosing span of a nonempty, multirow rectangle. Check before
+// multiplying the pitch so the span stays within the backing array.
+fn raster_row_span(length int, offset int, pitch int, row_bytes int, rows int) ?int {
+	if offset < 0 || offset > length - row_bytes || pitch < 0
+		|| pitch > (length - offset - row_bytes) / (rows - 1) {
+		return none
+	}
+	return (rows - 1) * pitch + row_bytes
+}
+
+fn raster_spans_overlap(source u64, source_span int, target u64, target_span int) bool {
+	return if source <= target {
+		target - source < u64(source_span)
+	} else {
+		source - target < u64(target_span)
+	}
 }
 
 // Anti-aliased runs pass their alpha and run-length arrays as slices that

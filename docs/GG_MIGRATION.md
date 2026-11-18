@@ -7530,3 +7530,80 @@ elements. An initial setup attempt exited 1 before launching any
 browser. All three browser exits and the completed replay guard
 exit were zero. Timings above cover the mask compositor. Candidate
 browser measurements await the shared production rebuild.
+
+### Parallel Canvas sprite blits
+
+Large integer-translated Canvas image rectangles on the native N32
+sprite path use independent rows. Blends dispatch at 262,144 pixels
+and retain the distinct rounding of the unpaired first pixel in
+odd-width rows. Copies use the shared bulk-copy kernel and dispatch
+at 4 MiB. Disjoint draws skip temporary row allocation. A draw with overlapping input and output retains its
+original row order and blending snapshot.
+
+Matched single-C-unit V `-prod -g -prealloc -gc none` harnesses
+measured the clipped SpriteBlitter rectangle through return. Each
+input had padded source and target rows. The source contained
+transparent, opaque and intermediate premultiplied pixels. Destination
+reset and SHA-256 ran outside the timer. Seven rotating groups ran
+on Mac17,6 with 18 logical CPUs on 2026-11-18 at 08:42 local time.
+One-minute load varied from 8.04 to 8.59. All 21 fresh processes and
+the guard exited zero. Warm results use the median of the six calls
+after the first in each process. Times are medians in microseconds.
+
+| Size and operation | First before / forced serial / default | Warm before / forced serial / default |
+| --- | ---: | ---: |
+| 67×43 copy | 9.250 / 0.375 / 0.542 | 8.646 / 0.208 / 0.167 |
+| 67×43 source-over (alpha 255) | 11.833 / 11.209 / 9.500 | 9.209 / 9.875 / 8.312 |
+| 67×43 source-over (alpha 141) | 10.875 / 10.667 / 9.084 | 8.917 / 10.250 / 8.500 |
+| 511×513 copy | 709.750 / 24.792 / 24.209 | 621.167 / 24.541 / 23.917 |
+| 511×513 source-over (alpha 255) | 974.959 / 947.958 / 781.167 | 927.605 / 977.833 / 827.229 |
+| 511×513 source-over (alpha 141) | 736.875 / 935.583 / 765.167 | 934.896 / 990.708 / 799.208 |
+| 512×512 copy | 572.583 / 23.833 / 24.166 | 566.083 / 23.584 / 24.584 |
+| 512×512 source-over (alpha 255) | 857.125 / 641.917 / 441.041 | 795.688 / 610.458 / 372.542 |
+| 512×512 source-over (alpha 141) | 729.667 / 517.375 / 287.750 | 705.854 / 442.104 / 306.416 |
+| 1031×517 copy | 1372.750 / 58.167 / 49.917 | 1139.125 / 48.999 / 47.250 |
+| 1031×517 source-over (alpha 255) | 1829.292 / 1127.042 / 570.333 | 1820.833 / 1096.729 / 394.604 |
+| 1031×517 source-over (alpha 141) | 1564.916 / 1167.250 / 422.083 | 1535.958 / 913.521 / 329.375 |
+| 2051×1537 copy | 7324.375 / 414.042 / 193.459 | 8147.895 / 354.334 / 145.938 |
+| 2051×1537 source-over (alpha 255) | 9584.541 / 7269.416 / 2181.542 | 10679.354 / 6744.458 / 2116.312 |
+| 2051×1537 source-over (alpha 141) | 10275.250 / 5244.500 / 1791.834 | 9056.729 / 5918.374 / 1776.001 |
+| 3840×2160 copy | 21041.000 / 1258.000 / 491.458 | 20430.541 / 1104.146 / 421.104 |
+| 3840×2160 source-over (alpha 255) | 29685.583 / 18165.625 / 5753.333 | 29168.729 / 18799.541 / 5405.000 |
+| 3840×2160 source-over (alpha 141) | 27732.958 / 14556.917 / 4723.542 | 25978.916 / 14695.938 / 4556.583 |
+
+All complete destination hashes matched. Default execution won all
+seven first and warm pairs for cases that dispatched workers. The
+511×513 alpha-141 blend used the original ordered path and its
+first-call median rose from 736.875 to 765.167 µs, while paired
+warm results varied. The 4K copy took 1.10 ms with the new bulk loop
+forced serial and 0.42 ms with workers. Harness hashes were
+`a6bf00097e3586ab7427c560f45a5939b0a0b95abfe04f24712f79705810800c`
+before and
+`b22454d3aec85029418d5fd7cbc559d9baa97a174f1955ee8e714b8b43890ef7`
+after.
+
+A separate dispatch probe observed two distinct threads for 512×512
+blends, four for larger parallel batches, and zero below each cutoff
+or with workers disabled. Public macOS Canvas image draws used four
+threads for a 2051×1537 copy and a blend. Their full surfaces matched
+forced serial with hashes
+`294f3fe95d765597daf302c34ded190788f09e7369cf0b55b32f752b4b3aa4b0`
+and `7ef455c31b68d5738a485b6923a57366a77395f5528ac2787d0ed7ec62eebf95`.
+The first probe setup used a target stride the public Canvas API
+declined. Both valid public draws and the probe guard exited zero.
+Focused macOS and arm64 Linux checks covered odd and even clipped
+rows, padding and shared source and destination storage. Forced
+serial, ASan/UBSan and ThreadSanitizer passed. The pinned CPU raster
+differential suite passed with count 2000 and seed 20261106.
+
+The published single-C-unit executable
+`19554c666e7ef07de44937357e3a2f37df63bc26d8347bd4830a133c38be1766`
+and native library
+`ebde1494c5aebaa69ebe6edab9f4e3333020cb4b2949d96fa1fbb35f19d6a202`
+matched frozen Hacker News, GitHub and Old Reddit pixel references.
+Fresh sealed replays used JavaScript, private profiles and caches,
+a 1024×768 CSS-pixel viewport, 2× captures and a one-second settle.
+The audits found 30, 33 and 25 entries and zero Canvas elements.
+All three browsers and the replay guard exited zero. This published
+build predates the sprite change. Timings above cover the sprite
+blitter, and candidate site timings await a production build.

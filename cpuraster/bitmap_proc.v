@@ -677,24 +677,27 @@ fn blit_row_s32a(mut pixels []u8, offset int, span []u32, count int, alpha u32) 
 @[direct_array_access]
 fn blit_row_s32a_opaque(mut pixels []u8, offset int, span []u32, count int) {
 	for i in 0 .. count {
-		o := offset + i * 4
-		s := span[i]
-		if s >= 0xff000000 {
-			pixels[o] = u8(s)
-			pixels[o + 1] = u8(s >> 8)
-			pixels[o + 2] = u8(s >> 16)
-			pixels[o + 3] = u8(s >> 24)
-			continue
-		}
-		if s == 0 {
-			continue
-		}
-		inv_a := 255 - (s >> 24)
-		for c in 0 .. 4 {
-			sc := (s >> (8 * u32(c))) & 0xff
-			v := sc + mul_div255_round(inv_a, u32(pixels[o + c]))
-			pixels[o + c] = u8(if v > 255 { u32(255) } else { v })
-		}
+		blit_s32a_opaque_pixel(mut pixels, offset + i * 4, span[i])
+	}
+}
+
+@[direct_array_access; inline]
+fn blit_s32a_opaque_pixel(mut pixels []u8, o int, s u32) {
+	if s >= 0xff000000 {
+		pixels[o] = u8(s)
+		pixels[o + 1] = u8(s >> 8)
+		pixels[o + 2] = u8(s >> 16)
+		pixels[o + 3] = u8(s >> 24)
+		return
+	}
+	if s == 0 {
+		return
+	}
+	inv_a := 255 - (s >> 24)
+	for c in 0 .. 4 {
+		sc := (s >> (8 * u32(c))) & 0xff
+		v := sc + mul_div255_round(inv_a, u32(pixels[o + c]))
+		pixels[o + c] = u8(if v > 255 { u32(255) } else { v })
 	}
 }
 
@@ -710,12 +713,17 @@ fn blit_row_s32a_blend(mut pixels []u8, offset int, span []u32, count int, alpha
 		i = 1
 	}
 	for ; i < count; i++ {
-		sa := span[i] >> 24
-		mut scale := (u32(0xff00) - sa * alpha256) & 0xffff
-		scale = (scale + (scale >> 8)) & 0xffff
-		scale = (1 + (scale >> 8)) & 0xffff
-		blend_scaled_pixel(mut pixels, offset + i * 4, span[i], alpha256, scale)
+		s := span[i]
+		blend_scaled_pixel(mut pixels, offset + i * 4, s, alpha256,
+			s32a_pair_dst_scale(s >> 24, alpha256))
 	}
+}
+
+@[inline]
+fn s32a_pair_dst_scale(source_alpha u32, alpha256 u32) u32 {
+	mut scale := (u32(0xff00) - source_alpha * alpha256) & 0xffff
+	scale = (scale + (scale >> 8)) & 0xffff
+	return (1 + (scale >> 8)) & 0xffff
 }
 
 @[direct_array_access; inline]
