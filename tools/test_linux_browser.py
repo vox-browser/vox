@@ -324,6 +324,7 @@ def check_gg_svg_browser(binary, artifacts, temporary):
     assert all(document == documents[0] for document in documents[1:]), "GG changed the SVG document pixels"
     print("PASS: cached and uncached GG SVG replay and GL 4.2 fallback match the portable reference", flush=True)
     check_gg_svg_mutations(binary, artifacts, temporary, fixture)
+    check_gg_svg_viewport(binary, artifacts, temporary, fixture)
 
 
 def check_gg_svg_mutations(binary, artifacts, temporary, fixture):
@@ -386,6 +387,67 @@ requestAnimationFrame(changePaths);
         documents.append(rows[top:top + 100])
     assert documents[0] == documents[1], "Cached SVG mutations differ from uncached replay"
     print("PASS: SVG texture reuse follows edits and preserves reordered and repeated draws", flush=True)
+
+
+def check_gg_svg_viewport(binary, artifacts, temporary, fixture):
+    page = Path(temporary) / "gg-svg-viewport.html"
+    page.write_text(fixture.read_text().replace("</svg>", """
+  <path fill="#574faa" fill-opacity=".67" transform="translate(196 16) rotate(7)"
+        d="M0 4C5 0 26 0 25 47 Q27 64 13 73 Q0 71 0 4 Z"/>
+</svg>
+<style>
+  body { min-height: 1400px; }
+  #marker { position: fixed; inset: 0 0 auto auto; width: 12px; height: 4px; background: #098746; }
+  #side { position: fixed; left: 10px; top: 69px; }
+</style>
+<div id="marker"></div>
+<svg id="side" width="120" height="20">
+  <path fill="#1166dd" d="M5 3H105V15H5Z"/>
+</svg>
+<script>
+let frames = 0;
+function moveAcrossLeftEdge() {
+    if (++frames < 12) {
+        requestAnimationFrame(moveAcrossLeftEdge);
+        return;
+    }
+    document.getElementById('side').setAttribute('style', 'left:-55px');
+    document.body.setAttribute('data-viewport-ready', '1');
+}
+requestAnimationFrame(moveAcrossLeftEdge);
+</script>"""))
+    documents = []
+    for label in ("rerasterized", "reused"):
+        screenshot = artifacts / f"gg-svg-viewport-{label}.png"
+        screenshot.unlink(missing_ok=True)
+        environment = smoke_environment(Path(temporary) / f"gg-svg-viewport-{label}")
+        environment.pop("MESA_GL_VERSION_OVERRIDE", None)
+        environment.update(VOX_GG_SVG="1", VOX_GG_SVG_DIAGNOSTICS="1",
+                           VOX_DISABLE_GG_SVG_CACHE="0",
+                           VOX_GG_SVG_VIEWPORT_REUSE=str(int(label == "reused")),
+                           VOX_CAPTURE_INITIAL_VIEWPORT="1", VOX_SCREENSHOT_SCROLL_STEP="13",
+                           VOX_CAPTURE_READY_SELECTOR="body[data-viewport-ready]")
+        log = run_windowed([str(binary), "--enable-javascript", "--window-width=800", "--window-height=600",
+                            "--screenshot-viewport-height=600", "--screenshot-scroll-y=65",
+                            f"--screenshot={screenshot}", str(page)],
+                           env=environment, log_path=artifacts / f"gg-svg-viewport-{label}.log")
+        assert "draw=120x80 cache=miss" in log, log
+        assert ("crop=hit" in log) == (label == "reused"), log
+        assert ("draw=50x12 cache=hit bounds=hit crop=hit" in log) == (label == "reused"), log
+        width, height, channels, rows = rendered_png_rows(screenshot.read_bytes())
+
+        def pixel(x, y):
+            return rows[y][x * channels:x * channels + 3]
+
+        top = next((y for y in range(min(height, 150)) if pixel(width - 4, y) == b"\x09\x87\x46"), None)
+        assert top is not None, "Missing viewport marker"
+        assert pixel(22, top + 12) == b"\xff\x00\x00", "The cropped SVG is missing"
+        assert pixel(22, top + 40) == b"\xff\xff\xff", "The viewport did not scroll"
+        assert pixel(12, top + 77) == b"\x11\x66\xdd", "The left crop is missing"
+        assert pixel(65, top + 77) == b"\xff\xff\xff", "The SVG did not move across the left edge"
+        documents.append(rows[top:top + 100])
+    assert documents[0] == documents[1], "Cropped texture replay changed document pixels"
+    print("PASS: SVG viewport cropping reuses the same document pixels", flush=True)
 
 
 def check_svg_opacity_browser(binary, artifacts, temporary):

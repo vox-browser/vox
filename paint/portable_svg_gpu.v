@@ -16,6 +16,7 @@ $if vox_gg_svg ? {
 	const portable_svg_gpu_diagnostics = os.getenv('VOX_GG_SVG_DIAGNOSTICS') == '1'
 	const portable_svg_gpu_cache_control = os.getenv('VOX_DISABLE_GG_SVG_CACHE')
 	const disable_portable_svg_gpu_cache = portable_svg_gpu_cache_control == '1'
+	const portable_svg_gpu_viewport_reuse = os.getenv('VOX_GG_SVG_VIEWPORT_REUSE') == '1'
 	const portable_svg_gpu_image_limit = 8
 	const portable_svg_gpu_texture_slots = 2 * portable_svg_gpu_image_limit
 	const portable_svg_gpu_pixel_limit = 1024 * 1024
@@ -51,6 +52,30 @@ $if vox_gg_svg ? {
 		return unsafe {
 			vmemcmp(&texture.key.matrix[0], &key.matrix[0], 6 * int(sizeof(f32))) == 0
 		} && texture.matches_geometry(values)
+	}
+
+	fn (texture &PortableSVGTexture) crop_origin(key &PortableSVGTextureKey, values []f32) ?painting.IntPoint {
+		if texture.key.width < key.width || texture.key.height < key.height
+			|| (texture.key.width == key.width && texture.key.height == key.height)
+			|| texture.key.color != key.color || texture.key.even_odd != key.even_odd {
+			return none
+		}
+		if unsafe { vmemcmp(&texture.key.matrix[0], &key.matrix[0], 4 * int(sizeof(f32))) != 0 } {
+			return none
+		}
+		// Local translations differ by the texel offset of the visible
+		// rectangle. Require the same subpixel phase and complete coverage.
+		x := f64(texture.key.matrix[4]) - f64(key.matrix[4])
+		y := f64(texture.key.matrix[5]) - f64(key.matrix[5])
+		if !(x >= 0 && x <= f64(texture.key.width - key.width)
+			&& y >= 0 && y <= f64(texture.key.height - key.height)) {
+			return none
+		}
+		origin := painting.IntPoint{int(x), int(y)}
+		if x != f64(origin.x) || y != f64(origin.y) || !texture.matches_geometry(values) {
+			return none
+		}
+		return origin
 	}
 
 	fn (texture &PortableSVGTexture) matches_geometry(values []f32) bool {
@@ -189,8 +214,8 @@ $if vox_gg_svg ? {
 			|| bounds.width > 1024 || bounds.height > 1024 {
 			return false
 		}
-		area := bounds.width * bounds.height
-		if area > portable_svg_gpu_pixel_limit - state.pixels {
+		remaining_pixels := portable_svg_gpu_pixel_limit - state.pixels
+		if bounds.width * bounds.height > remaining_pixels {
 			return false
 		}
 		if !state.tried {
@@ -213,6 +238,7 @@ $if vox_gg_svg ? {
 		// have had a chance to match them. Each frame uses at most eight slots.
 		mut vacant := -1
 		mut matching := -1
+		mut crop := ?painting.IntPoint(none)
 		for index in 0 .. portable_svg_gpu_texture_slots {
 			texture := &state.textures[index]
 			if texture.image.id == 0 {
@@ -221,7 +247,14 @@ $if vox_gg_svg ? {
 				}
 			} else if cacheable && texture.matches(&key, data.path_data) {
 				matching = index
+				crop = none
 				break
+			} else if cacheable && portable_svg_gpu_viewport_reuse && matching < 0
+				&& texture.key.width * texture.key.height <= remaining_pixels {
+				if origin := texture.crop_origin(&key, data.path_data) {
+					matching = index
+					crop = origin
+				}
 			}
 		}
 		reused := matching >= 0
@@ -243,28 +276,37 @@ $if vox_gg_svg ? {
 		}
 		texture.used = true
 		state.count++
-		state.pixels += area
 		// GG presents the texture in document order. Canvas uses top-down
 		// OpenGL texture coordinates and outputs premultiplied RGBA.
 		x := f32(bounds.x)
 		y := f32(bounds.y)
 		right := f32(bounds.x + bounds.width)
 		bottom := f32(bounds.y + bounds.height)
+		mut u0, mut v0, mut u1, mut v1 := f32(0), f32(0), f32(1), f32(1)
+		if origin := crop {
+			u0 = f32(origin.x) / f32(texture.key.width)
+			v0 = f32(origin.y) / f32(texture.key.height)
+			u1 = f32(origin.x + bounds.width) / f32(texture.key.width)
+			v1 = f32(origin.y + bounds.height) / f32(texture.key.height)
+			state.pixels += texture.key.width * texture.key.height
+		} else {
+			state.pixels += bounds.width * bounds.height
+		}
 		renderer.push_pipeline()
 		renderer.load_pipeline(state.pipeline)
 		renderer.enable_texture()
 		renderer.texture(texture.image, state.sampler)
 		renderer.begin_quads()
 		renderer.c4b(255, 255, 255, 255)
-		renderer.v3f_t2f(x, y, 0, 0, 0)
-		renderer.v3f_t2f(right, y, 0, 1, 0)
-		renderer.v3f_t2f(right, bottom, 0, 1, 1)
-		renderer.v3f_t2f(x, bottom, 0, 0, 1)
+		renderer.v3f_t2f(x, y, 0, u0, v0)
+		renderer.v3f_t2f(right, y, 0, u1, v0)
+		renderer.v3f_t2f(right, bottom, 0, u1, v1)
+		renderer.v3f_t2f(x, bottom, 0, u0, v1)
 		renderer.end()
 		renderer.disable_texture()
 		renderer.pop_pipeline()
 		if portable_svg_gpu_diagnostics {
-			eprintln('VOX_GG_SVG draw=${bounds.width}x${bounds.height} cache=${if reused { "hit" } else { "miss" }} bounds=${if reused_bounds { "hit" } else { "miss" }}')
+			eprintln('VOX_GG_SVG draw=${bounds.width}x${bounds.height} cache=${if reused { "hit" } else { "miss" }} bounds=${if reused_bounds { "hit" } else { "miss" }} crop=${if crop != none { "hit" } else { "none" }}')
 		}
 		return true
 	}
