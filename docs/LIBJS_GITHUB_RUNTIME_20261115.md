@@ -9342,3 +9342,23 @@ sealing `Vox.c.i`. The successful production publication still predates both
 `eb8628f3a` and `9c42c5c64`, so browser runtime validation and matched timing
 of those changes remain pending. Receipts and probe sources are local under
 `docs/benchmark-results/github-frontend-5204-r108/receipts`.
+
+### Prepared LibJS script source ownership
+
+Commit `76c3de3ff` lets a prepared LibJS script keep the parser's persistent
+source buffer. This removes one copy of the script body. The prepared
+script owns the URL used in diagnostics and execution metadata.
+
+A focused executable uses the browser's cache and preparation functions,
+the LibJS parser and the real preallocation arena with a minimal host. It
+passes the forced cache-collision check, verifies buffer sharing with the
+frontend cache enabled and disabled, and reads the original Unicode source
+after releasing its input arena. Both its compile and runtime guards exit
+zero. The complete `browserjs` regression file passes the production type
+check in 25.454 guard seconds at 5,219,123,200 sampled peak bytes.
+
+The full regression binary build stops while writing generated C on the
+full filesystem. Runtime verification on the archived page awaits a
+production publication containing the change. The focused fixture,
+commands and guard receipts are local under
+`docs/benchmark-results/github-frontend-5204-r107/receipts`.
