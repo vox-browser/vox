@@ -1083,7 +1083,48 @@ since rejected four attempts because their shared native inputs changed.
 
 The last attempt sealed the committed workspace source and the same 17
 cache ABI inputs before the later verification failure. Its source
-manifest differs from the predecessor in 22 entries. The predecessor
-remains the latest published browser. Raw receipts and the publication
+manifest differs from the predecessor in 22 entries.
+
+### Offline startup and published workspace checks
+
+While the managed build ran, `tools/libjs_github_revisit.v` exercised the
+current inline workspace on the same frozen responses. A focused 3 GiB
+guard stopped the first attempt. Under the standard page-workload guard,
+the interpreter and two fresh cached-native processes run the same six
+startup scripts, make the same 49 requests, retain all 33 directory rows
+and keep JSC uninitialized. This headless path has zero commit links and
+covers startup script execution. Both native launches keep the copied
+cache unchanged, with 1,817 and 1,831 hits and zero misses or compiler
+calls. They record 28,296 and 28,307 workspace calls. Both guards exit
+zero. The cache reports 23,815 ms of loading on the first use of the copy
+and 164 ms on the second use.
+
+Managed receipt `20261118-071534-1dc4ac8a` publishes executable SHA-256
+`4ac49eb9690c121587fd4efd8f859f2cf0e2762013861238f07bb91a05547540`.
+The source manifest seals the exact `58bf9f099` workspace implementation
+and preserves all 17 cache ABI inputs. The 26 sealed source differences
+from the predecessor include other browser and raster changes.
+
+The standard capture matches the pinned Vox PNG, and the Display P3
+diagnostic matches the retained relocation image. The latter has the
+same two differing pixels at the Notifications button corners against
+Brave. Both fresh compiler-disabled visits fulfill all 81 modules,
+match the complete repository audit, and verify the three served
+compatibility scripts. Each records 2,948 native cache hits, zero
+misses or compiler calls, 483,873 native entries and 267,513 workspace
+calls with JSC uninitialized.
+
+All 14 visits in a separate seven-pair alternating cohort match the
+standard image and audit with diagnostic counters disabled. Cached
+native records 2,948–2,949 hits and zero misses or compiler calls on
+every visit. Browsers and the guard exit zero, and the guard adopts
+28 processes. From exclusive coalition creation through document
+PNG encoding, the interpreter median is **66,209,887,562** instructions
+and the cached-native median is **75,838,831,646**, 14.54% higher.
+Cached native uses more instructions in each pair. The standalone
+call loops isolate the workspace change. The browser cohort records
+the behavior of the full publication.
+
+Raw attempts, input hashes, captures, guards and the publication
 verifier remain local under
 `docs/performance/libjs-github-browser-20261116/libjs-github-inline-workspace-publication-20261118/`.
