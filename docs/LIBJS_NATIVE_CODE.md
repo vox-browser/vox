@@ -1579,3 +1579,39 @@ grouped caches with the compiler disabled. The new report identifies
 the prior pack and records the loaded library and image comparison.
 On the small fixture, both visits hit all 152 records with zero misses
 or compiler calls, and their screenshots matched pixel for pixel.
+
+### Full archived `vlang/v` cache build and reopen
+
+On November 18, 2026, the first seed stopped after 37 captured batches.
+The resumed seed verified and reused 4,736 records, then compiled 9,179
+more in 72 compiler calls. The resulting cache contains 13,915 records
+from 109 captures. A compiler-disabled visit traced 103 loaded libraries
+and recorded 2,948 cache hits with zero misses.
+
+Packing combined 13,147 records from those 103 libraries into the
+135,021,896-byte `e9e6bb7c…a68b` library. The output retained all 13,915
+cache keys across seven library files. The strict workflow stopped before
+the grouped reopen because the published executable changed during packing.
+`--verify-packed` used publication `d712e856…baa2` for both visits after
+checking its 472 sealed LibJS source digests and single-unit V `-prod`
+compiler mode against the seed publication `c758ea48…e3a8`.
+
+| Compiler-disabled visit | Loaded cache libraries | Native hits | Misses | Compiler calls |
+| --- | ---: | ---: | ---: | ---: |
+| Separate cache | 103 | 2,948 | 0 | 0 |
+| Grouped cache | 1 | 2,949 | 0 | 0 |
+
+The grouped visit mapped the verified packed library. Both visits passed
+the repository audit, fulfilled the same 81 modules, and had the same set
+of 159 replay requests, including three unarchived image requests that
+returned 404. The 1024×768 PNGs were byte-identical. Both differed from
+the pinned PNG by 304 pixels, a difference already present in the resumed
+seed and an existing-cache control on its publication. The verification
+guard adopted both fresh processes, recorded a sampled peak of 6,744,702,976
+bytes and exited successfully. These visits used loader tracing for
+functional verification.
+
+Local receipts are under
+`docs/performance/libjs-github-browser-20261116/libjs-full-github-grouped-workflow-20261118/`.
+The packed cache is under
+`~/Library/Caches/Vox/benchmarks/libjs-full-github-grouped-workflow-20261118/grouped`.
