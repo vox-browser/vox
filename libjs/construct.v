@@ -12,11 +12,12 @@ pub fn construct(mut vm VM, function Value, arguments []Value, new_target ?&Obje
 	if !function.is_constructor() {
 		return vm.throw_error_type(.type_error, .not_a_constructor, function.str())
 	}
-	target := new_target or { function.as_object() }
-	if !Value.from_object(target).is_constructor() {
+	object := function.as_object()
+	target := new_target or { object }
+	if voidptr(target) != voidptr(object) && !Value.from_object(target).is_constructor() {
 		return vm.throw_error_type(.type_error, .not_a_constructor, Value.from_object(target).str())
 	}
-	mut constructor := function.as_object().constructor or { panic('constructor slot missing') }
+	mut constructor := object.constructor or { panic('constructor slot missing') }
 	return constructor.internal_construct(mut vm, arguments, target)
 }
 
@@ -27,11 +28,11 @@ pub fn (mut function NativeFunction) internal_construct(mut vm VM, arguments []V
 	caller := vm.current_context()
 	mut stack := vm.interpreter_stack()
 	mark := stack.top()
-	mut callee := stack.allocate(0, []Value{}, u32(arguments.len)) or {
+	mut callee := stack.allocate_reusable(0, []Value{}, u32(arguments.len)) or {
 		return vm.throw_error_type(.internal_error, .call_stack_size_exceeded)
 	}
 	defer { stack.deallocate(mark) }
-	for index, argument in arguments { callee.set_argument(u32(index), argument) }
+	callee.copy_call_arguments(arguments)
 	callee.passed_argument_count = u32(arguments.len)
 	callee.function = FunctionObject(&function)
 	callee.realm = function.realm_

@@ -21,7 +21,7 @@ pub type IntrinsicPrototypeGetter = fn (realm &Realm) &Object
 // Runtime/AbstractOperations.cpp::GetPrototypeFromConstructor.
 pub fn get_prototype_from_constructor(mut vm VM, constructor &Object, intrinsic_default_prototype IntrinsicPrototypeGetter) !&Object {
 	assert constructor.callable != none && intrinsic_default_prototype != unsafe { nil }
-	prototype := constructor.get(mut vm, PropertyName.from_str('prototype'))!
+	prototype := constructor.get(mut vm, function_prototype_key)!
 	if prototype.is_object() { return prototype.as_object() }
 	realm := get_function_realm(mut vm, constructor)!
 	return intrinsic_default_prototype(realm)
