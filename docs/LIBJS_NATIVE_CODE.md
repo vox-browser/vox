@@ -437,8 +437,8 @@ Seven alternating fresh-process pairs disable the diagnostic counters.
 Median retired instruction counts are **1,105,955,657** before and
 **1,050,183,390** after, **5.04% fewer** for this loop. All 14 processes and
 the 3-GiB guard exit zero. The guard records 2.213 seconds and a sampled
-peak of 85,065,728 bytes. The production hook requests the new build. The
-GitHub startup effect awaits that build.
+peak of 85,065,728 bytes. The production hook requests the build used in
+the browser verification below.
 
 Raw captures, stacks, exact counts, input hashes and guard receipts stay
 local under `docs/performance/libjs-github-browser-20261116/libjs-github-dispatch-23ba-20261118/`.
@@ -459,6 +459,12 @@ initial hashes after the run. Seed, interpreter, native and memory guard
 exit zero. The 3-GiB guard records 0.773 seconds and 119,652,352 sampled
 peak bytes. The exact outcomes and receipts stay local under
 `docs/performance/libjs-github-browser-20261116/libjs-github-empty-calls-after-20261118/`.
+
+The same standalone probe with `-prod -gc boehm` produces identical results
+at all 160 limits, with a separately seeded cache. Its native reopen again
+records five hits, 732 entries, zero workspace calls, and zero misses or
+compiler calls. The 3-GiB guard exits zero at 0.798 seconds and 105,496,576
+sampled peak bytes.
 
 ### Repeat control on the published emitter build
 
@@ -487,4 +493,66 @@ median moves **+8.28%** between cohorts. These counts include the full
 browser startup and capture window. The repeat supplies an observed
 variation check for the later build comparison. Exact counts and receipts
 stay local under
+`docs/performance/libjs-github-browser-20261116/libjs-github-empty-calls-after-20261118/`.
+
+For the two median interpreter trials, the root-process markers place
+9,450,512,454 and 9,367,942,667 instructions before first document paint.
+From that marker through PNG encoding, the numbers are 59,924,685,963 and
+65,813,104,936. Both trials log seven paint-command builds. This diagnostic
+places the increase after first paint. The acceptance comparison uses the
+full coalition startup-to-PNG count.
+
+### Published empty-call build on frozen GitHub
+
+The worker attempt `20261118-024638-c98004e8` includes the patch and stops
+when the production input inventory changes during sealing. The next
+inventory includes the new native frame-clear header. The managed single-C
+`-prod` build then publishes executable
+`9c165f7ab3dc15fd6fcc7a0d89336aefde735c3a9f983c15248727de89918301`.
+Its verified source manifest includes the exact `2da4ea24d` workspace file.
+The candidate and control differ in 29 sealed source inputs, including
+RegExp literals, call-frame reuse, keyed collections and rendering.
+
+The existing `-O2` cache files, ABI, browser dependencies, archived page,
+compatibility policy and standard-raster reference match the repeat
+control. The candidate eligibility run records 2,948 hits and 483,835
+native entries, with zero misses, pending or invalid entries, compilations
+or compiler calls. It records 267,526 scratch-buffer calls, compared with
+292,074 in the repeat control's 480,307 native entries. Both diagnostics
+pass the pixel, content and capture-ownership checks. This is an observed
+change across builds. The standalone loop isolates the empty-call change.
+
+Seven alternating fresh-process pairs use the same private-profile and
+empty HTTP-cache protocol. The exclusive coalition counter covers startup,
+window setup and native document PNG encoding. PNG file writing, audit,
+teardown, GPU and outside service work fall outside that endpoint. Native
+diagnostics are disabled during the numbered runs.
+
+| Pair | Interpreter instructions | Cached-native instructions |
+| ---: | ---: | ---: |
+| 1 | 66,686,954,974 | 76,242,593,566 |
+| 2 | 66,709,279,635 | 67,118,090,473 |
+| 3 | 75,658,668,175 | 74,366,839,394 |
+| 4 | 66,639,850,358 | 74,559,625,963 |
+| 5 | 66,319,178,698 | 75,879,454,114 |
+| 6 | 76,037,526,441 | 76,331,726,902 |
+| 7 | 75,658,475,605 | 70,245,119,601 |
+| Median | **66,709,279,635** | **74,559,625,963** |
+
+The cached-native median is **4.19% lower** than the same-cache repeat
+control. The interpreter median falls **12.05%** across those builds.
+On the candidate, cached native uses **11.77% more instructions** by the
+ratio of medians and uses fewer instructions in two of seven pairs. The
+median paired ratio is 1.00613 and the highest-native/lowest-interpreter
+ratio is 1.15098. One-minute load ranges from 6.47 to 7.84 on 18 logical
+CPUs, compared with 5.58 to 6.73 during the repeat control.
+
+All 14 captures match the pinned 1024×768 Vox image and the full repository
+audit. All 81 modules fulfill, all three compatibility scripts match their
+pinned bodies, and JavaScriptCore stays uninitialized. Native shutdown
+receipts show 2,946–2,949 cache hits with zero misses, compiler calls,
+compilations, pending or invalid entries. All browser, harness and guard
+exits are zero. The guard adopts 28 processes and records 129.417 seconds
+and 7,027,703,808 sampled peak bytes. Exact counts, image audits, input
+hashes and failed-build receipts stay local under
 `docs/performance/libjs-github-browser-20261116/libjs-github-empty-calls-after-20261118/`.
