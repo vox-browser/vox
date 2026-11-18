@@ -9785,3 +9785,61 @@ pairs finish sooner. The paired guard exits zero in 3.255 seconds at
 of 47.91 during the cohort. The scope is array execution. The archived
 GitHub launch-to-PNG target remains open. Local receipts are under
 `docs/benchmark-results/libjs-array-length-5204-r120/receipts`.
+
+### Warm same-process compiled execution
+
+The archived GitHub comparison reuses native code on disk while launching
+a fresh browser for each measurement. This array benchmark instead loads
+one script, retains the same VM and function for eight untimed calls
+and measures the next nine calls in that process. Each call constructs
+16,384 arrays, assigns their lengths and checks checksum 139,264. The
+timer covers the function call. Startup, disk-cache lookup and the
+warm-up calls complete before timing begins.
+
+The LibJS processes use Clang `-O2` and `-prealloc -gc none`, with the
+compiler set to `/usr/bin/false` when measuring. They load three native
+entries and record zero misses or compiler calls. A separate diagnostic
+per build confirms 147,465 native executions during the nine measured
+calls. The V8 control runs the same script and verifies the same checksum
+under Node's V8 `14.6.202.34-node.40`.
+
+Each cohort has seven alternating trials and reports the median of the
+seven per-process medians. The consumed source manifests differ by
+`libjs/construct.v` in the first cohort and by
+`libjs/constructor_prototype.v` in the second and by `libjs/reference.v` in the third.
+
+| Cohort | LibJS control | Compiled LibJS change | Node V8 | Main-thread instructions before → after |
+| --- | ---: | ---: | ---: | ---: |
+| Native constructor frame reuse | 21.279 ms | 20.378 ms | 3.334 ms | 348,637,109 → 344,536,537 |
+| Cached constructor prototype key | 17.436 ms | 16.648 ms | 2.887 ms | 342,867,848 → 327,819,861 |
+| Writable array length assignment | 16.709 ms | 16.298 ms | 2.820 ms | 328,009,811 → 320,477,075 |
+
+Reusing native constructor frames lowers the median by 4.23% and
+instructions by 1.18%. An exposed frame remains available to its owner,
+as the retention regression checks. The prototype lookup uses the
+existing immutable key and still calls the same observable Get.
+This lowers the median by a further 4.52% and instructions by 4.39%
+in the second cohort. The controls shifted between cohorts. The
+18-CPU host reports one-minute loads of 6.33–6.95 in the first cohort
+and 7.71–8.05 in the second. Both guards exit zero, with sampled
+peaks of 920,420,352 and 763,789,312 bytes respectively.
+
+A direct numeric assignment grows an array's writable length slot without
+constructing property descriptors. Shrinking, coercion, explicit receivers
+and exotic objects take the checked path. The third cohort lowers the
+median by 2.46% and instructions by 2.30%. Six of seven pairs finish sooner
+and all seven retire fewer instructions. The guard exits zero at
+660,652,032 sampled peak bytes on one-minute loads of 9.08–9.52.
+The final LibJS median is 5.78 times the Node V8 median.
+
+The focused constructor, prototype and array suites compile with
+assertions enabled and each exits zero under its own 3 GiB runtime
+guard. Their separate compiler guards peak at 10,097,819,648,
+9,118,482,432 and 9,358,229,504 sampled bytes. The compiled benchmarks
+use the canonical checkout, with other local work held fixed across
+each comparison. The managed production rebuild is queued for these
+changes. The latest valid archived GitHub launch-to-PNG comparison
+remains 9.186 seconds for Vox with compiled LibJS and 2.434 seconds
+for Brave with V8. Local commands, consumed-source digests, paired
+samples and guard reports are under
+`docs/benchmark-results/libjs-warm-construct-5204-r121/receipts`.
