@@ -13,7 +13,7 @@ pub struct InterpreterStack {
 mut:
 	call_argument_workspaces []&CallArgumentWorkspace
 	call_argument_depth int
-	contexts      []&ExecutionContext
+	contexts      []&ExecutionContext // Owned by this stack and never sliced.
 	recycled      []&ExecutionContext
 	recycled_bytes uint
 	top_          uint
@@ -62,15 +62,20 @@ pub fn (mut stack InterpreterStack) allocate(registers_and_locals_count u32, con
 }
 
 // deallocate releases every frame allocated at or above the mark.
+@[direct_array_access]
 pub fn (mut stack InterpreterStack) deallocate(mark uint) {
 	if mark > stack.top_ {
 		panic('InterpreterStack.deallocate: mark ${mark} is above the top ${stack.top_}')
 	}
-	for stack.contexts.len > 0 && stack.contexts.last().stack_offset >= mark {
-		mut released := stack.contexts.last()
-		// pop() leaves the pointer in the capacity tail, which is still scanned
-		// by a conservative collector after the frame has stopped executing.
-		stack.contexts.delete_last()
+	for stack.contexts.len > 0 {
+		last := stack.contexts.len - 1
+		mut released := stack.contexts[last]
+		if released.stack_offset < mark { break }
+		// A conservative collector also scans the array's unused capacity.
+		unsafe {
+			stack.contexts[last] = nil
+			stack.contexts.len = last
+		}
 		released.stack_allocated = false
 		stack.recycle_context(mut released)
 	}
