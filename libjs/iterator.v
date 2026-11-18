@@ -87,7 +87,24 @@ pub fn iterator_step(mut vm VM, mut record IteratorRecord) !IteratorStep {
 }
 
 fn iterator_step_impl(mut vm VM, mut record IteratorRecord, with_value bool) !IteratorStep {
-	// Builtin marker fast paths are pending; this is the source's ordinary path.
+	if use_array_iterator_steps() && record.next_method.is_function() {
+		mut function := record.next_method.as_function()
+		if mut function is NativeFunction {
+			if array_prototype := function.array_iterator_pair_prototype {
+				step := function.step_array_iterator(mut vm, Value.from_object(record.iterator),
+					array_prototype) or {
+					record.done = true
+					return err
+				}
+				if step.done {
+					record.done = true
+					return IteratorStep{done: true}
+				}
+				return IteratorStep{result: IterationResult{done: Value.from_bool(false),
+					value: normal_completion(if with_value { step.value } else { js_undefined() })}}
+			}
+		}
+	}
 	result := iterator_next(mut vm, mut record, none)!
 	done := result.get(mut vm, iterator_done_key) or {
 		record.done = true

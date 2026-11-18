@@ -15,6 +15,8 @@ pub:
 	behaviour          NativeFunctionPointer = unsafe { nil }
 	raw_function_index ?u32
 	construct_behaviour NativeConstructPointer = unsafe { nil }
+mut:
+	array_iterator_pair_prototype ?&Object
 }
 
 pub type NativeConstructPointer = fn (mut vm VM, new_target &Object) !&Object
@@ -146,23 +148,10 @@ pub fn (function &NativeFunction) has_constructor() bool {
 }
 
 pub fn (mut function NativeFunction) internal_call(mut vm VM, this_value Value, arguments []Value) !Value {
-	caller := vm.current_context()
 	mut stack := vm.interpreter_stack()
 	mark := stack.top()
-	mut callee := stack.allocate_reusable(0, []Value{}, u32(arguments.len)) or {
-		return vm.throw_error_type(.internal_error, .call_stack_size_exceeded)
-	}
 	defer { stack.deallocate(mark) }
-	callee.copy_call_arguments(arguments)
-	callee.passed_argument_count = u32(arguments.len)
-	callee.function = FunctionObject(&function)
-	callee.realm = function.realm_
-	callee.this_value = this_value
-	callee.call_environment = caller.call_environment
-	callee.lexical_environment = caller.lexical_environment
-	callee.variable_environment = caller.variable_environment
-	callee.private_environment = caller.private_environment
-	vm.push_execution_context_checked(mut callee)!
+	function.push_call_frame(mut vm, mut stack, this_value, arguments)!
 	defer { vm.pop_current_context() }
 	behaviour := if index := function.raw_function_index {
 		vm.native_function(index, .raw_native_function)
@@ -173,6 +162,23 @@ pub fn (mut function NativeFunction) internal_call(mut vm VM, this_value Value, 
 		if builtin_profile_enabled { return invoke_profiled_builtin(&function, mut vm, behaviour) }
 	}
 	return behaviour(mut vm)
+}
+
+fn (mut function NativeFunction) push_call_frame(mut vm VM, mut stack InterpreterStack, this_value Value, arguments []Value) ! {
+	caller := vm.current_context()
+	mut callee := stack.allocate_reusable(0, []Value{}, u32(arguments.len)) or {
+		return vm.throw_error_type(.internal_error, .call_stack_size_exceeded)
+	}
+	callee.copy_call_arguments(arguments)
+	callee.passed_argument_count = u32(arguments.len)
+	callee.function = FunctionObject(&function)
+	callee.realm = function.realm_
+	callee.this_value = this_value
+	callee.call_environment = caller.call_environment
+	callee.lexical_environment = caller.lexical_environment
+	callee.variable_environment = caller.variable_environment
+	callee.private_environment = caller.private_environment
+	vm.push_execution_context_checked(mut callee)!
 }
 
 // 7.3.14 Call, AbstractOperations.cpp. Only callable objects have [[Call]].
