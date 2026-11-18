@@ -7947,3 +7947,71 @@ probes expire, so these samples establish the growth across phases.
 The window crop differs from Brave at 77,951 pixels and differs from
 the earlier direct document image at 63 pixels. Commands, complete
 guard exits and original PNGs remain local with the other r89 receipts.
+
+### Resource fetch worker storage and full-window diagnostics
+
+The original 120-second search, README and toolbar Back input on
+`9568a08e` completed on PID 18013 with the anonymous-region probe
+attached. The initial and returned repository content match Brave,
+the README document reached completion, and the browser, controller
+and guard exited zero. Capture and shutdown record 3,615 native cache
+hits and 1,786,846 native entries, with zero misses, compilations or
+compiler calls. Page JavaScriptCore stayed uninitialized. The 12 GiB
+guard sampled 9,891,332,096 peak bytes over 121.985285542 seconds.
+The whole-window crop differs from the unchanged Brave Back PNG at
+115,255 pixels. Converting a copy to the embedded Brave display
+profile leaves 107,527 differing pixels. The instrumented run reports
+its own memory peak. A reduction claim requires matched ordinary runs.
+
+The anonymous-mapping trace attributes 654,311,424 bytes of tracked
+remaining capacity to individual background fetches, 603,979,776 to
+batch workers, and 100,663,296 to script fetch workers. Each stack
+reaches the temporary URL parser through the worker request. These
+are virtual region capacities attributed to the stack that mapped
+them. The memory guard supplies the separate resident-byte measurement.
+
+Commit `48bb0b6b1` runs the shared batch and individual request path
+in a scratch arena. It copies the response or error into the
+existing retained worker arena before releasing request workspaces.
+A standalone production-preallocation probe passed with ordinary
+allocation and with the request namespace poisoned on release. The
+HTTP check receives an embedded-NUL body and repeated headers after
+the worker returns. The local file batch checks successful bodies and
+an error after repeated jobs. Both guards exit zero. The first full
+production type-check reported pointer arithmetic errors in existing
+edits to `paint/portable_svg_mask.v`. After those edits were fixed,
+the type-check exited zero in 44.145147125 seconds with
+7,125,319,680 sampled peak bytes.
+
+The subsequent published single-unit V `-prod` build `5d72f614`
+predates `48bb0b6b1`. Hacker News PID 53829 reopens the existing cache
+with exact 30-story content and 2× pixels. Capture and shutdown
+each have six native hits and zero misses or compiler calls. The
+guard exits zero in 3.850159625 seconds at 416,530,432 sampled bytes.
+The ordinary 120-second GitHub direct-document replay on PID 54257
+matches the initial Brave content, opens the README, and sends
+toolbar Back. At the last audit it has 3,594 cache hits, zero misses
+or compiler calls, and no page JavaScriptCore. The guard stops it
+before the final content and PNG capture and the shutdown audit, at
+31.715088334 seconds and 12,912,934,912 sampled peak bytes. The guard
+and its child exit 125 and 137. Both replays use the original frozen
+inputs and references.
+
+A separate 120-second replay on PID 56162 uses the anonymous-region
+probe and the historical raster diagnostics. It restores the exact
+Brave repository content after opening the README and using toolbar
+Back. Capture and shutdown record 3,615 cache hits and 1,781,009
+native entries, with zero misses or compiler calls and no page
+JavaScriptCore. The browser, controller and guard exit zero at
+12,511,461,376 sampled peak bytes in 121.503931583 seconds.
+The presented-frame path produces a 1024×768 Display P3 document
+PNG that differs from Brave at 106,106 pixels. The largest RGB channel
+difference is 170 at (120, 31) in the masthead. Testing one- and
+two-pixel translations in either direction leaves zero translation
+as the best fit in six regions. The PNG and memory results describe
+this diagnostic configuration.
+
+The managed production build for the resource worker change is
+pending. The strict memory and pixel checks remain open. Commands,
+audits, capture hashes and measurements are local under
+`repository-navigation-5204-r90/receipts`.
