@@ -86,25 +86,29 @@ fn native_svg_mask_opacity_depth(operations []layout.PaintMaskOperation) int {
 	return depth
 }
 
-fn native_svg_mask_grouped_solid_fills(operations []layout.PaintMaskOperation) bool {
+fn native_svg_mask_grouped_linear_count(operations []layout.PaintMaskOperation) ?int {
 	// Bound the amount of work on a cache miss. The shared validator checks
 	// that the opacity scopes balance and fit the rasterizer's layer limit.
-	if operations.len < 3 || operations.len > 12 { return false }
+	if operations.len < 3 || operations.len > 12 { return none }
 	mut fills := 0
+	mut gradients := 0
 	for index in 0 .. operations.len {
 		operation := &operations[index]
 		match operation.kind {
 			.path {
-				if operation.fill_linear_gradient != none || operation.fill_radial_gradient != none {
-					return false
+				// Radial fills retain the narrower nested-group eligibility.
+				if operation.fill_radial_gradient != none { return none }
+				if operation.fill_linear_gradient != none {
+					gradients++
 				}
 				fills++
 			}
 			.begin_opacity, .end_opacity {}
-			.image { return false }
+			.image { return none }
 		}
 	}
-	return fills > 0 && fills <= 6 && fills < operations.len
+	if fills == 0 || fills > 6 || fills == operations.len || gradients > 2 { return none }
+	return gradients
 }
 
 fn (mut app BrowserApp) raster_native_svg_content_mask(mask &layout.PaintClip, page_x f32,
@@ -116,10 +120,13 @@ fn (mut app BrowserApp) raster_native_svg_content_mask(mask &layout.PaintClip, p
 		&& operations.all(it.kind == .path && it.fill_linear_gradient == none
 		&& it.fill_radial_gradient == none)
 	automatic_solid := !force_shared_svg_mask_raster && can_keep_full_raster && solid_fills
-	grouped_solids := (force_shared_svg_mask_raster || can_keep_full_raster)
-		&& native_svg_mask_grouped_solid_fills(operations)
+	grouped_gradient_count := if force_shared_svg_mask_raster || can_keep_full_raster {
+		native_svg_mask_grouped_linear_count(operations) or { -1 }
+	} else {
+		-1
+	}
 	automatic_opacity_group := !force_shared_svg_mask_raster && can_keep_full_raster
-		&& (grouped_solids || native_svg_mask_opacity_depth(operations) > 0)
+		&& (grouped_gradient_count >= 0 || native_svg_mask_opacity_depth(operations) > 0)
 	mut automatic_radial := false
 	mut automatic_diagonal := false
 	if !force_shared_svg_mask_raster && !automatic_opacity_group && !automatic_solid {
@@ -143,7 +150,7 @@ fn (mut app BrowserApp) raster_native_svg_content_mask(mask &layout.PaintClip, p
 	if !portable_svg_content_mask_supported(mask) {
 		return false
 	}
-	if !solid_fills && !grouped_solids
+	if !solid_fills && grouped_gradient_count < 0
 		&& !mask.mask_operations.any(it.fill_linear_gradient != none || it.fill_radial_gradient != none) {
 		return false
 	}
@@ -177,7 +184,7 @@ fn (mut app BrowserApp) raster_native_svg_content_mask(mask &layout.PaintClip, p
 	if requires_cache && !keeps_full_raster { return false }
 	if automatic_radial {
 		if svg_background_rectangle_path(operations[0].path_data) == none { return false }
-	} else if requires_cache || solid_fills || grouped_solids {
+	} else if requires_cache || solid_fills || grouped_gradient_count == 0 {
 		for index in 0 .. operations.len {
 			operation := &operations[index]
 			if operation.kind != .path { continue }

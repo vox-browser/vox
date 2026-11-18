@@ -139,6 +139,10 @@ def write_mask_cache_pressure_fixture(fixture, *, kind, count, solid_fills=1, op
             fill = f'<path fill="url(#g{index})" d="M0 0h136v90H0Z"/>'
             if kind == "opacity":
                 fill = '<g opacity=".625">' * opacity_depth + fill + '</g>' * opacity_depth
+            elif kind == "gradient-opacity":
+                fill = (f'<g opacity=".625"><path fill="url(#g{index})" d="M0 0h88v90H0Z"/>'
+                        '<path fill="lime" fill-opacity=".5" d="M52 0h70v90H52Z"/></g>'
+                        '<g opacity=".5"><path fill="white" d="M90 0h46v90H90Z"/></g>')
         definitions.append(
             f'<mask id="m{index}" maskUnits="userSpaceOnUse" x="0" y="0" width="136" height="90">'
             f'{fill}</mask>'
@@ -167,14 +171,15 @@ def check_mask_cache_capacity(binary, directory, *, kind, solid_fills=1, opacity
     png, diagnostics = capture_document(binary, fixture, directory / name, settings, options)
     result = rendered_png_rows(png)
     assert result[:2] == (2048, 1200)
-    cache_kind = "OPACITY" if kind == "solid-opacity" else kind.upper()
+    sibling_groups = kind in ("solid-opacity", "gradient-opacity")
+    cache_kind = "OPACITY" if sibling_groups else kind.upper()
     assert f"VOX_SHARED_SVG_MASK_SKIP_{cache_kind}_CACHE" in diagnostics, diagnostics
     assert "VOX_SHARED_SVG_MASK_CACHE_HIT luminance=true " in diagnostics, diagnostics
     operations = 2 * opacity_depth + 1 if kind == "opacity" else solid_fills
-    if kind == "solid-opacity":
+    if sibling_groups:
         operations = 7
     assert f"VOX_SHARED_SVG_MASK luminance=true operations={operations} " in diagnostics, diagnostics
-    if opacity_depth > 1 or kind == "solid-opacity":
+    if opacity_depth > 1 or sibling_groups:
         settings["VOX_SHARED_SVG_MASK_RASTER"] = "0"
         quartz, _ = capture_document(binary, fixture, directory / f"{name}-quartz", settings, options)
         control = rendered_png_rows(quartz)
@@ -316,6 +321,26 @@ def write_nested_opacity_fixture(fixture, source, *, depth):
                        .replace('      </g>\n    </mask>', '      ' + '</g>' * depth + '\n    </mask>'))
 
 
+def write_mixed_opacity_fixture(fixture, source):
+    gradients = '''
+    <linearGradient id="alpha-linear" gradientUnits="userSpaceOnUse" x1="14" y1="18" x2="72" y2="100">
+      <stop stop-opacity=".25"/><stop offset="1"/>
+    </linearGradient>
+    <linearGradient id="alpha-sibling" gradientUnits="userSpaceOnUse" x1="150" y1="20" x2="160" y2="75">
+      <stop/><stop offset="1" stop-opacity="0"/>
+    </linearGradient>
+    <linearGradient id="luminance-linear" gradientUnits="userSpaceOnUse" x1="210" x2="290" y1="20" y2="90">
+      <stop stop-color="red"/><stop offset="1" stop-color="yellow"/>
+    </linearGradient>'''
+    fixture.write_text(source.read_text()
+                       .replace('<title>SVG mask opacity groups</title>',
+                                '<title>SVG mask opacity groups with mixed fills</title>')
+                       .replace('  <defs>', '  <defs>' + gradients)
+                       .replace('fill="black" d="M14', 'fill="url(#alpha-linear)" d="M14')
+                       .replace('fill="black" d="M150', 'fill="url(#alpha-sibling)" d="M150')
+                       .replace('fill="#f00"', 'fill="url(#luminance-linear)"'))
+
+
 def check_solid_mask_order_change(binary, fixture, directory):
     reordered = directory / "reordered-solid-masks.html"
     reordered.write_text(re.sub(r"^  <use .*\n", "", fixture.read_text(), flags=re.MULTILINE) + """
@@ -413,6 +438,7 @@ def main():
         check_mask_cache_capacity(binary, directory, kind="solid", solid_fills=2)
         check_mask_cache_capacity(binary, directory, kind="opacity", opacity_depth=4)
         check_mask_cache_capacity(binary, directory, kind="solid-opacity")
+        check_mask_cache_capacity(binary, directory, kind="gradient-opacity")
         check_svg_mask_strips(binary, vertical, directory, luminance=False)
         check_svg_mask_strips(binary, luminance, directory, luminance=True)
         check_linear_rgb_fallback(binary, luminance, directory)
@@ -435,6 +461,22 @@ def main():
         check_cached_svg_masks(binary, grouped_solids, directory, operations=5, alpha_operations=11,
                                samples=((94, 104, white), (195, 104, (0, 0, 255)),
                                         (375, 104, (255, 136, 0))))
+        mixed = directory / "mixed-gradient-opacity.html"
+        write_mixed_opacity_fixture(mixed, grouped_solids)
+        check_cached_svg_masks(binary, mixed, directory, operations=5, alpha_operations=11,
+                               samples=((94, 104, white), (195, 104, (0, 0, 255)),
+                                        (375, 104, (255, 136, 0))))
+        radial_siblings = directory / "radial-opacity-siblings.html"
+        radial_siblings.write_text(re.sub(
+            r'<linearGradient id="(alpha-sibling|luminance-linear)"[^>]*>(.*?)</linearGradient>',
+            r'<radialGradient id="\1" gradientUnits="userSpaceOnUse" cx="155" cy="45" r="30">\2</radialGradient>',
+            mixed.read_text(), flags=re.DOTALL))
+        check_quartz_mask_fallback(binary, radial_siblings, directory)
+        too_many_gradients = directory / "three-gradients-opacity.html"
+        too_many_gradients.write_text(re.sub(r'^        <path .*fill="url\(#[^)]+\)"/>$',
+                                            lambda match: '\n'.join([match[0]] * 3),
+                                            opacity.read_text(), flags=re.MULTILINE))
+        check_quartz_mask_fallback(binary, too_many_gradients, directory)
         fractional_group = directory / "fractional-solid-opacity.html"
         fractional_group.write_text(grouped_solids.read_text().replace('<path fill="black"',
                                     '<path transform="translate(.25 0)" fill="black"')
