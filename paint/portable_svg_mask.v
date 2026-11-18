@@ -166,7 +166,7 @@ fn svg_mask_ramp(mask &layout.PaintClip, bounds painting.IntRect, page_x f32, pa
 		if local.b != 0 || local.c != 0 { return none }
 	}
 	device := portable_device_transform(operation.transform, page_x, page_y, scale)
-	if device.b != 0 || device.c != 0 || device.a <= 0 || device.d <= 0 { return none }
+	// A reflection reverses sampling along an axis but preserves variation in one dimension.
 	matrix := portable_svg_surface_matrix(device, bounds)
 	rect := svg_mask_aligned_rect(operation, matrix) or { return none }
 	first_column := int(math.max(0, f64(rect.x)))

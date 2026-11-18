@@ -200,7 +200,13 @@ def check_mask_cache_capacity(binary, directory, *, kind, solid_fills=1, opacity
         assert maximum <= 2, f"Cache pressure changed {kind} channels by up to {maximum}"
 
 
-def check_svg_mask_strips(binary, fixture, directory, *, luminance):
+def write_reflected_strip_fixture(fixture, source):
+    fixture.write_text(source.read_text()
+                       .replace('<path d="M21', '<path transform="translate(222 122) scale(-1 -1)" d="M21')
+                       .replace('<path d="M255', '<path transform="translate(0 120) scale(1 -1)" d="M255'))
+
+
+def check_svg_mask_strips(binary, fixture, directory, *, luminance, reflected=False):
     name = fixture.stem
     axes = {"true", "false"} if luminance else {"true"}
     raster = f"VOX_SHARED_SVG_MASK luminance={str(luminance).lower()} "
@@ -211,7 +217,14 @@ def check_svg_mask_strips(binary, fixture, directory, *, luminance):
                         VOX_SCREENSHOT_SCROLL_STEP="12", LADYBIRD_SCREENSHOT_SCALE=str(scale))
         options = ["--screenshot-scroll-y=42", "--disable-javascript"]
         automatic, diagnostics = capture_document(binary, fixture, directory / f"{name}-auto-{scale}",
-                                                   settings, options)
+                                                  settings, options)
+        expect_quartz = reflected and not luminance and scale == 1
+        strip = automatic
+        if expect_quartz:
+            assert "VOX_SHARED_SVG_MASK luminance=" not in diagnostics, diagnostics
+            settings["VOX_SHARED_SVG_MASK_RASTER"] = "1"
+            strip, diagnostics = capture_document(binary, fixture, directory / f"{name}-forced-{scale}",
+                                                  settings, options)
         assert set(re.findall(pattern, diagnostics, re.MULTILINE)) == axes, diagnostics
         assert raster in diagnostics, diagnostics
         settings.update(VOX_SHARED_SVG_MASK_RASTER="1", VOX_DISABLE_SVG_MASK_RAMP="1")
@@ -219,9 +232,22 @@ def check_svg_mask_strips(binary, fixture, directory, *, luminance):
                                              settings, options)
         assert "VOX_SVG_MASK_RAMP " not in diagnostics, diagnostics
         assert raster in diagnostics, diagnostics
-        result = rendered_png_rows(automatic)
+        result = rendered_png_rows(strip)
         assert result[:2] == (1024 * scale, 600 * scale)
         assert result == rendered_png_rows(full), f"Shading strips changed the {scale}× pixels for {name}"
+        if reflected:
+            settings.update(VOX_SHARED_SVG_MASK_RASTER="", VOX_DISABLE_SHARED_SVG_MASK_CACHE="0",
+                            VOX_DISABLE_SVG_MASK_RAMP="0")
+            cached, diagnostics = capture_document(binary, fixture, directory / f"{name}-cached-{scale}",
+                                                    settings, options)
+            if expect_quartz:
+                assert "VOX_SHARED_SVG_MASK luminance=" not in diagnostics, diagnostics
+            else:
+                assert "VOX_SHARED_SVG_MASK_CACHE_HIT " in diagnostics, diagnostics
+                assert re.search(r"^VOX_SHARED_SVG_MASK(?:_CACHE_HIT)? .* viewport_crop=true ",
+                                 diagnostics, re.MULTILINE), diagnostics
+            assert rendered_png_rows(automatic) == rendered_png_rows(cached), (
+                f"Caching changed the {scale}× pixels for {name}")
 
         _, _, channels, rows = result
 
@@ -232,23 +258,30 @@ def check_svg_mask_strips(binary, fixture, directory, *, luminance):
         white = b"\xff\xff\xff"
         assert pixel(18, 15) == white and pixel(449, 15) == white
         if luminance:
-            assert abs(pixel(30, 15)[0] - 201) <= 1 and abs(pixel(190, 15)[0] - 237) <= 1
+            left, right = (237, 201) if reflected else (201, 237)
+            assert abs(pixel(30, 15)[0] - left) <= 1 and abs(pixel(190, 15)[0] - right) <= 1
             assert pixel(105, 10) == pixel(105, 50) and pixel(105, 10)[0] < pixel(30, 10)[0]
-            assert pixel(300, 10) == pixel(400, 10) and pixel(300, 10)[1] > pixel(300, 50)[1]
+            assert pixel(300, 10) == pixel(400, 10)
         else:
-            assert pixel(50, 10) == pixel(160, 10) and pixel(50, 10)[0] > pixel(50, 50)[0]
-            assert pixel(300, 10)[1] < pixel(300, 50)[1]
-        if scale == 2:
+            assert pixel(50, 10) == pixel(160, 10)
+            top, bottom = pixel(50, 10)[0], pixel(50, 50)[0]
+            assert top != bottom and (top > bottom) != reflected
+        top, bottom = pixel(300, 10)[1], pixel(300, 50)[1]
+        assert top != bottom and (top > bottom) == (luminance != reflected)
+        if scale == 2 or reflected:
             settings["VOX_SHARED_SVG_MASK_RASTER"] = "0"
-            quartz, diagnostics = capture_document(binary, fixture, directory / f"{name}-quartz",
+            quartz, diagnostics = capture_document(binary, fixture, directory / f"{name}-quartz-{scale}",
                                                    settings, options)
             assert "VOX_SHARED_SVG_MASK luminance=" not in diagnostics, diagnostics
             control = rendered_png_rows(quartz)
             assert result[:3] == control[:3]
-            maximum = max(abs(a - b) for current, previous in zip(result[3], control[3])
-                          for a, b in zip(current, previous))
-            assert maximum <= 2, f"{name} channels differed from Quartz by {maximum}"
-            print(f"Largest 2× channel difference from Quartz for {name} is {maximum}")
+            if expect_quartz:
+                assert rendered_png_rows(automatic) == control, f"{name} bypassed Quartz"
+            else:
+                maximum = max(abs(a - b) for current, previous in zip(result[3], control[3])
+                              for a, b in zip(current, previous))
+                assert maximum <= 2, f"{name} channels differed from Quartz by {maximum}"
+                print(f"Largest {scale}× channel difference from Quartz for {name} is {maximum}")
 
 
 def check_linear_rgb_fallback(binary, fixture, directory):
@@ -487,6 +520,16 @@ def main():
         check_mask_cache_capacity(binary, directory, kind="gradient", reflected=True)
         check_svg_mask_strips(binary, vertical, directory, luminance=False)
         check_svg_mask_strips(binary, luminance, directory, luminance=True)
+        for source, is_luminance in ((vertical, False), (luminance, True)):
+            reflected_strips = directory / f"reflected-{source.name}"
+            write_reflected_strip_fixture(reflected_strips, source)
+            check_svg_mask_strips(binary, reflected_strips, directory, luminance=is_luminance,
+                                  reflected=True)
+        fractional_strip = directory / "fractional-reflected-strips.html"
+        fractional_strip.write_text(reflected_strips.read_text()
+                                    .replace('translate(222 122)', 'translate(222.25 122)')
+                                    .replace('translate(0 120)', 'translate(0 120.25)'))
+        check_quartz_mask_fallback(binary, fractional_strip, directory)
         check_linear_rgb_fallback(binary, luminance, directory)
         check_cached_svg_masks(binary, diagonal, directory)
         # The second repeated sample starts at y=48 after scrolling 132 px.

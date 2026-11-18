@@ -199,10 +199,15 @@ fn (mut app BrowserApp) raster_native_svg_content_mask(mask &layout.PaintClip, p
 				return false
 			}
 		}
-	} else if !force_shared_svg_mask_raster
-		&& (int(raster_area[2]) * int(raster_area[3]) > shared_svg_mask_cache_pixel_limit
-			|| svg_mask_ramp(mask, bounds, page_x, page_y, scale) == none) {
-		return false
+	} else if !force_shared_svg_mask_raster {
+		if int(raster_area[2]) * int(raster_area[3]) > shared_svg_mask_cache_pixel_limit {
+			return false
+		}
+		ramp := svg_mask_ramp(mask, bounds, page_x, page_y, scale) or { return false }
+		// Keep Quartz's sampling for reflected alpha gradients at low backing scale.
+		if !mask.mask_luminance && scale < 2 && (ramp.transform[0] < 0 || ramp.transform[3] < 0) {
+			return false
+		}
 	}
 	raster_key := shared_svg_mask_raster_key(mask, raster_area, bounds, page_x, page_y, scale)
 	if raster_key != 0 {
