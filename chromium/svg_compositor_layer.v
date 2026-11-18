@@ -25,11 +25,9 @@ fn chromium_svg_opacity_group_end(commands []layout.PaintCommand, start int) int
 		|| commands[start + 2].kind != 'end_css_effect_layer' {
 		return start
 	}
-	layer := commands[start].visual_layer_data or { return start }
+	layer := normal_opacity_paint_layer(&commands[start]) or { return start }
 	end_layer := commands[start + 2].visual_layer_data or { return start }
-	if layer.kind != .css_effect || layer.opacity <= 0 || layer.opacity >= 1
-		|| layer.blend_mode != .normal || layer.filter != none || layer.scope_id == 0
-		|| end_layer.scope_id != layer.scope_id || end_layer.kind != layer.kind {
+	if end_layer.scope_id != layer.scope_id || end_layer.kind != layer.kind {
 		return start
 	}
 	inner := unsafe { &commands[start + 1] }

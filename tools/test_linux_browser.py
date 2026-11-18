@@ -282,6 +282,39 @@ def check_gradient_browser(binary, artifacts, temporary):
     print("PASS: clipped gradient text, foreground painting and exact gradient ramps", flush=True)
 
 
+def check_svg_opacity_browser(binary, artifacts, temporary):
+    fixture = Path(__file__).resolve().parents[1] / "Tests/Browser/Native/svg-opacity-groups.html"
+    screenshot = artifacts / "portable-svg-opacity.png"
+    screenshot.unlink(missing_ok=True)
+    environment = smoke_environment(Path(temporary) / "svg-opacity")
+    environment.pop("VOX_DISABLE_PORTABLE_SVG_OPACITY", None)
+    environment["VOX_PORTABLE_SVG_OPACITY_DIAGNOSTICS"] = "1"
+    log = run_windowed([str(binary), "--window-width=1024", "--window-height=640",
+                        "--screenshot-viewport-height=640", f"--screenshot={screenshot}", str(fixture)],
+                       env=environment, log_path=artifacts / "portable-svg-opacity.log")
+    assert "VOX_SVG_OPACITY paths=2 texture=144x72" in log, log
+    assert "VOX_SVG_OPACITY paths=2 texture=804x50" not in log, log
+    _, height, channels, rows = rendered_png_rows(screenshot.read_bytes())
+
+    def pixel(x, y):
+        return rows[y][x * channels:x * channels + 3]
+
+    top = next((y for y in range(min(height, 150)) if pixel(4, y) == b"\x34\xb7\x86"), None)
+    assert top is not None, "Missing document marker"
+    red = pixel(20, top + 56)
+    blue = pixel(128, top + 56)
+    assert red in (b"\xff\x7f\x7f", b"\xff\x80\x80"), red
+    assert blue in (b"\x7f\x7f\xff", b"\x80\x80\xff"), blue
+    assert pixel(65, top + 56) == blue, "Overlap applied group opacity more than once"
+    assert pixel(80, top + 56) == red, "Even-odd SVG hole failed to reveal the earlier path"
+    assert pixel(172, top + 56) == b"\xff\xff\xff", "The scope painted outside its path bounds"
+    translucent = pixel(100, top + 220)
+    assert all(abs(value - expected) <= 2 for value, expected in zip(translucent, (215, 179, 195))), translucent
+    for position, expected in ((200, red), (980, blue)):
+        assert all(abs(value - target) <= 1 for value, target in zip(pixel(position, top + 40), expected))
+    print("PASS: SVG group opacity applies once and preserves the path fill rule", flush=True)
+
+
 def check_webgl_pixels(data):
     """Find both complete shader canvases, excluding unknown browser chrome."""
     width, height, channels, rows = rendered_png_rows(data)
@@ -612,6 +645,7 @@ def main():
         print("PASS: local HTML and scripted layout")
         check_webgl_browser(binary, artifacts, temporary)
         check_gradient_browser(binary, artifacts, temporary)
+        check_svg_opacity_browser(binary, artifacts, temporary)
         check_https_navigation(binary, temporary, environment)
         print("PASS: HTTPS navigation and certificate verification")
         server = http.server.ThreadingHTTPServer(("127.0.0.1", 0),

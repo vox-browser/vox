@@ -1,0 +1,52 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>SVG opacity groups</title>
+<style>
+body { margin: 0; background: white; }
+header { width: 8px; height: 8px; background: #34b786; }
+svg { display: block; width: 360px; height: 1900px; }
+.sparse { position: absolute; top: 8px; left: 180px; width: 830px; height: 110px; }
+</style>
+<header></header>
+<svg viewBox="0 0 360 1900">
+  <g opacity=".5">
+    <path fill="#f00" d="M12 12h96v72H12Z"/>
+    <path fill="#00f" fill-rule="evenodd" d="M60 12h96v72H60Z M72 32h24v32H72Z"/>
+  </g>
+  <g opacity=".5" transform="translate(0 140)">
+    <path fill="#44d56a" d="M12 12h192v190H12Z"/>
+    <path fill="#5161e7" d="M60 24h192v200H60Z"/>
+    <path fill="#ed6c48" fill-opacity=".6" d="M24 46h214v204H24Z"/>
+  </g>
+  <g opacity=".5" transform="translate(0 430)">
+    <path fill="#44d56a" d="M12 12h192v190H12Z"/>
+    <path fill="#5161e7" d="M60 24h192v200H60Z"/>
+    <path fill="#ed6c48" fill-opacity=".6" d="M24 46h214v204H24Z"/>
+  </g>
+  <g opacity=".5" transform="translate(0 720)">
+    <path fill="#44d56a" d="M12 12h192v190H12Z"/>
+    <path fill="#5161e7" d="M60 24h192v200H60Z"/>
+    <path fill="#ed6c48" fill-opacity=".6" d="M24 46h214v204H24Z"/>
+  </g>
+  <g opacity=".5" transform="translate(0 1010)">
+    <path fill="#44d56a" d="M12 12h192v190H12Z"/>
+    <path fill="#5161e7" d="M60 24h192v200H60Z"/>
+    <path fill="#ed6c48" fill-opacity=".6" d="M24 46h214v204H24Z"/>
+  </g>
+  <g opacity=".5" transform="translate(0 1300)">
+    <path fill="#44d56a" d="M12 12h192v190H12Z"/>
+    <path fill="#5161e7" d="M60 24h192v200H60Z"/>
+    <path fill="#ed6c48" fill-opacity=".6" d="M24 46h214v204H24Z"/>
+  </g>
+  <g opacity=".5" transform="translate(0 1590)">
+    <path fill="#44d56a" d="M12 12h192v190H12Z"/>
+    <path fill="#5161e7" d="M60 24h192v200H60Z"/>
+    <path fill="#ed6c48" fill-opacity=".6" d="M24 46h214v204H24Z"/>
+  </g>
+</svg>
+<svg class="sparse" viewBox="0 0 830 110">
+  <g opacity=".5">
+    <path fill="#f00" d="M10 15h24v50H10Z"/>
+    <path fill="#00f" d="M790 15h24v50H790Z"/>
+  </g>
+</svg>

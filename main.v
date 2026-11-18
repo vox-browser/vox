@@ -7832,8 +7832,16 @@ fn (mut app BrowserApp) draw() {
 					if shared_svg_end > command_index { continue }
 				}
 				if command.kind == 'begin_css_effect_layer' {
-					shared_svg_end = app.draw_chromium_svg_opacity_group(app.paint_commands,
-						app.chromium_raster_plan.command_layers, command_index, 0, page_y)
+					$if macos {
+						if app.ctx.native_rendering {
+							shared_svg_end = app.draw_chromium_svg_opacity_group(app.paint_commands,
+								app.chromium_raster_plan.command_layers, command_index, 0, page_y)
+						}
+					}
+					if !app.ctx.native_rendering && culling.resource_depth == 0 {
+						shared_svg_end = app.draw_portable_svg_opacity_group(app.paint_commands,
+							command_index, 0, page_y)
+					}
 					if shared_svg_end > command_index { continue }
 				}
 				// SVG groups draw several commands on the CPU canvas in one batch,

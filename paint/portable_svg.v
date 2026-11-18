@@ -1,6 +1,7 @@
 module main
 
 import cpuraster
+import gg
 import layout
 import painting
 
@@ -14,23 +15,20 @@ fn (mut app BrowserApp) draw_portable_solid_svg_fill(command &layout.PaintComman
 	// Tessellating each contour independently fills holes and breaks concave
 	// paths. Rasterize the retained path as a unit with its SVG fill rule.
 	path := cpuraster.canvas_path(data.path_data, data.fill_even_odd)
-	rect := path.bounds() or { return false }
-	local := painting.Rect{f64(rect.left), f64(rect.top), f64(rect.right - rect.left), f64(rect.bottom - rect.top)}
 	scale := f64(app.ctx.scale)
 	transform := portable_device_transform(multiply_paint_transforms(command.transform,
 		data.path_transform), page_x, page_y, scale)
-	bounds := portable_pixel_bounds(transform.map_rect(local).intersection(app.portable_device_viewport(page_y)))
+	ink := portable_svg_path_bounds(path, transform, app.portable_device_viewport(page_y)) or { return false }
+	bounds := portable_pixel_bounds(ink)
 	if bounds.is_empty() { return true }
 	color := app.paint_colors.color_with_retained(command.color, command.opacity * data.fill_opacity,
 		command.retained_svg_fill_color())
 	if color.a == 0 { return true }
-	argb := (u32(color.a) << 24) | (u32(color.r) << 16) | (u32(color.g) << 8) | u32(color.b)
-	matrix := [f32(transform.a), f32(transform.b), f32(transform.c), f32(transform.d),
-		f32(transform.e - f64(bounds.x)), f32(transform.f - f64(bounds.y))]!
 	pitch := bounds.width * 4
 	mut premultiplied := []u8{len: pitch * bounds.height}
 	if !cpuraster.fill_canvas_path(mut premultiplied, bounds.width, bounds.height, pitch, 2,
-		path, matrix, argb, none, 1, .src_over, 0, [], none) {
+		path, portable_svg_surface_matrix(transform, bounds), portable_svg_argb(color), none, 1,
+		.src_over, 0, [], none) {
 		return false
 	}
 	mut pixels := []u8{len: premultiplied.len}
@@ -39,4 +37,19 @@ fn (mut app BrowserApp) draw_portable_solid_svg_fill(command &layout.PaintComman
 	app.draw_portable_raster_image(f32(f64(bounds.x) / scale), f32(f64(bounds.y) / scale),
 		bounds.width, bounds.height, pixels)
 	return true
+}
+
+fn portable_svg_path_bounds(path cpuraster.Path, transform painting.Affine, viewport painting.Rect) ?painting.Rect {
+	rect := path.bounds() or { return none }
+	local := painting.Rect{f64(rect.left), f64(rect.top), f64(rect.right - rect.left), f64(rect.bottom - rect.top)}
+	return transform.map_rect(local).intersection(viewport)
+}
+
+fn portable_svg_surface_matrix(transform painting.Affine, bounds painting.IntRect) [6]f32 {
+	return [f32(transform.a), f32(transform.b), f32(transform.c), f32(transform.d),
+		f32(transform.e - f64(bounds.x)), f32(transform.f - f64(bounds.y))]!
+}
+
+fn portable_svg_argb(color gg.Color) u32 {
+	return (u32(color.a) << 24) | (u32(color.r) << 16) | (u32(color.g) << 8) | u32(color.b)
 }

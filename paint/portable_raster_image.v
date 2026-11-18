@@ -15,6 +15,11 @@ fn (mut app BrowserApp) draw_portable_raster_image(x f32, y f32, width int, heig
 
 fn (mut app BrowserApp) draw_portable_raster_texture(destination gg.Rect, width int, height int,
 	pixels []u8) {
+	app.draw_portable_raster_texture_with_alpha(destination, width, height, pixels, 255)
+}
+
+fn (mut app BrowserApp) draw_portable_raster_texture_with_alpha(destination gg.Rect, width int,
+	height int, pixels []u8, alpha u8) {
 	// Sokol allows one streaming update per texture per frame.
 	index := app.portable_raster_image_index
 	app.portable_raster_image_index++
@@ -42,8 +47,7 @@ fn (mut app BrowserApp) draw_portable_raster_texture(destination gg.Rect, width 
 	}
 	platform.leave_persistent(persistent)
 	app.ctx.update_pixel_data(slot.image_id, pixels.data)
-	app.ctx.draw_image_by_id(destination.x, destination.y, destination.width, destination.height,
-		slot.image_id)
+	app.ctx.draw_image_with_config(img_id: slot.image_id, img_rect: destination, color: gg.Color{255, 255, 255, alpha})
 }
 
 fn (mut app BrowserApp) finish_portable_raster_images() {
