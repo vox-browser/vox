@@ -242,6 +242,28 @@ fn test_parse_function_declaration() {
 	assert func_data.is_arrow_function == false
 }
 
+fn test_statement_lists_keep_directives_and_function_bodies_in_source_order() {
+	parsed := parse_source('"script directive"; function outer() { "use strict"; let value = 42; return value; }',
+		.script)
+	assert !parsed.has_errors()
+	program := parsed.program.kind.program_data or { panic('missing program') }
+	assert program.scope.children.map(it.kind.tag) == [.expression_stmt, .function_declaration]
+
+	body := parsed.function_table.get(program.scope.children[1].kind.function_id).body
+	assert body.kind.in_strict_mode
+	scope := body.kind.scope or { panic('missing function body scope') }
+	assert scope.children.map(it.kind.tag) == [.expression_stmt, .variable_declaration, .return_stmt]
+}
+
+fn test_module_statement_list_keeps_source_order_across_import_and_export() {
+	parsed := parse_source('let first = 1; import value from "dep"; first; export { first }; value;',
+		.module)
+	assert !parsed.has_errors()
+	program := parsed.program.kind.program_data or { panic('missing program') }
+	assert program.scope.children.map(it.kind.tag) == [.variable_declaration, .import_stmt,
+		.expression_stmt, .export_stmt, .expression_stmt]
+}
+
 fn test_parse_arrow_function() {
 	program, parser := parse_script('const f = (x) => x + 1;')
 

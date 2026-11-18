@@ -819,7 +819,7 @@ fn (mut p Parser) parse_script(starts_in_strict_mode bool) ([]Statement, bool) {
 		p.flags.strict_mode = true
 	}
 
-	children << p.parse_statement_list(true)
+	p.parse_statement_list(mut children, true)
 	if !p.done() {
 		if p.flags.in_function_context {
 			p.expected('CurlyClose')
@@ -845,7 +845,7 @@ fn (mut p Parser) parse_module() ([]Statement, bool) {
 	mut children := []Statement{}
 
 	for !p.done() {
-		children << p.parse_statement_list(true)
+		p.parse_statement_list(mut children, true)
 
 		if p.done() {
 			break
@@ -978,8 +978,7 @@ fn (mut p Parser) parse_directive() (bool, []Statement) {
 	return found_use_strict, statements
 }
 
-fn (mut p Parser) parse_statement_list(allow_labelled_functions bool) []Statement {
-	mut statements := []Statement{}
+fn (mut p Parser) parse_statement_list(mut statements []Statement, allow_labelled_functions bool) {
 	for !p.done() {
 		if p.match_export_or_import() {
 			break
@@ -992,7 +991,6 @@ fn (mut p Parser) parse_statement_list(allow_labelled_functions bool) []Statemen
 			break
 		}
 	}
-	return statements
 }
 
 fn (mut p Parser) match_statement() bool {

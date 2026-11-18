@@ -791,7 +791,8 @@ fn (mut p Parser) parse_class_element(class_start Position, mut found_private_na
 			// A static block's patterns must not consume an enclosing pattern's names.
 			saved_pattern_bound_names := p.pattern_bound_names.clone()
 			p.pattern_bound_names = []BoundName{}
-			children := p.parse_statement_list(false)
+			mut children := []Statement{}
+			p.parse_statement_list(mut children, false)
 			p.pattern_bound_names = saved_pattern_bound_names
 			p.flags = saved_flags
 			p.consume_token(.curly_close)
@@ -1047,7 +1048,7 @@ fn (mut p Parser) parse_function_body(is_async bool, is_generator bool, is_simpl
 		}
 	}
 
-	children << p.parse_statement_list(true)
+	p.parse_statement_list(mut children, true)
 
 	p.flags.strict_mode = strict_before
 	p.flags.in_function_context = in_function_before
