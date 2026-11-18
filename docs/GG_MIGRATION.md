@@ -1655,6 +1655,84 @@ to 63.758–66.558 ms under pressure. Every scroll-changing interval exceeded
 zero. Sampled process-tree RSS peaked at 8,146,255,872 bytes for the build,
 497,483,776 for the captures and 599,769,088 for the scroll job.
 
+### Shading strips for reflected SVG gradient masks
+
+The shared rasterizer shades one row or column for pixel-aligned reflected
+rectangles. It keeps the signed transform for shade direction. On macOS,
+automatic reflection replay uses the strip for luminance masks and for alpha
+masks at backing scales of at least 2. Lower-scale reflected alpha uses Quartz.
+
+The published single-unit executable
+`604f51df0b16e909d556320a196324d6fb5af2f4b425127326d6c9899a6c46b4`
+used Quartz automatically on the reflected alpha fixture at 1×. Forced full
+shared shading differed by up to three channel levels on the alpha ramp with
+a scaled gradient transform. An eight-capture comparison on the same binary
+confirmed the three-level difference at 1× and found at most two levels at
+2× and on the luminance fixture at both scales. The first guard exited one
+when it reached the three-level result. All comparison browser exits and
+the second guard exit were zero.
+
+The reflected alpha and luminance fixture SHA-256 digests were
+`1fa08445c0ee140c80ea47836ebe7f0d361b3a818f533d70abbf366efe0d0533` and
+`5bd7a0fbe3629603977396e80769157720e14b4fde21ae2e3def12b91552c853`.
+In the arm64 Linux guest, a single-C-unit Clang `-O0` executable
+(`9aeba8065fc8937380fa4f89f1d3fa116075b896213754d3689402e4a90a9788`)
+matched full shading pixel for pixel on both reflected fixtures at X11
+backing scale, using software OpenGL. Separate processes with fresh
+profiles exercised the strip and full-shader controls under Xvfb. The
+19-check Linux browser smoke suite passed. The Linux build and test guards
+exited zero at 6,007,660,544 and 1,132,670,976 bytes peak sampled RSS.
+
+The macOS candidate was single-C-unit V `-prod`, Clang `-O1`, SHA-256
+`9f84db1ea3f5f113762d165e34edf1a69e225583ef7732539de3e1a2fe06c433`.
+All 155 captures passed. Reflected strips matched full shading pixel for
+pixel at 1× and 2×. Automatic reflected luminance and 2× alpha captures
+matched their cached controls exactly, including viewport clipping. They
+stayed within two channel levels of Quartz. The automatic 1× reflected
+alpha and fractional reflections matched explicit Quartz exactly. Native
+mask conversion and layer tests passed.
+
+The macOS scroll trials used local files, no script execution, fresh
+profiles and caches, a 1024 × 600 viewport at 2× and a one-second title-matched
+settle. `tools/measure_precise_scroll.py` sent 120 four-pixel inputs at a
+requested 60 Hz, reversing at 60 inputs. The endpoint was completed native
+frame installation after outer view paint over the first-to-last input window.
+Quartz and automatic pairs kept caching enabled and changed only
+`VOX_SHARED_SVG_MASK_RASTER`. The forced shared luminance pairs left caching
+off and changed only `VOX_DISABLE_SVG_MASK_RAMP`.
+
+Separate diagnostics counted shaded strips, cache hits and cropped hits
+during input. Alpha PID 11900 recorded 6 / 595 / 147. Luminance PID 12105
+recorded 6 / 583 / 138. The uncached luminance diagnostic, PID 12334,
+recorded 468 strips and zero hits. Timing launches disabled diagnostics.
+
+| PID | Fixture | Raster | Scroll fps | Median / p95 / max (ms) | Input Hz | Inputs / changes | First / last gap (ms) | Load |
+| --- | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| 12571 | Alpha | Quartz | 25.47 | 37.699 / 44.728 / 48.027 | 56.13 | 120 / 54 | 77.657 / 33.251 | 10.78 |
+| 12718 | Alpha | Automatic | 33.05 | 28.938 / 35.894 / 57.849 | 56.19 | 120 / 70 | 67.023 / 0.134 | 10.80 |
+| 12878 | Alpha | Quartz | 27.83 | 34.060 / 41.454 / 69.976 | 55.19 | 120 / 60 | 72.634 / 0.147 | 10.49 |
+| 13030 | Alpha | Automatic | 32.02 | 29.493 / 37.119 / 38.742 | 58.62 | 120 / 65 | 66.853 / 16.815 | 10.61 |
+| 13188 | Luminance | Quartz | 27.96 | 34.020 / 40.974 / 69.352 | 55.45 | 120 / 60 | 76.216 / 0.129 | 10.44 |
+| 13334 | Luminance | Automatic | 33.48 | 29.065 / 34.403 / 36.007 | 56.91 | 120 / 70 | 67.719 / 0.152 | 10.88 |
+| 13499 | Luminance | Quartz | 27.93 | 34.439 / 40.752 / 65.574 | 54.49 | 120 / 61 | 73.024 / 0.124 | 10.73 |
+| 13669 | Luminance | Automatic | 32.25 | 29.367 / 36.041 / 55.967 | 58.15 | 120 / 66 | 67.315 / 16.762 | 10.51 |
+| 13834 | Luminance | Full shader | 22.46 | 42.815 / 48.239 / 48.843 | 54.55 | 120 / 49 | 89.757 / 34.915 | 10.63 |
+| 13995 | Luminance | Strip | 29.68 | 31.994 / 38.642 / 59.656 | 56.97 | 120 / 62 | 66.941 / 19.695 | 10.58 |
+| 14144 | Luminance | Full shader | 19.57 | 48.459 / 57.859 / 58.161 | 55.46 | 120 / 42 | 103.631 / 36.203 | 10.21 |
+| 14381 | Luminance | Strip | 26.30 | 36.628 / 43.288 / 46.759 | 54.91 | 120 / 57 | 78.780 / 19.602 | 10.12 |
+
+The timed cohort ran 05:35:57–05:37:02 UTC on November 18, 2026. Load is
+the one-minute average at launch on the 18-CPU host. Peak scroll positions
+were 501–510 CSS pixels. Throughput, median and p95 improved in all six
+pairs. The first automatic alpha and first uncached strip trials published
+at the same scroll position after inputs 59 and 61 before moving after input
+62. Both had a longer maximum gap between position changes. The longest gap
+between any two native publications decreased in every pair. Every measured
+scroll-changing interval exceeded 16.67 ms. All timed and instrumented
+browsers and their guard exited zero. Peak sampled RSS was 8,155,660,288
+bytes for the final build, 497,958,912 for the captures and 608,698,368 for
+the scroll job.
+
 ## Original migration plan
 
 Vox currently renders through two Skia builds: LibWeb's Skia (CPU raster,
@@ -7383,3 +7461,72 @@ The audits recorded 30, 33 and 25 entries respectively and zero
 Canvas elements. All browser and guard exits were zero. The timings
 above cover mask compositing in isolation. Candidate browser
 validation awaits the shared rebuild.
+
+### Parallel pipeline mask compositing
+
+The A8 pipeline blitter sends independent rows of large constant
+and gradient masks to up to four raster threads. They share read-only
+paint inputs and preserve absolute shader coordinates. The solid and
+pipeline blitters share the clipped span and overlap check. Image
+shaders and masks whose writes could change later reads use ordered
+composition. Masks smaller than 262,144 pixels use the pipeline's
+existing serial loop.
+
+Matched single-C-unit V `-prod -g -prealloc -gc none` harnesses
+measured blit_mask through return. The pitched and clipped fixtures
+used padded target rows, an eleven-byte source row pad and a
+seven-byte mask offset. Buffer reset and SHA-256 ran outside the
+timer. Seven rotating groups ran on Mac17,6 with 18 logical CPUs
+on 2026-11-18 at 08:34 local time. One-minute load varied from
+12.14 to 12.56. All 21 fresh processes and the guard exited zero.
+Times below are medians in microseconds. Warm results use the
+median of each process's eight calls after its first.
+
+| Mask and blend | First before / forced serial / default | Warm before / forced serial / default |
+| --- | ---: | ---: |
+| 67×43 solid multiply | 28.125 / 29.500 / 24.875 | 25.625 / 28.542 / 24.084 |
+| 67×43 gradient soft-light | 79.791 / 78.416 / 73.000 | 74.604 / 72.333 / 63.459 |
+| 511×513 solid multiply | 2611.250 / 2560.041 / 2275.083 | 2351.729 / 2503.625 / 2135.833 |
+| 511×513 gradient soft-light | 6659.083 / 6755.791 / 5853.625 | 6383.688 / 6708.688 / 5867.395 |
+| 512×512 solid multiply | 2300.708 / 2560.166 / 1453.667 | 2396.521 / 2321.416 / 1348.917 |
+| 512×512 gradient soft-light | 6451.875 / 6496.916 / 3315.041 | 6390.771 / 6242.105 / 3271.812 |
+| 1031×517 solid multiply | 4939.583 / 5190.958 / 1531.750 | 4831.354 / 5037.771 / 1413.521 |
+| 1031×517 gradient soft-light | 12952.250 / 12993.625 / 3472.375 | 12880.417 / 12699.041 / 3387.771 |
+| 2051×1537 solid multiply | 27817.458 / 30177.042 / 8318.500 | 26254.312 / 28671.312 / 8236.833 |
+| 2051×1537 gradient soft-light | 70390.875 / 74224.833 / 19958.417 | 69886.479 / 73261.625 / 20356.854 |
+
+Every complete destination hash matched. Default execution won all
+first and warm pairs for parallel-sized masks. Below the cutoff,
+both modes used ordered composition and individual pairs varied.
+The largest forced-serial warm medians increased by 9.2% for
+multiply and 4.8% for soft-light. Harness hashes were
+`d80da5933c3fc52391499a544abfbd918e424c316f7c27f517e1fa791f72f40e`
+before and
+`095244f6d8379593c2f3daabf71917772d5496cb643c20a86a10ca1fc15adb02`
+after.
+
+A separate dispatch probe observed two distinct threads at 512×512,
+four at larger sizes, and zero below the cutoff or with workers
+disabled. A 1441×927 Canvas multiply path shadow reached the
+pipeline compositor with 848 rows and four threads. Full surface
+pixels matched forced serial
+(`986dd190507d2d3359861a2f922bab0210495be66cef99f296e0854c5b8a0039`).
+All four probe processes and the guard exited zero. Focused checks
+covered clipped and repeated coverage, low and high precision
+blending and genuine backing overlap. macOS, arm64 Linux,
+forced-serial, ASan/UBSan and ThreadSanitizer checks passed. The
+pinned CPU raster differential suite passed with count 2000 and
+seed 20261106.
+
+The published single-C-unit browser
+`604f51df0b16e909d556320a196324d6fb5af2f4b425127326d6c9899a6c46b4`
+with native library
+`ebde1494c5aebaa69ebe6edab9f4e3333020cb4b2949d96fa1fbb35f19d6a202`
+matched frozen Hacker News, GitHub and Old Reddit pixel references.
+Fresh sealed replays used JavaScript, private profiles and caches,
+a 1024×768 CSS-pixel viewport, 2× captures and a one-second settle.
+The audits found 30, 33 and 25 entries respectively and zero Canvas
+elements. An initial setup attempt exited 1 before launching any
+browser. All three browser exits and the completed replay guard
+exit were zero. Timings above cover the mask compositor. Candidate
+browser measurements await the shared production rebuild.
