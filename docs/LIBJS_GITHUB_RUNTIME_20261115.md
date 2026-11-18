@@ -7606,3 +7606,37 @@ The verified run cleared those settings.
 
 Generated-C differences, commands, exact CSS observations and browser
 receipts are local under `repository-navigation-5204-r84`.
+
+### Resource response filtering storage
+
+Commit `3afba1ed2` retires the temporary header list, serialized filter
+request, and decoded decision after each transport response check. The
+existing filter memo owns its retained entries and the returned error
+message is allocated in the caller before the workspace is released.
+
+Three guarded pairs used 174 archived GitHub response header sets from
+the full-list fixture, repeated 12 times with filtering enabled. Each
+control retained 37,718,444 caller-arena bytes. Each candidate retained
+601,176, a 98.4% reduction for the filter step. The focused probe
+preserves the separate values and first spelling of repeated headers
+and retains the Pikabu blocked-response error through a later filter
+call. Both paths allow the same response with filtering disabled.
+
+With scratch poisoning and filter logging enabled, the control retains
+51,065,296 bytes and the candidate 601,176 bytes. Both produce exactly
+the same 2,091 log records, including one Pikabu rejection. The generated
+C differs functionally only at the response filtering workspace. All
+eight processes and the 3 GiB guard exit zero. The paired guard samples
+134,529,024 peak RSS bytes. A separate poisoned run verifies 75 blocked
+response errors after their worker threads exit and reuses the first
+worker's memo entries on a third thread. Its guard exits zero and samples
+66,027,520 peak RSS bytes. The guarded production type check exits zero
+and automated suites remain on hold.
+
+Managed build `20261118-034626-1932f9c0` rejects a concurrent change in
+consumed V package membership during parsing. The previous executable
+stays published and the worker starts managed retry
+`20261118-035602-2025fd74`. GitHub's full Back replay and exact Brave
+pixels still require a completed production bundle with the CSS fix.
+The isolated response observations, rejected build receipts and replay
+driver are local under `repository-navigation-5204-r85`.
