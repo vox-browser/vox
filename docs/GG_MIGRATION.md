@@ -1,5 +1,47 @@
 # Migrating from Skia to vlib/gg
 
+## Non-scaling SVG strokes on OpenGL
+
+The opt-in OpenGL path now uses the existing `gg.canvas` non-scaling
+stroke implementation. It transforms the path first and applies its
+stroke width in device space, matching the standalone macOS path's
+width convention. The viewport cull and texture bounds include the
+device-space outset for caps, joins and antialiasing. The retained
+geometry bounds are shared, and the texture key includes the vector
+effect.
+
+The Linux fixture covers enlargement, reduction, skew, a stroke whose
+centerline scrolls above the viewport, and a live switch from a scaling
+stroke. The switch reused local bounds and rasterized a new texture even
+though the old scaled texture covered its rectangle. The clipped stroke
+reused its texture at scroll offset 65. The document comparison excludes
+the live status bar and is pixel-exact. The first two test runs exposed
+an incorrect expected texture width and a comparison that included the
+live RAM readout. The complete Linux GG window suite then passed.
+
+The Linux executable SHA-256 was
+`587aaa1acdf1a8f94d88476ac8a6622c6afa33835ad08626c267263dd3a4e749`.
+It used V `5a39a4d` and single-unit Clang `-O0`. The fixture SHA-256 was
+`fd1760541fc6c51b3c1848e24c863aff3fd43ddf98305f9841a5135087085a25`.
+The benchmark used Mesa software OpenGL under Xvfb, a fresh process
+with private profile and cache for each run, an 800 × 712 window, one
+second of settling, and 32 synthetic 42-pixel wheel steps. OS caches
+remained available. Input hashes, scroll positions and paint-command
+counts matched. One-minute load ranged from 0.36 to 0.46 on four virtual
+CPUs. The final window suite, benchmark, and their memory guards exited zero.
+
+| Pair | Median callback uncached / cached, ms | p95, ms | Maximum, ms |
+| ---: | ---: | ---: | ---: |
+| 1 | 3.680 / 1.704 | 5.545 / 5.736 | 6.391 / 7.670 |
+| 2 | 3.863 / 1.579 | 6.200 / 3.682 | 6.604 / 3.775 |
+
+Texture reuse reduced the medians by 53.7% and 59.1%. The first pair's
+p95 and maximum rose. Separate diagnostics recorded 93 texture and
+bounds hits over the final 31 moving callbacks and 93 rasterizations
+with caching disabled. These timings cover synthetic software OpenGL
+replay. The Windows OpenGL source check passed. Windows window and pixel
+verification remains pending.
+
 ## Solid SVG strokes on OpenGL
 
 The opt-in `VOX_GG_SVG=1` renderer passes solid, undashed SVG strokes
@@ -7,8 +49,8 @@ to `gg.canvas` in document paint order. It preserves curve segments,
 multiple contours, transforms, caps, joins, and stroke opacity. A stroke
 shares cached local geometry bounds with its fill and has a separate
 texture key containing its width, cap, join, and miter limit. It uses the
-existing frame limits of eight draws and one megapixel. Dashed,
-non-scaling, gradient and pattern strokes still use legacy replay.
+existing frame limits of eight draws and one megapixel. This first slice
+left dashed, non-scaling, gradient and pattern strokes on legacy replay.
 
 The Linux window tests passed the existing fill, mutation, cropping and
 GL 4.2 fallback checks. A six-stroke fixture verified cap and join
