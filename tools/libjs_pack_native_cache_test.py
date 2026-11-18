@@ -7,6 +7,7 @@ import tempfile
 import unittest
 from unittest.mock import patch
 
+from libjs_capture_native_compiler import C_FLAGS, capture_compile
 from libjs_pack_native_cache import digest, link_group, pack_cache
 
 
@@ -107,6 +108,59 @@ class PackNativeCacheTests(unittest.TestCase):
         with self.assertRaises(FileExistsError):
             self.pack()
         self.assertEqual(sentinel.read_text(), "already here")
+
+    def build_captured_library(self, value):
+        staging = self.root / f"batch-{value}"
+        staging.mkdir()
+        source, output = staging / "code.c", staging / "code.dylib"
+        source.write_text(f"int vox_native_0(void) {{ return {value}; }}\n")
+        captures = self.root / "captures"
+        capture_compile([*C_FLAGS, "-dynamiclib", str(source), "-o", str(output)], captures)
+        sha = digest(output)
+        saved = captures / sha / "code.c"
+        self.assertEqual(saved.read_bytes(), source.read_bytes())
+        library = self.directory / f"{sha}.dylib"
+        output.rename(library)
+        key = f"{value:064x}"
+        record = dict(key=key, abi=self.abi, library=library.name, library_sha256=sha, symbol=0)
+        (self.directory / (key + ".json")).write_text(json.dumps(record))
+        return library.name, saved
+
+    def test_captured_batches_reopen_with_distinct_symbols(self):
+        selected = [self.build_captured_library(value)[0] for value in (4, 5)]
+        report = pack_cache(self.cache, self.abi, None, None, selected, self.output,
+                            captures=self.root / "captures")
+        directory = self.output / self.abi
+        library = directory / report["library"]
+        self.assertEqual(digest(library), report["group_sha256"])
+        loaded = ctypes.CDLL(str(library))
+        symbols = set()
+        for value in (4, 5):
+            key = f"{value:064x}"
+            record = json.loads((directory / (key + ".json")).read_bytes())
+            self.assertEqual(record["key"], key)
+            self.assertEqual(record["library"], library.name)
+            self.assertEqual(getattr(loaded, f"vox_native_{record['symbol']}")(), value)
+            symbols.add(record["symbol"])
+        self.assertEqual(symbols, {1, 2})
+        self.assertEqual(report["grouped_records"], 2)
+
+    def test_rejects_mutated_captured_source(self):
+        first, source = self.build_captured_library(4)
+        second, _ = self.build_captured_library(5)
+        source.write_text("int vox_native_0(void) { return 9; }\n")
+        with self.assertRaisesRegex(ValueError, "Captured C digest mismatch"):
+            pack_cache(self.cache, self.abi, None, None, [first, second], self.output,
+                       captures=self.root / "captures")
+        self.assertFalse(self.output.exists())
+
+    def test_failed_compiler_leaves_capture_directory_empty(self):
+        source, output = self.root / "code.c", self.root / "code.dylib"
+        source.write_text("#error expected failed compiler run\n")
+        captures = self.root / "captures"
+        with self.assertRaises(subprocess.CalledProcessError):
+            capture_compile([*C_FLAGS, "-dynamiclib", str(source), "-o", str(output)], captures)
+        self.assertEqual(list(captures.iterdir()), [])
 
 
 if __name__ == "__main__":

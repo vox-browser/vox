@@ -1367,3 +1367,42 @@ repository audit, and fulfills all 81 modules. With the compiler
 disabled it records 2,941 cache hits and 470,469 native entries,
 with zero misses or compiler calls. Local receipts are under
 `docs/performance/libjs-github-browser-20261116/libjs-pack-native-cache-tool-20261118/`.
+
+### Capture and group freshly compiled batches
+
+Use the capture wrapper during a fresh macOS cache build. It passes
+the compiler arguments to Clang and saves each successful batch's C
+and receipt under the compiled library's digest.
+
+```sh
+VOX_LIBJS_NATIVE_CACHE="$separate_cache" \
+VOX_LIBJS_NATIVE_GENERATED_CODE_CACHE=1 \
+VOX_LIBJS_NATIVE_CAPTURE_DIR="$captures" \
+VOX_LIBJS_NATIVE_COMPILER="$PWD/tools/libjs_capture_native_compiler.py" \
+  Build/v/Vox.app/Contents/MacOS/Vox --enable-javascript --js-engine=libjs "$url"
+```
+
+After seeding, use `--captures` in place of `--objects` and
+`--receipt`. The packer recompiles only the selected C batches,
+validates the generated exports, and assigns distinct symbol numbers
+in the new image. Cache keys and ABI stay the same. Use the same
+generated-code setting when reopening the grouped cache.
+
+```sh
+python3 tools/libjs_pack_native_cache.py \
+  --cache "$separate_cache" --abi "$abi" --captures "$captures" \
+  --library "$startup_library_1" --library "$startup_library_2" \
+  --output "$grouped_cache"
+```
+
+A fresh standalone LibJS run captures two batches with 151 distinct
+generated-code records. A fresh compiler-disabled reopen maps the
+grouped image, returns the same script result, and records 151 native
+hits and entries with zero misses or compiler calls.
+
+The frozen GitHub check captures and groups two archived startup
+batches with 256 records in the full 13,915-key cache. Published Vox
+`ea5cc7a3…bb74` maps the new image, matches the pinned screenshot and
+repository audit, and fulfills all 81 modules. It records 2,948 native
+hits and zero misses or compiler calls. Local receipts are under
+`docs/performance/libjs-github-browser-20261116/libjs-native-compiler-capture-20261118/`.

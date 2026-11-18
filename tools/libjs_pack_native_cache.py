@@ -1,9 +1,8 @@
 #!/usr/bin/env python3
-"""Link selected LibJS cache objects into a fresh macOS cache."""
+"""Group selected LibJS cache libraries into a fresh macOS cache."""
 
 import argparse
 from collections import defaultdict
-import hashlib
 import json
 from pathlib import Path
 import re
@@ -12,15 +11,12 @@ import subprocess
 import sys
 import tempfile
 
+from libjs_capture_native_compiler import C_FLAGS, CLANG, digest
+
 
 SHA256 = re.compile(r"[0-9a-f]{64}")
 LIBRARY = re.compile(r"[0-9a-f]{64}\.dylib")
 ENTRY = re.compile(r"_vox_native_(0|[1-9][0-9]*)")
-
-
-def digest(path):
-    with path.open("rb") as handle:
-        return hashlib.file_digest(handle, "sha256").hexdigest()
 
 
 def read_records(directory, abi):
@@ -57,6 +53,14 @@ def exports(path):
     return values
 
 
+def link_objects(work, inputs, expected):
+    image = work / "group.dylib"
+    subprocess.run([CLANG, "-dynamiclib", *map(str, inputs), "-o", str(image)], check=True)
+    if exports(image) != expected:
+        raise ValueError("Grouped library exports differ from the selected objects")
+    return image
+
+
 def link_group(source, objects, receipt, selected, libraries, symbols, work):
     by_library = {}
     for row in receipt["object_files"]:
@@ -89,15 +93,42 @@ def link_group(source, objects, receipt, selected, libraries, symbols, work):
         expected.update(actual)
         inputs.append(target)
 
-    image = work / "group.dylib"
-    subprocess.run(["/usr/bin/clang", "-dynamiclib", *map(str, inputs), "-o", str(image)],
-                   check=True)
-    if exports(image) != expected:
-        raise ValueError("Grouped library exports differ from the selected objects")
-    return image
+    return link_objects(work, inputs, expected)
 
 
-def pack_cache(cache, abi, objects, receipt_path, libraries_to_group, output):
+def link_captured_group(source, captures, selected, libraries, symbols, work):
+    exported = {name: exports(source / name) for name in sorted(selected)}
+    # Keep the renamed numbers outside every original range. The preprocessor
+    # then expands each definition once, without another rename matching it.
+    next_symbol = max(max(numbers) for numbers in exported.values()) + 1
+    if next_symbol + sum(map(len, exported.values())) - 1 > 1_000_000:
+        raise ValueError("Grouped symbols would exceed the native cache record limit")
+    remaps, inputs, expected = {}, [], set()
+    for index, (name, original) in enumerate(exported.items()):
+        sha = libraries[name]
+        captured = captures / sha
+        receipt = json.loads((captured / "receipt.json").read_bytes())
+        if (receipt["library_sha256"] != sha or tuple(receipt["c_flags"]) != C_FLAGS
+                or not symbols[name] <= original):
+            raise ValueError(f"Capture and cache library differ: {name}")
+        input_c = work / f"batch-{index}.c"
+        shutil.copyfile(captured / "code.c", input_c)
+        if digest(input_c) != receipt["source_sha256"]:
+            raise ValueError(f"Captured C digest mismatch: {name}")
+        mapping = {number: next_symbol + offset for offset, number in enumerate(sorted(original))}
+        next_symbol += len(mapping)
+        obj = input_c.with_suffix(".o")
+        defines = [f"-Dvox_native_{old}=vox_native_{new}" for old, new in mapping.items()]
+        subprocess.run([CLANG, *C_FLAGS, "-fPIC", *defines, "-c", str(input_c), "-o", str(obj)], check=True)
+        if exports(obj) != set(mapping.values()):
+            raise ValueError(f"Captured C has different exports: {name}")
+        remaps[name] = mapping
+        inputs.append(obj)
+        expected.update(mapping.values())
+    return link_objects(work, inputs, expected), remaps
+
+
+def pack_cache(cache, abi, objects, receipt_path, libraries_to_group, output, *, captures=None):
     if sys.platform != "darwin":
         raise ValueError("Native cache grouping requires macOS")
     if not SHA256.fullmatch(abi):
@@ -116,16 +147,21 @@ def pack_cache(cache, abi, objects, receipt_path, libraries_to_group, output):
     for name, sha in libraries.items():
         if digest(source / name) != sha:
             raise ValueError(f"Library digest mismatch: {name}")
-    receipt = json.loads(receipt_path.read_bytes())
-    if receipt["abi"] != abi:
-        raise ValueError("Object receipt uses a different native cache ABI")
+    if captures is None:
+        receipt = json.loads(receipt_path.read_bytes())
+        if receipt["abi"] != abi:
+            raise ValueError("Object receipt uses a different native cache ABI")
 
     output.parent.mkdir(parents=True, exist_ok=True)
     with tempfile.TemporaryDirectory(prefix=".libjs-pack-", dir=output.parent) as scratch:
         work = Path(scratch)
         stage = work / abi
         stage.mkdir()
-        image = link_group(source, objects, receipt, selected, libraries, symbols, work)
+        remaps = {}
+        if captures is None:
+            image = link_group(source, objects, receipt, selected, libraries, symbols, work)
+        else:
+            image, remaps = link_captured_group(source, captures, selected, libraries, symbols, work)
         sha = digest(image)
         grouped = sha + ".dylib"
         image.rename(stage / grouped)
@@ -139,7 +175,10 @@ def pack_cache(cache, abi, objects, receipt_path, libraries_to_group, output):
         grouped_entries = 0
         for name, (raw, row) in records.items():
             if row["library"] in selected:
+                mapping = remaps.get(row["library"])
                 row = dict(row, library=grouped, library_sha256=sha)
+                if mapping is not None:
+                    row["symbol"] = mapping[int(row["symbol"])]
                 raw = (json.dumps(row, separators=(",", ":")) + "\n").encode()
                 if len(raw) > 16384:
                     raise ValueError(f"Grouped native cache record is too large: {name}")
@@ -167,13 +206,19 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--cache", required=True, type=Path, help="source cache root containing the ABI directory")
     parser.add_argument("--abi", required=True, help="native cache ABI digest")
-    parser.add_argument("--objects", required=True, type=Path, help="directory of retained relocatable object files")
-    parser.add_argument("--receipt", required=True, type=Path, help="link receipt with object_files and ABI")
+    parser.add_argument("--objects", type=Path, help="directory of retained relocatable object files")
+    parser.add_argument("--receipt", type=Path, help="link receipt with object_files and ABI")
+    parser.add_argument("--captures", type=Path, help="directory saved by libjs_capture_native_compiler.py")
     parser.add_argument("--library", action="append", required=True, help="cache library basename to group (repeatable)")
     parser.add_argument("--output", required=True, type=Path, help="new private cache root")
     args = parser.parse_args()
+    if args.captures is None and (args.objects is None or args.receipt is None):
+        parser.error("use --captures or both --objects and --receipt")
+    if args.captures is not None and (args.objects is not None or args.receipt is not None):
+        parser.error("--captures is an alternative to --objects and --receipt")
     try:
-        receipt = pack_cache(args.cache, args.abi, args.objects, args.receipt, args.library, args.output)
+        receipt = pack_cache(args.cache, args.abi, args.objects, args.receipt, args.library, args.output,
+                             captures=args.captures)
     except (OSError, ValueError, KeyError, TypeError, subprocess.CalledProcessError) as error:
         print(f"libjs_pack_native_cache: {error}", file=sys.stderr)
         return 1
