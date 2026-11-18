@@ -7404,3 +7404,38 @@ Managed production attempt `20261118-030853-ecf3924d` is underway. The
 installed browser is still `23ba3183…3bb`. Full cached-native Back
 restoration under 12 GiB remains pending. Local commands, pins and
 receipts are under `repository-navigation-5204-r79`.
+
+### LibJS built-in Map and Set iterator steps
+
+The published replay tags 112 MiB of tracked virtual mapping capacity
+to iterator result creation under the keyed collection callback. Commit
+`24d437163` gives the captured built-in Map and Set methods the same
+typed native step dispatch as Array iterators. Each step retains the
+original frame, receiver checks, live insertion order, deleted-entry
+budget charges and ordinary entry-pair arrays. A public `next()` call
+returns a fresh result object.
+
+Three alternating fresh-process pairs use matching single-C prealloc
+builds, with 493 source and fixture pins. Only the six implementation
+files differ. Every process yields 24,000 Map and Set values and entry
+pairs and sums 402,000. The control caller arena grows by 76,555,943 bytes
+in every pair. The candidate grows by 37,131,974 bytes, **51.5% less**.
+The manual checks cover live deletion, insertion and clear, captured
+and replaced methods, wrong receiver brands, public result mutation,
+and Array and TypedArray iteration.
+
+The native seed compiles nine executables in one compiler call. A fresh
+reopen with `/usr/bin/false` verifies the same semantics, budget
+exhaustion while scanning tombstones, and subsequent collection access.
+It records nine hits, ten native entries, 172,579 helper steps, and zero
+misses, compiler calls, pending or invalid entries. All runtime
+processes and guards exit zero. The production type check passes in
+37.633454667 seconds at 7,101,612,032 sampled peak bytes. The regression
+source remains unrun under the automated-test hold.
+
+In-flight production attempt `20261118-030853-ecf3924d` records the
+earlier Array iterator sources. The managed hook queued this Map and
+Set change. The installed executable is still `23ba3183…3bb`. Full
+cached-native Back restoration under 12 GiB remains pending. Local
+commands, pins and receipts are under
+`repository-navigation-5204-r80`.
