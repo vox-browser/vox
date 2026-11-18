@@ -15,6 +15,7 @@ $if vox_gg_svg ? {
 	const portable_svg_gpu_diagnostics = os.getenv('VOX_GG_SVG_DIAGNOSTICS') == '1'
 	const disable_portable_svg_gpu_cache = os.getenv('VOX_DISABLE_GG_SVG_CACHE') == '1'
 	const portable_svg_gpu_image_limit = 8
+	const portable_svg_gpu_texture_slots = 2 * portable_svg_gpu_image_limit
 	const portable_svg_gpu_pixel_limit = 1024 * 1024
 	const portable_svg_gpu_cached_values = 128 * layout.compatibility_clip_path_segment_stride
 	const portable_svg_gpu = &PortableSVGGpu{}
@@ -35,6 +36,7 @@ $if vox_gg_svg ? {
 		// between frames. Zero values recorded means the texture is transient.
 		values   [portable_svg_gpu_cached_values]f32
 		length   int
+		used     bool
 	}
 
 	fn (texture &PortableSVGTexture) matches(key &PortableSVGTextureKey, values []f32) bool {
@@ -55,6 +57,7 @@ $if vox_gg_svg ? {
 			texture.image = gfx.Image{}
 		}
 		texture.length = 0
+		texture.used = false
 	}
 
 	// The legacy GG window owns one Sokol context per process. It also owns
@@ -65,7 +68,7 @@ $if vox_gg_svg ? {
 		canvas   &canvas.GpuContext = unsafe { nil }
 		pipeline render.Pipeline
 		sampler  gfx.Sampler
-		textures [portable_svg_gpu_image_limit]PortableSVGTexture
+		textures [portable_svg_gpu_texture_slots]PortableSVGTexture
 		count    int
 		pixels   int
 	}
@@ -106,10 +109,12 @@ $if vox_gg_svg ? {
 
 	fn (mut state PortableSVGGpu) finish_frame() {
 		// All commands that sampled a texture have been submitted at this point.
-		for index in 0 .. portable_svg_gpu_image_limit {
-			if index >= state.count || state.textures[index].length == 0 {
-				state.textures[index].release()
+		for index in 0 .. portable_svg_gpu_texture_slots {
+			mut texture := &state.textures[index]
+			if !texture.used || texture.length == 0 {
+				texture.release()
 			}
+			texture.used = false
 		}
 		state.count = 0
 		state.pixels = 0
@@ -119,7 +124,7 @@ $if vox_gg_svg ? {
 		if state.canvas == unsafe { nil } {
 			return
 		}
-		for index in 0 .. portable_svg_gpu_image_limit {
+		for index in 0 .. portable_svg_gpu_texture_slots {
 			state.textures[index].release()
 		}
 		renderer.destroy_pipeline(state.pipeline)
@@ -169,8 +174,8 @@ $if vox_gg_svg ? {
 		if state.canvas == unsafe { nil } {
 			return false
 		}
-		// A slot follows the order of successful GPU draws. Its matrix is
-		// relative to the texture, so integer scroll offsets can reuse it.
+		// The matrix is relative to the texture, so integer scroll offsets
+		// can reuse it wherever the path appears in the new paint order.
 		key := PortableSVGTextureKey{
 			matrix:   matrix
 			width:    bounds.width
@@ -178,11 +183,29 @@ $if vox_gg_svg ? {
 			color:    color
 			even_odd: data.fill_even_odd
 		}
-		mut texture := &state.textures[state.count]
 		cacheable := !disable_portable_svg_gpu_cache && data.path_data.len <= portable_svg_gpu_cached_values
-		reused := cacheable && texture.matches(&key, data.path_data)
+		// Keep the previous frame's images available until all current draws
+		// have had a chance to match them. Each frame uses at most eight slots.
+		mut vacant := -1
+		mut matching := -1
+		for index in 0 .. portable_svg_gpu_texture_slots {
+			texture := &state.textures[index]
+			if texture.image.id == 0 {
+				if vacant < 0 {
+					vacant = index
+				}
+			} else if cacheable && texture.matches(&key, data.path_data) {
+				matching = index
+				break
+			}
+		}
+		reused := matching >= 0
+		index := if reused { matching } else { vacant }
+		if index < 0 {
+			return false
+		}
+		mut texture := &state.textures[index]
 		if !reused {
-			texture.release()
 			texture.image = state.rasterize(data, &key) or { return false }
 			if cacheable {
 				texture.key = key
@@ -192,6 +215,7 @@ $if vox_gg_svg ? {
 				texture.length = data.path_data.len
 			}
 		}
+		texture.used = true
 		state.count++
 		state.pixels += area
 		// GG presents the texture in document order. Canvas uses top-down

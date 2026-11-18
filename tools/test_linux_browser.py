@@ -337,6 +337,11 @@ function changePaths() {
     paths[0].setAttribute('d', 'M12 8H132V88H12Z M72 18H102V38H72Z');
     paths[1].setAttribute('fill', '#0f0');
     paths[2].setAttribute('transform', 'translate(170 38)');
+    const svg = paths[0].parentNode;
+    svg.appendChild(paths[0]);
+    const duplicate = paths[2].cloneNode(true);
+    duplicate.setAttribute('transform', 'translate(170 64)');
+    svg.appendChild(duplicate);
     document.body.setAttribute('data-ready', '1');
 }
 requestAnimationFrame(changePaths);
@@ -357,6 +362,8 @@ requestAnimationFrame(changePaths);
                            env=environment, log_path=artifacts / f"gg-svg-mutations-{label}.log")
         assert log.count("draw=120x80 cache=miss") >= 2, log
         assert log.count("draw=80x30 cache=miss") >= 2, log
+        if label == "cached":
+            assert log.count("draw=42x20 cache=miss") == 1, "Reordered path lost its retained texture"
         _, height, channels, rows = rendered_png_rows(screenshot.read_bytes())
 
         def pixel(x, y):
@@ -367,11 +374,13 @@ requestAnimationFrame(changePaths);
         top = marker + 8
         assert pixel(45, top + 27) == b"\xff\x00\x00", "The old SVG hole was retained"
         assert pixel(88, top + 27) == b"\xff\xff\xff", "The new SVG hole is missing"
-        assert pixel(95, top + 60) in (b"\x7f\x80\x00", b"\x80\x7f\x00"), "The old fill color was retained"
+        assert pixel(95, top + 60) == b"\xff\x00\x00", "The original paint order was retained"
+        assert pixel(145, top + 60) in (b"\x7f\xff\x7f", b"\x80\xff\x80"), "The old fill color was retained"
         assert pixel(191, top + 20) == b"\xff\xff\xff" and pixel(191, top + 48) == b"\x00\xaa\x00"
+        assert pixel(191, top + 74) == b"\x00\xaa\x00", "The duplicated path is missing"
         documents.append(rows[top:top + 100])
     assert documents[0] == documents[1], "Cached SVG mutations differ from uncached replay"
-    print("PASS: SVG texture reuse follows geometry, color, and position changes", flush=True)
+    print("PASS: SVG texture reuse follows edits and preserves reordered and repeated draws", flush=True)
 
 
 def check_svg_opacity_browser(binary, artifacts, temporary):
