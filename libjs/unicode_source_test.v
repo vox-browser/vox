@@ -33,3 +33,42 @@ fn test_identifier_properties_reject_punctuation_inside_former_letter_ranges() {
 	assert is_identifier_continue_cp(0x200C)
 	assert is_identifier_continue_cp(0x200D)
 }
+
+fn test_expression_identifier_names_own_their_utf16_spelling() {
+	mut parser := Parser.new(utf16(r'\u0063afé?.\u0061.𐐀; plain.\u0062; async;'), .script)
+	program := parser.parse_program(false)
+	parser.scope_collector.analyze(false)
+	assert !parser.has_errors()
+	assert !parser.scope_collector.has_errors()
+	data := program.kind.program_data or { panic('Missing program') }
+	assert data.scope.children.len == 3
+
+	for index in 0 .. parser.source.len {
+		parser.source[index] = 0
+	}
+	chain_expr := data.scope.children[0].kind.expression or { panic('Missing chain') }
+	chain := chain_expr.kind.optional_chain_data or { panic('Missing chain data') }
+	base := chain.base.kind.identifier or { panic('Missing chain base') }
+	assert base.name.str() == 'café'
+	assert base.is_global
+	assert chain.references.len == 2
+	first := chain.references[0]
+	last := chain.references[1]
+	if first is OptionalChainMemberRef {
+		assert first.identifier.name.str() == 'a'
+	} else {
+		panic('Missing optional member')
+	}
+	if last is OptionalChainMemberRef {
+		assert last.identifier.name.str() == '𐐀'
+	} else {
+		panic('Missing regular member')
+	}
+	member := data.scope.children[1].kind.expression or { panic('Missing member expression') }
+	property := member.kind.property or { panic('Missing member name') }
+	name := property.kind.identifier or { panic('Missing property identifier') }
+	assert name.name.str() == 'b'
+	async_expr := data.scope.children[2].kind.expression or { panic('Missing async expression') }
+	async_id := async_expr.kind.identifier or { panic('Missing async identifier') }
+	assert async_id.name.str() == 'async'
+}

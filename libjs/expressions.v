@@ -334,9 +334,8 @@ fn (mut p Parser) parse_primary_expression(min_precedence int, forbidden Forbidd
 				return arrow, false
 			}
 			async_token := p.consume_and_check_identifier()
-			value := p.token_value(async_token).clone()
-			id := p.make_identifier(start, Utf16String.from_slice(value))
-			p.scope_collector.register_identifier(id, value, none)
+			id := p.make_identifier(start, Utf16String.from_slice(p.token_value(async_token)))
+			p.scope_collector.register_identifier(id, id.name.data, none)
 			return p.expression(start, ExpressionKind.identifier_kind(id)), true
 		}
 		.template_literal_start {
@@ -442,23 +441,17 @@ fn (mut p Parser) parse_primary_expression_identifier(start Position, forbidden 
 			&& (p.flags.strict_mode || p.flags.in_generator_function_context) {
 			p.syntax_error("'yield' is not allowed as an identifier in this context")
 		}
-		id_token := p.consume_and_check_identifier()
-		value := p.token_value(id_token).clone()
-		id := p.make_identifier(start, Utf16String.from_slice(value.clone()))
-		p.scope_collector.register_identifier(id, value, none)
-		return p.expression(start, ExpressionKind.identifier_kind(id)), true
 	} else if p.match_token(.escaped_keyword) {
 		p.syntax_error('Keyword must not contain escaped characters')
-		id_token := p.consume_and_check_identifier()
-		value := p.token_value(id_token).clone()
-		id := p.make_identifier(start, Utf16String.from_slice(value.clone()))
-		p.scope_collector.register_identifier(id, value, none)
-		return p.expression(start, ExpressionKind.identifier_kind(id)), true
 	} else {
 		p.expected('primary expression')
 		p.consume()
 		return p.expression(start, ExpressionKind.error()), true
 	}
+	id_token := p.consume_and_check_identifier()
+	id := p.make_identifier(start, Utf16String.from_slice(p.token_value(id_token)))
+	p.scope_collector.register_identifier(id, id.name.data, none)
+	return p.expression(start, ExpressionKind.identifier_kind(id)), true
 }
 
 fn (mut p Parser) parse_regex_literal(start Position, token Token) Expression {
@@ -614,9 +607,8 @@ fn (mut p Parser) parse_secondary_expression(lhs Expression, min_precedence int,
 				}), ForbiddenTokens{}
 			} else if p.match_identifier_name() {
 				mem_token := p.consume()
-				value := p.token_value(mem_token).clone()
 				property := p.expression(property_start, ExpressionKind.identifier_kind(p.make_identifier(property_start,
-					Utf16String.from_slice(value))))
+					Utf16String.from_slice(p.token_value(mem_token)))))
 				return p.expression(start, ExpressionKind{
 					tag:      .member
 					object:   &lhs
@@ -933,10 +925,9 @@ fn (mut p Parser) parse_optional_chain(start Position, base Expression) Expressi
 					if p.match_identifier_name() {
 						property_start := p.position()
 						mem_token := p.consume()
-						value := p.token_value(mem_token).clone()
 						references << OptionalChainMemberRef{
 							identifier: p.make_identifier(property_start,
-								Utf16String.from_slice(value))
+								Utf16String.from_slice(p.token_value(mem_token)))
 							mode:       .optional
 						}
 					} else {
@@ -963,9 +954,8 @@ fn (mut p Parser) parse_optional_chain(start Position, base Expression) Expressi
 			} else if p.match_identifier_name() {
 				property_start := p.position()
 				mem_token := p.consume()
-				value := p.token_value(mem_token).clone()
 				references << OptionalChainMemberRef{
-					identifier: p.make_identifier(property_start, Utf16String.from_slice(value))
+					identifier: p.make_identifier(property_start, Utf16String.from_slice(p.token_value(mem_token)))
 					mode:       .not_optional
 				}
 			} else {
