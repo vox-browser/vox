@@ -1,11 +1,67 @@
 # Migrating from Skia to vlib/gg
 
+## Retaining windowed SVG textures
+
+The opt-in OpenGL SVG renderer keeps up to eight resolved textures from the
+previous frame, with the existing one-megapixel per-frame budget. A slot
+follows replay order and owns a copy of up to 128 path segments. Reuse checks
+the exact path bytes, fill rule, RGBA paint, texture dimensions
+and the matrix relative to the texture. Integer movement can reuse the
+texture. A changed key replaces the image, and unused slots retire after
+frame submission. Set `VOX_DISABLE_GG_SVG_CACHE=1` for uncached replay.
+
+The [Linux window test](../tools/test_linux_browser.py) found identical
+document pixels with cached GG, uncached GG, the portable painter and the
+GL 4.2 fallback. It also moved an even-odd hole, changed a translucent fill
+color and translated a path during live replay. Cached and uncached captures
+both showed the updated pixels. All six browser runs and the 3 GiB guard
+exited zero.
+
+The Linux executable SHA-256 was
+`04ef205528bf2072647984010dc53069de04a0670d33d35fac45d6325496e381`.
+The build used single-unit Clang `-O0` and V revision `5a39a4d`.
+Three rotating triplets used that executable and the same fixed-SVG fixture
+recorded below. Fresh browser processes used private profiles and caches,
+Mesa software OpenGL under Xvfb, an 800 × 712 window, one second of settling,
+and 32 synthetic 42-pixel wheel steps. The fixture and executable hashes,
+scroll positions and paint-command counts matched throughout. OS caches
+remained available. A separate diagnostic run recorded all three texture
+hits throughout the measured scroll window. All ten browser runs and the
+3 GiB guard exited zero. One-minute guest load ranged from 0.79 to 2.97 on
+four virtual CPUs.
+
+| Trial | Renderer | Median callback (ms) | p95 (ms) | Maximum (ms) |
+| --- | --- | ---: | ---: | ---: |
+| 1 | Portable | 4.802 | 41.371 | 70.535 |
+| 2 | Uncached GG | 6.292 | 13.618 | 14.407 |
+| 3 | Cached GG | 2.261 | 5.223 | 5.372 |
+| 4 | Uncached GG | 6.439 | 9.801 | 11.341 |
+| 5 | Cached GG | 2.321 | 10.482 | 26.782 |
+| 6 | Portable | 4.503 | 10.472 | 12.735 |
+| 7 | Cached GG | 2.249 | 5.376 | 8.396 |
+| 8 | Portable | 4.705 | 7.825 | 8.112 |
+| 9 | Uncached GG | 6.840 | 16.508 | 16.849 |
+
+In matched triplets, the cache lowered median callback time by 64–67%
+versus uncached GG and by 48–53% versus the portable painter. Trial 5 showed
+a 26.8 ms maximum and a higher p95 than the two controls in its triplet.
+The measurements cover a warmed, software-rendered fixture. The OpenGL
+renderer remains opt-in pending hardware and production measurements.
+
+The Windows `--opengl --console` build linked an x86-64 PE executable
+with V `eeee53a` and MinGW GCC 16.2.0. It used `-pipe` on the retry
+after the assembly scratch file exhausted local disk space. The 12 GiB
+guard exited zero with a peak RSS of 10,462,429,184 bytes. The executable
+SHA-256 was
+`f4dba55bcee427c5487a30fac7d3211c09594717193e368420d2e93d6fb5e92e`.
+Windows rendering still needs runtime verification.
+
 ## Windowed SVG replay on OpenGL
 
 `VOX_GG_SVG=1` sends eligible solid SVG fills through `gg.canvas` on Linux
 and in a Windows `--opengl` build. Canvas borrows the window's Sokol context.
 GG samples the resolved texture in document paint order with premultiplied
-alpha and retires it after submission. The raster stays on the GPU. Linux
+alpha. The initial renderer retired each texture after submission. Linux
 uses the portable painter when the current context lacks OpenGL 4.3 or
 shader storage buffers. The launch switch is opt-in.
 
