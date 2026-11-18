@@ -9605,3 +9605,34 @@ The published browser predates this change. Recent managed builds still
 fail on disk writes. The page-render timing remains pending. The parser
 trials, source manifests, test results and disassembly witness are local
 under `docs/benchmark-results/github-scope-map-5204-r114/receipts`.
+
+### Statement list assembly
+
+Commit `55347cf55` appends parsed statements directly to the AST list
+that owns them. Scripts and function bodies continue their directive
+lists, and modules use one list through imports, exports and ordinary
+statements. The new regressions check source order across those
+boundaries. The frontend, directive prologue and class context suites
+pass with assertions enabled.
+
+The earlier parser sample includes bulk array appends during function
+body parsing. Disassembly confirms that the script, module and function
+body parsers each retain their statement-list call and drop one call to
+the bulk append routine. The consumed-source manifests differ only in
+`libjs/parser.v` and `libjs/declarations.v`.
+
+Seven alternating fresh-process pairs parse all 81 pinned GitHub modules
+without diagnostics or recursion-limit failures. Both builds use Clang
+`-O2`, V development mode and `-prealloc -gc none`. Median frontend
+instructions fall from 6,940,746,054 to 6,897,837,720, a 0.62% reduction.
+Median frontend time falls from 589.378 to 581.243 ms, a 1.38% reduction.
+Instructions improve in all seven pairs and elapsed time in five.
+One-minute host load ranges from 8.16 to 8.37 on 18 CPUs. The 3 GiB guard
+exits zero in 9.451 seconds at 2,476,654,592 sampled peak bytes.
+
+The full upstream AST comparison is pending. Four guarded attempts fail
+on disk writes during compiler staging, object compilation or linking.
+The published browser still predates this change. Page timing remains
+pending after further managed production build disk failures. Local
+receipts include the failed attempts, input manifests and paired trials
+under `docs/benchmark-results/github-statement-list-5204-r115/receipts`.
