@@ -42,7 +42,8 @@ fn test_history_push_replace_update_actual_native_entries_and_live_document_loca
 fn test_same_document_traversal_updates_history_and_dispatches_popstate() {
 	mut host, mut vm, mut document := history_fixture()!
 	defer { host.close() }
-	history_eval(mut vm, r'var visits=[];addEventListener("popstate",e=>visits.push([e,e.state===history.state,location.pathname]));
+	history_eval(mut vm, r'var visits=[];addEventListener("popstate",e=>visits.push([e,e.state===history.state,location.pathname,
+		e.target===window&&e.currentTarget===window]));
 		history.replaceState({page:"start"},"");history.pushState({page:"file"},"","/file");history.pushState({page:"second"},"","/file");')!
 	window := host.frame_window(mut vm)!
 	mut model := window.navigable_model()
@@ -50,7 +51,7 @@ fn test_same_document_traversal_updates_history_and_dispatches_popstate() {
 	assert model.traverse_same_document_history(mut document, -1)
 	assert !model.can_traverse_same_document_history(document, -1)
 	assert model.traverse_same_document_history(mut document, 1)
-	assert history_eval(mut vm, r'visits.length===3&&visits.every(v=>v[0] instanceof PopStateEvent&&v[0].isTrusted&&v[1])&&
+	assert history_eval(mut vm, r'visits.length===3&&visits.every(v=>v[0] instanceof PopStateEvent&&v[0].isTrusted&&v[1]&&v[3])&&
 		visits[0][0].state.page==="file"&&visits[0][2]==="/file"&&visits[1][0].state.page==="start"&&visits[1][2]==="/start"&&
 		history.state===visits[2][0].state&&history.length===3&&location.pathname==="/file"')!.as_bool()
 	assert history_eval(mut vm, r'addEventListener("popstate",()=>history.pushState({page:"new"},"","/new"),{once:true});true')!.as_bool()

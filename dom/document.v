@@ -3693,7 +3693,9 @@ pub fn (w &Window) dispatch_popstate_event(state JSValue) {
 		state: state
 	})
 	event.set_is_trusted(true)
-	event_target_dispatch_event(unsafe { &EventTarget(w) }, unsafe { &Event(event) })
+	// History traversal targets the relevant global object without the legacy
+	// document target override used by the window load event.
+	EventDispatcher.dispatch(unsafe { &EventTarget(w) }, unsafe { &Event(event) }, false)
 }
 
 pub fn (w &Window) current_event() ?&Event {
