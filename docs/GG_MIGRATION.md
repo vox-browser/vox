@@ -765,6 +765,102 @@ browser and guard exits were zero. Sampled process-tree RSS peaked at
 11,248,877,568 bytes in the build and 406,306,816 bytes in the combined
 diagnostic and timing job.
 
+### Retaining radial SVG masks on macOS
+
+Automatic selection includes supported single rectangular radial masks
+when the aligned bitmap and its padding fit the 128 Ki pixel limit.
+The shared raster keeps the complete image available across viewport
+edges. When all cache slots were used in the current or previous frame,
+new radial masks use Quartz. This keeps active rasters available and
+avoids repeatedly paying for a full gradient draw during scroll.
+
+The mixed workload used the [existing fixture](../Tests/Browser/Native/svg-gradient-masks.html)
+with the digest above. The radial-only workload removed the horizontal
+alpha group and the embedded SVG. Its SHA-256 was
+`b66ebedef633eecae19f55e42854cc83038737e72f2dfb50a45631e8eb4856d6`.
+The pressure workload used 75 individually positioned 136 × 90 masks,
+five per row with different radial gradients and 120 px row spacing.
+Its SHA-256 was
+`a4a1afea97b530b617586b294767619ce251e7791414932defc760c210029017`.
+Each run used the same precise wheel schedule, window, 2× backing
+scale, readiness checks and private profile as the row-reuse cohort.
+Automatic selection and Quartz alternated on the same executable for
+each pair. The endpoint was completed native frame installation.
+
+#### Initial radial selection
+
+The single-C V `-prod`, Clang `-O1` executable SHA-256 was
+`c23f508609599e4574c0b1fec6d980ca9fd21032bcfb754e5dcc1b0fbb571afe`.
+The AVIF digest matched the row-reuse cohort. The first pressure
+diagnostic counted 1,560 luminance rasters and zero hits inside the
+input window. In the unprofiled pairs, throughput fell to 23.51
+scroll-changing publications per second in both pressure trials.
+
+| PID | Fixture | Raster | Scroll fps | Median / p95 / max (ms) | Input Hz | Inputs / changes | First / last gap (ms) | Over 16.67 ms | Load |
+| --- | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| 89695 | Mixed | Quartz | 41.06 | 23.588 / 26.454 / 28.675 | 54.28 | 120 / 90 | 55.192 / 18.292 | 100% | 7.24 |
+| 89792 | Mixed | Automatic | 44.29 | 21.696 / 25.687 / 27.660 | 57.29 | 120 / 92 | 49.202 / 17.050 | 100% | 7.14 |
+| 89896 | Mixed | Quartz | 40.75 | 24.020 / 27.174 / 30.170 | 51.05 | 120 / 95 | 57.474 / 17.738 | 100% | 7.53 |
+| 90008 | Mixed | Automatic | 45.37 | 20.942 / 25.501 / 25.995 | 57.43 | 120 / 94 | 48.617 / 16.626 | 100% | 7.25 |
+| 90115 | Radial only | Quartz | 51.45 | 18.798 / 22.319 / 23.386 | 54.67 | 120 / 112 | 45.566 / 0.114 | 96% | 7.15 |
+| 90185 | Radial only | Automatic | 50.06 | 19.368 / 25.035 / 26.411 | 55.67 | 120 / 107 | 44.198 / 0.117 | 96% | 6.81 |
+| 90481 | Radial only | Quartz | 51.41 | 18.729 / 23.286 / 25.239 | 56.12 | 120 / 109 | 44.277 / 0.110 | 95% | 6.75 |
+| 90549 | Radial only | Automatic | 54.91 | 17.565 / 21.356 / 32.489 | 55.38 | 120 / 118 | 40.731 / 0.128 | 70% | 6.45 |
+| 90720 | Pressure | Quartz | 33.71 | 28.701 / 32.544 / 32.964 | 59.88 | 120 / 67 | 64.470 / 0.262 | 100% | 6.11 |
+| 90805 | Pressure | Automatic | 23.51 | 41.507 / 45.575 / 47.180 | 57.11 | 120 / 49 | 86.267 / 17.668 | 100% | 5.94 |
+| 90925 | Pressure | Quartz | 34.10 | 28.418 / 32.368 / 34.054 | 58.80 | 120 / 69 | 65.204 / 0.105 | 100% | 5.70 |
+| 91010 | Pressure | Automatic | 23.51 | 40.739 / 44.407 / 48.358 | 55.96 | 120 / 50 | 87.978 / 36.418 | 100% | 5.57 |
+
+The trials ran from 03:14:34 to 03:15:54 UTC on November 18, 2026.
+Load is the starting one-minute average on the 18-CPU host. All
+browser and guard exits were zero.
+
+#### Radial selection with cache protection
+
+The final single-C V `-prod`, Clang `-O1` executable SHA-256 was
+`4c25938bbb11f6a6fa7e665ffc6163b28d9999ab6e3e3f922fc973ff06c29209`.
+The AVIF digest matched the initial candidate. During input, separate
+diagnostics recorded 418 radial hits, including 110 cropped
+placements, and three rasters in the mixed workload (PID 18123).
+The pressure workload recorded 1,120 radial hits, 16 rasters and 1,174
+Quartz fallbacks (PID 17452).
+
+| PID | Fixture | Raster | Scroll fps | Median / p95 / max (ms) | Input Hz | Inputs / changes | First / last gap (ms) | Over 16.67 ms | Load |
+| --- | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| 17572 | Pressure | Quartz | 32.60 | 29.271 / 34.036 / 35.715 | 59.69 | 120 / 65 | 65.289 / 16.742 | 100% | 8.42 |
+| 17686 | Pressure | Automatic | 35.66 | 26.931 / 31.454 / 33.339 | 59.77 | 120 / 71 | 56.277 / 16.892 | 100% | 8.30 |
+| 17793 | Pressure | Quartz | 32.22 | 29.344 / 33.515 / 63.052 | 59.91 | 120 / 64 | 65.200 / 18.718 | 100% | 8.12 |
+| 17897 | Pressure | Automatic | 34.43 | 27.847 / 32.699 / 36.707 | 59.39 | 120 / 69 | 62.598 / 17.343 | 100% | 7.95 |
+| 18290 | Mixed | Quartz | 37.34 | 25.457 / 30.492 / 50.336 | 54.86 | 120 / 81 | 59.302 / 20.051 | 100% | 7.86 |
+| 18437 | Mixed | Automatic | 42.32 | 22.547 / 27.363 / 28.755 | 52.47 | 120 / 96 | 48.450 / 16.756 | 100% | 7.71 |
+| 18599 | Mixed | Quartz | 38.58 | 24.728 / 29.268 / 31.015 | 54.65 | 120 / 84 | 54.919 / 19.384 | 100% | 7.73 |
+| 18745 | Mixed | Automatic | 42.08 | 22.665 / 27.050 / 47.592 | 54.43 | 120 / 92 | 55.006 / 18.164 | 100% | 7.67 |
+| 18937 | Radial only | Quartz | 41.94 | 23.026 / 26.617 / 44.260 | 53.66 | 120 / 93 | 64.275 / 16.491 | 100% | 7.38 |
+| 19346 | Radial only | Automatic | 52.00 | 18.701 / 22.936 / 24.895 | 53.81 | 120 / 115 | 44.649 / 0.128 | 90% | 7.75 |
+| 19522 | Radial only | Quartz | 49.44 | 19.366 / 24.698 / 25.876 | 56.03 | 120 / 105 | 47.950 / 0.095 | 100% | 7.47 |
+| 19660 | Radial only | Automatic | 53.64 | 17.877 / 22.210 / 33.538 | 55.03 | 120 / 116 | 45.430 / 0.118 | 80% | 7.27 |
+
+The final cohort ran from 03:22:41 to 03:23:54 UTC. All browser and
+guard exits were zero. Automatic throughput and p95 improved in both
+pressure pairs. The mixed and radial-only pairs also improved, with
+substantial variation between the radial-only Quartz controls.
+Sampled process-tree RSS peaked at 11,683,315,712 bytes for the build,
+396,869,632 bytes for the pressure job and 413,171,712 bytes for the
+mixed and radial-only job.
+
+The [macOS pixel suite](../tools/test_macos_svg_gradient_mask.py)
+pins backing scale and uses the same AppKit capture path throughout.
+The initial unpinned comparisons varied even on an unmasked orange
+marker. With fixed backing scale, both automatic and forced sampling
+were within two channel levels of Quartz at 2×. At 1×, the horizontal
+alpha mask differed by three levels in two columns. The suite checks
+the two-level bound at 2×, the analytic samples at 1×,
+and exact comparisons for row reuse, viewport edges and mutations.
+The 2× automatic scroll capture matched forced shared rasterization
+pixel for pixel. The capacity capture verified cache hits and Quartz
+fallbacks in the same document. Native pixel and layer checks and
+the Windows D3D11 V type check passed.
+
 ## Original migration plan
 
 Vox currently renders through two Skia builds: LibWeb's Skia (CPU raster,
