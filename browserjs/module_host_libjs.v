@@ -109,7 +109,7 @@ fn (mut host ModuleHost) consume_libjs_script(operation &BrowserModuleOperation,
 	if waiters.len==0 { return }
 	mut runtime := unsafe { &Runtime(host.runtime) }
 	mut vm := runtime.agent_vm
-	mut result := libjs.ModuleLoadResult.from_error(vm.throw_error(.type_error,'Failed to fetch JavaScript module ${operation.key}'))
+	mut result := libjs.ModuleLoadResult{}
 	if source := script {
 		module_script := unsafe { &html.JavaScriptModuleScript(source) }
 		if module_script.kind==.javascript {
@@ -121,6 +121,10 @@ fn (mut host ModuleHost) consume_libjs_script(operation &BrowserModuleOperation,
 			}
 			result=libjs.ModuleLoadResult.from_module(libjs.Module(module_record))
 		}
+	}
+	if result.module_record == none {
+		result = libjs.ModuleLoadResult.from_error(vm.throw_error(.type_error,
+			'Failed to fetch JavaScript module ${operation.key}'))
 	}
 	for mut waiter in waiters {
 		if waiter.finished { continue }
