@@ -8868,3 +8868,145 @@ The exact audits, source pins, guard and exit receipts, upload traces,
 and PNG comparisons are local under `repository-navigation-5204-r101/receipts`.
 The ordinary capture and the isolated PNG diagnostics still differ from
 the unchanged Brave Back reference.
+
+### Destination-gamut PNG filtering and shared avatar samples
+
+Commit `6532894f0` selects the sampled PNG color path from the actual
+Display P3 raster and renderer support. The PNG source converts to the
+destination encoding before mip generation and filtering. Conversion,
+blending and the shadow or glyph backdrop keep their existing ownership.
+The selected color path follows the raster automatically when it is
+Display P3. The ordinary sRGB PNG replay remains the distinct sRGB path.
+
+A focused image test uses two saturated source colors that become the
+same red after the gamut transform. Filtering the source first produced
+a red channel of 175 where destination-space mip levels produce 255.
+The control fails that assertion. The replacement passes the image,
+shadow and glyph tests in both GC modes. The guards exit zero in 18.994
+and 23.227 seconds, at 798,621,696 and 788,250,624 sampled bytes. The
+production type check exits zero in 48.642 seconds at 7,128,121,344
+sampled bytes.
+
+The three controls below use published executable `c758ea48…dfce3a8`
+with the same 120-second original GitHub replay, generated-code cache,
+and Brave reference. Their three content snapshots match in order.
+The browser, replay and guard exit zero. Cache shutdown has zero misses
+or compiler calls, and JavaScriptCore remains uninitialized.
+
+| Display P3 diagnostic | PID | Brave pixels different | Guard seconds | Sampled peak RSS bytes |
+| --- | ---: | ---: | ---: | ---: |
+| Destination gamut before filtering and GPU mipmaps | 72452 | 49 | 121.697 | 12,380,225,536 |
+| Also retain scaled PNG shadows in the same draw | 74136 | 32 | 121.760 | 10,211,115,008 |
+| Also retain overlapping text in that draw | 78888 | 31 | 122.230 | 11,918,278,656 |
+
+The first control is pixel-identical to the prior 49-pixel diagnostic.
+The shadow grouping changes exactly 17 commit avatar pixels and resolves
+all 17. Sharing the text resolve fixes the final avatar pixel. The
+repository logo remains exact across all three captures. The original
+Brave screenshot still differs at 31 pixels outside those image regions.
+
+Commit `ae6f0ece9` enables the same scaled grouping on an active 1×
+Display P3 raster with image-gamut support. A following text leaf shares
+the resolve only when the existing ownership, effect, clip and overlap
+checks accept it. The focused fixture runs both real paint classifiers
+against the avatar page and stubs the native target as sRGB, 1× P3 and
+2× P3. Only 1× P3 accepts the scaled group. Rotated, separately clipped
+or differently owned leaves retain their existing handling.
+
+The first fixture assembly interpolated its temporary source path
+incorrectly. The combined compile-and-run retry reaches the 3 GiB guard
+during compilation. Compiling separately under the 12 GiB guard exits
+zero in 39.926 seconds at 4,749,180,928 sampled bytes. The actual test
+exits zero under 3 GiB in 0.390 seconds at 34,750,464 sampled bytes.
+The production type check exits zero in 46.558 seconds at
+7,125,843,968 sampled bytes.
+
+Managed attempt `20261118-102332-8d08d02c` seals the gamut change
+and the full-source PNG sizing follow-up, and passes build and smoke.
+Its publication is superseded while the canonical bundle has a reader.
+Attempts `20261118-103624-9cddba7e` and `20261118-103933-893fb333`
+stop during sealing when the shared native SVG mask image header
+changes. The managed worker retries the combined source before
+windowed verification.
+
+Managed build `20261118-104445-4bbc3f6d` publishes executable
+`8449e53002c6c57ed747712cf39421572993bd0986565d5cb6b0224131ba17b1`
+as one C unit with literal V `-prod`. Its sealed sources include both
+Display P3 changes and commit `470423ced` for full-source PNG sizing.
+The build and headless smoke guards exit zero in 381.170 and 0.931 seconds
+at 8,939,290,624 and 139,001,856 sampled bytes.
+
+Hacker News PID 67420 matches all 30 stories and the 2× PNG exactly with six
+native hits, zero misses or compiler calls, and an uninitialized JavaScriptCore.
+Its guard exits zero in 4.511 seconds at 421,052,416 sampled bytes. Ordinary
+GitHub PID 72689 completes the 120-second input and all three ordered content
+checks. The browser, replay and guard exit zero in 122.010 guard seconds at
+9,085,714,432 sampled bytes. Shutdown records 3,613 native hits and 1,771,262
+entries, zero misses or compiler calls, and an uninitialized JavaScriptCore.
+The comparison exits 1 because the ordinary Back PNG still differs from the
+unchanged Brave Back reference at 60,057 pixels. It is pixel-identical to
+the preceding ordinary Vox capture.
+
+Two Display P3 runs on that executable were interrupted before the guard
+and PNG receipts completed. The next publication, `20261118-105928-fdc9266b`,
+contains all seven pinned color, image and grouping sources in another
+single-C `-prod` executable. Its SHA-256 is
+`91ba43479fe10028a5e83fd9e951193f84d28934cd3ee97cb572dc5a58b8e301`.
+The following replays complete the three ordered content checks and the
+120-second input. Both Vox processes and both replay guards exit zero. The
+comparisons exit 1 for the remaining pixels.
+
+| Capture | PID | Brave pixels different | Guard seconds | Sampled peak RSS bytes | Native cache hits | Native entries |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| Display P3 with GPU mipmaps | 33439 | 31 | 121.752 | 12,254,691,328 | 3,614 | 1,770,923 |
+| Full raster diagnostic | 37910 | 2 | 121.566 | 12,427,591,680 | 3,616 | 1,775,146 |
+
+Both replays record zero misses or compiler calls and an uninitialized
+JavaScriptCore. The first capture uses the gamut and grouping behavior by
+default on its P3 target, and matches the prior shadow-and-text diagnostic
+pixel for pixel. The repository logo and avatar both match Brave. The full
+raster diagnostic still differs at viewport coordinates `(648, 188)` and
+`(646, 190)`.
+
+A separate local-page capture on PID 42452 exercises the full-source PNG
+selection in the published browser. It traces a 40×30 source decoded at
+40×30 and drawn at 16×12 from a 3× layout into a 1× Display P3 PNG. The
+browser and 3 GiB guard exit zero in 0.857 seconds at 220,971,008 sampled bytes.
+
+### GitHub repository launch timing against Brave and V8
+
+`tools/benchmark_github_page.py` runs the archived `github.com/vlang/v`
+repository in fresh browser processes with 1024×768 document viewports,
+fresh HTTP caches and profiles, original-origin replay, and OS caches retained.
+The comparison covers process launch, window setup, author-script hydration,
+a one-second settle, document PNG and audit collection, and process exit. It uses
+the published Vox executable above, the [verified Clang `-O2` native cache](LIBJS_NATIVE_CODE.md),
+and Brave with V8 `15.7.112.43`. `--raster-parity-options` is explicit for Vox.
+The timing includes each browser's DOM, rendering and capture pipeline. The
+separate [Hacker News 500-cycle benchmark](HACKER_NEWS_LIBJS_RAM.md#measurement-boundaries)
+times repeated synchronous comment collapse and expand through Vox's script
+and DOM integrations. The Hacker News total sums initialization, the first
+audited cycle, the next 500 cycles and the compile/cache-finish checkpoint.
+
+The first LibJS process exceeds the 35-second deadline and is terminated
+with exit `-15`. Its paired Brave run exits zero in 2.510 seconds. The other
+six alternating pairs pass their content and unchanged input checks. All
+completed LibJS launches record 2,948–2,949 native cache hits, zero misses
+and zero compiler calls. Their PNGs each differ from the Brave
+reference at two pixels. All completed Brave PNGs match the reference exactly.
+Both engines reproduce their own screenshots across their completed runs.
+
+| Browser and JavaScript engine | Median launch through exit | Completed-pair range | Median observed instructions |
+| --- | ---: | ---: | ---: |
+| Vox with cached native LibJS | 7.430 s | 6.991–9.708 s | 66,629,943,185 |
+| Brave with V8 | 2.202 s | 2.175–2.364 s | 20,629,279,943 |
+
+The median LibJS browser run takes 3.375× as long on the six completed pairs.
+The sampled process-tree instruction counts are lower bounds and exclude GPU
+and external-service work. The seven-pair cohort is incomplete, and the
+comparison makes no isolated engine-speed or optimization acceptance claim.
+The guard adopts all 14 browser roots and records 127.366 seconds and
+6,750,683,136 sampled peak RSS bytes. The controller and guard exit 1 for the
+incomplete cohort. The paired statistics, all attempts, input identities and
+raw command, audit and exit receipts are local under
+`repository-navigation-5204-r102/receipts`.
