@@ -29,6 +29,8 @@ from github_hydrated_render import (AuditCDP, SELECTORS, URL, certificate_spki,
                                     content, ready_selector, validate)
 from hacker_news_browser_instructions import test_display
 from libjs_browser_diagnostic import native_reuse_errors
+from libjs_capture_native_compiler import CAPTURE_DIR, CLANG, captured_source
+from libjs_pack_native_cache import SHA256, read_records
 import measure_browser_instructions as measurement
 from measure_precise_scroll import runtime_input_paths
 from measure_sealed_github_instructions import native_dependencies
@@ -37,6 +39,7 @@ from process_instruction_counts import MacCounters, ProcessTreeCounter, CounterS
 from run_memory_bounded import publish_adopted_processes
 
 ROOT = Path(__file__).resolve().parents[1]
+CAPTURE_COMPILER = ROOT / 'tools/libjs_capture_native_compiler.py'
 RASTER_OPTIONS = ('DOCUMENT_P3 PNG_RENDER_DENSITY PNG_GPU_MIPS ANALYTIC_RECT '
     'DOCUMENT_IMAGE_P3 IMAGE_GAMUT_BEFORE_FILTER PRECISE_TRANSFORM_ORIGIN '
     'SCALED_PNG_SHADOW_GROUP GPU_RECTANGLE_CLIP RECTANGLE_CLIP_DEDUP '
@@ -104,6 +107,24 @@ def cache_errors(capture, shutdown, *, preparing, diagnostics):
     return errors
 
 
+def verify_compiler_captures(directory, cache, abi):
+    if not SHA256.fullmatch(abi):
+        raise ValueError('Invalid captured cache ABI')
+    source = cache / abi
+    records, libraries, _ = read_records(source, abi)
+    if not libraries:
+        raise ValueError('Prepared cache contains no native libraries')
+    batches = {}
+    for name, sha in libraries.items():
+        if digest(source / name) != sha:
+            raise ValueError(f'Prepared library digest mismatch: {name}')
+        code, source_sha = captured_source(directory, sha)
+        if digest(code) != source_sha:
+            raise ValueError(f'Captured C digest mismatch: {name}')
+        batches[name] = dict(library_sha256=sha, source_sha256=source_sha)
+    return dict(directory=str(directory), abi=abi, records=len(records), batches=batches)
+
+
 def observe(args, engine, folder, expected, replayed_scripts, api):
     folder.mkdir()
     profile, cache = folder / 'profile', folder / 'http-cache'
@@ -132,6 +153,8 @@ def observe(args, engine, folder, expected, replayed_scripts, api):
             VOX_LIBJS_NATIVE_GENERATED_CODE_CACHE='1', VOX_LIBJS_NATIVE_CACHE_FINAL_AUDIT_PATH=str(final_cache))
         if args.prepare_native_cache:
             env['VOX_LIBJS_NATIVE_COMPILER'] = str(args.native_compiler)
+            if args.native_captures:
+                env[CAPTURE_DIR] = str(args.native_captures)
         if args.native_diagnostics:
             env['VOX_LIBJS_NATIVE_DIAGNOSTICS'] = '1'
     row = dict(engine=engine, host_before=dict(unix=time.time(), cpu_count=os.cpu_count(), load=os.getloadavg()),
@@ -238,6 +261,9 @@ def observe(args, engine, folder, expected, replayed_scripts, api):
                 preparing=args.prepare_native_cache, diagnostics=args.native_diagnostics)
             if row['cache_errors']:
                 raise RuntimeError('Native cache was incomplete: ' + repr(row['cache_errors']))
+            if args.native_captures:
+                row['compiler_captures'] = verify_compiler_captures(
+                    args.native_captures, args.native_cache, row['native_cache_final']['native']['abi'])
         row['replayed_scripts'] = verify_replayed_scripts(replay, replayed_scripts)
         row['valid'] = True
     except Exception as error:
@@ -266,6 +292,16 @@ def run(args):
         raise ValueError('Native measurements require a separately prepared cache')
     if args.prepare_native_cache and args.native_cache.exists():
         raise ValueError('Native cache preparation requires a new cache directory')
+    args.native_captures = getattr(args, 'native_captures', None)
+    if args.native_captures is not None:
+        args.native_captures = args.native_captures.resolve()
+        if not args.prepare_native_cache:
+            raise ValueError('Compiler captures require native cache preparation')
+        if (args.native_captures.is_relative_to(args.native_cache)
+                or args.native_cache.is_relative_to(args.native_captures)):
+            raise ValueError('Use separate directories for compiler captures and the native cache')
+        if args.native_captures.exists() or args.native_captures == args.output:
+            raise ValueError('Compiler captures require a new directory')
     args.output.mkdir(parents=True, exist_ok=False)
     args.position = test_display()['position']
     expected = content(json.loads(args.reference_audit.read_text()))
@@ -294,11 +330,16 @@ def run(args):
             paths.extend(native_dependencies(args.brave))
         if args.prepare_native_cache:
             paths.append(args.native_compiler)
+        if args.native_captures:
+            paths.extend([Path(CLANG), ROOT / 'tools/libjs_pack_native_cache.py'])
         native_files = set(p for p in args.native_cache.rglob('*') if p.is_file()) if args.native_cache else set()
         paths.extend(sorted(native_files))
         pins = {str(p): digest(p) for p in paths}
         report['inputs'] = pins
         report['production_receipt'] = json.loads((ROOT / 'Build/production-build/latest.json').read_text())
+        if args.native_captures:
+            args.native_captures.mkdir(mode=0o700, parents=True)
+            report['native_captures'] = str(args.native_captures)
         save(args.output / 'results.json', report)
         for pair in range(args.repeat):
             order = args.engines if pair % 2 == 0 else args.engines[::-1]
@@ -350,8 +391,11 @@ def main():
                    help='Private Vox filter bundle for a fixture that serves compatibility scripts directly')
     p.add_argument('--prepare-native-cache', action='store_true',
                    help='Compile a new cache for the same fixture in a separate untimed seed')
-    p.add_argument('--native-compiler', type=Path,
-                   help='Compiler for the preparation run (default /usr/bin/clang)')
+    compiler = p.add_mutually_exclusive_group()
+    compiler.add_argument('--native-compiler', type=Path,
+                          help='Compiler for the preparation run (default /usr/bin/clang)')
+    compiler.add_argument('--native-captures', type=Path,
+                          help='Retain generated C and library receipts in a new directory while seeding')
     p.add_argument('--native-diagnostics', action='store_true',
                    help='Verify actual native execution with instrumented counters in an untimed reopen')
     p.add_argument('--vox', type=Path, default=ROOT / 'Build/v/Vox.app/Contents/MacOS/Vox')
@@ -370,7 +414,10 @@ def main():
         p.error('Preparation requires one libjs-native run, a new cache and native diagnostics disabled')
     if args.native_compiler and not args.prepare_native_cache:
         p.error('The compiler can only be selected during preparation')
-    args.native_compiler = (args.native_compiler or Path('/usr/bin/clang')).resolve()
+    if args.native_captures and not args.prepare_native_cache:
+        p.error('--native-captures requires --prepare-native-cache')
+    args.native_compiler = (CAPTURE_COMPILER if args.native_captures
+                            else args.native_compiler or Path(CLANG)).resolve()
     return run(args)
 
 

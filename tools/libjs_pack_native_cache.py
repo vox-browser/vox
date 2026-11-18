@@ -12,7 +12,7 @@ import subprocess
 import sys
 import tempfile
 
-from libjs_capture_native_compiler import C_FLAGS, CLANG, digest
+from libjs_capture_native_compiler import C_FLAGS, CLANG, captured_source, digest
 
 
 SHA256 = re.compile(r"[0-9a-f]{64}")
@@ -127,15 +127,12 @@ def link_captured_group(source, captures, selected, libraries, symbols, work):
         raise ValueError("Grouped symbols would exceed the native cache record limit")
     remaps, inputs, expected = {}, [], set()
     for index, (name, original) in enumerate(exported.items()):
-        sha = libraries[name]
-        captured = captures / sha
-        receipt = json.loads((captured / "receipt.json").read_bytes())
-        if (receipt["library_sha256"] != sha or tuple(receipt["c_flags"]) != C_FLAGS
-                or not symbols[name] <= original):
+        if not symbols[name] <= original:
             raise ValueError(f"Capture and cache library differ: {name}")
+        captured, source_sha = captured_source(captures, libraries[name])
         input_c = work / f"batch-{index}.c"
-        shutil.copyfile(captured / "code.c", input_c)
-        if digest(input_c) != receipt["source_sha256"]:
+        shutil.copyfile(captured, input_c)
+        if digest(input_c) != source_sha:
             raise ValueError(f"Captured C digest mismatch: {name}")
         mapping = {number: next_symbol + offset for offset, number in enumerate(sorted(original))}
         next_symbol += len(mapping)

@@ -1437,3 +1437,21 @@ pinned screenshot and repository audit. It fulfills all 81 modules
 and records 2,940 native cache hits with zero misses or compiler
 calls. Local receipts are under
 `docs/performance/libjs-github-browser-20261116/libjs-native-cache-trace-selection-20261118/`.
+
+### Capture batches in the GitHub runner
+
+Add `--native-captures "$captures"` to a single `libjs-native` seed
+with `--prepare-native-cache` and `--repeat 1`. The runner selects the
+capture wrapper and records the ABI, cache keys counted, and the C
+and library digests in the attempt's `compiler_captures` receipt.
+Pass that directory to the packer's `--captures` option. The keys of
+`compiler_captures.batches` give the library basenames for selection.
+
+A small replay fixture seeds 152 records across two captured
+batches through this option. Reopening the grouped result reproduces
+the seed screenshot with 152 cache hits and 156 native entries. A
+separate compiler-disabled run on the full frozen GitHub archive
+matches the pinned screenshot and repository audit, fulfills all 81
+modules, and records 2,948 hits. Both reopens have zero misses or
+compiler calls. Local receipts are under
+`docs/performance/libjs-github-browser-20261116/libjs-benchmark-native-captures-20261118/`.

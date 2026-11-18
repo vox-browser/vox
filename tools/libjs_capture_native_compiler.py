@@ -21,6 +21,14 @@ def digest(path):
         return hashlib.file_digest(handle, "sha256").hexdigest()
 
 
+def captured_source(directory, library_sha):
+    batch = directory / library_sha
+    receipt = json.loads((batch / "receipt.json").read_bytes())
+    if receipt["library_sha256"] != library_sha or tuple(receipt["c_flags"]) != C_FLAGS:
+        raise ValueError(f"Capture receipt differs from native library {library_sha}")
+    return batch / "code.c", receipt["source_sha256"]
+
+
 def capture_compile(arguments, directory):
     if sys.platform != "darwin":
         raise ValueError("Native compiler capture requires macOS")
