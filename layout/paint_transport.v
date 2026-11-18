@@ -709,6 +709,8 @@ pub:
 	path_components []PaintPath
 	mask_operations []PaintMaskOperation
 	cache_key       u64
+	// The mask resource before visual-context and nested viewport projection.
+	mask_raster_key u64
 	scope_id        u64
 	mask_luminance  bool
 	// The accumulated transform at the point where this clip node appears.

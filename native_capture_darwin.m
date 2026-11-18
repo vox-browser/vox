@@ -2491,6 +2491,16 @@ typedef struct {
 } NativeSVGClipCacheEntry;
 
 static NativeSVGClipCacheEntry native_svg_clip_cache[NATIVE_SVG_CLIP_CACHE_SIZE];
+// At most sixteen 512 KiB RGBA images. An absolute-position entry can
+// retain the same image without allocating another copy of its pixels.
+#define NATIVE_SVG_MASK_RASTER_CACHE_SIZE 16
+typedef struct {
+	uint64_t key;
+	CGImageRef image;
+	uint64_t last_use;
+} NativeSVGMaskRasterCacheEntry;
+
+static NativeSVGMaskRasterCacheEntry native_svg_mask_raster_cache[NATIVE_SVG_MASK_RASTER_CACHE_SIZE];
 static uint64_t native_svg_clip_cache_clock;
 static CGContextRef native_svg_clip_build_context;
 static CGImageRef native_svg_clip_image;
@@ -5329,6 +5339,24 @@ void native_add_svg_content_mask_radial_gradient_path(const float *data,
 		linear_color_space, stop_data, stop_count, opacity);
 }
 
+// Transfer an owned image into the cache for the active canvas placement.
+static void native_cache_svg_mask_image(CGImageRef image) {
+	int replacement = 0;
+	for (int index = 1; index < NATIVE_SVG_CLIP_CACHE_SIZE; ++index) {
+		if (native_svg_clip_cache[index].image == NULL
+			|| native_svg_clip_cache[index].last_use
+				< native_svg_clip_cache[replacement].last_use) {
+			replacement = index;
+		}
+	}
+	if (native_svg_clip_cache[replacement].image != NULL) {
+		CGImageRelease(native_svg_clip_cache[replacement].image);
+	}
+	native_svg_clip_cache[replacement] = (NativeSVGClipCacheEntry){
+		native_svg_clip_build_key, image, native_svg_clip_rect, native_svg_clip_cache_clock
+	};
+}
+
 static CGImageRef native_finalize_svg_mask_cache(void) {
 	if (native_svg_clip_image == NULL && native_svg_clip_build_context != NULL) {
 		size_t width = CGBitmapContextGetWidth(native_svg_clip_build_context);
@@ -5354,24 +5382,45 @@ static CGImageRef native_finalize_svg_mask_cache(void) {
 		CGContextRelease(native_svg_clip_build_context);
 		native_svg_clip_build_context = NULL;
 		if (native_svg_clip_image != NULL) {
-			int replacement = 0;
-			for (int index = 1; index < NATIVE_SVG_CLIP_CACHE_SIZE; ++index) {
-				if (native_svg_clip_cache[index].image == NULL
-					|| native_svg_clip_cache[index].last_use
-						< native_svg_clip_cache[replacement].last_use) {
-					replacement = index;
-				}
-			}
-			if (native_svg_clip_cache[replacement].image != NULL) {
-				CGImageRelease(native_svg_clip_cache[replacement].image);
-			}
-			native_svg_clip_cache[replacement].key = native_svg_clip_build_key;
-			native_svg_clip_cache[replacement].image = native_svg_clip_image;
-			native_svg_clip_cache[replacement].rect = native_svg_clip_rect;
-			native_svg_clip_cache[replacement].last_use = native_svg_clip_cache_clock;
+			native_cache_svg_mask_image(native_svg_clip_image);
 		}
 	}
 	return native_svg_clip_image;
+}
+
+int32_t native_reuse_svg_mask_raster(uint64_t key) {
+	for (int index = 0; index < NATIVE_SVG_MASK_RASTER_CACHE_SIZE; ++index) {
+		NativeSVGMaskRasterCacheEntry *entry = &native_svg_mask_raster_cache[index];
+		if (entry->key == key && entry->image != NULL) {
+			entry->last_use = native_svg_clip_cache_clock;
+			CGContextRelease(native_svg_clip_build_context);
+			native_svg_clip_build_context = NULL;
+			native_svg_clip_image = CGImageRetain(entry->image);
+			native_cache_svg_mask_image(native_svg_clip_image);
+			return 1;
+		}
+	}
+	return 0;
+}
+
+void native_remember_svg_mask_raster(uint64_t key) {
+	CGImageRef image = native_finalize_svg_mask_cache();
+	if (image == NULL) {
+		return;
+	}
+	int replacement = 0;
+	for (int index = 1; index < NATIVE_SVG_MASK_RASTER_CACHE_SIZE; ++index) {
+		if (native_svg_mask_raster_cache[index].image == NULL
+			|| native_svg_mask_raster_cache[index].last_use
+				< native_svg_mask_raster_cache[replacement].last_use) {
+			replacement = index;
+		}
+	}
+	NativeSVGMaskRasterCacheEntry *entry = &native_svg_mask_raster_cache[replacement];
+	if (entry->image != NULL) {
+		CGImageRelease(entry->image);
+	}
+	*entry = (NativeSVGMaskRasterCacheEntry){key, CGImageRetain(image), native_svg_clip_cache_clock};
 }
 
 void native_finish_svg_mask_cache(void) {

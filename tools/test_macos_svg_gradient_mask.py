@@ -16,7 +16,7 @@ def digest(path):
         return hashlib.file_digest(source, "sha256").hexdigest()
 
 
-def capture(binary, fixture, directory, shared):
+def capture(binary, fixture, directory, shared, *, cache=False, scroll=0):
     directory.mkdir()
     profile = directory / "profile"
     profile.mkdir()
@@ -26,9 +26,13 @@ def capture(binary, fixture, directory, shared):
     environment = dict(os.environ, VOX_PROFILE_DIR=str(profile), VOX_TEST_WINDOW="1",
                        LADYBIRD_CACHE_DIR=str(directory / "cache"),
                        VOX_CAPTURE_DOCUMENT_ONLY="1", VOX_SHARED_SVG_MASK_RASTER=str(int(shared)),
+                       VOX_DISABLE_SHARED_SVG_MASK_CACHE=str(int(not cache)),
                        VOX_PORTABLE_SVG_MASK_DIAGNOSTICS="1")
     command = [binary, "--window-width=1024", "--window-height=712",
                "--screenshot-viewport-height=600", f"--screenshot={screenshot}", fixture]
+    if scroll:
+        environment.update(VOX_CAPTURE_INITIAL_VIEWPORT="1", VOX_SCREENSHOT_SCROLL_STEP="12")
+        command.insert(-1, f"--screenshot-scroll-y={scroll}")
     with log.open("w") as output, subprocess.Popen(command, env=environment, stdout=output,
                                                   stderr=subprocess.STDOUT) as browser:
         try:
@@ -42,8 +46,10 @@ def capture(binary, fixture, directory, shared):
     assert status == 0, diagnostics
     for mode in ("true", "false"):
         assert (f"VOX_SHARED_SVG_MASK luminance={mode}" in diagnostics) == shared, diagnostics
+        assert (f"VOX_SHARED_SVG_MASK_CACHE_HIT luminance={mode}" in diagnostics) == cache, diagnostics
     data = screenshot.read_bytes()
-    check_svg_mask_gradient_pixels(data)
+    if not scroll:
+        check_svg_mask_gradient_pixels(data)
     return rendered_png_rows(data)
 
 
@@ -67,6 +73,10 @@ def main():
         maximum = max(abs(a - b) for old_row, new_row in zip(quartz, shared) for a, b in zip(old_row, new_row))
         assert maximum <= 2, f"Document channels differed by up to {maximum}"
         print(f"Largest document channel difference against Quartz is {maximum}")
+        before_cache = capture(binary, fixture, directory / "scrolled-uncached", True, scroll=96)
+        after_cache = capture(binary, fixture, directory / "scrolled-cached", True, cache=True, scroll=96)
+        assert before_cache[3] != shared, "Capture must move the document"
+        assert after_cache == before_cache, "Cached masks changed the scrolled document pixels"
     assert {path: digest(path) for path in inputs} == digests
     print("PASS: macOS rendered both gradient mask modes with the shared rasterizer")
 

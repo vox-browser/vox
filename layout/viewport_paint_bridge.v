@@ -2232,6 +2232,7 @@ fn apply_compatibility_visual_context_node(tree &painting.AccumulatedVisualConte
 				}
 				mask_operations: operations
 				cache_key: cache_key
+				mask_raster_key: node.data.cache_key
 				scope_id: node.data.scope_id
 				mask_luminance: node.data.mask_type == .luminance
 				transform: flattened.transform

@@ -6,8 +6,38 @@ import os
 import painting
 
 const shared_svg_mask_raster = os.getenv('VOX_SHARED_SVG_MASK_RASTER') == '1'
+const disable_shared_svg_mask_cache = os.getenv('VOX_DISABLE_SHARED_SVG_MASK_CACHE') == '1'
 
 fn C.native_svg_content_mask_surface(f32, &i32, &f32, &&u8) i32
+fn C.native_reuse_svg_mask_raster(u64) i32
+fn C.native_remember_svg_mask_raster(u64)
+
+fn shared_svg_mask_raster_key(mask &layout.PaintClip, area [4]i32, bounds painting.IntRect,
+	page_x f32, page_y f32, scale f64) u64 {
+	// Keep the native cache within its per-image memory budget. Both padding
+	// and clipping are relative to the borrowed bitmap, which moves on scroll.
+	if disable_shared_svg_mask_cache || mask.mask_raster_key == 0
+		|| int(area[2]) * int(area[3]) > 128 * 1024 {
+		return 0
+	}
+	mut key := mask.mask_raster_key
+	for value in [int(area[2]), int(area[3]), bounds.x - int(area[0]), bounds.y - int(area[1]),
+		bounds.width, bounds.height]! {
+		key = (key ^ u64(value)) * u64(1099511628211)
+	}
+	key = (key ^ math.f64_bits(scale)) * u64(1099511628211)
+	for index in 0 .. mask.mask_operations.len {
+		operation := &mask.mask_operations[index]
+		if operation.kind != .path { continue }
+		transform := portable_device_transform(operation.transform, page_x, page_y, scale)
+		// Hash the exact matrix passed to the CPU rasterizer, including the
+		// subpixel phase of paths within an aligned mask region.
+		for value in portable_svg_surface_matrix(transform, bounds) {
+			key = (key ^ u64(math.f32_bits(value))) * u64(1099511628211)
+		}
+	}
+	return key
+}
 
 fn (mut app BrowserApp) raster_native_svg_content_mask(mask &layout.PaintClip, page_x f32,
 	page_y f32) bool {
@@ -36,6 +66,13 @@ fn (mut app BrowserApp) raster_native_svg_content_mask(mask &layout.PaintClip, p
 	}
 	bounds := portable_pixel_bounds(region.intersection(image))
 	if bounds.is_empty() { return true }
+	raster_key := shared_svg_mask_raster_key(mask, area, bounds, page_x, page_y, scale)
+	if raster_key != 0 && C.native_reuse_svg_mask_raster(raster_key) != 0 {
+		if portable_svg_mask_diagnostics {
+			eprintln('VOX_SHARED_SVG_MASK_CACHE_HIT luminance=${mask.mask_luminance} surface=${bounds.width}x${bounds.height}')
+		}
+		return true
+	}
 	pitch := int(area[2]) * 4
 	offset := (bounds.y - int(area[1])) * pitch + (bounds.x - int(area[0])) * 4
 	length := (bounds.height - 1) * pitch + bounds.width * 4
@@ -45,6 +82,9 @@ fn (mut app BrowserApp) raster_native_svg_content_mask(mask &layout.PaintClip, p
 			unsafe { vmemset(data + offset + y * pitch, 0, bounds.width * 4) }
 		}
 		return false
+	}
+	if raster_key != 0 {
+		C.native_remember_svg_mask_raster(raster_key)
 	}
 	if portable_svg_mask_diagnostics {
 		eprintln('VOX_SHARED_SVG_MASK luminance=${mask.mask_luminance} operations=${mask.mask_operations.len} surface=${bounds.width}x${bounds.height}')
