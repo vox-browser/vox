@@ -930,3 +930,32 @@ resolve to the frame-release method in the published executable.
 Raw inputs, failed builds, the rejected cohort and the diagnostic receipts
 remain local under
 `docs/performance/libjs-github-browser-20261116/libjs-github-frame-release-after-20261118/`.
+
+### Primer Link receiver diagnosis
+
+On the same published `9568a08e…f757` executable, the original launch and
+capture harness ran eight fresh interpreter visits with the original fixture
+and eight with the receiver logging fixture, alternating fixture order.
+Each visit verifies the served Primer module and all three compatibility
+replacements. All 16 match the pinned document PNG and complete repository
+audit, fulfill all 81 modules with JSC uninitialized, and produce an empty
+diagnostic log. Each browser exits zero. The guard exits zero after 113.647
+seconds, with all 16 browser roots adopted and a sampled peak of 6,709,788,672
+bytes. These captures diagnose the warning. The rejected performance cohort
+remains the performance record.
+
+A separate file fixture executes Primer's two interface checks in a
+microtask on the same executable. All six parsed or created HTML anchors
+and buttons pass, including the XHTML namespace factory and an anchor
+parsed inside SVG `foreignObject`. SVG and null-namespace anchors fail the
+HTML checks and stringify as `[object Element]`. Passing the parsed SVG
+anchor to the same console call reproduces the original warning text
+exactly. The warning alone cannot identify the GitHub receiver or establish
+how it was created. The focused browser and guard both exit zero.
+
+Local receipts under
+`docs/performance/libjs-github-browser-20261116/libjs-github-link-receiver-9568-20261118/`
+include the capture and probe inputs, the rejected preflight with ambient
+`NO_PROXY` settings, and the file probe's first attempt, which rendered the
+expected result but lacked the HTTP navigation marker required by the
+instruction harness.
