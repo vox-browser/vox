@@ -1564,3 +1564,18 @@ A small fixture resumed from one verified batch, reused 128 cache
 records, and compiled the missing 24. The packed library loaded in a
 new process and hit all 152 records with zero misses or compiler
 calls. The separate and grouped reopens match pixel for pixel.
+
+### Verify an existing packed cache
+
+When packing has finished, pass `--verify-packed "$packed_report/results.json"`
+with the original `--cache-work` and replay inputs and a new `--output`.
+Keep `pack.json` and `trace/results.json` alongside the previous workflow
+report. The command checks the trace receipt, the separate-cache file
+set and digests, and the packed library digest. It accepts a newer
+publication with the same sealed LibJS sources and compiler mode.
+
+Two fresh visits under one publication lease trace the separate and
+grouped caches with the compiler disabled. The new report identifies
+the prior pack and records the loaded library and image comparison.
+On the small fixture, both visits hit all 152 records with zero misses
+or compiler calls, and their screenshots matched pixel for pixel.

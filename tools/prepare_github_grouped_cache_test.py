@@ -122,6 +122,46 @@ class GroupedCacheWorkflowTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, 'different LibJS or compiler inputs'):
                 workflow.verify_interrupted_seed(args, checkpoint, cache, current)
 
+    def test_packed_checkpoint_checks_cache_files_and_group_digest(self):
+        cache = self.options.cache_work.resolve()
+        abi = 'a' * 64
+        separate, grouped = (cache / name for name in ('separate', 'grouped'))
+        records = separate / abi
+        records.mkdir(parents=True)
+        record = records / ('b' * 64 + '.json')
+        record.write_bytes(b'cache record')
+        image = grouped / abi / 'group.dylib'
+        image.parent.mkdir(parents=True)
+        image.write_bytes(b'packed image')
+        archive = self.root / 'archive'
+        archive.mkdir()
+        audit, png = self.root / 'audit.json', self.root / 'reference.png'
+        inputs = (archive / 'manifest.json', audit, png)
+        for path in inputs:
+            path.write_bytes(b'fixture')
+        old = self.root / 'old'
+        trace = old / 'trace/results.json'
+        trace.parent.mkdir(parents=True)
+        workflow.benchmark.save(trace, dict(complete=True, inputs={
+            str(path.resolve()): workflow.benchmark.digest(path) for path in (*inputs, record)
+        }, attempts=[dict(valid=True, browser_overrides={'VOX_LIBJS_NATIVE_CACHE': str(separate)})]))
+        packed = dict(abi=abi, library=image.name, group_sha256=workflow.benchmark.digest(image),
+                      benchmark={'trace': dict(path='/old/location/trace/results.json',
+                                               sha256=workflow.benchmark.digest(trace))})
+        workflow.benchmark.save(old / 'pack.json', packed)
+        checkpoint, publication = old / 'results.json', {'executable_sha256': 'published'}
+        workflow.benchmark.save(checkpoint, dict(cache_work=str(cache), grouped_cache=str(grouped),
+                                                  stages={'pack': 'receipt'}, production=publication))
+        args = SimpleNamespace(archive=archive, reference_audit=audit, reference_png=png,
+                               adblock_assets=None, raster_parity_options=False)
+        self.assertEqual(workflow.verify_packed_checkpoint(args, checkpoint, cache, publication), packed)
+        image.write_bytes(b'changed packed image')
+        with self.assertRaisesRegex(ValueError, 'Pinned workflow inputs changed'):
+            workflow.verify_packed_checkpoint(args, checkpoint, cache, publication)
+        (records / ('c' * 64 + '.json')).touch()
+        with self.assertRaisesRegex(ValueError, 'file set changed'):
+            workflow.verify_packed_checkpoint(args, checkpoint, cache, publication)
+
 
 if __name__ == '__main__':
     unittest.main()

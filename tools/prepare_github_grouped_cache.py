@@ -38,6 +38,32 @@ def verify_reopen(separate, grouped, packed, output, diff_tool):
     return pixels
 
 
+def verify_compatible_publication(earlier, published):
+    if earlier['executable_sha256'] == published['executable_sha256']:
+        return
+    source_sets = []
+    for receipt in (earlier, published):
+        path = Path(receipt['frozen_compilation']).with_name('source-manifest.json')
+        manifest = json.loads(path.read_text())
+        source_sets.append({name: sha for name, sha in manifest.items()
+                            if Path(name).is_relative_to(benchmark.ROOT / 'libjs')})
+    if not source_sets[0] or source_sets[0] != source_sets[1] or earlier['c_compile'] != published['c_compile']:
+        raise ValueError('The current publication has different LibJS or compiler inputs')
+
+
+def replay_pins(args, receipt, options):
+    assets = args.adblock_assets.resolve() if args.adblock_assets else None
+    parity = all(options.get('VOX_DIAGNOSTIC_' + name) == '1' for name in benchmark.RASTER_OPTIONS)
+    if options.get('VOX_ADBLOCK_ENGINE_ASSETS') != (str(assets) if assets else None) or parity != args.raster_parity_options:
+        raise ValueError('The saved replay settings differ')
+    pins = {str(Path(path).resolve()): sha for path, sha in receipt['inputs'].items()}
+    required = {str(path.resolve()) for path in (args.archive / 'manifest.json', args.reference_audit, args.reference_png)}
+    if required - pins.keys():
+        raise ValueError('The saved replay inputs differ')
+    return {path: sha for path, sha in pins.items() if path in required
+            or (assets and Path(path).is_relative_to(assets))}
+
+
 def verify_interrupted_seed(args, checkpoint, cache_work, published):
     previous = json.loads(checkpoint.read_text())
     if (previous['complete'] or set(previous['stages']) != {'seed'}
@@ -48,30 +74,18 @@ def verify_interrupted_seed(args, checkpoint, cache_work, published):
     seeded = json.loads((directory / 'results.json').read_text())
     options = json.loads((directory / '0-libjs-native/launch.json').read_text())['browser_overrides']
     captures, separate = cache_work / 'captures', cache_work / 'separate'
-    assets = str(args.adblock_assets.resolve()) if args.adblock_assets else None
-    parity = all(options.get('VOX_DIAGNOSTIC_' + name) == '1' for name in benchmark.RASTER_OPTIONS)
     if (not seeded['prepare_native_cache'] or seeded.get('complete')
             or Path(seeded['native_captures']).resolve() != captures
-            or Path(options['VOX_LIBJS_NATIVE_CACHE']).resolve() != separate
-            or options.get('VOX_ADBLOCK_ENGINE_ASSETS') != assets or parity != args.raster_parity_options):
+            or Path(options['VOX_LIBJS_NATIVE_CACHE']).resolve() != separate):
         raise ValueError('Interrupted seed and resumed cache settings differ')
+    replay_pins(args, seeded, options)
     pins = {str(Path(path).resolve()): sha for path, sha in seeded['inputs'].items()}
-    for path in (args.archive / 'manifest.json', args.reference_audit, args.reference_png):
-        if str(path.resolve()) not in pins:
-            raise ValueError('Interrupted seed and resumed replay inputs differ')
     # The resume feature can update the driver. The renderer, compiler, replay,
     # and fixture inputs retain the exact byte identities from the old attempt.
     driver = str(Path(benchmark.__file__).resolve())
     prior_driver = pins.pop(driver)
     if earlier['executable_sha256'] != published['executable_sha256']:
-        source_sets = []
-        for receipt in (earlier, published):
-            path = Path(receipt['frozen_compilation']).with_name('source-manifest.json')
-            manifest = json.loads(path.read_text())
-            source_sets.append({name: sha for name, sha in manifest.items()
-                                if Path(name).is_relative_to(benchmark.ROOT / 'libjs')})
-        if not source_sets[0] or source_sets[0] != source_sets[1] or earlier['c_compile'] != published['c_compile']:
-            raise ValueError('The current publication has different LibJS or compiler inputs')
+        verify_compatible_publication(earlier, published)
         pins.pop(str(BINARY.resolve()))
     verify_inputs(pins)
     abis = [path.name for path in separate.iterdir() if path.is_dir() and benchmark.SHA256.fullmatch(path.name)]
@@ -84,24 +98,52 @@ def verify_interrupted_seed(args, checkpoint, cache_work, published):
                 previous_driver_sha256=prior_driver, driver_sha256=benchmark.digest(driver))
 
 
+def verify_packed_checkpoint(args, checkpoint, cache_work, published):
+    previous = json.loads(checkpoint.read_text())
+    separate, grouped = cache_work / 'separate', cache_work / 'grouped'
+    if ('pack' not in previous['stages'] or Path(previous['cache_work']).resolve() != cache_work
+            or Path(previous['grouped_cache']).resolve() != grouped):
+        raise ValueError('Expected completed packing for this native cache work directory')
+    verify_compatible_publication(previous['production'], published)
+    packed = json.loads((checkpoint.parent / 'pack.json').read_text())
+    trace_pin = packed['benchmark']['trace']
+    trace_path = Path(trace_pin['path'])
+    if not trace_path.is_file():
+        trace_path = checkpoint.parent / 'trace/results.json'
+    verify_inputs({str(trace_path): trace_pin['sha256']})
+    trace = json.loads(trace_path.read_text())
+    row, = trace['attempts']
+    options = row['browser_overrides']
+    if not trace['complete'] or not row['valid'] or Path(options['VOX_LIBJS_NATIVE_CACHE']).resolve() != separate:
+        raise ValueError('Packed cache and saved trace differ')
+    verify_inputs(replay_pins(args, trace, options))
+    pins = {name: sha for name, sha in trace['inputs'].items() if Path(name).is_relative_to(separate)}
+    if not pins or set(pins) != {str(path) for path in separate.rglob('*') if path.is_file()}:
+        raise ValueError('The traced separate-cache file set changed')
+    image = grouped / packed['abi'] / packed['library']
+    verify_inputs(pins | {str(image): packed['group_sha256']})
+    return packed
+
+
 def run(args):
     output, cache_work = args.output.resolve(), args.cache_work.resolve()
     checkpoint = getattr(args, 'resume_seed', None)
+    packed_checkpoint = getattr(args, 'verify_packed', None)
     if output.is_relative_to(cache_work) or cache_work.is_relative_to(output):
         raise ValueError('Use separate roots for reports and native cache work')
     if output.exists():
         raise FileExistsError('The reports directory must be new')
-    if checkpoint is None:
+    if checkpoint is None and packed_checkpoint is None:
         cache_work.mkdir(parents=True, mode=0o700)
     elif not cache_work.is_dir():
-        raise ValueError('Resuming requires the interrupted cache work directory')
+        raise ValueError('Continuing requires the original cache work directory')
     with (cache_work / '.workflow.lock').open('a') as lock:
         fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
         output.mkdir(parents=True)
-        return run_workflow(args, output, cache_work, checkpoint)
+        return run_workflow(args, output, cache_work, checkpoint, packed_checkpoint)
 
 
-def run_workflow(args, output, cache_work, checkpoint):
+def run_workflow(args, output, cache_work, checkpoint, packed_checkpoint):
     separate, captures, grouped = (cache_work / name for name in ('separate', 'captures', 'grouped'))
     report_path = output / 'results.json'
     report = dict(complete=False, cache_work=str(cache_work), grouped_cache=str(grouped), stages={})
@@ -135,32 +177,45 @@ def run_workflow(args, output, cache_work, checkpoint):
             if entry['exit'] != 0 or benchmark.digest(BINARY) != entry['executable_sha256']:
                 raise ValueError('The canonical Vox executable differs from its completed production receipt')
             report['production'] = entry
-            if checkpoint is not None:
-                stage = 'resume'
-                report['resume_seed'] = verify_interrupted_seed(args, checkpoint, cache_work, entry)
-            stage = 'seed'
-            seeded = browser_visit(stage, separate, prepare=True)
-            pins = seeded['inputs']
+            if packed_checkpoint is not None:
+                stage = 'verify-pack'
+                packed = verify_packed_checkpoint(args, packed_checkpoint, cache_work, entry)
+                report['verified_pack_from'] = str(packed_checkpoint.resolve())
+                benchmark.save(output / 'pack.json', packed)
+                report['stages']['pack'] = str(output / 'pack.json')
+            else:
+                if checkpoint is not None:
+                    stage = 'resume'
+                    report['resume_seed'] = verify_interrupted_seed(args, checkpoint, cache_work, entry)
+                stage = 'seed'
+                seeded = browser_visit(stage, separate, prepare=True)
+                verify_inputs(seeded['inputs'])
             stage = 'trace'
-            verify_inputs(pins)
             traced = browser_visit(stage, separate)
+            if packed_checkpoint is not None:
+                image = grouped / packed['abi'] / packed['library']
+                pins = traced['inputs'] | {str(image): packed['group_sha256']}
+                stage = 'reopen'
+                verify_inputs(pins)
+                reopened = browser_visit(stage, grouped)
+                verify_inputs(pins)
 
-        stage = 'pack'
-        verify_inputs(pins)
-        packed = pack_from_benchmark(output / 'seed/results.json', output / 'trace/results.json', grouped)
-        benchmark.save(output / 'pack.json', packed)
-        report['stages']['pack'] = str(output / 'pack.json')
-        image = grouped / packed['abi'] / packed['library']
-        pins = pins | {str(image): packed['group_sha256']}
-        benchmark.save(report_path, report)
+        if packed_checkpoint is None:
+            stage = 'pack'
+            pins = seeded['inputs']
+            verify_inputs(pins)
+            packed = pack_from_benchmark(output / 'seed/results.json', output / 'trace/results.json', grouped)
+            benchmark.save(output / 'pack.json', packed)
+            report['stages']['pack'] = str(output / 'pack.json')
+            image = grouped / packed['abi'] / packed['library']
+            pins = pins | {str(image): packed['group_sha256']}
+            benchmark.save(report_path, report)
 
-        stage = 'reopen'
-        with canonical_bundle_lease(BUNDLE):
-            verify_inputs(pins)
-            if benchmark.digest(BINARY) != entry['executable_sha256']:
-                raise ValueError('The published Vox executable changed before the grouped reopen')
-            reopened = browser_visit(stage, grouped)
-            verify_inputs(pins)
+            stage = 'reopen'
+            with canonical_bundle_lease(BUNDLE):
+                verify_inputs(pins)
+                reopened = browser_visit(stage, grouped)
+                verify_inputs(pins)
         stage = 'compare'
         report['pixels'] = verify_reopen(traced['attempts'][0], reopened['attempts'][0],
                                          packed, output, args.diff_tool)
@@ -180,7 +235,9 @@ def main():
     parser.add_argument('--diff-tool', type=Path, default=benchmark.ROOT / 'Build/pixel-tools/pixel_diff')
     parser.add_argument('--output', type=Path, required=True, help='new directory for replay reports and captures')
     parser.add_argument('--cache-work', type=Path, required=True, help='private directory for code and cache files')
-    parser.add_argument('--resume-seed', type=Path, help='results.json from an interrupted seed in --cache-work')
+    checkpoint = parser.add_mutually_exclusive_group()
+    checkpoint.add_argument('--resume-seed', type=Path, help='results.json from an interrupted seed in --cache-work')
+    checkpoint.add_argument('--verify-packed', type=Path, help='results.json from completed packing in --cache-work')
     parser.add_argument('--memory-guard-registry', type=Path, required=True)
     parser.add_argument('--adblock-assets', type=Path)
     parser.add_argument('--raster-parity-options', action='store_true')
