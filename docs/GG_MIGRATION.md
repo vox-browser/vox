@@ -2005,6 +2005,117 @@ All browsers and guards in the sealed cohort exited zero. The sealed build,
 screenshot and comparison jobs peaked at 6,721,585,152, 459,997,184 and
 638,713,856 bytes of sampled process-tree RSS.
 
+### Publishing Quartz color masks in place
+
+The Quartz fallback converts its premultiplied RGBA bitmap to coverage in
+place and takes a Core Graphics snapshot. The shared raster uses the same
+publisher. The copy path expands alpha-only clip bitmaps into RGBA and
+handles snapshot failures. It can retry a failed snapshot because the
+premultiplied white pixels have equal luminance and alpha.
+
+The native tests passed 16 exact publication comparisons across alpha and
+luminance, clipping and destination-in, sRGB and Display P3 destinations,
+and direct and cropped placements. The layer, cache and exhaustive pixel
+conversion checks also passed.
+
+A Clang `-O1` harness timed snapshot or copy publication through release of
+the source context. It created and drew the source before timing and
+verified the composited pixel hash afterward. Seven alternating pairs used
+fresh processes for each size and mode. Each small process published 51
+masks and each large process published 17. Warm times use the medians after
+the first sample of each process. All 56 processes matched their fixture's
+control pixel hash and exited zero. One-minute load ranged
+from 8.26 to 8.67 on 18 logical CPUs.
+
+| Mask | First before / after (µs) | Warm before / after (µs) | Faster pairs, first / warm |
+| --- | ---: | ---: | ---: |
+| 276 × 184 alpha | 747.958 / 697.709 | 55.270 / 40.500 | 5/7 / 7/7 |
+| 276 × 184 luminance | 717.709 / 660.500 | 61.167 / 41.792 | 5/7 / 7/7 |
+| 1902 × 1284 alpha | 1856.500 / 1511.375 | 1020.250 / 584.646 | 7/7 / 7/7 |
+| 1902 × 1284 luminance | 1929.416 / 1393.916 | 1069.333 / 601.229 | 7/7 / 7/7 |
+
+The harness SHA-256 was
+`68f6cbfcbb28d365951e9b5cae1456ec72ae90871b678165eac520db4fb69c18`.
+
+A second harness included the destination-in draw, image release and
+destination flush. It timed publication and drawing around the excluded
+destination allocation and fill. Every output matched its control hash.
+Across seven alternating pairs per row, the candidate improved every warm
+pair. Host load ranged from 6.16 to 6.94. The harness SHA-256 was
+`0cab4251b88f2573072996d065ae107b886aff132dc5bc5759cc90ae1401d181`.
+
+| Destination | Mask | First before / after (µs) | Warm before / after (µs) | Faster pairs, first / warm |
+| --- | --- | ---: | ---: | ---: |
+| sRGB | 276 × 184 alpha | 600.458 / 572.958 | 59.520 / 48.417 | 5/7 / 7/7 |
+| sRGB | 276 × 184 luminance | 569.042 / 555.583 | 60.584 / 48.813 | 6/7 / 7/7 |
+| sRGB | 1902 × 1284 alpha | 2242.501 / 1945.958 | 1423.062 / 1203.624 | 6/7 / 7/7 |
+| sRGB | 1902 × 1284 luminance | 2267.792 / 2053.292 | 1483.374 / 1200.792 | 6/7 / 7/7 |
+| Display P3 | 276 × 184 alpha | 834.001 / 832.208 | 211.145 / 196.417 | 4/7 / 7/7 |
+| Display P3 | 276 × 184 luminance | 799.459 / 785.833 | 214.104 / 199.645 | 4/7 / 7/7 |
+| Display P3 | 1902 × 1284 alpha | 8162.792 / 8163.292 | 7618.209 / 7177.709 | 3/7 / 7/7 |
+| Display P3 | 1902 × 1284 luminance | 8262.041 / 7670.209 | 7706.688 / 7312.146 | 6/7 / 7/7 |
+
+The private browsers shared one generated C unit from V `-prod` and used
+single-unit Clang `-O1 -fno-lto`. An unrelated Retina PNG metadata change
+landed during compilation. The first wheel cohort used a control without
+that change and was excluded. Its three pressure pairs measured
+15.25 → 13.81, 13.44 → 14.60 and 13.25 → 13.86 scroll fps. Its overlap
+pairs measured 27.82 → 28.71, 27.42 → 27.10 and 30.08 → 28.99 scroll fps.
+The matched control incorporated the same metadata statement into the
+sealed unit. The compiler inputs matched outside the mask publication
+functions and header.
+
+The generated C SHA-256 was
+`b4aaa0545a33da6b7db94fed8a3e66adda0cb60fb422f1425b975628f3485f61`.
+The executable hashes were
+`530f4bd2d2d6db0c34ed7ca331e568db8653af1bd60e18556f8566a62d7ffc95` for the
+matched control and
+`03c77bc5c67c800bd74cb54c19d04cf02e0bbc645240a3a0c91f3790009c726d` for the
+candidate. The candidate passed all 158 macOS SVG mask captures. In the
+matched comparison, four 2× capture pairs agreed on every pixel. Those
+included the default pressure and overlap workloads, plus the pressure
+and nested gradient-opacity fixtures with Quartz forced. The default
+pressure and overlap logs agreed on 385 and 116 shared-mask decisions.
+
+The wheel trials used the same 75-mask pressure and overlap files as the
+preceding section. Each run used a fresh process, profile and browser
+cache, a local file, JavaScript disabled and a 1024 × 600 viewport at 2×.
+Host caches were retained. A one-second title-matched settle preceded 120
+four-pixel wheel inputs at a requested 60 Hz, reversing after input 60.
+Throughput counts scroll-changing native frame installations after outer
+view paint over the first-to-last input window.
+
+A separate diagnostic launch on pressure (PID 5136) reported 568 Quartz
+fallbacks for denied cache admission, 496 hits including 73 crops, and 16
+new rasters between the start marker and final publication. The overlap
+launch (PID 5390) reported zero capacity denials, 622 hits including 155
+crops, and six new rasters. Timed launches disabled mask diagnostics.
+
+| PID | Fixture | Build | Scroll fps | Median / p95 / max (ms) | Input Hz | Inputs / changes | First / last scroll gap (ms) | Load |
+| --- | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| 5606 | Pressure | Before | 17.11 | 56.241 / 61.336 / 63.305 | 59.89 | 120 / 34 | 120.840 / 16.591 | 6.68 |
+| 5740 | Pressure | After | 16.86 | 56.985 / 63.537 / 64.871 | 59.00 | 120 / 34 | 119.766 / 0.092 | 6.38 |
+| 5852 | Pressure | After | 16.41 | 57.350 / 62.063 / 63.258 | 59.19 | 120 / 33 | 120.173 / 49.721 | 6.35 |
+| 5949 | Pressure | Before | 16.36 | 57.569 / 65.419 / 70.213 | 59.00 | 120 / 33 | 119.741 / 18.733 | 6.40 |
+| 6035 | Pressure | Before | 17.19 | 56.032 / 60.202 / 62.356 | 58.43 | 120 / 35 | 122.216 / 0.248 | 6.21 |
+| 6091 | Pressure | After | 15.94 | 57.562 / 64.483 / 116.434 | 57.47 | 120 / 33 | 123.732 / 48.983 | 6.03 |
+| 6149 | Overlap | Before | 33.56 | 28.368 / 33.951 / 53.576 | 58.72 | 120 / 68 | 66.902 / 16.635 | 5.71 |
+| 6216 | Overlap | After | 32.91 | 28.722 / 34.275 / 53.099 | 56.75 | 120 / 69 | 66.191 / 16.474 | 5.73 |
+| 6384 | Overlap | After | 33.67 | 28.789 / 33.924 / 35.278 | 58.07 | 120 / 69 | 66.673 / 16.601 | 6.14 |
+| 6849 | Overlap | Before | 29.33 | 32.694 / 42.703 / 54.551 | 57.21 | 120 / 61 | 73.437 / 16.921 | 5.88 |
+| 8075 | Overlap | Before | 32.16 | 30.118 / 34.767 / 37.762 | 57.12 | 120 / 67 | 74.589 / 0.132 | 7.09 |
+| 8327 | Overlap | After | 31.56 | 29.993 / 35.793 / 54.474 | 56.90 | 120 / 66 | 70.144 / 17.085 | 7.17 |
+
+The matched cohort ran 06:50:44–06:51:48 UTC on November 18, 2026.
+Load is the one-minute average at launch on the 18-CPU host. Peak scroll
+positions were 484.5–510 CSS pixels. Median pressure throughput fell from
+17.11 to 16.41 fps, and median overlap throughput rose from 32.16 to 32.91
+fps. Both fixtures slowed in two of three pairs. All measured intervals
+exceeded 16.67 ms. All browser, native test and guard exits were zero.
+Peak sampled process-tree RSS was 8,212,135,936 bytes for the original
+build job, 6,528,106,496 for the matched control rebuild, 471,252,992 for
+the screenshot suite, and 638,976,000 for the matched comparison.
+
 ## Original migration plan
 
 Vox currently renders through two Skia builds: LibWeb's Skia (CPU raster,
