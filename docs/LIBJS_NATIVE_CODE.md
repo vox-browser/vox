@@ -1825,9 +1825,8 @@ A standalone build using the committed constants retains the same 81
 archived modules and reuses all of them on the second sweep in both
 orders. The initial sweeps have 81 misses each. The runtime guards exit
 zero and the complete `browserjs` regression file passes the production
-type check. Windowed reload validation awaits a published build with the
-new limit. The latest managed attempt ran out of space staging generated C.
-Raw checks and inputs are under
+type check. The managed build ran out of space staging generated C during
+this check. Raw checks and inputs are under
 `docs/benchmark-results/github-frontend-budget-5204-r110/receipts`.
 
 ### Build helper scratch at process handoff
@@ -1845,3 +1844,37 @@ and both guards exited zero. A guarded worker build still ran out of
 space emitting its initial C file, before the new removal step. The
 published browser still predates the 6 MiB frontend limit. Raw commands
 and receipts are under `docs/benchmark-results/vox-v-tool-handoff-20261118/receipts`.
+
+### Windowed GitHub reload with the 6 MiB cache
+
+The archived `github.com/vlang/v` page completed before and after Cmd+R in
+each browser process. A signed private build (`3497cee9…7d84`) sealed the
+6 MiB frontend source and used single-unit V `-prod` with Clang `-O0`.
+Its compile and allocator staging ran on a temporary RAM volume because
+the shared production filesystem could not fit the build. The control
+was the published 4 MiB browser (`4e0651cd…c452`). Each run started with
+a fresh profile and HTTP cache and used the same verified grouped native
+cache contents, frozen archive and compatibility policy.
+
+| Browser | First document frontend hits / misses | Reload frontend hits / misses | Reload native hits |
+| --- | ---: | ---: | ---: |
+| Published 4 MiB control | 10 / 83 | 12 / 81 | 2,942 |
+| Private 6 MiB build | 22 / 83 | 99 / 0 | 2,895 |
+
+The private cache held 83 entries and 5,088,524 source bytes across the
+reload. All 81 modules fulfilled before and after the shortcut on both
+builds, with zero native misses or compiler calls and no JavaScriptCore
+context. Both builds reproduced their own window pixels exactly on reload.
+A separate 1024×768 document capture from the private build mapped the
+single grouped library, recorded 2,924 native hits, matched the published
+Vox document pixel for pixel and differed from the archived Brave reference
+by the same two pixels. The private build and startup smoke passed their
+guards. Browser and guard exits were zero for the verified captures.
+
+The earlier reload observer could accept a late audit from the first
+document. The verified runs observed the old runtime closing and a loading
+transition before accepting the second document. The local receipts retain
+the rejected attempts, corrected audits, build identity and PNG under
+`docs/benchmark-results/github-window-reload-20261118/receipts`. These are
+functional checks on frozen inputs. The scratch build used `-O0` and the
+managed optimized publication still depends on available disk space.
