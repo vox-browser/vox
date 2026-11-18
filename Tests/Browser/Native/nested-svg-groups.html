@@ -1,0 +1,22 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Nested SVG groups</title>
+<style>
+body { margin: 0; background: white; }
+header { width: 8px; height: 8px; background: #34b786; }
+section { position: relative; margin-left: 12px; height: 180px; }
+img, .background { position: absolute; top: 10px; height: 140px; }
+img { left: 0; width: 200px; }
+.background { left: 248px; width: 150px; background: url(nested-svg-groups.svg) left top / 200px 140px no-repeat; }
+section:nth-of-type(2) img { transform: translateX(12px) scale(1.2); transform-origin: top left; }
+</style>
+<header></header>
+<section><img src="nested-svg-groups.svg"><div class="background"></div></section>
+<section><img src="nested-svg-groups.svg"><div class="background"></div></section>
+<section><img src="nested-svg-groups.svg"><div class="background"></div></section>
+<section><img src="nested-svg-groups.svg"><div class="background"></div></section>
+<section><img src="nested-svg-groups.svg"><div class="background"></div></section>
+<section><img src="nested-svg-groups.svg"><div class="background"></div></section>
+<section><img src="nested-svg-groups.svg"><div class="background"></div></section>
+<section><img src="nested-svg-groups.svg"><div class="background"></div></section>
+<section><img src="nested-svg-groups.svg"><div class="background"></div></section>

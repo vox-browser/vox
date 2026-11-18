@@ -351,6 +351,41 @@ def check_svg_clip_browser(binary, artifacts, temporary):
     print("PASS: SVG clip bounds, curved unions, holes and fractional coverage", flush=True)
 
 
+def check_nested_svg_browser(binary, artifacts, temporary):
+    fixture = Path(__file__).resolve().parents[1] / "Tests/Browser/Native/nested-svg-groups.html"
+    screenshot = artifacts / "portable-svg-nested.png"
+    screenshot.unlink(missing_ok=True)
+    environment = smoke_environment(Path(temporary) / "svg-nested")
+    environment.pop("VOX_DISABLE_PORTABLE_SVG_CLIP", None)
+    environment.pop("VOX_DISABLE_PORTABLE_SVG_OPACITY", None)
+    environment.update(VOX_PORTABLE_SVG_CLIP_DIAGNOSTICS="1", VOX_PORTABLE_SVG_OPACITY_DIAGNOSTICS="1")
+    log = run_windowed([str(binary), "--window-width=1024", "--window-height=640",
+                        "--screenshot-viewport-height=640", f"--screenshot={screenshot}", str(fixture)],
+                       env=environment, log_path=artifacts / "portable-svg-nested.log")
+    assert "VOX_SVG_CLIP crop=false components=1 paths=2" in log, log
+    assert "VOX_SVG_OPACITY paths=2" in log, log
+    _, height, channels, rows = rendered_png_rows(screenshot.read_bytes())
+
+    def pixel(x, y):
+        return rows[y][x * channels:x * channels + 3]
+
+    marker = next((y for y in range(min(height, 150)) if pixel(4, y) == b"\x34\xb7\x86"), None)
+    assert marker is not None, "Missing document marker"
+    white = b"\xff\xff\xff"
+    top = marker + 18
+    for origin in (12, 260):
+        assert pixel(origin + 14, top + 14) == white, "Nested SVG drew beyond the curved clip"
+        assert pixel(origin + 30, top + 42) == b"\xff\x00\x00", "Nested SVG lost the red clip interior"
+        assert pixel(origin + 54, top + 42) == b"\x00\x00\xff", "Nested SVG lost the blue clip interior"
+        assert pixel(origin + 138, top + 40) in (b"\x7f\x7f\xff", b"\x80\x80\xff"), "Nested group applied opacity per path"
+    assert pixel(204, top + 102) == b"\xff\x88\x00"
+    assert pixel(218, top + 102) == white, "Path painted beyond the replaced image viewport"
+    assert pixel(420, top + 40) == white, "Nested group painted beyond the CSS background area"
+    assert pixel(465, top + 102) == white, "Path painted beyond the CSS background area"
+    assert pixel(60, top + 230) == b"\xff\x00\x00", "Nested clip did not follow the scaled image"
+    print("PASS: replaced and CSS background SVGs replay clip and opacity groups within their viewport", flush=True)
+
+
 def check_webgl_pixels(data):
     """Find both complete shader canvases, excluding unknown browser chrome."""
     width, height, channels, rows = rendered_png_rows(data)
@@ -683,6 +718,7 @@ def main():
         check_gradient_browser(binary, artifacts, temporary)
         check_svg_opacity_browser(binary, artifacts, temporary)
         check_svg_clip_browser(binary, artifacts, temporary)
+        check_nested_svg_browser(binary, artifacts, temporary)
         check_https_navigation(binary, temporary, environment)
         print("PASS: HTTPS navigation and certificate verification")
         server = http.server.ThreadingHTTPServer(("127.0.0.1", 0),

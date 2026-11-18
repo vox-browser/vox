@@ -9,6 +9,11 @@ import painting
 const portable_svg_group_max_paths = 128
 const portable_svg_group_max_pixels = 4 * 1024 * 1024
 
+fn (app &BrowserApp) portable_svg_group_allowed() bool {
+	return !app.ctx.native_rendering && app.page_zoom == 1 && app.paint_effect_depth == 0
+		&& app.paint_svg_mask_depth == 0 && app.portable_background_text_clip == none
+}
+
 fn portable_svg_group_clip_supported(command &layout.PaintCommand) bool {
 	if !chromium_shared_recording_clips_supported(command) || command.clip_outs.len > 0
 		|| command.recording_clip != none {

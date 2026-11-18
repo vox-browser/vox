@@ -3,6 +3,7 @@ module main
 import layout
 import math
 import os
+import painting
 
 const disable_portable_svg_opacity = os.getenv('VOX_DISABLE_PORTABLE_SVG_OPACITY') == '1'
 const portable_svg_opacity_diagnostics = os.getenv('VOX_PORTABLE_SVG_OPACITY_DIAGNOSTICS') == '1'
@@ -30,17 +31,13 @@ fn portable_svg_opacity_end(commands []layout.PaintCommand, start int, layer &la
 }
 
 fn (mut app BrowserApp) draw_portable_svg_opacity_group(commands []layout.PaintCommand,
-	start int, page_x f32, page_y f32) int {
-	if disable_portable_svg_opacity || app.ctx.native_rendering || app.page_zoom != 1
-		|| app.paint_effect_depth != 0 || app.paint_svg_mask_depth != 0
-		|| app.portable_background_text_clip != none {
-		return start
-	}
+	start int, page_x f32, page_y f32, outer_viewport ?painting.Rect) int {
+	if disable_portable_svg_opacity || !app.portable_svg_group_allowed() { return start }
 	opening := &commands[start]
 	layer := normal_opacity_paint_layer(opening) or { return start }
 	end := portable_svg_opacity_end(commands, start, layer) or { return start }
 	scale := f64(app.ctx.scale)
-	mut viewport := app.portable_device_viewport(page_y)
+	mut viewport := outer_viewport or { app.portable_device_viewport(page_y) }
 	if clip := opening.effect_ancestor_clip() {
 		viewport = viewport.intersection(portable_svg_device_clip(clip, page_x, page_y, scale))
 	}

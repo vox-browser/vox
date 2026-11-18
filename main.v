@@ -6312,17 +6312,15 @@ fn (mut app BrowserApp) draw_command(source_command &layout.PaintCommand, page_x
 					return
 				}
 			}
-			clip_left := int(math.floor(f64(x)))
-			clip_top := int(math.floor(f64(y)))
-			clip_right := int(math.ceil(f64(x + w)))
-			clip_bottom := int(math.ceil(f64(y + h)))
-			for nested_command in command.nested_viewport_commands {
-				app.ctx.scissor_rect(clip_left, clip_top, clip_right - clip_left, clip_bottom - clip_top)
-				transformed := layout.paint_command_for_nested_viewport(nested_command, command.transform, painting.IntPoint{result.nested_rect.x, result.nested_rect.y}, command.opacity)
-				app.draw_command(transformed, page_x, page_y, window_height)
-			}
-			app.flush_rounded_rect_underlay(page_x, page_y, window_height)
-			app.ctx.scissor_rect(0, 0, app.ctx.width, app.ctx.height)
+			clip := result.clip_rect
+			viewport := portable_device_transform(command.transform, 0, 0, 1).map_rect(
+				painting.Rect{f64(clip.x), f64(clip.y), f64(clip.width), f64(clip.height)})
+			app.draw_portable_nested_commands(command.nested_viewport_commands, PortableNestedPlacement{
+				transform: command.transform
+				origin: painting.IntPoint{result.nested_rect.x, result.nested_rect.y}
+				opacity: command.opacity
+				clip: portable_nested_clip(command, viewport)
+			}, page_x, page_y, window_height)
 		}
 		'paint_outer_box_shadow' {
 			app.draw_portable_shadow(*command, page_x, page_y, scroll_y)
@@ -7233,10 +7231,22 @@ fn (mut app BrowserApp) draw_command(source_command &layout.PaintCommand, page_x
 						}
 					}
 					if commands := nested_commands {
-						app.draw_nested_svg_commands(commands, replay.transform,
-							if chromium_svg { painting.IntPoint{} } else { painting.IntPoint{destination.x, destination.y} },
-							command.opacity, page_x, page_y, window_height)
-						app.flush_rounded_rect_underlay(page_x, page_y, window_height)
+						origin := if chromium_svg { painting.IntPoint{} } else { painting.IntPoint{destination.x, destination.y} }
+						if app.ctx.native_rendering {
+							app.draw_nested_svg_commands(commands, replay.transform, origin, command.opacity,
+								page_x, page_y, window_height)
+							app.flush_rounded_rect_underlay(page_x, page_y, window_height)
+						} else {
+							viewport := portable_device_transform(replay.transform, 0, 0, 1).map_rect(
+								painting.Rect{f64(origin.x), f64(origin.y), replay.content_width(), replay.content_height()})
+							background_clip := portable_device_transform(command.transform, 0, 0, 1).map_rect(image_bounds)
+							app.draw_portable_nested_commands(commands, PortableNestedPlacement{
+								transform: replay.transform
+								origin: origin
+								opacity: command.opacity
+								clip: portable_nested_clip(command, viewport.intersection(background_clip))
+							}, page_x, page_y, window_height)
+						}
 					}
 					$if macos {
 						if app.ctx.native_rendering { C.native_end_clip() }
@@ -7828,7 +7838,7 @@ fn (mut app BrowserApp) draw() {
 							app.chromium_raster_plan.command_layers, command_index, 0, page_y)
 					} else if culling.resource_depth == culling.depth {
 						shared_svg_end = app.draw_portable_svg_clip_group(app.paint_commands,
-							command_index, 0, page_y)
+							command_index, 0, page_y, none)
 					}
 					if shared_svg_end > command_index { continue }
 				}
@@ -7845,7 +7855,7 @@ fn (mut app BrowserApp) draw() {
 					}
 					if !app.ctx.native_rendering && culling.resource_depth == 0 {
 						shared_svg_end = app.draw_portable_svg_opacity_group(app.paint_commands,
-							command_index, 0, page_y)
+							command_index, 0, page_y, none)
 					}
 					if shared_svg_end > command_index { continue }
 				}

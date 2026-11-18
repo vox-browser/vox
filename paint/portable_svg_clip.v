@@ -30,17 +30,13 @@ fn portable_svg_clip_group_end(commands []layout.PaintCommand, start int, mask l
 }
 
 fn (mut app BrowserApp) draw_portable_svg_clip_group(commands []layout.PaintCommand,
-	start int, page_x f32, page_y f32) int {
-	if disable_portable_svg_clip || app.ctx.native_rendering || app.page_zoom != 1
-		|| app.paint_effect_depth != 0 || app.paint_svg_mask_depth != 0
-		|| app.portable_background_text_clip != none {
-		return start
-	}
+	start int, page_x f32, page_y f32, outer_viewport ?painting.Rect) int {
+	if disable_portable_svg_clip || !app.portable_svg_group_allowed() { return start }
 	mask := commands[start].mask_clip()
 	if !mask.is_svg_mask || mask.is_svg_content_mask || mask.path_components.len > 64 { return start }
 	end := portable_svg_clip_group_end(commands, start, mask) or { return start }
 	scale := f64(app.ctx.scale)
-	mut viewport := app.portable_device_viewport(page_y)
+	mut viewport := outer_viewport or { app.portable_device_viewport(page_y) }
 	mut direct_crop := false
 	if rect := svg_background_rectangular_clip(mask) {
 		device := portable_device_transform([f64(1), 0, 0, 1, 0, 0]!, page_x, page_y, scale).map_rect(rect)
