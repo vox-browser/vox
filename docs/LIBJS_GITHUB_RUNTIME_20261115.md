@@ -9576,3 +9576,32 @@ trial completed. Managed production receipts continue to show disk-space
 failures. Browser page timing remains pending. The sample, source pins,
 test and benchmark receipts are local under
 `docs/benchmark-results/github-profile-5204-r113/receipts`.
+
+### Scope identifier map copies
+
+Commit `6a0b5819b` resolves identifiers directly from each scope's
+insertion-ordered map. The loop annotates identifier nodes and propagates
+references to the parent. The current scope's map remains live until
+propagation finishes. The scope-order and rollback regression suites
+pass with assertions enabled, covering local index order, captures and
+repeated speculative parsing.
+
+The earlier stack sample includes copying below
+`ScopeCollector.resolve_identifiers`. Disassembly of the matched parser
+binaries confirms one map-clone call in that function before the change
+and zero afterwards. The source manifests differ only in
+`libjs/scope_collector.v`.
+
+Seven alternating fresh-process pairs parse the 81 pinned GitHub modules
+without diagnostics or recursion-limit failures. Both builds use Clang
+`-O2`, V development mode and `-prealloc -gc none`. Median full-frontend
+instructions fall from 6,979,238,622 to 6,919,320,506, a 0.86% reduction.
+Median elapsed time falls from 656.087 to 650.450 ms. Every pair improves
+in instructions, and six improve in elapsed time. Host one-minute load
+ranges from 11.05 to 11.31 on 18 CPUs. The 3 GiB guard exits zero in
+10.278 seconds at 2,559,754,240 sampled peak bytes.
+
+The published browser predates this change. Recent managed builds still
+fail on disk writes. The page-render timing remains pending. The parser
+trials, source manifests, test results and disassembly witness are local
+under `docs/benchmark-results/github-scope-map-5204-r114/receipts`.
