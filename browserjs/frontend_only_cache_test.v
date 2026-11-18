@@ -61,4 +61,18 @@ fn test_frontend_only_control_reuses_syntax_without_enabling_native_execution() 
 	cached := runtime.prepare_libjs_script(ScriptSource{code: code})!
 	assert voidptr(cached.frontend) == voidptr(first)
 	assert voidptr(cached.source.code.str) == voidptr(first.source_text.str)
+
+	// Three sources of this size exceed the aggregate budget. Two fit.
+	padding := ' '.repeat(2 * 1024 * 1024)
+	large_first := '${code}; 1;\n//${padding}'
+	large_second := '${code}; 2;\n//${padding}'
+	large_third := '${code}; 3;\n//${padding}'
+	first_large := runtime.prepare_libjs_frontend(large_first, .script, options)
+	second_large := runtime.prepare_libjs_frontend(large_second, .script, options)
+	assert !first_large.has_errors() && !second_large.has_errors()
+	revisited_first := runtime.prepare_libjs_frontend(large_first, .script, options)
+	assert voidptr(revisited_first) == voidptr(first_large)
+	assert !runtime.prepare_libjs_frontend(large_third, .script, options).has_errors()
+	assert voidptr(runtime.prepare_libjs_frontend(large_first, .script, options)) == voidptr(first_large)
+	assert voidptr(runtime.prepare_libjs_frontend(large_second, .script, options)) != voidptr(second_large)
 }

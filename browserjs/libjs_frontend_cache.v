@@ -26,7 +26,8 @@ mut:
 }
 
 const libjs_frontend_cache = &LibJSFrontendCache{}
-const libjs_frontend_cache_source_limit = 4 * 1024 * 1024
+const libjs_frontend_cache_source_limit = 6 * 1024 * 1024
+const libjs_frontend_cache_max_entry_bytes = 4 * 1024 * 1024
 const libjs_frontend_cache_entry_limit = 128
 
 pub struct LibJSFrontendCacheStats {
@@ -56,7 +57,7 @@ fn (runtime &Runtime) prepare_libjs_frontend(source string, kind libjs.SourceTyp
 	persistent := platform.enter_persistent()
 	defer { platform.leave_persistent(persistent) }
 	mut owner := unsafe { &Runtime(runtime) }
-	if !runtime.use_libjs_frontend_cache() || source.len > libjs_frontend_cache_source_limit {
+	if !runtime.use_libjs_frontend_cache() || source.len > libjs_frontend_cache_max_entry_bytes {
 		owner.libjs_frontend_cache_misses_++
 		return libjs.parse_source_with_options(source.clone(), kind, options)
 	}
