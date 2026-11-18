@@ -58,6 +58,22 @@ fn test_unchanged_chrome_text_and_title_lists_allocate_no_frame_storage() {
 	assert first.tab_titles == ['Steady']
 }
 
+fn test_tab_title_lookup_releases_storage_across_unrelated_text_changes() {
+	mut document := chrome_text_document('<!doctype html><title>Steady</title><p>First</p>')
+	defer { document.finalize() }
+	mut app := &BrowserApp{document: document}
+	body := document.body() or { panic('missing body') }
+	paragraph := body.as_node().first_child() or { panic('missing paragraph') }
+	mut text := paragraph.first_child() or { panic('missing paragraph text') }
+	assert app.browser_tab_title() == 'Steady'
+	for index in 0 .. 128 {
+		text.set_text_content(if index % 2 == 0 { 'Second' } else { 'First' })!
+		before := platform.thread_arena_usage().used
+		assert app.browser_tab_title() == 'Steady'
+		$if prealloc { assert platform.thread_arena_usage().used == before }
+	}
+}
+
 fn test_chrome_text_cache_owns_values_read_during_temporary_paint_work() {
 	mut document := chrome_text_document('<!doctype html><title>Owned</title>')
 	defer { document.finalize() }
