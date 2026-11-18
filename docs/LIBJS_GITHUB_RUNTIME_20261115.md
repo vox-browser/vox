@@ -7372,3 +7372,35 @@ up the next request and the installed executable is still
 `23ba3183…3bb`. The full cached-native Back replay under 12 GiB remains
 pending. Exact local commands, pins and receipts are under
 `repository-navigation-5204-r78`.
+
+### LibJS built-in array iterator steps
+
+Commit `3d052fec4` lets internal iterator steps consume the yielded value
+and completion flag from the captured built-in Array iterator method.
+The step uses the same native call-frame setup as an ordinary native call.
+Array-like getters, TypedArray bounds checks and entry pairs stay on the
+shared iterator implementation. Direct `next()` calls still return fresh
+ordinary objects. Custom methods follow the generic iterator protocol.
+
+Three alternating fresh-process pairs use matching single-C prealloc
+builds. The 493 source and fixture pins differ only in the three
+implementation files. Every process yields 24,000 array elements and
+sums 108,000. The control caller arena grows by 41,956,992 bytes in
+each pair. The candidate grows by 8,693,008 bytes, **79.3% less**.
+The earlier trial that allocated the two properties together used
+41,957,006 bytes. That trial was reverted and its receipt is retained.
+
+A fresh native-cache process reopens with `/usr/bin/false`, verifies
+the same results, and exercises reentrant length reads, thrown value
+identity, captured and overridden `next` methods, and TypedArrays.
+It records 16 hits, 24 native entries, 138,431 helper steps, and zero
+misses, compiler calls, pending or invalid entries. The seed compiles
+16 executables in one compiler call. All runtime processes and guards
+exit zero. The production type check passes in 44.282047083 seconds at
+7,109,165,056 sampled peak bytes. The native-frame regression source
+remains unrun under the automated-test hold.
+
+Managed production attempt `20261118-030853-ecf3924d` is underway. The
+installed browser is still `23ba3183…3bb`. Full cached-native Back
+restoration under 12 GiB remains pending. Local commands, pins and
+receipts are under `repository-navigation-5204-r79`.
