@@ -1454,6 +1454,68 @@ arguments. The corrected command used the same generated C. The screenshot
 guard peaked at 541,966,336 bytes. The timing jobs peaked at 683,769,856 and
 600,162,304 bytes.
 
+### Caching linear gradient fills in SVG opacity groups on macOS
+
+The automatic cache accepts up to two supported linear gradients among
+the six aligned rectangle fills in a nested or sibling opacity sequence.
+The full bitmap still uses the 128 Ki-pixel limit and the existing cache
+admission rules. Radial gradients retain the previous eligibility. A new
+radial sibling in the initial fixture differed from Quartz by three channel
+levels in the forced shared renderer at 1×, so the new route keeps that
+sequence on Quartz.
+
+The published single-unit executable
+`870e280a166afa2249e1f90dcd8fb7cee701e0614f25414dd12004c9f4472077`
+used Quartz for the automatic path on both linear fixtures. Three matched
+screenshot sets compared automatic, Quartz and forced shared replay in fresh
+processes. The largest channel difference from Quartz was two for the regular
+fixture at both scales and for the 30-mask pressure fixture at 2×. All nine
+browser exits and the guard exit were zero.
+
+The private single-unit V `-prod`, Clang `-O1` executable SHA-256 was
+`5a109f23a1350184a1eacf9f1632cdada3272c161b3a462213dc42ace6312d07`.
+All 104 macOS captures passed. The mixed alpha and luminance masks matched
+uncached shared rendering pixel for pixel at 1× and 2×, including cropped
+viewport hits. The largest 2× channel difference from Quartz was two.
+Radial siblings, groups with three gradients and uncached automatic mode
+matched explicit Quartz. The native pixel and layer tests passed.
+
+The regular and 75-mask pressure fixtures had SHA-256 digests
+`526cd8171ae580d1be70ac5c9d4b00b1837243253e2648a2c67724591bf014e6` and
+`b748a2e7db06461df5b1dadf2c0e71882011474419ea1f84b3165bab8cc7d9f5`.
+They ran as local files with scripts disabled at 1024 × 600 and 2×, with
+fresh processes, caches and private profiles and a one-second title-matched
+settle. `tools/measure_precise_scroll.py` delivered 120 four-pixel inputs at a
+requested 60 Hz and reversed at 60 inputs. Maximum scroll positions were
+487.5–510 CSS pixels, below the bottom of either document. The endpoint was
+completed native frame installation after outer view paint over the first-to-last
+input window. Each timed pair changed only `VOX_SHARED_SVG_MASK_RASTER` from
+`0` to automatic.
+
+Instrumented PID 93723 recorded 638 regular-fixture cache hits, 152 cropped
+hits and six fresh rasters during input. Pressure PID 93875 recorded 496 hits,
+78 cropped hits, 16 fresh rasters and 568 Quartz fallbacks. The timed launches
+used diagnostics off.
+
+| PID | Fixture | Raster | Scroll fps | Median / p95 / max (ms) | Input Hz | Inputs / changes | First / last gap (ms) | Load |
+| --- | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| 94153 | Regular | Quartz | 23.21 | 41.255 / 45.279 / 45.806 | 57.54 | 120 / 48 | 90.816 / 33.224 | 6.10 |
+| 94467 | Regular | Automatic | 33.66 | 28.153 / 33.776 / 57.366 | 56.42 | 120 / 71 | 65.166 / 16.837 | 6.42 |
+| 94674 | Regular | Quartz | 22.87 | 41.086 / 44.859 / 83.005 | 56.71 | 120 / 48 | 92.047 / 34.203 | 6.22 |
+| 94821 | Regular | Automatic | 34.77 | 27.329 / 32.074 / 34.730 | 59.11 | 120 / 70 | 61.583 / 17.198 | 6.77 |
+| 94967 | Pressure | Quartz | 11.91 | 77.080 / 84.254 / 84.847 | 56.67 | 120 / 25 | 161.522 / 66.693 | 6.62 |
+| 95158 | Pressure | Automatic | 14.79 | 64.248 / 69.711 / 71.944 | 58.66 | 120 / 30 | 130.891 / 33.739 | 6.57 |
+| 95300 | Pressure | Quartz | 10.86 | 85.513 / 93.632 / 98.935 | 58.77 | 120 / 22 | 169.677 / 51.263 | 6.29 |
+| 95648 | Pressure | Automatic | 13.65 | 68.947 / 77.796 / 77.894 | 57.99 | 120 / 28 | 135.218 / 48.846 | 6.26 |
+
+The timed cohort ran 04:59:33–05:00:15 UTC on November 18, 2026. Load is
+the one-minute average on the 18-CPU host at launch. Throughput, median and
+p95 improved in all four pairs. The maximum interval rose in one regular
+pair. All measured intervals exceeded 16.67 ms. The timed and instrumented
+browsers and their guard exited zero. Peak sampled RSS was 8,142,831,616
+bytes for the final build, 479,019,008 for the screenshots and 604,979,200
+for the scroll cohort.
+
 ## Original migration plan
 
 Vox currently renders through two Skia builds: LibWeb's Skia (CPU raster,
