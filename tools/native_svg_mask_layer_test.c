@@ -1,5 +1,6 @@
 #include "native/include/native_svg_mask_layer_darwin.h"
 #include "native/include/native_svg_mask_cache_key.h"
+#include "native/include/native_svg_mask_raster_cache_darwin.h"
 #include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -13,6 +14,73 @@ static CGContextRef bitmap(void)
     CGColorSpaceRelease(space);
     assert(context != NULL);
     return context;
+}
+
+static const NativeSVGMaskRasterCacheEntry *scan_mask_raster_cache(
+    const NativeSVGMaskRasterCache *cache)
+{
+    const NativeSVGMaskRasterCacheEntry *oldest = &cache->entries[0];
+    for (int index = 1; index < NATIVE_SVG_MASK_RASTER_CACHE_SIZE; ++index) {
+        const NativeSVGMaskRasterCacheEntry *entry = &cache->entries[index];
+        if (entry->image == NULL || entry->last_use < oldest->last_use) {
+            oldest = entry;
+        }
+    }
+    return oldest;
+}
+
+static void check_mask_raster_replacement(void)
+{
+    NativeSVGMaskRasterCache cache = {0};
+    CGContextRef context = bitmap();
+    CGImageRef image = CGBitmapContextCreateImage(context);
+    assert(image != NULL);
+    for (int index = NATIVE_SVG_MASK_RASTER_CACHE_SIZE - 1; index >= 0; --index) {
+        assert(native_svg_mask_raster_can_admit(&cache, UINT64_MAX));
+        assert(cache.replacement == &cache.entries[index]);
+        assert(native_svg_mask_raster_store(&cache,
+            (NativeSVGMaskRasterCacheEntry){index + 1, image, UINT64_MAX, UINT64_MAX}) == NULL);
+    }
+
+    // Equal timestamps retain the first slot. Its admission age is checked
+    // anew even across frame rollover while the cached slot stays valid.
+    assert(!native_svg_mask_raster_can_admit(&cache, UINT64_MAX));
+    assert(!native_svg_mask_raster_can_admit(&cache, 0));
+    assert(native_svg_mask_raster_can_admit(&cache, 1));
+    assert(cache.replacement == &cache.entries[0]);
+    native_svg_mask_raster_touch(&cache, &cache.entries[0], UINT64_MAX, 1);
+    assert(cache.replacement == &cache.entries[0]);
+    assert(!native_svg_mask_raster_can_admit(&cache, 1));
+    native_svg_mask_raster_touch(&cache, &cache.entries[1], 0, 1);
+    assert(cache.replacement == NULL);
+    native_svg_mask_raster_touch(&cache, &cache.entries[2], 1, 1);
+    assert(native_svg_mask_raster_replacement(&cache) == &cache.entries[1]);
+    native_svg_mask_raster_touch(&cache, &cache.entries[2], 2, 1);
+    assert(cache.replacement == &cache.entries[1]);
+    native_svg_mask_raster_touch(&cache, &cache.entries[1], 3, 1);
+    assert(cache.replacement == NULL);
+    assert(native_svg_mask_raster_replacement(&cache) == &cache.entries[2]);
+
+    // Compare hits, capacity misses and stores against the original full scan.
+    uint32_t sequence = 1;
+    for (uint64_t step = 0; step < 4096; ++step) {
+        uint64_t frame = 1 + step / 19;
+        sequence = sequence * 1664525u + 1013904223u;
+        int slot = (sequence >> 16) % NATIVE_SVG_MASK_RASTER_CACHE_SIZE;
+        if (sequence % 3 != 0) {
+            native_svg_mask_raster_touch(&cache, &cache.entries[slot], 4 + step, frame);
+        }
+        const NativeSVGMaskRasterCacheEntry *expected = scan_mask_raster_cache(&cache);
+        assert(native_svg_mask_raster_can_admit(&cache, frame) == (frame - expected->frame > 1));
+        assert(cache.replacement == expected);
+        if (frame - expected->frame > 1) {
+            assert(native_svg_mask_raster_store(&cache,
+                (NativeSVGMaskRasterCacheEntry){100 + step, image, 4 + step, frame}) == image);
+            assert(expected->key == 100 + step);
+        }
+    }
+    CGImageRelease(image);
+    CGContextRelease(context);
 }
 
 static void begin_layer(CGContextRef context, CGRect rect, int optimized)
@@ -128,6 +196,7 @@ static CGContextRef coverage_scene(int srgb, int clip, int full)
 
 int main(void)
 {
+    check_mask_raster_replacement();
     for (int content = 0; content < 2; ++content) {
         uint64_t standard = native_svg_mask_cache_key(17, content, 1024, 640, 0, 64, 0, 1);
         assert(standard == native_svg_mask_cache_key(17, content, 1024, 640, 0, 64, 0, 1));
@@ -173,6 +242,6 @@ int main(void)
         CGContextRelease(reference);
         CGContextRelease(shared);
     }
-    printf("SVG mask layers: %d exact scenes, clip restoration, bounds and backing-scale keys passed\n", cases);
+    printf("SVG mask layers: %d exact scenes, clip restoration, bounds, cache keys and replacement passed\n", cases);
     return 0;
 }
