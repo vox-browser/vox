@@ -102,6 +102,41 @@ static void check_backdrop_snapshot_ownership(void) {
     assert([expected isEqualToData:render_pixels(input, area)]);
 }
 
+static void check_svg_turbulence(void) {
+    const size_t width = 317;
+    const int32_t height = 257;
+    const size_t bytes = width * height * 4;
+    NSMutableData *serial = [NSMutableData dataWithLength:bytes];
+    NSMutableData *parallel = [NSMutableData dataWithLength:bytes];
+    int original_rounding = fegetround();
+
+    for (int mode = 0; mode <= 1; ++mode) {
+        assert(fesetround(mode == 0 ? FE_TONEAREST : FE_DOWNWARD) == 0);
+        NativeSVGFilterNode node = {.first = .018, .second = .037, .third = 3,
+            .fourth = -17, .mode = mode};
+        setenv("VOX_SERIAL_CPU_RASTER", "1", 1);
+        native_svg_render_turbulence_pixels(serial.mutableBytes, width, height,
+            node.first, node.second, node.third, node.fourth, mode, 1.25);
+        unsetenv("VOX_SERIAL_CPU_RASTER");
+        memset(parallel.mutableBytes, 0xff, bytes);
+        native_svg_render_turbulence_pixels(parallel.mutableBytes, width, height,
+            node.first, node.second, node.third, node.fourth, mode, 1.25);
+        assert([parallel isEqualToData:serial]);
+        assert(fegetround() == (mode == 0 ? FE_TONEAREST : FE_DOWNWARD));
+        assert(fesetround(original_rounding) == 0);
+
+        CGRect bounds = CGRectMake(-5, 13, width, height);
+        setenv("VOX_SERIAL_CPU_RASTER", "1", 1);
+        CIImage *before = native_apply_svg_turbulence(bounds, &node, 1.25);
+        unsetenv("VOX_SERIAL_CPU_RASTER");
+        CIImage *after = native_apply_svg_turbulence(bounds, &node, 1.25);
+        assert(before && after && CGRectEqualToRect(before.extent, bounds)
+            && CGRectEqualToRect(after.extent, bounds));
+        assert([render_pixels(before, bounds) isEqualToData:render_pixels(after, bounds)]);
+    }
+    fprintf(stderr, "PASS serial and parallel SVG turbulence pixels, rounding, and image extent\n");
+}
+
 static void paint_filtered_frame(id view, SEL selector, NSRect rect) {
     (void)view; (void)selector; (void)rect;
     native_begin_font_compositing_layer(1280, 900);
@@ -127,6 +162,7 @@ int main(void) { @autoreleasepool {
     native_initialize_css_filter_renderer();
     check_formats_and_ownership();
     check_backdrop_snapshot_ownership();
+    check_svg_turbulence();
     NSView *view = [[NSView alloc] initWithFrame:NSMakeRect(0, 0, 1280, 900)];
     uint64_t warm = 0, peak = 0;
     for (int frame = 0; frame < 200; ++frame) {

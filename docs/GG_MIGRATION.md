@@ -4832,3 +4832,46 @@ scroll offset stayed fixed. The measurement driver exited 1 for GitHub and
 These runs establish eligibility on the older bundle. The before/after
 timings cover the native upload and adoption only. Whole-browser timing
 for the new code awaits a published build containing it.
+
+### Parallel native SVG turbulence
+
+The macOS SVG filter graph builds its deterministic gradient table once.
+The CPU raster workers then fill disjoint row bands of the turbulence
+bitmap. Core Image receives the complete bitmap after all workers join.
+Small images and `VOX_SERIAL_CPU_RASTER=1` use a single range. Both
+`turbulence` and `fractalNoise` retain their pixel arithmetic.
+
+Matching Apple Clang 21 `-O2` harnesses measured gradient-table setup and
+RGBA generation through completion. Seven alternating fresh-process
+groups used the previous function, the candidate with forced serial
+execution, and the candidate with default workers. Warm cases generated
+one untimed image first. The 18-logical-CPU host's one-minute load was
+8.70–12.41. All processes and the memory guard exited zero. Output hashes
+matched across all arms.
+
+| Bitmap and filter | Before, ms | Candidate serial, ms | Candidate default, ms | Default faster than before |
+| --- | ---: | ---: | ---: | ---: |
+| 64×65, one octave, turbulence, warm | 0.055 | 0.056 | 0.056 | 2/7 |
+| 257×193, three octaves, fractal noise, cold | 1.084 | 1.256 | 0.439 | 7/7 |
+| 641×393, three octaves, turbulence, warm | 7.527 | 6.609 | 1.868 | 7/7 |
+| 1281×785, four octaves, fractal noise, warm | 34.097 | 34.252 | 9.165 | 7/7 |
+
+An earlier callback implementation at load 5.50 had before/default
+medians of 0.043/0.047, 0.919/0.301, 4.542/1.283 and 23.652/6.856 ms.
+A separate diagnostic resolved the final worker entry at Mach-O offset
+`0xe10` and observed four distinct threads in each large dispatch. The
+small and forced-serial cases did not dispatch. ASan/UBSan and
+ThreadSanitizer passed both large raster cases. The native CSS filter
+suite compared exact serial/parallel bytes, rounding modes, translated
+Core Image output and repeated-frame ownership.
+
+The published single-C-unit build
+`296096c89d6b92677139a110f2004bfe8df20d6ebc70db759960be3046c4e829`
+supplied eligibility observations. Sealed Hacker News, GitHub and Old
+Reddit captures retained their prior content and decoded RGBA references
+at 1024×768 CSS pixels and 2× backing scale with a one-second settle.
+None called the turbulence rasterizer. A local `feTurbulence` control
+activated the probe at executable offset `0x2ed0c` with a 1282×786
+noise image. All browser processes and the memory guard exited zero.
+The before/after timings cover only the native filter. A published
+browser with the new worker code is pending.
