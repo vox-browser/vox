@@ -556,3 +556,44 @@ exits are zero. The guard adopts 28 processes and records 129.417 seconds
 and 7,027,703,808 sampled peak bytes. Exact counts, image audits, input
 hashes and failed-build receipts stay local under
 `docs/performance/libjs-github-browser-20261116/libjs-github-empty-calls-after-20261118/`.
+
+## Operand slot decoding, 2026-11-18
+
+A paired profile on `9c165f7a…8301` matches the pinned GitHub image and
+repository audit in both modes and fulfills all 81 modules. The native
+capture records 2,947 hits and zero misses or compiler calls. Main-thread
+stacks include operand slot resolution in 19 of 716 interpreter samples
+and one of 708 native samples. These are instrumented observations.
+
+`ff9d28415` resolves the encoded tag and bounds in one step, eliminating
+the intermediate checked tag result in the common operand path. Registers,
+locals, constants and arguments keep their original slot and error rules.
+A standalone probe compares the exact old and new decoder bodies over
+2,560 cases, including all eight tags, read and write access, and boundary
+indices. All 360 valid offsets and 2,200 error messages match. Focused
+regression source remains unrun under the automated-suite hold.
+
+Two single-C `-prod -prealloc -gc none` builds verify a 750,000-call loop.
+Their generated host C differs in the slot decoder and the embedded source
+used for cache ABI hashing. Both compile exactly the same 5,006 native C
+bytes and matching machine-code sections, then reopen with the compiler
+disabled. Each returns 42 and records one cache hit, zero misses or
+compiler calls, and 750,000 native slow call steps in the separate
+eligibility run. The interpreter returns the same result.
+
+Seven alternating fresh-process pairs per tier count retired instructions
+through process exit with native diagnostics disabled during measurement.
+
+| Focused workload | Previous median | Direct tag median | Reduction |
+| --- | ---: | ---: | ---: |
+| Cached native | 1,077,818,478 | 1,068,678,071 | 0.85% |
+| Interpreter | 2,037,325,893 | 2,014,575,108 | 1.12% |
+
+All 28 processes and the 3-GiB guard exit zero. The guard records 4.066
+seconds and 85,704,704 sampled peak bytes. The source-based ABI fingerprint
+includes `operand.v`, so the new production build requires a new cache
+partition. The GitHub profile uses the installed predecessor. The managed
+hook requests the production build for page-level verification.
+
+Raw profiles, exact counts, generated C and guard receipts stay local under
+`docs/performance/libjs-github-browser-20261116/libjs-github-call-profile-9c16-20261118/`.
