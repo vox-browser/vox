@@ -31,7 +31,12 @@ fn png_sampling_bytes_supported(bytes []u8) bool {
 
 fn (mut app BrowserApp) sampled_png_decode(url string, image &gg.Image, width f64, height f64) ?SampledPNGUpload {
 	if image.path != '' || image.nr_channels != 6 || image.data == unsafe { nil } { return none }
-	dw, dh := imageraster.decode_size(image.width, image.height, width, height) or { return none }
+	raster_extent := [width, height]!
+	decode_extent := sampled_png_decode_extent(raster_extent, app.document.rendering_device_pixel_ratio(),
+		C.native_raster_device_pixel_ratio()) or { return none }
+	dw, dh := sampled_png_decode_size(image.width, image.height, raster_extent, decode_extent) or {
+		return none
+	}
 	bytes := app.background_image_bytes(url) or { return none }
 	profile := imageraster.png_sampling_profile(bytes) or { return none }
 	mut gpu_mips := profile.gamma > 0
@@ -72,12 +77,6 @@ fn (mut app BrowserApp) sampled_png_decode(url string, image &gg.Image, width f6
 	return SampledPNGUpload{ image: app.ctx.get_cached_image_by_idx(result.id), gpu_mips: gpu_mips }
 }
 
-fn (app &BrowserApp) sampled_png_decode_extent_for_frame(geometry SampledPNGGeometry) ?[2]f64 {
-	extent := [f64(geometry.width), f64(geometry.height)]!
-	return sampled_png_decode_extent(extent, app.document.rendering_device_pixel_ratio(),
-		C.native_raster_device_pixel_ratio())
-}
-
 fn (mut app BrowserApp) draw_sampled_png(command &layout.PaintCommand, image &gg.Image, url string,
 	destination painting.IntRect, source [4]f32, clip [12]f32, matrix [6]f64,
 	page_x f32, page_y f32, scroll_y f64, nearest bool) bool {
@@ -87,8 +86,9 @@ fn (mut app BrowserApp) draw_sampled_png(command &layout.PaintCommand, image &gg
 		return false
 	}
 	geometry := sampled_png_paint_geometry(destination, clip, matrix) or { return false }
-	decode_extent := app.sampled_png_decode_extent_for_frame(geometry) or { return false }
-	upload := app.sampled_png_decode(url, image, decode_extent[0], decode_extent[1]) or { return false }
+	upload := app.sampled_png_decode(url, image, f64(geometry.width), f64(geometry.height)) or {
+		return false
+	}
 	decoded := upload.image
 	previous_color_scope := select_document_png_color_space()
 	defer { document_png_p3_scope = previous_color_scope }

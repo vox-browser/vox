@@ -82,8 +82,9 @@ fn (mut app BrowserApp) draw_shadowed_png_group(index int, page_y f32, window_he
 	if content != geometry.clip {
 		return index
 	}
-	decode_extent := app.sampled_png_decode_extent_for_frame(geometry) or { return index }
-	upload := app.sampled_png_decode(data.image_url, image, decode_extent[0], decode_extent[1]) or { return index }
+	upload := app.sampled_png_decode(data.image_url, image, f64(geometry.width), f64(geometry.height)) or {
+		return index
+	}
 	fill := app.paint_colors.color(shadow.color, 1)
 	color := chromium_retained_paint_color(*shadow) or {
 		[f32(fill.r) / 255, f32(fill.g) / 255, f32(fill.b) / 255, f32(fill.a) / 255]!

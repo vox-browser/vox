@@ -17,3 +17,19 @@ fn test_png_decode_extent_retains_render_density_before_capture() {
 	}
 	assert sampled_png_decode_extent([f64(30), 24]!, 1e308, 0.5) == none
 }
+
+fn test_sampled_png_keeps_the_full_source_for_a_minified_capture() {
+	raster := [f64(16), 12]!
+	rendering := sampled_png_decode_extent(raster, 3, 1)?
+	width, height := sampled_png_decode_size(40, 30, raster, rendering)?
+	assert width == 40 && height == 30
+
+	width_at_natural, height_at_natural := sampled_png_decode_size(48, 36, raster, rendering)?
+	assert width_at_natural == 48 && height_at_natural == 36
+
+	width_at_capture, height_at_capture := sampled_png_decode_size(40, 30, raster, raster)?
+	assert width_at_capture == 20 && height_at_capture == 15
+
+	assert sampled_png_decode_size(16, 12, raster, rendering) == none
+	assert sampled_png_decode_size(4097, 30, raster, rendering) == none
+}
