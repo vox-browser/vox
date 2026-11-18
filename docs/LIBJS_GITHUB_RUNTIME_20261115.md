@@ -8759,3 +8759,112 @@ change is verified by the native fixture.
 The pinned commands, source checks, exact audits, PNGs, ICC comparisons
 and guards are local under `repository-navigation-5204-r100/receipts`.
 Exact GitHub Back parity remains open.
+
+### Sampled PNG decode density in ordinary captures
+
+The diagnostics on published executable `abc313c8…6f749f4a` vary
+the existing PNG options independently. Each runs the original 120-second
+search, README and toolbar Back input under the 12 GiB guard. The same
+archive, native cache and Brave controls are pinned throughout. All three
+ordered content checks pass in each run. The browser, replay and guard exit
+zero. The cache records zero misses or compiler calls, with JavaScriptCore
+uninitialized. All outer pixel verdicts exit 1.
+
+| Display P3 diagnostic | PID | Logo / avatar decode | Differing pixels | Guard seconds | Sampled peak RSS bytes |
+| --- | ---: | --- | ---: | ---: | ---: |
+| Render-density decodes | 90579 | 60×60 / 40×40 | 284 | 122.167 | 9,163,767,808 |
+| GPU mipmaps | 96740 | 30×30 / 20×20 | 343 | 121.789 | 11,926,765,568 |
+| Render-density decodes and GPU mipmaps | 1779 | 60×60 / 40×40 | 150 | 121.537 | 11,918,950,400 |
+| Larger decodes, GPU mipmaps and document image gamut | 15010 | 60×60 / 40×40 | 131 | 122.307 | 8,822,243,328 |
+| Larger decodes, GPU mipmaps and image gamut conversion before filtering | 35431 | 60×60 / 40×40 | 49 | 121.624 | 12,233,768,960 |
+
+GPU mipmaps alone reproduce all decoded pixels of the previous
+Display P3 control. Render-density decoding resolves 80 of its
+343 differing pixels and introduces 21. Enabling GPU mipmaps on the
+larger decodes resolves a further 144 and introduces ten. The paired
+image traces show the changed upload dimensions and mipmap mode at
+the repository logo and commit avatar draws. Applying the image gamut
+first resolves the remaining 82 logo pixels without introducing a
+new difference relative to the preceding diagnostic. Eighteen avatar
+pixels remain. These controls retain the ordinary color and mipmap
+selection policy in production.
+
+Commit `17eff88ad` uses the document's rendering density as a floor
+for both sampled PNG draws and their grouped shadow path. A 1× capture
+from a 2× document retains the detail available to the live frame.
+Equal-density and higher-density captures use their existing raster
+extent. The change preserves the current mipmap selection policy.
+
+The guarded fixture exercises the actual sizing entry point with a
+native density stub and the real image decode-size selector. The old
+ordinary call requests 30×30 for the logo and fails the expected 60×60
+assertion. The new call requests 60×60 and gives the 20×20 avatar a
+40×40 decode. It also checks equal and higher targets, fractional
+density and invalid inputs. The initial probe used production assertion
+stripping and is excluded from the result. The successful guard exits
+zero in 2.834 seconds at 393,658,368 sampled bytes. The production type
+check exits zero in 45.875 seconds at 6,919,143,424 sampled bytes.
+
+Commit `470423ced` retains the full source texture when the live density
+requires it and the capture target still minifies it. Both draw paths
+select their uploads from the actual target and the rendering-density
+floor. The same eligibility checks reject unsupported image dimensions
+and targets that would use the existing non-minifying path. The focused
+probe reproduces the earlier selector's decline for a 40×30 image in a
+16×12 capture of a 3× document. It verifies the 40×30 upload and the
+equal-density, invalid and exact-natural-size cases. The fixture guard
+exits zero in 2.328 seconds at 371,752,960 sampled bytes. The production
+type check exits zero in 40.396 seconds at 7,121,141,760 sampled bytes.
+
+Managed build `20261118-095612-f974a35a` publishes executable
+`c758ea483aa8943ec31cdbdbb282e5271c1335c9a5df3c29b37a32cbedfce3a8`
+as one C unit with literal V `-prod`. The build and headless smoke guards
+exit zero. Its frozen manifest verifies the default density change and
+the wide-gamut Retina capture changes. Its browser replays exercise
+`17eff88ad`. The full-source follow-up is covered by the fixture and
+production type check above. Hacker News PID 43649 matches all 30 stories
+and the 2× PNG exactly with six native hits, zero misses or compiler
+calls, and an uninitialized JavaScriptCore. Its guard exits zero in
+3.881 seconds at 438,304,768 sampled bytes.
+
+Ordinary GitHub PID 43923 completes all three exact content checks and
+the 120-second input. The browser, replay and guard exit zero in 121.748
+guard seconds at 8,931,196,928 sampled bytes. Shutdown records 3,615 native
+hits and 1,787,662 entries, zero misses or compiler calls, and an
+uninitialized JavaScriptCore. The ordinary Back PNG differs from Brave
+at 60,057 pixels. Compared with the previous published ordinary Vox PNG,
+the 304 changed pixels all belong to the repository logo and commit
+avatar. They resolve 43 differences and introduce 21.
+
+Display P3 PID 46338 omits the former PNG density override and keeps
+GPU mipmaps disabled. Its actual logo and avatar uploads are 60×60
+and 40×40. The PNG reproduces the earlier render-density diagnostic
+pixel for pixel, with 284 differences against Brave. It completes the
+three ordered content checks and exits zero through the browser, replay
+and guard in 122.028 seconds at 12,042,600,448 sampled bytes. Shutdown
+records 3,615 native hits and 1,775,903 entries, zero misses or compiler
+calls, and an uninitialized JavaScriptCore.
+
+With the GPU mipmap switch enabled alongside the default density rule,
+PID 56676 reproduces the earlier combined diagnostic pixel for pixel.
+The unchanged Brave PNG differs at 150 pixels. The three ordered content
+checks pass, and the browser, replay and guard exit zero in 121.915 seconds
+at 12,175,769,600 sampled bytes. Shutdown records 3,616 native hits and
+1,778,089 entries, zero misses or compiler calls, and an uninitialized
+JavaScriptCore.
+
+The same published build also contains the earlier Retina metadata fix.
+Two fresh local-file captures on PIDs 68096 and 68114 produce 768×520
+Display P3 PNGs at 2×, with identical ICC numeric tags, no explicit
+resolution override, and all 399,360 pixels equal. The direct capture
+logs the frame-copy path and the fallback disables it. Both browser exits
+and the guard exit are zero in 1.225 seconds at 216,383,488 sampled bytes.
+The first readiness wait expired before a matching bundle published.
+A subsequent literal-HTML launch hit the existing missing-origin check
+for `about:srcdoc` before capture. The successful retry uses identical
+local-file input in both paths.
+
+The exact audits, source pins, guard and exit receipts, upload traces,
+and PNG comparisons are local under `repository-navigation-5204-r101/receipts`.
+The ordinary capture and the isolated PNG diagnostics still differ from
+the unchanged Brave Back reference.
