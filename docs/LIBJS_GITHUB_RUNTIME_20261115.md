@@ -9496,3 +9496,47 @@ changes. Recent managed rebuilds continue to encounter disk exhaustion.
 Page-render timing with these changes is pending. Compiler input digests,
 all timed attempts and regression receipts are local under
 `docs/benchmark-results/github-keyword-parser-5204-r111/receipts`.
+
+### Scope rollback and label lookahead
+
+Commit `c2bbfe8a0` trims discarded child scopes in place. Scope records
+are appended in index order, so rollback can remove the discarded suffix
+and keep the live prefix and its storage. The regression starts with a
+retained child, adds two speculative children on each iteration, and
+checks the restored tree, flags, diagnostics and storage. The same test
+executable evaluates the repeated parenthesized-expression fixture.
+
+Commit `e9694a165` uses lexer lookahead to establish the colon before
+parsing a label. Ordinary identifier-led expressions avoid saving parser
+and scope state and constructing a label string. Reserved-word and
+contextual-label checks pass, along with a fixture that has expressions
+before and after a label with comment and newline trivia. Both test
+executables run with assertions enabled and exit zero.
+
+Each comparison uses seven alternating fresh-process pairs over the 81
+pinned GitHub modules. The binaries use Clang `-O2`, V development mode
+and `-prealloc -gc none`. The consumed-source manifests differ only in
+`scope_collector.v` for rollback and `statements.v` for label lookahead.
+All 28 processes parse every module without diagnostics or recursion-limit
+failures. The label comparison uses the completed scope-rollback binary
+as its control.
+
+| Comparison | Control instructions | Candidate instructions | Median elapsed |
+| --- | ---: | ---: | ---: |
+| Scope rollback | 7,199,395,759 | 7,185,142,707 | 737.278 → 768.584 ms |
+| Label lookahead | 7,034,554,233 | 7,017,361,502 | 647.501 → 640.255 ms |
+
+Scope rollback uses 0.20% fewer median instructions, with all seven pairs
+improving in instructions and four improving in elapsed time. Label
+lookahead uses 0.24% fewer median instructions, with six pairs improving
+in instructions and five improving in elapsed time. One-minute host load
+ranges from 10.67–10.81 for scope rollback and 8.79–8.86 for label
+lookahead. Their 3 GiB guards exit zero at 2,519,760,896 and 2,588,704,768
+sampled peak bytes, respectively. The timings cover source conversion,
+parsing and scope analysis.
+
+The current production publication predates both changes. Managed build
+receipts still show disk-space failures. Browser rendering validation is
+pending. Pinned build inputs, initial build and regression attempts,
+and timed trials are local under
+`docs/benchmark-results/github-scope-5204-r112/receipts`.
