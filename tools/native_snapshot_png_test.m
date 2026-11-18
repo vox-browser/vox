@@ -80,7 +80,7 @@ static void test_parallel_deflate(void)
     const size_t heights[] = {641, 941, max_height};
     unsetenv("VOX_SERIAL_SNAPSHOT_PNG");
     for (size_t i = 0; i < sizeof heights / sizeof heights[0]; ++i) {
-        size_t size = 0, height = heights[i];
+        size_t height = heights[i];
         if (height == max_height) {
             uint32_t noise = 0x61798c45;
             for (size_t n = 0; n < pitch * height; ++n) {
@@ -90,8 +90,27 @@ static void test_parallel_deflate(void)
                 input[n] = (uint8_t)noise;
             }
         }
-        uint8_t *compressed = native_snapshot_deflate_rows(input, row_bytes, height, pitch, &size);
-        assert(compressed && size);
+        VoxSnapshotIDAT chunks[4];
+        size_t count = native_snapshot_deflate_rows(input, row_bytes, height, pitch, chunks);
+        assert(count == i + 2);
+        size_t size = 0;
+        for (size_t index = 0; index < count; ++index) size += chunks[index].size - 12;
+        uint8_t *compressed = malloc(size);
+        assert(compressed);
+        size_t offset = 0;
+        for (size_t index = 0; index < count; ++index) {
+            uint8_t *bytes = chunks[index].bytes;
+            size_t payload = chunks[index].size - 12;
+            assert(!memcmp(bytes + 4, "IDAT", 4));
+            uint8_t word[4];
+            native_png_write_u32(word, (uint32_t)payload);
+            assert(!memcmp(word, bytes, 4));
+            native_png_write_u32(word, (uint32_t)crc32(0, bytes + 4, (uInt)payload + 4));
+            assert(!memcmp(word, bytes + 8 + payload, 4));
+            memcpy(compressed + offset, bytes + 8, payload);
+            offset += payload;
+            free(bytes);
+        }
         uLongf length = (row_bytes + 1) * height;
         assert(uncompress(decoded, &length, compressed, size) == Z_OK);
         assert(length == (row_bytes + 1) * height);
@@ -101,11 +120,11 @@ static void test_parallel_deflate(void)
         }
         free(compressed);
     }
-    size_t size = 7;
-    assert(!native_snapshot_deflate_rows(input, row_bytes, 1, pitch, &size) && !size);
-    assert(!native_snapshot_deflate_rows(input, row_bytes, max_height, row_bytes - 1, &size) && !size);
+    VoxSnapshotIDAT chunks[4];
+    assert(!native_snapshot_deflate_rows(input, row_bytes, 1, pitch, chunks));
+    assert(!native_snapshot_deflate_rows(input, row_bytes, max_height, row_bytes - 1, chunks));
     assert(setenv("VOX_SERIAL_SNAPSHOT_PNG", "1", 1) == 0);
-    assert(!native_snapshot_deflate_rows(input, row_bytes, max_height, pitch, &size) && !size);
+    assert(!native_snapshot_deflate_rows(input, row_bytes, max_height, pitch, chunks));
     assert(unsetenv("VOX_SERIAL_SNAPSHOT_PNG") == 0);
     free(decoded);
     free(input);

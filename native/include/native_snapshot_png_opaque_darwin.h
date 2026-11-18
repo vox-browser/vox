@@ -12,12 +12,6 @@
 #include "native_presented_pixels_darwin.h"
 #include "native_snapshot_png_deflate_darwin.h"
 
-static void native_png_write_u32(unsigned char *bytes, uint32_t value)
-{
-    bytes[0] = value >> 24; bytes[1] = value >> 16;
-    bytes[2] = value >> 8; bytes[3] = value;
-}
-
 static void native_png_append_chunk(NSMutableData *output, const char *type,
     const unsigned char *bytes, uint32_t length)
 {
@@ -124,55 +118,68 @@ static NSData *native_encode_opaque_snapshot_png(NSBitmapImageRep *bitmap,
     if (!trusted && !vox_rgba8_is_opaque(source, (size_t)width, (size_t)height, (size_t)row_pitch)) return nil;
 
     if (getenv("VOX_DISABLE_LIBDEFLATE_PNG")) return nil;
-    size_t written = 0;
-    uint8_t *compressed_bytes = native_snapshot_deflate_rows(source, row_bytes,
-        (size_t)height, (size_t)row_pitch, &written);
-    NSData *compressed = compressed_bytes
-        ? [NSData dataWithBytesNoCopy:compressed_bytes length:written freeWhenDone:YES]
-        : native_snapshot_optional_compression(source, row_bytes, (size_t)height, (size_t)row_pitch);
-    if (!compressed) return nil;
-
-    const unsigned char signature[] = {137,80,78,71,13,10,26,10};
-    NSMutableData *result = [NSMutableData dataWithCapacity:compressed.length + 256];
-    [result appendBytes:signature length:sizeof signature];
-    unsigned char header[13] = {0};
-    native_png_write_u32(header, (uint32_t)width);
-    native_png_write_u32(header + 4, (uint32_t)height);
-    header[8] = 8; header[9] = 6;
-    native_png_append_chunk(result, "IHDR", header, sizeof header);
-    unsigned char intent = 0;
-    native_png_append_chunk(result, "sRGB", &intent, 1);
-
-    unsigned char exif[120] = {0};
-    exif[0] = exif[1] = 'M'; exif[3] = 42;
-    native_png_write_u32(exif + 4, 8);
-    native_png_write_u16(exif + 8, density ? 4 : 1);
-    size_t directory = density ? 78 : 26;
-    if (density) {
-        native_png_exif_entry(exif + 10, 0x11a, 5, 62);
-        native_png_exif_entry(exif + 22, 0x11b, 5, 70);
-        native_png_exif_entry(exif + 34, 0x128, 3, 0x20000);
-        native_png_exif_entry(exif + 46, 0x8769, 4, (uint32_t)directory);
-        native_png_write_u32(exif + 62, (uint32_t)dpi_x);
-        native_png_write_u32(exif + 66, 1);
-        native_png_write_u32(exif + 70, (uint32_t)dpi_y);
-        native_png_write_u32(exif + 74, 1);
-    } else native_png_exif_entry(exif + 10, 0x8769, 4, (uint32_t)directory);
-    native_png_write_u16(exif + directory, 3);
-    native_png_exif_entry(exif + directory + 2, 0xa001, 3, 0x10000);
-    native_png_exif_entry(exif + directory + 14, 0xa002, 4, (uint32_t)width);
-    native_png_exif_entry(exif + directory + 26, 0xa003, 4, (uint32_t)height);
-    native_png_append_chunk(result, "eXIf", exif, density ? 120 : 68);
-    if (density) {
-        unsigned char physical[9] = {0};
-        native_png_write_u32(physical, (uint32_t)meter_x);
-        native_png_write_u32(physical + 4, (uint32_t)meter_y);
-        physical[8] = 1;
-        native_png_append_chunk(result, "pHYs", physical, sizeof physical);
+    VoxSnapshotIDAT chunks[4];
+    size_t chunk_count = native_snapshot_deflate_rows(source, row_bytes, (size_t)height,
+        (size_t)row_pitch, chunks);
+    NSData *compressed = nil;
+    if (!chunk_count) {
+        compressed = native_snapshot_optional_compression(source, row_bytes,
+            (size_t)height, (size_t)row_pitch);
+        if (!compressed) return nil;
     }
-    native_png_append_chunk(result, "IDAT", compressed.bytes, (uint32_t)compressed.length);
-    native_png_append_chunk(result, "IEND", NULL, 0);
-    return result;
+
+    @try {
+        const unsigned char signature[] = {137,80,78,71,13,10,26,10};
+        size_t capacity = compressed.length + 256;
+        for (size_t index = 0; index < chunk_count; ++index) capacity += chunks[index].size;
+        NSMutableData *result = [NSMutableData dataWithCapacity:capacity];
+        [result appendBytes:signature length:sizeof signature];
+        unsigned char header[13] = {0};
+        native_png_write_u32(header, (uint32_t)width);
+        native_png_write_u32(header + 4, (uint32_t)height);
+        header[8] = 8; header[9] = 6;
+        native_png_append_chunk(result, "IHDR", header, sizeof header);
+        unsigned char intent = 0;
+        native_png_append_chunk(result, "sRGB", &intent, 1);
+
+        unsigned char exif[120] = {0};
+        exif[0] = exif[1] = 'M'; exif[3] = 42;
+        native_png_write_u32(exif + 4, 8);
+        native_png_write_u16(exif + 8, density ? 4 : 1);
+        size_t directory = density ? 78 : 26;
+        if (density) {
+            native_png_exif_entry(exif + 10, 0x11a, 5, 62);
+            native_png_exif_entry(exif + 22, 0x11b, 5, 70);
+            native_png_exif_entry(exif + 34, 0x128, 3, 0x20000);
+            native_png_exif_entry(exif + 46, 0x8769, 4, (uint32_t)directory);
+            native_png_write_u32(exif + 62, (uint32_t)dpi_x);
+            native_png_write_u32(exif + 66, 1);
+            native_png_write_u32(exif + 70, (uint32_t)dpi_y);
+            native_png_write_u32(exif + 74, 1);
+        } else native_png_exif_entry(exif + 10, 0x8769, 4, (uint32_t)directory);
+        native_png_write_u16(exif + directory, 3);
+        native_png_exif_entry(exif + directory + 2, 0xa001, 3, 0x10000);
+        native_png_exif_entry(exif + directory + 14, 0xa002, 4, (uint32_t)width);
+        native_png_exif_entry(exif + directory + 26, 0xa003, 4, (uint32_t)height);
+        native_png_append_chunk(result, "eXIf", exif, density ? 120 : 68);
+        if (density) {
+            unsigned char physical[9] = {0};
+            native_png_write_u32(physical, (uint32_t)meter_x);
+            native_png_write_u32(physical + 4, (uint32_t)meter_y);
+            physical[8] = 1;
+            native_png_append_chunk(result, "pHYs", physical, sizeof physical);
+        }
+        if (chunk_count) {
+            for (size_t index = 0; index < chunk_count; ++index)
+                [result appendBytes:chunks[index].bytes length:chunks[index].size];
+        } else {
+            native_png_append_chunk(result, "IDAT", compressed.bytes, (uint32_t)compressed.length);
+        }
+        native_png_append_chunk(result, "IEND", NULL, 0);
+        return result;
+    } @finally {
+        for (size_t index = 0; index < chunk_count; ++index) free(chunks[index].bytes);
+    }
 }
 
 #endif

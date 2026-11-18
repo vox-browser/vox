@@ -5155,3 +5155,44 @@ the complete Retina PNG and the optional codec fallback.
 ThreadSanitizer also passed an archived capture. Timing covers encoding
 only. The installed browser supplied the pixels and codec-extension
 verification, so the default production route awaits its rebuild.
+
+### Parallel PNG chunk checksums
+
+The screenshot workers now emit complete PNG image-data chunks and
+calculate their CRCs. Each zlib stream records its Adler-32 as it
+compresses the filtered scanlines. After joining the workers, the
+caller combines the Adler-32 values, finishes the last chunk's CRC and
+appends the chunks in row order. This removes the intermediate joined
+buffer and the caller's CRC scan across the whole compressed image.
+
+The same sealed Hacker News, GitHub and Old Reddit archives produced
+their prior pixel and content references using the published
+`66f97ef08d4c9ff9ae1195cd80c9817add78ab82c27960580f1444a44101e77d`
+executable. Fresh browser processes captured at 1024×768 CSS pixels,
+2× backing scale and one second of settling. Browser and guard exits
+were zero. The published browser supplied the input pixels.
+
+Matching Apple Clang 21 `-O2 -fobjc-arc` harnesses timed the complete
+`native_encode_snapshot_png` call before and after this change. The
+control was the previous four-worker encoder in `d46e64920`. Seven
+alternating fresh-process pairs ran per case. Warm trials performed one
+untimed encode. Input loading, decoding for validation and disk writes
+were outside the measurement. One-minute load was 3.91–4.16 on 18
+logical CPUs. All processes and the guard exited zero.
+
+| Archive | Cold before → after, ms | Cold pairs faster | Warm before → after, ms | Warm pairs faster |
+| --- | ---: | ---: | ---: | ---: |
+| Hacker News | 4.440 → 4.337 | 6/7 | 4.229 → 4.171 | 7/7 |
+| GitHub | 4.102 → 3.971 | 5/7 | 3.879 → 3.843 | 4/7 |
+| Old Reddit | 4.656 → 4.520 | 6/7 | 4.514 → 4.475 | 5/7 |
+
+The concatenated image-data payload was byte-identical in each
+comparison. Three extra chunk headers and CRCs add 36 bytes per file
+with four bands. Each output matched the archived pixels, profiles,
+density and ancillary metadata. An independent zlib decoder validated
+two through four chunks with padded rows and incompressible input,
+and checked each chunk's CRC. Retina metadata and fallback checks passed
+in ARC, non-ARC and ASan/UBSan builds. A separate probe identified the
+worker at offset `0x23cc` and observed four threads on every archive.
+Forced serial matched the earlier ImageIO output. The software CRC
+and ThreadSanitizer runs matched the new Hacker News PNG.

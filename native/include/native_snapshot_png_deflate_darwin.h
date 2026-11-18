@@ -7,13 +7,19 @@
 #include <stdlib.h>
 #include <string.h>
 #include <zlib.h>
+#include "native_crc32.h"
+
+static void native_png_write_u32(uint8_t *bytes, uint32_t value)
+{
+    bytes[0] = value >> 24; bytes[1] = value >> 16;
+    bytes[2] = value >> 8; bytes[3] = value;
+}
 
 typedef struct {
     int (*initialize)(z_streamp, int, int, int, int, int, const char *, int);
     int (*compress)(z_streamp, int);
     int (*release)(z_streamp);
     uLong (*bound)(z_streamp, uLong);
-    uLong (*checksum)(uLong, const Bytef *, uInt);
     uLong (*combine)(uLong, uLong, z_off_t);
 } VoxSnapshotZlib;
 
@@ -24,10 +30,9 @@ static void native_snapshot_load_zlib(void *context)
     if (!library) return;
     VoxSnapshotZlib found = {
         dlsym(library, "deflateInit2_"), dlsym(library, "deflate"), dlsym(library, "deflateEnd"),
-        dlsym(library, "deflateBound"), dlsym(library, "adler32"), dlsym(library, "adler32_combine")
+        dlsym(library, "deflateBound"), dlsym(library, "adler32_combine")
     };
-    if (!(found.initialize && found.compress && found.release && found.bound
-          && found.checksum && found.combine)) {
+    if (!(found.initialize && found.compress && found.release && found.bound && found.combine)) {
         dlclose(library);
         return;
     }
@@ -36,12 +41,17 @@ static void native_snapshot_load_zlib(void *context)
 }
 
 typedef struct {
+    uint8_t *bytes;
+    size_t size;
+} VoxSnapshotIDAT;
+
+typedef struct {
     const uint8_t *pixels;
     const VoxSnapshotZlib *api;
     size_t row_bytes, pitch, rows;
-    uint8_t *compressed;
-    size_t written;
+    VoxSnapshotIDAT chunk;
     uLong checksum;
+    uint32_t crc;
     int last;
 } VoxSnapshotDeflateBand;
 
@@ -60,20 +70,31 @@ static void native_snapshot_deflate_band(void *context, size_t lane)
     }
 
     z_stream stream = {0};
-    int status = api->initialize(&stream, Z_BEST_SPEED, Z_DEFLATED, -15, 8,
+    int status = api->initialize(&stream, Z_BEST_SPEED, Z_DEFLATED, 15, 8,
         Z_DEFAULT_STRATEGY, ZLIB_VERSION, sizeof stream);
     if (status == Z_OK) {
         // Allow for the byte-alignment block at the end of each nonfinal band.
         stream.avail_out = (uInt)api->bound(&stream, (uLong)size) + 8;
-        band->compressed = malloc(stream.avail_out);
-        if (band->compressed) {
+        uint8_t *bytes = malloc((size_t)stream.avail_out + 12);
+        band->chunk.bytes = bytes;
+        if (bytes) {
+            // Reserve the length and IDAT tag. From the second band onward,
+            // let zlib write its header into the space reserved for the tag.
+            size_t skip = lane ? 2 : 0;
             stream.next_in = input;
             stream.avail_in = (uInt)size;
-            stream.next_out = band->compressed;
+            stream.next_out = bytes + 8 - skip;
             status = api->compress(&stream, band->last ? Z_FINISH : Z_SYNC_FLUSH);
             if (status == (band->last ? Z_STREAM_END : Z_OK) && !stream.avail_in && stream.avail_out) {
-                band->written = stream.total_out;
-                band->checksum = api->checksum(1, input, (uInt)size);
+                size_t payload = stream.total_out - skip;
+                native_png_write_u32(bytes, (uint32_t)payload);
+                memcpy(bytes + 4, "IDAT", 4);
+                // The last four payload bytes will become the Adler-32 for
+                // the whole stream. Leave that part of the final CRC open.
+                band->crc = vox_crc32(0, bytes + 4, 4 + payload - (band->last ? 4 : 0));
+                if (!band->last) native_png_write_u32(bytes + 8 + payload, band->crc);
+                band->checksum = stream.adler;
+                band->chunk.size = payload + 12;
             }
         }
         api->release(&stream);
@@ -81,27 +102,27 @@ static void native_snapshot_deflate_band(void *context, size_t lane)
     free(input);
 }
 
-// Each band writes independent raw DEFLATE blocks. Sync flush leaves every
-// nonfinal band at a byte boundary. The last band sets BFINAL, and the joined
-// stream gets one zlib header and one Adler-32 over all filtered scanlines.
-static uint8_t *native_snapshot_deflate_rows(const uint8_t *pixels, size_t row_bytes,
-    size_t height, size_t pitch, size_t *written)
+// PNG feeds consecutive IDAT payloads to one inflater. Each nonfinal band
+// ends at a sync-flush boundary. Only the first supplies a zlib header and
+// only the last finishes DEFLATE and supplies the combined Adler-32.
+// On success the caller owns the returned chunks' bytes.
+static size_t native_snapshot_deflate_rows(const uint8_t *pixels, size_t row_bytes,
+    size_t height, size_t pitch, VoxSnapshotIDAT chunks[4])
 {
-    *written = 0;
     const size_t max_bytes = 64u * 1024u * 1024u;
     if (!pixels || !row_bytes || !height || row_bytes >= max_bytes
         || height > max_bytes / (row_bytes + 1) || pitch < row_bytes || pitch > SIZE_MAX / height)
-        return NULL;
+        return 0;
     size_t stride = row_bytes + 1;
     size_t lanes = stride * height / (2u * 1024u * 1024u);
     if (lanes > 4) lanes = 4;
     if (lanes > height) lanes = height;
-    if (lanes < 2 || getenv("VOX_SERIAL_SNAPSHOT_PNG")) return NULL;
+    if (lanes < 2 || getenv("VOX_SERIAL_SNAPSHOT_PNG")) return 0;
 
     static dispatch_once_t once;
     static VoxSnapshotZlib api;
     dispatch_once_f(&once, &api, native_snapshot_load_zlib);
-    if (!api.initialize) return NULL;
+    if (!api.initialize) return 0;
     VoxSnapshotDeflateBand bands[4] = {0};
     for (size_t lane = 0; lane < lanes; ++lane) {
         size_t first = height * lane / lanes, last = height * (lane + 1) / lanes;
@@ -111,33 +132,20 @@ static uint8_t *native_snapshot_deflate_rows(const uint8_t *pixels, size_t row_b
     dispatch_apply_f(lanes, dispatch_get_global_queue(QOS_CLASS_USER_INTERACTIVE, 0),
         bands, native_snapshot_deflate_band);
 
-    size_t size = 6; // zlib header and Adler-32 trailer
+    uLong adler = 1;
     for (size_t lane = 0; lane < lanes; ++lane) {
-        if (!bands[lane].written) {
-            size = 0;
-            break;
+        if (!bands[lane].chunk.size) {
+            for (size_t index = 0; index < lanes; ++index) free(bands[index].chunk.bytes);
+            return 0;
         }
-        size += bands[lane].written;
+        adler = api.combine(adler, bands[lane].checksum, (z_off_t)(stride * bands[lane].rows));
     }
-    uint8_t *result = size ? malloc(size) : NULL;
-    if (result) {
-        result[0] = 0x78; result[1] = 0x01;
-        size_t offset = 2;
-        uLong adler = 1;
-        for (size_t lane = 0; lane < lanes; ++lane) {
-            const VoxSnapshotDeflateBand *band = &bands[lane];
-            memcpy(result + offset, band->compressed, band->written);
-            offset += band->written;
-            adler = api.combine(adler, band->checksum, (z_off_t)(stride * band->rows));
-        }
-        result[offset] = (uint8_t)(adler >> 24);
-        result[offset + 1] = (uint8_t)(adler >> 16);
-        result[offset + 2] = (uint8_t)(adler >> 8);
-        result[offset + 3] = (uint8_t)adler;
-        *written = size;
-    }
-    for (size_t lane = 0; lane < lanes; ++lane) free(bands[lane].compressed);
-    return result;
+    const VoxSnapshotDeflateBand *last = &bands[lanes - 1];
+    uint8_t *trailer = last->chunk.bytes + last->chunk.size - 8;
+    native_png_write_u32(trailer, (uint32_t)adler);
+    native_png_write_u32(trailer + 4, vox_crc32(last->crc, trailer, 4));
+    for (size_t lane = 0; lane < lanes; ++lane) chunks[lane] = bands[lane].chunk;
+    return lanes;
 }
 
 #endif
