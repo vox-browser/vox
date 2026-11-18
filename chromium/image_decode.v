@@ -1,6 +1,7 @@
 module main
 
 import crypto.sha256
+import platform
 
 // Keep large data URLs eligible for the same decode history as ordinary URLs.
 // Separate the two namespaces so a literal URL cannot impersonate a digest.
@@ -20,6 +21,8 @@ fn (app &BrowserApp) begin_chromium_image_decode_frame() {
 		C.native_begin_image_decode_frame(voidptr(app.document), app.paint_generation,
 			u64(app.navigation_generation))
 		if app.document == unsafe { nil } || app.document.font_rendering_policy() != .chromium { return }
+		work := platform.begin_thread_scratch('image decoding hint identities')
+		defer { work.finish() }
 		// Collect all uses before drawing: an earlier async use must see a
 		// later sync use of the same resource, including another raster layer.
 		for index in 0 .. app.paint_commands.len {
@@ -45,13 +48,18 @@ fn set_chromium_image_decode_scope(scope int) {
 
 fn (app &BrowserApp) set_chromium_image_resource_identity(url string) {
 	$if macos {
-		identity := chromium_image_decode_resource_identity(url)
-		if app.document != unsafe { nil } && app.document.font_rendering_policy() == .chromium
-			&& identity.len > 0 {
-			C.native_set_image_resource_identity(identity.str, i32(identity.len))
-		} else {
-			C.native_set_image_resource_identity(unsafe { nil }, 0)
+		if url == '' || app.document == unsafe { nil } || app.document.font_rendering_policy() != .chromium {
+			clear_chromium_image_resource_identity()
+			return
 		}
+		work := platform.begin_thread_scratch('image decode resource identity')
+		defer { work.finish() }
+		identity := chromium_image_decode_resource_identity(url)
+		if identity.len == 0 {
+			clear_chromium_image_resource_identity()
+			return
+		}
+		C.native_set_image_resource_identity(identity.str, i32(identity.len))
 	}
 }
 

@@ -3,6 +3,7 @@ module main
 import dom
 import html
 import layout
+import platform
 
 fn test_large_data_images_keep_a_bounded_distinct_decode_identity() {
 	assert chromium_image_decode_resource_identity('') == ''
@@ -91,6 +92,18 @@ fn test_replaced_image_commands_retain_the_html_element_identity() {
 	zero_height := layout.PaintCommand{ ...images[0] height: 0 }
 	assert chromium_paint_image_decoding_hint(document, &zero_width) == -1
 	assert chromium_paint_image_decoding_hint(document, &zero_height) == -1
+	$if macos {
+		document.set_font_rendering_policy(.chromium)
+		mut app := BrowserApp{document: document}
+		app.paint_commands = images
+		app.begin_chromium_image_decode_frame()
+		before := platform.thread_arena_usage().used
+		for _ in 0 .. 128 {
+			app.begin_chromium_image_decode_frame()
+			app.set_chromium_image_resource_identity(images[0].image().image_url)
+		}
+		$if prealloc { assert platform.thread_arena_usage().used == before }
+	}
 }
 
 fn test_animated_image_vetoes_async_checkering() {
