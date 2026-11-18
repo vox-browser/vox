@@ -1071,9 +1071,19 @@ coverage prevent isolating the cost of the workspace from this profile.
 Build attempt `20261118-064618-79a6e376` seals the exact workspace source
 from `58bf9f099`. Its generated browser C allocates the eight slots inline,
 explicitly initializes them to undefined, and clears them by indexed store.
-The 17 cache ABI inputs match the predecessor. The build stops when
-`native_bitmap_snapshot_darwin.h` changes during verification. Managed
-attempt `20261118-065451-ba75c7cb` is in progress, so the predecessor
+The 17 cache ABI inputs match the predecessor. The managed build has
+since rejected four attempts because their shared native inputs changed.
+
+| Attempt | Input changed during verification |
+| --- | --- |
+| `20261118-064618-79a6e376` | `native_bitmap_snapshot_darwin.h` |
+| `20261118-065451-ba75c7cb` | `native_bitmap_snapshot_darwin.h` |
+| `20261118-065816-6556720d` | `native_scroll_tile_presentation_darwin.h` |
+| `20261118-070300-5a022eb6` | `native_scroll_raster_darwin.h` |
+
+The last attempt sealed the committed workspace source and the same 17
+cache ABI inputs before the later verification failure. Its source
+manifest differs from the predecessor in 22 entries. The predecessor
 remains the latest published browser. Raw receipts and the publication
 verifier remain local under
 `docs/performance/libjs-github-browser-20261116/libjs-github-inline-workspace-publication-20261118/`.
