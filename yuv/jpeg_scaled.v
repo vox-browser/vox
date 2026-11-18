@@ -63,7 +63,8 @@ fn jpeg_scaled_planes(planes []u8, width int, height int, target_width int, targ
 }
 
 fn jpeg_scale_plane(source []u8, width int, height int, tw int, th int) ?[]u8 {
-	mut data := source.clone()
+	// Borrow the input until a mip or resize produces its own output.
+	mut data := unsafe { source }
 	mut w, mut h := width, height
 	// Chromium enables Skia's legacy anisotropic mip selection: use the
 	// geometric mean, preserving f32 rounding at power-of-two boundaries.
@@ -71,41 +72,15 @@ fn jpeg_scale_plane(source []u8, width int, height int, tw int, th int) ?[]u8 {
 	scale := f32(math.sqrt(f64(sx * sy)))
 	mut divisor := 1
 	for f32(divisor * 2) * scale <= 1 {
-		nw, nh := math.max(1, w / 2), math.max(1, h / 2)
-		wx := if w == 1 {
-			[1]
-		} else if w % 2 == 0 {
-			[1, 1]
-		} else {
-			[1, 2, 1]
-		}
-		wy := if h == 1 {
-			[1]
-		} else if h % 2 == 0 {
-			[1, 1]
-		} else {
-			[1, 2, 1]
-		}
-		mut denominator := 0
-		for x in wx {
-			for y in wy { denominator += x * y }
-		}
-		mut next := []u8{len: nw * nh}
-		for y in 0 .. nh {
-			for x in 0 .. nw {
-				mut value := 0
-				for dy, yy in wy {
-					for dx, xx in wx { value += int(data[(y * 2 + dy) * w + x * 2 + dx]) * xx * yy }
-				}
-				next[y * nw + x] = u8(value / denominator)
-			}
-		}
-		data = next.clone()
-		w = nw
-		h = nh
+		data = cpuraster.halve_mipmap_plane(data, w, h)?
+		w = math.max(1, w / 2)
+		h = math.max(1, h / 2)
 		divisor *= 2
 	}
-	if w == tw && h == th { return data }
+	if w == tw && h == th {
+		// The caller appends the other planes to this owned array.
+		return if divisor == 1 { source.clone() } else { data }
+	}
 	// SkYUVAPixmapInfo selects Gray8 for single-channel unorm8 CPU planes.
 	return cpuraster.resize_gray8(data, w, h, tw, th)
 }

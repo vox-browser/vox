@@ -138,6 +138,43 @@ X11 window. The header, gradient version text, icons, and compilation card
 rendered. The compilation video needs the Linux media implementation.
 The full shared compositor and macOS runtime validation of this commit remain open.
 
+## Solid SVG clip groups
+
+The portable GG painter applies SVG `<clipPath>` geometry to complete groups
+of solid fills. The clip and opacity passes share the bounded V raster replay.
+An integer-aligned rectangular clip limits the raster bounds directly.
+Fractional rectangles and curved or compound geometry produce a coverage
+mask. The painter resolves the source paths in order, applies the coverage
+once, and uploads one texture. The existing limits for path count, surface
+size, and sparse ink apply. Clips may have up to 64 components. SVG `<mask>`
+content and complex group contents still use their existing replay paths.
+
+The [browser fixture](../Tests/Browser/Native/svg-clip-groups.html) checks
+visible overlap, rectangular cropping, curved coverage, disjoint components,
+even-odd holes, a fractional edge, and a following unclipped sibling. It pins
+the rectangular crop and coverage paths with `VOX_PORTABLE_SVG_CLIP_DIAGNOSTICS=1`.
+The initial Linux `-O0` capture and the published macOS native renderer agreed
+at all ten sampled solid pixels. The fractional sample was `(127, 212, 127)`
+on Linux and `(128, 213, 128)` on macOS.
+
+The macOS baseline used the published single-unit `-prod` executable
+`23ba3183f6c6446597823e434ba9016fc6949940758a6bcbcba91991b782b3bb`, with AVIF
+library `ebde1494c5aebaa69ebe6edab9f4e3333020cb4b2949d96fa1fbb35f19d6a202`.
+The local fixture ran in fresh PIDs 68794 and 68952 at 1024 × 600, 2× backing
+scale, fresh profiles and caches, scripting disabled, and one second settle.
+Each run used 120 precise wheel inputs at a requested 60 Hz, moving four
+pixels per input and reversing after 60. The endpoint was changed Cocoa
+frame installations after outer view paint.
+
+| Trial | Scroll fps | Median interval (ms) | p95 (ms) | Max (ms) | Over 16.67 ms | Input / scroll changes | First / last gap (ms) |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| 1 | 40.35 | 23.851 | 28.495 | 30.624 | 100% | 120 / 92 | 56.107 / 18.643 |
+| 2 | 40.99 | 23.527 | 27.927 | 30.002 | 100% | 120 / 90 | 54.493 / 18.367 |
+
+Both browser exits and the guard exit were zero. The 18-CPU host's starting
+one-minute load averages were 9.93 and 9.70 while other builds were running.
+These are baseline measurements from the existing Cocoa compositor.
+
 ## Original migration plan
 
 Vox currently renders through two Skia builds: LibWeb's Skia (CPU raster,
@@ -4071,3 +4108,26 @@ ordinary `-gc none` allocator. The initial unstaged run lacked the GG upload
 APIs. Staging GG alone let it compile, but the unstaged preallocator crashed
 inside the PNG decoder before resizing. Staging the production allocator
 resolved that failure.
+
+### Parallel JPEG and WebP plane mipmaps
+
+Large byte-plane mip reductions share the RGBA integer mipmap kernel and
+divide their output rows across up to four CPU participants. The JPEG and
+WebP upload paths borrow the decoded source while filtering and retain the
+new output directly at each level. Identity uploads still copy borrowed
+pixels before appending chroma. Odd-dimension weights and the subsequent
+Gray8 interpolation retain their existing rounding.
+
+Seven alternating fresh-process pairs used macOS single-C `-prod` builds
+with preallocation. The timed spans begin with deterministic decoded planes
+and end with packed upload pixels. Host one-minute load was 6.51 on 18 logical
+CPUs. Every output hash matched and every process and memory guard exited zero.
+
+| CPU upload preparation | Dimensions | Before median | After median | Faster pairs |
+| --- | --- | ---: | ---: | ---: |
+| JPEG 4:4:4 | 2047×1795 to 1003×857 | 13.168 ms | 8.552 ms | 7/7 |
+| WebP 4:2:0 | 2048×1840 to 1024×920 | 3.407 ms | 2.380 ms | 7/7 |
+
+Focused serial and parallel pixel checks passed on macOS and Linux. The
+production-allocator JPEG and odd/even WebP native fixtures, macOS
+ThreadSanitizer check, and 2,500 existing Skia mipmap comparisons passed.

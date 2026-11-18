@@ -1,5 +1,7 @@
 module yuv
 
+import os
+
 fn test_scaled_jpeg_upload_preserves_plane_values_before_rgb_clipping() {
 	mut planes := []u8{len: 24, init: 128}
 	for i, value in [0, 255, 0, 255] { planes[16 + i] = u8(value) }
@@ -131,5 +133,51 @@ fn test_plane_resizing_uses_geometric_mean_for_rounded_mips() {
 		source := []u8{len: d[0] * d[1], init: u8(((index % d[0]) * 17 + (index / d[0]) * 29 + (index % d[0]) * (index / d[0]) * 7 + 13) & 255)}
 		actual := jpeg_scale_plane(source, d[0], d[1], d[2], d[3]) or { panic('plane scale') }
 		assert actual == expected[n], 'case ${n}'
+	}
+}
+
+fn test_plane_identity_result_owns_its_pixels() {
+	source := [u8(10), 20, 30, 40]
+	mut scaled := jpeg_scale_plane(source, 2, 2, 2, 2) or { panic('identity resize') }
+	scaled[0] = 99
+	assert source == [u8(10), 20, 30, 40]
+}
+
+fn test_large_jpeg_and_webp_yuv_uploads_match_serial_mips() {
+	serial_setting := 'VOX_SERIAL_CPU_RASTER'
+	previous := os.getenv_opt(serial_setting)
+	defer {
+		if value := previous {
+			os.setenv(serial_setting, value, true)
+		} else {
+			os.unsetenv(serial_setting)
+		}
+	}
+
+	for subsampled in [false, true] {
+		// 4:4:4 exercises odd dimensions on all three planes. For the
+		// 4:2:0 WebP half-size upload the chroma is already the target size.
+		width := if subsampled { 2048 } else { 2047 }
+		height := if subsampled { 1840 } else { 1795 }
+		size := width * height
+		length := if subsampled { size + size / 2 } else { size * 3 }
+		source := []u8{len: length, init: u8((index * 53 + index / 127) & 255)}
+		original := source.clone()
+		assert os.setenv(serial_setting, '1', true) == 0
+		serial := if subsampled {
+			webp_minified_upload(source, width, height, width / 2, height / 2)
+		} else {
+			jpeg_scaled_upload(source, width, height, 1003, 857, false)
+		} or { panic('serial upload') }
+		assert os.unsetenv(serial_setting) == 0
+		parallel := if subsampled {
+			webp_minified_upload(source, width, height, width / 2, height / 2)
+		} else {
+			jpeg_scaled_upload(source, width, height, 1003, 857, false)
+		} or { panic('parallel upload') }
+		pixels_match := parallel == serial
+		source_unchanged := source == original
+		assert pixels_match, 'YUV upload bytes differ for subsampled=${subsampled}'
+		assert source_unchanged, 'source plane bytes changed'
 	}
 }

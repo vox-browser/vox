@@ -3,34 +3,71 @@ module cpuraster
 fn C.log2f(x f32) f32
 
 struct MipmapScan {
-	source CanvasBitmap
-	target []u8
-	width  int
-	x_taps int
-	y_taps int
+	source       []u8
+	source_pitch int
+	target       []u8
+	width        int
+	x_taps       int
+	y_taps       int
+	channels     int
 }
 
 fn scan_mipmap_rows(context voidptr, first i32, end i32) {
 	scan := unsafe { &MipmapScan(context) }
+	if scan.channels == 1 {
+		scan.write_rows(int(first), int(end), 1)
+	} else {
+		scan.write_rows(int(first), int(end), 4)
+	}
+}
+
+@[inline]
+fn (scan &MipmapScan) write_rows(first int, end int, channels int) {
 	mut target := unsafe { scan.target }
 	shift := scan.x_taps + scan.y_taps - 2
-	for y in int(first) .. int(end) {
+	for y in first .. end {
 		for x in 0 .. scan.width {
-			offset := (y * scan.width + x) * 4
-			for c in 0 .. 4 {
+			offset := (y * scan.width + x) * channels
+			for c in 0 .. channels {
 				mut sum := 0
 				for j in 0 .. scan.y_taps {
 					wy := if scan.y_taps == 3 && j == 1 { 2 } else { 1 }
 					for i in 0 .. scan.x_taps {
 						wx := if scan.x_taps == 3 && i == 1 { 2 } else { 1 }
-						source_offset := (y * 2 + j) * scan.source.pitch + (x * 2 + i) * 4 + c
-						sum += int(scan.source.pixels[source_offset]) * wx * wy
+						source_offset := (y * 2 + j) * scan.source_pitch + (x * 2 + i) * channels + c
+						sum += int(scan.source[source_offset]) * wx * wy
 					}
 				}
 				target[offset + c] = u8(sum >> shift)
 			}
 		}
 	}
+}
+
+fn halve_mipmap_pixels(source []u8, pitch int, width int, height int, channels int) []u8 {
+	w, h := math_max_int(1, width / 2), math_max_int(1, height / 2)
+	pixels := []u8{len: w * h * channels}
+	scan := MipmapScan{
+		source:       source
+		source_pitch: pitch
+		target:       pixels
+		width:        w
+		x_taps:       if width == 1 { 1 } else if width & 1 != 0 { 3 } else { 2 }
+		y_taps:       if height == 1 { 1 } else if height & 1 != 0 { 3 } else { 2 }
+		channels:     channels
+	}
+	run_raster_scans(&scan, h, w, scan_mipmap_rows)
+	return pixels
+}
+
+// Halve a packed byte plane with the same integer mip kernel as RGBA.
+// The next bilinear resize applies the Gray8 store's distinct rounding.
+pub fn halve_mipmap_plane(source []u8, width int, height int) ?[]u8 {
+	if width <= 0 || height <= 0 || width > 4096 || height > 4096
+		|| width * height > 4 * 1024 * 1024 || source.len != width * height {
+		return none
+	}
+	return halve_mipmap_pixels(source, width, width, height, 1)
 }
 
 // Raster mipmaps halve each dimension, using a box for even dimensions and
@@ -44,15 +81,7 @@ pub fn build_image_mipmap(bitmap CanvasBitmap, level int) ?CanvasBitmap {
 	mut image := bitmap
 	for _ in 0 .. level {
 		w, h := math_max_int(1, image.width / 2), math_max_int(1, image.height / 2)
-		pixels := []u8{len: w * h * 4}
-		scan := MipmapScan{
-			source: image
-			target: pixels
-			width:  w
-			x_taps: if image.width == 1 { 1 } else if image.width & 1 != 0 { 3 } else { 2 }
-			y_taps: if image.height == 1 { 1 } else if image.height & 1 != 0 { 3 } else { 2 }
-		}
-		run_raster_scans(&scan, h, w, scan_mipmap_rows)
+		pixels := halve_mipmap_pixels(image.pixels, image.pitch, image.width, image.height, 4)
 		image = CanvasBitmap{...bitmap, pixels: pixels, width: w, height: h, pitch: w * 4}
 	}
 	return image
