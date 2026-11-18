@@ -1864,6 +1864,78 @@ Peak sampled RSS was 8,205,336,576 bytes for the candidate build,
 6,611,386,368 for the control build, 495,616,000 for the screenshot suite
 and 637,452,288 for the scroll job.
 
+### Checking SVG mask cache capacity before rectangle recognition
+
+For shared rasters that require a cache entry, a lookup miss checks admission
+before recognizing the fill rectangles. The admission query reads the native
+cache. A capacity fallback can therefore return to Quartz without walking
+path geometry.
+
+The grouped-gradient pressure fixture adds a fractional solid mask after the
+grouped fills in paint order. Its diagnostic label identifies a capacity
+fallback separately from the grouped masks. On the published executable
+`eb9c83cc14fe48f533dcf68e7dbc3e4c871426aa6aa110d3e65a570d961f22a1`, the
+fractional fill rejected geometry before admission. Its visible pixels matched
+Quartz exactly. Both fresh comparison captures exited zero.
+
+The private candidate used single-unit V `-prod`, Clang `-O1`, with
+executable SHA-256
+`c94058e958d1e4774a0bd9a405054797a3043db1e432ef0ac2e66128ca9cd091`.
+The timing control moved the geometry block before admission in the same
+generated C and used the same Clang flags. Its executable SHA-256 was
+`d6909dd960be6655ec7977adbb200148deb1c619388721b643cb1f3f9c74887a`.
+The original generated C SHA-256 was
+`b4081dc68f7067ee0c8faabded4a5a269f9de902a1457089d8b6aee3715bf3f6`.
+
+All 158 macOS mask captures passed. The fractional fill's 2× pixels matched
+Quartz exactly, and the new capacity diagnostic appeared for that fill. The
+native conversion and layer tests passed. The fixture SHA-256 values for the
+75-mask pressure page, overlapping solid masks, and the pressure page with
+the fractional fill were
+`b748a2e7db06461df5b1dadf2c0e71882011474419ea1f84b3165bab8cc7d9f5`,
+`014ff8fe50e532a757b267173b04d324f1cd8ea1f242ae5d7a9f5e5901bc9e4b` and
+`90452e2ac51bba709111edcc8f2481093a4c86eb5d197ec33f664284788e4bf6`.
+
+The timing protocol used fresh processes, profiles and caches, local pages
+with JavaScript disabled, and a 1024 × 600 viewport at 2×. After a one-second
+title-matched settle, `tools/measure_precise_scroll.py` delivered 120
+four-pixel inputs at a requested 60 Hz and reversed at 60 inputs. The endpoint
+was completed native frame installation after outer view paint over the
+first-to-last input window.
+
+Six captures matched the before and after builds pixel for pixel. The
+pressure and overlap fixtures used a 132 CSS-pixel scroll offset, and the
+fractional test used 42 CSS pixels. An instrumented pressure launch,
+PID 18095, recorded 528 retained hits, 88 cropped hits, 16 new rasters and
+601 admission fallbacks during input. Each denied mask had three paths, so
+the new order skipped 1,803 rectangle checks. The overlap launch, PID 18206,
+recorded 651 hits, 163 cropped hits, six new rasters and zero admission
+fallbacks. Timing launches disabled diagnostics.
+
+| PID | Fixture | Order | Scroll fps | Median / p95 / max (ms) | Input Hz | Inputs / changes | First / last gap (ms) | Load |
+| --- | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| 18303 | Pressure | Before | 15.46 | 58.154 / 66.235 / 122.933 | 59.34 | 120 / 31 | 121.760 / 51.989 | 6.08 |
+| 18402 | Pressure | After | 16.33 | 57.260 / 61.656 / 65.297 | 58.90 | 120 / 33 | 127.642 / 51.613 | 5.92 |
+| 18525 | Pressure | Before | 16.68 | 57.214 / 63.855 / 64.785 | 58.40 | 120 / 34 | 124.750 / 0.267 | 6.00 |
+| 18626 | Pressure | After | 15.36 | 60.934 / 67.445 / 67.525 | 58.96 | 120 / 31 | 127.039 / 49.743 | 5.77 |
+| 18931 | Pressure | Before | 16.03 | 59.179 / 66.611 / 66.885 | 59.61 | 120 / 32 | 126.275 / 17.957 | 5.71 |
+| 19079 | Pressure | After | 15.68 | 59.115 / 71.092 / 121.518 | 56.54 | 120 / 33 | 123.225 / 0.262 | 6.22 |
+| 19215 | Overlap | Before | 33.47 | 28.637 / 33.234 / 36.270 | 57.73 | 120 / 69 | 70.546 / 16.464 | 6.04 |
+| 19322 | Overlap | After | 33.27 | 28.945 / 34.060 / 35.674 | 59.09 | 120 / 67 | 66.874 / 16.699 | 5.87 |
+| 19417 | Overlap | Before | 32.87 | 28.829 / 34.733 / 37.077 | 58.38 | 120 / 67 | 68.265 / 16.767 | 5.96 |
+| 19519 | Overlap | After | 33.74 | 28.501 / 33.430 / 34.102 | 57.36 | 120 / 70 | 66.502 / 16.425 | 5.81 |
+
+The timed cohort ran 06:16:35–06:17:27 UTC on November 18, 2026. Load is
+the one-minute average at launch on the 18-CPU host. Peak scroll positions
+were 484.5–510 CSS pixels. Pressure throughput rose in one pair and fell
+in two. Overlap throughput rose in one pair and fell in the other. Both
+long pressure gaps above 120 ms straddled the reversal, with a publication
+at the same scroll position after inputs 58 and 62. All measured intervals
+exceeded 16.67 ms. The capture, diagnostic and timed browsers and guards
+exited zero. The candidate build, control build, screenshot suite and scroll
+job peaked at 7,369,539,584, 7,105,593,344, 488,194,048 and 641,040,384 bytes
+of sampled process-tree RSS.
+
 ## Original migration plan
 
 Vox currently renders through two Skia builds: LibWeb's Skia (CPU raster,
