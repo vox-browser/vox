@@ -1,5 +1,25 @@
 # Migrating from Skia to vlib/gg
 
+## Shared GPU SVG path replay
+
+`ggshape` uses one SVG descriptor decoder and `gg.canvas` draw implementation
+on Metal and OpenGL. A caller can supply a GPU context and rasterize one path
+into premultiplied BGRA8. The macOS browser still uses its persistent,
+precompiled Metal context and the same surface, backdrop upload, draw, and
+readback sequence. Its batched SVG images use the shared descriptor replay
+inside the existing macOS batch wrapper. Linux browser pages still use the
+portable raster and Sokol presentation path.
+
+The same [SVG pixel test](../ggshape/path_canvas_test.v) passed against
+Apple Silicon Metal and ARM64 Linux offscreen EGL with Mesa software OpenGL.
+It checks the entire translated solid fill, the even-odd hole, BGRA order and
+row padding, then samples a multisampled backdrop and a linear gradient. The
+test also checks that an unsupported gradient leaves the destination intact.
+The macOS non-scaling stroke, SVG batch, mask path, and SVG shadow pixel
+references passed unchanged. These checks ran with the C backend and
+`-gc none` under 3 GiB memory guards, with compiler revisions `eeee53a`
+on macOS and `5a39a4d` on Linux. Browser-level timing remains to be measured.
+
 ## Shared CSS background replay
 
 The portable painter and the macOS gradient fallback use the same V raster
