@@ -68,3 +68,26 @@ static CGColorRef native_document_srgb_components(const CGFloat *components) CF_
     return color;
 }
 #endif
+
+// Tag the empty capture target before AppKit composites the document. A
+// post-capture conversion cannot recover colors clipped by the first target.
+static NSBitmapImageRep *native_wide_document_capture_target(NSBitmapImageRep *bitmap) {
+#ifdef VOX_DOCUMENT_COLOR_BRIDGE
+    if (!vox_document_display_p3_enabled()) return nil;
+    CGColorSpaceRef color = native_copy_document_render_space();
+    if (!color) return nil;
+    NSColorSpace *space = native_document_render_space_is_p3
+        ? [[NSColorSpace alloc] initWithCGColorSpace:color] : nil;
+    CGColorSpaceRelease(color);
+    if (!space) return nil;
+    NSBitmapImageRep *target = [bitmap bitmapImageRepByRetaggingWithColorSpace:space];
+#if !__has_feature(objc_arc)
+    [space release];
+#endif
+    target.size = bitmap.size;
+    return target;
+#else
+    (void)bitmap;
+    return nil;
+#endif
+}

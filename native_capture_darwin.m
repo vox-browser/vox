@@ -6785,13 +6785,18 @@ static void native_schedule_screenshot(string output_path, BOOL document_only,
 			return;
 		}
 		NSBitmapImageRep *presented = native_presented_capture_bitmap(view, bounds, pixels_wide, pixels_high);
-		if (presented) bitmap = presented;
-		else native_cache_display_in_bitmap(view, bounds, bitmap);
+		NSBitmapImageRep *wide_document = nil;
+		if (presented) {
+			bitmap = presented;
+		} else {
+			if (document_only) wide_document = native_wide_document_capture_target(bitmap);
+			bitmap = wide_document ?: bitmap;
+			native_cache_display_in_bitmap(view, bounds, bitmap);
+		}
 		native_capture_instruction_checkpoint("capture_cached");
-		// The backing store follows the display profile (usually Display P3 on modern Macs).
-		// Normalize captures to sRGB so pixel comparisons do not report a page-sized color-space
-		// delta against Ladybird's untagged screenshot output.
-		NSBitmapImageRep *encodedBitmap = presented ?:
+		// Direct frames and wide-gamut document captures already use their export
+		// color space. Normalize the other AppKit captures for the sRGB PNG contract.
+		NSBitmapImageRep *encodedBitmap = (presented || wide_document) ? bitmap :
 		    [bitmap bitmapImageRepByConvertingToColorSpace:[NSColorSpace sRGBColorSpace]
 		                                  renderingIntent:NSColorRenderingIntentRelativeColorimetric];
 		if (encodedBitmap == nil) {

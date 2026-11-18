@@ -3,9 +3,27 @@
 #include <assert.h>
 #include <stdio.h>
 #include <string.h>
+#include "platform/native_state.h"
+#define VOX_DOCUMENT_COLOR_BRIDGE 1
 #include "native/include/native_layer_presentation_darwin.h"
 #include "native/include/native_snapshot_png_darwin.h"
 #include "native/include/native_presented_capture_darwin.h"
+
+int vox_document_display_p3_enabled(void) {
+    return getenv("VOX_TEST_CAPTURE_P3") != NULL;
+}
+uint8_t *vox_document_display_p3_profile(int *length) {
+    *length = 0;
+    if (!vox_document_display_p3_enabled()) return NULL;
+    static CFDataRef profile;
+    if (!profile) {
+        CGColorSpaceRef color = CGColorSpaceCreateWithName(kCGColorSpaceDisplayP3);
+        profile = CGColorSpaceCopyICCData(color);
+        CGColorSpaceRelease(color);
+    }
+    *length = (int)CFDataGetLength(profile);
+    return (uint8_t *)CFDataGetBytePtr(profile);
+}
 
 static unsigned termination_calls;
 @interface CaptureApplication : NSApplication
@@ -31,6 +49,7 @@ static unsigned termination_calls;
 @property NSInteger bitmapWidth;
 @property NSInteger bitmapHeight;
 @property BOOL flippedCapture;
+@property BOOL captureSpaceMatchesFrame;
 @end
 @implementation MyView2
 - (BOOL)isFlipped { return self.flippedCapture; }
@@ -45,6 +64,9 @@ static unsigned termination_calls;
     self.sourceHeight = CGImageGetHeight(image);
     self.sourceScale = self.layer.contentsScale;
     self.captureOverride = native_layer_capture_scale;
+    self.captureSpaceMatchesFrame = CFEqual(CGImageGetColorSpace(image), bitmap.colorSpace.CGColorSpace);
+    CGContextRef target = [NSGraphicsContext graphicsContextWithBitmapImageRep:bitmap].CGContext;
+    CGContextDrawImage(target, CGRectMake(0, 0, bitmap.pixelsWide, bitmap.pixelsHigh), image);
 }
 @end
 static MyView2 *capture_view;
@@ -60,7 +82,9 @@ static void capture_draw(id view, SEL command, NSRect bounds) {
     draw_raster_scale = native_raster_device_pixel_ratio();
     draw_mask_scale = native_svg_mask_backing_scale();
     CGContextRef context = NSGraphicsContext.currentContext.CGContext;
-    CGContextSetRGBFillColor(context, 1, 1, 1, 1);
+    CGContextSetFillColorSpace(context, CGBitmapContextGetColorSpace(context));
+    const CGFloat red[] = {1, .25, 0, 1};
+    CGContextSetFillColor(context, red);
     CGContextFillRect(context, bounds);
 }
 typedef struct { const char *str; int len; } string;
@@ -167,6 +191,8 @@ int main(int argc, char **argv) {
                 assert(native_layer_capture_scale == 0 && !native_layer_presenting);
                 NSString *path = [NSString stringWithFormat:@"%s/entry-%u-busy-%u.png", argv[1], entry, busy];
                 assert([[NSFileManager defaultManager] fileExistsAtPath:path]);
+                NSBitmapImageRep *image = [NSBitmapImageRep imageRepWithContentsOfFile:path];
+                assert(image && CFEqual(CGImageGetColorSpace(image.CGImage), NSColorSpace.sRGBColorSpace.CGColorSpace));
                 pump_for(.01);
                 assert(capture_view.captures == previous + 1); // No duplicate retry delivery.
                 assert(termination_calls == (entry == 0 ? 0 : busy + 1));
@@ -210,6 +236,15 @@ int main(int argc, char **argv) {
             NSString *path = [NSString stringWithFormat:@"%s/document-%u.png", argv[1], flipped];
             NSBitmapImageRep *image = [NSBitmapImageRep imageRepWithContentsOfFile:path];
             assert(image != nil && image.pixelsWide == 20 && image.pixelsHigh == 8);
+            CGColorSpaceRef expected = native_copy_document_render_space();
+            assert(CFEqual(CGImageGetColorSpace(image.CGImage), expected));
+            if (vox_document_display_p3_enabled()) {
+                assert(capture_view.captureSpaceMatchesFrame);
+                NSUInteger sample[4] = {0};
+                [image getPixel:sample atX:10 y:4];
+                assert(sample[0] == 255 && sample[1] >= 63 && sample[1] <= 64 && sample[2] == 0);
+            }
+            CGColorSpaceRelease(expected);
             assert(document_process_checkpoints == flipped + 1);
             assert(document_coalition_checkpoints == flipped + 1);
             assert(document_audit_callbacks == flipped + 1);
