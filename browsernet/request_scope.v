@@ -16,6 +16,7 @@ fn C.vox_resource_scope_end_publication(scope voidptr)
 fn C.vox_resource_scope_wait(scope voidptr, nanoseconds i64) bool
 fn C.vox_resource_scope_acquire_slot(scope voidptr, limit u32) bool
 fn C.vox_resource_release_slot()
+fn C.vox_resource_slots_in_flight() u32
 
 pub const max_concurrent_requests = 16
 const request_cancelled_code = 1499
@@ -87,6 +88,13 @@ fn (scope &RequestScope) acquire_request_slot() ! {
 
 fn release_request_slot() {
 	C.vox_resource_release_slot()
+}
+
+// requests_in_flight counts the worker transports of every document that are
+// between acquiring their slot and leaving their transfer. A finished
+// transfer is no longer counted while its result waits to be published.
+pub fn requests_in_flight() int {
+	return int(C.vox_resource_slots_in_flight())
 }
 
 // Channels normally fit a batch, but a retired or slower consumer may leave

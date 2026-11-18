@@ -12,7 +12,18 @@ import fetch
 import http
 import os
 import platform
+import sync.stdatomic
 import time
+
+// Transfers registered with any connection, on the main thread and on
+// workers, from their start until their curl handle is freed.
+__global curl_transfers_in_flight_ u64
+
+// transfers_in_flight counts the Fetch transfers of every document that have
+// started and have not completed, failed or been stopped.
+pub fn transfers_in_flight() int {
+	return int(stdatomic.load_u64(&curl_transfers_in_flight_))
+}
 
 // Diagnostic JSON lines for completed transfers: new connections, handshake
 // and first-byte times, and wall-clock start/header/finish timestamps.
@@ -200,6 +211,7 @@ fn (mut connection CurlConnection) start_transfer(params &fetch.FetchParams, req
 	check_curl_result(C.vox_curl_setopt_write(native.easy_, C.CURLOPT_WRITEFUNCTION, curl_data_received), C.CURLE_OK)
 	check_curl_result(C.vox_curl_setopt_pointer(native.easy_, C.CURLOPT_WRITEDATA, native), C.CURLE_OK)
 	connection.requests_[native.id_] = native
+	stdatomic.add_u64(&curl_transfers_in_flight_, 1)
 	handle := native.request_handle()
 	native.receiver_.set_network_request(handle)
 	mut controller := params.controller
@@ -405,7 +417,10 @@ fn (mut request CurlRequest) free_curl_structs() {
 	request.easy_ = unsafe { nil }
 	if request.headers_ != unsafe { nil } { C.vox_curl_slist_free_all(request.headers_); request.headers_ = unsafe { nil } }
 	mut owner := unsafe { &CurlConnection(request.connection_) }
-	owner.requests_.delete(request.id_)
+	if request.id_ in owner.requests_ {
+		owner.requests_.delete(request.id_)
+		stdatomic.sub_u64(&curl_transfers_in_flight_, 1)
+	}
 	// Drop the storage lease last: releasing it can free the request records.
 	request.release_request_storage()
 }
