@@ -8240,3 +8240,65 @@ do the portable path and its Linux C-backend type check.
 The source receipts, input hashes, ordered content proof, guards, raw
 browser logs, and pixel comparisons are retained locally under
 `repository-navigation-5204-r94/receipts`.
+
+### Resource worker mapping follow-up
+
+The anonymous-mapping probe on the same `4ac49eb9` executable exercises
+the whole-window diagnostic used for the earlier fetch-worker trace.
+The fresh process (PID 44440) completes the full 120-second replay and
+matches the exact initial repository, standalone README and returned
+repository content. The browser, controller and guard exit zero at
+12,022,005,760 sampled bytes over 122.235 seconds. Shutdown records
+3,614 native hits and 1,779,610 native entries, zero misses or compiler
+calls, and an uninitialized JavaScriptCore runtime. The driver checks
+141 input identities and reports zero changes. The guard verifies
+adoption of the browser PID.
+
+The symbolized trace shows 81 surviving mappings of 16 MiB each from
+the resource and script workers' first request scratch entry. That
+size matches the V runtime's base arena for a fresh thread. Twelve
+256 KiB mappings appear at those scratch and nested URL parser sites.
+The aggregate surviving virtual capacity at those worker sites is
+1,362,100,224 bytes. The largest worker stacks in the older trace
+totaled 1,358,954,496 bytes and first reached the allocator from URL
+resolution. The traced capacities reflect anonymous mappings, including
+pages that might never become resident. This run preserves the original
+ordinary memory verdict and supplies a separate view of worker allocation
+lifetime. The symbol and input checks, window PNG, and guards are local
+under `repository-navigation-5204-r95-memory/receipts`.
+
+### Published PNG density validation
+
+Managed build `20261118-074136-fde66f4a` publishes executable
+`870e280a166afa2249e1f90dcd8fb7cee701e0614f25414dd12004c9f4472077`
+with a single C unit and literal V `-prod`. The two consumed PNG
+source files match `2c21578e1` exactly. The build and headless smoke
+checks exit zero. Hacker News PID 64175 reopens the existing cache
+with exact 30-story content and 2× pixels, six native cache hits and
+zero misses or compiler calls. The guard exits zero in 3.839 seconds
+at 419,299,328 sampled bytes.
+
+The ordinary GitHub attempt (PID 64426) again matches the three
+Brave content controls in order. The guard stops it at 32.346 seconds
+and 12,904,841,216 sampled bytes, above the same 12 GiB cap. The
+guard and its child exit 125 and 137. The last audit has 3,615 native
+hits and 1,681,884 native entries, zero misses or compiler calls, and
+an uninitialized JavaScriptCore runtime. The ordinary attempt ends
+before encoding the PNG or writing the shutdown cache audit.
+
+The historical-raster run (PID 65341) again matches the exact repository
+and README audits. It completes the 120-second replay in 121.845 guard
+seconds at 12,680,183,808 sampled bytes. The browser, controller and
+guard exit zero. Shutdown records 3,615 native hits, 1,776,073 native
+entries, zero misses or compiler calls, and an uninitialized
+JavaScriptCore runtime.
+
+The 1,024×768, 1× capture from the live Retina window now decodes the
+repository logo at 60×60 and the commit avatar at 40×40. Both image
+regions match Brave pixel for pixel, removing all 308 differences from
+those regions. The unchanged Brave Back reference still differs at
+the two Notifications corners, (648, 188) and (646, 190), with the
+same RGB values as the earlier Metal control and maximum channel
+error of 10. The exact-pixel verdict exits 1. The ordered audits,
+input identities, image comparison and guard reports are local under
+`repository-navigation-5204-r96-png/receipts`.
