@@ -226,6 +226,23 @@ runtime-guard.exe 180000 3072 projection.out projection.err \
 python tools/check_windows_graphics_smoke.py C:/path/to/projection.png
 ```
 
+For the OpenGL variant, prepare the current Canvas adapter before building
+the same smoke tool. This opens a GL 4.3 window, checks the shared SVG
+gradient stroke pixels, and then captures the projection and font checks.
+Use the staged Mesa WGL DLLs beside the executable for a software run.
+
+```sh
+ui2_modules=$(sh tools/run_v_tool.sh prepare_ui2)
+v -memory-limit 10G -prod -no-prod-options -enable-globals -gc none \
+  -os windows -arch amd64 -cc gcc -subsystem console \
+  -path "$PWD|$ui2_modules|@vmodules|@vlib" \
+  -file-list native/graphics_windows.c.v,native/paint.v \
+  -o opengl-smoke.exe tools/windows_graphics_smoke.v
+GALLIUM_DRIVER=llvmpipe runtime-guard.exe 240000 3072 opengl.out opengl.err \
+  C:/path/to/opengl-smoke.exe C:/path/to/opengl.png
+python tools/check_windows_graphics_smoke.py C:/path/to/opengl.png
+```
+
 The PNG checker uses Pillow and can run on the host after copying the PNG out
 of the VM. It checks rectangle positions, full areas, colors and text coverage.
 The browser fixture

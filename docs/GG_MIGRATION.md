@@ -26,7 +26,7 @@ compiler was killed while another compiler was resident. After recovery,
 the full Linux GG SVG window suite passed. Cached and uncached document
 captures matched exactly. The gradient stroke fixture covered both
 paint orders, dashes, non-scaling width, text outlines and live stop and
-opacity edits. Windows window and pixel verification remain pending.
+opacity edits.
 
 The current Windows OpenGL browser also linked with V `178232d`, MinGW
 GCC 16.2.0 and single-unit C `-prod -no-prod-options`. Its executable
@@ -43,6 +43,49 @@ fixture hashes before launch. The cached run requested Mesa llvmpipe
 and reached its five-minute deadline with exit 124 and 237,436,928 bytes
 of peak committed memory under the 3 GiB job guard. It produced no
 capture or renderer diagnostics. The harness skipped the uncached run.
+
+The [focused graphics smoke](WINDOWS.md#focused-native-checks) opens a
+Sokol window without the browser or JavaScriptCore. Its OpenGL variant
+checks a shared Canvas gradient stroke before capturing window pixels.
+On Linux with Mesa under Xvfb, the stroke and the projection, color and
+text pixel checks passed. Both Windows variants linked with V `178232d`
+and MinGW GCC 16.2.0 using the dynamic pthread import library.
+
+The Windows 11 QEMU OpenGL probe timed out before its window startup
+marker. The D3D11 control also timed out without output or a capture.
+Both reached the four-minute limit and exited 124 under 3 GiB guards.
+Peak committed memory was 2,150,400 bytes for OpenGL and 2,297,856 for
+D3D11. All transfer input hashes matched after the tests.
+
+A fresh Windows OpenGL browser built with the same compiler and C mode
+had SHA-256
+`fdf6715ed791993d844e89260457faded012d06babbb0b2b509f5b8c492b8aa9`.
+Its headless run in the guest's SSH session executed JavaScript and
+passed DOM mutation, click and wheel handling. The 3 GiB guard reported
+exit zero and 442,695,680 bytes of peak committed memory.
+The same executable's interactive run reached the shared Canvas
+renderer and logged linear, radial, dashed and non-scaling strokes.
+It reached its first paint replay checkpoint before the five-minute
+guard timed out with exit 124 and 543,813,632 bytes of peak committed
+memory. The harness skipped the uncached run.
+
+A ten-minute retry with warm system caches captured both cache modes.
+The document rows matched pixel for pixel, and the shape and live-edit
+checks passed. Both captures lacked the gradient on the text outline.
+The deployed Windows executable could not resolve the checkout-based
+fallback font. Windows now resolves installed Arial when the configured
+and bundled paths yield no font, using the installed bold face where
+available. The font path uses the existing per-family and weight cache.
+
+The Windows tests found the regular and bold fallbacks and decoded a
+glyph outline from installed Arial. The macOS configured-font override
+test also passed. The rebuilt Windows executable had SHA-256
+`cbff4ec24dd0bd918cb51fdb3f4ee5c37698b67fce9c300fd128741cb49ee313`.
+Its fresh cached and uncached processes captured the same 800 × 600
+window fixture with Mesa software OpenGL. Both passed the stroke order,
+dash, non-scaling, text and live-edit assertions. Document pixels matched
+exactly. Both 3 GiB guards exited zero and reported peak committed memory
+of 564,645,888 and 569,634,816 bytes, respectively.
 
 The Linux executable SHA-256 was
 `1e91375a68de0d8d906ed22a6c1021901b570acb45a6300386cffa0739da5b46`.
