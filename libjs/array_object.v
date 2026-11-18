@@ -17,20 +17,13 @@ pub fn ArrayObject.create(mut vm VM, realm &Realm, length u64, prototype &Object
 	if length > 0xffffffff { return vm.throw_error_type(.range_error, .invalid_length, 'array') }
 	mut object := Object.create(realm, prototype)
 	object.class_name = 'Array'
+	// The fresh array's virtual length descriptor reads these initialized slots.
 	array := &ArrayObject{
 		object: object
 		realm:  realm
+		length: u32(length)
 	}
 	object.array_object = array
-	// Array.cpp uses MUST here: defining length is an operation, even when
-	// production builds omit assertions.
-	length_defined := object.internal_define_own_property(mut vm, vm.length_key(), PropertyDescriptor{
-		value:        Value.from_f64(f64(length))
-		writable:     true
-		enumerable:   false
-		configurable: false
-	})!
-	assert length_defined
 	return array
 }
 
@@ -66,15 +59,25 @@ pub fn (array &ArrayObject) length_descriptor() PropertyDescriptor {
 	}
 }
 
-// Array.cpp::set_length follows the optimized ephemeral-property body. Both
-// numeric conversions happen before descriptor validation, and a coercion may
-// change the old length/writability before those checks run.
+// Array.cpp::set_length follows the optimized ephemeral-property body.
+// Values that require coercion go through both conversions before descriptor
+// validation, since either can change the array's length or writability.
 pub fn (mut array ArrayObject) set_length(mut vm VM, descriptor PropertyDescriptor) !bool {
 	mut new_length := array.length
 	if value := descriptor.value {
-		new_length = value.to_u32(mut vm)!
-		number_length := value.to_number(mut vm)!
-		if f64(new_length) != number_length.number {
+		mut number_length := f64(0)
+		if value.is_number() {
+			number_length = value.number
+			// Guard the cast, including NaN, before checking for a fraction.
+			if !(number_length >= 0 && number_length <= f64(0xffffffff)) {
+				return vm.throw_error_type(.range_error, .invalid_length, 'array')
+			}
+			new_length = u32(number_length)
+		} else {
+			new_length = value.to_u32(mut vm)!
+			number_length = value.to_number(mut vm)!.number
+		}
+		if f64(new_length) != number_length {
 			return vm.throw_error_type(.range_error, .invalid_length, 'array')
 		}
 	}

@@ -178,6 +178,8 @@ fn test_array_length_validation_and_freezing_preserve_upstream_descriptor_rules(
 	}
 	zero := ArrayObject.create(mut vm, vm.realm(), 0, prototype)!
 	mut zero_object := zero.object
+	zero_object.set(mut vm, length_key, Value.from_f64(4294967295.0), .yes)!
+	assert zero.length == 0xffffffff && zero_object.properties.len == 0
 	zero_object.set(mut vm, length_key, Value.from_f64(-0.0), .yes)!
 	assert !math.signbit(zero_object.get(mut vm, length_key)!.number)
 }
