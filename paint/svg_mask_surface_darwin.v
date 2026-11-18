@@ -208,20 +208,6 @@ fn (mut app BrowserApp) raster_native_svg_content_mask(mask &layout.PaintClip, p
 			return true
 		}
 	}
-	// A hit already proved the path geometry. The key includes the mask's
-	// path data, the device matrices and the bounds used by these checks.
-	if automatic_radial {
-		if svg_background_rectangle_path(operations[0].path_data) == none { return false }
-	} else if checks_rectangles {
-		for index in 0 .. operations.len {
-			operation := &operations[index]
-			if operation.kind != .path { continue }
-			device := portable_device_transform(operation.transform, page_x, page_y, scale)
-			if svg_mask_aligned_rect(operation, portable_svg_surface_matrix(device, bounds)) == none {
-				return false
-			}
-		}
-	}
 	if requires_cache && (raster_key == 0 || C.native_can_admit_svg_mask_raster() == 0) {
 		if portable_svg_mask_diagnostics {
 			kind := if automatic_fills {
@@ -236,6 +222,20 @@ fn (mut app BrowserApp) raster_native_svg_content_mask(mask &layout.PaintClip, p
 			eprintln('VOX_SHARED_SVG_MASK_SKIP_${kind}_CACHE')
 		}
 		return false
+	}
+	// The retained key covers rectangle geometry. On a miss, recognize the
+	// rectangles only when the raster can be used.
+	if automatic_radial {
+		if svg_background_rectangle_path(operations[0].path_data) == none { return false }
+	} else if checks_rectangles {
+		for index in 0 .. operations.len {
+			operation := &operations[index]
+			if operation.kind != .path { continue }
+			device := portable_device_transform(operation.transform, page_x, page_y, scale)
+			if svg_mask_aligned_rect(operation, portable_svg_surface_matrix(device, bounds)) == none {
+				return false
+			}
+		}
 	}
 	data := C.native_svg_content_mask_pixels(scale, raster_area[2], raster_area[3])
 	if data == unsafe { nil } {

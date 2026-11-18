@@ -172,6 +172,16 @@ def check_mask_cache_capacity(binary, directory, *, kind, solid_fills=1, opacity
     fixture = directory / f"{name}.html"
     write_mask_cache_pressure_fixture(fixture, kind=kind, count=30, solid_fills=solid_fills,
                                       opacity_depth=opacity_depth, reflected=reflected)
+    fractional_fill = kind == "gradient-opacity"
+    if fractional_fill:
+        # This solid fill follows the grouped fills in paint order and has a
+        # fractional device edge. Its capacity fallback has a distinct label.
+        mask = ('<mask id="fractional" maskUnits="userSpaceOnUse" x="0" y="0" width="30" height="48">'
+                '<path fill="white" transform="translate(.25 0)" d="M0 0h28v48H0Z"/></mask>')
+        target = ('<path transform="translate(908 100)" mask="url(#fractional)"'
+                  ' fill="red" d="M0 0h30v48H0Z"/>')
+        fixture.write_text(fixture.read_text().replace('</defs>', mask + '</defs>')
+                           .replace('</svg>', target + '</svg>'))
     settings = dict(VOX_SHARED_SVG_MASK_RASTER="", VOX_DISABLE_SHARED_SVG_MASK_CACHE="0",
                     VOX_EAGER_SHARED_SVG_MASK_BITMAP="0", VOX_COPY_SHARED_SVG_MASK_BITMAP="0",
                     VOX_CLIP_SHARED_SVG_MASK_RASTER="0", VOX_CAPTURE_INITIAL_VIEWPORT="1",
@@ -183,6 +193,9 @@ def check_mask_cache_capacity(binary, directory, *, kind, solid_fills=1, opacity
     sibling_groups = kind in ("solid-opacity", "gradient-opacity")
     cache_kind = "OPACITY" if sibling_groups else kind.upper()
     assert f"VOX_SHARED_SVG_MASK_SKIP_{cache_kind}_CACHE" in diagnostics, diagnostics
+    if fractional_fill:
+        assert "VOX_SHARED_SVG_MASK_SKIP_SOLID_CACHE" in diagnostics, diagnostics
+        assert "VOX_SHARED_SVG_MASK luminance=true operations=1 " not in diagnostics, diagnostics
     assert "VOX_SHARED_SVG_MASK_CACHE_HIT luminance=true " in diagnostics, diagnostics
     operations = 2 * opacity_depth + 1 if kind == "opacity" else solid_fills
     if sibling_groups:
@@ -198,6 +211,13 @@ def check_mask_cache_capacity(binary, directory, *, kind, solid_fills=1, opacity
         maximum = max(abs(a - b) for current, previous in zip(result[3], control[3])
                       for a, b in zip(current, previous))
         assert maximum <= 2, f"Cache pressure changed {kind} channels by up to {maximum}"
+        if fractional_fill:
+            channels = result[2]
+            first, last = 908 * 2 * channels, 938 * 2 * channels
+            assert [row[first:last] for row in result[3][116:212]] == [
+                row[first:last] for row in control[3][116:212]]
+            inside = first + 4 * channels
+            assert result[3][132][inside:inside + 3] == b"\xff\x00\x00"
 
 
 def write_reflected_strip_fixture(fixture, source):
