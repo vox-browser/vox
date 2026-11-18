@@ -561,6 +561,57 @@ guards with sampled RSS peaks of 11,692,883,968 and 411,107,328 bytes.
 All browser exits were zero. The two allocation orders gave similar
 scroll publication rates. The shared raster remained opt-in.
 
+### Publishing the shared mask bitmap directly
+
+After V rasterizes an eligible mask, Vox converts that bitmap in place
+to premultiplied white RGB with alpha or luminance coverage. The same
+bitmap context supplies the final Core Graphics image. The benchmark
+switch `VOX_COPY_SHARED_SVG_MASK_BITMAP=1` uses a second bitmap for the
+conversion.
+
+The C conversion tests on macOS and Linux covered all RGB triples,
+every alpha value, row padding, and unaligned starts. The Core Graphics
+test compared the sRGB and DeviceRGB images through destination-in and
+clip-to-mask operations at fractional bounds. Both operations produced
+identical pixels. Six fresh macOS browser captures passed, with exact
+document pixels between the copied and in-place masks after a 96-pixel
+scroll. The largest difference against Quartz at the top of the
+fixture was two channel levels.
+
+The timing build used single-C V `-prod` with Clang `-O1`, SHA-256
+`57d50c29e332d4d97d5760728426ce6b1ea04dcc843bcf8a9c69f9f0ca8253c1`.
+The fixture and AVIF digests matched the previous cohort. The diagnostic
+in PID 81887 produced 232 masks in the second bitmap during the input
+window. PID 82049 published all 246 freshly rasterized masks from the
+original bitmap. Both diagnostics exercised alpha and luminance.
+
+Each run used a fresh process, cache and private profile with a hidden
+bookmark bar. The local fixture used disabled scripts, a one-second settle
+after the title matched, a 1024 × 600 document viewport at 2× backing scale,
+and 120 precise wheel inputs at a requested 60 Hz. The wheel delta was
+four pixels with a reversal after 60 inputs. The endpoint was changed
+native frame installation after outer view paint.
+
+| PID | Raster | Scroll fps | Median (ms) | p95 (ms) | Max (ms) | Input Hz | Inputs / scroll changes | First / last gap (ms) |
+| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| 82187 | Quartz | 42.95 | 22.417 | 25.985 | 27.339 | 53.24 | 120 / 96 | 51.382 / 17.548 |
+| 82282 | Copy | 45.20 | 21.433 | 25.128 | 26.427 | 55.45 | 120 / 97 | 51.402 / 18.280 |
+| 82427 | In place | 45.13 | 21.293 | 25.748 | 27.315 | 54.80 | 120 / 98 | 52.153 / 19.167 |
+| 82530 | Copy | 42.49 | 22.504 | 26.742 | 46.180 | 53.79 | 120 / 94 | 55.638 / 17.586 |
+| 82652 | In place | 42.32 | 23.181 | 26.500 | 48.483 | 56.59 | 120 / 89 | 53.007 / 0.109 |
+| 82810 | Quartz | 42.55 | 22.639 | 26.063 | 28.437 | 53.86 | 120 / 94 | 56.068 / 20.066 |
+| 82964 | Copy, translated cache off | 37.85 | 25.232 | 29.649 | 31.393 | 57.75 | 120 / 78 | 61.572 / 17.276 |
+| 83058 | In place, translated cache off | 37.39 | 25.794 | 29.164 | 31.488 | 57.79 | 120 / 77 | 62.478 / 16.717 |
+| 83151 | Copy, translated cache off | 37.10 | 25.644 | 30.125 | 32.050 | 59.67 | 120 / 74 | 61.490 / 16.935 |
+| 83263 | In place, translated cache off | 38.42 | 25.317 | 28.810 | 29.486 | 57.87 | 120 / 79 | 58.469 / 0.103 |
+
+Every measured scroll interval exceeded 16.67 ms. Starting one-minute
+loads on the 18-CPU host were 6.92, 6.44, 6.33, 7.39, 7.28, 6.94, 6.70,
+6.49, 6.37 and 6.42. The browser and guard exits were zero. Sampled
+RSS peaked at 11,339,235,328 bytes for the build and 407,846,912 bytes
+for the scroll cohort. Publication rates were similar for both
+conversion methods. The shared renderer remains opt-in.
+
 ## Original migration plan
 
 Vox currently renders through two Skia builds: LibWeb's Skia (CPU raster,
