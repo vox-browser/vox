@@ -1742,3 +1742,41 @@ the earlier verified pair and differ from the unchanged older reference by
 visits, records 6,799,081,472 sampled peak RSS bytes and exits zero. Raw
 receipts and the rejected publication check are under the same evidence
 directory in `layout-cohort/` and `cohort-rejected-publication/`.
+
+### Recovered group against Brave
+
+Seven alternating pairs compare publication `4e0651cd…c452` with Brave's
+V8 `15.7.112.43` on the archived `vlang/v` repository. The same archive,
+content audit, Brave PNG reference, one-second settle and Vox raster
+parity settings from the earlier comparison are retained. Each visit uses
+a fresh process, profile and empty HTTP cache, with the OS caches retained.
+A separate traced visit maps the recovered `91c5bc6b…b6d8` library and
+records 480,381 native entries. The timed visits disable loader tracing
+and LibJS diagnostic counters.
+
+| Browser | Median launch to observed PNG | PNG time range | Median launch through exit | Median observed instructions through exit |
+| --- | ---: | ---: | ---: | ---: |
+| Vox with grouped compiled LibJS | 9.186 s | 9.098–10.048 s | 9.305 s | 63,302,142,931 |
+| Brave with V8 | 2.434 s | 2.191–2.586 s | 2.535 s | 20,714,807,851 |
+
+The median PNG availability time is 3.77× longer in Vox. The endpoints
+include browser startup, author-script hydration and rendering. Brave's
+PNG endpoint includes CDP delivery and the harness's file write. Vox's is
+the first completed PNG observed during process polling. The instruction
+samples are process-tree lower bounds and exclude GPU and external service
+work. Brave has one to four missing final process samples per visit. The
+18-CPU host's one-minute load ranges from 18.59 to 30.73 at launch.
+
+All 14 browser exits and the guard exit are zero. The full repository
+audits pass and both browsers receive the three archived compatibility
+replacements. Vox fulfills all 81 modules and records 2,948–2,949 native
+hits, zero misses and zero compiler calls. Each browser reproduces its
+own pixels. Brave matches the unchanged reference and Vox differs by two
+pixels. Vox makes 159 replay requests per visit and Brave makes 160, with
+different asset requests including one extra JavaScript chunk in Brave.
+These are whole-browser startup and capture observations on frozen inputs.
+
+The guard adopts all 15 browser roots and records 151.804 seconds at a
+sampled peak of 6,651,772,928 bytes. The full grouped-cache evidence
+directory retains the commands, input hashes and all attempts under
+`v8-comparison/`.
