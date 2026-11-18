@@ -7857,3 +7857,41 @@ bundle containing these changes. The newest completed bundle at the time
 of these diagnostics was still `66f97ef0`. The local
 `repository-navigation-5204-r88/receipts` directory retains the observer
 manifests, audit states and guard exits.
+
+### Active window document captures
+
+The production bundle remains `66f97ef0`. Build
+`20261118-053957-1b5fc431` verified the parsed session storage, meta and
+attribute map sources and stopped before sealing when
+`native_capture_darwin.m` changed. The following attempt
+`20261118-054622-79e4258e` stopped on a change to
+`native_layer_presentation_darwin.h`.
+
+A standalone production LibJS probe projected the same generated-code
+ABI as the existing caches, `857d37bf…4ab6`, with all 19 recorded input
+hashes stable. The actual candidate ABI remains a publication check.
+Hacker News on the current bundle passes exact 30-story content and
+2× pixels, with six native hits and zero cache misses, compiler calls or
+JavaScriptCore initialization. Browser PID 2251 and its guard exit zero
+at 419,364,864 sampled bytes.
+
+A separate GitHub diagnostic enables the historical raster options on
+the original full Back workflow. PID 19106 restores exact Brave content
+and records 3,586 native hits before the memory guard stops it after Back
+at 12,917,112,832 sampled bytes. A 38-second capture of PID 28931 reaches
+exact README and Back content plus a clean shutdown, with 3,583 native
+hits and 1,621,141 entries. It has zero misses, compiler calls,
+compilations, invalid or pending entries and no page JavaScriptCore.
+The guard exits zero in 42.589682083 seconds at 10,138,746,880 sampled
+bytes. The whole-window crop remains tagged sRGB and differs from the
+unchanged Brave Back PNG at 117,190 pixels. This earlier, instrumented
+capture supplies diagnostic evidence.
+
+Commit `712e4197d` lets the active observer honor
+`VOX_CAPTURE_DOCUMENT_ONLY` through the existing document PNG scheduler.
+An isolated probe verifies opt-in routing, viewport geometry and audit
+ownership with a native stub. The production type-check passes in
+40.674927167 seconds at 7,113,670,656 sampled bytes. A published
+bundle with the changes is required for the direct document capture and
+the strict post-fix Back replay. Local scripts and receipts are under
+`repository-navigation-5204-r89`.
