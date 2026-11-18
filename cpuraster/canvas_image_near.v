@@ -16,10 +16,8 @@ fn raw_filter_image_view(view FilterImageView, requested IRect) ?FilterResult {
 	w, h := bounds.width(), bounds.height()
 	if w > max_untiled_dimension || h > max_untiled_dimension { return none }
 	mut pixels := []u8{len: w * h * 4}
-	for row in 0 .. h {
-		start := (bounds.top - y + row) * bitmap.pitch + (bounds.left - x) * 4
-		copy(mut pixels[row * w * 4..(row + 1) * w * 4], bitmap.pixels[start..start + w * 4])
-	}
+	start := (bounds.top - y) * bitmap.pitch + (bounds.left - x) * 4
+	copy_filter_rectangle(bitmap.pixels[start..], mut pixels, bitmap.pitch, w * 4, w * 4, h)
 	return FilterResult{...new_filter_result(SpecialImage{BlurImage{pixels, w, h}, IRect{0, 0, w, h}},
 		bounds.left, bounds.top), color_info: FilterImageInfo{premultiplied: bitmap.premultiplied}}
 }

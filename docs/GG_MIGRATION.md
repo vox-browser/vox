@@ -7004,3 +7004,63 @@ settle. They audited 30, 33 and 25 entries and zero Canvas or SVG
 filter elements. The browser and guard exits were zero. Timings
 cover the filter operations in isolation. Candidate browser
 validation awaits its shared rebuild.
+
+### Parallel CPU filter image subset copies
+
+Packed blur subsets and nearly integer Canvas image resolves now use
+the filter row-copy scheduler. It considers only the visible bytes
+when applying the 4 MiB cutoff. Packed outputs keep independent
+storage, and padded Canvas sources keep their original straight-alpha
+or premultiplied bytes. Workers write disjoint output rows and join
+before the filter borrows the packed result.
+
+Matched single-unit V C `-prod -gc none` harnesses measured each
+subset operation through return, including allocation. Source setup,
+hashing and release were outside the timer. Each of seven rotating
+groups ran a fresh process per mode. All 147 processes and the guard
+exited zero. Compacted output hashes matched across all modes and
+groups. Warm medians use each process's post-first-call median.
+One-minute host load was 9.17–9.18 on 18 logical CPUs.
+
+| Copied rectangle | First before / forced serial / default, µs | Warm before / forced serial / default, µs | Default faster pairs, first / warm |
+| --- | ---: | ---: | ---: |
+| 67×43 packed inset | 1.708 / 1.583 / 1.834 | 0.417 / 0.250 / 0.250 | 2/7 / 7/7 |
+| 67×43 padded source | 2.000 / 1.708 / 1.917 | 0.417 / 0.250 / 0.250 | 2/7 / 7/7 |
+| 1024×768 packed inset | 253.458 / 246.125 / 272.625 | 90.104 / 85.000 / 87.542 | 3/7 / 5/7 |
+| 2051×1537 packed inset | 1200.042 / 1042.167 / 996.792 | 368.771 / 369.896 / 187.605 | 5/7 / 7/7 |
+| 2051×1537 padded source | 1125.166 / 1009.875 / 984.125 | 364.688 / 374.188 / 190.375 | 7/7 / 7/7 |
+| 3840×2160 full packed image | 2988.834 / 3068.250 / 2403.916 | 909.209 / 666.834 / 419.125 | 7/7 / 7/7 |
+| 3840×2160 padded source | 2806.125 / 2734.250 / 2327.417 | 962.500 / 1027.834 / 513.334 | 7/7 / 7/7 |
+
+The 1024×768 first-call median rose 19.167 µs. Padded cases used
+29 padding bytes per source row. Harness SHA-256 values were
+`298a5fe19c553b84dcd0e030ab464bb5cf9ec43270539232eaafa786e5f8ba02`
+and `8251202df3df4052ed17a7bfdbaa3fb718ae53b5600bb620f8652c73e1928756`.
+The worker probe saw four distinct threads for large packed and
+padded subsets and zero dispatch below 4 MiB or under forced serial.
+The public blur call with a 2051×1537 source dispatched two four-thread
+copies and matched the serial result
+(`369724e5553efb81cc8e2cc195bded46e8fa9671b274c21f3636df5fd8419f7d`).
+Probe processes and the guard exited zero. Focused macOS, arm64 Linux,
+forced serial, ASan/UBSan and ThreadSanitizer tests passed. The
+pinned CPU raster differential suite passed with count 2000 and
+seed 20261106.
+
+The published single-C-unit executable
+`896b2d35d455afdbb5ec57c6dd5d5759a42e1a15d5f71961ae39fc0d146365cb`
+matched the frozen Hacker News, GitHub and Old Reddit pixels.
+Fresh sealed replays used JavaScript, private profiles and caches,
+a 1024×768 CSS-pixel viewport, 2× capture and a one-second settle.
+They audited 30, 33 and 25 entries and zero Canvas or SVG filter
+elements. Browser and guard exits were zero. The measurements above
+cover isolated subset operations. Candidate browser validation
+awaits the shared rebuild.
+
+The same published executable also validated the earlier
+[Quartz SVG mask conversion](#parallel-quartz-svg-mask-conversion).
+The large luminance fixture
+`76b0f2b69a872ef93ce60088bf1cbd23f3cf5ed47478ce5213213fe90db90832`
+used four distinct threads in its 1284-row copy and zero under
+the serial override. Both fresh browsers and the replay guard
+exited zero. The captured RGBA matched between settings
+(`2c2688c954e2901c44e62b32b5acc956bed15da23c129cf16c288172c0b169c9`).
