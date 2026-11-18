@@ -277,3 +277,37 @@ fn test_compiled_array_property_updates_and_apply_use_exotic_dispatch() {
 		assert vm.running_execution_context() == base && vm.interpreter_stack().depth() == 0
 	}
 }
+
+fn test_array_length_reference_grows_only_for_the_original_receiver() {
+	mut vm := VM.create()
+	create_simple_execution_context(mut vm)
+	prototype := Object.create(vm.realm(), none)
+	array := ArrayObject.create_from(mut vm, vm.realm(), [Value.from_i32(42)], prototype)!
+	mut object := array.object
+	value := Value.from_object(object)
+	key := PropertyName.from_str('length')
+	direct := Reference.for_value(value, key, none, true)
+
+	assert object.internal_prevent_extensions()
+	direct.put_value(mut vm, Value.from_f64(4294967295))!
+	assert array.length == u32(0xffffffff)
+	assert object.get(mut vm, PropertyName.from_number(0))!.number == 42
+	assert !object.has_own_property(PropertyName.from_number(1))
+
+	receiver := Object.create(vm.realm(), object)
+	alternate := Reference.for_value(value, key, Value.from_object(receiver), true)
+	alternate.put_value(mut vm, Value.from_i32(4))!
+	assert receiver.get(mut vm, key)!.number == 4
+	assert array.length == u32(0xffffffff)
+
+	direct.put_value(mut vm, Value.from_i32(0))!
+	assert array.length == 0 && !object.has_own_property(PropertyName.from_number(0))
+	assert object.internal_define_own_property(mut vm, key, PropertyDescriptor{writable: false})!
+	Reference.for_value(value, key, none, false).put_value(mut vm, Value.from_i32(1))!
+	if _ := direct.put_value(mut vm, Value.from_i32(1)) {
+		assert false
+	} else {
+		assert thrown_value(err).as_object().error_kind()? == .type_error
+	}
+	assert array.length == 0
+}

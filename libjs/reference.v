@@ -237,6 +237,23 @@ pub fn (reference Reference) put_value(mut vm VM, value Value) ! {
 		if private_name := reference.private_name {
 			return base_obj.private_set(mut vm, private_name, value)
 		}
+		if mut array := base_obj.array_object {
+			// A direct write to a writable Array length can grow its existing
+			// slot without constructing descriptors or deleting elements.
+			// Coercion, shrinking and alternate receivers use the checked Set.
+			if reference.this_value == none && value.is_number() && array.length_writable
+				&& value.number >= f64(array.length) && value.number <= f64(0xffffffff)
+				&& reference.name.is_length_property() && base_obj.proxy_object == none
+				&& base_obj.host_properties == none && base_obj.legacy_platform_object == none
+				&& base_obj.arguments_object == none && base_obj.typed_array == none
+				&& !vm.did_reach_stack_space_limit() {
+				length := u32(value.number)
+				if f64(length) == value.number {
+					array.length = length
+					return
+				}
+			}
+		}
 		// c. Let succeeded be ? baseObj.[[Set]](V.[[ReferencedName]], W, GetThisValue(V)).
 		succeeded := base_obj.internal_set(mut vm, reference.name, value, reference.get_this_value())!
 		// d. If succeeded is false and V.[[Strict]] is true, throw a TypeError exception.
