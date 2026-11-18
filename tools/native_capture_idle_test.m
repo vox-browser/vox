@@ -208,6 +208,8 @@ int main(int argc, char **argv) {
         [capture_view setBounds:NSMakeRect(7, 11, 32, 16)];
         unsetenv("LADYBIRD_SCREENSHOT_DELAY_SECONDS");
         for (unsigned flipped = 0; flipped < 2; ++flipped) {
+            NSInteger scale = vox_document_display_p3_enabled() && flipped ? 2 : 1;
+            setenv("LADYBIRD_SCREENSHOT_SCALE", scale == 2 ? "2" : "1", 1);
             capture_view.flippedCapture = flipped;
             native_layer_update(capture_view, @selector(updateLayer));
             assert(draw_raster_scale == 2 && draw_mask_scale == 2);
@@ -229,13 +231,14 @@ int main(int argc, char **argv) {
             assert(capture_view.captures == previous + 1);
             assert(termination_calls == previous_terminations + 1);
             assert(NSEqualRects(capture_view.capturedBounds, NSMakeRect(7, flipped ? 14 : 16, 20, 8)));
-            assert(capture_view.bitmapWidth == 20 && capture_view.bitmapHeight == 8);
-            assert(draw_raster_scale == 1 && draw_mask_scale == 1);
+            assert(capture_view.bitmapWidth == 20 * scale && capture_view.bitmapHeight == 8 * scale);
+            assert(draw_raster_scale == scale && draw_mask_scale == scale);
             assert(native_display_device_pixel_ratio() == 2);
             assert(native_raster_device_pixel_ratio() == 2 && native_svg_mask_backing_scale() == 2);
             NSString *path = [NSString stringWithFormat:@"%s/document-%u.png", argv[1], flipped];
             NSBitmapImageRep *image = [NSBitmapImageRep imageRepWithContentsOfFile:path];
-            assert(image != nil && image.pixelsWide == 20 && image.pixelsHigh == 8);
+            assert(image != nil && image.pixelsWide == 20 * scale && image.pixelsHigh == 8 * scale);
+            assert(NSEqualSizes(image.size, NSMakeSize(image.pixelsWide, image.pixelsHigh)));
             CGColorSpaceRef expected = native_copy_document_render_space();
             assert(CFEqual(CGImageGetColorSpace(image.CGImage), expected));
             if (vox_document_display_p3_enabled()) {
@@ -248,8 +251,10 @@ int main(int argc, char **argv) {
             assert(document_process_checkpoints == flipped + 1);
             assert(document_coalition_checkpoints == flipped + 1);
             assert(document_audit_callbacks == flipped + 1);
-            printf("document flipped=%u deferred=1 bounds=1 png=20x8 process=1 coalition=1\n", flipped);
+            printf("document flipped=%u deferred=1 bounds=1 png=%ldx%ld process=1 coalition=1\n",
+                flipped, (long)image.pixelsWide, (long)image.pixelsHigh);
         }
+        setenv("LADYBIRD_SCREENSHOT_SCALE", "1", 1);
         setenv("LADYBIRD_SCREENSHOT_DELAY_SECONDS", "0", 1);
         native_layer_update(capture_view, @selector(updateLayer));
         const double invalid[][3] = {

@@ -88,7 +88,7 @@ def main():
                 row["color_spaces"][color_space] = {
                     "exit": test_exit,
                     "snapshot_and_window_cases": text.count("deferred=1 fresh_source=32x16 scale=1 once=1 path_alive=1"),
-                    "document_cases": text.count("deferred=1 bounds=1 png=20x8 process=1 coalition=1"),
+                    "document_cases": text.count("deferred=1 bounds=1 png="),
                     "invalid_cases": text.count("rejected=1 no_png=1 no_checkpoint=1"),
                     "final_marker_present": "PASS deferred actual snapshot/screenshot entry points preserve logical scale and path lifetime" in text,
                 }

@@ -6778,6 +6778,9 @@ static void native_schedule_screenshot(string output_path, BOOL document_only,
 		if (encodedBitmap == nil) {
 			encodedBitmap = bitmap;
 		}
+		// AppKit needs the logical size during drawing. Export wide-gamut
+		// fallbacks with the same pixel-sized metadata as direct capture.
+		if (wide_document) encodedBitmap.size = NSMakeSize(pixels_wide, pixels_high);
 		native_capture_instruction_checkpoint("capture_converted");
 		NSData *png = native_encode_snapshot_png(encodedBitmap);
 		if (!document_only) native_capture_instruction_checkpoint("capture_encoded");
