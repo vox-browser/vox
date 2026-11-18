@@ -1,0 +1,25 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Solid SVG rectangle masks</title>
+<style>
+body { margin: 0; background: white; }
+svg { display: block; }
+</style>
+<svg width="640" height="1840" viewBox="0 0 640 1840">
+  <defs>
+    <mask id="alpha-mask" mask-type="alpha" maskUnits="userSpaceOnUse" x="15" y="5" width="200" height="118">
+      <path d="M21 11h180v100H21Z" fill="black" fill-opacity=".5"/>
+    </mask>
+    <mask id="luminance-mask" mask-type="luminance" maskUnits="userSpaceOnUse" x="265" y="12" width="180" height="100">
+      <path d="M255 15h200v90H255Z" fill="red" fill-opacity=".75"/>
+    </mask>
+  </defs>
+  <g id="sample">
+    <path d="M0 0h220v125H0Z" mask="url(#alpha-mask)" fill="blue"/>
+    <path d="M240 0h230v125H240Z" mask="url(#luminance-mask)" fill="red"/>
+    <path d="M490 27h40v40h-40Z" fill="#f80"/>
+  </g>
+  <use href="#sample" y="180"/><use href="#sample" y="360"/><use href="#sample" y="540"/>
+  <use href="#sample" y="720"/><use href="#sample" y="900"/><use href="#sample" y="1080"/>
+  <use href="#sample" y="1260"/><use href="#sample" y="1440"/><use href="#sample" y="1620"/>
+</svg>

@@ -77,11 +77,15 @@ fn (mut app BrowserApp) raster_native_svg_content_mask(mask &layout.PaintClip, p
 	page_y f32, scale f64) bool {
 	can_keep_full_raster := !clip_shared_svg_mask_raster && !disable_shared_svg_mask_cache
 		&& !eager_shared_svg_mask_bitmap && mask.mask_raster_key != 0
+	operations := mask.mask_operations
+	solid_fill := operations.len == 1 && operations[0].kind == .path
+		&& operations[0].fill_linear_gradient == none && operations[0].fill_radial_gradient == none
+	automatic_solid := !force_shared_svg_mask_raster && can_keep_full_raster && solid_fill
 	automatic_opacity_group := !force_shared_svg_mask_raster && can_keep_full_raster
 		&& native_svg_mask_simple_opacity_group(mask)
 	mut automatic_radial := false
 	mut automatic_diagonal := false
-	if !force_shared_svg_mask_raster && !automatic_opacity_group {
+	if !force_shared_svg_mask_raster && !automatic_opacity_group && !automatic_solid {
 		if mask.mask_operations.len != 1 { return false }
 		operation := &mask.mask_operations[0]
 		if linear := operation.fill_linear_gradient {
@@ -102,7 +106,8 @@ fn (mut app BrowserApp) raster_native_svg_content_mask(mask &layout.PaintClip, p
 	if !portable_svg_content_mask_supported(mask) {
 		return false
 	}
-	if !mask.mask_operations.any(it.fill_linear_gradient != none || it.fill_radial_gradient != none) {
+	if !solid_fill
+		&& !mask.mask_operations.any(it.fill_linear_gradient != none || it.fill_radial_gradient != none) {
 		return false
 	}
 	transform := portable_device_transform(mask.transform, page_x, page_y, scale)
@@ -131,29 +136,24 @@ fn (mut app BrowserApp) raster_native_svg_content_mask(mask &layout.PaintClip, p
 		}
 	}
 	cropped := crop_area[2] != 0
-	requires_cache := automatic_radial || automatic_diagonal || automatic_opacity_group
-	if !force_shared_svg_mask_raster {
-		// Retain complete gradient rasters at later scroll positions,
-		// including placements clipped by the viewport.
-		if requires_cache {
-			if !keeps_full_raster { return false }
-			if automatic_radial {
-				if svg_background_rectangle_path(mask.mask_operations[0].path_data) == none { return false }
-			} else {
-				first_path := if automatic_opacity_group { 1 } else { 0 }
-				end_path := if automatic_opacity_group { mask.mask_operations.len - 1 } else { 1 }
-				for index in first_path .. end_path {
-					operation := &mask.mask_operations[index]
-					device := portable_device_transform(operation.transform, page_x, page_y, scale)
-					if svg_mask_aligned_rect(operation, portable_svg_surface_matrix(device, bounds)) == none {
-						return false
-					}
-				}
+	requires_cache := automatic_radial || automatic_diagonal || automatic_opacity_group || automatic_solid
+	if requires_cache && !keeps_full_raster { return false }
+	if automatic_radial {
+		if svg_background_rectangle_path(operations[0].path_data) == none { return false }
+	} else if requires_cache || solid_fill {
+		first_path := if automatic_opacity_group { 1 } else { 0 }
+		end_path := if automatic_opacity_group { operations.len - 1 } else { 1 }
+		for index in first_path .. end_path {
+			operation := &operations[index]
+			device := portable_device_transform(operation.transform, page_x, page_y, scale)
+			if svg_mask_aligned_rect(operation, portable_svg_surface_matrix(device, bounds)) == none {
+				return false
 			}
-		} else if int(raster_area[2]) * int(raster_area[3]) > shared_svg_mask_cache_pixel_limit
-			|| svg_mask_ramp(mask, bounds, page_x, page_y, scale) == none {
-			return false
 		}
+	} else if !force_shared_svg_mask_raster
+		&& (int(raster_area[2]) * int(raster_area[3]) > shared_svg_mask_cache_pixel_limit
+			|| svg_mask_ramp(mask, bounds, page_x, page_y, scale) == none) {
+		return false
 	}
 	raster_key := shared_svg_mask_raster_key(mask, raster_area, bounds, page_x, page_y, scale)
 	if raster_key != 0 {
@@ -167,7 +167,15 @@ fn (mut app BrowserApp) raster_native_svg_content_mask(mask &layout.PaintClip, p
 	}
 	if requires_cache && (raster_key == 0 || C.native_can_admit_svg_mask_raster() == 0) {
 		if portable_svg_mask_diagnostics {
-			kind := if automatic_radial { 'RADIAL' } else if automatic_opacity_group { 'OPACITY' } else { 'DIAGONAL' }
+			kind := if automatic_solid {
+				'SOLID'
+			} else if automatic_radial {
+				'RADIAL'
+			} else if automatic_opacity_group {
+				'OPACITY'
+			} else {
+				'DIAGONAL'
+			}
 			eprintln('VOX_SHARED_SVG_MASK_SKIP_${kind}_CACHE')
 		}
 		return false

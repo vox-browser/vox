@@ -118,18 +118,21 @@ def write_mask_cache_pressure_fixture(fixture, *, kind, count):
     for index in range(count):
         x = 8 + index % 5 * 180
         y = 12 + index // 5 * 120
-        if kind == "radial":
-            tag = "radialGradient"
-            coordinates = f'cx="{30 + index}" cy="42" r="60"'
+        if kind == "solid":
+            fill = f'<path fill="#{60 + index:02x}4060" fill-opacity=".75" d="M0 0h136v90H0Z"/>'
         else:
-            tag = "linearGradient"
-            coordinates = f'x1="0" y1="0" x2="{50 + index}" y2="88"'
-        fill = f'<path fill="url(#g{index})" d="M0 0h136v90H0Z"/>'
-        if kind == "opacity":
-            fill = f'<g opacity=".625">{fill}</g>'
+            if kind == "radial":
+                tag = "radialGradient"
+                coordinates = f'cx="{30 + index}" cy="42" r="60"'
+            else:
+                tag = "linearGradient"
+                coordinates = f'x1="0" y1="0" x2="{50 + index}" y2="88"'
+            definitions.append(f'<{tag} id="g{index}" gradientUnits="userSpaceOnUse" {coordinates}>'
+                               f'<stop stop-color="white"/><stop offset="1"/></{tag}>')
+            fill = f'<path fill="url(#g{index})" d="M0 0h136v90H0Z"/>'
+            if kind == "opacity":
+                fill = f'<g opacity=".625">{fill}</g>'
         definitions.append(
-            f'<{tag} id="g{index}" gradientUnits="userSpaceOnUse" {coordinates}>'
-            f'<stop stop-color="white"/><stop offset="1"/></{tag}>'
             f'<mask id="m{index}" maskUnits="userSpaceOnUse" x="0" y="0" width="136" height="90">'
             f'{fill}</mask>'
         )
@@ -222,9 +225,8 @@ def check_linear_rgb_fallback(binary, fixture, directory):
     assert rendered_png_rows(automatic) == rendered_png_rows(quartz), "Linear RGB luminance bypassed Quartz"
 
 
-def check_cached_gradient_masks(binary, fixture, directory, *, opacity_group):
+def check_cached_svg_masks(binary, fixture, directory, *, operations=1, samples=()):
     name = fixture.stem
-    operations = 4 if opacity_group else 1
     # Scroll far enough for both mask regions in the next row to enter the canvas edge.
     options = ["--screenshot-scroll-y=132", "--disable-javascript"]
     for scale in (1, 2):
@@ -246,17 +248,11 @@ def check_cached_gradient_masks(binary, fixture, directory, *, opacity_group):
         result = rendered_png_rows(automatic)
         assert result[:2] == (1024 * scale, 600 * scale)
         assert result == rendered_png_rows(full), f"Cached {name} changed the {scale}× document"
-        if opacity_group:
-            _, _, channels, rows = result
-
-            def pixel(x, y):
-                start = x * scale * channels
-                return rows[y * scale][start:start + 3]
-
-            # The second repeated sample starts at y=48 after scrolling 132 px.
-            assert pixel(130, 138) == pixel(170, 138) == pixel(205, 138) == b"\x80\x80\xff"
-            assert pixel(290, 98) == b"\xff\x73\x73" and pixel(415, 98) == b"\xff\xde\xde"
-            assert pixel(18, 138) == pixel(449, 98) == b"\xff\xff\xff"
+        _, _, channels, rows = result
+        for x, y, expected in samples:
+            start = x * scale * channels
+            actual = rows[y * scale][start:start + 3]
+            assert actual == bytes(expected), (name, scale, x, y, list(actual), expected)
         if scale == 2:
             settings["VOX_SHARED_SVG_MASK_RASTER"] = ""
             uncached, diagnostics = capture_document(binary, fixture, directory / f"{name}-auto-uncached",
@@ -273,18 +269,15 @@ def check_cached_gradient_masks(binary, fixture, directory, *, opacity_group):
             print(f"Largest 2× channel difference from Quartz for {name} is {maximum}")
 
 
-def check_nested_opacity_fallback(binary, fixture, directory):
-    nested = directory / "nested-gradient-opacity.html"
-    nested.write_text(fixture.read_text()
-                      .replace('      <g opacity=', '      <g opacity=".75"><g opacity=')
-                      .replace('      </g>\n    </mask>', '      </g></g>\n    </mask>'))
+def check_quartz_mask_fallback(binary, fixture, directory):
+    name = fixture.stem
     settings = dict(VOX_SHARED_SVG_MASK_RASTER="", LADYBIRD_SCREENSHOT_SCALE="2",
                     VOX_DISABLE_SHARED_SVG_MASK_CACHE="0")
-    automatic, diagnostics = capture_document(binary, nested, directory / "nested-opacity-auto", settings)
+    automatic, diagnostics = capture_document(binary, fixture, directory / f"{name}-auto", settings)
     assert "VOX_SHARED_SVG_MASK luminance=" not in diagnostics, diagnostics
     settings["VOX_SHARED_SVG_MASK_RASTER"] = "0"
-    quartz, _ = capture_document(binary, nested, directory / "nested-opacity-quartz", settings)
-    assert rendered_png_rows(automatic) == rendered_png_rows(quartz), "Nested opacity bypassed Quartz"
+    quartz, _ = capture_document(binary, fixture, directory / f"{name}-quartz", settings)
+    assert rendered_png_rows(automatic) == rendered_png_rows(quartz), f"{name} bypassed Quartz"
 
 
 def main():
@@ -299,7 +292,8 @@ def main():
     luminance = fixture.with_name("svg-linear-luminance-masks.html")
     diagonal = fixture.with_name("svg-diagonal-gradient-masks.html")
     opacity = fixture.with_name("svg-gradient-mask-opacity.html")
-    inputs = [binary, fixture, mutation, vertical, luminance, diagonal, opacity]
+    solid = fixture.with_name("svg-solid-rectangle-masks.html")
+    inputs = [binary, fixture, mutation, vertical, luminance, diagonal, opacity, solid]
     avif_library = binary.with_name("libVoxAVIF.dylib")
     if avif_library.exists():
         inputs.append(avif_library)
@@ -347,14 +341,29 @@ def main():
                                cache=True, require_viewport_hit=True, scroll=42, scale=2)
         assert automatic_2x == full_2x, "Automatic radial raster changed the 2× document pixels"
         check_mask_mutation(binary, mutation, directory)
-        for kind in ("radial", "diagonal", "opacity"):
+        for kind in ("radial", "diagonal", "opacity", "solid"):
             check_mask_cache_capacity(binary, directory, kind=kind)
         check_svg_mask_strips(binary, vertical, directory, luminance=False)
         check_svg_mask_strips(binary, luminance, directory, luminance=True)
         check_linear_rgb_fallback(binary, luminance, directory)
-        check_cached_gradient_masks(binary, diagonal, directory, opacity_group=False)
-        check_cached_gradient_masks(binary, opacity, directory, opacity_group=True)
-        check_nested_opacity_fallback(binary, opacity, directory)
+        check_cached_svg_masks(binary, diagonal, directory)
+        # The second repeated sample starts at y=48 after scrolling 132 px.
+        white = (255, 255, 255)
+        check_cached_svg_masks(binary, opacity, directory, operations=4, samples=(
+            (130, 138, (128, 128, 255)), (170, 138, (128, 128, 255)), (205, 138, (128, 128, 255)),
+            (290, 98, (255, 115, 115)), (415, 98, (255, 222, 222)), (18, 138, white), (449, 98, white),
+        ))
+        check_cached_svg_masks(binary, solid, directory, samples=(
+            (130, 110, (127, 127, 255)), (290, 98, (255, 215, 215)), (18, 110, white), (449, 98, white),
+        ))
+        nested = directory / "nested-gradient-opacity.html"
+        nested.write_text(opacity.read_text()
+                          .replace('      <g opacity=', '      <g opacity=".75"><g opacity=')
+                          .replace('      </g>\n    </mask>', '      </g></g>\n    </mask>'))
+        check_quartz_mask_fallback(binary, nested, directory)
+        fractional = directory / "fractional-solid-mask.html"
+        fractional.write_text(solid.read_text().replace('fill-opacity=', 'transform="translate(.25 0)" fill-opacity='))
+        check_quartz_mask_fallback(binary, fractional, directory)
     assert {path: digest(path) for path in inputs} == digests
     print("PASS: macOS rendered both gradient mask modes with the shared rasterizer")
 
