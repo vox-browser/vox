@@ -799,3 +799,43 @@ inlined scan in the verified executable. Five land on the small-scope
 loop and 17 on the linear fallback after a hint miss. All 22 have a
 native-entry ancestor. The recorded address slide and disassembly identify
 both loops. This capture also matches the pinned image and complete audit.
+
+## Interpreter stack frame release, 2026-11-18
+
+The native profile on `66f97ef0…e77d` includes frame deallocation in five
+of 679 main-thread samples. All five have native-entry and call-dispatch
+ancestors. The capture matches the pinned GitHub image and audit.
+
+`fc3eec5f9` reads each retiring frame pointer once, clears its slot with
+a typed store, and shortens the private unsliced array. Clearing the
+retired slot keeps conservative collectors from retaining the frame via
+unused capacity. Mark validation, release order and recycling use the
+existing rules. A first variant retaining the generic deletion call
+changes both measured medians by less than 0.09% and is retained.
+
+Two single-C `-prod -prealloc -gc none` builds differ only in the
+`InterpreterStack.deallocate` body in generated host C. The emitted native
+C, cache ABI, cache key and native library text match exactly. Each fresh
+reopen records one cache hit, zero misses or compiler calls, and 750,000
+native slow call steps in the diagnostic. The loop returns 42 in both tiers.
+
+Seven alternating fresh-process pairs per tier count retired instructions
+through process exit. Every pair improves with direct tail clearing.
+
+| Focused call loop | Previous median | Direct tail clearing | Reduction |
+| --- | ---: | ---: | ---: |
+| Cached native | 1,067,522,702 | 1,043,658,421 | 2.24% |
+| Interpreter | 2,014,550,365 | 1,990,558,272 | 1.19% |
+
+The default-GC probe checks a no-op mark, release of two nested frames,
+preservation of arguments in retained public frames, and full unwind.
+The focused regression source also checks recycling order and zeroes in
+the retired capacity slots. It type-checks with the C backend and remains
+unrun under the automated-suite hold. All 28 measured processes and
+the guard exit zero. The 3-GiB measurement guard records 3.713 seconds and
+99,221,504 sampled peak bytes.
+
+The installed GitHub profile predates the frame change. The managed hook
+has requested its production build. Raw measurements, source and binary
+hashes, and the earlier attempts remain local under
+`docs/performance/libjs-github-browser-20261116/libjs-github-frame-release-66f9-20261118/`.
