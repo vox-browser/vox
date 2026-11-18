@@ -48,8 +48,95 @@ four-trial protocol produced the following synthetic callback replay results.
 
 The scroll traces agreed. The guest one-minute load averages were 1.11, 1.02,
 1.02 and 1.02. The build, browser suite, cohort and their guards exited zero.
-The cohort guard sampled a peak of 496,852,992 bytes. Native presentation
-cadence and the full shared compositor remain open.
+The cohort guard sampled a peak of 496,852,992 bytes.
+
+The subsequent macOS single-unit `-prod` bundle with verified source HEAD
+`3d7b08948920d7f685be88f8ad70f783b256821d` was tested in fresh PIDs 8217 and
+8340. Its executable SHA-256 was
+`23ba3183f6c6446597823e434ba9016fc6949940758a6bcbcba91991b782b3bb` and its
+AVIF library was `ebde1494c5aebaa69ebe6edab9f4e3333020cb4b2949d96fa1fbb35f19d6a202`.
+Both trials used the local scrolling gradient fixture with scripting disabled,
+fresh profiles and caches, a 1 second settle, and a 1024 × 600 viewport at
+backing scale 2. The native probe delivered 120 precise wheel inputs at 60 Hz
+with a 4-pixel delta and a reversal after 60 inputs. These are changed frame
+installations after the outer view paint, with nested revisions coalesced.
+The fixture SHA-256 was
+`d3a835484b1c637d5b1cd34b757e3feba4463b59dff370140a92667f2eb257c5`.
+
+| Trial | Scroll fps | Median interval (ms) | p95 (ms) | Max (ms) | Over 16.67 ms | Input / scroll changes | First / last gap (ms) |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| 1 | 59.47 | 16.658 | 17.817 | 29.058 | 47.5% | 120 / 118 | 24.378 / 14.904 |
+| 2 | 59.49 | 16.693 | 18.199 | 30.633 | 54.2% | 120 / 118 | 25.331 / 13.984 |
+
+Both browser processes and the guard exited zero. The 18-CPU host one-minute
+load averages before these trials were 5.75 and 5.69. The earlier unpublished
+bundle controls ran under different host load, so these results describe the
+published bundle's cadence on this fixture. The document screenshots at 800 × 600
+matched the gradient-text and radial-gradient references exactly. The gradient
+backdrop comparison differed by one blue-channel level at one pixel.
+
+## Solid SVG opacity groups
+
+The portable GG painter rasterizes a run of solid SVG fills inside one normal
+opacity scope into a bounded premultiplied surface. It uploads the resolved
+color once and applies group alpha during the GG image draw. This preserves
+source-over ordering, fill opacity, and the path's even-odd or winding rule.
+The native Chromium SVG adapter uses the same eligibility check for a normal
+opacity scope and retains its accelerated replay. The portable group pass
+accepts up to 128 paths with a common rectangular clip and a surface of up
+to 4,194,304 pixels. A sparse scope can also fall back when its bounding image
+would add more than 16,384 pixels beyond its individual path textures.
+Nested effects, non-solid paints, strokes, and complex clips use the existing replay.
+
+The Linux browser smoke suite checks that the grouped path ran and verifies
+overlap, a path hole, fill opacity, and the sparse fallback on the
+[SVG fixture](../Tests/Browser/Native/svg-opacity-groups.html). A four-trial
+Linux ARM64 software OpenGL cohort compared the default group pass with
+`VOX_DISABLE_PORTABLE_SVG_OPACITY=1` on the same executable. Each trial used a
+fresh browser process and 80 synthetic 42-pixel scroll steps at a requested
+1024 × 600 viewport, with a 1 second settle. Scroll positions and retained
+command counts agreed. The switch changes overlap pixels to the earlier
+flattened-alpha result. The timings measure replay through synthetic callback
+completion.
+
+The single-unit `-O0` diagnostic executable SHA-256 was
+`7cf42f0fb16ae4ab55afb27984fb184646117490aaeb722a904c74e1b03983f1`.
+This first cohort used the fixture before addition of the sparse-path check
+(`4da62c1472359a4f179deb11fbd2e8330b0903b5e0dbb4e9927f434ee247d89e`).
+
+| Trial | Replay | Median (ms) | p95 (ms) | Max (ms) |
+| --- | --- | ---: | ---: | ---: |
+| 1 | Per path | 25.069 | 27.360 | 27.803 |
+| 2 | Grouped | 12.853 | 14.855 | 15.392 |
+| 3 | Per path | 25.372 | 27.433 | 28.650 |
+| 4 | Grouped | 13.718 | 15.596 | 17.296 |
+
+The four-vCPU guest one-minute load averages were 1.44, 1.32, 1.22 and 1.12.
+The build, suite and cohort exited zero under their guards. The cohort guard
+sampled a peak of 462,340,096 bytes.
+
+The final single-unit `-O1` executable SHA-256 was
+`fe2d72410446d85e866ef0256fee9f5ab3ade5132b5d4d9a6334a837c14a1cb5`.
+The fixture SHA-256 was
+`bf84c48d0a59c14477967fcea87e577442b563c6e10a80aec541e4777d8de6d9`.
+Each trial had a fresh profile and cache. The four guest one-minute load
+averages were 1.51, 1.39, 1.28 and 1.18.
+
+| Trial | Replay | Median (ms) | p95 (ms) | Max (ms) |
+| --- | --- | ---: | ---: | ---: |
+| 1 | Per path | 4.789 | 6.644 | 7.540 |
+| 2 | Grouped | 2.842 | 4.522 | 5.349 |
+| 3 | Per path | 5.004 | 6.875 | 7.283 |
+| 4 | Grouped | 2.918 | 4.798 | 5.076 |
+
+The 80-frame scroll and retained command traces matched across all four trials.
+The build, Linux browser suite, and benchmark exited zero with sampled process
+tree peaks of 9,959,768,064, 867,598,336 and 452,648,960 bytes, respectively.
+The macOS production-mode V check and Windows D3D11 V check also passed.
+The final Linux executable also loaded live vlang.io in a fresh 1280 × 800
+X11 window. The header, gradient version text, icons, and compilation card
+rendered. The compilation video needs the Linux media implementation.
+The full shared compositor and macOS runtime validation of this commit remain open.
 
 ## Original migration plan
 
