@@ -7524,3 +7524,40 @@ Managed build `20261118-030853-ecf3924d` completes C compilation and
 enters publication checks. Commands, input hashes, content and pixel
 receipts, and the verified Hacker News cache are local under
 `repository-navigation-5204-r82`.
+
+### GitHub Back replay on the newly published browser
+
+Managed build `20261118-030853-ecf3924d` publishes single-C `-prod`
+executable `9c165f7ab3dc15fd6fcc7a0d89336aefde735c3a9f983c15248727de89918301`.
+Its source receipt includes the NodeList, RegExp literal, frame capacity
+and Array iterator changes. The Map and Set, String and RegExp iterator
+steps were committed after its source capture.
+
+Both fresh launches use the frozen full file lists, native file-search
+and Back input, and the existing generated-code cache with
+`/usr/bin/false`. Both match Brave's initial content, open the ready
+README and deliver Back. Every recorded audit shows LibJS without an
+initialized JavaScriptCore context. The only page diagnostic is GitHub's
+Worker fallback warning. Each run verifies unchanged executable,
+libraries, scripts, cache and fixture pins.
+
+| Replay | PID | Brave content after Back | Native hits / entries at last audit | Guard seconds | Sampled peak bytes |
+| --- | ---: | --- | ---: | ---: | ---: |
+| Native input | 94429 | File view remains at the repository URL | 3,564 / 1,339,617 | 34.133926708 | 12,927,877,120 |
+| Separate mapping trace | 98570 | Exact 33 rows, 56 commit links, latest commit and README | 3,585 / 1,780,212 | 57.882372875 | 12,888,014,848 |
+
+Both last audits show zero misses, compiler calls, compilations,
+pending or invalid entries. The 12 GiB guard adopts each browser and
+ends both runs before normal shutdown or image capture. Both controller
+children exit 137 and both guards exit 125. The first run verifies 139
+input pins and the traced run verifies 141. The traced run establishes
+exact terminal content in that observation. The memory and pixel gates
+remain open.
+
+The trace ranks current virtual mapping capacity under resource worker
+URL and scratch paths at 624 and 576 MiB, ECMAScript function creation
+at 448 MiB, interpreter frames at 432 MiB, and computed style at 377 MiB.
+Those values describe attributed mapping capacity. The paired guard
+reports above supply the sampled RSS peaks. Raw audits, stack mappings,
+comparison inputs and guard receipts are local under
+`repository-navigation-5204-r83`.
