@@ -1520,6 +1520,35 @@ screenshot and repository audit, and evaluates all 81 modules with
 receipts are under
 `docs/performance/libjs-github-browser-20261116/libjs-pack-from-benchmark-20261118/`.
 
+### Parallel packing verification
+
+The two-compiler workflow packs the small replay fixture's two batches.
+On a newer compatible browser publication, fresh separate and grouped
+visits both hit all 152 records with zero misses or compiler calls. Their
+PNGs are pixel-identical. Earlier fixture attempts stopped at the browser
+deadline, at a driver digest change and at a bundle publication change.
+
+A full-page replay check packs the four smallest C batches from the
+103-library loader trace with two compiler workers. The output keeps all
+13,915 records, with 512 pointing to the new group. The first pair has
+matching PNGs but 16 fewer image requests in the grouped visit. A second
+pair uses an eight-second settle period for both layouts. On publication
+`68ca9b1d…a629`, both visits make the same 159 replay requests, fulfill all
+81 modules and match pixel for pixel. The older pinned PNG differs by 304
+pixels from both. The separate visit maps 103 libraries and reports 2,949
+hits. The grouped visit maps 100 and reports 2,948 hits. Both have zero
+misses or compiler calls. These are traced functional checks.
+
+The four-worker attempt to group all 103 libraries reaches the 30-minute
+guard deadline during heavy host contention. The guard reports timeout,
+child exit 137 and a sampled peak of 2,085,371,904 bytes. It publishes no
+new full group. An audit verifies and retains 52 finished objects with
+their captured C digests and remapped exports in the private cache work
+directory under `parallel-pack-interrupted-objects/checkpoint`.
+
+Local receipts, including rejected attempts, are under
+`docs/performance/libjs-github-browser-20261116/libjs-full-github-grouped-workflow-20261118/`.
+
 ### Run the grouped-cache workflow
 
 `tools/prepare_github_grouped_cache.py` runs a capture seed, a traced
