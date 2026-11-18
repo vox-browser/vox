@@ -9,6 +9,7 @@
 #include <string.h>
 #include <math.h>
 #include <dlfcn.h>
+#include <dispatch/dispatch.h>
 #include "../../platform/native_state.h"
 #include "native_graphite_bridge.h"
 
@@ -198,18 +199,35 @@ static VoxScrollTileStorage *native_scroll_tile_acquire(size_t width, size_t hei
     __atomic_store_n(&slot->busy, 1, __ATOMIC_RELEASE);
     return slot;
 }
-static CGImageRef native_scroll_tile_image(VoxScrollTileStorage *slot, BOOL gpu);
-static CGImageRef native_scroll_tile_copy(const uint8_t *rows, size_t width, size_t height) {
-    VoxScrollTileStorage *slot = native_scroll_tile_acquire(width, height);
-    if (!slot) return NULL;
-    if (IOSurfaceLock(slot->surface, 0, NULL) != kIOReturnSuccess) {
-        __atomic_store_n(&slot->busy, 0, __ATOMIC_RELEASE); return NULL;
+typedef struct {
+    VoxScrollTileStorage *slot;
+    const uint8_t *source;
+    uint8_t *destination;
+    size_t index;
+} VoxScrollTileCopy;
+
+typedef struct {
+    const VoxScrollTileCopy *copies;
+    size_t count, lanes;
+} VoxScrollTileCopyBatch;
+
+// Slots are private and locked by the owner before dispatch. Workers only
+// copy pixels, then the owner unlocks and creates the image providers.
+static void native_scroll_tile_copy_batch(void *context, size_t lane) {
+    const VoxScrollTileCopyBatch *batch = (const VoxScrollTileCopyBatch *)context;
+    size_t first = batch->count * lane / batch->lanes;
+    size_t end = batch->count * (lane + 1) / batch->lanes;
+    for (size_t i = first; i < end; ++i) {
+        const VoxScrollTileCopy *copy = &batch->copies[i];
+        size_t row_bytes = copy->slot->width * 4;
+        size_t pitch = copy->slot->pitch, rows = copy->slot->height;
+        if (pitch == row_bytes) {
+            memcpy(copy->destination, copy->source, row_bytes * rows);
+        } else {
+            for (size_t row = 0; row < rows; ++row)
+                memcpy(copy->destination + row * pitch, copy->source + row * row_bytes, row_bytes);
+        }
     }
-    uint8_t *pixels = (uint8_t *)IOSurfaceGetBaseAddress(slot->surface);
-    for (size_t y = 0; y < height; ++y)
-        memcpy(pixels + y * slot->pitch, rows + y * width * 4, width * 4);
-    IOSurfaceUnlock(slot->surface, 0, NULL);
-    return native_scroll_tile_image(slot, NO);
 }
 // Core Animation consumes the scheduled IOSurface directly. CPU capture takes
 // the kernel's read fence lazily, only when a provider actually reads bytes.
@@ -275,25 +293,62 @@ static BOOL native_scroll_tiles_adopt(CGImageRef *, size_t, size_t, size_t, size
 static BOOL native_scroll_tiles_commit_mode(const uint8_t *ring, size_t width, size_t height,
     size_t row_origin, size_t top, CGFloat scale, const BOOL *dirty, BOOL gpu) {
     if (!native_scroll_tiles_accept(native_scroll_tile_destination)) return NO;
-    size_t tiles = (height + VOX_SCROLL_TILE_ROWS - 1) / VOX_SCROLL_TILE_ROWS;
-    if (!tiles || tiles > VOX_SCROLL_TILE_LIMIT) return NO;
+    if (!ring || !dirty || !width || !height || width > SIZE_MAX / 4 / height) return NO;
+    size_t tiles = 1 + (height - 1) / VOX_SCROLL_TILE_ROWS;
+    if (tiles > VOX_SCROLL_TILE_LIMIT) return NO;
     CGImageRef next[VOX_SCROLL_TILE_LIMIT] = {0};
-    size_t updated = 0;
+    VoxScrollTileCopy copies[VOX_SCROLL_TILE_LIMIT];
+    VoxScrollTileCopyBatch batch = {copies, 0, 1};
+    size_t bytes = 0;
     for (size_t index = 0; index < tiles; ++index) {
+        if (!dirty[index] && native_scroll_tile_images[index]) {
+            next[index] = CGImageRetain(native_scroll_tile_images[index]);
+            continue;
+        }
         size_t first = index * VOX_SCROLL_TILE_ROWS;
         size_t rows = height - first < VOX_SCROLL_TILE_ROWS ? height - first : VOX_SCROLL_TILE_ROWS;
-        if (!dirty[index] && native_scroll_tile_images[index])
-            next[index] = CGImageRetain(native_scroll_tile_images[index]);
-        else {
-            next[index] = native_scroll_tile_copy(ring + first * width * 4, width, rows);
-            ++updated;
+        VoxScrollTileStorage *slot = native_scroll_tile_acquire(width, rows);
+        if (!slot) goto failed;
+        if (IOSurfaceLock(slot->surface, 0, NULL) != kIOReturnSuccess) {
+            __atomic_store_n(&slot->busy, 0, __ATOMIC_RELEASE);
+            goto failed;
         }
-        if (!next[index]) {
-            for (size_t previous = 0; previous < index; ++previous) CGImageRelease(next[previous]);
-            return NO;
-        }
+        uint8_t *destination = (uint8_t *)IOSurfaceGetBaseAddress(slot->surface);
+        copies[batch.count++] = (VoxScrollTileCopy){slot, ring + first * width * 4, destination, index};
+        if (!destination) goto failed;
+        bytes += width * 4 * rows;
     }
-    return native_scroll_tiles_adopt(next, tiles, updated, width, height, row_origin, top, scale, gpu);
+    {
+        size_t lanes = bytes / (2u * 1024u * 1024u);
+        if (lanes > batch.count) lanes = batch.count;
+        if (lanes > 4) lanes = 4;
+        if (lanes > 1 && !getenv("VOX_SERIAL_SCROLL_TILE_COPY")) {
+            batch.lanes = lanes;
+            dispatch_apply_f(lanes, dispatch_get_global_queue(QOS_CLASS_USER_INTERACTIVE, 0),
+                &batch, native_scroll_tile_copy_batch);
+        } else native_scroll_tile_copy_batch(&batch, 0);
+    }
+    for (size_t i = 0; i < batch.count; ++i) {
+        VoxScrollTileCopy *copy = &copies[i];
+        VoxScrollTileStorage *slot = copy->slot;
+        IOSurfaceUnlock(slot->surface, 0, NULL);
+        // Provider creation consumes the reservation, even on failure.
+        copy->slot = NULL;
+        next[copy->index] = native_scroll_tile_image(slot, NO);
+        if (!next[copy->index]) goto failed;
+    }
+    return native_scroll_tiles_adopt(next, tiles, batch.count, width, height, row_origin, top, scale, gpu);
+
+failed:
+    for (size_t i = 0; i < batch.count; ++i) {
+        VoxScrollTileStorage *slot = copies[i].slot;
+        if (!slot) continue;
+        IOSurfaceUnlock(slot->surface, 0, NULL);
+        __atomic_store_n(&slot->busy, 0, __ATOMIC_RELEASE);
+    }
+    for (size_t index = 0; index < tiles; ++index)
+        if (next[index]) CGImageRelease(next[index]);
+    return NO;
 }
 static BOOL native_scroll_tiles_commit(const uint8_t *ring, size_t width, size_t height,
     size_t row_origin, size_t top, CGFloat scale, const BOOL *dirty) {

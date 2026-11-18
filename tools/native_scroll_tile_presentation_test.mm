@@ -132,6 +132,75 @@ static std::vector<uint8_t> packed(CGImageRef image) {
             + y * CGImageGetBytesPerRow(image), width * 4);
     CFRelease(data); return result;
 }
+
+static void test_cpu_tile_copy_batches() {
+    CGColorSpaceRef color = CGColorSpaceCreateWithName(kCGColorSpaceSRGB);
+    CGContextRef bitmap = CGBitmapContextCreate(nullptr, 8, 8, 8, 32, color,
+        CGBitmapInfo(kCGImageAlphaPremultipliedLast) | kCGBitmapByteOrder32Big);
+    CGColorSpaceRelease(color);
+    assert(bitmap);
+    native_scroll_tile_compositor_enabled(1);
+    native_scroll_tile_destination = bitmap;
+
+    for (size_t width : {2048, 2051}) { @autoreleasepool {
+        const size_t height = 4 * VOX_SCROLL_TILE_ROWS + 19;
+        const size_t tile_bytes = width * VOX_SCROLL_TILE_ROWS * 4;
+        std::vector<uint8_t> ring(width * height * 4);
+        for (size_t offset = 0; offset < ring.size(); ++offset)
+            ring[offset] = uint8_t(offset * 13 + offset / 67);
+        BOOL dirty[VOX_SCROLL_TILE_LIMIT];
+        memset(dirty, 1, sizeof dirty);
+        assert(native_scroll_tiles_commit(ring.data(), width, height, 7, 3, 2, dirty));
+        CGImageRef old = CGImageRetain(native_scroll_tile_images[0]);
+        auto old_pixels = packed(old);
+        assert(!memcmp(old_pixels.data(), ring.data(), tile_bytes));
+        CGImageRef unchanged = native_scroll_tile_images[4];
+        const size_t pitch = CGImageGetBytesPerRow(unchanged);
+        assert(width == 2048 ? pitch == width * 4 : pitch > width * 4);
+        for (size_t i = 0; i < 4 * tile_bytes; ++i) ring[i] ^= 0xff;
+        dirty[4] = NO;
+        assert(native_scroll_tiles_commit(ring.data(), width, height, 17, 3, 2, dirty));
+        assert(native_scroll_tile_images[4] == unchanged && packed(old) == old_pixels);
+        for (size_t index = 0; index < 5; ++index) {
+            auto actual = packed(native_scroll_tile_images[index]);
+            assert(actual.size() == std::min(tile_bytes, ring.size() - index * tile_bytes));
+            assert(!memcmp(actual.data(), ring.data() + index * tile_bytes, actual.size()));
+        }
+
+        // Leave exactly one slot available so a multi-tile replacement fails
+        // after acquiring a surface. The pending frame must stay published.
+        VoxScrollTileStorage *available = nullptr;
+        std::vector<VoxScrollTileStorage *> reserved;
+        for (auto &slot : native_scroll_tile_pool) {
+            if (__atomic_load_n(&slot.busy, __ATOMIC_ACQUIRE)
+                || (slot.surface && IOSurfaceIsInUse(slot.surface))) continue;
+            if (!available) available = &slot;
+            else {
+                __atomic_store_n(&slot.busy, 1, __ATOMIC_RELEASE);
+                reserved.push_back(&slot);
+            }
+        }
+        assert(available && !reserved.empty());
+        VoxScrollTileFrame *pending = native_scroll_tile_pending;
+        CGImageRef current = native_scroll_tile_images[0];
+        assert(!native_scroll_tiles_commit(ring.data(), width, height, 0, 3, 2, dirty));
+        assert(available->surface && !available->provider
+            && !__atomic_load_n(&available->busy, __ATOMIC_ACQUIRE));
+        assert(native_scroll_tile_pending == pending && native_scroll_tile_images[0] == current);
+        assert(IOSurfaceLock(available->surface, 0, nullptr) == kIOReturnSuccess);
+        IOSurfaceUnlock(available->surface, 0, nullptr);
+        for (auto *slot : reserved) __atomic_store_n(&slot->busy, 0, __ATOMIC_RELEASE);
+
+        CGImageRelease(old);
+        native_scroll_tiles_clear();
+    } }
+    native_scroll_tiles_clear();
+    native_scroll_tile_destination = nullptr;
+    native_scroll_tile_compositor_enabled(0);
+    CGContextRelease(bitmap);
+    puts("PASS packed and padded CPU tile batches, retained tiles, and partial reservation failure");
+}
+
 static std::vector<uint8_t> render_layer(CALayer *content, int width, int height)
 {
     @autoreleasepool {
@@ -170,6 +239,7 @@ static std::vector<uint8_t> render_layer(CALayer *content, int width, int height
 int main() { @autoreleasepool {
     [NSApplication sharedApplication];
     setenv("VOX_SCROLL_TILE_COMPOSITOR", "1", 1);
+    test_cpu_tile_copy_batches();
 
     native_set_opaque_browser_frames(1);
     for (BOOL flipped : {NO, YES})

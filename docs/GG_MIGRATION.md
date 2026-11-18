@@ -4724,3 +4724,60 @@ The native snapshot fixtures matched decoded pixels, profile and other
 PNG metadata in ARC, non-ARC, ASan/UBSan and ThreadSanitizer builds.
 The published browser supplied the workload and eligibility evidence.
 The timing spans exclude painting, PNG encoding and browser startup.
+
+### Parallel CPU scroll-tile publication copies
+
+The opt-in macOS CPU tile compositor and CPU bootstrap for GPU tiles
+now batch changed tile uploads. The caller reserves and locks the
+IOSurfaces, then up to four workers copy disjoint destinations. The caller
+joins the workers before unlocking and publishing. Clean tiles keep their
+image references. A failed reservation leaves the previous tile frame
+available. One-tile uploads and `VOX_SERIAL_SCROLL_TILE_COPY=1` stay serial.
+
+A standalone Apple Clang 21 `-O2 -fobjc-arc` harness timed
+`native_scroll_tiles_commit` from entry through image adoption. It checked
+every visible pixel after the measurement, with a new process for each
+trial. The control used the previous header. The serial and parallel
+arms used the same candidate binary. Each case had seven alternating
+groups and zero process or guard failures. Full-refresh cases ran at a
+one-minute load of 7.78 on an 18-logical-CPU Mac17,6. The sparse cases ran
+at load 26.41 and showed greater spread.
+
+| Document pixels and tile updates | Before, µs | Candidate serial, µs | Candidate default, µs | Default faster than before |
+| --- | ---: | ---: | ---: | ---: |
+| 2048×1536, six tiles, cold | 4045.125 | 3810.125 | 3420.209 | 7/7 |
+| 2048×1536, six tiles, warm | 440.125 | 407.916 | 232.583 | 7/7 |
+| 2051×1043, five padded tiles, warm | 389.917 | 393.333 | 143.959 | 7/7 |
+| 641×229, one tile, warm | 16.584 | 16.833 | 16.375 | 3/7 |
+| 2048×1536, one changed tile, warm | 49.583 | 56.542 | 54.916 | 5/7 |
+| 2048×1536, two changed tiles, warm | 180.083 | 177.250 | 91.084 | 6/7 |
+
+Warm runs had two prior commits. The sparse runs primed all six tiles
+and then replaced one or two while retaining the rest. A separate probe
+resolved the tile callback at Mach-O offset `0x18b4` and observed four
+distinct threads on each full-size dispatch. The one-tile case and
+forced-serial case did not dispatch. The native tests passed in ARC,
+non-ARC and ASan/UBSan builds, including pixel equality for packed and
+padded surfaces, retained image identity, and partial reservation
+failure. ThreadSanitizer passed both large copy workloads.
+
+The published single-C-unit receipt `20261118-035602-2025fd74`
+(`296096c89d6b92677139a110f2004bfe8df20d6ebc70db759960be3046c4e829`)
+supplied browser eligibility evidence. Fresh sealed-archive captures of
+Hacker News, GitHub and Old Reddit matched the existing decoded RGBA and
+content references at 1024×768 CSS pixels and 2× backing scale. Screenshot
+capture produced zero tile publications on all three sites.
+
+A separate windowed diagnostic on that same bundle enabled
+`VOX_SCROLL_TILE_COMPOSITOR=1` and tile logging. Each archived site used a
+fresh profile and cache, two seconds of title-matched settling, and
+48 native wheel events at nominal 60 Hz with a reversal halfway through.
+Hacker News committed six changed tiles once before input. During input
+it reported 46 one-tile updates, two two-tile updates, and one publication
+with zero tiles changed. Old Reddit scrolled with zero tile publications.
+GitHub loaded the archived document and received all 48 events, but its
+scroll offset stayed fixed. The measurement driver exited 1 for GitHub and
+0 for the other two. All browser processes and the memory guard exited 0.
+These runs establish eligibility on the older bundle. The before/after
+timings cover the native upload and adoption only. Whole-browser timing
+for the new code awaits a published build containing it.
