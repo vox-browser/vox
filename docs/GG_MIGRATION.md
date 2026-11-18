@@ -1,5 +1,48 @@
 # Migrating from Skia to vlib/gg
 
+## Solid SVG strokes on OpenGL
+
+The opt-in `VOX_GG_SVG=1` renderer passes solid, undashed SVG strokes
+to `gg.canvas` in document paint order. It preserves curve segments,
+multiple contours, transforms, caps, joins, and stroke opacity. A stroke
+shares cached local geometry bounds with its fill and has a separate
+texture key containing its width, cap, join, and miter limit. It uses the
+existing frame limits of eight draws and one megapixel. Dashed,
+non-scaling, gradient and pattern strokes still use legacy replay.
+
+The Linux window tests passed the existing fill, mutation, cropping and
+GL 4.2 fallback checks. A six-stroke fixture verified cap and join
+geometry, transformed curves, multiple contours, translucent blending,
+and both fill/stroke orders. Changing a round cap to a butt cap rebuilt
+the texture while reusing the geometry bounds. Cached and uncached
+document rows matched before and after the edit, and at scroll offset 126.
+The first window run paused when the host ran out of disk space, then
+failed a test sample on the round join's antialiased fringe. The passing
+run used RAM-backed scratch and checked a pixel farther outside the join.
+
+The Linux executable SHA-256 was
+`e0bf9f472f80ef3d8c190ebb938917500afaf9273de00ce7ed2bb58fd2f9a072`.
+It used V `5a39a4d` and single-unit Clang `-O0`. The fixture SHA-256 was
+`d760304658f81f4e28f0665645566626ed28b5dcce7d86f195bad583d12c1f5b`.
+Mesa software OpenGL ran under Xvfb in an 800 × 712 window. Fresh
+processes used private profiles and caches, with OS caches available,
+one second of settling, and 32 synthetic 42-pixel scroll steps. The
+scroll positions and paint-command counts matched. One-minute guest load
+ranged from 0.65 to 0.80 on four virtual CPUs.
+
+| Pair | Median callback uncached / cached, ms | p95, ms | Maximum, ms |
+| ---: | ---: | ---: | ---: |
+| 1 | 4.290 / 3.288 | 6.015 / 5.166 | 6.108 / 5.214 |
+| 2 | 3.871 / 3.369 | 5.967 / 4.242 | 6.008 / 5.546 |
+
+The median fell by 23.4% and 13.0% with caching. Separate diagnostics
+confirmed 186 stroke texture and bounds hits over the final 31 moving
+callbacks, compared with 186 rasterizations when caching was disabled.
+The final browser tests, benchmark, capture checks, and memory guards exited
+zero. These measurements cover synthetic replay on software OpenGL.
+The Windows OpenGL source check passed with V `eae4fce`. Windows window
+and pixel validation still need a runnable build.
+
 ## Reusing SVG textures at viewport edges
 
 `VOX_GG_SVG=1 VOX_GG_SVG_VIEWPORT_REUSE=1` lets the OpenGL SVG renderer
