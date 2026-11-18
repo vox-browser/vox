@@ -48,8 +48,11 @@ fn (environment &DeclarativeEnvironment) find_binding_index(name Utf16String) in
 	return environment.find_binding_index_linear(name)
 }
 
+@[direct_array_access]
 fn (environment &DeclarativeEnvironment) find_binding_index_linear(name Utf16String) int {
-	for index, binding in environment.bindings {
+	// The loop uses the current array length and compares names without mutating it.
+	for index in 0 .. environment.bindings.len {
+		binding := &environment.bindings[index]
 		if !binding.deleted && binding.name == name {
 			return index
 		}

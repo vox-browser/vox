@@ -2,6 +2,24 @@ module libjs
 
 import platform
 
+fn test_linear_binding_lookup_matches_live_utf16_names_in_slot_order() {
+	mut vm := VM.create()
+	create_simple_execution_context(mut vm)
+	mut env := DeclarativeEnvironment.create(none)
+	units := [u16(0x78), 0xd800]
+	name := utf16_string_from_code_units(units)
+	assert env.find_binding_index_linear(name) == -1
+	env.create_mutable_binding(mut vm, name, true)!
+	env.create_mutable_binding(mut vm, utf16_string('tail'), true)!
+	assert env.find_binding_index_linear(utf16_string_from_code_units(units)) == 0
+	assert env.delete_binding(mut vm, name)!
+	assert env.find_binding_index_linear(name) == -1
+	assert env.find_binding_index_linear(utf16_string('tail')) == 1
+	env.create_mutable_binding(mut vm, utf16_string_from_code_units(units), true)!
+	assert env.find_binding_index_linear(name) == 2
+	assert env.find_binding_index_linear(utf16_string_from_code_units([u16(0x78), 0xdc00])) == -1
+}
+
 fn binding_lookup_fixture(mut vm VM) !&DeclarativeEnvironment {
 	mut env := DeclarativeEnvironment.create(none)
 	for index in 0 .. 96 {
