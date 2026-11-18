@@ -4313,3 +4313,64 @@ including one-pixel axes, unequal radii, radius capping, ring wrap, and the
 decal border. The serial and parallel large results matched byte for byte.
 The SVG graph regression tests, macOS ThreadSanitizer run, and pinned CPU
 raster differential suite also passed.
+
+### Parallel CPU filter offsets
+
+The CPU fallback for SVG-reference `feOffset` and fractional drop-shadow
+translations shares bilinear column samples across rows. Each of up to
+four raster workers calculates its row samples and writes separate output
+rows. The filter keeps its per-channel interpolation and transparent-black
+samples outside the layer. Integral offsets use the row copy. Fully
+off-layer offsets produce a transparent surface.
+
+Seven alternating fresh-process groups used matching macOS single-C
+`-prod` builds with preallocation on an Apple M5 Max. The timed span is a
+Canvas2D path draw with one fractional SVG offset node, including layer
+creation, filtering, cropping and the composite. Path construction and
+hashing are outside the span. One-minute load was 6.20 on 18 logical CPUs.
+
+| Canvas size and offset | Before median | New serial median | New default median |
+| --- | ---: | ---: | ---: |
+| 1031×527 at (13.16843, −9.625) | 9.604 ms | 6.989 ms | 3.981 ms |
+| 1920×1080 at (−0.00014648, 1) | 35.726 ms | 25.799 ms | 15.169 ms |
+| 176×128 at (0.5, −0.5) | 0.407 ms | 0.324 ms | 0.323 ms |
+
+Every output matched its baseline bytes and all 63 timed processes and
+the memory guard exited zero. A separate probe observed four distinct
+threads in each large workload. The small workload runs serially under
+both worker settings. Focused tests on macOS and Linux checked bilinear
+edges, integer translations, large off-layer shifts and matching serial
+and parallel results. The SVG filter graph tests, ThreadSanitizer and
+the pinned CPU raster differential suite also passed.
+
+#### Archived browser eligibility
+
+The published single-C receipt `20261118-030853-ecf3924d`, executable SHA-256
+`9c165f7ab3dc15fd6fcc7a0d89336aefde735c3a9f983c15248727de89918301`,
+predates this change. A separate injected diagnostic pinned that executable
+and its helpers and counted calls to the raster dispatch callback at Mach-O
+offset `0x1170254`. A large Canvas2D blur on the same executable executed
+two four-thread batches, confirming the callback and JavaScript path.
+
+Each site used a fresh process and private profile/cache through sealed
+original-origin replay at 1024×768 and 2×, with one second of settling.
+The audit checked URL, title, complete readiness, JavaScriptCore
+initialization and distinct content IDs. All browsers and guards exited
+zero. An initial pilot used a 796-pixel document height and was repeated
+with the corrected 768-pixel height.
+
+| Archive | Content IDs | CPU raster batches | Diagnostic launch to capture exit |
+| --- | ---: | ---: | ---: |
+| Hacker News | 30 | 0 | 1,539.620 ms |
+| GitHub `vlang/v` | 33 | 0 | 3,639.429 ms |
+| Old Reddit `r/programming` | 25 | 0 | 1,756.248 ms |
+
+The Hacker News and Old Reddit decoded pixels matched the retained
+[frame-clear references](NATIVE_FRAME_CLEAR_BENCHMARK.md#input-identities).
+The GitHub replay used the retained November 12 archive
+`b9e3e33910c5df77c2f723532cc9f5e791341c8cc44ce4bfbabd5fb40cc3b7db`
+and produced decoded RGBA SHA-256
+`69ab76c878a122501f91053ef8ae07b2ca073da35bafc92c065dbce55920a0bc`.
+These single observations establish dispatch eligibility for the published
+browser at capture time. A before-and-after site comparison of the new
+offset code awaits the newer production executable.

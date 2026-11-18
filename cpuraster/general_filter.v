@@ -320,50 +320,6 @@ fn general_byte(v f32) u8 {
 	return u8(v + f32(0.5))
 }
 
-// SkImageFilters::Offset: whole-pixel translations copy; fractional ones
-// sample bilinearly, as the deferred transform does.
-fn general_offset(image BlurImage, dx f32, dy f32) BlurImage {
-	if !is_finite_f32(dx) || !is_finite_f32(dy) {
-		return BlurImage{[]u8{len: image.pixels.len}, image.width, image.height}
-	}
-	if dx == f32(math.round(dx)) && dy == f32(math.round(dy)) {
-		return general_place(image, int(dx), int(dy), image.width, image.height)
-	}
-	w, h := image.width, image.height
-	mut out := BlurImage{[]u8{len: image.pixels.len}, w, h}
-	for y in 0 .. h {
-		sy := f32(y) - dy
-		y0 := int(math.floor(sy))
-		fy := sy - f32(y0)
-		for x in 0 .. w {
-			sx := f32(x) - dx
-			x0 := int(math.floor(sx))
-			fx := sx - f32(x0)
-			for c in 0 .. 4 {
-				p00 := general_sample(image, x0, y0, c)
-				p10 := general_sample(image, x0 + 1, y0, c)
-				p01 := general_sample(image, x0, y0 + 1, c)
-				p11 := general_sample(image, x0 + 1, y0 + 1, c)
-				top_step := (p10 - p00) * fx
-				bottom_step := (p11 - p01) * fx
-				top := p00 + top_step
-				bottom := p01 + bottom_step
-				vertical := (bottom - top) * fy
-				out.pixels[(y * w + x) * 4 + c] = general_byte(top + vertical)
-			}
-		}
-	}
-	return out
-}
-
-@[inline]
-fn general_sample(image BlurImage, x int, y int, c int) f32 {
-	if x < 0 || y < 0 || x >= image.width || y >= image.height {
-		return 0
-	}
-	return f32(image.pixels[(y * image.width + x) * 4 + c])
-}
-
 // SkImageFilters::Merge: each input source-over the preceding ones.
 fn general_merge(inputs []BlurImage, width int, height int) BlurImage {
 	mut out := BlurImage{[]u8{len: width * height * 4}, width, height}
