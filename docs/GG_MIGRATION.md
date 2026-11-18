@@ -412,6 +412,57 @@ under their guards, with sampled process-tree RSS peaks of 5,974,519,808,
 macOS production-mode and Windows D3D11 V checks passed. The pinned CPU
 raster differential suite passed with 10,000 exact gradient draws.
 
+### Shared gradient mask raster on macOS
+
+`VOX_SHARED_SVG_MASK_RASTER=1` uses the V mask rasterizer on macOS for
+eligible gradient fills. The rasterizer writes only the aligned mask
+rectangle in the bitmap that enters the existing native cache. It uses
+the bitmap's row stride and leaves the transparent padding intact. Native
+composition continues to use the cached alpha or luminance image. Other
+resources and fractional mask rectangles use the existing Quartz replay.
+
+The macOS pixel check compares both settings in new browser processes
+and verifies that the shared path ran for both alpha and luminance.
+Across the 1024 × 600 document, the largest difference against Quartz
+was two channel levels. The Linux browser suite, Windows D3D11 type
+check, native SVG mask conversion and layer checks all passed.
+
+The same macOS single-C executable, compiled with V `-prod` and Clang
+`-O1`, ran both paths. Its SHA-256 was
+`06fa95ced9400bbc889a099c3e9643d14d1aff8ee81250dfa18e94a627d52f8b`
+and the AVIF library SHA-256 was
+`ebde1494c5aebaa69ebe6edab9f4e3333020cb4b2949d96fa1fbb35f19d6a202`.
+The build, captures and focus checks used the same fixture digest as the
+Linux trials above. The build peaked at 12,438,732,800 bytes under the
+12 GiB process-tree guard. The two pixel capture PIDs were 94900 and 94917.
+
+The initial private builds exited 139 before scroll input in the STB
+bookmark icon decoder. The non-`-prod` build reproduced that exit in both
+mask modes. With the same private `-prod` timing build, a fresh profile
+with an empty hidden bookmark bar allowed the precise-wheel runs to start.
+All trials used that profile seed, a fresh cache, disabled scripts,
+no external resources and a one-second settle after the fixture title
+appeared. The observed viewport was 1024 × 600 at 2× backing scale.
+A separate diagnostic recorded 267 alpha and 257 luminance shared
+mask rasterizations during the input window.
+
+The trial used 120 precise wheel inputs at a requested 60 Hz, with a
+four-pixel delta and one reversal after 60 inputs. The endpoint was
+changed native frame installation after the outer view paint. Both
+variants exceeded the 16.67 ms deadline on every measured scroll interval.
+
+| PID | Raster | Scroll fps | Median (ms) | p95 (ms) | Max (ms) | Input Hz | Inputs / scroll changes | First / last gap (ms) |
+| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| 95630 | Quartz | 41.76 | 22.764 | 26.339 | 47.476 | 54.02 | 120 / 92 | 52.645 / 20.213 |
+| 95741 | Shared | 27.89 | 34.473 | 38.127 | 68.844 | 55.32 | 120 / 60 | 78.019 / 0.088 |
+| 95891 | Quartz | 42.89 | 22.282 | 26.031 | 27.966 | 54.29 | 120 / 94 | 54.111 / 17.040 |
+| 95985 | Shared | 27.66 | 34.271 | 38.500 | 69.497 | 54.86 | 120 / 60 | 75.839 / 17.467 |
+
+The 18-CPU host's starting one-minute loads were 6.83, 6.84, 6.45 and
+6.42. All browser and guard exits were zero and the cohort peaked at
+402,685,952 sampled RSS bytes. The shared path remains opt-in because
+of the measured scroll regression.
+
 ## Original migration plan
 
 Vox currently renders through two Skia builds: LibWeb's Skia (CPU raster,
