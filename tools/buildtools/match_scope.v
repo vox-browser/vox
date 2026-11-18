@@ -90,8 +90,9 @@ fn prepare_match(selected string) !string {
 	env['VOX_MATCH_SCOPE_RECEIPT'] = join(root, 'patched.txt')
 	scratch := temporary(root, 'build-')!
 	defer { remove(scratch) or {} }
+	// Keep the bootstrap optimized without requiring Clang's LLVMgold linker plugin.
 	mut command := [resolved, '-b', 'c', '-nocache', '-memory-limit', '10G', '-cc', wrapper, '-prod',
-		'-o', join(scratch, 'v')]
+		'-no-prod-options', '-cflags', '-O2', '-o', join(scratch, 'v')]
 	for backend in ['fastc', 'x64', 'amd64', 'arm64', 'ssa', 'eval', 'wasm'] {
 		command << ['-d', 'skip_' + backend]
 	}

@@ -9,6 +9,7 @@ import json
 import os
 from pathlib import Path
 import subprocess
+import sys
 import tempfile
 import unittest
 
@@ -164,6 +165,35 @@ class VBuildMigrationTest(unittest.TestCase):
         subprocess.run([self.driver, 'v_match_scope_cc', str(source)], env=environment, check=True)
         self.assertEqual(source.read_text(), patch_compiler(original)[0])
         self.assertEqual(receipt.read_text(), 'patched\n')
+
+    def test_match_scope_bootstrap_keeps_prod_optimization_without_lto(self):
+        bootstrap = self.work / 'scope-bootstrap'
+        bootstrap.mkdir()
+        transform = bootstrap / 'vlib/v/transform/transform.v'
+        transform.parent.mkdir(parents=True)
+        transform.write_text('fn (mut t Transformer) lower_remaining_matches_in_used_fns() {\n}\n')
+        compiler = bootstrap / 'v'
+        compiler.write_text('''#!/bin/sh
+set -eu
+while [ "$#" -gt 0 ]; do
+    case "$1" in
+        run) dirname "$0"; exit ;;
+        -o) shift; cp "$0" "$1"; printf 'patched\\n' > "$VOX_MATCH_SCOPE_RECEIPT"; exit ;;
+    esac
+    shift
+done
+exit 1
+''')
+        compiler.chmod(0o755)
+        environment = dict(self.environment, XDG_CACHE_HOME=str(bootstrap / 'cache'),
+                           V_BIN=self.compiler)
+        for preparer in ([self.driver, 'prepare_v_match_scope'],
+                         [sys.executable, ROOT / 'tools/prepare_v_match_scope.py']):
+            cached = Path(subprocess.check_output([*preparer, compiler], env=environment, text=True).strip())
+            self.assertNotEqual(cached, compiler)
+            command = json.loads((cached.parent / 'build.log').read_text().splitlines()[-1])['command']
+            start = command.index('-prod')
+            self.assertEqual(command[start:start + 4], ['-prod', '-no-prod-options', '-cflags', '-O2'])
 
     def test_windows_dependency_notices_do_not_pollute_shell_setup_stdout(self):
         import re
