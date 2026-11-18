@@ -9184,3 +9184,51 @@ post-commit worker has the rebuild request, and the new archived-page
 breakdown is pending a publication that seals both source hashes. Raw stage
 streams, input pins, preflight failures and guarded checks are local under
 `github-stage-attribution-5204-r105/receipts`.
+
+### Published LibJS callback and module attribution
+
+Managed build `20261118-120526-3448b376` publishes single-C V `-prod`
+executable `4e0651cd258ad071ef21997e56960622c0fda2e75b26b0efa3870f08be6ec452`.
+The frozen manifest matches both files in `a797cd0ce` and all 17 native
+cache ABI sources in the predecessor. Compilation and headless smoke exit
+zero. A fresh instrumented interpreter/compiled pair uses the same archive,
+viewport, capture reference and one-second settle as the earlier trace.
+Both content audits and PNG checks pass. The compiler-disabled grouped
+visit records 2,949 hits, 476,289 native entries, zero misses or compiler
+calls, and all 81 modules complete. Both browser and guard exits are zero.
+The guard adopts both browser processes and their helpers, and samples a
+peak of 6,523,813,888 bytes. The guard's 238.942 seconds include waiting
+for publication and the two launches.
+
+| Main-thread instruction scope | Interpreted LibJS | Grouped compiled LibJS |
+| --- | ---: | ---: |
+| JavaScript and bindings self work | 14,516,612,393 | 14,549,470,750 |
+| JavaScript self work inside posted-message tasks | 10,632,357,097 | 9,762,068,776 |
+| Posted-message task self work | 9,392,292 | 10,480,592 |
+| LibJS module frontend self work | 7,374,477,032 | 7,329,509,667 |
+| LibJS module linking self work | 221,219,132 | 253,184,471 |
+
+The posted-message JavaScript row is a subset of the JavaScript and
+bindings row. The earlier trace exposed zero such scopes under those
+tasks. The published hooks expose 44 in the interpreter visit and 49 in the
+compiled visit, accounting for almost all of the previously unattributed
+posted-message work. The frontend scope runs 81 times in each browser and
+includes source-cache lookup, parsing and native template bookkeeping.
+These instrumented main-thread counts locate work on this page. There is
+one pair, and its tracing adds overhead.
+
+Commit `eb8628f3a` defers building the module fetch `TypeError` and its
+stack until there is no module to deliver. A focused regression covers
+both the fulfilled namespace and the exact rejection type and message.
+The production type check exits zero in 113.009 guard seconds at
+5,247,975,424 sampled RSS bytes. Two standalone test build attempts reach
+the 12 GiB guard during compilation, so the new test has yet to execute.
+A fresh loopback control on `68ca9b1d…a629` verifies the HTTP 200 namespace
+and the HTTP 404 rejection in 1.148 guard seconds at 343,048,192 sampled
+bytes. The first control's browser exits zero and its document audit
+passes, but the controller reads the wrong audit field and exits 1. The
+corrected control exits zero. Browser verification and timings for the
+allocation change await the managed publication.
+
+Raw stages, launch and input pins, build and guard receipts, and both
+loopback attempts are local under `github-libjs-module-5204-r106/receipts`.
