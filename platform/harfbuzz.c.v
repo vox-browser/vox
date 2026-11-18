@@ -372,7 +372,13 @@ fn resolve_font_path_for_family(family string, weight int) ?string {
 		}
 		return linux_font_path(family_name, weight, false)
 	}
-	regular_path := configured_document_font_path()?
+	regular_path := configured_document_font_path() or {
+		$if windows {
+			windows_root := os.getenv_opt('WINDIR') or { os.getenv('SystemRoot') }
+			return windows_document_font_path(windows_root, weight)
+		}
+		return none
+	}
 	if weight < 600 {
 		return regular_path
 	}
@@ -392,6 +398,20 @@ fn resolve_font_path_for_family(family string, weight int) ?string {
 		}
 	}
 	return regular_path
+}
+
+$if windows {
+	fn windows_document_font_path(windows_root string, weight int) ?string {
+		if windows_root == '' { return none }
+		fonts := os.join_path(windows_root, 'Fonts')
+		if weight >= 600 {
+			bold := os.join_path(fonts, 'arialbd.ttf')
+			if os.is_file(bold) { return bold }
+		}
+		regular := os.join_path(fonts, 'arial.ttf')
+		if os.is_file(regular) { return regular }
+		return none
+	}
 }
 
 $if test {
