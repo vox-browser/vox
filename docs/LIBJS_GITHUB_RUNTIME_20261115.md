@@ -9666,3 +9666,33 @@ peak bytes. Receipts are local under
 
 The published production bundle predates the packaging change. Disk
 exhaustion still blocks a fresh browser publication and GitHub timing.
+
+### String and template literal decoding
+
+Commit `1ae9f580f` reads raw string and template tokens from the UTF-16
+source view. The decoder copies plain text into owned storage in one
+operation and starts escape decoding at the first backslash or carriage
+return. Disassembly confirms that both parser entry points drop their
+raw-token clone. The focused Unicode and directive suites pass with
+assertions enabled, and all 100 upstream AST fixtures match. The Unicode
+regression overwrites the parser input and checks plain and escaped
+strings, CRLF normalization, and both forms of tagged template data.
+
+Seven alternating fresh-process pairs parse the 81 archived GitHub
+modules without diagnostics or depth-limit failures. Both binaries use
+Clang `-O2`, V development mode and `-prealloc -gc none`. The consumed
+source manifests differ only in `libjs/expressions.v`.
+
+| Median frontend measure | Control | Literal decoding |
+| --- | ---: | ---: |
+| Retired instructions | 6,872,739,460 | 6,845,399,349 |
+| Elapsed time | 495.976 ms | 496.179 ms |
+
+Six pairs use fewer instructions and five finish sooner. The 0.40%
+median instruction reduction accompanies essentially unchanged median
+elapsed time. Host one-minute load ranges from 8.29 to 8.31 on 18 CPUs.
+The 3 GiB guard exits zero in 8.578 seconds at 2,431,205,376 sampled
+peak bytes. Builds and checks use private RAM-backed scratch. The raw
+timings, source manifests and verification receipts are local in
+`docs/benchmark-results/github-literal-decoding-5204-r118.tar.gz`.
+The published bundle predates the change.
