@@ -303,7 +303,7 @@ def observe(args, engine, folder, expected, replayed_scripts, api):
     return row
 
 
-def run(args):
+def run(args, *, bundle_lease=None):
     args.output = args.output.resolve(); args.archive = args.archive.resolve()
     args.vox = args.vox.resolve(); args.brave = args.brave.resolve()
     if args.native_cache: args.native_cache = args.native_cache.resolve()
@@ -342,7 +342,7 @@ def run(args):
     if args.trace_native_libraries:
         report['trace_native_libraries'] = True
     api = MacCounters()
-    with canonical_bundle_lease(ROOT / 'Build/v/Vox.app'):
+    with (bundle_lease or canonical_bundle_lease)(ROOT / 'Build/v/Vox.app'):
         asset_env = {'VOX_ADBLOCK_ENGINE_ASSETS': str(args.adblock_assets)} if args.adblock_assets else {}
         paths = [*native_dependencies(args.vox, args.vox.parent.glob('*.dylib')),
             *sorted((ROOT / 'Build/v').glob('*.dylib')), *runtime_input_paths(args.vox, asset_env),

@@ -1512,3 +1512,35 @@ screenshot and repository audit, and evaluates all 81 modules with
 2,949 hits. Both runs have zero misses or compiler calls. Local
 receipts are under
 `docs/performance/libjs-github-browser-20261116/libjs-pack-from-benchmark-20261118/`.
+
+### Run the grouped-cache workflow
+
+`tools/prepare_github_grouped_cache.py` runs a capture seed, a traced
+reopen, the packer, and a compiler-disabled grouped reopen against
+the same frozen archive. It checks the pinned browser inputs
+between visits and verifies that the grouped reopen loads the
+packed image and matches the separate-cache screenshot pixel for pixel.
+
+```sh
+sh tools/run_v_tool.sh run_memory_bounded \
+  --lock "$lock" --report "$guard_report" --adopt-pids-from "$pids" -- \
+  python3 tools/prepare_github_grouped_cache.py \
+    --archive "$archive" --reference-audit "$reference_audit" \
+    --reference-png "$reference_png" --adblock-assets "$assets" \
+    --output "$report_dir" --cache-work "$private_cache_work" \
+    --memory-guard-registry "$pids" --timeout "$visit_timeout"
+```
+
+Use new directories for the report and the private cache work.
+The report includes each stage's receipts, the packed library
+digest, and the image comparison. A successful report sets
+`complete` and identifies the verified `grouped_cache` directory.
+
+The small replay fixture completes all four stages, groups two
+libraries and preserves all 152 cache records. Both reopens match
+pixel for pixel and hit all 152 records with zero misses or
+compiler calls. A separate full frozen GitHub reopen with the
+existing group matches the pinned screenshot and repository audit,
+fulfills 81 modules, and records 2,948 hits with zero misses or
+compiler calls. Local receipts are under
+`docs/performance/libjs-github-browser-20261116/libjs-github-grouped-workflow-20261118/`.
