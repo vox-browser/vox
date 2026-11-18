@@ -304,6 +304,26 @@ fn test_pruning_does_not_follow_symlinks() ! {
 	assert !exists(join(root, 'discard'))
 }
 
+fn test_pruning_removes_siblings_when_one_file_cannot_be_removed() ! {
+	$if macos {
+		root := temporary(os.temp_dir(), 'vox-prune-blocked-test-')!
+		blocked := join(root, 'a-blocked')
+		removable := join(root, 'z-removable')
+		defer {
+			checked(['chflags', 'nouchg', blocked]) or {}
+			remove(root) or {}
+		}
+		write_changed(blocked, 'protected')!
+		write_changed(removable, 'disposable')!
+		checked(['chflags', 'uchg', blocked])!
+		mut failure := ''
+		prune_remove(root) or { failure = err.msg() }
+		assert failure.contains(blocked)
+		assert exists(blocked)
+		assert !exists(removable)
+	}
+}
+
 fn test_build_lock_is_not_inherited_by_executed_children() ! {
 	$if !windows {
 		root := temporary(os.temp_dir(), 'vox-lock-inheritance-test-')!

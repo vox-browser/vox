@@ -31,7 +31,13 @@ fn prune_remove(path string) ! {
 		// Sealed compiler inputs can contain read-only directories. Change only
 		// directories being removed; never traverse a module or bundle symlink.
 		os.chmod(path, 0o755) or {}
-		for entry in listing(path)! { prune_remove(entry)! }
+		mut first_failure := ?IError(none)
+		for entry in listing(path)! {
+			prune_remove(entry) or {
+				if first_failure == none { first_failure = err }
+			}
+		}
+		if err := first_failure { return err }
 		os.rmdir(path)!
 	} else if exists(path) {
 		os.rm(path)!
