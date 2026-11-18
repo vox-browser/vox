@@ -104,6 +104,23 @@ static void check_all_colors(void)
         for (unsigned c = 0; c < 4; ++c) assert(output[x * 4 + c] == x);
 }
 
+static void check_overlapping_rgba_rows(void)
+{
+    const size_t width = 1027, height = 1025, pitch = width * 4 + 7;
+    const size_t size = pitch * (height + 1);
+    uint8_t *actual = malloc(size), *expected = malloc(size);
+    assert(actual && expected);
+    for (size_t i = 0; i < size; ++i) actual[i] = random_byte();
+    memcpy(expected, actual, size);
+    for (size_t row = 0; row < height; ++row)
+        native_convert_rgba_svg_mask_pixels(expected + row * pitch, pitch,
+            expected + (row + 1) * pitch, pitch, width, 1, 1);
+    native_convert_rgba_svg_mask_pixels(actual, pitch, actual + pitch, pitch, width, height, 1);
+    assert(memcmp(actual, expected, size) == 0);
+    free(expected);
+    free(actual);
+}
+
 int main(void)
 {
     const size_t widths[] = {0, 1, 2, 7, 15, 16, 17, 31, 32, 33, 63, 65, 257, 1476, 1492};
@@ -117,13 +134,15 @@ int main(void)
         }
     }
     for (int mode = 0; mode < 4; ++mode) {
+        check(1024, 1024, 5, 3, mode / 2, mode % 2);
         check(1492, 1696, 13, 3, mode / 2, mode % 2);
         check(1476, 1461, 7, 1, mode / 2, mode % 2);
-        cases += 2;
+        cases += 3;
     }
     native_convert_svg_mask_pixels(NULL, 0, NULL, 0, 0, 12, 1, 1);
     native_convert_svg_mask_pixels(NULL, 0, NULL, 0, 12, 0, 1, 1);
     check_all_colors();
+    check_overlapping_rgba_rows();
     printf("SVG mask pixels: %zu stride/tail/guard scenes, all 16777216 RGB triples and all alpha values passed\n", cases);
     return 0;
 }

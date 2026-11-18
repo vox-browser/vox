@@ -6682,3 +6682,68 @@ eight-band cap. ThreadSanitizer reproduced the new Hacker News
 PNG with zero reported races. The installed browser supplied the
 capture input and baseline. Candidate production capture awaits
 the shared rebuild.
+
+### Parallel Quartz SVG mask conversion
+
+Quartz SVG mask publication flushes the bitmap before converting it
+in disjoint row ranges. Large alpha-only, RGBA alpha and RGBA
+luminance masks use two to four of the existing CPU raster workers.
+Conversion stays serial below 1,048,576 pixels, for partial source
+and destination overlap, and with `VOX_SERIAL_CPU_RASTER=1`. Exact
+in-place RGBA conversion remains eligible. The workers join before
+Quartz receives the premultiplied-white mask, and padding is preserved.
+
+Two matched single-unit Apple Clang `-O2 -flto` harnesses timed the
+original and new conversion calls through return. Timing excludes
+source generation, the in-place reset, output comparison and
+Quartz image creation. Seven rotating groups used a fresh process
+per mode and checked each complete output against a scalar
+reference. All 168 process exits and the guard exit were zero.
+Warm times are medians of each process's post-first-call median.
+One-minute host load ranged from 7.11 to 7.34 on 18 logical CPUs.
+
+| Mask | First before / forced serial / default, µs | Warm before / forced serial / default, µs | Default faster pairs, first / warm |
+| --- | ---: | ---: | ---: |
+| 67×43 luminance | 0.458 / 0.458 / 0.417 | 0.333 / 0.292 / 0.292 | 4/7 / 3/7 |
+| 1023×1024 luminance | 116.625 / 109.000 / 120.583 | 106.771 / 106.479 / 111.167 | 2/7 / 1/7 |
+| 1024×1024 luminance | 113.875 / 122.917 / 121.084 | 107.000 / 109.896 / 86.187 | 3/7 / 7/7 |
+| 2051×1537 RGBA luminance | 365.166 / 376.000 / 269.333 | 324.000 / 328.563 / 130.750 | 5/7 / 7/7 |
+| 2051×1537 RGBA alpha | 418.167 / 438.459 / 260.083 | 379.334 / 384.459 / 141.938 | 7/7 / 7/7 |
+| 2051×1537 alpha-only | 326.833 / 321.333 / 248.583 | 305.688 / 316.375 / 124.646 | 7/7 / 7/7 |
+| 2051×1537 in-place luminance | 329.375 / 333.375 / 222.792 | 329.917 / 327.833 / 124.230 | 6/7 / 7/7 |
+| 2051×1537 in-place alpha | 1300.500 / 245.208 / 192.125 | 1290.708 / 246.687 / 94.771 | 7/7 / 7/7 |
+
+The large in-place alpha case also benefited from the compiler's
+code generation for the reorganized serial loop. A lower threshold
+was considered in a full earlier cohort. The 1024×512 first call
+rose from 64.708 to 82.291 µs and lost all seven pairs, while its
+warm median fell from 62.104 to 41.917 µs. The final threshold
+keeps that size serial. The final harnesses had SHA-256
+`6ca3c6bc11c7ac902e1950baeacee99846d1aa266c7d072d8b2e3e3df96a4c28` and
+`85fa3d61c4752f9063320d61337df523559a68db7f890ff55513343bdf113ee2`.
+
+The worker probe observed zero dispatch below the final threshold
+and with the serial override, two distinct threads at the threshold,
+and four on the large masks. The native Objective-C capture adapter
+also compiled in an ARC harness and published three 1902×1284 masks
+through its ordinary PNG-independent image provider path. Both copy
+modes and in-place conversion each used four distinct threads and
+matched their forced-serial images. The combined visible RGBA
+SHA-256 was
+`da3caca70233117a20b1337aea3f1ff84c0da54c2015b69754b4fcc5a54170eb`.
+Focused macOS, arm64 Linux, ASan/UBSan, ThreadSanitizer and 16 native
+mask layer scenes passed. The focused tests include all 16,777,216
+RGB triples, exact overlap order, padding and uneven row ranges.
+
+The published single-C-unit browser
+`4ac49eb9690c121587fd4efd8f859f2cf0e2762013861238f07bb91a05547540`
+predates this change. A separate probe identified the two original
+conversion entries at offsets `0x2ed34` and `0x2f1fc`. A synthetic
+large SVG reached the conversion in both native mask modes. Sealed
+Hacker News, GitHub and Old Reddit replays audited 30, 33 and 25
+entries and matched the frozen pixel references. Each used private
+profiles and caches, JavaScript, a 1024×768 CSS-pixel viewport, 2×
+capture and one second of settling. The probe observed no conversion
+calls on the three archived pages. Browser and guard exits were
+zero. Candidate validation inside the browser awaits its production
+rebuild.

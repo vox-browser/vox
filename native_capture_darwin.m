@@ -5353,6 +5353,7 @@ static CGImageRef native_copy_svg_mask_bitmap(void) {
 	size_t width = CGBitmapContextGetWidth(context);
 	size_t height = CGBitmapContextGetHeight(context);
 	size_t source_stride = CGBitmapContextGetBytesPerRow(context);
+	CGContextFlush(context);
 	uint8_t *source = CGBitmapContextGetData(context);
 	if (source == NULL) {
 		return NULL;
@@ -5444,6 +5445,7 @@ int32_t native_publish_svg_mask_raster(uint64_t key, int32_t reuse_bitmap, const
 		size_t width = CGBitmapContextGetWidth(context);
 		size_t height = CGBitmapContextGetHeight(context);
 		size_t pitch = CGBitmapContextGetBytesPerRow(context);
+		CGContextFlush(context);
 		uint8_t *pixels = CGBitmapContextGetData(context);
 		if (pixels != NULL) {
 			native_convert_rgba_svg_mask_pixels(pixels, pitch, pixels, pitch,
