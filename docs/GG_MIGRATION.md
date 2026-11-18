@@ -4449,3 +4449,34 @@ four distinct threads for both large workloads. The smallest workload
 stayed serial. Focused macOS and Linux tests covered order, repeated
 inputs, opacity, saturation and unchanged sources. SVG filter graph tests,
 ThreadSanitizer and the pinned CPU raster differential suite passed.
+
+### Parallel CPU color matrices
+
+The software color-matrix layer used by Canvas2D `feColorMatrix` and
+matrix filters that require an intermediate surface now divides large
+buffers into disjoint row ranges for up to four CPU participants. A matrix
+evaluates transparent black once for the layer because unpremultiplication
+maps every zero-alpha source pixel to that input. The result can remain
+transparent or introduce color and opacity. Workers borrow the validated
+matrix and source pixels and use the existing channel clamping and rounding.
+
+Seven alternating fresh-process groups used matching macOS single-C
+`-prod` builds with preallocation on an Apple M5 Max. The timed span covered
+a Canvas2D path draw using one SVG color-matrix node, including layer drawing,
+matrix evaluation, cropping and final composition. Path construction and
+output hashing were outside the span. One-minute load was 5.49 on 18 logical
+CPUs.
+
+| Canvas size and transparent-pixel behavior | Before median | New serial median | New default median |
+| --- | ---: | ---: | ---: |
+| 1920×1080, preserves transparency | 27.842 ms | 21.940 ms | 15.779 ms |
+| 1920×1080, adds color and opacity | 29.153 ms | 25.230 ms | 17.296 ms |
+| 176×128, preserves transparency | 0.338 ms | 0.284 ms | 0.283 ms |
+
+All 63 draws matched their baseline pixels byte for byte and every timed
+process and the memory guard exited zero. A separate probe observed four
+distinct threads in both large workloads. The small canvas stayed serial
+in both worker modes. Focused tests passed on macOS and Linux, including
+zero alpha with nonzero stored RGB, alpha bias and invalid matrices.
+The SVG filter graph tests, macOS ThreadSanitizer and pinned CPU raster
+differential suite passed.

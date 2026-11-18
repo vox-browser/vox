@@ -364,18 +364,57 @@ fn scan_filter_merge(context voidptr, first i32, end i32) {
 // color filter: unpremultiply, the matrix, clamping, premultiply.
 fn general_color_matrix(image BlurImage, matrix MatrixColorFilter) BlurImage {
 	filter := new_color_filter([matrix]) or { return image }
-	mut out := BlurImage{[]u8{len: image.pixels.len}, image.width, image.height}
-	for i := 0; i + 3 < image.pixels.len; i += 4 {
-		c := filter.apply([f32(image.pixels[i]) * inv_255, f32(image.pixels[i + 1]) * inv_255, f32(image.pixels[i + 2]) * inv_255,
-			f32(image.pixels[i + 3]) * inv_255]!, false)
-		a := general_byte(c[3] * 255)
-		out.pixels[i + 3] = a
-		for k in 0 .. 3 {
-			v := general_byte(c[k] * 255)
-			out.pixels[i + k] = if v > a { a } else { v }
+	output := []u8{len: image.pixels.len}
+	scan := FilterMatrixScan{
+		source:      image.pixels
+		output:      output
+		row_bytes:   image.width * 4
+		filter:      filter
+		transparent: filter_matrix_pixel(&filter, [f32(0), 0, 0, 0]!)
+	}
+	run_raster_scans(&scan, image.height, image.width, scan_filter_matrix)
+	return BlurImage{output, image.width, image.height}
+}
+
+struct FilterMatrixScan {
+	source      []u8
+	output      []u8
+	row_bytes   int
+	filter      ColorFilter
+	transparent [4]u8
+}
+
+fn scan_filter_matrix(context voidptr, first i32, end i32) {
+	scan := unsafe { &FilterMatrixScan(context) }
+	mut output := unsafe { scan.output }
+	start := int(first) * scan.row_bytes
+	stop := int(end) * scan.row_bytes
+	for i := start; i < stop; i += 4 {
+		alpha := scan.source[i + 3]
+		// Unpremultiplication yields transparent black at zero alpha,
+		// regardless of the RGB bytes stored there.
+		if alpha == 0 && scan.transparent[3] == 0 {
+			continue
+		}
+		pixel := if alpha == 0 {
+			scan.transparent
+		} else {
+			filter_matrix_pixel(&scan.filter, [f32(scan.source[i]) * inv_255,
+				f32(scan.source[i + 1]) * inv_255, f32(scan.source[i + 2]) * inv_255,
+				f32(alpha) * inv_255]!)
+		}
+		for k in 0 .. 4 {
+			output[i + k] = pixel[k]
 		}
 	}
-	return out
+}
+
+@[inline]
+fn filter_matrix_pixel(filter &ColorFilter, input [4]f32) [4]u8 {
+	c := filter.apply(input, false)
+	a := general_byte(c[3] * 255)
+	return [math.min(a, general_byte(c[0] * 255)), math.min(a, general_byte(c[1] * 255)),
+		math.min(a, general_byte(c[2] * 255)), a]!
 }
 
 fn general_alpha_table(image BlurImage, table [256]u8) BlurImage {
