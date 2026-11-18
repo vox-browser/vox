@@ -6,6 +6,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 #include <zlib.h>
 #include "native_crc32.h"
 
@@ -44,6 +45,8 @@ typedef struct {
     uint8_t *bytes;
     size_t size;
 } VoxSnapshotIDAT;
+
+enum { VOX_SNAPSHOT_PNG_MAX_BANDS = 8 };
 
 typedef struct {
     const uint8_t *pixels;
@@ -107,23 +110,30 @@ static void native_snapshot_deflate_band(void *context, size_t lane)
 // only the last finishes DEFLATE and supplies the combined Adler-32.
 // On success the caller owns the returned chunks' bytes.
 static size_t native_snapshot_deflate_rows(const uint8_t *pixels, size_t row_bytes,
-    size_t height, size_t pitch, VoxSnapshotIDAT chunks[4])
+    size_t height, size_t pitch, VoxSnapshotIDAT chunks[VOX_SNAPSHOT_PNG_MAX_BANDS])
 {
     const size_t max_bytes = 64u * 1024u * 1024u;
     if (!pixels || !row_bytes || !height || row_bytes >= max_bytes
         || height > max_bytes / (row_bytes + 1) || pitch < row_bytes || pitch > SIZE_MAX / height)
         return 0;
     size_t stride = row_bytes + 1;
+    // A 2048×1536 Retina capture can fill six bands at this granularity.
     size_t lanes = stride * height / (2u * 1024u * 1024u);
-    if (lanes > 4) lanes = 4;
     if (lanes > height) lanes = height;
     if (lanes < 2 || getenv("VOX_SERIAL_SNAPSHOT_PNG")) return 0;
+    if (lanes > VOX_SNAPSHOT_PNG_MAX_BANDS) lanes = VOX_SNAPSHOT_PNG_MAX_BANDS;
+    // Keep the previous schedule on machines with four or fewer CPUs.
+    if (lanes > 4) {
+        long cpus = sysconf(_SC_NPROCESSORS_ONLN);
+        size_t capacity = cpus > 4 ? (size_t)cpus : 4;
+        if (lanes > capacity) lanes = capacity;
+    }
 
     static dispatch_once_t once;
     static VoxSnapshotZlib api;
     dispatch_once_f(&once, &api, native_snapshot_load_zlib);
     if (!api.initialize) return 0;
-    VoxSnapshotDeflateBand bands[4] = {0};
+    VoxSnapshotDeflateBand bands[VOX_SNAPSHOT_PNG_MAX_BANDS] = {0};
     for (size_t lane = 0; lane < lanes; ++lane) {
         size_t first = height * lane / lanes, last = height * (lane + 1) / lanes;
         bands[lane] = (VoxSnapshotDeflateBand){.pixels = pixels + first * pitch, .api = &api,

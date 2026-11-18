@@ -68,16 +68,19 @@ static void test_large_opacity_scan(void)
 
 static void test_parallel_deflate(void)
 {
-    const size_t row_bytes = 2051 * 4, pitch = row_bytes + 9, max_height = 1541;
+    const size_t row_bytes = 2051 * 4, pitch = row_bytes + 9, max_height = 2305;
     uint8_t *input = malloc(pitch * max_height);
     uint8_t *decoded = malloc((row_bytes + 1) * max_height);
     assert(input && decoded);
     for (size_t y = 0; y < max_height; ++y)
         for (size_t x = 0; x < pitch; ++x)
             input[y * pitch + x] = (uint8_t)(x * 17 + y * 31 + (y >> 8));
-    // Two, three and four bands, with nonempty row tails and changing pixels
-    // across every band boundary. The detached padding never enters zlib.
-    const size_t heights[] = {641, 941, max_height};
+    // Exercise uneven row splits, a Retina-sized frame and a frame large
+    // enough to hit the band limit. Padding never enters zlib.
+    const size_t heights[] = {641, 941, 1025, 1541, max_height};
+    const size_t expected_bands[] = {2, 3, 4, 6, 8};
+    const long cpus = sysconf(_SC_NPROCESSORS_ONLN);
+    const size_t capacity = cpus > 4 ? (size_t)cpus : 4;
     unsetenv("VOX_SERIAL_SNAPSHOT_PNG");
     for (size_t i = 0; i < sizeof heights / sizeof heights[0]; ++i) {
         size_t height = heights[i];
@@ -90,9 +93,9 @@ static void test_parallel_deflate(void)
                 input[n] = (uint8_t)noise;
             }
         }
-        VoxSnapshotIDAT chunks[4];
+        VoxSnapshotIDAT chunks[VOX_SNAPSHOT_PNG_MAX_BANDS];
         size_t count = native_snapshot_deflate_rows(input, row_bytes, height, pitch, chunks);
-        assert(count == i + 2);
+        assert(count == (expected_bands[i] < capacity ? expected_bands[i] : capacity));
         size_t size = 0;
         for (size_t index = 0; index < count; ++index) size += chunks[index].size - 12;
         uint8_t *compressed = malloc(size);
@@ -120,7 +123,7 @@ static void test_parallel_deflate(void)
         }
         free(compressed);
     }
-    VoxSnapshotIDAT chunks[4];
+    VoxSnapshotIDAT chunks[VOX_SNAPSHOT_PNG_MAX_BANDS];
     assert(!native_snapshot_deflate_rows(input, row_bytes, 1, pitch, chunks));
     assert(!native_snapshot_deflate_rows(input, row_bytes, max_height, row_bytes - 1, chunks));
     assert(setenv("VOX_SERIAL_SNAPSHOT_PNG", "1", 1) == 0);
@@ -128,13 +131,13 @@ static void test_parallel_deflate(void)
     assert(unsetenv("VOX_SERIAL_SNAPSHOT_PNG") == 0);
     free(decoded);
     free(input);
-    puts("PASS two to four PNG deflate bands, filter bytes, padded rows and serial fallback");
+    puts("PASS two to eight PNG deflate bands, filter bytes, padded rows and serial fallback");
 }
 
 static void test_large_snapshot_png(const char *directory)
 {
     @autoreleasepool {
-        const size_t width = 1027, height = 1033, pitch = width * 4 + 12;
+        const size_t width = 2051, height = 1541, pitch = width * 4 + 12;
         NSMutableData *pixels = [NSMutableData dataWithLength:pitch * height];
         for (size_t y = 0; y < height; ++y) {
             uint8_t *row = (uint8_t *)pixels.mutableBytes + y * pitch;

@@ -118,7 +118,7 @@ static NSData *native_encode_opaque_snapshot_png(NSBitmapImageRep *bitmap,
     if (!trusted && !vox_rgba8_is_opaque(source, (size_t)width, (size_t)height, (size_t)row_pitch)) return nil;
 
     if (getenv("VOX_DISABLE_LIBDEFLATE_PNG")) return nil;
-    VoxSnapshotIDAT chunks[4];
+    VoxSnapshotIDAT chunks[VOX_SNAPSHOT_PNG_MAX_BANDS];
     size_t chunk_count = native_snapshot_deflate_rows(source, row_bytes, (size_t)height,
         (size_t)row_pitch, chunks);
     NSData *compressed = nil;

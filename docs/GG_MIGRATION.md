@@ -6546,3 +6546,62 @@ settle. They audited 30, 33 and 25 entries respectively and zero
 video elements on each page. Each browser and the guard exited zero.
 The timings above cover CPU conversion of video frames. The shared
 production build used for the archive checks predates this change.
+
+### More PNG compression bands for Retina captures
+
+The macOS opaque PNG encoder can dispatch up to eight independent
+DEFLATE bands. It still assigns about 2 MiB per band, so a full
+2048×1536 capture uses six on a machine with enough CPUs. The
+previous four-band cap remains on hosts with four or fewer online
+CPUs. The serial override and ImageIO fallback still apply.
+
+The published single-C-unit Vox executable
+`5d72f61417d4e5c75c4bd333550ce43baf8a65fcbd00bf89c1e1dafd8f641660`
+supplied screenshots with four threads observed at callback offset
+`0x11706c4`. Fresh sealed replays used JavaScript, private cold
+profiles and caches, a 1024×768 CSS-pixel viewport, 2× capture and a
+one-second settle. Captures audited 30 Hacker News stories, 33
+GitHub directory rows and 25 Old Reddit posts. All three matched
+the earlier [archived browser pixel references](#archived-browser-eligibility).
+All browser exits and the replay guard exit were zero.
+
+Matching single-unit Apple Clang `-O2 -flto -fobjc-arc` harnesses
+timed the complete native PNG encoder through PNG bytes in memory.
+Input setup, process launch, page rendering and disk writes were
+outside that span. The old harness reproduced the published PNGs
+byte for byte. Seven alternating fresh-process pairs ran per case.
+Each process timed eight encodes. Warm times are medians of each
+process's post-first-call median. All 56 process exits and the
+cohort guard exit were zero. One-minute load was 4.88 on 18 logical
+CPUs.
+
+| Capture | First before → after, ms | Warm before → after, ms | Faster pairs, first / warm | PNG bytes before → after |
+| --- | ---: | ---: | ---: | ---: |
+| Hacker News | 4.428 → 3.416 | 4.082 → 2.972 | 7/7 / 7/7 | 462,136 → 462,479 |
+| GitHub | 3.976 → 3.155 | 3.852 → 2.797 | 7/7 / 7/7 | 340,329 → 340,198 |
+| Old Reddit | 4.629 → 3.582 | 4.531 → 3.310 | 7/7 / 7/7 | 544,821 → 545,118 |
+| Hacker News, cropped to 2048×1024 | 3.047 → 2.913 | 2.647 → 2.660 | 5/7 / 2/7 | 299,207 → 299,207 |
+
+The cropped control fit four bands in both builds and its PNGs
+were identical. Its warm median rose by 0.012 ms. Every output
+passed PNG chunk CRC and zlib stream validation, and the decoded
+RGBA, ancillary metadata, density and profile matched. The two
+harness executable hashes were
+`20ddb5d632ef068763994fcc0ae28d1852c939becf0f671c490ec9388ea9b960`
+and `61a6e69f3e7ab91a4a90e4d4cd3ea50337a9f2da4a3153356f7262f345b81f50`.
+An earlier uncapped-by-CPU candidate measured warm medians of
+4.110 → 2.945 ms, 3.841 → 2.745 ms and 4.366 → 3.179 ms on the
+same three captures. Its four-band control measured
+2.737 → 2.728 ms. It ran at one-minute load 3.97–4.37 with zero
+process and guard exits.
+
+A separate probe resolved the candidate callback at offset
+`0x29ec` and observed six distinct threads for each full capture.
+An emulated four-CPU host used four threads and reproduced the
+old byte-identical PNG. The serial override dispatched zero bands.
+Native ARC and non-ARC tests passed with normal and ASan/UBSan
+builds. The padded and incompressible input checks covered the
+eight-band cap. ThreadSanitizer reproduced the new Hacker News
+PNG with zero reported races. The installed browser supplied the
+capture input and baseline. Candidate production capture awaits
+the shared rebuild.
