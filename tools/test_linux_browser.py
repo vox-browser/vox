@@ -327,6 +327,7 @@ def check_gg_svg_browser(binary, artifacts, temporary):
     check_gg_svg_viewport(binary, artifacts, temporary, fixture)
     check_gg_svg_strokes(binary, artifacts, temporary)
     check_gg_svg_non_scaling_strokes(binary, artifacts, temporary)
+    check_gg_svg_dashed_strokes(binary, artifacts, temporary)
 
 
 def check_gg_svg_strokes(binary, artifacts, temporary):
@@ -456,6 +457,76 @@ requestAnimationFrame(changeVectorEffect);
         documents.append(rows[top:height - 24])
     assert documents[0] == documents[1], "Cached non-scaling strokes differ from uncached replay"
     print("PASS: GG non-scaling stroke width, live vector effect, and viewport edge", flush=True)
+
+
+def check_gg_svg_dashed_strokes(binary, artifacts, temporary):
+    fixture = Path(__file__).resolve().parents[1] / "Tests/Browser/Native/svg-gg-dashed-stroke.html"
+    page = Path(temporary) / fixture.name
+    page.write_text(fixture.read_text() + """
+<script>
+let frames = 0;
+function changeDashes() {
+    if (++frames < 12) {
+        requestAnimationFrame(changeDashes);
+        return;
+    }
+    document.getElementById('offset').setAttribute('stroke-dashoffset', '3');
+    document.getElementById('intervals').setAttribute('stroke-dasharray', '10 9');
+    document.body.setAttribute('data-dashes-ready', '1');
+}
+requestAnimationFrame(changeDashes);
+</script>
+""")
+    documents = []
+    white = "ffffff"
+    blue = "154fbc"
+    brown = "b94015"
+    green = "098746"
+    purple = "8c2fa5"
+    for mode, disable_cache in (("cached", "0"), ("uncached", "1")):
+        label = f"{page.stem}-{mode}"
+        screenshot = artifacts / f"{label}.png"
+        screenshot.unlink(missing_ok=True)
+        environment = smoke_environment(Path(temporary) / label)
+        environment.pop("MESA_GL_VERSION_OVERRIDE", None)
+        environment.update(VOX_GG_SVG="1", VOX_GG_SVG_DIAGNOSTICS="1",
+                           VOX_DISABLE_GG_SVG_CACHE=disable_cache,
+                           VOX_CAPTURE_READY_SELECTOR="body[data-dashes-ready]")
+        log = run_windowed([str(binary), "--enable-javascript", "--window-width=800",
+                            "--window-height=600", "--screenshot-viewport-height=600",
+                            f"--screenshot={screenshot}", str(page)],
+                           env=environment, log_path=artifacts / f"{label}.log")
+        strokes = [line for line in log.splitlines() if line.endswith(" dash=2")]
+        assert len(strokes) >= 7 and any("non_scaling=1" in line for line in strokes), log
+        assert any("cache=hit bounds=hit" in line for line in strokes) == (mode == "cached"), log
+        for size in ("126x6", "130x6"):
+            misses = [line for line in strokes if f"draw={size} cache=miss" in line]
+            assert len(misses) >= 2, log
+            if mode == "cached":
+                assert len(misses) == 2 and "bounds=hit" in misses[1], log
+
+        _, height, channels, rows = rendered_png_rows(screenshot.read_bytes())
+
+        def pixel(x, y):
+            return rows[y][x * channels:x * channels + 3].hex()
+
+        marker = next((y for y in range(min(height, 150)) if pixel(4, y) == "34b786"), None)
+        assert marker is not None, "Missing document marker"
+        top = marker + 8
+        samples = [
+            (14, 20, blue), (20, 20, white), (26, 20, blue),  # pathLength and phase edit
+            (21, 40, brown), (25, 40, white),  # interval edit
+            (16, 80, green), (24, 74, white), (113, 88, green), (129, 88, white),
+            (13, 108, purple), (30, 94, white),  # elliptical arc
+            (12, 134, blue), (20, 134, white), (28, 134, blue),  # round zero-length dashes
+            (164, 120, green), (172, 120, white), (181, 120, green), (164, 126, white),
+            (186, 15, blue), (193, 17, "be2020"), (202, 14, white),  # closed path and paint order
+        ]
+        for x, y, expected in samples:
+            assert pixel(x, top + y) == expected, (x, y, pixel(x, top + y), expected)
+        documents.append(rows[marker:height - 24])
+    assert documents[0] == documents[1], "Cached dashed strokes differ from uncached replay"
+    print("PASS: GG SVG dashes, curve segments, live pattern and offset edits", flush=True)
 
 
 def check_gg_svg_mutations(binary, artifacts, temporary, fixture):

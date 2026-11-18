@@ -195,23 +195,24 @@ fn draw_supported_path(mut ctx canvas.GpuContext, pixels &u8, width i32, height 
 		target.clear(canvas.Color4f{})
 	}
 	if multisampled { target.draw_msaa_trigger() }
-	draw_descriptor(mut target, path, none) or { return 0 }
+	draw_descriptor(mut target, path, none, none) or { return 0 }
 	target.read_pixels(pixels, int(pitch)) or { return 0 }
 	return 1
 }
 
 // record_svg_path records a standalone descriptor on a caller-owned surface.
-pub fn record_svg_path(mut target canvas.GpuSurface, path &C.VoxGraphitePath) ! {
+pub fn record_svg_path(mut target canvas.GpuSurface, path &C.VoxGraphitePath, dash ?SVGPathDash) ! {
 	if path == unsafe { nil } || !path_supported(path) {
 		return error('unsupported SVG path descriptor')
 	}
-	draw_descriptor(mut target, path, none)!
+	draw_descriptor(mut target, path, none, dash)!
 }
 
 // draw_descriptor adds one descriptor's draw to `target` like
 // draw_path_on_canvas(): its matrix (after the SVG image's `parent`), its
 // rounded clips and its paint.
-fn draw_descriptor(mut target canvas.GpuSurface, path &C.VoxGraphitePath, parent ?canvas.Matrix) ! {
+fn draw_descriptor(mut target canvas.GpuSurface, path &C.VoxGraphitePath, parent ?canvas.Matrix,
+	dash ?SVGPathDash) ! {
 	clipped := path.has_clip != 0 || path.has_ancestor_clip != 0
 	non_scaling := path.stroke != 0 && path.non_scaling_stroke != 0
 	if non_scaling && !non_scaling_matrix_is_affine(path.matrix) {
@@ -263,6 +264,9 @@ fn draw_descriptor(mut target canvas.GpuSurface, path &C.VoxGraphitePath, parent
 		} else {
 			target.set_matrix(canvas.Matrix.identity())
 		}
+	}
+	if pattern := dash {
+		geometry = dash_svg_geometry(geometry, pattern, path.matrix, non_scaling)!
 	}
 	mut color := shape_color([path.red, path.green, path.blue, path.alpha]!, path.has_float_color != 0,
 		path.float_color)

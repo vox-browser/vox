@@ -1,0 +1,30 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Shared GG dashed SVG strokes</title>
+<style>
+  body { margin: 0; min-height: 4096px; background: white; }
+  .stage { position: fixed; top: 0; left: 0; }
+  header { width: 16px; height: 8px; background: #34b786; }
+  svg { display: block; }
+</style>
+<div class="stage">
+  <header></header>
+  <svg width="284" height="154" fill="none">
+    <path id="offset" d="M12 20H132" pathLength="60" stroke="#154fbc"
+          stroke-width="4" stroke-linejoin="bevel" stroke-dasharray="5 4"/>
+    <path id="intervals" d="M12 40H136" stroke="#b94015"
+          stroke-width="4" stroke-linejoin="round" stroke-dasharray="7 12"/>
+    <path d="M8 88Q48 44 88 88 M110 88H160" stroke="#098746"
+          stroke-width="6" stroke-linejoin="round" stroke-dasharray="16 8"/>
+    <path d="M12 112A18 18 0 0 1 48 112" stroke="#8c2fa5"
+          stroke-width="6" stroke-linejoin="round" stroke-dasharray="14 24"/>
+    <path d="M12 134H124" stroke="#154fbc" stroke-width="8"
+          stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="0 16"/>
+    <path d="M6 10H35" transform="translate(148 90) scale(2 3)"
+          vector-effect="non-scaling-stroke" stroke="#098746" stroke-width="6"
+          stroke-linejoin="round" stroke-dasharray="8 11"/>
+    <path d="M188 16H250V64H188Z" fill="#be2020" stroke="#154fbc" stroke-width="6"
+          stroke-linejoin="round" stroke-dasharray="12 10" stroke-dashoffset="4"
+          style="paint-order: stroke fill"/>
+  </svg>
+</div>

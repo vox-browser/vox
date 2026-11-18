@@ -99,7 +99,7 @@ fn draw_svg_image_pixels(pixels &u8, width i32, height i32, pitch i32, flags i32
 		target.save_layer(none) or { return 0 }
 	}
 	for index in 0 .. int(count) {
-		draw_descriptor(mut target, unsafe { &paths[index] }, parent_matrix) or { return 0 }
+		draw_descriptor(mut target, unsafe { &paths[index] }, parent_matrix, none) or { return 0 }
 	}
 	if layered {
 		target.restore()

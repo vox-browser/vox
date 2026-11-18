@@ -22,6 +22,7 @@ $if vox_gg_svg ? {
 	const portable_svg_gpu_texture_slots = 2 * portable_svg_gpu_image_limit
 	const portable_svg_gpu_pixel_limit = 1024 * 1024
 	const portable_svg_gpu_cached_values = 128 * layout.compatibility_clip_path_segment_stride
+	const portable_svg_gpu_dash_intervals = 32
 	const portable_svg_gpu = &PortableSVGGpu{}
 
 	struct PortableSVGStroke {
@@ -30,6 +31,8 @@ $if vox_gg_svg ? {
 		cap        i32
 		join       i32
 		non_scaling bool
+		dash_count int
+		dash_offset_bits u64
 	}
 
 	struct PortableSVGTextureKey {
@@ -49,11 +52,12 @@ $if vox_gg_svg ? {
 		// Own a bounded copy because document paint storage can retire or change
 		// between frames. Zero values recorded means the texture is transient.
 		values   [portable_svg_gpu_cached_values]f32
+		dashes   [portable_svg_gpu_dash_intervals]f64
 		length   int
 		used     bool
 	}
 
-	fn (texture &PortableSVGTexture) matches(key &PortableSVGTextureKey, values []f32) bool {
+	fn (texture &PortableSVGTexture) matches(key &PortableSVGTextureKey, data &layout.PaintSVGPathData) bool {
 		if texture.key.width != key.width
 			|| texture.key.height != key.height || texture.key.color != key.color
 			|| texture.key.even_odd != key.even_odd || texture.key.stroke != key.stroke {
@@ -61,10 +65,10 @@ $if vox_gg_svg ? {
 		}
 		return unsafe {
 			vmemcmp(&texture.key.matrix[0], &key.matrix[0], 6 * int(sizeof(f32))) == 0
-		} && texture.matches_geometry(values)
+		} && texture.matches_path(key, data)
 	}
 
-	fn (texture &PortableSVGTexture) crop_origin(key &PortableSVGTextureKey, values []f32) ?painting.IntPoint {
+	fn (texture &PortableSVGTexture) crop_origin(key &PortableSVGTextureKey, data &layout.PaintSVGPathData) ?painting.IntPoint {
 		if texture.key.width < key.width || texture.key.height < key.height
 			|| (texture.key.width == key.width && texture.key.height == key.height)
 			|| texture.key.color != key.color || texture.key.even_odd != key.even_odd
@@ -83,10 +87,18 @@ $if vox_gg_svg ? {
 			return none
 		}
 		origin := painting.IntPoint{int(x), int(y)}
-		if x != f64(origin.x) || y != f64(origin.y) || !texture.matches_geometry(values) {
+		if x != f64(origin.x) || y != f64(origin.y) || !texture.matches_path(key, data) {
 			return none
 		}
 		return origin
+	}
+
+	fn (texture &PortableSVGTexture) matches_path(key &PortableSVGTextureKey,
+		data &layout.PaintSVGPathData) bool {
+		return texture.matches_geometry(data.path_data) && (key.stroke.dash_count == 0 || unsafe {
+			vmemcmp(&texture.dashes[0], data.stroke_dasharray.data,
+				key.stroke.dash_count * int(sizeof(f64))) == 0
+		})
 	}
 
 	fn (texture &PortableSVGTexture) matches_geometry(values []f32) bool {
@@ -218,7 +230,12 @@ $if vox_gg_svg ? {
 			stroke_width:       math.f32_from_bits(key.stroke.width_bits)
 			miter_limit:        math.f32_from_bits(key.stroke.miter_bits)
 		}
-		ggshape.record_svg_path(mut target, &path)!
+		dash := if key.stroke.dash_count != 0 {
+			?ggshape.SVGPathDash(ggshape.SVGPathDash{data.stroke_dasharray, data.stroke_dashoffset})
+		} else {
+			none
+		}
+		ggshape.record_svg_path(mut target, &path, dash)!
 		return target.take_document_image()!
 	}
 
@@ -246,9 +263,14 @@ $if vox_gg_svg ? {
 		if !portable_svg_gpu_enabled || app.paint_effect_depth != 0 || app.paint_svg_mask_depth != 0
 			|| command.stroke_color == '' || command.stroke_width <= 0
 			|| data.path_data.len < layout.compatibility_clip_path_segment_stride
-			|| data.path_data[0] == 6 || data.stroke_dasharray.len != 0
+			|| data.path_data[0] == 6
 			|| data.stroke_pattern != none || command.stroke_linear_gradient() != none
 			|| command.stroke_radial_gradient() != none {
+			return false
+		}
+		dash_count := data.stroke_dasharray.len
+		if dash_count > 0 && (dash_count > portable_svg_gpu_dash_intervals
+			|| data.path_data.len > portable_svg_gpu_cached_values) {
 			return false
 		}
 		state := unsafe { portable_svg_gpu }
@@ -286,6 +308,8 @@ $if vox_gg_svg ? {
 			cap:        i32(data.stroke_linecap)
 			join:       i32(data.stroke_linejoin)
 			non_scaling: data.non_scaling_stroke
+			dash_count: dash_count
+			dash_offset_bits: if dash_count > 0 { math.f64_bits(data.stroke_dashoffset) } else { u64(0) }
 		}
 		return draw_portable_gpu_svg_path(app.ctx.r, data, portable_svg_surface_matrix(transform, bounds),
 			bounds, color, local, cached != none, stroke)
@@ -332,13 +356,13 @@ $if vox_gg_svg ? {
 				if vacant < 0 {
 					vacant = index
 				}
-			} else if cacheable && texture.matches(&key, data.path_data) {
+			} else if cacheable && texture.matches(&key, &data) {
 				matching = index
 				crop = none
 				break
 			} else if cacheable && portable_svg_gpu_viewport_reuse && matching < 0
 				&& texture.key.width * texture.key.height <= remaining_pixels {
-				if origin := texture.crop_origin(&key, data.path_data) {
+				if origin := texture.crop_origin(&key, &data) {
 					matching = index
 					crop = origin
 				}
@@ -357,6 +381,9 @@ $if vox_gg_svg ? {
 				texture.local_bounds = local_bounds
 				unsafe {
 					vmemcpy(&texture.values[0], data.path_data.data, data.path_data.len * int(sizeof(f32)))
+					if stroke.dash_count != 0 {
+						vmemcpy(&texture.dashes[0], data.stroke_dasharray.data, stroke.dash_count * int(sizeof(f64)))
+					}
 				}
 				texture.length = data.path_data.len
 			}
@@ -393,7 +420,7 @@ $if vox_gg_svg ? {
 		renderer.disable_texture()
 		renderer.pop_pipeline()
 		if portable_svg_gpu_diagnostics {
-			eprintln('VOX_GG_SVG draw=${bounds.width}x${bounds.height} cache=${if reused { "hit" } else { "miss" }} bounds=${if reused_bounds { "hit" } else { "miss" }} crop=${if crop != none { "hit" } else { "none" }} stroke=${int(stroke.width_bits != 0)}${if stroke.non_scaling { " non_scaling=1" } else { "" }}')
+			eprintln('VOX_GG_SVG draw=${bounds.width}x${bounds.height} cache=${if reused { "hit" } else { "miss" }} bounds=${if reused_bounds { "hit" } else { "miss" }} crop=${if crop != none { "hit" } else { "none" }} stroke=${int(stroke.width_bits != 0)}${if stroke.non_scaling { " non_scaling=1" } else { "" }}${if stroke.dash_count > 0 { " dash=${stroke.dash_count}" } else { "" }}')
 		}
 		return true
 	}
