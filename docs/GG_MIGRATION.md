@@ -941,6 +941,93 @@ process-tree RSS peaked at 11,019,010,048 bytes during the build,
 397,901,824 bytes in the first timing job and 392,527,872 bytes
 in the uncached Quartz comparison.
 
+### Reusing strips in linear SVG luminance masks
+
+The shared raster also uses one shaded row or column for aligned
+rectangular luminance masks with a single sRGB linear gradient.
+The strip retains premultiplied RGB, including stop alpha and fill
+opacity. The luminance conversion uses the same integer channel
+weights as the full shader. macOS uses the existing automatic
+selection and the 128 Ki pixel limit.
+
+The [luminance fixture](../Tests/Browser/Native/svg-linear-luminance-masks.html)
+uses an opaque red–green–blue horizontal gradient and a transformed
+vertical gradient with changing stop alpha and partial fill opacity.
+The fixture SHA-256 was
+`263051a227a5964cd27fe855f4e2d00a8e2c6a262958706aaa774b2b4f614f27`.
+The published binary at `e720fb9a8`, SHA-256
+`5d72f61417d4e5c75c4bd333550ce43baf8a65fcbd00bf89c1e1dafd8f641660`,
+confirmed the earlier full shared shader and Quartz were within
+two channel levels across both masks at 1× and 2×. All four fresh
+captures exited zero with the pinned fixture and library.
+
+The Linux X11 captures matched the full shader pixel for pixel.
+All 19 browser checks and the Windows D3D11 V type check passed.
+The Linux ARM64 Clang `-O0` executable SHA-256 was
+`dafeb83d9ca4314ecf40514c6760c0d7671a6bedae8d2f5339892b603338ffca`.
+The synthetic Linux cohort used the same Xvfb software OpenGL
+protocol as the vertical-alpha test. Each process used a fresh cache
+and profile, disabled scripts, and requested a 1024 × 600 viewport.
+Two pairs alternated the full shader and strip reuse, with matching
+traces for all 80 synthetic 42-pixel steps. A separate diagnostic
+exercised both strip directions.
+
+| Trial | Raster | Replay median (ms) | p95 (ms) | Max (ms) |
+| --- | --- | ---: | ---: | ---: |
+| 1 | Full shader | 31.800 | 36.355 | 50.191 |
+| 2 | Strip reuse | 20.183 | 22.935 | 37.913 |
+| 3 | Full shader | 34.515 | 39.111 | 48.450 |
+| 4 | Strip reuse | 21.008 | 24.531 | 38.599 |
+
+Starting one-minute guest loads were 0.58, 0.61, 0.56 and 0.52 on
+four vCPUs, while the host compiled the macOS candidate. The Linux
+build, browser suite and synthetic replay guards exited zero.
+
+The 30-capture macOS suite compared the automatic strip path with
+the full shader at 1× and 2×. Both matched exactly. The 2× Quartz
+comparison differed by at most two channel levels. With
+`color-interpolation="linearRGB"`, the automatic path selected Quartz
+and matched the explicit Quartz control pixel for pixel.
+
+The private macOS single-C V `-prod`, Clang `-O1` executable SHA-256
+was `1cb9eb53debe18625616ee7946bb087953c191c58620c50bdde376719fb00500`.
+It used the same AVIF library as the published comparison. In a
+separate uncached diagnostic, PID 79286 recorded 348 horizontal
+strips and 345 vertical strips for 693 luminance rasters within
+the input window.
+
+The macOS trials used the same profile, viewport, settle and
+precise wheel settings as the vertical-alpha cohort. The endpoint
+was completed native frame installation after outer view paint.
+The uncached pairs disabled the shared mask cache. The strip and
+full shader pairs also forced shared selection to isolate the
+raster change. The timing launches disabled diagnostics and
+preserved binary, library, fixture and driver hashes.
+
+| PID | Raster | Scroll fps | Median / p95 / max (ms) | Input Hz | Inputs / changes | First / last gap (ms) | Load |
+| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| 79374 | Quartz | 34.08 | 28.212 / 32.786 / 35.701 | 57.94 | 120 / 70 | 65.415 / 16.433 | 6.02 |
+| 79499 | Automatic | 38.17 | 25.514 / 30.205 / 33.120 | 57.50 | 120 / 79 | 57.620 / 17.498 | 5.86 |
+| 79599 | Quartz | 32.16 | 29.864 / 35.548 / 40.242 | 57.98 | 120 / 66 | 66.084 / 16.907 | 5.79 |
+| 79757 | Automatic | 35.64 | 27.440 / 32.488 / 33.535 | 54.37 | 120 / 78 | 60.210 / 17.548 | 5.89 |
+| 79929 | Full shader, uncached | 29.56 | 32.854 / 36.736 / 37.402 | 57.66 | 120 / 61 | 71.646 / 20.434 | 6.28 |
+| 80138 | Strip, uncached | 36.54 | 26.721 / 31.683 / 32.400 | 55.74 | 120 / 78 | 59.857 / 0.101 | 6.18 |
+| 80298 | Full shader, uncached | 29.37 | 32.324 / 37.568 / 67.637 | 57.29 | 120 / 61 | 71.324 / 0.115 | 6.16 |
+| 80446 | Strip, uncached | 35.21 | 27.331 / 32.653 / 33.486 | 57.39 | 120 / 73 | 61.038 / 16.520 | 6.39 |
+| 80589 | Quartz, uncached | 32.31 | 29.376 / 34.623 / 36.072 | 53.40 | 120 / 72 | 65.242 / 16.428 | 6.68 |
+| 80744 | Automatic, uncached | 36.81 | 26.305 / 32.499 / 33.518 | 56.16 | 120 / 78 | 60.793 / 16.905 | 6.70 |
+| 80938 | Quartz, uncached | 35.65 | 27.321 / 32.134 / 32.957 | 58.93 | 120 / 72 | 64.319 / 0.089 | 6.89 |
+| 81101 | Automatic, uncached | 37.25 | 25.664 / 31.289 / 47.322 | 56.82 | 120 / 78 | 60.479 / 17.333 | 6.82 |
+
+The timed cohort ran from 03:45:57 to 03:47:02 UTC on November 18,
+2026. Load is the starting one-minute average on the 18-CPU host.
+All intervals exceeded 16.67 ms. Scroll publication throughput and
+p95 improved in all six pairs on this fixture. The second uncached
+automatic trial had a longer maximum interval than its Quartz
+control. All browser and guard exits were zero. Sampled process-tree
+RSS peaked at 11,709,595,648 bytes for the build and 400,637,952
+bytes for the diagnostic and timing job.
+
 ## Original migration plan
 
 Vox currently renders through two Skia builds: LibWeb's Skia (CPU raster,
