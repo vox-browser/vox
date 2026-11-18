@@ -1,19 +1,25 @@
 #include "native/include/native_svg_mask_layer_darwin.h"
 #include "native/include/native_svg_mask_cache_key.h"
+#include "native/include/native_svg_mask_image_darwin.h"
 #include "native/include/native_svg_mask_raster_cache_darwin.h"
 #include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
-static CGContextRef bitmap(void)
+static CGContextRef bitmap_in_space(CFStringRef profile)
 {
-    CGColorSpaceRef space = CGColorSpaceCreateWithName(kCGColorSpaceSRGB);
+    CGColorSpaceRef space = CGColorSpaceCreateWithName(profile);
     CGContextRef context = CGBitmapContextCreate(NULL, 96, 80, 8, 96 * 4, space,
         kCGImageAlphaPremultipliedLast | kCGBitmapByteOrder32Big);
     CGColorSpaceRelease(space);
     assert(context != NULL);
     return context;
+}
+
+static CGContextRef bitmap(void)
+{
+    return bitmap_in_space(kCGColorSpaceSRGB);
 }
 
 static const NativeSVGMaskRasterCacheEntry *scan_mask_raster_cache(
@@ -152,10 +158,9 @@ static CGContextRef scene(int optimized, int nested, int transformed, CGFloat ph
     return context;
 }
 
-static CGContextRef coverage_scene(int srgb, int clip, int full)
+static CGContextRef coverage_scene(int reuse, int clip, int full, int luminance, CFStringRef profile)
 {
-    CGColorSpaceRef space = srgb ? CGColorSpaceCreateWithName(kCGColorSpaceSRGB)
-        : CGColorSpaceCreateDeviceRGB();
+    CGColorSpaceRef space = CGColorSpaceCreateWithName(kCGColorSpaceSRGB);
     size_t width = full ? 32 : 21;
     size_t height = full ? 24 : 17;
     CGContextRef mask = CGBitmapContextCreate(NULL, width, height, 8, width * 4, space,
@@ -166,10 +171,16 @@ static CGContextRef coverage_scene(int srgb, int clip, int full)
     for (size_t y = 0; y < height; ++y) {
         for (size_t x = 0; x < width; ++x) {
             size_t source = full ? y * 32 + x : (y + 3) * 32 + x + 5;
-            memset(pixels + (y * width + x) * 4, (uint8_t)(source * 37), 4);
+            uint8_t alpha = (uint8_t)(source * 37);
+            uint8_t *pixel = pixels + (y * width + x) * 4;
+            pixel[0] = alpha / 3;
+            pixel[1] = alpha / 2;
+            pixel[2] = alpha * 7 / 8;
+            pixel[3] = alpha;
         }
     }
-    CGImageRef image = CGBitmapContextCreateImage(mask);
+    CGImageRef image = reuse ? native_snapshot_svg_rgba_mask_bitmap(mask, luminance)
+        : native_copy_svg_mask_bitmap(mask, 1, luminance);
     assert(image != NULL);
     CGContextRelease(mask);
     if (full) {
@@ -179,7 +190,7 @@ static CGContextRef coverage_scene(int srgb, int clip, int full)
         image = cropped;
     }
 
-    CGContextRef canvas = bitmap();
+    CGContextRef canvas = bitmap_in_space(profile);
     CGRect rect = CGRectMake(7.25, 8.5, 67.5, 53.25);
     if (clip) {
         CGContextClipToMask(canvas, rect, image);
@@ -234,14 +245,21 @@ int main(void)
     CGContextRestoreGState(context);
     assert(CGRectEqualToRect(before, CGContextGetClipBoundingBox(context)));
     CGContextRelease(context);
-    for (int clip = 0; clip < 2; ++clip) {
-        CGContextRef reference = coverage_scene(0, clip, 0);
-        CGContextRef shared = coverage_scene(1, clip, 1);
-        assert(memcmp(CGBitmapContextGetData(reference), CGBitmapContextGetData(shared),
-            CGBitmapContextGetBytesPerRow(reference) * 80) == 0);
-        CGContextRelease(reference);
-        CGContextRelease(shared);
+    const CFStringRef profiles[] = {kCGColorSpaceSRGB, kCGColorSpaceDisplayP3};
+    for (int profile = 0; profile < 2; ++profile) {
+        for (int luminance = 0; luminance < 2; ++luminance) {
+            for (int clip = 0; clip < 2; ++clip) {
+                CGContextRef reference = coverage_scene(0, clip, 0, luminance, profiles[profile]);
+                for (int crop = 0; crop < 2; ++crop) {
+                    CGContextRef actual = coverage_scene(1, clip, crop, luminance, profiles[profile]);
+                    assert(memcmp(CGBitmapContextGetData(reference), CGBitmapContextGetData(actual),
+                        CGBitmapContextGetBytesPerRow(reference) * 80) == 0);
+                    CGContextRelease(actual);
+                }
+                CGContextRelease(reference);
+            }
+        }
     }
-    printf("SVG mask layers: %d exact scenes, clip restoration, bounds, cache keys and replacement passed\n", cases);
+    printf("SVG mask layers: %d exact layer scenes, 16 exact publications, clip restoration, bounds and cache passed\n", cases);
     return 0;
 }

@@ -46,7 +46,7 @@ int native_gpu_tile_compositor_enabled(void) {
 #include "native/include/native_deferred_font_darwin.h"
 #include "native/include/native_svg_mask_layer_darwin.h"
 #include "native/include/native_svg_mask_cache_key.h"
-#include "native/include/native_svg_mask_pixels.h"
+#include "native/include/native_svg_mask_image_darwin.h"
 #include "native/include/native_svg_mask_raster_cache_darwin.h"
 
 #include "native/include/native_ffmpeg_darwin.h"
@@ -5336,42 +5336,17 @@ void native_discard_svg_mask_bitmap(void) {
 	}
 }
 
-static CGImageRef native_copy_svg_mask_bitmap(void) {
-	CGContextRef context = native_svg_clip_build_context;
-	if (context == NULL) {
-		return NULL;
-	}
-	size_t width = CGBitmapContextGetWidth(context);
-	size_t height = CGBitmapContextGetHeight(context);
-	size_t source_stride = CGBitmapContextGetBytesPerRow(context);
-	CGContextFlush(context);
-	uint8_t *source = CGBitmapContextGetData(context);
-	if (source == NULL) {
-		return NULL;
-	}
-	CGColorSpaceRef color_space = CGColorSpaceCreateDeviceRGB();
-	CGContextRef mask_context = CGBitmapContextCreate(NULL, width, height, 8,
-		width * 4, color_space,
-		kCGImageAlphaPremultipliedLast | kCGBitmapByteOrder32Big);
-	CGColorSpaceRelease(color_space);
-	if (mask_context == NULL) {
-		return NULL;
-	}
-	CGImageRef image = NULL;
-	uint8_t *mask = CGBitmapContextGetData(mask_context);
-	if (mask != NULL) {
-		native_convert_svg_mask_pixels(source, source_stride, mask,
-			CGBitmapContextGetBytesPerRow(mask_context), width, height,
-			native_svg_clip_build_is_color, native_svg_clip_build_is_luminance);
-		image = CGBitmapContextCreateImage(mask_context);
-	}
-	CGContextRelease(mask_context);
-	return image;
-}
-
 static void native_finalize_svg_mask_cache(void) {
 	if (native_svg_clip_image == NULL && native_svg_clip_build_context != NULL) {
-		native_svg_clip_image = native_copy_svg_mask_bitmap();
+		CGContextRef context = native_svg_clip_build_context;
+		if (native_svg_clip_build_is_color) {
+			native_svg_clip_image = native_snapshot_svg_rgba_mask_bitmap(context,
+				native_svg_clip_build_is_luminance);
+		}
+		if (native_svg_clip_image == NULL) {
+			native_svg_clip_image = native_copy_svg_mask_bitmap(context,
+				native_svg_clip_build_is_color, native_svg_clip_build_is_luminance);
+		}
 		native_discard_svg_mask_bitmap();
 		if (native_svg_clip_image != NULL) {
 			native_cache_svg_mask_image(native_svg_clip_image);
@@ -5419,26 +5394,16 @@ int32_t native_publish_svg_mask_raster(uint64_t key, int32_t reuse_bitmap, const
 	CGContextRef context = native_svg_clip_build_context;
 	CGImageRef image = NULL;
 	if (reuse_bitmap && context != NULL) {
-		size_t width = CGBitmapContextGetWidth(context);
-		size_t height = CGBitmapContextGetHeight(context);
-		size_t pitch = CGBitmapContextGetBytesPerRow(context);
-		CGContextFlush(context);
-		uint8_t *pixels = CGBitmapContextGetData(context);
-		if (pixels != NULL) {
-			native_convert_rgba_svg_mask_pixels(pixels, pitch, pixels, pitch,
-				width, height, native_svg_clip_build_is_luminance);
-			// The mask is consumed through alpha. Retain the sRGB bitmap
-			// with the same premultiplied-white bytes as the DeviceRGB copy.
-			image = CGBitmapContextCreateImage(context);
-			if (image != NULL) {
-				published = 2;
-			}
+		image = native_snapshot_svg_rgba_mask_bitmap(context, native_svg_clip_build_is_luminance);
+		if (image != NULL) {
+			published = 2;
 		}
 	}
 	// Premultiplied white also has equal luminance and alpha, so the copy
 	// remains valid if creating the in-place image failed.
-	if (image == NULL) {
-		image = native_copy_svg_mask_bitmap();
+	if (image == NULL && context != NULL) {
+		image = native_copy_svg_mask_bitmap(context, native_svg_clip_build_is_color,
+			native_svg_clip_build_is_luminance);
 	}
 	native_discard_svg_mask_bitmap();
 	if (image == NULL) {
