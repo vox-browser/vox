@@ -8302,3 +8302,121 @@ same RGB values as the earlier Metal control and maximum channel
 error of 10. The exact-pixel verdict exits 1. The ordered audits,
 input identities, image comparison and guard reports are local under
 `repository-navigation-5204-r96-png/receipts`.
+
+### Resident memory during the Back replay
+
+Three fresh `870e280a` processes replay the original GitHub inputs with a
+120-second endpoint. A read-only observer samples the browser's RSS and
+physical footprint with `proc_pid_rusage`, and scans memory regions at RSS
+thresholds. The existing 12 GiB guard adopts the browser and reports its
+separate aggregate RSS. Both input drivers keep the usual live raster policy.
+The third process also runs the anonymous-mapping interposer. The fixed
+snapshots show exact repository, complete README, and restored repository
+content in that order.
+
+| Capture endpoint | Browser PID | Guard / guarded child | Guard seconds | Sampled peak RSS bytes |
+| --- | ---: | --- | ---: | ---: |
+| Active document | 83965 | 0 / 0 | 121.689 | 10,353,098,752 |
+| Whole window | 91584 | 125 / 137 | 33.573 | 13,045,137,408 |
+| Whole window with mapping probe | 94384 | 125 / 137 | 32.298 | 12,924,502,016 |
+
+The active-document attempt records 3,614 native cache hits, zero misses
+or compiler calls, and a clean shutdown. The unchanged Brave Back PNG
+differs from its standard-raster capture at 60,079 pixels. The earlier
+active-document attempt on this executable crossed the cap without the
+observer. These outcomes show that an ordinary-raster completion is
+possible on the archived workload and that it varies across launches.
+The separate physical-footprint sample at the active-document RSS peak
+is 13,126,200,720 bytes. The post-Back active-document scan at 37.951
+seconds reports 2,476,457,984 bytes in the kernel's swapped-out field
+for untagged private regions. That field is zero in the last complete
+whole-window scan. The guard uses sampled RSS.
+
+The last complete scan in the ordinary whole-window attempt attributes
+11,674,664,960 resident bytes to untagged private regions. The scan that
+overlaps termination is retained with its incomplete status. In the
+instrumented attempt the last complete scan matches 4,500 exact private
+region extents across both ends of the scan, covering 11,519,066,112
+resident bytes. The largest individual reservation origins are LibJS
+instruction dispatch (452,067,328 bytes), ECMAScript function creation
+(402,227,200), and reusable execution-frame allocation (217,497,600).
+The worker base mappings account for 7,241,728 matched resident bytes.
+Those mappings originally reserve 16 MiB per fresh thread, and recycled
+regions can be reused without remapping. The attribution describes the
+original reservation sites and current residency of exact matches.
+
+Twelve selected Metal draw controls preserve the shaders and vary the
+depth state. Reversing the viewport depth range, clear value and compare
+function together reproduces each original full tile exactly, including
+both corner differences in document order. Inclusive comparison and
+disabled depth writes each produce four differences from the reference
+in every tested order. These selected draws leave the exact whole-page
+pixel gate open.
+
+The sampled regions, mapping joins, exact audit stages, controller
+inputs and guards are local under `repository-navigation-5204-r97/receipts`.
+
+### LibJS merge-sort workspace
+
+Array sorting was among the reservation origins in the final private
+region sample. Commit `ad44847c8` replaces the per-merge left and right
+clones with a working copy and one reusable merge buffer. The recursion
+still visits the left half before the right and takes equal values from
+the left. A comparator error from a child sort leaves the caller buffer
+intact. An error during the final merge keeps the already written prefix.
+The new regression covers both error locations.
+
+The actual sort unit file passes with current V under the aggregate
+memory guard. The compiler retries with C after its implicit TCC check
+cannot resolve CoreFoundation. The guard exits zero in 140.983 seconds
+at 9,298,542,592 sampled bytes. The same unit file passes with `-gc none`
+in 95.809 guard seconds at 8,935,849,984 sampled bytes. The production type check exercises the
+full browser with `-prod -prealloc -gc none` and exits zero in 46.927
+seconds at 7,119,716,352 sampled bytes.
+
+A focused production-allocator fixture compiles both versions of the
+sorter and runs each in its own fresh process. The 2, 3, 16, 57, 512
+and 4,096 item cases preserve stable ordering and identical comparison
+counts. For 100 sorts of 4,096 items, arena growth falls from
+275,203,183 to 9,836,800 bytes with 4,427,500 comparisons in each
+process. The guard exits zero in 3.849 seconds at 629,932,032 sampled
+bytes. This measures allocations in the focused sort workload. The
+managed commit rebuild is required for a GitHub run with the new sorter.
+
+### Capture color and the next published control
+
+The standard-raster active-document PNG from PID 83965 is tagged sRGB.
+Converting a copy with ColorSync to the Brave reference profile reduces
+the difference from 60,079 to 25,265 pixels. The three sampled link
+pixels change from RGB `(9, 105, 218)` to the exact Brave value
+`(46, 103, 211)`. The first verification required the complete ICC
+profile bytes to match and rejected the rewritten profile. The retry
+verifies the identical matrix, white point and channel transfer tags.
+Only the copyright tag payload differs. Both original PNG hashes remain
+fixed. The converted copy supplies color attribution and the original
+capture remains the ordinary-raster result.
+
+Build `20261118-075540-37c2a48b` publishes executable
+`896b2d35d455afdbb5ec57c6dd5d5759a42e1a15d5f71961ae39fc0d146365cb`.
+Its frozen source manifest contains the call-argument workspace store
+change and the previous sorter. Hacker News PID 21382 matches the exact
+30-story content and 2× pixels with six native hits and zero misses or
+compiler calls. The guard exits zero in 4.416 seconds at 420,790,272
+sampled bytes.
+
+On that build, ordinary GitHub PID 21940 matches the three content
+controls and reaches 3,614 native hits with zero misses or compiler
+calls. Its guard stops the process at 34.293 seconds and 12,947,324,928
+sampled bytes, before PNG capture or shutdown audit. Separate raster
+diagnostic PID 23784 completes the 120-second replay and matches the
+same ordered content. It records 3,615 native hits and 1,767,696 native
+entries, zero misses or compiler calls, and no initialized JavaScriptCore.
+The browser, controller and guard exit zero in 121.731 guard seconds at
+12,586,565,632 sampled bytes. The unchanged Brave Back PNG still differs
+at the same two corner pixels and the exact-pixel verdict exits 1.
+
+The ordinary and diagnostic attempts use unchanged archives, comparison
+inputs and caches. Both remaining goals require the normal renderer and
+memory behavior to be verified on their respective capture paths. The
+converted images, ordinary and diagnostic results, and build receipts
+are local under `repository-navigation-5204-r97/receipts`.
