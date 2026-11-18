@@ -9540,3 +9540,39 @@ receipts still show disk-space failures. Browser rendering validation is
 pending. Pinned build inputs, initial build and regression attempts,
 and timed trials are local under
 `docs/benchmark-results/github-scope-5204-r112/receipts`.
+
+### Expression identifier storage
+
+A separate two-second stack sample of the baseline parser records 1,571
+main-thread snapshots, including 1,324 in the intentional sleep intervals
+used to attach the sampler. It records 83 snapshots with
+`_platform_memmove` at the top of the stack. Expression construction,
+array growth and scope analysis all appear on copying paths. The sampler
+and parser exit zero. The sample is diagnostic and stays outside the
+timed comparisons.
+
+Commit `10ca314da` constructs the AST's owned UTF-16 identifier name
+directly from the token in primary expressions, member access and
+optional chains. Scope registration reads the owned name. The Unicode
+regression overwrites the parser's UTF-16 input after parsing and verifies
+escaped names, a supplementary character and scope resolution. The
+focused tests run with assertions enabled and exit zero.
+
+Seven alternating fresh-process pairs parse all 81 pinned GitHub modules
+without diagnostics or recursion-limit failures. The binaries use Clang
+`-O2`, V development mode and `-prealloc -gc none`. Compiler manifests
+differ only in `expressions.v`. Median full-frontend instructions fall
+from 6,942,542,494 to 6,815,509,578, a 1.83% reduction. All seven pairs
+improve in instructions. Median elapsed time falls from 583.146 to
+577.724 ms, with six pairs faster. The largest module's instructions
+fall from 1,811,311,662 to 1,774,428,070. One-minute host load ranges
+from 6.69 to 6.87 on 18 CPUs. The 3 GiB cohort guard exits zero in
+9.010 seconds at 2,598,928,384 sampled peak bytes.
+
+The published browser predates this change. A disk-space failure blocked
+the initial benchmark launcher. The standard Build pruner could not
+remove its stale protected app bundle, and the later guarded standalone
+trial completed. Managed production receipts continue to show disk-space
+failures. Browser page timing remains pending. The sample, source pins,
+test and benchmark receipts are local under
+`docs/benchmark-results/github-profile-5204-r113/receipts`.
