@@ -1128,3 +1128,38 @@ the behavior of the full publication.
 Raw attempts, input hashes, captures, guards and the publication
 verifier remain local under
 `docs/performance/libjs-github-browser-20261116/libjs-github-inline-workspace-publication-20261118/`.
+
+## Direct argument workspace stores, 2026-11-18
+
+The `4ac49eb9` browser diagnostic records 444,791 native entry-table
+hits and 267,513 argument workspace calls. An initial candidate indexes
+the 256-slot entry table directly. The isolated loop records 749,999
+table hits in both builds. Its median instructions increase from
+6,144,754,208 to 6,145,866,569, and four of seven pairs improve.
+The entry-table change was dropped.
+
+`eff5b1024` fills the fixed slots directly, then creates the borrowed
+argument slice. The existing count check bounds the copy. Operand
+validation and deferred cleanup still cover a partially filled
+workspace. Generated host C changes only in this copy and borrow path.
+
+Seven alternating fresh-process pairs use the same compiler-seeded
+native libraries with diagnostics disabled and count through process
+exit. Separate diagnostics execute 750,000 workspace calls in each
+variant. Both return 42 and reopen without cache misses or compiler
+calls. Median retired instructions fall from **6,139,302,617** to
+**6,118,281,312**, a **0.34% reduction**. All seven pairs improve.
+
+A standalone probe rejects an uninitialized eighth operand before the
+callee runs, then completes a fresh eight-argument call returning 42
+with the stack restored. Default GC and preallocation with GC disabled
+both pass in the interpreter and on compiler-disabled native reopen.
+Each reopen records one hit, zero misses or compiler calls, and two
+native entries. The focused regression checks that the partial
+workspace slots are cleared. It type-checks under the automated-suite
+hold. Frozen GitHub validation awaits a production build containing
+the direct stores.
+
+Raw measurements, C differences and guard receipts remain local in
+`docs/performance/libjs-github-browser-20261116/libjs-github-native-entry-slots-20261118/`
+and `docs/performance/libjs-github-browser-20261116/libjs-github-workspace-direct-stores-20261118/`.
