@@ -45,6 +45,7 @@ int native_gpu_tile_compositor_enabled(void) {
 #include "native/include/native_stationary_raster_darwin.h"
 #include "native/include/native_deferred_font_darwin.h"
 #include "native/include/native_svg_mask_layer_darwin.h"
+#include "native/include/native_svg_mask_cache_key.h"
 #include "native/include/native_svg_mask_pixels.h"
 
 #include "native/include/native_ffmpeg_darwin.h"
@@ -2508,36 +2509,15 @@ static int native_svg_clip_build_opacity_depth;
 static int native_svg_clip_build_quartz_opacity_depth;
 static VoxSVGMaskOpacityBitmap native_svg_clip_opacity_bitmaps[VOX_SVG_MASK_OPACITY_BITMAP_DEPTH];
 
-static uint64_t native_svg_clip_hash_float(uint64_t hash, float value) {
-	uint32_t bits;
-	memcpy(&bits, &value, sizeof(bits));
-	hash ^= bits;
-	return hash * UINT64_C(1099511628211);
-}
-
-static uint64_t native_svg_mask_cache_key(unsigned long long input_key,
-	int content_mask, float canvas_width, float canvas_height, float page_x,
-	float page_y, float scroll_y) {
-	uint64_t key = (uint64_t)input_key;
-	key ^= content_mask ? UINT64_C(0x6d61736b636f6e74)
-	                    : UINT64_C(0x636c6970616c7068);
-	key *= UINT64_C(1099511628211);
-	key = native_svg_clip_hash_float(key, canvas_width);
-	key = native_svg_clip_hash_float(key, canvas_height);
-	key = native_svg_clip_hash_float(key, page_x);
-	key = native_svg_clip_hash_float(key, page_y);
-	return native_svg_clip_hash_float(key, scroll_y);
-}
-
 static int native_prepare_svg_mask(unsigned long long input_key, int content_mask,
 	float canvas_width, float canvas_height, float page_x, float page_y,
-	float scroll_y) {
+	float scroll_y, CGFloat scale) {
 	native_svg_clip_canvas_width = canvas_width;
 	native_svg_clip_build_opacity_depth = 0;
 	native_svg_clip_build_quartz_opacity_depth = 0;
 	native_svg_clip_cache_clock++;
 	uint64_t key = native_svg_mask_cache_key(input_key, content_mask, canvas_width,
-		canvas_height, page_x, page_y, scroll_y);
+		canvas_height, page_x, page_y, scroll_y, scale);
 	native_svg_clip_build_key = key;
 	native_svg_clip_image = NULL;
 	native_svg_clip_build_context = NULL;
@@ -5040,15 +5020,15 @@ void native_begin_svg_clip_mask(unsigned long long input_key, float canvas_width
 	float page_y, float scroll_y) {
 	native_svg_clip_build_is_color = 0;
 	native_svg_clip_build_is_luminance = 0;
+	CGFloat scale = native_svg_mask_backing_scale();
 	if (!native_prepare_svg_mask(input_key, 0, canvas_width, canvas_height, page_x,
-		page_y, scroll_y)) {
+		page_y, scroll_y, scale)) {
 		return;
 	}
 	native_svg_clip_rect = native_svg_mask_canvas_rect(area_x, area_y, area_width,
 		area_height, transform_a, transform_b, transform_c, transform_d,
 		transform_e, transform_f, page_x, page_y, scroll_y, canvas_width,
 		canvas_height);
-	CGFloat scale = native_svg_mask_backing_scale();
 	size_t width = (size_t)MAX(1.0, ceil(native_svg_clip_rect.size.width * scale));
 	size_t height = (size_t)MAX(1.0, ceil(native_svg_clip_rect.size.height * scale));
 	native_svg_clip_build_context = CGBitmapContextCreate(NULL, width, height, 8,
@@ -5067,15 +5047,16 @@ double native_prepare_svg_content_mask(unsigned long long input_key, int luminan
 	float page_x, float page_y, float scroll_y) {
 	native_svg_clip_build_is_color = 1;
 	native_svg_clip_build_is_luminance = luminance;
+	CGFloat scale = native_svg_mask_backing_scale();
 	if (!native_prepare_svg_mask(input_key, 1, canvas_width, canvas_height, page_x,
-		page_y, scroll_y)) {
+		page_y, scroll_y, scale)) {
 		return 0;
 	}
 	native_svg_clip_rect = native_svg_mask_canvas_rect(area[0], area[1], area[2],
 		area[3], matrix[0], matrix[1], matrix[2], matrix[3],
 		matrix[4], matrix[5], page_x, page_y, scroll_y, canvas_width,
 		canvas_height);
-	return native_svg_mask_backing_scale();
+	return scale;
 }
 
 static CGContextRef native_allocate_svg_content_mask_bitmap(CGFloat scale,
@@ -5523,7 +5504,7 @@ void native_end_svg_mask_layer(unsigned long long input_key, int content_mask,
 		return;
 	}
 	uint64_t key = native_svg_mask_cache_key(input_key, content_mask, canvas_width,
-		canvas_height, page_x, page_y, scroll_y);
+		canvas_height, page_x, page_y, scroll_y, native_svg_mask_backing_scale());
 	CGImageRef image = NULL;
 	CGRect mask_rect = CGRectZero;
 	for (int index = 0; index < NATIVE_SVG_CLIP_CACHE_SIZE; ++index) {

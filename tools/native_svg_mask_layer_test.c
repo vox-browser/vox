@@ -1,4 +1,5 @@
 #include "native/include/native_svg_mask_layer_darwin.h"
+#include "native/include/native_svg_mask_cache_key.h"
 #include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -127,6 +128,12 @@ static CGContextRef coverage_scene(int srgb, int clip, int full)
 
 int main(void)
 {
+    for (int content = 0; content < 2; ++content) {
+        uint64_t standard = native_svg_mask_cache_key(17, content, 1024, 640, 0, 64, 0, 1);
+        assert(standard == native_svg_mask_cache_key(17, content, 1024, 640, 0, 64, 0, 1));
+        assert(standard != native_svg_mask_cache_key(17, content, 1024, 640, 0, 64, 0, 2));
+        assert(standard != native_svg_mask_cache_key(17, content, 1024, 640, 0, 64, 0, 1.5));
+    }
     int cases = 0;
     for (int nested = 0; nested < 2; ++nested) {
         for (int transformed = 0; transformed < 2; ++transformed) {
@@ -166,6 +173,6 @@ int main(void)
         CGContextRelease(reference);
         CGContextRelease(shared);
     }
-    printf("SVG mask layers: %d pixel-exact scenes, empty/disjoint bounds and clip restoration passed\n", cases);
+    printf("SVG mask layers: %d exact scenes, clip restoration, bounds and backing-scale keys passed\n", cases);
     return 0;
 }

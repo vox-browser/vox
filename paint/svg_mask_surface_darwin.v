@@ -130,7 +130,7 @@ fn (mut app BrowserApp) raster_native_svg_content_mask(mask &layout.PaintClip, p
 	published := C.native_publish_svg_mask_raster(raster_key, i32(!copy_shared_svg_mask_bitmap), &crop_area[0])
 	if cropped && published == 0 { return false }
 	if portable_svg_mask_diagnostics {
-		eprintln('VOX_SHARED_SVG_MASK luminance=${mask.mask_luminance} operations=${mask.mask_operations.len} surface=${bounds.width}x${bounds.height} viewport_crop=${cropped} bitmap_reused=${published == 2}')
+		eprintln('VOX_SHARED_SVG_MASK luminance=${mask.mask_luminance} operations=${mask.mask_operations.len} surface=${bounds.width}x${bounds.height} viewport_crop=${cropped} resource_key=${mask.mask_raster_key} bitmap_reused=${published == 2}')
 	}
 	return true
 }
