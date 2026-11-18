@@ -166,9 +166,19 @@ fn run_build(root string, stage string, receipt string, environment map[string]s
 		executable, '--headless-smoke'], env, join(receipt, 'smoke.log'))
 }
 
+fn remove_staged_browser(stage string, receipt string) ! {
+	// A benchmark can acquire a shared artifact lease after a blocked
+	// publication attempt and before we decide to supersede this build.
+	mut artifact := acquire(join(receipt, 'artifact.lock'), false)!
+	defer { artifact.release() }
+	remove(stage)!
+}
+
 fn build_attempt(root string, state string, request Record, before Record, receipt string) !Record {
 	stage := temporary(join(root, 'Build'), '.production-output-')!
-	defer { remove(stage) or {} }
+	defer {
+		remove_staged_browser(stage, receipt) or { eprintln('Staged browser cleanup: ${err}') }
+	}
 	write_json(join(receipt, 'inputs-before.json'), json.Any(before))!
 	mut env := os.environ()
 	env['VOX_BUILD_C_MODE'] = (request['c_mode'] or { json.Null{} }).str()
