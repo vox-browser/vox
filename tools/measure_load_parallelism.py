@@ -16,7 +16,10 @@ counted. This is a parallelism diagnostic, not an instruction acceptance gate.
 
 --control-env adds a matched control on the same executable: every round runs
 both variants, alternating which goes first, and the summary states whether
-all their captures have identical bytes. Run it through run_memory_bounded.
+all their captures have identical bytes. A hydrating page needs
+--ready-selector: without one, 2 of 30 GitHub captures were taken between two
+script phases, with fewer replayed requests and other pixels. Run it through
+run_memory_bounded.
 """
 import argparse
 import ctypes
@@ -172,6 +175,8 @@ def run_trial(args, counters, index, label, extra_environment):
                LADYBIRD_SCREENSHOT_SCALE=str(args.screenshot_scale),
                # The allocator policy otherwise re-executes the browser once.
                MallocSpaceEfficient='1')
+    if args.ready_selector:
+        env['VOX_CAPTURE_READY_SELECTOR'] = args.ready_selector
     if args.first_submission:
         # The first-submission timer needs the instruction endpoints, whose
         # readings add work to every frame. Keep it out of plain timing cohorts.
@@ -264,7 +269,10 @@ def median_of(rows, section, key):
 
 
 def summarize(rows):
-    summary = dict(trials=len(rows), png_sha256=sorted({row['png_sha256'] for row in rows}))
+    summary = dict(trials=len(rows), png_sha256=sorted({row['png_sha256'] for row in rows}),
+                   # Captures of one page state replay the same requests; a
+                   # smaller count marks a capture taken before the page settled.
+                   replayed_requests=sorted({row['replayed_requests'] for row in rows}))
     for section in ['launch_to_png', 'launch_to_first_submission']:
         summary[section] = {key: median_of(rows, section, key) for key in [
             'wall_ms', 'process_cpu_ms', 'main_thread_cpu_ms', 'other_threads_cpu_ms',
@@ -289,6 +297,9 @@ def main():
                         help='2 rasterizes the document at the density of a Retina window.')
     parser.add_argument('--sample-interval', type=float, default=.002)
     parser.add_argument('--timeout', type=float, default=120)
+    parser.add_argument('--ready-selector', metavar='SELECTOR',
+                        help='Capture only after this selector matches. A page that hydrates '
+                             'can otherwise be captured between two of its script phases.')
     parser.add_argument('--first-submission', action='store_true',
                         help='Also report launch to the first submitted document layer (instrumented).')
     parser.add_argument('--env', action='append', default=[], metavar='NAME=VALUE',
@@ -322,6 +333,7 @@ def main():
                for label, _ in variants}
     result = dict(scope=__doc__, url=args.url, viewport=[args.width, args.height],
                   js_engine=args.js_engine, screenshot_scale=args.screenshot_scale,
+                  ready_selector=args.ready_selector,
                   variants={label: extra_environment for label, extra_environment in variants},
                   first_submission_instrumented=args.first_submission, **identity,
                   summary=summary, trials=rows)

@@ -76,7 +76,7 @@ class LoadParallelismTests(unittest.TestCase):
 
     def test_summary_reports_medians_and_every_wall_time(self):
         def row(wall, main):
-            return dict(png_sha256='a', launch_to_png=dict(
+            return dict(png_sha256='a', replayed_requests=7 if wall < 300 else 5, launch_to_png=dict(
                 wall_ms=wall, process_cpu_ms=main + 10, main_thread_cpu_ms=main,
                 other_threads_cpu_ms=10, main_thread_share=main / (main + 10),
                 average_busy_cores=1, main_thread_utilization=1,
@@ -87,6 +87,8 @@ class LoadParallelismTests(unittest.TestCase):
         self.assertEqual(result['launch_to_png']['main_thread_cpu_ms'], 60)
         self.assertEqual(result['launch_to_png']['wall_ms_all'], [300, 100, 200])
         self.assertEqual(result['png_sha256'], ['a'])
+        # A capture that replayed fewer requests stays visible in the summary.
+        self.assertEqual(result['replayed_requests'], [5, 7])
         # No trial requested the instrumented first-submission endpoint.
         self.assertIsNone(result['launch_to_first_submission']['wall_ms'])
         self.assertIsNone(median_of(rows, 'launch_to_first_submission', 'wall_ms'))
