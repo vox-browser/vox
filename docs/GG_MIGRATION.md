@@ -2116,6 +2116,84 @@ Peak sampled process-tree RSS was 8,212,135,936 bytes for the original
 build job, 6,528,106,496 for the matched control rebuild, 471,252,992 for
 the screenshot suite, and 638,976,000 for the matched comparison.
 
+### Bounding rectangular GG SVG mask fills on macOS
+
+The Quartz mask bridge stages an uncomposited GG path image before applying
+the current clip and opacity. A contained rectangular fill with exactly
+integral device edges now stages its ink bounds and a one-pixel fringe.
+The bridge rebases the GG transform to that bitmap and restores the image
+placement in the original Quartz context. Strokes, fractional edges,
+skew, and rectangles that cross the bitmap boundary use full staging.
+
+Six native placement checks compared cropped and full staging over a
+partially clipped backdrop. They covered ordinary and reflected fills,
+scaling, fractional translation, skew and out-of-bounds geometry. The
+16 native layer scenes, 16 mask publications, cache checks and exhaustive
+conversion checks passed.
+
+The browser pair shared one V `-prod` generated C unit and used single-unit
+Clang `-O1 -fno-lto`. The preprocessed inputs matched outside the mask-path
+header and its native call. The generated C SHA-256 was
+`122be60004c69f19247efa757e6b495f28db6641440707b64bf3e8227b121430`.
+The control and candidate executable SHA-256 values were
+`818fd1de212606da201f2f3da0bda432957d0dbd0ba51c083e406a320a0ec9ed` and
+`42b82dd61860f73d7d4e5990d11d30a9acdcf805c5e6b0d9c7b9daebe2f0528d`.
+
+The candidate passed all 158 macOS mask captures. Four paired 2× captures
+matched every decoded pixel. They used the default pressure and overlap
+fixtures, the same pressure fixture with the shared raster disabled, and
+a Quartz fixture with reflected, fractional and rotated rectangles. The
+default builds logged the same 385 pressure and 106 overlap mask decisions.
+
+An LLDB trace of the Quartz rectangle fixture measured the arguments at
+`draw_document_path_pixels` entry on the two pinned executables. The
+control (PID 70034) used four 280 × 188 readbacks. The candidate (PID 70087)
+used 58 × 130 and 94 × 182 for the two integral fills and 280 × 188 for the
+fractional and rotated fills. Total staged pixels fell from 210,560 to
+129,928, a 38.3% reduction. The traced PNGs matched every decoded pixel.
+Both browsers and the guard exited zero. The first diagnostic attempt
+stopped at the allocator's startup `exec`. The recorded trace let LLDB
+continue across it. The trace is separate from the wheel timing.
+
+The precise wheel trials used fresh processes, profiles and browser caches
+with the same local pressure and overlap fixtures as the preceding section.
+They used a 1024 × 600 viewport at 2×, disabled JavaScript and retained host
+caches. After a one-second title-matched settle the driver sent 120
+four-pixel inputs at a requested 60 Hz, reversing after 60 inputs. The
+endpoint counts scroll-changing native frame installations after outer
+view paint over the first-to-last input window.
+
+The separate pressure diagnostic (PID 67099) recorded 615 capacity denials,
+544 shared hits including 83 crops, and 16 new shared rasters through the
+final publication. Overlap (PID 67233) recorded zero capacity denials,
+632 hits including 154 crops, and six new rasters. Timing used the default
+renderer configuration with mask diagnostics disabled.
+
+| PID | Fixture | Build | Scroll fps | Median / p95 / max (ms) | Input Hz | Inputs / changes | First / last scroll gap (ms) | Load |
+| --- | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| 67363 | Pressure | Before | 16.93 | 54.531 / 62.704 / 109.816 | 55.96 | 120 / 36 | 120.133 / 32.940 | 6.19 |
+| 67509 | Pressure | After | 17.68 | 54.078 / 58.831 / 61.910 | 58.43 | 120 / 36 | 118.410 / 0.269 | 5.94 |
+| 67639 | Pressure | After | 16.48 | 55.849 / 65.568 / 115.645 | 57.69 | 120 / 34 | 119.459 / 34.972 | 5.78 |
+| 67741 | Pressure | Before | 16.30 | 56.981 / 63.121 / 117.252 | 57.06 | 120 / 34 | 125.273 / 17.015 | 5.56 |
+| 67854 | Pressure | Before | 15.60 | 60.015 / 63.895 / 65.483 | 59.89 | 120 / 31 | 123.741 / 49.735 | 5.27 |
+| 67982 | Pressure | After | 15.09 | 63.100 / 68.403 / 69.168 | 57.91 | 120 / 31 | 128.069 / 34.147 | 5.01 |
+| 68149 | Overlap | Before | 33.81 | 28.355 / 33.355 / 51.391 | 55.88 | 120 / 72 | 66.262 / 16.498 | 5.09 |
+| 68264 | Overlap | After | 34.48 | 27.441 / 33.486 / 51.981 | 56.21 | 120 / 73 | 64.789 / 0.109 | 5.15 |
+| 68364 | Overlap | After | 34.32 | 28.027 / 33.437 / 34.817 | 58.34 | 120 / 70 | 67.484 / 16.492 | 5.38 |
+| 68485 | Overlap | Before | 32.96 | 29.094 / 35.333 / 54.344 | 56.84 | 120 / 69 | 70.545 / 0.110 | 5.19 |
+| 68585 | Overlap | Before | 32.79 | 30.145 / 35.359 / 37.128 | 56.56 | 120 / 69 | 66.801 / 0.137 | 5.25 |
+| 68728 | Overlap | After | 33.15 | 28.868 / 33.966 / 52.105 | 58.88 | 120 / 67 | 67.256 / 16.532 | 5.23 |
+
+The timed cohort ran 07:11:55–07:12:59 UTC on November 18, 2026. Load is
+the one-minute average at launch on the 18-CPU host. Peak scroll positions
+were 484.5–510 CSS pixels. Pressure throughput improved in two of three
+pairs and its median rose from 16.30 to 16.48 fps. Overlap throughput
+improved in all three pairs and its median rose from 32.96 to 34.32 fps.
+Variation in the overlap control and input delivery limits attribution of
+the timing differences. Every measured interval exceeded 16.67 ms.
+The build, screenshot and comparison guard exits were zero and sampled
+process-tree RSS peaked at 7,466,958,848, 491,520,000 and 635,076,608 bytes.
+
 ## Original migration plan
 
 Vox currently renders through two Skia builds: LibWeb's Skia (CPU raster,
