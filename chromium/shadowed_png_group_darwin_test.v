@@ -27,6 +27,7 @@ fn test_shadowed_png_pair_requires_adjacent_same_owner_root_paints() {
 	}
 	assert shadowed_png_group_eligible_with_scale(scaled, layers, index, true)
 	assert !shadowed_png_group_eligible_with_scale(scaled, layers, index, false)
+	assert !shadowed_png_group_eligible(scaled, layers, index)
 	scaled[index + 1].transform = [f64(.5), 0, 0, .5, 3.5, 4.5]!
 	assert !shadowed_png_group_eligible_with_scale(scaled, layers, index, true)
 	for replacement in [layout.PaintCommand{ ...commands[index], blur: 1 },

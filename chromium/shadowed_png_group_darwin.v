@@ -6,12 +6,14 @@ import math
 import os
 import painting
 
-const scaled_png_shadow_group_diagnostic = os.getenv('VOX_DIAGNOSTIC_SCALED_PNG_SHADOW_GROUP') == '1'
+const trace_shadowed_png = os.getenv('VOX_DIAGNOSTIC_SCALED_PNG') == '1'
 
 fn C.native_draw_shadowed_png(&u8, i32, i32, i32, i32, i32, f32, f32, f32, f32, &f32, f32, f32, f32, f32, f32, &C.VoxGraphiteShape) i32
 
 fn shadowed_png_group_eligible(commands []layout.PaintCommand, layers []int, index int) bool {
-	return shadowed_png_group_eligible_with_scale(commands, layers, index, scaled_png_shadow_group_diagnostic)
+	if !shadowed_png_group_eligible_with_scale(commands, layers, index, true) { return false }
+	return normalized_paint_transform(commands[index].transform) == [f64(1), 0, 0, 1, 0, 0]!
+		|| (document_png_supports_p3_raster() && C.native_raster_device_pixel_ratio() == 1)
 }
 
 fn shadowed_png_group_eligible_with_scale(commands []layout.PaintCommand, layers []int, index int,
@@ -106,7 +108,7 @@ fn (mut app BrowserApp) draw_shadowed_png_group(index int, page_y f32, window_he
 		upload.gpu_mips, geometry, shape)
 	if text_end > index { return text_end }
 	drawn := C.native_draw_shadowed_png(decoded.data, i32(decoded.width), i32(decoded.height), i32(image.width), i32(image.height), i32(upload.gpu_mips), geometry.x, geometry.y, geometry.width, geometry.height, &geometry.clip[0], 0, page_y, 0, f32(app.ctx.width), f32(app.ctx.height), &shape)
-	if drawn != 0 && scaled_png_shadow_group_diagnostic {
+	if drawn != 0 && trace_shadowed_png {
 		eprintln('VOX_SCALED_PNG_SHADOW_GROUP scale=${matrix[0]} source=${image.width}x${image.height} decode=${decoded.width}x${decoded.height} p3=${document_png_space_is_p3()}')
 	}
 	return if drawn != 0 { index + 2 } else { index }

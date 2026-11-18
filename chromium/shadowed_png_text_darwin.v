@@ -4,9 +4,6 @@ import gg
 import ggshape
 import layout
 import math
-import os
-
-const shadowed_png_text_diagnostic = os.getenv('VOX_DIAGNOSTIC_SHADOWED_PNG_TEXT') == '1'
 
 // The following leaf must be ordinary root text. Its own clips or effects
 // cannot become a clip of the preceding image and shadow.
@@ -25,13 +22,13 @@ fn shadowed_png_text_supported(commands []layout.PaintCommand, layers []int, ind
 fn (mut app BrowserApp) draw_shadowed_png_text(index int, page_y f32, decoded &gg.Image,
 	natural_width int, natural_height int, gpu_mips bool, image SampledPNGGeometry,
 	shadow C.VoxGraphiteShape) int {
-	if !shadowed_png_text_diagnostic || !app.ctx.native_rendering || app.page_zoom != 1
+	if !app.ctx.native_rendering || app.page_zoom != 1
 		|| app.scroll_y != 0 || document_png_space_is_p3() == 0
 		|| C.native_raster_device_pixel_ratio() != 1 {
 		return index
 	}
 	if !shadowed_png_text_supported(app.paint_commands, app.chromium_raster_plan.command_layers, index) {
-		if index + 2 < app.paint_commands.len {
+		if trace_shadowed_png && index + 2 < app.paint_commands.len {
 			c := &app.paint_commands[index + 2]
 			eprintln('VOX_SHADOWED_PNG_TEXT decline index=${index} kind=${c.kind} clip=${c.has_clip}/${c.clip_list != unsafe { nil }}')
 		}
@@ -57,7 +54,7 @@ fn (mut app BrowserApp) draw_shadowed_png_text(index int, page_y f32, decoded &g
 	width, height := int(geometry[2]), int(geometry[3])
 	if width <= 0 || height <= 0 || width > 2048 || height > 256 { return index }
 	glyph := elliptical_text_coverage(c, geometry, page_y) or {
-		eprintln('VOX_SHADOWED_PNG_TEXT decline index=${index} mask')
+		if trace_shadowed_png { eprintln('VOX_SHADOWED_PNG_TEXT decline index=${index} mask') }
 		return index
 	}
 	mut pixels := []u8{len: width * height * 4}
@@ -83,6 +80,8 @@ fn (mut app BrowserApp) draw_shadowed_png_text(index int, page_y f32, decoded &g
 	swap_document_raster_channels(pixels.data, geometry[2], geometry[3], geometry[2] * 4)
 	if C.native_document_text_raster_finish(pixels.data, geometry[0], geometry[1], geometry[2], geometry[3],
 		geometry[5], geometry[6], f32(app.ctx.height), 1) == 0 { return index }
-	eprintln('VOX_SHADOWED_PNG_TEXT index=${index} text=${index + 2} geometry=${geometry[..]}')
+	if trace_shadowed_png {
+		eprintln('VOX_SHADOWED_PNG_TEXT index=${index} text=${index + 2} geometry=${geometry[..]}')
+	}
 	return index + 3
 }
