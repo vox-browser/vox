@@ -89,6 +89,64 @@ fn geometry_grid_covers_filter_output(grid DocumentGeometryGrid, x int, y int, c
 	return clip[0] + f32(x) >= 0 && clip[1] + f32(y) >= 0
 }
 
+// VOX_GG_FULL_TILE_TRANSFERS=1 restores whole-tile uploads and readbacks for
+// every leaf, for matched comparisons.
+const full_tile_leaf_transfers = os.getenv('VOX_GG_FULL_TILE_TRANSFERS') != ''
+
+// A leaf is drawn on a surface of its compositor tile's size, which keeps the
+// tile's sample positions, but it can change only its own rows. LeafTileRows
+// holds the leaf's part of one tile: the backdrop to upload and, after the
+// draw, the pixels to publish. A tile is megabytes; a typical leaf is a few
+// kilobytes.
+struct LeafTileRows {
+	region ggshape.SurfaceRegion
+	pitch  int
+	pixels []u8
+}
+
+// The rows of `pixels` (a leaf at x0, y0) inside the tile at ox, oy. Returns
+// none when the leaf's whole-tile path has to handle this tile.
+fn leaf_tile_rows(grid DocumentGeometryGrid, pixels &u8, pitch int, backdrop i32, x0 int, y0 int,
+	ox int, oy int, left int, top int, right int, bottom int) ?LeafTileRows {
+	if full_tile_leaf_transfers || right <= left || bottom <= top { return none }
+	row_bytes := (right - left) * 4
+	mut storage := []u8{len: row_bytes * (bottom - top)}
+	if backdrop != 0 {
+		for y in top .. bottom {
+			unsafe {
+				vmemcpy(&storage[(y - top) * row_bytes],
+					pixels + (y - y0) * pitch + (left - x0) * 4, row_bytes)
+			}
+		}
+	}
+	return LeafTileRows{
+		region: ggshape.SurfaceRegion{
+			surface_width:  grid.width
+			surface_height: grid.height
+			x:              left - ox
+			y:              top - oy
+			width:          right - left
+			height:         bottom - top
+		}
+		pitch:  row_bytes
+		pixels: storage
+	}
+}
+
+// Copy the published part of a drawn leaf region into the leaf's result.
+fn (rows &LeafTileRows) publish(mut result []u8, pitch int, x0 int, y0 int, left int, top int,
+	publish_left int, publish_top int, publish_right int, publish_bottom int) {
+	if publish_right <= publish_left { return }
+	source := unsafe { &u8(rows.pixels.data) }
+	for y in publish_top .. publish_bottom {
+		unsafe {
+			vmemcpy(&result[(y - y0) * pitch + (publish_left - x0) * 4],
+				source + (y - top) * rows.pitch + (publish_left - left) * 4,
+				(publish_right - publish_left) * 4)
+		}
+	}
+}
+
 fn draw_document_shape_tiles(pixels &u8, width i32, height i32, pitch i32, backdrop i32,
 	first_x int, first_y int, shape &C.VoxGraphiteShape) i32 {
 	grid := document_geometry_grid
@@ -105,20 +163,14 @@ fn draw_document_shape_tiles(pixels &u8, width i32, height i32, pitch i32, backd
 	}
 	mut result := []u8{len: int(height) * int(pitch)}
 	unsafe { vmemcpy(result.data, pixels, result.len) }
-	mut tile := []u8{len: grid.width * grid.height * 4}
+	// Allocated by the first tile that needs whole-tile transfers.
+	mut tile := []u8{}
 	for row in geometry_tile_owner(y0, grid.height, grid.rows) .. geometry_tile_owner(y0 + height - 1, grid.height, grid.rows) + 1 {
 		oy := row * (grid.height - 2)
 		for col in geometry_tile_owner(x0, grid.width, grid.columns) .. geometry_tile_owner(x0 + width - 1, grid.width, grid.columns) + 1 {
 			ox := col * (grid.width - 2)
-			for i in 0 .. tile.len { tile[i] = 0 }
 			left, top := math.max(x0, ox), math.max(y0, oy)
 			right, bottom := math.min(x0 + width, ox + grid.width), math.min(y0 + height, oy + grid.height)
-			for y in top .. bottom {
-				unsafe {
-					vmemcpy(&tile[((y - oy) * grid.width + left - ox) * 4],
-						pixels + (y - y0) * int(pitch) + (left - x0) * 4, (right - left) * 4)
-				}
-			}
 			mut draw := *shape
 			draw.matrix[2] += f32(x0 - ox)
 			draw.matrix[5] += f32(y0 - oy)
@@ -132,9 +184,6 @@ fn draw_document_shape_tiles(pixels &u8, width i32, height i32, pitch i32, backd
 				draw = ggshape.localize_rounded_shape(draw, -(draw.matrix[2] + f32(ox)) / draw.matrix[0], -(draw.matrix[5] + f32(oy)) / draw.matrix[4])
 			}
 			draw.force_msaa = i32(i32(row * grid.columns + col) in grid.cells)
-			if ggshape.draw(tile.data, i32(grid.width), i32(grid.height), i32(grid.width * 4), backdrop, &draw) == 0 {
-				return 0
-			}
 			publish_left := math.max(x0, ox + if col > 0 { 1 } else { 0 })
 			publish_top := math.max(y0, oy + if row > 0 { 1 } else { 0 })
 			publish_right := math.min(x0 + width, ox + grid.width - if col + 1 < grid.columns {
@@ -147,6 +196,29 @@ fn draw_document_shape_tiles(pixels &u8, width i32, height i32, pitch i32, backd
 			} else {
 				0
 			})
+			// A filter layer reads the pixels around its output; keep its
+			// whole-tile backdrop.
+			if draw.has_filter_clip == 0 {
+				if rows := leaf_tile_rows(grid, pixels, int(pitch), backdrop, x0, y0, ox, oy,
+					left, top, right, bottom) {
+					if ggshape.draw_region(rows.pixels.data, i32(rows.pitch), rows.region, backdrop, &draw) != 0 {
+						rows.publish(mut result, int(pitch), x0, y0, left, top, publish_left,
+							publish_top, publish_right, publish_bottom)
+						continue
+					}
+				}
+			}
+			if tile.len == 0 { tile = []u8{len: grid.width * grid.height * 4} }
+			for i in 0 .. tile.len { tile[i] = 0 }
+			for y in top .. bottom {
+				unsafe {
+					vmemcpy(&tile[((y - oy) * grid.width + left - ox) * 4],
+						pixels + (y - y0) * int(pitch) + (left - x0) * 4, (right - left) * 4)
+				}
+			}
+			if ggshape.draw(tile.data, i32(grid.width), i32(grid.height), i32(grid.width * 4), backdrop, &draw) == 0 {
+				return 0
+			}
 			for y in publish_top .. publish_bottom {
 				unsafe {
 					vmemcpy(&result[(y - y0) * int(pitch) + (publish_left - x0) * 4],
@@ -174,29 +246,18 @@ fn draw_document_path_tiles(pixels &u8, width i32, height i32, pitch i32, backdr
 	}
 	mut result := []u8{len: int(height) * int(pitch)}
 	unsafe { vmemcpy(result.data, pixels, result.len) }
-	mut tile := []u8{len: grid.width * grid.height * 4}
+	// Allocated by the first tile that needs whole-tile transfers.
+	mut tile := []u8{}
 	for row in geometry_tile_owner(y0, grid.height, grid.rows) .. geometry_tile_owner(y0 + height - 1, grid.height, grid.rows) + 1 {
 		oy := row * (grid.height - 2)
 		for col in geometry_tile_owner(x0, grid.width, grid.columns) .. geometry_tile_owner(x0 + width - 1, grid.width, grid.columns) + 1 {
 			ox := col * (grid.width - 2)
-			for i in 0 .. tile.len { tile[i] = 0 }
 			left, top := math.max(x0, ox), math.max(y0, oy)
 			right, bottom := math.min(x0 + width, ox + grid.width), math.min(y0 + height, oy + grid.height)
-			for y in top .. bottom {
-				unsafe {
-					vmemcpy(&tile[((y - oy) * grid.width + left - ox) * 4],
-						pixels + (y - y0) * int(pitch) + (left - x0) * 4, (right - left) * 4)
-				}
-			}
 			mut draw := *path
 			draw.matrix[2] += f32(x0 - ox)
 			draw.matrix[5] += f32(y0 - oy)
-			result_code := if i32(row * grid.columns + col) in grid.cells {
-				ggshape.draw_multisampled_path(tile.data, i32(grid.width), i32(grid.height), i32(grid.width * 4), backdrop, &draw)
-			} else {
-				ggshape.draw_path(tile.data, i32(grid.width), i32(grid.height), i32(grid.width * 4), backdrop, &draw)
-			}
-			if result_code == 0 { return 0 }
+			multisampled := i32(row * grid.columns + col) in grid.cells
 			publish_left := math.max(x0, ox + if col > 0 { 1 } else { 0 })
 			publish_top := math.max(y0, oy + if row > 0 { 1 } else { 0 })
 			publish_right := math.min(x0 + width, ox + grid.width - if col + 1 < grid.columns {
@@ -209,6 +270,28 @@ fn draw_document_path_tiles(pixels &u8, width i32, height i32, pitch i32, backdr
 			} else {
 				0
 			})
+			if rows := leaf_tile_rows(grid, pixels, int(pitch), backdrop, x0, y0, ox, oy,
+				left, top, right, bottom) {
+				if ggshape.draw_path_region(rows.pixels.data, i32(rows.pitch), rows.region, backdrop, &draw, multisampled) != 0 {
+					rows.publish(mut result, int(pitch), x0, y0, left, top, publish_left,
+						publish_top, publish_right, publish_bottom)
+					continue
+				}
+			}
+			if tile.len == 0 { tile = []u8{len: grid.width * grid.height * 4} }
+			for i in 0 .. tile.len { tile[i] = 0 }
+			for y in top .. bottom {
+				unsafe {
+					vmemcpy(&tile[((y - oy) * grid.width + left - ox) * 4],
+						pixels + (y - y0) * int(pitch) + (left - x0) * 4, (right - left) * 4)
+				}
+			}
+			result_code := if multisampled {
+				ggshape.draw_multisampled_path(tile.data, i32(grid.width), i32(grid.height), i32(grid.width * 4), backdrop, &draw)
+			} else {
+				ggshape.draw_path(tile.data, i32(grid.width), i32(grid.height), i32(grid.width * 4), backdrop, &draw)
+			}
+			if result_code == 0 { return 0 }
 			for y in publish_top .. publish_bottom {
 				unsafe {
 					vmemcpy(&result[(y - y0) * int(pitch) + (publish_left - x0) * 4],
@@ -244,26 +327,22 @@ fn draw_document_shape_glyph_tiles(pixels &u8, width i32, height i32, pitch i32,
 	}
 	mut result := []u8{len: int(height) * int(pitch)}
 	unsafe { vmemcpy(result.data, pixels, result.len) }
-	mut tile := []u8{len: grid.width * grid.height * 4}
+	// Allocated by the first tile that needs whole-tile transfers.
+	mut tile := []u8{}
 	for row in geometry_tile_owner(y0, grid.height, grid.rows) .. geometry_tile_owner(y0 + height - 1, grid.height, grid.rows) + 1 {
 		oy := row * (grid.height - 2)
 		for col in geometry_tile_owner(x0, grid.width, grid.columns) .. geometry_tile_owner(x0 + width - 1, grid.width, grid.columns) + 1 {
 			ox := col * (grid.width - 2)
-			for i in 0 .. tile.len { tile[i] = 0 }
 			left, top := math.max(x0, ox), math.max(y0, oy)
 			right, bottom := math.min(x0 + width, ox + grid.width), math.min(y0 + height, oy + grid.height)
-			for y in top .. bottom {
-				unsafe {
-					vmemcpy(&tile[((y - oy) * grid.width + left - ox) * 4],
-						pixels + (y - y0) * int(pitch) + (left - x0) * 4, (right - left) * 4)
-				}
-			}
 			mut draws := []C.VoxGraphiteShape{cap: int(count)}
+			mut filtered := false
 			for i in 0 .. int(count) {
 				mut draw := unsafe { shapes[i] }
 				draw.matrix[2] += f32(x0 - ox)
 				draw.matrix[5] += f32(y0 - oy)
 				if draw.has_filter_clip != 0 {
+					filtered = true
 					draw.filter_clip[0] += f32(x0 - ox)
 					draw.filter_clip[2] += f32(x0 - ox)
 					draw.filter_clip[1] += f32(y0 - oy)
@@ -271,6 +350,30 @@ fn draw_document_shape_glyph_tiles(pixels &u8, width i32, height i32, pitch i32,
 				}
 				draw.force_msaa = i32(i32(row * grid.columns + col) in grid.cells)
 				draws << draw
+			}
+			// Glyph coverage is a whole-tile mask, and a filter layer reads the
+			// pixels around its output; both keep whole-tile transfers.
+			if glyphs.len == 0 && !filtered {
+				if rows := leaf_tile_rows(grid, pixels, int(pitch), backdrop, x0, y0, ox, oy,
+					left, top, right, bottom) {
+					if ggshape.draw_shapes_region(rows.pixels.data, i32(rows.pitch), rows.region, backdrop,
+						draws.data, count) != 0 {
+						rows.publish(mut result, int(pitch), x0, y0, left, top,
+							math.max(x0, ox + if col > 0 { 1 } else { 0 }),
+							math.max(y0, oy + if row > 0 { 1 } else { 0 }),
+							math.min(x0 + width, ox + grid.width - if col + 1 < grid.columns { 1 } else { 0 }),
+							math.min(y0 + height, oy + grid.height - if row + 1 < grid.rows { 1 } else { 0 }))
+						continue
+					}
+				}
+			}
+			if tile.len == 0 { tile = []u8{len: grid.width * grid.height * 4} }
+			for i in 0 .. tile.len { tile[i] = 0 }
+			for y in top .. bottom {
+				unsafe {
+					vmemcpy(&tile[((y - oy) * grid.width + left - ox) * 4],
+						pixels + (y - y0) * int(pitch) + (left - x0) * 4, (right - left) * 4)
+				}
 			}
 			mut masks := []ggshape.GlyphCoverage{}
 			for glyph in glyphs {

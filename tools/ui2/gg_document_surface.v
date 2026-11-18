@@ -14,3 +14,47 @@ pub fn (mut s GpuSurface) take_document_image() !gfx.Image {
 	s.color = gfx.Image{}
 	return image
 }
+
+fn (s &GpuSurface) check_document_region(pixels voidptr, pitch int, x int, y int, width int, height int) ! {
+	// Region transfers use the Metal blit path; OpenGL transfers swizzle whole
+	// surfaces through write_pixels() and read_pixels().
+	if s.ctx.is_gl {
+		return error('gg.canvas: region transfers require the Metal backend')
+	}
+	if pixels == unsafe { nil } || width <= 0 || height <= 0 || x < 0 || y < 0
+		|| x > s.width - width || y > s.height - height || pitch < width * 4 {
+		return error('gg.canvas: invalid pixel region ${x},${y} ${width}x${height}')
+	}
+}
+
+// write_document_region replaces one rectangle of the surface with BGRA8
+// premultiplied pixels and discards pending draws, like write_pixels() for
+// that rectangle. `pixels` addresses the rectangle's first pixel and its rows
+// are `pitch` bytes apart. Pixels outside the rectangle keep their previous
+// contents, which are undefined on a new surface: use it only when the later
+// draws and read_document_region() stay inside the rectangle.
+pub fn (mut s GpuSurface) write_document_region(pixels voidptr, pitch int, x int, y int, width int, height int) ! {
+	if s.layer != unsafe { nil } {
+		return error('gg.canvas: cannot write pixels under a layer')
+	}
+	s.check_document_region(pixels, pitch, x, y, width, height)!
+	s.reset_draws()
+	if !gfx.write_image(s.color, x, y, width, height, pixels, pitch) {
+		return error('gg.canvas: could not upload pixels')
+	}
+	s.load = true
+}
+
+// read_document_region renders the pending draws like read_pixels() and
+// copies one rectangle of the surface into BGRA8 premultiplied `pixels`,
+// whose rows are `pitch` bytes apart.
+pub fn (mut s GpuSurface) read_document_region(pixels voidptr, pitch int, x int, y int, width int, height int) ! {
+	s.check_document_region(pixels, pitch, x, y, width, height)!
+	s.flush()!
+	if !gfx.read_image(s.color, x, y, width, height, pixels, pitch) {
+		return error('gg.canvas: could not read back the surface')
+	}
+	if s.ctx.owns_gfx {
+		gfx.commit()
+	}
+}

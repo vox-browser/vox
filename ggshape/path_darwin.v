@@ -78,6 +78,15 @@ fn draw_svg_image_pixels(pixels &u8, width i32, height i32, pitch i32, flags i32
 	} else {
 		target.clear(canvas.Color4f{})
 	}
+	record_svg_image(mut target, flags, paths, count, parent, viewport, rounded_clip) or { return 0 }
+	target.read_pixels(pixels, int(pitch)) or { return 0 }
+	return 1
+}
+
+// record_svg_image adds an SVG image's draws to a surface that already holds
+// its backdrop: the pass's sample count, the parent matrix, the viewport and
+// rounded clips, and each descriptor.
+fn record_svg_image(mut target canvas.GpuSurface, flags i32, paths &C.VoxGraphitePath, count i32, parent &f32, viewport &f32, rounded_clip &f32) ! {
 	if flags & svg_force_msaa != 0 {
 		target.draw_msaa_trigger()
 	}
@@ -88,22 +97,20 @@ fn draw_svg_image_pixels(pixels &u8, width i32, height i32, pitch i32, flags i32
 	parent_matrix := canvas.Matrix.values(parent_values)
 	target.set_matrix(parent_matrix)
 	v := unsafe { [viewport[0], viewport[1], viewport[2], viewport[3]] }
-	target.clip_rect(canvas.Rect.xywh(v[0], v[1], v[2], v[3]), .intersect, flags & svg_hard_viewport == 0) or { return 0 }
+	target.clip_rect(canvas.Rect.xywh(v[0], v[1], v[2], v[3]), .intersect, flags & svg_hard_viewport == 0)!
 	layered := rounded_clip != unsafe { nil }
 	if layered {
 		mut values := [12]f32{}
 		for i in 0 .. 12 {
 			values[i] = unsafe { rounded_clip[i] }
 		}
-		target.clip_rrect(rounded_rect(values), .intersect, true) or { return 0 }
-		target.save_layer(none) or { return 0 }
+		target.clip_rrect(rounded_rect(values), .intersect, true)!
+		target.save_layer(none)!
 	}
 	for index in 0 .. int(count) {
-		draw_descriptor(mut target, unsafe { &paths[index] }, parent_matrix, none) or { return 0 }
+		draw_descriptor(mut target, unsafe { &paths[index] }, parent_matrix, none)!
 	}
 	if layered {
 		target.restore()
 	}
-	target.read_pixels(pixels, int(pitch)) or { return 0 }
-	return 1
 }

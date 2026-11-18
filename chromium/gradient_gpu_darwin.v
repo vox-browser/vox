@@ -41,21 +41,15 @@ fn draw_document_gradient_tiles(pixels &u8, width i32, height i32, pitch i32, ba
 	}
 	mut result := []u8{len: int(height) * int(pitch)}
 	unsafe { vmemcpy(result.data, pixels, result.len) }
-	mut tile := []u8{len: grid.width * grid.height * 4}
+	// Allocated by the first tile that needs whole-tile transfers.
+	mut tile := []u8{}
 	for row in geometry_tile_owner(y0, grid.height, grid.rows) .. geometry_tile_owner(y0 + height - 1, grid.height, grid.rows) + 1 {
 		oy := row * (grid.height - 2)
 		for col in geometry_tile_owner(x0, grid.width, grid.columns) .. geometry_tile_owner(x0 + width - 1, grid.width, grid.columns) + 1 {
 			ox := col * (grid.width - 2)
-			for i in 0 .. tile.len { tile[i] = 0 }
 			left, top := math.max(x0, ox), math.max(y0, oy)
 			right, bottom := math.min(x0 + width, ox + grid.width), math.min(y0 + height, oy + grid.height)
 			if right <= left || bottom <= top { continue }
-			for y in top .. bottom {
-				unsafe {
-					vmemcpy(&tile[((y - oy) * grid.width + left - ox) * 4],
-						pixels + (y - y0) * int(pitch) + (left - x0) * 4, (right - left) * 4)
-				}
-			}
 			mut draw := unsafe { *path }
 			draw.matrix[2] += f32(x0 - ox)
 			draw.matrix[5] += f32(y0 - oy)
@@ -68,11 +62,6 @@ fn draw_document_gradient_tiles(pixels &u8, width i32, height i32, pitch i32, ba
 			viewport := [f32(0), 0, f32(grid.width), f32(grid.height)]!
 			flags := (if backdrop != 0 { i32(1) } else { i32(0) }) | 4 |
 				if i32(row * grid.columns + col) in grid.cells { i32(2) } else { i32(0) }
-			if ggshape.draw_svg_image(tile.data, i32(grid.width), i32(grid.height), i32(grid.width * 4),
-				flags, &draw, 1, &parent[0], &viewport[0], unsafe { nil }) == 0 {
-				return 0
-			}
-
 			publish_left := math.max(x0, ox + if col > 0 { 1 } else { 0 })
 			publish_top := math.max(y0, oy + if row > 0 { 1 } else { 0 })
 			publish_right := math.min(x0 + width, ox + grid.width - if col + 1 < grid.columns {
@@ -85,6 +74,27 @@ fn draw_document_gradient_tiles(pixels &u8, width i32, height i32, pitch i32, ba
 			} else {
 				0
 			})
+			if rows := leaf_tile_rows(grid, pixels, int(pitch), backdrop, x0, y0, ox, oy,
+				left, top, right, bottom) {
+				if ggshape.draw_svg_image_region(rows.pixels.data, i32(rows.pitch), rows.region, flags,
+					&draw, 1, &parent[0], &viewport[0], unsafe { nil }) != 0 {
+					rows.publish(mut result, int(pitch), x0, y0, left, top, publish_left,
+						publish_top, publish_right, publish_bottom)
+					continue
+				}
+			}
+			if tile.len == 0 { tile = []u8{len: grid.width * grid.height * 4} }
+			for i in 0 .. tile.len { tile[i] = 0 }
+			for y in top .. bottom {
+				unsafe {
+					vmemcpy(&tile[((y - oy) * grid.width + left - ox) * 4],
+						pixels + (y - y0) * int(pitch) + (left - x0) * 4, (right - left) * 4)
+				}
+			}
+			if ggshape.draw_svg_image(tile.data, i32(grid.width), i32(grid.height), i32(grid.width * 4),
+				flags, &draw, 1, &parent[0], &viewport[0], unsafe { nil }) == 0 {
+				return 0
+			}
 			for y in publish_top .. publish_bottom {
 				unsafe {
 					vmemcpy(&result[(y - y0) * int(pitch) + (publish_left - x0) * 4],
