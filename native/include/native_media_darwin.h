@@ -5,6 +5,7 @@
 #import <CoreVideo/CoreVideo.h>
 #include "native_avfoundation_darwin.h"
 #include "native_ffmpeg_playback_darwin.h"
+#include "../../cpuraster/scan_workers.h"
 #include <stdint.h>
 #include <stdlib.h>
 #include <math.h>
@@ -300,19 +301,27 @@ static void native_media_seek(void *handle, double seconds, int32_t approximate)
             });
         }];
 }
-// A playing video converts every new frame on the main thread: swap red and
-// blue four pixels at a time (1426x1080 BGRA frames on vlang.io).
-static void native_media_bgra_to_rgba(const uint8_t *input, size_t stride, uint8_t *pixels,
-    size_t w, size_t h) {
+typedef struct {
+    const uint8_t *input;
+    uint8_t *pixels;
+    size_t stride, width;
+} VoxMediaBgraConversion;
+
+static void native_media_bgra_rows(const VoxMediaBgraConversion *frame, size_t first, size_t end) {
+    size_t w = frame->width;
 #if defined(__aarch64__)
     const uint8_t indices[] = {2, 1, 0, 3, 6, 5, 4, 7, 10, 9, 8, 11, 14, 13, 12, 15};
     uint8x16_t order = vld1q_u8(indices);
 #endif
-    for (size_t y = 0; y < h; ++y) {
-        const uint8_t *src = input + y * stride;
-        uint8_t *dst = pixels + y * w * 4;
+    for (size_t y = first; y < end; ++y) {
+        const uint8_t *src = frame->input + y * frame->stride;
+        uint8_t *dst = frame->pixels + y * w * 4;
         size_t x = 0;
 #if defined(__aarch64__)
+        for (; w - x >= 16; x += 16) {
+            for (size_t byte = 0; byte < 64; byte += 16)
+                vst1q_u8(dst + x * 4 + byte, vqtbl1q_u8(vld1q_u8(src + x * 4 + byte), order));
+        }
         for (; w - x >= 4; x += 4)
             vst1q_u8(dst + x * 4, vqtbl1q_u8(vld1q_u8(src + x * 4), order));
 #endif
@@ -322,6 +331,25 @@ static void native_media_bgra_to_rgba(const uint8_t *input, size_t stride, uint8
         }
     }
 }
+
+static void native_media_bgra_range(void *context, int32_t first, int32_t end) {
+    native_media_bgra_rows((const VoxMediaBgraConversion *)context, (size_t)first, (size_t)end);
+}
+
+// The caller supplies a locked decoder buffer and an independently allocated
+// output. This call joins the workers before the decoder can reuse the input.
+static void native_media_bgra_to_rgba(const uint8_t *input, size_t stride, uint8_t *pixels,
+    size_t w, size_t h) {
+    VoxMediaBgraConversion frame = {input, pixels, stride, w};
+    size_t lanes = w * h / (512u * 1024u);
+    if (lanes > VOX_SCAN_WORKERS_MAX) lanes = VOX_SCAN_WORKERS_MAX;
+    if (lanes > h) lanes = h;
+    if (lanes > 1 && h <= INT32_MAX && !vox_scan_workers_disabled())
+        vox_scan_workers_run(&frame, (int32_t)h, (int32_t)lanes, native_media_bgra_range);
+    else
+        native_media_bgra_rows(&frame, 0, h);
+}
+
 static uint8_t *native_media_copy_frame(void *handle, int32_t *width, int32_t *height) {
     VoxMediaPlayback *media = native_media_for_handle(handle);
     if (!media) return NULL;

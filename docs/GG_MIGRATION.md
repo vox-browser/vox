@@ -7978,3 +7978,70 @@ JavaScript, private profiles and caches, a 1024×768 CSS viewport,
 25 entries and zero Canvas elements. All browser and guard exits
 were zero. The timings above cover legacy bitmap shader rectangles.
 Candidate site measurements await the shared production rebuild.
+
+### Parallel AVFoundation frame conversion
+
+The macOS playback bridge copies BGRA frames into packed RGBA by
+assigning disjoint rows to the raster workers. The CoreVideo buffer
+remains locked and the RGBA buffer remains private until the workers
+join. The ARM64 loop converts sixteen pixels at a time, with vector
+and scalar tails for odd widths. Dispatch starts at 1,048,576 pixels,
+with up to four threads. `VOX_SERIAL_CPU_RASTER=1` forces serial
+conversion.
+
+Matched native Clang `-O3 -g` harnesses measured conversion through
+return for deterministic BGRA frames with 44 bytes of source row
+padding. Allocation, source initialization and output hashing were
+outside the timer. The first measurement for each size included
+accessing the new output buffer. Seven rotating groups on Mac17,6
+with 18 logical CPUs started at 09:20 local time on 2026-11-18.
+The one-minute load was 4.08. All 21 processes and the guard exited
+zero. Times are medians in microseconds. Warm values take each
+process's median of the 16 calls after its first.
+
+| Frame | First before / forced serial / default | Warm before / forced serial / default |
+| --- | ---: | ---: |
+| 320×240 | 20.750 / 25.167 / 20.500 | 4.875 / 4.834 / 4.875 |
+| 1023×1025 | 324.875 / 312.292 / 306.917 | 79.979 / 92.562 / 91.709 |
+| 1024×1024 | 79.416 / 71.459 / 77.625 | 78.187 / 70.438 / 39.459 |
+| 1426×1080 | 486.125 / 510.166 / 353.084 | 112.417 / 145.083 / 82.605 |
+| 1921×1081 | 707.458 / 665.125 / 431.750 | 150.854 / 194.145 / 77.188 |
+| 3840×2160 | 2957.375 / 2878.875 / 1590.500 | 583.395 / 543.292 / 317.396 |
+
+Default scheduling won all seven warm pairs for every dispatched
+size. First-call wins for those sizes were 4, 6, 7 and 7. The
+1023×1025 warm median rose by 11.730 µs below the cutoff. An
+earlier four-pixel loop took 6.917 µs for warm 320×240 and
+311.750 µs for 4K. A sixteen-pixel interleaved load/store trial
+took 4.917 and 314.271 µs respectively. Hashes matched across all
+three cohorts. Final harness hashes were
+`eb43d0937dd0a0c3a47c2511f43cca8076731eed5d35450f904b903d0731bbc7`
+before and
+`8746566284cb567e9070deb90ca07577fe888504ca9aea710abd36ed042f4ea1`
+after.
+
+A separate native probe saw two threads at 1024×1024 and 1426×1080,
+three at 1921×1081 and four at 4K. It saw zero batches below the
+cutoff and under forced serial. AVFoundation decoded a local
+1920×1080 MP4 fixture
+(`b7f44d034cb48490132861748ecbbf46db3c63cb935be9c1e7a9e43d046f6cae`)
+through the playback bridge and used three distinct conversion
+threads. Its RGBA output matched forced serial
+(`1fe0091d81bbd335aac0a789928b6f172f51c6c3ccc42362a23347c6d80071b4`).
+All four probe processes and the guard exited zero. The native MP4
+and loopback HLS playback suite passed in both modes, including
+pause, seek, end and cancellation. Byte and canary checks covered
+unaligned output, odd widths, padding and both sides of the cutoff.
+ASan/UBSan and ThreadSanitizer passed the conversion fixtures.
+
+The published single-C-unit executable
+`eb9c83cc14fe48f533dcf68e7dbc3e4c871426aa6aa110d3e65a570d961f22a1`
+with library
+`ebde1494c5aebaa69ebe6edab9f4e3333020cb4b2949d96fa1fbb35f19d6a202`
+matched archived Hacker News, GitHub and Old Reddit pixels.
+The sealed replays used JavaScript, private profiles and caches,
+a 1024×768 CSS viewport, 2× capture and a one-second settle. They
+audited 30, 33 and 25 entries and zero video elements. All browser
+and guard exits were zero. The shared bundle predates the change.
+The benchmark measures CPU frame conversion, and the archived
+pages provide pixel regression coverage.
