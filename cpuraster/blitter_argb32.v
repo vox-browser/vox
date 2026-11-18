@@ -318,34 +318,10 @@ fn blend_solid_mask_pixel(color u32, pm_color u32, dst u32, coverage u32) u32 {
 
 fn (mut b SolidBlitter) blit_disjoint_mask(mask &Mask, clip IRect) bool {
 	width, height := clip.width(), clip.height()
-	if width > b.pixels.len / 4 || b.row_bytes < width * 4 || mask.row_bytes < 0 {
-		return false
-	}
-	src := mask.index(clip.left, clip.top)
-	dst := b.offset(clip.left, clip.top)
-	rows_after_first := height - 1
-	if src < 0 || dst < 0 || src > mask.image.len - width || dst > b.pixels.len - width * 4
-		|| mask.row_bytes > (mask.image.len - src - width) / rows_after_first
-		|| b.row_bytes > (b.pixels.len - dst - width * 4) / rows_after_first {
-		return false
-	}
-	coverage := mask.image[src..src + rows_after_first * mask.row_bytes + width]
-	pixels := b.pixels[dst..dst + rows_after_first * b.row_bytes + width * 4]
-	// Row stride zero is a repeated read-only mask. If the backing ranges
-	// overlap, keep serial order because later reads can observe writes.
-	source_address := u64(uint(coverage.data))
-	target_address := u64(uint(pixels.data))
-	overlaps := if source_address <= target_address {
-		target_address - source_address < u64(coverage.len)
-	} else {
-		source_address - target_address < u64(pixels.len)
-	}
-	if overlaps {
-		return false
-	}
+	offsets := disjoint_mask_row_offsets(mask, clip, b.pixels, b.row_bytes) or { return false }
 	scan := SolidMaskScan{
-		coverage:    coverage
-		pixels:      pixels
+		coverage:    unsafe { mask.image[offsets.source..] }
+		pixels:      unsafe { b.pixels[offsets.target..] }
 		source_pitch: mask.row_bytes
 		target_pitch: b.row_bytes
 		width:       width

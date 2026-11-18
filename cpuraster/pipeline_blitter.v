@@ -462,10 +462,57 @@ fn (mut b PipelineBlitter) blit_anti_rect(x int, y int, width int, height int, l
 }
 
 fn (mut b PipelineBlitter) blit_mask(mask &Mask, clip IRect) {
-	for row in 0 .. clip.height() {
+	width, height := clip.width(), clip.height()
+	// An image shader may sample storage shared with the destination.
+	if !b.imaged && width > 0 && height > 1 && height <= max_i32
+		&& i64(width) * height >= 2 * scan_pixels_per_worker {
+		if offsets := disjoint_mask_row_offsets(mask, clip, b.pixels, b.row_bytes) {
+			// run_raster_scans joins before these borrows can go out of scope.
+			scan := PipelineMaskScan{
+				blitter:      b
+				coverage:     mask.image
+				source_pitch: mask.row_bytes
+				clip:         clip
+				offsets:      offsets
+			}
+			run_raster_scans(&scan, height, width, scan_pipeline_mask)
+			return
+		}
+	}
+	for row in 0 .. height {
 		src := mask.index(clip.left, clip.top + row)
-		for i in 0 .. clip.width() {
+		for i in 0 .. width {
 			b.blit(clip.left + i, clip.top + row, 1, .mask, mask.image[src + i])
+		}
+	}
+}
+
+struct PipelineMaskScan {
+	blitter      &PipelineBlitter
+	coverage     []u8
+	source_pitch int
+	clip         IRect
+	offsets      MaskRowOffsets
+}
+
+@[direct_array_access]
+fn scan_pipeline_mask(context voidptr, first i32, end i32) {
+	scan := unsafe { &PipelineMaskScan(context) }
+	// Each worker gets its own blitter header. Shader inputs remain read-only
+	// and the borrowed pixel storage is partitioned by row.
+	mut blitter := unsafe { *scan.blitter }
+	for row in int(first) .. int(end) {
+		src := scan.offsets.source + row * scan.source_pitch
+		dst := scan.offsets.target + row * blitter.row_bytes
+		y := scan.clip.top + row
+		for i in 0 .. scan.clip.width() {
+			x := scan.clip.left + i
+			coverage := scan.coverage[src + i]
+			if blitter.lowp {
+				blitter.blit_lowp(x, y, dst + i * 4, .mask, coverage)
+			} else {
+				blitter.blit_highp(x, y, dst + i * 4, .mask, coverage)
+			}
 		}
 	}
 }

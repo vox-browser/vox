@@ -19,6 +19,42 @@ fn (m &Mask) index(x int, y int) int {
 	return m.offset + (y - m.bounds.top) * m.row_bytes + x - m.bounds.left
 }
 
+struct MaskRowOffsets {
+	source int
+	target int
+}
+
+// Validate clipped spans for a nonempty, multirow mask before sharing them
+// with workers. A zero source stride repeats the same read-only coverage.
+fn disjoint_mask_row_offsets(mask &Mask, clip IRect, pixels []u8, target_pitch int) ?MaskRowOffsets {
+	width, height := clip.width(), clip.height()
+	if width > pixels.len / 4 || target_pitch < width * 4 || mask.row_bytes < 0 {
+		return none
+	}
+	source := mask.index(clip.left, clip.top)
+	target := clip.top * target_pitch + clip.left * 4
+	rows_after_first := height - 1
+	if source < 0 || target < 0 || source > mask.image.len - width
+		|| target > pixels.len - width * 4
+		|| mask.row_bytes > (mask.image.len - source - width) / rows_after_first
+		|| target_pitch > (pixels.len - target - width * 4) / rows_after_first {
+		return none
+	}
+	source_address := u64(uint(mask.image.data)) + u64(source)
+	target_address := u64(uint(pixels.data)) + u64(target)
+	source_span := rows_after_first * mask.row_bytes + width
+	target_span := rows_after_first * target_pitch + width * 4
+	// Keep serial order if coverage reads can observe writes to the target.
+	if source_address <= target_address {
+		if target_address - source_address < u64(source_span) {
+			return none
+		}
+	} else if source_address - target_address < u64(target_span) {
+		return none
+	}
+	return MaskRowOffsets{source, target}
+}
+
 // Anti-aliased runs pass their alpha and run-length arrays as slices that
 // share the caller's storage, so wrappers can break runs in place (SkAlphaRuns).
 interface Blitter {
