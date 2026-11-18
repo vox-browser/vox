@@ -748,9 +748,69 @@ fn (mut b LegacyShaderBlitter) blit_h(x int, y int, width int) {
 }
 
 fn (mut b LegacyShaderBlitter) blit_rect(x int, y int, width int, height int) {
-	for row in 0 .. height {
-		b.blit_h(x, y + row, width)
+	if width > 0 && width <= max_untiled_dimension && height > 1 && height <= max_i32
+		&& i64(width) * height >= 2 * scan_pixels_per_worker
+		&& b.blit_disjoint_rect(x, y, width, height) {
+		return
 	}
+	if height <= 0 {
+		return
+	}
+	if b.span.len < width {
+		b.span = []u32{len: width}
+	}
+	b.blit_shader_rows(x, y, width, height, mut b.span)
+}
+
+fn (b &LegacyShaderBlitter) blit_shader_rows(x int, y int, width int, height int, mut span []u32) {
+	mut pixels := unsafe { b.pixels }
+	for row in y .. y + height {
+		b.state.shade_span(x, row, mut span, width)
+		blit_row_s32a_opaque(mut pixels, row * b.row_bytes + x * 4, span, width)
+	}
+}
+
+fn (b &LegacyShaderBlitter) blit_disjoint_rect(x int, y int, width int, height int) bool {
+	if width > b.row_bytes / 4 {
+		return false
+	}
+	offset := y * b.row_bytes + x * 4
+	span := raster_row_span(b.pixels.len, offset, b.row_bytes, width * 4, height) or { return false }
+	target := u64(uint(b.pixels.data)) + u64(offset)
+	if raster_spans_overlap(u64(uint(b.state.pixels.data)), b.state.pixels.len, target, span) {
+		return false
+	}
+	scan := LegacyShaderRectScan{
+		blitter: b
+		x:       x
+		y:       y
+		width:   width
+	}
+	run_raster_scans(&scan, height, width, scan_legacy_shader_rect)
+	return true
+}
+
+struct LegacyShaderRectScan {
+	blitter &LegacyShaderBlitter
+	x       int
+	y       int
+	width   int
+}
+
+fn scan_legacy_shader_rect(context voidptr, first i32, end i32) {
+	scan := unsafe { &LegacyShaderRectScan(context) }
+	// Shade a complete row so the sampler keeps its original chunk boundaries.
+	mut storage := [max_untiled_dimension]u32{}
+	mut span := unsafe {
+		[]u32(array{
+			data:         &storage[0]
+			len:          scan.width
+			cap:          scan.width
+			element_size: sizeof(u32)
+			flags:        .nogrow | .nofree
+		})
+	}
+	scan.blitter.blit_shader_rows(scan.x, scan.y + int(first), scan.width, int(end - first), mut span)
 }
 
 fn (mut b LegacyShaderBlitter) blit_anti_h(x_in int, y int, mut aa []u8, mut runs []i16) {

@@ -7820,3 +7820,89 @@ one-second settle. The audits found 30, 33 and 25 entries and zero
 Canvas elements. The three browser processes and guard exited
 zero. Timings above cover the isolated rectangle path. Site timings
 for the rectangle change await its production build.
+
+### Parallel legacy bitmap shader rectangles
+
+Large N32 source-over image rectangles with disjoint source and
+destination storage use up to four workers at 262,144 pixels. Each
+worker owns a stack-backed scratch row and uses the existing sampler
+and blend routines on complete rows. This preserves chunk origins
+and fixed-point rounding for scaled and repeated images. Small
+rectangles and overlapping storage use the original ordered
+shading and blending with one scratch size check per rectangle.
+The generated C showed no allocation calls in the 33 raster
+functions reachable from the worker callback.
+
+Matched single-C-unit V `-prod -g -prealloc -gc none` harnesses
+measured the clipped blit through return. Both surfaces had padded
+rows. The source included opaque, transparent and partially
+transparent premultiplied pixels. The fixtures used nearest scaling
+at full paint alpha, bilinear scaling at alpha 211, and bilinear
+affine repeat at alpha 211. Buffer resets and SHA-256 ran outside
+the timer. Seven rotating groups ran on Mac17,6 with 18 logical
+CPUs starting at 09:10 local time on 2026-11-18. One-minute load
+was 10.20–10.75. All 21 processes and the guard exited zero.
+Times are medians in microseconds. Warm results take each
+process's median of six calls after the first.
+
+| Size and sampling | First before / forced serial / default | Warm before / forced serial / default |
+| --- | ---: | ---: |
+| 67×43 nearest scale | 7.584 / 7.833 / 7.500 | 8.042 / 7.250 / 6.896 |
+| 67×43 bilinear scale | 15.500 / 13.333 / 13.542 | 14.688 / 12.917 / 12.563 |
+| 67×43 bilinear affine repeat | 23.709 / 21.000 / 20.084 | 23.312 / 20.687 / 19.709 |
+| 511×513 nearest scale | 632.417 / 754.000 / 782.792 | 706.292 / 645.833 / 601.438 |
+| 511×513 bilinear scale | 1106.791 / 1084.417 / 1078.000 | 1098.062 / 1171.833 / 1061.167 |
+| 511×513 bilinear affine repeat | 2030.833 / 2246.875 / 1960.958 | 2103.313 / 2299.751 / 1939.500 |
+| 512×512 nearest scale | 692.125 / 668.292 / 539.917 | 668.917 / 657.042 / 457.667 |
+| 512×512 bilinear scale | 1156.542 / 1152.542 / 720.084 | 1134.062 / 1150.708 / 707.770 |
+| 512×512 bilinear affine repeat | 1913.458 / 1879.583 / 1288.667 | 1930.979 / 1980.792 / 1279.396 |
+| 1031×517 nearest scale | 1254.375 / 1357.625 / 553.583 | 1233.625 / 1333.500 / 492.896 |
+| 1031×517 bilinear scale | 2092.417 / 2204.542 / 802.541 | 2168.126 / 2151.813 / 780.145 |
+| 1031×517 bilinear affine repeat | 4159.125 / 4211.375 / 1437.750 | 4253.605 / 4016.979 / 1409.208 |
+| 2051×1537 nearest scale | 7764.625 / 8409.667 / 2878.750 | 8387.916 / 8769.125 / 2672.166 |
+| 2051×1537 bilinear scale | 14030.458 / 12961.750 / 4428.125 | 14004.750 / 13104.188 / 4413.458 |
+| 2051×1537 bilinear affine repeat | 22688.625 / 24241.917 / 8375.208 | 23800.250 / 23612.292 / 7999.229 |
+| 3840×2160 nearest scale | 21427.917 / 20403.875 / 7456.084 | 21654.709 / 20936.688 / 7269.521 |
+| 3840×2160 bilinear scale | 33720.167 / 35336.083 / 11337.708 | 34250.500 / 34800.063 / 11285.792 |
+| 3840×2160 bilinear affine repeat | 64875.542 / 62727.459 / 20333.459 | 65847.855 / 59959.084 / 20428.312 |
+
+Default scheduling won all seven pairs at and above the cutoff on
+both metrics. Below it, the 511×513 nearest first-call median rose
+from 632.417 to 782.792 µs, and its warm median fell from 706.292 to
+601.438 µs. Individual pairs varied below the cutoff. An earlier
+cohort kept the scratch capacity check inside the serial row loop
+and showed a 511×513 nearest warm regression of 501.771 to 545.730 µs.
+That cohort ran at load 4.84–5.26 and measured 4K warm default times
+of 4.236, 7.164 and 12.668 ms for the three modes. Host load and
+control medians differed between the two cohorts. All destination
+hashes matched in both cohorts. Harness SHA-256 values were
+`4192d16ae370065a0bfe9ef590b3b45f02505e10beab071d407191a2aa1f63ea`
+before and
+`c38a5dc99551a822b2231d495759e6e55ef392a479bd115da4b4da482175b321`
+after.
+
+A separate probe observed two threads at 512×512 and four on
+larger worker batches. It observed zero batches below the cutoff
+or with workers disabled. Two public macOS Canvas source-over
+draws scaled to 2051×1537 with and without smoothing. Both used
+four threads and matched forced serial pixel for pixel
+(`a7aef68e149aa66ce13d303a453a3096da41020d6aa1ade7a5861178bbcdcda8`
+and `e136bd70ab871634186ab3ee9989b13913117a3305cf69fa8ac2c3133e382152`).
+All probe processes and the guard exited zero. Focused macOS and
+arm64 Linux checks covered clipped and padded sources, nearest
+and bilinear sampling, affine repeat, and shared storage.
+Forced serial, ASan/UBSan, ThreadSanitizer, and the pinned CPU
+raster differential suite (count 2000, seed 20261106) passed.
+
+The published single-C-unit executable
+`eb9c83cc14fe48f533dcf68e7dbc3e4c871426aa6aa110d3e65a570d961f22a1`
+and native library
+`ebde1494c5aebaa69ebe6edab9f4e3333020cb4b2949d96fa1fbb35f19d6a202`
+matched archived Hacker News, GitHub and Old Reddit pixels.
+The parsed-source manifest pins the preceding shaded rectangle
+implementation from `23091d029`. Fresh sealed replays used
+JavaScript, private profiles and caches, a 1024×768 CSS viewport,
+2× capture and a one-second settle. The audits found 30, 33 and
+25 entries and zero Canvas elements. All browser and guard exits
+were zero. The timings above cover legacy bitmap shader rectangles.
+Candidate site measurements await the shared production rebuild.
