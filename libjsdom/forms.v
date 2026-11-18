@@ -59,7 +59,7 @@ fn form_enum_value(value string, allowed []string, fallback string) string {
 
 fn (mut host Host) install_forms() ! {
 	mut prototype := host.html_element_prototypes['HTMLFormElement'] or { return error('Missing form prototype') }
-	host.install_control_reflection(mut prototype, 'form', {'acceptCharset':'accept-charset', 'name':'name', 'target':'target', 'rel':'rel'}, {'noValidate':'novalidate'})
+	host.install_html_attribute_reflection(mut prototype, 'form', {'acceptCharset':'accept-charset', 'name':'name', 'target':'target', 'rel':'rel'}, {'noValidate':'novalidate'})
 	for name in ['action', 'method', 'enctype', 'encoding', 'autocomplete'] {
 		host.accessor(mut prototype, name, fn [host, name] (mut vm libjs.VM) !libjs.Value {
 			element := host.form_control_receiver(mut vm, 'form')!
@@ -135,7 +135,7 @@ fn (mut host Host) install_forms() ! {
 	}
 	for tag, interface_name in {'input':'HTMLInputElement', 'button':'HTMLButtonElement'} {
 		mut target := host.html_element_prototypes[interface_name] or { return error('Missing submitter prototype') }
-		host.install_control_reflection(mut target, tag, {'formTarget':'formtarget'}, {'formNoValidate':'formnovalidate'})
+	host.install_html_attribute_reflection(mut target, tag, {'formTarget':'formtarget'}, {'formNoValidate':'formnovalidate'})
 		for name in ['formAction', 'formMethod', 'formEnctype'] {
 			host.accessor(mut target, name, fn [host, tag, name] (mut vm libjs.VM) !libjs.Value {
 				element := host.form_control_receiver(mut vm, tag)!

@@ -10,6 +10,36 @@ fn html_interface_eval(mut vm libjs.VM, source string) !libjs.Value {
 	return vm.run_with_limits(mut script, libjs.ExecutionLimits{max_instructions: 100000}) or { return error(exception_message(err)) }
 }
 
+fn test_meta_element_reflects_native_metadata() {
+	document := html.parse_document('<head><meta name="visitor-payload" content="eyJ2aXNpdCI6dHJ1ZX0="></head>')
+	mut vm := libjs.VM.create()
+	libjs.create_simple_execution_context(mut vm)
+	mut host := Host.create(vm, vm.realm(), document, Hooks{})!
+	defer { host.close() }
+	assert html_interface_eval(mut vm, r'
+		const meta = document.querySelector("meta");
+		const payload = JSON.parse(atob(meta.content));
+		const initial = meta instanceof HTMLMetaElement && meta.name === "visitor-payload" &&
+			meta.media === "" && meta.httpEquiv === "" && payload.visit;
+		meta.name = "updated";
+		meta.httpEquiv = "default-style";
+		meta.media = "screen";
+		meta.scheme = "test";
+		meta.content = btoa(JSON.stringify({visit:false}));
+		const reflected = meta.getAttribute("name") === "updated" &&
+			meta.getAttribute("http-equiv") === "default-style" && meta.getAttribute("media") === "screen" &&
+			meta.getAttribute("scheme") === "test" && !JSON.parse(atob(meta.getAttribute("content"))).visit;
+		meta.content = "\ud800";
+		const units = meta.content === "\ud800";
+		meta.removeAttribute("content");
+		const descriptor = Object.getOwnPropertyDescriptor(HTMLMetaElement.prototype, "content");
+		let branded = false;
+		try { descriptor.get.call(document.createElement("div")); }
+		catch (error) { branded = error instanceof TypeError; }
+		initial && reflected && units && meta.content === "" && branded && descriptor.enumerable && descriptor.configurable;
+	')!.as_bool()
+}
+
 fn test_specialized_html_wrapper_prototypes_match_native_tags_and_media_ancestry() {
 	mut vm := libjs.VM.create()
 	libjs.create_simple_execution_context(mut vm)

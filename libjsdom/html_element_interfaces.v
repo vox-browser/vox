@@ -57,4 +57,12 @@ fn (mut host Host) install_html_element_interfaces() ! {
 		prototype.define_direct_property(libjs.PropertyName.from_symbol(vm.well_known_symbol_to_string_tag()), libjs.Value.from_string(vm.create_string_from_str(name)), libjs.attribute_configurable)
 		global.define_direct_property(libjs.PropertyName.from_str(name), libjs.Value.from_object(constructor), libjs.attribute_writable | libjs.attribute_configurable)
 	}
+	mut meta := host.html_element_prototypes['HTMLMetaElement'] or { return error('Missing HTMLMetaElement prototype') }
+	host.install_html_attribute_reflection(mut meta, 'meta', {
+		'name': 'name'
+		'httpEquiv': 'http-equiv'
+		'content': 'content'
+		'media': 'media'
+		'scheme': 'scheme'
+	}, {})
 }

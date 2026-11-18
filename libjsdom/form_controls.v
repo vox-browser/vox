@@ -29,13 +29,15 @@ fn (mut host Host) finish_form_mutation() {
 	host.changed()
 }
 
-fn (mut host Host) install_control_reflection(mut prototype libjs.Object, tag string, strings map[string]string, booleans map[string]string) {
+fn (mut host Host) install_html_attribute_reflection(mut prototype libjs.Object, tag string, strings map[string]string, booleans map[string]string) {
 	for boolean in [false, true] {
 		members := if boolean { booleans } else { strings }
 		for name, attribute in members {
 			host.accessor(mut prototype, name, fn [host, tag, attribute, boolean] (mut vm libjs.VM) !libjs.Value {
 				element := host.form_control_receiver(mut vm, tag)!
-				return if boolean { libjs.Value.from_bool(element.has_attribute(attribute)) } else { libjs.Value.from_string(vm.create_string_from_str(element.get_attribute_value(attribute))) }
+				if boolean { return libjs.Value.from_bool(element.has_attribute(attribute)) }
+				text := libjs.utf16_string_from_utf8_without_validation(element.get_attribute_value(attribute))
+				return libjs.Value.from_string(vm.create_string(text))
 			}, fn [host, tag, attribute, boolean] (mut vm libjs.VM) !libjs.Value {
 				mut element := unsafe { &dom.Element(host.form_control_receiver(mut vm, tag)!) }
 				persistent := platform.enter_persistent()
@@ -162,7 +164,7 @@ fn (mut host Host) install_form_controls() ! {
 			'option' { {'disabled':'disabled', 'defaultSelected':'selected'} }
 			else { {'disabled':'disabled'} }
 		}
-		host.install_control_reflection(mut prototype, tag, strings, booleans)
+		host.install_html_attribute_reflection(mut prototype, tag, strings, booleans)
 		host.accessor(mut prototype, 'form', fn [host, tag] (mut vm libjs.VM) !libjs.Value {
 			element := host.form_control_receiver(mut vm, tag)!
 			persistent := platform.enter_persistent(); defer { platform.leave_persistent(persistent) }
