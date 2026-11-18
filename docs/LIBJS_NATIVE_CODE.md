@@ -1615,3 +1615,41 @@ Local receipts are under
 `docs/performance/libjs-github-browser-20261116/libjs-full-github-grouped-workflow-20261118/`.
 The packed cache is under
 `~/Library/Caches/Vox/benchmarks/libjs-full-github-grouped-workflow-20261118/grouped`.
+
+### Startup cost with the full grouped cache
+
+Seven alternating pairs compare the separate and packed `-O2` cache
+layouts on publication `7a17002a…15e5`, a single-unit V `-prod` build.
+The first preflight stopped before launch because the bundle had been
+republished. The new preflight verified matching sealed LibJS sources
+and compiler mode, then traced both layouts on one publication. It found
+103 mapped cache libraries totaling 136,855,096 bytes separately and one
+mapped library of 135,021,896 bytes with grouping.
+
+The timed visits disable loader traces and LibJS diagnostic counters.
+Each starts a fresh process and window with private empty HTTP cache and
+profile. OS filesystem and shader caches are retained. Retired instructions
+cover exclusive resource coalition creation through the native document
+PNG encoding marker, including window setup and the one-second settle.
+PNG file writing, the repository audit and teardown follow the endpoint.
+
+| Cache layout | Median retired instructions | Instruction range | Median native cache load at capture |
+| --- | ---: | ---: | ---: |
+| Separate | 72,930,654,754 | 66,962,263,115–74,210,390,842 | 218.36 ms |
+| Grouped | 64,325,501,618 | 58,715,571,532–66,040,146,245 | 135.01 ms |
+
+Grouping reduces the median instruction count by **11.80%** and median
+native cache load time by **38.17%**. Both measures are lower in all seven
+pairs. The highest grouped count is 98.62% of the lowest separate count,
+a conservative difference of **1.38%**. The 18-CPU host's one-minute load
+averages at launch range from 11.22 to 14.79. The measured instruction
+counts cover the full Vox startup and capture workflow on this replay.
+
+All 14 measured visits pass the repository audit, fulfill the same 81
+modules and reproduce the same 159 requests and PNG bytes. Each records
+2,948–2,950 native hits with zero misses or compiler calls. The PNGs match
+the earlier verified pair and differ from the unchanged older reference by
+304 pixels. The guard adopts 32 processes across the eligibility and timed
+visits, records 6,799,081,472 sampled peak RSS bytes and exits zero. Raw
+receipts and the rejected publication check are under the same evidence
+directory in `layout-cohort/` and `cohort-rejected-publication/`.
