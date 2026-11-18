@@ -8,42 +8,97 @@ import painting
 
 const disable_portable_svg_mask = os.getenv('VOX_DISABLE_PORTABLE_SVG_MASK') == '1'
 const portable_svg_mask_diagnostics = os.getenv('VOX_PORTABLE_SVG_MASK_DIAGNOSTICS') == '1'
+const portable_svg_mask_max_opacity_depth = 4
 
 fn portable_svg_content_mask_supported(mask &layout.PaintClip) bool {
 	if mask.is_svg_mask || mask.corner_radii != layout.BoxRadii{} || mask.mask_operations.len > 64
 		|| mask.transform[1] != 0 || mask.transform[2] != 0 {
 		return false
 	}
+	mut depth := 0
 	for index in 0 .. mask.mask_operations.len {
 		operation := &mask.mask_operations[index]
-		if operation.kind != .path || !operation.has_fill || operation.has_stroke
-			|| operation.opacity != 1 || operation.fill_linear_gradient != none
-			|| operation.fill_radial_gradient != none || operation.fill_pattern != none
-			|| operation.path_data.len < layout.compatibility_clip_path_segment_stride {
-			return false
+		match operation.kind {
+			.begin_opacity {
+				if depth == portable_svg_mask_max_opacity_depth
+					|| !(operation.opacity >= 0 && operation.opacity <= 1) { return false }
+				depth++
+			}
+			.end_opacity {
+				if depth == 0 { return false }
+				depth--
+			}
+			.path {
+				if !operation.has_fill || operation.has_stroke || operation.opacity != 1
+					|| operation.fill_linear_gradient != none || operation.fill_radial_gradient != none
+					|| operation.fill_pattern != none
+					|| operation.path_data.len < layout.compatibility_clip_path_segment_stride {
+					return false
+				}
+			}
+			.image { return false }
 		}
 	}
-	return true
+	return depth == 0
+}
+
+struct PortableSVGMaskLayer {
+mut:
+	pixels  []u8
+	opacity f32
 }
 
 fn (mut app BrowserApp) apply_portable_svg_content_mask(mut image PortableSVGGroupImage,
 	mask &layout.PaintClip, region painting.Rect, page_x f32, page_y f32, scale f64) bool {
 	bounds := image.bounds
 	pitch := bounds.width * 4
-	mut coverage := []u8{len: pitch * bounds.height}
+	byte_count := pitch * bounds.height
+	mut layers := [portable_svg_mask_max_opacity_depth + 1]PortableSVGMaskLayer{}
+	layers[0].pixels = []u8{len: byte_count}
+	mut depth := 0
 	for index in 0 .. mask.mask_operations.len {
 		operation := &mask.mask_operations[index]
-		color := app.paint_colors.color(operation.fill_color, operation.fill_opacity)
-		if color.a == 0 { continue }
-		path := cpuraster.canvas_path(operation.path_data, operation.path_even_odd)
-		transform := portable_device_transform(operation.transform, page_x, page_y, scale)
-		argb := if mask.mask_luminance { portable_svg_argb(color) } else { (u32(color.a) << 24) | 0xffffff }
-		if !cpuraster.fill_canvas_path(mut coverage, bounds.width, bounds.height, pitch, 2,
-			path, portable_svg_surface_matrix(transform, bounds), argb, none, 1,
-			.src_over, 0, [], none) {
-			return false
+		match operation.kind {
+			.begin_opacity {
+				depth++
+				layers[depth].opacity = f32(operation.opacity)
+				if layers[depth].pixels.len == 0 {
+					layers[depth].pixels = []u8{len: byte_count}
+				} else {
+					unsafe { vmemset(layers[depth].pixels.data, 0, byte_count) }
+				}
+			}
+			.end_opacity {
+				layer := layers[depth]
+				depth--
+				bitmap := cpuraster.CanvasBitmap{
+					pixels: layer.pixels
+					width: bounds.width
+					height: bounds.height
+					pitch: pitch
+					premultiplied: true
+				}
+				rect := [f32(0), 0, f32(bounds.width), f32(bounds.height)]!
+				// The children blend in isolation. Apply the opacity once while
+				// restoring the complete mask layer, without resampling it.
+				if !cpuraster.draw_canvas_image(mut layers[depth].pixels, bounds.width, bounds.height,
+					pitch, 2, [f32(1), 0, 0, 1, 0, 0]!, bitmap, rect, rect, false,
+					layer.opacity, .src_over, []) { return false }
+			}
+			.path {
+				color := app.paint_colors.color(operation.fill_color, operation.fill_opacity)
+				if color.a == 0 { continue }
+				path := cpuraster.canvas_path(operation.path_data, operation.path_even_odd)
+				transform := portable_device_transform(operation.transform, page_x, page_y, scale)
+				argb := if mask.mask_luminance { portable_svg_argb(color) } else { (u32(color.a) << 24) | 0xffffff }
+				if !cpuraster.fill_canvas_path(mut layers[depth].pixels, bounds.width, bounds.height,
+					pitch, 2, path, portable_svg_surface_matrix(transform, bounds), argb, none, 1,
+					.src_over, 0, [], none) { return false }
+			}
+			.image { return false }
 		}
 	}
+	coverage := layers[0].pixels
 	if mask.mask_luminance {
 		// The mask channels are already premultiplied. Convert the resolved
 		// color with the native mask's integer luminance weights.
