@@ -162,22 +162,32 @@ static void native_scroll_raster_clear_gpu_input(VoxScrollRaster const *cache,
 // Rows form a ring: advancing the origin keeps the overlapping document pixels
 // in place. Only the exposed rows need writing back after replay. Contiguous
 // canvases need at most two copies even when the ring wraps.
-static void native_scroll_raster_copy_row_range(VoxScrollRaster *cache,
-    uint8_t *canvas, size_t pitch, size_t first, size_t count, int store) {
-    size_t row_bytes = cache->width * 4;
+typedef struct {
+    VoxScrollRaster *cache;
+    uint8_t *canvas;
+    size_t pitch, origin, first, count, left, width, chunks;
+    int store;
+} VoxScrollRasterCopyJob;
+
+static void native_scroll_raster_copy_row_range(const VoxScrollRasterCopyJob *job,
+    size_t first, size_t count) {
+    const VoxScrollRaster *cache = job->cache;
+    size_t ring_pitch = cache->width * 4, row_bytes = job->width * 4;
+    size_t left = job->left * 4;
     while (count) {
-        size_t ring_row = (cache->row_origin + first) % cache->height;
+        size_t ring_row = (job->origin + first) % cache->height;
         size_t run = cache->height - ring_row;
         if (run > count) run = count;
-        uint8_t *raster = cache->pixels + ring_row * row_bytes;
-        uint8_t *output = canvas + (cache->top + first) * pitch;
-        if (pitch == row_bytes) {
-            if (store) memcpy(raster, output, run * row_bytes);
+        uint8_t *raster = cache->pixels + ring_row * ring_pitch + left;
+        uint8_t *output = job->canvas + (cache->top + first) * job->pitch + left;
+        if (job->pitch == row_bytes && ring_pitch == row_bytes) {
+            if (job->store) memcpy(raster, output, run * row_bytes);
             else memcpy(output, raster, run * row_bytes);
         } else {
             for (size_t row = 0; row < run; ++row) {
-                if (store) memcpy(raster + row * row_bytes, output + row * pitch, row_bytes);
-                else memcpy(output + row * pitch, raster + row * row_bytes, row_bytes);
+                if (job->store)
+                    memcpy(raster + row * ring_pitch, output + row * job->pitch, row_bytes);
+                else memcpy(output + row * job->pitch, raster + row * ring_pitch, row_bytes);
             }
         }
         first += run;
@@ -185,18 +195,11 @@ static void native_scroll_raster_copy_row_range(VoxScrollRaster *cache,
     }
 }
 
-typedef struct {
-    VoxScrollRaster *cache;
-    uint8_t *canvas;
-    size_t pitch, first, count, chunks;
-    int store;
-} VoxScrollRasterCopyJob;
 static void native_scroll_raster_copy_chunk(void *context, size_t index) {
-    VoxScrollRasterCopyJob *job = (VoxScrollRasterCopyJob *)context;
+    const VoxScrollRasterCopyJob *job = (const VoxScrollRasterCopyJob *)context;
     size_t begin = job->count * index / job->chunks;
     size_t end = job->count * (index + 1) / job->chunks;
-    native_scroll_raster_copy_row_range(job->cache, job->canvas, job->pitch,
-        job->first + begin, end - begin, job->store);
+    native_scroll_raster_copy_row_range(job, job->first + begin, end - begin);
 }
 // Restoring or storing the retained viewport moves tens of megabytes per frame
 // at Retina sizes, more than one core's memory bandwidth delivers in a frame
@@ -212,19 +215,26 @@ static size_t native_scroll_raster_parallel_copy_bytes(void) {
     }
     return (size_t)bytes;
 }
-static void native_scroll_raster_copy_rows(VoxScrollRaster *cache,
-    uint8_t *canvas, size_t pitch, size_t first, size_t count, int store) {
+static void native_scroll_raster_copy_region(VoxScrollRaster *cache,
+    uint8_t *canvas, size_t pitch, size_t origin, size_t first, size_t count,
+    size_t left, size_t width, int store) {
     if (store && cache->tiled)
         for (size_t row = 0; row < count; ++row)
-            cache->tile_dirty[((cache->row_origin + first + row) % cache->height) / VOX_SCROLL_TILE_ROWS] = YES;
+            cache->tile_dirty[((origin + first + row) % cache->height) / VOX_SCROLL_TILE_ROWS] = YES;
     size_t threshold = native_scroll_raster_parallel_copy_bytes();
-    if (threshold && count >= 16 && count * cache->width * 4 >= threshold) {
-        VoxScrollRasterCopyJob job = {cache, canvas, pitch, first, count, 4, store};
+    VoxScrollRasterCopyJob job = {cache, canvas, pitch, origin, first, count, left, width, 4, store};
+    if (threshold && count >= 16 && count * width * 4 >= threshold) {
         dispatch_apply_f(job.chunks, dispatch_get_global_queue(QOS_CLASS_USER_INTERACTIVE, 0),
             &job, native_scroll_raster_copy_chunk);
         return;
     }
-    native_scroll_raster_copy_row_range(cache, canvas, pitch, first, count, store);
+    native_scroll_raster_copy_row_range(&job, first, count);
+}
+
+static void native_scroll_raster_copy_rows(VoxScrollRaster *cache,
+    uint8_t *canvas, size_t pitch, size_t first, size_t count, int store) {
+    native_scroll_raster_copy_region(cache, canvas, pitch, cache->row_origin,
+        first, count, 0, cache->width, store);
 }
 
 // CPU raster only needs the damaged area and a small sampling fringe. The
@@ -234,15 +244,8 @@ static void native_scroll_raster_copy_rect(VoxScrollRaster *cache, uint8_t *canv
     if (right > cache->width) right = cache->width;
     if (bottom > cache->height) bottom = cache->height;
     if (left >= right || top >= bottom) return;
-    for (size_t y = top; y < bottom; ++y) {
-        size_t row = (cache->row_origin + y) % cache->height;
-        uint8_t *raster = cache->pixels + (row * cache->width + left) * 4;
-        uint8_t *output = canvas + (cache->top + y) * pitch + left * 4;
-        if (store) {
-            memcpy(raster, output, (right - left) * 4);
-            cache->tile_dirty[row / VOX_SCROLL_TILE_ROWS] = YES;
-        } else memcpy(output, raster, (right - left) * 4);
-    }
+    native_scroll_raster_copy_region(cache, canvas, pitch, cache->row_origin,
+        top, bottom - top, left, right - left, store);
 }
 static void native_scroll_raster_tile_damage(VoxScrollRaster *cache,
     size_t left, size_t top, size_t right, size_t bottom) {
@@ -525,12 +528,10 @@ static int native_begin_scroll_raster(uint64_t owner, uint64_t revision,
             CGContextFillRect(context, CGRectMake(width, page_bottom, canvas_w - width, height));
         CGContextRestoreGState(context);
     } else {
-        for (size_t y = 0; y < h; ++y) {
-            long source_y = (long)y + rows;
-            if (source_y >= 0 && source_y < (long)h)
-                memcpy(pixels + (top + y) * pitch,
-                    cache->pixels + (size_t)source_y * w * 4, w * 4);
-        }
+        size_t shift = (size_t)labs(rows);
+        if (shift < h)
+            native_scroll_raster_copy_region(cache, pixels, pitch, rows < 0 ? h - shift : shift,
+                rows < 0 ? shift : 0, h - shift, 0, w, 0);
     }
     *scroll_delta = rows / scale;
     CGContextSaveGState(context);
@@ -656,9 +657,8 @@ static void native_end_scroll_raster(void) {
         } else if (cache->damage_optimized) {
             native_scroll_raster_store_rows(cache, pixels, pitch);
         } else {
-            for (size_t y = 0; y < cache->height; ++y)
-                memcpy(cache->pixels + y * cache->width * 4,
-                    pixels + (cache->top + y) * pitch, cache->width * 4);
+            native_scroll_raster_copy_region(cache, pixels, pitch, 0,
+                0, cache->height, 0, cache->width, 1);
         }
         cache->valid = !cache->independent_content;
         cache->tiles_current = 0;

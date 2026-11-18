@@ -6280,3 +6280,79 @@ and zero flatten calls. The GitHub windows matched exactly and the
 Old Reddit windows differed in 5,091 RGBA bytes. These observations
 do not establish a complete-page performance gain. A candidate
 production capture still requires the shared rebuild.
+
+### Parallel copies of scroll damage and linear fallback rows
+
+Damage-rectangle transfers and the linear scroll-cache fallback now use
+the existing row-copy workers. Each job describes the source origin,
+viewport rows and horizontal byte range. The caller marks dirty tiles
+before dispatch. Workers write separate rows with the same packed or
+padded stride as the original copy. The linear fallback still leaves
+the newly exposed strip for painting. Copies below 4 MiB or spanning
+fewer than 16 rows stay serial. The existing
+`VOX_SERIAL_SCROLL_RASTER_COPY=1` override applies to these transfers.
+
+The Apple Clang single-C-unit `-O2 -flto -fobjc-arc` harness compared
+the original loops with the new implementation, both forced serial
+and with default scheduling. It timed each copy through return, with
+fixture setup and comparison outside the span. The full-row control
+already used workers before the change. Each of 147 fresh processes
+verified both complete buffers and the dirty-tile flags. Seven
+rotating groups produced the medians below. Warm values are medians
+of each process's post-first-call median. Browser and timing probes
+ran separately from the timed harness.
+One-minute load was 7.89–7.98 on 18 logical CPUs. All timed process and guard exits were zero.
+
+| Transfer | First call before / serial / default, µs | Warm before / serial / default, µs | Default faster than before |
+| --- | ---: | ---: | ---: |
+| 1024×768 damage restore | 55.375 / 55.833 / 56.042 | 54.291 / 54.834 / 54.542 | 1/7 |
+| 2048×1536 damage restore | 254.166 / 263.167 / 216.917 | 246.980 / 245.812 / 111.959 | 6/7 |
+| 2051×1537 padded damage store | 302.667 / 335.541 / 236.667 | 269.604 / 276.458 / 116.999 | 7/7 |
+| 3840×2160 padded damage restore | 1013.916 / 1009.167 / 515.083 | 909.438 / 871.583 / 297.166 | 7/7 |
+| 2048×1536 linear restore | 185.125 / 189.500 / 180.375 | 180.792 / 182.978 / 112.062 | 6/7 |
+| 3840×2160 padded linear restore | 1011.875 / 1023.292 / 507.333 | 876.375 / 827.812 / 297.188 | 7/7 |
+| 2048×1536 full-row control | 187.250 / 190.625 / 181.958 | 113.103 / 183.625 / 106.062 | 5/7 |
+
+The 1× case remained serial and its first-call median rose 0.667 µs.
+A separate worker probe saw four distinct threads for the large
+rectangular restore, padded store and shifted restore. It saw no
+dispatch for the 1× case or with the serial override.
+The row-union, scroll raster and retained-tile tests passed in their
+normal and sanitizer configurations. Forced serial, forced parallel,
+ARC and non-ARC checks also passed. Focused tests covered a large
+wrapped, padded rectangle and a Retina fallback with a scroll
+reversal.
+
+The published single-C-unit executable
+`5d72f61417d4e5c75c4bd333550ce43baf8a65fcbd00bf89c1e1dafd8f641660`
+still predates this change. Separate fresh document captures matched
+the frozen Hacker News, GitHub and Old Reddit pixel references
+with 30, 33 and 25 audited entries at 1024×768 CSS pixels and 2×.
+Each used sealed replay, a private cold cache and profile, and a
+one-second settle.
+
+The baseline-only wheel diagnostics used sealed replay in fresh
+processes, a 1024×768 CSS-pixel document viewport, JavaScript enabled,
+and the CPU tile compositor explicitly enabled. The interposer
+identified the original rectangle-loop return offsets
+`0x117739c` and `0x11773e4`. Its standalone original-path control
+counted all 698 expected row copies. During title-matched wheel
+input it counted the following native row copies and publications.
+These are observations of the instrumented published build.
+
+| Archive | Completed inputs | Completed native publications | Tile publications | Restored rows / bytes during input | Stored rows / bytes during input |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Hacker News | 24 | 25 | 27 | 810 / 6,056,592 | 0 / 0 |
+| GitHub | 120 | 9 | 0 | 0 / 0 | 0 / 0 |
+| Old Reddit | 24 | 14 | 0 | 0 / 0 | 0 / 0 |
+
+Hacker News and Old Reddit used 24 nominal 60 Hz wheel events of
+delta five, reversed after 12 events and with a two-second settle.
+The first GitHub run completed all 24 inputs but produced only
+three publications in total, too few inside the input window. The
+driver and its enclosing guard returned one. A longer GitHub trial
+used a three-second settle, 120 events and a reversal after 60.
+The successful browsers and the longer GitHub driver and guard all
+exited zero. These row totals do not establish an individual copy's
+parallel eligibility or a page-level speedup. Candidate page
+measurements await the shared production rebuild.
