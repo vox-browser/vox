@@ -33,7 +33,7 @@ fn chromium_root_paint_cull(viewport LayoutRect, contents LayoutRect, scale f64,
 		return none
 	}
 	for value in [viewport.x, viewport.y, viewport.width, viewport.height, contents.x, contents.y,
-		contents.width, contents.height] {
+		contents.width, contents.height]! {
 		if math.is_nan(value) || math.is_inf(value, 0) { return none }
 	}
 	if contents.height <= viewport.height && viewport.y == 0 { return contents }
@@ -252,7 +252,14 @@ fn chromium_collect_paint_metadata(result &DocumentLayoutResult, commands []Pain
 		scratch.paint_metadata << ChromiumPaintMetadata{after, context, state, bounds,
 			chromium_paint_client(box), fixed_container}
 	}
-	scratch.paint_metadata.reverse_in_place()
+	// Use a typed stack temporary. array.reverse_in_place allocates an
+	// element-sized buffer that preallocation keeps until its arena retires.
+	for index in 0 .. scratch.paint_metadata.len / 2 {
+		opposite := scratch.paint_metadata.len - index - 1
+		first := scratch.paint_metadata[index]
+		scratch.paint_metadata[index] = scratch.paint_metadata[opposite]
+		scratch.paint_metadata[opposite] = first
+	}
 	// An unculled plan retains its established scrolling/image policy. Only
 	// fixed-container geometry is added when root culling cannot be projected.
 	if cull == none { return if has_fixed_metadata { .fixed_bounds } else { .none } }
