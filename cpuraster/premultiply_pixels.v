@@ -22,23 +22,16 @@ pub fn premultiply_rgba_copy(source []u8, width int, height int) ?[]u8 {
 // using WebP's truncating conversion. Any incomplete final pixel is copied as-is.
 pub fn premultiply_rgba_copy_truncated(source []u8) []u8 {
 	mut output := []u8{len: source.len}
-	batch_pixels := 1024
-	batch_bytes := batch_pixels * 4
-	batches := source.len / batch_bytes
 	pixel_bytes := source.len / 4 * 4
 	scan := PremultiplyScan{
 		source:    source.data
 		output:    output.data
-		row_bytes: batch_bytes
-		pitch:     batch_bytes
+		row_bytes: packed_rgba_scan_bytes
+		pitch:     packed_rgba_scan_bytes
 		bias:      0
 	}
-	if batches <= max_i32 {
-		run_raster_scans(&scan, batches, batch_pixels, scan_premultiply_rgba_rows)
-		scan.premultiply_span(batches * batch_bytes, pixel_bytes)
-	} else {
-		scan.premultiply_span(0, pixel_bytes)
-	}
+	tail := run_packed_rgba_scans(&scan, pixel_bytes, scan_premultiply_rgba_rows)
+	scan.premultiply_span(tail, pixel_bytes)
 	for offset in pixel_bytes .. source.len {
 		output[offset] = source[offset]
 	}

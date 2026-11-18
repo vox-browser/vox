@@ -5965,3 +5965,54 @@ the WebP paint conversion. Each capture used a fresh process,
 private profile and cache, and one second of settling. Browser and
 guard exits were zero. The component timings measure the WebP paint
 conversion, and the candidate production capture awaits the rebuild.
+
+### Parallel straight-alpha conversion for portable Canvas uploads
+
+Linux and Windows Canvas uploads now use the shared CPU raster workers
+to build the straight RGBA copy from the premultiplied surface. The
+caller waits for every range before uploading it. The shared scheduler
+keeps inputs below 262,144 pixels serial and can use up to four lanes.
+The conversion uses a 256-entry read-only reciprocal table and preserves
+the exact integer division and saturation for every color/alpha pair.
+The source remains available for Canvas readback.
+
+Seven rotating fresh-process groups timed allocation and conversion
+through return for each surface. The three modes were the original
+clone and scalar loop, the new implementation with
+`VOX_SERIAL_CPU_RASTER=1`, and the new implementation with default
+scheduling. Input generation and hashing were outside the timed span.
+Warm values are medians of within-process medians after the first
+conversion. The Linux run used four virtual CPUs in an AArch64 Lima
+guest, V 0.5.2, and single-C-unit Clang `-prod -gc none`. The macOS
+component run used the prepared single-C-unit Clang
+`-prod -prealloc -gc none` compiler on 18 logical CPUs.
+The one-minute load was 0.20–0.33 in the guest and 6.42–6.67 on macOS.
+
+| Surface | Linux first before / serial / default, µs | Linux warm before / serial / default, µs | macOS first before / serial / default, µs | macOS warm before / serial / default, µs |
+| --- | ---: | ---: | ---: | ---: |
+| 300×150 mixed | 372.283 / 88.206 / 87.414 | 369.137 / 86.915 / 86.623 | 93.500 / 59.792 / 58.209 | 91.542 / 57.542 / 57.188 |
+| 512×512 mixed | 2152.114 / 517.071 / 340.575 | 2170.238 / 508.050 / 305.014 | 541.917 / 335.625 / 240.458 | 531.750 / 337.854 / 222.250 |
+| 1027×513 mixed | 4369.183 / 1014.142 / 373.616 | 4360.996 / 1013.016 / 328.762 | 1071.417 / 681.625 / 365.792 | 1068.000 / 687.270 / 292.479 |
+| 1920×1080 mixed | 17091.994 / 4062.066 / 1218.928 | 17251.363 / 3988.068 / 1155.179 | 4258.750 / 2745.417 / 1098.708 | 4211.583 / 2718.375 / 1156.167 |
+| 1920×1080 opaque | 4777.423 / 2191.779 / 955.310 | 4774.757 / 2152.572 / 722.232 | 1279.083 / 1438.250 / 745.875 | 1218.729 / 1434.375 / 683.375 |
+| 1920×1080 transparent | 6598.254 / 868.604 / 364.866 | 6056.995 / 489.300 / 165.559 | 3879.375 / 900.208 / 563.458 | 3919.062 / 911.416 / 553.980 |
+| 3840×2160 mixed | 68299.986 / 15967.145 / 4485.597 | 68174.463 / 15778.318 / 4353.475 | 16817.125 / 11019.041 / 4277.208 | 16976.916 / 10872.812 / 4306.333 |
+
+Default scheduling was faster than the original in all seven pairs for
+every input on both platforms. The forced-serial opaque case on macOS
+was slower than the original. All 147 timed processes per platform and
+both guards exited zero, and each input's full-buffer hash matched
+across modes and platforms.
+
+The Linux probe saw one new worker at 512×512 and three at 1027×513,
+in addition to the calling thread. It observed no workers at 511×513
+or with forced serial scheduling. Linux focused tests passed in both
+modes, including the WebP copy that shares the packed batch scheduler.
+The guest compiler could not bootstrap the V memory guard, so the
+Linux commands used the repository's Python memory guard. The macOS
+production-allocator tests and ASan/UBSan checks passed.
+
+The [archived site cohort](#parallel-premultiplication-of-canvas2d-destinations)
+found no canvas elements on Hacker News, GitHub, or Old Reddit. The
+measurements here cover the portable upload conversion. Full browser
+validation of the new upload path and Windows execution remain unverified.

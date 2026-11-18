@@ -10,6 +10,19 @@ fn C.vox_scan_workers_run(voidptr, i32, i32, fn (voidptr, i32, i32))
 fn C.vox_scan_workers_disabled() bool
 
 const scan_pixels_per_worker = 128 * 1024
+const packed_rgba_scan_pixels = 1024
+const packed_rgba_scan_bytes = packed_rgba_scan_pixels * 4
+
+// Return the byte offset of the final partial batch. The caller handles it
+// after the full batches have joined.
+fn run_packed_rgba_scans(context voidptr, byte_count int, scan fn (voidptr, i32, i32)) int {
+	batches := byte_count / packed_rgba_scan_bytes
+	if batches > max_i32 {
+		return 0
+	}
+	run_raster_scans(context, batches, packed_rgba_scan_pixels, scan)
+	return batches * packed_rgba_scan_bytes
+}
 
 // The callbacks borrow their input and output until every range has finished.
 // They do not allocate or access mutable state outside their own pixel range.
