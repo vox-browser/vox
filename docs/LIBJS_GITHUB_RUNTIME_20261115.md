@@ -9010,3 +9010,55 @@ The guard adopts all 14 browser roots and records 127.366 seconds and
 incomplete cohort. The paired statistics, all attempts, input identities and
 raw command, audit and exit receipts are local under
 `repository-navigation-5204-r102/receipts`.
+
+### Whole-pixel placement of the Notifications rectangle draw
+
+Commit `a4fe3c594` lets `tools/replay_metal_rectangle.m` replay a viewport
+inside a larger target specified by `draw.target_size`. Viewport coordinates
+and scissor bounds remain in target space and are recorded in the receipt.
+Legacy snapshots still use the viewport dimensions as the target extent.
+Both original 1,024×256 selected-draw tiles reproduce their full BGRA hashes.
+Seven malformed or out-of-bounds viewport and target combinations decline
+without publishing. A 1,056×288 sample capture reproduces the uninstrumented
+color output and reports four records per target pixel. Its guard exits zero
+in 0.578 seconds at 65,257,472 sampled bytes. The automated regression suite
+remains held.
+
+The first experiment compares the captured and document instance orders at
+61 integer translations on the original 1,024×256 target. It keeps the
+captured shaders, depth state and indices. The zero-offset controls reproduce
+the full original tiles and differ at the two Notifications corners. The
+button crops differ by two pixels at 39 placements, three at 11, and one at
+10. At `(3, -3)`, the two normalized crops agree, but six other pixels differ
+from the untranslated captured control. The guard exits zero in 6.235 seconds
+at 111,771,648 sampled bytes.
+
+The second experiment compares Metal viewport offsets with equivalent
+whole-pixel instance translations at 61 placements on a 1,056×288 target.
+For both instance orders the two translation methods produce identical
+normalized crops at every position. The two draw orders agree at 13 positions,
+and each of those crops differs from the original captured control at one
+or more pixels. The unchanged shaders can therefore reproduce the placement
+sensitivity without changing their instance transforms. All 244 offset draws,
+both legacy controls and the seven rejection checks complete. The final guard
+exits zero in 14.449 seconds at 93,831,168 sampled bytes. A strict compiler
+attempt fails on the existing `fastMathEnabled` deprecation. The successful
+retry keeps the deprecation as a warning and treats other warnings as errors.
+
+These selected draws use a white backdrop and omit the rest of the page.
+Raster translation alone supplies no parity fix.
+
+A fresh 120-second full raster replay uses the latest completed single-C
+`-prod` browser from `20261118-111945-4ed1a3a8`, executable SHA-256
+`d712e8563c55161e84b9994da2ce30bff71c80811739537959f6f708276bbaa2`.
+PID 92369 matches the original repository, the standalone README, and the
+repository after native toolbar Back. Shutdown records 3,613 native hits,
+1,770,686 native entries, zero misses or compiler calls, and an uninitialized
+JavaScriptCore. The browser, replay and guard exit zero in 121.950 guard
+seconds at 12,661,260,288 sampled peak bytes. Its decoded RGBA matches the
+previous published full raster capture. The unchanged Brave reference still
+differs at the same two Notifications corners, with maximum channel error
+ten. The exact comparison exits 1.
+
+The Metal inputs and raw guards, source and executable identities, and
+ordered browser receipts are local under `repository-navigation-5204-r103/receipts`.
