@@ -610,10 +610,17 @@ pub fn (mut event_loop EventLoop) process() {
 	if mut timer := event_loop.system_event_loop_timer_ { timer.stop() }
 	event_loop.task_generation_++
 	event_loop.scheduled = false
-	reached_step_1_tasks := event_loop.reached_step_1_tasks.clone()
-	event_loop.reached_step_1_tasks.clear()
-	for steps in reached_step_1_tasks {
-		steps.execute()
+	if event_loop.reached_step_1_tasks.len > 0 {
+		// Callbacks can register work for the next turn, so detach the pending
+		// pointers before calling out. Their execution uses the caller's arena.
+		snapshot := platform.begin_thread_scratch('event loop step-one snapshot')
+		reached_step_1_tasks := event_loop.reached_step_1_tasks.clone()
+		snapshot.leave()
+		event_loop.reached_step_1_tasks.clear()
+		for steps in reached_step_1_tasks {
+			steps.execute()
+		}
+		snapshot.finish()
 	}
 
 	if event_loop.task_queue_.has_runnable_tasks() {
@@ -726,7 +733,7 @@ pub fn (mut event_loop EventLoop) rendering_opportunity(frame_time f64, watchdog
 		return false
 	}
 	event_loop.rendering_task_queued_ = true
-	task := Task.create(.rendering, none, fn [mut event_loop] () {
+	task := Task.create_owned(.rendering, none, fn [mut event_loop] () {
 		event_loop.update_the_rendering()
 	})
 	mut queue := event_loop.task_queue_
