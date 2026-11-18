@@ -2194,6 +2194,99 @@ the timing differences. Every measured interval exceeded 16.67 ms.
 The build, screenshot and comparison guard exits were zero and sampled
 process-tree RSS peaked at 7,466,958,848, 491,520,000 and 635,076,608 bytes.
 
+### Skipping the input channel swap for transparent SVG mask paths
+
+The GG path callback now swaps incoming red and blue channels only when
+it uploads a backdrop. A transparent draw clears the GG surface and
+replaces the staging pixels at readback. The output swap continues to
+publish RGBA to Quartz.
+
+An initial experiment used a BGRA staging bitmap and removed both swaps.
+It produced identical pixels and increased warm staging and compositing
+time on all three sizes below. The final change keeps RGBA staging and
+removes the input pass on transparent draws.
+
+The Apple Clang `-O1` harnesses used the three staging sizes from the
+rectangle fixture above. Each measurement included staging allocation,
+the serial red/blue loops, a CPU copy simulating readback, image creation,
+the Quartz draw and the destination flush. Source generation, destination
+allocation and filling, and output hashing were outside the timed interval.
+Each size and configuration used seven alternating pairs of fresh processes,
+with 101 samples per process. All outputs for each size matched the old
+composite hash. Warm times use each process's median after its first sample.
+
+| Bitmap | Experimental warm RGBA / BGRA (µs) | Final first before / after (µs) | Final warm before / after (µs) | Final faster pairs, first / warm |
+| --- | ---: | ---: | ---: | ---: |
+| 58 × 130 | 82.812 / 111.271 | 845.708 / 846.875 | 62.125 / 60.146 | 4/7 / 5/7 |
+| 94 × 182 | 179.646 / 231.728 | 908.792 / 949.500 | 137.646 / 130.083 | 3/7 / 7/7 |
+| 280 × 188 | 505.708 / 547.938 | 1191.125 / 1114.625 | 353.812 / 333.854 | 5/7 / 6/7 |
+
+The two harness SHA-256 values were
+`f6ebec6ee406bb29b534713d75fda83771b1bcff73e405e0e19d0f8991406f92` and
+`3b965939a4d5e9ce65a76ada86215ffd61371ab60cad1f707b77fe8c34083ce0`.
+One-minute host load was 15.68 for the BGRA experiment and 9.10 for the
+final harness on 18 logical CPUs.
+
+The matched browsers used one V `-prod` generated C unit and single-unit
+Clang `-O1 -fno-lto`. The RGBA control restored the two channel swaps in
+the sealed code. The paired candidate added the backdrop guard to that
+same sealed unit. The control executable SHA-256 was
+`1c1b37a3a10aa48c0192ac5e22b69733fb5de8b369a6a63e4271250be2b1089a`
+and the candidate executable SHA-256 was
+`fc4dc6c4f5409a824ad0a4a4fe6c8b0d4d16a9c5e9e2f06987682bde4e77793a`.
+Disassembly confirmed a branch around the input swap for a zero backdrop
+and an unconditional output swap. A separate `-prod` C generation from the
+canonical V source confirmed the callback shape. Its generated C SHA-256
+was `d21b5afb66d1efa712eff24dec250a723f8f4a31f34db71b4418c3c26210d1b0`.
+The native mask layer and exhaustive conversion checks also passed.
+
+All 158 macOS SVG mask captures passed on the candidate. Four paired 2×
+captures matched every decoded pixel. They covered the default pressure
+and overlap fixtures, pressure with Quartz forced, and a Quartz luminance
+mask with translucent red, blue, reflected and transformed paths. The
+colored fixture's SHA-256 was
+`9829156b10f124098b59a589cf1a348c5bc24e3fcbeab72abd36ffeef07da657`.
+Both colored captures logged five successful GG path draws. The default
+captures agreed on 385 pressure and 106 overlap mask decisions.
+
+The wheel trials used the same local pressure and overlap fixtures as above,
+fresh processes and browser caches, JavaScript disabled, and a 1024 × 600
+viewport at 2×. Host caches were retained. After a one-second title-matched
+settle, the driver sent 120 four-pixel inputs at a requested 60 Hz, reversing
+after input 60. Throughput counts scroll-changing native frame installations
+after outer view paint over the first-to-last input window.
+
+A separate pressure diagnostic (PID 12277) logged 620 cache capacity
+denials, 544 hits including 88 crops, and 16 new shared rasters between the
+start marker and the final publication. The overlap diagnostic (PID 12378)
+logged zero denials, 621 hits including 155 crops, and six new shared
+rasters. The timed trials disabled mask diagnostics.
+
+| PID | Fixture | Build | Scroll fps | Median / p95 / max (ms) | Input Hz | Inputs / changes | First / last scroll gap (ms) | Load |
+| --- | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| 12495 | Pressure | Before | 16.17 | 57.833 / 61.887 / 65.180 | 58.30 | 120 / 33 | 124.521 / 48.960 | 8.07 |
+| 12596 | Pressure | After | 16.12 | 58.638 / 62.906 / 63.957 | 58.15 | 120 / 33 | 123.770 / 33.187 | 7.82 |
+| 12696 | Pressure | After | 15.49 | 58.176 / 66.456 / 117.650 | 59.46 | 120 / 31 | 121.754 / 49.166 | 7.44 |
+| 12814 | Pressure | Before | 15.78 | 60.158 / 65.103 / 65.464 | 58.68 | 120 / 32 | 125.818 / 32.691 | 7.22 |
+| 12986 | Pressure | Before | 15.68 | 58.294 / 65.154 / 123.535 | 58.31 | 120 / 32 | 121.245 / 18.398 | 7.28 |
+| 13092 | Pressure | After | 15.59 | 59.198 / 66.239 / 120.105 | 59.86 | 120 / 31 | 122.111 / 32.685 | 6.94 |
+| 13190 | Overlap | Before | 29.76 | 32.972 / 38.867 / 41.172 | 56.22 | 120 / 63 | 73.249 / 0.331 | 7.10 |
+| 13355 | Overlap | After | 31.39 | 30.822 / 37.181 / 38.093 | 58.36 | 120 / 64 | 70.175 / 0.120 | 7.17 |
+| 13502 | Overlap | After | 31.35 | 31.231 / 36.049 / 38.984 | 55.67 | 120 / 67 | 70.792 / 0.095 | 7.16 |
+| 13656 | Overlap | Before | 29.44 | 32.161 / 37.610 / 39.680 | 54.74 | 120 / 64 | 70.800 / 33.733 | 7.71 |
+| 13845 | Overlap | Before | 27.64 | 33.561 / 44.765 / 72.432 | 55.76 | 120 / 59 | 71.539 / 0.134 | 7.81 |
+| 14058 | Overlap | After | 26.86 | 36.495 / 41.575 / 43.860 | 54.18 | 120 / 59 | 87.482 / 0.124 | 7.67 |
+
+The timed cohort ran 07:32:08–07:33:12 UTC on November 18, 2026. Load is
+the one-minute average at launch on the 18-CPU host. Peak scroll positions
+were 485–510 CSS pixels. Pressure throughput decreased by less than 2% in
+each pair, and its median fell from 15.78 to 15.59 fps. The overlap median
+rose from 29.44 to 31.35 fps, with one pair slower. Every scroll interval
+exceeded 16.67 ms. All browsers and final validation guards exited zero.
+Sampled process-tree RSS peaked at 7,541,555,200 bytes for the matched
+candidate build, 7,737,901,056 for canonical C generation, 487,751,680 for
+the screenshot suite, and 670,285,824 for the scroll comparison.
+
 ## Original migration plan
 
 Vox currently renders through two Skia builds: LibWeb's Skia (CPU raster,
