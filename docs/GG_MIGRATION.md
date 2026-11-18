@@ -272,6 +272,53 @@ The compilation video still requires a Linux media path. macOS production-mode
 and Windows D3D11 V type checks passed. The next shared macOS build is queued.
 Running the portable replay on macOS remains open.
 
+## SVG alpha and luminance masks
+
+The portable GG player applies SVG content masks to eligible groups of
+solid fills, including in nested SVG images. It resolves the solid mask
+operations in paint order and uses the resulting alpha or premultiplied
+luminance as coverage for a single group texture. The mask region bounds
+both rasters, and fractional region edges contribute coverage once. This
+pass takes up to 64 solid mask fills in an axis-aligned rectangular region.
+Complex mask resources retain their existing replay.
+
+The [mask fixture](../Tests/Browser/Native/svg-content-masks.html) checks
+the coverage from black in alpha and luminance modes, even-odd holes,
+partial opacity, overlapping color fills, and the mask region. It also
+checks a fractional translated mask in an embedded SVG. Thirteen sampled
+pixels matched the native macOS capture from executable
+`9c165f7ab3dc15fd6fcc7a0d89336aefde735c3a9f983c15248727de89918301` in fresh
+PID 40042. The translated edge sample was `(127, 127, 255)` on Linux at
+1× backing scale and `(191, 191, 255)` in the logical-pixel macOS capture.
+
+The optimized Linux ARM64 single-unit `-O1` executable SHA-256 was
+`3c969cb83555495aca50dfc7c520a1a0481881fa6b83e7b277a151342f0445c1`.
+The fixture SHA-256 was
+`6dc176903d66f637659b97484bc34a89ee0357c828c182ff9fefca52b8f3f966`.
+A separate diagnostic recorded 40 applications of each mask mode during
+scroll replay after the first callback. The cohort alternated the default
+with `VOX_DISABLE_PORTABLE_SVG_MASK=1`. Each software OpenGL trial ran a
+fresh process with a fresh profile and cache, one second of settle, and 80
+synthetic 42-pixel scroll callbacks at a requested 1024 × 600 viewport.
+Timings end at callback replay completion.
+
+| Trial | Replay | Median (ms) | p95 (ms) | Max (ms) |
+| --- | --- | ---: | ---: | ---: |
+| 1 | Per path | 15.577 | 16.736 | 19.508 |
+| 2 | Masked group | 3.141 | 5.659 | 5.759 |
+| 3 | Per path | 14.572 | 15.073 | 15.780 |
+| 4 | Masked group | 3.005 | 5.497 | 5.892 |
+
+Scroll positions and retained command counts matched across all four trials.
+The guest one-minute load averages were 0.73, 0.73, 0.91 and 1.88. The
+guarded build, Linux browser suite and benchmark exited zero with sampled
+process-tree peaks of 10,053,210,112, 869,707,776 and 473,800,704 bytes.
+A disabled-path capture reproduced the filled alpha hole and visible black
+luminance region. The optimized Linux browser also rendered the header,
+version gradient, icons and compilation card on live vlang.io. The macOS
+production-mode and Windows D3D11 type checks passed. The shared runtime
+build and macOS portable renderer cutover remain open.
+
 ## Original migration plan
 
 Vox currently renders through two Skia builds: LibWeb's Skia (CPU raster,
