@@ -1936,6 +1936,75 @@ exited zero. The candidate build, control build, screenshot suite and scroll
 job peaked at 7,369,539,584, 7,105,593,344, 488,194,048 and 641,040,384 bytes
 of sampled process-tree RSS.
 
+### Reusing the SVG mask cache replacement slot
+
+The macOS raster cache normally keeps its selected replacement slot across
+admission checks. A store or a hit that can change the selection invalidates
+it. Admission still reads the slot's current age on each call. The existing
+capacity, frame protection and tie-breaking order apply.
+
+The native test compared 4,096 mixed queries with the original scan. It also
+checked empty slots, tied timestamps, clock wrap and protection across frame
+wrap. The layer and pixel conversion tests passed. A separate Clang `-O1`
+microbenchmark made eight million consecutive denied queries per arm with a
+full cache and alternating current and preceding frame ages. Across seven
+alternating pairs, median query time was 5.409 ns with the scan and 0.759 ns
+with the cached slot. The microbenchmark isolates the admission call.
+
+The first private build was discarded for comparison after a concurrent
+native header edit. The paired builds reused one generated C unit from V
+`-prod`, compiled with Clang `-O1 -fno-lto`. The control used the native
+bridge from `267914943`. The preprocessed bytes outside the native bridge
+and new cache header matched before compilation.
+
+The generated C SHA-256 was
+`f049b80cc97480230e37567b1d59e2b1c5849473c4ca3b3a1db1d0f998741554`.
+The paired executable SHA-256 values were
+`18b9a6e480b2d4c8e290fde05303bd2f7a8e4239899ab989618ecc002bbe7b68` for the
+control and `cec9e1601df71910d767ec0427a363fe82d98b181e6ebd77bc6aa1ee82042fc4`
+for the candidate. All 158 macOS mask captures passed on the candidate.
+At a 132 CSS-pixel scroll offset the paired 2× captures matched pixel for
+pixel. The browser logs agreed on all 385 pressure and 106 overlap mask
+decisions across those captures.
+
+The wheel trials used the same 75-mask pressure and overlapping solid-mask
+fixtures as the preceding section. The driver used fresh processes, profiles
+and browser caches, local files, JavaScript disabled and a 1024 × 600
+viewport at 2×. Host caches were retained. After a one-second title-matched
+settle, it sent 120 four-pixel inputs at a requested 60 Hz, reversing after
+60 inputs. Throughput counts scroll-changing native frame installations
+after outer view paint over the first-to-last input window.
+
+From `SCROLL_START` through the final publication, a separate diagnostic
+pressure launch (PID 62552) logged 592 capacity denials, 512 hits including
+78 crops, and 16 new rasters. Overlap (PID 62644) logged zero denials, 648
+hits including 159 crops, and six new rasters. The timed launches ran with
+the mask diagnostics disabled.
+
+| PID | Fixture | Build | Scroll fps | Median / p95 / max (ms) | Input Hz | Inputs / changes | First / last scroll gap (ms) | Load |
+| --- | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| 62749 | Pressure | Before | 16.72 | 56.403 / 61.950 / 65.487 | 58.50 | 120 / 34 | 119.612 / 33.171 | 4.83 |
+| 62816 | Pressure | After | 16.62 | 57.194 / 63.832 / 66.152 | 59.93 | 120 / 33 | 121.435 / 16.994 | 4.79 |
+| 62869 | Pressure | After | 16.90 | 56.570 / 62.890 / 64.675 | 59.14 | 120 / 34 | 123.592 / 16.985 | 4.81 |
+| 62924 | Pressure | Before | 16.06 | 56.609 / 63.814 / 116.701 | 57.90 | 120 / 33 | 119.491 / 50.865 | 4.98 |
+| 63002 | Pressure | Before | 16.10 | 57.514 / 63.827 / 116.412 | 58.06 | 120 / 33 | 123.824 / 17.589 | 4.90 |
+| 63085 | Pressure | After | 14.61 | 61.836 / 71.366 / 131.861 | 57.95 | 120 / 30 | 126.876 / 48.997 | 4.99 |
+| 63256 | Overlap | Before | 33.34 | 29.011 / 34.082 / 36.429 | 58.35 | 120 / 68 | 67.225 / 16.497 | 4.99 |
+| 63318 | Overlap | After | 34.46 | 27.872 / 32.792 / 35.942 | 57.76 | 120 / 71 | 63.979 / 16.601 | 4.99 |
+| 63387 | Overlap | After | 34.21 | 27.796 / 33.043 / 51.223 | 58.15 | 120 / 70 | 69.507 / 16.412 | 4.91 |
+| 63447 | Overlap | Before | 34.04 | 28.532 / 33.890 / 34.806 | 58.71 | 120 / 69 | 63.866 / 16.841 | 4.76 |
+| 63555 | Overlap | Before | 34.49 | 27.830 / 33.745 / 35.437 | 59.48 | 120 / 69 | 67.101 / 0.255 | 4.70 |
+| 63611 | Overlap | After | 33.59 | 28.303 / 33.610 / 53.167 | 56.29 | 120 / 71 | 66.539 / 16.377 | 4.48 |
+
+The cohort ran 06:33:36–06:34:39 UTC on November 18, 2026. Load is the
+one-minute average at launch on the 18-CPU host. Peak scroll positions
+were 484.5–510 CSS pixels. Throughput varied across pairs for both fixtures.
+All measured intervals exceeded 16.67 ms. The three pressure gaps above
+100 ms and the two overlap gaps above 50 ms straddled the input reversal.
+All browsers and guards in the sealed cohort exited zero. The sealed build,
+screenshot and comparison jobs peaked at 6,721,585,152, 459,997,184 and
+638,713,856 bytes of sampled process-tree RSS.
+
 ## Original migration plan
 
 Vox currently renders through two Skia builds: LibWeb's Skia (CPU raster,
