@@ -3,7 +3,7 @@ module buildtools
 import os
 
 fn test_staging_an_already_staged_compiler_preserves_single_closure_hooks() ! {
-	root := temporary(os.temp_dir(), 'vox-nested-runtime-')!
+	root := temporary(os.vtmp_dir(), 'vox-nested-runtime-')!
 	defer { remove(root) or {} }
 	vroot := join(root, 'compiler')
 	write_changed(join(vroot, 'vlib/builtin/allocation.c.v'), 'module builtin\npub fn v_realloc(b &u8, n int) &u8 {\n new_ptr = malloc(n)\n\t\t\tC.memcpy(new_ptr, b, n)\n return new_ptr\n}\n')!
@@ -18,7 +18,10 @@ fn test_staging_an_already_staged_compiler_preserves_single_closure_hooks() ! {
 	for file in ['closure.c.v', 'closure_nix.c.v', 'closure_prealloc_metadata.c.v'] {
 		assert read(join(first, 'builtin/closure', file))! == read(join(second, 'builtin/closure', file))!
 	}
-	assert prepare_prealloc(join(first, 'compiler/v'), join(root, 'cache'))! == second
+	staged := join(first, 'compiler/v')
+	assert prepare_prealloc(staged, join(root, 'cache'))! == second
+	os.write_file(compiler, '#!/bin/sh\nexit 1\n')!
+	assert read(staged)! == '#!/bin/sh\ndirname "$0"\n'
 }
 
 fn test_closure_staging_rejects_partial_or_duplicated_hooks() ! {
@@ -34,7 +37,7 @@ fn test_closure_staging_rejects_partial_or_duplicated_hooks() ! {
 }
 
 fn test_staged_runtime_can_be_regenerated_after_the_cache_directory_moves() ! {
-	root := temporary(os.temp_dir(), 'vox-runtime-move-')!
+	root := temporary(os.vtmp_dir(), 'vox-runtime-move-')!
 	defer { remove(root) or {} }
 	vroot := join(root, 'compiler')
 	write_changed(join(vroot, 'vlib/builtin/allocation.c.v'), 'module builtin\npub fn v_realloc(b &u8, n int) &u8 {\n new_ptr = malloc(n)\n\t\t\tC.memcpy(new_ptr, b, n)\n return new_ptr\n}\n')!

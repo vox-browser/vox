@@ -138,7 +138,7 @@ fn capture_declarations(source string, header string) string {
 
 fn prepare_prealloc(selected string, output_root string) !string {
 	resolved := real(os.find_abs_path_of_executable(selected) or { selected })
-	tmp := temporary(os.temp_dir(), 'vox-prealloc-root-')!
+	tmp := temporary(os.vtmp_dir(), 'vox-prealloc-root-')!
 	defer { remove(tmp) or {} }
 	vlib := compiler_vlib(resolved, tmp)!
 	builtin := join(vlib, 'builtin')
@@ -236,8 +236,17 @@ fn prepare_prealloc(selected string, output_root string) !string {
 				link_to(join(compiler_root, name), join(os.dir(vlib), name))!
 			}
 		}
-		os.cp(resolved, join(compiler_root, 'v'))!
-		os.chmod(join(compiler_root, 'v'), 0o755)!
+		staged_compiler := join(compiler_root, 'v')
+		$if macos {
+			// Retain an independent inode while sharing unchanged APFS blocks.
+			checked(['/bin/cp', '-c', resolved, staged_compiler])!
+		} $else {
+			os.cp(resolved, staged_compiler)!
+		}
+		if digest(staged_compiler)! != compiler_hash {
+			return error('V compiler changed while staging: ${resolved}')
+		}
+		os.chmod(staged_compiler, 0o755)!
 		write_json(join(staged, 'manifest.json'), json.Any(identity))!
 		os.rename(staged, root)!
 	}
