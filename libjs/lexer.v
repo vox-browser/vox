@@ -149,138 +149,138 @@ fn is_identifier_continue_cp(cp u32) bool {
 fn keyword_from_str(s []u16) ?TokenType {
 	match s.len {
 		2 {
-			if utf16_equals(s, utf16('do')) {
+			if utf16_equals_ascii(s, 'do') {
 				return .do_kw
 			}
-			if utf16_equals(s, utf16('if')) {
+			if utf16_equals_ascii(s, 'if') {
 				return .if_kw
 			}
-			if utf16_equals(s, utf16('in')) {
+			if utf16_equals_ascii(s, 'in') {
 				return .in_kw
 			}
 		}
 		3 {
-			if utf16_equals(s, utf16('for')) {
+			if utf16_equals_ascii(s, 'for') {
 				return .for_kw
 			}
-			if utf16_equals(s, utf16('let')) {
+			if utf16_equals_ascii(s, 'let') {
 				return .let_kw
 			}
-			if utf16_equals(s, utf16('new')) {
+			if utf16_equals_ascii(s, 'new') {
 				return .new_kw
 			}
-			if utf16_equals(s, utf16('try')) {
+			if utf16_equals_ascii(s, 'try') {
 				return .try_kw
 			}
-			if utf16_equals(s, utf16('var')) {
+			if utf16_equals_ascii(s, 'var') {
 				return .var_kw
 			}
 		}
 		4 {
-			if utf16_equals(s, utf16('case')) {
+			if utf16_equals_ascii(s, 'case') {
 				return .case_kw
 			}
-			if utf16_equals(s, utf16('else')) {
+			if utf16_equals_ascii(s, 'else') {
 				return .else_kw
 			}
-			if utf16_equals(s, utf16('enum')) {
+			if utf16_equals_ascii(s, 'enum') {
 				return .enum_kw
 			}
-			if utf16_equals(s, utf16('null')) {
+			if utf16_equals_ascii(s, 'null') {
 				return .null_literal
 			}
-			if utf16_equals(s, utf16('this')) {
+			if utf16_equals_ascii(s, 'this') {
 				return .this_kw
 			}
-			if utf16_equals(s, utf16('true')) {
+			if utf16_equals_ascii(s, 'true') {
 				return .bool_literal
 			}
-			if utf16_equals(s, utf16('void')) {
+			if utf16_equals_ascii(s, 'void') {
 				return .void_kw
 			}
-			if utf16_equals(s, utf16('with')) {
+			if utf16_equals_ascii(s, 'with') {
 				return .with_kw
 			}
 		}
 		5 {
-			if utf16_equals(s, utf16('async')) {
+			if utf16_equals_ascii(s, 'async') {
 				return .async
 			}
-			if utf16_equals(s, utf16('await')) {
+			if utf16_equals_ascii(s, 'await') {
 				return .await_kw
 			}
-			if utf16_equals(s, utf16('break')) {
+			if utf16_equals_ascii(s, 'break') {
 				return .break_kw
 			}
-			if utf16_equals(s, utf16('catch')) {
+			if utf16_equals_ascii(s, 'catch') {
 				return .catch_kw
 			}
-			if utf16_equals(s, utf16('class')) {
+			if utf16_equals_ascii(s, 'class') {
 				return .class_kw
 			}
-			if utf16_equals(s, utf16('const')) {
+			if utf16_equals_ascii(s, 'const') {
 				return .const_kw
 			}
-			if utf16_equals(s, utf16('false')) {
+			if utf16_equals_ascii(s, 'false') {
 				return .bool_literal
 			}
-			if utf16_equals(s, utf16('super')) {
+			if utf16_equals_ascii(s, 'super') {
 				return .super_kw
 			}
-			if utf16_equals(s, utf16('throw')) {
+			if utf16_equals_ascii(s, 'throw') {
 				return .throw_kw
 			}
-			if utf16_equals(s, utf16('while')) {
+			if utf16_equals_ascii(s, 'while') {
 				return .while_kw
 			}
-			if utf16_equals(s, utf16('yield')) {
+			if utf16_equals_ascii(s, 'yield') {
 				return .yield_kw
 			}
 		}
 		6 {
-			if utf16_equals(s, utf16('delete')) {
+			if utf16_equals_ascii(s, 'delete') {
 				return .delete_kw
 			}
-			if utf16_equals(s, utf16('export')) {
+			if utf16_equals_ascii(s, 'export') {
 				return .export_kw
 			}
-			if utf16_equals(s, utf16('import')) {
+			if utf16_equals_ascii(s, 'import') {
 				return .import_kw
 			}
-			if utf16_equals(s, utf16('return')) {
+			if utf16_equals_ascii(s, 'return') {
 				return .return_kw
 			}
-			if utf16_equals(s, utf16('switch')) {
+			if utf16_equals_ascii(s, 'switch') {
 				return .switch_kw
 			}
-			if utf16_equals(s, utf16('typeof')) {
+			if utf16_equals_ascii(s, 'typeof') {
 				return .typeof_kw
 			}
 		}
 		7 {
-			if utf16_equals(s, utf16('default')) {
+			if utf16_equals_ascii(s, 'default') {
 				return .default_kw
 			}
-			if utf16_equals(s, utf16('extends')) {
+			if utf16_equals_ascii(s, 'extends') {
 				return .extends_kw
 			}
-			if utf16_equals(s, utf16('finally')) {
+			if utf16_equals_ascii(s, 'finally') {
 				return .finally_kw
 			}
 		}
 		8 {
-			if utf16_equals(s, utf16('continue')) {
+			if utf16_equals_ascii(s, 'continue') {
 				return .continue_kw
 			}
-			if utf16_equals(s, utf16('debugger')) {
+			if utf16_equals_ascii(s, 'debugger') {
 				return .debugger
 			}
-			if utf16_equals(s, utf16('function')) {
+			if utf16_equals_ascii(s, 'function') {
 				return .function_kw
 			}
 		}
 		10 {
-			if utf16_equals(s, utf16('instanceof')) {
+			if utf16_equals_ascii(s, 'instanceof') {
 				return .instanceof_kw
 			}
 		}
@@ -1031,8 +1031,7 @@ fn (mut l Lexer) next() Token {
 				}
 				identifier_value = decoded
 			} else {
-				source_slice := l.source[value_start - 1..l.position - 1].clone()
-				if kw := keyword_from_str(source_slice) {
+				if kw := keyword_from_str(l.source[value_start - 1..l.position - 1]) {
 					token_type = kw
 				} else {
 					token_type = .identifier
