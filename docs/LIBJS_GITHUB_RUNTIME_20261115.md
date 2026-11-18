@@ -7735,3 +7735,52 @@ on disk.
 Raw audits, content and pixel verdicts, compiler commands, mapping
 diagnostics and guard receipts remain local under
 `repository-navigation-5204-r86`.
+
+### Back and Forward event target
+
+A private observation fixture adds a small script to the archived HTML.
+The original author scripts, full file lists and both router response
+variants keep their hashes. Both browsers receive the JSON
+representations of README and the returned repository. The Brave run
+preserves the exact returned content and records a trusted traversal
+callback whose event target is Window. The Vox trace records Document
+as the target of the same Window callback. These instrumented launches
+are separate from the compiler-disabled acceptance observation.
+
+Commit `fe078fec5` fires the trusted history traversal event on Window
+without the legacy target override. Guarded standalone control and
+candidate probes exercise actual same-document Back and Forward through
+the HTML navigable and the LibJS DOM binding. Both restore the URL and
+the same object returned by `history.state`. The candidate reports Window
+as both target and current target, preserves the trusted non-bubbling
+`PopStateEvent`, and leaves the Document capture listener untouched.
+The production type check exits zero in 51.452773667 seconds at
+7,106,166,784 sampled peak bytes. The focused regression source covers
+the target and current target. Automated suites remain on hold.
+[HTML history traversal](https://html.spec.whatwg.org/multipage/browsing-the-web.html#update-document-for-history-step-application)
+[DOM event dispatch](https://dom.spec.whatwg.org/#concept-event-dispatch)
+
+The progress insertion stack identifies GitHub's delayed Turbo
+progress callback. The document-level observer records the registration
+of the frame-render listener and observes no frame-render delivery
+during the warmed replay. The interpreted observation also leaves
+the progress strip visible. Three Vox diagnostic attempts cross the
+guard after native Back. The insertion-only attempt completes in
+53.812231292 seconds at 12,547,260,416 sampled bytes. The browser
+captures the restored document and the trace controller exits one
+because the added script introduces diagnostic messages and cold code.
+The actual cause of the incomplete progress lifecycle remains open,
+and production has yet to exercise the popstate correction.
+
+The unchanged Brave Back PNG carries Display P3 primaries with an
+sRGB transfer function. The standard Vox document crop carries sRGB.
+An offline ColorSync conversion of a copy of the Vox crop into the
+Brave profile leaves 110,482 differing pixels, compared with 118,210
+in the original raw comparison. Both input hashes verify before and
+after. Color profile alignment alone leaves substantial pixel
+differences. The original pixel verdict and capture policy stay in
+force.
+
+The event traces, browser and guard receipts, focused checks and
+color profile diagnosis remain local under
+`repository-navigation-5204-r87`.
