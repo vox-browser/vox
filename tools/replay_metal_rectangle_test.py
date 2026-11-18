@@ -97,6 +97,31 @@ class SnapshotInputTests(unittest.TestCase):
             self.assertIn('Snapshot input hash mismatch', result.stderr)
             self.assertFalse(output.exists())
 
+    def test_viewport_must_fit_the_replay_target(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            names = ['vertices.bin', 'instances.bin', 'indices.bin', 'uniforms.bin',
+                     'vertex.metal', 'fragment.metal', 'vertex-options.bin', 'fragment-options.bin']
+            for name in names:
+                (root / name).touch()
+            files = dict.fromkeys(names, {'size': 0, 'sha256': hashlib.sha256(b'').hexdigest()})
+            depth = [225, 1, 1, 0, 0, 7, 0, 0, 0, 0xffffffff, 0xffffffff,
+                     0, 7, 0, 0, 0, 0xffffffff, 0xffffffff]
+            draw = {'offset': 0, 'depth': {'raw_hex': b''.join(
+                value.to_bytes(8, 'little') for value in depth).hex(), 'compare': 1,
+                'write_enabled': True}, 'viewport': [1, 0, 4, 4, 0, 1],
+                'scissor': [0, 0, 4, 4]}
+            output = root / 'pixels.bgra'
+            for extra, error in [({}, 'Viewport exceeds replay target'),
+                                 ({'target_size': [4, 4]}, 'Viewport exceeds replay target'),
+                                 ({'target_size': [5.5, 4]}, 'Unsupported replay target dimensions')]:
+                with self.subTest(target=extra):
+                    (root / 'draw.json').write_text(json.dumps({'files': files, 'draw': {**draw, **extra}}))
+                    result = self.invoke(root, output)
+                    self.assertNotEqual(result.returncode, 0)
+                    self.assertIn(error, result.stderr)
+                    self.assertFalse(output.exists())
+
     def test_existing_receipt_is_never_replaced(self):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)

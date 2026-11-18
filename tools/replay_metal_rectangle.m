@@ -3,7 +3,8 @@
 // Compile under the memory guard with clang -framework Foundation -framework Metal.
 // Supports unclipped Dawn vertex-pulled rectangles (28/108-byte strides,
 // float4 paint slots, inline slot 30), BGRA8 four-sample targets and the observed
-// v225 relaxed-math options/default stencil. The viewport defines target size.
+// v225 relaxed-math options/default stencil. An optional draw.target_size
+// supplies the target dimensions when the viewport does not span the target.
 // OUTPUT is premultiplied BGRA8, top row first; --background is premultiplied RGBA8.
 // --samples-output adds an unblended diagnostic attachment for the retained
 // Dawn solid-rectangle fragment ABI. Each pixel has four float4 sample records:
@@ -222,14 +223,30 @@ int main(int argc, char **argv) { @autoreleasepool { @try {
     NSUInteger draw_offset = integer(draw, @"offset");
     validate_depth(draw[@"depth"]);
     NSArray *viewport = draw[@"viewport"], *scissor = draw[@"scissor"];
-    require(viewport.count == 6 && scissor.count == 4, @"Invalid viewport or scissor");
-    double width_value = [viewport[2] doubleValue], height_value = [viewport[3] doubleValue];
-    require([viewport[0] doubleValue] == 0 && [viewport[1] doubleValue] == 0
-        && isfinite(width_value) && isfinite(height_value)
-        && width_value >= 1 && height_value >= 1 && width_value <= 8192 && height_value <= 8192
-        && floor(width_value) == width_value && floor(height_value) == height_value
-        && width_value * height_value <= 16 * 1024 * 1024, @"Unsupported viewport dimensions");
-    NSUInteger width = width_value, height = height_value;
+    require([viewport isKindOfClass:[NSArray class]] && viewport.count == 6
+        && [scissor isKindOfClass:[NSArray class]] && scissor.count == 4,
+        @"Invalid viewport or scissor");
+    for (id component in viewport)
+        require([component isKindOfClass:[NSNumber class]] && isfinite([component doubleValue]),
+            @"Invalid viewport coordinate");
+    double vx = [viewport[0] doubleValue], vy = [viewport[1] doubleValue];
+    double vw = [viewport[2] doubleValue], vh = [viewport[3] doubleValue];
+    require(vx >= 0 && vy >= 0 && vw >= 1 && vh >= 1 && floor(vw) == vw && floor(vh) == vh,
+        @"Unsupported viewport dimensions");
+    double target_width = vw, target_height = vh;
+    NSArray *target_size = draw[@"target_size"];
+    if (target_size) {
+        require([target_size isKindOfClass:[NSArray class]] && target_size.count == 2
+            && [target_size[0] isKindOfClass:[NSNumber class]] && [target_size[1] isKindOfClass:[NSNumber class]],
+            @"Invalid replay target size");
+        target_width = [target_size[0] doubleValue];
+        target_height = [target_size[1] doubleValue];
+    }
+    require(target_width >= 1 && target_height >= 1 && target_width <= 8192 && target_height <= 8192
+        && floor(target_width) == target_width && floor(target_height) == target_height
+        && target_width * target_height <= 16 * 1024 * 1024, @"Unsupported replay target dimensions");
+    require(vw <= target_width - vx && vh <= target_height - vy, @"Viewport exceeds replay target");
+    NSUInteger width = target_width, height = target_height;
     require(!sample_output || width * height <= 1024 * 1024,
         @"Sample diagnostics exceed 1,048,576 pixels");
     double near = [viewport[4] doubleValue], far = [viewport[5] doubleValue];
@@ -362,7 +379,7 @@ int main(int argc, char **argv) { @autoreleasepool { @try {
     id<MTLRenderCommandEncoder> encoder = [command renderCommandEncoderWithDescriptor:pass];
     require(encoder != nil, @"Cannot create render encoder");
     [encoder setRenderPipelineState:render]; [encoder setDepthStencilState:depth_state];
-    [encoder setViewport:(MTLViewport){0, 0, width, height, near, far}];
+    [encoder setViewport:(MTLViewport){vx, vy, vw, vh, near, far}];
     NSUInteger sx = [scissor[0] unsignedIntegerValue], sy = [scissor[1] unsignedIntegerValue];
     NSUInteger sw = [scissor[2] unsignedIntegerValue], sh = [scissor[3] unsignedIntegerValue];
     require(sx < width && sy < height && sw <= width - sx && sh <= height - sy && sw && sh,
@@ -407,6 +424,7 @@ int main(int argc, char **argv) { @autoreleasepool { @try {
     NSMutableDictionary *receipt = [@{@"width":@(width), @"height":@(height), @"draw_offset":@(draw_offset),
         @"split_instances":@(split), @"instances":@(instances), @"output_sha256":sha256(pixels),
         @"input_sha256":pins, @"background_rgba":@(background), @"gpu_status":@(command.status),
+        @"viewport":viewport, @"scissor":scissor,
         @"scope":@"Selected captured rectangle draw; uniform backdrop, relaxed math, default stencil; omits other passes and publication"} mutableCopy];
     if (sample_output) {
         NSData *values = [NSData dataWithBytes:diagnostic_buffer.contents length:diagnostic_buffer.length];
