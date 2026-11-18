@@ -4184,3 +4184,33 @@ produced the same destination SHA-256
 (`01deabb3dae311e16d18730a6e7f69d7fd5eae346b594f71d604782546a23e8b`).
 All processes and guards exited zero. These timings cover the CPU conversion
 call and its dispatch.
+
+### Parallel WebGL bitmap export
+
+Large bitmap conversions for WebGL texture uploads divide destination rows
+among up to four CPU participants. Workers share the prepared source and
+column mapping and join before the texture upload. The same code handles
+flipped and scaled exports, including the platform's nearest sampler, packed
+formats and Display P3 conversion. Small conversions and the raw RGB888
+export use the caller.
+
+Seven alternating fresh-process pairs per format used matching macOS
+single-C `-prod` builds with preallocation on an Apple M5 Max. A 2047×1153
+source with padded rows was flipped and scaled to 1920×1080. The timed span
+includes output allocation, setup, sampling, conversion and worker completion.
+It excludes source generation, output hashing and the GPU upload. One-minute
+host load ranged from 7.38 to 7.42 on 18 logical CPUs.
+
+| Output | Before median | After median | Faster pairs |
+| --- | ---: | ---: | ---: |
+| RGB565 | 5.019 ms | 3.086 ms | 7/7 |
+| Premultiplied sRGB RGBA8888 | 5.809 ms | 2.906 ms | 7/7 |
+| Straight RGBA8888 from Display P3 | 150.697 ms | 49.269 ms | 7/7 |
+
+Every output matched its baseline byte for byte and all timed processes and
+guards exited zero. A separate probe observed four distinct CPU threads in
+each conversion. Focused macOS and Linux comparisons covered sampling across
+tile boundaries, padded input, flipping and color conversion. ThreadSanitizer
+passed on macOS. The pinned Skia suite matched 448 exhaustive and 2,016
+random bitmap exports. The native WebGL test read back all pixels of a
+1031×521 flipped upload successfully in serial and parallel modes.
