@@ -1,5 +1,68 @@
 # Migrating from Skia to vlib/gg
 
+## Reusing SVG textures at viewport edges
+
+`VOX_GG_SVG=1 VOX_GG_SVG_VIEWPORT_REUSE=1` lets the OpenGL SVG renderer
+sample part of a cached texture as a fill crosses the viewport edge. The
+geometry, paint, linear transform and subpixel phase must agree, and the
+texture must cover every visible texel. The draw keeps its clipped
+destination rectangle and uses nearest sampling. Exact matches take
+priority. A covering match charges the full texture to the one-megapixel
+frame budget. New or expanding areas use normal rasterization when the
+cache lacks the needed texels.
+
+The Linux window test warms the SVG textures, scrolls through the top
+edge, then moves a fixed SVG across the left edge. Captures compare the
+reused and rerasterized pixels, including a rotated translucent path.
+The scrolling fixture has 42 SVG rows at 84 CSS pixels each, with
+60-pixel-high even-odd fills. Its SHA-256 is
+`2185a43add049d63b05bf254cc747d06ceae7fab15b788a1f502cde0a59e25e9`.
+
+An initial build computed texture coordinates for every draw. Its
+executable SHA-256 was
+`0e1930fdbea1f79e91ea5f79ed65c15692145a4871b4a8e41b09ca357a293bb8`.
+The first two matched pairs and four repeat pairs gave these results.
+Values within each cell are rerasterized / reused, in milliseconds.
+
+| Cohort | Pair | Median callback | p95 | Maximum |
+| --- | ---: | ---: | ---: | ---: |
+| Initial | 1 | 5.384 / 5.349 | 7.020 / 9.006 | 8.770 / 9.172 |
+| Initial | 2 | 3.116 / 5.243 | 4.892 / 8.076 | 5.735 / 8.716 |
+| Repeat | 1 | 3.370 / 3.295 | 5.723 / 5.245 | 5.882 / 5.392 |
+| Repeat | 2 | 3.324 / 3.479 | 3.537 / 5.875 | 3.946 / 6.214 |
+| Repeat | 3 | 3.394 / 5.452 | 5.592 / 6.856 | 6.004 / 9.008 |
+| Repeat | 4 | 5.175 / 5.095 | 8.690 / 8.656 | 9.277 / 9.450 |
+
+The timings varied substantially across both modes. Viewport reuse has
+its own opt-in and computes adjusted texture coordinates on crop hits.
+
+The final executable SHA-256 was
+`9a4a688dc58ee18496490acb7492d0f8c510e41f7ba929d00925aba0491061f7`.
+Both Linux executables used V `5a39a4d` and single-unit Clang `-O0`.
+After a shared-volume link ran out of space, the Linux link and test
+executables used the guest filesystem. The final window tests matched
+the portable reference and GL 4.2 fallback, and the top- and left-edge
+captures matched the rerasterized reference. The row fixture also matched
+at scroll offset 126.
+
+The measured runs used Mesa software OpenGL under Xvfb, fresh
+processes with private profiles and caches, an 800 × 712 window, one
+second of settling, and 32 synthetic 42-pixel scroll steps. OS caches
+remained available. Scroll traces, command counts and input hashes
+matched. Separate diagnostics measured 232 draws over the final 31
+moving frames. Rasterizations fell from 46 to 31, with 15 crop hits.
+The benchmark and 3 GiB guards exited zero. Final one-minute guest load
+ranged from 1.44 to 1.69 on four virtual CPUs.
+
+| Final pair | Median callback | p95 | Maximum |
+| ---: | ---: | ---: | ---: |
+| 1 | 5.419 / 4.979 | 7.704 / 8.225 | 9.828 / 8.507 |
+| 2 | 3.030 / 5.501 | 6.250 / 6.528 | 7.574 / 8.543 |
+
+The final pairs still gave mixed callback timing, so the separate opt-in
+remains. The Windows OpenGL source check passed with V `eeee53a`. Available
+scratch space limited Windows validation to that check.
+
 ## Reusing SVG path bounds
 
 The OpenGL SVG texture cache stores the local bounds computed by the
