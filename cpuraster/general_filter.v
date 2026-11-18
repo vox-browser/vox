@@ -418,20 +418,42 @@ fn filter_matrix_pixel(filter &ColorFilter, input [4]f32) [4]u8 {
 }
 
 fn general_alpha_table(image BlurImage, table [256]u8) BlurImage {
-	mut out := BlurImage{[]u8{len: image.pixels.len}, image.width, image.height}
-	for i := 0; i + 3 < image.pixels.len; i += 4 {
-		a := image.pixels[i + 3]
-		if a == 0 {
+	output := []u8{len: image.pixels.len}
+	scan := FilterOpacityScan{
+		source:    image.pixels
+		output:    output
+		row_bytes: image.width * 4
+		table:     table
+	}
+	run_raster_scans(&scan, image.height, image.width, scan_filter_opacity)
+	return BlurImage{output, image.width, image.height}
+}
+
+struct FilterOpacityScan {
+	source    []u8
+	output    []u8
+	row_bytes int
+	table     [256]u8
+}
+
+fn scan_filter_opacity(context voidptr, first i32, end i32) {
+	scan := unsafe { &FilterOpacityScan(context) }
+	mut output := unsafe { scan.output }
+	start := int(first) * scan.row_bytes
+	stop := int(end) * scan.row_bytes
+	for i := start; i < stop; i += 4 {
+		a := scan.source[i + 3]
+		na := scan.table[a]
+		// Transparent input and output both leave the initialized zero pixel.
+		if a == 0 || na == 0 {
 			continue
 		}
-		na := table[a]
 		for k in 0 .. 3 {
-			unpremul := f32(image.pixels[i + k]) * 255 / f32(a)
-			out.pixels[i + k] = general_byte(unpremul * f32(na) * inv_255)
+			unpremul := f32(scan.source[i + k]) * 255 / f32(a)
+			output[i + k] = general_byte(unpremul * f32(na) * inv_255)
 		}
-		out.pixels[i + 3] = na
+		output[i + 3] = na
 	}
-	return out
 }
 
 // SRGBToLinearGamma and LinearToSRGBGamma on unpremultiplied channels.

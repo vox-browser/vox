@@ -4554,3 +4554,31 @@ tests passed, covering all 65,280 nonzero-alpha lookup combinations,
 both gamma directions and unchanged source buffers. The general SVG
 filter tests, macOS ThreadSanitizer and pinned CPU raster differential
 suite passed.
+
+### Parallel CPU opacity filtering
+
+The Canvas2D CPU fallback for Chromium-style `opacity()` distributes
+large premultiplied layers across up to four raster workers. Each worker
+uses the same 8-bit alpha table and writes separate rows. Transparent
+source pixels and pixels reduced to zero alpha leave the output clear.
+Other pixels use the existing premultiplication and rounding.
+
+Seven alternating fresh-process groups used matching macOS single-C
+`-prod` builds with preallocation on an Apple M5 Max. The timed span was
+a Canvas2D image draw with an opacity filter, including the layer draw,
+opacity pass and final composition. Source generation and output hashing
+were outside the span. One-minute load was 7.65 on 18 logical CPUs.
+
+| Canvas size and opacity | Before median | New serial median | New default median | Default faster than before |
+| --- | ---: | ---: | ---: | ---: |
+| 1920×1080, 48% | 27.830 ms | 26.566 ms | 20.565 ms | 7/7 |
+| 1051×527, 25% | 7.310 ms | 7.134 ms | 5.802 ms | 7/7 |
+| 176×128, 48% | 0.302 ms | 0.292 ms | 0.289 ms | 6/7 |
+
+All 63 draws matched their baseline pixels byte for byte and all timed
+processes and the memory guard exited zero. Focused macOS and Linux tests
+covered the byte alpha table, transparent input and output, serial equivalence
+and unchanged input. The general filter tests, ThreadSanitizer and pinned
+CPU raster differential suite passed.
+A separate probe observed four distinct threads on each large workload.
+The small workload stayed serial.
