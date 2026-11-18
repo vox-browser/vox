@@ -136,7 +136,11 @@ The macOS production-mode V check and Windows D3D11 V check also passed.
 The final Linux executable also loaded live vlang.io in a fresh 1280 × 800
 X11 window. The header, gradient version text, icons, and compilation card
 rendered. The compilation video needs the Linux media implementation.
-The full shared compositor and macOS runtime validation of this commit remain open.
+The published macOS single-unit `-prod` executable
+`9c165f7ab3dc15fd6fcc7a0d89336aefde735c3a9f983c15248727de89918301` carried
+the verified `eaca5f62c` opacity replay source. Its native renderer passed
+the opacity color, overlap, hole and fill-opacity pixel samples in fresh PID
+96263. Portable macOS runtime validation and the full compositor remain open.
 
 ## Solid SVG clip groups
 
@@ -204,6 +208,69 @@ compilation card in the optimized Linux build. The Linux media path still
 needs support for its compilation video. The macOS production-mode and
 Windows D3D11 V type checks also passed. The shared macOS runtime build and
 full compositor cutover remain open.
+
+The next published macOS bundle, pinned above, passed the native clip samples
+in PID 96347. Its two precise-wheel trials used the same clip fixture and
+schedule as the baseline, with an unchanged AVIF library. This bundle includes
+the earlier opacity replay and intervening changes. The portable clip path
+had yet to reach the production bundle.
+
+| PID | Scroll fps | Median interval (ms) | p95 (ms) | Max (ms) | Over 16.67 ms | Input / scroll changes | First / last gap (ms) |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| 99887 | 38.51 | 24.590 | 29.010 | 29.721 | 100% | 120 / 81 | 53.475 / 20.027 |
+| 104 | 39.26 | 24.372 | 28.805 | 52.494 | 100% | 120 / 84 | 52.767 / 18.454 |
+
+Both browser exits and the guard exit were zero. These two runs began at
+one-minute host load averages of 7.38 and 7.67. The earlier cohort used a
+different build and host load, so the two sets describe observed native
+cadence. The fixture remains below 60 scroll-changing installations per second.
+
+## Nested SVG image replay
+
+Replaced SVG images and CSS SVG backgrounds now use the portable clip and
+opacity passes for eligible solid-fill groups. The player projects one
+validated scope at a time and intersects its raster bounds with the embedding
+viewport. Ordinary leaves replay individually and intersect their own
+scissor with the same viewport when they carry a clip. Group replay applies
+to fully opaque embeddings. Translucent embeddings use ordinary replay.
+
+The [nested fixture](../Tests/Browser/Native/nested-svg-groups.html) checks
+clip interiors, group overlap, pixels outside each embedding rectangle, and
+a translated and scaled image. It loads a separate SVG resource through both
+an image element and a CSS background. The published native macOS capture
+in PID 96408 matched the previous bundle exactly over all 614,400 document
+pixels. Linux and macOS agreed at the sampled solid pixels and differed by
+one level in red and green at the two sampled 50% blue overlap pixels.
+
+The Linux ARM64 optimized single-unit `-O1` executable was
+`2111fdcd31e701b8c90884550bd1634d8d185fde66dfe837d0f0612daa518233`.
+The HTML and SVG input SHA-256 values were
+`ae9a94a4a14acbf5f27378a6730541cf16b37cf2f8ca4f2e9b5a2b4f763c384f` and
+`e447d42766910bc2ceef13fa92a672e9ccff8e9e6392372da16a7e56d84e645e`.
+A separate diagnostic observed both passes after scrolling began. The cohort
+alternated the default with `VOX_DISABLE_PORTABLE_SVG_CLIP=1` and
+`VOX_DISABLE_PORTABLE_SVG_OPACITY=1` on the same executable. Each software
+OpenGL trial used a fresh profile, cache and process, a one-second settle,
+and 80 synthetic 42-pixel scroll callbacks at a requested 1024 × 600 viewport.
+Timings end at callback replay completion.
+
+| Trial | Replay | Median (ms) | p95 (ms) | Max (ms) |
+| --- | --- | ---: | ---: | ---: |
+| 1 | Per path | 37.160 | 40.162 | 41.285 |
+| 2 | Grouped | 2.159 | 4.598 | 5.247 |
+| 3 | Per path | 36.474 | 38.963 | 41.417 |
+| 4 | Grouped | 2.166 | 4.609 | 4.832 |
+
+Scroll positions and retained command counts matched across the cohort.
+The four-vCPU guest's starting one-minute load averages were 0.91, 0.84,
+1.65 and 1.55. The guarded build, suite and benchmark exited zero with
+process-tree peaks of 10,023,243,776, 865,431,552 and 474,693,632 bytes.
+The disabled-path capture reproduced leaking clip corners and incorrect
+overlap alpha on both embeddings. Live vlang.io rendered its header,
+version gradient, icons and compilation card in the optimized Linux build.
+The compilation video still requires a Linux media path. macOS production-mode
+and Windows D3D11 V type checks passed. The next shared macOS build is queued.
+Running the portable replay on macOS remains open.
 
 ## Original migration plan
 
