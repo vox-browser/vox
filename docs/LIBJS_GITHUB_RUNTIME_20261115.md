@@ -9695,4 +9695,48 @@ The 3 GiB guard exits zero in 8.578 seconds at 2,431,205,376 sampled
 peak bytes. Builds and checks use private RAM-backed scratch. The raw
 timings, source manifests and verification receipts are local in
 `docs/benchmark-results/github-literal-decoding-5204-r118.tar.gz`.
-The published bundle predates the change.
+The published bundle at the time of those trials predated the change.
+
+### Published parser changes versus Brave
+
+Managed build `20261118-155315-2b212dc4` publishes single-unit V `-prod`
+executable `18438d546aa3ff0433adebbf05979010b3de983e4eb20900ce9948853fa1777e`.
+Its sealed sources include the statement lists, scope-map reuse, literal
+decoding and packaged adblock changes. The build guard exits zero in
+1,117.143 seconds at 8,037,236,736 sampled peak bytes. Headless smoke also
+exits zero. The generated main C file is 194,134,832 bytes and the new
+executable is 50,057,472 bytes. The previous production receipt records
+347,061,543 and 80,422,864 bytes respectively.
+
+The archived `vlang/v` visit retains the earlier replay, audit, reference
+and one-second settle. Each run uses a fresh process, profile and HTTP
+cache, with OS caches retained. Among the pinned inputs, the Vox
+executable and adblock worker digests change. The 17 native cache ABI
+source hashes match. A separate traced visit maps the recovered grouped
+cache library, completes all 81 modules, executes 480,419 native entries
+and records 2,948 hits with zero misses or compiler calls.
+
+| Browser | Observed median launch to PNG | Observed PNG time range | Observed median launch through exit |
+| --- | ---: | ---: | ---: |
+| Vox with grouped compiled LibJS | 9.420 s | 9.331–11.079 s | 9.619 s |
+| Brave with V8 15.7.112.43 | 2.644 s | 2.586–2.752 s | 2.976 s |
+
+All seven alternating pairs produce PNGs, pass the repository content
+audits and exit zero. Every Vox visit reuses compiled code with
+2,948–2,949 hits and zero misses or compiler calls. The seven Vox PNGs
+are pixel-identical and each differs from the shared reference by two
+pixels. The first Brave PNG differs from the reference by 11 pixels.
+The following six match that reference exactly and differ from the
+first Brave PNG by the same 11 pixels. The unchanged repeatability
+check therefore rejects the cohort. All seven timings per browser are
+retained as observations.
+
+The measurements include startup, hydration and rendering. The
+timed launches report one-minute host loads of 87.58–105.66 on 18 CPUs.
+The guard adopts all 15 browser roots, records 301.835 seconds at
+6,149,603,328 sampled peak bytes and exits one. The prior complete
+[comparison against Brave](LIBJS_NATIVE_CODE.md#recovered-group-against-brave)
+records 9.186 seconds for Vox and 2.434 seconds for Brave under lower
+host load. Raw attempts, exact counters, images, executable identities
+and guard reports are local under
+`docs/benchmark-results/github-compiled-v8-5204-r119/receipts`.
