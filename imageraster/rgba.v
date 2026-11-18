@@ -37,7 +37,9 @@ pub fn mip_chain(source Image) ?[]Image {
 		return none
 	}
 	mut levels := [source]
-	for levels.last().width > 1 || levels.last().height > 1 { levels << halve(levels.last()) }
+	for levels.last().width > 1 || levels.last().height > 1 {
+		levels << halve(levels.last())?
+	}
 	return levels
 }
 
@@ -60,47 +62,21 @@ pub fn decode_rgba(source []u8, width int, height int, decoded_width int, decode
 	scale := f32(math.sqrt(f64(sx * sy)))
 	mut divisor := 1
 	for f32(divisor * 2) * scale <= 1 && divisor < 4096 {
-		image = halve(image)
+		image = halve(image)?
 		divisor *= 2
 	}
 	return resize(image, decoded_width, decoded_height)
 }
 
-fn halve(source Image) Image {
-	width, height := math.max(1, source.width / 2), math.max(1, source.height / 2)
-	wx := if source.width == 1 {
-		[1]
-	} else if source.width % 2 != 0 {
-		[1, 2, 1]
-	} else {
-		[1, 1]
-	}
-	wy := if source.height == 1 {
-		[1]
-	} else if source.height % 2 != 0 {
-		[1, 2, 1]
-	} else {
-		[1, 1]
-	}
-	mut denominator := 0
-	for x in wx {
-		for y in wy { denominator += x * y }
-	}
-	mut output := []u8{len: width * height * 4}
-	for y in 0 .. height {
-		for x in 0 .. width {
-			for c in 0 .. 4 {
-				mut value := 0
-				for dy, yy in wy {
-					for dx, xx in wx {
-						value += int(source.pixels[((2 * y + dy) * source.width + 2 * x + dx) * 4 + c]) * xx * yy
-					}
-				}
-				output[(y * width + x) * 4 + c] = u8(value / denominator)
-			}
-		}
-	}
-	return Image{ width: width, height: height, pixels: output }
+fn halve(source Image) ?Image {
+	level := cpuraster.build_image_mipmap(cpuraster.CanvasBitmap{
+		pixels:        source.pixels
+		width:         source.width
+		height:        source.height
+		pitch:         source.width * 4
+		premultiplied: true
+	}, 1)?
+	return Image{width: level.width, height: level.height, pixels: level.pixels}
 }
 
 fn resize(source Image, width int, height int) Image {

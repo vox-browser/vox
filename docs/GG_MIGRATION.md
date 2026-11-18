@@ -4039,3 +4039,35 @@ passes the focused tests, and a native macOS probe observes four distinct
 threads covering all rows at the caller's rounding mode.
 The pinned raster differential suite passes with its default count and seed,
 including 10,000 pixel-exact blurred Canvas2D shadow draws.
+
+### Parallel CPU image scaling
+
+Large RGBA, R8 and Gray8 bilinear resizes and RGBA mipmap levels use up to
+four raster participants. Each participant reads the shared source and writes
+its own output rows. Canvas2D and the browser's premultiplied image uploads use
+the same mipmap kernel, including its odd-dimension weighting. Each level
+finishes before the next level or upload starts. `VOX_SERIAL_CPU_RASTER=1`
+selects the serial path.
+
+Seven alternating fresh-process pairs used a single optimized macOS C build
+with preallocation. The synthetic images were 2047×1795 and the destination
+was 1003×857. The RGBA span includes premultiplication, mip reduction and
+the final resize. The Gray8 span covers the resampler. Input generation and
+output hashing sit outside both spans. Host one-minute load was 7.35 on
+18 logical CPUs.
+
+| CPU image operation | Serial median | Parallel median | Faster pairs |
+| --- | ---: | ---: | ---: |
+| Prepare a premultiplied RGBA image | 39.969 ms | 15.327 ms | 7/7 |
+| Resize a Gray8 plane | 3.822 ms | 1.385 ms | 7/7 |
+
+All output hashes matched and all timed processes exited zero. The focused
+large-image tests pass on macOS with preallocation and Linux with Boehm,
+including uneven scan ranges, mixed scaling, padded mipmap input and source
+ownership. ThreadSanitizer passed on macOS. The pinned Skia differential
+check matched all 2,500 mipmap cases. The macOS PNG and odd WebP upload
+fixtures passed with staged GG and the production allocator, and with the
+ordinary `-gc none` allocator. The initial unstaged run lacked the GG upload
+APIs. Staging GG alone let it compile, but the unstaged preallocator crashed
+inside the PNG decoder before resizing. Staging the production allocator
+resolved that failure.

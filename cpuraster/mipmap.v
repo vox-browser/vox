@@ -2,6 +2,37 @@ module cpuraster
 
 fn C.log2f(x f32) f32
 
+struct MipmapScan {
+	source CanvasBitmap
+	target []u8
+	width  int
+	x_taps int
+	y_taps int
+}
+
+fn scan_mipmap_rows(context voidptr, first i32, end i32) {
+	scan := unsafe { &MipmapScan(context) }
+	mut target := unsafe { scan.target }
+	shift := scan.x_taps + scan.y_taps - 2
+	for y in int(first) .. int(end) {
+		for x in 0 .. scan.width {
+			offset := (y * scan.width + x) * 4
+			for c in 0 .. 4 {
+				mut sum := 0
+				for j in 0 .. scan.y_taps {
+					wy := if scan.y_taps == 3 && j == 1 { 2 } else { 1 }
+					for i in 0 .. scan.x_taps {
+						wx := if scan.x_taps == 3 && i == 1 { 2 } else { 1 }
+						source_offset := (y * 2 + j) * scan.source.pitch + (x * 2 + i) * 4 + c
+						sum += int(scan.source.pixels[source_offset]) * wx * wy
+					}
+				}
+				target[offset + c] = u8(sum >> shift)
+			}
+		}
+	}
+}
+
 // Raster mipmaps halve each dimension, using a box for even dimensions and
 // the overlapping [1,2,1] triangle for odd ones. Components stay in their
 // stored color space and alpha representation.
@@ -12,21 +43,17 @@ pub fn build_image_mipmap(bitmap CanvasBitmap, level int) ?CanvasBitmap {
 	if level > count { return none }
 	mut image := bitmap
 	for _ in 0 .. level {
-		w, h := math_max_int(1, image.width/2), math_max_int(1, image.height/2)
-		x_taps := if image.width == 1 { 1 } else if image.width & 1 != 0 { 3 } else { 2 }
-		y_taps := if image.height == 1 { 1 } else if image.height & 1 != 0 { 3 } else { 2 }
-		shift := x_taps-1 + y_taps-1
-		mut pixels := []u8{len: w*h*4}
-		for y in 0 .. h { for x in 0 .. w { for c in 0 .. 4 {
-			mut sum := 0
-			for j in 0 .. y_taps { for i in 0 .. x_taps {
-				wx := if x_taps == 3 && i == 1 { 2 } else { 1 }
-				wy := if y_taps == 3 && j == 1 { 2 } else { 1 }
-				sum += int(image.pixels[(y*2+j)*image.pitch+(x*2+i)*4+c])*wx*wy
-			} }
-			pixels[(y*w+x)*4+c] = u8(sum >> shift)
-		} } }
-		image = CanvasBitmap{...bitmap, pixels: pixels, width: w, height: h, pitch: w*4}
+		w, h := math_max_int(1, image.width / 2), math_max_int(1, image.height / 2)
+		pixels := []u8{len: w * h * 4}
+		scan := MipmapScan{
+			source: image
+			target: pixels
+			width:  w
+			x_taps: if image.width == 1 { 1 } else if image.width & 1 != 0 { 3 } else { 2 }
+			y_taps: if image.height == 1 { 1 } else if image.height & 1 != 0 { 3 } else { 2 }
+		}
+		run_raster_scans(&scan, h, w, scan_mipmap_rows)
+		image = CanvasBitmap{...bitmap, pixels: pixels, width: w, height: h, pitch: w * 4}
 	}
 	return image
 }
