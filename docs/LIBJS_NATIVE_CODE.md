@@ -724,3 +724,78 @@ The installed production sample predates the scan change. The managed hook
 has requested a build containing it. The raw stacks, source and binary
 hashes, measurements and guard receipts remain local under
 `docs/performance/libjs-github-browser-20261116/libjs-github-cost-profile-2960-20261118/`.
+
+### Same-build control and frame costs
+
+Seven additional alternating pairs on the installed `296096c8…e829`
+executable reuse the same optimized libraries, frozen responses, script
+policy and image reference. The interpreter median is **66,494,302,215**
+instructions and the cached-native median is **75,816,089,857**. From the
+previous cohort on the same build, the medians move +0.21% and −0.31%,
+respectively. Cached native uses 14.02% more by the ratio of medians and
+uses fewer in one pair. One-minute host load ranges from 8.82 to 27.23
+on 18 logical CPUs. All 14 captures match the pinned image and audit,
+with 81 fulfilled modules and all three compatibility script bodies.
+Native runs record 2,947–2,948 hits with zero misses or compiler calls.
+
+The median trials differ by 25.3 million root-process instructions through
+first document paint. Through PNG encoding, the cumulative intervals
+between `frame_prepared` and `frame_complete` account for 12.74 billion
+instructions in the interpreter trial and 18.49 billion in the native trial.
+They cover the whole root process while those frames run. The interpreter
+trial has two intervals above one billion instructions and the native trial
+has three, despite identical final document pixels.
+
+A separate pair uses the existing main-thread stage counters to inspect the
+work inside those boundaries. On that pair, the native run records 0.447
+billion more exclusive instructions in `javascript_execution_and_bindings`,
+3.822 billion more in `flow_layout` and 3.044 billion more in
+`paint_leaf_svg`. It records 25 flow-layout scopes and 508 SVG paint scopes,
+compared with 22 and 338 for the interpreter. The stage counters include
+tracing overhead and report these two captures. The uninstrumented cohort
+supplies the startup-to-PNG comparison.
+
+Raw inputs, exact phase totals and diagnostic attempts remain local under
+`docs/performance/libjs-github-browser-20261116/libjs-github-binding-after-20261118/`.
+
+### Published binding scan on frozen GitHub
+
+Managed production receipt `20261118-043956-76e1c1ba` pins executable
+SHA-256 `66f97ef08d4c9ff9ae1195cd80c9817add78ab82c27960580f1444a44101e77d`.
+Its sealed source manifest contains the exact `6cb1be824` scan. The
+17 embedded native cache inputs match the predecessor. A fresh diagnostic
+reuses the existing ABI and optimized libraries with the compiler disabled.
+It records 483,888 native entries, 2,947 cache hits, and zero misses or
+compiler calls.
+
+Seven alternating pairs count retired instructions from exclusive Vox
+coalition creation through native document PNG encoding. They use fresh
+profiles and HTTP caches, with cookie imports and native diagnostics
+disabled. All 14 captures match the pinned 1024×768 image and the full
+repository audit. The 81 modules fulfill on every visit using LibJS with
+JSC uninitialized, and the three compatibility scripts match their archive
+hashes. The native runs record 2,947–2,949 hits and zero misses, compiler
+calls, compilations, pending or invalid entries. Cache and library hashes
+stay fixed. Browser, harness and guard exits are zero. The guard adopts 28
+processes and records 151.543 seconds and 6,964,117,504 sampled peak bytes.
+
+The cached-native median is **75,462,692,949** instructions and the
+interpreter median is **74,682,115,989**, a **1.05%** native increase by
+the ratio of medians. Cached native uses fewer instructions in two of
+seven pairs. The median paired ratio is 1.01012, and the highest-native
+to lowest-interpreter ratio is 1.16903.
+
+Relative to the same-cache repeat on the predecessor, the native median
+falls 0.47% and the interpreter median rises 12.31%. In the selected
+interpreter median trial, root-process instructions during the recorded
+frame intervals rise from 12.74 to 18.60 billion. The native median trials
+move from 18.49 to 18.62 billion in those intervals. The publications differ
+in nine sealed inputs, including raster and native capture code. Host
+one-minute load ranges from 7.70 to 12.89 in the published scan cohort.
+The isolated lookup probe supplies the per-change instruction result.
+
+A separate native sample maps 22 of 679 main-thread samples to the
+inlined scan in the verified executable. Five land on the small-scope
+loop and 17 on the linear fallback after a hint miss. All 22 have a
+native-entry ancestor. The recorded address slide and disassembly identify
+both loops. This capture also matches the pinned image and complete audit.
