@@ -7,13 +7,19 @@
 static inline CGImageRef native_snapshot_svg_rgba_mask_bitmap(CGContextRef context, int is_luminance)
 {
 	CGContextFlush(context);
+	size_t width = CGBitmapContextGetWidth(context), height = CGBitmapContextGetHeight(context);
+	// Small alpha masks can use their existing coverage. Large clips apply
+	// faster in Quartz when the RGB channels have been made white.
+	if (!is_luminance && width * height <= 128u * 1024u) {
+		return CGBitmapContextCreateImage(context);
+	}
 	uint8_t *pixels = CGBitmapContextGetData(context);
 	if (pixels == NULL) {
 		return NULL;
 	}
 	size_t pitch = CGBitmapContextGetBytesPerRow(context);
 	native_convert_rgba_svg_mask_pixels(pixels, pitch, pixels, pitch,
-		CGBitmapContextGetWidth(context), CGBitmapContextGetHeight(context), is_luminance);
+		width, height, is_luminance);
 	// Both mask compositing paths consume alpha from premultiplied white.
 	return CGBitmapContextCreateImage(context);
 }

@@ -183,6 +183,11 @@ static CGContextRef coverage_scene(int reuse, int clip, int full, int luminance,
     CGImageRef image = reuse ? native_snapshot_svg_rgba_mask_bitmap(mask, luminance)
         : native_copy_svg_mask_bitmap(mask, 1, luminance);
     assert(image != NULL);
+    if (reuse && !luminance) {
+        const uint8_t alpha = (uint8_t)((full ? 1 : 3 * 32 + 6) * 37);
+        const uint8_t expected[] = {alpha / 3, alpha / 2, alpha * 7 / 8, alpha};
+        assert(memcmp(pixels + 4, expected, sizeof(expected)) == 0);
+    }
     CGContextRelease(mask);
     if (full) {
         CGImageRef cropped = CGImageCreateWithImageInRect(image, CGRectMake(5, 3, 21, 17));
@@ -204,6 +209,23 @@ static CGContextRef coverage_scene(int reuse, int clip, int full, int luminance,
     }
     CGImageRelease(image);
     return canvas;
+}
+
+static void check_large_alpha_mask_publication(void)
+{
+    CGColorSpaceRef space = CGColorSpaceCreateWithName(kCGColorSpaceSRGB);
+    CGContextRef mask = CGBitmapContextCreate(NULL, 512, 257, 8, 512 * 4, space,
+        kCGImageAlphaPremultipliedLast | kCGBitmapByteOrder32Big);
+    CGColorSpaceRelease(space);
+    assert(mask != NULL);
+    uint8_t *pixels = CGBitmapContextGetData(mask);
+    const uint8_t color[] = {11, 29, 67, 91};
+    memcpy(pixels, color, sizeof(color));
+    CGImageRef image = native_snapshot_svg_rgba_mask_bitmap(mask, 0);
+    const uint8_t coverage[] = {91, 91, 91, 91};
+    assert(image != NULL && memcmp(pixels, coverage, sizeof(coverage)) == 0);
+    CGImageRelease(image);
+    CGContextRelease(mask);
 }
 
 static int staged_width, staged_height;
@@ -279,6 +301,7 @@ int main(void)
 {
     check_mask_raster_replacement();
     check_mask_path_raster_bounds();
+    check_large_alpha_mask_publication();
     for (int content = 0; content < 2; ++content) {
         uint64_t standard = native_svg_mask_cache_key(17, content, 1024, 640, 0, 64, 0, 1);
         assert(standard == native_svg_mask_cache_key(17, content, 1024, 640, 0, 64, 0, 1));
