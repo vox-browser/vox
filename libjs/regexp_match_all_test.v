@@ -46,6 +46,23 @@ fn test_match_all_exec_results_keep_identity_and_abrupt_next_can_retry() {
 	assert match_all_eval(mut vm, 'var rejected=false;try{Object.getPrototypeOf("a".matchAll(/a/g)).next.call({})}catch(e){rejected=e instanceof TypeError}rejected')!.as_bool()
 }
 
+fn test_match_all_internal_iterator_step_preserves_custom_exec_after_a_throw() {
+	mut vm := VM.create()
+	create_simple_execution_context(mut vm)
+	assert match_all_eval(mut vm, '
+		var marker = {}, match = {0: "a", index: 0}, calls = 0;
+		var matcher = {exec() {
+			if (++calls === 1) throw marker;
+			return calls === 2 ? match : null;
+		}};
+		var rx = {flags: "g", constructor: {[Symbol.species]: function () { return matcher; }}};
+		var iterator = RegExp.prototype[Symbol.matchAll].call(rx, "a"), caught = false;
+		try { for (var item of iterator) {} } catch (e) { caught = e === marker; }
+		var items = [...iterator];
+		caught && items.length === 1 && items[0] === match && calls === 3 && iterator.next().done;
+	')!.as_bool()
+}
+
 fn test_cached_match_all_iteration_runs_with_native_compiler_disabled() {
 	directory := os.join_path(os.getenv_opt('TMPDIR') or { os.temp_dir() }, 'vox-native-match-all-' + rand.uuid_v4())
 	defer { os.rmdir_all(directory) or {} }

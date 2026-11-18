@@ -17,7 +17,11 @@ fn initialize_regexp_match_all_intrinsics(mut vm VM, mut realm Realm) {
 	mut prototype := Object.create(realm, realm.iterator_prototype)
 	realm.regexp_string_iterator_prototype = prototype
 	prototype.define_direct_property(PropertyName.from_symbol(vm.well_known_symbol_to_string_tag()), Value.from_string(vm.create_string_from_str('RegExp String Iterator')), attribute_configurable)
-	install_intrinsic_method(mut vm, realm, mut prototype, 'next', 0, regexp_string_iterator_next)
+	mut next := NativeFunction.create(mut vm, realm, realm.function_prototype,
+		regexp_string_iterator_next, 0, iterator_next_key, none)
+	next.iterator_step = regexp_string_iterator_step
+	prototype.define_direct_property(iterator_next_key, Value.from_object(next.object),
+		attribute_writable | attribute_configurable)
 	mut regexp := realm.regexp_prototype or { panic('Missing RegExp prototype') }
 	method := NativeFunction.create(mut vm, realm, realm.function_prototype, regexp_symbol_match_all, 1, PropertyName.from_symbol(vm.well_known_symbol_match_all()), none)
 	regexp.define_direct_property(PropertyName.from_symbol(vm.well_known_symbol_match_all()), Value.from_object(method.object), attribute_writable | attribute_configurable)
@@ -46,15 +50,21 @@ fn regexp_symbol_match_all(mut vm VM) !Value {
 }
 
 fn regexp_string_iterator_next(mut vm VM) !Value {
+	step := regexp_string_iterator_step(mut vm)!
+	return Value.from_object(create_iterator_result_object(vm.realm(), step.value,
+		step.done, vm.realm().object_prototype))
+}
+
+fn regexp_string_iterator_step(mut vm VM) !IteratorStepValue {
 	value := vm.this_value()
 	if !value.is_object() { return vm.throw_error(.type_error, 'RegExp String Iterator next requires its internal slots') }
 	mut iterator := value.as_object().regexp_string_iterator or { return vm.throw_error(.type_error, 'RegExp String Iterator next requires its internal slots') }
 	vm.consume_execution_budget()!
-	if iterator.done { return Value.from_object(create_iterator_result_object(vm.realm(), js_undefined(), true, vm.realm().object_prototype)) }
+	if iterator.done { return IteratorStepValue{done: true, value: js_undefined()} }
 	match_ := regexp_exec(mut vm, iterator.regexp, iterator.text)!
 	if match_.is_null() {
 		iterator.done = true
-		return Value.from_object(create_iterator_result_object(vm.realm(), js_undefined(), true, vm.realm().object_prototype))
+		return IteratorStepValue{done: true, value: js_undefined()}
 	}
 	if !iterator.global {
 		iterator.done = true
@@ -67,7 +77,7 @@ fn regexp_string_iterator_next(mut vm VM) !Value {
 			regexp.set(mut vm, PropertyName.from_str('lastIndex'), Value.from_f64(f64(next)), .yes)!
 		}
 	}
-	return Value.from_object(create_iterator_result_object(vm.realm(), match_, false, vm.realm().object_prototype))
+	return IteratorStepValue{value: match_}
 }
 
 // StringPrototype.cpp::match_all. Validate global regex flags before reading
