@@ -8449,3 +8449,87 @@ consume additional source changes, and the standalone sorter allocation
 result supplies the isolated comparison. The browser checks, fixed input
 hashes and guard records are local under
 `repository-navigation-5204-r97/receipts/sort-published`.
+
+### Optional-chain AST storage and Metal sample controls
+
+The resident-page trace identified expression-parser call sites among the
+largest LibJS reservation origins. Commit `07d6fa895` stores the optional
+chain's base and reference list together in the payload for that node. The
+base is embedded in the payload. The AST dump, nested function collection,
+and optional-chain compiler walk those same children in the original order.
+
+Clang measures the declarations extracted from the published and candidate
+V C output on arm64. `Expression` falls from 784 to 736 bytes and
+`ExpressionKind` falls from 760 to 712. The optional payload is 784 bytes,
+the size of the former separately allocated base. The layout check compares
+individual records and exits zero in 7.968 guard seconds at 1,080,639,488
+sampled bytes. The browser runtime guard measures peak RSS separately.
+
+The optional-chain unit file passes with current V in both GC modes. The
+regression retains a closure across further parsing and then exercises
+functions in the chain's base, computed member and call argument. The
+focused upstream fixture and all 100 upstream AST fixtures match. The
+production type check exits zero in 43.840 seconds at 7,026,360,320 sampled
+bytes. Managed attempt `20261118-082424-a9710d2b` stops when a shared CPU
+blitter input changes during sealing. The next attempt's parsed source
+receipt matches all four optional-chain implementation files in the commit.
+
+The 15 attachment controls replay the captured instance order, document
+order and the document order with a fully clipped prefix. Memoryless color
+or depth, memoryless color and depth together, and stored MSAA color samples
+all preserve the original full tile for each order. Their guard exits zero
+in 1.262 seconds at 126,484,480 sampled bytes.
+
+The sample-position controls use the GPU's four default locations. Explicit
+default order reproduces implicit default order. Across all 24 permutations
+of those same positions, document order always differs at both Notifications
+corners. Eighteen permutations also introduce two or three other corner
+differences across all three instance orders. In document order, the
+Notifications corner colors take three distinct pairs of RGB values across
+the permutations. The reference order and clipped-prefix order preserve
+the reference corner colors throughout. The successful retry uses
+the Metal SDK's programmable-sample-position property and records 75
+successful renders in 6.254 guard seconds at 138,248,192 sampled bytes.
+These controls exercise selected draws over white. The exact page result
+still depends on the two remaining corners.
+
+The AST inputs and outputs, generated layout proof, raw Metal controls,
+and guard results are local under `repository-navigation-5204-r98/receipts`.
+
+### Published optional-chain storage replay
+
+Managed build `20261118-082925-1a2a7a3f` publishes executable
+`19554c666e7ef07de44937357e3a2f37df63bc26d8347bd4830a133c38be1766` as
+one C unit with literal V `-prod`. The sealed manifest verifies the four
+implementation files in `07d6fa895`. The build and headless smoke guards
+exit zero. Hacker News PID 17660 again matches all 30 stories and the
+2× PNG with six native hits, zero misses or compiler calls, and an
+uninitialized JavaScriptCore. Its guard exits zero in 4.278 seconds
+at 420,429,824 sampled bytes.
+
+The first ordinary GitHub replay (PID 17921) completes 120 seconds
+and matches the initial repository, standalone README and restored
+repository content. The browser, replay and guard exit zero. The
+guard samples 12,874,465,280 peak bytes over 122.022 seconds, 10,436,608
+bytes below its cap. Shutdown records 3,614 native hits, 1,772,683 entries,
+zero misses or compiler calls, and an uninitialized JavaScriptCore. The
+standard-raster PNG differs from the unchanged Brave Back reference at
+60,079 pixels, and the outer pixel verdict exits 1.
+
+The separate raster diagnostic (PID 20941) completes 120 seconds with
+the same ordered content. It records 3,615 native hits and 1,765,607
+native entries, zero misses and compiler calls, and an uninitialized
+JavaScriptCore runtime. Its browser, replay and guard exit zero, with
+12,380,717,056 sampled peak bytes over 122.269 seconds. The two
+Notifications differences remain against the original Brave Back PNG.
+The standard-raster and raster-diagnostic captures each match the prior
+Vox image for their respective mode pixel for pixel.
+
+The repeated ordinary replay (PID 35565) uses the same executable, input
+hashes, cache policy, and 120-second endpoint. It restores the exact
+content again and reaches 3,614 native hits and 1,678,243 entries with
+zero misses or compiler calls. The guard stops it at 39.368 seconds and
+12,906,889,216 sampled bytes. Guard and guarded child exit 125 and 137.
+The ordinary memory result varies across the two launches. Both attempts
+and the separate raster result are retained with their input hashes and
+host load readings under `repository-navigation-5204-r98/receipts/published`.
