@@ -326,6 +326,7 @@ def check_gg_svg_browser(binary, artifacts, temporary):
     check_gg_svg_mutations(binary, artifacts, temporary, fixture)
     check_gg_svg_viewport(binary, artifacts, temporary, fixture)
     check_gg_svg_strokes(binary, artifacts, temporary)
+    check_gg_svg_non_scaling_strokes(binary, artifacts, temporary)
 
 
 def check_gg_svg_strokes(binary, artifacts, temporary):
@@ -394,6 +395,67 @@ requestAnimationFrame(changeCap);
             documents.append(rows[marker:top + 180])
         assert documents[0] == documents[1], "Cached stroke pixels differ from uncached replay"
     print("PASS: GG SVG stroke geometry, paint order, and texture invalidation", flush=True)
+
+
+def check_gg_svg_non_scaling_strokes(binary, artifacts, temporary):
+    fixture = Path(__file__).resolve().parents[1] / "Tests/Browser/Native/svg-gg-non-scaling-stroke.html"
+    page = Path(temporary) / fixture.name
+    page.write_text(fixture.read_text().replace(' vector-effect="non-scaling-stroke"', "", 1) + """
+<script>
+let frames = 0;
+function changeVectorEffect() {
+    if (++frames < 12) {
+        requestAnimationFrame(changeVectorEffect);
+        return;
+    }
+    document.getElementById('enlarged').setAttribute('vector-effect', 'non-scaling-stroke');
+    document.body.setAttribute('data-vector-effect-ready', '1');
+}
+requestAnimationFrame(changeVectorEffect);
+</script>
+""")
+    documents = []
+    white = bytes.fromhex("ffffff")
+    blue = bytes.fromhex("154fbc")
+    brown = bytes.fromhex("b94015")
+    green = bytes.fromhex("098746")
+    purple = bytes.fromhex("8c2fa5")
+    for mode, disable_cache in (("cached", "0"), ("uncached", "1")):
+        label = f"{page.stem}-{mode}"
+        screenshot = artifacts / f"{label}.png"
+        screenshot.unlink(missing_ok=True)
+        environment = smoke_environment(Path(temporary) / label)
+        environment.pop("MESA_GL_VERSION_OVERRIDE", None)
+        environment.update(VOX_GG_SVG="1", VOX_GG_SVG_DIAGNOSTICS="1",
+                           VOX_DISABLE_GG_SVG_CACHE=disable_cache, VOX_GG_SVG_VIEWPORT_REUSE="1",
+                           VOX_CAPTURE_READY_SELECTOR="body[data-vector-effect-ready]",
+                           VOX_CAPTURE_INITIAL_VIEWPORT="1", VOX_SCREENSHOT_SCROLL_STEP="13")
+        log = run_windowed([str(binary), "--enable-javascript", "--window-width=800",
+                            "--window-height=600", "--screenshot-viewport-height=600",
+                            "--screenshot-scroll-y=65", f"--screenshot={screenshot}", str(page)],
+                           env=environment, log_path=artifacts / f"{label}.log")
+        assert "draw=114x38 cache=miss" in log, log
+        strokes = [line for line in log.splitlines() if line.endswith(" stroke=1 non_scaling=1")]
+        assert any("draw=102x14 cache=miss" in line for line in strokes), log
+        assert any("draw=164x5" in line for line in strokes), log
+        assert any("draw=164x5 cache=hit bounds=hit crop=hit" in line for line in strokes) == (mode == "cached"), log
+        assert any("cache=hit bounds=hit" in line for line in strokes) == (mode == "cached"), log
+        _, height, channels, rows = rendered_png_rows(screenshot.read_bytes())
+
+        def pixel(x, y):
+            return rows[y][x * channels:x * channels + 3]
+
+        top = next((y for y in range(min(height, 150)) if pixel(4, y) == b"\x34\xb7\x86"), None)
+        assert top is not None, "Missing document marker"
+        assert pixel(21, top + 40) == blue, "Non-scaling round cap is missing"
+        assert pixel(48, top + 44) == blue and pixel(48, top + 49) == white, "Stroke widened under scale"
+        assert pixel(170, top + 50) == brown and pixel(228, top + 68) == brown, "Stroke narrowed under scale"
+        assert pixel(255, top + 114) == green and pixel(252, top + 123) == white, "Skewed stroke is incorrect"
+        assert pixel(360, top + 2) == purple and pixel(360, top + 7) == white, "Visible edge was culled"
+        # The bottom 24px status bar includes live RAM usage.
+        documents.append(rows[top:height - 24])
+    assert documents[0] == documents[1], "Cached non-scaling strokes differ from uncached replay"
+    print("PASS: GG non-scaling stroke width, live vector effect, and viewport edge", flush=True)
 
 
 def check_gg_svg_mutations(binary, artifacts, temporary, fixture):

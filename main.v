@@ -6246,8 +6246,17 @@ fn (mut app BrowserApp) draw_command(source_command &layout.PaintCommand, page_x
 	}
 	// The caller supplies this frame's document viewport origin. Re-reading
 	// browser settings for every leaf can also change chrome geometry mid-frame.
-	if cull_bottom < app.paint_replay_viewport_top(page_y) || cull_top > f32(window_height - app.status_height()) {
-		return
+	viewport_top := app.paint_replay_viewport_top(page_y)
+	viewport_bottom := f32(window_height - app.status_height())
+	if cull_bottom < viewport_top || cull_top > viewport_bottom {
+		$if vox_gg_svg ? {
+			fringe := app.portable_non_scaling_stroke_fringe(command)
+			if cull_bottom + fringe < viewport_top || cull_top - fringe > viewport_bottom {
+				return
+			}
+		} $else {
+			return
+		}
 	}
 	$if linux {
 		if app.portable_background_text_clip != none
