@@ -18,6 +18,13 @@ fn test_linear_binding_lookup_matches_live_utf16_names_in_slot_order() {
 	env.create_mutable_binding(mut vm, utf16_string_from_code_units(units), true)!
 	assert env.find_binding_index_linear(name) == 2
 	assert env.find_binding_index_linear(utf16_string_from_code_units([u16(0x78), 0xdc00])) == -1
+	assert env.find_binding_index_linear(utf16_string('x')) == -1
+	lone := utf16_string_from_code_units([u16(0xd800)])
+	env.create_mutable_binding(mut vm, lone, true)!
+	assert env.find_binding_index_linear(utf16_string_from_code_units([u16(0xd800)])) == 3
+	assert env.find_binding_index_linear(utf16_string_from_code_units([u16(0xdc00)])) == -1
+	assert env.delete_binding(mut vm, lone)!
+	assert env.find_binding_index_linear(lone) == -1
 }
 
 fn binding_lookup_fixture(mut vm VM) !&DeclarativeEnvironment {

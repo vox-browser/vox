@@ -50,6 +50,18 @@ fn (environment &DeclarativeEnvironment) find_binding_index(name Utf16String) in
 
 @[direct_array_access]
 fn (environment &DeclarativeEnvironment) find_binding_index_linear(name Utf16String) int {
+	if name.data.len == 1 {
+		// A single UTF-16 unit identifies the whole name, including lone
+		// surrogate units. Check the live slot before reading its unit.
+		unit := name.data[0]
+		for index in 0 .. environment.bindings.len {
+			binding := &environment.bindings[index]
+			if !binding.deleted && binding.name.data.len == 1 && binding.name.data[0] == unit {
+				return index
+			}
+		}
+		return -1
+	}
 	// The loop uses the current array length and compares names without mutating it.
 	for index in 0 .. environment.bindings.len {
 		binding := &environment.bindings[index]
