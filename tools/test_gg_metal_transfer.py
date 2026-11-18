@@ -23,6 +23,7 @@ def main():
     staged = prepare_sokol_metal(output / 'modules', vroot / 'vlib')
     paths = [Path(__file__), root / 'tools/prepare_gg_metal.py', root / 'tools/prepare_ui2.py',
              root / 'native/include/native_gg_metal_transfer.h',
+             root / 'cpuraster/scan_workers.h',
              root / 'tools/native_gg_metal_transfer_test.m',
              staged / 'sokol_gfx.h', staged / 'manifest.json',
              vroot / 'thirdparty/sokol/sokol_gfx.h']

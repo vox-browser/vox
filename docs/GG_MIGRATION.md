@@ -8538,3 +8538,87 @@ The same build matched archived Hacker News, GitHub and Old Reddit
 references in the [preceding replay](#parallel-rounded-shadow-patch-expansion).
 The timings here cover texture preparation through return.
 Candidate page timings await the shared production rebuild.
+
+### Parallel CPU copies for Metal texture transfers
+
+Joined Metal uploads and readbacks now split CPU staging copies of
+at least 8 MiB across up to four raster workers. Packed buffers use
+one `memcpy` per band. Padded buffers copy each row's active bytes.
+The upload joins before GPU encoding, and readback joins after
+Metal completes and before the buffer is released. Smaller copies
+and `VOX_SERIAL_CPU_RASTER=1` use a single thread.
+
+The first cutoff trial dispatched at 2 MiB. At 2048×768, warm
+copies improved but the first upload rose from 118.917 to 135.750 µs
+and the first readback from 98.042 to 124.208 µs. The final cutoff
+keeps that size serial.
+
+The final cohort used seven rotating fresh-process groups on
+Mac17,6 with 18 logical CPUs and one-minute load of 7.55–8.32.
+A single Apple Clang `-O2 -flto` harness called either the original
+row loop or the production copy helper on actual shared Metal
+buffers and client memory. Times cover the CPU copy through return,
+including worker dispatch and join. Buffer allocation, fill, byte
+verification and GPU work are outside the timed span. Warm times
+use the median of each process's ten copies after its first call.
+All 378 processes and the guard exited zero and checked every byte.
+
+| Surface and direction | First before / serial / default, µs | Warm before / serial / default, µs | Warm default faster pairs |
+| --- | ---: | ---: | ---: |
+| 512×512 upload | 17.375 / 15.917 / 16.500 | 17.521 / 17.292 / 17.375 | 4/7 |
+| 512×512 readback | 16.750 / 17.375 / 17.875 | 17.625 / 17.333 / 16.646 | 5/7 |
+| 2048×768 upload | 328.917 / 129.833 / 183.667 | 96.063 / 97.375 / 100.250 | 1/7 |
+| 2048×768 readback | 182.500 / 115.667 / 144.125 | 102.938 / 99.021 / 103.750 | 2/7 |
+| 2048×1024 upload | 252.625 / 261.125 / 160.375 | 133.667 / 134.459 / 108.584 | 7/7 |
+| 2048×1024 readback | 314.958 / 164.042 / 192.375 | 135.000 / 135.521 / 99.938 | 7/7 |
+| 2051×1537 padded upload | 541.583 / 647.292 / 199.875 | 407.750 / 439.208 / 199.855 | 7/7 |
+| 2051×1537 padded readback | 617.000 / 510.792 / 253.542 | 438.208 / 422.125 / 210.021 | 7/7 |
+| 2048×1536 upload | 204.083 / 278.667 / 194.167 | 219.792 / 221.438 / 157.771 | 7/7 |
+| 2048×1536 readback | 289.875 / 286.208 / 209.917 | 215.375 / 216.834 / 142.438 | 7/7 |
+| 3840×2160 padded upload | 1608.292 / 1413.417 / 552.167 | 613.646 / 589.855 / 355.396 | 7/7 |
+| 3840×2160 padded readback | 1908.458 / 1451.167 / 708.958 | 1184.875 / 1134.355 / 484.959 | 7/7 |
+
+The harness executable SHA-256 was
+`f04d6a30109091622508e9ce0f312a29d46145d7d4a9ecf4b6f3b1e27da3c2cf`.
+A separate dispatch probe recorded four distinct threads at 8 MiB
+and on 2051×1537 padded copies. It recorded no dispatch below
+8 MiB or in forced serial mode. The real Metal test passed its
+existing command ordering, staging ownership and failure checks
+and new large packed and padded round trips under default
+scheduling, forced serial, and ASan/UBSan. ThreadSanitizer passed
+both large padded copy directions. The V and Python staging paths
+produced identical Sokol Metal headers. The broader UI adapter
+staging check stopped at a missing `gg/canvas/vox_path_math.m`
+wrapper, before reaching its Metal assertion.
+
+#### Archived page baseline
+
+The completed single-C `-prod` receipt `20261118-095612-f974a35a`
+sealed the previous repeated-background texture change and the
+original Metal transfer loop. Its executable SHA-256 was
+`c758ea483aa8943ec31cdbdbb282e5271c1335c9a5df3c29b37a32cbedfce3a8`.
+The AVIF and adblock helper hashes match the
+[frame-clear benchmark](NATIVE_FRAME_CLEAR_BENCHMARK.md#input-identities).
+
+Fresh processes used the same archives and decoded pixel hashes
+as the [earlier eligibility runs](#archived-browser-eligibility).
+The 1024×768 viewport was captured at 2× after one second of
+settling. Each process used a private empty profile and cache,
+sealed origin replay and JavaScriptCore. System caches remained
+available. All nine captures matched the frozen references and
+retained 30, 33 and 25 distinct content IDs. JavaScriptCore
+initialized and reported no script diagnostics. The browsers and
+the memory guard exited zero. One-minute load ranged from 14.07
+to 15.68. A pilot capture exited zero but its audit check used the
+wrong runtime field name. The completed cohort uses the actual
+`native_context_initialized` field.
+
+| Archived page | Launch through PNG, audit and process exit, ms | Median, ms |
+| --- | ---: | ---: |
+| Hacker News | 2115.233, 1782.767, 1812.123 | 1812.123 |
+| GitHub | 4974.524, 4307.651, 4552.195 | 4552.195 |
+| Old Reddit | 2029.691, 2041.569, 2028.785 | 2029.691 |
+
+These times establish the page baseline for the original Metal
+copy. A whole-page comparison requires a completed build with the
+final 8 MiB cutoff and confirmation that the sites reach it.

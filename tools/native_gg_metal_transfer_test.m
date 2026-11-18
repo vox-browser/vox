@@ -182,10 +182,42 @@ static void exercise(id<MTLDevice> device, bool retained) {
     sg_commit(); sg_shutdown();
 }
 
+static void exercise_large_transfer(id<MTLDevice> device, int padding) {
+    sg_setup(&(sg_desc){.environment.metal.device = (__bridge const void*)device});
+    assert(sg_isvalid());
+    const int width = 2051, height = 1537, row_bytes = width * 4, pitch = row_bytes + padding;
+    const size_t size = (size_t)pitch * height;
+    sg_image image = sg_make_image(&(sg_image_desc){
+        .render_target = true, .width = width, .height = height,
+        .pixel_format = SG_PIXELFORMAT_BGRA8, .sample_count = 1,
+    });
+    assert(sg_query_image_state(image) == SG_RESOURCESTATE_VALID);
+    uint8_t *input = malloc(size), *output = malloc(size);
+    assert(input && output);
+    for (size_t i = 0; i < size; ++i) input[i] = (uint8_t)(i * 31 + i / pitch);
+    memset(output, 0xa7, size);
+    assert(sg_v_write_image(image, 0, 0, width, height, input, pitch));
+    memset(input, 0x11, size);
+    assert(sg_v_read_image(image, 0, 0, width, height, output, pitch));
+    for (int y = 0; y < height; ++y) {
+        size_t start = (size_t)y * pitch;
+        for (int x = 0; x < row_bytes; ++x)
+            assert(output[start + x] == (uint8_t)((start + x) * 31 + y));
+        for (int x = row_bytes; x < pitch; ++x)
+            assert(output[start + x] == 0xa7);
+    }
+    free(output);
+    free(input);
+    sg_shutdown();
+}
+
 int main(void) { @autoreleasepool {
     id<MTLDevice> device = MTLCreateSystemDefaultDevice(); assert(device);
     exercise(device, false); exercise(device, true);
     assert(joined_reads == 194 && standalone_reads == 162);
     assert(joined_uploads == 32 && standalone_uploads == 66);
     printf("GG Metal transfers: 128 exact pending-uniform cases, 194 joined / 162 standalone reads, 32 joined / 66 standalone uploads; upload order, buffer reuse, padding, invalid views, active passes, failures and frame-slot reuse pass\n");
+    exercise_large_transfer(device, 0);
+    exercise_large_transfer(device, 28);
+    puts("Large packed and padded uploads and readbacks match byte for byte");
 } }
