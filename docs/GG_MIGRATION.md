@@ -7318,3 +7318,68 @@ They audited 30, 33 and 25 entries and zero Canvas elements.
 Browser and replay guard exits were zero. Timings cover analytic
 mask generation. Candidate browser validation awaits the shared
 rebuild.
+
+### Parallel solid-color mask compositing
+
+The premultiplied RGBA solid blitter validates the clipped source
+and destination spans once. Independent rows then share the
+existing raster scheduler, with up to four threads at 262,144
+pixels and above. A zero mask pitch identifies an immutable
+repeated row. Overlapping storage, overlapping output rows
+and other layouts outside this path use the original checked
+serial loop. Black, opaque and translucent colors retain their
+existing integer blend formulas.
+
+Matched V single-unit C `-prod -gc none` harnesses measured the
+`blit_mask` call through return. Destination reset and output
+hashing were outside the timer. The case buffers had padded
+destination rows and clipped origins. Ordinary masks used an
+eleven-byte row pad and a seven-byte base offset. A repeated
+mask used one row. All 189 processes across seven rotating
+fresh-process groups and the guard exited zero. Complete
+destination hashes matched in every group and mode. Warm values
+are medians of per-process medians after the first call.
+One-minute load was 9.43–10.07 on 18 logical CPUs.
+
+| Mask | First before / forced serial / default, µs | Warm before / forced serial / default, µs |
+| --- | ---: | ---: |
+| 9×9 translucent | 0.417 / 0.417 / 0.583 | 0.209 / 0.125 / 0.125 |
+| 67×43 translucent | 7.167 / 4.792 / 4.666 | 6.917 / 4.375 / 4.375 |
+| 511×513 translucent | 610.125 / 392.416 / 391.667 | 610.438 / 386.896 / 394.063 |
+| 512×512 translucent | 612.458 / 387.625 / 232.334 | 661.375 / 392.021 / 212.521 |
+| 1031×517 translucent | 1215.834 / 774.750 / 409.750 | 1220.208 / 775.875 / 301.125 |
+| 2051×1537 black | 6958.542 / 3310.667 / 1312.000 | 6808.771 / 3428.916 / 1142.292 |
+| 2051×1537 opaque | 8080.042 / 5047.459 / 1780.834 | 7532.292 / 4822.250 / 1668.750 |
+| 2051×1537 repeated translucent row | 7868.584 / 4863.208 / 1752.375 | 7632.958 / 4824.084 / 1691.833 |
+| 3840×2160 translucent | 20742.916 / 13423.000 / 4518.625 | 20094.271 / 13064.084 / 4499.667 |
+
+The 9×9 first-call median rose by 0.166 µs. All other sizes won all
+seven pairs on both metrics. The harness SHA-256 values were
+`d09c476224fe2bd088dfc2fbf91605c0f9363e31e5c91ec10448a68a36493a15`
+and `0cec83a4b596886147266ad3a5ed2c7bec72ebff1897d9407bb3a7785a2f5d02`.
+An earlier candidate selected the validated loop only for
+parallel-sized masks. Its 67×43 warm result rose from 7.500
+to 7.958 µs. The final version applies the validated loop to
+small disjoint masks too.
+
+A separate probe observed two distinct threads at 512×512,
+four on larger packed and repeated masks, and zero below the
+cutoff or under `VOX_SERIAL_CPU_RASTER=1`. A normal 1441×927
+Canvas path shadow used four distinct threads in the mask
+compositor. Its complete RGBA surface matched forced serial
+(`c9ccb9e79eea8c7d1e6e71cdffe0cb9a3445102d7478629c62a399ac90a1ff8e`).
+Focused tests covered clipped origins, padding, repeated rows
+and genuinely overlapping storage. macOS, arm64 Linux, forced
+serial, ASan/UBSan and ThreadSanitizer checks passed. The pinned
+raster differential suite passed with count 2000 and seed
+20261106. Probe and guard exits were zero.
+
+The published single-C-unit executable
+`604f51df0b16e909d556320a196324d6fb5af2f4b425127326d6c9899a6c46b4`
+matched the frozen Hacker News, GitHub and Old Reddit pixels.
+Fresh sealed replays used private profiles and caches, JavaScript,
+a 1024×768 CSS-pixel viewport, 2× capture and one second of settling.
+The audits recorded 30, 33 and 25 entries respectively and zero
+Canvas elements. All browser and guard exits were zero. The timings
+above cover mask compositing in isolation. Candidate browser
+validation awaits the shared rebuild.

@@ -285,28 +285,102 @@ fn (mut b SolidBlitter) blit_mask(mask &Mask, clip IRect) {
 	if b.kind == .general && b.src_a == 0 {
 		return
 	}
-	pmc := b.pm_color
-	color_alpha := pmc >> 24
-	for row in 0 .. clip.height() {
+	width, height := clip.width(), clip.height()
+	if width > 0 && height > 1 && height <= max_i32 && b.blit_disjoint_mask(mask, clip) {
+		return
+	}
+	for row in 0 .. height {
 		mut dst := b.offset(clip.left, clip.top + row)
 		mut src := mask.index(clip.left, clip.top + row)
-		for _ in 0 .. clip.width() {
+		for _ in 0 .. width {
 			m := u32(mask.image[src])
 			d := load32(b.pixels, dst)
-			value := if b.color == 0xff000000 {
-				alpha_mul_q(d, 256 - m) + (m << 24)
-			} else {
-				m256 := m + 1
-				scale := if b.color >> 24 == 255 {
-					256 - m
-				} else {
-					256 - ((color_alpha * m256) >> 8)
-				}
-				alpha_mul_q(pmc, m256) + alpha_mul_q(d, scale)
-			}
-			store32(mut b.pixels, dst, value)
+			store32(mut b.pixels, dst, blend_solid_mask_pixel(b.color, b.pm_color, d, m))
 			dst += 4
 			src++
+		}
+	}
+}
+
+@[inline]
+fn blend_solid_mask_pixel(color u32, pm_color u32, dst u32, coverage u32) u32 {
+	if color == 0xff000000 {
+		return alpha_mul_q(dst, 256 - coverage) + (coverage << 24)
+	}
+	mask_scale := coverage + 1
+	dst_scale := if color >> 24 == 255 {
+		256 - coverage
+	} else {
+		256 - (((pm_color >> 24) * mask_scale) >> 8)
+	}
+	return alpha_mul_q(pm_color, mask_scale) + alpha_mul_q(dst, dst_scale)
+}
+
+fn (mut b SolidBlitter) blit_disjoint_mask(mask &Mask, clip IRect) bool {
+	width, height := clip.width(), clip.height()
+	if width > b.pixels.len / 4 || b.row_bytes < width * 4 || mask.row_bytes < 0 {
+		return false
+	}
+	src := mask.index(clip.left, clip.top)
+	dst := b.offset(clip.left, clip.top)
+	rows_after_first := height - 1
+	if src < 0 || dst < 0 || src > mask.image.len - width || dst > b.pixels.len - width * 4
+		|| mask.row_bytes > (mask.image.len - src - width) / rows_after_first
+		|| b.row_bytes > (b.pixels.len - dst - width * 4) / rows_after_first {
+		return false
+	}
+	coverage := mask.image[src..src + rows_after_first * mask.row_bytes + width]
+	pixels := b.pixels[dst..dst + rows_after_first * b.row_bytes + width * 4]
+	// Row stride zero is a repeated read-only mask. If the backing ranges
+	// overlap, keep serial order because later reads can observe writes.
+	source_address := u64(uint(coverage.data))
+	target_address := u64(uint(pixels.data))
+	overlaps := if source_address <= target_address {
+		target_address - source_address < u64(coverage.len)
+	} else {
+		source_address - target_address < u64(pixels.len)
+	}
+	if overlaps {
+		return false
+	}
+	scan := SolidMaskScan{
+		coverage:    coverage
+		pixels:      pixels
+		source_pitch: mask.row_bytes
+		target_pitch: b.row_bytes
+		width:       width
+		color:       b.color
+		pm_color:    b.pm_color
+	}
+	run_raster_scans(&scan, height, width, scan_solid_mask)
+	return true
+}
+
+struct SolidMaskScan {
+	coverage     []u8
+	pixels       []u8
+	source_pitch int
+	target_pitch int
+	width        int
+	color        u32
+	pm_color     u32
+}
+
+@[direct_array_access]
+fn scan_solid_mask(context voidptr, first i32, end i32) {
+	scan := unsafe { &SolidMaskScan(context) }
+	mut pixels := unsafe { scan.pixels }
+	for y in int(first) .. int(end) {
+		source := y * scan.source_pitch
+		target := y * scan.target_pitch
+		for x in 0 .. scan.width {
+			o := target + x * 4
+			value := blend_solid_mask_pixel(scan.color, scan.pm_color, load32_unchecked(pixels, o),
+				u32(scan.coverage[source + x]))
+			pixels[o] = u8(value)
+			pixels[o + 1] = u8(value >> 8)
+			pixels[o + 2] = u8(value >> 16)
+			pixels[o + 3] = u8(value >> 24)
 		}
 	}
 }
