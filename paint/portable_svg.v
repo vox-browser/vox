@@ -12,13 +12,24 @@ fn (mut app BrowserApp) draw_portable_solid_svg_fill(command &layout.PaintComman
 		|| data.fill_pattern != none {
 		return false
 	}
-	// Tessellating each contour independently fills holes and breaks concave
-	// paths. Rasterize the retained path as a unit with its SVG fill rule.
-	path := cpuraster.canvas_path(data.path_data, data.fill_even_odd)
+	mut cached_bounds := ?cpuraster.Rect(none)
+	$if vox_gg_svg ? {
+		if portable_svg_gpu_enabled && app.paint_effect_depth == 0 && app.paint_svg_mask_depth == 0 {
+			cached_bounds = portable_gpu_svg_local_bounds(data.path_data)
+		}
+	}
+	mut decoded := ?cpuraster.Path(none)
+	local := if cached := cached_bounds {
+		cached
+	} else {
+		path := cpuraster.canvas_path(data.path_data, data.fill_even_odd)
+		decoded = path
+		path.bounds() or { return false }
+	}
 	scale := f64(app.ctx.scale)
 	transform := portable_device_transform(multiply_paint_transforms(command.transform,
 		data.path_transform), page_x, page_y, scale)
-	ink := portable_svg_path_bounds(path, transform, app.portable_device_viewport(page_y)) or { return false }
+	ink := portable_svg_device_bounds(local, transform, app.portable_device_viewport(page_y))
 	bounds := portable_pixel_bounds(ink)
 	if bounds.is_empty() { return true }
 	color := app.paint_colors.color_with_retained(command.color, command.opacity * data.fill_opacity,
@@ -27,10 +38,13 @@ fn (mut app BrowserApp) draw_portable_solid_svg_fill(command &layout.PaintComman
 	matrix := portable_svg_surface_matrix(transform, bounds)
 	$if vox_gg_svg ? {
 		if portable_svg_gpu_enabled && app.paint_effect_depth == 0 && app.paint_svg_mask_depth == 0
-			&& draw_portable_gpu_svg_fill(app.ctx.r, data, matrix, bounds, color) {
+			&& draw_portable_gpu_svg_fill(app.ctx.r, data, matrix, bounds, color, local, cached_bounds != none) {
 			return true
 		}
 	}
+	// Rasterize the whole path with its fill rule, including concave contours
+	// and holes. A GPU fallback only decodes the path if it reused the bounds.
+	path := decoded or { cpuraster.canvas_path(data.path_data, data.fill_even_odd) }
 	pitch := bounds.width * 4
 	mut premultiplied := []u8{len: pitch * bounds.height}
 	if !cpuraster.fill_canvas_path(mut premultiplied, bounds.width, bounds.height, pitch, 2,
@@ -48,6 +62,10 @@ fn (mut app BrowserApp) draw_portable_solid_svg_fill(command &layout.PaintComman
 
 fn portable_svg_path_bounds(path cpuraster.Path, transform painting.Affine, viewport painting.Rect) ?painting.Rect {
 	rect := path.bounds() or { return none }
+	return portable_svg_device_bounds(rect, transform, viewport)
+}
+
+fn portable_svg_device_bounds(rect cpuraster.Rect, transform painting.Affine, viewport painting.Rect) painting.Rect {
 	local := painting.Rect{f64(rect.left), f64(rect.top), f64(rect.right - rect.left), f64(rect.bottom - rect.top)}
 	return transform.map_rect(local).intersection(viewport)
 }

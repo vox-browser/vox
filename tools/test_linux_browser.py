@@ -285,14 +285,15 @@ def check_gradient_browser(binary, artifacts, temporary):
 def check_gg_svg_browser(binary, artifacts, temporary):
     fixture = Path(__file__).resolve().parents[1] / "Tests/Browser/Native/svg-gg-path-fill.html"
     documents = []
-    for label in ("portable-svg", "gg-svg", "gg-svg-uncached", "gg-svg-fallback"):
+    for label in ("portable-svg", "gg-svg", "gg-svg-decoded-bounds", "gg-svg-uncached", "gg-svg-fallback"):
         enabled = label != "portable-svg"
-        uses_gpu = label in ("gg-svg", "gg-svg-uncached")
+        uses_gpu = label in ("gg-svg", "gg-svg-decoded-bounds", "gg-svg-uncached")
+        cache_control = {"gg-svg-decoded-bounds": "bounds", "gg-svg-uncached": "1"}.get(label, "0")
         screenshot = artifacts / f"{label}.png"
         screenshot.unlink(missing_ok=True)
         environment = smoke_environment(Path(temporary) / label)
         environment.update(VOX_GG_SVG=str(int(enabled)), VOX_GG_SVG_DIAGNOSTICS="1",
-                           VOX_DISABLE_GG_SVG_CACHE=str(int(label == "gg-svg-uncached")))
+                           VOX_DISABLE_GG_SVG_CACHE=cache_control)
         environment.pop("MESA_GL_VERSION_OVERRIDE", None)
         if label == "gg-svg-fallback":
             environment["MESA_GL_VERSION_OVERRIDE"] = "4.2"
@@ -302,7 +303,9 @@ def check_gg_svg_browser(binary, artifacts, temporary):
         assert ("VOX_GG_SVG unavailable:" in log) == (label == "gg-svg-fallback"), log
         for size in ("120x80", "80x30", "42x20"):
             assert (f"VOX_GG_SVG draw={size}" in log) == uses_gpu, log
-            assert (f"VOX_GG_SVG draw={size} cache=hit" in log) == (label == "gg-svg"), log
+            assert (f"VOX_GG_SVG draw={size} cache=hit" in log) == (
+                label in ("gg-svg", "gg-svg-decoded-bounds")), log
+            assert (f"VOX_GG_SVG draw={size} cache=hit bounds=hit" in log) == (label == "gg-svg"), log
         _, height, channels, rows = rendered_png_rows(screenshot.read_bytes())
 
         def pixel(x, y):
@@ -364,6 +367,8 @@ requestAnimationFrame(changePaths);
         assert log.count("draw=80x30 cache=miss") >= 2, log
         if label == "cached":
             assert log.count("draw=42x20 cache=miss") == 1, "Reordered path lost its retained texture"
+            assert log.count("draw=120x80 cache=miss bounds=miss") >= 2, "Path edit reused the old bounds"
+            assert "draw=80x30 cache=miss bounds=hit" in log, "A paint-only change discarded geometry"
         _, height, channels, rows = rendered_png_rows(screenshot.read_bytes())
 
         def pixel(x, y):

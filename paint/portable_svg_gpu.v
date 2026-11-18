@@ -1,6 +1,7 @@
 module main
 
 $if vox_gg_svg ? {
+	import cpuraster
 	import gg
 	import gg.canvas
 	import gg.render
@@ -13,7 +14,8 @@ $if vox_gg_svg ? {
 
 	const portable_svg_gpu_enabled = os.getenv('VOX_GG_SVG') == '1'
 	const portable_svg_gpu_diagnostics = os.getenv('VOX_GG_SVG_DIAGNOSTICS') == '1'
-	const disable_portable_svg_gpu_cache = os.getenv('VOX_DISABLE_GG_SVG_CACHE') == '1'
+	const portable_svg_gpu_cache_control = os.getenv('VOX_DISABLE_GG_SVG_CACHE')
+	const disable_portable_svg_gpu_cache = portable_svg_gpu_cache_control == '1'
 	const portable_svg_gpu_image_limit = 8
 	const portable_svg_gpu_texture_slots = 2 * portable_svg_gpu_image_limit
 	const portable_svg_gpu_pixel_limit = 1024 * 1024
@@ -32,6 +34,7 @@ $if vox_gg_svg ? {
 	mut:
 		image    gfx.Image
 		key      PortableSVGTextureKey
+		local_bounds cpuraster.Rect
 		// Own a bounded copy because document paint storage can retire or change
 		// between frames. Zero values recorded means the texture is transient.
 		values   [portable_svg_gpu_cached_values]f32
@@ -40,15 +43,36 @@ $if vox_gg_svg ? {
 	}
 
 	fn (texture &PortableSVGTexture) matches(key &PortableSVGTextureKey, values []f32) bool {
-		if texture.length != values.len || texture.key.width != key.width
+		if texture.key.width != key.width
 			|| texture.key.height != key.height || texture.key.color != key.color
 			|| texture.key.even_odd != key.even_odd {
 			return false
 		}
 		return unsafe {
 			vmemcmp(&texture.key.matrix[0], &key.matrix[0], 6 * int(sizeof(f32))) == 0
-				&& vmemcmp(&texture.values[0], values.data, values.len * int(sizeof(f32))) == 0
+		} && texture.matches_geometry(values)
+	}
+
+	fn (texture &PortableSVGTexture) matches_geometry(values []f32) bool {
+		return texture.length == values.len && unsafe {
+			vmemcmp(&texture.values[0], values.data, values.len * int(sizeof(f32))) == 0
 		}
+	}
+
+	fn portable_gpu_svg_local_bounds(values []f32) ?cpuraster.Rect {
+		state := unsafe { portable_svg_gpu }
+		if disable_portable_svg_gpu_cache || portable_svg_gpu_cache_control == 'bounds'
+			|| state.canvas == unsafe { nil } || state.count == portable_svg_gpu_image_limit
+			|| values.len > portable_svg_gpu_cached_values {
+			return none
+		}
+		for index in 0 .. portable_svg_gpu_texture_slots {
+			texture := &state.textures[index]
+			if texture.matches_geometry(values) {
+				return texture.local_bounds
+			}
+		}
+		return none
 	}
 
 	fn (mut texture PortableSVGTexture) release() {
@@ -157,7 +181,8 @@ $if vox_gg_svg ? {
 	}
 
 	fn draw_portable_gpu_svg_fill(renderer &render.Context, data layout.PaintSVGPathData,
-		matrix [6]f32, bounds painting.IntRect, color gg.Color) bool {
+		matrix [6]f32, bounds painting.IntRect, color gg.Color, local_bounds cpuraster.Rect,
+		reused_bounds bool) bool {
 		mut state := unsafe { portable_svg_gpu }
 		// Bound GPU memory and the number of pending passes for this replay.
 		if renderer == unsafe { nil } || state.count == portable_svg_gpu_image_limit
@@ -209,6 +234,7 @@ $if vox_gg_svg ? {
 			texture.image = state.rasterize(data, &key) or { return false }
 			if cacheable {
 				texture.key = key
+				texture.local_bounds = local_bounds
 				unsafe {
 					vmemcpy(&texture.values[0], data.path_data.data, data.path_data.len * int(sizeof(f32)))
 				}
@@ -238,7 +264,7 @@ $if vox_gg_svg ? {
 		renderer.disable_texture()
 		renderer.pop_pipeline()
 		if portable_svg_gpu_diagnostics {
-			eprintln('VOX_GG_SVG draw=${bounds.width}x${bounds.height} cache=${if reused { "hit" } else { "miss" }}')
+			eprintln('VOX_GG_SVG draw=${bounds.width}x${bounds.height} cache=${if reused { "hit" } else { "miss" }} bounds=${if reused_bounds { "hit" } else { "miss" }}')
 		}
 		return true
 	}
