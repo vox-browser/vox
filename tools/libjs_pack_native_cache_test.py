@@ -8,7 +8,7 @@ import unittest
 from unittest.mock import patch
 
 from libjs_capture_native_compiler import C_FLAGS, capture_compile
-from libjs_pack_native_cache import digest, libraries_from_trace, link_group, pack_cache
+from libjs_pack_native_cache import digest, libraries_from_trace, link_group, pack_cache, pack_from_benchmark
 
 
 class CacheTraceTests(unittest.TestCase):
@@ -223,6 +223,73 @@ class PackNativeCacheTests(unittest.TestCase):
         with self.assertRaises(subprocess.CalledProcessError):
             capture_compile([*C_FLAGS, "-dynamiclib", str(source), "-o", str(output)], captures)
         self.assertEqual(list(captures.iterdir()), [])
+
+    def benchmark_pair(self):
+        captures = self.root / "captures"
+        batches = {}
+        for value in (4, 5):
+            name, source = self.build_captured_library(value)
+            batches[name] = dict(library_sha256=digest(self.directory / name), source_sha256=digest(source))
+        seed = self.root / "seed-results.json"
+        trace = self.root / "trace-results.json"
+        old_folder = self.root / "original-report" / "0-libjs-native"
+        folder = self.root / old_folder.name
+        folder.mkdir()
+        log = folder / "native-library-trace.log"
+        log.write_text("".join(f"dyld[42]: <uuid> {self.directory / name}\n" for name in batches))
+        base = dict(engine="libjs-native", valid=True, exit=0,
+                    browser_overrides={"VOX_LIBJS_NATIVE_CACHE": str(self.cache)})
+        prepared = dict(base, compiler_captures=dict(abi=self.abi, directory=str(captures), batches=batches))
+        reopened = dict(base, pid=42, folder=str(old_folder), native_library_trace=dict(
+            abi=self.abi, pid=42, path=str(old_folder / log.name), sha256=digest(log), libraries=sorted(batches)))
+        seed.write_text(json.dumps(dict(complete=True, prepare_native_cache=True, attempts=[prepared])))
+        pins = {str(path.resolve()): digest(path) for path in self.directory.iterdir()}
+        trace.write_text(json.dumps(dict(complete=True, trace_native_libraries=True, attempts=[reopened], inputs=pins)))
+        return seed, trace, log
+
+    def test_cli_packs_verified_benchmark_results_after_relocation(self):
+        seed, trace, log = self.benchmark_pair()
+        tool = Path(__file__).with_name("libjs_pack_native_cache.py")
+        report = json.loads(subprocess.check_output([
+            sys.executable, str(tool), "--seed-results", str(seed), "--trace-results", str(trace),
+            "--output", str(self.output),
+        ]))
+        self.assertEqual(report["benchmark"]["seed"]["sha256"], digest(seed))
+        self.assertEqual(report["benchmark"]["trace"]["sha256"], digest(trace))
+        self.assertEqual(report["trace"], dict(pid=42, path=str(log.resolve()), sha256=digest(log)))
+        self.assertEqual((report["records"], report["grouped_records"]), (5, 2))
+        directory = self.output / self.abi
+        output = ctypes.CDLL(str(directory / report["library"]))
+        for value in (4, 5):
+            record = json.loads((directory / f"{value:064x}.json").read_bytes())
+            self.assertEqual(getattr(output, f"vox_native_{record['symbol']}")(), value)
+
+    def test_benchmark_results_reject_a_changed_loader_log(self):
+        seed, trace, log = self.benchmark_pair()
+        log.write_bytes(log.read_bytes() + b"later log entry\n")
+        with self.assertRaisesRegex(ValueError, "Loader log differs"):
+            pack_from_benchmark(seed, trace, self.output)
+        self.assertFalse(self.output.exists())
+
+    def test_benchmark_results_reject_new_cache_record_bytes(self):
+        seed, trace, _ = self.benchmark_pair()
+        entry = self.directory / f"{1:064x}.json"
+        entry.write_bytes(entry.read_bytes() + b"\n")
+        with self.assertRaisesRegex(ValueError, "Native cache differs"):
+            pack_from_benchmark(seed, trace, self.output)
+        self.assertFalse(self.output.exists())
+
+    def test_benchmark_results_reject_rewritten_capture_and_receipt(self):
+        seed, trace, _ = self.benchmark_pair()
+        batch = next((self.root / "captures").iterdir())
+        source, receipt = batch / "code.c", batch / "receipt.json"
+        source.write_text("int vox_native_0(void) { return 100; }\n")
+        checks = json.loads(receipt.read_bytes())
+        checks["source_sha256"] = digest(source)
+        receipt.write_text(json.dumps(checks))
+        with self.assertRaisesRegex(ValueError, "Compiler capture differs"):
+            pack_from_benchmark(seed, trace, self.output)
+        self.assertFalse(self.output.exists())
 
 
 if __name__ == "__main__":

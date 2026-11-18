@@ -118,7 +118,7 @@ def link_group(source, objects, receipt, selected, libraries, symbols, work):
     return link_objects(work, inputs, expected)
 
 
-def link_captured_group(source, captures, selected, libraries, symbols, work):
+def link_captured_group(source, captures, selected, libraries, symbols, work, compiler_batches):
     exported = {name: exports(source / name) for name in sorted(selected)}
     # Keep the renamed numbers outside every original range. The preprocessor
     # then expands each definition once, without another rename matching it.
@@ -130,6 +130,9 @@ def link_captured_group(source, captures, selected, libraries, symbols, work):
         if not symbols[name] <= original:
             raise ValueError(f"Capture and cache library differ: {name}")
         captured, source_sha = captured_source(captures, libraries[name])
+        if compiler_batches is not None and compiler_batches.get(name) != dict(
+                library_sha256=libraries[name], source_sha256=source_sha):
+            raise ValueError(f"Compiler capture differs from the seed results: {name}")
         input_c = work / f"batch-{index}.c"
         shutil.copyfile(captured, input_c)
         if digest(input_c) != source_sha:
@@ -148,7 +151,7 @@ def link_captured_group(source, captures, selected, libraries, symbols, work):
 
 
 def pack_cache(cache, abi, objects, receipt_path, libraries_to_group, output, *,
-               captures=None, trace=None, trace_pid=None):
+               captures=None, trace=None, trace_pid=None, cache_pins=None, compiler_batches=None):
     if sys.platform != "darwin":
         raise ValueError("Native cache grouping requires macOS")
     if not SHA256.fullmatch(abi):
@@ -167,6 +170,11 @@ def pack_cache(cache, abi, objects, receipt_path, libraries_to_group, output, *,
     records, libraries, symbols = read_records(source, abi)
     if selected - libraries.keys():
         raise ValueError(f"Selected libraries lack cache records: {sorted(selected - libraries.keys())}")
+    if cache_pins is not None:
+        traced_records = {name: sha for name, sha in cache_pins.items() if name.endswith(".json")}
+        record_digests = {name: hashlib.sha256(raw).hexdigest() for name, (raw, _) in records.items()}
+        if record_digests != traced_records or any(cache_pins.get(name) != sha for name, sha in libraries.items()):
+            raise ValueError("Native cache differs from the trace results")
     for name, sha in libraries.items():
         if digest(source / name) != sha:
             raise ValueError(f"Library digest mismatch: {name}")
@@ -184,7 +192,7 @@ def pack_cache(cache, abi, objects, receipt_path, libraries_to_group, output, *,
         if captures is None:
             image = link_group(source, objects, receipt, selected, libraries, symbols, work)
         else:
-            image, remaps = link_captured_group(source, captures, selected, libraries, symbols, work)
+            image, remaps = link_captured_group(source, captures, selected, libraries, symbols, work, compiler_batches)
         sha = digest(image)
         grouped = sha + ".dylib"
         image.rename(stage / grouped)
@@ -228,28 +236,87 @@ def pack_cache(cache, abi, objects, receipt_path, libraries_to_group, output, *,
     return result
 
 
+def benchmark_results(path):
+    raw = path.read_bytes()
+    report = json.loads(raw)
+    if not isinstance(report, dict) or report.get("complete") is not True:
+        raise ValueError(f"Incomplete benchmark results: {path}")
+    return report, dict(path=str(path.resolve()), sha256=hashlib.sha256(raw).hexdigest())
+
+
+def pack_from_benchmark(seed_results, trace_results, output, trace_pid=None):
+    seed, seed_input = benchmark_results(seed_results)
+    traced, trace_input = benchmark_results(trace_results)
+    if seed.get("prepare_native_cache") is not True or traced.get("trace_native_libraries") is not True:
+        raise ValueError("Expected compiler-capture seed results and a traced native reopen")
+    seeds = [row for row in seed["attempts"] if row.get("compiler_captures")]
+    reopens = [row for row in traced["attempts"] if row.get("native_library_trace")
+               and (trace_pid is None or row["pid"] == trace_pid)]
+    if len(seeds) != 1 or len(reopens) != 1:
+        raise ValueError("Expected one compiler-capture seed and one traced attempt. Use --trace-pid to select a trace.")
+    prepared, reopened = seeds[0], reopens[0]
+    for row in (prepared, reopened):
+        if row["engine"] != "libjs-native" or row["valid"] is not True or row["exit"] != 0:
+            raise ValueError("Expected successful LibJS native cache attempts")
+    captured, trace = prepared["compiler_captures"], reopened["native_library_trace"]
+    abi = captured["abi"]
+    cache = Path(prepared["browser_overrides"]["VOX_LIBJS_NATIVE_CACHE"]).resolve()
+    if (not SHA256.fullmatch(abi) or trace["abi"] != abi or trace["pid"] != reopened["pid"]
+            or Path(reopened["browser_overrides"]["VOX_LIBJS_NATIVE_CACHE"]).resolve() != cache):
+        raise ValueError("Seed and trace must use the same native cache and ABI")
+
+    folder, recorded_log = Path(reopened["folder"]), Path(trace["path"])
+    if not folder.is_absolute() or folder.name in ("", "..") or recorded_log != folder / "native-library-trace.log":
+        raise ValueError("Invalid benchmark trace path")
+    # The benchmark directory can move with its attempt folders and logs.
+    log = Path(trace_input["path"]).parent / folder.name / recorded_log.name
+    source = cache / abi
+    selected, log_input = libraries_from_trace(log, source, trace["pid"])
+    if log_input["sha256"] != trace["sha256"] or selected != trace["libraries"]:
+        raise ValueError("Loader log differs from the trace results")
+    pins = {Path(path).name: sha for path, sha in traced["inputs"].items() if Path(path).parent == source}
+    result = pack_cache(cache, abi, None, None, selected, output, captures=Path(captured["directory"]),
+                        cache_pins=pins, compiler_batches=captured["batches"])
+    result.update(trace=log_input, benchmark=dict(seed=seed_input, trace=trace_input))
+    return result
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--cache", required=True, type=Path, help="source cache root containing the ABI directory")
-    parser.add_argument("--abi", required=True, help="native cache ABI digest")
+    parser.add_argument("--cache", type=Path, help="source cache root containing the ABI directory")
+    parser.add_argument("--abi", help="native cache ABI digest")
     parser.add_argument("--objects", type=Path, help="directory of retained relocatable object files")
     parser.add_argument("--receipt", type=Path, help="link receipt with object_files and ABI")
     parser.add_argument("--captures", type=Path, help="directory saved by libjs_capture_native_compiler.py")
-    selection = parser.add_mutually_exclusive_group(required=True)
+    parser.add_argument("--seed-results", type=Path, help="GitHub benchmark results from a compiler-capture seed")
+    selection = parser.add_mutually_exclusive_group()
     selection.add_argument("--library", action="append", help="cache library basename to group (repeatable)")
     selection.add_argument("--trace", type=Path, help="completed DYLD_PRINT_LIBRARIES log from this cache")
+    selection.add_argument("--trace-results", type=Path, help="GitHub benchmark results from a traced reopen")
     parser.add_argument("--trace-pid", type=int, help="process to select when the trace covers multiple launches")
     parser.add_argument("--output", required=True, type=Path, help="new private cache root")
     args = parser.parse_args()
-    if args.captures is None and (args.objects is None or args.receipt is None):
-        parser.error("use --captures or both --objects and --receipt")
-    if args.captures is not None and (args.objects is not None or args.receipt is not None):
-        parser.error("--captures is an alternative to --objects and --receipt")
-    if args.trace_pid is not None and (args.trace is None or args.trace_pid <= 0):
-        parser.error("--trace-pid requires --trace and a positive PID")
+    benchmark = args.seed_results is not None or args.trace_results is not None
+    if benchmark:
+        if args.seed_results is None or args.trace_results is None:
+            parser.error("supply both --seed-results and --trace-results")
+        if any((args.cache, args.abi, args.captures, args.objects, args.receipt)):
+            parser.error("benchmark results supply the source cache, ABI, captures and trace")
+    else:
+        if not args.cache or not args.abi or (args.library is None and args.trace is None):
+            parser.error("supply --cache, --abi, and --library or --trace")
+        if args.captures is None and (args.objects is None or args.receipt is None):
+            parser.error("use --captures or both --objects and --receipt")
+        if args.captures is not None and (args.objects is not None or args.receipt is not None):
+            parser.error("--captures is an alternative to --objects and --receipt")
+    if args.trace_pid is not None and (args.trace_pid <= 0 or not (args.trace or args.trace_results)):
+        parser.error("--trace-pid requires a positive PID and --trace or --trace-results")
     try:
-        receipt = pack_cache(args.cache, args.abi, args.objects, args.receipt, args.library, args.output,
-                             captures=args.captures, trace=args.trace, trace_pid=args.trace_pid)
+        if benchmark:
+            receipt = pack_from_benchmark(args.seed_results, args.trace_results, args.output, args.trace_pid)
+        else:
+            receipt = pack_cache(args.cache, args.abi, args.objects, args.receipt, args.library, args.output,
+                                 captures=args.captures, trace=args.trace, trace_pid=args.trace_pid)
     except (OSError, ValueError, KeyError, TypeError, subprocess.CalledProcessError) as error:
         print(f"libjs_pack_native_cache: {error}", file=sys.stderr)
         return 1

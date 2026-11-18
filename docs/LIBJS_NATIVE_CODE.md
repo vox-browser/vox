@@ -1482,3 +1482,33 @@ packer consumes the saved trace and groups both libraries. The
 grouped reopen retains the seed screenshot and all 152 cache hits.
 Local receipts are under
 `docs/performance/libjs-github-browser-20261116/libjs-github-benchmark-loader-trace-20261118/`.
+
+### Pack from GitHub benchmark results
+
+The packer accepts `results.json` from a successful
+`--native-captures` seed and a `--trace-native-libraries` reopen of
+the same cache and ABI. It checks the cached records and libraries
+against the trace input digests, and checks the selected C batches
+against the seed receipt before publishing the group.
+
+```sh
+python3 tools/libjs_pack_native_cache.py \
+  --seed-results "$seed_run/results.json" \
+  --trace-results "$trace_run/results.json" \
+  --output "$grouped_cache"
+```
+
+Keep the trace report with its attempt folders and loader logs.
+The report directory can move. The packer opens the cache and
+captures at the paths in the reports. If the trace report contains
+multiple visits, pass `--trace-pid` to select one. The pack receipt
+records both results files and the loader log by digest.
+
+The packer consumes the retained fixture reports and groups 152
+records. The compiler-disabled reopen matches the seed screenshot
+and hits all 152 records. A separate reopen of the full frozen
+GitHub page reuses its existing optimized group, matches the pinned
+screenshot and repository audit, and evaluates all 81 modules with
+2,949 hits. Both runs have zero misses or compiler calls. Local
+receipts are under
+`docs/performance/libjs-github-browser-20261116/libjs-pack-from-benchmark-20261118/`.
