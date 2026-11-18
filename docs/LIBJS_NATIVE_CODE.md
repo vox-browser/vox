@@ -1003,3 +1003,41 @@ new executable. The earlier performance cohort remains rejected.
 
 Raw inputs, images, exits and diagnostic receipts remain local under
 `docs/performance/libjs-github-browser-20261116/libjs-github-primer-effects-9568-20261118/`.
+
+## Inline call argument workspaces, 2026-11-18
+
+The frozen GitHub capture on `5d72f614…1660` records 267,507 argument
+workspace calls. `58bf9f099` stores the eight value slots directly in
+the workspace. This removes a separate allocation and lets the cleanup
+loop write fixed-array slots. Each new slot is explicitly initialized
+to JavaScript undefined. An initial candidate using implicit array
+initialization generated empty tags and was rejected during C inspection.
+
+Two single-C `-prod -prealloc -gc none` builds differ only in this
+workspace's storage and accesses in generated host C. Both return 42
+and execute 750,000 workspace calls per diagnostic loop. Within each
+argument width, both builds reopen the same generated native library
+with one hit and zero misses or compiler calls. Seven alternating
+fresh-process pairs per width count retired instructions through exit
+with diagnostic counters disabled.
+
+| Arguments | Previous median | Inline workspace median | Reduction |
+| --- | ---: | ---: | ---: |
+| Two | 1,373,619,924 | 1,347,301,188 | 1.92% |
+| Eight | 1,959,154,349 | 1,901,742,812 | 2.93% |
+
+All 14 pairs improve. Both widths also return 42 in the interpreter.
+A separate 72-level recursive throw preserves eight-argument calls,
+retained arguments objects, proxy calls and the original thrown value.
+The interpreter stack returns to its initial mark. The probe passes with
+default GC and with preallocation and GC disabled. Both compiler-disabled
+reopens record four hits, zero misses or compiler calls, 78 native
+entries and 76 workspace calls. The updated workspace regression
+type-checks and stays unrun under the automated-suite hold.
+
+The managed build that was in progress during the edit rejected the
+changed source. A subsequent managed build is underway. The savings
+above apply to the standalone call loops. Frozen-page validation of this
+change awaits a publication containing it. Exact counts, generated C
+differences, artifact hashes and guard receipts remain local under
+`docs/performance/libjs-github-browser-20261116/libjs-github-inline-workspace-20261118/`.
