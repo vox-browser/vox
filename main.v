@@ -8104,15 +8104,7 @@ fn (mut app BrowserApp) draw() {
 			return
 		}
 		app.screenshot_scheduled = true
-		if os.getenv('VOX_CAPTURE_DOCUMENT_ONLY') == '1' {
-			$if macos {
-				C.schedule_native_document_screenshot(app.screenshot_path, f64(app.page_top()),
-					f64(app.viewport_width), f64(app.viewport_height), voidptr(&app), native_document_capture_audit)
-			} $else {
-				app.write_capture_audit_if_requested()
-				app.application.schedule_native_screenshot(app.screenshot_path)
-			}
-		} else {
+		if !app.schedule_document_screenshot(app.screenshot_path) {
 			app.write_capture_audit_if_requested()
 			app.application.schedule_native_screenshot(app.screenshot_path)
 		}
