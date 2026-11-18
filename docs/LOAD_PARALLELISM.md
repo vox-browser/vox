@@ -156,6 +156,13 @@ spans 2,217 to 3,607 ms within each variant; its +3.8% is not a measured
 regression, and the −2.6% at scale 2 is not established either. The main
 thread's share of process CPU stays at 71% to 84%.
 
+The bundle published from the committed tree (`67f4a238a1ba…`, head
+`1aa004a52`) repeated three alternating pairs per page at scale 2 at load
+averages of 10 to 13. Main-thread CPU was 243, 244 and 247 ms
+against 269, 269 and 272 ms on Hacker News, 286, 287 and 287 ms against 295,
+303 and 303 ms on old Reddit, and 3249, 3327 and 3512 ms against 3333, 3755
+and 4141 ms on GitHub, again with byte-identical captures and zero exits.
+
 ### Frames in a normal Retina window
 
 Three alternating rounds per page in an ordinary window at device scale 2,
