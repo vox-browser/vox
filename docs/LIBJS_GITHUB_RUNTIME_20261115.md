@@ -7812,3 +7812,48 @@ The standard crop differs from the unchanged Brave Back PNG at
 118,327 pixels and still shows the blue progress strip. The pixel
 verdict exits one. The PNGs, audits and guard receipts are retained
 with the event trace.
+
+### GitHub soft-navigation bindings
+
+The progress trace on the published `66f97ef0` bundle recorded two
+99 ms timers in Vox. Both fired and the first inserted the progress
+element. Brave scheduled one timer and canceled it when README rendered.
+The private observer used the archived scripts, a separate observer asset
+and instrumented HTML. The sampled 12 GiB guard ended the Vox trace with
+exit 137 at 12,924,190,720 bytes after the toolbar Back input. Brave exited
+zero at 996,704,256 sampled peak bytes.
+
+GitHub's soft-navigation code reads and writes its marker through
+`sessionStorage`. A private storage shim produced the progress-end event
+and exposed a missing `HTMLMetaElement.content` property when React Router
+read the visitor payload. The underlying archived attribute decoded as
+valid base64 JSON. The storage-only replay exited cleanly in the browser
+and failed the controller's README content check. It used 10,060,824,576
+sampled peak bytes.
+
+Adding the reflected metadata properties to the private fixture let
+README render and allowed the native toolbar Back input. The progress
+element disappeared and the returned repository title was observed. The
+guard ended that run with exit 137 at 12,887,097,344 sampled bytes before
+capture or the shutdown audit. The trace also identified the missing
+`Element.attributes` used by GitHub to snapshot the root attributes and
+restore them on Back.
+
+Commit `c7a1a2e36` exposes the native session storage owner.
+Commit `a187bc80c` reflects HTML metadata through the DOM attribute
+mutator. Commit `21dfd0604` exposes native attribute records as live
+`Attr` nodes in `NamedNodeMap`. Standalone LibJS probes exercised storage
+identity, Unicode, origin and tab isolation, metadata decoding, live
+attributes and restoration through native Back. Each runtime probe
+completed under the focused 3 GiB guard. The production type-check of
+the combined changes completed in 41.083 seconds at 7,119,486,976
+sampled peak bytes. See the
+[HTML storage getter](https://html.spec.whatwg.org/multipage/webstorage.html#dom-sessionstorage),
+[metadata interface](https://html.spec.whatwg.org/multipage/semantics.html#the-meta-element)
+and [DOM attribute map](https://dom.spec.whatwg.org/#interface-namednodemap).
+
+The strict archived replay and exact pixel verdict require a published
+bundle containing these changes. The newest completed bundle at the time
+of these diagnostics was still `66f97ef0`. The local
+`repository-navigation-5204-r88/receipts` directory retains the observer
+manifests, audit states and guard exits.
