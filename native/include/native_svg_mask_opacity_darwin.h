@@ -3,7 +3,7 @@
 
 #include "native_sparse_opacity_ink_darwin.h"
 
-#include "native_opacity_group_darwin.h"
+#include "native_opacity_composite_rows.h"
 #include "native_opacity_canvas_pool_darwin.h"
 #include "native_bitmap_snapshot_darwin.h"
 
@@ -64,11 +64,9 @@ static void native_end_svg_mask_bitmap_opacity(VoxSVGMaskOpacityBitmap *group)
         CGRect device = CGRectMake(left, top, ink_width, ink_height);
         int copied = 0;
         if (pixels) {
-            for (size_t row = 0; row < ink_height; ++row)
-                native_composite_opacity_pixels(
-                    group->canvas.pixels + (top + row) * pitch + (size_t)left * 4,
-                    backdrop + (top + row) * parent_pitch + (size_t)left * 4,
-                    pixels + row * ink_width * 4, ink_width, group->opacity);
+            native_composite_opacity_rows(group->canvas.pixels + (size_t)top * pitch + (size_t)left * 4, pitch,
+                backdrop + (size_t)top * parent_pitch + (size_t)left * 4, parent_pitch,
+                pixels, ink_width * 4, ink_width, (int32_t)ink_height, group->opacity, 0);
             image = native_take_bitmap_image_for_destination(result, parent);
             copied = image != NULL;
         } else if (result) CGContextRelease(result);

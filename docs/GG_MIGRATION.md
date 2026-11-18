@@ -4962,3 +4962,49 @@ Observed throughput stayed close to 58.6–58.7 publications per second
 across settings. The parallel trials had more intervals over budget.
 The result establishes native worker use on this archive, with no
 measurable scrolling gain under this short input schedule.
+
+### Parallel macOS opacity-group compositing
+
+The macOS CSS opacity and SVG mask groups use the CPU raster workers for
+large blends. The caller flushes Quartz, lends the source and backdrop
+bitmaps, and publishes the result after the worker batch joins. Each
+worker owns complete output rows and uses the existing normal or screen
+pixel kernel. Groups below 131,072 pixels and
+`VOX_SERIAL_CPU_RASTER=1` use a single range.
+
+Matching Apple Clang 21 `-O2` harnesses timed compositing into a completed
+RGBA buffer. Seven alternating fresh-process groups used the previous
+row loop, the new forced-serial path, and the new default. Warm inputs
+had one untimed composite. The 18-logical-CPU host's one-minute load was
+6.13. Every process and the guard exited 0, and output hashes matched
+across all arms.
+
+| Region and blend | Before, µs | Candidate serial, µs | Candidate default, µs | Default faster than before |
+| --- | ---: | ---: | ---: | ---: |
+| 84×72, padded normal, warm | 7.042 | 6.833 | 6.792 | 6/7 |
+| 511×385, padded normal, cold | 214.959 | 213.792 | 102.333 | 7/7 |
+| 1480×960, normal, warm | 1245.334 | 1255.375 | 366.542 | 7/7 |
+| 1480×960, screen, warm | 2437.583 | 2372.583 | 667.667 | 7/7 |
+
+A separate dispatch probe resolved the worker entry at executable offset
+`0x2c68` and observed four distinct threads for the large normal and
+screen cases. The small and forced-serial cases stayed on the caller.
+The optimized and ASan/UBSan unit tests passed for both modes, padded
+destinations and changing rounding modes. ThreadSanitizer passed both
+large blend cases. Core Graphics tests compiled the previous and
+current CSS and SVG mask group endings in ARC and non-ARC modes. They
+matched byte for byte on cropped groups with a padded parent bitmap.
+
+The published single-C-unit build
+`66f97ef08d4c9ff9ae1195cd80c9817add78ab82c27960580f1444a44101e77d`
+supplied browser eligibility observations. Sealed Hacker News, GitHub
+and Old Reddit captures at 1024×768 CSS pixels and 2× backing scale
+matched their prior content and decoded RGBA references after a
+one-second settle. All browser processes and the guard exited 0.
+An allocation probe at executable offset `0x1cd9c` found three CSS
+blend regions on GitHub (84×72, 90×28, 28×32). All fit the serial path.
+Hacker News and Old Reddit made no allocations at that call site.
+A local opacity control exercised the same call site with a 1480×960
+region. The table measures only the native blend, with the large
+control's dimensions. Whole-browser verification of the new worker
+code awaits its production build.

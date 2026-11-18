@@ -772,7 +772,7 @@ void native_end_background_blend_mode(void) {
 	}
 }
 
-#include "native/include/native_chromium_screen_blend.h"
+#include "native/include/native_opacity_composite_rows.h"
 
 static CGBlendMode native_compositing_operator(int mode) {
 	switch (mode) {
@@ -911,16 +911,11 @@ static void native_end_offscreen_opacity_group(NativeOpacityGroup *group) {
 			8, ink_width * 4, color_space, kCGImageAlphaPremultipliedLast | kCGBitmapByteOrder32Big);
 		uint8_t *result = result_context == NULL ? NULL : (uint8_t *)CGBitmapContextGetData(result_context);
 		if (result != NULL) {
-			for (size_t row = 0; row < ink_height; ++row) {
-				if (group->blend_mode == 3) native_composite_screen_pixels(
-					group->pixels + (top + row) * layer_pitch + (size_t)left * 4,
-					backdrop + (top + row) * parent_pitch + (size_t)left * 4,
-					result + row * ink_width * 4, ink_width, group->opacity);
-				else native_composite_opacity_pixels(
-					group->pixels + (top + row) * layer_pitch + (size_t)left * 4,
-					backdrop + (top + row) * parent_pitch + (size_t)left * 4,
-					result + row * ink_width * 4, ink_width, group->opacity);
-			}
+			native_composite_opacity_rows(
+				group->pixels + (size_t)top * layer_pitch + (size_t)left * 4, layer_pitch,
+				backdrop + (size_t)top * parent_pitch + (size_t)left * 4, parent_pitch,
+				result, ink_width * 4, ink_width, (int32_t)ink_height, group->opacity,
+				group->blend_mode == 3);
 			CGImageRef image = native_take_bitmap_image_for_destination(result_context, group->parent);
 			if (image != NULL) {
 				// Copy the composite into place under the backdrop's clip.
