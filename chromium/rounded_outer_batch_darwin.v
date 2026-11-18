@@ -164,7 +164,7 @@ fn rounded_outer_batch_indices(commands []layout.PaintCommand, layers []int, sta
 fn (mut app BrowserApp) draw_disjoint_rounded_batch(start int, page_y f32) []int {
 	if !disjoint_rounded_batch || !app.ctx.native_rendering || app.page_zoom != 1
 		|| app.document == unsafe { nil } || app.document.font_rendering_policy() != .chromium
-		|| C.native_display_device_pixel_ratio() != 1 {
+		|| C.native_raster_device_pixel_ratio() != 1 {
 		return []int{}
 	}
 	indices := rounded_outer_batch_indices(app.paint_commands, app.chromium_raster_plan.command_layers, start)

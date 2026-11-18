@@ -510,7 +510,7 @@ fn (mut app BrowserApp) update_chromium_viewport_raster_plan() {
 	defer { stage.finish() }
 	$if macos {
 		if app.page_zoom != 1 || app.document == unsafe { nil } { return }
-		scale := C.native_display_device_pixel_ratio()
+		scale := C.native_raster_device_pixel_ratio()
 		viewport := layout.LayoutRect{0, app.scroll_y, app.viewport_width, app.viewport_height}
 		if !layout.chromium_raster_cull_changed(app.document, viewport, scale, &app.chromium_raster_plan) {
 			return
@@ -530,7 +530,7 @@ fn (mut app BrowserApp) set_chromium_msaa_tiles() {
 		document_geometry_grid = DocumentGeometryGrid{}
 		app.chromium_background_uses_local_origin = false
 		app.begin_chromium_image_decode_frame()
-		scale := C.native_display_device_pixel_ratio()
+		scale := C.native_raster_device_pixel_ratio()
 		layout_scale := if app.document != unsafe { nil } { app.document.layout_coordinate_scale() } else { 1.0 }
 		if os.getenv('VOX_DIAGNOSTIC_PAINT_LAYER') != '' {
 			top := app.scroll_y * layout_scale
@@ -576,7 +576,7 @@ fn (mut app BrowserApp) select_chromium_raster_layer(index int) {
 		} else { index }
 		layer := app.chromium_raster_plan.layers[raster_index]
 		app.chromium_background_uses_local_origin = raster_index > 0 && !layer.legacy_raster
-		scale := C.native_display_device_pixel_ratio()
+		scale := C.native_raster_device_pixel_ratio()
 		phase_origin := layer.compositor_origin or { [layer.bounds.x, layer.bounds.y]! }
 		compositor_shape_basis = f32(1 / app.document.layout_coordinate_scale())
 		select_compositor_raster_phase(phase_origin[0], phase_origin[1],

@@ -136,6 +136,7 @@ fn C.native_add_background_text_clip_run(x f32, y f32, text string, size f32, bo
 fn C.native_add_background_glyph_clip_run(glyphs &u16, positions &f64, glyph_count int, font_size f32, font_weight int, emoji_face int, baseline_x f32, baseline_y f32, transform_a f32, transform_b f32, transform_c f32, transform_d f32, transform_e f32, transform_f f32, page_x f32, page_y f32, scroll_y f32, canvas_width f32, canvas_height f32, font_path string, face_index int, font_smoothing int) int
 
 fn C.native_display_device_pixel_ratio() f64
+fn C.native_raster_device_pixel_ratio() f64
 
 fn C.native_register_system_face(key string, path string, postscript_name string, axis_tags &u32, axis_values &f32, axis_count int) int
 

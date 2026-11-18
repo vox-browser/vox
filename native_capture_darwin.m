@@ -527,10 +527,6 @@ static CGFloat native_screenshot_scale(void) {
 	return isfinite(scale) && scale > 1.0 ? (CGFloat)scale : 1.0;
 }
 
-static BOOL native_screenshot_uses_logical_pixels(void) {
-	return getenv("LADYBIRD_SCREENSHOT_DELAY_SECONDS") != NULL && native_screenshot_scale() <= 1.0;
-}
-
 void native_cache_browser_snapshot(string path_value) {
 	NSString *path = native_capture_string(path_value);
 	BOOL debug_snapshot = getenv("LADYBIRD_DEBUG_SNAPSHOT") != NULL;
@@ -1018,6 +1014,13 @@ double native_display_device_pixel_ratio(void) {
 	}
 	CGFloat scale = [[NSScreen mainScreen] backingScaleFactor];
 	return isfinite(scale) && scale > 0 ? scale : 1.0;
+}
+
+// A live screenshot can redraw at a different scale from the window. Paint
+// uses the capture target while DOM media queries keep the window density.
+double native_raster_device_pixel_ratio(void) {
+	if (native_layer_capture_scale > 0) return native_layer_capture_scale;
+	return native_display_device_pixel_ratio();
 }
 
 // Retained glyph runs name the exact face V shaped them with: either a font
@@ -2544,14 +2547,9 @@ static CGFloat native_window_backing_scale(void) {
 }
 
 static CGFloat native_svg_mask_backing_scale(void) {
-	// Screenshot references are logical-pixel Skia surfaces. Building nested
-	// masks, patterns, and filter layers at the Retina window scale and then
-	// shrinking the captured view applies a second sampling kernel and changes
-	// edge coverage. Keep those intermediate surfaces at the reference scale;
-	// interactive windows still use their native backing density.
-	if (native_screenshot_uses_logical_pixels()) {
-		return 1.0;
-	}
+	// Intermediate masks, patterns and filters use the same raster density
+	// as the frame that composites them.
+	if (native_layer_capture_scale > 0) return native_layer_capture_scale;
 	if (getenv("LADYBIRD_SCREENSHOT_DELAY_SECONDS") != NULL) {
 		return native_screenshot_scale();
 	}

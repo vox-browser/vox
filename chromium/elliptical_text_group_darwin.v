@@ -125,7 +125,7 @@ fn elliptical_text_coverage(command &layout.PaintCommand, geometry [7]i32, page_
 
 fn (mut app BrowserApp) draw_elliptical_text_group(start int, page_y f32) int {
 	if !app.ctx.native_rendering || app.document == unsafe { nil } || app.page_zoom != 1
-		|| app.document.font_rendering_policy() != .chromium || C.native_display_device_pixel_ratio() != 1 {
+		|| app.document.font_rendering_policy() != .chromium || C.native_raster_device_pixel_ratio() != 1 {
 		return start
 	}
 	selected := elliptical_text_group_indices(app.paint_commands, app.chromium_raster_plan.command_layers, start, layout.LayoutRect{0, 0, f64(app.viewport_width), f64(app.viewport_height)})

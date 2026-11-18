@@ -190,12 +190,12 @@ fn (mut app BrowserApp) record_document_paint_commands() {
 	app.adopt_current_document_geometry()
 	app.prime_document_paint_resources()
 	app.prepare_native_css_filter_renderer()
-	// Raster-layer origins and tile grids use screen pixels. Zoomed commands
+	// Raster-layer origins and tile grids use frame pixels. Zoomed commands
 	// use the ordinary compositing layer until those plans support a scale.
 	if document.font_rendering_policy() == .chromium && app.page_zoom == 1 {
 		mut raster_scale := 1.0
 		$if macos {
-			raster_scale = C.native_display_device_pixel_ratio()
+			raster_scale = C.native_raster_device_pixel_ratio()
 		}
 		layout.update_chromium_raster_layer_plan_for_viewport(document, app.paint_commands,
 			raster_scale, layout.LayoutRect{0, app.scroll_y, app.viewport_width, app.viewport_height},

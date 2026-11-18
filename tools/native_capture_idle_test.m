@@ -49,9 +49,16 @@ static unsigned termination_calls;
 @end
 static MyView2 *capture_view;
 static unsigned draws;
+static double draw_raster_scale;
+static CGFloat draw_mask_scale;
+static double native_display_device_pixel_ratio(void);
+double native_raster_device_pixel_ratio(void);
+static CGFloat native_svg_mask_backing_scale(void);
 static void capture_draw(id view, SEL command, NSRect bounds) {
     (void)view; (void)command;
     ++draws;
+    draw_raster_scale = native_raster_device_pixel_ratio();
+    draw_mask_scale = native_svg_mask_backing_scale();
     CGContextRef context = NSGraphicsContext.currentContext.CGContext;
     CGContextSetRGBFillColor(context, 1, 1, 1, 1);
     CGContextFillRect(context, bounds);
@@ -89,6 +96,11 @@ static void vox_coalition_instruction_checkpoint(const char *label) {
 // The runner extracts the real entry points and shared scheduling/scale helpers,
 // preserving their deferred scheduling, encoding, and write behavior.
 #include "native_capture_entry_points.inc"
+
+static double native_display_device_pixel_ratio(void) {
+    if (getenv("LADYBIRD_SCREENSHOT_DELAY_SECONDS")) return native_screenshot_scale();
+    return capture_view.window.backingScaleFactor;
+}
 
 static void pump_for(double seconds) {
     CFAbsoluteTime until = CFAbsoluteTimeGetCurrent() + seconds;
@@ -168,8 +180,11 @@ int main(int argc, char **argv) {
         // A top inset describes the same crop in flipped and unflipped views.
         // A nonzero bounds origin catches accidental frame-coordinate cropping.
         [capture_view setBounds:NSMakeRect(7, 11, 32, 16)];
+        unsetenv("LADYBIRD_SCREENSHOT_DELAY_SECONDS");
         for (unsigned flipped = 0; flipped < 2; ++flipped) {
             capture_view.flippedCapture = flipped;
+            native_layer_update(capture_view, @selector(updateLayer));
+            assert(draw_raster_scale == 2 && draw_mask_scale == 2);
             NSUInteger previous = capture_view.captures;
             unsigned previous_terminations = termination_calls;
             native_layer_document_work_active = YES;
@@ -189,6 +204,9 @@ int main(int argc, char **argv) {
             assert(termination_calls == previous_terminations + 1);
             assert(NSEqualRects(capture_view.capturedBounds, NSMakeRect(7, flipped ? 14 : 16, 20, 8)));
             assert(capture_view.bitmapWidth == 20 && capture_view.bitmapHeight == 8);
+            assert(draw_raster_scale == 1 && draw_mask_scale == 1);
+            assert(native_display_device_pixel_ratio() == 2);
+            assert(native_raster_device_pixel_ratio() == 2 && native_svg_mask_backing_scale() == 2);
             NSString *path = [NSString stringWithFormat:@"%s/document-%u.png", argv[1], flipped];
             NSBitmapImageRep *image = [NSBitmapImageRep imageRepWithContentsOfFile:path];
             assert(image != nil && image.pixelsWide == 20 && image.pixelsHigh == 8);
@@ -197,6 +215,8 @@ int main(int argc, char **argv) {
             assert(document_audit_callbacks == flipped + 1);
             printf("document flipped=%u deferred=1 bounds=1 png=20x8 process=1 coalition=1\n", flipped);
         }
+        setenv("LADYBIRD_SCREENSHOT_DELAY_SECONDS", "0", 1);
+        native_layer_update(capture_view, @selector(updateLayer));
         const double invalid[][3] = {
             { NAN, 20, 8 }, { 3, INFINITY, 8 }, { 3, 20, NAN },
             { -1, 20, 8 }, { 3, 0, 8 }, { 3, 20, 0 },

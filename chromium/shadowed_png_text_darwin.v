@@ -27,7 +27,7 @@ fn (mut app BrowserApp) draw_shadowed_png_text(index int, page_y f32, decoded &g
 	shadow C.VoxGraphiteShape) int {
 	if !shadowed_png_text_diagnostic || !app.ctx.native_rendering || app.page_zoom != 1
 		|| app.scroll_y != 0 || document_png_space_is_p3() == 0
-		|| C.native_display_device_pixel_ratio() != 1 {
+		|| C.native_raster_device_pixel_ratio() != 1 {
 		return index
 	}
 	if !shadowed_png_text_supported(app.paint_commands, app.chromium_raster_plan.command_layers, index) {

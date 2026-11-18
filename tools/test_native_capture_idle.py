@@ -21,6 +21,9 @@ def entry_points(source):
     text = source.read_text()
     functions = []
     for declaration in ("static CGFloat native_screenshot_scale(",
+                        "double native_raster_device_pixel_ratio(",
+                        "static CGFloat native_window_backing_scale(",
+                        "static CGFloat native_svg_mask_backing_scale(",
                         "void native_cache_browser_snapshot(",
                         "static void native_schedule_screenshot(",
                         "void schedule_native_screenshot(",
