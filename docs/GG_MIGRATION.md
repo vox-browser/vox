@@ -1028,6 +1028,77 @@ control. All browser and guard exits were zero. Sampled process-tree
 RSS peaked at 11,709,595,648 bytes for the build and 400,637,952
 bytes for the diagnostic and timing job.
 
+### Caching diagonal SVG gradient masks on macOS
+
+Automatic selection uses the shared linear shader for a single
+diagonal gradient in a device-aligned rectangle when the complete
+bitmap fits the existing cache limit. It reuses the raster across
+scroll positions, including at viewport edges. Admission protects
+rasters used by the current or preceding frame. An unavailable cache
+slot or a disabled shared cache sends the mask through Quartz.
+The strip rasterizer still handles axis-aligned fades.
+
+The [diagonal fixture](../Tests/Browser/Native/svg-diagonal-gradient-masks.html)
+has a diagonal alpha mask and a transformed sRGB luminance mask.
+Its SHA-256 was
+`3f798c17a0915cd23fe0a16bf8c24742b52689247667227b2c22f96ae11da7c5`.
+The published binary at `e720fb9a8` and AVIF library digests
+matched the luminance cohort. Fresh 1× and 2× captures in PIDs
+89882, 89902, 89923 and 89961 compared Quartz with the forced full
+shader. Each mask stayed within two channel levels of Quartz and
+all launches exited zero.
+
+The candidate suite initially checked a 42-pixel offset, which
+did not exercise cropped cache hits for both masks. At a 132-pixel
+offset both masks recorded cropped hits. The automatic captures
+matched uncached shared shader output pixel for pixel at 1× and
+2×. Disabling the shared cache in automatic mode produced the
+same pixels as Quartz. The 2× Quartz comparison differed from the
+cached path by at most two channel levels. All 37 candidate macOS
+captures, all 19 Linux browser checks and the Windows D3D11 type
+check passed.
+
+The pressure fixture generated 75 different diagonal gradients,
+with five 136 × 90 mask regions per row and 120 px row spacing.
+Its SHA-256 was
+`3017bbb7c1cbeb4f9ddb4adec577dad7d168fd1667d94c6ac08dfd7b7ea9a6c9`.
+The macOS timing cohorts used the preceding wheel protocol with
+a 1024 × 600 document viewport at 2×. Each process used a fresh
+cache and profile with an empty hidden bookmark bar. The script-free
+local files required no external resources. Timing began after one
+second of settle after the title matched. Each trial used 120
+four-pixel wheel inputs at a requested 60 Hz with one reversal,
+and counted scroll-changing native frame installations after outer
+view paint over the input window. The private single-C V `-prod`,
+Clang `-O1` executable SHA-256 was
+`fb5330bfacd52e673ad0a41e7d942231482d5344ebfcced76b2f5da1dc7358f0`.
+Its AVIF library matched the published comparison.
+
+Separate diagnostics counted 740 hits, 199 cropped placements
+and six rasters in the diagonal fixture (PID 11204). The
+pressure fixture recorded 1,216 hits, 203 cropped placements,
+16 rasters and 1,263 Quartz fallbacks (PID 11577).
+The timing launches disabled diagnostics and alternated Quartz
+with automatic selection on the same binary for each fixture.
+
+| PID | Fixture | Raster | Scroll fps | Median / p95 / max (ms) | Input Hz | Inputs / changes | First / last gap (ms) | Load |
+| --- | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| 11329 | Diagonal | Quartz | 36.48 | 26.220 / 31.648 / 32.890 | 57.89 | 120 / 75 | 63.448 / 0.081 | 5.56 |
+| 11385 | Diagonal | Automatic | 39.78 | 24.051 / 28.161 / 32.137 | 57.04 | 120 / 83 | 54.639 / 19.523 | 5.44 |
+| 11453 | Diagonal | Quartz | 36.39 | 26.354 / 32.048 / 32.769 | 56.24 | 120 / 77 | 59.011 / 18.430 | 5.40 |
+| 11506 | Diagonal | Automatic | 40.56 | 23.816 / 28.299 / 29.360 | 56.78 | 120 / 85 | 54.640 / 19.252 | 5.61 |
+| 11676 | Pressure | Quartz | 34.21 | 28.481 / 31.848 / 37.230 | 59.87 | 120 / 68 | 65.978 / 0.199 | 5.52 |
+| 11799 | Pressure | Automatic | 36.78 | 26.267 / 29.599 / 32.453 | 59.96 | 120 / 73 | 64.408 / 0.235 | 6.36 |
+| 11869 | Pressure | Quartz | 33.14 | 28.372 / 32.845 / 62.509 | 59.76 | 120 / 66 | 72.754 / 17.042 | 7.13 |
+| 11984 | Pressure | Automatic | 36.68 | 26.062 / 31.140 / 56.864 | 59.79 | 120 / 73 | 59.824 / 0.241 | 6.96 |
+
+The timed cohort ran from 03:57:37 to 03:58:25 UTC on November 18,
+2026. Load is the starting one-minute average on the 18-CPU host.
+Throughput, median and p95 improved in all four pairs. All measured
+intervals exceeded 16.67 ms. The timing browser and guard exits were
+zero. Sampled process-tree RSS peaked at 11,682,955,264 bytes
+for the build and 398,196,736 bytes for the diagnostic and timing job.
+
 ## Original migration plan
 
 Vox currently renders through two Skia builds: LibWeb's Skia (CPU raster,
