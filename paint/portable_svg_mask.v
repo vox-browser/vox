@@ -131,8 +131,8 @@ mut:
 }
 
 struct SVGMaskRamp {
-	first_row int
-	end_row   int
+	coverage  painting.IntRect
+	vertical  bool
 	transform [6]f32
 }
 
@@ -141,10 +141,9 @@ fn svg_mask_ramp(mask &layout.PaintClip, bounds painting.IntRect, page_x f32, pa
 	if disable_svg_mask_ramp || mask.mask_luminance || mask.mask_operations.len != 1 { return none }
 	operation := &mask.mask_operations[0]
 	gradient := operation.fill_linear_gradient or { return none }
-	if f32(gradient.start_point.y) != f32(gradient.end_point.y)
-		|| f32(gradient.start_point.x) == f32(gradient.end_point.x) {
-		return none
-	}
+	same_x := f32(gradient.start_point.x) == f32(gradient.end_point.x)
+	same_y := f32(gradient.start_point.y) == f32(gradient.end_point.y)
+	if same_x == same_y { return none }
 	if local := gradient.gradient.gradient_transform {
 		if local.b != 0 || local.c != 0 { return none }
 	}
@@ -160,34 +159,62 @@ fn svg_mask_ramp(mask &layout.PaintClip, bounds painting.IntRect, page_x f32, pa
 		&& f64(it) == math.floor(f64(it)) && math.abs(f64(it)) < 1048576) {
 		return none
 	}
+	first_column := int(math.max(0, f64(left)))
+	end_column := int(math.min(f64(bounds.width), f64(right)))
 	first_row := int(math.max(0, f64(top)))
 	end_row := int(math.min(f64(bounds.height), f64(bottom)))
-	if end_row - first_row <= 1 { return none }
-	mut row_matrix := matrix
-	row_matrix[5] -= f32(first_row)
-	return SVGMaskRamp{first_row, end_row, row_matrix}
+	coverage := painting.IntRect{first_column, first_row, end_column - first_column, end_row - first_row}
+	if coverage.is_empty() || (same_x && coverage.width <= 1) || (same_y && coverage.height <= 1) {
+		return none
+	}
+	mut strip_matrix := matrix
+	if same_x {
+		strip_matrix[4] -= f32(coverage.x)
+	} else {
+		strip_matrix[5] -= f32(coverage.y)
+	}
+	return SVGMaskRamp{coverage, same_x, strip_matrix}
 }
 
 fn raster_svg_mask_ramp(mut pixels []u8, pitch int, width int, operation &layout.PaintMaskOperation,
 	ramp SVGMaskRamp) bool {
 	path := cpuraster.canvas_path(operation.path_data, operation.path_even_odd)
 	style := portable_svg_mask_gradient(operation, false)
-	row_bytes := width * 4
-	first := ramp.first_row * pitch
-	mut row := pixels[first..first + row_bytes]
-	// The device rectangle covers complete rows and the shader depends on x.
-	// Keep the normal CPU shader's sampling and rounding for the first row.
-	if !cpuraster.fill_canvas_path(mut row, width, 1, row_bytes, 2, path, ramp.transform,
-		0xff000000, style, f32(operation.fill_opacity), .src_over, 0, [], none) {
-		unsafe { vmemset(row.data, 0, row_bytes) }
-		return false
-	}
-	for y in ramp.first_row + 1 .. ramp.end_row {
-		offset := y * pitch
-		copy(mut pixels[offset..offset + row_bytes], row)
+	coverage := ramp.coverage
+	opacity := f32(operation.fill_opacity)
+	// Shade a strip on the varying axis using the original CPU shader.
+	if ramp.vertical {
+		mut column := []u8{len: coverage.bottom() * 4}
+		if !cpuraster.fill_canvas_path(mut column, 1, coverage.bottom(), 4, 2, path,
+			ramp.transform, 0xff000000, style, opacity, .src_over, 0, [], none) {
+			return false
+		}
+		// The surfaces have four-byte pixel offsets and stride.
+		unsafe {
+			for y in coverage.y .. coverage.bottom() {
+				color := (&u32(column.data))[y]
+				mut row := &u32(pixels.data) + y * (pitch / 4) + coverage.x
+				for x in 0 .. coverage.width {
+					row[x] = color
+				}
+			}
+		}
+	} else {
+		row_bytes := width * 4
+		first := coverage.y * pitch
+		mut row := pixels[first..first + row_bytes]
+		if !cpuraster.fill_canvas_path(mut row, width, 1, row_bytes, 2, path, ramp.transform,
+			0xff000000, style, opacity, .src_over, 0, [], none) {
+			unsafe { vmemset(row.data, 0, row_bytes) }
+			return false
+		}
+		for y in coverage.y + 1 .. coverage.bottom() {
+			offset := y * pitch
+			copy(mut pixels[offset..offset + row_bytes], row)
+		}
 	}
 	if portable_svg_mask_diagnostics {
-		eprintln('VOX_SVG_MASK_RAMP width=${width} rows=${ramp.end_row - ramp.first_row}')
+		eprintln('VOX_SVG_MASK_RAMP width=${coverage.width} rows=${coverage.height} vertical=${ramp.vertical}')
 	}
 	return true
 }

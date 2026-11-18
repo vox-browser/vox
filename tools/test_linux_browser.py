@@ -498,6 +498,34 @@ def check_svg_mask_gradient_pixels(data):
         assert all(abs(value - target) <= 2 for value, target in zip(actual, (channel, channel, 255))), (x, actual)
 
 
+def check_vertical_svg_mask_browser(binary, artifacts, temporary):
+    fixture = Path(__file__).resolve().parents[1] / "Tests/Browser/Native/svg-vertical-alpha-masks.html"
+    documents = []
+    for mode in ("column", "shader"):
+        environment = smoke_environment(Path(temporary) / f"svg-vertical-{mode}")
+        environment.update(VOX_DISABLE_PORTABLE_SVG_MASK="0", VOX_PORTABLE_SVG_MASK_DIAGNOSTICS="1",
+                           VOX_DISABLE_SVG_MASK_RAMP=str(int(mode == "shader")))
+        screenshot = artifacts / f"svg-vertical-{mode}.png"
+        screenshot.unlink(missing_ok=True)
+        log = run_windowed([str(binary), "--window-width=1024", "--window-height=720",
+                            "--screenshot-viewport-height=600", f"--screenshot={screenshot}",
+                            "--disable-javascript", str(fixture)], env=environment,
+                           log_path=artifacts / f"svg-vertical-{mode}.log")
+        assert "VOX_SVG_MASK luminance=false operations=1 paths=1" in log, log
+        vertical = re.search(r"^VOX_SVG_MASK_RAMP .* vertical=true$", log, re.MULTILINE)
+        assert bool(vertical) == (mode == "column"), log
+        width, height, channels, rows = rendered_png_rows(screenshot.read_bytes())
+        assert width >= 640
+        marker = next((y for y in range(27, min(height, 160))
+                       if rows[y][500 * channels:500 * channels + 3] == b"\xff\x88\x00"), None)
+        assert marker is not None, "Missing vertical-mask fixture marker"
+        top = marker - 27
+        assert height >= top + 600
+        documents.append([row[:640 * channels] for row in rows[top:top + 600]])
+    assert documents[0] == documents[1], "Shading one column changed the X11 document pixels"
+    print("PASS: vertical SVG alpha masks match the full shader pixel for pixel", flush=True)
+
+
 def check_webgl_pixels(data):
     """Find both complete shader canvases, excluding unknown browser chrome."""
     width, height, channels, rows = rendered_png_rows(data)
@@ -834,6 +862,7 @@ def main():
         check_svg_mask_browser(binary, artifacts, temporary)
         check_svg_mask_opacity_browser(binary, artifacts, temporary)
         check_svg_mask_gradient_browser(binary, artifacts, temporary)
+        check_vertical_svg_mask_browser(binary, artifacts, temporary)
         check_https_navigation(binary, temporary, environment)
         print("PASS: HTTPS navigation and certificate verification")
         server = http.server.ThreadingHTTPServer(("127.0.0.1", 0),
