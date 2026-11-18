@@ -597,3 +597,42 @@ hook requests the production build for page-level verification.
 
 Raw profiles, exact counts, generated C and guard receipts stay local under
 `docs/performance/libjs-github-browser-20261116/libjs-github-call-profile-9c16-20261118/`.
+
+### Mixed operand frames and live GitHub control
+
+A standalone VM probe on the current operand decoder returns 42 across
+interpreted and cached-native runs. The interpreter reads an argument, adds
+a constant through two local slots and a register, then writes 42 back to the
+argument. Frame validation rejects the same stream at arity zero with
+`Argument out of range`. The native stream reads the argument through
+`GetArgument` and records one slow step and three generated fast steps. Its
+fresh reopen records one cache hit and zero misses or compiler calls. The
+3-GiB runtime guard exits zero with a sampled peak of 64,290,816 bytes.
+
+Direct navigation to the live `https://github.com/vlang/v` page uses the
+installed predecessor `9c165f7a…8301`. An initial run reuses the archived
+generated-code cache for 2,838 hits and reports 180 misses. The interpreter
+control and the archived-cache run match the four repository audit groups.
+Two private cache preparations time out during Clang `-O2` compilation. The
+following reopen still has 29 misses. An `-O0` seed ends before hydration
+completes, and its reopen reports two misses. These attempts are retained.
+
+The final seed waits for a commit link in every file row and an active
+Sponsor control before the four-second document capture delay. It extends
+the private cache at `-O0`, retaining the earlier optimized libraries.
+The fresh reopen with the compiler disabled records **3,014 hits**, zero
+misses, compiler calls, compilations, pending or invalid entries, and
+673,140 native entries. All 76 modules evaluate and fulfill, and JSC stays
+uninitialized. The complete audit matches the interpreter, including 34
+file rows, 53 commit links, the latest commit and the README. Both document
+PNGs are 1024×768 and have SHA-256
+`7723d292a3c1773a48db54c5270029b41743912e06a0eff8d173bec5ac9bb0d8`.
+
+Both captures use fresh private profiles and HTTP caches with cookie imports
+disabled. The browser, driver and guard exit zero and the native cache
+hashes stay fixed through the reopen. The measured peak sampled process-tree
+RSS is 7,053,164,544 bytes for the cached run and 7,095,926,784 for the
+interpreter. This live check establishes functional cache reuse and rendering
+equality between LibJS modes for the observed responses. Raw receipts remain
+local under
+`docs/performance/libjs-github-browser-20261116/libjs-github-operand-after-20261118/`.
