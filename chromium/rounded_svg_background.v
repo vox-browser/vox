@@ -19,14 +19,16 @@ fn svg_background_rectangle_path(data []f32) ?painting.Rect {
 	stride := layout.compatibility_clip_path_segment_stride
 	if data.len != stride * 5 && data.len != stride * 6 { return none }
 	if data[0] != 0 || data[data.len - stride] != 5 { return none }
-	mut points := []painting.Point{cap: 5}
-	for offset := 0; offset < data.len - stride; offset += stride {
-		if offset > 0 && data[offset] != 1 { return none }
-		points << painting.Point{f64(data[offset + 1]), f64(data[offset + 2])}
+	mut points := [4]painting.Point{}
+	for index in 0 .. points.len {
+		offset := index * stride
+		if index > 0 && data[offset] != 1 { return none }
+		points[index] = painting.Point{f64(data[offset + 1]), f64(data[offset + 2])}
 	}
-	if points.len == 5 {
-		if points[4] != points[0] { return none }
-		points.delete_last()
+	if data.len == stride * 6 {
+		closing := stride * points.len
+		if data[closing] != 1 || f64(data[closing + 1]) != points[0].x
+			|| f64(data[closing + 2]) != points[0].y { return none }
 	}
 	mut left := points[0].x
 	mut top := points[0].y

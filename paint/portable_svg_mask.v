@@ -143,9 +143,11 @@ fn svg_mask_aligned_rect(operation &layout.PaintMaskOperation, matrix [6]f32) ?p
 	mut right := f32(rect.right()) * matrix[0] + matrix[4]
 	mut top := f32(rect.y) * matrix[3] + matrix[5]
 	mut bottom := f32(rect.bottom()) * matrix[3] + matrix[5]
-	if ![left, right, top, bottom]!.all(math.is_finite(f64(it))
-		&& f64(it) == math.floor(f64(it)) && math.abs(f64(it)) < 1048576) {
-		return none
+	for coordinate in [left, right, top, bottom]! {
+		value := f64(coordinate)
+		if !math.is_finite(value) || value != math.floor(value) || math.abs(value) >= 1048576 {
+			return none
+		}
 	}
 	// A reflected rectangle has reversed endpoints. Keep the signed matrix
 	// for shading and cache identity, and order only the device bounds.

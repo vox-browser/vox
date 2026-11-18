@@ -166,9 +166,8 @@ fn (mut app BrowserApp) raster_native_svg_content_mask(mask &layout.PaintClip, p
 	image := painting.Rect{f64(area[0]), f64(area[1]), f64(area[2]), f64(area[3])}
 	// Borrow only the integer mask area. Quartz retains fractional coverage
 	// and the transparent padding around the bitmap.
-	if ![region.x, region.y, region.right(), region.bottom()]!.all(math.is_finite(it)
-		&& it == math.floor(it)) {
-		return false
+	for edge in [region.x, region.y, region.right(), region.bottom()]! {
+		if !math.is_finite(edge) || edge != math.floor(edge) { return false }
 	}
 	mut bounds := portable_pixel_bounds(region.intersection(image))
 	if bounds.is_empty() { return true }
