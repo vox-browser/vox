@@ -861,6 +861,86 @@ pixel for pixel. The capacity capture verified cache hits and Quartz
 fallbacks in the same document. Native pixel and layer checks and
 the Windows D3D11 V type check passed.
 
+### Reusing columns in vertical SVG alpha masks
+
+For a single vertical alpha gradient in a device-aligned rectangle,
+the shared raster shades one column with the existing CPU shader and
+copies each packed pixel across its covered row. This keeps the
+gradient's original vertical coordinates and leaves uncovered pixels
+clear. The existing aligned-mask default and bitmap size limit on
+macOS also apply to these masks.
+
+The [vertical mask fixture](../Tests/Browser/Native/svg-vertical-alpha-masks.html)
+covers both gradient directions, a gradient transform, partial fill
+opacity, and a mask path clipped horizontally by its region. Its
+SHA-256 was `c19ec971f0e234926c0c7aae97081d19c53d249cd2391d18507c0bb2ad4ffeff`.
+At 1× and 2×, scrolled macOS captures matched the full shared shader
+pixel for pixel. The largest 2× difference from Quartz was two channel
+levels. The X11 document capture also matched the full shader exactly.
+All 18 Linux browser checks and the Windows D3D11 V type check passed.
+
+The Linux ARM64 Clang `-O0` smoke build SHA-256 was
+`070b385041a9188b5b20e6f574f68150ba3e0c00fc23d139f498e48aa447d868`.
+Two alternating pairs used software OpenGL under Xvfb, fresh profiles
+and caches, an empty hidden bookmark bar and a one-second settle.
+The fixture had no scripts or external resources. The driver requested
+a 1024 × 600 document viewport and advanced 80 synthetic 42-pixel
+steps per trial. Command and scroll traces matched. The table measures
+replay inside those callbacks.
+
+| Trial | Raster | Median (ms) | p95 (ms) | Max (ms) |
+| --- | --- | ---: | ---: | ---: |
+| 1 | Full shader | 23.611 | 26.726 | 41.903 |
+| 2 | Column reuse | 13.027 | 15.625 | 31.355 |
+| 3 | Full shader | 24.652 | 27.680 | 44.341 |
+| 4 | Column reuse | 13.203 | 15.932 | 32.296 |
+
+The four-vCPU guest started the trials at one-minute loads of
+0.46, 0.50, 0.54 and 0.58 while the host compiled the macOS binary.
+The Linux build, browser checks, and replay cohort exited zero.
+
+The private macOS single-C V `-prod`, Clang `-O1` executable SHA-256
+was `00add4e3c4fa45cdd9afbd2fa439abddcc0cab10da28755ee3f9398967eb0128`.
+The AVIF library matched the horizontal-mask cohort. A separate
+diagnostic in PID 53713 recorded 692 vertical strip rasters during
+the input window with the cache disabled.
+
+The macOS trials used the same private profile, 1024 × 600 viewport
+at 2× and native wheel protocol as the preceding cohorts. Each
+process settled for one second after the fixture title matched.
+The script-free local fixture required no external resources. Each
+pair ran 120 four-pixel inputs at a requested 60 Hz with reversal
+after 60 inputs. The endpoint was completed native frame installation
+after outer view paint, measured over the first-to-last input window.
+Uncached trials disabled the shared mask cache. The full shader and
+column trials both forced shared selection to isolate the shading
+change. Diagnostics were disabled during timing.
+
+| PID | Raster | Scroll fps | Median / p95 / max (ms) | Input Hz | Inputs / changes | First / last gap (ms) | Load |
+| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| 53764 | Quartz | 33.44 | 28.662 / 34.424 / 37.263 | 56.84 | 120 / 70 | 61.865 / 16.837 | 6.89 |
+| 53893 | Automatic | 38.49 | 25.013 / 31.096 / 32.511 | 56.54 | 120 / 81 | 57.531 / 19.251 | 6.74 |
+| 54084 | Quartz | 35.75 | 26.943 / 31.995 / 33.457 | 57.48 | 120 / 74 | 61.315 / 0.103 | 6.68 |
+| 54162 | Automatic | 39.78 | 24.168 / 28.635 / 29.979 | 55.70 | 120 / 85 | 54.831 / 19.322 | 6.23 |
+| 54228 | Full shader, uncached | 28.40 | 34.393 / 38.965 / 39.765 | 55.41 | 120 / 61 | 69.271 / 18.959 | 5.97 |
+| 54348 | Column, uncached | 35.95 | 26.768 / 32.737 / 52.525 | 54.85 | 120 / 78 | 57.597 / 18.082 | 6.13 |
+| 54444 | Full shader, uncached | 31.29 | 31.416 / 35.909 / 37.197 | 58.18 | 120 / 64 | 65.895 / 0.089 | 6.63 |
+| 54550 | Column, uncached | 36.56 | 26.540 / 30.940 / 31.460 | 56.50 | 120 / 77 | 60.663 / 17.941 | 6.82 |
+| 55235 | Quartz, uncached | 35.85 | 26.965 / 31.205 / 50.105 | 56.14 | 120 / 76 | 61.021 / 18.240 | 7.14 |
+| 55288 | Automatic, uncached | 38.66 | 25.285 / 29.721 / 31.037 | 58.98 | 120 / 78 | 54.758 / 17.177 | 6.89 |
+| 55342 | Quartz, uncached | 35.26 | 27.234 / 32.654 / 33.395 | 58.28 | 120 / 72 | 61.307 / 16.636 | 6.50 |
+| 55432 | Automatic, uncached | 35.99 | 26.454 / 33.102 / 34.078 | 54.90 | 120 / 78 | 58.707 / 18.101 | 6.30 |
+
+The cohorts ran from 03:36:01 to 03:37:18 UTC on November 18, 2026.
+Load is the starting one-minute average on the 18-CPU host. All
+measured intervals exceeded 16.67 ms. Automatic selection improved
+throughput in all four Quartz pairs. The uncached Quartz pairs had
+mixed p95 results. Column reuse improved throughput and p95 in both
+full shader pairs. All browser and guard exits were zero. Sampled
+process-tree RSS peaked at 11,019,010,048 bytes during the build,
+397,901,824 bytes in the first timing job and 392,527,872 bytes
+in the uncached Quartz comparison.
+
 ## Original migration plan
 
 Vox currently renders through two Skia builds: LibWeb's Skia (CPU raster,
