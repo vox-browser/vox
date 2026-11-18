@@ -112,7 +112,7 @@ def check_mask_mutation(binary, fixture, directory):
     assert after[40][180 * channels:180 * channels + 3] == b"\xff\x00\x00"
 
 
-def write_mask_cache_pressure_fixture(fixture, *, kind, count, solid_fills=1):
+def write_mask_cache_pressure_fixture(fixture, *, kind, count, solid_fills=1, opacity_depth=1):
     definitions = []
     paths = []
     for index in range(count):
@@ -134,7 +134,7 @@ def write_mask_cache_pressure_fixture(fixture, *, kind, count, solid_fills=1):
                                f'<stop stop-color="white"/><stop offset="1"/></{tag}>')
             fill = f'<path fill="url(#g{index})" d="M0 0h136v90H0Z"/>'
             if kind == "opacity":
-                fill = f'<g opacity=".625">{fill}</g>'
+                fill = '<g opacity=".625">' * opacity_depth + fill + '</g>' * opacity_depth
         definitions.append(
             f'<mask id="m{index}" maskUnits="userSpaceOnUse" x="0" y="0" width="136" height="90">'
             f'{fill}</mask>'
@@ -148,21 +148,33 @@ def write_mask_cache_pressure_fixture(fixture, *, kind, count, solid_fills=1):
                        + "".join(definitions) + "</defs>" + "".join(paths) + "</svg>")
 
 
-def check_mask_cache_capacity(binary, directory, *, kind, solid_fills=1):
+def check_mask_cache_capacity(binary, directory, *, kind, solid_fills=1, opacity_depth=1):
     name = f"{kind}-cache-capacity" if solid_fills == 1 else f"{kind}-two-fills-cache-capacity"
+    if opacity_depth > 1:
+        name = f"{kind}-{opacity_depth}-layers-cache-capacity"
     fixture = directory / f"{name}.html"
-    write_mask_cache_pressure_fixture(fixture, kind=kind, count=30, solid_fills=solid_fills)
+    write_mask_cache_pressure_fixture(fixture, kind=kind, count=30, solid_fills=solid_fills,
+                                      opacity_depth=opacity_depth)
     settings = dict(VOX_SHARED_SVG_MASK_RASTER="", VOX_DISABLE_SHARED_SVG_MASK_CACHE="0",
                     VOX_EAGER_SHARED_SVG_MASK_BITMAP="0", VOX_COPY_SHARED_SVG_MASK_BITMAP="0",
                     VOX_CLIP_SHARED_SVG_MASK_RASTER="0", VOX_CAPTURE_INITIAL_VIEWPORT="1",
                     VOX_SCREENSHOT_SCROLL_STEP="12", LADYBIRD_SCREENSHOT_SCALE="2")
-    png, diagnostics = capture_document(binary, fixture, directory / name,
-                                        settings, ["--screenshot-scroll-y=42"])
-    assert rendered_png_rows(png)[:2] == (2048, 1200)
+    options = ["--screenshot-scroll-y=42"]
+    png, diagnostics = capture_document(binary, fixture, directory / name, settings, options)
+    result = rendered_png_rows(png)
+    assert result[:2] == (2048, 1200)
     assert f"VOX_SHARED_SVG_MASK_SKIP_{kind.upper()}_CACHE" in diagnostics, diagnostics
     assert "VOX_SHARED_SVG_MASK_CACHE_HIT luminance=true " in diagnostics, diagnostics
-    operations = 3 if kind == "opacity" else solid_fills
+    operations = 2 * opacity_depth + 1 if kind == "opacity" else solid_fills
     assert f"VOX_SHARED_SVG_MASK luminance=true operations={operations} " in diagnostics, diagnostics
+    if opacity_depth > 1:
+        settings["VOX_SHARED_SVG_MASK_RASTER"] = "0"
+        quartz, _ = capture_document(binary, fixture, directory / f"{name}-quartz", settings, options)
+        control = rendered_png_rows(quartz)
+        assert result[:3] == control[:3]
+        maximum = max(abs(a - b) for current, previous in zip(result[3], control[3])
+                      for a, b in zip(current, previous))
+        assert maximum <= 2, f"Cache pressure changed nested opacity channels by up to {maximum}"
 
 
 def check_svg_mask_strips(binary, fixture, directory, *, luminance):
@@ -287,6 +299,14 @@ def check_quartz_mask_fallback(binary, fixture, directory):
     assert rendered_png_rows(automatic) == rendered_png_rows(quartz), f"{name} bypassed Quartz"
 
 
+def write_nested_opacity_fixture(fixture, source, *, depth):
+    fixture.write_text(source.read_text()
+                       .replace('<title>SVG gradient mask opacity groups</title>',
+                                '<title>Nested SVG gradient mask opacity</title>')
+                       .replace('      <g opacity=', '      ' + '<g opacity=".75">' * (depth - 1) + '<g opacity=')
+                       .replace('      </g>\n    </mask>', '      ' + '</g>' * depth + '\n    </mask>'))
+
+
 def check_solid_mask_order_change(binary, fixture, directory):
     reordered = directory / "reordered-solid-masks.html"
     reordered.write_text(re.sub(r"^  <use .*\n", "", fixture.read_text(), flags=re.MULTILINE) + """
@@ -380,6 +400,7 @@ def main():
         for kind in ("radial", "diagonal", "opacity", "solid"):
             check_mask_cache_capacity(binary, directory, kind=kind)
         check_mask_cache_capacity(binary, directory, kind="solid", solid_fills=2)
+        check_mask_cache_capacity(binary, directory, kind="opacity", opacity_depth=4)
         check_svg_mask_strips(binary, vertical, directory, luminance=False)
         check_svg_mask_strips(binary, luminance, directory, luminance=True)
         check_linear_rgb_fallback(binary, luminance, directory)
@@ -399,11 +420,17 @@ def main():
             (370, 118, (255, 150, 150)), (430, 118, (255, 164, 164)), (449, 118, white),
         ))
         check_solid_mask_order_change(binary, overlap, directory)
-        nested = directory / "nested-gradient-opacity.html"
-        nested.write_text(opacity.read_text()
-                          .replace('      <g opacity=', '      <g opacity=".75"><g opacity=')
-                          .replace('      </g>\n    </mask>', '      </g></g>\n    </mask>'))
-        check_quartz_mask_fallback(binary, nested, directory)
+        for depth, alpha_channel, luma_channel, overlay in ((2, 160, 151, 230), (4, 202, 197, 242)):
+            nested = directory / f"nested-gradient-opacity-{depth}.html"
+            write_nested_opacity_fixture(nested, opacity, depth=depth)
+            check_cached_svg_masks(binary, nested, directory, operations=2 * depth + 2, samples=(
+                (130, 138, (alpha_channel, alpha_channel, 255)), (170, 138, (alpha_channel, alpha_channel, 255)),
+                (205, 138, (alpha_channel, alpha_channel, 255)), (290, 98, (255, luma_channel, luma_channel)),
+                (415, 98, (255, overlay, overlay)), (18, 138, white), (449, 98, white),
+            ))
+        too_deep = directory / "nested-gradient-opacity-5.html"
+        write_nested_opacity_fixture(too_deep, opacity, depth=5)
+        check_quartz_mask_fallback(binary, too_deep, directory)
         fractional = directory / "fractional-solid-mask.html"
         fractional.write_text(solid.read_text().replace('fill-opacity=', 'transform="translate(.25 0)" fill-opacity='))
         check_quartz_mask_fallback(binary, fractional, directory)
