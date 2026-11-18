@@ -16,7 +16,8 @@ def digest(path):
         return hashlib.file_digest(source, "sha256").hexdigest()
 
 
-def capture(binary, fixture, directory, shared, *, cache=False, eager=False, copy=False, scroll=0):
+def capture(binary, fixture, directory, shared, *, cache=False, eager=False, copy=False,
+            scroll=0, clip_raster=False, require_viewport_hit=False, scale=1):
     directory.mkdir()
     profile = directory / "profile"
     profile.mkdir()
@@ -29,6 +30,8 @@ def capture(binary, fixture, directory, shared, *, cache=False, eager=False, cop
                        VOX_DISABLE_SHARED_SVG_MASK_CACHE=str(int(not cache)),
                        VOX_EAGER_SHARED_SVG_MASK_BITMAP=str(int(eager)),
                        VOX_COPY_SHARED_SVG_MASK_BITMAP=str(int(copy)),
+                       VOX_CLIP_SHARED_SVG_MASK_RASTER=str(int(clip_raster)),
+                       LADYBIRD_SCREENSHOT_SCALE=str(scale),
                        VOX_PORTABLE_SVG_MASK_DIAGNOSTICS="1")
     command = [binary, "--window-width=1024", "--window-height=712",
                "--screenshot-viewport-height=600", f"--screenshot={screenshot}", fixture]
@@ -55,6 +58,10 @@ def capture(binary, fixture, directory, shared, *, cache=False, eager=False, cop
                 if line.startswith(f"VOX_SHARED_SVG_MASK_CACHE_HIT luminance={mode} ")]
         assert bool(hits) == cache, diagnostics
         assert all(line.endswith(f"bitmap_allocated={str(eager).lower()}") for line in hits), hits
+        if clip_raster:
+            assert all("viewport_crop=false" in line for line in hits), hits
+        if require_viewport_hit:
+            assert any("viewport_crop=true" in line for line in hits), diagnostics
     data = screenshot.read_bytes()
     if not scroll:
         check_svg_mask_gradient_pixels(data)
@@ -91,6 +98,17 @@ def main():
         assert eager_cache == before_cache, "Eager cache changed the scrolled document pixels"
         assert after_cache == before_cache, "Cached masks changed the scrolled document pixels"
         assert copied == after_cache, "Reusing the bitmap changed the scrolled document pixels"
+        clipped = capture(binary, fixture, directory / "viewport-clipped", True,
+                          cache=True, clip_raster=True, scroll=42)
+        full = capture(binary, fixture, directory / "viewport-full", True,
+                       cache=True, require_viewport_hit=True, scroll=42)
+        assert clipped == full, "Reusing a partially visible mask changed the document pixels"
+        clipped_2x = capture(binary, fixture, directory / "viewport-clipped-2x", True,
+                             cache=True, clip_raster=True, scroll=42, scale=2)
+        full_2x = capture(binary, fixture, directory / "viewport-full-2x", True,
+                          cache=True, require_viewport_hit=True, scroll=42, scale=2)
+        assert clipped_2x[:2] == (2048, 1200)
+        assert clipped_2x == full_2x, "Reusing a partially visible mask changed the 2× document pixels"
     assert {path: digest(path) for path in inputs} == digests
     print("PASS: macOS rendered both gradient mask modes with the shared rasterizer")
 

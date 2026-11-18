@@ -5078,12 +5078,11 @@ double native_prepare_svg_content_mask(unsigned long long input_key, int luminan
 	return native_svg_mask_backing_scale();
 }
 
-static CGContextRef native_allocate_svg_content_mask_bitmap(CGFloat scale) {
+static CGContextRef native_allocate_svg_content_mask_bitmap(CGFloat scale,
+	size_t width, size_t height) {
 	if (native_svg_clip_build_context != NULL) {
 		return native_svg_clip_build_context;
 	}
-	size_t width = (size_t)MAX(1.0, ceil(native_svg_clip_rect.size.width * scale));
-	size_t height = (size_t)MAX(1.0, ceil(native_svg_clip_rect.size.height * scale));
 	CGColorSpaceRef color_space = CGColorSpaceCreateWithName(kCGColorSpaceSRGB);
 	native_svg_clip_build_context = CGBitmapContextCreate(NULL, width, height, 8,
 		width * 4, color_space,
@@ -5100,7 +5099,9 @@ static CGContextRef native_allocate_svg_content_mask_bitmap(CGFloat scale) {
 
 void native_begin_svg_content_mask_bitmap(double scale, float canvas_height,
 	const float *area, const float *matrix, float page_x, float page_y, float scroll_y) {
-	CGContextRef context = native_allocate_svg_content_mask_bitmap(scale);
+	size_t width = (size_t)MAX(1.0, ceil(native_svg_clip_rect.size.width * scale));
+	size_t height = (size_t)MAX(1.0, ceil(native_svg_clip_rect.size.height * scale));
+	CGContextRef context = native_allocate_svg_content_mask_bitmap(scale, width, height);
 	if (context == NULL) {
 		return;
 	}
@@ -5164,9 +5165,11 @@ int32_t native_svg_content_mask_geometry(float canvas_height, double scale, int3
 	return 1;
 }
 
-uint8_t *native_svg_content_mask_pixels(double scale, int32_t width) {
-	CGContextRef context = native_allocate_svg_content_mask_bitmap(scale);
-	if (context == NULL || CGBitmapContextGetBytesPerRow(context) != (size_t)width * 4) {
+uint8_t *native_svg_content_mask_pixels(double scale, int32_t width, int32_t height) {
+	CGContextRef context = native_allocate_svg_content_mask_bitmap(scale, (size_t)width, (size_t)height);
+	if (context == NULL || CGBitmapContextGetWidth(context) != (size_t)width
+		|| CGBitmapContextGetHeight(context) != (size_t)height
+		|| CGBitmapContextGetBytesPerRow(context) != (size_t)width * 4) {
 		return NULL;
 	}
 	return CGBitmapContextGetData(context);
@@ -5354,53 +5357,74 @@ static void native_cache_svg_mask_image(CGImageRef image) {
 	};
 }
 
-static void native_close_svg_mask_bitmap(void) {
-	CGContextRelease(native_svg_clip_build_context);
-	native_svg_clip_build_context = NULL;
-	if (native_svg_clip_image != NULL) {
-		native_cache_svg_mask_image(native_svg_clip_image);
+void native_discard_svg_mask_bitmap(void) {
+	if (native_svg_clip_build_context != NULL) {
+		CGContextRelease(native_svg_clip_build_context);
+		native_svg_clip_build_context = NULL;
 	}
 }
 
-static CGImageRef native_finalize_svg_mask_cache(void) {
+static CGImageRef native_copy_svg_mask_bitmap(void) {
+	CGContextRef context = native_svg_clip_build_context;
+	if (context == NULL) {
+		return NULL;
+	}
+	size_t width = CGBitmapContextGetWidth(context);
+	size_t height = CGBitmapContextGetHeight(context);
+	size_t source_stride = CGBitmapContextGetBytesPerRow(context);
+	uint8_t *source = CGBitmapContextGetData(context);
+	if (source == NULL) {
+		return NULL;
+	}
+	CGColorSpaceRef color_space = CGColorSpaceCreateDeviceRGB();
+	CGContextRef mask_context = CGBitmapContextCreate(NULL, width, height, 8,
+		width * 4, color_space,
+		kCGImageAlphaPremultipliedLast | kCGBitmapByteOrder32Big);
+	CGColorSpaceRelease(color_space);
+	if (mask_context == NULL) {
+		return NULL;
+	}
+	CGImageRef image = NULL;
+	uint8_t *mask = CGBitmapContextGetData(mask_context);
+	if (mask != NULL) {
+		native_convert_svg_mask_pixels(source, source_stride, mask,
+			CGBitmapContextGetBytesPerRow(mask_context), width, height,
+			native_svg_clip_build_is_color, native_svg_clip_build_is_luminance);
+		image = CGBitmapContextCreateImage(mask_context);
+	}
+	CGContextRelease(mask_context);
+	return image;
+}
+
+static void native_finalize_svg_mask_cache(void) {
 	if (native_svg_clip_image == NULL && native_svg_clip_build_context != NULL) {
-		size_t width = CGBitmapContextGetWidth(native_svg_clip_build_context);
-		size_t height = CGBitmapContextGetHeight(native_svg_clip_build_context);
-		size_t source_stride = CGBitmapContextGetBytesPerRow(native_svg_clip_build_context);
-		uint8_t *source = CGBitmapContextGetData(native_svg_clip_build_context);
-		CGColorSpaceRef color_space = CGColorSpaceCreateDeviceRGB();
-		CGContextRef mask_context = CGBitmapContextCreate(NULL, width, height, 8,
-			width * 4, color_space,
-			kCGImageAlphaPremultipliedLast | kCGBitmapByteOrder32Big);
-		CGColorSpaceRelease(color_space);
-		if (source != NULL && mask_context != NULL) {
-			uint8_t *mask = CGBitmapContextGetData(mask_context);
-			size_t mask_stride = CGBitmapContextGetBytesPerRow(mask_context);
-			native_convert_svg_mask_pixels(source, source_stride, mask, mask_stride,
-				width, height, native_svg_clip_build_is_color,
-				native_svg_clip_build_is_luminance);
-			native_svg_clip_image = CGBitmapContextCreateImage(mask_context);
+		native_svg_clip_image = native_copy_svg_mask_bitmap();
+		native_discard_svg_mask_bitmap();
+		if (native_svg_clip_image != NULL) {
+			native_cache_svg_mask_image(native_svg_clip_image);
 		}
-		if (mask_context != NULL) {
-			CGContextRelease(mask_context);
-		}
-		native_close_svg_mask_bitmap();
 	}
-	return native_svg_clip_image;
 }
 
-int32_t native_reuse_svg_mask_raster(uint64_t key) {
+static CGImageRef native_svg_mask_image_for_placement(CGImageRef image, const int32_t *crop) {
+	if (crop[2] == 0) {
+		return CGImageRetain(image);
+	}
+	return CGImageCreateWithImageInRect(image, CGRectMake(crop[0], crop[1], crop[2], crop[3]));
+}
+
+int32_t native_reuse_svg_mask_raster(uint64_t key, const int32_t *crop) {
 	for (int index = 0; index < NATIVE_SVG_MASK_RASTER_CACHE_SIZE; ++index) {
 		NativeSVGMaskRasterCacheEntry *entry = &native_svg_mask_raster_cache[index];
 		if (entry->key == key && entry->image != NULL) {
-			entry->last_use = native_svg_clip_cache_clock;
-			int32_t hit = 1;
-			if (native_svg_clip_build_context != NULL) {
-				CGContextRelease(native_svg_clip_build_context);
-				native_svg_clip_build_context = NULL;
-				hit = 2;
+			CGImageRef image = native_svg_mask_image_for_placement(entry->image, crop);
+			if (image == NULL) {
+				return 0;
 			}
-			native_svg_clip_image = CGImageRetain(entry->image);
+			entry->last_use = native_svg_clip_cache_clock;
+			int32_t hit = native_svg_clip_build_context != NULL ? 2 : 1;
+			native_discard_svg_mask_bitmap();
+			native_svg_clip_image = image;
 			native_cache_svg_mask_image(native_svg_clip_image);
 			return hit;
 		}
@@ -5408,9 +5432,10 @@ int32_t native_reuse_svg_mask_raster(uint64_t key) {
 	return 0;
 }
 
-int32_t native_publish_svg_mask_raster(uint64_t key, int32_t reuse_bitmap) {
+int32_t native_publish_svg_mask_raster(uint64_t key, int32_t reuse_bitmap, const int32_t *crop) {
 	int32_t published = 1;
 	CGContextRef context = native_svg_clip_build_context;
+	CGImageRef image = NULL;
 	if (reuse_bitmap && context != NULL) {
 		size_t width = CGBitmapContextGetWidth(context);
 		size_t height = CGBitmapContextGetHeight(context);
@@ -5421,20 +5446,29 @@ int32_t native_publish_svg_mask_raster(uint64_t key, int32_t reuse_bitmap) {
 				width, height, native_svg_clip_build_is_luminance);
 			// The mask is consumed through alpha. Retain the sRGB bitmap
 			// with the same premultiplied-white bytes as the DeviceRGB copy.
-			native_svg_clip_image = CGBitmapContextCreateImage(context);
-			if (native_svg_clip_image != NULL) {
-				native_close_svg_mask_bitmap();
+			image = CGBitmapContextCreateImage(context);
+			if (image != NULL) {
 				published = 2;
 			}
 		}
 	}
 	// Premultiplied white also has equal luminance and alpha, so the copy
 	// remains valid if creating the in-place image failed.
-	CGImageRef image = native_finalize_svg_mask_cache();
+	if (image == NULL) {
+		image = native_copy_svg_mask_bitmap();
+	}
+	native_discard_svg_mask_bitmap();
 	if (image == NULL) {
 		return 0;
 	}
+	native_svg_clip_image = native_svg_mask_image_for_placement(image, crop);
+	if (native_svg_clip_image == NULL) {
+		CGImageRelease(image);
+		return 0;
+	}
+	native_cache_svg_mask_image(native_svg_clip_image);
 	if (key == 0) {
+		CGImageRelease(image);
 		return published;
 	}
 	int replacement = 0;
@@ -5449,7 +5483,7 @@ int32_t native_publish_svg_mask_raster(uint64_t key, int32_t reuse_bitmap) {
 	if (entry->image != NULL) {
 		CGImageRelease(entry->image);
 	}
-	*entry = (NativeSVGMaskRasterCacheEntry){key, CGImageRetain(image), native_svg_clip_cache_clock};
+	*entry = (NativeSVGMaskRasterCacheEntry){key, image, native_svg_clip_cache_clock};
 	return published;
 }
 

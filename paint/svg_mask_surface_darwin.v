@@ -9,20 +9,23 @@ const shared_svg_mask_raster = os.getenv('VOX_SHARED_SVG_MASK_RASTER') == '1'
 const disable_shared_svg_mask_cache = os.getenv('VOX_DISABLE_SHARED_SVG_MASK_CACHE') == '1'
 const eager_shared_svg_mask_bitmap = os.getenv('VOX_EAGER_SHARED_SVG_MASK_BITMAP') == '1'
 const copy_shared_svg_mask_bitmap = os.getenv('VOX_COPY_SHARED_SVG_MASK_BITMAP') == '1'
+const clip_shared_svg_mask_raster = os.getenv('VOX_CLIP_SHARED_SVG_MASK_RASTER') == '1'
+const shared_svg_mask_cache_pixel_limit = 128 * 1024
 
 fn C.native_prepare_svg_content_mask(u64, i32, f32, f32, &f32, &f32, f32, f32, f32) f64
 fn C.native_begin_svg_content_mask_bitmap(f64, f32, &f32, &f32, f32, f32, f32)
 fn C.native_svg_content_mask_geometry(f32, f64, &i32) i32
-fn C.native_svg_content_mask_pixels(f64, i32) &u8
-fn C.native_reuse_svg_mask_raster(u64) i32
-fn C.native_publish_svg_mask_raster(u64, i32) i32
+fn C.native_svg_content_mask_pixels(f64, i32, i32) &u8
+fn C.native_discard_svg_mask_bitmap()
+fn C.native_reuse_svg_mask_raster(u64, &i32) i32
+fn C.native_publish_svg_mask_raster(u64, i32, &i32) i32
 
 fn shared_svg_mask_raster_key(mask &layout.PaintClip, area [4]i32, bounds painting.IntRect,
 	page_x f32, page_y f32, scale f64) u64 {
 	// Keep the native cache within its per-image memory budget. Both padding
 	// and clipping are relative to the borrowed bitmap, which moves on scroll.
 	if disable_shared_svg_mask_cache || mask.mask_raster_key == 0
-		|| int(area[2]) * int(area[3]) > 128 * 1024 {
+		|| int(area[2]) * int(area[3]) > shared_svg_mask_cache_pixel_limit {
 		return 0
 	}
 	mut key := mask.mask_raster_key
@@ -42,6 +45,21 @@ fn shared_svg_mask_raster_key(mask &layout.PaintClip, area [4]i32, bounds painti
 		}
 	}
 	return key
+}
+
+fn (app &BrowserApp) shared_svg_mask_full_area(region painting.Rect, visible painting.Rect,
+	scale f64) ?[4]i32 {
+	if scale != math.floor(scale) { return none }
+	// Match the one-CSS-pixel fringe of native_svg_mask_canvas_rect().
+	full := painting.Rect{region.x - scale, region.y - scale, region.width + 2 * scale,
+		region.height + 2 * scale}
+	if full == visible || full.width > 16384 || full.height > 16384
+		|| full.width * full.height > shared_svg_mask_cache_pixel_limit {
+		return none
+	}
+	canvas := painting.Rect{0, 0, f64(app.ctx.width) * scale, f64(app.ctx.height) * scale}
+	if full.intersection(canvas) != visible { return none }
+	return [i32(full.x), i32(full.y), i32(full.width), i32(full.height)]!
 }
 
 fn (mut app BrowserApp) raster_native_svg_content_mask(mask &layout.PaintClip, page_x f32,
@@ -67,33 +85,52 @@ fn (mut app BrowserApp) raster_native_svg_content_mask(mask &layout.PaintClip, p
 		&& it == math.floor(it)) {
 		return false
 	}
-	bounds := portable_pixel_bounds(region.intersection(image))
+	mut bounds := portable_pixel_bounds(region.intersection(image))
 	if bounds.is_empty() { return true }
-	raster_key := shared_svg_mask_raster_key(mask, area, bounds, page_x, page_y, scale)
+	mut raster_area := area
+	mut crop_area := [4]i32{}
+	if !clip_shared_svg_mask_raster && !disable_shared_svg_mask_cache && !eager_shared_svg_mask_bitmap
+		&& mask.mask_raster_key != 0 {
+		if full := app.shared_svg_mask_full_area(region, image, scale) {
+			raster_area = full
+			bounds = portable_pixel_bounds(region)
+			crop_area = [area[0] - full[0], area[1] - full[1], area[2], area[3]]!
+		}
+	}
+	cropped := crop_area[2] != 0
+	raster_key := shared_svg_mask_raster_key(mask, raster_area, bounds, page_x, page_y, scale)
 	if raster_key != 0 {
-		hit := C.native_reuse_svg_mask_raster(raster_key)
+		hit := C.native_reuse_svg_mask_raster(raster_key, &crop_area[0])
 		if hit != 0 {
 			if portable_svg_mask_diagnostics {
-				eprintln('VOX_SHARED_SVG_MASK_CACHE_HIT luminance=${mask.mask_luminance} surface=${bounds.width}x${bounds.height} bitmap_allocated=${hit == 2}')
+				eprintln('VOX_SHARED_SVG_MASK_CACHE_HIT luminance=${mask.mask_luminance} surface=${bounds.width}x${bounds.height} viewport_crop=${cropped} bitmap_allocated=${hit == 2}')
 			}
 			return true
 		}
 	}
-	data := C.native_svg_content_mask_pixels(scale, area[2])
-	if data == unsafe { nil } { return false }
-	pitch := int(area[2]) * 4
-	offset := (bounds.y - int(area[1])) * pitch + (bounds.x - int(area[0])) * 4
+	data := C.native_svg_content_mask_pixels(scale, raster_area[2], raster_area[3])
+	if data == unsafe { nil } {
+		if cropped { C.native_discard_svg_mask_bitmap() }
+		return false
+	}
+	pitch := int(raster_area[2]) * 4
+	offset := (bounds.y - int(raster_area[1])) * pitch + (bounds.x - int(raster_area[0])) * 4
 	length := (bounds.height - 1) * pitch + bounds.width * 4
 	mut pixels := unsafe { (data + offset).vbytes(length) }
 	if !app.raster_svg_content_mask(mut pixels, pitch, bounds, mask, page_x, page_y, scale) {
+		if cropped {
+			C.native_discard_svg_mask_bitmap()
+			return false
+		}
 		for y in 0 .. bounds.height {
 			unsafe { vmemset(data + offset + y * pitch, 0, bounds.width * 4) }
 		}
 		return false
 	}
-	published := C.native_publish_svg_mask_raster(raster_key, i32(!copy_shared_svg_mask_bitmap))
+	published := C.native_publish_svg_mask_raster(raster_key, i32(!copy_shared_svg_mask_bitmap), &crop_area[0])
+	if cropped && published == 0 { return false }
 	if portable_svg_mask_diagnostics {
-		eprintln('VOX_SHARED_SVG_MASK luminance=${mask.mask_luminance} operations=${mask.mask_operations.len} surface=${bounds.width}x${bounds.height} bitmap_reused=${published == 2}')
+		eprintln('VOX_SHARED_SVG_MASK luminance=${mask.mask_luminance} operations=${mask.mask_operations.len} surface=${bounds.width}x${bounds.height} viewport_crop=${cropped} bitmap_reused=${published == 2}')
 	}
 	return true
 }

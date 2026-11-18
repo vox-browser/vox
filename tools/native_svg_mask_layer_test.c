@@ -83,21 +83,32 @@ static CGContextRef scene(int optimized, int nested, int transformed, CGFloat ph
     return context;
 }
 
-static CGContextRef coverage_scene(int srgb, int clip)
+static CGContextRef coverage_scene(int srgb, int clip, int full)
 {
     CGColorSpaceRef space = srgb ? CGColorSpaceCreateWithName(kCGColorSpaceSRGB)
         : CGColorSpaceCreateDeviceRGB();
-    CGContextRef mask = CGBitmapContextCreate(NULL, 32, 24, 8, 32 * 4, space,
+    size_t width = full ? 32 : 21;
+    size_t height = full ? 24 : 17;
+    CGContextRef mask = CGBitmapContextCreate(NULL, width, height, 8, width * 4, space,
         kCGImageAlphaPremultipliedLast | kCGBitmapByteOrder32Big);
     CGColorSpaceRelease(space);
     assert(mask != NULL);
     uint8_t *pixels = CGBitmapContextGetData(mask);
-    for (size_t i = 0; i < 32 * 24; ++i) {
-        memset(pixels + i * 4, (uint8_t)(i * 37), 4);
+    for (size_t y = 0; y < height; ++y) {
+        for (size_t x = 0; x < width; ++x) {
+            size_t source = full ? y * 32 + x : (y + 3) * 32 + x + 5;
+            memset(pixels + (y * width + x) * 4, (uint8_t)(source * 37), 4);
+        }
     }
     CGImageRef image = CGBitmapContextCreateImage(mask);
     assert(image != NULL);
     CGContextRelease(mask);
+    if (full) {
+        CGImageRef cropped = CGImageCreateWithImageInRect(image, CGRectMake(5, 3, 21, 17));
+        CGImageRelease(image);
+        assert(cropped != NULL);
+        image = cropped;
+    }
 
     CGContextRef canvas = bitmap();
     CGRect rect = CGRectMake(7.25, 8.5, 67.5, 53.25);
@@ -148,8 +159,8 @@ int main(void)
     assert(CGRectEqualToRect(before, CGContextGetClipBoundingBox(context)));
     CGContextRelease(context);
     for (int clip = 0; clip < 2; ++clip) {
-        CGContextRef reference = coverage_scene(0, clip);
-        CGContextRef shared = coverage_scene(1, clip);
+        CGContextRef reference = coverage_scene(0, clip, 0);
+        CGContextRef shared = coverage_scene(1, clip, 1);
         assert(memcmp(CGBitmapContextGetData(reference), CGBitmapContextGetData(shared),
             CGBitmapContextGetBytesPerRow(reference) * 80) == 0);
         CGContextRelease(reference);
