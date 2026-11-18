@@ -1,5 +1,6 @@
 module ggshape
 
+import cpuraster
 import gg.canvas
 import math
 
@@ -366,29 +367,59 @@ fn rounded_shadow_nine_patch(shape &C.VoxGraphiteShape, width int, height int) ?
 	center_x := (shape.rect[2] * m[0] + 2 * blur_radius) * f32(.5)
 	center_y := (shape.rect[3] * m[4] + 2 * blur_radius) * f32(.5)
 	edge := 2 * blur_radius + radius + f32(.5)
-	mut output := []u8{len: width * height}
-	for y in 0 .. height {
-		dy := f32(y) + f32(.5) - top - center_y
-		py := f32(math.max(0, f64(math.abs(dy) - (center_y - edge)))) * (if dy < 0 {
-			f32(-1)
-		} else if dy > 0 {
-			f32(1)
-		} else {
-			f32(0)
-		}) + edge
-		iy := int(contour_clamp(f32(math.floor(f64(py / (2 * edge) * f32(dimension)))), 0, f32(dimension - 1)))
-		for x in 0 .. width {
-			dx := f32(x) + f32(.5) - left - center_x
-			px := f32(math.max(0, f64(math.abs(dx) - (center_x - edge)))) * (if dx < 0 {
-				f32(-1)
-			} else if dx > 0 {
-				f32(1)
-			} else {
-				f32(0)
-			}) + edge
-			ix := int(contour_clamp(f32(math.floor(f64(px / (2 * edge) * f32(dimension)))), 0, f32(dimension - 1)))
-			output[y * width + x] = patch[iy * dimension + ix]
+	return expand_rounded_shadow_patch(patch, dimension, width, height, left, top, center_x,
+		center_y, edge)
+}
+
+@[inline]
+fn shadow_patch_coordinate(pixel int, origin f32, center f32, edge f32, dimension int) int {
+	distance := f32(pixel) + f32(.5) - origin - center
+	position := f32(math.max(0, f64(math.abs(distance) - (center - edge)))) * (if distance < 0 {
+		f32(-1)
+	} else if distance > 0 {
+		f32(1)
+	} else {
+		f32(0)
+	}) + edge
+	return int(contour_clamp(f32(math.floor(f64(position / (2 * edge) * f32(dimension)))),
+		0, f32(dimension - 1)))
+}
+
+fn expand_rounded_shadow_patch(patch []u8, dimension int, width int, height int, left f32, top f32, center_x f32, center_y f32, edge f32) []u8 {
+	columns := []int{len: width, init: shadow_patch_coordinate(index, left, center_x, edge, dimension)}
+	output := []u8{len: width * height}
+	scan := RoundedShadowPatchScan{
+		patch:     patch
+		output:    output
+		columns:   columns
+		dimension: dimension
+		top:       top
+		center_y:  center_y
+		edge:      edge
+	}
+	cpuraster.run_raster_scans(&scan, height, width, scan_rounded_shadow_patch)
+	return output
+}
+
+struct RoundedShadowPatchScan {
+	patch     []u8
+	output    []u8
+	columns   []int
+	dimension int
+	top       f32
+	center_y  f32
+	edge      f32
+}
+
+@[direct_array_access]
+fn scan_rounded_shadow_patch(context voidptr, first i32, end i32) {
+	scan := unsafe { &RoundedShadowPatchScan(context) }
+	mut output := unsafe { scan.output }
+	for y in int(first) .. int(end) {
+		source := shadow_patch_coordinate(y, scan.top, scan.center_y, scan.edge, scan.dimension) * scan.dimension
+		target := y * scan.columns.len
+		for x, column in scan.columns {
+			output[target + x] = scan.patch[source + column]
 		}
 	}
-	return output
 }

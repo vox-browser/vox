@@ -8114,3 +8114,61 @@ audited 30, 33 and 25 entries and zero video elements. All browser
 and guard exits were zero. The shared bundle predates the change.
 The benchmark measures CPU frame conversion, and the archived
 pages provide pixel regression coverage.
+
+### Parallel rounded shadow patch expansion
+
+The macOS rounded-shadow adapter maps horizontal coordinates once
+for the full mask. Workers sample the same nearest-neighbor patch
+into disjoint destination rows before the adapter submits the
+completed mask to the GPU. Dispatch starts at 262,144 pixels and
+uses up to four threads. The smaller masks also reuse the column map.
+
+Matched single-C-unit V `-prod -g -prealloc -gc none` harnesses
+measured patch expansion through return, including output
+allocation and column map preparation. Patch generation and output
+hashing were outside the timer. The synthetic 205×205 patch and
+fractional sample origins were identical across modes. Seven
+rotating fresh-process groups on Mac17,6 with 18 logical CPUs
+started at 09:34 local time on 2026-11-18. The one-minute load was
+4.99. All 21 processes and the guard exited zero. Warm values
+use the medians of each process's four calls after its first.
+Times are medians in microseconds.
+
+| Mask | First before / forced serial / default | Warm before / forced serial / default |
+| --- | ---: | ---: |
+| 67×43 | 7.917 / 2.250 / 2.250 | 7.271 / 1.875 / 1.855 |
+| 511×513 | 672.250 / 147.667 / 146.209 | 620.146 / 147.230 / 147.875 |
+| 512×512 | 621.750 / 149.500 / 124.167 | 638.792 / 148.417 / 96.958 |
+| 1600×400 | 1520.833 / 364.833 / 165.000 | 1526.083 / 358.354 / 196.270 |
+| 1921×1081 | 4895.917 / 1156.542 / 552.167 | 5063.875 / 1154.583 / 572.854 |
+| 3840×2160 | 19865.625 / 4663.291 / 1802.042 | 19833.250 / 4674.730 / 1880.792 |
+
+All full output hashes matched. The default configuration beat
+the original in all seven first and warm pairs, including the
+serial-sized masks. The benchmark executable SHA-256 values were
+`41804e5f247e4e84437963145c0e4d0a436cdfe37e4972429e6ad1ac7ed36e3c`
+before and
+`ff337dafc0469304497bf1bb501bc1f3e34ba3d87e80788b623a095b1d1874ec`
+after.
+
+A separate dispatch probe observed two threads at 512×512, four
+on larger batches and zero below the cutoff or with workers
+disabled. Six full 1600×400 shadow draws through the public
+gg.canvas adapter each used four threads. They all matched the
+existing Graphite golden hashes in both modes. The initial probe
+executable lacked the callback symbol. The final driver exercised
+the public draw entry point with explicit runtime checks. All
+four final probe processes and the guard exited zero. Focused
+scalar-reference, forced-serial, ASan/UBSan and ThreadSanitizer
+checks passed.
+
+The published single-C-unit executable
+`abc313c877690171f669481414f33c967376bd88d45f1128596e79e76f749f4a`
+with library
+`ebde1494c5aebaa69ebe6edab9f4e3333020cb4b2949d96fa1fbb35f19d6a202`
+matched archived Hacker News, GitHub and Old Reddit pixels.
+Fresh sealed replays used JavaScript, private profiles and caches,
+a 1024×768 CSS viewport, 2× capture and a one-second settle.
+The audits verified 30, 33 and 25 entries and all browser and
+guard exits were zero. The published build predates this shadow
+change. Timings above cover mask expansion in isolation.
