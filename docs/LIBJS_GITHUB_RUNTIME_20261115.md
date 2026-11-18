@@ -9843,3 +9843,148 @@ remains 9.186 seconds for Vox with compiled LibJS and 2.434 seconds
 for Brave with V8. Local commands, consumed-source digests, paired
 samples and guard reports are under
 `docs/benchmark-results/libjs-warm-construct-5204-r121/receipts`.
+
+### Published runtime changes versus Brave
+
+Managed build `20261119-002649-7f5ec8aa` publishes single-unit V
+`-prod` executable
+`164061bab30f9ca5eca82316de0e03451fefbf0874c96a8c3cab734e19ae1b06`.
+The frozen source manifest verifies `1ba724c13`, `f1a24504b` and all
+17 ABI inputs of the original grouped native cache. The same archived
+`vlang/v` page uses 1024×768 document captures, original-origin replay,
+a one-second settle and fresh browser processes, profiles and HTTP
+caches. OS caches are retained.
+
+The traced eligibility visit maps the pinned grouped library, evaluates
+all 81 modules and records 480,209 native entries. Across seven alternating
+untraced pairs, all repository audits pass and all browser exits are
+zero. Each LibJS visit records 2,948–2,949 native cache hits and zero
+misses or compiler calls. Each browser reproduces its own pixels. Brave
+matches its reference exactly and the Vox PNGs differ by two pixels.
+
+| Browser | Median launch to PNG | PNG range | Median through exit | Median observed instructions |
+| --- | ---: | ---: | ---: | ---: |
+| Vox with compiled LibJS | 8.903 s | 8.413–9.719 s | 8.997 s | 55,428,408,630 |
+| Brave with V8 15.7.112.43 | 2.623 s | 2.320–3.762 s | 2.733 s | 20,732,610,187 |
+
+The median launch-to-PNG ratio is 3.39×. The endpoints include browser
+startup, hydration and rendering. Brave's endpoint includes CDP delivery
+and the harness's PNG write. The sampled process-tree instruction totals
+are lower bounds. One Vox visit misses a final process sample and six
+Brave visits miss one to three samples. The 18-CPU host reports
+one-minute launch loads of 14.62–16.96. The guard adopts all 15 browser
+roots and exits zero in 164.664 seconds at 6,227,017,728 sampled peak
+bytes. The new cohort validates the published build as a whole, with
+other source changes also present. Raw attempts and input digests are
+local under `docs/benchmark-results/github-compiled-v8-5204-r122/receipts`.
+
+### Warm compiled array callbacks
+
+Commit `f83322328` uses one live load for a present own array data
+element in `forEach`, `map`, `reduce` and `reduceRight`. A live numeric
+key guards the dense storage position. Holes, accessors and exotic
+objects use checked HasProperty and Get, and the execution budget keeps
+the original charge. `map` appends own data properties directly when
+intrinsic construction guarantees a fresh result. User-provided species
+continue to define properties as each callback returns.
+
+The same-process benchmark prepares one 128-element array and runs 64
+iterations of `forEach`, `map` and `reduce` per call. It verifies
+checksum 1,560,576. It warms each process with eight calls and measures
+the next nine. LibJS uses Clang `-O2` and `-prealloc -gc none`. Separate
+diagnostics verify 221,193 native entries across those nine calls for
+each build. Every timed LibJS process loads six prebuilt native entries
+and records zero misses or compiler calls. Node uses V8
+`14.6.202.34-node.40` with the same source and checksum.
+
+| Seven alternating trials | LibJS control | LibJS change | Node V8 | Main-thread instructions before → after |
+| --- | ---: | ---: | ---: | ---: |
+| Single live element lookup | 10.838 ms | 7.012 ms | 3.061 ms | 215,686,612 → 143,455,272 |
+| Direct append into a fresh map result | 7.085 ms | 5.053 ms | 3.050 ms | 143,459,617 → 107,337,455 |
+
+The first cohort reduces median elapsed time by 35.3% and instructions
+by 33.5%. The second reduces those metrics by 28.7% and 25.2%. All
+seven pairs in each cohort finish sooner. The final LibJS median is
+1.66× the V8 median. The consumed manifests isolate the tested changes
+and both cohorts complete with guard exit zero. The one-minute host
+load is 13.67–14.16 and 17.43–18.16 respectively. The focused element
+lookup, map and reduce suites pass in guarded runs with Boehm and with
+preallocation and no GC.
+
+A separate candidate borrows stack argument storage for synchronous
+callbacks that copy it into their own frames. The candidate saves 0.14%
+of instructions and 0.36% of elapsed time under that cohort's load. It
+was reverted. The benchmark includes that cohort and its paired control.
+Local commands, test exits, and raw samples are under
+`docs/benchmark-results/libjs-warm-callback-5204-r123/receipts`.
+
+### Published array callback changes versus Brave
+
+Managed build `20261119-004759-f7511b4f` publishes single-unit V
+`-prod` executable
+`5ca3ed99fb8d790009d0623097fa643b56847b381f02534d0583f7c319d716c3`.
+The frozen manifest verifies all five LibJS implementation files from
+`f83322328` and the same 17 native cache ABI files. The publication
+also contains four renderer source changes relative to the previous
+comparison. It passes the headless startup check.
+
+A separate traced visit completes all 81 modules and records
+433,862 native entries and 24,131 direct element reads. The previous
+publication's eligibility visit records 2,528 direct element reads.
+The profile collects 1,855 main-thread snapshots during a portion of
+the traced launch. The native executable runner appears in 777
+snapshots and the layout callback in 487. Lexical binding lookup
+accounts for 59 samples at the top of the main-thread stack.
+
+| Browser | Median launch to PNG | PNG range | Median through exit | Median observed instructions |
+| --- | ---: | ---: | ---: | ---: |
+| Vox with compiled LibJS | 8.000 s | 6.553–8.616 s | 8.105 s | 56,353,531,372 |
+| Brave with V8 15.7.112.43 | 2.371 s | 2.122–2.598 s | 2.465 s | 20,446,906,860 |
+
+All seven alternating pairs use the prior frozen archive, a one-second
+settle and fresh browser, profile and HTTP cache state. Every visit
+passes the repository audit and exits zero. Each browser reproduces its
+own PNG. Brave is pixel-exact to the reference and Vox differs by two
+pixels. Every Vox visit has 2,949 native hits, zero misses and zero
+compiler calls. The warm compiled launch-to-PNG median takes 3.37×
+as long as Brave's. Both browser medians fall by about 10% across the
+two publications, and Vox's observed median instruction count rises.
+The matched standalone cohorts isolate the runtime changes. The browser
+comparison reflects the host conditions and all sources in each publication.
+
+The 18-CPU host reports one-minute launch loads of 13.11–28.87. The
+process-tree instruction totals are lower bounds. Four Vox visits miss
+one final process sample, and six Brave visits miss one to four
+samples. The guard adopts 15 browser roots, samples 6,245,826,560 peak
+bytes and exits zero. Its 504.084 seconds include waiting for publication.
+Commands, build hashes, complete pairs and the separate trace are
+local under `docs/benchmark-results/github-compiled-v8-5204-r124/receipts`.
+
+### Lookup of single-unit lexical names
+
+Commit `fd7322cf4` compares single-unit UTF-16 binding names directly in
+the small-scope scan. It checks the live slot and its length, preserves
+lone surrogate units, and retains the existing comparison for longer
+names. The focused binding lookup suite passes in guarded Boehm and
+preallocation runs, including deleted names and retained closure bindings.
+
+A warm loop reads four single-unit global lexical names over 16,384
+iterations and checks checksum 327,680. The same process warms eight
+times and measures nine calls. Both LibJS builds use the same
+compiler and generated cache protocol. They load two prebuilt native
+entries before timing, with zero misses or compiler calls. Separate
+diagnostics confirm nine native executions during measurement.
+The consumed manifests differ only in `libjs/declarative_environment.v`.
+
+| Median of seven paired process medians | LibJS control | LibJS direct comparison | Node V8 14.6.202.34-node.40 |
+| --- | ---: | ---: | ---: |
+| Elapsed time | 12.728 ms | 9.857 ms | 0.044 ms |
+| Main-thread instructions | 200,261,796 | 171,426,856 | — |
+
+Every pair retires fewer LibJS instructions, with a median reduction of
+14.4%. Six pairs complete sooner. The seventh candidate takes 40.074 ms
+against its 26.573 ms control. The guard exits zero at 196,050,944 sampled
+peak bytes with host loads of 8.37–10.99. The published GitHub
+comparison above covers the earlier array changes. The lexical change
+is queued for production. Local measurements and focused checks are
+under `docs/benchmark-results/libjs-warm-bindings-5204-r125/receipts`.
