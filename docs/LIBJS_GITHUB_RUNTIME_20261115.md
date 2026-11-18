@@ -9400,3 +9400,46 @@ full filesystem. Runtime verification on the archived page awaits a
 production publication containing the change. The focused fixture,
 commands and guard receipts are local under
 `docs/benchmark-results/github-frontend-5204-r107/receipts`.
+
+### ASCII identifier runs in LibJS
+
+Commit `ba4522f10` advances consecutive ASCII identifier characters in one
+scan and leaves the following character for the existing Unicode and escape
+handling. The focused regression checks a supplementary code point, an escape,
+CRLF, a private identifier, the next token's column and end of input. It runs
+with assertions enabled and exits zero under the 3 GiB guard.
+
+Seven alternating pairs use the 81 pinned GitHub modules. The minimal lexer
+runs match all per-file token checksums. The full-parser runs use identical
+V `-prod -prealloc -gc none` settings and succeed on all 81 modules in each
+fresh process, with no diagnostics or recursion-limit failures. Both controls
+already include the keyword optimization in `3f45845b7`. The matched build
+inputs differ in `libjs/lexer.v`.
+
+| Median | Baseline | ASCII runs | Reduction |
+| --- | ---: | ---: | ---: |
+| Standalone lexer instructions | 1,078,476,835 | 949,488,475 | 11.96% |
+| Standalone lexer intervals | 64.263 ms | 58.616 ms | 8.79% |
+| Full frontend instructions | 6,830,150,220 | 6,675,589,585 | 2.26% |
+| Full frontend intervals | 587.254 ms | 576.603 ms | 1.81% |
+
+All 14 launches in each cohort exit zero. Every pair retires fewer
+instructions. Two full-frontend elapsed-time pairs regress. The full
+frontend includes UTF-16 decoding, parsing and lexical scope analysis.
+The full-frontend guard exits zero in 9.827 seconds at a sampled peak
+of 2,624,225,280 bytes. One-minute host load is 6.48–6.52 on 18 CPUs.
+An earlier compile found the lexer-only module through the benchmark
+directory. The matched parser build uses the canonical LibJS package.
+
+The separate attempt to measure the earlier keyword-only change through
+the full parser uses the historical lexer source and the current canonical
+LibJS dependencies. A separate-file control fails module resolution. The
+module overlay type-checks, and its later compile attempts stop on the full
+filesystem while assembling embedded resources. The 44.83% keyword result
+above remains a lexer measurement.
+
+The latest published browser still predates both lexer changes. Managed
+rebuilds continue to fail on disk writes, so the standalone cohorts leave
+the page-render timing open. Build identities, all attempts and guard
+receipts are local under
+`docs/benchmark-results/github-identifier-5204-r110/receipts`.
