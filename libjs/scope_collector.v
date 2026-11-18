@@ -858,13 +858,12 @@ fn (mut sc ScopeCollector) propagate_eval_poisoning(index int) {
 fn (mut sc ScopeCollector) resolve_identifiers(index int, initiated_by_eval bool, suppress_globals bool) {
 	// V maps retain insertion order, matching upstream's IndexMap. Local
 	// variable indices follow the first registration, including propagated uses.
-	groups := sc.records[index].identifier_groups.clone()
-	sc.records[index].identifier_groups = map[string]IdentifierGroup{}
-
 	mut propagate_to_parent := []string{}
 	mut propagate_groups := []IdentifierGroup{}
 
-	for key, original_group in groups {
+	// The loop updates identifier nodes and the parent scope. It leaves this
+	// map intact until its keys and references have been propagated.
+	for key, original_group in sc.records[index].identifier_groups {
 		mut group := original_group
 
 		// Annotate each Identifier AST node with its declaration kind.
@@ -1096,6 +1095,7 @@ fn (mut sc ScopeCollector) resolve_identifiers(index int, initiated_by_eval bool
 			}
 		}
 	}
+	sc.records[index].identifier_groups = map[string]IdentifierGroup{}
 }
 
 fn (mut sc ScopeCollector) build_function_scope_data(index int) {
