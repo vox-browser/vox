@@ -1263,3 +1263,39 @@ which ran more requests and exposed additional commit links. The timed
 cohorts use the earlier compiler-disabled startup audit as their reference.
 Raw attempts, input hashes, traces and guard receipts remain local under
 `docs/performance/libjs-github-browser-20261116/libjs-github-native-library-packing-20261118/`.
+
+### Optimized cache libraries
+
+The follow-up compiles the same 98 retained C translation units at
+`-O2` and links the same 41 startup objects together. Both layouts
+contain all 12,399 keys. The group is fixed by the earlier trace before
+collecting this cohort. Each layout passes a separate compiler-disabled
+preflight on the same pinned standalone executable.
+
+Across seven alternating fresh-process pairs, median retired
+instructions fall from **13,393,668,402** to **13,180,627,698**
+(1.59%). All seven pairs use fewer instructions with the group.
+Median cache load time falls from **95.09 ms** to **73.36 ms**.
+The last pair takes 113.12 ms with the group and 100.06 ms separately.
+Standalone visits retain the same 49 requests, six startup scripts,
+33 server-rendered rows and zero commit links. Every timed visit has
+zero cache misses, invalid records or compiler calls.
+
+A separate trace records 41 images totaling 54,556,696 bytes in the
+separate layout and one image of 53,526,736 bytes in the grouped
+layout. The timed cohort measures warm headless process creation
+through exit with diagnostic counters disabled. Its guard exits zero
+at 3,350,134,784 sampled bytes.
+
+Two instrumented windowed visits use publication `19554c66…1766`
+and extend both layouts with the same 1,516 browser-only cache records.
+Both match the pinned 1024×768 Vox PNG pixel for pixel, pass the full
+repository audit, evaluate all 81 modules, and serve the three verified
+compatibility replacements. The separate layout records 2,937 cache
+hits at shutdown, and the grouped layout records 2,948. Both report
+zero misses or compiler calls with JSC uninitialized. The dyld trace
+confirms that the windowed candidate maps the grouped library. The
+browser and guard exits are zero, and the guard adopts five processes.
+
+Raw captures, input hashes, traces and guard receipts remain local under
+`docs/performance/libjs-github-browser-20261116/libjs-github-native-library-packing-o2-20261118/`.
