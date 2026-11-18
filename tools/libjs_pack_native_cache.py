@@ -3,6 +3,7 @@
 
 import argparse
 from collections import defaultdict
+from concurrent.futures import ThreadPoolExecutor, as_completed
 import hashlib
 import json
 from pathlib import Path
@@ -118,14 +119,39 @@ def link_group(source, objects, receipt, selected, libraries, symbols, work):
     return link_objects(work, inputs, expected)
 
 
-def link_captured_group(source, captures, selected, libraries, symbols, work, compiler_batches):
+def compile_captured_batch(input_c, mapping, name):
+    obj = input_c.with_suffix(".o")
+    defines = [f"-Dvox_native_{old}=vox_native_{new}" for old, new in mapping.items()]
+    subprocess.run([CLANG, *C_FLAGS, "-fPIC", *defines, "-c", str(input_c), "-o", str(obj)], check=True)
+    if exports(obj) != set(mapping.values()):
+        raise ValueError(f"Captured C has different exports: {name}")
+    return obj
+
+
+def compile_captured_batches(batches, jobs):
+    if jobs == 1:
+        return [compile_captured_batch(*batch) for batch in batches]
+    with ThreadPoolExecutor(max_workers=min(jobs, len(batches))) as pool:
+        futures = [pool.submit(compile_captured_batch, *batch) for batch in batches]
+        try:
+            for future in as_completed(futures):
+                future.result()
+        except BaseException:
+            for future in futures:
+                future.cancel()
+            raise
+        # The linker takes the same ordered inputs regardless of compile completion order.
+        return [future.result() for future in futures]
+
+
+def link_captured_group(source, captures, selected, libraries, symbols, work, compiler_batches, jobs):
     exported = {name: exports(source / name) for name in sorted(selected)}
     # Keep the renamed numbers outside every original range. The preprocessor
     # then expands each definition once, without another rename matching it.
     next_symbol = max(max(numbers) for numbers in exported.values()) + 1
     if next_symbol + sum(map(len, exported.values())) - 1 > 1_000_000:
         raise ValueError("Grouped symbols would exceed the native cache record limit")
-    remaps, inputs, expected = {}, [], set()
+    remaps, batches, expected = {}, [], set()
     for index, (name, original) in enumerate(exported.items()):
         if not symbols[name] <= original:
             raise ValueError(f"Capture and cache library differ: {name}")
@@ -139,21 +165,19 @@ def link_captured_group(source, captures, selected, libraries, symbols, work, co
             raise ValueError(f"Captured C digest mismatch: {name}")
         mapping = {number: next_symbol + offset for offset, number in enumerate(sorted(original))}
         next_symbol += len(mapping)
-        obj = input_c.with_suffix(".o")
-        defines = [f"-Dvox_native_{old}=vox_native_{new}" for old, new in mapping.items()]
-        subprocess.run([CLANG, *C_FLAGS, "-fPIC", *defines, "-c", str(input_c), "-o", str(obj)], check=True)
-        if exports(obj) != set(mapping.values()):
-            raise ValueError(f"Captured C has different exports: {name}")
         remaps[name] = mapping
-        inputs.append(obj)
+        batches.append((input_c, mapping, name))
         expected.update(mapping.values())
+    inputs = compile_captured_batches(batches, jobs)
     return link_objects(work, inputs, expected), remaps
 
 
 def pack_cache(cache, abi, objects, receipt_path, libraries_to_group, output, *,
-               captures=None, trace=None, trace_pid=None, cache_pins=None, compiler_batches=None):
+               captures=None, trace=None, trace_pid=None, cache_pins=None, compiler_batches=None, jobs=1):
     if sys.platform != "darwin":
         raise ValueError("Native cache grouping requires macOS")
+    if type(jobs) is not int or jobs < 1 or (jobs != 1 and captures is None):
+        raise ValueError("Parallel compilation requires captured C batches and a positive job count")
     if not SHA256.fullmatch(abi):
         raise ValueError("Expected a 64-character native cache ABI digest")
     if output.resolve().is_relative_to(cache.resolve()):
@@ -192,7 +216,8 @@ def pack_cache(cache, abi, objects, receipt_path, libraries_to_group, output, *,
         if captures is None:
             image = link_group(source, objects, receipt, selected, libraries, symbols, work)
         else:
-            image, remaps = link_captured_group(source, captures, selected, libraries, symbols, work, compiler_batches)
+            image, remaps = link_captured_group(source, captures, selected, libraries, symbols, work,
+                                                compiler_batches, jobs)
         sha = digest(image)
         grouped = sha + ".dylib"
         image.rename(stage / grouped)
@@ -231,6 +256,8 @@ def pack_cache(cache, abi, objects, receipt_path, libraries_to_group, output, *,
     result = dict(abi=abi, records=len(records), grouped_records=grouped_entries,
                   libraries=len(libraries) - len(selected) + 1,
                   group_libraries=sorted(selected), group_sha256=sha, library=grouped)
+    if captures is not None:
+        result["compiler_jobs"] = min(jobs, len(selected))
     if trace_receipt is not None:
         result["trace"] = trace_receipt
     return result
@@ -244,7 +271,7 @@ def benchmark_results(path):
     return report, dict(path=str(path.resolve()), sha256=hashlib.sha256(raw).hexdigest())
 
 
-def pack_from_benchmark(seed_results, trace_results, output, trace_pid=None):
+def pack_from_benchmark(seed_results, trace_results, output, trace_pid=None, *, jobs=1):
     seed, seed_input = benchmark_results(seed_results)
     traced, trace_input = benchmark_results(trace_results)
     if seed.get("prepare_native_cache") is not True or traced.get("trace_native_libraries") is not True:
@@ -276,7 +303,7 @@ def pack_from_benchmark(seed_results, trace_results, output, trace_pid=None):
         raise ValueError("Loader log differs from the trace results")
     pins = {Path(path).name: sha for path, sha in traced["inputs"].items() if Path(path).parent == source}
     result = pack_cache(cache, abi, None, None, selected, output, captures=Path(captured["directory"]),
-                        cache_pins=pins, compiler_batches=captured["batches"])
+                        cache_pins=pins, compiler_batches=captured["batches"], jobs=jobs)
     result.update(trace=log_input, benchmark=dict(seed=seed_input, trace=trace_input))
     return result
 
@@ -295,8 +322,11 @@ def main():
     selection.add_argument("--trace-results", type=Path, help="GitHub benchmark results from a traced reopen")
     parser.add_argument("--trace-pid", type=int, help="process to select when the trace covers multiple launches")
     parser.add_argument("--output", required=True, type=Path, help="new private cache root")
+    parser.add_argument("--jobs", type=int, default=1, help="maximum concurrent captured C compilers (default 1)")
     args = parser.parse_args()
     benchmark = args.seed_results is not None or args.trace_results is not None
+    if args.jobs < 1 or (args.jobs != 1 and not (benchmark or args.captures)):
+        parser.error("--jobs requires a positive compiler count and captured C batches")
     if benchmark:
         if args.seed_results is None or args.trace_results is None:
             parser.error("supply both --seed-results and --trace-results")
@@ -313,10 +343,11 @@ def main():
         parser.error("--trace-pid requires a positive PID and --trace or --trace-results")
     try:
         if benchmark:
-            receipt = pack_from_benchmark(args.seed_results, args.trace_results, args.output, args.trace_pid)
+            receipt = pack_from_benchmark(args.seed_results, args.trace_results, args.output, args.trace_pid,
+                                          jobs=args.jobs)
         else:
             receipt = pack_cache(args.cache, args.abi, args.objects, args.receipt, args.library, args.output,
-                                 captures=args.captures, trace=args.trace, trace_pid=args.trace_pid)
+                                 captures=args.captures, trace=args.trace, trace_pid=args.trace_pid, jobs=args.jobs)
     except (OSError, ValueError, KeyError, TypeError, subprocess.CalledProcessError) as error:
         print(f"libjs_pack_native_cache: {error}", file=sys.stderr)
         return 1

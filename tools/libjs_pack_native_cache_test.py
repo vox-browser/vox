@@ -4,11 +4,13 @@ from pathlib import Path
 import subprocess
 import sys
 import tempfile
+from threading import Barrier
 import unittest
 from unittest.mock import patch
 
 from libjs_capture_native_compiler import C_FLAGS, capture_compile
-from libjs_pack_native_cache import digest, libraries_from_trace, link_group, pack_cache, pack_from_benchmark
+from libjs_pack_native_cache import (compile_captured_batch, digest, libraries_from_trace,
+                                    link_group, pack_cache, pack_from_benchmark)
 
 
 class CacheTraceTests(unittest.TestCase):
@@ -190,22 +192,45 @@ class PackNativeCacheTests(unittest.TestCase):
 
     def test_captured_batches_reopen_with_distinct_symbols(self):
         selected = [self.build_captured_library(value)[0] for value in (4, 5)]
-        report = pack_cache(self.cache, self.abi, None, None, selected, self.output,
-                            captures=self.root / "captures")
+        both_started = Barrier(2, timeout=5)
+
+        def compile_together(*batch):
+            both_started.wait()
+            return compile_captured_batch(*batch)
+
+        with patch("libjs_pack_native_cache.compile_captured_batch", side_effect=compile_together):
+            report = pack_cache(self.cache, self.abi, None, None, selected, self.output,
+                                captures=self.root / "captures", jobs=2)
+        self.assertEqual(report["compiler_jobs"], 2)
         directory = self.output / self.abi
         library = directory / report["library"]
         self.assertEqual(digest(library), report["group_sha256"])
         loaded = ctypes.CDLL(str(library))
-        symbols = set()
         for value in (4, 5):
             key = f"{value:064x}"
             record = json.loads((directory / (key + ".json")).read_bytes())
             self.assertEqual(record["key"], key)
             self.assertEqual(record["library"], library.name)
             self.assertEqual(getattr(loaded, f"vox_native_{record['symbol']}")(), value)
-            symbols.add(record["symbol"])
-        self.assertEqual(symbols, {1, 2})
+            self.assertEqual(record["symbol"], sorted(selected).index(selected[value - 4]) + 1)
         self.assertEqual(report["grouped_records"], 2)
+
+    def test_parallel_compile_failure_leaves_no_cache_or_scratch(self):
+        selected = [self.build_captured_library(value)[0] for value in (4, 5)]
+        both_started = Barrier(2, timeout=5)
+
+        def fail_one(input_c, mapping, name):
+            both_started.wait()
+            if name == selected[0]:
+                raise subprocess.CalledProcessError(1, ["clang", str(input_c)])
+            return compile_captured_batch(input_c, mapping, name)
+
+        with patch("libjs_pack_native_cache.compile_captured_batch", side_effect=fail_one):
+            with self.assertRaises(subprocess.CalledProcessError):
+                pack_cache(self.cache, self.abi, None, None, selected, self.output,
+                           captures=self.root / "captures", jobs=2)
+        self.assertFalse(self.output.exists())
+        self.assertEqual(list(self.root.glob(".libjs-pack-*")), [])
 
     def test_rejects_mutated_captured_source(self):
         first, source = self.build_captured_library(4)
@@ -252,12 +277,13 @@ class PackNativeCacheTests(unittest.TestCase):
         tool = Path(__file__).with_name("libjs_pack_native_cache.py")
         report = json.loads(subprocess.check_output([
             sys.executable, str(tool), "--seed-results", str(seed), "--trace-results", str(trace),
-            "--output", str(self.output),
+            "--jobs", "2", "--output", str(self.output),
         ]))
         self.assertEqual(report["benchmark"]["seed"]["sha256"], digest(seed))
         self.assertEqual(report["benchmark"]["trace"]["sha256"], digest(trace))
         self.assertEqual(report["trace"], dict(pid=42, path=str(log.resolve()), sha256=digest(log)))
         self.assertEqual((report["records"], report["grouped_records"]), (5, 2))
+        self.assertEqual(report["compiler_jobs"], 2)
         directory = self.output / self.abi
         output = ctypes.CDLL(str(directory / report["library"]))
         for value in (4, 5):

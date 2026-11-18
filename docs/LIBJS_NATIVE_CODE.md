@@ -1504,6 +1504,13 @@ captures at the paths in the reports. If the trace report contains
 multiple visits, pass `--trace-pid` to select one. The pack receipt
 records both results files and the loader log by digest.
 
+Pass `--jobs 4` to compile up to four captured C batches in parallel.
+Run the packer inside the aggregate memory guard when increasing this
+limit. The default is one compiler. Each batch's captured bytes and
+exports are checked, and the linker uses the same symbol assignments and
+object order at every job count. The pack receipt records the compiler
+limit used for the selected batches.
+
 The packer consumes the retained fixture reports and groups 152
 records. The compiler-disabled reopen matches the seed screenshot
 and hits all 152 records. A separate reopen of the full frozen
@@ -1535,6 +1542,8 @@ Use new directories for the report and the private cache work.
 The report includes each stage's receipts, the packed library
 digest, and the image comparison. A successful report sets
 `complete` and identifies the verified `grouped_cache` directory.
+Use `--pack-jobs 4` to raise the compiler limit for the packing stage of
+this workflow.
 
 The small replay fixture completes all four stages, groups two
 libraries and preserves all 152 cache records. Both reopens match
