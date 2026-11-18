@@ -4480,3 +4480,34 @@ in both worker modes. Focused tests passed on macOS and Linux, including
 zero alpha with nonzero stored RGB, alpha bias and invalid matrices.
 The SVG filter graph tests, macOS ThreadSanitizer and pinned CPU raster
 differential suite passed.
+
+### Parallel CPU SVG color-space conversion
+
+The Canvas2D SVG filter evaluator divides large sRGB and linear RGB
+conversions across up to four CPU workers. Each worker writes a separate
+range of rows and shares the gamma table built for the pass. Integer
+unpremultiplication computes the same clamped lookup index as the former
+floating-point calculation for every byte channel and nonzero byte alpha.
+The conversion preserves alpha and writes transparent black at zero alpha.
+
+Seven alternating fresh-process groups used matching macOS single-C
+`-prod` builds with preallocation on an Apple M5 Max. The timed span was
+a Canvas2D path draw with one or two SVG color conversion nodes, including
+layer drawing, conversion, cropping and final composition. Path construction
+and output hashing were outside the span. One-minute load ranged from 6.07
+to 6.14 on 18 logical CPUs.
+
+| Canvas size and conversion | Before median | New serial median | New default median | Default faster than before |
+| --- | ---: | ---: | ---: | ---: |
+| 1920×1080, sRGB to linear RGB and back | 30.442 ms | 21.991 ms | 16.834 ms | 7/7 |
+| 1051×527, sRGB to linear RGB | 5.596 ms | 4.829 ms | 4.135 ms | 7/7 |
+| 176×128, sRGB to linear RGB and back | 0.382 ms | 0.282 ms | 0.289 ms | 6/7 |
+
+All 63 draws produced byte-identical pixels against their respective
+baselines and all timed processes and the memory guard exited zero.
+A separate probe observed four distinct threads per conversion on both
+large canvases. The small canvas stayed serial. Focused macOS and Linux
+tests passed, covering all 65,280 nonzero-alpha lookup combinations,
+both gamma directions and unchanged source buffers. The general SVG
+filter tests, macOS ThreadSanitizer and pinned CPU raster differential
+suite passed.

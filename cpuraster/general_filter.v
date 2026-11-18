@@ -445,20 +445,48 @@ fn general_transfer(image BlurImage, to_linear bool) BlurImage {
 			if x <= 0.0031308 { x * 12.92 } else { general_encode_srgb(x) }
 		})
 	}
-	mut out := BlurImage{[]u8{len: image.pixels.len}, image.width, image.height}
-	for i := 0; i + 3 < image.pixels.len; i += 4 {
-		a := image.pixels[i + 3]
+	output := []u8{len: image.pixels.len}
+	scan := FilterTransferScan{
+		source:    image.pixels
+		output:    output
+		row_bytes: image.width * 4
+		table:     table
+	}
+	run_raster_scans(&scan, image.height, image.width, scan_filter_transfer)
+	return BlurImage{output, image.width, image.height}
+}
+
+struct FilterTransferScan {
+	source    []u8
+	output    []u8
+	row_bytes int
+	table     [256]f32
+}
+
+fn scan_filter_transfer(context voidptr, first i32, end i32) {
+	scan := unsafe { &FilterTransferScan(context) }
+	mut output := unsafe { scan.output }
+	start := int(first) * scan.row_bytes
+	stop := int(end) * scan.row_bytes
+	for i := start; i < stop; i += 4 {
+		a := u32(scan.source[i + 3])
 		if a == 0 {
 			continue
 		}
 		fa := f32(a) * inv_255
 		for k in 0 .. 3 {
-			unpremul := int(math.min(255.0, math.round(f64(image.pixels[i + k]) * 255 / f64(a))))
-			out.pixels[i + k] = general_byte(table[unpremul] * fa * 255)
+			unpremul := filter_transfer_index(scan.source[i + k], a)
+			output[i + k] = general_byte(scan.table[unpremul] * fa * 255)
 		}
-		out.pixels[i + 3] = a
+		output[i + 3] = u8(a)
 	}
-	return out
+}
+
+// For a nonzero byte alpha, round the positive quotient to the nearest
+// byte, with half values rounded up, and clamp out-of-range source RGB.
+@[inline]
+fn filter_transfer_index(channel u8, alpha u32) int {
+	return int(math.min(u32(255), (u32(channel) * 255 + alpha / 2) / alpha))
 }
 
 fn general_encode_srgb(x f64) f64 {
