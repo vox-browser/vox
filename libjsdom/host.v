@@ -158,6 +158,7 @@ mut:
 	stream_controller_wrappers map[voidptr]&libjs.Object
 	history_object &libjs.Object = unsafe { nil }
 	history_binding ?&HistoryBinding
+	session_storage_binding ?&SessionStorageBinding
 	query_prototype &libjs.Object = unsafe { nil }
 	query_iterator_prototype &libjs.Object = unsafe { nil }
 	queries map[voidptr]&domurl.URLSearchParams
@@ -292,6 +293,7 @@ pub fn Host.create(vm &libjs.VM, realm &libjs.Realm, document &dom.Document, hoo
 	host.install_constraint_validation()!
 	host.install_forms()!
 	host.install_history()
+	host.install_session_storage()
 	host.install_headers()!
 	mut global := realm.global_object_record()
 	global.define_direct_property(libjs.PropertyName.from_str('document'), host.wrap_node(document.as_node()), libjs.attribute_enumerable)
@@ -390,6 +392,7 @@ pub fn (mut host Host) close() {
 	}
 	host.history_binding = none
 	host.history_object = unsafe { nil }
+	host.session_storage_binding = none
 	host.location_url = unsafe { nil }
 	host.urls.clear()
 	host.url_wrappers.clear()

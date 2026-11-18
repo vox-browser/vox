@@ -21,7 +21,6 @@ __global (
 	html_window_test_mode               bool
 	html_window_internals_exposed       bool
 	html_window_local_storage_bottles   = map[string]&StorageBottle{}
-	html_window_session_storage_bottles = map[string]&StorageBottle{}
 	html_window_storage_hub             &StorageHub
 )
 
@@ -155,20 +154,13 @@ fn window_storage_hub() &StorageHub {
 	return html_window_storage_hub
 }
 
-// Storage bottles are keyed by origin for the whole process. Create them, and
-// the keys that find them, outside the calling document's arena.
-fn window_storage_bottle(local bool, key string) &StorageBottle {
+// Local storage is shared by origin. Its entries outlive individual documents.
+fn window_local_storage_bottle(key string) &StorageBottle {
 	persistent := platform.enter_persistent()
 	defer { platform.leave_persistent(persistent) }
-	if local {
-		if bottle := html_window_local_storage_bottles[key] { return bottle }
-		created := StorageBottle.create(5 * 1024 * 1024)
-		html_window_local_storage_bottles[key] = created
-		return created
-	}
-	if bottle := html_window_session_storage_bottles[key] { return bottle }
+	if bottle := html_window_local_storage_bottles[key] { return bottle }
 	created := StorageBottle.create(5 * 1024 * 1024)
-	html_window_session_storage_bottles[key] = created
+	html_window_local_storage_bottles[key] = created
 	return created
 }
 
@@ -467,7 +459,7 @@ pub fn (mut window WindowModel) local_storage() !&Storage {
 		return storage
 	}
 	key := window.associated_document().origin().serialize()
-	bottle := window_storage_bottle(true, key)
+	bottle := window_local_storage_bottle(key)
 	mut hub := window_storage_hub()
 	storage := Storage.create(.local, bottle, mut hub, window.associated_document().origin(), window.storage_traversable_id(), window.associated_document().url)
 	window.local_storage_bottle_ = bottle
@@ -479,17 +471,29 @@ pub fn (mut window WindowModel) local_storage() !&Storage {
 
 // https://html.spec.whatwg.org/multipage/webstorage.html#dom-sessionstorage
 pub fn (mut window WindowModel) session_storage() !&Storage {
-	if storage := window.session_storage_ {
-		return storage
+	mut document := unsafe { &dom.Document(window.associated_document()) }
+	if holder := document.session_storage_holder() {
+		return unsafe { &Storage(holder) }
 	}
-	key := '${window.storage_traversable_id()}|${window.associated_document().origin().serialize()}'
-	bottle := window_storage_bottle(false, key)
+	origin := document.origin()
+	if origin.is_opaque() {
+		return error('SecurityError: sessionStorage is not available for opaque origins')
+	}
+	mut context := window.browsing_context().top_level_browsing_context() or {
+		return error('SecurityError: sessionStorage requires a top-level browsing context')
+	}
+	key := origin.serialize()
+	persistent := platform.enter_persistent()
+	bottle := context.session_storage_bottles_[key] or {
+		created := StorageBottle.create(5 * 1024 * 1024)
+		context.session_storage_bottles_[key] = created
+		created
+	}
+	platform.leave_persistent(persistent)
 	mut hub := window_storage_hub()
-	storage := Storage.create(.session, bottle, mut hub, window.associated_document().origin(), window.storage_traversable_id(), window.associated_document().url)
-	window.session_storage_bottle_ = bottle
-	window.storage_hub_ = hub
-	window.session_storage_ = storage
-	register_window_storage_retirement(window.associated_document(), storage)
+	storage := Storage.create(.session, bottle, mut hub, origin, '${voidptr(context)}', document.url)
+	document.set_session_storage_holder(unsafe { &dom.Storage(storage) })
+	register_window_storage_retirement(document, storage)
 	return storage
 }
 
