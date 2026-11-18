@@ -510,6 +510,57 @@ tree RSS peaked at 8,038,252,544 bytes during the macOS build and
 raster trials. The comparison with Quartz was mixed, and the shared
 path remains opt-in.
 
+### Allocating the mask bitmap after cache lookup
+
+The macOS shared path determines the device bounds and checks the
+translated-mask cache before it opens a Quartz bitmap. A cache hit
+publishes the retained image directly for the new placement. A miss
+opens a bitmap for the V rasterizer. Masks that decline shared replay
+use the existing Quartz clip and draw operations. The benchmark switch
+`VOX_EAGER_SHARED_SVG_MASK_BITMAP=1` opens and clips the bitmap before
+lookup.
+
+Five fresh macOS captures compared Quartz, shared raster without
+reuse, and both allocation orders. After a 96-pixel scroll, the two
+cached variants matched the uncached document pixels exactly. The
+largest channel difference against the Quartz capture at the top of
+the fixture was two levels. The full Linux browser suite, Windows
+D3D11 type check, and native SVG mask conversion and layer tests passed.
+
+The timing used a single-C V `-prod`, Clang `-O1` executable, SHA-256
+`3746585bae7afa0a93f5e2fb6ac602160763f8b52839922b8a624944aab9560e`.
+It used the previous fixture and AVIF digests. The five capture PIDs
+were 52618, 52635, 52641, 52668 and 52681. In separate precise-wheel
+diagnostics, 643 translated-mask hits in PID 52738 allocated a bitmap
+before lookup. None of the 668 hits in PID 52833 allocated one after
+moving allocation. Both diagnostics exercised alpha and luminance.
+
+Three timing groups rotated the allocation orders and Quartz. Each
+ran the same local 120-input precise wheel schedule at a 1024 × 600
+document viewport and 2× backing scale. Each launch used a fresh cache
+and private profile with a hidden bookmark bar, disabled scripts, and
+a one-second settle after the title matched. The endpoint was changed
+native frame installation after outer view paint.
+
+| PID | Raster | Scroll fps | Median (ms) | p95 (ms) | Max (ms) | Input Hz | Inputs / scroll changes | First / last gap (ms) |
+| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| 52947 | Quartz | 42.87 | 22.514 | 25.906 | 26.772 | 54.86 | 120 / 93 | 57.652 / 17.496 |
+| 53048 | Shared, before lookup | 45.22 | 21.337 | 25.043 | 26.647 | 54.91 | 120 / 98 | 56.723 / 17.158 |
+| 53147 | Shared, after lookup | 44.87 | 21.507 | 25.927 | 27.060 | 55.62 | 120 / 96 | 51.838 / 16.888 |
+| 53249 | Shared, before lookup | 44.34 | 21.661 | 25.710 | 27.033 | 54.96 | 120 / 96 | 51.870 / 17.284 |
+| 53354 | Shared, after lookup | 44.97 | 21.445 | 24.969 | 27.397 | 57.54 | 120 / 93 | 51.518 / 16.539 |
+| 53455 | Quartz | 43.00 | 22.342 | 26.097 | 26.664 | 55.02 | 120 / 93 | 54.038 / 17.052 |
+| 53550 | Shared, after lookup | 44.13 | 21.467 | 25.779 | 27.932 | 56.47 | 120 / 93 | 51.643 / 20.577 |
+| 53680 | Quartz | 41.26 | 23.625 | 26.843 | 29.801 | 55.79 | 120 / 88 | 56.376 / 18.882 |
+| 53798 | Shared, before lookup | 44.10 | 21.522 | 25.935 | 45.029 | 58.96 | 120 / 89 | 52.505 / 0.079 |
+
+All measured scroll intervals exceeded 16.67 ms. Starting one-minute
+loads on the 18-CPU host were 7.16, 6.83, 6.84, 6.69, 6.64, 6.51, 6.35,
+6.40 and 6.45. The macOS build and timed cohort passed their memory
+guards with sampled RSS peaks of 11,692,883,968 and 411,107,328 bytes.
+All browser exits were zero. The two allocation orders gave similar
+scroll publication rates. The shared raster remained opt-in.
+
 ## Original migration plan
 
 Vox currently renders through two Skia builds: LibWeb's Skia (CPU raster,
