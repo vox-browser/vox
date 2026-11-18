@@ -315,6 +315,42 @@ def check_svg_opacity_browser(binary, artifacts, temporary):
     print("PASS: SVG group opacity applies once and preserves the path fill rule", flush=True)
 
 
+def check_svg_clip_browser(binary, artifacts, temporary):
+    fixture = Path(__file__).resolve().parents[1] / "Tests/Browser/Native/svg-clip-groups.html"
+    screenshot = artifacts / "portable-svg-clip.png"
+    screenshot.unlink(missing_ok=True)
+    environment = smoke_environment(Path(temporary) / "svg-clip")
+    environment.pop("VOX_DISABLE_PORTABLE_SVG_CLIP", None)
+    environment["VOX_PORTABLE_SVG_CLIP_DIAGNOSTICS"] = "1"
+    log = run_windowed([str(binary), "--window-width=1024", "--window-height=640",
+                        "--screenshot-viewport-height=640", f"--screenshot={screenshot}", str(fixture)],
+                       env=environment, log_path=artifacts / "portable-svg-clip.log")
+    assert "VOX_SVG_CLIP crop=true components=1 paths=2 texture=92x57" in log, log
+    assert "VOX_SVG_CLIP crop=false components=2 paths=2" in log, log
+    assert "VOX_SVG_CLIP crop=false components=1 paths=1" in log, log
+    _, height, channels, rows = rendered_png_rows(screenshot.read_bytes())
+
+    def pixel(x, y):
+        return rows[y][x * channels:x * channels + 3]
+
+    top = next((y for y in range(min(height, 150)) if pixel(4, y) == b"\x34\xb7\x86"), None)
+    assert top is not None, "Missing document marker"
+    top += 8
+    white = b"\xff\xff\xff"
+    assert pixel(20, top + 40) == b"\xff\x00\x00"
+    assert pixel(80, top + 40) == b"\x00\x00\xff"
+    assert pixel(110, top + 40) == white, "Rectangle clip leaked"
+    assert pixel(132, top + 22) == white, "Circle was clipped to its bounding box"
+    assert pixel(160, top + 50) == b"\xff\x00\x00"
+    assert pixel(207, top + 50) == white, "Disjoint clip components filled the gap"
+    assert pixel(226, top + 28) == b"\x00\x00\xff"
+    assert pixel(254, top + 50) == white, "Even-odd clip hole was filled"
+    assert pixel(325, top + 40) == b"\x00\xaa\x00"
+    assert 70 < pixel(320, top + 40)[0] < 190, "Fractional clip edge lost coverage"
+    assert pixel(430, top + 40) == b"\xff\x88\x00", "Mask affected an unclipped sibling"
+    print("PASS: SVG clip bounds, curved unions, holes and fractional coverage", flush=True)
+
+
 def check_webgl_pixels(data):
     """Find both complete shader canvases, excluding unknown browser chrome."""
     width, height, channels, rows = rendered_png_rows(data)
@@ -646,6 +682,7 @@ def main():
         check_webgl_browser(binary, artifacts, temporary)
         check_gradient_browser(binary, artifacts, temporary)
         check_svg_opacity_browser(binary, artifacts, temporary)
+        check_svg_clip_browser(binary, artifacts, temporary)
         check_https_navigation(binary, temporary, environment)
         print("PASS: HTTPS navigation and certificate verification")
         server = http.server.ThreadingHTTPServer(("127.0.0.1", 0),

@@ -7821,10 +7821,15 @@ fn (mut app BrowserApp) draw() {
 					}
 				}
 				if command.kind == 'begin_svg_mask_layer' {
-					shared_svg_end = app.draw_chromium_masked_image(command_index, 0, page_y)
-					if shared_svg_end > command_index { continue }
-					shared_svg_end = app.draw_chromium_svg_rectangular_mask(app.paint_commands,
-						app.chromium_raster_plan.command_layers, command_index, 0, page_y)
+					if app.ctx.native_rendering {
+						shared_svg_end = app.draw_chromium_masked_image(command_index, 0, page_y)
+						if shared_svg_end > command_index { continue }
+						shared_svg_end = app.draw_chromium_svg_rectangular_mask(app.paint_commands,
+							app.chromium_raster_plan.command_layers, command_index, 0, page_y)
+					} else if culling.resource_depth == culling.depth {
+						shared_svg_end = app.draw_portable_svg_clip_group(app.paint_commands,
+							command_index, 0, page_y)
+					}
 					if shared_svg_end > command_index { continue }
 				}
 				if !gpu_leaf && command.kind in ['fill_rect', 'fill_rounded_rect'] {
