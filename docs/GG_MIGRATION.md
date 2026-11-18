@@ -1583,6 +1583,78 @@ timed browser exits and their guard exit were zero. Sampled process-tree RSS
 peaked at 8,147,353,600 bytes during the build, 493,568,000 for the screenshot
 suite and 605,487,104 for the scroll job.
 
+### Caching reflected rectangular SVG mask fills on macOS
+
+Axis-aligned reflections qualify when the transformed fill edges land on
+whole device pixels. The rectangle check orders the mapped endpoints and
+passes the signed transform to shading and the cache key. Horizontal,
+vertical and two-axis reflections use the existing bitmap and paint-operation
+limits. Fractional reflections use Quartz in automatic mode.
+
+The published single-unit executable
+`896b2d35d455afdbb5ec57c6dd5d5759a42e1a15d5f71961ae39fc0d146365cb`
+used Quartz automatically. Its reflected solid fixture matched the
+unreflected Quartz control exactly. Forced shared replay of the mixed
+fixture differed from Quartz by at most two channel levels at 1× and
+2×. The 30-mask pressure capture had the same maximum at 2×. The
+11 baseline browser exits and the guard exit were zero.
+
+The private single-C-unit V `-prod`, Clang `-O1` executable SHA-256 was
+`cccf135b96deecd493908fc028340cf935885bcb7216869b8a0070fc88e48f6f`.
+All 136 macOS captures passed. Cached reflected masks matched uncached
+shared replay at 1× and 2×, including cropped cache hits. At 2× the solid
+fixture matched Quartz exactly and the mixed and pressure fixtures stayed
+within two channel levels. Fractional reflections and the cache-disabled
+automatic captures matched Quartz exactly. Native mask pixel conversion and
+layer tests passed.
+
+The solid, mixed and 75-mask pressure fixture SHA-256 digests were
+`f4885e50c7c8d623db57fb1024a72ff28a122fa1b0328124de6ebb143300faba`,
+`2e01c984f21f88594b872b344cd8a369167161e067470f7d25ce983d4461ad85` and
+`3c8573f99abbf6062ef507f668efacdda401c4902b2a905475d756944c3b6792`.
+The local pages ran with scripts disabled, fresh profiles and caches,
+a 1024 × 600 viewport at 2× and a one-second title-matched settle.
+`tools/measure_precise_scroll.py` delivered 120 four-pixel inputs at a
+requested 60 Hz, with a reversal at 60 inputs. The endpoint was completed
+native frame installation after outer view paint over the first-to-last
+input window. Each timed pair changed only `VOX_SHARED_SVG_MASK_RASTER`
+between `0` and automatic.
+
+Separate diagnostics counted cache hits, cropped hits, fresh rasters and
+admission fallbacks during wheel input. Solid PID 54913 logged
+587 / 144 / 6 / 0. Mixed PID 54994 logged 671 / 171 / 6 / 0.
+Pressure PID 55056 logged 592 / 88 / 16 / 662. Timed launches used
+diagnostics off.
+
+| PID | Fixture | Raster | Scroll fps | Median / p95 / max (ms) | Input Hz | Inputs / changes | First / last gap (ms) | Load |
+| --- | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| 55105 | Solid | Quartz | 22.79 | 41.850 / 45.947 / 46.964 | 57.71 | 120 / 47 | 91.070 / 34.330 | 5.51 |
+| 55200 | Solid | Automatic | 29.73 | 32.031 / 38.925 / 61.697 | 58.97 | 120 / 60 | 74.900 / 0.261 | 5.31 |
+| 55307 | Solid | Quartz | 22.97 | 41.218 / 46.211 / 48.767 | 58.17 | 120 / 47 | 93.071 / 17.217 | 5.45 |
+| 55374 | Solid | Automatic | 31.66 | 30.534 / 35.166 / 56.209 | 58.86 | 120 / 64 | 77.085 / 0.098 | 5.25 |
+| 55441 | Mixed | Quartz | 27.82 | 34.839 / 39.489 / 40.218 | 57.07 | 120 / 58 | 78.661 / 0.101 | 5.31 |
+| 55554 | Mixed | Automatic | 35.36 | 27.185 / 32.223 / 52.838 | 59.26 | 120 / 71 | 61.591 / 16.915 | 5.05 |
+| 55612 | Mixed | Quartz | 27.64 | 35.126 / 39.530 / 42.387 | 56.70 | 120 / 58 | 78.855 / 0.121 | 5.12 |
+| 55685 | Mixed | Automatic | 35.33 | 27.472 / 32.094 / 52.216 | 58.39 | 120 / 72 | 66.159 / 0.102 | 5.19 |
+| 55911 | Pressure | Quartz | 13.69 | 68.525 / 71.770 / 73.463 | 56.16 | 120 / 29 | 143.291 / 49.291 | 5.34 |
+| 56100 | Pressure | Automatic | 16.46 | 57.439 / 64.262 / 66.558 | 57.60 | 120 / 34 | 121.001 / 33.299 | 5.31 |
+| 56196 | Pressure | Quartz | 13.01 | 70.492 / 76.669 / 149.711 | 57.35 | 120 / 27 | 139.029 / 17.270 | 5.20 |
+| 56295 | Pressure | Automatic | 16.65 | 57.282 / 62.571 / 63.758 | 58.29 | 120 / 34 | 112.730 / 18.360 | 5.11 |
+
+The timed cohort ran 05:18:30–05:19:33 UTC on November 18, 2026. Load is
+the one-minute average at launch on the 18-CPU host. Peak scroll positions
+were 486–509.5 CSS pixels, below the document limits. Throughput, median
+and p95 improved in all six pairs. The solid and mixed automatic trials had
+longer maximum scroll-changing intervals at the reversal. Each published
+after input 61 at the same scroll position as after input 59, then moved
+again after input 62. Maximum gaps across all publications decreased in
+every pair, from 46.964–48.767 to 37.011–39.845 ms on the solid fixture,
+40.218–42.387 to 33.376–33.457 ms on the mixed fixture and 73.463–76.881
+to 63.758–66.558 ms under pressure. Every scroll-changing interval exceeded
+16.67 ms. All diagnostic and timed browser exits and their guard exit were
+zero. Sampled process-tree RSS peaked at 8,146,255,872 bytes for the build,
+497,483,776 for the captures and 599,769,088 for the scroll job.
+
 ## Original migration plan
 
 Vox currently renders through two Skia builds: LibWeb's Skia (CPU raster,
