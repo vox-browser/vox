@@ -8071,3 +8071,48 @@ sealing. The new managed build is required to exercise the two
 committed fixes together. The original PNG references and both
 diagnostic results are retained locally with
 `repository-navigation-5204-r91/receipts`.
+
+### Background image batching and rectangle draw order
+
+Commit `3ec988f6d` groups the image URLs discovered during paint
+preparation, initial preload and the eager unsized-image scan.
+The discovery pass reserves each URL once. The existing fetch pool
+then runs the batch with at most 16 workers and the document's
+request scope. Each published result follows the existing handling
+for decoding, cache insertion and repaint.
+
+The focused production-preallocation probe exercises 19 unique
+file responses interleaved with duplicate discoveries and an
+already-cached URL. It also checks local file errors, a loopback HTTP
+body with embedded NUL and repeated headers, and publication after
+worker exit. Both ordinary and poisoned request arenas pass. The
+whole production type-check exits zero in 41.080754625 seconds at
+7,114,424,320 sampled peak bytes. The next managed build verifies
+parsed V inputs for the resource workspace, capture raster scale
+and batch changes. Its native sealing and final browser checks
+remain pending.
+
+The three retained GitHub round trips also pass exact content
+comparison at each visited document. Each standalone README audit
+matches the Brave title, viewport, latest commit, three commit links
+and all 22,128 article characters. The initial and returned
+repository audits each match 33 rows, 56 commit links and the
+20,773-character embedded README.
+
+A standalone Metal experiment replays the two captured rectangle
+controls and 290 derived instance orders over the same white
+backdrop. Both controls reproduce their complete BGRA hashes. The
+derived document-order control with the underline first changes
+exactly (648, 188) and (646, 190), the same coordinates as the
+published-page residual. Both 120-case nine-instance series give
+20 complete tile matches each. The Notifications corners match
+when its border is third or fourth within the four-border part of
+the nine-instance order. Each 24-case eight-instance series has
+six orders that match the two corners, with other button pixels
+still different. The replay guard exits zero in 13.874308291 seconds
+at 51,085,312 sampled bytes. These experiments isolate draw order
+and batching on the retained tile. The page renderer and references
+stay fixed while the production pixel and memory gates remain open.
+
+The full-content comparison, source proof and draw-order receipts
+are local under `repository-navigation-5204-r92/receipts`.
