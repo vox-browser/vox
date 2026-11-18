@@ -11,21 +11,24 @@ fn use_call_argument_workspaces() bool {
 }
 
 const call_argument_workspace_limit = 64
+const call_argument_workspace_capacity = 8
 
 @[heap]
 struct CallArgumentWorkspace {
 mut:
-	values []Value
+	// Keep the fixed-width slots with their owner. Borrowed argument views
+	// use this storage only until the synchronous call returns.
+	values [call_argument_workspace_capacity]Value = [call_argument_workspace_capacity]Value{init: js_undefined()}
 }
 
 fn (mut stack InterpreterStack) acquire_call_argument_workspace() &CallArgumentWorkspace {
 	depth := stack.call_argument_depth
 	buffer := if depth < call_argument_workspace_limit {
 		if depth == stack.call_argument_workspaces.len {
-			stack.call_argument_workspaces << &CallArgumentWorkspace{values: []Value{len: 8}}
+			stack.call_argument_workspaces << &CallArgumentWorkspace{}
 		}
 		stack.call_argument_workspaces[depth]
-	} else { &CallArgumentWorkspace{values: []Value{len: 8}} }
+	} else { &CallArgumentWorkspace{} }
 	stack.call_argument_depth++
 	return buffer
 }
@@ -62,7 +65,9 @@ fn (frame &ExecutionContext) adjacent_call_registers(executable &Executable, ope
 // layouts use independent scratch buffers that are cleared after the call.
 fn (mut vm VM) execute_reused_argument_call(instruction &Instruction, executable &Executable, target Value, receiver Value) !Value {
 	count := instruction.arguments.len
-	if count < 0 || count > 8 { return error('Call argument workspace count out of range') }
+	if count < 0 || count > call_argument_workspace_capacity {
+		return error('Call argument workspace count out of range')
+	}
 	if count == 0 {
 		return call(mut vm, target, receiver, unsafe { borrow_argument_values(nil, 0) })
 	}

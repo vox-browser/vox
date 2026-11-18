@@ -99,17 +99,21 @@ fn test_call_argument_workspace_pool_is_bounded_and_releases_references() {
 	mut buffers := []&CallArgumentWorkspace{}
 	for _ in 0 .. call_argument_workspace_limit + 5 {
 		mut buffer := stack.acquire_call_argument_workspace()
-		buffer.values[0] = value
+		for index in 0 .. call_argument_workspace_capacity {
+			assert buffer.values[index].is_undefined()
+			buffer.values[index] = value
+		}
 		buffers << buffer
 	}
 	assert stack.call_argument_workspaces.len == call_argument_workspace_limit
 	assert vm.heap_roots().contains(value.cell)
 	for index := buffers.len - 1; index >= 0; index-- {
 		mut buffer := buffers[index]
-		stack.release_call_argument_workspace(mut buffer, 1)
-		assert buffer.values[0].is_undefined()
+		stack.release_call_argument_workspace(mut buffer, call_argument_workspace_capacity)
+		for item in buffer.values { assert item.is_undefined() }
 	}
 	assert stack.call_argument_depth == 0
+	assert !vm.heap_roots().contains(value.cell)
 	mut reused := stack.acquire_call_argument_workspace()
 	assert voidptr(reused) == voidptr(buffers[0])
 	for item in reused.values { assert item.is_undefined() }
