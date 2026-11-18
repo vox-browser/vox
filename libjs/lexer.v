@@ -614,6 +614,29 @@ fn (l &Lexer) is_surrogate_pair(len int) bool {
 	return len == 2
 }
 
+// ASCII identifier characters advance by one column and cannot end a line.
+// Leave the first other code unit to the Unicode and escape checks.
+fn (mut l Lexer) consume_ascii_identifier_tail() {
+	start := l.position - 1
+	mut end := start
+	for end < l.source.len {
+		point := u32(l.source[end])
+		if !(lex_is_ascii_alphanumeric(point) || point == u32(`_`) || point == u32(`$`)) {
+			break
+		}
+		end++
+	}
+	if end == start { return }
+	l.line_column += u32(end - start)
+	l.position = end + 1
+	if end == l.source.len {
+		l.eof = true
+		l.current_code_unit = 0
+	} else {
+		l.current_code_unit = l.source[end]
+	}
+}
+
 // Scan an identifier body. Returns true if it contains escape sequences.
 fn (mut l Lexer) scan_identifier_body(initial_len int) bool {
 	mut has_escape := false
@@ -625,6 +648,7 @@ fn (mut l Lexer) scan_identifier_body(initial_len int) bool {
 		for _ in 0 .. consume_count {
 			l.consume()
 		}
+		l.consume_ascii_identifier_tail()
 		next_cp, next_len := l.is_identifier_middle()
 		if next_cp >= 0 {
 			ident_len = next_len
