@@ -24,9 +24,11 @@ def capture_document(binary, fixture, directory, settings, options=()):
     (profile / "settings.json").write_text(json.dumps({"allow_any_site": True}))
     screenshot = directory / "document.png"
     log = directory / "browser.log"
+    # Pin the raster backing density and keep every capture on the same path.
     environment = dict(os.environ, VOX_PROFILE_DIR=str(profile), VOX_TEST_WINDOW="1",
                        LADYBIRD_CACHE_DIR=str(directory / "cache"),
                        VOX_CAPTURE_DOCUMENT_ONLY="1", LADYBIRD_SCREENSHOT_SCALE="1",
+                       LADYBIRD_SCREENSHOT_DELAY_SECONDS="0.1", VOX_DISABLE_PRESENTED_CAPTURE="1",
                        VOX_CAPTURE_INITIAL_VIEWPORT="0", VOX_CAPTURE_READY_SELECTOR="",
                        VOX_PORTABLE_SVG_MASK_DIAGNOSTICS="1")
     environment.update(settings)
@@ -67,23 +69,25 @@ def capture(binary, fixture, directory, shared, *, cache=False, eager=False, cop
     for mode in ("true", "false"):
         rasters = [line for line in diagnostics.splitlines()
                    if line.startswith(f"VOX_SHARED_SVG_MASK luminance={mode} ")]
-        assert bool(rasters) == (shared is True or shared is None and mode == "false"), diagnostics
+        expected = shared is True or (shared is None and
+                                      (mode == "false" or cache and not eager and not clip_raster))
+        assert bool(rasters) == expected, diagnostics
         assert all(line.endswith(f"bitmap_reused={str(not copy).lower()}") for line in rasters), rasters
         hits = [line for line in diagnostics.splitlines()
                 if line.startswith(f"VOX_SHARED_SVG_MASK_CACHE_HIT luminance={mode} ")]
-        assert bool(hits) == cache, diagnostics
+        assert bool(hits) == (expected and cache), diagnostics
         assert all(line.endswith(f"bitmap_allocated={str(eager).lower()}") for line in hits), hits
         if clip_raster:
             assert all("viewport_crop=false" in line for line in hits), hits
         if require_viewport_hit:
             assert any("viewport_crop=true" in line for line in hits), diagnostics
-    if not scroll:
+    if not scroll and scale == 1:
         check_svg_mask_gradient_pixels(data)
     return rendered_png_rows(data)
 
 
 def check_mask_mutation(binary, fixture, directory):
-    settings = dict(VOX_SHARED_SVG_MASK_RASTER="1", VOX_COPY_SHARED_SVG_MASK_BITMAP="0",
+    settings = dict(VOX_SHARED_SVG_MASK_RASTER="", VOX_COPY_SHARED_SVG_MASK_BITMAP="0",
                     VOX_DISABLE_SHARED_SVG_MASK_CACHE="0", VOX_EAGER_SHARED_SVG_MASK_BITMAP="0")
     original, _ = capture_document(binary, fixture, directory / "mutation-original", settings,
                                    ["--disable-javascript"])
@@ -95,7 +99,7 @@ def check_mask_mutation(binary, fixture, directory):
         keys = re.findall(rf"^VOX_SHARED_SVG_MASK luminance={mode} .* resource_key=(\d+) ",
                           diagnostics, re.MULTILINE)
         assert len(set(keys)) == 2 and "0" not in keys, diagnostics
-    settings["VOX_DISABLE_SHARED_SVG_MASK_CACHE"] = "1"
+    settings.update(VOX_SHARED_SVG_MASK_RASTER="1", VOX_DISABLE_SHARED_SVG_MASK_CACHE="1")
     uncached, _ = capture_document(binary, fixture, directory / "mutation-uncached", settings, options)
     width, height, channels, before = rendered_png_rows(original)
     updated = rendered_png_rows(cached)
@@ -106,6 +110,36 @@ def check_mask_mutation(binary, fixture, directory):
     assert before[40][180 * channels:180 * channels + 3] == b"\xff\xff\xff"
     assert after[40][40 * channels:40 * channels + 3] == b"\x00\x00\xff"
     assert after[40][180 * channels:180 * channels + 3] == b"\xff\x00\x00"
+
+
+def check_radial_cache_capacity(binary, directory):
+    fixture = directory / "radial-cache-capacity.html"
+    definitions = []
+    paths = []
+    for index in range(30):
+        x = 8 + index % 5 * 180
+        y = 12 + index // 5 * 120
+        definitions.append(
+            f'<radialGradient id="g{index}" gradientUnits="userSpaceOnUse"'
+            f' cx="{30 + index}" cy="42" r="60">'
+            '<stop stop-color="white"/><stop offset="1"/></radialGradient>'
+            f'<mask id="m{index}" maskUnits="userSpaceOnUse" x="0" y="0" width="136" height="90">'
+            f'<path fill="url(#g{index})" d="M0 0h136v90H0Z"/></mask>'
+        )
+        paths.append(f'<path transform="translate({x} {y})" mask="url(#m{index})"'
+                     ' fill="blue" d="M0 0h136v90H0Z"/>')
+    fixture.write_text('<!doctype html><style>body{margin:0;background:white}svg{display:block}</style>'
+                       '<svg width="960" height="840"><defs>'
+                       + "".join(definitions) + "</defs>" + "".join(paths) + "</svg>")
+    settings = dict(VOX_SHARED_SVG_MASK_RASTER="", VOX_DISABLE_SHARED_SVG_MASK_CACHE="0",
+                    VOX_EAGER_SHARED_SVG_MASK_BITMAP="0", VOX_COPY_SHARED_SVG_MASK_BITMAP="0",
+                    VOX_CLIP_SHARED_SVG_MASK_RASTER="0", VOX_CAPTURE_INITIAL_VIEWPORT="1",
+                    VOX_SCREENSHOT_SCROLL_STEP="12", LADYBIRD_SCREENSHOT_SCALE="2")
+    png, diagnostics = capture_document(binary, fixture, directory / "radial-cache-capacity",
+                                        settings, ["--screenshot-scroll-y=42"])
+    assert rendered_png_rows(png)[:2] == (2048, 1200)
+    assert "VOX_SHARED_SVG_MASK_SKIP_RADIAL_CACHE" in diagnostics, diagnostics
+    assert "VOX_SHARED_SVG_MASK_CACHE_HIT luminance=true " in diagnostics, diagnostics
 
 
 def main():
@@ -123,13 +157,15 @@ def main():
     digests = {path: digest(path) for path in inputs}
     with tempfile.TemporaryDirectory(prefix="vox-svg-mask-") as temporary:
         directory = Path(temporary)
-        width, height, channels, quartz = capture(binary, fixture, directory / "quartz", False)
-        new_width, new_height, new_channels, shared = capture(binary, fixture, directory / "shared", True)
+        unscrolled = capture(binary, fixture, directory / "samples-1x", True)
+        width, height, channels, quartz = capture(binary, fixture, directory / "quartz", False, scale=2)
+        new_width, new_height, new_channels, shared = capture(binary, fixture, directory / "shared", True,
+                                                              scale=2)
         assert (width, height, channels) == (new_width, new_height, new_channels)
         maximum = max(abs(a - b) for old_row, new_row in zip(quartz, shared) for a, b in zip(old_row, new_row))
         assert maximum <= 2, f"Document channels differed by up to {maximum}"
         print(f"Largest document channel difference against Quartz is {maximum}")
-        automatic = capture(binary, fixture, directory / "automatic", None)
+        automatic = capture(binary, fixture, directory / "automatic", None, scale=2)
         assert automatic[:3] == (width, height, channels)
         automatic_difference = max(abs(a - b) for old, new in zip(quartz, automatic[3])
                                    for a, b in zip(old, new))
@@ -143,7 +179,7 @@ def main():
         after_cache = capture(binary, fixture, directory / "scrolled-cached", True, cache=True, scroll=96)
         copied = capture(binary, fixture, directory / "scrolled-copied", True,
                          cache=True, copy=True, scroll=96)
-        assert before_cache[3] != shared, "Capture must move the document"
+        assert before_cache != unscrolled, "Capture must move the document"
         assert eager_cache == before_cache, "Eager cache changed the scrolled document pixels"
         assert after_cache == before_cache, "Cached masks changed the scrolled document pixels"
         assert copied == after_cache, "Reusing the bitmap changed the scrolled document pixels"
@@ -158,7 +194,11 @@ def main():
                           cache=True, require_viewport_hit=True, scroll=42, scale=2)
         assert clipped_2x[:2] == (2048, 1200)
         assert clipped_2x == full_2x, "Reusing a partially visible mask changed the 2× document pixels"
+        automatic_2x = capture(binary, fixture, directory / "automatic-2x", None,
+                               cache=True, require_viewport_hit=True, scroll=42, scale=2)
+        assert automatic_2x == full_2x, "Automatic radial raster changed the 2× document pixels"
         check_mask_mutation(binary, mutation, directory)
+        check_radial_cache_capacity(binary, directory)
     assert {path: digest(path) for path in inputs} == digests
     print("PASS: macOS rendered both gradient mask modes with the shared rasterizer")
 

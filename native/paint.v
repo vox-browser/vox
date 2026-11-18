@@ -5,6 +5,7 @@ import gg
 fn C.vox_browser_frame_prepared()
 fn C.vox_browser_frame_completed()
 fn C.vox_browser_has_paint_context() int
+fn C.native_begin_svg_mask_frame()
 
 // Cocoa already supplies a drawing context for the native view. Sokol's
 // immediate-mode projection/pass is only needed by the portable renderer.
@@ -12,6 +13,7 @@ fn begin_browser_frame(ctx &gg.Context) {
 	$if macos {
 		if ctx.native_rendering {
 			C.vox_browser_frame_prepared()
+			C.native_begin_svg_mask_frame()
 			return
 		}
 	}

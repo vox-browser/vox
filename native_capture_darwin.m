@@ -2494,9 +2494,11 @@ typedef struct {
 	uint64_t key;
 	CGImageRef image;
 	uint64_t last_use;
+	uint64_t frame;
 } NativeSVGMaskRasterCacheEntry;
 
 static NativeSVGMaskRasterCacheEntry native_svg_mask_raster_cache[NATIVE_SVG_MASK_RASTER_CACHE_SIZE];
+static uint64_t native_svg_mask_frame;
 static uint64_t native_svg_clip_cache_clock;
 static CGContextRef native_svg_clip_build_context;
 static CGImageRef native_svg_clip_image;
@@ -5394,6 +5396,28 @@ static CGImageRef native_svg_mask_image_for_placement(CGImageRef image, const in
 	return CGImageCreateWithImageInRect(image, CGRectMake(crop[0], crop[1], crop[2], crop[3]));
 }
 
+void native_begin_svg_mask_frame(void) {
+	++native_svg_mask_frame;
+}
+
+static NativeSVGMaskRasterCacheEntry *native_svg_mask_raster_replacement(void) {
+	NativeSVGMaskRasterCacheEntry *replacement = &native_svg_mask_raster_cache[0];
+	for (int index = 1; index < NATIVE_SVG_MASK_RASTER_CACHE_SIZE; ++index) {
+		NativeSVGMaskRasterCacheEntry *entry = &native_svg_mask_raster_cache[index];
+		if (entry->image == NULL || entry->last_use < replacement->last_use) {
+			replacement = entry;
+		}
+	}
+	return replacement;
+}
+
+int32_t native_can_admit_svg_mask_raster(void) {
+	const NativeSVGMaskRasterCacheEntry *entry = native_svg_mask_raster_replacement();
+	// Keep rasters that the current or preceding frame used. A sequence
+	// longer than the cache would otherwise evict them before each reuse.
+	return entry->image == NULL || native_svg_mask_frame - entry->frame > 1;
+}
+
 int32_t native_reuse_svg_mask_raster(uint64_t key, const int32_t *crop) {
 	for (int index = 0; index < NATIVE_SVG_MASK_RASTER_CACHE_SIZE; ++index) {
 		NativeSVGMaskRasterCacheEntry *entry = &native_svg_mask_raster_cache[index];
@@ -5403,6 +5427,7 @@ int32_t native_reuse_svg_mask_raster(uint64_t key, const int32_t *crop) {
 				return 0;
 			}
 			entry->last_use = native_svg_clip_cache_clock;
+			entry->frame = native_svg_mask_frame;
 			int32_t hit = native_svg_clip_build_context != NULL ? 2 : 1;
 			native_discard_svg_mask_bitmap();
 			native_svg_clip_image = image;
@@ -5452,19 +5477,12 @@ int32_t native_publish_svg_mask_raster(uint64_t key, int32_t reuse_bitmap, const
 		CGImageRelease(image);
 		return published;
 	}
-	int replacement = 0;
-	for (int index = 1; index < NATIVE_SVG_MASK_RASTER_CACHE_SIZE; ++index) {
-		if (native_svg_mask_raster_cache[index].image == NULL
-			|| native_svg_mask_raster_cache[index].last_use
-				< native_svg_mask_raster_cache[replacement].last_use) {
-			replacement = index;
-		}
-	}
-	NativeSVGMaskRasterCacheEntry *entry = &native_svg_mask_raster_cache[replacement];
+	NativeSVGMaskRasterCacheEntry *entry = native_svg_mask_raster_replacement();
 	if (entry->image != NULL) {
 		CGImageRelease(entry->image);
 	}
-	*entry = (NativeSVGMaskRasterCacheEntry){key, image, native_svg_clip_cache_clock};
+	*entry = (NativeSVGMaskRasterCacheEntry){key, image, native_svg_clip_cache_clock,
+		native_svg_mask_frame};
 	return published;
 }
 

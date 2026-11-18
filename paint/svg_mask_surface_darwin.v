@@ -20,6 +20,7 @@ fn C.native_svg_content_mask_geometry(f32, f64, &i32) i32
 fn C.native_svg_content_mask_pixels(f64, i32, i32) &u8
 fn C.native_discard_svg_mask_bitmap()
 fn C.native_reuse_svg_mask_raster(u64, &i32) i32
+fn C.native_can_admit_svg_mask_raster() i32
 fn C.native_publish_svg_mask_raster(u64, i32, &i32) i32
 
 fn shared_svg_mask_raster_key(mask &layout.PaintClip, area [4]i32, bounds painting.IntRect,
@@ -55,7 +56,7 @@ fn (app &BrowserApp) shared_svg_mask_full_area(region painting.Rect, visible pai
 	// Match the one-CSS-pixel fringe of native_svg_mask_canvas_rect().
 	full := painting.Rect{region.x - scale, region.y - scale, region.width + 2 * scale,
 		region.height + 2 * scale}
-	if full == visible || full.width > 16384 || full.height > 16384
+	if full.width > 16384 || full.height > 16384
 		|| full.width * full.height > shared_svg_mask_cache_pixel_limit {
 		return none
 	}
@@ -66,9 +67,17 @@ fn (app &BrowserApp) shared_svg_mask_full_area(region painting.Rect, visible pai
 
 fn (mut app BrowserApp) raster_native_svg_content_mask(mask &layout.PaintClip, page_x f32,
 	page_y f32, scale f64) bool {
-	if !force_shared_svg_mask_raster && (disable_svg_mask_ramp || mask.mask_luminance
-		|| mask.mask_operations.len != 1 || mask.mask_operations[0].fill_linear_gradient == none) {
-		return false
+	can_keep_full_raster := !clip_shared_svg_mask_raster && !disable_shared_svg_mask_cache
+		&& !eager_shared_svg_mask_bitmap && mask.mask_raster_key != 0
+	mut automatic_radial := false
+	if !force_shared_svg_mask_raster {
+		if mask.mask_operations.len != 1 { return false }
+		operation := &mask.mask_operations[0]
+		automatic_radial = can_keep_full_raster && operation.fill_radial_gradient != none
+		if !automatic_radial && (disable_svg_mask_ramp || mask.mask_luminance
+			|| operation.fill_linear_gradient == none) {
+			return false
+		}
 	}
 	if scale == 0 { return true }
 	mut area := [4]i32{}
@@ -95,20 +104,30 @@ fn (mut app BrowserApp) raster_native_svg_content_mask(mask &layout.PaintClip, p
 	if bounds.is_empty() { return true }
 	mut raster_area := area
 	mut crop_area := [4]i32{}
-	if !clip_shared_svg_mask_raster && !disable_shared_svg_mask_cache && !eager_shared_svg_mask_bitmap
-		&& mask.mask_raster_key != 0 {
+	mut keeps_full_raster := false
+	if can_keep_full_raster {
 		if full := app.shared_svg_mask_full_area(region, image, scale) {
-			raster_area = full
-			bounds = portable_pixel_bounds(region)
-			crop_area = [area[0] - full[0], area[1] - full[1], area[2], area[3]]!
+			keeps_full_raster = true
+			if full != area {
+				raster_area = full
+				bounds = portable_pixel_bounds(region)
+				crop_area = [area[0] - full[0], area[1] - full[1], area[2], area[3]]!
+			}
 		}
 	}
 	cropped := crop_area[2] != 0
-	// Enable only bounded row-copy masks by default. Other shared shaders
-	// keep the opt-in path even when their masks meet the geometry checks.
-	if !force_shared_svg_mask_raster && (int(raster_area[2]) * int(raster_area[3]) > shared_svg_mask_cache_pixel_limit
-		|| svg_mask_ramp(mask, bounds, page_x, page_y, scale) == none) {
-		return false
+	if !force_shared_svg_mask_raster {
+		// Reuse the complete radial raster at later scroll positions,
+		// including placements clipped by the viewport.
+		if automatic_radial {
+			if !keeps_full_raster
+				|| svg_background_rectangle_path(mask.mask_operations[0].path_data) == none {
+				return false
+			}
+		} else if int(raster_area[2]) * int(raster_area[3]) > shared_svg_mask_cache_pixel_limit
+			|| svg_mask_ramp(mask, bounds, page_x, page_y, scale) == none {
+			return false
+		}
 	}
 	raster_key := shared_svg_mask_raster_key(mask, raster_area, bounds, page_x, page_y, scale)
 	if raster_key != 0 {
@@ -119,6 +138,12 @@ fn (mut app BrowserApp) raster_native_svg_content_mask(mask &layout.PaintClip, p
 			}
 			return true
 		}
+	}
+	if automatic_radial && (raster_key == 0 || C.native_can_admit_svg_mask_raster() == 0) {
+		if portable_svg_mask_diagnostics {
+			eprintln('VOX_SHARED_SVG_MASK_SKIP_RADIAL_CACHE')
+		}
+		return false
 	}
 	data := C.native_svg_content_mask_pixels(scale, raster_area[2], raster_area[3])
 	if data == unsafe { nil } {
