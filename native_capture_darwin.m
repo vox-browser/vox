@@ -5062,22 +5062,26 @@ void native_begin_svg_clip_mask(unsigned long long input_key, float canvas_width
 	}
 }
 
-void native_begin_svg_content_mask(unsigned long long input_key, int luminance,
-	float canvas_width, float canvas_height, float area_x, float area_y,
-	float area_width, float area_height, float transform_a, float transform_b,
-	float transform_c, float transform_d, float transform_e, float transform_f,
+double native_prepare_svg_content_mask(unsigned long long input_key, int luminance,
+	float canvas_width, float canvas_height, const float *area, const float *matrix,
 	float page_x, float page_y, float scroll_y) {
 	native_svg_clip_build_is_color = 1;
 	native_svg_clip_build_is_luminance = luminance;
 	if (!native_prepare_svg_mask(input_key, 1, canvas_width, canvas_height, page_x,
 		page_y, scroll_y)) {
-		return;
+		return 0;
 	}
-	native_svg_clip_rect = native_svg_mask_canvas_rect(area_x, area_y, area_width,
-		area_height, transform_a, transform_b, transform_c, transform_d,
-		transform_e, transform_f, page_x, page_y, scroll_y, canvas_width,
+	native_svg_clip_rect = native_svg_mask_canvas_rect(area[0], area[1], area[2],
+		area[3], matrix[0], matrix[1], matrix[2], matrix[3],
+		matrix[4], matrix[5], page_x, page_y, scroll_y, canvas_width,
 		canvas_height);
-	CGFloat scale = native_svg_mask_backing_scale();
+	return native_svg_mask_backing_scale();
+}
+
+static CGContextRef native_allocate_svg_content_mask_bitmap(CGFloat scale) {
+	if (native_svg_clip_build_context != NULL) {
+		return native_svg_clip_build_context;
+	}
 	size_t width = (size_t)MAX(1.0, ceil(native_svg_clip_rect.size.width * scale));
 	size_t height = (size_t)MAX(1.0, ceil(native_svg_clip_rect.size.height * scale));
 	CGColorSpaceRef color_space = CGColorSpaceCreateWithName(kCGColorSpaceSRGB);
@@ -5085,26 +5089,34 @@ void native_begin_svg_content_mask(unsigned long long input_key, int luminance,
 		width * 4, color_space,
 		kCGImageAlphaPremultipliedLast | kCGBitmapByteOrder32Big);
 	CGColorSpaceRelease(color_space);
-	if (native_svg_clip_build_context == NULL) {
+	if (native_svg_clip_build_context != NULL) {
+		CGContextScaleCTM(native_svg_clip_build_context, scale, scale);
+		CGContextTranslateCTM(native_svg_clip_build_context,
+			-native_svg_clip_rect.origin.x, -native_svg_clip_rect.origin.y);
+		CGContextSetShouldAntialias(native_svg_clip_build_context, true);
+	}
+	return native_svg_clip_build_context;
+}
+
+void native_begin_svg_content_mask_bitmap(double scale, float canvas_height,
+	const float *area, const float *matrix, float page_x, float page_y, float scroll_y) {
+	CGContextRef context = native_allocate_svg_content_mask_bitmap(scale);
+	if (context == NULL) {
 		return;
 	}
-	CGContextScaleCTM(native_svg_clip_build_context, scale, scale);
-	CGContextTranslateCTM(native_svg_clip_build_context,
-		-native_svg_clip_rect.origin.x, -native_svg_clip_rect.origin.y);
-	CGContextSetShouldAntialias(native_svg_clip_build_context, true);
-	if (area_width <= 0.0 || area_height <= 0.0) {
-		CGContextClipToRect(native_svg_clip_build_context, CGRectZero);
+	if (area[2] <= 0.0 || area[3] <= 0.0) {
+		CGContextClipToRect(context, CGRectZero);
 		return;
 	}
 	CGMutablePathRef local_area = CGPathCreateMutable();
 	CGPathAddRect(local_area, NULL,
-		CGRectMake(area_x, area_y, area_width, area_height));
-	CGAffineTransform to_canvas = CGAffineTransformMake(transform_a, -transform_b,
-		transform_c, -transform_d, page_x + transform_e,
-		canvas_height - page_y + scroll_y - transform_f);
+		CGRectMake(area[0], area[1], area[2], area[3]));
+	CGAffineTransform to_canvas = CGAffineTransformMake(matrix[0], -matrix[1],
+		matrix[2], -matrix[3], page_x + matrix[4],
+		canvas_height - page_y + scroll_y - matrix[5]);
 	CGPathRef canvas_area = CGPathCreateCopyByTransformingPath(local_area, &to_canvas);
-	CGContextAddPath(native_svg_clip_build_context, canvas_area);
-	CGContextClip(native_svg_clip_build_context);
+	CGContextAddPath(context, canvas_area);
+	CGContextClip(context);
 	CGPathRelease(canvas_area);
 	CGPathRelease(local_area);
 }
@@ -5132,42 +5144,32 @@ void native_add_svg_clip_mask_path(const float *data, int segment_count, int eve
 	CGPathRelease(local_path);
 }
 
-// The V mask painter can borrow the new bitmap before Quartz has drawn into
-// it. Supply top-down device coordinates and keep bitmap ownership here.
-int32_t native_svg_content_mask_surface(float canvas_height, int32_t *area,
-	float *backing_scale, uint8_t **pixels) {
-	if (native_svg_clip_image != NULL) {
-		return 2;
-	}
-	CGContextRef context = native_svg_clip_build_context;
-	if (context == NULL || !native_svg_clip_build_is_color) {
-		return 0;
-	}
-	size_t width = CGBitmapContextGetWidth(context);
-	size_t height = CGBitmapContextGetHeight(context);
-	size_t pitch = CGBitmapContextGetBytesPerRow(context);
-	CGFloat scale = CGContextGetCTM(context).a;
+// Compute the bitmap's device bounds before asking Quartz for storage.
+int32_t native_svg_content_mask_geometry(float canvas_height, double scale, int32_t *area) {
 	CGFloat left = CGRectGetMinX(native_svg_clip_rect) * scale;
 	CGFloat top = (canvas_height - CGRectGetMaxY(native_svg_clip_rect)) * scale;
-	if (width == 0 || height == 0 || width > 16384 || height > 16384
-		|| width * height > 4u * 1024u * 1024u || pitch != width * 4
-		|| scale <= 0 || !isfinite(scale)
+	CGFloat width = CGRectGetWidth(native_svg_clip_rect) * scale;
+	CGFloat height = CGRectGetHeight(native_svg_clip_rect) * scale;
+	if (!(width >= 1 && width <= 16384 && width == floor(width))
+		|| !(height >= 1 && height <= 16384 && height == floor(height))
+		|| width * height > 4u * 1024u * 1024u
 		|| !(left >= 0 && left < INT32_MAX && left == floor(left))
-		|| !(top >= 0 && top < INT32_MAX && top == floor(top))
-		|| CGRectGetWidth(native_svg_clip_rect) * scale != (CGFloat)width
-		|| CGRectGetHeight(native_svg_clip_rect) * scale != (CGFloat)height) {
-		return 0;
-	}
-	*pixels = CGBitmapContextGetData(context);
-	if (*pixels == NULL) {
+		|| !(top >= 0 && top < INT32_MAX && top == floor(top))) {
 		return 0;
 	}
 	area[0] = (int32_t)left;
 	area[1] = (int32_t)top;
 	area[2] = (int32_t)width;
 	area[3] = (int32_t)height;
-	*backing_scale = (float)scale;
 	return 1;
+}
+
+uint8_t *native_svg_content_mask_pixels(double scale, int32_t width) {
+	CGContextRef context = native_allocate_svg_content_mask_bitmap(scale);
+	if (context == NULL || CGBitmapContextGetBytesPerRow(context) != (size_t)width * 4) {
+		return NULL;
+	}
+	return CGBitmapContextGetData(context);
 }
 
 void native_begin_svg_mask_opacity(float opacity) {
@@ -5388,11 +5390,15 @@ int32_t native_reuse_svg_mask_raster(uint64_t key) {
 		NativeSVGMaskRasterCacheEntry *entry = &native_svg_mask_raster_cache[index];
 		if (entry->key == key && entry->image != NULL) {
 			entry->last_use = native_svg_clip_cache_clock;
-			CGContextRelease(native_svg_clip_build_context);
-			native_svg_clip_build_context = NULL;
+			int32_t hit = 1;
+			if (native_svg_clip_build_context != NULL) {
+				CGContextRelease(native_svg_clip_build_context);
+				native_svg_clip_build_context = NULL;
+				hit = 2;
+			}
 			native_svg_clip_image = CGImageRetain(entry->image);
 			native_cache_svg_mask_image(native_svg_clip_image);
-			return 1;
+			return hit;
 		}
 	}
 	return 0;

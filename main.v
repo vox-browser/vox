@@ -253,8 +253,6 @@ fn C.native_begin_svg_clip_mask(cache_key u64, canvas_width f32, canvas_height f
 
 fn C.native_add_svg_clip_mask_path(data &f32, segment_count int, even_odd int, transform_a f32, transform_b f32, transform_c f32, transform_d f32, transform_e f32, transform_f f32, page_x f32, page_y f32, scroll_y f32, canvas_width f32, canvas_height f32)
 
-fn C.native_begin_svg_content_mask(cache_key u64, luminance int, canvas_width f32, canvas_height f32, area_x f32, area_y f32, area_width f32, area_height f32, transform_a f32, transform_b f32, transform_c f32, transform_d f32, transform_e f32, transform_f f32, page_x f32, page_y f32, scroll_y f32)
-
 fn C.native_begin_svg_mask_opacity(opacity f32)
 
 fn C.native_end_svg_mask_opacity()
@@ -5576,13 +5574,24 @@ fn (mut app BrowserApp) prepare_native_svg_layer_mask(clip layout.PaintClip, pag
 		}
 		if clip.is_svg_content_mask {
 			area_matrix := normalized_paint_transform(clip.transform)
-			C.native_begin_svg_content_mask(clip.cache_key, if clip.mask_luminance {
-				1
-			} else {
-				0
-			}, f32(app.ctx.width), f32(app.ctx.height), f32(clip.rect.x), f32(clip.rect.y), f32(clip.rect.width), f32(clip.rect.height), f32(area_matrix[0]), f32(area_matrix[1]), f32(area_matrix[2]), f32(area_matrix[3]), f32(area_matrix[4]), f32(area_matrix[5]), page_x, page_y, scroll_y)
-			if app.raster_native_svg_content_mask(&clip, page_x, page_y - scroll_y) {
+			area := [f32(clip.rect.x), f32(clip.rect.y), f32(clip.rect.width), f32(clip.rect.height)]!
+			mask_matrix := [f32(area_matrix[0]), f32(area_matrix[1]), f32(area_matrix[2]),
+				f32(area_matrix[3]), f32(area_matrix[4]), f32(area_matrix[5])]!
+			canvas_height := f32(app.ctx.height)
+			scale := C.native_prepare_svg_content_mask(clip.cache_key, i32(clip.mask_luminance),
+				f32(app.ctx.width), canvas_height, &area[0], &mask_matrix[0], page_x, page_y, scroll_y)
+			eager := !shared_svg_mask_raster || eager_shared_svg_mask_bitmap
+			if eager && scale > 0 {
+				C.native_begin_svg_content_mask_bitmap(scale, canvas_height, &area[0], &mask_matrix[0],
+					page_x, page_y, scroll_y)
+			}
+			if shared_svg_mask_raster && app.raster_native_svg_content_mask(&clip, page_x,
+				page_y - scroll_y, scale) {
 				return
+			}
+			if !eager && scale > 0 {
+				C.native_begin_svg_content_mask_bitmap(scale, canvas_height, &area[0], &mask_matrix[0],
+					page_x, page_y, scroll_y)
 			}
 			for operation in clip.mask_operations {
 				match operation.kind {

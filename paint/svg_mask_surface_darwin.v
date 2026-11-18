@@ -7,8 +7,12 @@ import painting
 
 const shared_svg_mask_raster = os.getenv('VOX_SHARED_SVG_MASK_RASTER') == '1'
 const disable_shared_svg_mask_cache = os.getenv('VOX_DISABLE_SHARED_SVG_MASK_CACHE') == '1'
+const eager_shared_svg_mask_bitmap = os.getenv('VOX_EAGER_SHARED_SVG_MASK_BITMAP') == '1'
 
-fn C.native_svg_content_mask_surface(f32, &i32, &f32, &&u8) i32
+fn C.native_prepare_svg_content_mask(u64, i32, f32, f32, &f32, &f32, f32, f32, f32) f64
+fn C.native_begin_svg_content_mask_bitmap(f64, f32, &f32, &f32, f32, f32, f32)
+fn C.native_svg_content_mask_geometry(f32, f64, &i32) i32
+fn C.native_svg_content_mask_pixels(f64, i32) &u8
 fn C.native_reuse_svg_mask_raster(u64) i32
 fn C.native_remember_svg_mask_raster(u64)
 
@@ -40,20 +44,18 @@ fn shared_svg_mask_raster_key(mask &layout.PaintClip, area [4]i32, bounds painti
 }
 
 fn (mut app BrowserApp) raster_native_svg_content_mask(mask &layout.PaintClip, page_x f32,
-	page_y f32) bool {
-	if !shared_svg_mask_raster { return false }
+	page_y f32, scale f64) bool {
+	if scale == 0 { return true }
 	mut area := [4]i32{}
-	mut backing_scale := f32(0)
-	mut data := &u8(unsafe { nil })
-	status := C.native_svg_content_mask_surface(f32(app.ctx.height), &area[0], &backing_scale, &data)
-	if status != 1 { return status == 2 }
+	if C.native_svg_content_mask_geometry(f32(app.ctx.height), scale, &area[0]) == 0 {
+		return false
+	}
 	if !portable_svg_content_mask_supported(mask) {
 		return false
 	}
 	if !mask.mask_operations.any(it.fill_linear_gradient != none || it.fill_radial_gradient != none) {
 		return false
 	}
-	scale := f64(backing_scale)
 	transform := portable_device_transform(mask.transform, page_x, page_y, scale)
 	rect := mask.rect
 	region := transform.map_rect(painting.Rect{rect.x, rect.y, rect.width, rect.height})
@@ -67,12 +69,17 @@ fn (mut app BrowserApp) raster_native_svg_content_mask(mask &layout.PaintClip, p
 	bounds := portable_pixel_bounds(region.intersection(image))
 	if bounds.is_empty() { return true }
 	raster_key := shared_svg_mask_raster_key(mask, area, bounds, page_x, page_y, scale)
-	if raster_key != 0 && C.native_reuse_svg_mask_raster(raster_key) != 0 {
-		if portable_svg_mask_diagnostics {
-			eprintln('VOX_SHARED_SVG_MASK_CACHE_HIT luminance=${mask.mask_luminance} surface=${bounds.width}x${bounds.height}')
+	if raster_key != 0 {
+		hit := C.native_reuse_svg_mask_raster(raster_key)
+		if hit != 0 {
+			if portable_svg_mask_diagnostics {
+				eprintln('VOX_SHARED_SVG_MASK_CACHE_HIT luminance=${mask.mask_luminance} surface=${bounds.width}x${bounds.height} bitmap_allocated=${hit == 2}')
+			}
+			return true
 		}
-		return true
 	}
+	data := C.native_svg_content_mask_pixels(scale, area[2])
+	if data == unsafe { nil } { return false }
 	pitch := int(area[2]) * 4
 	offset := (bounds.y - int(area[1])) * pitch + (bounds.x - int(area[0])) * 4
 	length := (bounds.height - 1) * pitch + bounds.width * 4
