@@ -358,7 +358,10 @@ fn draw_document_path_pixels(pixels &u8, width i32, height i32, pitch i32, backd
 	// All raster work is synchronous; only the caller-owned pixels survive.
 	work := platform.begin_thread_scratch('native raster callback')
 	defer { work.finish() }
-	swap_document_raster_channels(pixels, width, height, pitch)
+	// GG reads the incoming pixels only when it draws over a backdrop.
+	if backdrop != 0 {
+		swap_document_raster_channels(pixels, width, height, pitch)
+	}
 	draw := if document_paths_use_p3(path, 1) != 0 { document_p3_path(*path) } else { *path }
 	result := ggshape.draw_path(pixels, width, height, pitch, backdrop, &draw)
 	swap_document_raster_channels(pixels, width, height, pitch)
