@@ -1733,6 +1733,63 @@ browsers and their guard exited zero. Peak sampled RSS was 8,155,660,288
 bytes for the final build, 497,958,912 for the captures and 608,698,368 for
 the scroll job.
 
+### Fixed-size SVG rectangle checks
+
+SVG rectangle recognition stores its four corners in a fixed array. An
+optional line back to the first corner is checked directly. Shared mask
+rectangle alignment and the macOS mask-region check iterate fixed arrays of
+four edges. Generated C for the previous published build used a dynamic
+point array and two dynamic edge arrays on this path. The candidate emitted
+no array allocation or append calls in the three checks.
+
+The single-C-unit V `-prod`, Clang `-O1` comparison harness used both sets
+of geometry checks with the production geometry field types and packed
+segment stride. It checked all 64 input records for identical eligibility
+and returned bounds before timing. Each of seven pairs used fresh processes,
+alternating which variant ran first. Each process ran two workloads of
+2,000,000 checks with prepared inputs. Timers covered geometry checks and
+result checksumming, with process launch and input preparation outside.
+The executable SHA-256 was
+`2d57fd42e83795c47a5bbd2109a5efa6a8e9ef92da76c67a2331d08ca34866fa`.
+
+| Workload | Accepted checks | Median before / fixed (ms) | Before range (ms) | Fixed range (ms) | Checksum |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Aligned rectangles | 2,000,000 | 125.535 / 95.728 | 120.173–127.843 | 94.031–97.336 | 4546511169908150597 |
+| Mixed eligibility | 250,000 | 57.933 / 42.653 | 55.063–58.865 | 41.846–45.804 | 7602596038793500197 |
+
+The checksums matched across all runs. Both workloads improved in every
+pair. The cohort ran 05:45:36–05:45:38 UTC on November 18, 2026, with a
+one-minute host load of 13.42 on 18 CPUs and other compiler jobs active.
+The 14 processes and the 3 GiB guard exited zero. Peak sampled process-tree
+RSS was 651,755,520 bytes.
+
+The focused `chromium/rounded_svg_background_test.v` file passed, including
+an explicit line back to the first corner and rejection checks for a curved
+closing segment and a misplaced endpoint. The test guard exited zero.
+
+All 155 macOS mask captures passed on the single-unit V `-prod`, Clang `-O1`
+candidate (`6ff6ea6a7421011989894c17a7a9cce1616bf81b275d10c791ed4ae738a49e27`).
+Twelve additional fresh captures compared the candidate with the published
+executable (`19554c666e7ef07de44937357e3a2f37df63bc26d8347bd4830a133c38be1766`).
+The rounded SVG background, transformed rectangular clip and overlapping
+solid mask fixtures matched pixel for pixel at 1× and 2×. These local
+captures used a 1024 × 600 viewport, private profiles and scripts disabled.
+Their fixture SHA-256 digests were
+`52f45dc0717159947ba655db78000f2e702a96b1f9c3ff457fc747d207b124b7`,
+`8454f39d3d14e943da9983cf5a46c61e9d6ec09103e8015b3bc35147967f817f` and
+`014ff8fe50e532a757b267173b04d324f1cd8ea1f242ae5d7a9f5e5901bc9e4b`.
+The browser build, captures and comparison guards exited zero. Their sampled
+RSS peaks were 8,152,825,856, 498,024,448 and 325,074,944 bytes.
+
+The first arm64 Linux build was killed with exit 137 while the V frontend
+and Clang overlapped. The split build emitted C, then linked a single unit
+with Clang `-O0`. The flags dump omitted the STB image object, so the final
+link compiled the matching `stbi.c` from the guest V toolchain. Its executable
+SHA-256 was `b16fb498da7f666edb010f7036d74a3db459ff4e0e8496a35797e339eadb7832`.
+All 19 Linux browser smoke checks passed under Xvfb with software OpenGL.
+The final link and test guards exited zero, with sampled RSS peaks of
+1,823,965,184 and 1,103,851,520 bytes.
+
 ## Original migration plan
 
 Vox currently renders through two Skia builds: LibWeb's Skia (CPU raster,
