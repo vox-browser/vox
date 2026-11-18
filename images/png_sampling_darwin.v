@@ -74,9 +74,6 @@ fn (mut app BrowserApp) sampled_png_decode(url string, image &gg.Image, width f6
 
 fn (app &BrowserApp) sampled_png_decode_extent_for_frame(geometry SampledPNGGeometry) ?[2]f64 {
 	extent := [f64(geometry.width), f64(geometry.height)]!
-	if os.getenv('VOX_DIAGNOSTIC_PNG_RENDER_DENSITY') != '1' { return extent }
-	// The geometry describes the destination raster. During a live capture
-	// that raster can have a different density from the document's display.
 	return sampled_png_decode_extent(extent, app.document.rendering_device_pixel_ratio(),
 		C.native_raster_device_pixel_ratio())
 }
