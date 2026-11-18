@@ -50,12 +50,7 @@ pub fn decode_rgba(source []u8, width int, height int, decoded_width int, decode
 		|| decoded_width > width || decoded_height > height {
 		return none
 	}
-	mut pixels := source.clone()
-	for i in 0 .. width * height {
-		for c in 0 .. 3 {
-			pixels[i * 4 + c] = u8((u32(pixels[i * 4 + c]) * pixels[i * 4 + 3] + 127) / 255)
-		}
-	}
+	pixels := cpuraster.premultiply_rgba_copy(source, width, height)?
 	mut image := Image{ width: width, height: height, pixels: pixels }
 	// Match Chromium's legacy Skia mip selection for rounded decode extents.
 	sx, sy := f32(decoded_width) / f32(width), f32(decoded_height) / f32(height)

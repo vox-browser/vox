@@ -5398,3 +5398,57 @@ buffers. It saw no dispatch for the archive size or forced serial.
 The ARC and non-ARC pool suites, 288 white-clear compatibility
 comparisons, and the focused ASan/UBSan and ThreadSanitizer runs passed.
 Production validation of the new path awaits the shared rebuild.
+
+### Parallel premultiplication of sampled PNG and WebP uploads
+
+Sampled RGBA uploads now write a premultiplied copy in a single pass.
+The existing CPU raster workers divide source rows at 262,144 pixels
+and can use up to four lanes. The conversion keeps the original
+`(channel * alpha + 127) / 255` rounding, preserves the source buffer,
+and finishes before mip selection and filtering. There is no worker
+dispatch below the threshold or with `VOX_SERIAL_CPU_RASTER=1`.
+
+The archived page diagnostics used the published single-C-unit bundle
+`66f97ef08d4c9ff9ae1195cd80c9817add78ab82c27960580f1444a44101e77d`.
+The probe counted source clones from the RGBA decode entry point at
+return offset `0x1f4fc4`. It detected the 2,107,404-byte source in a
+separate 1027×513 transparent PNG scaled to 200×100 CSS pixels. At
+1024×768 CSS pixels and 2× capture scale with one second of settling,
+the three sealed replays matched their content counts and existing
+decoded PNG references. Fresh captures used private profiles and
+caches, with JavaScriptCore context initialization and zero reported
+JavaScript errors. The browser and guard exits were zero.
+
+| Archive | Audited entries | RGBA premultiplication at capture | Frozen capture RGBA SHA-256 |
+| --- | ---: | --- | --- |
+| Hacker News | 30 | None | `a12f1a485f6b1e6f9d87dc1a49e47c3e2b7c2245858332e1209ff15041734642` |
+| GitHub | 33 | 60×60 and 40×40, both serial | `69ab76c878a122501f91053ef8ae07b2ca073da35bafc92c065dbce55920a0bc` |
+| Old Reddit | 25 | None | `d31ea76663720b84aa5e78a722e3cb21eb41cb345742572d2e6e66fc1070bc1a` |
+
+A matching uninstrumented, single-C-unit `-prod -prealloc -gc none`
+harness timed output allocation and premultiplication through return.
+It compared the original clone and scalar loop, the new pass forced
+serial, and the new pass with default scheduling. The timed scope ends
+before mip generation or painting. Inputs were the two archived GitHub
+avatars, the decoded PNG control, and synthetic packed RGBA with mixed
+alpha. Seven alternating, fresh-process groups ran on 18 logical CPUs
+at one-minute loads of 4.59–4.62. All 126 processes and the guard exited
+zero, and each input produced identical output across the three modes.
+
+| Source | First call before / serial / default, µs | Warm before / serial / default, µs |
+| --- | ---: | ---: |
+| GitHub 40×40 | 3.583 / 2.500 / 2.500 | 2.542 / 1.542 / 1.542 |
+| GitHub 60×60 | 6.583 / 4.416 / 4.416 | 6.334 / 4.125 / 4.125 |
+| 512×512 | 455.584 / 298.791 / 200.791 | 456.917 / 289.688 / 183.605 |
+| PNG 1027×513 | 926.542 / 574.959 / 327.541 | 917.833 / 592.896 / 266.042 |
+| 1025×1023 | 1849.625 / 1176.500 / 501.333 | 1855.417 / 1190.750 / 485.854 |
+| 2049×2047 | 7818.292 / 4957.875 / 2166.542 | 7496.396 / 4954.813 / 1934.063 |
+
+A separate dispatch diagnostic observed two threads at the threshold
+and four at 1027×513. It recorded no dispatch at 60×60 or when forced
+serial. The image suites passed with the Clang C backend in default
+and production allocator configurations. The FastC attempt stopped
+at an SDK-header compilation error before tests ran. The three
+archives provide path eligibility and baseline pixel checks.
+A candidate whole-page timing comparison requires the shared
+production rebuild.

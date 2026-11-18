@@ -22,6 +22,24 @@ fn test_alpha_is_premultiplied_before_neighboring_colors_are_filtered() {
 	assert image.pixels == [u8(0), 0, 127, 127]
 }
 
+fn test_large_odd_rgba_decode_matches_scalar_premultiplication() {
+	width, height := 1027, 513
+	source := []u8{len: width * height * 4, init: u8((index * 59 + index / 4) & 255)}
+	input_hash := sha256.sum(source).hex()
+	mut expected := source.clone()
+	for offset := 0; offset < expected.len; offset += 4 {
+		alpha := u32(expected[offset + 3])
+		for channel in 0 .. 3 {
+			expected[offset + channel] = u8((u32(expected[offset + channel]) * alpha + 127) / 255)
+		}
+	}
+	image := decode_rgba(source, width, height, width, height) or { panic('decode') }
+	assert image.width == width && image.height == height
+	matches := image.pixels == expected
+	assert matches
+	assert sha256.sum(source).hex() == input_hash
+}
+
 fn test_odd_mip_dimensions_filter_the_final_source_row_and_column() {
 	mut pixels := []u8{len: 3 * 3 * 4}
 	for y in 0 .. 3 {
