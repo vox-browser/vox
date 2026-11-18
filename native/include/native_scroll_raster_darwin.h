@@ -8,6 +8,7 @@
 #include <stdio.h>
 #include <dlfcn.h>
 #include <dispatch/dispatch.h>
+#include "native_frame_clear_darwin.h"
 #include "native_raster_row_ranges.h"
 #include "native_scroll_tile_presentation_darwin.h"
 
@@ -129,7 +130,10 @@ static void native_scroll_raster_clear_gpu_input(VoxScrollRaster const *cache,
     uint8_t *pixels, size_t pitch, int reuse, double delta, const double *damage, int count) {
     int sparse = reuse && getenv("VOX_GPU_TILE_SPARSE_CLEAR");
     size_t cleared = 0, w = cache->canvas_width, h = cache->canvas_height;
-    if (!sparse) cleared = native_scroll_raster_white_rect(pixels,pitch,w,h,0,0,w,h);
+    if (!sparse) {
+        vox_clear_frame_rows(pixels, w * 4, pitch, h);
+        cleared = w * h * 4;
+    }
     else {
         cleared += native_scroll_raster_white_rect(pixels,pitch,w,h,0,0,w,cache->top);
         cleared += native_scroll_raster_white_rect(pixels,pitch,w,h,0,cache->top+cache->height,w,h);

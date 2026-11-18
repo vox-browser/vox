@@ -4,7 +4,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <stdio.h>
-#include <string.h>
+#include "native_frame_clear_darwin.h"
 
 // A capability for the first paint of a fresh, privately owned document
 // bitmap. The embedding adapter grants it only with default graphics state;
@@ -39,8 +39,7 @@ static int vox_initial_document_clear(VoxInitialDocumentClear *state, CGContextR
     CGContextFlush(context);
     void *pixels = CGBitmapContextGetData(context);
     if (!pixels) return 0;
-    if (pitch == width * 4) memset(pixels, 255, pitch * height);
-    else for (size_t y = 0; y < height; ++y) memset((uint8_t *)pixels + y * pitch, 255, width * 4);
+    vox_clear_frame_rows((uint8_t *)pixels, width * 4, pitch, height);
     const char *diagnostics = getenv("VOX_INITIAL_DOCUMENT_CLEAR_DIAGNOSTICS");
     if (diagnostics && *diagnostics) fprintf(stderr, "VOX_INITIAL_DOCUMENT_CLEAR width=%zu height=%zu\n", width, height);
     return 1;
