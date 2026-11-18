@@ -1382,6 +1382,78 @@ exits in this cohort were zero. Sampled process-tree RSS peaked at
 11,685,937,152 bytes for the build and 405,733,376 bytes for the
 accepted diagnostic and timing job.
 
+### Caching solid SVG opacity groups on macOS
+
+Automatic shared rasterization accepts nested and sibling opacity groups
+with up to six pixel-aligned solid rectangle fills and 12 paint operations.
+Fills outside the groups participate in the same ordered replay. The existing
+four-layer and 128 Ki-pixel limits apply. Cache pressure, fractional edges and
+operation counts beyond the limit can select Quartz.
+
+The published executable `4ac49eb9690c121587fd4efd8f859f2cf0e2762013861238f07bb91a05547540`
+used Quartz for both masks in the [opacity fixture](../Tests/Browser/Native/svg-mask-opacity.html)
+in fresh PID 36794. Its source SHA-256 was
+`2ca5b13ae5723502fa64a1661cb1ea2b3eb129e2508c048cd6fa1cf6e429ea51`.
+The private single-unit V `-prod`, Clang `-O1` executable was
+`a64f3f3c0250ca1863b62a2a78a8c863de4a0bb94f2e54807a6f37c58fc6f77d`.
+All 92 macOS captures passed on that executable. The grouped alpha and
+luminance masks matched uncached shared replay exactly at 1× and 2×, including
+cropped viewport hits. The largest difference from Quartz at 2× was one
+channel level. A mixed cache and Quartz capture with 30 masks stayed within
+two channel levels. Fractional fills, excessive operation counts and disabled
+caching matched the explicit Quartz control exactly. Native pixel conversion
+and layer tests passed.
+
+Three local, script-free fixtures ran at 1024 × 600 and 2× after a one-second
+title-matched settle. Each fresh process used a private cache and profile.
+`tools/measure_precise_scroll.py` sent 120 four-pixel precise inputs at a
+requested 60 Hz, reversing after 60. Each pair used the same executable and
+changed `VOX_SHARED_SVG_MASK_RASTER` from `0` to automatic. The throughput
+endpoint was completed native frame installation after outer view paint over
+the first-to-last input window.
+
+The 30-mask pressure fixture reached its 240 CSS-pixel scroll limit before
+the input reversed. The 75-mask fixture used the same mask geometry with more
+rows. Its four timed runs reached 495–503.5 CSS pixels, below the 1320 CSS-pixel
+scroll limit. The short and tall pressure fixture SHA-256 values were
+`157c3c6e8973e910b18a2a7dad820b5e8bf0f9f9069ea7f470566a8d5b45a679` and
+`5cc0a84a101caee62df2bd8f68ddce774e73e6cd7017a8eef3ef7065b0a8e0bf`.
+
+Separate instrumented launches counted cache hits, cropped hits, fresh rasters
+and Quartz fallbacks during input. The regular fixture, PID 45276, logged
+562 / 130 / 6 / 0. The short pressure fixture, PID 46589, logged
+406 / 40 / 21 / 337. The tall pressure fixture, PID 56008, logged
+400 / 57 / 16 / 464. All three browser exits were zero. The first diagnostic's
+wrapper misread the start record and returned one after the probe had passed.
+The corrected wrapper read that receipt and the timings used diagnostics off.
+
+| PID | Fixture | Raster | Scroll fps | Median / p95 / max (ms) | Input Hz | Inputs / changes | First / last gap (ms) | Load |
+| --- | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| 46798 | Regular | Quartz | 20.13 | 47.695 / 52.029 / 53.216 | 58.43 | 120 / 41 | 103.926 / 0.281 | 4.74 |
+| 46989 | Regular | Automatic | 29.61 | 32.397 / 36.453 / 62.776 | 55.07 | 120 / 64 | 73.265 / 17.677 | 4.76 |
+| 47178 | Regular | Quartz | 20.07 | 48.161 / 52.312 / 53.115 | 56.87 | 120 / 42 | 108.167 / 0.131 | 4.94 |
+| 47364 | Regular | Automatic | 30.55 | 31.699 / 36.051 / 38.416 | 58.63 | 120 / 62 | 72.363 / 0.137 | 5.03 |
+| 47551 | Short pressure | Quartz | 7.93 | 64.960 / 550.287 / 550.287 | 59.00 | 120 / 16 | 141.221 / 427.100 | 5.26 |
+| 47736 | Short pressure | Automatic | 11.61 | 44.792 / 50.063 / 516.180 | 57.54 | 120 / 24 | 98.124 / 470.272 | 5.56 |
+| 47866 | Short pressure | Quartz | 8.36 | 64.633 / 499.224 / 499.224 | 58.52 | 120 / 17 | 138.815 / 419.979 | 5.28 |
+| 48048 | Short pressure | Automatic | 11.51 | 44.866 / 50.015 / 546.007 | 57.07 | 120 / 24 | 96.273 / 469.368 | 5.50 |
+| 56176 | Tall pressure | Quartz | 9.35 | 102.302 / 112.865 / 112.865 | 58.53 | 120 / 19 | 200.446 / 0.188 | 7.38 |
+| 59924 | Tall pressure | Automatic | 12.32 | 75.733 / 82.055 / 83.359 | 58.64 | 120 / 25 | 161.172 / 49.293 | 7.27 |
+| 62413 | Tall pressure | Quartz | 9.89 | 95.246 / 103.443 / 106.110 | 58.83 | 120 / 20 | 200.657 / 0.107 | 7.57 |
+| 62494 | Tall pressure | Automatic | 13.00 | 72.524 / 79.231 / 79.877 | 59.51 | 120 / 26 | 150.543 / 17.084 | 7.44 |
+
+The cohorts ran 04:46:07–04:46:50 and 04:47:37–04:47:57 UTC on November 18,
+2026. Load is the starting one-minute average on the 18-CPU host. Both
+fixtures without a scroll clamp improved throughput, median and p95 in both
+pairs. The maximum interval increased in one regular pair and in one short
+pressure pair. All measured intervals exceeded 16.67 ms. All timed browser
+and guard exits were zero. The C generation and compile jobs peaked at
+8,184,463,360 and 7,241,416,704 bytes of sampled process-tree RSS. The
+first compile command failed when it passed framework flags as single
+arguments. The corrected command used the same generated C. The screenshot
+guard peaked at 541,966,336 bytes. The timing jobs peaked at 683,769,856 and
+600,162,304 bytes.
+
 ## Original migration plan
 
 Vox currently renders through two Skia builds: LibWeb's Skia (CPU raster,
