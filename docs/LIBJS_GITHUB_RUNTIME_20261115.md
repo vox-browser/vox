@@ -9288,3 +9288,57 @@ validation and an end-to-end timing for both changes await a publication
 with their exact source hashes. Commands, input pins, guard reports, raw
 attempts and build errors are local under
 `docs/benchmark-results/github-frontend-5204-r107/receipts`.
+
+### Standalone preparation of the 81 GitHub modules
+
+The published browser's audit identifies 81 evaluated and fulfilled modules.
+Their 81 distinct archived responses match the manifest and total 5,088,368
+bytes. That exceeds the process-local frontend cache's 4 MiB source-byte
+limit by 894,064 bytes, before inline scripts. Full retention of the module
+set is impossible at that limit. The audit does not establish the hit rate
+on reload.
+
+A standalone V `-prod -prealloc -gc none` executable parses those exact
+responses as modules at the browser's depth limit of 256. File reads and
+diagnostic inspection stay outside the timed intervals. All 81 modules
+parse without diagnostics or recursion-limit failures in each fresh process.
+The 18-CPU host's one-minute load is 10.00 during the three attempts. The
+executable SHA-256 is
+`7b2a58eca163a54bee79b7baa746bb15aa6bcfb466bee186adafee3180d81f6f`.
+
+| Attempt | Main-thread frontend instructions | Summed frontend time |
+| --- | ---: | ---: |
+| 1 | 7,111,911,488 | 640.370 ms |
+| 2 | 7,101,116,915 | 648.349 ms |
+| 3 | 7,099,606,451 | 651.707 ms |
+
+The interval covers UTF-16 conversion, parsing and lexical-scope analysis.
+It has the same order of magnitude as the 7.28-billion-instruction frontend
+scopes in the published browser, with a separate executable and fixed source
+order. `code-view-5d65cb0f8c6bfda9.js` accounts for 1,812,989,787 median
+instructions, or 25.5% of the standalone median total. The five largest
+instruction counts account for 59.1%. Browser launch, linking, bytecode
+generation and JavaScript execution are outside the standalone intervals.
+The [separate seven-pair GitHub comparison](LIBJS_NATIVE_CODE.md#recovered-group-against-brave)
+on `4e0651cd…c452` records median PNG availability of 9.186 seconds in Vox
+and 2.434 seconds in Brave. Those browser measurements retain startup,
+author-script hydration and rendering.
+
+The 3 GiB guard exits zero at 32.310 seconds and 2,970,959,872 sampled RSS
+bytes for the compile and three runs. Two earlier attempts fail due to full
+disk during C staging and during Clang's object output, respectively. The
+retained attempts identify both failures.
+
+The cache implementation from `9c42c5c64` also passes a standalone runtime
+probe with LibJS and a minimal host. The probe uses the exact browser cache
+source and checks reuse for identical input, a forced collision and independent
+partitions. The first probe needed a missing-map-entry guard in its assertion.
+The corrected compiler and explicit test binary exits are zero, with a guard
+peak of 3,031,744,512 sampled bytes in 27.343 seconds. The full `browserjs`
+regression build fails while writing generated C on the full filesystem.
+
+Managed attempt `20261118-125756-22ae8668` also fails with no space while
+sealing `Vox.c.i`. The successful production publication still predates both
+`eb8628f3a` and `9c42c5c64`, so browser runtime validation and matched timing
+of those changes remain pending. Receipts and probe sources are local under
+`docs/benchmark-results/github-frontend-5204-r108/receipts`.
