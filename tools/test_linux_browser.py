@@ -458,6 +458,42 @@ def check_svg_mask_opacity_browser(binary, artifacts, temporary):
     print("PASS: isolated and nested SVG mask opacity with alpha and luminance", flush=True)
 
 
+def check_svg_mask_gradient_browser(binary, artifacts, temporary):
+    fixture = Path(__file__).resolve().parents[1] / "Tests/Browser/Native/svg-gradient-masks.html"
+    screenshot = artifacts / "portable-svg-mask-gradient.png"
+    screenshot.unlink(missing_ok=True)
+    environment = smoke_environment(Path(temporary) / "svg-mask-gradient")
+    environment.pop("VOX_DISABLE_PORTABLE_SVG_MASK", None)
+    environment["VOX_PORTABLE_SVG_MASK_DIAGNOSTICS"] = "1"
+    log = run_windowed([str(binary), "--window-width=1024", "--window-height=640",
+                        "--screenshot-viewport-height=640", f"--screenshot={screenshot}", str(fixture)],
+                       env=environment, log_path=artifacts / "portable-svg-mask-gradient.log")
+    assert "VOX_SVG_MASK luminance=false operations=1 paths=2" in log, log
+    assert "VOX_SVG_MASK luminance=true operations=1 paths=1" in log, log
+    assert "VOX_SVG_MASK luminance=false operations=1 paths=1" in log, log
+    _, height, channels, rows = rendered_png_rows(screenshot.read_bytes())
+
+    def pixel(x, y):
+        return rows[y][x * channels:x * channels + 3]
+
+    marker = next((y for y in range(min(height, 150)) if pixel(4, y) == b"\x34\xb7\x86"), None)
+    assert marker is not None, "Missing document marker"
+    y = marker + 8
+    white = b"\xff\xff\xff"
+    assert pixel(20, y + 42) == white, "The transformed alpha ramp started too early"
+    assert pixel(110, y + 16) == white, "The gradient transform also moved the mask path"
+    assert pixel(143, y + 42) == white, "The gradient leaked beyond the mask region"
+    assert pixel(275, y + 91) == white, "The radial shader ignored the vertical scale"
+    assert pixel(375, y + 42) == b"\xff\x88\x00", "Mask affected an unclipped sibling"
+    assert pixel(449, y + 32) == white, "Embedded SVG lost the object-box gradient transform"
+    assert pixel(502, y + 32) == b"\x00\x00\xff"
+    for x, offset, channel in ((70, 42, 151), (110, 42, 51), (275, 55, 5),
+                               (310, 55, 129), (275, 70, 132), (475, 32, 128)):
+        actual = pixel(x, y + offset)
+        assert all(abs(value - target) <= 2 for value, target in zip(actual, (channel, channel, 255))), (x, actual)
+    print("PASS: SVG gradient masks preserve stop opacity, the path, and gradient-local coordinates", flush=True)
+
+
 def check_webgl_pixels(data):
     """Find both complete shader canvases, excluding unknown browser chrome."""
     width, height, channels, rows = rendered_png_rows(data)
@@ -793,6 +829,7 @@ def main():
         check_nested_svg_browser(binary, artifacts, temporary)
         check_svg_mask_browser(binary, artifacts, temporary)
         check_svg_mask_opacity_browser(binary, artifacts, temporary)
+        check_svg_mask_gradient_browser(binary, artifacts, temporary)
         check_https_navigation(binary, temporary, environment)
         print("PASS: HTTPS navigation and certificate verification")
         server = http.server.ThreadingHTTPServer(("127.0.0.1", 0),

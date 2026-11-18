@@ -24,6 +24,8 @@ pub:
 	r1    f32
 	angle f32
 	stops []f32
+	// Map gradient coordinates into the path's local coordinate space.
+	local_transform ?[6]f32
 }
 
 // What the shader factory returned: nothing (the paint keeps its black
@@ -222,14 +224,20 @@ fn canvas_gradient_shader(gradient CanvasGradient, m Matrix) CanvasShader {
 	if colors.len == 0 {
 		return CanvasShader{}
 	}
+	gradient_matrix := if local := gradient.local_transform {
+		combined := sk_concat(canvas_affine([m.a, m.b, m.c, m.d, m.e, m.f]!), canvas_affine(local))
+		Matrix{combined.sx, combined.ky, combined.kx, combined.sy, combined.tx, combined.ty}
+	} else {
+		m
+	}
 	return match gradient.kind {
 		1 {
-			make_linear(Point{gradient.x0, gradient.y0}, Point{gradient.x1, gradient.y1}, colors, positions, m)
+			make_linear(Point{gradient.x0, gradient.y0}, Point{gradient.x1, gradient.y1}, colors, positions, gradient_matrix)
 		}
 		2 {
-			make_two_point_conical(Point{gradient.x0, gradient.y0}, gradient.r0, Point{gradient.x1, gradient.y1}, gradient.r1, colors, positions, m)
+			make_two_point_conical(Point{gradient.x0, gradient.y0}, gradient.r0, Point{gradient.x1, gradient.y1}, gradient.r1, colors, positions, gradient_matrix)
 		}
-		3 { make_canvas_sweep(gradient, colors, positions, m) }
+		3 { make_canvas_sweep(gradient, colors, positions, gradient_matrix) }
 		else { CanvasShader{} }
 	}
 }
