@@ -9,7 +9,7 @@ fn resolve_property_in_substitution_workspace(element dom.AbstractElement, prope
 	if scopes := guarded_contexts.function_definition_scopes {
 		temporary_contexts.function_definition_scopes = scopes.clone()
 	}
-	mut result := substitute_arbitrary_substitution_functions_for_element(element,
+	result := substitute_arbitrary_substitution_functions_for_element(element,
 		mut temporary_contexts, unresolved.tokens, SubstitutionContext{
 			dependency_type: .property
 			first:           string_from_property_id(property_id)
@@ -21,6 +21,7 @@ fn resolve_property_in_substitution_workspace(element dom.AbstractElement, prope
 	if scopes := temporary_contexts.function_definition_scopes {
 		guarded_contexts.function_definition_scopes = scopes.clone()
 	}
-	own_value_component_text(mut result)
+	// Keep the substituted tokens alive for the parser. The typed-value exporter
+	// copies only the result, and the fallback owns any input it may retain.
 	return parse_substituted_property_value(property_id, result, true)
 }
