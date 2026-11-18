@@ -737,15 +737,10 @@ fn dump_expression(expression &Expression, state DumpState) {
 		}
 		.conditional {
 			dump_node(state, 'ConditionalExpression', expression.range)
-			if test := expression.kind.test {
-				dump_labeled_expression('test', test, false, state)
-			}
-			if consequent := expression.kind.consequent {
-				dump_labeled_expression('consequent', consequent, false, state)
-			}
-			if alt := expression.kind.alternate_expr {
-				dump_labeled_expression('alternate', alt, true, state)
-			}
+			branches := expression.kind.conditional_data or { return }
+			dump_labeled_expression('test', &branches.test, false, state)
+			dump_labeled_expression('consequent', &branches.consequent, false, state)
+			dump_labeled_expression('alternate', &branches.alternate, true, state)
 		}
 		.sequence {
 			dump_node(state, 'SequenceExpression', expression.range)

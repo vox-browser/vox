@@ -579,15 +579,10 @@ fn (mut ft FunctionTable) collect_from_expression(expr &Expression, mut result F
 			}
 		}
 		.conditional {
-			if test := expr.kind.test {
-				ft.collect_from_expression(test, mut result)
-			}
-			if consequent := expr.kind.consequent {
-				ft.collect_from_expression(consequent, mut result)
-			}
-			if alternate := expr.kind.alternate_expr {
-				ft.collect_from_expression(alternate, mut result)
-			}
+			branches := expr.kind.conditional_data or { return }
+			ft.collect_from_expression(&branches.test, mut result)
+			ft.collect_from_expression(&branches.consequent, mut result)
+			ft.collect_from_expression(&branches.alternate, mut result)
 		}
 		.sequence {
 			for e in expr.kind.expressions {
@@ -1293,9 +1288,7 @@ mut:
 	rhs                   ?&Expression
 	operand               ?&Expression
 	argument              ?&Expression
-	test                  ?&Expression
-	consequent            ?&Expression
-	alternate_expr        ?&Expression
+	conditional_data      ?&ConditionalExpressionData
 	object                ?&Expression
 	property              ?&Expression
 	specifier             ?&Expression

@@ -1,10 +1,17 @@
 // SPDX-License-Identifier: BSD-2-Clause
 module libjs
 
+@[heap]
+struct ConditionalExpressionData {
+	test       Expression
+	consequent Expression
+mut:
+	alternate Expression
+}
+
 struct ConditionalTail {
 	start Position
-	test Expression
-	consequent Expression
+	branches &ConditionalExpressionData
 }
 
 // expressions.rs parses right-associative conditional alternatives recursively.
@@ -20,7 +27,8 @@ fn (mut parser Parser) parse_conditional_tail(lhs Expression, forbidden Forbidde
 		parser.consume_token(.question_mark)
 		consequent := parser.parse_assignment_expression()
 		parser.consume_token(.colon)
-		tails << ConditionalTail{start, test, consequent}
+		// The temporary list keeps only the location and the eventual owner.
+		tails << ConditionalTail{start, &ConditionalExpressionData{test: test, consequent: consequent}}
 		if parser.done() {
 			alternate = parser.expression(parser.position(), ExpressionKind.error())
 			break
@@ -43,11 +51,11 @@ fn (mut parser Parser) parse_conditional_tail(lhs Expression, forbidden Forbidde
 	}
 	for index := tails.len - 1; index >= 0; index-- {
 		tail := tails[index]
+		mut branches := tail.branches
+		branches.alternate = alternate
 		alternate = parser.expression(tail.start, ExpressionKind{
-			tag: .conditional
-			test: &Expression{...tail.test}
-			consequent: &Expression{...tail.consequent}
-			alternate_expr: &Expression{...alternate}
+			tag:              .conditional
+			conditional_data: branches
 		})
 	}
 	return alternate
@@ -59,19 +67,21 @@ fn (mut generator BytecodeGenerator) conditional_tail(mut vm VM, expression &Exp
 	previous_range := generator.range
 	defer { generator.range = previous_range }
 	dst := generator.temporary()
-	mut current := *expression
+	// The input and its retained children outlive this local traversal.
+	mut current := unsafe { expression }
 	mut ends := []u32{}
 	for current.kind.tag == .conditional {
 		generator.range = current.range
-		test := generator.expression(mut vm, current.kind.test or { return error('Missing conditional test') })!
+		branches := current.kind.conditional_data or { return error('Missing conditional branches') }
+		test := generator.expression(mut vm, &branches.test)!
 		otherwise := generator.emit(Instruction{op: .jump_if_false, lhs: test})
-		value := generator.expression(mut vm, current.kind.consequent or { return error('Missing consequent') })!
+		value := generator.expression(mut vm, &branches.consequent)!
 		generator.emit(Instruction{op: .mov, dst: dst, lhs: value})
 		ends << generator.emit(Instruction{op: .jump})
 		generator.patch(otherwise)
-		current = *(current.kind.alternate_expr or { return error('Missing alternate') })
+		current = &branches.alternate
 	}
-	value := generator.expression(mut vm, &current)!
+	value := generator.expression(mut vm, current)!
 	generator.emit(Instruction{op: .mov, dst: dst, lhs: value})
 	for end in ends { generator.patch(end) }
 	return dst
