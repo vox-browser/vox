@@ -24,10 +24,17 @@ fn (mut app BrowserApp) draw_portable_solid_svg_fill(command &layout.PaintComman
 	color := app.paint_colors.color_with_retained(command.color, command.opacity * data.fill_opacity,
 		command.retained_svg_fill_color())
 	if color.a == 0 { return true }
+	matrix := portable_svg_surface_matrix(transform, bounds)
+	$if vox_gg_svg ? {
+		if portable_svg_gpu_enabled && app.paint_effect_depth == 0 && app.paint_svg_mask_depth == 0
+			&& draw_portable_gpu_svg_fill(app.ctx.r, data, matrix, bounds, color) {
+			return true
+		}
+	}
 	pitch := bounds.width * 4
 	mut premultiplied := []u8{len: pitch * bounds.height}
 	if !cpuraster.fill_canvas_path(mut premultiplied, bounds.width, bounds.height, pitch, 2,
-		path, portable_svg_surface_matrix(transform, bounds), portable_svg_argb(color), none, 1,
+		path, matrix, portable_svg_argb(color), none, 1,
 		.src_over, 0, [], none) {
 		return false
 	}

@@ -7420,6 +7420,12 @@ fn (mut app BrowserApp) draw_command(source_command &layout.PaintCommand, page_x
 				filled = app.draw_portable_solid_svg_fill(command, svg_data, page_x, page_y)
 				if filled && (command.stroke_color == '' || command.stroke_width <= 0) { return }
 			}
+			$if windows && vox_gg_svg ? {
+				if portable_svg_gpu_enabled {
+					filled = app.draw_portable_solid_svg_fill(command, svg_data, page_x, page_y)
+					if filled && (command.stroke_color == '' || command.stroke_width <= 0) { return }
+				}
+			}
 			input_polygons := if svg_data.path_polygons.len > 0 {
 				svg_data.path_polygons
 			} else {

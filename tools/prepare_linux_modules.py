@@ -132,6 +132,10 @@ def stage_module(source, target, package):
         if destination.is_symlink():
             destination.unlink()
         write_if_changed(destination, Path(__file__).with_name('linux_fontstash_callbacks.h').read_text())
+    if package == 'gg' and (target / 'canvas/gpu_context.v').is_file():
+        from prepare_ui2 import stage_document_surface
+        stage_document_surface(target / 'canvas', windows=False)
+        expected.add(Path('canvas/vox_document_surface.v'))
     if target.exists():
         for path in sorted(target.rglob("*"), reverse=True):
             if not path.is_symlink() and path.is_dir():

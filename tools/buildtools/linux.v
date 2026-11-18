@@ -158,6 +158,11 @@ fn stage_linux_module(source string, target string, package string) ! {
 		expected << 'canvas/vox_document_clip.v'
 		write_changed(join(target, 'canvas/vox_document_clip.v'),
 			read(join(root_dir(), 'tools/ui2/gg_document_clip.v'))!)!
+		if os.is_file(join(target, 'canvas/gpu_context.v')) {
+			expected << 'canvas/vox_document_surface.v'
+			write_changed(join(target, 'canvas/vox_document_surface.v'),
+				read(join(root_dir(), 'tools/ui2/gg_document_surface.v'))!)!
+		}
 	}
 	for path in files(target)! { if relative(path, target) !in expected { remove(path)! } }
 }

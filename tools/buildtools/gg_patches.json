@@ -1,4 +1,16 @@
 {
+  "prepare_gg_windows_canvas": [
+    {
+      "file": "gpu_context.v",
+      "old": "\t$if !macos && !linux {\n\t\treturn error('gg.canvas: GPU rendering requires macOS or Linux')\n\t}",
+      "new": "\t$if windows {\n\t\tif !gfx.is_valid() {\n\t\t\treturn error('gg.canvas: GPU rendering requires a current Sokol OpenGL context on Windows')\n\t\t}\n\t} $else $if !macos && !linux {\n\t\treturn error('gg.canvas: GPU rendering requires macOS, Linux or Windows')\n\t}"
+    },
+    {
+      "file": "gpu_context.v",
+      "old": "\t} $else {\n\t\tif gfx.query_backend() != .metal_macos",
+      "new": "\t} $else $if windows {\n\t\tif gfx.query_backend() != .glcore33 || !gfx.query_features().storage_buffer\n\t\t\t|| !windows_gpu_has_storage_buffers() {\n\t\t\treturn error('gg.canvas: GPU rendering requires OpenGL 4.3 with vertex and fragment storage buffers and at least 16 storage bindings')\n\t\t}\n\t\tctx.is_gl = true\n\t} $else {\n\t\tif gfx.query_backend() != .metal_macos"
+    }
+  ],
   "prepare_gg_shadow": [
     {
       "file": "gpu_layer.v",

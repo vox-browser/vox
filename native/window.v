@@ -41,6 +41,12 @@ fn configure_native_browser_context(mut context gg.Context) {
 	$if !macos {
 		context.window.event_userdata_cb = dispatch_native_browser_event
 	}
+	$if windows && vox_gg_svg ? {
+		if portable_svg_gpu_enabled {
+			context.window.gl.major_version = 4
+			context.window.gl.minor_version = 3
+		}
+	}
 	$if macos {
 		// Runs before the window exists; AppKit reads this when indexing it.
 		browserwindow.register_window_tab_indexing_default()

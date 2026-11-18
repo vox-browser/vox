@@ -22,6 +22,8 @@ def main():
                         help='cross-compilation sysroot containing mingw64/')
     parser.add_argument('--console', action='store_true',
                         help='keep a console entry point for startup diagnostics')
+    parser.add_argument('--opengl', action='store_true',
+                        help='build the Sokol OpenGL window with GG canvas SVG support')
     args = parser.parse_args()
     repo = Path(__file__).resolve().parent.parent
     environment = dict(os.environ, V_MACOS_V3_NO_FALLBACK='1')
@@ -72,7 +74,7 @@ def main():
             flags += ['-subsystem', 'console']
         run([compiler, '-memory-limit', '10G', *flags, '-enable-globals', '-gc', 'none',
              '-os', 'windows', '-arch', 'amd64', '-cc', environment['CC'],
-             '-d', 'ui2_custom_rendering', '-d', 'sokol_d3d11',
+             '-d', 'ui2_custom_rendering', '-d', 'vox_gg_svg' if args.opengl else 'sokol_d3d11',
              '-path', f'{repo}|{modules}|@vmodules|@vlib', '-o', output, '.'])
     if output.read_bytes()[:2] != b'MZ':
         raise SystemExit('Compiler did not produce a Windows executable')

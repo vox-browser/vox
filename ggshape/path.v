@@ -200,6 +200,14 @@ fn draw_supported_path(mut ctx canvas.GpuContext, pixels &u8, width i32, height 
 	return 1
 }
 
+// record_svg_path records a standalone descriptor on a caller-owned surface.
+pub fn record_svg_path(mut target canvas.GpuSurface, path &C.VoxGraphitePath) ! {
+	if path == unsafe { nil } || !path_supported(path) {
+		return error('unsupported SVG path descriptor')
+	}
+	draw_descriptor(mut target, path, none)!
+}
+
 // draw_descriptor adds one descriptor's draw to `target` like
 // draw_path_on_canvas(): its matrix (after the SVG image's `parent`), its
 // rounded clips and its paint.

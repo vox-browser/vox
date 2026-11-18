@@ -4,6 +4,7 @@
 import argparse
 import os
 import re
+import json
 from pathlib import Path
 import shutil
 import sys
@@ -97,6 +98,27 @@ def prepare_gg_gradient(modules, vlib):
         write_if_changed(canvas / 'vox_document_image.v', document_image.read_text())
         document_clip = Path(__file__).parent / 'ui2/gg_document_clip.v'
         write_if_changed(canvas / 'vox_document_clip.v', document_clip.read_text())
+        stage_document_surface(canvas)
+
+
+def stage_document_surface(canvas, windows=True):
+    tools = Path(__file__).parent
+    if not (canvas / 'gpu_context.v').is_file():
+        return
+    names = ['document_surface.v']
+    if windows:
+        from prepare_gg_shadow import replace_once
+        patches = json.loads((tools / 'buildtools/gg_patches.json').read_text())
+        for operation in patches['prepare_gg_windows_canvas']:
+            path = canvas / operation['file']
+            source = path.read_text()
+            if operation['new'] not in source:
+                if path.is_symlink():
+                    path.unlink()
+                write_if_changed(path, replace_once(source, operation['old'], operation['new']))
+        names.append('window_gpu_windows.c.v')
+    for name in names:
+        write_if_changed(canvas / ('vox_' + name), (tools / 'ui2' / ('gg_' + name)).read_text())
 
 
 def prepare_ui2_source(source, target):

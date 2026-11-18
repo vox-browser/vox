@@ -345,6 +345,12 @@ fn (mut app BrowserApp) poll_background_browser_tab() {
 
 fn (mut app BrowserApp) cleanup_browser_tabs() {
 	defer { app.application.close() }
+	$if vox_gg_svg ? {
+		if portable_svg_gpu_enabled && app.ctx != unsafe { nil } {
+			mut gpu := unsafe { portable_svg_gpu }
+			gpu.release(app.ctx.r)
+		}
+	}
 	if app.process_tabs() {
 		if app.tabs.process_timer != unsafe { nil } { app.tabs.process_timer.stop() }
 		if app.tabs.closing_process {

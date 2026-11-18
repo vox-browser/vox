@@ -90,7 +90,7 @@ fi
 # Listing the repository first keeps its packages unqualified wherever it lives.
 case "$v_backend" in c|fastc) ;; *) echo "Unsupported browser backend: $v_backend" >&2; exit 2 ;; esac
 set -- -b "$v_backend" -memory-limit 10G -enable-globals -cc "${CC:-clang}" \
-    -d vox_production -d use_openssl \
+    -d vox_production -d use_openssl -d vox_gg_svg \
     -exclude '@vlib/time/zoneinfo.native.v' \
     -path "$module_paths"
 if [ "$gc_mode" = prealloc ]; then

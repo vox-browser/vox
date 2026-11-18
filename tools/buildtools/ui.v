@@ -81,6 +81,12 @@ fn prepare_gg_canvas(canvas string) ! {
 	write_changed(join(canvas, 'vox_document_image.v'), image_helper)!
 	write_changed(join(canvas, 'vox_shadow_mask.v'), read(join(root_dir(), 'tools/ui2/gg_shadow_mask.v'))!)!
 	write_changed(join(canvas, 'vox_document_clip.v'), read(join(root_dir(), 'tools/ui2/gg_document_clip.v'))!)!
+	if os.is_file(join(canvas, 'gpu_context.v')) {
+		gg_repair_patches(canvas, 'prepare_gg_windows_canvas')!
+		for name in ['document_surface.v', 'window_gpu_windows.c.v'] {
+			write_changed(join(canvas, 'vox_' + name), read(join(root_dir(), 'tools/ui2/gg_' + name))!)!
+		}
+	}
 }
 
 fn prepare_gg_gradient(modules string, vlib string) ! {

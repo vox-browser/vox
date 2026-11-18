@@ -282,6 +282,44 @@ def check_gradient_browser(binary, artifacts, temporary):
     print("PASS: clipped gradient text, foreground painting and exact gradient ramps", flush=True)
 
 
+def check_gg_svg_browser(binary, artifacts, temporary):
+    fixture = Path(__file__).resolve().parents[1] / "Tests/Browser/Native/svg-gg-path-fill.html"
+    documents = []
+    for label in ("portable-svg", "gg-svg", "gg-svg-fallback"):
+        enabled = label != "portable-svg"
+        uses_gpu = label == "gg-svg"
+        screenshot = artifacts / f"{label}.png"
+        screenshot.unlink(missing_ok=True)
+        environment = smoke_environment(Path(temporary) / label)
+        environment.update(VOX_GG_SVG=str(int(enabled)), VOX_GG_SVG_DIAGNOSTICS="1")
+        environment.pop("MESA_GL_VERSION_OVERRIDE", None)
+        if label == "gg-svg-fallback":
+            environment["MESA_GL_VERSION_OVERRIDE"] = "4.2"
+        log = run_windowed([str(binary), "--window-width=800", "--window-height=600",
+                            "--screenshot-viewport-height=600", f"--screenshot={screenshot}", str(fixture)],
+                           env=environment, log_path=artifacts / f"{label}.log")
+        assert ("VOX_GG_SVG unavailable:" in log) == (label == "gg-svg-fallback"), log
+        for size in ("120x80", "80x30", "42x20"):
+            assert (f"VOX_GG_SVG draw={size}" in log) == uses_gpu, log
+        _, height, channels, rows = rendered_png_rows(screenshot.read_bytes())
+
+        def pixel(x, y):
+            return rows[y][x * channels:x * channels + 3]
+
+        top = next((y for y in range(min(height, 150)) if pixel(4, y) == b"\x34\xb7\x86"), None)
+        assert top is not None, "Missing document marker"
+        top += 8
+        assert pixel(22, top + 20) == b"\xff\x00\x00"
+        assert pixel(45, top + 27) == b"\xff\xff\xff", "Even-odd hole was painted"
+        assert pixel(45, top + 70) == b"\xff\x00\x00", "Path was flipped"
+        assert pixel(95, top + 60) in (b"\x7f\x00\x80", b"\x80\x00\x7f"), "Incorrect premultiplied blend"
+        assert pixel(145, top + 60) in (b"\x7f\x7f\xff", b"\x80\x80\xff")
+        assert pixel(191, top + 20) == b"\x00\xaa\x00", "Transformed fill is missing"
+        documents.append(rows[top:top + 100])
+    assert documents[0] == documents[1] == documents[2], "GG changed the SVG document pixels"
+    print("PASS: GPU-resident GG SVG replay and GL 4.2 fallback match the portable reference", flush=True)
+
+
 def check_svg_opacity_browser(binary, artifacts, temporary):
     fixture = Path(__file__).resolve().parents[1] / "Tests/Browser/Native/svg-opacity-groups.html"
     screenshot = artifacts / "portable-svg-opacity.png"
@@ -834,6 +872,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("binary", nargs="?", type=Path, default=repo / "Build/linux/vox")
     parser.add_argument("--output", type=Path, default=repo / "Build/linux/browser-smoke")
+    parser.add_argument("--gg-svg", action="store_true", help="check shared GG SVG replay against the portable renderer")
     args = parser.parse_args()
     wait_seconds = window_wait_seconds()
     binary = args.binary.resolve()
@@ -841,6 +880,9 @@ def main():
     require_tools()
     artifacts.mkdir(parents=True, exist_ok=True)
     with tempfile.TemporaryDirectory(prefix="vox-linux-") as temporary:
+        if args.gg_svg:
+            check_gg_svg_browser(binary, artifacts, temporary)
+            return
         environment = smoke_environment(temporary)
         output = run([str(binary), "--headless-smoke"], env=environment)
         assert "javascript DOM mutation: passed" in output, output

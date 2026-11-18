@@ -33,6 +33,12 @@ fn end_browser_frame(ctx &gg.Context) {
 		}
 	}
 	ctx.end()
+	$if vox_gg_svg ? {
+		if portable_svg_gpu_enabled {
+			mut state := unsafe { portable_svg_gpu }
+			state.finish_frame()
+		}
+	}
 }
 
 fn draw_browser_polygon(ctx &gg.Context, points []f32, color gg.Color) {

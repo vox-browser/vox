@@ -113,7 +113,7 @@ fn dispatch(name string, args []string) !int {
 			return 0
 		}
 		'build_windows_browser' {
-			build_windows(arguments(args, ['--console'])!)!
+			build_windows(arguments(args, ['--console', '--opengl'])!)!
 			return 0
 		}
 		'dev_build_env' {
