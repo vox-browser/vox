@@ -450,45 +450,6 @@ fn general_encode_srgb(x f64) f64 {
 	return scaled - 0.055
 }
 
-// SkImageFilters::Erode/Dilate: the per-channel minimum or maximum over a
-// (2rx+1) x (2ry+1) window, decal outside the layer.
-fn general_morphology(image BlurImage, rx_in int, ry_in int, dilate bool) BlurImage {
-	if rx_in <= 0 && ry_in <= 0 {
-		return image
-	}
-	// Larger radii cover the whole layer before this cap matters.
-	rx := if rx_in > 256 { 256 } else if rx_in < 0 { 0 } else { rx_in }
-	ry := if ry_in > 256 { 256 } else if ry_in < 0 { 0 } else { ry_in }
-	w, h := image.width, image.height
-	mut horizontal := BlurImage{[]u8{len: image.pixels.len}, w, h}
-	for y in 0 .. h {
-		for x in 0 .. w {
-			for c in 0 .. 4 {
-				mut v := if dilate { u8(0) } else { u8(255) }
-				for k in -rx .. rx + 1 {
-					s := if x + k < 0 || x + k >= w { u8(0) } else { image.pixels[(y * w + x + k) * 4 + c] }
-					v = if dilate { if s > v { s } else { v } } else { if s < v { s } else { v } }
-				}
-				horizontal.pixels[(y * w + x) * 4 + c] = v
-			}
-		}
-	}
-	mut out := BlurImage{[]u8{len: image.pixels.len}, w, h}
-	for y in 0 .. h {
-		for x in 0 .. w {
-			for c in 0 .. 4 {
-				mut v := if dilate { u8(0) } else { u8(255) }
-				for k in -ry .. ry + 1 {
-					s := if y + k < 0 || y + k >= h { u8(0) } else { horizontal.pixels[((y + k) * w + x) * 4 + c] }
-					v = if dilate { if s > v { s } else { v } } else { if s < v { s } else { v } }
-				}
-				out.pixels[(y * w + x) * 4 + c] = v
-			}
-		}
-	}
-	return out
-}
-
 // make_svg_filter(): nodes evaluated in order, inputs -1 for the source,
 // the root cropped to the filter region with decal tiling. Invalid graphs
 // pass the source through, as the native builder did.

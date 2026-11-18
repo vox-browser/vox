@@ -4281,3 +4281,35 @@ tile boundaries, padded input, flipping and color conversion. ThreadSanitizer
 passed on macOS. The pinned Skia suite matched 448 exhaustive and 2,016
 random bitmap exports. The native WebGL test read back all pixels of a
 1031×521 flipped upload successfully in serial and parallel modes.
+
+### Parallel CPU erosion and dilation
+
+Canvas2D SVG-reference `feErode` and `feDilate` use a sliding per-channel
+minimum or maximum over the existing separable passes. Each sample enters
+and leaves the queue at most once. The same 256-pixel radius cap and
+transparent-black border apply. Large surfaces split the horizontal pass by
+rows and the vertical pass by columns, with a join between passes. An axis
+with no radius reuses its input.
+
+Seven alternating fresh-process groups used macOS single-C `-prod` builds
+with preallocation on an Apple M5 Max. Each group compared the previous
+implementation, the new implementation with `VOX_SERIAL_CPU_RASTER=1`, and
+the default worker policy. The timed span is a Canvas2D path draw with one
+SVG morphology node and includes mask creation, filtering, cropping and the
+final composite. Input construction and output hashing are outside the span.
+One-minute load ranged from 5.16 to 5.17 on 18 logical CPUs.
+
+| Operation and canvas size | Before median | New serial median | New default median |
+| --- | ---: | ---: | ---: |
+| Radius-16 dilation, 1103×577 | 110.632 ms | 15.729 ms | 7.980 ms |
+| Radius-2 erosion, 1600×900 | 48.682 ms | 29.950 ms | 13.433 ms |
+| Radius-1 dilation, 176×128 | 0.597 ms | 0.496 ms | 0.466 ms |
+
+All 63 draws matched their baseline pixels and exited zero under the memory
+guard. A separate macOS probe observed four distinct threads on both passes
+of both large workloads. The small workload stayed serial under both settings.
+The macOS and Linux focused checks matched a direct rectangular reference,
+including one-pixel axes, unequal radii, radius capping, ring wrap, and the
+decal border. The serial and parallel large results matched byte for byte.
+The SVG graph regression tests, macOS ThreadSanitizer run, and pinned CPU
+raster differential suite also passed.
