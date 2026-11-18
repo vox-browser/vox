@@ -5354,6 +5354,14 @@ static void native_cache_svg_mask_image(CGImageRef image) {
 	};
 }
 
+static void native_close_svg_mask_bitmap(void) {
+	CGContextRelease(native_svg_clip_build_context);
+	native_svg_clip_build_context = NULL;
+	if (native_svg_clip_image != NULL) {
+		native_cache_svg_mask_image(native_svg_clip_image);
+	}
+}
+
 static CGImageRef native_finalize_svg_mask_cache(void) {
 	if (native_svg_clip_image == NULL && native_svg_clip_build_context != NULL) {
 		size_t width = CGBitmapContextGetWidth(native_svg_clip_build_context);
@@ -5376,11 +5384,7 @@ static CGImageRef native_finalize_svg_mask_cache(void) {
 		if (mask_context != NULL) {
 			CGContextRelease(mask_context);
 		}
-		CGContextRelease(native_svg_clip_build_context);
-		native_svg_clip_build_context = NULL;
-		if (native_svg_clip_image != NULL) {
-			native_cache_svg_mask_image(native_svg_clip_image);
-		}
+		native_close_svg_mask_bitmap();
 	}
 	return native_svg_clip_image;
 }
@@ -5404,10 +5408,34 @@ int32_t native_reuse_svg_mask_raster(uint64_t key) {
 	return 0;
 }
 
-void native_remember_svg_mask_raster(uint64_t key) {
+int32_t native_publish_svg_mask_raster(uint64_t key, int32_t reuse_bitmap) {
+	int32_t published = 1;
+	CGContextRef context = native_svg_clip_build_context;
+	if (reuse_bitmap && context != NULL) {
+		size_t width = CGBitmapContextGetWidth(context);
+		size_t height = CGBitmapContextGetHeight(context);
+		size_t pitch = CGBitmapContextGetBytesPerRow(context);
+		uint8_t *pixels = CGBitmapContextGetData(context);
+		if (pixels != NULL) {
+			native_convert_rgba_svg_mask_pixels(pixels, pitch, pixels, pitch,
+				width, height, native_svg_clip_build_is_luminance);
+			// The mask is consumed through alpha. Retain the sRGB bitmap
+			// with the same premultiplied-white bytes as the DeviceRGB copy.
+			native_svg_clip_image = CGBitmapContextCreateImage(context);
+			if (native_svg_clip_image != NULL) {
+				native_close_svg_mask_bitmap();
+				published = 2;
+			}
+		}
+	}
+	// Premultiplied white also has equal luminance and alpha, so the copy
+	// remains valid if creating the in-place image failed.
 	CGImageRef image = native_finalize_svg_mask_cache();
 	if (image == NULL) {
-		return;
+		return 0;
+	}
+	if (key == 0) {
+		return published;
 	}
 	int replacement = 0;
 	for (int index = 1; index < NATIVE_SVG_MASK_RASTER_CACHE_SIZE; ++index) {
@@ -5422,6 +5450,7 @@ void native_remember_svg_mask_raster(uint64_t key) {
 		CGImageRelease(entry->image);
 	}
 	*entry = (NativeSVGMaskRasterCacheEntry){key, CGImageRetain(image), native_svg_clip_cache_clock};
+	return published;
 }
 
 void native_finish_svg_mask_cache(void) {

@@ -44,6 +44,18 @@ static void check(size_t width, size_t height, size_t padding, size_t offset,
         actual + offset, mask_stride, width, height, color, luminance);
     assert(memcmp(expected, actual, mask_size) == 0);
     assert(memcmp(source, before, source_size) == 0);
+    if (color) {
+        native_convert_rgba_svg_mask_pixels(before + offset, source_stride,
+            before + offset, source_stride, width, height, luminance);
+        assert(memcmp(source, before, offset) == 0);
+        for (size_t y = 0; y < height; ++y) {
+            size_t row = offset + y * source_stride;
+            assert(memcmp(expected + row, before + row, width * 4) == 0);
+            assert(memcmp(source + row + width * 4, before + row + width * 4, padding) == 0);
+        }
+        size_t tail = source_stride * height + offset;
+        assert(memcmp(source + tail, before + tail, source_size - tail) == 0);
+    }
     free(actual);
     free(expected);
     free(before);
@@ -54,7 +66,7 @@ static void check_all_colors(void)
 {
     // Every RGB triple, including channels greater than alpha, checks the
     // exact truncating luminance formula rather than a floating approximation.
-    uint8_t source[256 * 4], output[256 * 4];
+    uint8_t source[256 * 4], output[256 * 4], in_place[256 * 4];
     for (unsigned r = 0; r < 256; ++r) {
         for (unsigned g = 0; g < 256; ++g) {
             for (unsigned b = 0; b < 256; ++b) {
@@ -65,6 +77,10 @@ static void check_all_colors(void)
             }
             native_convert_svg_mask_pixels(source, sizeof(source), output,
                 sizeof(output), 256, 1, 1, 1);
+            memcpy(in_place, source, sizeof(source));
+            native_convert_rgba_svg_mask_pixels(in_place, sizeof(in_place), in_place,
+                sizeof(in_place), 256, 1, 1);
+            assert(memcmp(output, in_place, sizeof(output)) == 0);
             for (unsigned b = 0; b < 256; ++b) {
                 uint8_t alpha = (uint8_t)((54u * r + 183u * g + 19u * b) >> 8);
                 for (unsigned channel = 0; channel < 4; ++channel) {
@@ -82,6 +98,8 @@ static void check_all_colors(void)
     }
     for (unsigned x = 0; x < 256; ++x) source[x * 4 + 3] = (uint8_t)x;
     native_convert_svg_mask_pixels(source, 1024, output, 1024, 256, 1, 1, 0);
+    native_convert_rgba_svg_mask_pixels(source, 1024, source, 1024, 256, 1, 0);
+    assert(memcmp(output, source, sizeof(output)) == 0);
     for (unsigned x = 0; x < 256; ++x)
         for (unsigned c = 0; c < 4; ++c) assert(output[x * 4 + c] == x);
 }

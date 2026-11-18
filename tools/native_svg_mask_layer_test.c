@@ -83,6 +83,37 @@ static CGContextRef scene(int optimized, int nested, int transformed, CGFloat ph
     return context;
 }
 
+static CGContextRef coverage_scene(int srgb, int clip)
+{
+    CGColorSpaceRef space = srgb ? CGColorSpaceCreateWithName(kCGColorSpaceSRGB)
+        : CGColorSpaceCreateDeviceRGB();
+    CGContextRef mask = CGBitmapContextCreate(NULL, 32, 24, 8, 32 * 4, space,
+        kCGImageAlphaPremultipliedLast | kCGBitmapByteOrder32Big);
+    CGColorSpaceRelease(space);
+    assert(mask != NULL);
+    uint8_t *pixels = CGBitmapContextGetData(mask);
+    for (size_t i = 0; i < 32 * 24; ++i) {
+        memset(pixels + i * 4, (uint8_t)(i * 37), 4);
+    }
+    CGImageRef image = CGBitmapContextCreateImage(mask);
+    assert(image != NULL);
+    CGContextRelease(mask);
+
+    CGContextRef canvas = bitmap();
+    CGRect rect = CGRectMake(7.25, 8.5, 67.5, 53.25);
+    if (clip) {
+        CGContextClipToMask(canvas, rect, image);
+    }
+    CGContextSetRGBFillColor(canvas, .25, .5, .75, .8);
+    CGContextFillRect(canvas, rect);
+    if (!clip) {
+        CGContextSetBlendMode(canvas, kCGBlendModeDestinationIn);
+        CGContextDrawImage(canvas, rect, image);
+    }
+    CGImageRelease(image);
+    return canvas;
+}
+
 int main(void)
 {
     int cases = 0;
@@ -116,6 +147,14 @@ int main(void)
     CGContextRestoreGState(context);
     assert(CGRectEqualToRect(before, CGContextGetClipBoundingBox(context)));
     CGContextRelease(context);
+    for (int clip = 0; clip < 2; ++clip) {
+        CGContextRef reference = coverage_scene(0, clip);
+        CGContextRef shared = coverage_scene(1, clip);
+        assert(memcmp(CGBitmapContextGetData(reference), CGBitmapContextGetData(shared),
+            CGBitmapContextGetBytesPerRow(reference) * 80) == 0);
+        CGContextRelease(reference);
+        CGContextRelease(shared);
+    }
     printf("SVG mask layers: %d pixel-exact scenes, empty/disjoint bounds and clip restoration passed\n", cases);
     return 0;
 }

@@ -8,13 +8,14 @@ import painting
 const shared_svg_mask_raster = os.getenv('VOX_SHARED_SVG_MASK_RASTER') == '1'
 const disable_shared_svg_mask_cache = os.getenv('VOX_DISABLE_SHARED_SVG_MASK_CACHE') == '1'
 const eager_shared_svg_mask_bitmap = os.getenv('VOX_EAGER_SHARED_SVG_MASK_BITMAP') == '1'
+const copy_shared_svg_mask_bitmap = os.getenv('VOX_COPY_SHARED_SVG_MASK_BITMAP') == '1'
 
 fn C.native_prepare_svg_content_mask(u64, i32, f32, f32, &f32, &f32, f32, f32, f32) f64
 fn C.native_begin_svg_content_mask_bitmap(f64, f32, &f32, &f32, f32, f32, f32)
 fn C.native_svg_content_mask_geometry(f32, f64, &i32) i32
 fn C.native_svg_content_mask_pixels(f64, i32) &u8
 fn C.native_reuse_svg_mask_raster(u64) i32
-fn C.native_remember_svg_mask_raster(u64)
+fn C.native_publish_svg_mask_raster(u64, i32) i32
 
 fn shared_svg_mask_raster_key(mask &layout.PaintClip, area [4]i32, bounds painting.IntRect,
 	page_x f32, page_y f32, scale f64) u64 {
@@ -90,11 +91,9 @@ fn (mut app BrowserApp) raster_native_svg_content_mask(mask &layout.PaintClip, p
 		}
 		return false
 	}
-	if raster_key != 0 {
-		C.native_remember_svg_mask_raster(raster_key)
-	}
+	published := C.native_publish_svg_mask_raster(raster_key, i32(!copy_shared_svg_mask_bitmap))
 	if portable_svg_mask_diagnostics {
-		eprintln('VOX_SHARED_SVG_MASK luminance=${mask.mask_luminance} operations=${mask.mask_operations.len} surface=${bounds.width}x${bounds.height}')
+		eprintln('VOX_SHARED_SVG_MASK luminance=${mask.mask_luminance} operations=${mask.mask_operations.len} surface=${bounds.width}x${bounds.height} bitmap_reused=${published == 2}')
 	}
 	return true
 }

@@ -16,7 +16,7 @@ def digest(path):
         return hashlib.file_digest(source, "sha256").hexdigest()
 
 
-def capture(binary, fixture, directory, shared, *, cache=False, eager=False, scroll=0):
+def capture(binary, fixture, directory, shared, *, cache=False, eager=False, copy=False, scroll=0):
     directory.mkdir()
     profile = directory / "profile"
     profile.mkdir()
@@ -28,6 +28,7 @@ def capture(binary, fixture, directory, shared, *, cache=False, eager=False, scr
                        VOX_CAPTURE_DOCUMENT_ONLY="1", VOX_SHARED_SVG_MASK_RASTER=str(int(shared)),
                        VOX_DISABLE_SHARED_SVG_MASK_CACHE=str(int(not cache)),
                        VOX_EAGER_SHARED_SVG_MASK_BITMAP=str(int(eager)),
+                       VOX_COPY_SHARED_SVG_MASK_BITMAP=str(int(copy)),
                        VOX_PORTABLE_SVG_MASK_DIAGNOSTICS="1")
     command = [binary, "--window-width=1024", "--window-height=712",
                "--screenshot-viewport-height=600", f"--screenshot={screenshot}", fixture]
@@ -46,7 +47,10 @@ def capture(binary, fixture, directory, shared, *, cache=False, eager=False, scr
     diagnostics = log.read_text(errors="replace")
     assert status == 0, diagnostics
     for mode in ("true", "false"):
-        assert (f"VOX_SHARED_SVG_MASK luminance={mode}" in diagnostics) == shared, diagnostics
+        rasters = [line for line in diagnostics.splitlines()
+                   if line.startswith(f"VOX_SHARED_SVG_MASK luminance={mode} ")]
+        assert bool(rasters) == shared, diagnostics
+        assert all(line.endswith(f"bitmap_reused={str(not copy).lower()}") for line in rasters), rasters
         hits = [line for line in diagnostics.splitlines()
                 if line.startswith(f"VOX_SHARED_SVG_MASK_CACHE_HIT luminance={mode} ")]
         assert bool(hits) == cache, diagnostics
@@ -81,9 +85,12 @@ def main():
         eager_cache = capture(binary, fixture, directory / "scrolled-eager", True,
                               cache=True, eager=True, scroll=96)
         after_cache = capture(binary, fixture, directory / "scrolled-cached", True, cache=True, scroll=96)
+        copied = capture(binary, fixture, directory / "scrolled-copied", True,
+                         cache=True, copy=True, scroll=96)
         assert before_cache[3] != shared, "Capture must move the document"
         assert eager_cache == before_cache, "Eager cache changed the scrolled document pixels"
         assert after_cache == before_cache, "Cached masks changed the scrolled document pixels"
+        assert copied == after_cache, "Reusing the bitmap changed the scrolled document pixels"
     assert {path: digest(path) for path in inputs} == digests
     print("PASS: macOS rendered both gradient mask modes with the shared rasterizer")
 
