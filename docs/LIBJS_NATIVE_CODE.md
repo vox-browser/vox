@@ -1299,3 +1299,33 @@ browser and guard exits are zero, and the guard adopts five processes.
 
 Raw captures, input hashes, traces and guard receipts remain local under
 `docs/performance/libjs-github-browser-20261116/libjs-github-native-library-packing-o2-20261118/`.
+
+### Full browser comparison
+
+Seven alternating pairs reuse publication `19554c66…1766` in
+single-unit C mode with V `-prod`. Both layouts contain the same 13,915
+cache keys, including 1,516 browser-only entries. The earlier traces
+verify execution on the same executable, native libraries and cache
+files. The measured runs disable LibJS diagnostic counters and dyld
+logging. They start with fresh windows, profiles and HTTP caches,
+retain OS filesystem and shader caches, and count from exclusive
+resource coalition creation through document PNG encoding.
+
+Median retired instructions fall from **74,433,405,958** with separate
+libraries to **73,962,159,923** with the group (0.63%). The group uses
+fewer instructions in four of seven pairs. The highest grouped count
+is 110.72% of the lowest separate count. Median cache load time at
+capture falls from **226.72 ms** to **192.28 ms** (15.19%), with lower
+load time in every pair. The measured whole-browser instruction ranges
+overlap.
+
+All 14 visits match the pinned 1024×768 PNG and repository audit,
+fulfill 81 modules and serve the three verified replacement scripts.
+Each sees the same 159 replay requests, including three 404s for two
+unarchived image URLs. Each records 2,948–2,950 native hits at shutdown
+with zero misses or compiler calls and JSC uninitialized. All browsers
+and the guard exit zero. The guard adopts 28 processes and samples a
+peak of 6,887,686,144 bytes.
+
+Raw counts, replay logs, captures, and guard receipts remain local under
+`docs/performance/libjs-github-browser-20261116/libjs-github-native-library-packing-windowed-20261118/`.
