@@ -9062,3 +9062,64 @@ ten. The exact comparison exits 1.
 
 The Metal inputs and raw guards, source and executable identities, and
 ordered browser receipts are local under `repository-navigation-5204-r103/receipts`.
+
+### Grouped LibJS startup and the PNG availability endpoint
+
+The [matched grouped-cache comparison](LIBJS_NATIVE_CODE.md#full-archived-vlangv-cache-build-and-reopen)
+uses seven alternating pairs on publication `7a17002a…15e5`. Grouping the
+same optimized LibJS cache reduces median startup-through-encoding instructions
+from 72,930,654,754 to 64,325,501,618, an 11.80% reduction. Median cache load
+time falls from 218.36 to 135.01 ms. Both measures improve in all seven pairs.
+
+A separate seven-pair launch-through-exit comparison uses that same Vox
+publication, the grouped Clang `-O2` cache and Brave's V8 `15.7.112.43`.
+It retains all attempts. All seven Vox launches pass the content and cache
+checks. Brave has two teardown watchdog exits and one timeout. The remaining
+Brave captures vary between zero and 11 pixel differences from the pinned
+reference. The first failed Brave launch had no PNG fingerprint, so the
+then-current harness skipped fallback stability checks for later Brave runs.
+The controller and guard exit 1 after 276.134 guard seconds at 6,646,661,120
+sampled peak RSS bytes. This incomplete cohort supplies no speed ratio.
+
+Commit `9381fb19a` records observed PNG availability for both browsers
+separately from launch through exit. Brave's endpoint includes CDP transfer
+and its output file write. Vox's endpoint is the first completed PNG observed
+during exit polling. The driver now compares each valid capture against its
+engine's first valid capture even after an earlier failure. Eleven focused
+Python tests pass.
+
+One matched validation pair on `7a17002a…15e5` uses fresh private profiles,
+original-origin replay, the one-second settle and the raster diagnostic
+settings from the previous Brave comparison. Both browser exits and the
+guard exit are zero. The guard adopts PIDs 77007 and 77997 and records
+35.463 seconds at 6,627,409,920 sampled peak RSS bytes.
+
+| Browser | Launch to observed PNG | PNG to exit | Launch through exit |
+| --- | ---: | ---: | ---: |
+| Vox with grouped compiled LibJS | 10.163 s | 164.140 ms | 10.327 s |
+| Brave with V8 | 2.737 s | 112.324 ms | 2.849 s |
+
+The LibJS visit records 2,948 native hits and zero misses or compiler calls.
+The timing gap is already present at PNG availability. This pair validates
+the endpoints and includes browser startup, script hydration and rendering.
+It supplies neither a seven-pair timing result nor isolated JavaScript time.
+
+Two instrumented archived-page visits record 477,109–479,732 native entries,
+13.09–13.19 million native fast steps and 4.99–5.02 million slow steps. Both
+reopen the grouped cache with zero misses or compiler calls. Both stack
+samplers exit zero but produce empty call graphs. The counters establish
+native and helper execution, with no per-function time attribution.
+
+A candidate removes generic array access from the native entry cache's
+positive lookup using the existing fixed slot mask. Two focused binaries
+execute the same 480,000-call script with the same warmed native library.
+Both diagnostic visits return 7,920,000 and record 479,999 entry-cache hits.
+The seven uninstrumented process pairs return the same value with three
+native cache hits and zero misses or compiler calls. Their median retired
+instructions are 5,183,694,633 before and 5,180,039,512 with the candidate.
+The 0.07% median difference and three regressed pairs supply no reliable
+gain. The candidate is reverted. The paired guard exits zero in 17.354
+seconds at 292,749,312 sampled peak RSS bytes.
+
+The raw timings, rejected attempts, guard exits, profiles, source diff and
+pinned inputs are local under `github-performance-5204-r104/receipts`.
