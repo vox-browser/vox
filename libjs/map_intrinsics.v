@@ -41,7 +41,7 @@ fn initialize_map_intrinsics(mut vm VM, mut realm Realm) {
 	mut iterator := Object.create(realm, realm.iterator_prototype)
 	realm.map_iterator_prototype = iterator
 	iterator.define_direct_property(PropertyName.from_symbol(vm.well_known_symbol_to_string_tag()), Value.from_string(vm.create_string_from_str('Map Iterator')), attribute_configurable)
-	install_intrinsic_method(mut vm, realm, mut iterator, 'next', 0, fn (mut vm VM) !Value { return keyed_iterator_next(mut vm, true) })
+	install_keyed_iterator_next(mut vm, realm, mut iterator, true)
 	for name, kind in { 'keys': PropertyKind.key, 'values': .value, 'entries': .key_and_value } {
 		method := NativeFunction.create(mut vm, realm, realm.function_prototype, fn [kind] (mut vm VM) !Value {
 			return create_keyed_iterator(mut vm, true, kind, vm.realm().map_iterator_prototype or { panic('Missing Map iterator prototype') })

@@ -20,6 +20,25 @@ fn test_map_bucket_collisions_preserve_distinct_keys_and_iterator_order() {
 	')!.as_bool()
 }
 
+fn test_keyed_iterator_steps_keep_the_captured_method_and_receiver_brand() {
+	mut vm := VM.create()
+	create_simple_execution_context(mut vm)
+	assert map_eval(mut vm, '
+		var map = new Map([[1, 2], [3, 4]]);
+		var iterator = map.values(), parent = Object.getPrototypeOf(iterator), next = parent.next;
+		var wrong = new Set([9]).values(), caught = false, seen = [];
+		wrong.next = next;
+		try { for (var value of wrong) {} } catch (reason) { caught = reason instanceof TypeError; }
+		for (var value of iterator) {
+			seen.push(value);
+			parent.next = function () { return {value: 7, done: true}; };
+		}
+		var publicResult = map.values().next();
+		parent.next = next;
+		caught && seen.join(",") === "2,4" && publicResult.value === 7 && publicResult.done;
+	')!.as_bool()
+}
+
 fn map_eval(mut vm VM, source string) !Value {
 	mut script := Script.parse(source, vm.realm(), 'map.js', unsafe { nil })!
 	return vm.run_with_limits(mut script, ExecutionLimits{ max_instructions: 100000 }) or {

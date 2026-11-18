@@ -40,6 +40,8 @@ pub:
 	value Value
 }
 
+type NativeIteratorStep = fn (mut vm VM) !IteratorStepValue
+
 pub fn get_iterator_direct(mut vm VM, object &Object) !&IteratorRecord {
 	next_method := object.get(mut vm, iterator_next_key)!
 	return &IteratorRecord{iterator: object, next_method: next_method}
@@ -87,12 +89,11 @@ pub fn iterator_step(mut vm VM, mut record IteratorRecord) !IteratorStep {
 }
 
 fn iterator_step_impl(mut vm VM, mut record IteratorRecord, with_value bool) !IteratorStep {
-	if use_array_iterator_steps() && record.next_method.is_function() {
+	if use_native_iterator_steps() && record.next_method.is_function() {
 		mut function := record.next_method.as_function()
 		if mut function is NativeFunction {
-			if array_prototype := function.array_iterator_pair_prototype {
-				step := function.step_array_iterator(mut vm, Value.from_object(record.iterator),
-					array_prototype) or {
+			if function.iterator_step != unsafe { nil } {
+				step := function.step_iterator(mut vm, Value.from_object(record.iterator)) or {
 					record.done = true
 					return err
 				}
@@ -122,6 +123,23 @@ fn iterator_step_impl(mut vm VM, mut record IteratorRecord, with_value bool) !It
 		completion_from_error(err)
 	}
 	return IteratorStep{result: IterationResult{done: done, value: value}}
+}
+
+fn use_native_iterator_steps() bool {
+	$if test {
+		if builtin_profile_enabled { return false }
+	}
+	return true
+}
+
+// Internal consumers keep the original native frame for getters and errors.
+fn (mut function NativeFunction) step_iterator(mut vm VM, receiver Value) !IteratorStepValue {
+	mut stack := vm.interpreter_stack()
+	mark := stack.top()
+	defer { stack.deallocate(mark) }
+	function.push_call_frame(mut vm, mut stack, receiver, []Value{})!
+	defer { vm.pop_current_context() }
+	return function.iterator_step(mut vm)
 }
 
 pub fn iterator_step_value(mut vm VM, mut record IteratorRecord) !IteratorStepValue {

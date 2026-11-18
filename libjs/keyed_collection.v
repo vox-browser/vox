@@ -149,7 +149,22 @@ fn create_keyed_iterator(mut vm VM, is_map bool, kind PropertyKind, prototype &O
 	return Value.from_object(object)
 }
 
-fn keyed_iterator_next(mut vm VM, is_map bool) !Value {
+fn install_keyed_iterator_next(mut vm VM, realm &Realm, mut prototype Object, is_map bool) {
+	step := fn [is_map] (mut vm VM) !IteratorStepValue {
+		return keyed_iterator_step(mut vm, is_map)
+	}
+	mut next := NativeFunction.create(mut vm, realm, realm.function_prototype,
+		fn [step] (mut vm VM) !Value {
+		result := step(mut vm)!
+		return Value.from_object(create_iterator_result_object(vm.realm(), result.value,
+			result.done, vm.realm().object_prototype))
+	}, 0, iterator_next_key, none)
+	next.iterator_step = step
+	prototype.define_direct_property(iterator_next_key, Value.from_object(next.object),
+		attribute_writable | attribute_configurable)
+}
+
+fn keyed_iterator_step(mut vm VM, is_map bool) !IteratorStepValue {
 	value := vm.this_value()
 	if !value.is_object() { return vm.throw_error(.type_error, 'Incompatible collection iterator receiver') }
 	mut iterator := value.as_object().keyed_iterator or { return vm.throw_error(.type_error, 'Incompatible collection iterator receiver') }
@@ -164,9 +179,9 @@ fn keyed_iterator_next(mut vm VM, is_map bool) !Value {
 			if iterator.kind == .key_and_value {
 				yielded = Value.from_object(ArrayObject.create_from(mut vm, vm.realm(), [entry.key, if is_map { entry.value } else { entry.key }], vm.realm().array_prototype_record())!.object)
 			}
-			return Value.from_object(create_iterator_result_object(vm.realm(), yielded, false, vm.realm().object_prototype))
+			return IteratorStepValue{value: yielded}
 		}
 		iterator.done = true
 	}
-	return Value.from_object(create_iterator_result_object(vm.realm(), js_undefined(), true, vm.realm().object_prototype))
+	return IteratorStepValue{done: true, value: js_undefined()}
 }

@@ -16,7 +16,7 @@ pub:
 	raw_function_index ?u32
 	construct_behaviour NativeConstructPointer = unsafe { nil }
 mut:
-	array_iterator_pair_prototype ?&Object
+	iterator_step NativeIteratorStep = unsafe { nil }
 }
 
 pub type NativeConstructPointer = fn (mut vm VM, new_target &Object) !&Object
