@@ -1456,7 +1456,7 @@ fn (mut p Parser) parse_template_literal(is_tagged bool) Expression {
 		if p.match_token(.template_literal_string) {
 			tpl_token := p.consume()
 			string_pos := p.position()
-			raw := p.token_value(tpl_token).clone()
+			raw := p.token_value(tpl_token)
 			if is_tagged {
 				raw_value := raw_template_value(raw)
 				raw_strings << raw_value
@@ -1525,7 +1525,7 @@ fn (p &Parser) process_template_escape_sequences(raw []u16) ?Utf16String {
 // Parse a string literal token's value, processing escape sequences.
 // Returns `(value, has_legacy_octal)`.
 fn (mut p Parser) parse_string_value(token Token) (Utf16String, bool) {
-	raw := p.token_value(token).clone()
+	raw := p.token_value(token)
 	if raw.len < 2 {
 		return Utf16String.new(), false
 	}
@@ -1554,13 +1554,27 @@ mut:
 
 // Unified escape sequence processor for both string and template literals.
 fn process_escape_sequences_impl(input []u16, mode EscapeMode) EscapeResult {
+	mut first_special := input.len
+	for index, code_unit in input {
+		if code_unit == ch(`\\`) || code_unit == ch(`\r`) {
+			first_special = index
+			break
+		}
+	}
+	if first_special == input.len {
+		return EscapeResult{
+			value: Utf16String.from_slice(input)
+		}
+	}
+
 	mut result := Utf16String{
 		data: []u16{cap: input.len}
 	}
+	result.data << input[..first_special]
 	mut has_legacy_octal := false
 	mut malformed_hex := false
 	mut malformed_unicode := false
-	mut i := 0
+	mut i := first_special
 
 	n_ch := ch(`n`)
 	r_ch := ch(`r`)

@@ -72,3 +72,38 @@ fn test_expression_identifier_names_own_their_utf16_spelling() {
 	async_id := async_expr.kind.identifier or { panic('Missing async identifier') }
 	assert async_id.name.str() == 'async'
 }
+
+fn test_literals_own_their_decoded_utf16() {
+	source := r'"café𐐀"; "prefix\uD800\n";' + ' `first\r\nsecond`; ' +
+		r'tag`raw\n𐐀`; tag`bad\u{no}`;'
+	mut parser := Parser.new(utf16(source), .script)
+	program := parser.parse_program(false)
+	assert !parser.has_errors()
+	data := program.kind.program_data or { panic('Missing program') }
+	assert data.scope.children.len == 5
+	for index in 0 .. parser.source.len {
+		parser.source[index] = 0
+	}
+
+	plain := data.scope.children[0].kind.expression or { panic('Missing string') }
+	assert plain.kind.string_value.str() == 'café𐐀'
+	escaped := data.scope.children[1].kind.expression or { panic('Missing escaped string') }
+	assert escaped.kind.string_value.data[..6] == utf16('prefix')
+	assert escaped.kind.string_value.data[6..] == [u16(0xD800), 10]
+
+	template := data.scope.children[2].kind.expression or { panic('Missing template') }
+	template_data := template.kind.template_data or { panic('Missing template data') }
+	assert template_data.expressions[0].kind.string_value.str() == 'first\nsecond'
+
+	tagged := data.scope.children[3].kind.expression or { panic('Missing tagged template') }
+	tagged_template := tagged.kind.template_literal_expr or { panic('Missing template') }
+	tagged_data := tagged_template.kind.template_data or { panic('Missing template data') }
+	assert tagged_data.raw_strings[0].str() == r'raw\n𐐀'
+	assert tagged_data.expressions[0].kind.string_value.str() == 'raw\n𐐀'
+
+	invalid := data.scope.children[4].kind.expression or { panic('Missing tagged template') }
+	invalid_template := invalid.kind.template_literal_expr or { panic('Missing template') }
+	invalid_data := invalid_template.kind.template_data or { panic('Missing template data') }
+	assert invalid_data.raw_strings[0].str() == r'bad\u{no}'
+	assert invalid_data.expressions[0].kind.tag == .null_literal
+}
