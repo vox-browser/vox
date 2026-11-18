@@ -7471,3 +7471,56 @@ The managed production build is still sealing its inputs. Full
 cached-native Back restoration under 12 GiB awaits a new published
 bundle. Local commands, pins and receipts are under
 `repository-navigation-5204-r81`.
+
+### LibJS built-in RegExp iterator steps
+
+Commit `87ff4f0d1` uses native step dispatch for the captured built-in
+`matchAll` iterator method. The normal native frame continues to own
+observable `exec` calls, Unicode advancement and budget checks. A
+public `next()` returns a fresh ordinary result object and exposes
+the matcher-provided value.
+
+Three alternating fresh-process pairs use matching single-C prealloc
+builds. Of the 493 source and fixture pins, only
+`libjs/regexp_match_all.v` differs. Every process yields 8,000 matches
+and verifies their captures and indices. The control caller arena grows
+by 77,462,209 bytes and the candidate grows by 65,142,227 bytes in
+every pair, **15.9% less**. The probes also verify Unicode empty-match
+advancement, custom result identity, retry after an abrupt step, and
+captured and overridden methods.
+
+A fresh native-cache process reopens with `/usr/bin/false` and
+verifies the same semantics. It records five hits, eight native
+entries and 104,273 helper steps, with zero misses, compiler calls,
+pending or invalid entries. The seed compiles five executables in
+one compiler call. The production type check passes in 41.849718292
+seconds at 6,733,873,152 sampled peak bytes. The updated regression
+source remains unrun under the automated-test hold.
+
+### Archived Hacker News on the published browser
+
+The installed single-C executable `23ba3183…3bb` completes a fresh
+seed and compiler-disabled reopen on the original 30-story archive.
+Both match the unchanged document PNG reference at 1024×768 CSS pixels
+and 2× capture scale. Both pass the exact content audit with a private
+profile and empty HTTP cache. JavaScriptCore stays uninitialized and
+the audits record zero JavaScript errors.
+
+The seed compiles six executables in one compiler call. The reopen
+records six hits, six native entries and zero misses, compiler calls,
+new compilations, pending or invalid entries at capture and shutdown.
+The native cache uses ABI
+`e2d10230287cafcdb03bce6df0a228f1f9d1fa04cdae2d2648cbe15c81c2835b`.
+PIDs 72800 and 72926, the controller and the memory guard exit zero.
+The guard adopts both browsers and their helpers and records
+7.276059958 seconds and 465,616,896 sampled peak bytes.
+
+The retained cache passes a third strict compiler-disabled reopen after
+relocation. PID 75095 and its controller and guard exit zero, with every
+input hash stable. That guard records 3.149268541 seconds and
+412,729,344 sampled peak bytes.
+
+Managed build `20261118-030853-ecf3924d` completes C compilation and
+enters publication checks. Commands, input hashes, content and pixel
+receipts, and the verified Hacker News cache are local under
+`repository-navigation-5204-r82`.
