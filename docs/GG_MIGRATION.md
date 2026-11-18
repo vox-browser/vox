@@ -1099,6 +1099,76 @@ intervals exceeded 16.67 ms. The timing browser and guard exits were
 zero. Sampled process-tree RSS peaked at 11,682,955,264 bytes
 for the build and 398,196,736 bytes for the diagnostic and timing job.
 
+### Caching SVG gradient masks with group opacity on macOS
+
+Automatic selection can render an isolated opacity group with one
+or two pixel-aligned rectangular fills, including a supported
+gradient, in the shared rasterizer. It composites the fills before
+applying the group opacity and retains the complete raster within
+the existing 128 Ki pixel limit. Cache admission protects rasters
+used by the current or preceding frame. Nested groups and masks
+without an available cache slot use Quartz.
+
+The [group opacity fixture](../Tests/Browser/Native/svg-gradient-mask-opacity.html)
+combines an alpha gradient with an overlapping solid fill and
+an sRGB luminance gradient with a red overlay. Its SHA-256 was
+`c4768659c273d4ecaa356425dd16ee6070fd102805a8951d54de60cabfd2572d`.
+The published binary at `e720fb9a8` and AVIF library digests
+matched the diagonal cohort. Fresh PIDs 22784, 22842, 22859
+and 23125 compared forced shared rasterization with Quartz.
+The document differed by at most two channel levels at 1×
+and one at 2×. Native mask conversion and layer tests passed.
+
+The pressure fixture generated 75 single-fill groups with
+different diagonal gradients in 136 × 90 mask regions.
+Its SHA-256 was
+`b30caf8f441c3385143cbbc9e04e1978b4006ca08d5ae499c5d54d571f84f385`.
+The macOS timing cohorts used the preceding precise wheel
+protocol with the 1024 × 600 document viewport at 2×, a fresh
+cache and private profile per process, and one second of settle
+after document-title readiness. Each script-free local fixture
+received 120 four-pixel inputs at a requested 60 Hz, reversing
+after 60. The endpoint was completed native frame installation
+after outer view paint, measured over the first-to-last input.
+
+The private single-C V `-prod`, Clang `-O1` executable SHA-256
+was `27b94e043e8abf7c13e0f1cf71de2386f48c6a977fc79e35d5ede7607c89df48`.
+Its AVIF library matched the published comparison. All 46
+macOS captures passed. At the 132-pixel offset the candidate
+used cropped cache hits and matched the uncached shared shader
+exactly at 1× and 2×. On the half-opacity mask, both individual
+fills and their overlap produced `(128, 128, 255)`. The 2× Quartz
+comparison differed by at most one channel level. Disabling the
+shared cache and adding a nested opacity group both matched the
+explicit Quartz control pixel for pixel.
+
+The separate grouped diagnostic in PID 38200 recorded 608 cache
+hits, including 161 cropped placements, and six rasters during
+input. With cache pressure, PID 39029 recorded 1,104 hits,
+188 cropped placements, 16 rasters and 1,165 Quartz fallbacks.
+The timing launches disabled diagnostics and alternated Quartz
+with automatic selection on the same pinned binary.
+
+| PID | Fixture | Raster | Scroll fps | Median / p95 / max (ms) | Input Hz | Inputs / changes | First / last gap (ms) | Load |
+| --- | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| 38366 | Two fills | Quartz | 27.60 | 35.279 / 39.689 / 40.510 | 55.67 | 120 / 59 | 76.625 / 17.717 | 7.75 |
+| 38531 | Two fills | Automatic | 35.42 | 27.355 / 33.101 / 35.895 | 56.95 | 120 / 74 | 60.525 / 0.100 | 7.93 |
+| 38689 | Two fills | Quartz | 26.88 | 36.130 / 41.650 / 42.520 | 57.12 | 120 / 56 | 76.629 / 0.259 | 7.54 |
+| 38880 | Two fills | Automatic | 31.75 | 29.763 / 35.617 / 61.855 | 56.39 | 120 / 67 | 67.398 / 19.015 | 7.44 |
+| 39198 | Pressure | Quartz | 30.72 | 31.588 / 35.081 / 35.995 | 58.97 | 120 / 62 | 69.623 / 0.106 | 7.27 |
+| 39314 | Pressure | Automatic | 35.46 | 27.302 / 31.447 / 32.747 | 59.44 | 120 / 71 | 65.485 / 0.195 | 6.93 |
+| 39412 | Pressure | Quartz | 29.81 | 31.671 / 36.749 / 67.294 | 59.13 | 120 / 60 | 73.174 / 16.602 | 6.78 |
+| 39511 | Pressure | Automatic | 34.32 | 28.050 / 33.047 / 34.950 | 59.19 | 120 / 69 | 62.772 / 0.098 | 6.71 |
+
+The timed cohort ran from 04:06:29 to 04:07:17 UTC on November 18,
+2026. Load is the starting one-minute average on the 18-CPU host.
+Throughput, median and p95 improved in all four pairs. The second
+two-fill automatic trial had a longer maximum interval than its
+Quartz control. All measured intervals exceeded 16.67 ms. Browser
+and guard exits were zero. Sampled process-tree RSS peaked at
+11,680,628,736 bytes for the build and 402,440,192 bytes for
+the diagnostic and timing job.
+
 ## Original migration plan
 
 Vox currently renders through two Skia builds: LibWeb's Skia (CPU raster,
