@@ -1,5 +1,54 @@
 # Migrating from Skia to vlib/gg
 
+## SVG gradient strokes on OpenGL
+
+The opt-in OpenGL renderer uses the same sRGB linear and concentric
+radial gradient descriptors for fills and strokes. The texture cache keys
+on the gradient, stroke style and dash pattern. A gradient-only paint
+stays in document paint order when the stroke has an empty solid-color
+field. Gradient-stroked text retains the glyph outline. A zero-width
+gradient stroke still permits the solid-fill glyph path.
+
+The non-scaling draw maps the gradient into the same texture coordinates
+as the transformed outline. This preserves the gradient's placement on
+the shape while computing the stroke width in device space. [SVG 2 vector effects](https://www.w3.org/TR/SVG2/painting.html#VectorEffects)
+
+The Windows OpenGL source check and the Metal shared-path and
+non-scaling regression tests passed. A focused Metal descriptor check
+sampled the transformed gradient and its six-pixel stroke width. The
+combined macOS layout test reached its aggregate memory limit. The
+gradient-stroke assertions passed in a focused driver after separating
+compilation and execution. They kept the outline at positive width and
+used glyphs at zero width.
+
+The first Linux attempt stopped on host disk writes, and an in-guest
+compiler was killed while another compiler was resident. After recovery,
+the full Linux GG SVG window suite passed. Cached and uncached document
+captures matched exactly. The gradient stroke fixture covered both
+paint orders, dashes, non-scaling width, text outlines and live stop and
+opacity edits. Windows window and pixel verification remain pending.
+
+The Linux executable SHA-256 was
+`1e91375a68de0d8d906ed22a6c1021901b570acb45a6300386cffa0739da5b46`.
+It used V `5a39a4d` and single-unit Clang `-O0`. The fixture SHA-256 was
+`0aa4184832b9e3a900f0f8484933ed48e9104d5cd60bb4609aea082d1be41f4e`.
+The benchmark used Mesa software OpenGL under Xvfb with fresh processes,
+private profiles and caches, an 800 × 712 window, one second of settling,
+and 32 synthetic 42-pixel scroll steps. System caches remained available.
+Input hashes, scroll positions and paint-command counts matched.
+One-minute guest load ranged from 0.23 to 1.14 on four virtual CPUs.
+Linux window checks, replay benchmarks and their memory guards exited zero.
+
+| Pair | Median callback uncached / cached, ms | p95, ms | Maximum, ms |
+| ---: | ---: | ---: | ---: |
+| 1 | 5.959 / 2.160 | 7.407 / 2.631 | 9.095 / 5.751 |
+| 2 | 5.790 / 2.155 | 7.303 / 2.728 | 9.086 / 6.266 |
+
+Caching reduced median callback time by 63.7% and 62.8%. Separate
+diagnostics recorded 155 fixed gradient stroke draws over 31 moving
+callbacks. All 155 reused their textures and bounds with caching enabled.
+These measurements cover synthetic software OpenGL replay.
+
 ## SVG gradient fills on OpenGL
 
 The opt-in OpenGL renderer sends sRGB linear and concentric radial SVG
