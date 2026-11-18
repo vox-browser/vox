@@ -75,6 +75,33 @@ static void check_formats_and_ownership(void) {
     fprintf(stderr, "PASS %d exact padded RGBA/BGRA, opaque, straight-alpha, decode-array and source-lifetime comparisons\n", comparisons);
 }
 
+static void check_backdrop_snapshot_ownership(void) {
+    const size_t width = 64, height = 40, pitch = width * 4 + 32;
+    CGColorSpaceRef color = CGColorSpaceCreateWithName(kCGColorSpaceDisplayP3);
+    CGContextRef context = CGBitmapContextCreate(NULL, width, height, 8, pitch, color,
+        kCGImageAlphaPremultipliedLast | kCGBitmapByteOrder32Big);
+    assert(context);
+    CGContextSetRGBFillColor(context, 0.8, 0.31, 0.15, 0.76);
+    CGContextFillEllipseInRect(context, CGRectMake(3, 2, 55, 31));
+    CGImageRef reference = CGBitmapContextCreateImage(context);
+    assert(reference);
+    CGRect area = CGRectMake(0, 0, width, height);
+    NSData *expected = render_pixels(native_css_filter_source_image(reference), area);
+    CGImageRelease(reference);
+
+    NativeCSSBackdropBitmap bitmap = native_copy_css_backdrop_bitmap(context);
+    assert(bitmap.bytes && bitmap.width == width && bitmap.height == height && bitmap.pitch == pitch);
+    CGContextClearRect(context, area);
+    CGContextRelease(context);
+    CGColorSpaceRelease(color);
+
+    CIImage *input = [CIImage imageWithBitmapData:(__bridge NSData *)bitmap.bytes
+        bytesPerRow:bitmap.pitch size:area.size format:bitmap.format colorSpace:bitmap.color_space];
+    CFRelease(bitmap.bytes);
+    CGColorSpaceRelease(bitmap.color_space);
+    assert([expected isEqualToData:render_pixels(input, area)]);
+}
+
 static void paint_filtered_frame(id view, SEL selector, NSRect rect) {
     (void)view; (void)selector; (void)rect;
     native_begin_font_compositing_layer(1280, 900);
@@ -99,6 +126,7 @@ static uint64_t resident_bytes(void) {
 int main(void) { @autoreleasepool {
     native_initialize_css_filter_renderer();
     check_formats_and_ownership();
+    check_backdrop_snapshot_ownership();
     NSView *view = [[NSView alloc] initWithFrame:NSMakeRect(0, 0, 1280, 900)];
     uint64_t warm = 0, peak = 0;
     for (int frame = 0; frame < 200; ++frame) {

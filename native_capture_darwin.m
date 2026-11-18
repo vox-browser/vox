@@ -10,6 +10,7 @@
 #include "native/include/native_ui_intelligence_darwin.h"
 #include <CoreImage/CoreImage.h>
 #include <CoreText/CoreText.h>
+#include <limits.h>
 #include <malloc/malloc.h>
 #include <math.h>
 #include <stdint.h>
@@ -2611,11 +2612,19 @@ typedef struct {
 static CGImageRef native_copy_cg_image(gg__Image *image);
 
 typedef struct {
+	CFDataRef bytes;
+	CGColorSpaceRef color_space;
+	size_t width, height, pitch;
+	CIFormat format;
+} NativeCSSBackdropBitmap;
+
+typedef struct {
 	CGContextRef context;
 	CGContextRef destination;
 	// Non-null only for this layer's dedicated anonymous zero-fill mapping.
 	uint8_t *sparse_input_pixels;
 	CGImageRef backdrop_source;
+	NativeCSSBackdropBitmap backdrop_bitmap;
 	CGPathRef backdrop_clip;
 	CGRect backdrop_bounds;
 	float canvas_width;
@@ -2650,6 +2659,40 @@ static int native_css_filter_overflow_depth;
 static CIContext *native_css_filter_ci_context;
 VOX_NATIVE_STATE CIContext *native_css_filter_software_context;
 static CGColorSpaceRef native_css_filter_color_space;
+
+static CIFormat native_css_filter_bitmap_format(size_t bits_per_component,
+	size_t bits_per_pixel, CGBitmapInfo info) {
+	if (bits_per_component != 8 || bits_per_pixel != 32) return 0;
+	CGBitmapInfo order = info & kCGBitmapByteOrderMask;
+	CGImageAlphaInfo alpha = info & kCGBitmapAlphaInfoMask;
+	if (alpha == kCGImageAlphaPremultipliedLast && order == kCGBitmapByteOrder32Big)
+		return kCIFormatRGBA8;
+	if (alpha == kCGImageAlphaPremultipliedFirst && order == kCGBitmapByteOrder32Little)
+		return kCIFormatBGRA8;
+	return 0;
+}
+
+static NativeCSSBackdropBitmap native_copy_css_backdrop_bitmap(CGContextRef context) {
+	NativeCSSBackdropBitmap bitmap = {
+		.width = CGBitmapContextGetWidth(context),
+		.height = CGBitmapContextGetHeight(context),
+		.pitch = CGBitmapContextGetBytesPerRow(context),
+		.format = native_css_filter_bitmap_format(CGBitmapContextGetBitsPerComponent(context),
+			CGBitmapContextGetBitsPerPixel(context), CGBitmapContextGetBitmapInfo(context)),
+	};
+	CGColorSpaceRef color_space = CGBitmapContextGetColorSpace(context);
+	if (!bitmap.format || !bitmap.width || !bitmap.height || !bitmap.pitch
+		|| bitmap.width > bitmap.pitch / 4 || bitmap.height > LONG_MAX / bitmap.pitch
+		|| !color_space || CGColorSpaceGetModel(color_space) != kCGColorSpaceModelRGB) return bitmap;
+	CGContextFlush(context);
+	const UInt8 *pixels = CGBitmapContextGetData(context);
+	if (!pixels) return bitmap;
+	// Core Image owns the immutable bytes directly. Snapshot once before
+	// drawing changes the backdrop instead of importing a Quartz snapshot.
+	bitmap.bytes = CFDataCreate(NULL, pixels, (CFIndex)(bitmap.pitch * bitmap.height));
+	if (bitmap.bytes) bitmap.color_space = CGColorSpaceRetain(color_space);
+	return bitmap;
+}
 
 // Run after the native draw has unwound. Managed references held by a paint
 // callback's C stack must not keep its temporary construction data alive during
@@ -3064,7 +3107,6 @@ void native_begin_backdrop_filter_layer(float canvas_width, float canvas_height,
 	};
 	if (source != NULL && destination != NULL && region_width > 0.0f
 		&& region_height > 0.0f && canvas_width > 0.0f && canvas_height > 0.0f) {
-		layer.backdrop_source = CGBitmapContextCreateImage(source);
 		CGPathRef local_path = native_create_corner_rounded_rect_path(region_x,
 			region_y, region_width, region_height, top_left_x, top_left_y,
 			top_right_x, top_right_y, bottom_right_x, bottom_right_y,
@@ -3080,9 +3122,12 @@ void native_begin_backdrop_filter_layer(float canvas_width, float canvas_height,
 				CGRectStandardize(CGPathGetPathBoundingBox(layer.backdrop_clip)),
 				CGRectMake(0, 0, canvas_width, canvas_height));
 		}
-		layer.active = layer.backdrop_source != NULL && layer.backdrop_clip != NULL
-			&& !CGRectIsNull(layer.backdrop_bounds)
-			&& !CGRectIsEmpty(layer.backdrop_bounds);
+		if (layer.backdrop_clip != NULL && !CGRectIsNull(layer.backdrop_bounds)
+			&& !CGRectIsEmpty(layer.backdrop_bounds)) {
+			layer.backdrop_bitmap = native_copy_css_backdrop_bitmap(source);
+			if (!layer.backdrop_bitmap.bytes) layer.backdrop_source = CGBitmapContextCreateImage(source);
+			layer.active = layer.backdrop_bitmap.bytes != NULL || layer.backdrop_source != NULL;
+		}
 	}
 	if (transparent_source) CGContextRelease(transparent_source);
 	native_css_filter_stack[native_css_filter_stack_depth++] = layer;
@@ -4099,15 +4144,8 @@ static void native_free_svg_filter_graph(NativeCSSFilterLayer *layer) {
 // the native premultiplied format and color space. Other formats keep their
 // ordinary Core Image decoder.
 static CIImage *native_css_filter_source_image(CGImageRef image) {
-	CIFormat format = 0;
-	CGBitmapInfo order = CGImageGetBitmapInfo(image) & kCGBitmapByteOrderMask;
-	CGImageAlphaInfo alpha = CGImageGetAlphaInfo(image);
-	if (CGImageGetBitsPerComponent(image) == 8 && CGImageGetBitsPerPixel(image) == 32) {
-		if (alpha == kCGImageAlphaPremultipliedLast && order == kCGBitmapByteOrder32Big)
-			format = kCIFormatRGBA8;
-		else if (alpha == kCGImageAlphaPremultipliedFirst && order == kCGBitmapByteOrder32Little)
-			format = kCIFormatBGRA8;
-	}
+	CIFormat format = native_css_filter_bitmap_format(CGImageGetBitsPerComponent(image),
+		CGImageGetBitsPerPixel(image), CGImageGetBitmapInfo(image));
 	size_t width = CGImageGetWidth(image), height = CGImageGetHeight(image);
 	size_t pitch = CGImageGetBytesPerRow(image);
 	if (format && !CGImageGetDecode(image) && height && pitch && height <= SIZE_MAX / pitch) {
@@ -4130,9 +4168,8 @@ static CIImage *native_css_filter_source_image(CGImageRef image) {
 	return [CIImage imageWithCGImage:image];
 }
 
-static CIImage *native_apply_css_filter_layer(NativeCSSFilterLayer const *layer,
-	CGImageRef source_image) {
-	CIImage *output = native_css_filter_source_image(source_image);
+static CIImage *native_apply_css_filter_operations(NativeCSSFilterLayer const *layer,
+	CIImage *output) {
 	for (NSInteger index = (NSInteger)layer->operation_count - 1;
 		index >= 0; --index) {
 		NativeCSSFilterOperation operation = layer->operations[index];
@@ -4155,6 +4192,11 @@ static CIImage *native_apply_css_filter_layer(NativeCSSFilterLayer const *layer,
 		}
 	}
 	return native_apply_svg_filter_graph(layer, output);
+}
+
+static CIImage *native_apply_css_filter_layer(NativeCSSFilterLayer const *layer,
+	CGImageRef source_image) {
+	return native_apply_css_filter_operations(layer, native_css_filter_source_image(source_image));
 }
 
 #ifdef VOX_TEST_CROPPED_CSS_FILTERS
@@ -4828,8 +4870,18 @@ void native_end_backdrop_filter_layer(float opacity) {
 	if (layer.active) {
 		@autoreleasepool {
 			native_initialize_css_filter_renderer();
-			CIImage *output = native_apply_css_filter_layer(&layer,
-				layer.backdrop_source);
+			NativeCSSBackdropBitmap bitmap = layer.backdrop_bitmap;
+			CIImage *input;
+			if (bitmap.bytes) {
+				input = [CIImage imageWithBitmapData:(__bridge NSData *)bitmap.bytes
+					bytesPerRow:bitmap.pitch size:CGSizeMake(bitmap.width, bitmap.height)
+					format:bitmap.format colorSpace:bitmap.color_space];
+			} else {
+				bitmap.width = CGImageGetWidth(layer.backdrop_source);
+				bitmap.height = CGImageGetHeight(layer.backdrop_source);
+				input = native_css_filter_source_image(layer.backdrop_source);
+			}
+			CIImage *output = native_apply_css_filter_operations(&layer, input);
 			// Core Image is demand-driven. Render only the transformed backdrop
 			// bounds; blur and drop-shadow filters request their required source
 			// pixels outside this rectangle through their region-of-interest logic.
@@ -4839,11 +4891,13 @@ void native_end_backdrop_filter_layer(float opacity) {
 				layer.backdrop_bounds.size.width * layer.scale,
 				layer.backdrop_bounds.size.height * layer.scale);
 			source_rect = CGRectIntersection(source_rect, CGRectMake(0, 0,
-				CGImageGetWidth(layer.backdrop_source),
-				CGImageGetHeight(layer.backdrop_source)));
+				bitmap.width, bitmap.height));
 			CGImageRef filtered_image = [native_css_filter_ci_context
 				createCGImage:output fromRect:source_rect format:kCIFormatRGBA8
 				colorSpace:native_css_filter_color_space];
+			// Core Image keeps any input it still needs. Drop the layer's reference
+			// before writing to the context that supplied the backdrop.
+			if (layer.backdrop_source) CGImageRelease(layer.backdrop_source);
 			if (filtered_image != NULL) {
 				CGContextSaveGState(layer.destination);
 				CGContextAddPath(layer.destination, layer.backdrop_clip);
@@ -4857,8 +4911,9 @@ void native_end_backdrop_filter_layer(float opacity) {
 			}
 		}
 	}
-	if (layer.backdrop_source != NULL) {
-		CGImageRelease(layer.backdrop_source);
+	if (layer.backdrop_bitmap.bytes) {
+		CFRelease(layer.backdrop_bitmap.bytes);
+		CGColorSpaceRelease(layer.backdrop_bitmap.color_space);
 	}
 	if (layer.backdrop_clip != NULL) {
 		CGPathRelease(layer.backdrop_clip);

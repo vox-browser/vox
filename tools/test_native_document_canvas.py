@@ -25,11 +25,16 @@ def entry_points(text):
     declarations = declarations.replace(
         "static CGImageRef native_copy_cg_image(gg__Image *image);",
         "static CGImageRef native_copy_cg_image(gg__Image *image) { (void)image; return NULL; }")
-    functions = [function(signature) for signature in (
+    functions = ['#include "native/include/native_sparse_bitmap_context_darwin.h"',
+                 '#ifndef VOX_DOCUMENT_COLOR_BRIDGE\n'
+                 'static int vox_document_display_p3_enabled(void) { return 0; }\n'
+                 '#endif']
+    functions += [function(signature) for signature in (
         "static void native_add_elliptical_arc(",
         "static CGPathRef native_create_corner_rounded_rect_path(",
         "static void native_initialize_css_filter_renderer(",
         "void native_prepare_css_filter_renderer(",
+        "static void native_begin_css_filter_layer_in_space(",
         "void native_begin_css_filter_layer(")]
     functions.append("void native_end_css_filter_layer(void);")
     functions += [function(signature) for signature in (
