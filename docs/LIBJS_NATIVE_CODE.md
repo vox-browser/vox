@@ -959,3 +959,47 @@ include the capture and probe inputs, the rejected preflight with ambient
 `NO_PROXY` settings, and the file probe's first attempt, which rendered the
 expected result but lacked the HTTP navigation marker required by the
 instruction harness.
+
+### Primer Link effects on Vox and Brave
+
+The warning visit has the same 159 request method, URL and status records
+as 21 clean visits. A private derivative of the same archive records the
+receiver at every Primer Link effect while leaving its interface check
+in place. Four interpreter visits on `9568a08e…f757` record the same
+53 connected receivers in the same order. All 52 anchors and the button
+pass the interface check. Two of the visits delay each commit-data
+response by 350 ms. All four match the standard Vox reference and
+repository audit. The guard adopts all four roots and exits zero.
+
+Brave (Chromium `157.0.8103.79`) returns the same multiset of receiver tags,
+namespaces, destinations and interface-check results using the same
+instrumented script. It matches its pinned Display P3 PNG. The exact
+warning receiver remains unknown. Local receipts retain the Brave
+preflight at 2×, the sRGB run with a pixel mismatch and a lingering
+helper, and the Display P3 run whose PNG checker lacked Pillow. The
+completed Display P3 check uses the existing `pixel_diff` binary and
+exits zero.
+
+### Frozen native cache after the raster publication
+
+Managed receipt `20261118-061647-25b2319e` publishes executable SHA-256
+`5d72f61417d4e5c75c4bd333550ce43baf8a65fcbd00bf89c1e1dafd8f641660`.
+The eight changed manifest entries are raster or capture sources. All
+17 embedded cache ABI inputs and the frame-release source match the
+predecessor.
+
+Two fresh compiler-disabled visits on the original fixture each report
+2,949 native hits and zero misses or compiler calls, both at capture and
+shutdown. Both fulfill all 81 modules with JSC uninitialized, match the
+full 33-row, 56-commit, latest-commit and README audit, and verify the
+three served compatibility replacements. The standard-raster capture
+matches the pinned Vox PNG and records 483,870 native entries. Its
+cross-browser comparison retains the baseline's 59,867 differing pixels. The
+Display P3 raster diagnostic records 489,967 entries and is pixel-identical
+to the retained URL-relocation image. Its only two differences from Brave
+remain at the Notifications button corners, with a maximum channel error
+of ten. Browsers and guards exit zero. These are functional checks on the
+new executable. The earlier performance cohort remains rejected.
+
+Raw inputs, images, exits and diagnostic receipts remain local under
+`docs/performance/libjs-github-browser-20261116/libjs-github-primer-effects-9568-20261118/`.
