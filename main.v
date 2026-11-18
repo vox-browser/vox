@@ -1193,15 +1193,8 @@ fn fetch_resource_in_background_with_scope(resource_url string, source_url strin
 
 fn fetch_resource_for_results_with_scope(resource_url string, source_url string, request_type string, results chan PreloadedResource, scope &browsernet.RequestScope) {
 	platform.retain_thread_allocations()
-	resource := fetch_browser_resource_with_scope(resource_url, '', source_url, request_type, scope) or {
-		publish_resource_result(PreloadedResource{
-			url: resource_url
-			error: err.msg()
-			source_url: source_url
-			request_type: request_type
-		}, results, scope)
-		return
-	}
+	resource := fetch_resource_job(ResourceFetchJob{url: resource_url, request_type: request_type},
+		source_url, scope)
 	publish_resource_result(resource, results, scope)
 }
 

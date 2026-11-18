@@ -72,15 +72,7 @@ fn fetch_resource_jobs_with_scope(jobs []ResourceFetchJob, source_url string, wa
 	platform.retain_thread_allocations()
 	for job in jobs {
 		scope.check() or { return }
-		resource := if job.cached.len > 0 {
-			filter_preloaded_resource_with_scope(job.cached[0], source_url, job.request_type, scope) or {
-				PreloadedResource{ url: job.url, error: err.msg(), source_url: source_url, request_type: job.request_type }
-			}
-		} else {
-			fetch_browser_resource_with_scope(job.url, '', source_url, job.request_type, scope) or {
-				PreloadedResource{ url: job.url, error: err.msg(), source_url: source_url, request_type: job.request_type }
-			}
-		}
+		resource := fetch_resource_job(job, source_url, scope)
 		if !publish_resource_result(resource, results, scope) { return }
 		if wake {
 			$if macos {
@@ -88,6 +80,34 @@ fn fetch_resource_jobs_with_scope(jobs []ResourceFetchJob, source_url string, wa
 			}
 		}
 	}
+}
+
+fn fetch_resource_job(job ResourceFetchJob, source_url string, scope &browsernet.RequestScope) PreloadedResource {
+	// The worker's result outlives the thread. URL, header and transport
+	// workspaces belong to the request that produced it.
+	scratch := platform.begin_thread_scratch('resource fetch request')
+	defer { scratch.finish() }
+	resource := resolve_resource_fetch_job(job, source_url, scope) or {
+		PreloadedResource{
+			url: job.url
+			error: err.msg()
+			source_url: source_url
+			request_type: job.request_type
+		}
+	}
+	$if prealloc {
+		scratch.leave()
+		return persistent_preloaded_resource(resource)
+	} $else {
+		return resource
+	}
+}
+
+fn resolve_resource_fetch_job(job ResourceFetchJob, source_url string, scope &browsernet.RequestScope) !PreloadedResource {
+	if job.cached.len > 0 {
+		return filter_preloaded_resource_with_scope(job.cached[0], source_url, job.request_type, scope)
+	}
+	return fetch_browser_resource_with_scope(job.url, '', source_url, job.request_type, scope)
 }
 
 fn publish_resource_result(resource PreloadedResource, results chan PreloadedResource,

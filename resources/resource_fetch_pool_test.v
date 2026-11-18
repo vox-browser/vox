@@ -1,6 +1,8 @@
 module main
 
+import adblock
 import html
+import net
 import os
 import time
 
@@ -55,6 +57,45 @@ fn test_resource_fetch_workers_deliver_every_result_once() {
 		assert resource.request_type == 'stylesheet'
 	}
 	assert received['file://${directory}/missing.js'].error != ''
+}
+
+fn serve_resource_fetch_result(mut listener net.TcpListener) {
+	mut socket := listener.accept() or { panic(err) }
+	defer { socket.close() or {} }
+	socket.set_read_timeout(3 * time.second)
+	mut request := []u8{len: 8192}
+	socket.read(mut request) or { panic(err) }
+	socket.write_string('HTTP/1.1 200 OK\r\nCache-Control: no-store\r\nX-Resource: first\r\nX-Resource: second\r\nContent-Length: 3\r\nConnection: close\r\n\r\na\x00b') or { panic(err) }
+}
+
+fn test_background_resource_result_survives_request_and_worker_exit() {
+	filtering := adblock.is_enabled()
+	adblock.set_enabled(false)
+	defer { adblock.set_enabled(filtering) }
+	mut listener := net.listen_tcp(.ip, '127.0.0.1:0') or { panic(err) }
+	defer { listener.close() or {} }
+	listener.set_accept_timeout(5 * time.second)
+	host := listener.addr() or { panic(err) }
+	origin := 'http://${host}'
+	address := origin + '/resource'
+	source := origin + '/document'
+	server := spawn serve_resource_fetch_result(mut listener)
+	results := chan PreloadedResource{cap: 1}
+	worker := spawn fetch_resource_in_background(address, source, 'image', results)
+	worker.wait()
+	server.wait()
+	assert results.len == 1
+	resource := <-results
+	assert resource.error == ''
+	assert resource.url == address
+	assert resource.source_url == source
+	assert resource.final_url == address
+	assert resource.request_type == 'image'
+	assert resource.status_code == 200
+	assert resource.body == 'a\x00b'
+	tags := resource.response_headers.filter(it.name.to_lower() == 'x-resource')
+	assert tags.map(it.value) == ['first', 'second']
+	assert resource.response_time >= resource.request_time
 }
 
 fn test_document_preloads_every_stylesheet_and_bounds_images() {
