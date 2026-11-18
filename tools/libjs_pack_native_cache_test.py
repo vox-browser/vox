@@ -8,7 +8,44 @@ import unittest
 from unittest.mock import patch
 
 from libjs_capture_native_compiler import C_FLAGS, capture_compile
-from libjs_pack_native_cache import digest, link_group, pack_cache
+from libjs_pack_native_cache import digest, libraries_from_trace, link_group, pack_cache
+
+
+class CacheTraceTests(unittest.TestCase):
+    def setUp(self):
+        scratch = tempfile.TemporaryDirectory(prefix="vox-native-trace-test-")
+        self.addCleanup(scratch.cleanup)
+        self.root = Path(scratch.name)
+        self.cache = self.root / "cache with spaces"
+        self.abi = self.cache / ("a" * 64)
+        self.abi.mkdir(parents=True)
+        self.trace = self.root / "dyld.log"
+        self.first, self.second = (f"{index:064x}.dylib" for index in (1, 2))
+
+    def test_selects_only_images_in_the_requested_cache_abi(self):
+        alias = self.root / "alias"
+        alias.symlink_to(self.cache, target_is_directory=True)
+        self.trace.write_text("\n".join((
+            "dyld[90]: <uuid> /usr/lib/libSystem.B.dylib",
+            f"dyld[90]: <uuid> {self.cache / ('b' * 64) / self.first}",
+            f"dyld[90]: <uuid> {self.abi / 'nested' / self.first}",
+            f"dyld[42]: <uuid> {self.abi / self.second}",
+            f"dyld[42]: <uuid> {alias / self.abi.name / self.first}",
+            f"dyld[42]: <uuid> {self.abi / self.first}",
+        )))
+        selected, receipt = libraries_from_trace(self.trace, self.abi)
+        self.assertEqual(selected, [self.first, self.second])
+        self.assertEqual(receipt, dict(pid=42, path=str(self.trace.resolve()), sha256=digest(self.trace)))
+
+    def test_multiple_launches_require_the_target_pid(self):
+        self.trace.write_text(
+            f"dyld[42]: <uuid> {self.abi / self.first}\n"
+            f"dyld[43]: <uuid> {self.abi / self.second}\n")
+        with self.assertRaisesRegex(ValueError, "Use --trace-pid"):
+            libraries_from_trace(self.trace, self.abi)
+        self.assertEqual(libraries_from_trace(self.trace, self.abi, 43)[0], [self.second])
+        with self.assertRaisesRegex(ValueError, "No native cache libraries"):
+            libraries_from_trace(self.trace, self.abi, 44)
 
 
 @unittest.skipUnless(sys.platform == "darwin", "requires the macOS linker")
@@ -108,6 +145,31 @@ class PackNativeCacheTests(unittest.TestCase):
         with self.assertRaises(FileExistsError):
             self.pack()
         self.assertEqual(sentinel.read_text(), "already here")
+
+    def test_cli_packs_the_traced_libraries(self):
+        trace = self.root / "dyld.log"
+        trace.write_text("".join(f"dyld[42]: <uuid> {self.directory / name}\n" for name in self.selected))
+        tool = Path(__file__).with_name("libjs_pack_native_cache.py")
+        result = subprocess.check_output([
+            sys.executable, str(tool), "--cache", str(self.cache), "--abi", self.abi,
+            "--objects", str(self.objects), "--receipt", str(self.receipt),
+            "--trace", str(trace), "--output", str(self.output),
+        ])
+        report = json.loads(result)
+        self.assertEqual(report["group_libraries"], sorted(self.selected))
+        self.assertEqual(report["trace"]["pid"], 42)
+        self.assertEqual(report["trace"]["sha256"], digest(trace))
+        self.assertEqual(report["grouped_records"], 2)
+        self.assertTrue((self.output / self.abi / report["library"]).is_file())
+
+    def test_trace_of_a_removed_library_cannot_publish(self):
+        trace = self.root / "dyld.log"
+        missing = self.directory / ("f" * 64 + ".dylib")
+        trace.write_text(f"dyld[42]: <uuid> {self.directory / self.selected[0]}\n"
+                         f"dyld[42]: <uuid> {missing}\n")
+        with self.assertRaisesRegex(ValueError, "Selected libraries lack cache records"):
+            pack_cache(self.cache, self.abi, self.objects, self.receipt, None, self.output, trace=trace)
+        self.assertFalse(self.output.exists())
 
     def build_captured_library(self, value):
         staging = self.root / f"batch-{value}"

@@ -3,6 +3,7 @@
 
 import argparse
 from collections import defaultdict
+import hashlib
 import json
 from pathlib import Path
 import re
@@ -17,6 +18,27 @@ from libjs_capture_native_compiler import C_FLAGS, CLANG, digest
 SHA256 = re.compile(r"[0-9a-f]{64}")
 LIBRARY = re.compile(r"[0-9a-f]{64}\.dylib")
 ENTRY = re.compile(r"_vox_native_(0|[1-9][0-9]*)")
+DYLD_IMAGE = re.compile(r"dyld\[([1-9][0-9]*)\]: <[^>]+> (/.+)")
+
+
+def libraries_from_trace(trace, directory, pid=None):
+    """Select images opened in this ABI directory by one traced process."""
+    raw = trace.read_bytes()
+    directory = directory.resolve()
+    by_pid = defaultdict(set)
+    for line in raw.decode(errors="replace").splitlines():
+        match = DYLD_IMAGE.fullmatch(line)
+        if match is None or (pid is not None and int(match[1]) != pid):
+            continue
+        path = Path(match[2])
+        if LIBRARY.fullmatch(path.name) and path.parent.resolve() == directory:
+            by_pid[int(match[1])].add(path.name)
+    if not by_pid:
+        raise ValueError(f"No native cache libraries in {trace} for {directory}")
+    if len(by_pid) > 1:
+        raise ValueError(f"Multiple processes loaded libraries from this cache. Use --trace-pid with {sorted(by_pid)}.")
+    owner, selected = next(iter(by_pid.items()))
+    return sorted(selected), dict(pid=owner, path=str(trace.resolve()), sha256=hashlib.sha256(raw).hexdigest())
 
 
 def read_records(directory, abi):
@@ -128,7 +150,8 @@ def link_captured_group(source, captures, selected, libraries, symbols, work):
     return link_objects(work, inputs, expected), remaps
 
 
-def pack_cache(cache, abi, objects, receipt_path, libraries_to_group, output, *, captures=None):
+def pack_cache(cache, abi, objects, receipt_path, libraries_to_group, output, *,
+               captures=None, trace=None, trace_pid=None):
     if sys.platform != "darwin":
         raise ValueError("Native cache grouping requires macOS")
     if not SHA256.fullmatch(abi):
@@ -137,10 +160,13 @@ def pack_cache(cache, abi, objects, receipt_path, libraries_to_group, output, *,
         raise ValueError("Choose an output outside the source cache")
     if output.exists() or output.is_symlink():
         raise FileExistsError(f"Output already exists: {output}")
+    source = cache / abi
+    trace_receipt = None
+    if trace is not None:
+        libraries_to_group, trace_receipt = libraries_from_trace(trace, source, trace_pid)
     selected = set(libraries_to_group)
     if len(selected) < 2 or len(selected) != len(libraries_to_group):
         raise ValueError("Select at least two distinct libraries")
-    source = cache / abi
     records, libraries, symbols = read_records(source, abi)
     if selected - libraries.keys():
         raise ValueError(f"Selected libraries lack cache records: {sorted(selected - libraries.keys())}")
@@ -197,9 +223,12 @@ def pack_cache(cache, abi, objects, receipt_path, libraries_to_group, output, *,
         except OSError:
             output.rmdir()
             raise
-    return dict(abi=abi, records=len(records), grouped_records=grouped_entries,
-                libraries=len(libraries) - len(selected) + 1,
-                group_libraries=sorted(selected), group_sha256=sha, library=grouped)
+    result = dict(abi=abi, records=len(records), grouped_records=grouped_entries,
+                  libraries=len(libraries) - len(selected) + 1,
+                  group_libraries=sorted(selected), group_sha256=sha, library=grouped)
+    if trace_receipt is not None:
+        result["trace"] = trace_receipt
+    return result
 
 
 def main():
@@ -209,16 +238,21 @@ def main():
     parser.add_argument("--objects", type=Path, help="directory of retained relocatable object files")
     parser.add_argument("--receipt", type=Path, help="link receipt with object_files and ABI")
     parser.add_argument("--captures", type=Path, help="directory saved by libjs_capture_native_compiler.py")
-    parser.add_argument("--library", action="append", required=True, help="cache library basename to group (repeatable)")
+    selection = parser.add_mutually_exclusive_group(required=True)
+    selection.add_argument("--library", action="append", help="cache library basename to group (repeatable)")
+    selection.add_argument("--trace", type=Path, help="completed DYLD_PRINT_LIBRARIES log from this cache")
+    parser.add_argument("--trace-pid", type=int, help="process to select when the trace covers multiple launches")
     parser.add_argument("--output", required=True, type=Path, help="new private cache root")
     args = parser.parse_args()
     if args.captures is None and (args.objects is None or args.receipt is None):
         parser.error("use --captures or both --objects and --receipt")
     if args.captures is not None and (args.objects is not None or args.receipt is not None):
         parser.error("--captures is an alternative to --objects and --receipt")
+    if args.trace_pid is not None and (args.trace is None or args.trace_pid <= 0):
+        parser.error("--trace-pid requires --trace and a positive PID")
     try:
         receipt = pack_cache(args.cache, args.abi, args.objects, args.receipt, args.library, args.output,
-                             captures=args.captures)
+                             captures=args.captures, trace=args.trace, trace_pid=args.trace_pid)
     except (OSError, ValueError, KeyError, TypeError, subprocess.CalledProcessError) as error:
         print(f"libjs_pack_native_cache: {error}", file=sys.stderr)
         return 1

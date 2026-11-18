@@ -1406,3 +1406,34 @@ batches with 256 records in the full 13,915-key cache. Published Vox
 repository audit, and fulfills all 81 modules. It records 2,948 native
 hits and zero misses or compiler calls. Local receipts are under
 `docs/performance/libjs-github-browser-20261116/libjs-native-compiler-capture-20261118/`.
+
+### Select libraries from a loader trace
+
+Save stderr from a separate compiler-disabled reopen with
+`DYLD_PRINT_LIBRARIES=1`. Use a completed diagnostic trace for the
+workload you want to group.
+
+```sh
+python3 tools/libjs_pack_native_cache.py \
+  --cache "$separate_cache" --abi "$abi" --captures "$captures" \
+  --trace "$dyld_log" --output "$grouped_cache"
+```
+
+`--trace` selects every traced library in the specified cache ABI
+directory. It works with retained compiler captures or a relocatable
+object receipt. Use `--trace-pid` when multiple processes in the log
+opened that cache. The pack receipt records the selected process,
+trace digest and library basenames. The existing digest and export
+checks apply to each selected library.
+
+The frozen GitHub headless trace selects the same 41 libraries as the
+earlier measured group. The grouped cache preserves all 12,399 keys
+and reopens with 1,831 hits and 65,634 native entries, zero misses or
+compiler calls, and the same 49 archived requests.
+
+With the same 1,516 browser-only entries added, publication
+`eb9c83cc…22a1` maps the trace-selected library and matches the
+pinned screenshot and repository audit. It fulfills all 81 modules
+and records 2,940 native cache hits with zero misses or compiler
+calls. Local receipts are under
+`docs/performance/libjs-github-browser-20261116/libjs-native-cache-trace-selection-20261118/`.
