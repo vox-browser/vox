@@ -362,6 +362,56 @@ opacity and flat-mask fixtures passed in the suite. Disabling mask replay
 reproduced fully opaque coverage in the half-opacity and nested scopes.
 The macOS production-mode and Windows D3D11 type checks also passed.
 
+## SVG gradient masks
+
+Portable GG replay uses the CPU gradient shader for padded linear and
+radial fills in SVG content masks. The gradient transform maps shader
+coordinates into the path's local space while the path keeps its existing
+geometry. Alpha masks use stop alpha and fill opacity. Luminance masks
+resolve the sRGB colors in a premultiplied surface before applying the
+luminance weights. Other spread modes, unsupported radial geometry and
+luminance gradients in linear RGB use the existing replay.
+
+The [gradient mask fixture](../Tests/Browser/Native/svg-gradient-masks.html)
+checks a translated and scaled alpha ramp, an elliptical luminance mask,
+and an object-bounding-box gradient inside an embedded SVG. Thirteen
+samples from the optimized Linux capture agreed with the macOS native
+capture within one level per channel. Eleven matched exactly. The native
+comparison used fresh PID 13320 from single-unit `-prod` receipt
+`20261118-035602-2025fd74`, with executable SHA-256
+`296096c89d6b92677139a110f2004bfe8df20d6ebc70db759960be3046c4e829`
+and AVIF SHA-256
+`ebde1494c5aebaa69ebe6edab9f4e3333020cb4b2949d96fa1fbb35f19d6a202`.
+That bundle also passed the nested SVG and solid-mask samples in fresh PIDs
+18048 and 18123. The macOS comparison uses Cocoa rendering.
+
+The Linux ARM64 single-unit Clang `-O1` executable SHA-256 was
+`cc506b86027f251a4191e852de3cd05e183cbbb2be1f974a8af8818547309506`.
+The fixture SHA-256 was
+`358aaffab9b6a968c0c450a8466d13761813fff26d3bf507791f59d7ac200d4c`.
+A separate diagnostic confirmed both gradient mask modes during scroll
+replay. The four trials alternated `VOX_DISABLE_PORTABLE_SVG_MASK=1`
+with the enabled path on the same binary. Each used software OpenGL
+and a fresh process, profile and cache, one second of settle, and 80
+synthetic 42-pixel steps at a requested 1024 × 600 viewport. The scroll
+and command traces matched. The disabled path painted four sampled
+points fully blue where the masks should make them transparent.
+Timings measure replay within the synthetic callbacks.
+
+| Trial | Replay | Median (ms) | p95 (ms) | Max (ms) |
+| --- | --- | ---: | ---: | ---: |
+| 1 | Disabled | 21.783 | 23.402 | 24.774 |
+| 2 | Gradient mask | 5.856 | 9.597 | 10.075 |
+| 3 | Disabled | 19.603 | 22.658 | 23.706 |
+| 4 | Gradient mask | 4.301 | 6.999 | 7.068 |
+
+Starting one-minute load averages in the four-vCPU guest were 2.37, 2.26,
+2.08 and 2.07. The build, full Linux browser suite and cohort exited zero
+under their guards, with sampled process-tree RSS peaks of 5,974,519,808,
+899,305,472 and 477,368,320 bytes. The CPU gradient unit tests and the
+macOS production-mode and Windows D3D11 V checks passed. The pinned CPU
+raster differential suite passed with 10,000 exact gradient draws.
+
 ## Original migration plan
 
 Vox currently renders through two Skia builds: LibWeb's Skia (CPU raster,
