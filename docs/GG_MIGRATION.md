@@ -612,6 +612,57 @@ RSS peaked at 11,339,235,328 bytes for the build and 407,846,912 bytes
 for the scroll cohort. Publication rates were similar for both
 conversion methods. The shared renderer remains opt-in.
 
+### Reusing masks across viewport edges
+
+The macOS shared renderer can retain a complete aligned mask within the
+512 KiB per-image cache limit, even when the viewport clips part of it.
+Vox uses a cropped Core Graphics image for the current placement and
+keeps the complete raster available for later scroll positions. The
+placement retains the existing clipped bounds used by both mask
+compositing operations. `VOX_CLIP_SHARED_SVG_MASK_RASTER=1` restores
+rasterization into the clipped bounds for comparisons.
+
+The native tests matched cropped and directly rasterized images through
+both clip-to-mask and destination-in. Ten fresh browser captures passed.
+At a 42-pixel scroll offset, both paths matched pixel for pixel at
+1024 × 600 and 2048 × 1200. The full-raster path recorded viewport-edge
+cache hits in both alpha and luminance mode.
+
+The single-C V `-prod`, Clang `-O1` executable SHA-256 was
+`6adc1975a6fc82923205e87baccdf527a69c253b402e38bc87f82a8751315f63`.
+The fixture and AVIF digests matched the previous cohort. In separate
+precise-wheel diagnostics, PID 91817 rasterized 249 masks with the
+viewport-clipped strategy and recorded 660 translated cache hits. PID
+91888 rasterized six masks and recorded 942 translated cache hits,
+248 of them for partially visible masks. These counts cover the input
+window and include alpha and luminance.
+
+Three timing groups ran the same 120 precise wheel inputs at a requested
+60 Hz, with four-pixel steps and a reversal after 60 inputs. Each used a
+1024 × 600 document viewport at 2× backing scale, a fresh cache and private
+profile with a hidden bookmark bar, and one second of settle after the
+local fixture title matched. Scripts were disabled. The endpoint was
+changed native frame installation after outer view paint.
+
+| PID | Raster | Scroll fps | Median (ms) | p95 (ms) | Max (ms) | Input Hz | Inputs / scroll changes | First / last gap (ms) |
+| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| 91970 | Quartz | 43.46 | 22.094 | 25.487 | 26.927 | 56.83 | 120 / 91 | 54.253 / 17.352 |
+| 92019 | Viewport-clipped | 41.89 | 22.980 | 26.921 | 27.921 | 56.64 | 120 / 88 | 53.585 / 18.806 |
+| 92213 | Full mask | 45.88 | 21.028 | 25.991 | 27.746 | 55.14 | 120 / 99 | 49.545 / 0.098 |
+| 92331 | Viewport-clipped | 44.36 | 21.950 | 25.962 | 26.431 | 56.16 | 120 / 94 | 54.532 / 0.101 |
+| 92464 | Full mask | 47.02 | 20.561 | 24.863 | 26.529 | 52.79 | 120 / 106 | 48.050 / 0.107 |
+| 92567 | Quartz | 41.20 | 23.560 | 27.170 | 28.022 | 55.72 | 120 / 88 | 53.146 / 0.105 |
+| 92685 | Full mask | 45.69 | 21.015 | 25.671 | 26.686 | 57.85 | 120 / 94 | 48.630 / 0.111 |
+| 92785 | Quartz | 40.24 | 23.832 | 28.463 | 30.009 | 54.41 | 120 / 88 | 52.915 / 18.589 |
+| 92901 | Viewport-clipped | 44.75 | 21.882 | 25.509 | 26.090 | 54.90 | 120 / 97 | 52.645 / 0.085 |
+
+Starting one-minute loads on the 18-CPU host were 4.60, 4.87, 4.96,
+4.96, 5.21, 5.27, 5.25, 5.07 and 5.14. All sampled scroll intervals
+exceeded 16.67 ms. The browser and guard exits were zero. Sampled RSS
+peaked at 11,696,046,080 bytes for the build and 407,158,784 bytes for
+the timed cohort. Full-mask caching improved scroll publication rates
+in all three groups on this fixture. The shared renderer remains opt-in.
+
 ## Original migration plan
 
 Vox currently renders through two Skia builds: LibWeb's Skia (CPU raster,
