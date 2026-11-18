@@ -7784,3 +7784,31 @@ force.
 The event traces, browser and guard receipts, focused checks and
 color profile diagnosis remain local under
 `repository-navigation-5204-r87`.
+
+### Published backdrop bundle checks
+
+Managed build `20261118-043956-76e1c1ba` publishes executable
+`66f97ef08d4c9ff9ae1195cd80c9817add78ab82c27960580f1444a44101e77d`.
+The preprocessed source fingerprint and backdrop helper verify
+against the compiler receipt. The source capture precedes
+`fe078fec5`.
+
+Hacker News reopens the existing cache on PID 15613 with the compiler
+disabled, six native hits and exact archived content and pixels.
+The guard adopts the browser and completes in 3.798951584 seconds
+at 417,579,008 sampled peak bytes.
+
+GitHub PID 15909 completes the full search, README and toolbar Back
+replay using the archived responses and the existing compiler-disabled
+cache. Both repository audits match Brave and shutdown records
+3,584 hits and 1,788,838 native entries. It has zero misses, compiler
+calls, compilations, invalid or pending entries and no initialized
+page JavaScriptCore. The browser, controller and guard exit zero.
+The 12 GiB guard samples 10,407,526,400 peak bytes over
+122.293082 seconds. The two production builds contain additional
+source changes, so these observations describe their separate runs.
+
+The standard crop differs from the unchanged Brave Back PNG at
+118,327 pixels and still shows the blue progress strip. The pixel
+verdict exits one. The PNGs, audits and guard receipts are retained
+with the event trace.
