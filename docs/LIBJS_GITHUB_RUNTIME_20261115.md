@@ -8015,3 +8015,59 @@ The managed production build for the resource worker change is
 pending. The strict memory and pixel checks remain open. Commands,
 audits, capture hashes and measurements are local under
 `repository-navigation-5204-r90/receipts`.
+
+### Live capture raster density
+
+On published `5d72f614`, the fresh repository-root screenshot on
+PID 79786 matches the full Brave content and reproduces the historic
+two Notifications-button pixels exactly. The browser, controller and
+guard exit zero. The guard samples 6,896,631,808 peak bytes over
+10.37854625 seconds. Shutdown records 2,949 native hits and 483,973
+entries, with zero misses, compilations or compiler calls.
+
+The previous Back capture redrew a 1× output bitmap while the
+Chromium raster plan and paint helpers still used the display's
+2× density. The root screenshot entered the 1× raster path from
+launch. Its trace narrows the root tile from 2,048 to 1,024 pixels.
+The previous live Back trace lacked that projection.
+
+A separate 120-second diagnostic on the same bundle supplies
+`LADYBIRD_SCREENSHOT_DELAY_SECONDS=0.1`, so the live replay presents
+at 1× throughout. The layout and rendering DPR stay at 2. The
+unchanged search, README and toolbar Back sequence completes on PID
+82753. Initial and returned repository content match Brave.
+Capture and shutdown record 3,616 cache hits and 1,780,848 native
+entries, no page JavaScriptCore, and zero misses or compiler calls.
+The browser, controller and guard exit zero in 121.512677333 seconds
+at 12,536,053,760 sampled peak bytes.
+
+The Display P3 capture differs from the original Back reference at
+exactly two pixels, (648, 188) and (646, 190). Both expected and
+actual RGB triples at those points match the historic root residual.
+The unchanged historical and Back Brave references themselves differ
+at 1,116 pixels, all within the file search control. The returned
+Vox image retains the same search control state as Brave. The
+instrumentation and the 1× display setting make this a raster
+diagnostic. The live memory and exact pixel checks remain open.
+
+Commit `ac5b815eb` scopes the target density to actual capture
+painting. Chromium raster plans, tiles, scale-sensitive draw paths
+and native masks and filters use that density during the capture.
+The live document's display queries and layout retain their own
+density. The native capture fixture passes under ARC and MRC. It
+checks ordinary 2× drawing, a 1× document capture from that live
+window, and restoration of the 2× raster density. The first fixture
+run reached both crop checks but stopped in the subsequent
+invalid-bounds checks because its mock window received an AppKit
+display call. The retry restored the fixture's screenshot mode
+for those cases. The native guard exits zero in 2.493498416 seconds
+at 190,595,072 sampled bytes. The production type-check exits zero
+in 47.716407916 seconds at 7,128,743,936 sampled bytes.
+
+The intervening managed build `20261118-064618-79a6e376` verified
+the resource worker source and stopped when
+`native/include/native_bitmap_snapshot_darwin.h` changed during
+sealing. The new managed build is required to exercise the two
+committed fixes together. The original PNG references and both
+diagnostic results are retained locally with
+`repository-navigation-5204-r91/receipts`.
