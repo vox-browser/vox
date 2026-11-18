@@ -1169,6 +1169,73 @@ and guard exits were zero. Sampled process-tree RSS peaked at
 11,680,628,736 bytes for the build and 402,440,192 bytes for
 the diagnostic and timing job.
 
+### Caching solid SVG rectangle masks on macOS
+
+Automatic selection can reuse the shared raster of a single solid
+fill in a pixel-aligned rectangular path. It uses the same alpha
+and luminance conversion as the portable renderer. The complete
+bitmap must fit the existing 128 Ki pixel limit, and admission
+protects rasters used in the current or preceding frame. Quartz
+handles masks with fractional edges or no available cache slot.
+
+The [solid rectangle fixture](../Tests/Browser/Native/svg-solid-rectangle-masks.html)
+checks a black half-opacity alpha mask and a red three-quarter-opacity
+luminance mask. Its SHA-256 was
+`07b57389db3bc434b3c6899b28a1213630aba27a330399b034cef0bc89d2975d`.
+The published binary at `e720fb9a8` and its AVIF library matched
+the grouped-mask cohort. Fresh Quartz captures in PIDs 42703
+and 42746 produced `(127, 127, 255)` and `(255, 215, 215)`
+on the two fills at both 1× and 2×.
+
+The cache-pressure fixture used 75 partially opaque solid masks
+with distinct colors in 136 × 90 regions. Its SHA-256 was
+`57792682cba8436d07bc79bbe02ee038fcf179d62541b72136af4f299ee3ffdc`.
+The local fixtures had no scripts or external resources. The
+macOS timing cohorts used the preceding precise wheel protocol
+with a 1024 × 600 document viewport at 2×. Each run started with
+a fresh cache and private profile and settled for one second
+after the document title matched. The 120 four-pixel inputs
+reversed halfway at a requested 60 Hz. The endpoint was completed
+native frame installation after outer view paint, measured over
+the first-to-last input window.
+
+The private single-C V `-prod`, Clang `-O1` executable SHA-256 was
+`ae117f01b28cda83bc6e623e4b38b80c68deba924c9a2412ff4cab5cbb0b4253`.
+Its AVIF library matched the published comparison. The 55-capture
+macOS suite recorded cropped cache hits in both mask modes
+and matched the uncached shared result exactly at 1× and 2×.
+The 2× solid rectangle capture matched Quartz pixel for pixel.
+Tests with fractional path edges and with the shared cache
+disabled verified the Quartz fallback. The native mask conversion
+and layer checks passed.
+
+The separate diagnostic in PID 62073 recorded 682 cache hits,
+including 183 cropped placements, and six rasters during
+input. Under pressure, PID 62421 recorded 752 hits, 124 cropped
+placements, 16 rasters and 797 Quartz fallbacks. The timing
+launches disabled diagnostics and alternated Quartz with automatic
+selection on the same pinned binary.
+
+| PID | Fixture | Raster | Scroll fps | Median / p95 / max (ms) | Input Hz | Inputs / changes | First / last gap (ms) | Load |
+| --- | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| 62146 | Solid | Quartz | 30.05 | 31.864 / 37.685 / 63.915 | 56.76 | 120 / 63 | 69.414 / 16.595 | 6.64 |
+| 62210 | Solid | Automatic | 36.80 | 26.092 / 31.405 / 48.858 | 58.40 | 120 / 75 | 59.545 / 0.095 | 6.35 |
+| 62264 | Solid | Quartz | 31.73 | 30.847 / 35.175 / 37.414 | 55.53 | 120 / 68 | 71.998 / 0.093 | 6.24 |
+| 62364 | Solid | Automatic | 36.42 | 26.659 / 31.426 / 32.843 | 57.79 | 120 / 75 | 61.418 / 16.565 | 6.14 |
+| 62536 | Pressure | Quartz | 20.39 | 46.346 / 50.915 / 52.348 | 57.77 | 120 / 42 | 101.321 / 32.979 | 5.96 |
+| 62646 | Pressure | Automatic | 23.11 | 41.368 / 45.778 / 47.003 | 59.78 | 120 / 46 | 89.129 / 32.843 | 5.89 |
+| 62807 | Pressure | Quartz | 21.29 | 44.564 / 47.993 / 49.653 | 58.91 | 120 / 43 | 103.292 / 33.146 | 5.90 |
+| 62907 | Pressure | Automatic | 23.27 | 40.421 / 44.452 / 89.715 | 57.68 | 120 / 48 | 88.067 / 16.351 | 5.74 |
+
+The timed cohort ran from 04:15:01 to 04:15:49 UTC on November 18,
+2026. Load is the starting one-minute average on the 18-CPU host.
+Throughput, median and p95 improved in all four pairs. The second
+pressure trial had a longer maximum interval with automatic
+selection. All measured intervals exceeded 16.67 ms. Browser and
+guard exits were zero. Sampled process-tree RSS peaked at
+11,680,612,352 bytes for the build and 397,950,976 bytes for
+the diagnostic and timing job.
+
 ## Original migration plan
 
 Vox currently renders through two Skia builds: LibWeb's Skia (CPU raster,
