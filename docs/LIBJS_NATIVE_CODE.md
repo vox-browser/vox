@@ -1157,9 +1157,66 @@ both pass in the interpreter and on compiler-disabled native reopen.
 Each reopen records one hit, zero misses or compiler calls, and two
 native entries. The focused regression checks that the partial
 workspace slots are cleared. It type-checks under the automated-suite
-hold. Frozen GitHub validation awaits a production build containing
-the direct stores.
+hold.
 
 Raw measurements, C differences and guard receipts remain local in
 `docs/performance/libjs-github-browser-20261116/libjs-github-native-entry-slots-20261118/`
 and `docs/performance/libjs-github-browser-20261116/libjs-github-workspace-direct-stores-20261118/`.
+
+### Offline GitHub startup with direct stores
+
+The standalone single-C `-prod -prealloc -gc none` diagnostic exercises
+the direct stores with the frozen GitHub responses. Its separate native
+preflight warms the private copy of the optimized cache and records
+1,831 hits, 65,634 native entries and 28,307 workspace calls, with zero
+misses or compiler calls. That first use reports 22,604 ms of cache
+loading. The measured cache files stay unchanged throughout.
+
+Seven alternating fresh-process pairs count through process exit.
+They run the same six startup scripts, request the same 49 responses,
+retain 33 server-rendered rows and keep JSC uninitialized. This headless
+scope has zero commit links and includes fixture reading, parsing, DOM
+and module startup, cache loading, script execution and teardown. It
+has no layout or PNG encoding. The interpreter median is
+**11,792,815,634** instructions, and cached native uses
+**15,035,824,414**, or **27.50% more**. Native visits record
+1,831–1,836 hits with zero misses or compiler calls. The guard exits
+zero at 3,436,134,400 sampled bytes.
+
+The separate delayed-attach native profile has 630 main-thread samples.
+Of these, 291 contain the native cache load path and 219 contain
+`dlopen`. The first interpreter sample has an empty call graph, and the delayed interpreter
+sample has 238 main-thread samples.
+
+### Published direct stores on frozen GitHub
+
+Managed receipt `20261118-075540-37c2a48b` publishes executable SHA-256
+`896b2d35d455afdbb5ec57c6dd5d5759a42e1a15d5f71961ae39fc0d146365cb`.
+Its manifest seals the exact `eff5b1024` workspace source and preserves
+all 17 native-cache ABI inputs. Two raster files also differ from
+the immediately preceding publication.
+
+The compiler-disabled eligibility visit matches the pinned Vox image
+and full repository audit. It records 2,950 cache hits, 490,055 native
+entries and 269,496 workspace calls. The separate Display P3 capture
+matches the retained relocation image and reproduces the two known
+Notifications button corner differences against Brave. Both visits
+fulfill all 81 modules with JSC uninitialized, verify the three
+compatibility replacements, and report zero misses or compiler calls.
+
+All 14 visits in seven alternating pairs match the standard PNG and
+repository audit, fulfill all 81 modules, and verify the same three
+compatibility replacements. Native visits record 2,947–2,950 hits with
+zero misses or compiler calls. The browsers and guard exit zero, and
+the guard adopts 28 processes. From exclusive coalition creation
+through document PNG encoding, the interpreter median is
+**74,999,755,427** instructions. Cached native uses **75,884,945,551**,
+or **1.18% more**, and uses fewer instructions in one pair.
+
+Compared with the earlier measured `4ac49eb9` publication, the
+interpreter median rises 13.28% and the native median rises 0.06%.
+Fifteen sealed source entries differ across those publications.
+The narrower tier gap reflects the higher interpreter median.
+Raw captures, profiles, input hashes and guard receipts remain local
+under
+`docs/performance/libjs-github-browser-20261116/libjs-github-workspace-direct-stores-publication-20261118/`.
