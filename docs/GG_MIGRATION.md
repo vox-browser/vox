@@ -1305,6 +1305,83 @@ exits were zero. Sampled process-tree RSS peaked at 11,681,857,536
 bytes for the build and 398,295,040 bytes for the diagnostic and
 timing job.
 
+### Caching nested opacity in SVG gradient masks on macOS
+
+Automatic selection accepts a stack of up to four opacity
+groups enclosing the same one or two pixel-aligned rectangular
+fills, including a supported gradient. The shared raster
+composites the fills, then restores each group from the inside
+out. The complete raster fits the existing 128 Ki pixel limit
+and uses the same admission policy as the single opacity group.
+
+The test generates two- and four-layer variants of the
+[group opacity fixture](../Tests/Browser/Native/svg-gradient-mask-opacity.html).
+Their SHA-256 digests were
+`e079f8edabba482e455ea5aebb5d380b850464e871d15147c96d5fae3ddeca62`
+and `acf9d5a545bc8a7ebc682f6a1daea81ed4ba4725beb1c2a082d675f1b621e924`.
+The published `e720fb9a8` executable and AVIF library matched the
+preceding cohort. Eight fresh captures compared the forced shared
+path with Quartz at 1× and 2×. Both variants stayed within two
+channel levels of Quartz. The overlap and individual alpha fills
+produced `(160, 160, 255)` with two layers and `(202, 202, 255)`
+with four layers in the shared captures.
+
+The pressure fixture used 75 different gradients, each enclosed
+by four opacity groups in a 136 × 90 mask region. Its SHA-256 was
+`0492aa6de8ed826f5fc3c61732707c66a9e32cf2399b15c3e30bf1ff4ca324aa`.
+The local fixtures had no scripts or external resources. The
+macOS trials used the preceding precise wheel protocol at a
+1024 × 600 viewport and 2× backing scale, with fresh processes,
+caches and private profiles and one second of settle after the
+document title matched. Each launch received 120 four-pixel
+inputs at a requested 60 Hz, reversing after 60. The endpoint
+was completed native frame installation after outer view paint
+over the first-to-last input window.
+
+The private single-C V `-prod`, Clang `-O1` executable SHA-256 was
+`e282cf6668c096955ca53a4f7a5d4990087e7720dbecde43739a949f36bbcb1c`.
+All 80 macOS captures passed. The two- and four-layer fixtures
+matched the forced uncached shared render pixel for pixel at
+1× and 2×, with cropped cache hits in both mask modes.
+The four-layer pressure capture stayed within two channel levels
+of Quartz while using both cached rasters and Quartz fallbacks.
+Five nested groups and disabling the shared cache both matched
+the explicit Quartz control exactly. Native conversion and
+layer checks passed.
+
+The first diagnostic, PID 14148, exited zero. A production publish
+replaced AVIF and adblock helper files during that run. Both digests
+stayed the same and both file identities changed. The driver
+rejected the run and the guard exited 1. The subsequent cohort
+used the new published file identities with the same private
+browser executable.
+
+The valid nested diagnostic in PID 15556 recorded 659 cache hits,
+including 177 cropped placements, and six rasters during input.
+With four-layer masks under pressure, PID 16092 recorded 928
+hits, 150 cropped placements, 16 rasters and 971 Quartz fallbacks.
+The timing launches disabled diagnostics and alternated Quartz
+with automatic selection on the same pinned browser.
+
+| PID | Fixture | Raster | Scroll fps | Median / p95 / max (ms) | Input Hz | Inputs / changes | First / last gap (ms) | Load |
+| --- | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| 15697 | Two layers | Quartz | 26.13 | 36.325 / 42.588 / 71.553 | 57.59 | 120 / 54 | 80.781 / 0.129 | 5.08 |
+| 15791 | Two layers | Automatic | 33.24 | 28.518 / 34.321 / 52.908 | 57.34 | 120 / 69 | 63.529 / 17.554 | 5.23 |
+| 15899 | Two layers | Quartz | 26.59 | 36.569 / 42.306 / 43.270 | 56.51 | 120 / 56 | 76.603 / 0.122 | 5.04 |
+| 15996 | Two layers | Automatic | 34.89 | 27.586 / 32.057 / 32.750 | 58.48 | 120 / 71 | 59.650 / 16.387 | 5.04 |
+| 16219 | Four layers, pressure | Quartz | 21.34 | 44.835 / 49.635 / 53.384 | 59.06 | 120 / 43 | 95.851 / 17.103 | 5.11 |
+| 16346 | Four layers, pressure | Automatic | 27.07 | 35.329 / 42.285 / 48.696 | 56.51 | 120 / 57 | 74.343 / 16.512 | 5.02 |
+| 16439 | Four layers, pressure | Quartz | 22.99 | 40.896 / 44.888 / 86.509 | 58.21 | 120 / 47 | 93.940 / 17.885 | 5.02 |
+| 16556 | Four layers, pressure | Automatic | 29.11 | 32.569 / 37.489 / 71.423 | 57.74 | 120 / 60 | 68.845 / 18.128 | 4.94 |
+
+The accepted cohort ran from 04:34:10 to 04:34:59 UTC on November 18,
+2026. Load is the starting one-minute average on the 18-CPU host.
+Throughput and all three interval statistics improved in all four
+pairs. All measured intervals exceeded 16.67 ms. Browser and guard
+exits in this cohort were zero. Sampled process-tree RSS peaked at
+11,685,937,152 bytes for the build and 405,733,376 bytes for the
+accepted diagnostic and timing job.
+
 ## Original migration plan
 
 Vox currently renders through two Skia builds: LibWeb's Skia (CPU raster,
