@@ -91,24 +91,6 @@ fn supported(shape &C.VoxGraphiteShape) bool {
 		&& (shape.clip_out_count == 0 || shape.clip_outs != unsafe { nil })
 }
 
-// rounded_rect converts x, y, width, height and four radius pairs, like the
-// backend's SkRRect::setRectRadii(SkRect::MakeXYWH(...)).
-fn rounded_rect(v [12]f32) canvas.RRect {
-	return canvas.RRect.rect_radii(canvas.Rect.xywh(v[0], v[1], v[2], v[3]), [
-		canvas.Point{v[4], v[5]},
-		canvas.Point{v[6], v[7]},
-		canvas.Point{v[8], v[9]},
-		canvas.Point{v[10], v[11]},
-	]!)
-}
-
-fn shape_color(rgba [4]u8, has_float bool, float [4]f32) canvas.Color4f {
-	if has_float {
-		return canvas.Color4f{float[0], float[1], float[2], float[3]}
-	}
-	return canvas.Color4f.from_rgba8(rgba[0], rgba[1], rgba[2], rgba[3])
-}
-
 // draw implements vox_graphite_draw_shape_pixels() for supported descriptors:
 // it draws the shape over BGRA8 premultiplied pixels (or transparency without
 // a background) like the backend's Graphite surface and returns 1, or returns

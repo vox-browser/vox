@@ -1,9 +1,5 @@
 module ggshape
 
-$if !macos {
-	$compile_error('The gg.canvas browser adapters currently require macOS')
-}
-
 import gg.canvas
 
 fn non_scaling_matrix_is_affine(m [9]f32) bool {
