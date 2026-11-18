@@ -7416,6 +7416,12 @@ fn (mut app BrowserApp) draw_command(source_command &layout.PaintCommand, page_x
 				}
 			}
 			mut filled := false
+			mut stroked := false
+			$if vox_gg_svg ? {
+				if svg_data.stroke_first {
+					stroked = app.draw_portable_gpu_svg_stroke(command, svg_data, page_x, page_y)
+				}
+			}
 			$if linux {
 				filled = app.draw_portable_solid_svg_fill(command, svg_data, page_x, page_y)
 				if filled && (command.stroke_color == '' || command.stroke_width <= 0) { return }
@@ -7425,6 +7431,12 @@ fn (mut app BrowserApp) draw_command(source_command &layout.PaintCommand, page_x
 					filled = app.draw_portable_solid_svg_fill(command, svg_data, page_x, page_y)
 					if filled && (command.stroke_color == '' || command.stroke_width <= 0) { return }
 				}
+			}
+			$if vox_gg_svg ? {
+				if !svg_data.stroke_first && (filled || command.color == '') {
+					stroked = app.draw_portable_gpu_svg_stroke(command, svg_data, page_x, page_y)
+				}
+				if stroked && (filled || command.color == '') { return }
 			}
 			input_polygons := if svg_data.path_polygons.len > 0 {
 				svg_data.path_polygons
@@ -7449,7 +7461,7 @@ fn (mut app BrowserApp) draw_command(source_command &layout.PaintCommand, page_x
 					}
 				}
 			}
-			if command.stroke_color.len > 0 && screen_polygons.len > 0
+			if !stroked && command.stroke_color.len > 0 && screen_polygons.len > 0
 				&& screen_polygons[0].len >= 4 && command.stroke_width > 0 {
 				points := screen_polygons[0]
 				stroke := app.paint_colors.color_with_retained(command.stroke_color, command.opacity * svg_data.stroke_opacity,

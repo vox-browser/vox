@@ -7,6 +7,7 @@ $if vox_gg_svg ? {
 	import gg.render
 	import ggshape
 	import layout
+	import math
 	import os
 	import painting
 	import platform
@@ -23,12 +24,20 @@ $if vox_gg_svg ? {
 	const portable_svg_gpu_cached_values = 128 * layout.compatibility_clip_path_segment_stride
 	const portable_svg_gpu = &PortableSVGGpu{}
 
+	struct PortableSVGStroke {
+		width_bits u32
+		miter_bits u32
+		cap        i32
+		join       i32
+	}
+
 	struct PortableSVGTextureKey {
 		matrix   [6]f32
 		width    int
 		height   int
 		color    gg.Color
 		even_odd bool
+		stroke   PortableSVGStroke
 	}
 
 	struct PortableSVGTexture {
@@ -46,7 +55,7 @@ $if vox_gg_svg ? {
 	fn (texture &PortableSVGTexture) matches(key &PortableSVGTextureKey, values []f32) bool {
 		if texture.key.width != key.width
 			|| texture.key.height != key.height || texture.key.color != key.color
-			|| texture.key.even_odd != key.even_odd {
+			|| texture.key.even_odd != key.even_odd || texture.key.stroke != key.stroke {
 			return false
 		}
 		return unsafe {
@@ -57,7 +66,8 @@ $if vox_gg_svg ? {
 	fn (texture &PortableSVGTexture) crop_origin(key &PortableSVGTextureKey, values []f32) ?painting.IntPoint {
 		if texture.key.width < key.width || texture.key.height < key.height
 			|| (texture.key.width == key.width && texture.key.height == key.height)
-			|| texture.key.color != key.color || texture.key.even_odd != key.even_odd {
+			|| texture.key.color != key.color || texture.key.even_odd != key.even_odd
+			|| texture.key.stroke != key.stroke {
 			return none
 		}
 		if unsafe { vmemcmp(&texture.key.matrix[0], &key.matrix[0], 4 * int(sizeof(f32))) != 0 } {
@@ -200,14 +210,65 @@ $if vox_gg_svg ? {
 			green:         color.g
 			blue:          color.b
 			alpha:         color.a
+			stroke:        i32(key.stroke.width_bits != 0)
+			line_cap:      key.stroke.cap
+			line_join:     key.stroke.join
+			stroke_width:  math.f32_from_bits(key.stroke.width_bits)
+			miter_limit:   math.f32_from_bits(key.stroke.miter_bits)
 		}
 		ggshape.record_svg_path(mut target, &path)!
 		return target.take_document_image()!
 	}
 
-	fn draw_portable_gpu_svg_fill(renderer &render.Context, data layout.PaintSVGPathData,
+	fn (mut app BrowserApp) draw_portable_gpu_svg_stroke(command &layout.PaintCommand,
+		data layout.PaintSVGPathData, page_x f32, page_y f32) bool {
+		if !portable_svg_gpu_enabled || app.paint_effect_depth != 0 || app.paint_svg_mask_depth != 0
+			|| command.stroke_color == '' || command.stroke_width <= 0
+			|| data.path_data.len < layout.compatibility_clip_path_segment_stride
+			|| data.path_data[0] == 6 || data.non_scaling_stroke || data.stroke_dasharray.len != 0
+			|| data.stroke_pattern != none || command.stroke_linear_gradient() != none
+			|| command.stroke_radial_gradient() != none {
+			return false
+		}
+		state := unsafe { portable_svg_gpu }
+		if state.count == portable_svg_gpu_image_limit || (state.tried && state.canvas == unsafe { nil }) {
+			return false
+		}
+		width := f32(command.stroke_width)
+		miter := f32(if data.stroke_miterlimit > 1 { data.stroke_miterlimit } else { 1.0 })
+		if !(width > 0) || math.is_inf(f64(width), 0) || math.is_inf(f64(miter), 0) {
+			return false
+		}
+		color := app.paint_colors.color_with_retained(command.stroke_color,
+			command.opacity * data.stroke_opacity, command.retained_svg_stroke_color())
+		if color.a == 0 { return true }
+		cached := portable_gpu_svg_local_bounds(data.path_data)
+		local := cached or { cpuraster.canvas_path(data.path_data, false).bounds() or { return false } }
+		transform := portable_device_transform(multiply_paint_transforms(command.transform,
+			data.path_transform), page_x, page_y, f64(app.ctx.scale))
+		// Inflate the raw path before mapping so anisotropic transforms
+		// include every cap and miter. Keep one extra device pixel for AA.
+		cap_outset := if data.stroke_linecap == 2 { math.sqrt2 } else { 1.0 }
+		join_outset := if data.stroke_linejoin == 0 { f64(miter) } else { 1.0 }
+		pad := f64(width) * 0.5 * math.max(cap_outset, join_outset)
+		rect := painting.Rect{f64(local.left), f64(local.top),
+			f64(local.right) - f64(local.left), f64(local.bottom) - f64(local.top)}
+		ink := transform.map_rect(rect.inflated(pad, pad, pad, pad)).inflated(1, 1, 1, 1)
+		bounds := portable_pixel_bounds(ink.intersection(app.portable_device_viewport(page_y)))
+		if bounds.is_empty() { return true }
+		stroke := PortableSVGStroke{
+			width_bits: math.f32_bits(width)
+			miter_bits: math.f32_bits(miter)
+			cap:        i32(data.stroke_linecap)
+			join:       i32(data.stroke_linejoin)
+		}
+		return draw_portable_gpu_svg_path(app.ctx.r, data, portable_svg_surface_matrix(transform, bounds),
+			bounds, color, local, cached != none, stroke)
+	}
+
+	fn draw_portable_gpu_svg_path(renderer &render.Context, data layout.PaintSVGPathData,
 		matrix [6]f32, bounds painting.IntRect, color gg.Color, local_bounds cpuraster.Rect,
-		reused_bounds bool) bool {
+		reused_bounds bool, stroke PortableSVGStroke) bool {
 		mut state := unsafe { portable_svg_gpu }
 		// Bound GPU memory and the number of pending passes for this replay.
 		if renderer == unsafe { nil } || state.count == portable_svg_gpu_image_limit
@@ -232,6 +293,7 @@ $if vox_gg_svg ? {
 			height:   bounds.height
 			color:    color
 			even_odd: data.fill_even_odd
+			stroke:   stroke
 		}
 		cacheable := !disable_portable_svg_gpu_cache && data.path_data.len <= portable_svg_gpu_cached_values
 		// Keep the previous frame's images available until all current draws
@@ -306,7 +368,7 @@ $if vox_gg_svg ? {
 		renderer.disable_texture()
 		renderer.pop_pipeline()
 		if portable_svg_gpu_diagnostics {
-			eprintln('VOX_GG_SVG draw=${bounds.width}x${bounds.height} cache=${if reused { "hit" } else { "miss" }} bounds=${if reused_bounds { "hit" } else { "miss" }} crop=${if crop != none { "hit" } else { "none" }}')
+			eprintln('VOX_GG_SVG draw=${bounds.width}x${bounds.height} cache=${if reused { "hit" } else { "miss" }} bounds=${if reused_bounds { "hit" } else { "miss" }} crop=${if crop != none { "hit" } else { "none" }} stroke=${int(stroke.width_bits != 0)}')
 		}
 		return true
 	}

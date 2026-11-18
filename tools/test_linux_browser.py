@@ -325,6 +325,75 @@ def check_gg_svg_browser(binary, artifacts, temporary):
     print("PASS: cached and uncached GG SVG replay and GL 4.2 fallback match the portable reference", flush=True)
     check_gg_svg_mutations(binary, artifacts, temporary, fixture)
     check_gg_svg_viewport(binary, artifacts, temporary, fixture)
+    check_gg_svg_strokes(binary, artifacts, temporary)
+
+
+def check_gg_svg_strokes(binary, artifacts, temporary):
+    fixture = Path(__file__).resolve().parents[1] / "Tests/Browser/Native/svg-gg-stroke.html"
+    edited = Path(temporary) / "gg-svg-stroke-edit.html"
+    edited.write_text(fixture.read_text() + """
+<script>
+let frames = 0;
+function changeCap() {
+    if (++frames < 12) {
+        requestAnimationFrame(changeCap);
+        return;
+    }
+    document.getElementById('round').setAttribute('stroke-linecap', 'butt');
+    document.body.setAttribute('data-stroke-ready', '1');
+}
+requestAnimationFrame(changeCap);
+</script>
+""")
+    white = bytes.fromhex("ffffff")
+    blue = bytes.fromhex("0000ff")
+    red = bytes.fromhex("ff0000")
+    cap_color = bytes.fromhex("2244cc")
+    for page in (fixture, edited):
+        documents = []
+        for mode, disable_cache in (("cached", "0"), ("uncached", "1")):
+            label = f"{page.stem}-{mode}"
+            screenshot = artifacts / f"{label}.png"
+            screenshot.unlink(missing_ok=True)
+            environment = smoke_environment(Path(temporary) / label)
+            environment.pop("MESA_GL_VERSION_OVERRIDE", None)
+            environment.update(VOX_GG_SVG="1", VOX_GG_SVG_DIAGNOSTICS="1",
+                               VOX_DISABLE_GG_SVG_CACHE=disable_cache)
+            script = []
+            if page == edited:
+                environment["VOX_CAPTURE_READY_SELECTOR"] = "body[data-stroke-ready]"
+                script = ["--enable-javascript"]
+            log = run_windowed([str(binary), *script, "--window-width=800", "--window-height=600",
+                                "--screenshot-viewport-height=600", f"--screenshot={screenshot}",
+                                str(page)], env=environment, log_path=artifacts / f"{label}.log")
+            strokes = [line for line in log.splitlines() if line.startswith("VOX_GG_SVG draw=")
+                       and line.endswith(" stroke=1")]
+            assert len(strokes) >= 6, log
+            assert any("cache=hit bounds=hit" in line for line in strokes) == (mode == "cached"), log
+            if page == edited and mode == "cached":
+                cap_misses = [line for line in strokes if "draw=90x50 cache=miss" in line]
+                assert len(cap_misses) == 2 and "bounds=hit" in cap_misses[1], log
+            _, height, channels, rows = rendered_png_rows(screenshot.read_bytes())
+
+            def pixel(x, y):
+                return rows[y][x * channels:x * channels + 3]
+
+            marker = next((y for y in range(min(height, 150)) if pixel(4, y) == b"\x34\xb7\x86"), None)
+            assert marker is not None, "Missing document marker"
+            top = marker + 8
+            assert pixel(26, top + 24) == (white if page == edited else cap_color), "Incorrect round cap"
+            assert pixel(24, top + 19) == white and pixel(35, top + 24) == cap_color
+            assert pixel(96, top + 24) == white, "Butt cap extended past the endpoint"
+            assert pixel(112, top + 24) in (b"\x7f\x7f\xff", b"\x80\x80\xff"), "Incorrect stroke alpha"
+            assert pixel(170, top + 20) == bytes.fromhex("dd6600"), "Square cap is missing"
+            assert pixel(32, top + 56) == bytes.fromhex("00aa00"), "Transformed curve is missing"
+            assert pixel(90, top + 70) == bytes.fromhex("00aa00"), "Second contour is missing"
+            assert pixel(21, top + 101) == blue, "Miter join is missing"
+            assert pixel(99, top + 100) == white and pixel(101, top + 103) == blue, "Incorrect round join"
+            assert pixel(29, top + 120) == blue and pixel(107, top + 120) == red, "Incorrect paint order"
+            documents.append(rows[marker:top + 180])
+        assert documents[0] == documents[1], "Cached stroke pixels differ from uncached replay"
+    print("PASS: GG SVG stroke geometry, paint order, and texture invalidation", flush=True)
 
 
 def check_gg_svg_mutations(binary, artifacts, temporary, fixture):
