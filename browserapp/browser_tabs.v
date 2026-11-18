@@ -20,6 +20,7 @@ mut:
 	process_timer           &platform.Timer      = unsafe { nil }
 	process_visible         bool
 	process_initializing    bool
+	process_focus_retry_at  i64
 	profile_refresh_at      i64
 	hold_window_until       i64
 	polling_process         bool

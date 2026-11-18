@@ -6,35 +6,31 @@ static void vox_tab_x11_frame(void *display, unsigned long window, double *value
     XTranslateCoordinates(display, window, a.root, 0, 0, &x, &y, &child);
     values[0]=x; values[1]=y; values[2]=a.width; values[3]=a.height;
 }
-static void vox_tab_x11_show(void *display, unsigned long window, int visible,
+static void vox_tab_x11_show(Display *display, Window window, int visible,
                             double x, double y, double w, double h) {
-    if (!visible) XUnmapWindow(display, window);
-    else {
-        if (w>0 && h>0) XMoveResizeWindow(display, window, (int)x, (int)y, (unsigned)w, (unsigned)h);
+    if (visible) {
+        if (w > 0 && h > 0) {
+            XMoveResizeWindow(display, window, (int)x, (int)y, (unsigned)w, (unsigned)h);
+        }
         XMapRaised(display, window);
-
-        // Keep the window viewable between the attribute check and direct focus.
-        XWindowAttributes attributes;
-        XGrabServer(display);
-        Status found = XGetWindowAttributes(display, window, &attributes);
-        if (found && attributes.map_state == IsViewable) {
-            XSetInputFocus(display, window, RevertToParent, CurrentTime);
-        }
-        XUngrabServer(display);
-
-        if (found && attributes.map_state != IsViewable) {
-            // A window manager can handle MapRequest asynchronously. Let it
-            // activate the window once mapped, since direct focus would fail.
-            XEvent event = {0};
-            event.xclient.type = ClientMessage;
-            event.xclient.display = display;
-            event.xclient.window = window;
-            event.xclient.message_type = XInternAtom(display, "_NET_ACTIVE_WINDOW", False);
-            event.xclient.format = 32;
-            event.xclient.data.l[0] = 1; // Application source indication.
-            XSendEvent(display, attributes.root, False,
-                       SubstructureRedirectMask | SubstructureNotifyMask, &event);
-        }
+    } else {
+        // Notify the window manager even when the map request is still pending.
+        XWithdrawWindow(display, window, DefaultScreen(display));
     }
     XFlush(display);
+}
+
+static int vox_tab_x11_focus(Display *display, Window window) {
+    // A window manager can defer MapRequest or reparent the window. Keep
+    // viewability stable between the attribute check and the focus request.
+    XWindowAttributes attributes;
+    XGrabServer(display);
+    int viewable = XGetWindowAttributes(display, window, &attributes)
+        && attributes.map_state == IsViewable;
+    if (viewable) {
+        XSetInputFocus(display, window, RevertToParent, CurrentTime);
+    }
+    XUngrabServer(display);
+    XFlush(display);
+    return viewable;
 }
