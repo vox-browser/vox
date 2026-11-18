@@ -1,5 +1,6 @@
 module ggshape
 
+import cpuraster
 import gg.canvas
 import math
 
@@ -108,8 +109,7 @@ fn svg_shadow_pixels(pixels &u8, width int, height int, pitch int, samples int,
 	source.draw_path(path, canvas.Paint{ color: canvas.Color4f{1, 1, 1, 1}, anti_alias: true })!
 	mut rgba := []u8{len: sw * sh * 4}
 	source.read_pixels(rgba.data, sw * 4)!
-	mut alpha := []u8{len: sw * sh}
-	for i in 0 .. alpha.len { alpha[i] = rgba[i * 4 + 3] }
+	alpha := cpuraster.copy_rgba_alpha(rgba)
 	merged.set_matrix(canvas.Matrix.translate(sx - left + 1, sy - top + 1))
 	merged.draw_linear_alpha_mask(alpha, sw, sh, canvas.Paint{ color: canvas.Color4f{0, 0, 0, 1}, anti_alias: true })!
 	// Snap the logical subset, excluding the guaranteed transparent border.

@@ -258,8 +258,7 @@ fn shadow_filter_layer_with_path_matrix(shape &C.VoxGraphiteShape, width int, he
 	}
 	mut rgba := []u8{len: source_width * source_height * 4}
 	source.read_pixels(rgba.data, source_width * 4)!
-	mut alpha := []u8{len: source_width * source_height}
-	for i in 0 .. alpha.len { alpha[i] = rgba[i * 4 + 3] }
+	alpha := cpuraster.copy_rgba_alpha(rgba)
 	mut image := ShadowMask{alpha, source_width, source_height}
 	mut bounds := original
 	mut pixels := original

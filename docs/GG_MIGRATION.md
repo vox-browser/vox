@@ -8172,3 +8172,66 @@ a 1024×768 CSS viewport, 2× capture and a one-second settle.
 The audits verified 30, 33 and 25 entries and all browser and
 guard exits were zero. The published build predates this shadow
 change. Timings above cover mask expansion in isolation.
+
+### Parallel alpha extraction after GPU readback
+
+Rounded image clips, blurred shadows and SVG shadows share an A8
+extraction kernel. It copies the fourth byte of each complete
+pixel. The source and output allocations are disjoint. The raster
+scheduler joins its packed batches before the caller uses the mask.
+Inputs smaller than 2 MiB use the optimized serial scan. Larger
+inputs use up to four threads and finish any partial batch on the
+caller.
+
+Matched single-C-unit V `-prod -g -prealloc -gc none` harnesses
+measured extraction through return, including mask allocation.
+Input generation and output hashing ran outside the timer. Seven
+rotating fresh-process groups ran on Mac17,6 with 18 logical CPUs
+starting at 09:42 local time on 2026-11-18. One-minute load varied
+from 4.70 to 9.06. All 21 processes and the guard exited zero.
+Warm medians use each process's eight calls after its first.
+Times are in microseconds.
+
+| Mask | First before / forced serial / default | Warm before / forced serial / default |
+| --- | ---: | ---: |
+| 32×32 | 0.792 / 0.292 / 0.375 | 0.709 / 0.125 / 0.125 |
+| 511×513 | 195.709 / 48.125 / 46.083 | 175.750 / 52.479 / 52.438 |
+| 512×512 | 175.166 / 54.084 / 49.375 | 173.458 / 42.312 / 52.917 |
+| 1600×400 | 432.583 / 116.584 / 129.833 | 383.021 / 106.729 / 95.188 |
+| 1024×1024 | 704.292 / 206.416 / 169.625 | 795.105 / 196.813 / 161.687 |
+| 1921×1081 | 1581.750 / 368.667 / 304.167 | 1571.354 / 353.021 / 282.354 |
+| 3840×2160 | 6251.666 / 1369.875 / 909.708 | 6625.355 / 1634.729 / 1145.896 |
+
+All output hashes matched. The default configuration won every
+pair against the original, including the below-cutoff fixtures.
+The initial candidate dispatched at 512×512 and took 43.479 µs
+warm versus 38.750 µs forced serial in that group. The retained
+cutoff keeps that size serial. The final 1600×400 first-call
+median rose against forced serial by 13.249 µs, while the warm
+median fell by 11.541 µs. The initial cohort had load 4.21–4.27
+and 4K warm medians of 4509.688 / 1255.521 / 809.667 µs.
+Final harness SHA-256 values were
+`55912cc28f98c816950bdcd46e490698104bf4f1cdbc6e420c3a1efd4b6e5eb4`
+before and
+`bc52aff736e98566226d4375bf50aa03d0504115a6741f92220c7b4a6297a10d`
+after.
+
+A separate probe saw four threads for a public 1024×1024 rounded
+image clip and a 1600×900 shadow draw with uneven corner radii.
+Their complete outputs matched forced serial
+(`85a6f0fa911e7242a01fab31f1d5f3ad34916e5ab04fae0cd998c5d5b1c477fa`
+and `6cab9c3c836d7bc1ab9fcc2bc4ec703cecba29deb7893dbfd3dd3333d52a48b3`).
+The 1600×400 harness assigned four ranges and used two to four
+distinct threads. Larger cases used four. There were zero worker
+batches below the cutoff and with forced serial. Probe processes
+and guard exited zero. The rounded-image clip, cookie-shadow, SVG
+shadow and tall-shadow GPU fixtures passed. macOS, arm64 Linux,
+forced serial, ASan/UBSan, ThreadSanitizer and the pinned CPU raster
+differential suite (count 2000, seed 20261106) passed.
+
+The available completed browser was still
+`abc313c877690171f669481414f33c967376bd88d45f1128596e79e76f749f4a`,
+which matched the archived Hacker News, GitHub and Old Reddit
+references in the [preceding check](#parallel-rounded-shadow-patch-expansion).
+The timings above cover alpha extraction. Candidate site timings
+await the shared rebuild.
