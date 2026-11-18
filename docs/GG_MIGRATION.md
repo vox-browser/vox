@@ -1,5 +1,51 @@
 # Migrating from Skia to vlib/gg
 
+## SVG gradient fills on OpenGL
+
+The opt-in OpenGL renderer sends sRGB linear and concentric radial SVG
+fills to the shared `gg.canvas` descriptor renderer. It uses the retained
+gradient coordinates and transform, pad/repeat/reflect spread, exact
+stop colors and positions, and the combined fill opacity. It preserves
+even-odd holes and the author-specified order of fill and stroke. The
+shader still requires supported geometry and at most eight effective
+stops after stop normalization.
+
+The texture cache owns the gradient parameters and compares stops
+before reusing pixels. The geometry-bounds cache is independent of
+paint changes. Gradients rerasterize when they cross a viewport edge,
+where a cropped texture can have a different dither phase.
+
+Linux window checks exercised linear and radial fills, repeat and
+reflect, a single translucent stop, an even-odd hole, and stroke-first
+painting. Live edits to stop color, gradient transform, and fill
+opacity each rerasterized the affected gradient while reusing its
+geometry bounds. Cached and uncached document pixels matched, including
+the clipped gradient at scroll offset 65. The Windows OpenGL source
+check passed. Windows window and pixel verification remain pending.
+
+The Linux executable SHA-256 was
+`79e37d4ac9924f5cbb379da3c51573a09445c724816589926fab6c4a49a77f6f`.
+It used V `5a39a4d` and single-unit Clang `-O0`. The fixture SHA-256 was
+`35365473bf7d60f093c34051576f417a906c1fa8ecedad1564950b44b43d687b`.
+The benchmark used Mesa software OpenGL under Xvfb with fresh processes,
+private profiles and caches, an 800 × 712 window, one second of settling,
+and 32 synthetic 42-pixel scroll steps. System caches remained available.
+Input hashes, scroll positions and paint-command counts matched.
+One-minute guest load ranged from 0.49 to 0.81 on four virtual CPUs.
+The browser tests, benchmark and their memory guards exited zero.
+
+| Pair | Median callback uncached / cached, ms | p95, ms | Maximum, ms |
+| ---: | ---: | ---: | ---: |
+| 1 | 4.616 / 1.662 | 7.603 / 4.493 | 29.502 / 32.193 |
+| 2 | 4.427 / 1.647 | 6.652 / 6.312 | 31.991 / 31.241 |
+
+Caching reduced the medians by 64.0% and 62.8%. Separate diagnostics
+recorded all 150 fixed gradient draws as texture and bounds hits over
+the final 30 moving callbacks. With caching disabled all 150 gradients
+rasterized again. Every timed run had its longest callback at the
+second scroll step, while the scrolling gradient crossed the viewport
+edge. These measurements cover synthetic software OpenGL replay.
+
 ## Dashed SVG strokes on OpenGL
 
 The opt-in OpenGL renderer splits a solid-color dashed stroke with the
