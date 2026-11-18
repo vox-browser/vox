@@ -96,11 +96,14 @@ fn fetch_resource_job(job ResourceFetchJob, source_url string, scope &browsernet
 		}
 	}
 	$if prealloc {
-		scratch.leave()
-		return persistent_preloaded_resource(resource)
-	} $else {
-		return resource
+		// Filtering can return the same cache entry. Its original owner
+		// already keeps the immutable result alive after this request.
+		if !resource.retained_for_process {
+			scratch.leave()
+			return persistent_preloaded_resource(resource)
+		}
 	}
+	return resource
 }
 
 fn resolve_resource_fetch_job(job ResourceFetchJob, source_url string, scope &browsernet.RequestScope) !PreloadedResource {

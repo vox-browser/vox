@@ -528,6 +528,8 @@ struct PreloadedResource {
 	request_time i64
 	response_time i64
 	bytes_available_before_completion u64
+	// Payload and headers already belong to retained storage outside a request.
+	retained_for_process bool
 }
 
 // Keep the root executable linked against the translated support modules too. The visible page

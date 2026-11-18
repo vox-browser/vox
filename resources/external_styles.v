@@ -265,6 +265,7 @@ fn (mut app BrowserApp) install_script_inserted_stylesheet(resource PreloadedRes
 		source_url:       filtered.source_url.clone()
 		request_type:     filtered.request_type.clone()
 		response_headers: filtered.response_headers.map(adblock.ResponseHeader{ name: it.name.clone(), value: it.value.clone() })
+		retained_for_process: false
 	}
 	app.script_stylesheet_responses[resource.url.clone()] = retained
 	if retained.error == '' {

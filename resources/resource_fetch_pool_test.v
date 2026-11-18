@@ -104,6 +104,43 @@ fn test_background_discovery_batches_unique_uncached_urls() {
 	assert expected.len == 0
 }
 
+fn test_resource_fetch_workers_reuse_retained_cache_payloads() {
+	filtering := adblock.is_enabled()
+	adblock.set_enabled(false)
+	defer { adblock.set_enabled(filtering) }
+	address := 'https://example.com/retained.png'
+	source := 'https://example.com/index.html'
+	entry := PreloadedResource{
+		url: address
+		body: 'cache payload with binary NUL: \x00end'.clone()
+		source_url: source
+		final_url: address
+		request_type: 'image'
+		response_headers: [adblock.ResponseHeader{
+			name: 'Content-Type'.clone()
+			value: 'image/png'.clone()
+		}]
+	}
+	retained := persistent_preloaded_resource(entry)
+	results := chan PreloadedResource{cap: 1}
+	for cached in [entry, retained] {
+		spawn_resource_fetch_workers([ResourceFetchJob{
+			url: address
+			request_type: 'image'
+			cached: [cached]
+		}], source, false, results)
+		resource := <-results
+		assert resource.body == cached.body
+		assert resource.response_headers == cached.response_headers
+		assert resource.error == ''
+		$if prealloc {
+			assert resource.retained_for_process
+			assert (voidptr(resource.body.str) == voidptr(cached.body.str)) == cached.retained_for_process
+			assert (resource.response_headers.data == cached.response_headers.data) == cached.retained_for_process
+		}
+	}
+}
+
 fn serve_resource_fetch_result(mut listener net.TcpListener) {
 	mut socket := listener.accept() or { panic(err) }
 	defer { socket.close() or {} }
