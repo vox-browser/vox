@@ -1555,6 +1555,23 @@ new full group. An audit verifies and retains 52 finished objects with
 their captured C digests and remapped exports in the private cache work
 directory under `parallel-pack-interrupted-objects/checkpoint`.
 
+The checkpointed restart verifies those 52 objects and compiles the
+remaining 51 with up to four workers. Its guard exits zero after
+1,163.16 seconds at 1,893,105,664 sampled peak RSS bytes. The new
+group preserves all 13,915 cache keys and the previous full group's
+symbol assignments. Its library contains 13,147 grouped records.
+
+Fresh replays on compatible publication `4e0651cd…c452` map 103 native
+cache libraries separately and one with grouping. The respective
+visits record 2,948 and 2,949 hits with zero misses or compiler calls.
+Both make the same 159 requests, pass the repository audit, fulfill all
+81 modules and produce byte-identical 1024×768 PNGs. Each PNG differs
+from the older pinned reference by 304 pixels. An earlier separate
+visit made one extra sidebar request with the same response bytes, and
+the verifier stopped before launching the grouped visit. Both final
+browsers and the replay guard exit zero. The restarted group is under
+`parallel-grouped` in the private cache work directory.
+
 Local receipts, including rejected attempts, are under
 `docs/performance/libjs-github-browser-20261116/libjs-full-github-grouped-workflow-20261118/`.
 
