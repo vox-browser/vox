@@ -175,6 +175,36 @@ Both browser exits and the guard exit were zero. The 18-CPU host's starting
 one-minute load averages were 9.93 and 9.70 while other builds were running.
 These are baseline measurements from the existing Cocoa compositor.
 
+The optimized Linux ARM64 single-unit `-O1` executable SHA-256 was
+`4b93e4c7848a396db38ead5022aaae012ddbe2fce8235ab4a3606e2970396020`.
+The local fixture SHA-256 was
+`1d8db436b21f32f96dc5496db99be7867e73508823d056f5dc8939ace2c06a31`.
+A separate diagnostic showed both the rectangular crop and coverage pass
+executing during scroll. The cohort alternated the default with
+`VOX_DISABLE_PORTABLE_SVG_CLIP=1`, which restores the earlier bounding-box
+clip. Each trial used software OpenGL, a fresh process, profile and cache,
+and 80 synthetic 42-pixel scroll callbacks at a requested 1024 × 600 viewport
+after a one-second settle. Scroll positions and retained command counts
+matched. Timings end at callback replay completion.
+
+| Trial | Replay | Median (ms) | p95 (ms) | Max (ms) |
+| --- | --- | ---: | ---: | ---: |
+| 1 | Bounds only | 20.720 | 21.490 | 22.023 |
+| 2 | Clip geometry | 2.258 | 4.793 | 5.500 |
+| 3 | Bounds only | 21.253 | 23.460 | 26.127 |
+| 4 | Clip geometry | 2.313 | 4.836 | 5.229 |
+
+The four-vCPU guest's starting one-minute load averages were 1.31, 1.20,
+1.43 and 1.31. The build, Linux browser suite and cohort exited zero under
+the memory guards, with respective peaks of 9,644,331,008, 939,761,664 and
+483,737,600 bytes. The suite included the existing opacity and gradient
+pixel checks. A disabled-path capture reproduced the curved leak and filled
+hole. Live vlang.io rendered its header, gradient version text, icons and
+compilation card in the optimized Linux build. The Linux media path still
+needs support for its compilation video. The macOS production-mode and
+Windows D3D11 V type checks also passed. The shared macOS runtime build and
+full compositor cutover remain open.
+
 ## Original migration plan
 
 Vox currently renders through two Skia builds: LibWeb's Skia (CPU raster,
