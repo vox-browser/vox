@@ -55,16 +55,18 @@ fn (mut app BrowserApp) preload_initial_document_resources(base_url string) map[
 	// used by layout before deciding whether an image has a display box.
 	css.sync_document_style_elements(app.document)
 	foreground, background := partition_nonrendered_image_preloads(app.document, base_url, image_urls)
+	mut jobs := []ResourceFetchJob{}
 	for resource_url in background {
 		if resource := app.navigation_preloaded_resources[resource_url] {
 			loaded[resource_url] = resource
 			continue
 		}
-		app.request_background_resource(resource_url)
+		app.enqueue_background_resource(resource_url, mut jobs)
 		if resource_url in app.background_resource_pending {
 			app.nonrendered_image_preloads[resource_url] = true
 		}
 	}
+	app.start_background_resource_batch(jobs)
 	for resource_url, resource in preload_document_resource_urls(app.document, base_url, foreground, cached) {
 		loaded[resource_url] = resource
 	}

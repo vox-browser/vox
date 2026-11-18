@@ -36,18 +36,20 @@ fn (app &BrowserApp) document_paints_natively() bool {
 fn (mut app BrowserApp) prime_document_paint_resources() {
 	if disable_paint_resource_prefetch || !app.document_paints_natively() { return }
 	before := app.background_resource_pending.len
+	mut jobs := []ResourceFetchJob{}
 	for index in 0 .. app.paint_commands.len {
 		if address := pending_paint_background_url(&app.paint_commands[index]) {
-			app.request_background_resource(address)
+			app.enqueue_background_resource(address, mut jobs)
 		}
 	}
 	// Viewport recording leaves offscreen backgrounds out; request them as if
 	// recorded, so they arrive before scrolling reaches them.
 	if app.document != unsafe { nil } {
 		for address in layout.document_background_image_urls(app.document) {
-			app.request_background_resource(address)
+			app.enqueue_background_resource(address, mut jobs)
 		}
 	}
+	app.start_background_resource_batch(jobs)
 	if paint_resource_prefetch_diagnostics && app.background_resource_pending.len > before {
 		eprintln('VOX_PAINT_RESOURCE_PREFETCH requests=${app.background_resource_pending.len - before}')
 	}
@@ -87,7 +89,9 @@ fn (mut app BrowserApp) prime_initial_computed_background_resources(width f64, h
 	mut found := InitialBackgroundPreloads{}
 	collect_initial_background_preloads(app.document.as_node(), mut found)
 	before := app.background_resource_pending.len
-	for address in found.urls { app.request_background_resource(address) }
+	mut jobs := []ResourceFetchJob{}
+	for address in found.urls { app.enqueue_background_resource(address, mut jobs) }
+	app.start_background_resource_batch(jobs)
 	if initial_background_preload_diagnostics {
 		eprintln('VOX_INITIAL_BACKGROUND_PRELOAD requests=${app.background_resource_pending.len - before}')
 	}

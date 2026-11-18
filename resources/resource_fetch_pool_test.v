@@ -59,6 +59,51 @@ fn test_resource_fetch_workers_deliver_every_result_once() {
 	assert received['file://${directory}/missing.js'].error != ''
 }
 
+fn test_background_discovery_batches_unique_uncached_urls() {
+	directory := os.join_path(os.temp_dir(), 'vox-background-batch-${os.getpid()}-${time.sys_mono_now()}')
+	os.mkdir_all(directory) or { panic(err) }
+	defer { os.rmdir_all(directory) or {} }
+	count := max_concurrent_resource_fetches + 3
+	source := 'file://${directory}/index.html'
+	mut app := BrowserApp{
+		address: source
+		background_resource_results: chan PreloadedResource{cap: count}
+	}
+	cached_url := 'file://${directory}/cached.png'
+	app.resource_cache[cached_url] = PreloadedResource{url: cached_url, body: 'cached'}
+	mut jobs := []ResourceFetchJob{}
+	mut expected := map[string]string{}
+	for index in 0 .. count {
+		path := os.join_path(directory, '${index}.png')
+		body := 'image ${index}'
+		os.write_file(path, body) or { panic(err) }
+		address := 'file://${path}'
+		expected[address] = body
+		app.enqueue_background_resource(address, mut jobs)
+		app.enqueue_background_resource(address, mut jobs)
+	}
+	app.enqueue_background_resource(cached_url, mut jobs)
+	assert jobs.len == count
+	assert app.background_resource_pending.len == count
+	assert app.background_resource_jobs == 0
+	assert app.background_resource_results.len == 0
+	app.start_background_resource_batch(jobs)
+	defer {
+		if scope := app.background_resource_scope { scope.release() }
+	}
+	assert app.background_resource_jobs == count
+	for _ in 0 .. count {
+		resource := <-app.background_resource_results
+		assert resource.url in expected
+		assert resource.body == expected[resource.url]
+		assert resource.error == ''
+		assert resource.source_url == source
+		assert resource.request_type == 'image'
+		expected.delete(resource.url)
+	}
+	assert expected.len == 0
+}
+
 fn serve_resource_fetch_result(mut listener net.TcpListener) {
 	mut socket := listener.accept() or { panic(err) }
 	defer { socket.close() or {} }

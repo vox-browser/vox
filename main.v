@@ -1244,18 +1244,6 @@ fn filter_preloaded_resource_with_scope(resource PreloadedResource, source_url s
 	return resource
 }
 
-fn fetch_background_resource_in_background(resource_url string, source_url string, results chan PreloadedResource) {
-	fetch_resource_in_background(resource_url, source_url, 'image', results)
-	$if macos {
-		C.native_wake_browser()
-	}
-}
-
-fn fetch_background_resource_in_background_with_scope(resource_url string, source_url string, results chan PreloadedResource, scope &browsernet.RequestScope) {
-	fetch_resource_in_background_with_scope(resource_url, source_url, 'image', results, scope)
-	$if macos { C.native_wake_browser() }
-}
-
 fn fetch_page_in_background(resolved string, base string, generation int, add_history bool, results chan NavigationResult) {
 	fetch_page_in_background_with_scope(resolved, base, generation, add_history, results,
 		browsernet.new_request_scope())
@@ -5209,22 +5197,6 @@ fn browser_local_file_path(serialized_url string) ?string {
 		return none
 	}
 	return parsed.to_file_path()
-}
-
-fn (mut app BrowserApp) request_background_resource(image_url string) {
-	if app.state == .retired { return }
-	if image_url in app.resource_cache || image_url in app.background_resource_pending {
-		return
-	}
-	persistent := platform.enter_persistent()
-	owned_url := image_url.clone()
-	app.background_resource_pending[owned_url] = true
-	source_url := if app.document != unsafe { nil } { app.document.url.serialize().clone() } else { app.address.clone() }
-	app.background_resource_jobs++
-	scope := app.resource_request_scope()
-	scope.retain()
-	spawn fetch_background_resource_in_background_with_scope(owned_url, source_url, app.background_resource_results, scope)
-	platform.leave_persistent(persistent)
 }
 
 fn (mut app BrowserApp) poll_background_resources() {
