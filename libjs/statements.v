@@ -818,19 +818,12 @@ fn (mut p Parser) parse_catch_clause() CatchClause {
 fn (mut p Parser) try_parse_labelled_statement(allow_labelled_function bool) ?Statement {
 	start := p.position()
 
-	if !p.match_identifier_name() {
+	if !p.match_identifier_name() || p.next_token().token_type != .colon {
 		return none
 	}
 
-	p.save_state()
 	lbl_token := p.consume()
 	label := Utf16String.from_slice(p.token_value(lbl_token))
-
-	if !p.match_token(.colon) {
-		p.load_state()
-		return none
-	}
-	p.discard_saved_state()
 	p.consume() // consume :
 
 	if is_unconditional_reserved_word(label.data) {

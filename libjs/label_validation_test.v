@@ -22,3 +22,16 @@ fn test_contextual_words_keep_their_sloppy_label_grammar() {
 		assert parser.has_errors(), source
 	}
 }
+
+fn test_label_lookahead_preserves_expression_statements_and_trivia() {
+	parsed := parse_source('read()\nouter /* label */\n: while (ready()) { continue outer; }\nwritten = 1;',
+		.script)
+	assert !parsed.has_errors(), '${parsed.diagnostics}'
+	program := parsed.program.kind.program_data or { panic('Missing program') }
+	assert program.scope.children.len == 3
+	assert program.scope.children[0].kind.tag == .expression_stmt
+	labelled := program.scope.children[1]
+	assert labelled.kind.tag == .labelled
+	assert labelled.kind.label.str() == 'outer'
+	assert program.scope.children[2].kind.tag == .expression_stmt
+}
