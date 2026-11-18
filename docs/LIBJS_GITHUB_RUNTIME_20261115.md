@@ -7337,3 +7337,38 @@ Its frame pool predates this change. The commit hook queued the updated
 sources. A production cached-native Back replay under 12 GiB remains
 pending. Local commands, pins and receipts are under
 `repository-navigation-5204-r77`.
+
+### LibJS function metadata keys
+
+The published Back replay tags 272 MiB of tracked virtual mapping capacity
+to ECMAScript function creation. Commit `6279dd112` shares the immutable
+`name`, `length`, `constructor` and `prototype` keys. Each function owns
+its property descriptors and ordinary function prototype. Function creation
+also uses the already computed name and compares the default-export marker
+in UTF-16.
+
+Three alternating fresh-process pairs use matching single-C prealloc
+builds. The 493 recorded source and fixture pins differ only in the two
+implementation files. Each launch creates and retains 6,000 arrow, 6,000
+ordinary and 6,000 bound function objects. In each pair the caller arena
+grows by 72,598,741 bytes in the control and 52,049,573 bytes in the
+candidate, **28.3% less**. The probes verify descriptors, property order,
+independent mutations, prototype identity, and numeric and symbol names.
+
+The native-cache seed compiles 12 executables in one compiler call. A
+fresh reopen with `/usr/bin/false` verifies the function properties,
+unpaired UTF-16 names, and anonymous default-export names. It records
+12 hits, 18,011 native entries, 144,202 helper steps and zero misses,
+compiler calls, pending or invalid entries. The processes and guards exit
+zero. The production type check passes in 48.842441458 seconds at
+7,100,841,984 sampled peak bytes. The regression source remains unrun
+under the automated-test hold.
+
+Managed attempt `20261118-024638-c98004e8` exited 1 during sealing with
+`Production source membership changed`. Comparing its recorded
+inventory with the checkout finds the newly added
+`native/include/native_frame_clear_darwin.h`. The shared worker picked
+up the next request and the installed executable is still
+`23ba3183…3bb`. The full cached-native Back replay under 12 GiB remains
+pending. Exact local commands, pins and receipts are under
+`repository-navigation-5204-r78`.
