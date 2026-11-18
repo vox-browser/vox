@@ -446,6 +446,44 @@ requestAnimationFrame(() => requestAnimationFrame(() => {
     assert rows[70][370 * channels:370 * channels + 3] == b"\xff\xb7\xb7"
 
 
+def check_cached_geometry_change(binary, source, directory):
+    fixture = directory / "svg-mask-geometry-change.html"
+    text = re.sub(r"^  <use .*\n", "", source.read_text(), flags=re.MULTILINE)
+    fixture.write_text(text.replace("M255 15h200v90H255Z", "M275 15h150v90H275Z") + """
+<script>
+requestAnimationFrame(() => requestAnimationFrame(() => {
+    document.querySelector("#alpha-mask path").setAttribute("d", "M21 11H201V111Z");
+    document.querySelector("#luminance-mask path").setAttribute("transform", "translate(.25 0)");
+    document.documentElement.setAttribute("data-masks-updated", "true");
+}));
+</script>
+""")
+    settings = dict(VOX_SHARED_SVG_MASK_RASTER="", VOX_DISABLE_SHARED_SVG_MASK_CACHE="0",
+                    LADYBIRD_SCREENSHOT_SCALE="2")
+    original, _ = capture_document(binary, fixture, directory / "geometry-before", settings,
+                                   ["--disable-javascript"])
+    settings["VOX_CAPTURE_READY_SELECTOR"] = "html[data-masks-updated=true]"
+    options = ["--enable-javascript", "--js-engine=javascriptcore"]
+    changed, diagnostics = capture_document(binary, fixture, directory / "geometry-after", settings, options)
+    for luminance in ("true", "false"):
+        rasters = re.findall(rf"^VOX_SHARED_SVG_MASK luminance={luminance} operations=1 .*",
+                             diagnostics, re.MULTILINE)
+        assert len(rasters) == 1, diagnostics
+    settings["VOX_SHARED_SVG_MASK_RASTER"] = "0"
+    quartz, _ = capture_document(binary, fixture, directory / "geometry-quartz", settings, options)
+    result = rendered_png_rows(changed)
+    assert result == rendered_png_rows(quartz), "A mask hit retained old geometry"
+    before = rendered_png_rows(original)
+    assert before[:3] == result[:3] and result[:2] == (2048, 1200)
+    _, _, channels, rows = result
+    before_rows = before[3]
+    outside = 40 * 2 * channels
+    edge = 275 * 2 * channels
+    assert rows[180][outside:outside + 3] == b"\xff\xff\xff"
+    assert before_rows[180][outside:outside + 3] == b"\x7f\x7f\xff"
+    assert rows[120][edge:edge + 3] != before_rows[120][edge:edge + 3]
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("binary", type=Path)
@@ -547,6 +585,7 @@ def main():
             (370, 118, (255, 150, 150)), (430, 118, (255, 164, 164)), (449, 118, white),
         ))
         check_solid_mask_order_change(binary, overlap, directory)
+        check_cached_geometry_change(binary, solid, directory)
         for gradients in (False, True):
             name = "direct-gradient-fills" if gradients else "direct-solid-fills"
             direct_fills = directory / f"{name}.html"

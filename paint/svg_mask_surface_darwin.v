@@ -187,18 +187,8 @@ fn (mut app BrowserApp) raster_native_svg_content_mask(mask &layout.PaintClip, p
 	cropped := crop_area[2] != 0
 	requires_cache := automatic_radial || automatic_diagonal || automatic_opacity_group || automatic_fills
 	if requires_cache && !keeps_full_raster { return false }
-	if automatic_radial {
-		if svg_background_rectangle_path(operations[0].path_data) == none { return false }
-	} else if requires_cache || (counts.fills > 0 && counts.gradients == 0) {
-		for index in 0 .. operations.len {
-			operation := &operations[index]
-			if operation.kind != .path { continue }
-			device := portable_device_transform(operation.transform, page_x, page_y, scale)
-			if svg_mask_aligned_rect(operation, portable_svg_surface_matrix(device, bounds)) == none {
-				return false
-			}
-		}
-	} else if !force_shared_svg_mask_raster {
+	checks_rectangles := requires_cache || (counts.fills > 0 && counts.gradients == 0)
+	if !checks_rectangles && !force_shared_svg_mask_raster {
 		if int(raster_area[2]) * int(raster_area[3]) > shared_svg_mask_cache_pixel_limit {
 			return false
 		}
@@ -216,6 +206,20 @@ fn (mut app BrowserApp) raster_native_svg_content_mask(mask &layout.PaintClip, p
 				eprintln('VOX_SHARED_SVG_MASK_CACHE_HIT luminance=${mask.mask_luminance} surface=${bounds.width}x${bounds.height} viewport_crop=${cropped} bitmap_allocated=${hit == 2}')
 			}
 			return true
+		}
+	}
+	// A hit already proved the path geometry. The key includes the mask's
+	// path data, the device matrices and the bounds used by these checks.
+	if automatic_radial {
+		if svg_background_rectangle_path(operations[0].path_data) == none { return false }
+	} else if checks_rectangles {
+		for index in 0 .. operations.len {
+			operation := &operations[index]
+			if operation.kind != .path { continue }
+			device := portable_device_transform(operation.transform, page_x, page_y, scale)
+			if svg_mask_aligned_rect(operation, portable_svg_surface_matrix(device, bounds)) == none {
+				return false
+			}
 		}
 	}
 	if requires_cache && (raster_key == 0 || C.native_can_admit_svg_mask_raster() == 0) {
