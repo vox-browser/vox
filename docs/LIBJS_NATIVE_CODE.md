@@ -1511,6 +1511,15 @@ exports are checked, and the linker uses the same symbol assignments and
 object order at every job count. The pack receipt records the compiler
 limit used for the selected batches.
 
+Use `--object-checkpoint "$private_objects"` to save each verified
+object during compilation. After an interruption, run the same packing
+command with the same seed and trace results, checkpoint directory and
+unpublished output path. The packer checks the compiler, selection and
+ABI, then verifies each saved object's digest, captured source and
+symbol mapping before reusing it. It compiles the missing batches and
+reports both the compiled and reused object counts. The checkpoint
+directory is locked for the duration of object preparation and linking.
+
 The packer consumes the retained fixture reports and groups 152
 records. The compiler-disabled reopen matches the seed screenshot
 and hits all 152 records. A separate reopen of the full frozen
@@ -1572,7 +1581,9 @@ The report includes each stage's receipts, the packed library
 digest, and the image comparison. A successful report sets
 `complete` and identifies the verified `grouped_cache` directory.
 Use `--pack-jobs 4` to raise the compiler limit for the packing stage of
-this workflow.
+this workflow. Pass `--object-checkpoint` to retain batch objects for
+packing directly from its seed and trace receipts if the workflow stops
+during packing.
 
 The small replay fixture completes all four stages, groups two
 libraries and preserves all 152 cache records. Both reopens match

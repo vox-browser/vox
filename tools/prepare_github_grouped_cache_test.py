@@ -16,7 +16,8 @@ class GroupedCacheWorkflowTests(unittest.TestCase):
         self.addCleanup(scratch.cleanup)
         self.root = Path(scratch.name)
         self.options = SimpleNamespace(output=self.root / 'results', cache_work=self.root / 'cache',
-                                       diff_tool=self.root / 'pixel_diff', pack_jobs=2)
+                                       diff_tool=self.root / 'pixel_diff', pack_jobs=2,
+                                       object_checkpoint=self.root / 'pack-objects')
 
     def test_reopen_requires_the_packed_library(self):
         with patch.object(workflow.benchmark, 'compare') as compare:
@@ -51,9 +52,10 @@ class GroupedCacheWorkflowTests(unittest.TestCase):
                 complete=True, production_receipt=receipt, inputs={str(binary): sha}, attempts=[{'valid': True}]))
             return 0
 
-        def pack(seed, trace, output, *, jobs):
+        def pack(seed, trace, output, *, jobs, object_checkpoint):
             self.assertTrue(seed.exists() and trace.exists())
             self.assertEqual(jobs, self.options.pack_jobs)
+            self.assertEqual(object_checkpoint, self.options.object_checkpoint)
             image = output / 'abi' / 'group.dylib'
             image.parent.mkdir(parents=True)
             image.write_bytes(b'grouped image')

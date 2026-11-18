@@ -232,6 +232,39 @@ class PackNativeCacheTests(unittest.TestCase):
         self.assertFalse(self.output.exists())
         self.assertEqual(list(self.root.glob(".libjs-pack-*")), [])
 
+    def test_checkpoint_reuses_objects_from_interrupted_packing(self):
+        selected = sorted(self.build_captured_library(value)[0] for value in (4, 5))
+        checkpoint = self.root / "checkpoint"
+
+        def interrupted(input_c, mapping, name):
+            if name == selected[1]:
+                raise subprocess.CalledProcessError(1, ["clang", str(input_c)])
+            return compile_captured_batch(input_c, mapping, name)
+
+        with patch("libjs_pack_native_cache.compile_captured_batch", side_effect=interrupted):
+            with self.assertRaises(subprocess.CalledProcessError):
+                pack_cache(self.cache, self.abi, None, None, selected, self.output,
+                           captures=self.root / "captures", object_checkpoint=checkpoint)
+        self.assertFalse(self.output.exists())
+        self.assertEqual(list(self.root.glob(".libjs-pack-*")), [])
+        saved = json.loads((checkpoint / "objects.json").read_bytes())["verified_objects"]
+        self.assertEqual(set(saved), {selected[0]})
+
+        with patch("libjs_pack_native_cache.compile_captured_batch", wraps=compile_captured_batch) as compile_batch:
+            report = pack_cache(self.cache, self.abi, None, None, selected, self.output,
+                                captures=self.root / "captures", jobs=2, object_checkpoint=checkpoint)
+        compile_batch.assert_called_once()
+        self.assertEqual(compile_batch.call_args.args[-1], selected[1])
+        self.assertEqual((report["compiled_objects"], report["reused_objects"]), (1, 1))
+
+        with (checkpoint / saved[selected[0]]["object"]).open("ab") as obj:
+            obj.write(b"changed")
+        another_output = self.root / "another-output"
+        with self.assertRaisesRegex(ValueError, "Checkpoint object or captured C digest mismatch"):
+            pack_cache(self.cache, self.abi, None, None, selected, another_output,
+                       captures=self.root / "captures", object_checkpoint=checkpoint)
+        self.assertFalse(another_output.exists())
+
     def test_rejects_mutated_captured_source(self):
         first, source = self.build_captured_library(4)
         second, _ = self.build_captured_library(5)
@@ -277,7 +310,8 @@ class PackNativeCacheTests(unittest.TestCase):
         tool = Path(__file__).with_name("libjs_pack_native_cache.py")
         report = json.loads(subprocess.check_output([
             sys.executable, str(tool), "--seed-results", str(seed), "--trace-results", str(trace),
-            "--jobs", "2", "--output", str(self.output),
+            "--jobs", "2", "--object-checkpoint", str(self.root / "checkpoint"),
+            "--output", str(self.output),
         ]))
         self.assertEqual(report["benchmark"]["seed"]["sha256"], digest(seed))
         self.assertEqual(report["benchmark"]["trace"]["sha256"], digest(trace))

@@ -205,7 +205,7 @@ def run_workflow(args, output, cache_work, checkpoint, packed_checkpoint):
             pins = seeded['inputs']
             verify_inputs(pins)
             packed = pack_from_benchmark(output / 'seed/results.json', output / 'trace/results.json',
-                                         grouped, jobs=args.pack_jobs)
+                                         grouped, jobs=args.pack_jobs, object_checkpoint=args.object_checkpoint)
             benchmark.save(output / 'pack.json', packed)
             report['stages']['pack'] = str(output / 'pack.json')
             image = grouped / packed['abi'] / packed['library']
@@ -240,6 +240,7 @@ def main():
     checkpoint.add_argument('--resume-seed', type=Path, help='results.json from an interrupted seed in --cache-work')
     checkpoint.add_argument('--verify-packed', type=Path, help='results.json from completed packing in --cache-work')
     parser.add_argument('--pack-jobs', type=int, default=1, help='maximum concurrent C compilers while packing')
+    parser.add_argument('--object-checkpoint', type=Path, help='private directory for saving and reusing packed objects')
     parser.add_argument('--memory-guard-registry', type=Path, required=True)
     parser.add_argument('--adblock-assets', type=Path)
     parser.add_argument('--raster-parity-options', action='store_true')
@@ -250,6 +251,8 @@ def main():
         parser.error('Require a settle period below the browser timeout')
     if args.pack_jobs < 1 or (args.verify_packed and args.pack_jobs != 1):
         parser.error('--pack-jobs requires a positive compiler count and a packing run')
+    if args.verify_packed and args.object_checkpoint:
+        parser.error('--object-checkpoint requires a packing run')
     try:
         return run(args)
     except (OSError, ValueError) as error:

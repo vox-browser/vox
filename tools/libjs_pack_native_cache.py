@@ -4,6 +4,8 @@
 import argparse
 from collections import defaultdict
 from concurrent.futures import ThreadPoolExecutor, as_completed
+from contextlib import contextmanager
+import fcntl
 import hashlib
 import json
 from pathlib import Path
@@ -128,30 +130,58 @@ def compile_captured_batch(input_c, mapping, name):
     return obj
 
 
-def compile_captured_batches(batches, jobs):
+def compile_captured_batches(batches, jobs, retain):
+    if not batches:
+        return
     if jobs == 1:
-        return [compile_captured_batch(*batch) for batch in batches]
+        for batch in batches:
+            retain(batch, compile_captured_batch(*batch))
+        return
     with ThreadPoolExecutor(max_workers=min(jobs, len(batches))) as pool:
-        futures = [pool.submit(compile_captured_batch, *batch) for batch in batches]
+        futures = {pool.submit(compile_captured_batch, *batch): batch for batch in batches}
         try:
             for future in as_completed(futures):
-                future.result()
+                retain(futures[future], future.result())
         except BaseException:
             for future in futures:
                 future.cancel()
             raise
-        # The linker takes the same ordered inputs regardless of compile completion order.
-        return [future.result() for future in futures]
 
 
-def link_captured_group(source, captures, selected, libraries, symbols, work, compiler_batches, jobs):
+def object_compiler_inputs():
+    compiler = Path(subprocess.check_output(["/usr/bin/xcrun", "--find", "clang"], text=True).strip())
+    return dict(flags=[*C_FLAGS, "-fPIC"], compiler_sha256=digest(compiler),
+                version=subprocess.check_output([CLANG, "--version"], text=True))
+
+
+@contextmanager
+def locked_object_checkpoint(directory, abi, selected):
+    if directory is None:
+        yield None
+        return
+    directory.mkdir(parents=True, mode=0o700, exist_ok=True)
+    with (directory / ".lock").open("a") as lock:
+        fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        path = directory / "objects.json"
+        expected = dict(abi=abi, selected=sorted(selected), compiler=object_compiler_inputs())
+        receipt = json.loads(path.read_bytes()) if path.is_file() else dict(expected, verified_objects={})
+        if any(receipt.get(key) != value for key, value in expected.items()):
+            raise ValueError("Object checkpoint has different ABI, library selection or compiler inputs")
+        if set(receipt["verified_objects"]) - selected:
+            raise ValueError("Object checkpoint contains unselected libraries")
+        yield receipt
+
+
+def link_captured_group(source, captures, selected, libraries, symbols, work, compiler_batches, jobs,
+                        checkpoint, receipt):
     exported = {name: exports(source / name) for name in sorted(selected)}
     # Keep the renamed numbers outside every original range. The preprocessor
     # then expands each definition once, without another rename matching it.
     next_symbol = max(max(numbers) for numbers in exported.values()) + 1
     if next_symbol + sum(map(len, exported.values())) - 1 > 1_000_000:
         raise ValueError("Grouped symbols would exceed the native cache record limit")
-    remaps, batches, expected = {}, [], set()
+    remaps, batches, inputs, source_hashes, expected = {}, [], [], {}, set()
+    saved = receipt["verified_objects"] if receipt is not None else {}
     for index, (name, original) in enumerate(exported.items()):
         if not symbols[name] <= original:
             raise ValueError(f"Capture and cache library differ: {name}")
@@ -160,20 +190,51 @@ def link_captured_group(source, captures, selected, libraries, symbols, work, co
                 library_sha256=libraries[name], source_sha256=source_sha):
             raise ValueError(f"Compiler capture differs from the seed results: {name}")
         input_c = work / f"batch-{index}.c"
-        shutil.copyfile(captured, input_c)
-        if digest(input_c) != source_sha:
-            raise ValueError(f"Captured C digest mismatch: {name}")
         mapping = {number: next_symbol + offset for offset, number in enumerate(sorted(original))}
         next_symbol += len(mapping)
         remaps[name] = mapping
-        batches.append((input_c, mapping, name))
+        obj = input_c.with_suffix(".o")
+        inputs.append(obj)
+        source_hashes[name] = source_sha
+        if name in saved:
+            row = saved[name]
+            if (row["object"] != obj.name or row["source_sha256"] != source_sha
+                    or row["original_symbols"] != sorted(original)
+                    or row["first_remapped_symbol"] != min(mapping.values())):
+                raise ValueError(f"Checkpoint object inputs changed: {name}")
+            shutil.copyfile(checkpoint / obj.name, obj)
+            if digest(captured) != source_sha or digest(obj) != row["object_sha256"]:
+                raise ValueError(f"Checkpoint object or captured C digest mismatch: {name}")
+            if exports(obj) != set(mapping.values()):
+                raise ValueError(f"Checkpoint object exports differ: {name}")
+        else:
+            shutil.copyfile(captured, input_c)
+            if digest(input_c) != source_sha:
+                raise ValueError(f"Captured C digest mismatch: {name}")
+            batches.append((input_c, mapping, name))
         expected.update(mapping.values())
-    inputs = compile_captured_batches(batches, jobs)
-    return link_objects(work, inputs, expected), remaps
+
+    def retain(batch, obj):
+        if checkpoint is None:
+            return
+        _, mapping, name = batch
+        saved_object = checkpoint / obj.name
+        shutil.copyfile(obj, saved_object)
+        saved[name] = dict(object=obj.name, object_sha256=digest(saved_object),
+                           source_sha256=source_hashes[name], original_symbols=sorted(mapping),
+                           first_remapped_symbol=min(mapping.values()))
+        temporary = checkpoint / "objects.json.tmp"
+        temporary.write_text(json.dumps(receipt, indent=2) + "\n")
+        temporary.replace(checkpoint / "objects.json")
+
+    compile_captured_batches(batches, jobs, retain)
+    # The linker takes the same ordered inputs regardless of compile completion order.
+    return link_objects(work, inputs, expected), remaps, len(batches)
 
 
 def pack_cache(cache, abi, objects, receipt_path, libraries_to_group, output, *,
-               captures=None, trace=None, trace_pid=None, cache_pins=None, compiler_batches=None, jobs=1):
+               captures=None, trace=None, trace_pid=None, cache_pins=None, compiler_batches=None, jobs=1,
+               object_checkpoint=None):
     if sys.platform != "darwin":
         raise ValueError("Native cache grouping requires macOS")
     if type(jobs) is not int or jobs < 1 or (jobs != 1 and captures is None):
@@ -184,6 +245,12 @@ def pack_cache(cache, abi, objects, receipt_path, libraries_to_group, output, *,
         raise ValueError("Choose an output outside the source cache")
     if output.exists() or output.is_symlink():
         raise FileExistsError(f"Output already exists: {output}")
+    if object_checkpoint is not None:
+        object_checkpoint = object_checkpoint.resolve()
+        if (captures is None or object_checkpoint.is_relative_to(cache.resolve())
+                or object_checkpoint.is_relative_to(output.resolve())
+                or output.resolve().is_relative_to(object_checkpoint)):
+            raise ValueError("Use a separate object checkpoint directory with captured C batches")
     source = cache / abi
     trace_receipt = None
     if trace is not None:
@@ -216,8 +283,9 @@ def pack_cache(cache, abi, objects, receipt_path, libraries_to_group, output, *,
         if captures is None:
             image = link_group(source, objects, receipt, selected, libraries, symbols, work)
         else:
-            image, remaps = link_captured_group(source, captures, selected, libraries, symbols, work,
-                                                compiler_batches, jobs)
+            with locked_object_checkpoint(object_checkpoint, abi, selected) as checkpoint_receipt:
+                image, remaps, compiled = link_captured_group(source, captures, selected, libraries, symbols, work,
+                    compiler_batches, jobs, object_checkpoint, checkpoint_receipt)
         sha = digest(image)
         grouped = sha + ".dylib"
         image.rename(stage / grouped)
@@ -257,7 +325,8 @@ def pack_cache(cache, abi, objects, receipt_path, libraries_to_group, output, *,
                   libraries=len(libraries) - len(selected) + 1,
                   group_libraries=sorted(selected), group_sha256=sha, library=grouped)
     if captures is not None:
-        result["compiler_jobs"] = min(jobs, len(selected))
+        result.update(compiler_jobs=min(jobs, compiled), compiled_objects=compiled,
+                      reused_objects=len(selected) - compiled)
     if trace_receipt is not None:
         result["trace"] = trace_receipt
     return result
@@ -271,7 +340,7 @@ def benchmark_results(path):
     return report, dict(path=str(path.resolve()), sha256=hashlib.sha256(raw).hexdigest())
 
 
-def pack_from_benchmark(seed_results, trace_results, output, trace_pid=None, *, jobs=1):
+def pack_from_benchmark(seed_results, trace_results, output, trace_pid=None, *, jobs=1, object_checkpoint=None):
     seed, seed_input = benchmark_results(seed_results)
     traced, trace_input = benchmark_results(trace_results)
     if seed.get("prepare_native_cache") is not True or traced.get("trace_native_libraries") is not True:
@@ -303,7 +372,8 @@ def pack_from_benchmark(seed_results, trace_results, output, trace_pid=None, *, 
         raise ValueError("Loader log differs from the trace results")
     pins = {Path(path).name: sha for path, sha in traced["inputs"].items() if Path(path).parent == source}
     result = pack_cache(cache, abi, None, None, selected, output, captures=Path(captured["directory"]),
-                        cache_pins=pins, compiler_batches=captured["batches"], jobs=jobs)
+                        cache_pins=pins, compiler_batches=captured["batches"], jobs=jobs,
+                        object_checkpoint=object_checkpoint)
     result.update(trace=log_input, benchmark=dict(seed=seed_input, trace=trace_input))
     return result
 
@@ -323,6 +393,7 @@ def main():
     parser.add_argument("--trace-pid", type=int, help="process to select when the trace covers multiple launches")
     parser.add_argument("--output", required=True, type=Path, help="new private cache root")
     parser.add_argument("--jobs", type=int, default=1, help="maximum concurrent captured C compilers (default 1)")
+    parser.add_argument("--object-checkpoint", type=Path, help="private directory for saving and reusing compiled objects")
     args = parser.parse_args()
     benchmark = args.seed_results is not None or args.trace_results is not None
     if args.jobs < 1 or (args.jobs != 1 and not (benchmark or args.captures)):
@@ -344,10 +415,11 @@ def main():
     try:
         if benchmark:
             receipt = pack_from_benchmark(args.seed_results, args.trace_results, args.output, args.trace_pid,
-                                          jobs=args.jobs)
+                                          jobs=args.jobs, object_checkpoint=args.object_checkpoint)
         else:
             receipt = pack_cache(args.cache, args.abi, args.objects, args.receipt, args.library, args.output,
-                                 captures=args.captures, trace=args.trace, trace_pid=args.trace_pid, jobs=args.jobs)
+                                 captures=args.captures, trace=args.trace, trace_pid=args.trace_pid, jobs=args.jobs,
+                                 object_checkpoint=args.object_checkpoint)
     except (OSError, ValueError, KeyError, TypeError, subprocess.CalledProcessError) as error:
         print(f"libjs_pack_native_cache: {error}", file=sys.stderr)
         return 1
