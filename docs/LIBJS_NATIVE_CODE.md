@@ -636,3 +636,54 @@ interpreter. This live check establishes functional cache reuse and rendering
 equality between LibJS modes for the observed responses. Raw receipts remain
 local under
 `docs/performance/libjs-github-browser-20261116/libjs-github-operand-after-20261118/`.
+
+### Published operand decoder on the frozen GitHub page
+
+Production receipt `20261118-035602-2025fd74` pins executable SHA-256
+`296096c89d6b92677139a110f2004bfe8df20d6ebc70db759960be3046c4e829`.
+Its sealed source manifest includes the exact `ff9d28415` decoder. The
+earlier production attempt stops when V package membership changes during
+parsing. Both receipts are retained.
+
+The preparation capture fulfills all 81 modules and matches the pinned
+1024×768 Vox image. The audit independently rederives **13,915 keys** over
+109 generated C units. All canonical function bodies match the prior corpus.
+The new cache ABI is
+`857d37bf4f2f69da0f581b6094ba9c3456b3b7a09045cfdca817c386c8034ab6`.
+Each unit is freshly compiled with Clang `-O2`. Hashes verify the finished
+libraries, and a separate fresh diagnostic records 466,831 native entries,
+2,942 hits, zero misses and zero compiler calls.
+
+Seven alternating fresh-process pairs use this optimized cache, with
+diagnostics disabled. Retired instructions cover exclusive Vox coalition
+creation through native PNG encoding, including startup and window setup.
+The endpoint precedes PNG write, audit and shutdown.
+
+| Pair | Interpreter | Cached native |
+| ---: | ---: | ---: |
+| 1 | 75,522,988,899 | 76,134,219,106 |
+| 2 | 66,353,584,412 | 76,053,662,540 |
+| 3 | 66,187,459,334 | 75,743,640,085 |
+| 4 | 66,229,010,898 | 74,574,455,335 |
+| 5 | 75,062,865,386 | 76,068,375,045 |
+| 6 | 73,795,896,319 | 76,200,196,259 |
+| 7 | 66,315,979,785 | 66,856,594,986 |
+| Median | **66,353,584,412** | **76,053,662,540** |
+
+Cached native uses **14.62% more instructions** by the ratio of medians
+and more instructions in every pair. The median paired ratio is 1.03258
+and the highest-native/lowest-interpreter ratio is 1.15128. Relative to the
+preceding production cohort, the native median is 2.00% higher and the
+interpreter median is 0.53% lower. The builds differ in 31 sealed inputs
+and the current host's one-minute load ranges from 9.18 to 25.40, so the
+isolated VM probe remains the per-change instruction measurement.
+
+All 14 captures match the pinned Vox PNG and the complete frozen repository
+audit. Each fulfills the 81 modules using LibJS, with JSC uninitialized.
+The three compatibility-script bodies match the archive, and native library
+and cache hashes stay fixed. The cached runs record 2,947–2,948 hits and zero
+misses, compiler calls, compilations, pending or invalid entries. Browser,
+harness and guard exits are zero. The 12-GiB guard adopts all 28 recorded
+processes and reports 137.561 seconds and 6,990,544,896 sampled peak bytes.
+The commands, images, input hashes and raw attempts stay local under
+`docs/performance/libjs-github-browser-20261116/libjs-github-operand-after-20261118/`.
