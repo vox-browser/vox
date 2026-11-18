@@ -3,6 +3,7 @@ module libjsdom
 import dom
 import libjs
 import platform
+import processmetrics
 
 struct Listener {
 	target    &dom.EventTarget
@@ -226,6 +227,8 @@ fn (mut host Host) event_callback(target &dom.EventTarget, type_ string, callbac
 		if permitted := host.hooks.can_run_callback {
 			if !permitted() { return dom.js_undefined() }
 		}
+		javascript_stage := processmetrics.begin_javascript_instruction_stage()
+		defer { javascript_stage.finish() }
 		persistent := platform.enter_persistent()
 		defer { platform.leave_persistent(persistent) }
 		if before := host.hooks.before_callback { before() }

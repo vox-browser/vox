@@ -6,6 +6,7 @@ import fetch
 import html
 import libjs
 import platform
+import processmetrics
 
 struct LibJSModuleImport {
 	referrer libjs.ImportedModuleReferrer
@@ -139,6 +140,8 @@ fn (mut host ModuleHost) consume_libjs_script(operation &BrowserModuleOperation,
 fn (mut host ModuleHost) parse_libjs_module(key string,code string,starting_line int) !&libjs.SourceTextModule {
 	mut runtime := unsafe { &Runtime(host.runtime) }
 	if cached := runtime.libjs_modules_[key] { return cached }
+	frontend_stage := processmetrics.begin_thread_instruction_substage('libjs_module_frontend')
+	defer { frontend_stage.finish() }
 	parsed := runtime.prepare_libjs_frontend(code, .module, libjs.ParseOptions{max_recursion_depth:256})
 	if parsed.has_errors() { return libjs.ModuleParseError{diagnostics: parsed.diagnostics} }
 	mut created := &libjs.SourceTextModule{module_realm:runtime.realm, module_filename:key,
@@ -217,6 +220,8 @@ fn (mut host ModuleHost) drain_libjs_modules() {
 
 fn (mut host ModuleHost) evaluate_libjs_execution(mut execution BrowserModuleExecution) {
 	mut module_record := execution.libjs_module or { return }
+	javascript_stage := processmetrics.begin_javascript_instruction_stage()
+	defer { javascript_stage.finish() }
 	mut vm := unsafe { &libjs.VM(host.runtime.agent_vm) }
 	host.runtime.prepare_html_script()
 	previous := if document := host.settings.responsible_document() { document.current_script() } else { none }
@@ -225,7 +230,13 @@ fn (mut host ModuleHost) evaluate_libjs_execution(mut execution BrowserModuleExe
 		if mut document := host.settings.responsible_document() { document.set_current_script(previous) }
 		host.runtime.clean_up_html_script()
 	}
-	module_record.link(mut vm) or { host.finish_script(mut execution,libjs_exception_message(err));return }
+	link_stage := processmetrics.begin_thread_instruction_substage('libjs_module_link')
+	module_record.link(mut vm) or {
+		link_stage.finish()
+		host.finish_script(mut execution,libjs_exception_message(err))
+		return
+	}
+	link_stage.finish()
 	execution.evaluated=true
 	result := module_record.evaluate_with_limits(mut vm, host.runtime.libjs_execution_limits()) or { host.finish_script(mut execution,libjs_exception_message(err));return }
 	message := if result.promise.state==.rejected { libjs_exception_message(libjs.throw_completion(result.promise.result)) } else { '' }
