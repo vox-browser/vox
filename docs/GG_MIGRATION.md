@@ -6943,3 +6943,64 @@ shared rebuild. The published captures also verified the earlier
 [PNG scheduling change](#more-png-compression-bands-for-retina-captures).
 Each had six valid IDAT chunks and matched the corresponding
 six-band encoder benchmark PNG byte for byte.
+
+### Parallel CPU filter crop and integer offset copies
+
+The SVG filter fallback resolves the visible pixel rectangle once.
+It uses the existing float pixel-center expression to preserve
+fractional edges and rounding at large device origins. Crops copy
+the retained rectangle into a transparent result. Integer filter
+offsets and placement of blur results use the same pitched copy.
+The scheduler borrows disjoint output rows when the actual copy
+covers at least 4 MiB. Whole rows combine into a contiguous transfer.
+`VOX_SERIAL_CPU_RASTER=1` keeps the copy on the caller.
+
+Matched single-unit V C `-prod -gc none` harnesses timed each
+operation from entry through its return, including output allocation.
+Source construction, output hashing and release were outside the
+timer. Seven rotating groups used fresh processes per mode. All 189
+exits and the guard exit were zero. Complete output hashes matched
+for all modes in each case. Warm values are medians of each process's
+post-first-call median. One-minute load ranged from 6.10 to 6.42 on
+18 logical CPUs.
+
+| Operation | First before / forced serial / default, µs | Warm before / forced serial / default, µs | Default faster pairs, first / warm |
+| --- | ---: | ---: | ---: |
+| 67×43 inset crop | 4.083 / 1.416 / 1.417 | 2.625 / 0.167 / 0.167 | 7/7 / 7/7 |
+| 67×43 integer offset | 1.666 / 1.417 / 1.292 | 0.333 / 0.208 / 0.208 | 7/7 / 7/7 |
+| 1024×768 inset crop | 517.250 / 237.833 / 234.917 | 374.521 / 76.146 / 76.188 | 7/7 / 7/7 |
+| 2051×1537 inset crop | 2255.791 / 1003.709 / 626.208 | 1422.917 / 363.855 / 182.708 | 7/7 / 7/7 |
+| 2051×1537 narrow crop | 3559.292 / 766.500 / 767.834 | 2886.500 / 104.417 / 108.854 | 7/7 / 7/7 |
+| 2051×1537 empty crop | 3849.083 / 4.667 / 5.042 | 3048.313 / 49.521 / 50.563 | 7/7 / 7/7 |
+| 3840×2160 full crop | 5497.417 / 2251.750 / 2269.292 | 3653.187 / 652.417 / 455.646 | 7/7 / 7/7 |
+| 1920×1080 integer offset | 606.458 / 610.459 / 617.958 | 214.313 / 203.688 / 118.542 | 5/7 / 7/7 |
+| 3840×2160 integer offset | 2478.541 / 2407.208 / 2325.166 | 869.813 / 913.834 / 459.208 | 5/7 / 7/7 |
+
+Integer offsets were −7 pixels horizontally and +13 vertically.
+The 1080p offset's first-call median rose by 11.500 µs. The narrow
+crop's warm improvement came from avoiding the full pixel scan.
+The harness executable hashes were
+`01654b088d88e8f1dc37d13d3ead52c02a665b3048b4b0a90ec63f1df0e832bc`
+and `61e1eb151abcc9e73c87f12975f051bb945ff19d98e2a2334721399f2aaabf23`.
+
+A separate probe saw four distinct threads on a large inset crop,
+a full crop and a large offset. A 1024×768 inset crop, the large
+narrow crop and forced serial dispatched zero batches. The
+2051×1537 public Canvas2D fallback applied an integral SVG offset
+and crop in two four-thread copy batches. Its entire surface
+matched the forced-serial draw byte for byte with SHA-256
+`5a755be8b85e9bd964beea785f65d7fb6f8847c2ef9adaa92cd4c9e8fa12edda`.
+Both final draw processes and their guard exited zero. Focused
+macOS, arm64 Linux, forced serial, ASan/UBSan and ThreadSanitizer
+tests passed. The pinned CPU raster differential suite passed with
+count 2000 and seed 20261106.
+
+The published single-C-unit executable
+`870e280a166afa2249e1f90dcd8fb7cee701e0614f25414dd12004c9f4472077`
+matched the frozen document pixels for Hacker News, GitHub and
+Old Reddit. Fresh sealed replays used private profiles and caches,
+JavaScript, a 1024×768 CSS-pixel viewport, 2× capture and a one-second
+settle. They audited 30, 33 and 25 entries and zero Canvas or SVG
+filter elements. The browser and guard exits were zero. Timings
+cover the filter operations in isolation. Candidate browser
+validation awaits its shared rebuild.

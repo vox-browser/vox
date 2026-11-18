@@ -274,19 +274,13 @@ fn general_blur(image BlurImage, sigma_x f32, sigma_y f32) BlurImage {
 // The part of src at (x, y) inside a width x height transparent image.
 fn general_place(src BlurImage, x int, y int, width int, height int) BlurImage {
 	mut out := BlurImage{[]u8{len: width * height * 4}, width, height}
-	for row in 0 .. src.height {
-		dy := y + row
-		if dy < 0 || dy >= height {
-			continue
-		}
-		left := math_max_int(x, 0)
-		right := if x + src.width < width { x + src.width } else { width }
-		if left >= right {
-			continue
-		}
-		start := (row * src.width + (left - x)) * 4
-		copy(mut out.pixels[(dy * width + left) * 4..(dy * width + right) * 4], src.pixels[start..start +
-			(right - left) * 4])
+	left, top := math.max(x, 0), math.max(y, 0)
+	right, bottom := math.min(x + src.width, width), math.min(y + src.height, height)
+	if left < right && top < bottom {
+		start := ((top - y) * src.width + left - x) * 4
+		destination := (top * width + left) * 4
+		copy_filter_rectangle(src.pixels[start..], mut out.pixels[destination..], src.width * 4,
+			width * 4, (right - left) * 4, bottom - top)
 	}
 	return out
 }
@@ -630,22 +624,38 @@ fn general_svg_graph(source BlurImage, graph SvgFilterGraph, layer IRect, space 
 // Crop with decal tiling: pixels whose centers fall outside the device rect
 // become transparent.
 fn general_crop(image BlurImage, crop Rect, layer IRect) BlurImage {
-	mut out := BlurImage{image.pixels.clone(), image.width, image.height}
-	for y in 0 .. image.height {
-		cy := f32(layer.top + y) + f32(0.5)
-		row_inside := cy >= crop.top && cy < crop.bottom
-		for x in 0 .. image.width {
-			cx := f32(layer.left + x) + f32(0.5)
-			if !row_inside || cx < crop.left || cx >= crop.right {
-				i := (y * image.width + x) * 4
-				out.pixels[i] = 0
-				out.pixels[i + 1] = 0
-				out.pixels[i + 2] = 0
-				out.pixels[i + 3] = 0
-			}
-		}
+	mut out := BlurImage{[]u8{len: image.pixels.len}, image.width, image.height}
+	left := filter_crop_boundary(layer.left, image.width, crop.left)
+	right := filter_crop_boundary(layer.left, image.width, crop.right)
+	top := filter_crop_boundary(layer.top, image.height, crop.top)
+	bottom := filter_crop_boundary(layer.top, image.height, crop.bottom)
+	if left < right && top < bottom {
+		start := (top * image.width + left) * 4
+		pitch := image.width * 4
+		copy_filter_rectangle(image.pixels[start..], mut out.pixels[start..], pitch, pitch,
+			(right - left) * 4, bottom - top)
+	}
+	pixel_bytes := image.width * image.height * 4
+	if pixel_bytes < image.pixels.len {
+		copy(mut out.pixels[pixel_bytes..], image.pixels[pixel_bytes..])
 	}
 	return out
+}
+
+// Find the first pixel center on or after an edge. Use the same f32
+// expression as the pixel test, including where neighboring centers round
+// to the same value at large device coordinates.
+fn filter_crop_boundary(origin int, extent int, edge f32) int {
+	mut first, mut end := 0, extent
+	for first < end {
+		mid := first + (end - first) / 2
+		if f32(origin + mid) + f32(0.5) < edge {
+			first = mid + 1
+		} else {
+			end = mid
+		}
+	}
+	return first
 }
 
 // draw_general_canvas_path is the Skia-free fallback for a Canvas2D fill or
