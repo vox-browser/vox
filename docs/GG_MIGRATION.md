@@ -4617,9 +4617,10 @@ the memory guard exited zero. The sampled peak process-tree RSS was
 
 The pinned executable SHA-256 was
 `296096c89d6b92677139a110f2004bfe8df20d6ebc70db759960be3046c4e829`.
-AVIF and adblock helper hashes and the three archive and decoded-pixel
-hashes matched the [earlier references](#archived-browser-eligibility)
-and the [frame-clear input identities](NATIVE_FRAME_CLEAR_BENCHMARK.md#input-identities).
+The archives and decoded pixels matched the
+[earlier eligibility runs](#archived-browser-eligibility), including the
+November 12 GitHub archive. The AVIF and adblock helper hashes matched the
+[frame-clear input identities](NATIVE_FRAME_CLEAR_BENCHMARK.md#input-identities).
 
 The samples below are launch-to-exit milliseconds, rounded to three decimal
 places and ordered by pair. Odd pairs ran the disabled setting first.
