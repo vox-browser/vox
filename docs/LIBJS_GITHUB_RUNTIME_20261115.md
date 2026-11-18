@@ -7895,3 +7895,55 @@ ownership with a native stub. The production type-check passes in
 bundle with the changes is required for the direct document capture and
 the strict post-fix Back replay. Local scripts and receipts are under
 `repository-navigation-5204-r89`.
+
+### Published active document replay
+
+Managed build `20261118-055438-888e0b4d` publishes single-C `-prod`
+executable `9568a08eccc0567b56fa837e6d487bd57a63ec69d31c10b9760c9b5a6b5df757`.
+The sealed inputs match the storage, meta, attribute map and active
+document capture changes. C compilation and the managed headless smoke
+check exit zero. The existing generated-code ABI remains in use.
+
+Hacker News PID 86680 matches the original 30-story content and 2×
+document PNG. Capture and shutdown record six native hits, with zero
+misses, compiler calls and page JavaScriptCore initialization. Its
+guard exits zero in 3.826958584 seconds at 418,480,128 sampled bytes.
+
+GitHub PID 87013 opens the full archived README and returns to the
+exact Brave repository content through toolbar Back. The last audit
+records 3,613 native hits, zero misses or compiler calls, and no
+initialized JavaScriptCore. The standard 120-second window capture is
+interrupted before its PNG and shutdown audit. The memory guard ends
+it at 33.473139333 seconds and 12,889,309,184 sampled peak bytes. The
+guard and its child exit 125 and 137.
+
+The 27-second direct document observation on PID 91166 captures the
+usual live raster policy after native Back. Both repository content
+audits match Brave and the archived README renders before Back. The
+returned audit finds zero progress elements. The browser, controller
+and memory guard exit zero in 29.811995833 guard seconds at
+12,874,825,728 sampled peak bytes. Capture and shutdown report 3,615
+native hits, with zero misses, compiler calls, new compilations,
+invalid or pending entries. Shutdown records 1,682,385 native entries
+and JavaScriptCore stays uninitialized.
+
+The direct 1024×768 PNG differs from the unchanged Brave Back reference
+at 77,950 pixels. The first differing row is y=16. Converting a copy
+of the sRGB PNG to the Brave profile leaves 52,207 differing pixels.
+Both original image hashes remain fixed. An earlier diagnostic with
+the historical raster options reached the Display P3 document frame
+path. It captured during the README transition before Back, so its
+PNG supplies capture-path evidence. The original strict pixel and
+long-window memory gates remain open.
+
+A 36-second whole-window memory observation completes the same native
+round trip on PID 12988. It records exact repository and README content,
+clean shutdown, 3,614 cache hits and zero compiler calls. The guard
+exits zero after 48.092839334 seconds at 12,060,753,920 sampled bytes.
+The browser RSS samples reach 8,703,377,408 bytes on the repository
+before Back, 10,357,620,736 bytes while the README URL is active, and
+11,660,165,120 bytes in the returned repository. The timed memory-map
+probes expire, so these samples establish the growth across phases.
+The window crop differs from Brave at 77,951 pixels and differs from
+the earlier direct document image at 63 pixels. Commands, complete
+guard exits and original PNGs remain local with the other r89 receipts.
