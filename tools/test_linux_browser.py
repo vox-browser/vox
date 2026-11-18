@@ -329,6 +329,7 @@ def check_gg_svg_browser(binary, artifacts, temporary):
     check_gg_svg_non_scaling_strokes(binary, artifacts, temporary)
     check_gg_svg_dashed_strokes(binary, artifacts, temporary)
     check_gg_svg_gradient_fills(binary, artifacts, temporary)
+    check_gg_svg_gradient_strokes(binary, artifacts, temporary)
 
 
 def check_gg_svg_gradient_fills(binary, artifacts, temporary):
@@ -400,6 +401,75 @@ requestAnimationFrame(editGradients);
         documents.append(rows[marker:height - 24])
     assert documents[0] == documents[1], "Cached gradient fills differ from uncached replay"
     print("PASS: GG SVG gradient types, spread, opacity, live resource edits, and viewport edge", flush=True)
+
+
+def check_gg_svg_gradient_strokes(binary, artifacts, temporary):
+    fixture = Path(__file__).resolve().parents[1] / "Tests/Browser/Native/svg-gg-gradient-stroke.html"
+    page = Path(temporary) / fixture.name
+    page.write_text(fixture.read_text() + """
+<script>
+let frames = 0;
+function editStrokes() {
+    if (++frames < 12) {
+        requestAnimationFrame(editStrokes);
+        return;
+    }
+    document.getElementById('line-end').setAttribute('stop-color', '#00ff00');
+    document.getElementById('dashed').setAttribute('stroke-opacity', '.5');
+    document.body.setAttribute('data-stroke-gradient-ready', '1');
+}
+requestAnimationFrame(editStrokes);
+</script>
+""")
+    documents = []
+    for mode, disable_cache in (("cached", "0"), ("uncached", "1")):
+        label = f"{page.stem}-{mode}"
+        screenshot = artifacts / f"{label}.png"
+        screenshot.unlink(missing_ok=True)
+        environment = smoke_environment(Path(temporary) / label)
+        environment.pop("MESA_GL_VERSION_OVERRIDE", None)
+        environment.update(VOX_GG_SVG="1", VOX_GG_SVG_DIAGNOSTICS="1",
+                           VOX_DISABLE_GG_SVG_CACHE=disable_cache,
+                           VOX_CAPTURE_READY_SELECTOR="body[data-stroke-gradient-ready]")
+        log = run_windowed([str(binary), "--enable-javascript", "--window-width=800",
+                            "--window-height=600", "--screenshot-viewport-height=600",
+                            f"--screenshot={screenshot}", str(page)],
+                           env=environment, log_path=artifacts / f"{label}.log")
+        strokes = [line for line in log.splitlines() if " stroke=1" in line and " gradient=" in line]
+        assert any(line.endswith(" gradient=2") for line in strokes), log
+        assert any(" dash=2" in line for line in strokes), log
+        assert any(" non_scaling=1" in line for line in strokes), log
+        assert any("cache=hit bounds=hit" in line for line in strokes) == (mode == "cached"), log
+        for size in ("110x48", "142x10"):
+            misses = [line for line in strokes if f"draw={size} cache=miss" in line]
+            assert len(misses) >= 2, log
+            if mode == "cached":
+                assert len(misses) == 2 and "bounds=hit" in misses[1], log
+
+        _, height, channels, rows = rendered_png_rows(screenshot.read_bytes())
+
+        def pixel(x, y):
+            return tuple(rows[y][x * channels:x * channels + 3])
+
+        marker = next((y for y in range(min(height, 150)) if pixel(4, y) == (52, 183, 134)), None)
+        assert marker is not None, "Missing document marker"
+        top = marker + 8
+        samples = [
+            (100, 20, (55, 200, 0)), (74, 34, (64, 160, 255)),  # stroke over fill
+            (223, 19, (184, 32, 32)), (223, 15, (237, 244, 251)),  # fill over stroke
+            (18, 94, (132, 155, 162)), (26, 94, (255, 255, 255)),  # opacity and dash gap
+            (217, 86, (186, 0, 69)), (248, 86, (98, 0, 157)),
+            (217, 90, (255, 255, 255)),  # transformed gradient and fixed stroke width
+        ]
+        for x, y, expected in samples:
+            actual = pixel(x, top + y)
+            assert all(abs(a - b) <= 2 for a, b in zip(actual, expected)), (x, y, actual, expected)
+        text_pixels = [pixel(x, top + y) for y in range(82, 132) for x in range(302, 353)]
+        assert sum(g > 247 and r < 8 and b < 8 for r, g, b in text_pixels) > 20, "Missing text stroke"
+        assert sum(max(rgb) < 8 for rgb in text_pixels) > 20, "Missing text fill"
+        documents.append(rows[marker:height - 24])
+    assert documents[0] == documents[1], "Cached gradient strokes differ from uncached replay"
+    print("PASS: GG SVG gradient strokes, paint order, dashes, fixed width, and text", flush=True)
 
 
 def check_gg_svg_strokes(binary, artifacts, temporary):

@@ -3962,7 +3962,10 @@ fn uncached_block_box_from_typed_layout_shallow(node &Node, state &LayoutState, 
 		svg_stroke_miterlimit = computed.stroke_miterlimit()
 		svg_fill_opacity = f64(computed.fill_opacity())
 		svg_stroke_opacity = f64(computed.stroke_opacity())
-		if svg_fill_color != '' && svg_stroke_color == '' {
+		// Glyph runs carry solid fill paint. Gradient strokes need the outline.
+		if svg_fill_color != '' && svg_stroke_color == ''
+			&& (svg_stroke_width <= 0
+				|| (svg_stroke_linear_gradient == none && svg_stroke_radial_gradient == none)) {
 			if origin := used.svg_text_paint_origin() {
 				svg_text = chromium_svg_text_glyph_runs(node, computed, origin, to_page)
 				svg_text_content = origin.text

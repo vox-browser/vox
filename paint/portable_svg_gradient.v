@@ -73,55 +73,62 @@ $if vox_gg_svg ? {
 		if state.count == portable_svg_gpu_image_limit || (state.tried && state.canvas == unsafe { nil }) {
 			return false
 		}
-		mut style := painting.SVGGradientPaintStyle{}
-		mut kind := 1
-		mut points := [6]f32{}
-		if linear := command.fill_linear_gradient() {
-			style = linear.gradient
-			points = [f32(linear.start_point.x), f32(linear.start_point.y),
-				f32(linear.end_point.x), f32(linear.end_point.y), 0, 0]!
-		} else if radial := command.fill_radial_gradient() {
-			kind = 2
-			style = radial.gradient
-			points = [f32(radial.start_center.x), f32(radial.start_center.y),
-				f32(radial.start_radius), f32(radial.end_center.x), f32(radial.end_center.y),
-				f32(radial.end_radius)]!
-		} else {
+		gradient := portable_svg_path_gradient(command, false, command.opacity * data.fill_opacity) or {
 			return false
 		}
-		if style.color_space != .srgb || !points.all(math.is_finite(f64(it))) { return false }
-		opacity := f32(clamp(command.opacity * data.fill_opacity, 0.0, 1.0))
-		if opacity == 0 || style.color_stops.len == 0 { return true }
-
+		if math.f32_from_bits(gradient.key.opacity_bits) == 0 || gradient.style.color_stops.len == 0 {
+			return true
+		}
 		cached := portable_gpu_svg_local_bounds(data.path_data)
 		local := cached or {
-			portable_svg_gradient_path_bounds(data.path_data, data.fill_even_odd) or { return false }
+			portable_svg_gpu_path_bounds(data.path_data, data.fill_even_odd) or { return false }
 		}
 		transform := portable_device_transform(multiply_paint_transforms(command.transform,
 			data.path_transform), page_x, page_y, f64(app.ctx.scale))
 		bounds := portable_pixel_bounds(portable_svg_device_bounds(local, transform,
 			app.portable_device_viewport(page_y)))
 		if bounds.is_empty() { return true }
+		return draw_portable_gpu_svg_path(app.ctx.r, data, portable_svg_surface_matrix(transform,
+			bounds), bounds, gg.Color{}, local, cached != none, PortableSVGStroke{}, &gradient)
+	}
 
+	fn portable_svg_path_gradient(command &layout.PaintCommand, stroke bool,
+		opacity f64) ?PortableSVGGradientPaint {
+		mut style := painting.SVGGradientPaintStyle{}
+		mut kind := 1
+		mut points := [6]f32{}
+		linear_style := if stroke { command.stroke_linear_gradient() } else { command.fill_linear_gradient() }
+		if linear := linear_style {
+			style = linear.gradient
+			points = [f32(linear.start_point.x), f32(linear.start_point.y),
+				f32(linear.end_point.x), f32(linear.end_point.y), 0, 0]!
+		} else {
+			radial_style := if stroke { command.stroke_radial_gradient() } else { command.fill_radial_gradient() }
+			radial := radial_style or { return none }
+			kind = 2
+			style = radial.gradient
+			points = [f32(radial.start_center.x), f32(radial.start_center.y),
+				f32(radial.start_radius), f32(radial.end_center.x), f32(radial.end_center.y),
+				f32(radial.end_radius)]!
+		}
+		if style.color_space != .srgb || !points.all(math.is_finite(f64(it))) { return none }
 		affine := style.gradient_transform or { painting.Affine{} }
 		matrix := [f32(affine.a), f32(affine.c), f32(affine.e), f32(affine.b), f32(affine.d),
 			f32(affine.f), 0, 0, 1]!
-		if !matrix.all(math.is_finite(f64(it))) { return false }
-		gradient := PortableSVGGradientPaint{
+		if !matrix.all(math.is_finite(f64(it))) { return none }
+		return PortableSVGGradientPaint{
 			key: PortableSVGGradientKey{
 				kind:         kind
 				tile_mode:    int(style.spread_method)
-				opacity_bits: math.f32_bits(opacity)
+				opacity_bits: math.f32_bits(f32(clamp(opacity, 0.0, 1.0)))
 				points:       points
 				matrix:       matrix
 			}
 			style: style
 		}
-		return draw_portable_gpu_svg_path(app.ctx.r, data, portable_svg_surface_matrix(transform,
-			bounds), bounds, gg.Color{}, local, cached != none, PortableSVGStroke{}, &gradient)
 	}
 
-	fn portable_svg_gradient_path_bounds(data []f32, even_odd bool) ?cpuraster.Rect {
+	fn portable_svg_gpu_path_bounds(data []f32, even_odd bool) ?cpuraster.Rect {
 		if data[0] == 6 && data.len == layout.compatibility_clip_path_segment_stride {
 			// Chromium's packed path can represent a whole ellipse directly.
 			if !data[1..5].all(math.is_finite(f64(it))) || data[3] <= data[1] || data[4] <= data[2] {
@@ -130,5 +137,15 @@ $if vox_gg_svg ? {
 			return cpuraster.Rect{data[1], data[2], data[3], data[4]}
 		}
 		return cpuraster.canvas_path(data, even_odd).bounds()
+	}
+
+	// Non-scaling strokes render geometry in texture coordinates. Map the
+	// paint there too so its gradient still follows the original SVG path.
+	fn portable_svg_non_scaling_gradient_matrix(surface [6]f32, local [9]f32) [9]f32 {
+		m := multiply_paint_transforms(
+			[f64(surface[0]), f64(surface[1]), f64(surface[2]), f64(surface[3]),
+				f64(surface[4]), f64(surface[5])]!,
+			[f64(local[0]), f64(local[3]), f64(local[1]), f64(local[4]), f64(local[2]), f64(local[5])]!)
+		return [f32(m[0]), f32(m[2]), f32(m[4]), f32(m[1]), f32(m[3]), f32(m[5]), 0, 0, 1]!
 	}
 }

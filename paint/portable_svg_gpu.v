@@ -244,7 +244,11 @@ $if vox_gg_svg ? {
 			path.tile_mode = gradient.key.tile_mode
 			path.opacity = math.f32_from_bits(gradient.key.opacity_bits)
 			path.gradient_points = gradient.key.points
-			path.gradient_matrix = gradient.key.matrix
+			path.gradient_matrix = if key.stroke.non_scaling {
+				portable_svg_non_scaling_gradient_matrix(matrix, gradient.key.matrix)
+			} else {
+				gradient.key.matrix
+			}
 			path.stops = stops.data
 			path.stop_count = stops.len / 5
 		}
@@ -264,12 +268,14 @@ $if vox_gg_svg ? {
 	}
 
 	fn (app &BrowserApp) portable_non_scaling_stroke_fringe(command &layout.PaintCommand) f32 {
-		if !portable_svg_gpu_enabled || command.kind != 'draw_svg_path'
-			|| command.stroke_color == '' || command.stroke_width <= 0 {
+		if !portable_svg_gpu_enabled || command.kind != 'draw_svg_path' || command.stroke_width <= 0 {
 			return 0
 		}
 		data := command.svg_data
-		if data == unsafe { nil } || !data.non_scaling_stroke { return 0 }
+		if data == unsafe { nil } || !data.non_scaling_stroke
+			|| (command.stroke_color == '' && data.svg_gradient_data == none) {
+			return 0
+		}
 		// Layout's visual bounds are in transformed CSS pixels. The stroke's
 		// outset stays in device pixels until converted for viewport culling.
 		pad := portable_svg_stroke_outset(data, f32(command.stroke_width), f32(data.stroke_miterlimit))
@@ -279,11 +285,9 @@ $if vox_gg_svg ? {
 	fn (mut app BrowserApp) draw_portable_gpu_svg_stroke(command &layout.PaintCommand,
 		data layout.PaintSVGPathData, page_x f32, page_y f32) bool {
 		if !portable_svg_gpu_enabled || app.paint_effect_depth != 0 || app.paint_svg_mask_depth != 0
-			|| command.stroke_color == '' || command.stroke_width <= 0
+			|| (command.stroke_color == '' && data.svg_gradient_data == none) || command.stroke_width <= 0
 			|| data.path_data.len < layout.compatibility_clip_path_segment_stride
-			|| data.path_data[0] == 6
-			|| data.stroke_pattern != none || command.stroke_linear_gradient() != none
-			|| command.stroke_radial_gradient() != none {
+			|| data.stroke_pattern != none {
 			return false
 		}
 		dash_count := data.stroke_dasharray.len
@@ -300,11 +304,24 @@ $if vox_gg_svg ? {
 		if !(width > 0) || math.is_inf(f64(width), 0) || math.is_inf(f64(miter), 0) {
 			return false
 		}
-		color := app.paint_colors.color_with_retained(command.stroke_color,
-			command.opacity * data.stroke_opacity, command.retained_svg_stroke_color())
-		if color.a == 0 { return true }
+		opacity := command.opacity * data.stroke_opacity
+		mut color := gg.Color{}
+		gradient := if command.stroke_color == '' {
+			brush := portable_svg_path_gradient(command, true, opacity) or { return false }
+			if math.f32_from_bits(brush.key.opacity_bits) == 0 || brush.style.color_stops.len == 0 {
+				return true
+			}
+			&brush
+		} else {
+			color = app.paint_colors.color_with_retained(command.stroke_color, opacity,
+				command.retained_svg_stroke_color())
+			if color.a == 0 { return true }
+			unsafe { nil }
+		}
 		cached := portable_gpu_svg_local_bounds(data.path_data)
-		local := cached or { cpuraster.canvas_path(data.path_data, false).bounds() or { return false } }
+		local := cached or {
+			portable_svg_gpu_path_bounds(data.path_data, false) or { return false }
+		}
 		transform := portable_device_transform(multiply_paint_transforms(command.transform,
 			data.path_transform), page_x, page_y, f64(app.ctx.scale))
 		pad := portable_svg_stroke_outset(&data, width, miter)
@@ -330,7 +347,7 @@ $if vox_gg_svg ? {
 			dash_offset_bits: if dash_count > 0 { math.f64_bits(data.stroke_dashoffset) } else { u64(0) }
 		}
 		return draw_portable_gpu_svg_path(app.ctx.r, data, portable_svg_surface_matrix(transform, bounds),
-			bounds, color, local, cached != none, stroke, unsafe { nil })
+			bounds, color, local, cached != none, stroke, gradient)
 	}
 
 	fn draw_portable_gpu_svg_path(renderer &render.Context, data layout.PaintSVGPathData,

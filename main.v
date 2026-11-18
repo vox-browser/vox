@@ -7438,13 +7438,15 @@ fn (mut app BrowserApp) draw_command(source_command &layout.PaintCommand, page_x
 				if !filled {
 					filled = app.draw_portable_solid_svg_fill(command, svg_data, page_x, page_y)
 				}
-				if filled && (command.stroke_color == '' || command.stroke_width <= 0) { return }
 			}
 			$if windows && vox_gg_svg ? {
 				if !filled && portable_svg_gpu_enabled {
 					filled = app.draw_portable_solid_svg_fill(command, svg_data, page_x, page_y)
 				}
-				if filled && (command.stroke_color == '' || command.stroke_width <= 0) { return }
+			}
+			if filled && (stroked || command.stroke_width <= 0
+				|| (command.stroke_color == '' && svg_data.svg_gradient_data == none)) {
+				return
 			}
 			$if vox_gg_svg ? {
 				if !svg_data.stroke_first && (filled || command.color == '') {
@@ -7452,6 +7454,7 @@ fn (mut app BrowserApp) draw_command(source_command &layout.PaintCommand, page_x
 				}
 				if stroked && (filled || command.color == '') { return }
 			}
+			if filled && command.stroke_color == '' { return }
 			input_polygons := if svg_data.path_polygons.len > 0 {
 				svg_data.path_polygons
 			} else {
