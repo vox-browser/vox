@@ -1041,3 +1041,39 @@ above apply to the standalone call loops. Frozen-page validation of this
 change awaits a publication containing it. Exact counts, generated C
 differences, artifact hashes and guard receipts remain local under
 `docs/performance/libjs-github-browser-20261116/libjs-github-inline-workspace-20261118/`.
+
+### Published predecessor for the workspace comparison
+
+Seven alternating interpreter and cached-native pairs on `5d72f614…1660`
+count from exclusive Vox coalition creation through native PNG encoding.
+Each fresh process uses the standard 1024×768 frozen capture, the pinned
+Vox reference, the same script policy and the existing optimized cache.
+All 14 match the image and complete audit, fulfill all 81 modules with
+JSC uninitialized, and verify the three served compatibility replacements.
+The browser and driver exits are zero and the guard adopts all 28 browser
+and helper processes. Native visits record 2,943–2,950 hits with zero
+misses or compiler calls.
+
+The interpreter median is **60,644,763,870** instructions. The cached-native
+median is **69,901,146,183**, 15.26% higher, and native uses fewer instructions
+in one pair. Across the seven pairs the median native-minus-interpreter
+difference is 9.50 billion coalition instructions. The median difference
+through first paint is 29.38 million root-process instructions. The median
+difference between the root's frame-preparation and completion markers is
+5.85 billion. Those intervals include other root-process threads.
+
+A separate native diagnostic records 267,537 argument workspace calls
+and 484,025 native entries while reproducing the same image and audit.
+The corresponding interpreter and native stack captures contain 161 and
+696 main-thread samples, respectively. Inlined code and unequal sample
+coverage prevent isolating the cost of the workspace from this profile.
+
+Build attempt `20261118-064618-79a6e376` seals the exact workspace source
+from `58bf9f099`. Its generated browser C allocates the eight slots inline,
+explicitly initializes them to undefined, and clears them by indexed store.
+The 17 cache ABI inputs match the predecessor. The build stops when
+`native_bitmap_snapshot_darwin.h` changes during verification. Managed
+attempt `20261118-065451-ba75c7cb` is in progress, so the predecessor
+remains the latest published browser. Raw receipts and the publication
+verifier remain local under
+`docs/performance/libjs-github-browser-20261116/libjs-github-inline-workspace-publication-20261118/`.
