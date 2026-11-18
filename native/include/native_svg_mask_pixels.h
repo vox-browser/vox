@@ -3,7 +3,20 @@
 
 #include <stddef.h>
 #include <stdint.h>
+#if defined(__aarch64__)
+#include <arm_neon.h>
+#endif
 #include "../../cpuraster/scan_workers.h"
+
+#if defined(__aarch64__)
+static inline int native_svg_mask_can_vectorize_row(const uint8_t *source,
+    const uint8_t *output, size_t width)
+{
+    uintptr_t input_address = (uintptr_t)source, output_address = (uintptr_t)output;
+    // A forward overlap can change a later source pixel during the scalar loop.
+    return output_address <= input_address || (output_address - input_address) / 4 >= width;
+}
+#endif
 
 // Each mode reads a whole RGBA pixel before writing any channel. This also
 // supports converting the same bitmap in place with matching strides.
@@ -18,7 +31,20 @@ static inline void native_convert_rgba_svg_mask_rows(const uint8_t *source,
         for (size_t y = 0; y < height; ++y) {
             const uint8_t *row = source + y * source_stride;
             uint8_t *output = mask + y * mask_stride;
-            for (size_t x = 0; x < width; ++x) {
+            size_t x = 0;
+#if defined(__aarch64__) && defined(__ARM_FEATURE_DOTPROD) && __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
+            if (native_svg_mask_can_vectorize_row(row, output, width)) {
+                const uint8x16_t weights = vreinterpretq_u8_u32(vdupq_n_u32(54u | (183u << 8) | (19u << 16)));
+                // Byte one of each sum is the truncating right shift by eight.
+                const uint8x16_t select = {1, 1, 1, 1, 5, 5, 5, 5, 9, 9, 9, 9, 13, 13, 13, 13};
+                for (; width - x >= 4; x += 4) {
+                    uint32x4_t sums = vdotq_u32(vdupq_n_u32(0), vld1q_u8(row + x * 4), weights);
+                    uint8x16_t coverage = vqtbl1q_u8(vreinterpretq_u8_u32(sums), select);
+                    vst1q_u8(output + x * 4, coverage);
+                }
+            }
+#endif
+            for (; x < width; ++x) {
                 uint8_t alpha = (uint8_t)((54u * row[x * 4]
                     + 183u * row[x * 4 + 1] + 19u * row[x * 4 + 2]) >> 8);
                 output[x * 4] = alpha;
@@ -31,7 +57,20 @@ static inline void native_convert_rgba_svg_mask_rows(const uint8_t *source,
         for (size_t y = 0; y < height; ++y) {
             const uint8_t *row = source + y * source_stride;
             uint8_t *output = mask + y * mask_stride;
-            for (size_t x = 0; x < width; ++x) {
+            size_t x = 0;
+#if defined(__aarch64__)
+            if (native_svg_mask_can_vectorize_row(row, output, width)) {
+                const uint8x16_t select = {3, 3, 3, 3, 7, 7, 7, 7, 11, 11, 11, 11, 15, 15, 15, 15};
+                for (; width - x >= 16; x += 16) {
+                    uint8x16x4_t coverage = vld1q_u8_x4(row + x * 4);
+                    for (size_t block = 0; block < 4; ++block) {
+                        coverage.val[block] = vqtbl1q_u8(coverage.val[block], select);
+                    }
+                    vst1q_u8_x4(output + x * 4, coverage);
+                }
+            }
+#endif
+            for (; x < width; ++x) {
                 uint8_t alpha = row[x * 4 + 3];
                 output[x * 4] = alpha;
                 output[x * 4 + 1] = alpha;
@@ -42,16 +81,11 @@ static inline void native_convert_rgba_svg_mask_rows(const uint8_t *source,
     }
 }
 
-// Quartz clip paths can produce an alpha-only source in a separate bitmap.
-static inline void native_convert_svg_mask_rows(const uint8_t *source,
+// Quartz clip paths expand an alpha-only source into a separate bitmap.
+static inline void native_expand_svg_alpha_rows(const uint8_t *source,
     size_t source_stride, uint8_t *restrict mask, size_t mask_stride,
-    size_t width, size_t height, int is_color, int is_luminance)
+    size_t width, size_t height)
 {
-    if (is_color) {
-        native_convert_rgba_svg_mask_rows(source, source_stride, mask, mask_stride,
-            width, height, is_luminance);
-        return;
-    }
     if (width == 0 || height == 0) {
         return;
     }
@@ -65,6 +99,18 @@ static inline void native_convert_svg_mask_rows(const uint8_t *source,
             output[x * 4 + 2] = alpha;
             output[x * 4 + 3] = alpha;
         }
+    }
+}
+
+static inline void native_convert_svg_mask_rows(const uint8_t *source,
+    size_t source_stride, uint8_t *mask, size_t mask_stride,
+    size_t width, size_t height, int is_color, int is_luminance)
+{
+    if (is_color) {
+        native_convert_rgba_svg_mask_rows(source, source_stride, mask, mask_stride,
+            width, height, is_luminance);
+    } else {
+        native_expand_svg_alpha_rows(source, source_stride, mask, mask_stride, width, height);
     }
 }
 
