@@ -101,7 +101,8 @@ static void test_immutable_snapshot(int scale) {
 }
 static void test_snapshot_copy_mode_transitions(void) {
     native_discard_stationary_raster();
-    CGContextRef context = bitmap(32, 24, 2);
+    bitmap_padding = 16;
+    CGContextRef context = bitmap(1027, 757, 2);
     NSGraphicsContext.currentContext = [NSGraphicsContext graphicsContextWithCGContext:context flipped:NO];
     unsetenv("VOX_COPY_STATIONARY_RASTER_PIXELS");
     assert(!native_begin_stationary_raster_snapshot(1, 2, 3, 0, 0, 1, 1, 1, 1));
@@ -141,6 +142,7 @@ static void test_snapshot_copy_mode_transitions(void) {
     assert(!memcmp(expected, CGBitmapContextGetData(context), bytes));
     native_discard_stationary_raster(); free(expected);
     NSGraphicsContext.currentContext = nil; CGContextRelease(context);
+    bitmap_padding = 0;
 }
 // A scrolled frame is never retained: the next frame has moved again and
 // would discard it. Once scrolling stops, a repeated offset is drawn once,

@@ -5247,3 +5247,57 @@ in ARC, non-ARC and ASan/UBSan builds. A separate probe identified the
 worker at offset `0x23cc` and observed four threads on every archive.
 Forced serial matched the earlier ImageIO output. The software CRC
 and ThreadSanitizer runs matched the new Hacker News PNG.
+
+### Parallel stationary-frame bitmap copies
+
+The macOS stationary-frame cache uses up to four raster workers when it
+must copy a large bitmap. Byte-backed cache stores and restores, and
+restores from a copied Core Graphics provider, share the same pitched
+row copy. Workers join before the caller returns or publishes any
+pixels. Copies smaller than 4 MiB and `VOX_SERIAL_CPU_RASTER=1` execute
+on the caller.
+
+Published executable
+`66f97ef08d4c9ff9ae1195cd80c9817add78ab82c27960580f1444a44101e77d`
+at 2× rendered the same sealed Hacker News, GitHub and Old Reddit
+archives at a 1024×768 CSS-pixel viewport. The default reused an
+immutable frame and made no instrumented cache copies. With
+`VOX_COPY_STATIONARY_RASTER_PIXELS=1` the full 2048×1704 frame copied
+13,959,168 bytes per operation. The site diagnostics observed two
+stores each and four, sixteen and six restores respectively. An initial
+probe that resolved symbols for every copy stalled on GitHub. The
+completed diagnostic resolved the executable base once and matched
+only the three stationary-copy call sites. A separate interposition
+run executed the new copy helper at those call sites with the
+compatibility switch. All completed captures matched their previously
+audited content and decoded RGBA references and exited zero.
+
+Matching Apple Clang 21 `-O2 -fobjc-arc` harnesses timed the native cache
+store or restore call. Seven alternating fresh-process groups compared
+the previous implementation, the new forced-serial path and the new
+default. Cold cases allocated the copied-to storage before timing and
+left its pages untouched. Full-frame inputs extended the archived
+document bytes to the observed copy size. Warm cases made one prior
+copy. One-minute load was 6.81–7.14 on 18 logical CPUs. Every byte,
+including row padding, matched and all trial and guard exits were zero.
+
+| Input and operation | Before, µs | Candidate serial, µs | Candidate parallel, µs | Faster than before |
+| --- | ---: | ---: | ---: | ---: |
+| Hacker News cold store | 900.375 | 916.666 | 691.208 | 7/7 |
+| GitHub cold store | 840.208 | 938.000 | 847.500 | 5/7 |
+| Old Reddit cold store | 825.958 | 878.750 | 663.584 | 6/7 |
+| Hacker News cold restore | 1017.208 | 959.041 | 716.792 | 6/7 |
+| GitHub cold restore | 839.084 | 940.583 | 693.583 | 4/7 |
+| Old Reddit cold restore | 909.375 | 973.834 | 593.167 | 6/7 |
+| Padded 2054×1514 warm store | 174.792 | 227.709 | 125.459 | 7/7 |
+| Padded 2054×1514 warm byte restore | 165.584 | 180.042 | 103.083 | 6/7 |
+| Padded 2054×1514 warm image restore | 174.125 | 175.791 | 122.500 | 7/7 |
+| Padded 321×241 warm byte restore | 3.833 | 3.917 | 3.875 | 2/7 |
+
+A dispatch probe resolved the worker callback at executable offset
+`0x1b04` and observed four distinct threads for all three large copy
+entry points in the completed run. Small and forced-serial copies
+stayed on the caller. Native ARC, non-ARC, ASan/UBSan and ThreadSanitizer
+checks passed, including fallback after a failed snapshot allocation.
+The timings cover the compatibility copy calls. Production verification
+of the new code awaits the shared rebuild.
