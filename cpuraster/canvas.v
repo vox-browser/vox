@@ -493,17 +493,3 @@ fn canvas_paint_alpha(color u32, global_alpha f32) f32 {
 	pinned := if product < 1 { product } else { f32(1) }
 	return if f32(0) < pinned { pinned } else { f32(0) }
 }
-
-// SkConvertPixels' RGBA_to_rgbA(): (c * a + 127) / 255.
-fn premultiply_rows(mut pixels []u8, width int, height int, pitch int) {
-	for y in 0 .. height {
-		row := y * pitch
-		for x in 0 .. width {
-			o := row + x * 4
-			a := u32(pixels[o + 3])
-			for c in 0 .. 3 {
-				pixels[o + c] = u8((u32(pixels[o + c]) * a + 127) / 255)
-			}
-		}
-	}
-}

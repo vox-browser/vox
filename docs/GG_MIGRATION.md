@@ -5564,3 +5564,88 @@ out-of-line entry. A first debugger run exceeded the focused 3 GiB
 guard while capturing GitHub. The full diagnostic used the default
 12 GiB guard and all three browser, debugger, and guard exits were
 zero. Candidate whole-page timings still require the shared rebuild.
+
+### Parallel premultiplication of Canvas2D destinations
+
+Canvas2D draws use the same row workers as sampled-image uploads to
+prepare straight-alpha destinations in place. As before, conversion
+starts when a supported draw is ready to use the surface. The workers
+finish before drawing. They round each RGB channel with
+`(channel * alpha + 127) / 255` and leave alpha and row padding intact.
+The caller still owns the transition to a premultiplied surface.
+The shared scheduler can split surfaces of at least 262,144 pixels
+across two to four workers. `VOX_SERIAL_CPU_RASTER=1` forces one range.
+
+A prepared single-C-unit `-prod -prealloc -gc none` harness timed one
+transparent source-over draw. The old control ran the original
+Canvas loop and drew into the resulting premultiplied surface. The
+candidate prepared a straight-alpha surface through the normal draw
+entry. Each iteration restored the same input outside the timed
+span. Seven rotating fresh-process groups per size compared the
+original loop, the candidate forced serial, and the candidate with the
+default scheduler. All 105 processes and the memory guard exited
+zero and their full-buffer hashes matched across the three modes.
+Warm values are the median of the within-process medians after the
+first draw.
+The one-minute host load was 13.25–15.84 on 18 logical CPUs.
+
+| Canvas | First draw before / serial / default, µs | Warm before / serial / default, µs | Default faster than serial |
+| --- | ---: | ---: | ---: |
+| 300×150 | 105.792 / 44.541 / 54.042 | 99.188 / 40.688 / 42.375 | 3/7 |
+| 512×512 | 490.292 / 290.417 / 214.500 | 499.646 / 264.062 / 173.333 | 5/7 |
+| 1031×513, padded | 1066.958 / 516.125 / 252.875 | 1149.958 / 533.646 / 195.521 | 7/7 |
+| 1920×1080 | 4407.500 / 2242.333 / 775.750 | 4390.980 / 2163.562 / 689.562 | 7/7 |
+| 3840×2160 | 19590.333 / 8618.083 / 2578.000 | 16429.980 / 8707.416 / 2671.813 | 7/7 |
+
+The exploratory timing overlapped the browser cohort at a one-minute
+load of 22.65–23.58. Its first-draw before/default medians in table
+order were 97.000/52.292, 712.083/224.917, 1211.291/373.708, 5241.291/867.792, 20287.625/3094.333 µs.
+
+A separate probe observed two threads at 512×512 and four on the
+padded 1031×513 surface. It saw no dispatch below the threshold or
+in forced serial mode. The prepared allocator passed the focused
+Canvas, glyph, filter-layer, and image raster tests. The Canvas
+and sampled-image byte comparisons also passed in forced serial
+mode and with ASan and UBSan.
+
+Seven alternating fresh-process pairs per site used the published
+single-C-unit receipt `20261118-055438-888e0b4d`, executable SHA-256
+`9568a08eccc0567b56fa837e6d487bd57a63ec69d31c10b9760c9b5a6b5df757`.
+This executable contains the sampled-image premultiplication change
+and predates the Canvas change. The timings compare the existing
+raster scheduler enabled and disabled from launch through PNG capture,
+document audit and successful exit. All 42 captures used sealed
+original-origin replay, fresh private profiles and HTTP caches, a
+1024×768 CSS-pixel viewport at 2×, and one second of settling.
+System caches remained in place.
+
+| Archive | Workers disabled, ms | Default, ms | Default faster | Worker batches in separate probe |
+| --- | ---: | ---: | ---: | ---: |
+| Hacker News | 1556.732 | 1540.750 | 3/7 | 0 |
+| GitHub | 3779.487 | 3789.892 | 4/7 | 0 |
+| Old Reddit | 1787.573 | 1807.386 | 2/7 | 0 |
+
+All captures matched their frozen pixel references and preserved the
+same audited content and served response identities across both modes
+(30/33/25 entries and 6/61/18 responses by site). The replay returned
+the same 404s for the Hacker News and GitHub favicons and the two
+unarchived Vinix screenshot URLs on GitHub in both modes. Those
+known fixture misses were confirmed after two preflight attempts.
+JavaScriptCore initialized, with no reported script errors, and
+the audit found no canvas elements on these pages. The separately
+validated worker probe observed a four-thread batch on a 1200×900
+Canvas readback. It observed zero batches on each archive. The
+measured site differences therefore provide no speedup attribution.
+The one-minute site load was 5.08–24.59, with overlapping
+benchmark work near the end of the cohort. All browser and guard
+exits were zero. Whole-page checks of the Canvas change await the
+shared rebuild.
+
+The samples below are launch-to-exit milliseconds, ordered by pair.
+Odd pairs ran the workers-disabled setting first.
+
+| Archive | Workers disabled, ms | Default, ms |
+| --- | --- | --- |
+| Hacker News | 1793.020, 1556.732, 1530.002, 1531.847, 1521.110, 1618.192, 1628.853 | 1514.265, 1528.653, 1540.750, 1540.249, 1551.347, 1670.876, 1616.710 |
+| GitHub | 3689.112, 3779.487, 3764.194, 3684.892, 3887.710, 4131.023, 4108.306 | 3639.933, 3789.892, 3748.792, 3724.459, 4339.400, 4051.171, 4049.266 |
+| Old Reddit | 1758.637, 1768.435, 1787.573, 1735.655, 2354.995, 1886.693, 1857.683 | 1760.005, 1774.321, 1807.386, 1752.116, 2183.433, 1892.087, 1839.270 |
