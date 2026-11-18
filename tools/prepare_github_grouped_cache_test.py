@@ -74,6 +74,54 @@ class GroupedCacheWorkflowTests(unittest.TestCase):
         self.assertIn('Pinned workflow inputs changed', outcome['failure']['error'])
         self.assertTrue((self.options.output / 'pack.json').exists())
 
+    def test_interrupted_seed_accepts_only_matching_libjs_source_inputs(self):
+        cache = self.options.cache_work.resolve()
+        captures = cache / 'captures'
+        abi = 'a' * 64
+        (cache / 'separate' / abi).mkdir(parents=True)
+        old = self.root / 'old'
+        stage = old / 'seed'
+        (stage / '0-libjs-native').mkdir(parents=True)
+        archive = self.root / 'archive'
+        archive.mkdir()
+        audit, png = self.root / 'audit.json', self.root / 'reference.png'
+        for path in (archive / 'manifest.json', audit, png):
+            path.write_bytes(b'fixture')
+        binary = self.root / 'Vox'
+        binary.write_bytes(b'new executable')
+        source = str(workflow.benchmark.ROOT / 'libjs/native_code_cache.v')
+        compilations = []
+        for name in ('first', 'second'):
+            directory = self.root / name
+            directory.mkdir()
+            workflow.benchmark.save(directory / 'source-manifest.json', {source: 'libjs pin'})
+            compilations.append(str(directory / 'frozen-compile.json'))
+        earlier, current = (dict(executable_sha256=name, c_compile={'v_prod': True}, frozen_compilation=manifest)
+                            for name, manifest in zip(('first', 'second'), compilations))
+        checkpoint = old / 'results.json'
+        workflow.benchmark.save(checkpoint, dict(complete=False, stages={'seed': 'receipt'},
+                                                  production=earlier, cache_work=str(cache)))
+        pins = {str(path): workflow.benchmark.digest(path) for path in (archive / 'manifest.json', audit, png)}
+        pins.update({str(binary): 'previous executable pin',
+                     str(Path(workflow.benchmark.__file__).resolve()): 'previous driver pin'})
+        workflow.benchmark.save(stage / 'results.json', dict(prepare_native_cache=True,
+                                native_captures=str(captures), inputs=pins))
+        workflow.benchmark.save(stage / '0-libjs-native/launch.json',
+                                {'browser_overrides': {'VOX_LIBJS_NATIVE_CACHE': str(cache / 'separate')}})
+        args = SimpleNamespace(archive=archive, reference_audit=audit, reference_png=png,
+                               adblock_assets=None, raster_parity_options=False)
+        saved = dict(abi=abi, records=128, batches={'first.dylib': {}})
+        with (
+            patch.object(workflow, 'BINARY', binary),
+            patch.object(workflow.benchmark, 'verify_compiler_captures', return_value=saved),
+        ):
+            resumed = workflow.verify_interrupted_seed(args, checkpoint, cache, current)
+            self.assertEqual((resumed['previous_executable_sha256'], resumed['records'], resumed['batches']),
+                             ('first', 128, 1))
+            workflow.benchmark.save(Path(compilations[1]).with_name('source-manifest.json'), {source: 'changed'})
+            with self.assertRaisesRegex(ValueError, 'different LibJS or compiler inputs'):
+                workflow.verify_interrupted_seed(args, checkpoint, cache, current)
+
 
 if __name__ == '__main__':
     unittest.main()

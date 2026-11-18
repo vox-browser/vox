@@ -78,7 +78,7 @@ def verify_replayed_scripts(replay, expected):
     return expected
 
 
-def cache_errors(capture, shutdown, *, preparing, diagnostics):
+def cache_errors(capture, shutdown, *, preparing, diagnostics, resuming=False):
     errors = []
     if any(not isinstance(receipt, dict) for receipt in (capture, shutdown)):
         return ['missing capture or shutdown cache receipt']
@@ -93,8 +93,9 @@ def cache_errors(capture, shutdown, *, preparing, diagnostics):
                 or native.get('last_error') != '' or native.get('invalid_entries') != 0):
             errors.append(f'{phase}: unverified generated-code cache identity or cache failure')
         if preparing and phase == 'shutdown':
-            if (native.get('pending_executables') != 0 or native.get('compiled_executables', 0) <= 0
-                    or native.get('compiler_invocations', 0) <= 0):
+            compiled = native.get('compiled_executables', 0) > 0 and native.get('compiler_invocations', 0) > 0
+            reused = resuming and native.get('cache_hits', 0) > 0
+            if native.get('pending_executables') != 0 or not (compiled or reused):
                 errors.append('shutdown: cache preparation incomplete')
         if not preparing and not diagnostics:
             for key in ('cache_misses', 'pending_executables', 'compiled_executables', 'compiler_invocations'):
@@ -273,12 +274,15 @@ def observe(args, engine, folder, expected, replayed_scripts, api):
         if engine == 'libjs-native':
             row['native_cache_final'] = json.loads(final_cache.read_text())
             row['cache_errors'] = cache_errors(row['native_cache'], row['native_cache_final'],
-                preparing=args.prepare_native_cache, diagnostics=args.native_diagnostics)
+                preparing=args.prepare_native_cache, diagnostics=args.native_diagnostics,
+                resuming=args.resume_native_abi is not None)
             if row['cache_errors']:
                 raise RuntimeError('Native cache was incomplete: ' + repr(row['cache_errors']))
+            abi = row['native_cache_final']['native']['abi']
+            if args.resume_native_abi is not None and abi != args.resume_native_abi:
+                raise ValueError('Resumed native cache ABI changed')
             if args.native_captures:
-                row['compiler_captures'] = verify_compiler_captures(
-                    args.native_captures, args.native_cache, row['native_cache_final']['native']['abi'])
+                row['compiler_captures'] = verify_compiler_captures(args.native_captures, args.native_cache, abi)
         row['replayed_scripts'] = verify_replayed_scripts(replay, replayed_scripts)
         if engine == 'libjs-native' and args.trace_native_libraries:
             trace = folder / 'native-library-trace.log'
@@ -303,7 +307,7 @@ def observe(args, engine, folder, expected, replayed_scripts, api):
     return row
 
 
-def run(args, *, bundle_lease=None):
+def run(args, *, bundle_lease=None, resume_native_abi=None):
     args.output = args.output.resolve(); args.archive = args.archive.resolve()
     args.vox = args.vox.resolve(); args.brave = args.brave.resolve()
     if args.native_cache: args.native_cache = args.native_cache.resolve()
@@ -311,11 +315,15 @@ def run(args, *, bundle_lease=None):
     args.trace_native_libraries = getattr(args, 'trace_native_libraries', False)
     if args.trace_native_libraries:
         args.native_diagnostics = True
+    args.resume_native_abi = resume_native_abi
+    resume_native_seed = resume_native_abi is not None
     if 'libjs-native' in args.engines and args.native_cache is None:
         raise ValueError('Native measurements require a separately prepared cache')
-    if args.prepare_native_cache and args.native_cache.exists():
+    if args.prepare_native_cache and args.native_cache.exists() and not resume_native_seed:
         raise ValueError('Native cache preparation requires a new cache directory')
     args.native_captures = getattr(args, 'native_captures', None)
+    if resume_native_seed and (not args.prepare_native_cache or args.native_captures is None):
+        raise ValueError('Resuming a native seed requires compiler captures')
     if args.native_captures is not None:
         args.native_captures = args.native_captures.resolve()
         if not args.prepare_native_cache:
@@ -323,7 +331,7 @@ def run(args, *, bundle_lease=None):
         if (args.native_captures.is_relative_to(args.native_cache)
                 or args.native_cache.is_relative_to(args.native_captures)):
             raise ValueError('Use separate directories for compiler captures and the native cache')
-        if args.native_captures.exists() or args.native_captures == args.output:
+        if (args.native_captures.exists() and not resume_native_seed) or args.native_captures == args.output:
             raise ValueError('Compiler captures require a new directory')
     args.output.mkdir(parents=True, exist_ok=False)
     args.position = test_display()['position']
@@ -341,6 +349,8 @@ def run(args, *, bundle_lease=None):
         policy='Frozen original-origin replay; fresh HTTP caches and profiles; OS caches retained; 1024x768 document; shared settle period.')
     if args.trace_native_libraries:
         report['trace_native_libraries'] = True
+    if resume_native_seed:
+        report['resume_native_seed'] = True
     api = MacCounters()
     with (bundle_lease or canonical_bundle_lease)(ROOT / 'Build/v/Vox.app'):
         asset_env = {'VOX_ADBLOCK_ENGINE_ASSETS': str(args.adblock_assets)} if args.adblock_assets else {}
@@ -365,7 +375,7 @@ def run(args, *, bundle_lease=None):
         report['inputs'] = pins
         report['production_receipt'] = json.loads((ROOT / 'Build/production-build/latest.json').read_text())
         if args.native_captures:
-            args.native_captures.mkdir(mode=0o700, parents=True)
+            args.native_captures.mkdir(mode=0o700, parents=True, exist_ok=resume_native_seed)
             report['native_captures'] = str(args.native_captures)
         save(args.output / 'results.json', report)
         for pair in range(args.repeat):

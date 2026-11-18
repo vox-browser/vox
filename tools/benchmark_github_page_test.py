@@ -122,6 +122,17 @@ class NativeCacheReceiptTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'No native cache libraries'):
             benchmark.verify_native_library_trace(trace, self.cache, self.abi, 44)
 
+    def test_reused_batches_can_finish_an_interrupted_seed(self):
+        stats = dict(engine='libjs', native_context_initialized=False, native=dict(
+            abi=self.abi, identity_kind='generated-code', cache_hits=5, invalid_entries=0, last_error='',
+            pending_executables=0, compiler_invocations=0, compiled_executables=0))
+        self.assertEqual(benchmark.cache_errors(stats, stats, preparing=True, diagnostics=False, resuming=True), [])
+        self.assertIn('shutdown: cache preparation incomplete',
+                      benchmark.cache_errors(stats, stats, preparing=True, diagnostics=False))
+        stats['native']['pending_executables'] = 1
+        self.assertIn('shutdown: cache preparation incomplete',
+                      benchmark.cache_errors(stats, stats, preparing=True, diagnostics=False, resuming=True))
+
 
 if __name__ == '__main__':
     unittest.main()

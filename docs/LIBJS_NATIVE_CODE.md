@@ -1544,3 +1544,23 @@ existing group matches the pinned screenshot and repository audit,
 fulfills 81 modules, and records 2,948 hits with zero misses or
 compiler calls. Local receipts are under
 `docs/performance/libjs-github-browser-20261116/libjs-github-grouped-workflow-20261118/`.
+
+### Resume an interrupted seed
+
+Run the grouped-cache workflow with
+`--resume-seed "$interrupted_report/results.json"`, the same
+`--cache-work` directory, and a new `--output` directory. The
+checkpoint check verifies the archived inputs and each saved cache
+record against its compiled library and captured C. A cache-work
+lock prevents two workflow runs from writing the same cache.
+
+The workflow can start on a newer publication when its sealed LibJS
+sources and compiler mode match the interrupted run. The resumed
+browser verifies the cache ABI and reuses the saved library records.
+The report records both executable identities and the size of the
+verified checkpoint.
+
+A small fixture resumed from one verified batch, reused 128 cache
+records, and compiled the missing 24. The packed library loaded in a
+new process and hit all 152 records with zero misses or compiler
+calls. The separate and grouped reopens match pixel for pixel.
