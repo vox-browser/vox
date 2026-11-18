@@ -39,7 +39,7 @@ fn (mut app BrowserApp) draw_portable_solid_svg_fill(command &layout.PaintComman
 	$if vox_gg_svg ? {
 		if portable_svg_gpu_enabled && app.paint_effect_depth == 0 && app.paint_svg_mask_depth == 0
 			&& draw_portable_gpu_svg_path(app.ctx.r, data, matrix, bounds, color, local,
-				cached_bounds != none, PortableSVGStroke{}) {
+				cached_bounds != none, PortableSVGStroke{}, unsafe { nil }) {
 			return true
 		}
 	}

@@ -7430,16 +7430,21 @@ fn (mut app BrowserApp) draw_command(source_command &layout.PaintCommand, page_x
 				if svg_data.stroke_first {
 					stroked = app.draw_portable_gpu_svg_stroke(command, svg_data, page_x, page_y)
 				}
+				if svg_data.svg_gradient_data != none {
+					filled = app.draw_portable_gpu_svg_gradient_fill(command, svg_data, page_x, page_y)
+				}
 			}
 			$if linux {
-				filled = app.draw_portable_solid_svg_fill(command, svg_data, page_x, page_y)
+				if !filled {
+					filled = app.draw_portable_solid_svg_fill(command, svg_data, page_x, page_y)
+				}
 				if filled && (command.stroke_color == '' || command.stroke_width <= 0) { return }
 			}
 			$if windows && vox_gg_svg ? {
-				if portable_svg_gpu_enabled {
+				if !filled && portable_svg_gpu_enabled {
 					filled = app.draw_portable_solid_svg_fill(command, svg_data, page_x, page_y)
-					if filled && (command.stroke_color == '' || command.stroke_width <= 0) { return }
 				}
+				if filled && (command.stroke_color == '' || command.stroke_width <= 0) { return }
 			}
 			$if vox_gg_svg ? {
 				if !svg_data.stroke_first && (filled || command.color == '') {
