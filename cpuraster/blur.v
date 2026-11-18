@@ -221,7 +221,7 @@ fn mulhi16(a u32, b u32) u32 {
 // products of the 2r+1 inputs ending at m, in wrapping 16-bit lanes, then
 // the 8.8 value's integer part.
 @[inline]
-fn gauss_tap(values []u8, start int, step int, count int, m int, radius int, factors [6]u16) u8 {
+fn gauss_tap(values &u8, start int, step int, count int, m int, radius int, factors [6]u16) u8 {
 	mut acc := u32(0x80)
 	for k in 0 .. 2 * radius + 1 {
 		i := m - k
@@ -229,33 +229,73 @@ fn gauss_tap(values []u8, start int, step int, count int, m int, radius int, fac
 			continue
 		}
 		g := factors[if k > radius { k - radius } else { radius - k }]
-		acc = (acc + mulhi16(u32(values[start + i * step]) << 8, g)) & 0xffff
+		value := unsafe { values[start + i * step] }
+		acc = (acc + mulhi16(u32(value) << 8, g)) & 0xffff
 	}
 	return u8(acc >> 8)
 }
 
-// small_blur(): columns into the destination's middle, then rows in place.
+// Each destination row can finish both passes using its own temporary row.
 fn small_blur(sigma f64, src &Mask, mut dst Mask) {
 	radius, factors := gauss_factors(sigma)
-	src_w := src.bounds.width()
-	src_h := src.bounds.height()
-	dst_w := dst.bounds.width()
-	dst_h := dst.bounds.height()
-	for x in 0 .. src_w {
-		start := src.index(src.bounds.left + x, src.bounds.top)
-		for m in 0 .. dst_h {
-			dst.image[m * dst.row_bytes + radius + x] = gauss_tap(src.image, start, src.row_bytes,
-				src_h, m, radius, factors)
-		}
+	source_width, source_height := src.bounds.width(), src.bounds.height()
+	source := if source_width > 0 && source_height > 0 {
+		last := src.index(src.bounds.right - 1, src.bounds.bottom - 1)
+		src.image[src.offset..last + 1]
+	} else {
+		src.image
 	}
-	mut row := []u8{len: src_w}
-	for y in 0 .. dst_h {
-		o := y * dst.row_bytes
-		for x in 0 .. src_w {
-			row[x] = dst.image[o + radius + x]
-		}
-		for m in 0 .. dst_w {
-			dst.image[o + m] = gauss_tap(row, 0, 1, src_w, m, radius, factors)
+	scan := SmallMaskBlurScan{
+		source:        source.data
+		target:        dst.image.data
+		source_width:  source_width
+		source_height: source_height
+		source_pitch:  src.row_bytes
+		target_width:  dst.bounds.width()
+		target_pitch:  dst.row_bytes
+		radius:        radius
+		factors:       factors
+	}
+	rows := dst.bounds.height()
+	if scan.source_width <= max_untiled_dimension
+		&& i64(scan.source_width) * rows >= 2 * scan_pixels_per_worker {
+		run_raster_scans(&scan, rows, scan.source_width, scan_small_mask_blur)
+	} else {
+		row := []u8{len: scan.source_width}
+		scan.blur_rows(0, rows, row.data)
+	}
+}
+
+struct SmallMaskBlurScan {
+	source        &u8
+	target        &u8
+	source_width  int
+	source_height int
+	source_pitch  int
+	target_width  int
+	target_pitch  int
+	radius        int
+	factors       [6]u16
+}
+
+fn scan_small_mask_blur(context voidptr, first i32, end i32) {
+	scan := unsafe { &SmallMaskBlurScan(context) }
+	row := [max_untiled_dimension]u8{}
+	scan.blur_rows(int(first), int(end), &row[0])
+}
+
+fn (scan &SmallMaskBlurScan) blur_rows(first int, end int, row &u8) {
+	unsafe {
+		for y in first .. end {
+			for x in 0 .. scan.source_width {
+				row[x] = gauss_tap(scan.source, x, scan.source_pitch,
+					scan.source_height, y, scan.radius, scan.factors)
+			}
+			offset := y * scan.target_pitch
+			for x in 0 .. scan.target_width {
+				scan.target[offset + x] = gauss_tap(row, 0, 1, scan.source_width, x,
+					scan.radius, scan.factors)
+			}
 		}
 	}
 }

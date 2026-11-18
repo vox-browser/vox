@@ -7131,3 +7131,63 @@ used four distinct threads in its 1284-row copy and zero under
 the serial override. Both fresh browsers and the replay guard
 exited zero. The captured RGBA matched between settings
 (`2c2688c954e2901c44e62b32b5acc956bed15da23c129cf16c288172c0b169c9`).
+
+### Parallel direct Gaussian mask blur
+
+For sigma below 2, each output row now completes the vertical pass
+into a private temporary row and immediately applies the horizontal
+pass. This removes the full vertical write and read of the output
+bitmap. The original fixed-point products, rounding and transparent
+edges apply to both passes. Workers borrow a validated source slice,
+including its pitch and offset, and write disjoint destination rows.
+The existing scheduler uses up to four threads starting at 262,144
+source-width times destination-height samples. Sources wider than
+8191 pixels use dynamically sized scratch and stay serial.
+
+Matched V single-unit C `-prod -gc none` harnesses timed from the blur
+call through its return, including destination and scratch setup.
+The source had a nonzero origin, an eleven-byte base offset and
+thirteen bytes of row padding. Source setup, hashing and release
+were outside the timer. Seven rotating groups launched fresh
+processes per mode. All 147 process exits and the guard exit were
+zero. The complete mask SHA-256 matched across groups and modes.
+Warm values are medians of each process's median after its first
+call. One-minute host load was 6.84–7.02 on 18 logical CPUs.
+
+| Padded mask and sigma | First before / forced serial / default, µs | Warm before / forced serial / default, µs |
+| --- | ---: | ---: |
+| 23×19, 1.5 | 9.292 / 8.000 / 8.000 | 7.167 / 5.875 / 5.958 |
+| 481×480, 1.5 | 2616.459 / 1946.500 / 2021.333 | 2500.313 / 2006.063 / 1940.272 |
+| 512×512, 1.5 | 2867.417 / 2248.750 / 1631.958 | 2989.458 / 2310.896 / 1283.771 |
+| 1031×517, 1.5 | 6030.167 / 4486.583 / 1855.917 | 5931.938 / 4619.063 / 1663.396 |
+| 1920×1080, 0.45 | 13061.375 / 8646.625 / 3124.666 | 12848.479 / 8918.917 / 3064.729 |
+| 2051×1537, 1.9 | 47090.083 / 33906.333 / 11997.875 | 45727.313 / 34514.167 / 11582.229 |
+| 8205×45, 1.5 | 4603.584 / 3517.583 / 3465.334 | 4467.146 / 3507.021 / 3455.250 |
+
+The default candidate won every matching first and warm pair in
+the final cohort. Harness SHA-256 values were
+`82af195be34ae9fbd1725b49c086616645eef3d5405187ad1192615bdee36c29`
+and `ec4543d40af5cbd58bec528fb7e5ab84ca200522de3cc0fee032dde0e27cbd33`.
+An earlier candidate before the checked source slice measured
+46.908 → 12.253 ms warm for the 2051×1537 case. It also matched
+all pixels, with load 5.70–5.99 and zero process and guard exits.
+
+Generated C kept the 8191-byte worker scratch on the stack. A probe
+saw two distinct threads for 512×512 and four at 1031×517, with no
+dispatch below the size cutoff, above the scratch width or under
+the serial override. A 1441×927 Canvas path draw used four distinct
+threads in its Gaussian mask batch and matched the forced-serial
+surface (`c9ccb9e79eea8c7d1e6e71cdffe0cb9a3445102d7478629c62a399ac90a1ff8e`).
+Probe processes and the guard exited zero. Focused macOS and arm64
+Linux tests, forced serial, ASan/UBSan and ThreadSanitizer passed.
+The pinned raster differential suite passed with count 2000 and
+seed 20261106.
+
+The published single-C-unit executable
+`896b2d35d455afdbb5ec57c6dd5d5759a42e1a15d5f71961ae39fc0d146365cb`
+matched the archived pixels on Hacker News, GitHub and Old Reddit.
+Fresh sealed replays used JavaScript, private profiles and caches,
+a 1024×768 CSS-pixel viewport, 2× capture and a one-second settle.
+They audited 30, 33 and 25 entries and zero Canvas elements.
+Browser and replay guard exits were zero. Timings cover the isolated
+blur operation. Candidate browser validation awaits the shared rebuild.

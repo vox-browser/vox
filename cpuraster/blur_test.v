@@ -93,6 +93,31 @@ fn test_blurred_rects_match_skia() {
 		.src_over, 9, []) == fixture_hash('f9911f428908818f')
 }
 
+fn test_direct_gaussian_blur_preserves_padded_mask_pixels() {
+	// Full-mask digests from the original two-pass implementation.
+	for i, width in [1031, 8205] {
+		height := if i == 0 { 517 } else { 45 }
+		pitch := width + 13
+		source := Mask{
+			bounds:    IRect{-31, 27, width - 31, height + 27}
+			row_bytes: pitch
+			offset:    11
+			image:     []u8{len: 11 + (height - 1) * pitch + width, init: u8(index * 53 + index / 449)}
+		}
+		input_hash := sha256.sum(source.image).hex()
+		filter := new_mask_blur_filter(1.5)
+		mask := filter.blur(&source) or { panic('Expected a blurred mask') }
+		assert mask.bounds == irect_outset(source.bounds, filter.border(), filter.border())
+		expected := if i == 0 {
+			'05a1c5fffcbaace769ef0bc05a414bebfcc95d45a2dd6d7acf83384ea154d4b9'
+		} else {
+			'0a1e33908a8efc549a053d6f3150e235151618a79bcaad7262cf56b15bab2f5f'
+		}
+		assert sha256.sum(mask.image).hex() == expected
+		assert sha256.sum(source.image).hex() == input_hash
+	}
+}
+
 // A ring whose mask is more than 8191 pixels across: the anti-aliased fill
 // would overflow its supersampled 16-bit coordinates, so Skia fills the mask
 // with the non-anti-aliased SkScan::FillPath().
