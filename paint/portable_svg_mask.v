@@ -136,6 +136,20 @@ struct SVGMaskRamp {
 	transform [6]f32
 }
 
+fn svg_mask_aligned_rect(operation &layout.PaintMaskOperation, matrix [6]f32) ?painting.IntRect {
+	if matrix[1] != 0 || matrix[2] != 0 || matrix[0] <= 0 || matrix[3] <= 0 { return none }
+	rect := svg_background_rectangle_path(operation.path_data) or { return none }
+	left := f32(rect.x) * matrix[0] + matrix[4]
+	right := f32(rect.right()) * matrix[0] + matrix[4]
+	top := f32(rect.y) * matrix[3] + matrix[5]
+	bottom := f32(rect.bottom()) * matrix[3] + matrix[5]
+	if ![left, right, top, bottom]!.all(math.is_finite(f64(it))
+		&& f64(it) == math.floor(f64(it)) && math.abs(f64(it)) < 1048576) {
+		return none
+	}
+	return painting.IntRect{int(left), int(top), int(right - left), int(bottom - top)}
+}
+
 fn svg_mask_ramp(mask &layout.PaintClip, bounds painting.IntRect, page_x f32, page_y f32,
 	scale f64) ?SVGMaskRamp {
 	if disable_svg_mask_ramp || mask.mask_operations.len != 1 { return none }
@@ -149,20 +163,12 @@ fn svg_mask_ramp(mask &layout.PaintClip, bounds painting.IntRect, page_x f32, pa
 	}
 	device := portable_device_transform(operation.transform, page_x, page_y, scale)
 	if device.b != 0 || device.c != 0 || device.a <= 0 || device.d <= 0 { return none }
-	rect := svg_background_rectangle_path(operation.path_data) or { return none }
 	matrix := portable_svg_surface_matrix(device, bounds)
-	left := f32(rect.x) * matrix[0] + matrix[4]
-	right := f32(rect.right()) * matrix[0] + matrix[4]
-	top := f32(rect.y) * matrix[3] + matrix[5]
-	bottom := f32(rect.bottom()) * matrix[3] + matrix[5]
-	if ![left, right, top, bottom]!.all(math.is_finite(f64(it))
-		&& f64(it) == math.floor(f64(it)) && math.abs(f64(it)) < 1048576) {
-		return none
-	}
-	first_column := int(math.max(0, f64(left)))
-	end_column := int(math.min(f64(bounds.width), f64(right)))
-	first_row := int(math.max(0, f64(top)))
-	end_row := int(math.min(f64(bounds.height), f64(bottom)))
+	rect := svg_mask_aligned_rect(operation, matrix) or { return none }
+	first_column := int(math.max(0, f64(rect.x)))
+	end_column := int(math.min(f64(bounds.width), f64(rect.right())))
+	first_row := int(math.max(0, f64(rect.y)))
+	end_row := int(math.min(f64(bounds.height), f64(rect.bottom())))
 	coverage := painting.IntRect{first_column, first_row, end_column - first_column, end_row - first_row}
 	if coverage.is_empty() || (same_x && coverage.width <= 1) || (same_y && coverage.height <= 1) {
 		return none

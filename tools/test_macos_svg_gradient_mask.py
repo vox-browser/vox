@@ -112,33 +112,46 @@ def check_mask_mutation(binary, fixture, directory):
     assert after[40][180 * channels:180 * channels + 3] == b"\xff\x00\x00"
 
 
-def check_radial_cache_capacity(binary, directory):
-    fixture = directory / "radial-cache-capacity.html"
+def write_mask_cache_pressure_fixture(fixture, *, radial, count):
     definitions = []
     paths = []
-    for index in range(30):
+    for index in range(count):
         x = 8 + index % 5 * 180
         y = 12 + index // 5 * 120
+        if radial:
+            tag = "radialGradient"
+            coordinates = f'cx="{30 + index}" cy="42" r="60"'
+        else:
+            tag = "linearGradient"
+            coordinates = f'x1="0" y1="0" x2="{50 + index}" y2="88"'
         definitions.append(
-            f'<radialGradient id="g{index}" gradientUnits="userSpaceOnUse"'
-            f' cx="{30 + index}" cy="42" r="60">'
-            '<stop stop-color="white"/><stop offset="1"/></radialGradient>'
+            f'<{tag} id="g{index}" gradientUnits="userSpaceOnUse" {coordinates}>'
+            f'<stop stop-color="white"/><stop offset="1"/></{tag}>'
             f'<mask id="m{index}" maskUnits="userSpaceOnUse" x="0" y="0" width="136" height="90">'
             f'<path fill="url(#g{index})" d="M0 0h136v90H0Z"/></mask>'
         )
         paths.append(f'<path transform="translate({x} {y})" mask="url(#m{index})"'
                      ' fill="blue" d="M0 0h136v90H0Z"/>')
-    fixture.write_text('<!doctype html><style>body{margin:0;background:white}svg{display:block}</style>'
-                       '<svg width="960" height="840"><defs>'
+    height = ((count + 4) // 5 + 1) * 120
+    name = "Radial" if radial else "Diagonal"
+    fixture.write_text(f'<!doctype html><title>{name} SVG mask cache pressure</title>'
+                       '<style>body{margin:0;background:white}svg{display:block}</style>'
+                       f'<svg width="960" height="{height}"><defs>'
                        + "".join(definitions) + "</defs>" + "".join(paths) + "</svg>")
+
+
+def check_mask_cache_capacity(binary, directory, *, radial):
+    kind = "radial" if radial else "diagonal"
+    fixture = directory / f"{kind}-cache-capacity.html"
+    write_mask_cache_pressure_fixture(fixture, radial=radial, count=30)
     settings = dict(VOX_SHARED_SVG_MASK_RASTER="", VOX_DISABLE_SHARED_SVG_MASK_CACHE="0",
                     VOX_EAGER_SHARED_SVG_MASK_BITMAP="0", VOX_COPY_SHARED_SVG_MASK_BITMAP="0",
                     VOX_CLIP_SHARED_SVG_MASK_RASTER="0", VOX_CAPTURE_INITIAL_VIEWPORT="1",
                     VOX_SCREENSHOT_SCROLL_STEP="12", LADYBIRD_SCREENSHOT_SCALE="2")
-    png, diagnostics = capture_document(binary, fixture, directory / "radial-cache-capacity",
+    png, diagnostics = capture_document(binary, fixture, directory / f"{kind}-cache-capacity",
                                         settings, ["--screenshot-scroll-y=42"])
     assert rendered_png_rows(png)[:2] == (2048, 1200)
-    assert "VOX_SHARED_SVG_MASK_SKIP_RADIAL_CACHE" in diagnostics, diagnostics
+    assert f"VOX_SHARED_SVG_MASK_SKIP_{kind.upper()}_CACHE" in diagnostics, diagnostics
     assert "VOX_SHARED_SVG_MASK_CACHE_HIT luminance=true " in diagnostics, diagnostics
 
 
@@ -206,6 +219,44 @@ def check_linear_rgb_fallback(binary, fixture, directory):
     assert rendered_png_rows(automatic) == rendered_png_rows(quartz), "Linear RGB luminance bypassed Quartz"
 
 
+def check_diagonal_gradient_masks(binary, fixture, directory):
+    # Scroll far enough for both mask regions in the next row to enter the canvas edge.
+    options = ["--screenshot-scroll-y=132", "--disable-javascript"]
+    for scale in (1, 2):
+        settings = dict(VOX_SHARED_SVG_MASK_RASTER="", VOX_DISABLE_SHARED_SVG_MASK_CACHE="0",
+                        VOX_EAGER_SHARED_SVG_MASK_BITMAP="0", VOX_COPY_SHARED_SVG_MASK_BITMAP="0",
+                        VOX_CLIP_SHARED_SVG_MASK_RASTER="0", VOX_DISABLE_SVG_MASK_RAMP="0",
+                        VOX_CAPTURE_INITIAL_VIEWPORT="1", VOX_SCREENSHOT_SCROLL_STEP="12",
+                        LADYBIRD_SCREENSHOT_SCALE=str(scale))
+        automatic, diagnostics = capture_document(binary, fixture, directory / f"diagonal-auto-{scale}",
+                                                   settings, options)
+        for luminance in ("true", "false"):
+            assert f"VOX_SHARED_SVG_MASK luminance={luminance} " in diagnostics, diagnostics
+            assert re.search(rf"^VOX_SHARED_SVG_MASK_CACHE_HIT luminance={luminance} .* viewport_crop=true ",
+                             diagnostics, re.MULTILINE), diagnostics
+        assert "VOX_SVG_MASK_RAMP " not in diagnostics, diagnostics
+        settings.update(VOX_SHARED_SVG_MASK_RASTER="1", VOX_DISABLE_SHARED_SVG_MASK_CACHE="1")
+        full, _ = capture_document(binary, fixture, directory / f"diagonal-full-{scale}",
+                                   settings, options)
+        result = rendered_png_rows(automatic)
+        assert result[:2] == (1024 * scale, 600 * scale)
+        assert result == rendered_png_rows(full), f"Cached diagonal masks changed the {scale}× document"
+        if scale == 2:
+            settings["VOX_SHARED_SVG_MASK_RASTER"] = ""
+            uncached, diagnostics = capture_document(binary, fixture, directory / "diagonal-auto-uncached",
+                                                       settings, options)
+            assert "VOX_SHARED_SVG_MASK luminance=" not in diagnostics, diagnostics
+            settings["VOX_SHARED_SVG_MASK_RASTER"] = "0"
+            quartz, _ = capture_document(binary, fixture, directory / "diagonal-quartz", settings, options)
+            control = rendered_png_rows(quartz)
+            assert rendered_png_rows(uncached) == control, "Uncached diagonal masks bypassed Quartz"
+            assert result[:3] == control[:3]
+            maximum = max(abs(a - b) for current, previous in zip(result[3], control[3])
+                          for a, b in zip(current, previous))
+            assert maximum <= 2, f"Diagonal masks differed from Quartz by {maximum} levels"
+            print(f"Largest 2× diagonal mask channel difference from Quartz is {maximum}")
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("binary", type=Path)
@@ -216,7 +267,8 @@ def main():
     mutation = fixture.with_name("svg-gradient-mask-mutation.html")
     vertical = fixture.with_name("svg-vertical-alpha-masks.html")
     luminance = fixture.with_name("svg-linear-luminance-masks.html")
-    inputs = [binary, fixture, mutation, vertical, luminance]
+    diagonal = fixture.with_name("svg-diagonal-gradient-masks.html")
+    inputs = [binary, fixture, mutation, vertical, luminance, diagonal]
     avif_library = binary.with_name("libVoxAVIF.dylib")
     if avif_library.exists():
         inputs.append(avif_library)
@@ -264,10 +316,12 @@ def main():
                                cache=True, require_viewport_hit=True, scroll=42, scale=2)
         assert automatic_2x == full_2x, "Automatic radial raster changed the 2× document pixels"
         check_mask_mutation(binary, mutation, directory)
-        check_radial_cache_capacity(binary, directory)
+        check_mask_cache_capacity(binary, directory, radial=True)
+        check_mask_cache_capacity(binary, directory, radial=False)
         check_svg_mask_strips(binary, vertical, directory, luminance=False)
         check_svg_mask_strips(binary, luminance, directory, luminance=True)
         check_linear_rgb_fallback(binary, luminance, directory)
+        check_diagonal_gradient_masks(binary, diagonal, directory)
     assert {path: digest(path) for path in inputs} == digests
     print("PASS: macOS rendered both gradient mask modes with the shared rasterizer")
 
