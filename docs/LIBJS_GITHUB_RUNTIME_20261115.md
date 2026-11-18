@@ -8370,9 +8370,9 @@ The actual sort unit file passes with current V under the aggregate
 memory guard. The compiler retries with C after its implicit TCC check
 cannot resolve CoreFoundation. The guard exits zero in 140.983 seconds
 at 9,298,542,592 sampled bytes. The same unit file passes with `-gc none`
-in 95.809 guard seconds at 8,935,849,984 sampled bytes. The production type check exercises the
-full browser with `-prod -prealloc -gc none` and exits zero in 46.927
-seconds at 7,119,716,352 sampled bytes.
+in 95.809 guard seconds at 8,935,849,984 sampled bytes. The production
+type check exercises the full browser with `-prod -prealloc -gc none`
+and exits zero in 46.927 seconds at 7,119,716,352 sampled bytes.
 
 A focused production-allocator fixture compiles both versions of the
 sorter and runs each in its own fresh process. The 2, 3, 16, 57, 512
@@ -8394,7 +8394,8 @@ profile bytes to match and rejected the rewritten profile. The retry
 verifies the identical matrix, white point and channel transfer tags.
 Only the copyright tag payload differs. Both original PNG hashes remain
 fixed. The converted copy supplies color attribution and the original
-capture remains the ordinary-raster result.
+capture remains the ordinary-raster result. Among the 25,265 differing
+pixels after conversion, 23,107 have a maximum channel difference of one.
 
 Build `20261118-075540-37c2a48b` publishes executable
 `896b2d35d455afdbb5ec57c6dd5d5759a42e1a15d5f71961ae39fc0d146365cb`.
@@ -8420,3 +8421,31 @@ inputs and caches. Both remaining goals require the normal renderer and
 memory behavior to be verified on their respective capture paths. The
 converted images, ordinary and diagnostic results, and build receipts
 are local under `repository-navigation-5204-r97/receipts`.
+
+### Published merge-sort workspace replay
+
+Managed build `20261118-081004-bf6df4bf` publishes executable
+`604f51df0b16e909d556320a196324d6fb5af2f4b425127326d6c9899a6c46b4`
+as one C unit with literal V `-prod`. The consumed sort source matches
+`ad44847c8`. The build and headless smoke guards exit zero. Hacker News
+PID 55949 again matches all 30 stories and the 2× PNG with six native
+hits and zero misses or compiler calls. Its guard exits zero in 3.825
+seconds at 415,760,384 sampled bytes.
+
+The ordinary GitHub replay (PID 56148) matches the three ordered content
+controls and records 3,615 native hits and 1,648,713 entries in the last
+audit. It has zero misses and compiler calls. The guard stops it at
+28.955 seconds and 12,919,668,736 sampled bytes. Guard and guarded child
+exits are 125 and 137. The final PNG and cache shutdown audit are absent.
+
+The separate raster diagnostic (PID 56636) completes 120 seconds and
+matches the three exact content controls. Shutdown records 3,615 native
+hits and 1,773,921 native entries, zero misses or compiler calls, and an
+uninitialized JavaScriptCore runtime. The browser, controller and guard
+exit zero in 121.491 guard seconds at 12,367,855,616 sampled bytes.
+The unchanged Brave Back PNG differs at the same two Notifications
+corners, so the exact-pixel verdict exits 1. The two production builds
+consume additional source changes, and the standalone sorter allocation
+result supplies the isolated comparison. The browser checks, fixed input
+hashes and guard records are local under
+`repository-navigation-5204-r97/receipts/sort-published`.
