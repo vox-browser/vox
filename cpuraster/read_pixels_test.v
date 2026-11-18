@@ -1,6 +1,7 @@
 module cpuraster
 
 import crypto.sha256
+import os
 
 fn premultiplied_table() []u8 {
 	mut source := []u8{len: 256 * 256 * 4}
@@ -52,4 +53,60 @@ fn test_read_pixels_matches_skia_row_byte_validation() {
 	// A zero source pitch keeps zero row bytes: both rows read the first row.
 	assert read_pixels(source, 2, 2, 0, 1, mut destination, 2, 2, 8, 0, 0)
 	assert destination == [u8(1), 2, 3, 4, 5, 6, 7, 8, 1, 2, 3, 4, 5, 6, 7, 8]
+}
+
+fn test_large_pixel_read_matches_serial_with_clipping_and_padding() {
+	serial_setting := 'VOX_SERIAL_CPU_RASTER'
+	previous := os.getenv_opt(serial_setting)
+	defer {
+		if value := previous {
+			os.setenv(serial_setting, value, true)
+		} else {
+			os.unsetenv(serial_setting)
+		}
+	}
+
+	width, height := 1051, 533
+	pitch := width * 4 + 20
+	dw, dh := width + 10, height + 8
+	dp := dw * 4 + 28
+	for stride in [pitch, 0] {
+		source_size := if stride == 0 { width * 4 } else { pitch * height }
+		source := []u8{len: source_size, init: u8((index * 19 + index / 131) & 255)}
+		original := source.clone()
+		mut serial := []u8{len: dp * dh, init: 0x6b}
+		mut parallel := serial.clone()
+		assert os.setenv(serial_setting, '1', true) == 0
+		assert read_pixels(source, width, height, stride, 2, mut serial, dw, dh, dp, -7, -3)
+		assert os.unsetenv(serial_setting) == 0
+		assert read_pixels(source, width, height, stride, 2, mut parallel, dw, dh, dp, -7, -3)
+		pixels_match := parallel == serial
+		source_unchanged := source == original
+		assert pixels_match
+		assert source_unchanged
+		assert parallel[0] == 0x6b
+		assert parallel[3 * dp + 7 * 4 + 3] == source[3]
+		assert parallel[4 * dp - 1] == 0x6b
+		assert parallel.last() == 0x6b
+	}
+}
+
+fn test_overlapping_pixel_views_keep_serial_row_order() {
+	width, rows := 1025, 545
+	pitch := width * 4
+	mut backing := []u8{len: pitch * (rows + 1), init: if index % 4 == 3 {
+		u8(255)
+	} else {
+		u8((index / pitch + index % pitch) & 255)
+	}}
+	first_row := backing[..pitch].clone()
+	source := unsafe { backing[..pitch * rows] }
+	mut destination := unsafe { backing[pitch..] }
+	assert uint(source.data) + uint(pitch) == uint(destination.data)
+	assert read_pixels(source, width, rows, pitch, 2, mut destination, width, rows, pitch, 0, 0)
+	// Each row reads the preceding row that the serial pass has just written.
+	for row in 0 .. rows {
+		pixels_match := destination[row * pitch..(row + 1) * pitch] == first_row
+		assert pixels_match, 'shifted row ${row} differs'
+	}
 }

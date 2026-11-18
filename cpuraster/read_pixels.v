@@ -50,20 +50,64 @@ pub fn read_pixels(source []u8, width int, height int, pitch int, alpha_type int
 	if source_end > i64(source.len) || destination_end > i64(destination.len) {
 		return false
 	}
-	for row in 0 .. rows {
-		source_offset := (top + row) * pitch + left * 4
-		destination_offset := (destination_y + row) * destination_pitch + destination_x * 4
-		if alpha_type != 2 {
+	source_start := top * pitch + left * 4
+	destination_start := destination_y * destination_pitch + destination_x * 4
+	if alpha_type != 2 {
+		for row in 0 .. rows {
+			source_offset := source_start + row * pitch
+			destination_offset := destination_start + row * destination_pitch
 			unsafe { vmemcpy(&destination[destination_offset], &source[source_offset], columns * 4) }
-			continue
 		}
-		for column in 0 .. columns {
-			offset := column * 4
-			unpremultiply_pixel(source, source_offset + offset, mut destination, destination_offset +
-				offset)
-		}
+		return true
+	}
+
+	scan := PixelReadScan{
+		source:            source
+		destination:       destination
+		source_start:      source_start
+		destination_start: destination_start
+		source_pitch:      pitch
+		destination_pitch: destination_pitch
+		columns:           columns
+	}
+	// Compare the touched addresses, including any padding between rows.
+	// Views of one backing buffer may start at different addresses.
+	source_address := u64(uint(source.data)) + u64(source_start)
+	destination_address := u64(uint(destination.data)) + u64(destination_start)
+	overlaps := if source_address <= destination_address {
+		destination_address - source_address < u64(source_end - i64(source_start))
+	} else {
+		source_address - destination_address < u64(destination_end - i64(destination_start))
+	}
+	if overlaps {
+		scan_unpremultiply_rows(&scan, 0, i32(rows))
+	} else {
+		run_raster_scans(&scan, rows, columns, scan_unpremultiply_rows)
 	}
 	return true
+}
+
+struct PixelReadScan {
+	source            []u8
+	destination       []u8
+	source_start      int
+	destination_start int
+	source_pitch      int
+	destination_pitch int
+	columns           int
+}
+
+fn scan_unpremultiply_rows(context voidptr, first i32, end i32) {
+	scan := unsafe { &PixelReadScan(context) }
+	mut destination := unsafe { scan.destination }
+	for row in int(first) .. int(end) {
+		source_offset := scan.source_start + row * scan.source_pitch
+		destination_offset := scan.destination_start + row * scan.destination_pitch
+		for offset := 0; offset < scan.columns * 4; offset += 4 {
+			unpremultiply_pixel(scan.source, source_offset + offset, mut destination,
+				destination_offset + offset)
+		}
+	}
 }
 
 fn saturating_add(a int, b int) int {

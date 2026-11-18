@@ -4161,3 +4161,26 @@ CPUs. Every output hash matched and every process and memory guard exited zero.
 Focused serial and parallel pixel checks passed on macOS and Linux. The
 production-allocator JPEG and odd/even WebP native fixtures, macOS
 ThreadSanitizer check, and 2,500 existing Skia mipmap comparisons passed.
+
+### Parallel CPU pixel readback
+
+Large reads from premultiplied RGBA buffers now use up to four raster workers
+when the touched source and destination ranges are disjoint. This conversion
+serves Canvas2D pixel reads and some portable SVG and shadow uploads.
+Overlapping views retain their original serial row order. The focused tests
+cover padded and zero source strides, clipped rows, untouched destination
+bytes and overlapping views, and pass on macOS with preallocation and Linux
+with Boehm. The macOS ThreadSanitizer check and pinned CPU raster suite passed,
+including 76 exhaustive and 2,000 random pixel-read comparisons against Skia.
+
+On an Apple M5 Max with 18 logical CPUs and one-minute load of 6.04, seven
+alternating fresh-process pairs used matching macOS single-C `-prod` builds
+with preallocation. The timed call reads a 1920×1080 source into a 1927×1073
+destination at (-7, 3), with padded rows on both sides. Input generation and
+output hashing are outside the timed span. Median CPU readback latency
+fell from 8.683 ms to 3.496 ms, with the candidate faster in all seven pairs.
+A separate instrumented run observed four distinct threads. Every timed run
+produced the same destination SHA-256
+(`01deabb3dae311e16d18730a6e7f69d7fd5eae346b594f71d604782546a23e8b`).
+All processes and guards exited zero. These timings cover the CPU conversion
+call and its dispatch.
