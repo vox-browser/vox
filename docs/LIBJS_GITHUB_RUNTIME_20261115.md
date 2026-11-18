@@ -9740,3 +9740,48 @@ records 9.186 seconds for Vox and 2.434 seconds for Brave under lower
 host load. Raw attempts, exact counters, images, executable identities
 and guard reports are local under
 `docs/benchmark-results/github-compiled-v8-5204-r119/receipts`.
+
+### Compiled runtime profile and array length handling
+
+A traced visit on published executable
+`fb9f84d9dfb1322763bab7abb2026df81df55becbfb2c7f87237142caa329818`
+reuses the grouped cache and passes the archived `vlang/v` audit. It
+records 484,139 native entries, 13,410,611 fast steps and 5,090,065 slow
+steps. In 2,353 main-thread snapshots, 619 include the LibJS executable
+runner and 475 include the document layout callback. The sampled paths
+locate runtime and layout work. The instrumented pass is excluded from
+comparative timings. The sampler, browser and guard exit zero. Raw
+samples and replay receipts are local in
+`docs/benchmark-results/github-runtime-profile-5204-r120.tar.gz`.
+
+Commit `2a82a1ea8` initializes the virtual length of a fresh array from
+its validated constructor argument. For a numeric length descriptor,
+one bounds check, cast and fraction check replace the generic numeric
+conversions. Values that can invoke author code retain both coercions.
+The array suite passes with assertions enabled, including coercion
+order, sparse length limits and negative zero. The first combined
+compile-and-test attempt reaches its 3 GiB guard during compilation. The
+separate compile exits zero at 9,161,932,800 sampled peak bytes, and the
+focused runtime exits zero under its 3 GiB guard.
+
+Seven alternating trials run the same 16,384 array constructions and
+length writes and verify checksum 139,264. The two LibJS executables use
+Clang `-O2` and `-prealloc -gc none`. Their consumed source manifests
+differ only in `libjs/array_object.v`. Separate diagnostics confirm
+16,386 native entries in each binary. Each timed process loads three
+prebuilt entries with zero misses or compiler calls. Node embeds V8
+`14.6.202.34-node.40` and runs the same source. The elapsed intervals
+start at execution of the prepared script, including any native lookup
+or VM tiering within that execution.
+
+| Median array workload measure | LibJS control | LibJS numeric length | Node V8 |
+| --- | ---: | ---: | ---: |
+| Main-thread instructions | 360,759,202 | 352,255,934 | — |
+| Elapsed time | 30.775 ms | 30.270 ms | 6.424 ms |
+
+Instruction counts fall 2.36% with all seven pairs improving. Five
+pairs finish sooner. The paired guard exits zero in 3.255 seconds at
+82,706,432 sampled peak bytes. The 18-CPU host reports a one-minute load
+of 47.91 during the cohort. The scope is array execution. The archived
+GitHub launch-to-PNG target remains open. Local receipts are under
+`docs/benchmark-results/libjs-array-length-5204-r120/receipts`.
