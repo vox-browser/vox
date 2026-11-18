@@ -5745,3 +5745,56 @@ Odd pairs ran the workers-disabled setting first.
 | Hacker News | 1793.020, 1556.732, 1530.002, 1531.847, 1521.110, 1618.192, 1628.853 | 1514.265, 1528.653, 1540.750, 1540.249, 1551.347, 1670.876, 1616.710 |
 | GitHub | 3689.112, 3779.487, 3764.194, 3684.892, 3887.710, 4131.023, 4108.306 | 3639.933, 3789.892, 3748.792, 3724.459, 4339.400, 4051.171, 4049.266 |
 | Old Reddit | 1758.637, 1768.435, 1787.573, 1735.655, 2354.995, 1886.693, 1857.683 | 1760.005, 1774.321, 1807.386, 1752.116, 2183.433, 1892.087, 1839.270 |
+
+### Parallel truncating premultiplication for WebP paint pixels
+
+The macOS WebP RGB paint path now fills the premultiplied copy directly
+from the straight decoder bytes. It shares the raster premultiplication
+loop with Canvas2D and sampled-image uploads, using a zero rounding
+bias for WebP and 127 for the rounded conversions. The worker ranges
+cover complete 1024-pixel batches. A final short range uses the same
+conversion, and any partial-pixel bytes are copied unchanged. WebP
+decoding policy and the straight bitmap used by Canvas stay intact.
+
+A prepared single-C-unit `-prod -prealloc -gc none` harness timed output
+allocation and premultiplication through return. The original control
+cloned the straight buffer and truncated each color channel in a
+scalar loop. Seven rotating fresh-process groups measured each input
+with that loop, the new pass forced serial, and the new pass with
+default scheduling. The input from the WebP control was decoded before
+timing and the others used synthetic mixed alpha. The one-minute load
+was 8.05–8.28 on 18 logical CPUs. All 105 timed processes and the guard
+exited zero, and the full output hashes matched across modes for every
+input. An initial 4×2 timing attempt reached the timer's resolution,
+so that size is covered by the exact pixel tests.
+
+| Source | First call before / serial / default, µs | Warm before / serial / default, µs | Default faster than before |
+| --- | ---: | ---: | ---: |
+| 128×128 | 26.166 / 9.250 / 8.916 | 26.083 / 9.000 / 9.042 | 6/7 |
+| 512×512 | 423.750 / 145.750 / 129.500 | 424.605 / 148.250 / 110.896 | 7/7 |
+| WebP 1031×513 | 876.583 / 315.042 / 194.084 | 858.000 / 299.625 / 175.396 | 7/7 |
+| 1027×513, three trailing bytes | 876.500 / 297.417 / 194.167 | 870.146 / 296.583 / 179.459 | 7/7 |
+| 2049×2047 | 6849.208 / 2497.042 / 1308.042 | 6892.959 / 2326.834 / 1256.251 | 7/7 |
+
+A dispatch probe observed two threads at 512×512 and four at 1031×513.
+There was no dispatch one pixel below the threshold or with
+`VOX_SERIAL_CPU_RASTER=1`. The prepared allocator, forced serial, and
+ASan/UBSan runs passed. The focused tests compare all bytes across
+worker boundaries, check the last complete pixel and trailing bytes,
+and verify that the source is preserved. The browser's focused WebP
+tests passed through both local and fetched image entry points. Their
+first combined invocation reached the 3 GiB guard during compilation.
+Building that test under the default compile guard and then running
+it under the focused 3 GiB guard succeeded.
+
+The published single-C-unit bundle
+`9568a08eccc0567b56fa837e6d487bd57a63ec69d31c10b9760c9b5a6b5df757`
+provided archive eligibility and pixel checks. A probe at return
+offset `0x125b98` detected the 2,115,612-byte RGBA source of a separate
+1031×513 transparent WebP control. At 1024×768 CSS pixels and 2× capture
+scale, Hacker News, GitHub and Old Reddit matched their frozen
+references with 30, 33 and 25 audited entries. No archive called
+the WebP paint conversion. Each capture used a fresh process,
+private profile and cache, and one second of settling. Browser and
+guard exits were zero. The component timings measure the WebP paint
+conversion, and the candidate production capture awaits the rebuild.
