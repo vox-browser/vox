@@ -1,5 +1,6 @@
 module ggshape
 
+import cpuraster
 import gg.canvas
 import math
 
@@ -24,11 +25,7 @@ pub fn draw_repeated_background(pixels &u8, width int, height int, pitch int,
 		|| border.rect[2] <= 0 || border.rect[3] <= 0 || border.thickness <= 0 {
 		return false
 	}
-	mut rgba := source.clone()
-	for i in 0 .. sw * sh {
-		a := u32(rgba[i * 4 + 3])
-		for c in 0 .. 3 { rgba[i * 4 + c] = u8((u32(rgba[i * 4 + c]) * a + 127) / 255) }
-	}
+	rgba := cpuraster.premultiply_rgba_copy(source, sw, sh) or { return false }
 	mut ctx := context() or { return false }
 	mut target := ctx.new_surface(width: width, height: height, sample_count: samples) or { return false }
 	defer { target.free() }

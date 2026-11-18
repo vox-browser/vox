@@ -8289,3 +8289,63 @@ Its archived Hacker News, GitHub and Old Reddit pixel checks are
 recorded in the [preceding replay](#parallel-rounded-shadow-patch-expansion).
 The timings here cover the isolated crop. Candidate browser
 timings await the shared rebuild.
+
+### Parallel preparation of repeated background textures
+
+The macOS rounded-background compositor prepares its repeated
+texture with the shared raster premultiplication kernel. It writes
+premultiplied RGBA directly into the upload buffer, preserving the
+source bytes and the original `(channel * alpha + 127) / 255`
+rounding. At and above 262,144 pixels, raster workers join before
+the GPU upload. Smaller textures, including the archived Old
+Reddit sprite, use the fused serial loop.
+
+Matched single-C-unit V `-prod -g -prealloc -gc none` harnesses
+measured allocation and premultiplication through return. PNG
+decoding, input setup and output hashing ran outside the timer.
+The Old Reddit case used the original 140×1751 RGBA sprite
+(`3151728340f566d1400cd9437ae64e8d95583d066712fa1d7c0718b8d10f5527`).
+Other inputs were synthetic. Seven rotating fresh-process groups
+ran on Mac17,6 with 18 logical CPUs starting at 09:56 local time
+on 2026-11-18. One-minute load varied from 4.98 to 5.14. All 21
+processes and the guard exited zero. Warm results take each
+process's median of its eight calls after the first. Times are
+medians in microseconds.
+
+| Texture | First before / forced serial / default | Warm before / forced serial / default |
+| --- | ---: | ---: |
+| 32×32 | 1.542 / 0.667 / 0.666 | 1.417 / 0.458 / 0.438 |
+| 140×1751 Old Reddit | 391.208 / 135.792 / 141.667 | 399.938 / 144.042 / 142.270 |
+| 512×512 | 431.500 / 156.250 / 143.000 | 423.646 / 156.645 / 130.667 |
+| 1031×517 | 837.209 / 310.666 / 234.958 | 857.354 / 320.937 / 229.355 |
+| 1921×1081 | 3346.042 / 1267.500 / 863.334 | 3354.562 / 1242.375 / 801.938 |
+| 2048×2048 | 6970.792 / 2617.625 / 1409.708 | 6851.792 / 2507.791 / 1530.312 |
+
+Every output hash matched. Default scheduling won every first and
+warm pair against the original. The harness SHA-256 values were
+`2b122e1bd45fe28f43894bff915193155079d25ffa9eb30f013a8daf42dbcc8d`
+before and
+`f6ed15b925b82597e68204ca3edc0af4fb4a6f84416cd847fce11f4e3bca2d44`
+after.
+
+The dispatch probe observed two distinct threads at 512×512, four
+on larger synthetic cases, and zero below the cutoff or with
+workers disabled. A 140×3502 texture formed from two copies of the
+Old Reddit sprite reached the public repeated-background path and
+used three threads. All draws with the single and doubled sprites,
+including forced serial, produced the complete surface SHA-256
+`4a8b97797c29a8342798c573db35afc529341f3d96028b5ce6ff6abb203bd79d`.
+All four probe processes and the guard exited zero. The unchanged
+single-sample and multisample Brave references passed, including
+the double-height upload regression check. The first GPU test
+setup failed compilation before running because the fixture
+reassigned a mutable array alias. The final fixtures passed in
+both scheduling modes. Focused macOS and arm64 Linux tests,
+ASan/UBSan, and ThreadSanitizer passed.
+
+The latest completed browser was still
+`abc313c877690171f669481414f33c967376bd88d45f1128596e79e76f749f4a`.
+The same build matched archived Hacker News, GitHub and Old Reddit
+references in the [preceding replay](#parallel-rounded-shadow-patch-expansion).
+The timings here cover texture preparation through return.
+Candidate page timings await the shared production rebuild.
