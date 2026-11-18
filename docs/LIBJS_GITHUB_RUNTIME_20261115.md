@@ -7439,3 +7439,35 @@ Set change. The installed executable is still `23ba3183…3bb`. Full
 cached-native Back restoration under 12 GiB remains pending. Local
 commands, pins and receipts are under
 `repository-navigation-5204-r80`.
+
+### LibJS built-in String iterator steps
+
+Commit `961d82107` registers String iterator `next` with the same native
+step dispatch used by Array, Map and Set. A public `next()` call returns
+a fresh result object. The step reuses the VM's ASCII primitives and reads
+non-ASCII code units from the iterator's owned text. The returned primitive
+owns its code units.
+
+Three alternating fresh-process pairs use matching single-C prealloc
+builds. The 493 source and fixture pins differ only in the two
+implementation files. Each process yields 24,000 strings and verifies
+28,000 code units. The control caller arena grows by 51,794,105 bytes in
+each pair. The candidate grows by 16,146,114 bytes, **68.8% less**.
+The checks cover paired and lone surrogates, separate public result
+objects, captured and overridden methods, wrong receivers, spread and
+`Array.from`. The Boehm run forces collection and verifies retained
+values, including NUL and lone UTF-16 units.
+
+The native seed compiles three executables in one compiler call. A
+fresh reopen with `/usr/bin/false` verifies the same yields and
+observable behavior. It records three hits, three native entries and
+188,208 helper steps, with zero misses, compiler calls, pending or
+invalid entries. All runtime processes and guards exit zero. The
+production type check passes in 42.333822041 seconds at 7,107,379,200
+sampled peak bytes. The updated regression source remains unrun under
+the automated-test hold.
+
+The managed production build is still sealing its inputs. Full
+cached-native Back restoration under 12 GiB awaits a new published
+bundle. Local commands, pins and receipts are under
+`repository-navigation-5204-r81`.
