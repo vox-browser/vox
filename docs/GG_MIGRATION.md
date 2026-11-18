@@ -4875,3 +4875,43 @@ activated the probe at executable offset `0x2ed0c` with a 1282×786
 noise image. All browser processes and the memory guard exited zero.
 The before/after timings cover only the native filter. A published
 browser with the new worker code is pending.
+
+### Published Hacker News scroll-tile check
+
+Receipt `20261118-043956-76e1c1ba`, single C unit with V `-prod`, sealed
+the scroll-tile header from `121617152`. Executable SHA-256 was
+`66f97ef08d4c9ff9ae1195cd80c9817add78ab82c27960580f1444a44101e77d`.
+The archived homepage retained its 30 audited entries and exact decoded
+RGBA reference `a12f1a485f6b1e6f9d87dc1a49e47c3e2b7c2245858332e1209ff15041734642`
+with the CPU tile compositor enabled. The screenshot and guard exited 0.
+
+A separate interposed diagnostic resolved the tile worker at executable
+offset `0x1172328`. It observed four distinct threads on the initial
+six-tile upload and two distinct threads on each of two two-tile uploads
+during input. The diagnostic received all 48 wheel events, produced 48
+native publications, and exited 0 in the browser, driver and guard.
+
+Two alternating pairs used `tools/measure_precise_scroll.py` with
+`VOX_SCROLL_TILE_COMPOSITOR=1`, then contrasted
+`VOX_SERIAL_SCROLL_TILE_COPY=1` with the default worker setting on that
+same build. Each trial used a fresh process, profile and cache, sealed
+original-origin HTTPS replay, JavaScript enabled, a 1024×768 document
+viewport at 2×, and two seconds of title-matched settling. The driver
+sent 48 wheel events at nominal 60 Hz with delta 5 and a reversal after
+24 inputs. Browser, driver and guard exits were all 0. One-minute load
+was 10.28–10.68 on 18 logical CPUs. Each trial completed all 48 inputs,
+49 total native publications and 46 measured scroll changes.
+
+| Pair and worker setting | Actual input Hz | Scroll publications/s | Median / p95 / max interval, ms | Intervals over 16.67 ms | Leading / trailing gap, ms |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| 1 serial | 59.87 | 58.59 | 16.46 / 20.38 / 26.46 | 22/46 | 18.22 / 14.53 |
+| 1 parallel | 60.00 | 58.72 | 16.73 / 20.79 / 24.74 | 24/46 | 20.24 / 12.90 |
+| 2 parallel | 59.90 | 58.62 | 16.99 / 21.67 / 26.82 | 25/46 | 19.98 / 14.24 |
+| 2 serial | 59.85 | 58.58 | 16.62 / 21.97 / 24.97 | 22/46 | 18.56 / 14.76 |
+
+Throughput uses the entire first-to-last input window and counts changes
+at completed native frame installation after the outer view paint.
+Observed throughput stayed close to 58.6–58.7 publications per second
+across settings. The parallel trials had more intervals over budget.
+The result establishes native worker use on this archive, with no
+measurable scrolling gain under this short input schedule.
