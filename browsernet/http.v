@@ -7,6 +7,7 @@ import encoding.base64
 import loader
 import net
 import net.http
+import platform
 import time
 import url
 
@@ -47,7 +48,12 @@ pub fn response_headers(response http.Response) []adblock.ResponseHeader {
 }
 
 pub fn filter_response(input adblock.Request, response http.Response) ! {
+	// The response remains with its caller. The header view, filter request,
+	// and decoded decision are temporary unless we publish an error message.
+	scratch := platform.begin_thread_scratch('resource response filtering')
+	defer { scratch.finish() }
 	decision := adblock.check_response(input, response_headers(response))
+	scratch.leave()
 	if decision.error != '' { return error('Adblock unavailable: ${decision.error}') }
 	if decision.blocked { return error('Blocked by adblock: ${decision.rule}') }
 }
