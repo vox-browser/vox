@@ -1829,3 +1829,19 @@ type check. Windowed reload validation awaits a published build with the
 new limit. The latest managed attempt ran out of space staging generated C.
 Raw checks and inputs are under
 `docs/benchmark-results/github-frontend-budget-5204-r110/receipts`.
+
+### Build helper scratch at process handoff
+
+Commit `cf2fe0147` compiles each V tool, removes its generated C, and
+then runs the tool. The production script also releases the ad-block
+worker's temporary C after the source-manifest step completes. The
+launcher regression covers argument and exit status forwarding,
+manifest environment isolation and scratch cleanup.
+
+The real memory-guard launcher retained 2,017,360 bytes of generated C
+when it started its child under the previous path. The revised path held
+zero generated C bytes at handoff. Both checks used the same V compiler
+and both guards exited zero. A guarded worker build still ran out of
+space emitting its initial C file, before the new removal step. The
+published browser still predates the 6 MiB frontend limit. Raw commands
+and receipts are under `docs/benchmark-results/vox-v-tool-handoff-20261118/receipts`.
