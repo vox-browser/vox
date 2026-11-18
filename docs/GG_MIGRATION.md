@@ -319,6 +319,49 @@ version gradient, icons and compilation card on live vlang.io. The macOS
 production-mode and Windows D3D11 type checks passed. The shared runtime
 build and macOS portable renderer cutover remain open.
 
+## SVG mask opacity groups
+
+The portable GG replay now handles up to four nested opacity groups inside
+an eligible alpha or luminance mask. Each group renders into a bounded
+premultiplied surface. The existing CPU image compositor applies the
+group's opacity once when restoring it over its parent. Sibling groups
+reuse a cleared surface at the same depth.
+
+The [browser fixture](../Tests/Browser/Native/svg-mask-opacity.html) checks
+path overlap, nested half-opacity groups, surface reuse across siblings,
+and luminance after compositing over an opaque mask background. Ten sampled
+pixels agreed within one level per channel with the native macOS capture
+from executable `9c165f7ab3dc15fd6fcc7a0d89336aefde735c3a9f983c15248727de89918301`
+in fresh PID 73912. For example, the 50% blue overlap was `(128, 128, 255)`
+on Linux and `(127, 127, 255)` on macOS.
+
+The Linux ARM64 single-unit `-O1` executable SHA-256 was
+`d9f0f93b94d00d8c28effb665bd89fc0206d35da7275caba738d565fad1445cd`.
+The fixture SHA-256 was
+`2ca5b13ae5723502fa64a1661cb1ea2b3eb129e2508c048cd6fa1cf6e429ea51`.
+A separate diagnostic recorded 41 applications of each grouped mask mode
+after the first scroll callback. Each trial used software OpenGL, a fresh
+profile, cache and process, one second of settle, and 80 synthetic 42-pixel
+scroll callbacks at a requested 1024 × 600 viewport. The cohort alternated
+the default with `VOX_DISABLE_PORTABLE_SVG_MASK=1`. Timings end at callback
+replay completion.
+
+| Trial | Replay | Median (ms) | p95 (ms) | Max (ms) |
+| --- | --- | ---: | ---: | ---: |
+| 1 | Per path | 16.352 | 17.944 | 18.870 |
+| 2 | Masked group | 7.077 | 10.196 | 10.343 |
+| 3 | Per path | 14.554 | 17.398 | 18.491 |
+| 4 | Masked group | 7.299 | 9.959 | 10.917 |
+
+Scroll positions and retained command counts matched across all four
+trials. The guest one-minute load averages were 0.93, 1.10, 1.01 and 1.01.
+The 6 GiB guest used temporary swap for the build. The guarded build,
+Linux browser suite and cohort exited zero with sampled process-tree RSS
+peaks of 5,988,016,128, 877,191,168 and 470,147,072 bytes. Prior clip,
+opacity and flat-mask fixtures passed in the suite. Disabling mask replay
+reproduced fully opaque coverage in the half-opacity and nested scopes.
+The macOS production-mode and Windows D3D11 type checks also passed.
+
 ## Original migration plan
 
 Vox currently renders through two Skia builds: LibWeb's Skia (CPU raster,
