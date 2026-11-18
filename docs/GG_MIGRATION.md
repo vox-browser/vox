@@ -4284,8 +4284,8 @@ random bitmap exports. The native WebGL test read back all pixels of a
 
 ### Parallel CPU erosion and dilation
 
-Canvas2D SVG-reference `feErode` and `feDilate` use a sliding per-channel
-minimum or maximum over the existing separable passes. Each sample enters
+Canvas2D SVG-reference `feMorphology` uses a sliding per-channel minimum for
+erosion and maximum for dilation over the existing separable passes. Each sample enters
 and leaves the queue at most once. The same 256-pixel radius cap and
 transparent-black border apply. Large surfaces split the horizontal pass by
 rows and the vertical pass by columns, with a join between passes. An axis
