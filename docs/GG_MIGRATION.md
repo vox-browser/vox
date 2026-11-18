@@ -6144,3 +6144,69 @@ out-of-line destination-format check at return offset `0x1175548`
 observed no matches on these captures. The same probe detected the
 format conversion in a padded standalone control. Whole-page
 measurements of the candidate await the shared production rebuild.
+
+### Parallel capture of retained scroll tiles
+
+On-demand capture of a retained scroll-tile frame now initializes the
+output bitmap and overlays the tile slices across disjoint row bands.
+The caller checks the existing frame fences and reads each provider.
+Workers borrow those immutable bytes and join before the result is
+published. The image provider takes ownership of the finished
+allocation, removing the final full-bitmap copy. Wrapped slices, the
+right and bottom overlay edges, and padding are preserved. Captures
+below 4 MiB stay serial, and `VOX_SERIAL_SCROLL_TILE_CAPTURE=1` forces
+serial execution on larger frames.
+
+A single-C-unit Apple Clang `-O2 -flto -fobjc-arc` harness used the
+same wrapped ring, base image and tile providers in each mode. Its
+timed span starts at the flatten call and ends with image creation.
+Fixture setup and full provider-byte verification are outside that
+span. The three modes were the original implementation, the new
+implementation forced serial, and the new implementation with its
+default scheduler. Seven rotating fresh-process groups timed each
+surface. All 105 processes and the memory guard exited zero and every
+capture matched the independently assembled expected bytes.
+The one-minute load was 10.36 on 18 logical CPUs.
+
+| Frame | First call before / serial / default, µs | Warm before / serial / default, µs | Default faster than before | Default faster than new serial |
+| --- | ---: | ---: | ---: | ---: |
+| 1024×768, overlays | 501.958 / 268.125 / 281.375 | 280.687 / 111.562 / 107.375 | 7/7 | 3/7 |
+| 2048×1536, overlays | 2127.542 / 1158.833 / 1046.709 | 1299.022 / 472.667 / 225.375 | 7/7 | 7/7 |
+| 2048×1536, no overlays | 2111.958 / 1153.834 / 1115.042 | 1186.500 / 381.354 / 205.292 | 7/7 | 4/7 |
+| 2051×1537, padded | 2167.459 / 1160.833 / 1014.708 | 1285.542 / 465.979 / 221.230 | 7/7 | 7/7 |
+| 3840×2160, overlays | 6181.541 / 3749.792 / 2572.792 | 3828.709 / 1418.521 / 603.250 | 7/7 | 7/7 |
+
+Warm numbers are medians of within-process medians after the first
+capture. Median process peak RSS sampled immediately after the first
+4K call was 173,817,856 bytes before and 140,623,872 bytes with the
+candidate default, including the unchanged harness inputs. At
+2048×1536 with overlays those figures were 70,975,488 and 58,376,192
+bytes.
+
+A separate probe verified two threads at 1024×1024 and four threads
+at the padded size. It observed no dispatch at 1024×768 or with
+forced serial scheduling. The ARC, non-ARC, ASan/UBSan, and forced
+serial retained-tile tests passed, including the 2051×1539 fixture
+with padded, wrapped slices and a retained image after frame release.
+
+Published executable SHA-256
+`5d72f61417d4e5c75c4bd333550ce43baf8a65fcbd00bf89c1e1dafd8f641660`
+provided the archive diagnostics. Six captures of sealed Hacker News,
+GitHub and Old Reddit used fresh profiles and caches, 1024×768 CSS
+pixels at 2× and one second of settling. Default and explicitly
+enabled CPU tile settings both matched the frozen document pixels
+and their 30, 33 and 25 audited entries. The flatten probe at return
+offset `0x116c4ac` found zero calls on these document captures. A
+standalone original-path control validated the probe with a
+12,582,912-byte base image. The browser and guard exits were zero.
+
+Active-window snapshots were a separate diagnostic with a 1024×740
+document viewport. At a three-second observation delay Hacker News
+published two tiled frames when enabled, with zero flatten calls.
+Its full-window captures differed in 3,669 of 13,959,168 RGBA bytes.
+The first GitHub observation was still interactive. At a 6.5-second
+delay GitHub and Old Reddit both completed with zero tile publications
+and zero flatten calls. The GitHub windows matched exactly and the
+Old Reddit windows differed in 5,091 RGBA bytes. These observations
+do not establish a complete-page performance gain. A candidate
+production capture still requires the shared rebuild.

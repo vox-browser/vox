@@ -483,42 +483,115 @@ static BOOL native_scroll_tiles_ready(VoxScrollTileFrame *frame, const char *con
     return YES;
 }
 
+typedef struct {
+    CFDataRef data;
+    const uint8_t *pixels;
+    size_t first, rows, pitch;
+} VoxScrollCaptureBand;
+
+typedef struct {
+    const uint8_t *base;
+    uint8_t *output;
+    size_t height, pitch, length, row_bytes, lanes;
+    const VoxScrollCaptureBand *bands;
+    size_t count;
+} VoxScrollCapture;
+
+static void native_scroll_capture_rows(void *context, size_t lane) {
+    const VoxScrollCapture *capture = (const VoxScrollCapture *)context;
+    size_t first = capture->height * lane / capture->lanes;
+    size_t end = capture->height * (lane + 1) / capture->lanes;
+    size_t offset = first * capture->pitch;
+    size_t byte_end = end == capture->height ? capture->length : end * capture->pitch;
+    memcpy(capture->output + offset, capture->base + offset, byte_end - offset);
+    for (size_t i = 0; i < capture->count; ++i) {
+        const VoxScrollCaptureBand *band = &capture->bands[i];
+        size_t start = first > band->first ? first : band->first;
+        size_t stop = band->first + band->rows;
+        if (stop > end) stop = end;
+        if (stop <= start) continue;
+        const uint8_t *source = band->pixels + (start - band->first) * band->pitch;
+        uint8_t *destination = capture->output + start * capture->pitch;
+        if (capture->pitch == capture->row_bytes && band->pitch == capture->row_bytes) {
+            memcpy(destination, source, (stop - start) * capture->row_bytes);
+        } else {
+            for (size_t row = 0; row < stop - start; ++row)
+                memcpy(destination + row * capture->pitch, source + row * band->pitch,
+                    capture->row_bytes);
+        }
+    }
+}
+
+static void native_scroll_capture_release(void *info, const void *bytes, size_t size) {
+    (void)info;
+    (void)size;
+    free((void *)bytes);
+}
+
 static CGImageRef native_scroll_tiles_flatten(VoxScrollTileFrame *frame) {
     if (!native_scroll_tiles_ready(frame,"capture")) return NULL;
     if (frame->flattened) return frame->flattened;
     CFDataRef input = CGDataProviderCopyData(CGImageGetDataProvider(frame->base));
     if (!input) return NULL;
-    size_t pitch = CGImageGetBytesPerRow(frame->base);
-    NSMutableData *output = [NSMutableData dataWithBytes:CFDataGetBytePtr(input)
-        length:CFDataGetLength(input)];
-    CFRelease(input);
-    uint8_t *pixels = (uint8_t *)output.mutableBytes;
+    size_t pitch = CGImageGetBytesPerRow(frame->base), length = (size_t)CFDataGetLength(input);
     size_t right = frame->overlay < frame->document_width
         ? frame->document_width - frame->overlay : 0;
     size_t bottom = frame->overlay < frame->document_height
         ? frame->document_height - frame->overlay : 0;
-    for (size_t index = 0; index < frame->count; ++index) {
+    VoxScrollCaptureBand bands[VOX_SCROLL_TILE_LIMIT + 1];
+    VoxScrollCapture capture = {CFDataGetBytePtr(input), NULL, frame->height, pitch, length,
+        0, 1, bands, 0};
+    if (!frame->width || !frame->height || frame->width > pitch / 4 || right > frame->width
+        || length < frame->width * 4 || frame->height - 1 > (length - frame->width * 4) / pitch
+        || frame->count > VOX_SCROLL_TILE_LIMIT + 1) goto cleanup;
+    capture.row_bytes = right * 4;
+    for (size_t index = 0; capture.row_bytes && index < frame->count; ++index) {
+        CGRect src = frame->source[index], dst = frame->target[index];
+        size_t first = (size_t)dst.origin.y;
+        if (first < frame->top || first - frame->top >= bottom) continue;
+        size_t rows = (size_t)src.size.height, visible = bottom - (first - frame->top);
+        if (rows > visible) rows = visible;
+        if (!rows) continue;
+        if (first >= frame->height || rows > frame->height - first) goto cleanup;
         CGImageRef tile = (CGImageRef)CFArrayGetValueAtIndex(frame->images, index);
         CFDataRef bytes = CGDataProviderCopyData(CGImageGetDataProvider(tile));
-        if (!bytes) return NULL;
+        if (!bytes) goto cleanup;
         size_t tile_pitch = CGImageGetBytesPerRow(tile);
-        CGRect src = frame->source[index], dst = frame->target[index];
-        for (size_t y = 0; y < (size_t)src.size.height; ++y) {
-            size_t row = (size_t)dst.origin.y + y;
-            if (row - frame->top >= bottom) continue;
-            memcpy(pixels + row * pitch, CFDataGetBytePtr(bytes)
-                + ((size_t)src.origin.y + y) * tile_pitch, right * 4);
-        }
-        CFRelease(bytes);
+        size_t input_row = (size_t)src.origin.y, tile_length = (size_t)CFDataGetLength(bytes);
+        VoxScrollCaptureBand *band = &bands[capture.count++];
+        *band = (VoxScrollCaptureBand){bytes, NULL, first, rows, tile_pitch};
+        if (tile_pitch < capture.row_bytes || tile_length < capture.row_bytes
+            || input_row > (tile_length - capture.row_bytes) / tile_pitch
+            || rows - 1 > (tile_length - capture.row_bytes - input_row * tile_pitch) / tile_pitch)
+            goto cleanup;
+        band->pixels = CFDataGetBytePtr(bytes) + input_row * tile_pitch;
     }
-    CFDataRef owned = CFDataCreateCopy(NULL, (__bridge CFDataRef)output);
-    CGDataProviderRef provider = CGDataProviderCreateWithCFData(owned);
-    CFRelease(owned);
-    if (!provider) return NULL;
-    frame->flattened = CGImageCreate(frame->width, frame->height, 8, 32, pitch,
-        CGImageGetColorSpace(frame->base), CGImageGetBitmapInfo(frame->base), provider,
-        NULL, true, kCGRenderingIntentDefault);
-    CGDataProviderRelease(provider);
+    capture.output = (uint8_t *)malloc(length);
+    if (!capture.output) goto cleanup;
+    {
+        // Providers are read on the caller, including a tile split by ring wrap.
+        // Workers borrow the resulting immutable bytes and own disjoint output rows.
+        size_t lanes = length / (2u * 1024u * 1024u);
+        if (lanes > capture.height) lanes = capture.height;
+        if (lanes > 4) lanes = 4;
+        if (lanes > 1 && !getenv("VOX_SERIAL_SCROLL_TILE_CAPTURE")) {
+            capture.lanes = lanes;
+            dispatch_apply_f(lanes, dispatch_get_global_queue(QOS_CLASS_USER_INTERACTIVE, 0),
+                &capture, native_scroll_capture_rows);
+        } else native_scroll_capture_rows(&capture, 0);
+        CGDataProviderRef provider = CGDataProviderCreateWithData(NULL, capture.output, length,
+            native_scroll_capture_release);
+        if (!provider) goto cleanup;
+        capture.output = NULL;
+        frame->flattened = CGImageCreate(frame->width, frame->height, 8, 32, pitch,
+            CGImageGetColorSpace(frame->base), CGImageGetBitmapInfo(frame->base), provider,
+            NULL, true, kCGRenderingIntentDefault);
+        CGDataProviderRelease(provider);
+    }
+cleanup:
+    free(capture.output);
+    for (size_t i = 0; i < capture.count; ++i) CFRelease(bands[i].data);
+    CFRelease(input);
     return frame->flattened;
 }
 
