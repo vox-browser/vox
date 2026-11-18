@@ -159,6 +159,9 @@ mut:
 	history_object &libjs.Object = unsafe { nil }
 	history_binding ?&HistoryBinding
 	session_storage_binding ?&SessionStorageBinding
+	attribute_prototype &libjs.Object = unsafe { nil }
+	attribute_maps map[voidptr]&libjs.Object
+	attribute_nodes map[voidptr]&libjs.Object
 	query_prototype &libjs.Object = unsafe { nil }
 	query_iterator_prototype &libjs.Object = unsafe { nil }
 	queries map[voidptr]&domurl.URLSearchParams
@@ -237,6 +240,8 @@ pub fn Host.create(vm &libjs.VM, realm &libjs.Realm, document &dom.Document, hoo
 	mut host := &Host{ vm: vm, realm: realm, document: document, hooks: hooks }
 	host.install_nodes()!
 	host.install_node_interfaces()!
+	host.install_attribute_nodes()
+	host.install_attribute_maps()
 	host.install_shadow_roots()!
 	host.install_character_data()!
 	host.install_node_utilities()
@@ -393,6 +398,8 @@ pub fn (mut host Host) close() {
 	host.history_binding = none
 	host.history_object = unsafe { nil }
 	host.session_storage_binding = none
+	host.attribute_maps.clear()
+	host.attribute_nodes.clear()
 	host.location_url = unsafe { nil }
 	host.urls.clear()
 	host.url_wrappers.clear()

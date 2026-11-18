@@ -2811,6 +2811,8 @@ pub mut:
 @[heap]
 pub struct Attr {
 	Node
+mut:
+	attribute_record_ ?&Attr_
 pub mut:
 	name_          string
 	value_         string

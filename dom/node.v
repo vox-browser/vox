@@ -948,6 +948,9 @@ pub fn (n &Node) owner_document() ?&Document {
 	if n.is_document() {
 		return none
 	}
+	if attribute := n.as_attr() {
+		if record := attribute.attribute_record_ { return record.document() }
+	}
 	if n.document_ == unsafe { nil } {
 		return none
 	}
@@ -1352,7 +1355,7 @@ pub fn (n &Node) text_content() ?string {
 	}
 	if attr := n.as_attr() {
 		// If Attr node, return this's value.
-		return attr.value_
+		return attr.value()
 	}
 	// Otherwise, return null.
 	return none
@@ -1494,7 +1497,7 @@ pub fn (n &Node) node_value() ?string {
 	// The nodeValue getter steps are to return the following, switching on the interface this implements:
 	if attr := n.as_attr() {
 		// If Attr, return this's value.
-		return attr.value_
+		return attr.value()
 	}
 	if character_data := n.character_data() {
 		// If CharacterData, return this's data.
@@ -4237,8 +4240,8 @@ pub fn (n &Node) locate_a_namespace(prefix ?string) ?string {
 		return none
 	}
 	if attr := n.as_attr() {
-		if attr.owner_element_ != unsafe { nil } {
-			return attr.owner_element_.as_node().locate_a_namespace(prefix)
+		if owner := attr.owner_element() {
+			return owner.as_node().locate_a_namespace(prefix)
 		}
 		return none
 	}
@@ -4279,8 +4282,8 @@ pub fn (n &Node) lookup_prefix(namespace_ ?string) ?string {
 		}
 	}
 	if attr := n.as_attr() {
-		if attr.owner_element_ != unsafe { nil } {
-			return attr.owner_element_.locate_a_namespace_prefix(namespace_)
+		if owner := attr.owner_element() {
+			return owner.locate_a_namespace_prefix(namespace_)
 		}
 	}
 	if parent := n.parent_element() {
@@ -5362,6 +5365,7 @@ pub fn (mut a Attr) set_value(value string) ! {
 }
 
 pub fn (a &Attr) value() string {
+	if record := a.attribute_record_ { return record.value() }
 	return a.value_
 }
 
@@ -5382,6 +5386,7 @@ pub fn (a &Attr) prefix() ?string {
 }
 
 pub fn (a &Attr) owner_element() ?&Element {
+	if record := a.attribute_record_ { return record.owner_element() }
 	if a.owner_element_ == unsafe { nil } {
 		return none
 	}

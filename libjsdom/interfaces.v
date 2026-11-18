@@ -13,12 +13,14 @@ fn (mut host Host) install_node_interfaces() ! {
 	mut node_constructor := &libjs.Object(unsafe { nil })
 	mut element_constructor := &libjs.Object(unsafe { nil })
 	host.html_element_prototype = libjs.Object.create(host.realm, host.element_prototype)
-	for name in ['Node', 'Element', 'HTMLElement', 'Document', 'DocumentFragment'] {
+	host.attribute_prototype = libjs.Object.create(host.realm, host.node_prototype)
+	for name in ['Node', 'Element', 'HTMLElement', 'Document', 'DocumentFragment', 'Attr'] {
 		mut prototype := match name {
 			'Node' { host.node_prototype }
 			'Element' { host.element_prototype }
 			'HTMLElement' { host.html_element_prototype }
 			'DocumentFragment' { host.fragment_prototype }
+			'Attr' { host.attribute_prototype }
 			else { host.document_prototype }
 		}
 		construct := fn [host, name] (mut vm libjs.VM, new_target &libjs.Object) !&libjs.Object {

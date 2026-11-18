@@ -18,6 +18,8 @@ fn (mut host Host) wrap_node(node &dom.Node) libjs.Value {
 		if is_html { host.html_element_prototypes[interface_name] or { host.html_element_prototype } } else { host.element_prototype }
 	} else if node.is_document() {
 		host.document_prototype
+	} else if node.is_attribute() {
+		host.attribute_prototype
 	} else if node.is_shadow_root() {
 		host.shadow_root_prototype
 	} else if node.is_document_fragment() {
@@ -37,6 +39,8 @@ fn (mut host Host) wrap_node(node &dom.Node) libjs.Value {
 		if is_html { interface_name } else { 'Element' }
 	} else if node.is_document() {
 		'Document'
+	} else if node.is_attribute() {
+		'Attr'
 	} else if node.is_shadow_root() {
 		'ShadowRoot'
 	} else if node.is_document_fragment() {
@@ -158,7 +162,7 @@ fn (mut host Host) install_nodes() ! {
 					}
 				}
 				'ownerDocument' {
-					if !actual.is_document() { return owner.wrap_node(actual.document().as_node()) }
+					if document := actual.owner_document() { return owner.wrap_node(document.as_node()) }
 				}
 				else {}
 			}

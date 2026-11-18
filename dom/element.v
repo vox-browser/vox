@@ -152,6 +152,19 @@ pub fn (a &Attr_) value() string {
 	return a.value_
 }
 
+pub fn (mut a Attr_) set_value(value string) ! {
+	mut verified := value
+	if element := a.owner_element() {
+		verified = element.document().trusted_types_compliant_attribute_value(element, a.local_name_,
+			a.namespace_uri_, value)!
+	}
+	old_value := a.value_
+	a.value_ = verified
+	if element := a.owner_element() {
+		a.handle_attribute_changes(element, old_value, verified)
+	}
+}
+
 pub fn (a &Attr_) local_name() string {
 	return a.local_name_
 }
