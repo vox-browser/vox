@@ -1813,3 +1813,19 @@ All parses pass at depth 256 with matching source bytes. The 18-CPU
 host's one-minute load ranges from 6.61 to 7.70. Commands, inputs and
 failed build and runtime attempts are local under
 `docs/benchmark-results/github-frontend-cache-revisit-5204-r109/receipts`.
+
+Commit `87cd548ac` sets the aggregate frontend source budget to 6 MiB.
+A single source can occupy at most 4 MiB and the cache holds at most 128
+entries. The focused regression verifies that two sources totaling just
+over 4 MiB survive together, then checks least-recently-used eviction when
+a third pushes the total above 6 MiB. The cache collision and source
+ownership checks pass in the same run.
+
+A standalone build using the committed constants retains the same 81
+archived modules and reuses all of them on the second sweep in both
+orders. The initial sweeps have 81 misses each. The runtime guards exit
+zero and the complete `browserjs` regression file passes the production
+type check. Windowed reload validation awaits a published build with the
+new limit. The latest managed attempt ran out of space staging generated C.
+Raw checks and inputs are under
+`docs/benchmark-results/github-frontend-budget-5204-r110/receipts`.
