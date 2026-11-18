@@ -138,7 +138,7 @@ struct SVGMaskRamp {
 
 fn svg_mask_ramp(mask &layout.PaintClip, bounds painting.IntRect, page_x f32, page_y f32,
 	scale f64) ?SVGMaskRamp {
-	if disable_svg_mask_ramp || mask.mask_luminance || mask.mask_operations.len != 1 { return none }
+	if disable_svg_mask_ramp || mask.mask_operations.len != 1 { return none }
 	operation := &mask.mask_operations[0]
 	gradient := operation.fill_linear_gradient or { return none }
 	same_x := f32(gradient.start_point.x) == f32(gradient.end_point.x)
@@ -177,9 +177,9 @@ fn svg_mask_ramp(mask &layout.PaintClip, bounds painting.IntRect, page_x f32, pa
 }
 
 fn raster_svg_mask_ramp(mut pixels []u8, pitch int, width int, operation &layout.PaintMaskOperation,
-	ramp SVGMaskRamp) bool {
+	ramp SVGMaskRamp, luminance bool) bool {
 	path := cpuraster.canvas_path(operation.path_data, operation.path_even_odd)
-	style := portable_svg_mask_gradient(operation, false)
+	style := portable_svg_mask_gradient(operation, luminance)
 	coverage := ramp.coverage
 	opacity := f32(operation.fill_opacity)
 	// Shade a strip on the varying axis using the original CPU shader.
@@ -247,7 +247,8 @@ fn (mut app BrowserApp) apply_portable_svg_content_mask(mut image PortableSVGGro
 fn (mut app BrowserApp) raster_svg_content_mask(mut pixels []u8, pitch int, bounds painting.IntRect,
 	mask &layout.PaintClip, page_x f32, page_y f32, scale f64) bool {
 	if ramp := svg_mask_ramp(mask, bounds, page_x, page_y, scale) {
-		if raster_svg_mask_ramp(mut pixels, pitch, bounds.width, &mask.mask_operations[0], ramp) {
+		if raster_svg_mask_ramp(mut pixels, pitch, bounds.width, &mask.mask_operations[0], ramp,
+			mask.mask_luminance) {
 			return true
 		}
 	}

@@ -142,24 +142,28 @@ def check_radial_cache_capacity(binary, directory):
     assert "VOX_SHARED_SVG_MASK_CACHE_HIT luminance=true " in diagnostics, diagnostics
 
 
-def check_vertical_alpha_masks(binary, fixture, directory):
+def check_svg_mask_strips(binary, fixture, directory, *, luminance):
+    name = fixture.stem
+    axes = {"true", "false"} if luminance else {"true"}
+    raster = f"VOX_SHARED_SVG_MASK luminance={str(luminance).lower()} "
+    pattern = r"^VOX_SVG_MASK_RAMP .* vertical=(true|false)$"
     for scale in (1, 2):
         settings = dict(VOX_SHARED_SVG_MASK_RASTER="", VOX_DISABLE_SHARED_SVG_MASK_CACHE="1",
                         VOX_DISABLE_SVG_MASK_RAMP="0", VOX_CAPTURE_INITIAL_VIEWPORT="1",
                         VOX_SCREENSHOT_SCROLL_STEP="12", LADYBIRD_SCREENSHOT_SCALE=str(scale))
         options = ["--screenshot-scroll-y=42", "--disable-javascript"]
-        automatic, diagnostics = capture_document(binary, fixture, directory / f"vertical-auto-{scale}",
-                                                  settings, options)
-        assert re.search(r"^VOX_SVG_MASK_RAMP .* vertical=true$", diagnostics, re.MULTILINE), diagnostics
-        assert "VOX_SHARED_SVG_MASK luminance=false " in diagnostics, diagnostics
+        automatic, diagnostics = capture_document(binary, fixture, directory / f"{name}-auto-{scale}",
+                                                   settings, options)
+        assert set(re.findall(pattern, diagnostics, re.MULTILINE)) == axes, diagnostics
+        assert raster in diagnostics, diagnostics
         settings.update(VOX_SHARED_SVG_MASK_RASTER="1", VOX_DISABLE_SVG_MASK_RAMP="1")
-        full, diagnostics = capture_document(binary, fixture, directory / f"vertical-full-{scale}",
+        full, diagnostics = capture_document(binary, fixture, directory / f"{name}-full-{scale}",
                                              settings, options)
         assert "VOX_SVG_MASK_RAMP " not in diagnostics, diagnostics
-        assert "VOX_SHARED_SVG_MASK luminance=false " in diagnostics, diagnostics
+        assert raster in diagnostics, diagnostics
         result = rendered_png_rows(automatic)
         assert result[:2] == (1024 * scale, 600 * scale)
-        assert result == rendered_png_rows(full), f"Shading one column changed the {scale}× document"
+        assert result == rendered_png_rows(full), f"Shading strips changed the {scale}× pixels for {name}"
 
         _, _, channels, rows = result
 
@@ -169,19 +173,37 @@ def check_vertical_alpha_masks(binary, fixture, directory):
 
         white = b"\xff\xff\xff"
         assert pixel(18, 15) == white and pixel(449, 15) == white
-        assert pixel(50, 10) == pixel(160, 10) and pixel(50, 10)[0] > pixel(50, 50)[0]
-        assert pixel(300, 10)[1] < pixel(300, 50)[1]
+        if luminance:
+            assert abs(pixel(30, 15)[0] - 201) <= 1 and abs(pixel(190, 15)[0] - 237) <= 1
+            assert pixel(105, 10) == pixel(105, 50) and pixel(105, 10)[0] < pixel(30, 10)[0]
+            assert pixel(300, 10) == pixel(400, 10) and pixel(300, 10)[1] > pixel(300, 50)[1]
+        else:
+            assert pixel(50, 10) == pixel(160, 10) and pixel(50, 10)[0] > pixel(50, 50)[0]
+            assert pixel(300, 10)[1] < pixel(300, 50)[1]
         if scale == 2:
             settings["VOX_SHARED_SVG_MASK_RASTER"] = "0"
-            quartz, diagnostics = capture_document(binary, fixture, directory / "vertical-quartz",
+            quartz, diagnostics = capture_document(binary, fixture, directory / f"{name}-quartz",
                                                    settings, options)
             assert "VOX_SHARED_SVG_MASK luminance=" not in diagnostics, diagnostics
             control = rendered_png_rows(quartz)
             assert result[:3] == control[:3]
             maximum = max(abs(a - b) for current, previous in zip(result[3], control[3])
                           for a, b in zip(current, previous))
-            assert maximum <= 2, f"Vertical mask channels differed from Quartz by {maximum}"
-            print(f"Largest 2× vertical mask channel difference against Quartz is {maximum}")
+            assert maximum <= 2, f"{name} channels differed from Quartz by {maximum}"
+            print(f"Largest 2× channel difference from Quartz for {name} is {maximum}")
+
+
+def check_linear_rgb_fallback(binary, fixture, directory):
+    linear = directory / "linear-rgb-luminance.html"
+    linear.write_text(fixture.read_text().replace("<linearGradient ", '<linearGradient color-interpolation="linearRGB" '))
+    settings = dict(VOX_SHARED_SVG_MASK_RASTER="", VOX_DISABLE_SVG_MASK_RAMP="0",
+                    LADYBIRD_SCREENSHOT_SCALE="2", VOX_DISABLE_SHARED_SVG_MASK_CACHE="1")
+    automatic, diagnostics = capture_document(binary, linear, directory / "linear-rgb-auto", settings)
+    assert "VOX_SVG_MASK_RAMP " not in diagnostics, diagnostics
+    assert "VOX_SHARED_SVG_MASK luminance=" not in diagnostics, diagnostics
+    settings["VOX_SHARED_SVG_MASK_RASTER"] = "0"
+    quartz, _ = capture_document(binary, linear, directory / "linear-rgb-quartz", settings)
+    assert rendered_png_rows(automatic) == rendered_png_rows(quartz), "Linear RGB luminance bypassed Quartz"
 
 
 def main():
@@ -193,7 +215,8 @@ def main():
     fixture = root / "Tests/Browser/Native/svg-gradient-masks.html"
     mutation = fixture.with_name("svg-gradient-mask-mutation.html")
     vertical = fixture.with_name("svg-vertical-alpha-masks.html")
-    inputs = [binary, fixture, mutation, vertical]
+    luminance = fixture.with_name("svg-linear-luminance-masks.html")
+    inputs = [binary, fixture, mutation, vertical, luminance]
     avif_library = binary.with_name("libVoxAVIF.dylib")
     if avif_library.exists():
         inputs.append(avif_library)
@@ -242,7 +265,9 @@ def main():
         assert automatic_2x == full_2x, "Automatic radial raster changed the 2× document pixels"
         check_mask_mutation(binary, mutation, directory)
         check_radial_cache_capacity(binary, directory)
-        check_vertical_alpha_masks(binary, vertical, directory)
+        check_svg_mask_strips(binary, vertical, directory, luminance=False)
+        check_svg_mask_strips(binary, luminance, directory, luminance=True)
+        check_linear_rgb_fallback(binary, luminance, directory)
     assert {path: digest(path) for path in inputs} == digests
     print("PASS: macOS rendered both gradient mask modes with the shared rasterizer")
 

@@ -498,32 +498,32 @@ def check_svg_mask_gradient_pixels(data):
         assert all(abs(value - target) <= 2 for value, target in zip(actual, (channel, channel, 255))), (x, actual)
 
 
-def check_vertical_svg_mask_browser(binary, artifacts, temporary):
-    fixture = Path(__file__).resolve().parents[1] / "Tests/Browser/Native/svg-vertical-alpha-masks.html"
+def check_svg_mask_strips_browser(binary, artifacts, temporary, name, luminance, axes):
+    fixture = Path(__file__).resolve().parents[1] / "Tests/Browser/Native" / f"{name}.html"
     documents = []
-    for mode in ("column", "shader"):
-        environment = smoke_environment(Path(temporary) / f"svg-vertical-{mode}")
+    for mode in ("strip", "shader"):
+        environment = smoke_environment(Path(temporary) / f"{name}-{mode}")
         environment.update(VOX_DISABLE_PORTABLE_SVG_MASK="0", VOX_PORTABLE_SVG_MASK_DIAGNOSTICS="1",
                            VOX_DISABLE_SVG_MASK_RAMP=str(int(mode == "shader")))
-        screenshot = artifacts / f"svg-vertical-{mode}.png"
+        screenshot = artifacts / f"{name}-{mode}.png"
         screenshot.unlink(missing_ok=True)
         log = run_windowed([str(binary), "--window-width=1024", "--window-height=720",
                             "--screenshot-viewport-height=600", f"--screenshot={screenshot}",
                             "--disable-javascript", str(fixture)], env=environment,
-                           log_path=artifacts / f"svg-vertical-{mode}.log")
-        assert "VOX_SVG_MASK luminance=false operations=1 paths=1" in log, log
-        vertical = re.search(r"^VOX_SVG_MASK_RAMP .* vertical=true$", log, re.MULTILINE)
-        assert bool(vertical) == (mode == "column"), log
+                           log_path=artifacts / f"{name}-{mode}.log")
+        assert f"VOX_SVG_MASK luminance={str(luminance).lower()} operations=1 paths=1" in log, log
+        observed = set(re.findall(r"^VOX_SVG_MASK_RAMP .* vertical=(true|false)$", log, re.MULTILINE))
+        assert observed == (axes if mode == "strip" else set()), log
         width, height, channels, rows = rendered_png_rows(screenshot.read_bytes())
         assert width >= 640
         marker = next((y for y in range(27, min(height, 160))
                        if rows[y][500 * channels:500 * channels + 3] == b"\xff\x88\x00"), None)
-        assert marker is not None, "Missing vertical-mask fixture marker"
+        assert marker is not None, "Missing linear-mask fixture marker"
         top = marker - 27
         assert height >= top + 600
         documents.append([row[:640 * channels] for row in rows[top:top + 600]])
-    assert documents[0] == documents[1], "Shading one column changed the X11 document pixels"
-    print("PASS: vertical SVG alpha masks match the full shader pixel for pixel", flush=True)
+    assert documents[0] == documents[1], f"Shading one strip changed the X11 pixels for {name}"
+    print(f"PASS: {name} matches the full shader pixel for pixel", flush=True)
 
 
 def check_webgl_pixels(data):
@@ -862,7 +862,10 @@ def main():
         check_svg_mask_browser(binary, artifacts, temporary)
         check_svg_mask_opacity_browser(binary, artifacts, temporary)
         check_svg_mask_gradient_browser(binary, artifacts, temporary)
-        check_vertical_svg_mask_browser(binary, artifacts, temporary)
+        check_svg_mask_strips_browser(binary, artifacts, temporary, "svg-vertical-alpha-masks",
+                                      False, {"true"})
+        check_svg_mask_strips_browser(binary, artifacts, temporary, "svg-linear-luminance-masks",
+                                      True, {"true", "false"})
         check_https_navigation(binary, temporary, environment)
         print("PASS: HTTPS navigation and certificate verification")
         server = http.server.ThreadingHTTPServer(("127.0.0.1", 0),

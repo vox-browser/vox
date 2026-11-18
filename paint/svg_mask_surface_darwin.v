@@ -74,8 +74,7 @@ fn (mut app BrowserApp) raster_native_svg_content_mask(mask &layout.PaintClip, p
 		if mask.mask_operations.len != 1 { return false }
 		operation := &mask.mask_operations[0]
 		automatic_radial = can_keep_full_raster && operation.fill_radial_gradient != none
-		if !automatic_radial && (disable_svg_mask_ramp || mask.mask_luminance
-			|| operation.fill_linear_gradient == none) {
+		if !automatic_radial && (disable_svg_mask_ramp || operation.fill_linear_gradient == none) {
 			return false
 		}
 	}
