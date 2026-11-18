@@ -13,9 +13,49 @@ $if vox_gg_svg ? {
 
 	const portable_svg_gpu_enabled = os.getenv('VOX_GG_SVG') == '1'
 	const portable_svg_gpu_diagnostics = os.getenv('VOX_GG_SVG_DIAGNOSTICS') == '1'
+	const disable_portable_svg_gpu_cache = os.getenv('VOX_DISABLE_GG_SVG_CACHE') == '1'
 	const portable_svg_gpu_image_limit = 8
 	const portable_svg_gpu_pixel_limit = 1024 * 1024
+	const portable_svg_gpu_cached_values = 128 * layout.compatibility_clip_path_segment_stride
 	const portable_svg_gpu = &PortableSVGGpu{}
+
+	struct PortableSVGTextureKey {
+		matrix   [6]f32
+		width    int
+		height   int
+		color    gg.Color
+		even_odd bool
+	}
+
+	struct PortableSVGTexture {
+	mut:
+		image    gfx.Image
+		key      PortableSVGTextureKey
+		// Own a bounded copy because document paint storage can retire or change
+		// between frames. Zero values recorded means the texture is transient.
+		values   [portable_svg_gpu_cached_values]f32
+		length   int
+	}
+
+	fn (texture &PortableSVGTexture) matches(key &PortableSVGTextureKey, values []f32) bool {
+		if texture.length != values.len || texture.key.width != key.width
+			|| texture.key.height != key.height || texture.key.color != key.color
+			|| texture.key.even_odd != key.even_odd {
+			return false
+		}
+		return unsafe {
+			vmemcmp(&texture.key.matrix[0], &key.matrix[0], 6 * int(sizeof(f32))) == 0
+				&& vmemcmp(&texture.values[0], values.data, values.len * int(sizeof(f32))) == 0
+		}
+	}
+
+	fn (mut texture PortableSVGTexture) release() {
+		if texture.image.id != 0 {
+			gfx.destroy_image(texture.image)
+			texture.image = gfx.Image{}
+		}
+		texture.length = 0
+	}
 
 	// The legacy GG window owns one Sokol context per process. It also owns
 	// this renderer when multiple tabs share the window.
@@ -25,7 +65,7 @@ $if vox_gg_svg ? {
 		canvas   &canvas.GpuContext = unsafe { nil }
 		pipeline render.Pipeline
 		sampler  gfx.Sampler
-		images   [portable_svg_gpu_image_limit]gfx.Image
+		textures [portable_svg_gpu_image_limit]PortableSVGTexture
 		count    int
 		pixels   int
 	}
@@ -65,8 +105,11 @@ $if vox_gg_svg ? {
 	}
 
 	fn (mut state PortableSVGGpu) finish_frame() {
-		for index in 0 .. state.count {
-			gfx.destroy_image(state.images[index])
+		// All commands that sampled a texture have been submitted at this point.
+		for index in 0 .. portable_svg_gpu_image_limit {
+			if index >= state.count || state.textures[index].length == 0 {
+				state.textures[index].release()
+			}
 		}
 		state.count = 0
 		state.pixels = 0
@@ -76,12 +119,36 @@ $if vox_gg_svg ? {
 		if state.canvas == unsafe { nil } {
 			return
 		}
-		state.finish_frame()
+		for index in 0 .. portable_svg_gpu_image_limit {
+			state.textures[index].release()
+		}
 		renderer.destroy_pipeline(state.pipeline)
 		gfx.destroy_sampler(state.sampler)
 		mut gpu := state.canvas
 		gpu.free()
 		state.canvas = unsafe { nil }
+	}
+
+	fn (mut state PortableSVGGpu) rasterize(data layout.PaintSVGPathData, key &PortableSVGTextureKey) !gfx.Image {
+		mut gpu := state.canvas
+		mut target := gpu.new_surface(width: key.width, height: key.height)!
+		defer {
+			target.free()
+		}
+		matrix := key.matrix
+		color := key.color
+		path := C.VoxGraphitePath{
+			matrix:        [matrix[0], matrix[2], matrix[4], matrix[1], matrix[3], matrix[5], 0, 0, 1]!
+			segments:      data.path_data.data
+			segment_count: i32(data.path_data.len / layout.compatibility_clip_path_segment_stride)
+			even_odd:      i32(key.even_odd)
+			red:           color.r
+			green:         color.g
+			blue:          color.b
+			alpha:         color.a
+		}
+		ggshape.record_svg_path(mut target, &path)!
+		return target.take_document_image()!
 	}
 
 	fn draw_portable_gpu_svg_fill(renderer &render.Context, data layout.PaintSVGPathData,
@@ -102,24 +169,29 @@ $if vox_gg_svg ? {
 		if state.canvas == unsafe { nil } {
 			return false
 		}
-		mut gpu := state.canvas
-		mut target := gpu.new_surface(width: bounds.width, height: bounds.height) or { return false }
-		defer {
-			target.free()
+		// A slot follows the order of successful GPU draws. Its matrix is
+		// relative to the texture, so integer scroll offsets can reuse it.
+		key := PortableSVGTextureKey{
+			matrix:   matrix
+			width:    bounds.width
+			height:   bounds.height
+			color:    color
+			even_odd: data.fill_even_odd
 		}
-		path := C.VoxGraphitePath{
-			matrix:        [matrix[0], matrix[2], matrix[4], matrix[1], matrix[3], matrix[5], 0, 0, 1]!
-			segments:      data.path_data.data
-			segment_count: i32(data.path_data.len / layout.compatibility_clip_path_segment_stride)
-			even_odd:      i32(data.fill_even_odd)
-			red:           color.r
-			green:         color.g
-			blue:          color.b
-			alpha:         color.a
+		mut texture := &state.textures[state.count]
+		cacheable := !disable_portable_svg_gpu_cache && data.path_data.len <= portable_svg_gpu_cached_values
+		reused := cacheable && texture.matches(&key, data.path_data)
+		if !reused {
+			texture.release()
+			texture.image = state.rasterize(data, &key) or { return false }
+			if cacheable {
+				texture.key = key
+				unsafe {
+					vmemcpy(&texture.values[0], data.path_data.data, data.path_data.len * int(sizeof(f32)))
+				}
+				texture.length = data.path_data.len
+			}
 		}
-		ggshape.record_svg_path(mut target, &path) or { return false }
-		image := target.take_document_image() or { return false }
-		state.images[state.count] = image
 		state.count++
 		state.pixels += area
 		// GG presents the texture in document order. Canvas uses top-down
@@ -131,7 +203,7 @@ $if vox_gg_svg ? {
 		renderer.push_pipeline()
 		renderer.load_pipeline(state.pipeline)
 		renderer.enable_texture()
-		renderer.texture(image, state.sampler)
+		renderer.texture(texture.image, state.sampler)
 		renderer.begin_quads()
 		renderer.c4b(255, 255, 255, 255)
 		renderer.v3f_t2f(x, y, 0, 0, 0)
@@ -142,7 +214,7 @@ $if vox_gg_svg ? {
 		renderer.disable_texture()
 		renderer.pop_pipeline()
 		if portable_svg_gpu_diagnostics {
-			eprintln('VOX_GG_SVG draw=${bounds.width}x${bounds.height}')
+			eprintln('VOX_GG_SVG draw=${bounds.width}x${bounds.height} cache=${if reused { "hit" } else { "miss" }}')
 		}
 		return true
 	}

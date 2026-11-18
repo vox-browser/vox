@@ -285,13 +285,14 @@ def check_gradient_browser(binary, artifacts, temporary):
 def check_gg_svg_browser(binary, artifacts, temporary):
     fixture = Path(__file__).resolve().parents[1] / "Tests/Browser/Native/svg-gg-path-fill.html"
     documents = []
-    for label in ("portable-svg", "gg-svg", "gg-svg-fallback"):
+    for label in ("portable-svg", "gg-svg", "gg-svg-uncached", "gg-svg-fallback"):
         enabled = label != "portable-svg"
-        uses_gpu = label == "gg-svg"
+        uses_gpu = label in ("gg-svg", "gg-svg-uncached")
         screenshot = artifacts / f"{label}.png"
         screenshot.unlink(missing_ok=True)
         environment = smoke_environment(Path(temporary) / label)
-        environment.update(VOX_GG_SVG=str(int(enabled)), VOX_GG_SVG_DIAGNOSTICS="1")
+        environment.update(VOX_GG_SVG=str(int(enabled)), VOX_GG_SVG_DIAGNOSTICS="1",
+                           VOX_DISABLE_GG_SVG_CACHE=str(int(label == "gg-svg-uncached")))
         environment.pop("MESA_GL_VERSION_OVERRIDE", None)
         if label == "gg-svg-fallback":
             environment["MESA_GL_VERSION_OVERRIDE"] = "4.2"
@@ -301,6 +302,7 @@ def check_gg_svg_browser(binary, artifacts, temporary):
         assert ("VOX_GG_SVG unavailable:" in log) == (label == "gg-svg-fallback"), log
         for size in ("120x80", "80x30", "42x20"):
             assert (f"VOX_GG_SVG draw={size}" in log) == uses_gpu, log
+            assert (f"VOX_GG_SVG draw={size} cache=hit" in log) == (label == "gg-svg"), log
         _, height, channels, rows = rendered_png_rows(screenshot.read_bytes())
 
         def pixel(x, y):
@@ -316,8 +318,60 @@ def check_gg_svg_browser(binary, artifacts, temporary):
         assert pixel(145, top + 60) in (b"\x7f\x7f\xff", b"\x80\x80\xff")
         assert pixel(191, top + 20) == b"\x00\xaa\x00", "Transformed fill is missing"
         documents.append(rows[top:top + 100])
-    assert documents[0] == documents[1] == documents[2], "GG changed the SVG document pixels"
-    print("PASS: GPU-resident GG SVG replay and GL 4.2 fallback match the portable reference", flush=True)
+    assert all(document == documents[0] for document in documents[1:]), "GG changed the SVG document pixels"
+    print("PASS: cached and uncached GG SVG replay and GL 4.2 fallback match the portable reference", flush=True)
+    check_gg_svg_mutations(binary, artifacts, temporary, fixture)
+
+
+def check_gg_svg_mutations(binary, artifacts, temporary, fixture):
+    page = Path(temporary) / "gg-svg-mutations.html"
+    page.write_text(fixture.read_text() + """
+<script>
+let frames = 0;
+function changePaths() {
+    if (++frames < 12) {
+        requestAnimationFrame(changePaths);
+        return;
+    }
+    const paths = document.querySelectorAll('path');
+    paths[0].setAttribute('d', 'M12 8H132V88H12Z M72 18H102V38H72Z');
+    paths[1].setAttribute('fill', '#0f0');
+    paths[2].setAttribute('transform', 'translate(170 38)');
+    document.body.setAttribute('data-ready', '1');
+}
+requestAnimationFrame(changePaths);
+</script>
+""")
+    documents = []
+    for label, disable_cache in (("cached", "0"), ("uncached", "1")):
+        screenshot = artifacts / f"gg-svg-mutations-{label}.png"
+        screenshot.unlink(missing_ok=True)
+        environment = smoke_environment(Path(temporary) / f"gg-svg-mutations-{label}")
+        environment.pop("MESA_GL_VERSION_OVERRIDE", None)
+        environment.update(VOX_GG_SVG="1", VOX_GG_SVG_DIAGNOSTICS="1",
+                           VOX_DISABLE_GG_SVG_CACHE=disable_cache,
+                           VOX_CAPTURE_READY_SELECTOR="body[data-ready]")
+        log = run_windowed([str(binary), "--enable-javascript", "--window-width=800",
+                            "--window-height=600", "--screenshot-viewport-height=600",
+                            f"--screenshot={screenshot}", str(page)],
+                           env=environment, log_path=artifacts / f"gg-svg-mutations-{label}.log")
+        assert log.count("draw=120x80 cache=miss") >= 2, log
+        assert log.count("draw=80x30 cache=miss") >= 2, log
+        _, height, channels, rows = rendered_png_rows(screenshot.read_bytes())
+
+        def pixel(x, y):
+            return rows[y][x * channels:x * channels + 3]
+
+        marker = next((y for y in range(min(height, 150)) if pixel(4, y) == b"\x34\xb7\x86"), None)
+        assert marker is not None, "Missing document marker"
+        top = marker + 8
+        assert pixel(45, top + 27) == b"\xff\x00\x00", "The old SVG hole was retained"
+        assert pixel(88, top + 27) == b"\xff\xff\xff", "The new SVG hole is missing"
+        assert pixel(95, top + 60) in (b"\x7f\x80\x00", b"\x80\x7f\x00"), "The old fill color was retained"
+        assert pixel(191, top + 20) == b"\xff\xff\xff" and pixel(191, top + 48) == b"\x00\xaa\x00"
+        documents.append(rows[top:top + 100])
+    assert documents[0] == documents[1], "Cached SVG mutations differ from uncached replay"
+    print("PASS: SVG texture reuse follows geometry, color, and position changes", flush=True)
 
 
 def check_svg_opacity_browser(binary, artifacts, temporary):
