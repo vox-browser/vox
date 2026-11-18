@@ -8116,3 +8116,49 @@ stay fixed while the production pixel and memory gates remain open.
 
 The full-content comparison, source proof and draw-order receipts
 are local under `repository-navigation-5204-r92/receipts`.
+
+### Retained responses and rectangle viewport controls
+
+Commit `023687635` preserves the payload and headers of a
+process-owned cache response when filtering returns that same
+response. Fresh, rewritten or shorter-lived responses still copy
+into retained storage before the request arena retires.
+Stylesheet copies allocated in a document clear the process
+ownership flag. The focused preallocation probe verifies binary
+body and header equality, independent copies for unmarked input,
+and preserved pointer identity for a marked cache hit. It passes
+with ordinary allocation and with the request arena poisoned on
+release. The production type-check exits zero in 44.589377542
+seconds at 7,126,171,648 sampled peak bytes.
+
+Three alternating fresh-process pairs run the 96-response
+background discovery probe on the same executable and unchanged
+128 KiB local files. All responses arrive once and pass checks
+of their source, length, prefix and boundary bytes. Singleton
+dispatch creates 96 fetch workers per process. Batched dispatch
+creates 16. The median resident-size increase is 18,890,752 bytes for
+singletons and 16,973,824 bytes for the batch. The corresponding
+physical-footprint increases are 19,465,320 and 16,924,888 bytes.
+All six executions and their 3 GiB guards exit zero. These
+instrumented local-file measurements cover the dispatch change.
+The production GitHub memory check uses the real browser and
+archived network replay.
+
+The 36 retained Metal cases compare three instance orders at
+widths 1,024 and 2,048 and heights 256, 416 and 768, with both a
+full scissor and a scissor around the buttons. The adjusted
+projection holds geometry fixed in pixels. Every case preserves
+its order's button pixels across these settings. The captured
+order and the alternate order with the two narrower borders first
+match the reference buttons. Document order with the underline
+first retains the same two Notifications corner differences.
+The replay guard exits zero in 1.910968541 seconds at 97,665,024
+sampled bytes. This is a selected-draw result over white.
+
+Build `20261118-070300-5a022eb6` stopped during sealing after
+`native/include/native_scroll_raster_darwin.h` changed. The next
+managed attempt is running, and `5d72f614` remains the latest
+published executable. The normal 120-second Back replay and exact
+pixel comparison await publication of the resource and capture
+changes. Local inputs, guards and results are under
+`repository-navigation-5204-r93/receipts`.
