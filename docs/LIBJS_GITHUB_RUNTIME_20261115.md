@@ -9123,3 +9123,64 @@ seconds at 292,749,312 sampled peak RSS bytes.
 
 The raw timings, rejected attempts, guard exits, profiles, source diff and
 pinned inputs are local under `github-performance-5204-r104/receipts`.
+
+### Main-thread instruction attribution on archived GitHub
+
+One instrumented pair on production executable
+`68ca9b1d3eb7d53f34a3ff919e92148795e21bff42150bcc5e993efd7f2ba629`
+uses the standard 1024×768 Vox capture, frozen original-origin replay and a
+one-second settle. It enables the existing nested process and main-thread
+instruction scopes and uses the exclusive Vox coalition through native PNG
+encoding. Both visits fulfill all 81 modules, pass the complete repository
+audit, and reproduce the pinned Vox PNG. The compiler-disabled grouped
+LibJS visit records 2,948 cache hits, 480,343 native entries and zero misses
+or compiler calls. Both browser exits and the guard exit are zero. The
+guard adopts both browser processes and their helpers, and reports 40.084
+seconds at 6,622,232,576 sampled peak RSS bytes.
+
+| Exclusive main-thread scope | Interpreted LibJS | Grouped compiled LibJS |
+| --- | ---: | ---: |
+| Existing JavaScript execution and bindings | 8,327,291,850 | 9,267,347,154 |
+| Posted-message task self work | 10,642,133,994 | 9,832,317,544 |
+| Flow layout | 9,699,563,636 | 10,968,674,753 |
+| SVG paint leaves | 8,993,423,757 | 5,982,397,892 |
+| All main-thread instructions through encoding | 72,800,057,702 | 69,771,420,218 |
+| Exclusive resource coalition through encoding | 78,840,066,887 | 74,697,744,887 |
+
+The JavaScript scope on this executable covers explicit source entry, while
+LibJS event listeners can enter the VM from a posted-message task and modules
+can be parsed, linked and evaluated from a fetch callback. The posted-message
+row includes all of its remaining self work and cannot be assigned entirely
+to JavaScript. Frame and SVG paint counts differ across the pair, and tracing
+adds overhead. This pair supplies attribution evidence only.
+
+Two earlier receipts preserve preflight failures. The first specifies a
+reference path that was no longer present. The second still inherits ambient
+proxy variables and starts no browsers. The successful diagnostic uses the
+retained grouped-cache PNG and a clean environment with its explicit replay
+route.
+
+Commit `a797cd0ce` attributes LibJS event listener calls and async module
+evaluation to the existing JavaScript execution and bindings scope. The
+calling-thread stream also reports separate `libjs_module_frontend` and
+`libjs_module_link` scopes. These counters use the existing main-thread
+nesting rules, so parent self work excludes the new children. The hooks
+are inactive in ordinary runs. This addresses the attribution gap without
+changing the interpreter, generated code, or archived workload.
+
+The single-C production type check exits zero in 226.841 guard seconds at
+7,148,257,280 sampled bytes. Both focused `processmetrics` tests pass with
+the process and thread counters enabled, covering nested JavaScript scopes,
+counter state restoration, and worker exclusion. Their guard exits zero
+in 3.010 seconds at 748,830,720 sampled bytes. The full standalone module
+and message callback binaries do not complete. The first tool launch
+omits Objective-C mode, the FastC attempt reports C emission errors, and
+two explicit C-backend attempts reach their 12 GiB sampled guard, at
+12,889,178,112 and 12,988,989,440 bytes. Those attempts supply no runtime
+verification of the new browser entry scopes.
+
+The current publication predates both modified sources. The managed
+post-commit worker has the rebuild request, and the new archived-page
+breakdown is pending a publication that seals both source hashes. Raw stage
+streams, input pins, preflight failures and guarded checks are local under
+`github-stage-attribution-5204-r105/receipts`.
