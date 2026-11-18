@@ -704,6 +704,67 @@ and guard exits for the cohort were zero. Sampled process-tree RSS
 peaked at 11,481,743,360 bytes during the build and 403,701,760 bytes
 during timing. The shared renderer remains opt-in.
 
+### Reusing rows in horizontal SVG alpha masks
+
+The shared raster shades one row for an alpha mask formed by a single
+horizontal linear gradient in a device-aligned rectangle. It copies that
+row within the covered part of the cleared bitmap, using the existing
+shader's sampling and rounding. macOS selects this path by default for
+eligible masks with at most 128 Ki pixels including bitmap padding.
+`VOX_SHARED_SVG_MASK_RASTER=1` enables the broader shared gradient path
+and `=0` selects Quartz. `VOX_DISABLE_SVG_MASK_RAMP=1` disables row reuse.
+
+The [15-capture macOS check](../tools/test_macos_svg_gradient_mask.py)
+confirmed automatic selection for the horizontal alpha fixture and
+Quartz selection for the radial luminance fixture. The automatic
+document remained within two channel values of Quartz. The scrolled
+document matched the full shared shader pixel for pixel. Cache,
+viewport-edge and live mutation checks also passed. The Linux browser
+suite passed all 17 checks, including the gradient-mask capture, which
+logged 324 row replays. The Windows D3D11 browser passed the V type check.
+
+The private timing build used V `-b c -prod` in one C unit with Clang
+`-O1`. Its SHA-256 was
+`87391a09626cd363ea2b3239ec15836fe3ed86c11c41b9a39aa63e482f1edcbb`.
+The AVIF library and [local fixture](../Tests/Browser/Native/svg-gradient-masks.html)
+digests were `ebde1494c5aebaa69ebe6edab9f4e3333020cb4b2949d96fa1fbb35f19d6a202`
+and `358aaffab9b6a968c0c450a8466d13761813fff26d3bf507791f59d7ac200d4c`,
+respectively. A separate diagnostic in PID 59286 with caching disabled
+logged 448 row rasters and zero shared luminance rasters during input.
+
+The two alternating pairs for each control used
+`tools/measure_precise_scroll.py` with a 1024 × 600 document viewport
+at 2×, one second of settle after the title matched, and 120 precise
+four-pixel wheel inputs at a requested 60 Hz with reversal after 60.
+Each process started with a fresh cache and private profile seeded
+for file navigation and an empty hidden bookmark bar. The local
+fixture had no external resources and scripts were disabled. The
+endpoint was completed native frame installation after outer view
+paint. The rates divide scroll changes by the first-to-last input
+duration. Only the forced-shader and forced-row trials disabled the
+mask cache. All timing trials disabled diagnostic logging.
+
+| PID | Raster | Scroll fps | Median (ms) | p95 (ms) | Max (ms) | Input Hz | Inputs / scroll changes | First / last gap (ms) |
+| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| 59398 | Quartz | 42.88 | 22.309 | 26.219 | 26.971 | 54.87 | 120 / 93 | 52.923 / 17.435 |
+| 59513 | Automatic | 43.82 | 22.308 | 25.022 | 26.995 | 56.07 | 120 / 93 | 51.683 / 18.977 |
+| 59614 | Quartz | 41.87 | 22.789 | 26.415 | 46.579 | 55.99 | 120 / 89 | 51.785 / 17.979 |
+| 59719 | Automatic | 42.89 | 22.349 | 26.657 | 29.469 | 53.73 | 120 / 95 | 52.778 / 18.667 |
+| 59873 | Forced shader | 38.22 | 25.305 | 29.537 | 30.902 | 58.31 | 120 / 78 | 60.225 / 0.089 |
+| 59998 | Forced row | 41.16 | 23.404 | 26.686 | 28.159 | 55.03 | 120 / 89 | 53.836 / 18.386 |
+| 60118 | Forced shader | 37.92 | 25.464 | 29.687 | 32.123 | 56.40 | 120 / 80 | 59.338 / 16.222 |
+| 60227 | Forced row | 40.10 | 24.073 | 27.379 | 27.741 | 55.49 | 120 / 86 | 53.179 / 19.358 |
+
+The cohort ran from 03:02:07 to 03:02:51 UTC on November 18, 2026.
+Starting one-minute loads on the 18-CPU host were 4.01, 4.09, 4.65,
+4.75, 5.01, 4.85, 4.78 and 4.48. The automatic trials recorded about
+one more scroll-changing publication per second than Quartz, with
+mixed p95 intervals. Forced row reuse improved both rate and p95 in
+the uncached pairs. All measured intervals exceeded 16.67 ms. The
+browser and guard exits were zero. Sampled process-tree RSS peaked at
+11,248,877,568 bytes in the build and 406,306,816 bytes in the combined
+diagnostic and timing job.
+
 ## Original migration plan
 
 Vox currently renders through two Skia builds: LibWeb's Skia (CPU raster,
