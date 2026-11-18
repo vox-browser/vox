@@ -52,4 +52,13 @@ fn test_frontend_only_control_reuses_syntax_without_enabling_native_execution() 
 	os.setenv('VOX_LIBJS_FRONTEND_CACHE', '0', true)
 	fourth := runtime.prepare_libjs_frontend(code, .script, options)
 	assert voidptr(fourth) != voidptr(first) && runtime.frontend_code_cache_stats().misses == 3
+	uncached := runtime.prepare_libjs_script(ScriptSource{code: code, url: 'https://example.test/script.js'})!
+	assert uncached.source.code == code && uncached.source.url == 'https://example.test/script.js'
+	assert voidptr(uncached.source.code.str) == voidptr(uncached.frontend.source_text.str)
+	assert voidptr(uncached.source.code.str) != voidptr(code.str)
+
+	os.setenv('VOX_LIBJS_FRONTEND_CACHE', '1', true)
+	cached := runtime.prepare_libjs_script(ScriptSource{code: code})!
+	assert voidptr(cached.frontend) == voidptr(first)
+	assert voidptr(cached.source.code.str) == voidptr(first.source_text.str)
 }

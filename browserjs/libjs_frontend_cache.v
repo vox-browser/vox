@@ -111,7 +111,7 @@ fn (runtime &Runtime) prepare_libjs_script(source ScriptSource) !&PreparedScript
 	if source.starting_line < 1 { return error('Script starting line must be positive') }
 	persistent := platform.enter_persistent()
 	defer { platform.leave_persistent(persistent) }
-	owned := ScriptSource{ ...source, code: source.code.clone(), url: source.url.clone() }
-	parsed := runtime.prepare_libjs_frontend(owned.code, owned.source_type, libjs.ParseOptions{ max_recursion_depth: 256 })
+	parsed := runtime.prepare_libjs_frontend(source.code, source.source_type, libjs.ParseOptions{ max_recursion_depth: 256 })
+	owned := ScriptSource{ ...source, code: parsed.source_text, url: source.url.clone() }
 	return finish_script_preparation(owned, parsed)
 }
