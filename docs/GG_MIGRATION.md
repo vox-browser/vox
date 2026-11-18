@@ -1,5 +1,62 @@
 # Migrating from Skia to vlib/gg
 
+## Reusing SVG path bounds
+
+The OpenGL SVG texture cache stores the local bounds computed by the
+portable path decoder. A byte-for-byte geometry match can reuse those
+bounds through color changes, transforms, and integer scrolling. Replay
+maps the bounds to the current device and intersects them with the current
+viewport. A geometry miss decodes the path. A portable raster fallback
+decodes it when the GPU lookup supplied only its bounds.
+
+The Linux window tests matched the portable reference, including the
+GL 4.2 fallback, and matched cached and uncached captures after live edits.
+The diagnostics confirmed that an edited path missed the bounds cache
+and that a paint-only edit reused the bounds while rebuilding its texture.
+`VOX_DISABLE_GG_SVG_CACHE=bounds` forces a fresh bounds decode with texture
+reuse enabled.
+
+The Linux executable SHA-256 was
+`a371fa1a4deecc8dcf4cac1bd845b5b4efa67edf5a950edefeb029ecc4e46812`.
+It used V `5a39a4d`, with C emission and single-unit Clang `-O0`
+run separately. The software OpenGL runs used Xvfb, fresh processes,
+private profiles and caches, and a one-second settle in an 800 × 712
+window. Each measured run delivered 32 synthetic 42-pixel wheel steps.
+OS caches remained available, and one-minute guest load ranged from
+0.48 to 1.68 on four virtual CPUs. Both variants used the texture cache.
+
+The simple fixture was the three fixed SVG paths used in the earlier
+cache test, SHA-256
+`e975fd4989c2d95e18b9c2a3336b3940335b7057d770a2a3cf9a7ece0a71f13c`.
+The arc fixture drew six fixed paths with 64–69 elliptical arcs each,
+SHA-256
+`e7a6a1e50c466843b6be7214cabd25bc4b0663281701ea3b2d0d2372f142b1b0`.
+The two modes produced identical document rows on each fixture.
+Separate diagnostics counted 93 and 186 texture and bounds hits during
+the final 31 moving frames. Scroll traces, paint-command counts and input
+hashes matched. The browser tests, benchmarks and 3 GiB guard exited zero.
+
+| Fixture | Trial | Bounds | Median callback (ms) | p95 (ms) | Maximum (ms) |
+| --- | ---: | --- | ---: | ---: | ---: |
+| Simple | 1 | Decoded | 1.4795 | 1.662 | 3.591 |
+| Simple | 2 | Retained | 1.4405 | 1.825 | 3.874 |
+| Simple | 3 | Retained | 1.2485 | 3.149 | 3.470 |
+| Simple | 4 | Decoded | 1.3555 | 1.614 | 3.541 |
+| Arcs | 1 | Decoded | 1.4335 | 3.278 | 3.574 |
+| Arcs | 2 | Retained | 1.3060 | 3.143 | 3.222 |
+| Arcs | 3 | Retained | 1.3375 | 3.218 | 3.398 |
+| Arcs | 4 | Decoded | 1.7555 | 1.931 | 4.385 |
+
+Median callback time fell by 2.6–7.9% for the simple fixture and
+8.9–23.8% for the arc fixture. Median allocated memory on the arc
+fixture fell from 674–678 KiB to 614–615 KiB per callback. The p95
+rose in three pairs. These timings cover synthetic software OpenGL
+callbacks. The renderer remains opt-in.
+
+The Windows OpenGL V check passed with `-os windows -arch amd64 -check`
+and V `eeee53a`. Local disk space limited this change's Windows
+validation to source checking.
+
 ## Reusing SVG textures when paint order changes
 
 The OpenGL SVG cache matches textures by raster inputs across the whole
