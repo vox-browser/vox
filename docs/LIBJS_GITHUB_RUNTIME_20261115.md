@@ -9232,3 +9232,59 @@ allocation change await the managed publication.
 
 Raw stages, launch and input pins, build and guard receipts, and both
 loopback attempts are local under `github-libjs-module-5204-r106/receipts`.
+
+### Frontend cache cost on fresh GitHub launches
+
+Four fresh launches on `4e0651cd…c452` use the same archived `vlang/v`
+page, warmed grouped native cache, 1024×768 capture and one-second settle
+as the preceding diagnostic. The order is frontend cache on, off, off, on.
+All 81 modules complete on each visit. The full content and pinned Vox PNG
+checks pass. Each visit reuses 2,948–2,950 native entries with zero cache
+misses or compiler calls. The guarded controller and all browser exits are
+zero. The guard adopts all four browser processes and their helpers and
+records 60.124 seconds at 6,636,945,408 sampled RSS bytes.
+
+| Launch | Frontend hits / misses | Function bytecode compilations | Module frontend main-thread instructions | Coalition instructions through PNG encoding |
+| --- | ---: | ---: | ---: | ---: |
+| On | 20 / 83 | 4,170 | 7,276,764,461 | 79,440,182,356 |
+| Off | 0 / 103 | 4,171 | 7,039,107,205 | 77,666,669,865 |
+| Off | 0 / 103 | 4,170 | 7,039,841,588 | 72,139,120,905 |
+| On | 22 / 83 | 4,170 | 7,278,971,889 | 74,004,640,036 |
+
+The enabled cache has 83 misses in both fresh processes and the browser
+still generates function bytecode even with a warm machine-code cache. The
+81 module frontend calls retire 3.38–3.40% more instructions with the old
+cache enabled in these pairs. This scope includes cache lookup, parsing and
+module template bookkeeping. Tracing is enabled and the 18-CPU host's
+one-minute load ranges from 10.52 to 15.41 during these observations. The
+result locates cache overhead during launch and leaves reload behavior open.
+
+The retained preflight attempts rejected inherited `NO_PROXY` and `no_proxy`
+before launching browsers. The next cohort's first browser exited zero, but
+its last coalition log record was truncated while the filesystem filled.
+The controller and guard exit one for that incomplete cohort. Its other
+three visits pass. The complete four-launch cohort above started again
+with the same pinned inputs and protocol after free space recovered.
+
+Commit `9c42c5c64` replaces two SHA-256 operations with a noncryptographic
+index for this process-local cache. Both reuse paths verify the full source
+bytes. The partition, script kind and parser depth remain part of the key.
+A focused regression injects a collision and verifies that the caller
+receives syntax for its own source. The production type check exits zero in
+30.591 seconds at 5,242,552,320 sampled bytes. The regression awaits execution.
+
+A guarded V `-prod` key-construction benchmark uses 87 hash-verified archived
+JavaScript responses totaling 5,249,778 bytes. Three alternating process
+pairs each sweep the files 64 times. Median key construction is 2,325.58 ms
+for the previous pair of SHA-256 operations and 83.11 ms for the new index,
+about 36.34 and 1.30 ms per sweep. Compilation, I/O, source comparison on
+cache hits, parsing and browser launch are outside this timed region.
+
+The last published executable used for this diagnostic predates `eb8628f3a`
+and `9c42c5c64`. Three managed attempts (`123127-a3e610d1`, `124306-3814ee84`,
+and `125113-925c0bbf`) fail while writing generated C or sealed compiler
+inputs because the filesystem is full. A later request is pending. Runtime
+validation and an end-to-end timing for both changes await a publication
+with their exact source hashes. Commands, input pins, guard reports, raw
+attempts and build errors are local under
+`docs/benchmark-results/github-frontend-5204-r107/receipts`.
