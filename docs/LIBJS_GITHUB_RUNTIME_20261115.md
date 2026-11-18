@@ -9630,9 +9630,39 @@ Instructions improve in all seven pairs and elapsed time in five.
 One-minute host load ranges from 8.16 to 8.37 on 18 CPUs. The 3 GiB guard
 exits zero in 9.451 seconds at 2,476,654,592 sampled peak bytes.
 
-The full upstream AST comparison is pending. Four guarded attempts fail
-on disk writes during compiler staging, object compilation or linking.
+All 100 upstream AST fixtures pass with the current parser. The consumed
+source hashes for `parser.v` and `declarations.v` match the commit and
+the paired benchmark. Four earlier attempts failed on disk writes during
+compiler staging, object compilation or linking. The successful check
+uses temporary RAM-backed storage and compares the same upstream
+fixtures with the repository's unchanged corpus driver.
+
 The published browser still predates this change. Page timing remains
-pending after further managed production build disk failures. Local
-receipts include the failed attempts, input manifests and paired trials
-under `docs/benchmark-results/github-statement-list-5204-r115/receipts`.
+pending after further managed production build disk failures. The paired
+trials and AST check are local under
+`docs/benchmark-results/github-statement-list-5204-r115/receipts`.
+
+### Packaged adblock resources
+
+Commit `58239a687` makes the macOS browser and its adblock worker read the
+snapshot, metadata and codec from the bundle's Resources directory.
+Standalone builds keep their embedded fallback. Staging requests
+copy-on-write clones when the volume supports them and verifies the files
+through the existing sealed bundle input checks.
+
+The adblock helper's matched Clang C backend configurations use V
+`-prod` and differ by the packaged-assets define. Generated C drops from
+160,496,655 to 7,562,158 bytes. The packaged helper executes with the
+three hash-verified resources and fails with a missing snapshot or
+corrupt codec. The asset assertions pass in standalone and packaged
+modes, including a separate packaged run with `-prealloc -gc none`.
+The standalone self-worker check also passes with assertions enabled.
+
+The initial optimized standalone link crosses the 3 GiB guard. A
+separate guarded C-only generation confirms the exact control size, and
+the follow-up checks complete in 7.254 seconds at 858,030,080 sampled
+peak bytes. Receipts are local under
+`docs/benchmark-results/github-adblock-packaging-5204-r116/receipts`.
+
+The published production bundle predates the packaging change. Disk
+exhaustion still blocks a fresh browser publication and GitHub timing.
