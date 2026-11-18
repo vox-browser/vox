@@ -24,9 +24,10 @@ fn run_packed_rgba_scans(context voidptr, byte_count int, scan fn (voidptr, i32,
 	return batches * packed_rgba_scan_bytes
 }
 
-// The callbacks borrow their input and output until every range has finished.
-// They do not allocate or access mutable state outside their own pixel range.
-fn run_raster_scans(context voidptr, lines int, pixels_per_line int, scan fn (voidptr, i32, i32)) {
+// run_raster_scans joins all ranges before returning. The line count fits in
+// i32. Callers keep borrowed buffers alive and provide nonoverlapping write
+// ranges. Callbacks do not allocate or access mutable state outside their range.
+pub fn run_raster_scans(context voidptr, lines int, pixels_per_line int, scan fn (voidptr, i32, i32)) {
 	if lines <= 0 {
 		return
 	}

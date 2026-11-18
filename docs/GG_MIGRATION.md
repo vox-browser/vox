@@ -6492,3 +6492,57 @@ The successful browsers and the longer GitHub driver and guard all
 exited zero. These row totals do not establish an individual copy's
 parallel eligibility or a page-level speedup. Candidate page
 measurements await the shared production rebuild.
+
+### Parallel BT.601 video conversion
+
+The FFmpeg playback path converts limited-range I420 and YUVA420
+frames in disjoint output-row ranges. It shares the CPU raster worker
+dispatch, which starts at 262,144 pixels and uses up to four threads.
+The conversion joins before publishing the frame. Small frames,
+overlapping buffers and the `VOX_SERIAL_CPU_RASTER=1` override
+preserve serial row order. Odd dimensions, signed source pitches,
+straight alpha and destination padding retain their original bytes.
+
+A single-C-unit V `-prod -prealloc -gc none` harness compared the
+original scalar loop, the new code forced serial, and default
+scheduling. Timers cover conversion through its return, with fixture
+setup and RGBA hashing outside the span. Each of seven rotating
+groups launched a fresh process per size and mode. All 105 process
+exits and the guard exit were zero, and the complete padded RGBA
+hashes matched. Warm values are medians of each process's median
+after its first call. The benchmark executable SHA-256 was
+`a63ba5757d10eb408684189672a620f69a83634ad572dfc93778787eddd347c2`.
+One-minute host load ranged from 4.90 to 5.16 on 18 logical CPUs.
+
+| Frame | First conversion before / forced serial / default, µs | Warm before / forced serial / default, µs | Default warm wins |
+| --- | ---: | ---: | ---: |
+| 320×240 opaque | 96.750 / 96.959 / 98.916 | 96.000 / 96.042 / 96.313 | 2/7 |
+| 512×512 opaque | 333.708 / 326.750 / 208.125 | 330.271 / 324.208 / 179.938 | 7/7 |
+| 1031×513 alpha, reversed Y rows | 677.500 / 686.209 / 338.333 | 677.355 / 685.709 / 260.250 | 7/7 |
+| 1920×1080 opaque | 2726.166 / 2785.375 / 1127.500 | 2715.208 / 2747.229 / 830.605 | 7/7 |
+| 3840×2160 opaque | 11063.250 / 11341.333 / 3402.167 | 10829.396 / 10932.500 / 3378.209 | 7/7 |
+
+The small-frame warm median rose 0.313 µs. A separate dispatch probe
+saw zero dispatches for 511×513 and forced serial, two distinct
+threads at 512×512, and four distinct threads for the larger
+probed frames. The actual native FFmpeg playback helper decoded a
+1031×513 limited BT.601 VP9 alpha frame and called the exported V
+bridge. It dispatched four distinct threads by default and zero
+with the override. Both modes returned all 2,115,612 identical RGBA
+bytes with SHA-256
+`55e17f8d0e3755b2853aa0b86daa86118c410cd9a96aad91127c78e406e40db4`.
+Both decode runs and the final diagnostic guard exited zero. An
+ASan-instrumented decoder did not expose dispatch to the interposer.
+The final worker diagnostic used a separate, unsanitized decoder.
+The nine YUV test files, focused ASan/UBSan and forced-serial tests,
+native bridge checks, and the focused arm64 Linux test passed.
+
+Fresh captures with the published single-C-unit Vox executable
+`5d72f61417d4e5c75c4bd333550ce43baf8a65fcbd00bf89c1e1dafd8f641660`
+matched the frozen Hacker News, GitHub and Old Reddit pixels. The
+sealed replays used JavaScript, private cold profiles and caches,
+a 1024×768 CSS-pixel document viewport, 2× capture and a one-second
+settle. They audited 30, 33 and 25 entries respectively and zero
+video elements on each page. Each browser and the guard exited zero.
+The timings above cover CPU conversion of video frames. The shared
+production build used for the archive checks predates this change.
