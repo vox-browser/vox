@@ -1329,3 +1329,41 @@ peak of 6,887,686,144 bytes.
 
 Raw counts, replay logs, captures, and guard receipts remain local under
 `docs/performance/libjs-github-browser-20261116/libjs-github-native-library-packing-windowed-20261118/`.
+
+### Build a private grouped cache
+
+`tools/libjs_pack_native_cache.py` groups selected macOS cache
+libraries from retained relocatable objects. Each selected object
+must use the same `vox_native_N` symbols as its separate library.
+The selected objects need distinct symbol numbers across libraries.
+When preparing objects from retained generated C, assign those
+numbers before compiling the objects and linking the separate cache.
+
+The link receipt has an `abi` digest and an `object_files` array.
+Each row gives the `object` and `separate` filenames or paths and
+their `object_sha256` and `separate_sha256` digests. The tool locates
+files by basename in the supplied object and cache directories, so
+they can be moved after the original build.
+
+```sh
+python3 tools/libjs_pack_native_cache.py \
+  --cache "$separate_cache" --abi "$abi" \
+  --objects "$object_directory" --receipt "$link_receipt" \
+  --library "$startup_library_1" --library "$startup_library_2" \
+  --output "$grouped_cache"
+```
+
+Repeat `--library` for each selected library basename. The tool checks
+the cache and object digests, verifies the exports, and publishes the
+completed ABI directory in a new private cache. It preserves keys,
+symbol indices and the bytes of untouched records. Use the output
+directory as `VOX_LIBJS_NATIVE_CACHE` with the matching browser ABI
+and the source cache's identity mode.
+
+On the frozen GitHub fixture the tool groups 41 libraries with 5,212
+records and preserves all 13,915 keys. Published Vox
+`ea5cc7a3…bb74` opens the grouped image, matches the pinned PNG and
+repository audit, and fulfills all 81 modules. With the compiler
+disabled it records 2,941 cache hits and 470,469 native entries,
+with zero misses or compiler calls. Local receipts are under
+`docs/performance/libjs-github-browser-20261116/libjs-pack-native-cache-tool-20261118/`.
