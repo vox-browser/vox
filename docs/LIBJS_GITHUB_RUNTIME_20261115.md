@@ -7561,3 +7561,48 @@ Those values describe attributed mapping capacity. The paired guard
 reports above supply the sampled RSS peaks. Raw audits, stack mappings,
 comparison inputs and guard receipts are local under
 `repository-navigation-5204-r83`.
+
+### CSS substitution input ownership
+
+The GitHub mapping trace attributes 364,904,448 bytes of virtual mapping
+capacity to component copies in the CSS substitution workspace during
+cascade. Commit `3266e8378` keeps the substituted tokens live until the
+typed parser returns. Supported values export their final graph, and only
+the fallback path copies tokens that the result can retain.
+
+A guarded standalone probe recomputed the same inline style 2,000 times.
+The compiler's generated C differs only at the substitution changes.
+Three matched pairs produced identical values for calculated width,
+invalid height fallback, margin, padding, border radius, escaped font
+family, image-set URLs and attribute-backed content.
+
+| Conditions | Control caller-arena bytes | Candidate caller-arena bytes |
+| --- | ---: | ---: |
+| Each of three normal pairs | 195,199,955 | 169,279,969 |
+| Substitution and typed-parser scratch poisoning | 195,199,955 | 169,279,965 |
+| Scratch poisoning with calculated and text exports disabled | 213,695,944 | 198,847,950 |
+
+The normal pairs use 25,919,986 fewer caller-arena bytes, a 13.3% reduction.
+All ten runs exit zero with identical computed values. The 3 GiB guard
+reports 250,101,760 sampled peak RSS bytes for the paired probe. The
+guarded production type check exits zero. The focused regression sources
+are included in the commit and the automated suites remain on hold.
+GitHub's browser memory and pixel gates still need a bundle containing
+this change.
+
+### Hacker News on the GitHub replay build
+
+A fresh compiler-disabled Hacker News launch on published executable
+`9c165f7ab3dc15fd6fcc7a0d89336aefde735c3a9f983c15248727de89918301`
+matches all 30 archived Brave story rows and the unchanged 2× document
+PNG. At capture and clean shutdown, LibJS records six generated-code
+cache hits and six native entries. Misses, compiler calls, compilations,
+pending and invalid entries are all zero. JavaScriptCore stays
+uninitialized. The browser (PID 21784), controller and guard exit zero,
+with all 50 input pins unchanged. The guard adopts the browser and its
+helper and samples 415,563,776 peak RSS bytes. The first setup was
+rejected before launch because inherited proxy exclusions were set.
+The verified run cleared those settings.
+
+Generated-C differences, commands, exact CSS observations and browser
+receipts are local under `repository-navigation-5204-r84`.
