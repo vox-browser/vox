@@ -1220,3 +1220,46 @@ The narrower tier gap reflects the higher interpreter median.
 Raw captures, profiles, input hashes and guard receipts remain local
 under
 `docs/performance/libjs-github-browser-20261116/libjs-github-workspace-direct-stores-publication-20261118/`.
+
+## Native cache library grouping, 2026-11-18
+
+The earlier standalone profile listed 106 cached libraries and sampled
+`dlopen` on 219 of 630 main-thread stacks. A separate experiment
+seeded 12,399 generated-code cache records across 98 libraries from
+frozen `github.com/vlang/v` responses. The two layouts link the same
+`-O0` object files separately and together. Both keep normal cache key,
+ABI, library digest and export validation.
+
+Seven alternating pairs count retired instructions from fresh
+standalone process creation through exit, with OS file caches warm and
+native diagnostics disabled. Every visit runs six startup scripts,
+requests the same 49 archived responses, and retains 33 directory rows
+and zero commit links. Each reports zero native misses, invalid records
+or compiler attempts, with JSC uninitialized. This headless startup
+scope ends before layout or PNG capture.
+
+Linking all 98 objects into one library raises median native cache
+load time from **84.67 ms** to **122.29 ms**. Median retired
+instructions rise from **13,653,640,404** to **13,664,915,138**
+(0.08%), with fewer instructions in five of seven pairs. A separate
+dyld trace records 41 mapped libraries totaling 90,972,664 bytes in
+the separate layout. The single library maps 210,503,680 bytes.
+LibJS hashes each entire image before opening it.
+
+A second seven-pair cohort groups the 41 traced libraries and keeps the
+other 57 separate. Median retired instructions fall from
+**13,787,949,942** to **13,519,053,830** (1.95%), with fewer instructions
+in all seven pairs. Median cache load time falls from **105.89 ms** to
+**96.10 ms**. The last pair's grouped load takes 139.42 ms versus
+100.40 ms separately. The trace maps two images totaling 92,418,232
+bytes after grouping. All 28 timed runs meet the startup audit and
+record 1,799–1,837 cache hits. Both cohort guards exit zero and sample
+peaks below 3.46 GB.
+
+The group was selected from this archived workload. These measurements
+use unoptimized cache libraries and apply to repeat headless startup.
+An initial preflight compared a reopen against the compilation seed,
+which ran more requests and exposed additional commit links. The timed
+cohorts use the earlier compiler-disabled startup audit as their reference.
+Raw attempts, input hashes, traces and guard receipts remain local under
+`docs/performance/libjs-github-browser-20261116/libjs-github-native-library-packing-20261118/`.
