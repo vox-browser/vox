@@ -297,15 +297,61 @@ fn general_tint(mut image BlurImage, color u32) {
 	general_tint_with_coverage(mut image,color,-1)
 }
 
+@[direct_array_access]
 fn general_tint_with_coverage(mut image BlurImage, color u32, coverage_alpha f32) {
 	ca := if coverage_alpha >= 0 { coverage_alpha } else { f32(color >> 24) * inv_255 }
 	rgb := [f32((color >> 16) & 255) * ca, f32((color >> 8) & 255) * ca, f32(color & 255) * ca]!
+	alpha_scale := f32(255) * ca
+	if image.pixels.len >= packed_rgba_scan_bytes {
+		// A constant SrcIn tint depends only on the input alpha byte.
+		// Build the table with the same rounding as the small scalar path.
+		mut table := [256][4]u8{}
+		for alpha in 0 .. table.len {
+			table[alpha] = filter_tint_pixel(u8(alpha), rgb, alpha_scale)
+		}
+		scan := FilterTintScan{
+			pixels: image.pixels.data
+			table:  table
+		}
+		pixel_bytes := image.pixels.len / 4 * 4
+		tail := run_packed_rgba_scans(&scan, pixel_bytes, scan_filter_tint)
+		scan.tint_span(tail, pixel_bytes)
+		return
+	}
 	for i := 0; i + 3 < image.pixels.len; i += 4 {
-		a := f32(image.pixels[i + 3]) * inv_255
-		image.pixels[i] = general_byte(rgb[0] * a)
-		image.pixels[i + 1] = general_byte(rgb[1] * a)
-		image.pixels[i + 2] = general_byte(rgb[2] * a)
-		image.pixels[i + 3] = general_byte(f32(255) * ca * a)
+		pixel := filter_tint_pixel(image.pixels[i + 3], rgb, alpha_scale)
+		image.pixels[i] = pixel[0]
+		image.pixels[i + 1] = pixel[1]
+		image.pixels[i + 2] = pixel[2]
+		image.pixels[i + 3] = pixel[3]
+	}
+}
+
+@[inline]
+fn filter_tint_pixel(alpha u8, rgb [3]f32, alpha_scale f32) [4]u8 {
+	a := f32(alpha) * inv_255
+	return [general_byte(rgb[0] * a), general_byte(rgb[1] * a), general_byte(rgb[2] * a),
+		general_byte(alpha_scale * a)]!
+}
+
+struct FilterTintScan {
+	pixels &u8
+	table  [256][4]u8
+}
+
+fn scan_filter_tint(context voidptr, first i32, end i32) {
+	scan := unsafe { &FilterTintScan(context) }
+	scan.tint_span(int(first) * packed_rgba_scan_bytes, int(end) * packed_rgba_scan_bytes)
+}
+
+@[inline]
+fn (scan &FilterTintScan) tint_span(start int, end int) {
+	pixels := scan.pixels
+	unsafe {
+		for offset := start; offset < end; offset += 4 {
+			alpha := pixels[offset + 3]
+			vmemcpy(pixels + offset, &scan.table[alpha], 4)
+		}
 	}
 }
 

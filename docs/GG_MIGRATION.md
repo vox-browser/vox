@@ -6819,3 +6819,65 @@ capture and one second of settling. The probe observed no conversion
 calls on the three archived pages. Browser and guard exits were
 zero. Candidate validation inside the browser awaits its production
 rebuild.
+
+### Parallel CPU shadow tinting
+
+The fallback filter pipeline's constant SrcIn tint now computes the
+RGBA result once per possible input alpha. Starting at 1024 pixels,
+it applies the lookup table directly to the existing buffer. The
+existing CPU raster scheduler distributes complete pixel ranges at
+262,144 pixels and can use up to four threads. Smaller masks retain
+scalar tint calculation below 1024 pixels and serial lookup below
+the dispatch cutoff. Both kernels keep the original coverage and
+rounding. An incomplete final pixel remains untouched.
+
+Matched V single-unit C `-prod -prealloc -gc none` harnesses timed the
+tint call through return. The source reset and output hashing were
+outside the timer. Each of seven rotating groups ran a fresh process
+per mode. All 147 processes and the memory guard exited zero.
+Within each case the complete output SHA-256 matched across modes
+and groups. Warm values are medians of each process's post-first-call
+median. One-minute load was 5.08–5.17 on 18 logical CPUs.
+
+| Layer | First before / forced serial / default, µs | Warm before / forced serial / default, µs |
+| --- | ---: | ---: |
+| 24×17, explicit coverage | 0.833 / 0.458 / 0.459 | 0.709 / 0.250 / 0.250 |
+| 64×64 | 7.542 / 2.250 / 2.291 | 7.167 / 1.875 / 1.875 |
+| 511×513 | 477.959 / 97.417 / 95.208 | 476.938 / 96.938 / 95.792 |
+| 512×512 | 478.084 / 95.000 / 85.083 | 477.000 / 93.771 / 64.730 |
+| 1031×513, explicit coverage | 934.666 / 203.625 / 139.000 | 941.250 / 196.708 / 90.917 |
+| 1920×1080 | 3834.000 / 825.958 / 401.708 | 3732.167 / 772.938 / 276.605 |
+| 3840×2160, explicit coverage | 14960.750 / 3086.500 / 1186.500 | 15344.167 / 3128.626 / 1090.375 |
+
+The default candidate won all seven first-call and warm pairs per
+case. The final harness executable hashes were
+`5d83281daab1b00979dff8112ae0877d3c855431a7e777e336398b35db7f1653`
+and `375fe950d188303f5375e93e1c0d27e838d9e7dd1e50a56e9a360a2aa79a2c51`.
+An earlier candidate built the table only at the dispatch threshold.
+Its new scalar loop was slower at 64×64 (7.125 → 9.583 µs warm)
+and 511×513 (457.021 → 613.750 µs warm). Both sizes improved in the
+final cohort.
+
+The separate probe resolved the tint callback and saw zero batches
+below 262,144 pixels and under `VOX_SERIAL_CPU_RASTER=1`, two threads
+at the cutoff and four above it. The public Canvas2D fallback drew
+a 1441×927 drop-shadow scene with four threads in the tint batch.
+Its complete surface SHA-256 matched the forced-serial draw
+(`f22810741a34dac44f60279ce3cfefe5fa02d7607ad8e160dc83324dd886770e`).
+All probe processes and the guard exited zero. Focused macOS and
+arm64 Linux tests, forced serial, ASan/UBSan and ThreadSanitizer
+passed. The pinned CPU raster differential suite passed at count
+2000 and seed 20261106.
+
+Sealed Hacker News, GitHub and Old Reddit replays matched their
+frozen document pixels on the published single-C-unit browser
+`870e280a166afa2249e1f90dcd8fb7cee701e0614f25414dd12004c9f4472077`.
+They audited 30, 33 and 25 entries and zero Canvas elements, with
+fresh private profiles and caches, JavaScript, a 1024×768 CSS-pixel
+viewport, 2× capture, and a one-second settle. All three browser
+exits and the replay guard exit were zero. The timing above covers
+the isolated tint, and browser validation of the tint awaits the
+shared rebuild. The published captures also verified the earlier
+[PNG scheduling change](#more-png-compression-bands-for-retina-captures).
+Each had six valid IDAT chunks and matched the corresponding
+six-band encoder benchmark PNG byte for byte.

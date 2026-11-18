@@ -47,6 +47,24 @@ fn test_general_blur_and_drop_shadow_track_exact_layers() {
 	}
 }
 
+fn test_general_tint_matches_scalar_coverage_and_preserves_tail() {
+	width, height := 1031, 513
+	length := width * height * 4 + 3
+	color := u32(0xad277de1)
+	for coverage in [f32(-1), 0, 0.541, 1.05] {
+		mut reference := BlurImage{[]u8{len: 256 * 4, init: u8(index / 4)}, 256, 1}
+		general_tint_with_coverage(mut reference, color, coverage)
+		mut image := BlurImage{[]u8{len: length, init: u8(index / 4)}, width, height}
+		general_tint_with_coverage(mut image, color, coverage)
+		for i := 0; i < length - 3; i++ {
+			assert image.pixels[i] == reference.pixels[i % reference.pixels.len]
+		}
+		for i in length - 3 .. length {
+			assert image.pixels[i] == u8(i / 4)
+		}
+	}
+}
+
 // A rotated layer, which the exact ports decline, blurs the rotated shape:
 // coverage spreads past its edges, and the clip still bounds the result.
 fn test_general_blur_under_rotation_spreads_and_clips() {
