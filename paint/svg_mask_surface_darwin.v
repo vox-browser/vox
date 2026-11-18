@@ -65,13 +65,23 @@ fn (app &BrowserApp) shared_svg_mask_full_area(region painting.Rect, visible pai
 	return [i32(full.x), i32(full.y), i32(full.width), i32(full.height)]!
 }
 
+fn native_svg_mask_simple_opacity_group(mask &layout.PaintClip) bool {
+	operations := mask.mask_operations
+	// Bound cold work to one isolated layer and at most two rectangular fills.
+	return operations.len >= 3 && operations.len <= 4 && operations[0].kind == .begin_opacity
+		&& operations[operations.len - 1].kind == .end_opacity
+		&& operations[1].kind == .path && (operations.len == 3 || operations[2].kind == .path)
+}
+
 fn (mut app BrowserApp) raster_native_svg_content_mask(mask &layout.PaintClip, page_x f32,
 	page_y f32, scale f64) bool {
 	can_keep_full_raster := !clip_shared_svg_mask_raster && !disable_shared_svg_mask_cache
 		&& !eager_shared_svg_mask_bitmap && mask.mask_raster_key != 0
+	automatic_opacity_group := !force_shared_svg_mask_raster && can_keep_full_raster
+		&& native_svg_mask_simple_opacity_group(mask)
 	mut automatic_radial := false
 	mut automatic_diagonal := false
-	if !force_shared_svg_mask_raster {
+	if !force_shared_svg_mask_raster && !automatic_opacity_group {
 		if mask.mask_operations.len != 1 { return false }
 		operation := &mask.mask_operations[0]
 		if linear := operation.fill_linear_gradient {
@@ -121,19 +131,23 @@ fn (mut app BrowserApp) raster_native_svg_content_mask(mask &layout.PaintClip, p
 		}
 	}
 	cropped := crop_area[2] != 0
-	requires_cache := automatic_radial || automatic_diagonal
+	requires_cache := automatic_radial || automatic_diagonal || automatic_opacity_group
 	if !force_shared_svg_mask_raster {
 		// Retain complete gradient rasters at later scroll positions,
 		// including placements clipped by the viewport.
 		if requires_cache {
 			if !keeps_full_raster { return false }
-			operation := &mask.mask_operations[0]
 			if automatic_radial {
-				if svg_background_rectangle_path(operation.path_data) == none { return false }
+				if svg_background_rectangle_path(mask.mask_operations[0].path_data) == none { return false }
 			} else {
-				device := portable_device_transform(operation.transform, page_x, page_y, scale)
-				if svg_mask_aligned_rect(operation, portable_svg_surface_matrix(device, bounds)) == none {
-					return false
+				first_path := if automatic_opacity_group { 1 } else { 0 }
+				end_path := if automatic_opacity_group { mask.mask_operations.len - 1 } else { 1 }
+				for index in first_path .. end_path {
+					operation := &mask.mask_operations[index]
+					device := portable_device_transform(operation.transform, page_x, page_y, scale)
+					if svg_mask_aligned_rect(operation, portable_svg_surface_matrix(device, bounds)) == none {
+						return false
+					}
 				}
 			}
 		} else if int(raster_area[2]) * int(raster_area[3]) > shared_svg_mask_cache_pixel_limit
@@ -153,7 +167,8 @@ fn (mut app BrowserApp) raster_native_svg_content_mask(mask &layout.PaintClip, p
 	}
 	if requires_cache && (raster_key == 0 || C.native_can_admit_svg_mask_raster() == 0) {
 		if portable_svg_mask_diagnostics {
-			eprintln('VOX_SHARED_SVG_MASK_SKIP_${if automatic_radial { 'RADIAL' } else { 'DIAGONAL' }}_CACHE')
+			kind := if automatic_radial { 'RADIAL' } else if automatic_opacity_group { 'OPACITY' } else { 'DIAGONAL' }
+			eprintln('VOX_SHARED_SVG_MASK_SKIP_${kind}_CACHE')
 		}
 		return false
 	}
