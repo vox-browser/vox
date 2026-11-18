@@ -114,11 +114,11 @@ fn svg_shadow_pixels(pixels &u8, width int, height int, pitch int, samples int,
 	merged.draw_linear_alpha_mask(alpha, sw, sh, canvas.Paint{ color: canvas.Color4f{0, 0, 0, 1}, anti_alias: true })!
 	// Snap the logical subset, excluding the guaranteed transparent border.
 	mut combined := []u8{len: w * h * 4}
-	mut padded := []u8{len: (w + 2) * (h + 2) * 4}
-	merged.read_pixels(padded.data, (w + 2) * 4)!
-	for y in 0 .. h {
-		copy(mut combined[y * w * 4..(y + 1) * w * 4], padded[((y + 1) * (w + 2) + 1) * 4..((y + 1) * (w + 2) + 1 + w) * 4])
-	}
+	padded_pitch := (w + 2) * 4
+	mut padded := []u8{len: padded_pitch * (h + 2)}
+	merged.read_pixels(padded.data, padded_pitch)!
+	cpuraster.copy_raster_rectangle(padded[padded_pitch + 4..], mut combined, padded_pitch,
+		w * 4, w * 4, h)
 	target.set_matrix(canvas.Matrix.values(frame))
 	target.concat(canvas.Matrix.translate(left, top))
 	target.draw_linear_premultiplied_layer(combined, w, h, true)!

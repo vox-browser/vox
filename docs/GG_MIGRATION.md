@@ -8235,3 +8235,57 @@ which matched the archived Hacker News, GitHub and Old Reddit
 references in the [preceding check](#parallel-rounded-shadow-patch-expansion).
 The timings above cover alpha extraction. Candidate site timings
 await the shared rebuild.
+
+### Parallel SVG shadow border crops
+
+The macOS SVG drop-shadow adapter removes the one-pixel border
+from the resolved GPU readback with the shared raster rectangle
+copy. The packed BGRA result is uploaded after the copy joins.
+The copy borrows the destination slice explicitly, avoiding a
+compiler-inserted clone, and copies only the visible bytes in each
+row. Copies of at least 4 MiB use up to four workers.
+
+Matched single-C-unit V `-prod -g -prealloc -gc none` harnesses
+measured the crop including allocation of the packed result.
+Source setup and output hashing ran outside the timer. Seven
+rotating fresh-process groups ran on Mac17,6 with 18 logical CPUs
+starting at 09:50 local time on 2026-11-18. One-minute load varied
+from 6.68 to 7.05. All 21 processes and the guard exited zero.
+Times are medians in microseconds. Warm results take each
+process's median of eight calls after its first.
+
+| Packed output | First before / forced serial / default | Warm before / forced serial / default |
+| --- | ---: | ---: |
+| 32×32 | 0.334 / 0.333 / 0.291 | 0.250 / 0.167 / 0.167 |
+| 511×513 | 77.666 / 87.250 / 76.417 | 84.188 / 85.396 / 82.729 |
+| 1023×1025 | 313.250 / 330.042 / 336.167 | 334.167 / 342.583 / 343.334 |
+| 1024×1024 | 323.583 / 330.250 / 311.708 | 326.521 / 355.334 / 312.604 |
+| 1921×1081 | 678.000 / 655.083 / 598.958 | 667.708 / 669.230 / 595.042 |
+| 2048×2048 | 1286.625 / 1364.250 / 1128.166 | 1305.458 / 1351.938 / 1169.938 |
+
+Every full output hash matched. The two largest cases won all
+seven warm pairs. The 1023×1025 case stayed serial and its warm
+median rose by 9.167 µs. Harness SHA-256 values were
+`58ef6e5a3c6f1c9b24650785c278bcd81803e748b35a7dc19077bb744eff4b3c`
+before and
+`10180243c93a8352aa05bb3f9cdcc083b550577d2dc9b407e4d1a999b5eff998`
+after.
+
+The dispatch probe observed four distinct threads at and above
+the cutoff and zero below it or with workers disabled. The
+1600×900 public SVG shadow draw used four threads for the
+900×1600 crop with one and four destination samples. All four
+complete surfaces, including the forced-serial draws, had SHA-256
+`e39949b272bf555938ebe79711085deadf9881609cecd6bc5c44f64b5ac3a9e3`.
+The four probe processes and guard exited zero. Existing SVG
+shadow fixtures matched the unchanged Brave references. The
+padded copy checks, macOS and arm64 Linux tests, ASan/UBSan,
+ThreadSanitizer and the pinned CPU raster differential suite
+(count 2000, seed 20261106) passed.
+
+The available completed browser was still
+`abc313c877690171f669481414f33c967376bd88d45f1128596e79e76f749f4a`.
+Its archived Hacker News, GitHub and Old Reddit pixel checks are
+recorded in the [preceding replay](#parallel-rounded-shadow-patch-expansion).
+The timings here cover the isolated crop. Candidate browser
+timings await the shared rebuild.

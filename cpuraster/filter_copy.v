@@ -1,10 +1,14 @@
 module cpuraster
 
-// Copy a visible rectangle between distinct filter buffers. The row starts
-// already include the clip origin. Keep small rectangles on the caller.
-fn copy_filter_rectangle(source []u8, mut destination []u8, source_pitch int, destination_pitch int, row_bytes int, rows int) {
+// copy_raster_rectangle copies between disjoint raster buffers beginning at
+// their respective clip origins. Each pitch must be at least row_bytes and
+// the buffers must contain all requested rows.
+pub fn copy_raster_rectangle(source []u8, mut destination []u8, source_pitch int, destination_pitch int, row_bytes int, rows int) {
+	if rows <= 0 || row_bytes <= 0 {
+		return
+	}
 	input := source[..(rows - 1) * source_pitch + row_bytes]
-	output := destination[..(rows - 1) * destination_pitch + row_bytes]
+	output := unsafe { destination[..(rows - 1) * destination_pitch + row_bytes] }
 	scan := RasterCopyScan{
 		source:            input.data
 		destination:       output.data

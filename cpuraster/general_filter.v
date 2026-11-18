@@ -279,7 +279,7 @@ fn general_place(src BlurImage, x int, y int, width int, height int) BlurImage {
 	if left < right && top < bottom {
 		start := ((top - y) * src.width + left - x) * 4
 		destination := (top * width + left) * 4
-		copy_filter_rectangle(src.pixels[start..], mut out.pixels[destination..], src.width * 4,
+		copy_raster_rectangle(src.pixels[start..], mut out.pixels[destination..], src.width * 4,
 			width * 4, (right - left) * 4, bottom - top)
 	}
 	return out
@@ -632,7 +632,7 @@ fn general_crop(image BlurImage, crop Rect, layer IRect) BlurImage {
 	if left < right && top < bottom {
 		start := (top * image.width + left) * 4
 		pitch := image.width * 4
-		copy_filter_rectangle(image.pixels[start..], mut out.pixels[start..], pitch, pitch,
+		copy_raster_rectangle(image.pixels[start..], mut out.pixels[start..], pitch, pitch,
 			(right - left) * 4, bottom - top)
 	}
 	pixel_bytes := image.width * image.height * 4

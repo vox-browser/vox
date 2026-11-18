@@ -34,7 +34,7 @@ fn (s SpecialImage) bitmap() BlurImage {
 	mut px := []u8{len: w * h * 4}
 	if w > 0 && h > 0 {
 		src := (s.subset.top * s.backing.width + s.subset.left) * 4
-		copy_filter_rectangle(s.backing.pixels[src..], mut px, s.backing.width * 4, w * 4,
+		copy_raster_rectangle(s.backing.pixels[src..], mut px, s.backing.width * 4, w * 4,
 			w * 4, h)
 	}
 	return BlurImage{px, w, h}
