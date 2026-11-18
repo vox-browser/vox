@@ -663,46 +663,6 @@ peaked at 11,696,046,080 bytes for the build and 407,158,784 bytes for
 the timed cohort. Full-mask caching improved scroll publication rates
 in all three groups on this fixture. The shared renderer remains opt-in.
 
-### Backing scale and live mask changes
-
-The macOS placement cache includes backing scale alongside the resource
-key and canvas coordinates. Clip and content masks use that identity
-when preparing an image and when compositing it. The native key check
-distinguished 1× and 1.5× or 2× placements for both mask types.
-
-The [live mutation fixture](../Tests/Browser/Native/svg-gradient-mask-mutation.html)
-changes linear stop opacity and radial stop color after the first
-render. A published Quartz capture in PID 29997 changed the sample
-pixels to blue and red, as expected. The candidate shared renderer
-recorded the original and updated resource keys for each mask in PID
-33812. Its final document matched the uncached capture in PID 33819
-pixel for pixel. The first static suite run reported an eager-cache
-screenshot mismatch. A fresh focused pair and a full 13-capture repeat
-passed using the same comparisons. Native mask conversion, cropping and
-layer checks also passed.
-
-The single-C V `-prod`, Clang `-O1` timing executable SHA-256 was
-`e158e06331a5d55155620e49143ecf17cb5d9c1446857bf6c1ba5de8f4de6bd8`.
-The two alternating pairs used the previous scrolling fixture and AVIF
-digests, a fresh cache and private profile with a hidden bookmark bar,
-disabled scripts, and a one-second settle after the title matched. Each
-ran 120 precise four-pixel wheel inputs at a requested 60 Hz, with one
-reversal after 60 inputs. The document viewport was 1024 × 600 at 2×.
-The endpoint was changed native frame installation after outer view paint.
-
-| PID | Raster | Scroll fps | Median (ms) | p95 (ms) | Max (ms) | Input Hz | Inputs / scroll changes | First / last gap (ms) |
-| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
-| 33874 | Quartz | 40.26 | 24.098 | 27.151 | 29.930 | 55.07 | 120 / 87 | 54.279 / 19.342 |
-| 34105 | Shared | 45.74 | 20.992 | 25.327 | 27.439 | 52.84 | 120 / 103 | 55.262 / 0.123 |
-| 34363 | Quartz | 38.26 | 24.577 | 29.323 | 52.284 | 54.85 | 120 / 83 | 56.003 / 20.481 |
-| 34476 | Shared | 47.81 | 20.368 | 24.087 | 25.441 | 56.90 | 120 / 100 | 49.640 / 0.123 |
-
-Starting one-minute loads on the 18-CPU host were 4.13, 4.04, 4.19
-and 4.18. All measured scroll intervals exceeded 16.67 ms. The browser
-and guard exits for the cohort were zero. Sampled process-tree RSS
-peaked at 11,481,743,360 bytes during the build and 403,701,760 bytes
-during timing. The shared renderer remains opt-in.
-
 ## Original migration plan
 
 Vox currently renders through two Skia builds: LibWeb's Skia (CPU raster,
@@ -5341,3 +5301,59 @@ stayed on the caller. Native ARC, non-ARC, ASan/UBSan and ThreadSanitizer
 checks passed, including fallback after a failed snapshot allocation.
 The timings cover the compatibility copy calls. Production verification
 of the new code awaits the shared rebuild.
+
+### Parallel transparent clears for large pooled frames
+
+The macOS frame pool uses the existing row workers to clear reused
+transparent buffers of at least 33,177,600 bytes, the packed size of a
+3840×2160 RGBA frame. A slot and its optional IOSurface stay reserved
+until all rows have been cleared, including padding. Smaller buffers
+keep the single clear. `VOX_SERIAL_FRAME_CLEAR=1` also forces a single
+clear. Opaque callbacks can still defer initialization.
+
+The published single-C-unit executable
+`66f97ef08d4c9ff9ae1195cd80c9817add78ab82c27960580f1444a44101e77d`
+supplied archive diagnostics. A probe resolved the pool clear at
+executable offset `0x116a240`. Default captures of Hacker News, GitHub
+and Old Reddit made zero clears there. Forcing
+`VOX_CLEAR_OPAQUE_FRAME_BUFFERS=1` produced 5, 20 and 9 clears respectively,
+all 13,959,168 bytes. Fresh processes used the sealed archives, a
+1024×768 CSS-pixel viewport at 2×, and one second of settling. All
+browser and guard exits were zero and the document content and decoded
+pixels matched the prior references in both settings.
+
+Matching Apple Clang 21 `-O2 -fobjc-arc` harnesses timed reacquisition
+of a seeded pool slot through completion of its transparent clear.
+This includes reservation and the shared buffer's lock. An eviction
+case wrote a separate 64 MiB buffer before timing. Each case used
+seven alternating fresh-process groups on 18 logical CPUs. The
+one-minute load was 4.04–4.19 in the final cohort, with zero process or
+guard failures. All tests checked every byte.
+
+An initial candidate used workers for the 13–14 MiB frames. Its
+before/default medians were 58.959/57.750 µs for the shared archive
+size, 66.750/87.042 µs with eviction, 57.917/71.667 µs for padded
+shared storage, and 53.792/69.750 µs for mapped storage. Those sizes
+retain the single clear after an exploratory 4K and 5K cohort showed
+consistent gains.
+
+| Frame and storage | Before, µs | Candidate serial, µs | Candidate default, µs | Faster than before |
+| --- | ---: | ---: | ---: | ---: |
+| 1024×852 shared | 15.458 | 15.583 | 15.667 | 2/7 |
+| 2048×1704 shared | 73.500 | 84.250 | 99.000 | 1/7 |
+| 2048×1704 shared, evicted | 249.625 | 207.875 | 211.667 | 3/7 |
+| 2051×1703 padded shared | 85.917 | 86.250 | 95.541 | 5/7 |
+| 2051×1703 mapped | 62.416 | 72.375 | 75.292 | 4/7 |
+| 3840×2160 shared | 295.958 | 345.583 | 194.167 | 6/7 |
+| 4096×2160 shared, evicted | 521.041 | 539.458 | 232.458 | 6/7 |
+| 5120×2880 shared | 625.625 | 742.416 | 356.750 | 7/7 |
+| 5120×2880 shared, evicted | 814.792 | 832.542 | 470.666 | 7/7 |
+| 5123×2879 mapped | 696.792 | 763.083 | 404.833 | 7/7 |
+
+The smaller rows used the single-clear path in both builds and showed
+trial variation. A separate probe resolved the worker at offset
+`0x18b4` and saw four distinct threads on the large shared and mapped
+buffers. It saw no dispatch for the archive size or forced serial.
+The ARC and non-ARC pool suites, 288 white-clear compatibility
+comparisons, and the focused ASan/UBSan and ThreadSanitizer runs passed.
+Production validation of the new path awaits the shared rebuild.
