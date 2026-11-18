@@ -9329,19 +9329,57 @@ bytes for the compile and three runs. Two earlier attempts fail due to full
 disk during C staging and during Clang's object output, respectively. The
 retained attempts identify both failures.
 
-The cache implementation from `9c42c5c64` also passes a standalone runtime
-probe with LibJS and a minimal host. The probe uses the exact browser cache
-source and checks reuse for identical input, a forced collision and independent
-partitions. The first probe needed a missing-map-entry guard in its assertion.
-The corrected compiler and explicit test binary exits are zero, with a guard
-peak of 3,031,744,512 sampled bytes in 27.343 seconds. The full `browserjs`
-regression build fails while writing generated C on the full filesystem.
+The standalone cache probe for `9c42c5c64` compiled and exited zero with LibJS
+and a minimal host. It used `-prod`, which removes V assertions. The zero
+exit established execution, while the assertions needed the separate
+assertions-enabled retest below. The full `browserjs` regression build fails
+while writing generated C on the full filesystem.
 
 Managed attempt `20261118-125756-22ae8668` also fails with no space while
 sealing `Vox.c.i`. The successful production publication still predates both
 `eb8628f3a` and `9c42c5c64`, so browser runtime validation and matched timing
 of those changes remain pending. Receipts and probe sources are local under
 `docs/benchmark-results/github-frontend-5204-r108/receipts`.
+
+### Keyword lookup in the GitHub lexer workload
+
+Commit `3f45845b7` compares the lexer’s UTF-16 input directly with ASCII
+keyword spellings. The unescaped path passes its source slice straight to
+the lookup. A focused regression exercises ordinary, escaped, non-ASCII
+and longer identifiers alongside keyword and literal tokens. It runs with
+assertions enabled and exits zero under the 3 GiB guard.
+
+Seven alternating fresh-process pairs use the standalone C-backend V
+`-prod -gc none` lexer on the same 81 GitHub module files. The baseline
+and candidate use the repository's lexer, Unicode tables and UTF-16
+utilities. `libjs/lexer.v` is the only changed compiled source. All 14
+exits are zero. Each visit emits 1,938,155 tokens and reproduces the
+per-file checksums of token types, offsets, trivia, decoded identifiers
+and messages. The timing includes lexer work and the checksum calculation.
+It starts after reading the files and decoding each one to UTF-16. The
+standalone lexer uses its default slash disambiguation.
+
+| Median | Baseline | Candidate | Reduction |
+| --- | ---: | ---: | ---: |
+| Lexer instructions across 81 files | 1,954,238,411 | 1,078,240,652 | 44.83% |
+| Summed lexer intervals across 81 files | 93.773 ms | 55.866 ms | 40.42% |
+| Lexer instructions for `code-view-5d65cb0f8c6bfda9.js` | 406,543,184 | 235,295,176 | 42.12% |
+
+Every pair improves. The 18-CPU host's one-minute load is 8.30, and the
+cohort guard exits zero in 1.718 seconds at 168,984,576 sampled RSS bytes.
+An earlier candidate's local slice assignment triggered a compiler notice
+about an implicit copy. Its checks and timings are retained separately.
+The final candidate's direct slice argument clears that notice. Full-parser
+control builds failed on disk writes. The reported gains cover the lexer
+alone, and production browser timing remains pending.
+
+The assertions-enabled cache retest uses the exact code from `9c42c5c64`
+with a minimal parsed-source record and platform stub. It verifies exact
+source reuse, a forced hash collision and independent cache partitions.
+The test binary and 3 GiB guard exit zero in 1.354 seconds at 242,188,288
+sampled RSS bytes. The full browser regression still awaits a production
+build. Receipts, source pins and harnesses are local under
+`docs/benchmark-results/github-lexer-5204-r109/receipts`.
 
 ### Prepared LibJS script source ownership
 
