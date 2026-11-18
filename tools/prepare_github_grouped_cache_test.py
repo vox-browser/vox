@@ -14,7 +14,7 @@ class GroupedCacheWorkflowTests(unittest.TestCase):
     def setUp(self):
         scratch = tempfile.TemporaryDirectory()
         self.addCleanup(scratch.cleanup)
-        self.root = Path(scratch.name)
+        self.root = Path(scratch.name).resolve()
         self.options = SimpleNamespace(output=self.root / 'results', cache_work=self.root / 'cache',
                                        diff_tool=self.root / 'pixel_diff', pack_jobs=2,
                                        object_checkpoint=self.root / 'pack-objects')
@@ -164,6 +164,98 @@ class GroupedCacheWorkflowTests(unittest.TestCase):
         (records / ('c' * 64 + '.json')).touch()
         with self.assertRaisesRegex(ValueError, 'file set changed'):
             workflow.verify_packed_checkpoint(args, checkpoint, cache, publication)
+
+    def test_resumes_pack_and_reopens_both_layouts_after_publication_changes(self):
+        args = self.options
+        cache = args.cache_work.resolve()
+        separate, grouped, captures = (cache / name for name in ('separate', 'grouped', 'captures'))
+        separate.mkdir(parents=True)
+        record = separate / 'record.json'
+        record.write_bytes(b'cache record')
+        args.archive = self.root / 'archive'
+        args.archive.mkdir()
+        args.reference_audit = self.root / 'audit.json'
+        args.reference_png = self.root / 'reference.png'
+        args.adblock_assets = None
+        args.raster_parity_options = False
+        for path in (args.archive / 'manifest.json', args.reference_audit, args.reference_png):
+            path.write_bytes(b'fixture')
+        pins = {str(p.resolve()): workflow.benchmark.digest(p) for p in (
+            args.archive / 'manifest.json', args.reference_audit, args.reference_png, record)}
+
+        binary = self.root / 'Vox'
+        latest = self.root / 'latest.json'
+        source = str(workflow.benchmark.ROOT / 'libjs/native_code_cache.v')
+
+        def publish(name):
+            directory = self.root / name
+            directory.mkdir()
+            workflow.benchmark.save(directory / 'source-manifest.json', {source: 'same LibJS'})
+            binary.write_text(name)
+            receipt = dict(exit=0, executable_sha256=workflow.benchmark.digest(binary),
+                           c_compile={'v_prod': True}, frozen_compilation=str(directory / 'frozen-compile.json'))
+            workflow.benchmark.save(latest, receipt)
+            return receipt
+
+        previous = publish('first')
+        reports = self.root / 'relocated'
+        stages = {name: reports / name / 'results.json' for name in ('seed', 'trace')}
+        for path in stages.values():
+            path.parent.mkdir(parents=True)
+        loader = reports / 'trace/0-libjs-native/native-library-trace.log'
+        loader.parent.mkdir()
+        loader.write_bytes(b'loader trace')
+        workflow.benchmark.save(stages['seed'], dict(complete=True, prepare_native_cache=True,
+            production_receipt=previous, attempts=[dict(compiler_captures={'directory': str(captures)})]))
+        workflow.benchmark.save(stages['trace'], dict(complete=True, trace_native_libraries=True,
+            production_receipt=previous, inputs=pins,
+            attempts=[dict(valid=True, folder='/old/trace/0-libjs-native',
+                           browser_overrides={'VOX_LIBJS_NATIVE_CACHE': str(separate)})]))
+        args.resume_pack = reports / 'results.json'
+        object_checkpoint = args.object_checkpoint
+        workflow.benchmark.save(args.resume_pack, dict(complete=False, cache_work=str(cache),
+            grouped_cache=str(grouped), object_checkpoint=str(object_checkpoint),
+            stages={name: f'/old/{name}/results.json' for name in stages}, production=previous))
+        args.object_checkpoint = None
+        visits = []
+
+        def pack(seed, trace, output, *, jobs, object_checkpoint):
+            self.assertEqual(output, grouped)
+            self.assertEqual(seed.read_bytes(), stages['seed'].read_bytes())
+            self.assertEqual(trace.read_bytes(), stages['trace'].read_bytes())
+            self.assertEqual((trace.parent / '0-libjs-native/native-library-trace.log').read_bytes(), loader.read_bytes())
+            self.assertEqual(object_checkpoint, self.root / 'pack-objects')
+            image = output / 'abi' / 'group.dylib'
+            image.parent.mkdir(parents=True)
+            image.write_bytes(b'grouped image')
+            publish('second')
+            return dict(abi='abi', library=image.name, group_sha256=workflow.benchmark.digest(image))
+
+        def visit(options, **_):
+            self.assertFalse(options.prepare_native_cache)
+            self.assertTrue(options.trace_native_libraries)
+            visits.append((options.output.name, options.native_cache))
+            options.output.mkdir()
+            workflow.benchmark.save(options.output / 'results.json', dict(complete=True,
+                production_receipt=json.loads(latest.read_bytes()), inputs=pins,
+                attempts=[dict(valid=True, folder=str(options.output),
+                               native_library_trace={'libraries': ['group.dylib']})]))
+            return 0
+
+        with (
+            patch.multiple(workflow, BINARY=binary, PRODUCTION=latest),
+            patch.object(workflow, 'canonical_bundle_lease', return_value=nullcontext()),
+            patch.object(workflow.benchmark, 'run', side_effect=visit),
+            patch.object(workflow, 'pack_from_benchmark', side_effect=pack),
+            patch.object(workflow.benchmark, 'compare', return_value={'exact': True}),
+        ):
+            self.assertEqual(workflow.run(args), 0)
+        outcome = json.loads((args.output / 'results.json').read_text())
+        self.assertEqual(visits, [('verify-trace', separate), ('reopen', grouped)])
+        self.assertTrue(outcome['complete'])
+        self.assertEqual(outcome['resume_pack']['production'], previous)
+        self.assertNotEqual(outcome['production']['executable_sha256'], previous['executable_sha256'])
+        self.assertEqual(outcome['stages']['trace'], str(args.output / 'trace/results.json'))
 
 
 if __name__ == '__main__':

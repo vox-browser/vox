@@ -1631,6 +1631,29 @@ records, and compiled the missing 24. The packed library loaded in a
 new process and hit all 152 records with zero misses or compiler
 calls. The separate and grouped reopens match pixel for pixel.
 
+### Resume an interrupted pack
+
+When seed and trace are complete and the grouped cache is unpublished,
+pass `--resume-pack "$interrupted_report/results.json"` with the same
+`--cache-work`, the original replay inputs and a new `--output`. Keep
+the seed and trace report directories and their attempt logs. The
+workflow reads the saved object checkpoint path from the interrupted
+report when available. It verifies the original receipts and cache,
+reuses any verified objects and compiles the missing batches.
+
+After packing, the workflow pins the current compatible publication
+for fresh separate and grouped reopens. It checks which packed image
+loaded and compares both screenshots. If the earlier attempt already
+wrote `pack.json` and published the group, use `--verify-packed`.
+
+A controlled interruption after the first packed object on the small
+replay fixture retained that object. The restart reused it and compiled
+one more. Both fresh visits hit all 152 records with zero misses or
+compiler calls and produced identical screenshots. The same checks
+passed after moving both the interrupted and completed report directories.
+The full grouped-cache evidence directory holds the local receipts under
+`resume-pack-workflow/`.
+
 ### Verify an existing packed cache
 
 When packing has finished, pass `--verify-packed "$packed_report/results.json"`
