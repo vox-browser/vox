@@ -1,7 +1,7 @@
 @[has_globals]
 module browserjs
 
-import crypto.sha256
+import hash
 import libjs
 import os
 import platform
@@ -47,6 +47,11 @@ fn (runtime &Runtime) use_libjs_frontend_cache() bool {
 	}
 }
 
+fn libjs_frontend_key(partition string, source string, kind libjs.SourceType, options libjs.ParseOptions) string {
+	fingerprint := hash.sum64_string(source, 0)
+	return '${partition}:${kind}:${options.max_recursion_depth}:${fingerprint}'
+}
+
 fn (runtime &Runtime) prepare_libjs_frontend(source string, kind libjs.SourceType, options libjs.ParseOptions) &libjs.ParsedSource {
 	persistent := platform.enter_persistent()
 	defer { platform.leave_persistent(persistent) }
@@ -55,16 +60,19 @@ fn (runtime &Runtime) prepare_libjs_frontend(source string, kind libjs.SourceTyp
 		owner.libjs_frontend_cache_misses_++
 		return libjs.parse_source_with_options(source.clone(), kind, options)
 	}
-	key := sha256.hexhash(owner.libjs_native_cache_partition_ + ':${kind}:${options.max_recursion_depth}:' + sha256.hexhash(source))
+	key := libjs_frontend_key(runtime.libjs_native_cache_partition_, source, kind, options)
 	mut cache := libjs_frontend_cache
 	cache.lock.lock()
 	cache.clock++
 	if mut entry := cache.entries[key] {
-		entry.used = cache.clock
-		cache.entries[key] = entry
-		cache.lock.unlock()
-		owner.libjs_frontend_cache_hits_++
-		return entry.parsed
+		// The fingerprint indexes the cache. Only identical bytes can reuse syntax.
+		if entry.parsed.source_text == source {
+			entry.used = cache.clock
+			cache.entries[key] = entry
+			cache.lock.unlock()
+			owner.libjs_frontend_cache_hits_++
+			return entry.parsed
+		}
 	}
 	cache.lock.unlock()
 	owner.libjs_frontend_cache_misses_++
@@ -74,7 +82,10 @@ fn (runtime &Runtime) prepare_libjs_frontend(source string, kind libjs.SourceTyp
 	if parsed.has_errors() || parsed.reached_recursion_limit { return parsed }
 	cache.lock.lock()
 	defer { cache.lock.unlock() }
-	if entry := cache.entries[key] { return entry.parsed }
+	if entry := cache.entries[key] {
+		// Another caller can insert while we parse, including a colliding source.
+		return if entry.parsed.source_text == source { entry.parsed } else { parsed }
+	}
 	for cache.entries.len >= libjs_frontend_cache_entry_limit
 		|| cache.source_bytes + source.len > libjs_frontend_cache_source_limit {
 		mut oldest := ''

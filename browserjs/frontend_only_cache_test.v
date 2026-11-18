@@ -32,7 +32,24 @@ fn test_frontend_only_control_reuses_syntax_without_enabling_native_execution() 
 	assert runtime.frontend_code_cache_stats().misses == 1 && runtime.frontend_code_cache_stats().hits == 1
 	assert !runtime.libjs_native_cache_enabled_
 	assert runtime.native_code_cache_stats().abi == '' && runtime.native_code_cache_stats().compiler_invocations == 0
+
+	options := libjs.ParseOptions{ max_recursion_depth: 256 }
+	collision := 'var collision_' + rand.uuid_v4().replace('-', '') + '=13'
+	key := libjs_frontend_key(runtime.libjs_native_cache_partition_, collision, .script, options)
+	mut cache := libjs_frontend_cache
+	cache.lock.lock()
+	cache.entries[key] = LibJSFrontendEntry{ parsed: first }
+	defer {
+		cache.lock.lock()
+		cache.entries.delete(key)
+		cache.lock.unlock()
+	}
+	cache.lock.unlock()
+	third := runtime.prepare_libjs_frontend(collision, .script, options)
+	assert !third.has_errors() && third.source_text == collision && voidptr(third) != voidptr(first)
+	assert runtime.frontend_code_cache_stats().misses == 2 && runtime.frontend_code_cache_stats().hits == 1
+
 	os.setenv('VOX_LIBJS_FRONTEND_CACHE', '0', true)
-	third := runtime.prepare_libjs_frontend(code, .script, libjs.ParseOptions{ max_recursion_depth: 256 })
-	assert voidptr(third) != voidptr(first) && runtime.frontend_code_cache_stats().misses == 2
+	fourth := runtime.prepare_libjs_frontend(code, .script, options)
+	assert voidptr(fourth) != voidptr(first) && runtime.frontend_code_cache_stats().misses == 3
 }
