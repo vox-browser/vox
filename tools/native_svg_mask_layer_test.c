@@ -1,6 +1,7 @@
 #include "native/include/native_svg_mask_layer_darwin.h"
 #include "native/include/native_svg_mask_cache_key.h"
 #include "native/include/native_svg_mask_image_darwin.h"
+#include "native/include/native_svg_mask_path_darwin.h"
 #include "native/include/native_svg_mask_raster_cache_darwin.h"
 #include <assert.h>
 #include <stdio.h>
@@ -205,9 +206,79 @@ static CGContextRef coverage_scene(int reuse, int clip, int full, int luminance,
     return canvas;
 }
 
+static int staged_width, staged_height;
+
+static int raster_rectangle(uint8_t *pixels, int width, int height, int pitch,
+    int backdrop, VoxGraphitePath *path)
+{
+    assert(!backdrop && pitch == width * 4);
+    staged_width = width;
+    staged_height = height;
+    const float *matrix = path->matrix;
+    const float *rect = path->segments;
+    CGRect bounds = CGRectApplyAffineTransform(CGRectMake(rect[0], rect[1], rect[2], rect[3]),
+        CGAffineTransformMake(matrix[0], matrix[3], matrix[1], matrix[4], matrix[2], matrix[5]));
+    for (int y = 0; y < height; ++y) {
+        for (int x = 0; x < width; ++x) {
+            if (!CGRectContainsPoint(bounds, CGPointMake(x + .5, y + .5))) continue;
+            uint8_t *pixel = pixels + y * pitch + x * 4;
+            pixel[0] = 96;
+            pixel[1] = 33;
+            pixel[2] = 64;
+            pixel[3] = 128;
+        }
+    }
+    return 1;
+}
+
+static CGContextRef raster_mask_rectangle(CGAffineTransform transform, int force_full)
+{
+    CGContextRef context = bitmap();
+    CGContextSetRGBFillColor(context, .1, .5, .2, .9);
+    CGContextFillRect(context, CGRectMake(0, 0, 96, 80));
+    CGContextClipToRect(context, CGRectMake(8.25, 12.5, 60, 42));
+    CGContextSetAlpha(context, .7);
+    CGContextConcatCTM(context, transform);
+
+    float rect[4] = {21, 16, 22, 14};
+    CGPathRef outline = CGPathCreateWithRect(CGRectMake(rect[0], rect[1], rect[2], rect[3]), NULL);
+    // The stub always fills. The stroke flag makes the reference stage the
+    // full bitmap without changing the synthetic coverage.
+    VoxGraphitePath path = {.segments = rect, .stroke = force_full};
+    assert(native_raster_svg_mask_path(context, &path, outline, raster_rectangle));
+    CGPathRelease(outline);
+    return context;
+}
+
+static void check_mask_path_raster_bounds(void)
+{
+    const struct {
+        CGAffineTransform transform;
+        int width, height;
+    } cases[] = {
+        {CGAffineTransformIdentity, 24, 16},
+        {CGAffineTransformMake(2, 0, 0, -2, 4, 66), 46, 30},
+        {CGAffineTransformMake(-1, 0, 0, 1, 86, 0), 24, 16},
+        {CGAffineTransformMakeTranslation(.25, 0), 96, 80},
+        {CGAffineTransformMake(1, .25, 0, 1, 0, 0), 96, 80},
+        {CGAffineTransformMakeTranslation(-32, 0), 96, 80},
+    };
+    for (size_t index = 0; index < sizeof(cases) / sizeof(cases[0]); ++index) {
+        CGContextRef reference = raster_mask_rectangle(cases[index].transform, 1);
+        assert(staged_width == 96 && staged_height == 80);
+        CGContextRef actual = raster_mask_rectangle(cases[index].transform, 0);
+        assert(staged_width == cases[index].width && staged_height == cases[index].height);
+        assert(memcmp(CGBitmapContextGetData(reference), CGBitmapContextGetData(actual),
+            CGBitmapContextGetBytesPerRow(reference) * 80) == 0);
+        CGContextRelease(reference);
+        CGContextRelease(actual);
+    }
+}
+
 int main(void)
 {
     check_mask_raster_replacement();
+    check_mask_path_raster_bounds();
     for (int content = 0; content < 2; ++content) {
         uint64_t standard = native_svg_mask_cache_key(17, content, 1024, 640, 0, 64, 0, 1);
         assert(standard == native_svg_mask_cache_key(17, content, 1024, 640, 0, 64, 0, 1));
@@ -260,6 +331,6 @@ int main(void)
             }
         }
     }
-    printf("SVG mask layers: %d exact layer scenes, 16 exact publications, clip restoration, bounds and cache passed\n", cases);
+    printf("SVG mask layers: %d exact scenes, 16 publications, six path placements, clip and cache passed\n", cases);
     return 0;
 }

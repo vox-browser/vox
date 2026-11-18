@@ -5225,7 +5225,7 @@ void native_add_svg_content_mask_path(const float *data, int segment_count,
 		draw.stroke = has_stroke;
 		draw.stroke_width = stroke_width;
 		draw.line_cap = line_cap; draw.line_join = line_join; draw.miter_limit = miter_limit;
-		if (native_raster_svg_mask_path(native_svg_clip_build_context, &draw,
+		if (native_raster_svg_mask_path(native_svg_clip_build_context, &draw, path,
 			vox_draw_document_path_pixels)) {
 			CGContextRestoreGState(native_svg_clip_build_context);
 			CGPathRelease(path);
