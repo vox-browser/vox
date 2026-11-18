@@ -892,3 +892,41 @@ native cache hits and the relocated capture records 2,949. Both report
 zero misses or compiler calls and keep JSC uninitialized. Guards and
 browsers exit zero. This checks reuse and pixel stability under relocation
 with the standard raster configuration.
+
+### Published frame release on frozen GitHub
+
+Managed receipt `20261118-055438-888e0b4d` publishes executable SHA-256
+`9568a08eccc0567b56fa837e6d487bd57a63ec69d31c10b9760c9b5a6b5df757`.
+Its manifest seals the exact `fc3eec5f9` source. Generated host C clears the
+retired pointer before shortening the array and recycling the frame.
+The 17 embedded native cache inputs match the predecessor. A fresh
+compiler-disabled diagnostic uses the existing optimized libraries, matches
+the pinned GitHub image and audit, and records 2,948 hits, zero misses or
+compiler calls, and 483,873 native entries.
+
+The seven alternating pairs count from exclusive Vox coalition creation
+through native document PNG encoding. A direct check of the 14 artifacts
+confirms the same pinned 1024×768 PNG, complete
+repository content, and 81 fulfilled modules in every capture. All seven
+cached-native visits pass, with 2,948–2,949 hits and zero misses, compiler
+calls, compilations, invalid or pending entries. All browser processes exit
+zero. The guard adopts 28 processes and measures 118.711 seconds and
+7,000,883,200 sampled peak bytes.
+
+The interpreter visit in pair three records a Primer Link console error.
+The component reports an `Element` that fails its `HTMLAnchorElement` and
+`HTMLButtonElement` checks. The comparison driver and guard exit one. The
+cohort is rejected and all 14 attempts are retained. The publications differ
+in 37 sealed inputs, including browser rendering and DOM bindings.
+
+Eight follow-up interpreter captures add receiver fields only on the
+warning path in a private copy of the archived script. All eight match
+the pinned image and audit, and the warning does not recur. The receiver
+that produced the original warning remains unidentified. In a separate
+capture using the original fixture, 10 of 678 main-thread samples include
+`InterpreterStack.deallocate` beneath a native entry. Their addresses
+resolve to the frame-release method in the published executable.
+
+Raw inputs, failed builds, the rejected cohort and the diagnostic receipts
+remain local under
+`docs/performance/libjs-github-browser-20261116/libjs-github-frame-release-after-20261118/`.
