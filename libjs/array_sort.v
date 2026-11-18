@@ -31,35 +31,49 @@ pub fn sort_indexed_properties(mut vm VM, object &Object, length u64, compare Ar
 // Runtime/ArrayPrototype.cpp::array_merge_sort. Left-before-right recursion
 // and the <= comparison preserve the upstream stable order and abrupt exits.
 pub fn array_merge_sort(mut vm VM, compare ArraySortCompare, mut items []Value) ! {
-	if items.len <= 1 { return }
-	middle := items.len / 2
-	mut left := items[..middle].clone()
-	mut right := items[middle..].clone()
-	array_merge_sort(mut vm, compare, mut left)!
-	array_merge_sort(mut vm, compare, mut right)!
+	length := items.len
+	if length <= 1 { return }
+	middle := length / 2
+	// Keep the caller's array intact until both halves sort successfully.
+	// Only the final merge writes back, in the same order as before.
+	mut sorted := items.clone()
+	mut merged := []Value{cap: length - middle}
+	sort_array_range(mut vm, compare, mut sorted, mut merged, 0, middle)!
+	sort_array_range(mut vm, compare, mut sorted, mut merged, middle, length)!
 	items.clear()
+	merge_array_runs(mut vm, compare, sorted[..middle], sorted[middle..], mut items)!
+}
+
+fn sort_array_range(mut vm VM, compare ArraySortCompare, mut items []Value, mut merged []Value,
+	start int, end int) ! {
+	if end - start <= 1 { return }
+	middle := start + (end - start) / 2
+	sort_array_range(mut vm, compare, mut items, mut merged, start, middle)!
+	sort_array_range(mut vm, compare, mut items, mut merged, middle, end)!
+	merged.clear()
+	merge_array_runs(mut vm, compare, items[start..middle], items[middle..end], mut merged)!
+	for index, item in merged {
+		items[start + index] = item
+	}
+}
+
+fn merge_array_runs(mut vm VM, compare ArraySortCompare, left []Value, right []Value,
+	mut result []Value) ! {
 	mut left_index := 0
 	mut right_index := 0
 	for left_index < left.len && right_index < right.len {
 		x := left[left_index]
 		y := right[right_index]
-		result := compare(mut vm, x, y)!
-		if result <= 0 {
-			items << x
+		if compare(mut vm, x, y)! <= 0 {
+			result << x
 			left_index++
 		} else {
-			items << y
+			result << y
 			right_index++
 		}
 	}
-	for left_index < left.len {
-		items << left[left_index]
-		left_index++
-	}
-	for right_index < right.len {
-		items << right[right_index]
-		right_index++
-	}
+	result << left[left_index..]
+	result << right[right_index..]
 }
 
 // Runtime/Array.cpp::CompareArrayElements. Undefined sorts after all other
