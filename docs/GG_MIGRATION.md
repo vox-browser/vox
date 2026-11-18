@@ -2287,6 +2287,120 @@ Sampled process-tree RSS peaked at 7,541,555,200 bytes for the matched
 candidate build, 7,737,901,056 for canonical C generation, 487,751,680 for
 the screenshot suite, and 670,285,824 for the scroll comparison.
 
+### Publishing small SVG alpha masks from their existing coverage
+
+The macOS snapshot publisher can reuse the alpha in an RGBA mask of up to
+131,072 pixels. It flushes the bitmap and creates the image without
+rewriting the color channels. Luminance masks derive coverage from RGB.
+Larger alpha masks go through the premultiplied-white conversion before
+publication.
+
+The native checks compare colored alpha and luminance masks through both
+Quartz clipping and destination-in compositing, at fractional placements
+and on sRGB and Display P3 destinations. The small-alpha cases verify
+that publication preserved the source color bytes. A 512 × 257 alpha
+mask verifies the conversion just above the cutoff. The layer, cache,
+placement and exhaustive pixel conversion checks passed.
+
+An exploratory Clang `-O1` harness tried the direct snapshot without an
+area limit. On a 1902 × 1284 mask, median warm publication and layer
+compositing fell from 1725.833 to 1208.583 µs. Publication and clipping
+rose from 9426.333 to 9996.646 µs, with the direct snapshot faster in two
+of seven pairs. All composite pixel hashes matched. The harness hash was
+`55da644046980dd161b0d6be6629e8878ef71c96b4a3edace73d278e90468ac5`.
+
+The bounded candidate was measured through source release and then
+through mask application, image release and destination flush. The
+timings exclude source generation, destination allocation and setup,
+and output hashing. Each mode used seven alternating pairs of fresh
+processes and 41 samples per process. Warm values are medians of each
+process's post-first-sample median. All composite hashes matched. Host
+load was 7.23–7.42 on 18 logical CPUs. The harness SHA-256 was
+`fb78bb1688b21b311a9566eba596ec44a32ce0cc203b539960040bf8e61a0b07`.
+
+| Alpha bitmap | Application | Warm publication before / after (µs) | Warm publication and application before / after (µs) |
+| --- | --- | ---: | ---: |
+| 276 × 184 | Destination-in | 35.250 / 9.667 | 52.417 / 26.895 |
+| 276 × 184 | Clip | 34.584 / 10.437 | 212.730 / 193.083 |
+| 512 × 256 | Destination-in | 76.021 / 12.104 | 115.397 / 53.688 |
+| 512 × 256 | Clip | 78.270 / 12.062 | 497.646 / 457.625 |
+
+The candidate had a lower warm time in all seven pairs for each endpoint
+and row.
+
+Repeating the bounded benchmarks with a Display P3 destination produced
+identical composite hashes within each pair. With 21 samples per process,
+including the first sample, warm publication and application improved in
+all seven pairs per row. Host load was 6.17. The harness SHA-256 was
+`3e7b898c09af7c9e41c07a78d033d006f687aba29013766fca5e31ceea5c26ee`.
+
+| Alpha bitmap | Display P3 application | Warm publication and application before / after (µs) |
+| --- | --- | ---: |
+| 276 × 184 | Destination-in | 230.584 / 206.062 |
+| 276 × 184 | Clip | 240.000 / 214.416 |
+| 512 × 256 | Destination-in | 530.271 / 450.354 |
+| 512 × 256 | Clip | 548.083 / 489.896 |
+
+The matched browsers used one V `-prod` generated C unit and single-unit
+Clang `-O1 -fno-lto`. The bounded candidate substituted the preprocessed
+publisher from the final header into the sealed control. The generated
+C SHA-256 was
+`a18adf92f5369baf4a87109f3d48c42461d247ddc37534ae23710227fe423351`.
+The executable SHA-256 values were
+`b95160bb3798ccf6b4d4188bb3e09f1a387853f3672c65145144b0e490e9884e` for
+the control and `d67ea514ce10c96c02319d861a5d851571e8550bfd35c93a187b6035e75979a6`
+for the candidate.
+
+All 158 macOS mask captures passed. Four paired 2× captures matched every
+decoded pixel. They covered the default alpha and luminance pressure pages,
+the alpha page with Quartz forced, and the overlapping solid-mask fixture.
+The alpha fixture changes the mask type and gradient stops on the existing
+75-mask pressure page. Its SHA-256 was
+`a9edaf4677215287c6f68c8b9e98b2571e98e87e60fd43b695037a74ecdf7c2f`.
+Both default pressure captures matched 385 mask decisions per pair. The
+overlap candidate matched all 106 control decisions and then repeated the
+last ten cache hits in one additional paint. The diagnostic log comparison
+resumed with those same captures and accepted the repeated pass.
+
+The wheel trials used the two local pressure fixtures, fresh processes,
+profiles and browser caches, JavaScript disabled, and a 1024 × 600
+viewport at 2×. Host caches were retained. After a one-second title-matched
+settle, the driver sent 120 four-pixel inputs at a requested 60 Hz, reversing
+after input 60. Throughput counts scroll-changing native frame installations
+after outer view paint over the first-to-last input window.
+
+The alpha diagnostic (PID 54094) logged 568 cache-capacity denials, 496
+shared hits including 78 crops, and 16 new shared rasters between the start
+marker and final publication. The luminance diagnostic (PID 54239) logged
+639 denials, 560 hits including 84 crops, and 16 new shared rasters. Both
+fixture types were confirmed by the published mask diagnostics. Timing ran
+with those diagnostics disabled.
+
+| PID | Fixture | Build | Scroll fps | Median / p95 / max (ms) | Input Hz | Inputs / changes | First / last scroll gap (ms) | Load |
+| --- | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| 54412 | Alpha | Before | 15.61 | 58.303 / 65.478 / 123.438 | 59.90 | 120 / 31 | 127.345 / 33.445 | 5.85 |
+| 54555 | Alpha | After | 15.46 | 61.314 / 70.591 / 72.743 | 59.36 | 120 / 31 | 127.910 / 0.117 | 5.94 |
+| 54792 | Alpha | After | 15.44 | 59.676 / 66.238 / 123.095 | 59.29 | 120 / 31 | 130.345 / 16.857 | 6.27 |
+| 54954 | Alpha | Before | 15.45 | 59.468 / 68.659 / 127.084 | 59.29 | 120 / 31 | 128.758 / 17.693 | 6.17 |
+| 55110 | Alpha | Before | 15.46 | 60.600 / 67.899 / 69.380 | 59.34 | 120 / 31 | 122.755 / 49.923 | 6.31 |
+| 55253 | Alpha | After | 15.35 | 60.770 / 67.256 / 68.854 | 58.91 | 120 / 31 | 123.686 / 50.465 | 6.21 |
+| 55403 | Luminance | Before | 15.66 | 59.196 / 65.521 / 67.415 | 58.25 | 120 / 32 | 124.968 / 49.789 | 6.03 |
+| 55551 | Luminance | After | 16.26 | 58.215 / 64.755 / 65.977 | 58.62 | 120 / 33 | 122.333 / 16.760 | 5.95 |
+| 55700 | Luminance | After | 15.93 | 58.834 / 63.092 / 66.286 | 57.44 | 120 / 33 | 123.415 / 49.489 | 6.11 |
+| 55852 | Luminance | Before | 12.76 | 72.225 / 81.623 / 83.215 | 58.41 | 120 / 26 | 150.889 / 50.623 | 6.02 |
+| 56165 | Luminance | Before | 13.86 | 67.700 / 77.461 / 93.169 | 56.87 | 120 / 29 | 138.978 / 18.111 | 5.94 |
+| 56323 | Luminance | After | 13.70 | 68.640 / 77.744 / 78.466 | 58.22 | 120 / 28 | 141.128 / 17.203 | 6.10 |
+
+The wheel cohort ran 07:49:54–07:50:58 UTC on November 18, 2026. Load is
+the one-minute average at launch on the 18-CPU host. Peak scroll positions
+were 485–503 CSS pixels. Alpha throughput fell by less than 1% per pair,
+with a median of 15.46 → 15.44 fps and 31 scroll changes in each arm.
+Luminance throughput varied more, with a median of 13.86 → 15.93 fps.
+Every measured scroll interval exceeded 16.67 ms. The final checks,
+benchmarks and guards exited zero. Peak sampled process-tree RSS was
+7,180,599,296 bytes for the bounded build, 481,345,536 for the screenshot
+suite, and 670,171,136 for the paired wheel comparison.
+
 ## Original migration plan
 
 Vox currently renders through two Skia builds: LibWeb's Skia (CPU raster,
