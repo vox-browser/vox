@@ -1780,3 +1780,36 @@ The guard adopts all 15 browser roots and records 151.804 seconds at a
 sampled peak of 6,651,772,928 bytes. The full grouped-cache evidence
 directory retains the commands, input hashes and all attempts under
 `v8-comparison/`.
+
+### Frontend cache capacity on a repeated module load
+
+A standalone executable uses the browser's LibJS frontend cache and the
+81 audited `vlang/v` module bodies, totaling 5,088,368 bytes. It reads the
+sources before measurement, then prepares them twice in one process with
+a fresh host record per sweep. The first sweep follows their first request
+order in the archived Vox replay. The second uses the same order, with
+one separate reverse-order trial at each capacity. The executable uses
+V `-prod -prealloc -gc none` with Clang `-O0` and a test-only capacity input.
+The intervals cover cache lookups, parsing and source-byte checks.
+
+| Source budget | Second-sweep hits / misses | Median second-sweep instructions | Median second-sweep time | Median footprint after second sweep |
+| --- | ---: | ---: | ---: | ---: |
+| 4 MiB | 0 / 81 | 24,066,328,898 | 2,172.497 ms | 5,212,934,272 bytes |
+| 6 MiB | 81 / 0 | 48,885,541 | 2.831 ms | 2,613,741,872 bytes |
+
+The medians cover three alternating same-order pairs. Both capacities
+have 81 misses on the first sweep. At 4 MiB the first sweep retains 75
+entries. Repeated-order misses evict those entries before the next sweep
+queries them. Reversing the order hits 75 entries and misses six at
+4 MiB. The 6 MiB test retains all 81 and hits all of them in both orders.
+The budget counts source bytes. The sampled footprint also includes the
+parser's persistent allocations. Browser reload timing and memory need
+separate windowed verification.
+
+The first runtime attempt reaches the 3 GiB guard during the repeated
+load. The full module workload completes all eight attempts under the
+standard 12 GiB aggregate guard, at 5,229,887,488 sampled peak RSS bytes.
+All parses pass at depth 256 with matching source bytes. The 18-CPU
+host's one-minute load ranges from 6.61 to 7.70. Commands, inputs and
+failed build and runtime attempts are local under
+`docs/benchmark-results/github-frontend-cache-revisit-5204-r109/receipts`.
