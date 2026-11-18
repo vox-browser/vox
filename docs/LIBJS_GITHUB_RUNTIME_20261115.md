@@ -7640,3 +7640,98 @@ stays published and the worker starts managed retry
 pixels still require a completed production bundle with the CSS fix.
 The isolated response observations, rejected build receipts and replay
 driver are local under `repository-navigation-5204-r85`.
+
+### Published compiler-disabled full GitHub round trip
+
+Managed single-C `-prod` build `20261118-035602-2025fd74` publishes
+`296096c89d6b92677139a110f2004bfe8df20d6ebc70db759960be3046c4e829`.
+The sealed inputs contain the CSS substitution and response filtering
+changes. Compiler and managed smoke guard exit zero. Operand slot
+decoding changes the native ABI to
+`857d37bf4f2f69da0f581b6094ba9c3456b3b7a09045cfdca817c386c8034ab6`.
+
+The launch with the previous cache opens the README and restores the
+exact Brave content. It records 5,163 misses and zero native hits or
+entries. The memory guard stops PID 12742 before capture and shutdown
+at 29.484697458 seconds and 12,976,996,352 sampled bytes. The guard and
+its child exit 125 and 137. That run supplies cold-cache evidence.
+
+New preparation on PID 15601 emits 13,915 executables in 109 Clang calls
+using the established `-O0` preparation wrapper. It completes the frozen
+root-page audit and shutdown with zero pending or invalid entries. The
+controller and guard exit zero in 186.878644791 seconds at 8,467,431,424
+sampled peak bytes. The ABI-specific cache is retained under
+`libjs-github-production-296096-5204-r86/generated-c-staging` in the
+local Vox benchmark cache.
+
+A fresh launch of PID 22090 uses that partition with `/usr/bin/false`,
+the original full file lists and private HTTP cache. Native input
+searches for README, opens the ready file, and invokes toolbar Back.
+Both repository audits match Brave exactly, including 33 rows, 56 commit
+links, the latest commit and the 20,773-character README. The terminal
+audit has 3,584 native hits and 1,779,548 native entries. Clean shutdown
+records the same hits and 1,779,556 entries. Both show zero misses,
+compiler calls, compilations, pending or invalid entries. JavaScriptCore
+stays uninitialized and the sole page diagnostic is the Worker
+fallback warning. All recorded executable, library, fixture and cache
+inputs stay fixed. The browser, navigation controller and 12 GiB guard
+exit zero. The guard adopts the browser and samples 11,972,313,088 peak
+bytes over 123.22602575 seconds.
+
+The standard 1024×768 window crop differs from the unchanged Brave
+Back image at 118,210 pixels and from the historical Brave document
+reference at 118,438 pixels. The pixel verdict exits one and the
+overall parity gate remains open. The warmed capture shows a blue
+Turbo progress strip at the top. A separate progress-selector replay
+matches the same restored content and finds the element still present,
+with opacity one and its width increasing after Back. The published
+author script ends this progress path on a qualifying frame-render
+event. The trace establishes the lingering element and leaves the
+missing completion signal unverified. That separate diagnostic has
+zero cache misses when its guard stops it in 35.043459208 seconds at
+12,967,067,648 sampled peak bytes.
+
+Hacker News passes an independent seed and compiler-disabled reopen
+on the same published browser. PIDs 15139 and 15325 match the archived
+30-story content and 2× document PNG. The reopen records six hits,
+six native entries, zero cache misses and zero compiler calls, with
+JavaScriptCore uninitialized. Both browsers and their guard exit
+zero. The guard samples 472,367,104 peak bytes over 7.98300775 seconds.
+
+### Native backdrop bitmap ownership
+
+Commit `ee140dcae` snapshots premultiplied RGB backdrop bytes directly
+for Core Image. Unsupported bitmap formats use the existing Quartz
+snapshot. An off-canvas backdrop can skip the snapshot. A preview
+that only reordered Quartz release and culling had no consistent
+sampled RSS benefit.
+
+Three matched standalone pairs of the committed code render 250 Retina
+frames each. The exact combined raster digest across 60 direct outputs
+and the first 18 frames is
+`3239d71551ca253e25107f3b2896383b819e3410e576814251eaf005b8eac3f4`.
+The direct outputs cover padded RGBA/BGRA, an opaque fallback format,
+sRGB and Display P3, transformed and clipped regions and drawing after
+capture. Peak process RSS is 225,820,672 / 222,101,504,
+226,099,200 / 222,576,640 and 225,411,072 / 222,134,272 bytes for
+control/candidate. All six processes and the 3 GiB guard exit zero.
+The focused Objective-C and Objective-C++ regression fixtures compile.
+Automated suites remain on hold.
+
+A separate 150-frame mapping diagnostic on the one-copy preview
+reports 750,206,976 bytes of requested anonymous writable mappings
+versus 4,525,228,032 for the ordinary path. It validates the executable
+addresses and uses the same raster digest. These are cumulative
+virtual mapping capacities. The matched RSS numbers above describe
+the isolated harness, and the published GitHub replay predates the
+backdrop commit.
+
+The checkout's local Git exclusions cover old generated C, frozen
+compiler inputs and compiled browser artifacts stored with this
+GitHub evidence. The file scan now omits 9,806,434,346 bytes, with
+all 5,977 production input names preserved. The archived files remain
+on disk.
+
+Raw audits, content and pixel verdicts, compiler commands, mapping
+diagnostics and guard receipts remain local under
+`repository-navigation-5204-r86`.
