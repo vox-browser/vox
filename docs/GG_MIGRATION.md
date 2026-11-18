@@ -4582,3 +4582,50 @@ and unchanged input. The general filter tests, ThreadSanitizer and pinned
 CPU raster differential suite passed.
 A separate probe observed four distinct threads on each large workload.
 The small workload stayed serial.
+
+### Archived sites with CPU raster workers enabled and disabled
+
+Seven alternating fresh-process pairs on the published single-C
+`-prod` receipt `20261118-035602-2025fd74` compared
+`VOX_SERIAL_CPU_RASTER=1` with the default. Its sealed filter source
+includes the parallel merge implementation `9df5b6d37`. The new opacity
+implementation was measured separately in the Canvas2D benchmark above.
+The timed site span was executable launch through document PNG capture,
+audit, and successful process exit. Fresh private profiles and HTTP
+caches used sealed original-origin replay at 1024×768 and 2× with a
+one-second settle period. System caches remained in place.
+
+| Archived page | Workers disabled | Default | Default faster pairs | Raster batches in separate probe |
+| --- | ---: | ---: | ---: | ---: |
+| Hacker News | 1576.322 ms | 1567.403 ms | 3/7 | 0 |
+| GitHub `vlang/v` | 4057.344 ms | 4088.959 ms | 1/7 | 0 |
+| Old Reddit `r/programming` | 1897.367 ms | 1875.483 ms | 5/7 | 0 |
+
+The medians vary from a 1.2% decrease to a 0.8% increase. The sites
+dispatched no CPU raster batches in the eligibility runs, so the
+launch-to-capture differences cannot be attributed to those workers.
+A large Canvas2D blur on the same executable dispatched two batches
+through the Mach-O callback at offset `0x11733d8`.
+
+All 42 captures matched their independent serial references byte for
+byte. They preserved 30/33/25 distinct content IDs and 6/61/18 served
+response identities respectively, with complete readiness, JavaScriptCore
+initialized, and zero reported script or replay errors. Every browser and
+the memory guard exited zero. The sampled peak process-tree RSS was
+1,658,454,016 bytes, with one-minute load ranging from 6.23 to 11.44 on
+18 logical CPUs.
+
+The pinned executable SHA-256 was
+`296096c89d6b92677139a110f2004bfe8df20d6ebc70db759960be3046c4e829`.
+AVIF and adblock helper hashes and the three archive and decoded-pixel
+hashes matched the [earlier references](#archived-browser-eligibility)
+and the [frame-clear input identities](NATIVE_FRAME_CLEAR_BENCHMARK.md#input-identities).
+
+The samples below are launch-to-exit milliseconds, rounded to three decimal
+places and ordered by pair. Odd pairs ran the disabled setting first.
+
+| Page | Workers disabled, ms | Default, ms |
+| --- | --- | --- |
+| Hacker News | 1533.567, 1547.174, 1576.322, 1744.063, 1597.556, 1567.270, 1587.807 | 1564.719, 1567.366, 1587.198, 1598.561, 1567.403, 1583.624, 1555.268 |
+| GitHub | 3853.822, 3950.398, 4105.820, 4075.114, 4057.344, 3971.380, 4060.107 | 4933.405, 3977.557, 4124.217, 4159.841, 4056.026, 3978.884, 4088.959 |
+| Old Reddit | 1927.751, 1863.949, 1870.874, 1862.046, 1903.934, 1902.416, 1897.367 | 1901.780, 1874.911, 1842.151, 1887.112, 1877.571, 1875.483, 1853.312 |
