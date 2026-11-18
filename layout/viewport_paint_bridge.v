@@ -534,12 +534,12 @@ fn compatibility_scrollport_rect(box &BlockBox) LayoutRect {
 	}
 }
 
-fn precompute_compatibility_sticky_constraints(mut box BlockBox, sticky_frame_index int, boxes_by_layout map[u64]&BlockBox, boxes_by_scroll_frame map[int]&BlockBox, mut state painting.ScrollState) {
+fn precompute_compatibility_sticky_constraints(mut box BlockBox, sticky_frame_index int, boxes_by_layout map[u64]&BlockBox, boxes_by_scroll_frame []&BlockBox, mut state painting.ScrollState) {
 	nearest_scrolling_ancestor := state.nearest_scrolling_ancestor(sticky_frame_index)
-	if nearest_scrolling_ancestor == 0 {
+	if nearest_scrolling_ancestor <= 0 || nearest_scrolling_ancestor >= boxes_by_scroll_frame.len {
 		return
 	}
-	scroll_ancestor := boxes_by_scroll_frame[nearest_scrolling_ancestor] or { return }
+	scroll_ancestor := boxes_by_scroll_frame[nearest_scrolling_ancestor]
 	scrollport_rect := compatibility_scrollport_rect(scroll_ancestor)
 	sticky_border_box := box.border_box()
 	scrollport_size := painting.Size{scrollport_rect.width, scrollport_rect.height}
@@ -633,7 +633,7 @@ fn compatibility_sticky_view_rectangle_insets(box &BlockBox,insets painting.Stic
  return painting.StickyInsets{top,right,bottom,left}
 }
 
-fn assign_compatibility_scroll_frames(mut box BlockBox, boxes_by_layout map[u64]&BlockBox, mut boxes_by_scroll_frame map[int]&BlockBox, mut state painting.ScrollState) {
+fn assign_compatibility_scroll_frames(mut box BlockBox, boxes_by_layout map[u64]&BlockBox, mut boxes_by_scroll_frame []&BlockBox, mut state painting.ScrollState) {
 	box.own_scroll_frame_index = 0
 	box.sticky_scroll_frame_index = 0
 	// Only frame owners use the parent index. Ordinary boxes still recurse so
@@ -647,7 +647,7 @@ fn assign_compatibility_scroll_frames(mut box BlockBox, boxes_by_layout map[u64]
 		sticky_frame_index := state.create_sticky_frame_for(box.node_id.str(), parent_index)
 		box.sticky_scroll_frame_index = sticky_frame_index
 		box.own_scroll_frame_index = sticky_frame_index
-		boxes_by_scroll_frame[sticky_frame_index] = unsafe { &box }
+		boxes_by_scroll_frame << unsafe { &box }
 		precompute_compatibility_sticky_constraints(mut box, sticky_frame_index, boxes_by_layout, boxes_by_scroll_frame, mut state)
 	}
 	if compatibility_box_establishes_scroll_frame(box) {
@@ -658,7 +658,7 @@ fn assign_compatibility_scroll_frames(mut box BlockBox, boxes_by_layout map[u64]
 		}
 		paintable_id := if box.is_viewport_scroller { 'viewport' } else { box.node_id.str() }
 		box.own_scroll_frame_index = state.create_scroll_frame_for(paintable_id, scroll_parent_index)
-		boxes_by_scroll_frame[box.own_scroll_frame_index] = unsafe { &box }
+		boxes_by_scroll_frame << unsafe { &box }
 	}
 	for child_index := 0; child_index < box.children.len; child_index++ {
 		mut child := unsafe { &box.children[child_index] }
@@ -1165,10 +1165,34 @@ fn viewport_refresh_compositor_visual_contexts(target voidptr) {
 
 fn rebuild_compatibility_visual_contexts(mut result DocumentLayoutResult) {
 	result.ensure_boxes_by_layout_cache()
+	mut storage := result.paint_tree_storage
+	if storage != unsafe { nil } {
+		// Recordings can borrow filter and clip data from these contexts.
+		// The scene already retains this exact paint tree until its last reader.
+		entry := storage.arena.enter()
+		defer { storage.arena.leave(entry) }
+		if storage.arena.contains(result.visual_context_tree.nodes.data) {
+			result.scroll_state.clear()
+			result.visual_context_tree.nodes.trim(1)
+		} else {
+			result.scroll_state = painting.ScrollState{}
+			result.visual_context_tree = painting.new_accumulated_visual_context_tree()
+		}
+		build_compatibility_visual_contexts(mut result, mut storage.scroll_frame_boxes)
+		return
+	}
 	result.scroll_state = painting.ScrollState{}
-	mut boxes_by_scroll_frame := map[int]&BlockBox{}
-	assign_compatibility_scroll_frames(mut result.paint_tree, result.boxes_by_layout_cache, mut boxes_by_scroll_frame, mut result.scroll_state)
 	result.visual_context_tree = painting.new_accumulated_visual_context_tree()
+	mut boxes_by_scroll_frame := []&BlockBox{}
+	build_compatibility_visual_contexts(mut result, mut boxes_by_scroll_frame)
+}
+
+fn build_compatibility_visual_contexts(mut result DocumentLayoutResult,
+	mut boxes_by_scroll_frame []&BlockBox) {
+	// ScrollState appends indices in traversal order, starting after its sentinel.
+	boxes_by_scroll_frame.clear()
+	boxes_by_scroll_frame << unsafe { &BlockBox(nil) }
+	assign_compatibility_scroll_frames(mut result.paint_tree, result.boxes_by_layout_cache, mut boxes_by_scroll_frame, mut result.scroll_state)
 	mut coordinate_root := 0
 	if result.document.layout_coordinate_scale() != 1 {
 		coordinate_root = result.visual_context_tree.append(painting.TransformVisualData{
