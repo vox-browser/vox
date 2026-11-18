@@ -29,6 +29,20 @@ fn test_sampled_gamut_converts_source_before_blending_and_keeps_backdrop_space()
 	}
 }
 
+fn test_sampled_gamut_builds_mips_in_the_destination_encoding() {
+	// Both saturated inputs become the same red in the destination. Mixing
+	// the encoded source colors first would give a darker red after conversion.
+	gamut := [f32(1), 0, 0, 1, 0, 0, 0, 0, 1]!
+	source := [u8(255), 0, 0, 255, 0, 255, 0, 255].repeat(2)
+	for gpu_mips in [false, true] {
+		mut pixels := [u8(255), 255, 255, 255].repeat(16)
+		assert draw_sampled_srgb_gamut_clipped(pixels.data, 4, 4, 16, 1,
+			source, 2, 2, 1, 1, 1, 1, 1, 2, 2, [12]f32{}, gpu_mips, gamut) == 1
+		assert pixels[20..24] == [u8(0), 0, 255, 255]
+		assert pixels[..4] == [u8(255), 255, 255, 255]
+	}
+}
+
 fn test_sampled_gamut_rejects_invalid_transform_without_touching_pixels() {
 	mut pixels := [u8(17), 18, 19, 255].repeat(16)
 	before := pixels.clone()
