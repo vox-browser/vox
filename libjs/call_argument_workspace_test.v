@@ -119,3 +119,33 @@ fn test_call_argument_workspace_pool_is_bounded_and_releases_references() {
 	for item in reused.values { assert item.is_undefined() }
 	stack.release_call_argument_workspace(mut reused, 0)
 }
+
+fn test_call_argument_workspace_clears_slots_after_operand_error() {
+	set_call_argument_workspaces_for_testing(true)
+	mut vm := VM.create()
+	create_simple_execution_context(mut vm)
+	function := NativeFunction.create(mut vm, vm.realm(), vm.realm().function_prototype,
+		fn (mut vm VM) !Value { return js_undefined() }, 2, PropertyName.from_str('callee'), none)
+	executable := &Executable{
+		registers_and_locals_count: 6
+		constants: [Value.from_object(Object.create(vm.realm(), none))]
+		instructions: [
+			Instruction{op: .call, arguments: [Operand.constant(0), Operand.register(5)]},
+		]
+	}
+	mut frame := ExecutionContext.create(6, executable.constants, 0)
+	frame.realm = vm.realm()
+	frame.values[5] = js_special_empty_value()
+	vm.push_execution_context_checked(mut frame)!
+	defer { vm.pop_execution_context() }
+	vm.execute_call_instruction(&executable.instructions[0], executable,
+		Value.from_object(function.object), js_undefined()) or {
+		assert is_throw_completion(err)
+		stack := vm.interpreter_stack()
+		assert stack.call_argument_depth == 0
+		assert stack.call_argument_workspaces.len == 1
+		for value in stack.call_argument_workspaces[0].values { assert value.is_undefined() }
+		return
+	}
+	assert false, 'Expected the second operand to reject an uninitialized value'
+}

@@ -63,6 +63,7 @@ fn (frame &ExecutionContext) adjacent_call_registers(executable &Executable, ope
 // Concrete callees copy before author code runs. Empty calls need no backing
 // storage, and adjacent registers can be read directly during the copy. Other
 // layouts use independent scratch buffers that are cleared after the call.
+@[direct_array_access]
 fn (mut vm VM) execute_reused_argument_call(instruction &Instruction, executable &Executable, target Value, receiver Value) !Value {
 	count := instruction.arguments.len
 	if count < 0 || count > call_argument_workspace_capacity {
@@ -78,12 +79,13 @@ fn (mut vm VM) execute_reused_argument_call(instruction &Instruction, executable
 	mut stack := vm.interpreter_stack()
 	mut buffer := stack.acquire_call_argument_workspace()
 	defer { stack.release_call_argument_workspace(mut buffer, count) }
-	mut arguments := unsafe { borrow_argument_values(&buffer.values[0], count) }
+	// The count check bounds this copy by the fixed workspace capacity.
 	for index, operand in instruction.arguments {
 		value := frame.checked_dispatch_value(operand.slot(executable, frame.argument_count, false)!)!
 		if value.is_special_empty_value() { return vm.throw_error(.internal_error, 'Bytecode read an uninitialized argument') }
-		arguments[index] = value
+		buffer.values[index] = value
 	}
 	if mut tier := vm.native_tier { if tier.diagnostics { tier.activity.argument_workspace_calls++ } }
+	arguments := unsafe { borrow_argument_values(&buffer.values[0], count) }
 	return call(mut vm, target, receiver, arguments)
 }
