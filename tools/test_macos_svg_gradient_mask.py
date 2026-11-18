@@ -118,7 +118,11 @@ def write_mask_cache_pressure_fixture(fixture, *, kind, count, solid_fills=1, op
     for index in range(count):
         x = 8 + index % 5 * 180
         y = 12 + index // 5 * 120
-        if kind == "solid":
+        if kind == "solid-opacity":
+            fill = (f'<g opacity=".625"><path fill="#{60 + index:02x}4060" fill-opacity=".75"'
+                    ' d="M0 0h88v90H0Z"/><path fill="lime" fill-opacity=".5" d="M52 0h70v90H52Z"/></g>'
+                    '<g opacity=".5"><path fill="white" d="M90 0h46v90H90Z"/></g>')
+        elif kind == "solid":
             width = 88 if solid_fills == 2 else 136
             fill = f'<path fill="#{60 + index:02x}4060" fill-opacity=".75" d="M0 0h{width}v90H0Z"/>'
             if solid_fills == 2:
@@ -163,18 +167,21 @@ def check_mask_cache_capacity(binary, directory, *, kind, solid_fills=1, opacity
     png, diagnostics = capture_document(binary, fixture, directory / name, settings, options)
     result = rendered_png_rows(png)
     assert result[:2] == (2048, 1200)
-    assert f"VOX_SHARED_SVG_MASK_SKIP_{kind.upper()}_CACHE" in diagnostics, diagnostics
+    cache_kind = "OPACITY" if kind == "solid-opacity" else kind.upper()
+    assert f"VOX_SHARED_SVG_MASK_SKIP_{cache_kind}_CACHE" in diagnostics, diagnostics
     assert "VOX_SHARED_SVG_MASK_CACHE_HIT luminance=true " in diagnostics, diagnostics
     operations = 2 * opacity_depth + 1 if kind == "opacity" else solid_fills
+    if kind == "solid-opacity":
+        operations = 7
     assert f"VOX_SHARED_SVG_MASK luminance=true operations={operations} " in diagnostics, diagnostics
-    if opacity_depth > 1:
+    if opacity_depth > 1 or kind == "solid-opacity":
         settings["VOX_SHARED_SVG_MASK_RASTER"] = "0"
         quartz, _ = capture_document(binary, fixture, directory / f"{name}-quartz", settings, options)
         control = rendered_png_rows(quartz)
         assert result[:3] == control[:3]
         maximum = max(abs(a - b) for current, previous in zip(result[3], control[3])
                       for a, b in zip(current, previous))
-        assert maximum <= 2, f"Cache pressure changed nested opacity channels by up to {maximum}"
+        assert maximum <= 2, f"Cache pressure changed {kind} channels by up to {maximum}"
 
 
 def check_svg_mask_strips(binary, fixture, directory, *, luminance):
@@ -241,8 +248,10 @@ def check_linear_rgb_fallback(binary, fixture, directory):
     assert rendered_png_rows(automatic) == rendered_png_rows(quartz), "Linear RGB luminance bypassed Quartz"
 
 
-def check_cached_svg_masks(binary, fixture, directory, *, operations=1, samples=()):
+def check_cached_svg_masks(binary, fixture, directory, *, operations=1, alpha_operations=None,
+                           samples=()):
     name = fixture.stem
+    mask_operations = (("true", operations), ("false", alpha_operations or operations))
     # Scroll far enough for both mask regions in the next row to enter the canvas edge.
     options = ["--screenshot-scroll-y=132", "--disable-javascript"]
     for scale in (1, 2):
@@ -253,16 +262,16 @@ def check_cached_svg_masks(binary, fixture, directory, *, operations=1, samples=
                         LADYBIRD_SCREENSHOT_SCALE=str(scale))
         automatic, diagnostics = capture_document(binary, fixture, directory / f"{name}-auto-{scale}",
                                                    settings, options)
-        for luminance in ("true", "false"):
-            assert f"VOX_SHARED_SVG_MASK luminance={luminance} operations={operations} " in diagnostics, diagnostics
+        for luminance, count in mask_operations:
+            assert f"VOX_SHARED_SVG_MASK luminance={luminance} operations={count} " in diagnostics, diagnostics
             assert re.search(rf"^VOX_SHARED_SVG_MASK_CACHE_HIT luminance={luminance} .* viewport_crop=true ",
                              diagnostics, re.MULTILINE), diagnostics
         assert "VOX_SVG_MASK_RAMP " not in diagnostics, diagnostics
         settings.update(VOX_SHARED_SVG_MASK_RASTER="1", VOX_DISABLE_SHARED_SVG_MASK_CACHE="1")
         full, diagnostics = capture_document(binary, fixture, directory / f"{name}-full-{scale}",
                                              settings, options)
-        for luminance in ("true", "false"):
-            assert f"VOX_SHARED_SVG_MASK luminance={luminance} operations={operations} " in diagnostics, diagnostics
+        for luminance, count in mask_operations:
+            assert f"VOX_SHARED_SVG_MASK luminance={luminance} operations={count} " in diagnostics, diagnostics
         assert "VOX_SHARED_SVG_MASK_CACHE_HIT " not in diagnostics, diagnostics
         result = rendered_png_rows(automatic)
         assert result[:2] == (1024 * scale, 600 * scale)
@@ -349,7 +358,9 @@ def main():
     opacity = fixture.with_name("svg-gradient-mask-opacity.html")
     solid = fixture.with_name("svg-solid-rectangle-masks.html")
     overlap = fixture.with_name("svg-overlapping-solid-mask-fills.html")
-    inputs = [binary, fixture, mutation, vertical, luminance, diagonal, opacity, solid, overlap]
+    grouped_solids = fixture.with_name("svg-mask-opacity.html")
+    inputs = [binary, fixture, mutation, vertical, luminance, diagonal, opacity, solid, overlap,
+              grouped_solids]
     avif_library = binary.with_name("libVoxAVIF.dylib")
     if avif_library.exists():
         inputs.append(avif_library)
@@ -401,6 +412,7 @@ def main():
             check_mask_cache_capacity(binary, directory, kind=kind)
         check_mask_cache_capacity(binary, directory, kind="solid", solid_fills=2)
         check_mask_cache_capacity(binary, directory, kind="opacity", opacity_depth=4)
+        check_mask_cache_capacity(binary, directory, kind="solid-opacity")
         check_svg_mask_strips(binary, vertical, directory, luminance=False)
         check_svg_mask_strips(binary, luminance, directory, luminance=True)
         check_linear_rgb_fallback(binary, luminance, directory)
@@ -420,6 +432,19 @@ def main():
             (370, 118, (255, 150, 150)), (430, 118, (255, 164, 164)), (449, 118, white),
         ))
         check_solid_mask_order_change(binary, overlap, directory)
+        check_cached_svg_masks(binary, grouped_solids, directory, operations=5, alpha_operations=11,
+                               samples=((94, 104, white), (195, 104, (0, 0, 255)),
+                                        (375, 104, (255, 136, 0))))
+        fractional_group = directory / "fractional-solid-opacity.html"
+        fractional_group.write_text(grouped_solids.read_text().replace('<path fill="black"',
+                                    '<path transform="translate(.25 0)" fill="black"')
+                                    .replace('<path fill="#f00"',
+                                             '<path transform="translate(.25 0)" fill="#f00"'))
+        check_quartz_mask_fallback(binary, fractional_group, directory)
+        too_many_fills = directory / "large-solid-opacity-group.html"
+        too_many_fills.write_text(grouped_solids.read_text().replace(
+            '</mask>', '<path fill="white" d="M10 10h350v100H10Z"/>' * 8 + '</mask>'))
+        check_quartz_mask_fallback(binary, too_many_fills, directory)
         for depth, alpha_channel, luma_channel, overlay in ((2, 160, 151, 230), (4, 202, 197, 242)):
             nested = directory / f"nested-gradient-opacity-{depth}.html"
             write_nested_opacity_fixture(nested, opacity, depth=depth)
@@ -440,7 +465,7 @@ def main():
                                       .replace('<path d="M335', '<path transform="translate(.25 0)" d="M335'))
         check_quartz_mask_fallback(binary, fractional_overlap, directory)
     assert {path: digest(path) for path in inputs} == digests
-    print("PASS: macOS rendered both gradient mask modes with the shared rasterizer")
+    print("PASS: macOS shared SVG masks, cache reuse, and Quartz fallback")
 
 
 if __name__ == "__main__":

@@ -86,6 +86,27 @@ fn native_svg_mask_opacity_depth(operations []layout.PaintMaskOperation) int {
 	return depth
 }
 
+fn native_svg_mask_grouped_solid_fills(operations []layout.PaintMaskOperation) bool {
+	// Bound the amount of work on a cache miss. The shared validator checks
+	// that the opacity scopes balance and fit the rasterizer's layer limit.
+	if operations.len < 3 || operations.len > 12 { return false }
+	mut fills := 0
+	for index in 0 .. operations.len {
+		operation := &operations[index]
+		match operation.kind {
+			.path {
+				if operation.fill_linear_gradient != none || operation.fill_radial_gradient != none {
+					return false
+				}
+				fills++
+			}
+			.begin_opacity, .end_opacity {}
+			.image { return false }
+		}
+	}
+	return fills > 0 && fills <= 6 && fills < operations.len
+}
+
 fn (mut app BrowserApp) raster_native_svg_content_mask(mask &layout.PaintClip, page_x f32,
 	page_y f32, scale f64) bool {
 	can_keep_full_raster := !clip_shared_svg_mask_raster && !disable_shared_svg_mask_cache
@@ -95,12 +116,10 @@ fn (mut app BrowserApp) raster_native_svg_content_mask(mask &layout.PaintClip, p
 		&& operations.all(it.kind == .path && it.fill_linear_gradient == none
 		&& it.fill_radial_gradient == none)
 	automatic_solid := !force_shared_svg_mask_raster && can_keep_full_raster && solid_fills
-	automatic_opacity_depth := if !force_shared_svg_mask_raster && can_keep_full_raster {
-		native_svg_mask_opacity_depth(operations)
-	} else {
-		0
-	}
-	automatic_opacity_group := automatic_opacity_depth > 0
+	grouped_solids := (force_shared_svg_mask_raster || can_keep_full_raster)
+		&& native_svg_mask_grouped_solid_fills(operations)
+	automatic_opacity_group := !force_shared_svg_mask_raster && can_keep_full_raster
+		&& (grouped_solids || native_svg_mask_opacity_depth(operations) > 0)
 	mut automatic_radial := false
 	mut automatic_diagonal := false
 	if !force_shared_svg_mask_raster && !automatic_opacity_group && !automatic_solid {
@@ -124,7 +143,7 @@ fn (mut app BrowserApp) raster_native_svg_content_mask(mask &layout.PaintClip, p
 	if !portable_svg_content_mask_supported(mask) {
 		return false
 	}
-	if !solid_fills
+	if !solid_fills && !grouped_solids
 		&& !mask.mask_operations.any(it.fill_linear_gradient != none || it.fill_radial_gradient != none) {
 		return false
 	}
@@ -158,9 +177,10 @@ fn (mut app BrowserApp) raster_native_svg_content_mask(mask &layout.PaintClip, p
 	if requires_cache && !keeps_full_raster { return false }
 	if automatic_radial {
 		if svg_background_rectangle_path(operations[0].path_data) == none { return false }
-	} else if requires_cache || solid_fills {
-		for index in automatic_opacity_depth .. operations.len - automatic_opacity_depth {
+	} else if requires_cache || solid_fills || grouped_solids {
+		for index in 0 .. operations.len {
 			operation := &operations[index]
+			if operation.kind != .path { continue }
 			device := portable_device_transform(operation.transform, page_x, page_y, scale)
 			if svg_mask_aligned_rect(operation, portable_svg_surface_matrix(device, bounds)) == none {
 				return false
