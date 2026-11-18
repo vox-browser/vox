@@ -8533,3 +8533,140 @@ zero misses or compiler calls. The guard stops it at 39.368 seconds and
 The ordinary memory result varies across the two launches. Both attempts
 and the separate raster result are retained with their input hashes and
 host load readings under `repository-navigation-5204-r98/receipts/published`.
+
+### Conditional expression storage and triangle winding controls
+
+Commit `53adf12e9` stores a conditional's test, consequent and alternate
+in one owned payload. The parser's temporary tail contains the operator
+position and a reference to this payload. It fills the alternate branches
+backward, preserving right associativity and the original source ranges.
+The code generator borrows the stored branches while preserving their branch
+order and shared result register. Other expressions retain their usual
+recursion limit.
+
+The arm64 C declarations put `Expression` at 704 bytes, down from 736,
+and a `ConditionalTail` entry at 24 bytes, down from 1,488. The single
+2,112-byte payload stores three children that formerly occupied three
+736-byte allocations. These are record sizes. The layout check's guard
+exits zero in 5.158 seconds and samples 987,316,224 peak bytes.
+The generated parser body confirms three child allocation sites in the
+control and one payload allocation site in the candidate.
+
+The first compile rejects the local borrowed traversal without an
+explicit lifetime annotation. The retry confines the borrow to the
+function and passes the conditional unit file, including its 1,000-arm
+chain and the new delayed-closure regression. The same unit file passes
+with `-gc none`. All 100 upstream AST fixtures match, and the production
+type check exits zero in 38.612 seconds at 7,124,402,176 sampled bytes.
+
+The Metal replay converts the 69-index strip to 67 triangles, preserving
+primitive order and all 15 triangles with repeated vertices. For each of
+the captured, document and clipped-prefix instance orders, the original
+strip and all six triangle vertex permutations produce identical full
+tiles for that instance order. This covers cyclic vertex rotations and
+reversed winding. The 21 replays and compiler run exit zero under the
+guard in 2.266 seconds at 136,413,184 sampled bytes. The document-order
+control still differs at the two Notifications pixels.
+
+Fifteen further draws vary the primitive stream while keeping its vertices
+and winding. Reversing the stream repairs both document-order Notifications
+pixels and introduces five differences elsewhere. Moving all zero-area
+triangles to the front also repairs those pixels and introduces four
+differences elsewhere. Putting them at the end reproduces each original
+tile. These controls isolate primitive scheduling effects and leave the
+page's original renderer and pixel verdict in place. The guard exits zero
+in 1.487 seconds at 164,298,752 sampled bytes.
+
+The coverage and post-depth-coverage probes reproduce their uninstrumented
+tiles byte for byte in six draws. Their guard exits zero in 0.992 seconds
+at 72,564,736 sampled bytes. In the document-order control at
+`(646, 190)`, all four samples record primitive 1 with mask 15. Moving the
+zero-area triangles to the front gives primitive 1 mask 1 and primitive 30
+mask 14, the same sample split recorded in the earlier unified draw.
+Reversing the whole stream yields that split at this point as well. At the
+other Notifications corner, the two reordered streams reach the reference
+color with different sample assignments. Both Notifications differences
+remain in all 45 variants that remove one zero-area triangle or move it
+to the front or back. Dropping all 15 also leaves both differences.
+The 141 draws across the three instance orders exit zero in
+7.951 guard seconds at 49,070,080 sampled bytes. The final sample records
+describe the submitted draw and cannot reconstruct earlier rejected fragments.
+
+The layout proof, AST outputs, Metal inputs and tiles, and guard receipts
+are local under `repository-navigation-5204-r99/receipts`.
+
+### Published control before conditional storage
+
+Managed build `20261118-084641-0a9f1f58` publishes executable
+`ea5cc7a3d626c8fdef30c81044f1e9a78976d20c1c5726245d8a335b1950bb74`.
+Its sealed manifest contains the previous optional-chain implementation.
+Hacker News PID 61415 matches the 30 stories and 2× PNG exactly, with six
+native hits and zero misses or compiler calls. The guard exits zero in
+4.423 seconds at 454,688,768 sampled bytes.
+
+All three fresh GitHub processes match the initial repository, standalone
+README and restored repository content in order, using the same original
+archive, Brave reference and native cache. All run for 120 seconds with
+successful PID adoption and zero browser, replay and guard exits. Shutdown
+reports zero native misses or compiler calls, and JavaScriptCore stays
+uninitialized. The outer pixel verdict exits 1 for all three.
+
+| Raster policy | PID | Guard seconds | Peak sampled RSS bytes | Native hits / entries | Brave Back pixels different |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Ordinary | 65012 | 121.732 | 12,866,600,960 | 3,614 / 1,776,131 | 60,079 |
+| Historical raster diagnostic | 73291 | 121.483 | 12,531,957,760 | 3,615 / 1,771,648 | 2 |
+| Ordinary repeat | 77292 | 121.590 | 12,428,476,416 | 3,615 / 1,775,190 | 60,079 |
+
+Both ordinary attempts stay under the 12 GiB cap. Their PNGs have the same
+SHA-256. The lower peak of the repeat occurs on the same executable.
+
+### Published conditional expression replay
+
+Managed build `20261118-090120-0e59c085` publishes executable
+`eb9c83cc14fe48f533dcf68e7dbc3e4c871426aa6aa110d3e65a570d961f22a1`
+as one C unit with literal V `-prod`. The frozen manifest verifies all
+three conditional-storage implementation files in `53adf12e9`. The
+build and headless smoke guards exit zero. The published compiler's C
+output reproduces the 704-byte expression, 24-byte tail and one payload
+allocation measured in the focused check. Two CPU raster files and
+the SVG mask surface also differ from the published control, so the
+browser results describe the complete published build.
+
+Hacker News PID 92610 matches all 30 stories and the 2× PNG exactly.
+Capture and shutdown record six native hits, zero misses or compiler
+calls, and an uninitialized JavaScriptCore runtime. The guard exits
+zero in 4.321 seconds at 419,250,176 sampled bytes.
+
+The first ordinary GitHub replay completes the original 120-second input
+and matches the repository, standalone README and restored repository
+against the ordered Brave controls. PID 98432 is adopted by the guard.
+The browser, replay and guard exit zero in 121.947 guard seconds at
+11,758,895,104 sampled bytes. The shutdown audit records 3,614 native hits
+and 1,773,873 native entries, zero misses or compiler calls, and an
+uninitialized JavaScriptCore runtime. The ordinary PNG matches the prior
+ordinary Vox capture byte for byte. The comparison with the unchanged
+Brave Back PNG differs at 60,079 pixels and exits 1.
+
+The separate raster diagnostic on PID 11350 also completes all three
+content checks and the full 120 seconds. The browser, replay and guard
+exit zero in 121.484 guard seconds at 10,759,241,728 sampled bytes.
+Shutdown records 3,615 native hits and 1,770,586 entries, zero misses
+or compiler calls, and an uninitialized JavaScriptCore runtime. Its
+PNG has the same decoded RGBA pixels as the published control's
+raster diagnostic. The unchanged Brave reference differs at the same
+two Notifications corners, `(648, 188)` and `(646, 190)`, with a
+maximum channel error of ten. The exact-pixel verdict exits 1.
+
+The ordinary repeat on PID 14955 uses the same executable, archive,
+cache and capture settings. It completes the 120-second input with
+the same exact content and ordinary PNG. The browser, replay and
+guard exit zero in 121.968 guard seconds at 12,672,598,016 sampled
+bytes. Shutdown records 3,615 native hits and 1,791,187 entries,
+zero misses or compiler calls, and an uninitialized JavaScriptCore
+runtime. Both ordinary attempts stay below 12 GiB, with the second
+peak 212,303,872 bytes below the cap. Exact Brave Back pixels remain
+open in both raster modes.
+
+The build source comparison, audit order, input hashes, guard and exit
+receipts, and PNGs for both published builds are local under
+`repository-navigation-5204-r99/receipts`.
