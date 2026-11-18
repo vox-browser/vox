@@ -19,9 +19,8 @@ fn array_reduce(mut vm VM, reverse bool) !Value {
 		vm.consume_execution_budget()!
 		index := if reverse { remaining - 1 } else { length - remaining }
 		remaining--
-		key := array_index_key(index)
-		if !object.has_property_checked(mut vm, key)! { continue }
-		value := object.get(mut vm, key)!
+		value, present := object.read_present_array_index(mut vm, array_index_key(index))!
+		if !present { continue }
 		if !seeded {
 			accumulator = value
 			seeded = true

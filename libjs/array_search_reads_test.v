@@ -48,3 +48,36 @@ fn test_array_search_reads_charge_the_same_execution_budget_as_has_then_get() {
 	}
 	set_array_search_reads_for_testing(true)
 }
+
+fn test_array_callback_reads_observe_live_data_holes_accessors_and_proxy_traps() {
+	defer { set_array_search_reads_for_testing(true) }
+	for enabled in [false, true] {
+		set_array_search_reads_for_testing(enabled)
+		mut vm := VM.create()
+		create_simple_execution_context(mut vm)
+		vm.profile_native_code()!
+		vm.diagnose_native_code(true)!
+		assert search_reads_eval(mut vm, '
+			var trace="", a=[1,2,3], receiver={};
+			Object.setPrototypeOf(a,{get 1(){trace+="g";return 4}});
+			Array.prototype.forEach.call(a,function(v,i,source){
+				if(this!==receiver||source!==a)throw 1;
+				trace+=i+":"+v+";";
+				if(i===0){delete a[1];a[2]=8;a[3]=16}
+			},receiver);
+			var dense=[1,undefined,3], visits=0;
+			var mapped=dense.map(function(x){visits++;return x});
+			trace==="0:1;g1:4;2:8;"&&visits===3&&Object.hasOwn(mapped,"1")
+				&&mapped.reduce((sum,x)=>sum+(x||0),0)===4
+		', 100000)!.as_bool()
+		assert (vm.diagnose_native_code(false)!.direct_array_search_reads > 0) == enabled
+		assert search_reads_eval(mut vm, '
+			var log="", proxy=new Proxy([1,2],{
+				has(t,k){log+="h"+k;return k!=="0"},
+				get(t,k,r){log+="g"+k;return Reflect.get(t,k,r)}
+			});
+			Array.prototype.reduce.call(proxy,(sum,x)=>sum+x,0)===2
+				&&log==="glengthh0h1g1"
+		', 100000)!.as_bool()
+	}
+}

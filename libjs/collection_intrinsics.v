@@ -140,13 +140,8 @@ fn array_prototype_index_of(mut vm VM) !Value {
 	search := vm.argument(0)
 	for index < length {
 		vm.consume_execution_budget()!
-		key := array_index_key(index)
-		if value := object.own_array_search_value(key) {
-			// Charge HasProperty's first holder just as the checked path does.
-			vm.consume_execution_budget()!
-			if mut tier := vm.native_tier { if tier.diagnostics { tier.activity.direct_array_search_reads++ } }
-			if is_strictly_equal(search, value) { return Value.from_f64(f64(index)) }
-		} else if object.has_property_checked(mut vm, key)! && is_strictly_equal(search, object.get(mut vm, key)!) { return Value.from_f64(f64(index)) }
+		value, present := object.read_present_array_index(mut vm, array_index_key(index))!
+		if present && is_strictly_equal(search, value) { return Value.from_f64(f64(index)) }
 		index++
 	}
 	return Value.from_i32(-1)
@@ -176,8 +171,10 @@ fn array_prototype_for_each(mut vm VM) !Value {
 	this_argument := vm.argument(1)
 	for index := u64(0); index < length; index++ {
 		vm.consume_execution_budget()!
-		key := array_index_key(index)
-		if object.has_property_checked(mut vm, key)! { call(mut vm, callback, this_argument, [object.get(mut vm, key)!, Value.from_f64(f64(index)), Value.from_object(object)])! }
+		value, present := object.read_present_array_index(mut vm, array_index_key(index))!
+		if present {
+			call(mut vm, callback, this_argument, [value, Value.from_f64(f64(index)), Value.from_object(object)])!
+		}
 	}
 	return js_undefined()
 }
@@ -218,7 +215,7 @@ fn array_prototype_unshift(mut vm VM) !Value {
 	return Value.from_f64(f64(length + count))
 }
 
-fn array_species_create(mut vm VM, original &Object, length u64) !&Object {
+fn array_species_constructor(mut vm VM, original &Object) !Value {
 	mut constructor := js_undefined()
 	if Value.from_object(original).is_array(mut vm)! {
 		constructor = original.get(mut vm, PropertyName.from_str('constructor'))!
@@ -227,8 +224,17 @@ fn array_species_create(mut vm VM, original &Object, length u64) !&Object {
 			if constructor.is_null() { constructor = js_undefined() }
 		}
 	}
+	return constructor
+}
+
+fn array_create_with_species_constructor(mut vm VM, constructor Value, length u64) !&Object {
 	if constructor.is_undefined() { return ArrayObject.create(mut vm, vm.realm(), length, vm.realm().array_prototype_record())!.object }
 	return construct(mut vm, constructor, [Value.from_f64(f64(length))], none)
+}
+
+fn array_species_create(mut vm VM, original &Object, length u64) !&Object {
+	constructor := array_species_constructor(mut vm, original)!
+	return array_create_with_species_constructor(mut vm, constructor, length)
 }
 
 fn array_prototype_slice(mut vm VM) !Value {

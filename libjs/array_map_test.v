@@ -33,6 +33,34 @@ fn test_map_species_order_data_properties_and_no_final_length_assignment() {
 	assert map_eval(mut vm, 'var a=[],reads=0,caught=false;Object.defineProperty(a,"constructor",{get(){reads++;throw 9}});try{a.map(null)}catch(e){caught=e instanceof TypeError}caught&&reads===0')!.as_bool()
 }
 
+fn test_map_appends_only_to_unpublished_intrinsic_results() {
+	defer { set_fresh_array_storage_for_testing(true) }
+	for enabled in [false, true] {
+		set_fresh_array_storage_for_testing(enabled)
+		mut vm := VM.create()
+		create_simple_execution_context(mut vm)
+		map_eval(mut vm, 'var a=[1,,3], target=[40,40,40]')!
+		diagnose_fresh_array_storage_for_testing(true)
+		assert map_eval(mut vm, '
+			var mapped=a.map(v=>v*2), d=Object.getOwnPropertyDescriptor(mapped,"2");
+			mapped.length===3&&!Object.hasOwn(mapped,"1")&&mapped[0]===2
+				&&d.value===6&&d.writable&&d.enumerable&&d.configurable
+		')!.as_bool()
+		assert diagnose_fresh_array_storage_for_testing(false) == if enabled { u64(2) } else { u64(0) }
+		map_eval(mut vm, '
+			function Species(){return target}
+			a.constructor={};
+			a.constructor[Symbol.species]=Species
+		')!
+		diagnose_fresh_array_storage_for_testing(true)
+		assert map_eval(mut vm, '
+			var mapped=a.map(function(v,i){if(i===2&&target[0]!==2)throw 1;return v*2});
+			mapped===target&&target[0]===2&&target[1]===40&&target[2]===6
+		')!.as_bool()
+		assert diagnose_fresh_array_storage_for_testing(false) == 0
+	}
+}
+
 fn test_map_preserves_abrupt_getter_callback_and_result_definition_completions() {
 	mut vm := VM.create()
 	create_simple_execution_context(mut vm)

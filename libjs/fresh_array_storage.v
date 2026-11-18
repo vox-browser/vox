@@ -20,15 +20,19 @@ fn record_fresh_array_storage() {
 	$if test { if fresh_array_storage_diagnostic { fresh_arrays_initialized_for_test++ } }
 }
 
+fn (mut object Object) append_fresh_array_index(key PropertyName, value Value) {
+	object.properties << OwnProperty{key: key, value: value,
+		writable: true, enumerable: true, configurable: true}
+	record_fresh_array_storage()
+}
+
 // String.split has not published this fresh array and runs no author code while
 // appending pieces. Ordinary data creation never consults inherited setters.
 fn (mut array ArrayObject) append_split_value(mut vm VM, value Value) ! {
 	if use_fresh_array_storage() && array.length < 0xffffffff {
 		mut object := array.object
-		object.properties << OwnProperty{key: PropertyName.from_number(array.length), value: value,
-			writable: true, enumerable: true, configurable: true}
+		object.append_fresh_array_index(PropertyName.from_number(array.length), value)
 		array.length++
-		record_fresh_array_storage()
 		return
 	}
 	mut object := array.object
