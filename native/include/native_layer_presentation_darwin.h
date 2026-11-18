@@ -396,7 +396,17 @@ static VoxLayerFrameBuffer *native_layer_acquire_frame_buffer(size_t width, size
                 }
                 buffer->locked = YES;
             }
-            if (!defer_clear) memset(buffer->pixels, 0, buffer->bytes);
+            if (!defer_clear) {
+                const size_t parallel_clear_min_bytes = 3840u * 2160u * 4u;
+                if (buffer->bytes >= parallel_clear_min_bytes) {
+                    // The slot stays reserved and the IOSurface stays locked
+                    // until every row, including padding, is transparent.
+                    vox_fill_frame_rows((uint8_t *)buffer->pixels, buffer->pitch, buffer->pitch,
+                        buffer->height, 0);
+                } else {
+                    memset(buffer->pixels, 0, buffer->bytes);
+                }
+            }
 #ifdef VOX_TEST_LAYER_FRAME_BUFFERS
             ++native_test_frame_buffer_reuses;
             if (defer_clear) ++native_test_frame_buffer_deferred_clears;

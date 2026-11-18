@@ -663,6 +663,46 @@ peaked at 11,696,046,080 bytes for the build and 407,158,784 bytes for
 the timed cohort. Full-mask caching improved scroll publication rates
 in all three groups on this fixture. The shared renderer remains opt-in.
 
+### Backing scale and live mask changes
+
+The macOS placement cache includes backing scale alongside the resource
+key and canvas coordinates. Clip and content masks use that identity
+when preparing an image and when compositing it. The native key check
+distinguished 1× and 1.5× or 2× placements for both mask types.
+
+The [live mutation fixture](../Tests/Browser/Native/svg-gradient-mask-mutation.html)
+changes linear stop opacity and radial stop color after the first
+render. A published Quartz capture in PID 29997 changed the sample
+pixels to blue and red, as expected. The candidate shared renderer
+recorded the original and updated resource keys for each mask in PID
+33812. Its final document matched the uncached capture in PID 33819
+pixel for pixel. The first static suite run reported an eager-cache
+screenshot mismatch. A fresh focused pair and a full 13-capture repeat
+passed using the same comparisons. Native mask conversion, cropping and
+layer checks also passed.
+
+The single-C V `-prod`, Clang `-O1` timing executable SHA-256 was
+`e158e06331a5d55155620e49143ecf17cb5d9c1446857bf6c1ba5de8f4de6bd8`.
+The two alternating pairs used the previous scrolling fixture and AVIF
+digests, a fresh cache and private profile with a hidden bookmark bar,
+disabled scripts, and a one-second settle after the title matched. Each
+ran 120 precise four-pixel wheel inputs at a requested 60 Hz, with one
+reversal after 60 inputs. The document viewport was 1024 × 600 at 2×.
+The endpoint was changed native frame installation after outer view paint.
+
+| PID | Raster | Scroll fps | Median (ms) | p95 (ms) | Max (ms) | Input Hz | Inputs / scroll changes | First / last gap (ms) |
+| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| 33874 | Quartz | 40.26 | 24.098 | 27.151 | 29.930 | 55.07 | 120 / 87 | 54.279 / 19.342 |
+| 34105 | Shared | 45.74 | 20.992 | 25.327 | 27.439 | 52.84 | 120 / 103 | 55.262 / 0.123 |
+| 34363 | Quartz | 38.26 | 24.577 | 29.323 | 52.284 | 54.85 | 120 / 83 | 56.003 / 20.481 |
+| 34476 | Shared | 47.81 | 20.368 | 24.087 | 25.441 | 56.90 | 120 / 100 | 49.640 / 0.123 |
+
+Starting one-minute loads on the 18-CPU host were 4.13, 4.04, 4.19
+and 4.18. All measured scroll intervals exceeded 16.67 ms. The browser
+and guard exits for the cohort were zero. Sampled process-tree RSS
+peaked at 11,481,743,360 bytes during the build and 403,701,760 bytes
+during timing. The shared renderer remains opt-in.
+
 ## Original migration plan
 
 Vox currently renders through two Skia builds: LibWeb's Skia (CPU raster,
