@@ -9443,3 +9443,56 @@ rebuilds continue to fail on disk writes, so the standalone cohorts leave
 the page-render timing open. Build identities, all attempts and guard
 receipts are local under
 `docs/benchmark-results/github-identifier-5204-r110/receipts`.
+
+### Full-frontend keyword comparison and ASCII source conversion
+
+The earlier keyword change in `3f45845b7` now has a full-frontend
+comparison on the same 81 pinned modules. The control builds share the
+canonical LibJS dependencies and use the two exact lexer versions from
+Git. Compiler source manifests differ only in the lexer. With limited disk
+space, both builds use Clang `-O2` with V's development mode and
+`-prealloc -gc none`. Development mode reads resource files at runtime
+and avoids embedding their payloads into the executable.
+
+Seven alternating fresh-process pairs complete all 81 modules without a
+diagnostic or recursion-limit failure. Median instructions fall from
+8,024,481,796 to 7,342,744,816, an 8.50% reduction. Median elapsed
+frontend time falls from 693.109 to 663.379 ms, with five pairs faster.
+Host one-minute load is 11.75–12.16 on 18 CPUs. The guard exits zero in
+11.094 seconds at 2,630,434,816 sampled RSS bytes. This interval includes
+UTF-16 decoding, parsing and lexical scope analysis.
+
+Commit `14c08fd53` widens ASCII script bytes directly into the parser's
+UTF-16 input. It retains the existing decoder for sources containing
+non-ASCII bytes. The regression passes with assertions enabled for empty
+input, ASCII control characters and NUL, Unicode supplementary characters,
+and malformed bytes. The guard exits zero.
+
+Eighty archived modules are entirely ASCII and total 4,632,522 bytes.
+The remaining module brings the workload to 5,088,368 bytes. In seven
+alternating fresh-process conversion pairs, every file produces the same
+code-unit count and checksum in both modes. The timed intervals cover
+conversion and exclude file reads and checksum computation.
+
+| Benchmark and median | Control | ASCII widening | Change |
+| --- | ---: | ---: | ---: |
+| Standalone conversion instructions | 263,694,090 | 53,121,169 | −79.86% |
+| Standalone conversion intervals | 14.255 ms | 4.049 ms | −71.60% |
+| Full frontend instructions | 7,377,007,076 | 7,173,729,973 | −2.76% |
+| Full frontend intervals | 613.705 ms | 623.934 ms | +1.67% |
+
+The full-frontend pair uses the same Clang `-O2` development build
+and lexer from the keyword comparison. Compiler input digests show only
+the frontend integration and its new conversion source differing.
+All 14 processes parse the 81 modules successfully. Every pair uses fewer
+instructions, and three pairs have shorter elapsed intervals. One-minute
+load is 9.36–9.51. The guard exits zero in 9.831 seconds at 2,578,825,216
+sampled RSS bytes. Two independent attempts to compile a canonical control
+stop on full-disk errors. The matched results above use the completed
+keyword control.
+
+The production publication still predates the lexer and source-decoding
+changes. Recent managed rebuilds continue to encounter disk exhaustion.
+Page-render timing with these changes is pending. Compiler input digests,
+all timed attempts and regression receipts are local under
+`docs/benchmark-results/github-keyword-parser-5204-r111/receipts`.
