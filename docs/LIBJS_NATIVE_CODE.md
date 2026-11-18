@@ -687,3 +687,40 @@ harness and guard exits are zero. The 12-GiB guard adopts all 28 recorded
 processes and reports 137.561 seconds and 6,990,544,896 sampled peak bytes.
 The commands, images, input hashes and raw attempts stay local under
 `docs/performance/libjs-github-browser-20261116/libjs-github-operand-after-20261118/`.
+
+## Linear declarative binding lookup, 2026-11-18
+
+A matched main-thread sample of `296096c8…e829` on the frozen GitHub
+workload records 307 of 717 native-run samples inside a native entry.
+300 include a slow callback. The linear declarative binding scan is the
+leaf in 10 native-run samples and eight of 736 interpreter-run samples.
+Both samples match the pinned document and repository audit, fulfill all
+81 modules, and keep JSC uninitialized. The native run reuses 2,947 entries
+with zero cache misses or compiler calls.
+
+`6cb1be824` scans binding records in place. The loop already bounds each
+index by the current array length. Its generated C reads the deleted flag
+and name through the binding pointer, removing the generic array access
+and record copy. Slot order, tombstones and UTF-16 name equality stay the
+same.
+
+Two single-C `-prod -prealloc -gc none` builds differ only in this
+lookup's generated C. Seven alternating fresh-process pairs verify
+1,200,000 hits and 400,000 misses per run, including checks for deletion,
+recreated names, a supplementary character and unpaired surrogates.
+The old and new medians are **460,014,013** and **413,587,277** retired
+instructions through process exit, a **10.09% reduction** for this workload.
+Six pairs improve. The first candidate run uses 479,224,676 instructions
+and is retained. The separate default-GC executable reports the same lookup
+results, and all focused program and guard exits are zero. Focused
+regression source is included under the automated-suite hold.
+
+A translated JavaScript closure reads an outer binding and a local UTF-16
+identifier, returning 85 in both tiers. A fresh compiler-disabled reopen
+records three cache hits, zero misses or compiler calls, four native
+entries and 13 native fast steps.
+
+The installed production sample predates the scan change. The managed hook
+has requested a build containing it. The raw stacks, source and binary
+hashes, measurements and guard receipts remain local under
+`docs/performance/libjs-github-browser-20261116/libjs-github-cost-profile-2960-20261118/`.
