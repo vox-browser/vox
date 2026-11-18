@@ -1236,6 +1236,75 @@ guard exits were zero. Sampled process-tree RSS peaked at
 11,680,612,352 bytes for the build and 397,950,976 bytes for
 the diagnostic and timing job.
 
+### Caching overlapping solid SVG mask fills on macOS
+
+The bounded solid-mask path also accepts two pixel-aligned
+rectangular fills. The shared raster composites them in paint
+order before converting the premultiplied result to alpha or
+luminance. Both paths must be aligned, and the complete bitmap
+uses the existing cache limit and admission policy.
+
+The [overlap fixture](../Tests/Browser/Native/svg-overlapping-solid-mask-fills.html)
+has two half-opacity alpha fills and overlapping red and green
+luminance fills. Its SHA-256 was
+`014ff8fe50e532a757b267173b04d324f1cd8ea1f242ae5d7a9f5e5901bc9e4b`.
+The pinned published binary and AVIF library matched the preceding
+solid-rectangle cohort. The Quartz captures in PIDs 82279 and
+82353 at 1× and 2× gave `(127, 127, 255)` on the individual
+alpha fills and `(63, 63, 255)` in their overlap. The red-backed
+luminance overlap was `(255, 150, 150)`.
+
+The pressure fixture placed two overlapping translucent solid
+fills in each of 75 136 × 90 mask regions, with different colors
+across masks. Its SHA-256 was
+`85d29b8571a0779f730498d19b291a40fce26b08378e6fced5b7bd4a2aa8e239`.
+The macOS comparisons used the preceding precise wheel protocol
+with a 1024 × 600 document viewport at 2×, a fresh cache and
+private profile for each process, and one second of settle
+after the document title matched. Each local fixture ran without
+scripts or external resources. The 120 four-pixel wheel inputs
+reversed after 60 inputs at a requested 60 Hz. The counted endpoint
+was completed native frame installation over the first-to-last
+input window.
+
+The private single-C V `-prod`, Clang `-O1` executable SHA-256
+was `992e30d529904cc486c03ed75ab152ad25f1079c9f708b765663bdc2a85f18a1`.
+Its AVIF library matched the published comparison. The 66-capture
+macOS suite verified cropped cache hits and exact matches with the
+forced uncached shared path at 1× and 2×. The 2× overlap fixture
+matched Quartz pixel for pixel. A fractional translation of the
+second fill and a disabled shared cache both selected Quartz.
+Reordering the live luminance fills produced a new raster key and
+the same `(255, 183, 183)` overlap as the uncached render and
+published Quartz control. Native mask conversion and layer tests
+also passed.
+
+The separate overlap diagnostic in PID 90124 recorded 609 cache
+hits, including 164 cropped placements, and six rasters during
+input. The pressure diagnostic in PID 90642 recorded 608 hits,
+99 cropped placements, 16 rasters and 651 Quartz fallbacks.
+Timing launches disabled diagnostics and alternated Quartz with
+automatic selection on the same pinned binary.
+
+| PID | Fixture | Raster | Scroll fps | Median / p95 / max (ms) | Input Hz | Inputs / changes | First / last gap (ms) | Load |
+| --- | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| 90223 | Overlap | Quartz | 25.07 | 38.119 / 42.680 / 74.868 | 57.38 | 120 / 52 | 83.235 / 18.563 | 4.57 |
+| 90327 | Overlap | Automatic | 32.67 | 29.232 / 34.519 / 54.838 | 58.90 | 120 / 66 | 67.248 / 16.557 | 4.55 |
+| 90430 | Overlap | Quartz | 26.19 | 37.101 / 42.006 / 42.848 | 55.66 | 120 / 56 | 85.793 / 0.093 | 4.35 |
+| 90543 | Overlap | Automatic | 33.22 | 28.769 / 34.333 / 35.487 | 59.00 | 120 / 67 | 70.608 / 18.312 | 4.32 |
+| 90744 | Pressure | Quartz | 14.81 | 63.941 / 68.395 / 69.529 | 58.76 | 120 / 30 | 141.998 / 16.956 | 4.28 |
+| 90848 | Pressure | Automatic | 18.36 | 52.160 / 57.135 / 58.095 | 56.03 | 120 / 39 | 119.605 / 0.087 | 4.17 |
+| 90952 | Pressure | Quartz | 13.84 | 70.365 / 76.187 / 77.499 | 58.82 | 120 / 28 | 140.011 / 17.234 | 4.00 |
+| 91152 | Pressure | Automatic | 16.72 | 56.453 / 59.734 / 61.026 | 58.51 | 120 / 34 | 117.386 / 50.691 | 3.92 |
+
+The timed cohort ran from 04:24:25 to 04:25:13 UTC on November 18,
+2026. Load is the starting one-minute average on the 18-CPU host.
+Throughput and all three interval statistics improved in all four
+pairs. All measured intervals exceeded 16.67 ms. Browser and guard
+exits were zero. Sampled process-tree RSS peaked at 11,681,857,536
+bytes for the build and 398,295,040 bytes for the diagnostic and
+timing job.
+
 ## Original migration plan
 
 Vox currently renders through two Skia builds: LibWeb's Skia (CPU raster,
