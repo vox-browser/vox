@@ -28,6 +28,22 @@ captures matched exactly. The gradient stroke fixture covered both
 paint orders, dashes, non-scaling width, text outlines and live stop and
 opacity edits. Windows window and pixel verification remain pending.
 
+The current Windows OpenGL browser also linked with V `178232d`, MinGW
+GCC 16.2.0 and single-unit C `-prod -no-prod-options`. Its executable
+SHA-256 was
+`3defcf4daeef62d3994adaae06b9b6998b08d3cd69f4a05b108d99247d719483`.
+The 12 GiB guard exited zero at a sampled peak of 10,086,531,072 bytes.
+The legacy Python builder initially failed because its staged GG layer
+lacked the repeat-filter and translation fields. It now calls the same
+Canvas staging helper as the V builder. A focused driver check verified
+the fields and the OpenGL build flag using the prepared module tree.
+
+The Windows 11 x86-64 QEMU guest matched the executable and live-edit
+fixture hashes before launch. The cached run requested Mesa llvmpipe
+and reached its five-minute deadline with exit 124 and 237,436,928 bytes
+of peak committed memory under the 3 GiB job guard. It produced no
+capture or renderer diagnostics. The harness skipped the uncached run.
+
 The Linux executable SHA-256 was
 `1e91375a68de0d8d906ed22a6c1021901b570acb45a6300386cffa0739da5b46`.
 It used V `5a39a4d` and single-unit Clang `-O0`. The fixture SHA-256 was
