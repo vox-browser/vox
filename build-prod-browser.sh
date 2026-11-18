@@ -149,18 +149,20 @@ trap 'rm -rf "$compile_dir"' EXIT
 echo "Compiler outputs: $compile_dir"
 cp "$repo_dir/packaging/Info.plist" "$bundle_dir/Contents/Info.plist"
 cp "$repo_dir/packaging/Vox.icns" "$resources_dir/Vox.icns"
-# Keep the codec and metadata beside the binary snapshot. Non--prod V embeds
-# otherwise reopen checkout files, which may change after this bundle is built.
+# Both executables use this resource set. Clone unchanged blocks on macOS
+# volumes that support it so staging does not allocate a second snapshot.
 for adblock_asset in engine.snapshot.bin engine.snapshot.json.gz engine.js.gz; do
     adblock_resource="adblock.$adblock_asset"
     if [ "$adblock_asset" = engine.snapshot.bin ]; then
         adblock_resource=adblock.snapshot.bin
     fi
     if ! cmp -s "$repo_dir/adblock/$adblock_asset" "$resources_dir/$adblock_resource"; then
-        adblock_resource_tmp=$(mktemp "$resources_dir/.adblock-resource.XXXXXX")
-        cp "$repo_dir/adblock/$adblock_asset" "$adblock_resource_tmp"
+        adblock_resource_dir=$(mktemp -d "$resources_dir/.adblock-resource.XXXXXX")
+        adblock_resource_tmp="$adblock_resource_dir/$adblock_resource"
+        cp -c "$repo_dir/adblock/$adblock_asset" "$adblock_resource_tmp"
         chmod 644 "$adblock_resource_tmp"
         mv -f "$adblock_resource_tmp" "$resources_dir/$adblock_resource"
+        rmdir "$adblock_resource_dir"
     fi
 done
 
@@ -252,7 +254,8 @@ fi
 v_backend=${VOX_BUILD_BACKEND:-$(v_tool browser_backend "$repo_dir")}
 case "$v_backend" in c|fastc) ;; *) echo "Unsupported browser backend: $v_backend" >&2; exit 2 ;; esac
 set -- -b "$v_backend" -cc clang -memory-limit 10G -exclude "$zoneinfo_exclude" -enable-globals -d vox_sparse_ttf \
-    -d vox_production -d vox_ui2 -path "$repo_dir|$prealloc_modules|$font_modules|$http_modules|$ui2_modules|@vmodules|@vlib"
+    -d vox_production -d vox_ui2 -d vox_packaged_adblock_assets \
+    -path "$repo_dir|$prealloc_modules|$font_modules|$http_modules|$ui2_modules|@vmodules|@vlib"
 if [ "${VOX_KEEP_C:-0}" = 1 ]; then
     set -- "$@" -keepc
 fi
@@ -329,6 +332,7 @@ fi
 # It uses the same engine, snapshot resource and private transport as self-exec.
 helper_tmp="$compile_dir/VoxAdblockWorker"
 set -- -b "$v_backend" -cc clang -memory-limit 10G -exclude "$zoneinfo_exclude" -enable-globals -d vox_sparse_ttf -d vox_filter_worker_minimal_links \
+    -d vox_packaged_adblock_assets \
     -path "$repo_dir|$prealloc_modules|$font_modules|$http_modules|@vmodules|@vlib"
 helper_cflags=-O2
 if [ "$gc_mode" = prealloc ]; then

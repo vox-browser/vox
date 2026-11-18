@@ -41,7 +41,9 @@ fn C.vox_adblock_set_context(voidptr)
 fn C.vox_adblock_get_enabled() int
 fn C.vox_adblock_set_enabled(int)
 
-const compressed_engine_source = $embed_file('engine.js.gz')
+$if !vox_packaged_adblock_assets ? {
+	const compressed_engine_source = $embed_file('engine.js.gz')
+}
 
 // Protected by the same lock as the default engine. Cache hits that require
 // no VM evaluation do not postpone releasing that VM.
@@ -83,10 +85,12 @@ fn create_context(custom_filters ?string) !voidptr {
 		// Keep decompression, encoding and initialization-result temporaries out
 		// of the request thread's retained base arena.
 		if _ := custom_filters { return create_context_in_current_arena(custom_filters) }
-		persistent := platform.enter_persistent()
-		if snapshot_asset_path('engine.js.gz') == none { _ = compressed_engine_source.data() }
-		warm_snapshot_sources()
-		platform.leave_persistent(persistent)
+		$if !vox_packaged_adblock_assets ? {
+			persistent := platform.enter_persistent()
+			if snapshot_asset_path('engine.js.gz') == none { _ = compressed_engine_source.data() }
+			warm_snapshot_sources()
+			platform.leave_persistent(persistent)
+		}
 		mut scratch := platform.begin_thread_scratch('adblock initialization')
 		context := create_context_in_current_arena(custom_filters) or {
 			scratch.leave()
@@ -100,6 +104,20 @@ fn create_context(custom_filters ?string) !voidptr {
 	return create_context_in_current_arena(custom_filters)
 }
 
+fn read_engine_source() ![]u8 {
+	if path := snapshot_asset_path('engine.js.gz') {
+		return os.read_bytes(path) or {
+			kind := if snapshot_asset_directory() != none { 'diagnostic' } else { 'bundled' }
+			return error('Cannot read ${kind} adblock source: ${err}')
+		}
+	}
+	$if vox_packaged_adblock_assets ? {
+		return error('Cannot locate bundled adblock source')
+	} $else {
+		return compressed_engine_source.to_bytes()
+	}
+}
+
 fn create_context_in_current_arena(custom_filters ?string) !voidptr {
 	context := C.JSGlobalContextCreate(unsafe { nil })
 	if context == unsafe { nil } {
@@ -109,13 +127,10 @@ fn create_context_in_current_arena(custom_filters ?string) !voidptr {
 		C.JSGlobalContextRelease(context)
 		return err
 	}
-	compressed_source := if path := snapshot_asset_path('engine.js.gz') {
-		os.read_bytes(path) or {
-			C.JSGlobalContextRelease(context)
-			kind := if snapshot_asset_directory() != none { 'diagnostic' } else { 'bundled' }
-			return error('Cannot read ${kind} adblock source: ${err}')
-		}
-	} else { compressed_engine_source.to_bytes() }
+	compressed_source := read_engine_source() or {
+		C.JSGlobalContextRelease(context)
+		return err
+	}
 	source := decompress_engine_source(compressed_source) or {
 		C.JSGlobalContextRelease(context)
 		return error('Cannot decompress bundled adblock engine: ${err}')
