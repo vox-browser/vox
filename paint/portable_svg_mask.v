@@ -1,0 +1,100 @@
+module main
+
+import cpuraster
+import layout
+import math
+import os
+import painting
+
+const disable_portable_svg_mask = os.getenv('VOX_DISABLE_PORTABLE_SVG_MASK') == '1'
+const portable_svg_mask_diagnostics = os.getenv('VOX_PORTABLE_SVG_MASK_DIAGNOSTICS') == '1'
+
+fn portable_svg_content_mask_supported(mask &layout.PaintClip) bool {
+	if mask.is_svg_mask || mask.corner_radii != layout.BoxRadii{} || mask.mask_operations.len > 64
+		|| mask.transform[1] != 0 || mask.transform[2] != 0 {
+		return false
+	}
+	for index in 0 .. mask.mask_operations.len {
+		operation := &mask.mask_operations[index]
+		if operation.kind != .path || !operation.has_fill || operation.has_stroke
+			|| operation.opacity != 1 || operation.fill_linear_gradient != none
+			|| operation.fill_radial_gradient != none || operation.fill_pattern != none
+			|| operation.path_data.len < layout.compatibility_clip_path_segment_stride {
+			return false
+		}
+	}
+	return true
+}
+
+fn (mut app BrowserApp) apply_portable_svg_content_mask(mut image PortableSVGGroupImage,
+	mask &layout.PaintClip, region painting.Rect, page_x f32, page_y f32, scale f64) bool {
+	bounds := image.bounds
+	pitch := bounds.width * 4
+	mut coverage := []u8{len: pitch * bounds.height}
+	for index in 0 .. mask.mask_operations.len {
+		operation := &mask.mask_operations[index]
+		color := app.paint_colors.color(operation.fill_color, operation.fill_opacity)
+		if color.a == 0 { continue }
+		path := cpuraster.canvas_path(operation.path_data, operation.path_even_odd)
+		transform := portable_device_transform(operation.transform, page_x, page_y, scale)
+		argb := if mask.mask_luminance { portable_svg_argb(color) } else { (u32(color.a) << 24) | 0xffffff }
+		if !cpuraster.fill_canvas_path(mut coverage, bounds.width, bounds.height, pitch, 2,
+			path, portable_svg_surface_matrix(transform, bounds), argb, none, 1,
+			.src_over, 0, [], none) {
+			return false
+		}
+	}
+	if mask.mask_luminance {
+		// The mask channels are already premultiplied. Convert the resolved
+		// color with the native mask's integer luminance weights.
+		for offset := 0; offset < coverage.len; offset += 4 {
+			value := (54 * u32(coverage[offset]) + 183 * u32(coverage[offset + 1])
+				+ 19 * u32(coverage[offset + 2])) >> 8
+			image.pixels[offset + 3] = portable_svg_mask_alpha(image.pixels[offset + 3], u8(value))
+		}
+	} else {
+		for offset := 3; offset < coverage.len; offset += 4 {
+			image.pixels[offset] = portable_svg_mask_alpha(image.pixels[offset], coverage[offset])
+		}
+	}
+	apply_portable_svg_mask_region(mut image, region)
+	return true
+}
+
+@[inline]
+fn portable_svg_mask_alpha(alpha u8, coverage u8) u8 {
+	return u8((u32(alpha) * u32(coverage) + 127) / 255)
+}
+
+// The texture bounds enclose the region's fractional edges. Apply their
+// coverage once after compositing the mask operations.
+fn apply_portable_svg_mask_region(mut image PortableSVGGroupImage, mask_region painting.Rect) {
+	bounds := image.bounds
+	region := mask_region.intersection(painting.Rect{f64(bounds.x), f64(bounds.y),
+		f64(bounds.width), f64(bounds.height)})
+	columns := [int(math.floor(region.x)), int(math.ceil(region.right())) - 1]!
+	for index, x in columns {
+		if x < bounds.x || x >= bounds.right() || (index == 1 && x == columns[0]) { continue }
+		coverage := portable_svg_mask_edge_coverage(x, region.x, region.right())
+		if coverage == 255 { continue }
+		for row in 0 .. bounds.height {
+			offset := (row * bounds.width + x - bounds.x) * 4 + 3
+			image.pixels[offset] = portable_svg_mask_alpha(image.pixels[offset], coverage)
+		}
+	}
+	rows := [int(math.floor(region.y)), int(math.ceil(region.bottom())) - 1]!
+	for index, y in rows {
+		if y < bounds.y || y >= bounds.bottom() || (index == 1 && y == rows[0]) { continue }
+		coverage := portable_svg_mask_edge_coverage(y, region.y, region.bottom())
+		if coverage == 255 { continue }
+		row := (y - bounds.y) * bounds.width
+		for column in 0 .. bounds.width {
+			offset := (row + column) * 4 + 3
+			image.pixels[offset] = portable_svg_mask_alpha(image.pixels[offset], coverage)
+		}
+	}
+}
+
+fn portable_svg_mask_edge_coverage(pixel int, start f64, end f64) u8 {
+	return u8(math.round(255 * (math.min(end, f64(pixel + 1)) - math.max(start, f64(pixel)))))
+}

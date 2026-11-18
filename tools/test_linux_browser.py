@@ -386,6 +386,44 @@ def check_nested_svg_browser(binary, artifacts, temporary):
     print("PASS: replaced and CSS background SVGs replay clip and opacity groups within their viewport", flush=True)
 
 
+def check_svg_mask_browser(binary, artifacts, temporary):
+    fixture = Path(__file__).resolve().parents[1] / "Tests/Browser/Native/svg-content-masks.html"
+    screenshot = artifacts / "portable-svg-mask.png"
+    screenshot.unlink(missing_ok=True)
+    environment = smoke_environment(Path(temporary) / "svg-mask")
+    environment.pop("VOX_DISABLE_PORTABLE_SVG_MASK", None)
+    environment["VOX_PORTABLE_SVG_MASK_DIAGNOSTICS"] = "1"
+    log = run_windowed([str(binary), "--window-width=1024", "--window-height=640",
+                        "--screenshot-viewport-height=640", f"--screenshot={screenshot}", str(fixture)],
+                       env=environment, log_path=artifacts / "portable-svg-mask.log")
+    assert "VOX_SVG_MASK luminance=false operations=2 paths=2" in log, log
+    assert "VOX_SVG_MASK luminance=true operations=4 paths=1" in log, log
+    assert "VOX_SVG_MASK luminance=false operations=1 paths=1" in log, log
+    _, height, channels, rows = rendered_png_rows(screenshot.read_bytes())
+
+    def pixel(x, y):
+        return rows[y][x * channels:x * channels + 3]
+
+    marker = next((y for y in range(min(height, 150)) if pixel(4, y) == b"\x34\xb7\x86"), None)
+    assert marker is not None, "Missing document marker"
+    top = marker + 8
+    white = b"\xff\xff\xff"
+    assert pixel(16, top + 24) == b"\xff\x00\x00", "Black must contribute alpha coverage"
+    assert pixel(34, top + 42) == white, "Even-odd mask hole was filled"
+    assert pixel(62, top + 42) == b"\xff\x00\x00", "Overlapping mask paths lost opaque coverage"
+    assert pixel(140, top + 42) == white, "Mask painted beyond its region"
+    assert pixel(310, top + 42) == white, "Black must be transparent in a luminance mask"
+    assert pixel(340, top + 42) == b"\x00\x00\xff"
+    assert pixel(375, top + 42) == b"\xff\x88\x00", "Mask affected an unclipped sibling"
+    assert pixel(420, top + 24) == white
+    assert pixel(430, top + 24) == b"\x00\x00\xff", "Nested SVG mask did not replay"
+    for x, channel in ((90, 127), (208, 202), (240, 137), (255, 164), (421, 127)):
+        y = top + (24 if x == 421 else 42)
+        actual = pixel(x, y)
+        assert all(abs(value - target) <= 1 for value, target in zip(actual, (channel, channel, 255))), (x, actual)
+    print("PASS: SVG alpha and luminance masks, ordered coverage, and a fractional nested region", flush=True)
+
+
 def check_webgl_pixels(data):
     """Find both complete shader canvases, excluding unknown browser chrome."""
     width, height, channels, rows = rendered_png_rows(data)
@@ -719,6 +757,7 @@ def main():
         check_svg_opacity_browser(binary, artifacts, temporary)
         check_svg_clip_browser(binary, artifacts, temporary)
         check_nested_svg_browser(binary, artifacts, temporary)
+        check_svg_mask_browser(binary, artifacts, temporary)
         check_https_navigation(binary, temporary, environment)
         print("PASS: HTTPS navigation and certificate verification")
         server = http.server.ThreadingHTTPServer(("127.0.0.1", 0),

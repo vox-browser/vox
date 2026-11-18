@@ -58,12 +58,9 @@ fn (mut app BrowserApp) draw_portable_nested_svg_group(commands []layout.PaintCo
 	placement PortableNestedPlacement, page_x f32, page_y f32) ?int {
 	if !app.portable_svg_group_allowed() { return none }
 	command := &commands[start]
-	is_clip := command.kind == 'begin_svg_mask_layer'
-	end := if is_clip {
-		if disable_portable_svg_clip { return none }
-		mask := command.mask_clip()
-		if !mask.is_svg_mask || mask.is_svg_content_mask || mask.path_components.len > 64 { return none }
-		portable_svg_clip_group_end(commands, start, mask) or { return none }
+	is_mask := command.kind == 'begin_svg_mask_layer'
+	end := if is_mask {
+		portable_svg_mask_group_end(commands, start, command.mask_clip()) or { return none }
 	} else {
 		if disable_portable_svg_opacity { return none }
 		layer := normal_opacity_paint_layer(command) or { return none }
@@ -77,8 +74,8 @@ fn (mut app BrowserApp) draw_portable_nested_svg_group(commands []layout.PaintCo
 	// per-command replay and avoid allocating a transformed command array.
 	mapped := commands[start..end + 1].map(layout.paint_command_for_nested_viewport(it,
 		placement.transform, placement.origin, placement.opacity))
-	next := if is_clip {
-		app.draw_portable_svg_clip_group(mapped, 0, page_x, page_y, viewport)
+	next := if is_mask {
+		app.draw_portable_svg_mask_group(mapped, 0, page_x, page_y, viewport)
 	} else {
 		app.draw_portable_svg_opacity_group(mapped, 0, page_x, page_y, viewport)
 	}
