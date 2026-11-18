@@ -7,6 +7,7 @@ import os
 import painting
 
 const disable_portable_svg_mask = os.getenv('VOX_DISABLE_PORTABLE_SVG_MASK') == '1'
+const disable_svg_mask_ramp = os.getenv('VOX_DISABLE_SVG_MASK_RAMP') == '1'
 const portable_svg_mask_diagnostics = os.getenv('VOX_PORTABLE_SVG_MASK_DIAGNOSTICS') == '1'
 const portable_svg_mask_max_opacity_depth = 4
 
@@ -129,6 +130,68 @@ mut:
 	opacity f32
 }
 
+struct SVGMaskRamp {
+	first_row int
+	end_row   int
+	transform [6]f32
+}
+
+fn svg_mask_ramp(mask &layout.PaintClip, bounds painting.IntRect, page_x f32, page_y f32,
+	scale f64) ?SVGMaskRamp {
+	if disable_svg_mask_ramp || mask.mask_luminance || mask.mask_operations.len != 1 { return none }
+	operation := &mask.mask_operations[0]
+	gradient := operation.fill_linear_gradient or { return none }
+	if f32(gradient.start_point.y) != f32(gradient.end_point.y)
+		|| f32(gradient.start_point.x) == f32(gradient.end_point.x) {
+		return none
+	}
+	if local := gradient.gradient.gradient_transform {
+		if local.b != 0 || local.c != 0 { return none }
+	}
+	device := portable_device_transform(operation.transform, page_x, page_y, scale)
+	if device.b != 0 || device.c != 0 || device.a <= 0 || device.d <= 0 { return none }
+	rect := svg_background_rectangle_path(operation.path_data) or { return none }
+	matrix := portable_svg_surface_matrix(device, bounds)
+	left := f32(rect.x) * matrix[0] + matrix[4]
+	right := f32(rect.right()) * matrix[0] + matrix[4]
+	top := f32(rect.y) * matrix[3] + matrix[5]
+	bottom := f32(rect.bottom()) * matrix[3] + matrix[5]
+	if ![left, right, top, bottom]!.all(math.is_finite(f64(it))
+		&& f64(it) == math.floor(f64(it)) && math.abs(f64(it)) < 1048576) {
+		return none
+	}
+	first_row := int(math.max(0, f64(top)))
+	end_row := int(math.min(f64(bounds.height), f64(bottom)))
+	if end_row - first_row <= 1 { return none }
+	mut row_matrix := matrix
+	row_matrix[5] -= f32(first_row)
+	return SVGMaskRamp{first_row, end_row, row_matrix}
+}
+
+fn raster_svg_mask_ramp(mut pixels []u8, pitch int, width int, operation &layout.PaintMaskOperation,
+	ramp SVGMaskRamp) bool {
+	path := cpuraster.canvas_path(operation.path_data, operation.path_even_odd)
+	style := portable_svg_mask_gradient(operation, false)
+	row_bytes := width * 4
+	first := ramp.first_row * pitch
+	mut row := pixels[first..first + row_bytes]
+	// The device rectangle covers complete rows and the shader depends on x.
+	// Keep the normal CPU shader's sampling and rounding for the first row.
+	if !cpuraster.fill_canvas_path(mut row, width, 1, row_bytes, 2, path, ramp.transform,
+		0xff000000, style, f32(operation.fill_opacity), .src_over, 0, [], none) {
+		unsafe { vmemset(row.data, 0, row_bytes) }
+		return false
+	}
+	for y in ramp.first_row + 1 .. ramp.end_row {
+		offset := y * pitch
+		copy(mut pixels[offset..offset + row_bytes], row)
+	}
+	if portable_svg_mask_diagnostics {
+		eprintln('VOX_SVG_MASK_RAMP width=${width} rows=${ramp.end_row - ramp.first_row}')
+	}
+	return true
+}
+
 fn (mut app BrowserApp) apply_portable_svg_content_mask(mut image PortableSVGGroupImage,
 	mask &layout.PaintClip, region painting.Rect, page_x f32, page_y f32, scale f64) bool {
 	bounds := image.bounds
@@ -156,6 +219,11 @@ fn (mut app BrowserApp) apply_portable_svg_content_mask(mut image PortableSVGGro
 // can include pixels outside the mask region when borrowing a native bitmap.
 fn (mut app BrowserApp) raster_svg_content_mask(mut pixels []u8, pitch int, bounds painting.IntRect,
 	mask &layout.PaintClip, page_x f32, page_y f32, scale f64) bool {
+	if ramp := svg_mask_ramp(mask, bounds, page_x, page_y, scale) {
+		if raster_svg_mask_ramp(mut pixels, pitch, bounds.width, &mask.mask_operations[0], ramp) {
+			return true
+		}
+	}
 	layer_pitch := bounds.width * 4
 	byte_count := layer_pitch * bounds.height
 	mut layers := [portable_svg_mask_max_opacity_depth + 1]PortableSVGMaskLayer{}

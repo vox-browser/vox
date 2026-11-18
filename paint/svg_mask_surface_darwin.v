@@ -5,7 +5,9 @@ import math
 import os
 import painting
 
-const shared_svg_mask_raster = os.getenv('VOX_SHARED_SVG_MASK_RASTER') == '1'
+const shared_svg_mask_raster_mode = os.getenv('VOX_SHARED_SVG_MASK_RASTER')
+const shared_svg_mask_raster = shared_svg_mask_raster_mode in ['', '1']
+const force_shared_svg_mask_raster = shared_svg_mask_raster_mode == '1'
 const disable_shared_svg_mask_cache = os.getenv('VOX_DISABLE_SHARED_SVG_MASK_CACHE') == '1'
 const eager_shared_svg_mask_bitmap = os.getenv('VOX_EAGER_SHARED_SVG_MASK_BITMAP') == '1'
 const copy_shared_svg_mask_bitmap = os.getenv('VOX_COPY_SHARED_SVG_MASK_BITMAP') == '1'
@@ -64,6 +66,10 @@ fn (app &BrowserApp) shared_svg_mask_full_area(region painting.Rect, visible pai
 
 fn (mut app BrowserApp) raster_native_svg_content_mask(mask &layout.PaintClip, page_x f32,
 	page_y f32, scale f64) bool {
+	if !force_shared_svg_mask_raster && (disable_svg_mask_ramp || mask.mask_luminance
+		|| mask.mask_operations.len != 1 || mask.mask_operations[0].fill_linear_gradient == none) {
+		return false
+	}
 	if scale == 0 { return true }
 	mut area := [4]i32{}
 	if C.native_svg_content_mask_geometry(f32(app.ctx.height), scale, &area[0]) == 0 {
@@ -98,6 +104,12 @@ fn (mut app BrowserApp) raster_native_svg_content_mask(mask &layout.PaintClip, p
 		}
 	}
 	cropped := crop_area[2] != 0
+	// Enable only bounded row-copy masks by default. Other shared shaders
+	// keep the opt-in path even when their masks meet the geometry checks.
+	if !force_shared_svg_mask_raster && (int(raster_area[2]) * int(raster_area[3]) > shared_svg_mask_cache_pixel_limit
+		|| svg_mask_ramp(mask, bounds, page_x, page_y, scale) == none) {
+		return false
+	}
 	raster_key := shared_svg_mask_raster_key(mask, raster_area, bounds, page_x, page_y, scale)
 	if raster_key != 0 {
 		hit := C.native_reuse_svg_mask_raster(raster_key, &crop_area[0])

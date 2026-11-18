@@ -47,9 +47,10 @@ def capture_document(binary, fixture, directory, settings, options=()):
 
 
 def capture(binary, fixture, directory, shared, *, cache=False, eager=False, copy=False,
-            scroll=0, clip_raster=False, require_viewport_hit=False, scale=1):
-    settings = dict(VOX_SHARED_SVG_MASK_RASTER=str(int(shared)),
+            scroll=0, clip_raster=False, require_viewport_hit=False, scale=1, disable_ramp=False):
+    settings = dict(VOX_SHARED_SVG_MASK_RASTER="" if shared is None else str(int(shared)),
                     VOX_DISABLE_SHARED_SVG_MASK_CACHE=str(int(not cache)),
+                    VOX_DISABLE_SVG_MASK_RAMP=str(int(disable_ramp)),
                     VOX_EAGER_SHARED_SVG_MASK_BITMAP=str(int(eager)),
                     VOX_COPY_SHARED_SVG_MASK_BITMAP=str(int(copy)),
                     VOX_CLIP_SHARED_SVG_MASK_RASTER=str(int(clip_raster)),
@@ -59,10 +60,14 @@ def capture(binary, fixture, directory, shared, *, cache=False, eager=False, cop
         settings.update(VOX_CAPTURE_INITIAL_VIEWPORT="1", VOX_SCREENSHOT_SCROLL_STEP="12")
         options.append(f"--screenshot-scroll-y={scroll}")
     data, diagnostics = capture_document(binary, fixture, directory, settings, options)
+    if disable_ramp:
+        assert "VOX_SVG_MASK_RAMP " not in diagnostics, diagnostics
+    elif shared is not False:
+        assert "VOX_SVG_MASK_RAMP " in diagnostics, diagnostics
     for mode in ("true", "false"):
         rasters = [line for line in diagnostics.splitlines()
                    if line.startswith(f"VOX_SHARED_SVG_MASK luminance={mode} ")]
-        assert bool(rasters) == shared, diagnostics
+        assert bool(rasters) == (shared is True or shared is None and mode == "false"), diagnostics
         assert all(line.endswith(f"bitmap_reused={str(not copy).lower()}") for line in rasters), rasters
         hits = [line for line in diagnostics.splitlines()
                 if line.startswith(f"VOX_SHARED_SVG_MASK_CACHE_HIT luminance={mode} ")]
@@ -124,7 +129,15 @@ def main():
         maximum = max(abs(a - b) for old_row, new_row in zip(quartz, shared) for a, b in zip(old_row, new_row))
         assert maximum <= 2, f"Document channels differed by up to {maximum}"
         print(f"Largest document channel difference against Quartz is {maximum}")
+        automatic = capture(binary, fixture, directory / "automatic", None)
+        assert automatic[:3] == (width, height, channels)
+        automatic_difference = max(abs(a - b) for old, new in zip(quartz, automatic[3])
+                                   for a, b in zip(old, new))
+        assert automatic_difference <= 2, f"Automatic raster channels differed by {automatic_difference}"
         before_cache = capture(binary, fixture, directory / "scrolled-uncached", True, scroll=96)
+        rows_reference = capture(binary, fixture, directory / "scrolled-full-shader", True,
+                                 disable_ramp=True, scroll=96)
+        assert rows_reference == before_cache, "Copying the shaded row changed the document pixels"
         eager_cache = capture(binary, fixture, directory / "scrolled-eager", True,
                               cache=True, eager=True, scroll=96)
         after_cache = capture(binary, fixture, directory / "scrolled-cached", True, cache=True, scroll=96)
