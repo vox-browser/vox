@@ -22,6 +22,17 @@ fn test_nested_svg_paths_trigger_msaa_in_the_owning_document_tile() {
 	assert triggers[0].top == 519
 	assert triggers[0].bottom == 541
 	assert chromium_msaa_tiles(commands, 1, 256) == [2]
+
+	mut reused := []ChromiumMSAATrigger{cap: 1}
+	append_chromium_msaa_triggers(commands, none, mut reused)
+	before := platform.thread_arena_usage().used
+	for _ in 0 .. 100 {
+		reused.clear()
+		append_chromium_msaa_triggers(commands, none, mut reused)
+		assert reused.len == 1
+		assert reused[0].top == 519 && reused[0].bottom == 541
+	}
+	$if prealloc { assert platform.thread_arena_usage().used == before }
 }
 
 fn msaa_test_svg_path(top f64, bottom f64, role string) layout.PaintCommand {

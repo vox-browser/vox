@@ -4,6 +4,7 @@ import layout
 import math
 import painting
 import os
+import platform
 import processmetrics
 import gg.canvas
 
@@ -79,11 +80,18 @@ fn append_chromium_msaa_trigger(command &layout.PaintCommand, index int,
 		paintable := command.nested_viewport_paintable or { return }
 		converter := painting.new_device_pixel_converter(1) or { return }
 		result := paintable.paint(converter) or { return }
+		// Nested replay projects clip and mask payloads. Only the scalar
+		// trigger bounds belong to the frame's reusable tile storage.
+		scratch := platform.begin_thread_scratch('nested viewport MSAA')
+		defer { scratch.finish() }
+		mut nested_triggers := []ChromiumMSAATrigger{}
 		for path in command.nested_viewport_commands {
 			transformed := layout.paint_command_for_nested_viewport(path, command.transform,
 				painting.IntPoint{result.nested_rect.x, result.nested_rect.y}, command.opacity)
-			append_chromium_msaa_trigger(transformed, index, viewport, mut triggers)
+			append_chromium_msaa_trigger(unsafe { &transformed }, index, viewport, mut nested_triggers)
 		}
+		scratch.leave()
+		triggers << nested_triggers
 	}
 }
 
