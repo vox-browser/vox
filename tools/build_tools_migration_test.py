@@ -28,6 +28,46 @@ from http_receive_buffer import patch_receive_buffer
 ROOT = Path(__file__).resolve().parents[1]
 
 
+class VToolLauncherTest(unittest.TestCase):
+    def test_releases_generated_c_before_starting_tool(self):
+        with tempfile.TemporaryDirectory(prefix='vox-v-launcher-test-') as directory:
+            scratch = Path(directory)
+            driver = scratch / 'v'
+            tool = '''#!/usr/bin/env python3
+import json, os, sys
+from pathlib import Path
+
+path = Path(sys.argv[0])
+assert not path.with_suffix('.c').exists()
+assert 'V_MACOS_V3_SOURCE_MANIFEST' not in os.environ
+assert 'V_MACOS_V3_C_ERROR_DIR' not in os.environ
+print(json.dumps({'path': str(path), 'args': sys.argv[1:]}))
+sys.exit(7)
+'''
+            driver.write_text('''#!/usr/bin/env python3
+import os, sys
+from pathlib import Path
+
+assert sys.argv[1:6] == ['-skip-running', '-b', 'c', '-memory-limit', '10G']
+assert os.environ['VFLAGS'] == ''
+assert 'V_MACOS_V3_SOURCE_MANIFEST' not in os.environ
+assert 'V_MACOS_V3_C_ERROR_DIR' not in os.environ
+output = Path(sys.argv[sys.argv.index('-o') + 1])
+output.with_suffix('.c').touch()
+output.write_text(''' + repr(tool) + ''')
+output.chmod(0o755)
+''')
+            driver.chmod(0o755)
+            env = dict(os.environ, V_BIN=str(driver), TMPDIR=str(scratch), VFLAGS='-b js',
+                       V_MACOS_V3_SOURCE_MANIFEST='1', V_MACOS_V3_C_ERROR_DIR=str(scratch/'manifest'))
+            result = subprocess.run(['sh', str(ROOT/'tools/run_v_tool.sh'), 'browser_backend', 'space arg'],
+                                    env=env, text=True, capture_output=True)
+            self.assertEqual(result.returncode, 7, result.stderr)
+            report = json.loads(result.stdout)
+            self.assertEqual(report['args'], ['space arg'])
+            self.assertFalse(Path(report['path']).parent.exists())
+
+
 class VBuildMigrationTest(unittest.TestCase):
     @classmethod
     def setUpClass(cls):

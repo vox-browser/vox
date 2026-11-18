@@ -356,6 +356,8 @@ v_tool production_source_manifest compile --root "$repo_dir" \
     --component-dir "$VOX_BUILD_RECEIPT_DIR/worker-sources" \
     --command "$v_compiler" "$@" -cflags "$helper_cflags" -ldflags "-Wl,-dead_strip,-dead_strip_dylibs" \
     -o "$helper_tmp" "$repo_dir/tools/adblock-worker-mini"
+# Keep the parsed-source proof and release the temporary worker translation.
+rm -f "${helper_tmp}.c"
 chmod 755 "$helper_tmp"
 if command -v codesign >/dev/null 2>&1; then
     codesign --force --sign - --entitlements "$repo_dir/packaging/Vox.entitlements.plist" "$helper_tmp" >/dev/null
