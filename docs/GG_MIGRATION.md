@@ -5513,3 +5513,54 @@ at an SDK-header compilation error before tests ran. The three
 archives provide path eligibility and baseline pixel checks.
 A candidate whole-page timing comparison requires the shared
 production rebuild.
+
+### Parallel RGBA and BGRA channel swaps
+
+The macOS document raster callbacks and GPU image color readbacks
+share an in-place red and blue channel swap. It runs serially below
+524,288 pixels and can use up to four raster workers at or above
+that size. Each lane owns complete rows and all lanes finish before
+painting or publishing the buffer. The swap preserves alpha, green,
+and any row padding. `VOX_SERIAL_CPU_RASTER=1` forces serial execution.
+
+A single-C-unit V `-prod -prealloc -gc none` harness timed one in-place
+swap of an initialized buffer through completion. It compared the
+original macOS loop, the shared loop forced serial, and the shared
+loop with default scheduling. Seven alternating fresh-process
+groups ran on 18 logical CPUs at a one-minute load of 4.83. All
+147 processes and the guard exited zero and their buffer hashes
+matched across modes. The initial threshold trial at 512×512 had
+first-call medians of 65.458 µs before and 65.000 µs with workers.
+It was faster in four of seven groups, so that size stays serial.
+
+| Surface | First call before / serial / default, µs | Warm before / serial / default, µs | First call faster |
+| --- | ---: | ---: | ---: |
+| 48×34 | 0.625 / 0.500 / 0.583 | 0.375 / 0.375 / 0.375 | 5/7 |
+| 256×258 | 17.375 / 16.792 / 16.875 | 16.792 / 16.958 / 16.666 | 6/7 |
+| 512×512 | 68.417 / 66.083 / 67.292 | 68.125 / 67.000 / 66.146 | 4/7 |
+| 1024×512 | 136.000 / 132.042 / 79.417 | 136.063 / 131.084 / 60.396 | 6/7 |
+| 1031×513, unaligned and padded | 137.958 / 138.458 / 123.791 | 141.771 / 138.188 / 56.063 | 7/7 |
+| 2048×1536 | 826.459 / 803.125 / 319.334 | 832.167 / 819.500 / 223.021 | 7/7 |
+| 3840×2160, padded | 2188.583 / 2184.125 / 626.834 | 2186.437 / 2143.542 / 583.542 | 7/7 |
+
+A dispatch probe verified four threads at 1024×512 and at the
+unaligned, padded size. It recorded zero dispatch at 1023×512 or
+with the serial override. The focused CPU and GPU image color tests
+passed with the prepared production allocator and the browser's GG
+overlay. The CPU test checks every byte of a padded, unaligned
+surface and verifies that two swaps restore the full original buffer.
+It also passed with forced serial scheduling and with ASan and UBSan.
+
+The published single-C-unit executable
+`66f97ef08d4c9ff9ae1195cd80c9817add78ab82c27960580f1444a44101e77d`
+replayed Hacker News, GitHub, and Old Reddit at 1024×768 CSS pixels
+and 2× capture scale. Each used a fresh process, private profile and
+cache, and one second of settling. All three content audits
+(30, 33, and 25 entries) and decoded PNG hashes matched their frozen
+references. A breakpoint at `0x183ca0` recorded two 408×66 swaps
+in a text-shadow control and no hits on the three archives. The
+compiler inlines other call sites, so those counts cover only the
+out-of-line entry. A first debugger run exceeded the focused 3 GiB
+guard while capturing GitHub. The full diagnostic used the default
+12 GiB guard and all three browser, debugger, and guard exits were
+zero. Candidate whole-page timings still require the shared rebuild.

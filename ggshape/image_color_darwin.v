@@ -1,5 +1,6 @@
 module ggshape
 
+import cpuraster
 import gg.canvas
 import imageraster
 import math
@@ -42,9 +43,7 @@ fn convert_document_image_color(source imageraster.Image, transform canvas.Docum
 		transform, false) or { return none }
 	mut pixels := []u8{len: source.pixels.len}
 	target.read_pixels(pixels.data, source.width * 4) or { return none }
-	for i in 0 .. source.width * source.height {
-		pixels[i * 4], pixels[i * 4 + 2] = pixels[i * 4 + 2], pixels[i * 4]
-	}
+	unsafe { cpuraster.swap_rgba_red_blue(pixels.data, i32(source.width), i32(source.height), i32(source.width * 4)) }
 	return pixels
 }
 
@@ -68,9 +67,7 @@ fn gpu_image_mip_chain(source imageraster.Image) ?[]imageraster.Image {
 			return none
 		}
 		target.free()
-		for i in 0 .. width * height {
-			pixels[i * 4], pixels[i * 4 + 2] = pixels[i * 4 + 2], pixels[i * 4]
-		}
+		unsafe { cpuraster.swap_rgba_red_blue(pixels.data, i32(width), i32(height), i32(width * 4)) }
 		levels << imageraster.Image{ width: width, height: height, pixels: pixels }
 	}
 	return levels

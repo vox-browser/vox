@@ -1,5 +1,6 @@
 module main
 
+import cpuraster
 import ggshape
 import math
 import os
@@ -311,16 +312,7 @@ fn draw_document_shape_glyph_tiles(pixels &u8, width i32, height i32, pitch i32,
 
 // Quartz uses RGBA, while gg.canvas's GPU surface transports BGRA.
 fn swap_document_raster_channels(pixels &u8, width i32, height i32, pitch i32) {
-	unsafe {
-		for y in 0 .. int(height) {
-			for x in 0 .. int(width) {
-				i := y * int(pitch) + x * 4
-				red := pixels[i]
-				pixels[i] = pixels[i + 2]
-				pixels[i + 2] = red
-			}
-		}
-	}
+	unsafe { cpuraster.swap_rgba_red_blue(pixels, width, height, pitch) }
 }
 
 @[export: 'vox_draw_document_shape_pixels']
