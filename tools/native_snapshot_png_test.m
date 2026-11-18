@@ -42,10 +42,35 @@ static void test_opacity_scan(void)
     puts("PASS padded/unaligned opacity scans and every alpha position at widths 1..65");
 }
 
+static void test_large_opacity_scan(void)
+{
+    const size_t width = 2051, height = 1541, pitch = width * 4 + 19;
+    unsigned char *storage = calloc(1, pitch * height + 1);
+    assert(storage);
+    unsigned char *pixels = storage + 1;
+    for (size_t y = 0; y < height; ++y)
+        memset(pixels + y * pitch, 255, width * 4);
+
+    // Include the prefix, each worker's first row, the vector tail, and the
+    // last row. Zeroes in unaligned row padding must never affect the scan.
+    const size_t rows[] = {0, 1, 1 + (height - 1) / 4, 1 + (height - 1) / 2,
+        1 + 3 * (height - 1) / 4, height - 1};
+    assert(vox_rgba8_is_opaque(pixels, width, height, pitch));
+    for (size_t index = 0; index < sizeof rows / sizeof rows[0]; ++index) {
+        unsigned char *alpha = pixels + rows[index] * pitch + (width - 1) * 4 + 3;
+        *alpha = 254;
+        assert(!vox_rgba8_is_opaque(pixels, width, height, pitch));
+        *alpha = 255;
+    }
+    free(storage);
+    puts("PASS large opacity scan with padded rows and translucent worker boundaries");
+}
+
 int main(int argc, const char *argv[])
 {
     assert(argc == 2 || argc == 3);
     test_opacity_scan();
+    test_large_opacity_scan();
     if (argc == 3) {
         assert(dlopen(argv[2], RTLD_NOW | RTLD_GLOBAL));
         typedef size_t (*Compressor)(const void *, size_t, void *, size_t);

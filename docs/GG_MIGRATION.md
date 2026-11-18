@@ -4680,3 +4680,47 @@ places and ordered by pair. Odd pairs ran the disabled setting first.
 | Hacker News | 1533.567, 1547.174, 1576.322, 1744.063, 1597.556, 1567.270, 1587.807 | 1564.719, 1567.366, 1587.198, 1598.561, 1567.403, 1583.624, 1555.268 |
 | GitHub | 3853.822, 3950.398, 4105.820, 4075.114, 4057.344, 3971.380, 4060.107 | 4933.405, 3977.557, 4124.217, 4159.841, 4056.026, 3978.884, 4088.959 |
 | Old Reddit | 1927.751, 1863.949, 1870.874, 1862.046, 1903.934, 1902.416, 1897.367 | 1901.780, 1874.911, 1842.151, 1887.112, 1877.571, 1875.483, 1853.312 |
+
+### Parallel macOS screenshot opacity checks
+
+The native screenshot path checks whether an RGBA region is fully opaque.
+On large macOS bitmaps the caller checks the first row, then up to four
+threads scan disjoint row ranges using the existing vector and scalar
+kernels. The immutable region stays borrowed until all workers join.
+Early translucency in the first row skips dispatch. Small regions, scalar
+diagnostics and `VOX_SERIAL_CPU_RASTER=1` use the serial scan.
+
+On published receipt `20261118-035602-2025fd74`, an interposed probe
+validated the caller at Mach-O offset `0x1164d68`. It observed one scan and
+one successful presented-frame capture per archived site. All three
+captures had the same decoded RGBA hashes and content counts as the
+[worker-setting cohort](#archived-sites-with-cpu-raster-workers-enabled-and-disabled).
+Each capture used a fresh process, sealed replay, a 1024×768 document
+viewport at 2×, and a one-second settle period. Browser and guard exits
+were zero.
+
+Matching Clang `-O2` builds benchmarked just the scan on each captured
+2048×1536 RGBA image after reading it into memory. Each group used seven
+alternating fresh-process pairs. The first cohort ran under one-minute
+load of 13.33–27.01 on 18 logical CPUs and improved four of seven pairs
+per opaque input. A follow-up at load 8.46 had lower medians for every
+opaque input. The warm comparison used the same candidate binary in
+both modes and took the median of 17 scans after six warm-ups per process,
+at load 10.65. All seven warm pairs improved on every opaque input.
+
+| Image | Contended before → after, µs | Follow-up before → after, µs | Warm serial → parallel, µs |
+| --- | ---: | ---: | ---: |
+| Hacker News | 420.417 → 413.833 | 259.375 → 187.750 | 125.709 → 59.500 |
+| GitHub | 404.709 → 350.750 | 267.709 → 195.708 | 125.959 → 48.125 |
+| Old Reddit | 411.375 → 384.417 | 277.125 → 187.458 | 129.041 → 61.208 |
+| Hacker News with translucent first pixel | 0.708 → 0.834 | 0.417 → 1.667 | — |
+
+Both builds returned the same opacity verdict in every trial. All
+benchmark processes and guards exited zero. A separate probe observed
+four distinct worker threads and confirmed direct serial execution when
+forced and when the first pixel was translucent. Tests covered unaligned
+and padded rows, all small alpha positions, and large worker boundaries.
+The native snapshot fixtures matched decoded pixels, profile and other
+PNG metadata in ARC, non-ARC, ASan/UBSan and ThreadSanitizer builds.
+The published browser supplied the workload and eligibility evidence.
+The timing spans exclude painting, PNG encoding and browser startup.
