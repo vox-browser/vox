@@ -2401,6 +2401,111 @@ benchmarks and guards exited zero. Peak sampled process-tree RSS was
 7,180,599,296 bytes for the bounded build, 481,345,536 for the screenshot
 suite, and 670,171,136 for the paired wheel comparison.
 
+### Vectorizing SVG mask coverage conversion on Apple Silicon
+
+RGBA luminance conversion uses an unsigned ARM dot product for four pixels
+at a time. It applies the same 54, 183 and 19 weights and truncates after
+shifting by eight. RGBA alpha expansion uses a byte shuffle. Forward
+overlaps keep the per-pixel order because stores can affect later reads.
+The common RGBA converter accepts aliasing, including in-place bitmaps.
+The separate alpha-only clip expansion retains its disjoint-buffer contract.
+
+The native checks passed all 16,777,216 RGB combinations and every alpha
+value, including padding, unaligned buffers, in-place conversion, and
+overlap both across and within rows. They also passed with workers disabled,
+with ARM dot-product support undefined, and under AddressSanitizer and
+UndefinedBehaviorSanitizer. The native layer and mask publication checks
+passed. The scalar test also compiled for x86-64. Disassembly of the
+candidate harness confirmed `udot`.
+
+The Apple Clang `-O2` harnesses timed conversion through return, including
+worker dispatch where the bitmap was large enough. Source preparation,
+in-place resets and comparison against a scalar reference were outside the
+timed interval. Seven alternating pairs used fresh processes per row with
+81 samples for small masks and 31 for large masks. Warm times are medians
+of the post-first-sample median in each process. All outputs matched,
+including padding. One-minute host load was 14.09–14.71 on 18 logical CPUs.
+
+| Bitmap and mode | First before / after (µs) | Warm before / after (µs) | Faster pairs, first / warm |
+| --- | ---: | ---: | ---: |
+| 276 × 184 luminance copy | 5.459 / 4.250 | 5.375 / 3.958 | 6/7 / 7/7 |
+| 276 × 184 luminance in place | 5.584 / 4.417 | 5.375 / 4.083 | 7/7 / 7/7 |
+| 512 × 256 luminance in place | 14.167 / 10.916 | 13.917 / 10.792 | 6/7 / 7/7 |
+| 1902 × 1284 luminance copy | 180.917 / 165.917 | 100.833 / 93.416 | 6/7 / 5/7 |
+| 1902 × 1284 luminance in place | 189.750 / 166.250 | 141.812 / 124.459 | 5/7 / 5/7 |
+| 512 × 257 RGBA alpha in place | 11.333 / 11.625 | 11.041 / 11.416 | 1/7 / 0/7 |
+| 276 × 184 alpha-only expansion | 3.917 / 3.917 | 3.917 / 3.917 | 4/7 / 3/7 |
+| 1902 × 1284 alpha-only expansion | 242.709 / 245.917 | 106.876 / 105.688 | 3/7 / 4/7 |
+
+The RGBA harness executable SHA-256 values were
+`5260742a84c2cfd484404ed071d73a13ed13457eeb52100c391e765507bfa1f6` and
+`25d0a463a09dae28a494131e6031b625f540c40cfd846c8e68b88e1125e1e61c`.
+The alpha-only harness hashes were
+`ef739b19d25749f70a2a55ae02132adc9d3ea54475fe2df5ce00bdf5259fa093` and
+`3337431490feaf37df69aea882740d53e1aca936616d038e16dda4b9069e0214`.
+
+The initial widening-multiply version brought the warm 512 × 257 RGBA
+alpha control from 10.375 to 38.709 µs after removing the shared alias
+restriction. The packed alpha loop recovered most of that cost. Its
+earlier paired run measured 16.500 → 15.250 µs at load 12.31. The final
+paired run measured 11.041 → 11.416 µs at load 14.09. The alpha-only
+copy loop's disjoint-buffer annotation recovered its small-mask median
+after an earlier run measured 5.125 → 6.208 µs at load 22.15–22.77.
+
+The matched browsers used one V `-prod` generated C unit and single-unit
+Clang `-O1 -fno-lto`. The preprocessed inputs matched outside the conversion
+header. The generated C SHA-256 was
+`c8a532663d98846ace1c7e7f114dc5dc2b181d494a123ab55a7fe2ac20073d04`.
+The control and candidate executable SHA-256 values were
+`cca02f60d3e0c3df331e927efe6959496caf4501584d56be7882fc1738d402d4` and
+`e46e135ecc9f1511c8345a533ce406d51c1db01eb241758f2190b63278cc89fe`,
+respectively.
+
+The candidate passed all 158 macOS mask captures. Four paired 2× captures
+matched every decoded pixel. They covered the default luminance and alpha
+pressure fixtures, luminance with Quartz forced, and overlapping masks.
+The pressure captures agreed on 385 mask decisions per pair, and the
+overlap captures agreed on 106. The luminance diagnostics confirmed new
+rasters and Quartz fallback on the same fixture. The candidate browser's
+row converter contained the ARM `udot` instruction.
+
+The wheel trials reused the two local 75-mask pressure fixtures at 1024 × 600
+and 2× with JavaScript disabled, fresh processes, profiles and browser caches,
+and retained host caches. The title-matched settle lasted one second. The
+driver sent 120 four-pixel inputs at a requested 60 Hz, reversing after input
+60. Throughput counts scroll-changing native frame installations after outer
+view paint over the first-to-last input window.
+
+A separate luminance diagnostic (PID 39862) recorded 662 capacity denials,
+592 hits including 89 crops, and 16 new shared rasters through the final
+publication. The alpha diagnostic (PID 40015) recorded 634 denials, 560
+hits including 88 crops, and 16 new rasters. The timed cohort disabled
+mask diagnostics.
+
+| PID | Fixture | Build | Scroll fps | Median / p95 / max (ms) | Input Hz | Inputs / changes | First / last scroll gap (ms) | Load |
+| --- | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| 40171 | Luminance | Before | 15.11 | 61.849 / 68.561 / 69.628 | 59.94 | 120 / 30 | 135.227 / 49.964 | 5.26 |
+| 40317 | Luminance | After | 16.64 | 56.602 / 63.819 / 65.985 | 58.23 | 120 / 34 | 118.641 / 32.717 | 5.00 |
+| 40464 | Luminance | After | 16.55 | 58.387 / 61.891 / 63.410 | 59.70 | 120 / 33 | 119.828 / 16.802 | 4.84 |
+| 40609 | Luminance | Before | 16.51 | 57.136 / 65.788 / 66.312 | 57.77 | 120 / 34 | 123.534 / 32.855 | 4.77 |
+| 40861 | Luminance | Before | 16.37 | 56.302 / 63.189 / 115.969 | 59.02 | 120 / 33 | 121.365 / 18.034 | 4.71 |
+| 41074 | Luminance | After | 16.38 | 57.412 / 62.671 / 68.044 | 59.05 | 120 / 33 | 119.594 / 50.003 | 4.89 |
+| 41220 | Alpha | Before | 16.11 | 57.913 / 63.991 / 66.736 | 58.11 | 120 / 33 | 121.014 / 49.221 | 4.82 |
+| 41376 | Alpha | After | 15.80 | 57.343 / 67.148 / 119.362 | 58.77 | 120 / 32 | 120.078 / 33.262 | 5.08 |
+| 41511 | Alpha | After | 16.99 | 57.101 / 61.790 / 62.353 | 59.46 | 120 / 34 | 120.044 / 0.112 | 4.99 |
+| 41625 | Alpha | Before | 15.89 | 58.937 / 66.673 / 127.244 | 59.11 | 120 / 32 | 116.589 / 18.629 | 5.07 |
+| 41832 | Alpha | Before | 15.90 | 59.798 / 65.415 / 65.972 | 59.12 | 120 / 32 | 122.414 / 16.765 | 4.99 |
+| 41969 | Alpha | After | 15.56 | 61.738 / 66.922 / 67.553 | 59.75 | 120 / 31 | 129.117 / 0.122 | 5.15 |
+
+The timed cohort ran 08:16:08–08:17:12 UTC on November 18, 2026. Load is
+the one-minute average at launch on the 18-CPU host. Peak scroll positions
+were 484.5–502 CSS pixels. The luminance median rose from 16.37 to 16.55
+fps. The alpha median moved from 15.90 to 15.80 fps with mixed pairs.
+Every measured scroll interval exceeded 16.67 ms. All browsers and final
+guards exited zero. Sampled process-tree RSS peaked at 7,509,360,640 bytes
+for the paired build, 484,048,896 for the screenshot suite, and 671,760,384
+for the paired wheel comparison.
+
 ## Original migration plan
 
 Vox currently renders through two Skia builds: LibWeb's Skia (CPU raster,
