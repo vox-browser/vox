@@ -7263,3 +7263,58 @@ a 1024×768 CSS-pixel viewport, 2× capture and a one-second settle.
 They audited 30, 33 and 25 entries and zero Canvas elements.
 Browser and replay guard exits were zero. Timings cover the isolated
 blur operation. Candidate browser validation awaits the shared rebuild.
+
+### Parallel analytic rectangular shadow masks
+
+The portable rectangular blur still derives its horizontal and
+vertical profiles on the caller. It now multiplies the profiles
+over disjoint mask rows with the existing CPU raster scheduler.
+The original integer rounding, mask bounds and nine-patch
+placement are preserved. Dispatch starts at 262,144 mask pixels
+and uses up to four threads.
+
+Matched V single-unit C `-prod -gc none` harnesses measured
+`filter_rects_to_nine` through return, including profile creation
+and mask allocation. Output hashing and release were outside the
+timer. Seven rotating groups ran fresh processes per mode. All
+147 process exits and the guard exit were zero. The complete A8
+hash and dimensions matched across all groups and modes. Warm
+values are medians of the per-process median after the first call.
+One-minute host load was 5.19–5.34 on 18 logical CPUs.
+
+| Sigma / working mask | First before / forced serial / default, µs | Warm before / forced serial / default, µs | Default faster pairs, first / warm |
+| --- | ---: | ---: | ---: |
+| 1.5 / 17×17 | 1.667 / 1.542 / 1.666 | 0.292 / 0.209 / 0.209 | 2/7 / 7/7 |
+| 6 / 73×73 | 4.334 / 3.167 / 3.125 | 3.250 / 2.230 / 2.250 | 7/7 / 7/7 |
+| 25 / 301×301 | 55.792 / 38.708 / 40.125 | 50.062 / 32.063 / 32.583 | 7/7 / 7/7 |
+| 70 / 841×841 | 412.750 / 290.125 / 113.666 | 366.583 / 237.083 / 77.146 | 7/7 / 7/7 |
+| 92 / 1105×1105 | 690.125 / 471.583 / 167.375 | 627.250 / 409.687 / 122.916 | 7/7 / 7/7 |
+| 112 / 1345×1345 | 1026.125 / 715.959 / 232.916 | 923.084 / 603.959 / 175.208 | 7/7 / 7/7 |
+| 128 / 1537×1537 | 1333.291 / 908.792 / 286.375 | 1203.417 / 788.896 / 228.083 | 7/7 / 7/7 |
+
+The sigma 1.5 and 6 source rects were 128×92, sigma 25 used
+512×384, and the larger cases used 1930×1345. All were positioned
+at (31.25, 17.75). The harness SHA-256 values were
+`76241d326d63784995584e0fd6bd498061d303aa5e8210bbbb76ef637d05f264`
+and `fe43277d92747c902557a0f8b8dddbf13c5273b25a921bd48ac62e3e79e5e36d`.
+
+A separate worker probe saw no dispatch for 505×505 or with
+`VOX_SERIAL_CPU_RASTER=1`, two distinct threads for 517×517,
+and four for 1537×1537. A 2173×1553 Canvas path draw through
+the normal rectangular-shadow route used four distinct mask
+threads and matched its forced-serial RGBA surface
+(`3198e11e5f8ca4b1bf1b968851deda060dbdec04b15ae941c0ca09666d5ff23e`).
+All probe processes and the guard exited zero. Focused macOS,
+arm64 Linux, forced-serial, ASan/UBSan and ThreadSanitizer
+checks passed. The pinned CPU raster differential suite passed
+with count 2000 and seed 20261106.
+
+The published single-C-unit browser
+`604f51df0b16e909d556320a196324d6fb5af2f4b425127326d6c9899a6c46b4`
+matched the frozen Hacker News, GitHub and Old Reddit pixels.
+Fresh sealed replays used JavaScript, private caches and profiles,
+a 1024×768 CSS-pixel viewport, 2× capture and a one-second settle.
+They audited 30, 33 and 25 entries and zero Canvas elements.
+Browser and replay guard exits were zero. Timings cover analytic
+mask generation. Candidate browser validation awaits the shared
+rebuild.

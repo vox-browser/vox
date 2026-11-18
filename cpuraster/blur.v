@@ -559,15 +559,37 @@ fn blur_rect(sigma f32, r Rect) ?Mask {
 	}
 	six := f32(6) * sigma
 	profile := blur_profile(sk_ceil_int(six), sigma)
-	mut mask := new_a8_mask(bounds, bounds.width())
+	mask := new_a8_mask(bounds, bounds.width())
 	horizontal := blurred_scanline(profile, bounds.width(), sigma)
 	vertical := blurred_scanline(profile, bounds.height(), sigma)
-	for y in 0 .. bounds.height() {
-		for x in 0 .. bounds.width() {
-			mask.image[y * mask.row_bytes + x] = u8(mul_div255_round(horizontal[x], vertical[y]))
+	scan := RectBlurScan{
+		horizontal: horizontal.data
+		vertical:   vertical.data
+		output:     mask.image.data
+		width:      bounds.width()
+	}
+	run_raster_scans(&scan, bounds.height(), scan.width, scan_rect_blur)
+	return mask
+}
+
+struct RectBlurScan {
+	horizontal &u8
+	vertical   &u8
+	output     &u8
+	width      int
+}
+
+fn scan_rect_blur(context voidptr, first i32, end i32) {
+	scan := unsafe { &RectBlurScan(context) }
+	unsafe {
+		for y in int(first) .. int(end) {
+			row := scan.output + y * scan.width
+			coverage := u32(scan.vertical[y])
+			for x in 0 .. scan.width {
+				row[x] = u8(mul_div255_round(u32(scan.horizontal[x]), coverage))
+			}
 		}
 	}
-	return mask
 }
 
 // A nine-patch: the small blurred mask (at the origin), the destination

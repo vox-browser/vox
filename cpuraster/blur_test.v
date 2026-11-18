@@ -130,6 +130,18 @@ fn test_oversized_ring_mask_matches_skia() {
 	assert sha256.sum(px).hex()[..16] == fixture_hash('6c7f50d0617e3740')
 }
 
+fn test_large_analytic_rect_shadow_preserves_nine_patch_pixels() {
+	rect := Rect{31.25, 17.75, 1961.25, 1362.75}
+	state, patch := filter_rects_to_nine([rect], 128)
+	assert state == .true_
+	assert patch.mask.bounds == IRect{0, 0, 1537, 1537}
+	assert patch.mask.row_bytes == 1537
+	outer, _ := blur_rect_bounds(128, rect) or { panic('Expected blurred bounds') }
+	assert patch.outer == outer
+	// Captured from the original scalar analytic mask for the same rect and sigma.
+	assert sha256.sum(patch.mask.image).hex() == '86fb55a3d9882a20865a4f2cbc7aeffd7e4abf1aa6a2d95848bf5855445c54e3'
+}
+
 fn test_nested_rect_contours() {
 	// SkStroke outlines a closed rect as an outer and an inner rect.
 	mut outline := stroke_path(canvas_path(blur_test_rect(10, 10, 40, 30), false), 4, .butt,
