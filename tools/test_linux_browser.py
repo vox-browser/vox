@@ -471,7 +471,12 @@ def check_svg_mask_gradient_browser(binary, artifacts, temporary):
     assert "VOX_SVG_MASK luminance=false operations=1 paths=2" in log, log
     assert "VOX_SVG_MASK luminance=true operations=1 paths=1" in log, log
     assert "VOX_SVG_MASK luminance=false operations=1 paths=1" in log, log
-    _, height, channels, rows = rendered_png_rows(screenshot.read_bytes())
+    check_svg_mask_gradient_pixels(screenshot.read_bytes())
+    print("PASS: SVG gradient masks preserve stop opacity, the path, and gradient-local coordinates", flush=True)
+
+
+def check_svg_mask_gradient_pixels(data):
+    _, height, channels, rows = rendered_png_rows(data)
 
     def pixel(x, y):
         return rows[y][x * channels:x * channels + 3]
@@ -491,7 +496,6 @@ def check_svg_mask_gradient_browser(binary, artifacts, temporary):
                                (310, 55, 129), (275, 70, 132), (475, 32, 128)):
         actual = pixel(x, y + offset)
         assert all(abs(value - target) <= 2 for value, target in zip(actual, (channel, channel, 255))), (x, actual)
-    print("PASS: SVG gradient masks preserve stop opacity, the path, and gradient-local coordinates", flush=True)
 
 
 def check_webgl_pixels(data):

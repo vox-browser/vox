@@ -5567,6 +5567,13 @@ fn (mut app BrowserApp) prepare_native_svg_layer_mask(clip layout.PaintClip, pag
 		if !app.ctx.native_rendering {
 			return
 		}
+		defer {
+			if apply_as_clip {
+				C.native_finish_svg_clip_mask()
+			} else {
+				C.native_finish_svg_mask_cache()
+			}
+		}
 		if clip.is_svg_content_mask {
 			area_matrix := normalized_paint_transform(clip.transform)
 			C.native_begin_svg_content_mask(clip.cache_key, if clip.mask_luminance {
@@ -5574,6 +5581,9 @@ fn (mut app BrowserApp) prepare_native_svg_layer_mask(clip layout.PaintClip, pag
 			} else {
 				0
 			}, f32(app.ctx.width), f32(app.ctx.height), f32(clip.rect.x), f32(clip.rect.y), f32(clip.rect.width), f32(clip.rect.height), f32(area_matrix[0]), f32(area_matrix[1]), f32(area_matrix[2]), f32(area_matrix[3]), f32(area_matrix[4]), f32(area_matrix[5]), page_x, page_y, scroll_y)
+			if app.raster_native_svg_content_mask(&clip, page_x, page_y - scroll_y) {
+				return
+			}
 			for operation in clip.mask_operations {
 				match operation.kind {
 					.begin_opacity {
@@ -5679,11 +5689,6 @@ fn (mut app BrowserApp) prepare_native_svg_layer_mask(clip layout.PaintClip, pag
 					}, f32(component_matrix[0]), f32(component_matrix[1]), f32(component_matrix[2]), f32(component_matrix[3]), f32(component_matrix[4]), f32(component_matrix[5]), page_x, page_y, scroll_y, f32(app.ctx.width), f32(app.ctx.height))
 				}
 			}
-		}
-		if apply_as_clip {
-			C.native_finish_svg_clip_mask()
-		} else {
-			C.native_finish_svg_mask_cache()
 		}
 	}
 }

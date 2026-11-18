@@ -132,10 +132,34 @@ mut:
 fn (mut app BrowserApp) apply_portable_svg_content_mask(mut image PortableSVGGroupImage,
 	mask &layout.PaintClip, region painting.Rect, page_x f32, page_y f32, scale f64) bool {
 	bounds := image.bounds
-	pitch := bounds.width * 4
-	byte_count := pitch * bounds.height
+	mut coverage := []u8{len: bounds.width * bounds.height * 4}
+	if !app.raster_svg_content_mask(mut coverage, bounds.width * 4, bounds, mask, page_x, page_y,
+		scale) { return false }
+	if mask.mask_luminance {
+		// The mask channels are already premultiplied. Convert the resolved
+		// color with the native mask's integer luminance weights.
+		for offset := 0; offset < coverage.len; offset += 4 {
+			value := (54 * u32(coverage[offset]) + 183 * u32(coverage[offset + 1])
+				+ 19 * u32(coverage[offset + 2])) >> 8
+			image.pixels[offset + 3] = portable_svg_mask_alpha(image.pixels[offset + 3], u8(value))
+		}
+	} else {
+		for offset := 3; offset < coverage.len; offset += 4 {
+			image.pixels[offset] = portable_svg_mask_alpha(image.pixels[offset], coverage[offset])
+		}
+	}
+	apply_portable_svg_mask_region(mut image, region)
+	return true
+}
+
+// Both players supply a cleared premultiplied RGBA surface. Its row stride
+// can include pixels outside the mask region when borrowing a native bitmap.
+fn (mut app BrowserApp) raster_svg_content_mask(mut pixels []u8, pitch int, bounds painting.IntRect,
+	mask &layout.PaintClip, page_x f32, page_y f32, scale f64) bool {
+	layer_pitch := bounds.width * 4
+	byte_count := layer_pitch * bounds.height
 	mut layers := [portable_svg_mask_max_opacity_depth + 1]PortableSVGMaskLayer{}
-	layers[0].pixels = []u8{len: byte_count}
+	layers[0].pixels = pixels
 	mut depth := 0
 	for index in 0 .. mask.mask_operations.len {
 		operation := &mask.mask_operations[index]
@@ -156,14 +180,15 @@ fn (mut app BrowserApp) apply_portable_svg_content_mask(mut image PortableSVGGro
 					pixels: layer.pixels
 					width: bounds.width
 					height: bounds.height
-					pitch: pitch
+					pitch: layer_pitch
 					premultiplied: true
 				}
 				rect := [f32(0), 0, f32(bounds.width), f32(bounds.height)]!
 				// The children blend in isolation. Apply the opacity once while
 				// restoring the complete mask layer, without resampling it.
 				if !cpuraster.draw_canvas_image(mut layers[depth].pixels, bounds.width, bounds.height,
-					pitch, 2, [f32(1), 0, 0, 1, 0, 0]!, bitmap, rect, rect, false,
+					if depth == 0 { pitch } else { layer_pitch }, 2,
+					[f32(1), 0, 0, 1, 0, 0]!, bitmap, rect, rect, false,
 					layer.opacity, .src_over, []) { return false }
 			}
 			.path {
@@ -179,27 +204,13 @@ fn (mut app BrowserApp) apply_portable_svg_content_mask(mut image PortableSVGGro
 				path := cpuraster.canvas_path(operation.path_data, operation.path_even_odd)
 				transform := portable_device_transform(operation.transform, page_x, page_y, scale)
 				if !cpuraster.fill_canvas_path(mut layers[depth].pixels, bounds.width, bounds.height,
-					pitch, 2, path, portable_svg_surface_matrix(transform, bounds), argb, style, opacity,
+					if depth == 0 { pitch } else { layer_pitch }, 2,
+					path, portable_svg_surface_matrix(transform, bounds), argb, style, opacity,
 					.src_over, 0, [], none) { return false }
 			}
 			.image { return false }
 		}
 	}
-	coverage := layers[0].pixels
-	if mask.mask_luminance {
-		// The mask channels are already premultiplied. Convert the resolved
-		// color with the native mask's integer luminance weights.
-		for offset := 0; offset < coverage.len; offset += 4 {
-			value := (54 * u32(coverage[offset]) + 183 * u32(coverage[offset + 1])
-				+ 19 * u32(coverage[offset + 2])) >> 8
-			image.pixels[offset + 3] = portable_svg_mask_alpha(image.pixels[offset + 3], u8(value))
-		}
-	} else {
-		for offset := 3; offset < coverage.len; offset += 4 {
-			image.pixels[offset] = portable_svg_mask_alpha(image.pixels[offset], coverage[offset])
-		}
-	}
-	apply_portable_svg_mask_region(mut image, region)
 	return true
 }
 
