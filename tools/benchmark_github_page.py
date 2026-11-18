@@ -6,6 +6,9 @@ comparison, including its distinct DOM/renderer and CDP setup/audit/shutdown.
 Counters cover observed process trees from creation, including startup; they
 are lower bounds and exclude GPU/external-service execution. This is not an
 isolated JavaScript benchmark or an optimization acceptance gate.
+PNG availability and browser exit are separate wall-time endpoints. Brave
+includes CDP delivery and the harness's PNG write. Vox's file completion is
+observed during exit polling, with scheduler and polling delay.
 Run through run_memory_bounded with the same private PID registry.
 """
 import argparse
@@ -40,6 +43,7 @@ from run_memory_bounded import publish_adopted_processes
 
 ROOT = Path(__file__).resolve().parents[1]
 CAPTURE_COMPILER = ROOT / 'tools/libjs_capture_native_compiler.py'
+PNG_END_CHUNK = b'\x00\x00\x00\x00IEND\xaeB`\x82'
 RASTER_OPTIONS = ('DOCUMENT_P3 PNG_RENDER_DENSITY PNG_GPU_MIPS ANALYTIC_RECT '
     'DOCUMENT_IMAGE_P3 IMAGE_GAMUT_BEFORE_FILTER PRECISE_TRANSFORM_ORIGIN '
     'SCALED_PNG_SHADOW_GROUP GPU_RECTANGLE_CLIP RECTANGLE_CLIP_DEDUP '
@@ -55,6 +59,31 @@ def digest(path):
 
 def save(path, value):
     path.write_text(json.dumps(value, indent=2) + '\n')
+
+
+def png_write_complete(path):
+    try:
+        with path.open('rb') as handle:
+            if handle.seek(0, os.SEEK_END) < len(PNG_END_CHUNK):
+                return False
+            handle.seek(-len(PNG_END_CHUNK), os.SEEK_END)
+            return handle.read(len(PNG_END_CHUNK)) == PNG_END_CHUNK
+    except FileNotFoundError:
+        return False
+
+
+def check_capture_stability(row, previous_attempts, diff_tool):
+    if not row['valid']:
+        return
+    baseline = next((sample for sample in previous_attempts
+                     if sample['engine'] == row['engine'] and sample['valid']), None)
+    if baseline is None:
+        return
+    folder = Path(row['folder'])
+    row['stability_pixels'] = compare(Path(baseline['folder']) / 'document.png',
+        folder / 'document.png', folder / 'stability-diff.png', diff_tool)
+    if not row['stability_pixels']['exact']:
+        row.update(valid=False, error='Rendered pixels changed within the same engine')
 
 
 def clean_environment():
@@ -237,6 +266,8 @@ def observe(args, engine, folder, expected, replayed_scripts, api):
                         pass
                     client.sock.close(); client = None
                 while True:
+                    if 'png_available_ms' not in row and png_write_complete(png):
+                        row['png_available_ms'] = (time.monotonic() - launched) * 1000
                     readings = counter.sample()
                     root = readings.get(counter.root_identity)
                     if root and root.exited:
@@ -249,6 +280,14 @@ def observe(args, engine, folder, expected, replayed_scripts, api):
                 row['launch_through_exit_ms'] = (time.monotonic() - launched) * 1000
         if row['exit'] != 0:
             raise RuntimeError('Abnormal browser exit: ' + str(row['exit']))
+        if 'png_available_ms' not in row:
+            # The browser can write the PNG and exit between the file check
+            # and the counter sample. Exit is a conservative observed endpoint.
+            if not png_write_complete(png):
+                raise RuntimeError('Browser exited before completing the document PNG')
+            row['png_available_ms'] = row['launch_through_exit_ms']
+            row['png_first_observed_at_exit'] = True
+        row['post_png_ms'] = row['launch_through_exit_ms'] - row['png_available_ms']
         audit = json.loads(audit_path.read_text())
         validate(audit, expected)
         row['content_validated'] = True
@@ -393,23 +432,18 @@ def run(args, *, bundle_lease=None, resume_native_abi=None):
                                                     if p.is_file() and p not in native_files)
                 if row['changed_inputs'] or row.get('new_cache_files'):
                     row.update(valid=False, error='Pinned runtime inputs or native cache changed')
+                check_capture_stability(row, report['attempts'], args.diff_tool)
                 report['attempts'].append(row)
-                first = next(r for r in report['attempts'] if r['engine'] == engine)
-                if row is not first and row.get('png_file_sha256') and first.get('png_file_sha256'):
-                    row['stability_pixels'] = compare(Path(first['folder']) / 'document.png',
-                        Path(row['folder']) / 'document.png', Path(row['folder']) / 'stability-diff.png', args.diff_tool)
-                    if not row['stability_pixels']['exact']:
-                        row.update(valid=False, error='Rendered pixels changed within the same engine')
                 save(args.output / 'results.json', report)
                 print(json.dumps({k: row.get(k) for k in ['pair', 'engine', 'valid', 'error',
-                    'instructions', 'launch_through_exit_ms', 'root_lifetime_max_phys_footprint']}), flush=True)
+                    'instructions', 'png_available_ms', 'launch_through_exit_ms', 'root_lifetime_max_phys_footprint']}), flush=True)
         report['complete'] = all(r['valid'] for r in report['attempts'])
         report['medians'] = {}
         for engine in [] if args.prepare_native_cache or args.native_diagnostics else args.engines:
             rows = [r for r in report['attempts'] if r['engine'] == engine]
             if all(r['valid'] for r in rows):
                 report['medians'][engine] = {k: statistics.median(r[k] for r in rows)
-                    for k in ['instructions', 'launch_through_exit_ms']}
+                    for k in ['instructions', 'png_available_ms', 'launch_through_exit_ms']}
         save(args.output / 'results.json', report)
     return 0 if report['complete'] else 1
 

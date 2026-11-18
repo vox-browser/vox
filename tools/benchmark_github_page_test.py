@@ -11,6 +11,32 @@ import benchmark_github_page as benchmark
 from libjs_capture_native_compiler import C_FLAGS
 
 
+class PageEndpointTests(unittest.TestCase):
+    def test_png_completion_waits_for_the_complete_end_chunk(self):
+        with tempfile.TemporaryDirectory() as work:
+            image = Path(work) / 'document.png'
+            self.assertFalse(benchmark.png_write_complete(image))
+            image.write_bytes(b'\x89PNG\r\n\x1a\n')
+            self.assertFalse(benchmark.png_write_complete(image))
+            with image.open('ab') as handle:
+                handle.write(b'\x00\x00\x00\x00IEND\xaeB`')
+            self.assertFalse(benchmark.png_write_complete(image))
+            with image.open('ab') as handle:
+                handle.write(b'\x82')
+            self.assertTrue(benchmark.png_write_complete(image))
+
+    def test_failed_first_launch_cannot_prevent_later_stability_checks(self):
+        attempts = [dict(engine='brave', valid=False, folder='failed'),
+                    dict(engine='libjs', valid=True, folder='different-engine'),
+                    dict(engine='brave', valid=True, folder='baseline')]
+        row = dict(engine='brave', valid=True, folder='candidate')
+        with patch.object(benchmark, 'compare', return_value={'exact': False}) as compare:
+            benchmark.check_capture_stability(row, attempts, Path('diff-tool'))
+        compare.assert_called_once_with(Path('baseline/document.png'), Path('candidate/document.png'),
+                                       Path('candidate/stability-diff.png'), Path('diff-tool'))
+        self.assertFalse(row['valid'])
+
+
 class NativeCacheOptionsTests(unittest.TestCase):
     common = [
         '--archive', 'archive', '--reference-audit', 'audit.json', '--reference-png', 'reference.png',
