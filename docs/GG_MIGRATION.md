@@ -1,5 +1,56 @@
 # Migrating from Skia to vlib/gg
 
+## Windowed SVG replay on OpenGL
+
+`VOX_GG_SVG=1` sends eligible solid SVG fills through `gg.canvas` on Linux
+and in a Windows `--opengl` build. Canvas borrows the window's Sokol context.
+GG samples the resolved texture in document paint order with premultiplied
+alpha and retires it after submission. The raster stays on the GPU. Linux
+uses the portable painter when the current context lacks OpenGL 4.3 or
+shader storage buffers. The launch switch is opt-in.
+
+On ARM64 Linux with Mesa software OpenGL under Xvfb,
+`python3 tools/test_linux_browser.py BINARY --gg-svg` verified the three
+fills on the [SVG fixture](../Tests/Browser/Native/svg-gg-path-fill.html).
+Its document pixels matched the portable path exactly, including the
+even-odd hole, translucent overlap, orientation, and translated fill.
+Forcing GL 4.2 exercised the portable fallback and reproduced the same pixels.
+An earlier build requested GL 4.3 at window creation and failed on GL 4.2.
+The final Linux build checks capabilities after the normal window opens.
+The macOS shared path and non-scaling stroke suites also passed.
+
+The Windows `--opengl --console` build compiled and linked an x86-64 PE
+executable with MinGW GCC 16.2.0 and V revision `eeee53a`.
+Its SHA-256 was
+`07b50265fcd123855187eb5e688402aeceb90f71c9d751844d0021fa32aa6dad`.
+The 12 GiB build guard exited zero with a peak sampled RSS of
+9,838,542,848 bytes. Windows window and pixel checks await a runnable VM.
+
+The Linux executable SHA-256 was
+`4a684ddae49945472fc8e5128b21a8afb44238acf03d98202d110bfab03ac0bb`.
+It used single-unit Clang `-O0` and V revision `5a39a4d`. Two alternating
+pairs used the same executable, fresh profiles and caches, and 32 synthetic
+42-pixel wheel steps in an 800 × 712 window after one second of settling.
+The local fixture added `body{min-height:4096px}` and
+`svg{position:fixed;top:32px}` so the same paths were visible throughout.
+Its SHA-256 was
+`e975fd4989c2d95e18b9c2a3336b3940335b7057d770a2a3cf9a7ece0a71f13c`.
+OS caches remained available. A separate diagnostic recorded all three
+GPU paths throughout scrolling. All browser exits and the 3 GiB guard
+exit were zero. Scroll positions and paint-command counts matched in both
+pairs. One-minute load was 0.53–0.97 on four guest CPUs.
+
+| Trial | Renderer | Median callback (ms) | p95 (ms) | Maximum (ms) |
+| --- | --- | ---: | ---: | ---: |
+| 1 | Portable | 4.142 | 7.437 | 7.555 |
+| 2 | GG | 6.625 | 19.221 | 20.588 |
+| 3 | Portable | 4.336 | 8.038 | 9.723 |
+| 4 | GG | 6.551 | 16.751 | 21.796 |
+
+Median callback time rose by 51–60% on this software-rendered workload.
+These are synthetic callback timings. Hardware GPU and production scroll
+performance remain unverified.
+
 ## Shared GPU SVG path replay
 
 `ggshape` uses one SVG descriptor decoder and `gg.canvas` draw implementation

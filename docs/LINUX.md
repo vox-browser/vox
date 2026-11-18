@@ -306,6 +306,11 @@ python3 tools/test_linux_native.py
 python3 tools/test_linux_native.py --gc none
 ```
 
+Set `VOX_GG_SVG=1` to try the shared `gg.canvas` renderer for solid SVG
+fills. It draws into OpenGL textures that GG presents in document order.
+`python3 tools/test_linux_browser.py --gg-svg` compares the OpenGL path with
+the portable path in real X11 windows using Mesa software rendering.
+
 The production arena ownership checks use the same staged compiler runtime as
 the production build, run without a collector, and poison released storage to
 expose stale borrowed payloads:

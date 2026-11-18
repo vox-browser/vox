@@ -154,6 +154,12 @@ source checkout. `-no-prod-options` retains the existing C optimization level.
 Add `--console` to the helper when capturing startup diagnostics: V's GUI entry
 point otherwise reopens stdout and stderr on a console or `NUL`.
 
+Use `--opengl` to build the experimental Sokol OpenGL window and set
+`VOX_GG_SVG=1` at launch to exercise the shared `gg.canvas` SVG path renderer.
+The window requests OpenGL 4.3. Canvas uses the window's current context and
+requires shader storage buffers in both shader stages. The standard build
+uses the D3D11 window with its WARP fallback.
+
 The Windows build uses `-gc none`; scoped `-prealloc` remains unavailable.
 Process tab grouping uses the existing in-process fallback. Dedicated script
 worker processes, RequestServer socket event delivery and native video decoding
