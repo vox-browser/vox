@@ -8670,3 +8670,92 @@ open in both raster modes.
 The build source comparison, audit order, input hashes, guard and exit
 receipts, and PNGs for both published builds are local under
 `repository-navigation-5204-r99/receipts`.
+
+### Document capture color and raster option controls
+
+The ordinary GitHub Back PNG is sRGB. The unchanged Brave Back PNG
+uses Display P3 primaries. On published executable `eb9c83cc…61f22a1`,
+each of the following launches reuses the same archive and generated-code
+cache, completes all three ordered content checks and runs for 120 seconds
+under the same 12 GiB guard. The color-space controls expose no cache
+misses, compiler calls or page JavaScriptCore. The browser, replay and
+guard exit zero. The outer exact-pixel comparisons exit 1.
+
+| Diagnostic | PID | Capture policy | Pixels different from Brave | Guard seconds | Sampled peak RSS bytes |
+| --- | ---: | --- | ---: | ---: | ---: |
+| Display P3 only | 21724 | Direct frame | 343 | 121.860 | 12,498,599,936 |
+| Display P3 with image and extended paint color | 23580 | Direct frame | 338 | 122.012 | 12,051,185,664 |
+| Historical diagnostics with disjoint rectangle batching disabled | 27020 | Direct frame | 6 | 121.836 | 12,519,129,088 |
+| Display P3 with direct frame disabled | 40527 | AppKit fallback | 58,570 | 121.864 | 8,395,390,976 |
+| Display P3 with render-density PNG decodes and GPU mipmaps | 55720 | Direct frame | 150 | 121.886 | 7,412,432,896 |
+
+The Display P3 only run resolves 59,737 of the 60,079 ordinary
+differences and introduces one. The extra image and extended paint color
+options resolve seven of the 343 differences and introduce two. The
+repository logo and commit avatar account for the two largest remaining
+regions. Disabling rectangle batching keeps both Notifications differences
+and adds four other button pixels. Enabling render-density decoding and
+GPU mipmaps with Display P3 resolves 195 of the 343 differences and adds
+two. These are separate diagnostics on the same executable. The ordinary
+renderer captures in sRGB.
+
+The old AppKit fallback composites the wide-gamut frame into a generic
+RGB bitmap and encodes sRGB, while the direct frame path preserves P3.
+Commit `267914943` gives a document-only AppKit fallback the document's
+already-selected Display P3 profile before it composites. The PNG encoder
+then carries the same profile. The change preserves the ordinary sRGB
+document and whole-window fallback contracts.
+
+The focused async capture fixture reproduces the old profile failure under
+ARC and MRC. With the fix, both modes pass on sRGB and Display P3, including
+the decoded saturated pixel, clipped document dimensions and current raster
+density. The guard exits zero in 3.150 seconds at 192,741,376 sampled bytes.
+The production type check exits zero in 48.582 seconds at 7,124,762,624
+sampled bytes.
+
+Managed build `20261118-092611-8a1f5a34` publishes executable
+`abc313c877690171f669481414f33c967376bd88d45f1128596e79e76f749f4a`
+as one C unit with literal V `-prod`. The sealed header matches the
+commit, and the sealed native input matches the source containing the
+committed screenshot entry point and concurrent SVG work. The build
+and headless smoke guards exit zero. Hacker News PID 65110 matches
+all 30 stories and the 2× PNG with six native hits, zero misses or
+compiler calls, and an uninitialized JavaScriptCore. Its guard exits
+zero in 3.845 seconds at 413,302,784 sampled bytes.
+
+The ordinary GitHub replay on PID 65267 completes the three exact
+content checks and the full 120 seconds. The browser, replay and guard
+exit zero in 121.638 guard seconds at 12,721,143,808 sampled bytes.
+The final audit records 3,616 native hits and 1,787,501 entries, zero
+misses or compiler calls, and an uninitialized JavaScriptCore.
+The page emits the same Web Worker fallback advisory as the previous
+build. The ordinary sRGB PNG is byte-identical to the prior ordinary
+capture and differs from Brave Back at 60,079 pixels.
+
+On the same published build, both Display P3 capture paths complete the
+120-second replay, match all three ordered content controls, and exit zero
+through the browser, driver and memory guard. Shutdown records 3,615
+native hits in each mode with zero misses or compiler calls and an
+uninitialized JavaScriptCore. Both PNGs carry the same seven numeric ICC
+tags as the unchanged Brave Back reference. The direct and fallback
+images match all 786,432 decoded pixels, including the two Notifications
+corners. Both differ from Brave at 343 pixels in this P3-only mode. The
+old forced fallback differs at 58,570 pixels and exports sRGB.
+
+| Display P3 capture path | PID | Guard seconds | Sampled peak RSS bytes | Native entries |
+| --- | ---: | ---: | ---: | ---: |
+| AppKit fallback | 66785 | 121.565 | 12,248,432,640 | 1,783,055 |
+| Direct frame | 68633 | 121.483 | 10,065,362,944 | 1,778,194 |
+
+The extended native fixture first reproduces a density metadata mismatch
+at 2× in both ARC and MRC. Commit `5bfecb2a8` retains the logical size
+through AppKit compositing and encodes the 40×16 fallback with the same
+pixel-sized metadata as direct capture. The retry verifies the PNG size,
+profile, saturated pixel and capture scale in both compiler modes. Its
+guard exits zero in 3.117 seconds at 191,299,584 sampled bytes. The
+published GitHub runs above exercise the 1× profile fix. The 2× metadata
+change is verified by the native fixture.
+
+The pinned commands, source checks, exact audits, PNGs, ICC comparisons
+and guards are local under `repository-navigation-5204-r100/receipts`.
+Exact GitHub Back parity remains open.
