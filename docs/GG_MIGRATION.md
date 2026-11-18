@@ -1,5 +1,52 @@
 # Migrating from Skia to vlib/gg
 
+## Dashed SVG strokes on OpenGL
+
+The opt-in OpenGL renderer splits a solid-color dashed stroke with the
+existing CPU dash effect, then rasterizes the resulting contours with
+`gg.canvas`. Scaling strokes split in SVG user space. Non-scaling strokes
+split after transforming the path into device space. The texture cache
+owns the interval list and keys on the dash offset, so an unchanged draw
+reuses its texture without splitting the path again. Bounds reuse depends
+on geometry alone.
+
+The path uses the existing texture budgets. Dashed draws accept up to
+32 intervals and 128 source segments and decline when the dash-count
+estimate exceeds 2,048. These declines use legacy replay.
+
+Linux window checks covered lines, quadratic curves, arcs, round dots,
+closed contours, `pathLength`, paint order, and non-scaling dashes. Live
+changes to the intervals and offset each rebuilt the texture and reused
+the geometry bounds. The cached and uncached document captures were
+pixel-exact. The CPU dash and path-hit regression tests, the new dash budget
+test, the Metal shared-path and non-scaling regression tests, and the
+Windows OpenGL source check passed. Windows runtime verification remains
+pending.
+
+The Linux executable SHA-256 was
+`937e2a27992b266598894ff742dca3b3721ab80f031785d29c335e4fcec35017`.
+It used V `5a39a4d` and single-unit Clang `-O0`. The fixture SHA-256 was
+`f6dc5669fe10c1f4c17c179264066dc446b538fd222d8dcdd2719f73c0817fbc`.
+The benchmark used Mesa software OpenGL under Xvfb, fresh processes
+with private profiles and caches, an 800 × 712 window, one second of
+settling, and 32 synthetic 42-pixel scroll steps. System caches remained
+available. Input hashes, scroll positions and paint-command counts
+matched. One-minute guest load ranged from 0.52 to 1.44 over four virtual
+CPUs. The browser tests, benchmark, and their memory guards exited zero.
+
+| Pair | Median callback uncached / cached, ms | p95, ms | Maximum, ms |
+| ---: | ---: | ---: | ---: |
+| 1 | 5.290 / 3.248 | 7.724 / 5.199 | 7.777 / 5.442 |
+| 2 | 4.784 / 1.311 | 6.219 / 1.874 | 6.867 / 3.461 |
+
+Separate diagnostics counted 217 dashed-stroke texture and bounds hits
+over the final 31 moving callbacks. With caching disabled all 217
+strokes rasterized again. The measured medians improved by 38.6% and
+72.6%. The cached runs varied by more than 2×. These timings cover
+synthetic software OpenGL replay. The first Linux link launch hit a
+shared-filesystem log write error, and the first Windows check stopped
+before emitting a report. Both passed on retry.
+
 ## Non-scaling SVG strokes on OpenGL
 
 The opt-in OpenGL path now uses the existing `gg.canvas` non-scaling
