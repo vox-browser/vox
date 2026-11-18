@@ -1,10 +1,66 @@
 # Migrating from Skia to vlib/gg
 
+## Reusing SVG textures when paint order changes
+
+The OpenGL SVG cache matches textures by raster inputs across the whole
+frame. A fill can change position in paint order or share a texture with an
+identical fill. GG submits each draw in document order. The cache holds up
+to eight images from the previous frame while recording up to eight current
+draws. Each frame has a one-megapixel budget. Unused and transient images
+retire after submission.
+
+The Linux window test passed with cached and uncached GG, the portable
+painter, and the GL 4.2 fallback. A live SVG edit changed geometry and
+color, moved paths in paint order, and duplicated a translated path.
+The cached capture matched the uncached capture exactly. The translated
+path needed one rasterization across the edit and duplication.
+
+The Linux executable SHA-256 was
+`4ffae25b325e988786ab35392fad64ea7bb7e548818376c19abf12337081cbcc`.
+It used V `5a39a4d` and single-unit Clang `-O0`. The first build was
+killed with V and Clang resident together in the 6 GiB guest. Emitting
+C and its flags first and running Clang separately succeeded.
+
+The scrolling fixture had 42 SVG rows at 84 CSS pixels each, with
+20-pixel-high even-odd fills of distinct widths and colors. Its SHA-256 was
+`635d9d9aad04cda211d47d4d9ee113f65eb8e3cf000048ea900eb13df4e25d8b`.
+Document rows captured at scroll offset 126 matched exactly across the
+three modes. The separate diagnostic counted 195 cache hits in 210 draws
+over 30 consecutive frame transitions. Of those hits, 90 had different
+dimensions at the same draw position in the previous frame. Matching by
+draw position could therefore have hit at most 105 times on that trace.
+
+Two triplets used fresh processes, private profiles and caches, an 800 × 712
+window, a one-second settle and 32 synthetic 42-pixel scroll steps under
+Xvfb with Mesa software OpenGL. OS caches remained available. The scroll
+positions, paint-command counts, fixture hash and executable hash agreed.
+One-minute guest load was 1.28–1.51 on four virtual CPUs. The browser runs
+and the 3 GiB guard exited zero.
+
+| Trial | Renderer | Median callback (ms) | p95 (ms) | Maximum (ms) |
+| --- | --- | ---: | ---: | ---: |
+| 1 | Portable | 2.823 | 5.373 | 5.450 |
+| 2 | Uncached GG | 3.187 | 5.402 | 5.451 |
+| 3 | Cached GG | 2.533 | 3.237 | 4.884 |
+| 4 | Cached GG | 2.739 | 5.034 | 5.142 |
+| 5 | Uncached GG | 3.385 | 5.579 | 6.575 |
+| 6 | Portable | 2.695 | 4.742 | 5.566 |
+
+Caching lowered median callback time by 19–21% versus uncached GG. Against
+the portable painter, it was 10.3% faster in the first triplet and 1.6%
+slower in the second. The renderer remains opt-in.
+
+The Windows `--opengl --console` build linked an x86-64 PE executable with
+V `eeee53a` and MinGW GCC 16.2.0 using `-pipe`. The build and 12 GiB
+guard exited zero. The executable SHA-256 was
+`983e0ce2477fefb3c29183cb6206906726a9346310a34b55ead2d1600efa949a`.
+Windows rendering still needs runtime verification.
+
 ## Retaining windowed SVG textures
 
-The opt-in OpenGL SVG renderer keeps up to eight resolved textures from the
+The first OpenGL SVG cache kept up to eight resolved textures from the
 previous frame, with the existing one-megapixel per-frame budget. A slot
-follows replay order and owns a copy of up to 128 path segments. Reuse checks
+followed replay order and owned a copy of up to 128 path segments. Reuse checks
 the exact path bytes, fill rule, RGBA paint, texture dimensions
 and the matrix relative to the texture. Integer movement can reuse the
 texture. A changed key replaces the image, and unused slots retire after
