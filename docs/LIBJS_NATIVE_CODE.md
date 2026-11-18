@@ -1455,3 +1455,30 @@ matches the pinned screenshot and repository audit, fulfills all 81
 modules, and records 2,948 hits. Both reopens have zero misses or
 compiler calls. Local receipts are under
 `docs/performance/libjs-github-browser-20261116/libjs-benchmark-native-captures-20261118/`.
+
+### Trace native libraries in the GitHub runner
+
+Add `--trace-native-libraries` to a `libjs-native` reopen with
+`--native-cache`. The runner enables loader logging and native
+execution diagnostics for that visit and omits timing medians.
+It checks the logged library names against the cache records for
+the observed browser PID.
+
+The attempt's `native_library_trace` receipt includes the ABI, PID,
+library names, and the path and digest of the saved launch-through-exit
+log. Pass the saved `path` and `pid` when selecting the group.
+
+```sh
+python3 tools/libjs_pack_native_cache.py \
+  --cache "$separate_cache" --abi "$abi" --captures "$captures" \
+  --trace "$trace_path" --trace-pid "$trace_pid" --output "$grouped_cache"
+```
+
+The full frozen GitHub reopen identifies 91 loaded cache libraries
+for its browser PID, matches the pinned screenshot and repository
+audit, and evaluates all 81 modules. It records 2,943 native hits
+with zero misses or compiler calls. On the small seed fixture, the
+packer consumes the saved trace and groups both libraries. The
+grouped reopen retains the seed screenshot and all 152 cache hits.
+Local receipts are under
+`docs/performance/libjs-github-browser-20261116/libjs-github-benchmark-loader-trace-20261118/`.

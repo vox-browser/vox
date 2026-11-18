@@ -30,7 +30,7 @@ from github_hydrated_render import (AuditCDP, SELECTORS, URL, certificate_spki,
 from hacker_news_browser_instructions import test_display
 from libjs_browser_diagnostic import native_reuse_errors
 from libjs_capture_native_compiler import CAPTURE_DIR, CLANG, captured_source
-from libjs_pack_native_cache import SHA256, read_records
+from libjs_pack_native_cache import SHA256, libraries_from_trace, read_records
 import measure_browser_instructions as measurement
 from measure_precise_scroll import runtime_input_paths
 from measure_sealed_github_instructions import native_dependencies
@@ -125,6 +125,18 @@ def verify_compiler_captures(directory, cache, abi):
     return dict(directory=str(directory), abi=abi, records=len(records), batches=batches)
 
 
+def verify_native_library_trace(trace, cache, abi, pid):
+    if not SHA256.fullmatch(abi):
+        raise ValueError('Invalid traced cache ABI')
+    source = cache / abi
+    names, receipt = libraries_from_trace(trace, source, pid)
+    _, libraries, _ = read_records(source, abi)
+    unknown = set(names) - libraries.keys()
+    if unknown:
+        raise ValueError(f'Traced libraries lack cache records: {sorted(unknown)}')
+    return dict(receipt, abi=abi, libraries=names)
+
+
 def observe(args, engine, folder, expected, replayed_scripts, api):
     folder.mkdir()
     profile, cache = folder / 'profile', folder / 'http-cache'
@@ -157,11 +169,14 @@ def observe(args, engine, folder, expected, replayed_scripts, api):
                 env[CAPTURE_DIR] = str(args.native_captures)
         if args.native_diagnostics:
             env['VOX_LIBJS_NATIVE_DIAGNOSTICS'] = '1'
+        if args.trace_native_libraries:
+            env['DYLD_PRINT_LIBRARIES'] = '1'
     row = dict(engine=engine, host_before=dict(unix=time.time(), cpu_count=os.cpu_count(), load=os.getloadavg()),
         http_cache_initial_entries=len(list(cache.iterdir())), imported_cookies='disabled',
         scope=__doc__, folder=str(folder),
         browser_overrides={key: value for key, value in env.items()
-                           if key.startswith(('VOX_', 'LADYBIRD_')) and key != 'VOX_PROXY'})
+                           if (key.startswith(('VOX_', 'LADYBIRD_')) and key != 'VOX_PROXY')
+                           or key == 'DYLD_PRINT_LIBRARIES'})
     client = process = None
     try:
         if engine == 'brave':
@@ -265,6 +280,11 @@ def observe(args, engine, folder, expected, replayed_scripts, api):
                 row['compiler_captures'] = verify_compiler_captures(
                     args.native_captures, args.native_cache, row['native_cache_final']['native']['abi'])
         row['replayed_scripts'] = verify_replayed_scripts(replay, replayed_scripts)
+        if engine == 'libjs-native' and args.trace_native_libraries:
+            trace = folder / 'native-library-trace.log'
+            shutil.copyfile(folder / 'browser.log', trace)
+            row['native_library_trace'] = verify_native_library_trace(
+                trace, args.native_cache, row['native_cache_final']['native']['abi'], row['pid'])
         row['valid'] = True
     except Exception as error:
         row.update(valid=False, error=str(error), browser_exit_if_known=process.returncode if process else None)
@@ -288,6 +308,9 @@ def run(args):
     args.vox = args.vox.resolve(); args.brave = args.brave.resolve()
     if args.native_cache: args.native_cache = args.native_cache.resolve()
     if args.adblock_assets: args.adblock_assets = args.adblock_assets.resolve()
+    args.trace_native_libraries = getattr(args, 'trace_native_libraries', False)
+    if args.trace_native_libraries:
+        args.native_diagnostics = True
     if 'libjs-native' in args.engines and args.native_cache is None:
         raise ValueError('Native measurements require a separately prepared cache')
     if args.prepare_native_cache and args.native_cache.exists():
@@ -316,6 +339,8 @@ def run(args):
         prepare_native_cache=args.prepare_native_cache, native_diagnostics=args.native_diagnostics,
         replayed_scripts=replayed_scripts,
         policy='Frozen original-origin replay; fresh HTTP caches and profiles; OS caches retained; 1024x768 document; shared settle period.')
+    if args.trace_native_libraries:
+        report['trace_native_libraries'] = True
     api = MacCounters()
     with canonical_bundle_lease(ROOT / 'Build/v/Vox.app'):
         asset_env = {'VOX_ADBLOCK_ENGINE_ASSETS': str(args.adblock_assets)} if args.adblock_assets else {}
@@ -331,7 +356,9 @@ def run(args):
         if args.prepare_native_cache:
             paths.append(args.native_compiler)
         if args.native_captures:
-            paths.extend([Path(CLANG), ROOT / 'tools/libjs_pack_native_cache.py'])
+            paths.append(Path(CLANG))
+        if args.native_captures or args.trace_native_libraries:
+            paths.append(ROOT / 'tools/libjs_pack_native_cache.py')
         native_files = set(p for p in args.native_cache.rglob('*') if p.is_file()) if args.native_cache else set()
         paths.extend(sorted(native_files))
         pins = {str(p): digest(p) for p in paths}
@@ -398,6 +425,8 @@ def main():
                           help='Retain generated C and library receipts in a new directory while seeding')
     p.add_argument('--native-diagnostics', action='store_true',
                    help='Verify actual native execution with instrumented counters in an untimed reopen')
+    p.add_argument('--trace-native-libraries', action='store_true',
+                   help='Save a loader trace and identify its cache libraries in an untimed reopen')
     p.add_argument('--vox', type=Path, default=ROOT / 'Build/v/Vox.app/Contents/MacOS/Vox')
     p.add_argument('--brave', type=Path, default=Path('/Applications/Brave Browser.app/Contents/MacOS/Brave Browser'))
     p.add_argument('--repeat', type=int, default=7)
@@ -409,6 +438,9 @@ def main():
         p.error('Require a positive repeat count and settle period below the timeout')
     if len(set(args.engines)) != len(args.engines):
         p.error('Each engine may appear only once')
+    if args.trace_native_libraries and (args.prepare_native_cache or 'libjs-native' not in args.engines
+                                        or args.native_cache is None):
+        p.error('--trace-native-libraries requires a libjs-native reopen with --native-cache')
     if args.prepare_native_cache and (args.engines != ['libjs-native'] or args.repeat != 1
                                       or args.native_diagnostics or not args.native_cache):
         p.error('Preparation requires one libjs-native run, a new cache and native diagnostics disabled')

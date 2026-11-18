@@ -11,7 +11,7 @@ import benchmark_github_page as benchmark
 from libjs_capture_native_compiler import C_FLAGS
 
 
-class NativeCaptureOptionsTests(unittest.TestCase):
+class NativeCacheOptionsTests(unittest.TestCase):
     common = [
         '--archive', 'archive', '--reference-audit', 'audit.json', '--reference-png', 'reference.png',
         '--output', 'output', '--memory-guard-registry', 'pids.json', '--engines', 'libjs-native',
@@ -48,8 +48,28 @@ class NativeCaptureOptionsTests(unittest.TestCase):
                 benchmark.run(args)
             self.assertFalse(args.output.exists())
 
+    def test_trace_can_be_requested_for_a_native_reopen(self):
+        argv = [*self.common, '--trace-native-libraries']
+        with patch('sys.argv', ['benchmark', *argv]), patch.object(benchmark, 'run', return_value=0) as run:
+            self.assertEqual(benchmark.main(), 0)
+        self.assertTrue(run.call_args.args[0].trace_native_libraries)
 
-class NativeCaptureReceiptTests(unittest.TestCase):
+    def test_trace_requires_a_prepared_native_cache_and_a_native_reopen(self):
+        for extra, common in (
+            (['--prepare-native-cache'], self.common),
+            (['--engines', 'libjs'], self.common),
+            ([], self.common[:-4] + ['--repeat', '1']),
+        ):
+            with self.subTest(extra=extra, common=common):
+                argv = ['benchmark', *common, '--trace-native-libraries', *extra]
+                with patch('sys.argv', argv), redirect_stderr(StringIO()) as stderr:
+                    with self.assertRaises(SystemExit) as error:
+                        benchmark.main()
+                self.assertEqual(error.exception.code, 2)
+                self.assertIn('requires a libjs-native reopen', stderr.getvalue())
+
+
+class NativeCacheReceiptTests(unittest.TestCase):
     def setUp(self):
         scratch = tempfile.TemporaryDirectory()
         self.addCleanup(scratch.cleanup)
@@ -89,6 +109,18 @@ class NativeCaptureReceiptTests(unittest.TestCase):
         self.library.write_bytes(b'changed image')
         with self.assertRaisesRegex(ValueError, 'Prepared library digest mismatch'):
             self.verify()
+
+    def test_trace_receipt_verifies_libraries_for_the_observed_browser_pid(self):
+        trace = self.cache.parent / 'native-library-trace.log'
+        unknown = self.library.with_name('d' * 64 + '.dylib')
+        trace.write_text(f'dyld[42]: <uuid> {self.library}\ndyld[43]: <uuid> {unknown}\n')
+        expected = dict(pid=42, path=str(trace.resolve()), sha256=benchmark.digest(trace),
+                        abi=self.abi, libraries=[self.library.name])
+        self.assertEqual(benchmark.verify_native_library_trace(trace, self.cache, self.abi, 42), expected)
+        with self.assertRaisesRegex(ValueError, 'Traced libraries lack cache records'):
+            benchmark.verify_native_library_trace(trace, self.cache, self.abi, 43)
+        with self.assertRaisesRegex(ValueError, 'No native cache libraries'):
+            benchmark.verify_native_library_trace(trace, self.cache, self.abi, 44)
 
 
 if __name__ == '__main__':
