@@ -2,7 +2,6 @@ module buildtools
 
 import os
 import time
-import crypto.sha256
 import json2 as json
 
 pub type Record = map[string]json.Any
@@ -13,7 +12,11 @@ fn join(parts ...string) string { return os.join_path(...parts) }
 
 fn read(path string) !string { return os.read_file(path) }
 
-fn hash(data string) string { return sha256.hexhash(data) }
+fn hash(data string) string {
+	mut state := new_build_digest() or { panic(err) }
+	state.add(data) or { panic(err) }
+	return state.hex() or { panic(err) }
+}
 
 fn digest(path string) !string { return hash(read(path)!) }
 
