@@ -7,21 +7,30 @@ fn test_scope_rollback_preserves_storage_prefix_flags_and_tree() {
 	collector.open_scope(.program_scope, ScopeData.new_shared(), .script_top_level)
 	collector.open_scope(.function_scope, ScopeData.new_shared(), .function_top_level)
 	collector.records[1].variables['keep'] = ScopeVariable{flags: var_flag_var}
+	collector.records[1].children = []int{cap: 8}
+	collector.open_block_scope()
+	collector.close_scope()
 	collector.errors << ScopeError{message: 'retained'}
 	checkpoint := collector.save_state()
 	storage := collector.records.data
 	capacity := collector.records.cap
+	children_storage := collector.records[1].children.data
+	children_capacity := collector.records[1].children.cap
 	for _ in 0 .. 64 {
 		collector.records[1].uses_this = true
 		collector.open_scope(.function_scope, ScopeData.new_shared(), .function_top_level)
+		collector.close_scope()
+		collector.open_block_scope()
 		collector.errors << ScopeError{message: 'speculative'}
 		collector.load_state(checkpoint)
-		assert collector.current == 1 && collector.records.len == 2
-		assert !collector.records[1].uses_this && collector.records[1].children.len == 0
+		assert collector.current == 1 && collector.records.len == 3
+		assert !collector.records[1].uses_this && collector.records[1].children == [2]
 		assert collector.records[1].variables['keep'].flags == var_flag_var
 		assert collector.errors.len == 1 && collector.errors[0].message == 'retained'
 		// Bound the storage retained by repeated failed arrow hypotheses.
 		assert collector.records.data == storage && collector.records.cap == capacity
+		assert collector.records[1].children.data == children_storage
+		assert collector.records[1].children.cap == children_capacity
 	}
 }
 

@@ -285,15 +285,15 @@ fn (mut sc ScopeCollector) load_state(state ScopeCollectorState) {
 	sc.records.delete_many(saved_len, sc.records.len - saved_len)
 	sc.current = state.current
 	sc.errors.delete_many(state.errors_len, sc.errors.len - state.errors_len)
-	// Remove any child indices that pointed to now-truncated records.
+	// Opening a scope appends its record index to the parent's children.
+	// Only the suffix can refer to records removed by this rollback.
 	if sc.current >= 0 {
-		mut kept := []int{}
-		for c in sc.records[sc.current].children {
-			if c < saved_len {
-				kept << c
-			}
+		mut parent := &sc.records[sc.current]
+		mut kept := parent.children.len
+		for kept > 0 && parent.children[kept - 1] >= saved_len {
+			kept--
 		}
-		sc.records[sc.current].children = kept
+		parent.children.delete_many(kept, parent.children.len - kept)
 	}
 	// Restore flags on ancestor function scopes.
 	for saved in state.saved_flags {
