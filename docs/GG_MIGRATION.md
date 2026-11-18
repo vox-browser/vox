@@ -6016,3 +6016,60 @@ The [archived site cohort](#parallel-premultiplication-of-canvas2d-destinations)
 found no canvas elements on Hacker News, GitHub, or Old Reddit. The
 measurements here cover the portable upload conversion. Full browser
 validation of the new upload path and Windows execution remain unverified.
+
+### Parallel channel swaps during Quartz bitmap handoff
+
+An owned RGBA bitmap handed to a compatible BGRA destination now
+swaps channels in place across disjoint row bands. The existing
+NEON and scalar loops handle each band, with one lane below 4 MiB
+of pixel data and at most four lanes overall.
+`VOX_SERIAL_BITMAP_SWIZZLE=1` keeps the original serial schedule.
+The source context is flushed before the swap. Workers finish before
+the completed bitmap is handed to the image provider. Row padding,
+green, alpha, format metadata and provider ownership are preserved.
+
+Seven rotating fresh-process groups used a matching Apple Clang
+`-O2 -flto` harness with the original and candidate implementations.
+The timed span includes the destination format checks and the swap
+through return. Buffer setup, pixel verification and Quartz image
+creation are outside the span. Warm times are medians of per-process
+medians after the first call. Every process verified its full buffer.
+All 147 final processes and their memory guard exited zero.
+The final one-minute load was 9.10 on 18 logical CPUs.
+
+| Surface | First call before / serial / default, µs | Warm before / serial / default, µs | Default faster than before |
+| --- | ---: | ---: | ---: |
+| 67×43, padded | 0.750 / 0.750 / 0.750 | 0.250 / 0.250 / 0.250 | 3/7 |
+| 512×512 | 20.000 / 19.333 / 20.250 | 18.229 / 18.021 / 18.042 | 5/7 |
+| 1024×1024 | 144.041 / 146.250 / 119.042 | 73.438 / 73.166 / 52.646 | 5/7 |
+| 2048×1536 | 290.000 / 285.875 / 152.625 | 209.292 / 206.125 / 102.605 | 7/7 |
+| 2051×1537, padded | 248.917 / 344.583 / 169.416 | 224.792 / 225.125 / 99.395 | 7/7 |
+| 3840×2160 | 572.208 / 571.292 / 273.500 | 555.812 / 554.625 / 235.688 | 7/7 |
+| 5123×2881, padded | 1042.916 / 1046.542 / 540.417 | 1018.708 / 1029.875 / 383.084 | 7/7 |
+
+An earlier candidate sent the serial path through the band callback.
+It took 21.833 µs at 512×512 against 19.542 µs before. The final
+version invokes the row loop directly for serial work. That earlier
+trial's first-call before/default medians at 1024×1024, 2048×1536,
+2051×1537, 3840×2160 and 5123×2881 were 80.375/73.375,
+256.459/127.250, 238.500/150.625, 597.625/299.292 and
+1163.667/504.833 µs. Its one-minute load was 7.69–8.20.
+
+A separate dispatch probe observed two threads at 1024×1024 and four
+at 2051×1537, with no dispatch below the threshold or when forced
+serial. The bitmap suite passed 13,824 exact draw comparisons and
+216 opacity cases, plus a new padded 3851×2161 provider-byte and
+metadata check. It passed with default scheduling, forced serial
+scheduling, and ASan/UBSan.
+
+The published single-C-unit executable
+`5d72f61417d4e5c75c4bd333550ce43baf8a65fcbd00bf89c1e1dafd8f641660`
+provided archive diagnostics. Fresh Hacker News, GitHub and Old
+Reddit captures used sealed original-origin replay at 1024×768 CSS
+pixels and 2×, private profiles and caches, and one second of settling.
+They matched the frozen pixel references and preserved 30, 33 and
+25 audited entries, with zero browser and guard exits. A probe of the
+out-of-line destination-format check at return offset `0x1175548`
+observed no matches on these captures. The same probe detected the
+format conversion in a padded standalone control. Whole-page
+measurements of the candidate await the shared production rebuild.
