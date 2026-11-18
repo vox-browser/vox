@@ -27,6 +27,18 @@ fn test_optional_calls_preserve_method_receivers_and_capture_them_before_argumen
 	assert optional_chain_eval(mut vm, 'var nested={method:function(){return function(){"use strict";return this}}};nested?.method()()===undefined')!.as_bool()
 }
 
+fn test_retained_optional_chain_preserves_functions_in_the_base_and_references() {
+	mut vm := VM.create()
+	create_simple_execution_context(mut vm)
+	closure := optional_chain_eval(mut vm, 'function make(){return function(input){return (()=>input)()?.[(()=>"method")()]?.(()=>2) ?? 7}};make()')!
+	for _ in 0 .. 20 {
+		assert optional_chain_eval(mut vm, '({item:1})?.["item"]')!.number == 1
+	}
+	receiver := optional_chain_eval(mut vm, '({answer:40,method:function(fn){return this.answer+fn()}})')!
+	assert call(mut vm, closure, js_undefined(), [receiver])!.number == 42
+	assert call(mut vm, closure, js_undefined(), [js_null()])!.number == 7
+}
+
 fn test_optional_chain_errors_grouping_and_getters_retain_normal_behavior() {
 	mut vm := VM.create()
 	create_simple_execution_context(mut vm)

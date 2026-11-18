@@ -603,10 +603,9 @@ fn (mut ft FunctionTable) collect_from_expression(expr &Expression, mut result F
 			}
 		}
 		.optional_chain {
-			if base := expr.kind.base {
-				ft.collect_from_expression(base, mut result)
-			}
-			for ref_ in expr.kind.references {
+			chain := expr.kind.optional_chain_data or { return }
+			ft.collect_from_expression(&chain.base, mut result)
+			for ref_ in chain.references {
 				match ref_ {
 					OptionalChainCall {
 						for arg in ref_.arguments {
@@ -946,6 +945,12 @@ mut:
 // =============================================================================
 // Optional chain types
 // =============================================================================
+
+@[heap]
+struct OptionalChainData {
+	base       Expression
+	references []OptionalChainReference
+}
 
 enum OptionalChainMode {
 	optional
@@ -1293,7 +1298,6 @@ mut:
 	alternate_expr        ?&Expression
 	object                ?&Expression
 	property              ?&Expression
-	base                  ?&Expression
 	specifier             ?&Expression
 	options               ?&Expression
 	tag_expr              ?&Expression
@@ -1316,8 +1320,8 @@ mut:
 	expressions       []Expression
 	array_elements    []?Expression
 	object_properties []ObjectProperty
-	// Optional chain
-	references []OptionalChainReference
+	// Only optional-chain expressions store a base and reference list.
+	optional_chain_data ?&OptionalChainData
 	// Template
 	template_data ?&TemplateLiteralData
 	// Meta property

@@ -993,9 +993,11 @@ fn (mut p Parser) parse_optional_chain(start Position, base Expression) Expressi
 	}
 
 	return p.expression(start, ExpressionKind{
-		tag:        .optional_chain
-		base:       &base
-		references: references
+		tag: .optional_chain
+		optional_chain_data: &OptionalChainData{
+			base:       base
+			references: references
+		}
 	})
 }
 

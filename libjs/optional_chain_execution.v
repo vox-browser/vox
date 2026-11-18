@@ -41,14 +41,14 @@ fn (mut generator BytecodeGenerator) call_reference(mut vm VM, expression &Expre
 
 fn (mut generator BytecodeGenerator) optional_chain_reference(mut vm VM, expression &Expression, deleting bool) !(Operand, Operand) {
 	generator.check_compile_stack()!
-	if expression.kind.references.len == 0 { return error('Optional chain has no references') }
-	base := expression.kind.base or { return error('Missing optional-chain base') }
-	initial, initial_receiver := generator.call_reference(mut vm, base)!
+	chain := expression.kind.optional_chain_data or { return error('Optional chain has no references') }
+	if chain.references.len == 0 { return error('Optional chain has no references') }
+	initial, initial_receiver := generator.call_reference(mut vm, &chain.base)!
 	value, receiver := generator.temporary(), generator.temporary()
 	generator.emit(Instruction{ op: .mov, dst: value, lhs: initial })
 	generator.emit(Instruction{ op: .mov, dst: receiver, lhs: initial_receiver })
 	mut exits := []u32{}
-	for index, reference in expression.kind.references {
+	for index, reference in chain.references {
 		optional := match reference {
 			OptionalChainCall { reference.mode == .optional }
 			OptionalChainComputedRef { reference.mode == .optional }
@@ -70,7 +70,7 @@ fn (mut generator BytecodeGenerator) optional_chain_reference(mut vm VM, express
 			}
 			generator.emit(Instruction{ op: .mov, dst: receiver, lhs: value })
 			generator.emit(Instruction{
-				op:     if reference is OptionalChainPrivateMemberRef { OpCode.get_private } else if deleting && index == expression.kind.references.len - 1 {
+				op:     if reference is OptionalChainPrivateMemberRef { OpCode.get_private } else if deleting && index == chain.references.len - 1 {
 					OpCode.delete_property
 				} else {
 					OpCode.get_property
@@ -83,7 +83,7 @@ fn (mut generator BytecodeGenerator) optional_chain_reference(mut vm VM, express
 		}
 	}
 	if deleting {
-		if expression.kind.references.last() is OptionalChainCall {
+		if chain.references.last() is OptionalChainCall {
 			generator.emit(Instruction{ op: .mov, dst: value, lhs: generator.constant(Value.from_bool(true)) })
 		}
 	}

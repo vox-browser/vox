@@ -770,11 +770,10 @@ fn dump_expression(expression &Expression, state DumpState) {
 		}
 		.optional_chain {
 			dump_node(state, 'OptionalChain', expression.range)
-			if base := expression.kind.base {
-				dump_expression(base, child_state(state, expression.kind.references.len == 0))
-			}
-			for i, ref_ in expression.kind.references {
-				ref_state := child_state(state, i == expression.kind.references.len - 1)
+			chain := expression.kind.optional_chain_data or { return }
+			dump_expression(&chain.base, child_state(state, chain.references.len == 0))
+			for i, ref_ in chain.references {
+				ref_state := child_state(state, i == chain.references.len - 1)
 				match ref_ {
 					OptionalChainCall {
 						print_node(ref_state, 'Call(${optional_mode_str(ref_.mode)})')
