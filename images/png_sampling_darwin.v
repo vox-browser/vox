@@ -72,6 +72,15 @@ fn (mut app BrowserApp) sampled_png_decode(url string, image &gg.Image, width f6
 	return SampledPNGUpload{ image: app.ctx.get_cached_image_by_idx(result.id), gpu_mips: gpu_mips }
 }
 
+fn (app &BrowserApp) sampled_png_decode_extent_for_frame(geometry SampledPNGGeometry) ?[2]f64 {
+	extent := [f64(geometry.width), f64(geometry.height)]!
+	if os.getenv('VOX_DIAGNOSTIC_PNG_RENDER_DENSITY') != '1' { return extent }
+	// The geometry describes the destination raster. During a live capture
+	// that raster can have a different density from the document's display.
+	return sampled_png_decode_extent(extent, app.document.rendering_device_pixel_ratio(),
+		C.native_raster_device_pixel_ratio())
+}
+
 fn (mut app BrowserApp) draw_sampled_png(command &layout.PaintCommand, image &gg.Image, url string,
 	destination painting.IntRect, source [4]f32, clip [12]f32, matrix [6]f64,
 	page_x f32, page_y f32, scroll_y f64, nearest bool) bool {
@@ -81,12 +90,7 @@ fn (mut app BrowserApp) draw_sampled_png(command &layout.PaintCommand, image &gg
 		return false
 	}
 	geometry := sampled_png_paint_geometry(destination, clip, matrix) or { return false }
-	mut decode_extent := [f64(geometry.width), f64(geometry.height)]!
-	if os.getenv('VOX_DIAGNOSTIC_PNG_RENDER_DENSITY') == '1' {
-		decode_extent = sampled_png_decode_extent(decode_extent,
-			app.document.rendering_device_pixel_ratio(),
-			app.document.display_device_pixel_ratio()) or { return false }
-	}
+	decode_extent := app.sampled_png_decode_extent_for_frame(geometry) or { return false }
 	upload := app.sampled_png_decode(url, image, decode_extent[0], decode_extent[1]) or { return false }
 	decoded := upload.image
 	previous_color_scope := select_document_png_color_space()
