@@ -137,16 +137,20 @@ struct SVGMaskRamp {
 }
 
 fn svg_mask_aligned_rect(operation &layout.PaintMaskOperation, matrix [6]f32) ?painting.IntRect {
-	if matrix[1] != 0 || matrix[2] != 0 || matrix[0] <= 0 || matrix[3] <= 0 { return none }
+	if matrix[1] != 0 || matrix[2] != 0 || matrix[0] == 0 || matrix[3] == 0 { return none }
 	rect := svg_background_rectangle_path(operation.path_data) or { return none }
-	left := f32(rect.x) * matrix[0] + matrix[4]
-	right := f32(rect.right()) * matrix[0] + matrix[4]
-	top := f32(rect.y) * matrix[3] + matrix[5]
-	bottom := f32(rect.bottom()) * matrix[3] + matrix[5]
+	mut left := f32(rect.x) * matrix[0] + matrix[4]
+	mut right := f32(rect.right()) * matrix[0] + matrix[4]
+	mut top := f32(rect.y) * matrix[3] + matrix[5]
+	mut bottom := f32(rect.bottom()) * matrix[3] + matrix[5]
 	if ![left, right, top, bottom]!.all(math.is_finite(f64(it))
 		&& f64(it) == math.floor(f64(it)) && math.abs(f64(it)) < 1048576) {
 		return none
 	}
+	// A reflected rectangle has reversed endpoints. Keep the signed matrix
+	// for shading and cache identity, and order only the device bounds.
+	if left > right { left, right = right, left }
+	if top > bottom { top, bottom = bottom, top }
 	return painting.IntRect{int(left), int(top), int(right - left), int(bottom - top)}
 }
 

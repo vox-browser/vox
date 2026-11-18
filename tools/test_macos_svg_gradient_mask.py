@@ -112,7 +112,8 @@ def check_mask_mutation(binary, fixture, directory):
     assert after[40][180 * channels:180 * channels + 3] == b"\xff\x00\x00"
 
 
-def write_mask_cache_pressure_fixture(fixture, *, kind, count, solid_fills=1, opacity_depth=1):
+def write_mask_cache_pressure_fixture(fixture, *, kind, count, solid_fills=1, opacity_depth=1,
+                                      reflected=False):
     definitions = []
     paths = []
     for index in range(count):
@@ -144,7 +145,8 @@ def write_mask_cache_pressure_fixture(fixture, *, kind, count, solid_fills=1, op
                         '<path fill="lime" fill-opacity=".5" d="M52 0h70v90H52Z"/></g>'
                         '<g opacity=".5"><path fill="white" d="M90 0h46v90H90Z"/></g>')
             elif kind == "gradient":
-                fill = (f'<path fill="url(#g{index})" d="M0 0h88v90H0Z"/>'
+                transform = ' transform="translate(88 0) scale(-1 1)"' if reflected else ''
+                fill = (f'<path fill="url(#g{index})"{transform} d="M0 0h88v90H0Z"/>'
                         '<path fill="lime" fill-opacity=".5" d="M52 0h70v90H52Z"/>'
                         '<path fill="white" fill-opacity=".5" d="M90 0h46v90H90Z"/>')
         definitions.append(
@@ -160,13 +162,16 @@ def write_mask_cache_pressure_fixture(fixture, *, kind, count, solid_fills=1, op
                        + "".join(definitions) + "</defs>" + "".join(paths) + "</svg>")
 
 
-def check_mask_cache_capacity(binary, directory, *, kind, solid_fills=1, opacity_depth=1):
+def check_mask_cache_capacity(binary, directory, *, kind, solid_fills=1, opacity_depth=1,
+                              reflected=False):
     name = f"{kind}-cache-capacity" if solid_fills == 1 else f"{kind}-two-fills-cache-capacity"
     if opacity_depth > 1:
         name = f"{kind}-{opacity_depth}-layers-cache-capacity"
+    if reflected:
+        name = f"reflected-{name}"
     fixture = directory / f"{name}.html"
     write_mask_cache_pressure_fixture(fixture, kind=kind, count=30, solid_fills=solid_fills,
-                                      opacity_depth=opacity_depth)
+                                      opacity_depth=opacity_depth, reflected=reflected)
     settings = dict(VOX_SHARED_SVG_MASK_RASTER="", VOX_DISABLE_SHARED_SVG_MASK_CACHE="0",
                     VOX_EAGER_SHARED_SVG_MASK_BITMAP="0", VOX_COPY_SHARED_SVG_MASK_BITMAP="0",
                     VOX_CLIP_SHARED_SVG_MASK_RASTER="0", VOX_CAPTURE_INITIAL_VIEWPORT="1",
@@ -347,7 +352,7 @@ def write_mixed_opacity_fixture(fixture, source):
                        .replace('fill="#f00"', 'fill="url(#luminance-linear)"'))
 
 
-def write_direct_fills_fixture(fixture, source, *, gradients):
+def write_direct_fills_fixture(fixture, source, *, gradients, reflected=False):
     text = (source.read_text()
             .replace('<title>Overlapping solid SVG mask fills</title>',
                      '<title>Overlapping rectangular SVG mask fills</title>')
@@ -371,6 +376,12 @@ def write_direct_fills_fixture(fixture, source, *, gradients):
                 .replace('fill="black" fill-opacity=".5"', 'fill="url(#alpha-left)" fill-opacity=".5"')
                 .replace('fill="black" fill-opacity=".375"', 'fill="url(#alpha-center)" fill-opacity=".375"')
                 .replace('fill="lime" fill-opacity=".5"', 'fill="url(#luminance-right)" fill-opacity=".5"'))
+    if reflected:
+        # Reflect each rectangle about its own center to preserve its coverage.
+        text = (text.replace('<path d="M21', '<path transform="translate(168 0) scale(-1 1)" d="M21')
+                .replace('<path d="M105 26', '<path transform="translate(0 127) scale(1 -1)" d="M105 26')
+                .replace('<path d="M255', '<path transform="translate(0 120) scale(1 -1)" d="M255')
+                .replace('<path d="M335', '<path transform="translate(782 134) scale(-1 -1)" d="M335'))
     fixture.write_text(text)
 
 
@@ -473,6 +484,7 @@ def main():
         check_mask_cache_capacity(binary, directory, kind="solid-opacity")
         check_mask_cache_capacity(binary, directory, kind="gradient-opacity")
         check_mask_cache_capacity(binary, directory, kind="gradient")
+        check_mask_cache_capacity(binary, directory, kind="gradient", reflected=True)
         check_svg_mask_strips(binary, vertical, directory, luminance=False)
         check_svg_mask_strips(binary, luminance, directory, luminance=True)
         check_linear_rgb_fallback(binary, luminance, directory)
@@ -498,6 +510,15 @@ def main():
             write_direct_fills_fixture(direct_fills, overlap, gradients=gradients)
             check_cached_svg_masks(binary, direct_fills, directory, operations=3,
                                    samples=((18, 118, white), (449, 118, white), (500, 98, (255, 136, 0))))
+            reflected_fills = directory / f"reflected-{name}.html"
+            write_direct_fills_fixture(reflected_fills, overlap, gradients=gradients, reflected=True)
+            check_cached_svg_masks(binary, reflected_fills, directory, operations=3,
+                                   samples=((18, 118, white), (449, 118, white), (500, 98, (255, 136, 0))))
+        fractional_reflection = directory / "fractional-reflected-fills.html"
+        fractional_reflection.write_text(reflected_fills.read_text()
+                                         .replace('translate(168 0)', 'translate(168.25 0)')
+                                         .replace('translate(782 134)', 'translate(782 134.25)'))
+        check_quartz_mask_fallback(binary, fractional_reflection, directory)
         too_many_direct_fills = directory / "seven-direct-fills.html"
         too_many_direct_fills.write_text(direct_fills.read_text().replace(
             '</mask>', '<path d="M10 10h450v100H10Z" fill="white"/>' * 4 + '</mask>'))
