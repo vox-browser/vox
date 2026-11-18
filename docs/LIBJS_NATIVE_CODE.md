@@ -839,3 +839,56 @@ The installed GitHub profile predates the frame change. The managed hook
 has requested its production build. Raw measurements, source and binary
 hashes, and the earlier attempts remain local under
 `docs/performance/libjs-github-browser-20261116/libjs-github-frame-release-66f9-20261118/`.
+
+### Nested exception unwind
+
+A standalone JavaScript probe catches 80 throws from nested calls, checks the
+original value of a throw that escapes the script, then returns 42 from a
+successful recursive call. The interpreter stack returns to its starting
+depth and allocation mark after each script. Both default GC and preallocation
+with GC disabled pass in the interpreter and on compiler-disabled reopen.
+Each reopen records five cache hits, zero misses or compiler calls, and
+1,071 native entries. Both runtime guards exit zero.
+
+Production attempt `20261118-051109-bda5953f` seals the frame-release source
+and stops when `native_snapshot_png_opaque_darwin.h` changes during input
+verification. The next attempt `20261118-051923-a3fee897` stops when
+`native_svg_mask_pixels.h` changes during source verification. Attempt
+`20261118-052348-9157c387` stops at a change to
+`native_snapshot_png_deflate_darwin.h`. Attempt `20261118-053054-fdf4692d`
+stops at a change to `native_capture_darwin.m`. The failed receipts and
+available sealed source manifests stay local alongside the exception probe under
+`docs/performance/libjs-github-browser-20261116/libjs-github-frame-release-after-20261118/`.
+
+### Repeat control on the binding-scan build
+
+Seven additional pairs on unchanged executable `66f97ef0…e77d` reuse the
+same optimized libraries, archive, policy and image reference. Cached native
+has a median of **75,616,825,189** startup-to-PNG instructions, 0.20% above
+its earlier cohort. The interpreter median is **66,128,181,404**, 11.45%
+below its earlier cohort. The ratio of medians puts native 14.35% above
+the interpreter, compared with 1.05% in the earlier cohort on this executable.
+
+In the selected interpreter median trial, root-process instructions within
+the recorded frame intervals fall from 18.60 to 12.54 billion. Both cohorts
+match the same final pixels. In the repeat, all 14 captures match the
+complete repository audit and fulfill 81 modules. Native runs record
+2,942–2,949 cache hits with zero misses or compiler calls. The controls
+show the variation that accompanies the whole-browser comparison.
+
+### Relocated module URLs on the same build
+
+Two additional compiler-disabled captures on `66f97ef0…e77d` use the
+original and relocated forms of the same frozen fixture. The derivation
+relocates the 87 JavaScript asset URLs, updates the HTML import map and
+its CSP hash, and preserves all original author-script bodies. It
+changes only module URL strings in two of the three compatibility scripts.
+The replay verifies all three served replacement bodies in both captures.
+
+All 81 evaluated module URLs match after removing the relocation prefix,
+and every module fulfills. The repository audit matches and both captures
+have the same pinned 1024×768 Vox PNG. The original capture records 2,948
+native cache hits and the relocated capture records 2,949. Both report
+zero misses or compiler calls and keep JSC uninitialized. Guards and
+browsers exit zero. This checks reuse and pixel stability under relocation
+with the standard raster configuration.
