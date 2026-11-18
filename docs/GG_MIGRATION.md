@@ -463,6 +463,53 @@ The 18-CPU host's starting one-minute loads were 6.83, 6.84, 6.45 and
 402,685,952 sampled RSS bytes. The shared path remains opt-in because
 of the measured scroll regression.
 
+### Reusing translated gradient masks
+
+The shared macOS raster path retains up to sixteen finished mask images
+of at most 512 KiB each. An integer device-pixel translation can reuse
+the image at its new placement. The key includes the retained mask
+resource, backing scale, bitmap dimensions, clipped area and each path's
+matrix relative to the mask bitmap. The placement cache retains the same
+image object. `VOX_DISABLE_SHARED_SVG_MASK_CACHE=1` isolates the earlier
+shared replay for comparisons.
+
+Four fresh captures ran the macOS pixel check. The cached and uncached
+document images after a 96-pixel scroll were byte-for-byte equal after
+decoding, and the capture observed reuse in both mask modes. At the top
+of the fixture, the shared raster still agreed with Quartz to two levels
+per channel over the full document. The Linux browser suite and Windows
+D3D11 type check passed. Standalone layout test compilation reached the
+12 GiB guard.
+
+Both passes through the timing cohort used the same single-C V `-prod`,
+Clang `-O1` build, SHA-256
+`4f3c80fb7fa4fd31cbec44e78a04de057e95c4400ac87fab293dda998a4807a1`.
+The fixture and AVIF digests were unchanged from the prior cohort. The
+probe repeated the 120-input precise-wheel schedule at 1024 × 600 and
+2× scale. Each launch used a fresh cache and the same private profile
+seed with a hidden bookmark bar, no external resources, disabled scripts,
+and one second of settle after the title appeared. The endpoint was
+changed native frame installation after the outer view paint.
+A separate diagnostic counted 574 reused images and 231 rasterizations
+during the input window.
+
+| PID | Raster | Scroll fps | Median (ms) | p95 (ms) | Max (ms) | Input Hz | Inputs / scroll changes | First / last gap (ms) |
+| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| 24894 | Quartz | 43.89 | 21.634 | 26.385 | 27.662 | 56.16 | 120 / 93 | 54.243 / 17.280 |
+| 24970 | Shared, uncached | 35.77 | 26.565 | 31.054 | 53.245 | 59.11 | 120 / 72 | 60.695 / 17.628 |
+| 25064 | Shared, cached | 42.92 | 22.249 | 26.507 | 29.159 | 55.52 | 120 / 92 | 52.185 / 19.879 |
+| 25172 | Quartz | 39.15 | 24.789 | 29.103 | 29.957 | 54.80 | 120 / 85 | 53.806 / 17.360 |
+| 25459 | Shared, uncached | 34.09 | 28.304 | 32.572 | 56.677 | 58.80 | 120 / 69 | 65.182 / 0.107 |
+| 25645 | Shared, cached | 44.45 | 21.696 | 25.936 | 27.384 | 54.53 | 120 / 97 | 52.580 / 17.302 |
+
+The six trials exceeded 16.67 ms on every measured scroll interval.
+Starting one-minute loads on the 18-CPU host were 8.29, 7.78, 7.80, 7.50,
+7.38 and 7.35. All browser and guard exits were zero. Sampled process
+tree RSS peaked at 8,038,252,544 bytes during the macOS build and
+407,552,000 bytes in the scroll cohort. Caching improved both shared
+raster trials. The comparison with Quartz was mixed, and the shared
+path remains opt-in.
+
 ## Original migration plan
 
 Vox currently renders through two Skia builds: LibWeb's Skia (CPU raster,
