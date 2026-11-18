@@ -8162,3 +8162,81 @@ published executable. The normal 120-second Back replay and exact
 pixel comparison await publication of the resource and capture
 changes. Local inputs, guards and results are under
 `repository-navigation-5204-r93/receipts`.
+
+### Published Retina replay and PNG decode density
+
+Managed build `20261118-071534-1dc4ac8a` published executable
+`4ac49eb9690c121587fd4efd8f859f2cf0e2762013861238f07bb91a05547540`
+with a single C unit and literal V `-prod`. Its consumed source
+receipt includes the capture density, request arena, response
+ownership and image batching changes. The build and headless smoke
+guards exit zero. The fresh Hacker News reopen (PID 14317) matches
+the archived 30-story content and every pixel of the 2× reference.
+It records six native cache hits and entries, zero misses and compiler
+calls, and an uninitialized JavaScriptCore runtime. The guard exits
+zero in 4.330 seconds at 420,102,144 sampled bytes.
+
+Both GitHub attempts use the original archive, a fresh Retina window,
+the same generated native cache, `/usr/bin/false` as the compiler,
+and the same native input sequence. The ordered content proof checks
+the initial repository, the 22,128-character standalone README, and
+the repository after native toolbar Back against their Brave content
+controls. It checks the initial and returned snapshots on opposite
+sides of the standalone README. The original verdict picked the first
+matching repository snapshot for both stages because their content
+matches. The ordered proof records the actual return separately.
+
+The ordinary attempt (PID 14855) executes all inputs and restores
+the exact repository content. The guard stops it at 35.391 seconds
+and 12,896,780,288 sampled bytes, above the 12,884,901,888-byte cap.
+The guard exits 125 and reports child exit 137. The last native
+snapshot records 3,614 hits, 1,643,879 entries and zero misses or
+compiler calls. The process reaches neither final PNG encoding nor
+the shutdown cache audit.
+
+The separate historical-raster diagnostic (PID 15669) completes the
+120-second run with zero browser, controller and guard exits. It peaks
+at 12,582,420,480 sampled bytes over 121.699 seconds and records 3,614
+hits and 1,774,689 native entries, zero misses or compiler calls, and
+an uninitialized JavaScriptCore runtime. The document stays at a live
+2× display and layout scale. Native capture rerenders at 1× and encodes
+a 1,024×768 Display P3 PNG. The pixel gate against the unchanged Brave
+Back reference exits 1 with 310 differing pixels and a maximum channel
+error of 23. The repository logo accounts for 176 pixels and the commit
+avatar accounts for 132. The two remaining points in this capture are
+the Notifications button corners seen in the earlier 1× control.
+
+The upload logs show the 30×30 repository logo and 20×20 commit avatar
+decodes in that 1× capture. The earlier whole-window 1× control used
+60×60 and 40×40 decodes and matched both image regions. Commit
+`2c21578e1` uses the actual raster density for decode sizing in both
+sampled PNG paths, including the shadow group. A focused fixture
+exercises the 2× live raster, the 1× capture raster in the same window,
+and the disabled flag. It verifies the 60×60 and 40×40 capture decode
+targets and exits zero. The production type-check exits zero in
+42.452 seconds at 7,119,241,216 sampled bytes. Build
+`20261118-073809-246321e6` stopped after a native SVG header changed
+during input sealing. The commit has requested a managed rebuild.
+The published capture has yet to exercise the PNG change. The normal
+120-second memory and exact Brave pixel checks remain open.
+
+In the standalone Metal control, a single submitted rectangle clipped
+outside the target leaves no pixels on its own. Placing it before the
+button borders reproduces the exact reference tile, including both
+Notifications corner RGB values. Unused leading instance rows and fully
+clipped rectangles submitted after the borders preserve both differences.
+These 35 controls run under a guard for 2.520 seconds at 51,118,080
+sampled bytes and isolate a draw-submission dependency in the tile.
+
+The build-sealing sample also led to commit `5ddab3b29`. It uses
+incremental CommonCrypto SHA-256 in the macOS build tools and preserves
+the portable implementation. Three alternating fresh-process pairs on
+an unchanged synthetic checkout with a 96 MiB file produce identical
+repository and build-input digests. Median time inside the repository
+hashing routine is 4.653 seconds for the reference and 0.103 seconds
+for CommonCrypto. The binary, symlink and missing-file checks pass, as
+do the portable path and its Linux C-backend type check.
+
+The source receipts, input hashes, ordered content proof, guards, raw
+browser logs, and pixel comparisons are retained locally under
+`repository-navigation-5204-r94/receipts`.
