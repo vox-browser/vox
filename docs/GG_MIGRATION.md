@@ -7664,3 +7664,85 @@ The audits found 30, 33 and 25 entries and zero Canvas elements.
 All three browsers and the replay guard exited zero. This published
 build predates the sprite change. Timings above cover the sprite
 blitter, and candidate site timings await a production build.
+
+### Parallel shaded rectangle blits
+
+Large pipeline rectangles use the existing raster scheduler for
+disjoint destination rows. Image draws also check the backing of
+both sampled mipmap levels. An overlap keeps the original ordered
+draw, as do small rectangles and constant-color stores. The workers
+share the blitter header and paint inputs and write only their
+assigned rows.
+
+Fixed bilinear tap offsets remove three dynamic V arrays per
+high-precision sample. The gradient span borrows its shader directly,
+and rectangle and A8 mask callbacks borrow the blitter header.
+Generated production C showed no allocation calls in the 83 and
+78 raster functions reached from the two callbacks, respectively.
+
+Matched single-C-unit V `-prod -g -prealloc -gc none` harnesses
+measured the clipped pipeline rectangle through return. The image
+cases used padded rows, an approximately 2× bilinear scale, and paint
+alpha 0.83. Buffer reset and SHA-256 ran outside the timer. Seven
+rotating groups on Mac17,6 with 18 logical CPUs started at 08:59
+local time on 2026-11-18. One-minute load varied from 7.87 to 8.74.
+The initial baseline attempt reached a 3 GiB guard and exited 137.
+The full cohort used the repository's default 12 GiB guard, peaked
+at 4.12 GiB sampled RSS, and completed with all 21 processes and
+the guard exiting zero. Times are medians in microseconds. Warm
+results use each process's median of six calls after the first.
+
+| Size and paint | First before / forced serial / default | Warm before / forced serial / default |
+| --- | ---: | ---: |
+| 67×43 linear gradient | 21.083 / 17.417 / 17.792 | 18.979 / 16.604 / 16.500 |
+| 67×43 image source-over | 64.083 / 64.750 / 67.084 | 62.938 / 63.896 / 64.083 |
+| 67×43 image soft-light | 190.375 / 150.208 / 156.458 | 178.396 / 142.625 / 145.563 |
+| 511×513 linear gradient | 1557.209 / 1436.292 / 1446.416 | 1498.458 / 1440.729 / 1430.604 |
+| 511×513 image source-over | 5547.417 / 5712.709 / 5889.750 | 5654.312 / 5855.333 / 5846.792 |
+| 511×513 image soft-light | 16875.500 / 13038.542 / 13255.833 | 16175.001 / 12995.438 / 13151.083 |
+| 512×512 linear gradient | 1452.167 / 1415.709 / 962.125 | 1488.042 / 1456.626 / 778.146 |
+| 512×512 image source-over | 5684.500 / 5659.750 / 3030.250 | 5697.042 / 5742.562 / 3071.146 |
+| 512×512 image soft-light | 16344.541 / 12795.542 / 6772.958 | 15930.334 / 13002.750 / 6816.167 |
+| 1031×517 linear gradient | 3137.334 / 3000.125 / 1149.625 | 3152.396 / 2920.479 / 990.708 |
+| 1031×517 image source-over | 11584.667 / 11541.208 / 3563.958 | 11413.062 / 11755.291 / 3820.291 |
+| 1031×517 image soft-light | 32943.250 / 26637.625 / 7685.500 | 32460.250 / 26742.229 / 7663.542 |
+| 2051×1537 linear gradient | 19744.292 / 17869.917 / 5494.125 | 18293.750 / 17780.208 / 5822.042 |
+| 2051×1537 image source-over | 67562.709 / 69443.459 / 22492.500 | 67081.146 / 68185.792 / 20657.354 |
+| 2051×1537 image soft-light | 193470.750 / 157997.208 / 42812.041 | 193213.750 / 158015.709 / 43713.520 |
+
+All full destination hashes matched. The default configuration won
+all first and warm pairs at and above the dispatch threshold. The
+511×513 source-over case stayed serial and its first and warm
+medians rose 6.2% and 3.4% respectively. The largest soft-light case
+ran in 158.02 ms forced serial and 43.71 ms with workers. Harness
+hashes were
+`1ad420cd299b856d01fe8625af43ae8cd656f1fa7f9a3d4d3c09e5af83afd07c`
+before and
+`05c3e9695fe39386c3ca3e9f4549d7bfe5a30def843e0b8caebbce25209a386a`
+after.
+
+A separate probe observed two distinct threads at 512×512, four
+on larger batches, and zero below the cutoff or with workers
+disabled. Public macOS Canvas image draws in multiply and soft-light
+modes both dispatched four threads for a 2051×1537 destination.
+Their full surface hashes matched forced serial
+(`dd5cee2f3728877c3dd8f3d78401faf7f71bbefebca6f27967d057ce144d6db2`
+and `1768b517455d7fcd00f7fd59d1d155e79c40abfd7148572fddb4ffa1be60807b`).
+All four probe processes and the guard exited zero. Focused macOS
+and arm64 Linux tests covered clipped gradient and image rectangles,
+low and high precision, and both disjoint and aliased mipmap levels.
+Forced serial, ASan/UBSan, ThreadSanitizer, and the pinned CPU raster
+differential suite (count 2000, seed 20261106) passed.
+
+The published single-C-unit executable
+`ea5cc7a3d626c8fdef30c81044f1e9a78976d20c1c5726245d8a335b1950bb74`
+and native library
+`ebde1494c5aebaa69ebe6edab9f4e3333020cb4b2949d96fa1fbb35f19d6a202`
+matched the frozen Hacker News, GitHub and Old Reddit references.
+The parsed source receipt pins the sprite implementation from
+`461e46094`. Fresh sealed replays used JavaScript, private profiles
+and caches, a 1024×768 CSS-pixel viewport, 2× captures and a
+one-second settle. The audits found 30, 33 and 25 entries and zero
+Canvas elements. The three browser processes and guard exited
+zero. Timings above cover the isolated rectangle path. Site timings
+for the rectangle change await its production build.
