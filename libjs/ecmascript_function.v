@@ -1,5 +1,10 @@
 module libjs
 
+const function_prototype_key = PropertyName.from_str('prototype')
+const function_constructor_key = PropertyName.from_str('constructor')
+const default_export_identifier = utf16_string('*default*')
+const default_export_name = utf16_string('default')
+
 // Runtime/ECMAScriptFunctionObject.cpp: ordinary calls retain their defining
 // environment and allocate an independent interpreter frame. Executables use
 // this port's instruction-index ABI rather than upstream inline frames.
@@ -64,7 +69,7 @@ fn create_ecmascript_function_in_environment(mut vm VM, source &Executable, data
 	object.callable = FunctionObject(function)
 	if ordinary && !data.is_arrow_function && data.kind == .normal { object.constructor = ConstructorFunction(function) }
 	object.set_function_length(f64(data.function_length))
-	object.set_function_name(mut vm, PropertyName.from_utf16(function.name_for_call_stack()), none)
+	object.set_function_name_text(mut vm, function.name_for_call_stack())
 	code := source.source_code or { return error('Function executable is missing its source code') }
 	units := code.code.as_slice()
 	if data.source_text_start > data.source_text_end || data.source_text_end > u32(units.len) {
@@ -79,19 +84,19 @@ fn create_ecmascript_function_in_environment(mut vm VM, source &Executable, data
 	}
 	if ordinary && !data.is_arrow_function && data.kind == .normal {
 		mut prototype := Object.create(realm, realm.object_prototype)
-		prototype.define_direct_property(PropertyName.from_str('constructor'), Value.from_object(object), attribute_writable | attribute_configurable)
-		object.define_direct_property(PropertyName.from_str('prototype'), Value.from_object(prototype), attribute_writable)
+		prototype.define_direct_property(function_constructor_key, Value.from_object(object), attribute_writable | attribute_configurable)
+		object.define_direct_property(function_prototype_key, Value.from_object(prototype), attribute_writable)
 	} else if data.kind in [.generator, .async_generator] {
 		// Generator methods also own a prototype, but have no [[Construct]].
 		parent := if data.kind == .generator { realm.generator_prototype } else { realm.async_generator_prototype }
-		object.define_direct_property(PropertyName.from_str('prototype'), Value.from_object(Object.create(realm, parent)), attribute_writable)
+		object.define_direct_property(function_prototype_key, Value.from_object(Object.create(realm, parent)), attribute_writable)
 	}
 	return object
 }
 
 fn (function &ECMAScriptFunction) name_for_call_stack() Utf16String {
 	if name := function.data.name {
-		return if name.name.str() == '*default*' { utf16_string('default') } else { name.name }
+		return if name.name == default_export_identifier { default_export_name } else { name.name }
 	}
 	return function.inferred_name or { Utf16String.new() }
 }

@@ -15,6 +15,23 @@ fn function_test_sum(mut vm VM) !Value {
 	return result
 }
 
+fn test_function_metadata_preserves_code_units_and_independent_descriptors() {
+	mut vm := VM.create()
+	create_simple_execution_context(mut vm)
+	mut script := Script.parse(r'
+		function make() { return { ["\uD800"](argument) { return argument; } }["\uD800"]; }
+		var first = make(), second = make();
+		var original = Object.getOwnPropertyDescriptor(first, "name");
+		Object.defineProperty(first, "name", { value: "changed" });
+		delete first.length;
+		original.value.length === 1 && original.value.charCodeAt(0) === 0xD800 &&
+			!original.writable && !original.enumerable && original.configurable &&
+			first.name === "changed" && second.name === original.value && second.length === 1 &&
+			Reflect.ownKeys(second).join(",") === "length,name" && second(42) === 42;
+	', vm.realm(), 'function-metadata-keys.js', unsafe { nil })!
+	assert vm.run_with_limits(mut script, ExecutionLimits{max_instructions: 100_000})!.as_bool()
+}
+
 fn test_function_prototype_defines_methods_metadata_and_is_callable_without_running_context_changes() {
 	mut vm := VM.create()
 	base := create_simple_execution_context(mut vm)

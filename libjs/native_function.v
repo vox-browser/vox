@@ -21,6 +21,9 @@ pub type NativeConstructPointer = fn (mut vm VM, new_target &Object) !&Object
 
 pub type FunctionName = PrivateName | PropertyName
 
+const function_name_key = PropertyName.from_str('name')
+const function_length_key = PropertyName.from_str('length')
+
 fn make_function_name(name FunctionName, prefix ?string) Utf16String {
 	mut text := Utf16String.new()
 	match name {
@@ -50,18 +53,22 @@ fn make_function_name(name FunctionName, prefix ?string) Utf16String {
 // non-writable, non-enumerable, configurable data properties.
 pub fn (mut object Object) set_function_length(length f64) {
 	assert length >= 0 && (math.trunc(length) == length || math.is_inf(length, 1))
-	assert object.extensible && !object.has_own_property(PropertyName.from_str('length'))
-	object.define_direct_property(PropertyName.from_str('length'), Value.from_f64(length),
+	assert object.extensible && !object.has_own_property(function_length_key)
+	object.define_direct_property(function_length_key, Value.from_f64(length),
 		attribute_configurable)
 }
 
 pub fn (mut object Object) set_function_name(mut vm VM, name FunctionName, prefix ?string) Utf16String {
-	assert object.extensible && !object.has_own_property(PropertyName.from_str('name'))
 	text := make_function_name(name, prefix)
-	if object.native_callable { object.native_initial_name = text }
-	object.define_direct_property(PropertyName.from_str('name'),
-		Value.from_string(vm.create_string(text)), attribute_configurable)
+	object.set_function_name_text(mut vm, text)
 	return text
+}
+
+fn (mut object Object) set_function_name_text(mut vm VM, text Utf16String) {
+	assert object.extensible && !object.has_own_property(function_name_key)
+	if object.native_callable { object.native_initial_name = text }
+	object.define_direct_property(function_name_key,
+		Value.from_string(vm.create_string(text)), attribute_configurable)
 }
 
 // CapturingNativeFunction stores the closure directly. The raw variant uses
@@ -101,7 +108,7 @@ fn create_native_function(mut vm VM, realm &Realm, prototype ?&Object, behaviour
 	text := make_function_name(name, prefix)
 	if initialize_metadata {
 		object.set_function_length(length)
-		object.set_function_name(mut vm, name, prefix)
+		object.set_function_name_text(mut vm, text)
 	} else {
 		object.native_initial_name = text
 	}
