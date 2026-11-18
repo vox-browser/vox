@@ -75,7 +75,7 @@ def main():
     output.mkdir(parents=True, exist_ok=True)
     assert not (output / 'result.json').exists(), output
     compiler = Path(shutil.which('clang')).resolve()
-    files = (source / 'native/include/native_snapshot_png_darwin.h', source / 'native/include/native_snapshot_png_opaque_darwin.h', source / 'native/include/native_rgba_is_opaque.h', source / 'native/include/native_presented_pixels_darwin.h', source / 'tools/native_snapshot_png_test.m',
+    files = (source / 'native/include/native_snapshot_png_darwin.h', source / 'native/include/native_snapshot_png_opaque_darwin.h', source / 'native/include/native_snapshot_png_deflate_darwin.h', source / 'native/include/native_rgba_is_opaque.h', source / 'native/include/native_presented_pixels_darwin.h', source / 'tools/native_snapshot_png_test.m',
              Path(__file__).resolve(), compiler)
     pins = {str(path): digest(path) for path in files}
     if args.compression_library:
@@ -119,10 +119,11 @@ def main():
                 artifacts / ('case-%d-zlib.png' % case['case']))) for case in records]
             row['compression_backend_verified'] = (not args.compression_library or
                 'VOX_LIBDEFLATE_PNG input=' in (directory / 'test.log').read_text())
+            row['large_snapshot'] = compare(artifacts / 'large-reference.png', artifacts / 'large-candidate.png')
             row['passed'] = (row['test_exit_code'] == 0 and len(records) == 45 and
                 {case['case'] for case in records} == set(range(45)) and
                 all(case['passed'] for case in row['cases'] + row['fallback_cases'] + row['zlib_cases']) and
-                row['compression_backend_verified'] and
+                row['compression_backend_verified'] and row['large_snapshot']['passed'] and
                 'PASS 45 snapshot PNG pixel/profile/density cases' in (directory / 'test.log').read_text())
         result['changed_inputs'] = [str(path) for path, sha in pins.items() if digest(Path(path)) != sha]
         result['passed'] = len(result['jobs']) == 2 and all(row['passed'] for row in result['jobs'].values()) and not result['changed_inputs']

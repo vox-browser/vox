@@ -3,7 +3,7 @@
 #include <stdio.h>
 #include <string.h>
 #include "native/include/native_snapshot_png_darwin.h"
-// The test alone links zlib, to decode the optional backend's output.
+// Link zlib directly to decode the encoder's output independently.
 #include <zlib.h>
 
 static void test_opacity_scan(void)
@@ -66,11 +66,102 @@ static void test_large_opacity_scan(void)
     puts("PASS large opacity scan with padded rows and translucent worker boundaries");
 }
 
+static void test_parallel_deflate(void)
+{
+    const size_t row_bytes = 2051 * 4, pitch = row_bytes + 9, max_height = 1541;
+    uint8_t *input = malloc(pitch * max_height);
+    uint8_t *decoded = malloc((row_bytes + 1) * max_height);
+    assert(input && decoded);
+    for (size_t y = 0; y < max_height; ++y)
+        for (size_t x = 0; x < pitch; ++x)
+            input[y * pitch + x] = (uint8_t)(x * 17 + y * 31 + (y >> 8));
+    // Two, three and four bands, with nonempty row tails and changing pixels
+    // across every band boundary. The detached padding never enters zlib.
+    const size_t heights[] = {641, 941, max_height};
+    unsetenv("VOX_SERIAL_SNAPSHOT_PNG");
+    for (size_t i = 0; i < sizeof heights / sizeof heights[0]; ++i) {
+        size_t size = 0, height = heights[i];
+        if (height == max_height) {
+            uint32_t noise = 0x61798c45;
+            for (size_t n = 0; n < pitch * height; ++n) {
+                noise ^= noise << 13;
+                noise ^= noise >> 17;
+                noise ^= noise << 5;
+                input[n] = (uint8_t)noise;
+            }
+        }
+        uint8_t *compressed = native_snapshot_deflate_rows(input, row_bytes, height, pitch, &size);
+        assert(compressed && size);
+        uLongf length = (row_bytes + 1) * height;
+        assert(uncompress(decoded, &length, compressed, size) == Z_OK);
+        assert(length == (row_bytes + 1) * height);
+        for (size_t y = 0; y < height; ++y) {
+            const uint8_t *row = decoded + (row_bytes + 1) * y;
+            assert(row[0] == 0 && !memcmp(row + 1, input + y * pitch, row_bytes));
+        }
+        free(compressed);
+    }
+    size_t size = 7;
+    assert(!native_snapshot_deflate_rows(input, row_bytes, 1, pitch, &size) && !size);
+    assert(!native_snapshot_deflate_rows(input, row_bytes, max_height, row_bytes - 1, &size) && !size);
+    assert(setenv("VOX_SERIAL_SNAPSHOT_PNG", "1", 1) == 0);
+    assert(!native_snapshot_deflate_rows(input, row_bytes, max_height, pitch, &size) && !size);
+    assert(unsetenv("VOX_SERIAL_SNAPSHOT_PNG") == 0);
+    free(decoded);
+    free(input);
+    puts("PASS two to four PNG deflate bands, filter bytes, padded rows and serial fallback");
+}
+
+static void test_large_snapshot_png(const char *directory)
+{
+    @autoreleasepool {
+        const size_t width = 1027, height = 1033, pitch = width * 4 + 12;
+        NSMutableData *pixels = [NSMutableData dataWithLength:pitch * height];
+        for (size_t y = 0; y < height; ++y) {
+            uint8_t *row = (uint8_t *)pixels.mutableBytes + y * pitch;
+            for (size_t x = 0; x < width; ++x) {
+                row[x * 4] = (uint8_t)(x + y);
+                row[x * 4 + 1] = (uint8_t)(y / 2);
+                row[x * 4 + 2] = (uint8_t)(x ^ y);
+                row[x * 4 + 3] = 255;
+            }
+        }
+        CGDataProviderRef provider = CGDataProviderCreateWithCFData((__bridge CFDataRef)pixels);
+        CGColorSpaceRef srgb = CGColorSpaceCreateWithName(kCGColorSpaceSRGB);
+        CGImageRef image = CGImageCreate(width, height, 8, 32, pitch, srgb,
+            kCGImageAlphaPremultipliedLast | kCGBitmapByteOrder32Big,
+            provider, NULL, true, kCGRenderingIntentDefault);
+        assert(image);
+        NSBitmapImageRep *bitmap = [[NSBitmapImageRep alloc] initWithCGImage:image];
+        assert(bitmap);
+        bitmap.size = NSMakeSize(width / 2.0, height / 2.0);
+        native_presented_pixels_attach(bitmap, (NativePresentedPixels){pixels.bytes, width, height, pitch});
+        NSString *output = [NSString stringWithUTF8String:directory];
+        // Run before loading the optional compressor to exercise ImageIO and
+        // the parallel encoder through the actual native capture function.
+        assert(setenv("VOX_SERIAL_SNAPSHOT_PNG", "1", 1) == 0);
+        NSData *reference = native_encode_snapshot_png(bitmap);
+        assert(unsetenv("VOX_SERIAL_SNAPSHOT_PNG") == 0);
+        NSData *candidate = native_encode_snapshot_png(bitmap);
+        assert(reference && candidate && ![reference isEqualToData:candidate]);
+        assert([reference writeToFile:[output stringByAppendingPathComponent:@"large-reference.png"] atomically:YES]);
+        assert([candidate writeToFile:[output stringByAppendingPathComponent:@"large-candidate.png"] atomically:YES]);
+#if !__has_feature(objc_arc)
+        [bitmap release];
+#endif
+        CGImageRelease(image);
+        CGDataProviderRelease(provider);
+        CGColorSpaceRelease(srgb);
+    }
+}
+
 int main(int argc, const char *argv[])
 {
     assert(argc == 2 || argc == 3);
     test_opacity_scan();
     test_large_opacity_scan();
+    test_parallel_deflate();
+    test_large_snapshot_png(argv[1]);
     if (argc == 3) {
         assert(dlopen(argv[2], RTLD_NOW | RTLD_GLOBAL));
         typedef size_t (*Compressor)(const void *, size_t, void *, size_t);

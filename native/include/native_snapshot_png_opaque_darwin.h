@@ -10,6 +10,7 @@
 #include "native_rgba_is_opaque.h"
 #include "native_crc32.h"
 #include "native_presented_pixels_darwin.h"
+#include "native_snapshot_png_deflate_darwin.h"
 
 static void native_png_write_u32(unsigned char *bytes, uint32_t value)
 {
@@ -42,6 +43,42 @@ static void native_png_exif_entry(unsigned char *entry, unsigned tag, unsigned t
     native_png_write_u16(entry + 2, type);
     native_png_write_u32(entry + 4, 1);
     native_png_write_u32(entry + 8, value);
+}
+
+static NSData *native_snapshot_optional_compression(const unsigned char *source,
+    size_t row_bytes, size_t height, size_t row_pitch)
+{
+    size_t filtered_pitch = row_bytes + 1;
+    size_t size = filtered_pitch * height;
+    // The repeated-pixel codec reads unfiltered rows straight from the
+    // bitmap. Its output equals compressing the materialized rows below.
+    typedef size_t (*SnapshotRowCompressor)(const void *, size_t, size_t, size_t, void *, size_t);
+    typedef size_t (*SnapshotCompressor)(const void *, size_t, void *, size_t);
+    SnapshotRowCompressor row_compressor = (SnapshotRowCompressor)dlsym(RTLD_DEFAULT,
+        "ladybird_v_snapshot_compress_png_rows");
+    SnapshotCompressor compressor = (SnapshotCompressor)dlsym(RTLD_DEFAULT,
+        "ladybird_v_snapshot_compress_zlib");
+    if (!row_compressor && !compressor) return nil;
+    // zlib's compressBound, the capacity the libdeflate entry points expect.
+    size_t bound = size + (size >> 12) + (size >> 14) + (size >> 25) + 13;
+    NSMutableData *compressed = [NSMutableData dataWithLength:bound];
+    size_t written = row_compressor ? row_compressor(source, row_bytes, height,
+        row_pitch, compressed.mutableBytes, compressed.length) : 0;
+    if (!written) {
+        NSMutableData *rows = [NSMutableData dataWithLength:size];
+        unsigned char *filtered = rows.mutableBytes;
+        for (size_t y = 0; y < height; ++y) {
+            unsigned char *output = filtered + y * filtered_pitch;
+            output[0] = 0;
+            memcpy(output + 1, source + y * row_pitch, row_bytes);
+        }
+        written = compressor ? compressor(rows.bytes, size, compressed.mutableBytes, compressed.length) : 0;
+        if (!written) return nil;
+    }
+    if (getenv("VOX_LIBDEFLATE_PNG_DIAGNOSTICS"))
+        fprintf(stderr, "VOX_LIBDEFLATE_PNG input=%zu output=%zu\n", size, written);
+    compressed.length = written;
+    return compressed;
 }
 
 // Only opaque, byte-ordered RGBA in the named sRGB space is eligible. The
@@ -86,40 +123,14 @@ static NSData *native_encode_opaque_snapshot_png(NSBitmapImageRep *bitmap,
     const unsigned char *source = trusted ? presented.pixels : bitmap.bitmapData;
     if (!trusted && !vox_rgba8_is_opaque(source, (size_t)width, (size_t)height, (size_t)row_pitch)) return nil;
 
-    size_t size = filtered_pitch * (size_t)height;
-    // Vox links no zlib: this encoder needs the optional libdeflate backend.
-    // Without it (or when it cannot allocate or fit its output) the ordinary
-    // ImageIO encoder writes the snapshot instead.
     if (getenv("VOX_DISABLE_LIBDEFLATE_PNG")) return nil;
-    // The repeated-pixel codec reads unfiltered rows straight from the
-    // bitmap. Its output equals compressing the materialized rows below.
-    typedef size_t (*SnapshotRowCompressor)(const void *, size_t, size_t, size_t, void *, size_t);
-    typedef size_t (*SnapshotCompressor)(const void *, size_t, void *, size_t);
-    SnapshotRowCompressor row_compressor = (SnapshotRowCompressor)dlsym(RTLD_DEFAULT,
-        "ladybird_v_snapshot_compress_png_rows");
-    SnapshotCompressor compressor = (SnapshotCompressor)dlsym(RTLD_DEFAULT,
-        "ladybird_v_snapshot_compress_zlib");
-    if (!row_compressor && !compressor) return nil;
-    // zlib's compressBound, the capacity the libdeflate entry points expect.
-    size_t bound = size + (size >> 12) + (size >> 14) + (size >> 25) + 13;
-    NSMutableData *compressed = [NSMutableData dataWithLength:bound];
-    size_t written = row_compressor ? row_compressor(source, row_bytes, (size_t)height,
-        (size_t)row_pitch, compressed.mutableBytes, compressed.length) : 0;
-    if (!written) {
-        NSMutableData *rows = [NSMutableData dataWithLength:size];
-        unsigned char *filtered = rows.mutableBytes;
-        for (NSInteger y = 0; y < height; ++y) {
-            unsigned char *output = filtered + (size_t)y * filtered_pitch;
-            output[0] = 0;
-            memcpy(output + 1, source + (size_t)y * row_pitch, row_bytes);
-        }
-        written = compressor ? compressor(rows.bytes, size, compressed.mutableBytes, compressed.length) : 0;
-        if (!written) return nil;
-        if (getenv("VOX_LIBDEFLATE_PNG_DIAGNOSTICS"))
-            fprintf(stderr, "VOX_LIBDEFLATE_PNG input=%zu output=%zu\n", size, written);
-    } else if (getenv("VOX_LIBDEFLATE_PNG_DIAGNOSTICS"))
-        fprintf(stderr, "VOX_LIBDEFLATE_PNG input=%zu output=%zu\n", size, written);
-    compressed.length = written;
+    size_t written = 0;
+    uint8_t *compressed_bytes = native_snapshot_deflate_rows(source, row_bytes,
+        (size_t)height, (size_t)row_pitch, &written);
+    NSData *compressed = compressed_bytes
+        ? [NSData dataWithBytesNoCopy:compressed_bytes length:written freeWhenDone:YES]
+        : native_snapshot_optional_compression(source, row_bytes, (size_t)height, (size_t)row_pitch);
+    if (!compressed) return nil;
 
     const unsigned char signature[] = {137,80,78,71,13,10,26,10};
     NSMutableData *result = [NSMutableData dataWithCapacity:compressed.length + 256];

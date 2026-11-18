@@ -5059,3 +5059,48 @@ A local opacity control exercised the same call site with a 1480×960
 region. The table measures only the native blend, with the large
 control's dimensions. Whole-browser verification of the new worker
 code awaits its production build.
+
+### Parallel macOS screenshot PNG compression
+
+Large opaque sRGB snapshots split their unfiltered PNG rows into up to
+four bands and compress them with system zlib. The caller joins the
+byte-aligned DEFLATE blocks and combines their checksums into one zlib
+stream. PNG dimensions, profile, density and ancillary metadata use the
+existing writer. Small, translucent and other unsupported captures keep
+the existing codec selection. `VOX_SERIAL_SNAPSHOT_PNG=1` bypasses the
+band encoder for matched checks.
+
+The single-C-unit production executable
+`66f97ef08d4c9ff9ae1195cd80c9817add78ab82c27960580f1444a44101e77d`
+supplied archived inputs at 1024×768 CSS pixels, 2× backing scale and a
+one-second settle. All three pages used the direct presented capture
+path and matched their prior content and decoded RGBA references.
+A second set of fresh browser processes loaded the band encoder through
+the existing codec extension point. Each screenshot invoked the codec
+once and matched the prior decoded pixels, color profile, density and
+ancillary metadata. All browser processes and guards exited 0.
+
+Matching Apple Clang 21 `-O2 -fobjc-arc` harnesses timed
+`native_encode_snapshot_png` from the captured bitmap through complete
+PNG bytes in memory, including checksums and chunk construction. Seven
+alternating fresh-process groups compared the previous ImageIO path,
+the candidate forced to the same ImageIO path, and the candidate using
+four bands. Input loading and writing to disk were outside the timer.
+One-minute load was 4.95–5.12 on 18 logical CPUs. Every trial and guard
+exited 0. Each mode's output was deterministic across trials.
+
+| Archived page | Before, ms | Candidate serial, ms | Candidate parallel, ms | Before → after PNG bytes | Parallel faster than before |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Hacker News | 17.846 | 17.881 | 4.931 | 461,920 → 462,100 | 7/7 |
+| GitHub | 16.734 | 16.822 | 4.911 | 340,530 → 340,293 | 7/7 |
+| Old Reddit | 19.185 | 19.311 | 5.073 | 544,974 → 544,785 | 7/7 |
+
+A separate dispatch probe resolved the band callback at executable
+offset `0x21fc` and observed four distinct threads for every archive.
+Forced serial produced the same PNG bytes as the original path. Native
+ARC and non-ARC tests passed under normal, ASan and UBSan builds. They
+validated two through four bands, padded rows, incompressible input,
+the complete Retina PNG and the optional codec fallback.
+ThreadSanitizer also passed an archived capture. Timing covers encoding
+only. The installed browser supplied the pixels and codec-extension
+verification, so the default production route awaits its rebuild.
