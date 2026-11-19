@@ -347,6 +347,7 @@ function moveFocalCircle() {
         return;
     }
     document.getElementById('repeat-outer').setAttribute('fr', '12');
+    document.getElementById('offset-pad').setAttribute('fx', '112.5');
     document.body.setAttribute('data-focal-ready', '1');
 }
 requestAnimationFrame(moveFocalCircle);
@@ -366,23 +367,27 @@ requestAnimationFrame(moveFocalCircle);
                            env=environment, log_path=artifacts / f"{screenshot.stem}.log")
         gradients = [line for line in log.splitlines() if line.endswith(" gradient=2")]
         assert any("draw=256x88 cache=miss" in line for line in gradients), log
-        repeat = [line for line in gradients if "draw=224x96 " in line]
-        misses = [line for line in repeat if "cache=miss" in line]
-        if label == "cached":
-            assert len(misses) == 2 and "bounds=hit" in misses[1], log
-        else:
-            assert len(misses) >= 2 and len(misses) == len(repeat), log
+        assert any("draw=240x88 cache=miss" in line for line in gradients), log
+        for size in ("224x96", "208x96"):
+            draws = [line for line in gradients if f"draw={size} " in line]
+            misses = [line for line in draws if "cache=miss" in line]
+            if label == "cached":
+                assert len(misses) == 2 and "bounds=hit" in misses[1], log
+            else:
+                assert len(misses) >= 2 and len(misses) == len(draws), log
 
         _, height, channels, rows = rendered_png_rows(screenshot.read_bytes())
         marker = next(y for y, row in enumerate(rows[:150]) if row[4 * channels:4 * channels + 3] == b"\x34\xb7\x86")
-        # Sample under the focal circle, between the circles, and beyond the outer circle.
-        for x, expected in ((112, (191, 0, 64)), (132, (128, 0, 128)), (144, (191, 0, 64)),
-                            (384, (159, 127, 223)), (430, (149, 127, 234))):
-            pixel = rows[marker + 8 + 48][x * channels:x * channels + 3]
-            assert all(abs(a - b) <= 2 for a, b in zip(pixel, expected)), (x, pixel, expected)
+        samples = ((112, 48, (191, 0, 64)), (132, 48, (128, 0, 128)), (144, 48, (191, 0, 64)),
+                   (384, 48, (159, 127, 223)), (430, 48, (149, 127, 234)),
+                   (112, 164, (255, 0, 0)), (132, 164, (159, 0, 96)), (112, 184, (123, 0, 132)),
+                   (390, 188, (191, 127, 191)), (354, 140, (191, 127, 191)))
+        for x, y, expected in samples:
+            pixel = rows[marker + 8 + y][x * channels:x * channels + 3]
+            assert all(abs(a - b) <= 2 for a, b in zip(pixel, expected)), (x, y, pixel, expected)
         documents.append(rows[marker:height - 24])
-    assert documents[0] == documents[1], "Cached concentric spreads changed document pixels"
-    print("PASS: GG repeats and reflects SVG focal circles through live edits", flush=True)
+    assert documents[0] == documents[1], "Cached radial spreads changed document pixels"
+    print("PASS: GG renders SVG focal circles and spread methods through live edits", flush=True)
 
 
 def check_gg_svg_gradient_viewport(binary, artifacts, temporary):

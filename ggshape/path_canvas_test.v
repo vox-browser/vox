@@ -111,8 +111,19 @@ fn test_shared_svg_path_pixels() {
 	path.stop_count = 2
 	path.opacity = 1
 
+	// With the outer center shifted four pixels right, the forward ramp
+	// has length 12. A sample seven pixels from the focal center is at 1/3.
+	path.gradient_points = [f32(4.5), 4.5, 3, 8.5, 4.5, 11]!
+	assert draw_path_with_context(mut ctx, pixels.data, width, height, pitch, 0, &path, false) == 1
+	assert pixels[inner..inner + 4] == [u8(0), 0, 255, 255]
+	assert pixels[middle + 1] in [u8(84), 85, 86] && pixels[middle + 2] in [u8(169), 170, 171]
+	// Four pixels perpendicular to the line of centers gives t ≈ 0.129.
+	across := 11 * pitch + 10 * 4
+	assert pixels[across + 1] in [u8(32), 33, 34] && pixels[across + 2] in [u8(221), 222, 223]
+
 	path.stroke = 1
 	path.stroke_width = 2
+	path.gradient_points = [f32(4.5), 4.5, 3, 4.5, 4.5, 11]!
 	assert draw_path_with_context(mut ctx, pixels.data, width, height, pitch, 0, &path, false) == 1
 	assert pixels[inner..inner + 4] == [u8(0), 0, 0, 0]
 	stroke := 4 * pitch + 10 * 4
@@ -120,7 +131,13 @@ fn test_shared_svg_path_pixels() {
 
 	before := pixels.clone()
 	path.tile_mode = 1
-	path.gradient_points = [f32(4.5), 4.5, 3, 5.5, 4.5, 11]!
+	// Crossing circles still use the fallback.
+	path.gradient_points = [f32(4.5), 4.5, 3, 14.5, 4.5, 11]!
+	assert draw_path_with_context(mut ctx, pixels.data, width, height, pitch, 1, &path, false) == 0
+	assert pixels == before
+	// This offset is inside the outer circle in f64 but rounds to a
+	// tangent at the fragment shader's f32 precision.
+	path.gradient_points = [f32(0), 0, 3, 8191.99951171875, 2.5, 8195]!
 	assert draw_path_with_context(mut ctx, pixels.data, width, height, pitch, 1, &path, false) == 0
 	assert pixels == before
 	path.tile_mode = 0

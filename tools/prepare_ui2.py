@@ -108,7 +108,7 @@ def stage_document_surface(canvas, windows=True):
     names = ['document_surface.v']
     from prepare_gg_shadow import replace_once
     patches = json.loads((tools / 'buildtools/gg_patches.json').read_text())
-    groups = ['prepare_gg_document_gradient_hole', 'prepare_gg_concentric_tiles']
+    groups = ['prepare_gg_document_gradient_hole', 'prepare_gg_conical_gradient']
     if windows:
         groups.append('prepare_gg_windows_canvas')
         names.append('window_gpu_windows.c.v')

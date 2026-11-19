@@ -1,13 +1,14 @@
 module canvas
 
+import math
 import sokol.gfx
 
 // Map the distance from the common center to the interval between the
 // two circles before the shader applies repeat or mirror tiling.
-fn concentric_tile_gradient(start Point, start_radius f32, end Point, end_radius f32, g Gradient) !Gradient {
+fn concentric_tile_gradient(start_radius f32, end_radius f32, center Point, g Gradient) !Gradient {
 	span := end_radius - start_radius
-	if g.tile_mode !in [.repeat, .mirror] || start.x != end.x || start.y != end.y
-		|| !is_finite_f32(start.x) || !is_finite_f32(start.y) || !(start_radius > 0
+	if g.tile_mode !in [.repeat, .mirror]
+		|| !is_finite_f32(center.x) || !is_finite_f32(center.y) || !(start_radius > 0
 		&& span > gradient_degenerate_threshold && is_finite_f32(span)) {
 		return error('gg.canvas: two-point conical gradients are not supported')
 	}
@@ -18,9 +19,49 @@ fn concentric_tile_gradient(start Point, start_radius f32, end Point, end_radius
 	return Gradient{
 		...g
 		kind:        .radial
-		p0:          start
+		p0:          center
 		radius:      span
 		radial_bias: bias
+	}
+}
+
+// For nested circles the larger root of |p - t*d|^2 = (r0 + t*span)^2
+// is the gradient position. Align x with d and absorb its quadratic scale
+// into the vertex transform, leaving length(p) - focus*p.x + bias.
+fn nested_circle_gradient(start Point, start_radius f32, end Point, end_radius f32, g Gradient) !Gradient {
+	span := f64(end_radius) - f64(start_radius)
+	dx := f64(end.x) - f64(start.x)
+	dy := f64(end.y) - f64(start.y)
+	distance := math.sqrt(dx * dx + dy * dy)
+	if !(span - distance > f64(gradient_degenerate_threshold)) || !math.is_finite(span) {
+		return error('gg.canvas: focal circle must be strictly inside the outer circle')
+	}
+	focus := distance / span
+	if f32(focus) >= 1 {
+		return error('gg.canvas: focal circle is tangent at shader precision')
+	}
+	bias := -f64(start_radius) / span
+	denominator := (1 - focus) * (1 + focus)
+	x_scale := 1 / (span * denominator)
+	y_scale := 1 / (span * math.sqrt(denominator))
+	cosine := dx / distance
+	sine := dy / distance
+	xx, xy := cosine * x_scale, sine * x_scale
+	yx, yy := -sine * y_scale, cosine * y_scale
+	tx := -xx * f64(start.x) - xy * f64(start.y) - focus * bias / denominator
+	ty := -yx * f64(start.x) - yy * f64(start.y)
+	unit := [f32(xx), f32(xy), f32(tx), f32(yx), f32(yy), f32(ty), 0, 0, 1]!
+	if !unit.all(is_finite_f32(it)) || !is_finite_f32(f32(bias)) {
+		return error('gg.canvas: invalid focal gradient transform')
+	}
+	return Gradient{
+		...g
+		kind:         .radial
+		p0:           start
+		radius:       f32(span)
+		radial_unit:  Matrix.values(unit)
+		radial_focus: f32(focus)
+		radial_bias:  f32(bias)
 	}
 }
 
@@ -28,8 +69,20 @@ fn gradient_fields(fields string, shading Shading) string {
 	return if shading.is_linear() {
 		fields
 	} else {
-		fields.replace('float range_6;\n', 'float range_6;\nfloat radialBias;\n')
+		fields.replace('float range_6;\n', 'float range_6;\nfloat radialBias;\nfloat radialFocus;\n')
 	}
+}
+
+// Non-production builds read shared shader snippets at runtime. Keep the
+// added field and its use together in the compiled shader generator.
+fn gradient_conical_body(body string, shading Shading) string {
+	if shading.is_linear() {
+		return body
+	}
+	uniforms := '_globals._anonInterface0->combinedUniformData[_globals.uniformSsboIndex]'
+	coords := if shading.is_translucent() { 'LocalMatrix_3_Var' } else { 'LocalMatrix_2_Var' }
+	return body.replace(' + ${uniforms}.radialBias;',
+		' + (${uniforms}.radialBias - ${uniforms}.radialFocus * _in.${coords}.x);')
 }
 
 // A pixel-aligned gradient rectangle with a rectangular hole can use the

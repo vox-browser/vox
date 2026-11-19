@@ -207,41 +207,46 @@
       "new": "yuv.yz = sample(_globals.image_4, documentImageCoords * 0.5f).yz;"
     }
   ],
-  "prepare_gg_concentric_tiles": [
+  "prepare_gg_conical_gradient": [
     {
       "file": "gpu_gradient.v",
       "old": "// gradients that start at a point are radial gradients. Other two-point\n// conical gradients are not supported yet.",
-      "new": "// gradients that start at a point are radial gradients. Expanding concentric\n// gradients also support repeat and mirror tiling with a focal radius."
+      "new": "// gradients that start at a point are radial gradients. Expanding concentric\n// gradients also support repeat and mirror tiling with a focal radius.\n// Off-center gradients can expand from a strictly contained focal circle."
     },
     {
       "file": "gpu_gradient.v",
       "old": "\tlocal_matrix Matrix = Matrix.identity()\n}",
-      "new": "\tlocal_matrix Matrix = Matrix.identity()\n\tradial_bias f32\n}"
+      "new": "\tlocal_matrix Matrix = Matrix.identity()\n\tradial_bias f32\n\tradial_focus f32\n\tradial_unit ?Matrix\n}"
     },
     {
       "file": "gpu_gradient.v",
       "old": "\treturn error('gg.canvas: two-point conical gradients are not supported')",
-      "new": "\treturn concentric_tile_gradient(start, start_radius, end, end_radius, g)"
+      "new": "\tif start.x == end.x && start.y == end.y {\n\t\treturn concentric_tile_gradient(start_radius, end_radius, start, g)\n\t}\n\treturn nested_circle_gradient(start, start_radius, end, end_radius, g)"
     },
     {
       "file": "gpu_gradient.v",
       "old": "\trange       f32\n\t// The paint does not read",
-      "new": "\trange       f32\n\tradial_bias f32\n\t// The paint does not read"
+      "new": "\trange       f32\n\tradial_bias f32\n\tradial_focus f32\n\t// The paint does not read"
     },
     {
       "file": "gpu_gradient.v",
       "old": "a.mode != b.mode || a.range != b.range",
-      "new": "a.mode != b.mode || a.range != b.range || a.radial_bias != b.radial_bias"
+      "new": "a.mode != b.mode || a.range != b.range || a.radial_bias != b.radial_bias\n\t\t|| a.radial_focus != b.radial_focus"
     },
     {
       "file": "gpu_gradient.v",
       "old": "\tout << u.range\n\tfor out.len",
-      "new": "\tout << u.range\n\t// Use one word of the existing tail padding for the radial bias.\n\tout << u.radial_bias\n\tfor out.len"
+      "new": "\tout << u.range\n\t// Fit the two radial parameters into the existing tail padding.\n\tout << u.radial_bias\n\tout << u.radial_focus\n\tfor out.len"
     },
     {
       "file": "gpu_gradient.v",
       "old": "\t\trange:       f32(1) / f32(255)",
-      "new": "\t\trange:       f32(1) / f32(255)\n\t\tradial_bias: g.radial_bias"
+      "new": "\t\trange:       f32(1) / f32(255)\n\t\tradial_bias: g.radial_bias\n\t\tradial_focus: g.radial_focus"
+    },
+    {
+      "file": "gpu_gradient.v",
+      "old": "\t\t\t// rad_to_unit_matrix()\n\t\t\tinv := f32(1) / g.radius\n\t\t\tpts_to_unit = RasterMatrix.translate(-g.p0.x, -g.p0.y)\n\t\t\tpts_to_unit.post_scale(inv, inv)",
+      "new": "\t\t\tif unit := g.radial_unit {\n\t\t\t\tpts_to_unit = RasterMatrix.from(unit)\n\t\t\t} else {\n\t\t\t\t// rad_to_unit_matrix()\n\t\t\t\tinv := f32(1) / g.radius\n\t\t\t\tpts_to_unit = RasterMatrix.translate(-g.p0.x, -g.p0.y)\n\t\t\t\tpts_to_unit.post_scale(inv, inv)\n\t\t\t}"
     },
     {
       "file": "gpu_gradient.v",
@@ -252,6 +257,11 @@
       "file": "gpu_gradient.v",
       "old": "t = t.replace('float4 color_1;\\n', snippets['fields_${stops}'])",
       "new": "t = t.replace('float4 color_1;\\n', gradient_fields(snippets['fields_${stops}'], shading))"
+    },
+    {
+      "file": "gpu_gradient.v",
+      "old": "mut body := snippets['main_${kind}${alpha}']",
+      "new": "mut body := gradient_conical_body(snippets['main_${kind}${alpha}'], shading)"
     },
     {
       "file": "shaders/paint_snippets.metal",

@@ -160,7 +160,7 @@ fn stage_linux_module(source string, target string, package string) ! {
 			read(join(root_dir(), 'tools/ui2/gg_document_clip.v'))!)!
 		if os.is_file(join(target, 'canvas/gpu_context.v')) {
 			gg_repair_patches(join(target, 'canvas'), 'prepare_gg_document_gradient_hole')!
-			gg_repair_patches(join(target, 'canvas'), 'prepare_gg_concentric_tiles')!
+			gg_repair_patches(join(target, 'canvas'), 'prepare_gg_conical_gradient')!
 			expected << 'canvas/vox_document_surface.v'
 			write_changed(join(target, 'canvas/vox_document_surface.v'),
 				read(join(root_dir(), 'tools/ui2/gg_document_surface.v'))!)!
