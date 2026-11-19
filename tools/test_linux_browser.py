@@ -315,6 +315,62 @@ def check_web_font_browser(binary, artifacts, temporary):
     print("PASS: CSS web font glyphs and viewport-clipped text", flush=True)
 
 
+def check_web_font_texture_cache(binary, artifacts, temporary):
+    repo = Path(__file__).resolve().parents[1]
+    fixture = repo / "Tests/Browser/Native/portable-web-font.html"
+    font = repo / "Tests/Browser/Brave/resources/glyph-origin.ttf"
+    page = Path(temporary) / "web-font-texture-edit.html"
+    page.write_text(fixture.read_text().replace("../Brave/resources/glyph-origin.ttf", font.as_uri()) + """
+<script>
+let frames = 0;
+function editText() {
+    if (!document.fonts.check('80px Origin', 'Im')) {
+        requestAnimationFrame(editText);
+        return;
+    }
+    if (++frames === 8) {
+        const target = document.querySelector('.inside');
+        target.textContent = 'mI';
+        target.style.color = '#27b989';
+    }
+    if (frames < 16) {
+        requestAnimationFrame(editText);
+    } else {
+        document.body.setAttribute('data-text-edited', '1');
+    }
+}
+requestAnimationFrame(editText);
+</script>
+""")
+    documents = []
+    for enabled in (False, True):
+        label = f"web-font-texture-{int(enabled)}"
+        screenshot = artifacts / f"{label}.png"
+        screenshot.unlink(missing_ok=True)
+        environment = smoke_environment(Path(temporary) / label)
+        environment.update(VOX_DISABLE_WEB_FONT_TEXTURE_CACHE=str(int(not enabled)),
+                           VOX_WEB_FONT_TEXTURE_DIAGNOSTICS="1",
+                           VOX_CAPTURE_READY_SELECTOR="body[data-text-edited]")
+        log = run_windowed([str(binary), "--enable-javascript", "--window-width=800", "--window-height=640",
+                            "--screenshot-viewport-height=600", f"--screenshot={screenshot}", str(page)],
+                           env=environment, log_path=artifacts / f"{label}.log")
+        draws = re.findall(r"^VOX_WEB_FONT_TEXTURE cache=(hit|miss) recording=(\d+)$", log, re.MULTILINE)
+        if enabled:
+            hits = {generation for action, generation in draws if action == "hit"}
+            assert len(hits) >= 2, draws
+            assert ("miss", draws[-1][1]) in draws and draws[-1][1] in hits, draws
+        else:
+            assert not draws, draws
+        _, height, channels, rows = rendered_png_rows(screenshot.read_bytes())
+        top = next(y for y in range(150) if rows[y][225 * channels:225 * channels + 3] == b"\xea\x70\xb5")
+        text = [row[:140 * channels] for row in rows[top + 80:top + 176]]
+        assert sum(row.count(b"\x27\xb9\x89") for row in text) > 100, "The edited text is missing"
+        assert all(b"\xe5\x2d\xb8" not in row for row in text), "Stale texture after the live text edit"
+        documents.append(rows[top:height - 24])
+    assert documents[0] == documents[1], "Caching changed the document pixels"
+    print("PASS: cached web font textures preserve pixels across a live text edit", flush=True)
+
+
 def check_gg_svg_browser(binary, artifacts, temporary):
     fixture = Path(__file__).resolve().parents[1] / "Tests/Browser/Native/svg-gg-path-fill.html"
     documents = []
@@ -2139,6 +2195,7 @@ def main():
         check_webgl_browser(binary, artifacts, temporary)
         check_gradient_browser(binary, artifacts, temporary)
         check_web_font_browser(binary, artifacts, temporary)
+        check_web_font_texture_cache(binary, artifacts, temporary)
         check_svg_opacity_browser(binary, artifacts, temporary)
         check_svg_clip_browser(binary, artifacts, temporary)
         check_svg_gradient_groups_browser(binary, artifacts, temporary)

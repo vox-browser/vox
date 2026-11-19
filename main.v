@@ -450,6 +450,7 @@ mut:
 	force_dark_images                   map[string]&gg.Image
 	portable_raster_images              []PortableRasterImage
 	portable_raster_image_index         int
+	portable_web_font_textures          [portable_web_font_texture_slots]PortableWebFontTexture
 	portable_svg_rasters                &PortableSVGRasters = unsafe { nil }
 	portable_svg_group_recording        PortableSVGGroupRecording
 	portable_svg_group_textures         [portable_svg_raster_slots]PortableSVGGroupSlot
@@ -7437,7 +7438,7 @@ fn (mut app BrowserApp) draw_command(source_command &layout.PaintCommand, page_x
 						if run := command.glyph_run {
 							if run.font().is_invisible { return }
 							if run.font().source_path != '' && command.glyph_orientation == .horizontal
-								&& app.draw_portable_web_font(command, page_x, page_y, scroll_y) {
+								&& app.draw_portable_web_font(source_command, command, page_x, page_y, scroll_y) {
 								return
 							}
 							$if linux {
