@@ -1,5 +1,49 @@
 # Migrating from Skia to vlib/gg
 
+## Retaining exact SVG gradient textures at viewport edges
+
+With `VOX_GG_SVG=1` and `VOX_GG_SVG_VIEWPORT_REUSE=1`, OpenGL keeps unused
+gradient textures within the existing one-megapixel retained budget.
+Revisiting a viewport clip can reuse an exact match for the raster extent,
+transform, path and paint. When all 16 slots are occupied, the renderer can
+evict an older texture that the current frame has yet to use. The most
+recent frame's textures stay available during matching.
+
+An initial experiment sampled a larger texture at the same 8×8 dither
+phase. Two document pixels differed by one channel level against a
+freshly rasterized clip. A new gradient extent still rasterizes on first
+use, with subsequent reuse limited to identical inputs.
+
+The Linux viewport check moved three paths across the top edge, restored
+them, and revisited the first clip. The cached run rendered each clipped
+extent once and reproduced the baseline's document pixels exactly. The full
+Linux GG SVG window suite and Windows amd64 OpenGL source check passed.
+
+The Linux executable used V `5a39a4d` and single-unit Clang `-O0`, with
+SHA-256 `bde18d2a431c82edc9fcf76a87600348c19a91a5f570dce7df95cf6e43af0499`.
+The timing fixture repeated the three paths in 12 SVG rows spaced at 168
+CSS pixels, with SHA-256
+`a9fe42f2a7f42265436ffea8a2af7eb03675aab90c076beda33508f28a336d02`.
+Three alternating pairs used Mesa software OpenGL under Xvfb, fresh
+processes and private profiles and caches, an 800 × 712 window, a
+one-second settle and 32 synthetic 42-pixel scroll steps. System caches
+remained available. One-minute guest load ranged from 1.05 to 1.26 on
+four virtual CPUs. Executable and fixture hashes, scroll positions and
+paint-command counts matched. The benchmark and memory guard exited zero.
+
+| Pair | Median callback baseline / retained, ms | p95, ms | Maximum, ms |
+| ---: | ---: | ---: | ---: |
+| 1 | 3.5535 / 2.486 | 7.645 / 7.539 | 206.909 / 203.608 |
+| 2 | 4.004 / 2.100 | 9.219 / 8.884 | 284.325 / 209.542 |
+| 3 | 4.230 / 1.686 | 7.293 / 7.541 | 281.776 / 257.525 |
+
+Median callback time fell by 30–60%. Separate diagnostic runs recorded 248
+gradient draws in each mode after the first callback and reduced fresh
+rasterizations from 69 to 6. Every run reached its maximum callback at
+the third step, when the 27- and 28-pixel-high clips were first rasterized.
+These synthetic runs measure callback time. First-time clip latency and
+hardware performance remain open.
+
 ## Concentric SVG focal circles
 
 The shared GG path renderer handles an expanding concentric radial gradient
