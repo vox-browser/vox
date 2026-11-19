@@ -2,6 +2,7 @@ module libjs
 
 import dl
 import os
+import platform
 import strings
 import time
 
@@ -95,6 +96,8 @@ fn native_lookup_build_identity() string {
 	return native_cache_digest_string('${executable}\n${identity}')
 }
 
+// Callers hold the persistent arena: the index lives as long as the VM, which
+// is created there, whatever arena the first executing entry happens to hold.
 fn (mut vm VM) native_lookup_index_for(cache &NativeCodeCache) ?&NativeLookupIndex {
 	if !use_native_lookup_index() { return none }
 	if index := vm.native_lookup_index {
@@ -111,30 +114,45 @@ fn (mut vm VM) native_lookup_index_for(cache &NativeCodeCache) ?&NativeLookupInd
 	return index
 }
 
+// Read and split the file in a temporary workspace; retain only owned copies.
 fn (mut index NativeLookupIndex) read(abi string) {
-	text := os.read_file(index.path) or { return }
-	mut lines := text.split_into_lines()
-	if lines.len == 0 { return }
-	header := lines[0].split(' ')
+	$if prealloc {
+		scope := unsafe { prealloc_scope_begin() }
+		defer { unsafe { prealloc_scope_free_after(scope) } }
+		rows := native_lookup_index_rows(index.path)
+		unsafe { prealloc_scope_leave(scope) }
+		index.retain_rows(rows, abi)
+		return
+	}
+	index.retain_rows(native_lookup_index_rows(index.path), abi)
+}
+
+fn native_lookup_index_rows(path string) [][]string {
+	text := os.read_file(path) or { return [][]string{} }
+	return text.split_into_lines().map(it.split(' '))
+}
+
+fn (mut index NativeLookupIndex) retain_rows(rows [][]string, abi string) {
+	if rows.len == 0 { return }
+	header := rows[0]
 	// Library identities describe files in this ABI directory and remain valid
 	// for another build. Executable mappings belong to the recorded build only.
 	same_build := header.len == 3 && header[0] == native_lookup_index_header
 		&& header[1] == index.build && header[2] == abi
-	for line in lines[1..] {
-		fields := line.split(' ')
+	for fields in rows[1..] {
 		if fields.len == 4 && fields[0] == 'L' {
 			if native_lookup_library_name(fields[1]) && valid_native_digest(fields[2]) {
-				index.libraries[fields[1]] = NativeLookupLibrary{digest: fields[2], identity: fields[3]}
+				index.libraries[fields[1].clone()] = NativeLookupLibrary{digest: fields[2].clone(), identity: fields[3].clone()}
 			}
 		} else if same_build && fields.len == 6 && fields[0] == 'E' {
 			symbol := fields[5].int()
 			if valid_native_digest(fields[1]) && valid_native_digest(fields[2])
 				&& native_lookup_library_name(fields[3]) && valid_native_digest(fields[4])
 				&& symbol >= 0 && symbol <= 1000000 && fields[5] == symbol.str() {
-				index.records[fields[1]] = NativeLookupRecord{
-					key: fields[2]
-					library: fields[3]
-					digest: fields[4]
+				index.records[fields[1].clone()] = NativeLookupRecord{
+					key: fields[2].clone()
+					library: fields[3].clone()
+					digest: fields[4].clone()
 					symbol: symbol
 				}
 			}
@@ -158,7 +176,8 @@ fn native_lookup_put_u32(mut bytes []u8, value u32) {
 
 // The source digest, filename and function role identify the executable within
 // this build; the bytecode encoding and frame layout are included as well, so a
-// nondeterministic compilation can only miss.
+// nondeterministic compilation can only miss. The per-source digest is retained;
+// the encoding is temporary workspace.
 fn (mut index NativeLookupIndex) key(cache &NativeCodeCache, executable &Executable) string {
 	parsed := executable.parsed_source
 	if parsed == unsafe { nil } || executable.native_cache_scope == '' { return '' }
@@ -167,6 +186,18 @@ fn (mut index NativeLookupIndex) key(cache &NativeCodeCache, executable &Executa
 		index.source_digests[voidptr(parsed)] = digest
 		digest
 	}
+	prefix := '${native_lookup_index_header}:${index.build}:${cache.abi}:${cache.generated_code_identity}:${source}:'
+	$if prealloc {
+		scope := unsafe { prealloc_scope_begin() }
+		defer { unsafe { prealloc_scope_free_after(scope) } }
+		key := native_lookup_key_in_workspace(prefix, executable)
+		unsafe { prealloc_scope_leave(scope) }
+		return key.clone()
+	}
+	return native_lookup_key_in_workspace(prefix, executable)
+}
+
+fn native_lookup_key_in_workspace(prefix string, executable &Executable) string {
 	mut bytes := []u8{cap: 32 + executable.instructions.len * 44}
 	for value in [executable.registers_and_locals_count, executable.local_index_base,
 		u32(executable.constants.len), u32(executable.local_variable_names.len),
@@ -186,8 +217,8 @@ fn (mut index NativeLookupIndex) key(cache &NativeCodeCache, executable &Executa
 	} else {
 		''
 	}
-	mut builder := strings.new_builder(bytes.len + filename.len + executable.native_cache_scope.len + 256)
-	builder.write_string('${native_lookup_index_header}:${index.build}:${cache.abi}:${cache.generated_code_identity}:${source}:')
+	mut builder := strings.new_builder(bytes.len + prefix.len + executable.native_cache_scope.len + 96)
+	builder.write_string(prefix)
 	builder.write_string(native_cache_digest_string(filename))
 	builder.write_string(':${executable.native_cache_scope}:')
 	builder.write(bytes) or {}
@@ -237,6 +268,8 @@ fn (mut vm VM) native_lookup_entry(mut tier NativeTier, mut cache NativeCodeCach
 	if address in cache.keys { return .skipped }
 	if !tier.enabled { return .skipped }
 	if _ := tier.entries[address] { return .skipped }
+	persistent := platform.enter_persistent()
+	defer { platform.leave_persistent(persistent) }
 	mut index := vm.native_lookup_index_for(cache) or { return .skipped }
 	key := index.key(cache, executable)
 	if key == '' { return .skipped }
@@ -272,11 +305,11 @@ fn (mut vm VM) learn_native_lookup_entry(tier &NativeTier, executable &Executabl
 	key := cache.keys[voidptr(executable)] or { return }
 	if key !in cache.entries { return }
 	if index.records.len >= native_lookup_index_limit { return }
+	persistent := platform.enter_persistent()
+	defer { platform.leave_persistent(persistent) }
 	lookup := index.key(cache, executable)
 	if lookup == '' || lookup in index.records { return }
-	text := os.read_file(os.join_path(cache.directory, key + '.json')) or { return }
-	if text.len > 16384 { return }
-	stored := decode_native_cache_record(text) or { return }
+	stored := native_lookup_stored_record(os.join_path(cache.directory, key + '.json')) or { return }
 	if stored.key != key || stored.abi != cache.abi || !native_lookup_library_name(stored.library)
 		|| !valid_native_digest(stored.library_sha256) || stored.symbol < 0 || stored.symbol > 1000000 {
 		return
@@ -299,6 +332,33 @@ fn (mut vm VM) learn_native_lookup_entry(tier &NativeTier, executable &Executabl
 	index.stats.learned++
 }
 
+// Decode a record in a temporary workspace and return owned fields.
+fn native_lookup_stored_record(path string) ?NativeCacheRecord {
+	$if prealloc {
+		scope := unsafe { prealloc_scope_begin() }
+		defer { unsafe { prealloc_scope_free_after(scope) } }
+		record := native_lookup_decode_record(path) or {
+			unsafe { prealloc_scope_leave(scope) }
+			return none
+		}
+		unsafe { prealloc_scope_leave(scope) }
+		return NativeCacheRecord{
+			key: record.key.clone()
+			abi: record.abi.clone()
+			library: record.library.clone()
+			library_sha256: record.library_sha256.clone()
+			symbol: record.symbol
+		}
+	}
+	return native_lookup_decode_record(path)
+}
+
+fn native_lookup_decode_record(path string) ?NativeCacheRecord {
+	text := os.read_file(path) or { return none }
+	if text.len > 16384 { return none }
+	return decode_native_cache_record(text) or { return none }
+}
+
 pub fn (vm &VM) native_lookup_stats() NativeLookupStats {
 	if index := vm.native_lookup_index { return index.stats }
 	return NativeLookupStats{}
@@ -311,8 +371,24 @@ pub fn (mut vm VM) persist_native_lookup_index() ! {
 	if !index.dirty { return }
 	mut tier := vm.native_tier or { return }
 	cache := tier.persistent or { return }
+	$if prealloc {
+		scope := unsafe { prealloc_scope_begin() }
+		defer { unsafe { prealloc_scope_free_after(scope) } }
+		index.write(cache.abi) or {
+			unsafe { prealloc_scope_leave(scope) }
+			return error_with_code(err.msg().clone(), err.code())
+		}
+		unsafe { prealloc_scope_leave(scope) }
+	} $else {
+		index.write(cache.abi)!
+	}
+	index.dirty = false
+	index.stats.persisted_records = u64(index.records.len)
+}
+
+fn (index &NativeLookupIndex) write(abi string) ! {
 	mut output := strings.new_builder(128 + index.records.len * 280)
-	output.writeln('${native_lookup_index_header} ${index.build} ${cache.abi}')
+	output.writeln('${native_lookup_index_header} ${index.build} ${abi}')
 	for name in index.libraries.keys().sorted() {
 		library := index.libraries[name] or { continue }
 		if library.identity == '' || library.identity.contains(' ') { continue }
@@ -328,6 +404,4 @@ pub fn (mut vm VM) persist_native_lookup_index() ! {
 		os.rm(temporary) or {}
 		return err
 	}
-	index.dirty = false
-	index.stats.persisted_records = u64(index.records.len)
 }

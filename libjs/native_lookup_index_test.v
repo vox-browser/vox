@@ -1,6 +1,7 @@
 module libjs
 
 import os
+import platform
 import rand
 
 const lookup_index_source = 'function inc(n){return n+1} function twice(f,x){return f(f(x))} var total=0; for (var i=0;i<20;i++) total=twice(inc,total); total'
@@ -116,4 +117,42 @@ fn test_disabled_index_uses_the_ordinary_record_path() {
 	assert value == 40
 	assert stats.cache_hits == 3 && stats.cache_misses == 0
 	assert lookup.hits == 0 && lookup.loaded_records == 0
+}
+
+fn test_index_keys_encode_bytecode_in_a_temporary_workspace() {
+	mut instructions := []Instruction{}
+	for _ in 0 .. 4096 { instructions << Instruction{ op: .nop } }
+	instructions << Instruction{ op: .end, lhs: Operand.constant(0) }
+	parsed := &ParsedSource{ source_text: 'x'.repeat(4096) }
+	executable := &Executable{
+		registers_and_locals_count: 5
+		constants:                  [Value.from_i32(42)]
+		instructions:               instructions
+		bytecode_length:            u32(instructions.len)
+		parsed_source:              parsed
+		native_cache_scope:         'script'
+	}
+	cache := NativeCodeCache{ directory: os.temp_dir(), abi: 'a'.repeat(64), compiler: '/usr/bin/false' }
+	mut lookup_index := &NativeLookupIndex{ path: os.join_path(os.temp_dir(), 'unused-index'), build: 'b'.repeat(64) }
+	expected := lookup_index.key(cache, executable)
+	assert valid_native_digest(expected)
+	before := platform.thread_arena_usage().used
+	for _ in 0 .. 32 {
+		key := lookup_index.key(cache, executable)
+		// The returned key must outlive the workspace that produced it.
+		scratch := platform.begin_thread_scratch('native lookup key lifetime')
+		_ := []u8{len: 256 * 1024, init: 0xa5}
+		scratch.finish()
+		assert key == expected
+	}
+	$if prealloc {
+		// 32 encodings of 4,097 instructions would retain about 5.8 MB.
+		growth := platform.thread_arena_usage().used - before
+		assert growth < 32 * 1024, 'lookup key encoding retained ${growth} bytes'
+	}
+	// Any bytecode change produces a different key.
+	mut changed := instructions.clone()
+	changed[1] = Instruction{ op: .jump, target: 2 }
+	other := &Executable{ ...*executable, instructions: changed }
+	assert lookup_index.key(cache, other) != expected
 }
