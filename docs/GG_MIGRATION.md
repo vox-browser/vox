@@ -1,5 +1,66 @@
 # Migrating from Skia to vlib/gg
 
+## Converting portable SVG rasters in place before upload
+
+CPU SVG fills, strokes, and composited groups now convert their owned
+premultiplied RGBA buffer to straight alpha in place. Opaque pixels need
+no writes. The conversion uses the existing readback rounding and runs
+large buffers through disjoint packed scan ranges. Clip and mask coverage
+is applied after conversion. At scroll position zero, the three group
+uploads in the fixture previously allocated 94,464 bytes of temporary pixel
+storage per uncached replay.
+
+The focused macOS `-prod -gc none` test matched all 65,536 channel and alpha
+pairs and compared a 1051 × 533 raster with serial and worker scheduling.
+It also checked trailing bytes after an incomplete pixel. The focused
+test passed with AddressSanitizer and UndefinedBehaviorSanitizer. The pinned
+Skia suite passed, including 76 exhaustive and 20,000 randomized readback
+cases. The Linux CPU fallback captures matched pixel for pixel for fill,
+stroke, and group fixtures at 0 and 42 CSS pixels. The stroke comparison's
+capture fixture puts the stage in document flow so scrolling clips it.
+Diagnostics confirmed that the CPU fill, stroke, opacity, clip, and mask
+paths drew the samples.
+
+The Linux Clang `-O3` microbenchmark timed conversion and the copy mode's
+output allocation. Both modes start with a filled input buffer. Two
+alternating pairs used fresh processes with 101 measured calls after 11
+warmups. All output hashes matched. Both modes used executable SHA-256
+`8fe98421f7799962399128ee4d3700b52d8ce6961f289dab8e73f4031123a76f`.
+
+| Raster | Copy medians, µs | In-place medians, µs |
+| --- | ---: | ---: |
+| 144 × 72 opaque | 9.750, 12.958 | 3.042, 3.292 |
+| 144 × 72 mixed | 25.084, 22.333 | 23.083, 24.667 |
+| 144 × 72 translucent | 75.875, 108.167 | 37.833, 40.792 |
+| 1051 × 533 opaque | 254.584, 295.876 | 121.542, 126.751 |
+| 1051 × 533 mixed | 1612.506, 1836.507 | 1519.839, 1505.547 |
+| 1051 × 533 translucent | 1914.215, 1855.966 | 1699.965, 1757.423 |
+
+The browser comparison used matching single-unit Clang `-O0` flags
+and V `5a39a4d`. Control and candidate executable SHA-256 values were
+`e5002f13a1207bf2bec6ae001d85df9bcfa0672d2e7b9ae22bf53e79ee4c9c62`
+and `81786f2b29c23d7e3781b789b73a5e2f749905cae150de7d5c5754122f973bc9`.
+Each of two alternating pairs per fixture used the previous
+[gradient callback setup](#writing-full-coverage-gradient-source-spans-directly)
+with texture reuse disabled and fresh private state. Scroll positions
+and paint command counts matched across the 180 callbacks in each trial.
+Guest one-minute load ranged from 0.48 to 1.60 on four vCPUs. All measured
+processes and guards exited zero.
+
+| Fixture and pair | Replay median before / after, ms | Replay p95 and maximum before / after, ms | Median allocated KiB before / after |
+| --- | ---: | --- | ---: |
+| Grouped 1 | 3.954 / 4.050 | 4.921, 6.254 / 5.814, 6.398 | 870.5 / 784 |
+| Grouped 2 | 4.170 / 3.742 | 4.900, 6.872 / 4.334, 6.175 | 868 / 784 |
+| Individual 1 | 9.659 / 8.664 | 10.981, 17.830 / 9.448, 10.867 | 1135 / 858 |
+| Individual 2 | 9.271 / 8.712 | 10.153, 11.604 / 9.524, 10.685 | 1133.5 / 856.5 |
+
+Grouped replay timings varied, with the second control running at higher
+host load than its candidate. The allocation samples fell in every pair.
+The individual fixture also had lower medians and tails in both pairs.
+The Linux browser suite, all 17 GG SVG checks, and both Windows amd64
+source checks passed. These synthetic software-rendered timings leave
+native scrolling, Windows runtime, and hardware GPU performance unverified.
+
 ## Writing full-coverage gradient source spans directly
 
 The CPU raster pipeline writes clamped source bytes directly when
