@@ -737,6 +737,45 @@ to `d3d11.dll` and `libfreetype-6.dll`. Its SHA-256 was
 The Windows VM requires 5 GiB of free host storage. Windows native
 pixels, memory, timings, and precise scrolling remain unverified.
 
+## Reusing retained web-font textures
+
+The portable web-font painter reuses a texture when the adopted root
+paint command, recording generation, viewport, and backing scale match.
+The cache uses the first 16 existing GG streaming slots. A replacement
+upload or slot removal clears the corresponding entry. The live-edit
+regression observed hits before and after changing the glyph sequence
+and color. The edited capture matched the uncached document exactly.
+
+Two alternating pairs per workload used the same Linux AArch64
+single-unit Clang `-O0` executable with V `5a39a4d` and SHA-256
+`cd08b8eb79ba82c6a95fb87e02a5e587aeeae2eb7c6fc6808be7a555065dee1d`.
+The fixture contains 31 lines of 36 author-font glyphs at 32 px.
+Its SHA-256 was `f8080532a860d12b4cae56e9e5e2ff3f6711a143f7e0e2df101135cefd34569e`.
+The font SHA-256 was `9438128eaeb21796c5adc70376734aaa1c47d3b955009985ab6b8c448a8afa63`.
+Each trial used 48 synthetic draw callbacks, a fresh process and
+private profile and cache, a 1024 × 712 Xvfb window, Mesa software
+OpenGL, and one second of settling. JavaScript was disabled and OS
+caches stayed available. Command counts, scroll offsets, and final
+document pixels matched within each workload. All input hashes stayed
+fixed and the browsers and memory guard exited zero. One-minute guest
+load ranged from 1.19 to 1.84 on four vCPUs in the timed runs.
+
+| Workload and pair | Replay median uncached / cached, ms | Replay p95 and maximum uncached / cached, ms | Median allocated KiB uncached / cached |
+| --- | ---: | ---: | ---: |
+| Stationary 1 | 64.609 / 0.702 | 88.652, 99.372 / 0.920, 2.628 | 5058 / 114 |
+| Stationary 2 | 64.739 / 0.721 | 66.872, 67.946 / 1.890, 2.379 | 5059 / 113 |
+| Scrolling 1 | 65.211 / 65.083 | 69.299, 70.526 / 69.685, 74.257 | 5241.5 / 5237 |
+| Scrolling 2 | 63.626 / 64.077 | 67.002, 69.953 / 69.896, 73.557 | 5246 / 5237 |
+
+Separate diagnostic runs counted 658 hits and zero misses during
+stationary callbacks 1–47, and 108 hits and 560 misses during the
+same interval with synthetic scrolling. The scrolling replay medians
+were within 1%, and both cached scrolling trials had higher p95 and
+maximum times. These are draw-callback measurements. The Linux browser
+smoke suite and the macOS, Windows D3D11, and Windows OpenGL source checks
+passed. Windows native memory and timing checks still await a VM with
+enough host storage.
+
 ## Converting CPU SVG upload pixels faster
 
 The shared CPU raster readback copies opaque RGB bytes directly and writes zero
