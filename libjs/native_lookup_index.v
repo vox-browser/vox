@@ -65,12 +65,22 @@ pub mut:
 
 $if test {
 	__global native_lookup_index_disabled bool
+	__global native_lookup_index_readonly_for_test bool
 	pub fn set_native_lookup_index_for_testing(enabled bool) { native_lookup_index_disabled = !enabled }
+	pub fn set_native_lookup_index_readonly_for_testing(readonly bool) { native_lookup_index_readonly_for_test = readonly }
 }
 
 // Same-binary control for measurements: VOX_LIBJS_NATIVE_LOOKUP_INDEX=0 uses
 // only the ordinary record path and neither reads nor writes the index.
+// =readonly uses a frozen index without learning or rewriting it, for timed
+// visits that verify their cache inputs are unchanged.
 const native_lookup_index_env_disabled = os.getenv('VOX_LIBJS_NATIVE_LOOKUP_INDEX') == '0'
+const native_lookup_index_env_readonly = os.getenv('VOX_LIBJS_NATIVE_LOOKUP_INDEX') == 'readonly'
+
+fn native_lookup_index_learns() bool {
+	$if test { if native_lookup_index_readonly_for_test { return false } }
+	return !native_lookup_index_env_readonly
+}
 
 fn use_native_lookup_index() bool {
 	$if test { if native_lookup_index_disabled { return false } }
@@ -306,6 +316,7 @@ fn (mut vm VM) native_lookup_entry(mut tier NativeTier, mut cache NativeCodeCach
 // After the ordinary path resolved a stored record for this executable, learn
 // it. Pending (not yet compiled) and failed lookups are not learned.
 fn (mut vm VM) learn_native_lookup_entry(tier &NativeTier, executable &Executable) {
+	if !native_lookup_index_learns() { return }
 	cache := tier.persistent or { return }
 	mut index := vm.native_lookup_index or { return }
 	key := cache.keys[voidptr(executable)] or { return }
@@ -374,7 +385,7 @@ pub fn (vm &VM) native_lookup_stats() NativeLookupStats {
 // shutdown; an unchanged index is never rewritten.
 pub fn (mut vm VM) persist_native_lookup_index() ! {
 	mut index := vm.native_lookup_index or { return }
-	if !index.dirty { return }
+	if !index.dirty || !native_lookup_index_learns() { return }
 	mut tier := vm.native_tier or { return }
 	cache := tier.persistent or { return }
 	$if prealloc {

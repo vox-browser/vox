@@ -181,3 +181,35 @@ fn test_index_counts_shared_generated_records_once() {
 	assert hits[1] == 2 && hits[2] == 2
 	assert lookups[1].learned == 3 && lookups[2].hits == 3 && lookups[2].misses == 0
 }
+
+fn test_readonly_index_neither_learns_nor_rewrites() {
+	directory := os.join_path(os.temp_dir(), 'vox-lookup-index-' + rand.uuid_v4())
+	defer {
+		set_native_lookup_index_readonly_for_testing(false)
+		os.rmdir_all(directory) or {}
+	}
+	lookup_index_visit(directory, '/usr/bin/clang')!
+	set_native_lookup_index_readonly_for_testing(true)
+	_, empty, empty_lookup, _ := lookup_index_visit(directory, '/usr/bin/false')!
+	assert empty.cache_hits == 3 && empty_lookup.misses == 3 && empty_lookup.learned == 0
+	assert lookup_index_path(directory) == ''
+	set_native_lookup_index_readonly_for_testing(false)
+	lookup_index_visit(directory, '/usr/bin/false')!
+	index_path := lookup_index_path(directory)
+	written := os.read_file(index_path)!
+	// Drop one entry, then reuse the incomplete index read-only.
+	lines := written.split_into_lines()
+	mut kept := []string{}
+	mut dropped := false
+	for line in lines {
+		if !dropped && line.starts_with('E ') { dropped = true; continue }
+		kept << line
+	}
+	partial := kept.join('\n') + '\n'
+	os.write_file(index_path, partial)!
+	set_native_lookup_index_readonly_for_testing(true)
+	value, stats, lookup, _ := lookup_index_visit(directory, '/usr/bin/false')!
+	assert value == 40 && stats.cache_misses == 0
+	assert lookup.hits == 2 && lookup.misses == 1 && lookup.learned == 0
+	assert os.read_file(index_path)! == partial
+}
