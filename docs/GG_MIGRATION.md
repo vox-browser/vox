@@ -1,5 +1,57 @@
 # Migrating from Skia to vlib/gg
 
+## CPU fallback for SVG repeat and reflect fills
+
+The portable CPU fallback handles sRGB `repeat` and `reflect` fills for
+linear gradients and expanding radial gradients with a contained focal
+circle. The high-precision shader wraps or mirrors the gradient position
+before sampling the stops. Tiled ramps use the interior colors at hard
+stops on their endpoints. A repeating point focus on the outer circle
+uses the weighted premultiplied stop color beyond the tangent.
+[SVG 2 gradient spread and focal circles](https://www.w3.org/TR/SVG2/pservers.html#RadialGradients)
+
+The Linux fixture checked negative gradient positions, linear endpoint
+hard stops, concentric and tangent radial gradients, and the weighted
+color beyond a repeating point focus. The control left the first fill
+white with GG disabled. The candidate's disabled and Mesa OpenGL 4.2
+captures matched exactly. GG and both CPU runs matched the expected
+color samples. Existing SVG gradient mask pixels matched the previous
+build. Focused CPU gradient and span tests, the full Linux GG SVG window
+suite, and the Windows amd64 OpenGL source check passed. The pinned CPU
+raster suite matched 20,000 Canvas2D gradient draws against Skia,
+including 6,607 strokes, in both default and `-prod -gc none` builds with
+seed `20261106`.
+
+The Linux timing comparison used six previously supported radial
+gradients, including two tangent pad gradients. Document pixels matched
+exactly. Both builds used V `5a39a4d`, single-unit Clang and `-O0`. The
+control and candidate executable SHA-256 values were
+`2e7839d81825892e44b2592ce955aec163ac6269110866985bbec137a75ce353`
+and `d70bc5e8a1142e782139fbf44a956e93b79b3570083c6f2def03ef72c8beeb73`.
+The fixture and shader directory SHA-256 values were
+`31fa083ecdeb687010ac4d67fd9d1aca933bee20f0d77c21b97ea640e7b31e26`
+and `970ce36acbf7ea10b948d0a063d6315d587aadf8a8d84784d644b17ab6ffc48e`.
+
+Each synthetic trial used Mesa software OpenGL under Xvfb, a fresh
+process and private browser state, an 800 × 712 window, a one-second
+settle and 32 self-paced 42-pixel scroll steps. Scroll positions and
+paint-command counts matched. One-minute guest load ranged from 1.13 to
+1.61 on four virtual CPUs. The benchmark and memory guard exited zero.
+
+| Mode and pair | Median control / candidate, ms | p95, ms | Maximum, ms |
+| --- | ---: | ---: | ---: |
+| Cached 1 | 5.0885 / 5.1245 | 7.397 / 6.123 | 9.381 / 6.163 |
+| Cached 2 | 5.093 / 4.966 | 6.120 / 6.851 | 7.672 / 8.203 |
+| Rerasterized 1 | 5.4855 / 5.858 | 7.847 / 7.844 | 9.258 / 8.858 |
+| Rerasterized 2 | 5.541 / 5.9015 | 6.666 / 7.761 | 7.754 / 8.575 |
+
+Cached medians were within 2.5%. Both rerasterized medians increased by
+6.5–6.8%. Separate diagnostics counted 186 steady-state GG texture hits
+with caching and 186 GG rasterizations with caching disabled. This
+workload uses the GG route throughout, and the timing comparison leaves
+CPU fallback performance, hardware performance and Windows runtime
+unverified.
+
 ## CPU fallback for SVG pad fills
 
 The portable painter uses the CPU Canvas rasterizer for sRGB SVG pad
