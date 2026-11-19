@@ -258,3 +258,126 @@ fn test_unsupported_regions_leave_pixels_untouched() {
 	assert draw_region(rows.data, leaf_pitch, leaf, 1, &unknown) == 0
 	assert rows == before
 }
+
+fn leaf_cache_hits() u64 {
+	return C.vox_leaf_cache_counter(0)
+}
+
+fn test_identical_leaf_draws_reuse_their_result() {
+	context() or {
+		eprintln('skipping: ${err}')
+		return
+	}
+	C.vox_leaf_cache_clear()
+	shape := leaf_shape()
+	stores := C.vox_leaf_cache_counter(2)
+	mut hits := leaf_cache_hits()
+	mut first := leaf_rows(tile_backdrop())
+	assert draw_region(first.data, leaf_pitch, leaf, 1, &shape) == 1
+	assert C.vox_leaf_cache_counter(2) == stores + 1
+	assert leaf_cache_hits() == hits
+	// The same descriptor over the same backdrop copies the stored rows.
+	mut second := leaf_rows(tile_backdrop())
+	assert draw_region(second.data, leaf_pitch, leaf, 1, &shape) == 1
+	assert leaf_cache_hits() == hits + 1
+	assert second == first
+	assert second != leaf_rows(tile_backdrop())
+	assert_padding_kept(second)
+	hits++
+	// One changed backdrop byte, color, region or backdrop flag is another draw.
+	mut other_backdrop := leaf_rows(tile_backdrop())
+	other_backdrop[leaf_pitch * 20 + 81] ^= 0x10
+	assert draw_region(other_backdrop.data, leaf_pitch, leaf, 1, &shape) == 1
+	mut recolored := leaf_shape()
+	recolored.red = 200
+	mut recolored_rows := leaf_rows(tile_backdrop())
+	assert draw_region(recolored_rows.data, leaf_pitch, leaf, 1, &recolored) == 1
+	assert recolored_rows != first
+	mut moved := leaf_rows(tile_backdrop())
+	assert draw_region(moved.data, leaf_pitch, SurfaceRegion{ ...leaf, x: leaf.x + 1 }, 1, &shape) == 1
+	mut cleared := leaf_rows(tile_backdrop())
+	assert draw_region(cleared.data, leaf_pitch, leaf, 0, &shape) == 1
+	assert cleared != first
+	assert leaf_cache_hits() == hits
+	// Without a backdrop the incoming rows are not an input.
+	mut cleared_again := []u8{len: leaf_pitch * leaf.height, init: 0xa5}
+	assert draw_region(cleared_again.data, leaf_pitch, leaf, 0, &shape) == 1
+	assert leaf_cache_hits() == hits + 1
+	assert cleared_again == cleared
+}
+
+fn test_cached_paths_follow_their_segment_data_not_its_address() {
+	context() or {
+		eprintln('skipping: ${err}')
+		return
+	}
+	C.vox_leaf_cache_clear()
+	mut segments := leaf_segments.clone()
+	path := leaf_path(segments)
+	mut hits := leaf_cache_hits()
+	mut first := leaf_rows(tile_backdrop())
+	assert draw_path_region(first.data, leaf_pitch, leaf, 1, &path, false) == 1
+	// A copy of the segments at another address is the same path.
+	copied := leaf_segments.clone()
+	same_path := leaf_path(copied)
+	mut second := leaf_rows(tile_backdrop())
+	assert draw_path_region(second.data, leaf_pitch, leaf, 1, &same_path, false) == 1
+	assert leaf_cache_hits() == hits + 1
+	assert second == first
+	hits++
+	// Other coordinates at the first address are another path.
+	segments[13] += 1.5
+	mut changed := leaf_rows(tile_backdrop())
+	assert draw_path_region(changed.data, leaf_pitch, leaf, 1, &path, false) == 1
+	assert leaf_cache_hits() == hits
+	assert changed != first
+	// The multisampled pass is a different draw of the same descriptor.
+	mut multisampled := leaf_rows(tile_backdrop())
+	assert draw_path_region(multisampled.data, leaf_pitch, leaf, 1, &same_path, true) == 1
+	assert leaf_cache_hits() == hits
+	// SVG images are keyed by their paths, matrices and flags as well.
+	parent := [f32(1), 0, 0, 0, 1, 0, 0, 0, 1]!
+	viewport := [f32(0), 0, f32(tile_width), f32(tile_height)]!
+	mut image := leaf_rows(tile_backdrop())
+	assert draw_svg_image_region(image.data, leaf_pitch, leaf, 1 | 4, &same_path, 1, &parent[0],
+		&viewport[0], unsafe { nil }) == 1
+	mut image_again := leaf_rows(tile_backdrop())
+	assert draw_svg_image_region(image_again.data, leaf_pitch, leaf, 1 | 4, &same_path, 1, &parent[0],
+		&viewport[0], unsafe { nil }) == 1
+	assert leaf_cache_hits() == hits + 1
+	assert image_again == image
+	// A viewport that ends inside the path clips it.
+	narrower := [f32(0), 0, 30, f32(tile_height)]!
+	mut clipped := leaf_rows(tile_backdrop())
+	assert draw_svg_image_region(clipped.data, leaf_pitch, leaf, 1 | 4, &same_path, 1, &parent[0],
+		&narrower[0], unsafe { nil }) == 1
+	assert leaf_cache_hits() == hits + 1
+	assert clipped != image
+}
+
+fn test_cached_shape_groups_match_uncached_whole_tile_draws() {
+	context() or {
+		eprintln('skipping: ${err}')
+		return
+	}
+	C.vox_leaf_cache_clear()
+	mut ring := leaf_shape()
+	ring.fill = 0
+	ring.thickness = 2
+	ring.rect = [f32(7), 9, 16, 22, 3, 3, 3, 3, 3, 3, 3, 3]!
+	shapes := [leaf_shape(), ring]
+	mut whole := tile_backdrop()
+	assert draw_shapes(whole.data, tile_width, tile_height, tile_width * 4, 1, shapes.data, i32(shapes.len)) == 1
+	hits := leaf_cache_hits()
+	for round in 0 .. 3 {
+		mut rows := leaf_rows(tile_backdrop())
+		assert draw_shapes_region(rows.data, leaf_pitch, leaf, 1, shapes.data, i32(shapes.len)) == 1
+		assert rows == leaf_rows(whole), 'round ${round}'
+		assert_padding_kept(rows)
+	}
+	assert leaf_cache_hits() == hits + 2
+	// A group of one shape is not the lone shape's draw.
+	mut lone := leaf_rows(tile_backdrop())
+	assert draw_shapes_region(lone.data, leaf_pitch, leaf, 1, shapes.data, 1) == 1
+	assert leaf_cache_hits() == hits + 2
+}

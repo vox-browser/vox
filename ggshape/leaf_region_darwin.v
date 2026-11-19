@@ -35,8 +35,14 @@ pub fn draw_path_region(pixels &u8, pitch i32, region SurfaceRegion, has_backgro
 		|| C.pthread_main_np() == 0 {
 		return 0
 	}
+	mut key := new_leaf_cache_key(leaf_cache_path, if multisampled { i32(1) } else { i32(0) }, pixels, pitch, region,
+		has_background != 0)
+	key.add_path(path)
+	if key.fetch(pixels, pitch, region) { return 1 }
 	mut ctx := context() or { return 0 }
-	return draw_path_region_with_context(mut ctx, pixels, pitch, region, has_background, path, multisampled)
+	drawn := draw_path_region_with_context(mut ctx, pixels, pitch, region, has_background, path, multisampled)
+	if drawn != 0 { key.store(pixels, pitch, region) }
+	return drawn
 }
 
 fn draw_path_region_with_context(mut ctx canvas.GpuContext, pixels &u8, pitch i32, region SurfaceRegion, has_background i32, path &C.VoxGraphitePath, multisampled bool) i32 {
@@ -68,6 +74,9 @@ pub fn draw_region(pixels &u8, pitch i32, region SurfaceRegion, has_background i
 		|| C.pthread_main_np() == 0 {
 		return 0
 	}
+	mut key := new_leaf_cache_key(leaf_cache_shape, 0, pixels, pitch, region, has_background != 0)
+	key.add_shape(shape)
+	if key.fetch(pixels, pitch, region) { return 1 }
 	samples := if shape.force_msaa != 0 { 4 } else { 1 }
 	mut ctx := context() or { return 0 }
 	mut target := ctx.new_surface(
@@ -94,6 +103,7 @@ pub fn draw_region(pixels &u8, pitch i32, region SurfaceRegion, has_background i
 	target.read_document_region(pixels, int(pitch), region.x, region.y, region.width, region.height) or {
 		return 0
 	}
+	key.store(pixels, pitch, region)
 	return 1
 }
 
@@ -110,6 +120,15 @@ pub fn draw_svg_image_region(pixels &u8, pitch i32, region SurfaceRegion, flags 
 			return 0
 		}
 	}
+	mut key := new_leaf_cache_key(leaf_cache_svg_image, flags, pixels, pitch, region, flags & svg_backdrop != 0)
+	key.add_i32(count)
+	for index in 0 .. int(count) {
+		key.add_path(unsafe { &paths[index] })
+	}
+	key.add_floats(parent, 9)
+	key.add_floats(viewport, 4)
+	key.add_floats(rounded_clip, 12)
+	if key.fetch(pixels, pitch, region) { return 1 }
 	mut ctx := context() or { return 0 }
 	mut target := ctx.new_surface(width: region.surface_width, height: region.surface_height) or {
 		return 0
@@ -128,6 +147,7 @@ pub fn draw_svg_image_region(pixels &u8, pitch i32, region SurfaceRegion, flags 
 	target.read_document_region(pixels, int(pitch), region.x, region.y, region.width, region.height) or {
 		return 0
 	}
+	key.store(pixels, pitch, region)
 	return 1
 }
 
@@ -144,6 +164,11 @@ pub fn draw_shapes_region(pixels &u8, pitch i32, region SurfaceRegion, has_backg
 		if !supported(shape) { return 0 }
 		if shape.force_msaa != 0 { samples = 4 }
 	}
+	mut key := new_leaf_cache_key(leaf_cache_shapes, count, pixels, pitch, region, has_background != 0)
+	for i in 0 .. int(count) {
+		key.add_shape(unsafe { &shapes[i] })
+	}
+	if key.fetch(pixels, pitch, region) { return 1 }
 	mut ctx := context() or { return 0 }
 	mut target := ctx.new_surface(
 		width:        region.surface_width
@@ -173,5 +198,6 @@ pub fn draw_shapes_region(pixels &u8, pitch i32, region SurfaceRegion, has_backg
 	target.read_document_region(pixels, int(pitch), region.x, region.y, region.width, region.height) or {
 		return 0
 	}
+	key.store(pixels, pitch, region)
 	return 1
 }
