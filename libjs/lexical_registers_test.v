@@ -96,3 +96,35 @@ fn test_lexical_registers_remove_block_environments() {
 		}
 	}
 }
+
+fn async_register_result(source string) !f64 {
+	mut vm := VM.create()
+	create_simple_execution_context(mut vm)
+	mut script := Script.parse(source, vm.realm(), 'async-registers.js', unsafe { nil })!
+	vm.run_with_limits(mut script, ExecutionLimits{ max_instructions: 200000 })!
+	// Reactions run after the script; a later script observes their result.
+	mut read := Script.parse('result', vm.realm(), 'async-result.js', unsafe { nil })!
+	return vm.run_with_limits(mut read, ExecutionLimits{ max_instructions: 1000 })!.number
+}
+
+fn test_async_function_registers_survive_await() {
+	defer { set_register_bindings_for_testing(true) }
+	for enabled in [false, true] {
+		set_register_bindings_for_testing(enabled)
+		for source in [
+			'var result=0;async function f(a){var b=a+1;let c=await b;for(let i=0;i<3;i++){const d=await i;c+=d}return a+b+c}f(10).then(v=>{result=v+7})',
+			'var result=0;const f=async (a)=>{let s=0;for(const x of [a,a]){s+=await x}return s};f(21).then(v=>{result=v})',
+			'var result=0;async function f(a){let x=1;try{await Promise.reject(40)}catch(e){x+=e}return x+a}f(1).then(v=>{result=v})',
+		] {
+			assert async_register_result(source)! == 42, '${enabled}: ${source}'
+		}
+	}
+	mut vm := VM.create()
+	create_simple_execution_context(mut vm)
+	mut script := Script.parse('async function f(a){let b=await a;return a+b}f(21)', vm.realm(), 'async-registers.js', unsafe { nil })!
+	vm.run(mut script)!
+	function := lexical_function_for_test(mut vm, script, 'f')
+	executable := function.executable or { panic('Missing bytecode') }
+	assert executable.local_variable_names.len == 2
+	assert !executable.instructions.any(it.op in [.get_binding, .set_binding, .initialize_binding, .create_mutable_binding])
+}

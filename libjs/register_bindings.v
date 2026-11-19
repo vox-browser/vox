@@ -37,8 +37,11 @@ fn (mut function ECMAScriptFunction) prepare_register_bindings(mut generator Byt
 	$if test {
 		if register_bindings_disabled_for_test { return }
 	}
+	// An async function's await copies its whole initialized frame, local slots
+	// included. A generator's first suspension precedes frame initialization,
+	// whose copy drops local slots, so generators keep environment bindings.
 	if function.source.parsed_source == unsafe { nil } || !function.data.simple_parameters()
-		|| function.data.kind != .normal {
+		|| function.data.kind !in [.normal, .async_kind] {
 		return
 	}
 	$if test {
