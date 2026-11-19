@@ -1,5 +1,58 @@
 # Migrating from Skia to vlib/gg
 
+## CPU fallback for solid SVG strokes
+
+On Linux and in opted-in Windows OpenGL builds, a solid SVG stroke that
+GG declines uses the same CPU Canvas stroker as gradient strokes. It
+resolves the retained stroke color and opacity, rasterizes every contour,
+and preserves caps, joins, dash intervals, phase, non-scaling widths, and
+SVG paint order. The viewport cull includes the visible fringe of a
+non-scaling stroke on Linux even when GG is disabled.
+
+The previous Linux build missed the exterior of a round cap with GG
+disabled. Three focused window checks covered live changes to caps,
+dash patterns, dash phase, and `vector-effect`, as well as a second
+contour, transformed curves, joins, opacity, paint order, zero-length
+round dashes, and visible ink at the scrolled viewport edge. The
+candidate's GG-disabled and Mesa OpenGL 4.2 captures matched exactly in
+each check, as did its cached and uncached GG captures. The Windows
+amd64 OpenGL source check and all 15 Linux GG SVG window checks passed.
+
+The timing fixture was `Tests/Browser/Native/svg-gg-stroke.html`. Its
+document pixels matched exactly between builds with GG active. Both
+builds used V `5a39a4d`, single-unit Clang, and `-O0` from the shared
+checkout with other changes in progress. The control and candidate
+executable SHA-256 values were
+`0f4c995b77a9462718da4a86dca492a04bb600dd4a1a823e67a78850dd7876ca`
+and `65fdd0937bbc22feb0d0884470e1573ab3d7835c5a5b093c22298c79aa18bb60`.
+The fixture and shader directory SHA-256 values were
+`d760304658f81f4e28f0665645566626ed28b5dcce7d86f195bad583d12c1f5b`
+and `970ce36acbf7ea10b948d0a063d6315d587aadf8a8d84784d644b17ab6ffc48e`.
+
+Each trial used Mesa software OpenGL under Xvfb, a fresh process and
+private browser state, an 800 × 628 document viewport, a one-second
+settle, and 32 self-paced 42-pixel scroll steps. Both builds recorded
+the same scroll positions and command counts. Separate candidate
+diagnostics recorded 186 GG stroke texture hits with caching and 186
+GG stroke rasterizations with caching disabled. One-minute guest load
+ranged from 0.85 to 1.74 on four virtual CPUs. The timing driver and
+memory guard exited zero.
+
+| Mode and pair | Median control / candidate, ms | p95, ms | Maximum, ms |
+| --- | ---: | ---: | ---: |
+| Cached GG 1 | 5.0615 / 5.211 | 5.998 / 8.291 | 8.292 / 8.794 |
+| Cached GG 2 | 4.979 / 4.425 | 6.882 / 7.895 | 8.011 / 9.756 |
+| Rerasterized GG 1 | 5.4755 / 5.447 | 6.401 / 7.198 | 6.437 / 8.713 |
+| Rerasterized GG 2 | 5.4375 / 5.347 | 7.420 / 6.734 | 9.975 / 6.862 |
+| GG disabled 1 | 2.5955 / 3.650 | 3.117 / 5.626 | 3.846 / 5.809 |
+| GG disabled 2 | 2.780 / 3.904 | 5.623 / 6.445 | 5.788 / 7.059 |
+
+GG medians ranged from 11.1% faster to 3.0% slower and p95 rose in three
+pairs. With GG disabled, the candidate took 1.05–1.12 ms more per
+median callback while rendering geometry the control omitted. These are
+synthetic callback timings on software OpenGL. Native GPU performance
+and Windows runtime behavior remain unverified.
+
 ## CPU fallback for SVG gradient strokes
 
 Portable SVG replay tries GG first for gradient strokes, then uses the CPU
