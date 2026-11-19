@@ -57,3 +57,33 @@ fn (mut tier NativeTier) entry_for_execution(executable &Executable) ?NativeEntr
 	}
 	return none
 }
+
+// The interpreter's entry: the same lookup as entry_for_execution, with the
+// persisted lookup index consulted before an executable's first record lookup.
+fn (mut vm VM) native_entry_for_execution(mut tier NativeTier, executable &Executable) ?NativeEntry {
+	if tier.enabled && use_native_entry_cache() && tier.entry_cache.len != 0 {
+		slot := &tier.entry_cache[native_entry_cache_slot(executable)]
+		if voidptr(slot.executable) == voidptr(executable) {
+			if tier.profiling { tier.observe(executable) }
+			if tier.diagnostics { tier.activity.entry_cache_hits++ }
+			return slot.entry
+		}
+	}
+	if mut cache := tier.persistent {
+		match vm.native_lookup_entry(mut tier, mut cache, executable) {
+			.hit {}
+			.missed {
+				tier.prepare_cached_entry(executable)
+				vm.learn_native_lookup_entry(tier, executable)
+			}
+			.skipped { tier.prepare_cached_entry(executable) }
+		}
+	}
+	if tier.profiling { tier.observe(executable) }
+	if !tier.enabled { return none }
+	if entry := tier.entries[voidptr(executable)] {
+		tier.remember_native_entry(executable, entry)
+		return entry
+	}
+	return none
+}

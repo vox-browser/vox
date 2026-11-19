@@ -10,6 +10,7 @@ pub:
 	libjs_execution_generation u32
 	max_instructions_per_entry u64
 	native                     libjs.NativeCacheStats
+	native_lookup              libjs.NativeLookupStats
 	frontend                   LibJSFrontendCacheStats
 	function_bytecode          libjs.FunctionCompilationActivity
 	pending_native             []libjs.NativePendingExecutableDiagnostic
@@ -27,6 +28,7 @@ pub fn (runtime &Runtime) compiled_code_cache_audit() CompiledJavaScriptCacheAud
 		libjs_execution_generation: runtime.agent_vm.execution_generation()
 		max_instructions_per_entry: runtime.libjs_execution_limits().max_instructions
 		native:                     runtime.native_code_cache_stats()
+		native_lookup:              runtime.agent_vm.native_lookup_stats()
 		frontend:                   runtime.frontend_code_cache_stats()
 		function_bytecode:          runtime.realm.function_compilation_stats()
 		pending_native:             runtime.agent_vm.pending_native_code_cache_diagnostics(16)

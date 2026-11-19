@@ -46,6 +46,9 @@ fn (mut runtime Runtime) flush_document_native_cache() {
 		runtime.libjs_native_cache_failed_ = true
 		eprintln('LibJS native cache compilation failed: ${err.msg()}')
 	}
+	runtime.agent_vm.persist_native_lookup_index() or {
+		eprintln('LibJS native lookup index was not saved: ${err.msg()}')
+	}
 }
 
 fn (runtime &Runtime) write_final_native_cache_audit() {

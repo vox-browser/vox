@@ -538,7 +538,7 @@ pub fn (mut vm VM) run_executable(mut frame ExecutionContext, executable &Execut
 		}
 	}
 	if mut tier := vm.native_tier {
-		if entry := tier.entry_for_execution(executable) {
+		if entry := vm.native_entry_for_execution(mut tier, executable) {
 			mut fast_steps := &u64(unsafe { nil })
 			if tier.diagnostics {
 				tier.activity.entries++

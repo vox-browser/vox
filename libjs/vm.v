@@ -297,6 +297,7 @@ mut:
 	run_executable_depth           u32
 	// Explicit experimental tier; absent in ordinary/browser execution.
 	native_tier ?&NativeTier
+	native_lookup_index ?&NativeLookupIndex
 	weak_collection_registry ?&WeakCollectionRegistry
 	instruction_budget u64
 	instruction_budget_active bool
