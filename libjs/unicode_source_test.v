@@ -47,7 +47,7 @@ fn test_expression_identifier_names_own_their_utf16_spelling() {
 		parser.source[index] = 0
 	}
 	chain_expr := data.scope.children[0].kind.expression or { panic('Missing chain') }
-	chain := chain_expr.kind.optional_chain_data or { panic('Missing chain data') }
+	chain := chain_expr.kind.optional_chain_data() or { panic('Missing chain data') }
 	base := chain.base.kind.identifier or { panic('Missing chain base') }
 	assert base.name.str() == 'café'
 	assert base.is_global
@@ -92,18 +92,18 @@ fn test_literals_own_their_decoded_utf16() {
 	assert escaped.kind.string_value.data[6..] == [u16(0xD800), 10]
 
 	template := data.scope.children[2].kind.expression or { panic('Missing template') }
-	template_data := template.kind.template_data or { panic('Missing template data') }
+	template_data := template.kind.template_data() or { panic('Missing template data') }
 	assert template_data.expressions[0].kind.string_value.str() == 'first\nsecond'
 
 	tagged := data.scope.children[3].kind.expression or { panic('Missing tagged template') }
-	tagged_template := tagged.kind.template_literal_expr or { panic('Missing template') }
-	tagged_data := tagged_template.kind.template_data or { panic('Missing template data') }
+	tagged_template := tagged.kind.template_literal_expr() or { panic('Missing template') }
+	tagged_data := tagged_template.kind.template_data() or { panic('Missing template data') }
 	assert tagged_data.raw_strings[0].str() == r'raw\n𐐀'
 	assert tagged_data.expressions[0].kind.string_value.str() == 'raw\n𐐀'
 
 	invalid := data.scope.children[4].kind.expression or { panic('Missing tagged template') }
-	invalid_template := invalid.kind.template_literal_expr or { panic('Missing template') }
-	invalid_data := invalid_template.kind.template_data or { panic('Missing template data') }
+	invalid_template := invalid.kind.template_literal_expr() or { panic('Missing template') }
+	invalid_data := invalid_template.kind.template_data() or { panic('Missing template data') }
 	assert invalid_data.raw_strings[0].str() == r'bad\u{no}'
 	assert invalid_data.expressions[0].kind.tag == .null_literal
 }

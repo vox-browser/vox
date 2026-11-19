@@ -640,13 +640,15 @@ fn (mut p Parser) parse_class_expression(expect_name bool) Expression {
 
 	return p.expression(start, ExpressionKind{
 		tag:        .class_expr
-		class_data: &ClassData{
-			name:              name_id
-			source_text_start: start.offset
-			source_text_end:   p.source_text_end_offset()
-			constructor:       constructor
-			super_class:       super_class
-			elements:          elements
+		lists: &ExpressionLists{
+			class_data: &ClassData{
+				name:              name_id
+				source_text_start: start.offset
+				source_text_end:   p.source_text_end_offset()
+				constructor:       constructor
+				super_class:       super_class
+				elements:          elements
+			}
 		}
 	})
 }
@@ -656,7 +658,7 @@ fn (mut p Parser) parse_class_declaration() Statement {
 	class_expression := p.parse_class_expression(true)
 	// Convert the class expression into a class declaration.
 	if class_expression.kind.tag == .class_expr {
-		if cd := class_expression.kind.class_data {
+		if cd := class_expression.kind.class_data() {
 			if name_ident := cd.name {
 				p.scope_collector.add_lexical_declaration(name_ident.name.data.clone(), start.line,
 					start.column)
@@ -685,14 +687,16 @@ fn (mut p Parser) synthesize_default_constructor(start Position, class_name Utf1
 
 		super_call := p.expression(start, ExpressionKind{
 			tag:             .super_call
-			super_call_data: &SuperCallData{
-				arguments:    [
-					CallArgument{
-						value:     arguments_expression
-						is_spread: true
-					},
-				]
-				is_synthetic: true
+			lists: &ExpressionLists{
+				super_call_data: &SuperCallData{
+					arguments:    [
+						CallArgument{
+							value:     arguments_expression
+							is_spread: true
+						},
+					]
+					is_synthetic: true
+				}
 			}
 		})
 		mut return_stmt := p.statement(start, StatementKind{

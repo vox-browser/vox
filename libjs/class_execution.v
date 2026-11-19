@@ -19,7 +19,7 @@ fn (mut generator BytecodeGenerator) class_expression(mut vm VM, data &ClassData
 			ClassElementField { element.kind.key }
 			ClassElementStaticInit { continue }
 		}
-		if identifier := key.kind.private_identifier { private_names << generator.constant(Value.from_string(vm.create_string(identifier.name))) }
+		if identifier := key.kind.private_identifier() { private_names << generator.constant(Value.from_string(vm.create_string(identifier.name))) }
 	}
 	if private_names.len > 0 { generator.emit(Instruction{op: .enter_class_private_environment, arguments: private_names}) }
 	body := if expression := data.constructor { generator.expression(mut vm, &expression)! } else { generator.constant(js_undefined()) }
@@ -49,7 +49,7 @@ fn (mut generator BytecodeGenerator) class_expression(mut vm VM, data &ClassData
 		}
 		if element.kind is ClassElementField {
 			is_private := element.kind.key.kind.tag == .private_identifier_expr
-			raw_key := if identifier := element.kind.key.kind.private_identifier { generator.constant(Value.from_string(vm.create_string(identifier.name))) }
+			raw_key := if identifier := element.kind.key.kind.private_identifier() { generator.constant(Value.from_string(vm.create_string(identifier.name))) }
 				else { generator.expression(mut vm, &element.kind.key)! }
 			key := generator.temporary()
 			generator.emit(Instruction{op: .to_property_key, dst: key, lhs: raw_key})
@@ -71,7 +71,7 @@ fn (mut generator BytecodeGenerator) class_expression(mut vm VM, data &ClassData
 		}
 		method := element.kind as ClassElementMethod
 		is_private := method.key.kind.tag == .private_identifier_expr
-		raw_key := if identifier := method.key.kind.private_identifier { generator.constant(Value.from_string(vm.create_string(identifier.name))) }
+		raw_key := if identifier := method.key.kind.private_identifier() { generator.constant(Value.from_string(vm.create_string(identifier.name))) }
 			else { generator.expression(mut vm, &method.key)! }
 		key := generator.temporary()
 		generator.emit(Instruction{ op: .to_property_key, dst: key, lhs: raw_key })

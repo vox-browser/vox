@@ -23,9 +23,9 @@ fn test_tagged_template_tails_retain_nested_tags_and_substitutions() {
 	assert expression.kind.tag == .member
 	outer := expression.kind.object?
 	assert outer.kind.tag == .tagged_template_literal
-	inner := outer.kind.tag_expr?
+	inner := outer.kind.tag_expr()?
 	assert inner.kind.tag == .tagged_template_literal
-	assert inner.kind.tag_expr?.kind.tag == .identifier_expr
-	assert inner.kind.template_literal_expr?.kind.tag == .template_literal
-	assert inner.kind.template_literal_expr?.kind.template_data?.expressions.len == 3
+	assert inner.kind.tag_expr()?.kind.tag == .identifier_expr
+	assert inner.kind.template_literal_expr()?.kind.tag == .template_literal
+	assert inner.kind.template_literal_expr()?.kind.template_data()?.expressions.len == 3
 }

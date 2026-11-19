@@ -240,9 +240,11 @@ fn (mut p Parser) parse_primary_expression(min_precedence int, forbidden Forbidd
 				call_arguments := p.parse_arguments()
 				return p.expression(after_super, ExpressionKind{
 					tag:             .super_call
-					super_call_data: &SuperCallData{
-						arguments:    call_arguments
-						is_synthetic: false
+					lists: &ExpressionLists{
+						super_call_data: &SuperCallData{
+							arguments:    call_arguments
+							is_synthetic: false
+						}
 					}
 				}), true
 			} else if p.match_token(.period) || p.match_token(.bracket_open) {
@@ -278,7 +280,9 @@ fn (mut p Parser) parse_primary_expression(min_precedence int, forbidden Forbidd
 			}
 			return p.expression(start, ExpressionKind{
 				tag:           .big_int_literal
-				big_int_value: value_utf8.bytestr()
+				lists: &ExpressionLists{
+					big_int_value: value_utf8.bytestr()
+				}
 			}), true
 		}
 		.bool_literal {
@@ -385,8 +389,14 @@ fn (mut p Parser) parse_primary_expression(min_precedence int, forbidden Forbidd
 				p.consume_token(.paren_close)
 				return p.expression(start, ExpressionKind{
 					tag:       .import_call
-					specifier: &specifier
-					options:   if has_options { &options_expr } else { none }
+					lists: &ExpressionLists{
+						specifier: &Expression{
+							...specifier
+						}
+						options: if has_options { &Expression{
+							...options_expr
+						} } else { none }
+					}
 				}), true
 			} else {
 				p.expected("'.' or '('")
@@ -409,7 +419,9 @@ fn (mut p Parser) parse_primary_expression(min_precedence int, forbidden Forbidd
 			id := p.parse_private_identifier(start)
 			return p.expression(start, ExpressionKind{
 				tag:                .private_identifier_expr
-				private_identifier: id
+				lists: &ExpressionLists{
+					private_identifier: id
+				}
 			}), true
 		}
 		.regex_literal {
@@ -473,9 +485,11 @@ fn (mut p Parser) parse_regex_literal(start Position, token Token) Expression {
 	_ = p.compile_regex_pattern(pattern, flags)
 	return p.expression(start, ExpressionKind{
 		tag:         .regexp_literal
-		regexp_data: &RegExpLiteralData{
-			pattern: Utf16String.from_slice(pattern)
-			flags:   Utf16String.from_slice(flags)
+		lists: &ExpressionLists{
+			regexp_data: &RegExpLiteralData{
+				pattern: Utf16String.from_slice(pattern)
+				flags:   Utf16String.from_slice(flags)
+			}
 		}
 	})
 }
@@ -603,7 +617,9 @@ fn (mut p Parser) parse_secondary_expression(lhs Expression, min_precedence int,
 				id := p.parse_private_identifier(property_start)
 				property := p.expression(property_start, ExpressionKind{
 					tag:                .private_identifier_expr
-					private_identifier: id
+					lists: &ExpressionLists{
+						private_identifier: id
+					}
 				})
 				return p.expression(start, ExpressionKind{
 					tag:      .member
@@ -821,7 +837,7 @@ fn (mut p Parser) parse_new_expression() Expression {
 			if base.kind.tag == .member {
 				if object := base.kind.object { base = *object } else { break }
 			} else if base.kind.tag == .tagged_template_literal {
-				if tag := base.kind.tag_expr { base = *tag } else { break }
+				if tag := base.kind.tag_expr() { base = *tag } else { break }
 			} else { break }
 		}
 		if base.kind.tag == .import_call {
@@ -990,9 +1006,11 @@ fn (mut p Parser) parse_optional_chain(start Position, base Expression) Expressi
 
 	return p.expression(start, ExpressionKind{
 		tag: .optional_chain
-		optional_chain_data: &OptionalChainData{
-			base:       base
-			references: references
+		lists: &ExpressionLists{
+			optional_chain_data: &OptionalChainData{
+				base:       base
+				references: references
+			}
 		}
 	})
 }
@@ -1330,7 +1348,9 @@ fn (mut p Parser) parse_property_key() PropertyKey {
 			}
 			expression := p.expression(start, ExpressionKind{
 				tag:           .big_int_literal
-				big_int_value: value_utf8.bytestr()
+				lists: &ExpressionLists{
+					big_int_value: value_utf8.bytestr()
+				}
 			})
 			return PropertyKey{
 				expression: expression
@@ -1345,9 +1365,11 @@ fn (mut p Parser) parse_property_key() PropertyKey {
 			key_start := start
 			expression := p.expression(key_start, ExpressionKind{
 				tag:                .private_identifier_expr
-				private_identifier: &PrivateIdentifier{
-					range: p.range_from(key_start)
-					name:  value.clone()
+				lists: &ExpressionLists{
+					private_identifier: &PrivateIdentifier{
+						range: p.range_from(key_start)
+						name:  value.clone()
+					}
 				}
 			})
 			return PropertyKey{
@@ -1431,10 +1453,14 @@ fn (mut p Parser) parse_tagged_template_literals(tag_start Position, expression_
 		template := p.parse_template_literal(true)
 		expression = p.expression(tag_start, ExpressionKind{
 			tag:                   .tagged_template_literal
-			tag_expr:              &Expression{
-				...expression
+			lists: &ExpressionLists{
+				tag_expr: &Expression{
+					...expression
+				}
+				template_literal_expr: &Expression{
+					...template
+				}
 			}
-			template_literal_expr: &template
 		})
 	}
 	return expression
@@ -1517,9 +1543,11 @@ fn (mut p Parser) parse_template_literal(is_tagged bool) Expression {
 
 	return p.expression(start, ExpressionKind{
 		tag:           .template_literal
-		template_data: &TemplateLiteralData{
-			expressions: expressions
-			raw_strings: raw_strings
+		lists: &ExpressionLists{
+			template_data: &TemplateLiteralData{
+				expressions: expressions
+				raw_strings: raw_strings
+			}
 		}
 	})
 }

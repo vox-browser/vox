@@ -541,7 +541,7 @@ fn (mut ft FunctionTable) collect_from_expression(expr &Expression, mut result F
 			ft.transfer(expr.kind.function_id, mut result)
 		}
 		.class_expr {
-			if cd := expr.kind.class_data {
+			if cd := expr.kind.class_data() {
 				ft.collect_from_class(cd, mut result)
 			}
 		}
@@ -598,7 +598,7 @@ fn (mut ft FunctionTable) collect_from_expression(expr &Expression, mut result F
 			}
 		}
 		.optional_chain {
-			chain := expr.kind.optional_chain_data or { return }
+			chain := expr.kind.optional_chain_data() or { return }
 			ft.collect_from_expression(&chain.base, mut result)
 			for ref_ in chain.references {
 				match ref_ {
@@ -623,7 +623,7 @@ fn (mut ft FunctionTable) collect_from_expression(expr &Expression, mut result F
 			}
 		}
 		.super_call {
-			if sd := expr.kind.super_call_data {
+			if sd := expr.kind.super_call_data() {
 				for arg in sd.arguments {
 					ft.collect_from_expression(&arg.value, mut result)
 				}
@@ -650,17 +650,17 @@ fn (mut ft FunctionTable) collect_from_expression(expr &Expression, mut result F
 			}
 		}
 		.template_literal {
-			if td := expr.kind.template_data {
+			if td := expr.kind.template_data() {
 				for e in td.expressions {
 					ft.collect_from_expression(&e, mut result)
 				}
 			}
 		}
 		.tagged_template_literal {
-			if tag := expr.kind.tag_expr {
+			if tag := expr.kind.tag_expr() {
 				ft.collect_from_expression(tag, mut result)
 			}
-			if tl := expr.kind.template_literal_expr {
+			if tl := expr.kind.template_literal_expr() {
 				ft.collect_from_expression(tl, mut result)
 			}
 		}
@@ -670,10 +670,10 @@ fn (mut ft FunctionTable) collect_from_expression(expr &Expression, mut result F
 			}
 		}
 		.import_call {
-			if spec := expr.kind.specifier {
+			if spec := expr.kind.specifier() {
 				ft.collect_from_expression(spec, mut result)
 			}
-			if opts := expr.kind.options {
+			if opts := expr.kind.options() {
 				ft.collect_from_expression(opts, mut result)
 			}
 		}
@@ -1270,13 +1270,8 @@ mut:
 	numeric_value f64
 	string_value  Utf16String
 	bool_value    bool
-	big_int_value string
-	// Rare literal payloads must not inflate every identifier/operator node.
-	// Their explicit heap records also outlive parser and speculative frames.
-	regexp_data   ?&RegExpLiteralData
 	// Identifier data
 	identifier         ?&Identifier
-	private_identifier ?&PrivateIdentifier
 	// Operator data
 	binary_op     BinaryOp
 	logical_op    LogicalOp
@@ -1291,10 +1286,6 @@ mut:
 	conditional_data      ?&ConditionalExpressionData
 	object                ?&Expression
 	property              ?&Expression
-	specifier             ?&Expression
-	options               ?&Expression
-	tag_expr              ?&Expression
-	template_literal_expr ?&Expression
 	// Flags
 	prefixed      bool
 	computed      bool
@@ -1303,32 +1294,94 @@ mut:
 	lhs_is_parenthesized bool
 	// Call data (heap-allocated to break struct cycles)
 	call_data       ?&CallExpressionData
-	super_call_data ?&SuperCallData
 	// Function
 	function_id FunctionId
-	// Class (heap-allocated to break struct cycles)
-	class_data ?&ClassData
 	// Collections
-	// Sequence, array, object and assignment payloads; see ExpressionLists.
+	// Payloads of less common node kinds; see ExpressionLists.
 	lists ?&ExpressionLists
-	// Only optional-chain expressions store a base and reference list.
-	optional_chain_data ?&OptionalChainData
-	// Template
-	template_data ?&TemplateLiteralData
 	// Meta property
 	meta_property_type MetaPropertyType
 }
 
-// Present only on sequence, array, object and assignment nodes. Keeping these
-// 216 bytes out of line shrinks every other expression node, its copies and
-// the parent records that embed expressions.
+// Payloads of less common node kinds: sequences, array and object literals,
+// assignments, BigInt/RegExp literals, private names, dynamic imports, tagged
+// templates, templates, optional chains, super calls and classes. Keeping them
+// out of line shrinks every identifier, call, member and literal node, its
+// copies and the parent records that embed expressions. These heap records
+// also outlive parser and speculative frames.
 @[heap]
 struct ExpressionLists {
 mut:
-	expressions       []Expression
-	array_elements    []?Expression
-	object_properties []ObjectProperty
-	assignment_lhs    ?AssignmentLhs
+	expressions           []Expression
+	array_elements        []?Expression
+	object_properties     []ObjectProperty
+	assignment_lhs        ?AssignmentLhs
+	big_int_value         string
+	regexp_data           ?&RegExpLiteralData
+	private_identifier    ?&PrivateIdentifier
+	specifier             ?&Expression
+	options               ?&Expression
+	tag_expr              ?&Expression
+	template_literal_expr ?&Expression
+	super_call_data       ?&SuperCallData
+	class_data            ?&ClassData
+	optional_chain_data   ?&OptionalChainData
+	template_data         ?&TemplateLiteralData
+}
+
+fn (kind &ExpressionKind) big_int_value() string {
+	if lists := kind.lists { return lists.big_int_value }
+	return ''
+}
+
+fn (kind &ExpressionKind) regexp_data() ?&RegExpLiteralData {
+	if lists := kind.lists { return lists.regexp_data }
+	return none
+}
+
+fn (kind &ExpressionKind) private_identifier() ?&PrivateIdentifier {
+	if lists := kind.lists { return lists.private_identifier }
+	return none
+}
+
+fn (kind &ExpressionKind) specifier() ?&Expression {
+	if lists := kind.lists { return lists.specifier }
+	return none
+}
+
+fn (kind &ExpressionKind) options() ?&Expression {
+	if lists := kind.lists { return lists.options }
+	return none
+}
+
+fn (kind &ExpressionKind) tag_expr() ?&Expression {
+	if lists := kind.lists { return lists.tag_expr }
+	return none
+}
+
+fn (kind &ExpressionKind) template_literal_expr() ?&Expression {
+	if lists := kind.lists { return lists.template_literal_expr }
+	return none
+}
+
+fn (kind &ExpressionKind) super_call_data() ?&SuperCallData {
+	if lists := kind.lists { return lists.super_call_data }
+	return none
+}
+
+fn (kind &ExpressionKind) class_data() ?&ClassData {
+	if lists := kind.lists { return lists.class_data }
+	return none
+}
+
+fn (kind &ExpressionKind) optional_chain_data() ?&OptionalChainData {
+	if lists := kind.lists { return lists.optional_chain_data }
+	return none
+}
+
+fn (kind &ExpressionKind) template_data() ?&TemplateLiteralData {
+	if lists := kind.lists { return lists.template_data }
+	return none
 }
 
 fn (kind &ExpressionKind) expressions() []Expression {

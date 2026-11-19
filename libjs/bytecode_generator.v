@@ -153,7 +153,7 @@ fn (mut generator BytecodeGenerator) member_reference(mut vm VM, expression &Exp
 	property := kind.property or { return error('Missing member property') }
 	key := if kind.computed {
 		generator.expression(mut vm, property)!
-	} else if identifier := property.kind.private_identifier {
+	} else if identifier := property.kind.private_identifier() {
 		generator.constant(Value.from_string(vm.create_string(identifier.name)))
 	} else {
 		name := identifier_name(property) or {
@@ -242,15 +242,15 @@ fn (mut generator BytecodeGenerator) expression(mut vm VM, expression &Expressio
 	match kind.tag {
 		.yield_expr { return generator.yield_expression(mut vm, expression) }
 		.import_call {
-			specifier := generator.expression(mut vm, kind.specifier or { return error('Missing import specifier') })!
-			options := if options_expression := kind.options { generator.expression(mut vm, options_expression)! } else { generator.constant(js_undefined()) }
+			specifier := generator.expression(mut vm, kind.specifier() or { return error('Missing import specifier') })!
+			options := if options_expression := kind.options() { generator.expression(mut vm, options_expression)! } else { generator.constant(js_undefined()) }
 			result := generator.temporary()
 			generator.emit(Instruction{op: .import_call, dst: result, lhs: specifier, rhs: options})
 			return result
 		}
 		.tagged_template_literal { return generator.tagged_template(mut vm, expression) }
 		.template_literal {
-			data := kind.template_data or { return error('Missing template literal') }
+			data := kind.template_data() or { return error('Missing template literal') }
 			mut text := generator.constant(Value.from_string(vm.create_string(Utf16String.new())))
 			// codegen.rs::generate_template_literal: evaluate each substitution
 			// and ToString it before evaluating the next one. Addition itself
@@ -268,14 +268,14 @@ fn (mut generator BytecodeGenerator) expression(mut vm VM, expression &Expressio
 			}
 			return text
 		}
-		.class_expr { return generator.class_expression(mut vm, kind.class_data or { return error('Missing class expression') }) }
+		.class_expr { return generator.class_expression(mut vm, kind.class_data() or { return error('Missing class expression') }) }
 		.meta_property {
 			dst := generator.temporary()
 			generator.emit(Instruction{op: if kind.meta_property_type == .import_meta { OpCode.get_import_meta } else { OpCode.get_new_target },dst:dst})
 			return dst
 		}
 		.super_call {
-			data := kind.super_call_data or { return error('Missing super call data') }
+			data := kind.super_call_data() or { return error('Missing super call data') }
 			callee := generator.temporary()
 			generator.emit(Instruction{op: .get_super_constructor, dst: callee})
 			if !data.is_synthetic && data.arguments.any(it.is_spread) {
@@ -304,7 +304,7 @@ fn (mut generator BytecodeGenerator) expression(mut vm VM, expression &Expressio
 			return result
 		}
 		.regexp_literal {
-			data := kind.regexp_data or { return error('Missing regular expression') }
+			data := kind.regexp_data() or { return error('Missing regular expression') }
 			engine := compile_regexp_engine(data.pattern, data.flags) or {
 				return error('SyntaxError: ' + err.msg())
 			}
@@ -348,7 +348,7 @@ fn (mut generator BytecodeGenerator) expression(mut vm VM, expression &Expressio
 		.big_int_literal {
 			// codegen.rs::bigint_literal_digits and RustIntegration.cpp's BigInt
 			// constant reader; SignedBigInteger::from_base removes separators.
-			digits := kind.big_int_value.trim_string_right('n').replace('_', '')
+			digits := kind.big_int_value().trim_string_right('n').replace('_', '')
 			integer := string_to_bigint(utf16_string(digits)) or {
 				return error('Invalid parsed BigInt literal')
 			}
@@ -411,7 +411,7 @@ fn (mut generator BytecodeGenerator) expression(mut vm VM, expression &Expressio
 		.binary {
 			if kind.binary_op == .in_op {
 				if lhs := kind.lhs {
-					if identifier := lhs.kind.private_identifier {
+					if identifier := lhs.kind.private_identifier() {
 						base := generator.expression(mut vm, kind.rhs or { return error('Missing private in object') })!
 						dst := generator.temporary()
 						generator.emit(Instruction{op: .has_private, dst: dst, lhs: base, rhs: generator.constant(Value.from_string(vm.create_string(identifier.name)))})

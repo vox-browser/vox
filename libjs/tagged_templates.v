@@ -12,9 +12,9 @@ struct TemplateObjectEntry {
 
 // Rust/src/bytecode/codegen.rs::generate_tagged_template_literal.
 fn (mut generator BytecodeGenerator) tagged_template(mut vm VM, expression &Expression) !Operand {
-	tag := expression.kind.tag_expr or { return error('Missing template tag') }
-	literal := expression.kind.template_literal_expr or { return error('Missing tagged template literal') }
-	data := literal.kind.template_data or { return error('Missing tagged template data') }
+	tag := expression.kind.tag_expr() or { return error('Missing template tag') }
+	literal := expression.kind.template_literal_expr() or { return error('Missing tagged template literal') }
+	data := literal.kind.template_data() or { return error('Missing tagged template data') }
 	callee, receiver := generator.call_reference(mut vm, tag)!
 	mut strings := []Operand{}
 	for index := 0; index < data.expressions.len; index += 2 {

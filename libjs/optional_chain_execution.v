@@ -41,7 +41,7 @@ fn (mut generator BytecodeGenerator) call_reference(mut vm VM, expression &Expre
 
 fn (mut generator BytecodeGenerator) optional_chain_reference(mut vm VM, expression &Expression, deleting bool) !(Operand, Operand) {
 	generator.check_compile_stack()!
-	chain := expression.kind.optional_chain_data or { return error('Optional chain has no references') }
+	chain := expression.kind.optional_chain_data() or { return error('Optional chain has no references') }
 	if chain.references.len == 0 { return error('Optional chain has no references') }
 	initial, initial_receiver := generator.call_reference(mut vm, &chain.base)!
 	value, receiver := generator.temporary(), generator.temporary()
