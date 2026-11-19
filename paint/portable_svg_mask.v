@@ -45,10 +45,12 @@ fn portable_svg_content_mask_supported(mask &layout.PaintClip) bool {
 
 fn portable_svg_mask_gradient_supported(operation &layout.PaintMaskOperation, luminance bool) bool {
 	if linear := operation.fill_linear_gradient {
-		return portable_svg_pad_linear_supported(&linear, luminance)
+		return linear.gradient.spread_method == .pad
+			&& portable_svg_raster_linear_supported(&linear, luminance)
 	}
 	if radial := operation.fill_radial_gradient {
-		return portable_svg_pad_radial_supported(&radial, luminance)
+		return radial.gradient.spread_method == .pad
+			&& portable_svg_raster_radial_supported(&radial, luminance)
 	}
 	return true
 }

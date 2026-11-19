@@ -5,16 +5,16 @@ import layout
 import math
 import painting
 
-fn portable_svg_pad_linear_supported(linear &painting.SVGLinearGradientPaintStyle,
+fn portable_svg_raster_linear_supported(linear &painting.SVGLinearGradientPaintStyle,
 	uses_rgb bool) bool {
-	return portable_svg_pad_stops_supported(&linear.gradient, uses_rgb)
+	return portable_svg_raster_stops_supported(&linear.gradient, uses_rgb)
 		&& [linear.start_point.x, linear.start_point.y, linear.end_point.x,
 			linear.end_point.y]!.all(math.is_finite(f64(f32(it))))
 }
 
-fn portable_svg_pad_radial_supported(radial &painting.SVGRadialGradientPaintStyle,
+fn portable_svg_raster_radial_supported(radial &painting.SVGRadialGradientPaintStyle,
 	uses_rgb bool) bool {
-	if !portable_svg_pad_stops_supported(&radial.gradient, uses_rgb)
+	if !portable_svg_raster_stops_supported(&radial.gradient, uses_rgb)
 		|| ![radial.start_center.x, radial.start_center.y, radial.end_center.x, radial.end_center.y,
 			radial.start_radius, radial.end_radius]!.all(math.is_finite(f64(f32(it)))) {
 		return false
@@ -26,8 +26,8 @@ fn portable_svg_pad_radial_supported(radial &painting.SVGRadialGradientPaintStyl
 		&& math.sqrt(dx * dx + dy * dy) + radial.start_radius <= radial.end_radius
 }
 
-fn portable_svg_pad_stops_supported(gradient &painting.SVGGradientPaintStyle, uses_rgb bool) bool {
-	if gradient.spread_method != .pad || gradient.repeat_length != none || gradient.color_stops.len == 0
+fn portable_svg_raster_stops_supported(gradient &painting.SVGGradientPaintStyle, uses_rgb bool) bool {
+	if gradient.repeat_length != none || gradient.color_stops.len == 0
 		|| (uses_rgb && gradient.color_space != .srgb) {
 		return false
 	}
@@ -37,6 +37,14 @@ fn portable_svg_pad_stops_supported(gradient &painting.SVGGradientPaintStyle, us
 		}
 	}
 	return gradient.color_stops.all(it.position >= 0 && it.position <= 1)
+}
+
+fn portable_svg_raster_spread(gradient &painting.SVGGradientPaintStyle) cpuraster.CanvasGradientSpread {
+	return match gradient.spread_method {
+		.pad { .pad }
+		.repeat { .repeat }
+		.reflect { .reflect }
+	}
 }
 
 fn portable_svg_raster_gradient_transform(gradient &painting.SVGGradientPaintStyle) ?[6]f32 {
@@ -64,6 +72,7 @@ fn portable_svg_raster_linear_gradient(linear &painting.SVGLinearGradientPaintSt
 		y0: f32(linear.start_point.y)
 		x1: f32(linear.end_point.x)
 		y1: f32(linear.end_point.y)
+		spread: portable_svg_raster_spread(&linear.gradient)
 		local_transform: portable_svg_raster_gradient_transform(&linear.gradient)
 		stops: portable_svg_raster_gradient_stops(&linear.gradient, uses_rgb)
 	})
@@ -79,6 +88,7 @@ fn portable_svg_raster_radial_gradient(radial &painting.SVGRadialGradientPaintSt
 		x1: f32(radial.end_center.x)
 		y1: f32(radial.end_center.y)
 		r1: f32(radial.end_radius)
+		spread: portable_svg_raster_spread(&radial.gradient)
 		local_transform: portable_svg_raster_gradient_transform(&radial.gradient)
 		stops: portable_svg_raster_gradient_stops(&radial.gradient, uses_rgb)
 	})
@@ -90,10 +100,10 @@ fn (mut app BrowserApp) draw_portable_svg_raster_gradient_fill(command &layout.P
 		return false
 	}
 	style := if linear := command.fill_linear_gradient() {
-		if !portable_svg_pad_linear_supported(&linear, true) { return false }
+		if !portable_svg_raster_linear_supported(&linear, true) { return false }
 		portable_svg_raster_linear_gradient(&linear, true)
 	} else if radial := command.fill_radial_gradient() {
-		if !portable_svg_pad_radial_supported(&radial, true) { return false }
+		if !portable_svg_raster_radial_supported(&radial, true) { return false }
 		portable_svg_raster_radial_gradient(&radial, true)
 	} else {
 		return false

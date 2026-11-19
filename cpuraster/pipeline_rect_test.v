@@ -23,7 +23,7 @@ fn test_pipeline_rect_matches_ordered_gradient_and_image_rows() {
 	}
 	gradient := make_linear(Point{2, 1}, Point{830, 490},
 		[[f32(0.2), 0.3, 0.5, 0.8]!, [f32(0.7), 0.3, 0.1, 0.6]!], []f32{},
-		Matrix{1, 0, 0, 1, 0, 0}).gradient
+		Matrix{1, 0, 0, 1, 0, 0}, .pad).gradient
 	seed := []u8{len: pitch * (h + 4), init: u8(index * 17 + index / 359)}
 	for kind in 0 .. 4 {
 		mut actual := seed.clone()

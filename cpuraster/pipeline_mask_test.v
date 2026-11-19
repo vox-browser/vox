@@ -7,7 +7,7 @@ fn test_pipeline_mask_rows_match_ordered_blits() {
 	seed := []u8{len: pitch * h, init: u8(index * 17 + index / 359)}
 	gradient := make_linear(Point{2, 1}, Point{830, 490},
 		[[f32(0.2), 0.3, 0.5, 0.8]!, [f32(0.7), 0.3, 0.1, 0.6]!], []f32{},
-		Matrix{1, 0, 0, 1, 0, 0}).gradient
+		Matrix{1, 0, 0, 1, 0, 0}, .pad).gradient
 	for source_pitch in [w + 11, 0] {
 		mask := Mask{
 			bounds:    IRect{0, 0, w, h}

@@ -1,0 +1,45 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>SVG repeat and reflect fallback</title>
+<style>
+  body { margin: 0; background: white; }
+  header { width: 16px; height: 8px; background: #34b786; }
+  svg { display: block; }
+</style>
+<header></header>
+<svg width="444" height="180">
+  <defs>
+    <linearGradient id="linear-repeat" gradientUnits="userSpaceOnUse" x1="60.5" y1="0" x2="92.5" y2="0"
+                    spreadMethod="repeat">
+      <stop offset="0" stop-color="green"/>
+      <stop offset="0" stop-color="red"/>
+      <stop offset="1" stop-color="blue"/>
+      <stop offset="1" stop-color="green"/>
+    </linearGradient>
+    <linearGradient id="linear-reflect" href="#linear-repeat" spreadMethod="reflect"/>
+    <radialGradient id="circle-repeat" gradientUnits="userSpaceOnUse" cx="100.5" cy="90.5"
+                    fx="76.5" fy="90.5" fr="8" r="32" spreadMethod="repeat">
+      <stop offset="0" stop-color="red"/>
+      <stop offset="1" stop-color="blue"/>
+    </radialGradient>
+    <radialGradient id="circle-reflect" href="#circle-repeat" spreadMethod="reflect"/>
+    <radialGradient id="point-repeat" gradientUnits="userSpaceOnUse" cx="100.5" cy="148.5"
+                    fx="76.5" fy="148.5" r="24" spreadMethod="repeat">
+      <stop offset="0" stop-color="red"/>
+      <stop offset=".25" stop-color="red"/>
+      <stop offset=".25" stop-color="blue" stop-opacity=".5"/>
+      <stop offset="1" stop-color="blue" stop-opacity=".5"/>
+    </radialGradient>
+    <radialGradient id="concentric-reflect" gradientUnits="userSpaceOnUse" cx="76.5" cy="148.5"
+                    fr="6" r="22" spreadMethod="reflect">
+      <stop offset="0" stop-color="red"/>
+      <stop offset="1" stop-color="blue"/>
+    </radialGradient>
+  </defs>
+  <path d="M8 8H208V58H8Z" fill="url(#linear-repeat)"/>
+  <path d="M8 8H208V58H8Z" transform="translate(220 0)" fill="url(#linear-reflect)"/>
+  <path d="M8 66H208V114H8Z" fill="url(#circle-repeat)"/>
+  <path d="M8 66H208V114H8Z" transform="translate(220 0)" fill="url(#circle-reflect)"/>
+  <path d="M8 124H208V172H8Z" fill="url(#point-repeat)" fill-opacity=".5"/>
+  <path d="M8 124H208V172H8Z" transform="translate(220 0)" fill="url(#concentric-reflect)"/>
+</svg>
