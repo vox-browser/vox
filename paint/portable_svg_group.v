@@ -14,15 +14,24 @@ fn (app &BrowserApp) portable_svg_group_allowed() bool {
 		&& app.paint_svg_mask_depth == 0 && app.portable_background_text_clip == none
 }
 
-fn portable_svg_group_clip_supported(command &layout.PaintCommand) bool {
+fn portable_svg_group_clip_supported(command &layout.PaintCommand, mask ?&layout.PaintClip) bool {
 	if !chromium_shared_recording_clips_supported(command) || command.clip_outs.len > 0
 		|| command.recording_clip != none {
 		return false
 	}
 	if command.clip_list != unsafe { nil } {
 		for clip in command.clip_list.items {
-			if clip.transform[1] != 0 || clip.transform[2] != 0 || clip.corner_radii != layout.BoxRadii{} {
-				return false
+			if clip.corner_radii != layout.BoxRadii{} { return false }
+			if clip.transform[1] != 0 || clip.transform[2] != 0 {
+				region := mask or { return false }
+				// An enclosing SVG viewport and its mask share local coordinates.
+				// A contained mask region keeps all output inside the viewport.
+				if !region.is_svg_content_mask || clip.transform != region.transform
+					|| region.rect.x < clip.rect.x || region.rect.y < clip.rect.y
+					|| region.rect.x + region.rect.width > clip.rect.x + clip.rect.width
+					|| region.rect.y + region.rect.height > clip.rect.y + clip.rect.height {
+					return false
+				}
 			}
 		}
 	}
@@ -43,7 +52,7 @@ fn portable_svg_group_has_stroke(command &layout.PaintCommand) bool {
 }
 
 fn portable_svg_group_path_supported(command &layout.PaintCommand, first &layout.PaintCommand,
-	group_opacity f64) bool {
+	group_opacity f64, mask ?&layout.PaintClip) bool {
 	data := command.svg_data
 	if command.kind != 'draw_svg_path' || data == unsafe { nil }
 		|| data.path_data.len < layout.compatibility_clip_path_segment_stride || data.fill_pattern != none
@@ -52,7 +61,7 @@ fn portable_svg_group_path_supported(command &layout.PaintCommand, first &layout
 		|| f32(command.group_opacity) != f32(group_opacity)
 		|| command.has_clip != first.has_clip || command.clip_x != first.clip_x
 		|| command.clip_y != first.clip_y || command.clip_width != first.clip_width
-		|| command.clip_height != first.clip_height || !portable_svg_group_clip_supported(command) {
+		|| command.clip_height != first.clip_height || !portable_svg_group_clip_supported(command, mask) {
 		return false
 	}
 	if command.color != '' || portable_svg_group_has_stroke(command) { return true }

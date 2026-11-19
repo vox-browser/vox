@@ -15,7 +15,7 @@ fn portable_svg_mask_group_end(commands []layout.PaintCommand, start int, mask l
 	} else if disable_portable_svg_clip || !mask.is_svg_mask || mask.path_components.len > 64 {
 		return none
 	}
-	if start + 2 >= commands.len || !portable_svg_group_clip_supported(&commands[start]) { return none }
+	if start + 2 >= commands.len || !portable_svg_group_clip_supported(&commands[start], &mask) { return none }
 	first := &commands[start + 1]
 	limit := math.min(commands.len, start + portable_svg_group_max_paths + 2)
 	for index in start + 1 .. limit {
@@ -30,7 +30,7 @@ fn portable_svg_mask_group_end(commands []layout.PaintCommand, start int, mask l
 			}
 			return none
 		}
-		if !portable_svg_group_path_supported(command, first, 1) { return none }
+		if !portable_svg_group_path_supported(command, first, 1, &mask) { return none }
 	}
 	return none
 }
@@ -43,15 +43,16 @@ fn (mut app BrowserApp) draw_portable_svg_mask_group(commands []layout.PaintComm
 	if mask.is_svg_content_mask && mask.mask_operations.len == 0 { return end + 1 }
 	scale := f64(app.ctx.scale)
 	mut viewport := outer_viewport or { app.portable_device_viewport(page_y) }
+	local := painting.Rect{mask.rect.x, mask.rect.y, mask.rect.width, mask.rect.height}
+	mut transform := painting.Affine{}
 	mut region := painting.Rect{}
 	mut direct_crop := false
 	if rect := svg_background_rectangular_clip(mask) {
 		region = portable_device_transform([f64(1), 0, 0, 1, 0, 0]!, page_x, page_y, scale).map_rect(rect)
 		direct_crop = [region.x, region.y, region.right(), region.bottom()]!.all(it == math.floor(it))
 	} else {
-		local := painting.Rect{mask.rect.x, mask.rect.y, mask.rect.width, mask.rect.height}
 		if mask.is_svg_content_mask && local.is_empty() { return end + 1 }
-		transform := portable_device_transform(mask.transform, page_x, page_y, scale)
+		transform = portable_device_transform(mask.transform, page_x, page_y, scale)
 		region = transform.map_rect(local)
 		if mask.is_svg_content_mask && ![region.x, region.y, region.right(), region.bottom()]!.all(math.is_finite(it)) {
 			return start
@@ -65,8 +66,13 @@ fn (mut app BrowserApp) draw_portable_svg_mask_group(commands []layout.PaintComm
 	if image.bounds.is_empty() { return end + 1 }
 	mut cacheable := true
 	if mask.is_svg_content_mask {
-		cacheable = app.apply_portable_svg_content_mask(mut image, &mask, region, page_x, page_y,
+		cacheable = app.apply_portable_svg_content_mask(mut image, &mask, page_x, page_y,
 			scale) or { return start }
+		if (transform.b == 0 && transform.c == 0) || (transform.a == 0 && transform.d == 0) {
+			apply_portable_svg_mask_region(mut image, region)
+		} else if !apply_portable_svg_transformed_mask_region(mut image, local, transform) {
+			return start
+		}
 	} else if !direct_crop && !apply_portable_svg_clip(mut image, mask.path_components, page_x, page_y, scale) {
 		return start
 	}
@@ -77,6 +83,30 @@ fn (mut app BrowserApp) draw_portable_svg_mask_group(commands []layout.PaintComm
 		eprintln('VOX_SVG_CLIP crop=${direct_crop} components=${mask.path_components.len} paths=${image.paths} texture=${image.bounds.width}x${image.bounds.height}')
 	}
 	return end + 1
+}
+
+fn apply_portable_svg_transformed_mask_region(mut image PortableSVGGroupImage, rect painting.Rect,
+	transform painting.Affine) bool {
+	bounds := image.bounds
+	// Rasterize the transformed region in texture coordinates. Its bounding
+	// box is only for allocation and would expose pixels outside the mask.
+	mut path := cpuraster.PathBuilder{}
+	for i, corner in [painting.Point{rect.x, rect.y}, painting.Point{rect.right(), rect.y},
+		painting.Point{rect.right(), rect.bottom()}, painting.Point{rect.x, rect.bottom()}]! {
+		point := transform.map_point(corner)
+		x := f32(point.x - f64(bounds.x))
+		y := f32(point.y - f64(bounds.y))
+		if !math.is_finite(x) || !math.is_finite(y) { return false }
+		if i == 0 { path.move_to(x, y) } else { path.line_to(x, y) }
+	}
+	path.close()
+	mut coverage := []u8{len: bounds.width * bounds.height}
+	if !cpuraster.fill_opaque_coverage(mut coverage, bounds.width, bounds.height, path.detach(),
+		[f32(1), 0, 0, 1, 0, 0]!) {
+		return false
+	}
+	apply_portable_svg_clip_coverage(mut image, coverage)
+	return true
 }
 
 fn apply_portable_svg_clip(mut image PortableSVGGroupImage, components []layout.PaintPath,
@@ -93,9 +123,13 @@ fn apply_portable_svg_clip(mut image PortableSVGGroupImage, components []layout.
 		}
 	}
 	// Components form one coverage mask over the resolved SVG source.
+	apply_portable_svg_clip_coverage(mut image, coverage)
+	return true
+}
+
+fn apply_portable_svg_clip_coverage(mut image PortableSVGGroupImage, coverage []u8) {
 	for i, value in coverage {
 		alpha := 4 * i + 3
 		image.pixels[alpha] = portable_svg_mask_alpha(image.pixels[alpha], value)
 	}
-	return true
 }

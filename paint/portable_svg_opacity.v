@@ -12,7 +12,7 @@ const portable_svg_opacity_diagnostics = os.getenv('VOX_PORTABLE_SVG_OPACITY_DIA
 // A common clip lets the raster surface itself clip every path.
 fn portable_svg_opacity_end(commands []layout.PaintCommand, start int, layer &layout.PaintVisualLayer) ?int {
 	opening := &commands[start]
-	if !portable_svg_group_clip_supported(opening) || start + 2 >= commands.len {
+	if !portable_svg_group_clip_supported(opening, none) || start + 2 >= commands.len {
 		return none
 	}
 	first := &commands[start + 1]
@@ -32,7 +32,7 @@ fn portable_svg_opacity_end(commands []layout.PaintCommand, start int, layer &la
 			if closing.kind == layer.kind && closing.scope_id == layer.scope_id { return index }
 			return none
 		}
-		if !portable_svg_group_path_supported(command, first, layer.opacity) { return none }
+		if !portable_svg_group_path_supported(command, first, layer.opacity, none) { return none }
 	}
 	return none
 }

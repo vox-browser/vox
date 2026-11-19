@@ -16,7 +16,7 @@ const portable_svg_mask_max_opacity_depth = 4
 
 fn portable_svg_content_mask_supported(mask &layout.PaintClip, portable_group bool) bool {
 	if mask.is_svg_mask || mask.corner_radii != layout.BoxRadii{} || mask.mask_operations.len > 64
-		|| mask.transform[1] != 0 || mask.transform[2] != 0 {
+		|| (!portable_group && (mask.transform[1] != 0 || mask.transform[2] != 0)) {
 		return false
 	}
 	mut depth := 0
@@ -334,17 +334,15 @@ fn apply_svg_mask_ramp(mut image PortableSVGGroupImage, operation &layout.PaintM
 }
 
 fn (mut app BrowserApp) apply_portable_svg_content_mask(mut image PortableSVGGroupImage,
-	mask &layout.PaintClip, region painting.Rect, page_x f32, page_y f32, scale f64) ?bool {
+	mask &layout.PaintClip, page_x f32, page_y f32, scale f64) ?bool {
 	bounds := image.bounds
 	if ramp := svg_mask_ramp(mask, bounds, page_x, page_y, scale) {
 		if apply_svg_mask_ramp(mut image, &mask.mask_operations[0], ramp, mask.mask_luminance) {
-			apply_portable_svg_mask_region(mut image, region)
 			return true
 		}
 	}
 	if portable_svg_mask_solid_rects && mask.mask_operations.len == 1 && app.apply_svg_mask_solid_rect(mut image,
 		&mask.mask_operations[0], mask.mask_luminance, page_x, page_y, scale) {
-		apply_portable_svg_mask_region(mut image, region)
 		return true
 	}
 	mut coverage := []u8{len: bounds.width * bounds.height * 4}
@@ -362,7 +360,6 @@ fn (mut app BrowserApp) apply_portable_svg_content_mask(mut image PortableSVGGro
 			image.pixels[offset] = portable_svg_mask_alpha(image.pixels[offset], coverage[offset])
 		}
 	}
-	apply_portable_svg_mask_region(mut image, region)
 	return cacheable
 }
 
