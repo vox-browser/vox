@@ -2,10 +2,13 @@
 
 A user reported that Vox keeps one CPU busy while it renders a page. This
 report measures that on Hacker News, GitHub and old Reddit, explains why the
-load is serial, and records the one change made: leaf raster no longer moves a
-whole compositor tile through the GPU for every small shape. The pipeline is
-still single-threaded; the change removes main-thread work rather than moving
-it to other cores.
+load is serial, and records the changes made. Leaf raster no longer moves a
+whole compositor tile through the GPU for every small shape. Three follow-up
+fixes remove a wait and repeated work that the first measurements exposed: a
+deferred loading frame renders once the page is quiet, layout keeps its boxes
+and inline layout on Retina displays, and identical leaf draws are not
+repeated. The pipeline is still single-threaded; the changes remove
+main-thread work and idle waiting rather than moving work to other cores.
 
 ## Measurement
 
@@ -172,11 +175,13 @@ thread, including document installation in the first frame).
 
 | Page | First frame, control → candidate | Later frames | Last frame ends after first paint |
 | --- | ---: | ---: | ---: |
-| GitHub | 1039 → 920 ms | 470 → 336 ms (15 and 16 frames, −28%) | 5635 → 5097 ms |
-| Hacker News | 200 → 165 ms | 100 → 58 ms | 701 → 617 ms |
-| old Reddit | 315 → 281 ms | 59 → 37 ms | 620 → 576 ms |
+| GitHub | 1039 → 920 ms | 470 → 336 ms (15 and 16 frames, −28%) | 5577 → 5010 ms |
+| Hacker News | 200 → 165 ms | 100 → 58 ms | 601 → 559 ms |
+| old Reddit | 315 → 281 ms | 59 → 37 ms | 562 → 539 ms |
 
-Three rounds on a loaded host do not support a precise percentage. Every
+An earlier revision of this table listed the last frame's end plus its cost
+(5635 → 5097, 701 → 617 and 620 → 576 ms). Three rounds on a loaded host do
+not support a precise percentage. Every
 candidate first frame is below every control first frame on GitHub and old
 Reddit, and GitHub's hydration frames cost 239–402 ms against 393–583 ms.
 
@@ -198,20 +203,176 @@ focused tests and the type check is zero; sampled peak process-tree RSS stays
 under 2.5 GiB for page loads and 5.6 GiB for the type check. Raw logs,
 timelines and captures were local job output and are deleted.
 
+## Follow-up fixes
+
+Each fix has an environment switch that restores the previous behavior, so
+every comparison below alternates control and candidate on one executable.
+`tools/measure_load_frames.py` runs the normal-window rounds: it opens the
+archive in an ordinary window at device scale 2 and reads each rendered frame
+of 20 ms or more from `VOX_LOAD_RENDER_THROTTLE_DIAGNOSTICS`.
+
+### A deferred loading frame renders once the page is quiet
+
+After a document's first frame the load-frame throttle holds the next frame
+for three times the last frame's cost, up to 500 ms, to protect script time on
+hydrating pages. The first frame includes document installation, so Hacker
+News and old Reddit sat idle for most of 0.45 to 0.6 s before painting the
+images that had arrived. Commit `3902effd8` releases a deferred frame once the
+main thread has used at most a fifth of a 50 ms window and no fetch is in
+flight (`VOX_LOAD_RENDER_QUIET_MS`; control
+`VOX_DISABLE_LOAD_RENDER_QUIET_RELEASE=1`). A hydrating page keeps its
+deferral while scripts run or resources load.
+
+| Page | Second frame ends after first paint, control → candidate |
+| --- | ---: |
+| Hacker News | 363, 437 → 100, 100 ms |
+| old Reddit | 530, 526 → 97, 93 ms |
+
+GitHub's last loading frame ended 4773 and 4897 ms after first paint against
+4323 and 3513 ms, with three or four early releases and the same number of
+frames. Five alternating capture pairs per page at scale 2 kept identical
+pixels and main-thread CPU (256 → 256 ms on Hacker News, 295 → 295 ms on old
+Reddit); wall time from launch to capture fell 591 → 527 ms, 861 → 530 ms and
+4737 → 3697 ms on GitHub.
+
+### Layout keeps its work on Retina displays
+
+Layout cost about three times as many instructions at scale 2 as at scale 1
+on GitHub. At scale 2 a box holds the projection of its element's CSS-pixel
+style into physical coordinates, and two checks treated every projection as
+changed (commit `1af37f85c`):
+
+- `has_identical_retained_layout_inputs()` rejected every style at a layout
+  scale other than 1, so each no-op restyle rebuilt its boxes: 8,626 to
+  10,544 clean elements were rebuilt per load against 282 to 469 at scale 1.
+  It now projects the replacement and compares in physical coordinates,
+  which leaves 402 (control `VOX_DISABLE_DEVICE_LAYOUT_STYLE_REUSE=1`).
+- A projected font list carried none of the font computer's stamps, so text
+  shaped with it never counted as current and no inline layout was reused
+  between passes. A projection now reads the stamps of the cascade it scales
+  (control `VOX_DISABLE_DEVICE_LAYOUT_FONT_STAMPS=1`).
+
+One instrumented GitHub pair per step at capture scale 2 (executables
+`432e5f7edf08…` and `c93e43a7e58c…`), with byte-identical captures. The
+middle column holds both pairs' values:
+
+| Main thread | Both off | Style comparison | Both |
+| --- | ---: | ---: | ---: |
+| `flow_layout` instructions | 11.28 B | 9.23, 9.20 B | 3.07 B |
+| Layout tree construction, instructions | 1.44 B | 0.88, 0.91 B | 0.78 B |
+| Inline layouts reused in their pass | 0 | 0 | 10,075 |
+| Inline layouts restored from an earlier pass | 0 | 0 | 657 |
+| Inline layouts laid out for the first time | 50,881 | 51,060 | 4,294 |
+| Whole load, instructions | 33.8 B | 31.1, 30.8 B | 23.6 B |
+
+Scale 1 measures 3.3 B in `flow_layout` and 10,801, 817 and 4,294 inline
+layouts. Unprofiled GitHub cohorts with both switches as control, captures on
+`c93e43a7e58c…` and the normal window on `830d0151f7c0…`, which a concurrent
+build published from the same tree; the round it interrupted was rejected and
+repeated:
+
+| GitHub at scale 2 | Control | Candidate |
+| --- | ---: | ---: |
+| Capture, main-thread CPU (five pairs) | 3144 ms (2812–3402) | 2259 ms (2208–2548) |
+| Capture, launch to PNG | 3814 ms | 2899 ms |
+| Normal window, first frame (three rounds) | 894, 955, 1023 ms | 796, 776, 813 ms |
+| Normal window, later frames, median | 267 ms | 176 ms |
+| Normal window, last frame ends after first paint | 3238, 3047, 3297 ms | 2090, 2216, 2337 ms |
+| Normal window, main-thread CPU in 9 s | 3696, 3549, 3872 ms | 2520, 2630, 2815 ms |
+
+Captures of 17 archived pages (GitHub, old Reddit and the 15 pages under
+`Tests/Browser/Brave/sites`) are byte-identical with and without the two
+switches at scale 1, the scale of the Brave references. At scale 2 they are
+byte-identical except The Verge, where 725 pixels change in the seven "/"
+separators of its navigation row. Before, once an unrelated face had loaded,
+a box computed a new cascade for its physical font size instead of keeping
+the faces scaled from its CSS-size cascade; the unit test reproduces this.
+The separators were thinner and shifted. They now have the ink of the scale
+1 render (21,687 to 21,701 against 4 × 5,424; 20,748 to 20,756 before) and
+its centroids within 0.25 device pixels (up to 0.92 before). The neighbouring
+words are identical in both renders. The repository has no Brave reference
+for this page at scale 2.
+
+`css/device_layout_retained_style_test.v` (7 cases) covers no-op restyles,
+changed lengths, flags and context, pending faces, another scale, the
+unchanged CSS-pixel comparison and both font cases; the two font cases fail
+with the stamp switch set. Layout-module tests, modified or not, do not
+compile within the 12 GiB guard at present, so the layout side is covered by
+these whole-browser comparisons.
+
+### Identical leaf draws are not repeated
+
+GitHub repaints the same icons, borders and gradients in each of its loading
+frames, and every draw blocked the main thread for a GPU round trip. Commit
+`d40a69411` keys a region draw by all of its inputs (kind, flags, surface and
+region, backdrop rows, and the descriptors with the data their pointers
+address) and copies the rows of an identical earlier draw. The cache holds
+at most 32 MB in entries of up to 512 KB (control
+`VOX_DISABLE_LEAF_RASTER_CACHE=1`).
+
+GitHub in a normal window on `432e5f7edf08…`, three alternating rounds:
+later frames cost 310 → 209 ms (median), the last one ends 3143, 3377, 3355
+→ 2542, 2751, 2796 ms after first paint, and the first frame is unchanged
+(828, 870, 871 against 868, 868, 881 ms): its leaves are all new. One load
+has 570 hits and 198 misses and keeps 4.8 MB. Captures of the 17 pages at
+scales 1 and 2 are byte-identical with and without the cache.
+`ggshape/leaf_region_darwin_test.v` gained three cases: repeated draws,
+changed segment data at a reused address, and shape groups against
+whole-tile draws.
+
+### All three together
+
+Executable `c93e43a7e58c…` with the four switches as control, at load
+averages of 9 to 14. Captures at scale 2, five alternating pairs per page,
+byte-identical:
+
+| Page | Launch to PNG, control → candidate | Main-thread CPU, control → candidate |
+| --- | ---: | ---: |
+| Hacker News | 642 → 580 ms | 274 → 296 ms (249–307 against 248–299) |
+| old Reddit | 874 → 514 ms | 295 → 285 ms |
+| GitHub | 5158 → 3005 ms | 3072 → 2339 ms (2783–3215 against 2175–2420) |
+
+Normal window, three alternating rounds per page:
+
+| Page | Control | Candidate |
+| --- | ---: | ---: |
+| Hacker News, second frame ends after first paint | 457, 541, 494 ms | 82, 87, 91 ms |
+| Hacker News, second frame cost (median) | 61 ms | 36 ms |
+| old Reddit, second frame | ends 526, 529, 527 ms; costs 25 ms | under the 20 ms the diagnostics list |
+| GitHub, first frame | 870, 855, 1081 ms | 850, 698, 1038 ms |
+| GitHub, second frame ends after first paint | 790, 779, 880 ms | 388, 361, 458 ms |
+| GitHub, last frame ends after first paint | 4768, 4583, 5667 ms | 2312, 2094, 2864 ms |
+| GitHub, later frames, median cost | 333 ms | 159 ms |
+| GitHub, main-thread CPU in 9 s | 3289, 3050, 4260 ms | 2853, 2450, 3484 ms |
+
+The small pages gain wall time, not CPU: their main thread was idle while it
+waited. GitHub's main-thread CPU ranges do not overlap in the captures.
+Every browser and guard exit is zero.
+
+### Captures before hydration
+
+The GitHub captures that preceded hydration came from this benchmark, which
+captures as soon as the page reports ready with no settle period.
+`tools/measure_load_parallelism.py` takes `--ready-selector` and
+`--settle-seconds` and lists the replayed request count of every variant, so
+an early capture is visible. The selector is sufficient at scale 2. At scale
+1 two of four captures still replayed 155 of 157 requests; with
+`--settle-seconds 1.5` all six of three pairs are identical.
+
 ## Not changed
 
-- Each GPU leaf still creates tile-sized textures and blocks the main thread
-  for one GPU round trip (about 0.5 ms). Batching leaves of one tile into one
-  pass, or continuing CPU replay while the GPU renders, would remove most of
-  the remaining leaf cost and needs overlap tracking between leaves.
-- After a document's first frame, the load-frame throttle defers the next
-  frame by three times that frame's cost, up to 500 ms. The first frame
-  includes document installation, so on Hacker News and old Reddit the main
-  thread is idle for most of the 0.45 to 0.6 s before the second frame paints
-  the images that arrived in the meantime. The policy protects script time on hydrating pages and
-  was left as it is.
-- Layout costs about three times more instructions at capture scale 2 than at
-  scale 1 on GitHub (`flow_layout` 3.3 B in 21 passes against 8.5 to 11.3 B
-  in 20 to 22). The cause was not investigated.
+- The first time a leaf is drawn it still creates tile-sized textures and
+  blocks the main thread for one GPU round trip (about 0.5 ms; about 200
+  draws in a GitHub load). Batching the leaves of one tile into one pass, or
+  continuing CPU replay while the GPU renders, needs overlap tracking between
+  leaves.
+- Glyph-coverage groups and filter layers still upload and read back whole
+  tiles.
+- When a box's own cascade expires while the box is retained at scale 2,
+  `computed_font_list()` still computes a cascade for the physical font size
+  until the element is restyled. The sweeps above did not show it.
 - The first navigation of a launch starts after the first window frame, by an
   earlier measured decision; the fetch does not overlap AppKit startup.
+- The message of commit `e39770061` gives a 2048×512, 4 MB tile as its
+  example. The tiles on this display are those listed under leaf raster
+  transfers; shared history is not rewritten for it.
