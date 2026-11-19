@@ -195,7 +195,7 @@ fn (mut vm VM) execute_instruction(instruction &Instruction, executable &Executa
 		.require_object_coercible {
 			if left.is_nullish() { return vm.throw_error_type(.type_error,.to_object_null_or_undefined) }
 		}
-		.to_property_key { result=left.to_property_key(mut vm)!.to_value(mut vm) }
+		.to_property_key { result = property_key_value(mut vm, left)! }
 		.copy_object_excluding_keys {
 			mut excluded := []PropertyName{cap:instruction.arguments.len}
 			for operand in instruction.arguments {
@@ -220,7 +220,7 @@ fn (mut vm VM) execute_instruction(instruction &Instruction, executable &Executa
 		.new_array { result = Value.from_object(ArrayObject.create(mut vm, vm.realm(), u64(left.number), vm.realm().array_prototype_record())!.object) }
 		.define_property {
 			mut object := left.as_object()
-			object.create_data_property_or_throw(mut vm, right.to_property_key(mut vm)!, source)!
+			define_literal_property(mut vm, mut object, right.to_property_key(mut vm)!, source)!
 		}
 		.set_object_literal_prototype {
 			if right.is_object() || right.is_null() {
