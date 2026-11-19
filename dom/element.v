@@ -6114,6 +6114,9 @@ pub fn (mut e Element) attribute_changed(local_name string, old_value ?string, v
 		}
 		if e.is_svg_element() {
 			e.update_use_elements_that_reference_this()
+			if local_name == 'href' && namespace_ == namespace_xlink_uri {
+				e.note_svg_paint_resource_description_may_have_changed()
+			}
 		}
 		return
 	}
@@ -7689,7 +7692,7 @@ fn (e &Element) svg_paint_resource_element() ?&Element {
 	if !e.is_svg_element() {
 		return none
 	}
-	if e.local_name() in ['linearGradient', 'radialGradient', 'pattern', 'filter'] {
+	if e.local_name() in ['linearGradient', 'radialGradient', 'pattern', 'filter', 'mask'] {
 		return e
 	}
 	parent := e.as_node().parent_element() or { return none }

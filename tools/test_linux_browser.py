@@ -2,6 +2,7 @@
 """Exercise the built Linux browser, including native windows and process tabs."""
 
 import argparse
+import base64
 import ctypes
 import ctypes.util
 import functools
@@ -2068,6 +2069,77 @@ def check_svg_mask_gradient_strokes_browser(binary, artifacts, temporary):
     print("PASS: gradient strokes in SVG masks preserve alpha, luminance, paint order, and live stop edits", flush=True)
 
 
+def check_svg_mask_images_browser(binary, artifacts, temporary):
+    fixture = Path(__file__).resolve().parents[1] / "Tests/Browser/Native/svg-mask-images.html"
+    site = Path(temporary) / fixture.stem
+    site.mkdir()
+    html = fixture.read_text()
+    replacement = re.search(r"const replacement = '(data:image/png;base64,([^']+))'", html)
+    assert replacement is not None
+    html = html.replace(replacement[1], "/replacement.png")
+    (site / fixture.name).write_text(html)
+    legacy = re.sub(r'(<image id="edited"[^>]*?)\bhref=', r'\1xlink:href=', html, count=1)
+    legacy = legacy.replace("setAttribute('href', replacement)",
+                            "setAttributeNS('http://www.w3.org/1999/xlink', 'xlink:href', replacement)")
+    (site / "legacy.html").write_text(legacy)
+    (site / "replacement.png").write_bytes(base64.b64decode(replacement[2]))
+    image_requested = threading.Event()
+
+    class DelayedImage(Handler):
+        def do_GET(self):
+            if self.path == "/replacement.png":
+                image_requested.set()
+                time.sleep(.4)
+            super().do_GET()
+
+    with http.server.ThreadingHTTPServer(("127.0.0.1", 0),
+                                         functools.partial(DelayedImage, directory=site)) as server:
+        thread = threading.Thread(target=server.serve_forever, daemon=True)
+        thread.start()
+        try:
+            documents = []
+            for mode in ("cpu", "gg", "uncached", "xlink"):
+                page = "legacy.html" if mode == "xlink" else fixture.name
+                address = f"http://127.0.0.1:{server.server_port}/{page}"
+                label = f"{fixture.stem}-{mode}"
+                screenshot = artifacts / f"{label}.png"
+                screenshot.unlink(missing_ok=True)
+                image_requested.clear()
+                environment = smoke_environment(Path(temporary) / label)
+                environment.update(VOX_GG_SVG=str(int(mode == "gg")), VOX_GG_SVG_DIAGNOSTICS="1",
+                                   VOX_DISABLE_GG_SVG_CACHE=str(int(mode == "uncached")),
+                                   VOX_DISABLE_PORTABLE_SVG_MASK="0", VOX_PORTABLE_SVG_MASK_DIAGNOSTICS="1",
+                                   VOX_CAPTURE_READY_SELECTOR="body[data-mask-image-ready]")
+                log = run_windowed([str(binary), "--enable-javascript", "--window-width=800", "--window-height=600",
+                                    "--screenshot-viewport-height=600", f"--screenshot={screenshot}", address],
+                                   env=environment, log_path=artifacts / f"{label}.log")
+                assert image_requested.is_set(), log
+                _, height, channels, rows = rendered_png_rows(screenshot.read_bytes())
+                marker = next(y for y in range(150)
+                              if rows[y][4 * channels:4 * channels + 3] == bytes.fromhex("34b786"))
+                top = marker + 8
+                samples = (
+                    (28, 25, 255), (28, 42, 128), (60, 42, 191), (92, 42, 255), (124, 42, 128),
+                    (28, 72, 128), (60, 72, 128), (124, 72, 191), (28, 95, 255),
+                    (165, 36, 255), (190, 36, 164), (229, 36, 255), (256, 36, 255), (190, 82, 237),
+                    (313, 50, 127), (356, 50, 127), (356, 26, 255),
+                )
+                for x, y, expected in samples:
+                    actual = tuple(rows[top + y][x * channels:x * channels + 3])
+                    assert all(abs(a - b) <= 2 for a, b in zip(actual, (expected, expected, 255))), (label, x, y, actual)
+                assert rows[top + 30][432 * channels:432 * channels + 3] == bytes.fromhex("ff8800")
+                assert "VOX_SVG_MASK luminance=false operations=3 paths=1 " in log, log
+                assert "VOX_SVG_MASK luminance=true operations=1 paths=1 " in log, log
+                assert log.count("VOX_SVG_MASK luminance=false operations=1 paths=1 texture=136x104") >= 2, log
+                assert ("VOX_SVG_GROUP cache=hit " in log) == (mode != "uncached"), log
+                documents.append(rows[marker:height - 24])
+        finally:
+            server.shutdown()
+            thread.join()
+    assert all(doc == documents[0] for doc in documents[1:]), "Raster image mask replay changed document pixels"
+    print("PASS: SVG image masks preserve alpha, luminance, aspect ratio and delayed image updates", flush=True)
+
+
 def check_svg_mask_gradient_spread_browser(binary, artifacts, temporary):
     fixture = Path(__file__).resolve().parents[1] / "Tests/Browser/Native/svg-mask-gradient-spread.html"
     documents = []
@@ -2538,6 +2610,7 @@ def main():
         check_svg_mask_opacity_browser(binary, artifacts, temporary)
         check_svg_mask_strokes_browser(binary, artifacts, temporary)
         check_svg_mask_gradient_strokes_browser(binary, artifacts, temporary)
+        check_svg_mask_images_browser(binary, artifacts, temporary)
         check_svg_mask_gradient_browser(binary, artifacts, temporary)
         check_svg_mask_gradient_spread_browser(binary, artifacts, temporary)
         check_svg_mask_strips_browser(binary, artifacts, temporary, "svg-vertical-alpha-masks",

@@ -1,0 +1,45 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Raster images inside SVG masks</title>
+<style>
+body { margin: 0; background: white; }
+header { width: 8px; height: 8px; background: #34b786; }
+svg { display: block; }
+image { image-rendering: pixelated; }
+</style>
+<header></header>
+<svg width="460" height="116" viewBox="0 0 460 116">
+  <defs>
+    <mask id="alpha" mask-type="alpha" maskUnits="userSpaceOnUse" x="8" y="8" width="142" height="104">
+      <g opacity=".5">
+        <image x="16" y="20" width="128" height="80"
+               href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAQAAAACCAYAAAB/qH1jAAAAG0lEQVR4nGP4z8DwHwgbGIDgPxCAaRATKtAAAN7QDfSnnA7mAAAAAElFTkSuQmCC"/>
+      </g>
+    </mask>
+    <mask id="luminance" maskUnits="userSpaceOnUse" x="156" y="8" width="113" height="104">
+      <image x="172" y="20" width="80" height="80" preserveAspectRatio="xMidYMid slice"
+             href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAQAAAACCAYAAAB/qH1jAAAAG0lEQVR4nGP4z8DwHwgbGIDgPxCAaRATKtAAAN7QDfSnnA7mAAAAAElFTkSuQmCC"/>
+    </mask>
+    <mask id="edited-mask" mask-type="alpha" maskUnits="userSpaceOnUse" x="284" y="8" width="136" height="104">
+      <image id="edited" x="300" y="20" width="96" height="80"
+             href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAQAAAACCAYAAAB/qH1jAAAAG0lEQVR4nGP4z8DwHwgbGIDgPxCAaRATKtAAAN7QDfSnnA7mAAAAAElFTkSuQmCC"/>
+    </mask>
+  </defs>
+  <path fill="blue" mask="url(#alpha)" d="M0 0H152V116H0Z"/>
+  <path fill="blue" mask="url(#luminance)" d="M153 0H272V116H153Z"/>
+  <path fill="blue" mask="url(#edited-mask)" d="M278 0H423V116H278Z"/>
+  <path fill="#f80" d="M428 22h20v40h-20Z"/>
+</svg>
+<script>
+const replacement = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAQAAAACCAYAAAB/qH1jAAAAEUlEQVR4nGNg+P+/AQWjCwAATSET8fO1OzoAAAAASUVORK5CYII=';
+let frame = 0;
+function editImage() {
+    if (++frame === 12)
+        document.getElementById('edited').setAttribute('href', replacement);
+    if (frame === 24)
+        document.body.setAttribute('data-mask-image-ready', '');
+    else
+        requestAnimationFrame(editImage);
+}
+requestAnimationFrame(editImage);
+</script>

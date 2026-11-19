@@ -42,7 +42,12 @@ fn portable_svg_content_mask_supported(mask &layout.PaintClip, portable_group bo
 					return false
 				}
 			}
-			.image { return false }
+			.image {
+				if !portable_group || operation.image_url == ''
+					|| !(operation.opacity >= 0 && operation.opacity <= 1) {
+					return false
+				}
+			}
 		}
 	}
 	return depth == 0
@@ -323,7 +328,7 @@ fn apply_svg_mask_ramp(mut image PortableSVGGroupImage, operation &layout.PaintM
 }
 
 fn (mut app BrowserApp) apply_portable_svg_content_mask(mut image PortableSVGGroupImage,
-	mask &layout.PaintClip, region painting.Rect, page_x f32, page_y f32, scale f64) bool {
+	mask &layout.PaintClip, region painting.Rect, page_x f32, page_y f32, scale f64) ?bool {
 	bounds := image.bounds
 	if ramp := svg_mask_ramp(mask, bounds, page_x, page_y, scale) {
 		if apply_svg_mask_ramp(mut image, &mask.mask_operations[0], ramp, mask.mask_luminance) {
@@ -337,8 +342,8 @@ fn (mut app BrowserApp) apply_portable_svg_content_mask(mut image PortableSVGGro
 		return true
 	}
 	mut coverage := []u8{len: bounds.width * bounds.height * 4}
-	if !app.raster_svg_mask_layers(mut coverage, bounds.width * 4, bounds, mask, page_x, page_y,
-		scale) { return false }
+	cacheable := app.raster_svg_mask_layers(mut coverage, bounds.width * 4, bounds, mask, page_x,
+		page_y, scale)?
 	if mask.mask_luminance {
 		// The mask channels are already premultiplied. Convert the resolved
 		// color with the native mask's integer luminance weights.
@@ -352,7 +357,7 @@ fn (mut app BrowserApp) apply_portable_svg_content_mask(mut image PortableSVGGro
 		}
 	}
 	apply_portable_svg_mask_region(mut image, region)
-	return true
+	return cacheable
 }
 
 // The native player needs the full mask surface, including when a strip
@@ -365,7 +370,7 @@ fn (mut app BrowserApp) raster_svg_content_mask(mut pixels []u8, pitch int, boun
 			return true
 		}
 	}
-	return app.raster_svg_mask_layers(mut pixels, pitch, bounds, mask, page_x, page_y, scale)
+	return app.raster_svg_mask_layers(mut pixels, pitch, bounds, mask, page_x, page_y, scale) or { false }
 }
 
 fn svg_mask_line_path_rows(segments []f32, matrix [6]f32) ?[2]f32 {
@@ -457,14 +462,16 @@ fn svg_mask_opacity_end(operations []layout.PaintMaskOperation, start int) ?int 
 }
 
 // Paint into a cleared premultiplied RGBA surface. Its row stride can include
-// pixels outside the mask region when borrowing a native bitmap.
+// pixels outside the mask region when borrowing a native bitmap. The result
+// reports whether all image pixels were available for texture reuse.
 fn (mut app BrowserApp) raster_svg_mask_layers(mut pixels []u8, pitch int, bounds painting.IntRect,
-	mask &layout.PaintClip, page_x f32, page_y f32, scale f64) bool {
+	mask &layout.PaintClip, page_x f32, page_y f32, scale f64) ?bool {
 	layer_pitch := bounds.width * 4
 	mut layers := [portable_svg_mask_max_opacity_depth + 1]PortableSVGMaskLayer{}
 	layers[0].pixels = pixels
 	layers[0].rows = SVGMaskLayerRows{bottom: bounds.height}
 	mut depth := 0
+	mut cacheable := true
 	for index := 0; index < mask.mask_operations.len; index++ {
 		operation := &mask.mask_operations[index]
 		match operation.kind {
@@ -479,7 +486,7 @@ fn (mut app BrowserApp) raster_svg_mask_layers(mut pixels []u8, pitch int, bound
 						bounds, parent, page_x, page_y, scale)
 				}
 				if rows.height() == 0 {
-					index = svg_mask_opacity_end(mask.mask_operations, index) or { return false }
+					index = svg_mask_opacity_end(mask.mask_operations, index)?
 					if portable_svg_mask_diagnostics {
 						eprintln('VOX_SVG_MASK_LAYER_SKIP opacity_byte=${alpha}')
 					}
@@ -514,18 +521,24 @@ fn (mut app BrowserApp) raster_svg_mask_layers(mut pixels []u8, pitch int, bound
 				parent_pitch := if depth == 0 { pitch } else { layer_pitch }
 				if !cpuraster.restore_canvas_opacity_layer(mut layers[depth].pixels, parent_pitch,
 					parent.height(), layer.rows.top - parent.top,
-					bitmap, layer.opacity) { return false }
+					bitmap, layer.opacity) { return none }
 			}
 			.path {
 				device := portable_device_transform(operation.transform, page_x, page_y, scale)
 				if !app.raster_svg_mask_path(mut layers[depth], bounds.width,
 					if depth == 0 { pitch } else { layer_pitch }, operation,
-					portable_svg_surface_matrix(device, bounds), mask.mask_luminance) { return false }
+					portable_svg_surface_matrix(device, bounds), mask.mask_luminance) { return none }
 			}
-			.image { return false }
+			.image {
+				device := portable_device_transform(operation.transform, page_x, page_y, scale)
+				available := app.raster_svg_mask_image(mut layers[depth], bounds.width,
+					if depth == 0 { pitch } else { layer_pitch }, operation,
+					portable_svg_surface_matrix(device, bounds))?
+				cacheable = cacheable && available
+			}
 		}
 	}
-	return true
+	return cacheable
 }
 
 fn (mut app BrowserApp) raster_svg_mask_path(mut layer PortableSVGMaskLayer, width int, pitch int,
