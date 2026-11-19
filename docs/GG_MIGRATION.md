@@ -1,5 +1,60 @@
 # Migrating from Skia to vlib/gg
 
+## Off-center SVG focal circles
+
+The shared Canvas path now draws a radial gradient whose focal circle
+is strictly contained in its outer circle, including a zero-radius focal
+point. The gradient transform aligns the coordinate system with the line
+between the centers. The radial shader uses the larger root of the
+two-circle equation before applying the spread method. The geometry
+parameters fit into existing uniform padding and texture cache hits
+reuse the rendered pixels. [SVG 2 radial gradients](https://www.w3.org/TR/SVG2/pservers.html#RadialGradients)
+
+The shared path pixel test passed on Metal and Mesa OpenGL, including
+samples along and across the axis and declines for crossing circles and
+circles that round to tangency at shader precision.
+The Linux window fixture checked a shifted focal circle and a diagonal
+zero-radius focal point with reflection. Pixel samples matched the
+expected ramps. Cached and uncached document captures were identical
+after an `fx` edit that rebuilt the texture and reused the path bounds.
+The full Linux GG SVG window suite and Windows amd64 OpenGL source check
+passed.
+
+The first comparison was invalid because the prior non-production binary
+read the changed shader snippet from the shared module directory. Its
+fragment shader could not compile. The renderer generates the new
+formula from the compiled shader generator and preserves the shared
+snippet used by the baseline. The comparison pins the shader directory
+along with the executable and fixture hashes.
+
+The corrected comparison used V `5a39a4d`, single-unit Clang `-O0`, and
+baseline and candidate executable SHA-256 values
+`05def48a1bead78677995b824dc0d0b4830e6de0f41a47e981996f404db0d767` and
+`45ddfffaac3740494f141417f07a83639ecc97df5b2fd60c04bec3745883061d`.
+The zero-focal fixture SHA-256 was
+`c5d880e712d0a6eb9bd203e4c58cbbcd0939ade054911cc6cd893ed49e01fef2`.
+The staged shader directory hash was
+`970ce36acbf7ea10b948d0a063d6315d587aadf8a8d84784d644b17ab6ffc48e`.
+The captures for existing gradients matched pixel for pixel. These runs
+preceded the tangent precision guard, which the focused path tests cover.
+
+The comparison used Mesa software OpenGL under Xvfb, fresh processes and
+private browser state, an 800 × 712 window, a one-second settle and 32
+synthetic 42-pixel scroll steps. Scroll positions and paint-command
+counts matched. The one-minute guest load ranged from 1.03 to 1.82 on four
+virtual CPUs. The benchmark and memory guard exited zero.
+
+| Mode and pair | Median baseline / candidate, ms | p95, ms | Maximum, ms |
+| --- | ---: | ---: | ---: |
+| Cached 1 | 4.4945 / 4.469 | 6.308 / 5.327 | 7.947 / 8.459 |
+| Cached 2 | 4.386 / 4.8495 | 5.670 / 6.343 | 7.466 / 8.463 |
+| Rerasterized 1 | 4.2595 / 4.219 | 8.080 / 4.998 | 9.174 / 6.681 |
+| Rerasterized 2 | 4.2735 / 5.040 | 5.736 / 5.963 | 6.674 / 6.349 |
+
+Diagnostic runs confirmed 62 steady-state texture hits with caching and
+62 rasterizations without it. Timing varied in both modes. Hardware
+performance remains unverified.
+
 ## Reusing the SVG geometry lookup for exact textures
 
 The OpenGL SVG bounds lookup now returns the matching cache slot. If that
