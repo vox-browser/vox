@@ -1,5 +1,53 @@
 # Migrating from Skia to vlib/gg
 
+## CPU fallback for SVG pad fills
+
+The portable painter uses the CPU Canvas rasterizer for sRGB SVG pad
+fills when GG declines a gradient. The CPU path accepts linear and
+expanding radial gradients with a contained focal circle. It uses the
+same gradient descriptors as the SVG mask rasterizer and uploads the
+viewport-clipped fill through the existing portable raster path. The
+primary GG route handles eligible fills before CPU fallback is needed.
+
+The focused Linux window fixture checked an even-odd hole, a translated
+linear ramp with translucent stops, and a translated radial fill with
+half opacity. With GG disabled, the control left the first fill white.
+The candidate's disabled and OpenGL 4.2 captures matched exactly and
+the GPU, CPU and OpenGL 4.2 samples matched the expected colors. The
+uncached image-budget fixture now paints the gradient beyond the GPU
+budget. The gradient mask and both linear mask strip captures remained
+pixel-exact against the previous build. Windows amd64 OpenGL source
+checking and the full Linux GG SVG window suite passed.
+
+The Linux timing comparison used six previously supported radial
+gradients, including two tangent pad gradients. Document pixels matched
+exactly. Both builds used V `5a39a4d`, single-unit Clang and `-O0`. The
+control and candidate executable SHA-256 values were
+`59ce22808305d99ec7b6511ca77a94eee055b47e1d2b76496619ef2058b75d8d`
+and `2e7839d81825892e44b2592ce955aec163ac6269110866985bbec137a75ce353`.
+The fixture and shader directory SHA-256 values were
+`31fa083ecdeb687010ac4d67fd9d1aca933bee20f0d77c21b97ea640e7b31e26`
+and `970ce36acbf7ea10b948d0a063d6315d587aadf8a8d84784d644b17ab6ffc48e`.
+
+Each synthetic trial used Mesa software OpenGL under Xvfb, a fresh
+process and private browser state, an 800 × 712 window, a one-second
+settle and 32 self-paced 42-pixel scroll steps. Scroll positions and
+paint-command counts matched. One-minute guest load ranged from 1.08 to
+1.30 on four virtual CPUs. The benchmark and memory guard exited zero.
+
+| Mode and pair | Median control / candidate, ms | p95, ms | Maximum, ms |
+| --- | ---: | ---: | ---: |
+| Cached 1 | 5.1385 / 5.1965 | 6.926 / 7.618 | 8.219 / 8.150 |
+| Cached 2 | 4.9855 / 4.9725 | 6.447 / 6.342 | 8.273 / 8.299 |
+| Rerasterized 1 | 5.5465 / 5.735 | 8.462 / 6.859 | 8.503 / 11.410 |
+| Rerasterized 2 | 5.662 / 5.468 | 6.555 / 8.533 | 6.598 / 9.014 |
+
+Median differences were within 3.5% across the four pairs, with mixed
+p95 results. Separate diagnostics counted 186 steady-state GG texture
+hits with caching and 186 GG rasterizations with caching disabled.
+This timing workload uses the GG route. Hardware performance and
+Windows runtime remain unverified.
+
 ## Charging each SVG image once per frame
 
 Portable OpenGL SVG replay accounts for the area of each image when a
