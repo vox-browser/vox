@@ -203,12 +203,8 @@ fn (mut app BrowserApp) raster_portable_svg_group(commands []layout.PaintCommand
 			return none
 		}
 	}
-	mut pixels := []u8{len: surface.len}
-	if !cpuraster.read_pixels(surface, bounds.width, bounds.height, pitch, 2, mut pixels,
-		bounds.width, bounds.height, pitch, 0, 0) {
-		return none
-	}
-	return PortableSVGGroupImage{bounds: bounds, paths: paths.len, pixels: pixels}
+	cpuraster.unpremultiply_rgba_in_place(mut surface)
+	return PortableSVGGroupImage{bounds: bounds, paths: paths.len, pixels: surface}
 }
 
 fn (mut app BrowserApp) draw_portable_svg_group_image(image &PortableSVGGroupImage, alpha u8,

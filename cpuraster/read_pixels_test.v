@@ -27,6 +27,12 @@ fn test_read_pixels_unpremultiplies_like_skia() {
 	assert pixels[(128 * 256 + 200) * 4..(128 * 256 + 201) * 4] == [u8(255), 110, 255, 128]
 	assert pixels[(3 * 256 + 2) * 4..(3 * 256 + 3) * 4] == [u8(170), 255, 255, 3]
 	assert pixels[..4] == [u8(0), 0, 0, 0]
+	mut in_place := source.clone()
+	in_place << [u8(19), 23, 31]
+	unpremultiply_rgba_in_place(mut in_place)
+	in_place_matches := in_place[..source.len] == pixels
+	assert in_place_matches
+	assert in_place[source.len..] == [u8(19), 23, 31]
 	mut copied := []u8{len: source.len}
 	assert read_pixels(source, 256, 256, 1024, 1, mut copied, 256, 256, 1024, 0, 0)
 	assert copied == source
@@ -89,6 +95,34 @@ fn test_large_pixel_read_matches_serial_with_clipping_and_padding() {
 		assert parallel[4 * dp - 1] == 0x6b
 		assert parallel.last() == 0x6b
 	}
+}
+
+fn test_large_in_place_readback_matches_copy_and_serial_scheduling() {
+	serial_setting := 'VOX_SERIAL_CPU_RASTER'
+	previous := os.getenv_opt(serial_setting)
+	defer {
+		if value := previous {
+			os.setenv(serial_setting, value, true)
+		} else {
+			os.unsetenv(serial_setting)
+		}
+	}
+
+	width, height := 1051, 533
+	pitch := width * 4
+	source := []u8{len: pitch * height, init: u8((index * 23 + index / 131) & 255)}
+	mut expected := []u8{len: source.len}
+	assert os.setenv(serial_setting, '1', true) == 0
+	assert read_pixels(source, width, height, pitch, 2, mut expected, width, height, pitch, 0, 0)
+	mut serial := source.clone()
+	unpremultiply_rgba_in_place(mut serial)
+	assert os.unsetenv(serial_setting) == 0
+	mut parallel := source.clone()
+	unpremultiply_rgba_in_place(mut parallel)
+	serial_matches := serial == expected
+	parallel_matches := parallel == expected
+	assert serial_matches
+	assert parallel_matches
 }
 
 fn test_overlapping_pixel_views_keep_serial_row_order() {

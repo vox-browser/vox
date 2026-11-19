@@ -122,7 +122,7 @@ fn (mut app BrowserApp) draw_portable_svg_raster_fill(command &layout.PaintComma
 		return false
 	}
 	retain_clip := app.can_retain_portable_svg_clip_variant(entry, key, matrix, bounds, gradient)
-	app.upload_portable_svg_pixels(bounds, premultiplied, retain_clip)
+	app.upload_portable_svg_pixels(bounds, mut premultiplied, retain_clip)
 	if cache_index >= 0 {
 		app.remember_portable_svg_raster(cache_index, &data, key, matrix, local, gradient)
 	}
@@ -130,12 +130,9 @@ fn (mut app BrowserApp) draw_portable_svg_raster_fill(command &layout.PaintComma
 	return true
 }
 
-fn (mut app BrowserApp) upload_portable_svg_pixels(bounds painting.IntRect, premultiplied []u8,
+fn (mut app BrowserApp) upload_portable_svg_pixels(bounds painting.IntRect, mut pixels []u8,
 	retain_clip bool) {
-	pitch := bounds.width * 4
-	mut pixels := []u8{len: premultiplied.len}
-	cpuraster.read_pixels(premultiplied, bounds.width, bounds.height, pitch, 2, mut pixels,
-		bounds.width, bounds.height, pitch, 0, 0)
+	cpuraster.unpremultiply_rgba_in_place(mut pixels)
 	app.upload_portable_raster_texture(app.portable_svg_texture_destination(bounds), bounds.width,
 		bounds.height, pixels, 255, retain_clip)
 }

@@ -87,6 +87,41 @@ pub fn read_pixels(source []u8, width int, height int, pitch int, alpha_type int
 	return true
 }
 
+// unpremultiply_rgba_in_place converts packed premultiplied RGBA to straight
+// alpha with read_pixels' rounding and leaves an incomplete final pixel alone.
+pub fn unpremultiply_rgba_in_place(mut pixels []u8) {
+	pixel_bytes := pixels.len / 4 * 4
+	tail := run_packed_rgba_scans(pixels.data, pixel_bytes, scan_unpremultiply_packed)
+	unpremultiply_packed_span(unsafe { &u8(pixels.data) }, tail, pixel_bytes)
+}
+
+fn scan_unpremultiply_packed(context voidptr, first i32, end i32) {
+	unpremultiply_packed_span(unsafe { &u8(context) }, int(first) * packed_rgba_scan_bytes,
+		int(end) * packed_rgba_scan_bytes)
+}
+
+fn unpremultiply_packed_span(pixels &u8, start int, end int) {
+	unsafe {
+		for offset := start; offset < end; offset += 4 {
+			alpha := pixels[offset + 3]
+			if alpha == 255 {
+				continue
+			}
+			if alpha == 0 {
+				pixels[offset] = 0
+				pixels[offset + 1] = 0
+				pixels[offset + 2] = 0
+				continue
+			}
+			reciprocal := f32(1) / (f32(alpha) * inv_255)
+			for channel in 0 .. 3 {
+				at := offset + channel
+				pixels[at] = unpremultiply_channel(pixels[at], reciprocal)
+			}
+		}
+	}
+}
+
 struct PixelReadScan {
 	source            []u8
 	destination       []u8
