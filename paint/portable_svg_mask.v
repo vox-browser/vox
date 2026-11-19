@@ -68,6 +68,7 @@ fn portable_svg_mask_gradient(operation &layout.PaintMaskOperation, luminance bo
 struct PortableSVGMaskLayer {
 mut:
 	pixels  []u8
+	height  int
 	opacity f32
 }
 
@@ -275,25 +276,81 @@ fn (mut app BrowserApp) raster_svg_content_mask(mut pixels []u8, pitch int, boun
 	return app.raster_svg_mask_layers(mut pixels, pitch, bounds, mask, page_x, page_y, scale)
 }
 
+fn svg_mask_line_path_bottom(segments []f32, matrix [6]f32) ?f32 {
+	stride := layout.compatibility_clip_path_segment_stride
+	if segments.len < stride || segments.len % stride != 0 || segments[0] != 0 { return none }
+	transform := cpuraster.Matrix{matrix[0], matrix[1], matrix[2], matrix[3], matrix[4], matrix[5]}
+	mut bottom := f32(0)
+	for offset := 0; offset < segments.len; offset += stride {
+		match segments[offset] {
+			0, 1 {
+				point := transform.map_point(cpuraster.Point{segments[offset + 1], segments[offset + 2]})
+				if !math.is_finite(point.x) || !math.is_finite(point.y) { return none }
+				bottom = math.max(bottom, point.y)
+			}
+			5 {}
+			else { return none }
+		}
+	}
+	return bottom
+}
+
+fn svg_mask_opacity_layer_height(operations []layout.PaintMaskOperation, bounds painting.IntRect,
+	parent_height int, page_x f32, page_y f32, scale f64) int {
+	mut depth := 1
+	mut bottom := f32(0)
+	for index in 0 .. operations.len {
+		operation := &operations[index]
+		match operation.kind {
+			.begin_opacity { depth++ }
+			.end_opacity {
+				depth--
+				if depth == 0 {
+					// Keep a row past the last possible coverage so tightening
+					// the surface does not clip the antialiased edge.
+					return int(math.ceil(f64(bottom))) + 1
+				}
+			}
+			.path {
+				device := portable_device_transform(operation.transform, page_x, page_y, scale)
+				path_bottom := svg_mask_line_path_bottom(operation.path_data,
+					portable_svg_surface_matrix(device, bounds)) or { return parent_height }
+				bottom = math.max(bottom, path_bottom)
+				if bottom >= f32(parent_height - 1) { return parent_height }
+			}
+			.image { return parent_height }
+		}
+	}
+	return parent_height
+}
+
 // Paint into a cleared premultiplied RGBA surface. Its row stride can include
 // pixels outside the mask region when borrowing a native bitmap.
 fn (mut app BrowserApp) raster_svg_mask_layers(mut pixels []u8, pitch int, bounds painting.IntRect,
 	mask &layout.PaintClip, page_x f32, page_y f32, scale f64) bool {
 	layer_pitch := bounds.width * 4
-	byte_count := layer_pitch * bounds.height
 	mut layers := [portable_svg_mask_max_opacity_depth + 1]PortableSVGMaskLayer{}
 	layers[0].pixels = pixels
+	layers[0].height = bounds.height
 	mut depth := 0
 	for index in 0 .. mask.mask_operations.len {
 		operation := &mask.mask_operations[index]
 		match operation.kind {
 			.begin_opacity {
+				parent_height := layers[depth].height
+				height := svg_mask_opacity_layer_height(mask.mask_operations[index + 1..],
+					bounds, parent_height, page_x, page_y, scale)
 				depth++
+				layers[depth].height = height
 				layers[depth].opacity = f32(operation.opacity)
-				if layers[depth].pixels.len == 0 {
+				byte_count := layer_pitch * height
+				if layers[depth].pixels.len < byte_count {
 					layers[depth].pixels = []u8{len: byte_count}
 				} else {
 					unsafe { vmemset(layers[depth].pixels.data, 0, byte_count) }
+				}
+				if portable_svg_mask_diagnostics {
+					eprintln('VOX_SVG_MASK_LAYER depth=${depth} rows=${height} parent_rows=${parent_height}')
 				}
 			}
 			.end_opacity {
@@ -302,14 +359,15 @@ fn (mut app BrowserApp) raster_svg_mask_layers(mut pixels []u8, pitch int, bound
 				bitmap := cpuraster.CanvasBitmap{
 					pixels: layer.pixels
 					width: bounds.width
-					height: bounds.height
+					height: layer.height
 					pitch: layer_pitch
 					premultiplied: true
 				}
 				// The children blend in isolation. Apply the opacity once while
-				// restoring the complete mask layer.
+				// restoring the mask layer at its original pixel origin.
 				if !cpuraster.restore_canvas_opacity_layer(mut layers[depth].pixels,
-					if depth == 0 { pitch } else { layer_pitch }, bitmap, layer.opacity) { return false }
+					if depth == 0 { pitch } else { layer_pitch }, layers[depth].height,
+					bitmap, layer.opacity) { return false }
 			}
 			.path {
 				style := portable_svg_mask_gradient(operation, mask.mask_luminance)
@@ -323,7 +381,7 @@ fn (mut app BrowserApp) raster_svg_mask_layers(mut pixels []u8, pitch int, bound
 				}
 				path := cpuraster.canvas_path(operation.path_data, operation.path_even_odd)
 				transform := portable_device_transform(operation.transform, page_x, page_y, scale)
-				if !cpuraster.fill_canvas_path(mut layers[depth].pixels, bounds.width, bounds.height,
+				if !cpuraster.fill_canvas_path(mut layers[depth].pixels, bounds.width, layers[depth].height,
 					if depth == 0 { pitch } else { layer_pitch }, 2,
 					path, portable_svg_surface_matrix(transform, bounds), argb, style, opacity,
 					.src_over, 0, [], none) { return false }

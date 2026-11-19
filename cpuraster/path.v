@@ -249,7 +249,7 @@ fn (m Matrix) is_identity() bool {
 }
 
 // SkMatrix::mapPoints() with the proc its type mask selects.
-fn (m Matrix) map_point(p Point) Point {
+pub fn (m Matrix) map_point(p Point) Point {
 	if m.b == 0 && m.c == 0 {
 		if m.a == 1 && m.d == 1 {
 			return Point{p.x + m.e, p.y + m.f}

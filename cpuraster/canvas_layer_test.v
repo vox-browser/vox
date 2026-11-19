@@ -69,3 +69,50 @@ fn test_lowp_canvas_layer_restore_declines_incompatible_backings() {
 	assert !restore_lowp_canvas_layer(mut pixels, 16, CanvasBitmap{ ...separate, height: 3 }, 0.5)
 	assert pixels == before
 }
+
+fn test_canvas_opacity_layer_prefix_restores_only_its_rows() {
+	width, rows, height := 7, 3, 9
+	pitch := width * 4 + 12
+	mut source := []u8{len: pitch * height}
+	for y in 0 .. rows {
+		for x in 0 .. width {
+			offset := y * pitch + x * 4
+			alpha := u8(17 * x + 37 * y)
+			source[offset] = alpha
+			source[offset + 1] = alpha / 2
+			source[offset + 3] = alpha
+		}
+	}
+	full := CanvasBitmap{
+		pixels:        source
+		width:         width
+		height:        height
+		pitch:         pitch
+		premultiplied: true
+	}
+	prefix := CanvasBitmap{ ...full, height: rows }
+	seed := []u8{len: pitch * height, init: u8(index * 23 + index / 5)}
+	rect := [f32(0), 0, f32(width), f32(height)]!
+	for opacity in [f32(0.125), 0.5, 1] {
+		mut expected := seed.clone()
+		mut actual := seed.clone()
+		assert draw_canvas_image(mut expected, width, height, pitch, 2,
+			[f32(1), 0, 0, 1, 0, 0]!, full, rect, rect, false, opacity, .src_over, [])
+		assert restore_canvas_opacity_layer(mut actual, pitch, height, prefix, opacity)
+		assert actual == expected
+		assert actual[rows * pitch..] == seed[rows * pitch..]
+
+		mut lowp := seed.clone()
+		mut pipeline := seed.clone()
+		assert draw_canvas_image_sampled(mut pipeline, width, height, pitch, 2,
+			[f32(1), 0, 0, 1, 0, 0]!, full, rect, rect, false, opacity, .src_over, [], false,
+			false)
+		assert restore_lowp_canvas_layer(mut lowp, pitch, prefix, opacity)
+		assert lowp == pipeline
+	}
+
+	mut target := seed.clone()
+	assert !restore_canvas_opacity_layer(mut target, pitch, rows - 1, prefix, 0.5)
+	assert !restore_canvas_opacity_layer(mut target, pitch, 8192, prefix, 0.5)
+	assert target == seed
+}
