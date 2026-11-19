@@ -416,6 +416,9 @@ window.addEventListener('wheel', function () {
         during = log.split("Vox scroll frame: 0 ", 1)[1].split("Vox scroll frame: 30 ", 1)[0]
         hits = during.count("VOX_WEB_FONT_SCROLL cache=hit ")
         assert (hits >= 50 if enabled else hits == 0), hits
+        first_up = during.split("Vox scroll frame: 29 ", 1)[1]
+        up_hits = first_up.count("VOX_WEB_FONT_SCROLL cache=hit ")
+        assert (up_hits >= 5 if enabled else up_hits == 0), up_hits
         width, height, channels, rows = rendered_png_rows(screenshot.read_bytes())
         top = next(y for y in range(150)
                    if rows[y][(width - 4) * channels:(width - 4) * channels + 3] == b"\x09\x3c\x57")

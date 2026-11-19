@@ -36,6 +36,7 @@ struct PortableWebFontScrollInput {
 struct PortableWebFontScrollEntry {
 mut:
 	valid           bool
+	scroll_y        f64
 	key             PortableWebFontScrollKey
 	path_length     int
 	glyph_count     int
@@ -129,9 +130,35 @@ fn (mut app BrowserApp) restore_portable_web_font_scroll_texture(index int,
 				app.portable_web_font_textures[slot], app.portable_web_font_textures[index]
 			entries.entries[index], entries.entries[slot] = entries.entries[slot], entries.entries[index]
 		}
+		entries.entries[index].scroll_y = app.scroll_y
 		return true
 	}
 	return false
+}
+
+fn (mut app BrowserApp) preserve_displaced_web_font_texture(index int) {
+	mut cache := app.portable_web_font_scroll_textures
+	tail := app.portable_raster_images.len
+	if cache == unsafe { nil } || index >= tail || tail >= portable_web_font_texture_slots {
+		return
+	}
+	mut entry := &cache.entries[index]
+	if !entry.valid || app.document == unsafe { nil } || entry.scroll_y <= app.scroll_y
+		|| entry.key.document != u64(app.document.unique_id().value())
+		|| entry.key.revision != app.document.paint_content_revision() {
+		return
+	}
+	// When scrolling up, an entering row can overwrite a texture before an
+	// old visible row gets to look it up. Move it to the unused end of the
+	// slot array. Frame retirement releases it if no later draw takes it.
+	persistent := platform.enter_persistent()
+	app.portable_raster_images << app.portable_raster_images[index]
+	platform.leave_persistent(persistent)
+	app.portable_raster_images[index] = PortableRasterImage{image_id: -1}
+	app.portable_web_font_textures[tail] = app.portable_web_font_textures[index]
+	app.portable_web_font_textures[index] = PortableWebFontTexture{}
+	cache.entries[tail] = *entry
+	entry.valid = false
 }
 
 fn (mut app BrowserApp) remember_portable_web_font_scroll_texture(index int,
@@ -143,6 +170,7 @@ fn (mut app BrowserApp) remember_portable_web_font_scroll_texture(index int,
 	}
 	mut entry := &app.portable_web_font_scroll_textures.entries[index]
 	entry.valid = true
+	entry.scroll_y = app.scroll_y
 	entry.key = input.key
 	entry.path_length = input.font_path.len
 	entry.glyph_count = input.glyphs.len

@@ -84,6 +84,9 @@ fn (mut app BrowserApp) draw_portable_web_font(source &layout.PaintCommand, comm
 	}
 	bitmap := layout.rasterize_portable_text(*command, scale, viewport) or { return false }
 	if bitmap.width > 0 && bitmap.height > 0 {
+		if portable_web_font_scroll_reuse && key.generation != 0 {
+			app.preserve_displaced_web_font_texture(index)
+		}
 		app.draw_portable_raster_image(bitmap.x + page_x, bitmap.y + page_y - f32(scroll_y),
 			bitmap.width, bitmap.height, bitmap.pixels)
 		if key.generation != 0 {
