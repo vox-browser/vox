@@ -349,6 +349,13 @@ The small pages gain wall time, not CPU: their main thread was idle while it
 waited. GitHub's main-thread CPU ranges do not overlap in the captures.
 Every browser and guard exit is zero.
 
+The bundle published after the commits (`917504deb379…`, head `e32a9a894`)
+passes the headless smoke and repeated three alternating capture pairs at
+scale 2 with byte-identical pixels, at a load average of 9 to 11: launch to
+PNG 626, 638, 647 → 537, 548, 573 ms on Hacker News and 5652, 6144, 6253 →
+3454, 3682, 3826 ms on GitHub, whose main-thread CPU was 3510, 4090, 4110 →
+2743, 2965, 3075 ms.
+
 ### Captures before hydration
 
 The GitHub captures that preceded hydration came from this benchmark, which
