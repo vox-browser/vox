@@ -1,5 +1,58 @@
 # Migrating from Skia to vlib/gg
 
+## Repeating and reflected SVG focal circles
+
+The shared Canvas gradient constructor accepts expanding concentric radial
+gradients with a nonzero `fr` and `repeat` or `reflect` spread. It maps the
+distance from the center to `(distance - fr) / (r - fr)` before tiling. The
+focal and outer circles define one period. The offset occupies existing
+uniform padding and uses the same radial shader variants. This handles
+expanding circles with a shared center. [SVG 2 radial gradients](https://www.w3.org/TR/SVG2/pservers.html#RadialGradients)
+
+The shared path pixel test passed on Metal and Mesa OpenGL. It sampled
+points inside the focal circle and exercised both the four-stop shader and
+the eight-stop alpha variant. The Linux window fixture's cached and
+uncached document pixels matched exactly, including after a live `fr`
+edit that reused geometry bounds. The full Linux GG SVG window suite and
+the Windows amd64 source check passed.
+
+Existing gradients with `fr="0"` produced identical document pixels in
+the previous and updated Linux builds. The executables used V `5a39a4d`
+and single-unit Clang `-O0`. Their SHA-256 values were
+`6fd17e6319c21f92f6049eca3e57d9df8a414323c20c45d374f78caa201afa9b` and
+`577804eeb49b809f51da18c546080ee3f0001583b96ae3e9ee4b81d4e10cf5f4`.
+The zero-focal fixture SHA-256 was
+`c5d880e712d0a6eb9bd203e4c58cbbcd0939ade054911cc6cd893ed49e01fef2`.
+Six alternating runs used Mesa software OpenGL under Xvfb, fresh
+processes and browser profiles, an 800 × 712 window, a one-second settle
+and 32 synthetic 42-pixel scroll steps. Scroll traces and paint-command
+counts matched. One-minute guest load ranged from 0.90 to 1.37 on four
+virtual CPUs. The benchmark, browser and memory guard exited zero.
+
+| Pair with rerasterization | Median baseline / candidate, ms | p95, ms | Maximum, ms |
+| ---: | ---: | ---: | ---: |
+| 1 | 5.261 / 5.0275 | 8.679 / 5.605 | 8.997 / 8.432 |
+| 2 | 4.406 / 4.9025 | 5.862 / 6.976 | 7.209 / 7.374 |
+| 3 | 4.4585 / 5.275 | 6.644 / 6.893 | 9.593 / 8.181 |
+
+A separate diagnostic confirmed 62 radial rerasterizations after the
+first callback. Median callback time fell in one pair and rose in two.
+
+Three more pairs used the same inputs with the SVG texture cache enabled.
+One-minute guest load ranged from 1.46 to 1.68. A separate diagnostic
+confirmed texture and bounds cache hits for all 62 radial draws after the
+first callback. The benchmark and memory guard exited zero.
+
+| Pair with caching | Median baseline / candidate, ms | p95, ms | Maximum, ms |
+| ---: | ---: | ---: | ---: |
+| 1 | 4.6855 / 4.8055 | 8.908 / 6.582 | 9.325 / 7.114 |
+| 2 | 4.7045 / 4.713 | 6.375 / 7.292 | 7.331 / 8.416 |
+| 3 | 3.852 / 4.324 | 5.329 / 6.185 | 6.536 / 6.493 |
+
+Median callback time rose by 0.2–12.3% with caching, and p95 varied.
+The callback timings include the full browser replay, with the radial
+shader skipped on cache hits. Hardware performance remains unverified.
+
 ## Sharing OpenGL gradient shaders across viewport clips
 
 When the rectangular hole in an SVG gradient rectangle moves out of view,
