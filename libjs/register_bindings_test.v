@@ -121,3 +121,43 @@ fn test_register_bindings_preserve_loop_budget_boundaries_and_cleanup() {
 		assert completed[0] == completed[1], 'Budget ${budget}'
 	}
 }
+
+fn global_function_for_test(mut vm VM, script &Script, name string) &ECMAScriptFunction {
+	global := script.realm.global_object or { panic('Missing global') }
+	value := global.internal_get(mut vm, PropertyName.from_str(name), Value.from_object(global)) or { panic(err) }
+	callable := value.as_object().callable or { panic('Missing function') }
+	if callable is ECMAScriptFunction { return callable }
+	panic('Not an ECMAScript function')
+}
+
+fn test_register_bindings_cover_arrows_and_functions_with_nested_declarations() {
+	defer { set_register_bindings_legacy_scope_for_testing(false) }
+	for legacy in [true, false] {
+		set_register_bindings_legacy_scope_for_testing(legacy)
+		for source in [
+			'var f=(a)=>{var b=a+1;return b*2};f(20)',
+			'function f(a){function g(x){return x+1}var b=g(a);return b}f(41)',
+			'function f(a){var g=function(){return a};function h(){return 1}return g()+h()}f(41)',
+			'function f(a){function a(){return 42}return a()}f(0)',
+			'function f(){var b=1;function b(){return 0}return b}f()+41',
+			'function f(n){var s=0;var add=(x)=>x;for(var i=0;i<n;i++)s+=add(i);return s}f(9)+6',
+			'(a=>{var b=a;return ()=>b})(42)()',
+			'function f(a){if(a){function g(){return 42}}return g()}f(1)',
+			'function f(a){var g=a;{function g(){return 0}}return typeof g=="function"?42:0}f(1)',
+		] {
+			assert register_eval(source)!.number == 42, source
+		}
+	}
+	mut vm := VM.create()
+	create_simple_execution_context(mut vm)
+	mut script := Script.parse('var f=(a)=>{var b=a+1;return b};function g(a){function h(){return 1}var c=a+h();return c}f(41)+g(41)',
+		vm.realm(), 'registers.js', unsafe { nil })!
+	assert vm.run(mut script)!.number == 84
+	arrow := global_function_for_test(mut vm, script, 'f')
+	assert arrow.register_bindings.len == 2
+	arrow_code := arrow.executable or { panic('Missing bytecode') }
+	assert !arrow_code.instructions.any(it.op in [.get_binding, .set_binding, .set_variable])
+	// The nested declaration h stays in the environment; a and c are registers.
+	outer := global_function_for_test(mut vm, script, 'g')
+	assert outer.register_bindings.map(it.name.str()) == ['a', 'c']
+}

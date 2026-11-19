@@ -14,8 +14,18 @@ struct FunctionRegisterBinding {
 
 $if test {
 	__global register_bindings_disabled_for_test bool
+	__global register_bindings_legacy_scope_for_test bool
 	pub fn set_register_bindings_for_testing(enabled bool) {
 		register_bindings_disabled_for_test = !enabled
+	}
+	// Restore the earlier scope (no arrows, no nested declarations) for A/B checks.
+	pub fn set_register_bindings_legacy_scope_for_testing(enabled bool) {
+		register_bindings_legacy_scope_for_test = enabled
+	}
+	fn has_hoisted_function_names(function &ECMAScriptFunction) bool {
+		scope := function.data.body.kind.scope or { return false }
+		data := scope.function_scope_data or { return false }
+		return data.functions_to_initialize.len > 0 || scope.annexb_function_names.len > 0
 	}
 }
 
@@ -25,13 +35,30 @@ fn (mut function ECMAScriptFunction) prepare_register_bindings(mut generator Byt
 		if register_bindings_disabled_for_test { return }
 	}
 	if function.source.parsed_source == unsafe { nil } || !function.data.simple_parameters()
-		|| function.data.kind != .normal || function.data.is_arrow_function {
+		|| function.data.kind != .normal {
 		return
+	}
+	$if test {
+		if register_bindings_legacy_scope_for_test && (function.data.is_arrow_function
+			|| has_hoisted_function_names(function)) {
+			return
+		}
 	}
 	scope := function.data.body.kind.scope or { return }
 	if !function.arguments_are_unobservable(scope) { return }
 	data := scope.function_scope_data or { return }
-	if data.functions_to_initialize.len > 0 || scope.annexb_function_names.len > 0 { return }
+	// Arrow functions and functions with nested declarations keep their
+	// uncaptured parameters and vars in registers, as upstream LibJS does. A
+	// hoisted function declaration (or Annex B block function) shares its name's
+	// environment binding, so that name stays in the environment.
+	mut hoisted := []Utf16String{}
+	for function_to_initialize in data.functions_to_initialize {
+		if function_to_initialize.child_index < 0 || function_to_initialize.child_index >= scope.children.len { return }
+		declaration := scope.children[function_to_initialize.child_index]
+		name := declaration.kind.func_name or { return }
+		hoisted << name.name
+	}
+	for name in scope.annexb_function_names { hoisted << name }
 	// Duplicate parameter names share a binding; leave their ordered overwrite
 	// semantics in the environment path.
 	mut names := []Utf16String{}
@@ -48,6 +75,7 @@ fn (mut function ECMAScriptFunction) prepare_register_bindings(mut generator Byt
 		if parameter.binding is IdentifierBinding {
 			identifier := parameter.binding.identifier
 			if identifier.local_type != 1 || identifier.is_inside_scope_with_eval { continue }
+			if hoisted.any(it == identifier.name) { continue }
 			function.register_bindings << FunctionRegisterBinding{
 				name:            identifier.name
 				slot:            u32(function.register_bindings.len)
@@ -64,6 +92,7 @@ fn (mut function ECMAScriptFunction) prepare_register_bindings(mut generator Byt
 		if !data.vars_to_initialize.any(it.name == variable.name && !it.is_function_name) {
 			continue
 		}
+		if hoisted.any(it == variable.name) { continue }
 		function.register_bindings << FunctionRegisterBinding{
 			name:        variable.name
 			slot:        u32(function.register_bindings.len)
