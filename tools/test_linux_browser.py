@@ -1232,10 +1232,18 @@ def check_gg_svg_viewport(binary, artifacts, temporary, fixture):
   body { min-height: 1400px; }
   #marker { position: fixed; inset: 0 0 auto auto; width: 12px; height: 4px; background: #098746; }
   #side { position: fixed; left: 10px; top: 69px; }
+  #off-grid { position: fixed; left: 10px; top: 85px; }
+  #expanding { position: fixed; left: -65px; top: 94px; }
 </style>
 <div id="marker"></div>
 <svg id="side" width="120" height="20">
   <path fill="#1166dd" d="M5 3H105V15H5Z"/>
+</svg>
+<svg id="off-grid" width="120" height="10">
+  <path fill="#eea009" d="M5 1H105V9H5Z"/>
+</svg>
+<svg id="expanding" width="120" height="8">
+  <path fill="#226644" d="M5 1H105V7H5Z"/>
 </svg>
 <script>
 let frames = 0;
@@ -1245,19 +1253,23 @@ function moveAcrossLeftEdge() {
         return;
     }
     document.getElementById('side').setAttribute('style', 'left:-55px');
+    document.getElementById('off-grid').setAttribute('style', 'left:-55px; transform:translateX(-.25px)');
+    document.getElementById('expanding').setAttribute('style', 'left:-45px');
     document.body.setAttribute('data-viewport-ready', '1');
 }
 requestAnimationFrame(moveAcrossLeftEdge);
 </script>"""))
     documents = []
-    for label in ("rerasterized", "reused"):
+    for label in ("rerasterized", "reused", "cpu-rerasterized", "cpu-reused"):
+        gpu = not label.startswith("cpu-")
+        reuse = label in ("reused", "cpu-reused")
         screenshot = artifacts / f"gg-svg-viewport-{label}.png"
         screenshot.unlink(missing_ok=True)
         environment = smoke_environment(Path(temporary) / f"gg-svg-viewport-{label}")
         environment.pop("MESA_GL_VERSION_OVERRIDE", None)
-        environment.update(VOX_GG_SVG="1", VOX_GG_SVG_DIAGNOSTICS="1",
+        environment.update(VOX_GG_SVG=str(int(gpu)), VOX_GG_SVG_DIAGNOSTICS="1",
                            VOX_DISABLE_GG_SVG_CACHE="0",
-                           VOX_GG_SVG_VIEWPORT_REUSE=str(int(label == "reused")),
+                           VOX_GG_SVG_VIEWPORT_REUSE=str(int(reuse)),
                            VOX_CAPTURE_INITIAL_VIEWPORT="1", VOX_SCREENSHOT_SCROLL_STEP="13",
                            VOX_CAPTURE_READY_SELECTOR="body[data-viewport-ready]")
         log = run_windowed([str(binary), "--enable-javascript", "--window-width=800", "--window-height=600",
@@ -1265,8 +1277,15 @@ requestAnimationFrame(moveAcrossLeftEdge);
                             f"--screenshot={screenshot}", str(page)],
                            env=environment, log_path=artifacts / f"gg-svg-viewport-{label}.log")
         assert "draw=120x80 cache=miss" in log, log
-        assert ("crop=hit" in log) == (label == "reused"), log
-        assert ("draw=50x12 cache=hit bounds=hit crop=hit" in log) == (label == "reused"), log
+        assert ("crop=hit" in log) == reuse, log
+        if gpu:
+            assert ("draw=50x12 cache=hit bounds=hit crop=hit" in log) == reuse, log
+        else:
+            assert ("draw=50x12 cache=hit gradient=0 crop=hit" in log) == reuse, log
+            assert "draw=50x8 cache=miss gradient=0" in log, log
+            assert "draw=60x6 cache=miss gradient=0" in log, log
+            assert not any("crop=hit" in line and ("draw=50x8 " in line or "draw=60x6 " in line)
+                           for line in log.splitlines()), log
         width, height, channels, rows = rendered_png_rows(screenshot.read_bytes())
 
         def pixel(x, y):
@@ -1280,7 +1299,8 @@ requestAnimationFrame(moveAcrossLeftEdge);
         assert pixel(65, top + 77) == b"\xff\xff\xff", "The SVG did not move across the left edge"
         documents.append(rows[top:top + 100])
     assert documents[0] == documents[1], "Cropped texture replay changed document pixels"
-    print("PASS: SVG viewport cropping reuses the same document pixels", flush=True)
+    assert documents[2] == documents[3], "Cropped CPU texture replay changed document pixels"
+    print("PASS: GPU and CPU SVG viewport crops preserve their document pixels", flush=True)
 
 
 def check_svg_opacity_browser(binary, artifacts, temporary):

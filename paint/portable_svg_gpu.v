@@ -17,7 +17,6 @@ $if vox_gg_svg ? {
 	const portable_svg_gpu_diagnostics = os.getenv('VOX_GG_SVG_DIAGNOSTICS') == '1'
 	const portable_svg_gpu_cache_control = os.getenv('VOX_DISABLE_GG_SVG_CACHE')
 	const disable_portable_svg_gpu_cache = portable_svg_gpu_cache_control == '1'
-	const portable_svg_gpu_viewport_reuse = os.getenv('VOX_GG_SVG_VIEWPORT_REUSE') == '1'
 	const portable_svg_gpu_texture_slots = 16
 	// Leave room in the shared Sokol image pool for the rest of the browser.
 	const portable_svg_gpu_transient_slots = 64
@@ -77,26 +76,14 @@ $if vox_gg_svg ? {
 	}
 
 	fn (texture &PortableSVGTexture) crop_origin(key &PortableSVGTextureKey, data &layout.PaintSVGPathData) ?painting.IntPoint {
-		if texture.key.gradient || texture.key.width < key.width || texture.key.height < key.height
-			|| (texture.key.width == key.width && texture.key.height == key.height)
-			|| texture.key.color != key.color || texture.key.even_odd != key.even_odd
+		if texture.key.gradient || texture.key.color != key.color || texture.key.even_odd != key.even_odd
 			|| texture.key.stroke != key.stroke {
 			return none
 		}
-		if unsafe { vmemcmp(&texture.key.matrix[0], &key.matrix[0], 4 * int(sizeof(f32))) != 0 } {
-			return none
-		}
-		// Local translations differ by the texel offset of the visible
-		// rectangle. Require the same subpixel phase and complete coverage.
-		x := f64(texture.key.matrix[4]) - f64(key.matrix[4])
-		y := f64(texture.key.matrix[5]) - f64(key.matrix[5])
-		if !(x >= 0 && x <= f64(texture.key.width - key.width)
-			&& y >= 0 && y <= f64(texture.key.height - key.height)) {
-			return none
-		}
-		origin := painting.IntPoint{int(x), int(y)}
-		if x != f64(origin.x) || y != f64(origin.y) || !texture.matches_geometry(data.path_data)
-			|| !texture.matches_dashes(key, data) {
+		origin := portable_svg_covering_crop(texture.key.matrix,
+			painting.IntSize{texture.key.width, texture.key.height}, key.matrix,
+			painting.IntSize{key.width, key.height})?
+		if !texture.matches_geometry(data.path_data) || !texture.matches_dashes(key, data) {
 			return none
 		}
 		return origin
@@ -199,7 +186,7 @@ $if vox_gg_svg ? {
 			mut texture := &state.textures[index]
 			if texture.used && texture.length != 0 {
 				texture.idle = false
-			} else if portable_svg_gpu_viewport_reuse && texture.length != 0 && texture.key.gradient
+			} else if portable_svg_viewport_reuse && texture.length != 0 && texture.key.gradient
 				&& texture.key.width * texture.key.height <= spare_pixels {
 				// Keep exact viewport variants within the existing pixel budget.
 				// Gradient pixels depend on the raster extent as well as dither phase.
@@ -400,14 +387,14 @@ $if vox_gg_svg ? {
 					matching = index
 					crop = none
 					break
-				} else if cacheable && portable_svg_gpu_viewport_reuse && !key.gradient && matching < 0
+				} else if cacheable && portable_svg_viewport_reuse && !key.gradient && matching < 0
 					&& (texture.used || texture.key.width * texture.key.height <= remaining_pixels) {
 					if origin := texture.crop_origin(&key, &data) {
 						matching = index
 						crop = origin
 					}
 				}
-				if portable_svg_gpu_viewport_reuse && idle < 0 && texture.idle && !texture.used {
+				if portable_svg_viewport_reuse && idle < 0 && texture.idle && !texture.used {
 					idle = index
 				}
 			}

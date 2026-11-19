@@ -13,6 +13,7 @@ const portable_svg_raster_path_values = 64 * layout.compatibility_clip_path_segm
 const portable_svg_stroke_dash_values = 32
 const portable_svg_raster_gradient_values = 16 * 5
 const disable_portable_svg_raster_cache = os.getenv('VOX_DISABLE_GG_SVG_CACHE') == '1'
+const portable_svg_viewport_reuse = os.getenv('VOX_GG_SVG_VIEWPORT_REUSE') == '1'
 const portable_svg_raster_diagnostics = os.getenv('VOX_GG_SVG_DIAGNOSTICS') == '1'
 
 struct PortableSVGRasterKey {
@@ -43,6 +44,7 @@ mut:
 	key          PortableSVGRasterKey
 	matrix       [6]f32
 	local_bounds cpuraster.Rect
+	crop_safe    bool
 	path_len     int
 	path         [portable_svg_raster_path_values]f32
 	dashes       [portable_svg_stroke_dash_values]f64
@@ -78,13 +80,48 @@ fn (entry &PortableSVGRaster) matches_path(values []f32) bool {
 	}
 }
 
-fn (entry &PortableSVGRaster) matches_raster(key PortableSVGRasterKey,
-	matrix [6]f32, dashes []f64) bool {
-	return key == entry.key && unsafe {
-		vmemcmp(&entry.matrix[0], &matrix[0], 6 * int(sizeof(f32))) == 0
-	} && (key.dash_len == 0 || unsafe {
+fn (entry &PortableSVGRaster) matches_style(key PortableSVGRasterKey, dashes []f64) bool {
+	return key == entry.key && (key.dash_len == 0 || unsafe {
 		vmemcmp(&entry.dashes[0], dashes.data, key.dash_len * int(sizeof(f64))) == 0
 	})
+}
+
+fn portable_svg_covering_crop(cached [6]f32, source painting.IntSize,
+	matrix [6]f32, extent painting.IntSize) ?painting.IntPoint {
+	if source.width < extent.width || source.height < extent.height || source == extent {
+		return none
+	}
+	if unsafe { vmemcmp(&cached[0], &matrix[0], 4 * int(sizeof(f32))) != 0 } { return none }
+	// The translation delta is the source texel offset. Both phases must
+	// agree, and all of the new visible rectangle must already be resident.
+	x := f64(cached[4]) - f64(matrix[4])
+	y := f64(cached[5]) - f64(matrix[5])
+	if !(x >= 0 && x <= f64(source.width - extent.width)
+		&& y >= 0 && y <= f64(source.height - extent.height)) { return none }
+	origin := painting.IntPoint{int(x), int(y)}
+	if x != f64(origin.x) || y != f64(origin.y) { return none }
+	return origin
+}
+
+fn portable_svg_crop_aligned_rectangles(values []f32, matrix [6]f32) bool {
+	if matrix[0] == 0 || matrix[3] == 0 || matrix[1] != 0 || matrix[2] != 0 { return false }
+	// Verify products and translation separately so the CPU rasterizer can
+	// map the vertices exactly under any integral shift of the small texture.
+	if ![f64(matrix[4]), f64(matrix[5])]!.all(math.abs(it) < 1048576 && it == math.floor(it)) {
+		return false
+	}
+	stride := layout.compatibility_clip_path_segment_stride
+	mut start := 0
+	for offset := 0; offset + stride <= values.len; offset += stride {
+		if values[offset] != 5 { continue }
+		end := offset + stride
+		rect := svg_background_rectangle_path(values[start..end]) or { return false }
+		edges := [rect.x * f64(matrix[0]), rect.right() * f64(matrix[0]),
+			rect.y * f64(matrix[3]), rect.bottom() * f64(matrix[3])]!
+		if !edges.all(math.abs(it) < 1048576 && it == math.floor(it)) { return false }
+		start = end
+	}
+	return start == values.len
 }
 
 fn portable_svg_raster_gradient_key(paint &cpuraster.CanvasGradient) PortableSVGRasterGradientKey {
@@ -134,16 +171,26 @@ fn (app &BrowserApp) cached_portable_svg_raster(index int, values []f32) &Portab
 
 fn (mut app BrowserApp) draw_cached_portable_svg_raster(entry &PortableSVGRaster,
 	key PortableSVGRasterKey, matrix [6]f32, bounds painting.IntRect, dashes []f64,
-	gradient ?cpuraster.CanvasGradient) bool {
-	if entry == unsafe { nil } || !entry.matches_raster(key, matrix, dashes)
+	gradient ?cpuraster.CanvasGradient, operation string) bool {
+	if entry == unsafe { nil } || !entry.matches_style(key, dashes)
 		|| !entry.matches_gradient(gradient) {
 		return false
 	}
 	slot := app.portable_raster_images[app.portable_raster_image_index]
-	if slot.width != bounds.width || slot.height != bounds.height { return false }
+	mut source := gg.Rect{}
+	if slot.width != bounds.width || slot.height != bounds.height {
+		if !entry.crop_safe { return false }
+		origin := portable_svg_covering_crop(entry.matrix, painting.IntSize{slot.width, slot.height},
+			matrix, painting.IntSize{bounds.width, bounds.height}) or { return false }
+		source = gg.Rect{f32(origin.x), f32(origin.y), f32(bounds.width), f32(bounds.height)}
+	} else if unsafe { vmemcmp(&entry.matrix[0], &matrix[0], 6 * int(sizeof(f32))) != 0 } {
+		return false
+	}
 	app.portable_raster_image_index++
 	app.ctx.draw_image_with_config(img_id: slot.image_id,
-		img_rect: app.portable_svg_texture_destination(bounds), color: gg.Color{255, 255, 255, 255})
+		img_rect: app.portable_svg_texture_destination(bounds), part_rect: source,
+		color: gg.Color{255, 255, 255, 255})
+	log_portable_svg_raster_cache(operation, 'hit', bounds, gradient, source.width > 0)
 	return true
 }
 
@@ -158,6 +205,8 @@ fn (mut app BrowserApp) remember_portable_svg_raster(index int, data &layout.Pai
 	entry.key = key
 	entry.matrix = matrix
 	entry.local_bounds = local
+	entry.crop_safe = portable_svg_viewport_reuse && key.width_bits == 0 && gradient == none
+		&& portable_svg_crop_aligned_rectangles(data.path_data, matrix)
 	entry.path_len = data.path_data.len
 	unsafe {
 		vmemcpy(&entry.path[0], data.path_data.data, entry.path_len * int(sizeof(f32)))
@@ -174,9 +223,10 @@ fn (mut app BrowserApp) remember_portable_svg_raster(index int, data &layout.Pai
 }
 
 fn log_portable_svg_raster_cache(operation string, result string, bounds painting.IntRect,
-	gradient ?cpuraster.CanvasGradient) {
+	gradient ?cpuraster.CanvasGradient, cropped bool) {
 	if portable_svg_raster_diagnostics {
 		kind := if paint := gradient { paint.kind } else { 0 }
-		eprintln('VOX_CPU_SVG_${operation} draw=${bounds.width}x${bounds.height} cache=${result} gradient=${kind}')
+		crop := if cropped { ' crop=hit' } else { '' }
+		eprintln('VOX_CPU_SVG_${operation} draw=${bounds.width}x${bounds.height} cache=${result} gradient=${kind}${crop}')
 	}
 }
