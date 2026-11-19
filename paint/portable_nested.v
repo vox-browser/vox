@@ -60,7 +60,9 @@ fn (mut app BrowserApp) draw_portable_nested_svg_group(commands []layout.PaintCo
 	command := &commands[start]
 	is_mask := command.kind == 'begin_svg_mask_layer'
 	end := if is_mask {
-		portable_svg_mask_group_end(commands, start, command.mask_clip()) or { return none }
+		mask := command.mask_clip()
+		group := portable_svg_mask_group(commands, start, &mask) or { return none }
+		group.end
 	} else {
 		if disable_portable_svg_opacity { return none }
 		layer := normal_opacity_paint_layer(command) or { return none }

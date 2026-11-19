@@ -1,0 +1,45 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>SVG masks intersect transformed viewports</title>
+<style>
+body { margin: 0; background: white; }
+header { width: 8px; height: 8px; background: #34b786; }
+svg { position: absolute; top: 20px; left: 0; transform-origin: 0 0; }
+#sheared { transform: matrix(1, .5, -.5, 1, 68, 0); }
+#reflected { transform: matrix(-1, .5, .5, 1, 274, 0); }
+#disjoint { transform: matrix(1, .5, -.5, 1, 455, 0); }
+</style>
+<header></header>
+<svg id="sheared" width="120" height="100">
+  <mask id="alpha" mask-type="alpha" maskUnits="userSpaceOnUse" x="-20" y="20" width="68" height="64">
+    <path d="M-24 0H120V100H-24Z" fill="black"/>
+  </mask>
+  <g mask="url(#alpha)">
+    <path d="M-24 0H120V100H-24Z" fill="blue"/>
+    <path d="M16 38H32V62H16Z" fill="red"/>
+  </g>
+</svg>
+<svg id="reflected" width="120" height="100">
+  <mask id="luminance" maskUnits="userSpaceOnUse" x="80" y="-20" width="68" height="78">
+    <path d="M0 -24H156V100H0Z" fill="white" opacity=".5"/>
+  </mask>
+  <path d="M0 -24H156V100H0Z" fill="blue" mask="url(#luminance)"/>
+</svg>
+<svg id="disjoint" width="120" height="100">
+  <mask id="empty" mask-type="alpha" maskUnits="userSpaceOnUse" x="-48" y="18" width="24" height="74">
+    <path d="M-56 0H120V100H-56Z" fill="white"/>
+  </mask>
+  <path d="M-56 0H120V100H-56Z" fill="blue" mask="url(#empty)"/>
+</svg>
+<script>
+let frame = 0;
+function moveMask() {
+    if (++frame === 12)
+        document.getElementById('luminance').setAttribute('x', '94');
+    if (frame === 24)
+        document.body.setAttribute('data-mask-viewport-ready', '');
+    else
+        requestAnimationFrame(moveMask);
+}
+requestAnimationFrame(moveMask);
+</script>

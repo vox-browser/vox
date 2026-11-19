@@ -2213,7 +2213,35 @@ def check_svg_mask_pattern_strokes_browser(binary, artifacts, temporary):
 
 
 def check_svg_mask_transformed_region_browser(binary, artifacts, temporary):
-    fixture = Path(__file__).resolve().parents[1] / "Tests/Browser/Native/svg-mask-transformed-region.html"
+    blue, white, half = (0, 0, 255), (255, 255, 255), (127, 127, 255)
+    samples = (
+        (95, 84, blue), (50, 47, white), (72, 50, blue), (56, 63, white),
+        (225, 83, half), (187, 43, white), (258, 45, white),
+        (351, 55, blue), (331, 55, white), (380, 55, white), (351, 99, blue), (351, 100, white),
+        (66, 50, (191, 191, 255)), (66, 51, (63, 63, 255)),
+    )
+    check_transformed_svg_mask_browser(binary, artifacts, temporary, "region", samples, (
+        "luminance=true operations=3 paths=1 ", "luminance=false operations=1 paths=1 ",
+    ))
+    print("PASS: transformed SVG mask regions clip correctly and repaint after live region edits", flush=True)
+
+
+def check_svg_mask_transformed_viewport_browser(binary, artifacts, temporary):
+    blue, red, white, half = (0, 0, 255), (255, 0, 0), (255, 255, 255), (127, 127, 255)
+    samples = (
+        (62, 57, blue), (67, 82, red), (40, 56, white), (98, 85, white),
+        (47, 60, (191, 191, 255)), (47, 61, (63, 63, 255)),
+        (181, 96, half), (162, 111, white), (200, 92, white), (164, 68, white),
+        (474, 61, white),
+    )
+    check_transformed_svg_mask_browser(binary, artifacts, temporary, "viewport", samples, (
+        "luminance=false operations=1 paths=2 ", "luminance=true operations=3 paths=1 ",
+    ))
+    print("PASS: transformed viewports intersect SVG masks, including disjoint regions", flush=True)
+
+
+def check_transformed_svg_mask_browser(binary, artifacts, temporary, case, samples, expected_masks):
+    fixture = Path(__file__).resolve().parents[1] / f"Tests/Browser/Native/svg-mask-transformed-{case}.html"
     documents = []
     for mode in ("cpu", "gg", "uncached"):
         label = f"{fixture.stem}-{mode}"
@@ -2223,7 +2251,7 @@ def check_svg_mask_transformed_region_browser(binary, artifacts, temporary):
         environment.update(VOX_GG_SVG=str(int(mode == "gg")), VOX_GG_SVG_DIAGNOSTICS="1",
                            VOX_DISABLE_GG_SVG_CACHE=str(int(mode == "uncached")),
                            VOX_DISABLE_PORTABLE_SVG_MASK="0", VOX_PORTABLE_SVG_MASK_DIAGNOSTICS="1",
-                           VOX_CAPTURE_READY_SELECTOR="body[data-mask-region-ready]")
+                           VOX_CAPTURE_READY_SELECTOR=f"body[data-mask-{case}-ready]")
         log = run_windowed([str(binary), "--enable-javascript", "--window-width=800", "--window-height=600",
                             "--screenshot-viewport-height=600", f"--screenshot={screenshot}", str(fixture)],
                            env=environment, log_path=artifacts / f"{label}.log")
@@ -2233,24 +2261,14 @@ def check_svg_mask_transformed_region_browser(binary, artifacts, temporary):
         def pixel(x, y):
             return tuple(rows[marker + y][x * channels:x * channels + 3])
 
-        blue, white, half = (0, 0, 255), (255, 255, 255), (127, 127, 255)
-        samples = (
-            (95, 84, blue), (50, 47, white), (72, 50, blue), (56, 63, white),
-            (225, 83, half), (187, 43, white), (258, 45, white),
-            (351, 55, blue), (331, 55, white), (380, 55, white), (351, 99, blue), (351, 100, white),
-        )
         for x, y, expected in samples:
             actual = pixel(x, y)
             assert all(abs(a - b) <= 1 for a, b in zip(actual, expected)), (label, x, y, actual, expected)
-        for x, y, expected in ((66, 50, 191), (66, 51, 63)):
-            r, g, b = pixel(x, y)
-            assert r == g and b == 255 and abs(r - expected) <= 1, (label, x, y, (r, g, b))
-        assert "VOX_SVG_MASK luminance=true operations=3 paths=1 " in log, log
-        assert log.count("VOX_SVG_MASK luminance=false operations=1 paths=1 ") >= 2, log
+        for properties in expected_masks:
+            assert f"VOX_SVG_MASK {properties}" in log, log
         assert ("VOX_SVG_GROUP cache=hit " in log) == (mode != "uncached"), log
         documents.append(rows[marker:height - 24])
-    assert documents[0] == documents[1] == documents[2], "Transformed SVG mask replay changed document pixels"
-    print("PASS: transformed SVG mask regions clip correctly and repaint after live region edits", flush=True)
+    assert documents[0] == documents[1] == documents[2], f"Transformed SVG mask {case} changed document pixels"
 
 
 def check_svg_mask_gradient_spread_browser(binary, artifacts, temporary):
@@ -2727,6 +2745,7 @@ def main():
         check_svg_mask_patterns_browser(binary, artifacts, temporary)
         check_svg_mask_pattern_strokes_browser(binary, artifacts, temporary)
         check_svg_mask_transformed_region_browser(binary, artifacts, temporary)
+        check_svg_mask_transformed_viewport_browser(binary, artifacts, temporary)
         check_svg_mask_gradient_browser(binary, artifacts, temporary)
         check_svg_mask_gradient_spread_browser(binary, artifacts, temporary)
         check_svg_mask_strips_browser(binary, artifacts, temporary, "svg-vertical-alpha-masks",

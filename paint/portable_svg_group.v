@@ -24,12 +24,7 @@ fn portable_svg_group_clip_supported(command &layout.PaintCommand, mask ?&layout
 			if clip.corner_radii != layout.BoxRadii{} { return false }
 			if clip.transform[1] != 0 || clip.transform[2] != 0 {
 				region := mask or { return false }
-				// An enclosing SVG viewport and its mask share local coordinates.
-				// A contained mask region keeps all output inside the viewport.
-				if !region.is_svg_content_mask || clip.transform != region.transform
-					|| region.rect.x < clip.rect.x || region.rect.y < clip.rect.y
-					|| region.rect.x + region.rect.width > clip.rect.x + clip.rect.width
-					|| region.rect.y + region.rect.height > clip.rect.y + clip.rect.height {
+				if !region.is_svg_content_mask || clip.transform != region.transform {
 					return false
 				}
 			}
