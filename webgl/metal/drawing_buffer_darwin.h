@@ -1,8 +1,10 @@
 /* Direct Metal resources for the WebGL backend migration. No EGL/GLES calls. */
 #ifndef VOX_WEBGL_METAL_DRAWING_BUFFER_H
 #define VOX_WEBGL_METAL_DRAWING_BUFFER_H
+#if !defined(V3CACHE_NATIVE_INTERFACE) || defined(V3CACHE_NATIVE_OWNER)
 #import <Foundation/Foundation.h>
 #import <Metal/Metal.h>
+#endif
 #include <CoreFoundation/CoreFoundation.h>
 #include <stdint.h>
 #include <stdlib.h>
@@ -14,6 +16,7 @@ typedef struct {
     unsigned level, slice, plane;
 } VoxMetalDrawingBuffer;
 
+#if !defined(V3CACHE_NATIVE_INTERFACE) || defined(V3CACHE_NATIVE_OWNER)
 static void vox_metal_drop_owned(id value)
 {
 #if !__has_feature(objc_arc)
@@ -153,4 +156,5 @@ static int vox_metal_buffer_transfer(void* handle, void* pixels, uint64_t capaci
         return success;
     }
 }
+#endif
 #endif

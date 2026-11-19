@@ -3,6 +3,7 @@
 #include "drawing_buffer_darwin.h"
 typedef struct { uint32_t min_filter,mag_filter,mip_filter,wrap_s,wrap_t,wrap_r,compare,compare_func,anisotropy;float min_lod,max_lod; } VoxMetalSamplerOptions;
 typedef struct { CFTypeRef device,state; } VoxMetalSampler;
+#if !defined(V3CACHE_NATIVE_INTERFACE) || defined(V3CACHE_NATIVE_OWNER)
 static void vox_metal_sampler_destroy(void* handle)
 {
     VoxMetalSampler* sampler=handle;
@@ -32,4 +33,5 @@ static void* vox_metal_sampler_create(void* owner,VoxMetalSamplerOptions const* 
         return result;
     }
 }
+#endif
 #endif

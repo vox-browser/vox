@@ -1,4 +1,5 @@
 #pragma once
+#if !defined(V3CACHE_NATIVE_INTERFACE) || defined(V3CACHE_NATIVE_OWNER)
 // CoreText services for cpuraster's glyph masks, matching what LibWeb
 // Skia's SkTypeface_Mac and SkScalerContext_Mac ask of CoreText for an
 // unhinted anti-aliased (A8) strike. Everything else about the strike (the
@@ -529,3 +530,4 @@ static int cpuraster_ct_glyph_path(void* font_ref, uint16_t glyph_id, double con
     *elements = sink.values;
     return sink.count;
 }
+#endif

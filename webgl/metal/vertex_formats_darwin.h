@@ -1,6 +1,7 @@
 #ifndef VOX_METAL_VERTEX_FORMATS_H
 #define VOX_METAL_VERTEX_FORMATS_H
 #include "drawing_buffer_darwin.h"
+#if !defined(V3CACHE_NATIVE_INTERFACE) || defined(V3CACHE_NATIVE_OWNER)
 static unsigned vox_metal_vertex_scalar_size(unsigned format)
 {
     unsigned const sizes[] = {4,1,1,2,2,4,4,2};
@@ -30,4 +31,5 @@ static MTLVertexFormat vox_metal_vertex_format(unsigned format, unsigned compone
     default: return MTLVertexFormatInvalid;
     }
 }
+#endif
 #endif
