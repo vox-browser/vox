@@ -68,9 +68,13 @@ $if test {
 	pub fn set_native_lookup_index_for_testing(enabled bool) { native_lookup_index_disabled = !enabled }
 }
 
+// Same-binary control for measurements: VOX_LIBJS_NATIVE_LOOKUP_INDEX=0 uses
+// only the ordinary record path and neither reads nor writes the index.
+const native_lookup_index_env_disabled = os.getenv('VOX_LIBJS_NATIVE_LOOKUP_INDEX') == '0'
+
 fn use_native_lookup_index() bool {
 	$if test { if native_lookup_index_disabled { return false } }
-	return true
+	return !native_lookup_index_env_disabled
 }
 
 #include "@VMODROOT/libjs/native_lookup_identity.h"
