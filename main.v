@@ -451,6 +451,7 @@ mut:
 	portable_raster_images              []PortableRasterImage
 	portable_raster_image_index         int
 	portable_web_font_textures          [portable_web_font_texture_slots]PortableWebFontTexture
+	portable_web_font_scroll_textures   &PortableWebFontScrollTextures = unsafe { nil }
 	portable_svg_rasters                &PortableSVGRasters = unsafe { nil }
 	portable_svg_group_recording        PortableSVGGroupRecording
 	portable_svg_group_textures         [portable_svg_raster_slots]PortableSVGGroupSlot

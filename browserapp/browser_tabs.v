@@ -282,6 +282,8 @@ fn (mut app BrowserApp) dispose_browser_tab() {
 	$if linux || ui2_custom_rendering ? { app.stop_browser_memory_chrome() }
 	app.dismiss_browser_popup()
 	app.release_native_replay_scratch()
+	unsafe { free(app.portable_web_font_scroll_textures) }
+	app.portable_web_font_scroll_textures = unsafe { nil }
 	app.NavigationController.cancel_pending_navigation()
 	app.deferred_page_input = []DeferredPageInput{}
 	app.deferred_navigation_input = none

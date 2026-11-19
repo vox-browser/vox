@@ -59,6 +59,9 @@ fn (mut app BrowserApp) upload_portable_raster_texture(destination gg.Rect, widt
 fn (mut app BrowserApp) invalidate_portable_raster_image(index int, retain_svg_clip bool) {
 	if index < portable_web_font_texture_slots && app.portable_web_font_textures[index].key.generation != 0 {
 		app.portable_web_font_textures[index] = PortableWebFontTexture{}
+		if app.portable_web_font_scroll_textures != unsafe { nil } {
+			app.portable_web_font_scroll_textures.entries[index].valid = false
+		}
 	}
 	app.invalidate_portable_svg_raster(index, retain_svg_clip)
 }

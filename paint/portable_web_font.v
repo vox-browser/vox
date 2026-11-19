@@ -59,14 +59,25 @@ fn (mut app BrowserApp) draw_portable_web_font(source &layout.PaintCommand, comm
 	if key.generation != 0 && index < app.portable_raster_images.len {
 		entry := app.portable_web_font_textures[index]
 		if entry.key == key {
-			image := app.portable_raster_images[index]
-			app.portable_raster_image_index++
-			app.ctx.draw_image_with_config(img_id: image.image_id,
-				img_rect: gg.Rect{entry.x + page_x, entry.y + page_y - f32(scroll_y),
-				f32(image.width) / app.ctx.scale, f32(image.height) / app.ctx.scale},
-				color: gg.white)
+			app.draw_cached_portable_web_font(index, page_x, page_y, scroll_y)
 			if portable_web_font_texture_diagnostics {
 				eprintln('VOX_WEB_FONT_TEXTURE cache=hit recording=${key.generation}')
+			}
+			return true
+		}
+	}
+	scroll_input := if portable_web_font_scroll_reuse && key.generation != 0 {
+		app.portable_web_font_scroll_input(command, viewport)
+	} else {
+		none
+	}
+	if input := scroll_input {
+		if app.restore_portable_web_font_scroll_texture(index, &input) {
+			app.portable_web_font_textures[index] = PortableWebFontTexture{key,
+				f32(f64(input.bounds.x) / scale), f32(f64(input.bounds.y) / scale)}
+			app.draw_cached_portable_web_font(index, page_x, page_y, scroll_y)
+			if portable_web_font_texture_diagnostics {
+				eprintln('VOX_WEB_FONT_SCROLL cache=hit recording=${key.generation}')
 			}
 			return true
 		}
@@ -77,10 +88,28 @@ fn (mut app BrowserApp) draw_portable_web_font(source &layout.PaintCommand, comm
 			bitmap.width, bitmap.height, bitmap.pixels)
 		if key.generation != 0 {
 			app.portable_web_font_textures[index] = PortableWebFontTexture{key, bitmap.x, bitmap.y}
+			if input := scroll_input {
+				bounds := input.bounds
+				if bitmap.width == bounds.width && bitmap.height == bounds.height
+					&& bitmap.x == f32(f64(bounds.x) / scale) && bitmap.y == f32(f64(bounds.y) / scale) {
+					app.remember_portable_web_font_scroll_texture(index, &input)
+				}
+			}
 			if portable_web_font_texture_diagnostics {
 				eprintln('VOX_WEB_FONT_TEXTURE cache=miss recording=${key.generation}')
 			}
 		}
 	}
 	return true
+}
+
+fn (mut app BrowserApp) draw_cached_portable_web_font(index int, page_x f32,
+	page_y f32, scroll_y f64) {
+	image := app.portable_raster_images[index]
+	entry := app.portable_web_font_textures[index]
+	app.portable_raster_image_index++
+	app.ctx.draw_image_with_config(img_id: image.image_id,
+		img_rect: gg.Rect{entry.x + page_x, entry.y + page_y - f32(scroll_y),
+		f32(image.width) / app.ctx.scale, f32(image.height) / app.ctx.scale},
+		color: gg.white)
 }

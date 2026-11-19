@@ -349,6 +349,7 @@ requestAnimationFrame(editText);
         screenshot.unlink(missing_ok=True)
         environment = smoke_environment(Path(temporary) / label)
         environment.update(VOX_DISABLE_WEB_FONT_TEXTURE_CACHE=str(int(not enabled)),
+                           VOX_WEB_FONT_SCROLL_REUSE="1",
                            VOX_WEB_FONT_TEXTURE_DIAGNOSTICS="1",
                            VOX_CAPTURE_READY_SELECTOR="body[data-text-edited]")
         log = run_windowed([str(binary), "--enable-javascript", "--window-width=800", "--window-height=640",
@@ -369,6 +370,62 @@ requestAnimationFrame(editText);
         documents.append(rows[top:height - 24])
     assert documents[0] == documents[1], "Caching changed the document pixels"
     print("PASS: cached web font textures preserve pixels across a live text edit", flush=True)
+
+
+def check_web_font_scroll_reuse(binary, artifacts, temporary):
+    font = Path(__file__).resolve().parents[1] / "Tests/Browser/Brave/resources/glyph-origin.ttf"
+    page = Path(temporary) / "scroll-web-font-edit.html"
+    lines = "".join("<div>ImImIm</div>" if i % 2 == 0 else '<div class="odd">mImImI</div>'
+                    for i in range(31))
+    page.write_text("""
+<!doctype html><title>Scrolling web fonts</title>
+<style>
+@font-face {font-family:Origin;src:url('%s')}
+body {margin:0;height:1480px;background:#101820;color:#e52db8;font:32px/44px Origin}
+section {position:absolute;left:24px;top:24px;white-space:nowrap}
+.odd {color:#45cfa6}
+.clip {position:absolute;left:400px;top:1000px;width:55px;overflow:hidden}
+.fractional {position:absolute;left:520px;top:1000px;transform:translate(.5px,.375px)}
+.icon {position:fixed;right:32px;top:20px}
+aside {position:fixed;top:0;bottom:0;right:0;width:8px;background:#093c57}
+</style>
+<svg class="icon" width="24" height="24"><path fill="#7bcefa" d="M1 1H23V23H1Z M6 6V18H18V6Z"/></svg>
+<section>%s</section><div class="clip">mImImI</div><div class="fractional">ImImIm</div><aside></aside>
+<script>
+let wheels = 0;
+window.addEventListener('wheel', function () {
+    if (++wheels === 9)
+        document.querySelector('section').style.color = '#ee8a24';
+}, {passive:true});
+</script>
+""" % (font.as_uri(), lines))
+    documents = []
+    for enabled in (False, True):
+        label = f"web-font-scroll-{int(enabled)}"
+        screenshot = artifacts / f"{label}.png"
+        screenshot.unlink(missing_ok=True)
+        environment = smoke_environment(Path(temporary) / label)
+        environment.update(VOX_DISABLE_WEB_FONT_TEXTURE_CACHE="0",
+                           VOX_GG_SVG="0",
+                           VOX_WEB_FONT_SCROLL_REUSE=str(int(enabled)), VOX_WEB_FONT_TEXTURE_DIAGNOSTICS="1",
+                           VOX_PROFILE_SCROLL="1", VOX_SCROLL_PROFILE_IDLE="0", VOX_SCROLL_PROFILE_FRAMES="31",
+                           VOX_SCROLL_PROFILE_SETTLE_MS="1000")
+        log = run_windowed([str(binary), "--enable-javascript", "--window-width=800", "--window-height=640",
+                            "--screenshot-viewport-height=600", f"--screenshot={screenshot}", str(page)],
+                           env=environment, log_path=artifacts / f"{label}.log")
+        during = log.split("Vox scroll frame: 0 ", 1)[1].split("Vox scroll frame: 30 ", 1)[0]
+        hits = during.count("VOX_WEB_FONT_SCROLL cache=hit ")
+        assert (hits >= 50 if enabled else hits == 0), hits
+        width, height, channels, rows = rendered_png_rows(screenshot.read_bytes())
+        top = next(y for y in range(150)
+                   if rows[y][(width - 4) * channels:(width - 4) * channels + 3] == b"\x09\x3c\x57")
+        document = rows[top:height - 24]
+        assert any(b"\xee\x8a\x24" in row for row in document), "The live color edit is missing"
+        assert any(b"\x45\xcf\xa6" in row for row in document), "The alternate web-font rows are missing"
+        assert any(b"\x7b\xce\xfa" in row for row in document), "The SVG texture is missing"
+        documents.append(document)
+    assert documents[0] == documents[1], "Reusing web-font textures during scrolling changed pixels"
+    print("PASS: web font textures preserve pixels while scrolling and after a live color edit", flush=True)
 
 
 def check_gg_svg_browser(binary, artifacts, temporary):
@@ -2196,6 +2253,7 @@ def main():
         check_gradient_browser(binary, artifacts, temporary)
         check_web_font_browser(binary, artifacts, temporary)
         check_web_font_texture_cache(binary, artifacts, temporary)
+        check_web_font_scroll_reuse(binary, artifacts, temporary)
         check_svg_opacity_browser(binary, artifacts, temporary)
         check_svg_clip_browser(binary, artifacts, temporary)
         check_svg_gradient_groups_browser(binary, artifacts, temporary)
