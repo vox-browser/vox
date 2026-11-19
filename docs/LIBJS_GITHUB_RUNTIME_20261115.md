@@ -9988,3 +9988,125 @@ peak bytes with host loads of 8.37–10.99. The published GitHub
 comparison above covers the earlier array changes. The lexical change
 is queued for production. Local measurements and focused checks are
 under `docs/benchmark-results/libjs-warm-bindings-5204-r125/receipts`.
+
+### Script time against V8 after the lookup index and smaller AST, 2026-11-19
+
+**Compiled LibJS is not yet faster than V8 on this page.** On the final
+publication below, LibJS's main-thread JavaScript takes a median 1.17 s of
+thread CPU per load; Brave's V8 reports a median 187 ms `ScriptDuration`.
+The first stage-logged loads took 1.95–2.26 s with the new lookup index warm
+and 2.69 s while it learned; the earlier record path is not separately timed.
+The whole archived `vlang/v` load now reaches its PNG in 4.12 s against
+Brave's 2.03 s (the previous published comparison was 8.0 s against 2.37 s).
+
+**Measures.** V8 time is Brave's `Performance.getMetrics` `ScriptDuration`
+(main-thread script execution, including forced style/layout), read just
+before the capture of each Brave visit in the cohorts below. One separately
+traced Brave load attributes 389 ms of main-thread and 228 ms of background
+worker time to V8 trace events; tracing inflates both, and its own
+`ScriptDuration` was 293 ms. LibJS time comes from separate stage-logged
+diagnostic loads: commit `a1ea69eee` adds thread-CPU and wall nanoseconds at
+each calling-thread stage boundary, and the reported figure is the inclusive
+CPU time of the outermost `javascript_execution_and_bindings`,
+`libjs_module_frontend` and `libjs_module_link` scopes (nested forced
+style/layout included, as in `ScriptDuration`). Logging adds instructions to
+those loads; they are not timing cohorts. All loads use the frozen archive,
+fresh processes, profiles and HTTP caches, the 1024×768 document capture, a
+one-second settle and the grouped `-O2` native cache (2,943–2,949 hits, zero
+misses or compiler calls), cloned into a private directory.
+
+| LibJS publication (thread CPU, ms) | Loads | Outermost JavaScript | Execution self | Module frontend | Link |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| `52cb359d…`, index learning (seed) | 1 | 2,693 | — | — | — |
+| `52cb359d…`, index warm | 2 | 1,946–2,260 | 1,210 (one load) | 661 (one load) | 18 |
+| `2626c507…`, index, binding hints | 3 | 1,809–1,912 | 1,135–1,204 | 603–635 | 17–18 |
+| `48cf9b0d…`, property hints | 3 | 1,867–1,879 | 1,152–1,167 | 641–646 | 17–18 |
+| `b03b9f5a…`, expression lists, import/export | 3 | 1,302–1,414 | 882–959 | 367–397 | 13–14 |
+| `ed3db3d1…`, rare expression fields | 5 | 1,082–1,238 (median 1,170) | 731–857 | 306–333 | 11–12 |
+
+Host load fell during the day (one-minute loads from about 25 to 6), which
+also affects CPU time. The instruction totals of the stage-logged loads fell
+from about 58.2 billion (`2626c507…`) to 51.0–52.6 billion (`ed3db3d1…`).
+
+**Native lookup index.** Commits `30536b32f`, `a51308690`, `bd6f256ab`,
+`74dfa7666` and `b48902257` persist, per cache ABI directory, a map from a
+cheap source-bound key (browser executable file identity, source digest,
+filename, function role, frame layout and bytecode encoding) to the record a
+previous visit of the same build verified. Without it each of about 4,270
+executables regenerated its complete C source to derive its generated-code
+key and read one JSON record, and every launch rehashed the 135 MB grouped
+library. Libraries verified by digest record their device, inode, size and
+nanosecond mtime/ctime; an unchanged identity naming the same digest maps
+without rehashing. The index lives outside the 17 native-cache ABI sources,
+so existing caches stay valid. `VOX_LIBJS_NATIVE_LOOKUP_INDEX=0` is the
+same-binary control and `=readonly` uses a frozen index for timed visits.
+Each executed function set differs slightly between visits, so a learning
+visit can add a few entries; the timed candidates therefore run read-only.
+
+| Seven alternating rounds, `ed3db3d1…` | Median launch to PNG | PNG range | Median observed instructions | Instruction range |
+| --- | ---: | ---: | ---: | ---: |
+| Vox, index disabled | 4,325 ms | 4,240–4,565 ms | 44.41 billion | 43.36–45.15 billion |
+| Vox, read-only index | 4,116 ms | 4,084–4,171 ms | 42.90 billion | 42.50–43.70 billion |
+| Brave with V8 | 2,032 ms | 1,983–2,151 ms | 20.47 billion | 20.28–20.66 billion |
+
+Every index visit is faster and retires fewer instructions than its paired
+control; record loading falls from 122–136 ms to about 5 ms, with zero index
+misses. The earlier cohort on `2626c507…` (loads 10–14) also improved in all
+seven pairs: 46.07 to 43.97 billion instructions and 5,574 to 5,379 ms. Brave's
+`ScriptDuration` medians are 187 ms (range 185–201) and 243 ms (217–268) in
+the two cohorts. All 42 visits pass the repository audit and exit zero; every
+Vox PNG differs from the unchanged Brave reference by the same two pixels, and
+Brave matches it. Instruction totals are process-tree lower bounds.
+
+**Smaller AST nodes.** `6f2f71db8`, `c0a39c6a5` and `43ce364c9` move payloads
+present only on uncommon node kinds (sequence/array/object lists, assignment
+targets, BigInt/RegExp/private-name/dynamic-import/template/optional-chain/
+super-call/class records, import and export statement data) into out-of-line
+heap records. `Expression` shrinks from 704 to 312 bytes, `Statement` from
+1,024 to 704, object-literal properties from 1,456 to 672 and call arguments
+from 712 to 320. Parsing all 87 archived scripts (5.25 MB) in one process
+falls from 6.66 to 5.23 billion instructions and from 2.55 to 1.66 GB peak
+RSS. On the page the module frontend falls from about 640 to 330 ms, and the
+execution self time also falls, since lazily compiled functions copy less AST.
+Between the `2626c507…` and `ed3db3d1…` cohorts Vox's median peak footprint
+falls from 5.43 to 4.69 GiB. The exact upstream
+AST corpus passes 100/100 after each change. During the last change a tagged
+template's child pointed at a parser loop local and the corpus failed 3/100;
+the committed version copies those expressions into the heap explicitly.
+
+**Bounded hint tables.** `f690750de` rejects mismatched binding names by
+length and first/last unit before comparing them (139.2 to 125.1 ms on a
+closure-heavy script). `76abee941` and `3af86f808` raise the binding and
+property successful-position bounds from 64 to 4,096: tables that reached 64
+entries were cleared on nearly every insertion. A factory scope read through
+120 of its 400 names runs in 39.2 ms instead of 102.7 ms; reading 120 of 400
+object properties takes 52 ms instead of 295 ms. The binding results are
+medians of eight alternating same-binary pairs; the property result compares
+seven alternating process pairs of two otherwise identical binaries. Neither
+bound moved the page measurably, so no page credit is claimed for them. A parallel
+frame-pool capacity index showed no gain and was not committed.
+
+**Remaining gap.** Execution (about 0.8 s) is spread over interpretive call
+setup and frame pooling, linear property scans, binding walks, array growth
+and map lookups; native code handles only simple operations and calls back
+into the interpreter for calls, property writes and most runtime operations.
+The 0.33 s frontend parses every function body eagerly, where V8 preparses
+lazily and compiles on background threads. Next levers, in order: lazy
+function parsing, environment-coordinate binding reads and module-scope
+reads in native code (both native-cache ABI changes requiring a grouped cache
+rebuild), and inline caches for property reads.
+
+**Verification.** Focused native-cache, lookup-index, binding, environment,
+property, object, module and parser test files pass with Boehm, without GC
+and with preallocation where relevant. A whole-directory `v test libjs` run
+cannot complete under the 12 GiB guard: 70 of the 232 related test files each
+need more than 6 GiB to compile, independently of these changes, and four
+fail for unrelated reasons (`class_execution_test.v` still expects static
+blocks to be rejected, `native_binding_read_test.v` uses unsupported `with`,
+`native_function_test.v` exceeds the compiler memory limit and
+`regexp_literal_program_test.v` no longer compiles). The interpreter, array
+object, function prototype, bound function, BigInt execution and private
+object files pass at 10 GiB. The browser type-checks. The volume was full
+(199 MB free) during part of this work. Commands, rows, stage summaries,
+profiles and the Brave trace summary are local under
+`docs/benchmark-results/libjs-github-v8-e1-20261119/receipts`.

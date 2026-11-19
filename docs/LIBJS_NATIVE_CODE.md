@@ -1878,3 +1878,20 @@ the rejected attempts, corrected audits, build identity and PNG under
 `docs/benchmark-results/github-window-reload-20261118/receipts`. These are
 functional checks on frozen inputs. The scratch build used `-O0` and the
 managed optimized publication still depends on available disk space.
+
+### Lookup index for cached records
+
+Each cache ABI directory can hold `native-lookup-index-v1.txt`, written at the
+document cache flush when a visit learned new mappings. It maps a cheap
+source-bound key, bound to the browser executable's file identity, to the
+record that visit loaded and verified, and records the file identity of each
+library whose digest was verified. The next visit of the same build resolves
+indexed executables without deriving generated-code keys or reading records,
+and maps an unchanged library without rehashing it. A new build ignores the
+old mappings and relearns them. `VOX_LIBJS_NATIVE_LOOKUP_INDEX=0` disables the
+index; `=readonly` uses it without learning or rewriting it, so timed visits
+keep their pinned cache inputs unchanged. Seed it with one or two ordinary
+visits after a build is published. The cache audit's `native_lookup` field
+reports loaded, hit, missed, learned and rehashed counts. Results on the
+archived `vlang/v` page are in
+[the GitHub runtime report](LIBJS_GITHUB_RUNTIME_20261115.md#script-time-against-v8-after-the-lookup-index-and-smaller-ast-2026-11-19).
