@@ -1170,9 +1170,79 @@ The decoded document SHA-256 was
 
 The four-vCPU guest's one-minute load was 0.84–1.00 at the timed
 launches. Every browser process and the memory guard exited zero.
-This comparison covers warmed idle software replay. Candidate
-macOS and Windows runtime checks and hardware GPU timing remain
-pending.
+This comparison covers warmed idle software replay.
+
+The subsequently published macOS build `894f19090` had executable
+SHA-256 `f1bae5284118c638f79578e68cf2d7e99d21c29d144b3bd6abc328f3dafd9010`.
+Its first capture at the fixture's readiness selector, PID 56336,
+had five sampled pixels differ by more than one channel level.
+A fresh launch with an explicit two-second settle, 1× capture and a
+private cache, PID 61374, matched 12 samples exactly and the other
+three within one channel level. Both guarded launches exited zero.
+Windows runtime checks and hardware GPU timing remain pending.
+
+## Transformed SVG mask regions
+
+In `986d6dc55`, portable SVG replay uses the transformed mask region's
+bounding box to size the texture. For a non-axis-aligned region, the
+shared coverage rasterizer clips the completed mask to the four
+transformed corners. Axis-aligned regions and quarter-turns use the
+existing edge coverage. A rectangular viewport with the same transform
+can share the mask's clip when it fully contains the mask region.
+Other non-axis-aligned viewport clip combinations still use fallback.
+
+The fixture checks a skewed alpha mask, reflected luminance with group
+opacity, a quarter-turn, and a live edit to the alpha mask's origin.
+The Linux preflight's viewport guard left (50, 47) solid blue. The
+candidate matched the white macOS pixel. All 800 × 516 document pixels
+matched across cached CPU, GG-enabled and uncached Linux replay. The
+fixture SHA-256 was
+`b981647b3e29eda651fddf42f91bfc80e7f26856c573f85ae63376aa1f4cce7b`.
+The decoded RGB document SHA-256 was
+`ac8fb88988e1a3838117887adfa2dad4fd42a857e1b56932bb5d3d531b3b64b2`.
+
+The macOS reference used a fresh launch, PID 25163, of the published
+single-C-unit `e33c5cf2b` build with executable SHA-256
+`184be3652b72e181fd5679d36da4bb36eee1b9491e207654728000fe1f5f996a`.
+It matched 408,456 of 412,800 document pixels exactly. Each of the
+4,344 remaining pixels differed by at most one channel level. The
+new window check and fourteen neighboring Linux checks passed under
+the memory guard. The macOS and Windows D3D11 and OpenGL C backend
+source checks and 21 Linux smoke-driver unit tests passed.
+
+Two alternating pairs used the same single-unit Clang `-O0` Linux
+ARM64 executable, built with V `5a39a4d`. Its SHA-256 was
+`96d2dd94c77a44e5c68080e6f2bdff6fd5092a756efec129d1c8191b428a6390`.
+Four-vCPU Xvfb ran an 800 × 600 window with one Mesa software worker.
+Fresh processes used private profiles and caches and JavaScript off.
+A one-second settle preceded 48 synthetic idle callbacks. In separate
+diagnostics, every complete interval recorded three mask rasters
+with caching disabled and three texture hits with caching enabled.
+All timing captures preserved command counts and scroll offsets and
+matched decoded document SHA-256
+`05c9ec0dbc9b1f2c43f1754e5dfc69d7403dea3cd57229ec1544941cb94262ad`.
+
+| Pair | Uncached / cached median replay, ms | Uncached / cached p95 and maximum, ms | Uncached / cached median allocated KiB |
+| --- | ---: | ---: | ---: |
+| 1 | 1.856 / 0.837 | 2.263, 4.837 / 1.132, 1.270 | 387 / 120.5 |
+| 2 | 1.926 / 0.797 | 2.095, 4.119 / 0.935, 1.004 | 386 / 120 |
+
+The same session's earlier build, SHA-256
+`a0a94a6af8e1f65c312100c9d26a8a63245c7ed98cf1a5692338e9d3c0374977`,
+allowed transformed regions through the coverage rasterizer and
+retained the viewport eligibility guard. Two alternating comparisons
+of the cached, axis-aligned patterned-stroke fixture moved median
+replay from 0.824 to 0.858 ms and from 0.828 to 0.862 ms. The p95
+and maximum moved from 0.956 and 1.080 to 1.017 and 1.165 ms, and
+from 1.057 and 1.102 to 1.068 and 1.362 ms. Pixels and logged work
+counts matched. These timings include software window replay, and
+the source difference does not isolate the cost of the viewport
+check.
+
+The one-minute guest load at timed launches was 0.51–0.85. Input
+hashes stayed fixed, and both executables used the same linked library
+set. All browser and guard exits in the final runs were zero. Native
+Windows pixels and hardware GPU timings remain pending.
 
 ## Sharing the portable SVG fallback with Windows
 
