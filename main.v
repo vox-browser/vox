@@ -4202,12 +4202,13 @@ fn (mut app BrowserApp) navigate(address string, add_history bool) {
 			generation: generation
 			add_history: add_history
 		}
-		if !app.initial_window_frame_presented {
-			// Starting Foundation/TLS work while Cocoa creates its first window can
-			// serialize framework initialization for over a second. Present
-			// the loading chrome first, then fetch in parallel.
+		if !app.initial_window_frame_presented && defer_initial_navigation_fetch {
+			// The control holds the fetch until the first window frame, the
+			// earlier rule for every launch.
 			app.pending_navigation = pending
 		} else {
+			// The fetch runs on its own thread while Cocoa creates the window,
+			// so the response can be waiting when the first frame is done.
 			app.start_navigation_fetch(pending)
 		}
 		return

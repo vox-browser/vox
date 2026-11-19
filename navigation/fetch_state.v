@@ -1,7 +1,12 @@
 module main
 
 import browsernet
+import os
 import platform
+
+// VOX_DEFER_INITIAL_NAVIGATION_FETCH=1 holds the first fetch of a launch
+// until the first window frame, as before, for matched comparisons.
+const defer_initial_navigation_fetch = os.getenv('VOX_DEFER_INITIAL_NAVIGATION_FETCH') != ''
 
 fn (mut app BrowserApp) start_navigation_fetch(pending PendingNavigation) {
 	app.cancel_navigation_fetch()
