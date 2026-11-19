@@ -336,6 +336,7 @@ def check_gg_svg_browser(binary, artifacts, temporary):
     check_gg_svg_repeat_point_focus(binary, artifacts, temporary)
     check_gg_svg_texture_pressure(binary, artifacts, temporary)
     check_gg_svg_image_budget(binary, artifacts, temporary)
+    check_gg_svg_pad_fallback(binary, artifacts, temporary)
 
 
 def check_gg_svg_radial_spread(binary, artifacts, temporary):
@@ -552,9 +553,42 @@ svg { display: block }</style>
         marker = next(y for y, row in enumerate(rows[:150])
                       if row[4 * channels:4 * channels + 3] == b"\x34\xb7\x86")
         assert rows[marker + 8 + 344][3 * channels:3 * channels + 3] == b"\x00\xaa\x00"
-        if label == "cached":
-            assert rows[marker + 8 + 60][694 * channels:694 * channels + 3] == b"\x00\x00\xff"
+        assert rows[marker + 8 + 60][694 * channels:694 * channels + 3] == b"\x00\x00\xff"
     print("PASS: SVG image budget charges distinct rasters and admits repeated placements", flush=True)
+
+
+def check_gg_svg_pad_fallback(binary, artifacts, temporary):
+    fixture = Path(__file__).resolve().parents[1] / "Tests/Browser/Native/svg-gg-pad-fallback.html"
+    fallback_documents = []
+    for label in ("disabled", "gl42", "gpu"):
+        screenshot = artifacts / f"{fixture.stem}-{label}.png"
+        screenshot.unlink(missing_ok=True)
+        environment = smoke_environment(Path(temporary) / screenshot.stem)
+        environment.pop("MESA_GL_VERSION_OVERRIDE", None)
+        environment.update(VOX_GG_SVG=str(int(label != "disabled")), VOX_GG_SVG_DIAGNOSTICS="1")
+        if label == "gl42":
+            environment["MESA_GL_VERSION_OVERRIDE"] = "4.2"
+        log = run_windowed([str(binary), "--window-width=800", "--window-height=600",
+                            "--screenshot-viewport-height=600", f"--screenshot={screenshot}", str(fixture)],
+                           env=environment, log_path=artifacts / f"{screenshot.stem}.log")
+        assert ("VOX_GG_SVG unavailable:" in log) == (label == "gl42"), log
+        assert ("VOX_GG_SVG draw=112x80 " in log) == (label == "gpu"), log
+        assert ("VOX_GG_SVG draw=104x80 " in log) == (label == "gpu"), log
+
+        _, height, channels, rows = rendered_png_rows(screenshot.read_bytes())
+        marker = next(y for y, row in enumerate(rows[:150])
+                      if row[4 * channels:4 * channels + 3] == b"\x34\xb7\x86")
+        samples = ((11, 20, (255, 0, 0)), (32, 20, (199, 32, 88)),
+                   (105, 20, (127, 127, 255)), (55, 35, (255, 255, 255)),
+                   (196, 40, (255, 127, 127)), (212, 40, (191, 127, 191)),
+                   (224, 40, (127, 127, 255)))
+        for x, y, expected in samples:
+            pixel = rows[marker + 8 + y][x * channels:x * channels + 3]
+            assert all(abs(a - b) <= 2 for a, b in zip(pixel, expected)), (label, x, y, pixel, expected)
+        if label != "gpu":
+            fallback_documents.append(rows[marker:height - 24])
+    assert fallback_documents[0] == fallback_documents[1], "OpenGL 4.2 changed fallback gradient pixels"
+    print("PASS: SVG pad gradients draw with GG disabled and on OpenGL 4.2", flush=True)
 
 
 def check_gg_svg_gradient_viewport(binary, artifacts, temporary):

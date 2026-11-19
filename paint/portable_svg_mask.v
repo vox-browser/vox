@@ -45,81 +45,20 @@ fn portable_svg_content_mask_supported(mask &layout.PaintClip) bool {
 
 fn portable_svg_mask_gradient_supported(operation &layout.PaintMaskOperation, luminance bool) bool {
 	if linear := operation.fill_linear_gradient {
-		return portable_svg_mask_gradient_stops_supported(&linear.gradient, luminance)
-			&& [linear.start_point.x, linear.start_point.y, linear.end_point.x,
-				linear.end_point.y]!.all(math.is_finite(f64(f32(it))))
+		return portable_svg_pad_linear_supported(&linear, luminance)
 	}
 	if radial := operation.fill_radial_gradient {
-		if !portable_svg_mask_gradient_stops_supported(&radial.gradient, luminance)
-			|| ![radial.start_center.x, radial.start_center.y, radial.end_center.x, radial.end_center.y,
-				radial.start_radius, radial.end_radius]!.all(math.is_finite(f64(f32(it)))) {
-			return false
-		}
-		// SVG can adjust a focal circle that crosses the outer circle. Use the
-		// two-point shader when the resolved focal circle fits as supplied.
-		dx := radial.start_center.x - radial.end_center.x
-		dy := radial.start_center.y - radial.end_center.y
-		return radial.start_radius >= 0 && radial.end_radius > radial.start_radius
-			&& math.sqrt(dx * dx + dy * dy) + radial.start_radius <= radial.end_radius
+		return portable_svg_pad_radial_supported(&radial, luminance)
 	}
 	return true
 }
 
-fn portable_svg_mask_gradient_stops_supported(gradient &painting.SVGGradientPaintStyle,
-	luminance bool) bool {
-	if gradient.spread_method != .pad || gradient.repeat_length != none || gradient.color_stops.len == 0
-		|| (luminance && gradient.color_space != .srgb) {
-		return false
-	}
-	if local := portable_svg_mask_gradient_transform(gradient) {
-		if !local.all(math.is_finite(f64(it))) || local[0] * local[3] == local[1] * local[2] {
-			return false
-		}
-	}
-	return gradient.color_stops.all(it.position >= 0 && it.position <= 1)
-}
-
-fn portable_svg_mask_gradient_transform(gradient &painting.SVGGradientPaintStyle) ?[6]f32 {
-	local := gradient.gradient_transform or { return none }
-	return [f32(local.a), f32(local.b), f32(local.c), f32(local.d), f32(local.e), f32(local.f)]!
-}
-
-fn portable_svg_mask_gradient_stops(gradient &painting.SVGGradientPaintStyle, luminance bool) []f32 {
-	mut stops := []f32{cap: gradient.color_stops.len * 5}
-	for stop in gradient.color_stops {
-		stops << f32(stop.position)
-		stops << if luminance { f32(stop.color.r) / 255 } else { f32(1) }
-		stops << if luminance { f32(stop.color.g) / 255 } else { f32(1) }
-		stops << if luminance { f32(stop.color.b) / 255 } else { f32(1) }
-		stops << f32(stop.color.a) / 255
-	}
-	return stops
-}
-
 fn portable_svg_mask_gradient(operation &layout.PaintMaskOperation, luminance bool) ?cpuraster.CanvasPaintStyle {
 	if linear := operation.fill_linear_gradient {
-		return cpuraster.CanvasPaintStyle(cpuraster.CanvasGradient{
-			kind: 1
-			x0: f32(linear.start_point.x)
-			y0: f32(linear.start_point.y)
-			x1: f32(linear.end_point.x)
-			y1: f32(linear.end_point.y)
-			local_transform: portable_svg_mask_gradient_transform(&linear.gradient)
-			stops: portable_svg_mask_gradient_stops(&linear.gradient, luminance)
-		})
+		return portable_svg_raster_linear_gradient(&linear, luminance)
 	}
 	if radial := operation.fill_radial_gradient {
-		return cpuraster.CanvasPaintStyle(cpuraster.CanvasGradient{
-			kind: 2
-			x0: f32(radial.start_center.x)
-			y0: f32(radial.start_center.y)
-			r0: f32(radial.start_radius)
-			x1: f32(radial.end_center.x)
-			y1: f32(radial.end_center.y)
-			r1: f32(radial.end_radius)
-			local_transform: portable_svg_mask_gradient_transform(&radial.gradient)
-			stops: portable_svg_mask_gradient_stops(&radial.gradient, luminance)
-		})
+		return portable_svg_raster_radial_gradient(&radial, luminance)
 	}
 	return none
 }

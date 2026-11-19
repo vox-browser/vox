@@ -5,8 +5,11 @@ import gg
 import layout
 import painting
 
-fn (mut app BrowserApp) draw_portable_solid_svg_fill(command &layout.PaintCommand,
+fn (mut app BrowserApp) draw_portable_svg_fill(command &layout.PaintCommand,
 	data layout.PaintSVGPathData, page_x f32, page_y f32) bool {
+	if data.svg_gradient_data != none && app.draw_portable_svg_raster_gradient_fill(command, data, page_x, page_y) {
+		return true
+	}
 	if command.color == '' || data.path_data.len < layout.compatibility_clip_path_segment_stride
 		|| command.fill_linear_gradient() != none || command.fill_radial_gradient() != none
 		|| data.fill_pattern != none {
@@ -47,16 +50,22 @@ fn (mut app BrowserApp) draw_portable_solid_svg_fill(command &layout.PaintComman
 	// Rasterize the whole path with its fill rule, including concave contours
 	// and holes. A GPU fallback only decodes the path if it reused the bounds.
 	path := decoded or { cpuraster.canvas_path(data.path_data, data.fill_even_odd) }
+	return app.draw_portable_svg_cpu_fill(path, bounds, matrix, portable_svg_argb(color), none, 1)
+}
+
+fn (mut app BrowserApp) draw_portable_svg_cpu_fill(path cpuraster.Path, bounds painting.IntRect,
+	matrix [6]f32, color u32, style ?cpuraster.CanvasPaintStyle, opacity f32) bool {
 	pitch := bounds.width * 4
 	mut premultiplied := []u8{len: pitch * bounds.height}
 	if !cpuraster.fill_canvas_path(mut premultiplied, bounds.width, bounds.height, pitch, 2,
-		path, matrix, portable_svg_argb(color), none, 1,
+		path, matrix, color, style, opacity,
 		.src_over, 0, [], none) {
 		return false
 	}
 	mut pixels := []u8{len: premultiplied.len}
 	cpuraster.read_pixels(premultiplied, bounds.width, bounds.height, pitch, 2, mut pixels,
 		bounds.width, bounds.height, pitch, 0, 0)
+	scale := f64(app.ctx.scale)
 	app.draw_portable_raster_image(f32(f64(bounds.x) / scale), f32(f64(bounds.y) / scale),
 		bounds.width, bounds.height, pixels)
 	return true
