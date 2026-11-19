@@ -282,6 +282,39 @@ def check_gradient_browser(binary, artifacts, temporary):
     print("PASS: clipped gradient text, foreground painting and exact gradient ramps", flush=True)
 
 
+def check_web_font_pixels(data):
+    _, _, channels, rows = rendered_png_rows(data)
+
+    def pixel(x, y):
+        return rows[y][x * channels:x * channels + 3]
+
+    paper = b"\x10\x18\x20"
+    ink = b"\xe5\x2d\xb8"
+    page_top = next((y for y in range(150) if pixel(225, y) == b"\xea\x70\xb5"), None)
+    assert page_top is not None, "Missing web font fixture marker"
+
+    # The author face's rectangular stems survive the left-edge crop. The
+    # standard GG font does not have this arrangement of ink and gaps.
+    cropped = sum(pixel(4, y) == pixel(30, y) == ink and pixel(16, y) == paper
+                  for y in range(page_top + 24, page_top + 83))
+    inside = sum(pixel(40, y) == pixel(59, y) == pixel(84, y) == pixel(111, y) == ink
+                 and pixel(50, y) == paper
+                 for y in range(page_top + 104, page_top + 163))
+    assert cropped >= 20 and inside >= 20, (cropped, inside)
+
+
+def check_web_font_browser(binary, artifacts, temporary):
+    fixture = Path(__file__).resolve().parents[1] / "Tests/Browser/Native/portable-web-font.html"
+    screenshot = artifacts / "portable-web-font.png"
+    screenshot.unlink(missing_ok=True)
+    run_windowed([str(binary), "--window-width=800", "--window-height=640",
+                  "--screenshot-viewport-height=600", f"--screenshot={screenshot}", str(fixture)],
+                 env=smoke_environment(Path(temporary) / "web-font"),
+                 log_path=artifacts / "portable-web-font.log")
+    check_web_font_pixels(screenshot.read_bytes())
+    print("PASS: CSS web font glyphs and viewport-clipped text", flush=True)
+
+
 def check_gg_svg_browser(binary, artifacts, temporary):
     fixture = Path(__file__).resolve().parents[1] / "Tests/Browser/Native/svg-gg-path-fill.html"
     documents = []
@@ -2105,6 +2138,7 @@ def main():
         print("PASS: local HTML and scripted layout")
         check_webgl_browser(binary, artifacts, temporary)
         check_gradient_browser(binary, artifacts, temporary)
+        check_web_font_browser(binary, artifacts, temporary)
         check_svg_opacity_browser(binary, artifacts, temporary)
         check_svg_clip_browser(binary, artifacts, temporary)
         check_svg_gradient_groups_browser(binary, artifacts, temporary)

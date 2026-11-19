@@ -7432,10 +7432,19 @@ fn (mut app BrowserApp) draw_command(source_command &layout.PaintCommand, page_x
 		}
 		'draw_text' {
 			{
-				$if linux {
-					if command.glyph_run != none {
-						app.draw_portable_shadow(layout.PaintCommand{...command, kind: 'draw_text_shadow', blur: 0}, page_x, page_y, scroll_y)
-						return
+				$if linux || windows {
+					if portable_web_font_enabled {
+						if run := command.glyph_run {
+							if run.font().is_invisible { return }
+							if run.font().source_path != '' && command.glyph_orientation == .horizontal
+								&& app.draw_portable_web_font(command, page_x, page_y, scroll_y) {
+								return
+							}
+							$if linux {
+								app.draw_portable_shadow(layout.PaintCommand{...command, kind: 'draw_text_shadow', blur: 0}, page_x, page_y, scroll_y)
+								return
+							}
+						}
 					}
 				}
 				font_scale := math.sqrt(matrix[0] * matrix[0] + matrix[1] * matrix[1])
