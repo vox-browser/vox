@@ -1,17 +1,61 @@
 module cpuraster
 
-// restore_canvas_opacity_layer composites a premultiplied layer at the
-// origin of a target of the same width. Native N32 uses the legacy sprite
-// blend. Other RGBA surfaces can blend directly into the layer's rows.
-pub fn restore_canvas_opacity_layer(mut pixels []u8, pitch int, target_height int, image CanvasBitmap, opacity f32) bool {
-	if image.height > target_height || !untiled_device(pixels, image.width, target_height, pitch) {
+// fill_canvas_mask_path fills a solid or gradient path into a premultiplied
+// row band. Geometry and shading both use the original device coordinates.
+pub fn fill_canvas_mask_path(mut pixels []u8, width int, first_row int, height int, pitch int, path Path,
+	transform [6]f32, color u32, style ?CanvasPaintStyle, opacity f32) bool {
+	return fill_canvas_mask_path_surface(mut pixels, width, first_row, height, pitch, path,
+		transform, color, style, opacity, canvas_rgba_uses_legacy())
+}
+
+fn fill_canvas_mask_path_surface(mut pixels []u8, width int, first_row int, height int, pitch int, path Path,
+	transform [6]f32, color u32, style ?CanvasPaintStyle, opacity f32, legacy bool) bool {
+	if first_row == 0 {
+		return fill_canvas_path_surface(mut pixels, width, height, pitch, 2, path, transform, color,
+			style, opacity, .src_over, 0, [], none, legacy)
+	}
+	if path.is_inverse_fill() || !untiled_device(pixels, width, height, pitch)
+		|| first_row < 0 || first_row > max_untiled_dimension - height {
 		return false
 	}
-	if !canvas_rgba_uses_legacy() && restore_lowp_canvas_layer(mut pixels, pitch, image, opacity) {
+	if paint_style := style {
+		if paint_style is CanvasPattern {
+			return false
+		}
+	}
+	paint_color, _ := canvas_paint_source(color, style, 0)
+	alpha := canvas_paint_alpha(paint_color, opacity)
+	if paint_draws_nothing(.src_over, paint_alpha_byte(alpha), none) {
+		return true
+	}
+	matrix := Matrix{transform[0], transform[1], transform[2], transform[3], transform[4], transform[5]}
+	device := path.transform(matrix)
+	shader := canvas_paint_shader(style, matrix)
+	mut blitter := canvas_paint_blitter_for_surface(mut pixels, pitch, paint_color, shader, alpha,
+		.src_over, device.bounds() or { Rect{} }, legacy) or { return true }
+	if mut blitter is SolidBlitter {
+		blitter.first_row = first_row
+	} else if mut blitter is PipelineBlitter {
+		blitter.first_row = first_row
+	} else {
+		return false
+	}
+	return anti_fill_path(device, IRect{0, first_row, width, first_row + height}, mut blitter)
+}
+
+// restore_canvas_opacity_layer composites a premultiplied row band into a
+// target of the same width. Native N32 uses the legacy sprite blend.
+pub fn restore_canvas_opacity_layer(mut pixels []u8, pitch int, target_height int, first_row int, image CanvasBitmap, opacity f32) bool {
+	if !untiled_device(pixels, image.width, target_height, pitch) || first_row < 0
+		|| first_row >= target_height || image.height > target_height - first_row {
+		return false
+	}
+	mut target := if first_row == 0 { pixels } else { pixels[first_row * pitch..] }
+	if !canvas_rgba_uses_legacy() && restore_lowp_canvas_layer(mut target, pitch, image, opacity) {
 		return true
 	}
 	rect := [f32(0), 0, f32(image.width), f32(image.height)]!
-	return draw_canvas_image(mut pixels, image.width, target_height, pitch, 2,
+	return draw_canvas_image(mut target, image.width, target_height - first_row, pitch, 2,
 		[f32(1), 0, 0, 1, 0, 0]!, image, rect, rect, false, opacity, .src_over, [])
 }
 

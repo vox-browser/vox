@@ -144,7 +144,8 @@ pub struct SolidBlitter {
 	src_a     u32
 	row_bytes int
 mut:
-	pixels []u8
+	first_row int
+	pixels    []u8
 }
 
 // new_solid_blitter selects the blitter SkBlitter::Choose() does for an
@@ -169,7 +170,7 @@ pub fn new_solid_blitter(mut pixels []u8, row_bytes int, color u32) SolidBlitter
 
 @[inline]
 fn (b &SolidBlitter) offset(x int, y int) int {
-	return y * b.row_bytes + x * 4
+	return (y - b.first_row) * b.row_bytes + x * 4
 }
 
 fn (mut b SolidBlitter) blit_h(x int, y int, width int) {
@@ -318,7 +319,8 @@ fn blend_solid_mask_pixel(color u32, pm_color u32, dst u32, coverage u32) u32 {
 
 fn (mut b SolidBlitter) blit_disjoint_mask(mask &Mask, clip IRect) bool {
 	width, height := clip.width(), clip.height()
-	offsets := disjoint_mask_row_offsets(mask, clip, b.pixels, b.row_bytes) or { return false }
+	offsets := disjoint_mask_row_offsets(mask, clip, b.pixels, b.row_bytes,
+		b.offset(clip.left, clip.top)) or { return false }
 	scan := SolidMaskScan{
 		coverage:    unsafe { mask.image[offsets.source..] }
 		pixels:      unsafe { b.pixels[offsets.target..] }

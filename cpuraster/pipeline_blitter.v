@@ -234,7 +234,8 @@ pub struct PipelineBlitter {
 	tint      [4]f32
 	lowp_tint [4]u32
 mut:
-	pixels []u8
+	first_row int
+	pixels    []u8
 }
 
 // new_pipeline_blitter is SkRasterPipelineBlitter::Create() for an
@@ -364,7 +365,7 @@ fn new_image_blitter(mut pixels []u8, row_bytes int, shader ImageShader, alpha f
 
 @[inline]
 fn (b &PipelineBlitter) offset(x int, y int) int {
-	return y * b.row_bytes + x * 4
+	return (y - b.first_row) * b.row_bytes + x * 4
 }
 
 // Coverage stages: none for blitRect(), the float coverage of blitAntiH()
@@ -515,7 +516,8 @@ fn (mut b PipelineBlitter) blit_mask(mask &Mask, clip IRect) {
 	// An image shader may sample storage shared with the destination.
 	if !b.imaged && width > 0 && height > 1 && height <= max_i32
 		&& i64(width) * height >= 2 * scan_pixels_per_worker {
-		if offsets := disjoint_mask_row_offsets(mask, clip, b.pixels, b.row_bytes) {
+		if offsets := disjoint_mask_row_offsets(mask, clip, b.pixels, b.row_bytes,
+			b.offset(clip.left, clip.top)) {
 			// run_raster_scans joins before these borrows can go out of scope.
 			scan := PipelineMaskScan{
 				blitter:      b

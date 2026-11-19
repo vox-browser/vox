@@ -26,13 +26,12 @@ struct MaskRowOffsets {
 
 // Validate clipped spans for a nonempty, multirow mask before sharing them
 // with workers. A zero source stride repeats the same read-only coverage.
-fn disjoint_mask_row_offsets(mask &Mask, clip IRect, pixels []u8, target_pitch int) ?MaskRowOffsets {
+fn disjoint_mask_row_offsets(mask &Mask, clip IRect, pixels []u8, target_pitch int, target int) ?MaskRowOffsets {
 	width, height := clip.width(), clip.height()
 	if width > pixels.len / 4 || target_pitch < width * 4 {
 		return none
 	}
 	source := mask.index(clip.left, clip.top)
-	target := clip.top * target_pitch + clip.left * 4
 	source_span := raster_row_span(mask.image.len, source, mask.row_bytes, width, height) or { return none }
 	target_span := raster_row_span(pixels.len, target, target_pitch, width * 4, height) or { return none }
 	source_address := u64(uint(mask.image.data)) + u64(source)
