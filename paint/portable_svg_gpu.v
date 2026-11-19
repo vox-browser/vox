@@ -145,6 +145,13 @@ $if vox_gg_svg ? {
 		pixels   int
 	}
 
+	@[inline]
+	fn may_try_portable_svg_gpu() bool {
+		if !portable_svg_gpu_enabled { return false }
+		state := unsafe { portable_svg_gpu }
+		return state.canvas != unsafe { nil } || !state.tried
+	}
+
 	fn (mut state PortableSVGGpu) initialize(renderer &render.Context) {
 		state.tried = true
 		if !gfx.is_valid() || gfx.query_backend() != .glcore33 {
@@ -180,6 +187,7 @@ $if vox_gg_svg ? {
 	}
 
 	fn (mut state PortableSVGGpu) finish_frame() {
+		if state.canvas == unsafe { nil } { return }
 		// All commands that sampled a texture have been submitted at this point.
 		mut spare_pixels := portable_svg_gpu_pixel_limit - state.pixels
 		for index in 0 .. portable_svg_gpu_texture_slots {
@@ -275,7 +283,7 @@ $if vox_gg_svg ? {
 
 	fn (mut app BrowserApp) draw_portable_gpu_svg_stroke(command &layout.PaintCommand,
 		data layout.PaintSVGPathData, page_x f32, page_y f32) bool {
-		if !portable_svg_gpu_enabled || app.paint_effect_depth != 0 || app.paint_svg_mask_depth != 0
+		if !may_try_portable_svg_gpu() || app.paint_effect_depth != 0 || app.paint_svg_mask_depth != 0
 			|| (command.stroke_color == '' && data.svg_gradient_data == none) || command.stroke_width <= 0
 			|| data.path_data.len < layout.compatibility_clip_path_segment_stride
 			|| data.stroke_pattern != none {
@@ -284,10 +292,6 @@ $if vox_gg_svg ? {
 		dash_count := data.stroke_dasharray.len
 		if dash_count > 0 && (dash_count > portable_svg_gpu_dash_intervals
 			|| data.path_data.len > portable_svg_gpu_cached_values) {
-			return false
-		}
-		state := unsafe { portable_svg_gpu }
-		if state.tried && state.canvas == unsafe { nil } {
 			return false
 		}
 		width := f32(command.stroke_width)

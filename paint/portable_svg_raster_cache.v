@@ -185,7 +185,7 @@ fn portable_svg_raster_exact(image PortableRasterImage, cached [6]f32,
 
 fn (mut app BrowserApp) draw_cached_portable_svg_raster(entry &PortableSVGRaster,
 	key PortableSVGRasterKey, matrix [6]f32, bounds painting.IntRect, dashes []f64,
-	gradient ?cpuraster.CanvasGradient, operation string) bool {
+	gradient ?cpuraster.CanvasGradient, operation string, bounds_reused bool) bool {
 	if entry == unsafe { nil } || !entry.matches_style(key, dashes)
 		|| !entry.matches_gradient(gradient) {
 		return false
@@ -215,7 +215,7 @@ fn (mut app BrowserApp) draw_cached_portable_svg_raster(entry &PortableSVGRaster
 	app.ctx.draw_image_with_config(img_id: slot.image_id,
 		img_rect: app.portable_svg_texture_destination(bounds), part_rect: source,
 		color: gg.Color{255, 255, 255, 255})
-	log_portable_svg_raster_cache(operation, 'hit', bounds, gradient, detail)
+	log_portable_svg_raster_cache(operation, 'hit', bounds, gradient, detail, bounds_reused)
 	return true
 }
 
@@ -288,9 +288,9 @@ fn (mut app BrowserApp) remember_portable_svg_raster(index int, data &layout.Pai
 }
 
 fn log_portable_svg_raster_cache(operation string, result string, bounds painting.IntRect,
-	gradient ?cpuraster.CanvasGradient, detail string) {
+	gradient ?cpuraster.CanvasGradient, detail string, bounds_reused bool) {
 	if portable_svg_raster_diagnostics {
 		kind := if paint := gradient { paint.kind } else { 0 }
-		eprintln('VOX_CPU_SVG_${operation} draw=${bounds.width}x${bounds.height} cache=${result} gradient=${kind}${detail}')
+		eprintln('VOX_CPU_SVG_${operation} draw=${bounds.width}x${bounds.height} cache=${result} gradient=${kind}${detail} bounds=${if bounds_reused { "hit" } else { "miss" }}')
 	}
 }

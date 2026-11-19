@@ -455,6 +455,11 @@ def check_gg_svg_browser(binary, artifacts, temporary):
                             "--screenshot-viewport-height=600", f"--screenshot={screenshot}", str(fixture)],
                            env=environment, log_path=artifacts / f"{label}.log")
         assert ("VOX_GG_SVG unavailable:" in log) == (label == "gg-svg-fallback"), log
+        if label == "gg-svg-fallback":
+            assert log.count("VOX_GG_SVG unavailable:") == 1, log
+            fallback_hits = [line for line in log.splitlines()
+                             if line.startswith("VOX_CPU_SVG_FILL ") and " cache=hit " in line]
+            assert fallback_hits and all(line.endswith(" bounds=hit") for line in fallback_hits), fallback_hits
         assert (" hint=hit" in log) == (label == "gg-svg"), log
         for size in ("120x80", "80x30", "42x20"):
             assert (f"VOX_GG_SVG draw={size}" in log) == uses_gpu, log
@@ -883,7 +888,7 @@ requestAnimationFrame(moveGradientAcrossViewport);
             if not gpu:
                 assert any("variant=hit" in line for line in draws) == enabled, log
         for kind in (1, 2):
-            assert any("draw=200x28 cache=miss" in line and line.endswith(f" gradient={kind}")
+            assert any("draw=200x28 cache=miss" in line and f"gradient={kind}" in line.split()
                        for line in gradients), log
 
         width, height, channels, rows = rendered_png_rows(screenshot.read_bytes())
@@ -941,7 +946,7 @@ requestAnimationFrame(editGradients);
         gpu = mode in ("cached", "uncached")
         prefix = "VOX_GG_SVG draw=" if gpu else "VOX_CPU_SVG_FILL draw="
         gradients = [line for line in log.splitlines() if line.startswith(prefix)
-                     and (line.endswith(" gradient=1") or line.endswith(" gradient=2"))]
+                     and ("gradient=1" in line.split() or "gradient=2" in line.split())]
         assert ("VOX_GG_SVG unavailable:" in log) == (mode == "gl42"), log
         assert len(gradients) >= 6, log
         assert any("cache=hit" in line for line in gradients) == (mode not in ("uncached", "cpu-uncached")), log
@@ -950,7 +955,7 @@ requestAnimationFrame(editGradients);
             assert not any("crop=hit" in line for line in gradients), log
         for size, kind, variants in (("100x30", 1, 2), ("74x40", 2, 3), ("100x40", 1, 2)):
             misses = [line for line in gradients if f"draw={size} cache=miss" in line
-                      and line.endswith(f" gradient={kind}")]
+                      and f"gradient={kind}" in line.split()]
             assert len(misses) >= variants, log
             if mode == "cached":
                 assert len(misses) == variants and all("bounds=hit" in line for line in misses[1:]), log

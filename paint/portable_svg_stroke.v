@@ -102,7 +102,8 @@ fn (mut app BrowserApp) draw_portable_svg_raster_stroke(command &layout.PaintCom
 	} else {
 		PortableSVGRasterKey{}
 	}
-	if app.draw_cached_portable_svg_raster(entry, key, surface_matrix, bounds, data.stroke_dasharray, gradient, 'STROKE') {
+	if app.draw_cached_portable_svg_raster(entry, key, surface_matrix, bounds, data.stroke_dasharray,
+		gradient, 'STROKE', decoded == none) {
 		return true
 	}
 	mut path := decoded or { cpuraster.canvas_path(data.path_data, false) }
@@ -144,7 +145,7 @@ fn (mut app BrowserApp) draw_portable_svg_raster_stroke(command &layout.PaintCom
 	if cache_index >= 0 {
 		app.remember_portable_svg_raster(cache_index, &data, key, surface_matrix, local, gradient)
 	}
-	log_portable_svg_raster_cache('STROKE', 'miss', bounds, gradient, '')
+	log_portable_svg_raster_cache('STROKE', 'miss', bounds, gradient, '', false)
 	return true
 }
 
