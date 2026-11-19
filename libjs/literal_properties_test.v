@@ -31,3 +31,21 @@ fn test_literal_property_fast_path_preserves_definition_semantics() {
 		}
 	}
 }
+
+fn test_literal_constant_keys_skip_key_conversion() {
+	mut vm := VM.create()
+	create_simple_execution_context(mut vm)
+	mut script := Script.parse('function f(k){return {a:1,"b":2,3:3,[k]:4}}var o=f("c");o.a+o.b+o[3]+o.c===10', vm.realm(), 'literal-keys.js', unsafe { nil })!
+	assert vm.run(mut script)!.as_bool()
+	global := script.realm.global_object or { panic('Missing global') }
+	value := global.internal_get(mut vm, PropertyName.from_str('f'), Value.from_object(global))!
+	callable := value.as_object().callable or { panic('Missing function') }
+	if callable is ECMAScriptFunction {
+		executable := callable.executable or { panic('Missing bytecode') }
+		// Only the computed key is converted before its value is evaluated.
+		assert executable.instructions.filter(it.op == .to_property_key).len == 1
+		assert executable.instructions.filter(it.op == .define_property).len == 4
+	} else {
+		assert false
+	}
+}

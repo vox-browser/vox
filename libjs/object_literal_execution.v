@@ -23,8 +23,14 @@ fn (mut generator BytecodeGenerator) object_literal(mut vm VM, properties []Obje
 		} else {
 			generator.expression(mut vm, &property.key)!
 		}
-		key := generator.temporary()
-		generator.emit(Instruction{ op: .to_property_key, dst: key, lhs: raw_key })
+		// ToPropertyKey of an identifier, string or numeric key has no side effect,
+		// so define_property converts that constant itself. A computed key is
+		// converted before its value is evaluated, as the evaluation order requires.
+		mut key := raw_key
+		if property.is_computed {
+			key = generator.temporary()
+			generator.emit(Instruction{ op: .to_property_key, dst: key, lhs: raw_key })
+		}
 		expression := property.value or { return error('Missing property value') }
 		mut value := Operand{}
 		if property.is_method {
