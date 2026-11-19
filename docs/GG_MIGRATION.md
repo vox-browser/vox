@@ -698,6 +698,62 @@ checks, the GG SVG window suite passed all 18 checks, and macOS,
 Windows D3D11, and Windows OpenGL source checks passed. Windows
 runtime and hardware GPU performance remain unverified.
 
+## Isolating SVG gradient strokes in portable paint groups
+
+In `3bbab0f63`, the portable group renderer carries a resolved
+linear or radial gradient into the shared stroke rasterizer. It applies leaf stroke
+opacity before compositing the path and applies group opacity once
+to the finished surface. The same path handles stroke-first order,
+dashes, and non-scaling geometry through clips and masks.
+
+The Linux fixture edits a gradient stop after the initial group
+texture is drawn. It also checks a single path with stroke-first
+order, radial dashes through a circular clip, and a non-scaling
+gradient stroke through an alpha mask. The control declined the
+opacity scope and drew the overlap pixel as `#bf6f8f`. The isolated
+result is `#bf90af`. The 800 × 516 document pixels matched with
+GG Canvas enabled, disabled, and the texture cache disabled.
+Diagnostics confirmed that cached groups rerasterized after the edit.
+
+The fixture SHA-256 was
+`e731370cb2e13e977d2926d586b2270d161c2d761f438cf2ebe522426f814187`.
+The decoded document SHA-256 was
+`9f32c289d416eab900bd56c80e05f1804951eb3c413be2ca5a5cdf5fad06ba9c`.
+
+Two alternating pairs on each existing fixture checked uncached
+gradient fills and solid strokes inside groups. V `5a39a4d` and
+single-unit Clang `-O0` flags matched. The control and candidate
+executable SHA-256 values were
+`38beefa3995fb31c2dad8df0a61654cbc6063f5d8120ed77413ace9a18f955da`
+and `46e92aca16f3f0832b561cd184b8372aa4fdb3c5c645f94a10718895d824dfbb`.
+The fixed-position fill and solid stroke fixture SHA-256 values were
+`dcf5917e79624578f9aa6774ad2cd84302f45c38cbc011589e68797499a9231b`
+and `e99a2366b997e27235e1825e18af83f8f06094be249ceca0964bf75f10fd9a35`.
+
+Trials used fresh processes and private browser state in an
+800 × 712 Xvfb window with one Mesa software worker. Each trial
+settled for one second and recorded 48 synthetic callbacks with
+JavaScript and texture caching disabled. The 800 × 628 document
+pixels, paint command counts, and scroll offsets through the final
+504 CSS pixels matched within each route. Executable, library, and
+fixture hashes stayed fixed. Browser and guard exits were zero.
+One-minute guest load ranged from 1.76 to 2.14 on four vCPUs.
+Separate diagnostics counted 47 opacity rasters per build on the
+fill fixture and 94 on the solid stroke fixture.
+
+| Fixture and pair | Replay median before / after, ms | Replay p95 and maximum before / after, ms | Median allocated KiB before / after |
+| --- | ---: | ---: | ---: |
+| Gradient fills 1 | 2.661 / 2.729 | 4.402, 6.431 / 4.467, 4.663 | 407 / 407 |
+| Gradient fills 2 | 2.567 / 2.532 | 4.163, 4.214 / 4.217, 4.317 | 407 / 407 |
+| Solid strokes 1 | 0.938 / 0.929 | 2.466, 2.519 / 1.135, 2.550 | 413 / 413 |
+| Solid strokes 2 | 0.922 / 0.930 | 2.428, 2.669 / 1.117, 2.657 | 414 / 413 |
+
+Median replay differences stayed within 0.07 ms for gradient fills
+and 0.01 ms for solid strokes. These timings cover synthetic software
+replay. All 27 Linux browser smoke checks and 18 GG SVG window checks
+passed. macOS, Windows D3D11, and Windows OpenGL source checks passed.
+Windows runtime and hardware GPU performance remain unverified.
+
 ## Sharing the portable SVG fallback with Windows
 
 The standard Windows D3D11 window now uses the same CPU raster and GG texture
