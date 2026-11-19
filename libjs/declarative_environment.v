@@ -48,6 +48,11 @@ fn (environment &DeclarativeEnvironment) find_binding_index(name Utf16String) in
 	return environment.find_binding_index_linear(name)
 }
 
+$if test {
+	__global binding_scan_prefilter_disabled bool
+	pub fn set_binding_scan_prefilter_for_testing(enabled bool) { binding_scan_prefilter_disabled = !enabled }
+}
+
 @[direct_array_access]
 fn (environment &DeclarativeEnvironment) find_binding_index_linear(name Utf16String) int {
 	if name.data.len == 1 {
@@ -63,9 +68,36 @@ fn (environment &DeclarativeEnvironment) find_binding_index_linear(name Utf16Str
 		return -1
 	}
 	// The loop uses the current array length and compares names without mutating it.
+	$if test {
+		if binding_scan_prefilter_disabled {
+			for index in 0 .. environment.bindings.len {
+				binding := &environment.bindings[index]
+				if !binding.deleted && binding.name == name { return index }
+			}
+			return -1
+		}
+	}
+	// Most bindings differ in length or in their first or last unit; reject them
+	// without a call. Equal candidates compare all code units, as == does.
+	length := name.data.len
+	if length == 0 {
+		for index in 0 .. environment.bindings.len {
+			binding := &environment.bindings[index]
+			if !binding.deleted && binding.name.data.len == 0 { return index }
+		}
+		return -1
+	}
+	first := name.data[0]
+	last := name.data[length - 1]
 	for index in 0 .. environment.bindings.len {
 		binding := &environment.bindings[index]
-		if !binding.deleted && binding.name == name {
+		candidate := binding.name.data
+		if candidate.len != length || candidate[0] != first || candidate[length - 1] != last
+			|| binding.deleted {
+			continue
+		}
+		if candidate.data == name.data.data
+			|| unsafe { vmemcmp(candidate.data, name.data.data, length * int(sizeof(u16))) } == 0 {
 			return index
 		}
 	}
