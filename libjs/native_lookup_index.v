@@ -290,7 +290,9 @@ fn (mut vm VM) native_lookup_entry(mut tier NativeTier, mut cache NativeCodeCach
 		return .missed
 	}
 	cache.stats.load_ms += f64(time.sys_mono_now() - started) / 1e6
-	cache.stats.cache_hits++
+	// Like the record path, count each record once, not each executable that
+	// shares its generated code.
+	if record.key !in cache.entries { cache.stats.cache_hits++ }
 	// Keep the executable and its ParsedSource alive while their addresses are
 	// used as keys, exactly as the ordinary record path does.
 	cache.checked << executable

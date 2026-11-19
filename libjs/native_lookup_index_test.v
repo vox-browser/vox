@@ -51,7 +51,8 @@ fn test_index_resolves_learned_records_without_rehashing_libraries() {
 
 	value3, third, third_lookup, third_activity := lookup_index_visit(directory, '/usr/bin/false')!
 	assert value3 == 40
-	assert third.cache_hits == 3 && third.cache_misses == 0 && third.compiler_invocations == 0
+	// Cache hits count distinct records on both paths.
+	assert third.cache_hits == second.cache_hits && third.cache_misses == 0 && third.compiler_invocations == 0
 	assert third_lookup.loaded_records == 3 && third_lookup.hits == 3 && third_lookup.misses == 0
 	assert third_lookup.learned == 0 && third_lookup.dropped == 0
 	// The library digest was verified when learned; its identity is unchanged.
@@ -155,4 +156,28 @@ fn test_index_keys_encode_bytecode_in_a_temporary_workspace() {
 	changed[1] = Instruction{ op: .jump, target: 2 }
 	other := &Executable{ ...*executable, instructions: changed }
 	assert lookup_index.key(cache, other) != expected
+}
+
+fn test_index_counts_shared_generated_records_once() {
+	directory := os.join_path(os.temp_dir(), 'vox-lookup-index-' + rand.uuid_v4())
+	defer { os.rmdir_all(directory) or {} }
+	source := 'function a(n){return n+1} function b(n){return n+1} a(1)+b(2)'
+	mut hits := []u64{}
+	mut lookups := []NativeLookupStats{}
+	for visit in 0 .. 3 {
+		mut vm := VM.create()
+		create_simple_execution_context(mut vm)
+		vm.enable_native_code_cache_with_options(directory, if visit == 0 { '/usr/bin/clang' } else { '/usr/bin/false' },
+			NativeCodeCacheOptions{ generated_code_identity: true })!
+		mut script := Script.parse(source, vm.realm(), 'https://example.test/shared.js', unsafe { nil })!
+		assert vm.run_with_limits(mut script, ExecutionLimits{ max_instructions: 100000 })!.number == 5
+		stats := vm.flush_native_code_cache()!
+		vm.persist_native_lookup_index()!
+		hits << stats.cache_hits
+		lookups << vm.native_lookup_stats()
+		vm.close_native_code()!
+	}
+	// a and b share one generated record: three executables, two records.
+	assert hits[1] == 2 && hits[2] == 2
+	assert lookups[1].learned == 3 && lookups[2].hits == 3 && lookups[2].misses == 0
 }
