@@ -123,14 +123,28 @@ fn saturating_add(a int, b int) int {
 
 // SkSwizzler_opts' rgbA_to_CCCA() with !kFastUnpremul. Its NEON block of eight
 // pixels performs the same float operations, saturating instead of clamping.
-@[inline]
+// read_pixels has checked the full source and destination spans.
+@[direct_array_access; inline]
 fn unpremultiply_pixel(source []u8, source_offset int, mut destination []u8, destination_offset int) {
 	alpha := source[source_offset + 3]
-	normalized_alpha := f32(alpha) * inv_255
-	reciprocal := if alpha == 0 { f32(0) } else { f32(1) / normalized_alpha }
-	for channel in 0 .. 3 {
-		destination[destination_offset + channel] = unpremultiply_channel(source[source_offset +
-			channel], reciprocal)
+	match alpha {
+		0 {
+			for channel in 0 .. 3 {
+				destination[destination_offset + channel] = 0
+			}
+		}
+		255 {
+			for channel in 0 .. 3 {
+				destination[destination_offset + channel] = source[source_offset + channel]
+			}
+		}
+		else {
+			reciprocal := f32(1) / (f32(alpha) * inv_255)
+			for channel in 0 .. 3 {
+				destination[destination_offset + channel] = unpremultiply_channel(source[source_offset +
+					channel], reciprocal)
+			}
+		}
 	}
 	destination[destination_offset + 3] = alpha
 }
@@ -139,12 +153,13 @@ fn unpremultiply_pixel(source []u8, source_offset int, mut destination []u8, des
 fn unpremultiply_channel(value u8, reciprocal_alpha f32) u8 {
 	normalized := f32(value) * inv_255
 	divided := normalized * reciprocal_alpha
-	answer := math.min(f32(255), divided * f32(255))
-	return u8(round_half_even(answer))
-}
-
-// vrndns_f32() and vcvtnq_u32_f32(): round to nearest, ties to even.
-@[inline]
-fn round_half_even(value f32) f32 {
-	return f32(math.round_to_even(f64(value)))
+	scaled := divided * f32(255)
+	if scaled >= 255 {
+		return 255
+	}
+	// The remaining value is finite and in [0, 255). Round ties to even
+	// directly in that range, as in Skia's vrndns_f32()/vcvtnq_u32_f32().
+	whole := u32(scaled)
+	fraction := scaled - f32(whole)
+	return u8(whole + u32(fraction > 0.5 || (fraction == 0.5 && whole & 1 == 1)))
 }
