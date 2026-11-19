@@ -1,5 +1,68 @@
 # Migrating from Skia to vlib/gg
 
+## Retaining CPU SVG gradient stroke textures
+
+The CPU stroke texture cache also handles linear and radial gradients.
+It compares the resolved gradient geometry, local transform, spread,
+opacity, and exact stop values alongside the stroke key. Each slot owns
+a bounded copy of up to 16 stops. Larger gradients still rasterize on
+every draw. The cache uses the same streaming textures as solid strokes.
+
+The Linux window fixture checked live changes to stop color, opacity,
+radial radius, spread, and the local gradient transform of a non-scaling
+stroke. The cache rasterized each changed stroke and reused it on later
+frames. CPU captures with caching enabled, caching forced off, and
+OpenGL 4.2 matched exactly. All 16 Linux GG SVG window checks and the
+Windows amd64 OpenGL source check passed.
+
+The timing fixtures were `svg-gg-gradient-stroke.html` and
+`svg-gg-stroke.html` in `Tests/Browser/Native/`. Document pixels matched
+exactly between builds on each tested route, including when caching
+was forced off on the candidate. Both builds used V `5a39a4d`,
+single-unit Clang, and `-O0`, from the shared checkout with other changes
+in progress. The control and candidate executable SHA-256 values were
+`7c42a28b6ef8fbc2503e25fd78f4396bea49c2f15e9eee2228125343a94c77d6`
+and `6cd5127d7fdcfcc2f1a1e14ed0a53a1c42434ce18b3574d2a035f21df22f57a3`.
+The gradient fixture, solid fixture, and shader directory SHA-256 values were
+`0aa4184832b9e3a900f0f8484933ed48e9104d5cd60bb4609aea082d1be41f4e`,
+`d760304658f81f4e28f0665645566626ed28b5dcce7d86f195bad583d12c1f5b`,
+and `970ce36acbf7ea10b948d0a063d6315d587aadf8a8d84784d644b17ab6ffc48e`.
+
+Each trial used Mesa software OpenGL under Xvfb, a fresh process and
+private browser state, an 800 × 628 document viewport, a one-second
+settle, and 32 self-paced 42-pixel scroll steps. Scroll positions and
+paint-command counts matched. One-minute guest load ranged from 1.14
+to 2.17 on four virtual CPUs. Timing drivers and memory guards exited
+zero.
+
+| Renderer and pair | Median control / candidate, ms | p95, ms | Maximum, ms |
+| --- | ---: | ---: | ---: |
+| Gradient CPU 1 | 3.6175 / 3.515 | 7.402 / 5.033 | 7.442 / 5.716 |
+| Gradient CPU 2 | 3.616 / 3.521 | 6.518 / 4.208 | 7.732 / 6.837 |
+| Gradient GG 1 | 1.173 / 3.304 | 1.352 / 3.872 | 2.995 / 5.199 |
+| Gradient GG 2 | 1.243 / 1.204 | 1.439 / 3.027 | 3.474 / 3.337 |
+| Solid CPU 1 | 2.717 / 2.6725 | 3.105 / 4.857 | 6.516 / 5.625 |
+| Solid CPU 2 | 2.798 / 2.8175 | 3.087 / 5.972 | 3.142 / 6.070 |
+| Gradient GG follow-up 1 | 2.100 / 2.1075 | 2.882 / 2.486 | 6.022 / 5.986 |
+| Gradient GG follow-up 2 | 2.1015 / 2.154 | 2.617 / 3.054 | 5.727 / 5.654 |
+| Gradient GG one Mesa worker 1 | 1.098 / 1.293 | 1.398 / 1.787 | 3.079 / 3.275 |
+| Gradient GG one Mesa worker 2 | 1.0965 / 1.0985 | 2.795 / 1.282 | 3.372 / 1.492 |
+
+Diagnostics counted 155 gradient CPU texture hits with caching and
+155 rerasterizations with caching forced off. The solid CPU trace
+recorded 186 hits. The instrumented GG runs recorded 155 GG gradient
+stroke hits and zero CPU gradient stroke draws in each worker mode.
+The exceptional first GG pair spent 1.0775 vs 3.183 ms in median
+replay, with one collection in each run. Two further pairs at the
+default Mesa setting and two with `LP_NUM_THREADS=1` did not reproduce
+that gap. The results leave its cause unresolved.
+
+Median gradient CPU callback time fell by 2.6–2.8%, and p95 fell by
+32.0–35.4%. Solid CPU medians were within 1.7%, with higher p95 in
+both pairs. GG timing varied across the runs. These synthetic trials
+cover software OpenGL. Native GPU timing and Windows runtime remain
+unverified.
+
 ## Retaining CPU SVG stroke textures
 
 The portable CPU stroker can reuse the contents of a GG streaming image
