@@ -146,7 +146,9 @@ fn (mut host ModuleHost) parse_libjs_module(key string,code string,starting_line
 	if cached := runtime.libjs_modules_[key] { return cached }
 	frontend_stage := processmetrics.begin_thread_instruction_substage('libjs_module_frontend')
 	defer { frontend_stage.finish() }
-	parsed := runtime.prepare_libjs_frontend(code, .module, libjs.ParseOptions{max_recursion_depth:256})
+	preparsed := host.libjs_preparsed[key] or { unsafe { &libjs.ParsedSource(nil) } }
+	if preparsed != unsafe { nil } { host.libjs_preparsed.delete(key) }
+	parsed := runtime.prepare_libjs_frontend_with(code, .module, libjs.ParseOptions{max_recursion_depth:256}, preparsed)
 	if parsed.has_errors() { return libjs.ModuleParseError{diagnostics: parsed.diagnostics} }
 	mut created := &libjs.SourceTextModule{module_realm:runtime.realm, module_filename:key,
 		host_defined:voidptr(runtime), parsed:parsed}
@@ -156,6 +158,48 @@ fn (mut host ModuleHost) parse_libjs_module(key string,code string,starting_line
 	// handlers needed on later visits. Queue their syntax without running it.
 	runtime.queue_native_module_templates(created)
 	return created
+}
+
+// Parse a fetched JavaScript module on a worker, then resume its fetch from an
+// ordinary networking task on this thread. Returns false when the module is
+// handled synchronously: other engines, cached or non-JavaScript modules, a
+// failed decode, or no available worker.
+fn (mut host ModuleHost) parse_libjs_module_in_background(mut operation BrowserModuleOperation, response &fetch.Response, body []u8, callback html.OnFetchScriptComplete) bool {
+	if host.runtime.engine != .libjs || host.closed { return false }
+	runtime := unsafe { &Runtime(host.runtime) }
+	if _ := runtime.libjs_modules_[operation.key] { return false }
+	if !fetch.is_ok_status(response.status) { return false }
+	mime := fetch.extract_mime_type(response.header_list) or { return false }
+	if !mime.is_javascript() { return false }
+	persistent := platform.enter_persistent()
+	defer { platform.leave_persistent(persistent) }
+	source := html.decode_module_script_source(body) or { return false }
+	owner := voidptr(host)
+	op := voidptr(operation)
+	key := operation.key.clone()
+	// Called once on this thread's run loop; it releases itself afterwards. The
+	// runtime does not own it, because a worker may still hold it at close.
+	done := fn [owner, op, key, response, callback] (parsed &libjs.ParsedSource) {
+		mut host := unsafe { &ModuleHost(owner) }
+		if host.closed { return }
+		persistent := platform.enter_persistent()
+		defer { platform.leave_persistent(persistent) }
+		html.queue_a_task(.networking, host.settings.responsible_event_loop(), host.settings.responsible_document(), fn [owner, op, key, parsed, response, callback] () {
+			mut host := unsafe { &ModuleHost(owner) }
+			if host.closed { return }
+			persistent := platform.enter_persistent()
+			defer { platform.leave_persistent(persistent) }
+			mut operation := unsafe { &BrowserModuleOperation(op) }
+			host.libjs_preparsed[key] = parsed
+			host.complete_module_fetch(mut operation, response, callback)
+		})
+	}
+	if !submit_libjs_module_parse(source, libjs.ParseOptions{ max_recursion_depth: 256 }, done) {
+		platform.release_closure(voidptr(done))
+		return false
+	}
+	host.libjs_background_parses++
+	return true
 }
 
 fn (mut host ModuleHost) execute_libjs(source ScriptSource,stringify_result bool) !string {

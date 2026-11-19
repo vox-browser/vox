@@ -464,6 +464,12 @@ fn decode_script_body(bytes []u8, encoding_label string) !string {
 	return decoder.decode(bytes, encoding.TextDecodeOptions{})!
 }
 
+// The source text a module script fetch decodes from its body (always UTF-8),
+// so an embedder can prepare the same text before the fetch completes.
+pub fn decode_module_script_source(bytes []u8) !string {
+	return decode_script_body(bytes, 'utf-8')
+}
+
 fn script_pointer(script &ClassicScript) &Script {
 	return &script.Script
 }
