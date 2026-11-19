@@ -943,6 +943,64 @@ solid-stroke medians improved in both pairs. The fill-only replay
 timings moved in opposite directions and varied across controls.
 Native GPU performance and Windows runtime verification remain pending.
 
+## Repeating and reflecting SVG mask fills
+
+In `fb4a67f5c`, portable alpha and luminance masks accept linear
+and radial fills with the SVG `repeat` and `reflect` spread methods.
+The shared shaders use the resolved gradient transform, stops, and
+opacity. Integral axis-aligned rectangles with a linear gradient
+can shade one strip and apply it across the constant axis.
+
+The fixture checks horizontal repetition, vertical reflection,
+elliptical radial rings, isolated opacity, and a stop opacity edit.
+The Linux control drew the masked target in solid blue, including
+the pixel at (12, 44) outside the intended coverage. The candidate
+left that pixel white. All 800 × 516 document pixels matched across
+cached CPU replay, GG Canvas, and uncached full-shader replay.
+Diagnostics confirmed both strip axes and a reraster after the edit.
+The fixture and decoded document hashes were
+`e2deb09306a274eb65412d1e49dea8b1ac762ba9abd109996c49cc96d27fe947`
+and `579a9211437daf38e7b314117b8643a9336ffd5bbc8a53e7e0e91233bea1eeda`.
+
+A fresh macOS capture in PID 95218 used the published `c3370b40f`
+bundle with executable SHA-256
+`2626c50798f17dd0fe6ab7942da76f0ab20c71fcfdea6f04ccab71ad34f83ef9`.
+Twelve of 24 sampled pixels matched exactly and the maximum channel
+difference was three. The new Linux regression and ten neighboring
+SVG window checks passed. macOS and Windows D3D11 and OpenGL source
+checks passed.
+
+The Linux timing comparison toggled `VOX_DISABLE_SVG_MASK_RAMP` on
+the same ARM64 single-unit Clang `-O0` executable built with V
+`5a39a4d`. The executable SHA-256 was
+`0343557673905571209d58dba623a0f1a9f92f13b43e3a96884703c3df2dad62`.
+The timed fixture fixed the SVG and document marker while the page
+scrolled. Its SHA-256 was
+`b6a2f6ccd9f4fdae28167bbd4ecf284fc65e2500213c2d6f1e5f0d0ca4536f47`.
+Fresh processes used private profiles and caches, one Mesa software
+worker, and an 800 × 712 Xvfb window. JavaScript and texture caching
+were disabled. A one-second settle preceded 48 synthetic callbacks.
+Separate diagnostics confirmed four masks per callback and two
+strips when enabled across 47 complete intervals. The 800 × 628
+decoded document hash was
+`5e30390ea243f1266a74611fab927e23e5cf849188301028ca21dee738fc634f`.
+Pixels, paint command counts, offsets through the final 504 CSS
+pixels, and executable, fixture and library hashes stayed fixed.
+
+| Pair | Full / strip replay median, ms | Full / strip p95 and maximum, ms | Full / strip median allocated KiB |
+| --- | ---: | ---: | ---: |
+| 1 | 19.268 / 11.351 | 22.714, 23.182 / 13.851, 14.062 | 801.5 / 694 |
+| 2 | 24.762 / 13.418 | 27.930, 28.064 / 16.238, 16.305 | 801 / 693.5 |
+| 3 | 21.321 / 12.633 | 25.566, 26.636 / 15.532, 17.317 | 800 / 694 |
+| 4 | 18.631 / 13.311 | 21.053, 21.411 / 14.532, 15.326 | 801 / 695.5 |
+
+The strip route reduced median replay time by 29–46% and median
+allocation by 105.5–107.5 KiB per callback. The four-vCPU guest's
+one-minute load was 1.49–2.02 at the timed launches and no compiler
+processes were observed at launch. Browsers and the memory guard
+exited zero. This comparison measures synthetic software replay.
+Windows runtime and hardware GPU timing remain pending.
+
 ## Sharing the portable SVG fallback with Windows
 
 The standard Windows D3D11 window now uses the same CPU raster and GG texture
