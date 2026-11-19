@@ -1,5 +1,58 @@
 # Migrating from Skia to vlib/gg
 
+## Omitting empty trailing rows from SVG mask opacity layers
+
+The mask player bounds line-only opacity layers using device-space path
+points, including those in nested groups. It keeps the original pixel
+origin and row width, with a guard row past the last possible coverage.
+Curve-containing layers use the parent height. At each opacity depth the
+player reuses capacity across siblings and clears and restores only the
+current layer's rows.
+
+The browser regression covers a seven-row layer, growth to 91 rows,
+a nested 67-row layer, reuse for a 66-row sibling, and a curved layer
+that uses all 100 parent rows. A focused padded-stride raster test restored
+a three-row, odd-width layer into a nine-row target and matched a
+full-size transparent-padded reference with both blend rules. The test
+passed with ASan and UBSan. The pinned Skia differential suite also passed.
+
+Fresh Linux aarch64 builds used V `5a39a4d` and matching single-unit
+Clang `-O0` flags. Control and candidate executable SHA-256 values were
+`9fc67fac31bf2229f38fa511dd3754a6d79eb0564574743f0ed3595634309de7`
+and `3341757a07897de34455a4e039e4f4859f005959e177dd8a41affb13b9075241`.
+The solid, gradient, and tall mask fixtures matched pixel for pixel in
+800 × 600 document captures at scroll offsets 0 and 42 CSS pixels.
+The decoded hashes matched the
+[earlier opacity captures](#blending-svg-mask-opacity-layers-directly-on-linux).
+The tall fixture raises both 100-pixel mask regions to 170 pixels and
+leaves the painted paths at their original heights. Its diagnostics
+reported restores as short as 66 rows within a full 170-row region.
+
+Two alternating replay pairs per fixture used a 1024 × 712 Xvfb window,
+software OpenGL, fresh processes and private profiles, and a one-second
+settle period. JavaScript, GPU SVG replay, and SVG texture reuse were
+disabled. Each trial completed 80 synthetic callbacks with matched
+command counts and scroll offsets up to 1248 CSS pixels. The solid and
+tall HTML SHA-256 values were
+`2ca5b13ae5723502fa64a1661cb1ea2b3eb129e2508c048cd6fa1cf6e429ea51` and
+`93cba5210e94a8710c7bc79d2f6d403c7974deafb4f79c2530b2f640ba25123d`.
+Input hashes stayed fixed and both browsers and the memory guard exited
+zero. Guest one-minute load ranged from 0.67 to 1.99 on four vCPUs.
+
+| Fixture and pair | Replay median before / after, ms | Replay p95 and maximum before / after, ms | Median allocated KiB before / after |
+| --- | ---: | ---: | ---: |
+| Solid 1 | 6.647 / 6.847 | 13.944, 24.893 / 14.247, 29.486 | 3035.5 / 2898.5 |
+| Solid 2 | 7.228 / 6.609 | 15.811, 26.082 / 13.976, 31.291 | 3030 / 2899.5 |
+| Tall 1 | 9.155 / 9.338 | 20.884, 30.517 / 17.747, 33.393 | 4084 / 3516 |
+| Tall 2 | 15.375 / 8.567 | 22.297, 48.143 / 17.785, 38.667 | 4086.5 / 3512.5 |
+
+Allocation fell in every pair. The first pair for each fixture had a
+slightly higher candidate median, and the maximum rose in three pairs.
+The second tall control ran at the highest guest load and had a much
+higher median than the first. The timing results cover synthetic replay
+with varying load. All 20 Linux browser checks passed, along with macOS
+and Windows D3D11 and OpenGL source checks.
+
 ## Blending SVG mask opacity layers directly on Linux
 
 An isolated mask layer has the same dimensions and pixel origin as its
