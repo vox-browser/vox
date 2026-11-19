@@ -1,5 +1,44 @@
 module cpuraster
 
+// canvas_pixel_aligned_rect recognizes a closed four-corner contour
+// without allocating a decoded path.
+pub fn canvas_pixel_aligned_rect(segments []f32, transform [6]f32) ?IRect {
+	stride := canvas_path_segment_stride
+	if segments.len != 5 * stride && segments.len != 6 * stride {
+		return none
+	}
+	if segments[0] != 0 || segments[segments.len - stride] != 5 {
+		return none
+	}
+	if segments.len == 6 * stride && (segments[4 * stride] != 1
+		|| segments[4 * stride + 1] != segments[1] || segments[4 * stride + 2] != segments[2]) {
+		return none
+	}
+	matrix := Matrix{transform[0], transform[1], transform[2], transform[3], transform[4], transform[5]}
+	mut corners := [4]Point{}
+	// Verify the same device coordinates used by canvas replay.
+	limit := f32(max_untiled_dimension)
+	for i in 0 .. corners.len {
+		offset := i * stride
+		if i > 0 && segments[offset] != 1 {
+			return none
+		}
+		point := matrix.map_point(Point{segments[offset + 1], segments[offset + 2]})
+		if !(point.x >= -limit && point.x <= limit && point.y >= -limit && point.y <= limit)
+			|| point.x != floor_f32(point.x) || point.y != floor_f32(point.y) {
+			return none
+		}
+		corners[i] = point
+	}
+	verbs := [PathVerb.move, .line, .line, .line, .close]!
+	rect := trivial_rect(corners[..], verbs[..]) or { return none }
+	pixels := IRect{int(rect.left), int(rect.top), int(rect.right), int(rect.bottom)}
+	if pixels.is_empty() {
+		return none
+	}
+	return pixels
+}
+
 // fill_canvas_mask_path fills a solid or gradient path into a premultiplied
 // row band. Geometry and shading both use the original device coordinates.
 pub fn fill_canvas_mask_path(mut pixels []u8, width int, first_row int, height int, pitch int, path Path,

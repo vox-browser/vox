@@ -168,3 +168,86 @@ fn test_canvas_mask_path_band_uses_original_geometry_and_shader_coordinates() {
 		}
 	}
 }
+
+fn test_solid_rgba_canvas_colors_premultiply_identically_in_both_blenders() {
+	mut pixels := []u8{}
+	for alpha in 0 .. 256 {
+		for channel in 0 .. 256 {
+			color := (u32(alpha) << 24) | (u32(channel) << 16) | (u32(255 - channel) << 8) |
+				u32(channel ^ 0x53)
+			paint_alpha := canvas_paint_alpha(color, 1)
+			state := new_pipeline_blitter(mut pixels, 4, color & 0xffffff, paint_alpha, .src_over)
+			assert state.memset_color == premultiply_color(color)
+			assert paint_color_bytes(color, paint_alpha) == color
+		}
+	}
+}
+
+fn packed_canvas_rect_for_test(rect Rect, explicit_close bool) []f32 {
+	stride := canvas_path_segment_stride
+	count := if explicit_close { 6 } else { 5 }
+	mut segments := []f32{len: count * stride}
+	corners := [
+		Point{rect.left, rect.top},
+		Point{rect.right, rect.top},
+		Point{rect.right, rect.bottom},
+		Point{rect.left, rect.bottom},
+	]!
+	for i, point in corners {
+		segments[i * stride] = if i == 0 { f32(0) } else { f32(1) }
+		segments[i * stride + 1] = point.x
+		segments[i * stride + 2] = point.y
+	}
+	if explicit_close {
+		segments[4 * stride] = 1
+		segments[4 * stride + 1] = rect.left
+		segments[4 * stride + 2] = rect.top
+	}
+	segments[(count - 1) * stride] = 5
+	return segments
+}
+
+fn test_canvas_pixel_aligned_rect_matches_solid_path_raster() {
+	width, height := 43, 16
+	pitch := (width + 1) * 4
+	matrices := [
+		[f32(1), 0, 0, 1, 0, 0]!,
+		[f32(-1), 0, 0, 1, 10, -3]!,
+		[f32(0), 1, -1, 0, 9, 0]!,
+	]
+	for columns in [1, 2, 3, 8, 35] {
+		for rows in [1, 2, 11] {
+			segments := packed_canvas_rect_for_test(Rect{2, 2, f32(2 + columns), f32(2 + rows)},
+				rows == 2)
+			path := canvas_path(segments, false)
+			for matrix in matrices {
+				bounds := canvas_pixel_aligned_rect(segments, matrix) or { panic('expected integral rectangle') }
+				for legacy in [false, true] {
+					for color in [u32(0x9a509b30), 0xffc04020, 0x00334455] {
+						mut pixels := []u8{len: pitch * height}
+						assert fill_canvas_path_surface(mut pixels, width, height, pitch, 2, path,
+							matrix, color, none, 1, .src_over, 0, [], none, legacy)
+						paint := premultiply_color(color)
+						for y in 0 .. height {
+							for x in 0 .. width {
+								inside := x >= bounds.left && x < bounds.right && y >= bounds.top
+									&& y < bounds.bottom
+								assert load32(pixels, y * pitch + x * 4) == if inside {
+									paint
+								} else {
+									u32(0)
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+	mut segments := packed_canvas_rect_for_test(Rect{0, 0, 6, 8}, true)
+	assert canvas_pixel_aligned_rect(segments, [f32(1), 0, 0, 1, 0.25, 0]!) == none
+	assert canvas_pixel_aligned_rect(segments, [f32(1), 0, 0.125, 1, 0, 0]!) == none
+	assert canvas_pixel_aligned_rect(segments, [f32(1), 0, 0, 1, 8192, 0]!) == none
+	segments[4 * canvas_path_segment_stride + 1] = 1
+	assert canvas_pixel_aligned_rect(segments, [f32(1), 0, 0, 1, 0, 0]!) == none
+}

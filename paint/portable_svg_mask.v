@@ -9,6 +9,7 @@ import painting
 const disable_portable_svg_mask = os.getenv('VOX_DISABLE_PORTABLE_SVG_MASK') == '1'
 const disable_svg_mask_ramp = os.getenv('VOX_DISABLE_SVG_MASK_RAMP') == '1'
 const portable_svg_mask_row_bands = os.getenv('VOX_SVG_MASK_ROW_BANDS') == '1'
+const portable_svg_mask_solid_rects = os.getenv('VOX_SVG_MASK_SOLID_RECTS') == '1'
 const portable_svg_mask_diagnostics = os.getenv('VOX_PORTABLE_SVG_MASK_DIAGNOSTICS') == '1'
 const portable_svg_mask_max_opacity_depth = 4
 
@@ -196,6 +197,62 @@ fn svg_mask_luminance(red u8, green u8, blue u8) u8 {
 	return u8((54 * u32(red) + 183 * u32(green) + 19 * u32(blue)) >> 8)
 }
 
+fn (mut app BrowserApp) apply_svg_mask_solid_rect(mut image PortableSVGGroupImage,
+	operation &layout.PaintMaskOperation, luminance bool, page_x f32, page_y f32, scale f64) bool {
+	if operation.kind != .path || operation.fill_linear_gradient != none
+		|| operation.fill_radial_gradient != none {
+		return false
+	}
+	device := portable_device_transform(operation.transform, page_x, page_y, scale)
+	rect := cpuraster.canvas_pixel_aligned_rect(operation.path_data,
+		portable_svg_surface_matrix(device, image.bounds)) or { return false }
+	color := app.paint_colors.color(operation.fill_color, operation.fill_opacity)
+	mut coverage := color.a
+	if luminance {
+		// A solid fill over transparent black has the same premultiplied
+		// bytes in the native and portable rasterizers.
+		paint := cpuraster.premultiply_color(portable_svg_argb(color))
+		coverage = svg_mask_luminance(u8(paint), u8(paint >> 8), u8(paint >> 16))
+	}
+	apply_solid_svg_mask_rect(mut image, rect, coverage)
+	if portable_svg_mask_diagnostics {
+		eprintln('VOX_SVG_MASK_RECT luminance=${luminance} alpha=${coverage}')
+	}
+	return true
+}
+
+@[direct_array_access]
+fn apply_solid_svg_mask_rect(mut image PortableSVGGroupImage, rect cpuraster.IRect, coverage u8) {
+	width, height := image.bounds.width, image.bounds.height
+	left := math.max(rect.left, 0)
+	right := math.min(rect.right, width)
+	top := math.max(rect.top, 0)
+	bottom := math.min(rect.bottom, height)
+	if coverage == 255 && left == 0 && right == width && top == 0 && bottom == height { return }
+	has_coverage := coverage != 0 && left < right && top < bottom
+	for y in 0 .. height {
+		row := y * width * 4 + 3
+		if !has_coverage || y < top || y >= bottom {
+			for x in 0 .. width {
+				image.pixels[row + x * 4] = 0
+			}
+			continue
+		}
+		for x in 0 .. left {
+			image.pixels[row + x * 4] = 0
+		}
+		if coverage != 255 {
+			for x in left .. right {
+				offset := row + x * 4
+				image.pixels[offset] = portable_svg_mask_alpha(image.pixels[offset], coverage)
+			}
+		}
+		for x in right .. width {
+			image.pixels[row + x * 4] = 0
+		}
+	}
+}
+
 @[direct_array_access]
 fn apply_svg_mask_ramp(mut image PortableSVGGroupImage, operation &layout.PaintMaskOperation,
 	ramp SVGMaskRamp, luminance bool) bool {
@@ -253,6 +310,11 @@ fn (mut app BrowserApp) apply_portable_svg_content_mask(mut image PortableSVGGro
 			apply_portable_svg_mask_region(mut image, region)
 			return true
 		}
+	}
+	if portable_svg_mask_solid_rects && mask.mask_operations.len == 1 && app.apply_svg_mask_solid_rect(mut image,
+		&mask.mask_operations[0], mask.mask_luminance, page_x, page_y, scale) {
+		apply_portable_svg_mask_region(mut image, region)
+		return true
 	}
 	mut coverage := []u8{len: bounds.width * bounds.height * 4}
 	if !app.raster_svg_mask_layers(mut coverage, bounds.width * 4, bounds, mask, page_x, page_y,

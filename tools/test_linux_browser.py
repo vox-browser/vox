@@ -1600,6 +1600,38 @@ def check_svg_mask_browser(binary, artifacts, temporary):
     print("PASS: SVG alpha and luminance masks, ordered coverage, and a fractional nested region", flush=True)
 
 
+def check_svg_solid_rect_mask_browser(binary, artifacts, temporary):
+    fixture = Path(__file__).resolve().parents[1] / "Tests/Browser/Native/svg-solid-rect-masks.html"
+    screenshot = artifacts / "portable-svg-solid-rect-mask.png"
+    screenshot.unlink(missing_ok=True)
+    environment = smoke_environment(Path(temporary) / "svg-solid-rect-mask")
+    environment.pop("VOX_DISABLE_PORTABLE_SVG_MASK", None)
+    environment.update(VOX_PORTABLE_SVG_MASK_DIAGNOSTICS="1", VOX_SVG_MASK_SOLID_RECTS="1")
+    log = run_windowed([str(binary), "--window-width=1024", "--window-height=640",
+                        "--screenshot-viewport-height=640", f"--screenshot={screenshot}", str(fixture)],
+                       env=environment, log_path=artifacts / "portable-svg-solid-rect-mask.log")
+    assert re.search(r"^VOX_SVG_MASK_RECT luminance=false alpha=(127|128)$", log, re.MULTILINE), log
+    assert "VOX_SVG_MASK_RECT luminance=true alpha=44" in log, log
+    assert "VOX_SVG_MASK_RECT luminance=false alpha=255" in log, log
+    _, height, channels, rows = rendered_png_rows(screenshot.read_bytes())
+
+    def pixel(x, y):
+        return rows[y][x * channels:x * channels + 3]
+
+    marker = next((y for y in range(min(height, 150)) if pixel(4, y) == b"\x34\xb7\x86"), None)
+    assert marker is not None, "Missing document marker"
+    y = marker + 48
+    white, blue = b"\xff\xff\xff", b"\x00\x00\xff"
+    assert pixel(15, y) == pixel(228, y) == pixel(380, y) == white
+    assert pixel(50, y) in (b"\x7f\x7f\xff", b"\x80\x80\xff")
+    assert all(abs(value - target) <= 1 for value, target in zip(pixel(270, y), (211, 211, 255)))
+    assert pixel(425, y) == pixel(550, y) == blue
+    edge = pixel(420, y)
+    assert 0 < edge[0] < 255 and edge[0] == edge[1] and edge[2] == 255, edge
+    assert pixel(600, y) == b"\xff\x88\x00"
+    print("PASS: solid SVG rectangle masks preserve alpha, reflected luminance and fractional edges", flush=True)
+
+
 def check_svg_mask_opacity_browser(binary, artifacts, temporary):
     fixture = Path(__file__).resolve().parents[1] / "Tests/Browser/Native/svg-mask-opacity.html"
     page = Path(temporary) / fixture.name
@@ -2078,6 +2110,7 @@ def main():
         check_svg_gradient_groups_browser(binary, artifacts, temporary)
         check_nested_svg_browser(binary, artifacts, temporary)
         check_svg_mask_browser(binary, artifacts, temporary)
+        check_svg_solid_rect_mask_browser(binary, artifacts, temporary)
         check_svg_mask_opacity_browser(binary, artifacts, temporary)
         check_svg_mask_gradient_browser(binary, artifacts, temporary)
         check_svg_mask_strips_browser(binary, artifacts, temporary, "svg-vertical-alpha-masks",
