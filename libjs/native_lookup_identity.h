@@ -24,4 +24,29 @@ static inline int vox_libjs_native_file_identity(const char *path, uint64_t out[
 #endif
 	return 0;
 }
+
+// The main executable's identity. V's os.executable() reports dyld image 0,
+// which is an inserted library when DYLD_INSERT_LIBRARIES is set (profiling).
+#if defined(__APPLE__)
+#include <mach-o/dyld.h>
+#include <limits.h>
+#include <stdlib.h>
+static inline int vox_libjs_native_executable_identity(uint64_t out[7]) {
+	char path[PATH_MAX];
+	uint32_t size = sizeof(path);
+	if (_NSGetExecutablePath(path, &size) != 0) return -1;
+	char resolved[PATH_MAX];
+	if (realpath(path, resolved) == NULL) return -1;
+	return vox_libjs_native_file_identity(resolved, out);
+}
+#elif defined(__linux__)
+static inline int vox_libjs_native_executable_identity(uint64_t out[7]) {
+	return vox_libjs_native_file_identity("/proc/self/exe", out);
+}
+#else
+static inline int vox_libjs_native_executable_identity(uint64_t out[7]) {
+	(void)out;
+	return -1;
+}
+#endif
 #endif

@@ -90,6 +90,7 @@ fn use_native_lookup_index() bool {
 #include "@VMODROOT/libjs/native_lookup_identity.h"
 
 fn C.vox_libjs_native_file_identity(path &char, out &u64) int
+fn C.vox_libjs_native_executable_identity(out &u64) int
 
 // File identity for the verified-digest shortcut; '' when unavailable, which
 // always rehashes. Windows has no implementation and always rehashes.
@@ -103,17 +104,20 @@ fn native_lookup_file_identity(path string) string {
 	}
 }
 
-// The file's device, inode, size and nanosecond times identify the build. The
-// reported executable path differs between a direct launch and the allocator
-// re-exec, so resolve it before reading that identity and do not hash it.
+// The main executable's device, inode, size and nanosecond times identify the
+// build. It is read through the executable path, not V's os.executable(),
+// which reports an inserted library under DYLD_INSERT_LIBRARIES; the reported
+// path also differs between a direct launch and the allocator re-exec.
 fn native_lookup_build_identity() string {
-	identity := native_lookup_file_identity(os.real_path(os.executable()))
-	if identity == '' { return '' }
-	return native_cache_digest_string('native-lookup-build\n${identity}')
+	$if windows {
+		return ''
+	} $else {
+		mut fields := [7]u64{}
+		if C.vox_libjs_native_executable_identity(&fields[0]) != 0 { return '' }
+		return native_cache_digest_string('native-lookup-build\n${fields[0]}:${fields[1]}:${fields[2]}:${fields[3]}.${fields[4]}:${fields[5]}.${fields[6]}')
+	}
 }
 
-// Callers hold the persistent arena: the index lives as long as the VM, which
-// is created there, whatever arena the first executing entry happens to hold.
 fn (mut vm VM) native_lookup_index_for(cache &NativeCodeCache) ?&NativeLookupIndex {
 	if !use_native_lookup_index() { return none }
 	if index := vm.native_lookup_index {
