@@ -689,6 +689,54 @@ RSS of 8,536,981,504 bytes.
 The Windows VM could not meet its 5 GiB host disk reserve. Windows
 runtime pixels and timings remain unverified.
 
+## Shared replay for retained web-font text
+
+Linux now clips horizontal `@font-face` glyph runs to the viewport
+before allocating the raster, using the document's retained glyph IDs
+and positions. Windows can use the same FreeType and GG texture path
+with `VOX_PORTABLE_WEB_FONTS=1`, pending native testing of the
+`-gc none` working set.
+The layout regression compared every pixel with the corresponding
+crop of the full bitmap at device scales 1 and 2. The browser fixture
+checked the author's glyph stems and gaps in a fully visible run and
+one clipped at the left edge. The decoded document pixels matched the
+control exactly.
+
+Two alternating synthetic replay pairs for each fixture used V
+`5a39a4d` and single-unit Clang `-O0` on the four-vCPU AArch64 Linux
+guest. Each trial used Mesa software rendering, a fresh process and
+private profile and cache, a 1024 × 712 window, a one-second settle, and
+48 synthetic scrolling callbacks. JavaScript was disabled and OS caches
+remained available. All trials had matching command counts, scroll
+offsets, and final document pixels, with stable input hashes and
+zero browser and guard exits. One-minute guest load ranged from 0.48
+to 1.34. The replay times cover draw callbacks.
+
+| Workload and pair | Replay median before / after, ms | Replay p95 and maximum before / after, ms | Median allocated KiB before / after |
+| --- | ---: | ---: | ---: |
+| System font 1 | 32.943 / 39.687 | 40.331, 41.022 / 44.622, 50.920 | 3450 / 3448.5 |
+| System font 2 | 39.232 / 38.859 | 41.276, 41.652 / 41.510, 41.985 | 3447 / 3448 |
+| Web font 1 | 61.542 / 59.847 | 62.848, 66.066 / 61.769, 62.913 | 5493 / 5285 |
+| Web font 2 | 67.200 / 62.196 | 73.841, 76.770 / 67.109, 69.448 | 5492 / 5287 |
+| Long clipped web font 1 | 451.907 / 100.673 | 480.093, 498.030 / 107.877, 113.180 | 43009.5 / 8766.5 |
+| Long clipped web font 2 | 357.769 / 93.186 | 366.851, 382.198 / 96.910, 107.932 | 43008 / 8767 |
+
+The Linux control and measured candidate executable SHA-256 values were
+`4f6317cec4b8bfe4b14b73414b4308a0beeb6a6cc1e2e38c0dfaab244113da63`
+and `9261af318a04509b77dcd906a4aeeff1bb618b33d10abaf220abea7173ab0df4`.
+The long fixture placed 300 glyphs per line 1500 pixels left of the
+viewport. The system-font results were mixed.
+
+The final Linux build
+`4dc94f461906804b82e0eec4b35d1401b6980f80ee1101da6ed06b2ae6586748`
+passed the browser smoke suite and matched the measured candidate's
+fixture pixels. The macOS and Windows
+OpenGL source checks passed. The D3D11 diagnostic cross-build linked
+to `d3d11.dll` and `libfreetype-6.dll`. Its SHA-256 was
+`1e0306aba08371663600d61bd965589230d2c275eaaa26fb86ee7419200435aa`.
+The Windows VM requires 5 GiB of free host storage. Windows native
+pixels, memory, timings, and precise scrolling remain unverified.
+
 ## Converting CPU SVG upload pixels faster
 
 The shared CPU raster readback copies opaque RGB bytes directly and writes zero
