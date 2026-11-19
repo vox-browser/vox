@@ -1,5 +1,75 @@
 # Migrating from Skia to vlib/gg
 
+## Opt-in leading-row cropping for SVG mask opacity layers
+
+With leading-row cropping enabled, the mask player stores a row band
+around the occupied area of a line-only opacity layer. The scan converter
+and gradient shaders use the original device coordinates. The blitter
+subtracts the first row when addressing the layer's backing store.
+Restoring the band uses its row offset in the parent and keeps the full
+row width for both blend rules. Leading rows
+are dropped when they account for at least a quarter of the layer
+remaining after trailing-row trimming. Set `VOX_SVG_MASK_ROW_BANDS=1`
+to enable the experimental crop. The default uses trailing-row trimming.
+
+Focused tests matched the full-surface renderer for fractionally
+transformed solid and gradient paths in both blend modes. A padded,
+odd-width restore matched the full layer and preserved the surrounding
+rows. The focused suite passed with ASan and UBSan, and the pinned Skia
+differential suite passed. The browser regression checked nested groups,
+growth and reuse across siblings, and a curve using the parent surface.
+
+Fresh Linux aarch64 builds used V `5a39a4d` and matching single-unit
+Clang `-O0` flags. The control and candidate executable SHA-256 values
+were `de754489737b6fd9f901f75e35d536c4053532a1b2a4b55bbe3c995d483b5206`
+and `f60242a79478fb506352a9ef3a5b98f7a1554960d6283070be4ede1061c7a8ba`.
+Both settings matched the previous 800 × 600 document captures for all
+three fixtures at 0 and 42 CSS pixels of scrolling. The default matched
+the previous row extents. The solid and gradient fixtures retained their
+[earlier pixel hashes](#blending-svg-mask-opacity-layers-directly-on-linux).
+The lower mask fixture raises both mask regions to 170 pixels and moves
+the three outer opacity groups down 64 pixels. It produced a band of
+84 rows starting at row 71. Its decoded RGBA SHA-256 values were
+`665eafd32174c63f3b39f38acd3472dfe3bf80bcc06aec5e4a9a492c80318097` and
+`9c05dd173cfaf171059a256ae717f6a67888ee0e99dd14b67667da7f4fdb100c`.
+
+The initial candidate `de1c4bba6053679651d354dbcf4c9ae9dabc7f40840dbc859cac8c86bb38d5cb`
+also trimmed small leading bands in the solid fixture. Its median replay
+rose in both solid pairs, motivating the quarter-layer cutoff.
+
+| Initial fixture and pair | Replay median before / after, ms | Replay p95 and maximum before / after, ms | Median allocated KiB before / after |
+| --- | ---: | ---: | ---: |
+| Solid 1 | 6.242 / 7.119 | 12.109, 30.114 / 11.966, 28.782 | 2903.5 / 2848.5 |
+| Solid 2 | 6.227 / 6.406 | 11.684, 24.648 / 13.710, 24.919 | 2898 / 2848 |
+| Lower 1 | 8.336 / 8.053 | 17.875, 36.504 / 16.481, 25.670 | 3916 / 3455 |
+| Lower 2 | 8.470 / 7.758 | 18.333, 27.279 / 15.748, 32.177 | 3922 / 3455 |
+
+The cutoff build `f3fdb092d86e8de700a41159dae6889474b14ce373b9ac18929c92a7f6da297a`
+used the same crop as the opt-in path. Both cohorts used fresh processes
+and private profiles, a 1024 × 712 Xvfb window, Mesa software rendering,
+and a one-second settle period. JavaScript, GPU SVG replay, and SVG texture
+reuse were disabled. Each trial processed 80 synthetic callbacks with
+matched command counts and scroll offsets up to 1248 CSS pixels. The
+solid and lower fixture SHA-256 values were
+`2ca5b13ae5723502fa64a1661cb1ea2b3eb129e2508c048cd6fa1cf6e429ea51` and
+`54b5bacc238da3f54c8e3647c5586d46ffadb9197e348c0898627955fb01d381`.
+Input hashes stayed fixed and the browser and memory guard exited zero.
+Guest one-minute load ranged from 0.80 to 1.03 in the first cohort and
+from 1.00 to 1.23 in the cutoff cohort on four vCPUs.
+
+| Cutoff fixture and pair | Replay median before / after, ms | Replay p95 and maximum before / after, ms | Median allocated KiB before / after |
+| --- | ---: | ---: | ---: |
+| Solid 1 | 6.046 / 8.367 | 11.318, 23.116 / 12.566, 28.464 | 2901 / 2902 |
+| Solid 2 | 8.441 / 6.193 | 13.380, 23.158 / 13.493, 26.396 | 2894.5 / 2904 |
+| Lower 1 | 8.917 / 14.536 | 18.185, 28.528 / 17.178, 28.919 | 3919 / 3461 |
+| Lower 2 | 7.788 / 10.170 | 17.578, 26.491 / 15.555, 26.005 | 3926.5 / 3459 |
+
+In the cutoff cohort the lower fixture allocated 458–468 KiB less per
+callback and its p95 fell. Both lower-fixture median times rose. The
+synthetic timing results leave the leading-row crop opt-in. All 20
+Linux browser checks passed, along with macOS source checks and Windows
+source checks for D3D11 and OpenGL.
+
 ## Omitting empty trailing rows from SVG mask opacity layers
 
 The mask player bounds line-only opacity layers using device-space path
