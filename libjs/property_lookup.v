@@ -5,7 +5,10 @@ module libjs
 // Small objects keep the allocation-free linear lookup. Hints are bounded even
 // when an object continually deletes and adds unrelated names.
 const property_lookup_hint_minimum = 16
-const property_lookup_hint_limit = 64
+// Positions are recorded per key found, so only objects with many accessed
+// keys (global objects, prototypes, bundle registries) reach the bound; a
+// 64-entry table was cleared on nearly every insertion for them.
+const property_lookup_hint_limit = 4096
 
 @[heap]
 struct PropertyLookupHints {
