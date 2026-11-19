@@ -27,11 +27,13 @@ const load_frame_throttle_input_quiet_ns = time.second
 // The wait reserves main-thread time for scripts and network callbacks. Once
 // no transfer is in flight and the main thread has stayed idle for this long,
 // nothing is left to use the reservation and the deferred frame only shows
-// what has already arrived. VOX_LOAD_RENDER_QUIET_MS overrides the window for
+// what has already arrived. The window spans one display frame: a page whose
+// first paint is waiting for its images and scripts repeats it for every
+// frame it releases. VOX_LOAD_RENDER_QUIET_MS overrides the window for
 // measurements; VOX_DISABLE_LOAD_RENDER_QUIET_RELEASE=1 always waits out the
 // whole gap.
 const disable_load_frame_quiet_release = os.getenv('VOX_DISABLE_LOAD_RENDER_QUIET_RELEASE') != ''
-const load_frame_quiet_window_ns = i64(os.getenv_opt('VOX_LOAD_RENDER_QUIET_MS') or { '50' }.int()) * time.millisecond
+const load_frame_quiet_window_ns = i64(os.getenv_opt('VOX_LOAD_RENDER_QUIET_MS') or { '8' }.int()) * time.millisecond
 // Main-thread CPU time that still counts as idle within one quiet window:
 // timer ticks and the deferred frame checks themselves, not a script task.
 const load_frame_quiet_cpu_budget_ns = load_frame_quiet_window_ns / 5
