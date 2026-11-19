@@ -20,12 +20,15 @@ fn (mut app BrowserApp) draw_portable_raster_texture(destination gg.Rect, width 
 
 fn (mut app BrowserApp) draw_portable_raster_texture_with_alpha(destination gg.Rect, width int,
 	height int, pixels []u8, alpha u8) {
+	app.upload_portable_raster_texture(destination, width, height, pixels, alpha, false)
+}
+
+fn (mut app BrowserApp) upload_portable_raster_texture(destination gg.Rect, width int,
+	height int, pixels []u8, alpha u8, retain_svg_clip bool) {
 	// Sokol allows one streaming update per texture per frame.
 	index := app.portable_raster_image_index
 	app.portable_raster_image_index++
-	if app.portable_svg_rasters != unsafe { nil } && index < portable_svg_raster_slots {
-		app.portable_svg_rasters.entries[index].path_len = 0
-	}
+	app.invalidate_portable_svg_raster(index, retain_svg_clip)
 	persistent := platform.enter_persistent()
 	mut slot := if index < app.portable_raster_images.len {
 		app.portable_raster_images[index]
@@ -55,6 +58,7 @@ fn (mut app BrowserApp) draw_portable_raster_texture_with_alpha(destination gg.R
 
 fn (mut app BrowserApp) finish_portable_raster_images() {
 	for app.portable_raster_images.len > app.portable_raster_image_index {
+		app.invalidate_portable_svg_raster(app.portable_raster_images.len - 1, false)
 		slot := app.portable_raster_images.pop()
 		app.ctx.remove_cached_image_by_idx(slot.image_id)
 	}

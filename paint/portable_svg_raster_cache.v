@@ -12,6 +12,7 @@ const portable_svg_raster_slots = 16
 const portable_svg_raster_path_values = 64 * layout.compatibility_clip_path_segment_stride
 const portable_svg_stroke_dash_values = 32
 const portable_svg_raster_gradient_values = 16 * 5
+const portable_svg_clip_variant_pixels = 64 * 1024
 const disable_portable_svg_raster_cache = os.getenv('VOX_DISABLE_GG_SVG_CACHE') == '1'
 const portable_svg_viewport_reuse = os.getenv('VOX_GG_SVG_VIEWPORT_REUSE') == '1'
 const portable_svg_raster_diagnostics = os.getenv('VOX_GG_SVG_DIAGNOSTICS') == '1'
@@ -39,6 +40,11 @@ struct PortableSVGRasterGradientKey {
 	stop_len      int
 }
 
+struct PortableSVGClipVariant {
+	image  PortableRasterImage
+	matrix [6]f32
+}
+
 struct PortableSVGRaster {
 mut:
 	key          PortableSVGRasterKey
@@ -50,6 +56,7 @@ mut:
 	dashes       [portable_svg_stroke_dash_values]f64
 	gradient_key PortableSVGRasterGradientKey
 	stops        [portable_svg_raster_gradient_values]f32
+	variant      PortableSVGClipVariant
 }
 
 struct PortableSVGRasters {
@@ -169,6 +176,13 @@ fn (app &BrowserApp) cached_portable_svg_raster(index int, values []f32) &Portab
 	return if entry.matches_path(values) { entry } else { unsafe { nil } }
 }
 
+fn portable_svg_raster_exact(image PortableRasterImage, cached [6]f32,
+	bounds painting.IntRect, matrix [6]f32) bool {
+	return image.width == bounds.width && image.height == bounds.height && unsafe {
+		vmemcmp(&cached[0], &matrix[0], 6 * int(sizeof(f32))) == 0
+	}
+}
+
 fn (mut app BrowserApp) draw_cached_portable_svg_raster(entry &PortableSVGRaster,
 	key PortableSVGRasterKey, matrix [6]f32, bounds painting.IntRect, dashes []f64,
 	gradient ?cpuraster.CanvasGradient, operation string) bool {
@@ -176,22 +190,67 @@ fn (mut app BrowserApp) draw_cached_portable_svg_raster(entry &PortableSVGRaster
 		|| !entry.matches_gradient(gradient) {
 		return false
 	}
-	slot := app.portable_raster_images[app.portable_raster_image_index]
+	index := app.portable_raster_image_index
+	mut slot := app.portable_raster_images[index]
 	mut source := gg.Rect{}
-	if slot.width != bounds.width || slot.height != bounds.height {
-		if !entry.crop_safe { return false }
-		origin := portable_svg_covering_crop(entry.matrix, painting.IntSize{slot.width, slot.height},
-			matrix, painting.IntSize{bounds.width, bounds.height}) or { return false }
-		source = gg.Rect{f32(origin.x), f32(origin.y), f32(bounds.width), f32(bounds.height)}
-	} else if unsafe { vmemcmp(&entry.matrix[0], &matrix[0], 6 * int(sizeof(f32))) != 0 } {
-		return false
+	mut detail := ''
+	if !portable_svg_raster_exact(slot, entry.matrix, bounds, matrix) {
+		variant := entry.variant
+		if portable_svg_raster_exact(variant.image, variant.matrix, bounds, matrix) {
+			mut current := &app.portable_svg_rasters.entries[index]
+			current.variant = PortableSVGClipVariant{slot, current.matrix}
+			current.matrix = variant.matrix
+			slot = variant.image
+			app.portable_raster_images[index] = slot
+			detail = ' variant=hit'
+		} else {
+			if !entry.crop_safe { return false }
+			origin := portable_svg_covering_crop(entry.matrix, painting.IntSize{slot.width, slot.height},
+				matrix, painting.IntSize{bounds.width, bounds.height}) or { return false }
+			source = gg.Rect{f32(origin.x), f32(origin.y), f32(bounds.width), f32(bounds.height)}
+			detail = ' crop=hit'
+		}
 	}
 	app.portable_raster_image_index++
 	app.ctx.draw_image_with_config(img_id: slot.image_id,
 		img_rect: app.portable_svg_texture_destination(bounds), part_rect: source,
 		color: gg.Color{255, 255, 255, 255})
-	log_portable_svg_raster_cache(operation, 'hit', bounds, gradient, source.width > 0)
+	log_portable_svg_raster_cache(operation, 'hit', bounds, gradient, detail)
 	return true
+}
+
+fn (app &BrowserApp) can_retain_portable_svg_clip_variant(entry &PortableSVGRaster,
+	key PortableSVGRasterKey, matrix [6]f32, bounds painting.IntRect,
+	gradient ?cpuraster.CanvasGradient) bool {
+	if gradient == none || !portable_svg_viewport_reuse || entry == unsafe { nil } {
+		return false
+	}
+	slot := app.portable_raster_images[app.portable_raster_image_index]
+	// Only retain when the streaming slot would have to be resized anyway.
+	if (slot.width == bounds.width && slot.height == bounds.height)
+		|| slot.width * slot.height > portable_svg_clip_variant_pixels
+		|| bounds.width * bounds.height > portable_svg_clip_variant_pixels
+		|| entry.key != key || !entry.matches_gradient(gradient) {
+		return false
+	}
+	if unsafe { vmemcmp(&entry.matrix[0], &matrix[0], 4 * int(sizeof(f32))) != 0 } { return false }
+	x := f64(entry.matrix[4]) - f64(matrix[4])
+	y := f64(entry.matrix[5]) - f64(matrix[5])
+	return math.is_finite(x) && math.is_finite(y) && x == math.floor(x) && y == math.floor(y)
+}
+
+fn (mut app BrowserApp) invalidate_portable_svg_raster(index int, retain_current bool) {
+	if app.portable_svg_rasters == unsafe { nil } || index >= portable_svg_raster_slots { return }
+	mut entry := &app.portable_svg_rasters.entries[index]
+	if entry.variant.image.width > 0 {
+		app.ctx.remove_cached_image_by_idx(entry.variant.image.image_id)
+		entry.variant = PortableSVGClipVariant{}
+	}
+	if retain_current {
+		entry.variant = PortableSVGClipVariant{app.portable_raster_images[index], entry.matrix}
+		app.portable_raster_images[index] = PortableRasterImage{image_id: -1}
+	}
+	entry.path_len = 0
 }
 
 fn (mut app BrowserApp) remember_portable_svg_raster(index int, data &layout.PaintSVGPathData,
@@ -223,10 +282,9 @@ fn (mut app BrowserApp) remember_portable_svg_raster(index int, data &layout.Pai
 }
 
 fn log_portable_svg_raster_cache(operation string, result string, bounds painting.IntRect,
-	gradient ?cpuraster.CanvasGradient, cropped bool) {
+	gradient ?cpuraster.CanvasGradient, detail string) {
 	if portable_svg_raster_diagnostics {
 		kind := if paint := gradient { paint.kind } else { 0 }
-		crop := if cropped { ' crop=hit' } else { '' }
-		eprintln('VOX_CPU_SVG_${operation} draw=${bounds.width}x${bounds.height} cache=${result} gradient=${kind}${crop}')
+		eprintln('VOX_CPU_SVG_${operation} draw=${bounds.width}x${bounds.height} cache=${result} gradient=${kind}${detail}')
 	}
 }

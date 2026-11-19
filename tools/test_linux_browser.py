@@ -625,7 +625,11 @@ function moveGradientAcrossViewport() {
         document.getElementById('art').setAttribute('style', 'top:0');
     if (frames === 48)
         document.getElementById('art').setAttribute('style', 'top:-126px');
-    if (frames === 60)
+    if (frames === 60) {
+        document.getElementById('linear').firstElementChild.setAttribute('stop-color', '#1746a8');
+        document.getElementById('art').setAttribute('style', 'top:-42px');
+    }
+    if (frames === 72)
         document.body.setAttribute('data-gradient-viewport-ready', '1');
     else
         requestAnimationFrame(moveGradientAcrossViewport);
@@ -634,31 +638,40 @@ requestAnimationFrame(moveGradientAcrossViewport);
 </script>
 """)
     documents = []
-    for label in ("rerasterized", "reused"):
-        enabled = label == "reused"
+    for label in ("rerasterized", "reused", "cpu-rerasterized", "cpu-reused"):
+        gpu = not label.startswith("cpu-")
+        enabled = label in ("reused", "cpu-reused")
         screenshot = artifacts / f"{fixture.stem}-{label}.png"
         screenshot.unlink(missing_ok=True)
         environment = smoke_environment(Path(temporary) / screenshot.stem)
         environment.pop("MESA_GL_VERSION_OVERRIDE", None)
-        environment.update(VOX_GG_SVG="1", VOX_GG_SVG_DIAGNOSTICS="1", VOX_DISABLE_GG_SVG_CACHE="0",
+        environment.update(VOX_GG_SVG=str(int(gpu)), VOX_GG_SVG_DIAGNOSTICS="1", VOX_DISABLE_GG_SVG_CACHE="0",
                            VOX_GG_SVG_VIEWPORT_REUSE=str(int(enabled)),
                            VOX_CAPTURE_READY_SELECTOR="body[data-gradient-viewport-ready]")
         log = run_windowed([str(binary), "--enable-javascript", "--window-width=800", "--window-height=600",
                             "--screenshot-viewport-height=600", f"--screenshot={screenshot}", str(page)],
                            env=environment, log_path=artifacts / f"{screenshot.stem}.log")
-        gradients = [line for line in log.splitlines() if line.startswith("VOX_GG_SVG draw=")
+        prefix = "VOX_GG_SVG draw=" if gpu else "VOX_CPU_SVG_FILL draw="
+        gradients = [line for line in log.splitlines() if line.startswith(prefix)
                      and " gradient=" in line]
         assert not any("crop=hit" in line for line in gradients), log
-        full_hits = [line for line in gradients if "draw=200x120 cache=hit bounds=hit" in line]
-        assert any(" hint=hit " in line and line.endswith(" gradient=1") for line in full_hits), log
-        # The radial fill shares the path bytes and extent with the linear
-        # fill. Its separate paint must still select its own texture.
-        assert any(" hint=hit " not in line and line.endswith(" gradient=2") for line in full_hits), log
+        if gpu:
+            full_hits = [line for line in gradients if "draw=200x120 cache=hit bounds=hit" in line]
+            assert any(" hint=hit " in line and line.endswith(" gradient=1") for line in full_hits), log
+            # The radial fill shares the path bytes and extent with the linear
+            # fill. Its separate paint must still select its own texture.
+            assert any(" hint=hit " not in line and line.endswith(" gradient=2") for line in full_hits), log
+        else:
+            assert any("draw=200x120 cache=hit gradient=1 variant=hit" in line
+                       for line in gradients) == enabled, log
         for height, kind in ((112, 1), (112, 2), (111, 1)):
             draws = [line for line in gradients if f"draw=200x{height} " in line
-                     and line.endswith(f" gradient={kind}")]
-            assert sum("cache=miss" in line for line in draws) == (1 if enabled else 2), log
-            assert any("cache=hit bounds=hit" in line for line in draws), log
+                     and f" gradient={kind}" in line]
+            expected_misses = (1 if enabled else 3) + int(enabled and kind == 1)
+            assert sum("cache=miss" in line for line in draws) == expected_misses, (label, height, kind, log)
+            assert any("cache=hit" in line for line in draws), log
+            if not gpu:
+                assert any("variant=hit" in line for line in draws) == enabled, log
         for kind in (1, 2):
             assert any("draw=200x28 cache=miss" in line and line.endswith(f" gradient={kind}")
                        for line in gradients), log
@@ -671,7 +684,8 @@ requestAnimationFrame(moveGradientAcrossViewport);
         assert left != middle and b"\xff\xff\xff" not in (left, middle)
         documents.append(rows[marker:height - 24])
     assert documents[0] == documents[1], "Retaining exact gradient textures changed document pixels"
-    print("PASS: GG viewport changes reuse exact gradient textures", flush=True)
+    assert documents[2] == documents[3], "Retaining exact CPU gradient textures changed document pixels"
+    print("PASS: GG and CPU viewport changes reuse exact gradient textures and invalidate live stop edits", flush=True)
 
 
 def check_gg_svg_gradient_fills(binary, artifacts, temporary):

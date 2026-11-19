@@ -140,11 +140,11 @@ fn (mut app BrowserApp) draw_portable_svg_raster_stroke(command &layout.PaintCom
 		cap, join, miter, data.stroke_dasharray.map(f32(it)), f32(data.stroke_dashoffset), [], none) {
 		return false
 	}
-	app.upload_portable_svg_pixels(bounds, pixels)
+	app.upload_portable_svg_pixels(bounds, pixels, false)
 	if cache_index >= 0 {
 		app.remember_portable_svg_raster(cache_index, &data, key, surface_matrix, local, gradient)
 	}
-	log_portable_svg_raster_cache('STROKE', 'miss', bounds, gradient, false)
+	log_portable_svg_raster_cache('STROKE', 'miss', bounds, gradient, '')
 	return true
 }
 
