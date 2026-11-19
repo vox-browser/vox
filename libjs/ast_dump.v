@@ -721,7 +721,7 @@ fn dump_expression(expression &Expression, state DumpState) {
 		.assignment {
 			dump_node_with(state, 'AssignmentExpression', expression.range, color_op(state,
 				assignment_op_to_string(expression.kind.assignment_op)))
-			if assign_lhs := expression.kind.assignment_lhs {
+			if assign_lhs := expression.kind.assignment_lhs() {
 				match assign_lhs {
 					AssignmentLhsExpression {
 						dump_expression(assign_lhs.expression, child_state(state, false))
@@ -744,9 +744,9 @@ fn dump_expression(expression &Expression, state DumpState) {
 		}
 		.sequence {
 			dump_node(state, 'SequenceExpression', expression.range)
-			for i, child in expression.kind.expressions {
+			for i, child in expression.kind.expressions() {
 				dump_expression(&child,
-					child_state(state, i == expression.kind.expressions.len - 1))
+					child_state(state, i == expression.kind.expressions().len - 1))
 			}
 		}
 		.member {
@@ -846,8 +846,8 @@ fn dump_expression(expression &Expression, state DumpState) {
 		}
 		.array_expr {
 			dump_node(state, 'ArrayExpression', expression.range)
-			for i, elem in expression.kind.array_elements {
-				cs := child_state(state, i == expression.kind.array_elements.len - 1)
+			for i, elem in expression.kind.array_elements() {
+				cs := child_state(state, i == expression.kind.array_elements().len - 1)
 				if e := elem {
 					dump_expression(&e, cs)
 				} else {
@@ -857,9 +857,9 @@ fn dump_expression(expression &Expression, state DumpState) {
 		}
 		.object_expr {
 			dump_node(state, 'ObjectExpression', expression.range)
-			for i, prop in expression.kind.object_properties {
+			for i, prop in expression.kind.object_properties() {
 				dump_object_property(&prop, child_state(state,
-					i == expression.kind.object_properties.len - 1), state)
+					i == expression.kind.object_properties().len - 1), state)
 			}
 		}
 		.template_literal {

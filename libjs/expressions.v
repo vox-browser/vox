@@ -181,8 +181,10 @@ fn (mut p Parser) parse_comma_expression(start Position, expression Expression, 
 			expressions << p.parse_assignment_expression()
 		}
 		return p.expression(start, ExpressionKind{
-			tag:         .sequence
-			expressions: expressions
+			tag:   .sequence
+			lists: &ExpressionLists{
+				expressions: expressions
+			}
 		})
 	}
 	return expression
@@ -554,8 +556,10 @@ fn (mut p Parser) parse_secondary_expression(lhs Expression, min_precedence int,
 						tag:                  .assignment
 						assignment_op:        op
 						lhs_is_parenthesized: lhs_is_parenthesized
-						assignment_lhs:       AssignmentLhsPattern{
-							pattern: pattern
+						lists:                &ExpressionLists{
+							assignment_lhs: AssignmentLhsPattern{
+								pattern: pattern
+							}
 						}
 						rhs:                  &rhs
 					}), ForbiddenTokens{}
@@ -579,8 +583,10 @@ fn (mut p Parser) parse_secondary_expression(lhs Expression, min_precedence int,
 				tag:                  .assignment
 				assignment_op:        op
 				lhs_is_parenthesized: lhs_is_parenthesized
-				assignment_lhs:       AssignmentLhsExpression{
-					expression: &lhs
+				lists:                &ExpressionLists{
+					assignment_lhs: AssignmentLhsExpression{
+						expression: &lhs
+					}
 				}
 				rhs:                  &rhs
 			}), ForbiddenTokens{}
@@ -1081,8 +1087,10 @@ fn (mut p Parser) parse_object_expression() Expression {
 
 	p.consume_token(.curly_close)
 	return p.expression(start, ExpressionKind{
-		tag:               .object_expr
-		object_properties: properties
+		tag:   .object_expr
+		lists: &ExpressionLists{
+			object_properties: properties
+		}
 	})
 }
 
@@ -1409,8 +1417,10 @@ fn (mut p Parser) parse_array_expression() Expression {
 
 	p.consume_token(.bracket_close)
 	return p.expression(start, ExpressionKind{
-		tag:            .array_expr
-		array_elements: elements
+		tag:   .array_expr
+		lists: &ExpressionLists{
+			array_elements: elements
+		}
 	})
 }
 

@@ -319,14 +319,14 @@ fn (mut generator BytecodeGenerator) expression(mut vm VM, expression &Expressio
 			return dst
 		}
 		.array_expr {
-			for element in kind.array_elements {
+			for element in kind.array_elements() {
 				if value := element {
-					if value.kind.tag == .spread { return generator.array_literal_with_spread(mut vm, kind.array_elements) }
+					if value.kind.tag == .spread { return generator.array_literal_with_spread(mut vm, kind.array_elements()) }
 				}
 			}
 			dst := generator.temporary()
-			generator.emit(Instruction{op: .new_array, dst: dst, lhs: generator.constant(Value.from_f64(f64(kind.array_elements.len)))})
-			for index, element in kind.array_elements {
+			generator.emit(Instruction{op: .new_array, dst: dst, lhs: generator.constant(Value.from_f64(f64(kind.array_elements().len)))})
+			for index, element in kind.array_elements() {
 				if value := element {
 					item := generator.expression(mut vm, &value)!
 					generator.emit(Instruction{op: .define_property, lhs: dst, rhs: generator.constant(Value.from_f64(f64(index))), src: item})
@@ -335,7 +335,7 @@ fn (mut generator BytecodeGenerator) expression(mut vm VM, expression &Expressio
 			return dst
 		}
 		.object_expr {
-			return generator.object_literal(mut vm, kind.object_properties)
+			return generator.object_literal(mut vm, kind.object_properties())
 		}
 		.function_expr {
 			dst := generator.temporary()
@@ -448,7 +448,7 @@ fn (mut generator BytecodeGenerator) expression(mut vm VM, expression &Expressio
 		}
 		.sequence {
 			mut last := generator.constant(js_undefined())
-			for part in kind.expressions {
+			for part in kind.expressions() {
 				last = generator.expression(mut vm, &part)!
 			}
 			return last
@@ -515,7 +515,7 @@ fn (mut generator BytecodeGenerator) expression(mut vm VM, expression &Expressio
 			return dst
 		}
 		.assignment {
-			target := kind.assignment_lhs or { return error('Missing assignment target') }
+			target := kind.assignment_lhs() or { return error('Missing assignment target') }
 			if target is AssignmentLhsPattern {
 				if kind.assignment_op != .assignment { return error('Invalid destructuring assignment operator') }
 				value := generator.expression(mut vm, kind.rhs or { return error('Missing assignment rhs') })!

@@ -564,7 +564,7 @@ fn (mut ft FunctionTable) collect_from_expression(expr &Expression, mut result F
 			}
 		}
 		.assignment {
-			if assign_lhs := expr.kind.assignment_lhs {
+			if assign_lhs := expr.kind.assignment_lhs() {
 				match assign_lhs {
 					AssignmentLhsExpression {
 						ft.collect_from_expression(assign_lhs.expression, mut result)
@@ -585,7 +585,7 @@ fn (mut ft FunctionTable) collect_from_expression(expr &Expression, mut result F
 			ft.collect_from_expression(&branches.alternate, mut result)
 		}
 		.sequence {
-			for e in expr.kind.expressions {
+			for e in expr.kind.expressions() {
 				ft.collect_from_expression(&e, mut result)
 			}
 		}
@@ -635,14 +635,14 @@ fn (mut ft FunctionTable) collect_from_expression(expr &Expression, mut result F
 			}
 		}
 		.array_expr {
-			for elem in expr.kind.array_elements {
+			for elem in expr.kind.array_elements() {
 				if e := elem {
 					ft.collect_from_expression(&e, mut result)
 				}
 			}
 		}
 		.object_expr {
-			for prop in expr.kind.object_properties {
+			for prop in expr.kind.object_properties() {
 				ft.collect_from_expression(&prop.key, mut result)
 				if val := prop.value {
 					ft.collect_from_expression(&val, mut result)
@@ -1300,7 +1300,6 @@ mut:
 	computed      bool
 	is_yield_from bool
 	// Assignment lhs
-	assignment_lhs       ?AssignmentLhs
 	lhs_is_parenthesized bool
 	// Call data (heap-allocated to break struct cycles)
 	call_data       ?&CallExpressionData
@@ -1310,15 +1309,46 @@ mut:
 	// Class (heap-allocated to break struct cycles)
 	class_data ?&ClassData
 	// Collections
-	expressions       []Expression
-	array_elements    []?Expression
-	object_properties []ObjectProperty
+	// Sequence, array, object and assignment payloads; see ExpressionLists.
+	lists ?&ExpressionLists
 	// Only optional-chain expressions store a base and reference list.
 	optional_chain_data ?&OptionalChainData
 	// Template
 	template_data ?&TemplateLiteralData
 	// Meta property
 	meta_property_type MetaPropertyType
+}
+
+// Present only on sequence, array, object and assignment nodes. Keeping these
+// 216 bytes out of line shrinks every other expression node, its copies and
+// the parent records that embed expressions.
+@[heap]
+struct ExpressionLists {
+mut:
+	expressions       []Expression
+	array_elements    []?Expression
+	object_properties []ObjectProperty
+	assignment_lhs    ?AssignmentLhs
+}
+
+fn (kind &ExpressionKind) expressions() []Expression {
+	if lists := kind.lists { return lists.expressions }
+	return []Expression{}
+}
+
+fn (kind &ExpressionKind) array_elements() []?Expression {
+	if lists := kind.lists { return lists.array_elements }
+	return []?Expression{}
+}
+
+fn (kind &ExpressionKind) object_properties() []ObjectProperty {
+	if lists := kind.lists { return lists.object_properties }
+	return []ObjectProperty{}
+}
+
+fn (kind &ExpressionKind) assignment_lhs() ?AssignmentLhs {
+	if lists := kind.lists { return lists.assignment_lhs }
+	return none
 }
 
 fn ExpressionKind.error() ExpressionKind {
