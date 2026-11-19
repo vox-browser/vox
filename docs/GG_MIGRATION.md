@@ -1,5 +1,50 @@
 # Migrating from Skia to vlib/gg
 
+## Internally tangent SVG focal circles
+
+The shared Canvas path handles an expanding pad gradient whose focal
+circle touches the outer circle, including a point focus. When the
+quadratic term vanishes, the gradient uses the linear solution and
+leaves the half-plane beyond the common tangent transparent. Dedicated
+four- and eight-stop shader variants are compiled on demand. Tangent
+gradients with repeat or reflect still use the existing fallback.
+[SVG 2 radial gradients](https://www.w3.org/TR/SVG2/pservers.html#RadialGradients)
+
+The shared pixel test passed on Metal and Mesa OpenGL for a tangent
+circle at full and half opacity. The Linux window fixture also covers a
+diagonal point focus and an `fx` edit that moves a strictly nested circle
+into tangency. Cached and uncached document captures matched exactly.
+The full Linux GG SVG window suite and Windows amd64 OpenGL source check
+passed.
+
+Existing radial gradients matched pixel for pixel against the previous
+Linux executable. Both builds used V `5a39a4d` and single-unit Clang
+`-O0`. The control and candidate executable SHA-256 values were
+`45ddfffaac3740494f141417f07a83639ecc97df5b2fd60c04bec3745883061d`
+and `d61e60572f01765c86f8078fd5597a0a488c9f9c06e03dcfa3c43861209943fd`.
+The fixture and shared shader directory SHA-256 values were
+`c5d880e712d0a6eb9bd203e4c58cbbcd0939ade054911cc6cd893ed49e01fef2`
+and `970ce36acbf7ea10b948d0a063d6315d587aadf8a8d84784d644b17ab6ffc48e`.
+
+Each synthetic trial used Mesa software OpenGL under Xvfb, a fresh
+process and private browser state, an 800 × 712 window, a one-second
+settle and 32 self-paced 42-pixel scroll steps. Scroll positions and
+paint-command counts matched. One-minute guest load ranged from 0.93 to
+2.19 on four virtual CPUs. The benchmark and memory guard exited zero.
+
+| Mode and pair | Median control / candidate, ms | p95, ms | Maximum, ms |
+| --- | ---: | ---: | ---: |
+| Cached 1 | 5.5675 / 4.083 | 7.660 / 7.126 | 9.444 / 7.522 |
+| Cached 2 | 5.019 / 4.3205 | 6.100 / 5.334 | 7.636 / 7.006 |
+| Rerasterized 1 | 5.250 / 4.077 | 7.944 / 6.689 | 9.116 / 7.023 |
+| Rerasterized 2 | 5.296 / 5.0175 | 8.521 / 6.422 | 8.625 / 7.676 |
+
+Separate diagnostic runs confirmed 62 steady-state cache hits with
+caching and 62 rasterizations with caching disabled. The executables
+also contain different working-tree changes, so the timing comparison
+does not isolate the tangent shader's effect. Hardware performance and
+Windows runtime remain unverified.
+
 ## Off-center SVG focal circles
 
 The shared Canvas path now draws a radial gradient whose focal circle
