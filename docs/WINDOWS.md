@@ -158,7 +158,10 @@ Use `--opengl` to build the experimental Sokol OpenGL window and set
 `VOX_GG_SVG=1` at launch to exercise the shared `gg.canvas` SVG path renderer.
 The window requests OpenGL 4.3. Canvas uses the window's current context and
 requires shader storage buffers in both shader stages. The standard build
-uses the D3D11 window with its WARP fallback.
+uses the D3D11 window with its WARP fallback. Both window backends can replay
+supported SVG fills and strokes through the same CPU rasterizer and texture
+cache that Linux uses. The OpenGL build tries the GG Canvas GPU renderer first
+when enabled.
 
 The Windows build uses `-gc none`; scoped `-prealloc` remains unavailable.
 Process tab grouping uses the existing in-process fallback. Dedicated script
@@ -372,6 +375,8 @@ Run it on the interactive desktop with an empty `VOX_PROFILE_DIR`, matching
 runtime DLLs on `PATH`, and update checking disabled in that private profile.
 The driver raises its browser window before reading desktop pixels, and emits
 physical scan codes for shortcuts, matching Sokol's Win32 input boundary.
+The startup fixture checks gradient endpoint colors, an even-odd hole, and
+the width and gap of a dashed, non-scaling SVG stroke.
 Earlier driver attempts failed because the window was obscured or keyboard
 scan codes were absent; these attempts remain local evidence. The earlier
 900-second browser timeout is also retained and is not a passing close check.

@@ -1,5 +1,33 @@
 # Migrating from Skia to vlib/gg
 
+## Sharing the portable SVG fallback with Windows
+
+The standard Windows D3D11 window now uses the same CPU raster and GG texture
+cache as Linux for supported SVG path fills and strokes. The OpenGL variant
+tries GG Canvas first when enabled and uses the same CPU fallback on a
+decline. Non-scaling strokes get the same viewport culling allowance on both
+platforms.
+
+The Windows browser smoke driver samples the presented pixels of an SVG
+gradient with an even-odd hole and a dashed, non-scaling stroke. Its fixture
+also ran through an aarch64 Linux build with `vox_gg_svg` omitted. All six
+SVG pixel assertions matched, and diagnostics showed a raster miss followed
+by texture hits for both paint operations. The V `5a39a4d` single-unit
+Clang `-O0` executable SHA-256 was
+`74c8ee0b9fa0fe90a97663d8b91c05d49498db6f77c17851f61dca2a01d86902`.
+The full Linux browser smoke suite passed on its second run. The first
+run passed the rendering checks and exited 139 during keyboard navigation.
+A separate lifecycle retry also passed with the same binary.
+
+The guarded Windows amd64 D3D11 cross-build produced a PE32+ executable
+with SHA-256
+`21f77d647e14e0d051f45d7458c6d4a5850c8369ec139297a83a4d7759e08725`.
+The PE calls the shared fill and raster stroke routines. The smoke driver
+cross-compiled with warnings treated as errors, and the Windows OpenGL
+source check passed. The Windows VM's disk reserve
+requires 5 GiB of free host storage. The host had about 1.6 GiB free, so
+Windows pixel and timing checks remain pending.
+
 ## Converting CPU SVG upload pixels faster
 
 The shared CPU raster readback copies opaque RGB bytes directly and writes zero
