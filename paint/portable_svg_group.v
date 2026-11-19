@@ -69,8 +69,14 @@ mut:
 	pixels []u8
 }
 
+struct PortableSVGGroupRecording {
+	document u64
+	revision u64
+	viewport painting.Rect
+}
+
 struct PortableSVGGroupKey {
-	generation u64
+	recording  PortableSVGGroupRecording
 	start      int
 	viewport   painting.Rect
 	page_x     f32
@@ -83,28 +89,54 @@ struct PortableSVGGroupTexture {
 	bounds painting.IntRect
 }
 
+struct PortableSVGGroupVariant {
+	image   PortableRasterImage
+	texture PortableSVGGroupTexture
+}
+
+struct PortableSVGGroupSlot {
+mut:
+	active    PortableSVGGroupTexture
+	alternate PortableSVGGroupVariant
+}
+
 fn (app &BrowserApp) portable_svg_group_key(commands []layout.PaintCommand, start int,
 	viewport painting.Rect, page_x f32, page_y f32) PortableSVGGroupKey {
-	// Nested recordings use projected copies of the commands. The canonical
-	// recording generation only tracks the top-level command vector.
+	// Nested recordings use projected copies with their own transforms.
 	if disable_portable_svg_raster_cache || commands.data != app.paint_commands.data
 		|| app.portable_raster_image_index >= portable_svg_raster_slots {
 		return PortableSVGGroupKey{}
 	}
-	return PortableSVGGroupKey{app.paint_generation, start, viewport, page_x, page_y, app.ctx.scale}
+	// Root scrolling rebuilds lowered commands. The content revision covers
+	// their paint, and the recorded viewport fixes the placement of sticky
+	// and fixed content at each offset.
+	recording := if portable_svg_viewport_reuse {
+		app.portable_svg_group_recording
+	} else {
+		PortableSVGGroupRecording{revision: app.paint_generation}
+	}
+	return PortableSVGGroupKey{recording, start, viewport, page_x, page_y, app.ctx.scale}
 }
 
 fn (mut app BrowserApp) draw_cached_portable_svg_group(key PortableSVGGroupKey, alpha u8) bool {
 	index := app.portable_raster_image_index
-	if key.generation == 0 || index >= app.portable_raster_images.len { return false }
-	texture := &app.portable_svg_group_textures[index]
-	if texture.key != key { return false }
+	if key.recording.revision == 0 || index >= app.portable_raster_images.len { return false }
+	mut group := &app.portable_svg_group_textures[index]
+	mut detail := ''
+	if group.active.key != key {
+		alternate := group.alternate
+		if alternate.texture.key != key { return false }
+		group.alternate = PortableSVGGroupVariant{app.portable_raster_images[index], group.active}
+		group.active = alternate.texture
+		app.portable_raster_images[index] = alternate.image
+		detail = ' variant=hit'
+	}
 	app.ctx.draw_image_with_config(img_id: app.portable_raster_images[index].image_id,
-		img_rect: app.portable_svg_texture_destination(texture.bounds),
+		img_rect: app.portable_svg_texture_destination(group.active.bounds),
 		color: gg.Color{255, 255, 255, alpha})
 	app.portable_raster_image_index++
 	if portable_svg_raster_diagnostics {
-		eprintln('VOX_SVG_GROUP cache=hit start=${key.start}')
+		eprintln('VOX_SVG_GROUP cache=hit start=${key.start}${detail}')
 	}
 	return true
 }
@@ -183,10 +215,32 @@ fn (mut app BrowserApp) draw_portable_svg_group_image(image &PortableSVGGroupIma
 	key PortableSVGGroupKey) {
 	bounds := image.bounds
 	index := app.portable_raster_image_index
+	mut alternate := PortableSVGGroupVariant{}
+	if portable_svg_viewport_reuse && key.recording.revision != 0
+		&& index < app.portable_raster_images.len
+		&& bounds.width * bounds.height <= portable_svg_clip_variant_pixels {
+		active := app.portable_svg_group_textures[index].active
+		slot := app.portable_raster_images[index]
+		if active.key.recording.document == key.recording.document
+			&& active.key.recording.revision == key.recording.revision && active.key.start == key.start
+			&& active.key.scale == key.scale
+			&& slot.width * slot.height <= portable_svg_clip_variant_pixels {
+			// Keep the exact previous placement. The new raster's origin
+			// can change gradient rounding, even at equal texture sizes.
+			alternate = PortableSVGGroupVariant{slot, active}
+			app.portable_raster_images[index] = PortableRasterImage{image_id: -1}
+		}
+	}
 	app.draw_portable_raster_texture_with_alpha(app.portable_svg_texture_destination(bounds),
 		bounds.width, bounds.height, image.pixels, alpha)
-	if key.generation != 0 {
-		app.portable_svg_group_textures[index] = PortableSVGGroupTexture{key, bounds}
+	if key.recording.revision != 0 {
+		app.portable_svg_group_textures[index] = PortableSVGGroupSlot{
+			active: PortableSVGGroupTexture{key, bounds}
+			alternate: alternate
+		}
+		if portable_svg_raster_diagnostics {
+			eprintln('VOX_SVG_GROUP cache=miss start=${key.start}')
+		}
 	}
 }
 

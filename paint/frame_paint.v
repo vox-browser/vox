@@ -5,6 +5,7 @@ import processmetrics
 import dom
 import layout
 import math
+import painting
 import time
 import platform
 import os
@@ -173,6 +174,14 @@ fn (mut app BrowserApp) record_document_paint_commands() {
 		app.paint_display_list = list
 		app.paint_generation++
 		app.paint_commands = layout.display_list_commands(list)
+		if portable_svg_viewport_reuse {
+			viewport := document.viewport_rect()
+			app.portable_svg_group_recording = PortableSVGGroupRecording{
+				document: u64(document.unique_id().value())
+				revision: document.paint_content_revision()
+				viewport: painting.Rect{viewport.x, viewport.y, viewport.width, viewport.height}
+			}
+		}
 		app.paint_scene = layout.retain_display_list_scene(list)
 		layout.release_display_list_scene(previous_scene)
 		// Return the previous vector after dropping our lease. The recording

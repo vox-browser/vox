@@ -333,6 +333,7 @@ def check_gg_svg_browser(binary, artifacts, temporary):
     check_gg_svg_gradient_fills(binary, artifacts, temporary)
     check_gg_svg_gradient_strokes(binary, artifacts, temporary)
     check_gg_svg_gradient_viewport(binary, artifacts, temporary)
+    check_svg_gradient_group_viewport(binary, artifacts, temporary)
     check_gg_svg_radial_spread(binary, artifacts, temporary)
     check_gg_svg_repeat_point_focus(binary, artifacts, temporary)
     check_gg_svg_texture_pressure(binary, artifacts, temporary)
@@ -1459,6 +1460,71 @@ requestAnimationFrame(editGradient);
         documents.append(rows[top:top + 264])
     assert documents[0] == documents[1] == documents[2], "Grouped gradient replay changed pixels"
     print("PASS: SVG gradient fills preserve group opacity, curved clips and alpha masks", flush=True)
+
+
+def check_svg_gradient_group_viewport(binary, artifacts, temporary):
+    fixture = Path(__file__).resolve().parents[1] / "Tests/Browser/Native/svg-gradient-groups.html"
+    page = Path(temporary) / "svg-gradient-group-viewport.html"
+    page.write_text(fixture.read_text() + """
+<style>
+body { min-height: 642px; }
+aside { position: fixed; top: 0; right: 0; width: 12px; height: 4px; background: #093c57; }
+</style>
+<aside></aside>
+<script>
+let wheels = 0;
+window.addEventListener('wheel', function () {
+    if (++wheels === 101)
+        document.getElementById('blue').firstElementChild.setAttribute('stop-color', '#f00');
+}, {passive: true});
+</script>
+""")
+    documents = []
+    for reuse in (False, True):
+        label = f"svg-gradient-group-viewport-{int(reuse)}"
+        screenshot = artifacts / f"{label}.png"
+        screenshot.unlink(missing_ok=True)
+        environment = smoke_environment(Path(temporary) / label)
+        for effect in ("OPACITY", "CLIP", "MASK"):
+            environment.pop(f"VOX_DISABLE_PORTABLE_SVG_{effect}", None)
+        environment.update(VOX_GG_SVG="1", VOX_GG_SVG_DIAGNOSTICS="1",
+                           VOX_DISABLE_GG_SVG_CACHE="0", VOX_GG_SVG_VIEWPORT_REUSE=str(int(reuse)),
+                           VOX_PROFILE_SCROLL="1", VOX_SCROLL_PROFILE_FRAMES="181",
+                           VOX_SCROLL_PROFILE_SETTLE_MS="1000")
+        log = run_windowed([str(binary), "--enable-javascript", "--window-width=800",
+                            "--window-height=712", "--screenshot-viewport-height=600",
+                            f"--screenshot={screenshot}", str(page)],
+                           env=environment, log_path=artifacts / f"{label}.log")
+        moves = []
+        draws = []
+        for line in log.splitlines():
+            if line.startswith("VOX_SVG_GROUP "):
+                draws.append(line)
+            if line.startswith("Vox scroll frame:"):
+                frame = line.split()
+                fields = dict(token.split("=", 1) for token in frame[4:])
+                before, after = float(fields["before_y"]), float(fields["after_y"])
+                if before != after:
+                    moves.append((int(frame[3]), before, after, draws))
+                draws = []
+        assert [(frame, before, after) for frame, before, after, _ in moves] == [
+            (frame, 42 if frame % 60 else 0, 0 if frame % 60 else 42)
+            for frame in range(0, 181, 30)
+        ], (label, moves)
+        for frame, _, _, draws in moves[1:]:
+            # The stop edit invalidates the old texture at y=42 before frame 120.
+            kind = "variant=hit" if reuse and frame != 120 else "cache=miss"
+            assert len(draws) == 3 and all(kind in draw for draw in draws), (label, frame, draws)
+
+        width, height, channels, rows = rendered_png_rows(screenshot.read_bytes())
+        marker = next(y for y, row in enumerate(rows[:150])
+                      if row[(width - 4) * channels:(width - 4) * channels + 3] == b"\x09\x3c\x57")
+        row = rows[marker + 8 + 220 - 42]
+        assert row[24 * channels:24 * channels + 3] in (b"\xff\x7f\x7f", b"\xff\x80\x80"), label
+        assert row[100 * channels:100 * channels + 3] == b"\xff\xff\xff", label
+        documents.append(rows[marker:height - 24])
+    assert documents[0] == documents[1], "Reusing an exact SVG group viewport changed the document pixels"
+    print("PASS: SVG groups reuse exact viewport textures and invalidate them after a live stop edit", flush=True)
 
 
 def check_nested_svg_browser(binary, artifacts, temporary):
