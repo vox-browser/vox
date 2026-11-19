@@ -1244,6 +1244,60 @@ hashes stayed fixed, and both executables used the same linked library
 set. All browser and guard exits in the final runs were zero. Native
 Windows pixels and hardware GPU timings remain pending.
 
+## SVG masks intersecting transformed viewports
+
+In `79bd5dee3`, the portable player intersects a mask region with
+rectangular viewport clips that share its transform. It computes the
+overlap in local coordinates before allocating the surface and rasterizing
+its edges. An empty intersection consumes the group without drawing.
+Every leaf must resolve to the same rectangle. Transformed clips in
+different coordinate systems retain fallback.
+
+The fixture covers a skewed alpha mask with two foreground paths, a
+reflected luminance mask with a live origin edit, and a disjoint viewport.
+An untimed Linux fallback run left (98, 85) blue. The candidate and the
+macOS reference left it white. The cached CPU, GG-enabled, and uncached
+Linux captures match across the 800 × 516 document. The fixture SHA-256
+is `0eaa19ba11bddf05fe58939c11af7c9408330ed7ce638b881ac301ef7cc72a78`.
+The decoded RGB document SHA-256 is
+`d2e3b2adc4e0a71d4e1539f0b6a0fddb37bc6edc57b960fcae95f2e364e9a64a`.
+
+The macOS reference was PID 68648 from the published single-C-unit
+`894f19090` build, executable SHA-256
+`f1bae5284118c638f79578e68cf2d7e99d21c29d144b3bd6abc328f3dafd9010`.
+Of 412,800 pixels, 410,845 matched exactly and 1,875 differed by one
+channel level. The remaining 80 differed by up to seven levels along
+the antialiased interior red path. The prior transformed-region fixture
+also retained its exact macOS document pixels in a fresh launch of
+`fb702c8d6`, PID 74867, executable SHA-256
+`62b391b3b68052a2a04d009a02505a3dd0b86659e52e2ec55c1a41676e7bc8c8`.
+
+The new check and eighteen neighboring Linux window checks passed under
+the memory guard. The macOS and Windows D3D11 and OpenGL C backend source
+checks and 21 smoke-driver unit tests passed.
+
+Two alternating pairs used one Linux ARM64 executable built in a single
+C unit with V `5a39a4d` and Clang `-O0`. Its SHA-256 is
+`7fc05aa07ae45e77d17a9b8a271468b77c67cb84148d95ebb84da54c35d935f8`.
+Fresh processes used private profiles and caches, JavaScript off,
+and one Mesa software worker in an 800 × 600 Xvfb window. A one-second
+settle preceded 48 synthetic idle callbacks. Separate diagnostics
+recorded two mask rasters per complete interval with caching disabled
+and two texture hits with caching enabled. All timings used identical
+paint command counts, stationary offsets, and decoded pixels, SHA-256
+`d5bd27e16c0d80a9e16b729784ad25ea60bf2836e90510765190bd3655942de6`.
+
+| Pair | Uncached / cached median replay, ms | Uncached / cached p95 and maximum, ms | Uncached / cached median allocated KiB |
+| --- | ---: | ---: | ---: |
+| 1 | 1.525 / 0.842 | 1.833, 1.867 / 1.052, 1.154 | 280.5 / 119 |
+| 2 | 1.666 / 0.814 | 1.874, 2.063 / 0.967, 1.163 | 280 / 120 |
+
+One-minute guest load ranged from 1.38 to 1.54 across the timed
+launches on four vCPUs. The fixture, executable, and linked libraries
+retained their hashes. The browser processes and all final guards
+exited zero. Native Windows pixels and hardware GPU timing remain
+pending.
+
 ## Sharing the portable SVG fallback with Windows
 
 The standard Windows D3D11 window now uses the same CPU raster and GG texture
