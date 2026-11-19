@@ -5,8 +5,12 @@ import platform
 // Declarative names are unique; deletion retains a slot. Remember successful
 // positions only, and reread the live name/deleted bit before using a hint.
 // Values, absence and outer-environment resolution are never cached.
+// Hints hold at most one position per name found, so only large scopes reach
+// the bound. Bundled modules keep hundreds of functions in one factory scope;
+// inner closures that read more than 64 of those names cleared a 64-entry
+// table on nearly every insertion and fell back to scanning the whole scope.
 const binding_lookup_hint_minimum = 16
-const binding_lookup_hint_limit = 64
+const binding_lookup_hint_limit = 4096
 
 @[heap]
 struct BindingLookupHints {
@@ -35,6 +39,16 @@ $if test {
 		binding_lookup_diagnostics = enabled
 		return previous
 	}
+}
+
+$if test {
+	__global binding_lookup_hint_limit_for_test int
+	pub fn set_binding_lookup_hint_limit_for_testing(limit int) { binding_lookup_hint_limit_for_test = limit }
+}
+
+fn binding_lookup_limit() int {
+	$if test { if binding_lookup_hint_limit_for_test > 0 { return binding_lookup_hint_limit_for_test } }
+	return binding_lookup_hint_limit
 }
 
 fn binding_lookup_hash(name Utf16String) u64 {
@@ -74,7 +88,7 @@ fn (environment &DeclarativeEnvironment) find_binding_index_with_hints(name Utf1
 		owner.binding_lookup_hints = created
 		created
 	}
-	if hints.positions.len >= binding_lookup_hint_limit { hints.positions.clear() }
+	if hints.positions.len >= binding_lookup_limit() { hints.positions.clear() }
 	hints.positions[hash] = index
 	return index
 }

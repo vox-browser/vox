@@ -41,6 +41,9 @@ fn test_binding_lookup_hints_read_live_values_and_preserve_deletion_recreation_a
 	mut vm := VM.create()
 	create_simple_execution_context(mut vm)
 	mut env := binding_lookup_fixture(mut vm)!
+	// Initialization already hinted every name; start from an empty table so the
+	// first read misses and the second uses the hint it recorded.
+	env.binding_lookup_hints = none
 	diagnose_binding_lookup_for_testing(true)
 	assert env.get_binding_value(mut vm, utf16_string('binding17'), false)!.as_i32() == 17
 	assert env.get_binding_value(mut vm, utf16_string('binding17'), false)!.as_i32() == 17
