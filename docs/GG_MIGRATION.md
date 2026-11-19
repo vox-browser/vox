@@ -1,5 +1,55 @@
 # Migrating from Skia to vlib/gg
 
+## Compositing SVG mask strips directly into group alpha
+
+Portable linear SVG masks shade one row or column and apply its samples
+directly to the group's alpha. For luminance masks, each premultiplied RGB
+sample is converted once. This removes the full-size RGBA mask allocation
+and the strip expansion. The macOS native mask surface uses the same
+strip shader to populate its full bitmap.
+
+The Linux fixture tests compare strip compositing with the full-size
+shader at 0 and 42 CSS pixels of scrolling. They include a translucent
+masked path and verify the scroll offset from visible document pixels.
+The previous and updated builds also matched for every pixel in the
+1024 × 600 document viewport at both offsets. Diagnostics confirmed
+vertical alpha and both axes of luminance mask coverage.
+
+| Fixture | Decoded RGBA SHA-256 at 0 px | Decoded RGBA SHA-256 at 42 px |
+| --- | --- | --- |
+| Vertical alpha | `197de6e1fe4824a937eaed9524e953ad67299af4154ed580343d17d7a993841f` | `6ad53b97a410744ec017651a431a7631166570e057a2686ec10939bbf8541037` |
+| Linear luminance | `b7e5995fec1588c8c74fdf0d2dce51feabc2c0510706769818e007c6f862499c` | `a55863e545add569e0fe4eab311309e0cd7b29ad721b7d17b262526697c5b021` |
+
+Fresh Linux aarch64 builds used V `5a39a4d` and matching single-unit
+Clang `-O0` flags. Control and candidate executable SHA-256 values were
+`a101e54b1eb80744e9b34e4f81a245fba63a586fe3ba76d866f9830bbd82dcf4`
+and `e610ef63d5af8a5ee1d12dd815308871a19b955b4d9915463fbd09644a9d9453`.
+Replay timings used the original fixture HTML, a fresh profile and
+cache, a 1024 × 712 Xvfb window, and a one-second settle period. Mesa
+used software rendering. JavaScript, GPU SVG replay, and SVG texture
+reuse were disabled. Each trial completed 180 synthetic callbacks
+with the same command counts and scroll offsets between 0 and 1240 CSS
+pixels in its pair. The fixture SHA-256 values were
+`c19ec971f0e234926c0c7aae97081d19c53d249cd2391d18507c0bb2ad4ffeff`
+and `263051a227a5964cd27fe855f4e2d00a8e2c6a262958706aaa774b2b4f614f27`
+in table order. Input hashes stayed fixed and all browser and guard
+exits were zero. Guest one-minute load ranged from 1.00 to 1.54 on four
+vCPUs.
+
+| Fixture and pair | Replay median before / after, ms | Replay p95 and maximum before / after, ms | Median allocated KiB before / after |
+| --- | ---: | ---: | ---: |
+| Vertical alpha 1 | 3.432 / 2.566 | 7.796, 24.061 / 6.069, 22.258 | 2260 / 1709.5 |
+| Vertical alpha 2 | 3.707 / 2.640 | 7.890, 21.418 / 5.014, 24.560 | 2263.5 / 1711 |
+| Linear luminance 1 | 6.177 / 2.580 | 8.356, 23.785 / 6.580, 22.810 | 2253.5 / 1716 |
+| Linear luminance 2 | 4.680 / 2.597 | 8.623, 22.969 / 5.075, 23.596 | 2258.5 / 1714 |
+
+Median time, p95, and median allocation fell in all four pairs. Maximum
+replay time rose in two pairs, and the luminance controls varied in
+median time. These measurements cover uncached software-rendered
+callbacks. All 20 Linux browser checks passed. The macOS source check and
+both Windows amd64 source checks passed. Platform runtime timings and
+native scrolling were outside this comparison.
+
 ## Storing geometric SVG clip coverage in one byte per pixel
 
 Portable geometric SVG clips composite path components into a packed
