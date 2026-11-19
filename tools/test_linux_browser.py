@@ -2068,6 +2068,46 @@ def check_svg_mask_gradient_strokes_browser(binary, artifacts, temporary):
     print("PASS: gradient strokes in SVG masks preserve alpha, luminance, paint order, and live stop edits", flush=True)
 
 
+def check_svg_mask_gradient_spread_browser(binary, artifacts, temporary):
+    fixture = Path(__file__).resolve().parents[1] / "Tests/Browser/Native/svg-mask-gradient-spread.html"
+    documents = []
+    for mode in ("cpu", "gg", "shader"):
+        label = f"{fixture.stem}-{mode}"
+        screenshot = artifacts / f"{label}.png"
+        screenshot.unlink(missing_ok=True)
+        environment = smoke_environment(Path(temporary) / label)
+        environment.update(VOX_GG_SVG=str(int(mode == "gg")), VOX_GG_SVG_DIAGNOSTICS="1",
+                           VOX_DISABLE_GG_SVG_CACHE=str(int(mode == "shader")),
+                           VOX_DISABLE_SVG_MASK_RAMP=str(int(mode == "shader")),
+                           VOX_DISABLE_PORTABLE_SVG_MASK="0", VOX_PORTABLE_SVG_MASK_DIAGNOSTICS="1",
+                           VOX_CAPTURE_READY_SELECTOR="body[data-mask-spread-ready]")
+        log = run_windowed([str(binary), "--enable-javascript", "--window-width=800", "--window-height=600",
+                            "--screenshot-viewport-height=600", f"--screenshot={screenshot}", str(fixture)],
+                           env=environment, log_path=artifacts / f"{label}.log")
+        _, height, channels, rows = rendered_png_rows(screenshot.read_bytes())
+        marker = next(y for y in range(150) if rows[y][4 * channels:4 * channels + 3] == bytes.fromhex("34b786"))
+        top = marker + 8
+        samples = (
+            (12, 44, 255), (14, 44, 252), (34, 44, 124), (53, 44, 3),
+            (54, 44, 252), (74, 44, 124), (143, 44, 255),
+            (170, 49, 255), (205, 32, 223), (205, 49, 6), (205, 50, 6),
+            (205, 60, 134), (205, 69, 249),
+            (402, 51, 255), (412, 51, 191), (427, 51, 223), (437, 51, 159), (402, 57, 191),
+            (580, 51, 255), (590, 51, 127), (605, 51, 64), (615, 51, 191), (580, 60, 64),
+        )
+        for x, y, expected in samples:
+            actual = tuple(rows[top + y][x * channels:x * channels + 3])
+            assert all(abs(a - b) <= 2 for a, b in zip(actual, (expected, expected, 255))), (label, x, y, actual)
+        assert log.count("VOX_SVG_MASK luminance=false operations=1 paths=1 ") >= 2, log
+        assert "VOX_SVG_MASK luminance=false operations=3 paths=1 " in log, log
+        axes = set(re.findall(r"^VOX_SVG_MASK_RAMP .* vertical=(true|false)$", log, re.MULTILINE))
+        assert axes == (set() if mode == "shader" else {"true", "false"}), log
+        assert ("VOX_SVG_GROUP cache=hit " in log) == (mode != "shader"), log
+        documents.append(rows[marker:height - 24])
+    assert documents[0] == documents[1] == documents[2], "Gradient spread changed document pixels"
+    print("PASS: repeating and reflecting SVG masks preserve spread, opacity, and live stop edits", flush=True)
+
+
 def check_svg_mask_gradient_browser(binary, artifacts, temporary):
     fixture = Path(__file__).resolve().parents[1] / "Tests/Browser/Native/svg-gradient-masks.html"
     screenshot = artifacts / "portable-svg-mask-gradient.png"
@@ -2499,6 +2539,7 @@ def main():
         check_svg_mask_strokes_browser(binary, artifacts, temporary)
         check_svg_mask_gradient_strokes_browser(binary, artifacts, temporary)
         check_svg_mask_gradient_browser(binary, artifacts, temporary)
+        check_svg_mask_gradient_spread_browser(binary, artifacts, temporary)
         check_svg_mask_strips_browser(binary, artifacts, temporary, "svg-vertical-alpha-masks",
                                       False, {"true"})
         check_svg_mask_strips_browser(binary, artifacts, temporary, "svg-linear-luminance-masks",

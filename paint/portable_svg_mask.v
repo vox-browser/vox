@@ -14,7 +14,7 @@ const portable_svg_mask_solid_rects = os.getenv('VOX_SVG_MASK_SOLID_RECTS') == '
 const portable_svg_mask_diagnostics = os.getenv('VOX_PORTABLE_SVG_MASK_DIAGNOSTICS') == '1'
 const portable_svg_mask_max_opacity_depth = 4
 
-fn portable_svg_content_mask_supported(mask &layout.PaintClip, allow_strokes bool) bool {
+fn portable_svg_content_mask_supported(mask &layout.PaintClip, portable_group bool) bool {
 	if mask.is_svg_mask || mask.corner_radii != layout.BoxRadii{} || mask.mask_operations.len > 64
 		|| mask.transform[1] != 0 || mask.transform[2] != 0 {
 		return false
@@ -36,8 +36,8 @@ fn portable_svg_content_mask_supported(mask &layout.PaintClip, allow_strokes boo
 				if !(operation.has_fill || operation.has_stroke) || operation.opacity != 1
 					|| operation.path_data.len < layout.compatibility_clip_path_segment_stride
 					|| (operation.has_fill && (operation.fill_pattern != none
-					|| !portable_svg_mask_gradient_supported(operation, mask.mask_luminance)))
-					|| (operation.has_stroke && (!allow_strokes
+					|| !portable_svg_mask_gradient_supported(operation, mask.mask_luminance, portable_group)))
+					|| (operation.has_stroke && (!portable_group
 					|| !portable_svg_mask_stroke_supported(operation, mask.mask_luminance))) {
 					return false
 				}
@@ -63,13 +63,14 @@ fn portable_svg_mask_stroke_supported(operation &layout.PaintMaskOperation, lumi
 	return true
 }
 
-fn portable_svg_mask_gradient_supported(operation &layout.PaintMaskOperation, luminance bool) bool {
+fn portable_svg_mask_gradient_supported(operation &layout.PaintMaskOperation, luminance bool,
+	portable_group bool) bool {
 	if linear := operation.fill_linear_gradient {
-		return linear.gradient.spread_method == .pad
+		return (linear.gradient.spread_method == .pad || portable_group)
 			&& portable_svg_raster_linear_supported(&linear, luminance)
 	}
 	if radial := operation.fill_radial_gradient {
-		return radial.gradient.spread_method == .pad
+		return (radial.gradient.spread_method == .pad || portable_group)
 			&& portable_svg_raster_radial_supported(&radial, luminance)
 	}
 	return true
