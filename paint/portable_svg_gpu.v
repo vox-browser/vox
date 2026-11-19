@@ -59,6 +59,7 @@ $if vox_gg_svg ? {
 		gradient_count int
 		length   int
 		used     bool
+	idle     bool
 	}
 
 	fn (texture &PortableSVGTexture) matches(key &PortableSVGTextureKey, data &layout.PaintSVGPathData) bool {
@@ -135,6 +136,7 @@ $if vox_gg_svg ? {
 		}
 		texture.length = 0
 		texture.used = false
+		texture.idle = false
 	}
 
 	// The legacy GG window owns one Sokol context per process. It also owns
@@ -186,9 +188,18 @@ $if vox_gg_svg ? {
 
 	fn (mut state PortableSVGGpu) finish_frame() {
 		// All commands that sampled a texture have been submitted at this point.
+		mut spare_pixels := portable_svg_gpu_pixel_limit - state.pixels
 		for index in 0 .. portable_svg_gpu_texture_slots {
 			mut texture := &state.textures[index]
-			if !texture.used || texture.length == 0 {
+			if texture.used && texture.length != 0 {
+				texture.idle = false
+			} else if portable_svg_gpu_viewport_reuse && texture.length != 0 && texture.key.gradient
+				&& texture.key.width * texture.key.height <= spare_pixels {
+				// Keep exact viewport variants within the existing pixel budget.
+				// Gradient pixels depend on the raster extent as well as dither phase.
+				spare_pixels -= texture.key.width * texture.key.height
+				texture.idle = true
+			} else {
 				texture.release()
 			}
 			texture.used = false
@@ -383,8 +394,9 @@ $if vox_gg_svg ? {
 		cacheable := !disable_portable_svg_gpu_cache && data.path_data.len <= portable_svg_gpu_cached_values
 			&& (!key.gradient || gradient.style.color_stops.len <= portable_svg_gpu_gradient_stops)
 		// Keep the previous frame's images available until all current draws
-		// have had a chance to match them. Each frame uses at most eight slots.
+		// have had a chance to match them. Evict older, unused images if needed.
 		mut vacant := -1
+		mut idle := -1
 		mut matching := -1
 		mut crop := ?painting.IntPoint(none)
 		for index in 0 .. portable_svg_gpu_texture_slots {
@@ -405,14 +417,20 @@ $if vox_gg_svg ? {
 					crop = origin
 				}
 			}
+			if portable_svg_gpu_viewport_reuse && idle < 0 && texture.idle && !texture.used {
+				idle = index
+			}
 		}
 		reused := matching >= 0
-		index := if reused { matching } else { vacant }
+		index := if reused { matching } else if vacant >= 0 { vacant } else { idle }
 		if index < 0 {
 			return false
 		}
 		mut texture := &state.textures[index]
 		if !reused {
+			if texture.idle {
+				texture.release()
+			}
 			texture.image = state.rasterize(data, &key, gradient) or { return false }
 			if cacheable {
 				texture.key = key

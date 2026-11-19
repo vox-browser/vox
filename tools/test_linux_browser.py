@@ -330,6 +330,57 @@ def check_gg_svg_browser(binary, artifacts, temporary):
     check_gg_svg_dashed_strokes(binary, artifacts, temporary)
     check_gg_svg_gradient_fills(binary, artifacts, temporary)
     check_gg_svg_gradient_strokes(binary, artifacts, temporary)
+    check_gg_svg_gradient_viewport(binary, artifacts, temporary)
+
+
+def check_gg_svg_gradient_viewport(binary, artifacts, temporary):
+    fixture = Path(__file__).resolve().parents[1] / "Tests/Browser/Native/svg-gg-gradient-viewport.html"
+    page = Path(temporary) / fixture.name
+    page.write_text(fixture.read_text() + """
+<style>#art { position: fixed; top: 0; left: 0; }</style>
+<script>
+let frames = 0;
+function moveGradientAcrossViewport() {
+    ++frames;
+    if (frames === 12 || frames === 36)
+        document.getElementById('art').setAttribute('style', 'top:-42px');
+    if (frames === 24)
+        document.getElementById('art').setAttribute('style', 'top:0');
+    if (frames === 48)
+        document.body.setAttribute('data-gradient-viewport-ready', '1');
+    else
+        requestAnimationFrame(moveGradientAcrossViewport);
+}
+requestAnimationFrame(moveGradientAcrossViewport);
+</script>
+""")
+    documents = []
+    for label in ("rerasterized", "reused"):
+        enabled = label == "reused"
+        screenshot = artifacts / f"{fixture.stem}-{label}.png"
+        screenshot.unlink(missing_ok=True)
+        environment = smoke_environment(Path(temporary) / screenshot.stem)
+        environment.pop("MESA_GL_VERSION_OVERRIDE", None)
+        environment.update(VOX_GG_SVG="1", VOX_GG_SVG_DIAGNOSTICS="1", VOX_DISABLE_GG_SVG_CACHE="0",
+                           VOX_GG_SVG_VIEWPORT_REUSE=str(int(enabled)),
+                           VOX_CAPTURE_READY_SELECTOR="body[data-gradient-viewport-ready]")
+        log = run_windowed([str(binary), "--enable-javascript", "--window-width=800", "--window-height=600",
+                            "--screenshot-viewport-height=600", f"--screenshot={screenshot}", str(page)],
+                           env=environment, log_path=artifacts / f"{screenshot.stem}.log")
+        gradients = [line for line in log.splitlines() if " gradient=" in line]
+        assert not any("crop=hit" in line for line in gradients), log
+        for height, kind in ((112, 1), (112, 2), (111, 1)):
+            draws = [line for line in gradients if f"draw=200x{height} " in line
+                     and line.endswith(f" gradient={kind}")]
+            assert sum("cache=miss" in line for line in draws) == (1 if enabled else 2), log
+            assert any("cache=hit bounds=hit" in line for line in draws), log
+
+        width, height, channels, rows = rendered_png_rows(screenshot.read_bytes())
+        marker = next(y for y, row in enumerate(rows[:150])
+                      if row[(width - 4) * channels:(width - 4) * channels + 3] == b"\x09\x87\x46")
+        documents.append(rows[marker:height - 24])
+    assert documents[0] == documents[1], "Retaining exact gradient textures changed document pixels"
+    print("PASS: GG viewport changes reuse exact gradient textures", flush=True)
 
 
 def check_gg_svg_gradient_fills(binary, artifacts, temporary):
