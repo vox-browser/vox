@@ -1,5 +1,55 @@
 # Migrating from Skia to vlib/gg
 
+## Reusing SVG group textures when scrolling back
+
+`VOX_GG_SVG_VIEWPORT_REUSE=1` lets each of the 16 portable SVG group slots
+keep one alternate texture of up to 65,536 pixels. The cached placement
+includes the document's paint revision, the recorded viewport, the replay
+viewport, origin, and scale. Root scrolling can rebuild the lowered commands
+while keeping the paint revision. Returning to a recorded placement selects
+its exact texture, including for clipped gradients whose pixels depend on
+the raster origin. Paint changes, unrelated uploads, and retired slots
+discard their old textures.
+
+The window fixture alternated between 0 and 42 CSS pixels and edited a
+gradient stop after both placements were cached. The edited group rasterized
+at the next placement, then reused the updated texture on a later visit.
+Diagnostics counted 15 alternate hits across opacity, clip, and mask scopes.
+The clipped document pixels matched with viewport reuse on and off. Their
+decoded SHA-256 was
+`b486409d21779baf4ddfb12a35db4752216c5278a3c7dd355c1c9b2edeae64d8`.
+
+The performance cohort used the same fixtures and software OpenGL callback
+scope as the [gradient group comparison](#preserving-gradients-in-portable-svg-groups).
+The two builds used V `5a39a4d` and identical single-unit Clang `-O0` flags.
+Control and candidate executable SHA-256 values were
+`4dbcf8d6bf8c1c7b9d2622f6ee2c7371fd334271e93a2f01f7fdf6a9f71483e1`
+and `26c26ac008c3cfcaed30219a1c15db565af7e516116d80a3772982c01724a05f`.
+The gradient timing copy retained SHA-256
+`34329b0b5ba8e8419b7974ed15e60fb50094f8650d4c98b18888d59b454214f5`.
+Two alternating pairs per fixture matched scroll positions and paint-command
+counts. Guest one-minute load ranged from 0.99 to 1.13 on four virtual CPUs.
+All timed browser processes and the memory guard exited zero.
+
+| Fixture and pair | Replay median before / after, ms | Replay p95 and max before / after, ms |
+| --- | ---: | --- |
+| Solid, all 1 | 5.906 / 6.135 | 7.471 and 27.430 / 7.540 and 25.734 |
+| Solid, all 2 | 5.832 / 5.848 | 7.450 and 25.870 / 6.345 and 27.616 |
+| Gradient, all 1 | 1.073 / 1.084 | 2.961 and 4.967 / 2.701 and 4.812 |
+| Gradient, all 2 | 1.116 / 1.133 | 2.829 and 4.944 / 1.400 and 4.926 |
+| Gradient, moving 1 | 4.575 / 1.140 | 4.967 and 4.967 / 4.812 and 4.812 |
+| Gradient, moving 2 | 4.595 / 1.151 | 4.944 and 4.944 / 4.926 and 4.926 |
+
+The first two moving callbacks cost 4.537 and 4.812 ms in the first
+candidate trial and 4.620 and 4.926 ms in the second. The remaining four
+moving callbacks had medians of 1.089 and 1.053 ms, down from 4.442 and
+4.616 ms. The separate diagnostic replay confirmed raster misses on the
+first two moves and three alternate hits on each subsequent move.
+The solid fixture matched the control pixel for pixel. These timings
+cover synthetic software-rendered callbacks. The Linux browser suite, all
+17 GG SVG checks, and both Windows amd64 source checks passed. Windows
+runtime and hardware GPU timing remain unverified.
+
 ## Preserving gradients in portable SVG groups
 
 The shared portable renderer composites supported linear and radial fills
