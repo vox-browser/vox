@@ -7,8 +7,11 @@ whole compositor tile through the GPU for every small shape. Three follow-up
 fixes remove a wait and repeated work that the first measurements exposed: a
 deferred loading frame renders once the page is quiet, layout keeps its boxes
 and inline layout on Retina displays, and identical leaf draws are not
-repeated. The pipeline is still single-threaded; the changes remove
-main-thread work and idle waiting rather than moving work to other cores.
+repeated. A comparison with Brave follows: after two more waits were removed,
+Hacker News and old Reddit load faster in Vox, and GitHub still takes more
+than twice as long. The pipeline is still single-threaded; the changes
+remove main-thread work and idle waiting rather than moving work to other
+cores.
 
 ## Measurement
 
@@ -366,6 +369,115 @@ an early capture is visible. The selector is sufficient at scale 2. At scale
 1 two of four captures still replayed 155 of 157 requests; with
 `--settle-seconds 1.5` all six of three pairs are identical.
 
+## Against Brave
+
+`tools/measure_load_against_brave.py` launches Vox and Brave 157.1.99.57
+(Chrome/157.0.8103.79) alternately against the same archive: an empty
+profile, a normal window with a 1024×768 document viewport at device scale 2
+and the URL on the command line, timed from process launch to the completed
+capture. Brave's window height is calibrated so that no viewport emulation is
+needed, and every trial checks its viewport and capture size. Brave's
+interval ends when `Page.captureScreenshot` returns after the load event,
+`document.fonts.ready` and, on GitHub, the same ready selector; 96 to 150 ms
+of it lie between readiness and the delivered PNG. Vox's interval ends when
+its `--screenshot` PNG is complete and includes its capture raster and
+encoding. The two captures of each page show the same content; the browsers'
+readiness rules are their own. Each applies its own content blocking and
+makes its own requests: Brave sends 18, 33 and 172, of which 12, 14 and 13
+are outside the archive and rejected by the replay, against 7, 18 and 157 in
+Vox with 1, 0 and 3 rejected. Brave's CPU is the sum over its process tree
+at capture, a lower bound like Vox's process total.
+
+Seven alternating pairs per page, medians with ranges:
+
+| Page | Vox | Brave | Rounds Vox faster | Vox CPU | Brave CPU | Host load |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| Hacker News, before | 549 ms (518–562) | 533 ms (512–544) | 1 of 7 | 382 ms | 1149 ms | 10–11 |
+| Hacker News, after | 469 ms (417–526) | 548 ms (500–565) | 7 of 7 | 391 ms | 1186 ms | 10–11 |
+| Hacker News, after, loaded host | 646 ms (576–1114) | 849 ms (688–963) | 6 of 7 | 506 ms | 1598 ms | 37–43 |
+| old Reddit, before | 606 ms (564–627) | 643 ms (583–677) | 7 of 7 | 495 ms | 1357 ms | 12–14 |
+| old Reddit, after | 493 ms (446–502) | 563 ms (538–592) | 7 of 7 | 438 ms | 1195 ms | 10 |
+| old Reddit, after, loaded host | 636 ms (571–913) | 807 ms (736–942) | 7 of 7 | 575 ms | 1644 ms | 37–40 |
+| GitHub, before | 3329 ms (3178–3686) | 1426 ms (1185–1902) | 0 of 7 | 3336 ms | 3061 ms | 13 |
+| GitHub, after | 3586 ms (3167–4163) | 1647 ms (1423–1757) | 0 of 7 | 3728 ms | 3555 ms | 15–16 |
+| GitHub, after, loaded host | 3970 ms (3748–4442) | 1612 ms (1518–1871) | 0 of 7 | 4088 ms | 3583 ms | 37–43 |
+
+"Before" is executable `2f77a736ea15…`. "After" has the two changes below:
+`1141e476308d…` for Hacker News and old Reddit, `07b5829ff9ff…` for GitHub
+with the dropped prefetch switched off, and `e895f0ee5b9e…`, built from the
+committed tree, for the rows on a host at more than twice its core count in
+load. Vox is faster than Brave on Hacker News and old Reddit in the medians
+and in 27 of 28 rounds after the changes; its slowest launch beats Brave's
+fastest only in the quieter old Reddit cohort. GitHub is 2.2 to 2.5 times
+slower than Brave before and after: the two changes improve it by a few
+hundred milliseconds in same-executable comparisons, which the host load
+between these cohorts hides.
+
+### Waits removed
+
+An instrumented Hacker News load showed where a small page waited: the first
+fetch was held until the first window frame (about 200 ms), and each frame
+released by the quiet rule waited 50 ms, twice per load.
+
+- `d4a7c2c60` shortens the quiet window of the load-frame throttle from 50 ms
+  to 8 ms. Control `VOX_LOAD_RENDER_QUIET_MS=50`, four alternating capture
+  pairs with identical pixels: Hacker News 474 → 406 ms, old Reddit 499 →
+  477 ms, GitHub 3827 → 3472 ms (3108 → 2863 ms with 16 ms). GitHub in a
+  normal window keeps its five later frames; the last one ends 2162–2433 →
+  1827–2223 ms after first paint.
+- `c0766d9cf` starts the first fetch of a launch when the navigation is
+  requested instead of after the first window frame. Control
+  `VOX_DEFER_INITIAL_NAVIGATION_FETCH=1`, four pairs, identical pixels:
+  Hacker News 504 → 472 ms, old Reddit 568 → 529 ms, GitHub 2414 → 2393 ms.
+  The document request reaches the replay about 60 ms after launch instead
+  of about 220 ms. Against the live news.ycombinator.com in four alternating
+  rounds the first window frame moves from 151–156 ms to 157–196 ms and the
+  completed capture from 2797–3039 ms to 2704–2831 ms.
+
+With the shorter window some GitHub captures, of both variants of a pair,
+differ from the settled capture in the Sponsor icon and the branch button
+(132 pixels in the pair examined), which is consistent with a transition
+that is still running. Use `--settle-seconds` for pixel comparisons of that
+page.
+
+### Why GitHub stays behind
+
+Both browsers spend about the same CPU on the GitHub load, 3.3 to 4.1 s in
+Vox's process against 3.1 to 3.6 s in Brave's process tree. Brave spreads
+it over its processes and finishes in 1.4 to 1.6 s. Vox's main thread is
+busy for about four fifths of its load. One instrumented load (3.6 s with
+stage logging) divides the main thread's wall time as follows:
+
+| Main thread | Wall |
+| --- | ---: |
+| JavaScript execution and bindings | 750 ms |
+| Layout (22 passes; the first, with its style pass, 404 ms) | 830 ms |
+| Startup and waiting | 590 ms |
+| Two full rasters and paint recording | 440 ms |
+| Style | 370 ms |
+| JavaScriptCore module parsing | 250 ms |
+| CSS parsing | 100 ms |
+
+JavaScript and startup alone take about as long as Brave's whole load, so
+no amount of style, layout or raster tuning closes the gap on one thread.
+Raster blocks scripts as well: the first full raster and its frame hold the
+main thread for 470 ms, and the page sends its last requests right after.
+Matching Brave here needs work on other cores (raster off the main thread,
+which needs its own GPU context; script compilation; stylesheet parsing,
+which the arena ownership rule above prevents today) together with
+incremental style and layout.
+
+One experiment was measured and dropped. Vox requests GitHub's 73 module
+scripts about 600 ms after the document arrives, when its first layout is
+done, where Brave requests them 250 ms after. Fetching them on resource
+workers as soon as the markup arrives moved their median request from 1100
+to 450 ms after launch with no additional request, since the module loader
+reuses public immutable responses from the disk cache. Launch to capture did
+not change: 3355 → 3422 ms in five alternating replay pairs and 6851 →
+6757 ms (5911–7619 against 5901–6902) against the live page. The replay
+serves a module in a few milliseconds and the main thread is busy either
+way, so the code was not kept.
+
 ## Not changed
 
 - The first time a leaf is drawn it still creates tile-sized textures and
@@ -378,8 +490,13 @@ an early capture is visible. The selector is sufficient at scale 2. At scale
 - When a box's own cascade expires while the box is retained at scale 2,
   `computed_font_list()` still computes a cascade for the physical font size
   until the element is restyled. The sweeps above did not show it.
-- The first navigation of a launch starts after the first window frame, by an
-  earlier measured decision; the fetch does not overlap AppKit startup.
+- GitHub loads 2.2 to 2.5 times slower than in Brave; see above for what
+  closing that gap needs.
+- The response of a launch's first fetch still waits for the first window
+  frame before its stylesheets are requested, 100 to 130 ms after it
+  arrived. Discovering them on the fetch thread needs a way to hand their
+  responses to the main thread's preload without a second request.
+- Capture mode waits about 25 ms for a retry timer before its final raster.
 - The message of commit `e39770061` gives a 2048×512, 4 MB tile as its
   example. The tiles on this display are those listed under leaf raster
   transfers; shared history is not rewritten for it.
