@@ -62,7 +62,8 @@ $if vox_gg_svg ? {
 	idle     bool
 	}
 
-	fn (texture &PortableSVGTexture) matches(key &PortableSVGTextureKey, data &layout.PaintSVGPathData) bool {
+	fn (texture &PortableSVGTexture) matches(key &PortableSVGTextureKey, data &layout.PaintSVGPathData,
+		geometry_matched bool) bool {
 		if texture.key.width != key.width
 			|| texture.key.height != key.height || texture.key.color != key.color
 			|| texture.key.even_odd != key.even_odd || texture.key.gradient != key.gradient
@@ -71,7 +72,7 @@ $if vox_gg_svg ? {
 		}
 		return unsafe {
 			vmemcmp(&texture.key.matrix[0], &key.matrix[0], 6 * int(sizeof(f32))) == 0
-		} && texture.matches_path(key, data)
+		} && (geometry_matched || texture.matches_geometry(data.path_data)) && texture.matches_dashes(key, data)
 	}
 
 	fn (texture &PortableSVGTexture) crop_origin(key &PortableSVGTextureKey, data &layout.PaintSVGPathData) ?painting.IntPoint {
@@ -93,18 +94,19 @@ $if vox_gg_svg ? {
 			return none
 		}
 		origin := painting.IntPoint{int(x), int(y)}
-		if x != f64(origin.x) || y != f64(origin.y) || !texture.matches_path(key, data) {
+		if x != f64(origin.x) || y != f64(origin.y) || !texture.matches_geometry(data.path_data)
+			|| !texture.matches_dashes(key, data) {
 			return none
 		}
 		return origin
 	}
 
-	fn (texture &PortableSVGTexture) matches_path(key &PortableSVGTextureKey,
+	fn (texture &PortableSVGTexture) matches_dashes(key &PortableSVGTextureKey,
 		data &layout.PaintSVGPathData) bool {
-		return texture.matches_geometry(data.path_data) && (key.stroke.dash_count == 0 || unsafe {
+		return key.stroke.dash_count == 0 || unsafe {
 			vmemcmp(&texture.dashes[0], data.stroke_dasharray.data,
 				key.stroke.dash_count * int(sizeof(f64))) == 0
-		})
+		}
 	}
 
 	fn (texture &PortableSVGTexture) matches_geometry(values []f32) bool {
@@ -113,20 +115,21 @@ $if vox_gg_svg ? {
 		}
 	}
 
-	fn portable_gpu_svg_local_bounds(values []f32) ?cpuraster.Rect {
+	// A nonnegative slot identifies the bytes that supplied the bounds.
+	fn portable_gpu_svg_local_bounds(values []f32) (cpuraster.Rect, int) {
 		state := unsafe { portable_svg_gpu }
 		if disable_portable_svg_gpu_cache || portable_svg_gpu_cache_control == 'bounds'
 			|| state.canvas == unsafe { nil } || state.count == portable_svg_gpu_image_limit
 			|| values.len > portable_svg_gpu_cached_values {
-			return none
+			return cpuraster.Rect{}, -1
 		}
 		for index in 0 .. portable_svg_gpu_texture_slots {
 			texture := &state.textures[index]
 			if texture.matches_geometry(values) {
-				return texture.local_bounds
+				return texture.local_bounds, index
 			}
 		}
-		return none
+		return cpuraster.Rect{}, -1
 	}
 
 	fn (mut texture PortableSVGTexture) release() {
@@ -329,8 +332,8 @@ $if vox_gg_svg ? {
 			if color.a == 0 { return true }
 			unsafe { nil }
 		}
-		cached := portable_gpu_svg_local_bounds(data.path_data)
-		local := cached or {
+		cached_bounds, geometry_slot := portable_gpu_svg_local_bounds(data.path_data)
+		local := if geometry_slot >= 0 { cached_bounds } else {
 			portable_svg_gpu_path_bounds(data.path_data, false) or { return false }
 		}
 		transform := portable_device_transform(multiply_paint_transforms(command.transform,
@@ -358,12 +361,12 @@ $if vox_gg_svg ? {
 			dash_offset_bits: if dash_count > 0 { math.f64_bits(data.stroke_dashoffset) } else { u64(0) }
 		}
 		return draw_portable_gpu_svg_path(app.ctx.r, data, portable_svg_surface_matrix(transform, bounds),
-			bounds, color, local, cached != none, stroke, gradient)
+			bounds, color, local, geometry_slot, stroke, gradient)
 	}
 
 	fn draw_portable_gpu_svg_path(renderer &render.Context, data layout.PaintSVGPathData,
 		matrix [6]f32, bounds painting.IntRect, color gg.Color, local_bounds cpuraster.Rect,
-		reused_bounds bool, stroke PortableSVGStroke, gradient &PortableSVGGradientPaint) bool {
+		geometry_slot int, stroke PortableSVGStroke, gradient &PortableSVGGradientPaint) bool {
 		mut state := unsafe { portable_svg_gpu }
 		// Bound GPU memory and the number of pending passes for this replay.
 		if renderer == unsafe { nil } || state.count == portable_svg_gpu_image_limit
@@ -393,32 +396,42 @@ $if vox_gg_svg ? {
 		}
 		cacheable := !disable_portable_svg_gpu_cache && data.path_data.len <= portable_svg_gpu_cached_values
 			&& (!key.gradient || gradient.style.color_stops.len <= portable_svg_gpu_gradient_stops)
-		// Keep the previous frame's images available until all current draws
-		// have had a chance to match them. Evict older, unused images if needed.
 		mut vacant := -1
 		mut idle := -1
 		mut matching := -1
 		mut crop := ?painting.IntPoint(none)
-		for index in 0 .. portable_svg_gpu_texture_slots {
-			texture := &state.textures[index]
-			if texture.image.id == 0 {
-				if vacant < 0 {
-					vacant = index
-				}
-			} else if cacheable && texture.matches(&key, &data)
-				&& (!key.gradient || texture.matches_gradient(gradient)) {
-				matching = index
-				crop = none
-				break
-			} else if cacheable && portable_svg_gpu_viewport_reuse && !key.gradient && matching < 0
-				&& texture.key.width * texture.key.height <= remaining_pixels {
-				if origin := texture.crop_origin(&key, &data) {
-					matching = index
-					crop = origin
-				}
+		// The bounds lookup already compared the path bytes in this slot.
+		if cacheable && geometry_slot >= 0 {
+			texture := &state.textures[geometry_slot]
+			if texture.matches(&key, &data, true) && (!key.gradient || texture.matches_gradient(gradient)) {
+				matching = geometry_slot
 			}
-			if portable_svg_gpu_viewport_reuse && idle < 0 && texture.idle && !texture.used {
-				idle = index
+		}
+		hint_hit := matching >= 0
+		if !hint_hit {
+			// Keep the previous frame's images available until all current draws
+			// have had a chance to match them. Evict older, unused images if needed.
+			for index in 0 .. portable_svg_gpu_texture_slots {
+				texture := &state.textures[index]
+				if texture.image.id == 0 {
+					if vacant < 0 {
+						vacant = index
+					}
+				} else if cacheable && index != geometry_slot && texture.matches(&key, &data, false)
+					&& (!key.gradient || texture.matches_gradient(gradient)) {
+					matching = index
+					crop = none
+					break
+				} else if cacheable && portable_svg_gpu_viewport_reuse && !key.gradient && matching < 0
+					&& texture.key.width * texture.key.height <= remaining_pixels {
+					if origin := texture.crop_origin(&key, &data) {
+						matching = index
+						crop = origin
+					}
+				}
+				if portable_svg_gpu_viewport_reuse && idle < 0 && texture.idle && !texture.used {
+					idle = index
+				}
 			}
 		}
 		reused := matching >= 0
@@ -479,7 +492,7 @@ $if vox_gg_svg ? {
 		renderer.disable_texture()
 		renderer.pop_pipeline()
 		if portable_svg_gpu_diagnostics {
-			eprintln('VOX_GG_SVG draw=${bounds.width}x${bounds.height} cache=${if reused { "hit" } else { "miss" }} bounds=${if reused_bounds { "hit" } else { "miss" }} crop=${if crop != none { "hit" } else { "none" }} stroke=${int(stroke.width_bits != 0)}${if stroke.non_scaling { " non_scaling=1" } else { "" }}${if stroke.dash_count > 0 { " dash=${stroke.dash_count}" } else { "" }}${if key.gradient { " gradient=${gradient.key.kind}" } else { "" }}')
+			eprintln('VOX_GG_SVG draw=${bounds.width}x${bounds.height} cache=${if reused { "hit" } else { "miss" }} bounds=${if geometry_slot >= 0 { "hit" } else { "miss" }} crop=${if crop != none { "hit" } else { "none" }}${if hint_hit { " hint=hit" } else { "" }} stroke=${int(stroke.width_bits != 0)}${if stroke.non_scaling { " non_scaling=1" } else { "" }}${if stroke.dash_count > 0 { " dash=${stroke.dash_count}" } else { "" }}${if key.gradient { " gradient=${gradient.key.kind}" } else { "" }}')
 		}
 		return true
 	}

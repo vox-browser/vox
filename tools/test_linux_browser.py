@@ -301,6 +301,7 @@ def check_gg_svg_browser(binary, artifacts, temporary):
                             "--screenshot-viewport-height=600", f"--screenshot={screenshot}", str(fixture)],
                            env=environment, log_path=artifacts / f"{label}.log")
         assert ("VOX_GG_SVG unavailable:" in log) == (label == "gg-svg-fallback"), log
+        assert (" hint=hit" in log) == (label == "gg-svg"), log
         for size in ("120x80", "80x30", "42x20"):
             assert (f"VOX_GG_SVG draw={size}" in log) == uses_gpu, log
             assert (f"VOX_GG_SVG draw={size} cache=hit" in log) == (
@@ -422,6 +423,11 @@ requestAnimationFrame(moveGradientAcrossViewport);
                            env=environment, log_path=artifacts / f"{screenshot.stem}.log")
         gradients = [line for line in log.splitlines() if " gradient=" in line]
         assert not any("crop=hit" in line for line in gradients), log
+        full_hits = [line for line in gradients if "draw=200x120 cache=hit bounds=hit" in line]
+        assert any(" hint=hit " in line and line.endswith(" gradient=1") for line in full_hits), log
+        # The radial fill shares the path bytes and extent with the linear
+        # fill. Its separate paint must still select its own texture.
+        assert any(" hint=hit " not in line and line.endswith(" gradient=2") for line in full_hits), log
         for height, kind in ((112, 1), (112, 2), (111, 1)):
             draws = [line for line in gradients if f"draw=200x{height} " in line
                      and line.endswith(f" gradient={kind}")]
@@ -434,8 +440,9 @@ requestAnimationFrame(moveGradientAcrossViewport);
         width, height, channels, rows = rendered_png_rows(screenshot.read_bytes())
         marker = next(y for y, row in enumerate(rows[:150])
                       if row[(width - 4) * channels:(width - 4) * channels + 3] == b"\x09\x87\x46")
-        for x in (100, 330):
-            assert rows[marker + 8][x * channels:x * channels + 3] != b"\xff\xff\xff"
+        row = rows[marker + 8]
+        left, middle = (row[x * channels:x * channels + 3] for x in (100, 330))
+        assert left != middle and b"\xff\xff\xff" not in (left, middle)
         documents.append(rows[marker:height - 24])
     assert documents[0] == documents[1], "Retaining exact gradient textures changed document pixels"
     print("PASS: GG viewport changes reuse exact gradient textures", flush=True)

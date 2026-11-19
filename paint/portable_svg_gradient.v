@@ -79,8 +79,8 @@ $if vox_gg_svg ? {
 		if math.f32_from_bits(gradient.key.opacity_bits) == 0 || gradient.style.color_stops.len == 0 {
 			return true
 		}
-		cached := portable_gpu_svg_local_bounds(data.path_data)
-		local := cached or {
+		cached_bounds, geometry_slot := portable_gpu_svg_local_bounds(data.path_data)
+		local := if geometry_slot >= 0 { cached_bounds } else {
 			portable_svg_gpu_path_bounds(data.path_data, data.fill_even_odd) or { return false }
 		}
 		transform := portable_device_transform(multiply_paint_transforms(command.transform,
@@ -89,7 +89,7 @@ $if vox_gg_svg ? {
 			app.portable_device_viewport(page_y)))
 		if bounds.is_empty() { return true }
 		return draw_portable_gpu_svg_path(app.ctx.r, data, portable_svg_surface_matrix(transform,
-			bounds), bounds, gg.Color{}, local, cached != none, PortableSVGStroke{}, &gradient)
+			bounds), bounds, gg.Color{}, local, geometry_slot, PortableSVGStroke{}, &gradient)
 	}
 
 	fn portable_svg_path_gradient(command &layout.PaintCommand, stroke bool,

@@ -12,15 +12,16 @@ fn (mut app BrowserApp) draw_portable_solid_svg_fill(command &layout.PaintComman
 		|| data.fill_pattern != none {
 		return false
 	}
-	mut cached_bounds := ?cpuraster.Rect(none)
+	mut cached_bounds := cpuraster.Rect{}
+	mut geometry_slot := -1
 	$if vox_gg_svg ? {
 		if portable_svg_gpu_enabled && app.paint_effect_depth == 0 && app.paint_svg_mask_depth == 0 {
-			cached_bounds = portable_gpu_svg_local_bounds(data.path_data)
+			cached_bounds, geometry_slot = portable_gpu_svg_local_bounds(data.path_data)
 		}
 	}
 	mut decoded := ?cpuraster.Path(none)
-	local := if cached := cached_bounds {
-		cached
+	local := if geometry_slot >= 0 {
+		cached_bounds
 	} else {
 		path := cpuraster.canvas_path(data.path_data, data.fill_even_odd)
 		decoded = path
@@ -39,7 +40,7 @@ fn (mut app BrowserApp) draw_portable_solid_svg_fill(command &layout.PaintComman
 	$if vox_gg_svg ? {
 		if portable_svg_gpu_enabled && app.paint_effect_depth == 0 && app.paint_svg_mask_depth == 0
 			&& draw_portable_gpu_svg_path(app.ctx.r, data, matrix, bounds, color, local,
-				cached_bounds != none, PortableSVGStroke{}, unsafe { nil }) {
+				geometry_slot, PortableSVGStroke{}, unsafe { nil }) {
 			return true
 		}
 	}
