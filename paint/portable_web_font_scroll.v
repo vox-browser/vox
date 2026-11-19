@@ -59,14 +59,14 @@ fn (app &BrowserApp) portable_web_font_scroll_input(command &layout.PaintCommand
 	if matrix[0] != 1 || matrix[1] != 0 || matrix[2] != 0 || matrix[3] != 1 { return none }
 	if command.clip_list != unsafe { nil } && command.clip_list.items.len != 0 { return none }
 	scale := f64(app.ctx.scale)
-	left := int(math.floor((command.x + matrix[4]) * scale))
+	// A horizontal crop can stay fixed during vertical scrolling. Keep
+	// partially visible rows at the top and bottom out of the scroll cache.
 	top := int(math.floor((command.y + matrix[5]) * scale))
-	right := int(math.ceil((command.x + command.width + matrix[4]) * scale))
 	bottom := int(math.ceil((command.y + command.height + matrix[5]) * scale))
-	if left < viewport.x || top < viewport.y || right > viewport.right()
-		|| bottom > viewport.bottom() || left >= right || top >= bottom {
-		return none
-	}
+	if top < viewport.y || bottom > viewport.bottom() || top >= bottom { return none }
+	left := math.max(viewport.x, int(math.floor((command.x + matrix[4]) * scale)))
+	right := math.min(viewport.right(), int(math.ceil((command.x + command.width + matrix[4]) * scale)))
+	if left >= right { return none }
 	run := command.glyph_run?
 	if run.face() != .document { return none }
 	glyphs := run.glyph_indices()
