@@ -1,5 +1,59 @@
 # Migrating from Skia to vlib/gg
 
+## Retaining CPU SVG fill textures
+
+Portable SVG fills use the same streaming texture cache as strokes.
+The fill rule is part of the key alongside path bytes, transform,
+clipped dimensions, and resolved solid or gradient paint. A matching
+texture can be drawn at a new integer position without decoding the
+path, rasterizing it, or uploading its pixels. The cache keeps its
+16-slot bound, and every pixel upload invalidates the old entry for
+that streaming slot.
+
+The Linux window checks changed a solid fill from the nonzero rule to
+even-odd, replaced a stroke's slot with a same-sized fill, and checked
+live edits to gradient stops, local transform, opacity, and focal radius.
+Cached, forced-uncached, and OpenGL 4.2 fallback captures matched exactly
+after the edits and the clipped scroll. All 16 Linux GG SVG window checks
+and the Windows amd64 OpenGL source check with `-gc none` passed.
+
+The timing fixture was `Tests/Browser/Native/svg-gg-gradient-fill.html`.
+Both Linux builds used V `5a39a4d`, one Clang translation unit, and identical
+`-O0` flags from the shared checkout with other work in progress. V C
+generation and Clang linking ran separately after the guest exhausted
+memory in the first combined control build. The control and candidate
+executable SHA-256 values were
+`cc929b35e08a08021b95285603ddbe688a4ce4988721f7d709f476fbae3fbf15`
+and `79382eb0cc425c45580d4ffcfa5fb7178c26566b7021e626f6f3d20ba9cfcd34`.
+The fixture and shader directory SHA-256 values were
+`1612e79253b84585b6e9052a16466b6d65eb6ff8b60929ec1f34b974cb9e1cad`
+and `970ce36acbf7ea10b948d0a063d6315d587aadf8a8d84784d644b17ab6ffc48e`.
+
+Each trial used Mesa software OpenGL under Xvfb with `LP_NUM_THREADS=1`,
+a fresh process and private browser state, an 800 × 628 document viewport,
+a one-second settle, and 32 self-paced 42-pixel scroll steps. Scroll
+positions and paint-command counts matched. One-minute guest load ranged
+from 1.22 to 1.84 on four virtual CPUs. The timing driver and its memory
+guard exited zero. Static captures matched exactly between builds on
+each renderer and with caching forced off on the candidate.
+
+| Renderer and pair | Median control / candidate, ms | p95, ms | Maximum, ms |
+| --- | ---: | ---: | ---: |
+| CPU fallback 1 | 4.2135 / 1.245 | 6.080 / 3.211 | 22.983 / 21.362 |
+| CPU fallback 2 | 4.220 / 1.276 | 6.042 / 4.327 | 23.950 / 21.576 |
+| GG 1 | 1.071 / 1.025 | 5.905 / 5.747 | 22.915 / 22.745 |
+| GG 2 | 1.045 / 1.0455 | 5.787 / 5.739 | 23.354 / 23.266 |
+
+Separate diagnostics counted 155 stationary CPU fill texture hits with
+caching and 155 rerasterizations with caching disabled, plus one clipped
+fill in each run. The GG diagnostic counted 155 stationary GG texture
+hits and one clipped fill, with zero CPU gradient fills. Median CPU
+fallback times fell by 69.8–70.5%. GG medians were within 4.3%.
+The maximum in every run occurred during replay of the scroll step from
+42 to 84 CSS pixels. These trials measure synthetic callback times on
+software OpenGL. Native GPU performance and Windows runtime behavior
+remain unverified.
+
 ## Retaining CPU SVG gradient stroke textures
 
 The CPU stroke texture cache also handles linear and radial gradients.
