@@ -193,6 +193,10 @@ def observe(args, engine, folder, expected, replayed_scripts, api):
     if engine == 'libjs-native':
         env.update(VOX_LIBJS_NATIVE_CACHE=str(args.native_cache),
             VOX_LIBJS_NATIVE_GENERATED_CODE_CACHE='1', VOX_LIBJS_NATIVE_CACHE_FINAL_AUDIT_PATH=str(final_cache))
+        # Visits verify that pinned cache files are unchanged, so the learned
+        # lookup index stays frozen. Seed it by passing any other
+        # VOX_LIBJS_NATIVE_LOOKUP_INDEX value (for example `learn`).
+        env.setdefault('VOX_LIBJS_NATIVE_LOOKUP_INDEX', 'readonly')
         if args.prepare_native_cache:
             env['VOX_LIBJS_NATIVE_COMPILER'] = str(args.native_compiler)
             if args.native_captures:
