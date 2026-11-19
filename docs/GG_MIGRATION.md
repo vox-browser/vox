@@ -660,6 +660,35 @@ source check passed. The Windows VM's disk reserve
 requires 5 GiB of free host storage. The host had about 1.6 GiB free, so
 Windows pixel and timing checks remain pending.
 
+## Sharing CSS gradient text masks with Windows
+
+Windows D3D11 and OpenGL now replay `background-clip: text` through the
+same FreeType glyph mask and GG texture upload as Linux. The FreeType
+adapter streams font files through wide Windows paths, including CSS
+fonts downloaded into a Unicode profile path.
+
+The Linux browser smoke test passed on retry. The initial run passed
+the rendering checks and timed out during keyboard navigation. An
+isolated lifecycle retry passed before the complete rerun. The
+gradient ramp and full-raster modes produced identical document rows.
+On the Windows driver's `0.5` fixture under Linux Xvfb, the pixel check
+accepted the clipped glyphs and rejected the full gradient rectangle.
+The V `5a39a4d` single-unit Clang `-O0` executable SHA-256 was
+`2fc5115814fe7360e76b964401f9da3a000a83adef0aab26dd4297e215174a54`.
+The focused FreeType pixel and outline tests also passed on Linux.
+
+The macOS and both Windows source checks passed. The Windows smoke
+driver and Unicode-path glyph test cross-linked with MinGW GCC 16.2.0.
+The first D3D11 production build ran out of space staging generated C.
+A diagnostic build and a production retry linked to `d3d11.dll` and
+`libfreetype-6.dll`. The V `178232d` single-unit
+`-prod -no-prod-options` executable SHA-256 was
+`67b9c9edf7fac983e83cb4c14348751acf24b35207434239910b7fbe077cf0a2`.
+The retry and its 12 GiB guard exited zero at a sampled peak
+RSS of 8,536,981,504 bytes.
+The Windows VM could not meet its 5 GiB host disk reserve. Windows
+runtime pixels and timings remain unverified.
+
 ## Converting CPU SVG upload pixels faster
 
 The shared CPU raster readback copies opaque RGB bytes directly and writes zero
