@@ -1538,7 +1538,7 @@ fn (mut p Parser) parse_import_statement() Statement {
 		p.consume_or_insert_semicolon()
 		return p.statement(start, StatementKind{
 			tag:         .import_stmt
-			import_data: ImportStatementData{
+			import_data: &ImportStatementData{
 				module_request: ModuleRequest{
 					module_specifier: module_specifier
 					attributes:       attributes
@@ -1665,7 +1665,7 @@ fn (mut p Parser) parse_import_statement() Statement {
 
 	return p.statement(start, StatementKind{
 		tag:         .import_stmt
-		import_data: ImportStatementData{
+		import_data: &ImportStatementData{
 			module_request: ModuleRequest{
 				module_specifier: module_specifier
 				attributes:       attributes
@@ -1880,7 +1880,7 @@ fn (mut p Parser) parse_export_statement() Statement {
 
 	return p.statement(start, StatementKind{
 		tag:         .export_stmt
-		export_data: ExportStatementData{
+		export_data: &ExportStatementData{
 			statement:         export_statement
 			entries:           entries
 			is_default_export: is_default

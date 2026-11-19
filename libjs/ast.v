@@ -1471,8 +1471,9 @@ mut:
 	// Class declaration (heap-allocated to break struct cycles)
 	class_data ?&ClassData
 	// Import/Export
-	import_data ?ImportStatementData
-	export_data ?ExportStatementData
+	// Only import/export statements carry these 352 bytes; keep them out of line.
+	import_data ?&ImportStatementData
+	export_data ?&ExportStatementData
 	// Class field initializer
 	field_name Utf16String
 }
