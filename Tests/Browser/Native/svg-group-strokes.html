@@ -1,0 +1,34 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>SVG strokes inside paint groups</title>
+<style>
+  body { margin: 0; background: white; }
+  header { width: 8px; height: 8px; background: #34b786; }
+  svg { display: block; }
+</style>
+<header></header>
+<svg width="420" height="100">
+  <defs>
+    <clipPath id="clip"><circle cx="305" cy="43" r="32"/></clipPath>
+    <mask id="mask" mask-type="alpha" maskUnits="userSpaceOnUse" x="348" y="8" width="65" height="80">
+      <path fill="white" d="M358 8h37v80h-37Z"/>
+    </mask>
+  </defs>
+  <g opacity=".5">
+    <path fill="red" d="M12 16h80v60H12Z"/>
+    <path fill="none" stroke="blue" stroke-width="12" stroke-linecap="square"
+          d="M40 45H122"/>
+  </g>
+  <g opacity=".5">
+    <path fill="red" stroke="blue" stroke-width="16" paint-order="stroke fill"
+          d="M164 24h56v44h-56Z"/>
+  </g>
+  <g clip-path="url(#clip)">
+    <path fill="none" stroke="blue" stroke-width="14" stroke-dasharray="16 8"
+          d="M252 42H353"/>
+  </g>
+  <g mask="url(#mask)">
+    <path fill="none" stroke="red" stroke-width="12" vector-effect="non-scaling-stroke"
+          transform="translate(348 44) scale(2)" d="M0 0h30"/>
+  </g>
+</svg>

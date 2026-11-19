@@ -144,11 +144,6 @@ fn (app &BrowserApp) portable_svg_texture_destination(bounds painting.IntRect) g
 		f32(bounds.width) / app.ctx.scale, f32(bounds.height) / app.ctx.scale}
 }
 
-fn portable_svg_path_bounds(path cpuraster.Path, transform painting.Affine, viewport painting.Rect) ?painting.Rect {
-	rect := path.bounds() or { return none }
-	return portable_svg_device_bounds(rect, transform, viewport)
-}
-
 fn portable_svg_device_bounds(rect cpuraster.Rect, transform painting.Affine, viewport painting.Rect) painting.Rect {
 	local := painting.Rect{f64(rect.left), f64(rect.top), f64(rect.right - rect.left), f64(rect.bottom - rect.top)}
 	return transform.map_rect(local).intersection(viewport)

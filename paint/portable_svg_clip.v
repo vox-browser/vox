@@ -30,7 +30,7 @@ fn portable_svg_mask_group_end(commands []layout.PaintCommand, start int, mask l
 			}
 			return none
 		}
-		if !portable_svg_group_fill_supported(command, first, 1) { return none }
+		if !portable_svg_group_path_supported(command, first, 1) { return none }
 	}
 	return none
 }

@@ -29,12 +29,12 @@ fn portable_svg_group_clip_supported(command &layout.PaintCommand) bool {
 	return true
 }
 
-fn portable_svg_group_fill_supported(command &layout.PaintCommand, first &layout.PaintCommand,
+fn portable_svg_group_path_supported(command &layout.PaintCommand, first &layout.PaintCommand,
 	group_opacity f64) bool {
 	data := command.svg_data
 	if command.kind != 'draw_svg_path' || data == unsafe { nil }
 		|| data.path_data.len < layout.compatibility_clip_path_segment_stride || data.fill_pattern != none
-		|| (command.stroke_width > 0 && (command.stroke_color != '' || data.stroke_pattern != none))
+		|| (command.stroke_width > 0 && data.stroke_pattern != none)
 		|| command.blur != 0 || command.outer_shadow || command.scrollbar_axis != ''
 		|| f32(command.group_opacity) != f32(group_opacity)
 		|| command.has_clip != first.has_clip || command.clip_x != first.clip_x
@@ -51,15 +51,18 @@ fn portable_svg_group_fill_supported(command &layout.PaintCommand, first &layout
 			return true
 		}
 	}
-	return command.color != ''
+	return command.color != '' || (command.stroke_width > 0 && command.stroke_color != '')
 }
 
-struct PortableSVGGroupPath {
-	path      cpuraster.Path
-	transform painting.Affine
-	color     u32
-	style     ?cpuraster.CanvasPaintStyle
-	opacity   f32
+struct PortableSVGGroupPaint {
+	path         cpuraster.Path
+	transform    painting.Affine
+	color        u32
+	style        ?cpuraster.CanvasPaintStyle
+	opacity      f32
+	stroke_data  &layout.PaintSVGPathData = unsafe { nil }
+	stroke_width f32
+	stroke_miter f32
 }
 
 struct PortableSVGGroupImage {
@@ -154,41 +157,83 @@ fn (mut app BrowserApp) raster_portable_svg_group(commands []layout.PaintCommand
 	if clip.is_empty() { return PortableSVGGroupImage{} }
 	mut ink := painting.Rect{}
 	mut path_pixels := 0
-	mut paths := []PortableSVGGroupPath{cap: commands.len}
+	mut paints := []PortableSVGGroupPaint{cap: commands.len}
+	mut visible_paths := 0
 	for index in 0 .. commands.len {
 		command := &commands[index]
 		data := command.svg_data
 		path := cpuraster.canvas_path(data.path_data, data.fill_even_odd)
+		local := path.bounds() or { return none }
 		transform := portable_device_transform(multiply_paint_transforms(command.transform,
 			data.path_transform), page_x, page_y, scale)
-		bounds := portable_svg_path_bounds(path, transform, clip) or { return none }
-		if bounds.is_empty() { continue }
+		first_paint := paints.len
 		// Opacity scopes already folded their alpha into the recorded leaves.
-		// Restore the fill alpha before compositing the members.
-		fill_alpha := command.opacity / group_opacity * data.fill_opacity
-		mut style := ?cpuraster.CanvasPaintStyle(none)
-		mut color := u32(0xff000000)
-		mut opacity := f32(1)
-		if gradients := data.svg_gradient_data {
-			if gradients.fill_linear_gradient != none || gradients.fill_radial_gradient != none {
-				opacity = f32(clamp(fill_alpha, 0, 1))
-				if opacity == 0 { continue }
-				gradient := portable_svg_visible_gradient(command, false) or { return none }
-				style = cpuraster.CanvasPaintStyle(gradient)
+		// Restore each leaf's alpha before compositing the members.
+		leaf_alpha := command.opacity / group_opacity
+		fill_bounds := portable_svg_device_bounds(local, transform, clip)
+		if !fill_bounds.is_empty() {
+			fill_alpha := leaf_alpha * data.fill_opacity
+			mut style := ?cpuraster.CanvasPaintStyle(none)
+			mut color := u32(0)
+			mut opacity := f32(1)
+			if gradients := data.svg_gradient_data {
+				if gradients.fill_linear_gradient != none || gradients.fill_radial_gradient != none {
+					opacity = f32(clamp(fill_alpha, 0, 1))
+					if opacity != 0 {
+						gradient := portable_svg_visible_gradient(command, false) or { return none }
+						style = cpuraster.CanvasPaintStyle(gradient)
+						color = 0xff000000
+					}
+				}
+			}
+			if style == none && command.color != '' {
+				solid := app.paint_colors.color_with_retained(command.color, fill_alpha,
+					command.retained_svg_fill_color())
+				color = portable_svg_argb(solid)
+			}
+			if color >> 24 != 0 && opacity != 0 {
+				ink = ink.united(fill_bounds)
+				pixel_bounds := portable_pixel_bounds(fill_bounds)
+				path_pixels += pixel_bounds.width * pixel_bounds.height
+				paints << PortableSVGGroupPaint{
+					path: path
+					transform: transform
+					color: color
+					style: style
+					opacity: opacity
+				}
 			}
 		}
-		if style == none {
-			solid := app.paint_colors.color_with_retained(command.color, fill_alpha,
-				command.retained_svg_fill_color())
-			if solid.a == 0 { continue }
-			color = portable_svg_argb(solid)
+		if command.stroke_width > 0 && command.stroke_color != '' {
+			width := f32(command.stroke_width)
+			miter := f32(if data.stroke_miterlimit > 1 { data.stroke_miterlimit } else { 1.0 })
+			if !(width > 0) || !math.is_finite(f64(width)) || !math.is_finite(f64(miter)) {
+				return none
+			}
+			color := app.paint_colors.color_with_retained(command.stroke_color,
+				leaf_alpha * data.stroke_opacity, command.retained_svg_stroke_color())
+			stroke_bounds := portable_svg_stroke_bounds(data, local, transform, clip, width, miter)
+			if color.a != 0 && !stroke_bounds.is_empty() {
+				ink = ink.united(painting.Rect{f64(stroke_bounds.x), f64(stroke_bounds.y),
+					f64(stroke_bounds.width), f64(stroke_bounds.height)})
+				path_pixels += stroke_bounds.width * stroke_bounds.height
+				paints << PortableSVGGroupPaint{
+					path: cpuraster.Path{...path, fill_type: .winding}
+					transform: transform
+					color: portable_svg_argb(color)
+					opacity: 1
+					stroke_data: data
+					stroke_width: width
+					stroke_miter: miter
+				}
+				if data.stroke_first && paints.len == first_paint + 2 {
+					paints[first_paint], paints[first_paint + 1] = paints[first_paint + 1], paints[first_paint]
+				}
+			}
 		}
-		ink = ink.united(bounds)
-		path_bounds := portable_pixel_bounds(bounds)
-		path_pixels += path_bounds.width * path_bounds.height
-		paths << PortableSVGGroupPath{path, transform, color, style, opacity}
+		if paints.len > first_paint { visible_paths++ }
 	}
-	if paths.len == 0 { return PortableSVGGroupImage{} }
+	if paints.len == 0 { return PortableSVGGroupImage{} }
 	bounds := portable_pixel_bounds(ink)
 	// Leave widely separated paths on the leaf renderer instead of uploading
 	// a large area of transparent pixels between them.
@@ -196,15 +241,21 @@ fn (mut app BrowserApp) raster_portable_svg_group(commands []layout.PaintCommand
 	if pixel_count > portable_svg_group_max_pixels || pixel_count > path_pixels + 16384 { return none }
 	pitch := bounds.width * 4
 	mut surface := []u8{len: pitch * bounds.height}
-	for path in paths {
-		if !cpuraster.fill_canvas_path(mut surface, bounds.width, bounds.height, pitch, 2,
-			path.path, portable_svg_surface_matrix(path.transform, bounds), path.color, path.style, path.opacity,
-			.src_over, 0, [], none) {
+	for paint in paints {
+		matrix := portable_svg_surface_matrix(paint.transform, bounds)
+		drawn := if paint.stroke_data != unsafe { nil } {
+			raster_portable_svg_stroke(mut surface, bounds, paint.path, matrix, paint.stroke_data,
+				paint.color, none, paint.opacity, paint.stroke_width, paint.stroke_miter)
+		} else {
+			cpuraster.fill_canvas_path(mut surface, bounds.width, bounds.height, pitch, 2,
+				paint.path, matrix, paint.color, paint.style, paint.opacity, .src_over, 0, [], none)
+		}
+		if !drawn {
 			return none
 		}
 	}
 	cpuraster.unpremultiply_rgba_in_place(mut surface)
-	return PortableSVGGroupImage{bounds: bounds, paths: paths.len, pixels: surface}
+	return PortableSVGGroupImage{bounds: bounds, paths: visible_paths, pixels: surface}
 }
 
 fn (mut app BrowserApp) draw_portable_svg_group_image(image &PortableSVGGroupImage, alpha u8,

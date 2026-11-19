@@ -1601,6 +1601,50 @@ def check_svg_clip_browser(binary, artifacts, temporary):
     print("PASS: SVG clip bounds, curved unions, holes and fractional coverage", flush=True)
 
 
+def check_svg_group_strokes_browser(binary, artifacts, temporary):
+    fixture = Path(__file__).resolve().parents[1] / "Tests/Browser/Native/svg-group-strokes.html"
+    documents = []
+    for gpu in (False, True):
+        label = f"{fixture.stem}-{int(gpu)}"
+        screenshot = artifacts / f"{label}.png"
+        screenshot.unlink(missing_ok=True)
+        env = smoke_environment(Path(temporary) / label)
+        env.update(VOX_GG_SVG=str(int(gpu)), VOX_GG_SVG_DIAGNOSTICS="1",
+                   VOX_DISABLE_GG_SVG_CACHE="0",
+                   VOX_DISABLE_PORTABLE_SVG_OPACITY="0", VOX_PORTABLE_SVG_OPACITY_DIAGNOSTICS="1",
+                   VOX_DISABLE_PORTABLE_SVG_CLIP="0", VOX_PORTABLE_SVG_CLIP_DIAGNOSTICS="1",
+                   VOX_DISABLE_PORTABLE_SVG_MASK="0", VOX_PORTABLE_SVG_MASK_DIAGNOSTICS="1")
+        log = run_windowed([str(binary), "--window-width=800", "--window-height=600",
+                            "--screenshot-viewport-height=600", f"--screenshot={screenshot}", str(fixture)],
+                           env=env, log_path=artifacts / f"{label}.log")
+        assert "VOX_SVG_OPACITY paths=2 " in log, log
+        assert "VOX_SVG_OPACITY paths=1 " in log, log
+        assert "VOX_SVG_CLIP crop=false components=1 paths=1 " in log, log
+        assert "VOX_SVG_MASK luminance=false operations=1 paths=1 " in log, log
+        assert "VOX_SVG_GROUP cache=hit " in log, log
+        _, height, channels, rows = rendered_png_rows(screenshot.read_bytes())
+        marker = next(y for y in range(150) if rows[y][4 * channels:4 * channels + 3] == bytes.fromhex("34b786"))
+        top = marker + 8
+
+        def pixel(x, y):
+            return tuple(rows[top + y][x * channels:x * channels + 3])
+
+        red_half = (255, 127, 127)
+        blue_half = (127, 127, 255)
+        white = (255, 255, 255)
+        blue = (0, 0, 255)
+        samples = ((22, 45, red_half), (64, 45, blue_half), (125, 45, blue_half), (130, 45, white),
+                   (168, 45, red_half), (159, 45, blue_half),
+                   (280, 42, blue), (295, 42, white), (260, 42, white), (332, 42, blue), (340, 42, white),
+                   (375, 45, (255, 0, 0)), (353, 45, white), (399, 45, white), (375, 52, white))
+        for x, y, expected in samples:
+            actual = pixel(x, y)
+            assert all(abs(a - b) <= 1 for a, b in zip(actual, expected)), (label, x, y, actual, expected)
+        documents.append(rows[marker:height - 24])
+    assert documents[0] == documents[1], "GG Canvas changed isolated stroke pixels"
+    print("PASS: SVG groups preserve stroke opacity, paint order, caps, dashes, clips, and masks", flush=True)
+
+
 def check_svg_gradient_groups_browser(binary, artifacts, temporary):
     fixture = Path(__file__).resolve().parents[1] / "Tests/Browser/Native/svg-gradient-groups.html"
     edited = Path(temporary) / "svg-gradient-groups-edited.html"
@@ -2325,6 +2369,7 @@ def main():
         check_web_font_scroll_reuse(binary, artifacts, temporary, wide=True)
         check_svg_opacity_browser(binary, artifacts, temporary)
         check_svg_clip_browser(binary, artifacts, temporary)
+        check_svg_group_strokes_browser(binary, artifacts, temporary)
         check_svg_gradient_groups_browser(binary, artifacts, temporary)
         check_nested_svg_browser(binary, artifacts, temporary)
         check_svg_mask_browser(binary, artifacts, temporary)

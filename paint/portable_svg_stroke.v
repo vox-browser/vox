@@ -106,7 +106,24 @@ fn (mut app BrowserApp) draw_portable_svg_raster_stroke(command &layout.PaintCom
 		gradient, 'STROKE', decoded == none) {
 		return true
 	}
-	mut path := decoded or { cpuraster.canvas_path(data.path_data, false) }
+	path := decoded or { cpuraster.canvas_path(data.path_data, false) }
+	mut pixels := []u8{len: bounds.width * 4 * bounds.height}
+	if !raster_portable_svg_stroke(mut pixels, bounds, path, surface_matrix, &data, color,
+		gradient, opacity, width, miter) {
+		return false
+	}
+	app.upload_portable_svg_pixels(bounds, mut pixels, false)
+	if cache_index >= 0 {
+		app.remember_portable_svg_raster(cache_index, &data, key, surface_matrix, local, gradient)
+	}
+	log_portable_svg_raster_cache('STROKE', 'miss', bounds, gradient, '', false)
+	return true
+}
+
+fn raster_portable_svg_stroke(mut pixels []u8, bounds painting.IntRect, path_in cpuraster.Path,
+	surface_matrix [6]f32, data &layout.PaintSVGPathData, color u32,
+	gradient ?cpuraster.CanvasGradient, opacity f32, width f32, miter f32) bool {
+	mut path := path_in
 	mut matrix := surface_matrix
 	mut style := ?cpuraster.CanvasPaintStyle(none)
 	if paint := gradient {
@@ -134,19 +151,9 @@ fn (mut app BrowserApp) draw_portable_svg_raster_stroke(command &layout.PaintCom
 		2 { .bevel }
 		else { .miter }
 	}
-	pitch := bounds.width * 4
-	mut pixels := []u8{len: pitch * bounds.height}
-	if !cpuraster.stroke_canvas_path(mut pixels, bounds.width, bounds.height, pitch, 2, path,
+	return cpuraster.stroke_canvas_path(mut pixels, bounds.width, bounds.height, bounds.width * 4, 2, path,
 		matrix, color, style, opacity, .src_over, 0, width,
-		cap, join, miter, data.stroke_dasharray.map(f32(it)), f32(data.stroke_dashoffset), [], none) {
-		return false
-	}
-	app.upload_portable_svg_pixels(bounds, mut pixels, false)
-	if cache_index >= 0 {
-		app.remember_portable_svg_raster(cache_index, &data, key, surface_matrix, local, gradient)
-	}
-	log_portable_svg_raster_cache('STROKE', 'miss', bounds, gradient, '', false)
-	return true
+		cap, join, miter, data.stroke_dasharray.map(f32(it)), f32(data.stroke_dashoffset), [], none)
 }
 
 fn (mut app BrowserApp) draw_portable_svg_path_stroke(command &layout.PaintCommand,
