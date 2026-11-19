@@ -776,6 +776,55 @@ smoke suite and the macOS, Windows D3D11, and Windows OpenGL source checks
 passed. Windows native memory and timing checks still await a VM with
 enough host storage.
 
+## Reusing web-font textures across scroll recordings
+
+`VOX_WEB_FONT_SCROLL_REUSE=1` allows a fully visible horizontal web-font
+run to reuse a texture after viewport scrolling records a new paint
+list. The renderer compares the document content revision, font path
+and face, exact glyph IDs and positions, color, opacity, backing scale,
+and raster-local transform and dimensions. Whole-pixel translation can
+therefore reuse pixels. A clipped run, a non-translation transform, or
+a changed subpixel phase takes the existing raster path. The lookup can
+move a matching texture from a later unused web-font slot within the
+same 16-slot budget. Each entry stores at most 128 glyphs and 512
+font-path bytes. The tab releases the metadata when it closes.
+
+The first diagnostic rejected the scroll translation and recorded no
+hits. The raster-local comparison then recorded 265 cross-recording
+hits and 294 raster misses during synthetic callbacks 1–47. The window
+regression checked exact pixels across scrolling, a live color edit,
+clipped and fractional text, and an SVG sharing the streaming slots.
+
+Two alternating pairs compared the flag off and on with the existing
+stationary cache enabled in both. The Linux AArch64 executable used
+V `5a39a4d` and single-unit Clang `-O0`. Its SHA-256 was
+`fb31f3f8d3ba9101614150ab324220d2cca91f81895aee423ddd104b7d2965a1`.
+The fixture used 31 alternating-color lines of 36 author-font glyphs
+at 32 px and had SHA-256
+`1bdc2d1ef877068d0b788a9ef431f6eaab8bbf1d5c0d541176bd559557df550c`.
+The trials used fresh processes with private profiles and caches,
+Mesa software OpenGL in a 1024 × 712 Xvfb window, one second of settling,
+and 48 synthetic scrolling callbacks with JavaScript disabled. OS caches
+stayed available. One-minute load ranged from 1.13 to 1.44 on four
+guest vCPUs. Input hashes, scroll offsets, command counts, and final
+document pixels matched. Browser and guard exits were zero.
+
+| Pair | Replay median off / on, ms | Replay p95 and maximum off / on, ms | Median allocated KiB off / on |
+| --- | ---: | ---: | ---: |
+| 1 | 58.504 / 6.313 | 61.632, 64.134 / 59.651, 60.818 | 5220.5 / 799 |
+| 2 | 57.827 / 7.783 | 59.622, 59.823 / 59.216, 59.765 | 5217 / 805.5 |
+
+The final document pixel SHA-256 was
+`9aadcb12b8d0ddc547c8c7509fbcc9f70feb793acf5f1e7f4ae11911f9d68622`.
+The results measure synthetic draw callbacks. The Linux browser smoke
+suite passed. The cleanup build
+`01c30c5fd3c7ec15ac4994313f8b635df694e9ccb2c34921ee2899b4ce52fefa`
+passed the focused pixel checks and exited cleanly when its X11 window
+closed with a populated cache. A separate X11 wheel probe re-recorded
+the document and timed out waiting for a cross-recording hit. macOS,
+Windows D3D11, and Windows OpenGL source checks passed. Native scrolling
+performance and Windows memory and timing remain unverified.
+
 ## Converting CPU SVG upload pixels faster
 
 The shared CPU raster readback copies opaque RGB bytes directly and writes zero
