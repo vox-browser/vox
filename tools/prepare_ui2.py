@@ -106,17 +106,20 @@ def stage_document_surface(canvas, windows=True):
     if not (canvas / 'gpu_context.v').is_file():
         return
     names = ['document_surface.v']
+    from prepare_gg_shadow import replace_once
+    patches = json.loads((tools / 'buildtools/gg_patches.json').read_text())
+    groups = ['prepare_gg_document_gradient_hole']
     if windows:
-        from prepare_gg_shadow import replace_once
-        patches = json.loads((tools / 'buildtools/gg_patches.json').read_text())
-        for operation in patches['prepare_gg_windows_canvas']:
+        groups.append('prepare_gg_windows_canvas')
+        names.append('window_gpu_windows.c.v')
+    for group in groups:
+        for operation in patches[group]:
             path = canvas / operation['file']
             source = path.read_text()
             if operation['new'] not in source:
                 if path.is_symlink():
                     path.unlink()
                 write_if_changed(path, replace_once(source, operation['old'], operation['new']))
-        names.append('window_gpu_windows.c.v')
     for name in names:
         write_if_changed(canvas / ('vox_' + name), (tools / 'ui2' / ('gg_' + name)).read_text())
 

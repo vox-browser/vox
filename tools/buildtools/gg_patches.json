@@ -207,6 +207,43 @@
       "new": "yuv.yz = sample(_globals.image_4, documentImageCoords * 0.5f).yz;"
     }
   ],
+  "prepare_gg_document_gradient_hole": [
+    {
+      "file": "gpu_surface.v",
+      "old": "\torigin_y int\n\t// The saves made on this device",
+      "new": "\torigin_y int\n\tdocument_gradient_hole bool\n\t// The saves made on this device"
+    },
+    {
+      "file": "gpu_surface.v",
+      "old": "\tif outer.is_rect() {\n\t\ts.device_draw_rect(o, paint)!",
+      "new": "\tif outer.is_rect() {\n\t\t$if vox_gg_svg ? {\n\t\t\tif inner.is_rect() && paint.gradient != none && s.ctx.is_gl && !s.ctx.owns_gfx {\n\t\t\t\ts.document_gradient_hole = true\n\t\t\t\tdefer { s.document_gradient_hole = false }\n\t\t\t\ts.device_draw_rect(o, paint)!\n\t\t\t\treturn\n\t\t\t}\n\t\t}\n\t\ts.device_draw_rect(o, paint)!"
+    },
+    {
+      "file": "gpu_surface.v",
+      "old": "\tuniforms, opaque := shaded_uniforms(paint, clip.analytic)!\n\tpixel_aligned :=",
+      "new": "\tmut uniforms, opaque := shaded_uniforms(paint, clip.analytic)!\n\tpixel_aligned :="
+    },
+    {
+      "file": "gpu_surface.v",
+      "old": "\tdepends_on_dst := coverage || clipped || !opaque\n\ts.check_uniform_capacity([uniforms], clip.elements)!",
+      "new": "\tdepends_on_dst := coverage || clipped || !opaque\n\tgradient_hole := $if vox_gg_svg ? {\n\t\ts.document_gradient_hole && step == .cover_bounds\n\t} $else {\n\t\tfalse\n\t}\n\tif gradient_hole && !clipped {\n\t\tuniforms = document_unclipped_gradient_uniforms(uniforms)\n\t}\n\ts.check_uniform_capacity([uniforms], clip.elements)!"
+    },
+    {
+      "file": "gpu_surface.v",
+      "old": "\ts.record(step, coverage || depends_on_dst, instance, uniforms, order,\n\t\tdraw_clip)",
+      "new": "\t// Keep the OpenGL blend state stable as the hole enters or leaves the clip.\n\ts.record(step, coverage || depends_on_dst || gradient_hole, instance, uniforms, order,\n\t\tdraw_clip)"
+    },
+    {
+      "file": "gpu_surface.v",
+      "old": "\tuniforms, opaque := shaded_uniforms(paint, clip.analytic)!\n\tcolor := uniforms.color",
+      "new": "\tmut uniforms, opaque := shaded_uniforms(paint, clip.analytic)!\n\tgradient_hole := $if vox_gg_svg ? { s.document_gradient_hole } $else { false }\n\tif gradient_hole && !clipped {\n\t\tuniforms = document_unclipped_gradient_uniforms(uniforms)\n\t}\n\tcolor := uniforms.color"
+    },
+    {
+      "file": "gpu_surface.v",
+      "old": "\ts.record(.cover_bounds, depends_on_dst, instance, uniforms, order, DrawClip{",
+      "new": "\ts.record(.cover_bounds, depends_on_dst || gradient_hole, instance, uniforms, order, DrawClip{"
+    }
+  ],
   "prepare_gg_image_repeat": [
     {
       "file": "gpu_layer.v",

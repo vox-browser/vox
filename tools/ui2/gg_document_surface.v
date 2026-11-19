@@ -2,6 +2,20 @@ module canvas
 
 import sokol.gfx
 
+// A pixel-aligned gradient rectangle with a rectangular hole can use the
+// same OpenGL shader after the hole leaves the viewport. Zero inverse
+// radius and selected edges give full coverage without changing draw order.
+fn document_unclipped_gradient_uniforms(uniforms PaintUniforms) PaintUniforms {
+	return PaintUniforms{
+		...uniforms
+		clipped: true
+		clip: AnalyticClipUniforms{
+			radius_plus_half: [f32(1), 0]!
+			edge_select:      [f32(1), 1, 1, 1]!
+		}
+	}
+}
+
 // take_document_image flushes a surface and transfers ownership of its color
 // attachment. Free the surface before sampling the image and destroy the image
 // after its queued draws have been submitted.
