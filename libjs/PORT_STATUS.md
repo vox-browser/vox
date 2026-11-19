@@ -107,10 +107,21 @@ manual HN experiment above is historical, not the current document-cache policy.
 
 The function compiler maps parser-proven uncaptured parameters and function `var`
 bindings to bytecode local slots for ordinary, simple-parameter functions with
-unobservable arguments. Reads copy into temporaries to preserve evaluation order;
-the native tier lowers these accesses to direct slot moves. Captures, eval/with,
-lexical/TDZ bindings, complex parameters and observable arguments retain their
-environment paths. Focused tests cover assignments, destructuring, shadowing,
+unobservable arguments, including arrow functions and functions with nested
+declarations. A hoisted function declaration or Annex B block function keeps its
+name in the environment. Uncaptured `let`/`const` bindings declared in blocks,
+loop heads and the function body also use local slots (`lexical_registers.v`);
+blocks and loops whose lexical bindings are all slots allocate no environment
+and copy no per-iteration bindings. Upstream checks the TDZ at run time with an
+empty local and `ThrowIfTDZ`; this port instead proves in emission order that
+every read follows the initialization. A read or write before it, or a `const`
+assignment, recompiles the function with that binding in its environment, which
+raises the ReferenceError/TypeError. Case-block declarations, class and function
+declarations, catch parameters, async functions and generators keep their
+environment paths. Reads copy into temporaries to preserve evaluation order; the
+native tier lowers these accesses to direct slot moves. Captures, eval/with,
+complex parameters and observable arguments retain their environment paths.
+Focused tests cover assignments, destructuring, shadowing, TDZ and const errors,
 budgets and compiler-free native-cache revisits in both GC modes. This is a
 runtime optimization, not additional language or DOM parity.
 
