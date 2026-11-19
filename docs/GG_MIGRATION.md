@@ -716,6 +716,62 @@ The test guest reached the Windows sign-in screen, but the interactive
 test account could not sign in. The guest shut down normally with
 guard exit zero. Windows runtime pixels remain unverified.
 
+## Reusing SVG bounds after a GG Canvas fallback
+
+With `VOX_GG_SVG=1`, `f4f0998ba` sends subsequent solid fills to
+the CPU cache after GG Canvas initialization fails. Cache hits
+reuse the path bounds. Fills and strokes share the availability
+check, and frame cleanup skips the GPU cache when there is no canvas.
+
+The Linux regression confirms that the renderer reports its OpenGL
+4.2 capability failure once and reuses bounds on subsequent CPU
+fill texture hits. The previous build still decoded the geometry
+on those hits. The candidate's CPU fallback pixels matched the
+capture with GG Canvas disabled.
+
+The timing fixture kept 12 solid paths with 61 packed segments each
+fixed in view. Both builds used V `5a39a4d` and identical single-unit
+Clang `-O0` flags. The control and candidate executable SHA-256 values
+were `1f0c47326168f238a6c29cbfe0689354859614f13b01227da66a0da4956d9ad1`
+and `26931145833d98a23649b79ec6d30abf74127388678c26132092c639858dcf1c`.
+The fixture SHA-256 was
+`37bf7b0cb9cbaeedd89962b94076b7a4fd9d848afc2cef80ce5a0027c156d9d9`.
+Executable, fixture, and linked library hashes stayed fixed. Each
+trial used a fresh process and private browser state, an 800 × 712
+Xvfb window, one Mesa software rendering worker, and 48 synthetic
+callbacks after one second of settling. JavaScript was disabled.
+Command counts, scroll offsets through the final 504 CSS pixels,
+and 800 × 628 document captures matched within each route.
+
+In separate diagnostics, both OpenGL 4.2 builds recorded 564 CPU
+texture hits. Cached bounds accounted for zero hits in the control
+and all 564 in the candidate. The candidate matched the captures
+and cache counts with GG Canvas disabled. Both builds recorded 564
+GPU texture hits on shader-storage-capable OpenGL.
+
+Two alternating pairs ran per route with diagnostics disabled.
+One-minute guest load ranged from 1.18 to 1.58 on four vCPUs. Browser
+and memory guard exits were zero. Concurrent compiler runs exhausted
+guest memory in two build attempts. Temporary swap allowed the
+candidate build to finish and was removed before browser testing.
+
+| Route and pair | Replay median before / after, ms | Replay p95 and maximum before / after, ms | Median allocated KiB before / after |
+| --- | ---: | ---: | ---: |
+| OpenGL 4.2 fallback 1 | 0.751 / 0.684 | 2.636, 2.716 / 0.933, 2.572 | 165.5 / 126 |
+| OpenGL 4.2 fallback 2 | 0.753 / 0.736 | 1.047, 2.880 / 2.597, 2.900 | 165 / 127 |
+| GG Canvas 1 | 0.641 / 0.669 | 0.814, 2.391 / 0.820, 2.623 | 132.5 / 132 |
+| GG Canvas 2 | 0.740 / 0.635 | 0.890, 2.268 / 0.705, 2.375 | 131 / 131 |
+
+Fallback allocation fell by 38–39.5 KiB per callback. Fallback
+medians fell in both pairs, with mixed p95 and maximum results.
+GG Canvas medians were mixed. The document pixel SHA-256 values
+were `5f8cdb7b7f303627171a124fd648ed328da2a8631264859b9a702d0f612c6a88`
+on the fallback and `53d3f5d520e7bface67bee9c83500a7f1645ff3bc0095d45f8f447f18e7ed90f`
+with GG Canvas. The timings cover software replay callbacks. All 18
+Linux GG SVG window checks passed, as did the macOS, Windows D3D11,
+and Windows OpenGL source checks. Windows runtime and native GPU
+timing remain unverified.
+
 ## Sharing CSS gradient text masks with Windows
 
 Windows D3D11 and OpenGL now replay `background-clip: text` through the
