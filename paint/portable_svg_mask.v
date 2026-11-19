@@ -306,13 +306,10 @@ fn (mut app BrowserApp) raster_svg_mask_layers(mut pixels []u8, pitch int, bound
 					pitch: layer_pitch
 					premultiplied: true
 				}
-				rect := [f32(0), 0, f32(bounds.width), f32(bounds.height)]!
 				// The children blend in isolation. Apply the opacity once while
-				// restoring the complete mask layer, without resampling it.
-				if !cpuraster.draw_canvas_image(mut layers[depth].pixels, bounds.width, bounds.height,
-					if depth == 0 { pitch } else { layer_pitch }, 2,
-					[f32(1), 0, 0, 1, 0, 0]!, bitmap, rect, rect, false,
-					layer.opacity, .src_over, []) { return false }
+				// restoring the complete mask layer.
+				if !cpuraster.restore_canvas_opacity_layer(mut layers[depth].pixels,
+					if depth == 0 { pitch } else { layer_pitch }, bitmap, layer.opacity) { return false }
 			}
 			.path {
 				style := portable_svg_mask_gradient(operation, mask.mask_luminance)
