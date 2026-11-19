@@ -754,6 +754,71 @@ replay. All 27 Linux browser smoke checks and 18 GG SVG window checks
 passed. macOS, Windows D3D11, and Windows OpenGL source checks passed.
 Windows runtime and hardware GPU performance remain unverified.
 
+## Drawing solid strokes inside SVG masks
+
+In `ef7fd4c84`, the portable group player draws solid strokes in
+SVG mask sources with the shared stroke rasterizer. It blends stroke
+and fill in SVG paint order, resolves nested opacity, and then uses
+alpha or premultiplied luminance as the coverage. Layers containing
+strokes keep the parent row range so caps and joins stay within the
+rasterized area. The single-fill rectangle and gradient-strip paths
+decline mixed paint.
+
+The old Linux executable drew the alpha-mask sample at (33, 36)
+as solid blue because it declined the mask. The new sample is
+half-opacity blue (`#8080ff`). The fixture also checks transformed caps, stroke
+opacity, luminance paint order, gradient fill inside a stroked
+rectangle, and an animation-frame edit to stroke width. The
+800 × 516 document pixels matched with GG Canvas enabled, disabled,
+and the texture cache disabled. Both cached routes drew the mask again
+after the edit.
+
+The fixture SHA-256 was
+`04780a8d17431f0629d4d3c14048f11b4a7c45176118a9535863ba004315604d`.
+The decoded document SHA-256 was
+`dda2266fc74b68a5656561f61ef1010bb22afc2fc0f6121c30a7603ecfcff120`.
+
+Two cohorts each ran two alternating pairs against the existing
+fill-only opacity-mask fixture. The test copy fixed the SVG and the
+document marker in an 800 × 712 Xvfb window while its body scrolled.
+Each process used a fresh private profile and cache, one Mesa
+software worker, and no page scripts. One second of settling
+preceded 48 synthetic callbacks with the SVG texture cache disabled.
+Separate diagnostic runs confirmed eight mask rasters per callback
+across 47 complete intervals in each build. Paint command counts,
+offsets through the final 504 CSS pixels, and 800 × 628 document
+pixels matched across all trials.
+
+The aarch64 builds used matching V `5a39a4d` and single-unit Clang
+`-O0` flags. The control and candidate executable SHA-256 values were
+`95644e6f60f24388154cb7b9b6bcb316b5e98eb88beb5b4d9ab5f136d5d50bcf`
+and `69a97218ad5655078dc16eb67402eb8e17a2a4dfdbc9db4e7ae4621db6f90157`.
+The test fixture and decoded document hashes were
+`e5c771fd6f108c57ee9949913f9f5506f4ebe1bdd4d75f101190432f53594652`
+and `7a8d1e777da0d1b6e39db2bf30303ef165edfca5ad69425aea14301a9262711e`.
+Executable, fixture, and library hashes stayed fixed during both
+cohorts. The generated C also carried a concurrent LibJS change.
+One-minute guest load ranged from 1.31 to 1.59 on four vCPUs.
+
+| Cohort and pair | Replay median before / after, ms | Replay p95 and maximum before / after, ms | Median allocated KiB before / after |
+| --- | ---: | ---: | ---: |
+| First, 1 | 7.900 / 8.761 | 11.167, 11.649 / 12.308, 12.733 | 2628 / 2628 |
+| First, 2 | 9.209 / 8.848 | 12.791, 13.221 / 12.218, 12.535 | 2629.5 / 2627.5 |
+| Repeat, 1 | 11.772 / 13.722 | 16.330, 17.559 / 19.185, 19.668 | 2630.5 / 2631 |
+| Repeat, 2 | 13.202 / 13.677 | 17.907, 18.170 / 18.852, 22.000 | 2629 / 2628.5 |
+
+Three pairs recorded higher candidate replay medians. Control
+medians also varied by 5.30 ms, so these synthetic results leave
+the production performance impact unresolved. Browsers and memory
+guards exited zero in both cohorts. An extra shell delimiter returned
+127 after the first guarded benchmark finished. The repeat command
+exited zero.
+
+All 28 standard Linux browser checks and 18 GG SVG window checks
+passed under the memory guard. macOS, Windows D3D11, and Windows
+OpenGL source checks passed. macOS and Windows runtime validation
+and hardware GPU timing remain pending.
+
 ## Sharing the portable SVG fallback with Windows
 
 The standard Windows D3D11 window now uses the same CPU raster and GG texture
