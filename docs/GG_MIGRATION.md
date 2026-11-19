@@ -1,5 +1,60 @@
 # Migrating from Skia to vlib/gg
 
+## Blending SVG mask opacity layers directly on Linux
+
+An isolated mask layer has the same dimensions and pixel origin as its
+parent. On Linux, a disjoint premultiplied sRGB layer can now restore
+directly into the parent's rows using the existing 8-bit source-over
+rounding. Transparent pixels leave the backdrop untouched. Large restores
+can use the existing row workers. The shared entry point selects the
+legacy sprite blend on macOS and Windows.
+
+Focused tests compared the direct blend with image replay at all 256
+opacity bytes, using every source alpha byte, padded strides, and an
+odd-width target. The large restore matched with default and forced serial
+scheduling. Invalid and aliased layouts declined the direct path. The
+focused tests passed with ASan and UBSan, and the pinned Skia differential
+suite passed, including 10,000 canvas image draws.
+
+Fresh Linux aarch64 builds used V `5a39a4d` and matching single-unit
+Clang `-O0` flags. Control and candidate executable SHA-256 values were
+`f076eb4b88a922bdd3653aaf5fcf0edc4d6e3bb9ec28410529850e6fcff807ab`
+and `6854af820046dc7e274637ef131642696a6f6a7cfbdf21ea303632bd663d5225`.
+The 800 × 600 document captures matched pixel for pixel at 0 and 42 CSS
+pixels of scrolling. Diagnostics confirmed that the portable player
+composited the isolated alpha and luminance groups. The solid fixture also
+exercised nested and sibling groups.
+
+| Fixture | Decoded RGBA SHA-256 at 0 px | Decoded RGBA SHA-256 at 42 px |
+| --- | --- | --- |
+| Solid opacity groups | `9b8b28f0a6f88bc8aa43e67bd781a007929e2ed357705ef5296a4637d3957797` | `ea96e6d798c7c050881db806327df547beab92f82d177109a44911c4c7a8e7b6` |
+| Gradient opacity groups | `a42cf4b37188b15819173e6af7f86314c9296becd6072b603036e6f5148a6933` | `b1ab791c2350016696a2655f4b333f094b6d3be2c0d7874fe5df519ef2f7db99` |
+
+The synthetic replay cohort used fresh processes, private profiles and
+caches, a 1024 × 712 Xvfb window, software OpenGL, and a one-second settle
+period. JavaScript, GPU SVG replay, and SVG texture reuse were disabled.
+The original fixture SHA-256 values were
+`2ca5b13ae5723502fa64a1661cb1ea2b3eb129e2508c048cd6fa1cf6e429ea51`
+and `c4768659c273d4ecaa356425dd16ee6070fd102805a8951d54de60cabfd2572d`
+in table order. The 120 callbacks in each trial matched their paired
+command counts and scroll offsets. The offsets reached 1248 and 1240 CSS
+pixels, respectively. All input hashes stayed fixed. Both browser and
+memory guard exits were zero. Guest one-minute load ranged from 0.58 to
+1.19 on four vCPUs.
+
+| Fixture and pair | Replay median before / after, ms | Replay p95 and maximum before / after, ms | Median allocated KiB before / after |
+| --- | ---: | ---: | ---: |
+| Solid opacity 1 | 31.851 / 7.903 | 39.162, 45.254 / 13.138, 24.421 | 3048 / 3031.5 |
+| Solid opacity 2 | 33.281 / 6.080 | 41.250, 53.984 / 10.916, 26.625 | 3057 / 3034.5 |
+| Gradient opacity 1 | 30.013 / 15.425 | 37.155, 49.112 / 21.741, 36.473 | 2954 / 2943 |
+| Gradient opacity 2 | 28.609 / 15.193 | 35.427, 45.891 / 21.195, 35.318 | 2950 / 2939 |
+
+Median, p95, and maximum replay time fell in all four pairs. These
+measurements cover uncached callbacks in unoptimized software-rendered
+Linux builds. All 20 Linux browser checks passed. Source checks passed
+for macOS and Windows amd64 with D3D11 and OpenGL. Native scrolling and
+macOS and Windows runtime timings were outside this comparison.
+
 ## Compositing SVG mask strips directly into group alpha
 
 Portable linear SVG masks shade one row or column and apply its samples
