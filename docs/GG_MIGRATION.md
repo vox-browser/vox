@@ -1062,6 +1062,59 @@ from 1.26 to 1.33 at timed launches on four vCPUs. These timings
 cover warmed idle software replay. Candidate macOS and Windows
 runtime checks and native GPU timing remain pending.
 
+## Repeating vector and bitmap pattern fills in SVG masks
+
+In `34f9cc5f1`, the portable mask player uses the retained pattern
+operations to rasterize one premultiplied tile. It shades the mask
+path with the shared repeating bitmap shader, mapping the tile back
+to its SVG origin, period and transform. Tiles can include paths,
+images and isolated opacity groups. The mask's existing pixel budget
+bounds the total size of tiles generated per replay. The finished
+mask texture can be retained once its tile images are available.
+
+The fixture checks a translated vector tile with overlapping shapes
+inside an opacity group and a bitmap tile in a luminance mask. It
+also changes the vector tile's opacity after the first raster. The
+fallback capture with portable masks disabled drew the target
+solid blue at (9, 20), outside the intended pattern coverage.
+The candidate left that pixel white. All 800 × 516 document pixels
+matched across cached CPU replay, GG Canvas and uncached replay.
+The fixture and decoded document SHA-256 values were
+`6851f39c499e077c69a99ff144b705b6f7b6f20176de9fed8c596f993d90f18c`
+and `2818ef8c339118b218fb8a26627d1b100098d825d5dc88761fee3849f9ada073`.
+
+A native reference capture launched PID 70013 from the published
+`f96eeac1d` bundle with executable SHA-256
+`d3b5db917260170abf2a93c2d625a558532eb920f977831f2dba0e6092972567`.
+Twelve of 16 samples matched exactly. The four remaining samples
+differed by one channel value on the overlapping opacity group.
+The new Linux regression and eleven neighboring SVG window checks
+passed. The raster test checks that nearest sampling preserves texels
+under fractional scale. macOS and Windows D3D11 and OpenGL source
+checks passed.
+
+Two alternating pairs timed the same ARM64 single-unit Clang
+`-O0` executable with V `5a39a4d`. Its SHA-256 was
+`a6dd8ab9be00ed6f05968310d4af79ded4ff6bab0096e7e08c3fa75a4170a7aa`.
+Fresh processes used private profiles and caches, one Mesa worker,
+JavaScript disabled, and an 800 × 600 Xvfb window. A one-second
+settle preceded 48 synthetic idle replay callbacks. Diagnostics
+observed two mask rasters per callback with caching disabled and
+two texture hits with caching enabled across 47 complete intervals.
+The viewport pixel hash was
+`9688c70c525602005f27e0742cd1f3de70c67d6b23bc14e89aedcb72b2c614c5`.
+Pixels, paint command counts, position and input hashes matched.
+
+| Pair | Uncached / cached median replay, ms | Uncached / cached p95 and maximum, ms | Uncached / cached median allocated KiB |
+| --- | ---: | ---: | ---: |
+| 1 | 13.059 / 0.932 | 15.218, 16.475 / 1.260, 3.591 | 441 / 120 |
+| 2 | 12.661 / 0.885 | 15.847, 16.214 / 1.083, 3.359 | 443 / 120 |
+
+The four-vCPU guest's one-minute load was 0.96–1.05 at timed
+launches. All browser processes and the memory guard exited zero.
+The comparison measures warmed idle software replay. Candidate
+macOS and Windows runtime checks and native GPU timing remain pending.
+
 ## Sharing the portable SVG fallback with Windows
 
 The standard Windows D3D11 window now uses the same CPU raster and GG texture
