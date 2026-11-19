@@ -48,6 +48,43 @@ fn test_pipeline_rect_matches_ordered_gradient_and_image_rows() {
 	}
 }
 
+fn test_full_coverage_gradient_source_spans_match_the_pixel_pipeline() {
+	width, height, pitch := 142, 24, 592
+	seed := []u8{len: pitch * height, init: u8((index * 17 + index / 5) & 255)}
+	for kind in [1, 2] {
+		for alpha in [f32(1), 0.4] {
+			gradient := canvas_gradient_shader(CanvasGradient{
+				kind:  kind
+				x0:    13.25
+				y0:    7.5
+				x1:    if kind == 1 { f32(100.625) } else { f32(13.25) }
+				y1:    if kind == 1 { f32(16.25) } else { f32(7.5) }
+				r1:    29.25
+				stops: [f32(0), 0.2, 0.7, 0.3, 1, 0.37, 0.9, 0.2, 0.5, alpha, 1, 0.1, 0.4, 0.8, 1]
+			}, Matrix{1, 0.12, -0.2, 1, 1.375, -2.25}).gradient
+			mode := if alpha == 1 { BlendMode.src_over } else { BlendMode.src }
+			mut actual := seed.clone()
+			mut expected := seed.clone()
+			mut candidate := new_gradient_blitter(mut actual, pitch, gradient, 1, mode)
+			reference := new_gradient_blitter(mut expected, pitch, gradient, 1, mode)
+			assert candidate.shaded && candidate.lowp && candidate.mode == .src
+			candidate.blit_rect(3, 2, width - 7, 17)
+			for y in 2 .. 19 {
+				for x in 3 .. width - 4 {
+					reference.blit_lowp(x, y, reference.offset(x, y), .none, 0)
+				}
+			}
+			// Partial coverage still interpolates with the existing destination.
+			candidate.blit(5, 20, width - 11, .float, 91)
+			for x in 5 .. width - 6 {
+				reference.blit_lowp(x, 20, reference.offset(x, 20), .float, 91)
+			}
+			matches := actual == expected
+			assert matches
+		}
+	}
+}
+
 fn test_pipeline_rect_preserves_read_order_for_aliased_mipmap_levels() {
 	w, h := 512, 513
 	pitch := (w + 3) * 4

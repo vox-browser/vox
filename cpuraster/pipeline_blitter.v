@@ -381,8 +381,8 @@ enum CoverageKind {
 fn (b &PipelineBlitter) blit(x int, y int, count int, kind CoverageKind, coverage u8) {
 	offset := b.offset(x, y)
 	if kind == .none && b.lowp && b.shaded && !b.imaged && !b.scaled && !b.tinted
-		&& b.mode == .src_over {
-		b.blit_lowp_shaded_over(x, y, count, offset)
+		&& (b.mode == .src || b.mode == .src_over) {
+		b.blit_lowp_gradient_span(x, y, count, offset, b.mode == .src)
 		return
 	}
 	for i in 0 .. count {
@@ -692,23 +692,37 @@ fn lowp_alpha_is_srcover(mode BlendMode) bool {
 	return mode in [.darken, .lighten, .difference, .exclusion, .hard_light, .overlay]
 }
 
-// blit_lowp() for a full-coverage source-over gradient span, with the
-// stage selection made once for the span: shade, clamp_01, srcover and
-// store_8888.
+// Select the blend stage once for a full-coverage gradient span. Src writes
+// the clamped source lanes directly, which also covers opaque source-over
+// gradients that new_gradient_blitter() promotes to Src.
 @[direct_array_access]
-fn (b &PipelineBlitter) blit_lowp_shaded_over(x int, y int, count int, offset int) {
+fn (b &PipelineBlitter) blit_lowp_gradient_span(x int, y int, count int, offset int, replace bool) {
 	shader := &b.shader
-	if shader.geometry == .linear {
+	if shader.geometry == .linear && (!replace || count >= 8) {
 		mut colors := [256]u32{}
 		mut done := 0
 		for done < count {
 			n := if count - done < 64 { count - done } else { 64 }
 			shader.shade_lowp_linear_span(x + done, y, n, mut colors)
-			for i in 0 .. n {
-				b.blend_lowp_over(offset + (done + i) * 4, colors[i * 4], colors[i * 4 + 1],
-					colors[i * 4 + 2], colors[i * 4 + 3])
+			if replace {
+				for i in 0 .. n {
+					b.store_lowp_source(offset + (done + i) * 4, colors[i * 4], colors[i * 4 + 1],
+						colors[i * 4 + 2], colors[i * 4 + 3])
+				}
+			} else {
+				for i in 0 .. n {
+					b.blend_lowp_over(offset + (done + i) * 4, colors[i * 4], colors[i * 4 + 1],
+						colors[i * 4 + 2], colors[i * 4 + 3])
+				}
 			}
 			done += n
+		}
+		return
+	}
+	if replace {
+		for i in 0 .. count {
+			src := shader.shade_lowp(x + i, y)
+			b.store_lowp_source(offset + i * 4, src[0], src[1], src[2], src[3])
 		}
 		return
 	}
@@ -716,6 +730,15 @@ fn (b &PipelineBlitter) blit_lowp_shaded_over(x int, y int, count int, offset in
 		src := shader.shade_lowp(x + i, y)
 		b.blend_lowp_over(offset + i * 4, src[0], src[1], src[2], src[3])
 	}
+}
+
+@[direct_array_access; inline]
+fn (b &PipelineBlitter) store_lowp_source(offset int, r u32, g u32, blue u32, a u32) {
+	mut pixels := unsafe { b.pixels }
+	pixels[offset] = u8(lowp_min(r, 255))
+	pixels[offset + 1] = u8(lowp_min(g, 255))
+	pixels[offset + 2] = u8(lowp_min(blue, 255))
+	pixels[offset + 3] = u8(lowp_min(a, 255))
 }
 
 // clamp_01, srcover and store_8888 of one lowp color at offset o.
