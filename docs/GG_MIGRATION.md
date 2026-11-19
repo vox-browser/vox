@@ -1,13 +1,59 @@
 # Migrating from Skia to vlib/gg
 
+## Spreading internally tangent SVG gradients
+
+The tangent shader now also handles reflection and positive-radius
+repetition. The existing four- and eight-stop variants apply spread
+after solving for the gradient position and preserve the transparent
+region beyond the tangent. A repeating point focus on the outer circle
+still declines because SVG specifies a weighted-average color beyond
+the tangent. [SVG 2 radial gradients](https://www.w3.org/TR/SVG2/pservers.html#RadialGradients)
+
+Focused Metal and Mesa OpenGL pixel tests verified tiling at negative
+gradient positions and the transparent region beyond tangency. The Linux
+window fixture changed `spreadMethod` from `pad` to `repeat` on a tangent
+circle and checked the repeated ramp, a diagonal reflected point at half
+opacity and texture invalidation with path bounds reuse. Cached and
+uncached document captures matched exactly. The full Linux GG SVG window
+suite and Windows amd64 OpenGL source check passed.
+
+The established-workload fixture contains six radial gradients,
+including a tangent circle and point in pad mode. Its document pixels
+matched exactly between Linux builds made with V `5a39a4d`, single-unit
+Clang and `-O0`. Control and candidate executable SHA-256 values were
+`d61e60572f01765c86f8078fd5597a0a488c9f9c06e03dcfa3c43861209943fd`
+and `5b1241a7ccbcc403609354ec767a336800cffa21d9078d0511e8b0f571016b31`.
+The fixture and shader directory SHA-256 values were
+`31fa083ecdeb687010ac4d67fd9d1aca933bee20f0d77c21b97ea640e7b31e26`
+and `970ce36acbf7ea10b948d0a063d6315d587aadf8a8d84784d644b17ab6ffc48e`.
+
+Each synthetic trial used Mesa software OpenGL under Xvfb, a fresh
+process and private browser state, an 800 × 712 window, a one-second
+settle and 32 self-paced 42-pixel scroll steps. Scroll positions and
+paint-command counts matched. One-minute guest load ranged from 1.01 to
+1.75 on four virtual CPUs. The benchmark and memory guard exited zero.
+
+| Mode and pair | Median control / candidate, ms | p95, ms | Maximum, ms |
+| --- | ---: | ---: | ---: |
+| Cached 1 | 5.3895 / 5.6655 | 8.047 / 6.297 | 8.905 / 6.480 |
+| Cached 2 | 5.641 / 5.0925 | 7.402 / 8.814 | 8.607 / 10.173 |
+| Rerasterized 1 | 7.2865 / 6.2165 | 11.375 / 7.330 | 12.817 / 9.393 |
+| Rerasterized 2 | 11.523 / 6.7815 | 17.935 / 10.125 | 20.539 / 10.901 |
+
+Separate diagnostic runs confirmed 186 steady-state texture hits with
+caching and 186 rasterizations with caching disabled. The cached pairs
+had mixed results and the rerasterized control medians varied by over
+4 ms. The executables also contain different working-tree changes, so
+these results do not isolate this change's effect. Hardware performance
+and Windows runtime remain unverified.
+
 ## Internally tangent SVG focal circles
 
 The shared Canvas path handles an expanding pad gradient whose focal
 circle touches the outer circle, including a point focus. When the
 quadratic term vanishes, the gradient uses the linear solution and
 leaves the half-plane beyond the common tangent transparent. Dedicated
-four- and eight-stop shader variants are compiled on demand. Tangent
-gradients with repeat or reflect still use the existing fallback.
+four- and eight-stop shader variants are compiled on demand.
 [SVG 2 radial gradients](https://www.w3.org/TR/SVG2/pservers.html#RadialGradients)
 
 The shared pixel test passed on Metal and Mesa OpenGL for a tangent
