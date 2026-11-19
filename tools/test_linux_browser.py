@@ -333,6 +333,7 @@ def check_gg_svg_browser(binary, artifacts, temporary):
     check_gg_svg_gradient_strokes(binary, artifacts, temporary)
     check_gg_svg_gradient_viewport(binary, artifacts, temporary)
     check_gg_svg_radial_spread(binary, artifacts, temporary)
+    check_gg_svg_repeat_point_focus(binary, artifacts, temporary)
 
 
 def check_gg_svg_radial_spread(binary, artifacts, temporary):
@@ -398,6 +399,56 @@ requestAnimationFrame(moveFocalCircle);
         documents.append(rows[marker:height - 24])
     assert documents[0] == documents[1], "Cached radial spreads changed document pixels"
     print("PASS: GG renders SVG focal circles and spread methods through live edits", flush=True)
+
+
+def check_gg_svg_repeat_point_focus(binary, artifacts, temporary):
+    fixture = Path(__file__).resolve().parents[1] / "Tests/Browser/Native/svg-gg-repeat-point-focus.html"
+    page = Path(temporary) / fixture.name
+    page.write_text(fixture.read_text() + """
+<script>
+let frames = 0;
+function changeStop() {
+    if (++frames < 12) {
+        requestAnimationFrame(changeStop);
+        return;
+    }
+    document.getElementById('average-stop').setAttribute('stop-color', 'blue');
+    document.body.setAttribute('data-average-ready', '1');
+}
+requestAnimationFrame(changeStop);
+</script>
+""")
+    documents = []
+    for label, disable_cache in (("cached", "0"), ("uncached", "1")):
+        screenshot = artifacts / f"{fixture.stem}-{label}.png"
+        screenshot.unlink(missing_ok=True)
+        environment = smoke_environment(Path(temporary) / screenshot.stem)
+        environment.pop("MESA_GL_VERSION_OVERRIDE", None)
+        environment.update(VOX_GG_SVG="1", VOX_GG_SVG_DIAGNOSTICS="1",
+                           VOX_DISABLE_GG_SVG_CACHE=disable_cache,
+                           VOX_CAPTURE_READY_SELECTOR="body[data-average-ready]")
+        log = run_windowed([str(binary), "--enable-javascript", "--window-width=800", "--window-height=600",
+                            "--screenshot-viewport-height=600", f"--screenshot={screenshot}", str(page)],
+                           env=environment, log_path=artifacts / f"{screenshot.stem}.log")
+        draws = [line for line in log.splitlines() if "draw=196x88 " in line and line.endswith(" gradient=2")]
+        misses = [line for line in draws if "cache=miss" in line]
+        if label == "cached":
+            assert len(misses) == 2 and "bounds=hit" in misses[1], log
+        else:
+            assert len(misses) >= 2 and len(misses) == len(draws), log
+
+        _, height, channels, rows = rendered_png_rows(screenshot.read_bytes())
+        marker = next(y for y, row in enumerate(rows[:150])
+                      if row[4 * channels:4 * channels + 3] == b"\x34\xb7\x86")
+        row = rows[marker + 8 + 40]
+        samples = ((50, (207, 175, 223)), (66, (207, 175, 223)),
+                   (82, (255, 127, 127)), (100, (191, 191, 255)), (148, (191, 191, 255)))
+        for x, expected in samples:
+            pixel = row[x * channels:x * channels + 3]
+            assert all(abs(a - b) <= 2 for a, b in zip(pixel, expected)), (x, pixel, expected)
+        documents.append(rows[marker:height - 24])
+    assert documents[0] == documents[1], "The cached repeating focus changed document pixels"
+    print("PASS: GG averages repeating SVG point focuses and follows live stop edits", flush=True)
 
 
 def check_gg_svg_gradient_viewport(binary, artifacts, temporary):

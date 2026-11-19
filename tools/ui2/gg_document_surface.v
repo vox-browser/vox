@@ -34,9 +34,7 @@ fn nested_circle_gradient(start Point, start_radius f32, end Point, end_radius f
 	dy := f64(end.y) - f64(start.y)
 	distance := math.sqrt(dx * dx + dy * dy)
 	if span == distance && span > f64(gradient_degenerate_threshold) && math.is_finite(span) {
-		// SVG uses a weighted average on the far side of a repeating point
-		// focus on the outer circle. Keep that case with the SVG fallback.
-		if g.tile_mode == .decal || (g.tile_mode == .repeat && start_radius == 0) {
+		if g.tile_mode == .decal {
 			return error('gg.canvas: unsupported tile mode for this tangent gradient')
 		}
 		return tangent_circle_gradient(start, start_radius, dx, dy, span, g)
@@ -92,15 +90,41 @@ fn tangent_circle_gradient(start Point, start_radius f32, dx f64, dy f64, span f
 		radial_unit:    Matrix.values(unit)
 		radial_bias:    bias
 		radial_tangent: true
+		radial_average: g.tile_mode == .repeat && start_radius == 0
 	}
 }
 
-fn gradient_fields(fields string, shading Shading) string {
-	return if shading.is_linear() {
-		fields
-	} else {
-		fields.replace('float range_6;\n', 'float range_6;\nfloat radialBias;\nfloat radialFocus;\n')
+// The normalized stops cover [0, 1]. Integrate the premultiplied stop
+// colors, weighting each endpoint by half the length of its interval.
+fn gradient_average_color(colors []Color4f, positions []f32) Color4f {
+	mut sums := [4]f64{}
+	mut previous := colors[0].premul()
+	for i in 1 .. colors.len {
+		color := colors[i].premul()
+		weight := if positions.len == 0 {
+			0.5 / f64(colors.len - 1)
+		} else {
+			(f64(positions[i]) - f64(positions[i - 1])) * 0.5
+		}
+		sums[0] += (f64(previous.r) + f64(color.r)) * weight
+		sums[1] += (f64(previous.g) + f64(color.g)) * weight
+		sums[2] += (f64(previous.b) + f64(color.b)) * weight
+		sums[3] += (f64(previous.a) + f64(color.a)) * weight
+		previous = color
 	}
+	return Color4f{f32(sums[0]), f32(sums[1]), f32(sums[2]), f32(sums[3])}
+}
+
+fn gradient_fields(fields string, shading Shading) string {
+	if shading.is_linear() {
+		return fields
+	}
+	radial_fields := 'float range_6;\nfloat radialBias;\nfloat radialFocus;\n'
+	return fields.replace('float range_6;\n', if shading.is_tangent() {
+		radial_fields + 'float tangentOutsideAlpha;\n'
+	} else {
+		radial_fields
+	})
 }
 
 // Non-production builds read shared shader snippets at runtime. Keep the
@@ -114,10 +138,12 @@ fn gradient_conical_body(body string, shading Shading) string {
 	if shading.is_tangent() {
 		return body.replace('float _34_b = length(_in.${coords}) + ${uniforms}.radialBias;\nfloat2 _35_g = float2(_34_b, 1.0);',
 			'float2 focalCoords = _in.${coords};
-float2 _35_g = float2(0.0, -1.0);
+float4 focalColor = float4(${uniforms}.paintColor.xyz, ${uniforms}.tangentOutsideAlpha);
 if (focalCoords.x > 0.0) {
-    _35_g = float2(focalCoords.x + focalCoords.y * focalCoords.y / focalCoords.x + ${uniforms}.radialBias, 1.0);
-}')
+    float2 _35_g = float2(focalCoords.x + focalCoords.y * focalCoords.y / focalCoords.x + ${uniforms}.radialBias, 1.0);').replace('float4 _42_a = _37_sk_csxform_prealpha * ${uniforms}.paintColor.w;',
+			'    focalColor = _37_sk_csxform_prealpha;
+}
+float4 _42_a = focalColor * ${uniforms}.paintColor.w;')
 	}
 	return body.replace(' + ${uniforms}.radialBias;',
 		' + (${uniforms}.radialBias - ${uniforms}.radialFocus * _in.${coords}.x);')

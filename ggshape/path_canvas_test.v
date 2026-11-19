@@ -147,6 +147,29 @@ fn test_shared_svg_path_pixels() {
 	assert pixels[inner + 3] in [u8(127), 128]
 	assert pixels[middle + 1] in [u8(31), 32, 33] && pixels[middle + 2] in [u8(95), 96]
 	assert pixels[middle + 3] in [u8(127), 128]
+
+	// At a repeating point focus on the outer circle, the area behind the
+	// tangent uses the average of the ramp. These stops exercise implicit
+	// endpoints, a hard stop and interpolation with unequal stop alphas.
+	average_stops := [f32(1), 0, 0, 1, 0.125, 0, 1, 0, 0.5, 0.25, 0, 0, 1, 0, 0.25,
+		0, 0, 1, 0.5, 0.75, 1, 1, 1, 1, 0.875]
+	path.gradient_points = [f32(4.5), 4.5, 0, 12.5, 4.5, 8]!
+	path.tile_mode = 1
+	path.stops = average_stops.data
+	path.has_clip = 1
+	path.clip = [f32(2), 4, 18, 16, 0, 0, 0, 0, 0, 0, 0, 0]!
+	assert draw_path_with_context(mut ctx, pixels.data, width, height, pitch, 0, &path, false) == 1
+	// The weighted premultiplied RGBA is (0.375, 0.21875, 0.34375, 0.5625)
+	// before multiplying by the paint's half opacity.
+	assert pixels[behind] in [u8(43), 44, 45] && pixels[behind + 1] in [u8(27), 28, 29]
+	assert pixels[behind + 2] in [u8(47), 48, 49] && pixels[behind + 3] == 72
+	// On the repeating side t = 7/16 still samples the blue interval.
+	assert pixels[middle] in [u8(23), 24, 25] && pixels[middle + 1] == 0 && pixels[middle + 2] == 0
+	assert pixels[middle + 3] == 24
+	clipped := 5 * pitch + 7 * 4
+	assert pixels[clipped..clipped + 4] == [u8(0), 0, 0, 0]
+
+	path.has_clip = 0
 	path.stops = stops.data
 	path.stop_count = 2
 	path.opacity = 1
@@ -162,10 +185,6 @@ fn test_shared_svg_path_pixels() {
 
 	before := pixels.clone()
 	path.tile_mode = 1
-	// A repeating point focus on the outer circle has separate SVG semantics.
-	path.gradient_points = [f32(4.5), 4.5, 0, 12.5, 4.5, 8]!
-	assert draw_path_with_context(mut ctx, pixels.data, width, height, pitch, 1, &path, false) == 0
-	assert pixels == before
 	// Crossing circles still use the fallback.
 	path.gradient_points = [f32(4.5), 4.5, 3, 14.5, 4.5, 11]!
 	assert draw_path_with_context(mut ctx, pixels.data, width, height, pitch, 1, &path, false) == 0

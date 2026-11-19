@@ -211,12 +211,12 @@
     {
       "file": "gpu_gradient.v",
       "old": "// gradients that start at a point are radial gradients. Other two-point\n// conical gradients are not supported yet.",
-      "new": "// gradients that start at a point are radial gradients. Expanding concentric\n// gradients also support repeat and mirror tiling with a focal radius.\n// Off-center gradients can expand from a strictly contained focal circle.\n// Internally tangent circles support clamp and mirror, and repeat when\n// the focal radius is positive."
+      "new": "// gradients that start at a point are radial gradients. Expanding concentric\n// gradients also support repeat and mirror tiling with a focal radius.\n// Off-center gradients can expand from a contained or internally tangent\n// focal circle. Tangent repeat with a point focus follows SVG's edge rule."
     },
     {
       "file": "gpu_gradient.v",
       "old": "\tlocal_matrix Matrix = Matrix.identity()\n}",
-      "new": "\tlocal_matrix Matrix = Matrix.identity()\n\tradial_bias f32\n\tradial_focus f32\n\tradial_unit ?Matrix\n\tradial_tangent bool\n}"
+      "new": "\tlocal_matrix Matrix = Matrix.identity()\n\tradial_bias f32\n\tradial_focus f32\n\tradial_unit ?Matrix\n\tradial_tangent bool\n\tradial_average bool\n}"
     },
     {
       "file": "gpu_gradient.v",
@@ -246,27 +246,32 @@
     {
       "file": "paint.v",
       "old": "\tif p.color.a != 1 {\n\t\tshading = shading.with_alpha()",
-      "new": "\tif p.color.a != 1 || shading.is_tangent() {\n\t\tshading = shading.with_alpha()"
+      "new": "\tif shading.is_tangent() {\n\t\t// Tangent shaders use paintColor.xyz for the premultiplied color outside the tangent.\n\t\tu.paint_color = Color4f{u.paint_color.r, u.paint_color.g, u.paint_color.b, p.color.a}\n\t\tu.opaque = false\n\t} else if p.color.a != 1 {\n\t\tshading = shading.with_alpha()"
     },
     {
       "file": "gpu_gradient.v",
       "old": "\trange       f32\n\t// The paint does not read",
-      "new": "\trange       f32\n\tradial_bias f32\n\tradial_focus f32\n\t// The paint does not read"
+      "new": "\trange       f32\n\tradial_bias f32\n\tradial_focus f32\n\ttangent_outside_alpha f32\n\t// The paint does not read"
     },
     {
       "file": "gpu_gradient.v",
       "old": "a.mode != b.mode || a.range != b.range",
-      "new": "a.mode != b.mode || a.range != b.range || a.radial_bias != b.radial_bias\n\t\t|| a.radial_focus != b.radial_focus"
+      "new": "a.mode != b.mode || a.range != b.range || a.radial_bias != b.radial_bias\n\t\t|| a.radial_focus != b.radial_focus || a.tangent_outside_alpha != b.tangent_outside_alpha"
     },
     {
       "file": "gpu_gradient.v",
       "old": "\tout << u.range\n\tfor out.len",
-      "new": "\tout << u.range\n\t// Fit the two radial parameters into the existing tail padding.\n\tout << u.radial_bias\n\tout << u.radial_focus\n\tfor out.len"
+      "new": "\tout << u.range\n\t// Fit the radial parameters into the existing tail padding.\n\tout << u.radial_bias\n\tout << u.radial_focus\n\tout << u.tangent_outside_alpha\n\tfor out.len"
     },
     {
       "file": "gpu_gradient.v",
       "old": "\t\trange:       f32(1) / f32(255)",
       "new": "\t\trange:       f32(1) / f32(255)\n\t\tradial_bias: g.radial_bias\n\t\tradial_focus: g.radial_focus"
+    },
+    {
+      "file": "gpu_gradient.v",
+      "old": "\t// GradientShaderBlocks::GradientData: the stops, padded with the last.",
+      "new": "\tif g.radial_average {\n\t\taverage := gradient_average_color(colors, positions)\n\t\tu.paint_color = average\n\t\tu.tangent_outside_alpha = average.a\n\t}\n\t// GradientShaderBlocks::GradientData: the stops, padded with the last."
     },
     {
       "file": "gpu_gradient.v",
