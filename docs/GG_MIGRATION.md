@@ -1,5 +1,54 @@
 # Migrating from Skia to vlib/gg
 
+## Portable SVG draws beyond the texture cache
+
+Portable OpenGL SVG replay admits draws under its pixel and image budgets.
+Its 16 retained texture slots serve matching draws, including repeated
+placements of one raster. New rasters can use up to 64 transient image
+handles when the retained slots are occupied. These images are retired
+after GG submits the frame. Both kinds of draw share a one-megapixel
+per-frame budget and a 1024-pixel limit on either surface axis. The
+transient handle cap leaves space in the Sokol image pool for other painters.
+
+The Linux window fixture contains 20 distinct gradients, 44 translated
+repeats and a translucent overlay. The control rendered eight gradients
+and left the ninth sample white. The candidate rendered all 65 draws
+through GG, with identical cached and uncached document pixels. Warm
+cached frames had 60 texture hits and submitted five transient images.
+Uncached frames submitted 49 transient images. The test sampled each
+gradient and the overlay to verify paint order and image lifetime.
+The full Linux GG SVG window suite and Windows amd64 OpenGL source check
+passed.
+
+The Linux timing comparison used six previously supported radial
+gradients, including two tangent pad gradients. Document pixels matched
+exactly. Both builds used V `5a39a4d`, single-unit Clang and `-O0`. The
+control and candidate executable SHA-256 values were
+`9103707a0fece84803f9b575da2fb4b1ac5886547cd4b08cd5bedc56ff39423d`
+and `a6406b15ec784be11dced330e5d0e6e83da2db673d56ecaccdc17b432b32a91a`.
+The fixture and shader directory SHA-256 values were
+`31fa083ecdeb687010ac4d67fd9d1aca933bee20f0d77c21b97ea640e7b31e26`
+and `970ce36acbf7ea10b948d0a063d6315d587aadf8a8d84784d644b17ab6ffc48e`.
+
+Each synthetic trial used Mesa software OpenGL under Xvfb, a fresh
+process and private browser state, an 800 × 712 window, a one-second
+settle and 32 self-paced 42-pixel scroll steps. Scroll positions and
+paint-command counts matched. One-minute guest load ranged from 1.41 to
+2.68 on four virtual CPUs. The benchmark and memory guard exited zero.
+
+| Mode and pair | Median control / candidate, ms | p95, ms | Maximum, ms |
+| --- | ---: | ---: | ---: |
+| Cached 1 | 4.243 / 4.410 | 5.630 / 5.107 | 7.125 / 7.428 |
+| Cached 2 | 4.4425 / 4.3845 | 6.209 / 7.511 | 7.604 / 7.985 |
+| Rerasterized 1 | 5.3585 / 5.1485 | 7.279 / 7.493 | 8.856 / 7.777 |
+| Rerasterized 2 | 5.3605 / 5.2515 | 8.333 / 8.360 | 8.598 / 8.424 |
+
+The four median differences were within 4%, and p95 varied in both
+directions. Separate diagnostic runs counted 186 steady-state texture
+hits with caching and 186 rasterizations with caching disabled. The
+builds can include unrelated working-tree changes. Hardware performance
+and Windows runtime remain unverified.
+
 ## Repeating SVG point focuses on the outer circle
 
 For an sRGB `repeat` gradient whose point focus lies on the outer circle,
