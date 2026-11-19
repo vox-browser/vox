@@ -1,5 +1,59 @@
 # Migrating from Skia to vlib/gg
 
+## Cropping cached CPU SVG fills at viewport edges
+
+`VOX_GG_SVG_VIEWPORT_REUSE=1` also enables crops of cached CPU solid
+fills made of closed, pixel-aligned rectangles, including even-odd
+holes. The cached and visible rectangles must share the same linear
+transform and differ by a whole-texel offset, with all visible texels
+present in the cached texture. Replay samples that subrectangle with
+nearest filtering. The original texture remains available when its
+larger extent comes back into view. Fills with curved edges, gradients,
+fractional coverage, or newly exposed pixels use the raster path for a
+changed clip.
+
+The Linux window fixture exercised top and left clipping, an even-odd
+hole, a quarter-pixel transform, a growing visible rectangle, and a
+translucent rotated path. The CPU reused the aligned crops and
+rasterized the fractional, growing, and curved cases. Each renderer's
+cropped and rerasterized document captures matched exactly. All 16
+Linux GG SVG window checks passed, as did the Windows amd64 OpenGL
+source check with `-gc none`.
+
+The timing page had three 560-pixel-high solid fills, two with
+rectangular holes and one with partial opacity. The scroll tests used
+the same V `5a39a4d` and single-unit Clang `-O0` flags for both Linux
+builds from the shared checkout with other work in progress. The control
+and candidate executable SHA-256 values were
+`11f3796f2c951c090fef51c15410378ad806192057c0ebd82d81c0822f3fbfa8`
+and `b18e1b19afe875f10e19994d9b90af11e154b608f0942aa3a901afa9c542b83a`.
+The page and shader directory SHA-256 values were
+`56423df16f9085ff7546277dc85b15c78f2137cea0d95ec889d081bfffd9affd`
+and `970ce36acbf7ea10b948d0a063d6315d587aadf8a8d84784d644b17ab6ffc48e`.
+
+Each trial used Mesa software OpenGL under Xvfb with `LP_NUM_THREADS=1`,
+a fresh process and private browser state, an 800 × 628 document
+viewport, a one-second settle, and 32 self-paced 42-pixel scroll steps.
+The clipped subset contains 13 steps, ending at 546 CSS pixels. Scroll
+positions and paint-command counts matched. One-minute guest load
+ranged from 1.05 to 1.31 on four virtual CPUs. The timing driver and
+memory guard exited zero. Captures at 168 CSS pixels matched exactly
+for each renderer between builds and with viewport reuse disabled.
+
+| Renderer and pair | Clipped median control / candidate, ms | Full median, ms | Full p95, ms | Maximum, ms |
+| --- | ---: | ---: | ---: | ---: |
+| CPU fallback 1 | 16.356 / 1.021 | 1.1985 / 1.010 | 27.881 / 2.481 | 30.192 / 2.514 |
+| CPU fallback 2 | 15.965 / 1.002 | 1.135 / 1.009 | 27.623 / 1.284 | 28.957 / 2.573 |
+| GG 1 | 0.994 / 1.048 | 0.9945 / 1.020 | 1.171 / 1.366 | 2.728 / 2.855 |
+| GG 2 | 1.027 / 1.023 | 1.0025 / 0.9985 | 2.522 / 2.547 | 2.557 / 2.579 |
+
+After the first measured callback, the diagnostic counted 36 crops in
+the candidate CPU run and 36 rasterizations in the control CPU run.
+Both GG runs recorded 36 crops. The clipped CPU median fell by about
+94%. Whole-run GG medians were within 2.6%, with higher p95 in both
+pairs. These timings cover synthetic callbacks on software OpenGL.
+Native GPU performance and Windows runtime remain unverified.
+
 ## Retaining CPU SVG fill textures
 
 Portable SVG fills use the same streaming texture cache as strokes.
