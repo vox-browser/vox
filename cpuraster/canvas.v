@@ -13,7 +13,8 @@ const canvas_path_segment_stride = 12
 
 // Segments use PackedPath's encoding: 12 floats per segment, kind (0 move,
 // 1 line, 2 quad, 3 cubic, 4 SVG arc, 5 close), point, two control points,
-// radii, x-axis rotation in radians, large-arc and sweep flags.
+// radii, x-axis rotation in radians, large-arc and sweep flags. Kind 6
+// carries the left, top, right, and bottom coordinates of a whole ellipse.
 pub fn canvas_path(segments []f32, even_odd bool) Path {
 	mut b := PathBuilder{}
 	for i := 0; i + canvas_path_segment_stride <= segments.len; i += canvas_path_segment_stride {
@@ -28,6 +29,12 @@ pub fn canvas_path(segments []f32, even_odd bool) Path {
 					s[11] != 0, s[1], s[2])
 			}
 			5 { b.close() }
+			6 {
+				if is_finite_f32(s[1]) && is_finite_f32(s[2]) && is_finite_f32(s[3])
+					&& is_finite_f32(s[4]) && s[3] > s[1] && s[4] > s[2] {
+					b.add_oval_dir(Rect{s[1], s[2], s[3], s[4]}, true, 1)
+				}
+			}
 			else {}
 		}
 	}

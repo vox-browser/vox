@@ -478,6 +478,7 @@ def check_gg_svg_browser(binary, artifacts, temporary):
         documents.append(rows[top:top + 100])
     assert all(document == documents[0] for document in documents[1:]), "GG changed the SVG document pixels"
     print("PASS: cached and uncached GG SVG replay and GL 4.2 fallback match the portable reference", flush=True)
+    check_gg_svg_ellipses(binary, artifacts, temporary)
     check_gg_svg_mutations(binary, artifacts, temporary, fixture)
     check_gg_svg_viewport(binary, artifacts, temporary, fixture)
     check_gg_svg_strokes(binary, artifacts, temporary)
@@ -494,6 +495,60 @@ def check_gg_svg_browser(binary, artifacts, temporary):
     check_gg_svg_image_budget(binary, artifacts, temporary)
     check_gg_svg_pad_fallback(binary, artifacts, temporary)
     check_gg_svg_spread_fallback(binary, artifacts, temporary)
+
+
+def check_gg_svg_ellipses(binary, artifacts, temporary):
+    page = Path(temporary) / "svg-gg-ellipses.html"
+    page.write_text("""<!doctype html><title>SVG ellipse replay</title>
+<style>body { margin: 0; background: white; }
+header { width: 16px; height: 8px; background: #34b786; } svg { display: block; }</style>
+<header></header>
+<svg width="420" height="120">
+  <defs><linearGradient id="ink"><stop stop-color="red"/>
+    <stop offset="1" stop-color="blue"/></linearGradient></defs>
+  <ellipse cx="70" cy="52" rx="56" ry="32" fill="#008844"/>
+  <circle cx="220" cy="64" r="24" fill="none" stroke="#2244cc" stroke-width="8" stroke-linejoin="round"/>
+  <ellipse cx="350" cy="60" rx="44" ry="25" fill="url(#ink)"/>
+</svg>
+""")
+    portable_documents = []
+    for mode in ("cpu", "gl42", "gpu"):
+        label = f"{page.stem}-{mode}"
+        screenshot = artifacts / f"{label}.png"
+        screenshot.unlink(missing_ok=True)
+        env = smoke_environment(Path(temporary) / label)
+        env.pop("LADYBIRD_LAYOUT_TEST_FONT", None)
+        env.pop("MESA_GL_VERSION_OVERRIDE", None)
+        env.update(VOX_GG_SVG=str(int(mode != "cpu")), VOX_GG_SVG_DIAGNOSTICS="1",
+                   VOX_DISABLE_GG_SVG_CACHE="0")
+        if mode == "gl42":
+            env["MESA_GL_VERSION_OVERRIDE"] = "4.2"
+        log = run_windowed([str(binary), "--window-width=800", "--window-height=600",
+                            "--screenshot-viewport-height=600", f"--screenshot={screenshot}", str(page)],
+                           env=env, log_path=artifacts / f"{label}.log")
+        prefix = "VOX_GG_SVG" if mode == "gpu" else "VOX_CPU_SVG_FILL"
+        for size in ("112x64", "88x50"):
+            assert f"{prefix} draw={size} cache=miss" in log, (mode, size, log)
+            assert f"{prefix} draw={size} cache=hit" in log, (mode, size, log)
+        stroke = "VOX_GG_SVG draw=58x58" if mode == "gpu" else "VOX_CPU_SVG_STROKE draw=58x58"
+        assert stroke in log, (mode, log)
+        assert ("VOX_GG_SVG unavailable:" in log) == (mode == "gl42"), log
+        _, _, channels, rows = rendered_png_rows(screenshot.read_bytes())
+        top = next(y for y in range(150) if rows[y][4 * channels:4 * channels + 3] == bytes.fromhex("34b786")) + 8
+
+        def pixel(x, y):
+            return rows[top + y][x * channels:x * channels + 3]
+
+        assert pixel(30, 52) == bytes.fromhex("008844"), mode
+        assert pixel(18, 24) == b"\xff\xff\xff", mode
+        assert pixel(220, 40) == bytes.fromhex("2244cc") and pixel(220, 64) == b"\xff\xff\xff", mode
+        left = pixel(320, 60)
+        right = pixel(380, 60)
+        assert left[0] > 200 and left[2] < 60 and right[2] > 200 and right[0] < 60, (mode, left, right)
+        if mode != "gpu":
+            portable_documents.append(rows[top:top + 120])
+    assert portable_documents[0] == portable_documents[1], "GL 4.2 changed portable oval pixels"
+    print("PASS: SVG oval fills and strokes use GG Canvas or the portable rasterizer", flush=True)
 
 
 def check_gg_svg_radial_spread(binary, artifacts, temporary):
