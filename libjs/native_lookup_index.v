@@ -103,11 +103,13 @@ fn native_lookup_file_identity(path string) string {
 	}
 }
 
+// The file's device, inode, size and nanosecond times identify the build. The
+// reported executable path differs between a direct launch and the allocator
+// re-exec, so resolve it before reading that identity and do not hash it.
 fn native_lookup_build_identity() string {
-	executable := os.executable()
-	identity := native_lookup_file_identity(executable)
+	identity := native_lookup_file_identity(os.real_path(os.executable()))
 	if identity == '' { return '' }
-	return native_cache_digest_string('${executable}\n${identity}')
+	return native_cache_digest_string('native-lookup-build\n${identity}')
 }
 
 // Callers hold the persistent arena: the index lives as long as the VM, which
