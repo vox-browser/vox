@@ -128,3 +128,32 @@ fn test_async_function_registers_survive_await() {
 	assert executable.local_variable_names.len == 2
 	assert !executable.instructions.any(it.op in [.get_binding, .set_binding, .initialize_binding, .create_mutable_binding])
 }
+
+fn test_lexical_registers_with_environment_parameters() {
+	defer { set_lexical_registers_for_testing(true) }
+	for enabled in [false, true] {
+		set_lexical_registers_for_testing(enabled)
+		for source in [
+			'function f({a,b}){let s=a;{const t=b;s+=t}return s}f({a:40,b:2})',
+			'function f(a,b=2){const c=a+b;let n=0;for(let i=0;i<2;i++){let d=i;n+=d}return c-n+1}f(40)',
+			'function f(a){let s=0;for(let i=0;i<arguments.length;i++){const v=arguments[i];s+=v}return s+a-1}f(1,20,21)',
+			'function f(a=()=>b,b=1){let c=a();return c+41}f()',
+			'function f({x}=(()=>({x:41}))()){let y=x+1;return y}f()',
+			'function f(a,b=a){let x=1;{let x=2;a+=x}return a+x+b-1}f(20)',
+			'function f(a,b=1){try{q;let q=1;return 0}catch(e){return e instanceof ReferenceError?41+b:0}}f(0)',
+			'var f=async ({a})=>{let s=a;s+=await 2;return s};var result=0;f({a:40}).then(v=>{result=v});42',
+		] {
+			assert lexical_eval(source)!.number == 42, '${enabled}: ${source}'
+		}
+	}
+	mut vm := VM.create()
+	create_simple_execution_context(mut vm)
+	mut script := Script.parse('function f({a}){let s=a;{const t=1;s+=t}return s}f({a:41})', vm.realm(), 'lexical-registers.js', unsafe { nil })!
+	assert vm.run(mut script)!.number == 42
+	function := lexical_function_for_test(mut vm, script, 'f')
+	executable := function.executable or { panic('Missing bytecode') }
+	// The destructured parameter stays in the environment; s and t are slots.
+	assert function.register_bindings.len == 0
+	assert executable.local_variable_names.len == 2
+	assert !executable.instructions.any(it.op in [.enter_scope, .create_immutable_binding])
+}

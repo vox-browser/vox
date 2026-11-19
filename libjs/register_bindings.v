@@ -40,8 +40,7 @@ fn (mut function ECMAScriptFunction) prepare_register_bindings(mut generator Byt
 	// An async function's await copies its whole initialized frame, local slots
 	// included. A generator's first suspension precedes frame initialization,
 	// whose copy drops local slots, so generators keep environment bindings.
-	if function.source.parsed_source == unsafe { nil } || !function.data.simple_parameters()
-		|| function.data.kind !in [.normal, .async_kind] {
+	if function.source.parsed_source == unsafe { nil } || function.data.kind !in [.normal, .async_kind] {
 		return
 	}
 	$if test {
@@ -51,7 +50,29 @@ fn (mut function ECMAScriptFunction) prepare_register_bindings(mut generator Byt
 		}
 	}
 	scope := function.data.body.kind.scope or { return }
-	if !function.arguments_are_unobservable(scope) { return }
+	// Complex parameter lists and observable arguments keep parameters and vars
+	// in the environment; the body's own let/const bindings can still be slots.
+	if function.data.simple_parameters() && function.arguments_are_unobservable(scope) {
+		function.prepare_parameter_and_var_registers(scope)
+	}
+	generator.register_bindings = function.register_bindings.clone()
+	generator.add_lexical_registers(&function.data.body, scope, exclusions)
+	if generator.register_bindings.len == 0 { return }
+	generator.lexical_initialized = []bool{len: generator.register_bindings.len}
+	generator.variable_positions = []int{len: scope.local_variables.len, init: -1}
+	for position, binding in generator.register_bindings {
+		if binding.local_type == 2 && binding.local_index < u32(scope.local_variables.len) {
+			generator.variable_positions[binding.local_index] = position
+		}
+	}
+	generator.executable.local_index_base = reserved_register_count
+	for binding in generator.register_bindings {
+		generator.executable.local_variable_names << binding.name
+	}
+	generator.executable.registers_and_locals_count += u32(generator.register_bindings.len)
+}
+
+fn (mut function ECMAScriptFunction) prepare_parameter_and_var_registers(scope &ScopeData) {
 	data := scope.function_scope_data or { return }
 	// Arrow functions and functions with nested declarations keep their
 	// uncaptured parameters and vars in registers, as upstream LibJS does. A
@@ -106,21 +127,6 @@ fn (mut function ECMAScriptFunction) prepare_register_bindings(mut generator Byt
 			local_index: u32(index)
 		}
 	}
-	generator.register_bindings = function.register_bindings.clone()
-	generator.add_lexical_registers(&function.data.body, scope, exclusions)
-	if generator.register_bindings.len == 0 { return }
-	generator.lexical_initialized = []bool{len: generator.register_bindings.len}
-	generator.variable_positions = []int{len: scope.local_variables.len, init: -1}
-	for position, binding in generator.register_bindings {
-		if binding.local_type == 2 && binding.local_index < u32(scope.local_variables.len) {
-			generator.variable_positions[binding.local_index] = position
-		}
-	}
-	generator.executable.local_index_base = reserved_register_count
-	for binding in generator.register_bindings {
-		generator.executable.local_variable_names << binding.name
-	}
-	generator.executable.registers_and_locals_count += u32(generator.register_bindings.len)
 }
 
 fn (function &ECMAScriptFunction) parameter_in_register(index int) bool {
