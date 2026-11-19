@@ -444,15 +444,19 @@ fn draw_canvas_image_sampled(mut pixels []u8, width int, height int, pitch int, 
 		image, source, destination, smoothing, global_alpha, mode, clips, mipmap, legacy, false)
 }
 
+// canvas_image_opacity_byte matches SkPaint::setAlpha for bitmap draws.
+@[inline]
+pub fn canvas_image_opacity_byte(opacity f32) u8 {
+	return u8(opacity * f32(255))
+}
+
 fn draw_canvas_image_sampled_aa(mut pixels []u8, width int, height int, pitch int, alpha_type int, transform [6]f32, image CanvasBitmap, source [4]f32, destination [4]f32, smoothing bool, global_alpha f32, mode BlendMode, clips []Path, mipmap bool, legacy bool, antialias bool) bool {
 	if !untiled_device(pixels, width, height, pitch) || !image.installs() {
 		return false
 	}
 	ctm := canvas_affine(transform)
 	matrix := Matrix{transform[0], transform[1], transform[2], transform[3], transform[4], transform[5]}
-	// paint.setAlpha(static_cast<uint8_t>(global_alpha * 255)).
-	scaled_alpha := global_alpha * f32(255)
-	alpha_byte := int(u8(scaled_alpha))
+	alpha_byte := int(canvas_image_opacity_byte(global_alpha))
 	paint_alpha := f32(alpha_byte) * inv_255
 	src := rect_xywh(source)
 	dst := rect_xywh(destination)

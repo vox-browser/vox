@@ -68,7 +68,7 @@ fn restore_lowp_canvas_layer(mut pixels []u8, pitch int, image CanvasBitmap, opa
 			u64(uint(pixels.data)), pixels.len) {
 		return false
 	}
-	alpha := u32(u8(opacity * f32(255)))
+	alpha := u32(canvas_image_opacity_byte(opacity))
 	if alpha == 0 {
 		return true
 	}

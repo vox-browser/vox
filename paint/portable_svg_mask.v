@@ -319,6 +319,10 @@ fn svg_mask_opacity_layer_rows(operations []layout.PaintMaskOperation, bounds pa
 			.end_opacity {
 				depth--
 				if depth == 0 {
+					if bottom <= f32(parent.top - 1)
+						|| (portable_svg_mask_row_bands && top >= f32(parent.bottom + 1)) {
+						return SVGMaskLayerRows{}
+					}
 					if !portable_svg_mask_row_bands {
 						return SVGMaskLayerRows{0, int(math.ceil(math.max(0.0, f64(bottom)))) + 1}
 					}
@@ -352,6 +356,21 @@ fn svg_mask_opacity_layer_rows(operations []layout.PaintMaskOperation, bounds pa
 	return parent
 }
 
+fn svg_mask_opacity_end(operations []layout.PaintMaskOperation, start int) ?int {
+	mut nested := 0
+	for index in start + 1 .. operations.len {
+		match operations[index].kind {
+			.begin_opacity { nested++ }
+			.end_opacity {
+				if nested == 0 { return index }
+				nested--
+			}
+			else {}
+		}
+	}
+	return none
+}
+
 // Paint into a cleared premultiplied RGBA surface. Its row stride can include
 // pixels outside the mask region when borrowing a native bitmap.
 fn (mut app BrowserApp) raster_svg_mask_layers(mut pixels []u8, pitch int, bounds painting.IntRect,
@@ -361,16 +380,29 @@ fn (mut app BrowserApp) raster_svg_mask_layers(mut pixels []u8, pitch int, bound
 	layers[0].pixels = pixels
 	layers[0].rows = SVGMaskLayerRows{bottom: bounds.height}
 	mut depth := 0
-	for index in 0 .. mask.mask_operations.len {
+	for index := 0; index < mask.mask_operations.len; index++ {
 		operation := &mask.mask_operations[index]
 		match operation.kind {
 			.begin_opacity {
 				parent := layers[depth].rows
-				rows := svg_mask_opacity_layer_rows(mask.mask_operations[index + 1..],
-					bounds, parent, page_x, page_y, scale)
+				opacity := f32(operation.opacity)
+				alpha := cpuraster.canvas_image_opacity_byte(opacity)
+				rows := if alpha == 0 {
+					SVGMaskLayerRows{}
+				} else {
+					svg_mask_opacity_layer_rows(mask.mask_operations[index + 1..],
+						bounds, parent, page_x, page_y, scale)
+				}
+				if rows.height() == 0 {
+					index = svg_mask_opacity_end(mask.mask_operations, index) or { return false }
+					if portable_svg_mask_diagnostics {
+						eprintln('VOX_SVG_MASK_LAYER_SKIP opacity_byte=${alpha}')
+					}
+					continue
+				}
 				depth++
 				layers[depth].rows = rows
-				layers[depth].opacity = f32(operation.opacity)
+				layers[depth].opacity = opacity
 				byte_count := layer_pitch * rows.height()
 				if layers[depth].pixels.len < byte_count {
 					layers[depth].pixels = []u8{len: byte_count}

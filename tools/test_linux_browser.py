@@ -1603,11 +1603,18 @@ def check_svg_mask_browser(binary, artifacts, temporary):
 def check_svg_mask_opacity_browser(binary, artifacts, temporary):
     fixture = Path(__file__).resolve().parents[1] / "Tests/Browser/Native/svg-mask-opacity.html"
     page = Path(temporary) / fixture.name
+    invisible = """      <g opacity=".003">
+        <path fill="black" d="M10 10h160v100H10Z"/>
+        <g opacity=".5"><path fill="black" d="M10 10h160v100H10Z"/></g>
+      </g>
+      <g opacity=".5"><path fill="black" d="M20 -20h10v15H20Z"/></g>
+      <g opacity=".004"><path fill="black" d="M20 12h6v4H20Z"/></g>
+"""
     # A short first layer forces growth for the next sibling. A curve in
     # the luminance layer exercises the full-surface path.
     page.write_text(fixture.read_text().replace(
         '      <g opacity=".5">',
-        '      <g opacity=".5"><path fill="black" d="M165 92h5v4h-5Z"/></g>\n'
+        invisible + '      <g opacity=".5"><path fill="black" d="M165 92h5v4h-5Z"/></g>\n'
         '      <g opacity=".5">', 1).replace('M150 20h10v55h-10Z', 'M150 30h10v55h-10Z')
         .replace('M210 20h80v70h-80Z', 'M210 20h80q4 35 0 70h-80Z'))
     screenshot = artifacts / "portable-svg-mask-opacity.png"
@@ -1618,8 +1625,10 @@ def check_svg_mask_opacity_browser(binary, artifacts, temporary):
     log = run_windowed([str(binary), "--window-width=1024", "--window-height=640",
                         "--screenshot-viewport-height=640", f"--screenshot={screenshot}", str(page)],
                        env=environment, log_path=artifacts / "portable-svg-mask-opacity.log")
-    assert "VOX_SVG_MASK luminance=false operations=14 paths=2" in log, log
+    assert "VOX_SVG_MASK luminance=false operations=26 paths=2" in log, log
     assert "VOX_SVG_MASK luminance=true operations=5 paths=1" in log, log
+    assert "VOX_SVG_MASK_LAYER_SKIP opacity_byte=0" in log, log
+    assert "VOX_SVG_MASK_LAYER_SKIP opacity_byte=127" in log, log
     bands = ((1, 81, 6, 100), (1, 0, 91, 100), (2, 0, 67, 91), (1, 19, 57, 100), (1, 0, 100, 100))
     for depth, first, rows, parent_rows in bands:
         assert (f"VOX_SVG_MASK_LAYER depth={depth} first_row={first} rows={rows} "
@@ -1634,6 +1643,7 @@ def check_svg_mask_opacity_browser(binary, artifacts, temporary):
     y = marker + 48
     half = pixel(25, y)
     assert half in (b"\x7f\x7f\xff", b"\x80\x80\xff"), half
+    assert pixel(21, marker + 21) == b"\xfe\xfe\xff", "An opacity of one byte must still paint"
     assert pixel(167, marker + 101) == half, "Growing the next opacity layer erased the first sibling"
     assert pixel(50, y) == half, "Overlapping mask paths applied opacity independently"
     assert pixel(155, y) == half, "A sibling mask group retained the previous surface"
