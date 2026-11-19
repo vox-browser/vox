@@ -23,8 +23,8 @@ fn (mut app BrowserApp) draw_portable_raster_texture_with_alpha(destination gg.R
 	// Sokol allows one streaming update per texture per frame.
 	index := app.portable_raster_image_index
 	app.portable_raster_image_index++
-	if app.portable_svg_stroke_rasters != unsafe { nil } && index < portable_svg_stroke_slots {
-		app.portable_svg_stroke_rasters.entries[index].path_len = 0
+	if app.portable_svg_rasters != unsafe { nil } && index < portable_svg_raster_slots {
+		app.portable_svg_rasters.entries[index].path_len = 0
 	}
 	persistent := platform.enter_persistent()
 	mut slot := if index < app.portable_raster_images.len {

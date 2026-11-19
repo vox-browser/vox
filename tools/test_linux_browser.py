@@ -373,7 +373,8 @@ requestAnimationFrame(moveFocalCircle);
         log = run_windowed([str(binary), "--enable-javascript", "--window-width=800", "--window-height=600",
                             "--screenshot-viewport-height=600", f"--screenshot={screenshot}", str(page)],
                            env=environment, log_path=artifacts / f"{screenshot.stem}.log")
-        gradients = [line for line in log.splitlines() if line.endswith(" gradient=2")]
+        gradients = [line for line in log.splitlines() if line.startswith("VOX_GG_SVG draw=")
+                     and line.endswith(" gradient=2")]
         assert any("draw=256x88 cache=miss" in line for line in gradients), log
         assert any("draw=240x88 cache=miss" in line for line in gradients), log
         assert any("draw=192x72 cache=miss" in line for line in gradients), log
@@ -435,7 +436,8 @@ requestAnimationFrame(changeStop);
         log = run_windowed([str(binary), "--enable-javascript", "--window-width=800", "--window-height=600",
                             "--screenshot-viewport-height=600", f"--screenshot={screenshot}", str(page)],
                            env=environment, log_path=artifacts / f"{screenshot.stem}.log")
-        draws = [line for line in log.splitlines() if "draw=196x88 " in line and line.endswith(" gradient=2")]
+        draws = [line for line in log.splitlines() if line.startswith("VOX_GG_SVG draw=196x88 ")
+                 and line.endswith(" gradient=2")]
         misses = [line for line in draws if "cache=miss" in line]
         if label == "cached":
             assert len(misses) == 2 and "bounds=hit" in misses[1], log
@@ -488,7 +490,8 @@ svg { display: block }</style>
         log = run_windowed([str(binary), "--window-width=800", "--window-height=600",
                             "--screenshot-viewport-height=600", f"--screenshot={screenshot}", str(page)],
                            env=environment, log_path=artifacts / f"{screenshot.stem}.log")
-        draws = [line for line in log.splitlines() if line.endswith(" gradient=1")]
+        draws = [line for line in log.splitlines() if line.startswith("VOX_GG_SVG draw=")
+                 and line.endswith(" gradient=1")]
         assert sum("draw=39x14 cache=miss" in line and " transient=1" in line
                    for line in draws) >= 2, log
         assert any("draw=20x14 cache=hit" in line for line in draws) == (label == "cached"), log
@@ -643,7 +646,8 @@ requestAnimationFrame(moveGradientAcrossViewport);
         log = run_windowed([str(binary), "--enable-javascript", "--window-width=800", "--window-height=600",
                             "--screenshot-viewport-height=600", f"--screenshot={screenshot}", str(page)],
                            env=environment, log_path=artifacts / f"{screenshot.stem}.log")
-        gradients = [line for line in log.splitlines() if " gradient=" in line]
+        gradients = [line for line in log.splitlines() if line.startswith("VOX_GG_SVG draw=")
+                     and " gradient=" in line]
         assert not any("crop=hit" in line for line in gradients), log
         full_hits = [line for line in gradients if "draw=200x120 cache=hit bounds=hit" in line]
         assert any(" hint=hit " in line and line.endswith(" gradient=1") for line in full_hits), log
@@ -693,31 +697,41 @@ requestAnimationFrame(editGradients);
 </script>
 """)
     documents = []
-    for mode, disable_cache in (("cached", "0"), ("uncached", "1")):
+    for mode in ("cached", "uncached", "disabled", "gl42", "cpu-uncached"):
         label = f"{page.stem}-{mode}"
         screenshot = artifacts / f"{label}.png"
         screenshot.unlink(missing_ok=True)
         environment = smoke_environment(Path(temporary) / label)
         environment.pop("MESA_GL_VERSION_OVERRIDE", None)
-        environment.update(VOX_GG_SVG="1", VOX_GG_SVG_DIAGNOSTICS="1",
-                           VOX_DISABLE_GG_SVG_CACHE=disable_cache, VOX_GG_SVG_VIEWPORT_REUSE="1",
+        environment.update(VOX_GG_SVG=str(int(mode not in ("disabled", "cpu-uncached"))),
+                           VOX_GG_SVG_DIAGNOSTICS="1", VOX_GG_SVG_VIEWPORT_REUSE="1",
+                           VOX_DISABLE_GG_SVG_CACHE=str(int(mode in ("uncached", "cpu-uncached"))),
                            VOX_CAPTURE_READY_SELECTOR="body[data-gradient-ready]",
                            VOX_CAPTURE_INITIAL_VIEWPORT="1", VOX_SCREENSHOT_SCROLL_STEP="13")
+        if mode == "gl42":
+            environment["MESA_GL_VERSION_OVERRIDE"] = "4.2"
         log = run_windowed([str(binary), "--enable-javascript", "--window-width=800",
                             "--window-height=600", "--screenshot-viewport-height=600",
                             "--screenshot-scroll-y=65", f"--screenshot={screenshot}", str(page)],
                            env=environment, log_path=artifacts / f"{label}.log")
-        gradients = [line for line in log.splitlines() if " gradient=" in line]
+        gpu = mode in ("cached", "uncached")
+        prefix = "VOX_GG_SVG draw=" if gpu else "VOX_CPU_SVG_FILL draw="
+        gradients = [line for line in log.splitlines() if line.startswith(prefix)
+                     and (line.endswith(" gradient=1") or line.endswith(" gradient=2"))]
+        assert ("VOX_GG_SVG unavailable:" in log) == (mode == "gl42"), log
         assert len(gradients) >= 6, log
-        assert any("cache=hit bounds=hit" in line for line in gradients) == (mode == "cached"), log
+        assert any("cache=hit" in line for line in gradients) == (mode not in ("uncached", "cpu-uncached")), log
         assert any("draw=84x35 cache=miss" in line for line in gradients), log
-        assert not any("crop=hit" in line for line in gradients), log
+        if gpu:
+            assert not any("crop=hit" in line for line in gradients), log
         for size, kind, variants in (("100x30", 1, 2), ("74x40", 2, 3), ("100x40", 1, 2)):
             misses = [line for line in gradients if f"draw={size} cache=miss" in line
                       and line.endswith(f" gradient={kind}")]
             assert len(misses) >= variants, log
             if mode == "cached":
                 assert len(misses) == variants and all("bounds=hit" in line for line in misses[1:]), log
+            if mode in ("disabled", "gl42"):
+                assert len(misses) == variants, (mode, size, len(misses), log)
 
         _, height, channels, rows = rendered_png_rows(screenshot.read_bytes())
 
@@ -739,10 +753,11 @@ requestAnimationFrame(editGradients);
         ]
         for x, y, expected in samples:
             actual = pixel(x, top + y)
-            assert all(abs(a - b) <= 2 for a, b in zip(actual, expected)), (x, y, actual, expected)
+            assert all(abs(a - b) <= 2 for a, b in zip(actual, expected)), (mode, x, y, actual, expected)
         documents.append(rows[marker:height - 24])
     assert documents[0] == documents[1], "Cached gradient fills differ from uncached replay"
-    print("PASS: GG SVG gradient types, spread, opacity, live resource edits, and viewport edge", flush=True)
+    assert documents[2] == documents[3] == documents[4], "Cached CPU gradient fill pixels changed"
+    print("PASS: SVG gradient fills preserve spread, opacity, resource edits, and clipped pixels", flush=True)
 
 
 def check_gg_svg_gradient_strokes(binary, artifacts, temporary):
@@ -933,6 +948,7 @@ def check_cpu_svg_stroke_cache(binary, artifacts, temporary):
 <svg width="140" height="64">
   <path id="stroke" d="M30 40H94" fill="none" stroke="#2244cc" stroke-width="10" stroke-linejoin="round"/>
   <path id="fill" d="M24 34H100V46H24Z" fill="none"/>
+  <path id="rule" d="M104 20H132V52H104Z M112 26H124V42H112Z" fill="#008844"/>
 </svg>
 <script>
   const stroke = document.getElementById('stroke');
@@ -947,6 +963,7 @@ def check_cpu_svg_stroke_cache(binary, artifacts, temporary):
     if (frame === 24) {
       fill.setAttribute('fill', 'none');
       stroke.setAttribute('stroke', '#2244cc');
+      document.getElementById('rule').setAttribute('fill-rule', 'evenodd');
     }
     if (frame === 36) {
       document.body.setAttribute('data-cache-ready', '1');
@@ -977,6 +994,11 @@ def check_cpu_svg_stroke_cache(binary, artifacts, temporary):
             assert misses == 2 and hits > 0, (misses, hits, log)
         else:
             assert misses > 2 and hits == 0, (misses, hits, log)
+        rule = "VOX_CPU_SVG_FILL draw=28x32 cache="
+        if mode == "cached":
+            assert log.count(rule + "miss") == 2 and (rule + "hit") in log, log
+        else:
+            assert log.count(rule + "miss") > 2 and (rule + "hit") not in log, log
         _, height, channels, rows = rendered_png_rows(screenshot.read_bytes())
 
         def pixel(x, y):
@@ -986,6 +1008,8 @@ def check_cpu_svg_stroke_cache(binary, artifacts, temporary):
         assert marker is not None, "Missing document marker"
         assert pixel(40, marker + 48) == "2244cc", "Restored stroke kept the fill texture"
         assert pixel(25, marker + 43) == "ffffff", "Fill survived outside the stroke"
+        assert pixel(108, marker + 42) == "008844", "Solid fill disappeared"
+        assert pixel(116, marker + 42) == "ffffff", "Changing the fill rule kept the old texture"
         documents.append(rows[marker:height - 24])
     assert documents[0] == documents[1], "Reusing stroke textures changed CPU pixels"
     print("PASS: CPU SVG stroke texture reuse invalidates an overwritten slot", flush=True)

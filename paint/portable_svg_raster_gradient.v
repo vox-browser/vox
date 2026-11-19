@@ -116,14 +116,5 @@ fn (mut app BrowserApp) draw_portable_svg_raster_gradient_fill(command &layout.P
 	gradient := portable_svg_visible_gradient(command, false) or { return false }
 	opacity := f32(clamp(command.opacity * data.fill_opacity, 0.0, 1.0))
 	if opacity == 0 { return true }
-	path := cpuraster.canvas_path(data.path_data, data.fill_even_odd)
-	transform := portable_device_transform(multiply_paint_transforms(command.transform,
-		data.path_transform), page_x, page_y, f64(app.ctx.scale))
-	ink := portable_svg_path_bounds(path, transform, app.portable_device_viewport(page_y)) or {
-		return false
-	}
-	bounds := portable_pixel_bounds(ink)
-	if bounds.is_empty() { return true }
-	return app.draw_portable_svg_cpu_fill(path, bounds, portable_svg_surface_matrix(transform, bounds),
-		0xff000000, cpuraster.CanvasPaintStyle(gradient), opacity)
+	return app.draw_portable_svg_raster_fill(command, data, page_x, page_y, gradient, opacity)
 }
