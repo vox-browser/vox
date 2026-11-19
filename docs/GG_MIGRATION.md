@@ -1,5 +1,79 @@
 # Migrating from Skia to vlib/gg
 
+## Opt-in direct compositing for solid rectangular SVG masks
+
+With `VOX_SVG_MASK_SOLID_RECTS=1`, the portable group player applies a
+single pixel-aligned solid mask rectangle directly to the group's alpha.
+It verifies the packed corners in device coordinates and uses the existing
+premultiplication and luminance weights. Fractional boundaries use the
+path rasterizer. An opaque rectangle covering the group needs no
+per-pixel mask pass. The default uses the raster mask.
+
+The focused raster tests compared all 65,536 channel and alpha pairs
+against both canvas blenders and compared rasterized integer rectangles
+with the direct coverage, including clipped, narrow, and reflected
+rectangles. They passed with ASan and UBSan. The browser regression
+checked partial alpha, reflected luminance, opaque coverage, and a
+fractional edge.
+
+Fresh Linux aarch64 builds used V `5a39a4d` and matching single-unit
+Clang `-O0` flags. The control and candidate executable SHA-256 values
+were `2f98a0d0cbdf1ba4621255a1bf8535c57d6e26d32c8e81f833ad15d88a254510`
+and `cd4e1a9734f4d827cbe6cc7961ab1c00719774d38328cd01c5aba93203e31a82`.
+The default and opt-in modes matched the previous 800 × 600 document
+captures for both fixtures at scroll offsets 0 and 42 CSS pixels. A
+marker identified the document viewport. Diagnostics confirmed the
+alpha and luminance rectangle paths in opt-in mode.
+
+| Fixture | Decoded RGBA SHA-256 at 0 px | Decoded RGBA SHA-256 at 42 px |
+| --- | --- | --- |
+| Content masks | `7078409b2933f1e3648207611c4e2e4e5426cb66f48ed9db4466a3d08c7a8bbc` | `8e703dfc217ae9b2b5534378a5f3856eb21cc3835580c71d64b5b28a31d4b852` |
+| Solid rectangle masks | `38ca83ed1a278acfde5fb4fe14f04b14b33982da4a58bb01583241f85fe60164` | `9802586f5ce9218ab97886d75b0d3d6eb5a66e3e7186153050ed8e1fc7f05c8d` |
+
+The initial candidate `867bf2d039ddc0470d73ee78509a000d137434bd1ea5941bc4e624e7aba18834`
+decoded a path before checking its rectangle. The content-mask
+fixture stayed on the raster path and its median replay rose in both
+pairs. Its median paint preparation time rose too, from 288 to 375 µs and
+from 270 to 324 µs. The revised candidate checks packed corners directly
+and checks the operation count before calling the rectangle helper.
+
+| Initial fixture and pair | Replay median before / after, ms | Replay p95 and maximum before / after, ms | Median allocated KiB before / after |
+| --- | ---: | ---: | ---: |
+| Content 1 | 4.712 / 6.199 | 9.136, 23.110 / 9.354, 28.405 | 2130.5 / 2135 |
+| Content 2 | 4.629 / 6.237 | 8.787, 22.762 / 7.525, 22.939 | 2127.5 / 2130.5 |
+| Rectangle 1 | 13.526 / 7.491 | 14.598, 31.938 / 8.462, 21.944 | 3423.5 / 2684 |
+| Rectangle 2 | 15.996 / 5.486 | 18.314, 36.207 / 8.021, 25.680 | 3418.5 / 2683.5 |
+
+The packed-coordinate candidate
+`c22a14f476faf2567e68597f02f40baccddefb7bbbcc59d6509f970ac3e0494d`
+used the same direct path as the opt-in mode. Both cohorts used
+alternating builds, fresh processes and private profiles, a 1024 × 712
+Xvfb window, Mesa software rendering, and a one-second settle period.
+JavaScript, GPU SVG replay, SVG texture reuse, and leading-row cropping
+were disabled. Each trial processed 80 synthetic callbacks with
+matching command counts and scroll offsets up to 1248 CSS pixels.
+The content and rectangle fixture SHA-256 values were
+`6dc176903d66f637659b97484bc34a89ee0357c828c182ff9fefca52b8f3f966` and
+`cd16d9ff6d4817947444efa78d084354701b3805080a3183778229f6688b433d`.
+Input hashes stayed fixed and browser and guard exits were zero.
+Guest one-minute load ranged from 1.10 to 1.34 in the initial cohort
+and 0.66 to 1.83 in the packed cohort on four vCPUs.
+
+| Packed fixture and pair | Replay median before / after, ms | Replay p95 and maximum before / after, ms | Median allocated KiB before / after |
+| --- | ---: | ---: | ---: |
+| Content 1 | 4.396 / 8.876 | 8.961, 22.443 / 11.220, 26.595 | 2136.5 / 2134 |
+| Content 2 | 4.705 / 9.437 | 9.084, 22.048 / 11.363, 26.457 | 2134 / 2136.5 |
+| Rectangle 1 | 13.401 / 7.380 | 15.077, 25.236 / 8.081, 21.432 | 3421 / 2675.5 |
+| Rectangle 2 | 13.376 / 9.087 | 15.538, 31.812 / 9.755, 25.425 | 3425.5 / 2680.5 |
+
+The packed candidate saved 745–746 KiB per callback on the rectangle
+fixture. Replay medians rose in both content-fixture pairs. Those
+candidate trials had a median of three garbage collections per callback,
+while both controls had zero. Paint preparation rose from 257 to
+2501 µs and from 284 to 2510 µs. These software replay results leave the
+direct solid-mask path opt-in. All 21 Linux browser checks, the pinned
+Skia differential suite, and the macOS and Windows source checks passed.
+
 ## Skipping invisible SVG mask opacity groups
 
 The mask player uses the bitmap compositor's opacity byte before
