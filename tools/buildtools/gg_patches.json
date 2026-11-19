@@ -211,17 +211,42 @@
     {
       "file": "gpu_gradient.v",
       "old": "// gradients that start at a point are radial gradients. Other two-point\n// conical gradients are not supported yet.",
-      "new": "// gradients that start at a point are radial gradients. Expanding concentric\n// gradients also support repeat and mirror tiling with a focal radius.\n// Off-center gradients can expand from a strictly contained focal circle."
+      "new": "// gradients that start at a point are radial gradients. Expanding concentric\n// gradients also support repeat and mirror tiling with a focal radius.\n// Off-center gradients can expand from a strictly contained focal circle.\n// Clamp also supports an internally tangent focal circle."
     },
     {
       "file": "gpu_gradient.v",
       "old": "\tlocal_matrix Matrix = Matrix.identity()\n}",
-      "new": "\tlocal_matrix Matrix = Matrix.identity()\n\tradial_bias f32\n\tradial_focus f32\n\tradial_unit ?Matrix\n}"
+      "new": "\tlocal_matrix Matrix = Matrix.identity()\n\tradial_bias f32\n\tradial_focus f32\n\tradial_unit ?Matrix\n\tradial_tangent bool\n}"
     },
     {
       "file": "gpu_gradient.v",
       "old": "\treturn error('gg.canvas: two-point conical gradients are not supported')",
       "new": "\tif start.x == end.x && start.y == end.y {\n\t\treturn concentric_tile_gradient(start_radius, end_radius, start, g)\n\t}\n\treturn nested_circle_gradient(start, start_radius, end, end_radius, g)"
+    },
+    {
+      "file": "gpu_gradient.v",
+      "old": "\t// A texture sampled with hardware tiling (a restored layer).\n\timage\n}",
+      "new": "\t// A texture sampled with hardware tiling (a restored layer).\n\timage\n\t// Tangent gradients always use the alpha paint block, including with unit opacity.\n\tradial_tangent_4\n\tradial_tangent_8\n}\n\nfn (s Shading) is_tangent() bool {\n\treturn s in [.radial_tangent_4, .radial_tangent_8]\n}"
+    },
+    {
+      "file": "gpu_gradient.v",
+      "old": "s in [.linear_8, .radial_8, .linear_8_alpha, .radial_8_alpha]",
+      "new": "s in [.linear_8, .radial_8, .linear_8_alpha, .radial_8_alpha, .radial_tangent_8]"
+    },
+    {
+      "file": "gpu_gradient.v",
+      "old": "return s in [.linear_4_alpha, .linear_8_alpha, .radial_4_alpha, .radial_8_alpha]",
+      "new": "return s in [.linear_4_alpha, .linear_8_alpha, .radial_4_alpha, .radial_8_alpha] || s.is_tangent()"
+    },
+    {
+      "file": "gpu_gradient.v",
+      "old": "if stops == 4 { Shading.radial_4 } else { Shading.radial_8 }",
+      "new": "if g.radial_tangent {\n\t\t\t\tif stops == 4 { Shading.radial_tangent_4 } else { Shading.radial_tangent_8 }\n\t\t\t} else {\n\t\t\t\tif stops == 4 { Shading.radial_4 } else { Shading.radial_8 }\n\t\t\t}"
+    },
+    {
+      "file": "paint.v",
+      "old": "\tif p.color.a != 1 {\n\t\tshading = shading.with_alpha()",
+      "new": "\tif p.color.a != 1 || shading.is_tangent() {\n\t\tshading = shading.with_alpha()"
     },
     {
       "file": "gpu_gradient.v",

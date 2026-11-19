@@ -348,6 +348,7 @@ function moveFocalCircle() {
     }
     document.getElementById('repeat-outer').setAttribute('fr', '12');
     document.getElementById('offset-pad').setAttribute('fx', '112.5');
+    document.getElementById('tangent-circle').setAttribute('fx', '76.5');
     document.body.setAttribute('data-focal-ready', '1');
 }
 requestAnimationFrame(moveFocalCircle);
@@ -368,7 +369,8 @@ requestAnimationFrame(moveFocalCircle);
         gradients = [line for line in log.splitlines() if line.endswith(" gradient=2")]
         assert any("draw=256x88 cache=miss" in line for line in gradients), log
         assert any("draw=240x88 cache=miss" in line for line in gradients), log
-        for size in ("224x96", "208x96"):
+        assert any("draw=192x72 cache=miss" in line for line in gradients), log
+        for size in ("224x96", "208x96", "184x72"):
             draws = [line for line in gradients if f"draw={size} " in line]
             misses = [line for line in draws if "cache=miss" in line]
             if label == "cached":
@@ -381,7 +383,10 @@ requestAnimationFrame(moveFocalCircle);
         samples = ((112, 48, (191, 0, 64)), (132, 48, (128, 0, 128)), (144, 48, (191, 0, 64)),
                    (384, 48, (159, 127, 223)), (430, 48, (149, 127, 234)),
                    (112, 164, (255, 0, 0)), (132, 164, (159, 0, 96)), (112, 184, (123, 0, 132)),
-                   (390, 188, (191, 127, 191)), (354, 140, (191, 127, 191)))
+                   (390, 188, (191, 127, 191)), (354, 140, (191, 127, 191)),
+                   (60, 272, (255, 255, 255)), (76, 272, (255, 0, 0)), (100, 272, (170, 0, 85)),
+                   (76, 284, (202, 0, 53)), (144, 272, (0, 0, 255)),
+                   (334, 264, (255, 255, 255)), (346, 280, (223, 127, 159)))
         for x, y, expected in samples:
             pixel = rows[marker + 8 + y][x * channels:x * channels + 3]
             assert all(abs(a - b) <= 2 for a, b in zip(pixel, expected)), (x, y, pixel, expected)

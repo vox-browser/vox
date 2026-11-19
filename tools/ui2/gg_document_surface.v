@@ -33,6 +33,10 @@ fn nested_circle_gradient(start Point, start_radius f32, end Point, end_radius f
 	dx := f64(end.x) - f64(start.x)
 	dy := f64(end.y) - f64(start.y)
 	distance := math.sqrt(dx * dx + dy * dy)
+	if g.tile_mode == .clamp && span == distance && span > f64(gradient_degenerate_threshold)
+		&& math.is_finite(span) {
+		return tangent_circle_gradient(start, start_radius, dx, dy, span, g)
+	}
 	if !(span - distance > f64(gradient_degenerate_threshold)) || !math.is_finite(span) {
 		return error('gg.canvas: focal circle must be strictly inside the outer circle')
 	}
@@ -65,6 +69,28 @@ fn nested_circle_gradient(start Point, start_radius f32, end Point, end_radius f
 	}
 }
 
+// With internal tangency the quadratic term vanishes. Use the shared
+// point of tangency as the origin and scale both axes by 1 / (2 * span).
+fn tangent_circle_gradient(start Point, start_radius f32, dx f64, dy f64, span f64, g Gradient) !Gradient {
+	xx, xy := (dx / span) / (2 * span), (dy / span) / (2 * span)
+	tx := -xx * f64(start.x) - xy * f64(start.y) + f64(start_radius) / (2 * span)
+	ty := xy * f64(start.x) - xx * f64(start.y)
+	unit := [f32(xx), f32(xy), f32(tx), f32(-xy), f32(xx), f32(ty), 0, 0, 1]!
+	bias := f32(-f64(start_radius) / span)
+	if !unit.all(is_finite_f32(it)) || !is_finite_f32(bias) {
+		return error('gg.canvas: invalid tangent gradient transform')
+	}
+	return Gradient{
+		...g
+		kind:           .radial
+		p0:             start
+		radius:         f32(span)
+		radial_unit:    Matrix.values(unit)
+		radial_bias:    bias
+		radial_tangent: true
+	}
+}
+
 fn gradient_fields(fields string, shading Shading) string {
 	return if shading.is_linear() {
 		fields
@@ -81,6 +107,14 @@ fn gradient_conical_body(body string, shading Shading) string {
 	}
 	uniforms := '_globals._anonInterface0->combinedUniformData[_globals.uniformSsboIndex]'
 	coords := if shading.is_translucent() { 'LocalMatrix_3_Var' } else { 'LocalMatrix_2_Var' }
+	if shading.is_tangent() {
+		return body.replace('float _34_b = length(_in.${coords}) + ${uniforms}.radialBias;\nfloat2 _35_g = float2(_34_b, 1.0);',
+			'float2 focalCoords = _in.${coords};
+float2 _35_g = float2(0.0, -1.0);
+if (focalCoords.x > 0.0) {
+    _35_g = float2(focalCoords.x + focalCoords.y * focalCoords.y / focalCoords.x + ${uniforms}.radialBias, 1.0);
+}')
+	}
 	return body.replace(' + ${uniforms}.radialBias;',
 		' + (${uniforms}.radialBias - ${uniforms}.radialFocus * _in.${coords}.x);')
 }

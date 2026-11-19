@@ -121,6 +121,26 @@ fn test_shared_svg_path_pixels() {
 	across := 11 * pitch + 10 * 4
 	assert pixels[across + 1] in [u8(32), 33, 34] && pixels[across + 2] in [u8(221), 222, 223]
 
+	// With the circles touching, the axis ramp spans 16 pixels. The
+	// half-plane behind their common tangent has zero alpha.
+	path.gradient_points = [f32(4.5), 4.5, 3, 12.5, 4.5, 11]!
+	assert draw_path_with_context(mut ctx, pixels.data, width, height, pitch, 0, &path, false) == 1
+	behind := 7 * pitch + 6 * 4
+	assert pixels[behind..behind + 4] == [u8(0), 0, 0, 0]
+	assert pixels[inner..inner + 4] == [u8(0), 0, 255, 255]
+	assert pixels[middle + 1] in [u8(63), 64, 65] && pixels[middle + 2] in [u8(190), 191, 192]
+	assert pixels[across + 1] in [u8(36), 37, 38] && pixels[across + 2] in [u8(217), 218, 219]
+	path.stops = reflect_stops.data
+	path.stop_count = 5
+	path.opacity = 0.5
+	assert draw_path_with_context(mut ctx, pixels.data, width, height, pitch, 0, &path, false) == 1
+	assert pixels[behind..behind + 4] == [u8(0), 0, 0, 0]
+	assert pixels[middle + 1] in [u8(31), 32, 33] && pixels[middle + 2] in [u8(95), 96]
+	assert pixels[middle + 3] in [u8(127), 128]
+	path.stops = stops.data
+	path.stop_count = 2
+	path.opacity = 1
+
 	path.stroke = 1
 	path.stroke_width = 2
 	path.gradient_points = [f32(4.5), 4.5, 3, 4.5, 4.5, 11]!
