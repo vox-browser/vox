@@ -18,7 +18,7 @@ fn portable_svg_opacity_end(commands []layout.PaintCommand, start int, layer &la
 	first := &commands[start + 1]
 	if commands[start + 2].kind != 'draw_svg_path' {
 		// A single path still needs isolation when it paints a fill and a stroke.
-		if first.stroke_width <= 0 || first.stroke_color == ''
+		if !portable_svg_group_has_stroke(first)
 			|| (first.color == '' && first.fill_linear_gradient() == none
 			&& first.fill_radial_gradient() == none) {
 			return none

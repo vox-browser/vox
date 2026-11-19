@@ -29,6 +29,19 @@ fn portable_svg_group_clip_supported(command &layout.PaintCommand) bool {
 	return true
 }
 
+@[inline]
+fn portable_svg_group_has_stroke(command &layout.PaintCommand) bool {
+	if !(command.stroke_width > 0) { return false }
+	if command.stroke_color != '' { return true }
+	data := command.svg_data
+	if data != unsafe { nil } {
+		if gradients := data.svg_gradient_data {
+			return gradients.stroke_linear_gradient != none || gradients.stroke_radial_gradient != none
+		}
+	}
+	return false
+}
+
 fn portable_svg_group_path_supported(command &layout.PaintCommand, first &layout.PaintCommand,
 	group_opacity f64) bool {
 	data := command.svg_data
@@ -42,23 +55,18 @@ fn portable_svg_group_path_supported(command &layout.PaintCommand, first &layout
 		|| command.clip_height != first.clip_height || !portable_svg_group_clip_supported(command) {
 		return false
 	}
+	if command.color != '' || portable_svg_group_has_stroke(command) { return true }
 	if gradients := data.svg_gradient_data {
-		if command.stroke_width > 0 && (gradients.stroke_linear_gradient != none
-			|| gradients.stroke_radial_gradient != none) {
-			return false
-		}
-		if gradients.fill_linear_gradient != none || gradients.fill_radial_gradient != none {
-			return true
-		}
+		return gradients.fill_linear_gradient != none || gradients.fill_radial_gradient != none
 	}
-	return command.color != '' || (command.stroke_width > 0 && command.stroke_color != '')
+	return false
 }
 
 struct PortableSVGGroupPaint {
 	path         cpuraster.Path
 	transform    painting.Affine
 	color        u32
-	style        ?cpuraster.CanvasPaintStyle
+	gradient     ?cpuraster.CanvasGradient
 	opacity      f32
 	stroke_data  &layout.PaintSVGPathData = unsafe { nil }
 	stroke_width f32
@@ -173,20 +181,19 @@ fn (mut app BrowserApp) raster_portable_svg_group(commands []layout.PaintCommand
 		fill_bounds := portable_svg_device_bounds(local, transform, clip)
 		if !fill_bounds.is_empty() {
 			fill_alpha := leaf_alpha * data.fill_opacity
-			mut style := ?cpuraster.CanvasPaintStyle(none)
+			mut gradient := ?cpuraster.CanvasGradient(none)
 			mut color := u32(0)
 			mut opacity := f32(1)
 			if gradients := data.svg_gradient_data {
 				if gradients.fill_linear_gradient != none || gradients.fill_radial_gradient != none {
 					opacity = f32(clamp(fill_alpha, 0, 1))
 					if opacity != 0 {
-						gradient := portable_svg_visible_gradient(command, false) or { return none }
-						style = cpuraster.CanvasPaintStyle(gradient)
+						gradient = portable_svg_visible_gradient(command, false) or { return none }
 						color = 0xff000000
 					}
 				}
 			}
-			if style == none && command.color != '' {
+			if gradient == none && command.color != '' {
 				solid := app.paint_colors.color_with_retained(command.color, fill_alpha,
 					command.retained_svg_fill_color())
 				color = portable_svg_argb(solid)
@@ -199,35 +206,48 @@ fn (mut app BrowserApp) raster_portable_svg_group(commands []layout.PaintCommand
 					path: path
 					transform: transform
 					color: color
-					style: style
+					gradient: gradient
 					opacity: opacity
 				}
 			}
 		}
-		if command.stroke_width > 0 && command.stroke_color != '' {
+		if portable_svg_group_has_stroke(command) {
 			width := f32(command.stroke_width)
 			miter := f32(if data.stroke_miterlimit > 1 { data.stroke_miterlimit } else { 1.0 })
 			if !(width > 0) || !math.is_finite(f64(width)) || !math.is_finite(f64(miter)) {
 				return none
 			}
-			color := app.paint_colors.color_with_retained(command.stroke_color,
-				leaf_alpha * data.stroke_opacity, command.retained_svg_stroke_color())
+			stroke_alpha := leaf_alpha * data.stroke_opacity
+			mut opacity := f32(clamp(stroke_alpha, 0, 1))
+			mut color := u32(0xff000000)
+			mut gradient := ?cpuraster.CanvasGradient(none)
 			stroke_bounds := portable_svg_stroke_bounds(data, local, transform, clip, width, miter)
-			if color.a != 0 && !stroke_bounds.is_empty() {
-				ink = ink.united(painting.Rect{f64(stroke_bounds.x), f64(stroke_bounds.y),
-					f64(stroke_bounds.width), f64(stroke_bounds.height)})
-				path_pixels += stroke_bounds.width * stroke_bounds.height
-				paints << PortableSVGGroupPaint{
-					path: cpuraster.Path{...path, fill_type: .winding}
-					transform: transform
-					color: portable_svg_argb(color)
-					opacity: 1
-					stroke_data: data
-					stroke_width: width
-					stroke_miter: miter
+			if opacity != 0 && !stroke_bounds.is_empty() {
+				if command.stroke_color == '' {
+					gradient = portable_svg_visible_gradient(command, true) or { return none }
+				} else {
+					solid := app.paint_colors.color_with_retained(command.stroke_color, stroke_alpha,
+						command.retained_svg_stroke_color())
+					color = portable_svg_argb(solid)
+					opacity = 1
 				}
-				if data.stroke_first && paints.len == first_paint + 2 {
-					paints[first_paint], paints[first_paint + 1] = paints[first_paint + 1], paints[first_paint]
+				if color >> 24 != 0 {
+					ink = ink.united(painting.Rect{f64(stroke_bounds.x), f64(stroke_bounds.y),
+						f64(stroke_bounds.width), f64(stroke_bounds.height)})
+					path_pixels += stroke_bounds.width * stroke_bounds.height
+					paints << PortableSVGGroupPaint{
+						path: cpuraster.Path{...path, fill_type: .winding}
+						transform: transform
+						color: color
+						gradient: gradient
+						opacity: opacity
+						stroke_data: data
+						stroke_width: width
+						stroke_miter: miter
+					}
+					if data.stroke_first && paints.len == first_paint + 2 {
+						paints[first_paint], paints[first_paint + 1] = paints[first_paint + 1], paints[first_paint]
+					}
 				}
 			}
 		}
@@ -245,10 +265,12 @@ fn (mut app BrowserApp) raster_portable_svg_group(commands []layout.PaintCommand
 		matrix := portable_svg_surface_matrix(paint.transform, bounds)
 		drawn := if paint.stroke_data != unsafe { nil } {
 			raster_portable_svg_stroke(mut surface, bounds, paint.path, matrix, paint.stroke_data,
-				paint.color, none, paint.opacity, paint.stroke_width, paint.stroke_miter)
+				paint.color, paint.gradient, paint.opacity, paint.stroke_width, paint.stroke_miter)
 		} else {
+			mut style := ?cpuraster.CanvasPaintStyle(none)
+			if gradient := paint.gradient { style = cpuraster.CanvasPaintStyle(gradient) }
 			cpuraster.fill_canvas_path(mut surface, bounds.width, bounds.height, pitch, 2,
-				paint.path, matrix, paint.color, paint.style, paint.opacity, .src_over, 0, [], none)
+				paint.path, matrix, paint.color, style, paint.opacity, .src_over, 0, [], none)
 		}
 		if !drawn {
 			return none
