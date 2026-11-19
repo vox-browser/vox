@@ -1115,6 +1115,65 @@ launches. All browser processes and the memory guard exited zero.
 The comparison measures warmed idle software replay. Candidate
 macOS and Windows runtime checks and native GPU timing remain pending.
 
+## Repeating vector and bitmap pattern strokes in SVG masks
+
+In `75ad42064`, the portable mask player shades stroke coverage with
+the same retained tile renderer used by pattern fills. Fills and
+strokes share the mask's tile budget. Stroke opacity, cap geometry,
+and SVG paint order apply before the finished mask supplies alpha or
+luminance coverage. An incomplete tile can contribute available
+pixels while leaving the group texture eligible for a fresh replay.
+
+The fixture checks a translated vector tile on a square-capped
+stroke, a bitmap tile over solid white fills in both paint orders,
+and a live opacity edit inside the vector tile. Disabling portable
+masks reproduced a solid blue pixel at (10, 44) outside the stroke.
+The candidate left it white. All 800 × 516 document pixels matched
+across cached CPU replay, GG Canvas, and uncached replay.
+
+A separate Linux run served the bitmap tile after a 400 ms loopback
+delay. Its final pixels matched the local fixture exactly. The
+luminance mask rasterized three times before retaining the first
+complete texture. The fixture and decoded document SHA-256 values
+were
+`8db1fbf2f818aa9f818b186162b16a8ab9896e810dda70299b16fce290a10513`
+and `b85a5a7bf73e57b8c86aeee5693542d415061129cc2fee8bcfdfb167efbd3648`.
+
+The macOS reference launched PID 594 from the published
+`b13808d00` build with executable SHA-256
+`5f556e4cdda418f4fa1b2f58d83ce4044aa1d6b7f3e51e012a36120c9ab4b2f1`.
+Twelve of 15 samples matched exactly. The three remaining samples
+from the isolated vector stroke differed by one channel value.
+A separate launch of that same build in PID 11801 rechecked
+the earlier raster image mask edit. Both sampled replacement
+pixels were `#7f7fff` after the live `href` change.
+The patterned-stroke checks and twelve neighboring Linux SVG
+window checks passed. macOS and Windows D3D11 and OpenGL source
+checks passed.
+
+Two alternating pairs timed the same ARM64 single-unit Clang
+`-O0` executable with V `5a39a4d`. Its SHA-256 was
+`e77c80014778952127178c282fbda1bb845e6b64eb3ea4d1b197a7833b73480e`.
+Fresh private processes used one Mesa software worker, an
+800 × 600 Xvfb window, JavaScript disabled, and one second of
+settling before 48 synthetic idle callbacks. Diagnostics recorded
+two mask rasters per callback with caching disabled and two texture
+hits with caching enabled across 47 complete intervals. Pixels,
+paint command counts, position, and input hashes stayed fixed.
+The decoded document SHA-256 was
+`1236a523e81e3b3232feca4a41120dcf487a6629b8ee48c9df1faad4d2eb16a0`.
+
+| Pair | Uncached / cached median replay, ms | Uncached / cached p95 and maximum, ms | Uncached / cached median allocated KiB |
+| --- | ---: | ---: | ---: |
+| 1 | 7.097 / 0.886 | 7.587, 7.810 / 1.065, 3.322 | 498 / 121 |
+| 2 | 6.795 / 0.826 | 9.082, 9.361 / 1.058, 3.077 | 498 / 120 |
+
+The four-vCPU guest's one-minute load was 0.84–1.00 at the timed
+launches. Every browser process and the memory guard exited zero.
+This comparison covers warmed idle software replay. Candidate
+macOS and Windows runtime checks and hardware GPU timing remain
+pending.
+
 ## Sharing the portable SVG fallback with Windows
 
 The standard Windows D3D11 window now uses the same CPU raster and GG texture
