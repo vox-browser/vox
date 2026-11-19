@@ -153,7 +153,7 @@ fn (mut app BrowserApp) raster_native_svg_content_mask(mask &layout.PaintClip, p
 	if C.native_svg_content_mask_geometry(f32(app.ctx.height), scale, &area[0]) == 0 {
 		return false
 	}
-	if !portable_svg_content_mask_supported(mask) {
+	if !portable_svg_content_mask_supported(mask, false) {
 		return false
 	}
 	if counts.fills == 0

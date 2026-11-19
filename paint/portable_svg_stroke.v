@@ -141,19 +141,28 @@ fn raster_portable_svg_stroke(mut pixels []u8, bounds painting.IntRect, path_in 
 		path = path.transform(cpuraster.Matrix{matrix[0], matrix[1], matrix[2], matrix[3], matrix[4], matrix[5]})
 		matrix = [f32(1), 0, 0, 1, 0, 0]!
 	}
-	cap := match data.stroke_linecap {
+	return cpuraster.stroke_canvas_path(mut pixels, bounds.width, bounds.height, bounds.width * 4, 2, path,
+		matrix, color, style, opacity, .src_over, 0, width,
+		portable_svg_stroke_cap(data.stroke_linecap), portable_svg_stroke_join(data.stroke_linejoin),
+		miter, data.stroke_dasharray.map(f32(it)), f32(data.stroke_dashoffset), [], none)
+}
+
+@[inline]
+fn portable_svg_stroke_cap(linecap int) cpuraster.StrokeCap {
+	return match linecap {
 		1 { cpuraster.StrokeCap.round }
 		2 { .square }
 		else { .butt }
 	}
-	join := match data.stroke_linejoin {
+}
+
+@[inline]
+fn portable_svg_stroke_join(linejoin int) cpuraster.StrokeJoin {
+	return match linejoin {
 		1 { cpuraster.StrokeJoin.round }
 		2 { .bevel }
 		else { .miter }
 	}
-	return cpuraster.stroke_canvas_path(mut pixels, bounds.width, bounds.height, bounds.width * 4, 2, path,
-		matrix, color, style, opacity, .src_over, 0, width,
-		cap, join, miter, data.stroke_dasharray.map(f32(it)), f32(data.stroke_dashoffset), [], none)
 }
 
 fn (mut app BrowserApp) draw_portable_svg_path_stroke(command &layout.PaintCommand,

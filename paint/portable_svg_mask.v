@@ -1,6 +1,7 @@
 module main
 
 import cpuraster
+import gg
 import layout
 import math
 import os
@@ -13,7 +14,7 @@ const portable_svg_mask_solid_rects = os.getenv('VOX_SVG_MASK_SOLID_RECTS') == '
 const portable_svg_mask_diagnostics = os.getenv('VOX_PORTABLE_SVG_MASK_DIAGNOSTICS') == '1'
 const portable_svg_mask_max_opacity_depth = 4
 
-fn portable_svg_content_mask_supported(mask &layout.PaintClip) bool {
+fn portable_svg_content_mask_supported(mask &layout.PaintClip, allow_strokes bool) bool {
 	if mask.is_svg_mask || mask.corner_radii != layout.BoxRadii{} || mask.mask_operations.len > 64
 		|| mask.transform[1] != 0 || mask.transform[2] != 0 {
 		return false
@@ -32,10 +33,12 @@ fn portable_svg_content_mask_supported(mask &layout.PaintClip) bool {
 				depth--
 			}
 			.path {
-				if !operation.has_fill || operation.has_stroke || operation.opacity != 1
-					|| operation.fill_pattern != none
+				if !(operation.has_fill || operation.has_stroke) || operation.opacity != 1
 					|| operation.path_data.len < layout.compatibility_clip_path_segment_stride
-					|| !portable_svg_mask_gradient_supported(operation, mask.mask_luminance) {
+					|| (operation.has_fill && (operation.fill_pattern != none
+					|| !portable_svg_mask_gradient_supported(operation, mask.mask_luminance)))
+					|| (operation.has_stroke && (!allow_strokes
+					|| !portable_svg_mask_stroke_supported(operation))) {
 					return false
 				}
 			}
@@ -43,6 +46,14 @@ fn portable_svg_content_mask_supported(mask &layout.PaintClip) bool {
 		}
 	}
 	return depth == 0
+}
+
+fn portable_svg_mask_stroke_supported(operation &layout.PaintMaskOperation) bool {
+	width := f32(operation.stroke_width)
+	return width > 0 && math.is_finite(f64(width))
+		&& math.is_finite(f64(f32(operation.stroke_miterlimit)))
+		&& operation.stroke_pattern == none && operation.stroke_linear_gradient == none
+		&& operation.stroke_radial_gradient == none
 }
 
 fn portable_svg_mask_gradient_supported(operation &layout.PaintMaskOperation, luminance bool) bool {
@@ -113,6 +124,7 @@ fn svg_mask_ramp(mask &layout.PaintClip, bounds painting.IntRect, page_x f32, pa
 	scale f64) ?SVGMaskRamp {
 	if disable_svg_mask_ramp || mask.mask_operations.len != 1 { return none }
 	operation := &mask.mask_operations[0]
+	if operation.has_stroke { return none }
 	gradient := operation.fill_linear_gradient or { return none }
 	same_x := f32(gradient.start_point.x) == f32(gradient.end_point.x)
 	same_y := f32(gradient.start_point.y) == f32(gradient.end_point.y)
@@ -199,7 +211,7 @@ fn svg_mask_luminance(red u8, green u8, blue u8) u8 {
 
 fn (mut app BrowserApp) apply_svg_mask_solid_rect(mut image PortableSVGGroupImage,
 	operation &layout.PaintMaskOperation, luminance bool, page_x f32, page_y f32, scale f64) bool {
-	if operation.kind != .path || operation.fill_linear_gradient != none
+	if operation.kind != .path || operation.has_stroke || operation.fill_linear_gradient != none
 		|| operation.fill_radial_gradient != none {
 		return false
 	}
@@ -404,6 +416,9 @@ fn svg_mask_opacity_layer_rows(operations []layout.PaintMaskOperation, bounds pa
 				}
 			}
 			.path {
+				// Centerline bounds omit the caps and joins. Keep the parent
+				// surface so an opacity group retains the entire stroke.
+				if operation.has_stroke { return parent }
 				device := portable_device_transform(operation.transform, page_x, page_y, scale)
 				edges := svg_mask_line_path_rows(operation.path_data,
 					portable_svg_surface_matrix(device, bounds)) or { return parent }
@@ -494,26 +509,62 @@ fn (mut app BrowserApp) raster_svg_mask_layers(mut pixels []u8, pitch int, bound
 					bitmap, layer.opacity) { return false }
 			}
 			.path {
-				style := portable_svg_mask_gradient(operation, mask.mask_luminance)
-				mut argb := u32(0xff000000)
-				mut opacity := f32(operation.fill_opacity)
-				if style == none {
-					color := app.paint_colors.color(operation.fill_color, operation.fill_opacity)
-					if color.a == 0 { continue }
-					argb = if mask.mask_luminance { portable_svg_argb(color) } else { (u32(color.a) << 24) | 0xffffff }
-					opacity = 1
-				}
-				path := cpuraster.canvas_path(operation.path_data, operation.path_even_odd)
-				transform := portable_device_transform(operation.transform, page_x, page_y, scale)
-				rows := layers[depth].rows
-				if !cpuraster.fill_canvas_mask_path(mut layers[depth].pixels, bounds.width, rows.top,
-					rows.height(), if depth == 0 { pitch } else { layer_pitch }, path,
-					portable_svg_surface_matrix(transform, bounds), argb, style, opacity) { return false }
+				device := portable_device_transform(operation.transform, page_x, page_y, scale)
+				if !app.raster_svg_mask_path(mut layers[depth], bounds.width,
+					if depth == 0 { pitch } else { layer_pitch }, operation,
+					portable_svg_surface_matrix(device, bounds), mask.mask_luminance) { return false }
 			}
 			.image { return false }
 		}
 	}
 	return true
+}
+
+fn (mut app BrowserApp) raster_svg_mask_path(mut layer PortableSVGMaskLayer, width int, pitch int,
+	operation &layout.PaintMaskOperation, matrix [6]f32, luminance bool) bool {
+	mut style := ?cpuraster.CanvasPaintStyle(none)
+	mut fill := u32(0)
+	mut opacity := f32(1)
+	if operation.has_fill {
+		style = portable_svg_mask_gradient(operation, luminance)
+		if style != none {
+			fill = 0xff000000
+			opacity = f32(operation.fill_opacity)
+		} else {
+			color := app.paint_colors.color(operation.fill_color, operation.fill_opacity)
+			fill = portable_svg_mask_argb(color, luminance)
+		}
+	}
+	if fill >> 24 == 0 && !operation.has_stroke { return true }
+	path := cpuraster.canvas_path(operation.path_data, operation.path_even_odd)
+	if operation.has_stroke && operation.stroke_first
+		&& !app.raster_svg_mask_stroke(mut layer, width, pitch, operation, path, matrix, luminance) {
+		return false
+	}
+	if fill >> 24 != 0 && !cpuraster.fill_canvas_mask_path(mut layer.pixels, width, layer.rows.top,
+		layer.rows.height(), pitch, path, matrix, fill, style, opacity) {
+		return false
+	}
+	return !operation.has_stroke || operation.stroke_first
+		|| app.raster_svg_mask_stroke(mut layer, width, pitch, operation, path, matrix, luminance)
+}
+
+fn (mut app BrowserApp) raster_svg_mask_stroke(mut layer PortableSVGMaskLayer, width int, pitch int,
+	operation &layout.PaintMaskOperation, path cpuraster.Path, matrix [6]f32, luminance bool) bool {
+	color := app.paint_colors.color(operation.stroke_color, operation.stroke_opacity)
+	if color.a == 0 { return true }
+	mut local_matrix := matrix
+	local_matrix[5] -= f32(layer.rows.top)
+	return cpuraster.stroke_canvas_path(mut layer.pixels, width, layer.rows.height(), pitch, 2, path,
+		local_matrix, portable_svg_mask_argb(color, luminance), none, 1, .src_over, 0,
+		f32(operation.stroke_width), portable_svg_stroke_cap(operation.stroke_linecap),
+		portable_svg_stroke_join(operation.stroke_linejoin),
+		f32(math.max(1, operation.stroke_miterlimit)), [], 0, [], none)
+}
+
+@[inline]
+fn portable_svg_mask_argb(color gg.Color, luminance bool) u32 {
+	return if luminance { portable_svg_argb(color) } else { (u32(color.a) << 24) | 0xffffff }
 }
 
 @[inline]

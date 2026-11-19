@@ -11,7 +11,7 @@ const portable_svg_clip_diagnostics = os.getenv('VOX_PORTABLE_SVG_CLIP_DIAGNOSTI
 
 fn portable_svg_mask_group_end(commands []layout.PaintCommand, start int, mask layout.PaintClip) ?int {
 	if mask.is_svg_content_mask {
-		if disable_portable_svg_mask || !portable_svg_content_mask_supported(&mask) { return none }
+		if disable_portable_svg_mask || !portable_svg_content_mask_supported(&mask, true) { return none }
 	} else if disable_portable_svg_clip || !mask.is_svg_mask || mask.path_components.len > 64 {
 		return none
 	}
