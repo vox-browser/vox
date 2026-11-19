@@ -1,5 +1,60 @@
 # Migrating from Skia to vlib/gg
 
+## Concentric SVG focal circles
+
+The shared GG path renderer handles an expanding concentric radial gradient
+with `spreadMethod="pad"` and a nonzero `fr`. On a texture miss it maps the
+stops into the ordinary radial shader's coordinate range. The implicit first
+stop extends the first color inside the focal circle. The shader and cached
+texture replay are shared with ordinary radial gradients. The shader's
+effective eight-stop limit still applies, including the implicit stop.
+Offset centers, contracting radii, and repeat or reflect with a nonzero `fr`
+remain outside this slice. [SVG 2 radial gradients](https://www.w3.org/TR/SVG2/pservers.html#RadialGradients)
+
+The focused path tests passed on Metal and Linux OpenGL for transformed fills
+and strokes. The Windows amd64 OpenGL source check passed. The full Linux GG
+SVG window suite (`tools/test_linux_browser.py --gg-svg`) verified that
+separate live edits to `gradientTransform` and `fr` each rerasterized the
+texture and hit the geometry cache. Its cached and uncached document pixels
+were identical.
+
+The Linux window and timing runs used V `5a39a4d`, single-unit Clang
+`-O0`, and executable SHA-256
+`6781cbd687d9bfda3e9a0b4991b09c11c7d2effdf57dd1049b86dd825e9da116`.
+The fixture SHA-256 was
+`1612e79253b84585b6e9052a16466b6d65eb6ff8b60929ec1f34b974cb9e1cad`.
+`tools/measure_browser_scroll.py` ran with Mesa software OpenGL under
+Xvfb, an 800 × 712 window, a one-second settle, 32 synthetic 42-pixel
+steps, and fresh processes, profiles and browser caches. System caches
+remained available. Scroll positions and paint-command counts matched.
+The one-minute load observed on the four guest CPUs ranged from 0.52 to
+1.12. Browser, test and memory guard exits were zero for these runs.
+
+| Pair | Median callback uncached / cached, ms | p95, ms | Maximum, ms |
+| ---: | ---: | ---: | ---: |
+| 1 | 5.4625 / 2.067 | 8.377 / 4.636 | 22.223 / 21.518 |
+| 2 | 5.3505 / 1.9955 | 8.057 / 6.510 | 22.784 / 25.772 |
+
+Caching reduced median callback time by 62–63%. Separate diagnostics
+showed that all 31 focal-circle draws after the first measured callback
+hit both the texture and geometry caches.
+
+A second check compared the cached focal-circle fixture with an ordinary
+radial gradient that repeats the first color at offset `8/24`. The
+ordinary fixture SHA-256 was
+`137dfb8953be3986f6f4904ad0455ca5d0f2dd9038f5e4debad0c5a9118cb9b9`.
+Their document pixels and scroll traces matched exactly.
+
+| Pair | Median callback ordinary / focal circle, ms | p95, ms | Maximum, ms |
+| ---: | ---: | ---: | ---: |
+| 1 | 1.713 / 2.033 | 5.176 / 7.058 | 30.576 / 31.865 |
+| 2 | 1.932 / 1.590 | 5.138 / 5.632 | 34.402 / 35.385 |
+
+Median timings varied between pairs and the focal-circle fixture had
+a higher p95 in both. Every timing run had its longest callback at the
+second step, when the moving gradient crossed the viewport edge. These
+callback timings leave end-to-end performance parity open.
+
 ## SVG gradient strokes on OpenGL
 
 The opt-in OpenGL renderer uses the same sRGB linear and concentric
