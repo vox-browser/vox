@@ -129,17 +129,22 @@ fn svg_mask_ramp(mask &layout.PaintClip, bounds painting.IntRect, page_x f32, pa
 	return SVGMaskRamp{coverage, same_x, strip_matrix}
 }
 
-fn raster_svg_mask_ramp(mut pixels []u8, pitch int, width int, operation &layout.PaintMaskOperation,
+fn shade_svg_mask_strip(mut pixels []u8, length int, operation &layout.PaintMaskOperation,
 	ramp SVGMaskRamp, luminance bool) bool {
 	path := cpuraster.canvas_path(operation.path_data, operation.path_even_odd)
 	style := portable_svg_mask_gradient(operation, luminance)
+	width, height := if ramp.vertical { 1, length } else { length, 1 }
+	return cpuraster.fill_canvas_path(mut pixels, width, height, width * 4, 2, path,
+		ramp.transform, 0xff000000, style, f32(operation.fill_opacity), .src_over, 0, [], none)
+}
+
+fn raster_svg_mask_ramp(mut pixels []u8, pitch int, width int, operation &layout.PaintMaskOperation,
+	ramp SVGMaskRamp, luminance bool) bool {
 	coverage := ramp.coverage
-	opacity := f32(operation.fill_opacity)
 	// Shade a strip on the varying axis using the original CPU shader.
 	if ramp.vertical {
 		mut column := []u8{len: coverage.bottom() * 4}
-		if !cpuraster.fill_canvas_path(mut column, 1, coverage.bottom(), 4, 2, path,
-			ramp.transform, 0xff000000, style, opacity, .src_over, 0, [], none) {
+		if !shade_svg_mask_strip(mut column, coverage.bottom(), operation, ramp, luminance) {
 			return false
 		}
 		// The surfaces have four-byte pixel offsets and stride.
@@ -156,8 +161,7 @@ fn raster_svg_mask_ramp(mut pixels []u8, pitch int, width int, operation &layout
 		row_bytes := width * 4
 		first := coverage.y * pitch
 		mut row := pixels[first..first + row_bytes]
-		if !cpuraster.fill_canvas_path(mut row, width, 1, row_bytes, 2, path, ramp.transform,
-			0xff000000, style, opacity, .src_over, 0, [], none) {
+		if !shade_svg_mask_strip(mut row, width, operation, ramp, luminance) {
 			unsafe { vmemset(row.data, 0, row_bytes) }
 			return false
 		}
@@ -166,25 +170,88 @@ fn raster_svg_mask_ramp(mut pixels []u8, pitch int, width int, operation &layout
 			copy(mut pixels[offset..offset + row_bytes], row)
 		}
 	}
+	log_svg_mask_ramp(ramp)
+	return true
+}
+
+fn log_svg_mask_ramp(ramp SVGMaskRamp) {
 	if portable_svg_mask_diagnostics {
-		eprintln('VOX_SVG_MASK_RAMP width=${coverage.width} rows=${coverage.height} vertical=${ramp.vertical}')
+		eprintln('VOX_SVG_MASK_RAMP width=${ramp.coverage.width} rows=${ramp.coverage.height} vertical=${ramp.vertical}')
 	}
+}
+
+@[inline]
+fn svg_mask_luminance(red u8, green u8, blue u8) u8 {
+	return u8((54 * u32(red) + 183 * u32(green) + 19 * u32(blue)) >> 8)
+}
+
+@[direct_array_access]
+fn apply_svg_mask_ramp(mut image PortableSVGGroupImage, operation &layout.PaintMaskOperation,
+	ramp SVGMaskRamp, luminance bool) bool {
+	width, height := image.bounds.width, image.bounds.height
+	coverage := ramp.coverage
+	length := if ramp.vertical { coverage.bottom() } else { width }
+	mut strip := []u8{len: length * 4}
+	if !shade_svg_mask_strip(mut strip, length, operation, ramp, luminance) { return false }
+	// The strip is premultiplied. Resolve the mask values in its own storage
+	// before reusing them across the constant axis.
+	for i in 0 .. length {
+		offset := i * 4
+		strip[i] = if luminance {
+			svg_mask_luminance(strip[offset], strip[offset + 1], strip[offset + 2])
+		} else {
+			strip[offset + 3]
+		}
+	}
+	for y in 0 .. height {
+		row := y * width * 4 + 3
+		if y < coverage.y || y >= coverage.bottom() {
+			for x in 0 .. width {
+				image.pixels[row + x * 4] = 0
+			}
+		} else if ramp.vertical {
+			for x in 0 .. coverage.x {
+				image.pixels[row + x * 4] = 0
+			}
+			value := strip[y]
+			if value != 255 {
+				for x in coverage.x .. coverage.right() {
+					offset := row + x * 4
+					image.pixels[offset] = portable_svg_mask_alpha(image.pixels[offset], value)
+				}
+			}
+			for x in coverage.right() .. width {
+				image.pixels[row + x * 4] = 0
+			}
+		} else {
+			for x in 0 .. width {
+				offset := row + x * 4
+				image.pixels[offset] = portable_svg_mask_alpha(image.pixels[offset], strip[x])
+			}
+		}
+	}
+	log_svg_mask_ramp(ramp)
 	return true
 }
 
 fn (mut app BrowserApp) apply_portable_svg_content_mask(mut image PortableSVGGroupImage,
 	mask &layout.PaintClip, region painting.Rect, page_x f32, page_y f32, scale f64) bool {
 	bounds := image.bounds
+	if ramp := svg_mask_ramp(mask, bounds, page_x, page_y, scale) {
+		if apply_svg_mask_ramp(mut image, &mask.mask_operations[0], ramp, mask.mask_luminance) {
+			apply_portable_svg_mask_region(mut image, region)
+			return true
+		}
+	}
 	mut coverage := []u8{len: bounds.width * bounds.height * 4}
-	if !app.raster_svg_content_mask(mut coverage, bounds.width * 4, bounds, mask, page_x, page_y,
+	if !app.raster_svg_mask_layers(mut coverage, bounds.width * 4, bounds, mask, page_x, page_y,
 		scale) { return false }
 	if mask.mask_luminance {
 		// The mask channels are already premultiplied. Convert the resolved
 		// color with the native mask's integer luminance weights.
 		for offset := 0; offset < coverage.len; offset += 4 {
-			value := (54 * u32(coverage[offset]) + 183 * u32(coverage[offset + 1])
-				+ 19 * u32(coverage[offset + 2])) >> 8
-			image.pixels[offset + 3] = portable_svg_mask_alpha(image.pixels[offset + 3], u8(value))
+			value := svg_mask_luminance(coverage[offset], coverage[offset + 1], coverage[offset + 2])
+			image.pixels[offset + 3] = portable_svg_mask_alpha(image.pixels[offset + 3], value)
 		}
 	} else {
 		for offset := 3; offset < coverage.len; offset += 4 {
@@ -195,8 +262,8 @@ fn (mut app BrowserApp) apply_portable_svg_content_mask(mut image PortableSVGGro
 	return true
 }
 
-// Both players supply a cleared premultiplied RGBA surface. Its row stride
-// can include pixels outside the mask region when borrowing a native bitmap.
+// The native player needs the full mask surface, including when a strip
+// covers the mask region.
 fn (mut app BrowserApp) raster_svg_content_mask(mut pixels []u8, pitch int, bounds painting.IntRect,
 	mask &layout.PaintClip, page_x f32, page_y f32, scale f64) bool {
 	if ramp := svg_mask_ramp(mask, bounds, page_x, page_y, scale) {
@@ -205,6 +272,13 @@ fn (mut app BrowserApp) raster_svg_content_mask(mut pixels []u8, pitch int, boun
 			return true
 		}
 	}
+	return app.raster_svg_mask_layers(mut pixels, pitch, bounds, mask, page_x, page_y, scale)
+}
+
+// Paint into a cleared premultiplied RGBA surface. Its row stride can include
+// pixels outside the mask region when borrowing a native bitmap.
+fn (mut app BrowserApp) raster_svg_mask_layers(mut pixels []u8, pitch int, bounds painting.IntRect,
+	mask &layout.PaintClip, page_x f32, page_y f32, scale f64) bool {
 	layer_pitch := bounds.width * 4
 	byte_count := layer_pitch * bounds.height
 	mut layers := [portable_svg_mask_max_opacity_depth + 1]PortableSVGMaskLayer{}

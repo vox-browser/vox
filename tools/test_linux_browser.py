@@ -1676,30 +1676,43 @@ def check_svg_mask_gradient_pixels(data):
 
 def check_svg_mask_strips_browser(binary, artifacts, temporary, name, luminance, axes):
     fixture = Path(__file__).resolve().parents[1] / "Tests/Browser/Native" / f"{name}.html"
-    documents = []
+    page = Path(temporary) / fixture.name
+    page.write_text(fixture.read_text() + """
+<style>
+#sample > path:first-child { fill-opacity: .65; }
+#capture-marker { position: fixed; top: 0; bottom: 0; right: 0;
+                  width: 3px; background: #093c57; z-index: 100; }
+</style>
+<div id="capture-marker"></div>
+""")
+    documents = {}
     for mode in ("strip", "shader"):
-        environment = smoke_environment(Path(temporary) / f"{name}-{mode}")
-        environment.update(VOX_DISABLE_PORTABLE_SVG_MASK="0", VOX_PORTABLE_SVG_MASK_DIAGNOSTICS="1",
-                           VOX_DISABLE_SVG_MASK_RAMP=str(int(mode == "shader")))
-        screenshot = artifacts / f"{name}-{mode}.png"
-        screenshot.unlink(missing_ok=True)
-        log = run_windowed([str(binary), "--window-width=1024", "--window-height=720",
-                            "--screenshot-viewport-height=600", f"--screenshot={screenshot}",
-                            "--disable-javascript", str(fixture)], env=environment,
-                           log_path=artifacts / f"{name}-{mode}.log")
-        assert f"VOX_SVG_MASK luminance={str(luminance).lower()} operations=1 paths=1" in log, log
-        observed = set(re.findall(r"^VOX_SVG_MASK_RAMP .* vertical=(true|false)$", log, re.MULTILINE))
-        assert observed == (axes if mode == "strip" else set()), log
-        width, height, channels, rows = rendered_png_rows(screenshot.read_bytes())
-        assert width >= 640
-        marker = next((y for y in range(27, min(height, 160))
-                       if rows[y][500 * channels:500 * channels + 3] == b"\xff\x88\x00"), None)
-        assert marker is not None, "Missing linear-mask fixture marker"
-        top = marker - 27
-        assert height >= top + 600
-        documents.append([row[:640 * channels] for row in rows[top:top + 600]])
-    assert documents[0] == documents[1], f"Shading one strip changed the X11 pixels for {name}"
-    print(f"PASS: {name} matches the full shader pixel for pixel", flush=True)
+        for scroll in (0, 42):
+            label = f"{name}-{mode}-{scroll}"
+            environment = smoke_environment(Path(temporary) / label)
+            environment.update(VOX_DISABLE_PORTABLE_SVG_MASK="0", VOX_PORTABLE_SVG_MASK_DIAGNOSTICS="1",
+                               VOX_DISABLE_SVG_MASK_RAMP=str(int(mode == "shader")))
+            screenshot = artifacts / f"{label}.png"
+            screenshot.unlink(missing_ok=True)
+            log = run_windowed([str(binary), "--window-width=1024", "--window-height=720",
+                                "--screenshot-viewport-height=600", f"--screenshot-scroll-y={scroll}",
+                                f"--screenshot={screenshot}", "--disable-javascript", str(page)],
+                               env=environment, log_path=artifacts / f"{label}.log")
+            assert f"VOX_SVG_MASK luminance={str(luminance).lower()} operations=1 paths=1" in log, log
+            observed = set(re.findall(r"^VOX_SVG_MASK_RAMP .* vertical=(true|false)$", log, re.MULTILINE))
+            assert observed == (axes if mode == "strip" else set()), log
+            width, _, channels, rows = rendered_png_rows(screenshot.read_bytes())
+            assert width == 1024
+            marker = (width - 2) * channels
+            top = next((y for y, row in enumerate(rows) if row[marker:marker + 3] == b"\x09\x3c\x57"), None)
+            assert top is not None and len(rows) >= top + 600, "Missing document viewport"
+            orange = [y for y in range(180)
+                      if rows[top + y][500 * channels:500 * channels + 3] == b"\xff\x88\x00"]
+            assert orange == [y for y in range(180) if 27 <= (y + scroll) % 180 < 67], (label, orange)
+            documents[mode, scroll] = rows[top:top + 600]
+    for scroll in (0, 42):
+        assert documents["strip", scroll] == documents["shader", scroll], (name, scroll)
+    print(f"PASS: {name} matches the full shader pixel for pixel before and after scrolling", flush=True)
 
 
 def check_webgl_pixels(data):
