@@ -88,8 +88,29 @@ fn path_gradient(path &C.VoxGraphitePath) !canvas.Gradient {
 			p1:   canvas.Point{v[2], v[3]}
 		}
 	}
-	return canvas.Gradient.two_point_conical(canvas.Point{v[0], v[1]}, v[2], canvas.Point{v[3], v[4]},
-		v[5], base)!
+	start := canvas.Point{v[0], v[1]}
+	end := canvas.Point{v[3], v[4]}
+	return canvas.Gradient.two_point_conical(start, v[2], end, v[5], base) or {
+		if tile != .clamp || start.x != end.x || start.y != end.y || !(v[2] > 0 && v[5] > v[2])
+			|| !is_finite(v[5]) {
+			return err
+		}
+		// For a concentric pad gradient, map each stop to its distance from
+		// the common center divided by the outer radius. The radial shader's
+		// implicit first stop extends the first color inside the inner circle.
+		inner := v[2] / v[5]
+		for mut position in positions {
+			p := clamp_unit(position)
+			position = p + (1 - p) * inner
+		}
+		canvas.Gradient{
+			...base
+			kind:      .radial
+			p0:        start
+			radius:    v[5]
+			positions: positions
+		}
+	}
 }
 
 // path_from_segments decodes the browser's twelve-float SVG segments,

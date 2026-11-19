@@ -75,7 +75,33 @@ fn test_shared_svg_path_pixels() {
 	assert pixels[right..right + 4] == [u8(0), 255, 0, 255]
 	assert pixels[hole..hole + 4] == [u8(0), 0, 0, 0]
 
+	// The path and gradient matrices place the common center at (10.5, 7.5).
+	// Radii 3 and 11 leave a red inner disk, then interpolate towards green.
+	path.gradient = 2
+	path.gradient_points = [f32(4.5), 4.5, 3, 4.5, 4.5, 11]!
+	path.gradient_matrix = [f32(1), 0, 2, 0, 1, 1, 0, 0, 1]!
+	assert draw_path_with_context(mut ctx, pixels.data, width, height, pitch, 0, &path, false) == 1
+	inner := 7 * pitch + 10 * 4
+	middle := 7 * pitch + 17 * 4
+	outer := 7 * pitch + 23 * 4
+	assert pixels[inner..inner + 4] == [u8(0), 0, 255, 255]
+	assert pixels[middle] == 0 && pixels[middle + 3] == 255
+	assert pixels[middle + 1] in [u8(127), 128] && pixels[middle + 2] in [u8(127), 128]
+	assert pixels[outer..outer + 4] == [u8(0), 255, 0, 255]
+	assert pixels[hole..hole + 4] == [u8(0), 0, 0, 0]
+
+	path.stroke = 1
+	path.stroke_width = 2
+	assert draw_path_with_context(mut ctx, pixels.data, width, height, pitch, 0, &path, false) == 1
+	assert pixels[inner..inner + 4] == [u8(0), 0, 0, 0]
+	stroke := 4 * pitch + 10 * 4
+	assert pixels[stroke..stroke + 4] == [u8(0), 0, 255, 255]
+
 	before := pixels.clone()
+	path.tile_mode = 1
+	assert draw_path_with_context(mut ctx, pixels.data, width, height, pitch, 1, &path, false) == 0
+	assert pixels == before
+	path.tile_mode = 0
 	path.linear_color_space = 1
 	assert draw_path_with_context(mut ctx, pixels.data, width, height, pitch, 1, &path, false) == 0
 	assert pixels == before

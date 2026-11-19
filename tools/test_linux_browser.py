@@ -339,13 +339,16 @@ def check_gg_svg_gradient_fills(binary, artifacts, temporary):
 <script>
 let frames = 0;
 function editGradients() {
-    if (++frames < 12) {
+    if (++frames < 24) {
+        if (frames === 12) {
+            document.getElementById('endpoint').setAttribute('stop-color', '#00ff00');
+            document.getElementById('radial').setAttribute('gradientTransform', 'translate(12)');
+            document.getElementById('translucent').setAttribute('fill-opacity', '.5');
+        }
         requestAnimationFrame(editGradients);
         return;
     }
-    document.getElementById('endpoint').setAttribute('stop-color', '#00ff00');
-    document.getElementById('radial').setAttribute('gradientTransform', 'translate(12)');
-    document.getElementById('translucent').setAttribute('fill-opacity', '.5');
+    document.getElementById('radial').setAttribute('fr', '12');
     document.body.setAttribute('data-gradient-ready', '1');
 }
 requestAnimationFrame(editGradients);
@@ -371,12 +374,12 @@ requestAnimationFrame(editGradients);
         assert any("cache=hit bounds=hit" in line for line in gradients) == (mode == "cached"), log
         assert any("draw=84x35 cache=miss" in line for line in gradients), log
         assert not any("crop=hit" in line for line in gradients), log
-        for size, kind in (("100x30", 1), ("74x40", 2), ("100x40", 1)):
+        for size, kind, variants in (("100x30", 1, 2), ("74x40", 2, 3), ("100x40", 1, 2)):
             misses = [line for line in gradients if f"draw={size} cache=miss" in line
                       and line.endswith(f" gradient={kind}")]
-            assert len(misses) >= 2, log
+            assert len(misses) >= variants, log
             if mode == "cached":
-                assert len(misses) == 2 and "bounds=hit" in misses[1], log
+                assert len(misses) == variants and all("bounds=hit" in line for line in misses[1:]), log
 
         _, height, channels, rows = rendered_png_rows(screenshot.read_bytes())
 
@@ -389,7 +392,8 @@ requestAnimationFrame(editGradients);
         samples = [
             (10, 26, (0, 0, 0)), (13, 26, (251, 4, 0)),  # fill over the inside half of the stroke
             (52, 26, (255, 255, 255)), (100, 26, (29, 226, 0)),  # hole and changed stop
-            (178, 28, (248, 251, 253)), (144, 28, (32, 113, 202)),  # transformed radial
+            (178, 28, (255, 255, 255)), (189, 28, (255, 255, 255)),  # inside the focal circle
+            (196, 28, (134, 178, 226)), (144, 28, (32, 113, 202)),  # transformed radial ramp and pad
             (13, 66, (255, 64, 0)), (35, 66, (255, 64, 0)),  # repeat
             (130, 66, (134, 134, 134)), (149, 66, (134, 134, 134)),  # reflect
             (52, 120, (200, 209, 242)),  # single stop with nested paint alpha
