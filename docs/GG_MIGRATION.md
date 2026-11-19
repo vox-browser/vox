@@ -1,5 +1,51 @@
 # Migrating from Skia to vlib/gg
 
+## Storing geometric SVG clip coverage in one byte per pixel
+
+Portable geometric SVG clips composite path components into a packed
+alpha plane. The coverage buffer uses one byte per pixel instead of four.
+The scan converter and the existing platform-specific rounding at
+intersections and antialiased edges are preserved.
+
+The focused macOS `-prod -gc none` checks passed for both Canvas2D rounding
+rules, including all 65,536 alpha and coverage pairs, overlapping
+fractional paths, an even-odd hole, and invalid bounds. The same tests
+passed with ASan and UBSan. The pinned Skia differential suite passed with
+the default GC and 20,000 randomized path fills.
+
+Fresh Linux aarch64 builds used V `5a39a4d` and identical single-unit
+Clang `-O0` flags. Control and candidate executable SHA-256 values were
+`3ee34dbae0d5ca40e14cc687b49c4744890f995b98eb45c886b60875cddaae48`
+and `857f82696d62bc7d36adbe0bf517fd1ad4c0189e6bdb9ba69a5d058594cde9f0`.
+The `svg-clip-groups.html` capture added a fixed marker to identify the
+800 × 600 document area inside the 800 × 712 window. Both builds matched
+every document pixel at scroll offsets 0 and 42 CSS pixels. Diagnostics
+confirmed that the curved union and fractional clip used the coverage
+buffer. The decoded RGBA hashes were
+`597ce7150fc24f0fe99910a49967f8556bd5b93b498c17aa9fae214846ac1b8e` and
+`4cd18ce24fbe9af912d9c68435a8d253f2161c6311470f3a0e7c55e1ec88b506`.
+
+The replay benchmark used the original fixture with SHA-256
+`1d8db436b21f32f96dc5496db99be7867e73508823d056f5dc8939ace2c06a31`.
+Each fresh process used a private profile and cache, a 1024 × 712 Xvfb
+window, a one-second settle period, and Mesa software rendering.
+GPU SVG replay and SVG texture reuse were disabled. Both alternating
+pairs processed 180 synthetic callbacks with identical paint command
+counts and scroll changes between 0 and 1248 CSS pixels. Hash checks for
+the inputs and the browser and memory-guard exits passed. Guest
+one-minute load ranged from 1.25 to 1.41 on four vCPUs.
+
+| Pair | Replay median before / after, ms | Replay p95 and maximum before / after, ms | Median allocated KiB before / after |
+| --- | ---: | ---: | ---: |
+| 1 | 2.622 / 2.429 | 5.070, 23.477 / 5.180, 22.617 | 1774 / 1653.5 |
+| 2 | 2.617 / 2.405 | 5.110, 22.059 / 2.915, 21.923 | 1755.5 / 1650 |
+
+Both trials had lower median replay time and allocation. The first pair
+had a slightly higher p95. The timings cover synthetic raster and replay
+callbacks. The 20 Linux browser checks and all 17 Linux GG SVG checks
+passed. Windows amd64 source checks passed for D3D11 and OpenGL.
+Native scrolling and Windows runtime performance remain unmeasured.
+
 ## Converting portable SVG rasters in place before upload
 
 CPU SVG fills, strokes, and composited groups now convert their owned
