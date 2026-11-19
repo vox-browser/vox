@@ -1,5 +1,60 @@
 # Migrating from Skia to vlib/gg
 
+## Converting CPU SVG upload pixels faster
+
+The shared CPU raster readback copies opaque RGB bytes directly and writes zero
+RGB for transparent pixels. It converts partial alpha with the original f32
+operations and rounds the saturated byte to nearest even. The scan uses the
+source and destination bounds checked by `read_pixels` before it starts,
+including for overlapping views.
+
+The focused readback test passed on macOS and Linux, covering every channel
+and alpha byte pair, padded rows, and overlapping views. The pinned Skia
+oracle matched 76 exhaustive and 20,000 randomized readback cases on macOS,
+including in the `-prod -gc none` run that reached the 12 GiB guard in
+subsequent raster tests. The full pinned suite completed with the default GC.
+All 16 Linux GG SVG window checks and the Windows amd64 OpenGL source check
+passed.
+
+A Linux Clang `-O3` readback-only benchmark measured the 200 × 112 tile with
+warm, preallocated buffers. Median times for opaque, mixed, and translucent
+tiles went from 0.322 / 0.338 / 0.337 ms to 0.020 / 0.056 / 0.119 ms. At
+1051 × 533, where the row workers participate, medians went from
+2.166 / 2.301 / 2.332 ms to 0.251 / 1.611 / 1.616 ms. Each value is the
+median of four 61-call medians from two runs per build. Output hashes matched
+for each input, both executable hashes held, and the benchmark and guard
+exited zero.
+
+The Linux browser cohort used V `5a39a4d`, single-unit Clang `-O0`, and
+software OpenGL with `LP_NUM_THREADS=1` under Xvfb. The control and candidate
+executable SHA-256 values were
+`a8a5c6bb84d78a7993f8a4dfcc99656474652fa7b4b10452a45b46ac3921ec58`
+and `ec8ccd43ce7e5d2127c027b861fb58f452859382c62947b85f08cb4567b749ae`.
+The generated C differed in the readback functions, build timestamps, and
+a compiler-generated closure name. Both builds used identical C flags.
+Each trial ran a fresh process with private browser state and an 800 × 712
+window. The fixture and wheel schedule were the same as the
+[gradient clip reuse cohort](#retaining-exact-cpu-svg-gradient-clips).
+Viewport reuse was enabled on both builds. The scroll fixture SHA-256 was
+`4642727427b15f988ef7108628726a153dad2abaa0d6e1a9acaa4929fa0ac3d0`.
+Guest one-minute load ranged from 1.52 to 2.00 across the eight timed trials
+on four vCPUs.
+
+| Renderer and pair | First moving callback, control / candidate, ms | Revisit median, control / candidate, ms |
+| --- | ---: | ---: |
+| CPU fallback 1 | 13.975 / 10.067 | 1.075 / 1.227 |
+| CPU fallback 2 | 16.601 / 10.744 | 1.254 / 1.216 |
+| GG 1 | 8.159 / 7.844 | 2.883 / 1.143 |
+| GG 2 | 7.641 / 7.021 | 1.229 / 1.131 |
+
+Both CPU builds rasterized the first clipped extent and reused the
+alternate texture on 15 later fills. Full and clipped document captures
+were pixel-exact between builds on each renderer. All measured browser
+processes and the runtime guard exited zero. The first CPU clip callback
+took 28% and 35% less time in the two pairs. Revisit medians moved in both
+directions. These synthetic callback timings leave native scroll
+publication, hardware GPU performance, and Windows runtime unverified.
+
 ## Retaining exact CPU SVG gradient clips
 
 `VOX_GG_SVG_VIEWPORT_REUSE=1` can retain the previous CPU gradient fill
