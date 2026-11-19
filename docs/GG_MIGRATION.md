@@ -1,5 +1,62 @@
 # Migrating from Skia to vlib/gg
 
+## CPU fallback for SVG gradient strokes
+
+Portable SVG replay tries GG first for gradient strokes, then uses the CPU
+Canvas stroker when GG declines a supported sRGB gradient on Linux or in
+opted-in Windows builds. The CPU route shares the fill gradient descriptors,
+clips the stroke bounds to the viewport, and preserves paint order, opacity,
+caps, joins, miter limits, and dashes. For non-scaling strokes it transforms
+the centerline and the gradient into surface space while keeping the requested
+stroke width in device pixels.
+
+The Linux fixture covered both paint orders, a repeating dashed stroke with
+edited opacity, a transformed non-scaling stroke, live gradient-stop edits,
+and text outlines. The control showed the underlying blue fill at the first
+stroke sample with GG disabled. The candidate passed the color samples in all
+four modes. Its GG cached and uncached captures matched each other exactly,
+as did its GG-disabled and Mesa OpenGL 4.2 captures. The Windows amd64 OpenGL
+source check and the full Linux GG SVG window suite passed.
+
+The Linux comparison used the static stroke fixture and a second fixture
+with six previously supported radial fills. Document pixels matched exactly
+between builds on both fixtures. Both builds used V `5a39a4d`, single-unit
+Clang and `-O0`. The control and candidate executable SHA-256 values were
+`d70bc5e8a1142e782139fbf44a956e93b79b3570083c6f2def03ef72c8beeb73`
+and `d49cbafa734689d8580b7548d5df9774901b03395ffb1ead2ea00867058a3cf5`.
+The stroke fixture, fill fixture and shader directory SHA-256 values were
+`0aa4184832b9e3a900f0f8484933ed48e9104d5cd60bb4609aea082d1be41f4e`,
+`31fa083ecdeb687010ac4d67fd9d1aca933bee20f0d77c21b97ea640e7b31e26`
+and `970ce36acbf7ea10b948d0a063d6315d587aadf8a8d84784d644b17ab6ffc48e`.
+
+Each synthetic trial used Mesa software OpenGL under Xvfb, a fresh process
+and private browser state, an 800 × 628 document viewport, a one-second
+settle and 32 self-paced 42-pixel scroll steps. Scroll positions and
+paint-command counts matched. The comparison used builds from a shared
+checkout with other changes in progress.
+
+| Workload and pair | Median control / candidate, ms | p95, ms | Maximum, ms |
+| --- | ---: | ---: | ---: |
+| Cached strokes 1 | 2.119 / 2.1285 | 2.588 / 2.528 | 5.234 / 5.756 |
+| Cached strokes 2 | 1.963 / 2.111 | 2.557 / 5.764 | 6.290 / 7.457 |
+| Rerasterized strokes 1 | 5.8305 / 5.9695 | 7.519 / 7.798 | 8.503 / 8.424 |
+| Rerasterized strokes 2 | 5.859 / 5.6065 | 7.828 / 6.786 | 8.405 / 7.417 |
+| Cached fills 1 | 5.081 / 5.1815 | 6.607 / 6.764 | 8.688 / 7.544 |
+| Cached fills 2 | 5.514 / 5.145 | 7.064 / 6.024 | 9.148 / 6.173 |
+| Rerasterized fills 1 | 5.9935 / 5.8015 | 8.141 / 7.203 | 8.431 / 8.634 |
+| Rerasterized fills 2 | 5.519 / 5.541 | 6.890 / 6.838 | 10.117 / 7.347 |
+
+Median changes ranged from 6.7% faster to 7.5% slower. Both of the slowest
+callbacks in the second cached candidate stroke trial included a garbage
+collection. Its paired control and both trials in the first cached pair
+recorded one collection apiece. Diagnostics counted 155 gradient stroke
+texture hits and 186 gradient fill hits, with the same counts of GG
+rasterizations when caching was disabled. One-minute guest load ranged
+from 0.94 to 2.08 on four virtual CPUs. Both timing drivers and memory guards
+exited zero. These trials measure the existing GG route on software OpenGL.
+CPU fallback timing, hardware performance, and Windows runtime remain
+unverified.
+
 ## CPU fallback for SVG repeat and reflect fills
 
 The portable CPU fallback handles sRGB `repeat` and `reflect` fills for
