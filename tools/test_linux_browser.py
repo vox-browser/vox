@@ -2176,6 +2176,42 @@ def check_svg_mask_patterns_browser(binary, artifacts, temporary):
     print("PASS: SVG pattern mask fills preserve tile placement, luminance, opacity and live edits", flush=True)
 
 
+def check_svg_mask_pattern_strokes_browser(binary, artifacts, temporary):
+    fixture = Path(__file__).resolve().parents[1] / "Tests/Browser/Native/svg-mask-pattern-strokes.html"
+    documents = []
+    for mode in ("cpu", "gg", "uncached"):
+        label = f"{fixture.stem}-{mode}"
+        screenshot = artifacts / f"{label}.png"
+        screenshot.unlink(missing_ok=True)
+        environment = smoke_environment(Path(temporary) / label)
+        environment.update(VOX_GG_SVG=str(int(mode == "gg")), VOX_GG_SVG_DIAGNOSTICS="1",
+                           VOX_DISABLE_GG_SVG_CACHE=str(int(mode == "uncached")),
+                           VOX_DISABLE_PORTABLE_SVG_MASK="0", VOX_PORTABLE_SVG_MASK_DIAGNOSTICS="1",
+                           VOX_SVG_MASK_ROW_BANDS="1",
+                           VOX_CAPTURE_READY_SELECTOR="body[data-mask-pattern-stroke-ready]")
+        log = run_windowed([str(binary), "--enable-javascript", "--window-width=800", "--window-height=600",
+                            "--screenshot-viewport-height=600", f"--screenshot={screenshot}", str(fixture)],
+                           env=environment, log_path=artifacts / f"{label}.log")
+        _, height, channels, rows = rendered_png_rows(screenshot.read_bytes())
+        marker = next(y for y in range(150) if rows[y][4 * channels:4 * channels + 3] == bytes.fromhex("34b786"))
+        top = marker + 8
+        samples = (
+            (10, 44, 255), (12, 44, 191), (18, 44, 191), (23, 44, 255), (33, 44, 191), (33, 50, 255),
+            (210, 27, 228), (210, 32, 101), (210, 48, 0), (219, 27, 210), (226, 27, 255),
+            (314, 27, 228), (314, 32, 0), (314, 22, 255),
+        )
+        for x, y, expected in samples:
+            actual = tuple(rows[top + y][x * channels:x * channels + 3])
+            assert all(abs(a - b) <= 2 for a, b in zip(actual, (expected, expected, 255))), (label, x, y, actual)
+        assert rows[top + 30][410 * channels:410 * channels + 3] == bytes.fromhex("ff8800")
+        assert log.count("VOX_SVG_MASK luminance=false operations=3 paths=1 ") >= 2, log
+        assert "VOX_SVG_MASK luminance=true operations=2 paths=1 " in log, log
+        assert ("VOX_SVG_GROUP cache=hit " in log) == (mode != "uncached"), log
+        documents.append(rows[marker:height - 24])
+    assert documents[0] == documents[1] == documents[2], "SVG patterned stroke masks changed document pixels"
+    print("PASS: SVG pattern strokes preserve caps, alpha, luminance, paint order and live tile edits", flush=True)
+
+
 def check_svg_mask_gradient_spread_browser(binary, artifacts, temporary):
     fixture = Path(__file__).resolve().parents[1] / "Tests/Browser/Native/svg-mask-gradient-spread.html"
     documents = []
@@ -2648,6 +2684,7 @@ def main():
         check_svg_mask_gradient_strokes_browser(binary, artifacts, temporary)
         check_svg_mask_images_browser(binary, artifacts, temporary)
         check_svg_mask_patterns_browser(binary, artifacts, temporary)
+        check_svg_mask_pattern_strokes_browser(binary, artifacts, temporary)
         check_svg_mask_gradient_browser(binary, artifacts, temporary)
         check_svg_mask_gradient_spread_browser(binary, artifacts, temporary)
         check_svg_mask_strips_browser(binary, artifacts, temporary, "svg-vertical-alpha-masks",

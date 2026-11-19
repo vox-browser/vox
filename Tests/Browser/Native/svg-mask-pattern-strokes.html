@@ -1,0 +1,51 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Pattern strokes inside SVG masks</title>
+<style>
+body { margin: 0; background: white; }
+header { width: 8px; height: 8px; background: #34b786; }
+svg { display: block; }
+image { image-rendering: pixelated; }
+</style>
+<header></header>
+<svg width="448" height="110" viewBox="0 0 448 110">
+  <defs>
+    <pattern id="vector" patternUnits="userSpaceOnUse" x="8" y="8" width="20" height="18"
+             patternTransform="translate(3 0)">
+      <g id="stroke-tile-opacity" opacity=".75">
+        <rect width="9" height="18" fill="black"/>
+        <rect x="6" width="6" height="18" fill="red"/>
+      </g>
+    </pattern>
+    <pattern id="bitmap" patternUnits="userSpaceOnUse" x="0" y="26" width="32" height="16">
+      <image width="32" height="16"
+             href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAQAAAACCAYAAAB/qH1jAAAAG0lEQVR4nGP4z8DwHwgbGIDgPxCAaRATKtAAAN7QDfSnnA7mAAAAAElFTkSuQmCC"/>
+    </pattern>
+    <mask id="alpha" mask-type="alpha" maskUnits="userSpaceOnUse" x="8" y="8" width="148" height="90">
+      <g opacity=".5">
+        <path d="M16 44H144" fill="none" stroke="url(#vector)" stroke-width="10" stroke-linecap="square"/>
+      </g>
+    </mask>
+    <mask id="luminance" maskUnits="userSpaceOnUse" x="172" y="8" width="206" height="90">
+      <rect x="8" y="30" width="68" height="46" transform="translate(176 0)" fill="white"
+            stroke="url(#bitmap)" stroke-width="12" stroke-opacity=".5"/>
+      <rect x="8" y="30" width="68" height="46" transform="translate(280 0)" fill="white"
+            stroke="url(#bitmap)" stroke-width="12" stroke-opacity=".5" paint-order="stroke fill"/>
+    </mask>
+  </defs>
+  <path fill="blue" mask="url(#alpha)" d="M0 0H160V104H0Z"/>
+  <path fill="blue" mask="url(#luminance)" d="M168 0H382V104H168Z"/>
+  <path fill="#f80" d="M398 22h34v40h-34Z"/>
+</svg>
+<script>
+let frame = 0;
+function editStrokePattern() {
+    if (++frame === 12)
+        document.getElementById('stroke-tile-opacity').setAttribute('opacity', '.5');
+    if (frame === 24)
+        document.body.setAttribute('data-mask-pattern-stroke-ready', '');
+    else
+        requestAnimationFrame(editStrokePattern);
+}
+requestAnimationFrame(editStrokePattern);
+</script>

@@ -56,8 +56,11 @@ fn portable_svg_content_mask_supported(mask &layout.PaintClip, portable_group bo
 fn portable_svg_mask_stroke_supported(operation &layout.PaintMaskOperation, luminance bool) bool {
 	width := f32(operation.stroke_width)
 	if !(width > 0) || !math.is_finite(f64(width))
-		|| !math.is_finite(f64(f32(operation.stroke_miterlimit))) || operation.stroke_pattern != none {
+		|| !math.is_finite(f64(f32(operation.stroke_miterlimit))) {
 		return false
+	}
+	if pattern := operation.stroke_pattern {
+		return portable_svg_mask_pattern_supported(pattern)
 	}
 	if linear := operation.stroke_linear_gradient {
 		return portable_svg_raster_linear_supported(&linear, luminance)
@@ -578,27 +581,36 @@ fn (mut app BrowserApp) raster_svg_mask_path(mut layer PortableSVGMaskLayer, wid
 		return true
 	}
 	path := cpuraster.canvas_path(operation.path_data, operation.path_even_odd)
-	if operation.has_stroke && operation.stroke_first
-		&& !app.raster_svg_mask_stroke(mut layer, width, pitch, operation, path, matrix, luminance) {
-		return none
+	if operation.has_stroke && operation.stroke_first {
+		available := app.raster_svg_mask_stroke(mut layer, width, pitch, operation, path, matrix,
+			luminance, mut budget)?
+		cacheable = cacheable && available
 	}
 	if fill >> 24 != 0 && !cpuraster.fill_canvas_mask_path(mut layer.pixels, width, layer.rows.top,
 		layer.rows.height(), pitch, path, matrix, fill, style, opacity) {
 		return none
 	}
-	if operation.has_stroke && !operation.stroke_first
-		&& !app.raster_svg_mask_stroke(mut layer, width, pitch, operation, path, matrix, luminance) {
-		return none
+	if operation.has_stroke && !operation.stroke_first {
+		available := app.raster_svg_mask_stroke(mut layer, width, pitch, operation, path, matrix,
+			luminance, mut budget)?
+		cacheable = cacheable && available
 	}
 	return cacheable
 }
 
 fn (mut app BrowserApp) raster_svg_mask_stroke(mut layer PortableSVGMaskLayer, width int, pitch int,
-	operation &layout.PaintMaskOperation, path cpuraster.Path, matrix [6]f32, luminance bool) bool {
+	operation &layout.PaintMaskOperation, path cpuraster.Path, matrix [6]f32, luminance bool,
+	mut budget PortableSVGMaskTileBudget) ?bool {
 	mut argb := u32(0xff000000)
 	mut opacity := f32(operation.stroke_opacity)
 	mut style := ?cpuraster.CanvasPaintStyle(none)
-	if linear := operation.stroke_linear_gradient {
+	mut cacheable := true
+	if pattern := operation.stroke_pattern {
+		if opacity <= 0 { return true }
+		tile := app.raster_svg_mask_pattern(pattern, matrix, luminance, mut budget)?
+		style = cpuraster.CanvasPaintStyle(tile.pattern)
+		cacheable = tile.cacheable
+	} else if linear := operation.stroke_linear_gradient {
 		style = cpuraster.CanvasPaintStyle(portable_svg_raster_linear_gradient(&linear, luminance))
 	} else if radial := operation.stroke_radial_gradient {
 		style = cpuraster.CanvasPaintStyle(portable_svg_raster_radial_gradient(&radial, luminance))
@@ -610,11 +622,14 @@ fn (mut app BrowserApp) raster_svg_mask_stroke(mut layer PortableSVGMaskLayer, w
 	}
 	mut local_matrix := matrix
 	local_matrix[5] -= f32(layer.rows.top)
-	return cpuraster.stroke_canvas_path(mut layer.pixels, width, layer.rows.height(), pitch, 2, path,
+	if !cpuraster.stroke_canvas_path(mut layer.pixels, width, layer.rows.height(), pitch, 2, path,
 		local_matrix, argb, style, opacity, .src_over, 0,
 		f32(operation.stroke_width), portable_svg_stroke_cap(operation.stroke_linecap),
 		portable_svg_stroke_join(operation.stroke_linejoin),
-		f32(math.max(1, operation.stroke_miterlimit)), [], 0, [], none)
+		f32(math.max(1, operation.stroke_miterlimit)), [], 0, [], none) {
+		return none
+	}
+	return cacheable
 }
 
 @[inline]
