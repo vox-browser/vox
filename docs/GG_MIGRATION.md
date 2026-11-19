@@ -1,5 +1,59 @@
 # Migrating from Skia to vlib/gg
 
+## Sharing OpenGL gradient shaders across viewport clips
+
+When the rectangular hole in an SVG gradient rectangle moves out of view,
+the opt-in OpenGL path keeps the same shader and blend state. The
+ordinary rectangle and viewport-filling draws use full coverage when the
+clip is absent. The viewport fixture now ends with the holes offscreen.
+Baseline and candidate document pixels matched exactly. The full Linux GG
+SVG window suite and the Windows amd64 source check passed.
+
+A cold OpenGL trace found two program links and two roughly 84 ms first
+draws when the holes moved out of view. An initial fix covered the
+rectangle draw, leaving the viewport-filling draw to select a separate
+shader. Its three candidate times for that callback were 243, 308 and
+208 ms. The final diagnostic submitted eight shader sources before the
+first measured callback completed in both builds. It submitted four sources
+during the third callback in the baseline and zero with the fix. The next
+29 callbacks recorded 232 exact gradient cache hits in each build.
+
+Both builds used V `5a39a4d` and single-unit Clang `-O0`. The baseline
+SHA-256 was `f00fee78c624da1f24e9fd480718063667b22d491d5727e44da9d68b366957db`
+and the candidate SHA-256 was
+`6fd17e6319c21f92f6049eca3e57d9df8a414323c20c45d374f78caa201afa9b`.
+The 12-row fixture SHA-256 was
+`a9fe42f2a7f42265436ffea8a2af7eb03675aab90c076beda33508f28a336d02`.
+Three alternating pairs used Mesa software OpenGL under Xvfb with an
+800 × 712 window, a one-second settle, 32 synthetic 42-pixel scroll
+steps, and fresh processes, profiles, browser caches and shader caches.
+Scroll traces and paint-command counts matched. The one-minute guest
+load ranged from 1.20 to 1.34 on four virtual CPUs. The benchmark,
+browser and memory guard exited zero.
+
+| Pair | Third callback baseline / candidate, ms | Median, ms | p95, ms | Maximum, ms |
+| ---: | ---: | ---: | ---: | ---: |
+| 1 | 199.210 / 6.477 | 2.2165 / 2.343 | 6.405 / 6.807 | 199.210 / 7.519 |
+| 2 | 200.487 / 5.075 | 2.1375 / 2.351 | 7.086 / 6.120 | 200.487 / 7.998 |
+| 3 | 204.138 / 3.158 | 1.8045 / 2.4275 | 6.381 / 6.706 | 204.138 / 7.544 |
+
+The cold clip transition became shorter in each pair. Median callback
+time increased by 6–35%, and the p95 rose in two pairs.
+
+Three more pairs retained each build's Mesa shader cache from its first
+cold trial and used fresh browser state. One-minute guest load ranged
+from 1.15 to 2.02. The benchmark, browser and memory guard exited zero.
+
+| Pair | Third callback baseline / candidate, ms | Median, ms | p95, ms | Maximum, ms |
+| ---: | ---: | ---: | ---: | ---: |
+| 1 | 33.254 / 3.701 | 1.6895 / 2.3865 | 8.694 / 6.165 | 33.254 / 7.734 |
+| 2 | 36.471 / 5.623 | 1.611 / 2.270 | 6.745 / 6.394 | 36.471 / 8.155 |
+| 3 | 26.026 / 3.963 | 2.2555 / 2.114 | 7.461 / 7.533 | 26.026 / 12.044 |
+
+The warm clip transition also became shorter in each pair. The median
+increased in two pairs and fell in one. These timings cover synthetic
+draw callbacks. Hardware performance remains unverified.
+
 ## Retaining exact SVG gradient textures at viewport edges
 
 With `VOX_GG_SVG=1` and `VOX_GG_SVG_VIEWPORT_REUSE=1`, OpenGL keeps unused
