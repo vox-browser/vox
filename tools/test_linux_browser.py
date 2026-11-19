@@ -334,6 +334,7 @@ def check_gg_svg_browser(binary, artifacts, temporary):
     check_gg_svg_gradient_viewport(binary, artifacts, temporary)
     check_gg_svg_radial_spread(binary, artifacts, temporary)
     check_gg_svg_repeat_point_focus(binary, artifacts, temporary)
+    check_gg_svg_texture_pressure(binary, artifacts, temporary)
 
 
 def check_gg_svg_radial_spread(binary, artifacts, temporary):
@@ -449,6 +450,59 @@ requestAnimationFrame(changeStop);
         documents.append(rows[marker:height - 24])
     assert documents[0] == documents[1], "The cached repeating focus changed document pixels"
     print("PASS: GG averages repeating SVG point focuses and follows live stop edits", flush=True)
+
+
+def check_gg_svg_texture_pressure(binary, artifacts, temporary):
+    page = Path(temporary) / "svg-gg-texture-pressure.html"
+    # The first 20 draws need distinct textures. The later 44 repeat the first
+    # path at other integer positions, and the overlay tests submission order.
+    placements = [(8 + i % 10 * 64, 8 + i // 10 * 32) for i in range(64)]
+    shapes = []
+    for i, (x, y) in enumerate(placements):
+        width = 20 + i if i < 20 else 20
+        shapes.append(f'<path d="M0 0H{width}V14H0Z" transform="translate({x} {y})" fill="url(#ramp)"/>')
+    x, y = placements[19]
+    shapes.append(f'<path d="M0 0H20V14H0Z" transform="translate({x} {y})" fill="#00ff00" fill-opacity=".5"/>')
+    page.write_text("""<!doctype html><meta charset="utf-8"><title>GG SVG texture pressure</title>
+<style>body { margin: 0; background: white } header { width: 16px; height: 8px; background: #34b786 }
+svg { display: block }</style>
+<header></header><svg width="648" height="232"><defs>
+<linearGradient id="ramp" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="16" y2="0">
+<stop offset="0" stop-color="#e03010"/><stop offset=".5" stop-color="#e03010"/>
+<stop offset=".5" stop-color="#2040e0"/><stop offset="1" stop-color="#2040e0"/>
+</linearGradient></defs>
+""" + "\n".join(shapes) + "</svg>\n")
+
+    documents = []
+    for label, disable_cache in (("cached", "0"), ("uncached", "1")):
+        screenshot = artifacts / f"svg-gg-texture-pressure-{label}.png"
+        screenshot.unlink(missing_ok=True)
+        environment = smoke_environment(Path(temporary) / screenshot.stem)
+        environment.pop("MESA_GL_VERSION_OVERRIDE", None)
+        environment.update(VOX_GG_SVG="1", VOX_GG_SVG_DIAGNOSTICS="1",
+                           VOX_DISABLE_GG_SVG_CACHE=disable_cache)
+        log = run_windowed([str(binary), "--window-width=800", "--window-height=600",
+                            "--screenshot-viewport-height=600", f"--screenshot={screenshot}", str(page)],
+                           env=environment, log_path=artifacts / f"{screenshot.stem}.log")
+        draws = [line for line in log.splitlines() if line.endswith(" gradient=1")]
+        assert sum("draw=39x14 cache=miss" in line and " transient=1" in line
+                   for line in draws) >= 2, log
+        assert any("draw=20x14 cache=hit" in line for line in draws) == (label == "cached"), log
+        if label == "uncached":
+            assert any("draw=20x14 cache=miss" in line and " transient=1" in line for line in draws), log
+
+        _, height, channels, rows = rendered_png_rows(screenshot.read_bytes())
+        marker = next(y for y, row in enumerate(rows[:150])
+                      if row[4 * channels:4 * channels + 3] == b"\x34\xb7\x86")
+        for i, (x, y) in enumerate(placements):
+            row = rows[marker + 8 + y + 6]
+            expected = ((112, 152, 8), (16, 160, 112)) if i == 19 else ((224, 48, 16), (32, 64, 224))
+            for dx, color in zip((3, 12), expected):
+                pixel = row[(x + dx) * channels:(x + dx) * channels + 3]
+                assert all(abs(a - b) <= 2 for a, b in zip(pixel, color)), (i, dx, pixel, color)
+        documents.append(rows[marker:height - 24])
+    assert documents[0] == documents[1], "Transient textures changed SVG paint order or pixels"
+    print("PASS: GG renders 64 SVG gradient draws and a translucent overlay under texture pressure", flush=True)
 
 
 def check_gg_svg_gradient_viewport(binary, artifacts, temporary):

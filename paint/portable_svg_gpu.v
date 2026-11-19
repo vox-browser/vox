@@ -18,8 +18,9 @@ $if vox_gg_svg ? {
 	const portable_svg_gpu_cache_control = os.getenv('VOX_DISABLE_GG_SVG_CACHE')
 	const disable_portable_svg_gpu_cache = portable_svg_gpu_cache_control == '1'
 	const portable_svg_gpu_viewport_reuse = os.getenv('VOX_GG_SVG_VIEWPORT_REUSE') == '1'
-	const portable_svg_gpu_image_limit = 8
-	const portable_svg_gpu_texture_slots = 2 * portable_svg_gpu_image_limit
+	const portable_svg_gpu_texture_slots = 16
+	// Leave room in the shared Sokol image pool for the rest of the browser.
+	const portable_svg_gpu_transient_slots = 64
 	const portable_svg_gpu_pixel_limit = 1024 * 1024
 	const portable_svg_gpu_cached_values = 128 * layout.compatibility_clip_path_segment_stride
 	const portable_svg_gpu_dash_intervals = 32
@@ -119,7 +120,7 @@ $if vox_gg_svg ? {
 	fn portable_gpu_svg_local_bounds(values []f32) (cpuraster.Rect, int) {
 		state := unsafe { portable_svg_gpu }
 		if disable_portable_svg_gpu_cache || portable_svg_gpu_cache_control == 'bounds'
-			|| state.canvas == unsafe { nil } || state.count == portable_svg_gpu_image_limit
+			|| state.canvas == unsafe { nil }
 			|| values.len > portable_svg_gpu_cached_values {
 			return cpuraster.Rect{}, -1
 		}
@@ -151,7 +152,8 @@ $if vox_gg_svg ? {
 		pipeline render.Pipeline
 		sampler  gfx.Sampler
 		textures [portable_svg_gpu_texture_slots]PortableSVGTexture
-		count    int
+		transient_images [portable_svg_gpu_transient_slots]gfx.Image
+		transient_count int
 		pixels   int
 	}
 
@@ -207,8 +209,15 @@ $if vox_gg_svg ? {
 			}
 			texture.used = false
 		}
-		state.count = 0
+		state.release_transient_images()
 		state.pixels = 0
+	}
+
+	fn (mut state PortableSVGGpu) release_transient_images() {
+		for index in 0 .. state.transient_count {
+			gfx.destroy_image(state.transient_images[index])
+		}
+		state.transient_count = 0
 	}
 
 	fn (mut state PortableSVGGpu) release(renderer &render.Context) {
@@ -218,6 +227,7 @@ $if vox_gg_svg ? {
 		for index in 0 .. portable_svg_gpu_texture_slots {
 			state.textures[index].release()
 		}
+		state.release_transient_images()
 		renderer.destroy_pipeline(state.pipeline)
 		gfx.destroy_sampler(state.sampler)
 		mut gpu := state.canvas
@@ -310,7 +320,7 @@ $if vox_gg_svg ? {
 			return false
 		}
 		state := unsafe { portable_svg_gpu }
-		if state.count == portable_svg_gpu_image_limit || (state.tried && state.canvas == unsafe { nil }) {
+		if state.tried && state.canvas == unsafe { nil } {
 			return false
 		}
 		width := f32(command.stroke_width)
@@ -368,9 +378,7 @@ $if vox_gg_svg ? {
 		matrix [6]f32, bounds painting.IntRect, color gg.Color, local_bounds cpuraster.Rect,
 		geometry_slot int, stroke PortableSVGStroke, gradient &PortableSVGGradientPaint) bool {
 		mut state := unsafe { portable_svg_gpu }
-		// Bound GPU memory and the number of pending passes for this replay.
-		if renderer == unsafe { nil } || state.count == portable_svg_gpu_image_limit
-			|| bounds.width > 1024 || bounds.height > 1024 {
+		if renderer == unsafe { nil } || bounds.width > 1024 || bounds.height > 1024 {
 			return false
 		}
 		remaining_pixels := portable_svg_gpu_pixel_limit - state.pixels
@@ -436,32 +444,43 @@ $if vox_gg_svg ? {
 		}
 		reused := matching >= 0
 		index := if reused { matching } else if vacant >= 0 { vacant } else { idle }
-		if index < 0 {
+		if index < 0 && state.transient_count == portable_svg_gpu_transient_slots {
 			return false
 		}
-		mut texture := &state.textures[index]
-		if !reused {
-			if texture.idle {
-				texture.release()
+		image := if reused {
+			state.textures[index].image
+		} else {
+			if index >= 0 && state.textures[index].idle {
+				state.textures[index].release()
 			}
-			texture.image = state.rasterize(data, &key, gradient) or { return false }
-			if cacheable {
-				texture.key = key
-				texture.local_bounds = local_bounds
-				unsafe {
-					vmemcpy(&texture.values[0], data.path_data.data, data.path_data.len * int(sizeof(f32)))
-					if stroke.dash_count != 0 {
-						vmemcpy(&texture.dashes[0], data.stroke_dasharray.data, stroke.dash_count * int(sizeof(f64)))
+			resolved := state.rasterize(data, &key, gradient) or { return false }
+			if index >= 0 {
+				mut texture := &state.textures[index]
+				texture.image = resolved
+				if cacheable {
+					texture.key = key
+					texture.local_bounds = local_bounds
+					unsafe {
+						vmemcpy(&texture.values[0], data.path_data.data, data.path_data.len * int(sizeof(f32)))
+						if stroke.dash_count != 0 {
+							vmemcpy(&texture.dashes[0], data.stroke_dasharray.data, stroke.dash_count * int(sizeof(f64)))
+						}
 					}
+					if key.gradient {
+						texture.store_gradient(gradient)
+					}
+					texture.length = data.path_data.len
 				}
-				if key.gradient {
-					texture.store_gradient(gradient)
-				}
-				texture.length = data.path_data.len
+			} else {
+				// The queued quad still needs this image through frame submission.
+				state.transient_images[state.transient_count] = resolved
+				state.transient_count++
 			}
+			resolved
 		}
-		texture.used = true
-		state.count++
+		if index >= 0 {
+			state.textures[index].used = true
+		}
 		// GG presents the texture in document order. Canvas uses top-down
 		// OpenGL texture coordinates and outputs premultiplied RGBA.
 		x := f32(bounds.x)
@@ -470,6 +489,7 @@ $if vox_gg_svg ? {
 		bottom := f32(bounds.y + bounds.height)
 		mut u0, mut v0, mut u1, mut v1 := f32(0), f32(0), f32(1), f32(1)
 		if origin := crop {
+			texture := &state.textures[index]
 			u0 = f32(origin.x) / f32(texture.key.width)
 			v0 = f32(origin.y) / f32(texture.key.height)
 			u1 = f32(origin.x + bounds.width) / f32(texture.key.width)
@@ -481,7 +501,7 @@ $if vox_gg_svg ? {
 		renderer.push_pipeline()
 		renderer.load_pipeline(state.pipeline)
 		renderer.enable_texture()
-		renderer.texture(texture.image, state.sampler)
+		renderer.texture(image, state.sampler)
 		renderer.begin_quads()
 		renderer.c4b(255, 255, 255, 255)
 		renderer.v3f_t2f(x, y, 0, u0, v0)
@@ -492,7 +512,7 @@ $if vox_gg_svg ? {
 		renderer.disable_texture()
 		renderer.pop_pipeline()
 		if portable_svg_gpu_diagnostics {
-			eprintln('VOX_GG_SVG draw=${bounds.width}x${bounds.height} cache=${if reused { "hit" } else { "miss" }} bounds=${if geometry_slot >= 0 { "hit" } else { "miss" }} crop=${if crop != none { "hit" } else { "none" }}${if hint_hit { " hint=hit" } else { "" }} stroke=${int(stroke.width_bits != 0)}${if stroke.non_scaling { " non_scaling=1" } else { "" }}${if stroke.dash_count > 0 { " dash=${stroke.dash_count}" } else { "" }}${if key.gradient { " gradient=${gradient.key.kind}" } else { "" }}')
+			eprintln('VOX_GG_SVG draw=${bounds.width}x${bounds.height} cache=${if reused { "hit" } else { "miss" }} bounds=${if geometry_slot >= 0 { "hit" } else { "miss" }} crop=${if crop != none { "hit" } else { "none" }}${if hint_hit { " hint=hit" } else { "" }}${if index < 0 { " transient=1" } else { "" }} stroke=${int(stroke.width_bits != 0)}${if stroke.non_scaling { " non_scaling=1" } else { "" }}${if stroke.dash_count > 0 { " dash=${stroke.dash_count}" } else { "" }}${if key.gradient { " gradient=${gradient.key.kind}" } else { "" }}')
 		}
 		return true
 	}

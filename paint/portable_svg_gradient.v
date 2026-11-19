@@ -70,7 +70,7 @@ $if vox_gg_svg ? {
 			return false
 		}
 		state := unsafe { portable_svg_gpu }
-		if state.count == portable_svg_gpu_image_limit || (state.tried && state.canvas == unsafe { nil }) {
+		if state.tried && state.canvas == unsafe { nil } {
 			return false
 		}
 		gradient := portable_svg_path_gradient(command, false, command.opacity * data.fill_opacity) or {
