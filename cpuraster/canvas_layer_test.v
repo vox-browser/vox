@@ -251,3 +251,46 @@ fn test_canvas_pixel_aligned_rect_matches_solid_path_raster() {
 	segments[4 * canvas_path_segment_stride + 1] = 1
 	assert canvas_pixel_aligned_rect(segments, [f32(1), 0, 0, 1, 0, 0]!) == none
 }
+
+fn test_opaque_canvas_mask_rect_matches_path_in_padded_row_bands() {
+	width, height := 43, 16
+	pitch := (width + 3) * 4
+	segments := packed_canvas_rect_for_test(Rect{-4, 2, 27, 12}, true)
+	path := canvas_path(segments, true)
+	matrices := [
+		[f32(1), 0, 0, 1, 0, 0]!,
+		[f32(-1), 0, 0, 1, 28, -3]!,
+		[f32(0), 1, -1, 0, 35, 5]!,
+		[f32(1), 0, 0, 1, 60, 0]!,
+	]
+	seed := []u8{len: height * pitch, init: u8(index * 31 + index / 13)}
+	for matrix in matrices {
+		for first in [0, 5] {
+			rows := height - first - 1
+			band_seed := seed[first * pitch..(first + rows) * pitch]
+			for color in [u32(0xff000000), 0xff459efa, 0xffffffff] {
+				mut actual := band_seed.clone()
+				assert fill_opaque_canvas_mask_rect(mut actual, width, first, rows, pitch, segments,
+					matrix, color)
+				for legacy in [false, true] {
+					mut expected := band_seed.clone()
+					assert fill_canvas_mask_path_surface(mut expected, width, first, rows, pitch, path,
+						matrix, color, none, 1, legacy)
+					assert actual == expected
+				}
+			}
+		}
+	}
+}
+
+fn test_opaque_canvas_mask_rect_declines_partial_coverage_and_short_buffers() {
+	mut pixels := []u8{len: 8 * 8 * 4, init: 0x51}
+	before := pixels.clone()
+	rect := packed_canvas_rect_for_test(Rect{0, 0, 8, 8}, false)
+	identity := [f32(1), 0, 0, 1, 0, 0]!
+	fractional := [f32(1), 0, 0, 1, 0.25, 0]!
+	assert !fill_opaque_canvas_mask_rect(mut pixels, 8, 0, 8, 32, rect, identity, 0x80459efa)
+	assert !fill_opaque_canvas_mask_rect(mut pixels, 8, 0, 8, 32, rect, fractional, 0xff459efa)
+	assert !fill_opaque_canvas_mask_rect(mut pixels, 8, 1, 8, 36, rect, identity, 0xff459efa)
+	assert pixels == before
+}

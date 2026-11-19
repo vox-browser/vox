@@ -39,6 +39,21 @@ pub fn canvas_pixel_aligned_rect(segments []f32, transform [6]f32) ?IRect {
 	return pixels
 }
 
+// fill_opaque_canvas_mask_rect paints an aligned path rectangle into a
+// premultiplied mask band. Every covered pixel has full source-over coverage.
+pub fn fill_opaque_canvas_mask_rect(mut pixels []u8, width int, first_row int, height int,
+	pitch int, segments []f32, transform [6]f32, color u32) bool {
+	if color >> 24 != 255 || !untiled_device(pixels, width, height, pitch)
+		|| first_row < 0 || first_row > max_untiled_dimension - height {
+		return false
+	}
+	rect := canvas_pixel_aligned_rect(segments, transform) or { return false }
+	visible := rect.intersect(IRect{0, first_row, width, first_row + height}) or { return true }
+	mut blitter := new_solid_blitter(mut pixels, pitch, color)
+	blitter.blit_rect(visible.left, visible.top - first_row, visible.width(), visible.height())
+	return true
+}
+
 // fill_canvas_mask_path fills a solid or gradient path into a premultiplied
 // row band. Geometry and shading both use the original device coordinates.
 pub fn fill_canvas_mask_path(mut pixels []u8, width int, first_row int, height int, pitch int, path Path,

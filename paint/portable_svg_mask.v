@@ -536,6 +536,11 @@ fn (mut app BrowserApp) raster_svg_mask_path(mut layer PortableSVGMaskLayer, wid
 		}
 	}
 	if fill >> 24 == 0 && !operation.has_stroke { return true }
+	if !operation.has_stroke && style == none && fill >> 24 == 255
+		&& cpuraster.fill_opaque_canvas_mask_rect(mut layer.pixels, width, layer.rows.top,
+			layer.rows.height(), pitch, operation.path_data, matrix, fill) {
+		return true
+	}
 	path := cpuraster.canvas_path(operation.path_data, operation.path_even_odd)
 	if operation.has_stroke && operation.stroke_first
 		&& !app.raster_svg_mask_stroke(mut layer, width, pitch, operation, path, matrix, luminance) {
