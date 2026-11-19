@@ -885,6 +885,68 @@ and cache behavior. Native frame timing and Windows runtime remain
 unverified. The Linux browser smoke suite and macOS, Windows D3D11,
 and Windows OpenGL source checks passed.
 
+## Reusing horizontally clipped web-font textures
+
+With `VOX_WEB_FONT_SCROLL_REUSE=1`, `24e450729` lets a vertically
+scrolling line reuse its texture when the horizontal viewport crop
+produces the same raster dimensions and origin-relative transform. Rows
+cut by the top or bottom edge use the existing raster path. An initial
+version cached those rows and recorded zero hits on the ordinary
+fixture's first upward frame.
+
+The revised build reproduced all document pixels with the cache enabled
+and disabled, including after a live color edit. On the wide-line fixture
+the previous build logged 3 cross-recording hits, including 1 on the first
+upward frame. The revised build logged 222 hits, including 11 on that
+frame. The ordinary fixture also logged 222 and 11 hits.
+
+Two alternating pairs per fixture used AArch64 Linux, V `5a39a4d`, and
+matching single-unit Clang `-O0` flags. The control and revised executable
+SHA-256 values were
+`ce33fc3fbf0140fbc8e49f7c8bc48226aedbd5689a1e91c18d81a338c6499c24`
+and `f47551b9a0284675b2fabdd767bba2a142a976bb2c3f774cdd0dba1a6d46749e`.
+The ordinary and wide fixture SHA-256 values were
+`668b4e3f6a02611e4ee864d2834ab7e64bccfa855cf759a1f7e9a8421ce3c08b`
+and `041eee702ad8788936a4ed6d014064c989ed04c1112463f1d0439850edfff641`.
+Executable, linked library, font, and input hashes stayed fixed. Trials
+used fresh processes and private profiles and caches, a 1024 × 712 Xvfb
+window with Mesa software OpenGL, a one-second settle period, and JavaScript
+disabled. OS filesystem caches were retained. Each trial recorded 48
+synthetic callbacks including 21 downward and 18 upward movements.
+Offsets, paint command counts, and final 1024 × 628 document pixels matched.
+Guest one-minute load ranged from 0.96 to 1.31 on four vCPUs. Browser and
+guard exits were zero.
+
+| Fixture and pair | Replay median before / after, ms | Replay p95 and maximum before / after, ms | Median allocated KiB before / after |
+| --- | ---: | ---: | ---: |
+| Ordinary 1 | 5.838 / 6.287 | 11.601, 13.738 / 11.652, 12.248 | 677.5 / 682.5 |
+| Ordinary 2 | 6.042 / 6.459 | 12.644, 14.450 / 13.159, 14.187 | 672.5 / 674.5 |
+| Wide 1 | 87.966 / 9.162 | 93.298, 94.520 / 16.127, 18.017 | 8106 / 941.5 |
+| Wide 2 | 91.118 / 8.805 | 98.408, 100.573 / 16.565, 21.946 | 8094.5 / 940 |
+
+The ordinary and wide document pixel SHA-256 values were
+`9aadcb12b8d0ddc547c8c7509fbcc9f70feb793acf5f1e7f4ae11911f9d68622`
+and `35d2f8f5f8a1e5fec7d37b964ad7cce39d943caacbe24b8594eb40cef79079bb`.
+Separate diagnostics logged 481 hits in both ordinary builds and 0 versus
+481 for the wide fixture. Ordinary medians rose by 0.42–0.45 ms while
+wide replay allocated about 88% less per callback. Reuse remains opt-in.
+
+A live X11 check used four `xdotool` wheel events on the wide fixture
+with a scroll position marker. The marker confirmed offsets of 0, 42,
+84, 42, and 0 CSS pixels. At each offset the document pixels matched
+outside the rightmost eight columns occupied by the fading scrollbar.
+The revised build reused 12 textures on each event and the control
+reused zero. Both browser processes and the memory guard exited zero.
+The marked fixture SHA-256 was
+`e745172fc5a79858ae9cb78b84a321648bdbdc6aaa0ab97d500d98af86a2016b`.
+
+The timing measurements cover synthetic replay. Native GPU timing and
+Windows runtime remain unverified. All 25 Linux browser checks passed.
+The stationary-cache test now allows the capture-ready attribute to
+re-record unchanged pixels and still requires two generations with both
+an upload and a hit. macOS, Windows D3D11, and Windows OpenGL source
+checks passed.
+
 ## Converting CPU SVG upload pixels faster
 
 The shared CPU raster readback copies opaque RGB bytes directly and writes zero
