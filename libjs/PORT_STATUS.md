@@ -108,7 +108,9 @@ manual HN experiment above is historical, not the current document-cache policy.
 The function compiler maps parser-proven uncaptured parameters and function `var`
 bindings to bytecode local slots for ordinary, simple-parameter functions with
 unobservable arguments, including arrow and async functions and functions with
-nested declarations. A hoisted function declaration or Annex B block function keeps its
+nested declarations. Functions with complex parameters or observable arguments
+keep their parameters and vars in the environment, but their own uncaptured
+`let`/`const` bindings use slots too. A hoisted function declaration or Annex B block function keeps its
 name in the environment. Uncaptured `let`/`const` bindings declared in blocks,
 loop heads and the function body also use local slots (`lexical_registers.v`);
 blocks and loops whose lexical bindings are all slots allocate no environment

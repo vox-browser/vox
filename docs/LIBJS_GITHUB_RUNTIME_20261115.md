@@ -10173,3 +10173,88 @@ environment-coordinate binding reads (native-cache ABI changes that need a
 grouped-cache rebuild), lazy function parsing with a pre-parser, and
 incremental style/layout or off-main-thread rendering. Local receipts are
 under `docs/benchmark-results/libjs-github-v8-e2-20261119/receipts`.
+
+### Lexical, arrow and async bindings in registers, 2026-11-20
+
+**Register lowering coverage.** Before this round only ordinary
+simple-parameter functions with no arrow syntax and no nested declarations
+kept their uncaptured parameters and `var`s in local slots, and every
+`let`/`const`, block and loop head used a declarative environment. GitHub's
+bundles declare about 14,100 `let`s, 4,100 `var`s and 10,500 arrows (regex
+counts over the 87 archived scripts), so most bindings took the environment
+path: each block entry allocated an environment, each loop iteration copied
+its bindings, and each access was a by-name lookup.
+
+| Commit | Change |
+| --- | --- |
+| `9df74e65d` | Arrow functions and functions with nested declarations use slots; a hoisted function name stays in the environment. |
+| `61c614099` | Uncaptured `let`/`const` in blocks, loop heads and the function body use slots; blocks and loops whose lexical bindings are all slots allocate no environment and copy no per-iteration bindings. |
+| `ff0d575e7` | Async functions use slots (await copies the initialized frame). |
+
+Upstream checks the TDZ at run time with an empty local and `ThrowIfTDZ`.
+This port proves instead, in emission order, that every read follows the
+binding's initialization: within a block, code emitted after a declaration
+only runs after it in the same block entry. A read or write before the
+initialization, or a `const` assignment, rejects that binding and recompiles
+the function with it in the environment, which raises the ReferenceError or
+TypeError. Case-block declarations keep the environment because a case can
+jump past them.
+
+Optimized same-build A/B microbenchmarks (slots toggled by a test switch):
+
+| Case | Environment | Slots |
+| --- | ---: | ---: |
+| `let` loop, 200,000 iterations | 64.5 ms | 2.3 ms |
+| block `const` in a loop | 143.9 ms | 4.3 ms |
+| `for (const x of a)` | 35.9 ms | 11.5 ms |
+| arrow calls with a `const` | 131.4 ms | 27.9 ms |
+| destructuring `const {a,b}` | 72.1 ms | 8.6 ms |
+| call, 200,000 (arrow/declaration commit) | 64.98 ms | 30.41 ms |
+
+Functions whose parameters stay in the environment (destructured or default
+parameters, observable `arguments`) now keep their own `let`/`const` in slots
+too (`a9201c8e7`): a component-like function with destructured parameters,
+100,000 calls, 236.0 -> 75.0 ms; one with a default parameter, 200,000 calls,
+230.3 -> 91.6 ms. Object literals skip descriptor validation for fresh keys
+(`fcd054795`, 300,000 two-property literals 74.6 -> 66.1 ms) and constant keys
+no longer emit a conversion instruction (`227a40e2b`).
+
+**Page result.** Bundle `e4168684…` (`9fe7bccea`, before the last three
+commits) with a rebuilt grouped native cache: the workflow's grouped reopen
+matches the separate-cache screenshot pixel for pixel. Its trace stage first
+failed because a visit learned the lookup index inside the pinned cache;
+`6e590dd44` keeps that index read-only in benchmark visits unless seeding is
+requested. Three learning visits seeded the index; five alternating rounds
+then used it read-only, at one-minute host loads of 3–6 (the earlier
+worker-parsing cohort ran at 8–11, so absolute times across sessions are not
+comparable):
+
+| Five alternating rounds, `e4168684…` | Median launch to PNG | Range | Median observed instructions |
+| --- | ---: | ---: | ---: |
+| Vox with compiled LibJS | 3,571 ms | 3,542–3,718 ms | 43.34 billion |
+| Vox with JavaScriptCore | 2,991 ms | 2,956–3,036 ms | 29.86 billion |
+| Brave with V8 | 1,948 ms | 1,874–2,093 ms | 20.96 billion |
+
+All 15 visits pass the repository audit. Relative to JSC in the same cohort,
+LibJS fell from 1.26x (4,465/3,547 ms) to 1.19x; relative to Brave from 2.03x
+to 1.83x. Two stage-logged LibJS loads put outermost script CPU at 834 and
+837 ms (previous session 1,133–1,244 ms) and execution self time at 688–689 ms
+(942–1,036 ms); the module frontend is 103–108 ms. Brave's `ScriptDuration`
+median is 154 ms, so LibJS script time is still about 5.4x V8's. Whole-process
+instruction counts did not fall with the shorter script time.
+
+**Remaining gap.** A stage-logged JSC load on the same bundle spends about
+730 ms of main-thread CPU in style (21,194 style constructions, mostly
+pseudo-element probes, over about 5,400 element restyles), about 510 ms in
+layout (114 document layouts), 372 ms in JavaScriptCore and about 250 ms in
+paint; Brave reports 78 style recalculations in 95 ms and 19 layouts in 52 ms.
+So even with V8-speed script, Vox would trail Brave by roughly the rendering
+difference. Within LibJS, the measured page samples remain spread out: no
+property inline caches over shapes, array elements stored as numeric-keyed
+properties, about 150 ns per JS-to-JS call (frame pool, environment set-up and
+context push), and by-name environment walks for captured bindings. Measured
+and rejected this round: per-opcode interpreter tables (no change, clang
+already emits jump tables), shrinking the 1,112-byte `Object` (object creation
+is under 0.5% of page samples) and an environment-coordinate cache for
+captured reads (about 2.5% of page samples). The last three commits change
+bytecode, so measuring them needs another grouped-cache rebuild.
