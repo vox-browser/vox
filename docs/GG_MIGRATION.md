@@ -1,5 +1,56 @@
 # Migrating from Skia to vlib/gg
 
+## Preserving gradients in portable SVG groups
+
+The shared portable renderer composites supported linear and radial fills
+with the other paths in an SVG opacity, clip, or mask scope. It restores
+leaf fill alpha before blending the group and applies the group opacity
+or coverage once. The existing path count, area limits, and fallback for
+unsupported paints still apply.
+
+Top-level groups reuse their GG texture when the recorded paint generation,
+scope position, viewport, origin, and scale match. The streaming slot
+invalidates the group on upload or retirement. The fixture verifies the
+same pixels with the GG Canvas setting enabled, disabled, and with texture
+reuse disabled. It changes a gradient stop during animation and checks the
+updated masked pixels. The overlap changed from RGB `(127, 63, 191)` to
+`(127, 127, 255)`. The gradient previously painted outside the curved
+clip and alpha mask.
+
+Linux used V `5a39a4d` and matching single-unit Clang `-O0` flags. The
+control, grouped raster without reuse, and final executable SHA-256 values
+were `25322d3dfaa9abd7e499582a78716f9c7797ae18e9941f4fdc90819dd9daabf6`,
+`62dba1b39a28803be1f06b19d679a3a0fd772b02ccf1af2946e2650c10cd0546`,
+and `98eac3719d2cf94c7a6a07bc3016a277855868f7e4de606e665bb63bb4254e92`.
+The animation test starts with `svg-gradient-groups.html`, SHA-256
+`0d186c3a4faa88d19d00a1018df54d81005438de0f9a4f264861b6750f09d110`.
+
+Two alternating pairs per fixture used private browser state, a 1024 × 712
+window, software OpenGL with `LP_NUM_THREADS=1` under Xvfb, and a one-second
+settle. The synthetic driver sent 180 callbacks and reversed direction
+every 30. The gradient timing copy set a 642 CSS pixel minimum body height,
+giving six moving callbacks. Scroll offsets and paint-command counts matched.
+Guest one-minute load was 0.71–0.94 on four vCPUs in the final cohort.
+Process and guard exits were zero.
+
+| Fixture and pair | Replay median before / final, ms | Replay p95 before / final, ms | Replay maximum before / final, ms |
+| --- | ---: | ---: | ---: |
+| Solid, all 1 | 5.456 / 5.536 | 7.079 / 6.327 | 7.854 / 24.798 |
+| Solid, all 2 | 5.703 / 5.494 | 8.077 / 7.279 | 11.014 / 24.679 |
+| Gradient, all 1 | 1.017 / 1.092 | 2.271 / 2.893 | 3.120 / 4.780 |
+| Gradient, all 2 | 1.002 / 1.039 | 2.528 / 2.924 | 3.245 / 4.858 |
+| Gradient, moving 1 | 2.035 / 4.628 | 2.271 / 4.780 | 2.271 / 4.780 |
+| Gradient, moving 2 | 2.040 / 4.339 | 2.528 / 4.858 | 2.528 / 4.858 |
+
+The intermediate build rebuilt the gradient groups and spent 4.244–4.483 ms
+at the all-callback median. The final build reused unchanged viewport
+textures. The solid fixture matched the control pixel for pixel, with
+higher maximum replay times in the final cohort. Moving the gradients still
+rebuilds a correct group at the new viewport. These are software renderer
+callback timings. The full Linux browser smoke suite, all 16 Linux GG SVG
+window checks, and Windows amd64 D3D11 and OpenGL source checks passed.
+Windows execution and hardware GPU timing remain unverified.
+
 ## Sharing the portable SVG fallback with Windows
 
 The standard Windows D3D11 window now uses the same CPU raster and GG texture
