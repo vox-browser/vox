@@ -1001,6 +1001,67 @@ processes were observed at launch. Browsers and the memory guard
 exited zero. This comparison measures synthetic software replay.
 Windows runtime and hardware GPU timing remain pending.
 
+## Compositing raster images inside SVG masks
+
+In `1e32dd381`, portable SVG mask replay borrows RGBA pixels from
+the existing decoded-image cache and uses the shared canvas image
+rasterizer. The SVG image placement supplies the destination,
+aspect-ratio clip, and interpolation mode. Bitmap alpha or
+premultiplied luminance contributes coverage after opacity groups
+blend. An image whose pixels are unavailable contributes transparent
+coverage and prevents texture retention for that replay.
+
+A live image reference edit exposed a stale SVG mask description
+in the first Linux check and in the published macOS build.
+SVG masks now use the existing paint-resource invalidation path
+for descendant edits, including XLink image references.
+
+The Linux fixture uses a 4 × 2 RGBA image to exercise letterboxing,
+slice clipping, transparent pixels, and isolation. A script
+replaces an image with a same-sized bitmap served by a loopback
+handler after a 400 ms delay. All four 800 × 516 document captures
+matched across cached CPU replay, GG Canvas, uncached replay,
+and the legacy `xlink:href` variant. Cached runs rasterized the
+edited group 25–26 times in total and retained two textures.
+The fixture and decoded document SHA-256 values were
+`0668dbb4036b80c2d386e406bd4382ec5d1aa16dfb43ffd9d65447d07db18619`
+and `a6432b37b192b40320d2698b6b21d7987a7cb18efd9665a4e213e78058277647`.
+
+A native reference capture launched PID 16644 from the published
+`57cc6ceed` build with executable SHA-256
+`48cf9b0d55ef0a6bb661bb0ab3479bdf87e31518e4906dc1d9be75dd5a506c3e`.
+Eleven of 15 static samples matched exactly and the maximum channel
+difference was one. The native capture retained the original
+edited-mask pixel at (356, 50). The Linux candidate drew
+`#7f7fff` there after the delayed replacement. Ten neighboring
+Linux SVG window checks and the new fixture passed. macOS and
+Windows D3D11 and OpenGL source checks passed. The standalone
+layout test exceeded the compile memory guard. The windowed
+fixture covers both forms of the attribute edit.
+
+Two alternating pairs timed the same ARM64 single-unit Clang
+`-O0` executable with V `5a39a4d`. Its SHA-256 was
+`fc5cbdedad815eab57e9aa242c5079ab0126dd392a8966bc0cf95409f81e60d0`.
+Fresh private processes used the local fixture, JavaScript
+disabled, one Mesa worker, one second of settling, and 48
+synthetic idle replay callbacks at 800 × 600. Diagnostics observed
+three mask rasters per callback with caching disabled and three
+cache hits per callback with caching enabled across 47 complete
+intervals. Paint command counts and position matched. The decoded
+viewport SHA-256 was
+`537d9b34887c7054cc739f813c472bef249ec70859f0fb39a0a5eb3e51c7e3bc`.
+Executable, fixture and library hashes stayed fixed.
+
+| Pair | Uncached / cached median replay, ms | Uncached / cached p95 and maximum, ms | Uncached / cached median allocated KiB |
+| --- | ---: | ---: | ---: |
+| 1 | 10.279 / 1.362 | 13.828, 14.573 / 1.643, 4.729 | 529 / 121 |
+| 2 | 8.983 / 1.350 | 11.590, 13.431 / 1.593, 4.020 | 527 / 121 |
+
+Browser and guard exits were zero. One-minute guest load ranged
+from 1.26 to 1.33 at timed launches on four vCPUs. These timings
+cover warmed idle software replay. Candidate macOS and Windows
+runtime checks and native GPU timing remain pending.
+
 ## Sharing the portable SVG fallback with Windows
 
 The standard Windows D3D11 window now uses the same CPU raster and GG texture
