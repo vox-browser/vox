@@ -81,14 +81,47 @@ fn (mut app BrowserApp) draw_portable_svg_raster_stroke(command &layout.PaintCom
 		color = portable_svg_argb(stroke)
 		opacity = 1
 	}
-	mut path := cpuraster.canvas_path(data.path_data, false)
-	local := path.bounds() or { return false }
+	index := app.portable_raster_image_index
+	solid := command.stroke_color != ''
+	cacheable := solid && !disable_portable_svg_stroke_cache && index < portable_svg_stroke_slots
+		&& data.path_data.len <= portable_svg_stroke_path_values
+		&& data.stroke_dasharray.len <= portable_svg_stroke_dash_values
+	entry := if cacheable && app.portable_svg_stroke_rasters != unsafe { nil }
+		&& index < app.portable_raster_images.len {
+		&app.portable_svg_stroke_rasters.entries[index]
+	} else {
+		unsafe { nil }
+	}
+	matched_path := entry != unsafe { nil } && entry.matches_path(data.path_data)
+	mut decoded := ?cpuraster.Path(none)
+	local := if matched_path {
+		entry.local_bounds
+	} else {
+		path := cpuraster.canvas_path(data.path_data, false)
+		decoded = path
+		path.bounds() or { return false }
+	}
 	transform := portable_device_transform(multiply_paint_transforms(command.transform,
 		data.path_transform), page_x, page_y, f64(app.ctx.scale))
 	bounds := portable_svg_stroke_bounds(&data, local, transform, app.portable_device_viewport(page_y), width, miter)
 	if bounds.is_empty() { return true }
-	mut matrix := portable_svg_surface_matrix(transform, bounds)
-	if !matrix.all(math.is_finite(f64(it))) { return false }
+	surface_matrix := portable_svg_surface_matrix(transform, bounds)
+	if !surface_matrix.all(math.is_finite(f64(it))) { return false }
+	key := if cacheable { portable_svg_stroke_raster_key(&data, color, width, miter) } else { PortableSVGStrokeRasterKey{} }
+	if matched_path && entry.matches_stroke(key, surface_matrix, data.stroke_dasharray) {
+		slot := app.portable_raster_images[index]
+		if slot.width == bounds.width && slot.height == bounds.height {
+			app.portable_raster_image_index++
+			app.ctx.draw_image_with_config(img_id: slot.image_id,
+				img_rect: app.portable_svg_texture_destination(bounds), color: gg.Color{255, 255, 255, 255})
+			if portable_svg_stroke_diagnostics {
+				eprintln('VOX_CPU_SVG_STROKE draw=${bounds.width}x${bounds.height} cache=hit')
+			}
+			return true
+		}
+	}
+	mut path := decoded or { cpuraster.canvas_path(data.path_data, false) }
+	mut matrix := surface_matrix
 	mut style := ?cpuraster.CanvasPaintStyle(none)
 	if paint := gradient {
 		if data.non_scaling_stroke {
@@ -123,6 +156,12 @@ fn (mut app BrowserApp) draw_portable_svg_raster_stroke(command &layout.PaintCom
 		return false
 	}
 	app.upload_portable_svg_pixels(bounds, pixels)
+	if cacheable {
+		app.remember_portable_svg_stroke(index, &data, key, surface_matrix, local)
+	}
+	if portable_svg_stroke_diagnostics && solid {
+		eprintln('VOX_CPU_SVG_STROKE draw=${bounds.width}x${bounds.height} cache=miss')
+	}
 	return true
 }
 

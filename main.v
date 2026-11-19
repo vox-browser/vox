@@ -450,6 +450,7 @@ mut:
 	force_dark_images                   map[string]&gg.Image
 	portable_raster_images              []PortableRasterImage
 	portable_raster_image_index         int
+	portable_svg_stroke_rasters         &PortableSVGStrokeRasters = unsafe { nil }
 	portable_background_text_clip       ?PortableBackgroundTextClip
 	portable_canvas_images              []PortableCanvasImage
 	portable_canvas_image_index         int

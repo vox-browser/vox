@@ -327,6 +327,7 @@ def check_gg_svg_browser(binary, artifacts, temporary):
     check_gg_svg_mutations(binary, artifacts, temporary, fixture)
     check_gg_svg_viewport(binary, artifacts, temporary, fixture)
     check_gg_svg_strokes(binary, artifacts, temporary)
+    check_cpu_svg_stroke_cache(binary, artifacts, temporary)
     check_gg_svg_non_scaling_strokes(binary, artifacts, temporary)
     check_gg_svg_dashed_strokes(binary, artifacts, temporary)
     check_gg_svg_gradient_fills(binary, artifacts, temporary)
@@ -893,6 +894,78 @@ requestAnimationFrame(changeCap);
         assert documents[0] == documents[1], "Cached stroke pixels differ from uncached replay"
         assert documents[2] == documents[3], "OpenGL 4.2 changed CPU stroke pixels"
     print("PASS: SVG stroke geometry, paint order, and live cap edits on GPU and CPU", flush=True)
+
+
+def check_cpu_svg_stroke_cache(binary, artifacts, temporary):
+    page = Path(temporary) / "svg-cpu-stroke-cache.html"
+    page.write_text("""<!doctype html>
+<meta charset="utf-8">
+<title>Portable SVG stroke texture reuse</title>
+<style>
+  body { margin: 0; background: white; }
+  header { width: 16px; height: 8px; background: #34b786; }
+  svg { display: block; }
+</style>
+<header></header>
+<svg width="140" height="64">
+  <path id="stroke" d="M30 40H94" fill="none" stroke="#2244cc" stroke-width="10" stroke-linejoin="round"/>
+  <path id="fill" d="M24 34H100V46H24Z" fill="none"/>
+</svg>
+<script>
+  const stroke = document.getElementById('stroke');
+  const fill = document.getElementById('fill');
+  let frame = 0;
+  function overwriteStrokeTexture() {
+    ++frame;
+    if (frame === 12) {
+      stroke.setAttribute('stroke', 'none');
+      fill.setAttribute('fill', 'red');
+    }
+    if (frame === 24) {
+      fill.setAttribute('fill', 'none');
+      stroke.setAttribute('stroke', '#2244cc');
+    }
+    if (frame === 36) {
+      document.body.setAttribute('data-cache-ready', '1');
+      return;
+    }
+    requestAnimationFrame(overwriteStrokeTexture);
+  }
+  requestAnimationFrame(overwriteStrokeTexture);
+</script>
+""")
+    documents = []
+    for mode in ("cached", "uncached"):
+        label = f"{page.stem}-{mode}"
+        screenshot = artifacts / f"{label}.png"
+        screenshot.unlink(missing_ok=True)
+        environment = smoke_environment(Path(temporary) / label)
+        environment.update(VOX_GG_SVG="0", VOX_GG_SVG_DIAGNOSTICS="1",
+                           VOX_DISABLE_GG_SVG_CACHE=str(int(mode == "uncached")),
+                           VOX_CAPTURE_READY_SELECTOR="body[data-cache-ready]")
+        log = run_windowed([str(binary), "--enable-javascript", "--window-width=800",
+                            "--window-height=600", "--screenshot-viewport-height=600",
+                            f"--screenshot={screenshot}", str(page)],
+                           env=environment, log_path=artifacts / f"{label}.log")
+        prefix = "VOX_CPU_SVG_STROKE draw=76x12 cache="
+        misses = log.count(prefix + "miss")
+        hits = log.count(prefix + "hit")
+        if mode == "cached":
+            assert misses == 2 and hits > 0, (misses, hits, log)
+        else:
+            assert misses > 2 and hits == 0, (misses, hits, log)
+        _, height, channels, rows = rendered_png_rows(screenshot.read_bytes())
+
+        def pixel(x, y):
+            return rows[y][x * channels:x * channels + 3].hex()
+
+        marker = next((y for y in range(min(height, 150)) if pixel(4, y) == "34b786"), None)
+        assert marker is not None, "Missing document marker"
+        assert pixel(40, marker + 48) == "2244cc", "Restored stroke kept the fill texture"
+        assert pixel(25, marker + 43) == "ffffff", "Fill survived outside the stroke"
+        documents.append(rows[marker:height - 24])
+    assert documents[0] == documents[1], "Reusing stroke textures changed CPU pixels"
+    print("PASS: CPU SVG stroke texture reuse invalidates an overwritten slot", flush=True)
 
 
 def check_gg_svg_non_scaling_strokes(binary, artifacts, temporary):

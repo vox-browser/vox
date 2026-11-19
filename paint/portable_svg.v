@@ -109,9 +109,14 @@ fn (mut app BrowserApp) upload_portable_svg_pixels(bounds painting.IntRect, prem
 	mut pixels := []u8{len: premultiplied.len}
 	cpuraster.read_pixels(premultiplied, bounds.width, bounds.height, pitch, 2, mut pixels,
 		bounds.width, bounds.height, pitch, 0, 0)
+	app.draw_portable_raster_texture(app.portable_svg_texture_destination(bounds), bounds.width,
+		bounds.height, pixels)
+}
+
+fn (app &BrowserApp) portable_svg_texture_destination(bounds painting.IntRect) gg.Rect {
 	scale := f64(app.ctx.scale)
-	app.draw_portable_raster_image(f32(f64(bounds.x) / scale), f32(f64(bounds.y) / scale),
-		bounds.width, bounds.height, pixels)
+	return gg.Rect{f32(f64(bounds.x) / scale), f32(f64(bounds.y) / scale),
+		f32(bounds.width) / app.ctx.scale, f32(bounds.height) / app.ctx.scale}
 }
 
 fn portable_svg_path_bounds(path cpuraster.Path, transform painting.Affine, viewport painting.Rect) ?painting.Rect {
