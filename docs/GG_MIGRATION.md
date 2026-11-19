@@ -1,5 +1,60 @@
 # Migrating from Skia to vlib/gg
 
+## Retaining exact CPU SVG gradient clips
+
+`VOX_GG_SVG_VIEWPORT_REUSE=1` can retain the previous CPU gradient fill
+texture when the same path and paint need a differently sized viewport
+clip. Reuse requires an exact match for the path, fill rule, resolved
+gradient, local raster transform, and image dimensions. Each streaming
+slot can hold one alternate of up to 65,536 pixels, for at most one
+megatexel of additional retained texture area. A paint change, unrelated
+upload, or retired streaming slot discards the alternate. First visits
+still rasterize at the requested extent, preserving its sampling origin.
+
+The viewport fixture visited full and clipped linear and radial fills,
+returned to both extents, and changed a gradient stop before returning
+to a previously cached clip. The edited fill rasterized again. Output
+matched pixel for pixel with viewport reuse disabled on each renderer.
+All 16 Linux GG SVG window checks passed, as did the Windows amd64
+OpenGL source check with `-gc none`.
+
+For timings, `Tests/Browser/Native/svg-gg-gradient-viewport.html` used a
+642-pixel minimum body height. This left 42 pixels of overflow in the
+600-pixel document viewport with the bookmark bar visible. V `5a39a4d`
+and single-unit Clang `-O0` used identical flags for the control and
+candidate from the shared checkout with other work in progress. The
+executable SHA-256 values were
+`696fe12821023008f539dae5ea4507201411c08ce5c57ce9f38343f1d875168e`
+and `80a33098539e12aff4d47f259253ca49a96b80197b2b18de867e573cad59c8e9`.
+The page and shader directory SHA-256 values were
+`4642727427b15f988ef7108628726a153dad2abaa0d6e1a9acaa4929fa0ac3d0`
+and `970ce36acbf7ea10b948d0a063d6315d587aadf8a8d84784d644b17ab6ffc48e`.
+
+Each trial used Mesa software OpenGL under Xvfb with `LP_NUM_THREADS=1`,
+a fresh process and private browser state, an 800 × 712 window, and a
+one-second settle. The synthetic driver sent 180 self-paced wheel
+events and reversed every 30 callbacks. Six steps moved the document
+between 0 and 42 CSS pixels. The first was a new clip, and the other
+five revisited a previously painted extent. Scroll positions and
+paint-command counts matched. One-minute guest load ranged from 0.71
+to 1.46 on four virtual CPUs. The timing driver and memory guard
+exited zero. Each renderer's clipped captures matched exactly between
+builds and with viewport reuse disabled.
+
+| Renderer and pair | Revisit median control / candidate, ms | All moving median, ms | All moving p95 and maximum, ms |
+| --- | ---: | ---: | ---: |
+| CPU fallback 1 | 14.436 / 1.175 | 14.283 / 1.1905 | 15.989 / 16.242 |
+| CPU fallback 2 | 13.971 / 1.135 | 13.958 / 1.1445 | 14.816 / 13.084 |
+| GG 1 | 1.071 / 1.017 | 3.431 / 3.2515 | 7.849 / 6.185 |
+| GG 2 | 1.104 / 1.113 | 3.368 / 3.393 | 6.337 / 6.184 |
+
+Diagnostics counted 15 exact alternate hits in the candidate CPU run
+after the first moving callback. The control rasterized those 15 draws.
+Each GG run hit all 537 subsequent gradient draws. The two CPU revisit
+medians fell by about 92%. The candidate's first visit still spent
+13.084 and 16.242 ms. These timings cover synthetic replay on software
+OpenGL. Native GPU performance and Windows runtime remain unverified.
+
 ## Cropping cached CPU SVG fills at viewport edges
 
 `VOX_GG_SVG_VIEWPORT_REUSE=1` also enables crops of cached CPU solid
