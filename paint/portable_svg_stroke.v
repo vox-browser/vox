@@ -82,10 +82,11 @@ fn (mut app BrowserApp) draw_portable_svg_raster_stroke(command &layout.PaintCom
 		opacity = 1
 	}
 	index := app.portable_raster_image_index
-	solid := command.stroke_color != ''
-	cacheable := solid && !disable_portable_svg_stroke_cache && index < portable_svg_stroke_slots
+	gradient_values := if paint := gradient { paint.stops.len } else { 0 }
+	cacheable := !disable_portable_svg_stroke_cache && index < portable_svg_stroke_slots
 		&& data.path_data.len <= portable_svg_stroke_path_values
 		&& data.stroke_dasharray.len <= portable_svg_stroke_dash_values
+		&& gradient_values <= portable_svg_stroke_gradient_values
 	entry := if cacheable && app.portable_svg_stroke_rasters != unsafe { nil }
 		&& index < app.portable_raster_images.len {
 		&app.portable_svg_stroke_rasters.entries[index]
@@ -107,15 +108,21 @@ fn (mut app BrowserApp) draw_portable_svg_raster_stroke(command &layout.PaintCom
 	if bounds.is_empty() { return true }
 	surface_matrix := portable_svg_surface_matrix(transform, bounds)
 	if !surface_matrix.all(math.is_finite(f64(it))) { return false }
-	key := if cacheable { portable_svg_stroke_raster_key(&data, color, width, miter) } else { PortableSVGStrokeRasterKey{} }
-	if matched_path && entry.matches_stroke(key, surface_matrix, data.stroke_dasharray) {
+	key := if cacheable {
+		portable_svg_stroke_raster_key(&data, color, opacity, width, miter)
+	} else {
+		PortableSVGStrokeRasterKey{}
+	}
+	if matched_path && entry.matches_stroke(key, surface_matrix, data.stroke_dasharray)
+		&& entry.matches_gradient(gradient) {
 		slot := app.portable_raster_images[index]
 		if slot.width == bounds.width && slot.height == bounds.height {
 			app.portable_raster_image_index++
 			app.ctx.draw_image_with_config(img_id: slot.image_id,
 				img_rect: app.portable_svg_texture_destination(bounds), color: gg.Color{255, 255, 255, 255})
 			if portable_svg_stroke_diagnostics {
-				eprintln('VOX_CPU_SVG_STROKE draw=${bounds.width}x${bounds.height} cache=hit')
+				kind := if paint := gradient { paint.kind } else { 0 }
+				eprintln('VOX_CPU_SVG_STROKE draw=${bounds.width}x${bounds.height} cache=hit gradient=${kind}')
 			}
 			return true
 		}
@@ -157,10 +164,11 @@ fn (mut app BrowserApp) draw_portable_svg_raster_stroke(command &layout.PaintCom
 	}
 	app.upload_portable_svg_pixels(bounds, pixels)
 	if cacheable {
-		app.remember_portable_svg_stroke(index, &data, key, surface_matrix, local)
+		app.remember_portable_svg_stroke(index, &data, key, surface_matrix, local, gradient)
 	}
-	if portable_svg_stroke_diagnostics && solid {
-		eprintln('VOX_CPU_SVG_STROKE draw=${bounds.width}x${bounds.height} cache=miss')
+	if portable_svg_stroke_diagnostics {
+		kind := if paint := gradient { paint.kind } else { 0 }
+		eprintln('VOX_CPU_SVG_STROKE draw=${bounds.width}x${bounds.height} cache=miss gradient=${kind}')
 	}
 	return true
 }

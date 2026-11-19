@@ -752,26 +752,38 @@ def check_gg_svg_gradient_strokes(binary, artifacts, temporary):
 <script>
 let frames = 0;
 function editStrokes() {
-    if (++frames < 12) {
+    ++frames;
+    if (frames === 12) {
+        document.getElementById('line-end').setAttribute('stop-color', '#00ff00');
+        document.getElementById('dashed').setAttribute('stroke-opacity', '.5');
+        document.getElementById('radial').setAttribute('r', '24');
+        document.getElementById('fixed-width').setAttribute('gradientTransform', 'translate(4)');
+    }
+    if (frames === 24) {
+        document.getElementById('radial').setAttribute('r', '32');
+        document.getElementById('fixed-width').setAttribute('gradientTransform', 'translate(2)');
+        document.getElementById('dash').setAttribute('spreadMethod', 'reflect');
+    }
+    if (frames < 36) {
         requestAnimationFrame(editStrokes);
         return;
     }
-    document.getElementById('line-end').setAttribute('stop-color', '#00ff00');
-    document.getElementById('dashed').setAttribute('stroke-opacity', '.5');
+    document.getElementById('dash').setAttribute('spreadMethod', 'repeat');
     document.body.setAttribute('data-stroke-gradient-ready', '1');
 }
 requestAnimationFrame(editStrokes);
 </script>
 """)
     documents = []
-    for mode, disable_cache in (("cached", "0"), ("uncached", "1"), ("disabled", "0"), ("gl42", "0")):
+    for mode in ("cached", "uncached", "disabled", "gl42", "cpu-uncached"):
         label = f"{page.stem}-{mode}"
         screenshot = artifacts / f"{label}.png"
         screenshot.unlink(missing_ok=True)
         environment = smoke_environment(Path(temporary) / label)
         environment.pop("MESA_GL_VERSION_OVERRIDE", None)
-        environment.update(VOX_GG_SVG=str(int(mode != "disabled")), VOX_GG_SVG_DIAGNOSTICS="1",
-                           VOX_DISABLE_GG_SVG_CACHE=disable_cache,
+        environment.update(VOX_GG_SVG=str(int(mode not in ("disabled", "cpu-uncached"))),
+                           VOX_GG_SVG_DIAGNOSTICS="1",
+                           VOX_DISABLE_GG_SVG_CACHE=str(int(mode in ("uncached", "cpu-uncached"))),
                            VOX_CAPTURE_READY_SELECTOR="body[data-stroke-gradient-ready]")
         if mode == "gl42":
             environment["MESA_GL_VERSION_OVERRIDE"] = "4.2"
@@ -790,9 +802,19 @@ requestAnimationFrame(editStrokes);
                 misses = [line for line in strokes if f"draw={size} cache=miss" in line]
                 assert len(misses) >= 2, log
                 if mode == "cached":
-                    assert len(misses) == 2 and "bounds=hit" in misses[1], log
+                    assert "bounds=hit" in misses[1], log
+                    if size == "110x48":
+                        assert len(misses) == 2, log
         else:
             assert not strokes, log
+            for size, kind, edits in (("110x48", 1, 1), ("82x48", 2, 2), ("142x10", 1, 3), ("98x8", 1, 2)):
+                prefix = f"VOX_CPU_SVG_STROKE draw={size} cache="
+                misses = log.count(f"{prefix}miss gradient={kind}")
+                hits = log.count(f"{prefix}hit gradient={kind}")
+                if mode == "cpu-uncached":
+                    assert misses > edits + 1 and hits == 0, (mode, size, misses, hits, log)
+                else:
+                    assert misses == edits + 1 and hits > 0, (mode, size, misses, hits, log)
 
         _, height, channels, rows = rendered_png_rows(screenshot.read_bytes())
 
@@ -818,6 +840,7 @@ requestAnimationFrame(editStrokes);
         documents.append(rows[marker:height - 24])
     assert documents[0] == documents[1], "Cached gradient strokes differ from uncached replay"
     assert documents[2] == documents[3], "OpenGL 4.2 changed CPU gradient stroke pixels"
+    assert documents[2] == documents[4], "Reusing gradient stroke textures changed CPU pixels"
     print("PASS: SVG gradient strokes preserve paint order, dashes, fixed width, and text on GPU and CPU", flush=True)
 
 
