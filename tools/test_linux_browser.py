@@ -763,29 +763,35 @@ requestAnimationFrame(editStrokes);
 </script>
 """)
     documents = []
-    for mode, disable_cache in (("cached", "0"), ("uncached", "1")):
+    for mode, disable_cache in (("cached", "0"), ("uncached", "1"), ("disabled", "0"), ("gl42", "0")):
         label = f"{page.stem}-{mode}"
         screenshot = artifacts / f"{label}.png"
         screenshot.unlink(missing_ok=True)
         environment = smoke_environment(Path(temporary) / label)
         environment.pop("MESA_GL_VERSION_OVERRIDE", None)
-        environment.update(VOX_GG_SVG="1", VOX_GG_SVG_DIAGNOSTICS="1",
+        environment.update(VOX_GG_SVG=str(int(mode != "disabled")), VOX_GG_SVG_DIAGNOSTICS="1",
                            VOX_DISABLE_GG_SVG_CACHE=disable_cache,
                            VOX_CAPTURE_READY_SELECTOR="body[data-stroke-gradient-ready]")
+        if mode == "gl42":
+            environment["MESA_GL_VERSION_OVERRIDE"] = "4.2"
         log = run_windowed([str(binary), "--enable-javascript", "--window-width=800",
                             "--window-height=600", "--screenshot-viewport-height=600",
                             f"--screenshot={screenshot}", str(page)],
                            env=environment, log_path=artifacts / f"{label}.log")
         strokes = [line for line in log.splitlines() if " stroke=1" in line and " gradient=" in line]
-        assert any(line.endswith(" gradient=2") for line in strokes), log
-        assert any(" dash=2" in line for line in strokes), log
-        assert any(" non_scaling=1" in line for line in strokes), log
-        assert any("cache=hit bounds=hit" in line for line in strokes) == (mode == "cached"), log
-        for size in ("110x48", "142x10"):
-            misses = [line for line in strokes if f"draw={size} cache=miss" in line]
-            assert len(misses) >= 2, log
-            if mode == "cached":
-                assert len(misses) == 2 and "bounds=hit" in misses[1], log
+        assert ("VOX_GG_SVG unavailable:" in log) == (mode == "gl42"), log
+        if mode in ("cached", "uncached"):
+            assert any(line.endswith(" gradient=2") for line in strokes), log
+            assert any(" dash=2" in line for line in strokes), log
+            assert any(" non_scaling=1" in line for line in strokes), log
+            assert any("cache=hit bounds=hit" in line for line in strokes) == (mode == "cached"), log
+            for size in ("110x48", "142x10"):
+                misses = [line for line in strokes if f"draw={size} cache=miss" in line]
+                assert len(misses) >= 2, log
+                if mode == "cached":
+                    assert len(misses) == 2 and "bounds=hit" in misses[1], log
+        else:
+            assert not strokes, log
 
         _, height, channels, rows = rendered_png_rows(screenshot.read_bytes())
 
@@ -804,13 +810,14 @@ requestAnimationFrame(editStrokes);
         ]
         for x, y, expected in samples:
             actual = pixel(x, top + y)
-            assert all(abs(a - b) <= 2 for a, b in zip(actual, expected)), (x, y, actual, expected)
+            assert all(abs(a - b) <= 2 for a, b in zip(actual, expected)), (mode, x, y, actual, expected)
         text_pixels = [pixel(x, top + y) for y in range(82, 132) for x in range(302, 353)]
         assert sum(g > 247 and r < 8 and b < 8 for r, g, b in text_pixels) > 20, "Missing text stroke"
         assert sum(max(rgb) < 8 for rgb in text_pixels) > 20, "Missing text fill"
         documents.append(rows[marker:height - 24])
     assert documents[0] == documents[1], "Cached gradient strokes differ from uncached replay"
-    print("PASS: GG SVG gradient strokes, paint order, dashes, fixed width, and text", flush=True)
+    assert documents[2] == documents[3], "OpenGL 4.2 changed CPU gradient stroke pixels"
+    print("PASS: SVG gradient strokes preserve paint order, dashes, fixed width, and text on GPU and CPU", flush=True)
 
 
 def check_gg_svg_strokes(binary, artifacts, temporary):

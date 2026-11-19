@@ -65,8 +65,8 @@ fn portable_svg_raster_gradient_stops(gradient &painting.SVGGradientPaintStyle, 
 }
 
 fn portable_svg_raster_linear_gradient(linear &painting.SVGLinearGradientPaintStyle,
-	uses_rgb bool) cpuraster.CanvasPaintStyle {
-	return cpuraster.CanvasPaintStyle(cpuraster.CanvasGradient{
+	uses_rgb bool) cpuraster.CanvasGradient {
+	return cpuraster.CanvasGradient{
 		kind: 1
 		x0: f32(linear.start_point.x)
 		y0: f32(linear.start_point.y)
@@ -75,12 +75,12 @@ fn portable_svg_raster_linear_gradient(linear &painting.SVGLinearGradientPaintSt
 		spread: portable_svg_raster_spread(&linear.gradient)
 		local_transform: portable_svg_raster_gradient_transform(&linear.gradient)
 		stops: portable_svg_raster_gradient_stops(&linear.gradient, uses_rgb)
-	})
+	}
 }
 
 fn portable_svg_raster_radial_gradient(radial &painting.SVGRadialGradientPaintStyle,
-	uses_rgb bool) cpuraster.CanvasPaintStyle {
-	return cpuraster.CanvasPaintStyle(cpuraster.CanvasGradient{
+	uses_rgb bool) cpuraster.CanvasGradient {
+	return cpuraster.CanvasGradient{
 		kind: 2
 		x0: f32(radial.start_center.x)
 		y0: f32(radial.start_center.y)
@@ -91,7 +91,21 @@ fn portable_svg_raster_radial_gradient(radial &painting.SVGRadialGradientPaintSt
 		spread: portable_svg_raster_spread(&radial.gradient)
 		local_transform: portable_svg_raster_gradient_transform(&radial.gradient)
 		stops: portable_svg_raster_gradient_stops(&radial.gradient, uses_rgb)
-	})
+	}
+}
+
+fn portable_svg_visible_gradient(command &layout.PaintCommand, stroke bool) ?cpuraster.CanvasGradient {
+	linear := if stroke { command.stroke_linear_gradient() } else { command.fill_linear_gradient() }
+	if gradient := linear {
+		if !portable_svg_raster_linear_supported(&gradient, true) { return none }
+		return portable_svg_raster_linear_gradient(&gradient, true)
+	}
+	radial := if stroke { command.stroke_radial_gradient() } else { command.fill_radial_gradient() }
+	if gradient := radial {
+		if !portable_svg_raster_radial_supported(&gradient, true) { return none }
+		return portable_svg_raster_radial_gradient(&gradient, true)
+	}
+	return none
 }
 
 fn (mut app BrowserApp) draw_portable_svg_raster_gradient_fill(command &layout.PaintCommand,
@@ -99,15 +113,7 @@ fn (mut app BrowserApp) draw_portable_svg_raster_gradient_fill(command &layout.P
 	if data.path_data.len < layout.compatibility_clip_path_segment_stride || data.fill_pattern != none {
 		return false
 	}
-	style := if linear := command.fill_linear_gradient() {
-		if !portable_svg_raster_linear_supported(&linear, true) { return false }
-		portable_svg_raster_linear_gradient(&linear, true)
-	} else if radial := command.fill_radial_gradient() {
-		if !portable_svg_raster_radial_supported(&radial, true) { return false }
-		portable_svg_raster_radial_gradient(&radial, true)
-	} else {
-		return false
-	}
+	gradient := portable_svg_visible_gradient(command, false) or { return false }
 	opacity := f32(clamp(command.opacity * data.fill_opacity, 0.0, 1.0))
 	if opacity == 0 { return true }
 	path := cpuraster.canvas_path(data.path_data, data.fill_even_odd)
@@ -119,5 +125,5 @@ fn (mut app BrowserApp) draw_portable_svg_raster_gradient_fill(command &layout.P
 	bounds := portable_pixel_bounds(ink)
 	if bounds.is_empty() { return true }
 	return app.draw_portable_svg_cpu_fill(path, bounds, portable_svg_surface_matrix(transform, bounds),
-		0xff000000, style, opacity)
+		0xff000000, cpuraster.CanvasPaintStyle(gradient), opacity)
 }

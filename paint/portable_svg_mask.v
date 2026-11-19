@@ -57,10 +57,10 @@ fn portable_svg_mask_gradient_supported(operation &layout.PaintMaskOperation, lu
 
 fn portable_svg_mask_gradient(operation &layout.PaintMaskOperation, luminance bool) ?cpuraster.CanvasPaintStyle {
 	if linear := operation.fill_linear_gradient {
-		return portable_svg_raster_linear_gradient(&linear, luminance)
+		return cpuraster.CanvasPaintStyle(portable_svg_raster_linear_gradient(&linear, luminance))
 	}
 	if radial := operation.fill_radial_gradient {
-		return portable_svg_raster_radial_gradient(&radial, luminance)
+		return cpuraster.CanvasPaintStyle(portable_svg_raster_radial_gradient(&radial, luminance))
 	}
 	return none
 }

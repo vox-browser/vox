@@ -6250,7 +6250,7 @@ fn (mut app BrowserApp) draw_command(source_command &layout.PaintCommand, page_x
 	viewport_top := app.paint_replay_viewport_top(page_y)
 	viewport_bottom := f32(window_height - app.status_height())
 	if cull_bottom < viewport_top || cull_top > viewport_bottom {
-		$if vox_gg_svg ? {
+		$if linux || vox_gg_svg ? {
 			fringe := app.portable_non_scaling_stroke_fringe(command)
 			if cull_bottom + fringe < viewport_top || cull_top - fringe > viewport_bottom {
 				return
@@ -7425,72 +7425,7 @@ fn (mut app BrowserApp) draw_command(source_command &layout.PaintCommand, page_x
 					return
 				}
 			}
-			mut filled := false
-			mut stroked := false
-			$if vox_gg_svg ? {
-				if svg_data.stroke_first {
-					stroked = app.draw_portable_gpu_svg_stroke(command, svg_data, page_x, page_y)
-				}
-				if svg_data.svg_gradient_data != none {
-					filled = app.draw_portable_gpu_svg_gradient_fill(command, svg_data, page_x, page_y)
-				}
-			}
-			$if linux {
-				if !filled {
-					filled = app.draw_portable_svg_fill(command, svg_data, page_x, page_y)
-				}
-			}
-			$if windows && vox_gg_svg ? {
-				if !filled && portable_svg_gpu_enabled {
-					filled = app.draw_portable_svg_fill(command, svg_data, page_x, page_y)
-				}
-			}
-			if filled && (stroked || command.stroke_width <= 0
-				|| (command.stroke_color == '' && svg_data.svg_gradient_data == none)) {
-				return
-			}
-			$if vox_gg_svg ? {
-				if !svg_data.stroke_first && (filled || command.color == '') {
-					stroked = app.draw_portable_gpu_svg_stroke(command, svg_data, page_x, page_y)
-				}
-				if stroked && (filled || command.color == '') { return }
-			}
-			if filled && command.stroke_color == '' { return }
-			input_polygons := if svg_data.path_polygons.len > 0 {
-				svg_data.path_polygons
-			} else {
-				[command.points]
-			}
-			mut screen_polygons := [][]f32{cap: input_polygons.len}
-			for polygon in input_polygons {
-				mut screen_points := []f32{cap: polygon.len}
-				for index := 0; index + 1 < polygon.len; index += 2 {
-					point_x, point_y := paint_screen_point(*command, polygon[index], polygon[index + 1], page_x, page_y, scroll_y)
-					screen_points << point_x
-					screen_points << point_y
-				}
-				screen_polygons << screen_points
-			}
-			if !filled && command.color.len > 0 {
-				for polygon in screen_polygons {
-					if polygon.len >= 6 {
-						draw_browser_polygon(app.ctx, polygon, app.paint_colors.color_with_retained(command.color,
-							command.opacity * svg_data.fill_opacity, command.retained_svg_fill_color()))
-					}
-				}
-			}
-			if !stroked && command.stroke_color.len > 0 && screen_polygons.len > 0
-				&& screen_polygons[0].len >= 4 && command.stroke_width > 0 {
-				points := screen_polygons[0]
-				stroke := app.paint_colors.color_with_retained(command.stroke_color, command.opacity * svg_data.stroke_opacity,
-					command.retained_svg_stroke_color())
-				for index := 0; index + 3 < points.len; index += 2 {
-					draw_browser_line(app.ctx, points[index], points[index + 1], points[index + 2], points[index + 3], gg.PenConfig{
-						color: stroke
-						thickness: f32(command.stroke_width)
-					})
-				}
-			}
+			app.draw_portable_svg_path(command, svg_data, page_x, page_y, scroll_y)
 		}
 		'draw_text' {
 			{

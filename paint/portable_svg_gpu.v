@@ -286,27 +286,6 @@ $if vox_gg_svg ? {
 		return target.take_document_image()!
 	}
 
-	fn portable_svg_stroke_outset(data &layout.PaintSVGPathData, width f32, miter f32) f64 {
-		cap := if data.stroke_linecap == 2 { math.sqrt2 } else { 1.0 }
-		join := if data.stroke_linejoin == 0 { math.max(1.0, f64(miter)) } else { 1.0 }
-		return f64(width) * 0.5 * math.max(cap, join)
-	}
-
-	fn (app &BrowserApp) portable_non_scaling_stroke_fringe(command &layout.PaintCommand) f32 {
-		if !portable_svg_gpu_enabled || command.kind != 'draw_svg_path' || command.stroke_width <= 0 {
-			return 0
-		}
-		data := command.svg_data
-		if data == unsafe { nil } || !data.non_scaling_stroke
-			|| (command.stroke_color == '' && data.svg_gradient_data == none) {
-			return 0
-		}
-		// Layout's visual bounds are in transformed CSS pixels. The stroke's
-		// outset stays in device pixels until converted for viewport culling.
-		pad := portable_svg_stroke_outset(data, f32(command.stroke_width), f32(data.stroke_miterlimit))
-		return f32((pad + 1) / f64(app.ctx.scale))
-	}
-
 	fn (mut app BrowserApp) draw_portable_gpu_svg_stroke(command &layout.PaintCommand,
 		data layout.PaintSVGPathData, page_x f32, page_y f32) bool {
 		if !portable_svg_gpu_enabled || app.paint_effect_depth != 0 || app.paint_svg_mask_depth != 0
@@ -349,18 +328,7 @@ $if vox_gg_svg ? {
 		}
 		transform := portable_device_transform(multiply_paint_transforms(command.transform,
 			data.path_transform), page_x, page_y, f64(app.ctx.scale))
-		pad := portable_svg_stroke_outset(&data, width, miter)
-		rect := painting.Rect{f64(local.left), f64(local.top),
-			f64(local.right) - f64(local.left), f64(local.bottom) - f64(local.top)}
-		// The recorder transforms non-scaling geometry before stroking in
-		// device space. Bound caps and miters in that same space.
-		outline := if data.non_scaling_stroke {
-			transform.map_rect(rect).inflated(pad, pad, pad, pad)
-		} else {
-			transform.map_rect(rect.inflated(pad, pad, pad, pad))
-		}
-		ink := outline.inflated(1, 1, 1, 1)
-		bounds := portable_pixel_bounds(ink.intersection(app.portable_device_viewport(page_y)))
+		bounds := portable_svg_stroke_bounds(&data, local, transform, app.portable_device_viewport(page_y), width, miter)
 		if bounds.is_empty() { return true }
 		stroke := PortableSVGStroke{
 			width_bits: math.f32_bits(width)
