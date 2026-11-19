@@ -632,6 +632,72 @@ callback timings. The full Linux browser smoke suite, all 16 Linux GG SVG
 window checks, and Windows amd64 D3D11 and OpenGL source checks passed.
 Windows execution and hardware GPU timing remain unverified.
 
+## Isolating solid SVG strokes in portable paint groups
+
+In `5f059e114`, portable SVG opacity, clip, and mask groups
+composite solid strokes into the same surface as their fills. They use the
+leaf stroker's cap, join, dash, and non-scaling geometry, and expand
+the surface bounds for the stroke. The raster follows SVG paint
+order and applies group opacity after both paints. One path with
+both a fill and stroke can enter the opacity path. The existing
+scope and surface limits still apply.
+
+The window fixture checks opacity over overlapping leaves, a single
+path with stroke-first paint order, square caps, a dashed stroke
+through a circular clip, and a non-scaling stroke through an alpha
+mask. The previous build painted the first overlap as `#7f3fbf`
+because both leaves applied group opacity. The new result is
+`#7f7fff`. The Linux captures were pixel-identical with GG Canvas
+enabled and disabled, and diagnostics confirmed cached group reuse.
+The fixture SHA-256 was
+`b8edf7825805e5cb1f93ecc93ccbef87e1bbca14730180ef2d03147c0453cd76`.
+The 800 × 516 decoded document SHA-256 was
+`bd17930f0de302ccba94d6f98497cb5bcdba7a5fd06247da7a4e4fb8d4b44a2b`.
+
+Two matched pairs per unchanged fixture used V `5a39a4d` and
+identical single-unit Clang `-O0` flags. The control and candidate
+executable SHA-256 values were
+`074714026bc7f4ee3092a94d26b01f1674a7b49cdb6d4b8310bd4a43f515ecfe`
+and `e9a1e7c03937c305451b59bb0b6abc30af18793f7d9385b08a143d60e3fb661c`.
+The fill-only groups and ungrouped stroke fixture SHA-256 values were
+`2e7e05415b1dfe83b7aef3cdf62d0c963baa0b368c71f7585a80a43cba0d9cae`
+and `69825975e05ffb73e936b53ed45187ede0af0caa7b0c686f89e7e389db562096`.
+Both used an isolated profile and cache per process, a 1024 × 712
+Xvfb window with one Mesa software worker, a one-second settle, and
+48 synthetic callbacks with JavaScript disabled. The stroke fixture
+disabled texture caching to exercise each raster. Offsets ended at
+504 CSS pixels. The 1024 × 628 document captures, command counts,
+and scroll offsets matched. Executables, libraries, and fixtures
+retained their hashes through the runs. Browser and guard exits
+were zero. The first harness attempt looked for colors from the
+initial viewport after scrolling. The corrected assertion uses
+the colors in the final viewport.
+
+Separate diagnostics counted 139 group rasters per build on the
+fill fixture and 282 stroke rasters per build on the stroke fixture.
+The first cohort's one-minute guest load ranged from 0.44 to 0.73
+on four vCPUs.
+
+| Route and pair | Replay median before / after, ms | Replay p95 and maximum before / after, ms | Median allocated KiB before / after |
+| --- | ---: | ---: | ---: |
+| Fill-only groups 1 | 5.550 / 6.867 | 7.622, 29.201 / 7.903, 27.555 | 878 / 878.5 |
+| Fill-only groups 2 | 5.579 / 5.330 | 7.994, 28.068 / 7.306, 28.030 | 879 / 878 |
+| Ungrouped strokes 1 | 1.073 / 1.060 | 2.844, 3.088 / 2.947, 2.984 | 324 / 322.5 |
+| Ungrouped strokes 2 | 1.043 / 1.027 | 2.946, 3.180 / 2.861, 2.963 | 323 / 323.5 |
+| Fill-only groups 3 | 7.620 / 8.918 | 9.614, 32.068 / 11.509, 36.527 | 878 / 882 |
+| Fill-only groups 4 | 7.450 / 6.785 | 8.402, 32.053 / 8.656, 33.282 | 879.5 / 879.5 |
+
+The follow-up fill cohort repeated the same pixel, command count,
+and scroll checks at guest load 2.64–2.91. Fill medians rose in two
+pairs and fell in two. In the first pair, collection counts were
+22 before and 28 after. Medians for callbacks without collections
+were 5.156 and 5.203 ms. The cause of the whole-run timing variation
+remains unresolved. Ungrouped stroke medians stayed within 0.02 ms
+in software replay. The Linux browser smoke suite passed all 26
+checks, the GG SVG window suite passed all 18 checks, and macOS,
+Windows D3D11, and Windows OpenGL source checks passed. Windows
+runtime and hardware GPU performance remain unverified.
+
 ## Sharing the portable SVG fallback with Windows
 
 The standard Windows D3D11 window now uses the same CPU raster and GG texture
