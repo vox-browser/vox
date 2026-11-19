@@ -36,7 +36,7 @@ fn test_freetype_masks_match_native_outline_rasterization() {
 }
 
 fn test_freetype_path_strikes_keep_quadratic_outlines() {
-	$if linux || cpuraster_freetype ? {
+	$if linux || windows || cpuraster_freetype ? {
 		face := open_glyph_face(os.join_path(@VMODROOT, 'pixel_tests/sites/tarsnap/www.tarsnap.com/font/NotoSans-Regular-subset.ttf')) or { panic('face') }
 		defer { face.release() }
 		mut strike := new_glyph_strike(face, glyph_path_size, SkAffine{}, 0) or { panic('strike') }

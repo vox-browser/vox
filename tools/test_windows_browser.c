@@ -176,6 +176,36 @@ static int wait_pixel(HANDLE process, int x, int y, COLORREF expected) {
   return 0;
 }
 
+static int gradient_text_pixels(void) {
+  POINT origin = {448, 190};
+  if (!ClientToScreen(browser_window, &origin)) return 0;
+  HDC desktop = GetDC(NULL);
+  if (!desktop) return 0;
+  int ink = 0, red = 0, blue = 0;
+  int left = 40, right = -1, top = 36, bottom = -1;
+  for (int y = 0; y < 36; ++y) {
+    for (int x = 0; x < 40; ++x) {
+      COLORREF color = GetPixel(desktop, origin.x + x * 4, origin.y + y * 4);
+      if (color == CLR_INVALID || color == RGB(44, 160, 90)) continue;
+      if (GetRValue(color) > 190 && GetBValue(color) < 90) ++red;
+      if (GetBValue(color) > 190 && GetRValue(color) < 90) ++blue;
+      if (x < left) left = x;
+      if (x > right) right = x;
+      if (y < top) top = y;
+      if (y > bottom) bottom = y;
+      ++ink;
+    }
+  }
+  ReleaseDC(NULL, desktop);
+  // Count bare background inside the ink bounds so a gradient rectangle
+  // cannot pass by leaving bare pixels around its border.
+  int area = (right - left + 1) * (bottom - top + 1);
+  if (red > 8 && blue > 8 && ink * 4 < area * 3) return 1;
+  fprintf(stderr, "Gradient text samples: red=%d blue=%d ink=%d area=%d\n",
+          red, blue, ink, area);
+  return 0;
+}
+
 static int key(WORD code, DWORD flags) {
   INPUT input = {0};
   input.type = INPUT_KEYBOARD;
@@ -294,7 +324,10 @@ int wmain(int argc, wchar_t **argv) {
       "<path d='M16 0H176V200H16Z M72 68H104V180H72Z' fill='url(#band)' fill-rule='evenodd'/>"
       "<path d='M0 0V280' transform='translate(208) scale(3 1)' fill='none' "
       "stroke='#edc33b' stroke-width='12' stroke-dasharray='180 100' vector-effect='non-scaling-stroke'/>"
-      "</svg></body><script>globalThis.nativeInputReady=true;</script>";
+      "</svg><div style='position:absolute;left:450px;top:112px;font:bold 72px/96px sans-serif'>"
+      "<span style='background:linear-gradient(90deg,#ff3200 30%,#104cff 70%);"
+      "background-clip:text;color:transparent'>0.5</span></div>"
+      "</body><script>globalThis.nativeInputReady=true;</script>";
   char const second[] = "<!doctype html><title>Windows address entry "
                         "passed</title><h1>Navigation passed</h1>";
   if (!write_fixture(initial, first, sizeof first - 1) ||
@@ -338,6 +371,11 @@ int wmain(int argc, wchar_t **argv) {
       !wait_pixel(browser.hProcess, 211, 390, RGB(44, 160, 90)))
     goto finished;
   puts("PASS: SVG gradient, even-odd hole, and dashed non-scaling stroke pixels");
+  fflush(stdout);
+
+  phase = "gradient-text-pixels";
+  if (!gradient_text_pixels()) goto finished;
+  puts("PASS: CSS gradient paints inside the text mask");
   fflush(stdout);
 
   phase = "click";

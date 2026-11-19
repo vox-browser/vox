@@ -5961,7 +5961,7 @@ fn (mut app BrowserApp) draw_command(source_command &layout.PaintCommand, page_x
 		return
 	}
 	if command.kind == 'begin_background_text_clip' {
-		$if linux {
+		$if linux || windows {
 			app.begin_portable_background_text_clip(command, page_x, page_y)
 		}
 		$if macos {
@@ -6025,7 +6025,7 @@ fn (mut app BrowserApp) draw_command(source_command &layout.PaintCommand, page_x
 		return
 	}
 	if command.kind == 'end_background_text_clip' {
-		$if linux {
+		$if linux || windows {
 			app.portable_background_text_clip = none
 		}
 		$if macos {
@@ -6262,7 +6262,7 @@ fn (mut app BrowserApp) draw_command(source_command &layout.PaintCommand, page_x
 			return
 		}
 	}
-	$if linux {
+	$if linux || windows {
 		if app.portable_background_text_clip != none
 			&& command.kind in ['fill_rect', 'fill_rounded_rect'] {
 			app.draw_raster_background(command, [painting.Rect{command.x, command.y,
@@ -7645,7 +7645,7 @@ fn (mut app BrowserApp) draw() {
 		for replay_attempt in 0 .. 2 {
 			setup_instructions := processmetrics.begin_instruction_stage('raster_frame_setup')
 			app.portable_raster_image_index = 0
-			$if linux { app.portable_background_text_clip = none }
+			$if linux || windows { app.portable_background_text_clip = none }
 			$if macos {
 				if app.ctx.native_rendering {
 					// Speculative root pictures publish after the scroll raster ring

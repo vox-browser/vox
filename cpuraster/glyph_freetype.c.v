@@ -1,7 +1,7 @@
 module cpuraster
 
-$if linux || cpuraster_freetype ? {
-	$if linux {
+$if linux || windows || cpuraster_freetype ? {
+	$if linux || windows {
 		#pkgconfig freetype2
 	} $else {
 		// Test-only FreeType backend on macOS: Homebrew's FreeType

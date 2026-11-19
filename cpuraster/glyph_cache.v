@@ -105,7 +105,7 @@ fn (mut l LazyGlyphFace) get() ?GlyphFace {
 	if l.failed {
 		return none
 	}
-	face := $if linux || cpuraster_freetype ? {
+	face := $if linux || windows || cpuraster_freetype ? {
 		open_freetype_face(l.path, l.index) or {
 			l.failed = true
 			return none

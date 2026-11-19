@@ -101,7 +101,7 @@ fn fill_canvas_glyphs_surface(mut pixels []u8, width int, height int, pitch int,
 			return false
 		}
 	}
-	$if !linux && !cpuraster_freetype ? {
+	$if !linux && !windows && !cpuraster_freetype ? {
 		// SkTypeface_Mac::MakeFromStream() only opens the first face.
 		if run.face_index != 0 && !run.retained { return false }
 	}
@@ -164,7 +164,7 @@ fn fill_canvas_glyphs_surface(mut pixels []u8, width int, height int, pitch int,
 	// typeface, whose glyphs CoreText draws in the paint's opaque color.
 	luminance := paint_luminance(paint_color, alpha, shader, filter)
 	// CoreText's strike font is made with the first glyph the cache lacks.
-	mut strike := $if linux || cpuraster_freetype ? {
+	mut strike := $if linux || windows || cpuraster_freetype ? {
 		strike_face := lazy.get() or { return false }
 		new_glyph_strike(strike_face, run.font_size, position_matrix, luminance) or { GlyphStrike{} }
 	} $else {
@@ -204,7 +204,7 @@ fn fill_canvas_glyphs_surface(mut pixels []u8, width int, height int, pitch int,
 		// Color strikes check and draw their glyphs with the font itself.
 		strike.ensure_font(mut lazy)
 	}
-	$if linux || cpuraster_freetype ? {
+	$if linux || windows || cpuraster_freetype ? {
 		strike.foreground = (u32(paint_alpha_byte(alpha)) << 24) | (paint_color & 0xffffff)
 	}
 	// prepare_for_direct_mask_drawing(): device positions plus half the
@@ -231,7 +231,7 @@ fn fill_canvas_glyphs_surface(mut pixels []u8, width int, height int, pitch int,
 			}
 		}
 	}
-	$if linux || cpuraster_freetype ? {
+	$if linux || windows || cpuraster_freetype ? {
 		if !freetype_run_supported(&strike, run.glyphs) { return false }
 	}
 	mut target := new_canvas_target(mut pixels, width, height, pitch, alpha_type)
@@ -269,7 +269,7 @@ fn fill_canvas_glyphs_surface(mut pixels []u8, width int, height int, pitch int,
 	}
 	fill_glyph_outlines(mut pixels, pitch, run, routes, ctm, &rc, paint_color, shader, alpha, mode,
 		filter, legacy)
-	$if linux || cpuraster_freetype ? {
+	$if linux || windows || cpuraster_freetype ? {
 		if routes.any(it.kind == .drawable) {
 			drawable_face := lazy.get() or { return true }
 			fill_freetype_drawables(mut pixels, pitch, run, routes, drawable_face, ctm, &rc,
@@ -449,7 +449,7 @@ fn glyph_routes(face GlyphFace, ids []u16, as_paths bool) ?[]GlyphRoute {
 			continue
 		}
 		bounds := strike.glyph_bounds(id, 0, 0)
-		drawable := $if linux || cpuraster_freetype ? { C.cpuraster_ft_glyph_type(strike.font, id, 2) == 4 } $else { false }
+		drawable := $if linux || windows || cpuraster_freetype ? { C.cpuraster_ft_glyph_type(strike.font, id, 2) == 4 } $else { false }
 		route := if bounds.width == 0 || bounds.height == 0 {
 			GlyphRoute{
 				kind: .drop
@@ -993,7 +993,7 @@ mut:
 }
 
 fn new_glyph_strike(face GlyphFace, size f32, device SkAffine, luminance int) ?GlyphStrike {
-	$if linux || cpuraster_freetype ? {
+	$if linux || windows || cpuraster_freetype ? {
 		return new_freetype_strike(face, size, device, luminance)
 	}
 	mut strike := glyph_strike_template(size, device, luminance)?
@@ -1052,7 +1052,7 @@ fn (mut s GlyphStrike) glyph(id u16, sub_x int, sub_y int) StrikeGlyph {
 // SkScalerContext::internalMakeGlyph() with SkScalerContext_Mac's
 // generateMetrics() and generateImage().
 fn (s &GlyphStrike) make_glyph(id u16, sub_x_field int, sub_y_field int) StrikeGlyph {
-	$if linux || cpuraster_freetype ? {
+	$if linux || windows || cpuraster_freetype ? {
 		return freetype_make_glyph(s, id, sub_x_field, sub_y_field)
 	}
 	g := s.glyph_bounds(id, sub_x_field, sub_y_field)
@@ -1113,7 +1113,7 @@ fn (s &GlyphStrike) make_glyph(id u16, sub_x_field int, sub_y_field int) StrikeG
 // generateMetrics()'s bounds, rounded out, outset and saturated; zero for
 // an empty glyph.
 fn (s &GlyphStrike) glyph_bounds(id u16, sub_x_field int, sub_y_field int) StrikeGlyph {
-	$if linux || cpuraster_freetype ? {
+	$if linux || windows || cpuraster_freetype ? {
 		return freetype_glyph_bounds(s, id, sub_x_field, sub_y_field)
 	}
 	metrics := glyph_metrics(s.font, id, s.transform) or { return StrikeGlyph{} }
