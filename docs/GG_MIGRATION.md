@@ -1,5 +1,53 @@
 # Migrating from Skia to vlib/gg
 
+## Charging each SVG image once per frame
+
+Portable OpenGL SVG replay accounts for the area of each image when a
+frame first references it. Later placements and crops of that image can
+draw without spending more of the one-megapixel budget. A cropped draw
+charges the full backing image on first use. New and transient images
+are admitted against the same budget, before rasterization and queueing.
+
+The Linux window fixture first uses eight distinct 400 × 320 gradient
+images. With 24,576 pixels left, both builds decline a ninth distinct
+image. The candidate queues two further placements of the first image
+and paints the rightmost sample blue. The control leaves it white. A
+100 × 200 solid uses another 20,000 pixels. The candidate then reuses
+that image for its 30 × 200 viewport crop with 4,576 pixels left. The
+uncached candidate draws the same eight large gradients per frame, and
+the solid's crop uses the portable fallback. The full Linux GG SVG
+window suite and Windows amd64 OpenGL source check passed.
+
+The Linux timing comparison used six previously supported radial
+gradients, including two tangent pad gradients. Document pixels matched
+exactly. Both builds used V `5a39a4d`, single-unit Clang and `-O0`. The
+control and candidate executable SHA-256 values were
+`a6406b15ec784be11dced330e5d0e6e83da2db673d56ecaccdc17b432b32a91a`
+and `59ce22808305d99ec7b6511ca77a94eee055b47e1d2b76496619ef2058b75d8d`.
+The fixture and shader directory SHA-256 values were
+`31fa083ecdeb687010ac4d67fd9d1aca933bee20f0d77c21b97ea640e7b31e26`
+and `970ce36acbf7ea10b948d0a063d6315d587aadf8a8d84784d644b17ab6ffc48e`.
+
+Each synthetic trial used Mesa software OpenGL under Xvfb, a fresh
+process and private browser state, an 800 × 712 window, a one-second
+settle and 32 self-paced 42-pixel scroll steps. Scroll positions and
+paint-command counts matched. One-minute guest load ranged from 1.33 to
+1.67 on four virtual CPUs. The benchmark and memory guard exited zero.
+
+| Mode and pair | Median control / candidate, ms | p95, ms | Maximum, ms |
+| --- | ---: | ---: | ---: |
+| Cached 1 | 5.193 / 5.199 | 6.640 / 6.741 | 7.594 / 9.698 |
+| Cached 2 | 4.7685 / 5.226 | 5.980 / 6.585 | 7.292 / 8.846 |
+| Rerasterized 1 | 5.981 / 5.655 | 8.686 / 6.389 | 8.863 / 8.167 |
+| Rerasterized 2 | 5.3215 / 5.3615 | 7.588 / 7.339 | 9.686 / 8.034 |
+
+The cached median was nearly equal in the first pair and 9.6% higher in
+the second. The rerasterized medians moved in opposite directions.
+Separate diagnostic runs counted 186 steady-state texture hits with
+caching and 186 rasterizations with caching disabled. Working-tree
+differences and trial variability limit attribution. Hardware performance
+and Windows runtime remain unverified.
+
 ## Portable SVG draws beyond the texture cache
 
 Portable OpenGL SVG replay admits draws under its pixel and image budgets.
