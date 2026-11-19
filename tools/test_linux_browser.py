@@ -1386,6 +1386,81 @@ def check_svg_clip_browser(binary, artifacts, temporary):
     print("PASS: SVG clip bounds, curved unions, holes and fractional coverage", flush=True)
 
 
+def check_svg_gradient_groups_browser(binary, artifacts, temporary):
+    fixture = Path(__file__).resolve().parents[1] / "Tests/Browser/Native/svg-gradient-groups.html"
+    edited = Path(temporary) / "svg-gradient-groups-edited.html"
+    edited.write_text(fixture.read_text() + """
+<script>
+let frame = 0;
+function editGradient() {
+    if (++frame === 12)
+        document.getElementById('blue').firstElementChild.setAttribute('stop-color', '#f00');
+    if (frame === 24)
+        document.body.setAttribute('data-gradient-edit', 'ready');
+    else
+        requestAnimationFrame(editGradient);
+}
+requestAnimationFrame(editGradient);
+</script>
+""")
+    documents = []
+    for mode in ("cpu", "gg", "uncached", "edited"):
+        label = f"svg-gradient-groups-{mode}"
+        screenshot = artifacts / f"{label}.png"
+        screenshot.unlink(missing_ok=True)
+        environment = smoke_environment(Path(temporary) / label)
+        for effect in ("OPACITY", "CLIP", "MASK"):
+            environment.pop(f"VOX_DISABLE_PORTABLE_SVG_{effect}", None)
+            environment[f"VOX_PORTABLE_SVG_{effect}_DIAGNOSTICS"] = "1"
+        environment.update(VOX_GG_SVG=str(int(mode == "gg")), VOX_GG_SVG_DIAGNOSTICS="1",
+                           VOX_DISABLE_GG_SVG_CACHE=str(int(mode == "uncached")))
+        source = fixture
+        arguments = []
+        if mode == "edited":
+            source = edited
+            arguments.append("--enable-javascript")
+            environment["VOX_CAPTURE_READY_SELECTOR"] = "body[data-gradient-edit=ready]"
+        log = run_windowed([str(binary), "--window-width=800", "--window-height=600",
+                            *arguments, f"--screenshot={screenshot}", str(source)],
+                           env=environment, log_path=artifacts / f"{label}.log")
+        assert "VOX_SVG_OPACITY paths=2" in log, log
+        assert "VOX_SVG_CLIP crop=false components=1 paths=2" in log, log
+        assert "VOX_SVG_MASK luminance=false" in log, log
+        reused_scopes = set(re.findall(r"^VOX_SVG_GROUP cache=hit start=(\d+)", log, re.M))
+        assert len(reused_scopes) == (0 if mode == "uncached" else 3), log
+        _, height, channels, rows = rendered_png_rows(screenshot.read_bytes())
+
+        def pixel(x, y):
+            return rows[y][x * channels:x * channels + 3]
+
+        marker = next(y for y in range(min(height, 150)) if pixel(4, y) == b"\x34\xb7\x86")
+        top = marker + 8
+        white = b"\xff\xff\xff"
+        if mode == "edited":
+            assert log.count("VOX_SVG_MASK luminance=false") >= 2, log
+            assert pixel(24, top + 220) in (
+                b"\xff\x7f\x7f", b"\xff\x80\x80"), "The cached mask group kept its previous gradient stop"
+            assert pixel(100, top + 220) == white, "The edited gradient escaped the mask"
+            continue
+        red = pixel(20, top + 56)
+        blue = pixel(112, top + 56)
+        assert red in (b"\xff\x7f\x7f", b"\xff\x80\x80"), red
+        assert blue in (b"\x7f\x7f\xff", b"\x80\x80\xff"), blue
+        assert pixel(65, top + 56) == blue, "Gradient overlap blended the group opacity twice"
+        assert pixel(80, top + 56) == red, "Gradient fill lost its even-odd hole"
+        dark = pixel(148, top + 56)
+        assert dark[:2] == blue[:2] and dark[2] < blue[2], "The linear gradient missed the darker stop"
+        assert pixel(35, top + 108) == white, "Gradient escaped the curved clip"
+        assert pixel(68, top + 132) == b"\x00\xcc\x00", "The radial gradient center is missing"
+        assert pixel(95, top + 145) == b"\xff\x00\x00", "The later solid fill lost paint order"
+        assert pixel(116, top + 146) == white, "The clip missed the later solid fill"
+        assert pixel(24, top + 220) in (b"\x7f\x7f\xff", b"\x80\x80\xff"), "Mask opacity changed"
+        assert pixel(100, top + 220) == white, "The gradient escaped the alpha mask"
+        documents.append(rows[top:top + 264])
+    assert documents[0] == documents[1] == documents[2], "Grouped gradient replay changed pixels"
+    print("PASS: SVG gradient fills preserve group opacity, curved clips and alpha masks", flush=True)
+
+
 def check_nested_svg_browser(binary, artifacts, temporary):
     fixture = Path(__file__).resolve().parents[1] / "Tests/Browser/Native/nested-svg-groups.html"
     screenshot = artifacts / "portable-svg-nested.png"
@@ -1897,6 +1972,7 @@ def main():
         check_gradient_browser(binary, artifacts, temporary)
         check_svg_opacity_browser(binary, artifacts, temporary)
         check_svg_clip_browser(binary, artifacts, temporary)
+        check_svg_gradient_groups_browser(binary, artifacts, temporary)
         check_nested_svg_browser(binary, artifacts, temporary)
         check_svg_mask_browser(binary, artifacts, temporary)
         check_svg_mask_opacity_browser(binary, artifacts, temporary)

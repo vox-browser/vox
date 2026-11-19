@@ -240,7 +240,9 @@ fn (app &BrowserApp) can_retain_portable_svg_clip_variant(entry &PortableSVGRast
 }
 
 fn (mut app BrowserApp) invalidate_portable_svg_raster(index int, retain_current bool) {
-	if app.portable_svg_rasters == unsafe { nil } || index >= portable_svg_raster_slots { return }
+	if index >= portable_svg_raster_slots { return }
+	app.portable_svg_group_textures[index] = PortableSVGGroupTexture{}
+	if app.portable_svg_rasters == unsafe { nil } { return }
 	mut entry := &app.portable_svg_rasters.entries[index]
 	if entry.variant.image.width > 0 {
 		app.ctx.remove_cached_image_by_idx(entry.variant.image.image_id)

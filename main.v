@@ -451,6 +451,7 @@ mut:
 	portable_raster_images              []PortableRasterImage
 	portable_raster_image_index         int
 	portable_svg_rasters                &PortableSVGRasters = unsafe { nil }
+	portable_svg_group_textures         [portable_svg_raster_slots]PortableSVGGroupTexture
 	portable_background_text_clip       ?PortableBackgroundTextClip
 	portable_canvas_images              []PortableCanvasImage
 	portable_canvas_image_index         int

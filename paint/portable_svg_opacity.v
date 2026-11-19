@@ -41,10 +41,13 @@ fn (mut app BrowserApp) draw_portable_svg_opacity_group(commands []layout.PaintC
 	if clip := opening.effect_ancestor_clip() {
 		viewport = viewport.intersection(portable_svg_device_clip(clip, page_x, page_y, scale))
 	}
+	key := app.portable_svg_group_key(commands, start, viewport, page_x, page_y)
+	alpha := u8(math.round(layer.opacity * 255))
+	if app.draw_cached_portable_svg_group(key, alpha) { return end + 1 }
 	image := app.raster_portable_svg_group(commands[start + 1..end], viewport, page_x, page_y,
 		layer.opacity) or { return start }
 	if image.bounds.is_empty() { return end + 1 }
-	app.draw_portable_svg_group_image(image, u8(math.round(layer.opacity * 255)))
+	app.draw_portable_svg_group_image(image, alpha, key)
 	if portable_svg_opacity_diagnostics {
 		eprintln('VOX_SVG_OPACITY paths=${image.paths} texture=${image.bounds.width}x${image.bounds.height}')
 	}

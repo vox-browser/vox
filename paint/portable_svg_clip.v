@@ -58,6 +58,8 @@ fn (mut app BrowserApp) draw_portable_svg_mask_group(commands []layout.PaintComm
 		}
 	}
 	viewport = viewport.intersection(region)
+	key := app.portable_svg_group_key(commands, start, viewport, page_x, page_y)
+	if app.draw_cached_portable_svg_group(key, 255) { return end + 1 }
 	mut image := app.raster_portable_svg_group(commands[start + 1..end], viewport, page_x, page_y,
 		1) or { return start }
 	if image.bounds.is_empty() { return end + 1 }
@@ -66,7 +68,7 @@ fn (mut app BrowserApp) draw_portable_svg_mask_group(commands []layout.PaintComm
 	} else if !direct_crop && !apply_portable_svg_clip(mut image, mask.path_components, page_x, page_y, scale) {
 		return start
 	}
-	app.draw_portable_svg_group_image(image, 255)
+	app.draw_portable_svg_group_image(image, 255, key)
 	if mask.is_svg_content_mask && portable_svg_mask_diagnostics {
 		eprintln('VOX_SVG_MASK luminance=${mask.mask_luminance} operations=${mask.mask_operations.len} paths=${image.paths} texture=${image.bounds.width}x${image.bounds.height}')
 	} else if !mask.is_svg_content_mask && portable_svg_clip_diagnostics {

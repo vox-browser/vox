@@ -31,21 +31,35 @@ fn portable_svg_group_clip_supported(command &layout.PaintCommand) bool {
 
 fn portable_svg_group_fill_supported(command &layout.PaintCommand, first &layout.PaintCommand,
 	group_opacity f64) bool {
-	return command.kind == 'draw_svg_path' && command.svg_data != unsafe { nil }
-		&& command.color != '' && (command.stroke_color == '' || command.stroke_width <= 0)
-		&& command.svg_data.path_data.len >= layout.compatibility_clip_path_segment_stride
-		&& command.svg_data.svg_gradient_data == none && command.svg_data.fill_pattern == none
-		&& command.blur == 0 && !command.outer_shadow && command.scrollbar_axis == ''
-		&& f32(command.group_opacity) == f32(group_opacity)
-		&& command.has_clip == first.has_clip && command.clip_x == first.clip_x
-		&& command.clip_y == first.clip_y && command.clip_width == first.clip_width
-		&& command.clip_height == first.clip_height && portable_svg_group_clip_supported(command)
+	data := command.svg_data
+	if command.kind != 'draw_svg_path' || data == unsafe { nil }
+		|| data.path_data.len < layout.compatibility_clip_path_segment_stride || data.fill_pattern != none
+		|| (command.stroke_width > 0 && (command.stroke_color != '' || data.stroke_pattern != none))
+		|| command.blur != 0 || command.outer_shadow || command.scrollbar_axis != ''
+		|| f32(command.group_opacity) != f32(group_opacity)
+		|| command.has_clip != first.has_clip || command.clip_x != first.clip_x
+		|| command.clip_y != first.clip_y || command.clip_width != first.clip_width
+		|| command.clip_height != first.clip_height || !portable_svg_group_clip_supported(command) {
+		return false
+	}
+	if gradients := data.svg_gradient_data {
+		if command.stroke_width > 0 && (gradients.stroke_linear_gradient != none
+			|| gradients.stroke_radial_gradient != none) {
+			return false
+		}
+		if gradients.fill_linear_gradient != none || gradients.fill_radial_gradient != none {
+			return true
+		}
+	}
+	return command.color != ''
 }
 
 struct PortableSVGGroupPath {
 	path      cpuraster.Path
 	transform painting.Affine
 	color     u32
+	style     ?cpuraster.CanvasPaintStyle
+	opacity   f32
 }
 
 struct PortableSVGGroupImage {
@@ -53,6 +67,46 @@ struct PortableSVGGroupImage {
 	paths  int
 mut:
 	pixels []u8
+}
+
+struct PortableSVGGroupKey {
+	generation u64
+	start      int
+	viewport   painting.Rect
+	page_x     f32
+	page_y     f32
+	scale      f32
+}
+
+struct PortableSVGGroupTexture {
+	key    PortableSVGGroupKey
+	bounds painting.IntRect
+}
+
+fn (app &BrowserApp) portable_svg_group_key(commands []layout.PaintCommand, start int,
+	viewport painting.Rect, page_x f32, page_y f32) PortableSVGGroupKey {
+	// Nested recordings use projected copies of the commands. The canonical
+	// recording generation only tracks the top-level command vector.
+	if disable_portable_svg_raster_cache || commands.data != app.paint_commands.data
+		|| app.portable_raster_image_index >= portable_svg_raster_slots {
+		return PortableSVGGroupKey{}
+	}
+	return PortableSVGGroupKey{app.paint_generation, start, viewport, page_x, page_y, app.ctx.scale}
+}
+
+fn (mut app BrowserApp) draw_cached_portable_svg_group(key PortableSVGGroupKey, alpha u8) bool {
+	index := app.portable_raster_image_index
+	if key.generation == 0 || index >= app.portable_raster_images.len { return false }
+	texture := &app.portable_svg_group_textures[index]
+	if texture.key != key { return false }
+	app.ctx.draw_image_with_config(img_id: app.portable_raster_images[index].image_id,
+		img_rect: app.portable_svg_texture_destination(texture.bounds),
+		color: gg.Color{255, 255, 255, alpha})
+	app.portable_raster_image_index++
+	if portable_svg_raster_diagnostics {
+		eprintln('VOX_SVG_GROUP cache=hit start=${key.start}')
+	}
+	return true
 }
 
 fn (mut app BrowserApp) raster_portable_svg_group(commands []layout.PaintCommand,
@@ -77,13 +131,30 @@ fn (mut app BrowserApp) raster_portable_svg_group(commands []layout.PaintCommand
 			data.path_transform), page_x, page_y, scale)
 		bounds := portable_svg_path_bounds(path, transform, clip) or { return none }
 		if bounds.is_empty() { continue }
-		color := app.paint_colors.color_with_retained(command.color,
-			command.opacity / group_opacity * data.fill_opacity, command.retained_svg_fill_color())
-		if color.a == 0 { continue }
+		// Opacity scopes already folded their alpha into the recorded leaves.
+		// Restore the fill alpha before compositing the members.
+		fill_alpha := command.opacity / group_opacity * data.fill_opacity
+		mut style := ?cpuraster.CanvasPaintStyle(none)
+		mut color := u32(0xff000000)
+		mut opacity := f32(1)
+		if gradients := data.svg_gradient_data {
+			if gradients.fill_linear_gradient != none || gradients.fill_radial_gradient != none {
+				opacity = f32(clamp(fill_alpha, 0, 1))
+				if opacity == 0 { continue }
+				gradient := portable_svg_visible_gradient(command, false) or { return none }
+				style = cpuraster.CanvasPaintStyle(gradient)
+			}
+		}
+		if style == none {
+			solid := app.paint_colors.color_with_retained(command.color, fill_alpha,
+				command.retained_svg_fill_color())
+			if solid.a == 0 { continue }
+			color = portable_svg_argb(solid)
+		}
 		ink = ink.united(bounds)
 		path_bounds := portable_pixel_bounds(bounds)
 		path_pixels += path_bounds.width * path_bounds.height
-		paths << PortableSVGGroupPath{path, transform, portable_svg_argb(color)}
+		paths << PortableSVGGroupPath{path, transform, color, style, opacity}
 	}
 	if paths.len == 0 { return PortableSVGGroupImage{} }
 	bounds := portable_pixel_bounds(ink)
@@ -95,7 +166,7 @@ fn (mut app BrowserApp) raster_portable_svg_group(commands []layout.PaintCommand
 	mut surface := []u8{len: pitch * bounds.height}
 	for path in paths {
 		if !cpuraster.fill_canvas_path(mut surface, bounds.width, bounds.height, pitch, 2,
-			path.path, portable_svg_surface_matrix(path.transform, bounds), path.color, none, 1,
+			path.path, portable_svg_surface_matrix(path.transform, bounds), path.color, path.style, path.opacity,
 			.src_over, 0, [], none) {
 			return none
 		}
@@ -108,12 +179,15 @@ fn (mut app BrowserApp) raster_portable_svg_group(commands []layout.PaintCommand
 	return PortableSVGGroupImage{bounds: bounds, paths: paths.len, pixels: pixels}
 }
 
-fn (mut app BrowserApp) draw_portable_svg_group_image(image &PortableSVGGroupImage, alpha u8) {
+fn (mut app BrowserApp) draw_portable_svg_group_image(image &PortableSVGGroupImage, alpha u8,
+	key PortableSVGGroupKey) {
 	bounds := image.bounds
-	scale := f64(app.ctx.scale)
-	app.draw_portable_raster_texture_with_alpha(gg.Rect{f32(f64(bounds.x) / scale),
-		f32(f64(bounds.y) / scale), f32(f64(bounds.width) / scale), f32(f64(bounds.height) / scale)},
+	index := app.portable_raster_image_index
+	app.draw_portable_raster_texture_with_alpha(app.portable_svg_texture_destination(bounds),
 		bounds.width, bounds.height, image.pixels, alpha)
+	if key.generation != 0 {
+		app.portable_svg_group_textures[index] = PortableSVGGroupTexture{key, bounds}
+	}
 }
 
 fn portable_svg_device_clip(clip layout.LayoutRect, page_x f32, page_y f32, scale f64) painting.Rect {
