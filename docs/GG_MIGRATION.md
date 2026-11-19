@@ -660,6 +660,62 @@ source check passed. The Windows VM's disk reserve
 requires 5 GiB of free host storage. The host had about 1.6 GiB free, so
 Windows pixel and timing checks remain pending.
 
+## Replaying packed SVG circles and ellipses
+
+Browser layout can encode an authored SVG circle or ellipse as one
+packed oval. GG Canvas already decodes that record. In `f823b98e5`,
+the shared CPU decoder builds the same clockwise oval from four
+conics, which also gives the GG fill path valid bounds before it
+allocates a surface. Invalid rectangles are skipped.
+
+The Linux control rendered white at all four interior samples on the
+new oval fixture. The revised build drew the solid ellipse, stroked
+circle, and gradient ellipse. GG Canvas and both CPU routes matched
+the sampled interior colors, and the two CPU captures matched exactly.
+Diagnostics confirmed fill texture hits with GG enabled, disabled, and
+under the OpenGL 4.2 fallback. The fixture SHA-256 was
+`413d20cf5fcdd1d3216d987c8474b06920b3238c77778d873d04d7ec9e71f142`.
+
+A separate unchanged-path fixture checked replay overhead. Two
+alternating pairs per route used V `5a39a4d`, identical single-unit
+Clang `-O0` flags, a fresh process and private profile and cache per
+trial, and a software OpenGL Xvfb window with one Mesa worker. Each
+trial recorded 32 synthetic callbacks after one second of settling,
+with JavaScript disabled. The executable SHA-256 values were
+`811788f6028eb0ba550703055592d685679dd0a4fcedb6746a0190978301175e`
+and `6293cfbcea1307d96f56d8dbda8b83a61dfebc1b6493520a840bc8fb979cf859`.
+Executable, linked library, and fixture hashes stayed fixed. The fixture
+SHA-256 was `144999f58083ca32572ec19db85343044bb1985dbcefc581ec466b6458ef1bb6`.
+The 800 × 628 document capture, command counts, and scroll offsets
+matched. One-minute guest load ranged from 0.78 to 1.17 on four vCPUs.
+The browser and memory guard exits were zero. An initial control run
+had a document marker that scrolled out of view. Fixing the marker
+restored capture identity before collecting the pairs below.
+
+| Route and pair | Replay median before / after, ms | Replay p95 and maximum before / after, ms | Median allocated KiB before / after |
+| --- | ---: | ---: | ---: |
+| CPU 1 | 0.554 / 0.687 | 1.271, 2.508 / 0.922, 2.476 | 123 / 124 |
+| CPU 2 | 0.583 / 0.646 | 0.667, 1.966 / 0.872, 2.213 | 123.5 / 124 |
+| GG Canvas 1 | 0.613 / 0.594 | 1.163, 2.029 / 1.166, 2.641 | 125 / 125.5 |
+| GG Canvas 2 | 0.574 / 0.590 | 1.364, 2.023 / 1.165, 4.006 | 127 / 124.5 |
+
+CPU replay medians rose by 0.06–0.13 ms. GG Canvas medians varied
+by 0.02 ms, with higher maxima in both pairs. Hardware GPU timing
+remains unverified. The packed path unit test passed with `-gc none`
+on macOS. The pinned CPU raster differential suite, all 18 Linux GG
+SVG window checks, and macOS and both Windows source checks passed.
+The regular Linux suite passed all 25 checks on retry. The first run
+exited 139 during X11 keyboard navigation after passing the rendering
+checks.
+
+The Windows OpenGL build used V `2655544` and MinGW GCC 16.2.0.
+The resulting PE32+ executable SHA-256 was
+`6d83cfc81e29618aaac2db5b7a3e5f86cf67811b061ae7eddd6eaa69696da331`.
+Its build guard exited zero at a sampled peak RSS of 9,405,661,184 bytes.
+The test guest reached the Windows sign-in screen, but the interactive
+test account could not sign in. The guest shut down normally with
+guard exit zero. Windows runtime pixels remain unverified.
+
 ## Sharing CSS gradient text masks with Windows
 
 Windows D3D11 and OpenGL now replay `background-clip: text` through the
