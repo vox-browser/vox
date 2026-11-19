@@ -9,7 +9,7 @@
 </style>
 <div class="stage">
   <header></header>
-  <svg width="520" height="320">
+  <svg width="520" height="424">
     <defs>
       <radialGradient id="repeat-outer" gradientUnits="userSpaceOnUse" cx="112.5" cy="48.5"
                       fr="10" r="28" spreadMethod="repeat">
@@ -44,6 +44,13 @@
         <stop offset=".75" stop-color="#4000bf"/>
         <stop offset="1" stop-color="#0000ff"/>
       </radialGradient>
+      <radialGradient id="tangent-repeat" gradientUnits="userSpaceOnUse" cx="100.5" cy="360.5"
+                      fx="76.5" fy="360.5" fr="8" r="32">
+        <stop offset="0" stop-color="red"/>
+        <stop offset="1" stop-color="blue"/>
+      </radialGradient>
+      <radialGradient id="tangent-reflect" href="#tangent-point" spreadMethod="reflect"
+                      gradientTransform="translate(0 88)"/>
     </defs>
     <path d="M8 8H232V104H8Z" fill="url(#repeat-outer)"/>
     <path d="M256 8H512V96H256Z" fill="url(#reflect-outer)" fill-opacity=".5"/>
@@ -51,5 +58,7 @@
     <path d="M256 124H496V212H256Z" fill="url(#offset-point)" fill-opacity=".5"/>
     <path d="M8 240H192V312H8Z" fill="url(#tangent-circle)"/>
     <path d="M264 240H456V312H264Z" fill="url(#tangent-point)" fill-opacity=".5"/>
+    <path d="M8 328H192V416H8Z" fill="url(#tangent-repeat)"/>
+    <path d="M264 328H456V416H264Z" fill="url(#tangent-reflect)" fill-opacity=".5"/>
   </svg>
 </div>

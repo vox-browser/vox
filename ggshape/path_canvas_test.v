@@ -130,16 +130,27 @@ fn test_shared_svg_path_pixels() {
 	assert pixels[inner..inner + 4] == [u8(0), 0, 255, 255]
 	assert pixels[middle + 1] in [u8(63), 64, 65] && pixels[middle + 2] in [u8(190), 191, 192]
 	assert pixels[across + 1] in [u8(36), 37, 38] && pixels[across + 2] in [u8(217), 218, 219]
+	path.tile_mode = 1
+	assert draw_path_with_context(mut ctx, pixels.data, width, height, pitch, 0, &path, false) == 1
+	assert pixels[behind..behind + 4] == [u8(0), 0, 0, 0]
+	// The center's t = -3/16 repeats to 13/16.
+	assert pixels[inner + 1] in [u8(206), 207, 208] && pixels[inner + 2] in [u8(47), 48, 49]
+	assert pixels[inner + 3] == 255
+	path.tile_mode = 2
 	path.stops = reflect_stops.data
 	path.stop_count = 5
 	path.opacity = 0.5
 	assert draw_path_with_context(mut ctx, pixels.data, width, height, pitch, 0, &path, false) == 1
 	assert pixels[behind..behind + 4] == [u8(0), 0, 0, 0]
+	// Reflection maps t = -3/16 to 3/16 before the paint's half opacity.
+	assert pixels[inner + 1] in [u8(23), 24, 25] && pixels[inner + 2] in [u8(103), 104, 105]
+	assert pixels[inner + 3] in [u8(127), 128]
 	assert pixels[middle + 1] in [u8(31), 32, 33] && pixels[middle + 2] in [u8(95), 96]
 	assert pixels[middle + 3] in [u8(127), 128]
 	path.stops = stops.data
 	path.stop_count = 2
 	path.opacity = 1
+	path.tile_mode = 0
 
 	path.stroke = 1
 	path.stroke_width = 2
@@ -151,6 +162,10 @@ fn test_shared_svg_path_pixels() {
 
 	before := pixels.clone()
 	path.tile_mode = 1
+	// A repeating point focus on the outer circle has separate SVG semantics.
+	path.gradient_points = [f32(4.5), 4.5, 0, 12.5, 4.5, 8]!
+	assert draw_path_with_context(mut ctx, pixels.data, width, height, pitch, 1, &path, false) == 0
+	assert pixels == before
 	// Crossing circles still use the fallback.
 	path.gradient_points = [f32(4.5), 4.5, 3, 14.5, 4.5, 11]!
 	assert draw_path_with_context(mut ctx, pixels.data, width, height, pitch, 1, &path, false) == 0

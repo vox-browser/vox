@@ -33,8 +33,12 @@ fn nested_circle_gradient(start Point, start_radius f32, end Point, end_radius f
 	dx := f64(end.x) - f64(start.x)
 	dy := f64(end.y) - f64(start.y)
 	distance := math.sqrt(dx * dx + dy * dy)
-	if g.tile_mode == .clamp && span == distance && span > f64(gradient_degenerate_threshold)
-		&& math.is_finite(span) {
+	if span == distance && span > f64(gradient_degenerate_threshold) && math.is_finite(span) {
+		// SVG uses a weighted average on the far side of a repeating point
+		// focus on the outer circle. Keep that case with the SVG fallback.
+		if g.tile_mode == .decal || (g.tile_mode == .repeat && start_radius == 0) {
+			return error('gg.canvas: unsupported tile mode for this tangent gradient')
+		}
 		return tangent_circle_gradient(start, start_radius, dx, dy, span, g)
 	}
 	if !(span - distance > f64(gradient_degenerate_threshold)) || !math.is_finite(span) {

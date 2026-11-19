@@ -211,7 +211,7 @@
     {
       "file": "gpu_gradient.v",
       "old": "// gradients that start at a point are radial gradients. Other two-point\n// conical gradients are not supported yet.",
-      "new": "// gradients that start at a point are radial gradients. Expanding concentric\n// gradients also support repeat and mirror tiling with a focal radius.\n// Off-center gradients can expand from a strictly contained focal circle.\n// Clamp also supports an internally tangent focal circle."
+      "new": "// gradients that start at a point are radial gradients. Expanding concentric\n// gradients also support repeat and mirror tiling with a focal radius.\n// Off-center gradients can expand from a strictly contained focal circle.\n// Internally tangent circles support clamp and mirror, and repeat when\n// the focal radius is positive."
     },
     {
       "file": "gpu_gradient.v",
