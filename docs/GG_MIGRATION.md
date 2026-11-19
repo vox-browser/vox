@@ -1,5 +1,55 @@
 # Migrating from Skia to vlib/gg
 
+## Reusing the SVG geometry lookup for exact textures
+
+The OpenGL SVG bounds lookup now returns the matching cache slot. If that
+slot also matches the draw's transform, extent, paint and dash pattern,
+the renderer uses its texture immediately. The full search still handles
+paths that share geometry but use different paints or clipped extents.
+
+The zero-focal-radial fixture produced identical document pixels before
+and after the change. In a separate diagnostic, all 62 gradient draws
+after the first callback reused the bounds slot and skipped the texture
+search. The Linux GG SVG window suite verified that a linear and radial
+fill sharing geometry still select separate textures. The Windows amd64
+OpenGL source check passed.
+
+Both Linux executables used V `5a39a4d` and single-unit Clang `-O0`.
+Baseline and candidate executable SHA-256 values were
+`577804eeb49b809f51da18c546080ee3f0001583b96ae3e9ee4b81d4e10cf5f4` and
+`d2501c77a1daa3da6b158756406ff4c8ea6dfee4e5d3d38d633997e585fb8bd3`.
+The fixture SHA-256 was
+`c5d880e712d0a6eb9bd203e4c58cbbcd0939ade054911cc6cd893ed49e01fef2`.
+Three alternating pairs used cached SVG textures, Mesa software OpenGL
+under Xvfb, an 800 × 712 window, a one-second settle and 32 synthetic
+42-pixel scroll steps. Each run had a fresh process and private browser
+state. Scroll positions and paint-command counts matched. One-minute
+guest load ranged from 1.28 to 1.58 on four virtual CPUs. The benchmark,
+browser and memory guard exited zero.
+
+| Pair | Median callback baseline / candidate, ms | p95, ms | Maximum, ms |
+| ---: | ---: | ---: | ---: |
+| 1 | 4.658 / 4.8475 | 6.163 / 5.836 | 7.932 / 8.452 |
+| 2 | 4.714 / 4.437 | 7.737 / 7.006 | 7.938 / 8.314 |
+| 3 | 4.8445 / 4.871 | 8.130 / 6.089 | 8.912 / 7.695 |
+
+The first window suite exposed a diagnostic suffix used by the dashed
+stroke test. The final build moved the new marker earlier on the line.
+Its executable SHA-256 was
+`05def48a1bead78677995b824dc0d0b4830e6de0f41a47e981996f404db0d767`.
+It repeated the same workload and reproduced the exact document pixels
+and the 62 direct texture hits. One-minute guest load ranged from 1.10
+to 1.25. The benchmark, browser and memory guard exited zero.
+
+| Final pair | Median callback baseline / candidate, ms | p95, ms | Maximum, ms |
+| ---: | ---: | ---: | ---: |
+| 1 | 4.7345 / 4.3795 | 7.722 / 5.056 | 7.892 / 6.339 |
+| 2 | 4.6845 / 4.566 | 5.425 / 5.107 | 7.144 / 5.117 |
+| 3 | 4.8195 / 4.876 | 6.050 / 6.111 | 7.880 / 7.403 |
+
+Across the six pairs, the p95 fell five times. Median callback times
+varied. These synthetic callbacks leave hardware performance open.
+
 ## Repeating and reflected SVG focal circles
 
 The shared Canvas gradient constructor accepts expanding concentric radial
