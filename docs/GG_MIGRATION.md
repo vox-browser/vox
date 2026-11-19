@@ -1,5 +1,57 @@
 # Migrating from Skia to vlib/gg
 
+## Skipping invisible SVG mask opacity groups
+
+The mask player uses the bitmap compositor's opacity byte before
+allocating an isolated layer. When that byte is zero, it advances to the
+matching end marker, including across nested opacity scopes. The
+line-path bounds check also skips empty scopes and groups wholly above
+the clip. The opt-in row-band path can recognize groups below the clip.
+
+The browser regression verified that opacity `.003` skips a nested
+group, opacity `.004` still contributes one alpha byte, and a line
+group wholly above the clip is skipped. Sibling and nested visible
+groups still matched their expected pixels. The focused canvas layer
+tests and pinned Skia differential suite passed.
+
+Fresh Linux aarch64 builds used V `5a39a4d` and matching single-unit
+Clang `-O0` flags. The control and candidate executable SHA-256 values
+were `ff14bdef6e5182048f190fca2b55c5c7175db7891ca8d59e0c726986a1a90ca4`
+and `cc1bf01dd908d7fcf485d0bf80c8cb496231929b8c758bafc035dc971d24dee8`.
+The ordinary, gradient, and invisible-group fixtures matched pixel for
+pixel in 800 × 600 document captures at scroll offsets 0 and 42 CSS
+pixels. The invisible-group fixture extends the solid mask regions to
+170 pixels and adds a four-level opacity subtree at `.003` plus a
+group above the clip. Its pixels matched the ordinary solid fixture.
+The solid and gradient hashes match the
+[previous opacity captures](#blending-svg-mask-opacity-layers-directly-on-linux).
+
+Two alternating replay pairs per fixture used fresh processes and
+private profiles, a 1024 × 712 Xvfb window, Mesa software rendering,
+and a one-second settle period. JavaScript, GPU SVG replay, SVG texture
+reuse, and leading-row cropping were disabled. Each trial completed 80
+synthetic callbacks with matched paint command counts and scroll offsets
+up to 1248 CSS pixels. The ordinary and invisible-group fixture SHA-256
+values were
+`2ca5b13ae5723502fa64a1661cb1ea2b3eb129e2508c048cd6fa1cf6e429ea51` and
+`34c38493efc649a8bd7a32af592cf5e073ff6b66a0f22edf4d21ae825892d680`.
+Input hashes stayed fixed and all browser and guard exits were zero.
+Guest one-minute load ranged from 0.92 to 0.95 on four vCPUs.
+
+| Fixture and pair | Replay median before / after, ms | Replay p95 and maximum before / after, ms | Median allocated KiB before / after |
+| --- | ---: | ---: | ---: |
+| Ordinary 1 | 7.059 / 6.439 | 13.375, 25.402 / 13.623, 29.785 | 2903.5 / 2905.5 |
+| Ordinary 2 | 6.421 / 6.461 | 13.818, 26.074 / 13.375, 25.971 | 2901.5 / 2905 |
+| Invisible 1 | 17.417 / 15.045 | 30.567, 34.771 / 17.520, 32.755 | 4970.5 / 3786 |
+| Invisible 2 | 26.822 / 8.824 | 32.033, 49.871 / 18.050, 31.102 | 4968.5 / 3798 |
+
+The invisible-group fixture allocated 1171–1185 KiB less per callback.
+Its p95 fell by 43–44% across the two pairs. Its median varied between
+trials, and ordinary-fixture timings were mixed. These results cover
+software-rendered synthetic replay. All 20 Linux browser checks passed,
+along with macOS source checks and Windows source checks for D3D11 and
+OpenGL.
+
 ## Opt-in leading-row cropping for SVG mask opacity layers
 
 With leading-row cropping enabled, the mask player stores a row band
