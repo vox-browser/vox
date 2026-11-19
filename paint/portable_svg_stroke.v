@@ -39,7 +39,7 @@ fn (app &BrowserApp) portable_non_scaling_stroke_fringe(command &layout.PaintCom
 		eligible = portable_svg_gpu_enabled
 	}
 	$if linux {
-		eligible = eligible || data.svg_gradient_data != none
+		eligible = true
 	}
 	if !eligible { return 0 }
 	// Layout bounds are in CSS pixels and the stroke is evaluated in device pixels.
@@ -57,9 +57,9 @@ fn portable_svg_surface_gradient_transform(surface [6]f32, local [6]f32) [6]f32 
 	return [f32(m[0]), f32(m[1]), f32(m[2]), f32(m[3]), f32(m[4]), f32(m[5])]!
 }
 
-fn (mut app BrowserApp) draw_portable_svg_raster_gradient_stroke(command &layout.PaintCommand,
+fn (mut app BrowserApp) draw_portable_svg_raster_stroke(command &layout.PaintCommand,
 	data layout.PaintSVGPathData, page_x f32, page_y f32) bool {
-	if data.svg_gradient_data == none || data.stroke_pattern != none
+	if (command.stroke_color == '' && data.svg_gradient_data == none) || data.stroke_pattern != none
 		|| data.path_data.len < layout.compatibility_clip_path_segment_stride {
 		return false
 	}
@@ -68,9 +68,19 @@ fn (mut app BrowserApp) draw_portable_svg_raster_gradient_stroke(command &layout
 	if !(width > 0) || !math.is_finite(f64(width)) || !math.is_finite(f64(miter)) {
 		return false
 	}
-	mut gradient := portable_svg_visible_gradient(command, true) or { return false }
-	opacity := f32(clamp(command.opacity * data.stroke_opacity, 0.0, 1.0))
+	mut opacity := f32(clamp(command.opacity * data.stroke_opacity, 0.0, 1.0))
 	if opacity == 0 { return true }
+	mut color := u32(0xff000000)
+	mut gradient := ?cpuraster.CanvasGradient(none)
+	if command.stroke_color == '' {
+		gradient = portable_svg_visible_gradient(command, true) or { return false }
+	} else {
+		stroke := app.paint_colors.color_with_retained(command.stroke_color,
+			command.opacity * data.stroke_opacity, command.retained_svg_stroke_color())
+		if stroke.a == 0 { return true }
+		color = portable_svg_argb(stroke)
+		opacity = 1
+	}
 	mut path := cpuraster.canvas_path(data.path_data, false)
 	local := path.bounds() or { return false }
 	transform := portable_device_transform(multiply_paint_transforms(command.transform,
@@ -79,13 +89,20 @@ fn (mut app BrowserApp) draw_portable_svg_raster_gradient_stroke(command &layout
 	if bounds.is_empty() { return true }
 	mut matrix := portable_svg_surface_matrix(transform, bounds)
 	if !matrix.all(math.is_finite(f64(it))) { return false }
+	mut style := ?cpuraster.CanvasPaintStyle(none)
+	if paint := gradient {
+		if data.non_scaling_stroke {
+			local_transform := paint.local_transform or { [f32(1), 0, 0, 1, 0, 0]! }
+			style = cpuraster.CanvasPaintStyle(cpuraster.CanvasGradient{
+				...paint
+				local_transform: portable_svg_surface_gradient_transform(matrix, local_transform)
+			})
+		} else {
+			style = cpuraster.CanvasPaintStyle(paint)
+		}
+	}
 	if data.non_scaling_stroke {
 		path = path.transform(cpuraster.Matrix{matrix[0], matrix[1], matrix[2], matrix[3], matrix[4], matrix[5]})
-		local_transform := gradient.local_transform or { [f32(1), 0, 0, 1, 0, 0]! }
-		gradient = cpuraster.CanvasGradient{
-			...gradient
-			local_transform: portable_svg_surface_gradient_transform(matrix, local_transform)
-		}
 		matrix = [f32(1), 0, 0, 1, 0, 0]!
 	}
 	cap := match data.stroke_linecap {
@@ -101,7 +118,7 @@ fn (mut app BrowserApp) draw_portable_svg_raster_gradient_stroke(command &layout
 	pitch := bounds.width * 4
 	mut pixels := []u8{len: pitch * bounds.height}
 	if !cpuraster.stroke_canvas_path(mut pixels, bounds.width, bounds.height, pitch, 2, path,
-		matrix, 0xff000000, cpuraster.CanvasPaintStyle(gradient), opacity, .src_over, 0, width,
+		matrix, color, style, opacity, .src_over, 0, width,
 		cap, join, miter, data.stroke_dasharray.map(f32(it)), f32(data.stroke_dashoffset), [], none) {
 		return false
 	}
@@ -115,10 +132,10 @@ fn (mut app BrowserApp) draw_portable_svg_path_stroke(command &layout.PaintComma
 		if app.draw_portable_gpu_svg_stroke(command, data, page_x, page_y) { return }
 	}
 	$if linux {
-		if app.draw_portable_svg_raster_gradient_stroke(command, data, page_x, page_y) { return }
+		if app.draw_portable_svg_raster_stroke(command, data, page_x, page_y) { return }
 	}
 	$if windows && vox_gg_svg ? {
-		if portable_svg_gpu_enabled && app.draw_portable_svg_raster_gradient_stroke(command, data, page_x, page_y) { return }
+		if portable_svg_gpu_enabled && app.draw_portable_svg_raster_stroke(command, data, page_x, page_y) { return }
 	}
 	if command.stroke_color == '' { return }
 	points := if data.path_polygons.len > 0 { data.path_polygons[0] } else { command.points }
