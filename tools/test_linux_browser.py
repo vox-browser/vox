@@ -331,6 +331,57 @@ def check_gg_svg_browser(binary, artifacts, temporary):
     check_gg_svg_gradient_fills(binary, artifacts, temporary)
     check_gg_svg_gradient_strokes(binary, artifacts, temporary)
     check_gg_svg_gradient_viewport(binary, artifacts, temporary)
+    check_gg_svg_radial_spread(binary, artifacts, temporary)
+
+
+def check_gg_svg_radial_spread(binary, artifacts, temporary):
+    fixture = Path(__file__).resolve().parents[1] / "Tests/Browser/Native/svg-gg-radial-spread.html"
+    page = Path(temporary) / fixture.name
+    page.write_text(fixture.read_text() + """
+<script>
+let frames = 0;
+function moveFocalCircle() {
+    if (++frames < 12) {
+        requestAnimationFrame(moveFocalCircle);
+        return;
+    }
+    document.getElementById('repeat-outer').setAttribute('fr', '12');
+    document.body.setAttribute('data-focal-ready', '1');
+}
+requestAnimationFrame(moveFocalCircle);
+</script>
+""")
+    documents = []
+    for label, disable_cache in (("cached", "0"), ("uncached", "1")):
+        screenshot = artifacts / f"{fixture.stem}-{label}.png"
+        screenshot.unlink(missing_ok=True)
+        environment = smoke_environment(Path(temporary) / screenshot.stem)
+        environment.pop("MESA_GL_VERSION_OVERRIDE", None)
+        environment.update(VOX_GG_SVG="1", VOX_GG_SVG_DIAGNOSTICS="1",
+                           VOX_DISABLE_GG_SVG_CACHE=disable_cache,
+                           VOX_CAPTURE_READY_SELECTOR="body[data-focal-ready]")
+        log = run_windowed([str(binary), "--enable-javascript", "--window-width=800", "--window-height=600",
+                            "--screenshot-viewport-height=600", f"--screenshot={screenshot}", str(page)],
+                           env=environment, log_path=artifacts / f"{screenshot.stem}.log")
+        gradients = [line for line in log.splitlines() if line.endswith(" gradient=2")]
+        assert any("draw=256x88 cache=miss" in line for line in gradients), log
+        repeat = [line for line in gradients if "draw=224x96 " in line]
+        misses = [line for line in repeat if "cache=miss" in line]
+        if label == "cached":
+            assert len(misses) == 2 and "bounds=hit" in misses[1], log
+        else:
+            assert len(misses) >= 2 and len(misses) == len(repeat), log
+
+        _, height, channels, rows = rendered_png_rows(screenshot.read_bytes())
+        marker = next(y for y, row in enumerate(rows[:150]) if row[4 * channels:4 * channels + 3] == b"\x34\xb7\x86")
+        # Sample under the focal circle, between the circles, and beyond the outer circle.
+        for x, expected in ((112, (191, 0, 64)), (132, (128, 0, 128)), (144, (191, 0, 64)),
+                            (384, (159, 127, 223)), (430, (149, 127, 234))):
+            pixel = rows[marker + 8 + 48][x * channels:x * channels + 3]
+            assert all(abs(a - b) <= 2 for a, b in zip(pixel, expected)), (x, pixel, expected)
+        documents.append(rows[marker:height - 24])
+    assert documents[0] == documents[1], "Cached concentric spreads changed document pixels"
+    print("PASS: GG repeats and reflects SVG focal circles through live edits", flush=True)
 
 
 def check_gg_svg_gradient_viewport(binary, artifacts, temporary):

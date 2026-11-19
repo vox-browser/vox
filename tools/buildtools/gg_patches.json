@@ -207,6 +207,63 @@
       "new": "yuv.yz = sample(_globals.image_4, documentImageCoords * 0.5f).yz;"
     }
   ],
+  "prepare_gg_concentric_tiles": [
+    {
+      "file": "gpu_gradient.v",
+      "old": "// gradients that start at a point are radial gradients. Other two-point\n// conical gradients are not supported yet.",
+      "new": "// gradients that start at a point are radial gradients. Expanding concentric\n// gradients also support repeat and mirror tiling with a focal radius."
+    },
+    {
+      "file": "gpu_gradient.v",
+      "old": "\tlocal_matrix Matrix = Matrix.identity()\n}",
+      "new": "\tlocal_matrix Matrix = Matrix.identity()\n\tradial_bias f32\n}"
+    },
+    {
+      "file": "gpu_gradient.v",
+      "old": "\treturn error('gg.canvas: two-point conical gradients are not supported')",
+      "new": "\treturn concentric_tile_gradient(start, start_radius, end, end_radius, g)"
+    },
+    {
+      "file": "gpu_gradient.v",
+      "old": "\trange       f32\n\t// The paint does not read",
+      "new": "\trange       f32\n\tradial_bias f32\n\t// The paint does not read"
+    },
+    {
+      "file": "gpu_gradient.v",
+      "old": "a.mode != b.mode || a.range != b.range",
+      "new": "a.mode != b.mode || a.range != b.range || a.radial_bias != b.radial_bias"
+    },
+    {
+      "file": "gpu_gradient.v",
+      "old": "\tout << u.range\n\tfor out.len",
+      "new": "\tout << u.range\n\t// Use one word of the existing tail padding for the radial bias.\n\tout << u.radial_bias\n\tfor out.len"
+    },
+    {
+      "file": "gpu_gradient.v",
+      "old": "\t\trange:       f32(1) / f32(255)",
+      "new": "\t\trange:       f32(1) / f32(255)\n\t\tradial_bias: g.radial_bias"
+    },
+    {
+      "file": "gpu_gradient.v",
+      "old": "t = t.replace('float4 color_1;\\n', snippets['fields_${shading.stops()}'])",
+      "new": "t = t.replace('float4 color_1;\\n', gradient_fields(snippets['fields_${shading.stops()}'], shading))"
+    },
+    {
+      "file": "gpu_gradient.v",
+      "old": "t = t.replace('float4 color_1;\\n', snippets['fields_${stops}'])",
+      "new": "t = t.replace('float4 color_1;\\n', gradient_fields(snippets['fields_${stops}'], shading))"
+    },
+    {
+      "file": "shaders/paint_snippets.metal",
+      "old": "float _25_b = length(_in.LocalMatrix_2_Var);",
+      "new": "float _25_b = length(_in.LocalMatrix_2_Var) + _globals._anonInterface0->combinedUniformData[_globals.uniformSsboIndex].radialBias;"
+    },
+    {
+      "file": "shaders/paint_snippets.metal",
+      "old": "float _34_b = length(_in.LocalMatrix_3_Var);",
+      "new": "float _34_b = length(_in.LocalMatrix_3_Var) + _globals._anonInterface0->combinedUniformData[_globals.uniformSsboIndex].radialBias;"
+    }
+  ],
   "prepare_gg_document_gradient_hole": [
     {
       "file": "gpu_surface.v",

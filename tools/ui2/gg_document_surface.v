@@ -2,6 +2,36 @@ module canvas
 
 import sokol.gfx
 
+// Map the distance from the common center to the interval between the
+// two circles before the shader applies repeat or mirror tiling.
+fn concentric_tile_gradient(start Point, start_radius f32, end Point, end_radius f32, g Gradient) !Gradient {
+	span := end_radius - start_radius
+	if g.tile_mode !in [.repeat, .mirror] || start.x != end.x || start.y != end.y
+		|| !is_finite_f32(start.x) || !is_finite_f32(start.y) || !(start_radius > 0
+		&& span > gradient_degenerate_threshold && is_finite_f32(span)) {
+		return error('gg.canvas: two-point conical gradients are not supported')
+	}
+	bias := -start_radius / span
+	if !is_finite_f32(bias) {
+		return error('gg.canvas: invalid focal radius offset')
+	}
+	return Gradient{
+		...g
+		kind:        .radial
+		p0:          start
+		radius:      span
+		radial_bias: bias
+	}
+}
+
+fn gradient_fields(fields string, shading Shading) string {
+	return if shading.is_linear() {
+		fields
+	} else {
+		fields.replace('float range_6;\n', 'float range_6;\nfloat radialBias;\n')
+	}
+}
+
 // A pixel-aligned gradient rectangle with a rectangular hole can use the
 // same OpenGL shader after the hole leaves the viewport. Zero inverse
 // radius and selected edges give full coverage without changing draw order.

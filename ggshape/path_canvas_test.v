@@ -90,6 +90,27 @@ fn test_shared_svg_path_pixels() {
 	assert pixels[outer..outer + 4] == [u8(0), 255, 0, 255]
 	assert pixels[hole..hole + 4] == [u8(0), 0, 0, 0]
 
+	path.tile_mode = 1
+	assert draw_path_with_context(mut ctx, pixels.data, width, height, pitch, 0, &path, false) == 1
+	// Repeat at the center uses t = -3/8 modulo one = 5/8.
+	assert pixels[inner] == 0 && pixels[inner + 3] == 255
+	assert pixels[inner + 1] in [u8(159), 160] && pixels[inner + 2] in [u8(95), 96]
+	// The same paint with five stops and half opacity exercises the 8-stop
+	// alpha shader. Reflect at the center maps t = -3/8 to 3/8.
+	reflect_stops := [f32(1), 0, 0, 1, 0, 0.75, 0.25, 0, 1, 0.25, 0.5, 0.5, 0, 1, 0.5,
+		0.25, 0.75, 0, 1, 0.75, 0, 1, 0, 1, 1]
+	path.tile_mode = 2
+	path.stops = reflect_stops.data
+	path.stop_count = 5
+	path.opacity = 0.5
+	assert draw_path_with_context(mut ctx, pixels.data, width, height, pitch, 0, &path, false) == 1
+	assert pixels[inner] == 0 && pixels[inner + 3] in [u8(127), 128]
+	assert pixels[inner + 1] in [u8(47), 48] && pixels[inner + 2] in [u8(79), 80]
+	path.tile_mode = 0
+	path.stops = stops.data
+	path.stop_count = 2
+	path.opacity = 1
+
 	path.stroke = 1
 	path.stroke_width = 2
 	assert draw_path_with_context(mut ctx, pixels.data, width, height, pitch, 0, &path, false) == 1
@@ -99,6 +120,7 @@ fn test_shared_svg_path_pixels() {
 
 	before := pixels.clone()
 	path.tile_mode = 1
+	path.gradient_points = [f32(4.5), 4.5, 3, 5.5, 4.5, 11]!
 	assert draw_path_with_context(mut ctx, pixels.data, width, height, pitch, 1, &path, false) == 0
 	assert pixels == before
 	path.tile_mode = 0
