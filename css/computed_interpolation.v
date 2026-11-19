@@ -5929,7 +5929,7 @@ __global pending_intrinsic_font_reuse_reported bool
 // cannot establish what fonts the older geometry used, even if it is current.
 pub fn (c &ComputedProperties) cached_font_inputs_are_unchanged_since(computer &FontComputer, generation u64) bool {
 	list := c.cached_computed_font_list_ or { return false }
-	if list.computed_cache_created_generation_ > generation
+	if list.cache_stamp_owner().computed_cache_created_generation_ > generation
 		|| !computer.cached_cascade_is_current(list) { return false }
 	if list.pending_faces.len != 0 {
 		if disable_pending_intrinsic_font_reuse { return false }

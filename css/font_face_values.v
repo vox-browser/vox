@@ -3636,6 +3636,9 @@ pub mut:
 mut:
 	invisible_font_storage_ &FontCascadeInvisibleStorage = unsafe { nil }
 	device_layout_font_projection_ &FontCascadeList = unsafe { nil }
+	// The cascade that this device-layout projection scales. The font
+	// computer publishes and expires its stamps on that cascade only.
+	device_layout_source_ &FontCascadeList = unsafe { nil }
 	// Only the font-computer cache publishes these stamps. Retired entries
 	// remain immutable font snapshots for their readers, but cannot supply a
 	// style's inputs after another font-environment change.
@@ -3645,7 +3648,22 @@ mut:
 	computed_cache_created_generation_ u64
 }
 
-fn (computer &FontComputer) cached_cascade_is_current(list &FontCascadeList) bool {
+// Same-binary control: a device-layout projection of a cascade never counts
+// as current, so text shaped with it is laid out again in every pass.
+const disable_device_layout_font_stamps = os.getenv('VOX_DISABLE_DEVICE_LAYOUT_FONT_STAMPS') != ''
+
+// The list that carries a cascade's cache stamps: the cascade itself, or the
+// one it projects into device layout coordinates. A projection scales the
+// immutable faces of its source, so it is current exactly while its source is.
+fn (list &FontCascadeList) cache_stamp_owner() &FontCascadeList {
+	if list.device_layout_source_ != unsafe { nil } && !disable_device_layout_font_stamps {
+		return list.device_layout_source_
+	}
+	return unsafe { list }
+}
+
+fn (computer &FontComputer) cached_cascade_is_current(cascade &FontCascadeList) bool {
+	list := cascade.cache_stamp_owner()
 	current := !disable_live_font_cascade_reuse && list.computed_cache_current_
 		&& voidptr(list.computed_cache_owner_) == voidptr(computer)
 		&& list.computed_cache_policy_ == computer.font_rendering_policy()
