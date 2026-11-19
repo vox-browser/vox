@@ -879,6 +879,70 @@ surface SHA-256
 `7874e8ac3dd3f47dddce23589afbdde2fbc7ea2cabdc2315e80fb27457012c14`.
 Native window timing on the candidate remains pending.
 
+## Shading gradient strokes inside SVG masks
+
+In `9eacc94e2`, the portable mask player uses the shared linear
+and radial shaders to paint stroke coverage. The stroke shader
+uses the mask's alpha or luminance mode and keeps gradient
+transforms, spread and stroke opacity. The resolved layer
+composites with the existing fill order and group opacity.
+
+The new fixture exercises a translated reflected gradient in an
+alpha mask, anisotropic radial strokes in a luminance mask, and a
+stop-opacity edit after the first raster. Linux previously drew the
+target unmasked, including a solid blue pixel at (28, 44). The
+candidate drew `#fefeff` there after the edit. All 800 × 516
+document pixels matched with GG Canvas enabled, disabled and the
+texture cache disabled. Cached runs rasterized the alpha mask
+again after the edit.
+
+Eleven interior and exterior samples matched the published macOS
+build exactly. That capture launched PID 47521 from the verified
+`4dba39031` bundle with executable SHA-256
+`52cb359d8d13e7457d8dafa4b474ecf76bb1f7f3ef02bbe3c18095e0c5e46fa9`.
+The fixture and Linux decoded document SHA-256 values were
+`bfe90a7916edd891489c8df5d10f470843b2b82c3b63a2d144cda3586073284e`
+and `68b9d5e34b77d4a2d294a74ec57a44a6dd6f7de35ac49c74ef8636c325fde4df`.
+The new Linux regression and nine neighboring SVG window checks
+passed. macOS and Windows D3D11 and OpenGL source checks passed.
+
+Two alternating pairs per fixture checked existing masks containing
+solid strokes and fill-only opacity groups. Both ARM64 builds used
+V `5a39a4d` with matching single-unit Clang `-O0` flags. The
+generated C differed in the stroke change, build timestamps and
+compiler-generated closure names. The executable hashes were
+`8ae392c6ea19c89c6e54a13cae2ff3f481f4fd53ca8dd7aefbf0bebc7720bfb5`
+and `1830d5c088b6d70a28d069b670f2463af121c9ee3d366c0d096e72eb5ce72b8c`.
+
+Fresh Linux processes used an 800 × 712 Xvfb window, one software
+rendering worker, a private profile and cache, and 48 synthetic
+callbacks after one second of settling. JavaScript and SVG texture
+caching were disabled. Separate diagnostics confirmed four and
+eight mask rasters per callback across 47 complete intervals on
+the solid-stroke and fill-only fixtures. The 800 × 628 decoded
+document pixels, paint command counts, and offsets through the
+final 504 CSS pixels matched within each fixture. The input and
+library hashes stayed fixed. The fixed-position fixture hashes were
+`594880d11313d0865501fbd986e234665db5d6e1909394e416bbfe0f5a092c8f`
+and `e5c771fd6f108c57ee9949913f9f5506f4ebe1bdd4d75f101190432f53594652`.
+The corresponding decoded document hashes were
+`9bf481aaa6b46fcfe7428d5b2d44689f23d75dbdf51a9010c6e798757bad4cc1`
+and `7a8d1e777da0d1b6e39db2bf30303ef165edfca5ad69425aea14301a9262711e`.
+
+| Fixture and pair | Replay median before / after, ms | Replay p95 and maximum before / after, ms | Median allocated KiB before / after |
+| --- | ---: | ---: | ---: |
+| Solid strokes 1 | 2.908 / 2.735 | 5.320, 5.372 / 4.946, 5.210 | 680 / 678.5 |
+| Solid strokes 2 | 3.636 / 2.978 | 6.530, 7.121 / 5.849, 6.463 | 678.5 / 678.5 |
+| Fill only 1 | 19.050 / 9.513 | 20.021, 20.704 / 12.461, 13.495 | 2520.5 / 2521 |
+| Fill only 2 | 14.504 / 16.857 | 17.101, 17.177 / 20.079, 20.664 | 2521.5 / 2522 |
+
+Timed launches saw one-minute guest load of 1.48–2.10 on four
+vCPUs. Other compiler processes were present during the solid-stroke
+diagnostics. Every timing run and its guard exited zero. The
+solid-stroke medians improved in both pairs. The fill-only replay
+timings moved in opposite directions and varied across controls.
+Native GPU performance and Windows runtime verification remain pending.
+
 ## Sharing the portable SVG fallback with Windows
 
 The standard Windows D3D11 window now uses the same CPU raster and GG texture
