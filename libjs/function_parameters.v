@@ -38,7 +38,7 @@ fn (mut generator BytecodeGenerator) initialize_function_parameters(mut vm VM, d
 			generator.patch(skip)
 		}
 		if parameter.binding is IdentifierBinding {
-			generator.store_declared_binding(parameter.binding.identifier.name, value, true)
+			generator.store_declared_binding(parameter.binding.identifier, value, true)
 		} else {
 			generator.binding_pattern(mut vm, (parameter.binding as BindingPatternBinding).pattern, value, true)!
 		}

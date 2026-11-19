@@ -38,20 +38,23 @@ fn (mut generator BytecodeGenerator) for_of_statement(mut vm VM, statement &Stat
 	kind := statement.kind
 	lhs := kind.for_in_of_lhs or { return error('Missing for-of target') }
 	mut lexical := false
+	// Register bindings need neither the TDZ nor the per-iteration environment.
+	mut scoped := false
 	if lhs is ForInOfLhsDeclaration {
 		declaration := lhs.statement
 		if declaration.kind.declarations.len != 1 {
 			return error('Invalid for-of declaration count')
 		}
 		lexical = declaration.kind.decl_kind != .var_kind
-		if lexical {
+		scoped = lexical && !generator.declaration_in_registers(declaration)
+		if scoped {
 			generator.emit(Instruction{ op: .enter_scope })
 			generator.scope_depth++
 			generator.lexical_declarations([*declaration], false)!
 		}
 	}
 	value := generator.expression(mut vm, kind.rhs or { return error('Missing for-of value') })!
-	if lexical {
+	if scoped {
 		generator.scope_depth--
 		generator.emit(Instruction{ op: .leave_scope })
 	}
@@ -65,7 +68,7 @@ fn (mut generator BytecodeGenerator) for_of_statement(mut vm VM, statement &Stat
 	// LHS defaults/computed targets can suspend before the body starts.
 	generator.loops << BytecodeLoop{ scope_depth: base_depth, iterator: iterator }
 	if lhs is ForInOfLhsDeclaration {
-		if lexical {
+		if scoped {
 			generator.emit(Instruction{ op: .enter_scope })
 			generator.scope_depth++
 			generator.lexical_declarations([*lhs.statement], false)!
@@ -79,7 +82,7 @@ fn (mut generator BytecodeGenerator) for_of_statement(mut vm VM, statement &Stat
 	}
 	generator.statement(mut vm, kind.body or { return error('Missing for-of body') })!
 	loop := generator.loops.pop()
-	if lexical {
+	if scoped {
 		generator.scope_depth--
 		generator.emit(Instruction{ op: .leave_scope })
 	}

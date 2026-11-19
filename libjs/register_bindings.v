@@ -1,15 +1,18 @@
 module libjs
 
 // Parser scope analysis marks uncaptured bindings that cannot be observed by
-// eval or with. Keep lexical/TDZ bindings and complex parameter lists on their
-// existing environment paths. Local reads still copy into a temporary so later
-// argument/RHS evaluation cannot change an earlier read.
+// eval or with. Complex parameter lists stay on their existing environment
+// path; lexical_registers.v describes the let/const bindings. Local reads still
+// copy into a temporary so later argument/RHS evaluation cannot change an
+// earlier read.
 struct FunctionRegisterBinding {
 	name            Utf16String
 	slot            u32
 	local_type      int
 	local_index     u32
 	parameter_index int = -1
+	lexical         bool
+	constant        bool
 }
 
 $if test {
@@ -29,7 +32,7 @@ $if test {
 	}
 }
 
-fn (mut function ECMAScriptFunction) prepare_register_bindings(mut generator BytecodeGenerator) {
+fn (mut function ECMAScriptFunction) prepare_register_bindings(mut generator BytecodeGenerator, exclusions LexicalRegisterExclusions) {
 	function.register_bindings = []FunctionRegisterBinding{}
 	$if test {
 		if register_bindings_disabled_for_test { return }
@@ -100,13 +103,21 @@ fn (mut function ECMAScriptFunction) prepare_register_bindings(mut generator Byt
 			local_index: u32(index)
 		}
 	}
-	if function.register_bindings.len == 0 { return }
-	generator.register_bindings = function.register_bindings
+	generator.register_bindings = function.register_bindings.clone()
+	generator.add_lexical_registers(&function.data.body, scope, exclusions)
+	if generator.register_bindings.len == 0 { return }
+	generator.lexical_initialized = []bool{len: generator.register_bindings.len}
+	generator.variable_positions = []int{len: scope.local_variables.len, init: -1}
+	for position, binding in generator.register_bindings {
+		if binding.local_type == 2 && binding.local_index < u32(scope.local_variables.len) {
+			generator.variable_positions[binding.local_index] = position
+		}
+	}
 	generator.executable.local_index_base = reserved_register_count
-	for binding in function.register_bindings {
+	for binding in generator.register_bindings {
 		generator.executable.local_variable_names << binding.name
 	}
-	generator.executable.registers_and_locals_count += u32(function.register_bindings.len)
+	generator.executable.registers_and_locals_count += u32(generator.register_bindings.len)
 }
 
 fn (function &ECMAScriptFunction) parameter_in_register(index int) bool {
@@ -119,25 +130,52 @@ fn (function &ECMAScriptFunction) variable_in_register(name Utf16String) bool {
 
 fn (generator &BytecodeGenerator) variable_register(name Utf16String) ?Operand {
 	for binding in generator.register_bindings {
-		if binding.name == name { return Operand.local(binding.slot) }
+		if binding.name == name && !binding.lexical { return Operand.local(binding.slot) }
 	}
 	return none
 }
 
-fn (generator &BytecodeGenerator) identifier_register(identifier &Identifier) ?Operand {
+fn (mut generator BytecodeGenerator) identifier_register(identifier &Identifier) ?Operand {
+	return generator.identifier_register_access(identifier, false)
+}
+
+// A lexical register read or written before its initialization, or a const
+// assignment, rejects the binding; compile() then compiles the function again.
+fn (mut generator BytecodeGenerator) identifier_register_access(identifier &Identifier, write bool) ?Operand {
+	position := generator.identifier_register_position(identifier) or { return none }
+	binding := generator.register_bindings[position]
+	if binding.lexical && (!generator.lexical_initialized[position] || (write && binding.constant))
+		&& binding.local_index !in generator.rejected_lexicals {
+		generator.rejected_lexicals << binding.local_index
+	}
+	return Operand.local(binding.slot)
+}
+
+fn (generator &BytecodeGenerator) identifier_register_position(identifier &Identifier) ?int {
 	if identifier.is_inside_scope_with_eval { return none }
-	for binding in generator.register_bindings {
+	if identifier.local_type == 2 {
+		if identifier.local_index >= u32(generator.variable_positions.len) { return none }
+		position := generator.variable_positions[identifier.local_index]
+		if position < 0 || generator.register_bindings[position].name != identifier.name { return none }
+		return position
+	}
+	for position, binding in generator.register_bindings {
 		if identifier.local_type == binding.local_type && identifier.local_index == binding.local_index
 			&& identifier.name == binding.name {
-			return Operand.local(binding.slot)
+			return position
 		}
 	}
 	return none
 }
 
-fn (generator &BytecodeGenerator) expression_register(expression &Expression) ?Operand {
+fn (mut generator BytecodeGenerator) expression_register(expression &Expression) ?Operand {
 	if expression.kind.tag != .identifier_expr { return none }
 	return generator.identifier_register(expression.kind.identifier or { return none })
+}
+
+fn (mut generator BytecodeGenerator) assignment_register(expression &Expression) ?Operand {
+	if expression.kind.tag != .identifier_expr { return none }
+	return generator.identifier_register_access(expression.kind.identifier or { return none }, true)
 }
 
 fn (mut generator BytecodeGenerator) load_identifier(expression &Expression, dst Operand) ! {
@@ -154,7 +192,7 @@ fn (mut generator BytecodeGenerator) load_identifier(expression &Expression, dst
 }
 
 fn (mut generator BytecodeGenerator) store_identifier(expression &Expression, value Operand) ! {
-	if local := generator.expression_register(expression) {
+	if local := generator.assignment_register(expression) {
 		generator.emit(Instruction{ op: .mov, dst: local, lhs: value })
 	} else {
 		generator.emit(Instruction{

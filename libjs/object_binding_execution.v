@@ -7,7 +7,7 @@ module libjs
 // remain separate code-generation paths.
 fn (mut generator BytecodeGenerator) initialize_declaration_target(mut vm VM, target VariableDeclaratorTarget, value Operand, lexical bool) ! {
 	if target is IdentifierVarTarget {
-		generator.store_declared_binding(target.identifier.name, value, lexical)
+		generator.store_declared_binding(target.identifier, value, lexical)
 		return
 	}
 	if target is BindingPatternVarTarget {
@@ -15,12 +15,13 @@ fn (mut generator BytecodeGenerator) initialize_declaration_target(mut vm VM, ta
 	}
 }
 
-fn (mut generator BytecodeGenerator) store_declared_binding(name Utf16String, value Operand, lexical bool) {
-	if !lexical {
-		if local := generator.variable_register(name) {
-			generator.emit(Instruction{op: .mov, dst: local, lhs: value})
-			return
-		}
+fn (mut generator BytecodeGenerator) store_declared_binding(identifier &Identifier, value Operand, lexical bool) {
+	name := identifier.name
+	if lexical {
+		if generator.initialize_lexical_register(identifier, value) { return }
+	} else if local := generator.variable_register(name) {
+		generator.emit(Instruction{op: .mov, dst: local, lhs: value})
+		return
 	}
 	generator.emit(Instruction{ op: if lexical {
 		OpCode.initialize_binding
@@ -42,8 +43,8 @@ fn (mut generator BytecodeGenerator) initialize_binding_entry(mut vm VM, entry B
 		generator.binding_pattern(mut vm, pattern, value, lexical)!
 		return
 	}
-	if name := generator.binding_entry_name(entry) {
-		generator.store_declared_binding(name, value, lexical)
+	if identifier := binding_entry_identifier(entry) {
+		generator.store_declared_binding(identifier, value, lexical)
 		return
 	}
 	return generator.unsupported('binding pattern target')

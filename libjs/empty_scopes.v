@@ -24,11 +24,13 @@ $if test {
 	}
 }
 
-fn elide_empty_block(scope &ScopeData) bool {
+// A block whose let/const bindings all live in registers needs no environment.
+fn elide_empty_block(scope &ScopeData, lexicals_in_registers bool) bool {
 	mut eligible := !scope.contains_direct_call_to_eval && scope.annexb_function_names.len == 0
 	for child in scope.children {
 		if child.kind.tag == .class_declaration || child.function_declaration_for_labelled_item() != none
-			|| (child.kind.tag == .variable_declaration && child.kind.decl_kind != .var_kind) {
+			|| (child.kind.tag == .variable_declaration && child.kind.decl_kind != .var_kind
+			&& !lexicals_in_registers) {
 			eligible = false
 			break
 		}

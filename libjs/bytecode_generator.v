@@ -19,6 +19,11 @@ mut:
 struct BytecodeGenerator {
 mut:
 	register_bindings []FunctionRegisterBinding
+	// Per register binding: a lexical binding's initialization has been emitted.
+	lexical_initialized []bool
+	rejected_lexicals   []u32
+	// Register binding position per function-scope local index, or -1.
+	variable_positions []int
 	executable    &Executable
 	strict        bool
 	starting_line u32 = 1
@@ -703,13 +708,18 @@ fn (mut generator BytecodeGenerator) lexical_declarations(children []Statement, 
 		if child.kind.tag != .variable_declaration || child.kind.decl_kind == .var_kind { continue
 		 }
         for declaration in child.kind.declarations {
-            for name in declaration_bound_names(declaration) {
-                constant := child.kind.decl_kind==.const_kind
-                if global {
+            constant := child.kind.decl_kind==.const_kind
+            if global {
+                for name in declaration_bound_names(declaration) {
                     generator.executable.global_bindings << GlobalBinding{name:name.clone(),is_lexical:true,is_constant:constant}
-                } else {
-                    generator.emit(Instruction{op:if constant { OpCode.create_immutable_binding } else { OpCode.create_mutable_binding },identifier:generator.identifier(name)})
                 }
+                continue
+            }
+            mut identifiers := []&Identifier{}
+            collect_declarator_identifiers(declaration.target, mut identifiers)
+            for identifier in identifiers {
+                if generator.lexical_register_position(identifier) != none { continue }
+                generator.emit(Instruction{op:if constant { OpCode.create_immutable_binding } else { OpCode.create_mutable_binding },identifier:generator.identifier(identifier.name)})
             }
         }
 	}
@@ -778,7 +788,7 @@ fn (mut generator BytecodeGenerator) statement(mut vm VM, statement &Statement) 
 		}
 		.block {
 			scope := kind.scope or { return error('Missing block scope') }
-			if elide_empty_block(scope) {
+			if elide_empty_block(scope, generator.lexicals_in_registers(scope.children)) {
 				// Keep budgeted boundary operations, without allocating an empty
 				// environment or changing the actual lexical-depth metadata.
 				generator.emit(Instruction{op: .nop})
@@ -820,14 +830,21 @@ fn (mut generator BytecodeGenerator) statement(mut vm VM, statement &Statement) 
 			mut per_iteration := []Utf16String{}
 			if init := kind.for_init {
 				if init is ForInitDeclaration {
-					if init.statement.kind.decl_kind != .var_kind {
+					// Register bindings need neither the loop environment nor
+					// per-iteration copies: no closure can capture them.
+					if init.statement.kind.decl_kind != .var_kind
+						&& !generator.declaration_in_registers(init.statement) {
 						for_scope = true
 						generator.emit(Instruction{ op: .enter_scope })
 						generator.scope_depth++
 						generator.lexical_declarations([*init.statement], false)!
 						if init.statement.kind.decl_kind == .let_kind {
 							for declaration in init.statement.kind.declarations {
-								per_iteration << declaration_bound_names(declaration)
+								mut identifiers := []&Identifier{}
+								collect_declarator_identifiers(declaration.target, mut identifiers)
+								for identifier in identifiers {
+									if generator.lexical_register_position(identifier) == none { per_iteration << identifier.name }
+								}
 							}
 						}
 					}

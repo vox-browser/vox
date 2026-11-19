@@ -104,6 +104,10 @@ fn (function &ECMAScriptFunction) name_for_call_stack() Utf16String {
 fn (function &ECMAScriptFunction) realm() ?&Realm { return function.realm_ }
 
 fn (mut function ECMAScriptFunction) compile(mut vm VM) !&Executable {
+	return function.compile_with_lexical_registers(mut vm, LexicalRegisterExclusions{})
+}
+
+fn (mut function ECMAScriptFunction) compile_with_lexical_registers(mut vm VM, exclusions LexicalRegisterExclusions) !&Executable {
 	if executable := function.executable { return executable }
 	if cached := function.cached_function_compilation() {
 		function.executable = cached.executable
@@ -125,7 +129,7 @@ fn (mut function ECMAScriptFunction) compile(mut vm VM) !&Executable {
 		function_body: true
 		generator_function: function.data.kind == .generator
 	}
-	function.prepare_register_bindings(mut generator)
+	function.prepare_register_bindings(mut generator, exclusions)
 	if function.data.body.kind.tag == .class_field_initializer {
 		expression := function.data.body.kind.expression or { return error('Missing field initializer') }
 		mut value := Operand{}
@@ -144,6 +148,10 @@ fn (mut function ECMAScriptFunction) compile(mut vm VM) !&Executable {
 		if function.data.kind == .generator { generator.emit(Instruction{op: .generator_start}) }
 		for statement in scope.children { generator.statement(mut vm, &statement)! }
 		generator.emit(Instruction{op: .end, lhs: generator.constant(js_undefined())})
+	}
+	if generator.rejected_lexicals.len > 0 {
+		$if test { lexical_register_recompilations_for_test++ }
+		return function.compile_with_lexical_registers(mut vm, exclusions.with_rejected(generator.rejected_lexicals))
 	}
 	generator.executable.bytecode_length = u32(generator.executable.instructions.len)
 	generator.executable.validate(0)!

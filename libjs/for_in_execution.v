@@ -9,25 +9,29 @@ fn (mut generator BytecodeGenerator) for_in_statement(mut vm VM, statement &Stat
 	if kind.for_in_of_kind != .for_in { return generator.unsupported('for-of loop') }
 	lhs := kind.for_in_of_lhs or { return error('Missing for-in target') }
 	mut lexical := false
+	// Register bindings need neither the TDZ nor the per-iteration environment.
+	mut scoped := false
 	if lhs is ForInOfLhsDeclaration {
 		declaration := lhs.statement
 		if declaration.kind.declarations.len != 1 {
 			return error('Invalid for-in declaration count')
 		}
 		lexical = declaration.kind.decl_kind != .var_kind
-		if lexical {
+		scoped = lexical && !generator.declaration_in_registers(declaration)
+		if scoped {
 			// Bound names are in TDZ while evaluating the RHS, independently of
 			// the new environment created for each subsequent iteration.
 			generator.emit(Instruction{ op: .enter_scope })
 			generator.scope_depth++
 			generator.lexical_declarations([*declaration], false)!
+		} else if lexical {
 		} else if initializer := declaration.kind.declarations[0].init {
 			value := generator.expression(mut vm, &initializer)!
 			generator.initialize_declaration_target(mut vm, declaration.kind.declarations[0].target, value, false)!
 		}
 	}
 	value := generator.expression(mut vm, kind.rhs or { return error('Missing for-in value') })!
-	if lexical {
+	if scoped {
 		generator.scope_depth--
 		generator.emit(Instruction{ op: .leave_scope })
 	}
@@ -40,7 +44,7 @@ fn (mut generator BytecodeGenerator) for_in_statement(mut vm VM, statement &Stat
 	finished := generator.emit(Instruction{ op: .property_name_iterator_next, dst: key, lhs: iterator })
 	base_depth := generator.scope_depth
 	if lhs is ForInOfLhsDeclaration {
-		if lexical {
+		if scoped {
 			generator.emit(Instruction{ op: .enter_scope })
 			generator.scope_depth++
 			generator.lexical_declarations([*lhs.statement], false)!
@@ -55,7 +59,7 @@ fn (mut generator BytecodeGenerator) for_in_statement(mut vm VM, statement &Stat
 	generator.loops << BytecodeLoop{ scope_depth: base_depth }
 	generator.statement(mut vm, kind.body or { return error('Missing for-in body') })!
 	loop := generator.loops.pop()
-	if lexical {
+	if scoped {
 		generator.scope_depth--
 		generator.emit(Instruction{ op: .leave_scope })
 	}
