@@ -1,5 +1,56 @@
 # Migrating from Skia to vlib/gg
 
+## Retaining CPU SVG stroke textures
+
+The portable CPU stroker can reuse the contents of a GG streaming image
+for a solid stroke. It compares the copied path and dash data, effective
+color and stroke style, clipped image dimensions, and the transform
+relative to the image. An integer translation can reuse the image at a
+new destination. An upload for any other draw invalidates the saved
+stroke in that slot. The browser keeps bounded metadata for 16 of its
+existing slots. `VOX_DISABLE_GG_SVG_CACHE=1` also disables this reuse.
+
+The Linux window fixture replaced a blue stroke with a red fill of the
+same image dimensions, then restored the stroke. Diagnostics recorded
+two stroke rasterizations, one before the fill and one after it, with
+reuse on subsequent frames. The cached and uncached final captures
+matched exactly. All 16 Linux GG SVG window checks and the Windows
+amd64 OpenGL source check passed.
+
+The timing fixture was `Tests/Browser/Native/svg-gg-stroke.html`. Its
+document pixels matched between the control and candidate on each
+renderer, including with caching forced off on the candidate. Both
+builds used V `5a39a4d`, single-unit Clang, and `-O0` from the shared
+checkout with other changes in progress. The control and candidate
+executable SHA-256 values were
+`fee8af70e44e2c439fff8de7e8b4e97f2cdc59546fc98ca5b1a3da5faf700901`
+and `e5b20619fa57dbf5e721c1fc445b41a2ef22d3a087a286fe31c3a3192c7e6a9a`.
+The fixture and shader directory SHA-256 values were
+`d760304658f81f4e28f0665645566626ed28b5dcce7d86f195bad583d12c1f5b`
+and `970ce36acbf7ea10b948d0a063d6315d587aadf8a8d84784d644b17ab6ffc48e`.
+
+Each trial used Mesa software OpenGL under Xvfb, a fresh process and
+private browser state, an 800 × 628 document viewport, a one-second
+settle, and 32 self-paced 42-pixel scroll steps. Scroll positions and
+paint-command counts matched. One-minute guest load ranged from 1.45
+to 2.78 on four virtual CPUs. The timing driver and memory guard exited
+zero.
+
+| Renderer and pair | Median control / candidate, ms | p95, ms | Maximum, ms |
+| --- | ---: | ---: | ---: |
+| CPU fallback 1 | 5.223 / 2.567 | 6.523 / 5.448 | 7.145 / 5.563 |
+| CPU fallback 2 | 5.100 / 2.706 | 6.954 / 5.799 | 6.961 / 5.882 |
+| GG 1 | 5.158 / 4.9975 | 7.451 / 6.346 | 7.636 / 9.529 |
+| GG 2 | 4.952 / 4.9245 | 7.119 / 5.572 | 8.961 / 9.496 |
+
+Separate diagnostics counted 186 CPU stroke texture hits with caching
+and 186 CPU rasterizations with caching forced off. The GG diagnostic
+counted 186 GG stroke texture hits and zero CPU fallback draws. Median
+CPU fallback times fell by 46.9–50.9%. GG medians and p95 were lower in
+both pairs, while maximum callback times were higher. These synthetic
+trials cover software OpenGL. Native GPU timing and Windows runtime
+behavior remain unverified.
+
 ## CPU fallback for solid SVG strokes
 
 On Linux and in opted-in Windows OpenGL builds, a solid SVG stroke that
