@@ -18,11 +18,8 @@ fn (mut app BrowserApp) draw_portable_svg_path(command &layout.PaintCommand,
 			filled = app.draw_portable_gpu_svg_gradient_fill(command, data, page_x, page_y)
 		}
 	}
-	$if linux {
+	$if linux || windows {
 		if !filled { filled = app.draw_portable_svg_fill(command, data, page_x, page_y) }
-	}
-	$if windows && vox_gg_svg ? {
-		if !filled && portable_svg_gpu_enabled { filled = app.draw_portable_svg_fill(command, data, page_x, page_y) }
 	}
 	if !filled && command.color != '' {
 		polygons := if data.path_polygons.len > 0 { data.path_polygons } else { [command.points] }

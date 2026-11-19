@@ -286,7 +286,15 @@ int wmain(int argc, wchar_t **argv) {
     return 2;
   char const first[] = "<!doctype html><title>Windows startup passed</title>"
       "<body id=\"click-target\" style=\"margin:0;background:#2ca05a;color:white;height:100vh\" "
-      "onclick=\"this.style.backgroundColor='#ad394c'\"><h1>Windows startup passed</h1></body><script>globalThis.nativeInputReady=true;</script>";
+      "onclick=\"this.style.backgroundColor='#ad394c'\"><h1>Windows startup passed</h1>"
+      "<svg width='240' height='280' style='position:absolute;left:0;top:80px'>"
+      "<defs><linearGradient id='band' gradientUnits='userSpaceOnUse' x1='52' y1='0' x2='130' y2='0'>"
+      "<stop offset='0' stop-color='#ed4626'/><stop offset='1' stop-color='#214ada'/>"
+      "</linearGradient></defs>"
+      "<path d='M16 0H176V200H16Z M72 68H104V180H72Z' fill='url(#band)' fill-rule='evenodd'/>"
+      "<path d='M0 0V280' transform='translate(208) scale(3 1)' fill='none' "
+      "stroke='#edc33b' stroke-width='12' stroke-dasharray='180 100' vector-effect='non-scaling-stroke'/>"
+      "</svg></body><script>globalThis.nativeInputReady=true;</script>";
   char const second[] = "<!doctype html><title>Windows address entry "
                         "passed</title><h1>Navigation passed</h1>";
   if (!write_fixture(initial, first, sizeof first - 1) ||
@@ -319,6 +327,17 @@ int wmain(int argc, wchar_t **argv) {
   if (!wait_pixel(browser.hProcess, 400, 300, RGB(44, 160, 90)))
     goto finished;
   puts("PASS: native startup and rendered pixels");
+  fflush(stdout);
+
+  phase = "svg-pixels";
+  if (!wait_pixel(browser.hProcess, 36, 300, RGB(237, 70, 38)) ||
+      !wait_pixel(browser.hProcess, 88, 300, RGB(44, 160, 90)) ||
+      !wait_pixel(browser.hProcess, 160, 300, RGB(33, 74, 218)) ||
+      !wait_pixel(browser.hProcess, 211, 300, RGB(237, 195, 59)) ||
+      !wait_pixel(browser.hProcess, 217, 300, RGB(44, 160, 90)) ||
+      !wait_pixel(browser.hProcess, 211, 390, RGB(44, 160, 90)))
+    goto finished;
+  puts("PASS: SVG gradient, even-odd hole, and dashed non-scaling stroke pixels");
   fflush(stdout);
 
   phase = "click";

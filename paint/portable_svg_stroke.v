@@ -38,7 +38,7 @@ fn (app &BrowserApp) portable_non_scaling_stroke_fringe(command &layout.PaintCom
 	$if vox_gg_svg ? {
 		eligible = portable_svg_gpu_enabled
 	}
-	$if linux {
+	$if linux || windows {
 		eligible = true
 	}
 	if !eligible { return 0 }
@@ -153,11 +153,8 @@ fn (mut app BrowserApp) draw_portable_svg_path_stroke(command &layout.PaintComma
 	$if vox_gg_svg ? {
 		if app.draw_portable_gpu_svg_stroke(command, data, page_x, page_y) { return }
 	}
-	$if linux {
+	$if linux || windows {
 		if app.draw_portable_svg_raster_stroke(command, data, page_x, page_y) { return }
-	}
-	$if windows && vox_gg_svg ? {
-		if portable_svg_gpu_enabled && app.draw_portable_svg_raster_stroke(command, data, page_x, page_y) { return }
 	}
 	if command.stroke_color == '' { return }
 	points := if data.path_polygons.len > 0 { data.path_polygons[0] } else { command.points }

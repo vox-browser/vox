@@ -6251,7 +6251,7 @@ fn (mut app BrowserApp) draw_command(source_command &layout.PaintCommand, page_x
 	viewport_top := app.paint_replay_viewport_top(page_y)
 	viewport_bottom := f32(window_height - app.status_height())
 	if cull_bottom < viewport_top || cull_top > viewport_bottom {
-		$if linux || vox_gg_svg ? {
+		$if linux || windows || vox_gg_svg ? {
 			fringe := app.portable_non_scaling_stroke_fringe(command)
 			if cull_bottom + fringe < viewport_top || cull_top - fringe > viewport_bottom {
 				return
