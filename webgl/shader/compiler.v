@@ -57,13 +57,19 @@ fn translate_impl(source string,stage Stage,bindings map[string]int,validation b
  }
 
 	processed := preprocess(source)!
+    validate_input_identifiers(processed.tokens)!
 	constant_tokens := normalize_constant_expressions(processed.tokens)!
 	validate_essl_language(constant_tokens,processed.version)!
-    _=analyze_shader(constant_tokens,processed.version,stage)!
-    tokens := normalize_shader_expressions(constant_tokens,processed.version,stage)!
+    initial_analysis:=analyze_shader(constant_tokens,processed.version,stage)!
+    validate_global_initializers(constant_tokens,initial_analysis.functions,stage,processed.version)!
+    validate_metal_initializer_bindings(constant_tokens,initial_analysis.functions)!
+    validate_metal_global_declarations(constant_tokens,initial_analysis.functions,processed.version)!
+    normalized_tokens := normalize_shader_expressions(constant_tokens,processed.version,stage)!
+    tokens := defer_metal_global_initializers(normalized_tokens,shader_functions(normalized_tokens)!)!
 	mut body := []string{}
     analysis:=analyze_shader(tokens,processed.version,stage)!
     functions:=analysis.functions
+    zero_initializers:=metal_zero_initializers(tokens,functions)
     mut function_starts:=map[int]ShaderFunction{}
     mut function_setups:=map[int]string{}
     for function in functions {function_starts[function.start]=function}
@@ -85,6 +91,7 @@ fn translate_impl(source string,stage Stage,bindings map[string]int,validation b
 	version := processed.version
 	fragment_info:=if stage==.fragment {fragment_builtins(tokens,version,processed.extensions)!} else {FragmentBuiltins{}}
 	for at < tokens.len {
+        if at in zero_initializers {body << '= {}'}
         if function:=function_starts[at] {
             if function.body<0 || (!validation && !analysis.live[function.start]) {at=function.end;continue}
             if function.name=='main' {
@@ -244,7 +251,7 @@ fn translate_impl(source string,stage Stage,bindings map[string]int,validation b
             continue
         }
         local_type := if token in structures {'_vox_Struct_'+token} else {metal_type(token) or {''}}
-        if depth > 0 && local_type != '' && local_type != 'void' {
+        if local_type != '' && local_type != 'void' {
             if at+4 < tokens.len && identifier(tokens[at+1]) && tokens[at+2]=='[' && tokens[at+4]==']' {
                 count:=pp_integer(tokens[at+3])!
                 if count<1 || count>4096 {return error('Local array length out of range')}
@@ -306,6 +313,10 @@ fn translate_impl(source string,stage Stage,bindings map[string]int,validation b
 	if stage == .vertex { inputs = assign_interface_locations(inputs,bindings,16)! }
 	if stage == .fragment { outputs = assign_interface_locations(outputs,map[string]int{},8)! }
 	mut lines := ['#include <metal_stdlib>', 'using namespace metal;']
+    // Shader-provided indices never address memory outside their own array,
+    // vector or matrix. Clamp uint before narrowing, evaluating it only once.
+    lines << 'int _webgl_safe_index(int i,int n){return metal::clamp(i,0,n-1);}'
+    lines << 'int _webgl_safe_index(uint i,int n){return int(metal::min(i,uint(n-1)));}'
 	lines << texture_types()
     lines << copy_out_source()
 	lines << structure_source(structure_order)!
