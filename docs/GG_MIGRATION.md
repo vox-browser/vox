@@ -825,6 +825,66 @@ the document and timed out waiting for a cross-recording hit. macOS,
 Windows D3D11, and Windows OpenGL source checks passed. Native scrolling
 performance and Windows memory and timing remain unverified.
 
+## Preserving web-font textures on upward scroll
+
+With `VOX_WEB_FONT_SCROLL_REUSE=1`, an entering top row can move a
+displaced texture to an unused trailing slot before uploading its
+own pixels. The following rows can look up the displaced texture
+within the same 16-slot limit. Frame retirement releases unused
+slots. The focused regression requires hits on the first upward
+frame. The control reported zero hits on that frame.
+
+A separate X11 diagnostic explained the earlier single-wheel miss.
+At window width 800, the first 42-pixel tick advanced the paint
+content revision from 183 to 184, and the next downward tick reused
+10 textures. At width 1024 the same diagnostic kept revision 183
+and reused 10 on both downward ticks. In both widths the first
+upward tick missed every texture even with a stable revision.
+
+The pixel comparison used Xvfb, Mesa software OpenGL, fresh profiles,
+and one `xdotool` wheel event per step in a 1024 × 712 window. A
+document marker confirmed the offsets. The captures matched exactly
+between the two executables at each step. Both browsers closed with
+exit zero.
+
+| X11 scroll offset before → after | Textures reused before / after |
+| --- | ---: |
+| 0 → 42 | 0 / 0 |
+| 42 → 84 | 12 / 12 |
+| 84 → 42 | 0 / 12 |
+| 42 → 0 | 12 / 12 |
+
+Two alternating synthetic replay pairs used AArch64 Linux, V
+`5a39a4d`, and identical single-unit Clang `-O0` flags. The control
+and candidate executable SHA-256 values were
+`2ef8bf880b4cbd50e1405cef40489f943c59aa272581aafc183f05463874fa1b`
+and `53bd06a9a6db07fe61e45b99ea2933ffd5ceebbc4ba5305203bd0ae6fa5f3312`.
+The input fixture SHA-256 was
+`5efa7465a7fb43d67ab24c5bb3428beb3b2b8aa05296b1f87e25b898969a7f59`.
+Trials used the same window dimensions and software backend as the
+wheel check, fresh processes and private profiles and caches, one
+second of settling, and JavaScript disabled. OS caches were retained.
+Each trial recorded 48 callbacks, with 21 moving down and 18 moving
+up. All command counts, offsets, and final document pixels matched.
+One-minute guest load ranged from 1.32 to 1.69 on four vCPUs. Browser
+and guard exits were zero.
+
+| Callbacks and pair | Replay median before / after, ms | Replay p95 and maximum before / after, ms | Median allocated KiB before / after |
+| --- | ---: | ---: | ---: |
+| Up 1 | 62.014 / 5.932 | 64.837, 64.837 / 13.291, 13.291 | 5336.5 / 707 |
+| Up 2 | 62.637 / 5.526 | 64.904, 64.904 / 11.507, 11.507 | 5339 / 708 |
+| Down 1 | 6.381 / 6.656 | 8.847, 14.470 / 11.657, 14.048 | 688 / 703 |
+| Down 2 | 6.642 / 4.633 | 11.202, 13.211 / 8.421, 16.829 | 704 / 688 |
+| All 1 | 6.647 / 5.879 | 64.354, 64.837 / 11.659, 14.048 | 794 / 679 |
+| All 2 | 7.815 / 5.007 | 64.541, 64.904 / 8.421, 16.829 | 785 / 678.5 |
+
+The final synthetic document pixel SHA-256 was
+`a2fc0d02980fb56aa1f04a1d831dec058a2c8c73a988c007ca4c1f19a90f7064`.
+Downward timings were mixed. The X11 wheel check establishes pixel
+and cache behavior. Native frame timing and Windows runtime remain
+unverified. The Linux browser smoke suite and macOS, Windows D3D11,
+and Windows OpenGL source checks passed.
+
 ## Converting CPU SVG upload pixels faster
 
 The shared CPU raster readback copies opaque RGB bytes directly and writes zero
