@@ -1,5 +1,75 @@
 # Migrating from Skia to vlib/gg
 
+## Writing full-coverage gradient source spans directly
+
+The CPU raster pipeline writes clamped source bytes directly when
+a low-precision gradient span has full coverage and uses source replacement.
+This includes opaque source-over fills. Linear spans of at least eight
+pixels use the existing batched shader. Smaller spans and radial spans
+use the scalar shader. Partial coverage, paint alpha, and filters follow
+the general pipeline.
+
+Focused `-prod -gc none` span, gradient, and mask tests passed on macOS.
+The pinned Skia differential suite passed with the default GC, including
+10,000 gradient draws. The Linux group and individual gradient fixtures
+matched the control pixel for pixel at 0 and 42 CSS pixels of scrolling.
+A separate generated-C probe counted 14,208 linear and 5,184 radial
+pixels entering the replacement span at the return to the full group
+viewport. The probe binary was excluded from timings.
+
+Matching Linux V `5a39a4d` builds used single-unit Clang `-O0`.
+Control and candidate browser executable SHA-256 values were
+`51b59b2e77fdf96758ce623fad76a8efcb5a99422835a79b48d4dbe85d6eae4c`
+and `ce045250148997ebf2915984dfcd5a6c660b9065d81e0f04dcf3bc1c10edaf95`.
+The timings use the [group viewport cohort's](#reusing-svg-group-textures-when-scrolling-back)
+synthetic callback scope, local fixtures, four-vCPU guest, private browser
+state, one-second settle, and software OpenGL under Xvfb. Both fixtures
+used a 642 CSS pixel document with six moves in 180 callbacks. Scroll
+positions, paint command counts, binaries, fixtures, and shader inputs
+were checked across trials. The emitted C differed in the span routines,
+build timestamps, and a generated closure name. One-minute guest load was
+0.51–1.38. All timed process and memory guard exits were zero.
+
+| Fixture and pair | First two moving replays before / after, ms | All-callback median before / after, ms | All-callback p95 and maximum before / after, ms |
+| --- | --- | ---: | --- |
+| Grouped 1 | 7.598, 5.487 / 4.154, 4.405 | 1.107 / 1.110 | 2.956, 7.598 / 2.823, 4.405 |
+| Grouped 2 | 4.674, 4.883 / 6.219, 7.879 | 1.090 / 1.087 | 1.530, 4.883 / 3.224, 7.879 |
+| Individual, cache off 1 | 9.300, 10.086 / 9.054, 10.302 | 9.506 / 9.424 | 10.500, 11.220 / 10.145, 11.861 |
+| Individual, cache off 2 | 8.956, 9.921 / 8.861, 10.322 | 9.249 / 9.261 | 10.640, 11.921 / 10.402, 11.430 |
+
+Cold browser results varied between pairs. The cohort leaves the
+first-visit browser speedup unresolved.
+
+Two further alternating pairs disabled group texture reuse for every
+callback, so all 180 callbacks rasterized the grouped fixture. The same
+builds, viewport and input schedule ran at one-minute load 1.07–1.20.
+
+| Pair | Replay median before / after, ms | Replay p95 and maximum before / after, ms |
+| --- | ---: | --- |
+| 1 | 4.633 / 3.860 | 5.268, 6.938 / 4.976, 6.095 |
+| 2 | 4.151 / 3.831 | 4.482, 6.226 / 5.410, 8.540 |
+
+The optimized Clang `-O3` microbenchmark timed the path fill into a
+preallocated RGBA buffer cleared before each call. Its control sends
+source replacement through the generic pixel loop by changing the
+dispatch condition in generated C. Both binaries share the rest of the
+compiled implementation. SHA-256 values were
+`12e79f5f5a7c6cde50476cc7c8f31de8a2b23cc57cc500bc456ea6abf0c80213`
+and `5b05186f00ab9d9385eb3b7f847cd6f0dd3adead02d31f207da0b1377948fb1f`.
+Each row shows both 121-call medians from fresh processes, in pair order.
+The outputs matched for all four inputs and the guard and processes exited zero.
+
+| Gradient and dimensions | Control medians, µs | Candidate medians, µs |
+| --- | ---: | ---: |
+| Opaque linear 144 × 72 | 99.667, 97.416 | 54.583, 55.791 |
+| Opaque radial 144 × 72 | 111.667, 104.625 | 84.625, 90.334 |
+| Opaque linear 6 × 100 | 7.708, 7.167 | 6.541, 6.875 |
+| Translucent linear 144 × 72 | 81.375, 76.917 | 76.125, 79.375 |
+
+The Linux browser suite, all 17 GG SVG checks, and both Windows amd64
+source checks passed. These synthetic and raster-only timings leave
+native scrolling, Windows execution, and hardware GPU performance unverified.
+
 ## Reusing SVG group textures when scrolling back
 
 `VOX_GG_SVG_VIEWPORT_REUSE=1` lets each of the 16 portable SVG group slots
