@@ -819,6 +819,66 @@ passed under the memory guard. macOS, Windows D3D11, and Windows
 OpenGL source checks passed. macOS and Windows runtime validation
 and hardware GPU timing remain pending.
 
+## Blitting opaque SVG mask rectangles
+
+In `3f6a08f86`, the shared mask rasterizer recognizes an opaque
+fill-only rectangle directly from its packed path segments. It
+intersects the integral device rectangle with the active row band
+and writes premultiplied RGBA through the solid blitter. This avoids
+allocating a decoded path and scanning edges for those fills. Pixel
+tests compare the complete padded surface against both canvas
+blenders, including clipped, reflected and right-angle transforms.
+All eight focused Linux window checks and the macOS, Windows D3D11
+and Windows OpenGL source checks passed.
+
+The Linux repeat used the same fixed-position opacity fixture and
+48-callback input as the preceding section. Each fresh process ran
+in an 800 × 712 Xvfb window with one software raster worker,
+one second of settling, JavaScript disabled and texture caching
+disabled. One executable supplied both routes. A temporary switch
+in the generated C bypassed the direct fill for the control.
+Separate diagnostic launches observed 32 direct fills per callback
+over 47 complete intervals, versus zero with the bypass. Both had
+eight mask rasters per callback. The unmodified candidate also
+matched the reference.
+
+The guarded ARM64 single-unit Clang `-O0` executable used V
+`5a39a4d`. Its SHA-256 was
+`eadac616fea17d1e2e48b7f5d4a535f72cbedc77aa8aac263c348a4176f67352`.
+The comparison executable SHA-256 was
+`cd291484dd748b2a52edaca082df69a6fee6d31bfe979f7ef986e68686d48561`.
+The fixture and decoded viewport hashes matched the preceding
+section. Executable, fixture and linked-library hashes, scroll
+offsets, and paint command counts stayed fixed. Every browser and
+memory guard exited zero. The guest had four vCPUs and one-minute
+load between 1.40 and 1.65.
+
+| Pair | Scan / direct replay median, ms | Scan / direct p95 and maximum, ms | Scan / direct median allocated KiB |
+| --- | ---: | ---: | ---: |
+| 1 | 19.731 / 22.220 | 21.777, 22.966 / 26.404, 27.078 | 2627 / 2521 |
+| 2 | 18.889 / 17.995 | 20.371, 20.459 / 20.429, 24.134 | 2628 / 2520 |
+| 3 | 21.707 / 17.059 | 22.576, 24.090 / 20.426, 20.511 | 2627.5 / 2520 |
+| 4 | 19.023 / 18.745 | 20.397, 20.896 / 23.178, 24.769 | 2629 / 2519 |
+
+The direct route reduced median allocation by 106–110 KiB per
+callback in every pair. Replay medians improved in three pairs.
+The first pair was 2.49 ms slower and p95 rose in three pairs.
+
+A separate macOS single-unit Apple Clang `-O2` probe with V
+`1955619` and `-gc none` measured thread CPU time for the fill
+operations. Each fresh process warmed four fixture-sized rectangles
+and then drew 24,000 fills into a premultiplied 190 × 90 band with
+a padded stride. Four alternating pairs took 8.529 / 6.962,
+8.398 / 6.982, 8.511 / 7.035, and 8.554 / 7.050 µs per fill
+for scan and direct respectively. The median fell from 8.520 to
+7.009 µs. One-minute host load ranged from 15.59 to 15.71.
+The executable SHA-256 was
+`935fc814a564eaecda8ea5e61caee5aeee56dc46bee3012d9b882ad84f9c8aea`.
+Every process and the guard exited zero and produced the same
+surface SHA-256
+`7874e8ac3dd3f47dddce23589afbdde2fbc7ea2cabdc2315e80fb27457012c14`.
+Native window timing on the candidate remains pending.
+
 ## Sharing the portable SVG fallback with Windows
 
 The standard Windows D3D11 window now uses the same CPU raster and GG texture
