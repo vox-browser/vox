@@ -154,6 +154,7 @@ $if vox_gg_svg ? {
 		textures [portable_svg_gpu_texture_slots]PortableSVGTexture
 		transient_images [portable_svg_gpu_transient_slots]gfx.Image
 		transient_count int
+		// Pixel area of the distinct images referenced by this frame.
 		pixels   int
 	}
 
@@ -382,9 +383,7 @@ $if vox_gg_svg ? {
 			return false
 		}
 		remaining_pixels := portable_svg_gpu_pixel_limit - state.pixels
-		if bounds.width * bounds.height > remaining_pixels {
-			return false
-		}
+		draw_pixels := bounds.width * bounds.height
 		if !state.tried {
 			state.initialize(renderer)
 		}
@@ -404,6 +403,9 @@ $if vox_gg_svg ? {
 		}
 		cacheable := !disable_portable_svg_gpu_cache && data.path_data.len <= portable_svg_gpu_cached_values
 			&& (!key.gradient || gradient.style.color_stops.len <= portable_svg_gpu_gradient_stops)
+		if !cacheable && draw_pixels > remaining_pixels {
+			return false
+		}
 		mut vacant := -1
 		mut idle := -1
 		mut matching := -1
@@ -431,7 +433,7 @@ $if vox_gg_svg ? {
 					crop = none
 					break
 				} else if cacheable && portable_svg_gpu_viewport_reuse && !key.gradient && matching < 0
-					&& texture.key.width * texture.key.height <= remaining_pixels {
+					&& (texture.used || texture.key.width * texture.key.height <= remaining_pixels) {
 					if origin := texture.crop_origin(&key, &data) {
 						matching = index
 						crop = origin
@@ -443,6 +445,15 @@ $if vox_gg_svg ? {
 			}
 		}
 		reused := matching >= 0
+		image_pixels := if reused {
+			texture := &state.textures[matching]
+			if texture.used { 0 } else { texture.key.width * texture.key.height }
+		} else {
+			draw_pixels
+		}
+		if image_pixels > remaining_pixels {
+			return false
+		}
 		index := if reused { matching } else if vacant >= 0 { vacant } else { idle }
 		if index < 0 && state.transient_count == portable_svg_gpu_transient_slots {
 			return false
@@ -481,6 +492,7 @@ $if vox_gg_svg ? {
 		if index >= 0 {
 			state.textures[index].used = true
 		}
+		state.pixels += image_pixels
 		// GG presents the texture in document order. Canvas uses top-down
 		// OpenGL texture coordinates and outputs premultiplied RGBA.
 		x := f32(bounds.x)
@@ -494,9 +506,6 @@ $if vox_gg_svg ? {
 			v0 = f32(origin.y) / f32(texture.key.height)
 			u1 = f32(origin.x + bounds.width) / f32(texture.key.width)
 			v1 = f32(origin.y + bounds.height) / f32(texture.key.height)
-			state.pixels += texture.key.width * texture.key.height
-		} else {
-			state.pixels += bounds.width * bounds.height
 		}
 		renderer.push_pipeline()
 		renderer.load_pipeline(state.pipeline)

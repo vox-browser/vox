@@ -335,6 +335,7 @@ def check_gg_svg_browser(binary, artifacts, temporary):
     check_gg_svg_radial_spread(binary, artifacts, temporary)
     check_gg_svg_repeat_point_focus(binary, artifacts, temporary)
     check_gg_svg_texture_pressure(binary, artifacts, temporary)
+    check_gg_svg_image_budget(binary, artifacts, temporary)
 
 
 def check_gg_svg_radial_spread(binary, artifacts, temporary):
@@ -503,6 +504,57 @@ svg { display: block }</style>
         documents.append(rows[marker:height - 24])
     assert documents[0] == documents[1], "Transient textures changed SVG paint order or pixels"
     print("PASS: GG renders 64 SVG gradient draws and a translucent overlay under texture pressure", flush=True)
+
+
+def check_gg_svg_image_budget(binary, artifacts, temporary):
+    page = Path(temporary) / "svg-gg-image-budget.html"
+    # Eight 400x320 images use 1,024,000 pixels. Try one new paint before
+    # placing the first image twice more. Then use 20,000 more pixels for
+    # a solid image and try a 6,000-pixel crop of that image.
+    opacities = (1, .5, .6, .7, .8, .9, .75, .625, .25, 1, 1)
+    shapes = [f'<path d="M0 0H400V320H0Z" transform="translate({8 + i * 30} 8)" '
+              f'fill="url(#ramp)" fill-opacity="{opacity}"/>'
+              for i, opacity in enumerate(opacities)]
+    page.write_text("""<!doctype html><meta charset="utf-8"><title>GG SVG image budget</title>
+<style>body { margin: 0; background: white } header { width: 16px; height: 8px; background: #34b786 }
+svg { display: block }</style>
+<header></header><svg width="720" height="376"><defs>
+<linearGradient id="ramp" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="320" y2="0">
+<stop offset="0" stop-color="red"/><stop offset="1" stop-color="blue"/>
+</linearGradient></defs>
+""" + "\n".join(shapes) + """
+<path d="M0 0H100V200H0Z" transform="translate(8 150)" fill="#00aa00"/>
+<path d="M0 0H100V200H0Z" transform="translate(-70 150)" fill="#00aa00"/>
+</svg>
+""")
+
+    for label, disable_cache, gradients_per_frame in (("cached", "0", 10), ("uncached", "1", 8)):
+        screenshot = artifacts / f"svg-gg-image-budget-{label}.png"
+        screenshot.unlink(missing_ok=True)
+        environment = smoke_environment(Path(temporary) / screenshot.stem)
+        environment.pop("MESA_GL_VERSION_OVERRIDE", None)
+        environment.update(VOX_GG_SVG="1", VOX_GG_SVG_DIAGNOSTICS="1",
+                           VOX_DISABLE_GG_SVG_CACHE=disable_cache, VOX_GG_SVG_VIEWPORT_REUSE="1")
+        log = run_windowed([str(binary), "--window-width=800", "--window-height=600",
+                            "--screenshot-viewport-height=600", f"--screenshot={screenshot}", str(page)],
+                           env=environment, log_path=artifacts / f"{screenshot.stem}.log")
+        draws = [line for line in log.splitlines() if line.startswith("VOX_GG_SVG draw=")]
+        backing_draws = sum(line.startswith("VOX_GG_SVG draw=100x200 ") for line in draws)
+        gradients = [line for line in draws if line.startswith("VOX_GG_SVG draw=400x320 ")]
+        crops = [line for line in draws if line.startswith("VOX_GG_SVG draw=30x200 ")]
+        assert backing_draws > 1 and len(gradients) == gradients_per_frame * backing_draws, log
+        misses = sum(" cache=miss " in line for line in gradients)
+        assert misses == (8 if label == "cached" else len(gradients)), log
+        assert len(crops) == (backing_draws if label == "cached" else 0), log
+        assert all(" cache=hit " in line and " crop=hit " in line for line in crops), log
+
+        _, _, channels, rows = rendered_png_rows(screenshot.read_bytes())
+        marker = next(y for y, row in enumerate(rows[:150])
+                      if row[4 * channels:4 * channels + 3] == b"\x34\xb7\x86")
+        assert rows[marker + 8 + 344][3 * channels:3 * channels + 3] == b"\x00\xaa\x00"
+        if label == "cached":
+            assert rows[marker + 8 + 60][694 * channels:694 * channels + 3] == b"\x00\x00\xff"
+    print("PASS: SVG image budget charges distinct rasters and admits repeated placements", flush=True)
 
 
 def check_gg_svg_gradient_viewport(binary, artifacts, temporary):
