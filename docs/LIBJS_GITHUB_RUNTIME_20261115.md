@@ -10110,3 +10110,66 @@ object files pass at 10 GiB. The browser type-checks. The volume was full
 (199 MB free) during part of this work. Commands, rows, stage summaries,
 profiles and the Brave trace summary are local under
 `docs/benchmark-results/libjs-github-v8-e1-20261119/receipts`.
+
+### Worker-thread module parsing and the remaining gap, 2026-11-19
+
+**Not yet as fast as Brave.** On the same archived page, five alternating
+rounds give Vox with compiled LibJS a median 4,465 ms to the PNG
+(43.38 billion observed instructions), Vox with JavaScriptCore 3,547 ms
+(29.02 billion) and Brave 2,197 ms (20.50 billion). All 15 visits pass the
+repository audit and exit zero. Both Vox engines still trail Brave, and
+LibJS still costs about 0.9 s and 14 billion instructions more than JSC.
+
+**Worker-thread parsing.** `8c6d7c4e7` parses fetched LibJS module scripts on
+four worker threads, as V8 compiles streamed scripts off the main thread.
+The fetch completion queues the decoded source and returns to the event loop;
+the worker's result returns to the origin run loop, which resumes the
+ordinary module fetch from a networking task. Workers retain their
+allocations for the process. Only a clean result is reused; anything with a
+diagnostic or recursion stop is parsed again on the main thread (8 MB worker
+stacks versus the 64 MB main thread). `VOX_LIBJS_BACKGROUND_PARSE=0` keeps
+main-thread parsing and the audit's `frontend.background_parses` counts worker
+parses (80 per load). Parsing all 87 archived scripts on four concurrent
+threads matches a main-thread parse (82 full AST dumps, the five largest by
+diagnostics and length; two runs).
+
+| Seven alternating rounds, `654a0f77…`, read-only index | Median launch to PNG | Range | Median observed instructions |
+| --- | ---: | ---: | ---: |
+| Main-thread parsing (`VOX_LIBJS_BACKGROUND_PARSE=0`) | 4,674 ms | 4,242–5,571 ms | 43.09 billion |
+| Worker-thread parsing | 4,400 ms | 4,096–5,800 ms | 43.34 billion |
+| Brave with V8 | 2,222 ms | 2,178–2,416 ms | 20.68 billion |
+
+Only four of seven pairs are faster, at one-minute host loads of 8–11, so no
+reliable wall-time gain is claimed. Three stage-logged loads per mode show
+the main-thread module frontend falling from 339–374 to 130–146 ms, while
+execution self time rises from 807–960 to 942–1,036 ms; outermost script
+time is 1,133–1,244 ms against 1,194–1,388 ms. Brave's `ScriptDuration`
+median is 216 ms in this cohort.
+
+**Lookup index in profiled launches.** `8f8b2256a` and `2dab31231` derive the
+build identity from the main executable's file identity through
+`_NSGetExecutablePath` (Linux: `/proc/self/exe`). V's `os.executable()` reports
+dyld image zero, which is the inserted library under `DYLD_INSERT_LIBRARIES`,
+so profiled launches previously ignored the index.
+
+**Where LibJS's time goes.** One stage-logged load of each engine on the same
+publication: LibJS spends 873 ms in script execution and bindings and 128 ms
+in the module frontend; JSC spends 487 ms plus 191 ms of module source
+completion. LibJS's posted-task, parser-end and animation-frame tasks also
+enter script outside that scope (152 and 91 ms of other/rendering task time
+against 6 and 15 ms with JSC). Style, layout and paint are similar for both
+engines and remain well above Brave's (Brave reports 19 layouts in 52 ms and
+78 style recalculations in 95 ms). A launch-to-capture profile (injected
+startup delay, `MallocSpaceEfficient=1` to avoid the allocator re-exec) puts
+about half of the busy main thread in script and half in style, layout and
+paint. Within script, cost is spread over own-property scans (~15%), array
+growth (~10%), call frames (~7%), bytecode compilation (~7%) and binding walks
+(~5%); no single routine dominates. `Object` is 1,112 bytes, but object
+creation is under 0.5% of samples.
+
+**What parity needs.** Reaching Brave requires structural work on both halves:
+property inline caches over object shapes, compiled call paths and
+environment-coordinate binding reads (native-cache ABI changes that need a
+grouped-cache rebuild), lazy function parsing with a pre-parser, and
+incremental style/layout or off-main-thread rendering. Local receipts are
+under `docs/benchmark-results/libjs-github-v8-e2-20261119/receipts`.
