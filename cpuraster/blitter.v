@@ -347,10 +347,11 @@ fn (mut c RectClipBlitter) blit_anti_v2(x int, y int, a0 u8, a1 u8) {
 
 // SkA8_Blitter with the src-over procs for a solid alpha source.
 pub struct A8Blitter {
-	width     int
-	height    int
-	row_bytes int
-	src       u8
+	width         int
+	height        int
+	row_bytes     int
+	src           u8
+	legacy_opaque bool
 mut:
 	pixels []u8
 }
@@ -365,14 +366,38 @@ fn a8_srcover(src u8, dst u8) u8 {
 	return src + a8_div255(u32(255 - src) * u32(dst))
 }
 
+// The alpha lane of the legacy opaque SolidBlitter. Its two-pixel helpers
+// interpolate before rounding, while its spans and masks add scaled bytes.
+@[inline]
+fn a8_legacy_opaque_over(coverage u8, dst u8) u8 {
+	return coverage + u8(((256 - u32(coverage)) * u32(dst)) >> 8)
+}
+
+@[inline]
+fn a8_legacy_opaque_interp(coverage u8, dst u8) u8 {
+	scale := u32(coverage) + u32(coverage >> 7)
+	return u8((255 * scale + (256 - scale) * u32(dst)) >> 8)
+}
+
 fn (mut b A8Blitter) row_bw(offset int, count int) {
+	if b.src == 255 && count > 0 {
+		unsafe { vmemset(&u8(b.pixels.data) + offset, 255, count) }
+		return
+	}
 	for i in 0 .. count {
 		b.pixels[offset + i] = a8_srcover(b.src, b.pixels[offset + i])
 	}
 }
 
 // A8_row_aa() with canFoldAA for src-over.
+@[direct_array_access]
 fn (mut b A8Blitter) row_aa(offset int, count int, aa u8) {
+	if b.legacy_opaque {
+		for i in 0 .. count {
+			b.pixels[offset + i] = a8_legacy_opaque_over(aa, b.pixels[offset + i])
+		}
+		return
+	}
 	src := a8_div255(u32(b.src) * u32(aa))
 	for i in 0 .. count {
 		b.pixels[offset + i] = a8_srcover(src, b.pixels[offset + i])
@@ -424,6 +449,10 @@ fn (mut b A8Blitter) blit_anti_rect(x int, y int, width int, height int, left_al
 }
 
 fn (mut b A8Blitter) blit_mask(mask &Mask, clip IRect) {
+	if b.src == 255 {
+		b.blit_opaque_mask(mask, clip)
+		return
+	}
 	for row in 0 .. clip.height() {
 		dst := (clip.top + row) * b.row_bytes + clip.left
 		src := mask.index(clip.left, clip.top + row)
@@ -436,10 +465,40 @@ fn (mut b A8Blitter) blit_mask(mask &Mask, clip IRect) {
 	}
 }
 
+@[direct_array_access]
+fn (mut b A8Blitter) blit_opaque_mask(mask &Mask, clip IRect) {
+	width := clip.width()
+	for row in 0 .. clip.height() {
+		dst := (clip.top + row) * b.row_bytes + clip.left
+		src := mask.index(clip.left, clip.top + row)
+		if b.legacy_opaque {
+			for i in 0 .. width {
+				b.pixels[dst + i] = a8_legacy_opaque_over(mask.image[src + i], b.pixels[dst + i])
+			}
+		} else {
+			for i in 0 .. width {
+				b.pixels[dst + i] = a8_srcover(mask.image[src + i], b.pixels[dst + i])
+			}
+		}
+	}
+}
+
 fn (mut b A8Blitter) blit_anti_h2(x int, y int, a0 u8, a1 u8) {
+	if b.legacy_opaque {
+		offset := y * b.row_bytes + x
+		b.pixels[offset] = a8_legacy_opaque_interp(a0, b.pixels[offset])
+		b.pixels[offset + 1] = a8_legacy_opaque_interp(a1, b.pixels[offset + 1])
+		return
+	}
 	default_blit_anti_h2(mut b, x, y, a0, a1)
 }
 
 fn (mut b A8Blitter) blit_anti_v2(x int, y int, a0 u8, a1 u8) {
+	if b.legacy_opaque {
+		offset := y * b.row_bytes + x
+		b.pixels[offset] = a8_legacy_opaque_interp(a0, b.pixels[offset])
+		b.pixels[offset + b.row_bytes] = a8_legacy_opaque_interp(a1, b.pixels[offset + b.row_bytes])
+		return
+	}
 	default_blit_anti_v2(mut b, x, y, a0, a1)
 }

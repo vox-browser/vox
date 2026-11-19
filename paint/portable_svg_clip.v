@@ -80,21 +80,20 @@ fn (mut app BrowserApp) draw_portable_svg_mask_group(commands []layout.PaintComm
 fn apply_portable_svg_clip(mut image PortableSVGGroupImage, components []layout.PaintPath,
 	page_x f32, page_y f32, scale f64) bool {
 	bounds := image.bounds
-	pitch := bounds.width * 4
-	mut coverage := []u8{len: pitch * bounds.height}
+	mut coverage := []u8{len: bounds.width * bounds.height}
 	for part in components {
 		if part.path_data.len < layout.compatibility_clip_path_segment_stride { continue }
 		path := cpuraster.canvas_path(part.path_data, part.path_even_odd)
 		transform := portable_device_transform(part.transform, page_x, page_y, scale)
-		if !cpuraster.fill_canvas_path(mut coverage, bounds.width, bounds.height, pitch, 2,
-			path, portable_svg_surface_matrix(transform, bounds), 0xffffffff, none, 1,
-			.src_over, 0, [], none) {
+		if !cpuraster.fill_opaque_coverage(mut coverage, bounds.width, bounds.height,
+			path, portable_svg_surface_matrix(transform, bounds)) {
 			return false
 		}
 	}
 	// Components form one coverage mask over the resolved SVG source.
-	for alpha := 3; alpha < coverage.len; alpha += 4 {
-		image.pixels[alpha] = portable_svg_mask_alpha(image.pixels[alpha], coverage[alpha])
+	for i, value in coverage {
+		alpha := 4 * i + 3
+		image.pixels[alpha] = portable_svg_mask_alpha(image.pixels[alpha], value)
 	}
 	return true
 }
