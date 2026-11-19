@@ -35,8 +35,8 @@ fn portable_svg_content_mask_supported(mask &layout.PaintClip, portable_group bo
 			.path {
 				if !(operation.has_fill || operation.has_stroke) || operation.opacity != 1
 					|| operation.path_data.len < layout.compatibility_clip_path_segment_stride
-					|| (operation.has_fill && (operation.fill_pattern != none
-					|| !portable_svg_mask_gradient_supported(operation, mask.mask_luminance, portable_group)))
+					|| (operation.has_fill
+					&& !portable_svg_mask_fill_supported(operation, mask.mask_luminance, portable_group))
 					|| (operation.has_stroke && (!portable_group
 					|| !portable_svg_mask_stroke_supported(operation, mask.mask_luminance))) {
 					return false
@@ -68,8 +68,11 @@ fn portable_svg_mask_stroke_supported(operation &layout.PaintMaskOperation, lumi
 	return true
 }
 
-fn portable_svg_mask_gradient_supported(operation &layout.PaintMaskOperation, luminance bool,
+fn portable_svg_mask_fill_supported(operation &layout.PaintMaskOperation, luminance bool,
 	portable_group bool) bool {
+	if pattern := operation.fill_pattern {
+		return portable_group && portable_svg_mask_pattern_supported(pattern)
+	}
 	if linear := operation.fill_linear_gradient {
 		return (linear.gradient.spread_method == .pad || portable_group)
 			&& portable_svg_raster_linear_supported(&linear, luminance)
@@ -429,9 +432,9 @@ fn svg_mask_opacity_layer_rows(operations []layout.PaintMaskOperation, bounds pa
 				}
 			}
 			.path {
-				// Centerline bounds omit the caps and joins. Keep the parent
-				// surface so an opacity group retains the entire stroke.
-				if operation.has_stroke { return parent }
+				// Strokes need room for caps and joins. Bitmap shaders
+				// use the parent row origin.
+				if operation.has_stroke || operation.fill_pattern != none { return parent }
 				device := portable_device_transform(operation.transform, page_x, page_y, scale)
 				edges := svg_mask_line_path_rows(operation.path_data,
 					portable_svg_surface_matrix(device, bounds)) or { return parent }
@@ -472,6 +475,7 @@ fn (mut app BrowserApp) raster_svg_mask_layers(mut pixels []u8, pitch int, bound
 	layers[0].rows = SVGMaskLayerRows{bottom: bounds.height}
 	mut depth := 0
 	mut cacheable := true
+	mut budget := PortableSVGMaskTileBudget{}
 	for index := 0; index < mask.mask_operations.len; index++ {
 		operation := &mask.mask_operations[index]
 		match operation.kind {
@@ -525,9 +529,10 @@ fn (mut app BrowserApp) raster_svg_mask_layers(mut pixels []u8, pitch int, bound
 			}
 			.path {
 				device := portable_device_transform(operation.transform, page_x, page_y, scale)
-				if !app.raster_svg_mask_path(mut layers[depth], bounds.width,
+				available := app.raster_svg_mask_path(mut layers[depth], bounds.width,
 					if depth == 0 { pitch } else { layer_pitch }, operation,
-					portable_svg_surface_matrix(device, bounds), mask.mask_luminance) { return none }
+					portable_svg_surface_matrix(device, bounds), mask.mask_luminance, mut budget)?
+				cacheable = cacheable && available
 			}
 			.image {
 				device := portable_device_transform(operation.transform, page_x, page_y, scale)
@@ -542,16 +547,26 @@ fn (mut app BrowserApp) raster_svg_mask_layers(mut pixels []u8, pitch int, bound
 }
 
 fn (mut app BrowserApp) raster_svg_mask_path(mut layer PortableSVGMaskLayer, width int, pitch int,
-	operation &layout.PaintMaskOperation, matrix [6]f32, luminance bool) bool {
+	operation &layout.PaintMaskOperation, matrix [6]f32, luminance bool,
+	mut budget PortableSVGMaskTileBudget) ?bool {
 	mut style := ?cpuraster.CanvasPaintStyle(none)
 	mut fill := u32(0)
 	mut opacity := f32(1)
+	mut cacheable := true
 	if operation.has_fill {
-		style = portable_svg_mask_gradient(operation, luminance)
+		if pattern := operation.fill_pattern {
+			if operation.fill_opacity > 0 {
+				tile := app.raster_svg_mask_pattern(pattern, matrix, luminance, mut budget)?
+				style = cpuraster.CanvasPaintStyle(tile.pattern)
+				cacheable = tile.cacheable
+			}
+		} else {
+			style = portable_svg_mask_gradient(operation, luminance)
+		}
 		if style != none {
 			fill = 0xff000000
 			opacity = f32(operation.fill_opacity)
-		} else {
+		} else if operation.fill_pattern == none {
 			color := app.paint_colors.color(operation.fill_color, operation.fill_opacity)
 			fill = portable_svg_mask_argb(color, luminance)
 		}
@@ -565,14 +580,17 @@ fn (mut app BrowserApp) raster_svg_mask_path(mut layer PortableSVGMaskLayer, wid
 	path := cpuraster.canvas_path(operation.path_data, operation.path_even_odd)
 	if operation.has_stroke && operation.stroke_first
 		&& !app.raster_svg_mask_stroke(mut layer, width, pitch, operation, path, matrix, luminance) {
-		return false
+		return none
 	}
 	if fill >> 24 != 0 && !cpuraster.fill_canvas_mask_path(mut layer.pixels, width, layer.rows.top,
 		layer.rows.height(), pitch, path, matrix, fill, style, opacity) {
-		return false
+		return none
 	}
-	return !operation.has_stroke || operation.stroke_first
-		|| app.raster_svg_mask_stroke(mut layer, width, pitch, operation, path, matrix, luminance)
+	if operation.has_stroke && !operation.stroke_first
+		&& !app.raster_svg_mask_stroke(mut layer, width, pitch, operation, path, matrix, luminance) {
+		return none
+	}
+	return cacheable
 }
 
 fn (mut app BrowserApp) raster_svg_mask_stroke(mut layer PortableSVGMaskLayer, width int, pitch int,

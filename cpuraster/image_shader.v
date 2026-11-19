@@ -47,6 +47,7 @@ pub:
 	premultiplied bool
 	// Display P3 instead of sRGB.
 	display_p3 bool
+	nearest    bool
 	// CanvasPattern's repetition: 0 repeat, 1 repeat-x, 2 repeat-y and
 	// 3 no-repeat.
 	repetition int
@@ -144,7 +145,7 @@ fn canvas_pattern_shader(pattern CanvasPattern, m Matrix) CanvasShader {
 		ty: t[5]
 	}
 	return new_image_shader(pattern.bitmap(), if repeat_x { TileMode.repeat } else { .decal },
-		if repeat_y { TileMode.repeat } else { .decal }, true, sk_concat(matrix_affine(m), local))
+		if repeat_y { TileMode.repeat } else { .decal }, !pattern.nearest, sk_concat(matrix_affine(m), local))
 }
 
 // new_image_shader is SkImageShader::Make() for bitmap with its tile modes

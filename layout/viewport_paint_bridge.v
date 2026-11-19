@@ -2187,60 +2187,7 @@ fn apply_compatibility_visual_context_node(tree &painting.AccumulatedVisualConte
 				width: node.data.bounding_rect.width
 				height: node.data.bounding_rect.height
 			}
-			mut operations := []PaintMaskOperation{cap: node.data.operations.len}
-			for operation in node.data.operations {
-				operation_transform := multiply_affine(flattened.transform, [
-					operation.transform.a,
-					operation.transform.b,
-					operation.transform.c,
-					operation.transform.d,
-					operation.transform.e,
-					operation.transform.f,
-				]!)
-				mut operation_kind := PaintMaskOperationKind.path
-				match operation.kind {
-					.begin_filter, .end_filter { continue }
-					.begin_opacity { operation_kind = .begin_opacity }
-					.end_opacity { operation_kind = .end_opacity }
-					.image { operation_kind = .image }
-					.path { operation_kind = .path }
-				}
-				operations << PaintMaskOperation{
-					kind: operation_kind
-					opacity: operation.opacity
-					image_url: operation.image_url
-					image_rect: LayoutRect{
-						x: operation.image_rect.x
-						y: operation.image_rect.y
-						width: operation.image_rect.width
-						height: operation.image_rect.height
-					}
-					image_position_x: operation.image_position_x
-					image_position_y: operation.image_position_y
-					image_rendering: operation.image_rendering
-					image_paintable: operation.image_paintable
-					path_data: compatibility_pack_clip_path_segments(operation.path)
-					path_even_odd: operation.path.fill_rule == .even_odd
-					transform: operation_transform
-					fill_color: painting_color_string(operation.fill_color)
-					stroke_color: painting_color_string(operation.stroke_color)
-					fill_linear_gradient: operation.fill_linear_gradient
-					stroke_linear_gradient: operation.stroke_linear_gradient
-					fill_radial_gradient: operation.fill_radial_gradient
-					stroke_radial_gradient: operation.stroke_radial_gradient
-					fill_pattern: operation.fill_pattern
-					stroke_pattern: operation.stroke_pattern
-					has_fill: operation.has_fill
-					has_stroke: operation.has_stroke
-					fill_opacity: operation.fill_opacity
-					stroke_opacity: operation.stroke_opacity
-					stroke_width: operation.stroke_width
-					stroke_linecap: int(operation.stroke_linecap)
-					stroke_linejoin: int(operation.stroke_linejoin)
-					stroke_miterlimit: operation.stroke_miter_limit
-					stroke_first: operation.stroke_first
-				}
-			}
+			operations := compatibility_lower_svg_mask_operations(node.data.operations, flattened.transform)
 			mut cache_key := node.data.cache_key
 			for value in flattened.transform {
 				cache_key = svg_clip_hash_mix(cache_key, math.f64_bits(value))
@@ -4483,6 +4430,66 @@ fn compatibility_box_contains_hit_test_point_at(box &BlockBox, stacking_context_
 	// PaintableBox::hit_test() applies the normalized border radii after mapping
 	// the viewport point into the box's local coordinate space.
 	return box.border_box_contains_hit_test_point(local_point)
+}
+
+// Lower retained mask and pattern tile operations into the renderer's paint transport.
+pub fn compatibility_lower_svg_mask_operations(source []painting.SVGMaskPaintOperation,
+	transform [6]f64) []PaintMaskOperation {
+	mut operations := []PaintMaskOperation{cap: source.len}
+	for operation in source {
+		operation_transform := multiply_affine(transform, [
+			operation.transform.a,
+			operation.transform.b,
+			operation.transform.c,
+			operation.transform.d,
+			operation.transform.e,
+			operation.transform.f,
+		]!)
+		mut operation_kind := PaintMaskOperationKind.path
+		match operation.kind {
+			.begin_filter, .end_filter { continue }
+			.begin_opacity { operation_kind = .begin_opacity }
+			.end_opacity { operation_kind = .end_opacity }
+			.image { operation_kind = .image }
+			.path { operation_kind = .path }
+		}
+		operations << PaintMaskOperation{
+			kind: operation_kind
+			opacity: operation.opacity
+			image_url: operation.image_url
+			image_rect: LayoutRect{
+				x: operation.image_rect.x
+				y: operation.image_rect.y
+				width: operation.image_rect.width
+				height: operation.image_rect.height
+			}
+			image_position_x: operation.image_position_x
+			image_position_y: operation.image_position_y
+			image_rendering: operation.image_rendering
+			image_paintable: operation.image_paintable
+			path_data: compatibility_pack_clip_path_segments(operation.path)
+			path_even_odd: operation.path.fill_rule == .even_odd
+			transform: operation_transform
+			fill_color: painting_color_string(operation.fill_color)
+			stroke_color: painting_color_string(operation.stroke_color)
+			fill_linear_gradient: operation.fill_linear_gradient
+			stroke_linear_gradient: operation.stroke_linear_gradient
+			fill_radial_gradient: operation.fill_radial_gradient
+			stroke_radial_gradient: operation.stroke_radial_gradient
+			fill_pattern: operation.fill_pattern
+			stroke_pattern: operation.stroke_pattern
+			has_fill: operation.has_fill
+			has_stroke: operation.has_stroke
+			fill_opacity: operation.fill_opacity
+			stroke_opacity: operation.stroke_opacity
+			stroke_width: operation.stroke_width
+			stroke_linecap: int(operation.stroke_linecap)
+			stroke_linejoin: int(operation.stroke_linejoin)
+			stroke_miterlimit: operation.stroke_miter_limit
+			stroke_first: operation.stroke_first
+		}
+	}
+	return operations
 }
 
 // Recover the concrete renderer commands retained by a DOM DisplayList. Like
