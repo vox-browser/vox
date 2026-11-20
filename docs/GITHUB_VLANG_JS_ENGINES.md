@@ -1,4 +1,4 @@
-# github.com/vlang/v: Vox with V8, JavaScriptCore and compiled LibJS
+# github.com/vlang/v: Vox with V8, JavaScriptCore and compiled V.js
 
 ![Vox engine comparison on github.com/vlang/v](images/github-vlang-js-engines-20261120.png)
 
@@ -13,16 +13,16 @@ process exit. Engine order alternated each round.
 |---|---|---|---|
 | Vox + V8 | 6 | 33.24B (32.62–33.84) | 3.51 s (3.37–4.09) |
 | Vox + JavaScriptCore | 7 | 28.89B (28.79–29.51) | 3.16 s (2.99–3.49) |
-| Vox + LibJS (compiled) | 7 | 41.53B (40.55–41.96) | 3.63 s (3.51–4.15) |
+| Vox + V.js (compiled) | 7 | 41.53B (40.55–41.96) | 3.63 s (3.51–4.15) |
 | Brave (reference) | 6 | 20.35B (18.94–21.01) | 2.04 s (1.95–2.17) |
 
 Relative to Vox + JavaScriptCore, V8 needs 1.15× the instructions and compiled
-LibJS 1.44×. Brave's V8 `ScriptDuration` median was 194 ms.
+V.js 1.44×. Brave's V8 `ScriptDuration` median was 194 ms.
 
 ## Builds
 
-- JSC and LibJS share the published bundle `fe01881e…` (HEAD `c62b26514`,
-  `-b c`, a single C unit, V `-prod`). LibJS used the grouped native-code
+- JSC and V.js (LibJS) share the published bundle `fe01881e…` (HEAD `c62b26514`,
+  `-b c`, a single C unit, V `-prod`). V.js used the grouped native-code
   cache prepared for that executable by `tools/prepare_github_grouped_cache.py`,
   with its lookup index learned in three untimed visits and then read-only.
 - V8 used a private `VOX_V8=1` build of the same HEAD, built about 50 minutes
