@@ -2,6 +2,7 @@ module css
 
 
 import dom
+import processmetrics
 import platform
 
 // Translated scaffolding from:
@@ -518,6 +519,8 @@ pub fn (mut scope StyleScope) populate_new_rule_cache() &StyleCache {
 }
 
 pub fn (mut scope StyleScope) build_rule_cache() {
+	load_instruction_stage := processmetrics.begin_thread_instruction_substage('style_rule_cache')
+	defer { load_instruction_stage.finish() }
 	if scope.extend_rule_cache() { return }
 	if cache := scope.shared_user_agent_only_shadow_style_cache() {
 		scope.adopt_style_cache(cache)
