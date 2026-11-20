@@ -220,7 +220,7 @@ fn (mut vm VM) execute_instruction(instruction &Instruction, executable &Executa
 		.new_array { result = Value.from_object(ArrayObject.create(mut vm, vm.realm(), u64(left.number), vm.realm().array_prototype_record())!.object) }
 		.define_property {
 			mut object := left.as_object()
-			define_literal_property(mut vm, mut object, right.to_property_key(mut vm)!, source)!
+			define_literal_property(mut vm, mut object, right.to_property_key(mut vm)!, source, instruction.annex_b)!
 		}
 		.set_object_literal_prototype {
 			if right.is_object() || right.is_null() {

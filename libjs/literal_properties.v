@@ -21,15 +21,20 @@ fn (object &Object) is_ordinary_for_data_definition() bool {
 		&& object.array_object == none && object.string_object == none
 }
 
-fn define_literal_property(mut vm VM, mut object Object, key PropertyName, value Value) ! {
+// `fresh` is the compiler's proof that no earlier definition of this literal
+// created the key. Otherwise one lookup decides between appending and the
+// generic path; the literal object is ordinary and not an array, so appending
+// needs none of define_direct_property's length or index bookkeeping.
+fn define_literal_property(mut vm VM, mut object Object, key PropertyName, value Value, fresh bool) ! {
 	$if test {
 		if literal_property_fast_path_disabled {
 			object.create_data_property_or_throw(mut vm, key, value)!
 			return
 		}
 	}
-	if object.is_ordinary_for_data_definition() && object.find_own_property(key) < 0 {
-		object.define_direct_property(key, value, attribute_writable | attribute_enumerable | attribute_configurable)
+	if object.is_ordinary_for_data_definition() && (fresh || object.find_own_property(key) < 0) {
+		object.properties << OwnProperty{key: key, value: value, writable: true, enumerable: true,
+			configurable: true}
 		return
 	}
 	object.create_data_property_or_throw(mut vm, key, value)!

@@ -7,6 +7,10 @@ module libjs
 fn (mut generator BytecodeGenerator) object_literal(mut vm VM, properties []ObjectProperty) !Operand {
 	dst := generator.temporary()
 	generator.emit(Instruction{ op: .new_object, dst: dst })
+	// Constant names defined so far. A spread or computed key may define any
+	// name, so later definitions keep the runtime duplicate check after one.
+	mut defined_names := []Utf16String{}
+	mut dynamic_names := false
 	for property in properties {
 		if property.property_type == .proto_setter {
 			value := generator.expression(mut vm, &(property.value or { return error('Missing prototype value') }))!
@@ -14,10 +18,14 @@ fn (mut generator BytecodeGenerator) object_literal(mut vm VM, properties []Obje
 			continue
 		}
 		if property.property_type == .spread {
+			dynamic_names = true
 			value := generator.expression(mut vm, &property.key)!
 			generator.emit(Instruction{op: .copy_data_properties, lhs: dst, rhs: value})
 			continue
 		}
+		constant_name := literal_property_name(property)
+		fresh_name := !dynamic_names && if name := constant_name { !defined_names.any(it == name) } else { false }
+		if name := constant_name { defined_names << name } else { dynamic_names = true }
 		raw_key := if !property.is_computed && property.key.kind.tag == .identifier_expr {
 			generator.constant(Value.from_string(vm.create_string(identifier_name(&property.key)!)))
 		} else {
@@ -48,7 +56,24 @@ fn (mut generator BytecodeGenerator) object_literal(mut vm VM, properties []Obje
 		} else {
 			value = generator.expression(mut vm, &expression)!
 		}
-		generator.emit(Instruction{ op: .define_property, lhs: dst, rhs: key, src: value })
+		// annex_b marks a name that no earlier definition in this literal can have
+		// created, so the fresh ordinary object needs no duplicate lookup.
+		generator.emit(Instruction{ op: .define_property, lhs: dst, rhs: key, src: value, annex_b: fresh_name })
 	}
 	return dst
+}
+
+// The property name of an identifier or string key that cannot be an array
+// index; numeric spellings keep the runtime check.
+fn literal_property_name(property ObjectProperty) ?Utf16String {
+	if property.is_computed { return none }
+	name := if property.key.kind.tag == .identifier_expr {
+		identifier_name(&property.key) or { return none }
+	} else if property.key.kind.tag == .string_literal {
+		property.key.kind.string_value
+	} else {
+		return none
+	}
+	if name.data.len > 0 && name.data.all(it >= `0` && it <= `9`) { return none }
+	return name
 }
