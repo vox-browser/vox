@@ -1569,7 +1569,8 @@ fn (style_computer &StyleComputer) target_has_animation_for_property(abstract_el
 	}
 	// Hidden animated targets ask this on every sample; walk the stores in
 	// place rather than collecting per-target lists.
-	if style_computer.css_animation_storage_ != unsafe { nil } {
+	if style_computer.css_animation_storage_ != unsafe { nil }
+		&& style_computer.css_animation_storage_.has_entries_for(abstract_element) {
 		for entry in style_computer.css_animation_storage_.entries {
 			if !abstract_elements_equal(entry.abstract_element, abstract_element) {
 				continue
