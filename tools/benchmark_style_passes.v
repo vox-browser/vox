@@ -15,6 +15,7 @@ import css
 import dom
 import html
 import os
+import processmetrics
 import time
 
 fn main() {
@@ -41,6 +42,8 @@ fn main() {
 	mut styled := elements
 	mut total_ns := u64(0)
 	mut best_ns := u64(0)
+	// Thread instructions are independent of other processes on the host.
+	mut best_instructions := u64(0)
 	for _ in 0 .. passes {
 		mut copies := []&dom.Node{}
 		if mode == 'insert' {
@@ -57,12 +60,17 @@ fn main() {
 			document.set_needs_full_style_update(true)
 		}
 		start := time.sys_mono_now()
+		counted := processmetrics.thread_instruction_snapshot()
 		document.update_style()
+		instructions := processmetrics.thread_instruction_snapshot().since(counted) or { 0 }
 		elapsed := time.sys_mono_now() - start
+		if best_instructions == 0 || instructions < best_instructions { best_instructions = instructions }
 		for mut copy in copies { copy.remove(false) }
 		total_ns += elapsed
 		if best_ns == 0 || elapsed < best_ns { best_ns = elapsed }
 	}
 	average_ns := if passes > 0 { total_ns / u64(passes) } else { u64(0) }
-	println('mode=${mode} elements=${elements} styled=${styled} first_ms=${f64(first_ns) / 1e6:.1f} passes=${passes} average_ms=${f64(average_ns) / 1e6:.1f} best_ms=${f64(best_ns) / 1e6:.1f} best_us_per_element=${f64(best_ns) / 1e3 / f64(styled):.2f}')
+	// With `-d vox_css_diagnostics`, the instruction and call counts per scope.
+	css.report_diagnostic_instruction_scopes()
+	println('mode=${mode} elements=${elements} styled=${styled} first_ms=${f64(first_ns) / 1e6:.1f} passes=${passes} average_ms=${f64(average_ns) / 1e6:.1f} best_ms=${f64(best_ns) / 1e6:.1f} best_us_per_element=${f64(best_ns) / 1e3 / f64(styled):.2f} best_instructions=${best_instructions} instructions_per_element=${best_instructions / u64(styled)}')
 }
