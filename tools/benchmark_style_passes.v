@@ -11,6 +11,7 @@
 //   benchmark_style_passes page.html 20 insert
 module main
 
+import crypto.sha256
 import css
 import dom
 import html
@@ -86,7 +87,11 @@ fn report_matched_rule_signatures(document &dom.Document) {
 	computer := css.css_style_computer_for(document)
 	scope := css.style_scope_for_dom_node(document.as_node())
 	mut seen := map[string]int{}
+	mut with_environment := map[string]int{}
 	mut total := 0
+	// Stable across processes: sheet and rule indexes, specificity and the
+	// restyle bits, in document order, for comparing bucketing controls.
+	mut stable := []string{}
 	mut with_inline := 0
 	for element in css.query_selector_all(document.as_node(), '*') {
 		abstract := dom.AbstractElement.new(element, none)
@@ -101,11 +106,28 @@ fn report_matched_rule_signatures(document &dom.Document) {
 			for rule in layer.rules { parts << '${u64(voidptr(rule.rule))}' }
 			parts << '/'
 		}
+		mut stable_parts := []string{}
+		for rule in set.user_agent_rules {
+			stable_parts << '${rule.rule.style_sheet_index}.${rule.rule.rule_index}.${rule.rule.specificity}'
+		}
+		for layer in set.author_rules {
+			stable_parts << layer.qualified_layer_name
+			for rule in layer.rules {
+				stable_parts << '${rule.rule.style_sheet_index}.${rule.rule.rule_index}.${rule.rule.specificity}'
+			}
+		}
+		stable << '${stable_parts.join(',')}|${attempted.get(.hover)}${attempted.get(.focus)}${attempted.get(.focus_within)}${attempted.get(.focus_visible)}${attempted.get(.target)}'
 		if element.has_attribute('style') { with_inline++ }
 		seen[parts.join(',')]++
+		// With the custom property environment the cascade resolves var() in.
+		environment := if data := abstract.custom_property_data() { u64(voidptr(data)) } else { u64(0) }
+		with_environment['${parts.join(',')}#${environment}']++
 		total++
 	}
 	mut repeated := 0
 	for _, count in seen { if count > 1 { repeated += count - 1 } }
-	println('signatures elements=${total} distinct=${seen.len} repeats=${repeated} repeat_rate=${f64(repeated) / f64(total):.2f} inline_style=${with_inline}')
+	mut repeated_in_environment := 0
+	for _, count in with_environment { if count > 1 { repeated_in_environment += count - 1 } }
+	println('matched-rule digest ${sha256.hexhash(stable.join('\n'))}')
+	println('signatures elements=${total} distinct=${seen.len} repeats=${repeated} repeat_rate=${f64(repeated) / f64(total):.2f} inline_style=${with_inline} environment_distinct=${with_environment.len} environment_repeat_rate=${f64(repeated_in_environment) / f64(total):.2f}')
 }
