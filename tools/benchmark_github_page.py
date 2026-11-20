@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
 """Observe frozen GitHub launch, hydration, PNG, audit and normal process exit.
 
-JSC and LibJS use the same Vox executable. Brave supplies a whole-browser V8
-comparison, including its distinct DOM/renderer and CDP setup/audit/shutdown.
+JSC and LibJS use the same Vox executable. The optional `v8` engine runs a
+private `-d vox_v8` Vox build (JavaScriptCore's C API on V8) given by
+--v8-vox. Brave supplies a whole-browser V8 comparison, including its distinct
+DOM/renderer and CDP setup/audit/shutdown.
 Counters cover observed process trees from creation, including startup; they
 are lower bounds and exclude GPU/external-service execution. This is not an
 isolated JavaScript benchmark or an optimization acceptance gate.
@@ -189,6 +191,9 @@ def observe(args, engine, folder, expected, replayed_scripts, api):
         env.update({'VOX_DIAGNOSTIC_' + name: '1' for name in RASTER_OPTIONS})
     if args.adblock_assets and engine != 'brave':
         env['VOX_ADBLOCK_ENGINE_ASSETS'] = str(args.adblock_assets)
+    if engine == 'v8':
+        # Prints the V8 version at startup; its counters are kept regardless.
+        env['VOX_V8_DIAGNOSTICS'] = '1'
     final_cache = folder / 'native-cache-final.json'
     if engine == 'libjs-native':
         env.update(VOX_LIBJS_NATIVE_CACHE=str(args.native_cache),
@@ -222,7 +227,8 @@ def observe(args, engine, folder, expected, replayed_scripts, api):
             command = measurement.chrome_launch_command(options, args.brave, profile)
         else:
             backend = 'libjs' if engine.startswith('libjs') else 'javascriptcore'
-            command = [str(args.vox), '--enable-javascript', '--js-engine=' + backend,
+            executable = args.v8_vox if engine == 'v8' else args.vox
+            command = [str(executable), '--enable-javascript', '--js-engine=' + backend,
                 '--window-width', '1024', '--window-height', '880', '--screenshot-viewport-height', '768',
                 '--screenshot', str(png), URL]
         row['command'] = command
@@ -308,8 +314,10 @@ def observe(args, engine, folder, expected, replayed_scripts, api):
             runtime = row['javascript_runtime'] or {}
             backend = 'libjs' if engine.startswith('libjs') else 'javascriptcore'
             if (row['configured_javascript_engine'] != backend or runtime.get('engine') != backend
-                    or runtime.get('native_context_initialized') is not (engine == 'jsc')):
+                    or runtime.get('native_context_initialized') is not (engine in ['jsc', 'v8'])):
                 raise RuntimeError('Requested JavaScript engine execution is unverified')
+            if engine == 'v8' and 'Vox V8 backend: V8 ' not in (folder / 'browser.log').read_text(errors='replace'):
+                raise RuntimeError('Missing V8 backend diagnostic')
             if backend == 'libjs' and (runtime.get('libjs_execution_generation', 0) <= 0
                     or not runtime.get('modules') or any(m.get('status') != 'evaluated'
                     or m.get('promise_state') != 'fulfilled' for m in runtime['modules'])):
@@ -353,6 +361,11 @@ def observe(args, engine, folder, expected, replayed_scripts, api):
 def run(args, *, bundle_lease=None, resume_native_abi=None):
     args.output = args.output.resolve(); args.archive = args.archive.resolve()
     args.vox = args.vox.resolve(); args.brave = args.brave.resolve()
+    args.v8_vox = getattr(args, 'v8_vox', None)
+    if 'v8' in args.engines:
+        if args.v8_vox is None:
+            raise ValueError('The v8 engine requires --v8-vox')
+        args.v8_vox = args.v8_vox.resolve()
     if args.native_cache: args.native_cache = args.native_cache.resolve()
     if args.adblock_assets: args.adblock_assets = args.adblock_assets.resolve()
     args.trace_native_libraries = getattr(args, 'trace_native_libraries', False)
@@ -406,6 +419,8 @@ def run(args, *, bundle_lease=None, resume_native_abi=None):
             ROOT / 'tools/check_pixel_equality.py', args.reference_png, args.diff_tool]
         if 'brave' in args.engines:
             paths.extend(native_dependencies(args.brave))
+        if 'v8' in args.engines:
+            paths.extend(native_dependencies(args.v8_vox, args.v8_vox.parent.glob('*.dylib')))
         if args.prepare_native_cache:
             paths.append(args.native_compiler)
         if args.native_captures:
@@ -460,7 +475,7 @@ def main():
     p.add_argument('--diff-tool', type=Path, default=ROOT / 'Build/pixel-tools/pixel_diff')
     p.add_argument('--output', type=Path, required=True)
     p.add_argument('--memory-guard-registry', type=Path, required=True)
-    p.add_argument('--engines', nargs='+', choices=['libjs', 'jsc', 'libjs-native', 'brave'], default=['libjs', 'jsc', 'brave'])
+    p.add_argument('--engines', nargs='+', choices=['libjs', 'jsc', 'libjs-native', 'v8', 'brave'], default=['libjs', 'jsc', 'brave'])
     p.add_argument('--native-cache', type=Path)
     p.add_argument('--adblock-assets', type=Path,
                    help='Private Vox filter bundle for a fixture that serves compatibility scripts directly')
@@ -476,6 +491,7 @@ def main():
     p.add_argument('--trace-native-libraries', action='store_true',
                    help='Save a loader trace and identify its cache libraries in an untimed reopen')
     p.add_argument('--vox', type=Path, default=ROOT / 'Build/v/Vox.app/Contents/MacOS/Vox')
+    p.add_argument('--v8-vox', type=Path, help='Private -d vox_v8 Vox executable for the v8 engine')
     p.add_argument('--brave', type=Path, default=Path('/Applications/Brave Browser.app/Contents/MacOS/Brave Browser'))
     p.add_argument('--repeat', type=int, default=7)
     p.add_argument('--settle-seconds', type=float, default=1)
@@ -486,6 +502,8 @@ def main():
         p.error('Require a positive repeat count and settle period below the timeout')
     if len(set(args.engines)) != len(args.engines):
         p.error('Each engine may appear only once')
+    if ('v8' in args.engines) != (args.v8_vox is not None):
+        p.error('The v8 engine and --v8-vox require each other')
     if args.trace_native_libraries and (args.prepare_native_cache or 'libjs-native' not in args.engines
                                         or args.native_cache is None):
         p.error('--trace-native-libraries requires a libjs-native reopen with --native-cache')

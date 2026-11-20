@@ -95,6 +95,27 @@ class NativeCacheOptionsTests(unittest.TestCase):
                 self.assertIn('requires a libjs-native reopen', stderr.getvalue())
 
 
+class V8EngineOptionsTests(unittest.TestCase):
+    common = [
+        '--archive', 'archive', '--reference-audit', 'audit.json', '--reference-png', 'reference.png',
+        '--output', 'output', '--memory-guard-registry', 'pids.json', '--repeat', '1',
+    ]
+
+    def test_v8_engine_takes_its_private_executable(self):
+        argv = [*self.common, '--engines', 'v8', 'jsc', '--v8-vox', 'v8/Vox']
+        with patch('sys.argv', ['benchmark', *argv]), patch.object(benchmark, 'run', return_value=0) as run:
+            self.assertEqual(benchmark.main(), 0)
+        self.assertEqual(run.call_args.args[0].v8_vox, Path('v8/Vox'))
+
+    def test_v8_engine_and_executable_require_each_other(self):
+        for extra in (['--engines', 'v8'], ['--engines', 'jsc', '--v8-vox', 'v8/Vox']):
+            with self.subTest(extra=extra):
+                with patch('sys.argv', ['benchmark', *self.common, *extra]), redirect_stderr(StringIO()):
+                    with self.assertRaises(SystemExit) as error:
+                        benchmark.main()
+                self.assertEqual(error.exception.code, 2)
+
+
 class NativeCacheReceiptTests(unittest.TestCase):
     def setUp(self):
         scratch = tempfile.TemporaryDirectory()
