@@ -21,7 +21,7 @@ import time
 
 fn main() {
 	if os.args.len < 2 {
-		panic('usage: benchmark_style_passes INLINE_HTML [passes] [full|insert] [document-url]')
+		panic('usage: benchmark_style_passes INLINE_HTML [passes] [full|insert|signatures|computed] [document-url]')
 	}
 	markup := os.read_file(os.args[1]) or { panic(err) }
 	passes := if os.args.len > 2 { os.args[2].int() } else { 10 }
@@ -44,6 +44,19 @@ fn main() {
 	}
 	body := document.body() or { panic('missing body') }
 	mut body_node := unsafe { &dom.Node(body) }
+	if mode == 'computed' {
+		// The first style pass, then one inserted copy as `insert` styles it.
+		mut container := document.create_element('div') or { panic(err) }
+		mut container_node := container.as_node()
+		for child in body_node.children {
+			copy := child.clone_node(none, true, none) or { panic(err) }
+			container_node.append_child(copy) or { panic(err) }
+		}
+		body_node.append_child(container_node) or { panic(err) }
+		document.update_style()
+		report_computed_style_digest(document)
+		return
+	}
 	mut styled := elements
 	mut total_ns := u64(0)
 	mut best_ns := u64(0)
@@ -137,7 +150,15 @@ fn report_matched_rule_signatures(document &dom.Document) {
 				stable_parts << '${rule.rule.style_sheet_index}.${rule.rule.rule_index}.${rule.rule.specificity}'
 			}
 		}
-		stable << '${stable_parts.join(',')}|${attempted.get(.hover)}${attempted.get(.focus)}${attempted.get(.focus_within)}${attempted.get(.focus_visible)}${attempted.get(.target)}'
+		// Whether the coarse query lets each generated pseudo-element cascade.
+		mut pseudo_candidates := []bool{}
+		dom_pseudos := [dom.PseudoElement.before, .after, .selection, .first_letter, .first_line, .marker]
+		css_pseudos := [css.PseudoElement.before, .after, .selection, .first_letter, .first_line, .marker]
+		for index, pseudo in dom_pseudos {
+			pseudo_abstract := dom.AbstractElement.new(element, pseudo)
+			pseudo_candidates << scope.has_indexed_candidate_rule_for_pseudo_element(pseudo_abstract, css_pseudos[index])
+		}
+		stable << '${stable_parts.join(',')}|${attempted.get(.hover)}${attempted.get(.focus)}${attempted.get(.focus_within)}${attempted.get(.focus_visible)}${attempted.get(.target)}|${pseudo_candidates}'
 		if element.has_attribute('style') { with_inline++ }
 		seen[parts.join(',')]++
 		// With the custom property environment the cascade resolves var() in.
@@ -154,4 +175,28 @@ fn report_matched_rule_signatures(document &dom.Document) {
 	for _, count in with_environment { if count > 1 { repeated_in_environment += count - 1 } }
 	println('matched-rule digest ${sha256.hexhash(stable.join('\n'))}')
 	println('signatures elements=${total} distinct=${seen.len} repeats=${repeated} repeat_rate=${f64(repeated) / f64(total):.2f} inline_style=${with_inline} environment_distinct=${with_environment.len} environment_repeat_rate=${f64(repeated_in_environment) / f64(total):.2f}')
+}
+
+// Every element's computed longhands, serialized in document order: compares
+// style reuse controls against the ordinary computation.
+fn report_computed_style_digest(document &dom.Document) {
+	mut lines := []string{}
+	mut empty := 0
+	mut present := 0
+	for element in css.query_selector_all(document.as_node(), '*') {
+		computed := css.up_to_date_computed_properties_for_element(element)
+		mut parts := []string{cap: css.number_of_longhand_properties}
+		for index in 0 .. css.number_of_longhand_properties {
+			value := computed.raw_property_at_index(index)
+			if value == unsafe { nil } {
+				parts << '-'
+				continue
+			}
+			present++
+			if value.css_text == '' { empty++ }
+			parts << value.css_text
+		}
+		lines << parts.join('|')
+	}
+	println('computed-style digest ${sha256.hexhash(lines.join('\n'))} elements=${lines.len} values=${present} empty_text=${empty}')
 }
