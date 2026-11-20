@@ -10543,3 +10543,15 @@ times unusable. Its instruction medians: LibJS 39.4 billion, JavaScriptCore
 second, in which faster style lets more frames run; a stage-logged
 JavaScriptCore load shows rule matching at 1.54 billion instructions
 (2.12 in round 8) and the cascade at 0.85 billion (0.99).
+
+With a pixel-diff build that loads (the shared one links a removed
+`libgc.dylib`) and the host back to a load average of about 7.5, four
+alternating validated rounds of bundle `f8d1df8f6650` (the same code as
+`2e5538222`) gave launch-to-PNG medians of 3,223 ms for compiled LibJS
+(40.28 billion instructions), 2,870 ms for JavaScriptCore (27.08 billion)
+and 2,069 ms for Brave (20.41 billion), against 3,402, 2,863 and 1,979 ms in
+the previous status cohort: LibJS moved from 1.72 to 1.56 times Brave's
+time and JavaScriptCore from 1.45 to 1.39. Brave's own time rose by 4.5%,
+so part of that is host load. Script remains the largest single difference:
+a stage-logged load spends 774 ms in outermost LibJS script against 366 ms
+with JavaScriptCore.
