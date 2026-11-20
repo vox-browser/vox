@@ -13,6 +13,10 @@ import css
 import dom
 import platform
 import webidl
+import os
+
+// Same-binary control: every animation frame lays the image out again.
+const relayout_on_every_image_decode = os.getenv('VOX_RELAYOUT_ON_EVERY_IMAGE_DECODE') != ''
 
 pub enum ImageLoadingAttribute {
 	eager
@@ -151,10 +155,15 @@ fn (mut image HTMLImageElementModel) set_needs_layout_update_or_repaint_after_im
 	}
 }
 
+// The current decoded data advanced its animation. Its frames share one
+// natural size, so the box keeps its geometry: the paint transport takes the
+// new frame, as ImagePaintable repaints upstream. The box is laid out again
+// only when the transport cannot.
 fn html_image_decoded_data_did_update(target voidptr) {
 	mut image := unsafe { &HTMLImageElementModel(target) }
-	if element := image.element_ {
-		mut node := unsafe { &dom.Node(image_dom_element(element).as_node()) }
+	element := image.element_ or { return }
+	mut node := unsafe { &dom.Node(image_dom_element(element).as_node()) }
+	if relayout_on_every_image_decode || !node.image_provider_contents_changed() {
 		node.set_needs_layout_update(.html_image_element_update_the_image_data)
 	}
 }
