@@ -970,6 +970,7 @@ fn run_document_geometry_with_reuse(document &dom.Document, root &Node, viewport
 	geometry_started := started
 	mut timing_checkpoint := started
 	mut state := LayoutState.new()
+	state.layout_tree_order_ = voidptr(root.tree_order_)
 	mut previous_backoff := unsafe { &RetainedBlockBackoffTable(nil) }
 	if previous := document_layout_result(document) {
 		unsafe {

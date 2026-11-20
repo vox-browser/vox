@@ -30,6 +30,9 @@ const incremental_layout_diagnostics = os.getenv('VOX_INCREMENTAL_LAYOUT_DIAGNOS
 const verify_incremental_layout = os.getenv('VOX_VERIFY_INCREMENTAL_LAYOUT') != ''
 // With the above: compare two complete passes instead (determinism control).
 const verify_incremental_layout_control = os.getenv('VOX_VERIFY_INCREMENTAL_LAYOUT_CONTROL') != ''
+// Same-binary control: a node the committed pass did not lay out blocks the
+// reuse of its ancestors again, as before committed_pass_did_not_lay_out().
+const disable_unlaid_node_reuse = os.getenv('VOX_DISABLE_UNLAID_NODE_REUSE') != ''
 // More separate changes than this run the complete pass.
 const incremental_layout_max_origins = 64
 // Each rejected root may be replaced by the next one above it this many times.
@@ -334,6 +337,7 @@ fn try_incremental_relayout(document &dom.Document, root &Node, previous &Layout
 	state.relayout_records_ = previous.relayout_records_.clone()
 	state.first_relayout_records_ = previous.first_relayout_records_.clone()
 	state.pass_serial_ = next_layout_pass_serial()
+	state.layout_tree_order_ = voidptr(root.tree_order_)
 	state.subgrid_storage_ = previous.subgrid_storage_
 	state.begin_retained_block_backoff_pass(previous.block_layout_backoff_)
 	state.previous_state_ = unsafe { &LayoutState(previous) }
@@ -854,7 +858,8 @@ fn subtree_reuse_blocked(previous &LayoutState, node &Node, boundary &Node) bool
 		}
 		if styled := child.as_node_with_style() {
 			lookup := committed_values_lookup(previous, styled)
-			if lookup.values == unsafe { nil } && lookup.conflict {
+			if lookup.values == unsafe { nil } && lookup.conflict
+				&& !committed_pass_did_not_lay_out(previous, child, styled) {
 				if incremental_layout_diagnostics {
 					eprintln('VOX_INCREMENTAL_LAYOUT reuse=rejected tag=${layout_debug_tag(child)} reason=index-conflict ${index_conflict_detail(previous, child, styled)}')
 				}
@@ -1055,4 +1060,18 @@ fn index_conflict_detail(previous &LayoutState, node &Node, styled &NodeWithStyl
 		holders << if holder == unsafe { nil } { '${index}:nil' } else { '${index}:${layout_debug_tag(unsafe { &Node(holder) })}' }
 	}
 	return 'kind=${kind} parent=${parent} holders=${holders.join(',')}'
+}
+
+// Whether the committed pass left `node` without values. Under the tree order
+// that pass was keyed by, a node's values can only be at its current index:
+// a free slot there means that pass did not lay the node out (for example a
+// whitespace-only anonymous flex item), and a restored subtree reproduces
+// that exactly. After a rebuild the indexes moved, and a node without
+// values found under either index may have lost them, so it still blocks.
+fn committed_pass_did_not_lay_out(previous &LayoutState, node &Node, styled &NodeWithStyle) bool {
+	if disable_unlaid_node_reuse || previous.layout_tree_order_ == unsafe { nil }
+		|| previous.layout_tree_order_ != voidptr(node.tree_order_) {
+		return false
+	}
+	return previous.used_values_store.get(styled.layout_index()) == none
 }

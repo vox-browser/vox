@@ -1428,6 +1428,8 @@ mut:
 	// each independent formatting context of this pass was laid out.
 	subtree_reuse_source_ &LayoutState = unsafe { nil }
 	subtree_layout_decisions_ map[u64]SubtreeLayoutDecision
+	// The document tree order whose layout indexes key this pass's values.
+	layout_tree_order_ voidptr
 	// measurement_subtree_reuse.v: the first committed inner layout of each
 	// box this pass laid out again with other inputs, the serial of this pass,
 	// and, in a measurement, the committed state it may restore from.
