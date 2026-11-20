@@ -167,7 +167,9 @@ fn style_scope_is_roundabout_selector_bucketable_as_something_simpler(simple_sel
 	}
 	compound_selector := compound_selectors[compound_selectors.len - 1]
 	if compound_selector.simple_selectors.len != 1 {
-		return none
+		// Every simple selector of the argument's subject compound must hold
+		// for the subject, so any of them is a sound bucket.
+		return subject_compound_bucket(compound_selector)
 	}
 
 	inner_simple_selector := compound_selector.simple_selectors[0]
@@ -245,6 +247,13 @@ pub fn (mut cache RuleCache) add_rule(matching_rule &MatchingRule, pseudo_elemen
 				return
 			}
 		}
+	}
+
+	if tag_names := pseudo_class_subject_tag_buckets(last_compound_selector) {
+		for tag_name in tag_names {
+			style_scope_push_rule(mut cache.rules_by_tag_name, tag_name, matching_rule)
+		}
+		return
 	}
 
 	if matching_rule.contains_pseudo_element {
