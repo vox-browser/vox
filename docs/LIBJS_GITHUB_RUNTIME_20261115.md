@@ -10340,3 +10340,24 @@ instrumentation; sampled profiles attribute style. In LibJS loads,
 script run from posted tasks and animation frames outside the script stage.
 The literal and constructor commits change bytecode or `object.v`, so their
 page effect needs another grouped-cache rebuild.
+
+**Page result for this round.** Bundle `fe01881e6f67…` (`c62b26514`) with its
+own grouped cache (built while another session edited the benchmark driver,
+so the pinned reopen check was repeated with `--verify-packed`; pixel-exact).
+Five alternating rounds at one-minute host loads of 7–9, all 15 visits valid:
+
+| Five alternating rounds, `fe01881e6f67…` | Median launch to PNG | Range | Median observed instructions |
+| --- | ---: | ---: | ---: |
+| Vox with compiled LibJS | 3,667 ms | 3,573–3,941 ms | 40.90 billion |
+| Vox with JavaScriptCore | 3,132 ms | 3,051–3,357 ms | 28.44 billion |
+| Brave with V8 | 2,043 ms | 1,977–2,087 ms | 20.54 billion |
+
+LibJS is 1.17x JSC and 1.79x Brave in this cohort (1.19x and 1.83x in the
+quieter cohort before these commits); Brave's `ScriptDuration` median is
+198 ms. The round's gains are below the page's run-to-run variation: the
+whole-load LibJS median is unchanged (40.86 -> 40.90 billion), and two
+stage-logged loads differ by 3 billion instructions in style alone (11.4 and
+14.4 billion) because the number of style and layout passes depends on
+timing. Reaching Brave needs the structural changes already identified:
+incremental layout, cheaper per-element style, and an engine with inline
+caches over object shapes; this round's local fixes do not close it.
