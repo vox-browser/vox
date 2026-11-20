@@ -16,9 +16,9 @@ fn svg_hint_reuse_values(element &dom.Element, computer &StyleComputer) map[Prop
 	return values
 }
 
-// Within a style batch equal attributes share one parsed value with the same
-// serialization as an uncached parse; a different attribute text, another
-// batch and callers without a computer parse their own.
+// Inside style batches equal attributes share one parsed value with the same
+// serialization as an uncached parse, also in a later batch; a different
+// attribute text and callers outside a batch parse their own.
 fn test_svg_presentation_hints_share_parsed_values_within_a_batch() {
 	mut document := dom.Document.create(dom.url_about_blank())
 	defer { document.finalize() }
@@ -49,6 +49,7 @@ fn test_svg_presentation_hints_share_parsed_values_within_a_batch() {
 	computer.begin_computed_property_page_batch()
 	next := svg_hint_reuse_values(first, computer)
 	computer.end_computed_property_page_batch()
-	assert next[.d] != a[.d]
+	assert next[.d] == a[.d]
 	assert svg_hint_reuse_values(first, computer)[.d] != svg_hint_reuse_values(first, computer)[.d]
+	assert svg_hint_reuse_values(first, unsafe { nil })[.d] != a[.d]
 }
