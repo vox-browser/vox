@@ -856,7 +856,7 @@ fn subtree_reuse_blocked(previous &LayoutState, node &Node, boundary &Node) bool
 			lookup := committed_values_lookup(previous, styled)
 			if lookup.values == unsafe { nil } && lookup.conflict {
 				if incremental_layout_diagnostics {
-					eprintln('VOX_INCREMENTAL_LAYOUT reuse=rejected tag=${layout_debug_tag(child)} reason=index-conflict')
+					eprintln('VOX_INCREMENTAL_LAYOUT reuse=rejected tag=${layout_debug_tag(child)} reason=index-conflict ${index_conflict_detail(previous, child, styled)}')
 				}
 				return true
 			}
@@ -1029,3 +1029,30 @@ fn used_values_differing_fields(a &UsedValues, b &UsedValues) string {
 
 // Process-wide mismatch count of VOX_VERIFY_INCREMENTAL_LAYOUT (tests).
 __global incremental_layout_verify_mismatches u64
+
+// VOX_INCREMENTAL_LAYOUT_DIAGNOSTICS: which kind of box lost its committed
+// values, and which boxes hold its current and previous layout indexes.
+fn index_conflict_detail(previous &LayoutState, node &Node, styled &NodeWithStyle) string {
+	kind := if node.is_generated_for_pseudo_element() {
+		'pseudo'
+	} else if node.is_generated_text_node() {
+		'generated-text'
+	} else if node.is_list_item_marker_box() {
+		'marker'
+	} else if node.is_anonymous() {
+		'anonymous'
+	} else {
+		'dom'
+	}
+	parent := if p := node.parent() { layout_debug_tag(p) } else { '' }
+	mut holders := []string{}
+	for index in [styled.layout_index(), styled.previous_layout_index_] {
+		values := previous.used_values_store.get(index) or {
+			holders << '${index}:empty'
+			continue
+		}
+		holder := values.node_
+		holders << if holder == unsafe { nil } { '${index}:nil' } else { '${index}:${layout_debug_tag(unsafe { &Node(holder) })}' }
+	}
+	return 'kind=${kind} parent=${parent} holders=${holders.join(',')}'
+}

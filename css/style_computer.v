@@ -1967,6 +1967,7 @@ fn update_style_recursively(mut style_computer StyleComputer, node &dom.Node, ne
 	element_opt := node.as_element()
 	if element := element_opt {
 		style_computer.push_ancestor(element)
+		note_style_pass(9)
 	}
 
 	mut is_display_none := false
@@ -1986,6 +1987,7 @@ fn update_style_recursively(mut style_computer StyleComputer, node &dom.Node, ne
                 else if parent_display_changed { 2 } else if ancestor_needs_descendant_style_recompute { 3 }
                 else if recompute_elements_depending_on_custom_properties { 4 } else { 5 }
             record_diagnostic_style_update_cause(reason)
+            note_style_pass(reason)
             record_diagnostic_style_update_element(reason, element)
 			mut abstract_element := dom.AbstractElement.new(element, none)
 			node_invalidation, _ = style_computer.recompute_style_with_invalidation(mut abstract_element, &did_change_custom_properties)
@@ -1996,16 +1998,19 @@ fn update_style_recursively(mut style_computer StyleComputer, node &dom.Node, ne
 				mutable_element.set_pending_font_input_update(false)
 				if font_invalidation := style_computer.try_refresh_font_inputs(element) {
                     record_diagnostic_style_update_cause(6)
+                    note_style_pass(6)
 					node_invalidation = font_invalidation
 					font_inputs_refreshed = true
 				} else {
                     record_diagnostic_style_update_cause(7)
+                    note_style_pass(7)
 					mut abstract_element := dom.AbstractElement.new(element, none)
 					node_invalidation, _ = style_computer.recompute_style_with_invalidation(mut abstract_element, &did_change_custom_properties)
 					font_inputs_refreshed = true
 				}
 			}
 			if needs_inherited_style_update && !font_inputs_refreshed {
+				note_style_pass(8)
 				mut abstract_element := dom.AbstractElement.new(element, none)
 				node_invalidation = style_computer.recompute_inherited_style_with_invalidation(mut abstract_element)
 			}
@@ -2161,7 +2166,10 @@ fn update_style_for_document_from_upstream(document &dom.Document) RequiredInval
 	style_computer.reset_has_result_cache()
 	style_computer.reset_ancestor_filter()
 	mutable_document.build_registered_properties_cache()
-	return update_style_recursively(mut style_computer, unsafe { &dom.Node(document) }, false, false, false, false, false)
+	started := style_pass_clock()
+	result := update_style_recursively(mut style_computer, unsafe { &dom.Node(document) }, false, false, false, false, false)
+	report_style_pass(document, started)
+	return result
 }
 
 // The computed value of `property_id` for `element`, serialized from the retained StyleComputer result.
