@@ -769,12 +769,18 @@ fn resolve_cascade_declaration_value(abstract_element dom.AbstractElement, prope
 	}
 	typed := style_value_logic_from_dom(property_id, value) or { return unsafe { value } }
 	if typed is UnresolvedStyleValue {
+		if reused := lookup_environment_substitution(abstract_element, property_id, value, typed) {
+			return reused
+		}
 		mut resolved := resolve_unresolved_style_value_for_property(abstract_element, property_id, typed)
 		resolved.base_url = value.base_url
-		if opaque_is_guaranteed_invalid(resolved) {
-			return dom_style_value_from_value_logic(StyleValue(KeywordStyleValue.create(.unset)))
+		result := if opaque_is_guaranteed_invalid(resolved) {
+			dom_style_value_from_value_logic(StyleValue(KeywordStyleValue.create(.unset)))
+		} else {
+			resolved
 		}
-		return resolved
+		store_environment_substitution(abstract_element, property_id, value, typed, result)
+		return result
 	}
 	if typed is GuaranteedInvalidStyleValue {
 		return dom_style_value_from_value_logic(StyleValue(KeywordStyleValue.create(.unset)))

@@ -37,7 +37,12 @@ fn test_substituted_value_reuse_shares_parses_but_not_values() {
 	$if prealloc {
 		if !disable_substituted_value_reuse {
 			assert computer.substituted_values_ != unsafe { nil }
-			assert computer.substituted_values_.hits >= 2
+			// The repeated first child keeps its environment, so environment
+			// substitution reuse answers it before the token fingerprint.
+			assert computer.substituted_values_.hits >= if disable_environment_substitution_reuse { 2 } else { 1 }
+			if !disable_environment_substitution_reuse {
+				assert computer.environment_substitutions_ != unsafe { nil }
+			}
 		}
 	}
 }

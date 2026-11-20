@@ -11258,6 +11258,7 @@ pub mut:
 	simple_var_properties_ &SimpleVarPropertyCache = unsafe { nil }
 	substituted_values_ &SubstitutedValueCache = unsafe { nil }
 	svg_presentation_hints_ &SvgPresentationHintCache = unsafe { nil }
+	environment_substitutions_ &EnvironmentSubstitutionCache = unsafe { nil }
 	quirks_body_identity_ u64
 	quirks_body_used_color_ ?Color
 }
