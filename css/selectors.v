@@ -3303,10 +3303,56 @@ fn append_hashes_from_compound(compound_selector CompoundSelector, ancestor_hash
 					return result
 				}
 			}
+			.pseudo_class {
+				result = append_hashes_from_is_where_argument(simple_selector, result, fold_id_and_class_name_case)
+				if result.is_full {
+					return result
+				}
+			}
 			else {}
 		}
 	}
 	return result
+}
+
+// A single :is() or :where() argument in an ancestor compound holds for that
+// ancestor: its subject compound describes the ancestor itself, and the
+// compounds it reaches through descendant or child combinators are further
+// ancestors, as if the argument were written inline (`:is(.a .b) > *` is
+// `.a .b > *`). Sibling compounds are skipped as at the top level.
+fn append_hashes_from_is_where_argument(simple_selector SimpleSelector, result AppendHashResult, fold_id_and_class_name_case bool) AppendHashResult {
+	if disable_is_where_ancestor_hashes {
+		return result
+	}
+	pseudo_class := simple_selector.pseudo_class()
+	if pseudo_class.type_ !in [.is_, .where] || pseudo_class.argument_selector_list.selectors.len != 1 {
+		return result
+	}
+	compounds := pseudo_class.argument_selector_list.selectors[0].compound_selectors()
+	if compounds.len == 0 {
+		return result
+	}
+	mut current := append_hashes_from_compound(compounds[compounds.len - 1], result.ancestor_hashes, result.next_hash_index, fold_id_and_class_name_case)
+	if current.is_full {
+		return current
+	}
+	mut combinator_to_right := compounds[compounds.len - 1].combinator
+	for i := compounds.len - 2; i >= 0; i-- {
+		match combinator_to_right {
+			.descendant, .immediate_child {
+				current = append_hashes_from_compound(compounds[i], current.ancestor_hashes, current.next_hash_index, fold_id_and_class_name_case)
+				if current.is_full {
+					return current
+				}
+			}
+			.next_sibling, .subsequent_sibling {}
+			.column, .no_combinator {
+				return current
+			}
+		}
+		combinator_to_right = compounds[i].combinator
+	}
+	return current
 }
 
 fn append_unique_hash(hash u32, ancestor_hashes [8]u32, next_hash_index int) AppendHashResult {

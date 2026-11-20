@@ -15,6 +15,9 @@ import os
 // invalidate hover, target and the focus classes).
 const disable_pseudo_class_tag_buckets = os.getenv('VOX_DISABLE_PSEUDO_CLASS_TAG_BUCKETS') != ''
 
+// Ancestor filter hashes from :is()/:where() arguments (selectors.v).
+const disable_is_where_ancestor_hashes = os.getenv('VOX_DISABLE_IS_WHERE_ANCESTOR_HASHES') != ''
+
 const link_subject_tag_names = ['a', 'area']
 
 $if test {

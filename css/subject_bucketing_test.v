@@ -99,3 +99,66 @@ fn test_link_heading_and_where_rules_bucket_by_their_required_names() {
 	modes := bucketed.filter(it.starts_with('div=') || it.starts_with('span=') || it.starts_with('p='))
 	assert modes.len > 3
 }
+
+fn subject_bucketing_hashes(text string) []u32 {
+	parsed := parse_selector_with_parser(text, map[string]bool{}) or { panic(text) }
+	hashes, _ := selector_ancestor_hashes(parsed.selectors[0])
+	return hashes[..].filter(it != 0)
+}
+
+// A single :is()/:where() argument in an ancestor compound contributes the
+// ancestor hashes its inline form would; sibling compounds and lists do not.
+fn test_is_where_arguments_in_ancestor_compounds_supply_ancestor_hashes() {
+	inline := subject_bucketing_hashes('.banner .visual > *')
+	assert inline.len == 2
+	assert subject_bucketing_hashes(':is(.banner .visual) > *') == inline
+	assert subject_bucketing_hashes(':where(.banner > .visual) *') == inline
+	assert subject_bucketing_hashes('div:is(.banner .visual) > *').len == 3
+	assert subject_bucketing_hashes(':is(.banner + .visual) > *') == subject_bucketing_hashes('.visual > *')
+	assert subject_bucketing_hashes(':is(.banner, .visual) > *').len == 0
+	assert subject_bucketing_hashes(':not(.banner .visual) > *').len == 0
+	assert subject_bucketing_hashes(':is(.banner .visual)').len == 0
+	assert subject_bucketing_hashes(':is(:is(.banner) .visual) > *') == inline
+}
+
+// With the ancestors pushed, the filter rejects the rule exactly where the
+// argument cannot match, and keeps it where it does.
+fn test_is_where_ancestor_hashes_keep_matching_children() {
+	mut document := dom.Document.create(dom.url_about_blank())
+	defer { document.finalize() }
+	document.set_document_type(.html)
+	html_ns := 'http://www.w3.org/1999/xhtml'
+	mut html := document.create_element('html') or { panic(err) }
+	mut document_node := document.as_node()
+	document_node.append_child(html.as_node()) or { panic(err) }
+	mut head := subject_bucketing_child(mut document, mut html, html_ns, 'head', {})
+	mut body := subject_bucketing_child(mut document, mut html, html_ns, 'body', {})
+	mut style := document.create_element('style') or { panic(err) }
+	mut style_node := style.as_node()
+	style_node.append_child(document.create_text_node(':is(.banner .visual) > * { margin-top: 9px }').as_node()) or { panic(err) }
+	mut head_node := head.as_node()
+	head_node.append_child(style.as_node()) or { panic(err) }
+	mut banner := subject_bucketing_child(mut document, mut body, html_ns, 'div', {'class': 'banner'})
+	mut visual := subject_bucketing_child(mut document, mut banner, html_ns, 'div', {'class': 'visual'})
+	inside := subject_bucketing_child(mut document, mut visual, html_ns, 'span', {})
+	mut lone := subject_bucketing_child(mut document, mut body, html_ns, 'div', {'class': 'visual'})
+	outside := subject_bucketing_child(mut document, mut lone, html_ns, 'span', {})
+	document.update_style()
+	for element, expected in {
+		'inside':  '9px'
+		'outside': '0px'
+	} {
+		target := if element == 'inside' { inside } else { outside }
+		mut computer := StyleComputer.new(document)
+		mut chain := []&dom.Element{}
+		mut parent := target.as_node().parent_element()
+		for {
+			ancestor := parent or { break }
+			chain.prepend(ancestor)
+			parent = ancestor.as_node().parent_element()
+		}
+		for ancestor in chain { computer.push_ancestor(ancestor) }
+		computed := computer.compute_style(dom.AbstractElement.new(target, none))
+		assert (computed.property(.margin_top, .no) or { panic('margin') }).css_text == expected, element
+	}
+}
