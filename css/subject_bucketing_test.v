@@ -58,6 +58,9 @@ fn test_link_heading_and_where_rules_bucket_by_their_required_names() {
 		:heading(7) { color: black } :not(:link) { padding: 1px } :link::before { content: "x" }
 		:where(.card[data-k]) { border-top-width: 1px } :is(.card:hover) { border-left-width: 2px }
 		:where(div.card) { opacity: .5 } :where(p[title]) { opacity: .25 } :focus-visible { outline: 2px solid }
+		:where([data-variant="link"]:only-child) { margin-top: 3px } div:where([data-k]) { margin-left: 4px }
+		:is([data-mode="light"], [data-mode="auto"]) { color: white } :where([data-k]):where(div) { padding-top: 5px }
+		:where(.card[data-k]):is([data-k]) { padding-left: 6px } :is([DATA-Mode]) { padding-right: 7px }
 		@layer l { :heading(1) { color: orange } :link { text-decoration: none } }').as_node()) or { panic(err) }
 	mut head_node := head.as_node()
 	head_node.append_child(style.as_node()) or { panic(err) }
@@ -70,6 +73,12 @@ fn test_link_heading_and_where_rules_bucket_by_their_required_names() {
 	elements << subject_bucketing_child(mut document, mut body, html_ns, 'div', {'class': 'card'})
 	elements << subject_bucketing_child(mut document, mut body, html_ns, 'p', {'title': 't'})
 	elements << subject_bucketing_child(mut document, mut body, html_ns, 'span', {})
+	elements << subject_bucketing_child(mut document, mut body, html_ns, 'div', {'data-mode': 'light'})
+	elements << subject_bucketing_child(mut document, mut body, html_ns, 'span', {'data-mode': 'auto'})
+	elements << subject_bucketing_child(mut document, mut body, html_ns, 'p', {'data-mode': 'dark'})
+	mut wrapper := subject_bucketing_child(mut document, mut body, html_ns, 'section', {})
+	elements << subject_bucketing_child(mut document, mut wrapper, html_ns, 'button', {'data-variant': 'link'})
+	elements << subject_bucketing_child(mut document, mut body, html_ns, 'b', {'data-variant': 'link'})
 	elements << subject_bucketing_child(mut document, mut body, 'http://www.w3.org/2000/svg', 'a', {'href': '#y'})
 	document.update_style()
 	subject_bucketing_disabled_for_test = true
@@ -82,4 +91,11 @@ fn test_link_heading_and_where_rules_bucket_by_their_required_names() {
 	// The link and heading rules did match where they apply.
 	assert bucketed[0].count(',') > bucketed[1].count(',')
 	assert bucketed.any(it.starts_with('h2=') && it.count(',') >= 3)
+	// The attribute rules too: the only child and the light and auto modes
+	// gained rules the dark mode and the second link variant lack.
+	button := bucketed.filter(it.starts_with('button='))[0]
+	b := bucketed.filter(it.starts_with('b='))[0]
+	assert button.count(',') > b.count(',')
+	modes := bucketed.filter(it.starts_with('div=') || it.starts_with('span=') || it.starts_with('p='))
+	assert modes.len > 3
 }

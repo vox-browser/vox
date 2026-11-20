@@ -53,11 +53,13 @@ fn pseudo_class_subject_tag_buckets(compound CompoundSelector) ?[]string {
 	return none
 }
 
-// The id, class or tag of a compound that every subject must have, preferring
-// ids and classes as the outer bucketing does.
+// The id, class, attribute name or tag of a compound that every subject must
+// have, preferring ids and classes as the outer bucketing does, then a
+// required attribute name (attribute_tag_bucket.v), then the tag.
 fn subject_compound_bucket(compound CompoundSelector) ?SimplifiedSelectorForBucketing {
 	if !subject_bucketing_enabled() { return none }
 	mut tag := ?SimplifiedSelectorForBucketing(none)
+	mut attribute := ?SimplifiedSelectorForBucketing(none)
 	for index := compound.simple_selectors.len - 1; index >= 0; index-- {
 		simple := compound.simple_selectors[index]
 		match simple.type_ {
@@ -75,8 +77,28 @@ fn subject_compound_bucket(compound CompoundSelector) ?SimplifiedSelectorForBuck
 					}
 				}
 			}
+			.attribute {
+				if attribute == none {
+					attribute = subject_attribute_bucket(simple)
+				}
+			}
 			else {}
 		}
 	}
+	if attribute != none { return attribute }
 	return tag
+}
+
+// Attribute buckets are looked up by the element's attribute names, so only
+// attributes without a namespace qualify.
+fn subject_attribute_bucket(simple SimpleSelector) ?SimplifiedSelectorForBucketing {
+	if !subject_bucketing_enabled() || simple.type_ != .attribute { return none }
+	qualified := simple.attribute().qualified_name
+	if qualified.namespace_type !in [.default_, .none] || qualified.name.name.contains(':') {
+		return none
+	}
+	return SimplifiedSelectorForBucketing{
+		type_: .attribute
+		name:  qualified.name.lowercase_name
+	}
 }

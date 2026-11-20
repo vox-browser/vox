@@ -12,6 +12,9 @@ fn subject_bucket_name(simple SimpleSelector) ?SimplifiedSelectorForBucketing {
 		.tag_name {
 			SimplifiedSelectorForBucketing{ type_: .tag_name, name: simple.qualified_name().name.lowercase_name }
 		}
+		.attribute {
+			subject_attribute_bucket(simple)
+		}
 		else { none }
 	}
 }

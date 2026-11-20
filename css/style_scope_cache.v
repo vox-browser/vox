@@ -217,6 +217,9 @@ pub fn (mut cache RuleCache) add_rule(matching_rule &MatchingRule, pseudo_elemen
 	// NOTE: We traverse the simple selectors in reverse order to make sure that
 	// class/ID buckets are preferred over tag buckets in the common case of
 	// div.foo or div#foo selectors.
+	// An attribute name required through :is()/:where() is kept until no class
+	// or ID turns up, and then preferred over the tag.
+	mut required_attribute := ''
 	for i := last_compound_selector.simple_selectors.len - 1; i >= 0; i-- {
 		simple_selector := last_compound_selector.simple_selectors[i]
 		if simple_selector.type_ == .id {
@@ -228,13 +231,25 @@ pub fn (mut cache RuleCache) add_rule(matching_rule &MatchingRule, pseudo_elemen
 			return
 		}
 		if simple_selector.type_ == .tag_name {
+			if required_attribute != '' {
+				break
+			}
 			style_scope_push_rule(mut cache.rules_by_tag_name, simple_selector.qualified_name().name.lowercase_name, matching_rule)
 			return
 		}
 		// NOTE: Selectors like `:is/where(.foo)` and `:is/where(.foo .bar)` are
 		// bucketed as class selectors for `foo` and `bar` respectively.
 		if simplified := style_scope_is_roundabout_selector_bucketable_as_something_simpler(simple_selector) {
+			if simplified.type_ == .attribute {
+				if required_attribute == '' {
+					required_attribute = simplified.name
+				}
+				continue
+			}
 			if simplified.type_ == .tag_name {
+				if required_attribute != '' {
+					break
+				}
 				style_scope_push_rule(mut cache.rules_by_tag_name, simplified.name, matching_rule)
 				return
 			}
@@ -247,6 +262,10 @@ pub fn (mut cache RuleCache) add_rule(matching_rule &MatchingRule, pseudo_elemen
 				return
 			}
 		}
+	}
+	if required_attribute != '' {
+		style_scope_push_rule(mut cache.rules_by_attribute_name, required_attribute, matching_rule)
+		return
 	}
 
 	if tag_names := pseudo_class_subject_tag_buckets(last_compound_selector) {
