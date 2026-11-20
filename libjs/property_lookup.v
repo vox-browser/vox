@@ -58,6 +58,10 @@ fn property_lookup_hash(key PropertyName) u64 {
 }
 
 fn (object &Object) find_own_property_with_hints(key PropertyName) int {
+	if object.array_object != none {
+		position := object.array_index_position(key)
+		if position != array_index_position_unknown { return position }
+	}
 	hash := property_lookup_hash(key)
 	if hints := object.property_lookup_hints {
 		if index := hints.positions[hash] {

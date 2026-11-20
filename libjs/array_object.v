@@ -11,6 +11,9 @@ pub:
 pub mut:
 	length          u32
 	length_writable bool = true
+	// Upper bound on own properties that are not array indices (names,
+	// symbols, 2^32-1); see array_element_lookup.v.
+	named_properties u32
 }
 
 pub fn ArrayObject.create(mut vm VM, realm &Realm, length u64, prototype &Object) !&ArrayObject {

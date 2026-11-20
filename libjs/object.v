@@ -745,6 +745,9 @@ pub fn (mut object Object) delete_property_or_throw(mut vm VM, key PropertyName)
 
 // Object::define_direct_property: installs a data property without validation.
 pub fn (mut object Object) define_direct_property(key PropertyName, value Value, attributes u8) {
+	// Look the key up before growing an array's length: an index at or above
+	// the length is known to be absent without scanning the property vector.
+	index := object.find_own_property(key)
 	if mut array := object.array_object {
 		// Object.cpp::storage_set/indexed_put grows the magical array length
 		// even when an engine-private caller bypasses descriptor validation.
@@ -758,10 +761,10 @@ pub fn (mut object Object) define_direct_property(key PropertyName, value Value,
 		enumerable:   attributes & attribute_enumerable != 0
 		configurable: attributes & attribute_configurable != 0
 	}
-	index := object.find_own_property(key)
 	if index >= 0 {
 		object.properties[index] = property
 		return
 	}
 	object.properties << property
+	object.count_appended_array_property(key)
 }
