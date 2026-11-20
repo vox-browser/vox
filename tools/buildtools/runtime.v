@@ -125,6 +125,29 @@ fn patch_allocator(allocation string, prealloc string) !(string, string) {
 	return allocation[..start] + body + allocation[end..], prealloc + '\n' + helper.all_after('module builtin\n')
 }
 
+// The bounds checks V emits for fixed-array indexes, as V defines them in
+// builtin.c.v. When every one is found unchanged they are replaced by
+// tools/prealloc_runtime/fixed_index.c.v; other V versions keep their own.
+const fixed_index_functions = {
+	'fn v_fixed_index(i int, len int) int':     "fn v_fixed_index(i int, len int) int {\n\t\$if !no_bounds_checking {\n\t\tif i < 0 || i >= len {\n\t\t\tpanic('fixed array index out of range (index: ' + i64(i).str() + ', len: ' +\n\t\t\t\ti64(len).str() + ')')\n\t\t}\n\t}\n\treturn i\n}"
+	'fn v_fixed_index_i64(i i64, len int) int': "fn v_fixed_index_i64(i i64, len int) int {\n\t\$if !no_bounds_checking {\n\t\tif i < 0 || i >= i64(len) {\n\t\t\tpanic('fixed array index out of range (index: ' + i.str() + ', len: ' + i64(len).str() +\n\t\t\t\t')')\n\t\t}\n\t}\n\treturn int(i)\n}"
+	'fn v_fixed_index_u64(i u64, len int) int': "fn v_fixed_index_u64(i u64, len int) int {\n\t\$if !no_bounds_checking {\n\t\tif i >= u64(len) {\n\t\t\tpanic('fixed array index out of range (index: ' + i.str() + ', len: ' + i64(len).str() +\n\t\t\t\t')')\n\t\t}\n\t}\n\treturn int(i)\n}"
+}
+
+// Removes V's fixed-array bounds checks (and their attribute lines) from
+// builtin.c.v when they match fixed_index_functions; none when any differs.
+fn without_fixed_index_functions(source string) ?string {
+	mut text := source
+	for signature, original in fixed_index_functions {
+		start, end := function_span(text, signature) or { return none }
+		if text[start..end] != original { return none }
+		attribute := '@[inline; markused]\n'
+		if !text[..start].ends_with(attribute) { return none }
+		text = text[..start - attribute.len] + text[end..].trim_left('\n')
+	}
+	return text
+}
+
 fn capture_declarations(source string, header string) string {
 	declaration := '#include ' + json.encode(real(header))
 	mut text := source
@@ -157,6 +180,13 @@ fn prepare_prealloc(selected string, output_root string) !string {
 	owned['builtin/allocation.c.v'] = allocation
 	owned['builtin/prealloc.c.v'] = prealloc
 	owned['builtin/closure/closure_prealloc_metadata.c.v'] = read(join(root_dir(), 'tools/prealloc_runtime/closure_prealloc_metadata.c.v'))!
+	builtin_c_path := join(builtin, 'builtin.c.v')
+	if os.is_file(builtin_c_path) {
+		if builtin_c := without_fixed_index_functions(read(builtin_c_path)!) {
+			owned['builtin/builtin.c.v'] = builtin_c
+			owned['builtin/fixed_index.c.v'] = read(join(root_dir(), 'tools/prealloc_runtime/fixed_index.c.v'))!
+		}
+	}
 	compat := join(builtin, 'c_headers_compat_nix.c.v')
 	capture_header := join(vlib, 'os/execute_capture_legacy.h')
 	if os.is_file(compat) && os.is_file(capture_header) {
