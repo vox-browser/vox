@@ -11240,6 +11240,7 @@ pub mut:
 	animation_layout_compositor_only_ bool
 	longhand_reuse_cache_ &ComputedLonghandReuseCache = unsafe { nil }
 	simple_var_properties_ &SimpleVarPropertyCache = unsafe { nil }
+	substituted_values_ &SubstitutedValueCache = unsafe { nil }
 	quirks_body_identity_ u64
 	quirks_body_used_color_ ?Color
 }
