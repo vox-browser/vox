@@ -81,3 +81,43 @@ fn test_pseudo_subject_index_leaves_manual_caches_and_scope_crossing_rules_avail
 	assert cache.part_rules.len == 1
 	assert cache.pseudo_subject_rules_.len == 0
 }
+
+// The style pass's indexed query answers as the scan of every bucket does for
+// caches a scope built, across layers, origins and pseudo-element kinds.
+fn test_indexed_pseudo_candidate_query_matches_bucket_scan_for_scope_caches() {
+	mut document := dom.Document.create(dom.url_about_blank())
+	defer { document.finalize() }
+	document.set_document_type(.html)
+	mut html := document.create_element('html') or { panic(err) }
+	mut document_node := document.as_node()
+	document_node.append_child(html.as_node()) or { panic(err) }
+	mut style := document.create_element('style') or { panic(err) }
+	mut style_node := style.as_node()
+	style_node.append_child(document.create_text_node('.card::before{content:"a"} #main::after{content:"b"}
+		li::marker{color:red} @layer l{ p.note::first-letter{color:blue} [data-x]::after{content:"c"} }
+		*::selection{color:green} .card:hover::after{content:"d"} :is(.one,.two)::before{content:"e"}').as_node()) or { panic(err) }
+	mut html_node := html.as_node()
+	html_node.append_child(style.as_node()) or { panic(err) }
+	mut elements := []&dom.Element{}
+	for attributes in [{'class': 'card'}, {'id': 'main'}, {'class': 'note'}, {'data-x': '1'}, {'class': 'two'}, map[string]string{}] {
+		for tag in ['div', 'p', 'li'] {
+			mut element := document.create_element(tag) or { panic(err) }
+			for name, value in attributes { element.set_attribute_value(name, value) }
+			html_node.append_child(element.as_node()) or { panic(err) }
+			elements << element
+		}
+	}
+	document.update_style()
+	scope := css_style_scope_for_document(document)
+	mut positives := 0
+	for element in elements {
+		for dom_pseudo in [dom.PseudoElement.before, .after, .marker, .first_letter, .selection, .first_line] {
+			abstract := dom.AbstractElement.new(element, dom_pseudo)
+			pseudo := style_scope_pseudo_element_from_dom(dom_pseudo)
+			indexed := scope.has_indexed_candidate_rule_for_pseudo_element(abstract, pseudo)
+			assert indexed == scope.has_candidate_rule_for_pseudo_element(abstract, pseudo)
+			if indexed { positives++ }
+		}
+	}
+	assert positives > elements.len
+}

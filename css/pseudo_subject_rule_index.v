@@ -4,6 +4,8 @@ import dom
 import os
 
 const disable_pseudo_subject_rule_index = os.getenv('VOX_DISABLE_PSEUDO_SUBJECT_RULE_INDEX') != ''
+// Answer has_candidate_rule_for_pseudo_element() by scanning every bucket.
+const disable_pseudo_candidate_index_lookup = os.getenv('VOX_DISABLE_PSEUDO_CANDIDATE_INDEX_LOOKUP') != ''
 
 // Scope-built caches keep the same bucket order and MatchingRule identities,
 // with an additional view for each terminal pseudo-element. A ::before query

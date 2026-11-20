@@ -347,6 +347,18 @@ fn (cache &RuleCache) has_candidate_rule_for_pseudo_element(abstract_element dom
 	return cache.has_pseudo_subject_candidate(abstract_element, pseudo_element)
 }
 
+// The style pass's query. In caches a style scope built, the pseudo-subject
+// index holds every rule recording this pseudo-element, and matching for the
+// pseudo-element reads the same index, so only those rules are scanned.
+fn (cache &RuleCache) has_indexed_candidate_rule_for_pseudo_element(abstract_element dom.AbstractElement, pseudo_element PseudoElement) bool {
+	if cache.disjunctive_subject_masks_trusted_ && cache.pseudo_subject_index_ready_
+		&& !disable_pseudo_subject_rule_index && !disable_pseudo_candidate_index_lookup {
+		index := cache.pseudo_subject_rules_[pseudo_element] or { return false }
+		return index.has_pseudo_subject_candidate(abstract_element, pseudo_element)
+	}
+	return cache.has_pseudo_subject_candidate(abstract_element, pseudo_element)
+}
+
 fn (cache &RuleCache) has_pseudo_subject_candidate(abstract_element dom.AbstractElement, pseudo_element PseudoElement) bool {
 	element := abstract_element.element()
 	report_empty_pseudo_candidate_indexes(cache, element)
@@ -422,15 +434,28 @@ fn (cache &RuleCache) has_pseudo_subject_candidate(abstract_element dom.Abstract
 }
 
 fn (caches &RuleCaches) has_candidate_rule_for_pseudo_element(abstract_element dom.AbstractElement, pseudo_element PseudoElement) bool {
-	if caches.main.has_candidate_rule_for_pseudo_element(abstract_element, pseudo_element) {
+	return caches.has_candidate_rule_for_pseudo_element_in(abstract_element, pseudo_element, false)
+}
+
+fn (caches &RuleCaches) has_candidate_rule_for_pseudo_element_in(abstract_element dom.AbstractElement, pseudo_element PseudoElement, indexed bool) bool {
+	if caches.main.has_candidate_rule_for_pseudo_element_with(abstract_element, pseudo_element, indexed) {
 		return true
 	}
 	for _, cache in caches.by_layer {
-		if cache.has_candidate_rule_for_pseudo_element(abstract_element, pseudo_element) {
+		if cache.has_candidate_rule_for_pseudo_element_with(abstract_element, pseudo_element, indexed) {
 			return true
 		}
 	}
 	return false
+}
+
+@[inline]
+fn (cache &RuleCache) has_candidate_rule_for_pseudo_element_with(abstract_element dom.AbstractElement, pseudo_element PseudoElement, indexed bool) bool {
+	return if indexed {
+		cache.has_indexed_candidate_rule_for_pseudo_element(abstract_element, pseudo_element)
+	} else {
+		cache.has_candidate_rule_for_pseudo_element(abstract_element, pseudo_element)
+	}
 }
 
 // Avoid running a complete cascade for generated pseudo-elements when none of
@@ -438,13 +463,23 @@ fn (caches &RuleCaches) has_candidate_rule_for_pseudo_element(abstract_element d
 // This is the same coarse candidate filtering used before selector matching;
 // it can produce false positives, but never skips a potentially matching rule.
 pub fn (scope &StyleScope) has_candidate_rule_for_pseudo_element(abstract_element dom.AbstractElement, pseudo_element PseudoElement) bool {
+	return scope.has_candidate_rule_for_pseudo_element_in(abstract_element, pseudo_element, false)
+}
+
+// has_candidate_rule_for_pseudo_element() through the pseudo-subject indexes,
+// for the style pass deciding whether to cascade a generated pseudo-element.
+pub fn (scope &StyleScope) has_indexed_candidate_rule_for_pseudo_element(abstract_element dom.AbstractElement, pseudo_element PseudoElement) bool {
+	return scope.has_candidate_rule_for_pseudo_element_in(abstract_element, pseudo_element, true)
+}
+
+fn (scope &StyleScope) has_candidate_rule_for_pseudo_element_in(abstract_element dom.AbstractElement, pseudo_element PseudoElement, indexed bool) bool {
 	// A part's rules can live in an outer scope. Local buckets cannot prove
 	// that its pseudo-element has no matching rules there.
 	if abstract_element.element().has_part_names() { return true }
 	scope.build_rule_cache_if_needed()
 	for caches in [scope.author_rule_cache, scope.user_rule_cache, scope.user_agent_rule_cache]! {
 		if value := caches {
-			if value.has_candidate_rule_for_pseudo_element(abstract_element, pseudo_element) {
+			if value.has_candidate_rule_for_pseudo_element_in(abstract_element, pseudo_element, indexed) {
 				return true
 			}
 		}

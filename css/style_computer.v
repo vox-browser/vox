@@ -1137,7 +1137,7 @@ fn (s &StyleComputer) recompute_style_with_invalidation(mut abstract_element dom
 		}
 		scope := css_style_scope_for(pseudo_abstract)
 		mut new_pseudo_style := ?&ComputedProperties(none)
-		has_candidate := scope.has_candidate_rule_for_pseudo_element(pseudo_abstract, css_pseudo_element)
+		has_candidate := scope.has_indexed_candidate_rule_for_pseudo_element(pseudo_abstract, css_pseudo_element)
 		if has_candidate {
 			// Bucket admission does not match selectors. Only a cascade needs
 			// the originating element in the ancestor filter for its pseudo.
