@@ -11259,6 +11259,7 @@ pub mut:
 	substituted_values_ &SubstitutedValueCache = unsafe { nil }
 	svg_presentation_hints_ &SvgPresentationHintCache = unsafe { nil }
 	environment_substitutions_ &EnvironmentSubstitutionCache = unsafe { nil }
+	cascade_reuse_ &CascadeReuseCache = unsafe { nil }
 	quirks_body_identity_ u64
 	quirks_body_used_color_ ?Color
 }
@@ -14688,7 +14689,7 @@ fn (s &StyleComputer) compute_style_impl_with_animated_custom_property_recompute
 	mut cascade := s.acquire_cascade_scratch()
 	defer { cascade.finish() }
 	mut cascaded_properties := cascade.properties
-	s.compute_cascaded_values_into(mut cascaded_properties, abstract_element, did_match_any_pseudo_element_rules, mode, matching_rule_set, logical_alias_mapping_context, []PropertyID{})
+	s.compute_cascaded_values_reusing(mut cascaded_properties, abstract_element, did_match_any_pseudo_element_rules, mode, matching_rule_set, logical_alias_mapping_context)
 	next_cascade_checkpoint, cascade_elapsed := css_style_profile_checkpoint(profile_checkpoint)
 	profile_checkpoint = next_cascade_checkpoint
 	css_style_profile_cascade_ns += cascade_elapsed
@@ -14795,6 +14796,24 @@ pub fn (s &StyleComputer) compute_cascaded_values(abstract_element dom.AbstractE
 }
 
 fn (s &StyleComputer) compute_cascaded_values_into(mut cascaded_properties CascadedProperties, abstract_element dom.AbstractElement, did_match_any_pseudo_element_rules bool, mode ComputeStyleMode, matching_rule_set MatchingRuleSet, logical_alias_mapping_context ?LogicalAliasMappingContext, properties_to_cascade ComputedInterpolationPropertyIDs) {
+	s.compute_cascaded_values_with_hints(mut cascaded_properties, abstract_element, did_match_any_pseudo_element_rules, mode, matching_rule_set, logical_alias_mapping_context, properties_to_cascade, none)
+}
+
+// Element::apply_presentational_hints(): the hints for a non-pseudo element.
+fn (s &StyleComputer) cascade_presentational_hints(abstract_element dom.AbstractElement, properties_to_cascade ComputedInterpolationPropertyIDs) []StyleProperty {
+	mut hints := []StyleProperty{}
+	collect_element_presentational_hints(mut hints, abstract_element.element(), properties_to_cascade)
+	if abstract_element.element().is_html_element() {
+		collect_html_presentational_hints(mut hints, abstract_element.element(), properties_to_cascade)
+	} else if abstract_element.element().is_svg_element() {
+		collect_svg_presentational_hints_with(mut hints, abstract_element.element(), properties_to_cascade, s)
+	}
+	return hints
+}
+
+// compute_cascaded_values_into() with the presentational hints already
+// collected by the caller (cascade_reuse.v keys the cascade by them).
+fn (s &StyleComputer) compute_cascaded_values_with_hints(mut cascaded_properties CascadedProperties, abstract_element dom.AbstractElement, did_match_any_pseudo_element_rules bool, mode ComputeStyleMode, matching_rule_set MatchingRuleSet, logical_alias_mapping_context ?LogicalAliasMappingContext, properties_to_cascade ComputedInterpolationPropertyIDs, precollected_hints ?[]StyleProperty) {
 	load_instruction_stage := processmetrics.begin_thread_instruction_substage('style_cascade')
 	defer { load_instruction_stage.finish() }
 	diagnostic_scope_start := begin_diagnostic_instruction_scope()
@@ -14817,12 +14836,10 @@ fn (s &StyleComputer) compute_cascaded_values_into(mut cascaded_properties Casca
 	// cascade so substitution and invalid-at-computed-value-time handling are
 	// shared with declarations.
 	if abstract_element.pseudo_element() == none {
-		mut hints := []StyleProperty{}
-		collect_element_presentational_hints(mut hints, abstract_element.element(), properties_to_cascade)
-		if abstract_element.element().is_html_element() {
-			collect_html_presentational_hints(mut hints, abstract_element.element(), properties_to_cascade)
-		} else if abstract_element.element().is_svg_element() {
-			collect_svg_presentational_hints_with(mut hints, abstract_element.element(), properties_to_cascade, s)
+		hints := if collected := precollected_hints {
+			collected
+		} else {
+			s.cascade_presentational_hints(abstract_element, properties_to_cascade)
 		}
 		apply_property_list_to_cascade(mut cascaded_properties, abstract_element, hints, .author_presentational_hint, .no, none, unsafe { nil }, none, logical_alias_mapping_context, properties_to_cascade)
 	}

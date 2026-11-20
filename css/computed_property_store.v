@@ -283,6 +283,7 @@ fn (computer &StyleComputer) begin_computed_property_page_batch() {
 		owner.substituted_values_ = unsafe { nil }
 		owner.svg_presentation_hints_ = unsafe { nil }
 		owner.environment_substitutions_ = unsafe { nil }
+		owner.cascade_reuse_ = unsafe { nil }
 		owner.computed_property_page_interner_ = unsafe { nil }
 	}
 	owner.computed_property_page_batch_depth_++
@@ -299,6 +300,7 @@ fn (computer &StyleComputer) end_computed_property_page_batch() {
 		owner.substituted_values_ = unsafe { nil }
 		owner.svg_presentation_hints_ = unsafe { nil }
 		owner.environment_substitutions_ = unsafe { nil }
+		owner.cascade_reuse_ = unsafe { nil }
 		// Drop the entire pool: map.clear retains stale values in the fallback.
 		// Published readonly pages remain owned by the installed styles.
 		owner.computed_property_page_interner_ = unsafe { nil }

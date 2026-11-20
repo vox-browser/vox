@@ -769,6 +769,7 @@ fn resolve_cascade_declaration_value(abstract_element dom.AbstractElement, prope
 	}
 	typed := style_value_logic_from_dom(property_id, value) or { return unsafe { value } }
 	if typed is UnresolvedStyleValue {
+		note_cascade_substitution(abstract_element, typed)
 		if reused := lookup_environment_substitution(abstract_element, property_id, value, typed) {
 			return reused
 		}
