@@ -10,7 +10,7 @@ import strconv
 import time
 import url
 
-pub enum SameSite as u8 {
+pub enum SameSite {
 	default_
 	none
 	strict
