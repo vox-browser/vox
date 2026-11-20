@@ -1285,7 +1285,16 @@ fn (s &StyleComputer) recompute_inherited_style_with_invalidation(mut abstract_e
 		return invalidation
 	}
 
-	s.compute_property_values(mut computed, *abstract_element)
+	// compute_alignment_values() resolves a bare justify-items legacy against
+	// the parent after the longhand values, as the complete computation does.
+	// Every element starts with that value, so when no inherited value
+	// changed and it is the only parent-dependent one, resolve it alone.
+	if invalidation.is_none() && inheritance_dependence_is_justify_items_only(computed) {
+		compute_alignment_values(mut computed, *abstract_element)
+	} else {
+		s.compute_property_values(mut computed, *abstract_element)
+		compute_alignment_values(mut computed, *abstract_element)
+	}
 	for affected in values_affected_by_inherited_style {
 		property_invalidation := compute_property_invalidation(affected.property_id, affected.old_value, computed.property(affected.property_id, .no))
 		only_color_changes = only_color_changes && (affected.property_id == .color || property_invalidation.is_none())
@@ -1313,6 +1322,14 @@ fn (s &StyleComputer) recompute_inherited_style_with_invalidation(mut abstract_e
 		}
 	}
 	return invalidation
+}
+
+fn inheritance_dependence_is_justify_items_only(computed &ComputedProperties) bool {
+	if computed.inheritance_specified_storage_ == unsafe { nil } { return false }
+	for property_id, _ in computed.inheritance_specified_storage_.values {
+		if property_id != .justify_items { return false }
+	}
+	return true
 }
 
 fn animated_property_maps_invalidation(old_values map[PropertyID]&dom.StyleValue, new_values map[PropertyID]&dom.StyleValue) RequiredInvalidationAfterStyleChange {
