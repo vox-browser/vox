@@ -10361,3 +10361,55 @@ stage-logged loads differ by 3 billion instructions in style alone (11.4 and
 timing. Reaching Brave needs the structural changes already identified:
 incremental layout, cheaper per-element style, and an engine with inline
 caches over object shapes; this round's local fixes do not close it.
+
+## Layout and style passes, 2026-11-20 evening
+
+The JSC path isolates rendering from the engine, so this round measured
+same-binary JSC loads with an environment control for each change.
+`VOX_DOCUMENT_LAYOUT_DIAGNOSTICS=1`, `VOX_INCREMENTAL_LAYOUT_DIAGNOSTICS=1`
+and the new `VOX_STYLE_PASS_DIAGNOSTICS=1` (one line per style pass with
+the elements computed again by cause, followed by the properties that
+required a relayout and an example old -> new value) located the costs.
+
+Findings before the fixes, with diagnostics enabled:
+
+- Two script-driven passes (about 120 ms each) rebuilt every box and reused
+  no layout result: any element entering, leaving or renaming an `id`
+  forced a full layout tree rebuild in case an SVG `url(#id)` reference
+  changed, and GitHub inserts many elements with ids after hydration.
+- `justify-items` flipped between `normal` and `legacy` in every style
+  pass (4 to 22 elements), each flip a relayout: the inherited-value
+  refresh restored the specified `legacy` and skipped the alignment step
+  that the complete computation runs.
+- Passes with one dirty node still cost 30–45 ms: the incremental relayout
+  root must sit above every box an ancestor's intrinsic measurement sized
+  (about 2,000 of 5,184 nodes relaid for one span or one animated button),
+  and the renderer adapter costs about 5 ms in every pass.
+- The largest style pass computed 1,256 newly rendered elements in 40–50 ms,
+  about 35 µs each; the work is legitimate, the per-element cost is not.
+
+| Commit | Change | Measured (JSC, instructions per load) |
+| --- | --- | --- |
+| `1d1941bb7`, `5f67bf5f1` | Layout and paint resolve URL fragments through `rendering_element_by_id`, which records the id; only a recorded id entering, leaving or changing forces the rebuild. Control `VOX_REBUILD_LAYOUT_FOR_EVERY_ID_CHANGE=1`. | Four alternating rounds: median 29.47 -> 28.28 billion, lower by 0.93–1.46 billion in every round. The two full rebuilds became partial (about 72 and 78 ms). The nine SVG source-switch and paint-server mutation reftests stay pixel-exact. |
+| `fedefacdc`, `125dfb82b`, `ad57cd648` | The inherited refresh runs the alignment step, and resolves only `justify-items` when that is the element's sole parent-dependent value and no inherited value changed; the font input refresh no longer rejects elements for that keyword. Control `VOX_RETAIN_JUSTIFY_ITEMS_REFRESH=1`. | Four alternating rounds: median 28.21 -> 27.81 billion, lower in every round (0.04–0.80 billion). Four failing object-reuse assertions in `css/font_input_refresh_test.v` now pass. |
+| `caa69de30` | Under the tree order the committed pass was keyed by, a node without values at its current index (a whitespace-only anonymous flex item) no longer blocks the reuse of its ancestors. Control `VOX_DISABLE_UNLAID_NODE_REUSE=1`. | `VOX_VERIFY_INCREMENTAL_LAYOUT=1` finds no geometry mismatch. No page gain in four rounds (median 28.05 control, 28.25 change; the pass schedule varies between loads). |
+| `3cc7ecffe` | Opt-in `VOX_RETAINED_FLOW_ABSOLUTE=1` keeps absolutely positioned boxes of block parents in the retained flow salvage. | No gain in four rounds; left off. |
+
+All cohort visits were pixel-valid against the Brave reference. Host load
+was 7 to 34; only instruction counts are compared. Vox with JavaScriptCore
+is now about 27.8 billion instructions per load against Brave's 20.5.
+
+Unit-test caveat: with the current shared compiler, `v -b fastc ... test`
+reports a failed assertion as passing, and C-backend test builds of the
+html and layout modules exceed the 12 GiB guard in the transform stage's
+automatic `str()` synthesis. Layout tests in this round were compiled with
+FastC to a binary (`-o`) and run directly; FastC binaries of SVG paint tests
+crash in a closure in `typed_paint_adapter.v` with or without these changes,
+so the SVG behaviour was checked with the reftests above.
+
+Remaining rendering levers, by size: per-element style cost (rule
+collection and matching, cascade and value computation are a flat tail; a
+style sharing cache for repeated rows is the structural option), the
+height of incremental relayout roots under measured flex and grid items,
+the first automatic-height call of a stretched flex item (it never matches
+the item's last record), and the per-pass renderer adapter.
