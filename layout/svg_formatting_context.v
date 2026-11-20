@@ -1274,7 +1274,7 @@ fn (mut context SVGFormattingContext) layout_mask_or_clip(mask_or_clip &Node) {
 	// SVGFormattingContext starts the referenced viewport in its own user space.
 	// Its structural owner is not its coordinate containing block: upstream
 	// places every attached resource at (0, 0) after the nested run.
-	layout_state.set_content_offset(CSSPixelPoint{})
+	layout_state.set_content_offset(css.CSSPixelPoint{})
 	if context_styled := context.context_box.as_node_with_style() {
 		layout_state.set_containing_block_used_values(context.state.get_mutable(context_styled))
 	}
