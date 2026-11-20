@@ -157,7 +157,10 @@ fn (s &StyleComputer) can_refresh_font_inputs(abstract_element dom.AbstractEleme
 		}
 	}
 	if computed.inheritance_specified_storage_ != unsafe { nil } {
-		for _, value in computed.inheritance_specified_storage_.values {
+		for property_id, value in computed.inheritance_specified_storage_.values {
+			// A bare justify-items legacy depends on the parent's justify-items
+			// alone, never on fonts.
+			if property_id == .justify_items { continue }
 			length := computed_interpolation_length_from_dom_style_value(value) or { return diagnostic_font_guard_reject(6) }
 			if length.unit() !in [.em, .rem] { return diagnostic_font_guard_reject(7) }
 		}
