@@ -292,3 +292,36 @@ fn test_cooperative_heap_adjustment_honors_every_explicit_collector_override() {
 		}
 	}
 }
+
+// A host timer opted in with set_fires_during_cooperative_work() fires inside
+// the scope, as curl's transfer timer must; a page timer still waits.
+fn test_host_timer_fires_during_cooperative_work_while_page_timers_wait() {
+	if !native_timer_scheduling_available() { return }
+	host := &CooperativeWorkObservation{}
+	page := &CooperativeWorkObservation{}
+	mut host_timer := Timer.create_single_shot(1, fn [host] () {
+		mut observation := unsafe { &CooperativeWorkObservation(host) }
+		observation.fires++
+	})
+	host_timer.set_fires_during_cooperative_work(true)
+	mut page_timer := Timer.create_single_shot(1, fn [page] () {
+		mut observation := unsafe { &CooperativeWorkObservation(page) }
+		observation.fires++
+	})
+	defer {
+		host_timer.stop()
+		page_timer.stop()
+	}
+	mut scope := begin_cooperative_work(host, cooperative_work_test_callback)
+	host_timer.start()
+	page_timer.start()
+	deadline := time.sys_mono_now() + time.second
+	for host.fires == 0 && time.sys_mono_now() < deadline { pump_native_events(0.01) }
+	assert host.fires == 1
+	assert page.fires == 0
+	scope.finish()
+	page_deadline := time.sys_mono_now() + time.second
+	for page.fires == 0 && time.sys_mono_now() < page_deadline { pump_native_events(0.01) }
+	assert page.fires == 1
+	assert host.fires == 1
+}

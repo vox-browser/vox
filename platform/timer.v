@@ -25,6 +25,9 @@ mut:
 	native_timer_ voidptr
 	registration_generation_ u64
 	allocation_owner_ &RetainedArena = unsafe { nil }
+	// Fires during cooperative work instead of waiting for the scope to end
+	// (set_fires_during_cooperative_work()).
+	fires_during_cooperative_work_ bool
 }
 
 pub fn Timer.create() &Timer {
@@ -155,11 +158,19 @@ pub fn (mut timer Timer) set_single_shot(single_shot bool) {
 	timer.single_shot_ = single_shot
 }
 
+// Page timers keep run-to-completion order: firing during long synchronous
+// work (a cooperative checkpoint) waits until that work ends. A host timer
+// whose callback is already serviced at checkpoints by other sources can fire
+// there too.
+pub fn (mut timer Timer) set_fires_during_cooperative_work(fires bool) {
+	timer.fires_during_cooperative_work_ = fires
+}
+
 pub fn (mut timer Timer) fire() {
 	if !timer.active_ {
 		return
 	}
-	if defer_timer_during_cooperative_work(&timer) { return }
+	if !timer.fires_during_cooperative_work_ && defer_timer_during_cooperative_work(&timer) { return }
 	stage := processmetrics.begin_instruction_stage('platform_timer_delivery')
 	defer { stage.finish() }
 	// A callback may stop the timer or retire its document. Keep the callback
