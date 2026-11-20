@@ -2190,6 +2190,35 @@ fn (s &StyleComputer) in_quirks_document() bool {
 	return s.document_ != unsafe { nil } && s.document_.in_quirks_mode()
 }
 
+// The checks of style_scope_add_rule_to_run() that depend only on the roots
+// and the document, made once for a bucket or rule list.
+struct RuleCandidateScope {
+	root_is_relevant bool
+	recorded_root    ?&dom.ShadowRoot
+	quirks           bool
+}
+
+fn rule_candidate_scope(style_computer &StyleComputer, rule_root ?&dom.ShadowRoot, shadow_root ?&dom.ShadowRoot, element_shadow_root ?&dom.ShadowRoot) RuleCandidateScope {
+	return RuleCandidateScope{
+		root_is_relevant: style_scope_rule_root_is_relevant(rule_root, shadow_root, element_shadow_root)
+		recorded_root:    style_scope_mut_shadow_root_option(rule_root)
+		quirks:           style_computer.in_quirks_document()
+	}
+}
+
+// style_scope_add_rule_to_run() with the scope's checks already made.
+@[inline]
+fn style_scope_add_rule_in_scope(style_computer &StyleComputer, rule &MatchingRule, scope &RuleCandidateScope, mut rules_to_run []ScopedMatchingRule) {
+	if !style_scope_rule_is_relevant_for_scope(rule, scope.root_is_relevant)
+		|| style_computer.rejects_rule_with_ancestor_filter(rule, scope.quirks) {
+		return
+	}
+	rules_to_run << ScopedMatchingRule{
+		rule: rule
+		shadow_root: scope.recorded_root
+	}
+}
+
 fn style_scope_add_rule_to_run(style_computer &StyleComputer, abstract_element dom.AbstractElement, rule_to_run &MatchingRule, rule_root ?&dom.ShadowRoot, shadow_root ?&dom.ShadowRoot, element_shadow_root ?&dom.ShadowRoot, mut rules_to_run []ScopedMatchingRule) {
 	if !style_scope_rule_is_relevant_for_scope(rule_to_run, style_scope_rule_root_is_relevant(rule_root, shadow_root, element_shadow_root)) {
 		return
@@ -2222,6 +2251,7 @@ fn style_scope_add_rules_to_run(style_computer &StyleComputer, abstract_element 
 	}
 	element_namespace_uri := abstract_element.element().namespace_uri()
 	if queried_pseudo_element := style_scope_pseudo_element_from_abstract_element(abstract_element) {
+		scope := rule_candidate_scope(style_computer, rule_root, shadow_root, element_shadow_root)
 		for rule in rules {
 			// Only selectors targeting the queried pseudo-element can match. This avoids
 			// evaluating ordinary selectors and selectors for a different pseudo-element.
@@ -2233,27 +2263,20 @@ fn style_scope_add_rules_to_run(style_computer &StyleComputer, abstract_element 
 			if !style_scope_filter_namespace_rule(element_namespace_uri, rule) {
 				continue
 			}
-			style_scope_add_rule_to_run(style_computer, abstract_element, rule, rule_root, shadow_root, element_shadow_root, mut rules_to_run)
+			style_scope_add_rule_in_scope(style_computer, rule, &scope, mut rules_to_run)
 		}
 	} else {
 		// style_scope_add_rule_to_run() for each rule, with the checks that
 		// depend only on the roots and document done once for the bucket.
-		root_is_relevant := style_scope_rule_root_is_relevant(rule_root, shadow_root, element_shadow_root)
-		recorded_root := style_scope_mut_shadow_root_option(rule_root)
-		quirks := style_computer.in_quirks_document()
+		scope := rule_candidate_scope(style_computer, rule_root, shadow_root, element_shadow_root)
 		for rule in rules {
 			if !rule.slotted && !rule.contains_part_pseudo_element && rule.contains_pseudo_element {
 				continue
 			}
-			if !style_scope_filter_namespace_rule(element_namespace_uri, rule)
-				|| !style_scope_rule_is_relevant_for_scope(rule, root_is_relevant)
-				|| style_computer.rejects_rule_with_ancestor_filter(rule, quirks) {
+			if !style_scope_filter_namespace_rule(element_namespace_uri, rule) {
 				continue
 			}
-			rules_to_run << ScopedMatchingRule{
-				rule: rule
-				shadow_root: recorded_root
-			}
+			style_scope_add_rule_in_scope(style_computer, rule, &scope, mut rules_to_run)
 		}
 	}
 }
