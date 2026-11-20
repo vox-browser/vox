@@ -1289,7 +1289,9 @@ fn (s &StyleComputer) recompute_inherited_style_with_invalidation(mut abstract_e
 	// the parent after the longhand values, as the complete computation does.
 	// Every element starts with that value, so when no inherited value
 	// changed and it is the only parent-dependent one, resolve it alone.
-	if invalidation.is_none() && inheritance_dependence_is_justify_items_only(computed) {
+	if retain_justify_items_refresh {
+		s.compute_property_values(mut computed, *abstract_element)
+	} else if invalidation.is_none() && inheritance_dependence_is_justify_items_only(computed) {
 		compute_alignment_values(mut computed, *abstract_element)
 	} else {
 		s.compute_property_values(mut computed, *abstract_element)

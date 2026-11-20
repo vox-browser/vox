@@ -7,6 +7,9 @@ import time
 // VOX_STYLE_PASS_DIAGNOSTICS=1: one line per document style pass with the
 // elements it visited and why each one was computed again.
 const style_pass_diagnostics = os.getenv('VOX_STYLE_PASS_DIAGNOSTICS') != ''
+// Same-binary control: the inherited refresh and the font input guard treat
+// a bare justify-items legacy as they did before fedefacdc and 125dfb82b.
+const retain_justify_items_refresh = os.getenv('VOX_RETAIN_JUSTIFY_ITEMS_REFRESH') != ''
 
 // 0 full update, 1 own flag, 2 parent display, 3 ancestor descendant
 // recompute, 4 custom properties, 5 if()/media, 6 font inputs refreshed,
