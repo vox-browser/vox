@@ -602,6 +602,10 @@ pub fn (mut object Object) internal_set(mut vm VM, key PropertyName, value Value
 				return true
 			}
 		} else if parent := object.prototype {
+			if receiver.is_object() && voidptr(receiver.as_object()) == voidptr(&object) {
+				added := object.set_absent_own_data_property(key, value)
+				if added != absent_own_set_unhandled { return added == absent_own_set_added }
+			}
 			mut parent_object := unsafe { &Object(parent) }
 			return parent_object.internal_set(mut vm, key, value, receiver)
 		}
