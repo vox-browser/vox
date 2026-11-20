@@ -1854,11 +1854,11 @@ fn svg_paint_fragment(reference string) ?string {
 
 fn resolve_svg_fragment_identifier_to_element(node &dom.Node, fragment string) ?&dom.Element {
 	decoded_fragment := svg.decode_fragment_identifier(fragment)
-	if element := node.document().get_element_by_id(decoded_fragment) {
+	if element := node.document().rendering_element_by_id(decoded_fragment) {
 		return element
 	}
 	if shadow_root := node.containing_shadow_root() {
-		return unsafe { &dom.ParentNode(shadow_root) }.get_element_by_id(decoded_fragment)
+		return unsafe { &dom.ParentNode(shadow_root) }.rendering_element_by_id(decoded_fragment)
 	}
 	return none
 }
@@ -1890,7 +1890,7 @@ fn linked_svg_gradient(element &dom.Element, mut seen map[i64]bool) ?&dom.Elemen
 	fragment := svg_gradient_link_fragment(element.document(), svg_gradient_href(element)) or {
 		return none
 	}
-	linked := element.document().get_element_by_id(fragment) or { return none }
+	linked := element.document().rendering_element_by_id(fragment) or { return none }
 	if !linked.is_svg_element() || linked.local_name() !in ['linearGradient', 'radialGradient'] {
 		return none
 	}

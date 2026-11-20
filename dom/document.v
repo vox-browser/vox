@@ -5473,6 +5473,8 @@ pub mut:
 	layout_pass_generation             u64
 	// VOX_DOCUMENT_LAYOUT_DIAGNOSTICS: what dirtied layout since the last pass.
 	layout_dirty_reasons_              map[string]int
+	// Ids that layout or paint resolved from a URL fragment (rendering_element_by_id).
+	rendering_referenced_ids_          map[string]bool
 	paint_scene_generation             u64
 	oldest_live_paint_scene_generation u64
 	// Native shell snapshots retain/release their contiguous paint-tree slots.
@@ -11297,7 +11299,8 @@ pub fn (mut d Document) element_id_changed(element &Element, old_id ?string) {
 	if new_id := element.id() {
 		d.add_element_by_id(new_id, element)
 	}
-	d.note_svg_paint_resources_changed()
+	d.note_rendering_id_changed(old_id)
+	d.note_rendering_id_changed(element.id())
 }
 
 pub fn (mut d Document) element_with_id_was_added(element &Element) {
@@ -11309,7 +11312,7 @@ pub fn (mut d Document) element_with_id_was_added(element &Element) {
 	}
 	if id := element.id() {
 		d.add_element_by_id(id, element)
-		d.note_svg_paint_resources_changed()
+		d.note_rendering_id_changed(id)
 	}
 }
 
@@ -11322,7 +11325,7 @@ pub fn (mut d Document) element_with_id_was_removed(element &Element) {
 	}
 	if id := element.id() {
 		d.remove_element_by_id(id, element)
-		d.note_svg_paint_resources_changed()
+		d.note_rendering_id_changed(id)
 	}
 }
 
@@ -14422,6 +14425,36 @@ pub fn (p &Page) title_change_count() int {
 
 pub fn (d &Document) get_element_by_id(id string) ?&Element {
 	return d.element_by_id(id)
+}
+
+// Layout and paint resolve URL fragments (url(#id), href="#id") through this
+// lookup. It records the id: an element entering, leaving or renaming that id
+// can change what the reference resolves to, while any other id change leaves
+// rendering alone. The set only grows, so a stale entry costs a rebuild and
+// never a missed one.
+pub fn (d &Document) rendering_element_by_id(id string) ?&Element {
+	mut document := unsafe { &Document(d) }
+	document.rendering_referenced_ids_[id] = true
+	return d.element_by_id(id)
+}
+
+// The shadow-root form of rendering_element_by_id: ids are recorded on the
+// node document, whose id hooks see shadow-tree elements too.
+pub fn (p &ParentNode) rendering_element_by_id(id string) ?&Element {
+	mut document := unsafe { &Document(p.as_node().document()) }
+	document.rendering_referenced_ids_[id] = true
+	return p.get_element_by_id(id)
+}
+
+pub fn (d &Document) rendering_references_id(id string) bool {
+	return id in d.rendering_referenced_ids_
+}
+
+fn (mut d Document) note_rendering_id_changed(id ?string) {
+	value := id or { return }
+	if value in d.rendering_referenced_ids_ {
+		d.note_svg_paint_resources_changed()
+	}
 }
 
 fn url_percent_decode(s string) string {

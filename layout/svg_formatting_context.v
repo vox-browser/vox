@@ -1071,7 +1071,7 @@ fn (mut context SVGFormattingContext) layout_text_path_element(graphics_box &Nod
 		set_used_values_rect(mut graphics_state, svg.Rect{})
 		return
 	}
-	shape := graphics_box.document().get_element_by_id(reference[1..]) or {
+	shape := graphics_box.document().rendering_element_by_id(reference[1..]) or {
 		set_used_values_rect(mut graphics_state, svg.Rect{})
 		return
 	}

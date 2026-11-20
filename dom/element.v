@@ -7444,9 +7444,9 @@ fn (e &Element) svg_use_referenced_element() ?&Element {
 	fragment := reference.fragment() or { return none }
 	if !e.svg_use_reference_is_same_document(reference) {
 		resource := e.document().svg_use_resource_document(reference) or { return none }
-		return resource.get_element_by_id(url_percent_decode(fragment))
+		return resource.rendering_element_by_id(url_percent_decode(fragment))
 	}
-	return e.document().get_element_by_id(url_percent_decode(fragment))
+	return e.document().rendering_element_by_id(url_percent_decode(fragment))
 }
 
 fn (mut e Element) svg_use_inserted() {

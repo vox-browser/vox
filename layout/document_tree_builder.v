@@ -1669,12 +1669,12 @@ fn svg_resource_target_in_tree_scope(owner &Node, document &dom.Document, fragme
 	if owner_dom := owner.dom_node() {
 		if shadow_root := owner_dom.containing_shadow_root() {
 			parent_node := unsafe { &dom.ParentNode(shadow_root) }
-			if target := parent_node.get_element_by_id(fragment) {
+			if target := parent_node.rendering_element_by_id(fragment) {
 				return target
 			}
 		}
 	}
-	return document.get_element_by_id(fragment)
+	return document.rendering_element_by_id(fragment)
 }
 
 fn svg_pattern_href(element &dom.Element) string {
@@ -1698,7 +1698,7 @@ fn linked_svg_pattern(element &dom.Element, mut seen map[i64]bool) ?&dom.Element
 	if fragment == '' {
 		return none
 	}
-	linked := element.document().get_element_by_id(fragment) or { return none }
+	linked := element.document().rendering_element_by_id(fragment) or { return none }
 	if !linked.is_svg_element() || linked.local_name() != 'pattern'
 		|| linked.as_node().unique_id() == element.as_node().unique_id() {
 		return none
@@ -1830,12 +1830,12 @@ fn materialize_svg_use_shadow_trees(document &dom.Document) {
 		}
 		mut target := ?&dom.Element(none)
 		if href.starts_with('#') && href.len > 1 {
-			target = document.get_element_by_id(url.percent_decode(href[1..]).bytestr())
+			target = document.rendering_element_by_id(url.percent_decode(href[1..]).bytestr())
 		} else if fragment_offset := href.index('#') {
 			if fragment_offset + 1 < href.len {
 				external_reference := href[..fragment_offset]
 				if external_document := svg_image_document_for_source(document, external_reference) {
-					target = external_document.get_element_by_id(url.percent_decode(href[fragment_offset + 1..]).bytestr())
+					target = external_document.rendering_element_by_id(url.percent_decode(href[fragment_offset + 1..]).bytestr())
 				}
 			}
 		}
