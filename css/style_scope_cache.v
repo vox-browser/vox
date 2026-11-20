@@ -2510,6 +2510,10 @@ fn collect_matching_rules_with_storage(style_computer &StyleComputer, abstract_e
 	}
  diagnostic_matches_start := begin_diagnostic_instruction_scope()
  defer { record_diagnostic_instruction_scope(13, diagnostic_matches_start) }
+	$if vox_css_diagnostics ? {
+		diagnostic_matching_candidates[0]++
+		diagnostic_matching_candidates[1] += u64(rules_to_run.len)
+	}
 
 	mut matching_rules := []ScopedMatchingRule{}
 	mut repeated_rule_matches := RepeatedRuleMatchMemo{}
@@ -2614,6 +2618,9 @@ fn collect_matching_rules_with_storage(style_computer &StyleComputer, abstract_e
 		}
 
 		style_scope_merge_attempted_pseudo_class_matches(mut attempted_pseudo_class_matches, candidate_buffer.context)
+		$if vox_css_diagnostics ? {
+			if !did_match { note_diagnostic_failed_candidate(rule_to_run) }
+		}
 		if did_match {
 			if container_rule := rule_to_run.container_rule {
 				contains_size_feature := container_rule.container_rule_contains_size_feature()
@@ -2644,6 +2651,7 @@ fn collect_matching_rules_with_storage(style_computer &StyleComputer, abstract_e
 					arena.leave(entry)
 				}
 			}
+			$if vox_css_diagnostics ? { diagnostic_matching_candidates[2]++ }
 			append_scoped_matching_rule(mut matching_rules, ScopedMatchingRule{
 				rule: rule_to_run
 				shadow_root: style_scope_mut_shadow_root_option(rule_root)
