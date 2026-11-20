@@ -84,8 +84,11 @@ fn main() {
 // (by identity, in cascade order) as an earlier element: the hit rate a cache
 // keyed by matched rules could reach before inline styles and other inputs.
 fn report_matched_rule_signatures(document &dom.Document) {
-	computer := css.css_style_computer_for(document)
+	mut computer := css.css_style_computer_for(document)
 	scope := css.style_scope_for_dom_node(document.as_node())
+	// The ancestor filter must hold each element's ancestors, as during a
+	// style pass; otherwise every rule with ancestor hashes is rejected.
+	mut pushed := []&dom.Element{}
 	mut seen := map[string]int{}
 	mut with_environment := map[string]int{}
 	mut total := 0
@@ -94,6 +97,24 @@ fn report_matched_rule_signatures(document &dom.Document) {
 	mut stable := []string{}
 	mut with_inline := 0
 	for element in css.query_selector_all(document.as_node(), '*') {
+		mut chain := []&dom.Element{}
+		mut parent := element.as_node().parent_element()
+		for {
+			ancestor := parent or { break }
+			chain.prepend(ancestor)
+			parent = ancestor.as_node().parent_element()
+		}
+		mut common := 0
+		for common < pushed.len && common < chain.len && voidptr(pushed[common]) == voidptr(chain[common]) {
+			common++
+		}
+		for pushed.len > common {
+			computer.pop_ancestor(pushed.pop())
+		}
+		for ancestor in chain[common..] {
+			computer.push_ancestor(ancestor)
+			pushed << ancestor
+		}
 		abstract := dom.AbstractElement.new(element, none)
 		mut attempted := css.PseudoClassBitmap{}
 		mut matched_pseudo := false
@@ -123,6 +144,9 @@ fn report_matched_rule_signatures(document &dom.Document) {
 		environment := if data := abstract.custom_property_data() { u64(voidptr(data)) } else { u64(0) }
 		with_environment['${parts.join(',')}#${environment}']++
 		total++
+	}
+	for pushed.len > 0 {
+		computer.pop_ancestor(pushed.pop())
 	}
 	mut repeated := 0
 	for _, count in seen { if count > 1 { repeated += count - 1 } }
