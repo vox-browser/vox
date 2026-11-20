@@ -12165,6 +12165,11 @@ pub fn (s &StyleComputer) compute_properties(abstract_element dom.AbstractElemen
 	if key := reuse_key {
 		reused_longhands = s.restore_computed_longhands(key, cascaded_properties, mut properties)
 		record_diagnostic_longhand_lookup(reused_longhands)
+	} else {
+		$if vox_css_diagnostics ? {
+			s.note_longhand_reuse_rejection(abstract_element, cascaded_properties,
+				inherited_computed, recascaded_font_size != none)
+		}
 	}
 	record_diagnostic_instruction_scope(14, key_scope_start)
 	if !reused_longhands {

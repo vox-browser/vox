@@ -78,6 +78,8 @@ fn record_diagnostic_longhand_rejection(id PropertyID, value &dom.StyleValue) {
 		diagnostic_longhand_rejections[key]++
 	}
 	$if vox_css_diagnostics ? {
+		// The rejection report evaluates keys again; count each rejection once.
+		if diagnostic_longhand_reuse_reevaluating { return }
 		kind := if typed := typed_style_value_logic_from_dom(value) { typed.type_name() } else { 'untyped' }
 		key := '${string_from_property_id(id)} ${kind}'
 		diagnostic_longhand_rejections[key]++
@@ -104,6 +106,7 @@ pub fn report_diagnostic_instruction_scopes() {
 		eprintln('Vox diagnostic longhand lookups: misses=${diagnostic_longhand_lookups[0]} hits=${diagnostic_longhand_lookups[1]}')
 		eprintln('Vox diagnostic matching: collections=${diagnostic_matching_candidates[0]} candidates=${diagnostic_matching_candidates[1]} matched=${diagnostic_matching_candidates[2]}')
 		report_diagnostic_failed_candidates()
+		report_longhand_reuse_rejections()
 		for key, count in diagnostic_longhand_rejections {
 			eprintln('Vox diagnostic longhand rejection: ${key} ${count}')
 		}
