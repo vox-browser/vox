@@ -9750,7 +9750,14 @@ pub fn property_affects_hit_testing(property_id PropertyID) bool {
 	]
 }
 
+@[inline]
 pub fn compute_property_invalidation(property_id PropertyID, old_value ?&dom.StyleValue, new_value ?&dom.StyleValue) RequiredInvalidationAfterStyleChange {
+	invalidation := compute_property_invalidation_of_change(property_id, old_value, new_value)
+	if style_pass_diagnostics { note_style_pass_property(property_id, invalidation) }
+	return invalidation
+}
+
+fn compute_property_invalidation_of_change(property_id PropertyID, old_value ?&dom.StyleValue, new_value ?&dom.StyleValue) RequiredInvalidationAfterStyleChange {
 	mut invalidation := RequiredInvalidationAfterStyleChange{}
 
 	property_value_changed := style_value_option_changed(old_value, new_value)
