@@ -2861,7 +2861,7 @@ fn (mut list StyleSheetList) add_sheet(sheet &CSSStyleSheet) {
 		return
 	}
 
-	invalidate_css_style_scope_for_node(list.document_or_shadow_root)
+	invalidate_css_style_scope_for_appended_sheet(list.document_or_shadow_root)
 	marked_before := style_sheet_change_marked_elements
 	if !list.document_or_shadow_root.is_shadow_root()
 		&& (list.document_or_shadow_root.entire_subtree_needs_style_update()

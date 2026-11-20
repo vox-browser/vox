@@ -11156,6 +11156,10 @@ mut:
 	user_agent_only_shadow_cache_ &UserAgentOnlyShadowStyleCache = unsafe { nil }
 	adopted_user_agent_only_shadow_cache_ &UserAgentOnlyShadowStyleCache = unsafe { nil }
 	rule_cache_font_policy_ dom.FontRenderingPolicy
+	// rule_cache_extension.v: the author sheets the rule cache holds, and the
+	// cache that only appended sheets have invalidated since.
+	rule_cache_author_sheets_ []&CSSStyleSheet
+	extendable_rule_cache_ &ExtendableRuleCache = unsafe { nil }
 }
 
 // A complete set of selector and cascade caches that can be shared by style
