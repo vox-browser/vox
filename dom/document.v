@@ -14452,7 +14452,7 @@ pub fn (d &Document) rendering_references_id(id string) bool {
 
 fn (mut d Document) note_rendering_id_changed(id ?string) {
 	value := id or { return }
-	if value in d.rendering_referenced_ids_ {
+	if rebuild_layout_for_every_id_change || value in d.rendering_referenced_ids_ {
 		d.note_svg_paint_resources_changed()
 	}
 }
