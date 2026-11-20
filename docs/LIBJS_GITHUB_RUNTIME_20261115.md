@@ -10487,3 +10487,59 @@ earlier element (198 have inline styles). A cascade cache keyed by matched
 rules, presentational hints, inline style, link state and writing mode
 could skip most of the 22% cascade share; that is the next per-element
 style lever.
+
+## Per-element style, 2026-11-20 night
+
+A diagnostic build of the style benchmark (`-d vox_css_diagnostics`) lists
+the candidate selectors that fail most often after the ancestor filter.
+About twenty rules failed for every element: `:link`, `:visited`,
+`:heading(n)`, single-argument `:where()`/`:is()` combining a class or
+attribute with other conditions, attribute lists such as
+`:is([data-color-mode="light"], [data-color-mode="auto"])`, and
+`:is(.Banner .Banner-visual) > *`, whose ancestor compound the filter did
+not hash. A profile then showed candidate collection costing more than
+selector matching, a bounds check emitted out of line by the runtime, and
+parse and substitution work repeated for every element.
+
+| Commit | Change | Instructions per inserted element |
+| --- | --- | --- |
+| `8c3761b88` | Link and heading pseudo-classes bucketed by the tags they require; multi-condition `:is()`/`:where()` subjects by their class, id or tag. Control `VOX_DISABLE_PSEUDO_CLASS_TAG_BUCKETS=1`. | 405,000 -> 382,000 |
+| `078f082c3`, `5b9b34225` | `:is()`/`:where()` subjects by a required attribute name (kept out of the disjunctive subject masks). | 382,000 -> 375,700 |
+| `1b62906b7` | Single `:is()`/`:where()` arguments of ancestor compounds supply ancestor-filter hashes. Control `VOX_DISABLE_IS_WHERE_ANCESTOR_HASHES=1`. | 375,700 -> 366,700 |
+| `e8ac2743d` | The staged prealloc runtime replaces V's fixed-array bounds checks with ones whose panic message is built in a cold helper; clang had kept `v_fixed_index` out of line in every fixed-array index. Applies to the whole browser. | 366,800 -> 327,300 |
+| `11cabe765`, `2e5538222` | Shadow-root relevance and quirks checks made once per bucket; ancestor hashes read in place. | 327,300 -> 316,900; 273,100 -> 264,400 |
+| `d3237a949` | The style pass asks the pseudo-subject index whether a generated pseudo-element can match. Control `VOX_DISABLE_PSEUDO_CANDIDATE_INDEX_LOOKUP=1`. | 316,900 -> 305,000 |
+| `98e3886de` | Computed-longhand reuse covers SVG elements. Control `VOX_LONGHAND_REUSE_HTML_ONLY=1`. | 305,050 -> 303,700 |
+| `5ada0bb21` | Parsed SVG presentation attributes (fill, sizes, `d` paths) shared within a style batch. Control `VOX_DISABLE_SVG_PRESENTATION_HINT_REUSE=1`. | 304,000 -> 289,000 |
+| `24854b0b0` | A `var()`/`env()` declaration resolves once per custom property environment within a style batch. Control `VOX_DISABLE_ENVIRONMENT_SUBSTITUTION_REUSE=1`. | 288,400 -> 273,100 |
+
+Every change was checked with the benchmark's digests against its control:
+`signatures` hashes each element's matched rules, restyle bits and
+pseudo-element candidacy, and `computed` hashes every computed longhand of
+the page and one inserted copy (5,169 elements, 2,005,572 values). The
+earlier signature counts were taken with an empty ancestor filter, which
+rejected every rule with ancestor hashes; with ancestors pushed (`539c0fbb2`)
+the page has 336 distinct matched-rule sets among 2,663 elements, 87%
+repeats.
+
+Rejected after measurement: reusing longhands for equal `d` path data
+(+4%: unique paths filled the 256-entry reuse cache; neutral with a larger
+cap), skipping the interning of pages already canonical in the batch
+(-0.2%), and skipping the descendant walk after a display change when the
+document has no CSS animations (the page has some, so the walk stays).
+
+Per element the style computation is now 264,000 instructions: selector
+matching 32%, computed values 29%, the cascade 16%, page publication 6%.
+Longhand reuse still runs the full computation for pseudo-elements (8% of
+computations) and for cascaded values without a snapshot (19%: `d` paths,
+`clip-path: inset(50%)`, `calc()` margins and border widths with `rem`),
+counted by the rejection report of `f6b73246b`.
+
+A status cohort of the published bundle `f125d53bc05b` (three alternating
+rounds) ran while other jobs held the host's load average at 52 to 87 and
+the shared pixel-diff tool aborted, so its rows are unvalidated and its
+times unusable. Its instruction medians: LibJS 39.4 billion, JavaScriptCore
+27.0 billion, Brave 20.6 billion. Whole-load totals include the settle
+second, in which faster style lets more frames run; a stage-logged
+JavaScriptCore load shows rule matching at 1.54 billion instructions
+(2.12 in round 8) and the cascade at 0.85 billion (0.99).
