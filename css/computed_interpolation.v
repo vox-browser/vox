@@ -11257,6 +11257,7 @@ pub mut:
 	longhand_reuse_cache_ &ComputedLonghandReuseCache = unsafe { nil }
 	simple_var_properties_ &SimpleVarPropertyCache = unsafe { nil }
 	substituted_values_ &SubstitutedValueCache = unsafe { nil }
+	svg_presentation_hints_ &SvgPresentationHintCache = unsafe { nil }
 	quirks_body_identity_ u64
 	quirks_body_used_color_ ?Color
 }
@@ -14815,7 +14816,7 @@ fn (s &StyleComputer) compute_cascaded_values_into(mut cascaded_properties Casca
 		if abstract_element.element().is_html_element() {
 			collect_html_presentational_hints(mut hints, abstract_element.element(), properties_to_cascade)
 		} else if abstract_element.element().is_svg_element() {
-			collect_svg_presentational_hints(mut hints, abstract_element.element(), properties_to_cascade)
+			collect_svg_presentational_hints_with(mut hints, abstract_element.element(), properties_to_cascade, s)
 		}
 		apply_property_list_to_cascade(mut cascaded_properties, abstract_element, hints, .author_presentational_hint, .no, none, unsafe { nil }, none, logical_alias_mapping_context, properties_to_cascade)
 	}
@@ -15823,6 +15824,12 @@ pub fn html_table_element_apply_presentational_hints(element &dom.HTMLTableEleme
 }
 
 fn collect_svg_presentational_hints(mut properties []StyleProperty, element &dom.Element, properties_to_cascade ComputedInterpolationPropertyIDs) {
+	collect_svg_presentational_hints_with(mut properties, element, properties_to_cascade, unsafe { nil })
+}
+
+// With a style computer inside a style batch, equal attributes share parsed
+// values (svg_presentation_hint_reuse.v).
+fn collect_svg_presentational_hints_with(mut properties []StyleProperty, element &dom.Element, properties_to_cascade ComputedInterpolationPropertyIDs, computer &StyleComputer) {
 	tag_name := element.local_name()
 	sizing_only := ['foreignObject', 'image', 'rect', 'svg', 'symbol', 'use']!
 	attributes := element.attribute_list() or { return }
@@ -15878,12 +15885,12 @@ fn collect_svg_presentational_hints(mut properties []StyleProperty, element &dom
 			continue
 		}
 		attribute_value := attribute.value()
-		value := parse_svg_presentation_attribute_value(element.document(), property_id, attribute_value) or {
+		value := svg_presentation_hint_value(computer, element, property_id, attribute_value) or {
 			continue
 		}
 		properties << StyleProperty{
 			property_id: property_id
-			value: dom_style_value_from_value_logic(value)
+			value: value
 		}
 	}
 }
