@@ -10317,3 +10317,26 @@ loads put outermost script at 12.30 and 12.38 billion instructions against
 10.59–10.68 billion, so the array change removes about 0.55 billion script
 instructions (4.4%); the larger whole-load drop also reflects layout-pass
 variation, which moves JSC's count by about a billion between cohorts.
+
+### Style substitutions, literal and constructor writes, and worker-parsed document scripts, 2026-11-20
+
+A sampled JSC load (host load about 4) puts style construction at 203
+samples: rule matching 73, cascade 61 and computed properties 51 (font
+metrics 20). Most cascade time was resolving `var()`, and most of that was
+parsing the substituted tokens.
+
+| Commit | Change | Measured |
+| --- | --- | --- |
+| `dbd1351cb` | Within a style pass, reuse the parse of a declaration's substituted `var()` tokens, keyed by a fingerprint of the substituted values (Primer's fallback chains bypassed the single-`var()` cache). | 95% hit rate (15,337 of 16,168); `style_cascade` 1.15 -> 0.99 billion instructions in three alternating JSC loads, the other style stages unchanged. |
+| `9390b6f99` | Object literal keys that no earlier definition of the literal can have created skip the duplicate lookup (identifier/string keys before any spread or computed key; numeric spellings excluded), and every literal key needs at most one lookup. | 200,000 five-key literals 80.4 -> 57.9 ms; 50,000 thirty-key literals 132.9 -> 51.2 ms (literal paths off/on). |
+| `ccc01d827` | Start a worker parse when a document script body arrives; execution reuses it only when ready, error-free and identical in text. | Two alternating stage-logged LibJS loads: worker parses 80 -> 86, main-thread script instructions 14.70–14.96 -> 12.92–13.28 billion (`libjs_module_frontend` 1.6 billion leaves the main thread). |
+| `6c8b0b76b` | A write that adds a property to an ordinary receiver walks a plain ordinary prototype chain once and appends, instead of re-reading the receiver three more times. | Constructor adding ten fields, 50,000 objects, 96.3 -> 64.6 ms; four-field class 77.7 -> 60.0 ms; existing-field updates unchanged. |
+
+Stage-logged instruction counts include their own counter reads (logged loads
+run about 52 billion instructions against 43 unlogged, and style issues about
+70,000 substage calls), so `style_construction`'s exclusive count is mostly
+instrumentation; sampled profiles attribute style. In LibJS loads,
+`html_other_task` and `html_rendering_task` (2.0 and 1.4 billion) are mostly
+script run from posted tasks and animation frames outside the script stage.
+The literal and constructor commits change bytecode or `object.v`, so their
+page effect needs another grouped-cache rebuild.
