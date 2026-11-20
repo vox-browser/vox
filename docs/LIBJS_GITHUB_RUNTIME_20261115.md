@@ -10555,3 +10555,19 @@ time and JavaScriptCore from 1.45 to 1.39. Brave's own time rose by 4.5%,
 so part of that is host load. Script remains the largest single difference:
 a stage-logged load spends 774 ms in outermost LibJS script against 366 ms
 with JavaScriptCore.
+
+Two later changes take the per-element cost to 248,400 instructions,
+39% below the 405,000 of the evening:
+
+| Commit | Change | Instructions per inserted element |
+| --- | --- | --- |
+| `34fc570ef` | The cascade of an earlier element with the same matched rules, hint values, custom property environment, logical context and pseudo-element is replayed within a style batch (complete entry chains, order and presence bits); inline styles, position-try overrides and non-`var()` substitutions cascade anew. Control `VOX_DISABLE_CASCADE_REUSE=1`. | 264,800 -> 253,700 |
+| `91636c644` | Parsed SVG presentation attributes are kept for the document across style batches, keyed with the quirks mode. | 253,700 -> 248,400 |
+
+Also measured and rejected: identity-matched longhand reuse for `calc()`
+inputs (+8.6% with the 256-entry cache, still no gain with a larger cache
+or second-sighting admission), admitting longhand entries only on their
+second sighting (-0.6%), copying ancestor-filter hashes into each matching
+rule to avoid a pointer load (no time difference beyond noise, more
+instructions), and sharing styles between siblings, which only 407 of 2,663
+elements could use.
