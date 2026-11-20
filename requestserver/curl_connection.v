@@ -28,14 +28,6 @@ const curl_max_host_connections = 6
 // already multiplexing on. Pooled connections start main-thread transfers on
 // one shared multi handle per pool key; worker threads keep their own.
 const retain_separate_curl_connections = os.getenv('VOX_RETAIN_SEPARATE_CURL_CONNECTIONS') != ''
-// Long document work services AppKit at cooperative checkpoints, where curl's
-// socket sources already run socket_action(). Its timer, which starts newly
-// added transfers and drives timeouts, was deferred with page timers until the
-// work ended: on the archived github.com/vlang/v page the ~65 scripts queued
-// at the start of document installation began transferring only when the
-// first style and layout had finished. VOX_DEFER_CURL_TIMER_DURING_WORK=1
-// keeps that deferral.
-const defer_curl_timer_during_work = os.getenv('VOX_DEFER_CURL_TIMER_DURING_WORK') != ''
 const curl_connection_pool_limit = 8
 
 __global curl_connection_pools_ = map[string]&CurlConnection{}
@@ -75,9 +67,6 @@ pub fn CurlConnection.create() !&CurlConnection {
 		connection.timer_due_at_ = none
 		connection.socket_action(C.CURL_SOCKET_TIMEOUT, 0)
 	})
-	if !defer_curl_timer_during_work {
-		connection.timer_.set_fires_during_cooperative_work(true)
-	}
 	return connection
 }
 
