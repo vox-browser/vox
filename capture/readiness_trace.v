@@ -2,6 +2,7 @@ module main
 
 import css
 import os
+import time
 
 // Diagnostic: VOX_TRACE_CAPTURE_READINESS=1 reports which condition keeps a
 // requested screenshot from being scheduled, each time the blocking reason
@@ -52,7 +53,9 @@ fn (app &BrowserApp) font_capture_status() string {
 fn (mut app BrowserApp) trace_capture_readiness(paint_document bool) {
 	if !trace_capture_readiness { return }
 	reason := app.capture_readiness_blocker(paint_document)
-	if reason == app.capture_readiness_last_reason { return }
-	app.capture_readiness_last_reason = reason
-	eprintln('Vox capture readiness: ${if reason == '' { 'ready' } else { reason }}')
+	state := '${reason}|${app.capture_selector_ready()}'
+	if state == app.capture_readiness_last_reason { return }
+	app.capture_readiness_last_reason = state
+	// Wall-clock microseconds, comparable with VOX_CURL_TRANSFER_LOG times.
+	eprintln('Vox capture readiness: at_us=${time.now().unix_micro()} selector=${app.capture_selector_ready()} ${if reason == '' { 'ready' } else { reason }}')
 }
