@@ -10258,3 +10258,49 @@ already emits jump tables), shrinking the 1,112-byte `Object` (object creation
 is under 0.5% of page samples) and an environment-coordinate cache for
 captured reads (about 2.5% of page samples). The last three commits change
 bytecode, so measuring them needs another grouped-cache rebuild.
+
+### Array lookups, a property-miss filter and the layout passes, 2026-11-20
+
+**Last round on the page.** Bundle `856437379b93…` (`867d80f41`) with its own
+rebuilt grouped cache (pixel-exact reopen): five alternating rounds at
+one-minute host loads of 24–27 (another session's test batches) give compiled
+LibJS 3,825 ms (41.45–43.40 billion instructions, median 43.21), JSC 3,203 ms
+and Brave 1,957 ms (`ScriptDuration` 158 ms). All 15 visits pass the audit.
+The load inflates every wall time (JSC was 2,991 ms in the quieter cohort), so
+only the instruction counts compare: the last three commits of the previous
+round save about 0.1 billion instructions (43.34 -> 43.21 billion).
+
+**Array element lookups.** `dae2a9d21`: arrays keep elements as numeric keys in
+the property vector, and large arrays used the hashed position hints, which
+remember only hits. Every miss scanned the vector, so each `push` (a lookup
+of the new index) and each method read (`a.push`, `a.map`,
+`a[Symbol.iterator]`, which miss on the array before `Array.prototype`) was
+linear in the length, and the 4,096-entry hint table thrashed on bigger
+arrays. An array never owns an index at or above its length, element i is
+verified at position i, and arrays count their appended non-index keys so a
+name or symbol miss is answered without a scan.
+
+| Optimized same-build A/B | Hints | Array invariants |
+| --- | ---: | ---: |
+| 3 x 20,000 pushes | 3,043 ms | 11.4 ms |
+| 200,000 index reads (5,000 elements) | 711 ms | 47 ms |
+| 20 `for-of` passes over 5,000 elements | 345 ms | 37 ms |
+| index writes | 740 ms | 122 ms |
+| three-element literals | 50.1 ms | 55.5 ms (noise; path not reached) |
+
+**Rejected: a property-miss filter.** Two filter bits per string or symbol key
+on objects with four or more properties made a method call on a nine-field
+object 47.7 -> 40.5 ms (300,000 calls) and a missing-field check
+26.1 -> 21.5 ms. It assumes keys only arrive through `define_direct_property`,
+but ordinary objects keep a public property vector whose direct edits the
+position hints deliberately tolerate (`property_lookup_test.v` renames a key in
+place), so it was not committed. Arrays document the stricter contract instead.
+
+**Layout passes.** A JSC load with `VOX_DOCUMENT_LAYOUT_DIAGNOSTICS=1` shows
+eight main-document layouts of 26–139 ms (the first builds the tree twice); the
+other calls lay out separate SVG image documents in 0.1–3 ms each. Most passes
+rebuild the layout tree for a few dozen style changes or insertions (for
+example 29 `a`, 23 `li` and 13 `div` style changes in a 94 ms pass) and then
+lay out the whole document, as upstream Ladybird does. Blink lays out only
+dirty subtrees (Brave: 19 layouts in 52 ms), so incremental layout is the main
+rendering lever, with per-element style cost the other.

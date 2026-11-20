@@ -183,7 +183,15 @@ linked executable; measured targets and remaining limits are recorded in the
 [performance report](../docs/HACKER_NEWS_JSC_COMPARISON.md).
 
 Fresh unpublished arrays initialize dense own data elements directly; String
-split retains conversion/limit order and UTF-16 boundaries. String storage keeps
+split retains conversion/limit order and UTF-16 boundaries. Array elements stay
+numeric keys in the ordinary property vector, but lookups use the array
+invariants (`array_element_lookup.v`): an index at or above the length is absent,
+element i is found at position i when it is stored there, and an array without
+appended non-index keys answers name and symbol misses without scanning. Push,
+index reads and method reads on large arrays are no longer linear in the length.
+Unlike ordinary objects, whose hints tolerate direct edits of the public property
+vector, an array's vector must change through the object methods (as for
+`IndexedProperties` owners). String storage keeps
 rare unchecked-byte/IPC metadata in an owned optional payload, reducing the
 current 64-bit UTF16 record from 112 to 48 bytes without changing code units,
 raw bytes, IPC storage form or independent clone ownership. Native calls,
