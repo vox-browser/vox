@@ -14,8 +14,16 @@ const style_pass_diagnostics = os.getenv('VOX_STYLE_PASS_DIAGNOSTICS') != ''
 __global style_pass_counts [10]u64
 // Changed properties that required a relayout or a layout tree rebuild.
 __global style_pass_layout_properties map[string]int
+// One serialized old -> new change per counted property and pass.
+__global style_pass_property_examples map[string]string
 
-fn note_style_pass_property(property_id PropertyID, invalidation RequiredInvalidationAfterStyleChange) {
+fn style_pass_value_text(value ?&dom.StyleValue) string {
+	raw := value or { return '(none)' }
+	typed := typed_style_value_logic_from_dom(raw) or { return '(untyped)' }
+	return serialize_dom_style_value(typed).limit(40)
+}
+
+fn note_style_pass_property(property_id PropertyID, invalidation RequiredInvalidationAfterStyleChange, old_value ?&dom.StyleValue, new_value ?&dom.StyleValue) {
 	kind := if invalidation.needs_layout_tree_rebuild() {
 		'tree'
 	} else if invalidation.needs_relayout() {
@@ -23,7 +31,11 @@ fn note_style_pass_property(property_id PropertyID, invalidation RequiredInvalid
 	} else {
 		return
 	}
-	style_pass_layout_properties['${kind}:${string_from_property_id(property_id)}']++
+	key := '${kind}:${string_from_property_id(property_id)}'
+	style_pass_layout_properties[key]++
+	if key !in style_pass_property_examples {
+		style_pass_property_examples[key] = '${style_pass_value_text(old_value)}->${style_pass_value_text(new_value)}'
+	}
 }
 
 @[inline]
@@ -46,8 +58,9 @@ fn report_style_pass(document &dom.Document, started u64) {
 		keys.sort_with_compare(fn (a &string, b &string) int {
 			return style_pass_layout_properties[*b] - style_pass_layout_properties[*a]
 		})
-		eprintln('VOX_STYLE_PASS_PROPERTIES ${keys#[..12].map('${it}=${style_pass_layout_properties[it]}').join(',')}')
+		eprintln('VOX_STYLE_PASS_PROPERTIES ${keys#[..12].map('${it}=${style_pass_layout_properties[it]} [${style_pass_property_examples[it]}]').join(',')}')
 		style_pass_layout_properties.clear()
+		style_pass_property_examples.clear()
 	}
 	style_pass_counts = [10]u64{}
 }
