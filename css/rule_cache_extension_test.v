@@ -141,7 +141,7 @@ fn test_appended_sheets_extend_the_rule_cache_like_a_complete_build() {
 	assert extended.contains('size_queries=true')
 }
 
-fn test_layers_insertions_and_other_invalidations_build_completely() {
+fn test_layered_appends_extend_and_insertions_or_other_invalidations_build_completely() {
 	mut document, head := extension_document()
 	defer { document.finalize() }
 	first := extension_add_sheet(document, head, '.a{color:red}')
@@ -149,11 +149,14 @@ fn test_layers_insertions_and_other_invalidations_build_completely() {
 	scope.build_rule_cache_if_needed()
 	before := rule_cache_extension_count()
 
-	// Layer order belongs to the whole cache.
-	extension_add_sheet(document, head, '@layer base{.l{color:red}}')
+	// Layered rules join by layer name, and the layer order is taken again
+	// from every sheet, as a complete build does.
+	extension_add_sheet(document, head, '@layer base{.l{color:red}} @layer theme, base; @layer theme{.t{color:blue}}')
 	scope.build_rule_cache_if_needed()
-	assert rule_cache_extension_count() == before
-	assert extension_snapshot(scope) == extension_complete_build(mut scope)
+	assert rule_cache_extension_count() == before + 1
+	layered := extension_snapshot(scope)
+	assert layered.contains("layers=['theme', 'base', '']") || layered.any(it.starts_with('layers=') && it.contains('theme') && it.contains('base'))
+	assert layered == extension_complete_build(mut scope)
 
 	// A sheet before the existing ones changes their cascade positions.
 	earlier := extension_style(document, '.e{color:red}')
@@ -161,20 +164,20 @@ fn test_layers_insertions_and_other_invalidations_build_completely() {
 	head_node.insert_before(earlier.as_node(), first.as_node(), false)
 	assert extension_author_sheets(scope) == 4
 	scope.build_rule_cache_if_needed()
-	assert rule_cache_extension_count() == before
+	assert rule_cache_extension_count() == before + 1
 	assert extension_snapshot(scope) == extension_complete_build(mut scope)
 
 	// Any other invalidation after an append discards the kept cache.
 	extension_add_sheet(document, head, '.z{color:red}')
 	scope.invalidate_rule_cache()
 	scope.build_rule_cache_if_needed()
-	assert rule_cache_extension_count() == before
+	assert rule_cache_extension_count() == before + 1
 	assert extension_snapshot(scope) == extension_complete_build(mut scope)
 
 	// Two appends before the next build extend once.
 	extension_add_sheet(document, head, '.y{color:red}')
 	extension_add_sheet(document, head, '.x{color:red}')
 	scope.build_rule_cache_if_needed()
-	assert rule_cache_extension_count() == before + 1
+	assert rule_cache_extension_count() == before + 2
 	assert extension_snapshot(scope) == extension_complete_build(mut scope)
 }

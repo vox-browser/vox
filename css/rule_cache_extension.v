@@ -73,12 +73,13 @@ pub fn (mut scope StyleScope) invalidate_rule_cache_for_appended_sheet() {
 	scope.extendable_rule_cache_ = extendable
 }
 
-// Whether `rules` can join the caches after the existing sheets. Layer
-// declarations and imports can change the order of named layers, which the
-// whole cache depends on.
+// Whether `rules` can join the caches after the existing sheets. Imported
+// sheets load and change on their own schedule; they keep the complete build.
+// Layered rules can join: their caches are kept by layer name, and the
+// extension orders the names again from every sheet.
 fn rule_cache_rules_append_cleanly(rules &CSSRuleList) bool {
 	for rule in rules.rules {
-		if rule.type_ in [.layer_block, .layer_statement, .import_rule] { return false }
+		if rule.type_ == .import_rule { return false }
 		if children := rule.css_rules() {
 			if !rule_cache_rules_append_cleanly(children) { return false }
 		}
@@ -94,10 +95,10 @@ struct RuleCacheExtensionSheets {
 	first    int
 }
 
-fn (scope &StyleScope) extension_sheets(saved &ExtendableRuleCache) ?RuleCacheExtensionSheets {
-	document := scope.document() or { return none }
+fn (scope &StyleScope) extension_sheets(saved &ExtendableRuleCache) !RuleCacheExtensionSheets {
+	document := scope.document() or { return error('no document') }
 	if saved.font_policy != document.font_rendering_policy() || saved.quirks != document.in_quirks_mode() {
-		return none
+		return error('environment')
 	}
 	sheets := scope.stylesheets_for_cascade_origin(.author)
 	mut previous := saved.author_sheets.clone()
@@ -109,13 +110,13 @@ fn (scope &StyleScope) extension_sheets(saved &ExtendableRuleCache) ?RuleCacheEx
 		previous.delete_last()
 		current.delete_last()
 	}
-	if current.len < previous.len { return none }
+	if current.len < previous.len { return error('fewer sheets') }
 	for index, sheet in previous {
-		if voidptr(current[index]) != voidptr(sheet) { return none }
+		if voidptr(current[index]) != voidptr(sheet) { return error('sheet ${index} of ${previous.len} changed') }
 	}
 	appended := current[previous.len..].clone()
 	for sheet in appended {
-		if !rule_cache_rules_append_cleanly(sheet.rules) { return none }
+		if !rule_cache_rules_append_cleanly(sheet.rules) { return error('import') }
 	}
 	return RuleCacheExtensionSheets{
 		all:      sheets
@@ -132,7 +133,7 @@ fn (mut scope StyleScope) extend_rule_cache() bool {
 	scope.extendable_rule_cache_ = unsafe { nil }
 	extension := scope.extension_sheets(saved) or {
 		if rule_cache_extension_diagnostics {
-			eprintln('VOX_RULE_CACHE_EXTENSION rejected author_sheets=${saved.author_sheets.len}')
+			eprintln('VOX_RULE_CACHE_EXTENSION rejected author_sheets=${saved.author_sheets.len} reason=${err.msg()}')
 		}
 		return false
 	}
@@ -140,7 +141,6 @@ fn (mut scope StyleScope) extend_rule_cache() bool {
 	appended := extension.appended
 	previous := saved.cache
 	scope.rule_cache_font_policy_ = saved.font_policy
-	scope.qualified_layer_names_in_order = previous.qualified_layer_names_in_order.clone()
 	scope.selector_insights = previous.selector_insights
 	scope.pseudo_class_rule_cache = previous.pseudo_class_rule_cache.clone()
 	scope.style_invalidation_data = previous.style_invalidation_data
@@ -150,9 +150,10 @@ fn (mut scope StyleScope) extend_rule_cache() bool {
 	scope.has_size_container_queries = previous.has_size_container_queries
 	scope.build_user_style_sheet_if_needed()
 	scope.cache_rules_of_sheets(.author, previous.selector_insights, appended, uint(extension.first))
+	scope.build_qualified_layer_names_cache()
 	mut cache := &StyleCache{
 		function_rules_by_name:         previous.function_rules_by_name.clone()
-		qualified_layer_names_in_order: previous.qualified_layer_names_in_order.clone()
+		qualified_layer_names_in_order: scope.qualified_layer_names_in_order.clone()
 		selector_insights:              previous.selector_insights
 		pseudo_class_rule_cache:        scope.pseudo_class_rule_cache.clone()
 		style_invalidation_data:        previous.style_invalidation_data
