@@ -554,6 +554,7 @@ pub fn (mut scope StyleScope) style_sheet_list() &StyleSheetList {
 pub fn (mut scope StyleScope) invalidate_rule_cache() {
 	scope.extendable_rule_cache_ = unsafe { nil }
 	scope.rule_cache_author_sheets_ = []&CSSStyleSheet{}
+	scope.rule_cache_author_sheet_indexes_ = []uint{}
 	scope.adopted_user_agent_only_shadow_cache_ = unsafe { nil }
 	scope.invalidate_counter_style_cache()
 	scope.rule_cache = none
@@ -800,18 +801,24 @@ fn style_scope_cache_keyframes_rule(context voidptr, rule &CSSRule) {
 
 pub fn (mut scope StyleScope) make_rule_cache_for_cascade_origin(cascade_origin CascadeOrigin, insights &SelectorInsights) {
 	sheets := scope.stylesheets_for_cascade_origin(cascade_origin)
-	scope.cache_rules_of_sheets(cascade_origin, insights, sheets, 0)
-	if cascade_origin == .author { scope.rule_cache_author_sheets_ = sheets }
+	// Only the order of sheet indexes matters to the cascade. A stride leaves
+	// room for sheets that rule_cache_extension.v inserts between them.
+	indexes := rule_cache_strided_indexes(sheets.len)
+	scope.cache_rules_of_sheets(cascade_origin, insights, sheets, indexes)
+	if cascade_origin == .author {
+		scope.rule_cache_author_sheets_ = sheets
+		scope.rule_cache_author_sheet_indexes_ = indexes
+	}
 }
 
-// Adds the rules of `sheets`, which follow `first_index` earlier sheets of the
-// origin in cascade order, to the origin's caches.
-fn (mut scope StyleScope) cache_rules_of_sheets(cascade_origin CascadeOrigin, insights &SelectorInsights, sheets []&CSSStyleSheet, first_index uint) {
+// Adds the rules of `sheets`, whose cascade-order sheet indexes are `indexes`,
+// to the origin's caches.
+fn (mut scope StyleScope) cache_rules_of_sheets(cascade_origin CascadeOrigin, insights &SelectorInsights, sheets []&CSSStyleSheet, indexes []uint) {
 	fold_id_and_class_name_case := if document := scope.document() { document.in_quirks_mode() } else { false }
 	mut mutable_insights := unsafe { &SelectorInsights(insights) }
 
-	mut style_sheet_index := first_index
-	for sheet in sheets {
+	for position, sheet in sheets {
+		style_sheet_index := indexes[position]
 		mut rule_caches := scope.rule_caches_for_origin_mut(cascade_origin) or { continue }
 		mut context := RuleCacheBuildContext{
 			scope: &scope
@@ -826,7 +833,6 @@ fn (mut scope StyleScope) cache_rules_of_sheets(cascade_origin CascadeOrigin, in
 
 		// Loosely based on https://drafts.csswg.org/css-animations-2/#keyframe-processing
 		sheet.for_each_effective_rule_with_context(.preorder, voidptr(rule_caches.main), style_scope_cache_keyframes_rule)
-		style_sheet_index++
 	}
 }
 

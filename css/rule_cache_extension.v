@@ -3,38 +3,48 @@ module css
 import dom
 import os
 
-// Appending a style sheet used to rebuild every rule cache of the document:
-// each selector of every author, user and user-agent sheet was indexed and its
+// Adding a style sheet used to rebuild every rule cache of the document: each
+// selector of every author, user and user-agent sheet was indexed and its
 // invalidation sets built again. Pages that add sheets after the first style
-// pass (GitHub inserts two more after about 7,000 rules) paid that each time.
+// pass (GitHub inserts two more among about 7,000 rules) paid that each time.
 //
-// Every structure the build fills is append-only: rule buckets, the
-// pseudo-subject index, disjunctive subject masks, keyframes, invalidation
-// plans and selector insights. A build that adds the new sheets' rules after
-// those of the sheets before them therefore produces the same caches as a
-// complete one. The appending invalidation still clears the scope's caches,
+// Every structure the build fills is additive: rule buckets, the pseudo-subject
+// index, disjunctive subject masks, invalidation plans and selector insights.
+// Matching sorts its candidates by specificity, scope proximity, sheet index
+// and rule index, so the position of a rule in a bucket does not matter, only
+// the order of the sheet indexes. Complete builds number the author sheets
+// with a stride; sheets inserted between kept ones take indexes in the gap.
+// Keyframes and function definitions instead depend on processing order, so
+// an inserted sheet defining them before a kept sheet with rules keeps the
+// complete build. The adding invalidation still clears the scope's caches,
 // so readers that consult them without building see none in between, and
-// keeps the published cache aside. The next build extends that cache when the
-// author sheets it holds are an unchanged prefix of the current ones and no
-// other invalidation happened since; otherwise it builds everything again.
+// keeps the published cache aside. The next build extends it when the kept
+// author sheets are all still present in the same order and no other
+// invalidation happened since; otherwise it builds everything again.
 const disable_rule_cache_extension = os.getenv('VOX_DISABLE_RULE_CACHE_EXTENSION') != ''
 const rule_cache_extension_diagnostics = os.getenv('VOX_RULE_CACHE_EXTENSION_DIAGNOSTICS') != ''
 
 __global rule_cache_extensions u64
 
+// The sheet index distance between consecutive sheets of a complete build.
+const rule_cache_sheet_index_stride = uint(4096)
+
 @[heap]
 struct ExtendableRuleCache {
 	cache         &StyleCache = unsafe { nil }
 	author_sheets []&CSSStyleSheet
+	sheet_indexes []uint
 	font_policy   dom.FontRenderingPolicy
 	quirks        bool
-	// The document's author sheets end with its view-transition sheet, which
-	// is empty outside a transition. Sheets in tree order precede it.
-	trailing_empty bool
 }
 
 fn rule_cache_sheet_is_empty(sheet &CSSStyleSheet) bool {
 	return sheet.rules.length() == 0
+}
+
+// Starts at one stride, leaving room before the first sheet as well.
+fn rule_cache_strided_indexes(count int) []uint {
+	return []uint{len: count, init: uint(index + 1) * rule_cache_sheet_index_stride}
 }
 
 // Rule caches extended with appended sheets in this process (tests and diagnostics).
@@ -56,13 +66,12 @@ pub fn (mut scope StyleScope) invalidate_rule_cache_for_appended_sheet() {
 			if node := scope.node {
 				if node.as_shadow_root() == none && scope.adopted_user_agent_only_shadow_cache_ == unsafe { nil } {
 					if document := scope.document() {
-						sheets := scope.rule_cache_author_sheets_
 						extendable = &ExtendableRuleCache{
-							cache:          cache
-							author_sheets:  sheets
-							font_policy:    scope.rule_cache_font_policy_
-							quirks:         document.in_quirks_mode()
-							trailing_empty: sheets.len > 0 && rule_cache_sheet_is_empty(sheets.last())
+							cache:         cache
+							author_sheets: scope.rule_cache_author_sheets_
+							sheet_indexes: scope.rule_cache_author_sheet_indexes_
+							font_policy:   scope.rule_cache_font_policy_
+							quirks:        document.in_quirks_mode()
 						}
 					}
 				}
@@ -73,26 +82,32 @@ pub fn (mut scope StyleScope) invalidate_rule_cache_for_appended_sheet() {
 	scope.extendable_rule_cache_ = extendable
 }
 
-// Whether `rules` can join the caches after the existing sheets. Imported
+// What an added sheet contains that the extension must handle. Imported
 // sheets load and change on their own schedule; they keep the complete build.
 // Layered rules can join: their caches are kept by layer name, and the
 // extension orders the names again from every sheet.
-fn rule_cache_rules_append_cleanly(rules &CSSRuleList) bool {
-	for rule in rules.rules {
-		if rule.type_ == .import_rule { return false }
-		if children := rule.css_rules() {
-			if !rule_cache_rules_append_cleanly(children) { return false }
-		}
-	}
-	return true
+struct RuleCacheSheetContents {
+mut:
+	imports              bool
+	order_dependent_defs bool
 }
 
-// The current author sheets and those of them to add, or none when the kept
-// cache cannot be extended to them.
+fn rule_cache_scan_rules(rules &CSSRuleList, mut contents RuleCacheSheetContents) {
+	for rule in rules.rules {
+		if rule.type_ == .import_rule { contents.imports = true }
+		if rule.type_ in [.keyframes, .function_rule] { contents.order_dependent_defs = true }
+		if children := rule.css_rules() {
+			rule_cache_scan_rules(children, mut contents)
+		}
+	}
+}
+
+// The current author sheets with their indexes, and the added ones.
 struct RuleCacheExtensionSheets {
-	all      []&CSSStyleSheet
-	appended []&CSSStyleSheet
-	first    int
+	all           []&CSSStyleSheet
+	indexes       []uint
+	added         []&CSSStyleSheet
+	added_indexes []uint
 }
 
 fn (scope &StyleScope) extension_sheets(saved &ExtendableRuleCache) !RuleCacheExtensionSheets {
@@ -100,28 +115,60 @@ fn (scope &StyleScope) extension_sheets(saved &ExtendableRuleCache) !RuleCacheEx
 	if saved.font_policy != document.font_rendering_policy() || saved.quirks != document.in_quirks_mode() {
 		return error('environment')
 	}
+	if saved.sheet_indexes.len != saved.author_sheets.len { return error('no indexes') }
 	sheets := scope.stylesheets_for_cascade_origin(.author)
-	mut previous := saved.author_sheets.clone()
-	mut current := sheets.clone()
-	// An empty last sheet that stays last and empty contributes no rules, so
-	// the sheets inserted before it extend the cache as appended ones.
-	if saved.trailing_empty && previous.len > 0 && current.len > 0
-		&& voidptr(previous.last()) == voidptr(current.last()) && rule_cache_sheet_is_empty(current.last()) {
-		previous.delete_last()
-		current.delete_last()
+	mut indexes := []uint{len: sheets.len}
+	mut added := []&CSSStyleSheet{}
+	mut added_indexes := []uint{}
+	// Every kept sheet must still be there, in order. Each run of added sheets
+	// takes evenly spaced indexes between its kept neighbours.
+	mut kept := 0
+	mut position := 0
+	for position < sheets.len {
+		if kept < saved.author_sheets.len && voidptr(sheets[position]) == voidptr(saved.author_sheets[kept]) {
+			indexes[position] = saved.sheet_indexes[kept]
+			kept++
+			position++
+			continue
+		}
+		run_start := position
+		for position < sheets.len && (kept >= saved.author_sheets.len
+			|| voidptr(sheets[position]) != voidptr(saved.author_sheets[kept])) {
+			position++
+		}
+		run := sheets[run_start..position]
+		low := if kept > 0 { i64(saved.sheet_indexes[kept - 1]) } else { i64(-1) }
+		at_end := kept >= saved.author_sheets.len
+		step := if at_end {
+			i64(rule_cache_sheet_index_stride)
+		} else {
+			(i64(saved.sheet_indexes[kept]) - low) / i64(run.len + 1)
+		}
+		if step < 1 { return error('no index space') }
+		mut order_dependent_after := false
+		if !at_end {
+			for later in saved.author_sheets[kept..] {
+				if !rule_cache_sheet_is_empty(later) { order_dependent_after = true; break }
+			}
+		}
+		for offset, sheet in run {
+			mut contents := RuleCacheSheetContents{}
+			rule_cache_scan_rules(sheet.rules, mut contents)
+			if contents.imports { return error('import') }
+			if contents.order_dependent_defs && order_dependent_after { return error('keyframes or function') }
+			index := low + i64(offset + 1) * step
+			if index < 0 || index > i64(max_u32) { return error('no index space') }
+			indexes[run_start + offset] = uint(index)
+			added << sheet
+			added_indexes << uint(index)
+		}
 	}
-	if current.len < previous.len { return error('fewer sheets') }
-	for index, sheet in previous {
-		if voidptr(current[index]) != voidptr(sheet) { return error('sheet ${index} of ${previous.len} changed') }
-	}
-	appended := current[previous.len..].clone()
-	for sheet in appended {
-		if !rule_cache_rules_append_cleanly(sheet.rules) { return error('import') }
-	}
+	if kept != saved.author_sheets.len { return error('kept sheet missing') }
 	return RuleCacheExtensionSheets{
-		all:      sheets
-		appended: appended
-		first:    previous.len
+		all:           sheets
+		indexes:       indexes
+		added:         added
+		added_indexes: added_indexes
 	}
 }
 
@@ -138,7 +185,7 @@ fn (mut scope StyleScope) extend_rule_cache() bool {
 		return false
 	}
 	sheets := extension.all
-	appended := extension.appended
+	appended := extension.added
 	previous := saved.cache
 	scope.rule_cache_font_policy_ = saved.font_policy
 	scope.selector_insights = previous.selector_insights
@@ -149,7 +196,7 @@ fn (mut scope StyleScope) extend_rule_cache() bool {
 	scope.user_agent_rule_cache = previous.user_agent_rule_cache
 	scope.has_size_container_queries = previous.has_size_container_queries
 	scope.build_user_style_sheet_if_needed()
-	scope.cache_rules_of_sheets(.author, previous.selector_insights, appended, uint(extension.first))
+	scope.cache_rules_of_sheets(.author, previous.selector_insights, appended, extension.added_indexes)
 	scope.build_qualified_layer_names_cache()
 	mut cache := &StyleCache{
 		function_rules_by_name:         previous.function_rules_by_name.clone()
@@ -168,6 +215,7 @@ fn (mut scope StyleScope) extend_rule_cache() bool {
 	}
 	scope.rule_cache = cache
 	scope.rule_cache_author_sheets_ = sheets
+	scope.rule_cache_author_sheet_indexes_ = extension.indexes
 	rule_cache_extensions++
 	if rule_cache_extension_diagnostics {
 		eprintln('VOX_RULE_CACHE_EXTENSION extended author_sheets=${saved.author_sheets.len}->${sheets.len}')

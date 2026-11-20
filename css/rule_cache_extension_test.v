@@ -34,13 +34,51 @@ fn extension_author_sheets(scope &StyleScope) int {
 	return scope.stylesheets_for_cascade_origin(.author).len
 }
 
+// Matching sorts candidates by specificity, scope proximity, sheet index and
+// rule index, so a bucket is compared as a set of rules. Sheet indexes are
+// checked separately: they must follow the sheets' cascade order.
 fn extension_rules(label string, rules []&MatchingRule, mut out []string) {
 	mut parts := []string{}
 	for rule in rules {
 		identity := if owner := rule.rule { u64(voidptr(owner)) } else { u64(0) }
-		parts << '${identity}:${rule.style_sheet_index}:${rule.rule_index}:${rule.specificity}:${rule.pseudo_element}:${rule.contains_pseudo_element}'
+		sheet := if owner := rule.sheet { u64(voidptr(owner)) } else { u64(0) }
+		parts << '${identity}:${sheet}:${rule.rule_index}:${rule.specificity}:${rule.pseudo_element}:${rule.contains_pseudo_element}'
 	}
+	parts.sort()
 	out << '${label}=[${parts.join(' ')}]'
+}
+
+fn extension_collect_indexes(cache &RuleCache, mut indexes map[u64]uint) {
+	for rules in [cache.root_rules, cache.other_rules] {
+		for rule in rules { extension_note_index(rule, mut indexes) }
+	}
+	for _, rules in cache.rules_by_id { for rule in rules { extension_note_index(rule, mut indexes) } }
+	for _, rules in cache.rules_by_class { for rule in rules { extension_note_index(rule, mut indexes) } }
+	for _, rules in cache.rules_by_tag_name { for rule in rules { extension_note_index(rule, mut indexes) } }
+	for _, rules in cache.rules_by_attribute_name { for rule in rules { extension_note_index(rule, mut indexes) } }
+}
+
+fn extension_note_index(rule &MatchingRule, mut indexes map[u64]uint) {
+	sheet := rule.sheet or { return }
+	key := u64(voidptr(sheet))
+	if existing := indexes[key] {
+		assert existing == rule.style_sheet_index, 'one index per sheet'
+	}
+	indexes[key] = rule.style_sheet_index
+}
+
+// Every author sheet's rules carry one index, increasing in cascade order.
+fn extension_check_index_order(scope &StyleScope) {
+	cache := scope.rule_cache or { panic('no rule cache') }
+	mut indexes := map[u64]uint{}
+	extension_collect_indexes(cache.author_rule_cache.main, mut indexes)
+	for _, layer in cache.author_rule_cache.by_layer { extension_collect_indexes(layer, mut indexes) }
+	mut last := i64(-1)
+	for sheet in scope.stylesheets_for_cascade_origin(.author) {
+		index := indexes[u64(voidptr(sheet))] or { continue }
+		assert i64(index) > last, 'sheet indexes follow cascade order'
+		last = i64(index)
+	}
 }
 
 fn extension_bucket_map(label string, buckets map[string][]&MatchingRule, mut out []string) {
@@ -116,6 +154,7 @@ fn extension_snapshot(scope &StyleScope) []string {
 }
 
 fn extension_complete_build(mut scope StyleScope) []string {
+	extension_check_index_order(scope)
 	scope.invalidate_rule_cache()
 	scope.build_rule_cache_if_needed()
 	return extension_snapshot(scope)
@@ -141,7 +180,7 @@ fn test_appended_sheets_extend_the_rule_cache_like_a_complete_build() {
 	assert extended.contains('size_queries=true')
 }
 
-fn test_layered_appends_extend_and_insertions_or_other_invalidations_build_completely() {
+fn test_layered_and_inserted_sheets_extend_and_other_invalidations_build_completely() {
 	mut document, head := extension_document()
 	defer { document.finalize() }
 	first := extension_add_sheet(document, head, '.a{color:red}')
@@ -158,26 +197,40 @@ fn test_layered_appends_extend_and_insertions_or_other_invalidations_build_compl
 	assert layered.contains("layers=['theme', 'base', '']") || layered.any(it.starts_with('layers=') && it.contains('theme') && it.contains('base'))
 	assert layered == extension_complete_build(mut scope)
 
-	// A sheet before the existing ones changes their cascade positions.
-	earlier := extension_style(document, '.e{color:red}')
+	// A sheet before the existing ones takes an index below theirs.
+	earlier := extension_style(document, '.e{color:red} .a{color:blue}')
 	mut head_node := head.as_node()
 	head_node.insert_before(earlier.as_node(), first.as_node(), false)
 	assert extension_author_sheets(scope) == 4
 	scope.build_rule_cache_if_needed()
-	assert rule_cache_extension_count() == before + 1
+	assert rule_cache_extension_count() == before + 2
+	assert extension_snapshot(scope) == extension_complete_build(mut scope)
+
+	// One between two kept sheets, after a complete build.
+	between := extension_style(document, '.a{color:green} li{margin:0}')
+	head_node.insert_before(between.as_node(), first.as_node(), false)
+	scope.build_rule_cache_if_needed()
+	assert rule_cache_extension_count() == before + 3
+	assert extension_snapshot(scope) == extension_complete_build(mut scope)
+
+	// Keyframes inserted before a kept sheet with rules depend on processing order.
+	keyframes := extension_style(document, '@keyframes k{from{opacity:0}}')
+	head_node.insert_before(keyframes.as_node(), first.as_node(), false)
+	scope.build_rule_cache_if_needed()
+	assert rule_cache_extension_count() == before + 3
 	assert extension_snapshot(scope) == extension_complete_build(mut scope)
 
 	// Any other invalidation after an append discards the kept cache.
 	extension_add_sheet(document, head, '.z{color:red}')
 	scope.invalidate_rule_cache()
 	scope.build_rule_cache_if_needed()
-	assert rule_cache_extension_count() == before + 1
+	assert rule_cache_extension_count() == before + 3
 	assert extension_snapshot(scope) == extension_complete_build(mut scope)
 
 	// Two appends before the next build extend once.
 	extension_add_sheet(document, head, '.y{color:red}')
 	extension_add_sheet(document, head, '.x{color:red}')
 	scope.build_rule_cache_if_needed()
-	assert rule_cache_extension_count() == before + 2
+	assert rule_cache_extension_count() == before + 4
 	assert extension_snapshot(scope) == extension_complete_build(mut scope)
 }

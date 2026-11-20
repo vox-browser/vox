@@ -11159,6 +11159,7 @@ mut:
 	// rule_cache_extension.v: the author sheets the rule cache holds, and the
 	// cache that only appended sheets have invalidated since.
 	rule_cache_author_sheets_ []&CSSStyleSheet
+	rule_cache_author_sheet_indexes_ []uint
 	extendable_rule_cache_ &ExtendableRuleCache = unsafe { nil }
 }
 
