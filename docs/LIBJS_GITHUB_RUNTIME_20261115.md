@@ -10413,3 +10413,40 @@ style sharing cache for repeated rows is the structural option), the
 height of incremental relayout roots under measured flex and grid items,
 the first automatic-height call of a stretched flex item (it never matches
 the item's last record), and the per-pass renderer adapter.
+
+## Style sheet rule caches and animated images, 2026-11-20 night
+
+A sampled JavaScriptCore load put 86 of 347 style samples in rule cache
+builds: each of the two sheets GitHub inserts after its first style pass
+rebuilt the caches for about 7,000 rules, 69% of it building invalidation
+sets. Matching sorts its candidates by specificity, scope proximity, sheet
+index and rule index, and every structure a build fills is additive, so the
+document cache can be extended instead (`css/rule_cache_extension.v`):
+
+| Commit | Change | Measured |
+| --- | --- | --- |
+| `b275d7572`, `68d7cb6db`, `53c713ef0` | Adding a sheet keeps the published document cache aside; the next build adds the new sheets' rules when every kept sheet is still present in order and no other invalidation happened. Complete builds number sheets with a stride of 4,096 and inserted sheets take indexes in the gaps; layered sheets join and the layer order is read again; imports, and keyframes or functions inserted before a kept sheet with rules, keep the complete build. Control `VOX_DISABLE_RULE_CACHE_EXTENSION=1`. | Both later GitHub sheets extend (26 -> 27 -> 28). Three stage-logged alternating rounds: `style_rule_cache` 0.984 -> 0.342 billion instructions in every round. The faster style pass shifts the page's frame schedule (92-93 layouts against 97-108, four full text paints against five or six), so whole-load totals in two cohorts were within the page's variation. |
+| `ae8e869f6` | Animated image frames repaint through the paint transport instead of marking the image box for layout. Control `VOX_RELAYOUT_ON_EVERY_IMAGE_DECODE=1`. | No animated images on this page; one layout pass per frame removed on pages with animated GIF or WebP images. |
+
+The rule cache test compares every bucket (as a set keyed by rule and
+sheet), the pseudo-subject index, subject masks, keyframes, invalidation
+plans, insights, function definitions and layer order of an extended cache
+with a complete build, and checks that sheet indexes follow cascade order;
+the image test checks the shown frame's bitmap on the paint command.
+
+**Page result after the layout, style and rule cache rounds.** Bundle
+`8be37a6bc450…` (`ae8e869f6`), round 6's grouped LibJS cache reseeded for
+the new executable, three alternating rounds at loads of 6-9, all nine
+visits valid:
+
+| Three alternating rounds, `8be37a6bc450…` | Median launch to PNG | Median observed instructions |
+| --- | ---: | ---: |
+| Vox with compiled LibJS | 3,402 ms | 40.44 billion |
+| Vox with JavaScriptCore | 2,863 ms | 26.80 billion |
+| Brave with V8 | 1,979 ms | 20.34 billion |
+
+Against round 6 (`fe01881e6f67…`: 3,667 ms / 40.90, 3,132 ms / 28.44,
+2,043 ms / 20.54 billion), the rendering work brought the JavaScriptCore
+load from 28.44 to 26.80 billion instructions. Compiled LibJS still runs
+13.6 billion more instructions than JavaScriptCore on the same rendering,
+which is now the largest part of the gap to Brave.
