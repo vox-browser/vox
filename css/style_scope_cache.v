@@ -2094,33 +2094,72 @@ fn style_scope_filter_namespace_rule(element_namespace_uri ?string, rule &Matchi
 	return true
 }
 
-fn style_scope_add_rule_to_run(style_computer &StyleComputer, abstract_element dom.AbstractElement, rule_to_run &MatchingRule, rule_root ?&dom.ShadowRoot, shadow_root ?&dom.ShadowRoot, element_shadow_root ?&dom.ShadowRoot, mut rules_to_run []ScopedMatchingRule) {
-	// FIXME: This needs to be revised when adding support for the ::shadow
-	// selector, as it needs to cross shadow boundaries.
-	from_user_agent_or_user_stylesheet := rule_to_run.cascade_origin == .user_agent || rule_to_run.cascade_origin == .user
-
-	// NOTE: Inside shadow trees, we only match rules that are defined in the
-	// shadow tree's style sheets. Exceptions are:
-	// - the shadow tree's shadow host, which needs to match :host rules from
-	//   inside the shadow root.
-	// - ::slotted() rules, which need to match elements assigned to slots from
-	//   inside the shadow root.
-	// - UA or User style sheets don't have a scope, so they are always relevant.
-	mut rule_is_relevant_for_current_scope := style_scope_optional_shadow_root_equal(rule_root, shadow_root)
+// NOTE: Inside shadow trees, we only match rules that are defined in the
+// shadow tree's style sheets. Exceptions are:
+// - the shadow tree's shadow host, which needs to match :host rules from
+//   inside the shadow root.
+// - ::slotted() rules, which need to match elements assigned to slots from
+//   inside the shadow root.
+// - UA or User style sheets don't have a scope, so they are always relevant.
+// The part that depends only on the roots, the same for a whole bucket.
+fn style_scope_rule_root_is_relevant(rule_root ?&dom.ShadowRoot, shadow_root ?&dom.ShadowRoot, element_shadow_root ?&dom.ShadowRoot) bool {
+	if style_scope_optional_shadow_root_equal(rule_root, shadow_root) {
+		return true
+	}
 	if shadow_root_for_element := element_shadow_root {
-		rule_is_relevant_for_current_scope = rule_is_relevant_for_current_scope || style_scope_optional_shadow_root_equal(rule_root, shadow_root_for_element)
+		if style_scope_optional_shadow_root_equal(rule_root, shadow_root_for_element) {
+			return true
+		}
 	}
-	rule_is_relevant_for_current_scope = rule_is_relevant_for_current_scope || from_user_agent_or_user_stylesheet || rule_to_run.slotted || rule_to_run.contains_part_pseudo_element
 	if root := shadow_root {
-		rule_is_relevant_for_current_scope = rule_is_relevant_for_current_scope || (style_scope_shadow_root_is_none(rule_root) && root.uses_document_style_sheets())
+		return style_scope_shadow_root_is_none(rule_root) && root.uses_document_style_sheets()
 	}
+	return false
+}
 
-	if !rule_is_relevant_for_current_scope {
+// FIXME: This needs to be revised when adding support for the ::shadow
+// selector, as it needs to cross shadow boundaries.
+@[inline]
+fn style_scope_rule_is_relevant_for_scope(rule &MatchingRule, root_is_relevant bool) bool {
+	return root_is_relevant || rule.cascade_origin == .user_agent || rule.cascade_origin == .user
+		|| rule.slotted || rule.contains_part_pseudo_element
+}
+
+// should_reject_with_ancestor_filter() for a candidate, reading the selector's
+// retained hashes in place. Quirks mode folds id and class case first.
+@[inline]
+fn (s &StyleComputer) rejects_rule_with_ancestor_filter(rule &MatchingRule, quirks bool) bool {
+	data := rule.selector.data_
+	if quirks || data == unsafe { nil } || s.ancestor_filter_.buckets.len != counting_bloom_filter_bucket_count {
+		selector := rule.selector
+		return selector.can_use_ancestor_filter() && s.should_reject_with_ancestor_filter(selector)
+	}
+	if !data.can_use_ancestor_filter {
+		return false
+	}
+	buckets := s.ancestor_filter_.buckets
+	for index in 0 .. selector_ancestor_hash_count {
+		hash := data.ancestor_hashes[index]
+		if hash == 0 {
+			break
+		}
+		if unsafe { buckets[int(hash & counting_bloom_filter_key_mask)] } == 0
+			|| unsafe { buckets[int((hash >> 16) & counting_bloom_filter_key_mask)] } == 0 {
+			return true
+		}
+	}
+	return false
+}
+
+fn (s &StyleComputer) in_quirks_document() bool {
+	return s.document_ != unsafe { nil } && s.document_.in_quirks_mode()
+}
+
+fn style_scope_add_rule_to_run(style_computer &StyleComputer, abstract_element dom.AbstractElement, rule_to_run &MatchingRule, rule_root ?&dom.ShadowRoot, shadow_root ?&dom.ShadowRoot, element_shadow_root ?&dom.ShadowRoot, mut rules_to_run []ScopedMatchingRule) {
+	if !style_scope_rule_is_relevant_for_scope(rule_to_run, style_scope_rule_root_is_relevant(rule_root, shadow_root, element_shadow_root)) {
 		return
 	}
-
-	selector := rule_to_run.selector
-	if selector.can_use_ancestor_filter() && style_computer.should_reject_with_ancestor_filter(selector) {
+	if style_computer.rejects_rule_with_ancestor_filter(rule_to_run, style_computer.in_quirks_document()) {
 		return
 	}
 
@@ -2162,9 +2201,23 @@ fn style_scope_add_rules_to_run(style_computer &StyleComputer, abstract_element 
 			style_scope_add_rule_to_run(style_computer, abstract_element, rule, rule_root, shadow_root, element_shadow_root, mut rules_to_run)
 		}
 	} else {
+		// style_scope_add_rule_to_run() for each rule, with the checks that
+		// depend only on the roots and document done once for the bucket.
+		root_is_relevant := style_scope_rule_root_is_relevant(rule_root, shadow_root, element_shadow_root)
+		recorded_root := style_scope_mut_shadow_root_option(rule_root)
+		quirks := style_computer.in_quirks_document()
 		for rule in rules {
-			if (rule.slotted || rule.contains_part_pseudo_element || !rule.contains_pseudo_element) && style_scope_filter_namespace_rule(element_namespace_uri, rule) {
-				style_scope_add_rule_to_run(style_computer, abstract_element, rule, rule_root, shadow_root, element_shadow_root, mut rules_to_run)
+			if !rule.slotted && !rule.contains_part_pseudo_element && rule.contains_pseudo_element {
+				continue
+			}
+			if !style_scope_filter_namespace_rule(element_namespace_uri, rule)
+				|| !style_scope_rule_is_relevant_for_scope(rule, root_is_relevant)
+				|| style_computer.rejects_rule_with_ancestor_filter(rule, quirks) {
+				continue
+			}
+			rules_to_run << ScopedMatchingRule{
+				rule: rule
+				shadow_root: recorded_root
 			}
 		}
 	}
