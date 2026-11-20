@@ -10304,3 +10304,16 @@ example 29 `a`, 23 `li` and 13 `div` style changes in a 94 ms pass) and then
 lay out the whole document, as upstream Ladybird does. Blink lays out only
 dirty subtrees (Brave: 19 layouts in 52 ms), so incremental layout is the main
 rendering lever, with per-element style cost the other.
+
+**Array lookups on the page.** Bundle `de068a36652b…` (`1a5138aaa`) with its
+own rebuilt grouped cache (pixel-exact reopen). Other sessions' builds pushed
+one-minute host loads to 36–51 during the five alternating rounds, so wall
+times (LibJS 4.9–11.6 s, Brave 2.4–3.4 s) are not usable; all 15 visits pass
+the audit. Instruction counts compare with the previous bundle: compiled LibJS
+falls from a median 43.21 to 40.86 billion for the whole load, JSC reads
+29.20 billion (29.55 before) and Brave 20.84 billion. Two stage-logged LibJS
+loads put outermost script at 12.30 and 12.38 billion instructions against
+12.86 and 12.97 before, and script execution at 10.01–10.09 against
+10.59–10.68 billion, so the array change removes about 0.55 billion script
+instructions (4.4%); the larger whole-load drop also reflects layout-pass
+variation, which moves JSC's count by about a billion between cohorts.
