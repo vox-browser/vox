@@ -25,6 +25,7 @@ struct BrowserChromeState {
 	tab_titles             []string
 	tab_favicons           []int
 	tab_loading            []bool
+	tab_hibernated         []bool
 	tab_coloring           bool
 	custom_tab_titles      bool
 	tab_colors             []browsertabs.TabColor
@@ -117,6 +118,7 @@ fn (app &BrowserApp) browser_chrome_state(width int, height int) BrowserChromeSt
 		tab_titles:             titles
 		tab_favicons:           app.cached_browser_tab_favicons()
 		tab_loading:            app.browser_tab_loading_states()
+		tab_hibernated:         app.browser_tab_hibernated_states()
 		tab_coloring:           tab_coloring
 		custom_tab_titles:      settings.enable_custom_tab_titles
 		tab_colors:             if tab_coloring { app.browser_tab_colors() } else { []browsertabs.TabColor{} }
