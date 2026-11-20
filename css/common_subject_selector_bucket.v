@@ -12,11 +12,15 @@ fn subject_bucket_name(simple SimpleSelector) ?SimplifiedSelectorForBucketing {
 		.tag_name {
 			SimplifiedSelectorForBucketing{ type_: .tag_name, name: simple.qualified_name().name.lowercase_name }
 		}
-		.attribute {
-			subject_attribute_bucket(simple)
-		}
 		else { none }
 	}
+}
+
+// Also a required attribute name, for the :is()/:where() subject buckets.
+// Disjunctive subject masks keep only class, id and tag names.
+fn common_subject_bucket_name(simple SimpleSelector) ?SimplifiedSelectorForBucketing {
+	if name := subject_bucket_name(simple) { return name }
+	return subject_attribute_bucket(simple)
 }
 
 // A positive class/id/type in every alternative's subject compound is a
@@ -29,7 +33,7 @@ fn common_is_where_subject_bucket(selectors []Selector) ?SimplifiedSelectorForBu
 	if first.len == 0 { return none }
 	subject := first[first.len - 1]
 	for index := subject.simple_selectors.len - 1; index >= 0; index-- {
-		candidate := subject_bucket_name(subject.simple_selectors[index]) or { continue }
+		candidate := common_subject_bucket_name(subject.simple_selectors[index]) or { continue }
 		mut common := true
 		for alternative in selectors[1..] {
 			compounds := alternative.compound_selectors()
@@ -39,7 +43,7 @@ fn common_is_where_subject_bucket(selectors []Selector) ?SimplifiedSelectorForBu
 			}
 			mut found := false
 			for simple in compounds[compounds.len - 1].simple_selectors {
-				other := subject_bucket_name(simple) or { continue }
+				other := common_subject_bucket_name(simple) or { continue }
 				if other.type_ == candidate.type_ && other.name == candidate.name {
 					found = true
 					break
