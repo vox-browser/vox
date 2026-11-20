@@ -37,6 +37,10 @@ fn main() {
 	first_start := time.sys_mono_now()
 	document.update_style()
 	first_ns := time.sys_mono_now() - first_start
+	if mode == 'signatures' {
+		report_matched_rule_signatures(document)
+		return
+	}
 	body := document.body() or { panic('missing body') }
 	mut body_node := unsafe { &dom.Node(body) }
 	mut styled := elements
@@ -73,4 +77,35 @@ fn main() {
 	// With `-d vox_css_diagnostics`, the instruction and call counts per scope.
 	css.report_diagnostic_instruction_scopes()
 	println('mode=${mode} elements=${elements} styled=${styled} first_ms=${f64(first_ns) / 1e6:.1f} passes=${passes} average_ms=${f64(average_ns) / 1e6:.1f} best_ms=${f64(best_ns) / 1e6:.1f} best_us_per_element=${f64(best_ns) / 1e3 / f64(styled):.2f} best_instructions=${best_instructions} instructions_per_element=${best_instructions / u64(styled)}')
+}
+
+// How many elements match exactly the same author, user and user-agent rules
+// (by identity, in cascade order) as an earlier element: the hit rate a cache
+// keyed by matched rules could reach before inline styles and other inputs.
+fn report_matched_rule_signatures(document &dom.Document) {
+	computer := css.css_style_computer_for(document)
+	scope := css.style_scope_for_dom_node(document.as_node())
+	mut seen := map[string]int{}
+	mut total := 0
+	mut with_inline := 0
+	for element in css.query_selector_all(document.as_node(), '*') {
+		abstract := dom.AbstractElement.new(element, none)
+		mut attempted := css.PseudoClassBitmap{}
+		mut matched_pseudo := false
+		set := css.style_computer_build_matching_rule_set_impl(computer, abstract, mut attempted,
+			&matched_pseudo, .normal, scope)
+		mut parts := []string{}
+		for rule in set.user_agent_rules { parts << '${u64(voidptr(rule.rule))}' }
+		parts << '|'
+		for layer in set.author_rules {
+			for rule in layer.rules { parts << '${u64(voidptr(rule.rule))}' }
+			parts << '/'
+		}
+		if element.has_attribute('style') { with_inline++ }
+		seen[parts.join(',')]++
+		total++
+	}
+	mut repeated := 0
+	for _, count in seen { if count > 1 { repeated += count - 1 } }
+	println('signatures elements=${total} distinct=${seen.len} repeats=${repeated} repeat_rate=${f64(repeated) / f64(total):.2f} inline_style=${with_inline}')
 }
