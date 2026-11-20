@@ -2,6 +2,8 @@ module main
 
 import platform
 import browsernet
+import os
+import time
 
 // Resource batches can contain hundreds of jobs. A few workers drain each
 // batch without starting a thread per resource. browsernet additionally owns
@@ -82,11 +84,26 @@ fn fetch_resource_jobs_with_scope(jobs []ResourceFetchJob, source_url string, wa
 	}
 }
 
+// VOX_RESOURCE_FETCH_LOG=PATH appends one JSON line per worker fetch (images,
+// script-inserted stylesheets and other background resources) with
+// wall-clock microseconds, comparable with VOX_CURL_TRANSFER_LOG.
+const resource_fetch_log_path = os.getenv('VOX_RESOURCE_FETCH_LOG')
+
+fn log_resource_fetch(job ResourceFetchJob, started_us i64, resource PreloadedResource) {
+	finished_us := time.now().unix_micro()
+	address := job.url.replace('\\', '\\\\').replace('"', '\\"')
+	failure := resource.error.limit(80).replace('\\', '\\\\').replace('"', '\\"')
+	mut file := os.open_append(resource_fetch_log_path) or { return }
+	defer { file.close() }
+	file.writeln('{"url":"${address}","type":"${job.request_type}","cached":${job.cached.len > 0},"started_us":${started_us},"finished_us":${finished_us},"bytes":${resource.body.len},"error":"${failure}"}') or {}
+}
+
 fn fetch_resource_job(job ResourceFetchJob, source_url string, scope &browsernet.RequestScope) PreloadedResource {
 	// The worker's result outlives the thread. URL, header and transport
 	// workspaces belong to the request that produced it.
 	scratch := platform.begin_thread_scratch('resource fetch request')
 	defer { scratch.finish() }
+	started_us := if resource_fetch_log_path != '' { time.now().unix_micro() } else { i64(0) }
 	resource := resolve_resource_fetch_job(job, source_url, scope) or {
 		PreloadedResource{
 			url: job.url
@@ -95,6 +112,7 @@ fn fetch_resource_job(job ResourceFetchJob, source_url string, scope &browsernet
 			request_type: job.request_type
 		}
 	}
+	if resource_fetch_log_path != '' { log_resource_fetch(job, started_us, resource) }
 	$if prealloc {
 		// Filtering can return the same cache entry. Its original owner
 		// already keeps the immutable result alive after this request.
