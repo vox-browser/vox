@@ -81,6 +81,9 @@ fn (mut loader BrowserScriptRequestLoader) request_parser_script(model &html.HTM
 	resource_url := address.serialize()
 	if resource := loader.resources[resource_url] {
 		filtered := filter_preloaded_resource_with_scope(resource, loader.document.url.serialize(), 'script', scope)!
+		if host := loader.parser_host {
+			host.runtime.preparse_libjs_document_script(resource_url, filtered.body)
+		}
 		mut prepared := unsafe { &html.HTMLScriptElementModel(model) }
 		prepared.complete_external_fetch(filtered.body)
 		return
@@ -225,6 +228,10 @@ fn (mut loader BrowserScriptRequestLoader) poll(runtime &browserjs.Runtime, mut 
 			resource := <-loader.results {
 				loader.active_fetches--
 				loader.fetching.delete(resource.url)
+				// Parse on a worker while earlier scripts run or the parser continues.
+				if resource.error == '' {
+					runtime.preparse_libjs_document_script(resource.url, resource.body)
+				}
 				for mut request in loader.requests {
 					if request.url == resource.url && !request.ready {
 						request.resource = resource
