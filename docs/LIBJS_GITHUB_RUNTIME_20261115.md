@@ -10450,3 +10450,40 @@ Against round 6 (`fe01881e6f67…`: 3,667 ms / 40.90, 3,132 ms / 28.44,
 load from 28.44 to 26.80 billion instructions. Compiled LibJS still runs
 13.6 billion more instructions than JavaScriptCore on the same rendering,
 which is now the largest part of the gap to Brave.
+
+## Where the remaining time goes, and per-element style, 2026-11-20 late
+
+Both browsers' captures wait for the page's ready selector and then a
+one-second settle period, so launch-to-PNG is the time to rendered React
+content plus one second. Thread stage times of one stage-logged load per
+engine (`Vox thread stage time` lines) place readiness at about 2,026 ms
+with JavaScriptCore and 2,870 ms with compiled LibJS (Brave about 980 ms).
+Before readiness the main thread is idle for 337 and 384 ms respectively;
+LibJS reaches readiness later because of about 800 ms more main-thread work
+(script 756 against 424 ms, posted tasks 245 against 23 ms, and more layout
+and style passes interleaved with the slower script). JavaScriptCore runs
+about 340 ms of layout and 250 ms of style after readiness, inside the
+settle second. Most layout passes come from the browser's draw callback,
+not from script; script-forced layout is small.
+
+`tools/benchmark_style_passes.v` styles the frozen page's DOM with its 32
+sheets outside the browser, built like the browser. With thread instruction
+counts: a full style pass costs about 550,000 instructions per element, and
+the first style of inserted content (a deep copy of the body, as script
+inserts rendered content) about 405,000 (27 µs). Matching is 43% of
+`compute_style`, computed values 26% and the cascade 22%; within matching,
+the ancestor-filter checks, compound matching and per-candidate scope
+filtering lead, and the earlier per-layer bucket lookups were a smaller
+share than expected.
+
+| Commit | Change | Measured |
+| --- | --- | --- |
+| `aab5a1d32` | Per-target entry counts let style computations skip the animation storage scan for elements without CSS animations. Control `VOX_DISABLE_ANIMATION_TARGET_COUNTS=1`. | Entries of removed elements are never dropped, so the scan grew without bound; repeated insertion in the benchmark reached 14% of style time. |
+| `693d65d2a` | Author rules are collected once from a cache indexing every layer, then split by layer. Control `VOX_DISABLE_COMBINED_AUTHOR_MATCHING=1`. | 412,000 -> 405,000 instructions per inserted element, 556,000 -> 549,000 per element of a full pass. |
+
+The benchmark's `signatures` mode finds 273 distinct matched-rule sets
+among 2,663 elements: 90% of elements match exactly the rules of an
+earlier element (198 have inline styles). A cascade cache keyed by matched
+rules, presentational hints, inline style, link state and writing mode
+could skip most of the 22% cascade share; that is the next per-element
+style lever.
