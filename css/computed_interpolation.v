@@ -11072,6 +11072,10 @@ pub mut:
 	contains_part_pseudo_element bool
 	scope_rule                   ?&CSSRule
 	container_rule               ?&CSSRule
+	// The RuleCaches entry holding the rule: a named layer's cache
+	// (`in_layer_cache`, keyed by `cache_layer_name`) or the unlayered one.
+	in_layer_cache               bool
+	cache_layer_name             string
 }
 
 // The rule cache owns MatchingRule entries independently of the style scope

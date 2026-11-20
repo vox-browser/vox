@@ -23,12 +23,16 @@ pub struct RuleCaches {
 pub mut:
 	main     &RuleCache = unsafe { nil }
 	by_layer map[string]&RuleCache
+	// Every rule of `main` and `by_layer` in one index, in the same insertion
+	// order (combined_author_matching.v).
+	all &RuleCache = unsafe { nil }
 }
 
 pub fn RuleCaches.new() &RuleCaches {
 	return &RuleCaches{
 		main: RuleCache.new()
 		by_layer: map[string]&RuleCache{}
+		all: RuleCache.new()
 	}
 }
 
@@ -735,6 +739,8 @@ fn style_scope_cache_style_rule(raw_context voidptr, rule &CSSRule) {
 		}
 
 		qualified_layer_name := matching_rule.qualified_layer_name()
+		matching_rule.in_layer_cache = qualified_layer_name.len != 0
+		matching_rule.cache_layer_name = qualified_layer_name
 		mut rule_cache := if qualified_layer_name.len == 0 {
 			rule_caches.main
 		} else {
@@ -792,6 +798,13 @@ fn style_scope_cache_style_rule(raw_context voidptr, rule &CSSRule) {
 
 		rule_cache.add_rule(matching_rule, pseudo_element, contains_root_pseudo_class)
 		rule_cache.index_pseudo_subject_rule(matching_rule, pseudo_element, contains_root_pseudo_class)
+		if rule_caches.all != unsafe { nil } {
+			mut all := rule_caches.all
+			all.fold_id_and_class_name_case = fold_id_and_class_name_case
+			all.disjunctive_subject_masks_trusted_ = true
+			all.add_rule(matching_rule, pseudo_element, contains_root_pseudo_class)
+			all.index_pseudo_subject_rule(matching_rule, pseudo_element, contains_root_pseudo_class)
+		}
 	}
 	context.rule_index++
 }
@@ -1066,6 +1079,10 @@ pub fn (scope &StyleScope) rule_cache_for_cascade_origin(cascade_origin CascadeO
 
 	rule_caches_by_layer := scope.rule_caches_for_origin(cascade_origin) or { return none }
 	if layer_name := qualified_layer_name {
+		if layer_name == all_layers_rule_cache_name {
+			if rule_caches_by_layer.all == unsafe { nil } { return none }
+			return rule_caches_by_layer.all
+		}
 		return rule_caches_by_layer.by_layer[layer_name] or { return none }
 	}
 	return rule_caches_by_layer.main
@@ -2679,6 +2696,10 @@ fn build_matching_rule_set_with_storage(style_computer &StyleComputer, abstract_
 	matching_rule_set.user_rules = collect_matching_rules_with_storage(style_computer, abstract_element, .user, mut attempted_pseudo_class_matches, none, scope, storage)
 	sort_matching_rules(mut matching_rule_set.user_rules)
 
+	if use_combined_author_matching() {
+		collect_author_rules_by_layer(style_computer, abstract_element, mut matching_rule_set,
+			mut attempted_pseudo_class_matches, scope, storage)
+	} else {
 	// @layer-ed author rules
 	for layer_name in scope.qualified_layer_names_in_order {
 		mut layer_rules := collect_matching_rules_with_storage(style_computer, abstract_element, .author, mut attempted_pseudo_class_matches, layer_name, scope, storage)
@@ -2695,6 +2716,7 @@ fn build_matching_rule_set_with_storage(style_computer &StyleComputer, abstract_
 		qualified_layer_name: ''
 		rules: unlayered_author_rules
 	}, storage)
+	}
 
 	if mode == .create_pseudo_element_style_if_needed {
 		mut author_rules_has_any_rules := false
