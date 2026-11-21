@@ -339,8 +339,10 @@ fn try_incremental_relayout(document &dom.Document, root &Node, previous &Layout
 		state.previous_inline_layouts_ = previous.inline_layouts_
 		state.previous_block_layouts_ = previous.block_layouts_
 	}
-	state.block_layouts_ = previous.block_layouts_.clone()
-	state.inline_layouts_ = previous.inline_layouts_.clone()
+	state.block_layouts_ = block_layouts_outside_relayout_roots(previous.block_layouts_, root, roots,
+		skipped)
+	state.inline_layouts_ = inline_layouts_outside_relayout_roots(previous.inline_layouts_, root,
+		roots, skipped)
 	state.text_control_layouts_ = previous.text_control_layouts_.clone()
 	state.relayout_records_ = previous.relayout_records_.clone()
 	state.first_relayout_records_ = previous.first_relayout_records_.clone()
