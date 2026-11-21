@@ -18,6 +18,7 @@ fn ordinal_marker_document() &dom.Document {
 		body{margin:0;font:16px/20px sans-serif}
 		section{display:flow-root}
 		ol.roman{list-style-type:upper-roman}
+		ol.tinted li::marker{color:#c00}
 	</style><body><div id="changed"><p id="text">first</p></div>
 		<section id="stable"><ol id="list"><li>one</li><li>two</li><li>three</li></ol>
 		<ol class="roman"><li>alpha</li><li>beta</li></ol></section><p>tail</p></body>')
@@ -50,15 +51,25 @@ fn ordinal_marker_text(document &dom.Document) &dom.Node {
 // rebuild and its committed layout across a change elsewhere, while an
 // inserted item still renumbers the markers after it.
 fn test_ordered_list_subtrees_are_reused_until_their_ordinals_change() {
+	// Device layout keeps each box's style projected into layout coordinates.
+	for scale in [1.0, 2.0] {
+		ordered_list_reuse_case(scale)
+	}
+}
+
+fn ordered_list_reuse_case(scale f64) {
 	mut document := ordinal_marker_document()
 	defer { document.finalize() }
+	document.set_layout_coordinate_scale(scale)
 	_ = layout_document_typed_in_viewport(document, 400, 300)
+	reuses := os.getenv('VOX_RETAIN_ORDINAL_MARKER_BLOCKING') == ''
+		&& (scale == 1 || os.getenv('VOX_RETAIN_MARKER_STYLE_IDENTITY') == '')
 	section := document.get_element_by_id('stable') or { panic('section') }
 	section_node := section.as_node()
 	kept_mirror := section_node.unsafe_layout_node() or { panic('section box') }
 	kept := kept_mirror.real_layout_handle()
 	assert ordinal_marker_texts(document, 'list') == ['1. ', '2. ', '3. ']
-	mut changed := document.get_element_by_id('changed')?
+	mut changed := document.get_element_by_id('changed') or { panic('changed') }
 	for index in 0 .. 2 {
 		reused_before := incremental_layout_reused_subtree_count()
 		if index == 0 {
@@ -71,20 +82,28 @@ fn test_ordered_list_subtrees_are_reused_until_their_ordinals_change() {
 		}
 		document.update_layout(.debugging)
 		reused := incremental_layout_reused_subtree_count() - reused_before
-		if os.getenv('VOX_RETAIN_ORDINAL_MARKER_BLOCKING') == '' {
-			assert reused >= 1, 'pass ${index}'
+		if reuses {
+			assert reused >= 1, 'scale ${scale} pass ${index}'
 			if index == 0 {
 				mirror := section_node.unsafe_layout_node() or { panic('section box') }
 				assert mirror.real_layout_handle() == kept
 			}
 		} else {
-			assert reused == 0, 'pass ${index}'
+			assert reused == 0, 'scale ${scale} pass ${index}'
 		}
 		assert ordinal_marker_texts(document, 'list') == ['1. ', '2. ', '3. '], 'pass ${index}'
 		ordinal_marker_matches_full_rebuild(mut document)
 	}
+	// A ::marker color change reaches the kept marker boxes.
+	mut tinted := document.get_element_by_id('list') or { panic('list') }
+	tinted.set_attribute_value('class', 'tinted')
+	document.update_layout(.debugging)
+	mut sibling := document.get_element_by_id('changed') or { panic('changed') }
+	sibling.set_inner_html('<p id="text">tinted</p>') or { panic(err) }
+	document.update_layout(.debugging)
+	ordinal_marker_matches_full_rebuild(mut document)
 	// A new first item renumbers the clean items after it.
-	mut list := document.get_element_by_id('list')?
+	mut list := document.get_element_by_id('list') or { panic('list') }
 	mut first := document.create_element('li') or { panic(err) }
 	mut first_node := first.as_node()
 	first_node.append_child(document.create_text_node('zero').as_node()) or { panic(err) }

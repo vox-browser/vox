@@ -201,6 +201,7 @@ fn clean_subtree_blocker(node &Node, mut boxes &int) ?string {
 				'marker'
 			}
 		}
+		refresh_kept_marker_style(node)
 		return none
 	}
 	if node.is_list_item_box() && !retained_flow_list_item_box_is_built_alike(node) { return 'list-item' }

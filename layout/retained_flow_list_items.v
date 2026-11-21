@@ -75,7 +75,7 @@ fn retained_flow_marker_box_is_static(node &Node) bool {
 	element := owner.as_element() or { return false }
 	// The marker keeps the style it was built with; a restyled ::marker rebuilds.
 	if marker := css.computed_properties_for_pseudo_element(element, .marker) {
-		if voidptr(node.computed_values()) != voidptr(marker) { return false }
+		if !marker_box_keeps_style(node, marker) { return false }
 	}
 	for child in node.children() {
 		if !child.is_text_node() || child.children().len != 0 { return false }
@@ -99,12 +99,39 @@ fn retained_flow_marker_box_is_built_alike(node &Node) bool {
 	owner := parent.dom_node() or { return false }
 	element := owner.as_element() or { return false }
 	if marker := css.computed_properties_for_pseudo_element(element, .marker) {
-		if voidptr(node.computed_values()) != voidptr(marker) { return false }
+		if !marker_box_keeps_style(node, marker) { return false }
 	}
 	for child in node.children() {
 		if !child.is_text_node() || child.children().len != 0 { return false }
 	}
 	return true
+}
+
+// Whether a marker box still carries the ::marker style it was built with,
+// or one with identical layout inputs, compared as element styles are
+// (retained_flow_style_matches). A box keeps its style projected into layout
+// coordinates under device layout, which never shares the source's identity.
+// Clean subtree reuse gives a kept marker its current style
+// (refresh_kept_marker_style).
+fn marker_box_keeps_style(node &Node, marker &css.ComputedProperties) bool {
+	if voidptr(node.computed_values()) == voidptr(marker) { return true }
+	return !retain_marker_style_identity && retained_flow_style_matches(node, marker)
+}
+
+// Same-binary control: a marker whose style object was replaced rebuilds, as
+// before.
+const retain_marker_style_identity = os.getenv('VOX_RETAIN_MARKER_STYLE_IDENTITY') != ''
+
+// A kept marker box shows its item's current ::marker style.
+fn refresh_kept_marker_style(node &Node) {
+	parent := node.parent() or { return }
+	owner := parent.dom_node() or { return }
+	element := owner.as_element() or { return }
+	marker := css.computed_properties_for_pseudo_element(element, .marker) or { return }
+	if voidptr(node.computed_values()) == voidptr(marker) { return }
+	styled := node.as_node_with_style() or { return }
+	mut mutable := unsafe { &NodeWithStyle(styled) }
+	mutable.apply_style(marker)
 }
 
 // Whether the text a marker built alike would show now is the text its last
@@ -141,7 +168,7 @@ fn retained_flow_marker_rejection(node &Node) string {
 		if value := marker.typed_property_value(.content) {
 			if value.to_keyword() != .normal { return 'content' }
 		}
-		if voidptr(node.computed_values()) != voidptr(marker) { return 'style' }
+		if !marker_box_keeps_style(node, marker) { return 'style' }
 	}
 	if !retained_flow_marker_style_is_built_alike(element, computed, true) {
 		list_style_type := computed.list_style_type_for_scope(css.style_scope_for_abstract_element(dom.AbstractElement.new(element, none)))
