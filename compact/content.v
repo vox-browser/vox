@@ -56,8 +56,12 @@ fn install_compact_element_content_binding_with_policy(document &dom.Document, m
 		runtime.install_input_files_binding(fn [mut binding] (key string, state string, write bool, value voidptr) !voidptr {
 			return binding.input_files(key, state, write, value)
 		})!
-		runtime.install_trusted_types_policy_binding(document, fn [document] (callback_runtime &browserjs.Runtime) ! {
-			flush_compact_dom_mutations(document, callback_runtime)!
+		runtime.install_trusted_types_policy_binding(document, fn [document] (callback_runtime &browserjs.Runtime, full bool) ! {
+			if full {
+				flush_compact_dom_mutations(document, callback_runtime)!
+			} else {
+				settle_compact_dom_mutation_reactions(document, callback_runtime)!
+			}
 		}, fn [mut binding] (key string, namespace ?string, name string, input trustedtypes.TrustedTypeOrString, namespaced bool, state string) !string {
 			return binding.set_trusted_attribute(key, namespace, name, input, namespaced, state)
 		})!

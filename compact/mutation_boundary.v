@@ -17,6 +17,22 @@ fn flush_compact_dom_mutations(document &dom.Document, runtime &browserjs.Runtim
 	if messages.len != 0 { return error(messages.join('\n')) }
 }
 
+// Native attribute writes that only settled reactions, because the facade
+// had nothing to publish (tests and diagnostics).
+__global compact_settled_attribute_writes u64
+
+// flush_compact_dom_mutations() when the facade has nothing pending: its
+// snapshot would be empty, so only the reactions it settles remain.
+fn settle_compact_dom_mutation_reactions(document &dom.Document, runtime &browserjs.Runtime) ! {
+	if runtime.engine == .libjs { return }
+	compact_settled_attribute_writes++
+	mut messages := []string{}
+	settle_compact_dom_reactions(document, runtime, mut messages) or {
+		messages << 'JavaScript DOM synchronization: ${err.msg()}'
+	}
+	if messages.len != 0 { return error(messages.join('\n')) }
+}
+
 // Reactions may reenter JavaScript and enqueue another compact batch. Settle
 // those writes before the next native read or paint, without consuming logs or
 // repeatedly replaying canvas transport. Each batch is detached before replay.
