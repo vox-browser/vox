@@ -10767,3 +10767,41 @@ Keeping the boxes of elements that only have changed descendants, keeping
 the viewport so the incremental relayout path applies after tree updates,
 and making attachment and paint projection skip unchanged subtrees are the
 structural steps toward Blink's per-pass cost.
+
+## In-place layout tree updates, 2026-11-21
+
+Every layout tree update used to build the whole tree again from a new
+viewport: each ancestor of the change got a new box, so the committed root
+changed, the incremental relayout could not run, and the pass laid the
+document out again from the top while restoring kept subtrees, resolved
+counters for every kept element and walked each kept subtree to validate it.
+`layout/in_place_tree_update.v` keeps the committed tree when every flagged
+element's box is an ordinary block, flex or grid container: it re-syncs that
+box's child list (kept child boxes, new boxes for new or restyled children,
+dropped boxes for removed ones, anonymous wrappers made again through the
+builder's own attachment), gives new boxes layout indexes past those of the
+tree, marks the parent for layout and continues with the same-tree path.
+Anything else (list items, counters and quotes, SVG, tables, controls,
+shadow hosts, first-letter, inline boxes containing blocks) keeps the
+complete builder for the whole update, and so does any box built from state
+no flag covers once that state changed (image kind and availability, input
+build inputs, SVG viewport metrics): the complete builder revalidated those
+on every update, so a scan of the kept tree checks them first. Controls:
+`VOX_DISABLE_IN_PLACE_TREE_UPDATE=1`,
+diagnostics `VOX_IN_PLACE_TREE_UPDATE_DIAGNOSTICS=1` (each decline names its
+reason and parent).
+
+On the frozen page at scale 2, appending an element to `<body>` or
+`<react-app>` and removing it again costs 121 million instructions per pass
+instead of 168 million (insertion) and over 500 million (removal); averages
+339M -> 122M. Those parents have no relayout boundary below `<html>`
+(`no-root`), so the pass is still a complete one, now over the kept tree. The
+remaining per-pass cost is the paint tree projection (overstated by the
+benchmark, which keeps no projection templates), geometry and the DOM layout
+attachment, which runs twice per pass over every box. Complete-pass
+verification found no differences; the tests compare each update's display
+list with a complete rebuild (they run as main-module copies: FastC crashes
+on list markers). `retained_flow_image_trees_test.v` suspends in-place
+updates (`in_place_tree_update_suspended`) to keep exercising the builder's
+salvage path. The frozen page's remaining declines are header and box
+containers whose rebuilt children hold lists (`counter`).
