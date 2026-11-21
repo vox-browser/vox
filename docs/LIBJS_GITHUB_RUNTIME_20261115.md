@@ -11325,3 +11325,22 @@ the page uses `contain: layout size` once and `content-visibility: auto`
 sixteen times, so it would not apply to the hydration changes. Allowing roots
 inside measured subtrees needs proof that each measuring ancestor's inputs are
 unchanged, the main remaining layout project.
+
+**JavaScriptCore's own profile.** `23a7f2e61` adds `VOX_JSC_SAMPLING_PROFILE=PATH`,
+which enables JavaScriptCore's sampling profiler (the exported
+`JSContextGroupEnableSamplingProfiler` SPI) and writes its stack traces when
+the capture writes its audit. One load (bundle `bc8837a4fb6a`) recorded 328
+samples at 1 ms while JavaScript ran: 183 (56%) had a native host function as
+the innermost frame, 43 were in the interpreter (LLInt), 22 in baseline code
+and 8 in the optimizing tiers. The host samples split into:
+
+- forced layout from geometry reads (`__compactReadElementGeometry`, called
+  by primer-react), the single 65 ms `offsetWidth` layout;
+- selector queries from GitHub's lazy custom-element loader (`pb-*.js`), which
+  checks every added element against each pending tag with `matches` and then
+  `querySelector`; about 28 samples;
+- tree navigation and writes during React hydration and commit (`get`
+  accessors, `flushDOM` from setters, insertions, inline style writes).
+
+So about half of the time inside JavaScript is spent in the native DOM work it
+calls, and the page's own code accounts for the other half.
