@@ -295,6 +295,10 @@ fn relayout_incrementally(document &dom.Document, root &Node, previous &LayoutSt
 		add_incremental_relayout_root(mut roots, relayout_root)
 	}
 	for _ in 0 .. incremental_layout_max_escalations + 1 {
+		if incremental_roots_are_too_large(root, roots) {
+			incremental_layout_reject('large-root')
+			return none
+		}
 		attempt := try_incremental_relayout(document, root, previous, pass, roots)
 		if attempt.state != unsafe { nil } {
 			return attempt.state
