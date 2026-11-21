@@ -11093,3 +11093,76 @@ regeneration in either arm. Taken together the navigation cache has no
 measurable whole-load effect at these sample sizes; it removes ~1,900 bridge
 calls per load but the remaining first visits dominate. Its value for the
 hydration race is untested (the race needs a loaded host).
+
+`c5e6f082f` lets record-backed elements read `firstChild` through
+`Element.prototype` (the shared common accessors had defined an own
+`firstChild` on every wrapper, hiding the cached getter). A stage-logged load
+of its bundle `b0dd6d38` makes 1,979 `firstChild` and 1,970 `nextSibling`
+bridge calls (3,949 navigation calls against 4,214 with the cache before).
+
+## Where a load spends its main thread, and clipped glyph runs, 2026-11-21 evening
+
+**Stage logs overstate fine-grained stages.** With
+`VOX_DIAGNOSTIC_THREAD_LOAD_STAGES`, the reading at a substage's end is taken
+before its end line is written, so every substage charges one log write to
+its parent. A JavaScriptCore load reports `style_construction` as the
+largest exclusive stage (2.43 billion instructions in 14,277 style
+computations, each with about six substages), and stage-logged loads run
+about 31 billion instructions against about 24.6 billion without the logs.
+The style pass diagnostics of the same load count 21 passes and about 4,100
+visited elements. Shares of the load are better read from samples.
+
+**Sampled load.** `/usr/bin/sample` attached from process start
+(`Build/gh-e10/tools/sampled2.py`, JavaScriptCore, bundle `b0dd6d38`) has
+1,664 main-thread samples, about 880 of them waiting:
+
+| Busy main thread | Samples |
+| --- | ---: |
+| JavaScript (listeners, tasks, microtasks) | ~350 |
+| Module evaluation through `[JSValue callWithArguments:]` | ~70 |
+| Paint replay (`BrowserApp.draw_command`) | 270 |
+| Layout (37 forced by `offsetWidth` reads) | 156 |
+| Style | 27 |
+
+Of the paint replay, 158 samples wait in `[MTLCommandBuffer
+waitUntilCompleted]` for per-leaf GPU readbacks: clipped glyph runs 60,
+SVG path regions 27, sampled images with glyphs 18, shapes 36. Among the
+bridge's host functions, finding an element's wrapper for an event target
+merges every provider's element map and scans it (27 samples), and
+`querySelector` from elements takes 24.
+
+**Clipped glyph runs.** With the raster parity option `GLYPH_RECTANGLE_CLIP`
+(which these captures use), a text run inside a rectangular clip drew its
+interior on the CPU and the whole run again on a new GPU surface with the
+clip (backdrop upload, alpha mask draw, synchronous readback), then took
+from that draw only the pixels outside the clip's fully covered squares.
+When the glyph mask has no coverage on any of those pixels, neither draw
+changes them, and the GPU draw is skipped (`67f206603`, `f4d03d113`; control
+`VOX_RETAIN_COVERED_GLYPH_CLIP_DRAWS=1`). Of 286 clipped runs in a load, 258
+skip it; `VOX_VERIFY_COVERED_GLYPH_CLIP_DRAWS=1` still draws and merges them
+and found no differing pixel in any of the 258.
+
+**First-call answers.** A column flex container lays each item out at its
+automatic height and then at its flexed height; the committed record is the
+second call's, so the next pass laid every clean item's subtree out again for
+the first call. `124299978` answers that call from the first record when the
+subtree is clean and the inputs match, and then always makes the second call
+(control `VOX_DISABLE_FIRST_CALL_ANSWERS=1`). The scale-2 layout benchmark's
+text pass goes from 219.5 to 218.2 million instructions, with the
+complete-pass verifier clean; a load answers about seven calls.
+
+Five alternating rounds of bundle `4e5a2f6497f2` (`f4d03d113`), all 20 visits
+valid, host load average 12-17 from other sessions:
+
+| Arm | Median observed instructions | Median launch to PNG |
+| --- | ---: | ---: |
+| Vox with JavaScriptCore | 23.91 billion | 3,722 ms |
+| `VOX_RETAIN_COVERED_GLYPH_CLIP_DRAWS=1` | 24.81 billion | 4,054 ms |
+| `VOX_DISABLE_FIRST_CALL_ANSWERS=1` | 24.24 billion | 3,758 ms |
+| Brave with V8 | 20.97 billion | 2,424 ms |
+
+The skipped glyph draws save about 0.9 billion instructions (the per-run
+surfaces cost Metal driver work beyond the readback waits) and 330 ms at this
+load. The first-call answers are within the rounds' variation. One default
+visit regenerated the file table (27.87 billion, 4,484 ms). Vox now observes
+1.14 times Brave's instructions; times at this host load are not comparable.
