@@ -10859,3 +10859,35 @@ against the default (bundle 081b7c69, before the two fixes above): host load
 average 16-18 from other sessions' test suites, so times (4.2-5.5 s) are not
 usable. Instructions: control median 25.13B, in-place median 24.78B (-1.4%),
 with two in-place runs at 27.9B and 28.1B; inconclusive at this noise.
+
+## Wider in-place coverage, 2026-11-21 late morning
+
+The in-place update now handles the real page's earlier declines:
+
+- Flagged elements whose own box cannot keep a re-synced child list (inline
+  boxes, buttons and other special elements, elements without a box of their
+  own, text nodes whose text became or stopped being white space) escalate:
+  the nearest ancestor whose list can be re-synced rebuilds that child
+  (1e2f4a555, control `VOX_DISABLE_IN_PLACE_ESCALATION=1`). A rebuilt atomic
+  inline no longer counts as an inline box containing blocks.
+- A kept box built from state that changed without a flag (an image's kind
+  or availability, an input's build inputs, an SVG viewport's natural size,
+  other replaced boxes and controls) is rebuilt through the same escalation
+  instead of declining the whole update (e8409381d, control
+  `VOX_DISABLE_IN_PLACE_STALE_REBUILDS=1`).
+- Tables keep their anonymous wrappers (f369c3204); changes inside subtrees
+  that are not rendered are skipped (17c3d86ae).
+- Each style pass no longer walks every author sheet's effective rules for
+  `@property` registrations: sheets record whether they have any and keep
+  their registrations until their revision changes (188f28080, control
+  `VOX_RETAIN_PROPERTY_RULE_WALKS=1`; -1.0M instructions per benchmark pass).
+
+All of these keep the complete-pass verifier at zero mismatches on the
+benchmark's insert, class, text and head passes, and each has a test that
+compares the display list with a complete rebuild. Real-page diagnostic load
+on bundle 3ab2643a (one load, png 2,711 ms): main-document passes 108 ms
+(first update), then 28, 33, 32, 51 and 29 ms, against 167, 43, 52, 73 and
+44 ms in the morning load (bundle c86bed6c, host load differed). Remaining
+declines: `table-wrapper` on the README article, whose tables sit in inline
+`<markdown-accessiblity-table>` elements (block-in-inline), and `table` for
+a table added inside a rebuilt subtree.
