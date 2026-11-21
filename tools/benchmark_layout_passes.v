@@ -13,7 +13,8 @@
 //
 // Modes: full (rebuild the whole layout tree), head (insert an element into
 // <head>), class (toggle a class on one element inside the page), text (change
-// one text node's value, as React updates text). VOX_BENCHMARK_CLASS_SELECTOR
+// one text node's value, as React updates text), insert (append a small element
+// to VOX_BENCHMARK_INSERT_SELECTOR's element, then remove it). VOX_BENCHMARK_CLASS_SELECTOR
 // chooses the class mode's element and VOX_BENCHMARK_CLASS_ATTRIBUTE=name=value
 // the attribute it toggles.
 module main
@@ -28,7 +29,7 @@ import time
 
 fn main() {
 	if os.args.len < 2 {
-		panic('usage: benchmark_layout_passes INLINE_HTML [passes] [full|head|class|text] [document-url]')
+		panic('usage: benchmark_layout_passes INLINE_HTML [passes] [full|head|class|insert|text] [document-url]')
 	}
 	markup := os.read_file(os.args[1]) or { panic(err) }
 	passes := if os.args.len > 2 { os.args[2].int() } else { 10 }
@@ -79,6 +80,10 @@ fn main() {
 	// The class mode's element: VOX_BENCHMARK_CLASS_SELECTOR picks another one
 	// (for example the react-app element that React marks as loaded).
 	mut class_target := target
+	mut insert_target := class_target
+	if selector := os.getenv_opt('VOX_BENCHMARK_INSERT_SELECTOR') {
+		insert_target = css.query_selector(document.as_node(), selector) or { panic('no ${selector}') }
+	}
 	// VOX_BENCHMARK_CLASS_ATTRIBUTE=name=value toggles another attribute.
 	attribute_setting := os.getenv('VOX_BENCHMARK_CLASS_ATTRIBUTE')
 	class_attribute := if attribute_setting != '' { attribute_setting.all_before('=') } else { 'class' }
@@ -107,6 +112,21 @@ fn main() {
 					class_target.set_attribute_value(class_attribute, class_value)
 				} else {
 					class_target.remove_attribute(class_attribute)
+				}
+			}
+			'insert' {
+				// A small element appended to VOX_BENCHMARK_INSERT_SELECTOR's
+				// element (default the class mode's), removed on odd passes.
+				mut parent := insert_target.as_node()
+				if pass % 2 == 0 {
+					mut inserted := document.create_element('div') or { panic(err) }
+					inserted.set_attribute_value('class', 'benchmark-inserted')
+					mut inserted_node := inserted.as_node()
+					inserted_node.append_child(document.create_text_node('inserted').as_node()) or { panic(err) }
+					parent.append_child(inserted_node) or { panic(err) }
+				} else {
+					mut last := parent.last_child() or { panic('no child') }
+					last.remove(false)
 				}
 			}
 			'text' {
