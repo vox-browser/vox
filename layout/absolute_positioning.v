@@ -835,20 +835,49 @@ fn layout_absolutely_positioned_descendants(mut state LayoutState, root &Node) {
 }
 
 fn layout_absolutely_positioned_subtree(mut state LayoutState, root &Node) {
-	layout_absolutely_positioned_subtree_in(mut state, root, state.in_reused_subtree(root, false))
+	layout_absolutely_positioned_subtree_in(mut state, root, state.reused_subtree_root(root, false))
 }
 
 // A subtree restored by incremental_layout.v already carries its absolute
-// positions and block-content alignment; `parent_reused` skips it.
-fn layout_absolutely_positioned_subtree_in(mut state LayoutState, root &Node, parent_reused bool) {
-	if root.is_absolutely_positioned() && !parent_reused {
-		layout_absolutely_positioned_box(mut state, root)
+// positions and block-content alignment; `reused_root`, the restored subtree
+// containing `root`, skips it. An absolute box positioned against a box
+// outside that subtree is laid out again: its restored offset was relative to
+// a containing block that may have moved or resized since, or to a static
+// position whose ancestors moved.
+fn layout_absolutely_positioned_subtree_in(mut state LayoutState, root &Node, reused_root ?&Node) {
+	mut below := reused_root
+	if root.is_absolutely_positioned() {
+		relays := if restored_root := reused_root {
+			absolute_box_escapes_subtree(root, restored_root)
+		} else {
+			true
+		}
+		if relays {
+			layout_absolutely_positioned_box(mut state, root)
+			// Its inner layout records whether it restored its own subtree;
+			// otherwise its descendants are fresh for the later walks too.
+			below = none
+			if reused_root != none && u64(voidptr(root)) !in state.subtree_layout_decisions_ {
+				mut retained := retain_geometry_allocations()
+				state.subtree_layout_decisions_[u64(voidptr(root))] = .fresh
+				retained.finish()
+			}
+		}
 	}
-	reused := subtree_layout_reused_below(state, root, parent_reused)
-	if !reused {
+	if decision := state.subtree_layout_decisions_[u64(voidptr(root))] {
+		below = if decision == .reused { ?&Node(root) } else { ?&Node(none) }
+	}
+	if below == none {
 		align_block_contents(mut state, root)
 	}
 	for child in root.children() {
-		layout_absolutely_positioned_subtree_in(mut state, child, reused)
+		layout_absolutely_positioned_subtree_in(mut state, child, below)
 	}
+}
+
+// Whether `box`'s containing block lies outside the subtree of `root`.
+fn absolute_box_escapes_subtree(box &Node, root &Node) bool {
+	if retain_escaping_absolute_blocking { return false }
+	containing := box.containing_block() or { return true }
+	return !node_is_inclusive_ancestor(root, unsafe { &Node(containing) })
 }

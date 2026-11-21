@@ -555,8 +555,12 @@ fn reuse_committed_subtree_layout(mut state LayoutState, box &Node, mut box_stat
 		}
 		return none
 	}
-	if block_contents_need_alignment(box) || subtree_reuse_blocked(previous, box, box) {
-		if incremental_layout_diagnostics { incremental_layout_fresh_counts[5]++ }
+	if block_contents_need_alignment(box) || subtree_reuse_blocked_with(previous, box, box, !retain_escaping_absolute_blocking) {
+		if incremental_layout_diagnostics {
+			incremental_layout_fresh_counts[5]++
+			reason := if block_contents_need_alignment(box) { 'alignment' } else { subtree_reuse_block_reason(previous, box, box) }
+			eprintln('VOX_INCREMENTAL_LAYOUT reuse=blocked tag=${layout_debug_tag(box)} reason=${reason}')
+		}
 		return none
 	}
 	mut retained := retain_geometry_allocations()
@@ -834,11 +838,24 @@ fn generated_box_depends_on_document_order(node &Node) bool {
 	return false
 }
 
+// Same-binary control: an out-of-flow descendant positioned against a box
+// outside the subtree blocks its reuse in layout passes, as in measurements.
+const retain_escaping_absolute_blocking = os.getenv('VOX_RETAIN_ESCAPING_ABSOLUTE_BLOCKING') != ''
+
 // An out-of-flow descendant positioned against a box outside `boundary`
 // depends on geometry the subtree does not own. Layout indices are not unique
 // across trees laid out in one state, so each committed value must belong to
 // its node.
 fn subtree_reuse_blocked(previous &LayoutState, node &Node, boundary &Node) bool {
+	return subtree_reuse_blocked_with(previous, node, boundary, false)
+}
+
+// `allow_escaping_absolute`: a layout pass positions absolute boxes after all
+// formatting contexts. Its walk lays out again each one inside a reused
+// subtree whose containing block lies outside it (absolute_positioning.v),
+// from the static position its restored parent recorded and the containing
+// block's current geometry, so such a box need not block the reuse.
+fn subtree_reuse_blocked_with(previous &LayoutState, node &Node, boundary &Node, allow_escaping_absolute bool) bool {
 	// Counter-generated content can depend on preceding siblings outside the
 	// boundary. Its text and marker sizing must run through layout again.
 	// Bullets, authored strings and other content that no counter or quote
@@ -854,7 +871,10 @@ fn subtree_reuse_blocked(previous &LayoutState, node &Node, boundary &Node) bool
 	for child in node.children() {
 		if child.is_absolutely_positioned() || child.is_fixed_position() {
 			containing := child.containing_block() or { return true }
-			if !node_is_inclusive_ancestor(boundary, unsafe { &Node(containing) }) { return true }
+			if !allow_escaping_absolute
+				&& !node_is_inclusive_ancestor(boundary, unsafe { &Node(containing) }) {
+				return true
+			}
 		}
 		if styled := child.as_node_with_style() {
 			lookup := committed_values_lookup(previous, styled)
@@ -866,9 +886,41 @@ fn subtree_reuse_blocked(previous &LayoutState, node &Node, boundary &Node) bool
 				return true
 			}
 		}
-		if subtree_reuse_blocked(previous, child, boundary) { return true }
+		if subtree_reuse_blocked_with(previous, child, boundary, allow_escaping_absolute) { return true }
 	}
 	return false
+}
+
+// VOX_INCREMENTAL_LAYOUT_DIAGNOSTICS: the first condition that makes
+// subtree_reuse_blocked() refuse `node`, with the box it concerns.
+fn subtree_reuse_block_reason(previous &LayoutState, node &Node, boundary &Node) string {
+	if retain_static_generated_blocking {
+		if node.is_list_item_box() || node.is_list_item_marker_box()
+			|| node.is_generated_text_node() || node.is_generated_for_pseudo_element() {
+			return 'generated:${layout_debug_tag(node)}'
+		}
+	} else if generated_box_depends_on_document_order(node) {
+		return 'document-order:${layout_debug_tag(node)}'
+	}
+	for child in node.children() {
+		if child.is_absolutely_positioned() || child.is_fixed_position() {
+			containing := child.containing_block() or { return 'out-of-flow-without-containing-block:${layout_debug_tag(child)}' }
+			if retain_escaping_absolute_blocking
+				&& !node_is_inclusive_ancestor(boundary, unsafe { &Node(containing) }) {
+				return 'outside-containing-block:${layout_debug_tag(child)}<${layout_debug_tag(unsafe { &Node(containing) })}'
+			}
+		}
+		if styled := child.as_node_with_style() {
+			lookup := committed_values_lookup(previous, styled)
+			if lookup.values == unsafe { nil } && lookup.conflict
+				&& !committed_pass_did_not_lay_out(previous, child, styled) {
+				return 'index-conflict:${layout_debug_tag(child)}'
+			}
+		}
+		reason := subtree_reuse_block_reason(previous, child, boundary)
+		if reason != '' { return reason }
+	}
+	return ''
 }
 
 // Whether `node` lies in a subtree that this pass restored from the reuse
@@ -885,6 +937,21 @@ fn (state &LayoutState) in_reused_subtree(node &Node, inclusive bool) bool {
 		current = candidate.parent()
 	}
 	return false
+}
+
+// The box whose subtree this pass restored and that contains `node` (`node`
+// itself when `inclusive`), if any.
+fn (state &LayoutState) reused_subtree_root(node &Node, inclusive bool) ?&Node {
+	if state.subtree_layout_decisions_.len == 0 { return none }
+	mut current := if inclusive { ?&Node(node) } else { node.parent() }
+	for current != none {
+		candidate := current or { break }
+		if decision := state.subtree_layout_decisions_[u64(voidptr(candidate))] {
+			return if decision == .reused { candidate } else { none }
+		}
+		current = candidate.parent()
+	}
+	return none
 }
 
 // Whether `node`'s descendants were restored by subtree reuse, given whether
