@@ -162,7 +162,9 @@ fn clean_subtree_blocker(node &Node, mut boxes &int) ?string {
 		// The image provider can change kind or availability without a style
 		// change; alternative text, SVG documents and CSS replacements keep
 		// the complete builder.
-		if !retained_flow_raster_image_is_ordinary(node) { return 'replaced' }
+		if !retained_flow_raster_image_is_ordinary(node) && !retained_svg_image_box_is_current(node) {
+			return 'replaced'
+		}
 	}
 	if node.is_generated_text_node() { return none }
 	if node.is_generated_for_pseudo_element() && generated_content_uses_document_state(node) {
