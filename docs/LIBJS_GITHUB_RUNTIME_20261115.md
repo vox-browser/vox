@@ -10723,3 +10723,47 @@ the SVG salvage rules accept only with flow display, and SVG elements whose
 styles are animated (`VOX_RETAINED_LAYOUT_STYLE_DIAGNOSTICS=1` reports
 `differs=animated` 80 times per pass under device layout, where a box's
 projected style never shares the DOM style's identity).
+
+## Attribute invalidation reach and the layout gap to Brave, 2026-11-21
+
+`VOX_TRACE_STYLE_INVALIDATION_SOURCES=1` named the cause of the real load's
+30 ms style pass that recomputed 1,255 elements for one changed `span`:
+React adding class `loaded` to `<react-app>`. No rule mentions `.loaded`,
+but the element had no class attribute before, so `[class]` (from
+`a:not([class])`) flipped and the attribute name's whole plan applied,
+including `[class^=…]>[class^=…]`, which restyles every descendant with a
+class attribute. `6637be30c` records whether each attribute test is only
+used in the subject compound of its selectors and restyles the element
+alone when only such tests flip (control
+`VOX_RETAIN_SUBJECT_ATTRIBUTE_INVALIDATION=1`). On the frozen page at scale 2
+that class change restyles one element instead of 1,005 (layout pass 307M ->
+1.8M instructions). In seven alternating JSC pairs on the page the control
+used 26.03 and the change 25.00 billion instructions (median; every run of
+the change below the control's median), PNG median 3,664 -> 3,497 ms at a
+host load of 14 to 18. `9bcc774dc` keeps `:nth-child(… of S)` arguments out
+of the element's own tests, since they count siblings.
+
+The layout benchmark's class mode now takes any element and attribute
+(`VOX_BENCHMARK_CLASS_SELECTOR`, `VOX_BENCHMARK_CLASS_ATTRIBUTE=name=value`)
+and an insert mode appends and removes an element (`VOX_BENCHMARK_INSERT_SELECTOR`).
+The real load's attribute mutations (`style`, `aria-*`, `data-*`, `popover`,
+`tabindex`, classes on `<body>`) now restyle one element each; insertions
+restyle one to three. Their cost is layout: a script insertion costs 168 to
+262 million instructions at scale 2, the floor of the complete pass that
+follows any layout tree update (geometry 32%, paint projection 26%, tree
+build 12%, DOM attachment 11%, counters 7.5%). The benchmark document has
+native storage and no scripting, so it never keeps paint projection
+templates (`keeps_paint_projection_templates`) and overstates that share.
+
+Brave's renderer reports for the whole load 159 ms of script, 34 ms of
+layout over 16 layouts and 60 ms of style recalculation (82 times). Vox
+spends about 280 ms in JavaScriptCore, 350 ms in layout passes and 150 ms
+in style, plus about 390 ms replaying paint on the main thread. Blink's
+passes are proportional to the change; each Vox pass after a tree update
+walks the whole document: elements whose descendants changed get new boxes
+(so the root changes and no incremental relayout runs), and the DOM
+attachment, counters and paint projection are rebuilt for every box.
+Keeping the boxes of elements that only have changed descendants, keeping
+the viewport so the incremental relayout path applies after tree updates,
+and making attachment and paint projection skip unchanged subtrees are the
+structural steps toward Blink's per-pass cost.
