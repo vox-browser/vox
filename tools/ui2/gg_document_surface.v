@@ -1,6 +1,7 @@
 module canvas
 
 import math
+import os
 import sokol.gfx
 
 // Map the distance from the common center to the interval between the
@@ -218,4 +219,168 @@ pub fn (mut s GpuSurface) read_document_region(pixels voidptr, pitch int, x int,
 	if s.ctx.owns_gfx {
 		gfx.commit()
 	}
+}
+
+// Document leaf surfaces. Vox draws many paint leaves on a GPU surface of
+// their own and reads the result back. Creating and destroying the surface's
+// render targets (color, depth, the multisampled image and the attachments
+// a pass that needs MSAA adds) cost more than the leaf's draw, most of it
+// outside the calling thread: a rectangle leaf on a tile-sized surface ran
+// about 1.8 million instructions with new targets and 0.6 million with
+// reused ones.
+//
+// A released leaf surface keeps its targets here, by size and sample count,
+// for the next leaf surface of that size. Each leaf still gets a new
+// GpuSurface, so draws, clips, matrices and saves start empty in the
+// caller's scope; only image contents carry over. Every pass clears depth
+// and either clears color or loads what write_pixels() or
+// write_document_region() uploaded, so a leaf that writes or clears its
+// surface (or the region it reads back) sees what a new surface shows.
+// Same-binary control: VOX_GG_FRESH_LEAF_SURFACES=1.
+const retain_fresh_leaf_surfaces = os.getenv('VOX_GG_FRESH_LEAF_SURFACES') != ''
+const document_leaf_pool_capacity = 4
+
+struct DocumentLeafTargets {
+mut:
+	held                bool
+	width               int
+	height              int
+	sample_count        int
+	last_use            u64
+	color               gfx.Image
+	msaa                gfx.Image
+	depth               gfx.Image
+	attachments         gfx.Attachments
+	dynamic_msaa        gfx.Image
+	dynamic_depth       gfx.Image
+	dynamic_attachments gfx.Attachments
+}
+
+struct DocumentLeafPool {
+mut:
+	entries [document_leaf_pool_capacity]DocumentLeafTargets
+	uses    u64
+	reused  u64
+	created u64
+}
+
+const document_leaf_pool = &DocumentLeafPool{}
+
+fn (mut targets DocumentLeafTargets) destroy() {
+	if targets.dynamic_msaa.id != 0 {
+		gfx.destroy_attachments(targets.dynamic_attachments)
+		gfx.destroy_image(targets.dynamic_depth)
+		gfx.destroy_image(targets.dynamic_msaa)
+	}
+	gfx.destroy_attachments(targets.attachments)
+	gfx.destroy_image(targets.depth)
+	if targets.msaa.id != 0 {
+		gfx.destroy_image(targets.msaa)
+	}
+	gfx.destroy_image(targets.color)
+	targets = DocumentLeafTargets{}
+}
+
+// Reused and newly created leaf surface targets in this process.
+pub fn document_leaf_surface_statistics() (u64, u64) {
+	pool := unsafe { document_leaf_pool }
+	return pool.reused, pool.created
+}
+
+// new_document_leaf_surface is new_surface() for a leaf the caller releases
+// with release_document_leaf_surface(). It may reuse the render targets of a
+// released surface of the same size and sample count, whose pixels are
+// then those of the earlier leaf until the caller writes or clears them.
+pub fn (mut ctx GpuContext) new_document_leaf_surface(width int, height int, sample_count int) !&GpuSurface {
+	if width <= 0 || height <= 0 {
+		return error('gg.canvas: invalid surface size ${width}x${height}')
+	}
+	if sample_count != 1 && sample_count != 4 {
+		return error('gg.canvas: unsupported sample count ${sample_count}')
+	}
+	mut pool := unsafe { document_leaf_pool }
+	if !retain_fresh_leaf_surfaces {
+		for i in 0 .. pool.entries.len {
+			entry := pool.entries[i]
+			if !entry.held || entry.width != width || entry.height != height
+				|| entry.sample_count != sample_count {
+				continue
+			}
+			pool.entries[i] = DocumentLeafTargets{}
+			if gfx.query_attachments_state(entry.attachments) != .valid {
+				mut stale := entry
+				stale.destroy()
+				break
+			}
+			pool.reused++
+			return &GpuSurface{
+				ctx:                 unsafe { ctx }
+				width:               width
+				height:              height
+				texture_width:       width
+				texture_height:      height
+				sample_count:        sample_count
+				transform:           Transform.new(Matrix.identity())
+				bounds:              new_bounds_manager(width, height)
+				clip:                new_clip_stack(width, height)
+				color:               entry.color
+				msaa:                entry.msaa
+				depth:               entry.depth
+				attachments:         entry.attachments
+				dynamic_msaa:        entry.dynamic_msaa
+				dynamic_depth:       entry.dynamic_depth
+				dynamic_attachments: entry.dynamic_attachments
+			}
+		}
+	}
+	pool.created++
+	return ctx.new_sized_surface(width, height, width, height, sample_count)!
+}
+
+// release_document_leaf_surface frees the surface like free(), keeping its
+// render targets for a later leaf surface. A surface with an open layer, or
+// one that is a layer, is freed.
+pub fn (mut s GpuSurface) release_document_leaf_surface() {
+	if retain_fresh_leaf_surfaces || s.is_layer || s.layer != unsafe { nil }
+		|| s.texture_width != s.width || s.texture_height != s.height || s.color.id == 0 {
+		s.free()
+		return
+	}
+	s.free_retired_layers()
+	mut pool := unsafe { document_leaf_pool }
+	pool.uses++
+	mut slot := -1
+	for i in 0 .. pool.entries.len {
+		if !pool.entries[i].held {
+			slot = i
+			break
+		}
+		if slot < 0 || pool.entries[i].last_use < pool.entries[slot].last_use {
+			slot = i
+		}
+	}
+	if pool.entries[slot].held {
+		pool.entries[slot].destroy()
+	}
+	pool.entries[slot] = DocumentLeafTargets{
+		held:                true
+		width:               s.width
+		height:              s.height
+		sample_count:        s.sample_count
+		last_use:            pool.uses
+		color:               s.color
+		msaa:                s.msaa
+		depth:               s.depth
+		attachments:         s.attachments
+		dynamic_msaa:        s.dynamic_msaa
+		dynamic_depth:       s.dynamic_depth
+		dynamic_attachments: s.dynamic_attachments
+	}
+	s.color = gfx.Image{}
+	s.msaa = gfx.Image{}
+	s.depth = gfx.Image{}
+	s.attachments = gfx.Attachments{}
+	s.dynamic_msaa = gfx.Image{}
+	s.dynamic_depth = gfx.Image{}
+	s.dynamic_attachments = gfx.Attachments{}
 }

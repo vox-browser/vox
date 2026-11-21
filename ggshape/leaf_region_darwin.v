@@ -46,11 +46,11 @@ pub fn draw_path_region(pixels &u8, pitch i32, region SurfaceRegion, has_backgro
 }
 
 fn draw_path_region_with_context(mut ctx canvas.GpuContext, pixels &u8, pitch i32, region SurfaceRegion, has_background i32, path &C.VoxGraphitePath, multisampled bool) i32 {
-	mut target := ctx.new_surface(width: region.surface_width, height: region.surface_height) or {
+	mut target := ctx.new_document_leaf_surface(region.surface_width, region.surface_height, 1) or {
 		return 0
 	}
 	defer {
-		target.free()
+		target.release_document_leaf_surface()
 	}
 	if has_background != 0 {
 		target.write_document_region(pixels, int(pitch), region.x, region.y, region.width, region.height) or {
@@ -79,13 +79,9 @@ pub fn draw_region(pixels &u8, pitch i32, region SurfaceRegion, has_background i
 	if key.fetch(pixels, pitch, region) { return 1 }
 	samples := if shape.force_msaa != 0 { 4 } else { 1 }
 	mut ctx := context() or { return 0 }
-	mut target := ctx.new_surface(
-		width:        region.surface_width
-		height:       region.surface_height
-		sample_count: samples
-	) or { return 0 }
+	mut target := ctx.new_document_leaf_surface(region.surface_width, region.surface_height, samples) or { return 0 }
 	defer {
-		target.free()
+		target.release_document_leaf_surface()
 	}
 	if has_background != 0 {
 		target.write_document_region(pixels, int(pitch), region.x, region.y, region.width, region.height) or {
@@ -130,11 +126,11 @@ pub fn draw_svg_image_region(pixels &u8, pitch i32, region SurfaceRegion, flags 
 	key.add_floats(rounded_clip, 12)
 	if key.fetch(pixels, pitch, region) { return 1 }
 	mut ctx := context() or { return 0 }
-	mut target := ctx.new_surface(width: region.surface_width, height: region.surface_height) or {
+	mut target := ctx.new_document_leaf_surface(region.surface_width, region.surface_height, 1) or {
 		return 0
 	}
 	defer {
-		target.free()
+		target.release_document_leaf_surface()
 	}
 	if flags & svg_backdrop != 0 {
 		target.write_document_region(pixels, int(pitch), region.x, region.y, region.width, region.height) or {
@@ -170,13 +166,9 @@ pub fn draw_shapes_region(pixels &u8, pitch i32, region SurfaceRegion, has_backg
 	}
 	if key.fetch(pixels, pitch, region) { return 1 }
 	mut ctx := context() or { return 0 }
-	mut target := ctx.new_surface(
-		width:        region.surface_width
-		height:       region.surface_height
-		sample_count: samples
-	) or { return 0 }
+	mut target := ctx.new_document_leaf_surface(region.surface_width, region.surface_height, samples) or { return 0 }
 	defer {
-		target.free()
+		target.release_document_leaf_surface()
 	}
 	if has_background != 0 {
 		target.write_document_region(pixels, int(pitch), region.x, region.y, region.width, region.height) or {

@@ -96,8 +96,8 @@ fn draw_sampled_image_color_with_glyphs(pixels &u8,width i32,height i32,pitch i3
         }
 	}
 	mut ctx := context() or { return 0 }
-	mut surface := ctx.new_surface(width: width, height: height, sample_count: samples) or { return 0 }
-	defer { surface.free() }
+	mut surface := ctx.new_document_leaf_surface(width, height, samples) or { return 0 }
+	defer { surface.release_document_leaf_surface() }
 	if backdrop != 0 {
 		surface.write_pixels(pixels, pitch) or { return 0 }
 	} else {

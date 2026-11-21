@@ -27,8 +27,8 @@ pub fn draw_repeated_background(pixels &u8, width int, height int, pitch int,
 	}
 	rgba := cpuraster.premultiply_rgba_copy(source, sw, sh) or { return false }
 	mut ctx := context() or { return false }
-	mut target := ctx.new_surface(width: width, height: height, sample_count: samples) or { return false }
-	defer { target.free() }
+	mut target := ctx.new_document_leaf_surface(width, height, samples) or { return false }
+	defer { target.release_document_leaf_surface() }
 	target.write_pixels(pixels, pitch) or { return false }
 	if samples == 4 { target.draw_msaa_trigger() }
 	target.save()

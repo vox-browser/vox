@@ -25,8 +25,8 @@ pub fn draw_clipped_glyph_mask(pixels &u8, width i32, height i32, pitch i32,
 		return 0
 	}
 	mut ctx := context() or { return 0 }
-	mut target := ctx.new_surface(width: int(width), height: int(height), sample_count: samples) or { return 0 }
-	defer { target.free() }
+	mut target := ctx.new_document_leaf_surface(int(width), int(height), samples) or { return 0 }
+	defer { target.release_document_leaf_surface() }
 	if backdrop != 0 {
 		target.write_pixels(pixels, int(pitch)) or { return 0 }
 	} else {

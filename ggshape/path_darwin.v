@@ -69,9 +69,9 @@ fn draw_svg_image_pixels(pixels &u8, width i32, height i32, pitch i32, flags i32
 		}
 	}
 	mut ctx := context() or { return 0 }
-	mut target := ctx.new_surface(width: int(width), height: int(height)) or { return 0 }
+	mut target := ctx.new_document_leaf_surface(int(width), int(height), 1) or { return 0 }
 	defer {
-		target.free()
+		target.release_document_leaf_surface()
 	}
 	if flags & svg_backdrop != 0 {
 		target.write_pixels(pixels, int(pitch)) or { return 0 }

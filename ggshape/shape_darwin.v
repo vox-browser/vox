@@ -117,11 +117,11 @@ fn draw_shape_pixels(pixels &u8, width i32, height i32, pitch i32, has_backgroun
 	// A fresh surface per draw: it and its draw lists belong to the caller's
 	// scope. sokol.gfx releases its Metal objects after the commits that
 	// owned contexts make on every readback.
-	mut target := ctx.new_surface(width: int(width), height: int(height), sample_count: samples) or {
+	mut target := ctx.new_document_leaf_surface(int(width), int(height), samples) or {
 		return 0
 	}
 	defer {
-		target.free()
+		target.release_document_leaf_surface()
 	}
 	if has_background != 0 {
 		target.write_pixels(pixels, int(pitch)) or { return 0 }
@@ -244,8 +244,8 @@ pub fn draw_shapes_with_glyphs(pixels &u8, width i32, height i32, pitch i32, bac
 		if shape.force_msaa != 0 { samples = 4 }
 	}
 	mut ctx := context() or { return 0 }
-	mut target := ctx.new_surface(width: int(width), height: int(height), sample_count: samples) or { return 0 }
-	defer { target.free() }
+	mut target := ctx.new_document_leaf_surface(int(width), int(height), samples) or { return 0 }
+	defer { target.release_document_leaf_surface() }
 	if backdrop != 0 {
 		target.write_pixels(pixels, int(pitch)) or { return 0 }
 	} else {

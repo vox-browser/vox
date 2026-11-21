@@ -206,9 +206,9 @@ pub fn draw_path_with_context(mut ctx canvas.GpuContext, pixels &u8, width i32, 
 }
 
 fn draw_supported_path(mut ctx canvas.GpuContext, pixels &u8, width i32, height i32, pitch i32, has_background i32, path &C.VoxGraphitePath, multisampled bool) i32 {
-	mut target := ctx.new_surface(width: int(width), height: int(height)) or { return 0 }
+	mut target := ctx.new_document_leaf_surface(int(width), int(height), 1) or { return 0 }
 	defer {
-		target.free()
+		target.release_document_leaf_surface()
 	}
 	if has_background != 0 {
 		target.write_pixels(pixels, int(pitch)) or { return 0 }

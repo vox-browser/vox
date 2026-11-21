@@ -25,8 +25,8 @@ pub fn draw_text_shadow_mask(pixels &u8, width i32, height i32, pitch i32, backd
 	mask := shadow_mask_pass(image, int(width), int(height),
 		[f32(1), 1, source_x, source_y]!, [56]f32{}, 0, 0) or { return 0 }
 	mut ctx := context() or { return 0 }
-	mut target := ctx.new_surface(width: int(width), height: int(height)) or { return 0 }
-	defer { target.free() }
+	mut target := ctx.new_document_leaf_surface(int(width), int(height), 1) or { return 0 }
+	defer { target.release_document_leaf_surface() }
 	if backdrop != 0 {
 		target.write_pixels(pixels, int(pitch)) or { return 0 }
 	} else {
