@@ -41,6 +41,7 @@ pub fn measurement_subtree_reuse_statistics() (u64, u64, u64) {
 fn report_measurement_subtree_reuse() {
 	if !incremental_layout_diagnostics { return }
 	eprintln('VOX_MEASUREMENT_SUBTREE_REUSE last=${measurement_subtree_reuse_counts[0]} first=${measurement_subtree_reuse_counts[1]} first_records=${measurement_subtree_reuse_counts[2]}')
+	eprintln('VOX_FIRST_CALL_ANSWERS answered=${first_call_answer_count}')
 }
 
 // Called before a committed-pass inner layout of `box`. When this pass already

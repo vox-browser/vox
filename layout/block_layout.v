@@ -450,9 +450,17 @@ fn layout_inside_independent_formatting_context_with_mode(mut state LayoutState,
 	records_relayout_root := layout_mode == .normal && state.subtree_root == none
 		&& relayout_root_candidate(box)
 	if records_relayout_root {
+		answer_candidate := take_first_call_answer_candidate(mut state, box)
 		note_repeated_relayout_root(mut state, box, box_state, available_space)
 		if reused := reuse_committed_subtree_layout(mut state, box, mut box_state, available_space) {
 			return reused
+		}
+		// first_call_answer.v: a flex item's automatic-height call.
+		if answer_candidate {
+			if answered := answer_first_call_from_first_record(mut state, box, mut box_state,
+				available_space) {
+				return answered
+			}
 		}
 		// The index is shared by all contexts in this pass. Its first allocation
 		// and later growth must outlive each context's geometry workspace.

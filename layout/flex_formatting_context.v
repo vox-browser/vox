@@ -1799,7 +1799,9 @@ fn run_column_flex_formatting_context(mut state LayoutState, container &Node, mu
 	mut bases := []CSSPixels{cap: items.len}
 	mut edges := []CSSPixels{cap: items.len}
 	mut contributions := []CSSPixels{cap: items.len}
-	for item in items {
+	// first_call_answer.v: items laid out below without their subtrees.
+	mut answered := []bool{len: items.len}
+	for item_index, item in items {
 		styled := item.as_node_with_style() or { continue }
 		mut item_state := state.mutable_internal_box_values(styled)
 		item_state.set_containing_block_used_values(container_state)
@@ -1830,7 +1832,8 @@ fn run_column_flex_formatting_context(mut state LayoutState, container &Node, mu
 		if width := forced_width {
 			forced_width = clamp_layout_content_size(item, width, container_width, item_state, true)
 		}
-		laid_out := layout_independent_child(mut state, item, mut container_state, container_width, container_height, forced_width, none)
+		laid_out, first_call_answered := layout_first_call_of_flex_item(mut state, item, mut container_state, container_width, container_height, forced_width)
+		answered[item_index] = first_call_answered
 		base := flex_base_height(mut state, item, container_height, laid_out.content_height(), laid_out)
 		bases << base
 		edges << flex_or_grid_item_outer_block_edges(laid_out)
@@ -1904,7 +1907,7 @@ fn run_column_flex_formatting_context(mut state LayoutState, container &Node, mu
 		// Repeating unchanged inside-layout at every nested column multiplies
 		// the work. Promote the used height to a definite basis in place when
 		// no descendant consumes that transition; changed sizes still rerun.
-		reuse_geometry := current.content_height() == line.targets[index]
+		reuse_geometry := !answered[index] && current.content_height() == line.targets[index]
 			&& (if width := forced_width { width == current.content_width() } else { true })
 			&& (current.has_definite_height()
 				|| !flex_subtree_depends_on_definite_height(mut state, item))

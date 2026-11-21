@@ -1441,6 +1441,10 @@ mut:
 	automatic_height_answer_node_  voidptr
 	automatic_height_answer_width_ CSSPixels
 	automatic_height_answer_       CSSPixels
+	// first_call_answer.v: the column flex item whose automatic-height call
+	// may be answered, and the item answered without laying out its subtree.
+	first_call_answer_candidate_ voidptr
+	first_call_answered_box_     voidptr
 }
 
 pub fn LayoutState.new() &LayoutState {
