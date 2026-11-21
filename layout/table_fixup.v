@@ -256,25 +256,28 @@ fn generate_missing_table_parents(mut node Node, document &dom.Document) {
 	}
 }
 
+// The anonymous table wrapper box for a table root: the wrapper takes the
+// properties CSS 2 assigns it and the table box keeps the rest.
+fn wrap_table_root(child &Node, document &dom.Document) &Node {
+	child_styled := child.as_node_with_style() or { return child }
+	element_style := unsafe { &css.ComputedProperties(child_styled.computed_values()) }
+	table_style, style := element_style.table_box_and_wrapper_properties()
+	mut mutable_child_style := unsafe { &NodeWithStyle(child_styled) }
+	mutable_child_style.computed_values_ = computed_values_in_layout_coordinates(table_style, document)
+	mut wrapper := unsafe { &Node(TableWrapper.new(document, none, style)) }
+	wrapper.anonymous_ = true
+	wrapper.append_child(child)
+	mut table_root := unsafe { &Node(child) }
+	table_root.set_has_been_wrapped_in_table_wrapper(true)
+	return wrapper
+}
+
 fn wrap_table_roots(mut node Node, document &dom.Document) {
 	if node.table_fixup_skip_ { return }
 	mut rebuilt := []&Node{}
 	for child in node.children_.clone() {
 		if child.display().is_table_inside() && !node.is_table_wrapper() {
-			child_styled := child.as_node_with_style() or {
-				rebuilt << child
-				continue
-			}
-			element_style := unsafe { &css.ComputedProperties(child_styled.computed_values()) }
-			table_style, style := element_style.table_box_and_wrapper_properties()
-			mut mutable_child_style := unsafe { &NodeWithStyle(child_styled) }
-			mutable_child_style.computed_values_ = computed_values_in_layout_coordinates(table_style, document)
-			mut wrapper := unsafe { &Node(TableWrapper.new(document, none, style)) }
-			wrapper.anonymous_ = true
-			wrapper.append_child(child)
-			mut table_root := unsafe { &Node(child) }
-			table_root.set_has_been_wrapped_in_table_wrapper(true)
-			rebuilt << wrapper
+			rebuilt << wrap_table_root(child, document)
 		} else {
 			rebuilt << child
 		}

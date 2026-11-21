@@ -33,6 +33,8 @@ const in_place_tree_update_diagnostics = os.getenv('VOX_IN_PLACE_TREE_UPDATE_DIA
 // Same-binary control: a flagged element whose own child list cannot be
 // updated in place declines the update instead of being rebuilt by its parent.
 const disable_in_place_escalation = os.getenv('VOX_DISABLE_IN_PLACE_ESCALATION') != ''
+// Same-binary control: subtrees containing tables keep the complete builder.
+const disable_in_place_tables = os.getenv('VOX_DISABLE_IN_PLACE_TABLES') != ''
 // Same-binary control: a kept box built from state that changed without a
 // flag declines the update instead of being rebuilt by its parent.
 const disable_in_place_stale_rebuilds = os.getenv('VOX_DISABLE_IN_PLACE_STALE_REBUILDS') != ''
@@ -302,7 +304,8 @@ fn (mut update InPlaceTreeUpdate) subtree_is_self_contained(box &Node) bool {
 		return in_place_svg_is_closed(box) || update.decline('svg')
 	}
 	if box.is_svg_box() || is_svg_resource_box(box) { return update.decline('svg') }
-	if box.is_table_wrapper() || box.display().is_table_inside() || box.display().is_internal_table() {
+	if disable_in_place_tables && (box.is_table_wrapper() || box.display().is_table_inside()
+		|| box.display().is_internal_table()) {
 		return update.decline('table')
 	}
 	if box.is_generated_for_pseudo_element() && generated_content_uses_document_state(box) {
@@ -468,14 +471,21 @@ fn (mut update InPlaceTreeUpdate) plan_child_list(node &dom.Node) bool {
 		if built.is_inline() && !built.is_atomic_inline() && in_place_inline_contains_blocks(built) {
 			return update.decline('block-in-inline')
 		}
-		if !update.subtree_is_self_contained(built) { return false }
-		children << built
-		added << built
+		// Table parts outside a table join their siblings in one anonymous
+		// table.
+		if in_place_display_is_table_part(built.display()) { return update.decline('table-part') }
+		new_box := update.fix_new_tables(built)
+		if !update.subtree_is_self_contained(new_box) { return false }
+		children << new_box
+		added << new_box
 	}
 	children << after
 	mut removed := []&Node{}
 	for key, old in existing {
 		if !kept[key] {
+			if !old.is_table_wrapper() && in_place_display_is_table_part(old.display()) {
+				return update.decline('table-part')
+			}
 			if !update.subtree_is_self_contained(old) { return false }
 			removed << old
 		}
@@ -500,11 +510,19 @@ fn (mut update InPlaceTreeUpdate) plan_child_list(node &dom.Node) bool {
 fn (mut update InPlaceTreeUpdate) note_existing_child(child &Node, mut existing map[u64]&Node,
 	mut texts map[u64]&Node) bool {
 	if child.is_table_wrapper() {
-		table := in_place_wrapped_table(child) or { return update.decline('table-wrapper') }
-		table_dom := table.dom_node() or { return update.decline('table-wrapper') }
-		if table_dom.as_element() == none || in_place_box_is_split(table) {
-			return update.decline('table-wrapper')
+		table := in_place_wrapped_table(child) or {
+			if in_place_tree_update_diagnostics {
+				mut kinds := []string{}
+				for inner in child.children() {
+					kinds << '${inner.display()}/anon=${inner.is_anonymous()}/dom=${inner.dom_node() != none}'
+				}
+				eprintln('VOX_IN_PLACE_TABLE_WRAPPER children=${kinds}')
+			}
+			return update.decline('table-wrapper-box')
 		}
+		table_dom := table.dom_node() or { return update.decline('table-wrapper-dom') }
+		if table_dom.as_element() == none { return update.decline('table-wrapper-dom') }
+		if in_place_box_is_split(table) { return update.decline('table-wrapper-split') }
 		existing[u64(voidptr(table_dom))] = child
 		return true
 	}
@@ -522,6 +540,32 @@ fn (mut update InPlaceTreeUpdate) note_existing_child(child &Node, mut existing 
 	if in_place_box_is_split(child) { return update.decline('continuation-child') }
 	existing[u64(voidptr(child_dom))] = child
 	return true
+}
+
+fn in_place_display_is_table_part(display css.Display) bool {
+	return display.is_internal_table() || display.is_table_caption()
+}
+
+fn in_place_has_table_boxes(node &Node) bool {
+	display := node.display()
+	if node.is_table_wrapper() || display.is_table_inside() || in_place_display_is_table_part(display) {
+		return true
+	}
+	for child in node.children() {
+		if in_place_has_table_boxes(child) { return true }
+	}
+	return false
+}
+
+// The table fixups the complete builder runs over the whole tree, for a new
+// subtree: anonymous boxes for misparented table parts, whitespace between
+// table parts dropped, and wrappers for tables, the subtree's root included.
+fn (update &InPlaceTreeUpdate) fix_new_tables(built &Node) &Node {
+	if disable_in_place_tables || !in_place_has_table_boxes(built) { return built }
+	mut root := unsafe { &Node(built) }
+	fixup_table_tree(mut root, update.document)
+	if built.display().is_table_inside() { return wrap_table_root(built, update.document) }
+	return built
 }
 
 // The box of the table element an anonymous table wrapper holds.
