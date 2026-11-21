@@ -121,10 +121,11 @@ fn update_layout_tree_in_place(document &dom.Document, mut style_computer css.St
 	if !update.plan_branch(root_node) {
 		return decline_in_place_tree_update(update.reason)
 	}
-	if update.lists.len == 0 {
-		return decline_in_place_tree_update('no-flagged-branch')
+	// With no list to update (every flag inside unrendered subtrees), the
+	// committed tree is already current.
+	if update.lists.len > 0 {
+		update.apply(previous)
 	}
-	update.apply(previous)
 	in_place_tree_update_counts[0]++
 	if in_place_tree_update_diagnostics {
 		mut added := 0
@@ -155,6 +156,11 @@ fn decline_in_place_tree_update(reason string) ?&Node {
 
 // Follow the descendant flags below `node`, planning each flagged element.
 fn (mut update InPlaceTreeUpdate) plan_branch(node &dom.Node) bool {
+	// Nothing below an element that is not rendered and had no box has a box
+	// to keep or replace (an element that had one is planned by its parent).
+	if element := node.as_element() {
+		if in_place_element_is_unrendered(element) { return true }
+	}
 	if node.needs_layout_tree_update_() {
 		return update.plan_child_list(node)
 	}
@@ -168,6 +174,13 @@ fn (mut update InPlaceTreeUpdate) plan_branch(node &dom.Node) bool {
 		}
 	}
 	return true
+}
+
+fn in_place_element_is_unrendered(element &dom.Element) bool {
+	if in_place_box_of(element.as_node()) != none { return false }
+	if element.as_node().unsafe_layout_node() != none { return false }
+	computed := css.computed_properties_for_element(element) or { return true }
+	return computed.display().is_none()
 }
 
 fn in_place_box_of(node &dom.Node) ?&Node {

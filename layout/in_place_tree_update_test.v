@@ -227,3 +227,33 @@ fn test_kept_tables_keep_their_wrappers() {
 	}
 	in_place_matches_full_rebuild(mut document, 'table sibling')
 }
+
+// A change inside a subtree that is not rendered (a closed popover) has no
+// box to update: the committed tree is kept as it is.
+fn test_changes_inside_unrendered_subtrees_keep_the_committed_tree() {
+	mut document := html.parse_document('<!doctype html><style>body{margin:0;font:16px/20px sans-serif}</style><body><div id="app"><p id="p">text</p></div><div id="pop" style="display:none"><div id="msg">hidden</div></div></body>')
+	defer { document.finalize() }
+	_ = layout_document_typed_in_viewport(document, 400, 300)
+	enabled := os.getenv('VOX_DISABLE_IN_PLACE_TREE_UPDATE') == ''
+	kept_paragraph := in_place_handle(document, 'p')
+	updated_before, _ := in_place_tree_update_statistics()
+	mut message := document.get_element_by_id('msg') or { panic('msg') }
+	mut added := document.create_element('span') or { panic(err) }
+	mut added_node := added.as_node()
+	added_node.append_child(document.create_text_node('more').as_node()) or { panic(err) }
+	mut message_node := message.as_node()
+	message_node.append_child(added_node) or { panic(err) }
+	document.update_layout(.debugging)
+	updated_after, _ := in_place_tree_update_statistics()
+	if enabled {
+		assert updated_after == updated_before + 1
+		assert in_place_handle(document, 'p') == kept_paragraph
+	}
+	in_place_matches_full_rebuild(mut document, 'unrendered')
+	// Showing the popover afterwards builds its boxes.
+	mut popover := document.get_element_by_id('pop') or { panic('pop') }
+	popover.set_attribute_value('style', 'display:block')
+	document.update_layout(.debugging)
+	in_place_handle(document, 'msg')
+	in_place_matches_full_rebuild(mut document, 'shown')
+}
