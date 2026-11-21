@@ -11294,3 +11294,34 @@ The two bridge changes are within the rounds' variation on their own; the
 arms' captures have identical pixels. With the leaf, shadow and custom element
 changes of this session, Vox observes 1.08 times Brave's instructions
 (against 1.14 at the start of the session).
+
+## JIT thresholds, network work and layout roots, 2026-11-22
+
+**JIT thresholds.** `JSC_dumpOptions=1` shows that the system JavaScriptCore
+honours `JSC_*` options and already runs with `thresholdForJITAfterWarmUp=10000`
+(its documented default is 500); nothing in Vox or the harness sets it. Four
+alternating rounds at host load 5-10: 22.97 billion instructions and 2,605 ms
+(as shipped), 22.88 billion and 2,575 ms (warm-up 500, soon 100), 23.58
+billion and 2,573 ms (100/20). Earlier tier-up adds compilation without
+reducing total work; no change was made.
+
+**Network work on the main thread.** A sampled load spends about 115 ms of
+main-thread time in curl (`curl_multi_socket_action`: TLS record reads,
+handshakes, header handling); the request server is driven from the main run
+loop, so the four XHR responses requested at 1.62-1.70 s all completed at
+about 1.93 s, when the main thread returned to the run loop. Brave does this
+in its network service. Running the curl multi handle on a dedicated thread
+and queueing header, body and completion events to the main thread would free
+that time; it needs the multi handle's add, remove and pause operations
+marshalled to that thread and is not done.
+
+**Layout roots.** Of the hydration passes with tree updates, two declined the
+incremental path for `no-root` and one for too many changes. Every box laid
+out during an ancestor's intrinsic measurement is marked
+`sized_by_ancestor_measurement_`, and no relayout root may sit below such a
+box; on this page that is nearly everything below the flex columns. A box with
+both dimensions fixed or with size containment would be a safe boundary, but
+the page uses `contain: layout size` once and `content-visibility: auto`
+sixteen times, so it would not apply to the hydration changes. Allowing roots
+inside measured subtrees needs proof that each measuring ancestor's inputs are
+unchanged, the main remaining layout project.
