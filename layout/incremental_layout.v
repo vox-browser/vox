@@ -352,6 +352,8 @@ fn try_incremental_relayout(document &dom.Document, root &Node, previous &Layout
 			values := unsafe { &UsedValues(entry) }
 			node := values.node_
 			if node == unsafe { nil } || node.layout_index() in skipped { continue }
+			// A box an in-place tree update removed (in_place_tree_update.v).
+			if voidptr(unsafe { &Node(node) }.root()) != voidptr(root) { continue }
 			mut containing := ?&UsedValues(none)
 			if parent := committed_geometry_parent(unsafe { &Node(node) }, values) {
 				containing = state.get(parent)

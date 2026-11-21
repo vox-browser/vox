@@ -875,18 +875,26 @@ fn document_has_computed_style_for_viewport(document &dom.Document, width f64, h
 // pipeline directly and never repeats the cascade while building the tree.
 fn run_document_layout_with_current_style(document &dom.Document, viewport_width f64, viewport_height f64, needs_layout_tree_rebuild bool) ?DocumentLayoutResult {
 	mut timing_checkpoint := time.sys_mono_now()
+	mut same_tree := !needs_layout_tree_rebuild
 	root := if !needs_layout_tree_rebuild {
 		previous := document_layout_result(document) or { return none }
 		previous.root
 	} else {
 		mut style_computer := css.css_style_computer_for(document)
-		build_layout_tree_from_computed_styles(document, mut style_computer, timing_checkpoint) or {
-			return none
+		// in_place_tree_update.v: keep the committed tree when every flagged
+		// branch can be updated in place.
+		if kept := update_layout_tree_in_place(document, mut style_computer) {
+			same_tree = true
+			kept
+		} else {
+			build_layout_tree_from_computed_styles(document, mut style_computer, timing_checkpoint) or {
+				return none
+			}
 		}
 	}
 	timing_checkpoint = layout_timing_checkpoint('    build_tree_total', timing_checkpoint)
 	return finish_document_layout_with_reuse(document, root, viewport_width, viewport_height,
-		timing_checkpoint, !needs_layout_tree_rebuild)
+		timing_checkpoint, same_tree)
 }
 
 struct SizeQueryContainerGeometry {

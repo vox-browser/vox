@@ -9,11 +9,11 @@ import platform
 
 // Clean subtree reuse rejects form controls because the builder constructs
 // their internal boxes (build_input_internal_layout_children) from state no
-// invalidation flag covers. For the text-like input types those boxes come
-// from the type, value and placeholder attributes and from the input's
-// computed style, whose object a restyle replaces. Record those inputs when
-// the boxes are built; while they are unchanged, a rebuild would construct the
-// same boxes and the kept ones serve.
+// invalidation flag covers. For the text-like, date, number, check and button
+// input types those boxes come from the type, value and placeholder
+// attributes and from the input's computed style, whose object a restyle
+// replaces. Record those inputs when the boxes are built; while they are
+// unchanged, a rebuild would construct the same boxes and the kept ones serve.
 
 // Same-binary control: any input keeps the complete builder.
 const retain_input_tree_rebuilds = os.getenv('VOX_RETAIN_INPUT_TREE_REBUILDS') != ''
@@ -28,7 +28,10 @@ fn input_tree_signature(element &dom.Element) ?u64 {
 	}
 	type_ := element.get_attribute_value('type').trim_space().to_lower()
 	state := html.html_input_element_parse_type_attribute(type_)
-	if state !in [.text, .search, .telephone, .url, .email, .password] { return none }
+	if state !in [.text, .search, .telephone, .url, .email, .password, .date, .month, .week, .time,
+		.local_date_and_time, .number, .checkbox, .radio_button, .submit_button, .reset_button, .button] {
+		return none
+	}
 	computed := css.computed_properties_for_element(element) or { return none }
 	mut signature := fnv1a.sum64_string(type_)
 	for name in ['value', 'placeholder'] {
