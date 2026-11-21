@@ -9,6 +9,8 @@
 // the receipt's `-path`).
 //   benchmark_layout_passes page.html 20 head
 //
+// VOX_BENCHMARK_LAYOUT_SCALE=2 lays out in device pixels at that scale.
+//
 // Modes: full (rebuild the whole layout tree), head (insert an element into
 // <head>), class (toggle a class on one element inside the page), text (change
 // one text node's value, as React updates text).
@@ -35,6 +37,11 @@ fn main() {
 	document.set_browsing_context(&dom.BrowsingContext{ active_document_: document })
 	document.set_navigable(&dom.Navigable{ active_document_: document })
 	document.set_viewport_rect(dom.Rect{ width: 1024, height: 768 })
+	// The browser lays out in device pixels when capturing at a device pixel
+	// ratio (the GitHub benchmark captures at 2).
+	if scale := os.getenv_opt('VOX_BENCHMARK_LAYOUT_SCALE') {
+		document.set_layout_coordinate_scale(scale.f64())
+	}
 	layout.enable_native_paint_tree_storage(document)
 	layout.install_document_layout_hook(document)
 	mut computer := css.css_style_computer_for(document)
