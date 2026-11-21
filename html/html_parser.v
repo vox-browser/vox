@@ -13,6 +13,7 @@ import dom
 import css
 import encoding
 import platform
+import time
 
 __global html_parser_non_append_insertions u64
 
@@ -732,6 +733,8 @@ mut:
 	document      &dom.Document = unsafe { nil }
 	parser        ?&HTMLParser
 	document_stream_generation u64
+	// When the end of parsing began (deferred_script_rendering.v).
+	started_ns u64
 }
 
 pub fn HTMLParserEndState.create(document &dom.Document, parser ?&HTMLParser) &HTMLParserEndState {
@@ -739,6 +742,7 @@ pub fn HTMLParserEndState.create(document &dom.Document, parser ?&HTMLParser) &H
 		document: document
 		parser: parser
 		document_stream_generation: document.html_parser_stream_generation()
+		started_ns: time.sys_mono_now()
 	}
 }
 

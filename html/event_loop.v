@@ -937,7 +937,8 @@ fn (mut event_loop EventLoop) rendering_document_snapshot() RenderingDocumentSna
 		if document.is_decoded_svg() || !document.is_fully_active()
 			|| document.is_render_blocked() || document.hidden()
 			|| document.rendering_suppression_for_view_transitions
-			|| !document_has_a_rendering_opportunity(document) { continue }
+			|| !document_has_a_rendering_opportunity(document)
+			|| document_runs_deferred_scripts(document) { continue }
 		documents[count] = document
 		count++
 	}
