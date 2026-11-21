@@ -10571,3 +10571,56 @@ second sighting (-0.6%), copying ancestor-filter hashes into each matching
 rule to avoid a pointer load (no time difference beyond noise, more
 instructions), and sharing styles between siblings, which only 407 of 2,663
 elements could use.
+
+## The capture timeline and layout passes, 2026-11-21
+
+`VOX_TRACE_CAPTURE_READINESS` lines now carry wall-clock microseconds and
+the ready selector's state (`2c4b9278f`), comparable with the request
+server's `VOX_CURL_TRANSFER_LOG` and the new `VOX_RESOURCE_FETCH_LOG` of
+worker fetches (`ee3a1f273`). On an ordinary JavaScriptCore load the
+selector matches about 1.41 s after the first trace line; the capture then
+waits about 400 ms more for eight image requests and a script-inserted
+module stylesheet (`q4…module.css`), which Brave's harness does not wait
+for (it polls `readyState` and the selector). Those transfers take 17 to
+32 ms; their results wait for the main thread. The initial scripts reach
+the main thread 250 to 380 ms after they are requested: the request server
+is driven from the main thread's run loop, busy with the first style and
+layout then. Letting curl's multi timer fire at cooperative checkpoints
+(`8ffe803b2`) did not change those times in alternating loads and was
+reverted (`b3778596f`).
+
+With cheap per-pass diagnostics (`VOX_STYLE_PASS_DIAGNOSTICS`,
+`VOX_DOCUMENT_LAYOUT_DIAGNOSTICS`, `VOX_LEAF_TIMING_DIAGNOSTICS`) placed
+between the readiness transitions:
+
+| Window | Style passes | Layout passes | Paint replay |
+| --- | --- | --- | --- |
+| launch to interactive (858 ms) | 77 ms | 217 ms in 14 | |
+| interactive to selector (551 ms) | 17 ms | 145 ms in 5 | |
+| selector to capture readiness (436 ms) | 41 ms | 74 ms in 1 | 200 ms in one frame |
+
+The first painted frame replays its 910 steps in about 200 ms (an inset
+box shadow 23 ms, a backdrop filter 20 ms, outer shadows 3 to 6 ms each),
+later frames about 58 ms; that is the native drawing backend.
+
+`tools/benchmark_layout_passes.v` (`13a725834`) lays out the frozen page
+(3.08 billion instructions for its first style and layout) and times one
+layout after a chosen mutation. Any layout tree update cost about 200
+million instructions and a complete rebuild 831 million. A script inserting
+a `<link>` or `<script>` into `<head>` paid that because the insertion and
+the new element's first style each flagged a layout tree update; `fd280697e`
+leaves the tree alone when neither box exists (controls
+`VOX_RETAIN_HIDDEN_INSERTION_TREE_UPDATES=1`,
+`VOX_RETAIN_HIDDEN_STYLE_TREE_UPDATES=1`): 199M -> 2.7M instructions per
+pass. A visible text change (`nodeValue`, as React updates text) still
+costs 243 million: the incremental pass relays out 1,704 boxes from one
+root, because every box laid out for an ancestor's intrinsic measurement
+(grid and flex items) disqualifies the boundaries below it, and each pass
+then rebuilds the whole paint tree projection (21%) and attaches every
+layout node again (10%). Bounding relayout inside measured items, by
+showing their min- and max-content sizes unchanged, and retaining the paint
+projection of unchanged subtrees are the next layout levers.
+
+The style benchmark's `parse` mode measures the page's 4.1 MB of CSS as
+responses are parsed: 982 million instructions, 45% in selector parsing,
+which serializes each prelude back to text and parses that again.
