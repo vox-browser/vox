@@ -46,10 +46,12 @@ from run_memory_bounded import publish_adopted_processes
 ROOT = Path(__file__).resolve().parents[1]
 CAPTURE_COMPILER = ROOT / 'tools/libjs_capture_native_compiler.py'
 PNG_END_CHUNK = b'\x00\x00\x00\x00IEND\xaeB`\x82'
+# Raster parity switches for timed runs. PAINT_LAYER and SCALED_PNG only
+# trace (every paint command of every frame), so they stay out of them.
 RASTER_OPTIONS = ('DOCUMENT_P3 PNG_RENDER_DENSITY PNG_GPU_MIPS ANALYTIC_RECT '
     'DOCUMENT_IMAGE_P3 IMAGE_GAMUT_BEFORE_FILTER PRECISE_TRANSFORM_ORIGIN '
     'SCALED_PNG_SHADOW_GROUP GPU_RECTANGLE_CLIP RECTANGLE_CLIP_DEDUP '
-    'GLYPH_RECTANGLE_CLIP GPU_THIN_RECTANGLE_CLIP PAINT_LAYER SCALED_PNG '
+    'GLYPH_RECTANGLE_CLIP GPU_THIN_RECTANGLE_CLIP '
     'EXTENDED_GLYPH_COLOR EXTENDED_SHAPE_COLOR ROOT_CAPTURE_WIDTH '
     'DISJOINT_ROUNDED_BATCH SHADOWED_PNG_TEXT').split()
 
