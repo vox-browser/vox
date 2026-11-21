@@ -832,8 +832,12 @@ const retain_static_generated_blocking = os.getenv('VOX_RETAIN_STATIC_GENERATED_
 // or pseudo-element box that contains it, which is examined as its parent.
 fn generated_box_depends_on_document_order(node &Node) bool {
 	if node.is_generated_text_node() { return false }
-	if node.is_list_item_marker_box() { return !retained_flow_marker_box_is_static(node) }
-	if node.is_list_item_box() { return !retained_flow_list_item_box_is_static(node) }
+	if node.is_list_item_marker_box() {
+		return !retained_flow_marker_box_is_static(node) && !marker_ordinal_text_is_current(node)
+	}
+	if node.is_list_item_box() {
+		return !retained_flow_list_item_box_is_static(node) && !list_item_ordinal_marker_is_current(node)
+	}
 	if node.is_generated_for_pseudo_element() { return generated_content_uses_document_state(node) }
 	return false
 }

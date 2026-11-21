@@ -169,10 +169,10 @@ fn clean_subtree_blocker(node &Node, mut boxes &int) ?string {
 		return 'generated-content'
 	}
 	if node.is_list_item_marker_box() {
-		if !retained_flow_marker_box_is_static(node) { return 'marker' }
+		if !retained_flow_marker_box_is_built_alike(node) { return 'marker' }
 		return none
 	}
-	if node.is_list_item_box() && !retained_flow_list_item_box_is_static(node) { return 'list-item' }
+	if node.is_list_item_box() && !retained_flow_list_item_box_is_built_alike(node) { return 'list-item' }
 	if metrics := node.as_node_with_style_and_box_model_metrics() {
 		if metrics.continuation_of_node() != none { return 'continuation' }
 	}
