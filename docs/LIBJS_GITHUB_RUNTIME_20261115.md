@@ -11075,3 +11075,14 @@ engine-side remedy is faster hydration: React walks the server DOM with
 instructions per call for known nodes, far more for nodes needing a new
 wrapper); caching child and sibling links in the facade records, keyed by the
 document's tree version, would remove most of those calls.
+
+### Navigation cache (0d7dd3170)
+
+Bundle with the cache, 4 alternating pairs at host load 9-39 (display kept
+awake with `caffeinate -d`; an asleep display fails the capture with "Cannot
+enumerate test displays"), `VOX_RETAIN_NAVIGATION_QUERIES=1` against the
+default: `firstChild`/`nextSibling` bridge calls per load 6,145 -> 4,214
+(first visits still cross); instructions median 25.99B -> 25.41B, PNG median
+3,601 -> 3,563 ms. The file table was regenerated only in the first pair, in
+both arms, so at this load the race is rare either way; the cache's effect on
+it needs a loaded host to measure.
