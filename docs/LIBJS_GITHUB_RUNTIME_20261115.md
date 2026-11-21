@@ -10923,3 +10923,45 @@ median 3,302 ms (control) vs 3,087 ms (in place), instructions median
 24.98B vs 25.33B. Times favour the in-place path; the instruction totals do
 not, which this cohort cannot attribute (faster passes can let more frames
 run before readiness).
+
+## The JavaScript DOM bridge, 2026-11-21 afternoon
+
+With layout passes cheaper, the DOM bridge stands out. `VOX_DIAGNOSTIC_HOST_CALLBACKS=1`
+on the page: GitHub's lazy custom element loader runs, on every animation
+frame, `node.matches(tag) ? node : node.querySelector(tag)` and
+`customElements.get(tag)` for each added node and pending tag: 48,693
+`matches` and 41,513 `querySelector` calls per load. The JSON element query
+transport handles 14,655 calls (`VOX_COMPACT_QUERY_DIAGNOSTICS=1`: 112 ms of
+native time, 41 ms of it layout under `geometry`; `nativeAttribute` 5,234,
+`firstChild`/`nextSibling` 5,401, `documentCreateElement` 362 at 59 µs each).
+
+A JSC microbenchmark (a main-module test timing `evaluate_host` loops with
+thread instruction counters, built `-cflags -O2` and signed with the JIT
+entitlement) gives per-call costs and their fixes:
+
+| call | before | after | change |
+|---|---|---|---|
+| `matches(tag)` | 9.0K | 2.4K | tag selectors answered from the record (1c040155c), proxies instead of host wrappers (f9861dca1) |
+| `matches(.class)` | 8.8K | 7.2K | proxies |
+| `querySelector(tag)` | 8.9K | 7.3K | proxies |
+| `getAttribute` | 34.7K | 7.7K | direct `__ladybirdAttributeValue` host query (6aa299b6a) |
+| `hasAttribute` | 35.0K | 5.4K | same |
+| `createElement("div")` | 220K | 139K | reverse index of native hosts' element maps (faf74bba0) |
+
+Controls: `VOX_RETAIN_TAG_MATCHES_QUERY=1`, `VOX_RETAIN_NATIVE_SELECTOR_HOSTS=1`,
+`VOX_RETAIN_ATTRIBUTE_JSON_READS=1`, `VOX_RETAIN_IDENTITY_KEY_SCANS=1`. Every
+native host registered all ~2,700 initial elements under `__element_N` keys,
+so each element's first bridge key scanned five such maps (~200K
+instructions); the wheel host binds every new wrapper, which is why the index
+is updated per write instead of rebuilt.
+
+Page cohort, 7 alternating pairs on bundle 7dd00add (selector and attribute
+changes, before the host index): all three selector and attribute controls
+against none, instructions median 25.54B -> 25.30B, PNG median 2,838 ms ->
+2,806 ms (within run-to-run spread).
+
+What remains per element creation is the compact facade itself: native
+JSON encoding of the element state (28% of a create in a profile) and JSC
+building the wrapper (JSON parse, `defineProperties`, WeakMap writes, ~58%);
+`querySelector(tag)` still crosses into native for absent tags (a
+per-document census of created local names would let the facade answer).
