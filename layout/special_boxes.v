@@ -1275,6 +1275,10 @@ pub:
 	list_style_type_     css.ListStyleType
 	list_style_position_ css.ListStylePosition
 	list_item_element_   &dom.Element = unsafe { nil }
+mut:
+	// The CSS-coordinate ::marker style this box was built or last refreshed
+	// from (retained_flow_list_items.v). Its own style may be a projection.
+	source_style_ voidptr
 }
 
 pub fn (box &ListItemMarkerBox) has_authored_content() bool {
@@ -1290,6 +1294,7 @@ pub fn ListItemMarkerBox.new(document &dom.Document, list_style_type css.ListSty
 		list_style_type_: list_style_type
 		list_style_position_: list_style_position
 		list_item_element_: list_item_element
+		source_style_: voidptr(computed_values)
 	}
 }
 

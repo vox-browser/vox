@@ -115,7 +115,11 @@ fn retained_flow_marker_box_is_built_alike(node &Node) bool {
 // (refresh_kept_marker_style).
 fn marker_box_keeps_style(node &Node, marker &css.ComputedProperties) bool {
 	if voidptr(node.computed_values()) == voidptr(marker) { return true }
-	return !retain_marker_style_identity && retained_flow_style_matches(node, marker)
+	if retain_marker_style_identity { return false }
+	if box := node.as_list_item_marker_box() {
+		if box.source_style_ == voidptr(marker) { return true }
+	}
+	return retained_flow_style_matches(node, marker)
 }
 
 // Same-binary control: a marker whose style object was replaced rebuilds, as
@@ -129,9 +133,13 @@ fn refresh_kept_marker_style(node &Node) {
 	element := owner.as_element() or { return }
 	marker := css.computed_properties_for_pseudo_element(element, .marker) or { return }
 	if voidptr(node.computed_values()) == voidptr(marker) { return }
+	box := node.as_list_item_marker_box() or { return }
+	if box.source_style_ == voidptr(marker) { return }
 	styled := node.as_node_with_style() or { return }
 	mut mutable := unsafe { &NodeWithStyle(styled) }
 	mutable.apply_style(marker)
+	mut mutable_box := unsafe { &ListItemMarkerBox(box) }
+	mutable_box.source_style_ = voidptr(marker)
 }
 
 // Whether the text a marker built alike would show now is the text its last
