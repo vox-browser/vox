@@ -10891,3 +10891,35 @@ on bundle 3ab2643a (one load, png 2,711 ms): main-document passes 108 ms
 declines: `table-wrapper` on the README article, whose tables sit in inline
 `<markdown-accessiblity-table>` elements (block-in-inline), and `table` for
 a table added inside a rebuilt subtree.
+
+## Tables, the README article and large relayout roots, 2026-11-21 noon
+
+- New and removed subtrees containing tables update in place: each new
+  subtree gets the builder's table fixup pass and a wrapper when its root
+  is a table (18ff8b824, control `VOX_DISABLE_IN_PLACE_TABLES=1`); a table
+  part outside a table still keeps the complete builder (`table-part`).
+- The README article declined every update (`table-wrapper-box`): GitHub's
+  markdown clearfix `::before { display: table; content: "" }` sits in a
+  table wrapper. The wrapper now counts as the parent's generated box
+  (f3e0be85d). Insertions into the article then went in place but cost more
+  (337M against 270M with the complete builder in the scale-2 benchmark):
+  the incremental attempt laid the article out, its automatic height
+  changed, no root above accepted it, and the complete pass redid the work.
+- Relayout roots holding a quarter of a tree of 512 boxes or more now go to
+  the complete pass directly (c6fe67b22, control
+  `VOX_RETAIN_LARGE_RELAYOUT_ROOTS=1`): article insertion 340M -> 239M,
+  text change 225M -> 222M, other modes unchanged, verifier clean.
+
+A text change still costs 222M per pass: a full pass whose formatting
+contexts take 128M. Its reuse rejections are flex items measured at an
+automatic height whose committed record holds the final, definite-height
+call (`differs=content-height`), so each rejected container lays out its
+whole subtree; list item markers in those subtrees take 8% of the pass.
+
+Same-binary page cohort, 7 alternating pairs, bundle 93fe9b07 (everything
+above except c6fe67b22), `VOX_DISABLE_IN_PLACE_TREE_UPDATE=1` against the
+default, host load average 5-11 with a production build compiling: PNG
+median 3,302 ms (control) vs 3,087 ms (in place), instructions median
+24.98B vs 25.33B. Times favour the in-place path; the instruction totals do
+not, which this cohort cannot attribute (faster passes can let more frames
+run before readiness).
