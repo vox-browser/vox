@@ -283,3 +283,18 @@ fn test_subject_only_attribute_tests_restyle_only_the_element() {
 	fixture.middle.set_attribute_value('class', 'pane-x')
 	assert fixture.colors('pane-x') == '${attribute_value_red} ${attribute_value_blue}'
 }
+
+// `:nth-child(… of [data-picked])` counts siblings carrying the attribute, so
+// a flip on one element changes the matches of its later siblings: the test
+// is not the element's own and the name's plan still applies.
+fn test_nth_child_of_attribute_tests_reach_siblings() {
+	mut fixture := attribute_value_fixture('p:nth-child(1 of [data-picked]){color:red}')
+	defer { fixture.document.finalize() }
+	// The sibling is the second child of the scope, after div.mid.
+	fixture.sibling.set_attribute_value('data-picked', '')
+	assert fixture.colors('sibling picked') == '${attribute_value_blue} ${attribute_value_red}'
+	fixture.middle.set_attribute_value('data-picked', '')
+	assert fixture.colors('middle picked') == '${attribute_value_blue} ${attribute_value_blue}'
+	fixture.middle.remove_attribute('data-picked')
+	assert fixture.colors('middle unpicked') == '${attribute_value_blue} ${attribute_value_red}'
+}

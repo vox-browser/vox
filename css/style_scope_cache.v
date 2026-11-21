@@ -1180,7 +1180,10 @@ fn StyleScope.collect_selector_insights_at(selector Selector, subject bool, mut 
 						}
 					}
 				}
-				argument_subject := in_subject && simple_selector.pseudo_class().type_ != .has
+				// :is(), :where() and :not() test their arguments on the element
+				// itself; :has() and :nth-child(of …) on other elements.
+				argument_subject := in_subject
+					&& simple_selector.pseudo_class().type_ in [.is_, .where, .not_]
 				for argument_selector in simple_selector.pseudo_class().argument_selector_list.selectors {
 					StyleScope.collect_selector_insights_at(argument_selector, argument_subject, mut insights)
 				}
