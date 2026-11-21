@@ -220,22 +220,17 @@ fn (mut host ElementWheelHost) resolve_wheel_element_wrapper(target &dom.EventTa
 	// Only elements have wrapper keys; windows, documents and other nodes
 	// never match, so do not refresh the registry for them.
 	if !event_target_is_element(target) { return unsafe { nil } }
-	host.refresh_elements()
-	for key, element in host.elements {
-		if voidptr(element) != voidptr(target) { continue
-		 }
-		wrapper := host.runtime.call_javascript_function(host.resolver,
-			C.vox_jsc_JSValueMakeUndefined(host.runtime.context), [host.runtime.binding_string(key)])!
-		if C.JSValueIsNull(host.runtime.context, wrapper)
-			|| C.JSValueIsUndefined(host.runtime.context, wrapper) {
-			return unsafe { nil }
-		}
-		if !C.JSValueIsObject(host.runtime.context, wrapper) {
-			return error('TypeError: Element resolver returned a non-object wrapper')
-		}
-		return wrapper
+	key := host.wheel_element_key(unsafe { &dom.Element(target) }) or { return unsafe { nil } }
+	wrapper := host.runtime.call_javascript_function(host.resolver,
+		C.vox_jsc_JSValueMakeUndefined(host.runtime.context), [host.runtime.binding_string(key)])!
+	if C.JSValueIsNull(host.runtime.context, wrapper)
+		|| C.JSValueIsUndefined(host.runtime.context, wrapper) {
+		return unsafe { nil }
 	}
-	return unsafe { nil }
+	if !C.JSValueIsObject(host.runtime.context, wrapper) {
+		return error('TypeError: Element resolver returned a non-object wrapper')
+	}
+	return wrapper
 }
 
 fn element_wheel_host_bootstrap() string {

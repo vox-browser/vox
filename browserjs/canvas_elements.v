@@ -197,6 +197,23 @@ pub fn (runtime &Runtime) canvas_element_key_for_binding(element &dom.Element) ?
 	return none
 }
 
+// Every distinct key a provider maps to `element`, in provider order.
+pub fn (runtime &Runtime) canvas_element_keys_for_binding(element &dom.Element) []string {
+	mut keys := []string{}
+	for provider in runtime.canvas_element_providers_ {
+		if provider.identity != unsafe { nil } {
+			for key in provider.identity(element) {
+				if key !in keys { keys << key }
+			}
+		} else {
+			for key, candidate in provider.snapshot() {
+				if voidptr(candidate) == voidptr(element) && key !in keys { keys << key }
+			}
+		}
+	}
+	return keys
+}
+
 pub fn (runtime &Runtime) canvas_elements_for_binding() map[string]&dom.Element {
 	mut elements := map[string]&dom.Element{}
 	for provider in runtime.canvas_element_providers_ {
