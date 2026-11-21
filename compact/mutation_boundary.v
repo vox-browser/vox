@@ -1,6 +1,7 @@
 module main
 
 import browserjs
+import os
 import dom
 import platform
 
@@ -57,6 +58,10 @@ struct CompactDOMTaskOutput {
 
 // Observe task output after reactions settle: a reentrant navigation supersedes
 // the earlier request, and its logs must be collected before the realm retires.
+// VOX_CONSOLE_DIAGNOSTICS=1: print page console messages as each task's
+// output is committed (they are otherwise only shown by the smoke check).
+const compact_console_diagnostics = os.getenv('VOX_CONSOLE_DIAGNOSTICS') != ''
+
 fn apply_compact_dom_task(document &dom.Document, encoded string, runtime &browserjs.Runtime,
 	mut messages []string) !CompactDOMTaskCommit {
 	// Diagnostics and navigation outlive the caller's frame scratch, just as
@@ -76,7 +81,10 @@ fn apply_compact_dom_task(document &dom.Document, encoded string, runtime &brows
 	state := runtime.evaluate_host_temporary_text('__ladybirdTakeTaskOutput()')!
 	defer { state.finish() }
 	output := compact_decode_query[CompactDOMTaskOutput](state.value)!
-	for entry in output.logs { messages << entry.clone() }
+	for entry in output.logs {
+		if compact_console_diagnostics { eprintln('VOX_CONSOLE ${entry.limit(2000)}') }
+		messages << entry.clone()
+	}
 	return CompactDOMTaskCommit{
 		navigation: if output.navigate != '' { ?string(output.navigate.clone()) } else { none }
 	}
