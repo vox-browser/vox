@@ -1152,10 +1152,19 @@ pub fn (scope &StyleScope) rule_cache_for_cascade_origin(cascade_origin CascadeO
 }
 
 pub fn StyleScope.collect_selector_insights(selector Selector, mut insights SelectorInsights) {
-	for compound_selector in selector.compound_selectors() {
+	StyleScope.collect_selector_insights_at(selector, true, mut insights)
+}
+
+// `subject`: the selector's last compound matches the element the rule
+// styles. Earlier compounds, :has() arguments and ::slotted() compounds
+// match other elements.
+fn StyleScope.collect_selector_insights_at(selector Selector, subject bool, mut insights SelectorInsights) {
+	compounds := selector.compound_selectors()
+	for compound_index, compound_selector in compounds {
+		in_subject := subject && compound_index == compounds.len - 1
 		for simple_selector in compound_selector.simple_selectors {
 			if simple_selector.type_ == .attribute {
-				insights.record_attribute_value_test(simple_selector.attribute())
+				insights.record_attribute_value_test(simple_selector.attribute(), in_subject)
 			} else if simple_selector.type_ == .pseudo_class {
 				if simple_selector.pseudo_class().type_ == .local_link {
 					insights.has_local_link_selectors = true
@@ -1171,13 +1180,14 @@ pub fn StyleScope.collect_selector_insights(selector Selector, mut insights Sele
 						}
 					}
 				}
+				argument_subject := in_subject && simple_selector.pseudo_class().type_ != .has
 				for argument_selector in simple_selector.pseudo_class().argument_selector_list.selectors {
-					StyleScope.collect_selector_insights(argument_selector, mut insights)
+					StyleScope.collect_selector_insights_at(argument_selector, argument_subject, mut insights)
 				}
 			} else if simple_selector.type_ == .pseudo_element
 				&& simple_selector.pseudo_element().type_ == .slotted {
 				if argument_selector := simple_selector.pseudo_element().compound_selector {
-					StyleScope.collect_selector_insights(argument_selector, mut insights)
+					StyleScope.collect_selector_insights_at(argument_selector, false, mut insights)
 				}
 			}
 		}
