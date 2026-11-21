@@ -11166,3 +11166,34 @@ surfaces cost Metal driver work beyond the readback waits) and 330 ms at this
 load. The first-call answers are within the rounds' variation. One default
 visit regenerated the file table (27.87 billion, 4,484 ms). Vox now observes
 1.14 times Brave's instructions; times at this host load are not comparable.
+
+## Reused leaf render targets, 2026-11-21 evening
+
+Removing 258 clipped glyph draws saved about 3.5 million instructions per
+draw, while a main-thread microbenchmark of one draw counted about 1.0
+million: most of a GPU leaf's cost lands outside the calling thread. With
+process counters, a rectangle leaf on a new tile-sized (1056x416) surface ran
+1.79 million instructions and 0.63 million on a reused one; creating and
+freeing the surface's color, depth and multisampled images and attachments
+was the difference. `e69f0cf78` gives every GPU paint leaf its render targets
+from a four-entry pool kept by the staged gg.canvas surface helper
+(`new_document_leaf_surface`/`release_document_leaf_surface`); each leaf still
+builds a new `GpuSurface`, so draws, clips and matrices start empty, and only
+image contents carry over, which leaves overwrite, clear or (region leaves)
+read back only where they uploaded. Control `VOX_GG_FRESH_LEAF_SURFACES=1`.
+A test compares 60 pooled region and glyph leaves with new surfaces byte for
+byte.
+
+Five alternating rounds of bundle `0e4e77d8ddb3` (`e69f0cf78`), all 15 visits
+valid, host load average 12-20:
+
+| Arm | Median observed instructions | Median launch to PNG |
+| --- | ---: | ---: |
+| Vox with JavaScriptCore | 23.76 billion | 2,751 ms |
+| `VOX_GG_FRESH_LEAF_SURFACES=1` | 24.49 billion | 2,730 ms |
+| Brave with V8 | 20.81 billion | 2,074 ms |
+
+Every Vox capture of both arms has the same pixels (the PNG files differ only
+in their encoding metadata). The pool saves about 0.73 billion instructions;
+times are within the round-to-round variation at this load. Vox observes 1.14
+times Brave's instructions.
