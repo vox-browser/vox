@@ -289,6 +289,7 @@ fn relayout_incrementally(document &dom.Document, root &Node, previous &LayoutSt
 	mut roots := []&Node{}
 	for origin in origins {
 		relayout_root := incremental_relayout_root_above(previous, origin) or {
+			report_missing_relayout_root(previous, origin)
 			incremental_layout_reject('no-root')
 			return none
 		}
