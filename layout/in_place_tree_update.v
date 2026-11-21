@@ -30,6 +30,9 @@ import os
 // Same-binary control: every layout tree update builds the tree again.
 const disable_in_place_tree_update = os.getenv('VOX_DISABLE_IN_PLACE_TREE_UPDATE') != ''
 const in_place_tree_update_diagnostics = os.getenv('VOX_IN_PLACE_TREE_UPDATE_DIAGNOSTICS') != ''
+// Same-binary control: a flagged element whose own child list cannot be
+// updated in place declines the update instead of being rebuilt by its parent.
+const disable_in_place_escalation = os.getenv('VOX_DISABLE_IN_PLACE_ESCALATION') != ''
 
 __global in_place_tree_update_counts [2]u64
 // Tests of the complete builder's reuse paths suspend in-place updates so that
@@ -67,7 +70,31 @@ mut:
 	// Whether some generated box of the kept tree shows counter or quote
 	// values, which list items and counter operations elsewhere change.
 	counter_content bool
+	// Children rebuilt by their parent's list because their own list could
+	// not be updated in place, by DOM node.
+	forced map[u64]bool
 }
+
+enum InPlacePlan {
+	planned
+	declined
+	// The branch's flagged element cannot keep its box; its parent's list
+	// should rebuild it.
+	escalate
+}
+
+// The element whose child list an in-place update re-syncs: its style and
+// its box, or why its box cannot keep a re-synced list.
+struct InPlaceListParent {
+	element  &dom.Element            = unsafe { nil }
+	computed &css.ComputedProperties = unsafe { nil }
+	box      &Node                   = unsafe { nil }
+	reason   string
+}
+
+// Reasons local to the element's own box: its parent's list can rebuild it.
+const in_place_escalatable_reasons = ['not-element', 'element', 'parent-display', 'first-letter',
+	'parent-box', 'parent-kind']
 
 fn (mut update InPlaceTreeUpdate) decline(reason string) bool {
 	if update.reason == '' {
@@ -118,8 +145,10 @@ fn update_layout_tree_in_place(document &dom.Document, mut style_computer css.St
 	if !update.tree_state_is_current(previous.root) {
 		return decline_in_place_tree_update(update.reason)
 	}
-	if !update.plan_branch(root_node) {
-		return decline_in_place_tree_update(update.reason)
+	match update.plan_branch(root_node) {
+		.planned {}
+		.declined { return decline_in_place_tree_update(update.reason) }
+		.escalate { return decline_in_place_tree_update('root-escalation') }
 	}
 	// With no list to update (every flag inside unrendered subtrees), the
 	// committed tree is already current.
@@ -155,25 +184,77 @@ fn decline_in_place_tree_update(reason string) ?&Node {
 }
 
 // Follow the descendant flags below `node`, planning each flagged element.
-fn (mut update InPlaceTreeUpdate) plan_branch(node &dom.Node) bool {
+fn (mut update InPlaceTreeUpdate) plan_branch(node &dom.Node) InPlacePlan {
 	// Nothing below an element that is not rendered and had no box has a box
 	// to keep or replace (an element that had one is planned by its parent).
 	if element := node.as_element() {
-		if in_place_element_is_unrendered(element) { return true }
+		if in_place_element_is_unrendered(element) { return .planned }
 	}
 	if node.needs_layout_tree_update_() {
-		return update.plan_child_list(node)
+		target := update.child_list_parent(node)
+		if !disable_in_place_escalation && target.reason in in_place_escalatable_reasons {
+			return .escalate
+		}
+		return if update.plan_child_list(node) { .planned } else { .declined }
 	}
-	if !node.child_needs_layout_tree_update_() { return true }
+	if !node.child_needs_layout_tree_update_() { return .planned }
 	if element := node.as_element() {
-		if element.shadow_root() != none { return update.decline('shadow-host') }
-	}
-	for child in node.children {
-		if child.needs_layout_tree_update_() || child.child_needs_layout_tree_update_() {
-			if !update.plan_branch(child) { return false }
+		if element.shadow_root() != none {
+			update.decline('shadow-host')
+			return .declined
 		}
 	}
-	return true
+	mark := update.lists.len
+	for child in node.children {
+		if child.needs_layout_tree_update_() || child.child_needs_layout_tree_update_() {
+			match update.plan_branch(child) {
+				.planned {}
+				.declined { return .declined }
+				.escalate {
+					// Rebuild the child in this node's list instead; the lists
+					// planned below this node are planned again there.
+					update.lists.trim(mark)
+					update.forced[u64(voidptr(child))] = true
+					target := update.child_list_parent(node)
+					if target.reason in in_place_escalatable_reasons { return .escalate }
+					return if update.plan_child_list(node) { .planned } else { .declined }
+				}
+			}
+		}
+	}
+	return .planned
+}
+
+fn (update &InPlaceTreeUpdate) child_list_parent(node &dom.Node) InPlaceListParent {
+	element := node.as_element() or { return InPlaceListParent{ reason: 'not-element' } }
+	if !element.is_html_element() || element.shadow_root() != none
+		|| element.local_name() in in_place_special_parents {
+		return InPlaceListParent{ element: element, reason: 'element' }
+	}
+	if element.rendered_in_top_layer() { return InPlaceListParent{ element: element, reason: 'top-layer' } }
+	computed := css.computed_properties_for_element(element) or {
+		return InPlaceListParent{ element: element, reason: 'unstyled' }
+	}
+	if !in_place_parent_display_is_supported(computed.display()) {
+		return InPlaceListParent{ element: element, reason: 'parent-display' }
+	}
+	if first_letter := css.computed_properties_for_pseudo_element(element, .first_letter) {
+		if !first_letter.display().is_none() {
+			return InPlaceListParent{ element: element, reason: 'first-letter' }
+		}
+	}
+	parent := in_place_box_of(node) or { return InPlaceListParent{ element: element, reason: 'parent-box' } }
+	container := parent.is_block_container() || computed.display().is_flex_inside()
+		|| computed.display().is_grid_inside()
+	if parent.is_anonymous() || parent.is_list_item_box() || parent.is_table_wrapper()
+		|| parent.is_replaced_box() || parent.is_svg_box() || parent.is_fieldset_box() || !container
+		|| voidptr(parent.document()) != voidptr(update.document) {
+		return InPlaceListParent{ element: element, reason: 'parent-kind' }
+	}
+	if voidptr(parent.root()) != voidptr(update.root) {
+		return InPlaceListParent{ element: element, reason: 'detached-parent' }
+	}
+	return InPlaceListParent{ element: element, computed: computed, box: parent }
 }
 
 fn in_place_element_is_unrendered(element &dom.Element) bool {
@@ -256,33 +337,20 @@ fn in_place_inline_contains_blocks(box &Node) bool {
 		if !child.is_inline() && !child.is_out_of_flow() && child.as_node_with_style() != none {
 			return true
 		}
+		// An atomic inline lays its block children out in its own context.
+		if child.is_atomic_inline() { continue }
 		if in_place_inline_contains_blocks(child) { return true }
 	}
 	return false
 }
 
 fn (mut update InPlaceTreeUpdate) plan_child_list(node &dom.Node) bool {
-	element := node.as_element() or { return update.decline('not-element') }
-	update.planning = element
-	if !element.is_html_element() || element.shadow_root() != none
-		|| element.local_name() in in_place_special_parents {
-		return update.decline('element')
-	}
-	if element.rendered_in_top_layer() { return update.decline('top-layer') }
-	computed := css.computed_properties_for_element(element) or { return update.decline('unstyled') }
-	if !in_place_parent_display_is_supported(computed.display()) { return update.decline('parent-display') }
-	if first_letter := css.computed_properties_for_pseudo_element(element, .first_letter) {
-		if !first_letter.display().is_none() { return update.decline('first-letter') }
-	}
-	parent := in_place_box_of(node) or { return update.decline('parent-box') }
-	container := parent.is_block_container() || computed.display().is_flex_inside()
-		|| computed.display().is_grid_inside()
-	if parent.is_anonymous() || parent.is_list_item_box() || parent.is_table_wrapper()
-		|| parent.is_replaced_box() || parent.is_svg_box() || parent.is_fieldset_box() || !container
-		|| voidptr(parent.document()) != voidptr(update.document) {
-		return update.decline('parent-kind')
-	}
-	if voidptr(parent.root()) != voidptr(update.root) { return update.decline('detached-parent') }
+	target := update.child_list_parent(node)
+	if target.element != unsafe { nil } { update.planning = target.element }
+	if target.reason != '' { return update.decline(target.reason) }
+	element := target.element
+	computed := target.computed
+	parent := target.box
 	// The current child boxes: the parent's own generated boxes first and
 	// last, one box per element child and per text child, the latter two
 	// directly or inside the anonymous blocks wrapping inline runs.
@@ -330,10 +398,14 @@ fn (mut update InPlaceTreeUpdate) plan_child_list(node &dom.Node) bool {
 	for child in node.children {
 		key := u64(voidptr(child))
 		if child.is_text() {
+			// A flagged text node (its text became or stopped being white
+			// space) gets a new box.
 			if old := texts[key] {
-				children << old
-				kept[key] = true
-				continue
+				if !child.needs_layout_tree_update_() {
+					children << old
+					kept[key] = true
+					continue
+				}
 			}
 			data := child.as_character_data() or { continue }
 			text := unsafe { &Node(TextNode.new(update.document, child, data.data())) }
@@ -354,16 +426,29 @@ fn (mut update InPlaceTreeUpdate) plan_child_list(node &dom.Node) bool {
 		if old := existing[key] {
 			// A kept table keeps its wrapper; its own box carries its style.
 			built := if old.is_table_wrapper() { in_place_wrapped_table(old) or { old } } else { old }
-			if !child.needs_layout_tree_update_() && built.display() == child_style.display()
+			if !child.needs_layout_tree_update_() && !update.forced[key]
+				&& built.display() == child_style.display()
 				&& retained_flow_style_matches(built, child_style)
 				&& !retained_flow_element_has_generated_pseudo_style(child_element) {
-				children << old
-				kept[key] = true
+				mut keep := true
 				if child.child_needs_layout_tree_update_() {
-					if !update.plan_branch(child) { return false }
+					mark := update.lists.len
+					match update.plan_branch(child) {
+						.planned {}
+						.declined { return false }
+						.escalate {
+							// A flagged descendant needs this child rebuilt.
+							update.lists.trim(mark)
+							keep = false
+						}
+					}
 					update.planning = element
 				}
-				continue
+				if keep {
+					children << old
+					kept[key] = true
+					continue
+				}
 			}
 		}
 		if child_element.shadow_root() != none { return update.decline('shadow-child') }
@@ -371,7 +456,7 @@ fn (mut update InPlaceTreeUpdate) plan_child_list(node &dom.Node) bool {
 			mut update.builder) or { continue }
 		if update.builder.hoisted_pseudo_element_boxes.len != 0 { return update.decline('hoisted') }
 		if built.display().is_contents() { return update.decline('contents-child') }
-		if built.is_inline() && in_place_inline_contains_blocks(built) {
+		if built.is_inline() && !built.is_atomic_inline() && in_place_inline_contains_blocks(built) {
 			return update.decline('block-in-inline')
 		}
 		if !update.subtree_is_self_contained(built) { return false }
