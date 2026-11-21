@@ -459,6 +459,32 @@ fn (mut update InPlaceTreeUpdate) apply(previous &DocumentLayoutResult) {
 		return .@continue
 	})
 	recompute_containing_blocks(update.root)
+	refresh_layout_tree_order(update.root)
+}
+
+// Attaching children invalidates the tree order, which the attachment index,
+// ancestor tests and intrinsic seed visits need valid. Renumber the kept
+// tree's order in place: the committed pass keyed by the same order object
+// still finds unchanged layout indexes, and every node, new ones included,
+// gets a valid range.
+fn refresh_layout_tree_order(root &Node) {
+	if root.tree_order_ == unsafe { nil } || root.tree_order_owner_ != voidptr(root) { return }
+	mut order := unsafe { &LayoutTreeOrder(root.tree_order_) }
+	order.next_index = 0
+	refresh_layout_tree_order_in_subtree(root, mut order)
+	order.valid = true
+}
+
+fn refresh_layout_tree_order_in_subtree(node &Node, mut order LayoutTreeOrder) {
+	mut mutable_node := unsafe { &Node(node) }
+	mutable_node.tree_order_ = &order
+	mutable_node.tree_order_owner_ = voidptr(node)
+	mutable_node.tree_order_start_ = order.next_index
+	order.next_index++
+	for child in node.children() {
+		refresh_layout_tree_order_in_subtree(child, mut order)
+	}
+	mutable_node.tree_order_end_ = order.next_index
 }
 
 // Give every styled node of a new subtree an index no committed box holds.
