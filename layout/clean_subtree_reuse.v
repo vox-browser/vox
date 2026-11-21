@@ -213,7 +213,7 @@ fn clean_subtree_blocker(node &Node, mut boxes &int) ?string {
 			if element := owner.as_element() {
 				if element.is_html_element() && element.local_name() in ['input', 'textarea', 'select',
 					'progress', 'meter', 'fieldset', 'legend', 'iframe', 'object', 'embed', 'canvas',
-					'video', 'audio', 'marquee'] {
+					'video', 'audio', 'marquee'] && !input_tree_is_current(element) {
 					return 'control'
 				}
 				if element.rendered_in_top_layer() { return 'top-layer' }

@@ -2016,6 +2016,7 @@ fn static_control_placeholder_style(document &dom.Document, element &dom.Element
 }
 
 fn build_input_internal_layout_children(document &dom.Document, element &dom.Element, host_computed &css.ComputedProperties) []&Node {
+	note_input_tree_signature(element)
 	type_ := element.get_attribute_value('type').trim_space().to_lower()
 	type_state := html.html_input_element_parse_type_attribute(type_)
 	if type_state in [.text, .search, .telephone, .url, .email, .password, .date,
