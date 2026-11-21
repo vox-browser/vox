@@ -10624,3 +10624,66 @@ projection of unchanged subtrees are the next layout levers.
 The style benchmark's `parse` mode measures the page's 4.1 MB of CSS as
 responses are parsed: 982 million instructions, 45% in selector parsing,
 which serializes each prelude back to text and parses that again.
+
+## Layout tree updates, paint tracing and frames, 2026-11-21
+
+`VOX_DOCUMENT_LAYOUT_DIAGNOSTICS` on the real load shows that most layout
+passes after the first follow a layout tree update (`rebuilds=1`): one
+`<img>` receiving a shadow root or one element inserted into `<body>` costs
+57 to 127 ms. After a tree rebuild the pass is a complete pass that restores
+clean subtrees (`same_tree=false`); incremental relayout roots are only used
+when the tree was kept.
+
+The layout benchmark reproduces this with a `<head>` insertion and the
+boxless-update controls on (`VOX_RETAIN_HIDDEN_INSERTION_TREE_UPDATES=1`,
+`VOX_RETAIN_HIDDEN_STYLE_TREE_UPDATES=1`): a tree update that changes no box
+cost 198 million instructions.
+
+- Every screen-reader-only heading is positioned against the initial
+  containing block, and an out-of-flow descendant whose containing block was
+  outside a subtree blocked that subtree's reuse, so each ancestor of one was
+  laid out again. `97d7f5c94` restores such subtrees and lays out the escaping
+  absolute boxes again afterwards (control
+  `VOX_RETAIN_ESCAPING_ABSOLUTE_BLOCKING=1`; `VOX_INCREMENTAL_LAYOUT_DIAGNOSTICS`
+  reports `reuse=blocked reason=`): 198M -> 167M, and a paragraph text change
+  244M -> 231M, with no differences from complete passes
+  (`VOX_VERIFY_INCREMENTAL_LAYOUT=1`). On the page the change is within the
+  run-to-run spread (seven JSC pairs: 26.63B -> 26.52B median instructions).
+- Clean subtree reuse rejects any subtree containing a form control
+  (`clean_subtree_blocker`: `control`), so the header's `<input>` rebuilds its
+  whole ancestor chain (`<body>`, `<main>` and 23 `<div>`s) in every tree
+  update. Treating that input as reusable lowered the no-op update to 130M
+  instructions in an experiment; doing it safely needs a signature of what the
+  input's internal boxes are built from (type, value and placeholder
+  attributes and the `::placeholder` style).
+- The rest of a no-op update is whole-tree work: the paint tree projection
+  (31%, mostly boxes outside the ordinary snapshot path; SVG paths are
+  serialized and clip paths converted on every pass), DOM layout attachment
+  (13%), counter resolution for kept subtrees that contain list items (9%),
+  the style walk (7%) and scrollable overflow (6%).
+- Answering a flex item's first (automatic-height) layout call from its
+  first-call record in layout passes, as measurements already do, answered
+  about four calls per pass and changed nothing measurable.
+
+The benchmark harness enabled `VOX_DIAGNOSTIC_PAINT_LAYER` and
+`VOX_DIAGNOSTIC_SCALED_PNG` among its raster parity switches. Both only
+trace: every paint command of every frame went to the log (about 10,000 lines
+per load), and the paint-layer switch was read with `getenv` inside
+per-command loops. `52fe6816f` reads it once and keeps the parity paths
+quiet; `ee6cce958` leaves both out of timed runs. In seven alternating pairs
+the paint tracing accounted for 0.87 billion instructions (26.68B -> 25.81B
+median); wall times in that cohort are unusable (host load rose to 60). The
+capture's ready selector (one `:has()` per file row) was evaluated over the
+whole document on every frame, about 50 ms per load; `445e6f802` keeps its
+answer while the document's tree and attribute versions are unchanged.
+
+A sampled JSC load (main thread, about 1.8 ms per sample) spends about 440 ms
+in layout, 600 ms in paint replay with the tracing on, 280 ms in JavaScript and
+150 ms in style; the rest of the window is the one-second settle. Stylesheet
+parsing does not appear on the main thread. `VOX_LEAF_TIMING_DIAGNOSTICS`
+counts four document frames before the capture, each replayed completely:
+207, 69, 54 and 56 ms. The glyph rectangle clip parity switch draws each
+clipped glyph run through a GPU surface and reads it back synchronously
+(`GpuSurface.read_pixels` waits for the command buffer), about 288 runs and
+100 ms per load; that switch is enabled only by the benchmark's parity
+options.
