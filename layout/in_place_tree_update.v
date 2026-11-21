@@ -64,6 +64,9 @@ mut:
 	reason         string
 	// The flagged element being planned, for diagnostics.
 	planning       &dom.Element = unsafe { nil }
+	// Whether some generated box of the kept tree shows counter or quote
+	// values, which list items and counter operations elsewhere change.
+	counter_content bool
 }
 
 fn (mut update InPlaceTreeUpdate) decline(reason string) bool {
@@ -173,8 +176,15 @@ fn in_place_parent_display_is_supported(display css.Display) bool {
 // nothing in it affects the counters, quotes, SVG resources or table structure
 // of boxes outside it.
 fn (mut update InPlaceTreeUpdate) subtree_is_self_contained(box &Node) bool {
-	if box.is_list_item_box() || box.is_list_item_marker_box() { return update.decline('list-item') }
-	if box.is_svg_box() || box.is_svg_svg_box() || is_svg_resource_box(box) { return update.decline('svg') }
+	// Markers take their text from the item's ordinal during layout; counter
+	// state only matters to generated content that shows it.
+	if (box.is_list_item_box() || box.is_list_item_marker_box()) && update.counter_content {
+		return update.decline('list-item')
+	}
+	if box.is_svg_svg_box() {
+		return in_place_svg_is_closed(box) || update.decline('svg')
+	}
+	if box.is_svg_box() || is_svg_resource_box(box) { return update.decline('svg') }
 	if box.is_table_wrapper() || box.display().is_table_inside() || box.display().is_internal_table() {
 		return update.decline('table')
 	}
@@ -183,8 +193,8 @@ fn (mut update InPlaceTreeUpdate) subtree_is_self_contained(box &Node) bool {
 	}
 	if styled := box.as_node_with_style() {
 		values := unsafe { &css.ComputedValues(styled.computed_values()) }
-		if values.counter_reset().len != 0 || values.counter_increment().len != 0
-			|| values.counter_set().len != 0 {
+		if update.counter_content && (values.counter_reset().len != 0
+			|| values.counter_increment().len != 0 || values.counter_set().len != 0) {
 			return update.decline('counter')
 		}
 	}
@@ -472,6 +482,9 @@ const in_place_control_names = ['input', 'textarea', 'select', 'progress', 'mete
 	'legend', 'iframe', 'object', 'embed', 'canvas', 'video', 'audio', 'marquee']
 
 fn (mut update InPlaceTreeUpdate) tree_state_is_current(node &Node) bool {
+	if node.is_generated_for_pseudo_element() && generated_content_uses_document_state(node) {
+		update.counter_content = true
+	}
 	if node.is_image_box() {
 		if !retained_flow_raster_image_is_ordinary(node) && !retained_svg_image_box_is_current(node) {
 			return update.decline('image-state')
@@ -508,6 +521,34 @@ fn (mut update InPlaceTreeUpdate) tree_state_is_current(node &Node) bool {
 	}
 	for child in node.children() {
 		if !update.tree_state_is_current(child) { return false }
+	}
+	return true
+}
+
+// An SVG viewport whose subtree is made of plain shapes with no references
+// (no href, no url() attribute or paint, clip or mask), so nothing outside it
+// instantiates or depends on its content.
+fn in_place_svg_is_closed(node &Node) bool {
+	if is_svg_resource_box(node) { return false }
+	if node.is_text_node() {
+		text := node.as_text_node() or { return false }
+		return text.text_for_rendering().trim_space() == ''
+	}
+	owner := node.dom_node() or { return false }
+	element := owner.as_element() or { return false }
+	if !element.is_svg_element() || element.local_name() !in ['svg', 'g', 'path', 'rect', 'circle',
+		'ellipse', 'line', 'polyline', 'polygon'] {
+		return false
+	}
+	if list := element.attribute_list() {
+		for index in 0 .. list.length() {
+			attribute := list.item(index) or { return false }
+			if attribute.local_name() == 'href' || attribute.value().contains('url(') { return false }
+		}
+	}
+	if !retained_simple_svg_style_is_closed(node) { return false }
+	for child in node.children() {
+		if !in_place_svg_is_closed(child) { return false }
 	}
 	return true
 }

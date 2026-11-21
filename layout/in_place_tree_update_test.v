@@ -44,7 +44,7 @@ fn test_block_child_list_changes_keep_the_committed_tree() {
 	enabled := os.getenv('VOX_DISABLE_IN_PLACE_TREE_UPDATE') == ''
 	mut app := document.get_element_by_id('app') or { panic('app') }
 	mut app_node := app.as_node()
-	steps := ['append', 'remove', 'restyle', 'portal', 'inline']
+	steps := ['append', 'remove', 'restyle', 'portal', 'inline', 'list', 'icon']
 	for step in steps {
 		kept_app := in_place_handle(document, 'app')
 		kept_tail := in_place_handle(document, 'tail')
@@ -65,6 +65,16 @@ fn test_block_child_list_changes_keep_the_committed_tree() {
 			'restyle' {
 				mut second := document.get_element_by_id('b') or { panic('b') }
 				second.set_attribute_value('class', 'row')
+			}
+			'list' {
+				mut list := document.create_element('div') or { panic(err) }
+				list.set_inner_html('<ol><li>one</li><li>two</li></ol>') or { panic(err) }
+				app_node.append_child(list.as_node()) or { panic(err) }
+			}
+			'icon' {
+				mut icon := document.create_element('div') or { panic(err) }
+				icon.set_inner_html('<svg width="16" height="16" viewBox="0 0 16 16"><path d="M0 0h16v16H0z"/></svg>') or { panic(err) }
+				app_node.append_child(icon.as_node()) or { panic(err) }
 			}
 			'inline' {
 				mut span := document.create_element('span') or { panic(err) }
@@ -94,10 +104,15 @@ fn test_block_child_list_changes_keep_the_committed_tree() {
 	}
 }
 
-// A list item or a table keeps the complete builder.
+// A table, or generated content showing a counter, keeps the complete
+// builder; so do list items once some generated content shows counters.
 fn test_unsupported_child_lists_keep_the_complete_builder() {
-	for markup in ['<li id="new">item</li>', '<table id="new"><tr><td>cell</td></tr></table>'] {
-		mut document := in_place_document()
+	for markup in ['<table id="new"><tr><td>cell</td></tr></table>',
+		'<div class="counted">counted</div>', '<ol><li>one</li></ol>'] {
+		mut document := html.parse_document('<!doctype html><style>
+			body{margin:0;font:16px/20px sans-serif}
+			.counted::before{content:counter(list-item) ". "}
+		</style><body><div id="app"><div id="a">a</div><div class="counted">first</div></div></body>')
 		defer { document.finalize() }
 		_ = layout_document_typed_in_viewport(document, 400, 300)
 		mut app := document.get_element_by_id('app') or { panic('app') }
