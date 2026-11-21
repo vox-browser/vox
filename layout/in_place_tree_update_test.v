@@ -156,3 +156,50 @@ fn test_changed_builder_state_keeps_the_complete_builder() {
 		in_place_matches_full_rebuild(mut document, state)
 	}
 }
+
+// Scripts set an input's type through its model (`input.type = 'hidden'`),
+// as the JavaScript bridge relays attribute changes.
+fn in_place_set_input_type(element &dom.Element, value string) {
+	mut model := html.HTMLInputElementModel.create(unsafe { &dom.HTMLInputElement(element) })
+	model.set_type(value)
+}
+
+// Typing a disconnected input requests nothing of the document's layout
+// tree, so inserting it keeps the committed tree; changing a connected
+// input's type still replaces its box.
+fn test_inserted_typed_inputs_keep_the_committed_tree() {
+	mut document := in_place_document()
+	defer { document.finalize() }
+	_ = layout_document_typed_in_viewport(document, 400, 300)
+	enabled := os.getenv('VOX_DISABLE_IN_PLACE_TREE_UPDATE') == ''
+	kept_tail := in_place_handle(document, 'tail')
+	updated_before, _ := in_place_tree_update_statistics()
+	mut form := document.create_element('div') or { panic(err) }
+	mut form_node := form.as_node()
+	for type_, id in {
+		'hidden':   'token'
+		'checkbox': 'check'
+	} {
+		mut input := document.create_element('input') or { panic(err) }
+		in_place_set_input_type(input, type_)
+		input.set_attribute_value('id', id)
+		form_node.append_child(input.as_node()) or { panic(err) }
+	}
+	assert !document.needs_full_layout_tree_update()
+	mut app := document.get_element_by_id('app') or { panic('app') }
+	mut app_node := app.as_node()
+	app_node.append_child(form_node) or { panic(err) }
+	document.update_layout(.debugging)
+	updated_after, _ := in_place_tree_update_statistics()
+	if enabled {
+		assert updated_after == updated_before + 1
+		assert in_place_handle(document, 'tail') == kept_tail
+	}
+	in_place_matches_full_rebuild(mut document, 'typed inputs')
+	check := document.get_element_by_id('check') or { panic('check') }
+	kept_check := in_place_handle(document, 'check')
+	in_place_set_input_type(check, 'radio')
+	document.update_layout(.debugging)
+	assert in_place_handle(document, 'check') != kept_check
+	in_place_matches_full_rebuild(mut document, 'type change')
+}

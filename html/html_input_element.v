@@ -447,9 +447,14 @@ pub fn (mut model HTMLInputElementModel) type_attribute_changed(old_state HTMLIn
 	// Input states select different concrete layout-node classes (for example,
 	// TextInputBox versus ImageBox). The shadow-root transition below dirties a
 	// subtree when either state materializes one, but states without a shadow
-	// root still require the host node itself to be replaced.
-	mut document := unsafe { &dom.Document(element.document()) }
-	document.set_needs_full_layout_tree_update(true)
+	// root still require the host node itself to be replaced. A disconnected
+	// input has no box: inserting it flags it like any other new node, so
+	// parsing or scripting `<input type=hidden>` into a fragment requests
+	// nothing of the document's layout tree.
+	mut host := element.as_node()
+	if host.is_connected() {
+		host.set_needs_layout_tree_update(true, .element_set_shadow_root)
+	}
 	if old_mode == .value && model.value_ != '' && new_mode in [.default_, .default_on] {
 		element.set_attribute_value('value', model.value_)
 	} else if old_mode != .value && new_mode == .value {
