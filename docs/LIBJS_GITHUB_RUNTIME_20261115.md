@@ -10965,3 +10965,20 @@ JSON encoding of the element state (28% of a create in a profile) and JSC
 building the wrapper (JSON parse, `defineProperties`, WeakMap writes, ~58%);
 `querySelector(tag)` still crosses into native for absent tags (a
 per-document census of created local names would let the facade answer).
+
+### A hydration race the bridge speedups tilt
+
+Cohorts on bundle 69e4e247 (all four bridge changes) at host load 30-60
+showed loads clustering at ~25.7B or ~28.5B instructions. Per-load JSON
+bridge counts explain the clusters: in the expensive loads the page creates
+~1,200 elements (133 `td`, 35 `tr`) instead of ~460, i.e. React
+client-renders the file table instead of hydrating its server markup. The
+tag `matches()` fast path tilts this race (5 of 5 loads with it, 1 of 3
+without, VOX_RETAIN_TAG_MATCHES_QUERY=1), although its answers agree with
+native matching for parsed, `innerHTML`, created, inserted, shadow, fragment,
+template, cloned and SVG elements (checked in a main-module probe). The
+faster lazy loader upgrades custom elements before React hydrates that
+region; the visible result is unchanged (paint commands 907 vs 908). Why
+hydration then mismatches (what an earlier custom element upgrade changes in
+the light DOM React compares) is the next thing to establish, together with
+whether Brave hydrates or re-renders the table.
