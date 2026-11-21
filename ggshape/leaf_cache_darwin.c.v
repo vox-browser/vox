@@ -23,6 +23,9 @@ const leaf_cache_shape = u8(2)
 const leaf_cache_shapes = u8(3)
 const leaf_cache_svg_image = u8(4)
 const leaf_cache_whole_shape = u8(5)
+const leaf_cache_tile_shape = u8(6)
+// VOX_LEAF_CACHE_MAX_ENTRY_BYTES: larger results are not stored.
+const leaf_cache_max_entry_bytes = 512 * 1024
 
 // LeafCacheKey collects every input of one region draw. Two draws with equal
 // bytes upload the same backdrop and record the same draws on surfaces of the

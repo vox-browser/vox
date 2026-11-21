@@ -208,6 +208,30 @@ fn draw_document_shape_tiles(pixels &u8, width i32, height i32, pitch i32, backd
 					}
 				}
 			}
+			if !retain_whole_tile_shape_draws {
+				// The tile holds only the leaf's rows; draw it through the leaf
+				// raster cache, which keeps that rectangle of the result.
+				leaf_width := right - left
+				mut leaf_rows := []u8{len: leaf_width * (bottom - top) * 4}
+				for y in top .. bottom {
+					unsafe {
+						vmemcpy(&leaf_rows[(y - top) * leaf_width * 4],
+							pixels + (y - y0) * int(pitch) + (left - x0) * 4, leaf_width * 4)
+					}
+				}
+				if ggshape.draw_tile_leaf(mut leaf_rows, left - ox, top - oy, leaf_width, bottom - top,
+					grid.width, grid.height, backdrop, &draw) == 0 {
+					return 0
+				}
+				for y in publish_top .. publish_bottom {
+					unsafe {
+						vmemcpy(&result[(y - y0) * int(pitch) + (publish_left - x0) * 4],
+							&leaf_rows[((y - top) * leaf_width + publish_left - left) * 4],
+							(publish_right - publish_left) * 4)
+					}
+				}
+				continue
+			}
 			if tile.len == 0 { tile = []u8{len: grid.width * grid.height * 4} }
 			for i in 0 .. tile.len { tile[i] = 0 }
 			for y in top .. bottom {
@@ -230,6 +254,10 @@ fn draw_document_shape_tiles(pixels &u8, width i32, height i32, pitch i32, backd
 	unsafe { vmemcpy(pixels, result.data, result.len) }
 	return 1
 }
+
+// Same-binary control: draw a whole-tile shape leaf (a filtered shape, or one
+// whose region rows are unavailable) on a full tile copy every time.
+const retain_whole_tile_shape_draws = os.getenv('VOX_RETAIN_WHOLE_TILE_SHAPE_DRAWS') != ''
 
 // Replay SVG leaves in the owning picture tile, including its sample count.
 fn draw_document_path_tiles(pixels &u8, width i32, height i32, pitch i32, backdrop i32,

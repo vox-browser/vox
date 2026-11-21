@@ -113,19 +113,29 @@ fn draw_shape_pixels(pixels &u8, width i32, height i32, pitch i32, has_backgroun
 		return 0
 	}
 	samples := if shape.force_msaa != 0 { 4 } else { 1 }
-	// Box shadows and other whole-leaf shapes repeat every frame of a page
-	// load over the same backdrop; like region draws, an identical earlier
-	// draw supplies the pixels it read back.
+	// Whole-leaf shapes repeat every frame of a page load over the same
+	// backdrop; like region draws, an identical earlier draw supplies the
+	// pixels it read back. Surfaces too large to store skip the key.
 	whole := SurfaceRegion{
 		surface_width:  int(width)
 		surface_height: int(height)
 		width:          int(width)
 		height:         int(height)
 	}
-	mut key := new_leaf_cache_key(leaf_cache_whole_shape, i32(samples), pixels, pitch, whole,
-		has_background != 0)
+	mut key := if int(width) * int(height) * 4 <= leaf_cache_max_entry_bytes {
+		new_leaf_cache_key(leaf_cache_whole_shape, i32(samples), pixels, pitch, whole,
+			has_background != 0)
+	} else {
+		LeafCacheKey{}
+	}
 	key.add_shape(shape)
 	if key.fetch(pixels, pitch, whole) { return 1 }
+	return draw_shape_on_surface(pixels, width, height, pitch, has_background, shape, samples,
+		key, whole)
+}
+
+fn draw_shape_on_surface(pixels &u8, width i32, height i32, pitch i32, has_background i32,
+	shape &C.VoxGraphiteShape, samples int, key LeafCacheKey, whole SurfaceRegion) i32 {
 	mut ctx := context() or { return 0 }
 	// Each draw has its own surface (with pooled render targets): it and its
 	// draw lists belong to the caller's scope. sokol.gfx releases its Metal
@@ -578,4 +588,50 @@ pub fn localize_rounded_shape(shape C.VoxGraphiteShape, origin_x f32, origin_y f
 	result.matrix[2] += m[0] * origin_x
 	result.matrix[5] += m[4] * origin_y
 	return result
+}
+
+// draw_tile_leaf is draw() on a transparent tile of `tile_width` x
+// `tile_height` holding only a leaf's backdrop: `rows` (`width` x `height`,
+// tightly packed) at (`x`, `y`) in the tile. It returns that rectangle of the
+// result in `rows`. Filtered shapes (box shadows) draw on their whole tile,
+// whose transfer is too large for the leaf raster cache; the leaf rectangle
+// is all the caller publishes, and with the descriptor, tile size, sample
+// count and backdrop rows it determines the result, so identical draws on
+// later frames copy it from the cache.
+pub fn draw_tile_leaf(mut rows []u8, x int, y int, width int, height int, tile_width int,
+	tile_height int, backdrop i32, shape &C.VoxGraphiteShape) i32 {
+	if shape == unsafe { nil } || width <= 0 || height <= 0 || x < 0 || y < 0
+		|| x + width > tile_width || y + height > tile_height || rows.len != width * height * 4 {
+		return 0
+	}
+	samples := if shape.force_msaa != 0 { 4 } else { 1 }
+	leaf := SurfaceRegion{
+		surface_width:  tile_width
+		surface_height: tile_height
+		x:              x
+		y:              y
+		width:          width
+		height:         height
+	}
+	mut key := new_leaf_cache_key(leaf_cache_tile_shape, i32(samples), rows.data, i32(width * 4),
+		leaf, backdrop != 0)
+	key.add_shape(shape)
+	if key.fetch(rows.data, i32(width * 4), leaf) { return 1 }
+	mut tile := []u8{len: tile_width * tile_height * 4}
+	for row in 0 .. height {
+		unsafe {
+			vmemcpy(&tile[((y + row) * tile_width + x) * 4], &rows[row * width * 4], width * 4)
+		}
+	}
+	if draw_shape_on_surface(tile.data, i32(tile_width), i32(tile_height), i32(tile_width * 4),
+		backdrop, shape, samples, LeafCacheKey{}, SurfaceRegion{}) == 0 {
+		return 0
+	}
+	for row in 0 .. height {
+		unsafe {
+			vmemcpy(&rows[row * width * 4], &tile[((y + row) * tile_width + x) * 4], width * 4)
+		}
+	}
+	key.store(rows.data, i32(width * 4), leaf)
+	return 1
 }
