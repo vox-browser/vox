@@ -84,8 +84,13 @@ fn commit_dom_layout_attachment(root_box &Node, state &LayoutState, prepared Pre
 	// follow the same tree order as a fresh attachment.
 	mut placeholders := DOMLayoutAttachmentIndex.new(root_box)
 	mut inline_pieces := map[u64][]InlineBoxPiece{}
-	return attach_layout_node_recursive(root_box, none, state, attachment_parent_user_select(root_box), true, mut placeholders,
+	// Every box's absolute offset, memoized as projection does; without the
+	// session each box walks its whole containing block chain.
+	coordinates := begin_paint_coordinate_session(state)
+	root := attach_layout_node_recursive(root_box, none, state, attachment_parent_user_select(root_box), true, mut placeholders,
 		mut inline_pieces, true, provider)
+	coordinates.finish()
+	return root
 }
 
 fn collect_dom_text_visual_lines(box &Node, state &LayoutState) []dom.VisualLine {
