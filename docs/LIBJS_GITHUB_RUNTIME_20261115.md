@@ -10982,3 +10982,17 @@ region; the visible result is unchanged (paint commands 907 vs 908). Why
 hydration then mismatches (what an earlier custom element upgrade changes in
 the light DOM React compares) is the next thing to establish, together with
 whether Brave hydrates or re-renders the table.
+
+Follow-up: in a re-rendering load the README images and `/vlang/v/_sidebar`
+are fetched twice, so React client-renders the whole repository overview
+root, not just the file table. `VOX_CONSOLE_DIAGNOSTICS=1` (22822b4a0,
+3c25359f7: every committed console message and every `reportError()` call)
+shows nothing in either outcome: GitHub's `react-app` passes its own
+`onRecoverableError` to `hydrateRoot`, which reports to GitHub's telemetry
+instead of the console. The outcome follows host load (at load 30-90 most
+loads re-render with or without the tag fast path). Vox runs
+`requestAnimationFrame` callbacks in rendering tasks queued from the display
+link into the same task queue as React's scheduled hydration work, so the
+lazy loader's frame batch (which defines and upgrades custom elements inside
+the server markup) can run before hydration; identifying the mismatching
+upgrade needs the error React passes to that handler.
