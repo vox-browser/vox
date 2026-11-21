@@ -60,7 +60,7 @@ pub fn (mut host ElementWheelHost) install(mut runtime Runtime) ! {
 		return unsafe { host.elements[key] }
 	}, fn [handle] (element &dom.Element) []string {
 		host := unsafe { &ElementWheelHost(handle) }
-		return native_canvas_element_identity_keys(host.elements, element)
+		return native_canvas_element_identity_keys(voidptr(host), host.elements, element)
 	}, fn [handle] (registry &CanvasElementRegistry) {
 		host := unsafe { &ElementWheelHost(handle) }
 		for key, element in host.elements { registry.set(key, element) }
@@ -78,6 +78,7 @@ pub fn (mut host ElementWheelHost) install(mut runtime Runtime) ! {
 		host.resolver = unsafe { nil }
 		host.records = {}
 		host.elements = {}
+		invalidate_element_key_index(voidptr(host))
 	})
 }
 

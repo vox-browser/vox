@@ -35,6 +35,7 @@ pub fn ElementWheelHost.create_with_replay(document &dom.Document, replay ?Eleme
 	}
 	for index, element in css.query_selector_all(unsafe { &dom.Node(document) }, '*') {
 		host.elements['__element_${index}'] = element
+		invalidate_element_key_index(voidptr(host))
 	}
 	return host
 }
@@ -45,6 +46,7 @@ pub fn (host &ElementWheelHost) elements_for_binding() map[string]&dom.Element {
 
 fn (mut host ElementWheelHost) refresh_elements() {
 	host.runtime.merge_canvas_elements_into(mut host.elements)
+	invalidate_element_key_index(voidptr(host))
 }
 
 fn event_target_is_element(target &dom.EventTarget) bool {
@@ -55,6 +57,7 @@ fn event_target_is_element(target &dom.EventTarget) bool {
 fn (mut host ElementWheelHost) element_for_wheel_binding(key string, tag string, namespace string) !&dom.Element {
 	if element := host.runtime.canvas_element_for_binding(key) {
 		host.elements[key] = element
+		note_element_key_write(voidptr(host), key, element, host.elements.len)
 	}
 	if element := host.elements[key] {
 		// Wrapper state names a prefixed element by its qualified name.
@@ -87,5 +90,6 @@ fn (mut host ElementWheelHost) element_for_wheel_binding(key string, tag string,
 		return error('TypeError: Media elements retain their native media binding')
 	}
 	host.elements[key] = element
+	note_element_key_write(voidptr(host), key, element, host.elements.len)
 	return element
 }

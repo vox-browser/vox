@@ -49,6 +49,7 @@ pub fn ImageHost.create(document &dom.Document, fetch_hook ?html.HTMLImageFetchH
 	mut host := &ImageHost{ document: document, settings: unsafe { &html.EnvironmentSettingsObject(document.relevant_settings_object()) }, fetch_hook: fetch_hook, replay: replay }
 	for index, element in css.query_selector_all(unsafe { &dom.Node(document) }, '*') {
 		host.elements['__element_${index}'] = element
+		invalidate_element_key_index(voidptr(host))
 	}
 	return host
 }
@@ -111,6 +112,7 @@ pub fn (host &ImageHost) image_for_binding(wrapper voidptr) !&dom.HTMLImageEleme
 fn (mut host ImageHost) element_for_binding(key string) !&dom.Element {
 	if element := host.runtime.canvas_element_for_binding(key) {
 		host.elements[key] = element
+		note_element_key_write(voidptr(host), key, element, host.elements.len)
 	}
 	if element := host.elements[key] {
 		if element.is_html_element() && element.local_name() == 'img' { return element }
@@ -121,6 +123,7 @@ fn (mut host ImageHost) element_for_binding(key string) !&dom.Element {
 	}
 	element := dom.create_element(host.document, 'img', 'http://www.w3.org/1999/xhtml', none, none, false)!
 	host.elements[key] = element
+	note_element_key_write(voidptr(host), key, element, host.elements.len)
 	return element
 }
 

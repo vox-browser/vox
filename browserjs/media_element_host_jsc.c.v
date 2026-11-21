@@ -340,7 +340,7 @@ pub fn (mut host MediaElementHost) install(mut runtime Runtime) ! {
 		return unsafe { host.elements[key] }
 	}, fn [handle] (element &dom.Element) []string {
 		host := unsafe { &MediaElementHost(handle) }
-		return native_canvas_element_identity_keys(host.elements, element)
+		return native_canvas_element_identity_keys(voidptr(host), host.elements, element)
 	}, fn [handle] (registry &CanvasElementRegistry) {
 		host := unsafe { &MediaElementHost(handle) }
 		for key, element in host.elements { registry.set(key, element) }
@@ -370,6 +370,7 @@ pub fn (mut host MediaElementHost) install(mut runtime Runtime) ! {
 		host.bound_elements = {}
 		host.records = {}
 		host.elements = {}
+		invalidate_element_key_index(voidptr(host))
 	})
 	// The combined Document compiler must use this owner's actual media records.
 	runtime.media_element_hosts_ << &host

@@ -35,6 +35,7 @@ pub fn CanvasHost.create(document &dom.Document) &CanvasHost {
 	root := unsafe { &dom.Node(document) }
 	for index, element in css.query_selector_all(root, '*') {
 		host.elements['__element_${index}'] = element
+		invalidate_element_key_index(voidptr(host))
 	}
 	return host
 }
@@ -50,6 +51,7 @@ pub fn (mut host CanvasHost) install(mut runtime Runtime) ! {
 			if hook := host.before_draw { hook(runtime)! }
 		}
 		runtime.merge_canvas_elements_into(mut host.elements)
+		invalidate_element_key_index(voidptr(host))
 		return host.call_request(request)
 	})!
 	runtime.add_canvas_element_provider_with_merge(fn [mut host] () map[string]&dom.Element {
@@ -58,7 +60,7 @@ pub fn (mut host CanvasHost) install(mut runtime Runtime) ! {
 		if key !in host.elements { return none }
 		return unsafe { host.elements[key] }
 	}, fn [host] (element &dom.Element) []string {
-		return native_canvas_element_identity_keys(host.elements, element)
+		return native_canvas_element_identity_keys(voidptr(host), host.elements, element)
 	}, fn [mut host] (registry &CanvasElementRegistry) {
 		for key, element in host.elements { registry.set(key, element) }
 	})
@@ -169,6 +171,7 @@ fn (mut host CanvasHost) context_for(key string, width u32, height u32, settings
 	context := html.html_canvas_element_get_context(canvas, '2d', settings)!
 	record := &CanvasHostContext{ context: &context.OffscreenCanvasRenderingContext2D, element_context: context }
 	host.elements[key] = element
+	note_element_key_write(voidptr(host), key, element, host.elements.len)
 	host.contexts[key] = record
 	return record
 }

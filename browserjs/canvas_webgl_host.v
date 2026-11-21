@@ -42,6 +42,7 @@ pub fn CanvasWebGLHost.create(document &dom.Document) &CanvasWebGLHost {
 	root := unsafe { &dom.Node(document) }
 	for index, element in css.query_selector_all(root, '*') {
 		host.elements['__element_${index}'] = element
+		invalidate_element_key_index(voidptr(host))
 	}
 	return host
 }
@@ -54,6 +55,7 @@ pub fn (host &CanvasWebGLHost) elements_for_binding() map[string]&dom.Element {
 pub fn (mut host CanvasWebGLHost) install(mut runtime Runtime) ! {
 	runtime.define_host_function('__ladybirdWebGL', fn [mut host, mut runtime] (input string) !string {
 		runtime.merge_canvas_elements_into(mut host.elements)
+		invalidate_element_key_index(voidptr(host))
 		return host.call(input)
 	})!
 	runtime.add_canvas_element_provider_with_merge(fn [mut host] () map[string]&dom.Element {
@@ -62,7 +64,7 @@ pub fn (mut host CanvasWebGLHost) install(mut runtime Runtime) ! {
 		if key !in host.elements { return none }
 		return unsafe { host.elements[key] }
 	}, fn [host] (element &dom.Element) []string {
-		return native_canvas_element_identity_keys(host.elements, element)
+		return native_canvas_element_identity_keys(voidptr(host), host.elements, element)
 	}, fn [mut host] (registry &CanvasElementRegistry) {
 		for key, element in host.elements { registry.set(key, element) }
 	})
@@ -340,6 +342,7 @@ fn (mut host CanvasWebGLHost) dispatch(request map[string]json2.Any) !json2.Any 
 			mut document := unsafe { &dom.Document(host.document) }
 			created := document.create_element_ns('http://www.w3.org/1999/xhtml', 'canvas')!
 			host.elements[key] = created
+			note_element_key_write(voidptr(host), key, created, host.elements.len)
 			created
 		}
 		if element.local_name() != 'canvas' { return json2.Any(json2.Null{}) }
