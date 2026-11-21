@@ -124,3 +124,31 @@ fn list_item_ordinal_marker_is_current(node &Node) bool {
 	marker := list_item.marker() or { return true }
 	return retained_flow_marker_box_is_static(marker) || marker_ordinal_text_is_current(marker)
 }
+
+// VOX_CLEAN_SUBTREE_REUSE_DIAGNOSTICS: the first condition that keeps a
+// marker box from being built alike.
+fn retained_flow_marker_rejection(node &Node) string {
+	parent := node.parent() or { return 'detached' }
+	if !parent.is_list_item_box() { return 'parent:${layout_debug_tag(parent)}' }
+	owner := parent.dom_node() or { return 'anonymous-item' }
+	element := owner.as_element() or { return 'anonymous-item' }
+	computed := css.computed_properties_for_element(element) or { return 'unstyled' }
+	if !computed.display().is_list_item() { return 'display' }
+	if image := computed.typed_property_value(.list_style_image) {
+		if image.is_abstract_image() { return 'image' }
+	}
+	if marker := css.computed_properties_for_pseudo_element(element, .marker) {
+		if value := marker.typed_property_value(.content) {
+			if value.to_keyword() != .normal { return 'content' }
+		}
+		if voidptr(node.computed_values()) != voidptr(marker) { return 'style' }
+	}
+	if !retained_flow_marker_style_is_built_alike(element, computed, true) {
+		list_style_type := computed.list_style_type_for_scope(css.style_scope_for_abstract_element(dom.AbstractElement.new(element, none)))
+		return 'type:${list_style_type.kind}:${list_style_type.name}'
+	}
+	for child in node.children() {
+		if !child.is_text_node() || child.children().len != 0 { return 'children:${layout_debug_tag(child)}' }
+	}
+	return 'control'
+}

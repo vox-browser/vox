@@ -171,7 +171,13 @@ fn clean_subtree_blocker(node &Node, mut boxes &int) ?string {
 		return 'generated-content'
 	}
 	if node.is_list_item_marker_box() {
-		if !retained_flow_marker_box_is_built_alike(node) { return 'marker' }
+		if !retained_flow_marker_box_is_built_alike(node) {
+			return if clean_subtree_reuse_diagnostics {
+				'marker:${retained_flow_marker_rejection(node)}'
+			} else {
+				'marker'
+			}
+		}
 		return none
 	}
 	if node.is_list_item_box() && !retained_flow_list_item_box_is_built_alike(node) { return 'list-item' }
