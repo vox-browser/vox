@@ -11223,3 +11223,29 @@ billion (control) and 20.73 billion (Brave). The expected saving, about 50 ms
 of main-thread work, is below the rounds' variation at this load; the
 captures of both arms have identical pixels. Times at this load are not
 usable.
+
+## Frames during the load and repeated shadow leaves, 2026-11-21 night
+
+`VOX_LOAD_RENDER_THROTTLE_DIAGNOSTICS` and `VOX_LEAF_TIMING_DIAGNOSTICS` on
+one load: about ten frames. The first costs 350-700 ms (the first style pass
+65 ms over 2,552 elements, the first layout 118 ms in two passes, the second
+for container queries, and a 108 ms paint replay of 910 steps); each later
+frame replays the same ~910 steps in 28-34 ms. The slowest later steps were
+four box shadows at 2-3.4 ms each, every frame. `beece9cb0` adds
+`VOX_DIAGNOSTIC_PAINT_FINGERPRINT`, a hash of each recorded display list's
+dump; six consecutive recordings hashed alike, but the dump omits glyph,
+image and path content, so equal hashes do not prove equal pixels and no
+frame skipping was built on it.
+
+Two of the shadows carry a filter clip and were drawn on a whole tile
+(1056x416 at scale 2) holding only the leaf's backdrop rows. `5251059d5`
+let whole-surface shape draws use the leaf raster cache, which helped only
+small surfaces: a tile's transfer exceeds the cache's 512 KB entry limit.
+`981c11e35` therefore caches such tile leaves by what the tile holds (the
+descriptor, tile size, sample count, the leaf's position and backdrop rows)
+and keeps only the leaf rectangle, which is all the caller publishes
+(control `VOX_RETAIN_WHOLE_TILE_SHAPE_DRAWS=1`). Those two shadows left the
+slow list; two alternating pairs against the control had identical pixels.
+The other two slow shadows belong to shadowed avatar images drawn through
+another path; only 14 image tile draws happen in a whole load, too few to
+cache.
