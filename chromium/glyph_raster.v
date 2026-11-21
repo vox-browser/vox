@@ -112,8 +112,11 @@ fn draw_document_glyph_raster(glyphs []u16, positions []f64, font_path string, f
 
 __global document_glyph_raster_dump = os.getenv('VOX_TEXT_RASTER_DUMP')
 // Same-binary control: draw and merge a clipped glyph run on the GPU even when
-// its clip covers the whole raster box.
+// its clip edges cross no glyph coverage.
 const retain_covered_glyph_clip_draws = os.getenv('VOX_RETAIN_COVERED_GLYPH_CLIP_DRAWS') != ''
+// Also draw and merge such runs and report any pixel that differs from the
+// skipped draw's result.
+const verify_covered_glyph_clip_draws = os.getenv('VOX_VERIFY_COVERED_GLYPH_CLIP_DRAWS') != ''
 
 __global document_glyph_raster_records = 0
 
@@ -263,11 +266,11 @@ fn draw_document_glyph_raster_run(glyphs []u16, positions []f64, font_path strin
 				mask_run, transform, color, none, 1, .src_over, [], none) { return 'clipped glyph mask declined' }
 			mask := []u8{len: width * height, init: coverage[index * 4 + 3]}
 			clip := document_glyph_device_clip(bounds, geometry, scale_x, scale_y, page_x, page_y, scroll_y)
-			// A clip around the whole raster box leaves the merge below nothing to
-			// take from the clipped GPU draw; skip its upload and readback.
+			// A clip whose edges cross no glyph coverage leaves the merge below
+			// nothing to take from the clipped GPU draw; skip its upload and readback.
 			covered := !retain_covered_glyph_clip_draws
-				&& document_glyph_clip_covers_raster(clip, width, height)
-			mut clipped := if covered { []u8{} } else { pixels.clone() }
+				&& document_glyph_clip_edges_are_blank(clip, mask, width, height)
+			mut clipped := if covered && !verify_covered_glyph_clip_draws { []u8{} } else { pixels.clone() }
 			if extended_blend {
 				if !cpuraster.blend_extended_glyph_mask(mut pixels, width, height, width * 4, mask, ink) {
 					return 'extended glyph interior declined'
@@ -277,6 +280,10 @@ fn draw_document_glyph_raster_run(glyphs []u16, positions []f64, font_path strin
 			if covered {
 				if !document_glyph_mask_drawable(pixels, width, height, mask, ink, clip, geometry,
 					scale_x, scale_y, page_x, page_y, scroll_y) { return 'clipped glyph GPU declined' }
+				if verify_covered_glyph_clip_draws {
+					verify_covered_glyph_clip_draw(pixels, mut clipped, width, height, mask, ink, bounds,
+						clip, geometry, scale_x, scale_y, page_x, page_y, scroll_y)
+				}
 			} else {
 				if !draw_document_glyph_mask(mut clipped, width, height, mask, ink, bounds,
 					geometry, scale_x, scale_y, page_x, page_y, scroll_y) { return 'clipped glyph GPU declined' }

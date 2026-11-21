@@ -83,20 +83,38 @@ fn document_glyph_mask_samples(width int, height int, geometry [7]i32, scale_x f
 		i32(math.round((f32(geometry[1]) - page_y + scroll_y) * scale_y)), i32(width), i32(height))
 }
 
-// Whether merge_clipped_glyph_edges() would keep no pixel of the clipped draw:
-// the clip covers every pixel of the raster box, so the unclipped interior is
-// the whole result.
-fn document_glyph_clip_covers_raster(clip [4]f32, width int, height int) bool {
-	if width <= 0 || height <= 0 || clip.any(!math.is_finite(f64(it))) { return false }
+// Whether the pixels merge_clipped_glyph_edges() takes from the clipped draw
+// (all but the clip's fully covered pixel squares) have no glyph coverage.
+// Neither draw changes such a pixel, so the merge would keep the unclipped
+// interior everywhere. This holds when the clip covers the raster box and for
+// a run whose ink lies inside its clip while its raster margin crosses it.
+fn document_glyph_clip_edges_are_blank(clip [4]f32, mask []u8, width int, height int) bool {
+	if width <= 0 || height <= 0 || mask.len != width * height
+		|| clip.any(!math.is_finite(f64(it))) { return false }
 	left := int(math.ceil(math.max(f64(0), math.min(f64(width), f64(clip[0])))))
 	top := int(math.ceil(math.max(f64(0), math.min(f64(height), f64(clip[1])))))
 	right := int(math.floor(math.max(f64(0), math.min(f64(width), f64(clip[2])))))
 	bottom := int(math.floor(math.max(f64(0), math.min(f64(height), f64(clip[3])))))
-	return left == 0 && top == 0 && right == width && bottom == height
+	for y in 0 .. height {
+		row := y * width
+		if y < top || y >= bottom || left >= right {
+			for x in 0 .. width {
+				if mask[row + x] != 0 { return false }
+			}
+		} else {
+			for x in 0 .. left {
+				if mask[row + x] != 0 { return false }
+			}
+			for x in right .. width {
+				if mask[row + x] != 0 { return false }
+			}
+		}
+	}
+	return true
 }
 
-// draw_document_glyph_mask()'s acceptance without its draw, for a clip that
-// covers the raster box.
+// draw_document_glyph_mask()'s acceptance without its draw, for a clip whose
+// edges cross no glyph coverage.
 fn document_glyph_mask_drawable(pixels []u8, width int, height int, mask []u8, ink [4]f32,
 	clip [4]f32, geometry [7]i32, scale_x f32, scale_y f32, page_x f32, page_y f32, scroll_y f32) bool {
 	samples := document_glyph_mask_samples(width, height, geometry, scale_x, scale_y, page_x,
@@ -145,4 +163,30 @@ fn merge_clipped_glyph_edges(mut pixels []u8, clipped []u8, width int, height in
 		}
 	}
 	return true
+}
+
+__global covered_glyph_clip_verify_counts [2]u64
+
+// VOX_VERIFY_COVERED_GLYPH_CLIP_DRAWS: run the skipped GPU draw and merge on
+// the backdrop copy and compare with the interior-only result.
+fn verify_covered_glyph_clip_draw(pixels []u8, mut clipped []u8, width int, height int, mask []u8,
+	ink [4]f32, bounds [4]f32, clip [4]f32, geometry [7]i32, scale_x f32, scale_y f32,
+	page_x f32, page_y f32, scroll_y f32) {
+	if !draw_document_glyph_mask(mut clipped, width, height, mask, ink, bounds, geometry, scale_x,
+		scale_y, page_x, page_y, scroll_y) {
+		eprintln('VOX_COVERED_GLYPH_CLIP_VERIFY declined raster=${width}x${height}')
+		return
+	}
+	mut merged := pixels.clone()
+	if !merge_clipped_glyph_edges(mut merged, clipped, width, height, clip) {
+		eprintln('VOX_COVERED_GLYPH_CLIP_VERIFY merge-declined raster=${width}x${height}')
+		return
+	}
+	mut differing := 0
+	for index in 0 .. merged.len {
+		if merged[index] != pixels[index] { differing++ }
+	}
+	covered_glyph_clip_verify_counts[0]++
+	if differing > 0 { covered_glyph_clip_verify_counts[1]++ }
+	eprintln('VOX_COVERED_GLYPH_CLIP_VERIFY checked=${covered_glyph_clip_verify_counts[0]} differing_runs=${covered_glyph_clip_verify_counts[1]} differing_bytes=${differing} raster=${width}x${height}')
 }
