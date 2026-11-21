@@ -184,6 +184,8 @@ fn (mut app BrowserApp) draw_disjoint_rounded_batch(start int, page_y f32) []int
 		f32(app.ctx.width), f32(app.ctx.height), 0, page_y, 0) == 0 {
 		return []int{}
 	}
-	eprintln('VOX_DISJOINT_ROUNDED_BATCH start=${start} indices=${indices}')
+	if chromium_paint_layer_diagnostics || trace_disjoint_rounded_batch {
+		eprintln('VOX_DISJOINT_ROUNDED_BATCH start=${start} indices=${indices}')
+	}
 	return indices
 }

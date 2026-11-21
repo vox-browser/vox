@@ -285,11 +285,13 @@ fn draw_document_glyph_raster_run(glyphs []u16, positions []f64, font_path strin
 			geometry[5], geometry[6], canvas_height, i32(backdrop)) == 0 {
 			return 'composite failed'
 		}
-		if bounds := clip_bounds {
-			eprintln('VOX_GLYPH_RECTANGLE_CLIP bounds=${bounds} raster=${geometry[..]} backend=gpu')
-		}
-		if extended_blend {
-			eprintln('VOX_EXTENDED_GLYPH_COLOR ink=${ink[..]} raster=${geometry[..]} backend=cpu')
+		if chromium_paint_layer_diagnostics {
+			if bounds := clip_bounds {
+				eprintln('VOX_GLYPH_RECTANGLE_CLIP bounds=${bounds} raster=${geometry[..]} backend=gpu')
+			}
+			if extended_blend {
+				eprintln('VOX_EXTENDED_GLYPH_COLOR ink=${ink[..]} raster=${geometry[..]} backend=cpu')
+			}
 		}
 		return ''
 	}

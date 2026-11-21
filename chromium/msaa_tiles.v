@@ -18,6 +18,9 @@ fn C.native_set_chromium_paint_origin(f64, f64, i32)
 // least 256, so a 768-row viewport uses 256-row tiles spaced 254 rows apart.
 const chromium_min_gpu_raster_tile_rows = 256
 const chromium_root_capture_width = os.getenv('VOX_DIAGNOSTIC_ROOT_CAPTURE_WIDTH') == '1'
+// Paint-layer tracing: every recorded command, layer decisions and the raster
+// parity paths taken. Read once; the checks sit inside per-command loops.
+const chromium_paint_layer_diagnostics = os.getenv('VOX_DIAGNOSTIC_PAINT_LAYER') != ''
 
 fn chromium_gpu_raster_tile_rows(viewport_device_height int) int {
 	quarter := (viewport_device_height + 3) / 4 + 2
@@ -540,7 +543,7 @@ fn (mut app BrowserApp) set_chromium_msaa_tiles() {
 		app.begin_chromium_image_decode_frame()
 		scale := C.native_raster_device_pixel_ratio()
 		layout_scale := if app.document != unsafe { nil } { app.document.layout_coordinate_scale() } else { 1.0 }
-		if os.getenv('VOX_DIAGNOSTIC_PAINT_LAYER') != '' {
+		if chromium_paint_layer_diagnostics {
 			top := app.scroll_y * layout_scale
 			bottom := (app.scroll_y + app.viewport_height) * layout_scale
 			for index, command in app.paint_commands {
@@ -630,7 +633,7 @@ fn (mut app BrowserApp) select_chromium_raster_layer(index int) {
 				chromium_root_capture_grid(original_grid, app.viewport_width, scale,
 					app.document.layout_coordinate_scale(), chromium_root_capture_width)
 			} else { original_grid }
-			if grid.tile_width != original_grid.tile_width {
+			if grid.tile_width != original_grid.tile_width && chromium_paint_layer_diagnostics {
 				eprintln('VOX_ROOT_CAPTURE_WIDTH from=${original_grid.tile_width} to=${grid.tile_width} rows=${grid.tile_height} columns=${grid.columns}')
 			}
 			if grid.columns > 0 {

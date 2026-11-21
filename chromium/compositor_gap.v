@@ -2,7 +2,6 @@ module main
 
 import layout
 import math
-import os
 
 fn chromium_compositor_ink_union(a layout.LayoutRect, b layout.LayoutRect) layout.LayoutRect {
 	x := math.min(a.x, b.x)
@@ -102,7 +101,7 @@ fn chromium_compositor_gap_can_flush_parent(commands []layout.PaintCommand,
 			return false
 		}
 		ink := chromium_compositor_gap_ink(command) or {
-			if os.getenv('VOX_DIAGNOSTIC_PAINT_LAYER') != '' {
+			if chromium_paint_layer_diagnostics {
 				eprintln('VOX_PAINT_GAP_UNBOUNDED command=${index} xywh=${command.x},${command.y},${command.width},${command.height} clip=${command.has_clip}:${command.clip_x},${command.clip_y},${command.clip_width},${command.clip_height}')
 			}
 			return chromium_svg_compositor_layer_declined(parent, index, 'parent gap ink', command.kind)
@@ -132,7 +131,7 @@ fn chromium_compositor_gap_can_flush_parent(commands []layout.PaintCommand,
 		for prefix in before_ink {
 			for suffix in after_ink {
 				if chromium_compositor_ink_overlaps(prefix, suffix) {
-					if os.getenv('VOX_DIAGNOSTIC_PAINT_LAYER') != '' {
+					if chromium_paint_layer_diagnostics {
 						eprintln('VOX_PAINT_GAP_OVERLAP prefix=${prefix.x},${prefix.y},${prefix.width},${prefix.height} suffix=${suffix.x},${suffix.y},${suffix.width},${suffix.height}')
 					}
 					return chromium_svg_compositor_layer_declined(parent, start, 'parent spans overlap', '')
