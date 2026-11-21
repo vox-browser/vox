@@ -131,7 +131,7 @@ fn note_incremental_layout_origin(mut state LayoutState, node &Node) {
 	for existing in state.layout_invalidation_origins_ {
 		if voidptr(existing) == voidptr(node) { return }
 	}
-	if state.layout_invalidation_origins_.len >= incremental_layout_max_origins {
+	if state.layout_invalidation_origins_.len >= noted_layout_origin_limit() {
 		state.layout_invalidation_unbounded_ = true
 		state.layout_invalidation_origins_ = []&Node{}
 		return
@@ -281,6 +281,7 @@ fn relayout_incrementally(document &dom.Document, root &Node, previous &LayoutSt
 			}
 		}
 	}
+	origins = attached_layout_origins(origins, root)
 	if origins.len == 0 {
 		incremental_layout_reject('unrecorded-change')
 		return none
