@@ -11197,3 +11197,29 @@ Every Vox capture of both arms has the same pixels (the PNG files differ only
 in their encoding metadata). The pool saves about 0.73 billion instructions;
 times are within the round-to-round variation at this load. Vox observes 1.14
 times Brave's instructions.
+
+## Custom element construction and the wheel host's element map, 2026-11-21 night
+
+Summing the bridge's native time per action (`VOX_COMPACT_QUERY_DIAGNOSTICS`)
+put `documentCreateElement` first: 69 ms for 537 calls, 50 ms of it in 73
+`relative-time` elements at about 683 µs each. A JavaScriptCore
+microbenchmark on a 2,700-element document showed `createElement` of a custom
+element with an empty constructor at 14.9 million instructions, against 153
+thousand for a `div`: the HTMLElement constructor asks for the new element's
+wrapper, and the wheel host answered by copying every element provider's map
+into its own and scanning it, which also invalidated the reverse key index
+that the next identity lookup then rebuilt. `7c877c6eb` resolves the wrapper
+key from the providers' reverse indexes when they know the element by a
+single key (the only entry the refresh would have added or changed for it);
+several keys keep the refresh. Control `VOX_RETAIN_WHEEL_ELEMENT_REFRESH=1`.
+The microbenchmark goes to 257 thousand instructions per custom element (the
+`relative-time` constructor pattern 18.2 million -> 385 thousand). On the
+page, `relative-time` creation fell to about 188 µs and `div` creation from 76
+to 7 µs on average.
+
+Seven alternating rounds of bundle `f1ce8fd57ebb`, all 21 visits valid, host
+load average 22-40: instruction medians 23.41 billion (default), 23.47
+billion (control) and 20.73 billion (Brave). The expected saving, about 50 ms
+of main-thread work, is below the rounds' variation at this load; the
+captures of both arms have identical pixels. Times at this load are not
+usable.
