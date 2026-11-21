@@ -11020,3 +11020,13 @@ inserted containers are exactly an extra-node structural mismatch; the
 outcome then depends on whether hydration runs before that behaviour, which
 a faster engine wins. Still to confirm: a hydrated (cheap) load showing the
 containers inserted after hydration, and Chromium's ordering of the two.
+
+Caveat: GitHub's markdown container (`MarkdownContent`, class
+`js-snippet-clipboard-copy-unpositioned`) renders the README through a
+component taking an `html` prop with `suppressHydrationWarning`, i.e. most
+likely as raw HTML whose children React does not hydrate. Then the clipboard
+containers alone would not explain #418, and the mismatching node is
+elsewhere in `code-view`; the next probe step is to record which DOM node
+React's hydration cursor is on when #418 is created (e.g. by snapshotting the
+`code-view` skeleton at render start and diffing it against the archived
+server HTML outside the markdown container).
