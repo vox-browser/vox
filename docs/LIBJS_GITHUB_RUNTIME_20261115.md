@@ -10805,3 +10805,57 @@ on list markers). `retained_flow_image_trees_test.v` suspends in-place
 updates (`in_place_tree_update_suspended`) to keep exercising the builder's
 salvage path. The frozen page's remaining declines are header and box
 containers whose rebuilt children hold lists (`counter`).
+
+## Where an in-place pass spends its time, 2026-11-21 morning
+
+Real-page diagnostics (`VOX_IN_PLACE_TREE_UPDATE_DIAGNOSTICS=1`,
+`VOX_DOCUMENT_LAYOUT_DIAGNOSTICS=1`, now also naming every request for a
+complete rebuild as `VOX_FULL_LAYOUT_TREE_UPDATE reason=`): the main
+document's tree updates mostly go in place. Of 18 passes with a tree update
+in one load, 14 skip the in-place path for a complete rebuild, but these are
+first layouts of small sub-documents (0.2-4 ms each); the page itself asks for
+a complete rebuild twice, for its display density at startup. Main-document
+declines in three loads: `image-state` (an image not built from an ordinary
+or current SVG source), `parent-box` (a flagged `span.prc-Button-Label`
+without a box of its own), `anonymous-child` (`article.markdown-body`, whose
+README tables have anonymous table wrappers) and `unstyled` (a flagged element
+inside a closed popover). Setting an input's `type` requested a complete
+rebuild even for an input not in the document; it now flags only a connected
+input (d41605962). GitHub's primer stylesheet contains `@position-try`
+rules, which also request a complete rebuild when that sheet changes.
+
+Every main-document pass after a tree update, in place or not, is still a
+complete geometry pass over the kept tree with subtree reuse: the changed
+parents (`<body>`, flex columns, size containers) have no relayout root below
+`<html>` (`no-root`). Main-document passes in one uncontended load: 167 ms
+(first update, two passes), then 43, 52, 73 and 44 ms; the 44 ms one went in
+place. The first update makes two or three passes because container queries
+change 14 elements' display from `none` to `flex` once their containers have
+a size; Blink styles container descendants during layout instead.
+
+One in-place insertion into `<body>` in the scale-2 benchmark is 118 million
+instructions: paint projection 59M, DOM attachment 19M, formatting contexts
+17M, style and mutation 10M, scrollable overflow 8M, the in-place update 2M.
+Enabling projection templates (as for scripted pages) does not change it.
+Two fixes: the in-place update left the tree order invalid, so attachment
+kept every box in a hash map instead of its array slot and intrinsic seed
+visits were off (779ba0beb renumbers the same order object); attachment
+walked each box's whole containing block chain for its absolute offset
+(1a2ea67fd memoizes it with projection's coordinate session). The pass is
+now 110.4M (attachment 12.7M, formatting contexts 16.0M) and the first update
+3.17B -> 3.12B; the complete-pass verifier reports no mismatches in the
+insert, class, text and head modes.
+
+Inside projection (44% of the pass): text line rebasing 20%, SVG path
+serialization to strings 10% (the string is only read by an SVG export and a
+non-empty check; the renderer uses the packed segments), clip-path conversion
+9%. Inside attachment: the fixed-position containing block test 13% (ten
+`will-change` lookups per box), user-select 6%. These walks visit every box on
+every pass; skipping subtrees whose geometry and style the pass restored
+unchanged is the structural step that remains.
+
+Same-binary page cohort, 7 alternating pairs, `VOX_DISABLE_IN_PLACE_TREE_UPDATE=1`
+against the default (bundle 081b7c69, before the two fixes above): host load
+average 16-18 from other sessions' test suites, so times (4.2-5.5 s) are not
+usable. Instructions: control median 25.13B, in-place median 24.78B (-1.4%),
+with two in-place runs at 27.9B and 28.1B; inconclusive at this noise.
