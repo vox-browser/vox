@@ -10996,3 +10996,27 @@ link into the same task queue as React's scheduled hydration work, so the
 lazy loader's frame batch (which defines and upgrades custom elements inside
 the server markup) can run before hydration; identifying the mismatching
 upgrade needs the error React passes to that handler.
+
+### The hydration error and what precedes it
+
+A page-world probe installed as a content script in the capture profile
+(logging fetch timing, GitHub's `react-root:*` performance marks, errors
+created through a proxied global `Error`, and DOM mutations inside
+`react-app[app-name=code-view]`) shows, in loads that re-render:
+
+- `code-view` is server-rendered (`data-ssr="true"`) and starts hydrating at
+  1.4-2.8 s; React then raises error #418 with argument `HTML` (a structural
+  hydration mismatch) and regenerates the whole root on the client. No data
+  fetch has completed when the table is recreated, so this is not an update
+  racing hydration. The viewport (1024x768, media queries) is stable.
+- Parsing is complete well before hydration (`readyState` interactive with
+  1,829 elements under `code-view`). By hydration there are 1,948: the only
+  mutations in between are GitHub's snippet clipboard behaviour adding a
+  `div.zeroclipboard-container` (with its `clipboard-copy` button and icons) to
+  each of the README's code blocks, ~0.7 s before hydration.
+
+If React hydrates the README article's children as its own elements, those
+inserted containers are exactly an extra-node structural mismatch; the
+outcome then depends on whether hydration runs before that behaviour, which
+a faster engine wins. Still to confirm: a hydrated (cheap) load showing the
+containers inserted after hydration, and Chromium's ordering of the two.
