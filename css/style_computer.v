@@ -2071,7 +2071,8 @@ fn update_style_recursively(mut style_computer StyleComputer, node &dom.Node, ne
 	if node_invalidation.needs_relayout() {
 		mutable_node.set_needs_layout_update(.style_change)
 	}
-	if node_invalidation.needs_layout_tree_rebuild() {
+	if node_invalidation.needs_layout_tree_rebuild()
+		&& !style_change_cannot_change_layout_tree(node, is_display_none) {
 		if parent_element := node.parent_or_shadow_host_element() {
 			mut mutable_parent := unsafe { &dom.Node(parent_element.as_node()) }
 			mutable_parent.set_needs_layout_tree_update(true, .style_change)

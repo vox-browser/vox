@@ -2565,7 +2565,9 @@ pub fn (mut n Node) insert_before(node &Node, child ?&Node, suppress_observers b
 				}
 			}
 		}
-		n.set_needs_layout_tree_update(true, .node_insert_before)
+		if !n.insertion_cannot_create_boxes() {
+			n.set_needs_layout_tree_update(true, .node_insert_before)
+		}
 	}
 	// AD-HOC: invalidate the ordinal of the first list_item of the list_owner of the child node, if any.
 	if child_node := child {
@@ -2932,7 +2934,7 @@ pub fn (mut n Node) move_node(mut new_parent Node, child ?&Node) ! {
 	} else {
 		n.invalidate_style(.node_insert_before)
 	}
-	if n.is_connected() {
+	if n.is_connected() && !new_parent.insertion_cannot_create_boxes() {
 		new_parent.set_needs_layout_tree_update(true, .node_insert_before)
 	}
 	moved_node := &n
