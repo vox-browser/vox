@@ -436,6 +436,7 @@ fn layout_inside_independent_formatting_context_with_mode(mut state LayoutState,
 	// incremental_layout.v: a box laid out for a measurement depends on an
 	// ancestor's sizing; a committed layout of any other box bounds a relayout.
 	if layout_mode != .normal || state.subtree_root != none {
+		if layout_mode == .normal { note_min_height_probe_mark(state, box) }
 		mark_sized_by_ancestor_measurement(box, .measurement_layout)
 	}
 	// measurement_subtree_reuse.v: a measurement lays its flex and grid items
