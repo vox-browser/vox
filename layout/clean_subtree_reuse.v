@@ -96,8 +96,13 @@ fn reusable_clean_subtree(element &dom.Element, mut builder TreeBuilderState) ?&
 	}
 	// The previous parent placed this box directly; an anonymous wrapper there
 	// belongs to that parent's construction and is not part of this subtree.
-	parent := root.parent() or { return reject_clean_subtree(element, 'detached', mut builder) }
-	if parent.is_anonymous() { return reject_clean_subtree(element, 'anonymous-parent', mut builder) }
+	mut parent := root.parent() or { return reject_clean_subtree(element, 'detached', mut builder) }
+	if parent.is_anonymous() {
+		if !clean_subtree_wrapper_is_rebuilt_by_parent(parent) {
+			return reject_clean_subtree(element, 'anonymous-parent', mut builder)
+		}
+		parent = parent.parent() or { return reject_clean_subtree(element, 'detached', mut builder) }
+	}
 	parent_dom := parent.dom_node() or { return reject_clean_subtree(element, 'parent', mut builder) }
 	dom_parent := dom_root.parent() or { return reject_clean_subtree(element, 'parent', mut builder) }
 	if voidptr(parent_dom) != voidptr(dom_parent) {
@@ -131,6 +136,24 @@ fn reusable_clean_subtree(element &dom.Element, mut builder TreeBuilderState) ?&
 	clean_subtree_reuse_counts[0]++
 	clean_subtree_reuse_counts[1] += u64(boxes)
 	return root
+}
+
+// Same-binary control: a box that the previous build placed in an anonymous
+// wrapper keeps the complete builder.
+const retain_wrapped_subtree_rebuilds = os.getenv('VOX_RETAIN_WRAPPED_SUBTREE_REBUILDS') != ''
+
+// An anonymous block that wraps an inline run beside block siblings belongs
+// to the construction of its parent's box, which wraps the kept inline-level
+// boxes again when it is rebuilt. Other wrappers (generated, table, button and
+// fieldset fixups) keep the complete builder.
+fn clean_subtree_wrapper_is_rebuilt_by_parent(wrapper &Node) bool {
+	if retain_wrapped_subtree_rebuilds || !wrapper.is_anonymous() || !wrapper.children_are_inline()
+		|| wrapper.is_generated_for_pseudo_element() || wrapper.is_table_wrapper()
+		|| wrapper.as_block_container() == none {
+		return false
+	}
+	parent := wrapper.parent() or { return false }
+	return !parent.is_anonymous() && parent.dom_node() != none
 }
 
 // The first box in `node`'s subtree that the builder derives from state the
