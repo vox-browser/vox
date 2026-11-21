@@ -13,7 +13,8 @@
 //
 // Modes: full (rebuild the whole layout tree), head (insert an element into
 // <head>), class (toggle a class on one element inside the page), text (change
-// one text node's value, as React updates text).
+// one text node's value, as React updates text). VOX_BENCHMARK_CLASS_SELECTOR
+// chooses the class mode's element.
 module main
 
 import css
@@ -74,6 +75,12 @@ fn main() {
 		}
 	}
 	if target == unsafe { nil } { panic('no laid out paragraph with text') }
+	// The class mode's element: VOX_BENCHMARK_CLASS_SELECTOR picks another one
+	// (for example the react-app element that React marks as loaded).
+	mut class_target := target
+	if selector := os.getenv_opt('VOX_BENCHMARK_CLASS_SELECTOR') {
+		class_target = css.query_selector(document.as_node(), selector) or { panic('no ${selector}') }
+	}
 	mut best_ns := u64(0)
 	mut best_instructions := u64(0)
 	mut total_instructions := u64(0)
@@ -92,9 +99,9 @@ fn main() {
 			}
 			'class' {
 				if pass % 2 == 0 {
-					target.set_attribute_value('class', 'benchmark-toggle')
+					class_target.set_attribute_value('class', 'benchmark-toggle')
 				} else {
-					target.remove_attribute('class')
+					class_target.remove_attribute('class')
 				}
 			}
 			'text' {
