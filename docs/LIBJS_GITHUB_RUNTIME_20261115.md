@@ -11053,3 +11053,25 @@ from the `branch-and-tag-count` and `latest-commit` responses. That fits a
 client render that already has fetched data the server render did not, but
 does not yet name the component React rejected; hooking React's hydration
 failure (the fiber passed to its mismatch path) is the remaining step.
+
+### Where hydration fails
+
+Tracking the nodes `firstChild`/`nextSibling` return while `code-view`
+renders, the #418 error is created right after React claims
+`span.prc-Button-Label` inside a link-styled button (`a.prc-Button-ButtonBase`
+> `span.prc-Button-ButtonContent`) and finds no further sibling. The
+regenerated tree gives exactly those buttons extra `strong` counts: the
+branch and tag count links, filled from the `branch-and-tag-count` response.
+
+The likely mechanism: `code-view` starts its `branch-and-tag-count` and
+`latest-commit` fetches as it begins rendering; the local replay answers them
+within ~200 ms; Vox's hydration of ~2,000 server nodes through the DOM bridge
+takes longer, so when a response lands before hydration reaches those
+buttons, the hydrating component renders with the counts, mismatches the
+server markup, and React regenerates the whole root (~2.8B instructions).
+Brave hydrates in milliseconds, before real network responses arrive. The
+engine-side remedy is faster hydration: React walks the server DOM with
+`firstChild`/`nextSibling`, which cross the JSON bridge (~14-17K
+instructions per call for known nodes, far more for nodes needing a new
+wrapper); caching child and sibling links in the facade records, keyed by the
+document's tree version, would remove most of those calls.
