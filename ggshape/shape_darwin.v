@@ -113,10 +113,23 @@ fn draw_shape_pixels(pixels &u8, width i32, height i32, pitch i32, has_backgroun
 		return 0
 	}
 	samples := if shape.force_msaa != 0 { 4 } else { 1 }
+	// Box shadows and other whole-leaf shapes repeat every frame of a page
+	// load over the same backdrop; like region draws, an identical earlier
+	// draw supplies the pixels it read back.
+	whole := SurfaceRegion{
+		surface_width:  int(width)
+		surface_height: int(height)
+		width:          int(width)
+		height:         int(height)
+	}
+	mut key := new_leaf_cache_key(leaf_cache_whole_shape, i32(samples), pixels, pitch, whole,
+		has_background != 0)
+	key.add_shape(shape)
+	if key.fetch(pixels, pitch, whole) { return 1 }
 	mut ctx := context() or { return 0 }
-	// A fresh surface per draw: it and its draw lists belong to the caller's
-	// scope. sokol.gfx releases its Metal objects after the commits that
-	// owned contexts make on every readback.
+	// Each draw has its own surface (with pooled render targets): it and its
+	// draw lists belong to the caller's scope. sokol.gfx releases its Metal
+	// objects after the commits that owned contexts make on every readback.
 	mut target := ctx.new_document_leaf_surface(int(width), int(height), samples) or {
 		return 0
 	}
@@ -133,6 +146,7 @@ fn draw_shape_pixels(pixels &u8, width i32, height i32, pitch i32, has_backgroun
 	}
 	draw_shape_descriptor(mut target, shape, int(width), int(height)) or { return 0 }
 	target.read_pixels(pixels, int(pitch)) or { return 0 }
+	key.store(pixels, pitch, whole)
 	return 1
 }
 

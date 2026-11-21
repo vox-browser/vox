@@ -22,6 +22,7 @@ const leaf_cache_path = u8(1)
 const leaf_cache_shape = u8(2)
 const leaf_cache_shapes = u8(3)
 const leaf_cache_svg_image = u8(4)
+const leaf_cache_whole_shape = u8(5)
 
 // LeafCacheKey collects every input of one region draw. Two draws with equal
 // bytes upload the same backdrop and record the same draws on surfaces of the

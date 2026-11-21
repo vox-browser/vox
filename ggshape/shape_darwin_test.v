@@ -322,3 +322,49 @@ fn test_path_descriptors_draw_like_gg_canvas() {
 	assert draw_path(pixels.data, test_width, test_height, test_width * 4, 1, &path) == 0
 	assert pixels == backdrop()
 }
+
+// Whole-surface shape draws (box shadows) repeat over the same backdrop on
+// every frame of a load: an identical draw copies the stored result, and a
+// changed backdrop byte, descriptor or backdrop flag draws again.
+fn test_identical_whole_shape_draws_reuse_their_result() {
+	context() or {
+		eprintln('skipping: ${err}')
+		return
+	}
+	C.vox_leaf_cache_clear()
+	shape := base_shape()
+	mut hits := C.vox_leaf_cache_counter(0)
+	mut first := backdrop()
+	assert draw(first.data, test_width, test_height, test_width * 4, 1, &shape) == 1
+	assert C.vox_leaf_cache_counter(0) == hits
+	mut second := backdrop()
+	assert draw(second.data, test_width, test_height, test_width * 4, 1, &shape) == 1
+	assert C.vox_leaf_cache_counter(0) == hits + 1
+	assert second == first
+	assert second != backdrop()
+	hits++
+	mut changed := backdrop()
+	changed[test_width * 4 * 7 + 9] ^= 0x10
+	assert draw(changed.data, test_width, test_height, test_width * 4, 1, &shape) == 1
+	mut recolored := base_shape()
+	recolored.red = 200
+	mut recolored_pixels := backdrop()
+	assert draw(recolored_pixels.data, test_width, test_height, test_width * 4, 1, &recolored) == 1
+	assert recolored_pixels != first
+	mut cleared := backdrop()
+	assert draw(cleared.data, test_width, test_height, test_width * 4, 0, &shape) == 1
+	assert C.vox_leaf_cache_counter(0) == hits
+	// A padded pitch reads and stores only the surface's pixels.
+	pitch := test_width * 4 + 16
+	mut padded := []u8{len: pitch * test_height, init: 0x5a}
+	source := backdrop()
+	for y in 0 .. test_height {
+		for x in 0 .. test_width * 4 { padded[y * pitch + x] = source[y * test_width * 4 + x] }
+	}
+	assert draw(padded.data, test_width, test_height, pitch, 1, &shape) == 1
+	assert C.vox_leaf_cache_counter(0) == hits + 1
+	for y in 0 .. test_height {
+		for x in 0 .. test_width * 4 { assert padded[y * pitch + x] == first[y * test_width * 4 + x] }
+		for x in test_width * 4 .. pitch { assert padded[y * pitch + x] == 0x5a }
+	}
+}
