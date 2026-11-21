@@ -11086,3 +11086,10 @@ default: `firstChild`/`nextSibling` bridge calls per load 6,145 -> 4,214
 3,601 -> 3,563 ms. The file table was regenerated only in the first pair, in
 both arms, so at this load the race is rare either way; the cache's effect on
 it needs a loaded host to measure.
+
+A 7-pair cohort right after (host load ~7) reverses the sign: instructions
+median 24.38B (cache off) vs 24.93B (on), PNG 3,215 vs 3,305 ms, no
+regeneration in either arm. Taken together the navigation cache has no
+measurable whole-load effect at these sample sizes; it removes ~1,900 bridge
+calls per load but the remaining first visits dominate. Its value for the
+hydration race is untested (the race needs a loaded host).
