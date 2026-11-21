@@ -88,10 +88,22 @@ function __compactNodeWrapper(state){
  }
  return node;
 }
+const __compactTreeVersion=typeof globalThis.__ladybirdTreeVersion==="function"?globalThis.__ladybirdTreeVersion:null;
 for(const name of ["firstChild","lastChild","nextSibling","previousSibling"]){
 Object.defineProperty(Element.prototype,name,{get:function(){
  const state=__elementApply(__elementRecordGet,__elementRecords,[this]);
  if(!state)throw new TypeError("Illegal Node receiver");
+ // The last answer stands while the document tree is unchanged and no
+ // facade edits wait to be replayed.
+ if(__compactTreeVersion!==null&&!__compactHasPendingDOMState()){
+  const version=__compactTreeVersion();let cache=state.__navigation;
+  if(cache&&cache.version===version&&Object.prototype.hasOwnProperty.call(cache.values,name))return cache.values[name];
+  const value=__queryElements(state.bridgeKey,name,"");
+  if(__compactHasPendingDOMState()||__compactTreeVersion()!==version)return value;
+  if(!cache||cache.version!==version){cache={version,values:{}};Object.defineProperty(state,"__navigation",{value:cache,writable:true,configurable:true});}
+  cache.values[name]=value;
+  return value;
+ }
  return __queryElements(state.bridgeKey,name,"");
 },enumerable:true,configurable:true});
 }'

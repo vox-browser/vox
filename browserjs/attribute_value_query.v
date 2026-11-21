@@ -63,3 +63,16 @@ fn (runtime &Runtime) dom_string_value(value string) voidptr {
 	defer { C.JSStringRelease(text) }
 	return C.vox_jsc_JSValueMakeString(runtime.context, text)
 }
+
+// A host function of no arguments returning a number, such as the document's
+// tree version that lets the compact facade reuse navigation results.
+pub fn (mut runtime Runtime) install_number_query(name string, callback fn () f64) ! {
+	runtime.require_javascript_value_context()!
+	$if darwin || linux || windows {
+		owner := &runtime
+		runtime.define_value_host_function(name, fn [owner, callback] (_ voidptr, _ []voidptr) !voidptr {
+			return C.vox_jsc_JSValueMakeNumber(owner.context, callback())
+		})!
+		runtime.own_closure(voidptr(callback))
+	}
+}

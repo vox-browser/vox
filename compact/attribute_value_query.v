@@ -35,3 +35,17 @@ fn (mut binding CompactElementQueryBinding) attribute_value(key string, name str
 	value := element.get_attribute(name) or { return browserjs.AttributeValueReply{handled: true} }
 	return browserjs.AttributeValueReply{handled: true, present: true, value: value}
 }
+
+// Same-binary control: tree navigation always asks the native DOM.
+const retain_navigation_queries = os.getenv('VOX_RETAIN_NAVIGATION_QUERIES') != ''
+
+// __ladybirdTreeVersion(): the document's tree version. The facade's
+// firstChild/lastChild/nextSibling/previousSibling reuse an element's last
+// answer while it is unchanged and no facade edits are pending; React's
+// hydration walks thousands of server nodes this way.
+fn install_compact_tree_version_query(binding &CompactElementQueryBinding, mut runtime browserjs.Runtime) ! {
+	if retain_navigation_queries { return }
+	runtime.install_number_query('__ladybirdTreeVersion', fn [binding] () f64 {
+		return f64(binding.document.dom_tree_version())
+	})!
+}
