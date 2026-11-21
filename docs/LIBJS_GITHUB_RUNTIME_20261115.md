@@ -11030,3 +11030,16 @@ elsewhere in `code-view`; the next probe step is to record which DOM node
 React's hydration cursor is on when #418 is created (e.g. by snapshotting the
 `code-view` skeleton at render start and diffing it against the archived
 server HTML outside the markdown container).
+
+Skeleton check: in a re-rendering load, the probe recorded `code-view`'s node
+skeleton (element names, non-whitespace text, comments; the markdown
+container's children skipped) when its render started and compared it with
+the same skeleton of the archived server HTML: all 3,672 tokens are equal. So
+Vox's DOM matches the server markup when hydration begins, and the #418
+structural mismatch comes from React's first client render producing a
+different tree than the server did: client state that depends on timing
+(stores or globals filled by fetches and other scripts before `code-view`
+renders) rather than a DOM difference. The next step is to find which
+component's output differs (e.g. by hooking the fiber React fails on, or by
+comparing the client-render DOM with the server markup after the
+regeneration).
