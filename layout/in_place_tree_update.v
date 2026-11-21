@@ -391,8 +391,11 @@ fn (mut update InPlaceTreeUpdate) plan_child_list(node &dom.Node) bool {
 	}
 	mut seen_content := false
 	for child in current {
-		if child.is_generated_for_pseudo_element() {
-			if generator := child.pseudo_element_generator() {
+		// A generated box with display: table sits in its table wrapper (the
+		// clearfix `::before { display: table }`).
+		generated := in_place_generated_box(child)
+		if generated.is_generated_for_pseudo_element() {
+			if generator := generated.pseudo_element_generator() {
 				if voidptr(generator) == voidptr(element) {
 					if seen_content { after << child } else { before << child }
 					continue
@@ -566,6 +569,16 @@ fn (update &InPlaceTreeUpdate) fix_new_tables(built &Node) &Node {
 	fixup_table_tree(mut root, update.document)
 	if built.display().is_table_inside() { return wrap_table_root(built, update.document) }
 	return built
+}
+
+// The box itself, or for an anonymous table wrapper the table it holds.
+fn in_place_generated_box(box &Node) &Node {
+	if box.is_table_wrapper() {
+		for child in box.children() {
+			if child.display().is_table_inside() { return child }
+		}
+	}
+	return box
 }
 
 // The box of the table element an anonymous table wrapper holds.

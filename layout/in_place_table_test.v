@@ -31,9 +31,10 @@ fn in_place_table_append(mut document dom.Document, parent_id string, markup str
 // table fixups (wrappers, dropped whitespace between table parts) and stay
 // in place; a changed cell rebuilds its table through escalation. A table
 // part outside a table, which joins its siblings' anonymous table, still
-// keeps the complete builder.
+// keeps the complete builder. The parent's clearfix pseudo-elements
+// (`display: table`) sit in table wrappers and are kept.
 fn test_table_subtrees_update_in_place() {
-	mut document := html.parse_document('<!doctype html><style>body{margin:0;font:16px/20px sans-serif}td{padding:2px;border:1px solid}</style><body><div id="app"><p id="intro">intro</p></div><p id="tail">tail</p></body>')
+	mut document := html.parse_document('<!doctype html><style>body{margin:0;font:16px/20px sans-serif}td{padding:2px;border:1px solid}#app::before,#app::after{display:table;content:""}</style><body><div id="app"><p id="intro">intro</p></div><p id="tail">tail</p></body>')
 	defer { document.finalize() }
 	_ = layout_document_typed_in_viewport(document, 400, 300)
 	enabled := os.getenv('VOX_DISABLE_IN_PLACE_TREE_UPDATE') == ''
