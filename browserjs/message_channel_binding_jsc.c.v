@@ -1,10 +1,15 @@
 @[has_globals]
 module browserjs
 
+import os
 import dom
 import html
 import platform
 import webidl
+
+// VOX_CONSOLE_DIAGNOSTICS=1 also prints errors that scripts pass to reportError(),
+// such as React's recoverable hydration errors.
+const report_error_diagnostics = os.getenv('VOX_CONSOLE_DIAGNOSTICS') != ''
 
 @[heap]
 struct MessageChannelBinding {
@@ -108,6 +113,10 @@ fn (mut runtime Runtime) message_channel_operation(mut binding MessageChannelBin
 		return clone
 	}
 	if method == 'reportError' {
+		if report_error_diagnostics {
+			text := runtime.binding_dom_string(args[2]) or { '<unprintable>' }
+			eprintln('VOX_CONSOLE reportError: ${text.limit(2000)}')
+		}
 		settings := runtime.scripting_settings_ or { return error('reportError requires its owning settings') }
 		settings.report_an_exception(dom.js_webidl_value(runtime.webidl_value(args[2])!), false)
 		return C.vox_jsc_JSValueMakeUndefined(runtime.context)

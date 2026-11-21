@@ -77,14 +77,17 @@ fn apply_compact_dom_task(document &dom.Document, encoded string, runtime &brows
 		platform.leave_persistent(persistent)
 		scope.finish()
 	}
+	first_message := messages.len
+	defer {
+		if compact_console_diagnostics {
+			for entry in messages[first_message..] { eprintln('VOX_CONSOLE ${entry.limit(2000)}') }
+		}
+	}
 	apply_javascript_runtime_state(document, encoded, runtime, mut messages)
 	state := runtime.evaluate_host_temporary_text('__ladybirdTakeTaskOutput()')!
 	defer { state.finish() }
 	output := compact_decode_query[CompactDOMTaskOutput](state.value)!
-	for entry in output.logs {
-		if compact_console_diagnostics { eprintln('VOX_CONSOLE ${entry.limit(2000)}') }
-		messages << entry.clone()
-	}
+	for entry in output.logs { messages << entry.clone() }
 	return CompactDOMTaskCommit{
 		navigation: if output.navigate != '' { ?string(output.navigate.clone()) } else { none }
 	}
