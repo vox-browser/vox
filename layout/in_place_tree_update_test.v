@@ -132,27 +132,38 @@ fn test_unsupported_child_lists_keep_the_complete_builder() {
 	}
 }
 
-// Boxes the builder derives from state no flag covers (an input's
-// placeholder, an SVG viewport's natural size) send the next update
-// anywhere to the complete builder once that state changes, as before.
-fn test_changed_builder_state_keeps_the_complete_builder() {
+// A kept box built from state that changed without a flag (an input's
+// placeholder, an SVG viewport's natural size) is rebuilt by its parent's
+// list, as the complete builder would rebuild it; with the control the
+// update keeps the complete builder.
+fn test_changed_builder_state_rebuilds_the_stale_box() {
 	for state in ['input', 'svg'] {
 		mut document := html.parse_document('<!doctype html><body><div id="changed"></div><section id="stable"><p>Label <input id="field" placeholder="Search"> <svg id="icon" width="16" height="16"><rect width="16" height="16"/></svg></p></section></body>')
 		defer { document.finalize() }
 		_ = layout_document_typed_in_viewport(document, 400, 300)
-		mut target := document.get_element_by_id(if state == 'input' { 'field' } else { 'icon' }) or { panic(state) }
+		id := if state == 'input' { 'field' } else { 'icon' }
+		mut target := document.get_element_by_id(id) or { panic(state) }
 		if state == 'input' {
 			target.set_attribute_value('placeholder', 'Find a file')
 		} else {
 			target.set_attribute_value('width', '32')
 		}
 		document.update_layout(.debugging)
+		stale := in_place_handle(document, id)
 		updated_before, _ := in_place_tree_update_statistics()
 		mut changed := document.get_element_by_id('changed') or { panic('changed') }
 		changed.set_inner_html('<p>sibling</p>') or { panic(err) }
 		document.update_layout(.debugging)
 		updated_after, _ := in_place_tree_update_statistics()
-		assert updated_after == updated_before, state
+		if os.getenv('VOX_DISABLE_IN_PLACE_TREE_UPDATE') == '' {
+			if os.getenv('VOX_DISABLE_IN_PLACE_STALE_REBUILDS') == ''
+				&& os.getenv('VOX_DISABLE_IN_PLACE_ESCALATION') == '' {
+				assert updated_after == updated_before + 1, state
+				assert in_place_handle(document, id) != stale, state
+			} else {
+				assert updated_after == updated_before, state
+			}
+		}
 		in_place_matches_full_rebuild(mut document, state)
 	}
 }

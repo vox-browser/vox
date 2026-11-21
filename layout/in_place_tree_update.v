@@ -33,6 +33,9 @@ const in_place_tree_update_diagnostics = os.getenv('VOX_IN_PLACE_TREE_UPDATE_DIA
 // Same-binary control: a flagged element whose own child list cannot be
 // updated in place declines the update instead of being rebuilt by its parent.
 const disable_in_place_escalation = os.getenv('VOX_DISABLE_IN_PLACE_ESCALATION') != ''
+// Same-binary control: a kept box built from state that changed without a
+// flag declines the update instead of being rebuilt by its parent.
+const disable_in_place_stale_rebuilds = os.getenv('VOX_DISABLE_IN_PLACE_STALE_REBUILDS') != ''
 
 __global in_place_tree_update_counts [2]u64
 // Tests of the complete builder's reuse paths suspend in-place updates so that
@@ -73,6 +76,8 @@ mut:
 	// Children rebuilt by their parent's list because their own list could
 	// not be updated in place, by DOM node.
 	forced map[u64]bool
+	// Elements whose kept boxes were built from state that has changed.
+	stale []&dom.Node
 }
 
 enum InPlacePlan {
@@ -144,6 +149,10 @@ fn update_layout_tree_in_place(document &dom.Document, mut style_computer css.St
 	}
 	if !update.tree_state_is_current(previous.root) {
 		return decline_in_place_tree_update(update.reason)
+	}
+	for stale in update.stale {
+		mut flagged := unsafe { &dom.Node(stale) }
+		flagged.set_needs_layout_tree_update(true, .none)
 	}
 	match update.plan_branch(root_node) {
 		.planned {}
@@ -652,7 +661,7 @@ fn (mut update InPlaceTreeUpdate) tree_state_is_current(node &Node) bool {
 	}
 	if node.is_image_box() {
 		if !retained_flow_raster_image_is_ordinary(node) && !retained_svg_image_box_is_current(node) {
-			return update.decline('image-state')
+			return update.rebuild_stale(node, 'image-state')
 		}
 	} else if node.is_svg_svg_box() {
 		box := node.as_box() or { return update.decline('svg-state') }
@@ -660,10 +669,10 @@ fn (mut update InPlaceTreeUpdate) tree_state_is_current(node &Node) bool {
 		element := owner.as_element() or { return update.decline('svg-state') }
 		natural := negotiate_svg_natural_metrics(element)
 		if box.natural_size_ != natural || box.auto_content_box_size_ != natural {
-			return update.decline('svg-metrics')
+			return update.rebuild_stale(node, 'svg-metrics')
 		}
 	} else if node.is_replaced_box() {
-		return update.decline('replaced-state')
+		return update.rebuild_stale(node, 'replaced-state')
 	} else if is_svg_resource_box(node) {
 		return update.decline('svg-resource')
 	}
@@ -672,12 +681,12 @@ fn (mut update InPlaceTreeUpdate) tree_state_is_current(node &Node) bool {
 			if element := owner.as_element() {
 				if element.is_html_element() && element.local_name() in in_place_control_names {
 					if element.local_name() != 'input' {
-						return update.decline('control-state')
+						return update.rebuild_stale(node, 'control-state')
 					}
 					// A materialized model renders through its shadow tree, whose
 					// changes carry flags; otherwise the recorded build inputs.
 					if element.shadow_root() == none && !input_tree_is_current(element) {
-						return update.decline('input-state')
+						return update.rebuild_stale(node, 'input-state')
 					}
 					return true
 				}
@@ -688,6 +697,32 @@ fn (mut update InPlaceTreeUpdate) tree_state_is_current(node &Node) bool {
 		if !update.tree_state_is_current(child) { return false }
 	}
 	return true
+}
+
+// A kept box built from state its element no longer has: its element is
+// flagged so that its parent's list rebuilds it, as the complete builder
+// would. Its subtree is not scanned further: it is rebuilt with it.
+fn (mut update InPlaceTreeUpdate) rebuild_stale(node &Node, reason string) bool {
+	if disable_in_place_stale_rebuilds || disable_in_place_escalation || node.is_anonymous()
+		|| node.is_generated_for_pseudo_element() {
+		return update.decline(reason)
+	}
+	owner := node.dom_node() or { return update.decline(reason) }
+	if owner.as_element() == none { return update.decline(reason) }
+	update.stale << owner
+	update.note_counter_content_in(node)
+	return true
+}
+
+fn (mut update InPlaceTreeUpdate) note_counter_content_in(node &Node) {
+	if update.counter_content { return }
+	if node.is_generated_for_pseudo_element() && generated_content_uses_document_state(node) {
+		update.counter_content = true
+		return
+	}
+	for child in node.children() {
+		update.note_counter_content_in(child)
+	}
 }
 
 // An SVG viewport whose subtree is made of plain shapes with no references
