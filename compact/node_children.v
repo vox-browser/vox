@@ -2,6 +2,7 @@ module main
 
 import browserjs
 import dom
+import os
 import x.json2
 
 fn (mut binding CompactElementQueryBinding) node_tree_query(root &dom.Node, action string, value string) !string {
@@ -28,7 +29,12 @@ fn (mut binding CompactElementQueryBinding) node_tree_query(root &dom.Node, acti
 		request := compact_decode_query[map[string]json2.Any](value)!
 		key := json_string_property(request, 'child') or { return error('TypeError: Invalid child node') }
 		child := binding.node_for_key(key) or {
-			state := request['state'] or { return error('TypeError: Invalid child node') }
+			// The facade sends a child's state only when asked: a node the
+			// native side already owns needs none.
+			state := request['state'] or {
+				compact_child_state_requests++
+				return error('TypeError: Unknown child node')
+			}
 			if state !is map[string]json2.Any { return error('TypeError: Invalid child node') }
 			mut elements := binding.elements.clone()
 			created := javascript_created_node(binding.document, state as map[string]json2.Any, mut elements) or {
@@ -64,8 +70,15 @@ fn (mut binding CompactElementQueryBinding) note_node_tree_mutation() {
 	runtime.mark_document_replay_effects()
 }
 
+// Insertions whose child the native side did not own, so it asked the facade
+// for the child's state (tests and diagnostics).
+__global compact_child_state_requests u64
+
+// Same-binary control: send every inserted child's facade state, as before.
+const retain_compact_child_states = os.getenv('VOX_RETAIN_COMPACT_CHILD_STATES') != ''
+
 fn compact_node_children_bootstrap() string {
-	return r'
+	return 'const __compactRetainChildStates=${retain_compact_child_states};' + r'
 const __compactChildLists=new WeakMap(),__compactChildReaders=new WeakMap(),__childTreeVersion=globalThis.__ladybirdDOMTreeVersion;
 function NodeList(){throw new TypeError("Illegal NodeList constructor");}
 Object.defineProperty(globalThis,"NodeList",{value:NodeList,writable:true,configurable:true});
@@ -80,7 +93,7 @@ Object.defineProperty(NodeList.prototype,"forEach",{value:function forEach(callb
 function __compactNodeState(node){if(node===document)return{bridgeKey:"",nodeType:9};const state=__elementApply(__elementRecordGet,__elementRecords,[node])||__elementApply(__compactNodeGet,__compactNodeRecords,[node]);if(state)return state;const local=__compactForeignNode(node);if(local)return __compactNodeState(local);throw new TypeError("Expected a Node");}
 function __compactForeignNode(node){if(node===null||(typeof node!=="object"&&typeof node!=="function")||typeof __ladybirdForeignNodeState!=="function")return null;const encoded=__ladybirdForeignNodeState(node);return encoded?__queryElement(JSON.parse(encoded)):null;}
 function __compactInvalidateContent(state){for(let current=state;current;current=current.parentKey&&__state.elements[current.parentKey]){if(!current.textContentDirty)delete current.textContent;if(!current.innerHTMLDirty)delete current.innerHTML;current.nativeContent=true;}}
-function __compactInsertNode(parent,child,reference,insert){const own=__compactNodeState(parent),target=__compactNodeState(child),ref=reference==null?null:__compactNodeState(reference),moving=target.nodeType===11?__queryElements(target.bridgeKey,"childNodes",""):[child],oldParents=moving.map(node=>__state.elements[__compactNodeState(node).parentKey]).filter(Boolean);try{__queryElements(own.bridgeKey,insert?"insertNode":"appendNode",JSON.stringify({child:target.bridgeKey,reference:ref?ref.bridgeKey:"",state:target}));}catch(error){const match=/^(HierarchyRequestError|NotFoundError|NotSupportedError):\s*(.*)/.exec(String(error.message));if(match)throw new DOMException(match[2],match[1]);throw error;}for(const state of oldParents)__compactInvalidateContent(state);for(const node of moving){const state=__compactNodeState(node);state.parentKey=own.bridgeKey;state.nativeParent=true;state.removed=false;}__compactInvalidateContent(own);return child;}
+function __compactInsertNode(parent,child,reference,insert){const own=__compactNodeState(parent),target=__compactNodeState(child),ref=reference==null?null:__compactNodeState(reference),moving=target.nodeType===11?__queryElements(target.bridgeKey,"childNodes",""):[child],oldParents=moving.map(node=>__state.elements[__compactNodeState(node).parentKey]).filter(Boolean);try{const action=insert?"insertNode":"appendNode",request={child:target.bridgeKey,reference:ref?ref.bridgeKey:""};if(__compactRetainChildStates)request.state=target;try{__queryElements(own.bridgeKey,action,JSON.stringify(request));}catch(error){if(!request.state&&/^TypeError: Unknown child node/.test(String(error.message))){request.state=target;__queryElements(own.bridgeKey,action,JSON.stringify(request));}else throw error;}}catch(error){const match=/^(HierarchyRequestError|NotFoundError|NotSupportedError):\s*(.*)/.exec(String(error.message));if(match)throw new DOMException(match[2],match[1]);throw error;}for(const state of oldParents)__compactInvalidateContent(state);for(const node of moving){const state=__compactNodeState(node);state.parentKey=own.bridgeKey;state.nativeParent=true;state.removed=false;}__compactInvalidateContent(own);return child;}
 function __compactNodeList(read){
  const indexed=key=>typeof key==="string"&&/^(0|[1-9][0-9]*)$/.test(key)&&Number(key)<4294967295;
  const target=Object.create(NodeList.prototype);
