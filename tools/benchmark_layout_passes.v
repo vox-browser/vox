@@ -11,7 +11,7 @@
 //
 // Modes: full (rebuild the whole layout tree), head (insert an element into
 // <head>), class (toggle a class on one element inside the page), text (change
-// one text node).
+// one text node's value, as React updates text).
 module main
 
 import css
@@ -49,14 +49,24 @@ fn main() {
 		panic('the first update produced no layout')
 	}
 	mut head := document.head() or { panic('missing head') }
-	mut target := css.query_selector(document.as_node(), '#readme p, main p, p') or { panic('no paragraph') }
+	// The first paragraph with a box and a text child: a hidden one would not
+	// need any layout.
+	mut target := unsafe { &dom.Element(nil) }
 	mut text_target := ?&dom.Node(none)
-	for child in target.as_node().children {
-		if child.is_text() {
-			text_target = child
+	for paragraph in css.query_selector_all(document.as_node(), 'p') {
+		if paragraph.as_node().unsafe_layout_node() == none { continue }
+		for child in paragraph.as_node().children {
+			if child.is_text() && child.unsafe_layout_node() != none {
+				text_target = child
+				break
+			}
+		}
+		if text_target != none {
+			target = paragraph
 			break
 		}
 	}
+	if target == unsafe { nil } { panic('no laid out paragraph with text') }
 	mut best_ns := u64(0)
 	mut best_instructions := u64(0)
 	mut total_instructions := u64(0)
@@ -82,7 +92,8 @@ fn main() {
 			}
 			'text' {
 				mut node := text_target or { panic('no text node') }
-				node.set_text_content('benchmark text ${pass}') or { panic(err) }
+				// As React updates text: the node's value, not textContent.
+				node.set_node_value('benchmark text ${pass}') or { panic(err) }
 			}
 			else {
 				panic('unknown mode ${mode}')
