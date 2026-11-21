@@ -1,6 +1,7 @@
 module css
 
 import dom
+import os
 import strings
 import platform
 
@@ -1843,6 +1844,14 @@ pub mut:
 	source_text_            ?string
 mut:
 	shared_style_cache_revision_ u64
+	// Whether the rules (at that revision) contain an @property rule.
+	property_rules_scanned_       bool
+	property_rules_scan_revision_ u64
+	has_property_rules_           bool
+	// The effective registrations at a revision signature.
+	property_registrations_valid_     bool
+	property_registrations_signature_ u64
+	property_registrations_           map[string]CustomPropertyRegistration
 	font_synchronization_had_rules_ bool
 	media_memo_document_ voidptr
 	media_memo_generation_ u64
@@ -2235,6 +2244,45 @@ pub fn (sheet &CSSStyleSheet) for_each_effective_property_at_rule(callback fn (&
 
 pub fn (sheet &CSSStyleSheet) registered_properties_from_css_property_rules() map[string]CustomPropertyRegistration {
 	mut registered_properties := map[string]CustomPropertyRegistration{}
+	// Every style pass collects the registrations; most sheets have none,
+	// and the others change only with their rules or media matches, which
+	// bump the revisions.
+	if !retain_property_rule_walks {
+		if !sheet.may_have_property_rules() {
+			return registered_properties
+		}
+		signature := sheet.property_rule_revision_signature(0)
+		if sheet.property_registrations_valid_ && sheet.property_registrations_signature_ == signature {
+			return sheet.property_registrations_
+		}
+		document := sheet.owning_document() or { return sheet.walk_registered_properties() }
+		mut storage := document.enter_native_storage()
+		defer { storage.finish() }
+		mut mutable_sheet := unsafe { &CSSStyleSheet(sheet) }
+		mutable_sheet.property_registrations_ = sheet.walk_registered_properties()
+		mutable_sheet.property_registrations_signature_ = signature
+		mutable_sheet.property_registrations_valid_ = true
+		return sheet.property_registrations_
+	}
+	return sheet.walk_registered_properties()
+}
+
+// The revisions of the sheet and its loaded imports, combined.
+fn (sheet &CSSStyleSheet) property_rule_revision_signature(depth int) u64 {
+	mut signature := (sheet.shared_style_cache_revision_ ^ u64(voidptr(sheet))) * 0x100000001b3
+	if depth > 16 { return signature }
+	for import_rule in sheet.import_rules {
+		if imported := import_rule.kind_data().loaded_style_sheet {
+			signature = (signature ^ imported.property_rule_revision_signature(depth + 1)) * 0x100000001b3
+		} else {
+			signature = (signature ^ 0x9e3779b97f4a7c15) * 0x100000001b3
+		}
+	}
+	return signature
+}
+
+fn (sheet &CSSStyleSheet) walk_registered_properties() map[string]CustomPropertyRegistration {
+	mut registered_properties := map[string]CustomPropertyRegistration{}
 	registered_properties_ptr := &registered_properties
 	sheet.for_each_effective_property_at_rule(fn [registered_properties_ptr] (rule &CSSRule) {
 		unsafe {
@@ -2372,6 +2420,44 @@ fn invalidate_style_for_style_sheet_owners(sheet &CSSStyleSheet, reason dom.Styl
 			}
 		}
 	}
+}
+
+// Same-binary control: walk every sheet's effective rules for @property
+// registrations in every style pass.
+const retain_property_rule_walks = os.getenv('VOX_RETAIN_PROPERTY_RULE_WALKS') != ''
+
+// Whether the sheet or a loaded import of it has an @property rule at all,
+// whatever its conditions. Rule changes bump the revision.
+fn (sheet &CSSStyleSheet) may_have_property_rules() bool {
+	return sheet.may_have_property_rules_at(0)
+}
+
+fn (sheet &CSSStyleSheet) may_have_property_rules_at(depth int) bool {
+	// An import cycle or a very deep chain keeps the walk.
+	if depth > 16 { return true }
+	if !sheet.property_rules_scanned_ || sheet.property_rules_scan_revision_ != sheet.shared_style_cache_revision_ {
+		mut mutable_sheet := unsafe { &CSSStyleSheet(sheet) }
+		mutable_sheet.has_property_rules_ = rule_list_contains_property(sheet.rules)
+		mutable_sheet.property_rules_scan_revision_ = sheet.shared_style_cache_revision_
+		mutable_sheet.property_rules_scanned_ = true
+	}
+	if sheet.has_property_rules_ { return true }
+	for import_rule in sheet.import_rules {
+		if imported := import_rule.kind_data().loaded_style_sheet {
+			if imported.may_have_property_rules_at(depth + 1) { return true }
+		}
+	}
+	return false
+}
+
+fn rule_list_contains_property(list &CSSRuleList) bool {
+	for rule in list.rules {
+		if rule.type_ == .property { return true }
+		if children := rule.css_rules() {
+			if rule_list_contains_property(children) { return true }
+		}
+	}
+	return false
 }
 
 fn rule_list_contains_position_try(list &CSSRuleList) bool {
