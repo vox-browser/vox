@@ -77,8 +77,9 @@ struct ReplacedSizeEntry {
 	hash u64
 }
 
-fn mark_sized_by_ancestor_measurement(node &Node) {
+fn mark_sized_by_ancestor_measurement(node &Node, reason MeasurementMark) {
 	if node.sized_by_ancestor_measurement_ { return }
+	if incremental_layout_diagnostics { note_measurement_mark(node, reason) }
 	mut mutable := unsafe { &Node(node) }
 	mutable.sized_by_ancestor_measurement_ = true
 }
@@ -125,6 +126,7 @@ fn record_relayout_root(mut state LayoutState, box &Node, before &UsedValues, af
 }
 
 fn note_incremental_layout_origin(mut state LayoutState, node &Node) {
+	if incremental_layout_diagnostics { note_relayout_origin_for_census(state, node) }
 	if state.layout_invalidation_unbounded_ { return }
 	for existing in state.layout_invalidation_origins_ {
 		if voidptr(existing) == voidptr(node) { return }
@@ -254,6 +256,7 @@ fn clear_scrollable_overflow_in_state(mut state LayoutState) {
 fn relayout_incrementally(document &dom.Document, root &Node, previous &LayoutState,
 	pass CommittedLayoutPass, replaced map[u32]ReplacedSizeEntry) ?&LayoutState {
 	if disable_incremental_layout { return none }
+	report_relayout_origin_census(previous, root)
 	if previous.layout_invalidation_unbounded_ {
 		incremental_layout_reject('too-many-changes')
 		return none
