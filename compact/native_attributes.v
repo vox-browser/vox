@@ -288,8 +288,13 @@ const __compactNativeAttributes=(function(){
   return previous;
  }
  function method(name,value){Object.defineProperty(Element.prototype,name,{value,writable:true,enumerable:true,configurable:true});}
- method("getAttribute",{getAttribute(name){const own=state(this);if(arguments.length===0)throw new TypeError("getAttribute requires a name");return call(own,"get",{name:string(name)});}}.getAttribute);
- method("hasAttribute",{hasAttribute(name){const own=state(this);if(arguments.length===0)throw new TypeError("hasAttribute requires a name");return call(own,"has",{name:string(name)});}}.hasAttribute);
+ // Reads of a registered element with no pending facade edits ask the
+ // native attribute directly, without the JSON transport.
+ const direct=typeof globalThis.__ladybirdAttributeValue==="function"?globalThis.__ladybirdAttributeValue:null;
+ const asciiName=/^[\x00-\x7f]*$/;
+ function directValue(own,name){return direct!==null&&!own.created&&typeof own.bridgeKey==="string"&&asciiName.test(name)&&!__compactHasPendingDOMState()?direct(own.bridgeKey,name):undefined;}
+ method("getAttribute",{getAttribute(name){const own=state(this);if(arguments.length===0)throw new TypeError("getAttribute requires a name");name=string(name);const value=directValue(own,name);return value!==undefined?value:call(own,"get",{name});}}.getAttribute);
+ method("hasAttribute",{hasAttribute(name){const own=state(this);if(arguments.length===0)throw new TypeError("hasAttribute requires a name");name=string(name);const value=directValue(own,name);return value!==undefined?value!==null:call(own,"has",{name});}}.hasAttribute);
  method("getAttributeNS",{getAttributeNS(namespace,name){const own=state(this);if(arguments.length<2)throw new TypeError("getAttributeNS requires two arguments");return call(own,"getNS",{namespace:nullable(namespace),name:string(name)});}}.getAttributeNS);
  method("hasAttributeNS",{hasAttributeNS(namespace,name){const own=state(this);if(arguments.length<2)throw new TypeError("hasAttributeNS requires two arguments");return call(own,"hasNS",{namespace:nullable(namespace),name:string(name)});}}.hasAttributeNS);
  method("getAttributeNames",{getAttributeNames(){return call(state(this),"names");}}.getAttributeNames);

@@ -122,6 +122,7 @@ fn install_compact_element_content_binding_with_policy(document &dom.Document, m
 	})!
 	if runtime.engine == .javascriptcore { install_compact_matches_query(binding, mut runtime)! }
 	if runtime.engine == .javascriptcore { install_compact_first_query(binding, mut runtime)! }
+	if runtime.engine == .javascriptcore { install_compact_attribute_value_query(binding, mut runtime)! }
 	runtime.install_html_element_constructor_binding(fn [mut binding] (element &dom.Element) !voidptr {
 		// Register the native owner before the existing wrapper provider resolves
 		// it, preserving the same identity used by selectors and DOM mutations.
