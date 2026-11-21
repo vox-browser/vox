@@ -2350,7 +2350,7 @@ fn invalidate_style_for_style_sheet_owners(sheet &CSSStyleSheet, reason dom.Styl
 	if rule_list_contains_position_try(sheet.rules) {
 		if document := sheet.owning_document() {
 			mut owner := unsafe { &dom.Document(document) }
-			owner.set_needs_full_layout_tree_update(true)
+			owner.request_full_layout_tree_update('position-try-sheet-invalidated')
 		}
 	}
 	for owner in sheet.owning_documents_or_shadow_roots {
@@ -2842,7 +2842,7 @@ fn stylesheet_requires_broad_add_or_remove_invalidation(sheet &CSSStyleSheet) bo
 fn (mut list StyleSheetList) add_sheet(sheet &CSSStyleSheet) {
 	if rule_list_contains_position_try(sheet.rules) {
 		mut document := unsafe { &dom.Document(list.document()) }
-		document.set_needs_full_layout_tree_update(true)
+		document.request_full_layout_tree_update('position-try-sheet-added')
 	}
 	mut mutable_sheet := unsafe { &CSSStyleSheet(sheet) }
 	mutable_sheet.add_owning_document_or_shadow_root(list.document_or_shadow_root)

@@ -7718,7 +7718,7 @@ pub fn (mut d Document) note_svg_paint_resources_changed() {
 		// Ladybird republishes the resource descriptions in its visual-context
 		// arena. V embeds those descriptions in the renderer paint tree, so
 		// rebuild that transport from the retained DOM/layout state.
-		d.set_needs_full_layout_tree_update(true)
+		d.request_full_layout_tree_update('svg-paint-resources')
 		d.set_needs_repaint()
 	}
 }

@@ -904,7 +904,7 @@ fn (mut model HTMLInputElementModel) create_image_button_alt_text_shadow_tree() 
 	shadow_node.append_child(wrapper.as_node()) or { return }
 	model.image_button_alt_text_node_ = text
 	mut document := unsafe { &dom.Document(element.document()) }
-	document.set_needs_full_layout_tree_update(true)
+	document.request_full_layout_tree_update('image-input-alt-text')
 }
 
 fn (mut model HTMLInputElementModel) remove_image_button_alt_text_shadow_tree() {
@@ -915,7 +915,7 @@ fn (mut model HTMLInputElementModel) remove_image_button_alt_text_shadow_tree() 
 	element.set_shadow_root(none)
 	model.image_button_alt_text_node_ = none
 	mut document := unsafe { &dom.Document(element.document()) }
-	document.set_needs_full_layout_tree_update(true)
+	document.request_full_layout_tree_update('image-input-alt-text')
 }
 
 pub fn (mut model HTMLInputElementModel) update_image_button_alt_text_shadow_tree() {
@@ -937,7 +937,7 @@ pub fn (mut model HTMLInputElementModel) update_image_button_alt_text_shadow_tre
 		mut node := input_element(&model).as_node()
 		node.set_needs_layout_tree_update(true, .html_input_element_src_attribute)
 		mut document := unsafe { &dom.Document(input_element(&model).document()) }
-		document.set_needs_full_layout_tree_update(true)
+		document.request_full_layout_tree_update('image-input-alt-text')
 	}
 }
 

@@ -16,7 +16,7 @@ pub fn (mut d Document) set_rendering_device_pixel_ratio(value f64) {
 	d.rendering_device_pixel_ratio_ = ratio
 	d.bump_style_environment_version()
 	d.set_needs_full_style_update(true)
-	d.set_needs_full_layout_tree_update(true)
+	d.request_full_layout_tree_update('rendering-density')
 	if paintable := d.unsafe_paintable() { paintable.invalidate_all_paint_caches() }
 	d.set_needs_repaint()
 }
