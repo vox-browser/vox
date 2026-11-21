@@ -11249,3 +11249,48 @@ slow list; two alternating pairs against the control had identical pixels.
 The other two slow shadows belong to shadowed avatar images drawn through
 another path; only 14 image tile draws happen in a whole load, too few to
 cache.
+
+## Bridge writes and insertions, 2026-11-21 late night
+
+A JavaScriptCore microbenchmark of common DOM operations on a 2,700-element
+document showed writes costing 15 to 100 times a read (`getAttribute` 8
+thousand instructions; `setAttribute` 146 thousand, `appendChild` of a
+created element 157 thousand, moving an existing node 327 thousand). Two
+protocol costs dominated:
+
+- Every native attribute write first replayed the facade: it evaluated
+  `__ladybirdFinalize(true)` as script text, encoded the facade state as JSON
+  and decoded and applied it natively, even with nothing pending. The facade
+  now passes whether it has pending edits or canvases, and without them the
+  native side only settles custom element reactions (`fec4001cd`, control
+  `VOX_RETAIN_TRUSTED_ATTRIBUTE_REPLAYS=1`): `setAttribute` 147 thousand -> 79
+  thousand instructions, `className` writes 215 thousand -> 148 thousand.
+- Insertions sent the child's whole facade state (about 1 KB) with every
+  request, although the native handler reads it only for a child it does not
+  own. Requests now carry the keys, and the facade sends the state only when
+  the native side answers "Unknown child node" (`6ba648122`, control
+  `VOX_RETAIN_COMPACT_CHILD_STATES=1`): `appendChild` of a created element 157
+  thousand -> 53 thousand, moving a node 327 thousand -> 153 thousand.
+
+(A whole-document walk for `<meta name="color-scheme">` after each
+`textContent` write appeared only in the benchmark: GitHub's page has that
+meta early in its head, where the walk stops.)
+
+On the page the bridge's native time (`VOX_COMPACT_QUERY_DIAGNOSTICS`) fell
+from 193 to 139 ms per load; `appendNode` went from 20 to 7.5 µs per call.
+The largest remaining action is `geometry`, 18 script-forced layouts at about
+3.6 ms each.
+
+Seven alternating rounds of bundle `7a2e4ab4f2c7` (`6ba648122`), all 21
+visits valid, host load average 10-28:
+
+| Arm | Median observed instructions | Median launch to PNG |
+| --- | ---: | ---: |
+| Vox with JavaScriptCore | 22.33 billion | 3,623 ms |
+| both controls above | 22.47 billion | 3,743 ms |
+| Brave with V8 | 20.61 billion | 2,362 ms |
+
+The two bridge changes are within the rounds' variation on their own; the
+arms' captures have identical pixels. With the leaf, shadow and custom element
+changes of this session, Vox observes 1.08 times Brave's instructions
+(against 1.14 at the start of the session).
