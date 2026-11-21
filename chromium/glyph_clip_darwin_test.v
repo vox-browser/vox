@@ -2,6 +2,7 @@
 module main
 
 import layout
+import math
 
 fn test_glyph_rectangle_clips_intersect_in_document_space_before_aa_rasterization() {
 	clip := layout.PaintClip{rect: layout.LayoutRect{10.25, 20.5, 40.5, 30},
@@ -47,4 +48,21 @@ fn test_clipped_glyph_edges_preserve_only_fully_covered_pixel_squares() {
 	mut unchanged := []u8{len: 16, init: 25}
 	assert merge_clipped_glyph_edges(mut unchanged, []u8{len: 16, init: 90}, 2, 2, [f32(-1), -1, 3, 3]!)
 	assert unchanged == []u8{len: 16, init: 25}
+}
+
+// A clip that covers every pixel of the raster box leaves the merge nothing to
+// take from the clipped draw, so a run inside its clip skips the GPU draw;
+// a clip edge inside the box, even a fractional one, keeps it.
+fn test_clips_covering_the_raster_box_need_no_clipped_draw() {
+	for clip in [[f32(0), 0, 6, 4]!, [f32(-3), -0.5, 6.25, 9]!, [f32(-0.75), -0.25, 100, 4]!] {
+		assert document_glyph_clip_covers_raster(clip, 6, 4)
+		mut pixels := []u8{len: 6 * 4 * 4, init: 10}
+		assert merge_clipped_glyph_edges(mut pixels, []u8{len: pixels.len, init: 50}, 6, 4, clip)
+		assert pixels == []u8{len: 6 * 4 * 4, init: 10}
+	}
+	for clip in [[f32(0.25), 0, 6, 4]!, [f32(0), 0, 5.75, 4]!, [f32(0), 1, 6, 4]!,
+		[f32(0), 0, 6, 3.5]!, [f32(0), 0, 0, 0]!, [f32(0), 0, f32(math.inf(1)), 4]!] {
+		assert !document_glyph_clip_covers_raster(clip, 6, 4)
+	}
+	assert !document_glyph_clip_covers_raster([f32(0), 0, 6, 4]!, 0, 4)
 }

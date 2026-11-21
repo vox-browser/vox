@@ -77,11 +77,40 @@ fn native_restore_document_glyph_clips(command &layout.PaintCommand,
 }
 
 
+fn document_glyph_mask_samples(width int, height int, geometry [7]i32, scale_x f32, scale_y f32,
+	page_x f32, page_y f32, scroll_y f32) i32 {
+	return document_image_sample_count(i32(math.round((f32(geometry[0]) - page_x) * scale_x)),
+		i32(math.round((f32(geometry[1]) - page_y + scroll_y) * scale_y)), i32(width), i32(height))
+}
+
+// Whether merge_clipped_glyph_edges() would keep no pixel of the clipped draw:
+// the clip covers every pixel of the raster box, so the unclipped interior is
+// the whole result.
+fn document_glyph_clip_covers_raster(clip [4]f32, width int, height int) bool {
+	if width <= 0 || height <= 0 || clip.any(!math.is_finite(f64(it))) { return false }
+	left := int(math.ceil(math.max(f64(0), math.min(f64(width), f64(clip[0])))))
+	top := int(math.ceil(math.max(f64(0), math.min(f64(height), f64(clip[1])))))
+	right := int(math.floor(math.max(f64(0), math.min(f64(width), f64(clip[2])))))
+	bottom := int(math.floor(math.max(f64(0), math.min(f64(height), f64(clip[3])))))
+	return left == 0 && top == 0 && right == width && bottom == height
+}
+
+// draw_document_glyph_mask()'s acceptance without its draw, for a clip that
+// covers the raster box.
+fn document_glyph_mask_drawable(pixels []u8, width int, height int, mask []u8, ink [4]f32,
+	clip [4]f32, geometry [7]i32, scale_x f32, scale_y f32, page_x f32, page_y f32, scroll_y f32) bool {
+	samples := document_glyph_mask_samples(width, height, geometry, scale_x, scale_y, page_x,
+		page_y, scroll_y)
+	if samples == 0 { return false }
+	return ggshape.clipped_glyph_mask_drawable(pixels.data, i32(width), i32(height), i32(width * 4),
+		mask, ink, clip, int(samples))
+}
+
 fn draw_document_glyph_mask(mut pixels []u8, width int, height int, mask []u8,
 	ink [4]f32, bounds ?[4]f32, geometry [7]i32, scale_x f32, scale_y f32,
 	page_x f32, page_y f32, scroll_y f32) bool {
-	samples := document_image_sample_count(i32(math.round((f32(geometry[0]) - page_x) * scale_x)),
-		i32(math.round((f32(geometry[1]) - page_y + scroll_y) * scale_y)), i32(width), i32(height))
+	samples := document_glyph_mask_samples(width, height, geometry, scale_x, scale_y, page_x,
+		page_y, scroll_y)
 	if samples == 0 { return false }
 	clip := if selected := bounds {
 		document_glyph_device_clip(selected, geometry, scale_x, scale_y, page_x, page_y, scroll_y)

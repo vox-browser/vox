@@ -111,6 +111,10 @@ fn draw_document_glyph_raster(glyphs []u16, positions []f64, font_path string, f
 }
 
 __global document_glyph_raster_dump = os.getenv('VOX_TEXT_RASTER_DUMP')
+// Same-binary control: draw and merge a clipped glyph run on the GPU even when
+// its clip covers the whole raster box.
+const retain_covered_glyph_clip_draws = os.getenv('VOX_RETAIN_COVERED_GLYPH_CLIP_DRAWS') != ''
+
 __global document_glyph_raster_records = 0
 
 fn document_glyph_raster_record(run cpuraster.CanvasGlyphRun, transform [6]f32, geometry [7]i32,
@@ -258,17 +262,29 @@ fn draw_document_glyph_raster_run(glyphs []u16, positions []f64, font_path strin
 			if !cpuraster.fill_canvas_glyphs_cached(mut cache, mut coverage, width, height, width * 4, 2,
 				mask_run, transform, color, none, 1, .src_over, [], none) { return 'clipped glyph mask declined' }
 			mask := []u8{len: width * height, init: coverage[index * 4 + 3]}
-			mut clipped := pixels.clone()
+			clip := document_glyph_device_clip(bounds, geometry, scale_x, scale_y, page_x, page_y, scroll_y)
+			// A clip around the whole raster box leaves the merge below nothing to
+			// take from the clipped GPU draw; skip its upload and readback.
+			covered := !retain_covered_glyph_clip_draws
+				&& document_glyph_clip_covers_raster(clip, width, height)
+			mut clipped := if covered { []u8{} } else { pixels.clone() }
 			if extended_blend {
 				if !cpuraster.blend_extended_glyph_mask(mut pixels, width, height, width * 4, mask, ink) {
 					return 'extended glyph interior declined'
 				}
 			} else if !cpuraster.fill_canvas_glyphs_cached(mut cache, mut pixels, width, height, width * 4, 2, run,
 				transform, color, none, 1, .src_over, [], none) { return 'clipped glyph interior declined' }
-			if !draw_document_glyph_mask(mut clipped, width, height, mask, ink, bounds,
-				geometry, scale_x, scale_y, page_x, page_y, scroll_y) { return 'clipped glyph GPU declined' }
-			clip := document_glyph_device_clip(bounds, geometry, scale_x, scale_y, page_x, page_y, scroll_y)
-			if !merge_clipped_glyph_edges(mut pixels, clipped, width, height, clip) { return 'clipped glyph merge declined' }
+			if covered {
+				if !document_glyph_mask_drawable(pixels, width, height, mask, ink, clip, geometry,
+					scale_x, scale_y, page_x, page_y, scroll_y) { return 'clipped glyph GPU declined' }
+			} else {
+				if !draw_document_glyph_mask(mut clipped, width, height, mask, ink, bounds,
+					geometry, scale_x, scale_y, page_x, page_y, scroll_y) { return 'clipped glyph GPU declined' }
+				if !merge_clipped_glyph_edges(mut pixels, clipped, width, height, clip) { return 'clipped glyph merge declined' }
+			}
+			if chromium_paint_layer_diagnostics {
+				eprintln('VOX_GLYPH_CLIP_COVERED covered=${covered} raster=${width}x${height}')
+			}
 		} else if extended_blend {
 			mut coverage := []u8{len: pixels.len}
 			if !cpuraster.fill_canvas_glyphs_cached(mut cache, mut coverage, width, height, width * 4, 2,
