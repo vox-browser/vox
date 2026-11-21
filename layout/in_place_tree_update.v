@@ -83,15 +83,22 @@ fn (mut update InPlaceTreeUpdate) decline(reason string) bool {
 // none when the complete builder is needed. Planning builds new boxes without
 // attaching them; the committed tree changes only once every branch qualifies.
 fn update_layout_tree_in_place(document &dom.Document, mut style_computer css.StyleComputer) ?&Node {
-	if disable_in_place_tree_update || in_place_tree_update_suspended
-		|| document.needs_full_layout_tree_update() {
+	if disable_in_place_tree_update || in_place_tree_update_suspended {
 		return none
+	}
+	// Requests for the complete builder are not declines: the update is not
+	// attempted.
+	if document.needs_full_layout_tree_update() {
+		return skip_in_place_tree_update('full-tree-update')
 	}
 	previous := document_layout_result(document) or { return none }
 	if previous.root == unsafe { nil } || previous.state == unsafe { nil } { return none }
 	document_node := document.as_node()
-	if document_node.needs_layout_tree_update_() || document.top_layer_elements_for_layout().len > 0 {
-		return none
+	if document_node.needs_layout_tree_update_() {
+		return skip_in_place_tree_update('document-node')
+	}
+	if document.top_layer_elements_for_layout().len > 0 {
+		return skip_in_place_tree_update('top-layer')
 	}
 	root_element := document.document_element() or { return none }
 	mut update := InPlaceTreeUpdate{
@@ -129,6 +136,13 @@ fn update_layout_tree_in_place(document &dom.Document, mut style_computer css.St
 		eprintln('VOX_IN_PLACE_TREE_UPDATE updated parents=${update.lists.len} added=${added} removed=${removed}')
 	}
 	return previous.root
+}
+
+fn skip_in_place_tree_update(reason string) ?&Node {
+	if in_place_tree_update_diagnostics {
+		eprintln('VOX_IN_PLACE_TREE_UPDATE skipped=${reason}')
+	}
+	return none
 }
 
 fn decline_in_place_tree_update(reason string) ?&Node {
