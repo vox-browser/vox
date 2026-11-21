@@ -10687,3 +10687,39 @@ clipped glyph run through a GPU surface and reads it back synchronously
 (`GpuSurface.read_pixels` waits for the command buffer), about 288 runs and
 100 ms per load; that switch is enabled only by the benchmark's parity
 options.
+
+## Clean subtree reuse on the real load, 2026-11-21
+
+`VOX_CLEAN_SUBTREE_REUSE_DIAGNOSTICS=reasons` on the real load lists the
+subtrees each layout tree update rebuilds although nothing in them changed;
+each rejected element gets a new box, so its ancestors are laid out again.
+The capture renders at device pixel ratio 2 and lays out in device pixels,
+which the frozen-page layout benchmark did not do; `6449e5eee` adds
+`VOX_BENCHMARK_LAYOUT_SCALE=2`. Fixed in this round:
+
+| Rejection | Cause | Commit | Control |
+| --- | --- | --- | --- |
+| `replaced` (README badges) | images showing an SVG document | `3bb58511b` | `VOX_RETAIN_SVG_IMAGE_TREE_REBUILDS=1` |
+| `marker` (ordered lists) | counter-text markers | `9d9abbdc2` | `VOX_RETAIN_ORDINAL_MARKER_BLOCKING=1` |
+| `marker:style` (94 items per load) | under device layout a box keeps a projected style, never the `::marker` object | `db9e6734c`, `32c1fecca` | `VOX_RETAIN_MARKER_STYLE_IDENTITY=1` |
+| `anonymous-parent` | inline-level boxes in mixed-content wrappers | `43ccc289e` | `VOX_RETAIN_WRAPPED_SUBTREE_REBUILDS=1` |
+| `control` (header search) | text inputs, now kept while their build inputs are unchanged | `0afa74ffc` | `VOX_RETAIN_INPUT_TREE_REBUILDS=1` |
+
+`5ddf3bbe8` makes the diagnostic name the failing marker condition. The
+ordered-list test now runs at layout scales 1 and 2. The FastC test runner
+crashes on any document with list markers (`attach_list_item_marker`), and
+C-backend builds of layout tests exceed the 12 GiB guard, so the list tests
+were run as main-module copies, which compile within it.
+
+At scale 2, a layout tree update that changes no box went from 285 to 168
+million instructions (marker style alone 285M -> 173M), and the first style
+and layout from 3.37 to 3.20 billion; complete-pass verification found no
+geometry differences. On the page, seven alternating JSC pairs with all
+four reuse controls against none: PNG median 2,868 -> 2,805 ms (faster in
+six pairs), instructions 26.00B -> 25.58B; host load 8 to 11.
+
+Still rebuilt in every tree update: an `<svg>` styled `display:flex`, which
+the SVG salvage rules accept only with flow display, and SVG elements whose
+styles are animated (`VOX_RETAINED_LAYOUT_STYLE_DIAGNOSTICS=1` reports
+`differs=animated` 80 times per pass under device layout, where a box's
+projected style never shares the DOM style's identity).
