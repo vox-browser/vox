@@ -203,3 +203,27 @@ fn test_inserted_typed_inputs_keep_the_committed_tree() {
 	assert in_place_handle(document, 'check') != kept_check
 	in_place_matches_full_rebuild(mut document, 'type change')
 }
+
+// A kept table keeps its anonymous wrapper and boxes when a sibling is added
+// to its parent; an added or removed table still keeps the complete builder.
+fn test_kept_tables_keep_their_wrappers() {
+	mut document := html.parse_document('<!doctype html><style>body{margin:0;font:16px/20px sans-serif}td{padding:2px;border:1px solid}</style><body><article id="doc"><p>intro</p><table id="t"><tr><td>a</td><td>b</td></tr></table></article></body>')
+	defer { document.finalize() }
+	_ = layout_document_typed_in_viewport(document, 400, 300)
+	enabled := os.getenv('VOX_DISABLE_IN_PLACE_TREE_UPDATE') == ''
+	kept_table := in_place_handle(document, 't')
+	updated_before, _ := in_place_tree_update_statistics()
+	mut article := document.get_element_by_id('doc') or { panic('doc') }
+	mut added := document.create_element('p') or { panic(err) }
+	mut added_node := added.as_node()
+	added_node.append_child(document.create_text_node('more').as_node()) or { panic(err) }
+	mut article_node := article.as_node()
+	article_node.append_child(added_node) or { panic(err) }
+	document.update_layout(.debugging)
+	updated_after, _ := in_place_tree_update_statistics()
+	if enabled {
+		assert updated_after == updated_before + 1
+		assert in_place_handle(document, 't') == kept_table
+	}
+	in_place_matches_full_rebuild(mut document, 'table sibling')
+}

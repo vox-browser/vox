@@ -280,8 +280,14 @@ fn (mut update InPlaceTreeUpdate) plan_child_list(node &dom.Node) bool {
 	mut wrappers := []&Node{}
 	mut current := []&Node{}
 	for child in parent.children() {
+		// A table element's box sits in an anonymous wrapper, which stands for
+		// the table in the child list.
+		if child.is_table_wrapper() {
+			current << child
+			continue
+		}
 		if child.is_anonymous() && !child.is_generated_for_pseudo_element() {
-			if !child.children_are_inline() || child.is_table_wrapper() || !child.is_block_container() {
+			if !child.children_are_inline() || !child.is_block_container() {
 				return update.decline('anonymous-child')
 			}
 			wrappers << child
@@ -333,8 +339,10 @@ fn (mut update InPlaceTreeUpdate) plan_child_list(node &dom.Node) bool {
 			continue
 		}
 		if old := existing[key] {
-			if !child.needs_layout_tree_update_() && old.display() == child_style.display()
-				&& retained_flow_style_matches(old, child_style)
+			// A kept table keeps its wrapper; its own box carries its style.
+			built := if old.is_table_wrapper() { in_place_wrapped_table(old) or { old } } else { old }
+			if !child.needs_layout_tree_update_() && built.display() == child_style.display()
+				&& retained_flow_style_matches(built, child_style)
 				&& !retained_flow_element_has_generated_pseudo_style(child_element) {
 				children << old
 				kept[key] = true
@@ -384,6 +392,15 @@ fn (mut update InPlaceTreeUpdate) plan_child_list(node &dom.Node) bool {
 // not split into continuations.
 fn (mut update InPlaceTreeUpdate) note_existing_child(child &Node, mut existing map[u64]&Node,
 	mut texts map[u64]&Node) bool {
+	if child.is_table_wrapper() {
+		table := in_place_wrapped_table(child) or { return update.decline('table-wrapper') }
+		table_dom := table.dom_node() or { return update.decline('table-wrapper') }
+		if table_dom.as_element() == none || in_place_box_is_split(table) {
+			return update.decline('table-wrapper')
+		}
+		existing[u64(voidptr(table_dom))] = child
+		return true
+	}
 	if child.is_anonymous() || child.is_generated_for_pseudo_element() {
 		return update.decline('nested-anonymous-child')
 	}
@@ -398,6 +415,16 @@ fn (mut update InPlaceTreeUpdate) note_existing_child(child &Node, mut existing 
 	if in_place_box_is_split(child) { return update.decline('continuation-child') }
 	existing[u64(voidptr(child_dom))] = child
 	return true
+}
+
+// The box of the table element an anonymous table wrapper holds.
+fn in_place_wrapped_table(wrapper &Node) ?&Node {
+	for child in wrapper.children() {
+		if !child.is_anonymous() && child.display().is_table_inside() && child.dom_node() != none {
+			return child
+		}
+	}
+	return none
 }
 
 // Install the planned child lists into the committed tree.
