@@ -11043,3 +11043,13 @@ renders) rather than a DOM difference. The next step is to find which
 component's output differs (e.g. by hooking the fiber React fails on, or by
 comparing the client-render DOM with the server markup after the
 regeneration).
+
+After regeneration (skeleton at `react-root:commit:code-view`) the tree
+differs from the server's in React 19 resource hoisting (the leading `link`
+and `meta` leave the container), removed text-separator comments, and
+data-driven additions: `strong` counts beside the branch/tag icons and the
+latest commit's avatar/author block under the heading, i.e. content filled
+from the `branch-and-tag-count` and `latest-commit` responses. That fits a
+client render that already has fetched data the server render did not, but
+does not yet name the component React rejected; hooking React's hydration
+failure (the fiber passed to its mismatch path) is the remaining step.
