@@ -654,6 +654,12 @@ fn dump_css_style_sheet_if_requested(sheet &CSSStyleSheet) {
 	}
 }
 
+// A style sheet response's text parsed as an owner node parses it (lazy
+// declarations for large sheets), for benchmarks and tools.
+pub fn parse_owner_style_sheet_text(document &dom.Document, css_text string, location string) &CSSStyleSheet {
+	return parse_css_style_sheet_for_owner_node(document, css_text, location)
+}
+
 // Load imports before the sheet joins its style sheet list so imported fonts,
 // layers and style rules participate in the owner's initial invalidation.
 // Like local imports, the embedding browser's remote loader is synchronous.
