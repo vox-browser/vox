@@ -3,6 +3,7 @@ module main
 import processmetrics
 
 import dom
+import hash.fnv1a
 import layout
 import math
 import painting
@@ -12,6 +13,9 @@ import os
 
 const disable_javascript_paint_only_sync = os.getenv('VOX_DISABLE_JAVASCRIPT_PAINT_SYNC') != ''
 const javascript_paint_sync_diagnostics = os.getenv('VOX_JAVASCRIPT_PAINT_SYNC_DIAGNOSTICS') != ''
+// VOX_DIAGNOSTIC_PAINT_FINGERPRINT=1: one line per recorded display list with
+// a hash of its dump, to find frames that repaint unchanged content.
+const paint_fingerprint_diagnostics = os.getenv('VOX_DIAGNOSTIC_PAINT_FINGERPRINT') != ''
 
 __global javascript_paint_sync_adoptions u64
 
@@ -174,6 +178,11 @@ fn (mut app BrowserApp) record_document_paint_commands() {
 		app.paint_display_list = list
 		app.paint_generation++
 		app.paint_commands = layout.display_list_commands(list)
+		if paint_fingerprint_diagnostics {
+			listing := list.dump()
+			digest := fnv1a.sum64_string(listing)
+			eprintln('VOX_PAINT_FINGERPRINT generation=${app.paint_generation} commands=${app.paint_commands.len} dump_bytes=${listing.len} hash=${digest:016x} scroll=${app.scroll_y} at_ms=${time.sys_mono_now() / 1000000}')
+		}
 		if portable_svg_viewport_reuse {
 			viewport := document.viewport_rect()
 			app.portable_svg_group_recording = PortableSVGGroupRecording{
