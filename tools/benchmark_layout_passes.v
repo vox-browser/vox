@@ -14,7 +14,8 @@
 // Modes: full (rebuild the whole layout tree), head (insert an element into
 // <head>), class (toggle a class on one element inside the page), text (change
 // one text node's value, as React updates text). VOX_BENCHMARK_CLASS_SELECTOR
-// chooses the class mode's element.
+// chooses the class mode's element and VOX_BENCHMARK_CLASS_ATTRIBUTE=name=value
+// the attribute it toggles.
 module main
 
 import css
@@ -78,6 +79,10 @@ fn main() {
 	// The class mode's element: VOX_BENCHMARK_CLASS_SELECTOR picks another one
 	// (for example the react-app element that React marks as loaded).
 	mut class_target := target
+	// VOX_BENCHMARK_CLASS_ATTRIBUTE=name=value toggles another attribute.
+	attribute_setting := os.getenv('VOX_BENCHMARK_CLASS_ATTRIBUTE')
+	class_attribute := if attribute_setting != '' { attribute_setting.all_before('=') } else { 'class' }
+	class_value := if attribute_setting.contains('=') { attribute_setting.all_after('=') } else { 'benchmark-toggle' }
 	if selector := os.getenv_opt('VOX_BENCHMARK_CLASS_SELECTOR') {
 		class_target = css.query_selector(document.as_node(), selector) or { panic('no ${selector}') }
 	}
@@ -99,9 +104,9 @@ fn main() {
 			}
 			'class' {
 				if pass % 2 == 0 {
-					class_target.set_attribute_value('class', 'benchmark-toggle')
+					class_target.set_attribute_value(class_attribute, class_value)
 				} else {
-					class_target.remove_attribute('class')
+					class_target.remove_attribute(class_attribute)
 				}
 			}
 			'text' {
