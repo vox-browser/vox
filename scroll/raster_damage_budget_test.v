@@ -73,15 +73,8 @@ fn test_coalesced_damage_still_refuses_large_unbounded_and_reordered_changes() {
 	b := ScrollRasterCommandKey{...a, hash: 2}
 	ordered := budget_previous([a, b])
 	mut order := ScrollRasterDiffStats{}
-	reordered := scroll_raster_content_damage(&ordered, [b, a], 7, 0, 200, 200, mut order)
-	if retain_paint_order_fallback {
-		assert reordered == none
-		assert order.fallback == 'paint-order-changed'
-	} else {
-		// raster_order_damage.v: the command that moved is damaged instead.
-		rects := reordered or { panic('reordered content must reconcile') }
-		assert rects.len > 0 && order.reordered == 1
-	}
+	assert scroll_raster_content_damage(&ordered, [b, a], 7, 0, 200, 200, mut order) == none
+	assert order.fallback == 'paint-order-changed'
 }
 
 fn test_bounding_damage_joins_convert_newly_intersected_video_restores() {

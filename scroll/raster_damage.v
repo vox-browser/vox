@@ -94,8 +94,6 @@ mut:
 	changed  int
 	rects    int
 	fallback string
-	// Matched commands damaged because they moved earlier in paint order.
-	reordered int
 	// Videos whose only change is their frame, kept out of the returned rects.
 	restores []ScrollRasterVideoRestore
 }
@@ -916,16 +914,10 @@ fn scroll_raster_content_damage(previous &ScrollRasterKeyFrame, current []Scroll
 			cursor := cursors[key.hash]
 			if cursor < indices.len {
 				matched := indices[cursor]
-				// raster_order_damage: a command that moved earlier in paint
-				// order is damaged where it was and where it is.
-				if matched < last_matched && !retain_paint_order_fallback {
-					stats.reordered++
-				} else {
-					cursors[key.hash] = cursor + 1
-					if matched < last_matched { order_changed = true }
-					if matched > last_matched { last_matched = matched }
-					continue
-				}
+				cursors[key.hash] = cursor + 1
+				if matched < last_matched { order_changed = true }
+				if matched > last_matched { last_matched = matched }
+				continue
 			}
 		}
 		changed++
