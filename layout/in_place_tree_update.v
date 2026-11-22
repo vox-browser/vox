@@ -3,6 +3,7 @@ module layout
 import css
 import dom
 import os
+import platform
 
 // In-place layout tree update. A layout tree update flags the DOM node whose
 // child list needs new boxes (a node gaining or losing children, or a child
@@ -477,7 +478,11 @@ fn (mut update InPlaceTreeUpdate) plan_child_list(node &dom.Node) bool {
 		built := build_layout_box_for_element(update.document, child_element, update.style_computer,
 			mut update.builder) or { continue }
 		if in_place_tree_update_diagnostics {
-			in_place_built_box_counts[rebuild_reason] += in_place_subtree_box_count(built)
+			count := in_place_subtree_box_count(built)
+			// The map outlives the update's workspace.
+			persistent := platform.enter_persistent()
+			in_place_built_box_counts[rebuild_reason] += count
+			platform.leave_persistent(persistent)
 		}
 		if update.builder.hoisted_pseudo_element_boxes.len != 0 { return update.decline('hoisted') }
 		if built.display().is_contents() { return update.decline('contents-child') }

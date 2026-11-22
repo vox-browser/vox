@@ -2,6 +2,7 @@ module layout
 
 import css
 import os
+import platform
 
 // VOX_INLINE_RUN_REPEAT_DIAGNOSTICS=1: count the inline formatting runs that
 // build their items, and how many repeat an earlier run of the same
@@ -21,6 +22,9 @@ __global inline_run_repeat_kinds map[string]u64
 
 fn note_uncached_inline_run(state &LayoutState, containing_block &BlockContainer, used &UsedValues,
 	mode LayoutMode, space AvailableSpace, width_only bool) {
+	// The maps and their keys outlive the layout workspace this runs in.
+	persistent := platform.enter_persistent()
+	defer { platform.leave_persistent(persistent) }
 	key := exact_inline_layout_key(used, mode, space)
 	text := '${state.pass_serial_}:${u64(voidptr(containing_block))}:${key}'
 	measurement := state.subtree_root != none
