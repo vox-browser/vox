@@ -11344,3 +11344,49 @@ and 8 in the optimizing tiers. The host samples split into:
 
 So about half of the time inside JavaScript is spent in the native DOM work it
 calls, and the page's own code accounts for the other half.
+
+**Settle frames and the retained raster.** Per-thread counters (an injected
+dylib reading `PROC_PIDTHREADCOUNTS` at exit) put 19.6B of 23.2B process
+instructions on the main thread. `VOX_DIAGNOSTIC_PAINT_FINGERPRINT` and
+`VOX_LEAF_TIMING_DIAGNOSTICS` then showed 8-11 frames after the last layout,
+while Primer skeleton placeholders animated `mask-position`
+(`prc-Skeleton-shimmer`), each re-rasterizing the whole display list (~910
+commands, ~22 ms, ~0.3B instructions). Three backdrop-filtered header buttons
+kept the scroll raster ring from retaining pixels
+(`VOX_SCROLL_RASTER_REJECT reason=unsupported-command:apply_backdrop_filter`).
+`13d04cee8`/`400ca99a9`/`3a8b525dc` let the ring keep lists with bounded
+backdrop filters, also inside effect layers: a backdrop's key ink is the
+region it reads, and damage touching it repaints all of it. Same-binary
+cohort on bundle `9587655f69f2` (5 alternating pairs, host load 6-7.7):
+
+| Arm | Median | Range |
+|---|---:|---:|
+| ring keeps backdrops | 22.474B | 21.696-22.922B |
+| `VOX_RETAIN_BACKDROP_RASTER_REJECTION=1` | 23.818B | 22.498-25.084B |
+| Brave | 20.729B | 20.103-20.824B |
+
+Every Vox capture differed from the Brave reference by the same 2 pixels in
+both arms. The earlier bimodal totals (~22.9B vs ~24.5B) track how long the
+skeletons stay visible, which sets the number of such frames.
+
+**Hydration order.** In Brave the deferred module scripts run back to back
+after parsing, the code view's React root starts and commits, and only then
+does GitHub's lazy element loader (which scans in an animation frame) start
+the page's React partials. Vox took rendering opportunities between its
+deferred scripts, so the partials sometimes started first and the code view's
+hydration failed with React #418. `9b0f47818` skips rendering updates while
+deferred scripts can make progress; probe loads then always commit the code
+view first, as Brave does. That ordering did not change the totals, which were
+dominated by the settle frames above.
+
+**Layout roots.** The `VOX_INCREMENTAL_LAYOUT_DIAGNOSTICS` census
+(`c1923f3bd`/`69a551b86`) found three reasons for complete passes: block
+layout's min-height probe marked the `min-height: 100vh` app shell as
+measured (`3923309c1` releases those marks when the probe is ignored),
+detached origins left by in-place tree updates (`813cb4349` drops them), and
+origins under plain blocks near the top, which have no recorded ancestor.
+The incremental pass also carried every committed retained layout, so a
+replaced inline box could be painted from stale lines; `923d3d3d4` carries
+only those outside the relayout roots. The GitHub hydration passes still
+run complete (large roots, plain-block ancestry), so these did not change its
+totals.
