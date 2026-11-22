@@ -99,6 +99,19 @@ fn (app &BrowserApp) browser_tab_favicon_urls() (string, string) {
 	return cache.favicon_declared_url, cache.favicon_default_url
 }
 
+// Share the render resource batch so the first chrome update can consume an
+// already pending request. Decoding and failed-icon fallback stay with chrome.
+fn (mut app BrowserApp) enqueue_initial_tab_favicon(mut jobs []ResourceFetchJob) {
+	mut discovery := platform.begin_thread_scratch('initial tab favicon discovery')
+	defer { discovery.finish() }
+	declared, fallback := app.browser_tab_favicon_urls()
+	address := if declared != '' { declared } else { fallback }
+	discovery.leave()
+	if address.starts_with('http://') || address.starts_with('https://') {
+		app.enqueue_background_resource(address, mut jobs)
+	}
+}
+
 // Keep image ownership with the page, including background tabs. Requests use
 // the ordinary asynchronous resource loader, never a synchronous UI fetch.
 fn (mut app BrowserApp) browser_tab_favicon_id() int {

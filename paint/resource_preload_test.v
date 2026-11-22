@@ -1,5 +1,6 @@
 module main
 
+import dom
 import gg
 import html
 import layout
@@ -80,4 +81,30 @@ fn test_first_page_of_a_windowed_launch_prefetches_before_the_native_context_exi
 	app.ctx = &gg.Context{native_rendering: true}
 	app.native_paint_expected = false
 	assert app.document_paints_natively()
+}
+
+fn test_initial_image_batch_shares_its_budget_between_favicon_and_unique_visible_backgrounds() {
+	mut document := dom.Document.create(dom.URL{value: 'https://paint-resources.test/page'})
+	defer { document.finalize() }
+	mut markup := '<!doctype html><link rel="icon" href="/first.png"><link rel="icon" href="/tab.png">'
+	markup += '<div style="display:none;background-image:url(/hidden.png)"></div>'
+	for index in 0 .. initial_image_preload_limit {
+		markup += '<div style="background-image:url(/bg-${index}.png)">Tile</div>'
+		markup += '<div style="background-image:url(/bg-${index}.png)">Duplicate</div>'
+	}
+	html.parse_html_from_a_string(document, markup)
+	mut app := BrowserApp{document: document}
+	mut jobs := []ResourceFetchJob{}
+	app.enqueue_initial_tab_favicon(mut jobs)
+	app.enqueue_initial_tab_favicon(mut jobs)
+	assert jobs.len == 1
+	assert jobs[0].url == 'https://paint-resources.test/tab.png'
+	layout.prepare_initial_resource_styles(document, 800, 600)
+	mut found := InitialBackgroundPreloads{limit: initial_image_preload_limit - jobs.len}
+	collect_initial_background_preloads(document.as_node(), mut found)
+	for address in found.urls { app.enqueue_background_resource(address, mut jobs) }
+	assert jobs.len == initial_image_preload_limit
+	for index in 1 .. jobs.len {
+		assert jobs[index].url == 'https://paint-resources.test/bg-${index - 1}.png'
+	}
 }

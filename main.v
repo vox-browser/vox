@@ -3845,7 +3845,7 @@ fn (mut app BrowserApp) relayout(window_width int, window_height int) {
 	}
 	layout.enable_native_paint_tree_storage(app.document)
 	layout.enable_native_static_svg_backgrounds(app.document)
-	app.prime_initial_computed_background_resources(f64(viewport_width) / app.page_zoom, f64(viewport_height) / app.page_zoom)
+	app.prime_initial_paint_resources(f64(viewport_width) / app.page_zoom, f64(viewport_height) / app.page_zoom)
 	app.root_box = layout.layout_document_typed_in_viewport(app.document, f64(viewport_width) / app.page_zoom, f64(viewport_height) / app.page_zoom)
 	previous_storage := app.paint_tree_storage
 	app.paint_tree_storage = layout.retain_document_paint_tree(app.document)
