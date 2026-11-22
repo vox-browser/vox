@@ -7663,7 +7663,11 @@ fn (mut app BrowserApp) draw() {
 					// command replay, may supply deferred leaf rasters (mode 2).
 					chromium := replay_attempt == 0 && app.document != unsafe { nil }
 						&& app.document.font_rendering_policy() == .chromium
-					C.native_begin_deferred_layer_frame(app.begin_raster_frame_deferral(chromium))
+					enabled := chromium && !app.scroll_raster_content_eligible
+					layers_only := chromium && app.scroll_raster_content_eligible
+						&& !disable_reused_frame_layer_deferral
+					app.scroll_raster_frame_deferred = enabled
+					C.native_begin_deferred_layer_frame(i32(if enabled { 1 } else if layers_only { 2 } else { 0 }))
 				}
 			}
 			mut scroll_damage := ScrollRasterDamage{}
