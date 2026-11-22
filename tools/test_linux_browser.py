@@ -2061,6 +2061,23 @@ def check_svg_mask_non_scaling_strokes_browser(binary, artifacts, temporary):
     print("PASS: SVG masks preserve non-scaling widths, dash geometry, and paint transforms", flush=True)
 
 
+def check_svg_pattern_tile_non_scaling_strokes_browser(binary, artifacts, temporary):
+    white, green, blue, half = (255, 255, 255), (0, 255, 0), (0, 0, 255), (127, 127, 255)
+    samples = (
+        (1, 7, green), (1, 6, white), (1, 12, green), (1, 13, white),
+        (5, 10, white), (10, 10, green), (21, 10, green), (25, 10, white),
+        (130, 26, white), (130, 27, blue), (130, 32, blue), (130, 33, white),
+        (176, 30, half), (210, 30, blue), (256, 30, half),
+        (320, 10, blue), (321, 8, blue), (326, 10, white),
+        (325, 15, white), (330, 20, blue), (362, 20, blue),
+    )
+    check_transformed_svg_mask_browser(binary, artifacts, temporary, "tile-width",
+                                       [(x, y + 8, color) for x, y, color in samples], (
+        "luminance=true operations=1 paths=1 ", "luminance=false operations=1 paths=1 ",
+    ), fixture_name="svg-pattern-tile-non-scaling-strokes.html")
+    print("PASS: SVG pattern tiles retain device stroke widths, dash lengths, and gradient alignment", flush=True)
+
+
 def check_svg_mask_gradient_strokes_browser(binary, artifacts, temporary):
     fixture = Path(__file__).resolve().parents[1] / "Tests/Browser/Native/svg-mask-gradient-strokes.html"
     documents = []
@@ -2881,6 +2898,7 @@ def main():
         check_svg_mask_strokes_browser(binary, artifacts, temporary)
         check_svg_mask_dashed_strokes_browser(binary, artifacts, temporary)
         check_svg_mask_non_scaling_strokes_browser(binary, artifacts, temporary)
+        check_svg_pattern_tile_non_scaling_strokes_browser(binary, artifacts, temporary)
         check_svg_mask_gradient_strokes_browser(binary, artifacts, temporary)
         check_svg_mask_images_browser(binary, artifacts, temporary)
         check_svg_mask_patterns_browser(binary, artifacts, temporary)

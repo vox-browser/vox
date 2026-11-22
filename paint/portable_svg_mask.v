@@ -347,7 +347,7 @@ fn (mut app BrowserApp) apply_portable_svg_content_mask(mut image PortableSVGGro
 	}
 	mut coverage := []u8{len: bounds.width * bounds.height * 4}
 	cacheable := app.raster_svg_mask_layers(mut coverage, bounds.width * 4, bounds, mask, page_x,
-		page_y, scale)?
+		page_y, scale, unsafe { nil })?
 	if mask.mask_luminance {
 		// The mask channels are already premultiplied. Convert the resolved
 		// color with the native mask's integer luminance weights.
@@ -373,7 +373,8 @@ fn (mut app BrowserApp) raster_svg_content_mask(mut pixels []u8, pitch int, boun
 			return true
 		}
 	}
-	return app.raster_svg_mask_layers(mut pixels, pitch, bounds, mask, page_x, page_y, scale) or { false }
+	return app.raster_svg_mask_layers(mut pixels, pitch, bounds, mask, page_x, page_y, scale,
+		unsafe { nil }) or { false }
 }
 
 fn svg_mask_line_path_rows(segments []f32, matrix [6]f32) ?[2]f32 {
@@ -468,7 +469,8 @@ fn svg_mask_opacity_end(operations []layout.PaintMaskOperation, start int) ?int 
 // pixels outside the mask region when borrowing a native bitmap. The result
 // reports whether all image pixels were available for texture reuse.
 fn (mut app BrowserApp) raster_svg_mask_layers(mut pixels []u8, pitch int, bounds painting.IntRect,
-	mask &layout.PaintClip, page_x f32, page_y f32, scale f64) ?bool {
+	mask &layout.PaintClip, page_x f32, page_y f32, scale f64,
+	stroke_space &PortableSVGTileStrokeSpace) ?bool {
 	layer_pitch := bounds.width * 4
 	mut layers := [portable_svg_mask_max_opacity_depth + 1]PortableSVGMaskLayer{}
 	layers[0].pixels = pixels
@@ -532,7 +534,7 @@ fn (mut app BrowserApp) raster_svg_mask_layers(mut pixels []u8, pitch int, bound
 				available := app.raster_svg_mask_path(mut layers[depth], bounds.width,
 					if depth == 0 { pitch } else { layer_pitch }, operation,
 					portable_svg_surface_matrix(device, bounds), mask.mask_luminance,
-					mask.is_svg_content_mask && operation.non_scaling_stroke, mut budget)?
+					stroke_space, mut budget)?
 				cacheable = cacheable && available
 			}
 			.image {
@@ -548,7 +550,8 @@ fn (mut app BrowserApp) raster_svg_mask_layers(mut pixels []u8, pitch int, bound
 }
 
 fn (mut app BrowserApp) raster_svg_mask_path(mut layer PortableSVGMaskLayer, width int, pitch int,
-	operation &layout.PaintMaskOperation, matrix [6]f32, luminance bool, non_scaling bool,
+	operation &layout.PaintMaskOperation, matrix [6]f32, luminance bool,
+	stroke_space &PortableSVGTileStrokeSpace,
 	mut budget PortableSVGMaskTileBudget) ?bool {
 	mut style := ?cpuraster.CanvasPaintStyle(none)
 	mut fill := u32(0)
@@ -581,7 +584,7 @@ fn (mut app BrowserApp) raster_svg_mask_path(mut layer PortableSVGMaskLayer, wid
 	path := cpuraster.canvas_path(operation.path_data, operation.path_even_odd)
 	if operation.has_stroke && operation.stroke_first {
 		available := app.raster_svg_mask_stroke(mut layer, width, pitch, operation, path, matrix,
-			luminance, non_scaling, mut budget)?
+			luminance, stroke_space, mut budget)?
 		cacheable = cacheable && available
 	}
 	if fill >> 24 != 0 && !cpuraster.fill_canvas_mask_path(mut layer.pixels, width, layer.rows.top,
@@ -590,7 +593,7 @@ fn (mut app BrowserApp) raster_svg_mask_path(mut layer PortableSVGMaskLayer, wid
 	}
 	if operation.has_stroke && !operation.stroke_first {
 		available := app.raster_svg_mask_stroke(mut layer, width, pitch, operation, path, matrix,
-			luminance, non_scaling, mut budget)?
+			luminance, stroke_space, mut budget)?
 		cacheable = cacheable && available
 	}
 	return cacheable
@@ -598,7 +601,7 @@ fn (mut app BrowserApp) raster_svg_mask_path(mut layer PortableSVGMaskLayer, wid
 
 fn (mut app BrowserApp) raster_svg_mask_stroke(mut layer PortableSVGMaskLayer, width int, pitch int,
 	operation &layout.PaintMaskOperation, path cpuraster.Path, matrix [6]f32, luminance bool,
-	non_scaling bool,
+	stroke_space &PortableSVGTileStrokeSpace,
 	mut budget PortableSVGMaskTileBudget) ?bool {
 	mut argb := u32(0xff000000)
 	mut opacity := f32(operation.stroke_opacity)
@@ -622,9 +625,17 @@ fn (mut app BrowserApp) raster_svg_mask_stroke(mut layer PortableSVGMaskLayer, w
 	mut local_matrix := matrix
 	local_matrix[5] -= f32(layer.rows.top)
 	mut centerline := path
-	if non_scaling {
-		centerline, style = portable_svg_stroke_in_surface(path, local_matrix, style)
-		local_matrix = [f32(1), 0, 0, 1, 0, 0]!
+	if operation.non_scaling_stroke {
+		if stroke_space == unsafe { nil } {
+			centerline, style = portable_svg_stroke_in_surface(path, local_matrix, style)
+			local_matrix = [f32(1), 0, 0, 1, 0, 0]!
+		} else {
+			// Construct the stroke and sample its paint in device coordinates.
+			// Map the resulting outline back to the bitmap for tile clipping.
+			to_device := portable_svg_surface_paint_transform(stroke_space.to_device, local_matrix)
+			centerline, style = portable_svg_stroke_in_surface(path, to_device, style)
+			local_matrix = stroke_space.to_tile
+		}
 	}
 	if !cpuraster.stroke_canvas_path(mut layer.pixels, width, layer.rows.height(), pitch, 2, centerline,
 		local_matrix, argb, style, opacity, .src_over, 0,

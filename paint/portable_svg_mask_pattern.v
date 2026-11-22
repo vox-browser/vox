@@ -15,6 +15,29 @@ struct PortableSVGMaskPattern {
 	cacheable bool
 }
 
+struct PortableSVGTileStrokeSpace {
+	to_device [6]f32
+	to_tile   [6]f32
+}
+
+fn portable_svg_tile_stroke_space(device [6]f64, sx f64, sy f64) ?PortableSVGTileStrokeSpace {
+	// Only the linear part matters. Every copy of the tile uses the same
+	// stroke metric, regardless of its placement or the current scroll.
+	transform := painting.Affine{
+		a: device[0] / sx
+		b: device[1] / sx
+		c: device[2] / sy
+		d: device[3] / sy
+	}
+	inverse := transform.inverse()?
+	to_device := [f32(transform.a), f32(transform.b), f32(transform.c), f32(transform.d), 0, 0]!
+	to_tile := [f32(inverse.a), f32(inverse.b), f32(inverse.c), f32(inverse.d), 0, 0]!
+	if !to_device.all(math.is_finite(f64(it))) || !to_tile.all(math.is_finite(f64(it))) {
+		return none
+	}
+	return PortableSVGTileStrokeSpace{to_device, to_tile}
+}
+
 fn portable_svg_mask_pattern_supported(style &painting.SVGPatternPaintStyle) bool {
 	tile := style.tile_rect
 	if !(tile.width > 0 && tile.height > 0)
@@ -54,10 +77,16 @@ fn (mut app BrowserApp) raster_svg_mask_pattern(style &painting.SVGPatternPaintS
 	matrix32 := [f32(local[0]), f32(local[1]), f32(local[2]), f32(local[3]), f32(local[4]), f32(local[5])]!
 	if !matrix32.all(math.is_finite(f64(it))) { return none }
 	bounds := painting.IntRect{0, 0, int(width), int(height)}
+	stroke_space := if operations.any(it.has_stroke && it.non_scaling_stroke) {
+		space := portable_svg_tile_stroke_space(device, sx, sy)?
+		&PortableSVGTileStrokeSpace{...space}
+	} else {
+		unsafe { nil }
+	}
 	budget.pixels -= bounds.width * bounds.height
 	mut pixels := []u8{len: bounds.width * bounds.height * 4}
 	cacheable := app.raster_svg_mask_layers(mut pixels, bounds.width * 4, bounds, &mask,
-		0, 0, 1)?
+		0, 0, 1, stroke_space)?
 	return PortableSVGMaskPattern{
 		pattern: cpuraster.CanvasPattern{
 			pixels: pixels
