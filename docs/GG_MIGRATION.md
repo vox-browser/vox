@@ -2124,6 +2124,68 @@ UEFI variable hashes matched their preflight values after the
 captures. These results cover D3D11 pixels in the emulated guest.
 Hardware frame timings remain unmeasured.
 
+### Nested vector content in shared SVG pattern tiles
+
+In `0729ffc63`, the portable rasterizer accepts one level of nested
+vector patterns in fills and strokes. The outer and inner tiles share
+the 64-operation eligibility limit and the 4 Mi-pixel allocation
+budget. Nested images, filters, and nested non-scaling strokes use
+the fallback path. Layout includes the enclosing resource transform
+before normalizing the nested tile. This keeps translated copies
+in the same tile coordinates and gives them the same cache key.
+
+The earlier macOS production executable, SHA-256
+`70bd644dd462f4c528cd7ed6fa0e97f66b9635df5997789309db16b44e3cd840`,
+left the nested fill and stroke blank on the translated copy at both
+1× and 2×. The first Linux candidate still failed the translated
+stroke sample before the layout correction. The fixture SHA-256 was
+`0a1bc1db69adf2f73f72af01aca1c654c8a73be5ab8d8c5a5ad1bd1a5368f2e1`.
+
+The corrected Linux build used V `5a39a4d`, single-unit Clang
+`-O0`, and Boehm GC. Its executable SHA-256 was
+`f2527f8a89c2d118010b14a4a2d45650f13dc3c3d2d2a03614021f190f77b6e4`.
+Both cache modes passed 20 exact samples after the live color edit.
+The 800 × 516 document RGBA matched with SHA-256
+`b44e9cea2234deb2ef34d447aa64ad1363e325de08bd715edacb13b48e7c9c43`.
+The cached run logged 248 hits across two groups. Six existing
+Linux pattern and mask fixtures and 21 smoke-driver unit tests passed.
+
+The private macOS check used the prealloc runtime and single-unit
+C with V `d79ca45` and `-prod -no-prod-options`. Its executable
+SHA-256 was
+`d770cc0eb01ba69242bdaa56e1bcdd1fd6f2dd1a68dcbdf56158d08b881186b9`.
+Fresh windows passed at 1× and 2× before and after the edit, with
+both the original and updated tiles reused. All 27,648 pixels in
+the 1× fixture area matched Linux in each state. The original and
+edited crops had RGB SHA-256 values
+`90e901837188ff344e9b44459fe3e1ebe6ba4fd3580e7906004d14bff7a169ae`
+and `3049f269ca39d64b4362be6c4400ea239e287abf67bb077f5b7451d1794ffe26`.
+The existing macOS non-scaling stroke and delayed image fixtures
+passed at both densities. The standard layout test reached the
+memory guard. A standalone probe using the public layout entry
+point passed the tile coordinates and cache identity assertions
+at both densities. Windows D3D11 and OpenGL source checks passed.
+
+Two alternating Linux replay pairs used the same executable with
+fresh profiles and caches, one Mesa software worker, and 800 × 600
+Xvfb windows. After a one-second settle, each run completed 48
+synthetic idle callbacks with four paint commands at scroll offset
+zero. JavaScript and GG Canvas SVG path replay were disabled.
+Separate diagnostics found 94 cache hits between the first and last
+callback receipts with caching enabled and zero with it disabled.
+The guest one-minute load ranged from 0.31 to 0.44 across four CPUs
+during timing. The timed runs and guard exited zero and had identical
+decoded document RGBA, SHA-256
+`872ef0eabe09aff20e26860fffd5a3d85b262e9a9f18523667ca14ed85039170`.
+
+| Pair | Uncached / cached median replay, ms | Uncached / cached p95, ms | Uncached / cached maximum, ms | Uncached / cached median allocated KiB |
+| --- | ---: | ---: | ---: | ---: |
+| 1 | 7.997 / 0.623 | 9.520 / 0.899 | 9.855 / 2.074 | 352 / 163 |
+| 2 | 7.682 / 0.608 | 8.982 / 0.784 | 9.193 / 2.153 | 353 / 163 |
+
+These timings cover stationary software replay. Windows runtime
+pixels and hardware frame timing for nested tiles remain open.
+
 ## Sharing the portable SVG fallback with Windows
 
 The standard Windows D3D11 window now uses the same CPU raster and GG texture
