@@ -1467,6 +1467,66 @@ fixture, and linked library hashes stayed fixed, and all browser and
 guard exits were zero. Windows runtime pixels and hardware GPU timing
 remain pending.
 
+## Patterned foreground strokes on masked SVGs
+
+In `caa868066`, the portable group player replays vector and bitmap
+patterns on foreground strokes before applying the SVG mask. It uses
+the existing tile budget and GG texture cache. A non-scaling stroke
+uses the transformed path for geometry and maps the pattern into the
+same surface coordinates, so the pattern follows the path transform.
+
+The fixture exercises a translated vector tile, an alpha mask, a
+bitmap tile under a luminance mask, both paint orders, a live opacity
+edit, and a non-scaling stroke under a 2× transform. All 412,800
+document pixels matched across Linux cached CPU, GG-enabled, and
+uncached replay. The fixture SHA-256 is
+`021b7c41c6a92e360643dc831cc4eb49bca9dbd3e5593abe1a6b85f6200a274b`.
+The decoded RGB document SHA-256 is
+`3dbc0a068b4fb550657ec6e9f8380f3f6aeceab285d41ff693f61baea129bbd8`.
+
+The macOS reference used a fresh process, PID 30512, from published
+single-unit build `6209346d8`, executable SHA-256
+`a92b702d32ab26cf7835f2d4b148a39c8cca22f7ca841ede9542820d4a24a034`.
+The ordinary strokes matched exactly. All 828 differing pixels were
+in the transformed stroke, where the published native painter drew
+12 pixels of width and the portable path drew the specified six at
+1× backing scale.
+
+A loopback run delayed the bitmap response by one second. It
+recorded ten luminance-mask rasters without retaining the incomplete
+texture, then retained both stroke groups. Its final document
+matched the local capture. The fixture, thirteen neighboring Linux
+window checks, and all 21 Linux smoke-driver unit tests passed.
+The macOS and Windows D3D11 source checks passed. The initial
+Windows OpenGL check stopped on a LibJS warmup type error while that
+file was being edited. A guarded retry passed against the current
+tree using the same private UI2 and GG staging.
+
+Two alternating pairs used the same Linux ARM64 V `5a39a4d` binary
+with single-unit Clang `-O0`, SHA-256
+`0bd8fc8949811475af237624ec5b662ccdb0281b948e36f0101e55fb919dda7b`.
+Each trial used a fresh profile and cache, an 800 × 600 Xvfb window,
+one Mesa software worker, and a one-second settle period before
+48 synthetic idle callbacks. JavaScript and GG Canvas SVG replay
+were disabled. Separate diagnostics recorded four mask rasters per
+complete interval without caching and four texture hits with
+caching. All trials had 14 paint commands and a stationary offset.
+Decoded RGB SHA-256 was
+`a0d2fcb11c006d9ded6bff3f055c344476771b344394ad5f0877e9d94ece90be`.
+
+| Pair | Uncached / cached median replay, ms | Uncached / cached p95 and maximum, ms | Uncached / cached median allocated KiB |
+| --- | ---: | ---: | ---: |
+| 1 | 8.362 / 3.097 | 30.482, 79.472 / 34.894, 49.022 | 390 / 121 |
+| 2 | 8.672 / 1.562 | 22.154, 60.994 / 20.003, 133.362 | 390.5 / 121 |
+
+The 18-CPU host's one-minute load was 104.55 during the diagnostic
+trials and 113.18 after the cohort. Guest one-minute load ranged
+from 0.42 to 0.55 on four vCPUs for the timed launches. The executable,
+fixture, and linked library hashes stayed fixed. The Linux build,
+window checks, timing trials, and their guards exited zero. The
+first pair's p95 and the second pair's maximum rose with caching.
+Windows runtime pixels and hardware GPU timing remain pending.
+
 ## Sharing the portable SVG fallback with Windows
 
 The standard Windows D3D11 window now uses the same CPU raster and GG texture
