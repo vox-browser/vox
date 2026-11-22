@@ -1651,8 +1651,8 @@ The published macOS native painter drew through the gaps in all
 three resources. The reference was PID 12879 from single-unit
 build `6209346d8`, executable SHA-256
 `a92b702d32ab26cf7835f2d4b148a39c8cca22f7ca841ede9542820d4a24a034`.
-The native Quartz replay of strokes inside resources still needs
-the dash data. The previous macOS fix covers foreground strokes.
+At this revision the Quartz resource painter still ignored the
+dash data. The earlier macOS fix covered foreground strokes.
 
 Two alternating pairs used Linux ARM64 V `5a39a4d` with single-unit
 Clang `-O0`, executable SHA-256
@@ -1678,6 +1678,38 @@ during timed launches. The executable, fixture, and linked
 libraries stayed fixed. The Linux build, browser runs, and
 their guards exited zero. Windows runtime pixels and hardware
 GPU timing remain pending.
+
+## Dashed SVG resources in the macOS native painter
+
+In `bb4b6258c`, Quartz receives the retained dash intervals and
+phase for solid, linear-gradient, radial-gradient, and nested
+pattern strokes inside masks and tiles. Dashed solid mask strokes
+use the Quartz draw path because the accelerated mask path has no
+dash input. The dash state is scoped to each draw. Small arrays use
+stack storage for the conversion to `CGFloat`.
+
+The focused pixel test verified dash phase under a scaled transform,
+direct stroke coverage, a stroked clip, the heap conversion for a
+longer array, and restoration of undashed state. A separate
+offscreen harness compiled the seven native entry paths with a
+bitmap context and a line-path decoder. Its pixel checks verified
+that each path left the expected gap and that the ordinary solid
+mask stroke still entered the accelerated shortcut. Both tests
+passed with Clang `-O2`, ASan, and UBSan. The macOS C-backend V
+source check also passed.
+
+Ordinary strokes matched the previous painter pixel for pixel
+in the offscreen resource harness. Two alternating pairs used the
+same optimized executable, fresh processes, and 3,600 draws per
+trial after 60 warm-up draws. The baseline/candidate thread CPU
+times were 23.943/23.956 ms and 23.917/23.210 ms. The inputs
+retained their hashes and the tests and guards exited zero. These
+measurements cover the offscreen native routines.
+
+The published bundle was still `6209346d8` during verification.
+An earlier managed build stopped on deprecated `usize` uses in
+the in-progress JavaScriptCore word-view bridge. Browser-window
+pixels and production timing await a rebuilt bundle.
 
 ## Sharing the portable SVG fallback with Windows
 
