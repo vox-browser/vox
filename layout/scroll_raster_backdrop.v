@@ -40,12 +40,11 @@ pub fn scroll_raster_backdrop_filter_extent(command &PaintCommand) ?f64 {
 
 fn scroll_raster_backdrop_read_bounds(command &PaintCommand) ?LayoutRect {
 	extent := scroll_raster_backdrop_filter_extent(command)?
-	// The kernel is applied in device space: scale it by the transform, and
-	// once more for a recording made in CSS pixels at a device scale.
+	// The native pass applies the kernel through the command's transform.
 	matrix := normalized_affine(command.transform)
 	scale := math.max(1.0, math.max(math.sqrt(matrix[0] * matrix[0] + matrix[1] * matrix[1]),
 		math.sqrt(matrix[2] * matrix[2] + matrix[3] * matrix[3])))
-	margin := extent * scale * 2.0
+	margin := extent * scale
 	if math.is_nan(margin) || math.is_inf(margin, 0) { return none }
 	source := PaintCommand{
 		kind:      'fill_rect'
