@@ -11678,3 +11678,35 @@ chooses ciphers in its own order.
   descendants an in-place update currently builds again
   (`allow_subtree_reuse = false`). Clean-subtree reuse in the complete
   builder never runs on this page (0 roots in every pass).
+
+**Measured on bundle `0aaaa21ac`.**
+- `a036cce9a` replaced the one-field `json2.decode` of the retained request
+  decision with an exact suffix test. With the decode, the production bundle
+  aborted on this page with a garbage allocation size.
+- `233a81a21` calls `voxAdblockCheck`/`voxAdblockCheckResponse` directly with
+  JSON-parsed arguments instead of evaluating a new script per check
+  (`VOX_EVALUATE_ADBLOCK_CALLS_AS_SCRIPTS=1` is the control).
+- `0aaaa21ac` fetches a parent's first 64 children on its first navigation and
+  records their siblings (`VOX_DISABLE_NAVIGATION_PREFETCH=1` is the
+  control). Bridge queries on one load:
+
+  | Arm | `firstChild` | `nextSibling` | `childNodes` | All queries |
+  | --- | --- | --- | --- | --- |
+  | prefetch | 0 | 54 | 1,875 | 9,281 |
+  | control | 1,887 | 1,915 | 15 | 11,024 |
+
+- The 7-pair cohort compares every new behavior against all five controls,
+  with 2 px in every Vox run:
+
+  | Process | Pair deltas (candidate − control) |
+  | --- | --- |
+  | adblock worker | −25M to −43M in every pair (median 608M vs 642M) |
+  | main process | +89M to −731M (mean −71M), within noise |
+
+  Medians: Vox 20.965B, control 21.017B, Brave 20.677B.
+- On the real page, in-place updates built 2,476 boxes for elements that
+  already had one (display change 1,091, escalation 770, restyle 419,
+  flagged 196), against 519 for new elements. Of 22,000 inline runs that
+  built their items, 15,965 repeated an earlier run with the same constraints
+  in the same pass; about 9,900 of those were in contexts whose inputs could
+  be collected (main state 6,274, measurements 3,648).
