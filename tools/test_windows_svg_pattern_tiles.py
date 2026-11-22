@@ -49,6 +49,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("binary", type=Path, help="Windows Vox executable")
     parser.add_argument("--guard", type=Path, required=True, help="Windows job-object guard")
+    parser.add_argument("--nested", action="store_true", help="check bitmaps inside a nested SVG pattern")
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
     binary, guard = args.binary.resolve(), args.guard.resolve()
@@ -58,7 +59,7 @@ def main():
     (artifacts / "windows-inputs.json").write_text(json.dumps(inputs, indent=2) + "\n", encoding="utf-8")
     with tempfile.TemporaryDirectory(prefix="vox-svg-pattern-tile-") as temporary:
         check_svg_pattern_tile_image_browser(binary, artifacts, temporary,
-                                             partial(run_guarded_capture, guard))
+                                             partial(run_guarded_capture, guard), nested=args.nested)
     assert input_hashes(binary, guard) == inputs, "Windows browser or guard inputs changed during capture"
 
 

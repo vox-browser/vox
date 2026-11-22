@@ -2103,28 +2103,39 @@ def serve_delayed_svg_pattern_tile(fixture, source):
             thread.join()
 
 
-def check_svg_pattern_tile_image_pixels(rows, channels, scale, marker):
+def check_svg_pattern_tile_image_pixels(rows, channels, scale, marker, *, nested=False):
     white, green, blue, red = (255, 255, 255), (0, 255, 0), (0, 0, 255), (255, 0, 0)
     assert rows[marker + 4 * scale][4 * scale * channels:4 * scale * channels + 3] == bytes.fromhex("34b786")
     center = 10 * scale
     samples = (
         (1, center - 4, white), (1, center - 3, green),
         (1, center + 2, green), (1, center + 3, white),
-        (2 * scale, 16 * scale, blue), (10 * scale, 16 * scale, white),
-        (2 * scale, 18 * scale, red),
-        (22 * scale, 36 * scale, blue), (21 * scale, 30 * scale, green),
-        (130 * scale, 16 * scale, blue), (130 * scale, 18 * scale, red),
     )
+    if nested:
+        samples += (
+            (2 * scale, 3 * scale, blue), (10 * scale, 3 * scale, white),
+            (2 * scale, 15 * scale, red), (2 * scale, 17 * scale, blue),
+            (130 * scale, 3 * scale, blue), (130 * scale, 15 * scale, red),
+            (130 * scale, 17 * scale, blue),
+        )
+    else:
+        samples += (
+            (2 * scale, 16 * scale, blue), (10 * scale, 16 * scale, white),
+            (2 * scale, 18 * scale, red),
+            (22 * scale, 36 * scale, blue), (21 * scale, 30 * scale, green),
+            (130 * scale, 16 * scale, blue), (130 * scale, 18 * scale, red),
+        )
     for x, y, expected in samples:
         row = rows[marker + 8 * scale + y]
         actual = tuple(row[x * channels:x * channels + 3])
         assert actual == expected, (scale, x, y, actual, expected)
 
 
-def check_svg_pattern_tile_image_browser(binary, artifacts, temporary, run_capture=run_windowed):
-    fixture = Path(__file__).resolve().parents[1] / "Tests/Browser/Native/svg-pattern-tile-image-strokes.html"
+def check_svg_pattern_tile_image_browser(binary, artifacts, temporary, run_capture=run_windowed, *, nested=False):
+    name = "svg-pattern-tile-nested-image-strokes.html" if nested else "svg-pattern-tile-image-strokes.html"
+    fixture = Path(__file__).resolve().parents[1] / "Tests/Browser/Native" / name
     documents = []
-    with serve_delayed_svg_pattern_tile(fixture, Path(temporary) / "svg-pattern-image-site") as url:
+    with serve_delayed_svg_pattern_tile(fixture, Path(temporary) / f"{fixture.stem}-site") as url:
         for mode in ("cached", "uncached"):
             label = f"{fixture.stem}-{mode}"
             screenshot = artifacts / f"{label}.png"
@@ -2143,12 +2154,13 @@ def check_svg_pattern_tile_image_browser(binary, artifacts, temporary, run_captu
             marker = next((y for y in range(150) if rows[y][4 * channels:4 * channels + 3]
                            == bytes.fromhex("34b786")), None)
             assert marker is not None, "Missing SVG tile document marker"
-            check_svg_pattern_tile_image_pixels(rows, channels, 1, marker)
+            check_svg_pattern_tile_image_pixels(rows, channels, 1, marker, nested=nested)
             hits = set(re.findall(r"^VOX_SVG_GROUP cache=hit start=(\d+)", log, re.M))
             assert len(hits) == (2 if mode == "cached" else 0), log
             documents.append(rows[marker:height - 24])
     assert documents[0] == documents[1], "Caching changed the mixed SVG tile pixels"
-    print("PASS: mixed SVG tiles preserve delayed bitmaps, device stroke width, and cache parity", flush=True)
+    tiles = "nested SVG tiles" if nested else "mixed SVG tiles"
+    print(f"PASS: {tiles} preserve delayed bitmaps, device stroke width, and cache parity", flush=True)
 
 
 def check_svg_nested_tile_pixels(rows, channels, scale, marker, first_stripe):
@@ -2976,6 +2988,7 @@ def main():
     checks = parser.add_mutually_exclusive_group()
     checks.add_argument("--gg-svg", action="store_true", help="check shared GG SVG replay against the portable renderer")
     checks.add_argument("--pattern-images-only", action="store_true", help="check mixed SVG pattern tiles")
+    checks.add_argument("--pattern-nested-images-only", action="store_true", help="check nested SVG pattern bitmaps")
     checks.add_argument("--pattern-nested-only", action="store_true", help="check nested SVG pattern tiles")
     args = parser.parse_args()
     wait_seconds = window_wait_seconds()
@@ -2987,8 +3000,9 @@ def main():
         if args.gg_svg:
             check_gg_svg_browser(binary, artifacts, temporary)
             return
-        if args.pattern_images_only:
-            check_svg_pattern_tile_image_browser(binary, artifacts, temporary)
+        if args.pattern_images_only or args.pattern_nested_images_only:
+            check_svg_pattern_tile_image_browser(binary, artifacts, temporary,
+                                                 nested=args.pattern_nested_images_only)
             return
         if args.pattern_nested_only:
             check_svg_nested_tile_browser(binary, artifacts, temporary)
@@ -3026,6 +3040,7 @@ def main():
         check_svg_mask_non_scaling_strokes_browser(binary, artifacts, temporary)
         check_svg_pattern_tile_non_scaling_strokes_browser(binary, artifacts, temporary)
         check_svg_pattern_tile_image_browser(binary, artifacts, temporary)
+        check_svg_pattern_tile_image_browser(binary, artifacts, temporary, nested=True)
         check_svg_nested_tile_browser(binary, artifacts, temporary)
         check_svg_mask_gradient_strokes_browser(binary, artifacts, temporary)
         check_svg_mask_images_browser(binary, artifacts, temporary)

@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Compare shared and Quartz SVG mask rendering in fresh macOS windows."""
 import argparse
+from functools import partial
 import hashlib
 import json
 import os
@@ -535,7 +536,7 @@ def check_non_scaling_pattern_tiles(binary, fixture, directory):
     print("PASS: macOS shared SVG tile pixels and live vector effect")
 
 
-def check_pattern_tile_with_delayed_image(binary, fixture, directory):
+def check_pattern_tile_with_delayed_image(binary, fixture, directory, *, nested=False):
     with serve_delayed_svg_pattern_tile(fixture, directory / "site") as url:
         for scale in (1, 2):
             data, log = capture_document(binary, url, directory / f"pattern-image-{scale}x", {
@@ -547,11 +548,12 @@ def check_pattern_tile_with_delayed_image(binary, fixture, directory):
             })
             width, height, channels, rows = rendered_png_rows(data)
             assert (width, height) == (1024 * scale, 600 * scale)
-            check_svg_pattern_tile_image_pixels(rows, channels, scale, 0)
+            check_svg_pattern_tile_image_pixels(rows, channels, scale, 0, nested=nested)
             misses = re.findall(r"^VOX_SHARED_SVG_TILE cache=miss key=(\d+) ", log, re.M)
             hits = re.findall(r"^VOX_SHARED_SVG_TILE cache=hit key=(\d+)$", log, re.M)
             assert misses and misses[0] == "0" and hits and hits[0] in misses[1:], log
-    print("PASS: macOS shared SVG tiles preserve delayed bitmap content and device stroke width")
+    tiles = "nested SVG tiles" if nested else "SVG tiles"
+    print(f"PASS: macOS shared {tiles} preserve delayed bitmap content and device stroke width")
 
 
 def check_nested_pattern_tiles(binary, fixture, directory):
@@ -582,18 +584,22 @@ def main():
     patterns = parser.add_mutually_exclusive_group()
     patterns.add_argument("--pattern-strokes-only", action="store_true")
     patterns.add_argument("--pattern-images-only", action="store_true")
+    patterns.add_argument("--pattern-nested-images-only", action="store_true")
     patterns.add_argument("--pattern-nested-only", action="store_true")
     args = parser.parse_args()
     binary = args.binary.resolve()
     root = Path(__file__).resolve().parents[1]
     fixture = root / "Tests/Browser/Native/svg-gradient-masks.html"
-    if args.pattern_strokes_only or args.pattern_images_only or args.pattern_nested_only:
+    if args.pattern_strokes_only or args.pattern_images_only or args.pattern_nested_images_only or args.pattern_nested_only:
         if args.pattern_strokes_only:
             pattern = fixture.with_name("svg-pattern-tile-non-scaling-strokes.html")
             check_pattern = check_non_scaling_pattern_tiles
         elif args.pattern_images_only:
             pattern = fixture.with_name("svg-pattern-tile-image-strokes.html")
             check_pattern = check_pattern_tile_with_delayed_image
+        elif args.pattern_nested_images_only:
+            pattern = fixture.with_name("svg-pattern-tile-nested-image-strokes.html")
+            check_pattern = partial(check_pattern_tile_with_delayed_image, nested=True)
         else:
             pattern = fixture.with_name("svg-pattern-tile-nested-strokes.html")
             check_pattern = check_nested_pattern_tiles

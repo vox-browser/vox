@@ -1,0 +1,26 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Delayed bitmap in a nested SVG pattern</title>
+<style>
+body { margin: 0; background: white; }
+header { width: 8px; height: 8px; background: #34b786; }
+svg { display: block; }
+</style>
+<header></header>
+<svg width="256" height="100" viewBox="0 0 256 100">
+  <defs>
+    <pattern id="bitmap" width="40" height="16" patternUnits="userSpaceOnUse">
+      <image href="tile.png" width="16" height="16"
+             preserveAspectRatio="none" image-rendering="pixelated"/>
+    </pattern>
+    <pattern id="tile" width="40" height="40" patternUnits="userSpaceOnUse"
+             patternTransform="scale(.5)">
+      <path d="M0 6H40" fill="none" stroke="url(#bitmap)" stroke-width="4"/>
+      <path d="M0 20H40" fill="none" stroke="lime" stroke-width="6"
+            vector-effect="non-scaling-stroke"/>
+      <path d="M0 28h40v12H0Z" fill="url(#bitmap)"/>
+    </pattern>
+  </defs>
+  <path d="M0 0h120v100H0Z" fill="url(#tile)"/>
+  <path d="M0 0h120v100H0Z" fill="url(#tile)" transform="translate(128)"/>
+</svg>

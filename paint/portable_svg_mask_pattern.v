@@ -24,6 +24,11 @@ struct PortableSVGTileStrokeSpace {
 	to_tile   [6]f32
 }
 
+struct PortableSVGMaskPatternInfo {
+	operations int
+	has_images bool
+}
+
 fn portable_svg_tile_stroke_space(device [6]f64, sx f64, sy f64) ?PortableSVGTileStrokeSpace {
 	// Only the linear part matters. Every copy of the tile uses the same
 	// stroke metric, regardless of its placement or the current scroll.
@@ -43,13 +48,13 @@ fn portable_svg_tile_stroke_space(device [6]f64, sx f64, sy f64) ?PortableSVGTil
 }
 
 fn portable_svg_mask_pattern_supported(style &painting.SVGPatternPaintStyle) bool {
-	portable_svg_mask_pattern_operations(style, portable_svg_mask_pattern_max_operations, 0) or {
+	portable_svg_mask_pattern_info(style, portable_svg_mask_pattern_max_operations, 0) or {
 		return false
 	}
 	return true
 }
 
-fn portable_svg_mask_pattern_operations(style &painting.SVGPatternPaintStyle, limit int, depth int) ?int {
+fn portable_svg_mask_pattern_info(style &painting.SVGPatternPaintStyle, limit int, depth int) ?PortableSVGMaskPatternInfo {
 	tile := style.tile_rect
 	if depth >= portable_svg_mask_pattern_max_depth || !(tile.width > 0 && tile.height > 0)
 		|| ![tile.x, tile.y, tile.width, tile.height]!.all(math.is_finite(it)) {
@@ -58,24 +63,28 @@ fn portable_svg_mask_pattern_operations(style &painting.SVGPatternPaintStyle, li
 	list := style.tile_display_list?
 	mut count := list.operations.len
 	if count > limit { return none }
+	mut has_images := false
 	for index in 0 .. list.operations.len {
 		operation := &list.operations[index]
-		// The mask transport omits filter markers. Nested tiles also need
-		// a final device transform for non-scaling strokes and resource
-		// identities for images before those operations can share this path.
+		// The mask transport omits filter markers. Non-scaling strokes in a
+		// nested tile need the final device transform of the enclosing tile.
 		if operation.kind in [.begin_filter, .end_filter]
-			|| (depth != 0 && (operation.kind == .image
-			|| (operation.has_stroke && operation.non_scaling_stroke))) {
+			|| (depth != 0 && operation.has_stroke && operation.non_scaling_stroke) {
 			return none
 		}
+		has_images = has_images || (operation.kind == .image && operation.opacity != 0)
 		if pattern := operation.fill_pattern {
-			count += portable_svg_mask_pattern_operations(pattern, limit - count, depth + 1)?
+			info := portable_svg_mask_pattern_info(pattern, limit - count, depth + 1)?
+			count += info.operations
+			has_images = has_images || info.has_images
 		}
 		if pattern := operation.stroke_pattern {
-			count += portable_svg_mask_pattern_operations(pattern, limit - count, depth + 1)?
+			info := portable_svg_mask_pattern_info(pattern, limit - count, depth + 1)?
+			count += info.operations
+			has_images = has_images || info.has_images
 		}
 	}
-	return count
+	return PortableSVGMaskPatternInfo{count, has_images}
 }
 
 fn (mut app BrowserApp) raster_svg_mask_pattern(style &painting.SVGPatternPaintStyle,

@@ -7,11 +7,47 @@ fn C.native_shared_svg_pattern_scale(i32) f64
 fn C.native_reuse_shared_svg_pattern_tile(u64) i32
 fn C.native_install_shared_svg_pattern_tile(u64, &u8, u64, i32, i32) i32
 
+struct SharedSVGPatternCacheKey {
+mut:
+	value       u64
+	image_scope bool
+}
+
+fn (mut app BrowserApp) add_shared_svg_pattern_images(list &painting.SVGPatternDisplayList,
+	mut key SharedSVGPatternCacheKey) bool {
+	// The caller has checked the operation and depth limits for this tile.
+	for index in 0 .. list.operations.len {
+		operation := &list.operations[index]
+		if operation.kind == .image && operation.opacity != 0 {
+			if !key.image_scope {
+				if app.document == unsafe { nil } { return false }
+				key.value = (key.value ^ u64(app.document.unique_id().value())) * u64(1099511628211)
+				key.value = (key.value ^ u64(voidptr(app.ctx))) * u64(1099511628211)
+				key.image_scope = true
+			}
+			image := app.background_image(operation.image_url) or { return false }
+			key.value = (key.value ^ u64(image.id)) * u64(1099511628211)
+		}
+		if pattern := operation.fill_pattern {
+			child := pattern.tile_display_list or { return false }
+			if !app.add_shared_svg_pattern_images(child, mut key) { return false }
+		}
+		if pattern := operation.stroke_pattern {
+			child := pattern.tile_display_list or { return false }
+			if !app.add_shared_svg_pattern_images(child, mut key) { return false }
+		}
+	}
+	return true
+}
+
 fn (mut app BrowserApp) prepare_shared_svg_pattern_tile(style &painting.SVGPatternPaintStyle,
 	transform [6]f64, content_mask bool) bool {
 	list := style.tile_display_list or { return false }
-	if list.operations.len > 64 || !list.operations.any(it.has_stroke && it.non_scaling_stroke)
-		|| !portable_svg_mask_pattern_supported(style) {
+	if list.operations.len > portable_svg_mask_pattern_max_operations
+		|| !list.operations.any(it.has_stroke && it.non_scaling_stroke) {
+		return false
+	}
+	info := portable_svg_mask_pattern_info(style, portable_svg_mask_pattern_max_operations, 0) or {
 		return false
 	}
 	scale := C.native_shared_svg_pattern_scale(i32(content_mask))
@@ -29,24 +65,9 @@ fn (mut app BrowserApp) prepare_shared_svg_pattern_tile(style &painting.SVGPatte
 		}
 		// The display list identifies image URLs. Include the decoded image
 		// slots so a resource update cannot reuse a tile's earlier pixels.
-		mut image_scope := false
-		for index in 0 .. list.operations.len {
-			operation := &list.operations[index]
-			if operation.kind != .image || operation.opacity == 0 { continue }
-			if !image_scope {
-				if app.document == unsafe { nil } {
-					key = 0
-					break
-				}
-				key = (key ^ u64(app.document.unique_id().value())) * u64(1099511628211)
-				key = (key ^ u64(voidptr(app.ctx))) * u64(1099511628211)
-				image_scope = true
-			}
-			image := app.background_image(operation.image_url) or {
-				key = 0
-				break
-			}
-			key = (key ^ u64(image.id)) * u64(1099511628211)
+		if info.has_images {
+			mut image_key := SharedSVGPatternCacheKey{value: key}
+			key = if app.add_shared_svg_pattern_images(list, mut image_key) { image_key.value } else { 0 }
 		}
 		if key != 0 && C.native_reuse_shared_svg_pattern_tile(key) != 0 {
 			if portable_svg_raster_diagnostics { eprintln('VOX_SHARED_SVG_TILE cache=hit key=${key}') }
