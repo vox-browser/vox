@@ -1,11 +1,11 @@
 module libjs
 
+import crypto.rand
 import crypto.sha256
 import dl
 import json2
 import math
 import os
-import rand
 import time
 
 // Per-source, per-executable disk lookup. Unlike the manual warmup experiment,
@@ -24,6 +24,7 @@ mut:
 	entries       map[string]NativeEntry
 	libraries     map[string]NativeCachedLibrary
 	stats         NativeCacheStats
+	background_batch ?&NativeCacheBackgroundBatch
 }
 
 struct NativeCachedLibrary {
@@ -353,22 +354,40 @@ pub fn (mut vm VM) flush_native_code_cache_batch() !NativeCacheStats {
 	}
 	mut tier := vm.native_tier or { return NativeCacheStats{} }
 	mut cache := tier.persistent or { return NativeCacheStats{} }
+	if cache.background_batch != none {
+		return error('Native disk cache compilation already running in the background')
+	}
 	if cache.pending.len == 0 { return vm.native_code_cache_stats() }
+	keys, selected := cache.select_batch()!
+	compiled := native_compile_library(selected, cache.directory, cache.compiler) or {
+		cache.stats.last_error = err.msg()
+		return err
+	}
+	publish_native_cache_batch(cache.directory, cache.abi, keys, compiled.stats) or {
+		dl.close(compiled.handle)
+		cache.stats.last_error = err.msg()
+		return err
+	}
+	cache.install_batch(mut tier, keys, compiled)!
+	return vm.native_code_cache_stats()
+}
+
+fn (cache &NativeCodeCache) select_batch() !([]string, []&Executable) {
 	mut keys := []string{}
 	mut selected := []&Executable{}
 	mut instructions := u64(0)
 	for key in cache.pending.keys().sorted() {
 		executable := cache.pending[key] or { return error('Missing pending native executable') }
-		if selected.len>0 && (selected.len>=128 || instructions+u64(executable.instructions.len)>32768) { break }
+		if selected.len > 0 && (selected.len >= 128 || instructions + u64(executable.instructions.len) > 32768) { break }
 		executable.validate(0)!
 		keys << key
 		selected << executable
 		instructions += u64(executable.instructions.len)
 	}
-	compiled := native_compile_library(selected, cache.directory, cache.compiler) or {
-		cache.stats.last_error = err.msg()
-		return err
-	}
+	return keys, selected
+}
+
+fn (mut cache NativeCodeCache) install_batch(mut tier NativeTier, keys []string, compiled NativeCompiledLibrary) ! {
 	library := os.file_name(compiled.stats.library)
 	if loaded := cache.libraries[library] {
 		// dlopen increments the reference even when the code is already mapped.
@@ -378,28 +397,14 @@ pub fn (mut vm VM) flush_native_code_cache_batch() !NativeCacheStats {
 			return error('Compiled native library identity changed')
 		}
 	} else {
-		cache.libraries[library] = NativeCachedLibrary{ handle: compiled.handle, digest: compiled.stats.library_sha256 }
+		cache.libraries[library.clone()] = NativeCachedLibrary{ handle: compiled.handle, digest: compiled.stats.library_sha256.clone() }
 	}
-	cache.stats.compiled_executables += u64(selected.len)
+	cache.stats.compiled_executables += u64(keys.len)
 	if !compiled.stats.cache_hit { cache.stats.compiler_invocations++ }
 	cache.stats.compile_ms += compiled.stats.compile_ms
 	cache.stats.load_ms += compiled.stats.load_ms
 	for index, key in keys {
-		record := NativeCacheRecord{
-			key:            key
-			abi:            cache.abi
-			library:        library
-			library_sha256: compiled.stats.library_sha256
-			symbol:         index
-		}
-		path := os.join_path(cache.directory, key + '.json')
-		temporary := path + '.' + rand.uuid_v4() + '.tmp'
-		os.write_file(temporary, json2.encode(record))!
-		os.mv(temporary, path) or {
-			os.rm(temporary) or {}
-			return err
-		}
-		cache.entries[key] = compiled.entries[index]
+		cache.entries[key.clone()] = compiled.entries[index]
 		cache.pending.delete(key)
 	}
 	for executable in cache.checked {
@@ -407,5 +412,28 @@ pub fn (mut vm VM) flush_native_code_cache_batch() !NativeCacheStats {
 			tier.set_native_entry(executable, entry)
 		}
 	}
-	return vm.native_code_cache_stats()
+}
+
+fn publish_native_cache_batch(directory string, abi string, keys []string, stats NativeCodeStats) ! {
+	library := os.file_name(stats.library)
+	suffix := rand.bytes(16)!.hex()
+	for index, key in keys {
+		record := NativeCacheRecord{
+			key:            key
+			abi:            abi
+			library:        library
+			library_sha256: stats.library_sha256
+			symbol:         index
+		}
+		path := os.join_path(directory, key + '.json')
+		temporary := path + '.' + suffix + '.tmp'
+		os.write_file(temporary, json2.encode(record)) or {
+			os.rm(temporary) or {}
+			return err
+		}
+		os.mv(temporary, path) or {
+			os.rm(temporary) or {}
+			return err
+		}
+	}
 }

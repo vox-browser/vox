@@ -1,11 +1,7 @@
 module libjs
 
-import crypto.sha256
 import dl
-import os
 import strings
-import time
-import rand
 
 // An experimental baseline compiler, explicitly driven by the embedder after
 // warmup. Cache entries contain code/layout only, never realm pointers or values.
@@ -182,60 +178,9 @@ fn native_compile_library(selected []&Executable, directory string, compiler str
 }
 
 fn native_compile_library_in_workspace(selected []&Executable, directory string, compiler string) !NativeCompiledLibrary {
-	source, fast_count := native_source(selected)!
-	// The generated ABI, opcodes, target and optimization flags are part of the
-	// key. No function pointer or process-specific payload is embedded in the file.
-	key := sha256.hexhash('libjs-native-v1:${os.user_os()}:${os.uname().machine}:O2:no-strict-aliasing:' + source)
-	os.mkdir_all(directory)!
-	library := os.join_path(os.real_path(directory), key + dl.dl_ext)
-	mut stats := NativeCodeStats{
-		compiled_executables: selected.len
-		fast_instructions:    fast_count
-		cache_hit:            os.is_file(library)
-		library:              library
-	}
-	for executable in selected { stats.compiled_instructions += executable.instructions.len }
-	if !stats.cache_hit {
-		started := time.sys_mono_now()
-		// Generate outside Build/; only the final binary survives compilation.
-		job := os.join_path(os.real_path(directory), '.compile-' + rand.uuid_v4())
-		os.mkdir(job)!
-		defer { os.rmdir_all(job) or {} }
-		input := os.join_path(job, 'code.c')
-		output := os.join_path(job, 'code' + dl.dl_ext)
-		os.write_file(input, source)!
-		mut process := os.new_process(compiler)
-		mut args := ['-O2', '-std=c11', '-fno-strict-aliasing']
-		$if macos {
-			args << '-dynamiclib'
-		} $else {
-			args << ['-shared', '-fPIC']
-		}
-		args << [input, '-o', output]
-		process.set_args(args)
-		process.set_redirect_stdio()
-		process.run()
-		diagnostic := process.stderr_slurp()
-		process.wait()
-		code := process.code
-		process.close()
-		if code != 0 { return error('Native compiler exited ${code}: ${diagnostic}') }
-		os.mv(output, library)!
-		stats.compile_ms = f64(time.sys_mono_now() - started) / 1e6
-	}
-	started := time.sys_mono_now()
-	handle := dl.open_opt(library, dl.rtld_now | dl.rtld_local)!
-	mut entries := []NativeEntry{}
-	for index in 0 .. selected.len {
-		symbol := dl.sym_opt(handle, 'vox_native_${index}') or {
-			dl.close(handle)
-			return err
-		}
-		entries << unsafe { NativeEntry(symbol) }
-	}
-	stats.load_ms = f64(time.sys_mono_now() - started) / 1e6
-	stats.library_sha256 = sha256.hexhash(os.read_file(library)!)
-	return NativeCompiledLibrary{handle: handle, entries: entries, stats: stats}
+	build := prepare_native_library(selected, directory, compiler)!
+	compile_ms := build.compile()!
+	return build.load(compile_ms)
 }
 
 // Switch the same warmed VM between control and candidate without profiling or
@@ -257,6 +202,7 @@ pub fn (mut vm VM) close_native_code() ! {
 		tier.enabled = false
 		if tier.handle != unsafe { nil } { dl.close(tier.handle) }
 		if mut cache := tier.persistent {
+			cache.release_background_batch()
 			for _, library in cache.libraries { dl.close(library.handle) }
 		}
 	}

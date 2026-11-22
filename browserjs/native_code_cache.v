@@ -39,12 +39,13 @@ pub fn (runtime &Runtime) native_code_cache_stats() libjs.NativeCacheStats {
 
 fn (mut runtime Runtime) flush_document_native_cache() {
 	if !runtime.libjs_native_cache_enabled_ || runtime.libjs_native_cache_failed_ { return }
-	for runtime.has_pending_native_module_templates() { runtime.prepare_native_module_templates_batch() }
-	runtime.agent_vm.flush_native_code_cache() or {
-		// A compiler/cache failure must not turn valid author code into an error
-		// or retry its side effects. Existing cached entries remain usable.
-		runtime.libjs_native_cache_failed_ = true
-		eprintln('LibJS native cache compilation failed: ${err.msg()}')
+	if runtime.scripting_settings_ == none {
+		for runtime.has_pending_native_module_templates() { runtime.prepare_native_module_templates_batch() }
+		runtime.agent_vm.flush_native_code_cache() or { runtime.fail_document_native_cache(err) }
+	} else if runtime.agent_vm.native_code_cache_is_idle() {
+		// A document can close while the compiler is running. Consume any ready
+		// result, with the unfinished compiler retaining only its build files.
+		runtime.agent_vm.poll_background_native_cache_batch() or { runtime.fail_document_native_cache(err) }
 	}
 	runtime.agent_vm.persist_native_lookup_index() or {
 		eprintln('LibJS native lookup index was not saved: ${err.msg()}')
@@ -70,6 +71,7 @@ fn (runtime &Runtime) schedule_document_native_cache() {
 		return
 	}
 	if owner.scripting_settings_ != none {
+		if owner.agent_vm.has_background_native_cache_batch() { return }
 		persistent := platform.enter_persistent()
 		defer { platform.leave_persistent(persistent) }
 		owner.libjs_native_cache_pending_ = true
@@ -79,20 +81,10 @@ fn (runtime &Runtime) schedule_document_native_cache() {
 		if owner.libjs_native_cache_timer_ == unsafe { nil } {
 			owner.libjs_native_cache_timer_ = platform.Timer.create_single_shot(1000, fn [owner] () {
 				mut runtime := unsafe { &Runtime(owner) }
-				if runtime.closed { return }
-				if !runtime.agent_vm.native_code_cache_is_idle() || runtime.has_pending_module_scripts() || runtime.has_pending_libjs_fetches() {
-					runtime.libjs_native_cache_timer_.start()
-					return
-				}
-				runtime.libjs_native_cache_pending_ = false
-				runtime.flush_document_native_cache_batch()
-				if !runtime.libjs_native_cache_failed_ && (runtime.native_code_cache_stats().pending_executables>0 || runtime.has_pending_native_module_templates()) {
-					runtime.libjs_native_cache_pending_ = true
-					runtime.libjs_native_cache_timer_.start()
-				}
+				runtime.advance_document_native_cache()
 			})
 		}
-		owner.libjs_native_cache_timer_.restart()
+		owner.libjs_native_cache_timer_.restart_with_interval(1000)
 	} else {
 		// Embedders without an HTML event loop still get the same first/second
 		// visit semantics, with compilation after the outer script returns.
@@ -100,13 +92,46 @@ fn (runtime &Runtime) schedule_document_native_cache() {
 	}
 }
 
-fn (mut runtime Runtime) flush_document_native_cache_batch() {
-	if !runtime.libjs_native_cache_enabled_ || runtime.libjs_native_cache_failed_ { return }
-	runtime.prepare_native_module_templates_batch()
-	runtime.agent_vm.flush_native_code_cache_batch() or {
-		runtime.libjs_native_cache_failed_ = true
-		eprintln('LibJS native cache compilation failed: ${err.msg()}')
+fn (mut runtime Runtime) advance_document_native_cache() {
+	if runtime.closed { return }
+	if !runtime.agent_vm.native_code_cache_is_idle() {
+		runtime.libjs_native_cache_timer_.start()
+		return
 	}
+	if runtime.agent_vm.has_background_native_cache_batch() {
+		finished := runtime.agent_vm.poll_background_native_cache_batch() or {
+			runtime.fail_document_native_cache(err)
+			return
+		}
+		if !finished {
+			runtime.libjs_native_cache_timer_.start_with_interval(50)
+			return
+		}
+	} else {
+		if runtime.has_pending_module_scripts() || runtime.has_pending_libjs_fetches() {
+			runtime.libjs_native_cache_timer_.start_with_interval(1000)
+			return
+		}
+		runtime.prepare_native_module_templates_batch()
+		runtime.agent_vm.start_background_native_cache_batch() or {
+			runtime.fail_document_native_cache(err)
+			return
+		}
+		if runtime.agent_vm.has_background_native_cache_batch() {
+			runtime.libjs_native_cache_timer_.start_with_interval(50)
+			return
+		}
+	}
+	runtime.libjs_native_cache_pending_ = false
+	runtime.schedule_document_native_cache()
+}
+
+fn (mut runtime Runtime) fail_document_native_cache(err IError) {
+	// Compilation is optional. Keep interpreting author code and continue
+	// using any entries already loaded from the cache.
+	runtime.libjs_native_cache_failed_ = true
+	runtime.libjs_native_cache_pending_ = false
+	eprintln('LibJS native cache compilation failed: ${err.msg()}')
 }
 
 fn (mut runtime Runtime) stop_document_native_cache_timer() {
