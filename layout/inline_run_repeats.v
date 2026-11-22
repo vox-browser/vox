@@ -21,7 +21,7 @@ __global inline_run_repeat_counts [6]u64
 __global inline_run_repeat_kinds map[string]u64
 
 fn note_uncached_inline_run(state &LayoutState, containing_block &BlockContainer, used &UsedValues,
-	mode LayoutMode, space AvailableSpace, width_only bool) {
+	mode LayoutMode, space AvailableSpace, width_only bool, context ?&BlockFormattingContext) {
 	// The maps and their keys outlive the layout workspace this runs in.
 	persistent := platform.enter_persistent()
 	defer { platform.leave_persistent(persistent) }
@@ -40,7 +40,8 @@ fn note_uncached_inline_run(state &LayoutState, containing_block &BlockContainer
 	if state_text in inline_run_repeat_seen_in_state {
 		blocker := inline_run_blocker(unsafe { &Node(containing_block) }, true)
 		detail := if blocker == 'plain' { inline_run_collect_failure(unsafe { &Node(containing_block) }, true) } else { blocker }
-		inline_run_repeat_kinds['${if measurement { 'measurement' } else { 'main' }}:${detail}']++
+		miss := inline_run_cache_miss(state, containing_block, used, mode, space, width_only, context)
+		inline_run_repeat_kinds['${if measurement { 'measurement' } else { 'main' }}:${detail}:${miss}']++
 		inline_run_repeat_counts[4]++
 		if measurement { inline_run_repeat_counts[5]++ }
 	} else {
@@ -102,4 +103,58 @@ fn inline_run_collect_failure(node &Node, root bool) string {
 		if reason != 'collectable' { return reason }
 	}
 	return 'collectable'
+}
+
+// Why the inline cache of this state did not answer a repeated run: the
+// same-pass cache of a committed state (retained_inline_layout.v) or the
+// measurement cache of a probe (inline_measurement_layout.v).
+fn inline_run_cache_miss(state &LayoutState, containing_block &BlockContainer, used &UsedValues,
+	mode LayoutMode, space AvailableSpace, width_only bool, context ?&BlockFormattingContext) string {
+	root := unsafe { &Node(containing_block) }
+	key := u64(voidptr(root))
+	if state.subtree_root != none {
+		pool := state.measurement_chunk_pool_
+		if pool == unsafe { nil } || pool.closed { return 'no-pool' }
+		if !inline_measurement_root_is_closed_with_policy(root, context, true) { return 'not-closed' }
+		question := closed_inline_measurement_key(used, mode, space, width_only)
+		entries := pool.inline_measurements_[key] or { []&InlineMeasurementLayout{} }
+		for entry in entries {
+			if entry.key == question {
+				return if inline_measurement_inputs_are_current(entry.inputs) { 'entry-current' } else { 'entry-stale' }
+			}
+		}
+		if entries.len >= 4 { return 'evicted' }
+		if pool.backoff_ != unsafe { nil } {
+			if backoff_key := retained_measurement_backoff_key(root, true) {
+				if record := pool.backoff_.entries[backoff_key] {
+					if record.skips > 0 { return 'backoff' }
+				}
+			}
+		}
+		return if entries.len > 0 { 'other-keys' } else { 'unrecorded' }
+	}
+	if mode != .normal { return 'mode-${mode}' }
+	if width_only { return 'width-only' }
+	if !space.width.is_definite() { return 'indefinite' }
+	if bfc := context {
+		if bfc.floating_boxes.len != 0 { return 'floats' }
+		if bfc.has_line_clamp() || bfc.laying_out_invisible_clamped_content { return 'clamp' }
+		if !bfc.margin_state.has_block_container_waiting_for_final_y_position()
+			&& bfc.margin_state.current_collapsed_margin() != 0 {
+			return 'pending-margin'
+		}
+	}
+	if cached := state.inline_layouts_[key] {
+		if cached.same_pass_key != exact_inline_layout_key(used, mode, space) { return 'other-key' }
+		return if same_pass_inline_inputs_are_current(cached.inputs) { 'entry-current' } else { 'entry-stale' }
+	}
+	backoff := state.block_layout_backoff_
+	if backoff != unsafe { nil } {
+		if backoff_key := retained_inline_backoff_key(root) {
+			if record := backoff.entries[backoff_key] {
+				if record.skips > 0 { return 'backoff' }
+			}
+		}
+	}
+	return 'unrecorded'
 }

@@ -157,7 +157,7 @@ fn run_uncached_inline_formatting_context_for_width(mut state LayoutState, conta
 	parent_block_context ?&BlockFormattingContext, width_only bool) InlineFormattingResult {
 	if inline_run_repeat_diagnostics {
 		note_uncached_inline_run(state, containing_block, containing_block_used_values, layout_mode,
-			available_space, width_only)
+			available_space, width_only, parent_block_context)
 	}
 	containing_block_used_values.clear_line_boxes()
 	if inline_context_has_only_discarded_text(containing_block) {
