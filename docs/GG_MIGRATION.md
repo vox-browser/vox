@@ -1527,6 +1527,73 @@ window checks, timing trials, and their guards exited zero. The
 first pair's p95 and the second pair's maximum rose with caching.
 Windows runtime pixels and hardware GPU timing remain pending.
 
+## Standalone patterned SVG paths
+
+In `48068f85f`, Linux and Windows replay standalone vector and bitmap
+patterns with the same rasterizer used inside SVG content masks. The
+renderer preserves fill and stroke order, stroke dashes, and
+non-scaling width. It also accepts patterned paths in eligible SVG
+clips and isolated opacity scopes. Adopted root commands reuse the
+rendered GG texture by recording and command index.
+
+The fixture covers standalone fills and strokes, a circle clip, a
+single path with both fill and stroke patterns inside an opacity
+scope, and a dashed non-scaling stroke under a 2× transform. It also
+edits the vector tile's opacity after painting. Linux cached CPU,
+GG-enabled, and uncached replay matched across all 412,800 document
+pixels. The fixture SHA-256 is
+`7bec1c834da8f66cf47ed8e7e1b6c5006cf11caf255bc20f3dc05fb763186d66`.
+The decoded RGB document SHA-256 is
+`bc7f0e70fd171cef651a5bc918c4ad7a386802c8204ccbf126873066cf58a1b0`.
+
+The macOS reference was PID 54806 from published single-unit build
+`6209346d8`, executable SHA-256
+`a92b702d32ab26cf7835f2d4b148a39c8cca22f7ca841ede9542820d4a24a034`.
+The standalone fill and stroke matched exactly. The curved clip
+differed at 39 pixels by up to 21 channel levels. The opacity group
+differed by one level at 958 pixels and by up to 128 levels at two
+tile-boundary pixels. The native stroke painted through the dash gaps
+and doubled its width. The portable stroke preserved six pixels at
+1× backing scale and left the expected gaps.
+
+The loopback fixture delayed the bitmap by one second. Both the clip
+and opacity scopes drew six incomplete rasters before retaining the
+completed textures. Final pixels matched the local fixture. The first
+diagnostic incorrectly attributed a neighboring command's cache event
+to the clip scope. The retry matched cache events by command index.
+The fixture, ten neighboring Linux window checks, all 21 smoke-driver
+unit tests, and the macOS, Windows D3D11, and Windows OpenGL source
+checks passed.
+
+The initial Linux build failed during C compilation of the LibJS warmup
+channel and optional job. Reduced cases passed on V `5a39a4d` and
+`4460fc9` with runtime channel initialization and explicit optional
+construction. Those fixes also landed in `6055c69e7`. The retry built
+with V `5a39a4d` and single-unit Clang `-O0` on Linux ARM64, executable
+SHA-256 `026a283295eeb7c17e788399c03694883d6b1573bf5016e12f7fbce4bcbfd706`.
+
+Two alternating pairs used the same executable, fresh profiles and
+caches, an 800 × 600 Xvfb window, and one Mesa software worker. A
+one-second settle preceded 48 synthetic idle callbacks. JavaScript
+and GG Canvas SVG replay were disabled. Separate diagnostics recorded
+five texture hits per complete cached interval and a clip and opacity
+raster per uncached interval. All trials produced 11 paint commands
+at a stationary offset and decoded RGB SHA-256
+`8d5c0d049da33d439cfb833a44fe9480f6e9e616ae50ff2ea65a82d1a4cdf80d`.
+
+| Pair | Uncached / cached median replay, ms | Uncached / cached p95 and maximum, ms | Uncached / cached median allocated KiB |
+| --- | ---: | ---: | ---: |
+| 1 | 94.175 / 2.575 | 221.965, 315.117 / 27.256, 152.932 | 379 / 119 |
+| 2 | 93.234 / 2.541 | 193.474, 252.531 / 54.573, 76.016 | 379 / 119 |
+
+The 18-CPU host's one-minute load was 158.05 near the start of timing
+and 139.07 after the cohort. Guest one-minute load ranged from 1.10 to
+1.33 on four vCPUs during timed launches. The executable, fixture, and
+linked libraries stayed fixed. The successful build, timed browsers,
+and timing guard exited zero. These measurements cover repeated
+software replay. Windows runtime pixels and hardware GPU timing
+remain pending.
+
 ## Sharing the portable SVG fallback with Windows
 
 The standard Windows D3D11 window now uses the same CPU raster and GG texture
