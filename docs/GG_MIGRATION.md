@@ -2817,6 +2817,64 @@ are diagnostic given the different optimization flags and one-minute
 host load of 69.52–76.86 across 18 logical CPUs. Windows runtime
 pixels and display timing remain unverified.
 
+### Component transfer inside shared pattern tiles
+
+In `845cad5ce`, one `feComponentTransfer` on SourceGraphic can
+replay in the shared tile rasterizer in sRGB or linearRGB.
+Replay looks up straight RGBA channels and premultiplies the
+mapped output. The linearRGB pass decodes before indexing the
+table and encodes before writing the result. A lookup that
+gives transparent black coverage uses the existing layer and
+crop handling for filters that can fill clear pixels.
+
+The fixture checks both color spaces, translated fill and stroke
+tiles, and alpha masks. Its live edit changes the red and alpha
+tables and fills previously empty rows inside the crop.
+[Regression fixture](../Tests/Browser/Native/svg-pattern-tile-component-transfer.html)
+
+macOS passed at 1× and 2×. The initial 384 × 208 RGB crop
+matched the published native renderer with SHA-256
+`2b2aa824f8090becf3c62357eb63a59b537745f0789aba7b37b378374421c6a8`.
+The edited crop had SHA-256
+`962b02941bae4a40b2ede88ae9c552e82a2823e937e040480f9de72ec3a35f4e`
+on macOS and Linux. The edited native capture differed in
+24,600 pixels where its shifted copies extended past their
+crop. The original sRGB fill position matched in both states.
+Linux Xvfb passed with caching enabled and disabled in both
+row-band modes. The Linux executable SHA-256 was
+`f81ad7c9187281c7020ae9a1fe81152bb86ba855dc7a500c9d211962851b65d8`.
+The adjacent matrix fixtures, macOS opacity-filter fixture, CPU
+and painting tests, 23 smoke-driver tests, and Windows D3D11 and
+OpenGL source checks passed.
+
+Two alternating macOS pairs replayed 20 fills and 20 strokes from
+the unedited sRGB tile. Fresh processes used a 1024 × 600
+viewport at 1×, a private profile and cache, and a one-second
+settle. JavaScript and whole-frame raster reuse were disabled.
+Each run drew 42 commands in 48 stationary callbacks. Separate
+diagnostics showed zero shared tile hits in the published native
+control and 1,880 in the candidate between the first and last
+callback. All six document captures had RGBA SHA-256
+`250c522c69eaf6a14c4a6925d0bf26499fda7a8ae98a2a6724a5a29327e2ac40`.
+The timing input SHA-256 was
+`a60cea6992e9b2ab6a474c35fcc47ddcc112002e1d2617913749561ed471e005`.
+
+| Pair | Native / shared median replay, ms | Native / shared p95, ms | Native / shared maximum, ms | Native / shared median allocated KiB |
+| --- | ---: | ---: | ---: | ---: |
+| 1 | 20.481 / 1.185 | 21.991 / 1.224 | 23.670 / 1.266 | 3 / 3 |
+| 2 | 24.366 / 1.170 | 26.577 / 1.270 | 28.380 / 1.427 | 3 / 3 |
+
+Both macOS timing builds used single-unit C and prealloc. The
+published control used literal `-prod` with executable SHA-256
+`f35ad55c47210ecf13859efd66b30e75007d3a86667bce0a6f8254a1bd29705e`.
+The private candidate used `-prod -no-prod-options` with SHA-256
+`32abed5829e05abd9c9489d4cbc354ac0f8923d1cb8c8ee56261a99c0345b50d`.
+Executable, asset, and fixture hashes stayed fixed. Browsers
+and guards exited zero. The timings are diagnostic given the
+different C optimization flags. Host one-minute load was
+17.30–18.78 across 18 logical CPUs. Windows runtime pixels and
+display timing remain unverified.
+
 ## Sharing the portable SVG fallback with Windows
 
 The standard Windows D3D11 window now uses the same CPU raster and GG texture
