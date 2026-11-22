@@ -6,9 +6,15 @@ import layout
 import math
 import painting
 
-fn (mut app BrowserApp) draw_portable_svg_path(command &layout.PaintCommand,
+fn (mut app BrowserApp) draw_portable_svg_path(source &layout.PaintCommand, command &layout.PaintCommand,
 	data layout.PaintSVGPathData, page_x f32, page_y f32, scroll_y f64) {
 	has_stroke := command.stroke_width > 0
+	$if linux || windows {
+		if (data.fill_pattern != none || (has_stroke && data.stroke_pattern != none))
+			&& app.draw_portable_svg_pattern_path(source, command, page_x, page_y) {
+			return
+		}
+	}
 	if has_stroke && data.stroke_first {
 		app.draw_portable_svg_path_stroke(command, data, page_x, page_y, scroll_y)
 	}

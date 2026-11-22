@@ -2302,6 +2302,50 @@ def check_svg_mask_foreground_stroke_browser(binary, artifacts, temporary):
     print("PASS: Masked SVG foreground strokes preserve pattern color, paint order and non-scaling width", flush=True)
 
 
+def check_svg_foreground_patterns_browser(binary, artifacts, temporary):
+    fixture = Path(__file__).resolve().parents[1] / "Tests/Browser/Native/svg-foreground-patterns.html"
+    white = (255, 255, 255)
+    red_quarter, green_quarter = (255, 191, 191), (191, 255, 191)
+    red_half, blue_half = (255, 127, 127), (127, 127, 255)
+    samples = (
+        (12, 36, white), (15, 36, red_quarter), (40, 36, red_quarter),
+        (48, 36, green_quarter), (57, 36, white),
+        (40, 42, white), (44, 80, red_half), (52, 80, green_quarter), (60, 80, white),
+        (206, 29, red_half), (214, 29, green_quarter),
+        (222, 29, white), (180, 29, white), (214, 37, blue_half),
+        (336, 25, (127, 127, 127)), (336, 30, (191, 191, 127)), (343, 30, green_quarter),
+        (336, 40, green_quarter), (506, 108, white), (531, 108, red_quarter),
+        (547, 108, green_quarter), (531, 106, red_quarter), (531, 104, white),
+        (531, 111, white),
+    )
+    documents = []
+    for mode in ("cpu", "gg", "uncached"):
+        label = f"{fixture.stem}-{mode}"
+        screenshot = artifacts / f"{label}.png"
+        screenshot.unlink(missing_ok=True)
+        environment = smoke_environment(Path(temporary) / label)
+        environment.update(VOX_GG_SVG=str(int(mode == "gg")), VOX_GG_SVG_DIAGNOSTICS="1",
+                           VOX_DISABLE_GG_SVG_CACHE=str(int(mode == "uncached")),
+                           VOX_DISABLE_PORTABLE_SVG_CLIP="0", VOX_DISABLE_PORTABLE_SVG_OPACITY="0",
+                           VOX_PORTABLE_SVG_CLIP_DIAGNOSTICS="1", VOX_PORTABLE_SVG_OPACITY_DIAGNOSTICS="1",
+                           VOX_CAPTURE_READY_SELECTOR="body[data-svg-patterns-ready]")
+        log = run_windowed([str(binary), "--enable-javascript", "--window-width=800", "--window-height=600",
+                            "--screenshot-viewport-height=600", f"--screenshot={screenshot}", str(fixture)],
+                           env=environment, log_path=artifacts / f"{label}.log")
+        _, height, channels, rows = rendered_png_rows(screenshot.read_bytes())
+        marker = next(y for y in range(150) if rows[y][4 * channels:4 * channels + 3] == bytes.fromhex("34b786"))
+        for x, y, expected in samples:
+            actual = tuple(rows[marker + 8 + y][x * channels:x * channels + 3])
+            assert all(abs(a - b) <= 1 for a, b in zip(actual, expected)), (label, x, y, actual, expected)
+        assert "VOX_SVG_CLIP crop=false components=1 paths=1 " in log, log
+        assert "VOX_SVG_OPACITY paths=1 " in log, log
+        hits = set(re.findall(r"^VOX_SVG_GROUP cache=hit start=(\d+)", log, re.MULTILINE))
+        assert len(hits) == (0 if mode == "uncached" else 5), log
+        documents.append(rows[marker:height - 24])
+    assert documents[0] == documents[1] == documents[2], "SVG foreground patterns changed document pixels"
+    print("PASS: SVG foreground patterns preserve clips, opacity, paint order, dashes, and live edits", flush=True)
+
+
 def check_transformed_svg_mask_browser(binary, artifacts, temporary, case, samples, expected_masks,
                                        fixture_name=None):
     fixture = Path(__file__).resolve().parents[1] / "Tests/Browser/Native" / (
@@ -2809,6 +2853,7 @@ def main():
         check_svg_mask_patterns_browser(binary, artifacts, temporary)
         check_svg_mask_foreground_pattern_browser(binary, artifacts, temporary)
         check_svg_mask_foreground_stroke_browser(binary, artifacts, temporary)
+        check_svg_foreground_patterns_browser(binary, artifacts, temporary)
         check_svg_mask_pattern_strokes_browser(binary, artifacts, temporary)
         check_svg_mask_transformed_region_browser(binary, artifacts, temporary)
         check_svg_mask_transformed_viewport_browser(binary, artifacts, temporary)

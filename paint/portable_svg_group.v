@@ -56,11 +56,9 @@ fn portable_svg_group_path_supported(command &layout.PaintCommand, first &layout
 		|| command.clip_height != first.clip_height || !portable_svg_group_clip_supported(command, mask) {
 		return false
 	}
-	if data.fill_pattern != none || (command.stroke_width > 0 && data.stroke_pattern != none) {
-		region := mask or { return false }
-		return region.is_svg_content_mask
+	if command.color != '' || data.fill_pattern != none || portable_svg_group_has_stroke(command) {
+		return true
 	}
-	if command.color != '' || portable_svg_group_has_stroke(command) { return true }
 	if gradients := data.svg_gradient_data {
 		return gradients.fill_linear_gradient != none || gradients.fill_radial_gradient != none
 	}
@@ -134,6 +132,36 @@ fn (app &BrowserApp) portable_svg_group_key(commands []layout.PaintCommand, star
 		PortableSVGGroupRecording{revision: app.paint_generation}
 	}
 	return PortableSVGGroupKey{recording, start, viewport, page_x, page_y, app.ctx.scale}
+}
+
+fn (mut app BrowserApp) draw_portable_svg_pattern_path(source &layout.PaintCommand,
+	command &layout.PaintCommand, page_x f32, page_y f32) bool {
+	// Scope handlers own mask coverage and opacity. A declined scope must
+	// not retain a leaf texture as if it had been drawn on its own.
+	if app.paint_svg_mask_depth != 0 || app.paint_effect_depth != 0
+		|| app.portable_background_text_clip != none
+		|| !portable_svg_group_path_supported(command, command, 1, none) {
+		return false
+	}
+	viewport := app.portable_device_viewport(page_y)
+	mut key := PortableSVGGroupKey{}
+	// Only adopted root commands have a stable index across frames. Nested
+	// and zoomed commands use projected copies with different transforms.
+	if app.draw_command_depth == 1 && app.page_zoom == 1 {
+		base := u64(app.paint_commands.data)
+		address := u64(voidptr(source))
+		stride := sizeof(layout.PaintCommand)
+		if address >= base && address - base < u64(app.paint_commands.len) * stride {
+			key = app.portable_svg_group_key(app.paint_commands, int((address - base) / stride),
+				viewport, page_x, page_y)
+		}
+	}
+	if app.draw_cached_portable_svg_group(key, 255) { return true }
+	image := app.raster_portable_svg_group([*command], viewport, page_x, page_y, 1) or { return false }
+	if !image.bounds.is_empty() {
+		app.draw_portable_svg_group_image(image, 255, if image.incomplete { PortableSVGGroupKey{} } else { key })
+	}
+	return true
 }
 
 fn (mut app BrowserApp) draw_cached_portable_svg_group(key PortableSVGGroupKey, alpha u8) bool {

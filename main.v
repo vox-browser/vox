@@ -7440,7 +7440,7 @@ fn (mut app BrowserApp) draw_command(source_command &layout.PaintCommand, page_x
 					return
 				}
 			}
-			app.draw_portable_svg_path(command, svg_data, page_x, page_y, scroll_y)
+			app.draw_portable_svg_path(source_command, command, svg_data, page_x, page_y, scroll_y)
 		}
 		'draw_text' {
 			{

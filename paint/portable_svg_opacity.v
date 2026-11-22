@@ -20,7 +20,8 @@ fn portable_svg_opacity_end(commands []layout.PaintCommand, start int, layer &la
 		// A single path still needs isolation when it paints a fill and a stroke.
 		if !portable_svg_group_has_stroke(first)
 			|| (first.color == '' && first.fill_linear_gradient() == none
-			&& first.fill_radial_gradient() == none) {
+			&& first.fill_radial_gradient() == none
+			&& (first.svg_data == unsafe { nil } || first.svg_data.fill_pattern == none)) {
 			return none
 		}
 	}
@@ -54,7 +55,7 @@ fn (mut app BrowserApp) draw_portable_svg_opacity_group(commands []layout.PaintC
 	image := app.raster_portable_svg_group(commands[start + 1..end], viewport, page_x, page_y,
 		layer.opacity) or { return start }
 	if image.bounds.is_empty() { return end + 1 }
-	app.draw_portable_svg_group_image(image, alpha, key)
+	app.draw_portable_svg_group_image(image, alpha, if image.incomplete { PortableSVGGroupKey{} } else { key })
 	if portable_svg_opacity_diagnostics {
 		eprintln('VOX_SVG_OPACITY paths=${image.paths} texture=${image.bounds.width}x${image.bounds.height}')
 	}

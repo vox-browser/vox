@@ -31,7 +31,7 @@ fn (app &BrowserApp) portable_non_scaling_stroke_fringe(command &layout.PaintCom
 	}
 	data := command.svg_data
 	if data == unsafe { nil } || !data.non_scaling_stroke
-		|| (command.stroke_color == '' && data.svg_gradient_data == none) {
+		|| (command.stroke_color == '' && data.svg_gradient_data == none && data.stroke_pattern == none) {
 		return 0
 	}
 	mut eligible := false
