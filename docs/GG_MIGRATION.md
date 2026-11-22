@@ -1626,6 +1626,59 @@ SHA-256 `a92b702d32ab26cf7835f2d4b148a39c8cca22f7ca841ede9542820d4a24a034`.
 The published bundle predates the fix. Browser window pixels and
 production performance for the candidate await the managed rebuild.
 
+## Dashed strokes in shared SVG masks and pattern tiles
+
+In `716037c26`, SVG resource recordings retain the dash intervals and
+phase resolved in the path's user space, including `pathLength`
+calibration. The shared rasterizer uses them for strokes in masks and
+repeating pattern tiles. Resource cache identity includes the dash
+geometry, so a style edit can replace a retained texture.
+
+The fixture exercises a calibrated alpha mask, a gradient stroke
+inside a transformed luminance mask, and a repeating tile painted
+with a dashed stroke. JavaScript changes the alpha mask's offset
+and the tile's dash intervals after painting. All 412,800 document
+pixels matched across Linux cached CPU, uncached, GG-enabled replay,
+and viewport recording reuse. The fixture SHA-256 is
+`489b6af6792d6d83b7000b3de66d7bcbb018f541e3698205b2686693997ce64f`.
+The decoded RGB SHA-256 is
+`4af7273801ef1614e8f9ef3ea3c83be4bd288d007334a094be9bae54341259e6`.
+The fixture, eight neighboring Linux window checks, all 21
+smoke-driver unit tests, and the macOS, Windows D3D11, and Windows
+OpenGL source checks passed.
+
+The published macOS native painter drew through the gaps in all
+three resources. The reference was PID 12879 from single-unit
+build `6209346d8`, executable SHA-256
+`a92b702d32ab26cf7835f2d4b148a39c8cca22f7ca841ede9542820d4a24a034`.
+The native Quartz replay of strokes inside resources still needs
+the dash data. The previous macOS fix covers foreground strokes.
+
+Two alternating pairs used Linux ARM64 V `5a39a4d` with single-unit
+Clang `-O0`, executable SHA-256
+`36fd95f8d30efe866e284ae8e51f522059206e5231c20c74a7f8f7c8cfbab7ec`.
+Each trial launched with a fresh profile and cache, an 800 × 600
+Xvfb window, and one Mesa software worker. After a one-second settle,
+each ran 48 synthetic idle callbacks. JavaScript and GG Canvas SVG
+replay were disabled. The initial dash phase and tile intervals
+were checked in the captured pixels. Separate diagnostics recorded
+two mask rasters per complete uncached interval and three texture
+hits per cached interval. The captures agreed on 9 paint commands,
+a stationary offset, and decoded RGB SHA-256
+`6bdd7e70eb6e8bf3995b55064fd8e0ddb8cb3f1549f76b9f09fd072194ef5e90`.
+
+| Pair | Uncached / cached median replay, ms | Uncached / cached p95 and maximum, ms | Uncached / cached median allocated KiB |
+| --- | ---: | ---: | ---: |
+| 1 | 6.328 / 0.989 | 26.934, 31.249 / 9.521, 10.303 | 338.5 / 118.5 |
+| 2 | 5.968 / 1.145 | 9.075, 9.508 / 5.138, 8.632 | 337.5 / 119 |
+
+The 18-CPU host's one-minute load was 115.99 during the cohort.
+The four-vCPU guest's one-minute load ranged from 1.11 to 1.18
+during timed launches. The executable, fixture, and linked
+libraries stayed fixed. The Linux build, browser runs, and
+their guards exited zero. Windows runtime pixels and hardware
+GPU timing remain pending.
+
 ## Sharing the portable SVG fallback with Windows
 
 The standard Windows D3D11 window now uses the same CPU raster and GG texture
