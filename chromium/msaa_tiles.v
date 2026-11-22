@@ -21,6 +21,8 @@ const chromium_root_capture_width = os.getenv('VOX_DIAGNOSTIC_ROOT_CAPTURE_WIDTH
 // Paint-layer tracing: every recorded command, layer decisions and the raster
 // parity paths taken. Read once; the checks sit inside per-command loops.
 const chromium_paint_layer_diagnostics = os.getenv('VOX_DIAGNOSTIC_PAINT_LAYER') != ''
+// Each frame's multisampled tiles and the commands that select them, by layer.
+const chromium_msaa_tile_diagnostics = os.getenv('VOX_MSAA_TILE_DIAGNOSTICS') != ''
 
 fn chromium_gpu_raster_tile_rows(viewport_device_height int) int {
 	quarter := (viewport_device_height + 3) / 4 + 2
@@ -567,11 +569,32 @@ fn (mut app BrowserApp) set_chromium_msaa_tiles() {
 		count := app.chromium_raster_plan.layers.len
 		app.chromium_raster_tiles = app.chromium_msaa_storage.tiles[..count]
 		app.chromium_raster_grids = app.chromium_msaa_storage.grids[..count]
+		if chromium_msaa_tile_diagnostics {
+			app.report_chromium_msaa_tiles()
+		}
 		C.native_set_chromium_raster_scroll_y(app.scroll_y)
 		C.native_set_chromium_raster_layer(0, 0, 1)
 		C.native_set_chromium_save_layer_image_raster(0, 0, 0, 0, 0)
 		C.native_set_chromium_msaa_tiles(unsafe { nil }, 0,
 			chromium_gpu_raster_tile_rows(int(math.ceil(f64(app.viewport_height) * scale))))
+	}
+}
+
+fn (app &BrowserApp) report_chromium_msaa_tiles() {
+	revision := if app.document != unsafe { nil } { app.document.paint_content_revision() } else { u64(0) }
+	for layer in 0 .. app.chromium_msaa_storage.by_layer.len {
+		if layer >= app.chromium_raster_tiles.len { break }
+		triggers := app.chromium_msaa_storage.by_layer[layer]
+		mut listed := []string{}
+		for trigger in triggers {
+			if listed.len >= 24 { break }
+			kind := if trigger.command_index >= 0 && trigger.command_index < app.paint_commands.len {
+				app.paint_commands[trigger.command_index].kind
+			} else { '?' }
+			listed << '${trigger.command_index}:${kind}@${int(trigger.left)},${int(trigger.top)}'
+		}
+		grid := if layer < app.chromium_raster_grids.len { app.chromium_raster_grids[layer] } else { ChromiumRasterGrid{} }
+		eprintln('VOX_MSAA_TILES revision=${revision} layer=${layer} tiles=${app.chromium_raster_tiles[layer]} grid=${grid.tile_width}x${grid.tile_height}/${grid.columns} cells=${grid.cells} triggers=${triggers.len} ${listed.join(' ')}')
 	}
 }
 
