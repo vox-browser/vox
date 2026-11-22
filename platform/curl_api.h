@@ -28,55 +28,12 @@ typedef struct {
 #include <dlfcn.h>
 #include <pthread.h>
 #include <stdio.h>
-#include <string.h>
 // Keep libcurl lazy. Both native Fetch and cancellable browser resource
-// requests resolve the same library. Homebrew's OpenSSL curl is preferred
-// when it can verify servers through Apple's SecTrust (its AppleSecTrust
-// feature): with CURLSSLOPT_NATIVE_CA it trusts the same system and keychain
-// roots as macOS's own library, and OpenSSL's ARMv8 AES-GCM and TLS 1.3
-// replace the portable LibreSSL ciphers of /usr/lib/libcurl. A Homebrew curl
-// without that feature would trust only its own CA file, so the system
-// library remains the fallback. VOX_SYSTEM_LIBCURL=1 always uses it.
-#define VOX_SYSTEM_LIBCURL_PATH "/usr/lib/libcurl.4.dylib"
+// requests use macOS's system library, including its TLS trust integration.
 VOX_NATIVE_STATE VoxCurlApi vox_curl_loaded_api;
 VOX_NATIVE_STATE pthread_once_t vox_curl_load_once VOX_NATIVE_STATE_INIT(PTHREAD_ONCE_INIT);
-// Set when the loaded library verifies with SecTrust under CURLSSLOPT_NATIVE_CA.
-VOX_NATIVE_STATE int vox_curl_uses_native_ca;
-VOX_NATIVE_STATE const char* vox_curl_library_path;
-static int vox_curl_library_has_apple_sectrust(void* library) {
-    curl_version_info_data* (*version_info)(CURLversion) =
-        (curl_version_info_data* (*)(CURLversion))dlsym(library, "curl_version_info");
-    if (!version_info) return 0;
-    const curl_version_info_data* info = version_info(CURLVERSION_NOW);
-    if (!info || info->age < CURLVERSION_ELEVENTH || !info->feature_names) return 0;
-    for (const char* const* name = info->feature_names; *name; ++name) {
-        if (strcmp(*name, "AppleSecTrust") == 0) return 1;
-    }
-    return 0;
-}
-static void* vox_curl_open_library(void) {
-    const char* system_only = getenv("VOX_SYSTEM_LIBCURL");
-    if (!(system_only && *system_only)) {
-        static const char* const homebrew[] = {
-            "/opt/homebrew/opt/curl/lib/libcurl.4.dylib",
-            "/usr/local/opt/curl/lib/libcurl.4.dylib",
-        };
-        for (size_t index = 0; index < sizeof(homebrew) / sizeof(homebrew[0]); ++index) {
-            void* library = dlopen(homebrew[index], RTLD_NOW | RTLD_LOCAL);
-            if (!library) continue;
-            if (vox_curl_library_has_apple_sectrust(library)) {
-                vox_curl_uses_native_ca = 1;
-                vox_curl_library_path = homebrew[index];
-                return library;
-            }
-            dlclose(library);
-        }
-    }
-    vox_curl_library_path = VOX_SYSTEM_LIBCURL_PATH;
-    return dlopen(VOX_SYSTEM_LIBCURL_PATH, RTLD_NOW | RTLD_LOCAL);
-}
 static void vox_curl_load_api(void) {
-    void* library = vox_curl_open_library();
+    void* library = dlopen("/usr/lib/libcurl.4.dylib", RTLD_NOW | RTLD_LOCAL);
     if (!library) {
         fprintf(stderr, "Vox: cannot load libcurl: %s\n", dlerror());
         abort();
@@ -159,10 +116,6 @@ static CURLcode vox_curl_server_trust(void *handle, const char *bundle) {
     result = api->easy_setopt(handle, CURLOPT_CAINFO, (char *)NULL);
     if (result != CURLE_OK) return result;
     return api->easy_setopt(handle, CURLOPT_CAPATH, (char *)NULL);
-#elif defined(__APPLE__)
-    // macOS's own library already verifies against the system roots.
-    if (!vox_curl_uses_native_ca) return CURLE_OK;
-    return api->easy_setopt(handle, CURLOPT_SSL_OPTIONS, (long)CURLSSLOPT_NATIVE_CA);
 #else
     return CURLE_OK;
 #endif
