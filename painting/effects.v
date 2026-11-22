@@ -173,8 +173,9 @@ pub fn (filter GfxFilter) opacity_filter_amount() ?f64 {
 
 pub struct SVGSourceColorMatrix {
 pub:
-	values     [20]f32
-	linear_rgb bool
+	values          [20]f32
+	linear_rgb      bool
+	preserves_alpha bool
 }
 
 fn (node &GfxFilterNode) converts_color_space(input int, source string, destination string) bool {
@@ -184,7 +185,8 @@ fn (node &GfxFilterNode) converts_color_space(input int, source string, destinat
 }
 
 // Accept one matrix on SourceGraphic, optionally bracketed by the linearRGB
-// conversions. Keeping alpha unchanged permits replay into an alpha-only tile.
+// conversions. Transparent black must stay transparent so the rasterizer can
+// bound the filter layer by its source geometry.
 pub fn (filter GfxFilter) source_color_matrix() ?SVGSourceColorMatrix {
 	if filter.operations.len != 0 || filter.nodes.len !in [1, 3] { return none }
 	root := filter.root_id?
@@ -206,16 +208,18 @@ pub fn (filter GfxFilter) source_color_matrix() ?SVGSourceColorMatrix {
 		|| node.input_ids[0] != expected_input || node.matrix.len != 20 {
 		return none
 	}
-	if node.matrix[15] != 0 || node.matrix[16] != 0 || node.matrix[17] != 0
-		|| node.matrix[18] != 1 || node.matrix[19] != 0 {
-		return none
-	}
+	if node.matrix[19] > 0 { return none }
 	mut matrix := [20]f32{}
 	for i, value in node.matrix {
 		matrix[i] = f32(value)
 		if !math.is_finite(f64(matrix[i])) { return none }
 	}
-	return SVGSourceColorMatrix{values: matrix, linear_rgb: linear_rgb}
+	return SVGSourceColorMatrix{
+		values: matrix
+		linear_rgb: linear_rgb
+		preserves_alpha: node.matrix[15] == 0 && node.matrix[16] == 0 && node.matrix[17] == 0
+			&& node.matrix[18] == 1 && node.matrix[19] == 0
+	}
 }
 
 // A same-document SVG graph and its target bounds have one retained lifetime.

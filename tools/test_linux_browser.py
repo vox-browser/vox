@@ -2230,10 +2230,31 @@ def check_svg_color_matrix_tile_pixels(rows, channels, scale, marker, edited, *,
             assert actual == expected, (scale, left + x, y, actual, expected)
 
 
-def check_svg_tile_browser(binary, artifacts, temporary, name, *, ready=None,
+def check_svg_color_matrix_alpha_tile_pixels(rows, channels, scale, marker, edited):
+    white, lime = bytes.fromhex("ffffff"), bytes.fromhex("00ff00")
+    red, blue, black = bytes.fromhex("ff0000"), bytes.fromhex("0000ff"), bytes(3)
+    for left in (0, 128, 256):
+        masked = left == 256
+        red_band, blue_band = (black, black) if masked else (red, blue)
+        first, second = (white, blue_band) if edited else (red_band, white)
+        stripe = black if masked else lime
+        for x, y, expected in (
+            (2, 1, white), (2, 4, first), (11, 4, first), (12, 4, white),
+            (2, 8, white), (3, 12, white), (6, 12, second), (15, 12, second),
+            (16, 12, white), (6, 14, white), (6, 17, stripe),
+            (2, 24, first), (6, 32, second),
+        ):
+            row = rows[marker + (8 + y) * scale]
+            pos = (left + x) * scale * channels
+            actual = row[pos:pos + 3]
+            assert actual == expected, (scale, left + x, y, actual.hex(), expected.hex())
+
+
+def check_svg_tile_browser(binary, artifacts, temporary, name, *, ready=None, groups=None,
                            check_edited=functools.partial(check_svg_tile_fill_stroke_pixels,
                                                           first_stripe=(255, 255, 0))):
     fixture = Path(__file__).resolve().parents[1] / f"Tests/Browser/Native/svg-pattern-tile-{name}.html"
+    expected_groups = groups if groups is not None else (2 if ready else 3)
     documents = []
     for mode in ("cached", "uncached"):
         label = f"{fixture.stem}-{mode}"
@@ -2258,8 +2279,7 @@ def check_svg_tile_browser(binary, artifacts, temporary, name, *, ready=None,
         else:
             check_svg_nested_tile_device_pixels(rows, channels, 1, marker)
         hits = set(re.findall(r"^VOX_SVG_GROUP cache=hit start=(\d+)", log, re.M))
-        groups = 2 if ready else 3
-        assert len(hits) == (groups if mode == "cached" else 0), log
+        assert len(hits) == (expected_groups if mode == "cached" else 0), log
         documents.append(rows[marker:height - 24])
     assert documents[0] == documents[1], f"Caching changed the pixels of {fixture.stem}"
     if ready:
@@ -2273,6 +2293,9 @@ def check_svg_matrix_tiles(binary, artifacts, temporary):
         check_svg_tile_browser(binary, artifacts, temporary, name,
                                ready="data-color-matrix-ready", check_edited=functools.partial(
                                    check_svg_color_matrix_tile_pixels, edited=True, linear_rgb=linear_rgb))
+    check_svg_tile_browser(binary, artifacts, temporary, "color-matrix-alpha", groups=3,
+                           ready="data-color-matrix-ready", check_edited=functools.partial(
+                               check_svg_color_matrix_alpha_tile_pixels, edited=True))
 
 
 def check_svg_mask_gradient_strokes_browser(binary, artifacts, temporary):

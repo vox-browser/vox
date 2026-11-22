@@ -144,7 +144,11 @@ fn (mut app BrowserApp) raster_svg_mask_pattern(style &painting.SVGPatternPaintS
 	// system. The shader maps the raster back to the exact SVG cell period.
 	operations := layout.compatibility_lower_svg_mask_operations(list.operations,
 		[sx, 0.0, 0.0, sy, 0.0, 0.0]!, true)
-	mask := layout.PaintClip{mask_operations: operations, mask_luminance: luminance}
+	// A matrix can read RGB to compute alpha. Keep the source colors,
+	// including nested paint, even when the destination samples alpha alone.
+	retain_color := luminance || operations.any(it.color_matrix != unsafe { nil }
+		&& !it.color_matrix.matrix.preserves_alpha)
+	mask := layout.PaintClip{mask_operations: operations, mask_luminance: retain_color}
 	if !portable_svg_content_mask_supported(&mask, true) { return none }
 	local := multiply_paint_transforms(pattern_transform, [1 / sx, 0.0, 0.0, 1 / sy, tile.x, tile.y]!)
 	matrix32 := [f32(local[0]), f32(local[1]), f32(local[2]), f32(local[3]), f32(local[4]), f32(local[5])]!

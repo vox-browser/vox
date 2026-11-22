@@ -41,6 +41,18 @@ fn test_linear_rgb_matrix_encodes_before_rounding() {
 	assert pixels == [u8(111), 66, 30, 255, 12, 27, 41, 102, 3, 2, 1, 255, 0, 0, 0, 0]
 }
 
+fn test_in_place_matrix_derives_alpha_from_straight_color() {
+	matrix := MatrixColorFilter{
+		matrix: [f32(1), 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, .6, 0, 0, 0, 0]!
+		clamp: true
+	}
+	for linear_rgb in [false, true] {
+		mut pixels := [u8(102), 0, 0, 102, 0, 0, 255, 255, 0, 0, 0, 0]
+		assert apply_canvas_color_matrix_in_place(mut pixels, 3, 1, matrix, linear_rgb)
+		assert pixels == [u8(153), 0, 0, 153, 0, 0, 0, 0, 0, 0, 0, 0]
+	}
+}
+
 fn test_parallel_filter_matrix_matches_serial() {
 	serial_setting := 'VOX_SERIAL_CPU_RASTER'
 	previous := os.getenv_opt(serial_setting)
