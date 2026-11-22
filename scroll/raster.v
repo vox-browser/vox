@@ -132,11 +132,16 @@ fn (mut app BrowserApp) begin_scroll_raster() ScrollRasterDamage {
 		mut allow_reuse := 0
 		mut stats := ScrollRasterDiffStats{}
 		if ring_eligible {
+			keys_stage := processmetrics.begin_thread_instruction_substage('scroll_raster_keys')
 			keys = scroll_raster_frame_keys_with_scrollbars(app.paint_commands, key_scroll,
 				app.overlay_scrollbars.paint_opacity, css.width, css.height, inline_scrollbars)
+			keys_stage.finish()
+			marks_stage := processmetrics.begin_thread_instruction_substage('scroll_raster_key_marks')
 			app.mark_video_backdrop_keys(mut keys)
 			app.mark_background_image_keys(mut keys)
 			app.mix_raster_layer_keys(mut keys)
+			marks_stage.finish()
+			diff_stage := processmetrics.begin_thread_instruction_substage('scroll_raster_content_diff')
 			if disable_scroll_raster_content_damage {
 				stats.fallback = 'content-damage-disabled'
 			} else if content := scroll_raster_content_damage(&app.scroll_raster_keys, keys,
@@ -154,6 +159,7 @@ fn (mut app BrowserApp) begin_scroll_raster() ScrollRasterDamage {
 					}
 				}
 			}
+			diff_stage.finish()
 		}
 		mut clipped := rects.clone()
 		for restore in damage.restores { clipped << restore.rect }
@@ -173,8 +179,10 @@ fn (mut app BrowserApp) begin_scroll_raster() ScrollRasterDamage {
 			damage.rects = clipped
 			mut region := scroll_raster_strip_region(damage.delta, damage.width, damage.height)
 			region << rects
+			plan_stage := processmetrics.begin_thread_instruction_substage('scroll_raster_skip_plan')
 			damage.skip_plan = plan_scroll_raster_skips_with_restores(app.paint_commands, keys,
 				region, damage.restores, damage.unoptimized)
+			plan_stage.finish()
 			// Leaf rasters crop to the clip rectangles they intersect rather
 			// than to the bounding box Quartz reports for all of them.
 			for restore in damage.restores { region << restore.rect }
