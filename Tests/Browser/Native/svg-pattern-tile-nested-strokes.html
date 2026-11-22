@@ -1,6 +1,6 @@
 <!doctype html>
 <meta charset="utf-8">
-<title>Nested SVG patterns and non-scaling strokes</title>
+<title>Nested SVG patterns in fills and strokes</title>
 <style>
 body { margin: 0; background: white; }
 header { width: 8px; height: 8px; background: #34b786; }
@@ -16,8 +16,7 @@ svg { display: block; }
     <pattern id="tile" width="40" height="40" patternUnits="userSpaceOnUse"
              patternTransform="scale(.5)">
       <path d="M0 6H40" fill="none" stroke="url(#stripes)" stroke-width="4"/>
-      <path d="M0 20H40" fill="none" stroke="lime" stroke-width="6"
-            vector-effect="non-scaling-stroke"/>
+      <path d="M0 20H40" fill="none" stroke="lime" stroke-width="12"/>
       <path d="M0 28h40v12H0Z" fill="url(#stripes)"/>
     </pattern>
   </defs>

@@ -42,15 +42,15 @@ fn (mut app BrowserApp) add_shared_svg_pattern_images(list &painting.SVGPatternD
 
 fn (mut app BrowserApp) prepare_shared_svg_pattern_tile(style &painting.SVGPatternPaintStyle,
 	transform [6]f64, content_mask bool) bool {
-	if !style.has_non_scaling_stroke { return false }
+	if !(style.has_non_scaling_stroke || style.has_nested_pattern) { return false }
 	list := style.tile_display_list or { return false }
+	scale := C.native_shared_svg_pattern_scale(i32(content_mask))
+	if !(scale > 0 && math.is_finite(scale)) { return false }
 	info := portable_svg_mask_pattern_info(style, portable_svg_mask_pattern_max_operations, 0) or {
 		return false
 	}
-	scale := C.native_shared_svg_pattern_scale(i32(content_mask))
-	if !(scale > 0 && math.is_finite(scale)) { return false }
-	// The bitmap uses the device metric. Its placement in the document does
-	// not affect the tile pixels, including when a cached tile scrolls.
+	// The linear transform sets the bitmap resolution and stroke metric.
+	// Translated styles share a tile, including during scroll.
 	device := portable_device_transform(transform, 0, 0, scale)
 	matrix := [f32(device.a), f32(device.b), f32(device.c), f32(device.d), 0, 0]!
 	if !matrix.all(math.is_finite(f64(it))) { return false }

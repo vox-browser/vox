@@ -554,7 +554,7 @@ def check_pattern_tile_with_delayed_image(binary, fixture, directory, *, nested=
             hits = re.findall(r"^VOX_SHARED_SVG_TILE cache=hit key=(\d+)$", log, re.M)
             assert misses and misses[0] == "0" and hits and hits[0] in misses[1:], log
     tiles = "nested SVG tiles" if nested else "SVG tiles"
-    print(f"PASS: macOS shared {tiles} preserve delayed bitmap content and device stroke width")
+    print(f"PASS: macOS shared {tiles} preserve delayed bitmap content and stroke width")
 
 
 def check_nested_pattern_tiles(binary, fixture, directory):

@@ -2107,9 +2107,10 @@ def check_svg_pattern_tile_image_pixels(rows, channels, scale, marker, *, nested
     white, green, blue, red = (255, 255, 255), (0, 255, 0), (0, 0, 255), (255, 0, 0)
     assert rows[marker + 4 * scale][4 * scale * channels:4 * scale * channels + 3] == bytes.fromhex("34b786")
     center = 10 * scale
+    half_stroke = 3 * scale if nested else 3
     samples = (
-        (1, center - 4, white), (1, center - 3, green),
-        (1, center + 2, green), (1, center + 3, white),
+        (1, center - half_stroke - 1, white), (1, center - half_stroke, green),
+        (1, center + half_stroke - 1, green), (1, center + half_stroke, white),
     )
     if nested:
         samples += (
@@ -2160,19 +2161,20 @@ def check_svg_pattern_tile_image_browser(binary, artifacts, temporary, run_captu
             documents.append(rows[marker:height - 24])
     assert documents[0] == documents[1], "Caching changed the mixed SVG tile pixels"
     tiles = "nested SVG tiles" if nested else "mixed SVG tiles"
-    print(f"PASS: {tiles} preserve delayed bitmaps, device stroke width, and cache parity", flush=True)
+    print(f"PASS: {tiles} preserve delayed bitmaps, stroke width, and cache parity", flush=True)
 
 
 def check_svg_nested_tile_pixels(rows, channels, scale, marker, first_stripe):
     white, green, red = (255, 255, 255), (0, 255, 0), (255, 0, 0)
     center = 10 * scale
+    half_stroke = 3 * scale
     for left in (0, 128 * scale):
         for x, y, expected in (
             (2 * scale, 3 * scale, first_stripe), (5 * scale, 3 * scale, red),
             (8 * scale, 3 * scale, white), (2 * scale, 15 * scale, first_stripe),
             (5 * scale, 15 * scale, red), (8 * scale, 15 * scale, white),
-            (2 * scale, center - 4, white), (2 * scale, center - 3, green),
-            (2 * scale, center + 2, green), (2 * scale, center + 3, white),
+            (2 * scale, center - half_stroke - 1, white), (2 * scale, center - half_stroke, green),
+            (2 * scale, center + half_stroke - 1, green), (2 * scale, center + half_stroke, white),
         ):
             row = rows[marker + 8 * scale + y]
             pixel = (left + x) * channels
