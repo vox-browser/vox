@@ -1,4 +1,4 @@
-import { packedArray, packedMap, readPackedValue, encodePackedTable } from './lazy_snapshot.mjs';
+import { lazyReferenceArray, packedArray, packedMap, readPackedValue, encodePackedTable } from './lazy_snapshot.mjs';
 import { classicScript } from './classic_script.mjs';
 
 // Preserve uBO's engine selfies, loading large typed arrays as native bytes and
@@ -37,7 +37,7 @@ export function encodeSnapshot(snapshot, { lazyCosmetics = false, lazyNetworkBuc
                 ? [1, item.source, item.flags] : [0, item]);
             const table = encodePackedTable(references, 1), offset = byteLength;
             chunks.push(table); byteLength += table.length;
-            fixups.push(`${path}=packedArray(clone(Uint8Array,${offset},${table.length}),(bytes,index)=>{const value=read(bytes,index);return value[0]===1?new RegExp(value[1],value[2]):value[1];},globalThis.voxAdblockEagerSnapshotTables===true);ownedReferences.add(${path});`);
+            fixups.push(`${path}=lazyReferenceArray(clone(Uint8Array,${offset},${table.length}),(bytes,index)=>{const value=read(bytes,index);return value[0]===1?new RegExp(value[1],value[2]):value[1];},globalThis.voxAdblockEagerSnapshotTables===true);ownedReferences.add(${path});`);
             hasPackedTables = hasPackedReferences = true;
             active.delete(value);
             return null;
@@ -141,7 +141,8 @@ export function encodeSnapshot(snapshot, { lazyCosmetics = false, lazyNetworkBuc
         }
         suffixReader += `resources(){const bytes=globalThis.voxAdblockSnapshotBytes,packedMap=${packedMap},read=globalThis.voxAdblockReadPackedValue||(${readPackedValue});return {${tables.join(',')}};},`;
     }
-    const readers = hasPackedTables ? `const packedArray=${packedArray},packedMap=${packedMap},read=globalThis.voxAdblockReadPackedValue||(${readPackedValue});` : '';
+    const referenceReader = hasPackedReferences ? `,lazyReferenceArray=${lazyReferenceArray}` : '';
+    const readers = hasPackedTables ? `const packedArray=${packedArray},packedMap=${packedMap}${referenceReader},read=globalThis.voxAdblockReadPackedValue||(${readPackedValue});` : '';
     // Only a newly restored private reference array can be transferred to uBO.
     // Ordinary fromSelfie callers retain the original copy semantics. Taking
     // ownership once prevents two engines from adopting the same mutable array.

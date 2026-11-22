@@ -4,6 +4,8 @@ import vm from 'node:vm';
 import { gunzipSync } from 'node:zlib';
 import test from 'node:test';
 import { builtinScriptlets } from '../../adblock/vendor/ublock/js/resources/scriptlets.js';
+import { deserialize } from '../../adblock/vendor/ublock/js/s14e-serializer.js';
+import util from 'node:util';
 const code = gunzipSync(await fs.readFile(new URL('../../adblock/engine.js.gz', import.meta.url))).toString();
 const nativeSnapshot = await fs.readFile(new URL('../../adblock/engine.snapshot.bin', import.meta.url));
 const bytes = nativeSnapshot.subarray(16);
@@ -216,4 +218,15 @@ test('requests without a headers-realm candidate never match any response header
         if (!defaults.check(request).no_header_filters) continue;
         assert.equal(JSON.parse(defaults.context.voxAdblockCheckResponse(request, response.headers)).blocked, false);
     }
+});
+
+test('restored filter references load on first read and a later snapshot keeps every one', () => {
+    const defaults = engine();
+    assert.equal(defaults.check({url:'https://github.com/vlang/v/refs?type=branch',source_url:'https://github.com/vlang/v',request_type:'xmlhttprequest'}).blocked,false);
+    assert.equal(defaults.check({url:'https://securepubads.g.doubleclick.net/tag/js/gpt.js',source_url:'https://www.theverge.com/',request_type:'script'}).blocked,true);
+    const snapshot = deserialize(defaults.context.voxAdblockSnapshot());
+    const references = snapshot.network.filterRefs;
+    assert.ok(references.length > 1000);
+    assert.equal(references.findIndex((value, index) => index > 0 && value === undefined), -1);
+    assert.equal(util.types.isProxy(references), false);
 });

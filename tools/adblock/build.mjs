@@ -126,11 +126,29 @@ ${copy}        }
                 const copy = '    for ( let i = 0, n = selfie.length; i < n; i++ ) {\n        filterRefs[i] = selfie[i];\n    }';
                 if (source.split(declaration).length !== 2 || source.split(copy).length !== 2)
                     throw new Error('Unexpected uBO filter reference restoration');
-                source = source.replace(declaration, 'let filterRefs = [ null ];')
+                // A restored table loads its entries on first read: matching
+                // reads them through filterRefAt(), never through a proxy.
+                const toSelfie = 'const filterRefsToSelfie = ( ) =>\n    filterRefs.slice(0, filterRefsWritePtr);';
+                const reads = /filterRefs\[(filterData\[[a-z]+(?:\+\d+)?\]|irefs)\](?!\s*=(?!=))/g;
+                if (source.split(toSelfie).length !== 2 || [...source.matchAll(reads)].length !== 18)
+                    throw new Error('Unexpected uBO filter reference reads');
+                source = source.replace(reads, 'filterRefAt($1)')
+                    .replace(declaration, `let filterRefs = [ null ];
+let filterRefsLoad = ( ) => undefined;
+const filterRefAt = i => {
+    const ref = filterRefs[i];
+    return ref !== undefined ? ref : filterRefsLoad(i);
+};`)
+                    .replace(toSelfie, `const filterRefsToSelfie = ( ) => {
+    for ( let i = 0; i < filterRefsWritePtr; i++ ) { filterRefAt(i); }
+    return filterRefs.slice(0, filterRefsWritePtr);
+};`)
                     .replace(copy, `    const owned = globalThis.voxAdblockTakeFilterReferences?.(selfie);
     if (owned !== undefined) {
         filterRefs = owned;
+        filterRefsLoad = owned.$voxLoad ?? (( ) => undefined);
     } else {
+        filterRefsLoad = ( ) => undefined;
 ${copy}
     }`);
             }
