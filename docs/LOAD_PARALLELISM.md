@@ -492,11 +492,76 @@ way, so the code was not kept.
   until the element is restyled. The sweeps above did not show it.
 - GitHub loads 2.2 to 2.5 times slower than in Brave; see above for what
   closing that gap needs.
-- The response of a launch's first fetch still waits for the first window
-  frame before its stylesheets are requested, 100 to 130 ms after it
-  arrived. Discovering them on the fetch thread needs a way to hand their
-  responses to the main thread's preload without a second request.
+- In the cohorts above, the response of a launch's first fetch waited 100 to
+  130 ms for the first window frame before Vox requested its stylesheets. The
+  [follow-up](#initial-stylesheet-fetches-on-old-reddit) overlaps eligible
+  stylesheet requests with window setup.
 - Capture mode waits about 25 ms for a retry timer before its final raster.
 - The message of commit `e39770061` gives a 2048×512, 4 MB tile as its
   example. The tiles on this display are those listed under leaf raster
   transfers; shared history is not rewritten for it.
+
+## Initial stylesheet fetches on old Reddit
+
+Vox now starts the first navigation's stylesheet batch on the response worker
+when the HTML qualifies for tokenized discovery. The window opens while the
+requests run. The navigation owns one cancellation scope from the main resource
+through stylesheet adoption, and the usual stylesheet completion barrier
+still precedes document installation. Tokenized discovery accepts a base
+that repeats the response URL and an already-selected UTF-8 declaration.
+
+We measured a fresh native window at 1024×768 CSS pixels and scale 2 on an
+18-core Apple M5 Max running macOS 27.2. The URL was
+`https://old.reddit.com/r/programming/` from the same sealed private archive
+described above. The frozen page has no author scripts. JavaScriptCore and
+normal content blocking were enabled in Vox. Every trial used a new process,
+profile and HTTP cache. The offline replay rejected unarchived requests.
+OS and GPU caches were left in their normal shared state.
+
+The interval starts at process launch and ends at the completed document PNG.
+Vox reports its written PNG after capture readiness. Brave returns its PNG via
+CDP after the load event, font readiness and the shared post selector, with no
+added settle time. The goal was 20% lower median elapsed time. The ratio of the
+slowest Vox result to the fastest Brave result is also reported.
+
+The published baseline (`8b66b96b8324…`, single-unit C with V `-prod`)
+rendered all seven rounds ahead of Brave 157.1.99.57 (Chromium 157.0.8103.79).
+Medians were 373.81 ms and 439.13 ms, with 14.88% lower time in Vox.
+Vox ranged from 357.44 to 420.34 ms. Brave ranged from 431.21 to 462.34 ms.
+The conservative ratio was 97.48%. One-minute host load was 5.86–6.84.
+The baseline trace put the main HTML request at 57 ms, its response at 58 ms,
+and the first stylesheet request at 158 ms.
+
+Baseline elapsed times in pair order, in ms:
+
+- Vox 383.486, 420.343, 393.539, 368.557, 369.705, 373.807, 357.445
+- Brave 439.134, 437.628, 435.557, 431.207, 442.294, 445.939, 462.339
+
+The document title and all 25 ordered post IDs, titles and link targets
+matched in the audits. Both engines rendered a stable image across their own
+baseline trials. The cross-browser capture differs in 349,523 pixels
+(11.1110%, mean absolute channel error 0.2943 on the 0–255 scale).
+Vox replayed 18 archived requests. Brave made 33 requests, including 14
+unarchived requests rejected by the replay. All baseline timing processes
+and the memory guard exited zero. The separately instrumented Brave content
+audit captured matching content but needed forced cleanup on the busy host.
+
+Eight focused tests in `navigation/fetch_state_test.v` and
+`resources/tokenized_preloads_test.v` passed with preallocation and `-gc none`.
+The loopback test held a stylesheet until after navigation polling. It checked
+that the current document stayed installed until the stylesheet arrived and
+that the new layout used its rule. Both test binaries and their 3 GiB runtime
+guards exited zero. All 18 Python benchmark-harness tests passed. The first V
+test invocation selected incompatible installed graphics modules. The passing
+build used the production compiler and module paths.
+
+The production compiler consumed the implementation in `5f21c7f3b`, but
+receipt `20261122-080543-085d434c` ended during linking at the 2,700-second
+build timeout. The guard recorded exit 137 for its child and exit 125 for the
+managed build, with 6,276,431,872 bytes sampled at peak. The published bundle
+retained the baseline executable. The managed retry is active. The baseline
+results give no performance credit to the change, and the 20% target remains
+unverified.
+
+The live guest homepage returned HTTP 403, including after a direct request
+redirected to sign-in, so live homepage timing remains unverified.
