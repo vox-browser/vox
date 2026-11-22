@@ -11801,3 +11801,33 @@ chooses ciphers in its own order.
   `open` counter found 99 cookie-file opens costing 3.5 ms in a whole load;
   the 254 samples a sampled run showed in that `open` were an artifact of
   the sampling setup.
+
+**CSS parsing and adblock worker follow-ups.**
+- The page links 37 style sheets but only 29 distinct URLs: `primer-react-css`
+  (303 KB) five times and four theme sheets twice. Repeated copies already
+  reuse their token and rule syntax (about 25M each against 126M for a first
+  parse of the 303 KB sheet), so first parses of the 2.56 MB of distinct CSS
+  dominate. `dd952dba2` adds a `document-parse` mode to
+  `tools/benchmark_style_passes.v` that parses the page's sheets into a fresh
+  document's native storage as a first load does (885M for the 33 sheets,
+  against 975M the browser's main thread spends in its 37 parses).
+  `e5d48c154` clears only each rule's own caches when it is re-parented
+  (887M to 879M). Storing a sheet's rule syntax only on its second parse was
+  rejected: it saves the copy for sheets that never repeat but costs one
+  cache hit per repeated URL, about 40M worse on this page. Selector parsing
+  re-serializes tokens to text and parses that text again; replacing that is
+  the remaining structural lever.
+- The benchmark cohorts pin a 2026-11-17 engine
+  (`libjs-github-continue-20261117/replay-assets`). With the bundled engine,
+  this archive fails validation because its GitHub site optimizations request
+  compatibility scripts the replay does not serve, so the adblock results
+  below compare the worker processes of 7 loads per arm, built from the same
+  tree into private asset directories.
+- `0305dfd41` keeps uBO's `parseQueryPruneValue` and `parseRedirectValue`
+  eager: through the lazy parser stub, the first removeparam or redirect
+  directive evaluated the whole parser bundle (about 100M). Worker median
+  626M to 534M.
+- `0e6fa9517` restores the filter reference table as a plain array that loads
+  entries on first read: matching read it about 80 times per check through a
+  proxy trap while a page loads only about 190 of its 7,499 entries. A warm
+  check drops from 282K to 142K instructions; worker median 528M to 502M.
