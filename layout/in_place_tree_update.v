@@ -40,6 +40,9 @@ const disable_in_place_tables = os.getenv('VOX_DISABLE_IN_PLACE_TABLES') != ''
 const disable_in_place_stale_rebuilds = os.getenv('VOX_DISABLE_IN_PLACE_STALE_REBUILDS') != ''
 
 __global in_place_tree_update_counts [2]u64
+// VOX_IN_PLACE_TREE_UPDATE_DIAGNOSTICS: boxes built by in-place updates, by
+// why their element's previous box was not kept ('new' when it had none).
+__global in_place_built_box_counts map[string]u64
 // Tests of the complete builder's reuse paths suspend in-place updates so that
 // their tree updates reach it.
 __global in_place_tree_update_suspended bool
@@ -174,7 +177,7 @@ fn update_layout_tree_in_place(document &dom.Document, mut style_computer css.St
 			added += list.added.len
 			removed += list.removed.len
 		}
-		eprintln('VOX_IN_PLACE_TREE_UPDATE updated parents=${update.lists.len} added=${added} removed=${removed}')
+		eprintln('VOX_IN_PLACE_TREE_UPDATE updated parents=${update.lists.len} added=${added} removed=${removed} built_boxes=${in_place_built_box_counts}')
 	}
 	return previous.root
 }
@@ -467,8 +470,15 @@ fn (mut update InPlaceTreeUpdate) plan_child_list(node &dom.Node) bool {
 			}
 		}
 		if child_element.shadow_root() != none { return update.decline('shadow-child') }
+		rebuild_reason := if in_place_tree_update_diagnostics {
+			in_place_rebuild_reason(child, child_style, existing[key] or { unsafe { nil } },
+				update.forced[key])
+		} else { '' }
 		built := build_layout_box_for_element(update.document, child_element, update.style_computer,
 			mut update.builder) or { continue }
+		if in_place_tree_update_diagnostics {
+			in_place_built_box_counts[rebuild_reason] += in_place_subtree_box_count(built)
+		}
 		if update.builder.hoisted_pseudo_element_boxes.len != 0 { return update.decline('hoisted') }
 		if built.display().is_contents() { return update.decline('contents-child') }
 		if built.is_inline() && !built.is_atomic_inline() && in_place_inline_contains_blocks(built) {
@@ -543,6 +553,32 @@ fn (mut update InPlaceTreeUpdate) note_existing_child(child &Node, mut existing 
 	if in_place_box_is_split(child) { return update.decline('continuation-child') }
 	existing[u64(voidptr(child_dom))] = child
 	return true
+}
+
+// Why a child's previous box (nil for a child without one) is built again.
+fn in_place_rebuild_reason(child &dom.Node, style &css.ComputedProperties, old &Node, forced bool) string {
+	if old == unsafe { nil } { return 'new' }
+	built := if old.is_table_wrapper() { in_place_wrapped_table(old) or { old } } else { old }
+	return if child.needs_layout_tree_update_() {
+		'flagged'
+	} else if forced {
+		'forced'
+	} else if built.display() != style.display() {
+		'display'
+	} else if !retained_flow_style_matches(built, style) {
+		'style'
+	} else if child.as_element() != none
+		&& retained_flow_element_has_generated_pseudo_style(child.as_element() or { panic('element') }) {
+		'pseudo'
+	} else {
+		'escalated'
+	}
+}
+
+fn in_place_subtree_box_count(node &Node) u64 {
+	mut count := u64(1)
+	for child in node.children() { count += in_place_subtree_box_count(child) }
+	return count
 }
 
 fn in_place_display_is_table_part(display css.Display) bool {
