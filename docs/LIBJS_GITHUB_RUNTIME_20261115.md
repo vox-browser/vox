@@ -11767,3 +11767,37 @@ chooses ciphers in its own order.
   Pair deltas were −582M, +168M, −568M, −333M, −81M, −84M and −165M. Every
   candidate run used fewer instructions than every Brave run; the 10%
   criterion (`10 * max(Vox) <= 9 * min(Brave)`) is not met.
+
+**Where the remaining instructions go (bundles `85d92b56`–`d8f524a0`).**
+- Per thread at exit (injected `PROC_PIDTHREADCOUNTS` reporter, one load of
+  20.45B): the main thread 16.26B of the main process's 19.82B, JSC JIT
+  worklists 0.86B, heap helpers 0.25B, other threads about 0.5B; the adblock
+  worker 0.62B.
+- Coarse process-level stages (`VOX_DIAGNOSTIC_LOAD_STAGES=1` with
+  `VOX_PROFILE_INSTRUCTIONS=1`, under 0.2B overhead; the per-thread stream
+  adds about 150K instructions per stage boundary and inflates style several
+  times over): JavaScript execution and bindings 4.9B, module completion
+  1.6B, style updates 1.5B, flow layout 1.5B, CSS parsing 1.3B (0.97B on the
+  main thread alone), document replays 1.7B, of which the first full replay
+  is about 1.2B (text 486M over 87 leaves, shadows 231M and filters 203M,
+  both mostly first use, dispatch 98M, SVG 78M). Process-level stages also
+  count other threads' work while they are open.
+- A sampled load (1 ms) splits the busy main thread into JavaScript 35%,
+  layout 26% (geometry 268 samples, paint-tree projection 81, tree building
+  and in-place planning about 90), style 9%, HTML parsing 6%, paint 3% and
+  the rest in networking, frames and module fetches. No leaf in layout or
+  paint exceeds 10% of its subsystem. In `layout_passes` full mode the
+  inline item iterator is 21% of a pass, but on the page it is 40 samples:
+  the per-text-node chunk cache answers the repeats there.
+- Run-to-run spread (six loads 19.81B–20.84B) follows how many frames run
+  before capture: the slowest load had 88 frames (a 12-frame train of about
+  33M each from a transition) against about 60, and 145 layout passes
+  against about 100.
+- The adblock worker (`VOX_ADBLOCK_WORKER_DIAGNOSTICS=PATH`, `dbc226255`,
+  `6cb8d7c22`): engine startup 157M, 158 request checks 258M (about 0.8M
+  each, with first-of-a-kind checks of 17M to 90M), 171 response checks 31M
+  and 6 document filter queries 22M.
+- A `document.cookie` write saves the cookie file each time, but an injected
+  `open` counter found 99 cookie-file opens costing 3.5 ms in a whole load;
+  the 254 samples a sampled run showed in that `open` were an artifact of
+  the sampling setup.
