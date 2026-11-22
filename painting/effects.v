@@ -178,8 +178,31 @@ pub:
 	preserves_alpha bool
 }
 
-pub fn (matrix &SVGSourceColorMatrix) fills_clear_pixels() bool {
-	return matrix.values[19] > 0
+pub struct SVGSourceColorTable {
+pub:
+	channels   [4][]u8
+	linear_rgb bool
+}
+
+pub type SVGSourceColorFilter = SVGSourceColorMatrix | SVGSourceColorTable
+
+pub fn (filter SVGSourceColorFilter) fills_clear_pixels() bool {
+	return match filter {
+		SVGSourceColorMatrix { filter.values[19] > 0 }
+		SVGSourceColorTable { filter.channels[3].len > 0 && filter.channels[3][0] > 0 }
+	}
+}
+
+pub fn (filter SVGSourceColorFilter) preserves_alpha() bool {
+	return match filter {
+		SVGSourceColorMatrix { filter.preserves_alpha }
+		SVGSourceColorTable {
+			for index, value in filter.channels[3] {
+				if index != int(value) { return false }
+			}
+			true
+		}
+	}
 }
 
 fn (node &GfxFilterNode) converts_color_space(input int, source string, destination string) bool {
@@ -188,9 +211,9 @@ fn (node &GfxFilterNode) converts_color_space(input int, source string, destinat
 		&& node.string_parameters['destination'] == destination
 }
 
-// Accept one matrix on SourceGraphic, optionally bracketed by the linearRGB
-// conversions.
-pub fn (filter GfxFilter) source_color_matrix() ?SVGSourceColorMatrix {
+// Test the retained graph before looking up a cached tile. Preparing a
+// matrix or an RGBA lookup table only happens on a cache miss.
+pub fn (filter GfxFilter) source_color_node() ?&GfxFilterNode {
 	if filter.operations.len != 0 || filter.nodes.len !in [1, 3] { return none }
 	root := filter.root_id?
 	linear_rgb := filter.nodes.len == 3
@@ -207,14 +230,43 @@ pub fn (filter GfxFilter) source_color_matrix() ?SVGSourceColorMatrix {
 		return none
 	}
 	expected_input := if linear_rgb { filter.nodes[0].id } else { -1 }
-	if node.kind != 'color-matrix' || node.input_ids.len != 1
-		|| node.input_ids[0] != expected_input || node.matrix.len != 20 {
+	if node.input_ids.len != 1 || node.input_ids[0] != expected_input {
 		return none
+	}
+	match node.kind {
+		'color-matrix' {
+			if node.matrix.len != 20 || !node.matrix.all(math.is_finite(f64(f32(it)))) { return none }
+		}
+		'color-table' {
+			if node.color_tables.len > 4
+				|| !node.color_tables.all(it.values.len == 256 && it.channel in ['red', 'green', 'blue', 'alpha']) {
+				return none
+			}
+		}
+		else { return none }
+	}
+	return node
+}
+
+pub fn (filter GfxFilter) source_color_filter() ?SVGSourceColorFilter {
+	node := filter.source_color_node()?
+	linear_rgb := filter.nodes.len == 3
+	if node.kind == 'color-table' {
+		mut channels := [4][]u8{}
+		for table in node.color_tables {
+			index := match table.channel {
+				'red' { 0 }
+				'green' { 1 }
+				'blue' { 2 }
+				else { 3 }
+			}
+			channels[index] = table.values
+		}
+		return SVGSourceColorTable{channels, linear_rgb}
 	}
 	mut matrix := [20]f32{}
 	for i, value in node.matrix {
 		matrix[i] = f32(value)
-		if !math.is_finite(f64(matrix[i])) { return none }
 	}
 	return SVGSourceColorMatrix{
 		values: matrix

@@ -769,9 +769,9 @@ pub enum PaintMaskOperationKind {
 	path
 }
 
-pub struct PaintSVGMaskColorMatrix {
+pub struct PaintSVGMaskColorFilter {
 pub:
-	matrix painting.SVGSourceColorMatrix
+	effect painting.SVGSourceColorFilter
 	bounds ?painting.Rect
 }
 
@@ -779,7 +779,7 @@ pub struct PaintMaskOperation {
 pub:
 	kind                   PaintMaskOperationKind
 	opacity                f64 = 1.0
-	color_matrix           &PaintSVGMaskColorMatrix = unsafe { nil }
+	color_filter           &PaintSVGMaskColorFilter = unsafe { nil }
 	image_url              string
 	image_rect             LayoutRect
 	image_position_x       string = '50%'

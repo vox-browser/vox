@@ -4486,7 +4486,7 @@ pub fn compatibility_lower_svg_mask_operations(source []painting.SVGMaskPaintOpe
 					if opacity := filter.opacity_filter_amount() {
 						operations << PaintMaskOperation{kind: .begin_opacity, opacity: opacity}
 					} else {
-						matrix := filter.source_color_matrix() or { continue }
+						effect := filter.source_color_filter() or { continue }
 						bounds := if rect := filter.bounds {
 							affine := painting.Affine{transform[0], transform[1], transform[2],
 								transform[3], transform[4], transform[5]}
@@ -4496,7 +4496,7 @@ pub fn compatibility_lower_svg_mask_operations(source []painting.SVGMaskPaintOpe
 						}
 						operations << PaintMaskOperation{
 							kind: .begin_opacity
-							color_matrix: &PaintSVGMaskColorMatrix{matrix: matrix, bounds: bounds}
+							color_filter: &PaintSVGMaskColorFilter{effect: effect, bounds: bounds}
 						}
 					}
 				}

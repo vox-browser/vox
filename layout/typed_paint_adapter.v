@@ -3475,8 +3475,8 @@ fn collect_svg_mask_paint_operations(node &Node, state &LayoutState,
 					bounds)
 				retained_filter = resolved.to_gfx_filter(1)
 				if filter := retained_filter {
-					if filter.source_color_matrix() != none {
-						// Project the matrix's source bounds like the child
+					if filter.source_color_node() != none {
+						// Project the filter's source bounds like the child
 						// paint. Tile normalization then removes the
 						// destination's transform from both.
 						local := painting.Rect{

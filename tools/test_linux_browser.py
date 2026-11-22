@@ -2267,6 +2267,27 @@ def check_svg_color_matrix_bias_tile_pixels(rows, channels, scale, marker, edite
             assert actual == expected, (scale, left + x, y, actual.hex(), expected.hex())
 
 
+def check_svg_component_transfer_tile_pixels(rows, channels, scale, marker, edited):
+    white, lime, black, gray = (bytes.fromhex(color) for color in
+                               ("ffffff", "00ff00", "000000", "666666"))
+    for top, red in ((0, 153), (100, 203)):
+        for left in (0, 128, 256):
+            if left == 256:
+                ink, stripe = (gray if edited else black), black
+            else:
+                ink, stripe = (bytes.fromhex("ff6666") if edited else bytes((red, 0, 0))), lime
+            gap = gray if edited else white
+            for x, y, expected in (
+                (2, 1, white), (1, 2, white), (2, 2, ink), (6, 4, ink),
+                (15, 12, gap), (16, 12, white), (8, 15, gap), (8, 16, white),
+                (8, 18, stripe), (8, 24, ink), (8, 35, gap),
+            ):
+                row = rows[marker + (8 + top + y) * scale]
+                pos = (left + x) * scale * channels
+                actual = row[pos:pos + 3]
+                assert actual == expected, (scale, left + x, top + y, actual.hex(), expected.hex())
+
+
 def check_svg_tile_browser(binary, artifacts, temporary, name, *, ready=None, groups=None,
                            check_edited=functools.partial(check_svg_tile_fill_stroke_pixels,
                                                           first_stripe=(255, 255, 0))):
@@ -2315,6 +2336,12 @@ def check_svg_matrix_tiles(binary, artifacts, temporary):
         check_svg_tile_browser(binary, artifacts, temporary, name, groups=3,
                                ready="data-color-matrix-ready",
                                check_edited=functools.partial(check_pixels, edited=True))
+
+
+def check_svg_component_transfer_tiles(binary, artifacts, temporary):
+    check_svg_tile_browser(binary, artifacts, temporary, "component-transfer", groups=6,
+                           ready="data-component-transfer-ready", check_edited=functools.partial(
+                               check_svg_component_transfer_tile_pixels, edited=True))
 
 
 def check_svg_mask_gradient_strokes_browser(binary, artifacts, temporary):
@@ -3103,6 +3130,7 @@ def main():
     checks.add_argument("--pattern-standalone-only", action="store_true", help="check standalone SVG pattern tiles")
     checks.add_argument("--pattern-filter-only", action="store_true", help="check opacity-filtered SVG pattern tiles")
     checks.add_argument("--pattern-matrix-only", action="store_true", help="check SVG pattern color matrices")
+    checks.add_argument("--pattern-transfer-only", action="store_true", help="check SVG pattern component transfer")
     args = parser.parse_args()
     wait_seconds = window_wait_seconds()
     binary = args.binary.resolve()
@@ -3135,6 +3163,9 @@ def main():
             return
         if args.pattern_matrix_only:
             check_svg_matrix_tiles(binary, artifacts, temporary)
+            return
+        if args.pattern_transfer_only:
+            check_svg_component_transfer_tiles(binary, artifacts, temporary)
             return
         environment = smoke_environment(temporary)
         output = run([str(binary), "--headless-smoke"], env=environment)
@@ -3176,6 +3207,7 @@ def main():
                                ready="data-opacity-filter-ready", check_edited=functools.partial(
                                    check_svg_opacity_filter_tile_pixels, transparency=102))
         check_svg_matrix_tiles(binary, artifacts, temporary)
+        check_svg_component_transfer_tiles(binary, artifacts, temporary)
         check_svg_tile_browser(binary, artifacts, temporary, "nested-strokes",
                                ready="data-nested-pattern-ready")
         check_svg_tile_browser(binary, artifacts, temporary, "nested-non-scaling-strokes")

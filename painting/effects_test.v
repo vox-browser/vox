@@ -88,10 +88,38 @@ fn test_source_color_matrix_classifies_positive_alpha_bias() {
 			nodes: [GfxFilterNode{kind: 'color-matrix', input_ids: [-1], matrix: values}]
 			root_id: 0
 		}
-		matrix := filter.source_color_matrix() or { panic('expected a source color matrix') }
-		assert !matrix.preserves_alpha
-		assert matrix.values[19] == f32(bias)
-		assert matrix.fills_clear_pixels() == (bias > 0)
+		effect := filter.source_color_filter() or { panic('expected a source color matrix') }
+		assert !effect.preserves_alpha()
+		assert effect.fills_clear_pixels() == (bias > 0)
+		if effect is SVGSourceColorMatrix {
+			assert effect.values[19] == f32(bias)
+		} else {
+			assert false
+		}
+	}
+}
+
+fn test_source_color_table_retains_missing_channels_and_alpha_coverage() {
+	mut values := []u8{len: 256, init: u8(index)}
+	values[0] = 153
+	filter := GfxFilter{
+		nodes: [
+			GfxFilterNode{
+				kind: 'color-table'
+				input_ids: [-1]
+				color_tables: [GfxFilterColorTable{channel: 'alpha', values: values}]
+			},
+		]
+		root_id: 0
+	}
+	effect := filter.source_color_filter() or { panic('expected a source color table') }
+	assert effect.fills_clear_pixels()
+	assert !effect.preserves_alpha()
+	if effect is SVGSourceColorTable {
+		assert effect.channels[0].len == 0
+		assert effect.channels[3][0] == 153
+	} else {
+		assert false
 	}
 }
 

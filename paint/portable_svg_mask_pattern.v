@@ -71,7 +71,7 @@ fn portable_svg_mask_pattern_info(style &painting.SVGPatternPaintStyle, limit in
 		if operation.kind == .begin_filter {
 			filter := operation.filter?
 			if filter.opacity_filter_amount() == none {
-				filter.source_color_matrix()?
+				filter.source_color_node()?
 			}
 		}
 		has_images = has_images || (operation.kind == .image && operation.opacity != 0)
@@ -89,7 +89,7 @@ fn portable_svg_mask_pattern_info(style &painting.SVGPatternPaintStyle, limit in
 	return PortableSVGMaskPatternInfo{count, has_images}
 }
 
-fn svg_pattern_color_matrix_crop(filter &layout.PaintSVGMaskColorMatrix, width int, height int) ?painting.IntRect {
+fn svg_pattern_color_filter_crop(filter &layout.PaintSVGMaskColorFilter, width int, height int) ?painting.IntRect {
 	full := painting.IntRect{0, 0, width, height}
 	if rect := filter.bounds {
 		if ![rect.x, rect.y, rect.right(), rect.bottom()]!.all(math.is_finite(it)) { return none }
@@ -125,17 +125,27 @@ fn clear_svg_pattern_outside_crop(mut layer PortableSVGMaskLayer, width int, cro
 	}
 }
 
-fn apply_svg_pattern_color_matrix(mut layer PortableSVGMaskLayer, width int, height int,
-	filter &layout.PaintSVGMaskColorMatrix, retain_color bool) bool {
-	crop := svg_pattern_color_matrix_crop(filter, width, height) or { return false }
-	fills_clear := filter.matrix.fills_clear_pixels()
-	// Clearing before a matrix that preserves transparency avoids filtering
-	// pixels outside the crop. A positive alpha bias requires a final clip.
+fn apply_svg_pattern_color_filter(mut layer PortableSVGMaskLayer, width int, height int,
+	filter &layout.PaintSVGMaskColorFilter, retain_color bool) bool {
+	crop := svg_pattern_color_filter_crop(filter, width, height) or { return false }
+	effect := filter.effect
+	fills_clear := effect.fills_clear_pixels()
+	// Filter only the retained crop. A filter that gives transparent black
+	// coverage needs the crop applied after evaluation.
 	if !fills_clear { clear_svg_pattern_outside_crop(mut layer, width, crop) }
-	if retain_color && !cpuraster.apply_canvas_color_matrix_in_place(mut layer.pixels, width,
-		layer.rows.height(), cpuraster.MatrixColorFilter{matrix: filter.matrix.values, clamp: true},
-		filter.matrix.linear_rgb) {
-		return false
+	if retain_color {
+		applied := match effect {
+			painting.SVGSourceColorMatrix {
+				cpuraster.apply_canvas_color_matrix_in_place(mut layer.pixels, width,
+					layer.rows.height(), cpuraster.MatrixColorFilter{matrix: effect.values, clamp: true},
+					effect.linear_rgb)
+			}
+			painting.SVGSourceColorTable {
+				cpuraster.apply_canvas_color_table_in_place(mut layer.pixels, width,
+					layer.rows.height(), effect.channels, effect.linear_rgb)
+			}
+		}
+		if !applied { return false }
 	}
 	if fills_clear { clear_svg_pattern_outside_crop(mut layer, width, crop) }
 	return true
@@ -163,10 +173,10 @@ fn (mut app BrowserApp) raster_svg_mask_pattern(style &painting.SVGPatternPaintS
 	// system. The shader maps the raster back to the exact SVG cell period.
 	operations := layout.compatibility_lower_svg_mask_operations(list.operations,
 		[sx, 0.0, 0.0, sy, 0.0, 0.0]!, true)
-	// A matrix can read RGB to compute alpha. Keep the source colors,
+	// A filter can read RGB to compute alpha. Keep the source colors,
 	// including nested paint, even when the destination samples alpha alone.
-	retain_color := luminance || operations.any(it.color_matrix != unsafe { nil }
-		&& !it.color_matrix.matrix.preserves_alpha)
+	retain_color := luminance || operations.any(it.color_filter != unsafe { nil }
+		&& !it.color_filter.effect.preserves_alpha())
 	mask := layout.PaintClip{mask_operations: operations, mask_luminance: retain_color}
 	if !portable_svg_content_mask_supported(&mask, true) { return none }
 	local := multiply_paint_transforms(pattern_transform, [1 / sx, 0.0, 0.0, 1 / sy, tile.x, tile.y]!)
