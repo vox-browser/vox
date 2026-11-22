@@ -2434,6 +2434,68 @@ the corrected checks and the timing guard exited zero.
 These timings measure stationary software replay. Windows runtime
 pixels and hardware frame timing remain open.
 
+### Standalone SVG pattern tiles on macOS
+
+In `074797eb1`, the shared rasterizer accepts eligible standalone
+vector and mixed bitmap tiles in the macOS foreground and mask
+routes. Existing allocation and operation limits govern selection.
+The single-image fast path still runs first for eligible foreground
+fills. A color-matrix fixture stayed on the native
+filter route and matched the previous build pixel for pixel.
+
+The standalone vector fixture uses one tile for a fill and a
+translated stroke. Its original document matched the native
+baseline at 1× and 2×. The candidate reused the filled tile to
+paint the stroke and created a new cache key for a live color edit
+at both densities. The mixed bitmap fixture drew uncached tiles
+while waiting for the image, then reused a keyed tile after decode.
+Its scaling stroke measured six CSS pixels at both densities. Both
+fixtures passed Linux cache-on and cache-off pixel checks.
+
+The edited vector and delayed bitmap 256 × 108 crops matched across
+macOS and Linux pixel for pixel at 1×. Their RGB SHA-256 values were
+`3049f269ca39d64b4362be6c4400ea239e287abf67bb077f5b7451d1794ffe26`
+and `83f4028572a4d112dc80caf090c898b552559688072147004d6941f86abb0a78`.
+Their input SHA-256 values were
+`ff5eaf8e58d922f0fef65bd83e7935b99ee6ec2666600e52597b162dcf63a60e`
+and `15a2f264f95800ed3c1e73a8f7a211f3552c463610e248c737271abbe7011b31`,
+respectively. The Linux ARM64 check used V `5a39a4d`, single-unit
+Clang `-O0` and Boehm GC, with executable SHA-256
+`2107e2b5fa6cbd55427d17cfcbabd4d6cf7acf681f8894b0519eb62277195e80`.
+Nested, three-level, delayed image, and non-scaling stroke checks
+passed. The 23 smoke-driver unit tests and Windows D3D11 and OpenGL
+source checks passed.
+
+Both macOS timing builds used V `d79ca45`, prealloc and single-unit
+C `-prod -no-prod-options`. Their baseline and candidate executable
+SHA-256 values were
+`1164cbd66c702350df5a71e2ef8b455998f1d4e1f7d7e1cc72474b0f711b476d`
+and `81d455ce72f6d225999737d1cf0ad39a46ec2d9c803de5957808f7cb39671ede`.
+Two alternating pairs replayed 20 fills and 20 strokes with the
+same tile at different positions. The generated fixture SHA-256 was
+`803e90d6f28787b725090095873f82ecaa289908d0dc3448467f58d1f1c4d59f`.
+Each 1024 × 600 viewport at 1× used a fresh profile and cache.
+JavaScript and whole-frame raster reuse were disabled. Each trial
+ran 48 synthetic idle callbacks with 42 paint commands at scroll
+offset zero after a one-second settle. The candidate diagnostic
+recorded 1,880 shared cache hits between the first and last callbacks.
+The baseline diagnostic recorded zero. The timed runs disabled tile
+logging. Host one-minute load ranged from 6.24 to 6.56 across 18
+logical CPUs.
+
+All six document captures had RGBA SHA-256
+`8d5b5d389cab13d6163e2cc2088875fd1e74054e197e7c0326e3b6bc8238da98`.
+Executable, bundled library and fixture hashes stayed fixed.
+The builds, browser processes and memory guards exited zero.
+
+| Pair | Native / shared median replay, ms | Native / shared p95, ms | Native / shared maximum, ms | Native / shared median allocated KiB |
+| --- | ---: | ---: | ---: | ---: |
+| 1 | 0.804 / 0.716 | 0.863 / 0.771 | 0.871 / 0.786 | 3 / 3 |
+| 2 | 0.790 / 0.718 | 0.843 / 0.766 | 0.873 / 0.810 | 3 / 3 |
+
+These results cover stationary software replay. Windows runtime
+pixels and hardware frame timing remain open for this change.
+
 ## Sharing the portable SVG fallback with Windows
 
 The standard Windows D3D11 window now uses the same CPU raster and GG texture
