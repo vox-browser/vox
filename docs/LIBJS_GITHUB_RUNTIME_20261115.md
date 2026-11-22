@@ -11710,3 +11710,60 @@ chooses ciphers in its own order.
   built their items, 15,965 repeated an earlier run with the same constraints
   in the same pass; about 9,900 of those were in contexts whose inputs could
   be collected (main state 6,274, measurements 3,648).
+
+**Measured on bundles `5125e515` (descendant reuse) and `014af799` (generated inline inputs).**
+- `78fe4e3f8` keeps the boxes of clean descendants when an in-place update
+  builds an element again (`VOX_DISABLE_IN_PLACE_DESCENDANT_REUSE=1` is the
+  control). Boxes built for existing elements on one load:
+
+  | Arm | display | escalated | restyled | flagged | pseudo | kept | nodes laid out without committed values |
+  | --- | --- | --- | --- | --- | --- | --- | --- |
+  | reuse | 28 | 457 | 19 | 196 | 24 | 1,594 | 3,171 |
+  | control | 1,091 | 770 | 419 | 196 | 38 | 0 | 6,342 |
+
+  Subtrees restored from committed layout rose from 1,318 to 1,791. A 7-pair
+  cohort, 2 px in every Vox run, gave medians of 20.541B (reuse), 20.643B
+  (control) and 20.820B (Brave); main process 19.930B vs 20.030B. Pair
+  deltas ran from −594M to +712M: runs fall near either 20.1B or 20.7B, so
+  the −101M median difference is within that spread.
+- Correction to the inline-run repeats above: the diagnostic counted contexts
+  holding only discarded white space, which return before building any item.
+  With those separated and each run's calling-thread instructions summed
+  (`cbf64c18e`, `608db2a90`), one load spends 917M in runs that build items
+  (nested runs counted in their outer run too):
+
+  | Runs | Count | Instructions |
+  | --- | --- | --- |
+  | first run of a context and constraint in its state | — | 640M |
+  | white-space-only contexts | — | 29M |
+  | repeats in the same state | 3,478 | about 250M |
+
+  The repeats are contexts the retained caches reject: atomic inlines in the
+  main state (357 runs, 85M) and in measurements (73, 18M), generated
+  content in the main state (1,780, 101M), table-cell roots (367, 17M), SVG,
+  replaced and inline-block content (under 30M together). Collectable plain
+  contexts do not repeat.
+- The repeated contexts were not what retained inline lines reject in
+  general. With the generated node described (`5e669ef16`, `ce2dc2b52`),
+  the main-state "generated" repeats were outside list markers, whose list
+  items the committed layout rejected as roots, although measurements reuse
+  them. `6e6d3d8a2` accepts generated content from authored strings and
+  `attr()` (`VOX_DISABLE_GENERATED_INLINE_REUSE=1`); `be3438ece` and
+  `9eecb4366` let committed layouts retain list-item, outside-marker and
+  table-cell roots under the measurement path's closed-root rule
+  (`VOX_DISABLE_COMMITTED_LIST_AND_CELL_INLINE_REUSE=1`). One load then
+  spends 785M in runs that build items, against 919M, with 126M of
+  same-state repeats left: atomic inlines 84M, SVG and replaced content
+  most of the rest.
+- A 7-pair cohort on bundle `85d92b56` (both controls against neither), 2 px
+  in every Vox run:
+
+  | Arm | Median | Min | Max | Main process median |
+  | --- | --- | --- | --- | --- |
+  | candidate | 19.966B | 19.850B | 20.260B | 19.362B |
+  | control | 20.245B | 19.934B | 20.547B | 19.640B |
+  | Brave | 20.571B | 20.433B | 21.158B | — |
+
+  Pair deltas were −582M, +168M, −568M, −333M, −81M, −84M and −165M. Every
+  candidate run used fewer instructions than every Brave run; the 10%
+  criterion (`10 * max(Vox) <= 9 * min(Brave)`) is not met.
