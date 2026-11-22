@@ -779,10 +779,16 @@ fn scroll_raster_frame_keys_with_scrollbars(commands []layout.PaintCommand, scro
 				keys[begin].has_ink = true
 				keys[begin].ink = rect
 			}
-			// A group end writes nothing of its own; its begin carries the
-			// group's damage. Keep it bounded so an entering group reconciles.
-			key.has_ink = true
-			key.ink = layout.LayoutRect{0, 0, 0, 0}
+			// A group end composites the group: a change to it alone, or a
+			// move in paint order, damages the group's extent like its begin.
+			// raster_group_end_ink.v keeps the former empty ink as a control.
+			if retain_empty_group_end_ink {
+				key.has_ink = true
+				key.ink = layout.LayoutRect{0, 0, 0, 0}
+			} else if rect := group {
+				key.has_ink = true
+				key.ink = rect
+			}
 			keys[index] = key
 			if begins.len > 0 {
 				if !disable_stationary_filter_reuse {
