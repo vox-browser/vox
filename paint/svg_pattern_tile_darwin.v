@@ -11,7 +11,7 @@ fn (mut app BrowserApp) prepare_shared_svg_pattern_tile(style &painting.SVGPatte
 	transform [6]f64, content_mask bool) bool {
 	list := style.tile_display_list or { return false }
 	if list.operations.len > 64 || !list.operations.any(it.has_stroke && it.non_scaling_stroke)
-		|| !portable_svg_mask_pattern_supported(style) || list.operations.any(it.kind == .image) {
+		|| !portable_svg_mask_pattern_supported(style) {
 		return false
 	}
 	scale := C.native_shared_svg_pattern_scale(i32(content_mask))
@@ -27,7 +27,28 @@ fn (mut app BrowserApp) prepare_shared_svg_pattern_tile(style &painting.SVGPatte
 		for axis in 0 .. 4 {
 			key = (key ^ u64(math.f32_bits(matrix[axis]))) * u64(1099511628211)
 		}
-		if C.native_reuse_shared_svg_pattern_tile(key) != 0 {
+		// The display list identifies image URLs. Include the decoded image
+		// slots so a resource update cannot reuse a tile's earlier pixels.
+		mut image_scope := false
+		for index in 0 .. list.operations.len {
+			operation := &list.operations[index]
+			if operation.kind != .image || operation.opacity == 0 { continue }
+			if !image_scope {
+				if app.document == unsafe { nil } {
+					key = 0
+					break
+				}
+				key = (key ^ u64(app.document.unique_id().value())) * u64(1099511628211)
+				key = (key ^ u64(voidptr(app.ctx))) * u64(1099511628211)
+				image_scope = true
+			}
+			image := app.background_image(operation.image_url) or {
+				key = 0
+				break
+			}
+			key = (key ^ u64(image.id)) * u64(1099511628211)
+		}
+		if key != 0 && C.native_reuse_shared_svg_pattern_tile(key) != 0 {
 			if portable_svg_raster_diagnostics { eprintln('VOX_SHARED_SVG_TILE cache=hit key=${key}') }
 			return true
 		}

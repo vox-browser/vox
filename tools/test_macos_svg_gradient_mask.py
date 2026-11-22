@@ -1,15 +1,20 @@
 #!/usr/bin/env python3
 """Compare shared and Quartz SVG mask rendering in fresh macOS windows."""
 import argparse
+import base64
+import functools
 import hashlib
+import http.server
 import json
 import os
 from pathlib import Path
 import re
 import subprocess
 import tempfile
+import threading
+import time
 
-from test_linux_browser import check_svg_mask_gradient_pixels, rendered_png_rows
+from test_linux_browser import Handler, check_svg_mask_gradient_pixels, rendered_png_rows
 
 
 def digest(path):
@@ -533,20 +538,78 @@ def check_non_scaling_pattern_tiles(binary, fixture, directory):
     print("PASS: macOS shared SVG tile pixels and live vector effect")
 
 
+def check_pattern_tile_with_delayed_image(binary, fixture, directory):
+    source = directory / "site"
+    source.mkdir()
+    (source / fixture.name).write_bytes(fixture.read_bytes())
+    (source / "tile.png").write_bytes(base64.b64decode(
+        "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR4nGNgYPj/HwADAgH/5ncLrgAAAABJRU5ErkJggg=="))
+
+    class DelayedTile(Handler):
+        def do_GET(self):
+            if self.path == "/tile.png":
+                time.sleep(0.5)
+            super().do_GET()
+
+    white, green, blue = (255, 255, 255), (0, 255, 0), (0, 0, 255)
+    with http.server.ThreadingHTTPServer(("127.0.0.1", 0),
+                                         functools.partial(DelayedTile, directory=source)) as server:
+        thread = threading.Thread(target=server.serve_forever, daemon=True)
+        thread.start()
+        url = f"http://127.0.0.1:{server.server_port}/{fixture.name}"
+        try:
+            for scale in (1, 2):
+                data, log = capture_document(binary, url, directory / f"pattern-image-{scale}x", {
+                    "LADYBIRD_SCREENSHOT_SCALE": str(scale),
+                    "LADYBIRD_SCREENSHOT_DELAY_SECONDS": "1.2",
+                    "NO_PROXY": "127.0.0.1",
+                    "no_proxy": "127.0.0.1",
+                    "VOX_GG_SVG_DIAGNOSTICS": "1",
+                })
+                width, height, channels, rows = rendered_png_rows(data)
+                assert (width, height) == (1024 * scale, 600 * scale)
+                assert rows[4 * scale][4 * scale * channels:4 * scale * channels + 3] == bytes.fromhex("34b786")
+                center = 10 * scale
+                samples = (
+                    (1, center - 4, white), (1, center - 3, green),
+                    (1, center + 2, green), (1, center + 3, white),
+                    (2 * scale, 16 * scale, blue), (10 * scale, 16 * scale, white),
+                    (22 * scale, 36 * scale, blue), (21 * scale, 30 * scale, green),
+                )
+                for x, y, expected in samples:
+                    row = rows[8 * scale + y]
+                    actual = tuple(row[x * channels:x * channels + 3])
+                    assert actual == expected, (scale, x, y, actual, expected)
+                misses = re.findall(r"^VOX_SHARED_SVG_TILE cache=miss key=(\d+) ", log, re.M)
+                hits = re.findall(r"^VOX_SHARED_SVG_TILE cache=hit key=(\d+)$", log, re.M)
+                assert misses and misses[0] == "0" and hits and hits[0] in misses[1:], log
+        finally:
+            server.shutdown()
+            thread.join()
+    print("PASS: macOS shared SVG tiles preserve delayed bitmap content and device stroke width")
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("binary", type=Path)
-    parser.add_argument("--pattern-strokes-only", action="store_true")
+    patterns = parser.add_mutually_exclusive_group()
+    patterns.add_argument("--pattern-strokes-only", action="store_true")
+    patterns.add_argument("--pattern-images-only", action="store_true")
     args = parser.parse_args()
     binary = args.binary.resolve()
     root = Path(__file__).resolve().parents[1]
     fixture = root / "Tests/Browser/Native/svg-gradient-masks.html"
-    if args.pattern_strokes_only:
-        pattern = fixture.with_name("svg-pattern-tile-non-scaling-strokes.html")
+    if args.pattern_strokes_only or args.pattern_images_only:
+        if args.pattern_strokes_only:
+            pattern = fixture.with_name("svg-pattern-tile-non-scaling-strokes.html")
+            check_pattern = check_non_scaling_pattern_tiles
+        else:
+            pattern = fixture.with_name("svg-pattern-tile-image-strokes.html")
+            check_pattern = check_pattern_tile_with_delayed_image
         inputs = [binary, pattern, *binary.parent.glob("lib*.dylib")]
         digests = {path: digest(path) for path in inputs}
         with tempfile.TemporaryDirectory(prefix="vox-svg-pattern-") as temporary:
-            check_non_scaling_pattern_tiles(binary, pattern, Path(temporary))
+            check_pattern(binary, pattern, Path(temporary))
         assert {path: digest(path) for path in inputs} == digests
         return
     mutation = fixture.with_name("svg-gradient-mask-mutation.html")
