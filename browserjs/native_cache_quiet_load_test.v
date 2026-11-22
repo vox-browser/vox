@@ -66,15 +66,19 @@ fn check_native_cache_with_blocked_compiler(close_while_compiling bool) ! {
 	compiler := os.join_path(directory, 'compiler')
 	started := os.join_path(directory, 'started')
 	release := os.join_path(directory, 'release')
-	os.write_file(compiler, '#!/bin/sh\n'
-		+ 'touch ' + os.quoted_path(started) + '\n'
-		+ 'attempts=0\n'
-		+ 'while [ ! -e ' + os.quoted_path(release) + ' ]; do\n'
-		+ '    attempts=$((attempts + 1))\n'
-		+ '    [ "$attempts" -lt 250 ] || exit 3\n'
-		+ '    sleep 0.02\n'
-		+ 'done\n'
-		+ 'exec clang "$@"\n')!
+	compiler_script := [
+		'#!/bin/sh',
+		'touch ' + os.quoted_path(started),
+		'attempts=0',
+		'while [ ! -e ' + os.quoted_path(release) + ' ]; do',
+		'    attempts=$((attempts + 1))',
+		'    [ "$attempts" -lt 250 ] || exit 3',
+		'    sleep 0.02',
+		'done',
+		'exec clang "$@"',
+		'',
+	].join('\n')
+	os.write_file(compiler, compiler_script)!
 	os.chmod(compiler, 0o755)!
 	previous_cache := os.getenv_opt('VOX_LIBJS_NATIVE_CACHE')
 	previous_compiler := os.getenv_opt('VOX_LIBJS_NATIVE_COMPILER')
