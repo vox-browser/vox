@@ -458,7 +458,9 @@ fn chromium_layerize_visible_paint_chunks(result &DocumentLayoutResult,
 			return
 		}
 	}
+	metadata_stage := processmetrics.begin_thread_instruction_substage('layerize_metadata')
 	metadata_mode := chromium_collect_paint_metadata(result, commands, cull, mut scratch)
+	metadata_stage.finish()
 	if metadata_mode == .none {
 		chromium_layerize_chunks_into(scratch.chunks, commands.len, scale, mut plan, mut scratch.layer_states)
 		return
@@ -468,6 +470,7 @@ fn chromium_layerize_visible_paint_chunks(result &DocumentLayoutResult,
 		return
 	}
 	plan.has_paint_metadata = metadata_mode == .geometry
+	append_stage := processmetrics.begin_thread_instruction_substage('layerize_append')
 	scratch.paint_chunks.clear()
 	scratch.paint_chunk_contexts.clear()
 	scratch.command_chunk_groups.clear()
@@ -517,11 +520,16 @@ fn chromium_layerize_visible_paint_chunks(result &DocumentLayoutResult,
 	}
 	// Layerize geometry first. Group IDs retain disjoint command spans without
 	// copying a command vector for every chunk or filling in culled gaps.
+	append_stage.finish()
+	merge_stage := processmetrics.begin_thread_instruction_substage('layerize_merge')
 	chromium_layerize_chunks_into(scratch.paint_chunks, scratch.paint_chunks.len,
 		scale, mut plan, mut scratch.layer_states)
+	merge_stage.finish()
 	scratch.paint_chunk_layers.clear()
 	scratch.paint_chunk_layers << plan.command_layers
+	clips_stage := processmetrics.begin_thread_instruction_substage('layerize_picture_clips')
 	chromium_record_picture_clip_states(result, commands, mut scratch, mut plan)
+	clips_stage.finish()
 	plan.has_picture_clip_metadata = true
 	if metadata_mode == .clipping {
 		// Clip ancestry is useful independently of hit-test raster geometry.
