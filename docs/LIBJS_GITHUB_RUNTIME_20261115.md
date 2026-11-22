@@ -11537,3 +11537,21 @@ median is below Brave's (ratio 0.98); the conservative highest-Vox to
 lowest-Brave ratio is 1.03, so the spread of Vox runs (mostly the number of
 `pulse-in` frames before capture) still keeps the bound above parity.
 
+**What sets the upper tail.** Diagnostic loads on bundle `fd524cb06`
+correlate the spread of Vox runs with two timing effects. The sponsor
+heart's `.anim-pulse-in` (0.5 s `scale3d`) produced 0 to 16 main-thread
+frames before capture; loads without them measured 20.19-20.49B, loads
+with 16 measured 21.09-21.58B (roughly 40-55M per frame). Brave runs that
+transform animation on its compositor. Each such frame re-records the
+display list, hashes every command's retained-raster key (about 6.2M
+stage-logged) and rebuilds the Chromium raster layer plan (6.6-7.4M, 80%
+of it in layerization, `ad5eec55b`). Separately, how page work batches
+into rendering updates varies: one slow load ran 11 layout passes where
+another ran 5, and each extra pass is a complete pass of 15-30 ms even for
+one changed node (an image switching to alt text, a removed span).
+
+JSC tier-up thresholds are not a lever: an earlier Baseline JIT
+(`JSC_thresholdForJITAfterWarmUp=100`) measured 21.05B and an earlier DFG
+22.36B against 20.76B default (5 runs each); a later JIT and a disabled DFG
+stayed within noise of the default (20.65B, 20.35B vs 20.19B).
+
