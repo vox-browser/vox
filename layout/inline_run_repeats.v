@@ -20,9 +20,9 @@ __global inline_run_repeat_seen_in_state map[string]bool
 __global inline_run_repeat_counts [6]u64
 
 __global inline_run_repeat_kinds map[string]u64
-// Calling-thread instructions of the runs of each kind ('first' for runs
-// that repeat nothing in their state), nested runs included in their outer
-// run's cost too.
+// Calling-thread instructions of the runs of each kind ('first:' for runs
+// that repeat nothing in their state, by content), nested runs included in
+// their outer run's cost too.
 __global inline_run_repeat_costs map[string]u64
 
 // The kind of a run starting now, for note_inline_run_cost().
@@ -46,7 +46,11 @@ fn note_uncached_inline_run(state &LayoutState, containing_block &BlockContainer
 	mut kind := 'first'
 	if inline_context_has_only_discarded_text(containing_block) {
 		kind = 'discarded'
-	} else if state_text in inline_run_repeat_seen_in_state {
+	} else if state_text !in inline_run_repeat_seen_in_state {
+		blocker := inline_run_blocker(unsafe { &Node(containing_block) }, true)
+		kind = 'first:${if measurement { 'measurement' } else { 'main' }}:${blocker}'
+		inline_run_repeat_kinds[kind]++
+	} else {
 		blocker := inline_run_blocker(unsafe { &Node(containing_block) }, true)
 		detail := if blocker == 'plain' { inline_run_collect_failure(unsafe { &Node(containing_block) }, true) } else { blocker }
 		miss := inline_run_cache_miss(state, containing_block, used, mode, space, width_only, context)
