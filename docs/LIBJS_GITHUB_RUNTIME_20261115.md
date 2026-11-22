@@ -11616,3 +11616,21 @@ running the filter engine.
   table record, `viewBox`/path re-parsing, the style-computer hook checks)
   come from rebuilding every layout node. Each has at most 3 samples on
   the real page, where layout nodes and their caches persist.
+
+**TLS library.** The macOS system libcurl (8.7.1, LibreSSL 3.3.6) runs
+AES-GCM in portable C. A local benchmark measured each library's client
+instructions: a C client loaded the library, then downloaded 160 MB five
+times from a Python `ssl` server configured like the replay server.
+
+| Library | Instructions per MB | Fixed per process | Notes |
+| --- | --- | --- | --- |
+| System, LibreSSL | 25.9M | about 26M | |
+| Homebrew curl 8.23, OpenSSL 4.1 | 14.2M | about 93M | its dependencies are outside the dyld shared cache |
+| System, SecureTransport | 7.4M | about 39M | about 3x slower to transfer, TLS 1.2 only, needs `serverAuth` certificates |
+
+The replay serves 160 responses totalling 10.4 MB per load. Homebrew curl
+(`72544becc`, with SecTrust verification through `CURLSSLOPT_NATIVE_CA`)
+would therefore save only about 55M on this page, and make every page
+under about 6 MB slower (Hacker News by about 4%), so `4a04a85f8` reverted
+it. Preferring ChaCha20 does not help: the replay server, like most servers,
+chooses ciphers in its own order.
