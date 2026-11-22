@@ -1805,6 +1805,57 @@ Production window parity and performance await a bundle containing the
 change. Non-scaling strokes inside a repeating tile still require
 geometry that accounts for the tile-to-device transform.
 
+## Non-scaling strokes inside shared SVG pattern tiles
+
+In `b253d68b6`, the portable tile renderer includes the linear
+part of the tile-to-device transform when it constructs non-scaling
+strokes. The stroke width, dash lengths, and phase are in device
+coordinates. The renderer maps the outline back into the tile bitmap
+for clipping and retains the paint's original placement. All copies
+of the tile use the same stroke geometry across scroll offsets.
+
+The [fixture](../Tests/Browser/Native/svg-pattern-tile-non-scaling-strokes.html)
+checks six device pixels of width in a half-size tile, preserved
+gradient colors in an enlarged tile inside a luminance mask, and dash
+spacing along a sheared stroke inside an alpha mask. JavaScript edits
+the first tile's vector effect after 12 frames. The cached CPU, uncached,
+GG-enabled, and viewport recording reuse captures matched in all
+800 × 516 document pixels. The fixture and decoded RGB SHA-256 values
+were `e6e4707d3d16b9839364a14667f700bd368e28d4e1f9a02e3d04e2e45a2d0b37`
+and `ffc01f015a05c64070946775265276eb0e852daab9e53a8212dc2db2908ecef2`.
+Eight neighboring Linux window checks and 21 smoke-driver unit tests
+passed. The macOS, Windows D3D11, and Windows OpenGL source checks
+also passed.
+
+Two alternating software replay pairs used the same Linux ARM64
+executable with V `5a39a4d` and single-unit Clang `-O0`. The executable
+SHA-256 was
+`e2dc9e66c16ca192fcee88f31ecb28c494eca2b8d7ff6e67c1aea5ab70f96837`.
+Each run used a fresh private profile and cache, an 800 × 600 Xvfb
+window, and one Mesa software worker. The 48 synthetic idle callbacks
+followed a one-second settle period. JavaScript and GG Canvas SVG path
+replay were disabled, so the first tile retained its scaling stroke
+and the two masked tiles exercised non-scaling strokes. Each run recorded nine paint commands per callback and a
+stationary scroll offset. The decoded RGB SHA-256 was
+`ca73eeca15f44800e674c3c83fe4f2f0792db368ea7e90e4733030873eaa623d`.
+Separate diagnostics found two mask rasters per complete uncached
+interval and three texture hits per cached interval.
+
+| Pair | Uncached / cached median replay, ms | Uncached / cached p95 and maximum, ms | Uncached / cached median allocated KiB |
+| --- | ---: | ---: | ---: |
+| 1 | 91.300 / 1.325 | 252.904, 358.216 / 23.185, 62.318 | 518.5 / 120 |
+| 2 | 71.385 / 1.409 | 127.957, 132.112 / 14.670, 27.926 | 518.5 / 119 |
+
+The four-vCPU guest's one-minute load ranged from 0.90 to 1.31
+during timing. The 18-CPU host's one-minute load reached 228.25
+during verification. These measurements cover software replay with
+and without cache reuse in the same build.
+
+The Linux build, browser processes, and guards exited zero, and
+fixture, library, and executable hashes stayed fixed. Production
+performance, Windows runtime pixels, and the macOS native pattern tile
+path remain open.
+
 ## Sharing the portable SVG fallback with Windows
 
 The standard Windows D3D11 window now uses the same CPU raster and GG texture
