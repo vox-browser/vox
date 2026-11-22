@@ -1760,9 +1760,50 @@ guards exited zero. The four-vCPU guest's one-minute load ranged from
 1.12 to 1.17 during timing. The 18-CPU host's one-minute load was over
 100 during verification. These measurements cover cached and uncached
 software replay in the same build. Production performance and Windows
-runtime pixels remain unverified. The macOS Quartz resource fallback
-and non-scaling strokes used to paint a repeating tile still need the
-corresponding geometry handling.
+runtime pixels remain unverified. At this revision the macOS resource
+fallback and the paths used to paint a repeating tile still treated
+these as ordinary scaling strokes.
+
+## Non-scaling strokes in macOS SVG masks
+
+In `867ebb617`, macOS forwards the vector effect on solid
+mask strokes to the existing GG path rasterizer. Quartz draws dashed
+and painted strokes in backing-pixel coordinates. The gradient and
+pattern paint then use the original SVG transform. The gradient clip
+bounds cover the stroke caps for repeating and reflected paint.
+
+The published single-unit bundle `6209346d8`, executable SHA-256
+`a92b702d32ab26cf7835f2d4b148a39c8cca22f7ca841ede9542820d4a24a034`,
+reproduced the difference in a fresh 1024 × 600, 1× document
+capture of the [stroke fixture](../Tests/Browser/Native/svg-mask-non-scaling-strokes.html).
+After the scripted edit, the old bundle drew blue through the
+expected alpha dash gap at (43, 56) and left the reduced pattern
+stroke's sample at (194, 53) white. The process and guard exited zero.
+
+The focused CoreGraphics pattern test passed at 1× and 2× with
+Clang `-O2`, ASan, and UBSan. The offscreen driver exercised the actual
+solid, linear, and radial mask functions with a bitmap context. It
+checked six device pixels of stroke width and the same dash spacing
+at both scales, paint order, and pad, repeat, and reflect colors within
+one byte of the corresponding gradient fill. A stub recorded the GG
+descriptor and declined so the solid fallback also executed. The
+separate GG Canvas non-scaling pixel-oracle test, native mask layer
+and luminance pixel suites, and macOS V source check passed.
+
+The ordinary dashed strokes produced identical 128 × 96 RGBA
+pixels in two alternating offscreen timing pairs. Each process
+drew 3,600 solid, linear, and radial strokes after 90 warm-up
+draws, with no browser or window. Both variants were compiled
+into the same Clang `-O2` executable, SHA-256
+`28c9897d38382c4b6192d1d3665c557a22ded67e7d6b1880a667f7a525c31a68`.
+Thread CPU times before and after were 31.351/31.823 ms and
+31.105/31.022 ms. The 18-CPU host's one-minute load was 95.65.
+The inputs stayed fixed and the guards exited zero. The RGBA SHA-256
+in all four trials was
+`897157cdbe3f389876ebe0ddc61ed4694c03e9a4a09737a60bc3294378998278`.
+Production window parity and performance await a bundle containing the
+change. Non-scaling strokes inside a repeating tile still require
+geometry that accounts for the tile-to-device transform.
 
 ## Sharing the portable SVG fallback with Windows
 
