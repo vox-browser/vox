@@ -503,6 +503,29 @@ fn compatibility_scroll_snap_edges(computed &css.ComputedProperties, used &UsedV
 	}
 }
 
+// Same-binary control: resolve scroll-margin and scroll-padding for every box.
+const retain_all_scroll_snap_edges = os.getenv('VOX_RETAIN_ALL_SCROLL_SNAP_EDGES') != ''
+
+// Scroll snapping reads a box's scroll-margin only when it is a snap area and
+// its scroll-padding only when it is a snap container (the DOM's scrollIntoView
+// margins resolve from style). Resolving both for every box of every paint
+// projection cost more than the rest of its snap data.
+fn retained_box_scroll_snap(computed &css.ComputedProperties, used &UsedValues) &BlockBoxScrollSnapData {
+	align := computed.scroll_snap_align()
+	snap_type := computed.scroll_snap_type()
+	return retained_block_box_scroll_snap(BlockBoxScrollSnapData{
+		scroll_snap_align: align
+		scroll_snap_stop: computed.scroll_snap_stop()
+		scroll_snap_type: snap_type
+		scroll_margin: if retain_all_scroll_snap_edges || has_snap_alignment(align) {
+			compatibility_scroll_snap_edges(computed, used, false)
+		} else { BoxEdges{} }
+		scroll_padding: if retain_all_scroll_snap_edges || snap_type.strictness != .none_ {
+			compatibility_scroll_snap_edges(computed, used, true)
+		} else { BoxEdges{} }
+	})
+}
+
 fn scroll_snap_edge_needs_resolution_context(value css.LengthPercentageOrAuto) bool {
 	return value.is_calculated() || (value.is_length() && !value.length().is_absolute())
 }
@@ -4560,13 +4583,7 @@ fn uncached_block_box_from_typed_layout_shallow(node &Node, state &LayoutState, 
 			backdrop_filter: backdrop_filter
 		})
 
-		scroll_snap_data: retained_block_box_scroll_snap(BlockBoxScrollSnapData{
-			scroll_snap_align: computed.scroll_snap_align()
-			scroll_snap_stop: computed.scroll_snap_stop()
-			scroll_snap_type: computed.scroll_snap_type()
-			scroll_margin: compatibility_scroll_snap_edges(computed, used, false)
-			scroll_padding: compatibility_scroll_snap_edges(computed, used, true)
-		})
+		scroll_snap_data: retained_box_scroll_snap(computed, used)
 
 		clip_data: retained_block_box_clip(BlockBoxClipData{
 			clip_decided_by_parent: retained_box_paint_payload(clip_decided_by_parent)
