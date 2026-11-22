@@ -21,7 +21,7 @@ import time
 
 fn main() {
 	if os.args.len < 2 {
-		panic('usage: benchmark_style_passes INLINE_HTML [passes] [full|insert|signatures|computed|parse] [document-url]')
+		panic('usage: benchmark_style_passes INLINE_HTML [passes] [full|insert|signatures|computed|parse|document-parse] [document-url]')
 	}
 	markup := os.read_file(os.args[1]) or { panic(err) }
 	passes := if os.args.len > 2 { os.args[2].int() } else { 10 }
@@ -44,6 +44,10 @@ fn main() {
 	}
 	if mode == 'parse' {
 		report_stylesheet_parsing(document, passes)
+		return
+	}
+	if mode == 'document-parse' {
+		report_document_stylesheet_parsing(document, passes)
 		return
 	}
 	body := document.body() or { panic('missing body') }
@@ -209,6 +213,42 @@ fn report_computed_style_digest(document &dom.Document) {
 // when it arrives (large sheets' declarations are parsed later, on first use).
 // Run with VOX_DISABLE_STYLESHEET_RULE_CACHE=1: repeated texts otherwise reuse
 // their raw rules and only conversion is measured.
+// As a browser document first parses its linked sheets: every pass parses the
+// page's sheets in order into a fresh document's native storage, which shares
+// selectors across its sheets and builds them in place.
+fn report_document_stylesheet_parsing(document &dom.Document, passes int) {
+	mut texts := []string{}
+	for element in css.query_selector_all(document.as_node(), 'style') {
+		texts << element.as_node().text_content() or { '' }
+	}
+	mut bytes := 0
+	for text in texts { bytes += text.len }
+	mut best_instructions := u64(0)
+	mut best_ns := u64(0)
+	mut rules := 0
+	for _ in 0 .. passes {
+		// A new browser process starts without cached sheet syntax.
+		css.release_unused_stylesheet_syntax()
+		mut owner := html.parse_document_with_url('<!doctype html><title>sheets</title>', dom.URL{ value: 'https://github.com/vlang/v' })
+		owner.enable_native_storage()
+		start := time.sys_mono_now()
+		before := processmetrics.thread_instruction_snapshot()
+		mut allocations := owner.enter_native_storage()
+		rules = 0
+		for text in texts {
+			sheet := css.parse_owner_style_sheet_text(owner, text, 'https://github.githubassets.com/assets/bench.css')
+			rules += sheet.rules.length()
+		}
+		allocations.finish()
+		instructions := processmetrics.thread_instruction_snapshot().since(before) or { 0 }
+		elapsed := time.sys_mono_now() - start
+		if best_instructions == 0 || instructions < best_instructions { best_instructions = instructions }
+		if best_ns == 0 || elapsed < best_ns { best_ns = elapsed }
+		owner.finalize()
+	}
+	println('mode=document-parse sheets=${texts.len} bytes=${bytes} rules=${rules} passes=${passes} best_ms=${f64(best_ns) / 1e6:.1f} best_instructions=${best_instructions} instructions_per_byte=${f64(best_instructions) / f64(bytes):.1f}')
+}
+
 fn report_stylesheet_parsing(document &dom.Document, passes int) {
 	mut texts := []string{}
 	for element in css.query_selector_all(document.as_node(), 'style') {
