@@ -125,6 +125,7 @@ mut:
 	paint_visible_effects map[u64]bool
 	perspective_owners []int
 	perspective_root_rasters []bool
+	memos ChromiumRasterPlanMemos
 }
 
 __global chromium_raster_plan_scratch_ = ChromiumRasterPlanScratch{}

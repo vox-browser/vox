@@ -148,14 +148,8 @@ fn chromium_metadata_state(box &BlockBox, result &DocumentLayoutResult,
 	// background it needs during premultiplied rasterization.
 	state.fixed_raster_owner = chromium_fixed_raster_owner(box)
 	state.fixed_raster_group = scratch.fixed_raster_groups[state.fixed_raster_owner]
-	mut ancestor := context
-	for ancestor > 0 && ancestor < result.visual_context_tree.nodes.len {
-		if u64(ancestor) in scratch.compositor_bounds {
-			state.effect_scope = u64(ancestor)
-			break
-		}
-		ancestor = result.visual_context_tree.nodes[ancestor].parent_index
-	}
+	mut memos := unsafe { &ChromiumRasterPlanMemos(&scratch.memos) }
+	state.effect_scope = memos.effect_scope(result, context, scratch.compositor_bounds)
 	return context, state
 }
 
@@ -181,8 +175,8 @@ fn chromium_paint_context_bounds(bounds LayoutRect, context int,
 	state ChromiumRasterPropertyState, result &DocumentLayoutResult) LayoutRect {
 	if state.legacy_effect || state.effect_scope != 0 || state.scroll_frame > 0
 		|| state.sticky_frame > 0 || state.fixed_to_viewport { return bounds }
-	clip := compatibility_visual_context_clip(&result.visual_context_tree, context,
-		result.scroll_state_snapshot)
+	mut scratch := unsafe { &chromium_raster_plan_scratch_ }
+	clip := scratch.memos.context_clip(result, context)
 	if !clip.has_clip { return bounds }
 	viewport := result.document.viewport_rect()
 	return compatibility_intersect_rects(bounds, LayoutRect{clip.clip.x + viewport.x,
@@ -191,6 +185,7 @@ fn chromium_paint_context_bounds(bounds LayoutRect, context int,
 
 fn chromium_collect_paint_metadata(result &DocumentLayoutResult, commands []PaintCommand,
 	cull ?LayoutRect, mut scratch ChromiumRasterPlanScratch) ChromiumPaintMetadataMode {
+	scratch.memos.begin(result.visual_context_tree.nodes.len)
 	scratch.paint_metadata.clear()
 	count := result.paint_order.len * compatibility_paint_phase_count
 	scratch.paint_phase_firsts.clear()
@@ -242,7 +237,7 @@ fn chromium_collect_paint_metadata(result &DocumentLayoutResult, commands []Pain
 				context: context
 				state:   ChromiumRasterPropertyState{ ...state, scroll_hit_test: box.own_scroll_frame_index }
 				bounds:  marker
-				client:  chromium_paint_client(box)
+				client:  scratch.memos.paint_client(box)
 			}
 			has_scroll_marker = true
 		}
@@ -253,7 +248,7 @@ fn chromium_collect_paint_metadata(result &DocumentLayoutResult, commands []Pain
 			fixed_container = unsafe { &Node(box.layout_handle) }.is_fixed_position()
 		}
 		scratch.paint_metadata << ChromiumPaintMetadata{after, context, state, bounds,
-			chromium_paint_client(box), fixed_container}
+			scratch.memos.paint_client(box), fixed_container}
 	}
 	// Use a typed stack temporary. array.reverse_in_place allocates an
 	// element-sized buffer that preallocation keeps until its arena retires.
@@ -392,7 +387,8 @@ fn chromium_chunk_context(chunk ChromiumRasterChunk, result &DocumentLayoutResul
 			}
 		}
 		if context >= 0 && context != current { return -1, 0 }
-		current_client := chromium_paint_client(box)
+		mut scratch := unsafe { &chromium_raster_plan_scratch_ }
+		current_client := scratch.memos.paint_client(box)
 		if client != 0 && client != current_client { multiple_clients = true }
 		client = current_client
 		context = current
@@ -422,6 +418,8 @@ fn chromium_paint_chunk_has_pending_image(chunk ChromiumRasterChunk, commands []
 fn chromium_layerize_visible_paint_chunks(result &DocumentLayoutResult,
 	commands []PaintCommand, cull ?LayoutRect, scale f64,
 	mut scratch ChromiumRasterPlanScratch, mut plan ChromiumRasterLayerPlan) {
+	// Metadata collection starts the per-layerization memos.
+	defer { scratch.memos.end() }
 	scratch.paint_visible_effects.clear()
 	for chunk in scratch.chunks {
 		if chunk.state.effect_scope == 0 || (!chromium_paint_chunk_is_interested(chunk, cull)
