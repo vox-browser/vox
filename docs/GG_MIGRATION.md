@@ -1940,6 +1940,60 @@ The [Windows D3D11 check](#d3d11-svg-pattern-runtime-verification)
 also passed this fixture. Production frame timings remain unmeasured
 for this change.
 
+### Bitmap content in shared macOS pattern tiles
+
+In `006e5ee70`, a tile containing both a bitmap and a non-scaling
+stroke can use the shared SVG tile rasterizer. The cache key includes
+the document, GG context, and decoded image slots for these tiles.
+While an image is pending, the vector stroke can paint and the
+partial bitmap stays out of the cache. A later draw can retain the
+completed tile.
+
+The earlier single-unit production executable, SHA-256
+`7e40e05b73654f1d20a456bb1464945ebc1dc1a393e704b03d09b18446fc4951`,
+drew a three-pixel green stripe in the 1× mixed-tile fixture. The
+six-pixel check failed at the upper edge, and the delayed blue image
+was missing in both sampled repeats. Browser PID 96198 exited zero.
+The macOS V source check and the CoreGraphics pattern tests under
+ASan and UBSan passed.
+
+The first candidate captured the completed bitmap with the same
+three-pixel stroke. Its log showed a shared tile while the image was
+pending. After decoding, the rasterizer's channel check rejected the
+native PNG row marker and returned to Quartz.
+
+In `936131aaa`, the rasterizer accepts top-down straight and
+premultiplied native RGBA and forwards their alpha representation
+to the shared bitmap sampler. Images that require native color
+conversion use the native painter. The source check, native ICC and
+retagging checks under ASan and UBSan, and Linux ARM64 canvas image
+tests passed. The available Linux browser failed to load OpenSSL
+3.2 and 3.4 symbol versions in the test guest.
+
+The final single-unit production bundle used literal V `-prod`.
+Receipt `20261122-223409-82bb5f77` pinned the shared tile adapter,
+bitmap replay and native color profile header. The executable
+SHA-256 was `23ecb7021a1829911b103a685c366e3425e3858ef0d53267a5321abdaf33a942`.
+It was built in the shared checkout with concurrent edits elsewhere.
+
+The loopback fixture delayed an asymmetric blue and red PNG by
+500 ms. Two rectangles used the same tile at different positions.
+Each density passed 11 exact color samples, including the six-pixel
+stroke edges and image row order in both rectangles. Each logged two
+uncached draws while the image was pending, one raster of the complete
+40 × 40 tile, and one cache hit for the second rectangle.
+
+| Scale | Browser PID | Document | Decoded RGBA SHA-256 |
+| --- | ---: | --- | --- |
+| 1× | 6489 | 1024 × 600 | `cd79204454fe89a152ec908daa8491c81fba4ea36f9cd24fa7ef28477d6f522f` |
+| 2× | 6508 | 2048 × 1200 | `3aea8263d85450c081b862ba544e41be79dc14ac5c77a8fda2e47a8aedff255d` |
+
+The same bundle's vector-only pattern captures, PIDs 6475 and 6480,
+matched the earlier production control at both densities. All four
+browser processes and the 3 GiB guard exited zero. The executable,
+library, and fixture hashes remained fixed within the check.
+Production frame timings remain unmeasured for the mixed tile.
+
 ## Sharing the portable SVG fallback with Windows
 
 The standard Windows D3D11 window now uses the same CPU raster and GG texture
