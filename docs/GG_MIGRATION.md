@@ -2752,6 +2752,71 @@ The timings are diagnostic because the optimization flags differed
 and the one-minute load ranged from 154.63 to 160.10 on 18 logical
 CPUs. Display timing and Windows runtime pixels remain unverified.
 
+### Positive alpha bias in SVG pattern tiles
+
+In `ea78e56e5`, a source color matrix can fill transparent pixels
+inside a whole-pixel retained crop. The tile keeps rows through
+the matrix layer and its enclosing opacity layers when the bias
+can add coverage. The crop clears any spill after the matrix.
+Matrices that preserve transparent pixels still clear before
+filtering, so the raster scan skips those pixels.
+
+The fixture uses a path without a fill to extend the retained
+rectangle past visible source ink. It checks that the matrix
+paints the empty rows, clips the result, and updates the fill,
+translated stroke, and alpha mask when its values change.
+[Regression fixture](../Tests/Browser/Native/svg-pattern-tile-color-matrix-bias.html)
+
+Fresh macOS captures passed at 1× and 2×, including the older
+matrix, nested-pattern, and opacity-filter cases. The 1× fill
+matched the published native output in both fixture states.
+Each native capture had 9,840 RGB pixel differences across
+the shifted stroke and mask because the native crop spilled
+into adjacent transparent areas. The shared crops matched
+the sample expectations on both platforms. The edited 384 × 108
+RGB crop had SHA-256
+`c6fb1f939060e72464b0d0025499ad4240189914eb1ef35bd6c42dde95628320`
+on macOS and on Linux with caching enabled and disabled.
+
+Linux Xvfb passed all four matrix fixtures with both row-band
+settings. The arm64 build used V `5a39a4d`, Boehm GC, and Clang
+`-O0`. Emitting C and then running Clang separately let
+the 6 GiB guest release the V compiler's memory between stages.
+The executable SHA-256 was
+`854ab6a53e005a94cb0676fe3e0e64322dba9b5a74bc7c0ac501404ade5d973c`.
+The CPU and painting tests, 23 smoke-driver tests, and
+Windows D3D11 and OpenGL source checks passed.
+
+Two alternating macOS pairs replayed 20 fills and 20 strokes
+with a tile-wide crop. The test used 48 stationary callbacks and
+42 commands per callback at scroll position zero. Each fresh
+process used a private profile and cache, a 1024 × 600 viewport
+at 1×, and one second to settle. JavaScript and whole-frame
+raster reuse were disabled. Separate diagnostics recorded
+1,880 shared tile hits in the candidate and zero in the native
+control between the first and last callback. The six RGBA
+document captures shared SHA-256
+`a185ce16a6535f6e7481955b481d923c9c2558fd7350f446941baf517d019d89`.
+The timing fixture SHA-256 was
+`7844a3f990d8a623b8b67769a179cfd6c7b3527c40837843fcb0ffc57076e4cd`.
+
+| Pair | Native / shared median replay, ms | Native / shared p95, ms | Native / shared maximum, ms | Native / shared median allocated KiB |
+| --- | ---: | ---: | ---: | ---: |
+| 1 | 97.131 / 1.750 | 117.918 / 2.088 | 130.540 / 3.645 | 3 / 3 |
+| 2 | 70.892 / 1.780 | 103.719 / 3.995 | 114.538 / 5.102 | 3 / 3 |
+
+Both timing builds used single-unit C and prealloc. The published
+control used literal `-prod` and had executable SHA-256
+`f35ad55c47210ecf13859efd66b30e75007d3a86667bce0a6f8254a1bd29705e`.
+The private candidate used `-prod -no-prod-options` and had
+executable SHA-256
+`166cccee524659af8dd15b68288ad55a3ff3c2d15d8acef4fc51c7b7d22e975b`.
+Input hashes stayed fixed, including the matching image library and
+adblock worker. Final browsers and guards exited zero. The timings
+are diagnostic given the different optimization flags and one-minute
+host load of 69.52–76.86 across 18 logical CPUs. Windows runtime
+pixels and display timing remain unverified.
+
 ## Sharing the portable SVG fallback with Windows
 
 The standard Windows D3D11 window now uses the same CPU raster and GG texture
