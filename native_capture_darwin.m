@@ -6551,13 +6551,13 @@ void native_add_svg_pattern_path(const float *data, int segment_count,
 		native_set_svg_resource_dashes(context, dash_data, dash_count, dash_offset);
 	}
 	if (stroke_first && has_stroke) {
-		native_draw_svg_mask_path_part(context, path, 0, even_odd);
+		native_draw_svg_mask_path_part(context, path, 0, even_odd, NULL);
 	}
 	if (has_fill) {
-		native_draw_svg_mask_path_part(context, path, 1, even_odd);
+		native_draw_svg_mask_path_part(context, path, 1, even_odd, NULL);
 	}
 	if (!stroke_first && has_stroke) {
-		native_draw_svg_mask_path_part(context, path, 0, even_odd);
+		native_draw_svg_mask_path_part(context, path, 0, even_odd, NULL);
 	}
 	if (fill != NULL) CGColorRelease(fill);
 	if (stroke != NULL) CGColorRelease(stroke);
