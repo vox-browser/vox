@@ -1994,6 +1994,56 @@ browser processes and the 3 GiB guard exited zero. The executable,
 library, and fixture hashes remained fixed within the check.
 Production frame timings remain unmeasured for the mixed tile.
 
+#### Linux window verification
+
+The mixed-tile check now runs in the Linux browser smoke suite and
+uses the same delayed image and 11 color samples as the macOS test.
+It also compares every document pixel with the Linux SVG group
+texture cache on and off.
+The fixture and PNG SHA-256 values were
+`58dd7fe567220437b142ba003e2b7541d2fe777ee0508e03608ae6fd898a307f`
+and `2e360a7d238dc85aa9b5a9c6dc6c99b6784d4d4aca0f9fe5a845142628843853`.
+
+A private Linux ARM64 build linked against Ubuntu 24.04's OpenSSL
+3.0.13 and started successfully. The build used V `5a39a4d`,
+single-unit Clang `-O0`, and the default Boehm GC. It started from
+`c4a31348b` in the shared checkout with unrelated edits present.
+Its executable SHA-256 was
+`8280a2b3f2db5c12ea337daa10d3595cc78dce289c8f8a941da938bb7bc6c27d`.
+
+Both fresh Xvfb launches passed all 11 samples. The cached launch
+recorded two group misses and 124 hits across two distinct groups.
+The uncached launch recorded zero hits. The full 800 × 516 decoded
+document RGBA matched across both modes with SHA-256
+`5bfd67e3ccaa4ef706d7364fd4a3cc95d8100e1392c582c02ff1e9425b86e09c`.
+All 27,648 RGB pixels in the 256 × 108 authored fixture area
+matched the macOS 1× capture. Its cropped RGB SHA-256 was
+`83f4028572a4d112dc80caf090c898b552559688072147004d6941f86abb0a78`.
+Fresh macOS launches using the shared test helpers reproduced the
+earlier 1× and 2× full document hashes on the pinned production bundle.
+All 21 smoke-driver unit tests passed. The build, browser processes,
+and memory guards exited zero, and the input hashes stayed fixed.
+
+Two alternating replay pairs used the same Linux executable in fresh
+processes with private profiles and caches. Each 800 × 600 Xvfb
+window used one Mesa software worker. JavaScript and GG Canvas SVG
+path replay were disabled. After a one-second settle, 48 synthetic
+idle callbacks each processed four paint commands at scroll offset
+zero. A separate pair with SVG diagnostics recorded 94 hits between
+the first and last callback receipts with the cache enabled and zero
+with it disabled. Every replay capture matched the document hash above.
+
+| Pair | Uncached / cached median replay, ms | Uncached / cached p95, ms | Uncached / cached maximum, ms | Uncached / cached median allocated KiB |
+| --- | ---: | ---: | ---: | ---: |
+| 1 | 6.843 / 0.426 | 8.416 / 0.570 | 8.511 / 1.958 | 304 / 160 |
+| 2 | 6.904 / 0.374 | 7.027 / 0.507 | 8.434 / 1.837 | 305 / 160 |
+
+The guest's one-minute load ranged from 0.09 to 0.16 on four vCPUs
+during timing. Host load was 3.69 before and 3.49 after the replay
+checks on 18 CPUs. The six browser processes and 3 GiB guard exited
+zero. Executable, library, fixture and image hashes stayed fixed.
+These timings cover synthetic software replay of a stationary fixture.
+
 ## Sharing the portable SVG fallback with Windows
 
 The standard Windows D3D11 window now uses the same CPU raster and GG texture
