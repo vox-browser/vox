@@ -2242,6 +2242,70 @@ hashes stayed fixed through the replay checks.
 These timings cover stationary software replay. Windows runtime
 pixels and hardware frame timings for this fixture remain open.
 
+### Non-scaling strokes in nested SVG pattern tiles
+
+In `01743c256`, each tile keeps its sampling grid in the parent
+bitmap and inherits the parent's linear map to physical pixels
+for stroke expansion. Layout records whether a tile or descendant
+needs the device metric. macOS uses this flag to select the shared
+rasterizer and keys the result by the document's linear transform
+and backing density. The software paths on Linux and Windows use
+the same rasterizer.
+
+The regression paints a nested stripe as both fill and stroke,
+then repeats the outer tile with a translation and with a vertical
+stretch. The published macOS baseline, SHA-256
+`5559c0c6cbddbaae05a5d0216244f795e796b55d23796c38dc110bb99efa2b3f`,
+drew the stripe two physical pixels wide at 1× and four at 2× in
+the smaller tile. The candidate drew six in all three copies at
+both densities. At each density, macOS logged two raster misses
+and one hit for the translated tile. At 1×, both misses produced
+48 × 60 bitmaps with distinct keys, so the stretched copy could
+use its own stroke metric despite identical bitmap dimensions.
+
+The 320 × 98 fixture crop matched pixel for pixel across macOS and
+Linux at 1×. Its input SHA-256 was
+`d5d116f69b62c55c92e440492b0f22a46faf6e81f8d7717424d69b9f7ce1ecf7`.
+The crop's RGB SHA-256 was
+`5ecc122d99c541ad054f32a64c7f2a3e2a56f6bddb1d9c9f853527b4e11d40e1`.
+Both Linux cache modes produced the same 800 × 516 document RGBA
+with SHA-256
+`bbc917efc69336e2b2ea2ff4303af6680003442dfac68903b6619ddc6825d8e2`.
+The existing nested-vector mutation, delayed nested-bitmap and
+top-level non-scaling tile checks passed on both systems. macOS ran
+those checks at both densities. The 23 driver unit tests and
+Windows D3D11 and OpenGL source checks passed.
+
+The private macOS build used V `d79ca45`, prealloc and single-unit
+C `-prod -no-prod-options`. Its executable SHA-256 was
+`3dc0b9cc5d353c3afc4012de0ddb8d21c00352259814c770923ef92e162eddcc`.
+The Linux build used V `5a39a4d`, single-unit Clang `-O0` and Boehm
+GC. Its executable SHA-256 was
+`bd3d8aa9b2af31a2597642a24be704dfaf40e21b8d0e3bd83177af05f34f92ef`.
+
+Two alternating Linux replay pairs used the same executable,
+fresh profiles and caches, one Mesa software worker, and
+800 × 600 Xvfb windows. Each trial ran 48 synthetic idle callbacks
+after a one-second settle, with five paint commands at scroll
+offset zero. JavaScript and GG Canvas SVG path replay were disabled.
+Separate diagnostics found 141 hits over three groups between
+the first and last callbacks with caching enabled, and zero with
+it disabled. Guest one-minute load ranged from 0.45 to 0.78 over
+four CPUs during timing. Host load ranged from 5.09 to 5.14 over 18
+logical CPUs. All six captures matched the regression document.
+Executable, linked-library and fixture hashes stayed fixed.
+Both builds and their guards, the passing test runs, and all replay
+processes and their guard exited zero.
+
+| Pair | Uncached / cached median replay, ms | Uncached / cached p95, ms | Uncached / cached maximum, ms | Uncached / cached median allocated KiB |
+| --- | ---: | ---: | ---: | ---: |
+| 1 | 9.971 / 0.650 | 11.605 / 0.778 | 11.959 / 2.189 | 457 / 165 |
+| 2 | 10.020 / 0.635 | 11.521 / 0.744 | 11.640 / 2.028 | 455.5 / 165 |
+
+These results measure stationary software replay with and without
+the cache on one build. Hardware frame timings and Windows runtime
+pixels for this fixture remain open.
+
 ## Sharing the portable SVG fallback with Windows
 
 The standard Windows D3D11 window now uses the same CPU raster and GG texture
