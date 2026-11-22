@@ -3,6 +3,7 @@ module layout
 import css
 import os
 import platform
+import processmetrics
 
 // VOX_INLINE_RUN_REPEAT_DIAGNOSTICS=1: count the inline formatting runs that
 // build their items, and how many repeat an earlier run of the same
@@ -19,9 +20,14 @@ __global inline_run_repeat_seen_in_state map[string]bool
 __global inline_run_repeat_counts [6]u64
 
 __global inline_run_repeat_kinds map[string]u64
+// Calling-thread instructions of the runs of each kind ('first' for runs
+// that repeat nothing in their state), nested runs included in their outer
+// run's cost too.
+__global inline_run_repeat_costs map[string]u64
 
+// The kind of a run starting now, for note_inline_run_cost().
 fn note_uncached_inline_run(state &LayoutState, containing_block &BlockContainer, used &UsedValues,
-	mode LayoutMode, space AvailableSpace, width_only bool, context ?&BlockFormattingContext) {
+	mode LayoutMode, space AvailableSpace, width_only bool, context ?&BlockFormattingContext) string {
 	// The maps and their keys outlive the layout workspace this runs in.
 	persistent := platform.enter_persistent()
 	defer { platform.leave_persistent(persistent) }
@@ -37,20 +43,34 @@ fn note_uncached_inline_run(state &LayoutState, containing_block &BlockContainer
 		inline_run_repeat_seen[text] = true
 	}
 	state_text := '${u64(voidptr(state))}:${text}'
-	if state_text in inline_run_repeat_seen_in_state {
+	mut kind := 'first'
+	if inline_context_has_only_discarded_text(containing_block) {
+		kind = 'discarded'
+	} else if state_text in inline_run_repeat_seen_in_state {
 		blocker := inline_run_blocker(unsafe { &Node(containing_block) }, true)
 		detail := if blocker == 'plain' { inline_run_collect_failure(unsafe { &Node(containing_block) }, true) } else { blocker }
 		miss := inline_run_cache_miss(state, containing_block, used, mode, space, width_only, context)
-		inline_run_repeat_kinds['${if measurement { 'measurement' } else { 'main' }}:${detail}:${miss}']++
+		kind = '${if measurement { 'measurement' } else { 'main' }}:${detail}:${miss}'
+		inline_run_repeat_kinds[kind]++
 		inline_run_repeat_counts[4]++
 		if measurement { inline_run_repeat_counts[5]++ }
-	} else {
+	}
+	if kind != 'discarded' && state_text !in inline_run_repeat_seen_in_state {
 		inline_run_repeat_seen_in_state[state_text] = true
 	}
 	if inline_run_repeat_counts[0] % 1000 == 0 {
 		c := inline_run_repeat_counts
-		eprintln('VOX_INLINE_RUN_REPEATS runs=${c[0]} repeats=${c[1]} measurement_runs=${c[2]} measurement_repeats=${c[3]} same_state_repeats=${c[4]} same_state_measurement_repeats=${c[5]} kinds=${inline_run_repeat_kinds}')
+		eprintln('VOX_INLINE_RUN_REPEATS runs=${c[0]} repeats=${c[1]} measurement_runs=${c[2]} measurement_repeats=${c[3]} same_state_repeats=${c[4]} same_state_measurement_repeats=${c[5]} kinds=${inline_run_repeat_kinds} costs=${inline_run_repeat_costs}')
 	}
+	return kind
+}
+
+fn note_inline_run_cost(kind string, start u64) {
+	end := processmetrics.thread_instruction_snapshot().instructions
+	if end < start { return }
+	persistent := platform.enter_persistent()
+	defer { platform.leave_persistent(persistent) }
+	inline_run_repeat_costs[kind] += end - start
 }
 
 // The first content kind below an inline formatting root that retained inline
