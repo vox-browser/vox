@@ -86,6 +86,13 @@ fn refresh_document_paint_tree(document &dom.Document, mut result DocumentLayout
 	previous_storage := result.paint_tree_storage
 	defer { release_paint_tree(voidptr(previous_storage)) }
 	result.paint_tree = renderer_box_from_document_layout_result(result, viewport_width, viewport_height)
+	finish_document_paint_tree_refresh(document, mut result, had_valid_hit_test_display_list)
+}
+
+// Everything that reads the renderer snapshot's box identities is rebuilt
+// after its boxes were replaced, completely or in changed subtrees.
+fn finish_document_paint_tree_refresh(document &dom.Document, mut result DocumentLayoutResult,
+	had_valid_hit_test_display_list bool) {
 	result.has_renderer_snapshot = true
 	result.invalidate_boxes_by_layout_cache()
 	result.drop_display_list_scene()
@@ -119,6 +126,10 @@ fn refresh_document_paint_tree_if_needed(mut result DocumentLayoutResult) bool {
 	viewport := result.document.viewport_rect()
 	if paint_refresh_diagnostics {
 		eprintln('VOX_PAINT_REFRESH full handles=${result.paint_style_update_handles.len()} compositor=${result.paint_style_update_compositor_handles.len()}')
+	}
+	if refresh_changed_paint_subtrees(mut result) {
+		viewport_refresh_scroll_state(voidptr(&result))
+		return true
 	}
 	refresh_document_paint_tree(result.document, mut result, viewport.width, viewport.height)
 	viewport_refresh_scroll_state(voidptr(&result))
