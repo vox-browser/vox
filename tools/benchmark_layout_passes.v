@@ -14,7 +14,8 @@
 // Modes: full (rebuild the whole layout tree), head (insert an element into
 // <head>), class (toggle a class on one element inside the page), text (change
 // one text node's value, as React updates text), insert (append a small element
-// to VOX_BENCHMARK_INSERT_SELECTOR's element, then remove it). VOX_BENCHMARK_CLASS_SELECTOR
+// to VOX_BENCHMARK_INSERT_SELECTOR's element, then remove it), record (record the
+// viewport display list again without a change). VOX_BENCHMARK_CLASS_SELECTOR
 // chooses the class mode's element and VOX_BENCHMARK_CLASS_ATTRIBUTE=name=value
 // the attribute it toggles.
 module main
@@ -134,13 +135,21 @@ fn main() {
 				// As React updates text: the node's value, not textContent.
 				node.set_node_value('benchmark text ${pass}') or { panic(err) }
 			}
+			'record' {}
 			else {
 				panic('unknown mode ${mode}')
 			}
 		}
 		start := time.sys_mono_now()
 		counted := processmetrics.thread_instruction_snapshot()
-		document.update_layout(.debugging)
+		if mode == 'record' {
+			// Re-recording the viewport display list of an unchanged laid-out
+			// document, as an animation frame that changes only paint does.
+			document.set_needs_repaint()
+			_ = document.record_viewport_display_list()
+		} else {
+			document.update_layout(.debugging)
+		}
 		instructions := processmetrics.thread_instruction_snapshot().since(counted) or { 0 }
 		elapsed := time.sys_mono_now() - start
 		total_instructions += instructions
