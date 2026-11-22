@@ -91,7 +91,6 @@ fn (mut app BrowserApp) begin_scroll_raster() ScrollRasterDamage {
 	}
 	$if macos {
 		C.native_scroll_tile_compositor_enabled(i32(!browsersettings.current().disable_gpu_canvas))
-		viewport := app.document.viewport_rect()
 		// Page zoom projects the CSS-pixel commands at replay. Keys, content
 		// damage and the skip plan stay in CSS pixels, exactly as without
 		// zoom; only the rectangles handed to the native ring are scaled.
@@ -100,21 +99,14 @@ fn (mut app BrowserApp) begin_scroll_raster() ScrollRasterDamage {
 		// Keys remove the scroll translation the commands were recorded with,
 		// including its f32 rounding under zoom.
 		key_scroll := layout.scroll_raster_recorded_viewport_scroll(app.document)
-		// Shared SVG pictures finish after the font layer; their deferred
-		// pixels must not be captured before that layer has been published.
-		// Zoomed frames never use the shared recording.
-		eligible := zoom > 0 && (zoom == 1 || !disable_zoomed_scroll_raster)
-			&& !app.paint_canvas_culling_disabled
-			&& viewport.x == 0 && viewport.y == css.scroll
-			&& !(zoom == 1 && chromium_shared_recording_supported(app.paint_commands, app.chromium_raster_plan))
-			&& layout.viewport_scroll_raster_reusable(app.document, app.paint_commands,
-				css.width, css.height)
+		eligible := app.scroll_raster_content_qualifies()
 		inline_scrollbars := eligible && C.native_gpu_tile_compositor_enabled() != 0
 		damage.separate_scrollbars = eligible && !inline_scrollbars
 		damage.scrollbar_start = scroll_raster_scrollbar_start(app.paint_commands)
 		$if vox_scroll_raster_diagnostics ? {
 			marker := os.getenv('VOX_SCROLL_RASTER_INPUT_MARKER')
 			input := marker != '' && os.exists(marker)
+			viewport := app.document.viewport_rect()
 			eprintln('VOX_SCROLL_RASTER_GATE input=${input} eligible=${eligible} zoom=${app.page_zoom} culling_disabled=${app.paint_canvas_culling_disabled} viewport=${viewport.x},${viewport.y} scroll=${app.scroll_y} shared=${chromium_shared_recording_supported(app.paint_commands, app.chromium_raster_plan)} commands=${app.paint_commands.len}')
 		}
 		document_id := u64(app.document.unique_id().value())
@@ -252,6 +244,22 @@ struct ScrollRasterCssSpace {
 	scroll f64
 	width  f64
 	height f64
+}
+
+// Whether the current command list qualifies for the viewport scroll raster
+// ring. Shared SVG pictures finish after the font layer; their deferred pixels
+// must not be captured before that layer has been published. Zoomed frames
+// never use the shared recording.
+fn (app &BrowserApp) scroll_raster_content_qualifies() bool {
+	zoom := app.page_zoom
+	css := scroll_raster_css_space(app.scroll_y, app.viewport_width, app.viewport_height, zoom)
+	viewport := app.document.viewport_rect()
+	return zoom > 0 && (zoom == 1 || !disable_zoomed_scroll_raster)
+		&& !app.paint_canvas_culling_disabled
+		&& viewport.x == 0 && viewport.y == css.scroll
+		&& !(zoom == 1 && chromium_shared_recording_supported(app.paint_commands, app.chromium_raster_plan))
+		&& layout.viewport_scroll_raster_reusable(app.document, app.paint_commands,
+			css.width, css.height)
 }
 
 // The document viewport origin is the view scroll divided by the zoom, so the
