@@ -1711,6 +1711,59 @@ An earlier managed build stopped on deprecated `usize` uses in
 the in-progress JavaScriptCore word-view bridge. Browser-window
 pixels and production timing await a rebuilt bundle.
 
+## Non-scaling strokes inside shared SVG masks
+
+In `4790b82ba`, the portable mask player transforms a non-scaling
+stroke's centerline into the raster surface before applying its width,
+dash lengths, and phase. Gradient and pattern paint stay aligned with
+the transformed path. Layout includes the vector effect in the retained
+mask key and computes the fixed-width stroke bounds after the local
+transform when checking CSS mask tile clipping.
+
+The regression exercises a dashed alpha mask under 2× enlargement, a
+pattern-painted stroke under 0.5× reduction, and a gradient-painted
+stroke under enlargement. JavaScript changes the alpha mask's vector
+effect after the first paint. Cached CPU, uncached, GG-enabled, and
+viewport recording reuse produced the same 800 × 516 document pixels.
+The fixture SHA-256 is
+`6091577e48dd93d833f85d50774e7170dc7f3c79023250c0fba6ce86dafb4db7`.
+The decoded RGB SHA-256 is
+`28a50a2c1e69218e03974a9aaaeb019c8e1d442b81dcca46074e46014d3d61c0`.
+Eight neighboring Linux window checks, 21 smoke-driver tests, and
+the macOS GG, Windows D3D11, and Windows OpenGL source checks passed.
+The full layout test runner exceeded its 12 GiB process-tree cap
+in both the regular and serial builds. The exact tile-bounds test
+passed in a smaller executable built from the production geometry
+helpers and painting module.
+
+Two alternating pairs used the same Linux ARM64 executable, V
+`5a39a4d`, and single-unit Clang `-O0`. The executable SHA-256 is
+`317a0d0fcd8e90365dc3e90824e8b9042432e494d2d3529572d5bd344e8eb377`.
+Fresh processes used private profiles and caches, an 800 × 600 Xvfb
+window, and one Mesa software worker. Each ran 48 synthetic idle
+callbacks after a one-second settle. JavaScript and GG Canvas SVG path
+replay were disabled for timing, so the first mask retained its original
+scaling stroke. The matches included all document pixels, 11 paint
+commands per callback, and stationary scroll offsets. Decoded RGB
+SHA-256 was
+`51d9e0e46d337b651d0a4aa95ec0623133e79a78dc7648bf8eca33f523238e98`.
+Separate diagnostics found three mask rasters per uncached interval and
+three texture hits per cached interval.
+
+| Pair | Uncached / cached median replay, ms | Uncached / cached p95 and maximum, ms | Uncached / cached median allocated KiB |
+| --- | ---: | ---: | ---: |
+| 1 | 4.223 / 1.610 | 8.699, 14.435 / 5.818, 9.206 | 512 / 119 |
+| 2 | 6.932 / 1.551 | 11.083, 14.486 / 5.094, 9.147 | 511.5 / 119.5 |
+
+Input hashes stayed fixed and the Linux build, browser runs, and
+guards exited zero. The four-vCPU guest's one-minute load ranged from
+1.12 to 1.17 during timing. The 18-CPU host's one-minute load was over
+100 during verification. These measurements cover cached and uncached
+software replay in the same build. Production performance and Windows
+runtime pixels remain unverified. The macOS Quartz resource fallback
+and non-scaling strokes used to paint a repeating tile still need the
+corresponding geometry handling.
+
 ## Sharing the portable SVG fallback with Windows
 
 The standard Windows D3D11 window now uses the same CPU raster and GG texture
