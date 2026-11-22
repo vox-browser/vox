@@ -559,9 +559,67 @@ The production compiler consumed the implementation in `5f21c7f3b`, but
 receipt `20261122-080543-085d434c` ended during linking at the 2,700-second
 build timeout. The guard recorded exit 137 for its child and exit 125 for the
 managed build, with 6,276,431,872 bytes sampled at peak. The published bundle
-retained the baseline executable. The managed retry is active. The baseline
-results give no performance credit to the change, and the 20% target remains
-unverified.
+retained the baseline executable when that attempt ended.
 
 The live guest homepage returned HTTP 403, including after a direct request
 redirected to sign-in, so live homepage timing remains unverified.
+
+### Production validation on November 22
+
+The completed single-unit C production build `6209346d8` (executable SHA-256
+`a92b702d32ab26cf7835f2d4b148a39c8cca22f7ca841ede9542820d4a24a034`)
+contains the stylesheet change. The diagnostic request trace put the first
+stylesheet at 231 ms after launch, against 348 ms with
+`VOX_DISABLE_EARLY_NAVIGATION_STYLESHEETS=1` on the same executable. Both
+requested ten stylesheets and produced identical PNGs and content audits.
+The live guest homepage still returned HTTP 403 after redirecting to sign-in.
+
+| Seven alternating pairs per row | Vox median | Comparator median | Vox reduction | One-minute host load |
+| --- | ---: | ---: | ---: | ---: |
+| Current Brave, first cohort | 679.510 ms | 912.274 ms | 25.51% | 42.33–44.29 |
+| Current Brave, repeat | 678.103 ms | 803.968 ms | 15.66% | 44.67–48.94 |
+| Same Vox executable, stylesheet overlap disabled, first cohort | 663.023 ms | 741.974 ms | 10.64% | 41.12–42.50 |
+| Same Vox executable, stylesheet overlap disabled, repeat | 685.050 ms | 711.919 ms | 3.77% | 49.07–54.02 |
+
+Vox finished ahead in all 14 Brave pairs. Its slowest launch divided by
+Brave's fastest was 104.00% in the first cohort and 109.94% in the repeat.
+The 20% median margin held in one cohort and missed in the other.
+
+Elapsed times in pair order, in ms:
+
+| Cohort | Vox or enabled | Brave or disabled |
+| --- | --- | --- |
+| Brave, first | 858.468, 764.976, 679.510, 687.833, 677.016, 663.393, 657.754 | 929.577, 953.188, 912.274, 950.760, 854.459, 825.447, 838.157 |
+| Brave, repeat | 727.917, 656.763, 805.395, 851.678, 661.686, 678.103, 665.134 | 798.476, 821.073, 945.369, 955.279, 779.899, 774.670, 803.968 |
+| Same Vox executable, first | 723.127, 711.309, 660.482, 663.023, 751.168, 643.965, 644.762 | 776.077, 756.906, 707.215, 717.938, 816.975, 741.974, 698.691 |
+| Same Vox executable, repeat | 752.481, 641.174, 675.515, 662.627, 685.050, 799.750, 788.203 | 703.199, 694.318, 702.611, 711.919, 764.817, 736.328, 1022.500 |
+
+Brave updated to 158.1.100.58 (Chromium 158.0.8127.42). Two independent
+captures match all 14 of its timing PNGs. Both audits match Vox's title and
+all 25 ordered post IDs, titles and link targets. The current Brave PNG SHA-256
+is `d251cbb8c3d9727f57936a08ad316ce2a5b708ae8614a56f2587fd39c3317622`,
+and the historical Brave PNG hash starts `6b29ba023bc9`. The historical PNG
+file is unavailable for a pixel comparison with the new version. The current
+cross-browser diff has 349,523 differing pixels, the same count as the
+historical comparison, with mean absolute channel error 0.2943. All Vox
+timing PNGs match the published baseline SHA-256
+`162ce22ae132e792387139541b8245c67a8e71dce1389b11b8dcbd8c0c153d69`.
+Vox made 18 archived requests and Brave made 33 requests, including 14 that
+the replay rejected. The shared archive manifest hash starts `313886b3b917`.
+
+Each capture process exited zero. The first diagnostic and the first timing
+wrappers exited 1 after writing the results because the post-run hash check
+passed strings where the digest helper expected paths. Independent hash checks
+matched the recorded inputs. The corrected wrappers and their memory guards
+exited zero in both repeat cohorts and the separate Brave audit.
+
+On the second archive with the original author scripts retained, a diagnostic
+pair had identical captures and audits with JavaScriptCore initialized, 27
+requests including two rejected by the replay, and no native-reported errors.
+Its wall times were 1,151 ms enabled and 1,091 ms disabled during this
+instrumented pair. In three regular-window diagnostic pairs at higher host load,
+the first expensive frame ended at a median 1,276 ms enabled and 1,100 ms
+disabled, with overlapping ranges of 1,022–1,389 ms and 879–1,803 ms. These
+frame-log readings include installation and log delivery. With the frame
+throttle disabled for seven screenshot pairs, the median rose from 803 ms to
+894 ms with identical pixels. The throttle stays enabled.
