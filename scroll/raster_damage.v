@@ -1403,3 +1403,13 @@ fn scroll_raster_command_hash_parts(command &layout.PaintCommand, scroll f64) [8
 	parts[7] = h
 	return parts
 }
+
+// VOX_SCROLL_RASTER_REGION=x,y,width,height (with the damage diagnostics):
+// list the commands whose key ink meets that viewport rectangle each frame.
+fn scroll_raster_diagnostic_region() ?layout.LayoutRect {
+	text := os.getenv('VOX_SCROLL_RASTER_REGION')
+	if text == '' { return none }
+	parts := text.split(',')
+	if parts.len != 4 { return none }
+	return layout.LayoutRect{parts[0].f64(), parts[1].f64(), parts[2].f64(), parts[3].f64()}
+}

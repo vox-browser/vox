@@ -209,6 +209,17 @@ fn (mut app BrowserApp) begin_scroll_raster() ScrollRasterDamage {
 				}
 				eprintln('VOX_SCROLL_RASTER_REPLAYED ${replayed.join(' ')}')
 			}
+			if region := scroll_raster_diagnostic_region() {
+				mut listed := []string{}
+				for index in 0 .. keys.len {
+					key := keys[index]
+					if !key.has_ink || !scroll_raster_rects_overlap(key.ink, region) { continue }
+					command := unsafe { &app.paint_commands[index] }
+					suppressed := damage.reused && index < damage.skip_plan.len && damage.skip_plan[index]
+					listed << '${index}:${command.kind}@${int(key.ink.x)},${int(key.ink.y)},${int(key.ink.width)}x${int(key.ink.height)} hash=${key.hash:016x} underlays=${command.underlays_next} skipped=${suppressed}'
+				}
+				eprintln('VOX_SCROLL_RASTER_REGION_COMMANDS ${listed.join(' | ')}')
+			}
 		}
 		// Retain this frame's identities only when its pixels enter the ring:
 		// a frame that paints without eligibility leaves no reusable pixels.
