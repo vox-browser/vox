@@ -196,6 +196,15 @@ fn (mut app BrowserApp) begin_scroll_raster() ScrollRasterDamage {
 				if value { skipped++ }
 			}
 			eprintln('VOX_SCROLL_RASTER_DAMAGE eligible=${eligible} deferred=${app.scroll_raster_frame_deferred} reused=${damage.reused} revision=${revision} previous_valid=${app.scroll_raster_keys.valid} delta=${damage.delta} changed=${stats.changed} rects=${rects.len} restores=${damage.restores.len}/${stats.restores.len} skipped=${skipped}/${app.paint_commands.len} fallback=${stats.fallback}')
+			if damage.reused && damage.skip_plan.len == app.paint_commands.len && keys.len == app.paint_commands.len {
+				mut replayed := []string{}
+				for index, value in damage.skip_plan {
+					if value || replayed.len >= 80 { continue }
+					key := keys[index]
+					replayed << '${index}:${app.paint_commands[index].kind}@${int(key.ink.x)},${int(key.ink.y)},${int(key.ink.width)}x${int(key.ink.height)}'
+				}
+				eprintln('VOX_SCROLL_RASTER_REPLAYED ${replayed.join(' ')}')
+			}
 		}
 		// Retain this frame's identities only when its pixels enter the ring:
 		// a frame that paints without eligibility leaves no reusable pixels.
