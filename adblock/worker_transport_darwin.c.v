@@ -87,9 +87,15 @@ fn evaluate_default_worker(source string) !string {
 
 // Call at the very start of an explicitly worker-capable executable. An ordinary
 // invocation returns none. No module initializer opts into subprocess behavior.
-// VOX_ADBLOCK_WORKER_DIAGNOSTICS=1: the worker reports its startup and each
-// request's calling-thread instructions on stderr.
+// VOX_ADBLOCK_WORKER_DIAGNOSTICS=PATH: the worker appends its startup and each
+// request's calling-thread instructions to PATH (its own stderr is closed).
 const worker_request_diagnostics = os.getenv('VOX_ADBLOCK_WORKER_DIAGNOSTICS') != ''
+
+fn report_worker_diagnostic(line string) {
+	mut file := os.open_append(os.getenv('VOX_ADBLOCK_WORKER_DIAGNOSTICS')) or { return }
+	file.writeln(line) or {}
+	file.close()
+}
 
 pub fn run_default_worker_role(arguments []string) ?int {
 	if arguments.len < 2 || arguments[1] != '--vox-adblock-worker-v1' { return none }
@@ -104,7 +110,7 @@ pub fn run_default_worker_role(arguments []string) ?int {
 	defer { if context != unsafe { nil } { C.JSGlobalContextRelease(context) } }
 	if C.vox_adblock_worker_send_frame(4, 3, 0, unsafe { nil }, 0, 0) != 0 { return 74 }
 	if worker_request_diagnostics {
-		eprintln('VOX_ADBLOCK_WORKER startup instructions=${processmetrics.thread_instruction_snapshot().instructions - startup}')
+		report_worker_diagnostic('VOX_ADBLOCK_WORKER startup instructions=${processmetrics.thread_instruction_snapshot().instructions - startup}')
 	}
 	mut previous := u64(0)
 	for {
@@ -134,7 +140,7 @@ pub fn run_default_worker_role(arguments []string) ?int {
 		}
 		if worker_request_diagnostics {
 			spent := processmetrics.thread_instruction_snapshot().instructions - request_start
-			eprintln('VOX_ADBLOCK_WORKER request bytes=${source.len} reply=${message.len} instructions=${spent} source=${source.limit(60).replace('\n', ' ')}')
+			report_worker_diagnostic('VOX_ADBLOCK_WORKER request bytes=${source.len} reply=${message.len} instructions=${spent} source=${source.limit(60).replace('\n', ' ')}')
 		}
 		if C.vox_adblock_worker_send_frame(4, response_kind, id, message.str, uint(message.len), 0) != 0 { return 74 }
 	}
