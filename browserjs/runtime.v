@@ -82,6 +82,7 @@ pub struct Runtime {
 pub:
 	engine Engine
 mut:
+	site_native_warmup_ ?&SiteNativeWarmup
 	worker_module_global bool
 	context                   voidptr
 	closed                    bool
@@ -438,6 +439,9 @@ pub fn (runtime &Runtime) run_document_scripts(sources []ScriptSource) ! {
 		return
 	}
 	for source in sources {
+		if runtime.site_native_warmup_ != none {
+			runtime.collect_site_root_script(source)
+		}
 		runtime.execute_source(source, false) or {
 			mut owner := unsafe { &Runtime(runtime) }
 			owner.report_event_callback_exception(err)
@@ -461,6 +465,7 @@ pub fn (mut runtime Runtime) close() {
 	if runtime.closed {
 		return
 	}
+	runtime.site_native_warmup_ = none
 	runtime.stop_document_native_cache_timer()
 	runtime.flush_document_native_cache()
 	runtime.write_final_native_cache_audit()

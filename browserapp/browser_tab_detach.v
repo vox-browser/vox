@@ -28,6 +28,7 @@ struct DetachedTabSession {
 	scroll_y      f64
 	zoom          f64 = 1
 	engine        string = 'javascriptcore'
+	warm_libjs    bool
 	script_policy string = 'automatic'
 	width         int
 	height        int
@@ -102,6 +103,7 @@ fn (app &BrowserApp) detached_tab_session() DetachedTabSession {
 		scroll_y:      app.scroll_y
 		zoom:          app.page_zoom
 		engine:        app.js_engine.str()
+		warm_libjs:    app.warm_libjs
 		script_policy: app.script_policy.str()
 		width:         app.viewport_width
 		height:        app.viewport_height + app.chrome_height()
@@ -150,6 +152,7 @@ fn (mut app BrowserApp) restore_detached_tab(session DetachedTabSession) {
 	}
 	app.page_zoom = session.zoom
 	app.js_engine = session.engine_value()
+	app.warm_libjs = session.warm_libjs
 	app.script_policy = session.policy_value()
 	mut client := app.page_model.client()
 	client.zoom_level_ = session.zoom

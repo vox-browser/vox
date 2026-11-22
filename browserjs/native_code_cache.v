@@ -1,6 +1,5 @@
 module browserjs
 
-import browsersettings
 import libjs
 import json2
 import os
@@ -10,17 +9,10 @@ import platform
 // standalone Runtime.evaluate calls and the JavaScriptCore backend are unaffected.
 fn (mut runtime Runtime) initialize_document_native_cache() {
 	if runtime.engine != .libjs || runtime.libjs_native_cache_enabled_ { return }
-	choice := os.getenv('VOX_LIBJS_NATIVE_CACHE')
-	if choice in ['0', 'off'] { return }
-	directory := if choice != '' && choice != '1' {
-		choice
-	} else {
-		os.join_path(os.dir(browsersettings.default_path()), 'libjs-native-code')
-	}
+	directory := native_cache_root()
+	if directory == '' { return }
 	compiler := os.getenv_opt('VOX_LIBJS_NATIVE_COMPILER') or { 'clang' }
-	runtime.agent_vm.enable_native_code_cache_with_options(directory, compiler, libjs.NativeCodeCacheOptions{
-		generated_code_identity: os.getenv('VOX_LIBJS_NATIVE_GENERATED_CODE_CACHE') == '1'
-	}) or {
+	runtime.agent_vm.enable_native_code_cache_with_options(directory, compiler, site_warmup_options()) or {
 		eprintln('LibJS native cache unavailable: ${err.msg()}')
 		return
 	}

@@ -79,15 +79,22 @@ pub fn (mut module_record SourceTextModule) prepare_native_function_templates(mu
 	vm.push_execution_context_checked(mut context)!
 	defer { vm.pop_current_context() }
 	source := module_record.compile_module(mut vm)!
+	return prepare_native_source_templates(mut vm, mut cache, source, module_record.module_filename, start, limit)
+}
+
+fn prepare_native_source_templates(mut vm VM, mut cache NativeCodeCache, source &Executable,
+	filename string, start int, limit int) !NativeModuleTemplateBatch {
+	table := source.parsed_source.function_table
+	count := table.entries.len
 	end := if limit > count - start { count } else { start + limit }
 	mut result := NativeTemplatePreparation{}
-	if start == 0 { result.prepare_initializers(mut vm, mut cache, source, module_record.module_filename)! }
+	if start == 0 { result.prepare_initializers(mut vm, mut cache, source, filename)! }
 	for index in start .. end {
-		data := module_record.parsed.function_table.entries[index] or { continue }
+		data := table.entries[index] or { continue }
 		if data.kind == .async_generator {
 			result.unsupported++
 			if result.diagnostics.len < 16 {
-				result.diagnostics << '${module_record.module_filename}:${data.source_text_start}: async generator execution is not translated'
+				result.diagnostics << '${filename}:${data.source_text_start}: async generator execution is not translated'
 			}
 			continue
 		}
@@ -97,12 +104,12 @@ pub fn (mut module_record SourceTextModule) prepare_native_function_templates(mu
 			executable := callable.compile(mut vm) or {
 				result.unsupported++
 				if result.diagnostics.len < 16 {
-					result.diagnostics << '${module_record.module_filename}:${data.source_text_start}: ${err.msg()}'
+					result.diagnostics << '${filename}:${data.source_text_start}: ${err.msg()}'
 				}
 				continue
 			}
 			result.queue(executable, mut cache)
-			result.prepare_initializers(mut vm, mut cache, executable, module_record.module_filename)!
+			result.prepare_initializers(mut vm, mut cache, executable, filename)!
 		}
 	}
 	return NativeModuleTemplateBatch{ next_index: end, done: end >= count, prepared: result.prepared, queued: result.queued, unsupported: result.unsupported, diagnostics: result.diagnostics }

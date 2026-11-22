@@ -5,6 +5,7 @@ import dom
 import fetch
 import html
 import json2
+import libjs
 import os
 import platform
 import processmetrics
@@ -452,6 +453,13 @@ fn (mut host ModuleHost) supply(mut operation BrowserModuleOperation, code strin
 			return
 		}
 		if !retain_utf8_module_source { host.source_value_reported = true }
+	}
+	if runtime.site_native_warmup_ != none && !operation.key.contains('#vox-inline-') {
+		runtime.collect_site_native_source(libjs.NativeWarmupSource{
+			code: code
+			filename: operation.key
+			kind: .module
+		})
 	}
 	operation.finished = true
 	runtime.release_javascript_value(operation.resolve)

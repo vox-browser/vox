@@ -19,6 +19,7 @@ struct BrowserParserScriptHost {
 	media_loader      ?browserjs.MediaElementCreatedHook
 	on_runtime_created ?BrowserParserRuntimeCreated
 mut:
+	site_native_warmup ?&browserjs.SiteNativeWarmup
 	runtime           &browserjs.Runtime = unsafe { nil }
 	initial_resources map[string]PreloadedResource
 	svg_resources     map[string]PreloadedResource
@@ -84,12 +85,18 @@ fn browser_parser_created(target voidptr, parser &html.HTMLParser) {
 		mut binding := unsafe { &BrowserParserScriptHost(host) }
 		binding.did_finish_parsing()
 	})
-	if host.parser_generation == 1 && host.extension_scripts.len > 0 {
-		owner.set_navigation_readiness_callback(fn [host] (readiness dom.DocumentReadyState) {
+	first_parser := host.parser_generation == 1
+	if (first_parser && host.extension_scripts.len > 0) || host.site_native_warmup != none {
+		owner.set_navigation_readiness_callback(fn [host, first_parser] (readiness dom.DocumentReadyState) {
 			mut binding := unsafe { &BrowserParserScriptHost(host) }
-			binding.run_browser_extensions(if readiness == .interactive { .document_end } else { .document_idle })
+			if first_parser {
+				binding.run_browser_extensions(if readiness == .interactive { .document_end } else { .document_idle })
+			}
+			if readiness == .complete {
+				if mut warmup := binding.site_native_warmup { warmup.start_after_load() }
+			}
 		})
-		host.run_browser_extensions(.document_start)
+		if first_parser { host.run_browser_extensions(.document_start) }
 	}
 }
 
@@ -99,11 +106,12 @@ fn (mut host BrowserParserScriptHost) initialize() bool {
 	if !host.document.as_node().is_scripting_enabled() { return false }
 	host.initialization_attempted = true
 	host.runtime = create_browser_script_runtime(host.engine)
+	mut runtime := host.runtime
+	runtime.set_site_native_warmup(host.site_native_warmup)
 	if callback := host.on_runtime_created { callback(host.runtime) }
 	host.initialized = initialize_document_script_runtime(host.document, host.document.url.serialize(),
 		[]browserjs.ScriptSource{}, host.runtime, browser_fetch_image_request, host.images.callback(),
 		host.scripts, host.media_loader, mut host.messages)
-	mut runtime := host.runtime
 	runtime.add_close_handler(fn [host] () {
 		mut binding := unsafe { &BrowserParserScriptHost(host) }
 		binding.closed = true

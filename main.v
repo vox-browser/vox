@@ -399,6 +399,7 @@ mut:
 	paint_canvas_culling_disabled       bool
 	ctx                                 &gg.Context = unsafe { nil }
 	page_model                          &page.Page = unsafe { nil }
+	warm_libjs                          bool
 	js_engine                           browserjs.Engine = .javascriptcore
 	script_policy                       BrowserScriptPolicy
 	address                             string
@@ -507,6 +508,7 @@ struct LaunchOptions {
 mut:
 	js_engine                  browserjs.Engine = .javascriptcore
 	js_engine_explicit         bool
+	warm_libjs                 bool
 	script_policy              BrowserScriptPolicy
 	source                     string
 	restore_tab                string
@@ -692,6 +694,8 @@ fn parse_launch_options(arguments []string) !LaunchOptions {
 			options.script_policy = .enabled
 		} else if argument == '--disable-javascript' {
 			options.script_policy = .disabled
+		} else if argument == '--warm-libjs' {
+			options.warm_libjs = true
 		} else if argument == '--js-engine' {
 			if index + 1 >= arguments.len { return error('--js-engine requires javascriptcore or libjs') }
 			index++
@@ -4001,7 +4005,14 @@ fn (mut app BrowserApp) install_loaded_page(input_loaded LoadedPage, add_history
 	extension_scripts := app.prepare_browser_extension_injections(loaded)
 	mut parser_host := ?&BrowserParserScriptHost(none)
 	if app.document.as_node().is_scripting_enabled() {
-		mut host := install_browser_parser_script_host(app.document, app.js_engine,
+		mut engine := app.js_engine
+		mut warmup := ?&browserjs.SiteNativeWarmup(none)
+		if app.warm_libjs && engine == .libjs {
+			mut document_storage := app.document.enter_native_storage()
+			engine, warmup = browserjs.plan_site_native_warmup(loaded.url)
+			document_storage.finish()
+		}
+		mut host := install_browser_parser_script_host(app.document, engine,
 			image_loader, script_loader, parser_resources, fn [incoming] (element &dom.Element) {
 				mut owner := unsafe { &DocumentSession(incoming) }
 				owner.install_media_playback(element)
@@ -4010,6 +4021,7 @@ fn (mut app BrowserApp) install_loaded_page(input_loaded LoadedPage, add_history
 				owner.adopt_runtime(runtime)
 			})
 		host.extension_scripts = extension_scripts
+		host.site_native_warmup = warmup
 		parser_host = host
 	}
 	parse_prepared_browser_navigation_document(prepared_document)
@@ -8482,6 +8494,7 @@ fn run_browser(arguments []string) {
 	}
 	if !options.js_engine_explicit {
 		options.js_engine = browserjs.parse_engine(browsersettings.current().javascript_engine) or { browserjs.Engine.javascriptcore }
+		options.warm_libjs = options.js_engine == .libjs
 	}
 	restored_tab := read_detached_tab_session(options.restore_tab) or {
 		eprintln('Vox: could not restore tab: ${err.msg()}')
@@ -8489,6 +8502,7 @@ fn run_browser(arguments []string) {
 	}
 	if restored_tab.version > 0 {
 		options.js_engine = restored_tab.engine_value()
+		options.warm_libjs = restored_tab.warm_libjs
 		options.script_policy = restored_tab.policy_value()
 		options.width = restored_tab.width
 		options.height = restored_tab.height
@@ -8563,6 +8577,7 @@ fn run_browser(arguments []string) {
 		layout_tree_only: options.headless_layout_tree
 		native_paint_expected: native_paint_expected
 		js_engine: options.js_engine
+		warm_libjs: options.warm_libjs
 		script_policy: options.script_policy
 		use_document_font: use_document_font
 		viewport_width: options.width

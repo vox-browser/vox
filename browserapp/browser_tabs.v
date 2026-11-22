@@ -145,6 +145,7 @@ fn (mut app BrowserApp) activate_tab_chrome(action string) {
 				ctx:                            current.ctx
 				page_model:                     owner
 				js_engine:                      current.js_engine
+				warm_libjs:                     current.warm_libjs
 				script_policy:                  current.script_policy
 				use_document_font:              current.use_document_font
 				paint_canvas_culling_disabled:  current.paint_canvas_culling_disabled

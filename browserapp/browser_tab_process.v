@@ -172,6 +172,7 @@ fn (mut app BrowserApp) quit_process_tab() {
 fn (mut app BrowserApp) open_process_tab(address string, background bool) {
 	mut call_arguments := ['--window-width=${app.viewport_width}',
 		'--window-height=${app.viewport_height + app.chrome_height()}', '--js-engine=${app.js_engine}']
+	if app.warm_libjs { call_arguments << '--warm-libjs' }
 	if app.script_policy == .enabled { call_arguments << '--enable-javascript' }
 	if app.script_policy == .disabled { call_arguments << '--disable-javascript' }
 	if app.auto_open_devtools { call_arguments << '--auto-open-devtools-for-tabs' }
