@@ -2192,9 +2192,9 @@ def check_svg_nested_tile_device_pixels(rows, channels, scale, marker):
             assert actual == expected, (scale, left + 10, y, actual.hex(), expected.hex())
 
 
-def check_svg_nested_tile_browser(binary, artifacts, temporary, *, non_scaling=False):
-    name = "nested-non-scaling-strokes" if non_scaling else "nested-strokes"
+def check_svg_nested_tile_browser(binary, artifacts, temporary, name="nested-strokes"):
     fixture = Path(__file__).resolve().parents[1] / f"Tests/Browser/Native/svg-pattern-tile-{name}.html"
+    non_scaling = name != "nested-strokes"
     documents = []
     for mode in ("cached", "uncached"):
         label = f"{fixture.stem}-{mode}"
@@ -2224,7 +2224,7 @@ def check_svg_nested_tile_browser(binary, artifacts, temporary, *, non_scaling=F
         documents.append(rows[marker:height - 24])
     assert documents[0] == documents[1], "Caching changed the nested SVG tile pixels"
     if non_scaling:
-        print("PASS: nested SVG tile strokes keep their device width and cache parity", flush=True)
+        print(f"PASS: {fixture.stem} keeps device stroke width and cache parity", flush=True)
     else:
         print("PASS: nested SVG tile fill, stroke, live edits, and cache parity", flush=True)
 
@@ -3028,7 +3028,8 @@ def main():
             return
         if args.pattern_nested_only:
             check_svg_nested_tile_browser(binary, artifacts, temporary)
-            check_svg_nested_tile_browser(binary, artifacts, temporary, non_scaling=True)
+            check_svg_nested_tile_browser(binary, artifacts, temporary, "nested-non-scaling-strokes")
+            check_svg_nested_tile_browser(binary, artifacts, temporary, "nested-deep-strokes")
             return
         environment = smoke_environment(temporary)
         output = run([str(binary), "--headless-smoke"], env=environment)
@@ -3065,7 +3066,8 @@ def main():
         check_svg_pattern_tile_image_browser(binary, artifacts, temporary)
         check_svg_pattern_tile_image_browser(binary, artifacts, temporary, nested=True)
         check_svg_nested_tile_browser(binary, artifacts, temporary)
-        check_svg_nested_tile_browser(binary, artifacts, temporary, non_scaling=True)
+        check_svg_nested_tile_browser(binary, artifacts, temporary, "nested-non-scaling-strokes")
+        check_svg_nested_tile_browser(binary, artifacts, temporary, "nested-deep-strokes")
         check_svg_mask_gradient_strokes_browser(binary, artifacts, temporary)
         check_svg_mask_images_browser(binary, artifacts, temporary)
         check_svg_mask_patterns_browser(binary, artifacts, temporary)

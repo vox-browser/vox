@@ -6,7 +6,9 @@ import math
 import painting
 
 const portable_svg_mask_pattern_max_operations = 64
-const portable_svg_mask_pattern_max_depth = 2
+// Match the retained SVG pattern serialization limit. All descendants
+// still draw from the same operation and pixel budgets.
+const portable_svg_mask_pattern_max_depth = 16
 
 struct PortableSVGMaskTileBudget {
 mut:
