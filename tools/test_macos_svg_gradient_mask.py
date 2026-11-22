@@ -576,6 +576,7 @@ def check_pattern_tile_with_delayed_image(binary, fixture, directory):
                     (2 * scale, 16 * scale, blue), (10 * scale, 16 * scale, white),
                     (2 * scale, 18 * scale, red),
                     (22 * scale, 36 * scale, blue), (21 * scale, 30 * scale, green),
+                    (130 * scale, 16 * scale, blue), (130 * scale, 18 * scale, red),
                 )
                 for x, y, expected in samples:
                     row = rows[8 * scale + y]
