@@ -11571,3 +11571,48 @@ same bundles is larger than the effect.
 JavaScript reads of `offsetWidth` force layout for 47 sampled
 milliseconds per load, 28 of them geometry and 4 paint projection.
 
+
+**A second complete raster, and why it stays.** The first document frame
+always chose layer deferral, because the choice followed the previous
+frame's scroll-raster eligibility, and a deferred frame cannot enter the
+retained-raster ring. The next frame then found no retained pixels and
+rastered the whole viewport again (450M stage-logged). Native deferral has
+been a no-op since the Skia removal. `772a5ce56` decided from the frame's
+own commands and removed the second raster, but in 2 of 7 cohort runs the
+Star button's top-left corner kept a lighter anti-aliased pixel pair (233
+instead of 223; 4 differing pixels instead of 2). The control and Brave
+were unchanged, and the gain was within noise (pair mean -0.08B; candidate
+20.831B, control 20.904B, Brave 20.565B), so `06c7eadd8` reverted it. The
+corner comes from a complete raster: no damage rect covers the button, the
+button stays in the root raster layer, and root tile 0 multisamples in
+every state. It has the same signature as the long-standing 2 px at the
+Notifications button's corner, and the second complete raster had been
+hiding it. Diagnostic runs (8 loads with damage logging) never reproduced
+it.
+
+**Where the rest goes.** In an uninstrumented sample of a 20.06B load, the
+main thread has 78% of busy samples (1023 ms). By category: JavaScriptCore
+276, style 185, layout 136, copies and allocation 114 (spread over many
+callers), network 49 (22 of them LibreSSL AES-GCM), DOM 40, bridge 39,
+HTML parsing 36, text 34, paint 34, JSON 24. The coalition total also
+includes `VoxAdblockWorker` at 0.63B per load: a JavaScriptCore context
+running the filter engine.
+- The compact bridge made 11,005 host calls in one load (1,854
+  `nextSibling`, 1,828 `firstChild`, 2,593 attribute reads, 707 DOM
+  flushes, 594 `querySelectorAll`). Most take a few microseconds. Three
+  `offsetWidth` reads took 59 ms, all in the first, which forced a layout
+  of 4,401 nodes that hydration had just inserted (76 detached relayout
+  origins, `too-many-changes`). That is new content, not a reuse miss.
+- JavaScriptCore's sampling profiler puts 137 of 262 JavaScript samples in
+  host functions and about 25% under `__queryElements`. React reads a
+  bridge getter (19 samples), and GitHub's `pb-*.js` calls
+  `querySelector`/`matches` (about 24).
+- Stylesheet parsing is 52 sampled ms: rule conversion 24, of which
+  selector lists 19 (12 in uncached selector parsing), tokenizing 14. The
+  parse benchmark (`style_passes ... parse`) runs at 250 instructions per
+  byte but bypasses the document selector memo, so it overstates selectors.
+- A complete layout pass in `layout_passes ... full` costs 829M for 2,663
+  elements. Its hotspots (cmap table lookups that allocate a string per
+  table record, `viewBox`/path re-parsing, the style-computer hook checks)
+  come from rebuilding every layout node. Each has at most 3 samples on
+  the real page, where layout nodes and their caches persist.
