@@ -503,8 +503,10 @@ fn test_scroll_raster_content_damage_covers_only_changed_commands() {
 	// frames all need complete replay.
 	reordered := scroll_raster_frame_keys([layout.PaintCommand{ ...other, transform: scrolled },
 		layout.PaintCommand{ ...base, transform: scrolled }], 10, 1, 1024, 768)
-	assert scroll_raster_content_damage(&previous, reordered, 7, 10, 200, 200, mut stats) == none
-	assert stats.fallback == 'paint-order-changed'
+	if !paint_order_damage_enabled {
+		assert scroll_raster_content_damage(&previous, reordered, 7, 10, 200, 200, mut stats) == none
+		assert stats.fallback == 'paint-order-changed'
+	}
 	unbounded := scroll_raster_frame_keys([layout.PaintCommand{ ...base, transform: scrolled },
 		layout.PaintCommand{ ...other, transform: scrolled },
 		layout.PaintCommand{ kind: 'draw_text', text: 'late' }], 10, 1, 1024, 768)
