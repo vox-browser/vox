@@ -39,6 +39,9 @@ const disable_in_place_tables = os.getenv('VOX_DISABLE_IN_PLACE_TABLES') != ''
 // Same-binary control: a kept box built from state that changed without a
 // flag declines the update instead of being rebuilt by its parent.
 const disable_in_place_stale_rebuilds = os.getenv('VOX_DISABLE_IN_PLACE_STALE_REBUILDS') != ''
+// Same-binary control: an element built again gets new boxes for all of its
+// descendants.
+const disable_in_place_descendant_reuse = os.getenv('VOX_DISABLE_IN_PLACE_DESCENDANT_REUSE') != ''
 
 __global in_place_tree_update_counts [2]u64
 // VOX_IN_PLACE_TREE_UPDATE_DIAGNOSTICS: boxes built by in-place updates, by
@@ -146,9 +149,14 @@ fn update_layout_tree_in_place(document &dom.Document, mut style_computer css.St
 		builder:        new_tree_builder_state()
 	}
 	defer { update.builder.finish() }
-	// New boxes are built without reusing committed boxes: a box taken from
-	// elsewhere in the kept tree would keep its old parent there.
+	// New boxes are built without the complete builder's reuse: a box taken
+	// from elsewhere in the kept tree would keep its old parent there. Only
+	// the descendants of a box being replaced keep theirs (in_place_kept_descendant).
 	update.builder.allow_subtree_reuse = false
+	mut applied := false
+	defer {
+		if !applied { update.restore_kept_boxes(0) }
+	}
 	root_node := root_element.as_node()
 	if root_node.needs_layout_tree_update_() {
 		return decline_in_place_tree_update('root-element')
@@ -170,6 +178,7 @@ fn update_layout_tree_in_place(document &dom.Document, mut style_computer css.St
 	if update.lists.len > 0 {
 		update.apply(previous)
 	}
+	applied = true
 	in_place_tree_update_counts[0]++
 	if in_place_tree_update_diagnostics {
 		mut added := 0
@@ -220,6 +229,7 @@ fn (mut update InPlaceTreeUpdate) plan_branch(node &dom.Node) InPlacePlan {
 		}
 	}
 	mark := update.lists.len
+	kept_mark := update.builder.in_place_kept.len
 	for child in node.children {
 		if child.needs_layout_tree_update_() || child.child_needs_layout_tree_update_() {
 			match update.plan_branch(child) {
@@ -229,6 +239,7 @@ fn (mut update InPlaceTreeUpdate) plan_branch(node &dom.Node) InPlacePlan {
 					// Rebuild the child in this node's list instead; the lists
 					// planned below this node are planned again there.
 					update.lists.trim(mark)
+					update.restore_kept_boxes(kept_mark)
 					update.forced[u64(voidptr(child))] = true
 					target := update.child_list_parent(node)
 					if target.reason in in_place_escalatable_reasons { return .escalate }
@@ -452,12 +463,14 @@ fn (mut update InPlaceTreeUpdate) plan_child_list(node &dom.Node) bool {
 				mut keep := true
 				if child.child_needs_layout_tree_update_() {
 					mark := update.lists.len
+					kept_mark := update.builder.in_place_kept.len
 					match update.plan_branch(child) {
 						.planned {}
 						.declined { return false }
 						.escalate {
 							// A flagged descendant needs this child rebuilt.
 							update.lists.trim(mark)
+							update.restore_kept_boxes(kept_mark)
 							keep = false
 						}
 					}
@@ -475,13 +488,28 @@ fn (mut update InPlaceTreeUpdate) plan_child_list(node &dom.Node) bool {
 			in_place_rebuild_reason(child, child_style, existing[key] or { unsafe { nil } },
 				update.forced[key])
 		} else { '' }
-		built := build_layout_box_for_element(update.document, child_element, update.style_computer,
-			mut update.builder) or { continue }
+		// The clean descendants of a replaced box keep their boxes.
+		kept_mark := update.builder.in_place_kept.len
+		if !disable_in_place_descendant_reuse {
+			update.builder.in_place_replaced = existing[key] or { unsafe { nil } }
+		}
+		built_box := build_layout_box_for_element(update.document, child_element,
+			update.style_computer, mut update.builder)
+		update.builder.in_place_replaced = unsafe { nil }
+		built := built_box or {
+			update.restore_kept_boxes(kept_mark)
+			continue
+		}
 		if in_place_tree_update_diagnostics {
-			count := in_place_subtree_box_count(built)
+			mut kept_count := u64(0)
+			for kept_box in update.builder.in_place_kept[kept_mark..] {
+				kept_count += in_place_subtree_box_count(kept_box.box)
+			}
+			count := in_place_subtree_box_count(built) - kept_count
 			// The map outlives the update's workspace.
 			persistent := platform.enter_persistent()
 			in_place_built_box_counts[rebuild_reason] += count
+			if kept_count > 0 { in_place_built_box_counts['kept'] += kept_count }
 			platform.leave_persistent(persistent)
 		}
 		if update.builder.hoisted_pseudo_element_boxes.len != 0 { return update.decline('hoisted') }
@@ -558,6 +586,111 @@ fn (mut update InPlaceTreeUpdate) note_existing_child(child &Node, mut existing 
 	if in_place_box_is_split(child) { return update.decline('continuation-child') }
 	existing[u64(voidptr(child_dom))] = child
 	return true
+}
+
+// A committed box that an in-place build kept below a replaced box, with the
+// parent and position it had there.
+struct InPlaceKeptBox {
+	box    &Node
+	parent ?&Node
+	index  int
+}
+
+// An element an in-place update builds again (its display or style changed,
+// it gained generated content, or a flagged descendant needs its box
+// rebuilt) has descendants without flags of their own. As for the complete
+// builder's clean subtrees (reusable_clean_subtree), the flags guarantee that
+// building such a descendant would make the boxes it has, so it keeps them,
+// with their layout indexes and so their committed values. Below a flagged
+// element nothing is kept, and only boxes inside the box being replaced are
+// taken, so no box of the kept tree loses its place.
+fn in_place_kept_descendant(element &dom.Element, mut builder TreeBuilderState) ?&Node {
+	if disable_clean_subtree_reuse || clean_subtree_reuse_suspended || builder.flagged_ancestor_depth > 0 {
+		return none
+	}
+	node := element.as_node()
+	if node.needs_layout_tree_update_() || node.child_needs_layout_tree_update_()
+		|| !element.is_html_element() || element.rendered_in_top_layer() {
+		return none
+	}
+	// Slotted content is boxed away from the position that owns its flags.
+	mut ancestor := node.parent_or_shadow_host()
+	for ancestor != none {
+		current := ancestor or { break }
+		if current.is_shadow_root() { return none }
+		if parent_element := current.as_element() {
+			if !parent_element.is_html_element() { return none }
+		}
+		ancestor = current.parent_or_shadow_host()
+	}
+	computed := css.computed_properties_for_element(element) or { return none }
+	if computed.display().is_none() || computed.display().is_contents()
+		|| computed.content_visibility() != .visible {
+		return none
+	}
+	root := in_place_box_of(node) or { return none }
+	if root.is_anonymous() || voidptr(root.document()) != voidptr(element.document())
+		|| root.as_node_with_style() == none {
+		return none
+	}
+	// The box of the element's parent placed it, directly or in an anonymous
+	// block around an inline run, which that parent's build makes again.
+	mut parent := root.parent() or { return none }
+	if parent.is_anonymous() {
+		if !clean_subtree_wrapper_is_rebuilt_by_parent(parent) { return none }
+		parent = parent.parent() or { return none }
+	}
+	parent_dom := parent.dom_node() or { return none }
+	dom_parent := node.parent() or { return none }
+	if voidptr(parent_dom) != voidptr(dom_parent) { return none }
+	// The parent's box is the replaced box or inside it (for the replaced
+	// element itself, it is the kept box of the list being updated).
+	mut inside := ?&Node(parent)
+	for {
+		current := inside or { return none }
+		if voidptr(current) == voidptr(builder.in_place_replaced) { break }
+		inside = current.parent()
+	}
+	// A display change is the parent's to report; here it means a rebuild.
+	if !retained_flow_style_matches(root, computed) || root.display() != computed.display() {
+		return none
+	}
+	mut boxes := 0
+	if _ := clean_subtree_blocker(root, mut boxes) { return none }
+	mut elements := []&dom.Element{}
+	if !collect_clean_subtree_elements(element, mut elements) { return none }
+	// Block-level generated boxes of inline elements are hoisted out of them.
+	if root.is_inline_node() {
+		for candidate in elements {
+			if retained_flow_element_has_generated_pseudo_style(candidate) { return none }
+		}
+	}
+	resolve_retained_flow_counters(RetainedFlowSubtree{
+		root:     root
+		elements: elements
+	}, mut builder)
+	// The record lives as long as the update.
+	mut workspace := builder.workspace
+	entry := if workspace != unsafe { nil } { workspace.enter() } else { platform.ArenaEntry{} }
+	builder.in_place_kept << InPlaceKeptBox{
+		box:    root
+		parent: root.parent()
+		index:  root.index_in_parent_
+	}
+	if workspace != unsafe { nil } { workspace.leave(entry) }
+	return root
+}
+
+// Return the boxes kept by plans that were discarded to their places in the
+// committed tree, latest first.
+fn (mut update InPlaceTreeUpdate) restore_kept_boxes(mark int) {
+	for index := update.builder.in_place_kept.len - 1; index >= mark; index-- {
+		kept := update.builder.in_place_kept[index]
+		mut box := unsafe { &Node(kept.box) }
+		box.parent_ = kept.parent
+		box.index_in_parent_ = kept.index
+	}
+	if update.builder.in_place_kept.len > mark { update.builder.in_place_kept.trim(mark) }
 }
 
 // Why a child's previous box (nil for a child without one) is built again.
@@ -639,6 +772,12 @@ fn (mut update InPlaceTreeUpdate) apply(previous &DocumentLayoutResult) {
 	mut next_index := u32(previous.state.used_values_store.pages.len) * layout_state_page_size
 	live := highest_layout_index(update.root) + 1
 	if live > next_index { next_index = live }
+	// Kept descendants of replaced boxes keep their indexes, under which the
+	// relayout finds their committed values.
+	mut kept := map[u64]bool{}
+	for box in update.builder.in_place_kept {
+		kept[u64(voidptr(box.box))] = true
+	}
 	for list in update.lists {
 		mut parent := unsafe { &Node(list.parent) }
 		for old in list.removed {
@@ -658,7 +797,7 @@ fn (mut update InPlaceTreeUpdate) apply(previous &DocumentLayoutResult) {
 		attach_children_maintaining_inline_invariant(mut parent, list.children, update.document,
 			list.computed)
 		for added in list.added {
-			next_index = assign_fresh_layout_indexes(added, next_index)
+			next_index = assign_fresh_layout_indexes(added, next_index, kept)
 		}
 		// The anonymous blocks the attachment made around inline runs.
 		for child in parent.children() {
@@ -719,8 +858,10 @@ fn refresh_layout_tree_order_in_subtree(node &Node, mut order LayoutTreeOrder) {
 	mutable_node.tree_order_end_ = order.next_index
 }
 
-// Give every styled node of a new subtree an index no committed box holds.
-fn assign_fresh_layout_indexes(node &Node, next u32) u32 {
+// Give every styled node of a new subtree an index no committed box holds,
+// outside the kept subtrees within it.
+fn assign_fresh_layout_indexes(node &Node, next u32, kept map[u64]bool) u32 {
+	if kept[u64(voidptr(node))] { return next }
 	mut next_index := next
 	if styled := node.as_node_with_style() {
 		mut mutable_styled := unsafe { &NodeWithStyle(styled) }
@@ -729,7 +870,7 @@ fn assign_fresh_layout_indexes(node &Node, next u32) u32 {
 		next_index++
 	}
 	for child in node.children() {
-		next_index = assign_fresh_layout_indexes(child, next_index)
+		next_index = assign_fresh_layout_indexes(child, next_index, kept)
 	}
 	return next_index
 }

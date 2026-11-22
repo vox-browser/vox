@@ -268,3 +268,75 @@ fn test_changes_inside_unrendered_subtrees_keep_the_committed_tree() {
 	in_place_handle(document, 'msg')
 	in_place_matches_full_rebuild(mut document, 'shown')
 }
+
+fn in_place_box(document &dom.Document, id string) &Node {
+	return unsafe { &Node(in_place_handle(document, id)) }
+}
+
+fn in_place_layout_index(document &dom.Document, id string) u32 {
+	styled := in_place_box(document, id).as_node_with_style() or { panic('unstyled ${id}') }
+	return styled.layout_index()
+}
+
+// An element built again for its own display change keeps the boxes of its
+// clean descendants, with the layout indexes under which their committed
+// values are found; with the control they are built again. An update that
+// declines after keeping them returns them to their committed parents.
+fn test_rebuilt_elements_keep_their_clean_descendants() {
+	mut document := html.parse_document('<!doctype html><style>
+		body{margin:0;font:16px/20px sans-serif}
+		.counted::before{content:counter(list-item) ". "}
+	</style><body><div id="app"><div id="card"><p id="title">Title <b id="bold">bold</b></p><section id="body"><div id="inner">inner</div></section></div><p id="tail">tail</p></div></body>')
+	defer { document.finalize() }
+	_ = layout_document_typed_in_viewport(document, 400, 300)
+	enabled := os.getenv('VOX_DISABLE_IN_PLACE_TREE_UPDATE') == ''
+	reuse := enabled && os.getenv('VOX_DISABLE_IN_PLACE_DESCENDANT_REUSE') == ''
+		&& os.getenv('VOX_DISABLE_CLEAN_SUBTREE_REUSE') == ''
+	mut card := document.get_element_by_id('card') or { panic('card') }
+	kept_card := in_place_handle(document, 'card')
+	kept_title := in_place_handle(document, 'title')
+	kept_inner := in_place_handle(document, 'inner')
+	title_index := in_place_layout_index(document, 'title')
+	updated_before, _ := in_place_tree_update_statistics()
+	card.set_attribute_value('style', 'display:flex')
+	document.update_layout(.debugging)
+	updated_after, _ := in_place_tree_update_statistics()
+	if enabled {
+		assert updated_after == updated_before + 1
+		assert in_place_handle(document, 'card') != kept_card
+	}
+	if reuse {
+		assert in_place_handle(document, 'title') == kept_title
+		assert in_place_handle(document, 'inner') == kept_inner
+		assert in_place_layout_index(document, 'title') == title_index
+		assert voidptr(in_place_box(document, 'title').parent() or { panic('parent') }) == in_place_handle(document,
+			'card')
+	} else if enabled {
+		assert in_place_handle(document, 'title') != kept_title
+	}
+	in_place_matches_full_rebuild(mut document, 'display change')
+	// Generated content showing a counter declines the update after the
+	// card's descendants were kept again; the complete builder then runs.
+	committed_card := in_place_handle(document, 'card')
+	title := in_place_box(document, 'title')
+	title_index_in_parent := title.index_in_parent_
+	card.set_attribute_value('style', 'display:block')
+	mut counted := document.create_element('div') or { panic(err) }
+	counted.set_attribute_value('class', 'counted')
+	mut app := document.get_element_by_id('app') or { panic('app') }
+	mut app_node := app.as_node()
+	app_node.append_child(counted.as_node()) or { panic(err) }
+	_, declined_before := in_place_tree_update_statistics()
+	document.update_layout(.debugging)
+	_, declined_after := in_place_tree_update_statistics()
+	if enabled {
+		assert declined_after == declined_before + 1
+	}
+	// The committed title box is in the new tree, or still where the
+	// committed tree had it, not in the declined plan's card.
+	if in_place_handle(document, 'title') != voidptr(title) {
+		assert voidptr(title.parent() or { panic('detached') }) == committed_card
+		assert title.index_in_parent_ == title_index_in_parent
+	}
+	in_place_matches_full_rebuild(mut document, 'declined')
+}

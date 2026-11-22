@@ -41,6 +41,11 @@ mut:
 	// Block-level pseudo-element boxes of an InlineNode, waiting to be inserted
 	// into the nearest ancestor that is not an InlineNode.
 	hoisted_pseudo_element_boxes map[u64][]&Node
+	// in_place_tree_update.v: the committed box of the element an in-place
+	// update is building again, whose clean descendants keep their boxes, and
+	// the boxes kept so far.
+	in_place_replaced &Node = unsafe { nil }
+	in_place_kept     []InPlaceKeptBox
 }
 
 // insertion_parent_for_block_node(): in-flow blocks and out-of-flow boxes stay
@@ -1149,6 +1154,11 @@ fn build_layout_box_for_element(document &dom.Document, element &dom.Element, st
 		if retained := reusable_clean_flow_subtree(element, mut builder_state.nonreusable_flow_roots) {
 			resolve_retained_flow_counters(retained, mut builder_state)
 			return retained.root
+		}
+	}
+	if builder_state.in_place_replaced != unsafe { nil } {
+		if kept := in_place_kept_descendant(element, mut builder_state) {
+			return kept
 		}
 	}
 	return build_layout_box_for_element_with_svg_resource_kind(document, element, style_computer, mut builder_state, none)
