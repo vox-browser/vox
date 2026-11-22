@@ -2044,6 +2044,29 @@ checks on 18 CPUs. The six browser processes and 3 GiB guard exited
 zero. Executable, library, fixture and image hashes stayed fixed.
 These timings cover synthetic software replay of a stationary fixture.
 
+#### Windows mixed-tile verification setup
+
+The Windows runner shares the delayed PNG, exact pixel samples, and
+whole-document cache comparison with the Linux smoke test. It launches
+each window under a 3 GiB job-object guard and checks the browser, guard,
+and adjacent DLL identities. The two Windows runner unit tests and all
+21 Linux driver unit tests passed. Fresh 1× and 2× captures also passed
+on the published macOS bundle with executable SHA-256
+`5125e51509999049e77a1a210c0c98e861c50990b8f3b21850e58da502555c4e`.
+
+A private Windows amd64 D3D11 console build used V `d79ca45`, MinGW
+GCC 16.2.0, and single-unit C `-prod -no-prod-options`, starting from
+`8a9fd55f9` with concurrent edits elsewhere in the checkout. Its
+SHA-256 was `2b4c288b095dbc042ccce7e2dfedf7501cd2fbe0bbe97b287fb1bb5854b98615`.
+The build and its 12 GiB host guard exited zero at a sampled peak of
+9,876,815,872 bytes. The executable includes the portable group cache,
+pattern painter, and group rasterizer. The Windows job-object guard
+cross-compiled with the documented flags.
+
+The Windows guest launcher reported 4.39 GiB free against its 5 GiB
+host disk reserve. The mixed tile still needs native Windows pixel
+verification. [Windows test command](WINDOWS.md)
+
 ## Sharing the portable SVG fallback with Windows
 
 The standard Windows D3D11 window now uses the same CPU raster and GG texture

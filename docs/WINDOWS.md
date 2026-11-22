@@ -206,6 +206,18 @@ metric from the host Python guard's sampled process-tree RSS. The integration
 checks exercise Unicode/quoted arguments, both output streams, exit propagation,
 timeout termination and a rejected allocation above the job limit.
 
+Check mixed SVG pattern tiles with the built browser and its DLLs available:
+
+```sh
+python tools/test_windows_svg_pattern_tiles.py C:/path/to/Vox.exe \
+  --guard C:/path/to/runtime-guard.exe --output Build/windows-pattern-tiles
+```
+
+The check serves a delayed PNG from loopback, launches fresh guarded
+windows with the portable SVG group cache enabled and disabled, and
+compares the captured document pixels. It records both child exits, the
+browser and adjacent DLL hashes, and the SVG cache diagnostics.
+
 Run the graphics check on the interactive Windows desktop, also through the
 3 GiB guard:
 
