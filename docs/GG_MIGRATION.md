@@ -2306,6 +2306,68 @@ These results measure stationary software replay with and without
 the cache on one build. Hardware frame timings and Windows runtime
 pixels for this fixture remain open.
 
+### Deeper SVG pattern trees
+
+In `4d2f7d388`, the shared rasterizer accepts up to 16 pattern
+levels, matching the retained SVG serializer. A tree still shares
+the 64-operation and 4 Mi-pixel budgets. A Linux boundary check
+rendered six physical pixels per stripe through 16 tiles and
+observed 110 cache hits. At 17 tiles the shared renderer declined
+the tree and published no cached group.
+
+The three-tile fixture repeats the preceding two-tile composition
+with an additional scaling transform. The old Linux renderer
+declined the group and its capture contained no green at the
+stripe samples. The published macOS baseline, SHA-256
+`85d92b56295424799c28b9a35217c43a8829dcf79b34cfde9195331822849693`,
+drew a one-pixel stripe at 1× and a two-pixel stripe at 2× in the
+smaller tile. The shared rasterizer drew six physical pixels at
+both densities on macOS and at 1× on Linux. macOS reused the
+translated tile and separately cached the stretched tile at both
+densities. Linux produced identical document pixels with the
+cache on and off.
+
+The fixture SHA-256 was
+`8cadbf6c4be2b9dec1a48768d2c95c6f29e45a78d4d444a830bcbfc4aeb15ac0`.
+The 320 × 98 fixture crop matched across both systems at 1×, with
+RGB SHA-256
+`5ecc122d99c541ad054f32a64c7f2a3e2a56f6bddb1d9c9f853527b4e11d40e1`.
+The existing nested vector, device-width and delayed bitmap checks
+passed on both platforms. The 23 driver unit tests and Windows
+D3D11 and OpenGL source checks passed.
+
+The Linux builds used V `5a39a4d`, single-unit Clang `-O0` and
+Boehm GC. Their baseline and candidate executable SHA-256 values
+were `1c7c6d9b8d0593390af3829bf4b9e0878236e958302f403e8d4db1c860314849`
+and `fed7c43e7da50a346369ab3dd0644bc30c71966805a0795bcc0186d5cd215bd1`.
+The private macOS candidate used V `d79ca45`, prealloc and single-unit
+C `-prod -no-prod-options`, with executable SHA-256
+`f611bd605a5637ad36feaf0ba3acf2ea27128c4d988fbb32f314d727f8fbd31f`.
+
+Two alternating Linux baseline/candidate pairs measured cached
+replay of the existing two-tile device-width fixture. Each run
+used a fresh profile and cache, one Mesa software worker and an
+800 × 600 Xvfb window. All 48 synthetic idle callbacks ran after
+a one-second settle with five paint commands at scroll offset
+zero. JavaScript and GG Canvas SVG path replay were disabled.
+Separate diagnostics on both builds recorded 141 hits across
+three groups between the first and last callbacks. All six
+captures matched the 800 × 516 document RGBA checksum
+`bbc917efc69336e2b2ea2ff4303af6680003442dfac68903b6619ddc6825d8e2`.
+Executable, linked-library and fixture hashes stayed fixed.
+Guest one-minute load ranged from 0.57 to 0.62 across four CPUs.
+Host load ranged from 5.85 to 6.67 across 18 logical CPUs.
+The builds, test and replay processes, and memory guards exited zero.
+
+| Pair | Baseline / candidate median replay, ms | Baseline / candidate p95, ms | Baseline / candidate maximum, ms | Baseline / candidate median allocated KiB |
+| --- | ---: | ---: | ---: | ---: |
+| 1 | 0.637 / 0.623 | 0.739 / 0.796 | 2.200 / 2.318 | 166 / 166 |
+| 2 | 0.635 / 0.637 | 2.258 / 2.087 | 2.529 / 2.269 | 165 / 165 |
+
+These timings cover stationary software replay of the existing
+fixture. Windows runtime pixels and hardware frame timing for the
+deeper tiles remain open.
+
 ## Sharing the portable SVG fallback with Windows
 
 The standard Windows D3D11 window now uses the same CPU raster and GG texture
