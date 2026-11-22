@@ -116,6 +116,11 @@ pub fn viewport_scroll_raster_reusable(document &dom.Document, commands []PaintC
 			return reject_scroll_raster('perspective')
 		}
 	}
+	return scroll_raster_commands_reusable(commands, width, height)
+}
+
+// The command-list half of viewport_scroll_raster_reusable().
+pub fn scroll_raster_commands_reusable(commands []PaintCommand, width f64, height f64) bool {
 	mut in_command_group := false
 	mut open_groups := []string{}
 	// Only the trailing viewport overlays are painted after caching. Nested
@@ -160,6 +165,15 @@ pub fn viewport_scroll_raster_reusable(document &dom.Document, commands []PaintC
 			open_groups.pop()
 			continue
 		}
+		if command.kind == 'apply_backdrop_filter' && !retain_backdrop_raster_rejection {
+			// scroll_raster_backdrop.v: a bounded CSS-function backdrop at the
+			// top level repaints its whole read region with any damage to it.
+			if in_command_group || open_groups.len > 0 { return reject_scroll_raster('backdrop-in-group') }
+			if scroll_raster_backdrop_read_bounds(command) == none {
+				return reject_scroll_raster('unbounded-backdrop')
+			}
+			continue
+		}
 		match command.kind {
 			// Controls composite these translating primitives on one Skia
 			// surface. Replay both boundaries before caching the final pixels.
@@ -199,6 +213,9 @@ pub fn scroll_raster_trailing_scrollbar_start(commands []PaintCommand) int {
 // Outer shadows extend two blur radii beyond their shadow rectangle, matching
 // native replay culling; inner shadows stay inside their content box.
 pub fn scroll_raster_leaf_ink_bounds(command &PaintCommand) ?LayoutRect {
+	if command.kind == 'apply_backdrop_filter' {
+		return scroll_raster_backdrop_read_bounds(command)
+	}
 	match command.kind {
 		'paint_outer_box_shadow', 'draw_text_shadow' {
 			if command.blur < 0 || math.is_nan(command.blur) || math.is_inf(command.blur, 0) { return none }

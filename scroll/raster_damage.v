@@ -603,7 +603,11 @@ fn scroll_raster_command_hash_ex(command &layout.PaintCommand, scroll f64, trans
 		h = srk_mix(h, layer.mask_clip.cache_key)
 	}
 	if filter := command.backdrop_filter_data {
-		h = srk_ptr(h, voidptr(filter))
+		h = if layout.retain_backdrop_raster_rejection {
+			srk_ptr(h, voidptr(filter))
+		} else {
+			srk_backdrop_filter(h, filter)
+		}
 	}
 	h = srk_bool(h, command.backdrop_source_outside_filter)
 	if clip := command.mask_clip_data {
@@ -812,6 +816,8 @@ fn scroll_raster_frame_keys_with_scrollbars(commands []layout.PaintCommand, scro
 // the transformed clip list in the same space, as for group keys.
 fn scroll_raster_key_ink(command &layout.PaintCommand) ?layout.LayoutRect {
 	ink := layout.scroll_raster_leaf_ink_bounds(command)?
+	// A backdrop samples beyond the clip of the output it writes.
+	if command.kind == 'apply_backdrop_filter' { return ink }
 	if !command.has_clip || !(command.clip_width > 0) || !(command.clip_height > 0)
 		|| !scroll_raster_rect_valid(ink) {
 		return ink
@@ -976,6 +982,16 @@ fn scroll_raster_content_damage(previous &ScrollRasterKeyFrame, current []Scroll
 		area += snapped.width * snapped.height
 		clamped << snapped
 	}
+	// raster_backdrop_damage.v: damage reaching a backdrop's read region
+	// repaints all of it.
+	backdrop_regions := scroll_raster_backdrop_regions(current, width, height)
+	backdrop_strip := scroll_raster_backdrop_strip(delta, width, height)
+	mut backdrop_added := []bool{len: backdrop_regions.len}
+	if scroll_raster_extend_backdrop_damage(mut clamped, backdrop_regions, backdrop_strip,
+		mut backdrop_added) {
+		area = 0
+		for rect in clamped { area += rect.width * rect.height }
+	}
 	mut restores := []ScrollRasterVideoRestore{}
 	for current_index in video_frames {
 		ink := current[current_index].ink
@@ -1030,7 +1046,14 @@ fn scroll_raster_content_damage(previous &ScrollRasterKeyFrame, current []Scroll
 					untouched << restore
 				}
 			}
-			if untouched.len == stats.restores.len { break }
+			if untouched.len == stats.restores.len {
+				// A join can newly reach a backdrop's read region.
+				if !scroll_raster_extend_backdrop_damage(mut clamped, backdrop_regions,
+					backdrop_strip, mut backdrop_added) {
+					break
+				}
+				continue
+			}
 			stats.restores = untouched
 		}
 		if clamped.len + stats.restores.len > scroll_raster_max_damage_rects {
