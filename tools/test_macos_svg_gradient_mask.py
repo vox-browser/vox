@@ -543,7 +543,7 @@ def check_pattern_tile_with_delayed_image(binary, fixture, directory):
     source.mkdir()
     (source / fixture.name).write_bytes(fixture.read_bytes())
     (source / "tile.png").write_bytes(base64.b64decode(
-        "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR4nGNgYPj/HwADAgH/5ncLrgAAAABJRU5ErkJggg=="))
+        "iVBORw0KGgoAAAANSUhEUgAAAAEAAAACCAYAAACZgbYnAAAAEUlEQVR4nGNgYPj/n+E/kAQAEfgD/ek10vYAAAAASUVORK5CYII="))
 
     class DelayedTile(Handler):
         def do_GET(self):
@@ -551,7 +551,7 @@ def check_pattern_tile_with_delayed_image(binary, fixture, directory):
                 time.sleep(0.5)
             super().do_GET()
 
-    white, green, blue = (255, 255, 255), (0, 255, 0), (0, 0, 255)
+    white, green, blue, red = (255, 255, 255), (0, 255, 0), (0, 0, 255), (255, 0, 0)
     with http.server.ThreadingHTTPServer(("127.0.0.1", 0),
                                          functools.partial(DelayedTile, directory=source)) as server:
         thread = threading.Thread(target=server.serve_forever, daemon=True)
@@ -574,6 +574,7 @@ def check_pattern_tile_with_delayed_image(binary, fixture, directory):
                     (1, center - 4, white), (1, center - 3, green),
                     (1, center + 2, green), (1, center + 3, white),
                     (2 * scale, 16 * scale, blue), (10 * scale, 16 * scale, white),
+                    (2 * scale, 18 * scale, red),
                     (22 * scale, 36 * scale, blue), (21 * scale, 30 * scale, green),
                 )
                 for x, y, expected in samples:

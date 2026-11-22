@@ -5,17 +5,31 @@ import layout
 import math
 import painting
 
+fn C.native_image_has_color_profile(voidptr, i32, i32) i32
+
 fn (mut app BrowserApp) raster_svg_mask_image(mut layer PortableSVGMaskLayer, width int, pitch int,
 	operation &layout.PaintMaskOperation, matrix [6]f32) ?bool {
 	if operation.opacity == 0 { return true }
 	// While a request is outstanding, its transparent contribution must not
 	// become a retained group texture.
 	image := app.background_image(operation.image_url) or { return false }
-	if image.data == unsafe { nil } || image.nr_channels != 4 || image.width <= 0
+	if image.data == unsafe { nil } || image.width <= 0
 		|| image.height <= 0 || image.width > 0x1fffffff / image.height
 		|| !matrix.all(math.is_finite(f64(it))) {
 		return none
 	}
+	mut supported := image.nr_channels == 4
+	mut premultiplied := false
+	$if macos {
+		if app.ctx.native_rendering {
+			// Markers 6 and 7 store top-down straight and premultiplied RGBA.
+			// Tagged colors still need the native color conversion.
+			supported = image.path == '' && (image.nr_channels == 6 || image.nr_channels == 7)
+				&& C.native_image_has_color_profile(image.data, i32(image.width), i32(image.height)) == 0
+			premultiplied = image.nr_channels == 7
+		}
+	}
+	if !supported { return none }
 	rect := operation.image_rect
 	replay := resolved_svg_operation_image(operation.image_paintable,
 		painting.Rect{rect.x, rect.y, rect.width, rect.height}, operation.image_position_x,
@@ -45,6 +59,7 @@ fn (mut app BrowserApp) raster_svg_mask_image(mut layer PortableSVGMaskLayer, wi
 		width: image.width
 		height: image.height
 		pitch: image_pitch
+		premultiplied: premultiplied
 	}
 	if !cpuraster.draw_canvas_image(mut layer.pixels, width, layer.rows.height(), pitch, 2,
 		transform, bitmap, [f32(0), 0, f32(image.width), f32(image.height)]!,

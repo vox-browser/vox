@@ -69,10 +69,13 @@ int main(int argc, char **argv) {
         assert(!native_image_icc_profile(pixels, 2, 2));
         assert(native_png_icc_cached_bytes == 0 && native_png_icc_lru.count == 0);
         assert(native_image_color_profile(pixels, 2, 2, &profile));
+        assert(native_image_has_color_profile(pixels, 2, 2));
         assert(profile.values[0] == -1 && profile.values[16] == 0.75f);
         assert(!native_image_color_profile(pixels, 4, 1, &profile));
+        assert(!native_image_has_color_profile(pixels, 4, 1));
         native_tag_decoded_image_color_profile(pixels, 2, 2, NULL);
         assert(!native_image_color_profile(pixels, 2, 2, &profile));
+        assert(!native_image_has_color_profile(pixels, 2, 2));
         native_tag_decoded_image_color_profile(pixels, 2, 2, decoded.values);
         native_tag_image_color_profile(pixels, 2, 2, NULL, 0, 0);
         assert(!native_image_color_profile(pixels, 2, 2, &profile));
