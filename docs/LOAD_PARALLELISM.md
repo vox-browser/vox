@@ -623,3 +623,27 @@ disabled, with overlapping ranges of 1,022–1,389 ms and 879–1,803 ms. These
 frame-log readings include installation and log delivery. With the frame
 throttle disabled for seven screenshot pairs, the median rose from 803 ms to
 894 ms with identical pixels. The throttle stays enabled.
+
+### Pre-layout image requests
+
+The trace of `6209346d8` showed the four initial CSS background requests just
+after computed styles, followed by the fifth background and the 16×16 tab
+icon after layout. In one diagnostic launch these groups started at 573–575 ms
+and 633–637 ms, respectively. `5655e4448` queues the tab icon with the computed
+backgrounds before layout and gives this batch half of the 16-request transport
+budget. The regular background loader still owns cancellation, deduplication,
+decoding and the icon fallback.
+
+The four focused tests in `paint/resource_preload_test.v` passed with the
+production module paths, preallocation and `-gc none`. The new test checks the
+last declared favicon, duplicate URLs, hidden backgrounds and the combined
+batch limit. Both the compilation guard and the 3 GiB runtime guard exited
+zero. A fresh guest Vox launch of the live homepage rendered the sign-in page
+with zero listing posts and exited zero.
+
+Production attempts `20261122-153553-04c09a67` and `20261122-155304-02b2d5ea`
+both exited 1. Input verification caught concurrent changes to
+`platform/curl_api.h` in the first attempt and `libjs/native_code_cache.v` in
+the second. The second compiler consumed the image scheduling sources. The
+published executable still predates that change, so its effect on capture time
+and the 20% margin remain open.
