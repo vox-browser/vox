@@ -11423,3 +11423,37 @@ by its begin (`VOX_RETAIN_SHARED_GROUP_END_KEYS`); on this page it is neutral
 (8 pairs: 22.101B vs 22.134B median). Cohort on bundle `fca5a9cf1543`: Vox
 about 22.1B, Brave 20.63B median (6 runs, 20.40-20.86B); every Vox capture
 2 pixels from the Brave reference.
+
+**Paint projection.** Stage-logged loads (`5103a3826`, `465cbc3db`,
+`021646346`, `344b253c8`) split the remaining work. Pulse frames of the
+sponsor heart's `pulse-in` animation re-record, hash and plan the whole
+viewport (about 40-60M each), and how many occur before capture varies
+between loads. The largest repeated cost, though, is the renderer box
+projection: about 12 complete projections per load at 70-80M each
+(stage-logged), 8 of them inside layout passes and the rest full paint
+refreshes after compositor-category or non-local style changes. In the
+layout pass benchmark's text mutation pass (scale 2) the projection was a
+quarter of the pass, and SVG paths alone (serialization, bounds,
+flattening for about 190 octicons) a sixth of the projection.
+
+- `06b1c9033` memoizes each SVG path's serialization, bounds and packed
+  segments by complete path content (verified on every hit), in capped
+  persistent storage (`VOX_DISABLE_SVG_PATH_PROJECTION_MEMO`): text pass
+  218.6M -> 198.8M.
+- `97af4b88a` resolves scroll-margin only for snap areas and scroll-padding
+  only for snap containers, the only readers
+  (`VOX_RETAIN_ALL_SCROLL_SNAP_EDGES`): 198.8M -> 195.9M.
+
+Same-binary cohort on bundle `97af4b88a` (6 alternating pairs, host load
+5.9-7.7; control sets both switches):
+
+| Arm | Median | Range | Pixels vs Brave reference |
+|---|---:|---:|---:|
+| current | 21.263B | 20.827-22.009B | 2 in every run |
+| both switches | 22.005B | 21.237-22.191B | 2 in every run |
+| Brave | 20.490B | 20.400-21.101B | 25 in every run |
+
+The candidate is lower than its control in every pair (0.18-1.13B). The
+median ratio to Brave is 1.04; the conservative highest-Vox to lowest-Brave
+ratio is 1.08.
+
