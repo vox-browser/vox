@@ -3140,6 +3140,9 @@ fn (b &BlockBox) refresh_selected_paint_phase_command_cache_with_debug(entries [
 	// remain unchanged, while refreshed entries receive exact-sized storage.
 	unpublished := b.record_paint_commands_for_entries(entries, selected, mut recorder)
 	release_paint_commands(unpublished)
+	if paint_phase_refresh_diagnostics {
+		report_paint_phase_refresh(entries, selected, phase_commands)
+	}
 	for index in 0 .. entries.len {
 		if selected[index] {
 			entry_valid[index] = true
