@@ -3067,6 +3067,9 @@ fn viewport_record_display_list(target voidptr) &dom.DisplayList {
 	note_recorded_entry_opacities(mut result)
 	if !result.paint_phase_cache_valid {
 		result.paint_phase_commands, result.paint_phase_command_count = result.paint_tree.build_selected_paint_phase_command_cache_with_debug(result.paint_order, result.paint_phase_commands, selected, show_line_box_borders)
+		if paint_phase_refresh_diagnostics {
+			eprintln('VOX_PAINT_PHASE_REFRESH full-build entries=${result.paint_order.len} selected=${selected.count(it)} commands=${result.paint_phase_command_count}')
+		}
 		result.paint_phase_entry_valid = if selected.len > 0 { selected.clone() } else { []bool{len: result.paint_order.len, init: true} }
 		result.paint_phase_cache_valid = true
 	} else {
@@ -3528,6 +3531,10 @@ fn viewport_stacking_context(target voidptr) &dom.StackingContext {
 
 fn viewport_invalidate_stacking_context(target voidptr) {
 	mut result := viewport_layout_result(target)
+	if paint_phase_refresh_diagnostics && result.paint_phase_cache_valid {
+		eprintln('VOX_PAINT_PHASE_INVALIDATE stacking-context entries=${result.paint_order.len}')
+		print_backtrace()
+	}
 	result.stacking_context_tree_is_valid = false
 	result.stacking_context = unsafe { nil }
 	result.paint_order.clear()
@@ -3567,6 +3574,9 @@ fn viewport_reconcile_retained_paint_cache(mut result DocumentLayoutResult,
 		}
 	}
 	if !same_order {
+		if paint_phase_refresh_diagnostics {
+			report_paint_order_mismatch(result.paint_order, paint_order)
+		}
 		clear_phase_command_storage(mut result.paint_phase_commands)
 		result.paint_phase_command_count = 0
 		result.paint_phase_cache_valid = false

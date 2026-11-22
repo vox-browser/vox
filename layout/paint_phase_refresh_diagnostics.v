@@ -38,3 +38,18 @@ fn paint_phase_refresh_entry_name(box &BlockBox) string {
 	}
 	return if dom_node.is_text() { 'text' } else { 'node' }
 }
+
+// The first index where a rebuilt paint order stops matching the retained one.
+fn report_paint_order_mismatch(previous []PaintOrderEntry, current []PaintOrderEntry) {
+	mut first := -1
+	limit := if previous.len < current.len { previous.len } else { current.len }
+	for index in 0 .. limit {
+		if voidptr(previous[index].box) != voidptr(current[index].box) {
+			first = index
+			break
+		}
+	}
+	previous_name := if first >= 0 { paint_phase_refresh_entry_name(previous[first].box) } else { '-' }
+	current_name := if first >= 0 { paint_phase_refresh_entry_name(current[first].box) } else { '-' }
+	eprintln('VOX_PAINT_PHASE_INVALIDATE order previous=${previous.len} current=${current.len} first=${first} was=${previous_name} now=${current_name}')
+}
