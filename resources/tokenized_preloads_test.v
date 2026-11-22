@@ -9,6 +9,7 @@ fn test_tokenized_navigation_preloads_match_full_discovery_with_raw_text_and_url
 	for markup in [
 		'<html><head><title>&lt;img src="fake.png"></title><link rel="stylesheet" href="/x.css?a&amp;b"><script src="/x.js"></script></head><body><table><tr><td><img src="/p.png"><script src="/late.js">let s="<img src=\'hidden.png\'>";</script></td></tr></table></body></html>',
 		'<html><head><style>i:before{content:"<script src=bad.js>"}</style><link rel="preload" as="style" type="text/css; charset=utf-8" href="/x.css"><link rel="stylesheet" href="/x.css"></head><body><textarea><img src="fake.png"></textarea><img src="/x.css"><script src="/x.css"></script><script src="/right.js" type="APPLICATION/JAVASCRIPT"></script><script src="/data.json" type="application/json"></script></body></html>',
+		'<html><head><base href="https://preload.test/root/page"><meta http-equiv="Content-Type" content="text/html; charset=UTF-8"><link rel="stylesheet" href="page.css"></head><body></body></html>',
 	] {
 		loaded := LoadedPage{url:'https://preload.test/root/page', markup:markup, content_type:'text/html;charset=utf-8'}
 		found := tokenized_navigation_preloads(loaded) or { panic('eligible preload input rejected') }
@@ -27,20 +28,23 @@ fn test_tokenized_navigation_preloads_keep_sensitive_contexts_on_the_full_parser
 		'<noscript><link rel="stylesheet" href="hidden.css"></noscript>',
 		'<svg><image href="graphic.svg"/></svg>', '<math></math>',
 		'<select><img src="ignored.png"></select>', '<meta http-equiv="default-style" content="Other">',
+		'<meta http-equiv="content-type" content="text/html; charset=windows-1252">',
 		'<link rel="stylesheet" title="Set" href="set.css">',
+		'<link rel="stylesheet" type="application/json" href="unused.css">',
 		'<link rel="alternate stylesheet" href="unused.css">', '<link rel="stylesheet" disabled href="unused.css">',
 		'<style title="Set">b{color:red}</style>',
 	] {
-		assert collect_tokenized_navigation_preloads('<html><head></head><body>${content}</body></html>', 'https://preload.test/') == none
+		assert collect_tokenized_navigation_preloads('<html><head></head><body>${content}</body></html>', 'https://preload.test/', 'UTF-8') == none
 	}
-	assert collect_tokenized_navigation_preloads('<link rel="stylesheet" href="fragment.css">', 'https://preload.test/') == none
+	assert collect_tokenized_navigation_preloads('<link rel="stylesheet" href="fragment.css">', 'https://preload.test/', 'UTF-8') == none
+	assert collect_tokenized_navigation_preloads('<html><head><meta http-equiv="content-type" content="text/html; charset=UTF-8"></head><body></body></html>', 'https://preload.test/', 'windows-1252') == none
 }
 
 fn test_tokenized_navigation_preloads_preserve_group_priority_and_image_limit() {
 	mut content := '<html><head></head><body><img src="shared"><img src="late.png"><script src="shared"></script><link rel="stylesheet" href="shared">'
 	for index in 0 .. max_preloaded_resources + 8 { content += '<script src="${index}.js"></script>' }
 	content += '</body></html>'
-	found := collect_tokenized_navigation_preloads(content, 'https://preload.test/') or { panic('eligible') }
+	found := collect_tokenized_navigation_preloads(content, 'https://preload.test/', 'UTF-8') or { panic('eligible') }
 	// Discovery retains scripts independently of the commit barrier; images
 	// only fit the remaining discovery budget.
 	assert found.urls.len == max_preloaded_resources + 9
@@ -52,7 +56,7 @@ fn test_tokenized_navigation_preloads_preserve_group_priority_and_image_limit() 
 	mut images := '<html><head></head><body><script src="a.js"></script>'
 	for index in 0 .. max_preloaded_resources + 8 { images += '<img src="${index}.png">' }
 	images += '</body></html>'
-	bounded := collect_tokenized_navigation_preloads(images, 'https://preload.test/') or { panic('eligible') }
+	bounded := collect_tokenized_navigation_preloads(images, 'https://preload.test/', 'UTF-8') or { panic('eligible') }
 	assert bounded.urls.len == max_preloaded_resources
 	assert bounded.urls.last() == 'https://preload.test/${max_preloaded_resources - 2}.png'
 }

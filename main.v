@@ -1251,12 +1251,7 @@ fn filter_preloaded_resource_with_scope(resource PreloadedResource, source_url s
 	return resource
 }
 
-fn fetch_page_in_background(resolved string, base string, generation int, add_history bool, results chan NavigationResult) {
-	fetch_page_in_background_with_scope(resolved, base, generation, add_history, results,
-		browsernet.new_request_scope())
-}
-
-fn fetch_page_in_background_with_scope(resolved string, base string, generation int, add_history bool, results chan NavigationResult, scope &browsernet.RequestScope) {
+fn fetch_page_in_background_with_scope(resolved string, base string, generation int, add_history bool, results chan NavigationResult, scope &browsernet.RequestScope, stylesheet_script_policy BrowserScriptPolicy) {
 	defer { scope.release() }
 	platform.retain_thread_allocations()
 	loaded := fetch_page_with_scope(resolved, base, scope) or {
@@ -1276,6 +1271,7 @@ fn fetch_page_in_background_with_scope(resolved string, base string, generation 
 		add_history: add_history
 		resolved: resolved
 		loaded: loaded
+		stylesheets: start_early_navigation_stylesheets(loaded, stylesheet_script_policy, scope)
 	}, results, scope)
 	$if macos {
 		C.native_wake_browser()
@@ -4271,10 +4267,12 @@ fn (mut app BrowserApp) poll_navigation() {
 			if result.generation != app.navigation_generation {
 				return
 			}
-			app.cancel_navigation_fetch()
 			if loaded := result.loaded {
+				if app.adopt_navigation_stylesheets(result, loaded) { return }
+				app.cancel_navigation_fetch()
 				app.prepare_loaded_page(loaded, result.add_history)
 			} else {
+				app.cancel_navigation_fetch()
 				app.install_loaded_page(LoadedPage{
 					url: result.resolved
 					markup: error_markup(result.resolved, result.error)

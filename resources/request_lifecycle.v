@@ -15,13 +15,18 @@ fn publish_navigation_result(result NavigationResult, results chan NavigationRes
 	_ = browsernet.publish_result(result, results, scope)
 }
 
+fn (mut app NavigationController) take_navigation_fetch_scope() ?&browsernet.RequestScope {
+	scope := app.navigation_request_scope
+	app.navigation_request_scope = none
+	app.navigation_fetch_generation = 0
+	return scope
+}
+
 fn (mut app NavigationController) cancel_navigation_fetch() {
-	if scope := app.navigation_request_scope {
+	if scope := app.take_navigation_fetch_scope() {
 		scope.cancel()
 		scope.release()
-		app.navigation_request_scope = none
 	}
-	app.navigation_fetch_generation = 0
 }
 
 fn (mut app BrowserApp) cancel_background_resource_fetches() {

@@ -59,6 +59,7 @@ struct NavigationResult {
 	add_history bool
 	resolved    string
 	loaded      ?LoadedPage
+	stylesheets ?NavigationStylesheetPreloads
 	error       string
 }
 
