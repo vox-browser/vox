@@ -68,8 +68,26 @@ fn stationary_document_raster_command_eligible(command &layout.PaintCommand, dep
 	return true
 }
 
+// Same-binary control: track canvas culling through every command even when
+// no video can use it.
+const cull_stationary_commands_without_video = os.getenv('VOX_CULL_STATIONARY_COMMANDS_WITHOUT_VIDEO') != ''
+
 fn stationary_document_raster_viewport_eligible(commands []layout.PaintCommand,
 	page_y f64, width f64, height f64) bool {
+	// Culling decides only whether a video lies outside the canvas; canvases
+	// and live nested documents are ineligible wherever they are. Without a
+	// video the answer is the ordinary command scan, and every frame skips
+	// computing ink bounds for the whole display list.
+	if !cull_stationary_commands_without_video {
+		mut has_video := false
+		for index in 0 .. commands.len {
+			if commands[index].kind == 'draw_video' {
+				has_video = true
+				break
+			}
+		}
+		if !has_video { return stationary_document_raster_commands_eligible(commands, 0) }
+	}
 	mut culling := PaintCanvasCulling{enabled: true}
 	for index in 0 .. commands.len {
 		command := &commands[index]
