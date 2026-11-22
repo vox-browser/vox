@@ -8043,6 +8043,7 @@ fn (mut app BrowserApp) draw() {
 				app.snapshot_hold = false
 			}
 			if paint_document && browser_snapshot_cache_enabled() && !app.snapshot_cached
+				&& app.browser_chrome.javascript_compilation == none
 				&& !app.load_status.starts_with('Cached') && !app.load_status.starts_with('Loading ') {
 				app.snapshot_cached = true
 				C.native_cache_browser_snapshot(app.browser_chrome_snapshot_path(app.address))

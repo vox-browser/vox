@@ -93,7 +93,11 @@ fn browser_parser_created(target voidptr, parser &html.HTMLParser) {
 				binding.run_browser_extensions(if readiness == .interactive { .document_end } else { .document_idle })
 			}
 			if readiness == .complete {
-				if mut warmup := binding.site_native_warmup { warmup.start_after_load() }
+				if mut warmup := binding.site_native_warmup {
+					// The compiler publishes from its worker. Native wake delivery
+					// schedules the chrome update on the browser thread.
+					warmup.start_after_load(fn () { C.native_wake_browser() })
+				}
 			}
 		})
 		if first_parser { host.run_browser_extensions(.document_start) }

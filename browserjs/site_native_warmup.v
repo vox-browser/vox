@@ -4,9 +4,13 @@ import browsersettings
 import libjs
 import os
 import platform
+import sync.stdatomic
 
 const site_warmup_limit = 4 * 1024 * 1024
-const site_warmup_worker = chan bool{cap: 1}
+
+__global (
+	site_warmup_worker = chan bool{cap: 1}
+)
 
 @[heap]
 pub struct SiteNativeWarmup {
@@ -16,7 +20,32 @@ mut:
 	sources []libjs.NativeWarmupSource
 	bytes int
 	sealed bool
+	compilation ?&SiteNativeCompilation
 }
+
+@[heap]
+struct SiteNativeCompilation {
+	storage &platform.RetainedArena
+mut:
+	// Published by the worker. A negative value means it has finished.
+	percent i64
+}
+
+fn (mut warmup SiteNativeWarmup) compilation_progress() ?int {
+	job := warmup.compilation or { return none }
+	percent := stdatomic.load_i64(&job.percent)
+	if percent >= 0 { return int(percent) }
+	warmup.release_compilation()
+	return none
+}
+
+fn (mut warmup SiteNativeWarmup) release_compilation() {
+	job := warmup.compilation or { return }
+	warmup.compilation = none
+	mut storage := job.storage
+	storage.release()
+}
+
 
 fn site_warmup_options() libjs.NativeCodeCacheOptions {
 	return libjs.NativeCodeCacheOptions{
@@ -43,7 +72,8 @@ pub fn plan_site_native_warmup(address string) (Engine, ?&SiteNativeWarmup) {
 	if os.is_dir(root) && libjs.native_site_cache_ready(root, identity, site_warmup_options()) {
 		return .libjs, none
 	}
-	return .javascriptcore, &SiteNativeWarmup{root: root.clone(), identity: identity.clone()}
+	warmup := ?&SiteNativeWarmup(&SiteNativeWarmup{root: root.clone(), identity: identity.clone()})
+	return .javascriptcore, warmup
 }
 
 pub fn (mut runtime Runtime) set_site_native_warmup(warmup ?&SiteNativeWarmup) {
@@ -89,7 +119,7 @@ fn (runtime &Runtime) collect_site_native_source(source libjs.NativeWarmupSource
 	warmup.sources << libjs.NativeWarmupSource{...source, code: source.code.clone(), filename: source.filename.clone()}
 }
 
-pub fn (mut warmup SiteNativeWarmup) start_after_load() {
+pub fn (mut warmup SiteNativeWarmup) start_after_load(wake fn ()) {
 	if warmup.sealed || warmup.sources.len == 0 { return }
 	warmup.sealed = true
 	defer { warmup.sources = [] }
@@ -99,6 +129,7 @@ pub fn (mut warmup SiteNativeWarmup) start_after_load() {
 	}
 	mut storage := platform.new_retained_arena('LibJS site source snapshot')
 	mut scope := storage.enter_nested()
+	job := &SiteNativeCompilation{ storage: storage }
 	sources := warmup.sources.map(libjs.NativeWarmupSource{
 		...it
 		code: it.code.clone()
@@ -114,13 +145,24 @@ pub fn (mut warmup SiteNativeWarmup) start_after_load() {
 		_ := <-site_warmup_worker
 		return
 	}
-	storage.release()
-	spawn run_site_native_warmup(root, identity, compiler, options, sources, invoker)
+	// The document owns the initial lease. The deferred invoker keeps the
+	// source snapshot and progress alive until the worker finishes.
+	warmup.compilation = job
+	wake()
+	spawn run_site_native_warmup(root, identity, compiler, options, sources, invoker, job, wake)
 }
 
 fn run_site_native_warmup(root string, identity string, compiler string,
-	options libjs.NativeCodeCacheOptions, sources []libjs.NativeWarmupSource, invoker platform.NativeDeferredInvoker) {
-	libjs.compile_native_site_cache(root, identity, compiler, options, sources) or {}
+	options libjs.NativeCodeCacheOptions, sources []libjs.NativeWarmupSource,
+	invoker platform.NativeDeferredInvoker, job &SiteNativeCompilation, wake fn ()) {
+	libjs.compile_native_site_cache(root, identity, compiler, options, sources,
+		on_progress: fn [job, wake] (completed int, total int) {
+			stdatomic.store_i64(&job.percent, i64(completed * 100 / total))
+			wake()
+		}
+	) or {}
+	stdatomic.store_i64(&job.percent, -1)
+	wake()
 	_ := <-site_warmup_worker
 	invoker.deferred_invoke(fn () {})
 }

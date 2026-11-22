@@ -29,6 +29,19 @@ pub fn (runtime &Runtime) native_code_cache_stats() libjs.NativeCacheStats {
 	return runtime.agent_vm.native_code_cache_stats()
 }
 
+// Snapshot the current document's compilation. Warmup jobs publish on a
+// worker, while the live VM installs its completed batches on this thread.
+pub fn (runtime &Runtime) javascript_compilation_progress() ?int {
+	if mut warmup := runtime.site_native_warmup_ {
+		return warmup.compilation_progress()
+	}
+	base := runtime.libjs_compilation_base_ or { return none }
+	stats := runtime.native_code_cache_stats()
+	completed := stats.compiled_executables - base
+	total := completed + u64(stats.pending_executables)
+	return if total == 0 { 0 } else { int(completed * 100 / total) }
+}
+
 fn (mut runtime Runtime) flush_document_native_cache() {
 	if !runtime.libjs_native_cache_enabled_ || runtime.libjs_native_cache_failed_ { return }
 	if runtime.scripting_settings_ == none {
@@ -86,6 +99,13 @@ fn (runtime &Runtime) schedule_document_native_cache() {
 
 fn (mut runtime Runtime) advance_document_native_cache() {
 	if runtime.closed { return }
+	previous_progress := runtime.javascript_compilation_progress()
+	defer {
+		if !runtime.libjs_native_cache_pending_ { runtime.libjs_compilation_base_ = none }
+		if runtime.javascript_compilation_progress() != previous_progress {
+			if wakeup := runtime.document_state_wakeup_ { wakeup() }
+		}
+	}
 	if !runtime.agent_vm.native_code_cache_is_idle() {
 		runtime.libjs_native_cache_timer_.start()
 		return
@@ -110,6 +130,9 @@ fn (mut runtime Runtime) advance_document_native_cache() {
 			return
 		}
 		if runtime.agent_vm.has_background_native_cache_batch() {
+			if runtime.libjs_compilation_base_ == none {
+				runtime.libjs_compilation_base_ = runtime.native_code_cache_stats().compiled_executables
+			}
 			runtime.libjs_native_cache_timer_.start_with_interval(50)
 			return
 		}
@@ -133,6 +156,7 @@ fn (mut runtime Runtime) stop_document_native_cache_timer() {
 	callback := timer.on_timeout
 	timer.on_timeout = unsafe { nil }
 	runtime.libjs_native_cache_timer_ = unsafe { nil }
+	runtime.libjs_compilation_base_ = none
 	runtime.libjs_native_cache_pending_ = false
 	platform.release_closure(voidptr(callback))
 }

@@ -83,6 +83,7 @@ pub:
 	engine Engine
 mut:
 	site_native_warmup_ ?&SiteNativeWarmup
+	libjs_compilation_base_ ?u64
 	worker_module_global bool
 	context                   voidptr
 	closed                    bool
@@ -465,6 +466,7 @@ pub fn (mut runtime Runtime) close() {
 	if runtime.closed {
 		return
 	}
+	if mut warmup := runtime.site_native_warmup_ { warmup.release_compilation() }
 	runtime.site_native_warmup_ = none
 	runtime.stop_document_native_cache_timer()
 	runtime.flush_document_native_cache()

@@ -43,10 +43,16 @@ fn native_site_program_exists(directory string, key string) bool {
 		&& os.is_file(os.join_path(directory, record.library))
 }
 
+@[params]
+pub struct NativeSiteCompileObserver {
+pub:
+	on_progress ?fn (int, int)
+}
+
 // Compile detached source records. A fresh realm supplies compiler layouts
 // and receives no DOM, fetch callbacks or author execution.
 pub fn compile_native_site_cache(root string, identity string, compiler string,
-	options NativeCodeCacheOptions, sources []NativeWarmupSource) ! {
+	options NativeCodeCacheOptions, sources []NativeWarmupSource, observer NativeSiteCompileObserver) ! {
 	if sources.len == 0 || sources.len > 128 { return error('Invalid native site source count') }
 	mut vm := VM.create()
 	create_simple_execution_context(mut vm)
@@ -58,7 +64,12 @@ pub fn compile_native_site_cache(root string, identity string, compiler string,
 	for source in sources {
 		keys << prepare_site_program(mut vm, mut cache, vm.realm(), source)!
 	}
-	vm.flush_native_code_cache()!
+	mut pending := vm.native_code_cache_stats().pending_executables
+	total := pending
+	for pending > 0 {
+		pending = vm.flush_native_code_cache_batch()!.pending_executables
+		if on_progress := observer.on_progress { on_progress(total - pending, total) }
+	}
 	marker := native_site_cache_path(cache.directory, identity)
 	temporary := marker + '.' + rand.bytes(16)!.hex() + '.tmp'
 	defer { os.rm(temporary) or {} }
