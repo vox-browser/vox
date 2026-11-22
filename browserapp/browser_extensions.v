@@ -14,70 +14,58 @@ struct BrowserExtensionRow {
 
 struct BrowserExtensionsUI {
 mut:
-	open    bool
+	folder  string
 	rows    []BrowserExtensionRow
 	message string
 	failed  bool
 }
 
-const browser_extensions_ui = &BrowserExtensionsUI{}
-const browser_extensions_width = 560
-const browser_extensions_height = 390
-
-fn browser_extensions_button(id string, title string, x f64, y f64, width f64) ui2.Element {
-	return ui2.with_native_style(ui2.button(id, title, ui2.rect(x, y, width, 28),
-		ui2.BoxStyle{}, ui2.TextStyle{ size: 13 }))
-}
-
-fn browser_extensions_elements(state &BrowserExtensionsUI) ui2.Element {
+fn (state &BrowserExtensionsUI) elements() []ui2.Element {
 	mut rows := []ui2.Element{}
 	if state.rows.len == 0 {
-		rows << ui2.label('extensions-empty', 'No extensions loaded', ui2.rect(8, 8, 480, 22), ui2.TextStyle{ size: 13 })
+		rows << ui2.label('extensions-empty', 'No extensions loaded', ui2.rect(14, 10, 472, 24), ui2.TextStyle{ size: 13 })
 	}
 	for index, extension in state.rows {
 		y := f64(index * 58)
-		rows << ui2.label('extensions-name:${extension.id}', '${extension.name}  ${extension.version}', ui2.rect(8, y + 4, 312, 21), ui2.TextStyle{ size: 13 })
-		rows << ui2.Element{
-			...ui2.label('extensions-sites:${extension.id}', extension.sites, ui2.rect(8, y + 27, 312, 18), ui2.TextStyle{ size: 11, color: 0x555555 })
-			tooltip: extension.sites
-		}
 		action := if extension.enabled { 'disable' } else { 'enable' }
 		title := if extension.enabled { 'Disable' } else { 'Enable' }
-		rows << browser_extensions_button('extensions-${action}:${extension.id}', title, 326, y + 9, 76)
-		rows << browser_extensions_button('extensions-remove:${extension.id}', 'Remove', 410, y + 9, 82)
+		rows << ui2.Element{
+			...ui2.view('', ui2.rect(0, y, 500, 58), ui2.BoxStyle{ transparent: true }, [
+				ui2.label('extensions-name:${extension.id}', '${extension.name}  ${extension.version}', ui2.rect(14, 4, 282, 21), ui2.TextStyle{ size: 13 }),
+				ui2.with_tooltip(ui2.label('extensions-sites:${extension.id}', extension.sites, ui2.rect(14, 27, 282, 18), ui2.TextStyle{ size: 11, color: 0x525a66 }), extension.sites),
+				ui2.with_action(browser_settings_button('extensions-toggle:${extension.id}', title, 310, 9, 76), 'extensions-${action}:${extension.id}'),
+				browser_settings_button('extensions-remove:${extension.id}', 'Remove', 394, 9, 82),
+			])
+			key: extension.id
+		}
 	}
+	browse := ui2.file_dialog_supported()
 	folder := ui2.text_input(
 		id:          'extensions-path'
 		submit_id:   'extensions-install'
+		text:        state.folder
 		hint_text:   'Folder containing manifest.json'
-		frame:       ui2.rect(24, 48, 314, 28)
+		frame:       ui2.rect(24, 64, if browse { 300 } else { 378 }, 28)
+		multiline:   false
 		autocorrect: false
 		text_style:  ui2.TextStyle{ size: 13 }
 	) or { panic(err) }
+	help := ui2.TextStyle{ size: 12, color: 0x525a66 }
 	mut elements := [
-		ui2.label('extensions-heading', 'Extensions', ui2.rect(24, 16, 490, 25), ui2.TextStyle{ size: 18 }),
 		ui2.Element{ ...folder, accessibility_label: 'Unpacked extension folder' },
-		browser_extensions_button('extensions-install', 'Load unpacked', 422, 48, 114),
-		ui2.label('extensions-help', 'Use a trusted Manifest V3 folder. Changes apply on new page loads.', ui2.rect(24, 82, 512, 20), ui2.TextStyle{ size: 12 }),
-		ui2.scroll('extensions-list', ui2.rect(24, 112, 512, 206), 0xf7f7f7, rows),
-		ui2.Element{
-			...ui2.label('extensions-status', state.message, ui2.rect(24, 336, 416, 26), ui2.TextStyle{ size: 12, color: if state.failed {
-				u32(0xb42318)
-			} else {
-				u32(0x333333)
-			} })
-			tooltip: state.message
-		},
-		browser_extensions_button('extensions-close', 'Done', 450, 336, 86),
+		browser_settings_button('extensions-install', 'Load unpacked', 410, 64, 114),
+		ui2.label('extensions-help', 'Use a trusted Manifest V3 folder.', ui2.rect(24, 101, 500, 20), help),
+		ui2.label('extensions-apply-help', 'Extension changes are saved immediately and take effect on new page loads.', ui2.rect(24, 121, 500, 20), help),
+		ui2.scroll('extensions-list', ui2.rect(24, 152, 500, 150), 0xf5f6f8, rows),
+		ui2.with_tooltip(ui2.label('extensions-status', state.message, ui2.rect(24, 307, 500, 26), ui2.TextStyle{
+			size: 12
+			color: if state.failed { u32(0xb42318) } else { u32(0x343a44) }
+		}), state.message),
 	]
-	if ui2.file_dialog_supported() {
-		elements << browser_extensions_button('extensions-browse', 'Browse…', 346, 48, 68)
+	if browse {
+		elements << browser_settings_button('extensions-browse', 'Browse…', 332, 64, 70)
 	}
-	return ui2.Element{
-		...ui2.view('extensions-root', ui2.rect(0, 0, browser_extensions_width, browser_extensions_height), ui2.BoxStyle{ bg: 0xffffff }, elements)
-		accessibility_role:  'dialog'
-		accessibility_label: 'Extensions'
-	}
+	return elements
 }
 
 fn (mut state BrowserExtensionsUI) load_rows() {
@@ -100,66 +88,34 @@ fn (mut state BrowserExtensionsUI) load_rows() {
 	})
 }
 
-fn refresh_browser_extensions() {
-	$if vox_ui2 ? {
-		if browser_extensions_ui.open {
-			ui2.show_embedded_panel('extensions', 'Extensions', browser_extensions_width, browser_extensions_height,
-				browser_extensions_elements(browser_extensions_ui))
-		} else {
-			ui2.hide_embedded_panel('extensions')
-		}
-	}
-	if address_bar_owner.app != unsafe { nil } {
-		mut app := address_bar_owner.app.active_browser_tab()
-		mut state := app.browser_ui()
-		state.version++
-		app.refresh_browser_ui()
-	}
-}
-
-fn browser_extensions_event(event string) {
-	mut state := unsafe { browser_extensions_ui }
-	if event == 'extensions-open' {
-		if !state.open {
-			if browser_settings_visible() { close_browser_settings() }
-			state.open = true
-			state.message = ''
-			state.failed = false
-			state.load_rows()
-		}
-		refresh_browser_extensions()
-		return
-	}
-	if !state.open { return }
-	if event in ['extensions-close', 'panel-close:extensions'] {
-		state.open = false
-		state.rows = []BrowserExtensionRow{}
-		refresh_browser_extensions()
-		return
-	}
+fn (mut state BrowserExtensionsUI) handle_event(event string) {
 	if event == 'extensions-browse' {
 		directories := ui2.open_folder_dialog(title: 'Choose an unpacked extension')
 		if directories.len > 0 { ui2.set_text('extensions-path', directories[0]) }
 		return
 	}
-	state.message = update_browser_extension(event) or {
+	state.folder = ui2.text('extensions-path').clone()
+	state.message = update_browser_extension(event, state.folder) or {
 		state.failed = true
 		state.message = err.msg().clone()
-		refresh_browser_extensions()
+		refresh_browser_settings()
 		return
 	}
 	state.failed = false
 	state.load_rows()
-	refresh_browser_extensions()
-	if event == 'extensions-install' { ui2.set_text('extensions-path', '') }
+	if event == 'extensions-install' {
+		state.folder = ''
+		ui2.set_text('extensions-path', '')
+	}
+	refresh_browser_settings()
 }
 
-fn update_browser_extension(event string) !string {
+fn update_browser_extension(event string, folder string) !string {
 	mut scratch := platform.begin_thread_scratch('update extension profile')
 	defer { scratch.finish() }
 	path := browserextensions.profile_path()
 	if event == 'extensions-install' {
-		extension := browserextensions.install(path, ui2.text('extensions-path').trim_space()) or {
+		extension := browserextensions.install(path, folder.trim_space()) or {
 			scratch.leave()
 			return error(err.msg().clone())
 		}
@@ -188,30 +144,4 @@ fn update_browser_extension(event string) !string {
 		}
 		else { return '' }
 	}
-}
-
-fn browser_extensions_overlay(width int, height int) []ui2.Element {
-	$if vox_ui2 ? {
-		return []ui2.Element{}
-	}
-	if !browser_extensions_ui.open { return []ui2.Element{} }
-	x := if width > browser_extensions_width {
-		f64(width - browser_extensions_width) / 2
-	} else {
-		0.0
-	}
-	return [ui2.view('extensions-overlay', ui2.rect(0, 0, width, height), ui2.BoxStyle{ transparent: true }, [
-		ui2.with_action(ui2.button('extensions-dismiss', '', ui2.rect(0, 0, width, height),
-			ui2.BoxStyle{ transparent: true }, ui2.TextStyle{}), 'extensions-close'),
-		ui2.Element{
-			...ui2.scroll('extensions-panel', ui2.rect(x, 0, if width > browser_extensions_width {
-				browser_extensions_width
-			} else {
-				width
-			},
-				if height > browser_extensions_height { browser_extensions_height } else { height }), 0xffffff,
-				[browser_extensions_elements(browser_extensions_ui)])
-			scroll_mode: .both
-		},
-	])]
 }

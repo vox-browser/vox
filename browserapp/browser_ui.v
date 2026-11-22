@@ -154,8 +154,8 @@ fn browser_ui_event(event string) {
 		browser_update_event(event)
 		return
 	}
-	if event.starts_with('extensions-') || event == 'panel-close:extensions' {
-		browser_extensions_event(event)
+	if event.starts_with('settings-') || event.starts_with('extensions-') || event == 'panel-close:settings' {
+		browser_settings_event(event)
 		return
 	}
 	if event == 'host-reopen' {
@@ -207,15 +207,6 @@ fn browser_ui_event(event string) {
 		app.update_address_suggestions(ui2.text('address'))
 		return
 	}
-	if event == 'panel-close:settings' {
-		browser_settings_event(event)
-		return
-	}
-	if event.starts_with('settings-') {
-		browser_settings_event(event)
-		app.refresh_browser_ui()
-		return
-	}
 	app.activate_browser_chrome(event)
 }
 
@@ -237,6 +228,22 @@ fn browser_ui_key(event ui2.KeyEvent) {
 		// Keep focus traversal and focused-button activation with UI2.
 		$if !vox_ui2 ? {
 			if event.code !in [.tab, .space] { ui2.consume_key() }
+		}
+		return
+	}
+	mut settings_keys := browser_settings_visible()
+	$if vox_ui2 ? {
+		settings_keys = settings_keys && ui2.embedded_key_panel() == 'settings'
+	}
+	if settings_keys {
+		if event.code == .escape || (event.code == .w && (event.cmd || event.ctrl)) {
+			close_browser_settings()
+			ui2.consume_key()
+		} else if event.code == .tab && event.ctrl {
+			if next := ui2.tab_bar_key(browser_settings_sidebar(browser_settings_ui.section), event) {
+				browser_settings_event(ui2.tab_bar_tab_action(browser_settings_sidebar_id, next.state.selected))
+				ui2.consume_key()
+			}
 		}
 		return
 	}
@@ -264,29 +271,10 @@ fn browser_ui_key(event ui2.KeyEvent) {
 			return
 		}
 	}
-	mut extension_keys := browser_extensions_ui.open
-	mut settings_keys := browser_settings_visible()
-	$if vox_ui2 ? {
-		extension_keys = extension_keys && ui2.embedded_key_panel() == 'extensions'
-		settings_keys = settings_keys && ui2.embedded_key_panel() == 'settings'
-	}
-	if extension_keys {
-		if event.code == .escape || (event.code == .w && (event.cmd || event.ctrl)) {
-			browser_extensions_event('extensions-close')
-			ui2.consume_key()
-		}
-		return
-	}
-	if settings_keys && event.code in [.escape, .w] && (event.code == .escape || event.cmd || event.ctrl) {
-		close_browser_settings()
-		ui2.consume_key()
-		return
-	}
 	if app.handle_browser_popup_key(event.code.name()) {
 		ui2.consume_key()
 		return
 	}
-	if settings_keys { return }
 	app.note_address_key(event)
 	if app.handle_address_suggestion_key(event) {
 		ui2.consume_key()
