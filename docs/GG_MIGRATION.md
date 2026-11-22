@@ -2688,6 +2688,70 @@ These results cover stationary software replay of repeated,
 cached tiles. Hardware frame timing and Windows runtime pixels
 remain unverified.
 
+### Alpha-changing matrices inside shared pattern tiles
+
+In `03d4afe06`, shared tile replay accepts a single sRGB or linearRGB
+`feColorMatrix` on SourceGraphic when transparent black stays
+transparent. That constraint lets the filter layer keep the
+existing bounds derived from its source paths. Alpha-only masks
+preserve RGB in a tile whenever the matrix can change coverage.
+This also preserves colors in any nested paint the matrix reads.
+
+The fixture derives alpha from red, then switches to blue with a
+live matrix edit. It samples a fill, a translated stroke and an
+alpha mask. [Regression fixture](../Tests/Browser/Native/svg-pattern-tile-color-matrix-alpha.html)
+
+Fresh macOS captures passed at 1× and 2×. The translated tiles
+reused their cache key, and the edit produced a fresh reusable key.
+The initial 384 × 108 RGB crop matched the native 1× capture,
+with SHA-256 `c68062c61789f5faf95d9817437a4fa46cee81654effdaadefe7053a05b5b6b4`.
+The adjacent macOS nested-pattern and opacity-filter checks passed.
+The CPU and painting tests passed, along with 23 smoke-driver unit
+tests and the Windows D3D11 and OpenGL source checks.
+
+Linux Xvfb captures passed with caching enabled and disabled
+for the alpha-changing fixture and both earlier matrix fixtures.
+The edited 384 × 108 RGB crops matched macOS at 1× with SHA-256
+`d9fd2b8454d1405e2e3b413f49359221992cce86c4c19a81b81e405fee0a6879`.
+The arm64 test build used V `5a39a4d` with Boehm GC and Clang
+`-O0`. The combined build was killed after V emitted C in the
+6 GiB VM. The separate guarded native compile and link reused
+that C, yielding executable SHA-256
+`487cc3108b81ff2c8386d57d35b7b27edcc2134cf7ec30e4ff61547a201bdc2d`.
+The executable, libraries and fixtures retained their hashes
+throughout the captures. The compile, link and capture guards
+each exited zero.
+
+Two alternating macOS pairs exercised 20 fills and 20 strokes
+using translated copies of the same tile. Each fresh process
+used a 1024 × 600 document viewport at 1×, a private profile and
+cache, disabled JavaScript and whole-frame raster reuse, and
+settled for one second. The 48 stationary callbacks drew 42
+commands at scroll position zero. Separate diagnostics found
+1,880 shared cache hits between the first and last callback in
+the candidate and zero in the native control. All six document
+captures had RGBA SHA-256
+`4d338c58beb67c5d07d9e2cc987f083d700c1d1eef5f55339d3cb4e392f550b7`.
+The browsers and guards exited zero. The timing fixture SHA-256
+was `c11942702eeff84c12a9d9f9bd82c2acc26c4b2bcf2d05d778a0447a284d79dd`.
+
+| Pair | Native / shared median replay, ms | Native / shared p95, ms | Native / shared maximum, ms | Native / shared median allocated KiB |
+| --- | ---: | ---: | ---: | ---: |
+| 1 | 36.283 / 1.649 | 51.484 / 2.443 | 58.546 / 2.654 | 3 / 3 |
+| 2 | 32.785 / 1.774 | 36.975 / 2.804 | 41.642 / 3.336 | 3 / 3 |
+
+Both builds used single-unit C and prealloc. The published
+control used literal `-prod` and had executable SHA-256
+`f35ad55c47210ecf13859efd66b30e75007d3a86667bce0a6f8254a1bd29705e`.
+The private candidate used `-prod -no-prod-options` and had
+executable SHA-256
+`9ca561bbc33f3b0f21b7d271b6322f2ef90d4793fe974fc61b11f68336e4da87`.
+The image library and adblock worker hashes agreed between the
+builds. Executable, library and fixture hashes stayed fixed.
+The timings are diagnostic because the optimization flags differed
+and the one-minute load ranged from 154.63 to 160.10 on 18 logical
+CPUs. Display timing and Windows runtime pixels remain unverified.
+
 ## Sharing the portable SVG fallback with Windows
 
 The standard Windows D3D11 window now uses the same CPU raster and GG texture
