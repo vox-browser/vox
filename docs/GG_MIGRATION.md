@@ -1852,9 +1852,7 @@ during verification. These measurements cover software replay with
 and without cache reuse in the same build.
 
 The Linux build, browser processes, and guards exited zero, and
-fixture, library, and executable hashes stayed fixed. Production
-performance, Windows runtime pixels, and the macOS native pattern tile
-path remain open.
+fixture, library, and executable hashes stayed fixed.
 
 ## Shared non-scaling SVG pattern tiles on macOS
 
@@ -1891,8 +1889,55 @@ at 1× and 2×. The published `6209346d8` bundle, executable SHA-256
 reproduced the failure at 1×. PID 83922 exited zero and the check found
 white at (1, 15), where the non-scaling stripe should paint green.
 The previous managed build rejected a header that changed during
-compilation. Candidate window pixels and production performance
-await a published bundle containing the change.
+compilation.
+
+In `fbc605138`, the native pattern fallback supplies the new stroke
+transform argument at all three call sites. The guarded CoreGraphics
+test used the production functions and matched the earlier painter
+pixel for pixel across 16 combinations of fill, stroke, dash, and
+paint order with Clang `-O2`, ASan, and UBSan.
+
+The build from that fix, executable SHA-256
+`26467f157104051092e535c374a08040ce9eccde0f48ccb1985dbcfb00dd3dc6`,
+passed the 1× samples. At 2× it painted the green stripe at tile rows
+37–39 instead of 17–22, including with presented capture enabled.
+The baseline browser processes exited zero. The focused CoreGraphics
+control placed a pre-rendered stripe at the expected rows at 2×.
+
+In `2907ddab3`, tile normalization applies the outer SVG viewport
+transform only to bounding-box resources. User-space resources
+already inherit it during layout. This also removes an intermediate
+operation list for user-space tiles. The standard layout test run
+reached the 12 GiB guard. A standalone test using the same production
+layout APIs passed the 1× and 2× retained stroke coordinate assertions
+and two existing raster image normalization cases.
+
+Production receipt `20261122-211039-33f08316` used single-unit C and
+literal V `-prod`. Its executable SHA-256 was
+`b91cb8bf6bdfe82f754957ade71a39395f8024054fcb2ff15173207d6d4ff4f1`
+and its AVIF library SHA-256 was
+`ebde1494c5aebaa69ebe6edab9f4e3333020cb4b2949d96fa1fbb35f19d6a202`.
+The build started at `a036cce9a` in the shared dirty checkout. Its
+frozen source manifest matched the committed adapter, the native
+painter and its header, and the shared tile raster entry point.
+
+The guarded run of the `--pattern-strokes-only` assertions passed all
+24 color samples within two channel levels and exercised the live
+vector-effect change.
+Fresh browser PIDs 19283 and 19292 and their guard exited zero. Both
+densities recorded three tile misses and one hit. The full 1024 × 600
+1× capture matched the earlier build exactly. PID 19373 verified the
+2048 × 1200 2× capture with presented capture enabled and exited zero
+under its guard. The two 2× captures matched exactly. The executable,
+library, and fixture identities stayed fixed throughout each check.
+
+| Capture | Decoded RGBA SHA-256 |
+| --- | --- |
+| 1× | `d6622793fba70b659ebca02d099ee76725458b58e5f5e757c1e16fe5f9171d8d` |
+| 2× | `d69c9f35ee7630d60fbf6c40f14e5070060d4bf470202899edb46286da1993fa` |
+
+Production frame timings and Windows runtime pixels remain unmeasured
+for this change.
 
 ## Sharing the portable SVG fallback with Windows
 
