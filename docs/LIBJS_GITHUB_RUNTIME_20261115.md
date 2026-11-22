@@ -11457,3 +11457,25 @@ The candidate is lower than its control in every pair (0.18-1.13B). The
 median ratio to Brave is 1.04; the conservative highest-Vox to lowest-Brave
 ratio is 1.08.
 
+**Changed-subtree paint refreshes.** Four or five complete projections per
+load were paint refreshes the local refresh could not apply: the heart's
+`pulse-in` animation adding and removing its transform (a compositor
+category change) and transitions sampled on header buttons. `392eec0ef`
+projects the retained parent of each changed box again in place, in the
+snapshot's own storage, and then rebuilds the plans that read box
+identities exactly as a complete refresh does; roots, body children,
+fragmented boxes and updates of more than 64 boxes keep the complete
+refresh (`VOX_DISABLE_PAINT_SUBTREE_REFRESH`). Every refresh on the page
+takes the subtree path (16 changed buttons collapse to one subtree).
+Same-binary cohort on bundle `392eec0ef` (6 alternating pairs, host load
+4.1-7.3):
+
+| Arm | Median | Range | Pixels vs Brave reference |
+|---|---:|---:|---:|
+| current | 21.089B | 20.547-21.759B | 2 in every run |
+| `VOX_DISABLE_PAINT_SUBTREE_REFRESH=1` | 21.462B | 21.187-21.910B | 2 in every run |
+| Brave | 20.526B | 20.349-20.908B | 25 in every run |
+
+The candidate is lower than its control in every pair (0.10-1.00B). The
+median ratio to Brave is 1.03; the conservative ratio is 1.07.
+
