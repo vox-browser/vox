@@ -11509,3 +11509,31 @@ sampled milliseconds per load). Homebrew's libcurl (OpenSSL with ARMv8
 crypto, TLS 1.3, Apple trust) would remove most of it, but
 `platform/curl_api_darwin_test.c` deliberately pins the system library.
 
+**Duplicate style sheets.** `VOX_CSS_PARSE_DIAGNOSTICS` (`57c0786da`)
+showed the 300 KB `primer-react-css` module sheet converted five times: the
+archived page links it once in each server-rendered React partial. Each
+repeat reused the cached rule syntax (about 24M instead of 123M
+stage-logged), but every copy's rules were indexed again, multiplying the
+candidates each element tests and the invalidation sets each mutation
+consults. Removing the four repeated links from a copy of the archive
+lowered a load from 21.33B to 20.66B (4 runs each, 2 px). `fd524cb06`
+indexes one copy at the latest copy's sheet index (complete builds skip
+earlier copies; an extension appending a copy moves the indexed rules to
+its index). Copies qualify when they come from the same cached source
+bytes at the same location and media, CSSOM has not changed their rules or
+declarations, and they contain no `@import`, `@scope` or anonymous
+`@layer`; keyframes are still registered from every copy
+(`VOX_INDEX_DUPLICATE_STYLE_SHEETS`). Cohort on bundle `fd524cb06` (6
+alternating pairs, host load 6.4-7.5):
+
+| Arm | Median | Range | Pixels vs Brave reference |
+|---|---:|---:|---:|
+| current | 20.277B | 20.043-21.160B | 2 in every run |
+| `VOX_INDEX_DUPLICATE_STYLE_SHEETS=1` | 20.788B | 20.349-21.383B | 2 in every run |
+| Brave | 20.613B | 20.512-21.114B | 25 in every run |
+
+The candidate is lower than its control in 5 of 6 pairs (mean 0.42B). Its
+median is below Brave's (ratio 0.98); the conservative highest-Vox to
+lowest-Brave ratio is 1.03, so the spread of Vox runs (mostly the number of
+`pulse-in` frames before capture) still keeps the bound above parity.
+
