@@ -1298,6 +1298,62 @@ retained their hashes. The browser processes and all final guards
 exited zero. Native Windows pixels and hardware GPU timing remain
 pending.
 
+## SVG masks and independently transformed viewports
+
+In `817048097`, portable replay admits rectangular viewport clips with
+different transforms when the group's leaves share their clip geometry. On a
+texture miss, it intersects the device-space mask polygon with up to
+eight viewport rectangles and rasterizes the resulting silhouette
+once. Reflections preserve the interior side of each clip edge.
+Rectangles that share a transform still intersect in local coordinates.
+Axis-aligned clip stacks keep their existing coverage path. A texture
+hit skips polygon construction and coverage rasterization.
+
+The fixture exercises a skewed mask with independently skewed viewport
+clipping, two foreground paths, and a reflected viewport around an
+axis-aligned mask with a live origin edit. Cached CPU, GG-enabled, and
+uncached Linux replay matched all 800 × 516 document pixels. Both prior
+transformed-mask fixtures retained their recorded Linux pixel hashes.
+An untimed fallback capture painted blue at (180, 119) and (414, 78).
+The candidate and macOS reference left both pixels white.
+The new fixture SHA-256 is
+`abf71f4024b0df24464603a45baa2d4f23aba64511b97c92b1fb6a7c5f2c5037`.
+The decoded RGB document SHA-256 is
+`67b7761c4c83ec3d298c37ce8a936ad4a21e1531975ad3887b4030313cbe3255`.
+
+The native macOS reference was PID 52508 from published single-unit
+build `93fa84ca2`, executable SHA-256
+`8b66b96b83240020dd4e3aa827707ac4f97a5f089e70828eb0d13b501c9b06aa`.
+Of 412,800 document pixels, 412,442 matched exactly and 110 differed
+by one channel level. The remaining 248 differed by up to 56 levels
+at antialiased edges of the skewed mask and its interior red path.
+The new check and nineteen neighboring Linux window checks passed.
+The macOS and Windows D3D11 and OpenGL C backend source checks
+and 21 Linux smoke-driver unit tests passed.
+
+Two alternating pairs used the same Linux ARM64 executable built from
+`93fa84ca2` and the mask changes in one C unit with V `5a39a4d` and
+Clang `-O0`. The executable SHA-256 is
+`895cfb8ff29a26326c55629e757c0f022ea5d966c9af3dbd4411eee98e4f9015`.
+Fresh profiles and caches, JavaScript off, and one Mesa software worker
+were used in an 800 × 600 Xvfb window. A one-second settle preceded 48
+synthetic idle callbacks. Separate diagnostics recorded two mask rasters
+per complete interval with caching disabled and two texture hits with
+caching enabled. All timed captures used identical command counts and
+stationary offsets and had decoded document SHA-256
+`9941cd93858dfbb3b6d1678ac86c19d517ae4b202d8a934cba945ac648ef1966`.
+
+| Pair | Uncached / cached median replay, ms | Uncached / cached p95 and maximum, ms | Uncached / cached median allocated KiB |
+| --- | ---: | ---: | ---: |
+| 1 | 2.501 / 0.804 | 2.902, 5.768 / 0.987, 1.058 | 356.5 / 120.5 |
+| 2 | 2.087 / 1.121 | 2.305, 4.766 / 4.492, 13.648 | 356 / 120 |
+
+The second cached trial had a higher p95 and maximum than its uncached
+pair. One-minute guest load ranged from 0.61 to 0.66 at timed launches
+on four vCPUs. The fixture, executable, and linked library hashes
+stayed fixed. All refreshed browser and guard exits were zero. Windows
+runtime pixels and hardware GPU timing remain pending.
+
 ## Sharing the portable SVG fallback with Windows
 
 The standard Windows D3D11 window now uses the same CPU raster and GG texture
