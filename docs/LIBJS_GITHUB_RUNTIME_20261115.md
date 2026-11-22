@@ -11634,3 +11634,47 @@ would therefore save only about 55M on this page, and make every page
 under about 6 MB slower (Hacker News by about 4%), so `4a04a85f8` reverted
 it. Preferring ChaCha20 does not help: the replay server, like most servers,
 chooses ciphers in its own order.
+
+**Adblock responses, bridge navigation, inline runs and in-place updates.**
+- `364379e53`: the request-stage check now also reports whether any
+  headers-realm filter could match the request with some response headers
+  (`mayMatchHeaders`, which treats header conditions as satisfied; filters
+  are conjunctions). `check_response` answers from that retained verdict
+  without serializing headers or asking the worker. On the archived GitHub
+  manifest all 164 responses (239 KB of header JSON) have no candidate; the
+  load makes about 508 such checks. `VOX_CHECK_ALL_ADBLOCK_RESPONSES=1` is the
+  control.
+- `00ac2cff4` and `7e35714df`: the document keeps its tree version in a
+  native cell, which JavaScriptCore reads as a `Uint32Array` without a host
+  call. Text, comment and other nodes now share the elements' version-keyed
+  `firstChild`/`nextSibling` cache, which React hydration (`getNextHydratable`)
+  walks. The controls are `VOX_RETAIN_TREE_VERSION_HOST_CALLS=1` and
+  `VOX_UNCACHED_NODE_NAVIGATION=1`.
+- Inline runs (`ddc04088f`, `VOX_INLINE_RUN_REPEAT_DIAGNOSTICS=1`), measured
+  on `layout_passes` over the GitHub style benchmark page:
+
+  | Mode | Runs building items | Exact repeats in the same pass | Repeats in the same layout state |
+  | --- | --- | --- | --- |
+  | `full` | 40,000 | 25,850 | 20,820 |
+  | `insert` | 23,000 | 18,045 | 14,722 |
+
+  All repeats are normal-mode, definite-width runs, mostly in the main state.
+  In `full` mode, 7,392 repeats are in contexts whose inputs can be
+  collected but are skipped by the retained-inline backoff (8,026 backoff
+  outcomes). The rest are blocked by content that snapshots cannot record:
+  generated content 4,359, table-cell roots 1,789, atomic inlines 1,274,
+  inline-block roots 1,082, SVG 624, replaced 312. The backoff limits
+  durable snapshot growth between passes, so letting same-pass repeats
+  collect would need memory measurements as well as instruction counts.
+  Generated, atomic and SVG children need a snapshot of their own subtree.
+- In-place layout tree updates (`20ee24d78`,
+  `VOX_IN_PLACE_TREE_UPDATE_DIAGNOSTICS=1`) report the boxes they build, by
+  why the element's previous box was not kept. Two passes after hydration
+  laid out 2,011 and 4,710 nodes without committed values, through in-place
+  updates that added 35, then 9, subtree roots. React creates about
+  460–550 elements through the bridge, and `setInitialProperties` is its
+  busiest bridge caller, so part of this is client-rendered DOM. The new
+  counts separate it from restyled existing elements, whose clean
+  descendants an in-place update currently builds again
+  (`allow_subtree_reuse = false`). Clean-subtree reuse in the complete
+  builder never runs on this page (0 roots in every pass).
