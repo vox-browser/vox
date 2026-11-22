@@ -2625,6 +2625,69 @@ each run. The final builds, browsers and memory guards exited zero.
 The timings cover stationary software replay of repeated tiles.
 Hardware frame timing and Windows runtime pixels remain unverified.
 
+### Default linearRGB matrices inside shared pattern tiles
+
+In `be3fa6427`, the shared renderer accepts the retained SVG
+graph for one alpha-preserving `feColorMatrix` on SourceGraphic
+in the default linearRGB space. The CPU pass unpremultiplies the
+source, decodes sRGB, applies the matrix in linear RGB, encodes
+sRGB and writes the premultiplied result back to the tile. Conversion
+and filtering stay in floating point until the final byte write.
+The alpha-changing linearRGB fixture used the native fallback and
+matched the prior native build.
+
+The fixture scales opaque and translucent midtones in linear
+space and edits the scale from .25 to .5 after painting. The
+macOS and Linux edited 256 × 108 crops matched at 1×, with RGB
+SHA-256 `caf9ba77ab3d13a4a7193afc32b040002e0e8ebc15876a988f157c555b7850ff`.
+The untouched shared macOS document matched the native reference
+at 1×. At 2× the native reference clipped part of the first solid
+shape and all of the first translucent shape. The shared renderer
+drew both shapes at their full extent in both copies. At each
+density the fill and translated stroke reused a key, and the edit
+produced a new key followed by reuse.
+
+The fixture SHA-256 was
+`3df7dcba6beb0832addd5fe8d37c2e77a380aaddc502f78fc4c8d82ece139a5c`.
+The Linux executable used V `5a39a4d`, single-unit Clang `-O0`
+and Boehm GC. Its SHA-256 was
+`73a30382d9e560206dfec46cdfeecb9a4335cb3de8f36ba1cb4541da174897ba`.
+Cached and uncached Linux document captures matched. The adjacent
+sRGB, opacity, nested and delayed image checks passed, as did
+the CPU matrix and transfer tests, painting effects tests, 23
+smoke-driver unit tests, and both Windows source checks.
+
+Both macOS timing builds used V `d79ca45`, prealloc and single-unit
+C `-prod -no-prod-options`. The native and shared executable
+SHA-256 values were
+`8dbc48bcad6565f6e44d99854525282d708622564c191398d536bb0663a37d8e`
+and `fb3ffe4aa99d0f61c0a86dda3f38ce02221046d9b5e43e58b28c0e078883e4cf`.
+The bundled image library and adblock worker hashes matched
+between builds. Executable, library and input hashes stayed fixed.
+
+Two alternating pairs replayed 20 fills and 20 strokes from the
+same tile at different positions. The generated fixture SHA-256
+was `40849a92e5a2047db8b63e6d8a164a8aff9c41d76223f9771659884954cda9bd`.
+Each run used a 1024 × 600 viewport at 1×, a fresh profile and cache,
+and disabled JavaScript and whole-frame raster reuse. After a
+one-second settle, 48 synthetic idle callbacks replayed 42 commands
+at scroll offset zero. Separate diagnostics recorded 1,880 shared
+cache hits on the candidate between the first and last callback,
+and zero on the native baseline. Timed trials disabled tile
+logging. Host one-minute load ranged from 14.60 to 14.82 across 18
+logical CPUs during timing. All six cropped documents had RGBA
+SHA-256 `fc57f0aaa195cc35b7cafa978333937be48eb97fd0ce6702afbc5f73dd98bd41`.
+The builds, browsers and memory guards exited zero.
+
+| Pair | Native / shared median replay, ms | Native / shared p95, ms | Native / shared maximum, ms | Native / shared median allocated KiB |
+| --- | ---: | ---: | ---: | ---: |
+| 1 | 27.576 / 1.417 | 30.217 / 1.488 | 30.656 / 1.500 | 3 / 3 |
+| 2 | 24.615 / 1.649 | 27.170 / 2.804 | 27.680 / 3.047 | 3 / 3 |
+
+These results cover stationary software replay of repeated,
+cached tiles. Hardware frame timing and Windows runtime pixels
+remain unverified.
+
 ## Sharing the portable SVG fallback with Windows
 
 The standard Windows D3D11 window now uses the same CPU raster and GG texture
