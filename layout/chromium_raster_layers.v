@@ -4,6 +4,7 @@ import dom
 import math
 import painting
 import platform
+import processmetrics
 
 // The layerizer can merge chunks with a common property state until a
 // different composited scroll/sticky state overlaps them. Raster origins and
@@ -542,6 +543,7 @@ fn update_chromium_raster_layer_plan_with_cull(document &dom.Document, commands 
 	scratch.compositor_bounds.clear()
 	scratch.compositor_fixed_raster_owners.clear()
 	scratch.compositor_unbounded_animations.clear()
+	setup_stage := processmetrics.begin_thread_instruction_substage('raster_plan_setup')
 	candidates := if disable_viewport_entry_candidates {
 		[]int{len: result.paint_order.len, init: index}
 	} else {
@@ -585,6 +587,8 @@ fn update_chromium_raster_layer_plan_with_cull(document &dom.Document, commands 
 			}
 		}
 	}
+	setup_stage.finish()
+	chunks_stage := processmetrics.begin_thread_instruction_substage('raster_plan_chunks')
 	tree := result.visual_context_tree
 	scratch.prepare(tree.nodes.len, commands.len)
 	scratch.prepare_perspective_rasters(&tree)
@@ -831,15 +835,18 @@ fn update_chromium_raster_layer_plan_with_cull(document &dom.Document, commands 
 		}
 		index = end
 	}
+	chunks_stage.finish()
 	if scratch.compositor_scopes.len > 0 {
 		chromium_root_raster_plan_into(commands.len, mut plan)
 		return
 	}
+	layerize_stage := processmetrics.begin_thread_instruction_substage('raster_plan_layerize')
 	if cull != none || scratch.fixed_bounds.len > 0 {
 		chromium_layerize_visible_paint_chunks(result, commands, cull, device_scale, mut scratch, mut plan)
 	} else {
 		chromium_layerize_chunks_into(scratch.chunks, commands.len, device_scale, mut plan, mut scratch.layer_states)
 	}
+	layerize_stage.finish()
 	for layer_index, state in scratch.layer_states {
 		if state.legacy_effect && state.atomic_opacity && state.fixed_to_viewport {
 			if origin := scratch.fixed_bounds[state.fixed_raster_owner] {

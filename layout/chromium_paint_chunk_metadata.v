@@ -4,6 +4,7 @@ import dom
 import math
 import css
 import painting
+import processmetrics
 
 struct ChromiumPaintMetadata {
 	at      int
@@ -84,7 +85,9 @@ pub fn update_chromium_raster_layer_plan_for_viewport(document &dom.Document,
 	plan.paint_cull_contents = contents
 	update_chromium_raster_layer_plan_with_cull(document, commands, scale, cull, mut plan)
 	if plan.has_paint_metadata {
+		backgrounds_stage := processmetrics.begin_thread_instruction_substage('raster_plan_scroll_backgrounds')
 		chromium_assign_scroll_backgrounds(result, commands, mut plan)
+		backgrounds_stage.finish()
 	}
 }
 
