@@ -184,6 +184,7 @@ pub:
 	stroke_width           f64
 	stroke_dasharray       []f32
 	stroke_dashoffset      f32
+	non_scaling_stroke     bool
 	stroke_linecap         LineCap
 	stroke_linejoin        LineJoin
 	stroke_miter_limit     f64 = 4.0

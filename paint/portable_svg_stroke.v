@@ -129,30 +129,36 @@ fn raster_portable_svg_stroke(mut pixels []u8, bounds painting.IntRect, path_in 
 	mut matrix := surface_matrix
 	mut style := style_in
 	if data.non_scaling_stroke {
-		if paint := style_in {
-			match paint {
-				cpuraster.CanvasGradient {
-					local := paint.local_transform or { [f32(1), 0, 0, 1, 0, 0]! }
-					style = cpuraster.CanvasPaintStyle(cpuraster.CanvasGradient{
-						...paint
-						local_transform: portable_svg_surface_paint_transform(matrix, local)
-					})
-				}
-				cpuraster.CanvasPattern {
-					style = cpuraster.CanvasPaintStyle(cpuraster.CanvasPattern{
-						...paint
-						transform: portable_svg_surface_paint_transform(matrix, paint.transform)
-					})
-				}
-			}
-		}
-		path = path.transform(cpuraster.Matrix{matrix[0], matrix[1], matrix[2], matrix[3], matrix[4], matrix[5]})
+		path, style = portable_svg_stroke_in_surface(path_in, surface_matrix, style_in)
 		matrix = [f32(1), 0, 0, 1, 0, 0]!
 	}
 	return cpuraster.stroke_canvas_path(mut pixels, bounds.width, bounds.height, bounds.width * 4, 2, path,
 		matrix, color, style, opacity, .src_over, 0, width,
 		portable_svg_stroke_cap(data.stroke_linecap), portable_svg_stroke_join(data.stroke_linejoin),
 		miter, data.stroke_dasharray.map(f32(it)), f32(data.stroke_dashoffset), [], none)
+}
+
+fn portable_svg_stroke_in_surface(path cpuraster.Path, matrix [6]f32,
+	style_in ?cpuraster.CanvasPaintStyle) (cpuraster.Path, ?cpuraster.CanvasPaintStyle) {
+	mut style := style_in
+	if paint := style_in {
+		match paint {
+			cpuraster.CanvasGradient {
+				local := paint.local_transform or { [f32(1), 0, 0, 1, 0, 0]! }
+				style = cpuraster.CanvasPaintStyle(cpuraster.CanvasGradient{
+					...paint
+					local_transform: portable_svg_surface_paint_transform(matrix, local)
+				})
+			}
+			cpuraster.CanvasPattern {
+				style = cpuraster.CanvasPaintStyle(cpuraster.CanvasPattern{
+					...paint
+					transform: portable_svg_surface_paint_transform(matrix, paint.transform)
+				})
+			}
+		}
+	}
+	return path.transform(cpuraster.Matrix{matrix[0], matrix[1], matrix[2], matrix[3], matrix[4], matrix[5]}), style
 }
 
 @[inline]

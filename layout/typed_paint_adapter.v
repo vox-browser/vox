@@ -3083,6 +3083,7 @@ fn svg_mask_visual_cache_key(bounds painting.IntRect, mask_type painting.SVGMask
 		hash = svg_clip_hash_mix(hash, if operation.stroke_first { u64(1) } else { u64(0) })
 		hash = svg_clip_hash_mix(hash, u64(operation.stroke_linecap))
 		hash = svg_clip_hash_mix(hash, u64(operation.stroke_linejoin))
+		hash = svg_clip_hash_mix(hash, u64(operation.non_scaling_stroke))
 		if operation.stroke_dasharray.len > 0 {
 			hash = svg_clip_hash_mix(hash, u64(operation.stroke_dasharray.len))
 			hash = svg_clip_hash_mix(hash, u64(math.f32_bits(operation.stroke_dashoffset)))
@@ -3594,6 +3595,7 @@ fn collect_svg_mask_paint_operations(node &Node, state &LayoutState,
 						stroke_width: stroke_width
 						stroke_dasharray: dasharray
 						stroke_dashoffset: dashoffset
+						non_scaling_stroke: has_stroke && computed.vector_effect() == .non_scaling_stroke
 						stroke_linecap: match computed.stroke_linecap() {
 							.butt { painting.LineCap.butt }
 							.round { painting.LineCap.round }

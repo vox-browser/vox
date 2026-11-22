@@ -4517,6 +4517,7 @@ pub fn compatibility_lower_svg_mask_operations(source []painting.SVGMaskPaintOpe
 			stroke_width: operation.stroke_width
 			stroke_dasharray: operation.stroke_dasharray
 			stroke_dashoffset: operation.stroke_dashoffset
+			non_scaling_stroke: operation.non_scaling_stroke
 			stroke_linecap: int(operation.stroke_linecap)
 			stroke_linejoin: int(operation.stroke_linejoin)
 			stroke_miterlimit: operation.stroke_miter_limit
