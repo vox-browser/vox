@@ -394,10 +394,15 @@ fn (mut binding CompactElementQueryBinding) query(input string) !string {
 		return binding.node_tree_query(root, action, selector)
 	}
 	if action == 'getElementsByTagName' { return binding.tag_collection_query(root, selector) }
-	if action == 'lastChild' { return binding.node_relation_query(root, 'last') }
-	if action == 'firstChild' { return binding.node_relation_query(root, 'first') }
-	if action == 'nextSibling' { return binding.node_relation_query(root, 'next') }
-	if action == 'previousSibling' { return binding.node_relation_query(root, 'previous') }
+	if action in ['lastChild', 'firstChild', 'nextSibling', 'previousSibling'] {
+		compact_navigation_query_counts[0]++
+		return binding.node_relation_query(root, match action {
+			'lastChild' { 'last' }
+			'firstChild' { 'first' }
+			'nextSibling' { 'next' }
+			else { 'previous' }
+		})
+	}
 	if action == 'nodeParent' { return binding.node_relation_query(root, 'parent') }
 	if action == 'cachedParent' { return binding.cached_parent_query(root) }
 	if action == 'geometry' { return compact_element_geometry_query(root, selector) }

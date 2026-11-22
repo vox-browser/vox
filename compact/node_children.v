@@ -5,6 +5,10 @@ import dom
 import os
 import x.json2
 
+// Sibling and child navigations, and childNodes lists, answered for scripts
+// in this process (tests).
+__global compact_navigation_query_counts [2]u64
+
 fn (mut binding CompactElementQueryBinding) node_tree_query(root &dom.Node, action string, value string) !string {
 	if action == 'createText' {
 		return binding.encode_node_state(root.document().create_text_node(value).as_node())
@@ -13,8 +17,13 @@ fn (mut binding CompactElementQueryBinding) node_tree_query(root &dom.Node, acti
 		return binding.encode_node_state(root.document().create_document_fragment().as_node())
 	}
 	if action in ['childNodes', 'childElements'] {
-		mut nodes := []json2.Any{cap: root.children.len}
+		// childNodes with a positive count answers its first children only:
+		// the navigation cache's prefetch (last_child.v).
+		if action == 'childNodes' { compact_navigation_query_counts[1]++ }
+		limit := if action == 'childNodes' && value.len > 0 { value.int() } else { 0 }
+		mut nodes := []json2.Any{cap: if limit > 0 && limit < root.children.len { limit } else { root.children.len }}
 		for child in root.children {
+			if limit > 0 && nodes.len >= limit { break }
 			if action == 'childElements' && !child.is_element() { continue }
 			nodes << binding.node_state(child)
 		}

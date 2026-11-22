@@ -46,3 +46,32 @@ globalThis.result=[before,again,inserted,!!cache&&Object.prototype.hasOwnPropert
 	assert runtime.evaluate_host(navigation_cache_walk_script())! == 'zero,one,three,c,native'
 	assert messages == []string{}
 }
+
+// A walk along a parent's children (firstChild, then nextSibling) asks the
+// native DOM once: the first navigation fetches the children and records the
+// siblings of each.
+fn test_compact_first_navigation_prefetches_the_children_a_walk_needs() {
+	$if !darwin {
+		return
+	}
+	mut document := html.parse_document('<!doctype html><div id="host">a<b id="b1">x</b>c<!--d--><i id="i1"></i>e</div><div id="empty"></div>')
+	mut runtime := browserjs.Runtime.create()
+	defer {
+		runtime.close()
+	}
+	mut messages := []string{}
+	before := compact_navigation_query_counts
+	run_document_javascript(document, 'https://github.com/vlang/v', [
+		r'
+const seen=[];for(let node=host.firstChild;node;node=node.nextSibling)seen.push(node.nodeType===1?node.id:node.data);
+const back=[];for(let node=host.lastChild;node;node=node.previousSibling)back.push(node.nodeType===1?node.id:node.data);
+globalThis.result=[seen.join(","),back.join(","),empty.firstChild===null,empty.lastChild===null,
+	host.firstChild===host.firstChild].join("|");
+',
+	], runtime, mut messages)
+	assert runtime.evaluate_host('result')! == 'a,b1,c,d,i1,e|e,i1,d,c,b1,a|true|true|true'
+	// One child list for each parent; no navigation asked separately.
+	assert compact_navigation_query_counts[1] - before[1] == 2
+	assert compact_navigation_query_counts[0] - before[0] == 0
+	assert messages == []string{}
+}
