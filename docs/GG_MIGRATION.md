@@ -1412,6 +1412,61 @@ before any browser ran. The corrected cohort preserved executable,
 fixture and library hashes, and its browser and guard exits were zero.
 Windows runtime pixels and hardware GPU timing remain pending.
 
+## Patterned foreground fills on masked SVGs
+
+In `843274495`, the shared SVG mask compositor reuses the pattern tile
+rasterizer for foreground fills. The tile retains its color and transparency, then
+the group applies stroke order and mask coverage. The finished texture
+enters the cache after both the foreground and mask resources are ready.
+
+The fixture combines a translated vector pattern with a live opacity edit
+and a stroke painted before the fill. A second shape combines a bitmap
+pattern with a luminance mask. The macOS reference was PID 35650 from
+published single-unit build `6209346d8`, executable SHA-256
+`a92b702d32ab26cf7835f2d4b148a39c8cca22f7ca841ede9542820d4a24a034`.
+All 412,800 document pixels matched across that reference and Linux
+cached CPU, GG-enabled, and uncached replay. The fixture SHA-256 is
+`fc5a307e0310c454d71a0637a019468e4ba86a248c7201d4fef74c68dea0511b`.
+The decoded RGB document SHA-256 is
+`4f0ec7389e5b87c3d9c9bba6267f6205162249d732e5352502cbca991ee5e4f6`.
+
+A loopback run delayed the bitmap response by one second. The group
+replayed 26 luminance-mask rasters before it retained the first complete
+texture. Its final document exactly matched the local fixture. The new
+fixture, twelve neighboring Linux window checks, and the 21 Linux
+smoke-driver unit tests passed.
+
+The macOS and Windows D3D11 C backend source checks passed. The first
+Windows OpenGL check reported missing GG fields and helpers in the
+shared staging directory. Repeating the check with freshly staged
+UI2 and GG dependencies in a private cache passed.
+
+Disabling portable masks left document pixel (40, 50) white. The
+enabled compositor painted the expected translucent red.
+
+Two alternating pairs used single-unit V `5a39a4d` and Clang `-O0`
+on Linux ARM64. The executable SHA-256 is
+`daa5c41fba6d8e0271145c2f51b932974b685e31e6f0b65579c3600a41738ecc`.
+Each trial used a fresh profile and cache, default script policy, an
+800 × 600 Xvfb window, and one Mesa software worker. A one-second settle
+preceded 48 synthetic idle callbacks. Separate diagnostics recorded
+two mask rasters per complete interval with caching disabled and two
+texture hits with caching enabled. All timed captures agreed on paint
+command counts, stationary offsets, and decoded document SHA-256
+`ad37505b25a6827d21f0f91ecd06e150527a84bde1005b71882fbaaa2252761b`.
+
+| Pair | Uncached / cached median replay, ms | Uncached / cached p95 and maximum, ms | Uncached / cached median allocated KiB |
+| --- | ---: | ---: | ---: |
+| 1 | 19.061 / 1.345 | 57.480, 112.118 / 2.259, 6.228 | 306.5 / 119 |
+| 2 | 14.118 / 1.392 | 34.449, 37.548 / 3.710, 12.372 | 303 / 119 |
+
+The 18-CPU host's one-minute load was 92.83 during the diagnostic
+trials and 86.77 after the cohort. The guest's one-minute load ranged
+from 0.71 to 0.78 on four vCPUs during timed launches. The executable,
+fixture, and linked library hashes stayed fixed, and all browser and
+guard exits were zero. Windows runtime pixels and hardware GPU timing
+remain pending.
+
 ## Sharing the portable SVG fallback with Windows
 
 The standard Windows D3D11 window now uses the same CPU raster and GG texture
