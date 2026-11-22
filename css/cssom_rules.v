@@ -785,8 +785,12 @@ pub fn (mut rule CSSRule) set_css_text(text string) {
 	// On setting the cssText attribute must do nothing.
 }
 
+// Re-parenting reaches every descendant through set_parent_style_sheet(),
+// which clears each rule's own caches before and after the change, so neither
+// call clears the whole subtree again at every level: building nested groups
+// bottom-up re-parented each subtree once per enclosing level.
 pub fn (mut rule CSSRule) set_parent_rule(parent_rule ?&CSSRule) {
-	rule.clear_caches()
+	rule.clear_own_caches()
 	rule.parent_rule = parent_rule
 
 	if parent := parent_rule {
@@ -794,7 +798,7 @@ pub fn (mut rule CSSRule) set_parent_rule(parent_rule ?&CSSRule) {
 	} else {
 		rule.set_parent_style_sheet(none)
 	}
-	rule.clear_caches()
+	rule.clear_own_caches()
 }
 
 pub fn (mut rule CSSRule) set_parent_style_sheet(parent_style_sheet ?&CSSStyleSheet) {
@@ -804,7 +808,7 @@ pub fn (mut rule CSSRule) set_parent_style_sheet(parent_style_sheet ?&CSSStyleSh
 		}
 	}
 
-	rule.clear_caches()
+	rule.clear_own_caches()
 	rule.parent_style_sheet = parent_style_sheet
 	if mut font_face_rule := rule.kind_data().font_face_rule {
 		font_face_rule.set_parent_style_sheet(parent_style_sheet)
@@ -824,7 +828,7 @@ pub fn (mut rule CSSRule) set_parent_style_sheet(parent_style_sheet ?&CSSStyleSh
 		}
 		declaration_with_base.set_rule_base_url(base_url)
 	}
-	rule.clear_caches()
+	rule.clear_own_caches()
 
 	if rule.type_ == .import_rule {
 		if mut parent := rule.parent_style_sheet {
@@ -903,6 +907,17 @@ pub fn (rule &CSSRule) dump(indent_levels int) string {
 }
 
 pub fn (mut rule CSSRule) clear_caches() {
+	rule.clear_own_caches()
+	if child_rules := rule.rules {
+		mut mutable_child_rules := unsafe { &CSSRuleList(child_rules) }
+		for mut child_rule in mutable_child_rules.rules {
+			child_rule.clear_caches()
+		}
+	}
+}
+
+// The caches of this rule alone, not of its descendants.
+fn (mut rule CSSRule) clear_own_caches() {
 	rule.cached_layer_name = none
 	rule.cached_parent_container_rule = none
 	rule.parent_container_rule_cache_valid = false
@@ -916,12 +931,6 @@ pub fn (mut rule CSSRule) clear_caches() {
 			cached_scope_start_selectors: none
 			cached_scope_end_selectors: none
 		})
-	}
-	if child_rules := rule.rules {
-		mut mutable_child_rules := unsafe { &CSSRuleList(child_rules) }
-		for mut child_rule in mutable_child_rules.rules {
-			child_rule.clear_caches()
-		}
 	}
 }
 
