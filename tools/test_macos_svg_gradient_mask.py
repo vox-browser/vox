@@ -11,8 +11,8 @@ import subprocess
 import tempfile
 
 from test_linux_browser import (check_svg_mask_gradient_pixels, check_svg_nested_tile_device_pixels,
-                                check_svg_tile_fill_stroke_pixels,
-                                check_svg_pattern_tile_image_pixels, rendered_png_rows,
+                                check_svg_opacity_filter_tile_pixels, check_svg_pattern_tile_image_pixels,
+                                check_svg_tile_fill_stroke_pixels, rendered_png_rows,
                                 serve_delayed_svg_pattern_tile)
 
 
@@ -557,10 +557,12 @@ def check_pattern_tile_with_delayed_image(binary, fixture, directory, *, nested=
     print(f"PASS: macOS shared {tiles} preserve delayed bitmap content and stroke width")
 
 
-def check_pattern_tile_colors(binary, fixture, directory, *, ready):
+def check_pattern_tile_variants(binary, fixture, directory, *, ready,
+                                check_pixels=check_svg_tile_fill_stroke_pixels,
+                                original_sample=(0, 0, 255), edited_sample=(255, 255, 0)):
     for scale in (1, 2):
         original = set()
-        for mode, color in (("original", (0, 0, 255)), ("edited", (255, 255, 0))):
+        for mode, sample in (("original", original_sample), ("edited", edited_sample)):
             settings = dict(VOX_GG_SVG_DIAGNOSTICS="1", LADYBIRD_SCREENSHOT_SCALE=str(scale))
             options = ["--disable-javascript"]
             if mode == "edited":
@@ -570,7 +572,7 @@ def check_pattern_tile_colors(binary, fixture, directory, *, ready):
                                          settings, options)
             width, height, channels, rows = rendered_png_rows(data)
             assert (width, height) == (1024 * scale, 600 * scale)
-            check_svg_tile_fill_stroke_pixels(rows, channels, scale, 0, color)
+            check_pixels(rows, channels, scale, 0, sample)
             misses = set(re.findall(r"^VOX_SHARED_SVG_TILE cache=miss key=(\d+) ", log, re.M))
             hits = set(re.findall(r"^VOX_SHARED_SVG_TILE cache=hit key=(\d+)$", log, re.M))
             assert misses and "0" not in misses and (misses - original) & hits, log
@@ -602,12 +604,13 @@ def main():
     patterns.add_argument("--pattern-nested-images-only", action="store_true")
     patterns.add_argument("--pattern-nested-only", action="store_true")
     patterns.add_argument("--pattern-standalone-only", action="store_true")
+    patterns.add_argument("--pattern-filter-only", action="store_true")
     args = parser.parse_args()
     binary = args.binary.resolve()
     root = Path(__file__).resolve().parents[1]
     fixture = root / "Tests/Browser/Native/svg-gradient-masks.html"
     if (args.pattern_strokes_only or args.pattern_images_only or args.pattern_nested_images_only
-            or args.pattern_nested_only or args.pattern_standalone_only):
+            or args.pattern_nested_only or args.pattern_standalone_only or args.pattern_filter_only):
         if args.pattern_strokes_only:
             pattern = fixture.with_name("svg-pattern-tile-non-scaling-strokes.html")
             check_pattern = check_non_scaling_pattern_tiles
@@ -619,10 +622,15 @@ def main():
             check_pattern = partial(check_pattern_tile_with_delayed_image, nested=True)
         elif args.pattern_standalone_only:
             pattern = fixture.with_name("svg-pattern-tile-standalone-strokes.html")
-            check_pattern = partial(check_pattern_tile_colors, ready="data-standalone-pattern-ready")
+            check_pattern = partial(check_pattern_tile_variants, ready="data-standalone-pattern-ready")
+        elif args.pattern_filter_only:
+            pattern = fixture.with_name("svg-pattern-tile-opacity-filter.html")
+            check_pattern = partial(check_pattern_tile_variants, ready="data-opacity-filter-ready",
+                                    check_pixels=check_svg_opacity_filter_tile_pixels,
+                                    original_sample=153, edited_sample=102)
         else:
             pattern = fixture.with_name("svg-pattern-tile-nested-strokes.html")
-            check_pattern = partial(check_pattern_tile_colors, ready="data-nested-pattern-ready")
+            check_pattern = partial(check_pattern_tile_variants, ready="data-nested-pattern-ready")
         inputs = [binary, pattern, *binary.parent.glob("lib*.dylib")]
         device_fixtures = []
         if args.pattern_nested_only:

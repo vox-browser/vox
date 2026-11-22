@@ -153,6 +153,24 @@ pub:
 	bounds ?Rect
 }
 
+// An opacity-only CSS filter can restore its isolated source as an opacity
+// layer. SVG graphs can change coverage even when they contain opacity nodes.
+pub fn (filter GfxFilter) opacity_filter_amount() ?f64 {
+	if filter.operations.len == 0 || filter.nodes.len != 0
+		|| filter.root_id != none || filter.bounds != none {
+		return none
+	}
+	mut opacity := 1.0
+	for operation in filter.operations {
+		if operation.kind != 'color' || operation.color_operation != .opacity
+			|| !(operation.first >= 0 && operation.first <= 1) {
+			return none
+		}
+		opacity *= operation.first
+	}
+	return opacity
+}
+
 // A same-document SVG graph and its target bounds have one retained lifetime.
 // Ordinary and CSS-function-only filters carry no graph payload.
 struct ResolvedSVGFilterSnapshot {

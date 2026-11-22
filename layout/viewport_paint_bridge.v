@@ -2199,7 +2199,7 @@ fn apply_compatibility_visual_context_node(tree &painting.AccumulatedVisualConte
 				width: node.data.bounding_rect.width
 				height: node.data.bounding_rect.height
 			}
-			operations := compatibility_lower_svg_mask_operations(node.data.operations, flattened.transform)
+			operations := compatibility_lower_svg_mask_operations(node.data.operations, flattened.transform, false)
 			mut cache_key := node.data.cache_key
 			for value in flattened.transform {
 				cache_key = svg_clip_hash_mix(cache_key, math.f64_bits(value))
@@ -4465,8 +4465,9 @@ fn compatibility_box_contains_hit_test_point_at(box &BlockBox, stacking_context_
 }
 
 // Lower retained mask and pattern tile operations into the renderer's paint transport.
+// Pattern callers check that all filter scopes can be lowered to opacity.
 pub fn compatibility_lower_svg_mask_operations(source []painting.SVGMaskPaintOperation,
-	transform [6]f64) []PaintMaskOperation {
+	transform [6]f64, lower_filter_opacity bool) []PaintMaskOperation {
 	mut operations := []PaintMaskOperation{cap: source.len}
 	for operation in source {
 		operation_transform := multiply_affine(transform, [
@@ -4479,7 +4480,20 @@ pub fn compatibility_lower_svg_mask_operations(source []painting.SVGMaskPaintOpe
 		]!)
 		mut operation_kind := PaintMaskOperationKind.path
 		match operation.kind {
-			.begin_filter, .end_filter { continue }
+			.begin_filter {
+				if lower_filter_opacity {
+					filter := operation.filter or { continue }
+					opacity := filter.opacity_filter_amount() or { continue }
+					operations << PaintMaskOperation{kind: .begin_opacity, opacity: opacity}
+				}
+				continue
+			}
+			.end_filter {
+				if lower_filter_opacity {
+					operations << PaintMaskOperation{kind: .end_opacity}
+				}
+				continue
+			}
 			.begin_opacity { operation_kind = .begin_opacity }
 			.end_opacity { operation_kind = .end_opacity }
 			.image { operation_kind = .image }

@@ -68,9 +68,9 @@ fn portable_svg_mask_pattern_info(style &painting.SVGPatternPaintStyle, limit in
 	mut has_images := false
 	for index in 0 .. list.operations.len {
 		operation := &list.operations[index]
-		// The mask transport omits filter markers.
-		if operation.kind in [.begin_filter, .end_filter] {
-			return none
+		if operation.kind == .begin_filter {
+			filter := operation.filter?
+			filter.opacity_filter_amount()?
 		}
 		has_images = has_images || (operation.kind == .image && operation.opacity != 0)
 		if pattern := operation.fill_pattern {
@@ -108,7 +108,7 @@ fn (mut app BrowserApp) raster_svg_mask_pattern(style &painting.SVGPatternPaintS
 	// Tile operations are already normalized into the cell's coordinate
 	// system. The shader maps the raster back to the exact SVG cell period.
 	operations := layout.compatibility_lower_svg_mask_operations(list.operations,
-		[sx, 0.0, 0.0, sy, 0.0, 0.0]!)
+		[sx, 0.0, 0.0, sy, 0.0, 0.0]!, true)
 	mask := layout.PaintClip{mask_operations: operations, mask_luminance: luminance}
 	if !portable_svg_content_mask_supported(&mask, true) { return none }
 	local := multiply_paint_transforms(pattern_transform, [1 / sx, 0.0, 0.0, 1 / sy, tile.x, tile.y]!)

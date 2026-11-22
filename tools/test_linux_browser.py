@@ -2194,7 +2194,25 @@ def check_svg_nested_tile_device_pixels(rows, channels, scale, marker):
             assert actual == expected, (scale, left + 10, y, actual.hex(), expected.hex())
 
 
-def check_svg_tile_browser(binary, artifacts, temporary, name, *, ready=None):
+def check_svg_opacity_filter_tile_pixels(rows, channels, scale, marker, transparency):
+    red = (255, transparency, transparency)
+    blue = (transparency, transparency, 255)
+    white, green = (255, 255, 255), (0, 255, 0)
+    for left in (0, 128):
+        for x, y, expected in (
+            (2, 6, red), (6, 6, blue), (14, 6, blue), (18, 6, white),
+            (2, 1, white), (2, 14, white), (2, 17, green),
+            (2, 26, red), (6, 26, blue),
+        ):
+            row = rows[marker + (8 + y) * scale]
+            pos = (left + x) * scale * channels
+            actual = tuple(row[pos:pos + 3])
+            assert actual == expected, (scale, left + x, y, actual, expected)
+
+
+def check_svg_tile_browser(binary, artifacts, temporary, name, *, ready=None,
+                           check_edited=functools.partial(check_svg_tile_fill_stroke_pixels,
+                                                          first_stripe=(255, 255, 0))):
     fixture = Path(__file__).resolve().parents[1] / f"Tests/Browser/Native/svg-pattern-tile-{name}.html"
     documents = []
     for mode in ("cached", "uncached"):
@@ -2216,7 +2234,7 @@ def check_svg_tile_browser(binary, artifacts, temporary, name, *, ready=None):
         marker = next(y for y in range(150) if rows[y][4 * channels:4 * channels + 3]
                       == bytes.fromhex("34b786"))
         if ready:
-            check_svg_tile_fill_stroke_pixels(rows, channels, 1, marker, (255, 255, 0))
+            check_edited(rows, channels, 1, marker)
         else:
             check_svg_nested_tile_device_pixels(rows, channels, 1, marker)
         hits = set(re.findall(r"^VOX_SVG_GROUP cache=hit start=(\d+)", log, re.M))
@@ -3014,6 +3032,7 @@ def main():
     checks.add_argument("--pattern-nested-images-only", action="store_true", help="check nested SVG pattern bitmaps")
     checks.add_argument("--pattern-nested-only", action="store_true", help="check nested SVG pattern tiles")
     checks.add_argument("--pattern-standalone-only", action="store_true", help="check standalone SVG pattern tiles")
+    checks.add_argument("--pattern-filter-only", action="store_true", help="check opacity-filtered SVG pattern tiles")
     args = parser.parse_args()
     wait_seconds = window_wait_seconds()
     binary = args.binary.resolve()
@@ -3038,6 +3057,11 @@ def main():
             check_svg_tile_browser(binary, artifacts, temporary, "standalone-strokes",
                                    ready="data-standalone-pattern-ready")
             check_svg_pattern_tile_image_browser(binary, artifacts, temporary)
+            return
+        if args.pattern_filter_only:
+            check_svg_tile_browser(binary, artifacts, temporary, "opacity-filter",
+                                   ready="data-opacity-filter-ready", check_edited=functools.partial(
+                                       check_svg_opacity_filter_tile_pixels, transparency=102))
             return
         environment = smoke_environment(temporary)
         output = run([str(binary), "--headless-smoke"], env=environment)
@@ -3075,6 +3099,9 @@ def main():
         check_svg_pattern_tile_image_browser(binary, artifacts, temporary, nested=True)
         check_svg_tile_browser(binary, artifacts, temporary, "standalone-strokes",
                                ready="data-standalone-pattern-ready")
+        check_svg_tile_browser(binary, artifacts, temporary, "opacity-filter",
+                               ready="data-opacity-filter-ready", check_edited=functools.partial(
+                                   check_svg_opacity_filter_tile_pixels, transparency=102))
         check_svg_tile_browser(binary, artifacts, temporary, "nested-strokes",
                                ready="data-nested-pattern-ready")
         check_svg_tile_browser(binary, artifacts, temporary, "nested-non-scaling-strokes")
