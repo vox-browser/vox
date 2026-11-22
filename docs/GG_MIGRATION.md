@@ -2557,6 +2557,74 @@ The builds, browsers and memory guards exited zero.
 The timings cover stationary software replay. Hardware frame
 timing and Windows runtime pixels remain unverified.
 
+### SVG color matrices inside shared pattern tiles
+
+In `5b9d1746b`, a single sRGB `feColorMatrix` on SourceGraphic
+with an unchanged alpha row can run in the shared renderer.
+The renderer maps the source bounds into the tile, clips
+pixel-aligned regions and filters the premultiplied isolation
+bitmap in place. Applying the same resource transform to the bounds
+and the paint lets translated copies share a cache key. The
+alpha-changing and linearRGB cases exercised the native fallback
+and matched the baseline.
+
+The fixture swaps color channels on opaque and translucent shapes,
+reuses the tile for a fill and a translated stroke, and edits the
+matrix after painting. The original shared document matched the
+native macOS baseline at 1×. At 2× the native baseline clipped the
+first copy to an eight-CSS-pixel green stripe and omitted its
+translucent shape. The shared renderer drew the full twelve-pixel
+stripe and the translucent shape in both copies. A separate
+filtered-stroke capture matched the native clipping at 1×.
+macOS logged one tile miss and one hit at each density before the
+edit, then a new key and another hit after the edit.
+
+The edited 256 × 108 crop matched across macOS and Linux at 1×,
+with RGB SHA-256
+`dc580ee477cf3d551631158c70fd08eb1763063f0671ba5421ec545731d1da7d`.
+The fixture SHA-256 was
+`f2705edf649d425407f938f820776663a20e1270d42209db70463149f0cb8976`.
+The Linux ARM64 executable used V `5a39a4d`, single-unit Clang
+`-O0` and Boehm GC. Its SHA-256 was
+`8928e0d940c378d1e4fa10c914b64c6db024286810c261813dc5084153343319`.
+The Linux cache-on and cache-off documents matched. The opacity,
+nested, delayed image, device-width and mask-opacity checks passed.
+The 23 smoke-driver unit tests and Windows D3D11 and OpenGL source
+checks passed. The matrix unit test passed with explicit V C mode
+after the default FastC compile timed out.
+
+The private macOS timing builds used V `d79ca45`, prealloc and
+single-unit C `-prod -no-prod-options`. The native and shared
+executable SHA-256 values were
+`6458c0c1bec71887555460daaa86a53469aa2f97e444552b518879a7b94c6e19`
+and `d22f2f1039ed7feaa6666169e392561acf041922e39d5a9b199a65e1a2b80e1b`.
+The shared build includes the concurrent adblock worker logging
+change `6cb8d7c22` and a newer bundled worker. Worker diagnostics
+were disabled in both runs.
+
+Two alternating pairs replayed 20 fills and 20 strokes from one
+tile at different positions. The generated input SHA-256 was
+`fc395983248d319d1cc4211e2e3dd39809ba9520373effd8fef7b958c8125a74`.
+Each 1024 × 600 viewport used 1× backing, a fresh profile and cache,
+and disabled JavaScript and whole-frame raster reuse. After a
+one-second settle, 48 synthetic idle callbacks replayed 42 commands
+at scroll offset zero. Separate diagnostics recorded 1,880 shared
+hits between the first and last callbacks on the candidate and zero
+on the native baseline. Tile logging was disabled during timing.
+Host one-minute load ranged from 9.05 to 9.23 across 18 logical CPUs.
+All six documents had RGBA SHA-256
+`37caadcb1ca020a57cf083caa6ff078ae4f13e7aa74f87bd3d0b1fbf97cd4522`.
+The executables, bundled libraries and fixtures were pinned for
+each run. The final builds, browsers and memory guards exited zero.
+
+| Pair | Native / shared median replay, ms | Native / shared p95, ms | Native / shared maximum, ms | Native / shared median allocated KiB |
+| --- | ---: | ---: | ---: | ---: |
+| 1 | 17.631 / 1.027 | 18.459 / 1.092 | 20.370 / 1.162 | 3 / 3 |
+| 2 | 16.675 / 0.913 | 17.825 / 0.992 | 18.324 / 1.077 | 3 / 3 |
+
+The timings cover stationary software replay of repeated tiles.
+Hardware frame timing and Windows runtime pixels remain unverified.
+
 ## Sharing the portable SVG fallback with Windows
 
 The standard Windows D3D11 window now uses the same CPU raster and GG texture
