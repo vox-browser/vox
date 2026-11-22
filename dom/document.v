@@ -5363,6 +5363,10 @@ pub mut:
 
 	// Version tracking
 	dom_tree_version                         u64
+	// A native copy of dom_tree_version that scripts read without a host
+	// call (compact facade navigation caches). Never freed: a script context
+	// may outlive the document.
+	dom_tree_version_cell_                   &u64 = unsafe { nil }
 	light_dom_id_class_attribute_version_     u64
 	light_dom_element_version_                u64
 	attribute_version_                       u64
@@ -6173,6 +6177,21 @@ pub fn (d &Document) dom_tree_version() u64 {
 
 pub fn (mut d Document) bump_dom_tree_version() {
 	d.dom_tree_version++
+	if d.dom_tree_version_cell_ != unsafe { nil } {
+		unsafe { *d.dom_tree_version_cell_ = d.dom_tree_version }
+	}
+}
+
+// The document's tree version cell, created on first use and current from
+// then on. Every script context of the document reads the same cell.
+pub fn (mut d Document) dom_tree_version_cell() &u64 {
+	if d.dom_tree_version_cell_ == unsafe { nil } {
+		cell := unsafe { &u64(C.calloc(1, sizeof(u64))) }
+		if cell == unsafe { nil } { panic('Tree version cell allocation failed') }
+		d.dom_tree_version_cell_ = cell
+	}
+	unsafe { *d.dom_tree_version_cell_ = d.dom_tree_version }
+	return d.dom_tree_version_cell_
 }
 
 // Attribute edits do not change tree structure. Consumers caching discoveries

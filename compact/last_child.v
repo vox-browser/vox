@@ -88,23 +88,35 @@ function __compactNodeWrapper(state){
  }
  return node;
 }
-const __compactTreeVersion=typeof globalThis.__ladybirdTreeVersion==="function"?globalThis.__ladybirdTreeVersion:null;
+// The document tree version: two little-endian words the native document
+// keeps current, read without a host call, or the host function. Versions
+// past 2^53 are not exact numbers and disable the caches (-1).
+const __compactTreeVersionWords=globalThis.__ladybirdTreeVersionCell instanceof Uint32Array?globalThis.__ladybirdTreeVersionCell:null;
+if(__compactTreeVersionWords!==null)delete globalThis.__ladybirdTreeVersionCell;
+const __compactTreeVersion=__compactTreeVersionWords!==null?function(){const high=__compactTreeVersionWords[1];return high>=2097152?-1:__compactTreeVersionWords[0]+high*4294967296;}:typeof globalThis.__ladybirdTreeVersion==="function"?globalThis.__ladybirdTreeVersion:null;
+// firstChild/lastChild/nextSibling/previousSibling of any node: the last
+// answer stands while the document tree is unchanged and no facade edits wait
+// to be replayed. React hydration walks server text and elements this way.
+function __compactCachedNavigation(state,name){
+ if(__compactTreeVersion!==null&&!__compactHasPendingDOMState()){
+  const version=__compactTreeVersion();
+  if(version>=0){
+   let cache=state.__navigation;
+   if(cache&&cache.version===version&&Object.prototype.hasOwnProperty.call(cache.values,name))return cache.values[name];
+   const value=__queryElements(state.bridgeKey,name,"");
+   if(__compactHasPendingDOMState()||__compactTreeVersion()!==version)return value;
+   if(!cache||cache.version!==version){cache={version,values:{}};Object.defineProperty(state,"__navigation",{value:cache,writable:true,configurable:true});}
+   cache.values[name]=value;
+   return value;
+  }
+ }
+ return __queryElements(state.bridgeKey,name,"");
+}
 for(const name of ["firstChild","lastChild","nextSibling","previousSibling"]){
 Object.defineProperty(Element.prototype,name,{get:function(){
  const state=__elementApply(__elementRecordGet,__elementRecords,[this]);
  if(!state)throw new TypeError("Illegal Node receiver");
- // The last answer stands while the document tree is unchanged and no
- // facade edits wait to be replayed.
- if(__compactTreeVersion!==null&&!__compactHasPendingDOMState()){
-  const version=__compactTreeVersion();let cache=state.__navigation;
-  if(cache&&cache.version===version&&Object.prototype.hasOwnProperty.call(cache.values,name))return cache.values[name];
-  const value=__queryElements(state.bridgeKey,name,"");
-  if(__compactHasPendingDOMState()||__compactTreeVersion()!==version)return value;
-  if(!cache||cache.version!==version){cache={version,values:{}};Object.defineProperty(state,"__navigation",{value:cache,writable:true,configurable:true});}
-  cache.values[name]=value;
-  return value;
- }
- return __queryElements(state.bridgeKey,name,"");
+ return __compactCachedNavigation(state,name);
 },enumerable:true,configurable:true});
 }'
 }

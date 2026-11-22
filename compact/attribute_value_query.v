@@ -1,6 +1,7 @@
 module main
 
 import browserjs
+import dom
 import os
 import platform
 
@@ -48,4 +49,16 @@ fn install_compact_tree_version_query(binding &CompactElementQueryBinding, mut r
 	runtime.install_number_query('__ladybirdTreeVersion', fn [binding] () f64 {
 		return f64(binding.document.dom_tree_version())
 	})!
+	// __ladybirdTreeVersionCell: the same version as two little-endian words
+	// the document keeps current, read without a host call. The facade takes
+	// it at startup and removes the global.
+	if !retain_tree_version_host_calls {
+		mut document := unsafe { &dom.Document(binding.document) }
+		runtime.install_native_word_view('__ladybirdTreeVersionCell', voidptr(document.dom_tree_version_cell()), 2)!
+	}
 }
+
+// Same-binary control: navigation caches ask the native document for its tree
+// version on every read.
+const retain_tree_version_host_calls = os.getenv('VOX_RETAIN_TREE_VERSION_HOST_CALLS') != ''
+

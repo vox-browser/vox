@@ -4,6 +4,9 @@ import os
 
 const disable_shared_node_properties = os.getenv('VOX_DISABLE_SHARED_NODE_PROPERTIES') == '1'
 const shared_node_properties_diagnostics = os.getenv('VOX_SHARED_NODE_PROPERTIES_DIAGNOSTICS') == '1'
+// Same-binary control: text, comment and other non-element nodes ask the
+// native DOM for every navigation.
+const uncached_node_navigation = os.getenv('VOX_UNCACHED_NODE_NAVIGATION') != ''
 
 // Keep wrapper metadata local, while reusing the receiver-based accessors and
 // methods. Initialize descriptors on first use, after the other Node bindings
@@ -14,6 +17,8 @@ fn compact_node_properties_bootstrap() string {
 	if shared_node_properties_diagnostics {
 		prefix += 'Object.defineProperty(globalThis,"__voxSharedNodeWrappers",{value:0,writable:true});\n'
 	}
+	prefix += 'const __compactUncachedNodeNavigation=${uncached_node_navigation};\n'
+
 	if disable_shared_node_properties {
 		return prefix + r'
 function __compactInstallNodeProperties(node,state){
@@ -47,6 +52,8 @@ function __compactInstallNodeProperties(node,state){
 const __compactSharedNodeRead=function read(){return __queryElements(__compactSharedNodeRecord(this).bridgeKey,"nodeValue","");};
 const __compactSharedNodeWrite=function write(receiver,value,nullable){const own=__compactSharedNodeRecord(receiver);if(typeof value==="symbol")throw new TypeError("Cannot convert a Symbol to a string");__queryElements(own.bridgeKey,"setNodeValue",nullable&&value===null?"":String(value));__compactInvalidateContent(own);};
 let __compactNodePropertyDescriptors;
+// The element navigation cache (last_child.v), when that binding is present.
+const __compactNodeNavigation=function navigate(state,name){return typeof __compactCachedNavigation==="function"&&!__compactUncachedNodeNavigation?__compactCachedNavigation(state,name):__queryElements(state.bridgeKey,name,"");};
 const __compactCharacterPropertyDescriptors={
  data:{get:__compactSharedNodeRead,set(value){__compactSharedNodeWrite(this,value,false);}},length:{get(){return __elementApply(__compactSharedNodeRead,this,[]).length;}}
 };
@@ -57,11 +64,11 @@ function __compactInstallNodeProperties(node,state){
   isConnected:{get:__compactNodeConnected,enumerable:true,configurable:true},
   parentNode:{get(){return __compactNativeParent(__compactSharedNodeRecord(this));}},
   parentElement:{get(){const parent=this.parentNode;return parent&&parent.nodeType===1?parent:null;}},
-  firstChild:{get(){return __queryElements(__compactSharedNodeRecord(this).bridgeKey,"firstChild","");}},
-  lastChild:{get(){return __queryElements(__compactSharedNodeRecord(this).bridgeKey,"lastChild","");}},
+  firstChild:{get(){return __compactNodeNavigation(__compactSharedNodeRecord(this),"firstChild");}},
+  lastChild:{get(){return __compactNodeNavigation(__compactSharedNodeRecord(this),"lastChild");}},
   childNodes:{get(){return __compactChildNodes(this,__compactSharedNodeRecord(this));}},
-  nextSibling:{get(){return __queryElements(__compactSharedNodeRecord(this).bridgeKey,"nextSibling","");}},
-  previousSibling:{get(){return __queryElements(__compactSharedNodeRecord(this).bridgeKey,"previousSibling","");}},
+  nextSibling:{get(){return __compactNodeNavigation(__compactSharedNodeRecord(this),"nextSibling");}},
+  previousSibling:{get(){return __compactNodeNavigation(__compactSharedNodeRecord(this),"previousSibling");}},
   __firstChildOf:{get(){const parent=this.parentNode;return parent&&parent.nodeType===1&&parent.firstChild===this?parent.__state.bridgeKey:undefined;}},
   nodeValue:{get(){return [3,4,7,8].includes(__compactSharedNodeRecord(this).nodeType)?__elementApply(__compactSharedNodeRead,this,[]):null;},set(value){__compactSharedNodeWrite(this,value,true);}},
   textContent:{get(){return __queryElements(__compactSharedNodeRecord(this).bridgeKey,"nodeText","");},set(value){const own=__compactSharedNodeRecord(this);if(typeof value==="symbol")throw new TypeError("Cannot convert a Symbol to a string");__queryElements(own.bridgeKey,"setNodeText",value===null?"":String(value));__compactInvalidateContent(own);}},
