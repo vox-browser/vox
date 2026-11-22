@@ -1354,6 +1354,64 @@ on four vCPUs. The fixture, executable, and linked library hashes
 stayed fixed. All refreshed browser and guard exits were zero. Windows
 runtime pixels and hardware GPU timing remain pending.
 
+## Rounded viewports around masked SVGs
+
+In `9917e2f1c`, the portable mask compositor preserves rounded overflow
+clips when all paths in the group share their viewport geometry. It rasterizes their
+elliptical corners using the viewport's own transform and applies the
+coverage to the masked image before upload. Matching viewport clips
+are applied once. A texture hit skips rounded coverage rasterization.
+
+The window fixture exercises a live border-radius edit around an alpha
+mask with overlapping foreground paths. It also exercises a reflected
+viewport with asymmetric elliptical corners around a luminance mask.
+All 800 × 516 pixels matched across Linux cached CPU, GG-enabled, and
+uncached replay. The three earlier transformed-mask fixtures retained
+their recorded RGB hashes. The new fixture SHA-256 is
+`2b1605a17531f420c74eb9cd388357d311fb0e42c0fc90a9298604114e796dc5`.
+The decoded RGB document SHA-256 is
+`e905621b0779f6966fb9ef8a03db598fee19b630effe0691f6fe46eb311e612f`.
+
+The native macOS reference was PID 95566 from published single-unit
+build `6209346d8`, executable SHA-256
+`a92b702d32ab26cf7835f2d4b148a39c8cca22f7ca841ede9542820d4a24a034`.
+Of 412,800 pixels, 412,572 matched exactly and 43 differed by one
+channel level. The remaining 185 differed by up to 63 channel levels
+along the rounded edges.
+
+The rounded-viewport check and twenty neighboring Linux window checks
+passed under the memory guard. macOS and Windows D3D11 and OpenGL C backend
+source checks and 21 Linux smoke-driver unit tests passed. The Linux
+runtime build zero-initialized the duplicate-clip array in generated C.
+The final source marks its initializer unsafe to satisfy the compiler's
+reference-array check. The loop inspects only entries it has assigned.
+
+With portable masks disabled, the fallback painted (313, 159) blue.
+The enabled compositor and the macOS reference both left that pixel white.
+
+Two alternating pairs used single-unit V `5a39a4d` and Clang `-O0` on
+Linux ARM64. The executable SHA-256 is
+`3f1c66971188a4b5d073714ca2c663efaf02572c5cad71542c2a67a5077740a6`.
+Fresh processes used private profiles and caches, JavaScript off, an
+800 × 600 Xvfb window and one Mesa software worker. A one-second settle
+preceded 48 synthetic idle callbacks. Separate diagnostics recorded
+two mask rasters per complete interval with caching disabled and two
+texture hits with caching enabled. All timed captures shared paint
+command counts, stationary offsets and decoded document SHA-256
+`3c82fc428020f3f23e31fc26172322ef65020b8a08121ee8c072c130d14917bb`.
+
+| Pair | Uncached / cached median replay, ms | Uncached / cached p95 and maximum, ms | Uncached / cached median allocated KiB |
+| --- | ---: | ---: | ---: |
+| 1 | 3.575 / 1.407 | 7.918, 30.056 / 9.892, 18.662 | 364.5 / 120 |
+| 2 | 3.241 / 1.479 | 5.688, 23.291 / 7.984, 43.120 | 364.5 / 120 |
+
+Cached medians fell in both pairs and cached p95 rose in both pairs.
+The 18-CPU host's one-minute load was 98.15 before the run and 83.56
+after it. A script indentation error stopped the original launcher
+before any browser ran. The corrected cohort preserved executable,
+fixture and library hashes, and its browser and guard exits were zero.
+Windows runtime pixels and hardware GPU timing remain pending.
+
 ## Sharing the portable SVG fallback with Windows
 
 The standard Windows D3D11 window now uses the same CPU raster and GG texture
