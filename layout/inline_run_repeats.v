@@ -52,7 +52,9 @@ fn note_uncached_inline_run(state &LayoutState, containing_block &BlockContainer
 		inline_run_repeat_kinds[kind]++
 	} else {
 		blocker := inline_run_blocker(unsafe { &Node(containing_block) }, true)
-		detail := if blocker == 'plain' { inline_run_collect_failure(unsafe { &Node(containing_block) }, true) } else { blocker }
+		detail := if blocker == 'plain' || blocker.starts_with('generated-plain') {
+			'${blocker}|${inline_run_collect_failure(unsafe { &Node(containing_block) }, true)}'
+		} else { blocker }
 		miss := inline_run_cache_miss(state, containing_block, used, mode, space, width_only, context)
 		kind = '${if measurement { 'measurement' } else { 'main' }}:${detail}:${miss}'
 		inline_run_repeat_kinds[kind]++
@@ -84,7 +86,22 @@ fn inline_run_blocker(node &Node, root bool) string {
 		if node.is_svg_box() || node.is_svg_svg_box() { return 'svg' }
 		if node.is_replaced_box() { return 'replaced' }
 		if node.is_floating() { return 'float' }
-		if node.is_generated_for_pseudo_element() || node.is_generated_text_node() { return 'generated' }
+		if node.is_generated_for_pseudo_element() || node.is_generated_text_node() {
+			if !node.is_text_node() && !node.is_inline_node() { return 'generated-${node.display().to_string()}' }
+			if generated_content_uses_document_state(node) { return 'generated-document-state' }
+			content := if value := node.computed_values().property(.content, .yes) { value.css_text.limit(24) } else { '?' }
+			if text := node.as_text_node() {
+				if text.produces_line_box_fragment_when_empty_ || text.text_for_rendering() == '' {
+					return 'generated-empty-text'
+				}
+			}
+			// Collected unless a descendant is rejected.
+			for child in node.children() {
+				reason := inline_run_blocker(child, false)
+				if reason != 'plain' { return 'generated>${reason}' }
+			}
+			return 'generated-plain:${content}'
+		}
 		if node.is_list_item_marker_box() { return 'marker' }
 		if !node.is_text_node() && node.is_break_node() { return 'br' }
 		if !node.is_text_node() && !node.is_inline_node() { return 'atomic' }
