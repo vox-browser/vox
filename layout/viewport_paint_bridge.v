@@ -8,6 +8,7 @@ import os
 import page
 import painting
 import platform
+import processmetrics
 import strings
 
 // Same-binary control for the former scene-local step selection allocation.
@@ -3043,10 +3044,17 @@ fn viewport_record_display_list(target voidptr) &dom.DisplayList {
 		&& result.paint_phase_line_box_debug == show_line_box_borders {
 		return result.display_list
 	}
+	callback_stage := processmetrics.begin_thread_instruction_substage('paint_record_callback')
+	defer { callback_stage.finish() }
+	stacking_stage := processmetrics.begin_thread_instruction_substage('paint_record_stacking_context')
 	viewport_build_stacking_context_tree(target)
 	viewport_sync_cursor_paint_cache(mut result)
 	viewport_invalidate_fixed_background_paint_caches(mut result)
+	stacking_stage.finish()
+	visible_stage := processmetrics.begin_thread_instruction_substage('paint_record_visible_entries')
 	selected := if viewport_only { viewport_visible_paint_entries(mut result) } else { []bool{} }
+	visible_stage.finish()
+	phase_stage := processmetrics.begin_thread_instruction_substage('paint_record_phase_cache')
 	if result.paint_phase_line_box_debug != show_line_box_borders {
 		// Inspector guides are paint output. Rebuild them only when enabled,
 		// retaining ordinary bucket storage while dropping obsolete GC edges.
@@ -3065,6 +3073,9 @@ fn viewport_record_display_list(target voidptr) &dom.DisplayList {
 		result.paint_phase_command_count += result.paint_tree.refresh_selected_paint_phase_command_cache_with_debug(result.paint_order, selected, mut result.paint_phase_commands, mut result.paint_phase_entry_valid, show_line_box_borders)
 	}
 	viewport_entry_opacity_scales(mut result)
+	phase_stage.finish()
+	commands_stage := processmetrics.begin_thread_instruction_substage('paint_record_commands')
+	defer { commands_stage.finish() }
 	snapshot := result.scroll_state_snapshot
 	mut force_dark := ?painting.ForceDarkSettings(none)
 	if model := html.NavigableModel.navigable_with_active_document(result.document) {
