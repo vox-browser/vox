@@ -320,6 +320,23 @@ fn (damage &ScrollRasterDamage) skips_index(commands []layout.PaintCommand, inde
 	return damage.skips(&commands[index])
 }
 
+// Same-binary control: cull every command before consulting the damage plan.
+const cull_damage_skipped_leaves = os.getenv('VOX_CULL_DAMAGE_SKIPPED_LEAVES') != ''
+
+// A leaf the damage plan skips draws nothing, culled or not, and canvas
+// culling only tracks the nesting of group commands. Answering the plan first
+// spares each skipped leaf its ink bounds; a reused animation frame replays
+// about 20 of GitHub's 910 commands. Group commands still reach culling, and
+// videos keep it first, because a culled video invalidates its backdrop.
+fn (damage &ScrollRasterDamage) skips_leaf(commands []layout.PaintCommand, index int) bool {
+	if cull_damage_skipped_leaves || !damage.reused { return false }
+	kind := commands[index].kind
+	if kind.starts_with('begin_') || kind.starts_with('end_') || kind == 'draw_video' {
+		return false
+	}
+	return damage.skips_index(commands, index)
+}
+
 // A video can be composited over its retained backdrop when it is outside
 // every effect group, its raster layer draws immediately, and nothing later
 // in paint order touches its damage rectangle.

@@ -7745,6 +7745,7 @@ fn (mut app BrowserApp) draw() {
 					if app.ctx.native_rendering && command_index < app.chromium_raster_plan.command_layers.len
 						&& app.chromium_raster_plan.command_layers[command_index] < 0 { continue }
 				}
+				if scroll_damage.skips_leaf(app.paint_commands, command_index) { continue }
 				platform.cooperative_work_checkpoint()
 				mut command := unsafe { &app.paint_commands[command_index] }
 				if app.page_zoom != 1 {
