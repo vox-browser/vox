@@ -3874,21 +3874,20 @@ fn uncached_block_box_from_typed_layout_shallow(node &Node, state &LayoutState, 
 		mut svg_fill_rgba := ?css.Color(none)
 		mut svg_stroke_rgba := ?css.Color(none)
 		has_svg_path = true
-		svg_path = path.serialize()
-		if path_bounds := svg_path_bounds(path) {
+		projection := svg_path_projection(path, computed.fill_rule() == .evenodd,
+			node.document().font_rendering_policy() == .chromium)
+		svg_path = projection.serialized
+		if path_bounds := projection.path_bounds {
 			svg_path_bounding_box = painting.Rect{path_bounds.x, path_bounds.y, path_bounds.width, path_bounds.height}
 		}
 		ellipse_data := retained_svg_ellipse_data(node, path)
-		projection := svg_paint_path_projection(path, if computed.fill_rule() == .evenodd {
-			painting.WindingRule.even_odd
-		} else { painting.WindingRule.nonzero }, true, node.document().font_rendering_policy() == .chromium)
-		svg_path_data = ellipse_data or { projection.packed_segments }
+		svg_path_data = ellipse_data or { projection.packed }
 		svg_fill_even_odd = computed.fill_rule() == .evenodd
 		svg_hit_data = &SVGPathHitData{
 			pointer_events: computed.pointer_events()
 			has_fill: computed.fill() != none
 			has_stroke: computed.stroke() != none
-			path: cpuraster.PackedPath{segments: projection.packed_segments, even_odd: svg_fill_even_odd}
+			path: cpuraster.PackedPath{segments: projection.packed, even_odd: svg_fill_even_odd}
 			bounding_box: if node.is_svg_text_box() {
 				svg_text_bounding_box_for_hit_testing(node, state)
 			} else { none }
