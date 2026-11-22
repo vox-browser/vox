@@ -3,6 +3,18 @@
 
 #include <CoreGraphics/CoreGraphics.h>
 #include <stdbool.h>
+#include <stdlib.h>
+
+static inline void native_set_svg_resource_dashes(CGContextRef context,
+    const float *dashes, int count, float offset) {
+    if (!dashes || count <= 0) return;
+    CGFloat local[16];
+    CGFloat *lengths = count <= 16 ? local : malloc((size_t)count * sizeof(*lengths));
+    if (!lengths) return;
+    for (int index = 0; index < count; ++index) lengths[index] = dashes[index];
+    CGContextSetLineDash(context, offset, lengths, (size_t)count);
+    if (lengths != local) free(lengths);
+}
 
 typedef struct {
     CGFloat width;

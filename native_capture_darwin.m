@@ -2010,7 +2010,8 @@ static void native_draw_svg_linear_gradient_path_in_context(CGContextRef context
 	int line_join, float miter_limit, float start_x, float start_y, float end_x,
 	float end_y, float gradient_a, float gradient_b, float gradient_c,
 	float gradient_d, float gradient_e, float gradient_f, int spread_method,
-	int linear_color_space, const float *stop_data, int stop_count, float opacity) {
+	int linear_color_space, const float *stop_data, int stop_count, float opacity,
+	const float *dash_data, int dash_count, float dash_offset) {
 	if (context == NULL || data == NULL || segment_count <= 0 || stop_data == NULL
 		|| stop_count <= 0) {
 		return;
@@ -2033,6 +2034,7 @@ static void native_draw_svg_linear_gradient_path_in_context(CGContextRef context
 		CGContextSetLineJoin(context, line_join == 1 ? kCGLineJoinRound
 			: line_join == 2 ? kCGLineJoinBevel : kCGLineJoinMiter);
 		CGContextSetMiterLimit(context, MAX(miter_limit, 1.0));
+		native_set_svg_resource_dashes(context, dash_data, dash_count, dash_offset);
 		CGContextReplacePathWithStrokedPath(context);
 		CGContextClip(context);
 	} else if (even_odd) {
@@ -2143,7 +2145,7 @@ void native_draw_svg_linear_gradient_path(const float *data, int segment_count,
 		transform_f, page_x, page_y, scroll_y, canvas_height, stroke, stroke_width,
 		line_cap, line_join, miter_limit, start_x, start_y, end_x, end_y,
 		gradient_a, gradient_b, gradient_c, gradient_d, gradient_e, gradient_f,
-		spread_method, linear_color_space, stop_data, stop_count, opacity);
+		spread_method, linear_color_space, stop_data, stop_count, opacity, NULL, 0, 0);
 }
 
 #include "native/include/native_css_gradient_gpu_darwin.h"
@@ -2210,7 +2212,8 @@ static void native_draw_svg_radial_gradient_path_in_context(CGContextRef context
 	float start_radius, float end_x, float end_y, float end_radius,
 	float gradient_a, float gradient_b, float gradient_c, float gradient_d,
 	float gradient_e, float gradient_f, int spread_method,
-	int linear_color_space, const float *stop_data, int stop_count, float opacity) {
+	int linear_color_space, const float *stop_data, int stop_count, float opacity,
+	const float *dash_data, int dash_count, float dash_offset) {
 	if (context == NULL || data == NULL || segment_count <= 0 || stop_data == NULL
 		|| stop_count <= 0) {
 		return;
@@ -2237,6 +2240,7 @@ static void native_draw_svg_radial_gradient_path_in_context(CGContextRef context
 		CGContextSetLineJoin(context, line_join == 1 ? kCGLineJoinRound
 			: line_join == 2 ? kCGLineJoinBevel : kCGLineJoinMiter);
 		CGContextSetMiterLimit(context, MAX(miter_limit, 1.0));
+		native_set_svg_resource_dashes(context, dash_data, dash_count, dash_offset);
 		CGContextReplacePathWithStrokedPath(context);
 		CGContextClip(context);
 	} else if (even_odd) {
@@ -2365,7 +2369,7 @@ void native_draw_svg_radial_gradient_path(const float *data, int segment_count,
 		line_cap, line_join, miter_limit, start_x, start_y, start_radius, end_x,
 		end_y, end_radius, gradient_a, gradient_b, gradient_c, gradient_d,
 		gradient_e, gradient_f, spread_method, linear_color_space, stop_data,
-		stop_count, opacity);
+		stop_count, opacity, NULL, 0, 0);
 }
 
 // CSS gradients are submitted as one native shading operation, matching the shape of
@@ -5204,7 +5208,8 @@ void native_add_svg_content_mask_path(const float *data, int segment_count,
 	float page_y, float scroll_y, float canvas_width, float canvas_height,
 	gg__Color fill_color,
 	int has_fill, gg__Color stroke_color, int has_stroke, float stroke_width,
-	int line_cap, int line_join, float miter_limit, int stroke_first) {
+	int line_cap, int line_join, float miter_limit, int stroke_first,
+	const float *dash_data, int dash_count, float dash_offset) {
 	if (native_svg_clip_image != NULL || native_svg_clip_build_context == NULL
 		|| data == NULL || segment_count <= 0 || (!has_fill && !has_stroke)) {
 		return;
@@ -5215,7 +5220,7 @@ void native_add_svg_content_mask_path(const float *data, int segment_count,
 		canvas_height - page_y + scroll_y - transform_f);
 	CGContextSaveGState(native_svg_clip_build_context);
 	CGContextConcatCTM(native_svg_clip_build_context, to_canvas);
-	if (has_fill != has_stroke) {
+	if (has_fill != has_stroke && (!has_stroke || dash_count <= 0)) {
 		VoxGraphitePath draw = {0};
 		gg__Color color = has_fill ? fill_color : stroke_color;
 		draw.segments = data;
@@ -5250,6 +5255,7 @@ void native_add_svg_content_mask_path(const float *data, int segment_count,
 			line_join == 1 ? kCGLineJoinRound
 			               : line_join == 2 ? kCGLineJoinBevel : kCGLineJoinMiter);
 		CGContextSetMiterLimit(native_svg_clip_build_context, MAX(miter_limit, 1.0));
+		native_set_svg_resource_dashes(native_svg_clip_build_context, dash_data, dash_count, dash_offset);
 	}
 	if (stroke_first && has_stroke) {
 		native_draw_svg_mask_path_part(native_svg_clip_build_context, path, 0, even_odd);
@@ -5278,7 +5284,8 @@ void native_add_svg_content_mask_linear_gradient_path(const float *data,
 	float start_x, float start_y, float end_x, float end_y, float gradient_a,
 	float gradient_b, float gradient_c, float gradient_d, float gradient_e,
 	float gradient_f, int spread_method, int linear_color_space,
-	const float *stop_data, int stop_count, float opacity) {
+	const float *stop_data, int stop_count, float opacity,
+	const float *dash_data, int dash_count, float dash_offset) {
 	if (native_svg_clip_image != NULL || native_svg_clip_build_context == NULL) {
 		return;
 	}
@@ -5288,7 +5295,7 @@ void native_add_svg_content_mask_linear_gradient_path(const float *data,
 		canvas_height, stroke, stroke_width, line_cap, line_join, miter_limit,
 		start_x, start_y, end_x, end_y, gradient_a, gradient_b, gradient_c,
 		gradient_d, gradient_e, gradient_f, spread_method, linear_color_space,
-		stop_data, stop_count, opacity);
+		stop_data, stop_count, opacity, dash_data, dash_count, dash_offset);
 }
 
 void native_add_svg_content_mask_radial_gradient_path(const float *data,
@@ -5299,7 +5306,8 @@ void native_add_svg_content_mask_radial_gradient_path(const float *data,
 	float start_x, float start_y, float start_radius, float end_x, float end_y,
 	float end_radius, float gradient_a, float gradient_b, float gradient_c,
 	float gradient_d, float gradient_e, float gradient_f, int spread_method,
-	int linear_color_space, const float *stop_data, int stop_count, float opacity) {
+	int linear_color_space, const float *stop_data, int stop_count, float opacity,
+	const float *dash_data, int dash_count, float dash_offset) {
 	if (native_svg_clip_image != NULL || native_svg_clip_build_context == NULL) {
 		return;
 	}
@@ -5309,7 +5317,7 @@ void native_add_svg_content_mask_radial_gradient_path(const float *data,
 		canvas_height, stroke, stroke_width, line_cap, line_join, miter_limit,
 		start_x, start_y, start_radius, end_x, end_y, end_radius, gradient_a,
 		gradient_b, gradient_c, gradient_d, gradient_e, gradient_f, spread_method,
-		linear_color_space, stop_data, stop_count, opacity);
+		linear_color_space, stop_data, stop_count, opacity, dash_data, dash_count, dash_offset);
 }
 
 // Transfer an owned image into the cache for the active canvas placement.
@@ -6468,7 +6476,8 @@ void native_add_svg_pattern_path(const float *data, int segment_count,
 	float transform_d, float transform_e, float transform_f, float canvas_height,
 	gg__Color fill_color, int has_fill, gg__Color stroke_color, int has_stroke,
 	float stroke_width, int line_cap, int line_join, float miter_limit,
-	int stroke_first) {
+	int stroke_first,
+	const float *dash_data, int dash_count, float dash_offset) {
 	CGContextRef context = native_svg_pattern_context();
 	if (context == NULL || data == NULL || segment_count <= 0
 		|| (!has_fill && !has_stroke)) {
@@ -6494,6 +6503,7 @@ void native_add_svg_pattern_path(const float *data, int segment_count,
 		CGContextSetLineJoin(context, line_join == 1 ? kCGLineJoinRound
 			: line_join == 2 ? kCGLineJoinBevel : kCGLineJoinMiter);
 		CGContextSetMiterLimit(context, MAX(miter_limit, 1.0));
+		native_set_svg_resource_dashes(context, dash_data, dash_count, dash_offset);
 	}
 	if (stroke_first && has_stroke) {
 		native_draw_svg_mask_path_part(context, path, 0, even_odd);
@@ -6517,14 +6527,15 @@ void native_add_svg_pattern_linear_gradient_path(const float *data,
 	int line_join, float miter_limit, float start_x, float start_y, float end_x,
 	float end_y, float gradient_a, float gradient_b, float gradient_c,
 	float gradient_d, float gradient_e, float gradient_f, int spread_method,
-	int linear_color_space, const float *stop_data, int stop_count, float opacity) {
+	int linear_color_space, const float *stop_data, int stop_count, float opacity,
+	const float *dash_data, int dash_count, float dash_offset) {
 	native_draw_svg_linear_gradient_path_in_context(native_svg_pattern_context(),
 		data, segment_count, even_odd, transform_a, transform_b, transform_c,
 		transform_d, transform_e, transform_f, 0, 0, 0, canvas_height, stroke,
 		stroke_width, line_cap, line_join, miter_limit, start_x, start_y, end_x,
 		end_y, gradient_a, gradient_b, gradient_c, gradient_d, gradient_e,
 		gradient_f, spread_method, linear_color_space, stop_data, stop_count,
-		opacity);
+		opacity, dash_data, dash_count, dash_offset);
 }
 
 void native_add_svg_pattern_radial_gradient_path(const float *data,
@@ -6535,14 +6546,15 @@ void native_add_svg_pattern_radial_gradient_path(const float *data,
 	float start_radius, float end_x, float end_y, float end_radius,
 	float gradient_a, float gradient_b, float gradient_c, float gradient_d,
 	float gradient_e, float gradient_f, int spread_method, int linear_color_space,
-	const float *stop_data, int stop_count, float opacity) {
+	const float *stop_data, int stop_count, float opacity,
+	const float *dash_data, int dash_count, float dash_offset) {
 	native_draw_svg_radial_gradient_path_in_context(native_svg_pattern_context(),
 		data, segment_count, even_odd, transform_a, transform_b, transform_c,
 		transform_d, transform_e, transform_f, 0, 0, 0, canvas_height, stroke,
 		stroke_width, line_cap, line_join, miter_limit, start_x, start_y,
 		start_radius, end_x, end_y, end_radius, gradient_a, gradient_b, gradient_c,
 		gradient_d, gradient_e, gradient_f, spread_method, linear_color_space,
-		stop_data, stop_count, opacity);
+		stop_data, stop_count, opacity, dash_data, dash_count, dash_offset);
 }
 
 void native_add_svg_pattern_image(gg__Image *image, float destination_x,

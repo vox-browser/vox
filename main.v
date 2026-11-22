@@ -258,11 +258,11 @@ fn C.native_begin_svg_mask_opacity(opacity f32)
 
 fn C.native_end_svg_mask_opacity()
 
-fn C.native_add_svg_content_mask_path(data &f32, segment_count int, even_odd int, transform_a f32, transform_b f32, transform_c f32, transform_d f32, transform_e f32, transform_f f32, page_x f32, page_y f32, scroll_y f32, canvas_width f32, canvas_height f32, fill_color gg.Color, has_fill int, stroke_color gg.Color, has_stroke int, stroke_width f32, line_cap int, line_join int, miter_limit f32, stroke_first int)
+fn C.native_add_svg_content_mask_path(data &f32, segment_count int, even_odd int, transform_a f32, transform_b f32, transform_c f32, transform_d f32, transform_e f32, transform_f f32, page_x f32, page_y f32, scroll_y f32, canvas_width f32, canvas_height f32, fill_color gg.Color, has_fill int, stroke_color gg.Color, has_stroke int, stroke_width f32, line_cap int, line_join int, miter_limit f32, stroke_first int, dash_data &f32, dash_count int, dash_offset f32)
 
-fn C.native_add_svg_content_mask_linear_gradient_path(data &f32, segment_count int, even_odd int, transform_a f32, transform_b f32, transform_c f32, transform_d f32, transform_e f32, transform_f f32, page_x f32, page_y f32, scroll_y f32, canvas_height f32, stroke int, stroke_width f32, line_cap int, line_join int, miter_limit f32, start_x f32, start_y f32, end_x f32, end_y f32, gradient_a f32, gradient_b f32, gradient_c f32, gradient_d f32, gradient_e f32, gradient_f f32, spread_method int, linear_color_space int, stop_data &f32, stop_count int, opacity f32)
+fn C.native_add_svg_content_mask_linear_gradient_path(data &f32, segment_count int, even_odd int, transform_a f32, transform_b f32, transform_c f32, transform_d f32, transform_e f32, transform_f f32, page_x f32, page_y f32, scroll_y f32, canvas_height f32, stroke int, stroke_width f32, line_cap int, line_join int, miter_limit f32, start_x f32, start_y f32, end_x f32, end_y f32, gradient_a f32, gradient_b f32, gradient_c f32, gradient_d f32, gradient_e f32, gradient_f f32, spread_method int, linear_color_space int, stop_data &f32, stop_count int, opacity f32, dash_data &f32, dash_count int, dash_offset f32)
 
-fn C.native_add_svg_content_mask_radial_gradient_path(data &f32, segment_count int, even_odd int, transform_a f32, transform_b f32, transform_c f32, transform_d f32, transform_e f32, transform_f f32, page_x f32, page_y f32, scroll_y f32, canvas_height f32, stroke int, stroke_width f32, line_cap int, line_join int, miter_limit f32, start_x f32, start_y f32, start_radius f32, end_x f32, end_y f32, end_radius f32, gradient_a f32, gradient_b f32, gradient_c f32, gradient_d f32, gradient_e f32, gradient_f f32, spread_method int, linear_color_space int, stop_data &f32, stop_count int, opacity f32)
+fn C.native_add_svg_content_mask_radial_gradient_path(data &f32, segment_count int, even_odd int, transform_a f32, transform_b f32, transform_c f32, transform_d f32, transform_e f32, transform_f f32, page_x f32, page_y f32, scroll_y f32, canvas_height f32, stroke int, stroke_width f32, line_cap int, line_join int, miter_limit f32, start_x f32, start_y f32, start_radius f32, end_x f32, end_y f32, end_radius f32, gradient_a f32, gradient_b f32, gradient_c f32, gradient_d f32, gradient_e f32, gradient_f f32, spread_method int, linear_color_space int, stop_data &f32, stop_count int, opacity f32, dash_data &f32, dash_count int, dash_offset f32)
 
 fn C.native_begin_svg_pattern_tile(cache_key u64, tile_width f32, tile_height f32, content_scale_x f32, content_scale_y f32)
 
@@ -274,11 +274,11 @@ fn C.native_begin_svg_pattern_filter_layer(canvas_width f32, canvas_height f32)
 
 fn C.native_end_svg_pattern_filter_layer()
 
-fn C.native_add_svg_pattern_path(data &f32, segment_count int, even_odd int, transform_a f32, transform_b f32, transform_c f32, transform_d f32, transform_e f32, transform_f f32, canvas_height f32, fill_color gg.Color, has_fill int, stroke_color gg.Color, has_stroke int, stroke_width f32, line_cap int, line_join int, miter_limit f32, stroke_first int)
+fn C.native_add_svg_pattern_path(data &f32, segment_count int, even_odd int, transform_a f32, transform_b f32, transform_c f32, transform_d f32, transform_e f32, transform_f f32, canvas_height f32, fill_color gg.Color, has_fill int, stroke_color gg.Color, has_stroke int, stroke_width f32, line_cap int, line_join int, miter_limit f32, stroke_first int, dash_data &f32, dash_count int, dash_offset f32)
 
-fn C.native_add_svg_pattern_linear_gradient_path(data &f32, segment_count int, even_odd int, transform_a f32, transform_b f32, transform_c f32, transform_d f32, transform_e f32, transform_f f32, canvas_height f32, stroke int, stroke_width f32, line_cap int, line_join int, miter_limit f32, start_x f32, start_y f32, end_x f32, end_y f32, gradient_a f32, gradient_b f32, gradient_c f32, gradient_d f32, gradient_e f32, gradient_f f32, spread_method int, linear_color_space int, stop_data &f32, stop_count int, opacity f32)
+fn C.native_add_svg_pattern_linear_gradient_path(data &f32, segment_count int, even_odd int, transform_a f32, transform_b f32, transform_c f32, transform_d f32, transform_e f32, transform_f f32, canvas_height f32, stroke int, stroke_width f32, line_cap int, line_join int, miter_limit f32, start_x f32, start_y f32, end_x f32, end_y f32, gradient_a f32, gradient_b f32, gradient_c f32, gradient_d f32, gradient_e f32, gradient_f f32, spread_method int, linear_color_space int, stop_data &f32, stop_count int, opacity f32, dash_data &f32, dash_count int, dash_offset f32)
 
-fn C.native_add_svg_pattern_radial_gradient_path(data &f32, segment_count int, even_odd int, transform_a f32, transform_b f32, transform_c f32, transform_d f32, transform_e f32, transform_f f32, canvas_height f32, stroke int, stroke_width f32, line_cap int, line_join int, miter_limit f32, start_x f32, start_y f32, start_radius f32, end_x f32, end_y f32, end_radius f32, gradient_a f32, gradient_b f32, gradient_c f32, gradient_d f32, gradient_e f32, gradient_f f32, spread_method int, linear_color_space int, stop_data &f32, stop_count int, opacity f32)
+fn C.native_add_svg_pattern_radial_gradient_path(data &f32, segment_count int, even_odd int, transform_a f32, transform_b f32, transform_c f32, transform_d f32, transform_e f32, transform_f f32, canvas_height f32, stroke int, stroke_width f32, line_cap int, line_join int, miter_limit f32, start_x f32, start_y f32, start_radius f32, end_x f32, end_y f32, end_radius f32, gradient_a f32, gradient_b f32, gradient_c f32, gradient_d f32, gradient_e f32, gradient_f f32, spread_method int, linear_color_space int, stop_data &f32, stop_count int, opacity f32, dash_data &f32, dash_count int, dash_offset f32)
 
 fn C.native_add_svg_pattern_image(image &gg.Image, destination_x f32, destination_y f32, destination_width f32, destination_height f32, source_x f32, source_y f32, source_width f32, source_height f32, clip_x f32, clip_y f32, clip_width f32, clip_height f32, transform_a f32, transform_b f32, transform_c f32, transform_d f32, transform_e f32, transform_f f32, canvas_height f32, opacity f32, nearest_neighbor int)
 
@@ -4525,10 +4525,16 @@ fn multiply_paint_transforms(left_value [6]f64, right_value [6]f64) [6]f64 {
 	]!
 }
 
+@[params]
+struct NativeSVGResourceDash {
+	intervals []f32
+	offset f32
+}
+
 fn draw_native_svg_linear_gradient_path(path_data []f32, even_odd bool, matrix [6]f64,
 	page_x f32, page_y f32, scroll_y f32, canvas_height f32, stroke bool, stroke_width f64,
 	line_cap int, line_join int, miter_limit f64, style painting.SVGLinearGradientPaintStyle,
-	opacity f64, content_mask bool) {
+	opacity f64, content_mask bool, dash NativeSVGResourceDash) {
 	$if macos {
 		if path_data.len < layout.compatibility_clip_path_segment_stride
 			|| style.gradient.color_stops.len == 0 {
@@ -4561,7 +4567,7 @@ fn draw_native_svg_linear_gradient_path(path_data []f32, even_odd bool, matrix [
 					1
 				} else {
 					0
-				}, &stop_data[0], style.gradient.color_stops.len, f32(opacity))
+				}, &stop_data[0], style.gradient.color_stops.len, f32(opacity), &f32(dash.intervals.data), dash.intervals.len, dash.offset)
 			} else {
 				C.native_draw_svg_linear_gradient_path(&path_data[0], path_data.len / layout.compatibility_clip_path_segment_stride, if even_odd {
 					1
@@ -4584,7 +4590,7 @@ fn draw_native_svg_linear_gradient_path(path_data []f32, even_odd bool, matrix [
 fn draw_native_svg_radial_gradient_path(path_data []f32, even_odd bool, matrix [6]f64,
 	page_x f32, page_y f32, scroll_y f32, canvas_height f32, stroke bool, stroke_width f64,
 	line_cap int, line_join int, miter_limit f64, style painting.SVGRadialGradientPaintStyle,
-	opacity f64, content_mask bool) {
+	opacity f64, content_mask bool, dash NativeSVGResourceDash) {
 	$if macos {
 		if path_data.len < layout.compatibility_clip_path_segment_stride
 			|| style.gradient.color_stops.len == 0 {
@@ -4617,7 +4623,7 @@ fn draw_native_svg_radial_gradient_path(path_data []f32, even_odd bool, matrix [
 					1
 				} else {
 					0
-				}, &stop_data[0], style.gradient.color_stops.len, f32(opacity))
+				}, &stop_data[0], style.gradient.color_stops.len, f32(opacity), &f32(dash.intervals.data), dash.intervals.len, dash.offset)
 			} else {
 				C.native_draw_svg_radial_gradient_path(&path_data[0], path_data.len / layout.compatibility_clip_path_segment_stride, if even_odd {
 					1
@@ -4640,7 +4646,7 @@ fn draw_native_svg_radial_gradient_path(path_data []f32, even_odd bool, matrix [
 fn draw_native_svg_pattern_linear_gradient_path(path_data []f32, even_odd bool,
 	matrix [6]f64, tile_height f32, stroke bool, stroke_width f64, line_cap int,
 	line_join int, miter_limit f64, style painting.SVGLinearGradientPaintStyle,
-	opacity f64) {
+	opacity f64, dash NativeSVGResourceDash) {
 	$if macos {
 		if path_data.len < layout.compatibility_clip_path_segment_stride
 			|| style.gradient.color_stops.len == 0 {
@@ -4669,7 +4675,7 @@ fn draw_native_svg_pattern_linear_gradient_path(path_data []f32, even_odd bool,
 				1
 			} else {
 				0
-			}, &stop_data[0], style.gradient.color_stops.len, f32(opacity))
+			}, &stop_data[0], style.gradient.color_stops.len, f32(opacity), &f32(dash.intervals.data), dash.intervals.len, dash.offset)
 		}
 	}
 }
@@ -4677,7 +4683,7 @@ fn draw_native_svg_pattern_linear_gradient_path(path_data []f32, even_odd bool,
 fn draw_native_svg_pattern_radial_gradient_path(path_data []f32, even_odd bool,
 	matrix [6]f64, tile_height f32, stroke bool, stroke_width f64, line_cap int,
 	line_join int, miter_limit f64, style painting.SVGRadialGradientPaintStyle,
-	opacity f64) {
+	opacity f64, dash NativeSVGResourceDash) {
 	$if macos {
 		if path_data.len < layout.compatibility_clip_path_segment_stride
 			|| style.gradient.color_stops.len == 0 {
@@ -4706,7 +4712,7 @@ fn draw_native_svg_pattern_radial_gradient_path(path_data []f32, even_odd bool,
 				1
 			} else {
 				0
-			}, &stop_data[0], style.gradient.color_stops.len, f32(opacity))
+			}, &stop_data[0], style.gradient.color_stops.len, f32(opacity), &f32(dash.intervals.data), dash.intervals.len, dash.offset)
 		}
 	}
 }
@@ -4807,7 +4813,7 @@ fn (mut app BrowserApp) draw_native_svg_pattern_path(path_data []f32, even_odd b
 									1
 								} else {
 									0
-								})
+								}, &f32(operation.stroke_dasharray.data), operation.stroke_dasharray.len, operation.stroke_dashoffset)
 							}
 							continue
 						}
@@ -4826,23 +4832,32 @@ fn (mut app BrowserApp) draw_native_svg_pattern_path(path_data []f32, even_odd b
 											1
 										} else {
 											0
-										}, f32(operation_matrix[0]), f32(operation_matrix[1]), f32(operation_matrix[2]), f32(operation_matrix[3]), f32(operation_matrix[4]), f32(operation_matrix[5]), f32(tile.height), fill, 1, stroke_color, 0, f32(operation.stroke_width), int(operation.stroke_linecap), int(operation.stroke_linejoin), f32(operation.stroke_miter_limit), 0)
+										}, f32(operation_matrix[0]), f32(operation_matrix[1]), f32(operation_matrix[2]), f32(operation_matrix[3]), f32(operation_matrix[4]), f32(operation_matrix[5]), f32(tile.height), fill, 1, stroke_color, 0, f32(operation.stroke_width), int(operation.stroke_linecap), int(operation.stroke_linejoin), f32(operation.stroke_miter_limit), 0, nil, 0, 0)
 									}
 								}
 							} else if operation.has_stroke {
 								if gradient := operation.stroke_linear_gradient {
-									draw_native_svg_pattern_linear_gradient_path(operation_path, operation.path.fill_rule == .even_odd, operation_matrix, f32(tile.height), true, operation.stroke_width, int(operation.stroke_linecap), int(operation.stroke_linejoin), operation.stroke_miter_limit, gradient, operation.stroke_opacity)
+									draw_native_svg_pattern_linear_gradient_path(operation_path, operation.path.fill_rule == .even_odd, operation_matrix, f32(tile.height), true, operation.stroke_width, int(operation.stroke_linecap), int(operation.stroke_linejoin), operation.stroke_miter_limit, gradient, operation.stroke_opacity,
+										intervals: operation.stroke_dasharray
+										offset: operation.stroke_dashoffset
+									)
 								} else if gradient := operation.stroke_radial_gradient {
-									draw_native_svg_pattern_radial_gradient_path(operation_path, operation.path.fill_rule == .even_odd, operation_matrix, f32(tile.height), true, operation.stroke_width, int(operation.stroke_linecap), int(operation.stroke_linejoin), operation.stroke_miter_limit, gradient, operation.stroke_opacity)
+									draw_native_svg_pattern_radial_gradient_path(operation_path, operation.path.fill_rule == .even_odd, operation_matrix, f32(tile.height), true, operation.stroke_width, int(operation.stroke_linecap), int(operation.stroke_linejoin), operation.stroke_miter_limit, gradient, operation.stroke_opacity,
+										intervals: operation.stroke_dasharray
+										offset: operation.stroke_dashoffset
+									)
 								} else if pattern := operation.stroke_pattern {
-									app.draw_native_svg_pattern_path(operation_path, operation.path.fill_rule == .even_odd, operation_matrix, 0, 0, 0, f32(tile.height), true, operation.stroke_width, int(operation.stroke_linecap), int(operation.stroke_linejoin), operation.stroke_miter_limit, pattern, operation.stroke_opacity, false)
+									app.draw_native_svg_pattern_path(operation_path, operation.path.fill_rule == .even_odd, operation_matrix, 0, 0, 0, f32(tile.height), true, operation.stroke_width, int(operation.stroke_linecap), int(operation.stroke_linejoin), operation.stroke_miter_limit, pattern, operation.stroke_opacity, false,
+										dashes: operation.stroke_dasharray.map(f64(it))
+										dash_offset: f64(operation.stroke_dashoffset)
+									)
 								} else {
 									unsafe {
 										C.native_add_svg_pattern_path(&operation_path[0], operation_path.len / layout.compatibility_clip_path_segment_stride, if operation.path.fill_rule == .even_odd {
 											1
 										} else {
 											0
-										}, f32(operation_matrix[0]), f32(operation_matrix[1]), f32(operation_matrix[2]), f32(operation_matrix[3]), f32(operation_matrix[4]), f32(operation_matrix[5]), f32(tile.height), fill, 0, stroke_color, 1, f32(operation.stroke_width), int(operation.stroke_linecap), int(operation.stroke_linejoin), f32(operation.stroke_miter_limit), 0)
+										}, f32(operation_matrix[0]), f32(operation_matrix[1]), f32(operation_matrix[2]), f32(operation_matrix[3]), f32(operation_matrix[4]), f32(operation_matrix[5]), f32(tile.height), fill, 0, stroke_color, 1, f32(operation.stroke_width), int(operation.stroke_linecap), int(operation.stroke_linejoin), f32(operation.stroke_miter_limit), 0, &f32(operation.stroke_dasharray.data), operation.stroke_dasharray.len, operation.stroke_dashoffset)
 									}
 								}
 							}
@@ -5634,7 +5649,7 @@ fn (mut app BrowserApp) prepare_native_svg_layer_mask(clip layout.PaintClip, pag
 									1
 								} else {
 									0
-								})
+								}, &f32(operation.stroke_dasharray.data), operation.stroke_dasharray.len, operation.stroke_dashoffset)
 							}
 							continue
 						}
@@ -5653,22 +5668,31 @@ fn (mut app BrowserApp) prepare_native_svg_layer_mask(clip layout.PaintClip, pag
 											1
 										} else {
 											0
-										}, f32(matrix[0]), f32(matrix[1]), f32(matrix[2]), f32(matrix[3]), f32(matrix[4]), f32(matrix[5]), page_x, page_y, scroll_y, f32(app.ctx.width), f32(app.ctx.height), fill, 1, stroke, 0, f32(operation.stroke_width), operation.stroke_linecap, operation.stroke_linejoin, f32(operation.stroke_miterlimit), 0)
+										}, f32(matrix[0]), f32(matrix[1]), f32(matrix[2]), f32(matrix[3]), f32(matrix[4]), f32(matrix[5]), page_x, page_y, scroll_y, f32(app.ctx.width), f32(app.ctx.height), fill, 1, stroke, 0, f32(operation.stroke_width), operation.stroke_linecap, operation.stroke_linejoin, f32(operation.stroke_miterlimit), 0, nil, 0, 0)
 									}
 								}
 							} else if gradient := operation.stroke_linear_gradient {
-								draw_native_svg_linear_gradient_path(operation.path_data, operation.path_even_odd, matrix, page_x, page_y, scroll_y, f32(app.ctx.height), true, operation.stroke_width, operation.stroke_linecap, operation.stroke_linejoin, operation.stroke_miterlimit, gradient, operation.stroke_opacity, true)
+								draw_native_svg_linear_gradient_path(operation.path_data, operation.path_even_odd, matrix, page_x, page_y, scroll_y, f32(app.ctx.height), true, operation.stroke_width, operation.stroke_linecap, operation.stroke_linejoin, operation.stroke_miterlimit, gradient, operation.stroke_opacity, true,
+									intervals: operation.stroke_dasharray
+									offset: operation.stroke_dashoffset
+								)
 							} else if gradient := operation.stroke_radial_gradient {
-								draw_native_svg_radial_gradient_path(operation.path_data, operation.path_even_odd, matrix, page_x, page_y, scroll_y, f32(app.ctx.height), true, operation.stroke_width, operation.stroke_linecap, operation.stroke_linejoin, operation.stroke_miterlimit, gradient, operation.stroke_opacity, true)
+								draw_native_svg_radial_gradient_path(operation.path_data, operation.path_even_odd, matrix, page_x, page_y, scroll_y, f32(app.ctx.height), true, operation.stroke_width, operation.stroke_linecap, operation.stroke_linejoin, operation.stroke_miterlimit, gradient, operation.stroke_opacity, true,
+									intervals: operation.stroke_dasharray
+									offset: operation.stroke_dashoffset
+								)
 							} else if pattern := operation.stroke_pattern {
-								app.draw_native_svg_pattern_path(operation.path_data, operation.path_even_odd, matrix, page_x, page_y, scroll_y, f32(app.ctx.height), true, operation.stroke_width, operation.stroke_linecap, operation.stroke_linejoin, operation.stroke_miterlimit, pattern, operation.stroke_opacity, true)
+								app.draw_native_svg_pattern_path(operation.path_data, operation.path_even_odd, matrix, page_x, page_y, scroll_y, f32(app.ctx.height), true, operation.stroke_width, operation.stroke_linecap, operation.stroke_linejoin, operation.stroke_miterlimit, pattern, operation.stroke_opacity, true,
+									dashes: operation.stroke_dasharray.map(f64(it))
+									dash_offset: f64(operation.stroke_dashoffset)
+								)
 							} else if operation.has_stroke {
 								unsafe {
 									C.native_add_svg_content_mask_path(&operation.path_data[0], operation.path_data.len / layout.compatibility_clip_path_segment_stride, if operation.path_even_odd {
 										1
 									} else {
 										0
-									}, f32(matrix[0]), f32(matrix[1]), f32(matrix[2]), f32(matrix[3]), f32(matrix[4]), f32(matrix[5]), page_x, page_y, scroll_y, f32(app.ctx.width), f32(app.ctx.height), fill, 0, stroke, 1, f32(operation.stroke_width), operation.stroke_linecap, operation.stroke_linejoin, f32(operation.stroke_miterlimit), 0)
+									}, f32(matrix[0]), f32(matrix[1]), f32(matrix[2]), f32(matrix[3]), f32(matrix[4]), f32(matrix[5]), page_x, page_y, scroll_y, f32(app.ctx.width), f32(app.ctx.height), fill, 0, stroke, 1, f32(operation.stroke_width), operation.stroke_linecap, operation.stroke_linejoin, f32(operation.stroke_miterlimit), 0, &f32(operation.stroke_dasharray.data), operation.stroke_dasharray.len, operation.stroke_dashoffset)
 								}
 							}
 						}

@@ -31,12 +31,53 @@ static void render(Surface surface, CGColorSpaceRef color_space, CGImageRef imag
     CGContextRelease(ctx);
 }
 
+static void check_resource_dashes(CGColorSpaceRef color_space) {
+    Surface surface;
+    CGContextRef ctx = CGBitmapContextCreate(surface, width, height, 8, row_bytes,
+        color_space, kCGImageAlphaPremultipliedLast | kCGBitmapByteOrder32Big);
+    assert(ctx);
+    CGContextSetRGBFillColor(ctx, 1, 1, 1, 1);
+    CGContextFillRect(ctx, CGRectMake(0, 0, width, height));
+    CGContextSetShouldAntialias(ctx, false);
+    CGContextSetRGBStrokeColor(ctx, 0, 0, 0, 1);
+    CGContextSetLineWidth(ctx, 4);
+
+    // Resource strokes can use the same dash state for direct stroke
+    // coverage and for a stroked clip enclosing a gradient or pattern.
+    static const float dashes[] = {8, 4, 8, 4, 8, 4, 8, 4, 8, 4, 8, 4, 8, 4, 8, 4, 8, 4};
+    for (int row = 0; row < 2; ++row) {
+        int y = 16 + 24 * row;
+        CGContextSaveGState(ctx);
+        CGContextScaleCTM(ctx, 2, 1);
+        native_set_svg_resource_dashes(ctx, dashes, row == 0 ? 2 : 18, 4);
+        CGContextMoveToPoint(ctx, 5, y);
+        CGContextAddLineToPoint(ctx, 55, y);
+        if (row == 0) {
+            CGContextStrokePath(ctx);
+        } else {
+            CGContextReplacePathWithStrokedPath(ctx);
+            CGContextClip(ctx);
+            CGContextSetRGBFillColor(ctx, 0, 0, 0, 1);
+            CGContextFillRect(ctx, CGRectMake(0, 0, width, height));
+        }
+        CGContextRestoreGState(ctx);
+        assert(painted(surface, 12, y) && !painted(surface, 22, y) && painted(surface, 28, y));
+    }
+    native_set_svg_resource_dashes(ctx, NULL, 0, 0);
+    CGContextMoveToPoint(ctx, 10, 64);
+    CGContextAddLineToPoint(ctx, 110, 64);
+    CGContextStrokePath(ctx);
+    assert(painted(surface, 22, 64));
+    CGContextRelease(ctx);
+}
+
 int main(void) {
     static const uint8_t tile[] = {
         255, 0, 0, 255, 0, 255, 0, 255, 0, 0, 255, 255,
         0, 255, 255, 255, 255, 0, 255, 255, 255, 255, 0, 255,
     };
     CGColorSpaceRef color_space = CGColorSpaceCreateWithName(kCGColorSpaceSRGB);
+    check_resource_dashes(color_space);
     CGDataProviderRef provider = CGDataProviderCreateWithData(NULL, tile, sizeof(tile), NULL);
     CGImageRef image = CGImageCreate(3, 2, 8, 32, 12, color_space,
         kCGImageAlphaPremultipliedLast | kCGBitmapByteOrder32Big, provider, NULL,
