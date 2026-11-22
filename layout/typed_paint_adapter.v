@@ -2528,7 +2528,8 @@ fn normalize_svg_pattern_operations(operations []painting.SVGMaskPaintOperation,
 }
 
 fn resolve_svg_pattern_paint_style(node &Node, state &LayoutState, paint css.SVGPaint,
-	path_bounds ?painting.Rect, target_transform svg.AffineTransform) ?&painting.SVGPatternPaintStyle {
+	path_bounds ?painting.Rect, target_transform svg.AffineTransform,
+	ancestor_resource_transform svg.AffineTransform) ?&painting.SVGPatternPaintStyle {
 	if !paint.is_url() {
 		return none
 	}
@@ -2607,7 +2608,9 @@ fn resolve_svg_pattern_paint_style(node &Node, state &LayoutState, paint css.SVG
 	inverse_target := target_affine.inverse() or { return none }
 	target_styled := node.as_node_with_style() or { return none }
 	target_used := state.try_get(target_styled) or { return none }
-	resource_transform := target_used.svg_transform().multiply(svg_element_attribute_transform(content_element))
+	// The inverse target below includes the enclosing resource transform.
+	// Apply it to the nested pattern content before normalizing the tile.
+	resource_transform := ancestor_resource_transform.multiply(target_used.svg_transform()).multiply(svg_element_attribute_transform(content_element))
 	mut collection := SVGMaskPaintCollection{}
 	collect_svg_mask_paint_operations(resource, state, resource_transform, true, false, true,
 		mut collection)
@@ -3536,12 +3539,14 @@ fn collect_svg_mask_paint_operations(node &Node, state &LayoutState,
 				if fill_paint := computed.fill() {
 					fill_linear_gradient = resolve_svg_linear_gradient_paint_style(node, state, fill_paint, path_bounds)
 					fill_radial_gradient = resolve_svg_radial_gradient_paint_style(node, state, fill_paint, path_bounds)
-					fill_pattern = resolve_svg_pattern_paint_style(node, state, fill_paint, path_bounds, to_page)
+					fill_pattern = resolve_svg_pattern_paint_style(node, state, fill_paint, path_bounds,
+						to_page, resource_transform)
 				}
 				if stroke_paint := computed.stroke() {
 					stroke_linear_gradient = resolve_svg_linear_gradient_paint_style(node, state, stroke_paint, path_bounds)
 					stroke_radial_gradient = resolve_svg_radial_gradient_paint_style(node, state, stroke_paint, path_bounds)
-					stroke_pattern = resolve_svg_pattern_paint_style(node, state, stroke_paint, path_bounds, to_page)
+					stroke_pattern = resolve_svg_pattern_paint_style(node, state, stroke_paint,
+						path_bounds, to_page, resource_transform)
 				}
 				fill := if fill_linear_gradient == none && fill_radial_gradient == none
 					&& fill_pattern == none {
@@ -3977,12 +3982,14 @@ fn uncached_block_box_from_typed_layout_shallow(node &Node, state &LayoutState, 
 		if fill_paint := computed.fill() {
 			svg_fill_linear_gradient = resolve_svg_linear_gradient_paint_style(node, state, fill_paint, projection.bounds)
 			svg_fill_radial_gradient = resolve_svg_radial_gradient_paint_style(node, state, fill_paint, projection.bounds)
-			svg_fill_pattern = resolve_svg_pattern_paint_style(node, state, fill_paint, projection.bounds, to_page)
+			svg_fill_pattern = resolve_svg_pattern_paint_style(node, state, fill_paint,
+				projection.bounds, to_page, svg.AffineTransform{})
 		}
 		if stroke_paint := computed.stroke() {
 			svg_stroke_linear_gradient = resolve_svg_linear_gradient_paint_style(node, state, stroke_paint, projection.bounds)
 			svg_stroke_radial_gradient = resolve_svg_radial_gradient_paint_style(node, state, stroke_paint, projection.bounds)
-			svg_stroke_pattern = resolve_svg_pattern_paint_style(node, state, stroke_paint, projection.bounds, to_page)
+			svg_stroke_pattern = resolve_svg_pattern_paint_style(node, state, stroke_paint,
+				projection.bounds, to_page, svg.AffineTransform{})
 		}
 		if svg_fill_linear_gradient == none && svg_fill_radial_gradient == none
 			&& svg_fill_pattern == none {

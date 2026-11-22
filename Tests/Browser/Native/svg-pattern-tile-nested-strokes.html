@@ -1,0 +1,38 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Nested SVG patterns and non-scaling strokes</title>
+<style>
+body { margin: 0; background: white; }
+header { width: 8px; height: 8px; background: #34b786; }
+svg { display: block; }
+</style>
+<header></header>
+<svg width="256" height="100" viewBox="0 0 256 100">
+  <defs>
+    <pattern id="stripes" width="20" height="10" patternUnits="userSpaceOnUse">
+      <path id="first-stripe" d="M0 0h8v10H0Z" fill="blue"/>
+      <path d="M8 0h8v10H8Z" fill="red"/>
+    </pattern>
+    <pattern id="tile" width="40" height="40" patternUnits="userSpaceOnUse"
+             patternTransform="scale(.5)">
+      <path d="M0 6H40" fill="none" stroke="url(#stripes)" stroke-width="4"/>
+      <path d="M0 20H40" fill="none" stroke="lime" stroke-width="6"
+            vector-effect="non-scaling-stroke"/>
+      <path d="M0 28h40v12H0Z" fill="url(#stripes)"/>
+    </pattern>
+  </defs>
+  <path d="M0 0h120v100H0Z" fill="url(#tile)"/>
+  <path d="M0 0h120v100H0Z" fill="url(#tile)" transform="translate(128)"/>
+</svg>
+<script>
+let frame = 0;
+function editStripes() {
+    if (++frame === 12)
+        document.getElementById('first-stripe').setAttribute('fill', 'yellow');
+    if (frame === 24)
+        document.body.setAttribute('data-nested-pattern-ready', '');
+    else
+        requestAnimationFrame(editStripes);
+}
+requestAnimationFrame(editStripes);
+</script>

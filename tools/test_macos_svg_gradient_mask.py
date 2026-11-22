@@ -9,8 +9,9 @@ import re
 import subprocess
 import tempfile
 
-from test_linux_browser import (check_svg_mask_gradient_pixels, check_svg_pattern_tile_image_pixels,
-                                rendered_png_rows, serve_delayed_svg_pattern_tile)
+from test_linux_browser import (check_svg_mask_gradient_pixels, check_svg_nested_tile_pixels,
+                                check_svg_pattern_tile_image_pixels, rendered_png_rows,
+                                serve_delayed_svg_pattern_tile)
 
 
 def digest(path):
@@ -553,23 +554,49 @@ def check_pattern_tile_with_delayed_image(binary, fixture, directory):
     print("PASS: macOS shared SVG tiles preserve delayed bitmap content and device stroke width")
 
 
+def check_nested_pattern_tiles(binary, fixture, directory):
+    for scale in (1, 2):
+        original = set()
+        for mode, color in (("original", (0, 0, 255)), ("edited", (255, 255, 0))):
+            settings = dict(VOX_GG_SVG_DIAGNOSTICS="1", LADYBIRD_SCREENSHOT_SCALE=str(scale))
+            options = ["--disable-javascript"]
+            if mode == "edited":
+                options = ["--enable-javascript", "--js-engine=javascriptcore"]
+                settings["VOX_CAPTURE_READY_SELECTOR"] = "body[data-nested-pattern-ready]"
+            data, log = capture_document(binary, fixture, directory / f"nested-{mode}-{scale}x",
+                                         settings, options)
+            width, height, channels, rows = rendered_png_rows(data)
+            assert (width, height) == (1024 * scale, 600 * scale)
+            check_svg_nested_tile_pixels(rows, channels, scale, 0, color)
+            misses = set(re.findall(r"^VOX_SHARED_SVG_TILE cache=miss key=(\d+) ", log, re.M))
+            hits = set(re.findall(r"^VOX_SHARED_SVG_TILE cache=hit key=(\d+)$", log, re.M))
+            assert misses and "0" not in misses and (misses - original) & hits, log
+            if mode == "original":
+                original = misses
+    print("PASS: macOS shared nested SVG pattern fill, stroke, and live edits")
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("binary", type=Path)
     patterns = parser.add_mutually_exclusive_group()
     patterns.add_argument("--pattern-strokes-only", action="store_true")
     patterns.add_argument("--pattern-images-only", action="store_true")
+    patterns.add_argument("--pattern-nested-only", action="store_true")
     args = parser.parse_args()
     binary = args.binary.resolve()
     root = Path(__file__).resolve().parents[1]
     fixture = root / "Tests/Browser/Native/svg-gradient-masks.html"
-    if args.pattern_strokes_only or args.pattern_images_only:
+    if args.pattern_strokes_only or args.pattern_images_only or args.pattern_nested_only:
         if args.pattern_strokes_only:
             pattern = fixture.with_name("svg-pattern-tile-non-scaling-strokes.html")
             check_pattern = check_non_scaling_pattern_tiles
-        else:
+        elif args.pattern_images_only:
             pattern = fixture.with_name("svg-pattern-tile-image-strokes.html")
             check_pattern = check_pattern_tile_with_delayed_image
+        else:
+            pattern = fixture.with_name("svg-pattern-tile-nested-strokes.html")
+            check_pattern = check_nested_pattern_tiles
         inputs = [binary, pattern, *binary.parent.glob("lib*.dylib")]
         digests = {path: digest(path) for path in inputs}
         with tempfile.TemporaryDirectory(prefix="vox-svg-pattern-") as temporary:

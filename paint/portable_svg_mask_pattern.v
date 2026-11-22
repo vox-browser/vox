@@ -5,9 +5,13 @@ import layout
 import math
 import painting
 
+const portable_svg_mask_pattern_max_operations = 64
+const portable_svg_mask_pattern_max_depth = 2
+
 struct PortableSVGMaskTileBudget {
 mut:
 	pixels int = portable_svg_group_max_pixels
+	depth  int
 }
 
 struct PortableSVGMaskPattern {
@@ -39,20 +43,44 @@ fn portable_svg_tile_stroke_space(device [6]f64, sx f64, sy f64) ?PortableSVGTil
 }
 
 fn portable_svg_mask_pattern_supported(style &painting.SVGPatternPaintStyle) bool {
-	tile := style.tile_rect
-	if !(tile.width > 0 && tile.height > 0)
-		|| ![tile.x, tile.y, tile.width, tile.height]!.all(math.is_finite(it)) {
+	portable_svg_mask_pattern_operations(style, portable_svg_mask_pattern_max_operations, 0) or {
 		return false
 	}
-	list := style.tile_display_list or { return false }
-	// Tiles replay with the mask layer compositor. Bound recursion and reject
-	// filters before lowering, since the mask transport omits filter markers.
-	return list.operations.len <= 64 && !list.operations.any(it.kind in [.begin_filter, .end_filter]
-		|| it.fill_pattern != none || it.stroke_pattern != none)
+	return true
+}
+
+fn portable_svg_mask_pattern_operations(style &painting.SVGPatternPaintStyle, limit int, depth int) ?int {
+	tile := style.tile_rect
+	if depth >= portable_svg_mask_pattern_max_depth || !(tile.width > 0 && tile.height > 0)
+		|| ![tile.x, tile.y, tile.width, tile.height]!.all(math.is_finite(it)) {
+		return none
+	}
+	list := style.tile_display_list?
+	mut count := list.operations.len
+	if count > limit { return none }
+	for index in 0 .. list.operations.len {
+		operation := &list.operations[index]
+		// The mask transport omits filter markers. Nested tiles also need
+		// a final device transform for non-scaling strokes and resource
+		// identities for images before those operations can share this path.
+		if operation.kind in [.begin_filter, .end_filter]
+			|| (depth != 0 && (operation.kind == .image
+			|| (operation.has_stroke && operation.non_scaling_stroke))) {
+			return none
+		}
+		if pattern := operation.fill_pattern {
+			count += portable_svg_mask_pattern_operations(pattern, limit - count, depth + 1)?
+		}
+		if pattern := operation.stroke_pattern {
+			count += portable_svg_mask_pattern_operations(pattern, limit - count, depth + 1)?
+		}
+	}
+	return count
 }
 
 fn (mut app BrowserApp) raster_svg_mask_pattern(style &painting.SVGPatternPaintStyle,
 	matrix [6]f32, luminance bool, mut budget PortableSVGMaskTileBudget) ?PortableSVGMaskPattern {
+	if budget.depth >= portable_svg_mask_pattern_max_depth { return none }
 	list := style.tile_display_list?
 	tile := style.tile_rect
 	pattern_transform := painting_affine_array(style.pattern_transform or { painting.Affine{} })
@@ -84,9 +112,11 @@ fn (mut app BrowserApp) raster_svg_mask_pattern(style &painting.SVGPatternPaintS
 		unsafe { nil }
 	}
 	budget.pixels -= bounds.width * bounds.height
+	budget.depth++
+	defer { budget.depth-- }
 	mut pixels := []u8{len: bounds.width * bounds.height * 4}
 	cacheable := app.raster_svg_mask_layers(mut pixels, bounds.width * 4, bounds, &mask,
-		0, 0, 1, stroke_space)?
+		0, 0, 1, stroke_space, mut budget)?
 	return PortableSVGMaskPattern{
 		pattern: cpuraster.CanvasPattern{
 			pixels: pixels

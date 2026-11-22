@@ -2151,6 +2151,50 @@ def check_svg_pattern_tile_image_browser(binary, artifacts, temporary, run_captu
     print("PASS: mixed SVG tiles preserve delayed bitmaps, device stroke width, and cache parity", flush=True)
 
 
+def check_svg_nested_tile_pixels(rows, channels, scale, marker, first_stripe):
+    white, green, red = (255, 255, 255), (0, 255, 0), (255, 0, 0)
+    center = 10 * scale
+    for left in (0, 128 * scale):
+        for x, y, expected in (
+            (2 * scale, 3 * scale, first_stripe), (5 * scale, 3 * scale, red),
+            (8 * scale, 3 * scale, white), (2 * scale, 15 * scale, first_stripe),
+            (5 * scale, 15 * scale, red), (8 * scale, 15 * scale, white),
+            (2 * scale, center - 4, white), (2 * scale, center - 3, green),
+            (2 * scale, center + 2, green), (2 * scale, center + 3, white),
+        ):
+            row = rows[marker + 8 * scale + y]
+            pixel = (left + x) * channels
+            actual = tuple(row[pixel:pixel + 3])
+            assert actual == expected, (scale, left + x, y, actual, expected)
+
+
+def check_svg_nested_tile_browser(binary, artifacts, temporary):
+    fixture = Path(__file__).resolve().parents[1] / "Tests/Browser/Native/svg-pattern-tile-nested-strokes.html"
+    documents = []
+    for mode in ("cached", "uncached"):
+        label = f"{fixture.stem}-{mode}"
+        screenshot = artifacts / f"{label}.png"
+        screenshot.unlink(missing_ok=True)
+        environment = smoke_environment(Path(temporary) / label)
+        environment.update(VOX_GG_SVG="0", VOX_GG_SVG_DIAGNOSTICS="1",
+                           VOX_DISABLE_GG_SVG_CACHE=str(int(mode == "uncached")),
+                           VOX_CAPTURE_READY_SELECTOR="body[data-nested-pattern-ready]")
+        log = run_windowed([str(binary), "--enable-javascript", "--window-width=800",
+                            "--window-height=600", "--screenshot-viewport-height=600",
+                            f"--screenshot={screenshot}", str(fixture)],
+                           env=environment, log_path=artifacts / f"{label}.log")
+        width, height, channels, rows = rendered_png_rows(screenshot.read_bytes())
+        assert (width, height) == (800, 600)
+        marker = next(y for y in range(150) if rows[y][4 * channels:4 * channels + 3]
+                      == bytes.fromhex("34b786"))
+        check_svg_nested_tile_pixels(rows, channels, 1, marker, (255, 255, 0))
+        hits = set(re.findall(r"^VOX_SVG_GROUP cache=hit start=(\d+)", log, re.M))
+        assert len(hits) == (2 if mode == "cached" else 0), log
+        documents.append(rows[marker:height - 24])
+    assert documents[0] == documents[1], "Caching changed the nested SVG tile pixels"
+    print("PASS: nested SVG tile fill, stroke, live edits, and cache parity", flush=True)
+
+
 def check_svg_mask_gradient_strokes_browser(binary, artifacts, temporary):
     fixture = Path(__file__).resolve().parents[1] / "Tests/Browser/Native/svg-mask-gradient-strokes.html"
     documents = []
@@ -2932,6 +2976,7 @@ def main():
     checks = parser.add_mutually_exclusive_group()
     checks.add_argument("--gg-svg", action="store_true", help="check shared GG SVG replay against the portable renderer")
     checks.add_argument("--pattern-images-only", action="store_true", help="check mixed SVG pattern tiles")
+    checks.add_argument("--pattern-nested-only", action="store_true", help="check nested SVG pattern tiles")
     args = parser.parse_args()
     wait_seconds = window_wait_seconds()
     binary = args.binary.resolve()
@@ -2944,6 +2989,9 @@ def main():
             return
         if args.pattern_images_only:
             check_svg_pattern_tile_image_browser(binary, artifacts, temporary)
+            return
+        if args.pattern_nested_only:
+            check_svg_nested_tile_browser(binary, artifacts, temporary)
             return
         environment = smoke_environment(temporary)
         output = run([str(binary), "--headless-smoke"], env=environment)
@@ -2978,6 +3026,7 @@ def main():
         check_svg_mask_non_scaling_strokes_browser(binary, artifacts, temporary)
         check_svg_pattern_tile_non_scaling_strokes_browser(binary, artifacts, temporary)
         check_svg_pattern_tile_image_browser(binary, artifacts, temporary)
+        check_svg_nested_tile_browser(binary, artifacts, temporary)
         check_svg_mask_gradient_strokes_browser(binary, artifacts, temporary)
         check_svg_mask_images_browser(binary, artifacts, temporary)
         check_svg_mask_patterns_browser(binary, artifacts, temporary)

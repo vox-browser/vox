@@ -346,8 +346,9 @@ fn (mut app BrowserApp) apply_portable_svg_content_mask(mut image PortableSVGGro
 		return true
 	}
 	mut coverage := []u8{len: bounds.width * bounds.height * 4}
+	mut budget := PortableSVGMaskTileBudget{}
 	cacheable := app.raster_svg_mask_layers(mut coverage, bounds.width * 4, bounds, mask, page_x,
-		page_y, scale, unsafe { nil })?
+		page_y, scale, unsafe { nil }, mut budget)?
 	if mask.mask_luminance {
 		// The mask channels are already premultiplied. Convert the resolved
 		// color with the native mask's integer luminance weights.
@@ -373,8 +374,9 @@ fn (mut app BrowserApp) raster_svg_content_mask(mut pixels []u8, pitch int, boun
 			return true
 		}
 	}
+	mut budget := PortableSVGMaskTileBudget{}
 	return app.raster_svg_mask_layers(mut pixels, pitch, bounds, mask, page_x, page_y, scale,
-		unsafe { nil }) or { false }
+		unsafe { nil }, mut budget) or { false }
 }
 
 fn svg_mask_line_path_rows(segments []f32, matrix [6]f32) ?[2]f32 {
@@ -470,14 +472,13 @@ fn svg_mask_opacity_end(operations []layout.PaintMaskOperation, start int) ?int 
 // reports whether all image pixels were available for texture reuse.
 fn (mut app BrowserApp) raster_svg_mask_layers(mut pixels []u8, pitch int, bounds painting.IntRect,
 	mask &layout.PaintClip, page_x f32, page_y f32, scale f64,
-	stroke_space &PortableSVGTileStrokeSpace) ?bool {
+	stroke_space &PortableSVGTileStrokeSpace, mut budget PortableSVGMaskTileBudget) ?bool {
 	layer_pitch := bounds.width * 4
 	mut layers := [portable_svg_mask_max_opacity_depth + 1]PortableSVGMaskLayer{}
 	layers[0].pixels = pixels
 	layers[0].rows = SVGMaskLayerRows{bottom: bounds.height}
 	mut depth := 0
 	mut cacheable := true
-	mut budget := PortableSVGMaskTileBudget{}
 	for index := 0; index < mask.mask_operations.len; index++ {
 		operation := &mask.mask_operations[index]
 		match operation.kind {
