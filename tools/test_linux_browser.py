@@ -2121,7 +2121,7 @@ def check_svg_pattern_tile_image_pixels(rows, channels, scale, marker):
         assert actual == expected, (scale, x, y, actual, expected)
 
 
-def check_svg_pattern_tile_image_browser(binary, artifacts, temporary):
+def check_svg_pattern_tile_image_browser(binary, artifacts, temporary, run_capture=run_windowed):
     fixture = Path(__file__).resolve().parents[1] / "Tests/Browser/Native/svg-pattern-tile-image-strokes.html"
     documents = []
     with serve_delayed_svg_pattern_tile(fixture, Path(temporary) / "svg-pattern-image-site") as url:
@@ -2135,9 +2135,9 @@ def check_svg_pattern_tile_image_browser(binary, artifacts, temporary):
             environment.update(VOX_GG_SVG="0", VOX_GG_SVG_DIAGNOSTICS="1",
                                VOX_DISABLE_GG_SVG_CACHE=str(int(mode == "uncached")),
                                SCREENSHOT_SETTLE_SECONDS="1.2")
-            log = run_windowed([str(binary), "--window-width=800", "--window-height=600",
-                                "--screenshot-viewport-height=600", f"--screenshot={screenshot}", url],
-                               env=environment, log_path=artifacts / f"{label}.log")
+            log = run_capture([str(binary), "--window-width=800", "--window-height=600",
+                               "--screenshot-viewport-height=600", f"--screenshot={screenshot}", url],
+                              env=environment, log_path=artifacts / f"{label}.log")
             width, height, channels, rows = rendered_png_rows(screenshot.read_bytes())
             assert (width, height) == (800, 600)
             marker = next((y for y in range(150) if rows[y][4 * channels:4 * channels + 3]
