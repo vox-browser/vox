@@ -2496,6 +2496,67 @@ The builds, browser processes and memory guards exited zero.
 These results cover stationary software replay. Windows runtime
 pixels and hardware frame timing remain open for this change.
 
+### CSS opacity filters inside shared SVG pattern tiles
+
+In `c83cd496a`, the shared pattern renderer lowers a list of CSS
+`opacity()` functions to an isolated opacity layer. It multiplies
+the filter amounts and applies the result after compositing the
+children. The layer uses the existing row bounds and nesting
+limits. A separate fixture that combines opacity and blur uses the
+native macOS fallback and produced identical pixels in both builds.
+
+The regression fixture applies `opacity(80%) opacity(50%)` to two
+overlapping shapes and uses the same tile as a fill and a translated
+stroke. It also includes a fully transparent filter and edits the
+first filter to `opacity(60%)` after painting. The unedited document
+matched the native macOS baseline at 1× and 2×. The candidate
+reused the tile across the two paths at both densities and reused
+the new tile after the edit. Linux matched cached and uncached
+documents. The edited 256 × 108 crop matched across macOS and Linux
+at 1×, with RGB SHA-256
+`a5cc82b03926ea3a478bf2e7614acf21f7869ce19fd3feecf08a29d98bd75ba0`.
+The fixture SHA-256 was
+`41a47fc6301edfd7bafc8467f2a0ad3ac6eabe33af5638f96f177e2bafdb9945`.
+
+The Linux ARM64 check used V `5a39a4d`, single-unit Clang `-O0`
+and Boehm GC, with executable SHA-256
+`0cdbee6ce4a35bd90e5a445bac40947c9578f7072917b5623ae9a59f9609ae28`.
+The neighboring standalone, nested, delayed image, device stroke
+and Linux alpha/luminance mask-opacity checks passed. The painting
+effects tests, 23 smoke-driver unit tests, and Windows D3D11 and
+OpenGL source checks passed.
+
+The two macOS timing builds used V `d79ca45`, prealloc and
+single-unit C `-prod -no-prod-options`. The native and shared
+executable SHA-256 values were
+`59fe55632acb01f07302cf00815dd77cc7a09a112cf8496ada079e93141701c1`
+and `676690384d594dd78ac58ee3f6b8451ffc4a7e6696ad0e9703a1c3354eeaae64`.
+Two alternating pairs replayed 20 fills and 20 strokes from the
+same opacity-filtered tile at different positions. The generated
+input SHA-256 was
+`88a5d22fae785f056750dee9179f1fa921930fd1a6e3087b8762842496c226bf`.
+Each run used a 1024 × 600 viewport at 1× and a fresh profile and
+cache. JavaScript and whole-frame raster reuse were disabled.
+After a one-second settle, 48 synthetic idle callbacks replayed
+42 commands at scroll offset zero. The shared diagnostic logged
+1,880 cache hits between the first and last callbacks. The native
+diagnostic logged zero shared hits. Timed trials disabled tile
+logging. Host one-minute load ranged from 5.38 to 5.50 over 18
+logical CPUs.
+
+All six document captures had RGBA SHA-256
+`2e0d126d48853ea04bcc6c7a909f0309da7972edf75aa2892989bd3b7d121bb9`.
+Executables, bundled libraries and fixture hashes stayed fixed.
+The builds, browsers and memory guards exited zero.
+
+| Pair | Native / shared median replay, ms | Native / shared p95, ms | Native / shared maximum, ms | Native / shared median allocated KiB |
+| --- | ---: | ---: | ---: | ---: |
+| 1 | 0.817 / 0.757 | 0.955 / 0.879 | 1.049 / 0.920 | 3 / 3 |
+| 2 | 0.843 / 0.762 | 0.988 / 0.835 | 1.043 / 0.868 | 3 / 3 |
+
+The timings cover stationary software replay. Hardware frame
+timing and Windows runtime pixels remain unverified.
+
 ## Sharing the portable SVG fallback with Windows
 
 The standard Windows D3D11 window now uses the same CPU raster and GG texture
