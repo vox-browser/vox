@@ -87,9 +87,12 @@ fn inline_run_blocker(node &Node, root bool) string {
 		if node.is_replaced_box() { return 'replaced' }
 		if node.is_floating() { return 'float' }
 		if node.is_generated_for_pseudo_element() || node.is_generated_text_node() {
-			if !node.is_text_node() && !node.is_inline_node() { return 'generated-${node.display().to_string()}' }
-			if generated_content_uses_document_state(node) { return 'generated-document-state' }
 			content := if value := node.computed_values().property(.content, .yes) { value.css_text.limit(24) } else { '?' }
+			if !node.is_text_node() && !node.is_inline_node() {
+				kind := if node.is_image_box() { 'image' } else if node.is_replaced_box() { 'replaced' } else if node.is_svg_box() || node.is_svg_svg_box() { 'svg' } else if node.is_block_container() { 'block-container' } else { 'box' }
+				return 'generated-${node.display().to_string()}:${kind}:${content}'
+			}
+			if generated_content_uses_document_state(node) { return 'generated-document-state:${content}' }
 			if text := node.as_text_node() {
 				if text.produces_line_box_fragment_when_empty_ || text.text_for_rendering() == '' {
 					return 'generated-empty-text'
