@@ -47,9 +47,9 @@ fn (app &BrowserApp) portable_non_scaling_stroke_fringe(command &layout.PaintCom
 	return f32((pad + 1) / f64(app.ctx.scale))
 }
 
-// Place a local gradient in the same surface space as the transformed
+// Place local paint in the same surface space as the transformed
 // centerline of a non-scaling stroke.
-fn portable_svg_surface_gradient_transform(surface [6]f32, local [6]f32) [6]f32 {
+fn portable_svg_surface_paint_transform(surface [6]f32, local [6]f32) [6]f32 {
 	m := multiply_paint_transforms(
 		[f64(surface[0]), f64(surface[1]), f64(surface[2]), f64(surface[3]),
 			f64(surface[4]), f64(surface[5])]!,
@@ -108,8 +108,10 @@ fn (mut app BrowserApp) draw_portable_svg_raster_stroke(command &layout.PaintCom
 	}
 	path := decoded or { cpuraster.canvas_path(data.path_data, false) }
 	mut pixels := []u8{len: bounds.width * 4 * bounds.height}
+	mut style := ?cpuraster.CanvasPaintStyle(none)
+	if paint := gradient { style = cpuraster.CanvasPaintStyle(paint) }
 	if !raster_portable_svg_stroke(mut pixels, bounds, path, surface_matrix, &data, color,
-		gradient, opacity, width, miter) {
+		style, opacity, width, miter) {
 		return false
 	}
 	app.upload_portable_svg_pixels(bounds, mut pixels, false)
@@ -122,22 +124,28 @@ fn (mut app BrowserApp) draw_portable_svg_raster_stroke(command &layout.PaintCom
 
 fn raster_portable_svg_stroke(mut pixels []u8, bounds painting.IntRect, path_in cpuraster.Path,
 	surface_matrix [6]f32, data &layout.PaintSVGPathData, color u32,
-	gradient ?cpuraster.CanvasGradient, opacity f32, width f32, miter f32) bool {
+	style_in ?cpuraster.CanvasPaintStyle, opacity f32, width f32, miter f32) bool {
 	mut path := path_in
 	mut matrix := surface_matrix
-	mut style := ?cpuraster.CanvasPaintStyle(none)
-	if paint := gradient {
-		if data.non_scaling_stroke {
-			local_transform := paint.local_transform or { [f32(1), 0, 0, 1, 0, 0]! }
-			style = cpuraster.CanvasPaintStyle(cpuraster.CanvasGradient{
-				...paint
-				local_transform: portable_svg_surface_gradient_transform(matrix, local_transform)
-			})
-		} else {
-			style = cpuraster.CanvasPaintStyle(paint)
-		}
-	}
+	mut style := style_in
 	if data.non_scaling_stroke {
+		if paint := style_in {
+			match paint {
+				cpuraster.CanvasGradient {
+					local := paint.local_transform or { [f32(1), 0, 0, 1, 0, 0]! }
+					style = cpuraster.CanvasPaintStyle(cpuraster.CanvasGradient{
+						...paint
+						local_transform: portable_svg_surface_paint_transform(matrix, local)
+					})
+				}
+				cpuraster.CanvasPattern {
+					style = cpuraster.CanvasPaintStyle(cpuraster.CanvasPattern{
+						...paint
+						transform: portable_svg_surface_paint_transform(matrix, paint.transform)
+					})
+				}
+			}
+		}
 		path = path.transform(cpuraster.Matrix{matrix[0], matrix[1], matrix[2], matrix[3], matrix[4], matrix[5]})
 		matrix = [f32(1), 0, 0, 1, 0, 0]!
 	}

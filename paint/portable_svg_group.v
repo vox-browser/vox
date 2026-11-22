@@ -36,6 +36,7 @@ fn portable_svg_group_has_stroke(command &layout.PaintCommand) bool {
 	if command.stroke_color != '' { return true }
 	data := command.svg_data
 	if data != unsafe { nil } {
+		if data.stroke_pattern != none { return true }
 		if gradients := data.svg_gradient_data {
 			return gradients.stroke_linear_gradient != none || gradients.stroke_radial_gradient != none
 		}
@@ -48,7 +49,6 @@ fn portable_svg_group_path_supported(command &layout.PaintCommand, first &layout
 	data := command.svg_data
 	if command.kind != 'draw_svg_path' || data == unsafe { nil }
 		|| data.path_data.len < layout.compatibility_clip_path_segment_stride
-		|| (command.stroke_width > 0 && data.stroke_pattern != none)
 		|| command.blur != 0 || command.outer_shadow || command.scrollbar_axis != ''
 		|| f32(command.group_opacity) != f32(group_opacity)
 		|| command.has_clip != first.has_clip || command.clip_x != first.clip_x
@@ -56,7 +56,7 @@ fn portable_svg_group_path_supported(command &layout.PaintCommand, first &layout
 		|| command.clip_height != first.clip_height || !portable_svg_group_clip_supported(command, mask) {
 		return false
 	}
-	if data.fill_pattern != none {
+	if data.fill_pattern != none || (command.stroke_width > 0 && data.stroke_pattern != none) {
 		region := mask or { return false }
 		return region.is_svg_content_mask
 	}
@@ -234,13 +234,15 @@ fn (mut app BrowserApp) raster_portable_svg_group(commands []layout.PaintCommand
 			mut gradient := ?cpuraster.CanvasGradient(none)
 			stroke_bounds := portable_svg_stroke_bounds(data, local, transform, clip, width, miter)
 			if opacity != 0 && !stroke_bounds.is_empty() {
-				if command.stroke_color == '' {
-					gradient = portable_svg_visible_gradient(command, true) or { return none }
-				} else {
-					solid := app.paint_colors.color_with_retained(command.stroke_color, stroke_alpha,
-						command.retained_svg_stroke_color())
-					color = portable_svg_argb(solid)
-					opacity = 1
+				if data.stroke_pattern == none {
+					if command.stroke_color == '' {
+						gradient = portable_svg_visible_gradient(command, true) or { return none }
+					} else {
+						solid := app.paint_colors.color_with_retained(command.stroke_color, stroke_alpha,
+							command.retained_svg_stroke_color())
+						color = portable_svg_argb(solid)
+						opacity = 1
+					}
 				}
 				if color >> 24 != 0 {
 					ink = ink.united(painting.Rect{f64(stroke_bounds.x), f64(stroke_bounds.y),
@@ -251,6 +253,7 @@ fn (mut app BrowserApp) raster_portable_svg_group(commands []layout.PaintCommand
 						transform: transform
 						color: color
 						gradient: gradient
+						pattern: data.stroke_pattern
 						opacity: opacity
 						stroke_data: data
 						stroke_width: width
@@ -276,19 +279,19 @@ fn (mut app BrowserApp) raster_portable_svg_group(commands []layout.PaintCommand
 	mut tile_budget := PortableSVGMaskTileBudget{}
 	for paint in paints {
 		matrix := portable_svg_surface_matrix(paint.transform, bounds)
+		mut style := ?cpuraster.CanvasPaintStyle(none)
+		if gradient := paint.gradient { style = cpuraster.CanvasPaintStyle(gradient) }
+		if pattern := paint.pattern {
+			if !portable_svg_mask_pattern_supported(pattern) { return none }
+			// Preserve tile RGB for the foreground paint.
+			tile := app.raster_svg_mask_pattern(pattern, matrix, true, mut tile_budget)?
+			style = cpuraster.CanvasPaintStyle(tile.pattern)
+			incomplete = incomplete || !tile.cacheable
+		}
 		drawn := if paint.stroke_data != unsafe { nil } {
 			raster_portable_svg_stroke(mut surface, bounds, paint.path, matrix, paint.stroke_data,
-				paint.color, paint.gradient, paint.opacity, paint.stroke_width, paint.stroke_miter)
+				paint.color, style, paint.opacity, paint.stroke_width, paint.stroke_miter)
 		} else {
-			mut style := ?cpuraster.CanvasPaintStyle(none)
-			if gradient := paint.gradient { style = cpuraster.CanvasPaintStyle(gradient) }
-			if pattern := paint.pattern {
-				if !portable_svg_mask_pattern_supported(pattern) { return none }
-				// Preserve tile RGB for the foreground fill.
-				tile := app.raster_svg_mask_pattern(pattern, matrix, true, mut tile_budget)?
-				style = cpuraster.CanvasPaintStyle(tile.pattern)
-				incomplete = incomplete || !tile.cacheable
-			}
 			cpuraster.fill_canvas_path(mut surface, bounds.width, bounds.height, pitch, 2,
 				paint.path, matrix, paint.color, style, paint.opacity, .src_over, 0, [], none)
 		}

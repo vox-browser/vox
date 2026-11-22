@@ -2283,6 +2283,25 @@ def check_svg_mask_foreground_pattern_browser(binary, artifacts, temporary):
     print("PASS: Masked SVG foreground patterns preserve color, opacity, paint order and live edits", flush=True)
 
 
+def check_svg_mask_foreground_stroke_browser(binary, artifacts, temporary):
+    white = (255, 255, 255)
+    red_quarter, green_quarter = (255, 191, 191), (191, 255, 191)
+    red_half, yellow_half = (255, 127, 127), (255, 255, 127)
+    samples = (
+        (16, 42, white), (40, 42, red_quarter), (48, 42, green_quarter),
+        (57, 42, white), (64, 42, red_quarter), (40, 48, white), (128, 42, white),
+        (206, 26, red_half), (214, 26, green_quarter), (222, 26, white),
+        (174, 26, white), (302, 26, white), (206, 30, yellow_half), (206, 77, red_half),
+        (411, 81, red_quarter), (411, 84, red_quarter), (426, 84, green_quarter),
+        (444, 84, white), (458, 84, red_quarter), (411, 80, white), (411, 87, white),
+    )
+    check_transformed_svg_mask_browser(binary, artifacts, temporary, "foreground-stroke",
+                                       [(x, y + 8, color) for x, y, color in samples], (
+        "luminance=false operations=1 paths=1 ", "luminance=true operations=1 paths=1 ",
+    ), fixture_name="svg-mask-foreground-stroke.html")
+    print("PASS: Masked SVG foreground strokes preserve pattern color, paint order and non-scaling width", flush=True)
+
+
 def check_transformed_svg_mask_browser(binary, artifacts, temporary, case, samples, expected_masks,
                                        fixture_name=None):
     fixture = Path(__file__).resolve().parents[1] / "Tests/Browser/Native" / (
@@ -2789,6 +2808,7 @@ def main():
         check_svg_mask_images_browser(binary, artifacts, temporary)
         check_svg_mask_patterns_browser(binary, artifacts, temporary)
         check_svg_mask_foreground_pattern_browser(binary, artifacts, temporary)
+        check_svg_mask_foreground_stroke_browser(binary, artifacts, temporary)
         check_svg_mask_pattern_strokes_browser(binary, artifacts, temporary)
         check_svg_mask_transformed_region_browser(binary, artifacts, temporary)
         check_svg_mask_transformed_viewport_browser(binary, artifacts, temporary)

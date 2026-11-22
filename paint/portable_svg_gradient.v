@@ -138,7 +138,7 @@ $if vox_gg_svg ? {
 	// Non-scaling strokes render geometry in texture coordinates. Map the
 	// paint there too so its gradient still follows the original SVG path.
 	fn portable_svg_non_scaling_gradient_matrix(surface [6]f32, local [9]f32) [9]f32 {
-		m := portable_svg_surface_gradient_transform(surface,
+		m := portable_svg_surface_paint_transform(surface,
 			[local[0], local[3], local[1], local[4], local[2], local[5]]!)
 		return [m[0], m[2], m[4], m[1], m[3], m[5], 0, 0, 1]!
 	}
