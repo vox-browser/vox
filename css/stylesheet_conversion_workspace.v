@@ -4,6 +4,11 @@ import processmetrics
 import dom
 
 import platform
+import os
+
+// VOX_CSS_PARSE_DIAGNOSTICS: one line per parsed style sheet, to find sources
+// converted more than once per load.
+const stylesheet_parse_diagnostics = os.getenv('VOX_CSS_PARSE_DIAGNOSTICS') != ''
 
 // The public token-stream API still owns its input. Whole-sheet parsing can
 // instead retire that input after conversion: selectors and query preludes own
@@ -16,6 +21,9 @@ fn parse_css_stylesheet_in_workspace(params ParsingParams, text string, location
 	// top-level stylesheets share a template; all conversion context is fresh.
 	cache_rules := !disable_stylesheet_rule_cache && params.rule_context.len == 0
 		&& stylesheet_rule_cache_.eligible(text)
+	if stylesheet_parse_diagnostics {
+		eprintln('VOX_CSS_PARSE location=${location or { '-' }} bytes=${text.len} deferred=${deferred} cached=${cache_rules && stylesheet_rule_cache_.contains(text)} rule_context=${params.rule_context.len}')
+	}
 	if cache_rules {
 		if entry := stylesheet_rule_cache_.lookup(text) {
 			defer { entry.release() }

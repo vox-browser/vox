@@ -58,6 +58,14 @@ fn (cache &StylesheetRuleCache) eligible(input string) bool {
 		&& input.len <= cache.max_source_bytes
 }
 
+// Diagnostics only: whether `input` already has cached rule syntax.
+fn (mut cache StylesheetRuleCache) contains(input string) bool {
+	if !cache.eligible(input) { return false }
+	cache.mutex.lock()
+	defer { cache.mutex.unlock() }
+	return cache.entries.any(it.input == input)
+}
+
 fn (mut cache StylesheetRuleCache) lookup(input string) ?&StylesheetRuleEntry {
 	if !cache.eligible(input) { return none }
 	cache.mutex.lock()
