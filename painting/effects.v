@@ -171,14 +171,39 @@ pub fn (filter GfxFilter) opacity_filter_amount() ?f64 {
 	return opacity
 }
 
-// Accept a single sRGB matrix on SourceGraphic. Keeping alpha unchanged
-// also permits direct replay into an alpha-only pattern.
-pub fn (filter GfxFilter) source_color_matrix() ?[20]f32 {
-	if filter.operations.len != 0 || filter.nodes.len != 1 { return none }
+pub struct SVGSourceColorMatrix {
+pub:
+	values     [20]f32
+	linear_rgb bool
+}
+
+fn (node &GfxFilterNode) converts_color_space(input int, source string, destination string) bool {
+	return node.kind == 'color-space-conversion' && node.input_ids.len == 1
+		&& node.input_ids[0] == input && node.string_parameters['source'] == source
+		&& node.string_parameters['destination'] == destination
+}
+
+// Accept one matrix on SourceGraphic, optionally bracketed by the linearRGB
+// conversions. Keeping alpha unchanged permits replay into an alpha-only tile.
+pub fn (filter GfxFilter) source_color_matrix() ?SVGSourceColorMatrix {
+	if filter.operations.len != 0 || filter.nodes.len !in [1, 3] { return none }
 	root := filter.root_id?
-	node := &filter.nodes[0]
-	if node.id != root || node.kind != 'color-matrix' || node.input_ids.len != 1
-		|| node.input_ids[0] != -1 || node.matrix.len != 20 {
+	linear_rgb := filter.nodes.len == 3
+	node := &filter.nodes[if linear_rgb { 1 } else { 0 }]
+	if linear_rgb {
+		decode := &filter.nodes[0]
+		encode := &filter.nodes[2]
+		if decode.id != 0 || node.id != 1 || encode.id != 2 || root != encode.id
+			|| !decode.converts_color_space(-1, 'srgb', 'linear-rgb')
+			|| !encode.converts_color_space(node.id, 'linear-rgb', 'srgb') {
+			return none
+		}
+	} else if node.id != root {
+		return none
+	}
+	expected_input := if linear_rgb { filter.nodes[0].id } else { -1 }
+	if node.kind != 'color-matrix' || node.input_ids.len != 1
+		|| node.input_ids[0] != expected_input || node.matrix.len != 20 {
 		return none
 	}
 	if node.matrix[15] != 0 || node.matrix[16] != 0 || node.matrix[17] != 0
@@ -190,7 +215,7 @@ pub fn (filter GfxFilter) source_color_matrix() ?[20]f32 {
 		matrix[i] = f32(value)
 		if !math.is_finite(f64(matrix[i])) { return none }
 	}
-	return matrix
+	return SVGSourceColorMatrix{values: matrix, linear_rgb: linear_rgb}
 }
 
 // A same-document SVG graph and its target bounds have one retained lifetime.

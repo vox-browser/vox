@@ -419,7 +419,7 @@ fn general_color_matrix(image BlurImage, matrix MatrixColorFilter) BlurImage {
 // Each source pixel is fully read before writing it. The isolated layer
 // can use the same bitmap as both input and output.
 pub fn apply_canvas_color_matrix_in_place(mut pixels []u8, width int, height int,
-	matrix MatrixColorFilter) bool {
+	matrix MatrixColorFilter, linear_rgb bool) bool {
 	if !untiled_device(pixels, width, height, width * 4) { return false }
 	filter := new_color_filter([matrix]) or { return false }
 	scan := FilterMatrixScan{
@@ -427,9 +427,17 @@ pub fn apply_canvas_color_matrix_in_place(mut pixels []u8, width int, height int
 		output: pixels
 		row_bytes: width * 4
 		filter: filter
-		transparent: filter_matrix_pixel(&filter, [f32(0), 0, 0, 0]!)
+		transparent: if linear_rgb {
+			filter_linear_matrix_pixel(&filter, [u8(0), 0, 0, 0]!)
+		} else {
+			filter_matrix_pixel(&filter, [f32(0), 0, 0, 0]!)
+		}
 	}
-	run_raster_scans(&scan, height, width, scan_filter_matrix)
+	if linear_rgb {
+		run_raster_scans(&scan, height, width, scan_filter_linear_matrix)
+	} else {
+		run_raster_scans(&scan, height, width, scan_filter_matrix)
+	}
 	return true
 }
 
@@ -472,6 +480,46 @@ fn filter_matrix_pixel(filter &ColorFilter, input [4]f32) [4]u8 {
 	a := general_byte(c[3] * 255)
 	return [math.min(a, general_byte(c[0] * 255)), math.min(a, general_byte(c[1] * 255)),
 		math.min(a, general_byte(c[2] * 255)), a]!
+}
+
+fn scan_filter_linear_matrix(context voidptr, first i32, end i32) {
+	scan := unsafe { &FilterMatrixScan(context) }
+	mut output := unsafe { scan.output }
+	start := int(first) * scan.row_bytes
+	stop := int(end) * scan.row_bytes
+	for i := start; i < stop; i += 4 {
+		alpha := scan.source[i + 3]
+		if alpha == 0 && scan.transparent[3] == 0 { continue }
+		pixel := if alpha == 0 {
+			scan.transparent
+		} else {
+			filter_linear_matrix_pixel(&scan.filter, [scan.source[i], scan.source[i + 1],
+				scan.source[i + 2], alpha]!)
+		}
+		for k in 0 .. 4 {
+			output[i + k] = pixel[k]
+		}
+	}
+}
+
+fn filter_linear_matrix_pixel(filter &ColorFilter, input [4]u8) [4]u8 {
+	// Keep both tone curves and the matrix in the same pass. Quantize only
+	// after converting the unpremultiplied output back to sRGB.
+	alpha := f64(input[3]) / 255
+	unpremul := if alpha > 0 { 1.0 / f64(input[3]) } else { 0.0 }
+	linear := [f32(general_decode_srgb(f64(input[0]) * unpremul) * alpha),
+		f32(general_decode_srgb(f64(input[1]) * unpremul) * alpha),
+		f32(general_decode_srgb(f64(input[2]) * unpremul) * alpha), f32(alpha)]!
+	color := filter.apply(linear, input[3] == 255)
+	a := general_byte(color[3] * 255)
+	if a == 0 { return [u8(0), 0, 0, 0]! }
+	alpha_scale := f64(color[3]) * 255
+	inverse := 1.0 / f64(color[3])
+	mut pixel := [u8(0), 0, 0, a]!
+	for k in 0 .. 3 {
+		pixel[k] = math.min(a, general_byte(f32(general_encode_srgb(f64(color[k]) * inverse) * alpha_scale)))
+	}
+	return pixel
 }
 
 fn general_alpha_table(image BlurImage, table [256]u8) BlurImage {
@@ -518,11 +566,7 @@ fn general_transfer(image BlurImage, to_linear bool) BlurImage {
 	mut table := [256]f32{}
 	for v in 0 .. 256 {
 		x := f64(v) / 255
-		table[v] = f32(if to_linear {
-			if x <= 0.04045 { x / 12.92 } else { math.pow((x + 0.055) / 1.055, 2.4) }
-		} else {
-			if x <= 0.0031308 { x * 12.92 } else { general_encode_srgb(x) }
-		})
+		table[v] = f32(if to_linear { general_decode_srgb(x) } else { general_encode_srgb(x) })
 	}
 	output := []u8{len: image.pixels.len}
 	scan := FilterTransferScan{
@@ -568,7 +612,12 @@ fn filter_transfer_index(channel u8, alpha u32) int {
 	return int(math.min(u32(255), (u32(channel) * 255 + alpha / 2) / alpha))
 }
 
+fn general_decode_srgb(x f64) f64 {
+	return if x <= 0.04045 { x / 12.92 } else { math.pow((x + 0.055) / 1.055, 2.4) }
+}
+
 fn general_encode_srgb(x f64) f64 {
+	if x <= 0.0031308 { return x * 12.92 }
 	scaled := 1.055 * math.pow(x, 1 / 2.4)
 	return scaled - 0.055
 }

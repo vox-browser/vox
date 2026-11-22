@@ -118,7 +118,8 @@ fn apply_svg_pattern_color_matrix(mut layer PortableSVGMaskLayer, width int, hei
 		}
 	}
 	return !luminance || cpuraster.apply_canvas_color_matrix_in_place(mut layer.pixels, width,
-		layer.rows.height(), cpuraster.MatrixColorFilter{matrix: filter.values, clamp: true})
+		layer.rows.height(), cpuraster.MatrixColorFilter{matrix: filter.matrix.values, clamp: true},
+		filter.matrix.linear_rgb)
 }
 
 fn (mut app BrowserApp) raster_svg_mask_pattern(style &painting.SVGPatternPaintStyle,

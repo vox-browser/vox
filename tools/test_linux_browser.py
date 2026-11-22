@@ -2210,10 +2210,14 @@ def check_svg_opacity_filter_tile_pixels(rows, channels, scale, marker, transpar
             assert actual == expected, (scale, left + x, y, actual, expected)
 
 
-def check_svg_color_matrix_tile_pixels(rows, channels, scale, marker, edited):
+def check_svg_color_matrix_tile_pixels(rows, channels, scale, marker, edited, *, linear_rgb=False):
     white, lime, blue = (255, 255, 255), (0, 255, 0), (0, 0, 255)
-    solid = blue if edited else lime
-    translucent = (153, 255, 153) if edited else (255, 153, 153)
+    if linear_rgb:
+        solid = (152, 92, 44) if edited else (111, 66, 30)
+        translucent = (171, 191, 210) if edited else (165, 180, 194)
+    else:
+        solid = blue if edited else lime
+        translucent = (153, 255, 153) if edited else (255, 153, 153)
     for left in (0, 128):
         for x, y, expected in (
             (2, 4, solid), (11, 4, solid), (12, 4, white), (2, 8, white),
@@ -2262,6 +2266,13 @@ def check_svg_tile_browser(binary, artifacts, temporary, name, *, ready=None,
         print(f"PASS: {fixture.stem} preserves fill, stroke, live edits, and cache parity", flush=True)
     else:
         print(f"PASS: {fixture.stem} keeps device stroke width and cache parity", flush=True)
+
+
+def check_svg_matrix_tiles(binary, artifacts, temporary):
+    for name, linear_rgb in (("color-matrix", False), ("color-matrix-linear", True)):
+        check_svg_tile_browser(binary, artifacts, temporary, name,
+                               ready="data-color-matrix-ready", check_edited=functools.partial(
+                                   check_svg_color_matrix_tile_pixels, edited=True, linear_rgb=linear_rgb))
 
 
 def check_svg_mask_gradient_strokes_browser(binary, artifacts, temporary):
@@ -3081,9 +3092,7 @@ def main():
                                        check_svg_opacity_filter_tile_pixels, transparency=102))
             return
         if args.pattern_matrix_only:
-            check_svg_tile_browser(binary, artifacts, temporary, "color-matrix",
-                                   ready="data-color-matrix-ready", check_edited=functools.partial(
-                                       check_svg_color_matrix_tile_pixels, edited=True))
+            check_svg_matrix_tiles(binary, artifacts, temporary)
             return
         environment = smoke_environment(temporary)
         output = run([str(binary), "--headless-smoke"], env=environment)
@@ -3124,9 +3133,7 @@ def main():
         check_svg_tile_browser(binary, artifacts, temporary, "opacity-filter",
                                ready="data-opacity-filter-ready", check_edited=functools.partial(
                                    check_svg_opacity_filter_tile_pixels, transparency=102))
-        check_svg_tile_browser(binary, artifacts, temporary, "color-matrix",
-                               ready="data-color-matrix-ready", check_edited=functools.partial(
-                                   check_svg_color_matrix_tile_pixels, edited=True))
+        check_svg_matrix_tiles(binary, artifacts, temporary)
         check_svg_tile_browser(binary, artifacts, temporary, "nested-strokes",
                                ready="data-nested-pattern-ready")
         check_svg_tile_browser(binary, artifacts, temporary, "nested-non-scaling-strokes")

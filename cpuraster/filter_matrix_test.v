@@ -27,8 +27,18 @@ fn test_in_place_filter_matrix_matches_premultiplied_layer() {
 		clamp: true
 	}
 	expected := general_color_matrix(BlurImage{pixels, 2, 2}, matrix)
-	assert apply_canvas_color_matrix_in_place(mut pixels, 2, 2, matrix)
+	assert apply_canvas_color_matrix_in_place(mut pixels, 2, 2, matrix, false)
 	assert pixels == expected.pixels
+}
+
+fn test_linear_rgb_matrix_encodes_before_rounding() {
+	mut pixels := [u8(208), 128, 64, 255, 26, 52, 78, 102, 12, 8, 4, 255, 0, 0, 0, 0]
+	matrix := MatrixColorFilter{
+		matrix: [f32(.25), 0, 0, 0, 0, 0, .25, 0, 0, 0, 0, 0, .25, 0, 0, 0, 0, 0, 1, 0]!
+		clamp: true
+	}
+	assert apply_canvas_color_matrix_in_place(mut pixels, 2, 2, matrix, true)
+	assert pixels == [u8(111), 66, 30, 255, 12, 27, 41, 102, 3, 2, 1, 255, 0, 0, 0, 0]
 }
 
 fn test_parallel_filter_matrix_matches_serial() {

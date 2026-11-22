@@ -771,7 +771,7 @@ pub enum PaintMaskOperationKind {
 
 pub struct PaintSVGMaskColorMatrix {
 pub:
-	values [20]f32
+	matrix painting.SVGSourceColorMatrix
 	bounds ?painting.Rect
 }
 

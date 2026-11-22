@@ -648,11 +648,19 @@ def main():
         if args.pattern_standalone_only:
             bitmap = fixture.with_name("svg-pattern-tile-image-strokes.html")
             inputs.append(bitmap)
+        if args.pattern_matrix_only:
+            linear_matrix = fixture.with_name("svg-pattern-tile-color-matrix-linear.html")
+            inputs.append(linear_matrix)
         digests = {path: digest(path) for path in inputs}
         with tempfile.TemporaryDirectory(prefix="vox-svg-pattern-") as temporary:
             check_pattern(binary, pattern, Path(temporary))
             if args.pattern_standalone_only:
                 check_pattern_tile_with_delayed_image(binary, bitmap, Path(temporary))
+            if args.pattern_matrix_only:
+                check_pattern_tile_variants(binary, linear_matrix, Path(temporary),
+                                            ready="data-color-matrix-ready",
+                                            check_pixels=partial(check_svg_color_matrix_tile_pixels, linear_rgb=True),
+                                            original_sample=False, edited_sample=True)
             for device_fixture in device_fixtures:
                 check_nested_pattern_device_strokes(binary, device_fixture, Path(temporary))
         assert {path: digest(path) for path in inputs} == digests

@@ -4496,7 +4496,7 @@ pub fn compatibility_lower_svg_mask_operations(source []painting.SVGMaskPaintOpe
 						}
 						operations << PaintMaskOperation{
 							kind: .begin_opacity
-							color_matrix: &PaintSVGMaskColorMatrix{values: matrix, bounds: bounds}
+							color_matrix: &PaintSVGMaskColorMatrix{matrix: matrix, bounds: bounds}
 						}
 					}
 				}
