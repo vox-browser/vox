@@ -2008,8 +2008,9 @@ Guest file hashes before and after the runs matched the host
 executable, test guard, fixture, and JavaScriptCore DLL. The DLL
 SHA-256 was `1a0a0428b724cf2c2e15982a1199f37186cdcfad90f89892620737a181c9b7fe`.
 These results cover D3D11 rendering and cache behavior in the guest.
-Hardware frame timings and OpenGL Canvas runtime remain unverified
-for this build.
+The separate OpenGL build also passed the Canvas gradient-fill checks.
+Hardware frame timings remain unverified.
+[OpenGL verification](#windows-opengl-gradient-fill-verification)
 
 ## Replaying packed SVG circles and ellipses
 
@@ -3628,8 +3629,7 @@ reflect, a single translucent stop, an even-odd hole, and stroke-first
 painting. Live edits to stop color, gradient transform, and fill
 opacity each rerasterized the affected gradient while reusing its
 geometry bounds. Cached and uncached document pixels matched, including
-the clipped gradient at scroll offset 65. The Windows OpenGL source
-check passed. Windows window and pixel verification remain pending.
+the clipped gradient at scroll offset 65.
 
 The Linux executable SHA-256 was
 `79e37d4ac9924f5cbb379da3c51573a09445c724816589926fab6c4a49a77f6f`.
@@ -3653,6 +3653,42 @@ the final 30 moving callbacks. With caching disabled all 150 gradients
 rasterized again. Every timed run had its longest callback at the
 second scroll step, while the scrolling gradient crossed the viewport
 edge. These measurements cover synthetic software OpenGL replay.
+
+### Windows OpenGL gradient fill verification
+
+A fresh x86-64 Windows build used `build_windows_browser --opengl
+--console`, V `d79ca45`, MinGW GCC 16.2.0, and single-unit C
+`-prod -no-prod-options`. The canonical checkout contained concurrent
+edits elsewhere. The executable SHA-256 was
+`99b155ff03bf0467e9e732372910843ed56d39323ff55e35cbbe487868955bf4`.
+The build and its 12 GiB guard exited zero at a sampled peak of
+9,123,659,776 bytes.
+
+Two fresh processes in the Windows 11 QEMU guest's SSH session opened
+Sokol OpenGL windows with Mesa 26.2.6 llvmpipe. Both requested one
+software worker, used private profiles and caches, and set
+`VOX_GG_SVG=1`. The SVG fixture with the appended live-edit script
+had SHA-256
+`975ad2b7e07e6a0ceac934898aa7681ce4be7978ae75710ada96c275a4d496ff`.
+After the readiness marker and 65 CSS pixels of scrolling in 13-pixel
+steps, each process captured its 800 × 600 window backbuffer.
+[Linux smoke driver](../tools/test_linux_browser.py)
+
+| Mode | Browser PID | Browser and guard exit | Peak job committed bytes | Canvas gradient draws | Cache hits |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Cached | 4524 | 0 | 552,660,992 | 174 | 160 |
+| Uncached | 880 | 0 | 557,895,680 | 168 | 0 |
+
+Both 3 GiB guest guards and the host verifier passed. All 14 color
+samples matched within two channel levels. Diagnostics confirmed
+Canvas linear and radial replay, bounds reuse after paint edits, and
+rerasterization when the scrolling gradient crossed the viewport edge.
+The 800 × 516 document regions matched pixel for pixel. The decoded
+RGBA SHA-256 was
+`281a190b33cb0f7ac6068e29a20bbad99af66af946007d1a2ffdd7ab44120e69`.
+The executable, guard, fixture, JavaScriptCore, and four Mesa DLL
+hashes matched the host inputs and stayed fixed through both runs.
+Physical presentation and hardware frame timings remain unmeasured.
 
 ## Dashed SVG strokes on OpenGL
 
