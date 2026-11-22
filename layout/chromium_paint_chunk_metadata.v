@@ -72,6 +72,17 @@ fn chromium_root_paint_contents(result &DocumentLayoutResult, viewport LayoutRec
 	return LayoutRect{0, 0, viewport.width, viewport.height}
 }
 
+// The root paint cull and the contents it was derived from, for diagnostics.
+pub fn (plan &ChromiumRasterLayerPlan) paint_cull_description() string {
+	cull := if rect := plan.paint_cull_rect {
+		'${rect.x},${rect.y},${rect.width}x${rect.height}'
+	} else {
+		'none'
+	}
+	contents := plan.paint_cull_contents
+	return 'cull=${cull} contents=${contents.x},${contents.y},${contents.width}x${contents.height}'
+}
+
 pub fn update_chromium_raster_layer_plan_for_viewport(document &dom.Document,
 	commands []PaintCommand, scale f64, viewport LayoutRect, mut plan ChromiumRasterLayerPlan) {
 	result := document_layout_result(document) or {

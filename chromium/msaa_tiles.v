@@ -526,8 +526,12 @@ fn (mut app BrowserApp) update_chromium_viewport_raster_plan() {
 		if !layout.chromium_raster_cull_changed(app.document, viewport, scale, &app.chromium_raster_plan) {
 			return
 		}
+		previous := if scroll_raster_damage_diagnostics { app.chromium_raster_plan.paint_cull_description() } else { '' }
 		layout.update_chromium_raster_layer_plan_for_viewport(app.document, app.paint_commands,
 			scale, viewport, mut app.chromium_raster_plan)
+		if scroll_raster_damage_diagnostics {
+			eprintln('VOX_SCROLL_RASTER_PLAN_DISCARD revision=${app.document.paint_content_revision()} from ${previous} to ${app.chromium_raster_plan.paint_cull_description()}')
+		}
 		// A changed interest rect can change compositor grouping and dither
 		// origins. Pixels retained under the preceding plan cannot be reused.
 		C.native_discard_scroll_raster()
