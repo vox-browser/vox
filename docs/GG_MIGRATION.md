@@ -2186,6 +2186,62 @@ decoded document RGBA, SHA-256
 These timings cover stationary software replay. Windows runtime
 pixels and hardware frame timing for nested tiles remain open.
 
+### Bitmap content in nested SVG pattern tiles
+
+In `9d71bed62`, the shared rasterizer accepts bitmap operations
+inside a nested pattern. macOS includes descendant image slots
+when it keys the outer tile. While an image is pending, the shared
+renderer draws available content and leaves the partial tile out
+of the cache. Vector-only tiles skip the image lookup pass.
+
+The previous macOS bundle, SHA-256
+`6163ca64724ec58f2bffd3d0b069b1f4deab1a736c59c431401c369176d88dce`,
+drew the outer stroke and left the nested bitmap samples white
+at 1× and 2×. The loopback fixture delays an asymmetric PNG by
+500 ms and uses the nested bitmap as both fill and stroke paint.
+The fixture and PNG SHA-256 values were
+`b8a2fe2bb2da590771b4e29eaf8aed7df65afdb8f332da020fff5a58420e8005`
+and `2e360a7d238dc85aa9b5a9c6dc6c99b6784d4d4aca0f9fe5a845142628843853`.
+
+The Linux build used V `5a39a4d`, single-unit Clang `-O0`, and
+Boehm GC. Its executable SHA-256 was
+`c8ef8eeb5fad92f4b306c7fd6dcb5ebb34475bec99c8203c6df742e32a6b0e82`.
+Both cache modes passed 11 exact color samples and had identical
+800 × 516 document RGBA, SHA-256
+`7cb6a68a550a151d3a3d0e13bfdad628c636f8e3a20ed28e09f9ad1a4b78fbac`.
+The cached run logged 126 hits across two groups.
+
+The private macOS build used V `d79ca45`, prealloc, and single-unit
+C `-prod -no-prod-options`. Its executable SHA-256 was
+`d0fb9e7d71f8508c5d0a8be8ea6ce53976856b692e30ad77194bc866ebc7353f`.
+Both densities passed all samples. Each logged two uncached draws
+while the image was pending, then one completed tile and one reuse.
+All 27,648 fixture pixels at 1× matched Linux. The RGB crop SHA-256
+was `6d3836133589793f66735dbb63045dac4ffd6896887512d103608a795d811830`.
+The existing mixed bitmap and nested vector checks passed on both
+platforms. The macOS non-scaling tile checks, 23 driver unit tests,
+and Windows D3D11 and OpenGL source checks also passed. Both builds,
+all test processes, and their guards exited zero.
+
+Two alternating Linux replay pairs used fresh profiles and caches,
+one Mesa software worker, and 800 × 600 Xvfb windows. The 48 synthetic
+idle callbacks ran after a one-second settle, with four paint commands
+at scroll offset zero. JavaScript and GG Canvas SVG path replay were
+disabled. Separate diagnostics counted 94 hits between the first and
+last callback receipts with the cache enabled, and zero with it
+disabled. Guest one-minute load ranged from 0.38 to 0.49 across four
+CPUs during timing. All six captures had the same document RGBA as
+the window regression. Executable, linked libraries, and fixture
+hashes stayed fixed through the replay checks.
+
+| Pair | Uncached / cached median replay, ms | Uncached / cached p95, ms | Uncached / cached maximum, ms | Uncached / cached median allocated KiB |
+| --- | ---: | ---: | ---: | ---: |
+| 1 | 7.639 / 0.550 | 9.228 / 0.765 | 9.327 / 2.187 | 350.5 / 161 |
+| 2 | 7.689 / 0.540 | 9.285 / 0.732 | 9.515 / 2.115 | 349 / 162 |
+
+These timings cover stationary software replay. Windows runtime
+pixels and hardware frame timings for this fixture remain open.
+
 ## Sharing the portable SVG fallback with Windows
 
 The standard Windows D3D11 window now uses the same CPU raster and GG texture

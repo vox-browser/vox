@@ -217,7 +217,8 @@ python tools/test_windows_svg_pattern_tiles.py C:/path/to/Vox.exe \
 The check serves a delayed PNG from loopback, launches fresh guarded
 windows with the portable SVG group cache enabled and disabled, and
 compares the captured document pixels. It records both child exits, the
-browser and adjacent DLL hashes, and the SVG cache diagnostics.
+browser and adjacent DLL hashes, and the SVG cache diagnostics. Pass
+`--nested` to check the delayed bitmap when it paints a nested fill and stroke.
 
 Run the graphics check on the interactive Windows desktop, also through the
 3 GiB guard:
