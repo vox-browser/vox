@@ -10,6 +10,7 @@ import math
 import os
 import painting
 import platform
+import processmetrics
 import cpuraster
 import svg
 import time
@@ -2765,6 +2766,8 @@ fn paintable_box_paint_background(mut root_box BlockBox, root_layout_node &Node,
 // is shared by the native shell and DOM's callback-backed viewport paintable;
 // both must record and hit-test the exact same paint-order tree.
 fn renderer_box_from_document_layout_result(result &DocumentLayoutResult, viewport_width f64, viewport_height f64) BlockBox {
+	stage := processmetrics.begin_thread_instruction_substage('paint_projection')
+	defer { stage.finish() }
 	mut projection_owner := unsafe { &DocumentLayoutResult(result) }
 	projection_owner.paint_tree_storage = unsafe { nil }
 	layout_completed := time.sys_mono_now()

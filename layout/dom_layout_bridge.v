@@ -3,6 +3,7 @@ module layout
 import dom
 import css
 import os
+import processmetrics
 
 __global dom_layout_callbacks = dom.LayoutNodeCallbacks{
 	generated_content_text_callback: layout_generated_accessible_text
@@ -61,6 +62,8 @@ $if test {
 }
 
 fn prepare_dom_layout_attachment(root_box &Node) PreparedDOMLayoutAttachment {
+	stage := processmetrics.begin_thread_instruction_substage('layout_attach_prepare')
+	defer { stage.finish() }
 	mut placeholders := DOMLayoutAttachmentIndex.new(root_box)
 	mut inline_pieces := map[u64][]InlineBoxPiece{}
 	root := attach_layout_node_recursive(root_box, none, none, attachment_parent_user_select(root_box), false, mut placeholders,
@@ -71,6 +74,8 @@ fn prepare_dom_layout_attachment(root_box &Node) PreparedDOMLayoutAttachment {
 }
 
 fn commit_dom_layout_attachment(root_box &Node, state &LayoutState, prepared PreparedDOMLayoutAttachment) &dom.LayoutNode {
+	stage := processmetrics.begin_thread_instruction_substage('layout_attach_commit')
+	defer { stage.finish() }
 	assert prepared.root.layout_handle == voidptr(root_box)
 	// One immutable provider per commit retains the geometry context, without
 	// adding a closure or allocation to every text node. It belongs to the same
