@@ -166,12 +166,15 @@ fn (mut app BrowserApp) record_document_paint_commands() {
 	checkpoint := time.sys_mono_now()
 	app.memory_maintenance.document_changed(checkpoint)
 	mut document := unsafe { &dom.Document(app.document) }
+	record_stage := processmetrics.begin_thread_instruction_substage('paint_record_display_list')
 	display_list := if app.ctx != unsafe { nil } && app.ctx.native_rendering
 		&& !app.paint_canvas_culling_disabled {
 		document.record_viewport_display_list()
 	} else {
 		document.record_display_list()
 	}
+	record_stage.finish()
+	adopt_list_stage := processmetrics.begin_thread_instruction_substage('paint_adopt_display_list')
 	if list := display_list {
 		previous_commands := app.paint_commands
 		previous_scene := app.paint_scene
@@ -203,11 +206,17 @@ fn (mut app BrowserApp) record_document_paint_commands() {
 		app.release_paint_commands()
 		app.paint_commands_have_backdrop_filter = false
 	}
+	adopt_list_stage.finish()
 	// Recording can refresh paint-only styles in the retained transport without
 	// a layout pass. Adopt that final snapshot as well as geometry changes.
+	geometry_stage := processmetrics.begin_thread_instruction_substage('paint_adopt_geometry')
 	app.adopt_current_document_geometry()
+	geometry_stage.finish()
+	resources_stage := processmetrics.begin_thread_instruction_substage('paint_prime_resources')
 	app.prime_document_paint_resources()
 	app.prepare_native_css_filter_renderer()
+	resources_stage.finish()
+	raster_plan_stage := processmetrics.begin_thread_instruction_substage('paint_raster_layer_plan')
 	// Raster-layer origins and tile grids use frame pixels. Zoomed commands
 	// use the ordinary compositing layer until those plans support a scale.
 	if document.font_rendering_policy() == .chromium && app.page_zoom == 1 {
@@ -221,6 +230,7 @@ fn (mut app BrowserApp) record_document_paint_commands() {
 	} else {
 		app.chromium_raster_plan = layout.ChromiumRasterLayerPlan{}
 	}
+	raster_plan_stage.finish()
 	app.paint_commands_pending = false
 	root_rect := app.root_box.border_box()
 	// Animation frames re-record without changing what the status shows.
