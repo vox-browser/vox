@@ -11479,3 +11479,33 @@ Same-binary cohort on bundle `392eec0ef` (6 alternating pairs, host load
 The candidate is lower than its control in every pair (0.10-1.00B). The
 median ratio to Brave is 1.03; the conservative ratio is 1.07.
 
+**Hardware SHA-256 and stationary culling.** A main-thread sample showed
+vlib's portable SHA-256 block function at about 12 sampled milliseconds per
+load: the disk cache hashes every response body when a fetch worker stores
+it and again when the document reads the script back, and image sampling
+keys hash encoded bytes. `790a8dde7` adds `fastsha256` (CommonCrypto on
+macOS, identical digests, `VOX_PORTABLE_SHA256`). `1fdbd2abe` skips canvas
+culling in the per-frame stationary eligibility scan when no video exists
+(`VOX_CULL_STATIONARY_COMMANDS_WITHOUT_VIDEO`, about 3.9M per frame
+stage-logged); its 7-pair cohort was within noise (21.129B vs 21.057B
+control). Cohort on bundle `790a8dde7` (7 alternating pairs, host load
+3.4-4.0):
+
+| Arm | Median | Range | Pixels vs Brave reference |
+|---|---:|---:|---:|
+| current | 21.343B | 20.436-21.476B | 2 in every run |
+| `VOX_PORTABLE_SHA256=1` | 21.611B | 20.730-22.046B | 2 in every run |
+| Brave | 20.516B | 20.363-20.862B | 25 in every run |
+
+The candidate is lower than its control in 6 of 7 pairs (mean 0.30B).
+Medians move between cohorts with the number of `pulse-in` frames before
+capture; the paired deltas are the reliable signal. The conservative
+highest-Vox to lowest-Brave ratio is 1.05.
+
+Remaining identified cost outside the engine: TLS. The page's responses are
+decrypted on the main thread by macOS's system libcurl, whose LibreSSL
+runs AES-GCM in portable C (`gcm_ghash_4bit`, `AES_encrypt`: about 27
+sampled milliseconds per load). Homebrew's libcurl (OpenSSL with ARMv8
+crypto, TLS 1.3, Apple trust) would remove most of it, but
+`platform/curl_api_darwin_test.c` deliberately pins the system library.
+
