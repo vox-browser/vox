@@ -63,3 +63,17 @@ fn test_backdrop_filters_repaint_their_read_region_with_nearby_damage() {
 		keys, near_change, false)
 	assert !plan[1] && !plan[2]
 }
+
+// A backdrop inside an opacity layer keeps the retained raster; inside a
+// spatial filter layer it does not.
+fn test_backdrops_inside_effect_layers_keep_the_retained_raster() {
+	if layout.retain_backdrop_raster_rejection { return }
+	effect := [layout.PaintCommand{kind: 'begin_css_effect_layer'}, backdrop_button(50, 40),
+		layout.PaintCommand{kind: 'end_css_effect_layer'}]
+	assert layout.scroll_raster_commands_reusable(effect, 400, 400)
+	filtered := [layout.PaintCommand{kind: 'begin_css_filter_layer', visual_layer_data: &layout.PaintVisualLayer{
+		kind: .css_filter
+		filter: painting.GfxFilter{operations: [painting.GfxFilterOperation{kind: 'blur', first: 4}]}
+	}}, backdrop_button(50, 40), layout.PaintCommand{kind: 'end_css_filter_layer'}]
+	assert !layout.scroll_raster_commands_reusable(filtered, 400, 400)
+}

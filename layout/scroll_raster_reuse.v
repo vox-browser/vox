@@ -166,9 +166,13 @@ pub fn scroll_raster_commands_reusable(commands []PaintCommand, width f64, heigh
 			continue
 		}
 		if command.kind == 'apply_backdrop_filter' && !retain_backdrop_raster_rejection {
-			// scroll_raster_backdrop.v: a bounded CSS-function backdrop at the
-			// top level repaints its whole read region with any damage to it.
-			if in_command_group || open_groups.len > 0 { return reject_scroll_raster('backdrop-in-group') }
+			// scroll_raster_backdrop.v: a bounded CSS-function backdrop repaints
+			// its whole read region with any damage to it. Effect layers
+			// composite per pixel, so the region's replay inside them is
+			// exact; other groups keep complete replay.
+			if in_command_group || open_groups.any(it != 'end_css_effect_layer') {
+				return reject_scroll_raster('backdrop-in-group')
+			}
 			if scroll_raster_backdrop_read_bounds(command) == none {
 				return reject_scroll_raster('unbounded-backdrop')
 			}
