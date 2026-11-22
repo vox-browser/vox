@@ -7,6 +7,9 @@ import os
 // Same-binary control: generated content keeps every inline context it is in
 // on the uncached path.
 const disable_generated_inline_reuse = os.getenv('VOX_DISABLE_GENERATED_INLINE_REUSE') != ''
+// Same-binary control: list-item and table-cell roots lay their committed
+// lines out on the uncached path.
+const disable_committed_list_and_cell_inline_reuse = os.getenv('VOX_DISABLE_COMMITTED_LIST_AND_CELL_INLINE_REUSE') != ''
 
 struct RetainedInlineInput {
 	node           &Node
@@ -68,7 +71,19 @@ mut:
 // lines between and within passes (tests and diagnostics).
 pub fn inline_context_inputs_are_retainable(box &Node) bool {
 	mut inputs := []RetainedInlineInput{}
-	return collect_retained_inline_inputs(box, true, mut inputs)
+	return collect_committed_inline_inputs(box, mut inputs)
+}
+
+// The inputs of a committed inline context. A list item or table cell lays
+// its principal lines out like a paragraph, as measurements already treat it
+// (measurement_inline_roots.v): an outside marker has its own formatting run,
+// and the table algorithm sizes and aligns the cell around its lines.
+fn collect_committed_inline_inputs(root &Node, mut inputs []RetainedInlineInput) bool {
+	extended := !disable_committed_list_and_cell_inline_reuse
+		&& !disable_extended_inline_measurement_roots
+		&& (root.is_list_item_box() || root.display().is_table_cell())
+		&& measurement_inline_workspace_is_closed(root)
+	return collect_inline_inputs_with_measurement_roots(root, true, extended, mut inputs)
 }
 
 fn collect_retained_inline_inputs(node &Node, root bool, mut inputs []RetainedInlineInput) bool {
@@ -322,7 +337,7 @@ fn run_inline_formatting_context_internal(mut state LayoutState, containing_bloc
 	mut collect := true
 	if collecting_key := backoff_key { collect = backoff.allows_collecting(collecting_key) }
 	mut inputs := []RetainedInlineInput{}
-	if !collect || !collect_retained_inline_inputs(root, true, mut inputs) {
+	if !collect || !collect_committed_inline_inputs(root, mut inputs) {
 		if collect {
 			if rejected_key := backoff_key { backoff.escalate(rejected_key) }
 		}
