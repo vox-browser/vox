@@ -42,11 +42,8 @@ fn (mut app BrowserApp) add_shared_svg_pattern_images(list &painting.SVGPatternD
 
 fn (mut app BrowserApp) prepare_shared_svg_pattern_tile(style &painting.SVGPatternPaintStyle,
 	transform [6]f64, content_mask bool) bool {
+	if !style.has_non_scaling_stroke { return false }
 	list := style.tile_display_list or { return false }
-	if list.operations.len > portable_svg_mask_pattern_max_operations
-		|| !list.operations.any(it.has_stroke && it.non_scaling_stroke) {
-		return false
-	}
 	info := portable_svg_mask_pattern_info(style, portable_svg_mask_pattern_max_operations, 0) or {
 		return false
 	}
@@ -77,7 +74,9 @@ fn (mut app BrowserApp) prepare_shared_svg_pattern_tile(style &painting.SVGPatte
 	mut budget := PortableSVGMaskTileBudget{}
 	// Keep the paint's RGBA. The destination mask resolves luminance or alpha
 	// after it composites the completed tile.
-	raster := app.raster_svg_mask_pattern(style, matrix, true, mut budget) or { return false }
+	raster := app.raster_svg_mask_pattern(style, matrix, true, unsafe { nil }, mut budget) or {
+		return false
+	}
 	tile := raster.pattern
 	cache_key := if raster.cacheable { key } else { u64(0) }
 	if C.native_install_shared_svg_pattern_tile(cache_key, tile.pixels.data,

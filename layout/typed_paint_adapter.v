@@ -2664,6 +2664,16 @@ fn resolve_svg_pattern_paint_style(node &Node, state &LayoutState, paint css.SVG
 		pattern_transform.f] {
 		cache_key = svg_clip_hash_mix(cache_key, math.f64_bits(value))
 	}
+	mut has_non_scaling_stroke := false
+	for index in 0 .. operations.len {
+		operation := &operations[index]
+		fill_has_stroke := if fill := operation.fill_pattern { fill.has_non_scaling_stroke } else { false }
+		stroke_has_stroke := if stroke := operation.stroke_pattern { stroke.has_non_scaling_stroke } else { false }
+		if (operation.has_stroke && operation.non_scaling_stroke) || fill_has_stroke || stroke_has_stroke {
+			has_non_scaling_stroke = true
+			break
+		}
+	}
 	return &painting.SVGPatternPaintStyle{
 		tile_display_list_id: '${content_identity}'
 		tile_rect: tile_rect
@@ -2672,6 +2682,7 @@ fn resolve_svg_pattern_paint_style(node &Node, state &LayoutState, paint css.SVG
 			operations: operations
 		}
 		cache_key: cache_key
+		has_non_scaling_stroke: has_non_scaling_stroke
 	}
 }
 

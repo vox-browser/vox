@@ -10,7 +10,8 @@ import re
 import subprocess
 import tempfile
 
-from test_linux_browser import (check_svg_mask_gradient_pixels, check_svg_nested_tile_pixels,
+from test_linux_browser import (check_svg_mask_gradient_pixels, check_svg_nested_tile_device_pixels,
+                                check_svg_nested_tile_pixels,
                                 check_svg_pattern_tile_image_pixels, rendered_png_rows,
                                 serve_delayed_svg_pattern_tile)
 
@@ -578,6 +579,20 @@ def check_nested_pattern_tiles(binary, fixture, directory):
     print("PASS: macOS shared nested SVG pattern fill, stroke, and live edits")
 
 
+def check_nested_pattern_device_strokes(binary, fixture, directory):
+    for scale in (1, 2):
+        data, log = capture_document(binary, fixture, directory / f"nested-device-strokes-{scale}x",
+                                     dict(VOX_GG_SVG_DIAGNOSTICS="1", LADYBIRD_SCREENSHOT_SCALE=str(scale)),
+                                     ["--disable-javascript"])
+        width, height, channels, rows = rendered_png_rows(data)
+        assert (width, height) == (1024 * scale, 600 * scale)
+        check_svg_nested_tile_device_pixels(rows, channels, scale, 0)
+        misses = set(re.findall(r"^VOX_SHARED_SVG_TILE cache=miss key=(\d+) ", log, re.M))
+        hits = set(re.findall(r"^VOX_SHARED_SVG_TILE cache=hit key=(\d+)$", log, re.M))
+        assert len(misses) == 2 and "0" not in misses and misses & hits, log
+    print("PASS: macOS nested SVG tile strokes keep their device width and reuse translated tiles")
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("binary", type=Path)
@@ -604,9 +619,14 @@ def main():
             pattern = fixture.with_name("svg-pattern-tile-nested-strokes.html")
             check_pattern = check_nested_pattern_tiles
         inputs = [binary, pattern, *binary.parent.glob("lib*.dylib")]
+        if args.pattern_nested_only:
+            device_strokes = fixture.with_name("svg-pattern-tile-nested-non-scaling-strokes.html")
+            inputs.append(device_strokes)
         digests = {path: digest(path) for path in inputs}
         with tempfile.TemporaryDirectory(prefix="vox-svg-pattern-") as temporary:
             check_pattern(binary, pattern, Path(temporary))
+            if args.pattern_nested_only:
+                check_nested_pattern_device_strokes(binary, device_strokes, Path(temporary))
         assert {path: digest(path) for path in inputs} == digests
         return
     mutation = fixture.with_name("svg-gradient-mask-mutation.html")

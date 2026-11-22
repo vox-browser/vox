@@ -312,7 +312,7 @@ fn (mut app BrowserApp) raster_portable_svg_group(commands []layout.PaintCommand
 		if pattern := paint.pattern {
 			if !portable_svg_mask_pattern_supported(pattern) { return none }
 			// Preserve tile RGB for the foreground paint.
-			tile := app.raster_svg_mask_pattern(pattern, matrix, true, mut tile_budget)?
+			tile := app.raster_svg_mask_pattern(pattern, matrix, true, unsafe { nil }, mut tile_budget)?
 			style = cpuraster.CanvasPaintStyle(tile.pattern)
 			incomplete = incomplete || !tile.cacheable
 		}

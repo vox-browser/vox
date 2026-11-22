@@ -66,10 +66,8 @@ fn portable_svg_mask_pattern_info(style &painting.SVGPatternPaintStyle, limit in
 	mut has_images := false
 	for index in 0 .. list.operations.len {
 		operation := &list.operations[index]
-		// The mask transport omits filter markers. Non-scaling strokes in a
-		// nested tile need the final device transform of the enclosing tile.
-		if operation.kind in [.begin_filter, .end_filter]
-			|| (depth != 0 && operation.has_stroke && operation.non_scaling_stroke) {
+		// The mask transport omits filter markers.
+		if operation.kind in [.begin_filter, .end_filter] {
 			return none
 		}
 		has_images = has_images || (operation.kind == .image && operation.opacity != 0)
@@ -88,15 +86,16 @@ fn portable_svg_mask_pattern_info(style &painting.SVGPatternPaintStyle, limit in
 }
 
 fn (mut app BrowserApp) raster_svg_mask_pattern(style &painting.SVGPatternPaintStyle,
-	matrix [6]f32, luminance bool, mut budget PortableSVGMaskTileBudget) ?PortableSVGMaskPattern {
+	matrix [6]f32, luminance bool, parent_space &PortableSVGTileStrokeSpace,
+	mut budget PortableSVGMaskTileBudget) ?PortableSVGMaskPattern {
 	if budget.depth >= portable_svg_mask_pattern_max_depth { return none }
 	list := style.tile_display_list?
 	tile := style.tile_rect
 	pattern_transform := painting_affine_array(style.pattern_transform or { painting.Affine{} })
-	device := multiply_paint_transforms([f64(matrix[0]), f64(matrix[1]), f64(matrix[2]),
+	raster := multiply_paint_transforms([f64(matrix[0]), f64(matrix[1]), f64(matrix[2]),
 		f64(matrix[3]), f64(matrix[4]), f64(matrix[5])]!, pattern_transform)
-	width := math.ceil(tile.width * math.max(1.0, math.hypot(device[0], device[1])))
-	height := math.ceil(tile.height * math.max(1.0, math.hypot(device[2], device[3])))
+	width := math.ceil(tile.width * math.max(1.0, math.hypot(raster[0], raster[1])))
+	height := math.ceil(tile.height * math.max(1.0, math.hypot(raster[2], raster[3])))
 	if !(width > 0 && width <= 8191 && height > 0 && height <= 8191
 		&& width * height <= f64(budget.pixels)) {
 		return none
@@ -114,7 +113,16 @@ fn (mut app BrowserApp) raster_svg_mask_pattern(style &painting.SVGPatternPaintS
 	matrix32 := [f32(local[0]), f32(local[1]), f32(local[2]), f32(local[3]), f32(local[4]), f32(local[5])]!
 	if !matrix32.all(math.is_finite(f64(it))) { return none }
 	bounds := painting.IntRect{0, 0, int(width), int(height)}
-	stroke_space := if operations.any(it.has_stroke && it.non_scaling_stroke) {
+	stroke_space := if style.has_non_scaling_stroke {
+		// Child samples land in the parent bitmap. Stroke widths use the
+		// physical device metric reached through the parent's linear map.
+		device := if parent_space == unsafe { nil } {
+			raster
+		} else {
+			parent := parent_space.to_device
+			multiply_paint_transforms([f64(parent[0]), f64(parent[1]), f64(parent[2]),
+				f64(parent[3]), 0.0, 0.0]!, raster)
+		}
 		space := portable_svg_tile_stroke_space(device, sx, sy)?
 		&PortableSVGTileStrokeSpace{...space}
 	} else {

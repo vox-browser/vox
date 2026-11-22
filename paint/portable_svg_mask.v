@@ -561,7 +561,7 @@ fn (mut app BrowserApp) raster_svg_mask_path(mut layer PortableSVGMaskLayer, wid
 	if operation.has_fill {
 		if pattern := operation.fill_pattern {
 			if operation.fill_opacity > 0 {
-				tile := app.raster_svg_mask_pattern(pattern, matrix, luminance, mut budget)?
+				tile := app.raster_svg_mask_pattern(pattern, matrix, luminance, stroke_space, mut budget)?
 				style = cpuraster.CanvasPaintStyle(tile.pattern)
 				cacheable = tile.cacheable
 			}
@@ -610,7 +610,7 @@ fn (mut app BrowserApp) raster_svg_mask_stroke(mut layer PortableSVGMaskLayer, w
 	mut cacheable := true
 	if pattern := operation.stroke_pattern {
 		if opacity <= 0 { return true }
-		tile := app.raster_svg_mask_pattern(pattern, matrix, luminance, mut budget)?
+		tile := app.raster_svg_mask_pattern(pattern, matrix, luminance, stroke_space, mut budget)?
 		style = cpuraster.CanvasPaintStyle(tile.pattern)
 		cacheable = tile.cacheable
 	} else if linear := operation.stroke_linear_gradient {
