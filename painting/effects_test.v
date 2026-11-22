@@ -80,7 +80,7 @@ fn test_svg_filter_graph_wraps_the_css_filter_chain_without_flattening() {
 	assert gfx.bounds or { panic('expected SVG filter bounds') } == Rect{10, 20, 30, 40}
 }
 
-fn test_source_color_matrix_can_change_alpha_without_filling_empty_rows() {
+fn test_source_color_matrix_classifies_positive_alpha_bias() {
 	mut values := [1.0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0]
 	for bias in [0.0, -.25, .25] {
 		values[19] = bias
@@ -88,13 +88,10 @@ fn test_source_color_matrix_can_change_alpha_without_filling_empty_rows() {
 			nodes: [GfxFilterNode{kind: 'color-matrix', input_ids: [-1], matrix: values}]
 			root_id: 0
 		}
-		if bias > 0 {
-			assert filter.source_color_matrix() == none
-		} else {
-			matrix := filter.source_color_matrix() or { panic('expected transparent black to stay transparent') }
-			assert !matrix.preserves_alpha
-			assert matrix.values[19] == f32(bias)
-		}
+		matrix := filter.source_color_matrix() or { panic('expected a source color matrix') }
+		assert !matrix.preserves_alpha
+		assert matrix.values[19] == f32(bias)
+		assert matrix.fills_clear_pixels() == (bias > 0)
 	}
 }
 

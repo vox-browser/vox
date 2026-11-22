@@ -11,6 +11,7 @@ import subprocess
 import tempfile
 
 from test_linux_browser import (check_svg_color_matrix_alpha_tile_pixels,
+                                check_svg_color_matrix_bias_tile_pixels,
                                 check_svg_color_matrix_tile_pixels, check_svg_mask_gradient_pixels,
                                 check_svg_nested_tile_device_pixels,
                                 check_svg_opacity_filter_tile_pixels, check_svg_pattern_tile_image_pixels,
@@ -649,23 +650,26 @@ def main():
         if args.pattern_standalone_only:
             bitmap = fixture.with_name("svg-pattern-tile-image-strokes.html")
             inputs.append(bitmap)
+        matrix_fixtures = []
         if args.pattern_matrix_only:
-            linear_matrix = fixture.with_name("svg-pattern-tile-color-matrix-linear.html")
-            alpha_matrix = fixture.with_name("svg-pattern-tile-color-matrix-alpha.html")
-            inputs.extend((linear_matrix, alpha_matrix))
+            matrix_fixtures = [
+                (fixture.with_name(f"svg-pattern-tile-color-matrix-{name}.html"), check_pixels)
+                for name, check_pixels in (
+                    ("linear", partial(check_svg_color_matrix_tile_pixels, linear_rgb=True)),
+                    ("alpha", check_svg_color_matrix_alpha_tile_pixels),
+                    ("bias", check_svg_color_matrix_bias_tile_pixels),
+                )
+            ]
+            inputs.extend(matrix for matrix, _ in matrix_fixtures)
         digests = {path: digest(path) for path in inputs}
         with tempfile.TemporaryDirectory(prefix="vox-svg-pattern-") as temporary:
             check_pattern(binary, pattern, Path(temporary))
             if args.pattern_standalone_only:
                 check_pattern_tile_with_delayed_image(binary, bitmap, Path(temporary))
-            if args.pattern_matrix_only:
-                check_pattern_tile_variants(binary, linear_matrix, Path(temporary),
+            for matrix, check_pixels in matrix_fixtures:
+                check_pattern_tile_variants(binary, matrix, Path(temporary),
                                             ready="data-color-matrix-ready",
-                                            check_pixels=partial(check_svg_color_matrix_tile_pixels, linear_rgb=True),
-                                            original_sample=False, edited_sample=True)
-                check_pattern_tile_variants(binary, alpha_matrix, Path(temporary),
-                                            ready="data-color-matrix-ready",
-                                            check_pixels=check_svg_color_matrix_alpha_tile_pixels,
+                                            check_pixels=check_pixels,
                                             original_sample=False, edited_sample=True)
             for device_fixture in device_fixtures:
                 check_nested_pattern_device_strokes(binary, device_fixture, Path(temporary))

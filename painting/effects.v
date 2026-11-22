@@ -178,6 +178,10 @@ pub:
 	preserves_alpha bool
 }
 
+pub fn (matrix &SVGSourceColorMatrix) fills_clear_pixels() bool {
+	return matrix.values[19] > 0
+}
+
 fn (node &GfxFilterNode) converts_color_space(input int, source string, destination string) bool {
 	return node.kind == 'color-space-conversion' && node.input_ids.len == 1
 		&& node.input_ids[0] == input && node.string_parameters['source'] == source
@@ -185,8 +189,7 @@ fn (node &GfxFilterNode) converts_color_space(input int, source string, destinat
 }
 
 // Accept one matrix on SourceGraphic, optionally bracketed by the linearRGB
-// conversions. Transparent black must stay transparent so the rasterizer can
-// bound the filter layer by its source geometry.
+// conversions.
 pub fn (filter GfxFilter) source_color_matrix() ?SVGSourceColorMatrix {
 	if filter.operations.len != 0 || filter.nodes.len !in [1, 3] { return none }
 	root := filter.root_id?
@@ -208,7 +211,6 @@ pub fn (filter GfxFilter) source_color_matrix() ?SVGSourceColorMatrix {
 		|| node.input_ids[0] != expected_input || node.matrix.len != 20 {
 		return none
 	}
-	if node.matrix[19] > 0 { return none }
 	mut matrix := [20]f32{}
 	for i, value in node.matrix {
 		matrix[i] = f32(value)

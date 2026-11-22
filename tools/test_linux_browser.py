@@ -2250,6 +2250,23 @@ def check_svg_color_matrix_alpha_tile_pixels(rows, channels, scale, marker, edit
             assert actual == expected, (scale, left + x, y, actual.hex(), expected.hex())
 
 
+def check_svg_color_matrix_bias_tile_pixels(rows, channels, scale, marker, edited):
+    white, lime, black = bytes.fromhex("ffffff"), bytes.fromhex("00ff00"), bytes(3)
+    color = bytes.fromhex("6666ff" if edited else "ff0000")
+    coverage = bytes.fromhex("666666") if edited else black
+    for left in (0, 128, 256):
+        band, stripe = (coverage, black) if left == 256 else (color, lime)
+        for x, y, expected in (
+            (2, 1, white), (1, 2, white), (2, 2, band), (6, 4, band),
+            (15, 12, band), (16, 12, white), (8, 15, band), (8, 16, white),
+            (8, 17, white), (8, 18, stripe), (8, 35, band),
+        ):
+            row = rows[marker + (8 + y) * scale]
+            pos = (left + x) * scale * channels
+            actual = row[pos:pos + 3]
+            assert actual == expected, (scale, left + x, y, actual.hex(), expected.hex())
+
+
 def check_svg_tile_browser(binary, artifacts, temporary, name, *, ready=None, groups=None,
                            check_edited=functools.partial(check_svg_tile_fill_stroke_pixels,
                                                           first_stripe=(255, 255, 0))):
@@ -2293,9 +2310,11 @@ def check_svg_matrix_tiles(binary, artifacts, temporary):
         check_svg_tile_browser(binary, artifacts, temporary, name,
                                ready="data-color-matrix-ready", check_edited=functools.partial(
                                    check_svg_color_matrix_tile_pixels, edited=True, linear_rgb=linear_rgb))
-    check_svg_tile_browser(binary, artifacts, temporary, "color-matrix-alpha", groups=3,
-                           ready="data-color-matrix-ready", check_edited=functools.partial(
-                               check_svg_color_matrix_alpha_tile_pixels, edited=True))
+    for name, check_pixels in (("color-matrix-alpha", check_svg_color_matrix_alpha_tile_pixels),
+                               ("color-matrix-bias", check_svg_color_matrix_bias_tile_pixels)):
+        check_svg_tile_browser(binary, artifacts, temporary, name, groups=3,
+                               ready="data-color-matrix-ready",
+                               check_edited=functools.partial(check_pixels, edited=True))
 
 
 def check_svg_mask_gradient_strokes_browser(binary, artifacts, temporary):

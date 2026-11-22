@@ -409,7 +409,13 @@ fn svg_mask_opacity_layer_rows(operations []layout.PaintMaskOperation, bounds pa
 	for index in 0 .. operations.len {
 		operation := &operations[index]
 		match operation.kind {
-			.begin_opacity { depth++ }
+			.begin_opacity {
+				if operation.color_matrix != unsafe { nil }
+					&& operation.color_matrix.matrix.fills_clear_pixels() {
+					return parent
+				}
+				depth++
+			}
 			.end_opacity {
 				depth--
 				if depth == 0 {
@@ -489,6 +495,10 @@ fn (mut app BrowserApp) raster_svg_mask_layers(mut pixels []u8, pitch int, bound
 				alpha := cpuraster.canvas_image_opacity_byte(opacity)
 				rows := if alpha == 0 {
 					SVGMaskLayerRows{}
+				} else if operation.color_matrix != unsafe { nil }
+					&& operation.color_matrix.matrix.fills_clear_pixels() {
+					// This filter can paint rows outside the source geometry.
+					parent
 				} else {
 					svg_mask_opacity_layer_rows(mask.mask_operations[index + 1..],
 						bounds, parent, page_x, page_y, scale)

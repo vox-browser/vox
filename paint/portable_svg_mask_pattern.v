@@ -89,37 +89,56 @@ fn portable_svg_mask_pattern_info(style &painting.SVGPatternPaintStyle, limit in
 	return PortableSVGMaskPatternInfo{count, has_images}
 }
 
-fn apply_svg_pattern_color_matrix(mut layer PortableSVGMaskLayer, width int, height int,
-	filter &layout.PaintSVGMaskColorMatrix, luminance bool) bool {
+fn svg_pattern_color_matrix_crop(filter &layout.PaintSVGMaskColorMatrix, width int, height int) ?painting.IntRect {
+	full := painting.IntRect{0, 0, width, height}
 	if rect := filter.bounds {
-		if ![rect.x, rect.y, rect.right(), rect.bottom()]!.all(math.is_finite(it)) { return false }
+		if ![rect.x, rect.y, rect.right(), rect.bottom()]!.all(math.is_finite(it)) { return none }
 		crop := rect.intersection(painting.Rect{0, 0, f64(width), f64(height)})
 		// The native filter uses the source extent when no nonempty
 		// bounds overlap the tile.
 		if !crop.is_empty() {
-			if ![crop.x, crop.y, crop.right(), crop.bottom()]!.all(math.floor(it) == it) { return false }
-			left := int(crop.x) * 4
-			right := int(crop.right()) * 4
-			top := int(crop.y)
-			bottom := int(crop.bottom())
-			pitch := width * 4
-			for y in layer.rows.top .. layer.rows.bottom {
-				row := (y - layer.rows.top) * pitch
-				unsafe {
-					row_pixels := &u8(layer.pixels.data) + row
-					if y < top || y >= bottom {
-						vmemset(row_pixels, 0, pitch)
-					} else {
-						vmemset(row_pixels, 0, left)
-						vmemset(row_pixels + right, 0, pitch - right)
-					}
-				}
+			if ![crop.x, crop.y, crop.right(), crop.bottom()]!.all(math.floor(it) == it) { return none }
+			return painting.IntRect{int(crop.x), int(crop.y), int(crop.width), int(crop.height)}
+		}
+	}
+	return full
+}
+
+fn clear_svg_pattern_outside_crop(mut layer PortableSVGMaskLayer, width int, crop painting.IntRect) {
+	if crop.x == 0 && crop.width == width && crop.y <= layer.rows.top
+		&& crop.bottom() >= layer.rows.bottom { return }
+	left := crop.x * 4
+	right := crop.right() * 4
+	bottom := crop.bottom()
+	pitch := width * 4
+	for y in layer.rows.top .. layer.rows.bottom {
+		row := (y - layer.rows.top) * pitch
+		unsafe {
+			row_pixels := &u8(layer.pixels.data) + row
+			if y < crop.y || y >= bottom {
+				vmemset(row_pixels, 0, pitch)
+			} else {
+				vmemset(row_pixels, 0, left)
+				vmemset(row_pixels + right, 0, pitch - right)
 			}
 		}
 	}
-	return !luminance || cpuraster.apply_canvas_color_matrix_in_place(mut layer.pixels, width,
+}
+
+fn apply_svg_pattern_color_matrix(mut layer PortableSVGMaskLayer, width int, height int,
+	filter &layout.PaintSVGMaskColorMatrix, retain_color bool) bool {
+	crop := svg_pattern_color_matrix_crop(filter, width, height) or { return false }
+	fills_clear := filter.matrix.fills_clear_pixels()
+	// Clearing before a matrix that preserves transparency avoids filtering
+	// pixels outside the crop. A positive alpha bias requires a final clip.
+	if !fills_clear { clear_svg_pattern_outside_crop(mut layer, width, crop) }
+	if retain_color && !cpuraster.apply_canvas_color_matrix_in_place(mut layer.pixels, width,
 		layer.rows.height(), cpuraster.MatrixColorFilter{matrix: filter.matrix.values, clamp: true},
-		filter.matrix.linear_rgb)
+		filter.matrix.linear_rgb) {
+		return false
+	}
+	if fills_clear { clear_svg_pattern_outside_crop(mut layer, width, crop) }
+	return true
 }
 
 fn (mut app BrowserApp) raster_svg_mask_pattern(style &painting.SVGPatternPaintStyle,
