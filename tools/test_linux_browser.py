@@ -2210,6 +2210,22 @@ def check_svg_opacity_filter_tile_pixels(rows, channels, scale, marker, transpar
             assert actual == expected, (scale, left + x, y, actual, expected)
 
 
+def check_svg_color_matrix_tile_pixels(rows, channels, scale, marker, edited):
+    white, lime, blue = (255, 255, 255), (0, 255, 0), (0, 0, 255)
+    solid = blue if edited else lime
+    translucent = (153, 255, 153) if edited else (255, 153, 153)
+    for left in (0, 128):
+        for x, y, expected in (
+            (2, 4, solid), (11, 4, solid), (12, 4, white), (2, 8, white),
+            (3, 12, white), (6, 12, translucent), (15, 12, translucent), (16, 12, white),
+            (6, 14, white), (6, 17, lime), (2, 24, solid), (6, 32, translucent),
+        ):
+            row = rows[marker + (8 + y) * scale]
+            pos = (left + x) * scale * channels
+            actual = tuple(row[pos:pos + 3])
+            assert actual == expected, (scale, left + x, y, actual, expected)
+
+
 def check_svg_tile_browser(binary, artifacts, temporary, name, *, ready=None,
                            check_edited=functools.partial(check_svg_tile_fill_stroke_pixels,
                                                           first_stripe=(255, 255, 0))):
@@ -3033,6 +3049,7 @@ def main():
     checks.add_argument("--pattern-nested-only", action="store_true", help="check nested SVG pattern tiles")
     checks.add_argument("--pattern-standalone-only", action="store_true", help="check standalone SVG pattern tiles")
     checks.add_argument("--pattern-filter-only", action="store_true", help="check opacity-filtered SVG pattern tiles")
+    checks.add_argument("--pattern-matrix-only", action="store_true", help="check SVG pattern color matrices")
     args = parser.parse_args()
     wait_seconds = window_wait_seconds()
     binary = args.binary.resolve()
@@ -3062,6 +3079,11 @@ def main():
             check_svg_tile_browser(binary, artifacts, temporary, "opacity-filter",
                                    ready="data-opacity-filter-ready", check_edited=functools.partial(
                                        check_svg_opacity_filter_tile_pixels, transparency=102))
+            return
+        if args.pattern_matrix_only:
+            check_svg_tile_browser(binary, artifacts, temporary, "color-matrix",
+                                   ready="data-color-matrix-ready", check_edited=functools.partial(
+                                       check_svg_color_matrix_tile_pixels, edited=True))
             return
         environment = smoke_environment(temporary)
         output = run([str(binary), "--headless-smoke"], env=environment)
@@ -3102,6 +3124,9 @@ def main():
         check_svg_tile_browser(binary, artifacts, temporary, "opacity-filter",
                                ready="data-opacity-filter-ready", check_edited=functools.partial(
                                    check_svg_opacity_filter_tile_pixels, transparency=102))
+        check_svg_tile_browser(binary, artifacts, temporary, "color-matrix",
+                               ready="data-color-matrix-ready", check_edited=functools.partial(
+                                   check_svg_color_matrix_tile_pixels, edited=True))
         check_svg_tile_browser(binary, artifacts, temporary, "nested-strokes",
                                ready="data-nested-pattern-ready")
         check_svg_tile_browser(binary, artifacts, temporary, "nested-non-scaling-strokes")

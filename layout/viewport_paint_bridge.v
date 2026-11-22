@@ -4465,9 +4465,9 @@ fn compatibility_box_contains_hit_test_point_at(box &BlockBox, stacking_context_
 }
 
 // Lower retained mask and pattern tile operations into the renderer's paint transport.
-// Pattern callers check that all filter scopes can be lowered to opacity.
+// Pattern callers check that filter scopes can use the shared isolated layer.
 pub fn compatibility_lower_svg_mask_operations(source []painting.SVGMaskPaintOperation,
-	transform [6]f64, lower_filter_opacity bool) []PaintMaskOperation {
+	transform [6]f64, lower_pattern_filters bool) []PaintMaskOperation {
 	mut operations := []PaintMaskOperation{cap: source.len}
 	for operation in source {
 		operation_transform := multiply_affine(transform, [
@@ -4481,15 +4481,29 @@ pub fn compatibility_lower_svg_mask_operations(source []painting.SVGMaskPaintOpe
 		mut operation_kind := PaintMaskOperationKind.path
 		match operation.kind {
 			.begin_filter {
-				if lower_filter_opacity {
+				if lower_pattern_filters {
 					filter := operation.filter or { continue }
-					opacity := filter.opacity_filter_amount() or { continue }
-					operations << PaintMaskOperation{kind: .begin_opacity, opacity: opacity}
+					if opacity := filter.opacity_filter_amount() {
+						operations << PaintMaskOperation{kind: .begin_opacity, opacity: opacity}
+					} else {
+						matrix := filter.source_color_matrix() or { continue }
+						bounds := if rect := filter.bounds {
+							affine := painting.Affine{transform[0], transform[1], transform[2],
+								transform[3], transform[4], transform[5]}
+							?painting.Rect(affine.map_rect(rect))
+						} else {
+							?painting.Rect(none)
+						}
+						operations << PaintMaskOperation{
+							kind: .begin_opacity
+							color_matrix: &PaintSVGMaskColorMatrix{values: matrix, bounds: bounds}
+						}
+					}
 				}
 				continue
 			}
 			.end_filter {
-				if lower_filter_opacity {
+				if lower_pattern_filters {
 					operations << PaintMaskOperation{kind: .end_opacity}
 				}
 				continue

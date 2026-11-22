@@ -171,6 +171,28 @@ pub fn (filter GfxFilter) opacity_filter_amount() ?f64 {
 	return opacity
 }
 
+// Accept a single sRGB matrix on SourceGraphic. Keeping alpha unchanged
+// also permits direct replay into an alpha-only pattern.
+pub fn (filter GfxFilter) source_color_matrix() ?[20]f32 {
+	if filter.operations.len != 0 || filter.nodes.len != 1 { return none }
+	root := filter.root_id?
+	node := &filter.nodes[0]
+	if node.id != root || node.kind != 'color-matrix' || node.input_ids.len != 1
+		|| node.input_ids[0] != -1 || node.matrix.len != 20 {
+		return none
+	}
+	if node.matrix[15] != 0 || node.matrix[16] != 0 || node.matrix[17] != 0
+		|| node.matrix[18] != 1 || node.matrix[19] != 0 {
+		return none
+	}
+	mut matrix := [20]f32{}
+	for i, value in node.matrix {
+		matrix[i] = f32(value)
+		if !math.is_finite(f64(matrix[i])) { return none }
+	}
+	return matrix
+}
+
 // A same-document SVG graph and its target bounds have one retained lifetime.
 // Ordinary and CSS-function-only filters carry no graph payload.
 struct ResolvedSVGFilterSnapshot {

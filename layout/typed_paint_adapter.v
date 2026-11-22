@@ -3432,6 +3432,19 @@ fn collect_svg_vector_image_paint_operations(node &Node, image_url string,
 	return true
 }
 
+fn svg_resource_paint_transform(node &Node, state &LayoutState, used &UsedValues,
+	resource_transform svg.AffineTransform, object_bounding_box_units bool) svg.AffineTransform {
+	position := paint_cumulative_offset(node, state, used)
+	page_delta_x := position.x().to_double() - used.offset.x().to_double()
+	page_delta_y := position.y().to_double() - used.offset.y().to_double()
+	to_page := svg.AffineTransform{}.translated(page_delta_x, page_delta_y).multiply(used.svg_viewbox_transform()).multiply(resource_transform).multiply(used.svg_transform())
+	return if object_bounding_box_units {
+		outer_svg_viewport_transform_in_page_space(node, state).multiply(to_page)
+	} else {
+		to_page
+	}
+}
+
 fn collect_svg_mask_paint_operations(node &Node, state &LayoutState,
 	resource_transform svg.AffineTransform, is_resource_root bool, object_bounding_box_units bool,
 	retain_filters bool, mut collection SVGMaskPaintCollection) {
@@ -3461,6 +3474,24 @@ fn collect_svg_mask_paint_operations(node &Node, state &LayoutState,
 				resolved := resolved_css_filter_for_element(computed, color_context, paint_element,
 					bounds)
 				retained_filter = resolved.to_gfx_filter(1)
+				if filter := retained_filter {
+					if filter.source_color_matrix() != none {
+						// Project the matrix's source bounds like the child
+						// paint. Tile normalization then removes the
+						// destination's transform from both.
+						local := painting.Rect{
+							...bounds
+							x: used.offset.x().to_double() - used.padding_left.to_double() - used.border_left.to_double()
+							y: used.offset.y().to_double() - used.padding_top.to_double() - used.border_top.to_double()
+						}
+						to_page := svg_resource_paint_transform(node, state, used,
+							resource_transform, object_bounding_box_units)
+						retained_filter = painting.GfxFilter{
+							...filter
+							bounds: painting_affine_from_svg(to_page).map_rect(local)
+						}
+					}
+				}
 			}
 		}
 	}
@@ -3483,13 +3514,8 @@ fn collect_svg_mask_paint_operations(node &Node, state &LayoutState,
 				image_url := resolved_svg_image_url(element)
 				if image_url != '' && used.content_width().to_double() > 0
 					&& used.content_height().to_double() > 0 {
-					position := paint_cumulative_offset(node, state, used)
-					page_delta_x := position.x().to_double() - used.offset.x().to_double()
-					page_delta_y := position.y().to_double() - used.offset.y().to_double()
-					mut to_page := svg.AffineTransform{}.translated(page_delta_x, page_delta_y).multiply(used.svg_viewbox_transform()).multiply(resource_transform).multiply(used.svg_transform())
-					if object_bounding_box_units {
-						to_page = outer_svg_viewport_transform_in_page_space(node, state).multiply(to_page)
-					}
+					to_page := svg_resource_paint_transform(node, state, used,
+						resource_transform, object_bounding_box_units)
 					image_fit, object_position := svg_image_fit(element)
 					image_rect := painting.Rect{
 						x: used.offset.x().to_double()
@@ -3527,13 +3553,8 @@ fn collect_svg_mask_paint_operations(node &Node, state &LayoutState,
 		} else if svg_path := used.computed_svg_path() {
 			percentage_basis := viewport_percentage_basis(node, state)
 			stroke_width := computed.length_percentage_to_px(.stroke_width, percentage_basis) or { 1.0 }
-			position := paint_cumulative_offset(node, state, used)
-			page_delta_x := position.x().to_double() - used.offset.x().to_double()
-			page_delta_y := position.y().to_double() - used.offset.y().to_double()
-			mut to_page := svg.AffineTransform{}.translated(page_delta_x, page_delta_y).multiply(used.svg_viewbox_transform()).multiply(resource_transform).multiply(used.svg_transform())
-			if object_bounding_box_units {
-				to_page = outer_svg_viewport_transform_in_page_space(node, state).multiply(to_page)
-			}
+			to_page := svg_resource_paint_transform(node, state, used,
+				resource_transform, object_bounding_box_units)
 			path := painting_clip_path_from_canvas_path(html.canvas_gfx_path_from_svg_path_with_precision(svg_path, node.document().font_rendering_policy() == .chromium), if computed.fill_rule() == .evenodd {
 				painting.WindingRule.even_odd
 			} else {

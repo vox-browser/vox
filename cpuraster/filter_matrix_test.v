@@ -20,6 +20,17 @@ fn test_filter_matrix_preserves_transparency_and_applies_alpha_bias() {
 	assert invalid.pixels == image.pixels
 }
 
+fn test_in_place_filter_matrix_matches_premultiplied_layer() {
+	mut pixels := [u8(0), 0, 0, 0, 80, 16, 4, 128, 201, 15, 88, 255, 32, 9, 5, 64]
+	matrix := MatrixColorFilter{
+		matrix: [f32(0), 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0]!
+		clamp: true
+	}
+	expected := general_color_matrix(BlurImage{pixels, 2, 2}, matrix)
+	assert apply_canvas_color_matrix_in_place(mut pixels, 2, 2, matrix)
+	assert pixels == expected.pixels
+}
+
 fn test_parallel_filter_matrix_matches_serial() {
 	serial_setting := 'VOX_SERIAL_CPU_RASTER'
 	previous := os.getenv_opt(serial_setting)

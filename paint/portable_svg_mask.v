@@ -102,6 +102,7 @@ mut:
 	pixels  []u8
 	rows    SVGMaskLayerRows
 	opacity f32
+	color_matrix &layout.PaintSVGMaskColorMatrix = unsafe { nil }
 }
 
 struct SVGMaskLayerRows {
@@ -502,6 +503,7 @@ fn (mut app BrowserApp) raster_svg_mask_layers(mut pixels []u8, pitch int, bound
 				depth++
 				layers[depth].rows = rows
 				layers[depth].opacity = opacity
+				layers[depth].color_matrix = operation.color_matrix
 				byte_count := layer_pitch * rows.height()
 				if layers[depth].pixels.len < byte_count {
 					layers[depth].pixels = []u8{len: byte_count}
@@ -513,8 +515,12 @@ fn (mut app BrowserApp) raster_svg_mask_layers(mut pixels []u8, pitch int, bound
 				}
 			}
 			.end_opacity {
-				layer := layers[depth]
+				mut layer := layers[depth]
 				depth--
+				if layer.color_matrix != unsafe { nil } {
+					if !apply_svg_pattern_color_matrix(mut layer, bounds.width, bounds.height,
+						layer.color_matrix, mask.mask_luminance) { return none }
+				}
 				bitmap := cpuraster.CanvasBitmap{
 					pixels: layer.pixels
 					width: bounds.width

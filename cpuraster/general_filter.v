@@ -416,6 +416,23 @@ fn general_color_matrix(image BlurImage, matrix MatrixColorFilter) BlurImage {
 	return BlurImage{output, image.width, image.height}
 }
 
+// Each source pixel is fully read before writing it. The isolated layer
+// can use the same bitmap as both input and output.
+pub fn apply_canvas_color_matrix_in_place(mut pixels []u8, width int, height int,
+	matrix MatrixColorFilter) bool {
+	if !untiled_device(pixels, width, height, width * 4) { return false }
+	filter := new_color_filter([matrix]) or { return false }
+	scan := FilterMatrixScan{
+		source: pixels
+		output: pixels
+		row_bytes: width * 4
+		filter: filter
+		transparent: filter_matrix_pixel(&filter, [f32(0), 0, 0, 0]!)
+	}
+	run_raster_scans(&scan, height, width, scan_filter_matrix)
+	return true
+}
+
 struct FilterMatrixScan {
 	source      []u8
 	output      []u8
