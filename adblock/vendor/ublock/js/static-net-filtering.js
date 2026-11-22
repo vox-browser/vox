@@ -306,6 +306,9 @@ class TopDetails extends HostnameDetails {
 const $topDetails = new TopDetails();
 
 const $httpHeaders = {
+    // Vox: while set, every header condition is satisfied. A headers-realm
+    // pass then finds every filter that some response headers could match.
+    any: false,
     init(...headers) {
         this.headers = headers.flat();
         this.parsed.clear();
@@ -3100,6 +3103,7 @@ registerFilterClass(FilterStrictParty);
 
 class FilterOnHeaders {
     static match(idata) {
+        if ( $httpHeaders.any ) { return true; }
         const refs = filterRefs[filterData[idata+1]];
         if ( refs.$parsed === null ) {
             refs.$parsed = sfp.parseHeaderValue(refs.headerOpt);
@@ -5646,6 +5650,26 @@ StaticNetFilteringEngine.prototype.matchHeaders = function(fctxt, ...headers) {
 
     $httpHeaders.reset();
 
+    return r;
+};
+
+/******************************************************************************/
+
+// Vox: whether matchHeaders() could return non-zero for this request with
+// some response headers. Header conditions are the only part of a
+// headers-realm filter that depends on the headers, and a filter is a
+// conjunction of its conditions, so treating each header condition as
+// satisfied finds a superset of the filters any headers could match. Without
+// one, matchHeaders() returns 0 whatever the response headers are.
+StaticNetFilteringEngine.prototype.mayMatchHeaders = function(fctxt) {
+    const typeBits = typeNameToTypeValue[fctxt.type] || otherTypeBitValue;
+    const partyBits = fctxt.is3rdPartyToDoc() ? THIRDPARTY_REALM : FIRSTPARTY_REALM;
+    resetRegisters(fctxt, typeBits);
+    $httpHeaders.any = true;
+    this.$filterUnit = 0;
+    const r = this.realmMatchString(HEADERS_REALM | BLOCK_REALM, typeBits, partyBits);
+    $httpHeaders.any = false;
+    $httpHeaders.reset();
     return r;
 };
 
