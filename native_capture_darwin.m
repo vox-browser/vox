@@ -59,6 +59,7 @@ int native_gpu_tile_compositor_enabled(void) {
 #include "native/include/native_bitmap_snapshot_darwin.h"
 #include "native/include/native_svg_mask_opacity_darwin.h"
 #include "native/include/native_svg_mask_path_darwin.h"
+#include "native/include/native_svg_pattern_path_darwin.h"
 
 int native_prefers_overlay_scrollbars(void) {
 	return [NSScroller preferredScrollerStyle] == NSScrollerStyleOverlay;
@@ -1893,6 +1894,14 @@ static CGColorRef native_svg_srgb_color(gg__Color color, const float *precise) {
     return native_document_srgb_components(components);
 }
 
+static float native_non_scaling_svg_stroke_width(float width) {
+	if (native_font_compositing_context != NULL) return width;
+	CGFloat host_scale = [[native_browser_view() window] backingScaleFactor];
+	if (!isfinite(host_scale) || host_scale <= 0.0) host_scale = 1.0;
+	// Bias the device-space coverage tie to match the recorder's inclusive edge.
+	return width / host_scale + 2.0f / 512.0f;
+}
+
 void native_draw_svg_path_srgb(const float *data, int segment_count, int even_odd,
 	float transform_a, float transform_b, float transform_c, float transform_d,
 	float transform_e, float transform_f, float page_x, float page_y,
@@ -1908,14 +1917,6 @@ void native_draw_svg_path_srgb(const float *data, int segment_count, int even_od
 	if (context == NULL) {
 		return;
 	}
-	CGFloat host_scale = [[native_browser_view() window] backingScaleFactor];
-	if (!isfinite(host_scale) || host_scale <= 0.0)
-		host_scale = 1.0;
-	// Skia and CoreGraphics place a half-device-pixel host-space stroke on
-	// opposite sides of the coverage tie. A tiny device-space bias matches the
-	// recorder's inclusive edge without changing a visible stroke dimension.
-	float resolved_stroke_width = non_scaling_stroke && native_font_compositing_context == NULL
-		? stroke_width / host_scale + 2.0f / 512.0f : stroke_width;
 	CGMutablePathRef path = native_create_path_from_data(data, segment_count);
     if (dash_count == 0 && !(has_fill && has_stroke)) {
         const float matrix[6]={transform_a,transform_b,transform_c,transform_d,
@@ -1946,7 +1947,7 @@ void native_draw_svg_path_srgb(const float *data, int segment_count, int even_od
 		CGContextSaveGState(context);
 		CGContextAddPath(context, transformed_path);
 		CGContextSetStrokeColorWithColor(context, stroke);
-		CGContextSetLineWidth(context, MAX(resolved_stroke_width, 0.0));
+		CGContextSetLineWidth(context, MAX(native_non_scaling_svg_stroke_width(stroke_width), 0.0));
 		CGContextSetLineCap(context, line_cap == 1 ? kCGLineCapRound
 			: line_cap == 2 ? kCGLineCapSquare : kCGLineCapButt);
 		CGContextSetLineJoin(context, line_join == 1 ? kCGLineJoinRound
@@ -6589,7 +6590,8 @@ void native_finish_svg_pattern_path(const float *data, int segment_count,
 	float stroke_width, int line_cap, int line_join, float miter_limit,
 	float tile_x, float tile_y, float tile_width, float tile_height,
 	float pattern_a, float pattern_b, float pattern_c, float pattern_d,
-	float pattern_e, float pattern_f, float opacity, int content_mask) {
+	float pattern_e, float pattern_f, float opacity, int content_mask,
+	int non_scaling_stroke, const double *dash_data, int dash_count, double dash_offset) {
 	if (native_svg_pattern_stack_depth <= 0) return;
 	NativeSVGPatternBuild build =
 		native_svg_pattern_stack[--native_svg_pattern_stack_depth];
@@ -6621,36 +6623,26 @@ void native_finish_svg_pattern_path(const float *data, int segment_count,
 		canvas_height - page_y + scroll_y - transform_f);
 	CGAffineTransform pattern_transform = CGAffineTransformMake(pattern_a,
 		pattern_b, pattern_c, pattern_d, pattern_e, pattern_f);
-	CGContextSaveGState(destination);
-	CGContextConcatCTM(destination, to_canvas);
-	CGContextAddPath(destination, path);
+	NativeSVGPatternStroke geometry;
 	if (stroke) {
-		CGContextSetLineWidth(destination, MAX(stroke_width, 0.0));
-		CGContextSetLineCap(destination, line_cap == 1 ? kCGLineCapRound
-			: line_cap == 2 ? kCGLineCapSquare : kCGLineCapButt);
-		CGContextSetLineJoin(destination, line_join == 1 ? kCGLineJoinRound
-			: line_join == 2 ? kCGLineJoinBevel : kCGLineJoinMiter);
-		CGContextSetMiterLimit(destination, MAX(miter_limit, 1.0));
-		CGContextReplacePathWithStrokedPath(destination);
-		CGContextClip(destination);
-	} else if (even_odd) {
-		CGContextEOClip(destination);
-	} else {
-		CGContextClip(destination);
+		float width = non_scaling_stroke
+			? native_non_scaling_svg_stroke_width(stroke_width) : stroke_width;
+		geometry = (NativeSVGPatternStroke){
+			.width = MAX(width, 0.0),
+			.cap = line_cap == 1 ? kCGLineCapRound
+				: line_cap == 2 ? kCGLineCapSquare : kCGLineCapButt,
+			.join = line_join == 1 ? kCGLineJoinRound
+				: line_join == 2 ? kCGLineJoinBevel : kCGLineJoinMiter,
+			.miter_limit = MAX(miter_limit, 1.0),
+			.non_scaling = non_scaling_stroke != 0,
+			.dashes = dash_data,
+			.dash_count = dash_data && dash_count > 0 ? (size_t)dash_count : 0,
+			.dash_offset = dash_offset,
+		};
 	}
-	CGContextSetAlpha(destination, fminf(fmaxf(opacity, 0.0f), 1.0f));
-	// The tile surface already includes both the backing scale and the target's
-	// accumulated content scale. Replay it without a second interpolation pass.
-	CGContextSetInterpolationQuality(destination, kCGInterpolationNone);
-	CGContextConcatCTM(destination, pattern_transform);
-	// CGImage rows have the opposite vertical convention from the Skia tile
-	// surface. Reflect each repeating cell around its own center so asymmetric
-	// edge coverage and non-symmetric pattern content retain SVG y-down order.
-	CGContextTranslateCTM(destination, 0, 2.0f * tile_y + tile_height);
-	CGContextScaleCTM(destination, 1, -1);
-	CGContextDrawTiledImage(destination,
-		CGRectMake(tile_x, tile_y, tile_width, tile_height), image);
-	CGContextRestoreGState(destination);
+	native_draw_svg_pattern_tile(destination, path, even_odd != 0, to_canvas,
+		image, CGRectMake(tile_x, tile_y, tile_width, tile_height), pattern_transform,
+		fminf(fmaxf(opacity, 0.0f), 1.0f), stroke ? &geometry : NULL);
 	CGPathRelease(path);
 	CGImageRelease(image);
 }

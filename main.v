@@ -282,7 +282,7 @@ fn C.native_add_svg_pattern_radial_gradient_path(data &f32, segment_count int, e
 
 fn C.native_add_svg_pattern_image(image &gg.Image, destination_x f32, destination_y f32, destination_width f32, destination_height f32, source_x f32, source_y f32, source_width f32, source_height f32, clip_x f32, clip_y f32, clip_width f32, clip_height f32, transform_a f32, transform_b f32, transform_c f32, transform_d f32, transform_e f32, transform_f f32, canvas_height f32, opacity f32, nearest_neighbor int)
 
-fn C.native_finish_svg_pattern_path(data &f32, segment_count int, even_odd int, transform_a f32, transform_b f32, transform_c f32, transform_d f32, transform_e f32, transform_f f32, page_x f32, page_y f32, scroll_y f32, canvas_height f32, stroke int, stroke_width f32, line_cap int, line_join int, miter_limit f32, tile_x f32, tile_y f32, tile_width f32, tile_height f32, pattern_a f32, pattern_b f32, pattern_c f32, pattern_d f32, pattern_e f32, pattern_f f32, opacity f32, content_mask int)
+fn C.native_finish_svg_pattern_path(data &f32, segment_count int, even_odd int, transform_a f32, transform_b f32, transform_c f32, transform_d f32, transform_e f32, transform_f f32, page_x f32, page_y f32, scroll_y f32, canvas_height f32, stroke int, stroke_width f32, line_cap int, line_join int, miter_limit f32, tile_x f32, tile_y f32, tile_width f32, tile_height f32, pattern_a f32, pattern_b f32, pattern_c f32, pattern_d f32, pattern_e f32, pattern_f f32, opacity f32, content_mask int, non_scaling int, dash_data &f64, dash_count int, dash_offset f64)
 
 fn C.native_add_svg_content_mask_image(image &gg.Image, destination_x f32, destination_y f32, destination_width f32, destination_height f32, source_x f32, source_y f32, source_width f32, source_height f32, clip_x f32, clip_y f32, clip_width f32, clip_height f32, transform_a f32, transform_b f32, transform_c f32, transform_d f32, transform_e f32, transform_f f32, page_x f32, page_y f32, scroll_y f32, canvas_height f32, nearest_neighbor int)
 
@@ -4719,10 +4719,18 @@ fn painting_affine_array(transform painting.Affine) [6]f64 {
 	return [transform.a, transform.b, transform.c, transform.d, transform.e, transform.f]!
 }
 
+@[params]
+struct NativeSVGPatternStrokeOptions {
+	non_scaling bool
+	dashes      []f64
+	dash_offset f64
+}
+
 fn (mut app BrowserApp) draw_native_svg_pattern_path(path_data []f32, even_odd bool,
 	matrix [6]f64, page_x f32, page_y f32, scroll_y f32, canvas_height f32,
 	stroke bool, stroke_width f64, line_cap int, line_join int, miter_limit f64,
-	style &painting.SVGPatternPaintStyle, opacity f64, content_mask bool) {
+	style &painting.SVGPatternPaintStyle, opacity f64, content_mask bool,
+	options NativeSVGPatternStrokeOptions) {
 	$if macos {
 		if path_data.len < layout.compatibility_clip_path_segment_stride {
 			return
@@ -4844,6 +4852,7 @@ fn (mut app BrowserApp) draw_native_svg_pattern_path(path_data []f32, even_odd b
 			}
 		}
 		pattern_transform := style.pattern_transform or { painting.Affine{} }
+		dash_data := if options.dashes.len > 0 { unsafe { &options.dashes[0] } } else { unsafe { nil } }
 		unsafe {
 			C.native_finish_svg_pattern_path(&path_data[0], path_data.len / layout.compatibility_clip_path_segment_stride, if even_odd {
 				1
@@ -4857,7 +4866,7 @@ fn (mut app BrowserApp) draw_native_svg_pattern_path(path_data []f32, even_odd b
 				1
 			} else {
 				0
-			})
+			}, int(options.non_scaling), dash_data, options.dashes.len, options.dash_offset)
 		}
 	}
 }
@@ -7421,7 +7430,15 @@ fn (mut app BrowserApp) draw_command(source_command &layout.PaintCommand, page_x
 							} else if gradient := command.stroke_radial_gradient() {
 								draw_native_svg_radial_gradient_path(svg_data.path_data, svg_data.fill_even_odd, path_matrix, page_x, page_y, f32(scroll_y), f32(app.ctx.height), true, command.stroke_width, svg_data.stroke_linecap, svg_data.stroke_linejoin, svg_data.stroke_miterlimit, gradient, command.opacity * svg_data.stroke_opacity, false)
 							} else if pattern := svg_data.stroke_pattern {
-								app.draw_native_svg_pattern_path(svg_data.path_data, svg_data.fill_even_odd, path_matrix, page_x, page_y, f32(scroll_y), f32(app.ctx.height), true, command.stroke_width, svg_data.stroke_linecap, svg_data.stroke_linejoin, svg_data.stroke_miterlimit, pattern, command.opacity * svg_data.stroke_opacity, false)
+								app.draw_native_svg_pattern_path(svg_data.path_data, svg_data.fill_even_odd,
+									path_matrix, page_x, page_y, f32(scroll_y), f32(app.ctx.height),
+									true, command.stroke_width, svg_data.stroke_linecap,
+									svg_data.stroke_linejoin, svg_data.stroke_miterlimit, pattern,
+									command.opacity * svg_data.stroke_opacity, false,
+									non_scaling: svg_data.non_scaling_stroke
+									dashes: svg_data.stroke_dasharray
+									dash_offset: svg_data.stroke_dashoffset
+								)
 							} else if command.stroke_color.len > 0 {
 								unsafe {
 									C.native_draw_svg_path_srgb(&svg_data.path_data[0], svg_data.path_data.len / layout.compatibility_clip_path_segment_stride, if svg_data.fill_even_odd {
