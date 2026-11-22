@@ -10,8 +10,13 @@ const disable_portable_svg_clip = os.getenv('VOX_DISABLE_PORTABLE_SVG_CLIP') == 
 const portable_svg_clip_diagnostics = os.getenv('VOX_PORTABLE_SVG_CLIP_DIAGNOSTICS') == '1'
 
 struct PortableSVGMaskGroup {
-	end    int
-	region painting.Rect
+	end      int
+	viewport SVGMaskViewport
+}
+
+struct SVGMaskViewport {
+	rect  painting.Rect
+	mixed bool
 }
 
 fn portable_svg_mask_group(commands []layout.PaintCommand, start int, mask &layout.PaintClip) ?PortableSVGMaskGroup {
@@ -23,12 +28,13 @@ fn portable_svg_mask_group(commands []layout.PaintCommand, start int, mask &layo
 	opening := &commands[start]
 	if start + 2 >= commands.len || !portable_svg_group_clip_supported(opening, mask) { return none }
 	first := &commands[start + 1]
-	// Transformed rectangles with the same matrix share a coordinate system.
-	// Compute their intersection before rasterizing the region's edges.
-	transformed := mask.is_svg_content_mask && (mask.transform[1] != 0 || mask.transform[2] != 0)
 	local := painting.Rect{mask.rect.x, mask.rect.y, mask.rect.width, mask.rect.height}
-	base := if transformed { intersect_svg_mask_viewports(local, opening) } else { local }
-	region := if transformed { intersect_svg_mask_viewports(base, first) } else { base }
+	mut base := SVGMaskViewport{rect: local}
+	mut viewport := base
+	if mask.is_svg_content_mask {
+		base = svg_mask_viewport(base, opening, mask.transform)
+		viewport = svg_mask_viewport(base, first, mask.transform)
+	}
 	limit := math.min(commands.len, start + portable_svg_group_max_paths + 2)
 	for index in start + 1 .. limit {
 		command := &commands[index]
@@ -38,30 +44,50 @@ fn portable_svg_mask_group(commands []layout.PaintCommand, start int, mask &layo
 				&& closing.is_svg_content_mask == mask.is_svg_content_mask
 				&& closing.cache_key == mask.cache_key && closing.scope_id == mask.scope_id
 				&& closing.rect == mask.rect && closing.transform == mask.transform {
-				return PortableSVGMaskGroup{index, region}
+				return PortableSVGMaskGroup{index, viewport}
 			}
 			return none
 		}
 		if !portable_svg_group_path_supported(command, first, 1, mask) { return none }
-		if transformed && command.clip_list != first.clip_list
-			&& intersect_svg_mask_viewports(base, command) != region {
-			return none
+		if mask.is_svg_content_mask && voidptr(command.clip_list) != voidptr(first.clip_list) {
+			if svg_mask_viewport(base, command, mask.transform) != viewport
+				|| (viewport.mixed && !same_svg_mask_viewports(first.clip_list, command.clip_list)) {
+				return none
+			}
 		}
 	}
 	return none
 }
 
-fn intersect_svg_mask_viewports(region painting.Rect, command &layout.PaintCommand) painting.Rect {
-	mut intersection := region
+fn svg_mask_viewport(viewport SVGMaskViewport, command &layout.PaintCommand,
+	mask_transform [6]f64) SVGMaskViewport {
+	mut intersection := viewport.rect
+	mut mixed := viewport.mixed
 	if command.clip_list != unsafe { nil } {
 		for clip in command.clip_list.items {
 			if clip.transform[1] != 0 || clip.transform[2] != 0 {
-				rect := clip.rect
-				intersection = intersection.intersection(painting.Rect{rect.x, rect.y, rect.width, rect.height})
+				if clip.transform == mask_transform {
+					// These rectangles share local coordinates.
+					rect := clip.rect
+					intersection = intersection.intersection(painting.Rect{rect.x, rect.y, rect.width, rect.height})
+				} else {
+					mixed = true
+				}
 			}
 		}
 	}
-	return intersection
+	return SVGMaskViewport{intersection, mixed}
+}
+
+fn same_svg_mask_viewports(first &layout.PaintClipList, other &layout.PaintClipList) bool {
+	if first == unsafe { nil } || other == unsafe { nil } || first.items.len != other.items.len {
+		return false
+	}
+	for i, clip in first.items {
+		next := &other.items[i]
+		if clip.rect != next.rect || clip.transform != next.transform { return false }
+	}
+	return true
 }
 
 fn (mut app BrowserApp) draw_portable_svg_mask_group(commands []layout.PaintCommand,
@@ -73,7 +99,7 @@ fn (mut app BrowserApp) draw_portable_svg_mask_group(commands []layout.PaintComm
 	if mask.is_svg_content_mask && mask.mask_operations.len == 0 { return end + 1 }
 	scale := f64(app.ctx.scale)
 	mut viewport := outer_viewport or { app.portable_device_viewport(page_y) }
-	local := group.region
+	local := group.viewport.rect
 	mut transform := painting.Affine{}
 	mut region := painting.Rect{}
 	mut direct_crop := false
@@ -91,6 +117,13 @@ fn (mut app BrowserApp) draw_portable_svg_mask_group(commands []layout.PaintComm
 	viewport = viewport.intersection(region)
 	key := app.portable_svg_group_key(commands, start, viewport, page_x, page_y)
 	if app.draw_cached_portable_svg_group(key, 255) { return end + 1 }
+	mut polygon := []painting.Point{}
+	if group.viewport.mixed {
+		polygon = svg_mask_viewport_polygon(local, transform, &commands[start],
+			&commands[start + 1], mask.transform, page_x, page_y, scale) or { return start }
+		if polygon.len < 3 { return end + 1 }
+		viewport = viewport.intersection(svg_mask_polygon_bounds(polygon))
+	}
 	mut image := app.raster_portable_svg_group(commands[start + 1..end], viewport, page_x, page_y,
 		1) or { return start }
 	if image.bounds.is_empty() { return end + 1 }
@@ -98,10 +131,13 @@ fn (mut app BrowserApp) draw_portable_svg_mask_group(commands []layout.PaintComm
 	if mask.is_svg_content_mask {
 		cacheable = app.apply_portable_svg_content_mask(mut image, &mask, page_x, page_y,
 			scale) or { return start }
-		if (transform.b == 0 && transform.c == 0) || (transform.a == 0 && transform.d == 0) {
+		if group.viewport.mixed {
+			if !apply_portable_svg_mask_polygon(mut image, polygon) { return start }
+		} else if (transform.b == 0 && transform.c == 0) || (transform.a == 0 && transform.d == 0) {
 			apply_portable_svg_mask_region(mut image, region)
-		} else if !apply_portable_svg_transformed_mask_region(mut image, local, transform) {
-			return start
+		} else {
+			corners := svg_mask_rect_corners(local, transform)
+			if !apply_portable_svg_mask_polygon(mut image, corners[..]) { return start }
 		}
 	} else if !direct_crop && !apply_portable_svg_clip(mut image, mask.path_components, page_x, page_y, scale) {
 		return start
@@ -115,15 +151,12 @@ fn (mut app BrowserApp) draw_portable_svg_mask_group(commands []layout.PaintComm
 	return end + 1
 }
 
-fn apply_portable_svg_transformed_mask_region(mut image PortableSVGGroupImage, rect painting.Rect,
-	transform painting.Affine) bool {
+fn apply_portable_svg_mask_polygon(mut image PortableSVGGroupImage, polygon []painting.Point) bool {
 	bounds := image.bounds
 	// Rasterize the transformed region in texture coordinates. Its bounding
 	// box is only for allocation and would expose pixels outside the mask.
 	mut path := cpuraster.PathBuilder{}
-	for i, corner in [painting.Point{rect.x, rect.y}, painting.Point{rect.right(), rect.y},
-		painting.Point{rect.right(), rect.bottom()}, painting.Point{rect.x, rect.bottom()}]! {
-		point := transform.map_point(corner)
+	for i, point in polygon {
 		x := f32(point.x - f64(bounds.x))
 		y := f32(point.y - f64(bounds.y))
 		if !math.is_finite(x) || !math.is_finite(y) { return false }

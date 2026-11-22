@@ -24,9 +24,7 @@ fn portable_svg_group_clip_supported(command &layout.PaintCommand, mask ?&layout
 			if clip.corner_radii != layout.BoxRadii{} { return false }
 			if clip.transform[1] != 0 || clip.transform[2] != 0 {
 				region := mask or { return false }
-				if !region.is_svg_content_mask || clip.transform != region.transform {
-					return false
-				}
+				if !region.is_svg_content_mask { return false }
 			}
 		}
 	}

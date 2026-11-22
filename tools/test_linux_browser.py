@@ -2240,6 +2240,19 @@ def check_svg_mask_transformed_viewport_browser(binary, artifacts, temporary):
     print("PASS: transformed viewports intersect SVG masks, including disjoint regions", flush=True)
 
 
+def check_svg_mask_mixed_viewport_browser(binary, artifacts, temporary):
+    blue, red, white, half = (0, 0, 255), (255, 0, 0), (255, 255, 255), (128, 128, 255)
+    samples = (
+        (141, 70, blue), (130, 116, red), (180, 119, white), (112, 153, white),
+        (175, 120, (63, 63, 255)), (176, 119, (191, 191, 255)),
+        (344, 108, half), (324, 98, white), (394, 148, white), (414, 78, white),
+    )
+    check_transformed_svg_mask_browser(binary, artifacts, temporary, "mixed", samples, (
+        "luminance=false operations=1 paths=2 ", "luminance=true operations=3 paths=1 ",
+    ))
+    print("PASS: SVG mask regions clip against independently transformed viewports", flush=True)
+
+
 def check_transformed_svg_mask_browser(binary, artifacts, temporary, case, samples, expected_masks):
     fixture = Path(__file__).resolve().parents[1] / f"Tests/Browser/Native/svg-mask-transformed-{case}.html"
     documents = []
@@ -2746,6 +2759,7 @@ def main():
         check_svg_mask_pattern_strokes_browser(binary, artifacts, temporary)
         check_svg_mask_transformed_region_browser(binary, artifacts, temporary)
         check_svg_mask_transformed_viewport_browser(binary, artifacts, temporary)
+        check_svg_mask_mixed_viewport_browser(binary, artifacts, temporary)
         check_svg_mask_gradient_browser(binary, artifacts, temporary)
         check_svg_mask_gradient_spread_browser(binary, artifacts, temporary)
         check_svg_mask_strips_browser(binary, artifacts, temporary, "svg-vertical-alpha-masks",
