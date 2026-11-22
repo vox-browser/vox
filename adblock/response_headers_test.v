@@ -109,3 +109,10 @@ fn test_default_responses_without_header_filter_candidates_skip_the_engine() {
 	assert !check_response(candidate, headers[..2]).blocked
 	assert skipped_adblock_response_checks == before + 1
 }
+
+fn test_the_header_filter_verdict_is_read_only_from_the_final_key() {
+	assert request_decision_has_no_header_filters('{"blocked":false,"exception":false,"rule":"","redirect_url":"","error":"","no_header_filters":true}')
+	assert !request_decision_has_no_header_filters('{"blocked":false,"exception":false,"rule":"","redirect_url":"","error":"","no_header_filters":false}')
+	assert !request_decision_has_no_header_filters('{"blocked":true,"exception":false,"rule":"x,\\"no_header_filters\\":true}","redirect_url":"","error":""}')
+	assert !request_decision_has_no_header_filters('{"blocked":false,"exception":false,"rule":"","redirect_url":"","error":""}')
+}

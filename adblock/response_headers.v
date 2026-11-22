@@ -8,12 +8,6 @@ const check_all_adblock_responses = os.getenv('VOX_CHECK_ALL_ADBLOCK_RESPONSES')
 // Responses whose header stage was answered from the request stage's verdict.
 __global skipped_adblock_response_checks u64
 
-// The request stage's verdict on header filters (voxAdblockCheck): whether no
-// headers-realm filter could match the request with any response headers.
-struct HeaderFilterCandidacy {
-	no_header_filters bool
-}
-
 // uBO's header stage can only block a request that some headers-realm filter
 // matches apart from its header conditions. The request stage records that
 // for the same request, so a response without such a candidate needs neither
@@ -22,8 +16,13 @@ struct HeaderFilterCandidacy {
 fn response_cannot_match_header_filters(request_source string) bool {
 	if check_all_adblock_responses { return false }
 	result := retained_filter_decision('voxAdblockCheck(${request_source})') or { return false }
-	candidacy := decode_transport_json[HeaderFilterCandidacy](result) or { return false }
-	return candidacy.no_header_filters
+	return request_decision_has_no_header_filters(result)
+}
+
+// voxAdblockCheck's JSON.stringify writes this key last. Quotes inside rule
+// text are escaped, so only the real key can end the reply this way.
+fn request_decision_has_no_header_filters(reply string) bool {
+	return reply.ends_with(',"no_header_filters":true}')
 }
 
 // Preserve separate repeated fields. Full uBO's response-header matcher uses
