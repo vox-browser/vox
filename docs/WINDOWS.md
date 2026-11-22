@@ -206,7 +206,8 @@ metric from the host Python guard's sampled process-tree RSS. The integration
 checks exercise Unicode/quoted arguments, both output streams, exit propagation,
 timeout termination and a rejected allocation above the job limit.
 
-Check mixed SVG pattern tiles with the built browser and its DLLs available:
+Check mixed SVG pattern tiles from the interactive Windows desktop with the
+built browser and its DLLs available:
 
 ```sh
 python tools/test_windows_svg_pattern_tiles.py C:/path/to/Vox.exe \

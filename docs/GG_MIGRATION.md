@@ -2063,9 +2063,66 @@ The build and its 12 GiB host guard exited zero at a sampled peak of
 pattern painter, and group rasterizer. The Windows job-object guard
 cross-compiled with the documented flags.
 
-The Windows guest launcher reported 4.39 GiB free against its 5 GiB
-host disk reserve. The mixed tile still needs native Windows pixel
-verification. [Windows test command](WINDOWS.md)
+The standard Windows guest launcher reported 4.39 GiB free against
+its 5 GiB host disk reserve. [Windows test command](WINDOWS.md)
+
+#### Windows runtime pixel verification
+
+The Windows 11 x86-64 guest booted under single-threaded QEMU TCG
+using an 8 GiB RAM disk for a writable QCOW2 overlay and a copy of
+its UEFI variables. QEMU reported the installed guest image read-only.
+The test ran in the guest's desktop session, with the fixture and
+capture output on a temporary virtual USB disk. The loopback server
+used CPython 3.12.10. [Python release](https://www.python.org/downloads/release/python-31210/)
+
+The D3D11 console build started from `760b0e24f` with concurrent
+edits elsewhere in the checkout. It used V `d79ca45`, MinGW GCC
+16.2.0 and single-unit C `-prod -no-prod-options`. Its executable
+SHA-256 was
+`3c642f6bb3feb993bad3706823675ef129e8c1bf6dbb32ba162c64b8fb04a0b0`.
+The build and its 12 GiB guard exited zero at a sampled peak of
+8,388,247,552 bytes.
+
+The first window attempt launched from the virtual USB disk. The
+retry used the same executable bytes copied to the guest's internal
+NTFS disk alongside the installed runtime DLLs. In both attempts
+the Python driver hit its 260-second timeout in the first, cached
+capture. Both browser streams and job receipts were empty. During
+the NTFS attempt a guest process listing found no Vox process.
+
+The same guard launched Windows' `whoami.exe` and returned child
+exit zero in an SSH-session probe. Vox PID 6732 also passed
+`--headless-smoke` under the 3 GiB guard, including JavaScript DOM
+mutation, click handling, and wheel routing. Peak job committed
+memory was 446,803,968 bytes. In that SSH session, the windowed
+driver reached Sokol's D3D11 swap-chain assertion. Browser PID 2548
+exited `0xc0000409` without a job timeout.
+
+Writing the guard receipt directly to a file let the desktop
+diagnostic complete. The repository runner adopted that change in
+`802e882ba` and passed a fresh pair on the same D3D11 executable.
+Both 800 × 600 captures passed all 11 color samples, including the
+delayed PNG's row order and the device stroke edges.
+
+| Mode | Browser PID | Browser and guard exit | Peak job committed bytes | Group cache hits |
+| --- | ---: | ---: | ---: | ---: |
+| Cached | 4468 | 0 | 581,713,920 | 8 |
+| Uncached | 1716 | 0 | 571,752,448 | 0 |
+
+The 800 × 516 document RGBA was identical in both cache modes and
+matched Linux's decoded SHA-256
+`5bfd67e3ccaa4ef706d7364fd4a3cc95d8100e1392c582c02ff1e9425b86e09c`.
+The 27,648 authored RGB pixels also matched macOS at 1× with crop
+SHA-256 `83f4028572a4d112dc80caf090c898b552559688072147004d6941f86abb0a78`.
+The two Windows runner unit tests and 21 Linux driver unit tests
+passed. The verifier matched the executable, guard, JavaScriptCore
+DLL, fixture, and runner bytes against the host inputs.
+
+Windows shut down normally. QEMU and the host guard exited zero with
+a sampled peak of 8,901,165,056 bytes. The installed disk and original
+UEFI variable hashes matched their preflight values after the
+captures. These results cover D3D11 pixels in the emulated guest.
+Hardware frame timings remain unmeasured.
 
 ## Sharing the portable SVG fallback with Windows
 
