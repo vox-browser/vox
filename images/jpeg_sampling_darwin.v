@@ -1,6 +1,6 @@
 module main
 
-import crypto.sha256
+import fastsha256
 import gg
 import imageraster
 import layout
@@ -28,7 +28,7 @@ fn (mut app BrowserApp) draw_sampled_jpeg(command &layout.PaintCommand, image &g
 	dw, dh := imageraster.decode_size(image.width, image.height, f64(destination.width), f64(destination.height)) or { return false }
 	bytes := app.background_image_bytes(url) or { return false }
 	if !yuv.jpeg_plane_orientation_supported(bytes) { return false }
-	key := '\x00scaled-planar-jpeg:${sha256.hexhash(bytes.bytestr())}:${dw}x${dh}'
+	key := '\x00scaled-planar-jpeg:${fastsha256.sum(bytes).hex()}:${dw}x${dh}'
 	mut decoded := &gg.Image{}
 	if id := app.background_image_ids[key] {
 		decoded = app.ctx.get_cached_image_by_idx(id)

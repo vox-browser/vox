@@ -1,6 +1,6 @@
 module main
 
-import crypto.sha256
+import fastsha256
 import gg
 import imageraster
 import layout
@@ -44,7 +44,7 @@ fn (mut app BrowserApp) sampled_lossless_webp_decode(url string, image &gg.Image
 		&& width < image.width && height < image.height
 		&& width * image.height == height * image.width { return image }
 	if !opaque_lossless_webp_sampling_supported(bytes) { return none }
-	key := '\x00sampled-lossless-webp:${u64(voidptr(app.document))}:${app.navigation_generation}:${png_decode_scope.scope}:${url}:${sha256.hexhash(bytes.bytestr())}'
+	key := '\x00sampled-lossless-webp:${u64(voidptr(app.document))}:${app.navigation_generation}:${png_decode_scope.scope}:${url}:${fastsha256.sum(bytes).hex()}'
 	if id := app.background_image_ids[key] {
 		previous := app.ctx.get_cached_image_by_idx(id)
 		if previous.ok && previous.width >= dw && previous.height >= dh { return previous }

@@ -1,6 +1,6 @@
 module main
 
-import crypto.sha256
+import fastsha256
 import gg
 import ggshape
 import imageraster
@@ -41,7 +41,7 @@ fn (mut app BrowserApp) sampled_png_decode(url string, image &gg.Image, width f6
 	profile := imageraster.png_sampling_profile(bytes) or { return none }
 	mut gpu_mips := profile.gamma > 0
 	if os.getenv('VOX_DIAGNOSTIC_PNG_GPU_MIPS') == '1' { gpu_mips = true }
-	mut key := '\x00sampled-png:${u64(voidptr(app.document))}:${app.navigation_generation}:${png_decode_scope.scope}:${url}:${sha256.hexhash(bytes.bytestr())}'
+	mut key := '\x00sampled-png:${u64(voidptr(app.document))}:${app.navigation_generation}:${png_decode_scope.scope}:${url}:${fastsha256.sum(bytes).hex()}'
 	if id := app.background_image_ids[key] {
 		previous := app.ctx.get_cached_image_by_idx(id)
 		if previous.ok && previous.width >= dw && previous.height >= dh {
