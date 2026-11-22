@@ -7,8 +7,8 @@ import os
 // Same-binary control: generated content keeps every inline context it is in
 // on the uncached path.
 const disable_generated_inline_reuse = os.getenv('VOX_DISABLE_GENERATED_INLINE_REUSE') != ''
-// Same-binary control: list-item and table-cell roots lay their committed
-// lines out on the uncached path.
+// Same-binary control: list-item, marker and table-cell roots lay their
+// committed lines out on the uncached path.
 const disable_committed_list_and_cell_inline_reuse = os.getenv('VOX_DISABLE_COMMITTED_LIST_AND_CELL_INLINE_REUSE') != ''
 
 struct RetainedInlineInput {
@@ -77,11 +77,13 @@ pub fn inline_context_inputs_are_retainable(box &Node) bool {
 // The inputs of a committed inline context. A list item or table cell lays
 // its principal lines out like a paragraph, as measurements already treat it
 // (measurement_inline_roots.v): an outside marker has its own formatting run,
-// and the table algorithm sizes and aligns the cell around its lines.
+// whose one text child is revalidated like any text, and the table algorithm
+// sizes and aligns the cell around its lines.
 fn collect_committed_inline_inputs(root &Node, mut inputs []RetainedInlineInput) bool {
 	extended := !disable_committed_list_and_cell_inline_reuse
 		&& !disable_extended_inline_measurement_roots
-		&& (root.is_list_item_box() || root.display().is_table_cell())
+		&& (root.is_list_item_box() || root.display().is_table_cell()
+		|| root.is_list_item_marker_box())
 		&& measurement_inline_workspace_is_closed(root)
 	return collect_inline_inputs_with_measurement_roots(root, true, extended, mut inputs)
 }

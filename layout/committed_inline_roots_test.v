@@ -17,11 +17,11 @@ fn committed_inline_roots_match_full_layout(mut document dom.Document, label str
 	assert (document.record_display_list() or { panic('full paint') }).dump() == before, label
 }
 
-// A list item with an outside marker and a table cell lay their lines out
-// like a paragraph, so committed layouts retain them; an inside marker is
-// part of the lines and keeps its item on the uncached path. The lines match
-// a complete layout after a change beside them and after the list is
-// renumbered.
+// A list item with an outside marker, that marker and a table cell lay their
+// lines out like a paragraph, so committed layouts retain them; an inside
+// marker is part of the lines and keeps its item on the uncached path. The
+// lines match a complete layout after a change beside them and after the
+// list is renumbered, which changes the markers' text.
 fn test_list_items_and_table_cells_keep_committed_inline_lines() {
 	enabled := os.getenv('VOX_DISABLE_COMMITTED_LIST_AND_CELL_INLINE_REUSE') == ''
 		&& os.getenv('VOX_DISABLE_EXTENDED_INLINE_MEASUREMENT_ROOTS') == ''
@@ -35,6 +35,14 @@ fn test_list_items_and_table_cells_keep_committed_inline_lines() {
 	assert inline_context_inputs_are_retainable(committed_inline_roots_box(document, 'outside')) == enabled
 	assert !inline_context_inputs_are_retainable(committed_inline_roots_box(document, 'inside'))
 	assert inline_context_inputs_are_retainable(committed_inline_roots_box(document, 'cell')) == enabled
+	mut markers := 0
+	for child in committed_inline_roots_box(document, 'outside').children() {
+		if child.is_list_item_marker_box() {
+			assert inline_context_inputs_are_retainable(child) == enabled
+			markers++
+		}
+	}
+	assert markers == 1
 	mut other := document.get_element_by_id('other') or { panic('other') }
 	other.set_attribute_value('style', 'padding-top:3px')
 	document.update_layout(.debugging)
