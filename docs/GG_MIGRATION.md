@@ -1856,6 +1856,44 @@ fixture, library, and executable hashes stayed fixed. Production
 performance, Windows runtime pixels, and the macOS native pattern tile
 path remain open.
 
+## Shared non-scaling SVG pattern tiles on macOS
+
+In `a8ac3064f`, top-level vector tiles with non-scaling strokes use
+the portable rasterizer on macOS. Quartz composites the resulting
+premultiplied RGBA tile over a path or into a mask. An owned image
+keeps each tile available after the V frame arena resets. The native
+tile cache keys include all four linear coefficients of the device
+transform, so scaling, reflection, and shear changes can invalidate
+the tile while placement and scroll changes can reuse it. Nested
+patterns, filters, and image tiles use the native resource painter.
+
+The macOS V source check and the focused CoreGraphics tests passed.
+With Clang `-O2`, ASan, and UBSan, the pattern test checked row orientation,
+premultiplied alpha, and ownership after overwriting the source bytes.
+The offscreen route harness used the production install, lookup, and
+finish functions. It checked pixel-exact reuse between foreground and
+mask destinations, 2× mask scale, an invalid buffer, and stack balance.
+
+Two alternating timing pairs used 3,000 offscreen draws of a 128 × 128
+tile after 60 warm-up draws, with fresh processes and a shared Clang
+`-O2` executable. Uncached and cached thread CPU times were 53.381 /
+33.193 ms and 53.283 / 34.659 ms. All four captures had decoded RGBA
+SHA-256 `69669ce6723134b6cc708257f2f5cdf28ee7bdfc5b3c81a2c31f6edb0075194e`.
+Executable SHA-256 was
+`4e72a5b6e67e7d2471438aa993130ee8e2347aea2980f563483011e6419ae1ef`.
+Input hashes stayed fixed and the harness and guards exited zero.
+One-minute host load ranged from 99.44 to 99.97 on 18 CPUs. These
+timings cover image installation and Quartz replay.
+
+The new `--pattern-strokes-only` window check uses the shared fixture
+at 1× and 2×. The published `6209346d8` bundle, executable SHA-256
+`a92b702d32ab26cf7835f2d4b148a39c8cca22f7ca841ede9542820d4a24a034`,
+reproduced the failure at 1×. PID 83922 exited zero and the check found
+white at (1, 15), where the non-scaling stripe should paint green.
+The previous managed build rejected a header that changed during
+compilation. Candidate window pixels and production performance
+await a published bundle containing the change.
+
 ## Sharing the portable SVG fallback with Windows
 
 The standard Windows D3D11 window now uses the same CPU raster and GG texture
