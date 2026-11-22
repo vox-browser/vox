@@ -499,12 +499,19 @@ fn test_scroll_raster_content_damage_covers_only_changed_commands() {
 	assert (scroll_raster_content_damage(&previous, entering, 7, 10, 200, 200, mut stats) or {
 		panic('entering content must reconcile')
 	}).len == 0
-	// Reordered content, unbounded changes, other documents and absent
-	// frames all need complete replay.
+	// Unbounded changes, other documents and absent frames need complete
+	// replay; reordered content does too under its same-binary control
+	// (raster_order_damage.v), and is otherwise damaged where it moved.
 	reordered := scroll_raster_frame_keys([layout.PaintCommand{ ...other, transform: scrolled },
 		layout.PaintCommand{ ...base, transform: scrolled }], 10, 1, 1024, 768)
-	assert scroll_raster_content_damage(&previous, reordered, 7, 10, 200, 200, mut stats) == none
-	assert stats.fallback == 'paint-order-changed'
+	if retain_paint_order_fallback {
+		assert scroll_raster_content_damage(&previous, reordered, 7, 10, 200, 200, mut stats) == none
+		assert stats.fallback == 'paint-order-changed'
+	} else {
+		assert (scroll_raster_content_damage(&previous, reordered, 7, 10, 200, 200, mut stats) or {
+			panic('reordered content must reconcile')
+		}).len > 0
+	}
 	unbounded := scroll_raster_frame_keys([layout.PaintCommand{ ...base, transform: scrolled },
 		layout.PaintCommand{ ...other, transform: scrolled },
 		layout.PaintCommand{ kind: 'draw_text', text: 'late' }], 10, 1, 1024, 768)
