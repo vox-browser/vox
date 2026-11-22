@@ -11390,3 +11390,19 @@ replaced inline box could be painted from stale lines; `923d3d3d4` carries
 only those outside the relayout roots. The GitHub hydration passes still
 run complete (large roots, plain-block ancestry), so these did not change its
 totals.
+
+**Validated state.** The tighter backdrop read region (`3a8b525dc`) and the
+group-end ink fix (`3af83c53e`) keep the expected capture. Damaging
+reordered commands instead of the paint-order fallback (`e2463b19b`,
+reapplied as `23e225131`) left 273 stale skeleton pixels in most captures
+and was reverted twice (`9d93490d5`, `c79c319c6`). Same-binary cohort on
+bundle `1960b37b1aa9` (6 alternating pairs, host load 5.3-6.1):
+
+| Arm | Median | Range | Pixels vs Brave reference |
+|---|---:|---:|---:|
+| current | 22.455B | 22.303-22.844B | 2 in every run |
+| `VOX_RETAIN_BACKDROP_RASTER_REJECTION=1` | 23.778B | 22.709-24.721B | 2 in every run |
+| Brave | 20.456B | 19.993-20.604B | 0 |
+
+The median ratio to Brave is 1.10; the conservative highest-Vox to
+lowest-Brave ratio is 1.14.
