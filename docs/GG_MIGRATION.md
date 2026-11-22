@@ -1936,7 +1936,8 @@ library, and fixture identities stayed fixed throughout each check.
 | 1× | `d6622793fba70b659ebca02d099ee76725458b58e5f5e757c1e16fe5f9171d8d` |
 | 2× | `d69c9f35ee7630d60fbf6c40f14e5070060d4bf470202899edb46286da1993fa` |
 
-Production frame timings and Windows runtime pixels remain unmeasured
+The [Windows D3D11 check](#d3d11-svg-pattern-runtime-verification)
+also passed this fixture. Production frame timings remain unmeasured
 for this change.
 
 ## Sharing the portable SVG fallback with Windows
@@ -1963,9 +1964,52 @@ with SHA-256
 `21f77d647e14e0d051f45d7458c6d4a5850c8369ec139297a83a4d7759e08725`.
 The PE calls the shared fill and raster stroke routines. The smoke driver
 cross-compiled with warnings treated as errors, and the Windows OpenGL
-source check passed. The Windows VM's disk reserve
-requires 5 GiB of free host storage. The host had about 1.6 GiB free, so
-Windows pixel and timing checks remain pending.
+source check passed. The host had about 1.6 GiB free against the
+Windows VM's 5 GiB disk reserve, so runtime validation was deferred.
+
+### D3D11 SVG pattern runtime verification
+
+The Windows build initially failed because MinGW's `struct stat` lacks
+the POSIX nanosecond timestamp fields. Commit `e41f390e6` compiles that
+helper only on non-Windows targets. The Windows V path already skips
+the file identity shortcut. A focused check passed on macOS and the
+same header compiled with MinGW and warnings treated as errors.
+
+The guarded x86-64 D3D11 console build passed using V `d79ca45`, MinGW
+GCC 16.2.0 and single-unit C `-prod -no-prod-options`. The executable
+SHA-256 was
+`2ffa52cfa1b4aa39d921123f2ca81e3ab668552acdaa4c9bd42f43d151463a1b`.
+Its symbol table includes the portable SVG group rasterizer, pattern
+painter, and stroke rasterizer. The build and guard exited zero, with
+a sampled peak of 9,865,609,216 bytes under the 12 GiB limit. The
+canonical checkout also contained concurrent edits outside this change.
+
+The build ran in the Windows 11 x86-64 QEMU desktop. The first task
+stalled in its PowerShell launcher before reaching Vox. A batch
+launcher then ran the same binary twice with fresh private profiles
+and caches, using the shared non-scaling SVG pattern fixture. The
+capture waited for JavaScriptCore to apply the live vector-effect
+edit. Both runs exercised the alpha and luminance mask paths.
+
+| Mode | Browser PID | Browser and guard exit | Peak job committed bytes | SVG group cache hits |
+| --- | ---: | ---: | ---: | ---: |
+| Cached | 3552 | 0 | 482,746,368 | 78 |
+| Uncached | 5028 | 0 | 493,244,416 | 0 |
+
+The 3 GiB guest guards and the host pixel verifier passed. Each
+800 × 600 capture matched all 21 expected color samples within one
+channel level. The document marker was at row 60, and the 800 × 516
+document regions matched pixel for pixel. Their decoded RGBA SHA-256
+was `2605d2fb7a85e569161f02409ea0bd7913da3834a89cff3d4472602710829184`.
+The RGB SHA-256 matched the earlier Linux captures of the same fixture
+(`ffc01f015a05c64070946775265276eb0e852daab9e53a8212dc2db2908ecef2`).
+
+Guest file hashes before and after the runs matched the host
+executable, test guard, fixture, and JavaScriptCore DLL. The DLL
+SHA-256 was `1a0a0428b724cf2c2e15982a1199f37186cdcfad90f89892620737a181c9b7fe`.
+These results cover D3D11 rendering and cache behavior in the guest.
+Hardware frame timings and OpenGL Canvas runtime remain unverified
+for this build.
 
 ## Replaying packed SVG circles and ellipses
 
