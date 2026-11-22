@@ -83,8 +83,6 @@ mut:
 	valid    bool
 	document u64
 	paint_generation u64
-	// raster_font_generation.v
-	font_generation u64
 	scroll   f64
 	width    f64
 	height   f64
@@ -792,10 +790,6 @@ fn scroll_raster_frame_keys_with_scrollbars(commands []layout.PaintCommand, scro
 			} else if rect := group {
 				key.has_ink = true
 				key.ink = rect
-			}
-			// An end matches only the end of the same group (raster_group_end_ink.v).
-			if !retain_shared_group_end_keys {
-				key.hash = srk_mix(key.hash, keys[begin].hash)
 			}
 			keys[index] = key
 			if begins.len > 0 {

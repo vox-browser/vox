@@ -126,7 +126,6 @@ fn (mut app BrowserApp) begin_scroll_raster() ScrollRasterDamage {
 		app.scroll_raster_content_eligible = eligible
 		mut keys := []ScrollRasterCommandKey{}
 		mut rects := []layout.LayoutRect{}
-		font_generation := app.scroll_raster_font_generation()
 		// Reuse requires the content diff to reconcile this frame with the
 		// retained one: it is the only path that repaints content which does
 		// not translate with the viewport, such as fixed or sticky boxes.
@@ -139,9 +138,6 @@ fn (mut app BrowserApp) begin_scroll_raster() ScrollRasterDamage {
 			app.mark_background_image_keys(mut keys)
 			if disable_scroll_raster_content_damage {
 				stats.fallback = 'content-damage-disabled'
-			} else if !retain_font_blind_raster_reuse
-				&& app.scroll_raster_keys.font_generation != font_generation {
-				stats.fallback = 'font-generation'
 			} else if content := scroll_raster_content_damage(&app.scroll_raster_keys, keys,
 				document_id, key_scroll, css.width, css.height, mut stats)
 			{
@@ -229,7 +225,6 @@ fn (mut app BrowserApp) begin_scroll_raster() ScrollRasterDamage {
 				valid:    true
 				document: document_id
 				paint_generation: app.paint_generation
-				font_generation: font_generation
 				scroll:   key_scroll
 				width:    css.width
 				height:   css.height
