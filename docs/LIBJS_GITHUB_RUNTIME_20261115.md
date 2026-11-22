@@ -11555,3 +11555,19 @@ JSC tier-up thresholds are not a lever: an earlier Baseline JIT
 22.36B against 20.76B default (5 runs each); a later JIT and a disabled DFG
 stayed within noise of the default (20.65B, 20.35B vs 20.19B).
 
+**Per-frame plan and replay costs.** `c4e5cd82f` asks the damage plan
+before culling a leaf (a reused frame skipped about 890 of 910 commands
+only after computing each one's ink bounds; `VOX_CULL_DAMAGE_SKIPPED_LEAVES`).
+`f55a26f30` split layerization: hit-test metadata collection was 4.0M of
+the 6.6M plan, chunk construction 1.4M. `cc266556e` resolves each box's
+clip, compositor effect scope and paint client once per layerization
+(`VOX_DISABLE_RASTER_PLAN_MEMOS`): metadata 4.0M -> 2.7M, chunks 1.4M ->
+1.0M, plan 6.6-7.4M -> 5.7-6.4M per recording (stage-logged). A 7-pair
+cohort with both switches as control could not resolve these frame-level
+savings (candidate 20.976B, control 20.727B, Brave 20.621B; pair deltas
+-0.26 to +0.88B, 2 px in every Vox run); the spread between cohorts on the
+same bundles is larger than the effect.
+
+JavaScript reads of `offsetWidth` force layout for 47 sampled
+milliseconds per load, 28 of them geometry and 4 paint projection.
+
