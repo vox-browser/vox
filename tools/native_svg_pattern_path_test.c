@@ -16,18 +16,20 @@ static bool painted(const Surface surface, int x, int y) {
 }
 
 static void render(Surface surface, CGColorSpaceRef color_space, CGImageRef image,
-    CGPathRef path, const NativeSVGPatternStroke *stroke, bool even_odd) {
+    CGPathRef path, const NativeSVGPatternStroke *stroke, bool even_odd, CGFloat scale) {
     CGContextRef ctx = CGBitmapContextCreate(surface, width, height, 8, row_bytes,
         color_space, kCGImageAlphaPremultipliedLast | kCGBitmapByteOrder32Big);
     assert(ctx);
     CGContextSetRGBFillColor(ctx, 1, 1, 1, 1);
     CGContextFillRect(ctx, CGRectMake(0, 0, width, height));
     CGContextSetShouldAntialias(ctx, false);
-    CGAffineTransform to_canvas = CGAffineTransformMake(2, 0, 0, -2, 12, 48);
+    CGContextScaleCTM(ctx, scale, scale);
+    CGAffineTransform to_canvas = CGAffineTransformMake(2, 0, 0, -2, 12, 48 / scale);
     CGAffineTransform pattern = CGAffineTransformMakeTranslation(3, 2);
     native_draw_svg_pattern_tile(ctx, path, even_odd, to_canvas, image,
         CGRectMake(3, 1, 12, 12), pattern, 0.5, stroke);
-    assert(CGAffineTransformIsIdentity(CGContextGetCTM(ctx)));
+    assert(CGAffineTransformEqualToTransform(CGContextGetCTM(ctx),
+        CGAffineTransformMakeScale(scale, scale)));
     CGContextRelease(ctx);
 }
 
@@ -94,16 +96,16 @@ int main(void) {
         .non_scaling = true, .dashes = dashes, .dash_count = 2, .dash_offset = 4,
     };
     Surface fill, non_scaling, scaling, solid, no_offset;
-    render(fill, color_space, image, rectangle, NULL, false);
-    render(non_scaling, color_space, image, line, &stroke, false);
+    render(fill, color_space, image, rectangle, NULL, false, 1);
+    render(non_scaling, color_space, image, line, &stroke, false, 1);
     stroke.non_scaling = false;
-    render(scaling, color_space, image, line, &stroke, false);
+    render(scaling, color_space, image, line, &stroke, false, 1);
     stroke.dash_count = 0;
-    render(solid, color_space, image, line, &stroke, false);
+    render(solid, color_space, image, line, &stroke, false, 1);
     stroke.non_scaling = true;
     stroke.dash_count = 2;
     stroke.dash_offset = 0;
-    render(no_offset, color_space, image, line, &stroke, false);
+    render(no_offset, color_space, image, line, &stroke, false, 1);
 
     // The first 14 host pixels are painted after the four-pixel phase.
     // The scaling stroke evaluates the same phase in path coordinates.
@@ -126,17 +128,32 @@ int main(void) {
     }
     assert(memcmp(pixel(fill, 23, 48), pixel(fill, 32, 48), 4) != 0);
 
+    NativeSVGPatternStroke retina_geometry = stroke;
+    retina_geometry.backing_scale = 2;
+    retina_geometry.dash_offset = 4;
+    Surface retina_fill, retina_stroke;
+    render(retina_fill, color_space, image, rectangle, NULL, false, 2);
+    render(retina_stroke, color_space, image, line, &retina_geometry, false, 2);
+    for (int y = 41; y < 55; ++y) {
+        assert(painted(retina_stroke, 50, y) == (y >= 45 && y < 51));
+    }
+    assert(!painted(retina_stroke, 43, 48) && painted(retina_stroke, 44, 48));
+    assert(painted(retina_stroke, 57, 48) && !painted(retina_stroke, 58, 48));
+    assert(!painted(retina_stroke, 67, 48) && painted(retina_stroke, 68, 48));
+    for (int x = 44; x < 58; ++x)
+        assert(memcmp(pixel(retina_stroke, x, 48), pixel(retina_fill, x, 48), 4) == 0);
+
     CGMutablePathRef hole = CGPathCreateMutableCopy(rectangle);
     CGPathAddRect(hole, NULL, CGRectMake(5, -3, 15, 6));
     Surface even_odd;
-    render(even_odd, color_space, image, hole, NULL, true);
+    render(even_odd, color_space, image, hole, NULL, true, 1);
     assert(!painted(even_odd, 26, 48) && painted(even_odd, 60, 48));
 
     const CGFloat dotted[] = {0, 8};
     stroke.dashes = dotted;
     stroke.cap = kCGLineCapRound;
     Surface dots;
-    render(dots, color_space, image, line, &stroke, false);
+    render(dots, color_space, image, line, &stroke, false, 1);
     assert(painted(dots, 22, 48) && !painted(dots, 26, 48) && painted(dots, 30, 48));
 
     CGPathRelease(hole);

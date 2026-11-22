@@ -2,6 +2,7 @@
 #define VOX_NATIVE_SVG_PATTERN_PATH_DARWIN_H
 
 #include <CoreGraphics/CoreGraphics.h>
+#include <math.h>
 #include <stdbool.h>
 #include <stdlib.h>
 
@@ -16,6 +17,37 @@ static inline void native_set_svg_resource_dashes(CGContextRef context,
     if (lengths != local) free(lengths);
 }
 
+static inline void native_set_svg_resource_stroke(CGContextRef context, CGFloat width,
+    int cap, int join, CGFloat miter, const float *dashes, int count, float offset) {
+    CGContextSetLineWidth(context, width > 0 ? width : 0);
+    CGContextSetLineCap(context, cap == 1 ? kCGLineCapRound
+        : cap == 2 ? kCGLineCapSquare : kCGLineCapButt);
+    CGContextSetLineJoin(context, join == 1 ? kCGLineJoinRound
+        : join == 2 ? kCGLineJoinBevel : kCGLineJoinMiter);
+    CGContextSetMiterLimit(context, miter > 1 ? miter : 1);
+    native_set_svg_resource_dashes(context, dashes, count, offset);
+}
+
+static inline CGFloat native_svg_mask_device_scale(CGContextRef context) {
+    // Mask bitmaps and their opacity children share this uniform backing scale.
+    CGFloat scale = CGContextGetCTM(context).a;
+    return isfinite(scale) && scale > 0 ? scale : 1;
+}
+
+// The caller saves graphics state. Build the centerline in backing pixels,
+// where both the line width and the dash lengths will be applied.
+static inline bool native_add_svg_host_stroke_path(CGContextRef context,
+    CGPathRef path, CGAffineTransform to_canvas, CGFloat scale) {
+    CGAffineTransform to_pixels = CGAffineTransformConcat(to_canvas,
+        CGAffineTransformMakeScale(scale, scale));
+    CGPathRef geometry = CGPathCreateCopyByTransformingPath(path, &to_pixels);
+    if (!geometry) return false;
+    if (scale != 1) CGContextScaleCTM(context, 1 / scale, 1 / scale);
+    CGContextAddPath(context, geometry);
+    CGPathRelease(geometry);
+    return true;
+}
+
 typedef struct {
     CGFloat width;
     CGLineCap cap;
@@ -25,6 +57,7 @@ typedef struct {
     const CGFloat *dashes;
     size_t dash_count;
     CGFloat dash_offset;
+    CGFloat backing_scale;
 } NativeSVGPatternStroke;
 
 static inline void native_draw_svg_pattern_tile(CGContextRef destination,
@@ -32,15 +65,18 @@ static inline void native_draw_svg_pattern_tile(CGContextRef destination,
     CGRect tile, CGAffineTransform pattern_transform, CGFloat opacity,
     const NativeSVGPatternStroke *stroke) {
     bool host_space = stroke && stroke->non_scaling;
-    CGPathRef geometry = path;
-    if (host_space) {
-        geometry = CGPathCreateCopyByTransformingPath(path, &to_canvas);
-        if (!geometry) return;
-    }
     CGContextSaveGState(destination);
-    if (!host_space) CGContextConcatCTM(destination, to_canvas);
-    CGContextAddPath(destination, geometry);
-    if (host_space) CGPathRelease(geometry);
+    CGFloat scale = 1;
+    if (host_space) {
+        if (stroke->backing_scale > 0) scale = stroke->backing_scale;
+        if (!native_add_svg_host_stroke_path(destination, path, to_canvas, scale)) {
+            CGContextRestoreGState(destination);
+            return;
+        }
+    } else {
+        CGContextConcatCTM(destination, to_canvas);
+        CGContextAddPath(destination, path);
+    }
     if (stroke) {
         CGContextSetLineWidth(destination, stroke->width);
         CGContextSetLineCap(destination, stroke->cap);
@@ -60,7 +96,10 @@ static inline void native_draw_svg_pattern_tile(CGContextRef destination,
 
     // The stroke may use host coordinates. The tiles always follow the path's
     // original transform and their own pattern transform.
-    if (host_space) CGContextConcatCTM(destination, to_canvas);
+    if (host_space) {
+        if (scale != 1) CGContextScaleCTM(destination, scale, scale);
+        CGContextConcatCTM(destination, to_canvas);
+    }
     CGContextSetAlpha(destination, opacity);
     CGContextSetInterpolationQuality(destination, kCGInterpolationNone);
     CGContextConcatCTM(destination, pattern_transform);
