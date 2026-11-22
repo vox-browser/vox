@@ -11406,3 +11406,20 @@ bundle `1960b37b1aa9` (6 alternating pairs, host load 5.3-6.1):
 
 The median ratio to Brave is 1.10; the conservative highest-Vox to
 lowest-Brave ratio is 1.14.
+
+**Raster layers in retained-raster keys.** The one full replay left per load
+was the paint-order fallback when the sponsor button's `pulse-in` animation
+ended: its effect layer left the display list, and the header buttons'
+equal group ends matched the removed end out of order. Removing that
+replay exposed 273 stale pixels on the branch button. The animation had
+given the heart a Chromium raster layer of its own and moved the following
+button into another layer, so the button rasterized with a different
+origin and phase, yet its key did not change; the fallback's full replay
+had been repainting it. `573ac81e5` mixes each command's raster-layer
+signature into its key (`VOX_RETAIN_LAYER_BLIND_RASTER_KEYS`), which
+repaints moved commands and also separates the ends, so the animation's end
+now repaints only what changed. `0e132a3d6` additionally keys each group end
+by its begin (`VOX_RETAIN_SHARED_GROUP_END_KEYS`); on this page it is neutral
+(8 pairs: 22.101B vs 22.134B median). Cohort on bundle `fca5a9cf1543`: Vox
+about 22.1B, Brave 20.63B median (6 runs, 20.40-20.86B); every Vox capture
+2 pixels from the Brave reference.
