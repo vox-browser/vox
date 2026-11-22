@@ -504,13 +504,51 @@ requestAnimationFrame(() => requestAnimationFrame(() => {
     assert rows[120][edge:edge + 3] != before_rows[120][edge:edge + 3]
 
 
+def check_non_scaling_pattern_tiles(binary, fixture, directory):
+    white, green, blue, half = (255, 255, 255), (0, 255, 0), (0, 0, 255), (127, 127, 255)
+    for scale in (1, 2):
+        settings = dict(VOX_SHARED_SVG_MASK_RASTER="0", VOX_GG_SVG_DIAGNOSTICS="1",
+                        VOX_CAPTURE_READY_SELECTOR="body[data-mask-tile-width-ready]",
+                        LADYBIRD_SCREENSHOT_SCALE=str(scale))
+        data, log = capture_document(binary, fixture, directory / f"pattern-strokes-{scale}x",
+                                     settings, ["--enable-javascript", "--js-engine=javascriptcore"])
+        width, height, channels, rows = rendered_png_rows(data)
+        assert (width, height) == (1024 * scale, 600 * scale)
+        assert rows[4 * scale][4 * scale * channels:4 * scale * channels + 3] == bytes.fromhex("34b786")
+        center = 10 * scale
+        samples = [
+            (1, center - 4, white), (1, center - 3, green), (1, center + 2, green),
+            (1, center + 3, white), (5, center, white), (10, center, green),
+            (20 * scale + 1, center, green), (130 * scale, 30 * scale - 3, blue),
+            (130 * scale, 30 * scale + 3, white), (176 * scale, 30 * scale, half),
+        ]
+        if scale == 1:
+            samples.extend(((320, 10, blue), (326, 10, white), (325, 15, white), (330, 20, blue)))
+        for x, y, expected in samples:
+            row = rows[8 * scale + y]
+            actual = tuple(row[x * channels:x * channels + 3])
+            assert all(abs(a - b) <= 2 for a, b in zip(actual, expected)), (scale, x, y, actual, expected)
+        misses = set(re.findall(r"^VOX_SHARED_SVG_TILE cache=miss key=(\d+) ", log, re.MULTILINE))
+        assert len(misses) >= 3 and "0" not in misses, log
+    print("PASS: macOS shared SVG tile pixels and live vector effect")
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("binary", type=Path)
+    parser.add_argument("--pattern-strokes-only", action="store_true")
     args = parser.parse_args()
     binary = args.binary.resolve()
     root = Path(__file__).resolve().parents[1]
     fixture = root / "Tests/Browser/Native/svg-gradient-masks.html"
+    if args.pattern_strokes_only:
+        pattern = fixture.with_name("svg-pattern-tile-non-scaling-strokes.html")
+        inputs = [binary, pattern, *binary.parent.glob("lib*.dylib")]
+        digests = {path: digest(path) for path in inputs}
+        with tempfile.TemporaryDirectory(prefix="vox-svg-pattern-") as temporary:
+            check_non_scaling_pattern_tiles(binary, pattern, Path(temporary))
+        assert {path: digest(path) for path in inputs} == digests
+        return
     mutation = fixture.with_name("svg-gradient-mask-mutation.html")
     vertical = fixture.with_name("svg-vertical-alpha-masks.html")
     luminance = fixture.with_name("svg-linear-luminance-masks.html")

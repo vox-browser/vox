@@ -1,0 +1,49 @@
+module main
+
+import math
+import painting
+
+fn C.native_shared_svg_pattern_scale(i32) f64
+fn C.native_reuse_shared_svg_pattern_tile(u64) i32
+fn C.native_install_shared_svg_pattern_tile(u64, &u8, u64, i32, i32) i32
+
+fn (mut app BrowserApp) prepare_shared_svg_pattern_tile(style &painting.SVGPatternPaintStyle,
+	transform [6]f64, content_mask bool) bool {
+	list := style.tile_display_list or { return false }
+	if list.operations.len > 64 || !list.operations.any(it.has_stroke && it.non_scaling_stroke)
+		|| !portable_svg_mask_pattern_supported(style) || list.operations.any(it.kind == .image) {
+		return false
+	}
+	scale := C.native_shared_svg_pattern_scale(i32(content_mask))
+	if !(scale > 0 && math.is_finite(scale)) { return false }
+	// The bitmap uses the device metric. Its placement in the document does
+	// not affect the tile pixels, including when a cached tile scrolls.
+	device := portable_device_transform(transform, 0, 0, scale)
+	matrix := [f32(device.a), f32(device.b), f32(device.c), f32(device.d), 0, 0]!
+	if !matrix.all(math.is_finite(f64(it))) { return false }
+	mut key := u64(0)
+	if style.cache_key != 0 {
+		key = style.cache_key ^ u64(0x73766774696c6573)
+		for axis in 0 .. 4 {
+			key = (key ^ u64(math.f32_bits(matrix[axis]))) * u64(1099511628211)
+		}
+		if C.native_reuse_shared_svg_pattern_tile(key) != 0 {
+			if portable_svg_raster_diagnostics { eprintln('VOX_SHARED_SVG_TILE cache=hit key=${key}') }
+			return true
+		}
+	}
+	mut budget := PortableSVGMaskTileBudget{}
+	// Keep the paint's RGBA. The destination mask resolves luminance or alpha
+	// after it composites the completed tile.
+	raster := app.raster_svg_mask_pattern(style, matrix, true, mut budget) or { return false }
+	tile := raster.pattern
+	cache_key := if raster.cacheable { key } else { u64(0) }
+	if C.native_install_shared_svg_pattern_tile(cache_key, tile.pixels.data,
+		u64(tile.pixels.len), i32(tile.width), i32(tile.height)) == 0 {
+		return false
+	}
+	if portable_svg_raster_diagnostics {
+		eprintln('VOX_SHARED_SVG_TILE cache=miss key=${cache_key} tile=${tile.width}x${tile.height}')
+	}
+	return true
+}

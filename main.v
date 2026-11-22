@@ -4750,13 +4750,18 @@ fn (mut app BrowserApp) draw_native_svg_pattern_path(path_data []f32, even_odd b
 			page_x, page_y, scroll_y, canvas_height, style, opacity) {
 			return
 		}
-		// Pattern tiles are fixed-size rasters. Include the scale accumulated by
-		// the target's visual-context chain so transformed ancestors do not
-		// magnify a low-resolution tile.
-		content_scale_x := math.max(math.sqrt(matrix[0] * matrix[0] + matrix[1] * matrix[1]), 1.0)
-		content_scale_y := math.max(math.sqrt(matrix[2] * matrix[2] + matrix[3] * matrix[3]), 1.0)
-		C.native_begin_svg_pattern_tile(style.cache_key, f32(tile.width), f32(tile.height), f32(content_scale_x), f32(content_scale_y))
-		if display_list := style.tile_display_list {
+		mut native_recording := style.tile_display_list
+		if app.prepare_shared_svg_pattern_tile(style, matrix, content_mask) {
+			native_recording = none
+		} else {
+			// Include the scale accumulated by the target's visual context
+			// so transformed ancestors do not magnify a low-resolution tile.
+			content_scale_x := math.max(math.sqrt(matrix[0] * matrix[0] + matrix[1] * matrix[1]), 1.0)
+			content_scale_y := math.max(math.sqrt(matrix[2] * matrix[2] + matrix[3] * matrix[3]), 1.0)
+			C.native_begin_svg_pattern_tile(style.cache_key, f32(tile.width), f32(tile.height),
+				f32(content_scale_x), f32(content_scale_y))
+		}
+		if display_list := native_recording {
 			for operation in display_list.operations {
 				match operation.kind {
 					.begin_filter {

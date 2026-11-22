@@ -6319,14 +6319,45 @@ typedef struct {
 	uint64_t key;
 	CGContextRef context;
 	CGImageRef image;
-	float width;
-	float height;
 } NativeSVGPatternBuild;
 
 static NativeSVGPatternCacheEntry native_svg_pattern_cache[NATIVE_SVG_PATTERN_CACHE_SIZE];
 static NativeSVGPatternBuild native_svg_pattern_stack[NATIVE_SVG_PATTERN_STACK_SIZE];
 static int native_svg_pattern_stack_depth;
 static uint64_t native_svg_pattern_cache_clock;
+
+static CGImageRef native_retain_cached_svg_pattern_tile(uint64_t key) {
+	native_svg_pattern_cache_clock++;
+	for (int index = 0; index < NATIVE_SVG_PATTERN_CACHE_SIZE; ++index) {
+		NativeSVGPatternCacheEntry *entry = &native_svg_pattern_cache[index];
+		if (entry->image != NULL && entry->key == key) {
+			entry->last_use = native_svg_pattern_cache_clock;
+			return CGImageRetain(entry->image);
+		}
+	}
+	return NULL;
+}
+
+double native_shared_svg_pattern_scale(int32_t content_mask) {
+	// Nested pattern destinations already rasterize into a tile. Their final
+	// device metric also depends on the surrounding pattern.
+	if (native_svg_pattern_stack_depth != 0) return 0;
+	if (content_mask) {
+		if (native_svg_clip_build_context == NULL || native_svg_clip_image != NULL) return 0;
+		return native_svg_mask_device_scale(native_svg_clip_build_context);
+	}
+	return native_svg_mask_backing_scale();
+}
+
+int32_t native_reuse_shared_svg_pattern_tile(uint64_t key) {
+	if (key == 0 || native_svg_pattern_stack_depth != 0) return 0;
+	CGImageRef image = native_retain_cached_svg_pattern_tile(key);
+	if (image == NULL) return 0;
+	native_svg_pattern_stack[native_svg_pattern_stack_depth++] = (NativeSVGPatternBuild){
+		.key = key, .image = image,
+	};
+	return 1;
+}
 
 static CGContextRef native_svg_pattern_context(void) {
 	if (native_css_filter_stack_depth > 0) {
@@ -6429,8 +6460,6 @@ void native_begin_svg_pattern_tile(unsigned long long input_key, float tile_widt
 		return;
 	}
 	NativeSVGPatternBuild build = { 0 };
-	build.width = tile_width;
-	build.height = tile_height;
 	CGFloat backing_scale = native_svg_mask_backing_scale();
 	content_scale_x = isfinite(content_scale_x) && content_scale_x > 0.0f
 		? content_scale_x : 1.0f;
@@ -6444,15 +6473,10 @@ void native_begin_svg_pattern_tile(unsigned long long input_key, float tile_widt
 	key = native_svg_clip_hash_float(key, tile_width);
 	key = native_svg_clip_hash_float(key, tile_height);
 	build.key = key;
-	native_svg_pattern_cache_clock++;
-	for (int index = 0; index < NATIVE_SVG_PATTERN_CACHE_SIZE; ++index) {
-		if (native_svg_pattern_cache[index].image != NULL
-			&& native_svg_pattern_cache[index].key == key) {
-			native_svg_pattern_cache[index].last_use = native_svg_pattern_cache_clock;
-			build.image = CGImageRetain(native_svg_pattern_cache[index].image);
-			native_svg_pattern_stack[native_svg_pattern_stack_depth++] = build;
-			return;
-		}
+	build.image = native_retain_cached_svg_pattern_tile(key);
+	if (build.image != NULL) {
+		native_svg_pattern_stack[native_svg_pattern_stack_depth++] = build;
+		return;
 	}
 	if (!isfinite(tile_width) || !isfinite(tile_height) || tile_width <= 0.0f
 		|| tile_height <= 0.0f) {
@@ -6614,6 +6638,18 @@ static void native_cache_svg_pattern_image(uint64_t key, CGImageRef image) {
 	native_svg_pattern_cache[slot].key = key;
 	native_svg_pattern_cache[slot].image = CGImageRetain(image);
 	native_svg_pattern_cache[slot].last_use = native_svg_pattern_cache_clock;
+}
+
+int32_t native_install_shared_svg_pattern_tile(uint64_t key, const uint8_t *pixels,
+	uint64_t length, int32_t width, int32_t height) {
+	if (native_svg_pattern_stack_depth != 0) return 0;
+	CGImageRef image = native_copy_svg_pattern_rgba(pixels, length, width, height);
+	if (image == NULL) return 0;
+	if (key != 0) native_cache_svg_pattern_image(key, image);
+	native_svg_pattern_stack[native_svg_pattern_stack_depth++] = (NativeSVGPatternBuild){
+		.key = key, .image = image,
+	};
+	return 1;
 }
 
 void native_finish_svg_pattern_path(const float *data, int segment_count,

@@ -4,7 +4,29 @@
 #include <CoreGraphics/CoreGraphics.h>
 #include <math.h>
 #include <stdbool.h>
+#include <stdint.h>
 #include <stdlib.h>
+
+static inline CGImageRef native_copy_svg_pattern_rgba(const uint8_t *pixels, uint64_t length,
+    int32_t width, int32_t height) {
+    if (!pixels || width <= 0 || height <= 0 || width > 8191 || height > 8191) return NULL;
+    size_t pitch = (size_t)width * 4;
+    if (length != pitch * (size_t)height) return NULL;
+    // The paint buffer belongs to a V frame arena. Keep an owned copy for
+    // deferred Quartz draws and for subsequent cache hits.
+    CFDataRef data = CFDataCreate(kCFAllocatorDefault, pixels, (CFIndex)length);
+    if (!data) return NULL;
+    CGDataProviderRef provider = CGDataProviderCreateWithCFData(data);
+    CFRelease(data);
+    if (!provider) return NULL;
+    CGColorSpaceRef color_space = CGColorSpaceCreateWithName(kCGColorSpaceSRGB);
+    CGImageRef image = color_space ? CGImageCreate(width, height, 8, 32, pitch, color_space,
+        kCGImageAlphaPremultipliedLast | kCGBitmapByteOrder32Big,
+        provider, NULL, false, kCGRenderingIntentDefault) : NULL;
+    if (color_space) CGColorSpaceRelease(color_space);
+    CGDataProviderRelease(provider);
+    return image;
+}
 
 static inline void native_set_svg_resource_dashes(CGContextRef context,
     const float *dashes, int count, float offset) {

@@ -73,6 +73,43 @@ static void check_resource_dashes(CGColorSpaceRef color_space) {
     CGContextRelease(ctx);
 }
 
+static void check_shared_pattern_pixels(CGColorSpaceRef color_space) {
+    uint8_t tile[] = {
+        255, 0, 0, 255, 0, 128, 0, 128,
+        0, 0, 255, 255, 0, 0, 0, 0,
+    };
+    assert(native_copy_svg_pattern_rgba(tile, sizeof(tile) - 1, 2, 2) == NULL);
+    assert(native_copy_svg_pattern_rgba(tile, sizeof(tile), 2, 0) == NULL);
+    CGImageRef image = native_copy_svg_pattern_rgba(tile, sizeof(tile), 2, 2);
+    assert(image);
+    memset(tile, 0, sizeof(tile));
+
+    Surface surface;
+    CGContextRef ctx = CGBitmapContextCreate(surface, width, height, 8, row_bytes,
+        color_space, kCGImageAlphaPremultipliedLast | kCGBitmapByteOrder32Big);
+    assert(ctx);
+    CGContextSetRGBFillColor(ctx, 1, 1, 1, 1);
+    CGContextFillRect(ctx, CGRectMake(0, 0, width, height));
+    CGPathRef bounds = CGPathCreateWithRect(CGRectMake(0, 0, 32, 32), NULL);
+    native_draw_svg_pattern_tile(ctx, bounds, false,
+        CGAffineTransformMake(1, 0, 0, -1, 0, height), image, CGRectMake(0, 0, 16, 16),
+        CGAffineTransformIdentity, 1, NULL);
+
+    const uint8_t red[] = {255, 0, 0, 255};
+    const uint8_t green[] = {127, 255, 127, 255};
+    const uint8_t blue[] = {0, 0, 255, 255};
+    const uint8_t white[] = {255, 255, 255, 255};
+    for (int x = 4; x < 32; x += 16) {
+        assert(memcmp(pixel(surface, x, height - 1 - 4), red, 4) == 0);
+        assert(memcmp(pixel(surface, x + 8, height - 1 - 4), green, 4) == 0);
+        assert(memcmp(pixel(surface, x, height - 1 - 12), blue, 4) == 0);
+        assert(memcmp(pixel(surface, x + 8, height - 1 - 12), white, 4) == 0);
+    }
+    CGPathRelease(bounds);
+    CGContextRelease(ctx);
+    CGImageRelease(image);
+}
+
 int main(void) {
     static const uint8_t tile[] = {
         255, 0, 0, 255, 0, 255, 0, 255, 0, 0, 255, 255,
@@ -80,6 +117,7 @@ int main(void) {
     };
     CGColorSpaceRef color_space = CGColorSpaceCreateWithName(kCGColorSpaceSRGB);
     check_resource_dashes(color_space);
+    check_shared_pattern_pixels(color_space);
     CGDataProviderRef provider = CGDataProviderCreateWithData(NULL, tile, sizeof(tile), NULL);
     CGImageRef image = CGImageCreate(3, 2, 8, 32, 12, color_space,
         kCGImageAlphaPremultipliedLast | kCGBitmapByteOrder32Big, provider, NULL,
