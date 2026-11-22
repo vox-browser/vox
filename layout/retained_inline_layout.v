@@ -2,6 +2,11 @@ module layout
 
 import css
 import dom
+import os
+
+// Same-binary control: generated content keeps every inline context it is in
+// on the uncached path.
+const disable_generated_inline_reuse = os.getenv('VOX_DISABLE_GENERATED_INLINE_REUSE') != ''
 
 struct RetainedInlineInput {
 	node           &Node
@@ -59,6 +64,13 @@ mut:
 // Reusing line layout requires a closed inline context: no floats, atomic
 // children, shifted positioned content, first-letter splits or clamp effects.
 // Other contexts continue through the ordinary formatting algorithm.
+// Whether the inline formatting context rooted at `box` can keep retained
+// lines between and within passes (tests and diagnostics).
+pub fn inline_context_inputs_are_retainable(box &Node) bool {
+	mut inputs := []RetainedInlineInput{}
+	return collect_retained_inline_inputs(box, true, mut inputs)
+}
+
 fn collect_retained_inline_inputs(node &Node, root bool, mut inputs []RetainedInlineInput) bool {
 	return collect_inline_inputs_with_measurement_roots(node, root, false, mut inputs)
 }
@@ -84,7 +96,12 @@ fn collect_inline_inputs_with_measurement_policy(node &Node, root bool,
 	if extended_roots && !root && inline_measurement_marker_is_external(node) { return true }
 	if marker_root && !root && !node.is_text_node() { return false }
 	computed := node.computed_values()
-	if ((node.is_generated_for_pseudo_element() || node.is_generated_text_node()) && !marker_root)
+	// Generated boxes and text from authored strings are validated like any
+	// other input: their text, style and place. Counters, quotes, attributes
+	// and images come from state outside the context.
+	generated := node.is_generated_for_pseudo_element() || node.is_generated_text_node()
+	if (generated && !marker_root && (disable_generated_inline_reuse
+		|| generated_content_uses_document_state(node)))
 		|| node.is_in_ua_internal_shadow_tree() || node.is_svg_box() || node.is_replaced_box()
 		|| node.is_floating() || !retained_layout_position_is_unshifted(node)
 		|| (node.is_list_item_box() && !(root && extended_roots))

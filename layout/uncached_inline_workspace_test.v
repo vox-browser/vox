@@ -37,7 +37,9 @@ fn test_uncached_inline_workspace_accepts_generated_shadow_text_and_plain_breaks
 	root := unsafe { &Node(container) }
 	assert inline_layout_workspace_is_closed(root, true)
 	mut inputs := []RetainedInlineInput{}
-	assert !collect_retained_inline_inputs(root, true, mut inputs)
+	// Generated text from an authored string is an input like any other.
+	assert collect_retained_inline_inputs(root, true, mut inputs) == !disable_generated_inline_reuse
+	inputs.clear()
 	text.is_generated_text_node_ = false
 	text.set_is_in_ua_internal_shadow_tree(true)
 	inputs.clear()
