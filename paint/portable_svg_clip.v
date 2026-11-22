@@ -15,8 +15,9 @@ struct PortableSVGMaskGroup {
 }
 
 struct SVGMaskViewport {
-	rect  painting.Rect
-	mixed bool
+	rect    painting.Rect
+	mixed   bool
+	rounded bool
 }
 
 fn portable_svg_mask_group(commands []layout.PaintCommand, start int, mask &layout.PaintClip) ?PortableSVGMaskGroup {
@@ -51,7 +52,8 @@ fn portable_svg_mask_group(commands []layout.PaintCommand, start int, mask &layo
 		if !portable_svg_group_path_supported(command, first, 1, mask) { return none }
 		if mask.is_svg_content_mask && voidptr(command.clip_list) != voidptr(first.clip_list) {
 			if svg_mask_viewport(base, command, mask.transform) != viewport
-				|| (viewport.mixed && !same_svg_mask_viewports(first.clip_list, command.clip_list)) {
+				|| ((viewport.mixed || viewport.rounded)
+				&& !same_svg_mask_viewports(first.clip_list, command.clip_list)) {
 				return none
 			}
 		}
@@ -63,9 +65,12 @@ fn svg_mask_viewport(viewport SVGMaskViewport, command &layout.PaintCommand,
 	mask_transform [6]f64) SVGMaskViewport {
 	mut intersection := viewport.rect
 	mut mixed := viewport.mixed
+	mut rounded := viewport.rounded
 	if command.clip_list != unsafe { nil } {
 		for clip in command.clip_list.items {
-			if clip.transform[1] != 0 || clip.transform[2] != 0 {
+			if clip.corner_radii != layout.BoxRadii{} {
+				rounded = true
+			} else if clip.transform[1] != 0 || clip.transform[2] != 0 {
 				if clip.transform == mask_transform {
 					// These rectangles share local coordinates.
 					rect := clip.rect
@@ -76,16 +81,21 @@ fn svg_mask_viewport(viewport SVGMaskViewport, command &layout.PaintCommand,
 			}
 		}
 	}
-	return SVGMaskViewport{intersection, mixed}
+	return SVGMaskViewport{intersection, mixed, rounded}
+}
+
+@[inline]
+fn same_svg_mask_viewport(first &layout.PaintClip, other &layout.PaintClip) bool {
+	return first.rect == other.rect && first.transform == other.transform
+		&& first.corner_radii == other.corner_radii
 }
 
 fn same_svg_mask_viewports(first &layout.PaintClipList, other &layout.PaintClipList) bool {
 	if first == unsafe { nil } || other == unsafe { nil } || first.items.len != other.items.len {
 		return false
 	}
-	for i, clip in first.items {
-		next := &other.items[i]
-		if clip.rect != next.rect || clip.transform != next.transform { return false }
+	for i in 0 .. first.items.len {
+		if !same_svg_mask_viewport(&first.items[i], &other.items[i]) { return false }
 	}
 	return true
 }
@@ -138,6 +148,10 @@ fn (mut app BrowserApp) draw_portable_svg_mask_group(commands []layout.PaintComm
 		} else {
 			corners := svg_mask_rect_corners(local, transform)
 			if !apply_portable_svg_mask_polygon(mut image, corners[..]) { return start }
+		}
+		if group.viewport.rounded && !apply_svg_mask_rounded_viewports(mut image, &commands[start],
+			&commands[start + 1], page_x, page_y, scale) {
+			return start
 		}
 	} else if !direct_crop && !apply_portable_svg_clip(mut image, mask.path_components, page_x, page_y, scale) {
 		return start

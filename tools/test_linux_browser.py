@@ -2253,8 +2253,23 @@ def check_svg_mask_mixed_viewport_browser(binary, artifacts, temporary):
     print("PASS: SVG mask regions clip against independently transformed viewports", flush=True)
 
 
-def check_transformed_svg_mask_browser(binary, artifacts, temporary, case, samples, expected_masks):
-    fixture = Path(__file__).resolve().parents[1] / f"Tests/Browser/Native/svg-mask-transformed-{case}.html"
+def check_svg_mask_rounded_viewport_browser(binary, artifacts, temporary):
+    blue, red, white, half = (0, 0, 255), (255, 0, 0), (255, 255, 255), (128, 128, 255)
+    samples = (
+        (24, 24, white), (27, 27, white), (30, 30, blue), (49, 22, blue),
+        (67, 49, red), (108, 62, white),
+        (328, 128, half), (313, 159, white), (320, 151, half), (381, 123, half),
+    )
+    check_transformed_svg_mask_browser(binary, artifacts, temporary, "rounded-viewport", samples, (
+        "luminance=false operations=1 paths=2 ", "luminance=true operations=3 paths=1 ",
+    ), fixture_name="svg-mask-rounded-viewport.html")
+    print("PASS: SVG masks preserve rounded viewport clips and live radius changes", flush=True)
+
+
+def check_transformed_svg_mask_browser(binary, artifacts, temporary, case, samples, expected_masks,
+                                       fixture_name=None):
+    fixture = Path(__file__).resolve().parents[1] / "Tests/Browser/Native" / (
+        fixture_name or f"svg-mask-transformed-{case}.html")
     documents = []
     for mode in ("cpu", "gg", "uncached"):
         label = f"{fixture.stem}-{mode}"
@@ -2760,6 +2775,7 @@ def main():
         check_svg_mask_transformed_region_browser(binary, artifacts, temporary)
         check_svg_mask_transformed_viewport_browser(binary, artifacts, temporary)
         check_svg_mask_mixed_viewport_browser(binary, artifacts, temporary)
+        check_svg_mask_rounded_viewport_browser(binary, artifacts, temporary)
         check_svg_mask_gradient_browser(binary, artifacts, temporary)
         check_svg_mask_gradient_spread_browser(binary, artifacts, temporary)
         check_svg_mask_strips_browser(binary, artifacts, temporary, "svg-vertical-alpha-masks",

@@ -21,8 +21,7 @@ fn portable_svg_group_clip_supported(command &layout.PaintCommand, mask ?&layout
 	}
 	if command.clip_list != unsafe { nil } {
 		for clip in command.clip_list.items {
-			if clip.corner_radii != layout.BoxRadii{} { return false }
-			if clip.transform[1] != 0 || clip.transform[2] != 0 {
+			if clip.corner_radii != layout.BoxRadii{} || clip.transform[1] != 0 || clip.transform[2] != 0 {
 				region := mask or { return false }
 				if !region.is_svg_content_mask { return false }
 			}
