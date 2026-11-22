@@ -625,6 +625,7 @@ pub fn (mut scope StyleScope) invalidate_rule_cache() {
 	scope.extendable_rule_cache_ = unsafe { nil }
 	scope.rule_cache_author_sheets_ = []&CSSStyleSheet{}
 	scope.rule_cache_author_sheet_indexes_ = []uint{}
+	scope.rule_cache_duplicate_groups_ = map[string]&DuplicateSheetGroup{}
 	scope.adopted_user_agent_only_shadow_cache_ = unsafe { nil }
 	scope.invalidate_counter_style_cache()
 	scope.rule_cache = none
@@ -757,6 +758,8 @@ struct RuleCacheBuildContext {
 	insights &SelectorInsights
 	style_sheet_index uint
 	fold_id_and_class_name_case bool
+	// The indexed rules of a sheet whose identical copies share them.
+	duplicate_group &DuplicateSheetGroup = unsafe { nil }
 mut:
 	rule_index uint
 }
@@ -799,6 +802,10 @@ fn style_scope_cache_style_rule(raw_context voidptr, rule &CSSRule) {
 			cascade_origin: cascade_origin
 			scope_rule: rule.parent_scope_rule()
 			container_rule: rule.parent_container_rule()
+		}
+		if context.duplicate_group != unsafe { nil } {
+			mut group := context.duplicate_group
+			group.rules << matching_rule
 		}
 
 		qualified_layer_name := matching_rule.qualified_layer_name()
@@ -880,6 +887,9 @@ fn style_scope_cache_keyframes_rule(context voidptr, rule &CSSRule) {
 
 pub fn (mut scope StyleScope) make_rule_cache_for_cascade_origin(cascade_origin CascadeOrigin, insights &SelectorInsights) {
 	sheets := scope.stylesheets_for_cascade_origin(cascade_origin)
+	// A complete build indexes its own copies; only an extension shares the
+	// groups of the build it extends.
+	if cascade_origin == .author { scope.rule_cache_duplicate_groups_ = map[string]&DuplicateSheetGroup{} }
 	// Only the order of sheet indexes matters to the cascade. A stride leaves
 	// room for sheets that rule_cache_extension.v inserts between them.
 	indexes := rule_cache_strided_indexes(sheets.len)
@@ -896,9 +906,33 @@ fn (mut scope StyleScope) cache_rules_of_sheets(cascade_origin CascadeOrigin, in
 	fold_id_and_class_name_case := if document := scope.document() { document.in_quirks_mode() } else { false }
 	mut mutable_insights := unsafe { &SelectorInsights(insights) }
 
+	identities, last_copy := duplicate_sheet_identities(cascade_origin, sheets)
 	for position, sheet in sheets {
 		style_sheet_index := indexes[position]
 		mut rule_caches := scope.rule_caches_for_origin_mut(cascade_origin) or { continue }
+		identity := identities[position]
+		mut duplicate_group := unsafe { &DuplicateSheetGroup(nil) }
+		if identity != '' {
+			if mut group := scope.rule_cache_duplicate_groups_[identity] {
+				// An identical copy is already indexed (by an earlier build this
+				// cache extends): match its rules at the latest copy's index.
+				if style_sheet_index > group.index {
+					for mut rule in group.rules { rule.style_sheet_index = style_sheet_index }
+					group.index = style_sheet_index
+				}
+				report_duplicate_style_sheet(sheet, 'shared', group.index)
+				sheet.for_each_effective_rule_with_context(.preorder, voidptr(rule_caches.main), style_scope_cache_keyframes_rule)
+				continue
+			}
+			if last_copy[identity] != position {
+				// A later copy among these sheets is indexed instead.
+				report_duplicate_style_sheet(sheet, 'skipped', style_sheet_index)
+				sheet.for_each_effective_rule_with_context(.preorder, voidptr(rule_caches.main), style_scope_cache_keyframes_rule)
+				continue
+			}
+			duplicate_group = &DuplicateSheetGroup{ index: style_sheet_index }
+			scope.rule_cache_duplicate_groups_[identity] = duplicate_group
+		}
 		mut context := RuleCacheBuildContext{
 			scope: &scope
 			rule_caches: rule_caches
@@ -907,6 +941,7 @@ fn (mut scope StyleScope) cache_rules_of_sheets(cascade_origin CascadeOrigin, in
 			insights: mutable_insights
 			style_sheet_index: style_sheet_index
 			fold_id_and_class_name_case: fold_id_and_class_name_case
+			duplicate_group: duplicate_group
 		}
 		sheet.for_each_effective_rule_with_context(.preorder, voidptr(&context), style_scope_cache_style_rule)
 

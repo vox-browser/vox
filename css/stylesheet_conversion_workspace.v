@@ -40,7 +40,9 @@ fn parse_css_stylesheet_in_workspace(params ParsingParams, text string, location
 			}
 			rules := CSSRuleList.create(parser.convert_rules(entry.rules))
 			media := media_list or { MediaList.create_empty() }
-			return CSSStyleSheet.create(rules, media, location)
+			mut sheet := CSSStyleSheet.create(rules, media, location)
+			sheet.source_syntax_id_ = entry.id
+			return sheet
 		}
 	}
 	$if prealloc {
@@ -58,7 +60,7 @@ fn parse_css_stylesheet_in_workspace(params ParsingParams, text string, location
 		raw := parser.parse_a_stylesheet(location)
 		scratch.leave()
 		defer { scratch.finish() }
-		if cache_rules { stylesheet_rule_cache_.store(text, raw.rules) }
+		syntax_id := if cache_rules { stylesheet_rule_cache_.store(text, raw.rules) } else { u64(0) }
 		parser.raw_rules_transient = true
 		parser.component_input_transient = true
 		parser.token_stream = ParserTokenStream{}
@@ -67,16 +69,20 @@ fn parse_css_stylesheet_in_workspace(params ParsingParams, text string, location
 		parser.declared_namespaces = params.declared_namespaces.clone()
 		rules := CSSRuleList.create(parser.convert_rules(raw.rules))
 		media := if provided := media_list { provided } else { MediaList.create_empty() }
-		return CSSStyleSheet.create(rules, media, location)
+		mut sheet := CSSStyleSheet.create(rules, media, location)
+		sheet.source_syntax_id_ = syntax_id
+		return sheet
 	}
 	mut parser := RuleSelectorParser.create_for_stylesheet(params, text)
 	parser.defer_style_declarations = deferred
 	if cache_rules {
 		raw := parser.parse_a_stylesheet(location)
-		stylesheet_rule_cache_.store(text, raw.rules)
+		syntax_id := stylesheet_rule_cache_.store(text, raw.rules)
 		rules := CSSRuleList.create(parser.convert_rules(raw.rules))
 		media := media_list or { MediaList.create_empty() }
-		return CSSStyleSheet.create(rules, media, location)
+		mut sheet := CSSStyleSheet.create(rules, media, location)
+		sheet.source_syntax_id_ = syntax_id
+		return sheet
 	}
 	return parser.parse_as_css_stylesheet(location, media_list)
 }

@@ -36,6 +36,7 @@ struct ExtendableRuleCache {
 	sheet_indexes []uint
 	font_policy   dom.FontRenderingPolicy
 	quirks        bool
+	duplicate_groups map[string]&DuplicateSheetGroup
 }
 
 fn rule_cache_sheet_is_empty(sheet &CSSStyleSheet) bool {
@@ -72,6 +73,7 @@ pub fn (mut scope StyleScope) invalidate_rule_cache_for_appended_sheet() {
 							sheet_indexes: scope.rule_cache_author_sheet_indexes_
 							font_policy:   scope.rule_cache_font_policy_
 							quirks:        document.in_quirks_mode()
+							duplicate_groups: scope.rule_cache_duplicate_groups_
 						}
 					}
 				}
@@ -196,6 +198,7 @@ fn (mut scope StyleScope) extend_rule_cache() bool {
 	scope.user_agent_rule_cache = previous.user_agent_rule_cache
 	scope.has_size_container_queries = previous.has_size_container_queries
 	scope.build_user_style_sheet_if_needed()
+	scope.rule_cache_duplicate_groups_ = saved.duplicate_groups
 	scope.cache_rules_of_sheets(.author, previous.selector_insights, appended, extension.added_indexes)
 	scope.build_qualified_layer_names_cache()
 	mut cache := &StyleCache{

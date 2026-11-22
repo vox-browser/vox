@@ -34,6 +34,7 @@ fn invalidation_for_deleted_style_rule(sheet &CSSStyleSheet, index u32) ?&StyleS
 }
 
 fn invalidate_owners_for_deleted_style_rule(mut sheet CSSStyleSheet, invalidation &StyleSheetInvalidationSet, previous_sheet_effects ?ShadowRootStylesheetEffects) bool {
+	note_style_sheet_content_mutation(sheet, .style_sheet_delete_rule)
 	sheet.did_match = none
 	sheet.invalidate_shared_style_cache()
 	if document := sheet.owning_document() {

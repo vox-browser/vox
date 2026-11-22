@@ -19,6 +19,9 @@ struct StylesheetRuleEntry {
 	rules   []Rule
 	nodes   int
 	storage &platform.RetainedArena = unsafe { nil }
+	// Never reused: sheets converted from entries with equal ids have equal
+	// source bytes (duplicate_style_sheets.v).
+	id u64
 mut:
 	last_used u64
 }
@@ -44,6 +47,7 @@ mut:
 	nodes        int
 	serial       u64
 	reported_hit bool
+	next_id      u64
 }
 
 __global stylesheet_rule_cache_ = StylesheetRuleCache{}
@@ -122,16 +126,18 @@ fn stylesheet_declaration_nodes(declarations []Declaration) int {
 
 // Called after ordinary syntax parsing, so an oversized candidate never
 // causes a second parse. No parser or author callback runs under the lock.
-fn (mut cache StylesheetRuleCache) store(input string, rules []Rule) {
-	if !cache.eligible(input) { return }
+// Returns the stored (or already published) entry's id, or 0 when the source
+// is not cached.
+fn (mut cache StylesheetRuleCache) store(input string, rules []Rule) u64 {
+	if !cache.eligible(input) { return 0 }
 	mut nodes := rules.len
 	for rule in rules { nodes += stylesheet_rule_nodes(rule) }
-	if nodes > cache.max_nodes { return }
+	if nodes > cache.max_nodes { return 0 }
 	cache.mutex.lock()
 	defer { cache.mutex.unlock() }
 	// Another parser or a cooperative checkpoint may already have published.
 	for entry in cache.entries {
-		if entry.input == input { return }
+		if entry.input == input { return entry.id }
 	}
 	for cache.entries.len > 0 && (cache.entries.len >= cache.max_entries
 		|| cache.source_bytes + input.len > cache.max_source_bytes
@@ -151,15 +157,18 @@ fn (mut cache StylesheetRuleCache) store(input string, rules []Rule) {
 	for rule in rules { owned_rules << own_transient_rule_tree(rule) }
 	allocation_scope.finish()
 	cache.serial++
+	cache.next_id++
 	cache.entries << &StylesheetRuleEntry{
 		input:     owned_input
 		rules:     owned_rules
 		nodes:     nodes
 		storage:   storage
+		id:        cache.next_id
 		last_used: cache.serial
 	}
 	cache.source_bytes += input.len
 	cache.nodes += nodes
+	return cache.next_id
 }
 
 // Caller holds the mutex. The cache drops only its lease; an active

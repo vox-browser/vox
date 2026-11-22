@@ -1856,6 +1856,12 @@ mut:
 	media_memo_document_ voidptr
 	media_memo_generation_ u64
 	media_memo_environment_ MediaEvaluationEnvironment
+	// duplicate_style_sheets.v: the cached rule syntax this sheet was converted
+	// from (0 when uncached), whether CSSOM has changed its contents since, and
+	// whether its contents permit sharing one indexed copy (0 unknown).
+	source_syntax_id_       u64
+	content_mutated_        bool
+	duplicate_contents_     u8
 }
 
 fn (rule &CSSRule) has_process_lifetime_sheet() bool {
@@ -2369,6 +2375,7 @@ fn apply_style_sheet_shadow_root_effects(host &dom.Element, shadow_root &dom.Sha
 }
 
 fn (mut sheet CSSStyleSheet) invalidate_owners_with_previous_effects(reason dom.StyleInvalidationReason, previous_sheet_effects ?ShadowRootStylesheetEffects) {
+	note_style_sheet_content_mutation(sheet, reason)
 	sheet.did_match = none
 	sheet.invalidate_shared_style_cache()
 	// MediaList mutation changes which rules are effective. Refresh that state before

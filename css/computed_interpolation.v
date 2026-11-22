@@ -11165,6 +11165,8 @@ mut:
 	rule_cache_author_sheets_ []&CSSStyleSheet
 	rule_cache_author_sheet_indexes_ []uint
 	extendable_rule_cache_ &ExtendableRuleCache = unsafe { nil }
+	// duplicate_style_sheets.v: the indexed rules of identical sheet copies.
+	rule_cache_duplicate_groups_ map[string]&DuplicateSheetGroup
 }
 
 // A complete set of selector and cascade caches that can be shared by style
