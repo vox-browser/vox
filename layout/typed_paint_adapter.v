@@ -2611,19 +2611,26 @@ fn resolve_svg_pattern_paint_style(node &Node, state &LayoutState, paint css.SVG
 	mut collection := SVGMaskPaintCollection{}
 	collect_svg_mask_paint_operations(resource, state, resource_transform, true, false, true,
 		mut collection)
-	mut content_origin := painting.Point{}
-	if svg.parse_viewbox(content_element.get_attribute_value('viewBox')) == none {
-		seen.clear()
-		content_units := svg_pattern_units(content_element, 'patternContentUnits', .user_space_on_use, mut seen)
-		if content_units == .object_bounding_box {
-			content_origin = painting.Point{bounds.x, bounds.y}
-		}
+	has_view_box := svg.parse_viewbox(content_element.get_attribute_value('viewBox')) != none
+	seen.clear()
+	resource_units := if has_view_box {
+		svg_pattern_units(content_element, 'patternUnits', .object_bounding_box, mut seen)
+	} else {
+		svg_pattern_units(content_element, 'patternContentUnits', .user_space_on_use, mut seen)
 	}
-	// Resource collection uses CSS layout coordinates. The target CTM also
-	// includes its outer SVG viewport, so enter that space before removing it.
-	// Otherwise a downscaled viewBox enlarges the contents inside the tile.
-	page_operations := transform_svg_mask_paint_operations(collection.operations,
-		painting_affine_from_svg(outer_svg_viewport_transform_in_page_space(node, state)))
+	content_origin := if !has_view_box && resource_units == .object_bounding_box {
+		painting.Point{bounds.x, bounds.y}
+	} else {
+		painting.Point{}
+	}
+	// User-space resources inherit their viewport transform during SVG layout.
+	// Bounding-box resources start in the target's local coordinate space.
+	page_operations := if resource_units == .object_bounding_box {
+		transform_svg_mask_paint_operations(collection.operations,
+			painting_affine_from_svg(outer_svg_viewport_transform_in_page_space(node, state)))
+	} else {
+		collection.operations
+	}
 	operations := normalize_svg_pattern_operations(page_operations, inverse_target, content_origin)
 	seen.clear()
 	mut pattern_transform := painting_affine_from_svg(svg_pattern_transform(element, mut seen))
