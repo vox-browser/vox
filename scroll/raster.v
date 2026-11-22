@@ -136,6 +136,7 @@ fn (mut app BrowserApp) begin_scroll_raster() ScrollRasterDamage {
 				app.overlay_scrollbars.paint_opacity, css.width, css.height, inline_scrollbars)
 			app.mark_video_backdrop_keys(mut keys)
 			app.mark_background_image_keys(mut keys)
+			app.mix_raster_layer_keys(mut keys)
 			if disable_scroll_raster_content_damage {
 				stats.fallback = 'content-damage-disabled'
 			} else if content := scroll_raster_content_damage(&app.scroll_raster_keys, keys,
