@@ -2266,6 +2266,23 @@ def check_svg_mask_rounded_viewport_browser(binary, artifacts, temporary):
     print("PASS: SVG masks preserve rounded viewport clips and live radius changes", flush=True)
 
 
+def check_svg_mask_foreground_pattern_browser(binary, artifacts, temporary):
+    white = (255, 255, 255)
+    red_quarter, green_quarter = (255, 191, 191), (191, 255, 191)
+    samples = (
+        (15, 52, white), (40, 42, red_quarter), (48, 42, green_quarter),
+        (57, 42, white), (64, 42, red_quarter), (40, 23, (64, 0, 0)),
+        (40, 20, (0, 0, 0)), (40, 18, white), (206, 29, (255, 127, 127)),
+        (214, 29, green_quarter), (222, 29, white), (214, 37, (127, 127, 255)),
+        (174, 29, white), (302, 29, white), (206, 17, white), (206, 99, white),
+    )
+    check_transformed_svg_mask_browser(binary, artifacts, temporary, "foreground-pattern",
+                                       [(x, y + 8, color) for x, y, color in samples], (
+        "luminance=false operations=1 paths=1 ", "luminance=true operations=1 paths=1 ",
+    ), fixture_name="svg-mask-foreground-pattern.html")
+    print("PASS: Masked SVG foreground patterns preserve color, opacity, paint order and live edits", flush=True)
+
+
 def check_transformed_svg_mask_browser(binary, artifacts, temporary, case, samples, expected_masks,
                                        fixture_name=None):
     fixture = Path(__file__).resolve().parents[1] / "Tests/Browser/Native" / (
@@ -2771,6 +2788,7 @@ def main():
         check_svg_mask_gradient_strokes_browser(binary, artifacts, temporary)
         check_svg_mask_images_browser(binary, artifacts, temporary)
         check_svg_mask_patterns_browser(binary, artifacts, temporary)
+        check_svg_mask_foreground_pattern_browser(binary, artifacts, temporary)
         check_svg_mask_pattern_strokes_browser(binary, artifacts, temporary)
         check_svg_mask_transformed_region_browser(binary, artifacts, temporary)
         check_svg_mask_transformed_viewport_browser(binary, artifacts, temporary)

@@ -137,10 +137,11 @@ fn (mut app BrowserApp) draw_portable_svg_mask_group(commands []layout.PaintComm
 	mut image := app.raster_portable_svg_group(commands[start + 1..end], viewport, page_x, page_y,
 		1) or { return start }
 	if image.bounds.is_empty() { return end + 1 }
-	mut cacheable := true
+	mut cacheable := !image.incomplete
 	if mask.is_svg_content_mask {
-		cacheable = app.apply_portable_svg_content_mask(mut image, &mask, page_x, page_y,
+		mask_cacheable := app.apply_portable_svg_content_mask(mut image, &mask, page_x, page_y,
 			scale) or { return start }
+		cacheable = cacheable && mask_cacheable
 		if group.viewport.mixed {
 			if !apply_portable_svg_mask_polygon(mut image, polygon) { return start }
 		} else if (transform.b == 0 && transform.c == 0) || (transform.a == 0 && transform.d == 0) {
