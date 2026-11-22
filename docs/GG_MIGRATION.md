@@ -1594,6 +1594,38 @@ and timing guard exited zero. These measurements cover repeated
 software replay. Windows runtime pixels and hardware GPU timing
 remain pending.
 
+## Patterned stroke geometry on macOS
+
+In `2f6e156b0`, foreground SVG pattern strokes pass the dash array,
+dash offset, and vector effect to the native painter. CoreGraphics
+applies the dash state when it expands the stroke into a clip.
+Non-scaling strokes expand the transformed centerline at the same
+width used for solid strokes. The cached tiles still follow the
+original SVG path and pattern transforms.
+
+The focused CoreGraphics pixel test passed with Clang `-O2` and
+under ASan and UBSan. It verified 6- and 12-pixel widths under a 2×
+path transform, dash gaps and phase, round zero-length dashes, tile
+color and opacity, and an even-odd fill. The macOS C-backend V
+source check passed.
+
+The ordinary fill and undashed stroke matched the previous native
+painter exactly in a 128 × 96 offscreen comparison with fractional
+tile placement and shear. Two alternating pairs used fresh processes,
+one `-O2` executable, and 2,000 draws per trial after 100 warm-up draws.
+The baseline/candidate thread CPU times were 216.094/213.399 ms
+and 222.171/220.115 ms. The initial implementation constructed a
+separate dashed path and measured 217.542/225.154 ms and
+216.695/219.752 ms on the same ordinary paints. Host load was high
+throughout. These measurements cover the offscreen tile painter.
+
+A fresh baseline window from published build `6209346d8` reproduced
+the filled dash gap and doubled width on
+`svg-foreground-patterns.html`. It was PID 97856, with executable
+SHA-256 `a92b702d32ab26cf7835f2d4b148a39c8cca22f7ca841ede9542820d4a24a034`.
+The published bundle predates the fix. Browser window pixels and
+production performance for the candidate await the managed rebuild.
+
 ## Sharing the portable SVG fallback with Windows
 
 The standard Windows D3D11 window now uses the same CPU raster and GG texture
