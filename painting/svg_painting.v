@@ -56,7 +56,6 @@ pub:
 	tile_display_list      ?&SVGPatternDisplayList
 	cache_key              u64
 	has_non_scaling_stroke bool // Includes strokes in descendant tiles.
-	has_nested_pattern    bool
 }
 
 pub type SVGPaintStyle = SVGLinearGradientPaintStyle

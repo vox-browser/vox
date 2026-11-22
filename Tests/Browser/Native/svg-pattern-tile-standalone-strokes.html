@@ -1,0 +1,36 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Standalone vector SVG patterns in fills and strokes</title>
+<style>
+body { margin: 0; background: white; }
+header { width: 8px; height: 8px; background: #34b786; }
+svg { display: block; }
+</style>
+<header></header>
+<svg width="256" height="100" viewBox="0 0 256 100">
+  <defs>
+    <pattern id="tile" width="40" height="40" patternUnits="userSpaceOnUse"
+             patternTransform="scale(.5)">
+      <path id="first-stripe" fill="blue"
+            d="M0 4h8v4H0Z M20 4h8v4h-8Z M0 28h8v12H0Z M20 28h8v12h-8Z"/>
+      <path fill="red"
+            d="M8 4h8v4H8Z M28 4h8v4h-8Z M8 28h8v12H8Z M28 28h8v12h-8Z"/>
+      <path d="M0 20H40" fill="none" stroke="lime" stroke-width="12"/>
+    </pattern>
+  </defs>
+  <path d="M0 0h120v100H0Z" fill="url(#tile)"/>
+  <path d="M0 50H120" fill="none" stroke="url(#tile)" stroke-width="100"
+        transform="translate(128)"/>
+</svg>
+<script>
+let frame = 0;
+function editStripes() {
+    if (++frame === 12)
+        document.getElementById('first-stripe').setAttribute('fill', 'yellow');
+    if (frame === 24)
+        document.body.setAttribute('data-standalone-pattern-ready', '');
+    else
+        requestAnimationFrame(editStripes);
+}
+requestAnimationFrame(editStripes);
+</script>

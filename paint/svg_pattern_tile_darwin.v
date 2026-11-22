@@ -42,7 +42,6 @@ fn (mut app BrowserApp) add_shared_svg_pattern_images(list &painting.SVGPatternD
 
 fn (mut app BrowserApp) prepare_shared_svg_pattern_tile(style &painting.SVGPatternPaintStyle,
 	transform [6]f64, content_mask bool) bool {
-	if !(style.has_non_scaling_stroke || style.has_nested_pattern) { return false }
 	list := style.tile_display_list or { return false }
 	scale := C.native_shared_svg_pattern_scale(i32(content_mask))
 	if !(scale > 0 && math.is_finite(scale)) { return false }

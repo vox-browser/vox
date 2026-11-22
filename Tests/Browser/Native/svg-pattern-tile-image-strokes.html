@@ -1,6 +1,6 @@
 <!doctype html>
 <meta charset="utf-8">
-<title>Bitmap and non-scaling stroke in an SVG tile</title>
+<title>Bitmap and stroke in a standalone SVG tile</title>
 <style>
 body { margin: 0; background: white; }
 header { width: 8px; height: 8px; background: #34b786; }
@@ -11,8 +11,7 @@ svg { display: block; }
   <defs>
     <pattern id="tile" width="40" height="40" patternUnits="userSpaceOnUse"
              patternTransform="scale(.5)">
-      <path d="M0 20H40" fill="none" stroke="lime" stroke-width="6"
-            vector-effect="non-scaling-stroke"/>
+      <path d="M0 20H40" fill="none" stroke="lime" stroke-width="12"/>
       <image href="tile.png" x="0" y="28" width="16" height="12"
              preserveAspectRatio="none" image-rendering="pixelated"/>
     </pattern>
