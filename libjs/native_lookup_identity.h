@@ -1,7 +1,9 @@
 #ifndef VOX_LIBJS_NATIVE_LOOKUP_IDENTITY_H
 #define VOX_LIBJS_NATIVE_LOOKUP_IDENTITY_H
-#include <sys/stat.h>
 #include <stdint.h>
+
+#if !defined(_WIN32)
+#include <sys/stat.h>
 
 // Device, inode, size and nanosecond modification/status-change times of a
 // file. Returns 0 on success. Used to recognize an already verified library.
@@ -24,6 +26,7 @@ static inline int vox_libjs_native_file_identity(const char *path, uint64_t out[
 #endif
 	return 0;
 }
+#endif
 
 // The main executable's identity. V's os.executable() reports dyld image 0,
 // which is an inserted library when DYLD_INSERT_LIBRARIES is set (profiling).
