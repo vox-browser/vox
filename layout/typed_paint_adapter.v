@@ -2156,6 +2156,20 @@ fn resolved_svg_stroke_dasharray(computed &css.ComputedProperties, percentage_ba
 	return dasharray
 }
 
+fn resolved_svg_stroke_dashoffset(computed &css.ComputedValues, percentage_basis f64) f64 {
+	return computed.stroke_dashoffset().to_px(computed.length_resolution_context(),
+		css.CSSPixels.nearest_value_for(percentage_basis)).to_double()
+}
+
+fn calibrated_svg_stroke_dashes(node &Node, path svg.Path, dashes []f64, offset f64) ([]f64, f64) {
+	if dashes.len > 0 && node.is_svg_geometry_box() {
+		if element := svg_element_for_layout_node(node) {
+			return svg_element_model(element).calibrated_stroke_dashes(path, dashes, offset)
+		}
+	}
+	return dashes, offset
+}
+
 // The native twelve-float SVG protocol reserves kind 6 for an explicit
 // ellipse's LTRB rectangle. Keep source identity: an authored four-arc <path>
 // must still reach Skia as arcs, even when it has the same outline.
@@ -3069,6 +3083,13 @@ fn svg_mask_visual_cache_key(bounds painting.IntRect, mask_type painting.SVGMask
 		hash = svg_clip_hash_mix(hash, if operation.stroke_first { u64(1) } else { u64(0) })
 		hash = svg_clip_hash_mix(hash, u64(operation.stroke_linecap))
 		hash = svg_clip_hash_mix(hash, u64(operation.stroke_linejoin))
+		if operation.stroke_dasharray.len > 0 {
+			hash = svg_clip_hash_mix(hash, u64(operation.stroke_dasharray.len))
+			hash = svg_clip_hash_mix(hash, u64(math.f32_bits(operation.stroke_dashoffset)))
+			for interval in operation.stroke_dasharray {
+				hash = svg_clip_hash_mix(hash, u64(math.f32_bits(interval)))
+			}
+		}
 		for segment in operation.path.segments {
 			hash = svg_clip_hash_mix(hash, u64(segment.kind))
 			for value in [segment.point.x, segment.point.y, segment.control_point_0.x,
@@ -3482,7 +3503,8 @@ fn collect_svg_mask_paint_operations(node &Node, state &LayoutState,
 				}
 			}
 		} else if svg_path := used.computed_svg_path() {
-			stroke_width := computed.length_percentage_to_px(.stroke_width, viewport_percentage_basis(node, state)) or { 1.0 }
+			percentage_basis := viewport_percentage_basis(node, state)
+			stroke_width := computed.length_percentage_to_px(.stroke_width, percentage_basis) or { 1.0 }
 			position := paint_cumulative_offset(node, state, used)
 			page_delta_x := position.x().to_double() - used.offset.x().to_double()
 			page_delta_y := position.y().to_double() - used.offset.y().to_double()
@@ -3541,6 +3563,17 @@ fn collect_svg_mask_paint_operations(node &Node, state &LayoutState,
 					} else {
 						painting.Color{ a: 0 }
 					}
+					mut dasharray := []f32{}
+					mut dashoffset := f32(0)
+					if has_stroke {
+						dashes := resolved_svg_stroke_dasharray(computed, percentage_basis)
+						if dashes.len > 0 {
+							calibrated, offset := calibrated_svg_stroke_dashes(node, svg_path,
+								dashes, resolved_svg_stroke_dashoffset(computed, percentage_basis))
+							dasharray = calibrated.map(f32(it))
+							dashoffset = f32(offset)
+						}
+					}
 					collection.operations << painting.SVGMaskPaintOperation{
 						kind: .path
 						path: path
@@ -3559,6 +3592,8 @@ fn collect_svg_mask_paint_operations(node &Node, state &LayoutState,
 						fill_opacity: f64(computed.fill_opacity())
 						stroke_opacity: f64(computed.stroke_opacity())
 						stroke_width: stroke_width
+						stroke_dasharray: dasharray
+						stroke_dashoffset: dashoffset
 						stroke_linecap: match computed.stroke_linecap() {
 							.butt { painting.LineCap.butt }
 							.round { painting.LineCap.round }
@@ -3962,16 +3997,9 @@ fn uncached_block_box_from_typed_layout_shallow(node &Node, state &LayoutState, 
 		svg_stroke_width = svg_used_stroke_width(computed, percentage_basis,
 			node.document().font_rendering_policy() == .chromium)
 		svg_stroke_dasharray = resolved_svg_stroke_dasharray(computed, percentage_basis)
-		svg_stroke_dashoffset = computed.stroke_dashoffset().to_px(computed.length_resolution_context(), css.CSSPixels.nearest_value_for(percentage_basis)).to_double()
-		if node.is_svg_geometry_box() {
-			if source := node.dom_node() {
-				if geometry_element := source.as_element() {
-					model := svg_element_model(geometry_element)
-					svg_stroke_dasharray, svg_stroke_dashoffset = model.calibrated_stroke_dashes(path,
-						svg_stroke_dasharray, svg_stroke_dashoffset)
-				}
-			}
-		}
+		svg_stroke_dashoffset = resolved_svg_stroke_dashoffset(computed, percentage_basis)
+		svg_stroke_dasharray, svg_stroke_dashoffset = calibrated_svg_stroke_dashes(node, path,
+			svg_stroke_dasharray, svg_stroke_dashoffset)
 		svg_non_scaling_stroke = computed.vector_effect() == .non_scaling_stroke
 		svg_stroke_first = svg_mask_stroke_precedes_fill(computed.paint_order())
 		svg_stroke_linecap = match computed.stroke_linecap() {

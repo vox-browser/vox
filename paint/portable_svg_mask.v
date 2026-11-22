@@ -623,7 +623,8 @@ fn (mut app BrowserApp) raster_svg_mask_stroke(mut layer PortableSVGMaskLayer, w
 		local_matrix, argb, style, opacity, .src_over, 0,
 		f32(operation.stroke_width), portable_svg_stroke_cap(operation.stroke_linecap),
 		portable_svg_stroke_join(operation.stroke_linejoin),
-		f32(math.max(1, operation.stroke_miterlimit)), [], 0, [], none) {
+		f32(math.max(1, operation.stroke_miterlimit)), operation.stroke_dasharray,
+		operation.stroke_dashoffset, [], none) {
 		return none
 	}
 	return cacheable

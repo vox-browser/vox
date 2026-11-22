@@ -182,6 +182,8 @@ pub:
 	fill_opacity           f64 = 1.0
 	stroke_opacity         f64 = 1.0
 	stroke_width           f64
+	stroke_dasharray       []f32
+	stroke_dashoffset      f32
 	stroke_linecap         LineCap
 	stroke_linejoin        LineJoin
 	stroke_miter_limit     f64 = 4.0

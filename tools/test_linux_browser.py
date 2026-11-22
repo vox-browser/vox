@@ -2030,6 +2030,21 @@ def check_svg_mask_strokes_browser(binary, artifacts, temporary):
     print("PASS: SVG mask strokes preserve caps, opacity, paint order, and live stroke-width edits", flush=True)
 
 
+def check_svg_mask_dashed_strokes_browser(binary, artifacts, temporary):
+    white, blue, half_blue, green = (255, 255, 255), (0, 0, 255), (127, 127, 255), (0, 255, 0)
+    samples = (
+        (10, 25, blue), (19, 25, white), (28, 25, blue), (43, 25, white), (28, 20, white),
+        (177, 25, half_blue), (193, 25, white), (207, 25, half_blue), (230, 25, white), (177, 20, white),
+        (1, 72, green), (5, 72, white), (9, 72, green), (33, 72, green),
+        (37, 72, white), (1, 80, white),
+    )
+    check_transformed_svg_mask_browser(binary, artifacts, temporary, "dash-stroke",
+                                       [(x, y + 8, color) for x, y, color in samples], (
+        "luminance=false operations=1 paths=1 ", "luminance=true operations=1 paths=1 ",
+    ), fixture_name="svg-mask-dashed-strokes.html")
+    print("PASS: SVG resource strokes preserve dash phase, pathLength, transforms, and live edits", flush=True)
+
+
 def check_svg_mask_gradient_strokes_browser(binary, artifacts, temporary):
     fixture = Path(__file__).resolve().parents[1] / "Tests/Browser/Native/svg-mask-gradient-strokes.html"
     documents = []
@@ -2848,6 +2863,7 @@ def main():
         check_svg_solid_rect_mask_browser(binary, artifacts, temporary)
         check_svg_mask_opacity_browser(binary, artifacts, temporary)
         check_svg_mask_strokes_browser(binary, artifacts, temporary)
+        check_svg_mask_dashed_strokes_browser(binary, artifacts, temporary)
         check_svg_mask_gradient_strokes_browser(binary, artifacts, temporary)
         check_svg_mask_images_browser(binary, artifacts, temporary)
         check_svg_mask_patterns_browser(binary, artifacts, temporary)
