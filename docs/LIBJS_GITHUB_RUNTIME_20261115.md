@@ -12100,3 +12100,25 @@ chooses ciphers in its own order.
   restored 3,241 hits, but the extra key work made the longhand loop slower
   (638M against 601M per two passes). The icon paths are mostly unique within
   a style batch.
+
+**Stale LaunchServices records again, and a blocked Brave, 2026-11-23 night.**
+- `tools/prune_stale_launchservices.py` reported 599 missing-on-disk Vox
+  registrations (temporary `Vox.app` copies under `/var/folders/…/T/vox-svg-*`
+  and similar, from other sessions' scripts) on top of the 699 pruned on
+  11-04. Same bundle (`2e833c3e`), four loads each: 19.195B-19.321B before
+  `--apply`, 18.687B-18.940B after (about −0.48B and about 0.6 s less to PNG).
+  The records only inflate Vox launches on this machine (see 11-04); the
+  prune also removed Brave's stale helper records, so both browsers share the
+  cleaned environment. Earlier cohorts today ran with the stale records.
+- 7 loads on `2e833c3e` after the prune, host load averages 10-36: 18.845,
+  18.706, 18.669, 18.684, 18.852, 18.505 and 18.580B (median 18.684B,
+  max 18.852B), PNG median 3,886 ms, every capture 2 px, every load 160
+  requests (no regeneration). The 10% criterion would need a Brave minimum of
+  at least 20.947B; today's earlier Brave minimums were 20.38B-20.81B.
+- The Brave arm of that cohort failed in all 7 runs ("Chrome debugger did not
+  start"): Brave's `chrome_crashpad_handler` blocks in `getxattr()` on the
+  shared database `~/Library/Application Support/BraveSoftware/Brave-Browser/Crashpad`,
+  whose directory listing fails with EINTR, and the browser waits for that
+  handshake before creating its profile. Every new Brave process is affected
+  until that directory is repaired, so no matched Brave comparison was
+  possible.
