@@ -16,10 +16,13 @@ svg { display: block; }
       <image href="tile.png" width="16" height="16" preserveAspectRatio="none"
              image-rendering="pixelated"/>
     </pattern>
+    <pattern id="unsupported" width="16" height="16" patternUnits="userSpaceOnUse">
+      <path d="M0 0H16V16H0Z" fill="red" style="filter: blur(1px)"/>
+    </pattern>
     <pattern id="hidden" width="32" height="32" patternUnits="userSpaceOnUse">
-      <path d="M0 0H32V32H0Z" fill="lime" stroke="url(#missing)" stroke-width="0"/>
-      <path d="M0 0H32V16H0Z" fill="url(#missing)" fill-opacity="0"
-            stroke="url(#missing)" stroke-opacity="0" stroke-width="4"/>
+      <path d="M0 0H32V32H0Z" fill="lime" stroke="url(#unsupported)" stroke-width="0"/>
+      <path d="M0 0H32V16H0Z" fill="url(#unsupported)" fill-opacity="0"
+            stroke="url(#unsupported)" stroke-opacity="0" stroke-width="4"/>
     </pattern>
     <pattern id="visible" width="24" height="24" patternUnits="userSpaceOnUse">
       <path d="M0 0H24V24H0Z" fill="blue"/>

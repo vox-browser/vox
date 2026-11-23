@@ -59,6 +59,7 @@ fn portable_svg_content_mask_supported(mask &layout.PaintClip, portable_group bo
 }
 
 fn portable_svg_mask_stroke_supported(operation &layout.PaintMaskOperation, luminance bool) bool {
+	if operation.stroke_pattern != none && f32(operation.stroke_opacity) <= 0 { return true }
 	width := f32(operation.stroke_width)
 	if !(width > 0) || !math.is_finite(f64(width))
 		|| !math.is_finite(f64(f32(operation.stroke_miterlimit))) {
@@ -79,6 +80,7 @@ fn portable_svg_mask_stroke_supported(operation &layout.PaintMaskOperation, lumi
 fn portable_svg_mask_fill_supported(operation &layout.PaintMaskOperation, luminance bool,
 	portable_group bool) bool {
 	if pattern := operation.fill_pattern {
+		if !(operation.fill_opacity > 0) { return true }
 		return portable_group && portable_svg_mask_pattern_supported(pattern)
 	}
 	if linear := operation.fill_linear_gradient {

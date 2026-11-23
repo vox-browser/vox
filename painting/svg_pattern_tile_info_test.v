@@ -14,9 +14,9 @@ fn test_svg_pattern_tile_summary_counts_nested_draws_and_images() {
 	assert !(child.shared_tile_info() or { panic('expected a supported child') }).has_images
 	middle := tile_style_for_test(SVGPatternDisplayList.from_operations([
 		SVGMaskPaintOperation{kind: .image},
-		SVGMaskPaintOperation{kind: .path, fill_pattern: child},
+		SVGMaskPaintOperation{kind: .path, has_fill: true, fill_pattern: child},
 	]))
-	operations := [SVGMaskPaintOperation{kind: .path, fill_pattern: middle, stroke_pattern: child}]
+	operations := [SVGMaskPaintOperation{kind: .path, has_fill: true, has_stroke: true, fill_pattern: middle, stroke_pattern: child}]
 	prepared := tile_style_for_test(SVGPatternDisplayList.from_operations(operations))
 	raw := tile_style_for_test(&SVGPatternDisplayList{operations: operations})
 	info := prepared.shared_tile_info() or { panic('expected a supported pattern') }
@@ -30,19 +30,19 @@ fn test_svg_pattern_tile_summary_keeps_combined_operation_and_depth_limits() {
 	child := tile_style_for_test(SVGPatternDisplayList.from_operations(
 		[]SVGMaskPaintOperation{len: svg_pattern_tile_max_operations / 2, init: SVGMaskPaintOperation{kind: .path}}))
 	assert child.shared_tile_info() != none
-	operations := [SVGMaskPaintOperation{kind: .path, fill_pattern: child, stroke_pattern: child}]
+	operations := [SVGMaskPaintOperation{kind: .path, has_fill: true, has_stroke: true, fill_pattern: child, stroke_pattern: child}]
 	assert tile_style_for_test(SVGPatternDisplayList.from_operations(operations)).shared_tile_info() == none
 	assert tile_style_for_test(&SVGPatternDisplayList{operations: operations}).shared_tile_info() == none
 
 	mut nested := tile_style_for_test(SVGPatternDisplayList.from_operations([]))
 	for _ in 1 .. svg_pattern_tile_max_depth {
 		nested = tile_style_for_test(SVGPatternDisplayList.from_operations([
-			SVGMaskPaintOperation{kind: .path, fill_pattern: nested},
+			SVGMaskPaintOperation{kind: .path, has_fill: true, fill_pattern: nested},
 		]))
 	}
 	assert (nested.shared_tile_info() or { panic('expected the depth limit to be inclusive') }).depth == svg_pattern_tile_max_depth
 	over_limit := tile_style_for_test(SVGPatternDisplayList.from_operations([
-		SVGMaskPaintOperation{kind: .path, stroke_pattern: nested},
+		SVGMaskPaintOperation{kind: .path, has_stroke: true, stroke_pattern: nested},
 	]))
 	assert over_limit.shared_tile_info() == none
 }
@@ -66,9 +66,48 @@ fn test_svg_pattern_tile_summary_retains_filter_eligibility() {
 	]))
 	assert rejected.shared_tile_info() == none
 	parent := tile_style_for_test(SVGPatternDisplayList.from_operations([
-		SVGMaskPaintOperation{kind: .path, fill_pattern: rejected},
+		SVGMaskPaintOperation{kind: .path, has_fill: true, fill_pattern: rejected},
 	]))
 	assert parent.shared_tile_info() == none
+}
+
+fn test_svg_pattern_tile_summary_counts_only_painted_pattern_references() {
+	child := tile_style_for_test(SVGPatternDisplayList.from_operations([
+		SVGMaskPaintOperation{kind: .image},
+		SVGMaskPaintOperation{kind: .begin_filter, filter: GfxFilter{
+			operations: [GfxFilterOperation{kind: 'blur', first: 1}]
+		}},
+		SVGMaskPaintOperation{kind: .end_filter},
+	]))
+	zero_opacity := SVGMaskPaintOperation{
+		kind: .path
+		has_fill: true
+		has_stroke: true
+		fill_pattern: child
+		stroke_pattern: child
+		fill_opacity: 0
+		stroke_opacity: 0
+		stroke_width: 4
+	}
+	no_paint := SVGMaskPaintOperation{
+		...zero_opacity
+		has_fill: false
+		has_stroke: false
+		fill_opacity: 1
+		stroke_opacity: 1
+	}
+	for operation in [zero_opacity, no_paint] {
+		info := tile_style_for_test(SVGPatternDisplayList.from_operations([operation])).shared_tile_info() or {
+			panic('unused patterns need no raster support')
+		}
+		assert !info.has_images
+		assert info.operations == 1
+		assert info.depth == 1
+	}
+	for operation in [SVGMaskPaintOperation{...zero_opacity, fill_opacity: .001},
+		SVGMaskPaintOperation{...zero_opacity, stroke_opacity: .001}] {
+		assert tile_style_for_test(SVGPatternDisplayList.from_operations([operation])).shared_tile_info() == none
+	}
 }
 
 fn test_svg_pattern_tile_summary_skips_unsupported_filters_only_inside_invisible_scopes() {

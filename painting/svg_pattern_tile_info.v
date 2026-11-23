@@ -98,16 +98,20 @@ fn svg_pattern_operations_tile_info(operations []SVGMaskPaintOperation, limit in
 		}
 		has_images = has_images || (operation.kind == .image && operation.opacity != 0)
 		if pattern := operation.fill_pattern {
-			child := svg_pattern_style_tile_info(pattern, limit - count, ancestors + 1)?
-			count += child.operations
-			depth = math.max(depth, child.depth + 1)
-			has_images = has_images || child.has_images
+			if operation.has_fill && operation.fill_opacity > 0 {
+				child := svg_pattern_style_tile_info(pattern, limit - count, ancestors + 1)?
+				count += child.operations
+				depth = math.max(depth, child.depth + 1)
+				has_images = has_images || child.has_images
+			}
 		}
 		if pattern := operation.stroke_pattern {
-			child := svg_pattern_style_tile_info(pattern, limit - count, ancestors + 1)?
-			count += child.operations
-			depth = math.max(depth, child.depth + 1)
-			has_images = has_images || child.has_images
+			if operation.has_stroke && f32(operation.stroke_opacity) > 0 {
+				child := svg_pattern_style_tile_info(pattern, limit - count, ancestors + 1)?
+				count += child.operations
+				depth = math.max(depth, child.depth + 1)
+				has_images = has_images || child.has_images
+			}
 		}
 	}
 	return SVGPatternTileInfo{operations: count, depth: depth, has_images: has_images}
