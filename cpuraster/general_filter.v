@@ -409,6 +409,7 @@ fn general_color_matrix(image BlurImage, matrix MatrixColorFilter) BlurImage {
 		source:      image.pixels
 		output:      output
 		row_bytes:   image.width * 4
+		pitch:       image.width * 4
 		filter:      filter
 		transparent: filter_matrix_pixel(&filter, [f32(0), 0, 0, 0]!)
 	}
@@ -416,11 +417,28 @@ fn general_color_matrix(image BlurImage, matrix MatrixColorFilter) BlurImage {
 	return BlurImage{output, image.width, image.height}
 }
 
+@[params]
+pub struct CanvasColorFilterOptions {
+pub:
+	// Zero uses tightly packed rows.
+	pitch int
+}
+
+fn (options CanvasColorFilterOptions) validated_pitch(pixels []u8, width int, height int) ?int {
+	pitch := if options.pitch == 0 { width * 4 } else { options.pitch }
+	if options.pitch != 0 && height > 1 && pitch > pixels.len / (height - 1) {
+		return none
+	}
+	if !untiled_device(pixels, width, height, pitch) { return none }
+	return pitch
+}
+
 // Clamp and premultiply each SVG stage in floating point. Only the final
 // result is quantized, so all stages can share one pass over the bitmap.
 pub fn apply_canvas_color_matrices_in_place(mut pixels []u8, width int, height int,
-	stages [][20]f32, linear_rgb bool) bool {
-	if stages.len == 0 || !untiled_device(pixels, width, height, width * 4) { return false }
+	stages [][20]f32, linear_rgb bool, options CanvasColorFilterOptions) bool {
+	if stages.len == 0 { return false }
+	pitch := options.validated_pitch(pixels, width, height) or { return false }
 	mut matrices := []MatrixColorFilter{cap: stages.len}
 	for matrix in stages {
 		if !matrix.all(is_finite_f32(it)) { return false }
@@ -431,6 +449,7 @@ pub fn apply_canvas_color_matrices_in_place(mut pixels []u8, width int, height i
 		source: pixels
 		output: pixels
 		row_bytes: width * 4
+		pitch: pitch
 		filter: filter
 		transparent: if linear_rgb {
 			filter_linear_matrix_pixel(&filter, [u8(0), 0, 0, 0]!)
@@ -450,6 +469,7 @@ struct FilterMatrixScan {
 	source      []u8
 	output      []u8
 	row_bytes   int
+	pitch       int
 	filter      ColorFilter
 	transparent [4]u8
 }
@@ -457,24 +477,26 @@ struct FilterMatrixScan {
 fn scan_filter_matrix(context voidptr, first i32, end i32) {
 	scan := unsafe { &FilterMatrixScan(context) }
 	mut output := unsafe { scan.output }
-	start := int(first) * scan.row_bytes
-	stop := int(end) * scan.row_bytes
-	for i := start; i < stop; i += 4 {
-		alpha := scan.source[i + 3]
-		// Unpremultiplication yields transparent black at zero alpha,
-		// regardless of the RGB bytes stored there.
-		if alpha == 0 && scan.transparent[3] == 0 {
-			continue
-		}
-		pixel := if alpha == 0 {
-			scan.transparent
-		} else {
-			filter_matrix_pixel(&scan.filter, [f32(scan.source[i]) * inv_255,
-				f32(scan.source[i + 1]) * inv_255, f32(scan.source[i + 2]) * inv_255,
-				f32(alpha) * inv_255]!)
-		}
-		for k in 0 .. 4 {
-			output[i + k] = pixel[k]
+	for row in int(first) .. int(end) {
+		start := row * scan.pitch
+		stop := start + scan.row_bytes
+		for i := start; i < stop; i += 4 {
+			alpha := scan.source[i + 3]
+			// Unpremultiplication yields transparent black at zero alpha,
+			// regardless of the RGB bytes stored there.
+			if alpha == 0 && scan.transparent[3] == 0 {
+				continue
+			}
+			pixel := if alpha == 0 {
+				scan.transparent
+			} else {
+				filter_matrix_pixel(&scan.filter, [f32(scan.source[i]) * inv_255,
+					f32(scan.source[i + 1]) * inv_255, f32(scan.source[i + 2]) * inv_255,
+					f32(alpha) * inv_255]!)
+			}
+			for k in 0 .. 4 {
+				output[i + k] = pixel[k]
+			}
 		}
 	}
 }
@@ -490,19 +512,21 @@ fn filter_matrix_pixel(filter &ColorFilter, input [4]f32) [4]u8 {
 fn scan_filter_linear_matrix(context voidptr, first i32, end i32) {
 	scan := unsafe { &FilterMatrixScan(context) }
 	mut output := unsafe { scan.output }
-	start := int(first) * scan.row_bytes
-	stop := int(end) * scan.row_bytes
-	for i := start; i < stop; i += 4 {
-		alpha := scan.source[i + 3]
-		if alpha == 0 && scan.transparent[3] == 0 { continue }
-		pixel := if alpha == 0 {
-			scan.transparent
-		} else {
-			filter_linear_matrix_pixel(&scan.filter, [scan.source[i], scan.source[i + 1],
-				scan.source[i + 2], alpha]!)
-		}
-		for k in 0 .. 4 {
-			output[i + k] = pixel[k]
+	for row in int(first) .. int(end) {
+		start := row * scan.pitch
+		stop := start + scan.row_bytes
+		for i := start; i < stop; i += 4 {
+			alpha := scan.source[i + 3]
+			if alpha == 0 && scan.transparent[3] == 0 { continue }
+			pixel := if alpha == 0 {
+				scan.transparent
+			} else {
+				filter_linear_matrix_pixel(&scan.filter, [scan.source[i], scan.source[i + 1],
+					scan.source[i + 2], alpha]!)
+			}
+			for k in 0 .. 4 {
+				output[i + k] = pixel[k]
+			}
 		}
 	}
 }

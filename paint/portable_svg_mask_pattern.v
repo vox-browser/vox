@@ -59,55 +59,27 @@ fn svg_pattern_filter_crop(filter &layout.PaintSVGMaskFilter, width int, height 
 	return full
 }
 
-fn clear_svg_pattern_outside_crop(mut layer PortableSVGMaskLayer, width int, crop painting.IntRect) {
-	if crop.x == 0 && crop.width == width && crop.y <= layer.rows.top
-		&& crop.bottom() >= layer.rows.bottom { return }
-	left := crop.x * 4
-	right := crop.right() * 4
-	bottom := crop.bottom()
-	pitch := width * 4
-	for y in layer.rows.top .. layer.rows.bottom {
-		row := (y - layer.rows.top) * pitch
-		unsafe {
-			row_pixels := &u8(layer.pixels.data) + row
-			if y < crop.y || y >= bottom {
-				vmemset(row_pixels, 0, pitch)
-			} else {
-				vmemset(row_pixels, 0, left)
-				vmemset(row_pixels + right, 0, pitch - right)
-			}
+fn apply_svg_pattern_color_filter(mut layer PortableSVGMaskLayer, pitch int, clip cpuraster.IRect,
+	effect painting.SVGSourceColorFilter) bool {
+	start := clip.top * pitch + clip.left * 4
+	mut pixels := layer.pixels[start..]
+	width := clip.right - clip.left
+	height := clip.bottom - clip.top
+	return match effect {
+		painting.SVGSourceColorMatrix {
+			cpuraster.apply_canvas_color_matrices_in_place(mut pixels, width, height,
+				effect.stages, effect.linear_rgb, pitch: pitch)
+		}
+		painting.SVGSourceColorTable {
+			cpuraster.apply_canvas_color_tables_in_place(mut pixels, width, height,
+				effect.stages, effect.linear_rgb, pitch: pitch)
+		}
+		painting.SVGSourceColorChain {
+			stages := effect.stages.map(cpuraster.CanvasColorStage{it.matrix, it.channels, it.is_table, it.linear_rgb})
+			cpuraster.apply_canvas_color_chain_in_place(mut pixels, width, height, stages,
+				pitch: pitch)
 		}
 	}
-}
-
-fn apply_svg_pattern_filter(mut layer PortableSVGMaskLayer, width int, height int,
-	filter &layout.PaintSVGMaskFilter, retain_color bool) bool {
-	crop := svg_pattern_filter_crop(filter, width, height) or { return false }
-	effect := filter.effect or { return false }
-	fills_clear := effect.fills_clear_pixels()
-	// Filter only the retained crop. A filter that gives transparent black
-	// coverage needs the crop applied after evaluation.
-	if !fills_clear { clear_svg_pattern_outside_crop(mut layer, width, crop) }
-	if retain_color {
-		applied := match effect {
-			painting.SVGSourceColorMatrix {
-				cpuraster.apply_canvas_color_matrices_in_place(mut layer.pixels, width,
-					layer.rows.height(), effect.stages, effect.linear_rgb)
-			}
-			painting.SVGSourceColorTable {
-				cpuraster.apply_canvas_color_tables_in_place(mut layer.pixels, width,
-					layer.rows.height(), effect.stages, effect.linear_rgb)
-			}
-			painting.SVGSourceColorChain {
-				stages := effect.stages.map(cpuraster.CanvasColorStage{it.matrix, it.channels, it.is_table, it.linear_rgb})
-				cpuraster.apply_canvas_color_chain_in_place(mut layer.pixels, width,
-					layer.rows.height(), stages)
-			}
-		}
-		if !applied { return false }
-	}
-	if fills_clear { clear_svg_pattern_outside_crop(mut layer, width, crop) }
-	return true
 }
 
 fn (mut app BrowserApp) raster_svg_mask_pattern(style &painting.SVGPatternPaintStyle,

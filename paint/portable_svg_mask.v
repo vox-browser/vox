@@ -527,11 +527,6 @@ fn (mut app BrowserApp) raster_svg_mask_layers(mut pixels []u8, pitch int, bound
 			.end_opacity {
 				mut layer := layers[depth]
 				depth--
-				clipped_restore := layer.filter != unsafe { nil } && layer.filter.effect == none
-				if layer.filter != unsafe { nil } && !clipped_restore {
-					if !apply_svg_pattern_filter(mut layer, bounds.width, bounds.height,
-						layer.filter, mask.mask_luminance) { return none }
-				}
 				bitmap := cpuraster.CanvasBitmap{
 					pixels: layer.pixels
 					width: bounds.width
@@ -543,12 +538,18 @@ fn (mut app BrowserApp) raster_svg_mask_layers(mut pixels []u8, pitch int, bound
 				// restoring the mask layer at its original pixel origin.
 				parent := layers[depth].rows
 				parent_pitch := if depth == 0 { pitch } else { layer_pitch }
-				if clipped_restore {
-					// The source offset is isolated at full opacity before any outer blend.
+				if layer.filter != unsafe { nil } {
+					// A pattern filter is isolated at full opacity before any outer blend.
 					if layer.opacity != 1 { return none }
 					crop := svg_pattern_filter_crop(layer.filter, bounds.width, bounds.height)?
-					clip := cpuraster.IRect{crop.x, crop.y - layer.rows.top, crop.right(),
-						crop.bottom() - layer.rows.top}
+					top := math.max(crop.y, layer.rows.top) - layer.rows.top
+					bottom := math.min(crop.bottom(), layer.rows.bottom) - layer.rows.top
+					if crop.width == 0 || top >= bottom { continue }
+					clip := cpuraster.IRect{crop.x, top, crop.right(), bottom}
+					if effect := layer.filter.effect {
+						if mask.mask_luminance && !apply_svg_pattern_color_filter(mut layer,
+							layer_pitch, clip, effect) { return none }
+					}
 					if !cpuraster.restore_canvas_clipped_layer(mut layers[depth].pixels,
 						parent_pitch, parent.height(), layer.rows.top - parent.top, bitmap,
 						clip, layer.filter.source_alpha) {

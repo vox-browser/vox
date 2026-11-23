@@ -13,6 +13,7 @@ pub:
 struct CanvasColorChainScan {
 	pixels        []u8
 	row_bytes     int
+	pitch         int
 	stages        []CanvasColorStage
 	transparent   [4]u8
 	opaque_linear [256]f32
@@ -22,8 +23,9 @@ struct CanvasColorChainScan {
 // A mixed SVG chain shares the layer scan and the color-space conversions.
 // Its table stages quantize lookup indices and its final store premultiplies.
 pub fn apply_canvas_color_chain_in_place(mut pixels []u8, width int, height int,
-	stages []CanvasColorStage) bool {
-	if stages.len == 0 || !untiled_device(pixels, width, height, width * 4) { return false }
+	stages []CanvasColorStage, options CanvasColorFilterOptions) bool {
+	if stages.len == 0 { return false }
+	pitch := options.validated_pitch(pixels, width, height) or { return false }
 	for stage in stages {
 		if stage.is_table {
 			if !stage.channels.all(it.len == 0 || it.len == 256) { return false }
@@ -41,6 +43,7 @@ pub fn apply_canvas_color_chain_in_place(mut pixels []u8, width int, height int,
 	scan := CanvasColorChainScan{
 		pixels: pixels
 		row_bytes: width * 4
+		pitch: pitch
 		stages: stages
 		transparent: canvas_color_chain_pixel([f32(0), 0, 0, 0]!, stages, linear_rgb)
 		opaque_linear: opaque_linear
@@ -92,26 +95,28 @@ fn canvas_color_chain_pixel(input [4]f32, stages []CanvasColorStage, initial_lin
 fn scan_canvas_color_chain(context voidptr, first i32, end i32) {
 	scan := unsafe { &CanvasColorChainScan(context) }
 	mut pixels := unsafe { scan.pixels }
-	start := int(first) * scan.row_bytes
-	stop := int(end) * scan.row_bytes
-	for offset := start; offset < stop; offset += 4 {
-		alpha := pixels[offset + 3]
-		mut pixel := scan.transparent
-		if alpha != 0 {
-			mut straight := [f32(0), 0, 0, f32(alpha) * inv_255]!
-			for k in 0 .. 3 {
-				channel := pixels[offset + k]
-				if scan.linear_rgb && alpha == 255 {
-					straight[k] = scan.opaque_linear[channel]
-				} else {
-					value := math.min(1.0, f64(channel) / f64(alpha))
-					straight[k] = f32(if scan.linear_rgb { general_decode_srgb(value) } else { value })
+	for row in int(first) .. int(end) {
+		start := row * scan.pitch
+		stop := start + scan.row_bytes
+		for offset := start; offset < stop; offset += 4 {
+			alpha := pixels[offset + 3]
+			mut pixel := scan.transparent
+			if alpha != 0 {
+				mut straight := [f32(0), 0, 0, f32(alpha) * inv_255]!
+				for k in 0 .. 3 {
+					channel := pixels[offset + k]
+					if scan.linear_rgb && alpha == 255 {
+						straight[k] = scan.opaque_linear[channel]
+					} else {
+						value := math.min(1.0, f64(channel) / f64(alpha))
+						straight[k] = f32(if scan.linear_rgb { general_decode_srgb(value) } else { value })
+					}
 				}
+				pixel = canvas_color_chain_pixel(straight, scan.stages, scan.linear_rgb)
 			}
-			pixel = canvas_color_chain_pixel(straight, scan.stages, scan.linear_rgb)
-		}
-		for k in 0 .. 4 {
-			pixels[offset + k] = pixel[k]
+			for k in 0 .. 4 {
+				pixels[offset + k] = pixel[k]
+			}
 		}
 	}
 }
