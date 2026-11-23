@@ -1,5 +1,7 @@
 module painting
 
+import math
+
 fn test_all_mix_blend_modes_map_without_fallback() {
 	modes := [BlendMode.normal, .multiply, .screen, .overlay, .darken, .lighten, .color_dodge,
 		.color_burn, .hard_light, .soft_light, .difference, .exclusion, .hue, .saturation, .color,
@@ -190,6 +192,45 @@ fn test_source_color_filter_preserves_mixed_stage_order_and_alpha() {
 
 	branch := GfxFilter{nodes: [decode, matrix, GfxFilterNode{...table, input_ids: [0]}, encode], root_id: 3}
 	assert !branch.supports_source_color_filter()
+}
+
+fn test_source_color_filter_lowers_saturation_and_hue_to_matrices() {
+	saturation := GfxFilterNode{
+		kind: 'saturate'
+		input_ids: [-1]
+		parameters: {'amount': 0.0}
+	}
+	rotation := GfxFilterNode{
+		id: 1
+		kind: 'hue-rotate'
+		input_ids: [0]
+		parameters: {'angle_degrees': 450.0}
+	}
+	filter := GfxFilter{nodes: [saturation, rotation], root_id: 1}
+	effect := filter.source_color_filter() or { panic('expected two color matrices') }
+	assert effect.preserves_alpha()
+	assert !effect.fills_clear_pixels()
+	if effect is SVGSourceColorMatrix {
+		assert effect.stages.len == 2
+		assert effect.stages[0] == [f32(.213), .715, .072, 0, 0, .213, .715, .072, 0, 0,
+			.213, .715, .072, 0, 0, 0, 0, 0, 1, 0]!
+		assert math.abs(effect.stages[1][0]) < .000001
+		assert effect.stages[1][5] == f32(.356)
+		assert effect.stages[1][10] == f32(-.574)
+		assert effect.stages[1][18] == 1
+	} else {
+		assert false
+	}
+
+	table := GfxFilterNode{id: 2, kind: 'color-table', input_ids: [1]}
+	mixed := GfxFilter{nodes: [saturation, rotation, table], root_id: 2}.source_color_filter() or {
+		panic('expected matrices followed by a transfer')
+	}
+	assert mixed is SVGSourceColorChain
+	assert mixed.preserves_alpha()
+
+	invalid := GfxFilterNode{...rotation, parameters: {'angle_degrees': math.inf(1)}}
+	assert !GfxFilter{nodes: [saturation, invalid], root_id: 1}.supports_source_color_filter()
 }
 
 fn test_source_color_filter_follows_only_adjacent_component_transfers() {

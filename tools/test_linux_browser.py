@@ -2286,6 +2286,11 @@ def check_svg_color_filter_chain_pixels(rows, channels, scale, marker, edited, *
             assert actual == expected, (scale, left + x, y, actual.hex(), expected.hex())
 
 
+def check_svg_color_matrix_adjustments_tile_pixels(rows, channels, scale, marker, edited):
+    check_svg_color_filter_chain_pixels(rows, channels, scale, marker, False,
+                                        red="af4bff" if edited else "1b4900")
+
+
 def check_svg_component_transfer_tile_pixels(rows, channels, scale, marker, edited):
     white, lime, black, gray = (bytes.fromhex(color) for color in
                                ("ffffff", "00ff00", "000000", "666666"))
@@ -2352,6 +2357,7 @@ def check_svg_matrix_tiles(binary, artifacts, temporary):
                                    check_svg_color_matrix_tile_pixels, edited=True, linear_rgb=linear_rgb))
     for name, check_pixels in (("color-matrix-alpha", check_svg_color_matrix_alpha_tile_pixels),
                                ("color-matrix-bias", check_svg_color_matrix_bias_tile_pixels),
+                               ("color-matrix-adjustments", check_svg_color_matrix_adjustments_tile_pixels),
                                ("color-matrix-chain", functools.partial(
                                    check_svg_color_filter_chain_pixels, red="890000")),
                                ("color-matrix-transfer", functools.partial(

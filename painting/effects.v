@@ -288,7 +288,7 @@ fn (filter GfxFilter) source_color_span() ?SVGSourceColorSpan {
 		}
 		expected_input = decode.id
 	}
-	kind := filter.nodes[start].kind
+	first_is_table := filter.nodes[start].kind == 'color-table'
 	mut mixed := false
 	for index in start .. end {
 		node := &filter.nodes[index]
@@ -301,6 +301,9 @@ fn (filter GfxFilter) source_color_span() ?SVGSourceColorSpan {
 				if node.matrix.len != 20
 					|| !node.matrix.all(math.is_finite(f64(f32(it)))) { return none }
 			}
+			'saturate', 'hue-rotate' {
+				if !math.is_finite(f64(node.source_color_adjustment())) { return none }
+			}
 			'color-table' {
 				if node.color_tables.len > 4
 					|| !node.color_tables.all(it.values.len == 256 && it.channel in ['red', 'green', 'blue', 'alpha']) {
@@ -309,7 +312,7 @@ fn (filter GfxFilter) source_color_span() ?SVGSourceColorSpan {
 			}
 			else { return none }
 		}
-		mixed = mixed || node.kind != kind
+		mixed = mixed || (node.kind == 'color-table') != first_is_table
 		expected_input = node.id
 	}
 	return SVGSourceColorSpan{start, end, linear_rgb, mixed}
@@ -356,6 +359,13 @@ fn (node &GfxFilterNode) source_color_channels() [4][]u8 {
 }
 
 fn (node &GfxFilterNode) source_color_matrix_values() [20]f32 {
+	if node.kind == 'saturate' {
+		return svg_source_adjustment_matrix(f64(node.source_color_adjustment()), 0)
+	}
+	if node.kind == 'hue-rotate' {
+		radians := math.fmod(f64(node.source_color_adjustment()), 360) * (math.pi / 180)
+		return svg_source_adjustment_matrix(math.cos(radians), math.sin(radians))
+	}
 	mut matrix := [20]f32{}
 	for i, value in node.matrix {
 		matrix[i] = f32(value)
@@ -363,7 +373,28 @@ fn (node &GfxFilterNode) source_color_matrix_values() [20]f32 {
 	return matrix
 }
 
+fn (node &GfxFilterNode) source_color_adjustment() f32 {
+	return if node.kind == 'saturate' {
+		f32(node.parameters['amount'] or { 1.0 })
+	} else {
+		f32(node.parameters['angle_degrees'] or { 0.0 })
+	}
+}
+
+// Saturation and hue rotation share the cosine term of the SVG color matrix.
+fn svg_source_adjustment_matrix(c f64, s f64) [20]f32 {
+	return [
+		f32(0.213 + 0.787 * c - 0.213 * s), f32(0.715 - 0.715 * c - 0.715 * s),
+		f32(0.072 - 0.072 * c + 0.928 * s), 0, 0,
+		f32(0.213 - 0.213 * c + 0.143 * s), f32(0.715 + 0.285 * c + 0.140 * s),
+		f32(0.072 - 0.072 * c - 0.283 * s), 0, 0,
+		f32(0.213 - 0.213 * c - 0.787 * s), f32(0.715 - 0.715 * c + 0.715 * s),
+		f32(0.072 + 0.928 * c + 0.072 * s), 0, 0, 0, 0, 0, 1, 0,
+	]!
+}
+
 fn (node &GfxFilterNode) source_color_matrix_preserves_alpha() bool {
+	if node.kind != 'color-matrix' { return true }
 	values := node.matrix
 	return values[15] == 0 && values[16] == 0 && values[17] == 0 && values[18] == 1
 		&& values[19] == 0

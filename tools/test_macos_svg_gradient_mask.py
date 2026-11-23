@@ -10,7 +10,8 @@ import re
 import subprocess
 import tempfile
 
-from test_linux_browser import (check_svg_color_matrix_alpha_tile_pixels,
+from test_linux_browser import (check_svg_color_matrix_adjustments_tile_pixels,
+                                check_svg_color_matrix_alpha_tile_pixels,
                                 check_svg_color_matrix_bias_tile_pixels,
                                 check_svg_color_filter_chain_pixels, check_svg_color_matrix_tile_pixels,
                                 check_svg_component_transfer_tile_pixels,
@@ -669,6 +670,7 @@ def main():
                     ("linear", partial(check_svg_color_matrix_tile_pixels, linear_rgb=True)),
                     ("alpha", check_svg_color_matrix_alpha_tile_pixels),
                     ("bias", check_svg_color_matrix_bias_tile_pixels),
+                    ("adjustments", check_svg_color_matrix_adjustments_tile_pixels),
                     ("chain", partial(check_svg_color_filter_chain_pixels, red="890000")),
                     ("transfer", partial(check_svg_color_filter_chain_pixels, red="bb0000")),
                 )
