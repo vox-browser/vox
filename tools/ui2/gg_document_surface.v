@@ -178,10 +178,10 @@ pub fn (mut s GpuSurface) take_document_image() !gfx.Image {
 }
 
 fn (s &GpuSurface) check_document_region(pixels voidptr, pitch int, x int, y int, width int, height int) ! {
-	// Region transfers use the Metal blit path; OpenGL transfers swizzle whole
+	// Metal and D3D11 accept BGRA regions directly. OpenGL swizzles whole
 	// surfaces through write_pixels() and read_pixels().
 	if s.ctx.is_gl {
-		return error('gg.canvas: region transfers require the Metal backend')
+		return error('gg.canvas: region transfers require Metal or D3D11')
 	}
 	if pixels == unsafe { nil } || width <= 0 || height <= 0 || x < 0 || y < 0
 		|| x > s.width - width || y > s.height - height || pitch < width * 4 {

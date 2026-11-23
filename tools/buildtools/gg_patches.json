@@ -1,4 +1,26 @@
 {
+  "prepare_sokol_d3d11_transfers": [
+    {
+      "old": "    D3D11_SUBRESOURCE_DATA subres_data[SG_MAX_MIPMAPS * SG_MAX_TEXTUREARRAY_LAYERS];\n} _sg_d3d11_backend_t;",
+      "new": "    D3D11_SUBRESOURCE_DATA subres_data[SG_MAX_MIPMAPS * SG_MAX_TEXTUREARRAY_LAYERS];\n    ID3D11Texture2D* vox_readback;\n    UINT vox_readback_width;\n    UINT vox_readback_height;\n    DXGI_FORMAT vox_readback_format;\n} _sg_d3d11_backend_t;"
+    },
+    {
+      "old": "_SOKOL_PRIVATE void _sg_d3d11_discard_backend(void) {\n    SOKOL_ASSERT(_sg.d3d11.valid);\n    _sg.d3d11.valid = false;",
+      "new": "_SOKOL_PRIVATE void _sg_d3d11_discard_backend(void) {\n    SOKOL_ASSERT(_sg.d3d11.valid);\n    if (_sg.d3d11.vox_readback) {\n        _sg_d3d11_Release(_sg.d3d11.vox_readback);\n        _sg.d3d11.vox_readback = NULL;\n    }\n    _sg.d3d11.valid = false;"
+    },
+    {
+      "old": "/* V_SOKOL_IMAGE_TRANSFER_IMPL_BEGIN */",
+      "new": "/* V_SOKOL_IMAGE_TRANSFER_IMPL_BEGIN */\n#if defined(SOKOL_D3D11)\n#include \"native_gg_d3d11_transfer.h\"\n#endif"
+    },
+    {
+      "old": "return _sg_v_gl_transfer(img, x, y, width, height, pixels, pitch, false);\n    #else",
+      "new": "return _sg_v_gl_transfer(img, x, y, width, height, pixels, pitch, false);\n    #elif defined(SOKOL_D3D11)\n        return vox_gg_d3d11_transfer(img, x, y, width, height, pixels, pitch, false);\n    #else"
+    },
+    {
+      "old": "return _sg_v_gl_transfer(img, x, y, width, height, (void*)pixels, pitch, true);\n    #else",
+      "new": "return _sg_v_gl_transfer(img, x, y, width, height, (void*)pixels, pitch, true);\n    #elif defined(SOKOL_D3D11)\n        return vox_gg_d3d11_transfer(img, x, y, width, height, (void*)pixels, pitch, true);\n    #else"
+    }
+  ],
   "prepare_gg_windows_canvas": [
     {
       "file": "gpu_context.v",

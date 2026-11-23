@@ -1,5 +1,33 @@
 # Migrating from Skia to vlib/gg
 
+## D3D11 texture regions for shared Canvas surfaces
+
+The staged Sokol D3D11 backend implements the same rectangular texture
+upload and readback calls used by Canvas. BGRA8 and RGBA8 uploads preserve
+the destination outside the region. Readback copies the region into a
+staging texture, then copies the mapped rows into the caller's stride.
+The backend keeps one staging texture for up to 4 MiB of pixel data and
+releases it at shutdown. Larger reads use a temporary texture. The D3D11
+Canvas shaders and browser routing are still pending.
+[D3D11 uploads](https://learn.microsoft.com/en-us/windows/win32/api/d3d11/nf-d3d11-id3d11devicecontext-updatesubresource)
+[D3D11 region copies](https://learn.microsoft.com/en-us/windows/win32/api/d3d11/nf-d3d11-id3d11devicecontext-copysubresourceregion)
+
+The Windows 11 QEMU smoke used V `4478fc4` and MinGW GCC 16.2.0 with
+`-prod -no-prod-options`. An initial run stripped the V assertions, so
+the smoke now checks the operations explicitly. The unpatched control
+failed at the first valid subrectangle upload. The patched executable
+(`27dbbf489fd4b100b8b09f3c344e7536cc1939e7e5d43e1ad50a83e6e00e0627`)
+passed on both formats. The cases checked padded source and destination
+rows, preservation outside the upload, smaller reads, rejection of
+invalid regions and transfers within a pass, and a 1025 × 1024 readback
+above the cache budget. The guarded Windows process exited zero.
+
+The standard D3D11 browser source check, the offscreen SVG stroke and
+readback checks on macOS Metal and ARM64 Linux Mesa, and the focused
+Sokol staging parity test passed. Two broader staging checks stopped at
+existing differences in the `vox_path_math.m` wrapper and the staged
+`gg/canvas/paint.v`. Hardware timings remain unmeasured.
+
 ## Canvas SVG capability detection in Windows OpenGL windows
 
 The Windows OpenGL browser uses its normal window context when

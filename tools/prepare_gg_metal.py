@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Stage the repository's Metal readback without changing the V checkout."""
+"""Stage Vox's Sokol texture transfers without changing the V checkout."""
 import fcntl
 import hashlib
 import json
@@ -24,7 +24,18 @@ def patch_header(source, helper):
     return source[:first] + body + '\n#include ' + json.dumps(str(helper.resolve())) + source[last:]
 
 
-def prepare_sokol_metal(modules, vlib, output_root=None):
+def patch_d3d11_transfers(source, helper):
+    patches = json.loads(Path(__file__).with_name('buildtools').joinpath('gg_patches.json').read_text())
+    for operation in patches['prepare_sokol_d3d11_transfers']:
+        old = operation['old']
+        if source.count(old) != 1:
+            raise RuntimeError('Unsupported Sokol D3D11 transfer implementation: ' + old)
+        source = source.replace(old, operation['new'], 1)
+    return source.replace('#include "native_gg_d3d11_transfer.h"',
+                          '#include ' + json.dumps(str(helper.resolve())), 1)
+
+
+def prepare_sokol_metal(modules, vlib, output_root=None, *, d3d11=False):
     repo = Path(__file__).resolve().parents[1]
     helper = repo / 'native/include/native_gg_metal_transfer.h'
     source = vlib.parent / 'thirdparty/sokol/sokol_gfx.h'
@@ -34,8 +45,14 @@ def prepare_sokol_metal(modules, vlib, output_root=None):
     if original.count(include) != 1:
         raise RuntimeError('Unsupported Sokol native include declaration')
     header = patch_header(source.read_text(), helper)
+    helpers = [helper]
+    if d3d11:
+        d3d11_helper = repo / 'native/include/native_gg_d3d11_transfer.h'
+        header = patch_d3d11_transfers(header, d3d11_helper)
+        helpers.append(d3d11_helper)
     digest = hashlib.sha256(Path(__file__).read_bytes())
-    for data in [str(vlib.resolve()).encode(), header.encode(), helper.read_bytes(), original.encode()]:
+    for data in [str(vlib.resolve()).encode(), header.encode(), original.encode(),
+                 *(path.read_bytes() for path in helpers)]:
         digest.update(data)
     root = (output_root or repo / 'Build/v/native-gg-runtime') / digest.hexdigest()
     target = root / 'sokol_gfx.h'
@@ -59,13 +76,12 @@ def prepare_sokol_metal(modules, vlib, output_root=None):
                 (stage / 'manifest.json').write_text(json.dumps({
                     'source': str(source.resolve()),
                     'source_sha256': hashlib.sha256(source.read_bytes()).hexdigest(),
-                    'helper': str(helper),
-                    'helper_sha256': hashlib.sha256(helper.read_bytes()).hexdigest(),
+                    'helpers': {str(path): hashlib.sha256(path.read_bytes()).hexdigest() for path in helpers},
                     'sha256': digest.hexdigest(),
                 }, indent=2) + '\n')
                 stage.rename(root)
         os.utime(root)
-    link_directory_files(modules / 'sokol', vlib / 'sokol')
+    link_directory_files(modules / 'sokol/c', vlib / 'sokol/c')
     staged = modules / 'sokol/c/declaration.c.v'
     staged.unlink()
     staged.symlink_to(root / 'declaration.c.v')

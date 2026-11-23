@@ -153,7 +153,7 @@ def main():
     prepare_gg_gradient(target, vlib)
     if sys.platform == 'darwin':
         from prepare_gg_metal import prepare_sokol_metal
-        prepare_sokol_metal(target, vlib)
+        prepare_sokol_metal(target, vlib, d3d11=True)
         macos_source = vlib / 'macos'
         if not (macos_source / 'objc_bridge.h').is_file():
             raise SystemExit('UI2 requires a current V checkout with vlib/macos.')

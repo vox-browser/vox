@@ -259,14 +259,20 @@ render target and checks the pixels read back from it with both the default
 driver and explicit WARP. Check GG's projection and font pipelines separately:
 
 ```sh
+ui2_modules=$(sh tools/run_v_tool.sh prepare_ui2)
 v -memory-limit 10G -prod -no-prod-options -enable-globals -gc none \
   -os windows -arch amd64 -cc gcc -d sokol_d3d11 -subsystem console \
+  -path "$PWD|$ui2_modules|@vmodules|@vlib" \
   -file-list native/graphics_windows.c.v,native/paint.v \
   -o projection-smoke.exe tools/windows_graphics_smoke.v
 runtime-guard.exe 180000 3072 projection.out projection.err \
   C:/path/to/projection-smoke.exe C:/path/to/projection.png
 python tools/check_windows_graphics_smoke.py C:/path/to/projection.png
 ```
+
+The D3D11 smoke test also checks Sokol texture uploads and readback for
+BGRA8 and RGBA8 render targets. It verifies subrectangles, pitched rows,
+and pixels outside the uploaded region.
 
 For the OpenGL variant, prepare the current Canvas adapter before building
 the same smoke tool. This opens a GL 4.3 window, checks the shared SVG

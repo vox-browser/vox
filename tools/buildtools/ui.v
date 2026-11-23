@@ -146,14 +146,7 @@ fn prepare_gg_gradient(modules string, vlib string) ! {
 	prepare_gg_canvas(canvas)!
 }
 
-fn prepare_sokol(modules string, vlib string) !string {
-	helper := join(root_dir(), 'native/include/native_gg_metal_transfer.h')
-	source := join(os.dir(vlib), 'thirdparty/sokol/sokol_gfx.h')
-	declaration := join(vlib, 'sokol/c/declaration.c.v')
-	original := read(declaration)!
-	include := '#include "sokol_gfx.h"'
-	if original.count(include) != 1 { return error('Unsupported Sokol native include') }
-	text := read(source)!
+fn patch_sokol_metal(text string, helper string) !string {
 	start := '_SOKOL_PRIVATE bool _sg_v_mtl_transfer('
 	ending := '\n}\n#endif\n\n#if defined(_SOKOL_ANY_GL)'
 	if text.count(start) != 1 { return error('Unsupported Sokol Metal transfer') }
@@ -164,8 +157,37 @@ fn prepare_sokol(modules string, vlib string) !string {
 		'_SG_OBJC_RELEASE(staging)'] {
 		if body.count(token) != 1 { return error('Unsupported Sokol Metal transfer: ${token}') }
 	}
-	header := text[..first] + body.replace_once('_sg_v_mtl_transfer(', '_sg_v_mtl_transfer_separate(') + '\n#include ' + json.encode(real(helper)) + text[last..]
-	sha := hash(read(@FILE)! + real(vlib) + header + read(helper)! + original)
+	return text[..first] + body.replace_once('_sg_v_mtl_transfer(', '_sg_v_mtl_transfer_separate(') + '\n#include ' + json.encode(real(helper)) + text[last..]
+}
+
+fn prepare_sokol(modules string, vlib string) !string {
+	d3d11_helper := join(root_dir(), 'native/include/native_gg_d3d11_transfer.h')
+	source := join(os.dir(vlib), 'thirdparty/sokol/sokol_gfx.h')
+	original := read(join(vlib, 'sokol/c/declaration.c.v'))!
+	include := '#include "sokol_gfx.h"'
+	if original.count(include) != 1 { return error('Unsupported Sokol native include') }
+	mut header := read(source)!
+	mut helpers := [d3d11_helper]
+	$if macos {
+		metal_helper := join(root_dir(), 'native/include/native_gg_metal_transfer.h')
+		header = patch_sokol_metal(header, metal_helper)!
+		helpers << metal_helper
+	}
+	patches := json.parse($embed_file('gg_patches.json').to_string())!.as_map()
+	d3d11_patches := patches['prepare_sokol_d3d11_transfers'] or { return error('Missing Sokol D3D11 transfer patches') }
+	for operation in d3d11_patches.as_array() {
+		row := operation.as_map()
+		old := row['old'] or { return error('Missing Sokol D3D11 patch source') }
+		replacement := row['new'] or { return error('Missing Sokol D3D11 patch replacement') }
+		header = replace_once(header, old.str(), replacement.str())!
+	}
+	header = replace_once(header, '#include "native_gg_d3d11_transfer.h"',
+		'#include ' + json.encode(real(d3d11_helper)))!
+	mut helper_hashes := map[string]json.Any{}
+	for helper in helpers {
+		helper_hashes[helper] = json.Any(digest(helper)!)
+	}
+	sha := hash(read(@FILE)! + real(vlib) + header + json.encode(helper_hashes) + original)
 	root := build_cache('v/native-gg-runtime', sha)
 	mkdir(os.dir(root))!
 	mut held := acquire(root + '.lock', false)!
@@ -182,20 +204,19 @@ fn prepare_sokol(modules string, vlib string) !string {
 			}
 		}
 	} else {
-		tmp := temporary(os.dir(root), 'metal-')!
+		tmp := temporary(os.dir(root), 'sokol-')!
 		defer { remove(tmp) or {} }
 		for name, value in outputs { os.write_file(join(tmp, name), value)! }
 		write_json(join(tmp, 'manifest.json'), json.Any(map[string]json.Any{
 			'source':        real(source)
 			'source_sha256': digest(source)!
-			'helper':        helper
-			'helper_sha256': digest(helper)!
+			'helpers':       helper_hashes
 			'sha256':        sha
 		}))!
 		os.rename(tmp, root)!
 	}
 	os.utime(root, time.now().unix(), time.now().unix())!
-	link_files(join(modules, 'sokol'), join(vlib, 'sokol'))!
+	link_files(join(modules, 'sokol/c'), join(vlib, 'sokol/c'))!
 	link_to(join(modules, 'sokol/c/declaration.c.v'), join(root, 'declaration.c.v'))!
 	return root
 }
@@ -213,8 +234,8 @@ fn prepare_ui(selected string) !string {
 	link_to(join(target, 'ui2'), source)!
 	vlib := real(join(os.dir(real(selected)), 'vlib'))
 	prepare_gg_gradient(target, vlib)!
+	prepare_sokol(target, vlib)!
 	$if macos {
-		prepare_sokol(target, vlib)!
 		macos := join(vlib, 'macos')
 		if !os.is_file(join(macos, 'objc_bridge.h')) {
 			return error('UI2 requires current V with vlib/macos')

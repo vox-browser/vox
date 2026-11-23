@@ -127,12 +127,21 @@ class VBuildMigrationTest(unittest.TestCase):
         for path in (expected / 'gg/canvas').rglob('*'):
             if path.is_file():
                 self.assertEqual((modules / path.relative_to(expected)).read_bytes(), path.read_bytes(), str(path))
-        if os.uname().sysname == 'Darwin':
-            actual_header = Path((modules / 'sokol/c/declaration.c.v').resolve().parent / 'sokol_gfx.h')
-            self.assertEqual(actual_header.read_text(), metal.patch_header(
-                (self.vlib.parent / 'thirdparty/sokol/sokol_gfx.h').read_text(),
-                ROOT / 'native/include/native_gg_metal_transfer.h'))
         self.assertEqual(modules, Path(self.run_tool('prepare_ui2', self.compiler)))
+
+    def test_sokol_transfer_staging_preserves_other_adapters(self):
+        modules = Path(self.run_tool('prepare_ui2', self.compiler))
+        header = (self.vlib.parent / 'thirdparty/sokol/sokol_gfx.h').read_text()
+        if os.uname().sysname == 'Darwin':
+            header = metal.patch_header(header, ROOT / 'native/include/native_gg_metal_transfer.h')
+        actual_header = (modules / 'sokol/c/declaration.c.v').resolve().with_name('sokol_gfx.h')
+        self.assertEqual(actual_header.read_text(), metal.patch_d3d11_transfers(
+            header, ROOT / 'native/include/native_gg_d3d11_transfer.h'))
+        window_adapter = modules / 'sokol/sapp/sapp.c.v'
+        window_adapter.parent.mkdir(parents=True, exist_ok=True)
+        window_adapter.write_text('separately staged Sokol window code')
+        self.assertEqual(modules, Path(self.run_tool('prepare_ui2', self.compiler)))
+        self.assertEqual(window_adapter.read_text(), 'separately staged Sokol window code')
 
     def test_linux_modules_match_existing_adapters(self):
         modules = Path(self.run_tool('prepare_linux_modules', self.compiler))

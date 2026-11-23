@@ -1,6 +1,7 @@
 module main
 
 import os
+import sokol.gfx
 
 $if windows {
 	import gg
@@ -10,7 +11,6 @@ $if windows {
 $if !sokol_d3d11 ? {
 	import gg.canvas
 	import ggshape
-	import sokol.gfx
 }
 
 fn main() {
@@ -45,6 +45,10 @@ $if windows {
 			init_fn:      fn (mut state WindowsGraphicsSmoke) {
 				$if sokol_d3d11 ? {
 					configure_windows_browser_renderer(state.ctx)
+					check_d3d11_pixel_regions(17, 11, .bgra8, [u8(255), 0, 0, 255]!)
+					check_d3d11_pixel_regions(17, 11, .rgba8, [u8(0), 0, 255, 255]!)
+					check_d3d11_pixel_regions(1025, 1024, .rgba8, [u8(0), 0, 255, 255]!)
+					println('D3D11 BGRA8 and RGBA8 pitched texture transfers passed')
 				} $else {
 					check_svg_stroke_pixels() or { panic(err) }
 				}
@@ -55,10 +59,10 @@ $if windows {
 				state.ctx.draw_rect_filled(180, 130, 60, 70, gg.blue)
 				state.ctx.draw_text(20, 100, 'Windows', color: gg.black, size: 20)
 				end_browser_frame(state.ctx)
-				if state.ctx.frame >= 2 {
+				if state.ctx.frame == 2 {
 					sapp.screenshot_png(os.args[1]) or { panic(err) }
 					println('Windows GG projection, color and text smoke: captured')
-					exit(0)
+					sapp.quit()
 				}
 			}
 			user_data:    state
@@ -69,6 +73,84 @@ $if windows {
 			eprintln('Windows GG graphics smoke: starting the OpenGL window')
 		}
 		state.ctx.run()
+	}
+}
+
+$if windows && sokol_d3d11 ? {
+	// The smoke executable uses -prod, which drops V assertions.
+	fn require_d3d11_check(ok bool, message string) {
+		if !ok {
+			panic(message)
+		}
+	}
+
+	fn check_d3d11_pixel_regions(width int, height int, format gfx.PixelFormat, clear [4]u8) {
+		target := gfx.make_image(&gfx.ImageDesc{
+			width: width
+			height: height
+			render_target: true
+			pixel_format: format
+		})
+		require_d3d11_check(gfx.query_image_state(target) == .valid, 'D3D11 render target allocation failed')
+		defer { gfx.destroy_image(target) }
+		mut desc := gfx.AttachmentsDesc{}
+		desc.colors[0].image = target
+		attachments := gfx.make_attachments(&desc)
+		require_d3d11_check(gfx.query_attachments_state(attachments) == .valid, 'D3D11 attachment allocation failed')
+		defer { gfx.destroy_attachments(attachments) }
+
+		left, top, patch_width, patch_height := 3, 2, 5, 4
+		source_pitch := patch_width * 4 + 5
+		mut source := []u8{len: source_pitch * patch_height, init: 0xa5}
+		for y in 0 .. patch_height {
+			for x in 0 .. patch_width {
+				offset := y * source_pitch + x * 4
+				source[offset] = u8(17 + x)
+				source[offset + 1] = u8(23 + y)
+				source[offset + 2] = 61
+				source[offset + 3] = 127
+			}
+		}
+		pitch := width * 4 + 7
+		mut pixels := []u8{len: pitch * height, init: 0xcc}
+		mut pass := gfx.Pass{ attachments: attachments }
+		pass.action.colors[0].load_action = .clear
+		pass.action.colors[0].clear_value = gfx.Color{0, 0, 1, 1}
+		gfx.begin_pass(&pass)
+		require_d3d11_check(!gfx.read_image(target, 0, 0, width, height, pixels.data, pitch),
+			'D3D11 accepted readback during a render pass')
+		require_d3d11_check(!gfx.write_image(target, left, top, patch_width, patch_height, source.data, source_pitch),
+			'D3D11 accepted an upload during a render pass')
+		gfx.end_pass()
+		require_d3d11_check(!gfx.write_image(target, -1, top, patch_width, patch_height, source.data, source_pitch),
+			'D3D11 accepted an out-of-bounds rectangle')
+		require_d3d11_check(!gfx.read_image(target, 0, 0, width, height, pixels.data, width * 4 - 1),
+			'D3D11 accepted a short readback stride')
+		require_d3d11_check(gfx.write_image(target, left, top, patch_width, patch_height, source.data, source_pitch),
+			'D3D11 subrectangle upload failed')
+		require_d3d11_check(gfx.read_image(target, 0, 0, width, height, pixels.data, pitch),
+			'D3D11 render target readback failed')
+		for y in 0 .. height {
+			for x in 0 .. width {
+				offset := y * pitch + x * 4
+				if x >= left && x < left + patch_width && y >= top && y < top + patch_height {
+					start := (y - top) * source_pitch + (x - left) * 4
+					require_d3d11_check(pixels[offset..offset + 4] == source[start..start + 4],
+						'D3D11 altered pixels within the uploaded rectangle')
+				} else {
+					require_d3d11_check(pixels[offset..offset + 4] == clear[..],
+						'D3D11 altered surrounding pixels')
+				}
+			}
+			require_d3d11_check(pixels[y * pitch + width * 4..(y + 1) * pitch].all(it == 0xcc),
+				'D3D11 readback altered destination row padding')
+		}
+		mut cropped := []u8{len: 8}
+		require_d3d11_check(gfx.read_image(target, left + 1, top + 2, 2, 1, cropped.data, cropped.len),
+			'D3D11 subrectangle readback failed')
+		start := 2 * source_pitch + 4
+		require_d3d11_check(cropped == source[start..start + cropped.len],
+			'D3D11 subrectangle readback returned the wrong pixels')
 	}
 }
 
