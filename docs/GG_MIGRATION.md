@@ -4058,6 +4058,59 @@ executable SHA-256 was
 Executable and fixture hashes stayed fixed during the runs.
 Browser, probe, and corresponding guard exits were zero.
 
+### Restoring SourceGraphic inside the tile clip
+
+In `ea299f918`, SourceGraphic and SourceAlpha offsets use the
+same clipped restore. The SourceGraphic worker blends the
+premultiplied RGBA inside the visible band with the existing
+full-opacity sprite blend. SourceAlpha selects the alpha-byte
+worker once per restore. Both leave the source buffer intact.
+
+The canvas layer tests compared both inputs with a separately
+cleared band. They cover colored translucent pixels, padded
+source and destination strides, a nonzero row origin, partially
+outside and empty clips, raster workers, and invalid buffers.
+They passed on macOS and Linux. All nine offset fixtures, eight
+color-matrix fixtures, two component-transfer fixtures, and the
+opacity-filter fixture also passed on both systems. The 23 Python
+driver tests and both Windows source checks passed. Windows
+runtime remains unverified.
+
+With row bands enabled, both live states of the fractional-clip
+and SourceAlpha fixtures matched their existing Brave crop
+digests at 1× on Linux and 1× and 2× on macOS. The macOS traces
+showed reuse before and after each edit.
+[SourceGraphic validation](#fractional-clip-edges-for-svg-tile-offsets)
+[SourceAlpha validation](#sourcealpha-offsets-in-shared-svg-tiles)
+
+A same-executable Clang `-O2` diagnostic compared clearing
+outside the clip and restoring the whole band with the new
+clipped restore. Both operated on the same 40 × 23 band and
+produced identical buffers after the first restore and after
+each 60,000-restore trial. The readings are means in
+nanoseconds per restore.
+
+| Clip size | Pair | Control / candidate |
+| --- | ---: | ---: |
+| 13 × 8 | 1 | 2894 / 230 |
+| 13 × 8 | 2 | 2974 / 235 |
+| 40 × 23 | 1 | 3622 / 1981 |
+| 40 × 23 | 2 | 3586 / 1953 |
+
+One-minute load was 5.28 on 18 logical CPUs. These timings
+cover the restore operation. Production frame timing remains
+open.
+
+The macOS and aarch64 Linux executable SHA-256 values were
+`db6e71e7005dcad2b24e81f82e08118af45472175ca3b468b970baed59b2000d`
+and `9ffd8b9cf4cb9591f97b2baa6de91717de3364cbc67ce6593fcf3b703d3dee8a`.
+Both browser builds used Clang `-O0`. Linux used the deferred
+link and the existing LibJS function-pointer diagnostic allowance.
+The restore probe executable SHA-256 was
+`fdd2fba45baf248b736a91fbb9fde250ae44304196d8b17b0f5a2c8082492126`.
+The input identities stayed fixed and the browser, probe, and
+runtime guard exits were zero.
+
 ## Sharing the portable SVG fallback with Windows
 
 The standard Windows D3D11 window now uses the same CPU raster and GG texture
