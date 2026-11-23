@@ -3533,6 +3533,83 @@ All browser and guard exits were zero. This measures
 stationary replay after layout. Optimized production timing
 remains open.
 
+### Viewport-relative SVG offset filter regions
+
+In `d025f665a`, a standalone tile `feOffset` can use percentage coordinates
+in its `filterUnits="userSpaceOnUse"` region. Horizontal
+and vertical attributes resolve against the source SVG
+viewport's width and height. The resolver follows the original
+source element because pattern resource layout is attached to
+the paint target. It uses the author's viewBox dimensions
+when present and the used viewport dimensions otherwise.
+Numeric regions still resolve without a viewport walk. The
+projected offset and crop use the existing whole-pixel replay.
+[Filter Effects Level 1](https://www.w3.org/TR/filter-effects-1/#FilterRegion)
+[SVG viewport units](https://svgwg.org/svg2-draft/coords.html#Units)
+
+The fixture defines the pattern and filter in an SVG with
+a 400 × 100 viewBox and a 600 × 150 CSS size. Another SVG with
+an 800 × 200 viewBox uses the pattern for a fill, stroke, and
+alpha mask. It scales its drawing by two. A live edit shrinks
+the percentage region while keeping the offset and source
+geometry fixed.
+[Regression fixture](../Tests/Browser/Native/svg-pattern-tile-offset-viewport.html)
+
+The 768 × 208 RGB captures from macOS and Linux matched
+the static Brave reference in both states. The initial and
+edited SHA-256 digests were
+`87ee3d3a514008a586c96b56122531174f6a527f19227f876227587cb14cf292`
+and
+`017259321c6b777d5bc10587d28050e17c6a56801254794a970aa8648210e656`.
+The previously published macOS executable
+`6a541ab7cc0463cbc93bdb76e769b62b1dc131df5256e7275163af3ae2678102`
+differed by 7,800 and 9,600 pixels, respectively. A source
+viewport with equivalent laid-out dimensions and no viewBox
+produced the same pixels on both systems and reused the
+same macOS tile identities.
+
+All four offset fixtures passed on macOS at 1× and 2× and
+on Linux with group caching enabled and disabled. The Linux
+GG run used row bands. The combined C build exhausted guest
+memory. Deferred linking with V's captured compiler arguments
+passed under the guard. The aarch64 Linux Clang `-O0` executable
+SHA-256 was `cfbfd83a228d7c058d495b42a34e52e0c7f311b74cad38720964cae4514b756a`.
+
+The focused SVG unit tests, 23 Python driver tests, and both
+Windows V source checks passed. Windows runtime validation
+remains open.
+
+The macOS diagnostic compares the percentage filter region
+with the equivalent numeric rectangle (8, 8, 24, 20) on the
+same executable. Fresh processes drew 20 fills and 20 strokes
+with private profiles and caches, a 1024 × 600 viewport at 1×,
+and a one-second settle. JavaScript and whole-frame raster
+reuse were disabled. All 48 stationary callbacks replayed 42
+commands. Separate traces recorded 1,880 hits for the same
+tile key and zero misses between the first and last callbacks.
+
+| Pair | Numeric / percentage median replay, ms | Numeric / percentage p95, ms | Numeric / percentage maximum, ms |
+| --- | ---: | ---: | ---: |
+| 1 | 1.0895 / 1.2120 | 1.1130 / 1.2780 | 1.1820 / 1.4520 |
+| 2 | 1.2195 / 1.3065 | 1.5910 / 1.5300 | 1.5990 / 1.6050 |
+
+Median allocation was 3 KiB per callback in all runs.
+The six decoded RGBA captures matched with SHA-256
+`34dfd54485552cb56008b99848ae75e05f31ac51a7b8bbefd5e7ed2d27375690`.
+The input HTML hashes in numeric and percentage order were
+`c953869783f208f545f0e7ab58d824c79e1de958b95334395768e2dd6dc37694`
+and
+`e2da6d8542d157d74b064b90cd9bdc6455acd3fca5f86fbc4a3be59eff9796d6`.
+The macOS executable SHA-256 was
+`f347f2f0a41ad307fe806871a15c64866456d0a11f32f0a84e7755be0b5713ec`.
+It used single-unit C `-prod -no-prod-options` with Clang `-O0`.
+Executable, library, worker, and fixture hashes stayed fixed.
+One-minute load was 13.84–14.57 on 18 logical CPUs, and all
+browser and guard exits were zero. Percentage replay had
+a higher median in both pairs. The diagnostic measures
+stationary replay after layout, and optimized production
+timing remains open.
+
 ## Sharing the portable SVG fallback with Windows
 
 The standard Windows D3D11 window now uses the same CPU raster and GG texture
