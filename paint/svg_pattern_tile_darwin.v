@@ -45,7 +45,7 @@ fn (mut app BrowserApp) prepare_shared_svg_pattern_tile(style &painting.SVGPatte
 	list := style.tile_display_list or { return false }
 	scale := C.native_shared_svg_pattern_scale(i32(content_mask))
 	if !(scale > 0 && math.is_finite(scale)) { return false }
-	info := portable_svg_mask_pattern_info(style, portable_svg_mask_pattern_max_operations, 0) or {
+	info := style.shared_tile_info() or {
 		return false
 	}
 	// The linear transform sets the bitmap resolution and stroke metric.

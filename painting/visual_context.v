@@ -194,6 +194,8 @@ pub:
 // the same reference graph as C++ PaintStyle without forming a recursive V
 // value type.
 pub struct SVGPatternDisplayList {
+	tile_info       ?SVGPatternTileInfo
+	tile_info_ready bool
 pub:
 	operations []SVGMaskPaintOperation
 }

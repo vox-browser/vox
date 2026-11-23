@@ -5,11 +5,6 @@ import layout
 import math
 import painting
 
-const portable_svg_mask_pattern_max_operations = 64
-// Match the retained SVG pattern serialization limit. All descendants
-// still draw from the same operation and pixel budgets.
-const portable_svg_mask_pattern_max_depth = 16
-
 struct PortableSVGMaskTileBudget {
 mut:
 	pixels int = portable_svg_group_max_pixels
@@ -24,11 +19,6 @@ struct PortableSVGMaskPattern {
 struct PortableSVGTileStrokeSpace {
 	to_device [6]f32
 	to_tile   [6]f32
-}
-
-struct PortableSVGMaskPatternInfo {
-	operations int
-	has_images bool
 }
 
 fn portable_svg_tile_stroke_space(device [6]f64, sx f64, sy f64) ?PortableSVGTileStrokeSpace {
@@ -50,43 +40,7 @@ fn portable_svg_tile_stroke_space(device [6]f64, sx f64, sy f64) ?PortableSVGTil
 }
 
 fn portable_svg_mask_pattern_supported(style &painting.SVGPatternPaintStyle) bool {
-	portable_svg_mask_pattern_info(style, portable_svg_mask_pattern_max_operations, 0) or {
-		return false
-	}
-	return true
-}
-
-fn portable_svg_mask_pattern_info(style &painting.SVGPatternPaintStyle, limit int, depth int) ?PortableSVGMaskPatternInfo {
-	tile := style.tile_rect
-	if depth >= portable_svg_mask_pattern_max_depth || !(tile.width > 0 && tile.height > 0)
-		|| ![tile.x, tile.y, tile.width, tile.height]!.all(math.is_finite(it)) {
-		return none
-	}
-	list := style.tile_display_list?
-	mut count := list.operations.len
-	if count > limit { return none }
-	mut has_images := false
-	for index in 0 .. list.operations.len {
-		operation := &list.operations[index]
-		if operation.kind == .begin_filter {
-			filter := operation.filter?
-			if filter.opacity_filter_amount() == none && !filter.supports_source_color_filter() {
-				return none
-			}
-		}
-		has_images = has_images || (operation.kind == .image && operation.opacity != 0)
-		if pattern := operation.fill_pattern {
-			info := portable_svg_mask_pattern_info(pattern, limit - count, depth + 1)?
-			count += info.operations
-			has_images = has_images || info.has_images
-		}
-		if pattern := operation.stroke_pattern {
-			info := portable_svg_mask_pattern_info(pattern, limit - count, depth + 1)?
-			count += info.operations
-			has_images = has_images || info.has_images
-		}
-	}
-	return PortableSVGMaskPatternInfo{count, has_images}
+	return style.shared_tile_info() != none
 }
 
 fn svg_pattern_color_filter_crop(filter &layout.PaintSVGMaskColorFilter, width int, height int) ?painting.IntRect {
@@ -158,7 +112,7 @@ fn apply_svg_pattern_color_filter(mut layer PortableSVGMaskLayer, width int, hei
 fn (mut app BrowserApp) raster_svg_mask_pattern(style &painting.SVGPatternPaintStyle,
 	matrix [6]f32, luminance bool, parent_space &PortableSVGTileStrokeSpace,
 	mut budget PortableSVGMaskTileBudget) ?PortableSVGMaskPattern {
-	if budget.depth >= portable_svg_mask_pattern_max_depth { return none }
+	if budget.depth >= painting.svg_pattern_tile_max_depth { return none }
 	list := style.tile_display_list?
 	tile := style.tile_rect
 	pattern_transform := painting_affine_array(style.pattern_transform or { painting.Affine{} })

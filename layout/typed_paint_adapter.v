@@ -2678,9 +2678,7 @@ fn resolve_svg_pattern_paint_style(node &Node, state &LayoutState, paint css.SVG
 		tile_display_list_id: '${content_identity}'
 		tile_rect: tile_rect
 		pattern_transform: pattern_transform
-		tile_display_list: &painting.SVGPatternDisplayList{
-			operations: operations
-		}
+		tile_display_list: painting.SVGPatternDisplayList.from_operations(operations)
 		cache_key: cache_key
 		has_non_scaling_stroke: has_non_scaling_stroke
 	}
