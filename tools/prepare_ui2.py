@@ -112,7 +112,7 @@ def stage_document_surface(canvas, windows=True):
               'prepare_gg_gl_msaa_resolve']
     if windows:
         groups.extend(('prepare_gg_windows_canvas', 'prepare_gg_d3d11_canvas'))
-        names.extend(('window_gpu_windows.c.v', 'd3d11_canvas_windows.v'))
+        names.extend(('window_gpu_windows.c.v', 'd3d11_canvas_windows.v', 'd3d11_canvas_rrect_windows.v'))
     for group in groups:
         for operation in patches[group]:
             path = canvas / operation['file']

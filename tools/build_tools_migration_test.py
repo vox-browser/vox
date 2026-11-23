@@ -162,8 +162,8 @@ class VBuildMigrationTest(unittest.TestCase):
                 with self.subTest(group=group, file=name):
                     self.assertIn(operation['new'], (expected / name).read_text())
                     self.assertIn(operation['new'], (canvas / name).read_text())
-        name = 'vox_d3d11_canvas_windows.v'
-        self.assertEqual((canvas / name).read_bytes(), (expected / name).read_bytes())
+        for name in ('vox_d3d11_canvas_windows.v', 'vox_d3d11_canvas_rrect_windows.v'):
+            self.assertEqual((canvas / name).read_bytes(), (expected / name).read_bytes())
         self.assertEqual(modules, Path(self.run_tool('prepare_ui2', self.compiler)))
 
     def test_linux_modules_match_existing_adapters(self):

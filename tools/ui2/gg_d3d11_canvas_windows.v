@@ -20,6 +20,14 @@ struct CanvasVertex {
 #if defined(GRADIENT) || defined(ANALYTIC_CLIP)
     nointerpolation uint paintBase : TEXCOORD1;
 #endif
+#ifdef ANALYTIC_RRECT
+    float4 jacobian : TEXCOORD2;
+    float4 edgeDistances : TEXCOORD3;
+    float4 xRadii : TEXCOORD4;
+    float4 yRadii : TEXCOORD5;
+    float2 strokeParams : TEXCOORD6;
+    float2 perPixelControl : TEXCOORD7;
+#endif
 };
 '
 
@@ -39,7 +47,11 @@ float4 clipPosition(float2 device, float depth, float w) {
 }
 #ifdef SHADED
 CanvasVertex paintVertex(float4 position, uint base, float2 local) {
+#ifdef ANALYTIC_RRECT
+    CanvasVertex result = (CanvasVertex)0;
+#else
     CanvasVertex result;
+#endif
     result.position = position;
 #ifdef GRADIENT
     float4 affine = asfloat(paintData.Load4(base));
@@ -551,8 +563,15 @@ float clipCoverage(CanvasVertex input) {
 
 	const d3d11_canvas_finish_fragment = r'
 float4 finishPaint(CanvasVertex input, float4 color) {
+#if defined(ANALYTIC_RRECT) || defined(ANALYTIC_CLIP)
+    float coverage = 1.0;
+#ifdef ANALYTIC_RRECT
+    coverage = rrectCoverage(input);
+#endif
 #ifdef ANALYTIC_CLIP
-    color *= clipCoverage(input);
+    coverage *= clipCoverage(input);
+#endif
+    color *= coverage;
 #endif
     return color;
 }
@@ -571,7 +590,7 @@ float4 fragmentMain(float4 position : SV_Position) : SV_Target0 {
 }
 '
 
-	const d3d11_canvas_steps = [RenderStep.cover_bounds, .cover_fill, .cover_inverse_fill, .cover_clip,
+	const d3d11_canvas_steps = [RenderStep.analytic_rrect, .cover_bounds, .cover_fill, .cover_inverse_fill, .cover_clip,
 		.cover_inverse_clip, .convex_wedges, .stencil_wedges_winding, .stencil_wedges_even_odd,
 		.wedges_shaded, .tessellate_strokes]!
 
@@ -590,8 +609,10 @@ float4 fragmentMain(float4 position : SV_Position) : SV_Target0 {
 	}
 
 	fn (mut ctx GpuContext) precompile_d3d11_canvas() {
-		ctx.pipeline(.cover_bounds, 1, false, false, .solid)
-		ctx.pipeline(.cover_bounds, 1, true, false, .solid)
+		for step in [RenderStep.cover_bounds, .analytic_rrect] {
+			ctx.pipeline(step, 1, false, false, .solid)
+			ctx.pipeline(step, 1, true, false, .solid)
+		}
 		for step in d3d11_canvas_steps {
 			ctx.pipeline(step, 4, false, false, .solid)
 			if writes_color(step) {
@@ -616,6 +637,10 @@ float4 fragmentMain(float4 position : SV_Position) : SV_Target0 {
 		if clipped {
 			prefix += '#define ANALYTIC_CLIP\n#define CLIP_OFFSET ${paint_bytes}u\n'
 		}
+		rrect := step == .analytic_rrect
+		if rrect {
+			prefix += '#define ANALYTIC_RRECT\n'
+		}
 		if gradient {
 			prefix += '#define GRADIENT\n#define STOP_COUNT ${shading.stops()}\n'
 			if !shading.is_linear() {
@@ -629,6 +654,7 @@ float4 fragmentMain(float4 position : SV_Position) : SV_Target0 {
 			}
 		}
 		geometry := match true {
+			rrect { d3d11_canvas_rrect_math + d3d11_canvas_rrect_vertex }
 			step == .tessellate_strokes { d3d11_canvas_curve_math + d3d11_canvas_stroke_vertex }
 			is_wedge_step(step) { d3d11_canvas_curve_math + d3d11_canvas_wedge_vertex }
 			else { d3d11_canvas_cover_vertex }
@@ -640,6 +666,9 @@ float4 fragmentMain(float4 position : SV_Position) : SV_Target0 {
 		}
 		if clipped {
 			fragment += d3d11_canvas_intrinsics + d3d11_canvas_clip_fragment
+		}
+		if rrect {
+			fragment += d3d11_canvas_rrect_math + d3d11_canvas_rrect_fragment
 		}
 		fragment += d3d11_canvas_finish_fragment
 		fragment += if gradient { d3d11_canvas_gradient_fragment } else { d3d11_canvas_fragment }
@@ -663,7 +692,8 @@ float4 fragmentMain(float4 position : SV_Position) : SV_Target0 {
 			desc.fs.samplers[0] = gfx.ShaderSamplerDesc{ used: true, sampler_type: .filtering }
 			desc.fs.image_sampler_pairs[0] = gfx.ShaderImageSamplerPairDesc{ used: true }
 		}
-		for index in 0 .. 6 {
+		attr_count := if rrect { 14 } else { 6 }
+		for index in 0 .. attr_count {
 			desc.attrs[index].sem_name = c'TEXCOORD'
 			desc.attrs[index].sem_index = index
 		}

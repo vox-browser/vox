@@ -279,6 +279,8 @@ python tools/check_windows_graphics_smoke.py C:/path/to/projection.png
 The D3D11 smoke test checks pitched BGRA8 and RGBA8 texture transfers
 and verifies Canvas pixels for solid rectangles, blended fills, curved
 paths, winding rules, path clipping, multisample reloads and solid strokes.
+The analytic shape checks cover a fractional rectangle, mixed rounded
+corners, a translated and clipped gradient oval, and a hollow rounded stroke.
 The analytic clip checks cover a fractional rectangular hole in solid
 fills, a rounded intersect clip on a gradient wedge fill, and a fractional
 intersect clip on a tessellated stroke.

@@ -27,6 +27,7 @@ fn main() {
 		}
 		check_canvas_solid_fills() or { panic(err) }
 		check_canvas_analytic_clips() or { panic(err) }
+		check_canvas_analytic_rrects() or { panic(err) }
 		check_canvas_solid_strokes() or { panic(err) }
 		check_canvas_linear_gradients() or { panic(err) }
 		check_canvas_radial_gradients() or { panic(err) }
@@ -60,6 +61,7 @@ $if windows {
 				}
 				check_canvas_solid_fills() or { panic(err) }
 				check_canvas_analytic_clips() or { panic(err) }
+				check_canvas_analytic_rrects() or { panic(err) }
 				check_canvas_solid_strokes() or { panic(err) }
 				check_canvas_linear_gradients() or { panic(err) }
 				check_canvas_radial_gradients() or { panic(err) }
@@ -266,7 +268,9 @@ fn check_canvas_solid_fills() ! {
 		defer { recovery.free() }
 		recovery.clear(canvas.Color4f.from_rgba8(0, 255, 0, 255))
 		recovery.flush()!
-		recovery.draw_oval(canvas.Rect.ltrb(2, 2, 20, 20), canvas.Paint.rgba8(255, 0, 0, 255))!
+		recovery.save_layer(none)!
+		recovery.draw_rect(canvas.Rect.ltrb(2, 2, 20, 20), canvas.Paint.rgba8(255, 0, 0, 255))!
+		recovery.restore()
 		mut rejected := false
 		recovery.flush() or { rejected = err.msg().contains('D3D11 supports solid') }
 		if !rejected {
@@ -357,6 +361,71 @@ fn check_canvas_analytic_clips() ! {
 	expect_canvas_pixel(pixels, pitch, 16, 6, [u8(0), 191, 191, 191]!)!
 	expect_canvas_pixel(pixels, pitch, 17, 6, transparent)!
 	println('GG Canvas analytic rectangle and rounded clips passed on ${gfx.query_backend()}')
+}
+
+fn check_canvas_analytic_rrects() ! {
+	width, height := 32, 24
+	pitch := width * 4
+	pixels := []u8{len: pitch * height}
+	mut ctx := canvas.new_gpu_context()!
+	defer { ctx.free() }
+	mut target := ctx.new_surface(width: width, height: height)!
+	defer { target.free() }
+	clear := canvas.Color4f{}
+	transparent := [u8(0), 0, 0, 0]!
+	red := [u8(0), 0, 255, 255]!
+	blue := [u8(255), 0, 0, 255]!
+	red_paint := canvas.Paint{color: canvas.Color4f{1, 0, 0, 1}, anti_alias: true}
+	target.clear(clear)
+	target.draw_rect(canvas.Rect.ltrb(2.25, 2, 13.75, 9), red_paint)!
+	radii := [canvas.Point{6, 4}, canvas.Point{3, 5}, canvas.Point{}, canvas.Point{2, 3}]!
+	target.draw_rrect(canvas.RRect.rect_radii(canvas.Rect.ltrb(16, 1, 30, 15), radii), red_paint)!
+	target.read_pixels(pixels.data, pitch)!
+	expect_canvas_pixel(pixels, pitch, 1, 5, transparent)!
+	expect_canvas_pixel(pixels, pitch, 2, 5, [u8(0), 0, 191, 191]!)!
+	expect_canvas_pixel(pixels, pitch, 3, 5, red)!
+	expect_canvas_pixel(pixels, pitch, 13, 5, [u8(0), 0, 191, 191]!)!
+	expect_canvas_pixel(pixels, pitch, 16, 1, transparent)!
+	expect_canvas_pixel(pixels, pitch, 22, 5, red)!
+	expect_canvas_pixel(pixels, pitch, 29, 14, red)!
+
+	target.clear(clear)
+	target.save()
+	target.clip_rect(canvas.Rect.ltrb(10.25, 3, 30, 20), .intersect, true)!
+	target.set_matrix(canvas.Matrix.translate(1, 1))
+	mut path := canvas.PathBuilder{}
+	path.add_oval(canvas.Rect.ltrb(4, 3, 23, 16), .cw, 0)
+	target.draw_path(path.detach(), canvas.Paint{
+		anti_alias: true
+		dither:     true
+		gradient:   canvas.Gradient{
+			p0:     canvas.Point{12, 0}
+			p1:     canvas.Point{20, 0}
+			colors: [canvas.Color4f{1, 0, 0, 1}, canvas.Color4f{0, 0, 1, 1}]
+		}
+	})!
+	target.restore()
+	target.read_pixels(pixels.data, pitch)!
+	expect_canvas_pixel(pixels, pitch, 9, 10, transparent)!
+	expect_canvas_pixel(pixels, pitch, 10, 10, [u8(0), 0, 191, 191]!)!
+	expect_canvas_pixel(pixels, pitch, 11, 10, red)!
+	expect_canvas_pixel(pixels, pitch, 22, 10, blue)!
+	expect_canvas_pixel(pixels, pitch, 22, 4, transparent)!
+
+	target.clear(clear)
+	radius := canvas.Point{4, 4}
+	rounded := canvas.RRect.rect_radii(canvas.Rect.ltrb(5, 5, 24, 18), [radius, radius, radius, radius]!)
+	target.draw_rrect(rounded, canvas.Paint{
+		...red_paint
+		style:        .stroke
+		stroke_width: 4
+	})!
+	target.read_pixels(pixels.data, pitch)!
+	expect_canvas_pixel(pixels, pitch, 3, 3, transparent)!
+	expect_canvas_pixel(pixels, pitch, 4, 12, red)!
+	expect_canvas_pixel(pixels, pitch, 14, 4, red)!
+	expect_canvas_pixel(pixels, pitch, 14, 12, transparent)!
+	println('GG Canvas fractional rectangle, rounded fill, clipped oval and rounded stroke passed on ${gfx.query_backend()}')
 }
 
 fn check_canvas_solid_strokes() ! {

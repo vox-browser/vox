@@ -1,5 +1,31 @@
 # Migrating from Skia to vlib/gg
 
+## Analytic Canvas shapes on Windows D3D11
+
+D3D11 uses the shared analytic render step for rounded rectangles, ovals,
+fractional rectangles and simple strokes. The HLSL shaders use the existing
+indexed corner template, instanced shape data, paint buffer and clip record.
+The standard Canvas path dispatch selects these shapes on Windows. The
+pixel shader computes edge coverage, so these shapes can render without a
+multisample resolve.
+
+The guarded Canvas smoke passed on macOS Metal, Linux Mesa OpenGL and
+Windows 11 D3D11 under QEMU. It checked fractional rectangle coverage,
+mixed rounded corners, a translated and clipped gradient oval, and a
+hollow rounded stroke. The Windows executable kept its SHA-256 before
+and after launch (`3ddf5a38d6525ac1986f3b3dafa885097f3d2fc2bf091c376548d08d3daeb5dd`),
+exited zero and reproduced the prior window PNG byte for byte. The 24
+staging and replay-tool tests passed.
+
+Four fresh Windows browser processes exited zero under the 3 GiB guard.
+The V `4478fc4` and MinGW GCC 16.2.0 build used `-prod -no-prod-options`.
+Its SHA-256 stayed `f8be107b9270678c786ee8e5cca039cc205c91ced341a2c0e548b7956e88a12d`
+throughout replay. The portable, full-cache, texture-cache-only and
+uncached modes each reproduced their preceding D3D11 browser's 800 × 100
+document crop byte for byte. The replay exercised the nested rectangular
+fill, simple solid and gradient strokes, and the SVG texture cache.
+Hardware frame timings remain unmeasured.
+
 ## Analytic Canvas clips on Windows D3D11
 
 D3D11 Canvas bounds, wedge fills and tessellated strokes now apply
