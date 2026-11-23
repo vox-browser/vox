@@ -514,6 +514,40 @@ fn (mut vm VM) execute_instruction(instruction &Instruction, executable &Executa
 	return next
 }
 
+// The dispatch loop's handler for each opcode, from one table lookup: V lowers
+// a match on the opcode itself to a long compare chain.
+enum InlineHandler as u8 {
+	slow
+	mov
+	jump
+	branch
+	number_binary
+	increment
+	to_numeric
+	nop
+}
+
+const inline_handlers_by_opcode = compute_inline_handlers()
+
+fn compute_inline_handlers() []u8 {
+	mut handlers := []u8{len: int(OpCode.nop) + 1}
+	for index in 0 .. handlers.len {
+		op := unsafe { OpCode(index) }
+		handlers[index] = u8(match op {
+			.mov { InlineHandler.mov }
+			.jump { InlineHandler.jump }
+			.jump_if_false, .jump_if_true { InlineHandler.branch }
+			.add, .sub, .mul, .less_than, .less_than_equals, .greater_than, .greater_than_equals,
+			.strict_equals, .strict_inequals { InlineHandler.number_binary }
+			.increment, .decrement { InlineHandler.increment }
+			.to_numeric { InlineHandler.to_numeric }
+			.nop { InlineHandler.nop }
+			else { InlineHandler.slow }
+		})
+	}
+	return handlers
+}
+
 // Same-binary control: check every operand slot again while dispatching.
 const checked_interpreter_operands = os.getenv('VOX_LIBJS_CHECKED_OPERANDS') != ''
 
@@ -605,16 +639,27 @@ pub fn (mut vm VM) run_executable(mut frame ExecutionContext, executable &Execut
 	operand_bases := [u32(0), executable.local_index_base, executable.registers_and_locals_count,
 		executable.registers_and_locals_count + u32(executable.constants.len)]!
 	bases := unsafe { &u32(&operand_bases[0]) }
+	if executable.bytecode_length > u32(executable.instructions.len) {
+		return error('Bytecode length exceeds the instruction stream')
+	}
+	instructions := unsafe { &Instruction(executable.instructions.data) }
 	for frame.program_counter < executable.bytecode_length {
-		vm.consume_execution_budget()!
-		instruction := &executable.instructions[frame.program_counter]
+		// consume_execution_budget(), with its call only for active budgets.
+		if vm.instruction_budget_active { vm.consume_execution_budget()! }
+		// The loop condition and the check above bound the index.
+		instruction := unsafe { &instructions[frame.program_counter] }
 		// AsmInterpreter handlers for operations that cannot throw or call out.
 		// execute_instruction() still handles every other case, including an
 		// uninitialized operand, so its prologue and long opcode chain are
 		// skipped only for these steps.
-		if inline_interpreter_dispatch {
+		handler := if inline_interpreter_dispatch {
+			unsafe { InlineHandler(inline_handlers_by_opcode[int(instruction.op)]) }
+		} else {
+			InlineHandler.slow
+		}
+		if handler != .slow {
 			values := unsafe { &Value(frame.values.data) }
-			match instruction.op {
+			match handler {
 				.mov {
 					value := unsafe { values[bases[instruction.lhs.raw >> 29] + (instruction.lhs.raw & 0x1fffffff)] }
 					if !value.is_special_empty_value() {
@@ -629,7 +674,7 @@ pub fn (mut vm VM) run_executable(mut frame ExecutionContext, executable &Execut
 					frame.program_counter = instruction.target
 					continue
 				}
-				.jump_if_false, .jump_if_true {
+				.branch {
 					value := unsafe { values[bases[instruction.lhs.raw >> 29] + (instruction.lhs.raw & 0x1fffffff)] }
 					if value.tag == .boolean {
 						if (value.number != 0.0) == (instruction.op == .jump_if_true) {
@@ -640,8 +685,7 @@ pub fn (mut vm VM) run_executable(mut frame ExecutionContext, executable &Execut
 						continue
 					}
 				}
-				.add, .sub, .mul, .less_than, .less_than_equals, .greater_than,
-				.greater_than_equals, .strict_equals, .strict_inequals {
+				.number_binary {
 					left := unsafe { values[bases[instruction.lhs.raw >> 29] + (instruction.lhs.raw & 0x1fffffff)] }
 					right := unsafe { values[bases[instruction.rhs.raw >> 29] + (instruction.rhs.raw & 0x1fffffff)] }
 					if left.is_number() && right.is_number() {
@@ -664,7 +708,7 @@ pub fn (mut vm VM) run_executable(mut frame ExecutionContext, executable &Execut
 						continue
 					}
 				}
-				.increment, .decrement {
+				.increment {
 					value := unsafe { values[bases[instruction.lhs.raw >> 29] + (instruction.lhs.raw & 0x1fffffff)] }
 					if value.is_number() {
 						step := if instruction.op == .increment { 1.0 } else { -1.0 }
