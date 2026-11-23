@@ -11845,3 +11845,41 @@ chooses ciphers in its own order.
   `JSC_numberOfGCMarkers=1`) gave no usable result: host load averages were
   100-120, and every arm spread from 19.9B to 23.6B with load times of 4.2 s
   to 5.4 s. Repeat it on a quiet host.
+
+**Selector sources and the quiet-host tiering cohort, 2026-11-23.**
+- `0dccae685` copies a selector prelude straight into its owned source when
+  every token serializes as text it already owns: plain names, punctuation,
+  strings that need no escape and numbers with their source spelling. A name
+  is plain when its decoded value equals its source span and the span holds
+  no backslash. Other preludes keep the general serializer and its
+  per-selector scratch arena (`VOX_DISABLE_DIRECT_SELECTOR_PRELUDE=1`).
+  `39bddd814` keys the rule selector memo by the selector text, with one
+  graph per mode and policy in each entry, instead of building a combined
+  key for every lookup. Document-parse benchmark, GitHub's 33 sheets
+  (deterministic counts, matched pairs):
+
+  | Change | Before | After |
+  | --- | --- | --- |
+  | direct copy, per-byte name check | 869.1M | 832.2M |
+  | spelling-based name check | 826.0M, 834.3M | 798.2M, 805.9M |
+  | text-keyed memo | 840.9M, 839.9M | 835.0M, 834.5M |
+
+  The absolute counts move by up to 8M with host load, so compare within
+  pairs. Altogether about 70M of the 975M the main thread spends parsing
+  CSS in a load.
+- The JSC tiering cohort, repeated on a quiet host (load averages 7-18) on
+  bundle `86bda0b3`, same binary, 7 alternating pairs, 2 px in every Vox
+  run:
+
+  | Arm | Median | Min | Max | PNG median |
+  | --- | --- | --- | --- | --- |
+  | control | 19.639B | 19.538B | 19.832B | 3,267 ms |
+  | `JSC_useFTLJIT=false` | 19.693B | 19.281B | 19.932B | 3,400 ms |
+  | `JSC_numberOfGCMarkers=1` | 19.654B | 19.529B | 20.193B | 3,424 ms |
+  | Brave | 20.732B | 20.434B | 20.966B | 2,416 ms |
+
+  Neither switch helps; both make the load slower. On a quiet host the
+  control spreads over only 0.3B, and every control run used fewer
+  instructions than every Brave run. The 10% criterion needs a Vox maximum
+  of at most 18.39B against this Brave minimum, about 1.44B below this
+  control's maximum.
