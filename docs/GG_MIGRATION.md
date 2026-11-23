@@ -4419,6 +4419,32 @@ The browser and candidate runtime guards exited zero and pinned
 inputs stayed fixed. The production worker ran out of disk space
 while freezing compiler inputs. Hardware frame timings remain open.
 
+### Reusing macOS SVG tiles under zero-opacity filters
+
+In `ec4b3a913`, the macOS cache uses the same combined opacity
+and byte cutoff as shared tile lowering for CSS opacity filters.
+A zero-opacity scope can contain nested filters and opacity groups.
+A sibling image under a nonzero filter still contributes its
+decoded slot to the cache key.
+
+The fixture combines two opacity filters below the cutoff and
+places a delayed image above the cutoff after a hidden sibling.
+The `9717e8165` control rasterized both tiles four times at each
+density. The candidate rasterized the fully cacheable tile once
+and the other tile three times, including its first complete
+raster after the image arrived. Whole-document RGBA matched the
+control at 1× and 2× with the same hashes as the explicit opacity
+fixture. [Filtered bitmap fixture](../Tests/Browser/Native/svg-pattern-tile-hidden-filter-image.html)
+
+The private candidate used V `4478fc4` with prealloc and
+single-unit Clang `-O0`. Its executable SHA-256 was
+`fd45605ac033461279d6b828c4c1f2c3e2eb7cbf04ee2149192bb4f5513e752d`.
+The 12 GiB build guard recorded 11,589,173,248 bytes peak sampled
+process-tree RSS. The delayed bitmap suite, live opacity-filter
+edit and 21 driver tests passed. Browser and guard exits were
+zero and pinned inputs stayed fixed. The latest production build
+attempt ran out of space generating its object file.
+
 ## Sharing the portable SVG fallback with Windows
 
 The standard Windows D3D11 window now uses the same CPU raster and GG texture
