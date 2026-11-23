@@ -3904,6 +3904,94 @@ allowance. Executable, library, and fixture hashes stayed
 fixed through each check. Browser and replay guard exits
 were zero.
 
+### SourceAlpha offsets in shared SVG tiles
+
+In `58540bc67`, a standalone `feOffset` with `in="SourceAlpha"`
+can replay in the shared tile renderer. It translates and clips
+the isolated source on the same whole-pixel path as SourceGraphic.
+The renderer clears the retained RGB inside the clip whenever a
+consumer reads color. Alpha-only consumers keep the coverage
+without the RGB pass. The retained key distinguishes the two inputs.
+[Filter Effects Level 1](https://www.w3.org/TR/filter-effects-1/#attr-valuedef-in-sourcealpha)
+
+The fixture offsets a half-opaque red source used as a fill,
+stroke, alpha mask, and luminance mask. A live edit reverses
+the horizontal offset. The alpha mask preserves the translated
+coverage. The black result contributes zero to the luminance
+mask, which still shows the following white stripe.
+[Regression fixture](../Tests/Browser/Native/svg-pattern-tile-offset-source-alpha.html)
+
+macOS and Linux matched Brave 158.1.100.58 pixel for pixel at
+1×, and macOS also matched at 2×. The 512 × 108 RGB crop
+SHA-256 values before and after the edit were
+`217c157070a103bc57587f7ba32d0af4315ea1f0483a61ecd0216b2b683b6b33`
+and `a1dac1cce78cb1eaa5f5ba5489a0d08d8b5ca665b43afcca2eacab0770389ecf`.
+At 2× they were
+`a151c92af05ee1f9aaae788f71d564416cca304738d40d32c148bdfd92db1588`
+and `53ec7c9abd07e79d40c24e651619c1768a73f24065845af8af8253d930cc2e1f`.
+A black SourceGraphic control matched the initial crop at 1×.
+macOS reused both SourceAlpha tile keys during the live edit.
+
+The published macOS control
+`8ee1c59c5a8645dda761db1ee3286584e3eaca38d706e7c720ebfa5cff7824ee`
+differed by 3,888 and 4,104 pixels at 1× and by 12,528 and
+14,256 pixels at 2×. All nine focused offset fixtures passed
+on macOS and on Linux with group caching enabled and disabled.
+The projection and key tests, 23 Python driver tests, and both
+Windows V source checks passed. Windows runtime validation
+remains open.
+
+The macOS diagnostic compared SourceAlpha with pixel-identical
+black SourceGraphic. Fresh processes used private profiles and
+caches, a one-second settle, and a 1024 × 600 document crop
+at 1×. Each case drew 20 fills and 20 strokes with JavaScript
+and whole-frame raster reuse disabled. Both workloads had
+48 stationary callbacks, 42 commands per callback, and median
+allocation of 3 KiB per callback. Separate traces between the
+first and last callbacks showed 1,880 hits with one tile and
+1,880 misses with ten tiles competing for eight entries.
+
+| Workload and pair | Black / SourceAlpha median replay, µs | Black / SourceAlpha p95, µs | Black / SourceAlpha maximum, µs |
+| --- | ---: | ---: | ---: |
+| Cached 1 | 763.5 / 749.5 | 795 / 788 | 856 / 970 |
+| Cached 2 | 728.5 / 754 | 765 / 808 | 777 / 818 |
+| Cache pressure 1 | 2445.5 / 2473 | 2561 / 2615 | 2609 / 2696 |
+| Cache pressure 2 | 2410 / 2516 | 2561 / 2670 | 2565 / 2690 |
+
+Under cache pressure, SourceAlpha had median replay times
+27.5 and 106 µs higher than the black control. Cached replay
+timings varied by pair. One-minute load was 5.80–6.04 across
+18 logical CPUs. These trials measured stationary replay
+using single-unit Clang `-O0`. Optimized production timing
+remains open.
+
+The cached and cache-pressure replay crop digests were
+`10be2ab1c4bc61073b8b0f63784823a30626e57c2f360f0228b4006cc56bfdde`
+and `0cb3c0fd06ec71114c67eaafb55707dc90b623889d63b4956ea72ea818dfc039`.
+The fixture digests in black and SourceAlpha order were
+`660e13e32ddba0dfde23d4f3282e4c2e688a81e65cf18e88369308ce644f0c82`
+and `b9fd1b7892c8357dbc37dc415691a0dc04b44d79bc8d4240835d7b106c623b05`
+for one tile, and
+`335ba29f4c74df826ac1f818ce4b946eeac6bbada216a0de72ac85479f78f41e`
+and `aa6c6f451f5c44604e2f49b145e3bb44bee9d03c1e439778756090e6b8765f92`
+for ten tiles.
+
+The macOS and aarch64 Linux executables had SHA-256
+`5bad6b395d32f7a3afd50f40b3dcc0d329de6582f655f9b021cb51f62a2d5fe9`
+and `6b4668d5a88a2e663e4cf63864fd134634540a7d41f3fd214c3f60326f9d08fe`.
+Linux used a deferred Clang `-O0` link with V's captured
+arguments and the existing LibJS function-pointer diagnostic
+allowance. Executable, library, and fixture hashes stayed
+fixed throughout each check. Browser and replay guard exits
+were zero.
+
+A separate Brave probe measured fractional translations.
+At 1× a red rectangle shifted by `(2.25, 1.5)` had coverage
+191 at the left interior edge and 128 across its first row,
+including the corner. A separable bilinear sample over a
+transparent border would produce corner coverage 96. Those
+edge semantics remain open for shared fractional translation.
+
 ## Sharing the portable SVG fallback with Windows
 
 The standard Windows D3D11 window now uses the same CPU raster and GG texture
