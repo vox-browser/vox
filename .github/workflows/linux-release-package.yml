@@ -61,7 +61,9 @@ jobs:
                 libgl1-mesa-dev libxi-dev libxcursor-dev libxrandr-dev libx11-dev \
                 libasound2-dev libgc-dev libfreetype-dev libfontconfig-dev \
                 libwebp-dev libpng-dev libjpeg-dev fonts-dejavu-core \
-                xvfb xauth xdotool scrot openssl
+                xvfb xauth xdotool scrot openssl \
+                libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev \
+                gstreamer1.0-plugins-base gstreamer1.0-plugins-good gstreamer1.0-libav glib-networking
               printf "%s\n" "#!/bin/sh" "exec /usr/bin/clang-19 -fuse-ld=/usr/bin/ld.lld-19 \"\$@\"" > /usr/local/bin/vox-release-cc
               chmod +x /usr/local/bin/vox-release-cc
               export CC=/usr/local/bin/vox-release-cc

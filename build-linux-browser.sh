@@ -93,6 +93,9 @@ set -- -b "$v_backend" -memory-limit 10G -enable-globals -cc "${CC:-clang}" \
     -d vox_production -d use_openssl -d vox_gg_svg \
     -exclude '@vlib/time/zoneinfo.native.v' \
     -path "$module_paths"
+if pkg-config --exists gstreamer-app-1.0 gstreamer-video-1.0; then
+    set -- "$@" -d vox_gstreamer
+fi
 if [ "$gc_mode" = prealloc ]; then
     # Match macOS production: -prealloc alone leaves the default collector
     # selected. Keep the compiler's imported graph within its memory budget.

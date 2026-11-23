@@ -69,7 +69,8 @@ jobs:
                 webkit2gtk-4.1 glib2 harfbuzz curl openssl libglvnd mesa \
                 libxi libxcursor libxrandr libx11 alsa-lib gc freetype2 \
                 fontconfig libwebp libpng libjpeg-turbo ttf-dejavu \
-                xorg-server-xvfb xorg-xauth xdotool scrot ca-certificates
+                xorg-server-xvfb xorg-xauth xdotool scrot ca-certificates \
+                gst-plugins-base-libs gst-plugins-good gst-libav glib-networking
               useradd --create-home builder
               printf "%s\n" "builder ALL=(ALL) NOPASSWD: /usr/bin/pacman" > /etc/sudoers.d/vox-builder
               chown -R builder:builder /workspace/source

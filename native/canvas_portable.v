@@ -10,19 +10,31 @@ import platform
 import sokol.gfx
 
 struct PortableCanvasImage {
+	mut:
 	image_id int = -1
 	width int
 	height int
 	nearest bool
+	video_frame painting.VideoFrameResourceIdentity
 }
 
 $if linux || windows {
 	fn (mut app BrowserApp) draw_portable_canvas(command &layout.PaintCommand, bitmap &dom.Bitmap_, result painting.CanvasPaintResult, page_x f32, page_y f32, scroll_y f64) {
+		app.draw_portable_bitmap(command, bitmap, result.content.destination, result.clip_rect,
+			result.content.scaling, painting.VideoFrameResourceIdentity{}, page_x, page_y, scroll_y)
+	}
+
+	fn (mut app BrowserApp) draw_portable_bitmap(command &layout.PaintCommand, bitmap &dom.Bitmap_,
+		destination painting.IntRect, clip painting.IntRect, scaling painting.ScalingMode,
+		video_frame painting.VideoFrameResourceIdentity, page_x f32, page_y f32, scroll_y f64) {
+		left, top := math.max(f64(destination.x), f64(clip.x)), math.max(f64(destination.y), f64(clip.y))
+		right, bottom := math.min(f64(destination.right()), f64(clip.right())), math.min(f64(destination.bottom()), f64(clip.bottom()))
+		if right <= left || bottom <= top { return }
 		// Each displayed canvas gets one streaming image per frame, so Sokol
 		// never receives multiple updates to the same image in a single frame.
 		index := app.portable_canvas_image_index
 		app.portable_canvas_image_index++
-		nearest := result.content.scaling == .nearest_neighbor
+		nearest := scaling == .nearest_neighbor
 		persistent := platform.enter_persistent()
 		mut slot := if index < app.portable_canvas_images.len { app.portable_canvas_images[index] } else { PortableCanvasImage{} }
 		if slot.image_id < 0 || slot.width != bitmap.width || slot.height != bitmap.height || slot.nearest != nearest {
@@ -35,17 +47,19 @@ $if linux || windows {
 				nearest: nearest
 			}
 		}
+		// A paused video keeps its texture. Canvas and posters can reuse this
+		// slot, so their uploads must clear the previous video identity.
+		needs_upload := video_frame.source == 0 || slot.video_frame != video_frame
+		slot.video_frame = video_frame
 		if index < app.portable_canvas_images.len { app.portable_canvas_images[index] = slot } else { app.portable_canvas_images << slot }
 		platform.leave_persistent(persistent)
-		pixels := if bitmap.alpha_type in [u8(0), 2] {
-			imageraster.unpremultiply_canvas_rgba(bitmap.data[..bitmap.pitch * bitmap.height])
-		} else { bitmap.data }
-		app.ctx.update_pixel_data(slot.image_id, pixels.data)
+		if needs_upload {
+			pixels := if bitmap.alpha_type in [u8(0), 2] {
+				imageraster.unpremultiply_canvas_rgba(bitmap.data[..bitmap.pitch * bitmap.height])
+			} else { bitmap.data }
+			app.ctx.update_pixel_data(slot.image_id, pixels.data)
+		}
 		image := app.ctx.get_cached_image_by_idx(slot.image_id)
-		destination, clip := result.content.destination, result.clip_rect
-		left, top := math.max(f64(destination.x), f64(clip.x)), math.max(f64(destination.y), f64(clip.y))
-		right, bottom := math.min(f64(destination.right()), f64(clip.right())), math.min(f64(destination.bottom()), f64(clip.bottom()))
-		if right <= left || bottom <= top { return }
 		x1, y1 := paint_screen_point(*command, left, top, page_x, page_y, scroll_y)
 		x2, y2 := paint_screen_point(*command, right, bottom, page_x, page_y, scroll_y)
 		app.ctx.draw_image_with_config(

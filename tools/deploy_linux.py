@@ -60,7 +60,10 @@ def dependencies(work, binaries):
     output = capture(['dpkg-shlibdeps', '-O', *['-e' + str(path) for path in binaries]], work)
     for line in output.splitlines():
         if line.startswith('shlibs:Depends=') and line.partition('=')[2].strip():
-            return line.partition('=')[2].strip() + ', ca-certificates, fonts-dejavu-core'
+            linked = line.partition('=')[2].strip()
+            plugins = (', gstreamer1.0-plugins-base, gstreamer1.0-plugins-good, gstreamer1.0-libav, glib-networking'
+                       if 'libgstreamer1.0-0' in linked else '')
+            return linked + ', ca-certificates, fonts-dejavu-core' + plugins
     raise RuntimeError('dpkg-shlibdeps did not produce runtime dependencies')
 
 

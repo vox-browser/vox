@@ -54,6 +54,21 @@ local files; animation, embedded ICC profiles and image transformations remain
 unsupported. The initial decoder checks ran on macOS; Linux runtime conformance
 for this path remains unverified.
 
+Install the GStreamer development libraries and playback plugins to enable
+native video decoding in the Linux browser build.
+
+```sh
+sudo apt-get install libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev \
+    gstreamer1.0-plugins-base gstreamer1.0-plugins-good gstreamer1.0-libav glib-networking
+```
+
+The build selects this backend when `gstreamer-app-1.0` and
+`gstreamer-video-1.0` are available to pkg-config. GStreamer decodes on
+its streaming threads and the browser presents RGBA frames through GG.
+The browser stages progressive sources through its normal transport when
+a browser proxy is configured. The native path also accepts local files
+and direct HTTP/HTTPS media URLs.
+
 ```sh
 sh build-prod-browser.sh
 Build/linux/vox https://example.com
@@ -93,7 +108,8 @@ as described above:
 sudo pacman -Syu --needed base-devel clang lld pkgconf git python libarchive zstd \
     webkit2gtk-4.1 glib2 harfbuzz curl openssl libglvnd mesa libxi libxcursor \
     libxrandr libx11 alsa-lib gc freetype2 fontconfig libwebp libpng \
-    libjpeg-turbo ca-certificates ttf-dejavu
+    libjpeg-turbo ca-certificates ttf-dejavu \
+    gst-plugins-base-libs gst-plugins-good gst-libav glib-networking
 ./deploy.vsh --no-publish
 sudo pacman -U ./Build/deploy/vox-VERSION-1-x86_64.pkg.tar.zst
 ```
@@ -397,7 +413,9 @@ canvas and shadow checks passed as well.
 Linux uses the existing portable painter, with retained shaped text and V
 (`cpuraster`) shadows. Advanced effects implemented solely in the Cocoa painter, including
 some SVG paint servers, masks and filters, remain unported. Cocoa input-method
-integration and the macOS video-frame decoder also remain platform-specific.
+integration and AVFoundation remain macOS-specific. The Linux video adapter
+uses GStreamer. The standalone macOS video-frame extraction tool remains
+platform-specific.
 WebGL uses surfaceless EGL with robust GLES3 contexts for both WebGL versions.
 The backend targets Mesa hardware drivers and software llvmpipe; this verification
 used llvmpipe. No ANGLE headers, libraries or vendor entry points are required.

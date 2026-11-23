@@ -6899,7 +6899,7 @@ fn (mut app BrowserApp) draw_command(source_command &layout.PaintCommand, page_x
 			mut planar_image := ?&gg.Image(none)
 			mut video_resource := painting.VideoFrameResourceIdentity{}
 			if source := command.video_frame_source {
-				if gpu_video_upload_keys_enabled { video_resource = source.resource_identity() }
+				if !app.ctx.native_rendering || gpu_video_upload_keys_enabled { video_resource = source.resource_identity() }
 				if frame := source.current_frame() {
 					planar_image = browser_planar_video_image(frame)
 					if bitmap := frame.to_bitmap() {
@@ -6984,6 +6984,10 @@ fn (mut app BrowserApp) draw_command(source_command &layout.PaintCommand, page_x
 					C.native_set_video_frame_image(0)
 					C.native_end_clip()
 				}
+			}
+			$if linux || windows {
+				app.draw_portable_bitmap(command, bitmap, destination, result.clip_rect, scaling,
+					video_resource, page_x, page_y, scroll_y)
 			}
 		}
 		'draw_background_image' {

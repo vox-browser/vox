@@ -111,6 +111,13 @@ class ArchDeployTests(unittest.TestCase):
         self.assertFalse(any('rebuild_browser' in command for command in self.commands))
         self.assertEqual(len(list(self.output.parent.iterdir())), 2)
 
+    def test_gstreamer_build_declares_plugins_and_tls_backend(self):
+        self.needed.append('libgstapp-1.0.so.0')
+        self.linked += '\tlibgstapp-1.0.so.0 => /usr/lib/libgstapp-1.0.so.0 (0x456)\n'
+        self.package()
+        self.assertIn('depends=(ca-certificates glib-networking glibc gst-libav gst-plugins-good ttf-dejavu)',
+                      self.pkgbuild)
+
     def test_default_build_pins_prod_and_drops_inherited_build_overrides(self):
         with patch.dict(os.environ, VOX_BUILD_BACKEND='fastc', VOX_LINUX_CFLAGS='-O0',
                         PKGEXT='.pkg.tar.xz', CARCH='aarch64'):

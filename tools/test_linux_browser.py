@@ -394,6 +394,34 @@ def check_web_font_pixels(data):
     assert cropped >= 20 and inside >= 20, (cropped, inside)
 
 
+def check_portable_video_browser(binary, artifacts, temporary):
+    fixture = Path(__file__).resolve().parents[1] / "Tests/Browser/Native/portable-video.html"
+    screenshot = artifacts / "portable-video.png"
+    audit = artifacts / "portable-video.json"
+    config = artifacts / "portable-video-selectors.json"
+    config.write_text(json.dumps({"selectors": [{"name": "clip", "selector": "#clip", "limit": 1}]}))
+    env = smoke_environment(Path(temporary) / "portable-video")
+    env.update(VOX_CAPTURE_READY_SELECTOR="body[data-video-ready]",
+               VOX_CAPTURE_AUDIT_CONFIG=str(config), VOX_CAPTURE_AUDIT_PATH=str(audit))
+    run_windowed([str(binary), "--enable-javascript", "--window-width=800", "--window-height=600",
+                  "--screenshot-viewport-height=516", f"--screenshot={screenshot}", str(fixture)],
+                 env=env, log_path=screenshot.with_suffix(".log"), timeout=45)
+    document = json.loads(audit.read_text())
+    assert document["title"] == "Portable video playback" and document["ready"] == "complete"
+    selections = {item["name"]: item["elements"] for item in document["selections"]}
+    media = selections["clip"][0]["media"]
+    assert media["error_message"] == "" and media["current_src"].endswith("/portable-video.mp4")
+    assert media["paused"] and 1.5 <= media["current_time"] <= 1.7, media
+    assert (media["frame_width"], media["frame_height"]) == (48, 32) and media["frame_sha256"], media
+    _, _, channels, rows = rendered_png_rows(screenshot.read_bytes())
+    top = next(y for y, row in enumerate(rows[:150]) if row[4 * channels:4 * channels + 3] == b"\xea\x70\xb5")
+    red = rows[top + 29][64 * channels:64 * channels + 3]
+    green = rows[top + 65][64 * channels:64 * channels + 3]
+    assert red[0] >= 235 and max(red[1:]) <= 16, red
+    assert green[1] >= 235 and max(green[0], green[2]) <= 16, green
+    print("PASS: portable video autoplay, paused seek and rendered H.264 frame", flush=True)
+
+
 def check_web_font_browser(binary, artifacts, temporary):
     fixture = Path(__file__).resolve().parents[1] / "Tests/Browser/Native/portable-web-font.html"
     screenshot = artifacts / "portable-web-font.png"
@@ -3446,6 +3474,7 @@ def main():
     parser.add_argument("--output", type=Path, default=repo / "Build/linux/browser-smoke")
     checks = parser.add_mutually_exclusive_group()
     checks.add_argument("--gg-svg", action="store_true", help="check shared GG SVG replay against the portable renderer")
+    checks.add_argument("--media-only", action="store_true", help="check native Linux video playback and GG presentation")
     checks.add_argument("--pattern-images-only", action="store_true", help="check mixed SVG pattern tiles")
     checks.add_argument("--pattern-nested-images-only", action="store_true", help="check nested SVG pattern bitmaps")
     checks.add_argument("--pattern-nested-only", action="store_true", help="check nested SVG pattern tiles")
@@ -3463,6 +3492,9 @@ def main():
     with tempfile.TemporaryDirectory(prefix="vox-linux-") as temporary:
         if args.gg_svg:
             check_gg_svg_browser(binary, artifacts, temporary)
+            return
+        if args.media_only:
+            check_portable_video_browser(binary, artifacts, temporary)
             return
         if args.pattern_images_only or args.pattern_nested_images_only:
             check_svg_pattern_tile_image_browser(binary, artifacts, temporary,

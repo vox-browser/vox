@@ -90,6 +90,12 @@ class LinuxDeployTests(unittest.TestCase):
                 redirect_stdout(io.StringIO()):
             return deploy.deploy(self.root, self.output, package_only)
 
+    def test_gstreamer_build_declares_plugins_and_tls_backend(self):
+        self.dependencies = 'shlibs:Depends=libc6, libgstreamer1.0-0 (>= 1.20)\n'
+        self.package()
+        self.assertIn('gstreamer1.0-plugins-base, gstreamer1.0-plugins-good, '
+                      'gstreamer1.0-libav, glib-networking\n', self.control)
+
     def test_deb_contains_stripped_binaries_desktop_icon_dependencies_and_smoked_install_layout(self):
         before = {path.name: deploy.sha256(path) for path in (self.source, self.helper)}
         with patch.dict(os.environ, VOX_PROXY='http://invalid.example'):

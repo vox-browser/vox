@@ -1,5 +1,44 @@
 # Migrating from Skia to vlib/gg
 
+## Linux video playback through GG
+
+The compilation demo loads a silent H.264 MP4. Linux now uses
+GStreamer for native decoding and presents the retained RGBA frame
+through the same GG streaming texture path used for canvas bitmaps.
+A video resource identity skips repeated uploads of a paused frame.
+The appsink queue holds one sample, and the browser borrows tightly
+packed rows while updating its owned frame. Padded rows reuse a native
+buffer. The existing V media owner handles metadata, selection, autoplay,
+seek, end events, and teardown.
+
+On Ubuntu 24.04 ARM64 with GStreamer 1.24.2, a focused native probe
+decoded the live 1426 × 1080 demo and exercised local preroll, paused
+seeking, playback rate and end-of-stream. The initial adapter cleared
+its paused preroll by checking the regular appsink queue first. The
+retry pulled preroll before polling that queue and passed.
+
+The diagnostic Linux browser used V `5a39a4d` and a single Clang
+18.1.3 `-O0` unit. Its executable SHA-256 was
+`660abce9786efa692d3f52d56890e098fe9ca0e6f71ac91faf6dd95a9bf8e2c6`.
+The [local video fixture](../Tests/Browser/Native/portable-video.html)
+started muted playback, paused, sought to 1.6 seconds, and showed the
+red top and green bottom of the requested frame under Xvfb. The 48 × 32
+fixture movie SHA-256 was
+`0907a2b61970f21d9500665ce33d8964e4bf3c819b6a50a733848eee34f82b08`.
+Headless startup and the existing portable-gradient window checks passed.
+The browser and 3 GiB guard exited zero. Debian and Arch package tests
+verified that media-enabled packages declare their playback plugins.
+
+A fresh Linux Xvfb window loaded live [vlang.io](https://vlang.io/)
+at a 1280 × 800 document viewport with JavaScript enabled. The loaded
+video had a 1426 × 1080 decoded frame, no media error and an active
+playback clock. The capture showed the terminal recording in the
+compilation card. Its window PNG SHA-256 was
+`d6217a2db7c56f3317ea0ccdc855d39640f3379cdc86aa0f1eb210f510aca8a1`.
+The browser and 3 GiB guard exited zero. The macOS and Windows x64 D3D11
+production-mode source checks passed. These runs establish playback and frame presentation
+under software OpenGL. Hardware playback performance remains unmeasured.
+
 ## Rounded raster images in portable replay
 
 The portable replaced-image draw now carries the image element's own

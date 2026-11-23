@@ -1,0 +1,26 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Portable video playback</title>
+<style>
+body { margin: 0; background: #101820 }
+#marker { width: 8px; height: 8px; background: #ea70b5 }
+video { position: absolute; left: 16px; top: 16px; display: block }
+</style>
+<body>
+<div id="marker"></div>
+<video id="clip" autoplay muted playsinline width="96" height="64" src="portable-video.mp4"></video>
+<script>
+const clip = document.getElementById('clip');
+let seekingToSecondScene = false;
+clip.addEventListener('timeupdate', () => {
+    if (seekingToSecondScene || clip.currentTime < 0.2 || clip.paused) return;
+    seekingToSecondScene = true;
+    clip.pause();
+    clip.currentTime = 1.6;
+});
+clip.addEventListener('seeked', () => {
+    if (seekingToSecondScene && clip.paused && clip.currentTime >= 1.5) {
+        document.body.setAttribute('data-video-ready', '');
+    }
+});
+</script>

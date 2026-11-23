@@ -22,6 +22,8 @@ def dependencies(root, binaries):
     for binary in binaries:
         needed = re.findall(r'\(NEEDED\).*\[([^\]]+)\]',
                             capture(['readelf', '--dynamic', binary], root))
+        if 'libgstapp-1.0.so.0' in needed:
+            packages.update(('gst-plugins-good', 'gst-libav', 'glib-networking'))
         linked = capture(['ldd', binary], root)
         for library in needed:
             if library in bundled:

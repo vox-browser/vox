@@ -2,11 +2,9 @@ module main
 
 import dom
 import html
-
-$if macos {
+$if macos || (linux && vox_gstreamer ?) {
 	import math
 }
-
 import painting
 import os
 import platform
@@ -24,6 +22,13 @@ $if macos {
 
 #flag darwin -framework CoreVideo
 #flag darwin -framework CoreMedia
+
+$if linux && vox_gstreamer ? {
+	#pkgconfig gstreamer-app-1.0 gstreamer-video-1.0
+	#include "@VMODROOT/native/include/native_media_linux.h"
+	fn C.vox_linux_media_supports_mp4() i32
+	fn C.vox_linux_media_release_frame(voidptr)
+}
 
 fn C.native_media_open(&char) voidptr
 fn C.native_media_can_play_type(&char) i32
@@ -89,6 +94,9 @@ mut:
 
 fn browser_native_media_type(type_ string) html.CanPlayTypeResult {
 	essence := type_.all_before(';').trim_space().to_lower()
+	$if linux && vox_gstreamer ? {
+		return if essence == 'video/mp4' && C.vox_linux_media_supports_mp4() != 0 { .maybe } else { .empty }
+	}
 	if essence in ['audio/ogg','application/ogg'] {
 		$if macos { if C.native_media_can_play_type(type_.str) != 0 { return .maybe } }
 		return .empty
@@ -111,7 +119,7 @@ fn browser_native_media_type(type_ string) html.CanPlayTypeResult {
 }
 
 fn (mut player BrowserMediaPlayback) close() {
-	$if macos {
+	$if macos || (linux && vox_gstreamer ?) {
 		if player.handle != unsafe { nil } { C.native_media_close(player.handle) }
 	}
 	player.handle = unsafe { nil }
@@ -126,7 +134,7 @@ fn (mut player BrowserMediaPlayback) close() {
 fn (player &BrowserMediaPlayback) ranges() []html.MediaBufferedRange {
 	mut ranges := []html.MediaBufferedRange{}
 	if player.retired { return ranges }
-	$if macos {
+	$if macos || (linux && vox_gstreamer ?) {
 		if player.handle == unsafe { nil } { return ranges }
 		for index in 0 .. int(C.native_media_buffer_count(player.handle)) {
 			ranges << html.MediaBufferedRange{
@@ -175,6 +183,7 @@ fn (mut player BrowserMediaPlayback) update_frame_with_pixel_reuse(pixels &u8, w
 		height:                   height
 		pitch:                    width * 4
 		data:                     bytes
+		alpha_type:               $if linux { u8(3) } $else { u8(0) }
 		native_rows_are_top_down: true
 	})
 	created.generation = previous_generation + 1
@@ -226,7 +235,7 @@ fn (mut session DocumentSession) install_media_playback(element &dom.Element) {
 fn (mut owner BrowserMediaOwner) install_media_playback(element &dom.Element) {
 	if !owner.owns(element) { return }
 	install_video_poster_fetch_hook(element)
-	$if macos {
+	$if macos || (linux && vox_gstreamer ?) {
 		if !element.is_html_element() || element.local_name() !in ['audio', 'video'] { return }
 		mut media := html.html_media_element_for_dom_element(element) or { return }
 		owner.install_native_media_player(element)
@@ -249,7 +258,7 @@ fn (mut session DocumentSession) install_native_media_player(element &dom.Elemen
 
 fn (mut owner BrowserMediaOwner) install_native_media_player(element &dom.Element) {
 	if !owner.owns(element) { return }
-	$if macos {
+	$if macos || (linux && vox_gstreamer ?) {
 		mut media := html.html_media_element_for_dom_element(element) or { return }
 		for player in owner.media_players {
 			if voidptr(player.media) == voidptr(media) { return }
@@ -309,24 +318,32 @@ fn (mut owner BrowserMediaOwner) install_native_media_player(element &dom.Elemen
 			} else {
 				'video/mp4'
 			}
-			p.handle = if p.mime_type == 'video/webm' {
-				browser_open_webm_resource(source, p.element.document().url.serialize())!
-			} else if browser_media_requires_browser_transport(source) {
-				resource := browser_stage_native_media_resource(source,
-					p.element.document().url.serialize())!
-				p.resource_directory = resource.directory
-				C.native_media_open(resource.url.str)
-			} else {
-				C.native_media_open(source.serialize().str)
-			}
+			p.handle = p.open_resource(source)!
 			if p.handle == unsafe { nil } {
 				p.close()
 				return error('Unsupported native media URL')
 			}
-			C.native_wake_browser_after(16)
+			$if macos { C.native_wake_browser_after(16) }
+			$if linux { C.native_media_volume(p.handle, p.media.effective_media_volume()) }
 			return html.MediaResourceResponse{ mime_type: p.mime_type, metadata_pending: true }
 		})
 	}
+}
+
+fn (mut player BrowserMediaPlayback) open_resource(source dom.URL) !voidptr {
+	$if macos || (linux && vox_gstreamer ?) {
+		document_url := player.element.document().url.serialize()
+		$if macos {
+			if player.mime_type == 'video/webm' { return browser_open_webm_resource(source, document_url)! }
+		}
+		if browser_media_requires_browser_transport(source) {
+			resource := browser_stage_native_media_resource(source, document_url)!
+			player.resource_directory = resource.directory
+			return C.native_media_open(resource.url.str)
+		}
+		return C.native_media_open(source.serialize().str)
+	}
+	return error('Native media playback is unavailable')
 }
 
 fn (mut app BrowserApp) install_document_media_playback() {
@@ -402,7 +419,7 @@ fn (mut app BrowserApp) poll_media_playback() {
 
 fn (mut owner BrowserMediaOwner) poll_media_playback(paint_generation u64) {
 	if owner.closed || owner.retiring { return }
-	$if macos {
+	$if macos || (linux && vox_gstreamer ?) {
 		for mut player in owner.media_players {
 			if owner.closed || owner.retiring { return }
 			if player.retired || player.handle == unsafe { nil } { continue }
@@ -418,7 +435,7 @@ fn (mut owner BrowserMediaOwner) poll_media_playback(paint_generation u64) {
 				continue
 			}
 			if status == 0 {
-				C.native_wake_browser_after(16)
+				$if macos { C.native_wake_browser_after(16) }
 				continue
 			}
 			if !player.metadata_loaded {
@@ -449,11 +466,15 @@ fn (mut owner BrowserMediaOwner) poll_media_playback(paint_generation u64) {
 			if pixels != unsafe { nil } {
 				previous_generation := if frame := player.frame { frame.generation } else { u64(0) }
 				stable := player.update_frame(pixels, int(width), int(height))
-				mut plane_format := i32(0)
-				mut plane_length := i32(0)
-				planes := C.native_media_frame_planes(player.handle, &plane_format, &plane_length)
-				player.update_frame_planes(planes, int(plane_length), int(plane_format), previous_generation)
-				C.native_media_free_frame(pixels)
+				$if macos {
+					mut plane_format := i32(0)
+					mut plane_length := i32(0)
+					planes := C.native_media_frame_planes(player.handle, &plane_format, &plane_length)
+					player.update_frame_planes(planes, int(plane_length), int(plane_format), previous_generation)
+					C.native_media_free_frame(pixels)
+				} $else $if linux && vox_gstreamer ? {
+					C.vox_linux_media_release_frame(player.handle)
+				}
 				mut document := media.document() or { continue }
 				owner.invalidate_native_media_frame(mut document, stable, paint_generation)
 			}
@@ -470,7 +491,7 @@ fn (mut owner BrowserMediaOwner) poll_media_playback(paint_generation u64) {
 			if !media.paused() { media.time_marches_on(.normal_playback) }
 			// Continue polling while paused as well: loading, seeks and new frames
 			// must complete without a playing clock or a JavaScript timer.
-			C.native_wake_browser_after(if media.paused() { 100 } else { 16 })
+			$if macos { C.native_wake_browser_after(if media.paused() { 100 } else { 16 }) }
 		}
 	}
 }
