@@ -163,6 +163,73 @@ loads 50 records and links all six original entries; all six still fail executio
 The standalone VM intentionally has no browser Performance/DOM host.
 No source bytes or original imports were rewritten.
 
+## Date runtime follow-up — 2026-11-15
+
+`ad6b2991e` installs Date's wall clock, numeric/copy/component constructors,
+TimeClip, Gregorian calendar arithmetic, UTC and local getters/setters, ISO
+parsing, native string round trips, generic primitive conversion and `toJSON`.
+Local conversions select the earlier instant during an overlap and the prior
+offset during a skipped hour. Locale/Intl formatting, Temporal conversion and
+other implementation-defined legacy parsing remain absent.
+
+The seven Date cases and realm/Object-prototype neighbors pass in both GC
+modes with `TZ=America/New_York`; a separate UTC run passes all seven Date cases.
+A deterministic 500-case diagnostic compares UTC construction and UTC/local
+setters against a pinned Node executable with the same New York timezone; all
+cases pass. It is functional differential evidence, not site performance credit.
+Initial fixture/compile failures and the discovered historical-offset bug are
+retained. The unchanged 50-record GitHub module probe now passes the Date access
+and stops at missing `Set`; other entries still require browser Performance.
+No GitHub hydration or pixel equality follows from these runtime checks.
+
+## Iterator and loop follow-up — 2026-11-15
+
+`334af98d4` installs the existing Array/String iterator implementations in each
+realm, including Array keys/values/entries, the values/@@iterator alias, shared
+iterator ancestry, Unicode string iteration and primitive receiver preservation.
+Four selected files pass with default GC and GC disabled. Iterator helpers,
+the Iterator constructor and async iteration remain separate work.
+
+`b61911374` executes synchronous for-of with lexical iteration environments,
+iterator stepping, and protected cleanup paths. Break/return close once; continue
+and normal exhaustion do not. Throws retain their original reason, next/done/
+value failures respect the iterator's done state, and close errors bypass catches
+inside the loop body. Eight new cases pass in both GC modes; for-in, catch and
+script-evaluation neighbors pass too. Assignment/parameter/catch destructuring,
+async iteration and finally remain incomplete. The new loop code is not present
+in the native observation below.
+
+The shared Object file changed during that commit and included two unfinished
+collection fields. A subsequent commit removes only those incidental fields
+from the committed snapshot while preserving the concurrent worktree edits.
+No shared history was rewritten. The initial array-binding selection failed to
+compile against those in-progress collection types/realm initialization; it
+receives no execution credit. After concurrent `d925de78e` completes Set, the
+array-binding selections pass.
+
+`5bf37acb9` executes array binding declarations through the same iterator records:
+elisions skip value getters; exhaustion supplies undefined without repeating
+next; defaults, named functions, nested patterns and rest preserve source order.
+Normal and exceptional completion close only unfinished iterators. Five new
+cases and object-binding/for-of/script neighbors pass with default GC; the same
+selection plus Set checks passes with GC disabled. The browser diagnostic below
+predates these changes; new native verification is pending.
+
+A new canonical C-O0/Boehm diagnostic includes Date and for-in, but predates
+that iterator registration. Its executable SHA-256 is
+`c8257c6b735946c143ec9a1fccb92d6d760665dcf7f349a1391742b2c6985783`.
+Both fresh headless backends pass. The full 60-second LibJS observation exceeds
+the 3 GiB guard after 43.98 seconds (sampled aggregate peak 3,227,926,528 bytes;
+controller 137, guard 125, browser terminal status unknown; no audit/PNG).
+A separate early 20-second observation with a 10-second stack sample exits zero
+(browser/controller/guard) after 39.86 seconds, captures 33 rows, zero commit links
+and zero latest sections, and remains interactive. Its input pins are unchanged;
+sampled aggregate peak is 3,175,366,656 bytes. This shorter diagnosis does not
+replace the failed full observation or establish hydration/memory acceptance.
+The sole recorded error is the high-contrast module's unsupported for-of loop.
+The stack sample observes module parsing and scope allocation/GC; it supplies
+no allocation-size or performance credit.
+
 ## Native diagnostics after graph integration
 
 `tools/libjs_browser_diagnostic.py` observes a fresh, active native window against
