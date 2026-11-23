@@ -114,6 +114,13 @@
       "new": "\t\tgfx.apply_pipeline(load_pipeline)"
     }
   ],
+  "prepare_gg_gl_msaa_resolve": [
+    {
+      "file": "gpu_surface.v",
+      "old": "\tgfx.end_pass()\n\ts.reset_draws()\n\t// The pass sampled the restored layers.",
+      "new": "\t// Sokol resolves OpenGL multisample passes with glBlitFramebuffer,\n\t// which uses the current scissor. Resolve the entire backing texture\n\t// so pass clears and earlier batches outside the final scissor survive.\n\tif ctx.is_gl && samples > 1 && batches.len > 1 {\n\t\tfinal_scissor := real_scissors[batches[batches.len - 2]]\n\t\tbacking := Rect.ltrb(0, 0, f32(s.texture_width), f32(s.texture_height))\n\t\tif !rect_equal(final_scissor, backing) {\n\t\t\tgfx.apply_scissor_rect(0, 0, s.texture_width, s.texture_height, false)\n\t\t}\n\t}\n\tgfx.end_pass()\n\ts.reset_draws()\n\t// The pass sampled the restored layers."
+    }
+  ],
   "prepare_gg_shadow": [
     {
       "file": "gpu_layer.v",

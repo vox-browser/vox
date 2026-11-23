@@ -1,5 +1,30 @@
 # Migrating from Skia to vlib/gg
 
+## OpenGL multisample resolves after clipped draws
+
+Sokol's OpenGL `glBlitFramebuffer` resolve observes the last draw's
+scissor. When the final batch used a smaller scissor, the resolve left
+old pixels outside it, even after the multisample pass cleared those
+pixels. Canvas now widens the scissor to the backing texture immediately
+before a resolve that needs it. [OpenGL specification, framebuffer blits](https://registry.khronos.org/OpenGL/specs/gl/glspec30.pdf)
+
+The ARM64 Linux Mesa control left pixel `(26, 5)` green after an inverse
+fill and a subsequent clipped clear. The fixed smoke verified transparent
+pixels outside the intersect clip, retained its even-odd hole, and passed
+with both Linux module staging paths. The same pixel checks passed on
+macOS Metal. A separate Sokol counter run observed one additional scissor
+call in the clipped MSAA pass and no additional calls in the single-sample
+and full-surface MSAA cases. Hardware frame timings remain unmeasured.
+
+The Windows 11 QEMU smoke passed the same clip and window pixel checks on
+Mesa WGL and D3D11, with both processes exiting zero under the 3 GiB guard.
+The V `4478fc4` and MinGW GCC 16.2.0 builds used `-prod -no-prod-options`.
+SHA-256 matched before and after launch for WGL
+(`5b08a4be7e5b0cd9a4abfc1ecb19f5f5b1c62941f3fbedeba2d46b2a52c33c36`)
+and D3D11 (`779e624a11f4e158d44f4a4335b25b16affb6fa385968169e026be103182f785`).
+The D3D11 window capture matched the previous capture byte for byte.
+The focused V/Python staging parity and UI2 staging checks passed.
+
 ## Windows D3D11 document SVG fills
 
 The standard Windows build accepts `VOX_GG_SVG=1` to render solid SVG
@@ -51,10 +76,10 @@ font smoke capture.
 
 The shared solid fill and gradient stroke checks passed on Metal and
 ARM64 Linux Mesa. Metal also passed the intersect clip check. Mesa left
-the pixel at `(26, 5)` green outside the clip, both with the staged D3D11
-changes and with the existing Linux production module adapter. The smoke
-runs that specific clip check on Metal and D3D11. The Windows D3D11 browser
-source check, V/Python staging parity, and both staging test suites passed.
+the pixel at `(26, 5)` green outside the clip at the time of this run.
+The OpenGL resolve fix above restored that check on Mesa. The Windows
+D3D11 browser source check, V/Python staging parity, and both staging test
+suites passed.
 
 ## D3D11 texture regions for shared Canvas surfaces
 

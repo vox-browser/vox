@@ -235,23 +235,21 @@ fn check_canvas_solid_fills() ! {
 			transparent
 		})!
 	}
-	// The existing OpenGL adapter leaves pixels outside this intersect clip.
-	if gfx.query_backend() != .glcore33 {
-		// A path clip exercises the depth-only inverse cover as well as the
-		// regular solid fill. The explicit hole survives the clipping pass.
-		target.clear(canvas.Color4f{})
-		target.clip_path(canvas.Path{
-			verbs:     contours.verbs
-			points:    contours.points
-			weights:   contours.weights
-			fill_type: .even_odd
-		}, .intersect, true)!
-		target.draw_rect(canvas.Rect.ltrb(0, 0, width, height), canvas.Paint.rgba8(0, 255, 0, 255))!
-		target.read_pixels(pixels.data, pitch)!
-		expect_canvas_pixel(pixels, pitch, 6, 14, green)!
-		expect_canvas_pixel(pixels, pitch, 16, 16, transparent)!
-		expect_canvas_pixel(pixels, pitch, 26, 5, transparent)!
-	}
+	// Seed the resolve with an inverse fill so a partial blit would leave
+	// stale color outside the next pass's scissor, even after a clear.
+	expect_canvas_pixel(pixels, pitch, 26, 5, green)!
+	target.clear(canvas.Color4f{})
+	target.clip_path(canvas.Path{
+		verbs:     contours.verbs
+		points:    contours.points
+		weights:   contours.weights
+		fill_type: .even_odd
+	}, .intersect, true)!
+	target.draw_rect(canvas.Rect.ltrb(0, 0, width, height), canvas.Paint.rgba8(0, 255, 0, 255))!
+	target.read_pixels(pixels.data, pitch)!
+	expect_canvas_pixel(pixels, pitch, 6, 14, green)!
+	expect_canvas_pixel(pixels, pitch, 16, 16, transparent)!
+	expect_canvas_pixel(pixels, pitch, 26, 5, transparent)!
 
 	$if windows && sokol_d3d11 ? {
 		mut recovery := ctx.new_surface(width: width, height: height)!

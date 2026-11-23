@@ -84,6 +84,7 @@ fn prepare_gg_canvas(canvas string) ! {
 	if os.is_file(join(canvas, 'gpu_context.v')) {
 		gg_repair_patches(canvas, 'prepare_gg_windows_canvas')!
 		gg_repair_patches(canvas, 'prepare_gg_d3d11_canvas')!
+		gg_repair_patches(canvas, 'prepare_gg_gl_msaa_resolve')!
 		gg_repair_patches(canvas, 'prepare_gg_document_gradient_hole')!
 		gg_repair_patches(canvas, 'prepare_gg_conical_gradient')!
 		for name in ['document_surface.v', 'window_gpu_windows.c.v', 'd3d11_canvas_windows.v'] {

@@ -143,20 +143,20 @@ class VBuildMigrationTest(unittest.TestCase):
         self.assertEqual(modules, Path(self.run_tool('prepare_ui2', self.compiler)))
         self.assertEqual(window_adapter.read_text(), 'separately staged Sokol window code')
 
-    def test_d3d11_canvas_staging_matches_python(self):
+    def test_canvas_gpu_staging_matches_python(self):
         modules = Path(self.run_tool('prepare_ui2', self.compiler))
         canvas = modules / 'gg/canvas'
-        expected = self.work / 'python-d3d11-canvas'
+        expected = self.work / 'python-gpu-canvas'
         expected.mkdir()
         patches = json.loads((ROOT / 'tools/buildtools/gg_patches.json').read_text())
-        windows_groups = ('prepare_gg_windows_canvas', 'prepare_gg_d3d11_canvas')
-        groups = (*windows_groups, 'prepare_gg_document_gradient_hole', 'prepare_gg_conical_gradient')
+        gpu_groups = ('prepare_gg_windows_canvas', 'prepare_gg_d3d11_canvas', 'prepare_gg_gl_msaa_resolve')
+        groups = (*gpu_groups, 'prepare_gg_document_gradient_hole', 'prepare_gg_conical_gradient')
         for name in {operation['file'] for group in groups for operation in patches[group]}:
             target = expected / name
             target.parent.mkdir(parents=True, exist_ok=True)
             target.write_bytes((self.vlib / 'gg/canvas' / name).read_bytes())
         ui.stage_document_surface(expected)
-        for group in windows_groups:
+        for group in gpu_groups:
             for operation in patches[group]:
                 name = operation['file']
                 with self.subTest(group=group, file=name):
