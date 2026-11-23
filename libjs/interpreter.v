@@ -298,8 +298,16 @@ fn (mut vm VM) execute_instruction(instruction &Instruction, executable &Executa
 		}
 		.get_callee_and_this {
 			value, this_value := vm.execute_callee_read(instruction, executable)!
-			frame.values[instruction.dst.slot(executable, frame.argument_count, true)!] = value
-			frame.values[instruction.rhs.slot(executable, frame.argument_count, true)!] = this_value
+			if checked_interpreter_operands {
+				frame.values[instruction.dst.slot(executable, frame.argument_count, true)!] = value
+				frame.values[instruction.rhs.slot(executable, frame.argument_count, true)!] = this_value
+			} else {
+				unsafe {
+					mut values := &Value(frame.values.data)
+					values[instruction.dst.validated_slot(executable)] = value
+					values[instruction.rhs.validated_slot(executable)] = this_value
+				}
+			}
 			return next
 		}
 		.add {

@@ -81,7 +81,12 @@ fn (mut vm VM) execute_reused_argument_call(instruction &Instruction, executable
 	defer { stack.release_call_argument_workspace(mut buffer, count) }
 	// The count check bounds this copy by the fixed workspace capacity.
 	for index, operand in instruction.arguments {
-		value := frame.checked_dispatch_value(operand.slot(executable, frame.argument_count, false)!)!
+		value := if checked_interpreter_operands {
+			frame.checked_dispatch_value(operand.slot(executable, frame.argument_count, false)!)!
+		} else {
+			// run_executable() validated this executable for the frame.
+			unsafe { (&Value(frame.values.data))[operand.validated_slot(executable)] }
+		}
 		if value.is_special_empty_value() { return vm.throw_error(.internal_error, 'Bytecode read an uninitialized argument') }
 		buffer.values[index] = value
 	}

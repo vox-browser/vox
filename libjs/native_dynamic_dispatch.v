@@ -65,7 +65,12 @@ fn (mut vm VM) execute_call_instruction(instruction &Instruction, executable &Ex
 		for index in 0 .. frame.passed_argument_count { call_arguments << frame.argument(index) }
 	}
 	for argument_index, operand in instruction.arguments {
-		argument := frame.checked_dispatch_value(operand.slot(executable, frame.argument_count, false)!)!
+		argument := if checked_interpreter_operands {
+			frame.checked_dispatch_value(operand.slot(executable, frame.argument_count, false)!)!
+		} else {
+			// run_executable() validated this executable for the frame.
+			unsafe { (&Value(frame.values.data))[operand.validated_slot(executable)] }
+		}
 		if argument.is_special_empty_value() {
 			return vm.throw_error(.internal_error,
 				'Bytecode read an uninitialized argument')
