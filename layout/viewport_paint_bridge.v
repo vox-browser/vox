@@ -4511,16 +4511,21 @@ pub fn compatibility_lower_svg_mask_operations(source []painting.SVGMaskPaintOpe
 						}
 						delta := projected.delta
 						// Rasterize the translated source directly on the destination grid.
-						if ![crop.x, crop.y, crop.right(), crop.bottom(), delta.x, delta.y]!.all(math.floor(it) == it) {
+						if math.floor(delta.x) != delta.x || math.floor(delta.y) != delta.y {
 							return none
 						}
+						// Keep every raster pixel covered by the output subregion.
+						left := math.floor(crop.x)
+						top := math.floor(crop.y)
+						pixel_crop := painting.Rect{left, top, math.ceil(crop.right()) - left,
+							math.ceil(crop.bottom()) - top}
 						offsets << SVGPatternFilterPlacement{filter_depth, placement[4], placement[5]}
 						placement[4] += delta.x
 						placement[5] += delta.y
 						if !math.is_finite(placement[4]) || !math.is_finite(placement[5]) { return none }
 						operations << PaintMaskOperation{
 							kind: .begin_opacity
-							filter: &PaintSVGMaskFilter{bounds: crop}
+							filter: &PaintSVGMaskFilter{bounds: pixel_crop}
 						}
 					} else {
 						effect := filter.source_color_filter()?

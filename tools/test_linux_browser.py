@@ -2296,6 +2296,21 @@ def check_svg_offset_tile_pixels(rows, channels, scale, marker, edited, *, filte
     svg_scale = 2 if filter_units == "viewport" else 1
     for left in (0, 128, 256):
         ink, stripe = (black, black) if left == 256 else (red, lime)
+        if filter_units == "fractional-clip":
+            # Check both sides of every edge in device pixels, including odd
+            # positions at 2× where the two raster scales enclose different areas.
+            if edited:
+                x, y, right, bottom = (7, 6, 14, 12) if scale == 1 else (14, 12, 28, 24)
+            else:
+                x, y, right, bottom = (2, 5, 13, 12) if scale == 1 else (5, 11, 25, 23)
+            for column, row, expected in ((x, y, ink), (right - 1, bottom - 1, ink),
+                                          (x - 1, y, white), (x, y - 1, white),
+                                          (right, y, white), (x, bottom, white),
+                                          (8 * scale, 38 * scale, stripe)):
+                position = (left * scale + column) * channels
+                actual = rows[marker + 8 * scale + row][position:position + 3]
+                assert actual == expected, (scale, left, column, row, actual.hex(), expected.hex())
+            continue
         if filter_units == "tile-clip":
             band = white if edited else ink
             samples = ((0, 3, band), (7, 5, band), (8, 5, white), (1, 2, white),
@@ -3249,7 +3264,8 @@ def main():
             for name, filter_units in (("offset", None), ("offset-bounds", "region"),
                                        ("offset-primitive-units", "primitive"),
                                        ("offset-viewport", "viewport"), ("offset-subregion", "subregion"),
-                                       ("offset-curves", "curves"), ("offset-tile-clip", "tile-clip")):
+                                       ("offset-curves", "curves"), ("offset-tile-clip", "tile-clip"),
+                                       ("offset-fractional-clip", "fractional-clip")):
                 check_svg_tile_browser(binary, artifacts, temporary, name, groups=3,
                                        ready="data-offset-ready", check_edited=functools.partial(
                                            check_svg_offset_tile_pixels, edited=True,
