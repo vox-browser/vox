@@ -8530,7 +8530,11 @@ fn (mut app BrowserApp) handle_key(key gg.KeyCode, modifier gg.Modifier) {
 }
 
 fn main() {
-	run_browser(os.args)
+	$if vox_reddit_engine_benchmark ? {
+		reddit_engine_benchmark_main() or { panic(err) }
+	} $else {
+		run_browser(os.args)
+	}
 }
 
 fn run_browser(arguments []string) {

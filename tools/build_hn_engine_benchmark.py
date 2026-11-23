@@ -14,7 +14,7 @@ import re
 import shutil
 import subprocess
 
-from freeze_browser_compile import prepare, validate
+from freeze_browser_compile import fingerprint, prepare, validate
 from production_source_manifest import begin, combine, compile_component
 from rebuild_browser import repository_state
 
@@ -66,6 +66,50 @@ def profile_array_return_compat(source):
         + m[1] + '}, .arg1={' + m[2] + '}}', source)
 
 
+def recompile_sealed(args, receipt, output):
+    """Change only the inlining policy of already sealed, unprofiled inputs."""
+    origin = args.recompile_from.resolve()
+    configuration = json.loads((origin / 'configuration.json').read_text())
+    if ('-profile' in configuration.get('generation_command', [])
+            or configuration['engine'] != args.engine
+            or configuration['allocator'] != args.allocator
+            or configuration['optimization'] != args.optimization
+            or configuration.get('benchmark_mode', 'test') != ('production' if args.production else 'test')
+            or configuration['c_mode'] != 'single'):
+        raise ValueError('Recompilation requires matching unprofiled sealed inputs')
+    data = json.loads((origin / 'frozen-compile.json').read_text())
+    validate(origin, data['source_inputs'], require_complete=False)
+    command = data['compiler_command']
+    if command.count('-o') != 1:
+        raise ValueError('Expected one sealed compiler output')
+    command[command.index('-o') + 1] = str(output)
+    # Keep every compiler argument except the explicitly selected LLVM policy.
+    command = [item for index, item in enumerate(command)
+               if not item.startswith('-inline-threshold=')
+               and not (item == '-mllvm' and index + 1 < len(command)
+                        and command[index + 1].startswith('-inline-threshold='))]
+    if args.inline_threshold is not None:
+        command += ['-mllvm', f'-inline-threshold={args.inline_threshold}']
+    configuration.update(inline_threshold=args.inline_threshold,
+                         recompiled_from=str(origin))
+    data.update(compiler_command=command, complete=False)
+    data.pop('compiler_exit', None)
+    data['sealed_inputs'].update(fingerprint([origin / name for name in
+        ['configuration.json', 'source-manifest.json', 'frozen-compile.json']]))
+    save(receipt / 'configuration.json', configuration)
+    save(receipt / 'source-manifest.json', json.loads((origin / 'source-manifest.json').read_text()))
+    save(receipt / 'frozen-compile.json', data)
+    validate(receipt, data['source_inputs'], require_complete=False)
+    result = subprocess.run(command, cwd=data['cwd'])
+    data.update(compiler_exit=result.returncode, complete=result.returncode == 0)
+    save(receipt / 'frozen-compile.json', data)
+    if result.returncode:
+        return result.returncode
+    validate(receipt, data['source_inputs'])
+    print(output, flush=True)
+    return 0
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--engine', required=True, choices=['v8', 'jsc'])
@@ -75,12 +119,21 @@ def main():
     parser.add_argument('--allocator', choices=['prealloc', 'boehm'], default='prealloc')
     parser.add_argument('--optimization', choices=['O2', 'O3'], default='O3')
     parser.add_argument('--inline-threshold', type=int, help='LLVM inlining threshold; manual production prealloc builds use 1500')
+    parser.add_argument('--recompile-from', type=Path,
+                        help='Reuse a sealed .build directory, changing only its inlining threshold')
+    parser.add_argument('--seal-only', action='store_true',
+                        help='Prepare verified C/native inputs without running clang or producing a binary')
     parser.add_argument('--compiler', type=Path, default=Path(os.environ.get('V_BIN', str(Path.home() / 'code/v/v'))))
     parser.add_argument('--v8-adapter', type=Path)
+    parser.add_argument('--production', action='store_true',
+                        help='Build the Reddit workload through main without V test-mode branches')
     parser.add_argument('--profile', type=Path,
                         help='Diagnostic V -profile output; never use this binary for acceptance timing')
     parser.add_argument('--profile-fns', help='Restrict V profiling to these comma-separated entry functions')
     args = parser.parse_args()
+    reddit = args.entry.resolve() == (ROOT / 'sites/reddit_engine_benchmark_test.v').resolve()
+    if args.production and not reddit:
+        parser.error('--production currently supports the Reddit workload')
     if args.profile_fns and not args.profile:
         parser.error('--profile-fns requires --profile')
     if args.inline_threshold is not None and args.inline_threshold < 1:
@@ -91,15 +144,21 @@ def main():
     output.parent.mkdir(parents=True, exist_ok=True)
     receipt = output.with_name(output.name + '.build')
     receipt.mkdir(exist_ok=False)
+    if args.recompile_from:
+        if args.profile or args.profile_fns or args.seal_only:
+            parser.error('Sealed recompilation does not add profiling')
+        return recompile_sealed(args, receipt, output)
     compiler = args.compiler.resolve()
     if args.allocator == 'prealloc':
         runtime = Path(v_tool('prepare_prealloc_runtime', compiler, ROOT / 'Build/v/prealloc-runtime'))
         compiler = runtime / 'compiler/v'
     ui = v_tool('prepare_ui2', compiler)
     http = v_tool('prepare_http_compat', compiler)
-    entry = benchmark_entry(ROOT, ROOT / args.entry)
+    entry = ROOT if args.production else benchmark_entry(ROOT, ROOT / args.entry)
     cflags = '-' + args.optimization
     backend = []
+    if reddit:
+        backend += ['-d', 'vox_reddit_engine_benchmark']
     if args.engine == 'v8':
         if not args.v8_adapter or not args.v8_adapter.is_file():
             parser.error('V8 requires --v8-adapter pointing to libVoxJSCOnV8.dylib')
@@ -110,7 +169,7 @@ def main():
                 parser.error('Output directory contains another V8 adapter')
         else:
             link.symlink_to(adapter)
-        backend = ['-d', 'vox_v8', '-ldflags', f'-L{adapter.parent} -lVoxJSCOnV8 -Wl,-rpath,{adapter.parent}']
+        backend += ['-d', 'vox_v8', '-ldflags', f'-L{adapter.parent} -lVoxJSCOnV8 -Wl,-rpath,{adapter.parent}']
         cflags += f' -I{ROOT}/browserjs/v8/include'
     source, flags = receipt / 'benchmark.c', receipt / 'benchmark.flags'
     component = receipt / 'parsed'
@@ -134,7 +193,8 @@ def main():
     os.environ['V3_STR_CAP'] = '1'
     os.environ['V_MACOS_V3_NO_FALLBACK'] = '1'
     save(receipt / 'configuration.json', dict(engine=args.engine, allocator=args.allocator,
-         optimization=args.optimization, inline_threshold=args.inline_threshold, c_mode='single', generation_command=command))
+         optimization=args.optimization, inline_threshold=args.inline_threshold, c_mode='single',
+         benchmark_mode='production' if args.production else 'test', generation_command=command))
     save(receipt / 'inputs-before.json', repository_state(ROOT))
     inventory = begin(ROOT)
     save(receipt / 'source-inventory.json', inventory)
@@ -159,6 +219,9 @@ def main():
         data['compiler_command'] += ['-mllvm', f'-inline-threshold={args.inline_threshold}']
         save(receipt / 'frozen-compile.json', data)
     validate(receipt, data['source_inputs'], require_complete=False)
+    if args.seal_only:
+        print(receipt, flush=True)
+        return 0
     result = subprocess.run(data['compiler_command'], cwd=data['cwd'])
     data.update(compiler_exit=result.returncode, complete=result.returncode == 0)
     save(receipt / 'frozen-compile.json', data)

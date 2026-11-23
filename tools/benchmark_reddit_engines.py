@@ -23,18 +23,41 @@ from page_archive import Replay
 
 ROOT = Path(__file__).resolve().parents[1]
 METRICS = ['initialization_ms', 'first_cycle_ms', 'callback_ms', 'compile_finish_ms', 'total_ms']
-OPTIMIZATION_COUNTERS = {'regexp-flags': 'regexp_flag_getter_reads'}
+OPTIMIZATION_COUNTERS = {'regexp-flags': 'regexp_flag_getter_reads',
+                         'declarative-reads': 'direct_declarative_binding_reads',
+                         'regex-suffix-starts': 'regex_suffix_searches',
+                         'small-property-hints': 'small_property_hint_hits',
+                         'indexed-properties': 'indexed_property_misses',
+                         'string-key-scans': 'string_key_scans',
+                         'direct-frame-clears': 'direct_frame_clears',
+                         'direct-call-bindings': 'direct_call_bindings',
+                         'regexp-test-results': 'regexp_test_results',
+                         'regexp-empty-replacements': 'empty_regexp_replacements',
+                         'validation-arity': 'validation_arity_hits',
+                         'compiler-validation': 'compiler_validation_hits',
+                         'prototype-lookups': 'indexed_prototype_lookup_hits',
+                         'register-call-metadata': 'register_call_metadata_reads',
+                         'native-binding-reads': 'native_binding_steps'}
+CACHE_OPTIMIZATION_COUNTERS = {'native-cache-digests': 'accelerated_key_bytes',
+                               'native-key-encoding': 'in_place_encoded_key_bytes'}
+OPTIMIZATION_NAMES = [*OPTIMIZATION_COUNTERS, *CACHE_OPTIMIZATION_COUNTERS]
 
 
 def validate_control_diagnostics(before, after, disabled=None):
-    if (any(before['activity'][key] != after['activity'][key]
-            for key in ['entries', 'fast_steps', 'slow_steps'])
+    if (before['activity']['entries'] != after['activity']['entries']
+            or sum(before['activity'][key] for key in ['fast_steps', 'slow_steps']) !=
+               sum(after['activity'][key] for key in ['fast_steps', 'slow_steps'])
             or before['cache']['cache_hits'] != after['cache']['cache_hits']):
         raise ValueError('Control/candidate diagnostic workload or native cohort differs')
     if disabled:
-        key = OPTIMIZATION_COUNTERS[disabled]
-        if after['activity'].get(key, 0) <= 0 or before['activity'].get(key) != 0:
-            raise ValueError('Missing enabled/disabled optimization-path proof: ' + disabled)
+        for optimization in disabled.split(','):
+            if optimization not in OPTIMIZATION_NAMES:
+                raise ValueError('Unknown optimization control: ' + optimization)
+            section = 'cache' if optimization in CACHE_OPTIMIZATION_COUNTERS else 'activity'
+            counters = CACHE_OPTIMIZATION_COUNTERS if section == 'cache' else OPTIMIZATION_COUNTERS
+            key = counters[optimization]
+            if after[section].get(key, 0) <= 0 or before[section].get(key) != 0:
+                raise ValueError('Missing enabled/disabled optimization-path proof: ' + optimization)
 
 
 def faster_than_v8(summary):
@@ -49,12 +72,14 @@ def faster_than_v8(summary):
     return result
 
 
-def validate(visit, mode, cycles, manifest_sha, diagnostic=False, memory=False):
+def validate(visit, mode, cycles, manifest_sha, diagnostic=False, memory=False, production=False):
     if (visit['mode'] != mode or visit['cycles'] != cycles
             or visit['manifest_sha256'] != manifest_sha
             or not all(visit[k] for k in ['collapse_verified', 'classes_restored', 'probe_verified'])
             or visit['native_context'] != (mode in ['v8', 'jsc'])):
         raise ValueError('Wrong workload, failed DOM audit, or unexpected engine fallback')
+    if visit.get('test_build') is not (not production):
+        raise ValueError('Benchmark test/production mode differs from the requested protocol')
     if any(not math.isfinite(visit[k]) or visit[k] < 0 for k in METRICS):
         raise ValueError('Invalid measured interval')
     if abs(visit['total_ms'] - sum(visit[k] for k in METRICS[:-1])) > 0.001:
@@ -81,13 +106,14 @@ def main():
     parser.add_argument('--v8-binary', required=True, type=Path)
     parser.add_argument('--jsc-binary', required=True, type=Path)
     parser.add_argument('--libjs-control-binary', type=Path, help='Optional prior LibJS build for matched control/candidate visits')
-    parser.add_argument('--libjs-control-disable', choices=OPTIMIZATION_COUNTERS,
-                        help='Use the same LibJS binary with this optimization disabled in test mode')
+    parser.add_argument('--libjs-control-disable',
+                        help='Comma-separated test controls for the same binary: ' + ', '.join(OPTIMIZATION_NAMES))
     parser.add_argument('--archive', required=True, type=Path)
     parser.add_argument('--output', required=True, type=Path)
     parser.add_argument('--native-cache', required=True, type=Path)
     parser.add_argument('--skip-seed', action='store_true', help='Use a previously filled, pinned native cache')
     parser.add_argument('--memory', action='store_true', help='Separate root-process high-water RSS cohort')
+    parser.add_argument('--production', action='store_true', help='Require production runtime builds without V test-mode controls')
     parser.add_argument('--pairs', type=int, default=7)
     parser.add_argument('--cycles', type=int, default=100)
     parser.add_argument('--timeout', type=float, default=180)
@@ -100,13 +126,19 @@ def main():
         parser.error('Cold seed requires a new native-cache directory')
     if args.libjs_control_disable and args.libjs_control_binary:
         parser.error('A disabled-feature control uses the same JSC/LibJS binary')
+    if args.libjs_control_disable:
+        controls = args.libjs_control_disable.split(',')
+        if len(controls) != len(set(controls)) or any(key not in OPTIMIZATION_NAMES for key in controls):
+            parser.error('Unknown or repeated LibJS optimization control')
     have_control = bool(args.libjs_control_binary or args.libjs_control_disable)
+    if args.production and args.libjs_control_disable:
+        parser.error('Disabled-feature controls require test mode; production comparisons use separately built controls')
     binaries = {'v8': args.v8_binary.resolve(), 'jsc': args.jsc_binary.resolve(),
                 'libjs-warm': args.jsc_binary.resolve(), 'libjs-cold': args.jsc_binary.resolve()}
     if have_control:
         binaries['libjs-control'] = (args.libjs_control_binary or args.jsc_binary).resolve()
     engines = ['v8','jsc','libjs-warm'] + (['libjs-control'] if have_control else [])
-    report = dict(libjs_control_disable=args.libjs_control_disable,
+    report = dict(libjs_control_disable=args.libjs_control_disable, benchmark_mode='production' if args.production else 'test',
                   scope='Recovered original Reddit listing scripts plus representative two-comment/menu probe; '
                   'HTML/runtime/script initialization, first measured cycle, repeated native click dispatch and DOM synchronization, '
                   'explicit cache finish. Sum of intervals excludes process startup, file hashing, audits, teardown, external network, '
@@ -169,7 +201,7 @@ def main():
                 raise ValueError('Expected exactly one visit')
             visit = visits[0]
             attempt['visit'] = visit
-            validate(visit, actual_mode, count, report['inputs'][str(archive / 'manifest.json')], diagnostic, args.memory)
+            validate(visit, actual_mode, count, report['inputs'][str(archive / 'manifest.json')], diagnostic, args.memory, args.production)
             if diagnostic and mode=='v8' and 'Vox V8 backend: V8 ' not in stderr:
                 raise ValueError('Missing actual V8 backend diagnostic')
             verify()
@@ -185,7 +217,7 @@ def main():
 
     try:
         with canonical_bundle_lease(ROOT / 'Build/v/Vox.app'):
-            paths = [Path(__file__).resolve(), ROOT/'sites/reddit_engine_benchmark_test.v', ROOT/'tools/page_archive.py',
+            paths = [Path(__file__).resolve(), ROOT/'sites/reddit_engine_benchmark_test.v', ROOT/'sites/reddit_engine_benchmark.v', ROOT/'tools/page_archive.py',
                      ROOT/'tools/benchmark_hn_engines.py', archive/'manifest.json', *sorted((archive/'bodies').iterdir()),
                      Path(replay.ready['ca'])]
             configurations = []
@@ -195,11 +227,13 @@ def main():
                 if not build:
                     raise ValueError('Missing sealed benchmark build')
                 parsed = json.loads(next(p for p in receipts if p.name=='source-manifest.json').read_text())
-                benchmark_source = ROOT/'sites/reddit_engine_benchmark_test.v'
+                benchmark_source = ROOT/'sites/reddit_engine_benchmark.v'
                 if parsed.get(str(benchmark_source)) != digest(benchmark_source):
                     raise ValueError('Executable does not contain the current benchmark source')
                 report['builds'][engine] = build
                 configuration = build['configuration']
+                if configuration.get('benchmark_mode') != report['benchmark_mode']:
+                    raise ValueError('Build receipt test/production mode does not match the workload')
                 configurations.append({k:configuration[k] for k in ['allocator','optimization','inline_threshold','c_mode']})
                 paths.extend([binary,*receipts,*runtime_input_paths(binary,env_base)])
                 imports = subprocess.check_output(['nm','-m','-u',str(binary)],text=True)

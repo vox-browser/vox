@@ -4,7 +4,7 @@ from benchmark_reddit_engines import faster_than_v8, validate, validate_control_
 
 
 def visit():
-    return dict(mode='libjs-warm', cycles=100, manifest_sha256='fixture',
+    return dict(mode='libjs-warm', test_build=True, cycles=100, manifest_sha256='fixture',
                 collapse_verified=True, classes_restored=True, probe_verified=True,
                 native_context=False, initialization_ms=3, first_cycle_ms=1,
                 callback_ms=10, compile_finish_ms=0, total_ms=14,
@@ -15,6 +15,38 @@ def visit():
 
 
 class RedditReceiptTests(unittest.TestCase):
+    def test_production_protocol_rejects_test_or_missing_mode_proof(self):
+        value = visit()
+        with self.assertRaises(ValueError):
+            validate(value, 'libjs-warm', 100, 'fixture', production=True)
+        value['test_build'] = False
+        validate(value, 'libjs-warm', 100, 'fixture', production=True)
+        with self.assertRaises(ValueError):
+            validate(value, 'libjs-warm', 100, 'fixture')
+        del value['test_build']
+        with self.assertRaises(ValueError):
+            validate(value, 'libjs-warm', 100, 'fixture', production=True)
+
+    def test_native_dispatch_redistribution_preserves_total_work(self):
+        before, after = visit(), visit()
+        before['activity'].update(entries=42, fast_steps=100, slow_steps=20, native_binding_steps=0)
+        after['activity'].update(entries=42, fast_steps=110, slow_steps=10, native_binding_steps=10)
+        validate_control_diagnostics(before, after, 'native-binding-reads')
+        after['activity']['slow_steps'] += 1
+        with self.assertRaises(ValueError):
+            validate_control_diagnostics(before, after, 'native-binding-reads')
+
+    def test_initialization_cache_paths_require_enabled_and_disabled_proof(self):
+        before, after = visit(), visit()
+        for value in [before, after]:
+            value['activity'].update(entries=42, fast_steps=100, slow_steps=20)
+        before['cache']['accelerated_key_bytes'] = 0
+        after['cache']['accelerated_key_bytes'] = 1024
+        validate_control_diagnostics(before, after, 'native-cache-digests')
+        after['cache']['accelerated_key_bytes'] = 0
+        with self.assertRaises(ValueError):
+            validate_control_diagnostics(before, after, 'native-cache-digests')
+
     def test_same_binary_control_requires_enabled_disabled_path_and_identical_work(self):
         before, after = visit(), visit()
         for value in [before, after]:
