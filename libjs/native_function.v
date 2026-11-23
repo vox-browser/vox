@@ -195,5 +195,13 @@ pub fn call(mut vm VM, function Value, this_value Value, arguments []Value) !Val
 		return vm.throw_error_type(.type_error, .not_a_function, function.str())
 	}
 	mut callable := function.as_function()
+	// ECMAScriptFunction.internal_call() for an ordinary function is
+	// call_with_new_target(undefined, none), i.e. call_body(); skip the
+	// interface dispatch and the two wrappers that rewrap its result.
+	if mut callable is ECMAScriptFunction {
+		if callable.data.kind == .normal {
+			return callable.call_body(mut vm, this_value, arguments, js_undefined(), none, none)
+		}
+	}
 	return callable.internal_call(mut vm, this_value, arguments)
 }
