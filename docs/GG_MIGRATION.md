@@ -86,10 +86,67 @@ to 6.53.
 | 3 | 0.553 | 0.125 |
 
 The harness measures clip preparation with synthetic geometries.
-The Linux control build and Windows production-mode source check timed
-out. The Linux VM also lacked memory for the candidate build while
-other jobs were active. Browser pixel verification, scrolling
-measurements and Windows runtime remain open.
+The initial Linux control build and Windows production-mode source
+check timed out. The original Linux VM also lacked memory for the
+candidate build while other jobs were active.
+
+#### Linux window verification
+
+A temporary Ubuntu 24.04 ARM64 VM with four vCPUs and 10 GiB RAM
+built `5492e717e` from the canonical checkout mounted read-only. V
+`5a39a4d` generated one C unit. After a 360-second guard timeout, the
+retry completed C generation in 334.8 seconds with peak sampled RSS
+of 6,055,100,416 bytes. Clang 18.1.3 linked the diagnostic `-O0`
+executable from those same C inputs. The `-O2` link timed out at
+365 seconds.
+
+The diagnostic executable SHA-256 was
+`32ef5b13041dd516f178c7006b216a51ff37795bca54604570936fc20af442a9`.
+Headless startup and the portable-gradient window checks passed.
+The latter matched the ramp, full-raster and uncached-clip captures
+and confirmed cache hits in the enabled runs. The rounded scrolling
+fixture also matched pixel for pixel with the cache on and off at
+four CSS scroll offsets. These were fresh 1024 × 600 Xvfb document
+viewports at 1×, using Mesa llvmpipe with LLVM 20.1.2. All browser
+exits and the 3 GiB guard exit were zero. Executable, fixture, Xvfb
+and native-library hashes held throughout.
+
+| Scroll offset (CSS px) | Decoded document SHA-256 in both modes |
+| ---: | --- |
+| 0 | `e36c6402712c43cad77b070b7bf51ecc7f2c7f909aed2201a64596548e7bd4b6` |
+| 42 | `0794a047854b7bf884b527549dc19619c12d822fcc5cdf906895d1f35af7b25e` |
+| 256 | `e30d303645c32003411db3e1f870906e844b579c0cb0928b6aa42bbbe8d93bab` |
+| 310 | `11991ad79afb72a2e325df5e47ea3171d22e5de6e655784133f9d478157e3ea4` |
+
+#### Linux software replay timings
+
+Separate diagnostic runs counted 21 hits and 21 misses after the first
+completed scroll callback on the rounded fixture, and zero clip lookups
+on the rectangular fixture. Timing runs had clip diagnostics disabled.
+Three pairs per fixture used the same pinned diagnostic executable,
+fresh processes, profiles and caches, a 1024 × 600 document viewport,
+one second to settle and retained OS caches. The cache order was off/on,
+on/off, off/on. The rectangular fixture used 48 synthetic 42 px callbacks.
+The rounded fixture used 32 and matched the earlier twelve-card workload.
+Each pair had identical scroll positions and paint-command counts.
+All browser, driver and 3 GiB guard exits were zero. Guest one-minute
+load ranged from 1.24 to 2.94. Host one-minute load was 13.74 before
+and 9.87 after the cohort.
+
+| Fixture and pair | Median replay, off / on (ms) | p95, off / on (ms) | Max, off / on (ms) | Median allocation, off / on (KiB) |
+| --- | ---: | ---: | ---: | ---: |
+| Rectangular 1 | 2.752 / 2.870 | 3.413 / 5.562 | 6.153 / 6.087 | 579.0 / 578.0 |
+| Rectangular 2 | 2.867 / 2.586 | 5.634 / 3.376 | 7.087 / 5.953 | 578.5 / 579.5 |
+| Rectangular 3 | 2.831 / 2.582 | 3.568 / 3.004 | 5.517 / 3.353 | 580.0 / 578.0 |
+| Rounded 1 | 408.297 / 378.381 | 450.287 / 407.608 | 550.279 / 410.715 | 4947.0 / 4870.0 |
+| Rounded 2 | 315.378 / 339.695 | 770.375 / 414.575 | 898.162 / 416.652 | 4945.0 / 4865.5 |
+| Rounded 3 | 310.356 / 387.595 | 350.666 / 412.079 | 352.122 / 416.999 | 4950.0 / 4869.0 |
+
+Rounded draws saved 77–81 KiB of median allocation per callback. Median
+replay time fell in one pair and rose in two, with 32% variation among
+the rounded controls. These timings cover synthetic `-O0` software replay.
+Reuse remains opt-in. The Windows production-mode source retry timed out
+at 350 seconds. Optimized performance and Windows runtime remain open.
 
 ## Opt-in direct compositing for solid rectangular SVG masks
 
