@@ -556,8 +556,8 @@ pub fn (element &Element) numeric_filter_offset(primitive &Element, object_bound
 	return offset
 }
 
-// Resolve numeric filter coordinates without a viewport length context.
-pub fn (element &Element) numeric_filter_region(object_bounds ?Rect) ?Rect {
+// Resolve filter coordinates expressed as numbers or percentages.
+pub fn (element &Element) numeric_filter_region(object_bounds ?Rect, viewport_size ?Point) ?Rect {
 	object_units := element.filter_units() == .object_bounding_box
 	mut target := Rect{}
 	if object_units {
@@ -568,8 +568,14 @@ pub fn (element &Element) numeric_filter_region(object_bounds ?Rect) ?Rect {
 	for index, name in ['x', 'y', 'width', 'height'] {
 		fallback := if index < 2 { '-10%' } else { '120%' }
 		number := parse_number_percentage(element.attributes[name] or { fallback })?
-		if number.is_percentage && !object_units { return none }
-		values[index] = number.value
+		if number.is_percentage && !object_units {
+			size := viewport_size?
+			length := if index % 2 == 0 { size.x } else { size.y }
+			if !(length > 0) { return none }
+			values[index] = number.resolve_relative_to(length)
+		} else {
+			values[index] = number.value
+		}
 	}
 	region := if object_units {
 		Rect{

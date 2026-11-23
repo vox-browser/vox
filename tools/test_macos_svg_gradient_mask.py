@@ -669,7 +669,8 @@ def main():
         offset_fixtures = []
         if args.pattern_offset_only:
             offset_fixtures = [(fixture.with_name(f"svg-pattern-tile-offset-{name}.html"), units)
-                               for name, units in (("bounds", "region"), ("primitive-units", "primitive"))]
+                               for name, units in (("bounds", "region"), ("primitive-units", "primitive"),
+                                                   ("viewport", "viewport"))]
             inputs.extend(offset_fixture for offset_fixture, _ in offset_fixtures)
         if args.pattern_transfer_only:
             transfer_chain = fixture.with_name("svg-pattern-tile-component-transfer-chain.html")
@@ -698,7 +699,7 @@ def main():
                 check_pattern_tile_variants(binary, offset_fixture, Path(temporary),
                                             ready="data-offset-ready",
                                             check_pixels=partial(check_svg_offset_tile_pixels,
-                                                                 object_units=units),
+                                                                 filter_units=units),
                                             original_sample=False, edited_sample=True)
             if args.pattern_transfer_only:
                 check_pattern_tile_variants(binary, transfer_chain, Path(temporary),

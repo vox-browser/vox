@@ -1071,8 +1071,13 @@ fn painting_filter_from_svg_graph(graph svg.FilterGraph) ?painting.GfxFilter {
 	}
 }
 
+struct SVGPatternFilterTarget {
+	state &LayoutState
+	used  &UsedValues
+}
+
 fn resolved_svg_filter(element &dom.Element, reference string,
-	pattern_target ?&UsedValues) ?painting.GfxFilter {
+	pattern_target ?SVGPatternFilterTarget) ?painting.GfxFilter {
 	// PaintableBox.cpp accepts same-document fragments only; external URL
 	// filter resources are intentionally ignored by the upstream algorithm.
 	if reference.len < 2 || reference[0] != `#` {
@@ -1088,14 +1093,14 @@ fn resolved_svg_filter(element &dom.Element, reference string,
 	mutable_filter.register_svg_paint_resource_referencing_element(element)
 	model := svg_element_model(filter_element)
 	filter := painting_filter_from_svg_graph(model.gfx_filter())?
-	offset := svg_pattern_offset_from_filter(&model, filter, pattern_target) or { return filter }
+	offset := svg_pattern_offset_from_filter(&model, element, filter, pattern_target) or { return filter }
 	return painting.GfxFilter{...filter, pattern_offset: &painting.SVGPatternOffset{...offset}}
 }
 
 // A single offset with a resolved region can translate the source paint
 // before rasterization, then clip the isolated result.
-fn svg_pattern_offset_from_filter(element &svg.Element, filter painting.GfxFilter,
-	pattern_target ?&UsedValues) ?painting.SVGPatternOffset {
+fn svg_pattern_offset_from_filter(element &svg.Element, source &dom.Element, filter painting.GfxFilter,
+	pattern_target ?SVGPatternFilterTarget) ?painting.SVGPatternOffset {
 	if element.children.len != 1 || filter.nodes.len != 1 {
 		return none
 	}
@@ -1106,7 +1111,7 @@ fn svg_pattern_offset_from_filter(element &svg.Element, filter painting.GfxFilte
 	object_bounds := if element.filter_units() == .object_bounding_box
 		|| element.primitive_units() == .object_bounding_box {
 		target := pattern_target?
-		path := target.computed_svg_path()?
+		path := target.used.computed_svg_path()?
 		// Layout bounds include curve control points. A single linear contour
 		// gives the tight object bounds needed by the filter coordinates.
 		if path.instructions.len == 0 || path.instructions[0].type_ != .move
@@ -1118,10 +1123,41 @@ fn svg_pattern_offset_from_filter(element &svg.Element, filter painting.GfxFilte
 	} else {
 		?svg.Rect(none)
 	}
-	region := element.numeric_filter_region(object_bounds)?
+	// Explicit user-space coordinates and object bounds need no viewport walk.
+	region := element.numeric_filter_region(object_bounds, none) or {
+		target := pattern_target?
+		viewport := svg_pattern_filter_viewport_size(source, target.state)?
+		element.numeric_filter_region(object_bounds, viewport)?
+	}
 	delta := element.numeric_filter_offset(child, object_bounds)?
 	return painting.SVGPatternOffset{painting.Point{delta.x, delta.y},
 		painting.Rect{region.x, region.y, region.width, region.height}}
+}
+
+fn svg_pattern_filter_viewport_size(source &dom.Element, state &LayoutState) ?svg.Point {
+	// A referenced pattern's layout subtree is attached to its paint target.
+	// Resolve percentages against the viewport of the original source element.
+	mut ancestor := ?&dom.Node(source.as_node())
+	for {
+		node := ancestor?
+		if element := node.as_element() {
+			if element.is_svg_element() && element.local_name() in ['svg', 'symbol'] {
+				if view_box := svg.parse_viewbox(element.get_attribute_value('viewBox')) {
+					if view_box.width >= 0 && view_box.height >= 0 {
+						return svg.Point{view_box.width, view_box.height}
+					}
+				}
+				layout_node := node.unsafe_layout_node()?
+				handle := layout_node.real_layout_handle()
+				if handle == unsafe { nil } { return none }
+				styled := unsafe { &Node(handle) }.as_node_with_style()?
+				used := state.try_get(styled)?
+				return svg.Point{used.content_width().to_double(), used.content_height().to_double()}
+			}
+		}
+		ancestor = node.flat_tree_parent()
+	}
+	return none
 }
 
 fn transform_svg_pattern_offset(offset ?&painting.SVGPatternOffset,
@@ -1133,7 +1169,7 @@ fn transform_svg_pattern_offset(offset ?&painting.SVGPatternOffset,
 
 fn resolve_css_filter(computed_filter css.Filter, computed &css.ComputedValues,
 	color_context css.ColorResolutionContext,
-	element ?&dom.Element, bounds ?painting.Rect, pattern_target ?&UsedValues) painting.ResolvedCSSFilter {
+	element ?&dom.Element, bounds ?painting.Rect, pattern_target ?SVGPatternFilterTarget) painting.ResolvedCSSFilter {
 	if !computed_filter.has_filters() {
 		return painting.ResolvedCSSFilter{}
 	}
@@ -1191,7 +1227,7 @@ fn resolve_css_filter(computed_filter css.Filter, computed &css.ComputedValues,
 
 @[params]
 struct CSSFilterResolutionOptions {
-	pattern_target ?&UsedValues
+	pattern_target ?SVGPatternFilterTarget
 }
 
 fn resolved_css_filter_for_element(computed &css.ComputedValues,
@@ -3548,7 +3584,7 @@ fn collect_svg_mask_paint_operations(node &Node, state &LayoutState,
 				}
 				color_context := color_resolution_context_for_typed_node(node, computed.color())
 				resolved := resolved_css_filter_for_element(computed, color_context, paint_element,
-					bounds, pattern_target: used)
+					bounds, pattern_target: SVGPatternFilterTarget{state, used})
 				retained_filter = resolved.to_gfx_filter(1)
 				if filter := retained_filter {
 					if filter.pattern_offset != none {
