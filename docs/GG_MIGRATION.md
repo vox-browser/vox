@@ -1,5 +1,44 @@
 # Migrating from Skia to vlib/gg
 
+## Waiting for the updated WebGL frame in screenshot tests
+
+The WebGL texture reuse fixture emits `WEBGL_TEXTURE_UPDATE_COMPLETE` after
+the successful yellow clear in its twelfth animation callback.
+`VOX_CAPTURE_READY_CONSOLE_MESSAGE` waits for that exact document diagnostic
+before scheduling the screenshot. The fixture changes no DOM nodes, so the
+capture still exercises the canvas's own paint invalidation. The runner
+requires the diagnostic, both canvas pixel regions, and the expected texture
+upload counts. [WebGL texture reuse fixture](../Tests/Browser/Native/webgl-texture-reuse.html)
+
+The guarded ARM64 Linux build used V `5a39a4d` and single-unit Clang 18.1.3
+`-O0`. Its executable SHA-256 was
+`becf85dbf651ab3a618bb87f5741d39c3915f46cb4253012782f7b3f635c5d02`.
+A separate Xvfb run delayed the animation by five seconds. With the previous
+three-second settle as the only condition, the capture showed blue and had
+one animated upload. The readiness gate captured yellow with a zero-second
+settle and two animated uploads. The original fixture matched pixel for pixel
+with texture reuse enabled and disabled. Upload counts were one static and
+two animated with reuse, and 168 each without reuse. The delayed canvas,
+selector-gated video and headless smoke checks also passed. The 3 GiB guard
+exited zero. All 23 Python runner unit tests passed.
+
+The latest completed macOS production bundle matched the four changed V
+sources in its build manifest. Executable SHA-256
+`9b6345db70ad335f839ba64428c39d0c5d78e754b151cacd60030307633c84ff`
+captured the five-second delayed draw with a zero-second settle. Its 800 × 516
+RGBA document matched the Linux capture at SHA-256
+`5b607c45a12d4c936a1fcdc86e35fccbcac6b83bdef9c836b902aad883a1ee9f`.
+The browser and 3 GiB guard exited zero.
+
+The Windows x64 D3D11 build linked with V `4478fc4` and MinGW GCC 16.2.0
+in one C unit with `-prod -no-prod-options`. Executable SHA-256 was
+`78379dad319179569b80ba1aec574a4398502a532bf65dd94cff605608b664d7`.
+The focused Windows 11 QEMU runner reached its first guarded capture and
+exited 1. The guest produced no screenshot or browser guard receipt, so
+Windows runtime verification remains open. The guest's input manifest
+matched the staged executable, guard, runners and fixture. Hardware frame
+timings remain unmeasured.
+
 ## Affine transforms on canvas and video textures
 
 Portable replay maps all four clipped destination corners for rotated,

@@ -8123,7 +8123,7 @@ fn (mut app BrowserApp) draw() {
 	if app.screenshot_path != '' && !app.scroll_profile.enabled && !app.screenshot_scheduled && app.document != unsafe { nil } && !app.load_status.starts_with('Loading ') && app.background_resource_pending.len == 0 {
 		app.note_screenshot_initial_viewport(paint_document)
 		if !paint_document || app.screenshot_initial_viewport_pending()
-			|| !app.document_resources_ready_for_capture() || !app.capture_selector_ready() {
+			|| !app.document_resources_ready_for_capture() || app.capture_page_wait_reason() != '' {
 			$if macos { C.native_schedule_capture_retry(capture_scroll_retry_needs_frame, voidptr(&app)) }
 			return
 		}

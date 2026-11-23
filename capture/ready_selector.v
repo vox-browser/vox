@@ -8,6 +8,8 @@ import time
 // A benchmark can wait for asynchronous application content before starting
 // the existing screenshot settle timer. Empty preserves the normal boundary.
 const capture_ready_selector = os.getenv('VOX_CAPTURE_READY_SELECTOR')
+// Pixel-only scripts can signal readiness without changing document layout.
+const capture_ready_console_message = os.getenv('VOX_CAPTURE_READY_CONSOLE_MESSAGE')
 // The capture checks the selector on every frame until it matches. A
 // document whose tree and attributes are unchanged since the last check gives
 // the same answer; check again at least this often regardless.
@@ -48,6 +50,12 @@ fn capture_ready_selector_matches(document &dom.Document, selector string) bool 
 	return matches
 }
 
-fn (app &BrowserApp) capture_selector_ready() bool {
-	return capture_ready_selector_matches(app.document, capture_ready_selector)
+fn (app &BrowserApp) capture_page_wait_reason() string {
+	if !capture_ready_selector_matches(app.document, capture_ready_selector) {
+		return 'waiting for capture selector'
+	}
+	if capture_ready_console_message != '' && capture_ready_console_message !in app.js_messages {
+		return 'waiting for capture console message'
+	}
+	return ''
 }

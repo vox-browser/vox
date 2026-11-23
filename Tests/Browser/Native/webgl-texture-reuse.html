@@ -23,8 +23,12 @@ clear(stationary, 0, 1, 0);
 clear(updated, 0, 0, 1);
 let frame = 0;
 function update() {
-    if (++frame === 12) clear(updated, 1, 1, 0);
-    if (frame < 12) requestAnimationFrame(update);
+    if (++frame === 12) {
+        clear(updated, 1, 1, 0);
+        console.log('WEBGL_TEXTURE_UPDATE_COMPLETE');
+    } else {
+        requestAnimationFrame(update);
+    }
 }
 requestAnimationFrame(update);
 </script>

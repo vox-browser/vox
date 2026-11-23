@@ -40,7 +40,7 @@ fn (app &BrowserApp) capture_readiness_blocker(paint_document bool) string {
 	if !app.font_resources_ready_for_capture() { return 'font resources: ${app.font_capture_status()}' }
 	if !paint_document { return 'document not painted this frame' }
 	if app.screenshot_initial_viewport_pending() { return 'initial viewport pending' }
-	return ''
+	return app.capture_page_wait_reason()
 }
 
 fn (app &BrowserApp) font_capture_status() string {
@@ -53,9 +53,9 @@ fn (app &BrowserApp) font_capture_status() string {
 fn (mut app BrowserApp) trace_capture_readiness(paint_document bool) {
 	if !trace_capture_readiness { return }
 	reason := app.capture_readiness_blocker(paint_document)
-	state := '${reason}|${app.capture_selector_ready()}'
+	state := if reason == '' { 'ready' } else { reason }
 	if state == app.capture_readiness_last_reason { return }
 	app.capture_readiness_last_reason = state
 	// Wall-clock microseconds, comparable with VOX_CURL_TRANSFER_LOG times.
-	eprintln('Vox capture readiness: at_us=${time.now().unix_micro()} selector=${app.capture_selector_ready()} ${if reason == '' { 'ready' } else { reason }}')
+	eprintln('Vox capture readiness: at_us=${time.now().unix_micro()} ${state}')
 }

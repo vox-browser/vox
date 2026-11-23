@@ -3258,6 +3258,7 @@ def check_webgl_browser(binary, artifacts, temporary):
 
 def check_webgl_texture_reuse(binary, artifacts, temporary, run_capture=functools.partial(run_windowed, timeout=90)):
     fixture = Path(__file__).resolve().parents[1] / "Tests/Browser/Native/webgl-texture-reuse.html"
+    ready_message = "WEBGL_TEXTURE_UPDATE_COMPLETE"
     documents = []
     for disabled in (False, True):
         name = "webgl-textures-uncached" if disabled else "webgl-textures"
@@ -3267,6 +3268,7 @@ def check_webgl_texture_reuse(binary, artifacts, temporary, run_capture=functool
         audit.unlink(missing_ok=True)
         env = smoke_environment(Path(temporary) / name)
         env.update(SCREENSHOT_SETTLE_SECONDS="3", VOX_CAPTURE_AUDIT_PATH=str(audit),
+                   VOX_CAPTURE_READY_CONSOLE_MESSAGE=ready_message,
                    VOX_DISABLE_PORTABLE_CANVAS_UPLOAD_REUSE=str(int(disabled)),
                    VOX_PORTABLE_BITMAP_UPLOAD_DIAGNOSTICS="1")
         log = run_capture([str(binary), "--enable-javascript", "--window-width=800", "--window-height=600",
@@ -3275,6 +3277,7 @@ def check_webgl_texture_reuse(binary, artifacts, temporary, run_capture=functool
         result = json.loads(audit.read_text())
         assert result["title"] == "WebGL texture reuse" and result["ready"] == "complete", result
         assert result["native_reported_error_count"] == 0, result
+        assert ready_message in result["javascript_diagnostics"], result
 
         width, _, channels, rows = rendered_png_rows(screenshot.read_bytes())
         top = next(y for y, row in enumerate(rows[:150]) if row[4 * channels:4 * channels + 3] == b"\xea\x70\xb5")
