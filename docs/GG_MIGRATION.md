@@ -4533,6 +4533,36 @@ and pinned inputs stayed fixed. The previous production attempt
 ran out of disk space compiling the browser object. Frame
 timing remains unmeasured.
 
+### Reusing interleaved bitmap lookups in macOS SVG tiles
+
+In `abea7e9b6`, the tile cache probe retains its two most recently used
+bitmap URLs and decoded image IDs in fixed slots. Reusing an older
+slot promotes it. Each occurrence still contributes its ID to the
+key in display-list order.
+
+The repeated bitmap fixture's A, A, B, A sequence took two
+lookups per completed probe, down from three in the preceding
+private build, whose results are recorded above. The nested
+fill and stroke fixture took one lookup. Pending probes made
+one lookup in each fixture. All four decoded document RGBA
+hashes matched the earlier 1× and 2× captures.
+[Repeated bitmap fixture](../Tests/Browser/Native/svg-pattern-tile-repeated-bitmap.html)
+
+An additional runtime check added a third bitmap and replayed
+A, A, B, A, C, B. Resolving C evicted B. The final B resolved
+again, for four lookups and correct color samples at both
+densities.
+
+The private macOS candidate used V `4478fc4`, prealloc, and
+single-unit Clang `-O0`. Its executable SHA-256 was
+`bce5e476d8617c42aaa5c5378ad5ba7a808fb98e9d45bd3339a352e06b3b3efc`.
+Peak sampled build RSS was 11,614,568,448 bytes under the
+12 GiB guard. The bitmap suite, live opacity-filter checks,
+and 21 driver tests passed. The browser and guards exited
+zero, and pinned inputs stayed fixed. Frame timing remains
+unmeasured. The production attempt ran out of disk space
+while freezing a native compiler input.
+
 ## Sharing the portable SVG fallback with Windows
 
 The standard Windows D3D11 window now uses the same CPU raster and GG texture
