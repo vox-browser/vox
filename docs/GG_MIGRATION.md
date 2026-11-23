@@ -4472,6 +4472,39 @@ guard. The delayed bitmap suite, live opacity-filter edit and
 and pinned inputs stayed fixed. The overlapping production
 build stopped when the source inputs changed before preprocessing.
 
+### Sharing macOS SVG image lookups between fill and stroke
+
+In `be8fcfc5b`, a visible fill and stroke sharing an immutable
+pattern display list contribute that list's image slots once.
+A different list or a stroke without a visible fill still
+contributes its own slots. Pending images still leave the tile
+uncacheable.
+
+The same delayed bitmap fixture ran on two private macOS builds
+using V `4478fc4`, prealloc, and single-unit Clang `-O0`. The
+control included the lookup diagnostics. Both completed probes
+at each scale dropped from two image lookups to one. The two
+pending probes each performed one lookup on both builds.
+The 1× and 2× captures were pixel-identical, with decoded RGBA
+SHA-256 values
+`5648a45e86ff8a781a4d7b6934e4f42558729e03fb4bd373416776c4d62786de`
+and `3265dafb8ef710591cfad0848e380967c81ca76a0fb46a1245ef32e19a1c9e64`.
+[Shared bitmap fixture](../Tests/Browser/Native/svg-pattern-tile-shared-bitmap.html)
+
+The control and candidate executable SHA-256 values were
+`45a301d976bcbf54d76ed4a3cbe2c91459f7d6ccbb7099e755dc71b4d9990cde`
+and `726a596f9e9c292394487a8bc6ec24d2bf0c2e9f3b1a5a42de9493f750d57603`.
+The delayed bitmap suite, live opacity-filter edit and 21 driver
+tests passed. Browser and guard exits were zero and pinned
+inputs stayed fixed. Frame timing remains unmeasured.
+
+The published `8eb318d25` macOS build, executable SHA-256
+`4e0274f71a79bd5b3f63de6b9dc5dee5a0abba41dcd772f66e33b4c0d836599e`,
+also passed fresh 1× and 2× checks for hidden images under
+explicit opacity groups and opacity filters. All four captures
+matched the earlier diagnostic pixels and the executable and
+adjacent AVIF library stayed fixed.
+
 ## Sharing the portable SVG fallback with Windows
 
 The standard Windows D3D11 window now uses the same CPU raster and GG texture
