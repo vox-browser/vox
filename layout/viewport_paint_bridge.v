@@ -2199,7 +2199,8 @@ fn apply_compatibility_visual_context_node(tree &painting.AccumulatedVisualConte
 				width: node.data.bounding_rect.width
 				height: node.data.bounding_rect.height
 			}
-			operations := compatibility_lower_svg_mask_operations(node.data.operations, flattened.transform, false)
+			operations := compatibility_lower_svg_mask_operations(node.data.operations,
+				flattened.transform, false) or { []PaintMaskOperation{} }
 			mut cache_key := node.data.cache_key
 			for value in flattened.transform {
 				cache_key = svg_clip_hash_mix(cache_key, math.f64_bits(value))
@@ -4466,37 +4467,57 @@ fn compatibility_box_contains_hit_test_point_at(box &BlockBox, stacking_context_
 
 // Lower retained mask and pattern tile operations into the renderer's paint transport.
 // Pattern callers check that filter scopes can use the shared isolated layer.
+struct SVGPatternFilterPlacement {
+	depth int
+	x     f64
+	y     f64
+}
+
 pub fn compatibility_lower_svg_mask_operations(source []painting.SVGMaskPaintOperation,
-	transform [6]f64, lower_pattern_filters bool) []PaintMaskOperation {
+	transform [6]f64, lower_pattern_filters bool) ?[]PaintMaskOperation {
 	mut operations := []PaintMaskOperation{cap: source.len}
+	mut placement := transform
+	mut filter_depth := 0
+	mut offsets := []SVGPatternFilterPlacement{}
 	for operation in source {
-		operation_transform := multiply_affine(transform, [
-			operation.transform.a,
-			operation.transform.b,
-			operation.transform.c,
-			operation.transform.d,
-			operation.transform.e,
-			operation.transform.f,
-		]!)
 		mut operation_kind := PaintMaskOperationKind.path
 		match operation.kind {
 			.begin_filter {
 				if lower_pattern_filters {
-					filter := operation.filter or { continue }
+					filter := operation.filter?
+					filter_depth++
 					if opacity := filter.opacity_filter_amount() {
 						operations << PaintMaskOperation{kind: .begin_opacity, opacity: opacity}
+					} else if offset := filter.source_pattern_offset() {
+						affine := painting.Affine{placement[0], placement[1], placement[2],
+							placement[3], placement[4], placement[5]}
+						projected := offset.transformed(affine)?
+						crop := projected.region
+						delta := projected.delta
+						// Rasterize the translated source directly on the destination grid.
+						if ![crop.x, crop.y, crop.right(), crop.bottom(), delta.x, delta.y]!.all(math.floor(it) == it) {
+							return none
+						}
+						offsets << SVGPatternFilterPlacement{filter_depth, placement[4], placement[5]}
+						placement[4] += delta.x
+						placement[5] += delta.y
+						if !math.is_finite(placement[4]) || !math.is_finite(placement[5]) { return none }
+						operations << PaintMaskOperation{
+							kind: .begin_opacity
+							filter: &PaintSVGMaskFilter{bounds: crop}
+						}
 					} else {
-						effect := filter.source_color_filter() or { continue }
+						effect := filter.source_color_filter()?
 						bounds := if rect := filter.bounds {
-							affine := painting.Affine{transform[0], transform[1], transform[2],
-								transform[3], transform[4], transform[5]}
+							affine := painting.Affine{placement[0], placement[1], placement[2],
+								placement[3], placement[4], placement[5]}
 							?painting.Rect(affine.map_rect(rect))
 						} else {
 							?painting.Rect(none)
 						}
 						operations << PaintMaskOperation{
 							kind: .begin_opacity
-							color_filter: &PaintSVGMaskColorFilter{effect: effect, bounds: bounds}
+							filter: &PaintSVGMaskFilter{effect: effect, bounds: bounds}
 						}
 					}
 				}
@@ -4504,6 +4525,13 @@ pub fn compatibility_lower_svg_mask_operations(source []painting.SVGMaskPaintOpe
 			}
 			.end_filter {
 				if lower_pattern_filters {
+					if filter_depth == 0 { return none }
+					if offsets.len != 0 && offsets.last().depth == filter_depth {
+						saved := offsets.pop()
+						placement[4] = saved.x
+						placement[5] = saved.y
+					}
+					filter_depth--
 					operations << PaintMaskOperation{kind: .end_opacity}
 				}
 				continue
@@ -4513,6 +4541,14 @@ pub fn compatibility_lower_svg_mask_operations(source []painting.SVGMaskPaintOpe
 			.image { operation_kind = .image }
 			.path { operation_kind = .path }
 		}
+		operation_transform := multiply_affine(placement, [
+			operation.transform.a,
+			operation.transform.b,
+			operation.transform.c,
+			operation.transform.d,
+			operation.transform.e,
+			operation.transform.f,
+		]!)
 		operations << PaintMaskOperation{
 			kind: operation_kind
 			opacity: operation.opacity
@@ -4552,6 +4588,7 @@ pub fn compatibility_lower_svg_mask_operations(source []painting.SVGMaskPaintOpe
 			stroke_first: operation.stroke_first
 		}
 	}
+	if filter_depth != 0 { return none }
 	return operations
 }
 

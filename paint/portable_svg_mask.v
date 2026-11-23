@@ -102,7 +102,7 @@ mut:
 	pixels  []u8
 	rows    SVGMaskLayerRows
 	opacity f32
-	color_filter &layout.PaintSVGMaskColorFilter = unsafe { nil }
+	filter &layout.PaintSVGMaskFilter = unsafe { nil }
 }
 
 struct SVGMaskLayerRows {
@@ -410,8 +410,8 @@ fn svg_mask_opacity_layer_rows(operations []layout.PaintMaskOperation, bounds pa
 		operation := &operations[index]
 		match operation.kind {
 			.begin_opacity {
-				if operation.color_filter != unsafe { nil }
-					&& operation.color_filter.effect.fills_clear_pixels() {
+				if operation.filter != unsafe { nil }
+					&& operation.filter.fills_clear_pixels() {
 					return parent
 				}
 				depth++
@@ -495,8 +495,8 @@ fn (mut app BrowserApp) raster_svg_mask_layers(mut pixels []u8, pitch int, bound
 				alpha := cpuraster.canvas_image_opacity_byte(opacity)
 				rows := if alpha == 0 {
 					SVGMaskLayerRows{}
-				} else if operation.color_filter != unsafe { nil }
-					&& operation.color_filter.effect.fills_clear_pixels() {
+				} else if operation.filter != unsafe { nil }
+					&& operation.filter.fills_clear_pixels() {
 					// This filter can paint rows outside the source geometry.
 					parent
 				} else {
@@ -513,7 +513,7 @@ fn (mut app BrowserApp) raster_svg_mask_layers(mut pixels []u8, pitch int, bound
 				depth++
 				layers[depth].rows = rows
 				layers[depth].opacity = opacity
-				layers[depth].color_filter = operation.color_filter
+				layers[depth].filter = operation.filter
 				byte_count := layer_pitch * rows.height()
 				if layers[depth].pixels.len < byte_count {
 					layers[depth].pixels = []u8{len: byte_count}
@@ -527,9 +527,9 @@ fn (mut app BrowserApp) raster_svg_mask_layers(mut pixels []u8, pitch int, bound
 			.end_opacity {
 				mut layer := layers[depth]
 				depth--
-				if layer.color_filter != unsafe { nil } {
-					if !apply_svg_pattern_color_filter(mut layer, bounds.width, bounds.height,
-						layer.color_filter, mask.mask_luminance) { return none }
+				if layer.filter != unsafe { nil } {
+					if !apply_svg_pattern_filter(mut layer, bounds.width, bounds.height,
+						layer.filter, mask.mask_luminance) { return none }
 				}
 				bitmap := cpuraster.CanvasBitmap{
 					pixels: layer.pixels

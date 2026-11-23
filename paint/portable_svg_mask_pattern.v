@@ -43,7 +43,7 @@ fn portable_svg_mask_pattern_supported(style &painting.SVGPatternPaintStyle) boo
 	return style.shared_tile_info() != none
 }
 
-fn svg_pattern_color_filter_crop(filter &layout.PaintSVGMaskColorFilter, width int, height int) ?painting.IntRect {
+fn svg_pattern_filter_crop(filter &layout.PaintSVGMaskFilter, width int, height int) ?painting.IntRect {
 	full := painting.IntRect{0, 0, width, height}
 	if rect := filter.bounds {
 		if ![rect.x, rect.y, rect.right(), rect.bottom()]!.all(math.is_finite(it)) { return none }
@@ -54,6 +54,7 @@ fn svg_pattern_color_filter_crop(filter &layout.PaintSVGMaskColorFilter, width i
 			if ![crop.x, crop.y, crop.right(), crop.bottom()]!.all(math.floor(it) == it) { return none }
 			return painting.IntRect{int(crop.x), int(crop.y), int(crop.width), int(crop.height)}
 		}
+		if filter.effect == none { return painting.IntRect{} }
 	}
 	return full
 }
@@ -79,10 +80,13 @@ fn clear_svg_pattern_outside_crop(mut layer PortableSVGMaskLayer, width int, cro
 	}
 }
 
-fn apply_svg_pattern_color_filter(mut layer PortableSVGMaskLayer, width int, height int,
-	filter &layout.PaintSVGMaskColorFilter, retain_color bool) bool {
-	crop := svg_pattern_color_filter_crop(filter, width, height) or { return false }
-	effect := filter.effect
+fn apply_svg_pattern_filter(mut layer PortableSVGMaskLayer, width int, height int,
+	filter &layout.PaintSVGMaskFilter, retain_color bool) bool {
+	crop := svg_pattern_filter_crop(filter, width, height) or { return false }
+	effect := filter.effect or {
+		clear_svg_pattern_outside_crop(mut layer, width, crop)
+		return true
+	}
 	fills_clear := effect.fills_clear_pixels()
 	// Filter only the retained crop. A filter that gives transparent black
 	// coverage needs the crop applied after evaluation.
@@ -130,11 +134,11 @@ fn (mut app BrowserApp) raster_svg_mask_pattern(style &painting.SVGPatternPaintS
 	// Tile operations are already normalized into the cell's coordinate
 	// system. The shader maps the raster back to the exact SVG cell period.
 	operations := layout.compatibility_lower_svg_mask_operations(list.operations,
-		[sx, 0.0, 0.0, sy, 0.0, 0.0]!, true)
+		[sx, 0.0, 0.0, sy, 0.0, 0.0]!, true)?
 	// A filter can read RGB to compute alpha. Keep the source colors,
 	// including nested paint, even when the destination samples alpha alone.
-	retain_color := luminance || operations.any(it.color_filter != unsafe { nil }
-		&& !it.color_filter.effect.preserves_alpha())
+	retain_color := luminance || operations.any(it.filter != unsafe { nil }
+		&& it.filter.needs_source_color())
 	mask := layout.PaintClip{mask_operations: operations, mask_luminance: retain_color}
 	if !portable_svg_content_mask_supported(&mask, true) { return none }
 	local := multiply_paint_transforms(pattern_transform, [1 / sx, 0.0, 0.0, 1 / sy, tile.x, tile.y]!)

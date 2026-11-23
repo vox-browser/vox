@@ -50,7 +50,8 @@ fn svg_pattern_operations_tile_info(operations []SVGMaskPaintOperation, limit in
 		operation := &operations[index]
 		if operation.kind == .begin_filter {
 			filter := operation.filter?
-			if filter.opacity_filter_amount() == none && !filter.supports_source_color_filter() {
+			if filter.opacity_filter_amount() == none && filter.source_pattern_offset() == none
+				&& !filter.supports_source_color_filter() {
 				return none
 			}
 		}

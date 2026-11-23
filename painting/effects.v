@@ -151,6 +151,48 @@ pub:
 	// The transparent display-list trigger carries the same rectangle, matching
 	// StackingContext::paint() and SVGSVGPaintable::paint_svg_box().
 	bounds ?Rect
+	pattern_offset ?&SVGPatternOffset
+}
+
+pub struct SVGPatternOffset {
+pub:
+	delta  Point
+	region Rect
+}
+
+pub fn (offset SVGPatternOffset) transformed(transform Affine) ?SVGPatternOffset {
+	if !((transform.b == 0 && transform.c == 0) || (transform.a == 0 && transform.d == 0)) {
+		return none
+	}
+	region := transform.map_rect(offset.region)
+	delta := Point{
+		x: transform.a * offset.delta.x + transform.c * offset.delta.y
+		y: transform.b * offset.delta.x + transform.d * offset.delta.y
+	}
+	if region.is_empty() || ![region.x, region.y, region.right(), region.bottom(), delta.x, delta.y]!.all(math.is_finite(it)) {
+		return none
+	}
+	return SVGPatternOffset{delta, region}
+}
+
+pub fn (offset SVGPatternOffset) mix_cache_key(seed u64) u64 {
+	mut hash := seed
+	for value in [offset.delta.x, offset.delta.y, offset.region.x, offset.region.y,
+		offset.region.width, offset.region.height] {
+		mut bits := math.f64_bits(value)
+		// Hash each byte so the sign can affect lower bits. The retained SVG
+		// graph also hashes its unprojected offset.
+		for _ in 0 .. 8 {
+			hash = (hash ^ (bits & 0xff)) * u64(1099511628211)
+			bits >>= 8
+		}
+	}
+	return hash
+}
+
+pub fn (filter GfxFilter) source_pattern_offset() ?&SVGPatternOffset {
+	if filter.operations.len != 0 { return none }
+	return filter.pattern_offset
 }
 
 // An opacity-only CSS filter can restore its isolated source as an opacity
@@ -550,6 +592,7 @@ pub fn (filter ResolvedCSSFilter) to_gfx_filter(device_scale f64) ?GfxFilter {
 	mut nodes := []GfxFilterNode{}
 	mut root_id := ?int(none)
 	mut bounds := ?Rect(none)
+	mut pattern_offset := ?&SVGPatternOffset(none)
 	for operation in filter.operations {
 		match operation {
 			BlurFilter {
@@ -592,6 +635,7 @@ pub fn (filter ResolvedCSSFilter) to_gfx_filter(device_scale f64) ?GfxFilter {
 			nodes = svg.nodes.clone()
 			root_id = svg.root_id
 			bounds = snapshot.bounds
+			pattern_offset = svg.pattern_offset
 		}
 	}
 	if operations.len == 0 && root_id == none {
@@ -602,6 +646,7 @@ pub fn (filter ResolvedCSSFilter) to_gfx_filter(device_scale f64) ?GfxFilter {
 		nodes: nodes
 		root_id: root_id
 		bounds: bounds
+		pattern_offset: pattern_offset
 	}
 }
 

@@ -1085,7 +1085,45 @@ fn resolved_svg_filter(element &dom.Element, reference string) ?painting.GfxFilt
 	}
 	mut mutable_filter := unsafe { &dom.Element(filter_element) }
 	mutable_filter.register_svg_paint_resource_referencing_element(element)
-	return painting_filter_from_svg_graph(svg_element_model(filter_element).gfx_filter())
+	model := svg_element_model(filter_element)
+	filter := painting_filter_from_svg_graph(model.gfx_filter())?
+	offset := svg_pattern_offset_from_filter(&model, filter) or { return filter }
+	return painting.GfxFilter{...filter, pattern_offset: &painting.SVGPatternOffset{...offset}}
+}
+
+// A single offset with an explicit numeric user-space region can translate
+// the source paints before rasterization, then clip the isolated result.
+fn svg_pattern_offset_from_filter(element &svg.Element, filter painting.GfxFilter) ?painting.SVGPatternOffset {
+	if element.children.len != 1 || element.filter_units() != .user_space_on_use
+		|| element.primitive_units() != .user_space_on_use || filter.nodes.len != 1 {
+		return none
+	}
+	child := &element.children[0]
+	node := &filter.nodes[0]
+	if child.tag != 'feOffset' || node.kind != 'offset' || node.input_ids != [-1]
+		|| ['x', 'y', 'width', 'height'].any(it in child.attributes) { return none }
+	mut region_values := [4]f64{}
+	for index, name in ['x', 'y', 'width', 'height'] {
+		number := svg.parse_number_percentage(element.attributes[name] or { return none })?
+		if number.is_percentage || !math.is_finite(number.value) { return none }
+		region_values[index] = number.value
+	}
+	region := painting.Rect{region_values[0], region_values[1], region_values[2], region_values[3]}
+	if region.is_empty() { return none }
+	mut delta := [2]f64{}
+	for index, name in ['dx', 'dy'] {
+		number := svg.parse_number_percentage(child.attributes[name] or { '0' })?
+		if number.is_percentage || !math.is_finite(number.value) { return none }
+		delta[index] = number.value
+	}
+	return painting.SVGPatternOffset{painting.Point{delta[0], delta[1]}, region}
+}
+
+fn transform_svg_pattern_offset(offset ?&painting.SVGPatternOffset,
+	transform painting.Affine) ?&painting.SVGPatternOffset {
+	value := offset?
+	projected := value.transformed(transform)?
+	return &painting.SVGPatternOffset{...projected}
 }
 
 fn resolve_css_filter(computed_filter css.Filter, computed &css.ComputedValues,
@@ -2495,6 +2533,7 @@ fn transform_svg_mask_paint_operations(operations []painting.SVGMaskPaintOperati
 				filter: painting.GfxFilter{
 					...filter
 					bounds: bounds
+					pattern_offset: transform_svg_pattern_offset(filter.pattern_offset, transform)
 				}
 			}
 		} else if operation.kind == .path {
@@ -2655,7 +2694,7 @@ fn resolve_svg_pattern_paint_style(node &Node, state &LayoutState, paint css.SVG
 	if pattern_transform.inverse() == none {
 		return none
 	}
-	mut cache_key := svg_mask_visual_cache_key(painting.IntRect{
+	mut cache_key, native_bounds_key := svg_mask_visual_cache_keys(painting.IntRect{
 		width: int(math.ceil(tile_rect.width))
 		height: int(math.ceil(tile_rect.height))
 	}, .alpha, operations)
@@ -2680,6 +2719,7 @@ fn resolve_svg_pattern_paint_style(node &Node, state &LayoutState, paint css.SVG
 		pattern_transform: pattern_transform
 		tile_display_list: painting.SVGPatternDisplayList.from_operations(operations)
 		cache_key: cache_key
+		native_bounds_key: native_bounds_key
 		has_non_scaling_stroke: has_non_scaling_stroke
 	}
 }
@@ -3033,16 +3073,31 @@ fn svg_radial_gradient_visual_cache_key(seed u64,
 
 fn svg_mask_visual_cache_key(bounds painting.IntRect, mask_type painting.SVGMaskType,
 	operations []painting.SVGMaskPaintOperation) u64 {
+	key, native_bounds_key := svg_mask_visual_cache_keys(bounds, mask_type, operations)
+	return if native_bounds_key == 0 { key } else { svg_clip_hash_mix(key, native_bounds_key) }
+}
+
+fn svg_mask_visual_cache_keys(bounds painting.IntRect, mask_type painting.SVGMaskType,
+	operations []painting.SVGMaskPaintOperation) (u64, u64) {
 	mut hash := svg_clip_hash_mix(u64(14695981039346656037), u64(mask_type))
+	mut native_bounds_key := u64(0)
 	for value in [bounds.x, bounds.y, bounds.width, bounds.height] {
 		hash = svg_clip_hash_mix(hash, u64(value))
 	}
-	for operation in operations {
+	for index, operation in operations {
 		hash = svg_clip_hash_mix(hash, u64(operation.kind))
 		hash = svg_clip_hash_mix(hash, math.f64_bits(operation.opacity))
 		if operation.kind == .begin_filter {
 			if filter := operation.filter {
 				hash = svg_filter_visual_cache_key(hash, filter)
+				if filter.source_pattern_offset() != none {
+					if source := filter.bounds {
+						native_bounds_key = svg_clip_hash_mix(native_bounds_key, u64(index + 1))
+						for value in [source.x, source.y, source.width, source.height] {
+							native_bounds_key = svg_clip_hash_mix(native_bounds_key, math.f64_bits(value))
+						}
+					}
+				}
 			}
 			continue
 		}
@@ -3093,9 +3148,17 @@ fn svg_mask_visual_cache_key(bounds painting.IntRect, mask_type painting.SVGMask
 		}
 		if pattern := operation.fill_pattern {
 			hash = svg_clip_hash_mix(svg_clip_hash_mix(hash, 3), pattern.cache_key)
+			if pattern.native_bounds_key != 0 {
+				native_bounds_key = svg_clip_hash_mix(svg_clip_hash_mix(native_bounds_key,
+					u64(index) * 2 + 1), pattern.native_bounds_key)
+			}
 		}
 		if pattern := operation.stroke_pattern {
 			hash = svg_clip_hash_mix(svg_clip_hash_mix(hash, 4), pattern.cache_key)
+			if pattern.native_bounds_key != 0 {
+				native_bounds_key = svg_clip_hash_mix(svg_clip_hash_mix(native_bounds_key,
+					u64(index) * 2 + 2), pattern.native_bounds_key)
+			}
 		}
 		hash = svg_clip_hash_mix(hash, if operation.has_fill { u64(1) } else { u64(0) })
 		hash = svg_clip_hash_mix(hash, if operation.has_stroke { u64(1) } else { u64(0) })
@@ -3121,7 +3184,7 @@ fn svg_mask_visual_cache_key(bounds painting.IntRect, mask_type painting.SVGMask
 			hash = svg_clip_hash_mix(hash, if segment.sweep { u64(1) } else { u64(0) })
 		}
 	}
-	return hash
+	return hash, native_bounds_key
 }
 
 fn svg_filter_visual_cache_key(seed u64, filter painting.GfxFilter) u64 {
@@ -3129,7 +3192,11 @@ fn svg_filter_visual_cache_key(seed u64, filter painting.GfxFilter) u64 {
 	if root_id := filter.root_id {
 		hash = svg_clip_hash_mix(hash, u64(root_id + 1))
 	}
-	if bounds := filter.bounds {
+	if offset := filter.source_pattern_offset() {
+		// Offset replay uses the projected filter region. Generic source
+		// bounds can vary when the same tile is placed at different positions.
+		hash = offset.mix_cache_key(svg_clip_hash_mix(hash, 0x6f6666736574))
+	} else if bounds := filter.bounds {
 		for value in [bounds.x, bounds.y, bounds.width, bounds.height] {
 			hash = svg_clip_hash_mix(hash, math.f64_bits(value))
 		}
@@ -3473,7 +3540,15 @@ fn collect_svg_mask_paint_operations(node &Node, state &LayoutState,
 					bounds)
 				retained_filter = resolved.to_gfx_filter(1)
 				if filter := retained_filter {
-					if filter.supports_source_color_filter() {
+					if filter.pattern_offset != none {
+						to_page := svg_resource_paint_transform(node, state, used,
+							resource_transform, object_bounding_box_units)
+						retained_filter = painting.GfxFilter{
+							...filter
+							pattern_offset: transform_svg_pattern_offset(filter.pattern_offset,
+								painting_affine_from_svg(to_page))
+						}
+					} else if filter.supports_source_color_filter() {
 						// Project the filter's source bounds like the child
 						// paint. Tile normalization then removes the
 						// destination's transform from both.

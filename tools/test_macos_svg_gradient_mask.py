@@ -17,6 +17,7 @@ from test_linux_browser import (check_svg_color_matrix_adjustments_tile_pixels,
                                 check_svg_component_transfer_tile_pixels,
                                 check_svg_mask_gradient_pixels,
                                 check_svg_nested_tile_device_pixels,
+                                check_svg_offset_tile_pixels,
                                 check_svg_opacity_filter_tile_pixels, check_svg_pattern_tile_image_pixels,
                                 check_svg_tile_fill_stroke_pixels, rendered_png_rows,
                                 serve_delayed_svg_pattern_tile)
@@ -611,6 +612,7 @@ def main():
     patterns.add_argument("--pattern-nested-only", action="store_true")
     patterns.add_argument("--pattern-standalone-only", action="store_true")
     patterns.add_argument("--pattern-filter-only", action="store_true")
+    patterns.add_argument("--pattern-offset-only", action="store_true")
     patterns.add_argument("--pattern-matrix-only", action="store_true")
     patterns.add_argument("--pattern-transfer-only", action="store_true")
     args = parser.parse_args()
@@ -619,7 +621,7 @@ def main():
     fixture = root / "Tests/Browser/Native/svg-gradient-masks.html"
     if (args.pattern_strokes_only or args.pattern_images_only or args.pattern_nested_images_only
             or args.pattern_nested_only or args.pattern_standalone_only or args.pattern_filter_only
-            or args.pattern_matrix_only or args.pattern_transfer_only):
+            or args.pattern_matrix_only or args.pattern_transfer_only or args.pattern_offset_only):
         if args.pattern_strokes_only:
             pattern = fixture.with_name("svg-pattern-tile-non-scaling-strokes.html")
             check_pattern = check_non_scaling_pattern_tiles
@@ -637,6 +639,11 @@ def main():
             check_pattern = partial(check_pattern_tile_variants, ready="data-opacity-filter-ready",
                                     check_pixels=check_svg_opacity_filter_tile_pixels,
                                     original_sample=153, edited_sample=102)
+        elif args.pattern_offset_only:
+            pattern = fixture.with_name("svg-pattern-tile-offset.html")
+            check_pattern = partial(check_pattern_tile_variants, ready="data-offset-ready",
+                                    check_pixels=check_svg_offset_tile_pixels,
+                                    original_sample=False, edited_sample=True)
         elif args.pattern_matrix_only:
             pattern = fixture.with_name("svg-pattern-tile-color-matrix.html")
             check_pattern = partial(check_pattern_tile_variants, ready="data-color-matrix-ready",

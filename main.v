@@ -4758,7 +4758,7 @@ fn (mut app BrowserApp) draw_native_svg_pattern_path(path_data []f32, even_odd b
 			// so transformed ancestors do not magnify a low-resolution tile.
 			content_scale_x := math.max(math.sqrt(matrix[0] * matrix[0] + matrix[1] * matrix[1]), 1.0)
 			content_scale_y := math.max(math.sqrt(matrix[2] * matrix[2] + matrix[3] * matrix[3]), 1.0)
-			C.native_begin_svg_pattern_tile(style.cache_key, f32(tile.width), f32(tile.height),
+			C.native_begin_svg_pattern_tile(style.cache_key ^ style.native_bounds_key, f32(tile.width), f32(tile.height),
 				f32(content_scale_x), f32(content_scale_y))
 		}
 		if display_list := native_recording {

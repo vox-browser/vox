@@ -2291,6 +2291,21 @@ def check_svg_color_matrix_adjustments_tile_pixels(rows, channels, scale, marker
                                         red="af4bff" if edited else "1b4900")
 
 
+def check_svg_offset_tile_pixels(rows, channels, scale, marker, edited):
+    white, red, lime, black = map(bytes.fromhex, ("ffffff", "ff0000", "00ff00", "000000"))
+    for left in (0, 128, 256):
+        ink, stripe = (black, black) if left == 256 else (red, lime)
+        samples = ((4, 3, white), (5, 3, ink), (6, 5, ink), (7, 4, white),
+                   (5, 2, white), (5, 6, white), (10, 8, white)) if edited else (
+                       (9, 8, white), (10, 8, ink), (13, 11, ink), (14, 9, white),
+                       (10, 7, white), (10, 12, white), (5, 4, white))
+        for x, y, expected in (*samples, (8, 18, stripe)):
+            row = rows[marker + (8 + y) * scale]
+            position = (left + x) * scale * channels
+            color = row[position:position + 3]
+            assert color == expected, (scale, left + x, y, color.hex(), expected.hex())
+
+
 def check_svg_component_transfer_tile_pixels(rows, channels, scale, marker, edited):
     white, lime, black, gray = (bytes.fromhex(color) for color in
                                ("ffffff", "00ff00", "000000", "666666"))
@@ -3164,6 +3179,7 @@ def main():
     checks.add_argument("--pattern-nested-only", action="store_true", help="check nested SVG pattern tiles")
     checks.add_argument("--pattern-standalone-only", action="store_true", help="check standalone SVG pattern tiles")
     checks.add_argument("--pattern-filter-only", action="store_true", help="check opacity-filtered SVG pattern tiles")
+    checks.add_argument("--pattern-offset-only", action="store_true", help="check SVG pattern offsets")
     checks.add_argument("--pattern-matrix-only", action="store_true", help="check SVG pattern color matrices")
     checks.add_argument("--pattern-transfer-only", action="store_true", help="check SVG pattern component transfer")
     args = parser.parse_args()
@@ -3195,6 +3211,11 @@ def main():
             check_svg_tile_browser(binary, artifacts, temporary, "opacity-filter",
                                    ready="data-opacity-filter-ready", check_edited=functools.partial(
                                        check_svg_opacity_filter_tile_pixels, transparency=102))
+            return
+        if args.pattern_offset_only:
+            check_svg_tile_browser(binary, artifacts, temporary, "offset", groups=3,
+                                   ready="data-offset-ready", check_edited=functools.partial(
+                                       check_svg_offset_tile_pixels, edited=True))
             return
         if args.pattern_matrix_only:
             check_svg_matrix_tiles(binary, artifacts, temporary)
