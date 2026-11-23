@@ -1,5 +1,39 @@
 # Migrating from Skia to vlib/gg
 
+## Shared affine draws for decoded images
+
+Portable replaced images now use the same GG textured quad as affine canvas
+and video draws. The four transformed destination corners retain the clipped
+source coordinates in local order, preserving rotation, reflection, shear,
+and `object-fit: cover` crops. Positive axis-aligned draws use GG's rectangle
+draw. Rounded clips use the existing coverage path.
+[Affine media fixture](../Tests/Browser/Native/affine-media.html)
+
+The ARM64 Linux Xvfb baseline failed the rotated image interior assertion.
+The updated V `5a39a4d` and Clang 18.1.3 single-unit `-O0` executable
+(`04bf0757a4b0c1f9c3b01f2c524426870272ebe3de5da589d4f1f1268c956c70`)
+passed the expanded fixture, rounded image and WebGL regressions, and headless
+startup. The 800 × 516 RGBA crops matched with canvas reuse enabled and
+disabled at SHA-256 `e0fb90329714533506a2500761102b948ba8ffcc746f6cb71a434a202f5d1e11`.
+The three canvas textures uploaded three times with reuse and 315 times
+with reuse disabled. The browser and 3 GiB guard completed successfully.
+
+The published macOS native reference executable
+(`16baa3eca911d8b3ee323e6989b9e1336c46db00eacf04d7a3fd91d968e841ea`)
+passed the same pixel assertions. Its crop differed from Linux at 198 pixels
+along the sheared canvas and sheared image edges and color transitions.
+The updated macOS source check passed with V `4478fc4`.
+
+The Windows 11 QEMU guest ran the guarded x64 D3D11 build with V `4478fc4`
+and MinGW GCC 16.2.0 in one C unit with `-prod -no-prod-options`. Its
+executable SHA-256 was `51230859c65f46150a10990bd859f3dc7771a8e29d8a5d7a1915be8e643b75f6`
+before and after capture. The pixel assertions passed, and the three canvas
+textures each uploaded once. The 800 × 516 RGBA crop had SHA-256
+`b50fa8f4e71cd65b9f041623456a351d1ad7ee71e95ab36621e6fdc1854285fa`.
+Its 87 differences from Linux were confined to the sheared canvas and image.
+The browser and 3 GiB job guard exited zero. All 23 Python runner unit tests
+passed. Hardware frame timings remain unmeasured.
+
 ## Waiting for the updated WebGL frame in screenshot tests
 
 The WebGL texture reuse fixture emits `WEBGL_TEXTURE_UPDATE_COMPLETE` after

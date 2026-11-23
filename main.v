@@ -6857,6 +6857,11 @@ fn (mut app BrowserApp) draw_command(source_command &layout.PaintCommand, page_x
 				&& app.draw_portable_rounded_image(command, image_config, result, page_x, page_y, scroll_y) {
 				return
 			}
+			if non_axis_aligned || matrix[0] < 0 || matrix[3] < 0 {
+				app.draw_portable_affine_image(command, image_config,
+					painting.Rect{left, top, right - left, bottom - top}, page_x, page_y, scroll_y)
+				return
+			}
 			app.ctx.draw_image_with_config(image_config)
 		}
 		'draw_canvas' {

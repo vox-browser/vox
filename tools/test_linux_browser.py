@@ -3337,15 +3337,22 @@ def check_affine_media_pixels(data):
         (116, 28, 20, 12, "ffff00"), (136, 28, 20, 12, "0000ff"),
         (304, 16, 24, 12, "208040"), (304, 28, 24, 12, "2868b0"),
         (59, 16, 1, 40, "101820"), (84, 16, 1, 40, "101820"),
+        (74, 118, 8, 16, "0000ff"), (86, 118, 8, 16, "ff0000"),
+        (74, 138, 8, 16, "ffff00"), (86, 138, 8, 16, "00ff00"),
+        (146, 118, 16, 8, "00ff00"), (166, 118, 16, 8, "ff0000"),
+        (146, 130, 16, 8, "ffff00"), (166, 130, 16, 8, "0000ff"),
+        (366, 118, 20, 8, "208040"), (366, 130, 20, 8, "2868b0"),
+        (71, 116, 1, 40, "101820"), (96, 116, 1, 40, "101820"),
     ):
         pixel = bytes.fromhex(rgb) + (b"\xff" if channels == 4 else b"")
         assert all(row[x * channels:(x + width) * channels] == pixel * width
                    for row in document[y:y + height]), (x, y, "Incorrect transformed media pixels")
-    for offset, first, second in ((4, "ff0000", "00ff00"), (18, "0000ff", "ffff00")):
-        row = document[16 + offset]
-        for local_x, expected in ((-2, "101820"), (8, first), (28, second), (42, "101820")):
-            x = 200 + offset + local_x
-            assert row[x * channels:x * channels + 3] == bytes.fromhex(expected), (x, offset, "Incorrect shear")
+    for left, top in ((200, 16), (220, 116)):
+        for offset, first, second in ((4, "ff0000", "00ff00"), (18, "0000ff", "ffff00")):
+            row = document[top + offset]
+            for local_x, expected in ((-2, "101820"), (8, first), (28, second), (42, "101820")):
+                x = left + offset + local_x
+                assert row[x * channels:x * channels + 3] == bytes.fromhex(expected), (x, top + offset, "Incorrect shear")
     return document
 
 
@@ -3371,7 +3378,7 @@ def check_portable_affine_media(binary, artifacts, temporary, run_capture=functo
         uploads = log.splitlines().count("VOX_PORTABLE_BITMAP upload=40x24")
         assert (uploads > 3 if disabled else uploads == 3), (name, uploads)
     assert documents[0] == documents[1], "Canvas texture reuse changed affine media pixels"
-    print("PASS: affine canvas and cropped video poster pixels reach GG", flush=True)
+    print("PASS: affine image, canvas and cropped video poster pixels reach GG", flush=True)
 
 
 def window_wait_seconds():
