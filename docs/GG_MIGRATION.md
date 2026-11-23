@@ -4659,8 +4659,17 @@ build sealed the same input fingerprint on RAM. Its executable SHA-256
 was `f0d940c047bd0a33f0fdf6435d058029f37323a3c7e8f2fe1159998054f39070`.
 The startup smoke check, sixteen fresh browser launches and their
 guards exited zero. The pattern unit tests and macOS, Linux ARM64 and
-Windows D3D11 production-mode type checks passed. Production
-publication and frame timing remain open.
+Windows D3D11 production-mode type checks passed.
+
+The managed C `-prod` build `761d6fb6b` published from receipt
+`20261123-114927-3877d761` with executable SHA-256
+`dc65068e1b26716e9b4a610d93f00ad6ce931d12b86fc6e78af65daac590ae80`.
+The compact build stored 409,436,913 logical source bytes in 53,514,240
+allocated bytes for `Vox.c` and `0-Vox.c.i`. Both files kept their declared
+SHA-256 identities at the canonical receipt paths. The startup smoke
+check and sixteen fresh browser launches passed. The unused-pattern tile
+rasterized once and was reused three times at each density, with the same
+decoded RGBA hashes as the private build. Frame timing remains open.
 
 ## Sharing the portable SVG fallback with Windows
 

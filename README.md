@@ -55,8 +55,8 @@ sh build-prod-browser.sh --prod
 open Build/v/Vox.app
 ```
 
-For a low-space macOS build, point `TMPDIR` at a writable scratch volume
-and `VOX_BUILD_INPUT_COMPRESSOR` at an `afsctool` executable:
+For a low-space macOS build, set `TMPDIR` to a writable scratch volume
+and `VOX_BUILD_INPUT_COMPRESSOR` to an `afsctool` executable.
 
 ```sh
 TMPDIR=/path/to/scratch VOX_BUILD_INPUT_COMPRESSOR=/path/to/afsctool \
