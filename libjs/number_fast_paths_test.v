@@ -60,3 +60,9 @@ fn test_number_fast_paths_keep_operator_semantics() {
 	}
 }
 
+fn test_inline_dispatch_keeps_uninitialized_and_type_errors() {
+	// Inline handlers leave throwing cases to execute_instruction().
+	assert number_fast_eval('(function(){var s=Symbol();try{return s+1}catch(e){return e instanceof TypeError}})()')!.as_bool()
+	assert number_fast_eval('(function(){var a=1n;try{return a+1}catch(e){return e instanceof TypeError}})()')!.as_bool()
+	assert number_fast_eval('(function(){var t="";if(t)return false;return !""})()')!.as_bool()
+}

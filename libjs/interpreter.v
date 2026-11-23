@@ -510,6 +510,11 @@ fn (mut vm VM) execute_instruction(instruction &Instruction, executable &Executa
 // Same-binary control: check every operand slot again while dispatching.
 const checked_interpreter_operands = os.getenv('VOX_LIBJS_CHECKED_OPERANDS') != ''
 
+// Same-binary control `VOX_LIBJS_SLOW_DISPATCH`: send every instruction
+// through execute_instruction(). Checked operands always take that path.
+const inline_interpreter_dispatch = os.getenv('VOX_LIBJS_SLOW_DISPATCH') == ''
+	&& !checked_interpreter_operands
+
 // Interpreter/Interpreter.cpp::VM::run_executable, with a V dispatch loop in
 // place of the generated assembly interpreter. Ordinary calls allocate their
 // own checked frames; upstream inline-call frames remain untranslated.
@@ -576,9 +581,97 @@ pub fn (mut vm VM) run_executable(mut frame ExecutionContext, executable &Execut
 			return vm.invoke_native_entry(entry, executable, fast_steps)
 		}
 	}
+	// Operand.validated_slot()'s per-type bases, indexed by the operand tag.
+	operand_bases := [u32(0), executable.local_index_base, executable.registers_and_locals_count,
+		executable.registers_and_locals_count + u32(executable.constants.len)]!
+	bases := unsafe { &u32(&operand_bases[0]) }
 	for frame.program_counter < executable.bytecode_length {
 		vm.consume_execution_budget()!
 		instruction := &executable.instructions[frame.program_counter]
+		// AsmInterpreter handlers for operations that cannot throw or call out.
+		// execute_instruction() still handles every other case, including an
+		// uninitialized operand, so its prologue and long opcode chain are
+		// skipped only for these steps.
+		if inline_interpreter_dispatch {
+			values := unsafe { &Value(frame.values.data) }
+			match instruction.op {
+				.mov {
+					value := unsafe { values[bases[instruction.lhs.raw >> 29] + (instruction.lhs.raw & 0x1fffffff)] }
+					if !value.is_special_empty_value() {
+						unsafe {
+							values[bases[instruction.dst.raw >> 29] + (instruction.dst.raw & 0x1fffffff)] = value
+						}
+						frame.program_counter++
+						continue
+					}
+				}
+				.jump {
+					frame.program_counter = instruction.target
+					continue
+				}
+				.jump_if_false, .jump_if_true {
+					value := unsafe { values[bases[instruction.lhs.raw >> 29] + (instruction.lhs.raw & 0x1fffffff)] }
+					if value.tag == .boolean {
+						if (value.number != 0.0) == (instruction.op == .jump_if_true) {
+							frame.program_counter = instruction.target
+						} else {
+							frame.program_counter++
+						}
+						continue
+					}
+				}
+				.add, .sub, .mul, .less_than, .less_than_equals, .greater_than,
+				.greater_than_equals, .strict_equals, .strict_inequals {
+					left := unsafe { values[bases[instruction.lhs.raw >> 29] + (instruction.lhs.raw & 0x1fffffff)] }
+					right := unsafe { values[bases[instruction.rhs.raw >> 29] + (instruction.rhs.raw & 0x1fffffff)] }
+					if left.is_number() && right.is_number() {
+						x, y := left.number, right.number
+						result := match instruction.op {
+							.add { Value.from_f64(x + y) }
+							.sub { Value.from_f64(x - y) }
+							.mul { Value.from_f64(x * y) }
+							.less_than { Value.from_bool(x < y) }
+							.less_than_equals { Value.from_bool(x <= y) }
+							.greater_than { Value.from_bool(x > y) }
+							.greater_than_equals { Value.from_bool(x >= y) }
+							.strict_equals { Value.from_bool(x == y) }
+							else { Value.from_bool(x != y) }
+						}
+						unsafe {
+							values[bases[instruction.dst.raw >> 29] + (instruction.dst.raw & 0x1fffffff)] = result
+						}
+						frame.program_counter++
+						continue
+					}
+				}
+				.increment, .decrement {
+					value := unsafe { values[bases[instruction.lhs.raw >> 29] + (instruction.lhs.raw & 0x1fffffff)] }
+					if value.is_number() {
+						step := if instruction.op == .increment { 1.0 } else { -1.0 }
+						unsafe {
+							values[bases[instruction.dst.raw >> 29] + (instruction.dst.raw & 0x1fffffff)] = Value.from_f64(value.number + step)
+						}
+						frame.program_counter++
+						continue
+					}
+				}
+				.to_numeric {
+					value := unsafe { values[bases[instruction.lhs.raw >> 29] + (instruction.lhs.raw & 0x1fffffff)] }
+					if value.is_number() {
+						unsafe {
+							values[bases[instruction.dst.raw >> 29] + (instruction.dst.raw & 0x1fffffff)] = value
+						}
+						frame.program_counter++
+						continue
+					}
+				}
+				.nop {
+					frame.program_counter++
+					continue
+				}
+				else {}
+			}
+		}
 		next := vm.execute_instruction(instruction, executable) or {
 			if !is_throw_completion(err) { return err }
 			if vm.handle_exception(frame.program_counter, thrown_value(err)) == .continue_in_this_executable { continue
