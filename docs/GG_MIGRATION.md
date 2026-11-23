@@ -2875,6 +2875,66 @@ different C optimization flags. Host one-minute load was
 17.30–18.78 across 18 logical CPUs. Windows runtime pixels and
 display timing remain unverified.
 
+### Sequential component transfers inside shared SVG tiles
+
+In `255974010`, a tile can replay up to four consecutive
+`feComponentTransfer` stages on SourceGraphic in a single
+color space. The cold raster pass composes the tables before
+scanning pixels. If an intermediate stage reaches zero alpha,
+the composed lookup uses the RGB that the following stages
+would produce from transparent black. LinearRGB chains
+decode once and encode once.
+
+The fixture checks a fill, a translated stroke, and an alpha
+mask. Its live edit makes the first stage clear the source
+and the second restore coverage inside the retained crop.
+[Regression fixture](../Tests/Browser/Native/svg-pattern-tile-component-transfer-chain.html)
+
+macOS passed at 1× and 2×. The initial 384 × 108 RGB crop
+matched the published native renderer with SHA-256
+`111b21bebf2e41124579b4374af21268569982ebfd3713f0dd93721ea17002e4`.
+The edited macOS and Linux crops matched with SHA-256
+`d409ce269093f7eed9065140515c0ac5d5f4d535663ac34b1017db58a425ee83`.
+The edited native fill matched at its original position, and
+the native translated stroke and mask differed in 9,840
+pixels outside the crop. Linux passed with caching enabled
+and disabled in both row-band modes. A separate Linux sRGB
+capture passed the repeated fill and stroke samples. The
+Linux executable SHA-256 was
+`17e6bb4d12a2dbf8af7e3c01adc5245786c994d6e3dda3e743131d07c9d9d83c`.
+The single-transfer and matrix regressions, macOS opacity
+fixture, CPU and painting tests, 23 smoke-driver tests, and
+Windows D3D11 and OpenGL source checks passed.
+
+Two alternating macOS pairs replayed 20 fills and 20 strokes
+from the unedited sRGB chain. Fresh processes used a
+1024 × 600 viewport at 1×, a private profile and cache, and
+a one-second settle. JavaScript and whole-frame raster reuse
+were disabled. All 48 stationary callbacks drew 42 commands.
+Separate diagnostics recorded zero shared cache hits in the
+published native control and 1,880 in the candidate between
+the first and last callback. All six RGBA document captures
+had SHA-256
+`7fb875b560541d82bd8c8b9f077fa4161976d15a35458822835d5e32b20563e8`.
+The timing input SHA-256 was
+`1eebf78ac42c7e256019893c56bd60150a8043a0fe33e8f8867712ab526ad4e1`.
+
+| Pair | Native / shared median replay, ms | Native / shared p95, ms | Native / shared maximum, ms | Native / shared median allocated KiB |
+| --- | ---: | ---: | ---: | ---: |
+| 1 | 45.050 / 1.661 | 159.864 / 2.431 | 188.734 / 2.693 | 3 / 3 |
+| 2 | 45.310 / 1.998 | 67.293 / 2.587 | 82.606 / 3.756 | 3 / 3 |
+
+Both timing builds used single-unit C and prealloc. The
+published control used literal `-prod` and had SHA-256
+`f35ad55c47210ecf13859efd66b30e75007d3a86667bce0a6f8254a1bd29705e`.
+The private candidate used `-prod -no-prod-options` and had
+SHA-256
+`6c0ebc9b51fbf95c3fb55e5fed0e2a6ffee2e35143619aa05c1fe54cf9458a64`.
+Input hashes stayed fixed. The browsers and guards exited
+zero. Different C optimization flags and one-minute load of
+43.73–46.83 on 18 logical CPUs make these timings diagnostic.
+Windows runtime pixels and display timing remain unverified.
+
 ## Sharing the portable SVG fallback with Windows
 
 The standard Windows D3D11 window now uses the same CPU raster and GG texture
