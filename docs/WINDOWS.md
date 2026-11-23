@@ -233,9 +233,9 @@ The checks use the Linux fixtures and pixel assertions. Each fresh window
 runs inside a 3 GiB job with a private profile. The runner compares gradient
 ramps against full raster output and checks cached clipping against uncached
 replay. The canvas checks cover delayed Canvas 2D and WebGL initialization,
-subsequent WebGL frames and texture upload reuse. Pass `--canvas-only` to run
-those three captures separately. The runner records captures, logs, guard
-receipts and input hashes.
+subsequent WebGL frames, texture upload reuse, and transformed canvases and
+video posters. Pass `--canvas-only` to run those checks separately. The
+runner records captures, logs, guard receipts and input hashes.
 
 Run the graphics check on the interactive Windows desktop, also through the
 3 GiB guard:

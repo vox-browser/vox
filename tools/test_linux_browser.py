@@ -3322,6 +3322,55 @@ def check_late_canvas_draw(binary, artifacts, temporary, run_capture=functools.p
     print("PASS: Canvas 2D and WebGL contexts created after first paint reach GG", flush=True)
 
 
+def check_affine_media_pixels(data):
+    width, _, channels, rows = rendered_png_rows(data)
+    top = next(y for y, row in enumerate(rows[:150]) if row[4 * channels:4 * channels + 3] == b"\xea\x70\xb5")
+    assert width == 800 and len(rows) >= top + 516, "Missing affine media document viewport"
+    document = rows[top:top + 516]
+    for x, y, width, height, rgb in (
+        (60, 16, 12, 20, "0000ff"), (72, 16, 12, 20, "ff0000"),
+        (60, 36, 12, 20, "ffff00"), (72, 36, 12, 20, "00ff00"),
+        (116, 16, 20, 12, "00ff00"), (136, 16, 20, 12, "ff0000"),
+        (116, 28, 20, 12, "ffff00"), (136, 28, 20, 12, "0000ff"),
+        (304, 16, 24, 12, "208040"), (304, 28, 24, 12, "2868b0"),
+        (59, 16, 1, 40, "101820"), (84, 16, 1, 40, "101820"),
+    ):
+        pixel = bytes.fromhex(rgb) + (b"\xff" if channels == 4 else b"")
+        assert all(row[x * channels:(x + width) * channels] == pixel * width
+                   for row in document[y:y + height]), (x, y, "Incorrect transformed media pixels")
+    for offset, first, second in ((4, "ff0000", "00ff00"), (18, "0000ff", "ffff00")):
+        row = document[16 + offset]
+        for local_x, expected in ((-2, "101820"), (8, first), (28, second), (42, "101820")):
+            x = 200 + offset + local_x
+            assert row[x * channels:x * channels + 3] == bytes.fromhex(expected), (x, offset, "Incorrect shear")
+    return document
+
+
+def check_portable_affine_media(binary, artifacts, temporary, run_capture=functools.partial(run_windowed, timeout=90)):
+    fixture = Path(__file__).resolve().parents[1] / "Tests/Browser/Native/affine-media.html"
+    documents = []
+    for disabled in (False, True):
+        name = "affine-media-uncached" if disabled else "affine-media"
+        screenshot = artifacts / f"{name}.png"
+        audit = artifacts / f"{name}.json"
+        screenshot.unlink(missing_ok=True)
+        audit.unlink(missing_ok=True)
+        env = smoke_environment(Path(temporary) / name)
+        env.update(VOX_CAPTURE_AUDIT_PATH=str(audit), VOX_PORTABLE_BITMAP_UPLOAD_DIAGNOSTICS="1",
+                   VOX_DISABLE_PORTABLE_CANVAS_UPLOAD_REUSE=str(int(disabled)))
+        log = run_capture([str(binary), "--enable-javascript", "--window-width=800", "--window-height=600",
+                           "--screenshot-viewport-height=516", f"--screenshot={screenshot}", str(fixture)],
+                          env=env, log_path=screenshot.with_suffix(".log"))
+        result = json.loads(audit.read_text())
+        assert result["title"] == "Affine media" and result["ready"] == "complete", result
+        assert result["native_reported_error_count"] == 0, result
+        documents.append(check_affine_media_pixels(screenshot.read_bytes()))
+        uploads = log.splitlines().count("VOX_PORTABLE_BITMAP upload=40x24")
+        assert (uploads > 3 if disabled else uploads == 3), (name, uploads)
+    assert documents[0] == documents[1], "Canvas texture reuse changed affine media pixels"
+    print("PASS: affine canvas and cropped video poster pixels reach GG", flush=True)
+
+
 def window_wait_seconds():
     value = os.environ.get("VOX_LINUX_TEST_WAIT_SECONDS", "20")
     try:
@@ -3674,6 +3723,7 @@ def main():
         check_webgl_browser(binary, artifacts, temporary)
         check_webgl_texture_reuse(binary, artifacts, temporary)
         check_late_canvas_draw(binary, artifacts, temporary)
+        check_portable_affine_media(binary, artifacts, temporary)
         check_gradient_browser(binary, artifacts, temporary)
         check_rounded_image_browser(binary, artifacts, temporary)
         check_web_font_browser(binary, artifacts, temporary)

@@ -1,5 +1,45 @@
 # Migrating from Skia to vlib/gg
 
+## Affine transforms on canvas and video textures
+
+Portable replay maps all four clipped destination corners for rotated,
+sheared and reflected canvas and video draws. It pairs those vertices with
+the original cropped texture coordinates and emits one GG textured quad.
+Axis-aligned draws keep the regular image path. Rounded transforms keep
+their coverage path, and affine draws reuse the existing texture slots.
+
+The guarded ARM64 Linux build used V `5a39a4d` and single-unit Clang 18.1.3
+`-O0`. Its executable SHA-256 was
+`5a9db888d3a0fec8feaf7b61733771e1158436c5c4323612eeb90bf2dcb6eecb`.
+The Xvfb runs checked canvas quadrant order, shear bounds and a rotated
+video poster with `object-fit: cover`. The 800 × 516 RGBA crops matched
+with reuse enabled and disabled at SHA-256
+`81c320d02a97d01a6730856a0681aa3cb427f9ff4974d035ca89ac2ff86d8588`.
+The three canvas textures uploaded three times in total with reuse enabled
+and 264 times with reuse disabled. A separately linked control that bypassed
+the affine branch failed the rotated quadrant assertion. Linux headless
+startup and the video, rounded clip, WebGL and delayed canvas checks passed.
+[Affine media fixture](../Tests/Browser/Native/affine-media.html)
+
+The published macOS bundle (`df7cfba52595ed02ba651596fb1bdaf8ac9c5d8178392d0404b7198e8aa18b54`)
+passed the same pixel assertions. Its complete document crop differed from
+Linux at 50 pixels on the sheared canvas edges and color boundaries.
+
+The Windows 11 QEMU guest used a guarded x64 D3D11 build with V `4478fc4`
+and MinGW GCC 16.2.0 in one C unit with `-prod -no-prod-options`. Its
+executable SHA-256 was
+`e06c46c931079b892dde8fe3f722955b773c8da5dfc651f7ac1fd554fb627c52`.
+The full canvas run passed delayed initialization and stopped after the
+WebGL animation capture still showed its initial blue frame. A focused
+rerun with the same executable passed both affine captures. The three
+canvases uploaded three times in total with reuse enabled and 57 times
+with reuse disabled. Both crops had SHA-256
+`b8dca86ebc3f0734a5f8321fa423a2fdb3cc3099d83d3222b8b35c6cc12f3398`.
+They differed from Linux at four sheared-canvas color boundary pixels.
+The focused runner and both browser guards exited zero with pinned inputs.
+All 23 Python runner unit tests passed. Hardware frame timings remain
+unmeasured.
+
 ## Painting canvases initialized after first layout
 
 The retained paint tree keeps canvas geometry before a context exists. First

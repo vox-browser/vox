@@ -9,7 +9,8 @@ from pathlib import Path
 import tempfile
 
 from test_linux_browser import (check_gradient_browser, check_late_canvas_draw,
-                                check_rounded_image_browser, check_webgl_texture_reuse)
+                                check_portable_affine_media, check_rounded_image_browser,
+                                check_webgl_texture_reuse)
 from test_windows_svg_pattern_tiles import input_hashes, run_guarded_capture
 
 
@@ -18,7 +19,7 @@ def main():
     parser.add_argument("binary", type=Path, help="Windows Vox executable")
     parser.add_argument("--guard", type=Path, required=True, help="Windows job-object guard")
     parser.add_argument("--output", type=Path, required=True)
-    parser.add_argument("--canvas-only", action="store_true", help="check Canvas 2D and WebGL replay only")
+    parser.add_argument("--canvas-only", action="store_true", help="check canvas and transformed media replay only")
     args = parser.parse_args()
     binary, guard = args.binary.resolve(), args.guard.resolve()
     artifacts = args.output.resolve()
@@ -26,7 +27,8 @@ def main():
     tools = Path(__file__).resolve().parent
     native = tools.parent / "Tests/Browser/Native"
     fixtures = [tools / "test_linux_browser.py", tools / "test_windows_svg_pattern_tiles.py",
-                Path(__file__).resolve(), native / "late-canvas.html", native / "webgl-texture-reuse.html"]
+                Path(__file__).resolve(), native / "late-canvas.html", native / "webgl-texture-reuse.html",
+                native / "affine-media.html"]
     if not args.canvas_only:
         fixtures.append(native / "portable-gradients.html")
 
@@ -45,6 +47,7 @@ def main():
                 check_rounded_image_browser(binary, artifacts, temporary, capture)
             check_late_canvas_draw(binary, artifacts, temporary, capture)
             check_webgl_texture_reuse(binary, artifacts, temporary, capture)
+            check_portable_affine_media(binary, artifacts, temporary, capture)
     finally:
         assert hashes() == inputs, "Windows capture inputs changed during the run"
 
