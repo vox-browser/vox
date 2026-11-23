@@ -4582,6 +4582,31 @@ Four more launches passed the opacity-filter edit check. Browser and
 guard exits were zero and the executable, library, drivers and fixtures
 kept their hashes. These checks measured pixels and lookup counts.
 
+### Skipping invisible SVG scopes during shared mask eligibility
+
+`1a7d171cc` applies the raster player's opacity-byte rule during
+eligibility. A scope that rounds to zero skips to its matching close.
+The four-layer limit still applies to visible scopes and the
+operation count bounds the whole stream.
+
+The regression puts a missing bitmap five levels deep under opacity
+`.003`. The `b07ede8da` production control drew the document but missed
+the assertion for shared tile reuse. The candidate rasterized that
+tile once and reused it three times at both 1× and 2×. The document
+RGBA hashes match the [earlier captures](#reusing-macos-svg-tiles-with-invisible-image-layers).
+The sibling at `.004` still waited for its bitmap and reused the
+completed tile. The nested, shared, repeated and hidden bitmap tests
+and the live opacity-filter edit check passed. [Fixture](../Tests/Browser/Native/svg-pattern-tile-hidden-image.html)
+
+The single-unit C `-prod` receipt `20261123-104227-6f6015f1` began
+at `64746c6ce` with the fix in the working tree. The build input
+hash stayed the same after the fix was committed. The published
+executable SHA-256 was
+`58a0973c31a8777187fc0e29c7ab46de3eb818ffd7273b385b96ee101aebc773`.
+The startup smoke check, sixteen fresh browser launches and their
+guards exited zero. The macOS, Linux and Windows D3D11 production-mode
+V type checks passed. These tests cover pixel output and tile reuse.
+
 ## Sharing the portable SVG fallback with Windows
 
 The standard Windows D3D11 window now uses the same CPU raster and GG texture
