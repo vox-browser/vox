@@ -3228,6 +3228,73 @@ median increased by 0.106 and 0.308 ms. Production timing with
 matching compiler flags remains open, as do Windows runtime
 and display measurements.
 
+### Retaining SVG tile eligibility with the display list
+
+In `22557eb69`, layout records the shared tile summary with
+the immutable operation list. Replay reads the summary before
+looking up the tile. It carries filter eligibility, nested
+operation count and depth, and the presence of visible images.
+Nested fills and strokes are charged for each use. Visible
+bitmaps retain decoded-image identities in the cache key.
+
+Focused tests cover prepared and raw records, unsupported
+filters, image propagation, and the combined operation and
+depth limits. The macOS and aarch64 Linux browser runs passed
+the matrix, transfer, nested stroke, standalone, opacity, and
+delayed nested bitmap fixtures. The macOS captures ran at 1×
+and 2× where the fixture's driver uses both. The Linux
+executable SHA-256 was
+`7fbc49920a9bed2dcb753f42d615e79165348b3fcb9e7767ebd6629ccbfe7955`.
+The diagnostic Clang `-O0` link retained the generated LibJS
+function-pointer diagnostic allowance. Both Windows source
+checks and 23 Python smoke-driver tests passed.
+
+Three macOS workloads drew 20 fills and 20 strokes using
+one cached tile per process. The first tile used one sRGB
+matrix. The second used the same three-stage mixed-space graph
+as the regression. The third repeated its filtered group
+12 times inside the tile. The viewport was 1024 × 600 at 1×
+with a one-second settle. Fresh processes used private profiles
+and caches. JavaScript and whole-frame raster reuse were
+disabled. All 48 stationary callbacks drew 42 commands.
+Separate diagnostics counted 1,880 shared hits per workload
+on each build between the first and last callbacks.
+
+| Workload and pair | Before / after median replay, ms | Before / after p95, ms | Before / after maximum, ms | Before / after median allocated KiB |
+| --- | ---: | ---: | ---: | ---: |
+| Single space 1 | 1.1085 / 0.9645 | 1.1720 / 1.0490 | 1.2730 / 1.1650 | 3 / 3 |
+| Single space 2 | 0.9330 / 1.1140 | 0.9870 / 1.1780 | 1.0290 / 1.2090 | 3 / 3 |
+| Mixed spaces 1 | 1.1140 / 0.8275 | 1.1770 / 0.8620 | 1.2000 / 0.8860 | 3 / 3 |
+| Mixed spaces 2 | 0.7925 / 0.8850 | 0.8390 / 1.0130 | 0.8960 / 1.0810 | 3 / 3 |
+| Repeated filter groups 1 | 1.2275 / 0.8460 | 1.3700 / 0.9000 | 1.4360 / 0.9220 | 3 / 3 |
+| Repeated filter groups 2 | 1.2670 / 0.8680 | 1.3630 / 1.0240 | 1.3850 / 1.0880 | 3 / 3 |
+
+Both private builds used the same compiler, single-unit C,
+`-prod -no-prod-options`, prealloc, and a Clang `-O0` override.
+The before and after executable hashes were
+`d31f850f6912c79141c52c051f47c3d5f21bdeddef74a32dd058fa7ddcb54acd`
+and
+`895f210c48e6c7bcb8f125c9305f46cf1a65e018007cf025f8be5a001ff81a65`.
+Checkout source inventories had SHA-256
+`a2e394e50d281444aedb995fc6daff1c86a0779e422bbe6afe96f1fbc3d139e4`
+and
+`682ad01fbdc420c412d92d367b42835e1c542109070b8062cd7be8aee0904417`.
+The source inventory comparison identified the six feature
+files as the only differences. All 18 decoded RGBA documents
+matched with SHA-256
+`9c4a99ea7be5b74b74377c3bf94f63bd7bdcbadd534bbea5b3d71eca10f6a979`.
+The fixture hashes in table order were
+`e4dbc6134d5b0f4b41849a2a509497732463c34668652528fc5fa256347c7f75`,
+`880a7eded1a394045dab20bf465a9e76579719c6c9aa1583b8a1f57f5a3e86a3`,
+and `f56f6cadd46b95ec737125b6de96b8e88959d217ba65c78b9b0532e51ef4391e`.
+Inputs stayed fixed through the trials. Browsers and guards
+exited zero. One-minute load ranged from 10.50 to 11.86 across
+18 logical CPUs. Repeated filter groups improved in both
+pairs. The two smaller workloads had mixed results. This
+cohort measures synthetic replay with matched diagnostic
+builds. Optimized production and Windows runtime timings
+remain open.
+
 ## Sharing the portable SVG fallback with Windows
 
 The standard Windows D3D11 window now uses the same CPU raster and GG texture
