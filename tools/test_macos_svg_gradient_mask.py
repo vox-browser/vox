@@ -700,7 +700,8 @@ def main():
         if args.pattern_nested_images_only:
             shared_bitmap = fixture.with_name("svg-pattern-tile-shared-bitmap.html")
             hidden_bitmaps = [fixture.with_name(f"svg-pattern-tile-{name}.html")
-                              for name in ("hidden-image", "hidden-filter-image")]
+                              for name in ("hidden-image", "hidden-filter-image",
+                                           "hidden-pattern-paint")]
             inputs.extend((shared_bitmap, *hidden_bitmaps))
         offset_fixtures = []
         if args.pattern_offset_only:

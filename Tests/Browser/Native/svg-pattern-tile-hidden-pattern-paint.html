@@ -1,0 +1,34 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Invisible pattern fills and strokes do not block SVG tile reuse</title>
+<style>
+body { margin: 0; background: white; }
+header { width: 8px; height: 8px; background: #34b786; }
+svg { display: block; }
+</style>
+<header></header>
+<svg width="136" height="64">
+  <defs>
+    <pattern id="missing" width="16" height="16" patternUnits="userSpaceOnUse">
+      <image href="missing-tile.png" width="16" height="16"/>
+    </pattern>
+    <pattern id="delayed" width="16" height="16" patternUnits="userSpaceOnUse">
+      <image href="tile.png" width="16" height="16" preserveAspectRatio="none"
+             image-rendering="pixelated"/>
+    </pattern>
+    <pattern id="hidden" width="32" height="32" patternUnits="userSpaceOnUse">
+      <path d="M0 0H32V32H0Z" fill="lime" stroke="url(#missing)" stroke-width="0"/>
+      <path d="M0 0H32V16H0Z" fill="url(#missing)" fill-opacity="0"
+            stroke="url(#missing)" stroke-opacity="0" stroke-width="4"/>
+    </pattern>
+    <pattern id="visible" width="24" height="24" patternUnits="userSpaceOnUse">
+      <path d="M0 0H24V24H0Z" fill="blue"/>
+      <path d="M2 10H8V14H2Z" fill="url(#missing)" fill-opacity="0"
+            stroke="url(#delayed)" stroke-width="2" paint-order="stroke fill"/>
+      <path d="M0 0H8V8H0Z" fill="url(#delayed)"
+            stroke="url(#missing)" stroke-opacity="0" stroke-width="2"/>
+    </pattern>
+  </defs>
+  <path d="M0 0H56V56H0Z" fill="url(#hidden)" stroke="url(#hidden)" stroke-width="2"/>
+  <path d="M72 0H128V56H72Z" fill="url(#visible)" stroke="url(#visible)" stroke-width="2"/>
+</svg>
