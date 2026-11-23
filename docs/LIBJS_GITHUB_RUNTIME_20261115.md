@@ -11929,3 +11929,39 @@ chooses ciphers in its own order.
   (about 0.1B) are also below this spread. Every Vox run used fewer
   instructions than every Brave run; the 10% criterion needs a Vox maximum
   of at most 18.34B, about 1.65B below this cohort's.
+
+**CoreText first-use costs, 2026-11-23.**
+- An interposed census of CoreText calls (one load, instructions on the
+  calling thread) found two expensive answers asked repeatedly:
+
+  | Call | Calls | Instructions |
+  | --- | --- | --- |
+  | `CTFontManagerCreateFontDescriptorsFromURL` | 4 | 237.6M |
+  | `CTFontCopyVariationAxes` | 11 | 163.2M |
+  | `CTFontDrawGlyphs` (glyph masks) | 519 | 88.6M |
+  | `CTFontDescriptorCreateMatchingFontDescriptors` | 41 | 20.9M |
+  | `CTFontCreateWithFontDescriptor` | 527 | 16.8M |
+
+- Registering a replay face whose PostScript name CoreText will not
+  resolve by name re-created the font file's descriptors for every key.
+  The system UI font's hidden names (`.SFNS-Regular`; CoreText substitutes
+  Times New Roman for them) take that path, and each key parsed
+  `SFNS.ttf` into 369 descriptors, about 60M instructions. `fe7488c09`
+  keeps the descriptors of the last eight files (path, device, inode, size
+  and modification time) and selects from them as before
+  (`VOX_DISABLE_FONT_FILE_DESCRIPTOR_CACHE=1`).
+- `CTFontCopyVariationAxes()` localizes every axis name: about 30M
+  instructions for the system UI font. Face flags only need whether axes
+  exist, and system font matching only the `wght` range. `0cf538911` reads
+  the axis count from the `fvar` table header; `9717e8165` reads the `wght`
+  limits there when they need no rounding (CoreText truncates limits to
+  four decimals: Skia's 0.479996 reads 0.4799) and asks CoreText otherwise
+  (`VOX_DISABLE_FVAR_WEIGHT_AXIS_RANGE=1`). Fixtures compare both answers
+  for installed faces.
+- On bundle `04b49cea` (the first two commits) the census reads 1 descriptor
+  parse (59.7M) and 2 axes queries (57.2M, both from the `wght` range that
+  `9717e8165` then removes): about 0.28B less per load, 0.34B with the third.
+- Other system costs checked: TLS (above; system LibreSSL runs AES-GCM in
+  portable C, but Homebrew OpenSSL nets only about 55M on this page), Core
+  Image's first backdrop filter (Metal context creation; replacing it would
+  change filter pixels), and allocator `madvise`/`munmap` calls.
