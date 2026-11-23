@@ -33,10 +33,20 @@ The browser and 3 GiB guard exited zero.
 The Windows x64 D3D11 build linked with V `4478fc4` and MinGW GCC 16.2.0
 in one C unit with `-prod -no-prod-options`. Executable SHA-256 was
 `78379dad319179569b80ba1aec574a4398502a532bf65dd94cff605608b664d7`.
-The focused Windows 11 QEMU runner reached its first guarded capture and
-exited 1. The guest produced no screenshot or browser guard receipt, so
-Windows runtime verification remains open. The guest's input manifest
-matched the staged executable, guard, runners and fixture. Hardware frame
+The earlier Windows 11 QEMU runner reached its first guarded capture and
+exited 1 with empty capture and guard outputs. Its input manifest matched
+the staged executable, guard, runners and fixture.
+
+A fresh x64 D3D11 build with the same compiler configuration had executable
+SHA-256 `5745011ed139dfe5edb99d2d05a3699b888d095e8ec8bd58d7092173fdd22780`.
+The Windows 11 QEMU guest matched that hash before and after two fresh
+interactive captures. The launcher ran the native 3 GiB guard directly and
+recorded process startup phases. Both browser captures and their guards exited
+zero, with peak job committed memory of 543,535,104 and 546,234,368 bytes.
+The capture traces waited for the console message, and both audits recorded
+it. The shared pixel assertions passed, and both 800 × 516 RGBA crops matched
+the Linux and macOS hash above. Reuse recorded one static and two animated
+uploads. With reuse disabled, each canvas uploaded 36 times. Hardware frame
 timings remain unmeasured.
 
 ## Affine transforms on canvas and video textures
