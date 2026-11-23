@@ -87,6 +87,8 @@ mut:
 	compiler_validation ?CompilerValidation
 	register_name_index ?&FunctionRegisterNameIndex
 	regexp_literal_programs []RegExpLiteralProgram
+	// Appended last: native code compiled against earlier fields keeps its offsets.
+	call_plan ?&FunctionCallPlan
 }
 
 pub fn (executable &Executable) get_identifier(index u32) Utf16String {

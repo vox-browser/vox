@@ -214,11 +214,17 @@ fn (mut function ECMAScriptFunction) call_body(mut vm VM, this_value Value, argu
 		environment.bind_this_value(mut vm, bound_this)!
 		frame.this_value = bound_this
 	}
+	call_plan := function.call_plan(executable)
 	for index, parameter in function.data.parameters {
 		if use_register_call_metadata() {
-			if slot := function.parameter_register(index) {
+			// call_plan() matched parameter_slots.len to this parameter list.
+			slot := unsafe { (&i64(call_plan.parameter_slots.data))[index] }
+			if slot >= 0 {
+				$if test {
+					if register_call_metadata_diagnostics { register_call_metadata_reads++ }
+				}
 				value := if index < arguments.len { arguments[index] } else { js_undefined() }
-				frame.values[executable.local_index_base + slot] = value
+				frame.values[executable.local_index_base + u32(slot)] = value
 				continue
 			}
 		} else if function.parameter_in_register(index) {
@@ -252,15 +258,14 @@ fn (mut function ECMAScriptFunction) call_body(mut vm VM, this_value Value, argu
 		} else { environment.create_mutable_binding(mut vm, name, false)! }
 		environment.initialize_binding(mut vm, name, Value.from_object(object), .normal)!
 	}
-	for binding in if simple_parameters { executable.global_bindings } else { []GlobalBinding{} } {
-		if function.variable_in_register(binding.name) { continue }
-		if use_direct_call_bindings() {
-			environment.initialize_call_var(mut vm, binding.name)!
-			continue
-		}
-		if !environment.has_binding_named(binding.name) {
-			environment.create_mutable_binding(mut vm, binding.name, false)!
-			environment.initialize_binding(mut vm, binding.name, js_undefined(), .normal)!
+	if simple_parameters {
+		if use_register_call_metadata() {
+			for name in call_plan.environment_vars { initialize_function_var(mut vm, mut environment, name)! }
+		} else {
+			for binding in executable.global_bindings {
+				if function.variable_in_register(binding.name) { continue }
+				initialize_function_var(mut vm, mut environment, binding.name)!
+			}
 		}
 	}
 	returned := vm.run_executable(mut frame, executable, 0, ExecutionLimits{})!

@@ -32,20 +32,6 @@ fn use_register_call_metadata() bool {
 	return true
 }
 
-// Compiler-created private metadata has one register binding per parameter
-// index. Find and initialize that slot in one pass instead of scanning twice.
-fn (function &ECMAScriptFunction) parameter_register(index int) ?u32 {
-	for binding in function.register_bindings {
-		if binding.parameter_index == index {
-			$if test {
-				if register_call_metadata_diagnostics { register_call_metadata_reads++ }
-			}
-			return binding.slot
-		}
-	}
-	return none
-}
-
 // The compiler sets this private vector once, or replaces it when loading a
 // realm-local compiled body. Its complete bounded index can answer absence;
 // hash collisions still use the original exact comparison.
