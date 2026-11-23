@@ -310,23 +310,15 @@ fn (mut vm VM) execute_instruction(instruction &Instruction, executable &Executa
 			}
 			return next
 		}
-		.add {
-			result = add(mut vm, left, right)!
-		}
-		.sub {
-			result = sub(mut vm, left, right)!
-		}
-		.mul {
-			result = mul(mut vm, left, right)!
-		}
-		.div {
-			result = div(mut vm, left, right)!
-		}
-		.mod_ {
-			result = mod_(mut vm, left, right)!
-		}
-		.exp {
-			result = exp(mut vm, left, right)!
+		.add, .sub, .mul, .div, .mod_, .exp {
+			// AsmInterpreter's Number fast paths: no operand needs coercion.
+			result = if left.is_number() && right.is_number() {
+				Value.from_f64(number_binary_operation(left.number, right.number, instruction.op))
+			} else if instruction.op == .add {
+				add(mut vm, left, right)!
+			} else {
+				numeric_binary_operation(mut vm, left, right, instruction.op)!
+			}
 		}
 		.strict_equals {
 			result = Value.from_bool(is_strictly_equal(left, right))
@@ -349,7 +341,11 @@ fn (mut vm VM) execute_instruction(instruction &Instruction, executable &Executa
 			result = instance_of(mut vm, left, right)!
 		}
 		.less_than, .less_than_equals, .greater_than, .greater_than_equals {
-			comparison := compare_primitive_values(mut vm, left, right)!
+			comparison := if left.is_number() && right.is_number() {
+				compare_numbers(left.number, right.number)
+			} else {
+				compare_primitive_values(mut vm, left, right)!
+			}
 			result = Value.from_bool(match instruction.op {
 				.less_than { comparison == .less }
 				.less_than_equals { comparison in [.less, .equal] }
@@ -358,14 +354,22 @@ fn (mut vm VM) execute_instruction(instruction &Instruction, executable &Executa
 			})
 		}
 		.bitwise_and, .bitwise_or, .bitwise_xor, .left_shift, .right_shift, .unsigned_right_shift {
-			result = match instruction.op {
+			result = if left.is_number() && right.is_number() {
+				bits := number_bitwise_operation(number_to_i32(left.number),
+					number_to_i32(right.number), instruction.op)
+				if instruction.op == .unsigned_right_shift {
+					Value.from_f64(f64(u32(bits)))
+				} else {
+					Value.from_i32(bits)
+				}
+			} else { match instruction.op {
 				.bitwise_and { bitwise_and(mut vm, left, right)! }
 				.bitwise_or { bitwise_or(mut vm, left, right)! }
 				.bitwise_xor { bitwise_xor(mut vm, left, right)! }
 				.left_shift { left_shift(mut vm, left, right)! }
 				.right_shift { right_shift(mut vm, left, right)! }
 				else { unsigned_right_shift(mut vm, left, right)! }
-			}
+			} }
 		}
 		.unary_plus {
 			result = left.to_number(mut vm)!
@@ -379,7 +383,7 @@ fn (mut vm VM) execute_instruction(instruction &Instruction, executable &Executa
 		.increment, .decrement {
 			// Interpreter/SlowPaths.cpp::{increment,decrement}; the generator
 			// preserves the numeric old value separately for postfix updates.
-			numeric := left.to_numeric(mut vm)!
+			numeric := if left.is_number() { left } else { left.to_numeric(mut vm)! }
 			step := if instruction.op == .increment { 1 } else { -1 }
 			result = if numeric.is_number() {
 				Value.from_f64(numeric.number + step)
