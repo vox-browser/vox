@@ -145,8 +145,82 @@ and 9.87 after the cohort.
 Rounded draws saved 77–81 KiB of median allocation per callback. Median
 replay time fell in one pair and rose in two, with 32% variation among
 the rounded controls. These timings cover synthetic `-O0` software replay.
-Reuse remains opt-in. The Windows production-mode source retry timed out
-at 350 seconds. Optimized performance and Windows runtime remain open.
+Reuse remains opt-in. The Windows production-mode source retry for this
+checkpoint timed out at 350 seconds.
+
+#### Optimized Linux replay and Windows source check
+
+V `5a39a4d` generated one C unit from the canonical checkout with
+HEAD at `be0bad757` and working changes present. C generation took
+385.4 seconds. The 6 GiB ARM64 guest killed the Clang
+link after 411.1 seconds when it ran out of memory. The next attempt
+used the same generated C and compiler flags in a temporary 12 GiB
+Ubuntu 24.04 ARM64 guest with four vCPUs. The C and flag SHA-256 values were
+`e23aefc390f1c7a89fdb2ea58b31fd17596ad1c993b7ab5b3565e5cde1b1bc83`
+and `9088088adf9c38194c45f64bf6193fbd3bfe975b143c5b1205a31d8a03b3172f`.
+Clang 18.1.3 finished the single-unit `-O2` link in 484.5 seconds. The
+guard recorded a peak sampled process-tree RSS of 6,208,557,056 bytes.
+The executable SHA-256 was
+`3f02313e045563d2abb89013aacb273a5d838e75b4012f14e7f969dbba7cde73`.
+
+Headless startup passed. Under Xvfb and Mesa 25.2.8 llvmpipe with LLVM
+20.1.2, the three portable-gradient window captures matched exactly.
+With reuse on or off, the [twelve-card scrolling fixture](../Tests/Browser/Native/scroll-gradient-rounded.html)
+matched the four decoded document hashes above at 0, 42, 256 and 310 CSS
+pixels. Its source SHA-256 was
+`a5c3af398400a87c31b88425d30e07d6cc186861329f7ba0457eb79113498143`.
+The pinned executable, Xvfb, native library and fixture hashes held
+throughout. Browser exits and the 3 GiB coverage guard exit were zero.
+
+The separate diagnostic runs saw 21 hits and 21 misses after the first
+completed callback on the rounded fixture, and zero clip lookups on the
+rectangular fixture. Four fresh-process pairs per fixture then ran with
+clip diagnostics disabled in off/on, on/off, off/on, on/off order. Each
+run used a 1024 × 600 document viewport at 1×, a one-second settle, fresh
+profiles and caches, and retained OS caches. The rectangular and rounded
+fixtures used 48 and 32 synthetic 42 px callbacks respectively. Scroll
+positions and paint-command counts matched throughout. Child CPU time
+covers the driver, Xvfb and browser from launch through exit. All browser,
+driver and 3 GiB guard exits were zero. Guest one-minute load at trial
+starts ranged from 0.86 to 1.53. Host one-minute load was 18.54 before
+the cohort and 21.30 after it on 18 logical CPUs.
+
+| Fixture and pair | Median replay, off / on (ms) | p95, off / on (ms) | Max, off / on (ms) | Median allocation, off / on (KiB) | Child CPU, off / on (s) |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Rectangular 1 | 1.030 / 1.105 | 3.458 / 3.675 | 3.958 / 4.028 | 577.0 / 575.0 | 4.344 / 4.050 |
+| Rectangular 2 | 1.418 / 1.075 | 1.687 / 2.389 | 4.588 / 3.876 | 575.0 / 578.0 | 4.907 / 4.141 |
+| Rectangular 3 | 1.281 / 1.362 | 4.123 / 4.341 | 4.722 / 4.734 | 579.0 / 575.5 | 4.553 / 5.224 |
+| Rectangular 4 | 1.299 / 1.516 | 2.101 / 4.608 | 4.618 / 6.851 | 576.0 / 575.0 | 5.261 / 7.762 |
+| Rounded 1 | 49.230 / 50.916 | 53.044 / 61.730 | 53.661 / 63.573 | 4944.5 / 4866.0 | 6.025 / 5.778 |
+| Rounded 2 | 56.286 / 58.838 | 62.183 / 64.558 | 65.198 / 66.013 | 4948.5 / 4870.5 | 8.543 / 6.729 |
+| Rounded 3 | 57.159 / 53.098 | 60.850 / 60.993 | 62.754 / 62.672 | 4945.5 / 4868.5 | 8.442 / 8.323 |
+| Rounded 4 | 61.144 / 72.679 | 73.937 / 142.341 | 78.509 / 158.916 | 4947.0 / 4868.5 | 9.174 / 9.512 |
+
+Rounded callbacks saved 77–79 KiB of median allocation. Median replay
+was 7.1% faster in one pair and 3.4–18.9% slower in three. Whole-run
+child CPU time fell in three pairs. The rectangular controls varied by
+38% at the median with zero cache lookups. The observed timing variation
+and the rounded replay regressions leave reuse opt-in. These timings
+cover synthetic software replay. Hardware performance remains open.
+
+Fresh live [vlang.io](https://vlang.io/) captures reached complete document
+readiness with JavaScript enabled at 1280 × 800 on Linux and macOS. Both
+showed the navigation, gradient version text, mascot and compilation card.
+The Linux capture with reuse enabled recorded 38 clip hits and 38 misses
+across the launch. The compilation video area remained blank on Linux and
+the bird social icon had square corners. The macOS production bundle at
+`5492e717e` decoded a 1426 × 1080 video frame. Its executable SHA-256 was
+`06b1d0b16ca02d35de0a297c8c670b3c31f38aca12b97d35209823a52eb8f7db`.
+The Linux window PNG SHA-256 was
+`9bf7f2c0bc57701bbfd7383417f45213d35f3856524367fc77bfb90b3d676557`, and
+the macOS document PNG SHA-256 was
+`b8368e15d20bf3aef72ade6bb7d9358876e50abf35b223f2eca1a2aaab6111e2`.
+Both browsers and their 3 GiB guards exited zero.
+
+The Windows x64 D3D11 source retry passed with the C backend,
+`-check -prod -no-prod-options` and `-d sokol_d3d11`. It took 233.0
+seconds and the 12 GiB guard recorded a peak sampled process-tree RSS
+of 3,719,282,688 bytes. Windows execution of this revision remains open.
 
 ## Opt-in direct compositing for solid rectangular SVG masks
 
