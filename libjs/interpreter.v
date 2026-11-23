@@ -65,7 +65,120 @@ fn (mut vm VM) execute_instruction(instruction &Instruction, executable &Executa
 		}
 	}
 	mut result := js_undefined()
+	// V emits this match as an if-chain in source order; the most frequent
+	// operations that the dispatch loop does not handle inline come first.
 	match instruction.op {
+		.call, .construct, .super_construct {
+			result = vm.execute_call_instruction(instruction, executable, left, right)!
+		}
+		.get_property {
+			result = vm.execute_property_read(left, right, instruction.strict)!
+		}
+		.get_binding, .typeof_binding {
+			result = vm.execute_binding_read(instruction, executable)!
+		}
+		.put_property {
+			// SlowPaths.cpp::asm_slow_path_put_by_value and PropertyAccess.h's
+			// PutKind::Normal: coerce the retained key after evaluating the RHS.
+			// Ladybird 74a0613d1d79: ToObject rejects a nullish base before
+			// ToPropertyKey can execute user code.
+			if left.is_nullish() {
+				name := if right.is_string() { right.as_string().str() } else { right.str() }
+				if instruction.strict {
+					return vm.throw_error_type(.type_error, .reference_nullish_set_property, name,
+						left.str())
+				}
+				return vm.throw_error_type(.type_error, .to_object_null_or_undefined_with_property,
+					name, left.str())
+			}
+			key := right.to_property_key(mut vm)!
+			Reference.for_value(left, key, none, instruction.strict).put_value(mut vm, source)!
+		}
+		.get_callee_and_this {
+			value, this_value := vm.execute_callee_read(instruction, executable)!
+			if checked_interpreter_operands {
+				frame.values[instruction.dst.slot(executable, frame.argument_count, true)!] = value
+				frame.values[instruction.rhs.slot(executable, frame.argument_count, true)!] = this_value
+			} else {
+				unsafe {
+					mut values := &Value(frame.values.data)
+					values[instruction.dst.validated_slot(executable)] = value
+					values[instruction.rhs.validated_slot(executable)] = this_value
+				}
+			}
+			return next
+		}
+		.jump_if_true {
+			if left.to_boolean() { next = instruction.target }
+		}
+		.jump_if_false {
+			if !left.to_boolean() { next = instruction.target }
+		}
+		.jump_if_nullish {
+			if left.is_nullish() { next = instruction.target }
+		}
+		.strict_equals {
+			result = Value.from_bool(is_strictly_equal(left, right))
+		}
+		.strict_inequals {
+			result = Value.from_bool(!is_strictly_equal(left, right))
+		}
+		.resolve_this_binding {
+			result = vm.resolve_this_binding()!
+		}
+		.end {
+			vm.do_return(left)
+			return executable.bytecode_length
+		}
+		.new_object { result = Value.from_object(Object.create(vm.realm(), vm.realm().object_prototype)) }
+		.define_property {
+			mut object := left.as_object()
+			define_literal_property(mut vm, mut object, right.to_property_key(mut vm)!, source, instruction.annex_b)!
+		}
+		.new_array { result = Value.from_object(ArrayObject.create(mut vm, vm.realm(), u64(left.number), vm.realm().array_prototype_record())!.object) }
+		.set_binding, .set_variable, .initialize_binding {
+			name := executable.get_identifier(instruction.identifier)
+			if instruction.op == .set_variable {
+				mut environment := frame.variable_environment or {
+					return error('Frame has no variable environment')
+				}
+				if instruction.annex_b && environment.is_global_environment() {
+					global := unsafe { &GlobalEnvironment(environment_identity(environment)) }
+					if global.has_lexical_declaration(name) || !global.can_declare_global_function(name) {
+						return next
+					}
+				}
+
+				environment.set_mutable_binding(mut vm, name, left, instruction.strict)!
+			} else {
+				reference := vm.resolve_binding(name, instruction.strict, none)!
+				if instruction.op == .initialize_binding {
+					reference.initialize_referenced_binding(mut vm, left, .normal)!
+				} else {
+					reference.put_value(mut vm, left)!
+				}
+			}
+		}
+		.not_op {
+			result = Value.from_bool(!left.to_boolean())
+		}
+		.typeof_op {
+			result = Value.from_string(vm.create_string_from_str(typeof_value(left)))
+		}
+		.enter_scope {
+			frame.lexical_environment = Environment(DeclarativeEnvironment.create(frame.lexical_environment))
+			frame.lexical_scope_depth++
+		}
+		.leave_scope {
+			frame.leave_lexical_scope()!
+		}
+		.new_function, .new_function_with_name {
+			inferred := if instruction.op == .new_function_with_name { ?Utf16String(make_function_name(left.to_property_key(mut vm)!, none)) } else { none }
+			result = Value.from_object(create_ecmascript_function(mut vm, executable, instruction.identifier, instruction.strict, inferred, true)!)
+		}
+		.mov {
+			result = left
+		}
 		.nop {}
 		.generator_start {
 			mut execution := frame.generator_execution or { return error('Generator start requires a generator frame') }
@@ -222,12 +335,6 @@ fn (mut vm VM) execute_instruction(instruction &Instruction, executable &Executa
 				result = Value.from_object(create_regexp_object(mut vm, pattern, flags)!)
 			}
 		}
-		.new_object { result = Value.from_object(Object.create(vm.realm(), vm.realm().object_prototype)) }
-		.new_array { result = Value.from_object(ArrayObject.create(mut vm, vm.realm(), u64(left.number), vm.realm().array_prototype_record())!.object) }
-		.define_property {
-			mut object := left.as_object()
-			define_literal_property(mut vm, mut object, right.to_property_key(mut vm)!, source, instruction.annex_b)!
-		}
 		.set_object_literal_prototype {
 			if right.is_object() || right.is_null() {
 				mut object := left.as_object()
@@ -235,19 +342,12 @@ fn (mut vm VM) execute_instruction(instruction &Instruction, executable &Executa
 				if !object.internal_set_prototype_of(prototype) { return vm.throw_error_type(.type_error, .object_set_prototype_of_returned_false) }
 			}
 		}
-		.new_function, .new_function_with_name {
-			inferred := if instruction.op == .new_function_with_name { ?Utf16String(make_function_name(left.to_property_key(mut vm)!, none)) } else { none }
-			result = Value.from_object(create_ecmascript_function(mut vm, executable, instruction.identifier, instruction.strict, inferred, true)!)
-		}
 		.new_class_method {
 			prefix := if right.number == 1 { ?string('get') } else if right.number == 2 { ?string('set') } else { none }
 			result = Value.from_object(create_ecmascript_function(mut vm, executable, instruction.identifier, false, make_function_name(left.to_property_key(mut vm)!, prefix), false)!)
 		}
 		.new_class { result = create_base_class(mut vm, executable, instruction.identifier, left, right, source, instruction.strict)! }
 		.define_class_method { define_class_method(mut vm, left, right, source, instruction.identifier, instruction.strict)! }
-		.mov {
-			result = left
-		}
 		.super_construct_with_array {
 			arguments := create_argument_list_from_array_like(mut vm, right)!
 			result = construct_super(mut vm, left, arguments)!
@@ -257,29 +357,6 @@ fn (mut vm VM) execute_instruction(instruction &Instruction, executable &Executa
 			result = if instruction.op == .construct_with_array {
 				Value.from_object(construct(mut vm, left, arguments, none)!)
 			} else { call(mut vm, left, right, arguments)! }
-		}
-		.call, .construct, .super_construct {
-			result = vm.execute_call_instruction(instruction, executable, left, right)!
-		}
-		.get_property {
-			result = vm.execute_property_read(left, right, instruction.strict)!
-		}
-		.put_property {
-			// SlowPaths.cpp::asm_slow_path_put_by_value and PropertyAccess.h's
-			// PutKind::Normal: coerce the retained key after evaluating the RHS.
-			// Ladybird 74a0613d1d79: ToObject rejects a nullish base before
-			// ToPropertyKey can execute user code.
-			if left.is_nullish() {
-				name := if right.is_string() { right.as_string().str() } else { right.str() }
-				if instruction.strict {
-					return vm.throw_error_type(.type_error, .reference_nullish_set_property, name,
-						left.str())
-				}
-				return vm.throw_error_type(.type_error, .to_object_null_or_undefined_with_property,
-					name, left.str())
-			}
-			key := right.to_property_key(mut vm)!
-			Reference.for_value(left, key, none, instruction.strict).put_value(mut vm, source)!
 		}
 		.delete_property {
 			// ToObject precedes ToPropertyKey for DeleteByValue as well.
@@ -296,20 +373,6 @@ fn (mut vm VM) execute_instruction(instruction &Instruction, executable &Executa
 				instruction.strict, none)!
 			result = Value.from_bool(reference.delete_(mut vm)!)
 		}
-		.get_callee_and_this {
-			value, this_value := vm.execute_callee_read(instruction, executable)!
-			if checked_interpreter_operands {
-				frame.values[instruction.dst.slot(executable, frame.argument_count, true)!] = value
-				frame.values[instruction.rhs.slot(executable, frame.argument_count, true)!] = this_value
-			} else {
-				unsafe {
-					mut values := &Value(frame.values.data)
-					values[instruction.dst.validated_slot(executable)] = value
-					values[instruction.rhs.validated_slot(executable)] = this_value
-				}
-			}
-			return next
-		}
 		.add, .sub, .mul, .div, .mod_, .exp {
 			// AsmInterpreter's Number fast paths: no operand needs coercion.
 			result = if left.is_number() && right.is_number() {
@@ -319,12 +382,6 @@ fn (mut vm VM) execute_instruction(instruction &Instruction, executable &Executa
 			} else {
 				numeric_binary_operation(mut vm, left, right, instruction.op)!
 			}
-		}
-		.strict_equals {
-			result = Value.from_bool(is_strictly_equal(left, right))
-		}
-		.strict_inequals {
-			result = Value.from_bool(!is_strictly_equal(left, right))
 		}
 		.loose_equals {
 			result = Value.from_bool(is_loosely_equal(mut vm, left, right)!)
@@ -395,12 +452,6 @@ fn (mut vm VM) execute_instruction(instruction &Instruction, executable &Executa
 		.bitwise_not {
 			result = bitwise_not(mut vm, left)!
 		}
-		.not_op {
-			result = Value.from_bool(!left.to_boolean())
-		}
-		.typeof_op {
-			result = Value.from_string(vm.create_string_from_str(typeof_value(left)))
-		}
 		.get_binding_reference {
 			reference := vm.resolve_binding(executable.get_identifier(instruction.identifier),
 				instruction.strict, none)!
@@ -416,32 +467,6 @@ fn (mut vm VM) execute_instruction(instruction &Instruction, executable &Executa
 			}
 			reference.put_value(mut vm, right)!
 		}
-		.get_binding, .typeof_binding {
-			result = vm.execute_binding_read(instruction, executable)!
-		}
-		.set_binding, .set_variable, .initialize_binding {
-			name := executable.get_identifier(instruction.identifier)
-			if instruction.op == .set_variable {
-				mut environment := frame.variable_environment or {
-					return error('Frame has no variable environment')
-				}
-				if instruction.annex_b && environment.is_global_environment() {
-					global := unsafe { &GlobalEnvironment(environment_identity(environment)) }
-					if global.has_lexical_declaration(name) || !global.can_declare_global_function(name) {
-						return next
-					}
-				}
-
-				environment.set_mutable_binding(mut vm, name, left, instruction.strict)!
-			} else {
-				reference := vm.resolve_binding(name, instruction.strict, none)!
-				if instruction.op == .initialize_binding {
-					reference.initialize_referenced_binding(mut vm, left, .normal)!
-				} else {
-					reference.put_value(mut vm, left)!
-				}
-			}
-		}
 		.create_mutable_binding, .create_immutable_binding {
 			mut environment := frame.lexical_environment or {
 				return error('Frame has no lexical environment')
@@ -454,35 +479,12 @@ fn (mut vm VM) execute_instruction(instruction &Instruction, executable &Executa
 				environment.create_mutable_binding(mut vm, name, false)!
 			}
 		}
-		.enter_scope {
-			frame.lexical_environment = Environment(DeclarativeEnvironment.create(frame.lexical_environment))
-			frame.lexical_scope_depth++
-		}
-		.leave_scope {
-			frame.leave_lexical_scope()!
-		}
-		.resolve_this_binding {
-			result = vm.resolve_this_binding()!
-		}
 		.get_import_meta {
 			if vm.get_active_script_or_module().kind!=.module { return vm.throw_error(.internal_error,'ImportMeta requires an active module') }
 			result=Value.from_object(vm.get_import_meta())
 		}
 		.jump {
 			next = instruction.target
-		}
-		.jump_if_true {
-			if left.to_boolean() { next = instruction.target }
-		}
-		.jump_if_false {
-			if !left.to_boolean() { next = instruction.target }
-		}
-		.jump_if_nullish {
-			if left.is_nullish() { next = instruction.target }
-		}
-		.end {
-			vm.do_return(left)
-			return executable.bytecode_length
 		}
 		.throw_op {
 			return throw_completion(left)
