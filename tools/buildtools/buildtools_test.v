@@ -290,6 +290,58 @@ fn test_frozen_preprocessing_failure_releases_partial_outputs() ! {
 	}
 }
 
+fn test_compact_frozen_inputs_leave_the_receipt_unchanged_on_compression_failure() ! {
+	$if macos {
+		root := temporary(os.temp_dir(), 'vox-compact-input-failure-')!
+		defer { remove(root) or {} }
+		source := join(root, 'large.c')
+		destination := join(root, 'retained.c')
+		write_changed(source, 'x'.repeat(8 * 1024 * 1024))!
+		write_changed(destination, 'previous input')!
+		storage := FrozenInputStorage{root, '/usr/bin/true'}
+		mut rejected := false
+		storage.retain(source, destination) or { rejected = err.msg().contains('did not compress') }
+		assert rejected
+		assert read(destination)! == 'previous input'
+	}
+}
+
+fn test_compact_frozen_compilation_retains_the_original_paths_and_hashes() ! {
+	$if macos {
+		compressor := os.getenv_opt('VOX_TEST_BUILD_INPUT_COMPRESSOR') or { return }
+		root := fixture_repository()!
+		defer { remove(root) or {} }
+		stage := join(root, 'Build/stage')
+		receipt := join(root, 'Build/receipt')
+		scratch := join(root, 'Build/scratch')
+		write_changed(join(stage, 'Vox.app/Contents/Resources/resource'), 'resource')!
+		write_changed(join(root, 'packaging/Vox.entitlements.plist'), 'entitlements')!
+		write_changed(join(root, 'tools/localize_bundle_rpaths.vsh'), '// packaging helper')!
+		source := join(receipt, 'main.c')
+		raw := join(scratch, 'main.c')
+		write_changed(raw, 'static const char data[] = "' + 'x'.repeat(8 * 1024 * 1024)
+			+ '";\nint main(void) { return data[0] != 120; }\n')!
+		expected := digest(raw)!
+		flags := join(receipt, 'flags')
+		write_changed(flags, '-O1')!
+		before := repository_state(root)!
+		write_json(join(receipt, 'inputs-before.json'), json.Any(before))!
+		output := join(stage, 'probe')
+		assert freeze_command(['--root', root, '--stage', stage, '--receipt', receipt, '--source',
+			source, '--flags', flags, '--output', output, '--input-scratch', scratch,
+			'--input-compressor', compressor])! == 0
+		checked([output])!
+		remove(scratch)!
+		data := validate_frozen(receipt, before, true)!
+		inputs := string_map(data['sealed_inputs'] or { json.Null{} })
+		assert inputs[source] == expected
+		preprocessed := join(receipt, 'frozen-compiler-inputs/0-main.c.i')
+		assert inputs[preprocessed] == digest(preprocessed)!
+		assert strings(data['compiler_command'] or { json.Null{} }).contains(preprocessed)
+		assert inputs.keys().all(!it.starts_with(scratch + '/'))
+	}
+}
+
 fn test_process_identity_preserves_ps_date_spacing() {
 	assert process_start_identity('  31  20  31  1024 S  Thu Nov  5 12:34:56 2026') == 'Thu Nov  5 12:34:56 2026'
 }

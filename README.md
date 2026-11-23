@@ -55,6 +55,18 @@ sh build-prod-browser.sh --prod
 open Build/v/Vox.app
 ```
 
+For a low-space macOS build, point `TMPDIR` at a writable scratch volume
+and `VOX_BUILD_INPUT_COMPRESSOR` at an `afsctool` executable:
+
+```sh
+TMPDIR=/path/to/scratch VOX_BUILD_INPUT_COMPRESSOR=/path/to/afsctool \
+    sh tools/run_v_tool.sh rebuild_browser --build --backend c --prod
+```
+
+The single-unit build writes its large compiler inputs on scratch and
+retains filesystem-compressed copies in the production receipt. Clang
+and receipt validation read the same bytes at the canonical receipt paths.
+
 #### Linux (Ubuntu 24.04+ / Debian 13)
 
 ```sh

@@ -16,7 +16,8 @@ fn validate_repository(root string) ! {
 fn production_environment() map[string]string {
 	mut result := os.environ()
 	for key, _ in result {
-		if key.starts_with('GIT_') || key.starts_with('VOX_') || (key.starts_with('LADYBIRD_') && key != 'LADYBIRD_SOURCE_DIR') {
+		if key.starts_with('GIT_') || (key.starts_with('VOX_') && key != 'VOX_BUILD_INPUT_COMPRESSOR')
+			|| (key.starts_with('LADYBIRD_') && key != 'LADYBIRD_SOURCE_DIR') {
 			result.delete(key)
 		}
 	}

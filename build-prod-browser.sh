@@ -21,6 +21,7 @@ set -eu
 #   LADYBIRD_V_PROFILE       V profiling report path (unset for normal builds)
 #   LADYBIRD_V_PROFILE_FNS   comma-separated C function names to profile
 #   VOX_BUILD_SCRATCH_DIR     compiler output root (defaults to Build/v)
+#   VOX_BUILD_INPUT_COMPRESSOR  absolute path to afsctool for compact single-unit receipts
 #   VOX_BUILD_C_MODE          parallel (default) or single; set by the build supervisor
 #   VOX_V8=1                  experimental: compile with -d vox_v8, which implements the
 #                             JavaScriptCore C API on V8 (see docs/V8_ENGINE.md)
@@ -142,6 +143,17 @@ mkdir -p "$binary_dir" "$resources_dir"
 # Failed compiler jobs can leave Mach-O/object scratch directories beside their
 # output. Keep those outside the app so they cannot invalidate bundle signing.
 compiler_output_root=${VOX_BUILD_SCRATCH_DIR:-$build_dir}
+input_compressor=${VOX_BUILD_INPUT_COMPRESSOR:-}
+if [ -n "$input_compressor" ]; then
+    case "$input_compressor" in
+        /*) ;;
+        *) echo 'VOX_BUILD_INPUT_COMPRESSOR needs an absolute path' >&2; exit 1 ;;
+    esac
+    if [ ! -f "$input_compressor" ] || [ ! -x "$input_compressor" ]; then
+        echo "Compiler input compressor is not executable: $input_compressor" >&2; exit 1
+    fi
+    compiler_output_root=${VOX_BUILD_SCRATCH_DIR:-${TMPDIR:-/tmp}}
+fi
 mkdir -p "$compiler_output_root"
 compile_dir=$(mktemp -d "$compiler_output_root/compiler-output.XXXXXX")
 # Failed builds exit through set -e; remove their scratch as well.
@@ -253,6 +265,10 @@ fi
 # V drivers without manifest defaults need the backend passed explicitly.
 v_backend=${VOX_BUILD_BACKEND:-$(v_tool browser_backend "$repo_dir")}
 case "$v_backend" in c|fastc) ;; *) echo "Unsupported browser backend: $v_backend" >&2; exit 2 ;; esac
+if [ -n "$input_compressor" ] && { [ "$v_backend" != c ] || [ "$c_mode" != single ]; }; then
+    echo 'Compact compiler inputs require the single-unit C build' >&2
+    exit 1
+fi
 set -- -b "$v_backend" -cc clang -memory-limit 10G -exclude "$zoneinfo_exclude" -enable-globals -d vox_sparse_ttf \
     -d vox_production -d vox_ui2 -d vox_packaged_adblock_assets \
     -path "$repo_dir|$prealloc_modules|$font_modules|$http_modules|$ui2_modules|@vmodules|@vlib"
@@ -413,6 +429,12 @@ fi
 if [ ! -f "$compile_dir/Vox" ]; then
     generated_dir="$VOX_BUILD_RECEIPT_DIR/generated"
     mkdir -p "$generated_dir"
+    generated_source="$generated_dir/Vox.c"
+    if [ -n "$input_compressor" ]; then
+        input_scratch="$compile_dir/frozen-input-work"
+        mkdir "$input_scratch"
+        generated_source="$input_scratch/Vox.c"
+    fi
     export V_MACOS_V3_SOURCE_MANIFEST=1
     export V_MACOS_V3_C_ERROR_DIR="$VOX_BUILD_RECEIPT_DIR/browser-sources"
     compile_browser_v() {
@@ -423,14 +445,17 @@ if [ ! -f "$compile_dir/Vox" ]; then
     if [ -n "$extra_ldflags" ]; then
         compile_browser_v "$@" \
             -cflags "$extra_cflags" -ldflags "$extra_ldflags" \
-            -dump-c-flags "$generated_dir/Vox.flags" -o "$generated_dir/Vox.c" "$repo_dir"
+            -dump-c-flags "$generated_dir/Vox.flags" -o "$generated_source" "$repo_dir"
     else
         compile_browser_v "$@" \
             -cflags "$extra_cflags" \
-            -dump-c-flags "$generated_dir/Vox.flags" -o "$generated_dir/Vox.c" "$repo_dir"
+            -dump-c-flags "$generated_dir/Vox.flags" -o "$generated_source" "$repo_dir"
     fi
     set -- --root "$repo_dir" --stage "$build_dir" --receipt "$VOX_BUILD_RECEIPT_DIR" \
         --source "$generated_dir/Vox.c" --flags "$generated_dir/Vox.flags" --output "$compile_dir/Vox"
+    if [ -n "$input_compressor" ]; then
+        set -- "$@" --input-scratch "$input_scratch" --input-compressor "$input_compressor"
+    fi
     if [ -f "$VOX_BUILD_RECEIPT_DIR/worker-sources/v_sources" ] || \
        [ -f "$VOX_BUILD_RECEIPT_DIR/browser-sources/v_sources" ]; then
         # A compiler without manifest support retains the whole-tree check.
