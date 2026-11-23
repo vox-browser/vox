@@ -14,7 +14,8 @@ VOX_NATIVE_STATE id<MTLDevice> vox_rect_blur_device;
 VOX_NATIVE_STATE id<MTLCommandQueue> vox_rect_blur_queue;
 VOX_NATIVE_STATE id<MTLComputePipelineState> vox_rect_blur_pipeline;
 static int vox_rect_blur_coverage(const uint8_t *profile,int length,float *pixels,
-                                 int width,int height,const float *rect,float inverse,int fast) {
+                                 int width,int height,const float *rect,float inverse,int fast,
+                                 const float *origin) {
     if(!profile || !pixels || !rect || length<32 || length>2048 || width<=0 || height<=0 ||
        width>4096 || height>4096 || (int64_t)width*height>4*1024*1024)return 0;
     @autoreleasepool {
@@ -25,10 +26,11 @@ static int vox_rect_blur_coverage(const uint8_t *profile,int length,float *pixel
             NSString *source=@"#include <metal_stdlib>\nusing namespace metal;\n"
              @"kernel void coverage(texture2d<float,access::sample> profile [[texture(0)]],"
              @"texture2d<float,access::write> output [[texture(1)]],constant float4& rect [[buffer(0)]],"
-             @"constant float& inverse [[buffer(1)]],constant int& fast [[buffer(2)]],uint2 p [[thread_position_in_grid]]) {"
+             @"constant float& inverse [[buffer(1)]],constant int& fast [[buffer(2)]],"
+             @"constant float2& origin [[buffer(3)]],uint2 p [[thread_position_in_grid]]) {"
              @"if(p.x>=output.get_width()||p.y>=output.get_height())return;"
              @"constexpr sampler s(coord::normalized,address::clamp_to_edge,filter::linear);"
-             @"float2 coord=float2(p)+.5;float2 xy;"
+             @"float2 coord=(float2(p)+origin)+.5;float2 xy;"
              @"if(fast) {float2 pos=max(rect.xy-coord,coord-rect.zw);"
              @"xy=float2(profile.sample(s,float2(inverse*pos.x,.5)).r,profile.sample(s,float2(inverse*pos.y,.5)).r);}"
              @"else {float4 distances=float4(rect.xy-coord,coord-rect.zw);"
@@ -56,6 +58,7 @@ static int vox_rect_blur_coverage(const uint8_t *profile,int length,float *pixel
         [encoder setComputePipelineState:vox_rect_blur_pipeline];
         [encoder setTexture:input atIndex:0];[encoder setTexture:output atIndex:1];
         [encoder setBytes:rect length:16 atIndex:0];[encoder setBytes:&inverse length:4 atIndex:1];[encoder setBytes:&fast length:4 atIndex:2];
+        [encoder setBytes:origin length:2*sizeof(float) atIndex:3];
         [encoder dispatchThreads:MTLSizeMake(width,height,1) threadsPerThreadgroup:MTLSizeMake(16,16,1)];
         [encoder endEncoding];[command commit];[command waitUntilCompleted];
         int success=command.status==MTLCommandBufferStatusCompleted;

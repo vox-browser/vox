@@ -16,7 +16,7 @@ fn test_shadow_patch_expansion_matches_scalar_reference() {
 	]
 	for i, size in sizes {
 		w, h := size[0], size[1]
-		output := expand_rounded_shadow_patch(patch, dimension, w, h, 7.375, -2.625,
+		output := expand_rounded_shadow_patch(patch, dimension, SurfaceRegion{width: w, height: h}, 7.375, -2.625,
 			f32(w) * 0.49, f32(h) * 0.492, 102.25)
 		assert sha256.sum(output).hex() == hashes[i]
 	}

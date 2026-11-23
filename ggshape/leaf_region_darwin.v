@@ -93,7 +93,7 @@ pub fn draw_region(pixels &u8, pitch i32, region SurfaceRegion, has_background i
 	if samples == 4 {
 		target.draw_msaa_trigger()
 	}
-	draw_shape_descriptor(mut target, shape, region.surface_width, region.surface_height) or {
+	draw_shape_descriptor_region(mut target, shape, region) or {
 		return 0
 	}
 	target.read_document_region(pixels, int(pitch), region.x, region.y, region.width, region.height) or {

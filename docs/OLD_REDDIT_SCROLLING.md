@@ -432,3 +432,73 @@ What remains below the input rate:
   burst, and one run had none at all, so it depends on the environment.
 - Occasional 100–130 ms frames elsewhere in the thread did not recur under
   diagnostics; host load from other sessions also moves the input rate itself.
+
+## Live r/europe listing on 2026-11-23
+
+Two fresh launches of the live listing at 100% page zoom on the shared macOS
+production build reproduced the lag. Each trial used a 1701×948 document
+viewport at 2×, an empty private profile and HTTP cache, and the automatic
+script policy (which enabled JavaScript). The host's OS caches were retained.
+After the title `Europe` settled for eight seconds, the native input probe
+sent 360 precise six-point wheel events at nominal 60 Hz, reversing at event
+180. Throughput counts scroll-changing native frame installations during the
+entire input window. The Mac's 18 logical CPUs were under substantial
+contention, with one-minute load rising from 92.4 to 129.1 across the trials.
+
+| Trial (UTC start) | Scroll FPS | Input Hz | Scroll changes / publications | Median / p95 / max (ms) | Over 16.67 ms | Leading / trailing scroll gap (ms) |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| 02:18:51 | 9.48 | 28.12 | 121 / 142 | 73.20 / 245.70 / 550.74 | 90.91% | 669.34 / 25.36 |
+| 02:19:20 | 17.04 | 40.79 | 150 / 181 | 34.01 / 126.26 / 268.18 | 90.00% | 393.28 / 197.62 |
+
+Both browsers and the 12 GiB memory guard exited 0. The production receipt was
+`20261123-042042-7650db79` with executable SHA-256
+`6a541ab7cc0463cbc93bdb76e769b62b1dc131df5256e7275163af3ae2678102` and
+`libVoxAVIF.dylib` SHA-256
+`ebde1494c5aebaa69ebe6edab9f4e3333020cb4b2949d96fa1fbb35f19d6a202`.
+Two earlier attempts using lowercase `europe` missed the case-sensitive title
+gate and timed out before input (both browser exits were −9). The external
+sample captured rendering stacks, while the simultaneous bounded stall logger
+overflowed and the diagnostic driver exited 1. Separate raster and geometry
+diagnostics both finished with browser and guard exit 0.
+
+All 45 raster passes logged after input began reused the viewport. The largest
+rounded shadow still rasterized a 2738×2120 device-pixel surface even when
+Quartz published a strip as narrow as 50 device pixels. Another tall shadow and
+the rounded listing background also transferred large surfaces. Sampled
+main-thread stacks were dominated by shadow mask preparation, Metal transfers
+and texture uploads.
+
+On reused frames the macOS shape bridge now bounds rounded fill and outer
+shadow transfers to the repaint clip when it covers at most half the leaf.
+It keeps the original standalone surface or compositor tiles, including their
+sample count, and computes analytic shadow coverage only for the transfer
+rectangle. General blur filters keep their source bounds and sampling grid.
+`VOX_DISABLE_SCROLL_SHAPE_REGIONS=1` selects the whole-leaf control on the same
+binary, and `VOX_SCROLL_SHAPE_REGION_DIAGNOSTICS=1` logs the cropped and
+original dimensions for a separate eligibility run.
+
+An isolated C-backend test drew the 2738×2120 rounded shadow five times per
+path, comparing a 2738×100 crop byte for byte. Every crop matched. The full
+draws took 183–316 ms and the cropped draws took 13–91 ms with the leaf cache
+off. These diagnostic timings are for one shadow in an unoptimized test
+executable under contention.
+
+The Chromium geometry test also matched full and cropped pixels for
+rectangular and rounded shadows and rounded fills, with fractional shape
+coordinates, mixed sample counts and a crop crossing both tile boundaries.
+The GG leaf-region, shadow reference and native scroll-ring checks passed.
+
+Reproduce the live input protocol from the repository root with a unique job
+directory. Use a new output directory for every process.
+
+```sh
+D=$(mktemp -d Build/reddit-europe-scroll.XXXXXX)
+env -u ALL_PROXY -u HTTP_PROXY -u HTTPS_PROXY -u all_proxy -u http_proxy -u https_proxy \
+  VOX_TEST_WINDOW=1 sh tools/run_v_tool.sh run_memory_bounded \
+  --lock "$D/live.lock" --report "$D/live-guard.json" -- \
+  python3 tools/measure_precise_scroll.py --output "$D/run" \
+  --url https://old.reddit.com/r/europe/ --width 1701 --height 948 \
+  --inputs 360 --delta 6 --reverse-every 180 --require-title Europe \
+  --settle-seconds 8 --timeout 55 \
+  --network-policy 'Live HTTPS, empty private HTTP cache per process, host OS caches retained'
+```

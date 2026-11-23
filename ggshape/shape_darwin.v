@@ -161,6 +161,17 @@ fn draw_shape_on_surface(pixels &u8, width i32, height i32, pitch i32, has_backg
 }
 
 fn draw_shape_descriptor(mut target canvas.GpuSurface, shape &C.VoxGraphiteShape, width int, height int) ! {
+	draw_shape_descriptor_region(mut target, shape, SurfaceRegion{
+		surface_width: width
+		surface_height: height
+		width: width
+		height: height
+	})!
+}
+
+fn draw_shape_descriptor_region(mut target canvas.GpuSurface, shape &C.VoxGraphiteShape,
+	region SurfaceRegion) ! {
+	width, height := region.surface_width, region.surface_height
 	target.set_matrix(canvas.Matrix.values(shape.matrix))
 	if shape.has_intersect_clip != 0 {
 		c := shape.intersect_clip
@@ -200,7 +211,7 @@ fn draw_shape_descriptor(mut target canvas.GpuSurface, shape &C.VoxGraphiteShape
 		target.draw_drrect(rounded_rect(shape.rect), rounded_rect(shape.underlay_rect), paint)!
 	} else if shape.fill == 10 {
 		if rectangular_shadow_supported(shape) {
-			draw_rectangular_shadow(mut target, shape, width, height, paint)!
+			draw_rectangular_shadow(mut target, shape, region, paint)!
 			return
 		}
 		if rotated_filter_supported(shape) {
@@ -212,7 +223,17 @@ fn draw_shape_descriptor(mut target canvas.GpuSurface, shape &C.VoxGraphiteShape
 			target.draw_linear_alpha_mask(layer.mask.pixels, layer.mask.width, layer.mask.height, paint)!
 			return
 		}
-		mask := rounded_shadow_mask(shape, width, height)!
+		// The nine-patch's samples are independent of the output bounds.
+		// General filters retain the full source and its downsampling grid.
+		if affine_shadow_supported(shape) {
+			if mask := rounded_shadow_nine_patch(shape, region) {
+				target.clip_rrect(rounded_rect(shape.underlay_rect), .difference, true)!
+				target.set_matrix(canvas.Matrix.translate(f32(region.x), f32(region.y)))
+				target.draw_alpha_mask(mask, region.width, region.height, paint)!
+				return
+			}
+		}
+		mask := rounded_shadow_filter_mask(shape, width, height)!
 		target.clip_rrect(rounded_rect(shape.underlay_rect), .difference, true)!
 		target.set_matrix(canvas.Matrix.identity())
 		target.draw_alpha_mask(mask, width, height, paint)!

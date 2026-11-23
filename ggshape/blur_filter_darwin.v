@@ -175,9 +175,8 @@ fn shadow_filter_scale(shape &C.VoxGraphiteShape) ?f32 {
 	return scale
 }
 
-fn rounded_shadow_mask(shape &C.VoxGraphiteShape, width int, height int) ![]u8 {
+fn rounded_shadow_filter_mask(shape &C.VoxGraphiteShape, width int, height int) ![]u8 {
 	if affine_shadow_supported(shape) {
-		if patch := rounded_shadow_nine_patch(shape, width, height) { return patch }
 		if shape.rect[4..12].any(it > 0) {
 			return shadow_filter_mask(shape, width, height, none, canvas.Point{})
 		}
@@ -339,7 +338,7 @@ fn shadow_filter_layer_with_path_matrix(shape &C.VoxGraphiteShape, width int, he
 // Graphite AnalyticBlurMask::MakeRRect: blur a small rounded rectangle, then
 // sample its nine-patch with nearest filtering. Keep the A8 sample intact until
 // draw_alpha_mask multiplies it by the floating-point paint color.
-fn rounded_shadow_nine_patch(shape &C.VoxGraphiteShape, width int, height int) ?[]u8 {
+fn rounded_shadow_nine_patch(shape &C.VoxGraphiteShape, region SurfaceRegion) ?[]u8 {
 	m := shape.matrix
 	sigma := shape.thickness * f32(.5) * m[0]
 	radius := shape.rect[4] * m[0]
@@ -366,7 +365,7 @@ fn rounded_shadow_nine_patch(shape &C.VoxGraphiteShape, width int, height int) ?
 	center_x := (shape.rect[2] * m[0] + 2 * blur_radius) * f32(.5)
 	center_y := (shape.rect[3] * m[4] + 2 * blur_radius) * f32(.5)
 	edge := 2 * blur_radius + radius + f32(.5)
-	return expand_rounded_shadow_patch(patch, dimension, width, height, left, top, center_x,
+	return expand_rounded_shadow_patch(patch, dimension, region, left, top, center_x,
 		center_y, edge)
 }
 
@@ -384,19 +383,20 @@ fn shadow_patch_coordinate(pixel int, origin f32, center f32, edge f32, dimensio
 		0, f32(dimension - 1)))
 }
 
-fn expand_rounded_shadow_patch(patch []u8, dimension int, width int, height int, left f32, top f32, center_x f32, center_y f32, edge f32) []u8 {
-	columns := []int{len: width, init: shadow_patch_coordinate(index, left, center_x, edge, dimension)}
-	output := []u8{len: width * height}
+fn expand_rounded_shadow_patch(patch []u8, dimension int, region SurfaceRegion, left f32, top f32, center_x f32, center_y f32, edge f32) []u8 {
+	columns := []int{len: region.width, init: shadow_patch_coordinate(index + region.x, left, center_x, edge, dimension)}
+	output := []u8{len: region.width * region.height}
 	scan := RoundedShadowPatchScan{
 		patch:     patch
 		output:    output
 		columns:   columns
 		dimension: dimension
+		first_row: region.y
 		top:       top
 		center_y:  center_y
 		edge:      edge
 	}
-	cpuraster.run_raster_scans(&scan, height, width, scan_rounded_shadow_patch)
+	cpuraster.run_raster_scans(&scan, region.height, region.width, scan_rounded_shadow_patch)
 	return output
 }
 
@@ -405,6 +405,7 @@ struct RoundedShadowPatchScan {
 	output    []u8
 	columns   []int
 	dimension int
+	first_row int
 	top       f32
 	center_y  f32
 	edge      f32
@@ -415,7 +416,7 @@ fn scan_rounded_shadow_patch(context voidptr, first i32, end i32) {
 	scan := unsafe { &RoundedShadowPatchScan(context) }
 	mut output := unsafe { scan.output }
 	for y in int(first) .. int(end) {
-		source := shadow_patch_coordinate(y, scan.top, scan.center_y, scan.edge, scan.dimension) * scan.dimension
+		source := shadow_patch_coordinate(y + scan.first_row, scan.top, scan.center_y, scan.edge, scan.dimension) * scan.dimension
 		target := y * scan.columns.len
 		for x, column in scan.columns {
 			output[target + x] = scan.patch[source + column]

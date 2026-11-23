@@ -1189,6 +1189,8 @@ int native_document_text_raster_finish(const uint8_t *pixels, int left, int top,
 // rasterization belong to V's gg.canvas adapter.
 #include "native/include/native_graphite_bridge.h"
 extern int vox_draw_document_shape_pixels(uint8_t*, int, int, int, int, int, int, VoxGraphiteShape*);
+extern int vox_draw_document_shape_region_pixels(uint8_t*, int, int, int, int, int,
+    int, int, int, int, VoxGraphiteShape*);
 VOX_NATIVE_STATE VoxGraphiteShape native_v_shape_state;
 
 void native_set_shape_intersect_clip(const float *rect) {
@@ -1219,9 +1221,54 @@ static void native_v_shape_filter_clip(VoxGraphiteShape* shape, int32_t* geometr
     shape->filter_clip[2]=(right-geometry[0])*sx;shape->filter_clip[3]=(bottom-geometry[1])*sy;
 }
 
+// The original surface fixes the shape's samples and filter coordinates.
+// Quartz consumes only the portion under the current repaint clip, so read
+// and publish that part of the bitmap while drawing on the same GPU grid.
+static int native_try_scroll_shape_region(CGContextRef context, VoxGraphiteShape *shape,
+    const int32_t *geometry, float scale, float canvas_height, int first_x, int first_y) {
+    if (!native_scroll_raster.active || !native_scroll_raster.reused
+        || context != native_scroll_raster.context || !geometry[4]
+        || (shape->fill != 1 && shape->fill != 10)
+        || shape->matrix[1] != 0 || shape->matrix[3] != 0
+        || shape->matrix[0] <= 0 || shape->matrix[0] != shape->matrix[4]
+        || geometry[2] != geometry[5] * scale || geometry[3] != geometry[6] * scale
+        || getenv("VOX_DISABLE_SCROLL_SHAPE_REGIONS")) return 0;
+    CGRect clip = CGContextGetClipBoundingBox(context);
+    if (CGRectIsEmpty(clip) || CGRectIsNull(clip) || CGRectIsInfinite(clip)) return 0;
+    CGRect leaf = CGRectMake(geometry[0], geometry[1], geometry[5], geometry[6]);
+    CGRect cropped = CGRectIntersection(leaf, CGRectIntegral(CGRectMake(CGRectGetMinX(clip),
+        canvas_height - CGRectGetMaxY(clip), CGRectGetWidth(clip), CGRectGetHeight(clip))));
+    if (CGRectIsEmpty(cropped) || CGRectIsNull(cropped)) return 0;
+    int width = (int)lround(CGRectGetWidth(cropped) * scale);
+    int height = (int)lround(CGRectGetHeight(cropped) * scale);
+    int x = (int)lround((CGRectGetMinX(cropped) - CGRectGetMinX(leaf)) * scale);
+    int y = (int)lround((CGRectGetMinY(cropped) - CGRectGetMinY(leaf)) * scale);
+    if ((int64_t)width * height * 2 > (int64_t)geometry[2] * geometry[3]
+        || width <= 0 || height <= 0 || x < 0 || y < 0
+        || x + width > geometry[2] || y + height > geometry[3]) return 0;
+    int left = (int)CGRectGetMinX(cropped), top = (int)CGRectGetMinY(cropped);
+    // The readback and display rectangles must land on the same device pixels.
+    if (left * scale != round(left * scale) || top * scale != round(top * scale)
+        || CGRectGetWidth(cropped) * scale != width || CGRectGetHeight(cropped) * scale != height)
+        return 0;
+    uint8_t *pixels = malloc((size_t)width * height * 4);
+    if (!pixels) return 0;
+    int drawn = native_document_text_raster_read_backdrop(pixels, left, top, width, height, scale)
+        && vox_draw_document_shape_region_pixels(pixels, width, height, geometry[4], first_x,
+            first_y, geometry[2], geometry[3], x, y, shape)
+        && native_document_text_raster_finish(pixels, left, top, width, height,
+            (int)CGRectGetWidth(cropped), (int)CGRectGetHeight(cropped), canvas_height, geometry[4]);
+    free(pixels);
+    if (drawn && getenv("VOX_SCROLL_SHAPE_REGION_DIAGNOSTICS"))
+        fprintf(stderr, "VOX_SCROLL_SHAPE_REGION fill=%d full=%dx%d region=%dx%d\n",
+            shape->fill, geometry[2], geometry[3], width, height);
+    return drawn;
+}
+
 static int native_try_v_document_shape(VoxGraphiteShape shape, const float* matrix,
     float canvas_width, float canvas_height, float page_x, float page_y, float scroll_y) {
-    if ([[NSGraphicsContext currentContext] CGContext] != native_font_compositing_context) return 0;
+    CGContextRef context = [[NSGraphicsContext currentContext] CGContext];
+    if (!context || context != native_font_compositing_context) return 0;
     float x=shape.rect[0], y=shape.rect[1], width=shape.rect[2], height=shape.rect[3];
     int fill=shape.fill; float thickness=shape.thickness;
     float left = INFINITY, top = INFINITY, right = -INFINITY, bottom = -INFINITY;
@@ -1239,20 +1286,22 @@ static int native_try_v_document_shape(VoxGraphiteShape shape, const float* matr
     if (prepared == 2) return 1;
     if (prepared != 1) return 0;
     int w=geometry[2], h=geometry[3], backdrop=geometry[4];
+    float sx=(float)w/geometry[5], sy=(float)h/geometry[6];
+    float cropped[9]={matrix[0]*sx,matrix[2]*sx,(matrix[4]-geometry[0])*sx,
+        matrix[1]*sy,matrix[3]*sy,(matrix[5]-geometry[1])*sy,0,0,1};
+    memcpy(shape.matrix,cropped,sizeof(cropped));
+    native_v_shape_filter_clip(&shape,geometry,canvas_height,sx,sy,page_x,page_y,scroll_y);
+    int first_x = (int)lround((geometry[0]-page_x)*scale);
+    int first_y = (int)lround((geometry[1]-page_y+scroll_y)*scale);
+    if (native_try_scroll_shape_region(context, &shape, geometry, scale, canvas_height,
+            first_x, first_y)) return 1;
     size_t size=(size_t)w*h*4;
     uint8_t* pixels=calloc(size,1);
     if (!pixels) return 0;
     if (backdrop && !native_document_text_raster_read_backdrop(pixels,geometry[0],geometry[1],w,h,scale)) {
         free(pixels); return 0;
     }
-    float sx=(float)w/geometry[5], sy=(float)h/geometry[6];
-    float cropped[9]={matrix[0]*sx,matrix[2]*sx,(matrix[4]-geometry[0])*sx,
-        matrix[1]*sy,matrix[3]*sy,(matrix[5]-geometry[1])*sy,0,0,1};
-    memcpy(shape.matrix,cropped,sizeof(cropped));
-    native_v_shape_filter_clip(&shape,geometry,canvas_height,sx,sy,page_x,page_y,scroll_y);
-    int drawn=vox_draw_document_shape_pixels(pixels,w,h,w*4,backdrop,
-        (int)lround((geometry[0]-page_x)*scale),
-        (int)lround((geometry[1]-page_y+scroll_y)*scale),&shape);
+    int drawn=vox_draw_document_shape_pixels(pixels,w,h,w*4,backdrop,first_x,first_y,&shape);
     if (drawn) drawn=native_document_text_raster_finish(pixels,geometry[0],geometry[1],w,h,
         geometry[5],geometry[6],canvas_height,backdrop);
     free(pixels);

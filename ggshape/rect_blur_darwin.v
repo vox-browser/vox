@@ -6,7 +6,7 @@ import math
 #include "@DIR/rect_blur_darwin.m"
 
 fn C.erff(f32) f32
-fn C.vox_rect_blur_coverage(&u8, i32, &f32, i32, i32, &f32, f32, i32) i32
+fn C.vox_rect_blur_coverage(&u8, i32, &f32, i32, i32, &f32, f32, i32, &f32) i32
 
 fn rectangular_shadow_supported(shape &C.VoxGraphiteShape) bool {
 	return shape.fill == 10 && affine_shadow_supported(shape)
@@ -31,8 +31,12 @@ fn rectangle_integral_table(six_sigma f32) []u8 {
 }
 
 fn draw_rectangular_shadow(mut target canvas.GpuSurface, shape &C.VoxGraphiteShape,
-	width int, height int, paint canvas.Paint) ! {
+	region SurfaceRegion, paint canvas.Paint) ! {
 	if !rectangular_shadow_supported(shape) { return error('Unsupported rectangular blur') }
+	if region.surface_width > 4096 || region.surface_height > 4096
+		|| region.surface_width * region.surface_height > 4 * 1024 * 1024 {
+		return error('Rectangular blur exceeds bounded surface size')
+	}
 	m := shape.matrix
 	sigma := shape.thickness * f32(.5) * m[0]
 	pad := f32(3) * sigma
@@ -42,12 +46,13 @@ fn draw_rectangular_shadow(mut target canvas.GpuSurface, shape &C.VoxGraphiteSha
 		(shape.rect[1] + shape.rect[3]) * m[4] + m[5] - pad]!
 	fast := inset[0] <= inset[2] && inset[1] <= inset[3]
 	table := rectangle_integral_table(6 * sigma)
-	mut coverage := []f32{len: width * height}
-	if C.vox_rect_blur_coverage(table.data, i32(table.len), coverage.data, i32(width), i32(height),
-		&inset[0], f32(1) / (f32(6) * sigma), i32(fast)) == 0 {
+	mut coverage := []f32{len: region.width * region.height}
+	origin := [f32(region.x), f32(region.y)]!
+	if C.vox_rect_blur_coverage(table.data, i32(table.len), coverage.data, i32(region.width),
+		i32(region.height), &inset[0], f32(1) / (f32(6) * sigma), i32(fast), &origin[0]) == 0 {
 		return error('Rectangular blur GPU pass failed')
 	}
 	target.clip_rrect(rounded_rect(shape.underlay_rect), .difference, true)!
-	target.set_matrix(canvas.Matrix.identity())
-	target.draw_float_alpha_mask(coverage, width, height, paint)!
+	target.set_matrix(canvas.Matrix.translate(origin[0], origin[1]))
+	target.draw_float_alpha_mask(coverage, region.width, region.height, paint)!
 }

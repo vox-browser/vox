@@ -147,6 +147,34 @@ fn (rows &LeafTileRows) publish(mut result []u8, pitch int, x0 int, y0 int, left
 	}
 }
 
+fn document_shape_uses_tiles(grid DocumentGeometryGrid, x int, y int, width int, height int,
+	shape &C.VoxGraphiteShape) bool {
+	return geometry_grid_covers_leaf(grid, x, y, width, height)
+		|| (shape.has_filter_clip != 0 && ggshape.rotated_filter_supported(shape)
+			&& geometry_grid_covers_filter_output(grid, x, y, shape.filter_clip)
+			&& geometry_grid_intersects_leaf(grid, x, y, width, height))
+}
+
+fn document_shape_in_tile(shape &C.VoxGraphiteShape, grid DocumentGeometryGrid, x0 int, y0 int,
+	col int, row int) C.VoxGraphiteShape {
+	ox, oy := col * (grid.width - 2), row * (grid.height - 2)
+	mut draw := *shape
+	draw.matrix[2] += f32(x0 - ox)
+	draw.matrix[5] += f32(y0 - oy)
+	if draw.has_filter_clip != 0 {
+		draw.filter_clip[0] += f32(x0 - ox)
+		draw.filter_clip[2] += f32(x0 - ox)
+		draw.filter_clip[1] += f32(y0 - oy)
+		draw.filter_clip[3] += f32(y0 - oy)
+	}
+	if grid.origin_x != 0 || grid.origin_y != 0 {
+		draw = ggshape.localize_rounded_shape(draw, -(draw.matrix[2] + f32(ox)) / draw.matrix[0],
+			-(draw.matrix[5] + f32(oy)) / draw.matrix[4])
+	}
+	draw.force_msaa = i32(i32(row * grid.columns + col) in grid.cells)
+	return draw
+}
+
 fn draw_document_shape_tiles(pixels &u8, width i32, height i32, pitch i32, backdrop i32,
 	first_x int, first_y int, shape &C.VoxGraphiteShape) i32 {
 	grid := document_geometry_grid
@@ -155,10 +183,7 @@ fn draw_document_shape_tiles(pixels &u8, width i32, height i32, pitch i32, backd
 	}
 	x0 := first_x - int(math.round(grid.origin_x))
 	y0 := first_y - int(math.round(grid.origin_y))
-	if !geometry_grid_covers_leaf(grid, x0, y0, int(width), int(height))
-		&& !(shape.has_filter_clip != 0 && ggshape.rotated_filter_supported(shape)
-			&& geometry_grid_covers_filter_output(grid, x0, y0, shape.filter_clip)
-			&& geometry_grid_intersects_leaf(grid, x0, y0, int(width), int(height))) {
+	if !document_shape_uses_tiles(grid, x0, y0, int(width), int(height), shape) {
 		return ggshape.draw(pixels, width, height, pitch, backdrop, shape)
 	}
 	mut result := []u8{len: int(height) * int(pitch)}
@@ -171,19 +196,7 @@ fn draw_document_shape_tiles(pixels &u8, width i32, height i32, pitch i32, backd
 			ox := col * (grid.width - 2)
 			left, top := math.max(x0, ox), math.max(y0, oy)
 			right, bottom := math.min(x0 + width, ox + grid.width), math.min(y0 + height, oy + grid.height)
-			mut draw := *shape
-			draw.matrix[2] += f32(x0 - ox)
-			draw.matrix[5] += f32(y0 - oy)
-			if draw.has_filter_clip != 0 {
-				draw.filter_clip[0] += f32(x0 - ox)
-				draw.filter_clip[2] += f32(x0 - ox)
-				draw.filter_clip[1] += f32(y0 - oy)
-				draw.filter_clip[3] += f32(y0 - oy)
-			}
-			if grid.origin_x != 0 || grid.origin_y != 0 {
-				draw = ggshape.localize_rounded_shape(draw, -(draw.matrix[2] + f32(ox)) / draw.matrix[0], -(draw.matrix[5] + f32(oy)) / draw.matrix[4])
-			}
-			draw.force_msaa = i32(i32(row * grid.columns + col) in grid.cells)
+			draw := document_shape_in_tile(shape, grid, x0, y0, col, row)
 			publish_left := math.max(x0, ox + if col > 0 { 1 } else { 0 })
 			publish_top := math.max(y0, oy + if row > 0 { 1 } else { 0 })
 			publish_right := math.min(x0 + width, ox + grid.width - if col + 1 < grid.columns {
@@ -252,6 +265,45 @@ fn draw_document_shape_tiles(pixels &u8, width i32, height i32, pitch i32, backd
 		}
 	}
 	unsafe { vmemcpy(pixels, result.data, result.len) }
+	return 1
+}
+
+// The cropped buffer holds only pixels covered by the Quartz repaint clip.
+// Pick the same surface and tile grid as the full leaf, then transfer only the
+// output pixels owned by each intersecting tile.
+fn draw_document_shape_region(pixels &u8, pitch i32, backdrop i32, first_x int, first_y int,
+	region ggshape.SurfaceRegion, shape &C.VoxGraphiteShape) i32 {
+	grid := document_geometry_grid
+	x0 := first_x - int(math.round(grid.origin_x))
+	y0 := first_y - int(math.round(grid.origin_y))
+	if !document_shape_uses_tiles(grid, x0, y0, region.surface_width, region.surface_height, shape) {
+		return ggshape.draw_region(pixels, pitch, region, backdrop, shape)
+	}
+	left, top := x0 + region.x, y0 + region.y
+	right, bottom := left + region.width, top + region.height
+	for row in geometry_tile_owner(top, grid.height, grid.rows) .. geometry_tile_owner(bottom - 1, grid.height, grid.rows) + 1 {
+		oy := row * (grid.height - 2)
+		y := math.max(top, oy + int(row > 0))
+		y_end := math.min(bottom, oy + grid.height - int(row + 1 < grid.rows))
+		for col in geometry_tile_owner(left, grid.width, grid.columns) .. geometry_tile_owner(right - 1, grid.width, grid.columns) + 1 {
+			ox := col * (grid.width - 2)
+			x := math.max(left, ox + int(col > 0))
+			x_end := math.min(right, ox + grid.width - int(col + 1 < grid.columns))
+			if x_end <= x || y_end <= y { continue }
+			draw := document_shape_in_tile(shape, grid, x0, y0, col, row)
+			rows := unsafe { pixels + (y - top) * int(pitch) + (x - left) * 4 }
+			if ggshape.draw_region(rows, pitch, ggshape.SurfaceRegion{
+				surface_width: grid.width
+				surface_height: grid.height
+				x: x - ox
+				y: y - oy
+				width: x_end - x
+				height: y_end - y
+			}, backdrop, &draw) == 0 {
+				return 0
+			}
+		}
+	}
 	return 1
 }
 
@@ -460,6 +512,32 @@ fn draw_document_shape_pixels(pixels &u8, width i32, height i32, pitch i32, back
 		return 1
 	}
 	result := draw_document_shape_tiles(pixels, width, height, pitch, backdrop, first_x, first_y, &draw)
+	swap_document_raster_channels(pixels, width, height, pitch)
+	return result
+}
+
+@[export: 'vox_draw_document_shape_region_pixels']
+fn draw_document_shape_region_pixels(pixels &u8, width i32, height i32, backdrop i32,
+	first_x i32, first_y i32, surface_width i32, surface_height i32, x i32, y i32,
+	shape &C.VoxGraphiteShape) i32 {
+	if full_tile_leaf_transfers || retain_whole_tile_shape_draws
+		|| compositor_raster_phase != [f64(0), 0]! {
+		return 0
+	}
+	work := platform.begin_thread_scratch('native raster callback')
+	defer { work.finish() }
+	pitch := width * 4
+	swap_document_raster_channels(pixels, width, height, pitch)
+	draw := document_p3_shape(*shape)
+	result := draw_document_shape_region(pixels, pitch, backdrop, int(first_x), int(first_y),
+		ggshape.SurfaceRegion{
+			surface_width: int(surface_width)
+			surface_height: int(surface_height)
+			x: int(x)
+			y: int(y)
+			width: int(width)
+			height: int(height)
+		}, &draw)
 	swap_document_raster_channels(pixels, width, height, pitch)
 	return result
 }
