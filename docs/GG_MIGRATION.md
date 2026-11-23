@@ -4607,6 +4607,34 @@ The startup smoke check, sixteen fresh browser launches and their
 guards exited zero. The macOS, Linux and Windows D3D11 production-mode
 V type checks passed. These tests cover pixel output and tile reuse.
 
+### Skipping filters inside invisible shared SVG pattern scopes
+
+`4b09fdefe` uses the same scope boundary in the tile summary, tile
+lowering and macOS image dependency probe. A group opacity or pure
+opacity filter that quantizes to zero skips its balanced subtree before
+filter eligibility or image lookup. The unit tests preserve fallback at
+one byte of opacity and reject crossed or unclosed scope boundaries.
+
+The two delayed-bitmap fixtures place a blur and red path under `.003`
+group opacity or the product of `.006` and `.5` opacity filters. The
+previous executable `58a0973c31a8777187fc0e29c7ab46de3eb818ffd7273b385b96ee101aebc773`
+drew the visible sibling but fell back on both hidden tiles. The new
+production executable rasterized each hidden tile once and reused it
+three times at both 1× and 2×. All four decoded RGBA hashes matched the
+[earlier captures](#reusing-macos-svg-tiles-with-invisible-image-layers).
+The visible sibling still waited for its bitmap, and the live
+opacity-filter edit passed.
+
+The single-unit C `-prod` build published from receipt
+`20261123-111219-18f80b74` with executable SHA-256
+`b283127124529df60eb5d14bda6c5110d269802487292d36092cfc6d132920ec`.
+Earlier attempts hit disk limits writing Clang objects. The successful
+run put compiler and linker temporaries on RAM and compressed the two
+large retained compiler inputs with their SHA-256 digests preserved.
+The startup smoke check, sixteen browser launches and guards exited
+zero. The pattern unit tests and production-mode type checks for
+macOS, Linux ARM64 and Windows D3D11 passed. Frame timing remains open.
+
 ## Sharing the portable SVG fallback with Windows
 
 The standard Windows D3D11 window now uses the same CPU raster and GG texture
