@@ -348,6 +348,7 @@ fn (mut app BrowserApp) poll_background_browser_tab() {
 
 fn (mut app BrowserApp) cleanup_browser_tabs() {
 	defer { app.application.close() }
+	release_portable_nearest_sampler()
 	$if vox_gg_svg ? {
 		if portable_svg_gpu_enabled && app.ctx != unsafe { nil } {
 			mut gpu := unsafe { portable_svg_gpu }

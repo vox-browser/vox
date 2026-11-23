@@ -14,6 +14,12 @@ img { top: 116px }
 #image-reflected { left: 184px; transform: scaleX(-1) }
 #image-sheared { left: 220px; transform: matrix(1, 0, 1, 1, 0, 0) }
 #image-cropped { left: 388px; width: 24px; height: 24px; object-fit: cover; transform: matrix(0, 1, -1, 0, 0, 0) }
+.sampling { top: 180px; width: 64px; height: 24px }
+#sample-nearest { left: 16px }
+#sample-linear { left: 96px; image-rendering: auto }
+#sample-rounded { left: 176px; border-radius: 8px }
+#sample-sheared { left: 256px; transform: matrix(1, 0, 1, 1, 0, 0) }
+#sample-minified { left: 364px; width: 16px; height: 8px; image-rendering: crisp-edges }
 </style>
 <div id="marker"></div>
 <canvas id="rotated" width="40" height="24"></canvas>
@@ -24,6 +30,11 @@ img { top: 116px }
 <img id="image-reflected" width="40" height="24" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACgAAAAYCAYAAACIhL/AAAAAM0lEQVR42u3OsREAMAwCMfZf2vEQpPEJ7ntlkmn24YCAgICAgKeBZd8u1QABAQEBAY8DH1u9aAlzw0lGAAAAAElFTkSuQmCC">
 <img id="image-sheared" width="40" height="24" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACgAAAAYCAYAAACIhL/AAAAAM0lEQVR42u3OsREAMAwCMfZf2vEQpPEJ7ntlkmn24YCAgICAgKeBZd8u1QABAQEBAY8DH1u9aAlzw0lGAAAAAElFTkSuQmCC">
 <img id="image-cropped" width="24" height="24" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADAAAAAYCAYAAAC8/X7cAAAAQklEQVR4nO3PMQEAEBAAQFGMIvwojhgiiWDUigxvvuECXDkRN6POntLGSjk7UoqAgICAgICAgICAgICAgICAwE/gAQpGNxeUm9laAAAAAElFTkSuQmCC">
+<img id="sample-nearest" class="sampling" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAIAAAABCAYAAAD0In+KAAAADklEQVR42mP4z8DwHwQBEPgD/VP9jxkAAAAASUVORK5CYII=">
+<img id="sample-linear" class="sampling" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAIAAAABCAYAAAD0In+KAAAADklEQVR42mP4z8DwHwQBEPgD/VP9jxkAAAAASUVORK5CYII=">
+<img id="sample-rounded" class="sampling" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAIAAAABCAYAAAD0In+KAAAADklEQVR42mP4z8DwHwQBEPgD/VP9jxkAAAAASUVORK5CYII=">
+<img id="sample-sheared" class="sampling" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAIAAAABCAYAAAD0In+KAAAADklEQVR42mP4z8DwHwQBEPgD/VP9jxkAAAAASUVORK5CYII=">
+<img id="sample-minified" class="sampling" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAAAQCAYAAACm53kpAAAALklEQVR42u3QsQ0AAAzCMP5/mqp3YGXI7jTpt/oAAAAAAAAAAAAAAAAAAAAAez+SH/hqB+OYUwAAAABJRU5ErkJggg==">
 <script>
 for (const id of ['rotated', 'reflected', 'sheared']) {
     const context = document.getElementById(id).getContext('2d');

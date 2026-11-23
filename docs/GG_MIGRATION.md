@@ -1,5 +1,42 @@
 # Migrating from Skia to vlib/gg
 
+## CSS image sampling in portable GG replay
+
+Portable replaced images select nearest-neighbor sampling for `pixelated`
+and `crisp-edges` draws. The window shares one sampler across rectangular,
+affine and rounded coverage draws. The point sampler uses the base texture
+level, including when `crisp-edges` minifies an image. Smooth draws use the
+decoded texture's usual filter and mipmaps. Draws of the same image can
+select either filter while sharing its decoded texture.
+[Affine media fixture](../Tests/Browser/Native/affine-media.html)
+
+The ARM64 Linux single-unit Clang 18.1.3 `-O0` builds used V `5a39a4d`.
+The baseline (`53f6673be47f936c1d5ad347e2c772fb30b2580834c5a6f165e57d100c3ef33c`)
+failed the first nearest-neighbor pixel assertion. The candidate
+(`4bd5de4579bfbe165878ab01eb65dbb42726687abcb97954e6d9b8f3ef9d4552`)
+passed the nearest, smooth, rounded, sheared and minification assertions.
+The smooth image and streaming media control regions matched the baseline.
+The 800 × 516 RGBA crop had SHA-256
+`db5a2a05b882d09a8cd83726def5a5f058f2276ad4e71e5742d60be4847f3cf8`
+with texture reuse enabled and disabled. Rounded-image, WebGL and headless
+smoke checks passed under the 3 GiB guard. A separate live X11 window
+displayed the nearest-filtered boundary and exited normally on window close.
+
+The published native macOS reference
+(`945e46f85f4bfe3e54e4c05a82a0a9b30526733b69e619fc78056f0aa9186dd0`)
+passed the same sampling assertions. The Linux sheared decoded image differed
+from this reference at 148 pixels before the change and 53 after it. The macOS
+source check and all 23 Python runner unit tests passed.
+
+The guarded Windows 11 QEMU run used the x64 D3D11 build with V `4478fc4`
+and MinGW GCC 16.2.0 in one C unit with `-prod -no-prod-options`. The executable
+SHA-256 was `2fc6e40021d957ba3247a0170efbf2fec3dff7ccc8cb763bdb293a1ddac6e6a9`
+before and after capture. It passed the same assertions, including the mipmap
+control. Its 800 × 516 RGBA crop had SHA-256
+`a497a55d7640f299ac591fdff7926f265bfff8b475cae2b8996128fda8e3ed37`.
+The sheared decoded image differed from Linux at five pixels. The browser and
+3 GiB job guard exited zero. Hardware frame timings remain unmeasured.
+
 ## Reusing decoded video poster textures
 
 Both browser poster decoders mark newly decoded pixels for the same upload

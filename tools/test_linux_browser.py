@@ -3353,6 +3353,20 @@ def check_affine_media_pixels(data):
             for local_x, expected in ((-2, "101820"), (8, first), (28, second), (42, "101820")):
                 x = left + offset + local_x
                 assert row[x * channels:x * channels + 3] == bytes.fromhex(expected), (x, top + offset, "Incorrect shear")
+
+    def sampling_pixel(x, y):
+        return document[y][x * channels:x * channels + 3]
+
+    red, green = bytes.fromhex("ff0000"), bytes.fromhex("00ff00")
+    for x, expected in ((47, red), (48, green), (207, red), (208, green), (296, red), (304, green)):
+        assert sampling_pixel(x, 192) == expected, (x, "Incorrect nearest image filter")
+    # The nearest and smooth draws share the same decoded two-pixel texture.
+    for x in (127, 128):
+        r, g, b = sampling_pixel(x, 192)
+        assert 0 < r < 255 and 0 < g < 255 and b == 0, (x, "Smooth image lost linear filtering")
+    # The stripes average to a blend in the mipmaps. Point sampling should
+    # select a color from the base level even when both axes shrink.
+    assert all(sampling_pixel(x, 183) in (red, green) for x in range(364, 380)), "Minified crisp edges used a mipmap"
     return document
 
 
@@ -3380,7 +3394,7 @@ def check_portable_affine_media(binary, artifacts, temporary, run_capture=functo
         poster_uploads = log.splitlines().count("VOX_PORTABLE_BITMAP upload=48x24")
         assert (poster_uploads > 1 if disabled else poster_uploads == 1), (name, poster_uploads)
     assert documents[0] == documents[1], "Bitmap texture reuse changed affine media pixels"
-    print("PASS: affine image, canvas and cropped video poster pixels reach GG", flush=True)
+    print("PASS: affine media and CSS image filtering reach GG", flush=True)
 
 
 def window_wait_seconds():

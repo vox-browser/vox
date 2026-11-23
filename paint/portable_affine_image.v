@@ -5,7 +5,7 @@ import layout
 import painting
 
 fn (app &BrowserApp) draw_portable_affine_image(command &layout.PaintCommand,
-	config gg.DrawImageConfig, rect painting.Rect, page_x f32, page_y f32, scroll_y f64) {
+	config gg.DrawImageConfig, rect painting.Rect, nearest bool, page_x f32, page_y f32, scroll_y f64) {
 	image := config.img
 	if !image.simg_ok { return }
 	scale := app.ctx.scale
@@ -29,7 +29,7 @@ fn (app &BrowserApp) draw_portable_affine_image(command &layout.PaintCommand,
 	}
 	renderer.load_pipeline(app.ctx.pipeline.alpha)
 	renderer.enable_texture()
-	renderer.texture(image.simg, image.ssmp)
+	renderer.texture(image.simg, portable_image_sampler(image, nearest))
 	renderer.begin_quads()
 	renderer.c4b(config.color.r, config.color.g, config.color.b, config.color.a)
 	renderer.v3f_t2f(top_left_x * scale, top_left_y * scale, 0, u0, v0)

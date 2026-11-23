@@ -114,7 +114,7 @@ $if linux || windows {
 		matrix := command.transform
 		if matrix[1] != 0 || matrix[2] != 0 || matrix[0] < 0 || matrix[3] < 0 {
 			app.draw_portable_affine_image(command, config, painting.Rect{left, top, right - left, bottom - top},
-				page_x, page_y, scroll_y)
+				false, page_x, page_y, scroll_y)
 			return
 		}
 		app.ctx.draw_image_with_config(config)

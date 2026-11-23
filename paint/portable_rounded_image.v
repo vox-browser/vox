@@ -82,7 +82,8 @@ fn (mut app BrowserApp) draw_portable_rounded_bitmap(command &layout.PaintComman
 			transform: cpuraster.Matrix{f32(transform.a), 0, 0, f32(transform.d),
 				f32(origin.x - f64(bounds.x)), f32(origin.y - f64(bounds.y))}
 		}
-		if app.draw_portable_image_clip_spans(config, bounds, shape, stream) { return true }
+		nearest := stream == none && geometry.scaling == .nearest_neighbor
+		if app.draw_portable_image_clip_spans(config, bounds, shape, stream, nearest) { return true }
 	}
 	// Rasterize directly from the retained bitmap when the source is streamed.
 	source := if live := stream {
@@ -124,7 +125,7 @@ fn (mut app BrowserApp) draw_portable_rounded_bitmap(command &layout.PaintComman
 }
 
 fn (mut app BrowserApp) draw_portable_image_clip_spans(image_config gg.DrawImageConfig, bounds painting.IntRect,
-	shape cpuraster.RoundedClipGeometry, stream ?PortableBitmapStream) bool {
+	shape cpuraster.RoundedClipGeometry, stream ?PortableBitmapStream, nearest bool) bool {
 	renderer := app.ctx.r
 	if renderer == unsafe { nil } || (stream == none && !image_config.img.simg_ok) { return false }
 	// Limit the extra geometry in GG's shared frame queue. Large clips can use
@@ -138,7 +139,7 @@ fn (mut app BrowserApp) draw_portable_image_clip_spans(image_config gg.DrawImage
 		config.img = app.portable_bitmap_texture(live)
 	}
 	image := config.img
-	if spans.len == 1 && spans[0] == cpuraster.ClipCoverageRect{
+	if !nearest && spans.len == 1 && spans[0] == cpuraster.ClipCoverageRect{
 		cpuraster.IRect{0, 0, bounds.width, bounds.height}, 255} {
 		app.ctx.draw_image_with_config(config)
 		return true
@@ -159,7 +160,7 @@ fn (mut app BrowserApp) draw_portable_image_clip_spans(image_config gg.DrawImage
 	}
 	renderer.load_pipeline(app.ctx.pipeline.alpha)
 	renderer.enable_texture()
-	renderer.texture(image.simg, image.ssmp)
+	renderer.texture(image.simg, portable_image_sampler(image, nearest))
 	renderer.begin_quads()
 	for span in spans {
 		x1 := math.max(left, f32(bounds.x + span.rect.left))
