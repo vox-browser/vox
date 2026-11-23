@@ -92,7 +92,8 @@ fn test_source_color_matrix_classifies_positive_alpha_bias() {
 		assert !effect.preserves_alpha()
 		assert effect.fills_clear_pixels() == (bias > 0)
 		if effect is SVGSourceColorMatrix {
-			assert effect.values[19] == f32(bias)
+			assert effect.stages.len == 1
+			assert effect.stages[0][19] == f32(bias)
 		} else {
 			assert false
 		}
@@ -122,6 +123,28 @@ fn test_source_color_table_retains_missing_channels_and_alpha_coverage() {
 	} else {
 		assert false
 	}
+}
+
+fn test_source_color_filter_accepts_consecutive_matrices() {
+	values := [1.0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0]
+	first := GfxFilterNode{kind: 'color-matrix', input_ids: [-1], matrix: values}
+	mut biased := values.clone()
+	biased[19] = .4
+	second := GfxFilterNode{id: 1, kind: 'color-matrix', input_ids: [0], matrix: biased}
+	filter := GfxFilter{nodes: [first, second], root_id: 1}
+	effect := filter.source_color_filter() or { panic('expected a color matrix chain') }
+	assert effect.fills_clear_pixels()
+	assert !effect.preserves_alpha()
+	if effect is SVGSourceColorMatrix {
+		assert effect.stages.len == 2
+		assert effect.stages[0][19] == 0
+		assert effect.stages[1][19] == f32(.4)
+	} else {
+		assert false
+	}
+
+	mixed := GfxFilter{nodes: [first, GfxFilterNode{id: 1, kind: 'color-table', input_ids: [0]}], root_id: 1}
+	assert !mixed.supports_source_color_filter()
 }
 
 fn test_source_color_filter_follows_only_adjacent_component_transfers() {

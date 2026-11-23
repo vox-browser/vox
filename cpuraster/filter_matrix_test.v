@@ -27,7 +27,7 @@ fn test_in_place_filter_matrix_matches_premultiplied_layer() {
 		clamp: true
 	}
 	expected := general_color_matrix(BlurImage{pixels, 2, 2}, matrix)
-	assert apply_canvas_color_matrix_in_place(mut pixels, 2, 2, matrix, false)
+	assert apply_canvas_color_matrices_in_place(mut pixels, 2, 2, [matrix.matrix], false)
 	assert pixels == expected.pixels
 }
 
@@ -37,7 +37,7 @@ fn test_linear_rgb_matrix_encodes_before_rounding() {
 		matrix: [f32(.25), 0, 0, 0, 0, 0, .25, 0, 0, 0, 0, 0, .25, 0, 0, 0, 0, 0, 1, 0]!
 		clamp: true
 	}
-	assert apply_canvas_color_matrix_in_place(mut pixels, 2, 2, matrix, true)
+	assert apply_canvas_color_matrices_in_place(mut pixels, 2, 2, [matrix.matrix], true)
 	assert pixels == [u8(111), 66, 30, 255, 12, 27, 41, 102, 3, 2, 1, 255, 0, 0, 0, 0]
 }
 
@@ -48,8 +48,34 @@ fn test_in_place_matrix_derives_alpha_from_straight_color() {
 	}
 	for linear_rgb in [false, true] {
 		mut pixels := [u8(102), 0, 0, 102, 0, 0, 255, 255, 0, 0, 0, 0]
-		assert apply_canvas_color_matrix_in_place(mut pixels, 3, 1, matrix, linear_rgb)
+		assert apply_canvas_color_matrices_in_place(mut pixels, 3, 1, [matrix.matrix], linear_rgb)
 		assert pixels == [u8(153), 0, 0, 153, 0, 0, 0, 0, 0, 0, 0, 0]
+	}
+}
+
+fn test_canvas_matrix_chain_clamps_each_stage() {
+	first := [f32(2), 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0]!
+	second := [f32(.5), 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0]!
+	for linear_rgb in [false, true] {
+		mut pixels := [u8(221), 0, 0, 255]
+		assert apply_canvas_color_matrices_in_place(mut pixels, 1, 1, [first, second], linear_rgb)
+		assert pixels == [if linear_rgb { u8(188) } else { u8(128) }, 0, 0, 255]
+
+		mut invalid := second
+		invalid[4] = f32_infinity
+		original := pixels.clone()
+		assert !apply_canvas_color_matrices_in_place(mut pixels, 1, 1, [first, invalid], linear_rgb)
+		assert pixels == original
+	}
+}
+
+fn test_canvas_matrix_chain_restores_coverage_from_transparent_black() {
+	first := [f32(1), 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0]!
+	second := [f32(1), 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, .6]!
+	for linear_rgb in [false, true] {
+		mut pixels := [u8(255), 0, 0, 255, 0, 0, 255, 255, 0, 0, 0, 0]
+		assert apply_canvas_color_matrices_in_place(mut pixels, 3, 1, [first, second], linear_rgb)
+		assert pixels == [u8(153), 0, 0, 153, 0, 0, 0, 153, 0, 0, 0, 153]
 	}
 }
 

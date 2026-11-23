@@ -136,9 +136,8 @@ fn apply_svg_pattern_color_filter(mut layer PortableSVGMaskLayer, width int, hei
 	if retain_color {
 		applied := match effect {
 			painting.SVGSourceColorMatrix {
-				cpuraster.apply_canvas_color_matrix_in_place(mut layer.pixels, width,
-					layer.rows.height(), cpuraster.MatrixColorFilter{matrix: effect.values, clamp: true},
-					effect.linear_rgb)
+				cpuraster.apply_canvas_color_matrices_in_place(mut layer.pixels, width,
+					layer.rows.height(), effect.stages, effect.linear_rgb)
 			}
 			painting.SVGSourceColorTable {
 				cpuraster.apply_canvas_color_tables_in_place(mut layer.pixels, width,

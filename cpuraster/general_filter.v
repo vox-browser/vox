@@ -416,12 +416,17 @@ fn general_color_matrix(image BlurImage, matrix MatrixColorFilter) BlurImage {
 	return BlurImage{output, image.width, image.height}
 }
 
-// Each source pixel is fully read before writing it. The isolated layer
-// can use the same bitmap as both input and output.
-pub fn apply_canvas_color_matrix_in_place(mut pixels []u8, width int, height int,
-	matrix MatrixColorFilter, linear_rgb bool) bool {
-	if !untiled_device(pixels, width, height, width * 4) { return false }
-	filter := new_color_filter([matrix]) or { return false }
+// Clamp and premultiply each SVG stage in floating point. Only the final
+// result is quantized, so all stages can share one pass over the bitmap.
+pub fn apply_canvas_color_matrices_in_place(mut pixels []u8, width int, height int,
+	stages [][20]f32, linear_rgb bool) bool {
+	if stages.len == 0 || !untiled_device(pixels, width, height, width * 4) { return false }
+	mut matrices := []MatrixColorFilter{cap: stages.len}
+	for matrix in stages {
+		if !matrix.all(is_finite_f32(it)) { return false }
+		matrices << MatrixColorFilter{matrix: matrix, clamp: true}
+	}
+	filter := ColorFilter{matrices}
 	scan := FilterMatrixScan{
 		source: pixels
 		output: pixels
@@ -510,7 +515,9 @@ fn filter_linear_matrix_pixel(filter &ColorFilter, input [4]u8) [4]u8 {
 	linear := [f32(general_decode_srgb(f64(input[0]) * unpremul) * alpha),
 		f32(general_decode_srgb(f64(input[1]) * unpremul) * alpha),
 		f32(general_decode_srgb(f64(input[2]) * unpremul) * alpha), f32(alpha)]!
-	color := filter.apply(linear, input[3] == 255)
+	// Multi-stage SVG filters can amplify even a small alpha change.
+	// Use the full premultiplied path throughout a chain.
+	color := filter.apply(linear, input[3] == 255 && filter.filters.len == 1)
 	a := general_byte(color[3] * 255)
 	if a == 0 { return [u8(0), 0, 0, 0]! }
 	alpha_scale := f64(color[3]) * 255

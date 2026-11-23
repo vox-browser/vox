@@ -12,8 +12,8 @@ import tempfile
 
 from test_linux_browser import (check_svg_color_matrix_alpha_tile_pixels,
                                 check_svg_color_matrix_bias_tile_pixels,
-                                check_svg_color_matrix_tile_pixels,
-                                check_svg_component_transfer_chain_pixels, check_svg_component_transfer_tile_pixels,
+                                check_svg_color_filter_chain_pixels, check_svg_color_matrix_tile_pixels,
+                                check_svg_component_transfer_tile_pixels,
                                 check_svg_mask_gradient_pixels,
                                 check_svg_nested_tile_device_pixels,
                                 check_svg_opacity_filter_tile_pixels, check_svg_pattern_tile_image_pixels,
@@ -669,6 +669,7 @@ def main():
                     ("linear", partial(check_svg_color_matrix_tile_pixels, linear_rgb=True)),
                     ("alpha", check_svg_color_matrix_alpha_tile_pixels),
                     ("bias", check_svg_color_matrix_bias_tile_pixels),
+                    ("chain", partial(check_svg_color_filter_chain_pixels, red="890000")),
                 )
             ]
             inputs.extend(matrix for matrix, _ in matrix_fixtures)
@@ -680,7 +681,7 @@ def main():
             if args.pattern_transfer_only:
                 check_pattern_tile_variants(binary, transfer_chain, Path(temporary),
                                             ready="data-component-transfer-ready",
-                                            check_pixels=check_svg_component_transfer_chain_pixels,
+                                            check_pixels=partial(check_svg_color_filter_chain_pixels, red="e70000"),
                                             original_sample=False, edited_sample=True)
             for matrix, check_pixels in matrix_fixtures:
                 check_pattern_tile_variants(binary, matrix, Path(temporary),
