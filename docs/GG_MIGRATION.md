@@ -4563,6 +4563,25 @@ zero, and pinned inputs stayed fixed. Frame timing remains
 unmeasured. The production attempt ran out of disk space
 while freezing a native compiler input.
 
+Two subsequent attempts ran out of disk space while linking and
+rewriting bundle install names, respectively. APFS compression of
+the previous receipt's generated C and preprocessed input reclaimed
+339 MiB while preserving both recorded SHA-256 digests. Clang used
+a private RAM disk for temporary objects. The completed single-unit
+C `-prod` build at `b07ede8da` published from receipt
+`20261123-102620-fae82fc9` and passed the headless smoke check.
+Its executable and AVIF library SHA-256 values were
+`63be0756a7c60ea2146a53f692a1d80955b34e5a2baa79e64338e5dfdbcab083`
+and `ebde1494c5aebaa69ebe6edab9f4e3333020cb4b2949d96fa1fbb35f19d6a202`.
+
+Twelve fresh production captures matched the preceding decoded RGBA
+references for the nested, shared, repeated and three hidden bitmap
+fixtures at 1× and 2×. Completed probes used one lookup for nested or
+shared images and two for A, A, B, A. Pending probes used one lookup.
+Four more launches passed the opacity-filter edit check. Browser and
+guard exits were zero and the executable, library, drivers and fixtures
+kept their hashes. These checks measured pixels and lookup counts.
+
 ## Sharing the portable SVG fallback with Windows
 
 The standard Windows D3D11 window now uses the same CPU raster and GG texture
