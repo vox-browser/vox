@@ -224,7 +224,13 @@ fn (mut function ECMAScriptFunction) call_body(mut vm VM, this_value Value, argu
 					if register_call_metadata_diagnostics { register_call_metadata_reads++ }
 				}
 				value := if index < arguments.len { arguments[index] } else { js_undefined() }
-				frame.values[executable.local_index_base + u32(slot)] = value
+				// run_executable() checks this layout; the plan's slot is a register binding.
+				destination := executable.local_index_base + u32(slot)
+				if destination >= u32(frame.values.len) { panic('Parameter register is outside its frame') }
+				unsafe {
+					mut values := &Value(frame.values.data)
+					values[destination] = value
+				}
 				continue
 			}
 		} else if function.parameter_in_register(index) {

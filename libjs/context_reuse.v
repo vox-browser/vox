@@ -130,7 +130,7 @@ fn (mut stack InterpreterStack) allocate_reusable(registers u32, constants []Val
 		stack.next_frame_id++
 		context.stack_offset = stack.top_
 		context.stack_allocated = true
-		stack.contexts << context
+		push_within_capacity(mut stack.contexts, context)
 		stack.top_ = new_top
 		$if test {
 			if context_reuse_diagnostic_for_test { contexts_reused_for_test++ }
@@ -184,6 +184,6 @@ fn (mut stack InterpreterStack) recycle_context(mut context ExecutionContext) {
 		stack.recycled.delete(0)
 	}
 	context.clear_for_reuse()
-	stack.recycled << &context
+	push_within_capacity(mut stack.recycled, &context)
 	stack.recycled_bytes += size
 }

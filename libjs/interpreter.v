@@ -557,10 +557,23 @@ pub fn (mut vm VM) run_executable(mut frame ExecutionContext, executable &Execut
 	vm.run_executable_depth++
 	frame.executable = executable
 	frame.program_counter = entry_point
-	vm.set_reg(register_exception, js_special_empty_value())
-	vm.set_reg(register_return_value, js_special_empty_value())
-	if vm.reg(register_this_value).is_special_empty_value() {
-		vm.set_reg(register_this_value, frame.this_value or { js_special_empty_value() })
+	// `required` covers the reserved registers of every compiled body; other
+	// layouts keep the checked register accessors.
+	if frame.values.len >= int(reserved_register_count) {
+		unsafe {
+			mut registers := &Value(frame.values.data)
+			registers[register_exception] = js_special_empty_value()
+			registers[register_return_value] = js_special_empty_value()
+			if registers[register_this_value].is_special_empty_value() {
+				registers[register_this_value] = frame.this_value or { js_special_empty_value() }
+			}
+		}
+	} else {
+		vm.set_reg(register_exception, js_special_empty_value())
+		vm.set_reg(register_return_value, js_special_empty_value())
+		if vm.reg(register_this_value).is_special_empty_value() {
+			vm.set_reg(register_this_value, frame.this_value or { js_special_empty_value() })
+		}
 	}
 	defer {
 		if vm.run_executable_depth == 1 && vm.external_budget_depth == 0 && !vm.is_executing_module() {

@@ -700,8 +700,8 @@ pub fn (mut vm VM) push_execution_context(mut context ExecutionContext) {
 	context.caller_return_pc = 0
 	context.caller_dst_raw = 0
 	context.caller_is_construct = false
-	vm.execution_context_stack_ << &context
-	vm.execution_context_stack_previous_running_contexts << vm.running_execution_context_
+	push_within_capacity(mut vm.execution_context_stack_, &context)
+	push_within_capacity(mut vm.execution_context_stack_previous_running_contexts, vm.running_execution_context_)
 	vm.running_execution_context_ = &context
 }
 
@@ -712,17 +712,14 @@ pub fn (mut vm VM) pop_execution_context() &ExecutionContext {
 }
 
 fn (mut vm VM) pop_current_context() &ExecutionContext {
-	if vm.execution_context_stack_.len == 0 {
-		panic('pop_execution_context on an empty execution context stack')
-	}
-	mut context := vm.execution_context_stack_.last()
-	vm.execution_context_stack_.delete_last()
+	mut context := pop_last(mut vm.execution_context_stack_,
+		'pop_execution_context on an empty execution context stack')
 	context.caller_frame = none
 	context.caller_return_pc = 0
 	context.caller_dst_raw = 0
 	context.caller_is_construct = false
-	vm.running_execution_context_ = vm.execution_context_stack_previous_running_contexts.last()
-	vm.execution_context_stack_previous_running_contexts.delete_last()
+	vm.running_execution_context_ = pop_last(mut vm.execution_context_stack_previous_running_contexts,
+		'pop_execution_context without a previous running context')
 	return context
 }
 
@@ -920,13 +917,21 @@ pub fn (vm &VM) this_value() Value {
 	}
 }
 
+// One explicit bounds check, then a direct load or store; V's generic array
+// accessors copy every 16-byte value through a helper call.
 pub fn (vm &VM) reg(index u32) Value {
-	return vm.current_context().values[index]
+	context := vm.current_context()
+	if index >= u32(context.values.len) { panic('register ${index} is outside the running frame') }
+	return unsafe { (&Value(context.values.data))[index] }
 }
 
 pub fn (mut vm VM) set_reg(index u32, value Value) {
 	mut context := vm.current_context()
-	context.values[index] = value
+	if index >= u32(context.values.len) { panic('register ${index} is outside the running frame') }
+	unsafe {
+		mut values := &Value(context.values.data)
+		values[index] = value
+	}
 }
 
 pub fn (vm &VM) accumulator() Value {
@@ -941,6 +946,15 @@ pub fn (mut vm VM) do_return(value_argument Value) {
 	mut value := value_argument
 	if value.is_special_empty_value() {
 		value = js_undefined()
+	}
+	mut context := vm.current_context()
+	if context.values.len >= int(reserved_register_count) {
+		unsafe {
+			mut registers := &Value(context.values.data)
+			registers[register_return_value] = value
+			registers[register_exception] = js_special_empty_value()
+		}
+		return
 	}
 	vm.set_reg(register_return_value, value)
 	vm.set_reg(register_exception, js_special_empty_value())
