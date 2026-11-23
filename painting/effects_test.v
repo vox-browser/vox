@@ -171,8 +171,8 @@ fn test_source_color_filter_preserves_mixed_stage_order_and_alpha() {
 	assert effect.preserves_alpha()
 	assert !effect.fills_clear_pixels()
 	if effect is SVGSourceColorChain {
-		assert effect.linear_rgb
 		assert effect.stages.len == 2
+		assert effect.stages[0].linear_rgb && effect.stages[1].linear_rgb
 		assert !effect.stages[0].is_table
 		assert effect.stages[1].is_table
 		assert effect.stages[1].channels[0].len == 0
@@ -192,6 +192,38 @@ fn test_source_color_filter_preserves_mixed_stage_order_and_alpha() {
 
 	branch := GfxFilter{nodes: [decode, matrix, GfxFilterNode{...table, input_ids: [0]}, encode], root_id: 3}
 	assert !branch.supports_source_color_filter()
+}
+
+fn test_source_color_filter_tracks_intermediate_color_spaces() {
+	source := GfxFilterNode{kind: 'saturate', input_ids: [-1]}
+	decode := GfxFilterNode{
+		id: 1
+		kind: 'color-space-conversion'
+		input_ids: [0]
+		string_parameters: {'source': 'srgb', 'destination': 'linear-rgb'}
+	}
+	linear := GfxFilterNode{id: 2, kind: 'hue-rotate', input_ids: [1]}
+	encode := GfxFilterNode{
+		id: 3
+		kind: 'color-space-conversion'
+		input_ids: [2]
+		string_parameters: {'source': 'linear-rgb', 'destination': 'srgb'}
+	}
+	final := GfxFilterNode{id: 4, kind: 'saturate', input_ids: [3]}
+	chain := GfxFilter{nodes: [source, decode, linear, encode, final], root_id: 4}
+	effect := chain.source_color_filter() or { panic('expected an alternating color-space chain') }
+	assert effect.preserves_alpha()
+	assert !effect.fills_clear_pixels()
+	if effect is SVGSourceColorChain {
+		assert effect.stages.map(it.linear_rgb) == [false, true, false]
+		assert effect.stages.all(!it.is_table)
+	} else {
+		assert false
+	}
+
+	assert !GfxFilter{nodes: [source, decode, linear], root_id: 2}.supports_source_color_filter()
+	wrong := GfxFilterNode{...decode, id: 3, input_ids: [2]}
+	assert !GfxFilter{nodes: [source, decode, linear, wrong, final], root_id: 4}.supports_source_color_filter()
 }
 
 fn test_source_color_filter_lowers_saturation_and_hue_to_matrices() {

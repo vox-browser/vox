@@ -144,9 +144,9 @@ fn apply_svg_pattern_color_filter(mut layer PortableSVGMaskLayer, width int, hei
 					layer.rows.height(), effect.stages, effect.linear_rgb)
 			}
 			painting.SVGSourceColorChain {
-				stages := effect.stages.map(cpuraster.CanvasColorStage{it.matrix, it.channels, it.is_table})
+				stages := effect.stages.map(cpuraster.CanvasColorStage{it.matrix, it.channels, it.is_table, it.linear_rgb})
 				cpuraster.apply_canvas_color_chain_in_place(mut layer.pixels, width,
-					layer.rows.height(), stages, effect.linear_rgb)
+					layer.rows.height(), stages)
 			}
 		}
 		if !applied { return false }

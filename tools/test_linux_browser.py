@@ -2358,6 +2358,8 @@ def check_svg_matrix_tiles(binary, artifacts, temporary):
     for name, check_pixels in (("color-matrix-alpha", check_svg_color_matrix_alpha_tile_pixels),
                                ("color-matrix-bias", check_svg_color_matrix_bias_tile_pixels),
                                ("color-matrix-adjustments", check_svg_color_matrix_adjustments_tile_pixels),
+                               ("color-matrix-spaces", functools.partial(
+                                   check_svg_color_filter_chain_pixels, red="450000")),
                                ("color-matrix-chain", functools.partial(
                                    check_svg_color_filter_chain_pixels, red="890000")),
                                ("color-matrix-transfer", functools.partial(

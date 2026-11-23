@@ -4,9 +4,10 @@ import math
 
 pub struct CanvasColorStage {
 pub:
-	matrix   [20]f32
-	channels [4][]u8
-	is_table bool
+	matrix     [20]f32
+	channels   [4][]u8
+	is_table   bool
+	linear_rgb bool
 }
 
 struct CanvasColorChainScan {
@@ -21,7 +22,7 @@ struct CanvasColorChainScan {
 // A mixed SVG chain shares the layer scan and the color-space conversions.
 // Its table stages quantize lookup indices and its final store premultiplies.
 pub fn apply_canvas_color_chain_in_place(mut pixels []u8, width int, height int,
-	stages []CanvasColorStage, linear_rgb bool) bool {
+	stages []CanvasColorStage) bool {
 	if stages.len == 0 || !untiled_device(pixels, width, height, width * 4) { return false }
 	for stage in stages {
 		if stage.is_table {
@@ -30,6 +31,7 @@ pub fn apply_canvas_color_chain_in_place(mut pixels []u8, width int, height int,
 			return false
 		}
 	}
+	linear_rgb := stages[0].linear_rgb
 	mut opaque_linear := [256]f32{}
 	if linear_rgb {
 		for i in 0 .. 256 {
@@ -48,10 +50,18 @@ pub fn apply_canvas_color_chain_in_place(mut pixels []u8, width int, height int,
 	return true
 }
 
-fn canvas_color_chain_pixel(input [4]f32, stages []CanvasColorStage, linear_rgb bool) [4]u8 {
+fn canvas_color_chain_pixel(input [4]f32, stages []CanvasColorStage, initial_linear_rgb bool) [4]u8 {
 	mut straight := input
+	mut linear_rgb := initial_linear_rgb
 	for index in 0 .. stages.len {
 		stage := &stages[index]
+		if stage.linear_rgb != linear_rgb {
+			linear_rgb = stage.linear_rgb
+			for k in 0 .. 3 {
+				value := f64(straight[k])
+				straight[k] = f32(if linear_rgb { general_decode_srgb(value) } else { general_encode_srgb(value) })
+			}
+		}
 		if stage.is_table {
 			for k, table in stage.channels {
 				if table.len != 0 {
