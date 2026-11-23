@@ -3834,6 +3834,76 @@ allowance. Executables, libraries, and fixture inputs stayed
 fixed throughout each run. Final browser and replay guard
 exits were zero.
 
+### Fractional clip edges for SVG tile offsets
+
+In `eca29c38a`, the shared renderer encloses the visible
+`feOffset` output clip in device pixels. The fractional
+edges are rounded after projection and intersection with
+the tile. Pixels partly or fully inside the clip are
+kept, and the renderer translates the isolated source
+directly for whole-pixel offsets.
+[Filter Effects Level 1](https://www.w3.org/TR/filter-effects-1/#FilterPrimitiveSubRegion)
+
+The new fixture uses a tile as a fill, stroke, and alpha
+mask. A live edit moves three fractional clip edges.
+The initial and edited states matched Brave 158.1.100.58
+on macOS at 1× and 2× and on Linux at 1×. The 384 × 108
+RGB crops had SHA-256 values
+`8d3e4f72a7ed1a6cfb85613709ba6636a8af6b19f0573d69e02c1f713d5b58ff`
+and `fb879da459b24fb50ee61205b6e0d21bf4559750b74d62aebc43b0b3cdb86ba9`.
+At 2× the digests were
+`56a58550230409ec8f696d62a320a176fd237480ba19d2fee1ebe4af9e3d95eb`
+and `b482c49ffdd2029bff945f7d58c305a65e6f9ec4c1fe4183523e27d359db28be`.
+[Regression fixture](../Tests/Browser/Native/svg-pattern-tile-offset-fractional-clip.html)
+
+The published macOS control
+`bb57244d382fd5e339b5c288c48089bce0ed0bef2b2fc999f1cf05131dc150a4`
+differed by 5,049 and 5,994 pixels at 1× and by 16,974 and
+18,504 pixels at 2×. The candidate reused each tile in
+both states, with a new cache key after the edit. A
+fractional-translation control retained the fallback
+pixels and emitted zero shared tile events.
+
+All eight offset fixtures passed on macOS at both
+scales and on Linux with group caching enabled and
+disabled. The painting offset unit test, 23 driver tests,
+and Windows D3D11 and OpenGL V source checks passed.
+Windows runtime remains unverified.
+
+The macOS timing diagnostic compared pixel-identical
+integer and fractional clips in one single-unit Clang
+`-O0` build. Fresh processes drew 20 fills and 20
+strokes with private profiles and caches, a 1024 × 600
+document crop at 1×, and a one-second settle. JavaScript
+and whole-frame raster reuse were disabled. Each trial
+processed 48 stationary callbacks and 42 commands per
+callback, with median allocation of 3 KiB. Separate
+traces each counted 1,880 tile hits and zero misses
+between the first and last callbacks.
+
+| Pair | Integer / fractional median replay, µs | Integer / fractional p95, µs | Integer / fractional maximum, µs |
+| --- | ---: | ---: | ---: |
+| 1 | 827 / 833 | 871 / 861 | 881 / 894 |
+| 2 | 765 / 762.5 | 798 / 794 | 802 / 804 |
+
+One-minute load ranged from 10.69 to 11.91 on 18 logical
+CPUs. The replay crops shared SHA-256
+`49142e1c7792eff5460a276929335231370d167fb26d8813905e655d39acf0cf`.
+The corresponding fixture hashes were
+`4520c332b7630f4dd9b4f9faed51094999d98535c5c693f4017bdcef503f99c6`
+and `d6a9e0edbfd5eaeb8cd89952236eeac308177b7becbd7c71fe896837cdc047a5`.
+These timings cover steady cached replay after layout.
+Optimized production timing remains open.
+
+The macOS and aarch64 Linux executable SHA-256 values were
+`995a16ae85cfc2ffd7ec30819712d86597d9951ce4ead10729ec9fe697d0a30b`
+and `eea4f10a479442c7bc3f2c6ef9e106d0877af59802a1e348748be537c5cf021e`.
+Linux used the deferred Clang `-O0` link with V's captured
+arguments and the existing LibJS function-pointer diagnostic
+allowance. Executable, library, and fixture hashes stayed
+fixed through each check. Browser and replay guard exits
+were zero.
+
 ## Sharing the portable SVG fallback with Windows
 
 The standard Windows D3D11 window now uses the same CPU raster and GG texture
