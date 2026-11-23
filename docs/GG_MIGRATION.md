@@ -3610,6 +3610,85 @@ a higher median in both pairs. The diagnostic measures
 stationary replay after layout, and optimized production
 timing remains open.
 
+### SVG offset primitive subregions in shared tiles
+
+In `b8a8cd485`, a standalone `feOffset` on SourceGraphic can specify an
+output subregion. Explicit numbers and percentages resolve
+in the primitive's units. Omitted coordinates inherit the
+corresponding filter-region values. The shared tile clips the
+translated paint to the intersection of the two rectangles
+when the result aligns with the tile raster. An empty clip
+skips the isolated source and its nested filters during
+lowering.
+[Filter Effects Level 1](https://www.w3.org/TR/filter-effects-1/#FilterPrimitiveSubRegion)
+
+The fixture uses one tile as a fill, stroke, and alpha mask.
+It starts with a numeric subregion. A live edit sets two
+percentage coordinates and removes the other two attributes.
+The source path and offset stay fixed.
+[Regression fixture](../Tests/Browser/Native/svg-pattern-tile-offset-subregion.html)
+
+The 384 × 108 RGB crops matched static Brave captures on
+macOS and Linux in both states. The initial and edited
+SHA-256 digests were
+`fe72d91abf373fb3878fd4f054504462ba303f1c226f62012c1fadef00b534d7`
+and
+`632453836a90bc6e580e5fcb1160b65a276c6c88147050e4fcb1752d1aa922c2`.
+The published macOS executable
+`1a716874d467a366ff3eeeab46e48954c0f93e97bd4245e37a01af9db8e840da`
+differed by 4,140 and 5,760 pixels, respectively.
+
+An equivalent object-bounding-box subregion matched the
+initial pixels. A zero-width subregion around a nested
+opacity filter hid the source and preserved the following
+stripe in all three uses. Its crop also matched Brave on
+both systems, with SHA-256
+`209a8d1e36beae7287ac310d0531ce6747adbfb37c752d9ccca92bd0219376ce`.
+macOS traces showed tile reuse in each case and a new cache
+key after the live edit.
+
+All five offset fixtures passed on macOS at 1× and 2× and
+on Linux with group caching enabled and disabled. The Linux
+GG probe used row bands. The deferred Clang `-O0` link used
+V's captured arguments and the existing LibJS
+function-pointer diagnostic allowance. The aarch64 Linux
+executable SHA-256 was
+`8e40aac2d4ecadca2a5e60cccee025a1dfb6b5e031b3d1e69595677169fcd7d5`.
+SVG and painting unit checks, 23 Python driver tests, and
+both Windows V source checks passed. Windows runtime
+validation remains open.
+
+The macOS replay diagnostic uses equivalent clips, one
+specified by the filter region and one by the primitive
+subregion. Fresh processes drew 20 fills and 20 strokes on
+the same executable, with private profiles and caches, a
+1024 × 600 viewport at 1×, and a one-second settle. JavaScript
+and whole-frame raster reuse were disabled. All 48 stationary
+callbacks replayed 42 commands. Separate traces measured
+1,880 hits for the same tile key with zero misses between
+the first and last callbacks in both forms.
+
+| Pair | Region / subregion median replay, ms | Region / subregion p95, ms | Region / subregion maximum, ms |
+| --- | ---: | ---: | ---: |
+| 1 | 1.4185 / 1.4185 | 1.5780 / 1.6470 | 1.6180 / 1.7050 |
+| 2 | 1.4195 / 1.4100 | 1.6020 / 1.6670 | 1.6390 / 1.7580 |
+
+Median allocation was 3 KiB per callback in all six runs.
+All decoded RGBA captures matched with SHA-256
+`03bbe2e3cba6e8fde89dc598a89f2d51d8d85ee593f03429be539c6f57bcbcb1`.
+The input HTML hashes in region and subregion order were
+`5d3c193a073cf768c97e3c3b7327461ba51ed1c551f2d1988cb613d9e32ee7d5`
+and
+`91be4ac663e1190cfdd354115407340998ec9b7e07047a45eca0dc4f6686672d`.
+The executable SHA-256 was
+`43cfe009190950d8f40d6095f042ec3a5a3d9c25ecb94db64417f27156dd1f72`.
+It used single-unit C `-prod -no-prod-options` with Clang
+`-O0`. Executable, library, worker, and fixture inputs
+stayed fixed. One-minute host load was 37.61–46.08 on 18
+logical CPUs. All browser and guard exits were zero.
+Subregion replay had a comparable median and higher p95
+in both pairs. Optimized production timing remains open.
+
 ## Sharing the portable SVG fallback with Windows
 
 The standard Windows D3D11 window now uses the same CPU raster and GG texture
