@@ -279,6 +279,14 @@ pub fn initialize_host_defined_realm(mut vm VM, hooks RealmGlobalHooks) !&Execut
 	realm.json_object = create_json_object(mut vm, realm)
 	initialize_date_intrinsics(mut vm, mut realm)
 	initialize_promise_intrinsics(mut vm, mut realm)
+	// Prototype chains end in these records, so every inherited miss and every
+	// added property (whose [[Set]] looks for inherited setters) reaches them.
+	// Their complete key index proves absence without scanning every key.
+	// (Array.prototype is an Array exotic object, which keeps its own lookup.)
+	for prototype in [realm.object_prototype_record(), realm.function_prototype_record()] {
+		mut record := unsafe { &Object(prototype) }
+		record.enable_indexed_properties()
+	}
 	// 4. Set realm.[[GlobalObject]] to undefined.
 	// 5. Set realm.[[GlobalEnv]] to undefined.
 	// 7. Let newContext be a new execution context.
