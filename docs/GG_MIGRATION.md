@@ -4391,6 +4391,34 @@ and UEFI variables retained their original hashes. These captures
 verify D3D11 rendering in the emulated guest. Hardware frame timings
 remain open.
 
+### Reusing macOS SVG tiles with invisible image layers
+
+In `2192c8808`, the macOS tile cache skips image dependencies inside
+explicit opacity groups whose opacity byte is zero. The shared
+rasterizer already discards these groups. The tile cache still
+waits when a delayed image can contribute a pixel.
+
+The fixture uses a missing bitmap inside an opacity `.003` group
+and a delayed bitmap at `.004`. The published `9717e8165` executable
+failed the cache assertion and rasterized the hidden-image tile
+four times per capture. The candidate rasterized it once and logged
+three hits at each density. The visible-image tile became cacheable
+after delivery. The 1× and 2× document RGBA matched the control
+exactly, with hashes
+`3a6b6e6713e1c74ca7bca65d6650774dcec642748ad70678c035c7d305ff5679`
+and `f6d85ca058cba49076236074a2c80adb7a80f11ad32fe86e6939aafb6b5e9006`.
+[Regression fixture](../Tests/Browser/Native/svg-pattern-tile-hidden-image.html)
+
+The private macOS candidate used V `4478fc4` with prealloc,
+single-unit Clang `-O0`, and checkout adblock assets. Its SHA-256
+was `1e5a2dcdd73be2541729b19e60cfbc271bb059e0c71f5605b47da5510bb38eec`.
+The 12 GiB build guard recorded a sampled peak of 11,585,667,072
+bytes. The nested and shared delayed bitmap fixtures, the opacity
+filter with a live edit, and 21 Python driver tests passed.
+The browser and candidate runtime guards exited zero and pinned
+inputs stayed fixed. The production worker ran out of disk space
+while freezing compiler inputs. Hardware frame timings remain open.
+
 ## Sharing the portable SVG fallback with Windows
 
 The standard Windows D3D11 window now uses the same CPU raster and GG texture
