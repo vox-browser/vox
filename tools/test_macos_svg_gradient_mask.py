@@ -715,7 +715,7 @@ def main():
                 (fixture.with_name("svg-pattern-tile-shared-bitmap.html"),
                  check_svg_shared_bitmap_tile_pixels, 1),
                 (fixture.with_name("svg-pattern-tile-repeated-bitmap.html"),
-                 check_repeated_bitmap_tile_pixels, 3),
+                 check_repeated_bitmap_tile_pixels, 2),
             ]
             hidden_bitmaps = [fixture.with_name(f"svg-pattern-tile-{name}.html")
                               for name in ("hidden-image", "hidden-filter-image",

@@ -8,13 +8,18 @@ fn C.native_shared_svg_pattern_scale(i32) f64
 fn C.native_reuse_shared_svg_pattern_tile(u64) i32
 fn C.native_install_shared_svg_pattern_tile(u64, &u8, u64, i32, i32) i32
 
+struct SharedSVGPatternImageSlot {
+	url string
+	id  u64
+}
+
 struct SharedSVGPatternCacheKey {
 mut:
 	value          u64
 	image_scope    bool
 	image_lookups  int
-	last_image_url string
-	last_image_id  u64
+	last_image     SharedSVGPatternImageSlot
+	previous_image SharedSVGPatternImageSlot
 }
 
 fn (mut app BrowserApp) add_shared_svg_pattern_images(list &painting.SVGPatternDisplayList,
@@ -44,20 +49,25 @@ fn (mut app BrowserApp) add_shared_svg_pattern_images(list &painting.SVGPatternD
 		}
 		if operation.kind == .image && operation.opacity != 0 {
 			image_url := operation.image_url
-			if !key.image_scope || image_url != key.last_image_url {
-				if !key.image_scope {
-					if app.document == unsafe { nil } { return false }
-					key.value = (key.value ^ u64(app.document.unique_id().value())) * u64(1099511628211)
-					key.value = (key.value ^ u64(voidptr(app.ctx))) * u64(1099511628211)
-					key.image_scope = true
+			if !key.image_scope || image_url != key.last_image.url {
+				next_image := if image_url != '' && image_url == key.previous_image.url {
+					key.previous_image
+				} else {
+					if !key.image_scope {
+						if app.document == unsafe { nil } { return false }
+						key.value = (key.value ^ u64(app.document.unique_id().value())) * u64(1099511628211)
+						key.value = (key.value ^ u64(voidptr(app.ctx))) * u64(1099511628211)
+						key.image_scope = true
+					}
+					if portable_svg_raster_diagnostics { key.image_lookups++ }
+					image := app.background_image(image_url) or { return false }
+					SharedSVGPatternImageSlot{image_url, u64(image.id)}
 				}
-				if portable_svg_raster_diagnostics { key.image_lookups++ }
-				image := app.background_image(image_url) or { return false }
-				key.last_image_url = image_url
-				key.last_image_id = u64(image.id)
+				key.previous_image = key.last_image
+				key.last_image = next_image
 			}
 			// Keep the image IDs in display-list order, including repeated occurrences.
-			key.value = (key.value ^ key.last_image_id) * u64(1099511628211)
+			key.value = (key.value ^ key.last_image.id) * u64(1099511628211)
 		}
 		// A retained style can be present even when mask replay skips the paint.
 		mut fill_list := voidptr(0)
