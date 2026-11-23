@@ -2142,24 +2142,31 @@ def check_svg_shared_bitmap_tile_pixels(rows, channels, scale, marker):
         assert actual == expected, (scale, x, y, actual, expected)
 
 
-def check_svg_bitmap_tile_reuse(log, cached):
-    for depth, size in ((0, "40x40"), (1, "16x16")):
+def check_svg_hidden_pattern_tile_pixels(rows, channels, scale, marker, *, visible_pattern):
+    samples = ((4, 12, "00ff00"), (20, 12, "00ff00"), (84, 20, "0000ff"))
+    if visible_pattern:
+        samples += ((74, 20, "ff0000"),)
+    for x, y, expected in samples:
+        row = rows[marker + y * scale]
+        start = x * scale * channels
+        actual = row[start:start + 3].hex()
+        assert actual == expected, (scale, x, y, actual, expected)
+
+
+def check_svg_bitmap_tile_reuse(log, cached, tiles):
+    for depth, size, waits_for_bitmap in tiles:
         miss = f"VOX_SVG_TILE_RASTER reuse=miss depth={depth} tile={size}"
         pending = log.find(f"{miss} complete=false")
         completed = log.find(f"{miss} complete=true")
         hit = log.find(f"VOX_SVG_TILE_RASTER reuse=hit depth={depth} tile={size}")
-        assert 0 <= pending < completed, log
+        assert completed >= 0, log
+        assert (0 <= pending < completed if waits_for_bitmap else pending == -1), log
         assert (completed < hit if cached else hit == -1), log
 
 
-def check_svg_pattern_tile_image_browser(binary, artifacts, temporary, run_capture=run_windowed, *,
-                                         nested=False, shared=False):
-    if shared:
-        name = "svg-pattern-tile-shared-bitmap.html"
-    else:
-        name = "svg-pattern-tile-nested-image-strokes.html" if nested else "svg-pattern-tile-image-strokes.html"
-    fixture = Path(__file__).resolve().parents[1] / "Tests/Browser/Native" / name
-    expected_groups = 1 if shared else 2
+def check_delayed_svg_tile_browser(binary, artifacts, temporary, run_capture, name, check_pixels, *,
+                                   groups, tiles=()):
+    fixture = Path(__file__).resolve().parents[1] / "Tests/Browser/Native" / f"svg-pattern-tile-{name}.html"
     documents = []
     with serve_delayed_svg_pattern_tile(fixture, Path(temporary) / f"{fixture.stem}-site") as url:
         for mode in ("cached", "uncached"):
@@ -2180,17 +2187,35 @@ def check_svg_pattern_tile_image_browser(binary, artifacts, temporary, run_captu
             marker = next((y for y in range(150) if rows[y][4 * channels:4 * channels + 3]
                            == bytes.fromhex("34b786")), None)
             assert marker is not None, "Missing SVG tile document marker"
-            if shared:
-                check_svg_shared_bitmap_tile_pixels(rows, channels, 1, marker)
-                check_svg_bitmap_tile_reuse(log, mode == "cached")
-            else:
-                check_svg_pattern_tile_image_pixels(rows, channels, 1, marker, nested=nested)
+            check_pixels(rows, channels, 1, marker)
+            check_svg_bitmap_tile_reuse(log, mode == "cached", tiles)
             hits = set(re.findall(r"^VOX_SVG_GROUP cache=hit start=(\d+)", log, re.M))
-            assert len(hits) == (expected_groups if mode == "cached" else 0), log
+            assert len(hits) == (groups if mode == "cached" else 0), log
             documents.append(rows[marker:height - 24])
-    assert documents[0] == documents[1], "Caching changed the mixed SVG tile pixels"
+    assert documents[0] == documents[1], f"Caching changed the pixels of {fixture.stem}"
+
+
+def check_svg_pattern_tile_image_browser(binary, artifacts, temporary, run_capture=run_windowed, *,
+                                         nested=False, shared=False):
+    if shared:
+        check_delayed_svg_tile_browser(binary, artifacts, temporary, run_capture, "shared-bitmap",
+                                       check_svg_shared_bitmap_tile_pixels, groups=1,
+                                       tiles=((0, "40x40", True), (1, "16x16", True)))
+    else:
+        name = "nested-image-strokes" if nested else "image-strokes"
+        check_pixels = functools.partial(check_svg_pattern_tile_image_pixels, nested=nested)
+        check_delayed_svg_tile_browser(binary, artifacts, temporary, run_capture, name, check_pixels, groups=2)
     tiles = "shared SVG bitmap tiles" if shared else ("nested SVG tiles" if nested else "mixed SVG tiles")
     print(f"PASS: {tiles} preserve delayed bitmaps, stroke width, and cache parity", flush=True)
+
+
+def check_svg_hidden_pattern_tiles_browser(binary, artifacts, temporary, run_capture=run_windowed):
+    for name in ("hidden-image", "hidden-filter-image", "hidden-pattern-paint"):
+        check_pixels = functools.partial(check_svg_hidden_pattern_tile_pixels,
+                                         visible_pattern=name == "hidden-pattern-paint")
+        check_delayed_svg_tile_browser(binary, artifacts, temporary, run_capture, name, check_pixels,
+                                       groups=2, tiles=((0, "32x32", False), (0, "24x24", True)))
+        print(f"PASS: {name} reuses completed tiles and waits for visible bitmaps", flush=True)
 
 
 def check_svg_tile_fill_stroke_pixels(rows, channels, scale, marker, first_stripe):
@@ -3317,6 +3342,7 @@ def main():
                                                  nested=args.pattern_nested_images_only)
             if args.pattern_nested_images_only:
                 check_svg_pattern_tile_image_browser(binary, artifacts, temporary, shared=True)
+                check_svg_hidden_pattern_tiles_browser(binary, artifacts, temporary)
             return
         if args.pattern_nested_only:
             check_svg_tile_browser(binary, artifacts, temporary, "nested-strokes",
@@ -3393,6 +3419,7 @@ def main():
         check_svg_pattern_tile_image_browser(binary, artifacts, temporary)
         check_svg_pattern_tile_image_browser(binary, artifacts, temporary, nested=True)
         check_svg_pattern_tile_image_browser(binary, artifacts, temporary, shared=True)
+        check_svg_hidden_pattern_tiles_browser(binary, artifacts, temporary)
         check_svg_tile_browser(binary, artifacts, temporary, "standalone-strokes",
                                ready="data-standalone-pattern-ready")
         check_svg_tile_browser(binary, artifacts, temporary, "opacity-filter",
