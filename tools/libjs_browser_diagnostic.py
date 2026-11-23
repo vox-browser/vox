@@ -224,6 +224,8 @@ def run(args):
                 result['counts'] = {group['name']: group['count'] for group in audit['selections']}
                 result['javascript_diagnostics'] = audit.get('javascript_diagnostics', [])
                 result['compiled_javascript_cache'] = audit.get('compiled_javascript_cache')
+                result['configured_javascript_engine'] = audit.get('configured_javascript_engine')
+                result['javascript_runtime'] = audit.get('javascript_runtime')
                 result['native_errors'] = audit.get('native_reported_errors', [])
                 result['native_error_count'] = audit.get('native_reported_error_count', 0)
                 result['native_error_information'] = audit.get('native_reported_error_information', [])

@@ -194,6 +194,8 @@ struct CaptureAudit {
 	active_element         CaptureAuditActiveElement
 	javascript_diagnostics []string
 	compiled_javascript_cache ?browserjs.CompiledJavaScriptCacheAudit
+	configured_javascript_engine string
+	javascript_runtime ?browserjs.RuntimeExecutionAudit
 	// Native HTML timer/event exceptions bypass the compact bridge log.
 	native_reported_error_count int
 	native_reported_errors      []string
@@ -349,6 +351,8 @@ fn (app &BrowserApp) collect_capture_audit(config CaptureAuditConfig) !CaptureAu
 		active_element:              capture_audit_active_element(app.document)
 		javascript_diagnostics:      app.js_messages.clone()
 		compiled_javascript_cache: if app.js_runtime != unsafe { nil } { ?browserjs.CompiledJavaScriptCacheAudit(app.js_runtime.compiled_code_cache_audit()) } else { none }
+		configured_javascript_engine: app.js_engine.str()
+		javascript_runtime: if app.js_runtime != unsafe { nil } { ?browserjs.RuntimeExecutionAudit(app.js_runtime.execution_audit()) } else { none }
 		native_reported_error_count: native_reported_error_count
 		native_reported_errors:      native_reported_errors
 		native_reported_error_information: native_reported_error_information
