@@ -3256,7 +3256,7 @@ def check_webgl_browser(binary, artifacts, temporary):
     print('PASS: native GLES WebGL1/WebGL2 shaders, readback and canvas presentation', flush=True)
 
 
-def check_webgl_texture_reuse(binary, artifacts, temporary):
+def check_webgl_texture_reuse(binary, artifacts, temporary, run_capture=functools.partial(run_windowed, timeout=90)):
     fixture = Path(__file__).resolve().parents[1] / "Tests/Browser/Native/webgl-texture-reuse.html"
     documents = []
     for disabled in (False, True):
@@ -3269,9 +3269,9 @@ def check_webgl_texture_reuse(binary, artifacts, temporary):
         env.update(SCREENSHOT_SETTLE_SECONDS="3", VOX_CAPTURE_AUDIT_PATH=str(audit),
                    VOX_DISABLE_PORTABLE_CANVAS_UPLOAD_REUSE=str(int(disabled)),
                    VOX_PORTABLE_BITMAP_UPLOAD_DIAGNOSTICS="1")
-        log = run_windowed([str(binary), "--enable-javascript", "--window-width=800", "--window-height=600",
-                            "--screenshot-viewport-height=516", f"--screenshot={screenshot}", str(fixture)],
-                           env=env, log_path=screenshot.with_suffix(".log"), timeout=90)
+        log = run_capture([str(binary), "--enable-javascript", "--window-width=800", "--window-height=600",
+                           "--screenshot-viewport-height=516", f"--screenshot={screenshot}", str(fixture)],
+                          env=env, log_path=screenshot.with_suffix(".log"))
         result = json.loads(audit.read_text())
         assert result["title"] == "WebGL texture reuse" and result["ready"] == "complete", result
         assert result["native_reported_error_count"] == 0, result
@@ -3295,7 +3295,7 @@ def check_webgl_texture_reuse(binary, artifacts, temporary):
     print("PASS: unchanged WebGL textures are reused and later frames reach the window", flush=True)
 
 
-def check_late_canvas_draw(binary, artifacts, temporary):
+def check_late_canvas_draw(binary, artifacts, temporary, run_capture=functools.partial(run_windowed, timeout=90)):
     fixture = Path(__file__).resolve().parents[1] / "Tests/Browser/Native/late-canvas.html"
     name = "late-canvas"
     screenshot = artifacts / f"{name}.png"
@@ -3305,9 +3305,9 @@ def check_late_canvas_draw(binary, artifacts, temporary):
     env = smoke_environment(Path(temporary) / name)
     env.update(SCREENSHOT_SETTLE_SECONDS="3", VOX_CAPTURE_AUDIT_PATH=str(audit),
                VOX_DISABLE_PORTABLE_CANVAS_UPLOAD_REUSE="0", VOX_PORTABLE_BITMAP_UPLOAD_DIAGNOSTICS="1")
-    log = run_windowed([str(binary), "--enable-javascript", "--window-width=800", "--window-height=600",
-                        "--screenshot-viewport-height=516", f"--screenshot={screenshot}", str(fixture)],
-                       env=env, log_path=screenshot.with_suffix(".log"), timeout=90)
+    log = run_capture([str(binary), "--enable-javascript", "--window-width=800", "--window-height=600",
+                       "--screenshot-viewport-height=516", f"--screenshot={screenshot}", str(fixture)],
+                      env=env, log_path=screenshot.with_suffix(".log"))
     result = json.loads(audit.read_text())
     assert result["title"] == "Late canvas paint" and result["ready"] == "complete", result
     assert result["native_reported_error_count"] == 0, result

@@ -32,6 +32,26 @@ both contexts can appear after the initial display list and that later
 WebGL pixels use the same layout and canvas geometry. macOS and Windows
 x64 D3D11 source checks passed with V `4478fc4`. Frame timings remain unmeasured.
 
+The next published macOS bundle captured both the delayed and animated
+canvas fixtures in fresh processes at 1×. Its verified inputs included
+`b6ece7acb`, and its executable SHA-256 was
+`df7cfba52595ed02ba651596fb1bdaf8ac9c5d8178392d0404b7198e8aa18b54`.
+Both 800 × 516 RGBA crops matched the Linux document hash above. The
+author-script audits, browser processes and 3 GiB guards passed.
+
+The Windows x64 D3D11 build used V `4478fc4` and MinGW GCC 16.2.0 in one C
+unit with `-prod -no-prod-options`. Its executable SHA-256 was
+`eaa050af60e7b195e29229d7ab57355049da4e2d6c9764f8e2d82c5bcae5a390`.
+The interactive Windows 11 QEMU guest used the shared runner with
+`--canvas-only`. All three document crops matched the Linux hash. The
+delayed Canvas 2D and WebGL draws each uploaded one texture. With reuse
+enabled, the animation fixture uploaded the static canvas once and the
+animated canvas twice. With reuse disabled, it uploaded each 16 times.
+All three browser exits and the runner
+exit were zero. The executable, guard, 36 DLLs, runners and fixtures kept
+their pinned identities. The guest used the embeddable Python 3.12.10
+runtime. [Python release](https://www.python.org/downloads/release/python-31210/)
+
 ## Reusing unchanged WebGL canvas textures
 
 WebGL presentation updates the canvas-owned bitmap and advances its

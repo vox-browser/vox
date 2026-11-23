@@ -221,8 +221,8 @@ browser and adjacent DLL hashes, and the SVG cache diagnostics. Pass
 `--nested` to run both nested bitmap fixtures, including the case that
 checks tile reuse after the bitmap arrives.
 
-Run the portable gradient, rounded raster image and video poster pixel
-checks from the same desktop:
+Run the portable gradient, rounded raster image, video poster and canvas
+pixel checks from the same desktop using this command.
 
 ```sh
 python tools/test_windows_portable_replay.py C:/path/to/Vox.exe \
@@ -232,7 +232,10 @@ python tools/test_windows_portable_replay.py C:/path/to/Vox.exe \
 The checks use the Linux fixtures and pixel assertions. Each fresh window
 runs inside a 3 GiB job with a private profile. The runner compares gradient
 ramps against full raster output and checks cached clipping against uncached
-replay. It records the captures, logs, guard receipts and input hashes.
+replay. The canvas checks cover delayed Canvas 2D and WebGL initialization,
+subsequent WebGL frames and texture upload reuse. Pass `--canvas-only` to run
+those three captures separately. The runner records captures, logs, guard
+receipts and input hashes.
 
 Run the graphics check on the interactive Windows desktop, also through the
 3 GiB guard:
