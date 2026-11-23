@@ -4847,6 +4847,63 @@ Windows D3D11 and OpenGL source checks passed. Native Windows verification
 still requires the VM's host disk reserve. These checks cover pixel parity
 and the number of tile rasters per replay.
 
+#### Linux replay timing for the two-tile cache
+
+The control and candidate used the same canonical checkout, with only
+`paint/portable_svg_mask_pattern.v` supplied from `64185198e` and `e78f33b69`,
+respectively. Both used V `5a39a4d` with the match-scope adapter, aarch64
+Boehm, and single-unit Clang 18.1.3 at `-O0`. The executable SHA-256 values were
+`07df9610bfff43fee267b16b908475b6309598c5ff190c0a4ef229b3faf1a8e5` and
+`4c38dd0e1ee0bf2a55c7079f6e46cc943c6f7a0b97dacb60d11592b214d8a090`.
+Their identical C flags had SHA-256
+`c7898f2d0d69fb088a2d0f30ddefa81bac3e5c0761a738edeae20662ebd15659`.
+
+The benchmark expanded the three child cells to 64 × 64 and repeated
+the 144 × 108 outer path in 36 rows of six columns at 160 × 128 spacing.
+The interleaved fixture used A, B, A, C, B, C, A. The consecutive
+fixture used A, A, A, B, B, C, C. Their HTML SHA-256 values were
+`8ba1482a20c50504f11b74560d1dd0da51a18b1172acd534889b774a25e1e1c7` and
+`7c333677b9a817a8781316029e90d58773fed7ce6fb664bf2501b2479d0e2c9f`.
+Before timing, both builds matched the decoded 1024 × 600 document
+RGBA at 0 and 42 CSS pixels of scroll. Captures excluded the window chrome.
+
+| Fixture | RGBA SHA-256 at 0 px | RGBA SHA-256 at 42 px |
+| --- | --- | --- |
+| Interleaved | `68e0f2c8d3ddac6ffb45aa7222a76d6577abbd4b7d959ac34952d6dea87ee922` | `bb70c5ff5be531a6d5fd36059f22a6f4ac34d44013df294bb75156ce73c85022` |
+| Consecutive | `02bda1f4cd8747b4d19deeebdf4f401a38d4a81d6db48c291f53075442ef1f22` | `2a70d4c91df96910d0c742922e72a18dee64fbcb246ae669da9896c385dd03fc` |
+
+Separate diagnostics counted child rasters between the first and last
+callback completions. The interleaved control had 10,332 misses. The
+candidate had 7,380 misses and 2,952 hits. The consecutive fixture
+had 4,428 misses and 5,904 hits on both builds. Startup counts were
+recorded separately and excluded from these totals.
+
+Two alternating pairs per fixture used `tools/measure_browser_scroll.py`
+with `--frames 48 --width 1024 --height 600 --settle-seconds 1`. Each
+fresh process had a private profile and empty browser cache, with a local
+script-free document, Xvfb, Mesa 25.2.8 llvmpipe with one worker, and
+`VOX_GG_SVG=0` to exercise the shared CPU path. OS caches remained
+available. All 48 callbacks moved the document in 42 CSS-pixel steps,
+covering 0–1,260 CSS pixels. Scroll positions and paint-command counts
+matched. The compiler, browser, driver and guards exited zero. All 269
+pinned inputs retained their hashes. Timing ran from 10:50:38 to 10:52:57
+UTC on November 23, 2026. The four-vCPU guest's one-minute load was
+0.99–1.44 before launches. Samples on the 18-logical-CPU host ranged
+from 5.61 to 7.47 around the timing window, with concurrent compilation.
+
+| Fixture and pair | Median replay, ms | p95 / maximum replay, ms | Median allocated KiB |
+| --- | ---: | ---: | ---: |
+| Interleaved 1 control / candidate | 188.993 / 194.659 | 209.682, 233.364 / 351.944, 402.145 | 8964 / 7731 |
+| Interleaved 2 control / candidate | 332.470 / 206.496 | 397.734, 473.290 / 237.263, 270.823 | 8961.5 / 7731.5 |
+| Consecutive 1 control / candidate | 205.848 / 160.997 | 218.999, 245.320 / 193.159, 208.440 | 6498.5 / 6504.5 |
+| Consecutive 2 control / candidate | 168.439 / 177.168 | 191.152, 205.391 / 189.807, 203.328 | 6502 / 6503 |
+
+Median allocation fell by 1,230–1,233 KiB per callback on the
+interleaved fixture. Consecutive allocation changed by 1–6 KiB. Median
+replay time moved in opposite directions across the pairs for both
+fixtures, with substantial variation between controls. These synthetic
+callback timings leave the wall-time effect unresolved.
+
 ## Sharing the portable SVG fallback with Windows
 
 The standard Windows D3D11 window now uses the same CPU raster and GG texture
