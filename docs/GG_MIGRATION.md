@@ -1,5 +1,34 @@
 # Migrating from Skia to vlib/gg
 
+## Deferring streaming texture uploads until draw
+
+Rounded bitmap replay now acquires a streaming texture after it finds
+coverage rectangles to draw. The raster fallback reads the retained bitmap
+and uploads its viewport-sized result only. It skips the source texture
+allocation, alpha conversion and upload. A drawable stream still takes
+one slot per frame, and the slot keeps the identity of its uploaded video.
+
+Two guarded Linux ARM64 builds used V `5a39a4d` and single-unit Clang
+18.1.3 `-O0`. The baseline (`ebc9bffeebd6cb0a007d79afadf302c4c0798de2806f298ce112df144e449f14`)
+included upload diagnostics and used the previous upload order. The
+candidate SHA-256 was `654c04b643bdfb153962aa7274aa1a937843608d95e85e2e1308807b1a8aa51f`.
+The Xvfb fixture displayed a rotated 256 × 256 canvas in a 48 × 48 CSS
+box. Its source was uploaded 129 times in the baseline capture and zero
+times in the candidate. This removed 32.25 MiB of source upload payload
+from the baseline workload. The axis-aligned canvas and the video still
+uploaded their textures, and disabling clipping exercised the direct
+source upload for the larger canvas.
+
+The before and after 800 × 516 document pixels matched with clipping
+enabled (`3ecfb78c4cb036828bc3d7f4ee493fe8ff70cb864f9bb31a6b8c2518734d6d61`)
+and disabled (`01647ad4bf3637458a52c8378117d7dd07b60f0bb4a30a3796b2074c662a4208`).
+The decoded video frame, fixture and linked library hashes matched. Both
+builds and capture runs exited zero. The regression assertion detects
+the redundant upload in the baseline. The candidate also passed headless
+startup, the rounded image and poster checks, and the gradient checks.
+The macOS and Windows x64 D3D11 production-mode source checks and 21
+Python driver tests passed. Hardware frame timings remain unmeasured.
+
 ## Rounded clips on streaming textures
 
 Portable GG replay now applies `border-radius` to video frames, posters

@@ -416,10 +416,14 @@ def check_portable_video_browser(binary, artifacts, temporary):
         env = smoke_environment(Path(temporary) / name)
         env.update(VOX_CAPTURE_READY_SELECTOR="body[data-video-ready]",
                    VOX_CAPTURE_AUDIT_CONFIG=str(config), VOX_CAPTURE_AUDIT_PATH=str(audit),
-                   VOX_DISABLE_PORTABLE_ROUNDED_IMAGE_CLIP=str(int(disabled)))
-        run_windowed([str(binary), "--enable-javascript", "--window-width=800", "--window-height=600",
-                      "--screenshot-viewport-height=516", f"--screenshot={screenshot}", str(fixture)],
-                     env=env, log_path=screenshot.with_suffix(".log"), timeout=45)
+                   VOX_DISABLE_PORTABLE_ROUNDED_IMAGE_CLIP=str(int(disabled)),
+                   VOX_PORTABLE_BITMAP_UPLOAD_DIAGNOSTICS="1")
+        log = run_windowed([str(binary), "--enable-javascript", "--window-width=800", "--window-height=600",
+                            "--screenshot-viewport-height=516", f"--screenshot={screenshot}", str(fixture)],
+                           env=env, log_path=screenshot.with_suffix(".log"), timeout=45)
+        assert "VOX_PORTABLE_BITMAP upload=48x32" in log, "Missing video texture upload"
+        assert "VOX_PORTABLE_BITMAP upload=48x48" in log, "Missing axis-aligned canvas upload"
+        assert ("VOX_PORTABLE_BITMAP upload=256x256" in log) == disabled, "Unexpected rotated canvas source upload"
         document = json.loads(audit.read_text())
         assert document["title"] == "Portable video playback" and document["ready"] == "complete"
         selections = {item["name"]: item["elements"] for item in document["selections"]}

@@ -1,7 +1,6 @@
 module main
 
 import cpuraster
-import dom
 import gg
 import layout
 import math
@@ -57,13 +56,13 @@ fn (mut app BrowserApp) draw_portable_rounded_image(command &layout.PaintCommand
 }
 
 fn (mut app BrowserApp) draw_portable_rounded_bitmap(command &layout.PaintCommand, config gg.DrawImageConfig,
-	geometry painting.DrawScaledDecodedImageFrame, data [12]f32, bitmap ?&dom.Bitmap_,
+	geometry painting.DrawScaledDecodedImageFrame, data [12]f32, stream ?PortableBitmapStream,
 	page_x f32, page_y f32, scroll_y f64) bool {
-	image := config.img
 	radii := [data[4], data[5], data[6], data[7], data[8], data[9], data[10], data[11]]!
 	if radii[..].all(it <= 0) { return false }
-	replay := replaced_image_replay_rects(geometry.destination, geometry.clip_rect, image.width,
-		image.height, true) or { return true }
+	width, height := if live := stream { live.bitmap.width, live.bitmap.height } else { config.img.width, config.img.height }
+	replay := replaced_image_replay_rects(geometry.destination, geometry.clip_rect, width,
+		height, true) or { return true }
 	draw := replay.destination
 	scale := f64(app.ctx.scale)
 	transform := portable_device_transform(command.transform, page_x, page_y - f32(scroll_y), scale)
@@ -83,11 +82,11 @@ fn (mut app BrowserApp) draw_portable_rounded_bitmap(command &layout.PaintComman
 			transform: cpuraster.Matrix{f32(transform.a), 0, 0, f32(transform.d),
 				f32(origin.x - f64(bounds.x)), f32(origin.y - f64(bounds.y))}
 		}
-		if app.draw_portable_image_clip_spans(config, bounds, shape) { return true }
+		if app.draw_portable_image_clip_spans(config, bounds, shape, stream) { return true }
 	}
-	// Streaming textures keep their source pixels in the retained bitmap.
-	// Read them only when the transform or clip exceeds the quad path's limits.
-	source := if retained := bitmap {
+	// Rasterize directly from the retained bitmap when the source is streamed.
+	source := if live := stream {
+		retained := live.bitmap
 		cpuraster.CanvasBitmap{
 			pixels: retained.data
 			width: retained.width
@@ -96,6 +95,7 @@ fn (mut app BrowserApp) draw_portable_rounded_bitmap(command &layout.PaintComman
 			premultiplied: retained.alpha_type in [u8(0), 2]
 		}
 	} else {
+		image := config.img
 		if image.data == unsafe { nil } || image.nr_channels != 4 { return false }
 		pitch := image.width * 4
 		cpuraster.CanvasBitmap{
@@ -123,17 +123,21 @@ fn (mut app BrowserApp) draw_portable_rounded_bitmap(command &layout.PaintComman
 	return true
 }
 
-fn (mut app BrowserApp) draw_portable_image_clip_spans(config gg.DrawImageConfig, bounds painting.IntRect,
-	shape cpuraster.RoundedClipGeometry) bool {
+fn (mut app BrowserApp) draw_portable_image_clip_spans(image_config gg.DrawImageConfig, bounds painting.IntRect,
+	shape cpuraster.RoundedClipGeometry, stream ?PortableBitmapStream) bool {
 	renderer := app.ctx.r
-	image := config.img
-	if renderer == unsafe { nil } || !image.simg_ok { return false }
+	if renderer == unsafe { nil } || (stream == none && !image_config.img.simg_ok) { return false }
 	// Limit the extra geometry in GG's shared frame queue. Large clips can use
 	// the viewport-sized raster fallback without exhausting the vertex buffer.
 	limit := math.min(2048, (32768 - renderer.num_vertices()) / 6)
 	spans := app.portable_image_clip_spans(PortableRoundedImageClipKey{shape, bounds.width, bounds.height},
 		limit) or { return false }
 	if spans.len == 0 { return true }
+	mut config := image_config
+	if live := stream {
+		config.img = app.portable_bitmap_texture(live)
+	}
+	image := config.img
 	if spans.len == 1 && spans[0] == cpuraster.ClipCoverageRect{
 		cpuraster.IRect{0, 0, bounds.width, bounds.height}, 255} {
 		app.ctx.draw_image_with_config(config)
