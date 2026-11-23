@@ -19,6 +19,7 @@ from test_linux_browser import (check_svg_color_matrix_adjustments_tile_pixels,
                                 check_svg_nested_tile_device_pixels,
                                 check_svg_offset_tile_pixels,
                                 check_svg_opacity_filter_tile_pixels, check_svg_pattern_tile_image_pixels,
+                                check_svg_shared_bitmap_tile_pixels,
                                 check_svg_shared_tile_pixels,
                                 check_svg_tile_fill_stroke_pixels, rendered_png_rows,
                                 serve_delayed_svg_pattern_tile)
@@ -545,10 +546,10 @@ def check_non_scaling_pattern_tiles(binary, fixture, directory):
     print("PASS: macOS shared SVG tile pixels and live vector effect")
 
 
-def check_pattern_tile_with_delayed_image(binary, fixture, directory, *, nested=False):
-    with serve_delayed_svg_pattern_tile(fixture, directory / "site") as url:
+def check_pattern_tile_with_delayed_image(binary, fixture, directory, *, nested=False, shared=False):
+    with serve_delayed_svg_pattern_tile(fixture, directory / f"{fixture.stem}-site") as url:
         for scale in (1, 2):
-            data, log = capture_document(binary, url, directory / f"pattern-image-{scale}x", {
+            data, log = capture_document(binary, url, directory / f"{fixture.stem}-{scale}x", {
                 "LADYBIRD_SCREENSHOT_SCALE": str(scale),
                 "LADYBIRD_SCREENSHOT_DELAY_SECONDS": "1.2",
                 "NO_PROXY": "127.0.0.1",
@@ -557,11 +558,14 @@ def check_pattern_tile_with_delayed_image(binary, fixture, directory, *, nested=
             })
             width, height, channels, rows = rendered_png_rows(data)
             assert (width, height) == (1024 * scale, 600 * scale)
-            check_svg_pattern_tile_image_pixels(rows, channels, scale, 0, nested=nested)
+            if shared:
+                check_svg_shared_bitmap_tile_pixels(rows, channels, scale, 0)
+            else:
+                check_svg_pattern_tile_image_pixels(rows, channels, scale, 0, nested=nested)
             misses = re.findall(r"^VOX_SHARED_SVG_TILE cache=miss key=(\d+) ", log, re.M)
             hits = re.findall(r"^VOX_SHARED_SVG_TILE cache=hit key=(\d+)$", log, re.M)
             assert misses and misses[0] == "0" and hits and hits[0] in misses[1:], log
-    tiles = "nested SVG tiles" if nested else "SVG tiles"
+    tiles = "SVG bitmap tiles" if shared else ("nested SVG tiles" if nested else "SVG tiles")
     print(f"PASS: macOS shared {tiles} preserve delayed bitmap content and stroke width")
 
 
@@ -668,6 +672,9 @@ def main():
             bitmap = fixture.with_name("svg-pattern-tile-image-strokes.html")
             shared_tile = fixture.with_name("svg-pattern-tile-shared-fill-stroke.html")
             inputs.extend((bitmap, shared_tile))
+        if args.pattern_nested_images_only:
+            shared_bitmap = fixture.with_name("svg-pattern-tile-shared-bitmap.html")
+            inputs.append(shared_bitmap)
         offset_fixtures = []
         if args.pattern_offset_only:
             offset_fixtures = [(fixture.with_name(f"svg-pattern-tile-offset-{name}.html"), units)
@@ -700,6 +707,8 @@ def main():
         digests = {path: digest(path) for path in inputs}
         with tempfile.TemporaryDirectory(prefix="vox-svg-pattern-") as temporary:
             check_pattern(binary, pattern, Path(temporary))
+            if args.pattern_nested_images_only:
+                check_pattern_tile_with_delayed_image(binary, shared_bitmap, Path(temporary), shared=True)
             if args.pattern_standalone_only:
                 check_pattern_tile_with_delayed_image(binary, bitmap, Path(temporary))
                 check_pattern_tile_variants(binary, shared_tile, Path(temporary),

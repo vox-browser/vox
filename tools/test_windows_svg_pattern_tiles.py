@@ -58,8 +58,10 @@ def main():
     inputs = input_hashes(binary, guard)
     (artifacts / "windows-inputs.json").write_text(json.dumps(inputs, indent=2) + "\n", encoding="utf-8")
     with tempfile.TemporaryDirectory(prefix="vox-svg-pattern-tile-") as temporary:
-        check_svg_pattern_tile_image_browser(binary, artifacts, temporary,
-                                             partial(run_guarded_capture, guard), nested=args.nested)
+        capture = partial(run_guarded_capture, guard)
+        check_svg_pattern_tile_image_browser(binary, artifacts, temporary, capture, nested=args.nested)
+        if args.nested:
+            check_svg_pattern_tile_image_browser(binary, artifacts, temporary, capture, shared=True)
     assert input_hashes(binary, guard) == inputs, "Windows browser or guard inputs changed during capture"
 
 

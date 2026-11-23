@@ -1,0 +1,24 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Delayed bitmap shared by SVG fill and stroke</title>
+<style>
+body { margin: 0; background: white; }
+header { width: 8px; height: 8px; background: #34b786; }
+svg { display: block; }
+</style>
+<header></header>
+<svg width="160" height="100">
+  <defs>
+    <pattern id="bitmap" width="16" height="16" patternUnits="userSpaceOnUse">
+      <image href="tile.png" width="8" height="16"
+             preserveAspectRatio="none" image-rendering="pixelated"/>
+    </pattern>
+    <pattern id="tile" width="40" height="40" patternUnits="userSpaceOnUse">
+      <path d="M0 0H40V32H0Z" fill="url(#bitmap)" stroke="url(#bitmap)"
+            stroke-width="4" stroke-opacity=".6" paint-order="stroke fill"/>
+      <path d="M0 34H40V38H0Z" fill="lime"/>
+    </pattern>
+  </defs>
+  <path d="M0 0H120V94H0Z" fill="url(#tile)" stroke="url(#tile)"
+        stroke-width="2" paint-order="stroke fill"/>
+</svg>

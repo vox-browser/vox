@@ -159,14 +159,14 @@ fn (mut app BrowserApp) raster_svg_mask_pattern(style &painting.SVGPatternPaintS
 	pixels_before := budget.pixels
 	budget.pixels -= bounds.width * bounds.height
 	budget.depth++
-	if portable_svg_raster_diagnostics {
-		eprintln('VOX_SVG_TILE_RASTER reuse=miss depth=${budget.depth - 1} tile=${bounds.width}x${bounds.height}')
-	}
 	mut pixels := []u8{len: bounds.width * bounds.height * 4}
 	result := app.raster_svg_mask_layers(mut pixels, bounds.width * 4, bounds, &mask,
 		0, 0, 1, stroke_space, mut budget)
 	budget.depth--
 	cacheable := result?
+	if portable_svg_raster_diagnostics {
+		eprintln('VOX_SVG_TILE_RASTER reuse=miss depth=${budget.depth} tile=${bounds.width}x${bounds.height} complete=${cacheable}')
+	}
 	pattern := cpuraster.CanvasPattern{
 		pixels: pixels
 		width: bounds.width
@@ -177,17 +177,15 @@ fn (mut app BrowserApp) raster_svg_mask_pattern(style &painting.SVGPatternPaintS
 		transform: matrix32
 	}
 	if cacheable && !disable_portable_svg_raster_cache {
-		if info := style.shared_tile_info() {
-			if !info.has_images {
-				budget.last = PortableSVGMaskTileReuse{
-					style: voidptr(style)
-					pattern: pattern
-					metric: metric
-					pixel_cost: pixels_before - budget.pixels
-					depth: budget.depth
-					luminance: luminance
-				}
-			}
+		// Resource responses are published between replays. A pending image
+		// anywhere in the rendered subtree leaves cacheable false.
+		budget.last = PortableSVGMaskTileReuse{
+			style: voidptr(style)
+			pattern: pattern
+			metric: metric
+			pixel_cost: pixels_before - budget.pixels
+			depth: budget.depth
+			luminance: luminance
 		}
 	}
 	return PortableSVGMaskPattern{pattern: pattern, cacheable: cacheable}
