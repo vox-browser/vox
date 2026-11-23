@@ -81,7 +81,7 @@
     {
       "file": "gpu_surface.v",
       "old": "\tmut ctx := s.ctx\n\t// A pass with a draw",
-      "new": "\tmut ctx := s.ctx\n\t$if windows && sokol_d3d11 ? {\n\t\tif ctx.is_d3d11 && s.draws.any(!d3d11_canvas_supports(it.step, it.uniforms.clipped, it.uniforms.shading)) {\n\t\t\ts.reset_draws()\n\t\t\ts.free_retired_layers()\n\t\t\treturn error('gg.canvas: D3D11 supports solid and gradient bounds, rounded rectangles, wedge fills and tessellated strokes')\n\t\t}\n\t}\n\td3d11 := $if windows && sokol_d3d11 ? { true } $else { false }\n\tuses_storage_buffers := d3d11 || ctx.is_gl\n\t// A pass with a draw"
+      "new": "\tmut ctx := s.ctx\n\t$if windows && sokol_d3d11 ? {\n\t\tif ctx.is_d3d11 && s.draws.any(!d3d11_canvas_supports_draw(it)) {\n\t\t\ts.reset_draws()\n\t\t\ts.free_retired_layers()\n\t\t\treturn error('gg.canvas: unsupported D3D11 render step and paint combination')\n\t\t}\n\t}\n\td3d11 := $if windows && sokol_d3d11 ? { true } $else { false }\n\tuses_storage_buffers := d3d11 || ctx.is_gl\n\t// A pass with a draw"
     },
     {
       "file": "gpu_surface.v",
@@ -112,6 +112,13 @@
       "file": "gpu_surface.v",
       "old": "\t\tgfx.apply_pipeline(ctx.load_msaa_pipeline())",
       "new": "\t\tgfx.apply_pipeline(load_pipeline)"
+    }
+  ],
+  "prepare_gg_gl_image": [
+    {
+      "file": "gpu_shader_glsl.v",
+      "old": "\tsource = glsl_vector_comparisons(source)!",
+      "new": "\tsource = source.replace('as_type<float>(', 'uintBitsToFloat(')\n\tsource = glsl_vector_comparisons(source)!"
     }
   ],
   "prepare_gg_gl_msaa_resolve": [
@@ -224,7 +231,7 @@
     {
       "file": "shaders/paint_snippets.metal",
       "old": "float4 _10_mask = sample(_globals.image_4, _in.CoordNormalize_3_Var);\n",
-      "new": "float4 _10_mask = sample(_globals.image_4, _in.CoordNormalize_3_Var);\nfloat _11_gamma = _globals._anonInterface0->combinedUniformData[_globals.uniformSsboIndex].gammaParameters_7.x;\nif (_11_gamma > 0.0f) {\n    float3 _12_rgb = _10_mask.xyz / max(_10_mask.w, 0.0001f);\n    float3 _13_linear = powr(max(_12_rgb, 0.0f), float3(_11_gamma));\n    _13_linear = float3x3(_globals._anonInterface0->combinedUniformData[_globals.uniformSsboIndex].gamutColumn0_8.xyz,\n                         _globals._anonInterface0->combinedUniformData[_globals.uniformSsboIndex].gamutColumn1_8.xyz,\n                         _globals._anonInterface0->combinedUniformData[_globals.uniformSsboIndex].gamutColumn2_8.xyz) * _13_linear;\n    float3 _14_abs = abs(_13_linear);\n    float3 _15_encoded = select(powr(as_type<float>(0x3f919280u) * _14_abs, float3(as_type<float>(0x3ed55555u))) + as_type<float>(0xbd612800u),\n                               as_type<float>(0x414eb852u) * _14_abs, _14_abs < as_type<float>(0x3b4d2e31u));\n    _10_mask = float4(clamp(sign(_13_linear) * _15_encoded * _10_mask.w, 0.0f, _10_mask.w), _10_mask.w);\n}\n"
+      "new": "float4 _10_mask = sample(_globals.image_4, _in.CoordNormalize_3_Var);\nfloat _11_gamma = _globals._anonInterface0->combinedUniformData[_globals.uniformSsboIndex].gammaParameters_7.x;\nif (_11_gamma > 0.0f) {\n    float3 _12_rgb = _10_mask.xyz / max(_10_mask.w, 0.0001f);\n    float3 _13_linear = powr(max(_12_rgb, 0.0f), float3(_11_gamma));\n    _13_linear = float3x3(_globals._anonInterface0->combinedUniformData[_globals.uniformSsboIndex].gamutColumn0_8.xyz,\n                         _globals._anonInterface0->combinedUniformData[_globals.uniformSsboIndex].gamutColumn1_8.xyz,\n                         _globals._anonInterface0->combinedUniformData[_globals.uniformSsboIndex].gamutColumn2_8.xyz) * _13_linear;\n    float3 _14_abs = abs(_13_linear);\n    float3 _15_encoded = select(powr(as_type<float>(0x3f919280u) * _14_abs, float3(as_type<float>(0x3ed55555u))) + as_type<float>(0xbd612800u),\n                               as_type<float>(0x414eb852u) * _14_abs, _14_abs < float3(as_type<float>(0x3b4d2e31u)));\n    _10_mask = float4(clamp(sign(_13_linear) * _15_encoded * _10_mask.w, 0.0f, _10_mask.w), _10_mask.w);\n}\n"
     }
   ],
   "prepare_gg_yuv": [
@@ -541,7 +548,7 @@
     {
       "file": "shaders/paint_snippets.metal",
       "old": "    float3 _13_linear = powr(max(_12_rgb, 0.0f), float3(_11_gamma));",
-      "new": "    float3 _13_linear;\n    if (_11_gamma < 0.0f) {\n        float3 encoded = max(_12_rgb, 0.0f);\n        _13_linear = select(powr(encoded * (1.0f / 1.055f) + (0.055f / 1.055f), float3(2.4f)),\n                            encoded * (1.0f / 12.92f), encoded < 0.04045f);\n    } else {\n        _13_linear = powr(max(_12_rgb, 0.0f), float3(_11_gamma));\n    }"
+      "new": "    float3 _13_linear;\n    if (_11_gamma < 0.0f) {\n        float3 encoded = max(_12_rgb, 0.0f);\n        _13_linear = select(powr(encoded * (1.0f / 1.055f) + (0.055f / 1.055f), float3(2.4f)),\n                            encoded * (1.0f / 12.92f), encoded < float3(0.04045f));\n    } else {\n        _13_linear = powr(max(_12_rgb, 0.0f), float3(_11_gamma));\n    }"
     }
   ],
   "prepare_gg_yuv_luma_subset": [

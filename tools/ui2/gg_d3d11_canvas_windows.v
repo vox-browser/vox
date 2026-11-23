@@ -3,7 +3,7 @@ module canvas
 $if sokol_d3d11 ? {
 	import sokol.gfx
 
-	// The cover, wedge and stroke shaders below adapt the Graphite
+	// The cover, quad, wedge and stroke shaders below adapt the Graphite
 	// formulas used by gg/canvas/shaders. Their license is reproduced below.
 	const d3d11_canvas_output = r'
 struct CanvasVertex {
@@ -14,6 +14,8 @@ struct CanvasVertex {
 #else
     float gradientPosition : TEXCOORD0;
 #endif
+#elif defined(LAYER_IMAGE)
+    float2 imageCoord : TEXCOORD0;
 #else
     nointerpolation float4 color : TEXCOORD0;
 #endif
@@ -27,6 +29,8 @@ struct CanvasVertex {
     float4 yRadii : TEXCOORD5;
     float2 strokeParams : TEXCOORD6;
     float2 perPixelControl : TEXCOORD7;
+#elif defined(PER_EDGE_QUAD)
+    float4 edgeDistances : TEXCOORD3;
 #endif
 };
 '
@@ -47,7 +51,7 @@ float4 clipPosition(float2 device, float depth, float w) {
 }
 #ifdef SHADED
 CanvasVertex paintVertex(float4 position, uint base, float2 local) {
-#ifdef ANALYTIC_RRECT
+#if defined(ANALYTIC_RRECT) || defined(PER_EDGE_QUAD)
     CanvasVertex result = (CanvasVertex)0;
 #else
     CanvasVertex result;
@@ -62,6 +66,10 @@ CanvasVertex paintVertex(float4 position, uint base, float2 local) {
     float translationX = asfloat(paintData.Load(base + 16u));
     result.gradientPosition = dot(local, affine.xz) + translationX;
 #endif
+#elif defined(LAYER_IMAGE)
+    float4 affine = asfloat(paintData.Load4(base));
+    float4 mapping = asfloat(paintData.Load4(base + 16u));
+    result.imageCoord = (local.x * affine.xy + local.y * affine.zw + mapping.xy) * mapping.zw;
 #else
     result.color = asfloat(paintData.Load4(base));
 #endif
@@ -98,14 +106,14 @@ CanvasVertex vertexMain(CoverInstance input, uint vertex : SV_VertexID) {
         float denominator = dot(inverseRow, devicePixel);
         float w = dot(inverseRow, input.translation) / denominator;
         device = float3(pixel * w, w);
-#ifdef GRADIENT
+#if defined(GRADIENT) || defined(LAYER_IMAGE)
         local = float2(dot(cross(input.columnY, input.translation), devicePixel),
             dot(cross(input.translation, input.columnX), devicePixel)) / denominator;
 #endif
     }
     float4 position = clipPosition(device.xy, input.depth * device.z, device.z);
 #ifdef SHADED
-#ifndef GRADIENT
+#if !defined(GRADIENT) && !defined(LAYER_IMAGE)
     local = 0.0;
 #endif
     return paintVertex(position, input.paint * PAINT_STRIDE, local);
@@ -115,6 +123,75 @@ CanvasVertex vertexMain(CoverInstance input, uint vertex : SV_VertexID) {
     result.color = 0;
     return result;
 #endif
+}
+'
+
+	const d3d11_canvas_quad_vertex = r'
+struct QuadInstance {
+    uint corner : TEXCOORD0;
+    float2 normal : TEXCOORD1;
+    float4 edgeFlags : TEXCOORD2;
+    float4 quadX : TEXCOORD3;
+    float4 quadY : TEXCOORD4;
+    float depth : TEXCOORD5;
+    uint paint : TEXCOORD6;
+    float3 columnX : TEXCOORD7;
+    float3 columnY : TEXCOORD8;
+    float3 translation : TEXCOORD9;
+};
+
+CanvasVertex vertexMain(QuadInstance input) {
+    uint corner = input.corner;
+    uint nextCorner = (corner + 1u) % 4u;
+    float4 x = input.quadX;
+    float4 y = input.quadY;
+    float4 edges = input.edgeFlags;
+    float4 dx = x - x.wxyz;
+    float4 dy = y - y.wxyz;
+    // Canvas records this step only for nonempty rectangles.
+    float4 scale = rcp(max(max(abs(dx), abs(dy)), 1.0));
+    dx *= scale;
+    dy *= scale;
+    float4 lengthSquared = dx * dx + dy * dy;
+    float4 inverseLength = rsqrt(lengthSquared);
+    dx *= inverseLength;
+    dy *= inverseLength;
+    float2 local = float2(x[corner], y[corner]);
+    float3 device = local.x * input.columnX + local.y * input.columnY + input.translation;
+
+    float3 rowX = cross(input.columnY, input.translation);
+    float3 rowY = cross(input.translation, input.columnX);
+    float3 rowW = cross(input.columnX, input.columnY);
+    float inverseDet = rcp(dot(input.columnX, rowX));
+    float3 inverseX = float3(rowX.x, rowY.x, rowW.x) * inverseDet;
+    float3 inverseY = float3(rowX.y, rowY.y, rowW.y) * inverseDet;
+    float4 ux = -dy * (inverseX.x - inverseX.z * x) + dx * (inverseX.y - inverseX.z * y);
+    float4 uy = -dy * (inverseY.x - inverseY.z * x) + dx * (inverseY.y - inverseY.z * y);
+    float4 distanceToEdges = dy * (x - local.x) - dx * (y - local.y);
+    distanceToEdges *= rsqrt(ux * ux + uy * uy);
+    distanceToEdges += (1.5 - edges) * abs(device.z);
+
+    if (any(input.normal != 0.0) && device.z > 0.0) {
+        float4 jacobian = float4(inverseX.xy - inverseX.z * local, inverseY.xy - inverseY.z * local);
+        float2 normal = float2(edges[corner], edges[nextCorner]) * input.normal;
+        float2 a = applyInverseJacobian(normal.x * float2(dy[corner], -dx[corner]), jacobian);
+        float2 b = applyInverseJacobian(normal.y * float2(dy[nextCorner], -dx[nextCorner]), jacobian);
+        if (all(normal != 0.0)) {
+            a = normalize(a);
+            b = normalize(b);
+            if (dot(a, b) < -0.8) {
+                float orientation = sign(a.x * b.y - a.y * b.x);
+                a = orientation * float2(-a.y, a.x);
+                b = -orientation * float2(-b.y, b.x);
+            }
+        }
+        device.xy += device.z * normalize(a + b);
+        distanceToEdges -= device.z;
+    }
+    CanvasVertex result = paintVertex(clipPosition(device.xy, device.z * input.depth, device.z),
+        input.paint * PAINT_STRIDE, local);
+    result.edgeDistances = distanceToEdges;
+    return result;
 }
 '
 
@@ -450,6 +527,16 @@ float4 fragmentMain(CanvasVertex input) : SV_Target0 {
 }
 '
 
+	const d3d11_canvas_layer_fragment = r'
+Texture2D<float4> layerImage : register(t0);
+SamplerState layerSampler : register(s0);
+
+float4 fragmentMain(CanvasVertex input) : SV_Target0 {
+    // Canvas layer render targets already contain premultiplied RGBA.
+    return finishPaint(input, layerImage.SampleLevel(layerSampler, input.imageCoord, 0));
+}
+'
+
 	const d3d11_canvas_gradient_fragment = r'
 Texture2D<float4> ditherLUT : register(t0);
 SamplerState ditherSampler : register(s0);
@@ -563,10 +650,13 @@ float clipCoverage(CanvasVertex input) {
 
 	const d3d11_canvas_finish_fragment = r'
 float4 finishPaint(CanvasVertex input, float4 color) {
-#if defined(ANALYTIC_RRECT) || defined(ANALYTIC_CLIP)
+#if defined(ANALYTIC_RRECT) || defined(PER_EDGE_QUAD) || defined(ANALYTIC_CLIP)
     float coverage = 1.0;
 #ifdef ANALYTIC_RRECT
     coverage = rrectCoverage(input);
+#elif defined(PER_EDGE_QUAD)
+    float2 edges = min(input.edgeDistances.xy, input.edgeDistances.zw);
+    coverage = saturate(min(edges.x, edges.y) * input.position.w);
 #endif
 #ifdef ANALYTIC_CLIP
     coverage *= clipCoverage(input);
@@ -595,8 +685,26 @@ float4 fragmentMain(float4 position : SV_Position) : SV_Target0 {
 		.wedges_shaded, .tessellate_strokes]!
 
 	fn d3d11_canvas_supports(step RenderStep, clipped bool, shading Shading) bool {
+		if shading == .image {
+			return step in [.cover_bounds, .per_edge_aa_quad, .analytic_rrect]
+		}
 		return step in d3d11_canvas_steps && (!clipped || writes_color(step))
 			&& (shading == .solid || (shading.is_gradient() && writes_color(step)))
+	}
+
+	fn d3d11_canvas_supports_draw(draw &GpuDraw) bool {
+		if !d3d11_canvas_supports(draw.step, draw.uniforms.clipped, draw.uniforms.shading) {
+			return false
+		}
+		if draw.uniforms.shading == .image {
+			// Saved layers already contain premultiplied color and have one mip level.
+			// Document images can require color conversion, tint, or different sampling.
+			image := draw.uniforms.image
+			return image.color_transform == DocumentImageColorTransform{}
+				&& image.mask_color == Color4f{1, 1, 1, 1} && !draw.texture.document_linear_filter
+				&& !draw.texture.document_repeat_filter
+		}
+		return true
 	}
 
 	fn d3d11_canvas_shader_step(step RenderStep) RenderStep {
@@ -627,7 +735,12 @@ float4 fragmentMain(float4 position : SV_Position) : SV_Target0 {
 			return gfx.Shader{}
 		}
 		gradient := shading.is_gradient()
-		paint_bytes := if gradient { gradient_uniform_size(shading) } else { solid_uniform_size }
+		image := shading == .image
+		paint_bytes := match true {
+			gradient { gradient_uniform_size(shading) }
+			image { image_uniform_size }
+			else { solid_uniform_size }
+		}
 		mut prefix := ''
 		if writes_color(step) {
 			stride := step_uniform_size(step, clipped, shading)
@@ -638,8 +751,15 @@ float4 fragmentMain(float4 position : SV_Position) : SV_Target0 {
 			prefix += '#define ANALYTIC_CLIP\n#define CLIP_OFFSET ${paint_bytes}u\n'
 		}
 		rrect := step == .analytic_rrect
+		quad := step == .per_edge_aa_quad
 		if rrect {
 			prefix += '#define ANALYTIC_RRECT\n'
+		}
+		if quad {
+			prefix += '#define PER_EDGE_QUAD\n'
+		}
+		if image {
+			prefix += '#define LAYER_IMAGE\n'
 		}
 		if gradient {
 			prefix += '#define GRADIENT\n#define STOP_COUNT ${shading.stops()}\n'
@@ -655,6 +775,7 @@ float4 fragmentMain(float4 position : SV_Position) : SV_Target0 {
 		}
 		geometry := match true {
 			rrect { d3d11_canvas_rrect_math + d3d11_canvas_rrect_vertex }
+			quad { d3d11_canvas_rrect_math + d3d11_canvas_quad_vertex }
 			step == .tessellate_strokes { d3d11_canvas_curve_math + d3d11_canvas_stroke_vertex }
 			is_wedge_step(step) { d3d11_canvas_curve_math + d3d11_canvas_wedge_vertex }
 			else { d3d11_canvas_cover_vertex }
@@ -671,7 +792,11 @@ float4 fragmentMain(float4 position : SV_Position) : SV_Target0 {
 			fragment += d3d11_canvas_rrect_math + d3d11_canvas_rrect_fragment
 		}
 		fragment += d3d11_canvas_finish_fragment
-		fragment += if gradient { d3d11_canvas_gradient_fragment } else { d3d11_canvas_fragment }
+		fragment += match true {
+			gradient { d3d11_canvas_gradient_fragment }
+			image { d3d11_canvas_layer_fragment }
+			else { d3d11_canvas_fragment }
+		}
 		mut desc := gfx.ShaderDesc{}
 		desc.vs.source = &char(vertex.str)
 		desc.vs.entry = c'vertexMain'
@@ -687,12 +812,16 @@ float4 fragmentMain(float4 position : SV_Position) : SV_Target0 {
 		if clipped {
 			desc.fs.uniform_blocks[0].size = intrinsic_uniform_size
 		}
-		if gradient {
+		if gradient || image {
 			desc.fs.images[0] = gfx.ShaderImageDesc{ used: true, image_type: ._2d, sample_type: .float }
 			desc.fs.samplers[0] = gfx.ShaderSamplerDesc{ used: true, sampler_type: .filtering }
 			desc.fs.image_sampler_pairs[0] = gfx.ShaderImageSamplerPairDesc{ used: true }
 		}
-		attr_count := if rrect { 14 } else { 6 }
+		attr_count := match true {
+			rrect { 14 }
+			quad { 10 }
+			else { 6 }
+		}
 		for index in 0 .. attr_count {
 			desc.attrs[index].sem_name = c'TEXCOORD'
 			desc.attrs[index].sem_index = index

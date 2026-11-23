@@ -36,7 +36,7 @@ if (_11_gamma > 0.0f) {
                          _globals._anonInterface0->combinedUniformData[_globals.uniformSsboIndex].gamutColumn2_8.xyz) * _13_linear;
     float3 _14_abs = abs(_13_linear);
     float3 _15_encoded = select(powr(as_type<float>(0x3f919280u) * _14_abs, float3(as_type<float>(0x3ed55555u))) + as_type<float>(0xbd612800u),
-                               as_type<float>(0x414eb852u) * _14_abs, _14_abs < as_type<float>(0x3b4d2e31u));
+                               as_type<float>(0x414eb852u) * _14_abs, _14_abs < float3(as_type<float>(0x3b4d2e31u)));
     _10_mask = float4(clamp(sign(_13_linear) * _15_encoded * _10_mask.w, 0.0f, _10_mask.w), _10_mask.w);
 }
 ''')
@@ -61,7 +61,7 @@ def prepare_srgb_gamut(canvas):
     if (_11_gamma < 0.0f) {
         float3 encoded = max(_12_rgb, 0.0f);
         _13_linear = select(powr(encoded * (1.0f / 1.055f) + (0.055f / 1.055f), float3(2.4f)),
-                            encoded * (1.0f / 12.92f), encoded < 0.04045f);
+                            encoded * (1.0f / 12.92f), encoded < float3(0.04045f));
     } else {
         _13_linear = powr(max(_12_rgb, 0.0f), float3(_11_gamma));
     }''')

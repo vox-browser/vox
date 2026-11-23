@@ -149,7 +149,8 @@ class VBuildMigrationTest(unittest.TestCase):
         expected = self.work / 'python-gpu-canvas'
         expected.mkdir()
         patches = json.loads((ROOT / 'tools/buildtools/gg_patches.json').read_text())
-        gpu_groups = ('prepare_gg_windows_canvas', 'prepare_gg_d3d11_canvas', 'prepare_gg_gl_msaa_resolve')
+        gpu_groups = ('prepare_gg_windows_canvas', 'prepare_gg_d3d11_canvas',
+                      'prepare_gg_gl_msaa_resolve', 'prepare_gg_gl_image')
         groups = (*gpu_groups, 'prepare_gg_document_gradient_hole', 'prepare_gg_conical_gradient')
         for name in {operation['file'] for group in groups for operation in patches[group]}:
             target = expected / name

@@ -28,6 +28,7 @@ fn main() {
 		check_canvas_solid_fills() or { panic(err) }
 		check_canvas_analytic_clips() or { panic(err) }
 		check_canvas_analytic_rrects() or { panic(err) }
+		check_canvas_layers() or { panic(err) }
 		check_canvas_solid_strokes() or { panic(err) }
 		check_canvas_linear_gradients() or { panic(err) }
 		check_canvas_radial_gradients() or { panic(err) }
@@ -62,6 +63,7 @@ $if windows {
 				check_canvas_solid_fills() or { panic(err) }
 				check_canvas_analytic_clips() or { panic(err) }
 				check_canvas_analytic_rrects() or { panic(err) }
+				check_canvas_layers() or { panic(err) }
 				check_canvas_solid_strokes() or { panic(err) }
 				check_canvas_linear_gradients() or { panic(err) }
 				check_canvas_radial_gradients() or { panic(err) }
@@ -263,24 +265,6 @@ fn check_canvas_solid_fills() ! {
 	expect_canvas_pixel(pixels, pitch, 16, 16, transparent)!
 	expect_canvas_pixel(pixels, pitch, 26, 5, transparent)!
 
-	$if windows && sokol_d3d11 ? {
-		mut recovery := ctx.new_surface(width: width, height: height)!
-		defer { recovery.free() }
-		recovery.clear(canvas.Color4f.from_rgba8(0, 255, 0, 255))
-		recovery.flush()!
-		recovery.save_layer(none)!
-		recovery.draw_rect(canvas.Rect.ltrb(2, 2, 20, 20), canvas.Paint.rgba8(255, 0, 0, 255))!
-		recovery.restore()
-		mut rejected := false
-		recovery.flush() or { rejected = err.msg().contains('D3D11 supports solid') }
-		if !rejected {
-			return error('D3D11 Canvas must reject an unsupported pass before drawing')
-		}
-		recovery.draw_rect(canvas.Rect.ltrb(1, 1, 6, 6), canvas.Paint.rgba8(255, 0, 0, 255))!
-		recovery.read_pixels(pixels.data, pitch)!
-		expect_canvas_pixel(pixels, pitch, 4, 4, [u8(0), 0, 255, 255]!)!
-		expect_canvas_pixel(pixels, pitch, 10, 10, green)!
-	}
 	for y in 0 .. height {
 		if !pixels[y * pitch + width * 4..(y + 1) * pitch].all(it == 0xcc) {
 			return error('Canvas readback altered destination row padding')
@@ -361,6 +345,100 @@ fn check_canvas_analytic_clips() ! {
 	expect_canvas_pixel(pixels, pitch, 16, 6, [u8(0), 191, 191, 191]!)!
 	expect_canvas_pixel(pixels, pitch, 17, 6, transparent)!
 	println('GG Canvas analytic rectangle and rounded clips passed on ${gfx.query_backend()}')
+}
+
+fn check_canvas_layers() ! {
+	width, height := 32, 24
+	pitch := width * 4
+	pixels := []u8{len: pitch * height}
+	mut ctx := canvas.new_gpu_context()!
+	defer { ctx.free() }
+	mut target := ctx.new_surface(width: width, height: height)!
+	defer { target.free() }
+	red := [u8(0), 0, 255, 255]!
+	green := [u8(0), 255, 0, 255]!
+	blue := [u8(255), 0, 0, 255]!
+	clear := [u8(0), 0, 0, 0]!
+	red_paint := canvas.Paint.rgba8(255, 0, 0, 255)
+	blue_paint := canvas.Paint.rgba8(0, 0, 255, 255)
+	canvas_bounds := canvas.Rect.ltrb(0, 0, width, height)
+
+	// The logical layer bounds differ from the allocated texture dimensions.
+	target.clear(canvas.Color4f.from_rgba8(0, 255, 0, 255))
+	target.flush()!
+	target.save_layer(canvas.Rect.ltrb(3, 4, 21, 15))!
+	target.draw_rect(canvas.Rect.ltrb(4, 5, 15, 12), red_paint)!
+	target.save_layer(canvas.Rect.ltrb(8, 6, 19, 12))!
+	target.draw_rect(canvas.Rect.ltrb(9, 7, 18, 10), canvas.Paint.rgba8(0, 0, 255, 128))!
+	target.restore()
+	target.restore()
+	target.draw_rect(canvas.Rect.ltrb(6, 6, 8, 8), blue_paint)!
+	target.read_pixels(pixels.data, pitch)!
+	expect_canvas_pixel(pixels, pitch, 4, 5, red)!
+	expect_canvas_pixel(pixels, pitch, 6, 7, blue)!
+	expect_canvas_pixel(pixels, pitch, 9, 7, [u8(128), 0, 127, 255]!)!
+	expect_canvas_pixel(pixels, pitch, 16, 7, [u8(128), 127, 0, 255]!)!
+	expect_canvas_pixel(pixels, pitch, 17, 10, green)!
+	expect_canvas_pixel(pixels, pitch, 19, 6, green)!
+
+	target.clear(canvas.Color4f{})
+	target.save()
+	target.clip_rect(canvas.Rect.ltrb(5.25, 3, 19.75, 14), .intersect, true)!
+	target.save_layer(none)!
+	target.draw_rect(canvas_bounds, red_paint)!
+	target.restore()
+	target.restore()
+	target.read_pixels(pixels.data, pitch)!
+	expect_canvas_pixel(pixels, pitch, 4, 7, clear)!
+	expect_canvas_pixel(pixels, pitch, 5, 7, [u8(0), 0, 191, 191]!)!
+	expect_canvas_pixel(pixels, pitch, 6, 7, red)!
+	expect_canvas_pixel(pixels, pitch, 19, 7, [u8(0), 0, 191, 191]!)!
+	expect_canvas_pixel(pixels, pitch, 20, 7, clear)!
+
+	target.clear(canvas.Color4f{})
+	target.save()
+	radius := canvas.Point{4, 4}
+	target.clip_rrect(canvas.RRect.rect_radii(canvas.Rect.ltrb(2, 2, 21, 15), [radius, radius,
+		radius, radius]!), .intersect, true)!
+	target.save_layer(none)!
+	target.draw_rect(canvas_bounds, blue_paint)!
+	target.restore()
+	target.restore()
+	target.read_pixels(pixels.data, pitch)!
+	expect_canvas_pixel(pixels, pitch, 2, 2, clear)!
+	expect_canvas_pixel(pixels, pitch, 4, 6, blue)!
+	expect_canvas_pixel(pixels, pitch, 21, 6, clear)!
+
+	target.clear(canvas.Color4f{})
+	target.save()
+	target.clip_rect(canvas.Rect.ltrb(7.25, 4, 13.75, 10), .difference, true)!
+	target.save_layer(canvas.Rect.ltrb(2, 3, 19, 13))!
+	target.draw_rect(canvas_bounds, red_paint)!
+	target.restore()
+	target.restore()
+	target.read_pixels(pixels.data, pitch)!
+	expect_canvas_pixel(pixels, pitch, 6, 5, red)!
+	expect_canvas_pixel(pixels, pitch, 7, 5, [u8(0), 0, 64, 64]!)!
+	expect_canvas_pixel(pixels, pitch, 8, 5, clear)!
+	expect_canvas_pixel(pixels, pitch, 14, 5, red)!
+
+	$if windows && sokol_d3d11 ? {
+		// The saved-layer sampler has no document image filtering or mip selection.
+		target.clear(canvas.Color4f.from_rgba8(0, 255, 0, 255))
+		target.flush()!
+		source := []u8{len: 2 * 2 * 4, init: 255}
+		target.draw_document_scaled_rgba([source], 2, 2, 2, 2, 2, 2, 16, 16)!
+		mut rejected := false
+		target.flush() or { rejected = err.msg().contains('unsupported D3D11 render step') }
+		if !rejected {
+			return error('D3D11 Canvas must reject unsupported image sampling before drawing')
+		}
+		target.draw_rect(canvas.Rect.ltrb(1, 1, 6, 6), blue_paint)!
+		target.read_pixels(pixels.data, pitch)!
+		expect_canvas_pixel(pixels, pitch, 4, 4, blue)!
+		expect_canvas_pixel(pixels, pitch, 10, 10, green)!
+	}
+	println('GG Canvas saved layers, nested blending and restore clips passed on ${gfx.query_backend()}')
 }
 
 fn check_canvas_analytic_rrects() ! {

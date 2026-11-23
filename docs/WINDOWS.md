@@ -287,7 +287,10 @@ intersect clip on a tessellated stroke.
 The gradient checks cover linear bounds, wedges and strokes, and radial
 fills and strokes. They exercise reflected tiling, a hard stop, paint
 opacity, a contained focal circle and a repeating tangent point focus.
-It also checks recovery after a rejected unsupported draw.
+The saved-layer checks cover translated nested layers, premultiplied
+blending, fractional and rounded intersect clips, and a fractional
+difference clip. The test also checks recovery after a rejected document
+image with unsupported sampling.
 
 For the OpenGL variant, prepare the current Canvas adapter before building
 the same smoke tool. This opens a GL 4.3 window, checks the shared solid

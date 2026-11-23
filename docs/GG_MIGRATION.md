@@ -1,5 +1,39 @@
 # Migrating from Skia to vlib/gg
 
+## Canvas saved layers on Windows and Linux
+
+D3D11 now restores saved layers through the shared Canvas renderer. It
+samples the premultiplied GPU texture directly with the existing nearest
+sampler. Integer bounds, fractional edges, rounded clips and nested layers
+use the same recorded geometry and draw order as Metal and OpenGL. The
+image shaders compile on first use. Document image filtering and color
+conversion remain separate work on D3D11.
+
+The Linux layer test exposed a shader compilation failure in the staged
+Canvas image code. GLSL now uses `uintBitsToFloat` for the shared transfer
+curve's constants, and the threshold comparisons explicitly use vectors
+on both Metal and OpenGL.
+
+The guarded smoke checked translated nested layers, premultiplied blending,
+the difference between logical and allocated texture dimensions, and
+fractional, rounded and difference clips. It passed on macOS Metal, Linux
+Mesa OpenGL and Windows 11 D3D11 under QEMU. All 49 staging and replay-tool
+tests passed. glslang compiled all 12 layer shader variants and generated
+byte-identical SPIR-V for 176 existing solid and gradient shader variants.
+The Windows smoke executable kept SHA-256
+`df3547777a2deb145973392bb26cbcd07aa5948441711ce16b6897d865a669d3`
+before and after launch, exited zero under the 3 GiB guard and reproduced
+the prior projection, color and text PNG byte for byte.
+
+Four fresh Windows browser processes exited zero under the 3 GiB guard.
+The V `4478fc4` and MinGW GCC 16.2.0 build used `-prod -no-prod-options`.
+Its SHA-256 stayed `41e0a7dbe277d27bb9e83843ba84accb52b0ca356e40667b64fe138509caf497`
+throughout the replay. The portable, full-cache, texture-cache-only and
+uncached modes each matched their previous D3D11 browser's 800 × 100
+document crop byte for byte. The first portable launch took roughly six
+minutes in QEMU. These runs verify pixel output and process completion.
+Hardware frame timings remain unmeasured.
+
 ## Analytic Canvas shapes on Windows D3D11
 
 D3D11 uses the shared analytic render step for rounded rectangles, ovals,
