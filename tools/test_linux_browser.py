@@ -2293,6 +2293,18 @@ def check_svg_color_matrix_adjustments_tile_pixels(rows, channels, scale, marker
 
 def check_svg_offset_tile_pixels(rows, channels, scale, marker, edited, *, filter_units=None):
     white, red, lime, black = map(bytes.fromhex, ("ffffff", "ff0000", "00ff00", "000000"))
+    if filter_units == "source-alpha":
+        first, end = (13, 22) if edited else (16, 26)
+        for left in (0, 128, 256, 384):
+            ink = white if left == 384 else bytes.fromhex("7f7f7f")
+            stripe = black if left >= 256 else white
+            for x, y, expected in ((first - 1, 10, white), (first, 10, ink), (end - 1, 17, ink),
+                                   (end, 10, white), (first, 9, white), (first, 18, white),
+                                   (8, 38, stripe)):
+                position = (left + x) * scale * channels
+                actual = rows[marker + (8 + y) * scale][position:position + 3]
+                assert actual == expected, (scale, left + x, y, actual.hex(), expected.hex())
+        return
     svg_scale = 2 if filter_units == "viewport" else 1
     for left in (0, 128, 256):
         ink, stripe = (black, black) if left == 256 else (red, lime)
@@ -3265,8 +3277,10 @@ def main():
                                        ("offset-primitive-units", "primitive"),
                                        ("offset-viewport", "viewport"), ("offset-subregion", "subregion"),
                                        ("offset-curves", "curves"), ("offset-tile-clip", "tile-clip"),
-                                       ("offset-fractional-clip", "fractional-clip")):
-                check_svg_tile_browser(binary, artifacts, temporary, name, groups=3,
+                                       ("offset-fractional-clip", "fractional-clip"),
+                                       ("offset-source-alpha", "source-alpha")):
+                check_svg_tile_browser(binary, artifacts, temporary, name,
+                                       groups=4 if filter_units == "source-alpha" else 3,
                                        ready="data-offset-ready", check_edited=functools.partial(
                                            check_svg_offset_tile_pixels, edited=True,
                                            filter_units=filter_units))

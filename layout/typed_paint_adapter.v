@@ -1101,12 +1101,14 @@ fn resolved_svg_filter(element &dom.Element, reference string,
 // before rasterization, then clip the isolated result.
 fn svg_pattern_offset_from_filter(element &svg.Element, source &dom.Element, filter painting.GfxFilter,
 	pattern_target ?SVGPatternFilterTarget) ?painting.SVGPatternOffset {
-	if element.children.len != 1 || filter.nodes.len != 1 {
+	if element.children.len != 1 || element.children[0].tag != 'feOffset' {
 		return none
 	}
 	child := &element.children[0]
-	node := &filter.nodes[0]
-	if child.tag != 'feOffset' || node.kind != 'offset' || node.input_ids != [-1] { return none }
+	source_alpha := child.attributes['in'] == 'SourceAlpha'
+	if filter.nodes.len != (if source_alpha { 2 } else { 1 }) { return none }
+	node := &filter.nodes[filter.nodes.len - 1]
+	if node.kind != 'offset' || node.input_ids != [if source_alpha { 0 } else { -1 }] { return none }
 	object_bounds := if element.filter_units() == .object_bounding_box
 		|| element.primitive_units() == .object_bounding_box {
 		target := pattern_target?
@@ -1135,7 +1137,7 @@ fn svg_pattern_offset_from_filter(element &svg.Element, source &dom.Element, fil
 		crop = filter_region.intersection(painting.Rect{subregion.x, subregion.y,
 			subregion.width, subregion.height})
 	}
-	return painting.SVGPatternOffset{painting.Point{delta.x, delta.y}, crop}
+	return painting.SVGPatternOffset{painting.Point{delta.x, delta.y}, crop, source_alpha}
 }
 
 fn svg_pattern_filter_viewport_size(source &dom.Element, state &LayoutState) ?svg.Point {

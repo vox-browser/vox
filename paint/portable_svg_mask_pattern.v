@@ -85,6 +85,18 @@ fn apply_svg_pattern_filter(mut layer PortableSVGMaskLayer, width int, height in
 	crop := svg_pattern_filter_crop(filter, width, height) or { return false }
 	effect := filter.effect or {
 		clear_svg_pattern_outside_crop(mut layer, width, crop)
+		if filter.source_alpha && retain_color {
+			// SourceAlpha keeps coverage and supplies black to color or luminance draws.
+			for y in math.max(crop.y, layer.rows.top) .. math.min(crop.bottom(), layer.rows.bottom) {
+				row := (y - layer.rows.top) * width
+				for x in crop.x .. crop.right() {
+					pixel := (row + x) * 4
+					layer.pixels[pixel] = 0
+					layer.pixels[pixel + 1] = 0
+					layer.pixels[pixel + 2] = 0
+				}
+			}
+		}
 		return true
 	}
 	fills_clear := effect.fills_clear_pixels()

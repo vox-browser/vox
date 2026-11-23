@@ -4525,7 +4525,10 @@ pub fn compatibility_lower_svg_mask_operations(source []painting.SVGMaskPaintOpe
 						if !math.is_finite(placement[4]) || !math.is_finite(placement[5]) { return none }
 						operations << PaintMaskOperation{
 							kind: .begin_opacity
-							filter: &PaintSVGMaskFilter{bounds: pixel_crop}
+							filter: &PaintSVGMaskFilter{
+								bounds: pixel_crop
+								source_alpha: projected.source_alpha
+							}
 						}
 					} else {
 						effect := filter.source_color_filter()?

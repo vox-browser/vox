@@ -156,8 +156,9 @@ pub:
 
 pub struct SVGPatternOffset {
 pub:
-	delta  Point
-	region Rect
+	delta        Point
+	region       Rect
+	source_alpha bool
 }
 
 pub fn (offset SVGPatternOffset) transformed(transform Affine) ?SVGPatternOffset {
@@ -173,7 +174,7 @@ pub fn (offset SVGPatternOffset) transformed(transform Affine) ?SVGPatternOffset
 	if region.is_empty() || ![region.x, region.y, region.right(), region.bottom(), delta.x, delta.y]!.all(math.is_finite(it)) {
 		return none
 	}
-	return SVGPatternOffset{delta, region}
+	return SVGPatternOffset{delta, region, offset.source_alpha}
 }
 
 pub fn (offset SVGPatternOffset) mix_cache_key(seed u64) u64 {
@@ -188,7 +189,7 @@ pub fn (offset SVGPatternOffset) mix_cache_key(seed u64) u64 {
 			bits >>= 8
 		}
 	}
-	return hash
+	return if offset.source_alpha { (hash ^ u64(1)) * u64(1099511628211) } else { hash }
 }
 
 pub fn (filter GfxFilter) source_pattern_offset() ?&SVGPatternOffset {

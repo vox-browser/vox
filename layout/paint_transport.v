@@ -771,8 +771,9 @@ pub enum PaintMaskOperationKind {
 
 pub struct PaintSVGMaskFilter {
 pub:
-	effect ?painting.SVGSourceColorFilter
-	bounds ?painting.Rect
+	effect       ?painting.SVGSourceColorFilter
+	bounds       ?painting.Rect
+	source_alpha bool
 }
 
 pub fn (filter &PaintSVGMaskFilter) fills_clear_pixels() bool {
