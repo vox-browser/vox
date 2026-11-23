@@ -319,6 +319,19 @@ fn (mut stream RawTokenStream) consume_a_token() Token {
 	return token
 }
 
+// A leaf component owns a copy of its token. Copy the tokenizer's current
+// token into it directly rather than returning it through the stream first.
+fn (mut stream RawTokenStream) consume_a_component_token() ComponentValue {
+	if stream.source != unsafe { nil } {
+		component := ComponentValue{
+			value: &Token{...stream.source.current}
+		}
+		stream.source.advance()
+		return component
+	}
+	return ComponentValue.from_token(stream.consume_a_token())
+}
+
 fn (mut stream RawTokenStream) discard_a_token() {
 	if stream.source != unsafe { nil } {
 		stream.source.advance()
@@ -1117,7 +1130,7 @@ fn parser_consume_a_component_value_from_tokens(mut input RawTokenStream) Compon
 		if type_ == .function {
 			return ComponentValue.from_function(parser_consume_a_function(mut input))
 		}
-		return ComponentValue.from_token(input.consume_a_token())
+		return input.consume_a_component_token()
 	}
 	return ComponentValue.from_token(Tokenizer.create_eof_token())
 }
