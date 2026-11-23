@@ -3377,7 +3377,9 @@ def check_portable_affine_media(binary, artifacts, temporary, run_capture=functo
         documents.append(check_affine_media_pixels(screenshot.read_bytes()))
         uploads = log.splitlines().count("VOX_PORTABLE_BITMAP upload=40x24")
         assert (uploads > 3 if disabled else uploads == 3), (name, uploads)
-    assert documents[0] == documents[1], "Canvas texture reuse changed affine media pixels"
+        poster_uploads = log.splitlines().count("VOX_PORTABLE_BITMAP upload=48x24")
+        assert (poster_uploads > 1 if disabled else poster_uploads == 1), (name, poster_uploads)
+    assert documents[0] == documents[1], "Bitmap texture reuse changed affine media pixels"
     print("PASS: affine image, canvas and cropped video poster pixels reach GG", flush=True)
 
 

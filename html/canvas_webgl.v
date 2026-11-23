@@ -118,13 +118,13 @@ fn (mut state HTMLCanvasElementState) publish_webgl_bitmap(context &webgl.WebGLR
 			&& context.native.copy_painting_surface_pixels(mut bitmap.data) {
 			bitmap.alpha_type = 2
 			bitmap.native_rows_are_top_down = true
-			bitmap.canvas_pixels_changed()
+			bitmap.mark_pixels_changed()
 			return true
 		}
 	}
 	frame := context.native.painting_surface() or { return false }
 	mut bitmap := webgl_frame_bitmap(frame)
-	bitmap.canvas_pixels_changed()
+	bitmap.mark_pixels_changed()
 	surface.bitmap_ = bitmap
 	return true
 }

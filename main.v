@@ -1752,8 +1752,15 @@ fn install_object_image_fetch_hooks(document &dom.Document) {
 }
 
 
+fn browser_decode_video_poster_bitmap(bytes []u8) !&dom.Bitmap_ {
+	mut bitmap := browser_decode_raster_image_bytes(bytes)!
+	// Each successful decode publishes new pixels, even at the same size.
+	bitmap.mark_pixels_changed()
+	return bitmap
+}
+
 fn browser_decode_video_poster(bytes []u8) !html.DecodedImageData {
-	bitmap := browser_decode_raster_image_bytes(bytes)!
+	bitmap := browser_decode_video_poster_bitmap(bytes)!
 	return html.BitmapDecodedImageData.create([
 		html.BitmapDecodedImageFrame{frame: dom.DecodedImageFrame_.create(bitmap)},
 	], 0, false)
@@ -1775,7 +1782,7 @@ fn install_video_poster_fetch_hook(element &dom.Element) {
 		}
 	}
 	model.set_poster_fetch_hook(fn [element] (resource_url dom.URL) !&dom.Bitmap_ {
-		return browser_decode_raster_image_bytes(browser_image_resource_bytes_for_document(resource_url, element.document().url.serialize())!)
+		return browser_decode_video_poster_bitmap(browser_image_resource_bytes_for_document(resource_url, element.document().url.serialize())!)
 	})
 	if poster := element.get_attribute_ns(none, 'poster') { model.set_poster(poster) }
 }

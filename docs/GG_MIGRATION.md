@@ -1,5 +1,35 @@
 # Migrating from Skia to vlib/gg
 
+## Reusing decoded video poster textures
+
+Both browser poster decoders mark newly decoded pixels for the same upload
+revision mechanism used by Canvas 2D and WebGL. A portable GG slot can keep
+the poster texture across frames. Decoding a replacement of the same size
+gives it a fresh revision, so the next draw uploads the new pixels.
+
+The ARM64 Linux single-unit Clang 18.1.3 `-O0` builds used V `5a39a4d`.
+The baseline executable
+(`1e838916cf8aa2b39ddfb37d7362b88c60a27cf50254dc86b01ca81c0a27d944`)
+uploaded the affine fixture's static poster 97 times. The candidate
+(`3cd992c432508c44d5e8049c7c8c2e20344735c53c9dde9c53eb0cd4361f2507`)
+uploaded it once with reuse and 97 times with reuse disabled. All three
+800 × 516 RGBA document crops matched at SHA-256
+`e0fb90329714533506a2500761102b948ba8ffcc746f6cb71a434a202f5d1e11`.
+A delayed same-size cyan poster replacement reached the rotated rectangle
+with two uploads total. Portable video, rounded clipping, WebGL and headless
+startup checks passed under the 3 GiB guard. The Canvas 2D and WebGL V test
+files and all 23 Python runner unit tests also passed.
+[Affine media fixture](../Tests/Browser/Native/affine-media.html)
+
+The Windows x64 D3D11 build used V `4478fc4` and MinGW GCC 16.2.0 in one C
+unit with `-prod -no-prod-options`. Its executable SHA-256 was
+`12fc85b42316160d4bf1d10e0ee6907630b14b62a12f59f6dec0c8d2d28343a0`.
+The earlier affine fixture capture uploaded the poster 19 times. The updated
+build uploaded it once in Windows 11 QEMU. Both documents matched at SHA-256
+`b50fa8f4e71cd65b9f041623456a351d1ad7ee71e95ab36621e6fdc1854285fa`.
+The browser and 3 GiB job guard exited zero. The macOS source check passed.
+Hardware frame timings remain unmeasured.
+
 ## Shared affine draws for decoded images
 
 Portable replaced images now use the same GG textured quad as affine canvas

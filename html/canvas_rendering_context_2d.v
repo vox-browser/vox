@@ -333,7 +333,7 @@ pub fn html_canvas_element_set_canvas_content_dirty(element &dom.HTMLCanvasEleme
 	// The compact bridge can replace the bitmap's bytes directly before
 	// reporting the draw, in addition to the ordinary 2D raster entry points.
 	if mut bitmap := state.surface.bitmap() {
-		bitmap.canvas_pixels_changed()
+		bitmap.mark_pixels_changed()
 	}
 	state.dirty = true
 }

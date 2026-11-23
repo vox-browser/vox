@@ -156,7 +156,7 @@ fn (mut context OffscreenCanvasRenderingContext2D) paint_canvas_path(path Canvas
 	if painted {
 		mutable_bitmap.alpha_type = 2
 		mutable_bitmap.native_rows_are_top_down = true
-		mutable_bitmap.canvas_pixels_changed()
+		mutable_bitmap.mark_pixels_changed()
 	}
 }
 
@@ -306,7 +306,7 @@ fn (mut context OffscreenCanvasRenderingContext2D) paint_canvas_glyph_run(run &p
 	if painted {
 		mutable_bitmap.alpha_type = 2
 		mutable_bitmap.native_rows_are_top_down = true
-		mutable_bitmap.canvas_pixels_changed()
+		mutable_bitmap.mark_pixels_changed()
 	}
 	return painted
 }
@@ -502,6 +502,6 @@ fn (mut context OffscreenCanvasRenderingContext2D) paint_canvas_bitmap_command(o
 	if painted {
 		mutable_bitmap.alpha_type = 2
 		mutable_bitmap.native_rows_are_top_down = true
-		mutable_bitmap.canvas_pixels_changed()
+		mutable_bitmap.mark_pixels_changed()
 	}
 }

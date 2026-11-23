@@ -46,25 +46,25 @@ fn test_canvas_upload_revision_tracks_writes_and_same_size_replacement() {
 	mut canvas := OffscreenCanvas.create(4, 4) or { panic(err) }
 	mut context := canvas.create_2d_context(none) or { panic(err) }
 	bitmap := canvas.bitmap() or { panic('missing canvas surface') }
-	initial := bitmap.canvas_upload_revision()
-	assert initial != 0 && bitmap.canvas_upload_revision() == initial
+	initial := bitmap.upload_revision()
+	assert initial != 0 && bitmap.upload_revision() == initial
 	context.fill_rect(0, 0, 4, 4)
-	filled := bitmap.canvas_upload_revision()
+	filled := bitmap.upload_revision()
 	assert filled != 0 && filled != initial
 	assert voidptr(canvas.bitmap() or { panic('missing painted surface') }) == voidptr(bitmap)
 	image_data := context.create_image_data(1, 1, none) or { panic(err) }
 	context.put_image_data(image_data, 0, 0)
-	patched := bitmap.canvas_upload_revision()
+	patched := bitmap.upload_revision()
 	assert patched != 0 && patched != filled
 	context.clear_rect(0, 0, 4, 4)
-	cleared := bitmap.canvas_upload_revision()
+	cleared := bitmap.upload_revision()
 	assert cleared != 0 && cleared != patched
-	assert bitmap.clone().canvas_upload_revision() == 0
+	assert bitmap.clone().upload_revision() == 0
 	canvas.set_width(4) or { panic(err) }
 	reset := canvas.bitmap() or { panic('missing reset surface') }
 	assert reset.width == bitmap.width && reset.height == bitmap.height
-	assert reset.canvas_upload_revision() != 0 && reset.canvas_upload_revision() != cleared
-	assert bitmap.canvas_upload_revision() == cleared
+	assert reset.upload_revision() != 0 && reset.upload_revision() != cleared
+	assert bitmap.upload_revision() == cleared
 }
 
 fn test_tainted_html_canvas_rejects_serialization() {

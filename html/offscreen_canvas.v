@@ -64,7 +64,7 @@ fn create_transparent_canvas_bitmap(width u32, height u32) !&dom.Bitmap_ {
 		alpha_type: 1
 		data: []u8{len: int(byte_length)}
 	}
-	bitmap.canvas_pixels_changed()
+	bitmap.mark_pixels_changed()
 	return bitmap
 }
 
@@ -398,7 +398,7 @@ pub fn (mut context OffscreenCanvasRenderingContext2D) put_image_data_dirty(imag
 			}
 		}
 	}
-	mutable_bitmap.canvas_pixels_changed()
+	mutable_bitmap.mark_pixels_changed()
 }
 
 pub fn (mut context OffscreenCanvasRenderingContext2D) draw_image_internal(request CanvasDrawImageRequest) ! {

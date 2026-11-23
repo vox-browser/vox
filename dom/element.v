@@ -1214,7 +1214,7 @@ pub mut:
 	// final; ensure_pixels() fills `data` once, when something reads it.
 	pixel_decoder_ BitmapPixelDecoder = unsafe { nil }
 mut:
-	canvas_upload_revision_ u64
+	upload_revision_ u64
 }
 
 // Fills `bitmap.data` (pitch × height bytes) from retained encoded pixels.

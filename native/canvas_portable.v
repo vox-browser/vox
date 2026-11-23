@@ -20,7 +20,7 @@ struct PortableCanvasImage {
 	height int
 	nearest bool
 	video_frame painting.VideoFrameResourceIdentity
-	canvas_revision u64
+	bitmap_revision u64
 }
 
 struct PortableBitmapStream {
@@ -49,14 +49,14 @@ fn (mut app BrowserApp) portable_bitmap_texture(stream PortableBitmapStream) &gg
 	}
 	// Each upload replaces both keys. Canvas, posters and video can share a
 	// slot across frames, and untracked bitmaps always upload their pixels.
-	revision := if disable_portable_canvas_upload_reuse { u64(0) } else { bitmap.canvas_upload_revision() }
+	revision := if disable_portable_canvas_upload_reuse { u64(0) } else { bitmap.upload_revision() }
 	needs_upload := if stream.video_frame.source != 0 {
 		slot.video_frame != stream.video_frame
 	} else {
-		revision == 0 || slot.canvas_revision != revision
+		revision == 0 || slot.bitmap_revision != revision
 	}
 	slot.video_frame = stream.video_frame
-	slot.canvas_revision = revision
+	slot.bitmap_revision = revision
 	if index < app.portable_canvas_images.len { app.portable_canvas_images[index] = slot } else { app.portable_canvas_images << slot }
 	platform.leave_persistent(persistent)
 	if needs_upload {
