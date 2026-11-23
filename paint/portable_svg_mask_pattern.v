@@ -9,6 +9,17 @@ struct PortableSVGMaskTileBudget {
 mut:
 	pixels int = portable_svg_group_max_pixels
 	depth  int
+	last   PortableSVGMaskTileReuse
+}
+
+// The caller owns the style throughout replay. Use its address only for identity.
+struct PortableSVGMaskTileReuse {
+	style      voidptr
+	pattern    cpuraster.CanvasPattern
+	metric     PortableSVGTileStrokeSpace
+	pixel_cost int
+	depth      int
+	luminance  bool
 }
 
 struct PortableSVGMaskPattern {
@@ -100,6 +111,33 @@ fn (mut app BrowserApp) raster_svg_mask_pattern(style &painting.SVGPatternPaintS
 	sx := width / tile.width
 	sy := height / tile.height
 	if !math.is_finite(f64(f32(sx))) || !math.is_finite(f64(f32(sy))) { return none }
+	metric := if style.has_non_scaling_stroke {
+		// Child samples land in the parent bitmap. Stroke widths use the
+		// physical device metric reached through the parent's linear map.
+		device := if parent_space == unsafe { nil } {
+			raster
+		} else {
+			parent := parent_space.to_device
+			multiply_paint_transforms([f64(parent[0]), f64(parent[1]), f64(parent[2]),
+				f64(parent[3]), 0.0, 0.0]!, raster)
+		}
+		portable_svg_tile_stroke_space(device, sx, sy)?
+	} else {
+		PortableSVGTileStrokeSpace{}
+	}
+	bounds := painting.IntRect{0, 0, int(width), int(height)}
+	if budget.last.style == voidptr(style)
+		&& budget.last.pattern.width == bounds.width && budget.last.pattern.height == bounds.height
+		&& budget.last.depth == budget.depth && budget.last.luminance == luminance
+		&& budget.last.metric == metric {
+		// Charge the original subtree cost, including child tiles.
+		if budget.last.pixel_cost > budget.pixels { return none }
+		budget.pixels -= budget.last.pixel_cost
+		if portable_svg_raster_diagnostics {
+			eprintln('VOX_SVG_TILE_RASTER reuse=hit depth=${budget.depth} tile=${bounds.width}x${bounds.height}')
+		}
+		return PortableSVGMaskPattern{pattern: budget.last.pattern, cacheable: true}
+	}
 	// Tile operations are already normalized into the cell's coordinate
 	// system. The shader maps the raster back to the exact SVG cell period.
 	operations := layout.compatibility_lower_svg_mask_operations(list.operations,
@@ -113,38 +151,44 @@ fn (mut app BrowserApp) raster_svg_mask_pattern(style &painting.SVGPatternPaintS
 	local := multiply_paint_transforms(pattern_transform, [1 / sx, 0.0, 0.0, 1 / sy, tile.x, tile.y]!)
 	matrix32 := [f32(local[0]), f32(local[1]), f32(local[2]), f32(local[3]), f32(local[4]), f32(local[5])]!
 	if !matrix32.all(math.is_finite(f64(it))) { return none }
-	bounds := painting.IntRect{0, 0, int(width), int(height)}
 	stroke_space := if style.has_non_scaling_stroke {
-		// Child samples land in the parent bitmap. Stroke widths use the
-		// physical device metric reached through the parent's linear map.
-		device := if parent_space == unsafe { nil } {
-			raster
-		} else {
-			parent := parent_space.to_device
-			multiply_paint_transforms([f64(parent[0]), f64(parent[1]), f64(parent[2]),
-				f64(parent[3]), 0.0, 0.0]!, raster)
-		}
-		space := portable_svg_tile_stroke_space(device, sx, sy)?
-		&PortableSVGTileStrokeSpace{...space}
+		&metric
 	} else {
 		unsafe { nil }
 	}
+	pixels_before := budget.pixels
 	budget.pixels -= bounds.width * bounds.height
 	budget.depth++
-	defer { budget.depth-- }
-	mut pixels := []u8{len: bounds.width * bounds.height * 4}
-	cacheable := app.raster_svg_mask_layers(mut pixels, bounds.width * 4, bounds, &mask,
-		0, 0, 1, stroke_space, mut budget)?
-	return PortableSVGMaskPattern{
-		pattern: cpuraster.CanvasPattern{
-			pixels: pixels
-			width: bounds.width
-			height: bounds.height
-			pitch: bounds.width * 4
-			premultiplied: true
-			nearest: true
-			transform: matrix32
-		}
-		cacheable: cacheable
+	if portable_svg_raster_diagnostics {
+		eprintln('VOX_SVG_TILE_RASTER reuse=miss depth=${budget.depth - 1} tile=${bounds.width}x${bounds.height}')
 	}
+	mut pixels := []u8{len: bounds.width * bounds.height * 4}
+	result := app.raster_svg_mask_layers(mut pixels, bounds.width * 4, bounds, &mask,
+		0, 0, 1, stroke_space, mut budget)
+	budget.depth--
+	cacheable := result?
+	pattern := cpuraster.CanvasPattern{
+		pixels: pixels
+		width: bounds.width
+		height: bounds.height
+		pitch: bounds.width * 4
+		premultiplied: true
+		nearest: true
+		transform: matrix32
+	}
+	if cacheable && !disable_portable_svg_raster_cache {
+		if info := style.shared_tile_info() {
+			if !info.has_images {
+				budget.last = PortableSVGMaskTileReuse{
+					style: voidptr(style)
+					pattern: pattern
+					metric: metric
+					pixel_cost: pixels_before - budget.pixels
+					depth: budget.depth
+					luminance: luminance
+				}
+			}
+		}
+	}
+	return PortableSVGMaskPattern{pattern: pattern, cacheable: cacheable}
 }

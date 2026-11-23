@@ -19,6 +19,7 @@ from test_linux_browser import (check_svg_color_matrix_adjustments_tile_pixels,
                                 check_svg_nested_tile_device_pixels,
                                 check_svg_offset_tile_pixels,
                                 check_svg_opacity_filter_tile_pixels, check_svg_pattern_tile_image_pixels,
+                                check_svg_shared_tile_pixels,
                                 check_svg_tile_fill_stroke_pixels, rendered_png_rows,
                                 serve_delayed_svg_pattern_tile)
 
@@ -665,7 +666,8 @@ def main():
             inputs.extend(device_fixtures)
         if args.pattern_standalone_only:
             bitmap = fixture.with_name("svg-pattern-tile-image-strokes.html")
-            inputs.append(bitmap)
+            shared_tile = fixture.with_name("svg-pattern-tile-shared-fill-stroke.html")
+            inputs.extend((bitmap, shared_tile))
         offset_fixtures = []
         if args.pattern_offset_only:
             offset_fixtures = [(fixture.with_name(f"svg-pattern-tile-offset-{name}.html"), units)
@@ -700,6 +702,9 @@ def main():
             check_pattern(binary, pattern, Path(temporary))
             if args.pattern_standalone_only:
                 check_pattern_tile_with_delayed_image(binary, bitmap, Path(temporary))
+                check_pattern_tile_variants(binary, shared_tile, Path(temporary),
+                                            ready="data-pattern-ready", check_pixels=check_svg_shared_tile_pixels,
+                                            original_sample=False, edited_sample=True)
             for offset_fixture, units in offset_fixtures:
                 check_pattern_tile_variants(binary, offset_fixture, Path(temporary),
                                             ready="data-offset-ready",

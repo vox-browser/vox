@@ -34,3 +34,21 @@ fn test_nested_pattern_paints_keep_their_coordinates_when_the_outer_target_is_tr
 		assert keys[0] != 0 && keys[0] == keys[1]
 	}
 }
+
+fn test_svg_fill_and_stroke_share_the_resolved_pattern() {
+	source := $embed_file('@VMODROOT/Tests/Browser/Native/svg-pattern-tile-shared-fill-stroke.html').to_string()
+	mut document := html.parse_document(source)
+	defer { document.finalize() }
+	root := layout_document_typed_in_viewport(document, 320, 160)
+	paths := root.paint_commands().filter(it.kind == 'draw_svg_path')
+	assert paths.len == 1
+	path := paths[0].svg()
+	fill := path.fill_pattern or { panic('outer fill') }
+	stroke := path.stroke_pattern or { panic('outer stroke') }
+	assert voidptr(fill) == voidptr(stroke)
+	tile := fill.tile_display_list or { panic('outer tile') }
+	assert tile.operations.len == 1
+	inner_fill := tile.operations[0].fill_pattern or { panic('inner fill') }
+	inner_stroke := tile.operations[0].stroke_pattern or { panic('inner stroke') }
+	assert voidptr(inner_fill) == voidptr(inner_stroke)
+}

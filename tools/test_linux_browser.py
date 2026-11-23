@@ -2402,7 +2402,20 @@ def check_svg_component_transfer_tile_pixels(rows, channels, scale, marker, edit
                 assert actual == expected, (scale, left + x, top + y, actual.hex(), expected.hex())
 
 
+def check_svg_shared_tile_pixels(rows, channels, scale, marker, edited):
+    stroke = "6666ff" if edited else "66ff66"
+    samples = ((5, 14, "ffffff"), (6, 14, stroke), (9, 14, "ff0000"),
+               (13, 14, "00ff00"), (9, 23, "6666ff" if edited else "ff6666"),
+               (54, 14, stroke), (57, 14, "ff0000"))
+    for x, y, expected in samples:
+        row = rows[marker + (8 + y) * scale]
+        start = x * scale * channels
+        actual = row[start:start + 3].hex()
+        assert actual == expected, (scale, x, y, actual, expected)
+
+
 def check_svg_tile_browser(binary, artifacts, temporary, name, *, ready=None, groups=None,
+                           reuse_depths=(),
                            check_edited=functools.partial(check_svg_tile_fill_stroke_pixels,
                                                           first_stripe=(255, 255, 0))):
     fixture = Path(__file__).resolve().parents[1] / f"Tests/Browser/Native/svg-pattern-tile-{name}.html"
@@ -2432,6 +2445,9 @@ def check_svg_tile_browser(binary, artifacts, temporary, name, *, ready=None, gr
             check_svg_nested_tile_device_pixels(rows, channels, 1, marker)
         hits = set(re.findall(r"^VOX_SVG_GROUP cache=hit start=(\d+)", log, re.M))
         assert len(hits) == (expected_groups if mode == "cached" else 0), log
+        if reuse_depths:
+            reused = {int(depth) for depth in re.findall(r"^VOX_SVG_TILE_RASTER reuse=hit depth=(\d+)", log, re.M)}
+            assert reused == (set(reuse_depths) if mode == "cached" else set()), log
         documents.append(rows[marker:height - 24])
     assert documents[0] == documents[1], f"Caching changed the pixels of {fixture.stem}"
     if ready:
@@ -3280,6 +3296,9 @@ def main():
         if args.pattern_standalone_only:
             check_svg_tile_browser(binary, artifacts, temporary, "standalone-strokes",
                                    ready="data-standalone-pattern-ready")
+            check_svg_tile_browser(binary, artifacts, temporary, "shared-fill-stroke",
+                                   groups=1, ready="data-pattern-ready", reuse_depths=(0, 1),
+                                   check_edited=functools.partial(check_svg_shared_tile_pixels, edited=True))
             check_svg_pattern_tile_image_browser(binary, artifacts, temporary)
             return
         if args.pattern_filter_only:
