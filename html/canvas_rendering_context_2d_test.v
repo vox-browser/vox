@@ -267,13 +267,14 @@ fn test_canvas_drawing_requests_a_repaint_of_the_element() {
 		panic(err)
 	}
 	canvas := unsafe { &dom.HTMLCanvasElement(element) }
-	paintable := &dom.Paintable{}
+	mut paintable := &dom.Paintable{}
 	mut canvas_node := unsafe { &dom.Node(element.as_node()) }
 	canvas_node.set_layout_node(&dom.LayoutNode{
 		paintables_: [paintable]
 	})
 	mut context := html_canvas_element_get_context(canvas, '2d', none) or { panic(err) }
-	assert !paintable.needs_repaint
+	assert paintable.needs_repaint
+	paintable.needs_repaint = false
 
 	context.fill_rect(0, 0, 2, 2)
 	assert paintable.needs_repaint
