@@ -4314,6 +4314,50 @@ The production build volume ran out of space during compilation.
 Candidate browser runtime on macOS and Windows and frame timings
 remain open.
 
+### Reusing SVG pattern tiles after bitmap delivery
+
+In `15e481fb2`, the shared rasterizer can reuse a completed bitmap
+tile within the same replay. A pending image in the tile or any
+descendant keeps it out of the cache. The rasterizer still charges
+the original pixel budget on a hit.
+
+The [delayed bitmap fixture](../Tests/Browser/Native/svg-pattern-tile-shared-bitmap.html)
+uses the same pattern for fill and stroke at two nesting depths.
+The Linux traces showed both tiles incomplete while the response
+was pending. The first complete replay with reuse rasterized one
+40 × 40 tile and one 16 × 16 tile. With reuse disabled it rasterized
+two outer and four inner tiles. That reduced work in those tile
+surfaces from 4,224 to 1,856 pixels. Both Linux modes produced an
+identical document.
+
+Fresh macOS launches matched the published control at 1× and 2×
+and confirmed the nested tile hit after the response arrived.
+The 1× Linux and macOS crops differed by one channel level on
+eight pixels at the translucent stroke edges.
+
+| Capture | RGB crop SHA-256 |
+| --- | --- |
+| Linux 1× | `d3564dd4fc30f31e9a30b3b2d5b28af065639fb7d1ae8ee2c3eff485ed43b926` |
+| macOS 1× | `52795750957250ca7eb35edb2a04b310a780c823845204983bcc5d7cde25e332` |
+| macOS 2× | `150fb00f8c03ae2b8415e175e7dee6583821bbba2fdaeed84eb768ec1c8f2927` |
+
+All 30 Linux and 16 macOS fixtures passed, including the earlier
+offset and standalone cases. The 23 Python driver tests and the
+macOS, Windows D3D11 and Windows OpenGL source checks passed.
+The Windows nested bitmap runner also includes the delayed reuse
+fixture.
+
+Both candidate builds used single-unit Clang `-O0`. Linux used a
+deferred link and the existing LibJS function-pointer diagnostic
+allowance. Its executable SHA-256 was
+`767ddc09f6ab3ea34dc298424044c5be67e168944d5bda2a380a1eb3028d8f08`.
+The private macOS build used the prepared prealloc compiler and
+checkout adblock assets. Its executable SHA-256 was
+`dc04484c3c8465886f896f398e87ff01e879c6415d3f4e6bd2202fad3b58751a`.
+The published macOS control was `9717e8165`. Inputs stayed fixed and
+browser and runtime guard exits were zero. Windows runtime and
+production frame timing remain open.
+
 ## Sharing the portable SVG fallback with Windows
 
 The standard Windows D3D11 window now uses the same CPU raster and GG texture
