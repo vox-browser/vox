@@ -3992,6 +3992,72 @@ including the corner. A separable bilinear sample over a
 transparent border would produce corner coverage 96. Those
 edge semantics remain open for shared fractional translation.
 
+### Blending SourceAlpha directly into the tile clip
+
+In `62ee845ab`, the shared renderer blends black directly into
+the clipped region when restoring a SourceAlpha offset layer.
+The restore worker reads each source alpha byte and uses the
+existing full-opacity source-over blend. It intersects the filter
+clip with the actual row band, so it skips both writes to the
+source and blending outside the visible rectangle.
+
+The focused canvas layer tests passed on macOS and Linux. They
+compare against a separately cropped black layer with different
+source and destination strides, a nonzero row origin, partially
+outside and empty clips, and enough pixels to use raster workers.
+Aliased and truncated buffers are rejected before any write.
+All nine offset fixtures passed on macOS and on Linux with group
+caching enabled and disabled. The SourceAlpha crops with row
+bands enabled matched the existing Brave digests in both states
+at 1× on Linux and at 1× and 2× on macOS. All 23 Python driver
+tests and both Windows source checks passed. Windows runtime
+validation remains open.
+
+The macOS diagnostic used the same SourceAlpha fixtures as the
+preceding measurement. Both single-unit Clang `-O0` builds ran
+fresh processes with private profiles and caches, a one-second
+settle, and a 1024 × 600 document crop at 1×. JavaScript and
+whole-frame raster reuse were disabled. Each trial completed
+48 stationary callbacks with 42 commands and a median of 3 KiB
+allocated per callback. Separate traces recorded 1,880 hits
+with one tile and 1,880 misses with ten tiles. The decoded
+replay crops and fixture hashes matched the prior SourceAlpha
+cohort. [SourceAlpha validation](#sourcealpha-offsets-in-shared-svg-tiles)
+
+| Workload and pair | Control / candidate median replay, µs | Control / candidate p95, µs | Control / candidate maximum, µs |
+| --- | ---: | ---: | ---: |
+| Cached 1 | 818.5 / 784.5 | 864 / 836 | 1227 / 1076 |
+| Cached 2 | 773 / 791.5 | 899 / 846 | 1082 / 858 |
+| Cache pressure 1 | 2447 / 1619.5 | 2706 / 1810 | 2926 / 2005 |
+| Cache pressure 2 | 2491 / 1631 | 2644 / 1788 | 2762 / 2292 |
+
+Ten-tile medians fell 33.8% and 34.5%. Cached medians
+varied by pair. One-minute load ranged from 7.30 to 8.02
+on 18 logical CPUs. The candidate also includes CoreText
+face flag change `0cf538911`, which landed between builds.
+These browser timings measure synthetic replay after layout.
+Optimized production timing remains open.
+
+A separate same-executable Clang `-O2` diagnostic isolated the
+restore operation. It compared clearing the crop and RGB before
+the ordinary restore with the new clipped alpha blend. Both
+rendered identical buffers after one restore and after every
+60,000-restore trial of a 40 × 23 band with a 13 × 8 clip.
+The alternating mean times were 2,961 / 216 ns and
+3,016 / 193 ns per restore.
+
+The macOS control and candidate executable SHA-256 values were
+`24bdc7a6a0e1b6e90c13ad490290af1700d0c4ced229c6db7c957da8b721de2d`
+and `6ccbe4304ca27f1f8a44fbe337b61f79d1bb65616d59f910c62b255aee6e7eea`.
+The aarch64 Linux candidate was
+`7ed3b8cadd46d1f9936df8d63ea81416fc5c50d092e24e2e0a3c6e71b7759b32`
+using the deferred Clang `-O0` link and the existing LibJS
+function-pointer diagnostic allowance. The isolated probe
+executable SHA-256 was
+`590fc3052b1f4484535ad9f1729a4632975b8be07b157dab0d1bec3028cfc02e`.
+Executable and fixture hashes stayed fixed during the runs.
+Browser, probe, and corresponding guard exits were zero.
+
 ## Sharing the portable SVG fallback with Windows
 
 The standard Windows D3D11 window now uses the same CPU raster and GG texture
