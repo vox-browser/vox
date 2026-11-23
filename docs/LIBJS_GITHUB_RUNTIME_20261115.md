@@ -11965,3 +11965,17 @@ chooses ciphers in its own order.
   portable C, but Homebrew OpenSSL nets only about 55M on this page), Core
   Image's first backdrop filter (Metal context creation; replacing it would
   change filter pixels), and allocator `madvise`/`munmap` calls.
+- A 7-pair cohort on bundle `90bbd3ac` (all three), host load averages 4-6,
+  2 px in every Vox run; the control switches off the descriptor cache and
+  the `fvar` weight range (the face-flags change has no switch):
+
+  | Arm | Median | Min | Max | PNG median |
+  | --- | --- | --- | --- | --- |
+  | candidate | 19.609B | 19.097B | 20.239B | 2,544 ms |
+  | control | 19.847B | 19.557B | 20.031B | 2,549 ms |
+  | Brave | 20.947B | 20.809B | 22.012B | 1,917 ms |
+
+  The medians differ by the census's 0.24B; pair deltas were +0.50B,
+  +0.21B, −0.29B, −0.75B, −0.05B, −0.05B and −0.74B. Every Vox run used
+  fewer instructions than every Brave run; the 10% criterion needs a Vox
+  maximum of at most 18.73B against this Brave minimum.
