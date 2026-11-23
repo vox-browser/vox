@@ -11,17 +11,17 @@ fn loading_throttle(cost i64) LoadFrameThrottle {
 	}
 }
 
-fn test_expensive_loading_frame_waits_for_three_times_its_cost() {
+fn test_expensive_loading_frame_waits_for_eight_times_its_cost() {
 	state := loading_throttle(100 * time.millisecond)
 	now := 2100 * time.millisecond
-	assert state.deadline(now, 7) == 2300 * time.millisecond
-	assert state.deadline(2300 * time.millisecond, 7) == 0
-	assert state.deadline(2400 * time.millisecond, 7) == 0
+	assert state.deadline(now, 7) == 2800 * time.millisecond
+	assert state.deadline(2800 * time.millisecond, 7) == 0
+	assert state.deadline(2900 * time.millisecond, 7) == 0
 }
 
 fn test_loading_frame_gap_is_capped() {
 	state := loading_throttle(400 * time.millisecond)
-	assert state.deadline(2100 * time.millisecond, 7) == 2500 * time.millisecond
+	assert state.deadline(2100 * time.millisecond, 7) == 3500 * time.millisecond
 }
 
 fn test_cheap_frames_new_documents_and_late_frames_are_not_throttled() {
@@ -39,7 +39,7 @@ fn test_recent_input_keeps_the_normal_frame_cadence() {
 	state.last_input_ns = 1500 * time.millisecond
 	assert state.deadline(2100 * time.millisecond, 7) == 0
 	state.last_input_ns = 900 * time.millisecond
-	assert state.deadline(2100 * time.millisecond, 7) == 2300 * time.millisecond
+	assert state.deadline(2100 * time.millisecond, 7) == 2800 * time.millisecond
 }
 
 // A frame ended at 2000 ms with the main thread's CPU clock at 700 ms.
@@ -64,7 +64,7 @@ fn test_quiet_window_spans_about_one_display_frame() {
 
 fn test_idle_page_releases_its_frame_after_a_quiet_window() {
 	mut state := quiet_throttle()
-	// The gap lasts until 2300 ms; nothing ran and nothing is in flight.
+	// With a deadline at 2300 ms, nothing ran and nothing is in flight.
 	assert !state.quiet(quiet_start + quiet_window - time.millisecond, quiet_cpu + quiet_budget, false)
 	assert state.wait(quiet_start + quiet_window - 2 * time.millisecond, 2300 * time.millisecond) == 2 * time.millisecond
 	assert state.quiet(quiet_start + quiet_window, quiet_cpu + quiet_budget, false)

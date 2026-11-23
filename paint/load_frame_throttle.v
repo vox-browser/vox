@@ -12,13 +12,18 @@ const load_frame_throttle_diagnostics = os.getenv('VOX_LOAD_RENDER_THROTTLE_DIAG
 // each frame relays out and repaints it. A frame below this cost is not
 // throttled; one above it waits until the main thread has had several times
 // its cost for scripts and network callbacks, as Chromium stops starting main
-// frames faster than a busy main thread can service them.
+// frames faster than a busy main thread can service them. Eight times its cost
+// (at most 1.5 s) leaves hydration about nine tenths of the main thread: at
+// three times (at most 500 ms) GitHub's repository page took long enough to
+// hydrate that its own data responses arrived first, and React regenerated the
+// whole overview on the client. A quiet page still renders its deferred frame
+// after one quiet display frame (below).
 const load_frame_throttle_min_cost_ns = 20 * time.millisecond
 // VOX_LOAD_RENDER_THROTTLE_RATIO and VOX_LOAD_RENDER_THROTTLE_MAX_GAP_MS
 // override the defaults for measurements.
-const load_frame_throttle_cost_ratio = i64(os.getenv_opt('VOX_LOAD_RENDER_THROTTLE_RATIO') or { '3' }.int())
+const load_frame_throttle_cost_ratio = i64(os.getenv_opt('VOX_LOAD_RENDER_THROTTLE_RATIO') or { '8' }.int())
 const load_frame_throttle_max_gap_ns = i64(os.getenv_opt('VOX_LOAD_RENDER_THROTTLE_MAX_GAP_MS') or {
-	'500'
+	'1500'
 }.int()) * time.millisecond
 // Only the loading phase after a document's first paint, without recent input:
 // scrolling, typing and animation keep their normal frame cadence.
