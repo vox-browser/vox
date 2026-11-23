@@ -241,9 +241,10 @@ video posters. Pass `--canvas-only` to run those checks separately. The
 runner records captures, logs, guard receipts and input hashes.
 
 Run the same runner with `--gg-svg-d3d11` against the standard D3D11
-browser. It enables `VOX_GG_SVG=1` for solid, linear-gradient and concentric
-radial SVG fills and strokes. It checks cache hits, paint order, gradient
-ramps and portable fallback for off-center focal gradients.
+browser. It enables `VOX_GG_SVG=1` for solid, linear-gradient, concentric
+radial and strictly contained focal SVG fills and strokes. It checks cache
+hits, paint order, gradient ramps and portable fallback for tangent focal
+circles.
 
 Use `--gg-svg` against an `--opengl` browser with the
 staged Mesa WGL DLLs and `GALLIUM_DRIVER=llvmpipe`. It checks Canvas draws

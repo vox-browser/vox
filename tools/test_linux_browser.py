@@ -617,7 +617,11 @@ def check_gg_svg_solid_fills(binary, artifacts, temporary, fixture, run_capture=
       <stop offset="1" stop-color="blue"/></radialGradient>
     <radialGradient id="radial-stroke" gradientUnits="userSpaceOnUse" cx="80.5" cy="94.5" r="62"><stop stop-color="red"/>
       <stop offset="1" stop-color="blue"/></radialGradient>
-    <radialGradient id="focal" gradientUnits="userSpaceOnUse" cx="32" cy="6" r="30" fx="26" fy="5" fr="2"><stop stop-color="red"/>
+    <radialGradient id="focal-fill" gradientUnits="userSpaceOnUse" cx="203.5" cy="95.5" r="24" fx="188.5" fy="95.5" fr="4"><stop stop-color="red"/>
+      <stop offset="1" stop-color="blue"/></radialGradient>
+    <radialGradient id="focal-stroke" gradientUnits="userSpaceOnUse" cx="32" cy="6" r="30" fx="26" fy="5" fr="2"><stop stop-color="red"/>
+      <stop offset="1" stop-color="blue"/></radialGradient>
+    <radialGradient id="tangent" gradientUnits="userSpaceOnUse" cx="195.5" cy="38.5" r="24" fx="171.5" fy="38.5"><stop stop-color="red"/>
       <stop offset="1" stop-color="blue"/></radialGradient>
   </defs>
   <path d="M180 48H228V68H180Z" fill="url(#linear)"/>
@@ -625,8 +629,10 @@ def check_gg_svg_solid_fills(binary, artifacts, temporary, fixture, run_capture=
   <path d="M180 86H228" fill="none" stroke="#ed8a24" stroke-width="6"/>
   <path d="M24 90H72V98H24Z" fill="url(#radial-fill)"/>
   <path d="M80 94H142" fill="none" stroke="url(#radial-stroke)" stroke-width="6"/>
-  <path d="M180 92H228V98H180Z" fill="url(#focal)"/>
-  <path d="M12 3H72" fill="none" stroke="url(#focal)" stroke-width="4"/>
+  <path d="M180 92H228V98H180Z" fill="url(#focal-fill)"/>
+  <path d="M12 3H72" fill="none" stroke="url(#focal-stroke)" stroke-width="4"/>
+  <path d="M175 30H223V35H175Z" fill="url(#tangent)"/>
+  <path d="M173 39H223" fill="none" stroke="url(#tangent)" stroke-width="4"/>
 </svg>"""), encoding="utf-8")
         fixture = mixed
     documents = []
@@ -679,18 +685,21 @@ def check_gg_svg_solid_fills(binary, artifacts, temporary, fixture, run_capture=
             assert bool(strokes) == uses_gpu, log
             assert any(" cache=hit " in line for line in strokes) == (
                 label in ("gg-svg", "gg-svg-decoded-bounds")), log
-            for kind in (1, 2):
-                for stroke in (0, 1):
-                    draws = [line for line in gpu_draws if f" stroke={stroke} " in line
-                             and line.endswith(f" gradient={kind}")]
-                    assert bool(draws) == uses_gpu, log
-                    assert any(" cache=hit " in line for line in draws) == (
-                        label in ("gg-svg", "gg-svg-decoded-bounds")), log
-            for operation, radial_size in (("FILL", "48x8"), ("STROKE", "88x26")):
+            for size, stroke, kind in (("48x20", 0, 1), ("74x26", 1, 1), ("48x8", 0, 2),
+                                       ("88x26", 1, 2), ("48x6", 0, 2), ("78x18", 1, 2)):
+                draws = [line for line in gpu_draws if f" draw={size} " in line
+                         and f" stroke={stroke} " in line and line.endswith(f" gradient={kind}")]
+                assert bool(draws) == uses_gpu, log
+                assert any(" cache=hit " in line for line in draws) == (
+                    label in ("gg-svg", "gg-svg-decoded-bounds")), log
+            for operation, radial_sizes, tangent_size in (("FILL", ("48x8", "48x6"), "48x5"),
+                                                          ("STROKE", ("88x26", "78x18"), "68x18")):
                 cpu_draws = [line for line in lines if line.startswith(f"VOX_CPU_SVG_{operation} ")]
                 radial = [line for line in cpu_draws if " gradient=2 " in line]
-                assert any(f" draw={radial_size} " in line for line in radial) != uses_gpu, log
-                assert any(f" draw={radial_size} " not in line for line in radial), log  # Focal fallback.
+                for size in radial_sizes:
+                    assert any(f" draw={size} " in line for line in radial) != uses_gpu, log
+                assert any(f" draw={tangent_size} " in line for line in radial), log
+                assert not any(f" draw={tangent_size} " in line for line in gpu_draws), log
                 assert any(" gradient=1 " in line for line in cpu_draws) != uses_gpu, log
             left, right = pixel(183, top + 54), pixel(224, top + 54)
             assert left[0] > 220 and left[2] < 35 and right[2] > 220 and right[0] < 35, (left, right)
@@ -699,11 +708,17 @@ def check_gg_svg_solid_fills(binary, artifacts, temporary, fixture, run_capture=
             for first, last in ((24, 70), (80, 139)):
                 left, right = pixel(first, top + 94), pixel(last, top + 94)
                 assert left[0] > 249 and left[2] < 5 and right[2] > 235 and right[0] < 20, (left, right)
+            for first, last, y in ((188, 227, 95), (26, 69, 3)):
+                assert pixel(first, top + y) == b"\xff\x00\x00", (first, y, pixel(first, top + y))
+                assert pixel(last, top + y) == b"\x00\x00\xff", (last, y, pixel(last, top + y))
+            midpoint = pixel(204, top + 95)
+            assert all(abs(a - b) <= 2 for a, b in zip(midpoint, (168, 0, 87))), midpoint
             assert pixel(192, top + 86) == b"\xed\x8a\x24", "Solid stroke is missing"
         documents.append(rows[top:top + 100])
     if backend == "d3d11":
         assert documents[1] == documents[2] == documents[3], "D3D11 gradient cache changed document pixels"
-        ramps = ((180, 48, 228, 68), (180, 72, 228, 78), (24, 90, 72, 98), (80, 91, 142, 97))
+        ramps = ((12, 1, 72, 5), (180, 48, 228, 68), (180, 72, 228, 78),
+                 (24, 90, 72, 98), (80, 91, 142, 97), (180, 92, 228, 98))
         for y, (cpu, gpu) in enumerate(zip(documents[0], documents[1])):
             end = 0
             for x0, y0, x1, y1 in ramps:
@@ -714,7 +729,7 @@ def check_gg_svg_solid_fills(binary, artifacts, temporary, fixture, run_capture=
                     assert max(abs(a - b) for a, b in zip(cpu[left:right], gpu[left:right])) <= 2, (y, x0)
                     end = right
             assert cpu[end:] == gpu[end:], y
-        print("PASS: D3D11 linear and concentric radial SVG ramps, cache parity and focal fallback", flush=True)
+        print("PASS: D3D11 linear and radial SVG ramps, cache parity and tangent fallback", flush=True)
     else:
         assert all(document == documents[0] for document in documents[1:]), "GG changed the SVG document pixels"
         print(f"PASS: cached and uncached {backend} Canvas SVG replay and GL 4.2 fallback match the portable reference", flush=True)

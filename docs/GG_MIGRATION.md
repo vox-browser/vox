@@ -1,13 +1,35 @@
 # Migrating from Skia to vlib/gg
 
+## Contained focal SVG gradients on Windows D3D11
+
+The opt-in Windows Canvas route uses the existing radial shader for SVG
+fills and strokes whose off-center focal circle fits strictly inside the
+outer circle. The browser compares center distance against the difference
+in radii before allocating a texture and uses the portable rasterizer for
+tangent or noncontained circles. Eligible draws share the existing GPU
+texture cache. This uses the same shader and paint record as concentric
+radial gradients.
+
+Four fresh Windows 11 QEMU browser processes exited zero under the 3 GiB
+guard. The V `4478fc4` and MinGW GCC 16.2.0 build used `-prod -no-prod-options`.
+Its SHA-256 stayed `eff0798ba8ab36cc8c2594f695e4fdf2eddda55301d85b7654e85b839517f2bd`
+throughout the replay. The full-cache, texture-cache-only and uncached
+runs produced identical 800 × 100 document crops. Both contained focal
+ramps differed from portable output by at most one level per RGB channel.
+The linear and concentric radial ramps matched the preceding D3D11 capture
+byte for byte, and the tangent fallback matched portable output exactly.
+The logs confirmed cache hits for both focal draws and portable rendering
+for both tangent draws. The 23 replay-tool tests passed. Hardware frame
+timings remain unmeasured.
+
 ## Concentric radial SVG gradients on Windows D3D11
 
 The opt-in Windows Canvas route renders concentric radial SVG fills and
 strokes with up to eight effective stops through the shared paint records and
 texture cache. Radial shaders use both transformed coordinates, the existing
 radial parameters and the shared dither lookup. Linear shaders retain a
-single gradient coordinate. The browser uses the portable rasterizer for
-off-center focal gradients.
+single gradient coordinate. At this stage off-center focal gradients used
+the portable rasterizer.
 
 The guarded Canvas smoke passed on macOS Metal, Linux Mesa OpenGL and
 Windows 11 D3D11 under QEMU. It checked both axes of the radial ramp, an
