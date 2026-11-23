@@ -510,7 +510,8 @@ const checked_interpreter_operands = os.getenv('VOX_LIBJS_CHECKED_OPERANDS') != 
 // place of the generated assembly interpreter. Ordinary calls allocate their
 // own checked frames; upstream inline-call frames remain untranslated.
 pub fn (mut vm VM) run_executable(mut frame ExecutionContext, executable &Executable, entry_point u32, limits ExecutionLimits) !Value {
-	executable.validate(frame.argument_count)!
+	vm.validate_execution(executable, frame.argument_count)!
+	$if test { vm.profile_executable_for_testing(executable, &frame) }
 	if entry_point >= executable.bytecode_length { return error('Entry point out of range') }
 	required := u64(executable.registers_and_locals_count) + u64(executable.constants.len) +
 		frame.argument_count

@@ -17,6 +17,8 @@ pub:
 	construct_behaviour NativeConstructPointer = unsafe { nil }
 mut:
 	iterator_step NativeIteratorStep = unsafe { nil }
+	intrinsic_regexp_flag ?RegExpFlags
+	intrinsic_regexp_exec bool
 }
 
 pub type NativeConstructPointer = fn (mut vm VM, new_target &Object) !&Object
@@ -148,12 +150,18 @@ pub fn (function &NativeFunction) has_constructor() bool {
 }
 
 pub fn (mut function NativeFunction) internal_call(mut vm VM, this_value Value, arguments []Value) !Value {
+	return function.call_in_frame(mut vm, this_value, arguments, unsafe { nil })
+}
+
+// Internal callers may discard the result of a branded builtin. Keep its
+// original function identity, realm, native frame and error/stack checks.
+fn (mut function NativeFunction) call_in_frame(mut vm VM, this_value Value, arguments []Value, internal_behaviour NativeFunctionPointer) !Value {
 	mut stack := vm.interpreter_stack()
 	mark := stack.top()
 	defer { stack.deallocate(mark) }
 	function.push_call_frame(mut vm, mut stack, this_value, arguments)!
 	defer { vm.pop_current_context() }
-	behaviour := if index := function.raw_function_index {
+	behaviour := if internal_behaviour != unsafe { nil } { internal_behaviour } else if index := function.raw_function_index {
 		vm.native_function(index, .raw_native_function)
 	} else {
 		function.behaviour

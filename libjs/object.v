@@ -213,6 +213,7 @@ pub mut:
 	typed_array          ?&TypedArray
 mut:
 	property_lookup_hints ?&PropertyLookupHints
+	indexed_properties ?&IndexedProperties
 }
 
 // 10.1.12 OrdinaryObjectCreate ( proto [ , additionalInternalSlotsList ] ), https://tc39.es/ecma262/#sec-ordinaryobjectcreate
@@ -224,16 +225,20 @@ pub fn Object.create(realm &Realm, prototype ?&Object) &Object {
 }
 
 fn (object &Object) find_own_property(key PropertyName) int {
+	if use_indexed_properties() && object.indexed_properties != none { return object.find_indexed_property(key) }
 	$if test {
 		if property_lookup_hints_disabled_for_test { return object.find_own_property_linear(key) }
 	}
-	if object.properties.len >= property_lookup_hint_minimum {
+	if object.properties.len >= property_lookup_minimum() {
 		return object.find_own_property_with_hints(key)
 	}
 	return object.find_own_property_linear(key)
 }
 
 fn (object &Object) find_own_property_linear(key PropertyName) int {
+	if key.kind == .string_key && use_string_key_scans() {
+		return object.find_own_string_property(key.string_value)
+	}
 	for index, property in object.properties {
 		if property.key.equals(key) {
 			return index
@@ -478,6 +483,16 @@ pub fn (object &Object) internal_get(mut vm VM, key PropertyName, receiver Value
 		} else {
 			if parent := object.prototype {
 				if vm.did_reach_stack_space_limit() { return vm.throw_error_type(.internal_error, .call_stack_size_exceeded) }
+				if found := vm.indexed_prototype_property(parent, key) {
+					if found.position == -1 { return found.holder.internal_get(mut vm, key, receiver) }
+					if found.position == -2 { return js_undefined() }
+					inherited := found.holder.properties[found.position].value
+					if !inherited.is_accessor() { record_direct_property_read(); return inherited }
+					if use_direct_accessor_dispatch() {
+						vm.record_direct_accessor_dispatch(false)
+						return found.holder.get_accessor_value(mut vm, key, receiver, inherited.as_accessor())
+					}
+				}
 				return parent.internal_get(mut vm, key, receiver)
 			}
 			return js_undefined()
@@ -530,7 +545,9 @@ fn (object &Object) get_accessor_value(mut vm VM, key PropertyName, receiver Val
 			if cached := object.get_engine_private_property(cached_key) { return cached.value }
 		}
 	}
-	result := call(mut vm, getter, receiver, []Value{})!
+	result := vm.intrinsic_regexp_flag_value(getter, receiver) or {
+		call(mut vm, getter, receiver, []Value{})!
+	}
 	if receiver_uses_holder_cache {
 		if cached_key := accessor.cached_value_key {
 			current_index := object.find_own_property(key)
@@ -665,6 +682,7 @@ pub fn (mut object Object) internal_delete(key PropertyName) bool {
 		return false
 	}
 	object.properties.delete(index)
+	object.reindex_deleted_property()
 	if mut arguments := object.arguments_object {
 		if key.is_number() { arguments.parameter_map.delete(key.number) }
 	}
@@ -770,5 +788,6 @@ pub fn (mut object Object) define_direct_property(key PropertyName, value Value,
 		return
 	}
 	object.properties << property
+	object.index_appended_property()
 	object.count_appended_array_property(key)
 }

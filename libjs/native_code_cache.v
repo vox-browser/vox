@@ -60,6 +60,8 @@ pub mut:
 	compiler_invocations u64
 	compile_ms           f64
 	load_ms              f64
+	accelerated_key_bytes u64
+	in_place_encoded_key_bytes u64
 	last_error           string
 }
 
@@ -79,13 +81,15 @@ fn native_cache_abi() !string {
 	} $else {
 		// Invalidate machine code when the ABI or generated fast-path semantics
 		// change, without invalidating it for unrelated browser/docs commits.
-		return sha256.hexhash('native-disk-v2:${os.user_os()}:${os.uname().machine}:${native_primitive_layout_identity()}:' +
+		return sha256.hexhash('native-disk-v3:${native_cache_runtime_mode()}:${os.user_os()}:${os.uname().machine}:${native_primitive_layout_identity()}:' +
 			$embed_file('@VMODROOT/libjs/native_tier.v').to_string() +
 			$embed_file('@VMODROOT/libjs/native_dynamic_dispatch.v').to_string() +
 			$embed_file('@VMODROOT/libjs/native_property_read.v').to_string() +
 			$embed_file('@VMODROOT/libjs/native_property_length.v').to_string() +
 			$embed_file('@VMODROOT/libjs/native_property_index.v').to_string() +
+			$embed_file('@VMODROOT/libjs/native_binding_read.v').to_string() +
 			$embed_file('@VMODROOT/libjs/native_code_cache.v').to_string() +
+			$embed_file('@VMODROOT/libjs/native_key_encoding.v').to_string() +
 			$embed_file('@VMODROOT/libjs/native_generated_code_cache.v').to_string() +
 			$embed_file('@VMODROOT/libjs/instruction.v').to_string() +
 			$embed_file('@VMODROOT/libjs/value.v').to_string() +
@@ -96,6 +100,11 @@ fn native_cache_abi() !string {
 			$embed_file('@VMODROOT/libjs/utf16_ascii_storage.v').to_string() +
 			$embed_file('@VMODROOT/libjs/operand.v').to_string())
 	}
+}
+
+fn native_cache_runtime_mode() string {
+	$if test { return 'test' }
+	return 'production'
 }
 
 // The caller supplies a private executable cache, not the HTTP resource cache.
@@ -156,10 +165,6 @@ pub fn (vm &VM) native_code_cache_is_idle() bool {
 	return vm.run_executable_depth == 0 && vm.external_budget_depth == 0 && !vm.running_promise_jobs
 }
 
-fn native_key_u32(mut bytes []u8, value u32) {
-	bytes << [u8(value), u8(value >> 8), u8(value >> 16), u8(value >> 24)]
-}
-
 fn (mut cache NativeCodeCache) key(executable &Executable) string {
 	parsed := executable.parsed_source
 	if parsed == unsafe { nil } || executable.native_cache_scope == '' { return '' }
@@ -171,7 +176,7 @@ fn (mut cache NativeCodeCache) key(executable &Executable) string {
 		return sha256.hexhash(cache.abi + ':' + code)
 	}
 	source_hash := cache.source_hashes[voidptr(parsed)] or {
-		hash := sha256.hexhash(parsed.source_text)
+		hash := native_cache_digest_string(parsed.source_text)
 		cache.source_hashes[voidptr(parsed)] = hash
 		hash
 	}
@@ -194,9 +199,13 @@ fn (mut cache NativeCodeCache) key(executable &Executable) string {
 	} else {
 		''
 	}
-	return sha256.hexhash(cache.abi + ':' + source_hash + ':' +
-		sha256.hexhash(filename) + ':' + executable.native_cache_scope + ':' +
-		sha256.sum(bytes).hex())
+	if use_native_cache_digests() && u64(bytes.len) <= 0xffffffff {
+		cache.stats.accelerated_key_bytes += u64(bytes.len)
+	}
+	if use_native_key_encoding() { cache.stats.in_place_encoded_key_bytes += u64(bytes.len) }
+	return native_cache_digest_string(cache.abi + ':' + source_hash + ':' +
+		native_cache_digest_string(filename) + ':' + executable.native_cache_scope + ':' +
+		native_cache_digest_bytes(bytes))
 }
 
 fn valid_native_digest(value string) bool {
@@ -224,7 +233,7 @@ fn native_library_digest(path string) !string {
 }
 
 fn native_library_digest_in_workspace(path string) !string {
-	return sha256.hexhash(os.read_file(path)!)
+	return native_cache_digest_string(os.read_file(path)!)
 }
 
 fn (mut cache NativeCodeCache) retain_entry(loaded NativeLoadedEntry) NativeEntry {

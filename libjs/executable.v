@@ -84,6 +84,8 @@ pub mut:
 mut:
 	validation_snapshot ?&ValidationSnapshot
 	validation_successes u32
+	compiler_validation ?CompilerValidation
+	register_name_index ?&FunctionRegisterNameIndex
 	regexp_literal_programs []RegExpLiteralProgram
 }
 

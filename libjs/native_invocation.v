@@ -6,6 +6,9 @@ fn (mut stack InterpreterStack) acquire_native_invocation(vm &VM, executable &Ex
 	}
 	invocation := stack.native_calls[stack.native_depth]
 	unsafe { *invocation = NativeInvocation{ vm: vm, executable: executable, property_read_step: voidptr(native_property_step), property_length_step: voidptr(native_length_read), property_index_step: voidptr(native_index_read), primitive_type_names: if vm.native_type_names.len == 7 { vm.native_type_names.data } else { unsafe { nil } } } }
+	if vm.native_binding_executable_owned(executable) {
+		unsafe { invocation.binding_read_step = voidptr(native_binding_read) }
+	}
 	stack.native_depth++
 	return invocation
 }

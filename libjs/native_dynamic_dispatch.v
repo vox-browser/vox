@@ -141,9 +141,31 @@ fn (mut vm VM) resolve_compact_read(name Utf16String, strict bool, callee bool, 
 					environment = current.outer_environment()
 					continue
 				}
+				if use_direct_declarative_reads() {
+					index := current.find_binding_index(name)
+					if index >= 0 {
+						value := current.get_binding_value_direct(mut vm, index)!
+						vm.record_direct_declarative_binding_read()
+						vm.record_compact_reference_read()
+						return value, js_undefined()
+					}
+					environment = current.outer_environment()
+					continue
+				}
 			} else if mut current is DeclarativeEnvironment {
 				if current.bindings.len == 0 {
 					if mut tier := vm.native_tier { if tier.diagnostics { tier.activity.empty_binding_environments_skipped++ } }
+					environment = current.outer_environment()
+					continue
+				}
+				if use_direct_declarative_reads() {
+					index := current.find_binding_index(name)
+					if index >= 0 {
+						value := current.get_binding_value_direct(mut vm, index)!
+						vm.record_direct_declarative_binding_read()
+						vm.record_compact_reference_read()
+						return value, js_undefined()
+					}
 					environment = current.outer_environment()
 					continue
 				}

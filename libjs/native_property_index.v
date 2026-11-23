@@ -74,7 +74,7 @@ fn native_index_read(opaque voidptr, opaque_plan voidptr, values voidptr, output
 }
 
 fn native_index_position(object &Object, key PropertyName) int {
-	if object.properties.len < property_lookup_hint_minimum { return object.find_own_property_linear(key) }
+	if object.properties.len < property_lookup_minimum() { return object.find_own_property_linear(key) }
 	// Reuse an existing hint, validating its live key. A miss falls back instead
 	// of allocating a hint table in this nonthrowing native operation.
 	$if test { if property_lookup_hints_disabled_for_test { return -1 } }

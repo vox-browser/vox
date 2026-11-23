@@ -54,18 +54,28 @@ fn initialize_regexp_intrinsics(mut vm VM, mut realm Realm) {
 	realm.regexp_prototype = prototype
 	replacement := NativeFunction.create(mut vm, &realm, realm.function_prototype, regexp_symbol_replace, 2, PropertyName.from_symbol(vm.well_known_symbol_replace()), none)
 	prototype.define_direct_property(PropertyName.from_symbol(vm.well_known_symbol_replace()), Value.from_object(replacement.object), attribute_writable | attribute_configurable)
-	install_intrinsic_method(mut vm, &realm, mut prototype, 'exec', 1, regexp_prototype_exec)
+	mut exec_function := NativeFunction.create(mut vm, &realm, realm.function_prototype, regexp_prototype_exec, 1, PropertyName.from_str('exec'), none)
+	exec_function.intrinsic_regexp_exec = true
+	prototype.define_direct_property(PropertyName.from_str('exec'), Value.from_object(exec_function.object), attribute_writable | attribute_configurable)
 	install_intrinsic_method(mut vm, &realm, mut prototype, 'test', 1, fn (mut vm VM) !Value {
 		object := vm.this_value()
 		if !object.is_object() { return vm.throw_error(.type_error, 'RegExp test requires an object') }
 		text := vm.argument(0).to_primitive_string(mut vm)!
-		return Value.from_bool(!regexp_exec(mut vm, object.as_object(), text)!.is_null())
+		return Value.from_bool(!regexp_exec_for_test(mut vm, object.as_object(), text)!.is_null())
 	})
+	flag_keys := ['hasIndices','global','ignoreCase','multiline','dotAll','unicode','unicodeSets','sticky'].map(PropertyName.from_str(it))
 	for name in ['source', 'flags', 'global', 'ignoreCase', 'multiline', 'dotAll', 'unicode', 'unicodeSets', 'sticky', 'hasIndices'] {
-		prototype.define_native_accessor(mut vm, &realm, PropertyName.from_str(name), fn [name] (mut vm VM) !Value {
+		mut getter := NativeFunction.create(mut vm, &realm, realm.function_prototype, fn [name, flag_keys] (mut vm VM) !Value {
 			if name == 'flags' {
 				if !vm.this_value().is_object() { return vm.throw_error(.type_error, 'RegExp flags requires an object') }
 				object := vm.this_value().as_object()
+				if use_intrinsic_regexp_flags() {
+					mut bits := u8(0)
+					for index, key in flag_keys {
+						if object.get(mut vm, key)!.to_boolean() { bits |= u8(1 << index) }
+					}
+					return Value.from_string(vm.create_string_from_str(regexp_flag_spellings[int(bits)]))
+				}
 				mut flags := ''
 				for index, key in ['hasIndices','global','ignoreCase','multiline','dotAll','unicode','unicodeSets','sticky'] {
 					if object.get(mut vm, PropertyName.from_str(key))!.to_boolean() { flags += ['d','g','i','m','s','u','v','y'][index] }
@@ -88,7 +98,20 @@ fn initialize_regexp_intrinsics(mut vm VM, mut realm Realm) {
 				else { RegExpFlags.has_indices }
 			}
 			return Value.from_bool(regex.flags.has(flag))
-		}, unsafe { nil }, attribute_configurable, realm.function_prototype)
+		}, 0, PropertyName.from_str(name), 'get')
+		if name !in ['source', 'flags'] {
+			getter.intrinsic_regexp_flag = match name {
+				'global' { RegExpFlags.global }
+				'ignoreCase' { RegExpFlags.ignore_case }
+				'multiline' { RegExpFlags.multiline }
+				'dotAll' { RegExpFlags.dot_all }
+				'unicode' { RegExpFlags.unicode }
+				'unicodeSets' { RegExpFlags.unicode_sets }
+				'sticky' { RegExpFlags.sticky }
+				else { RegExpFlags.has_indices }
+			}
+		}
+		prototype.define_direct_accessor(PropertyName.from_str(name), getter.object, none, attribute_configurable)
 	}
 	match_function := NativeFunction.create(mut vm, &realm, realm.function_prototype, regexp_symbol_match, 1, PropertyName.from_symbol(vm.well_known_symbol_match()), none)
 	prototype.define_direct_property(PropertyName.from_symbol(vm.well_known_symbol_match()), Value.from_object(match_function.object), attribute_writable | attribute_configurable)
@@ -139,12 +162,16 @@ fn regexp_exec(mut vm VM, object &Object, text &PrimitiveString) !Value {
 }
 
 fn (mut regex RegExpObject) builtin_exec(mut vm VM, text &PrimitiveString) !Value {
+	return regex.builtin_exec_result(mut vm, text, true)
+}
+
+fn (mut regex RegExpObject) builtin_exec_slots(mut vm VM, text &PrimitiveString, materialize_result bool) ![]i32 {
 	vm.consume_execution_budget()!
 	mut object := regex.object
 	mut start := object.get(mut vm, PropertyName.from_str('lastIndex'))!.to_length(mut vm)!
 	stateful := regex.flags.has(.global) || regex.flags.has(.sticky)
 	if !stateful { start = 0 }
-	mut slots := []i32{len: int(regex.engine.program.capture_count + 1) * 2, init: -1}
+	mut slots := []i32{len: if materialize_result { int(regex.engine.program.capture_count + 1) * 2 } else { 2 }, init: -1}
 	mut matched := false
 	if start <= u64(text.utf16.len()) {
 		// Execution is synchronous and the engine only reads the immutable
@@ -155,9 +182,16 @@ fn (mut regex RegExpObject) builtin_exec(mut vm VM, text &PrimitiveString) !Valu
 	}
 	if !matched {
 		if stateful { object.set(mut vm, PropertyName.from_str('lastIndex'), Value.from_i32(0), .yes)! }
-		return js_null()
+		return []i32{}
 	}
 	if stateful { object.set(mut vm, PropertyName.from_str('lastIndex'), Value.from_i32(slots[1]), .yes)! }
+	return slots
+}
+
+fn (mut regex RegExpObject) builtin_exec_result(mut vm VM, text &PrimitiveString, materialize_result bool) !Value {
+	slots := regex.builtin_exec_slots(mut vm, text, materialize_result)!
+	if slots.len == 0 { return js_null() }
+	if !materialize_result { return Value.from_object(regex.object) }
 	mut values := []Value{}
 	for index := 0; index < slots.len; index += 2 {
 		values << if slots[index] < 0 { js_undefined() } else { Value.from_string(vm.create_string(utf16_string_from_code_units(text.utf16.data[int(slots[index])..int(slots[index + 1])]))) }

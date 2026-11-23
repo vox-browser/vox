@@ -134,6 +134,9 @@ fn (function &ECMAScriptFunction) parameter_in_register(index int) bool {
 }
 
 fn (function &ECMAScriptFunction) variable_in_register(name Utf16String) bool {
+	if use_register_call_metadata() {
+		if found := function.indexed_register_name(name) { return found }
+	}
 	return function.register_bindings.any(it.name == name)
 }
 

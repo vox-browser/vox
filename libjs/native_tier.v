@@ -56,6 +56,25 @@ pub mut:
 	native_index_steps u64
 	binding_lookup_cache_hits u64
 	binding_lookup_cache_misses u64
+	regexp_flag_getter_reads u64
+	direct_declarative_binding_reads u64
+	regex_suffix_searches u64
+	regex_suffix_skipped_positions u64
+	regex_suffix_rejections u64
+	small_property_hint_hits u64
+	indexed_property_hits u64
+	indexed_property_misses u64
+	string_key_scans u64
+	direct_frame_clears u64
+	direct_call_bindings u64
+	regexp_test_results u64
+	empty_regexp_replacements u64
+	validation_arity_hits u64
+	compiler_validation_hits u64
+	indexed_prototype_lookup_hits u64
+	register_call_metadata_reads u64
+	native_binding_steps u64
+	regexp_replace_results u64
 }
 
 pub struct NativeCodeStats {
@@ -78,6 +97,7 @@ struct NativeInvocation {
 	property_read_step voidptr
 	property_length_step voidptr
 	property_index_step voidptr
+	binding_read_step voidptr
 mut:
 	failure ?IError
 	ended   bool
@@ -95,6 +115,21 @@ pub fn (mut vm VM) diagnose_native_code(enabled bool) !NativeCodeActivity {
 		bindings := diagnose_binding_lookup_for_testing(enabled)
 		previous.binding_lookup_cache_hits = bindings.hits
 		previous.binding_lookup_cache_misses = bindings.misses
+		suffix := diagnose_regex_suffix_starts_for_testing(enabled)
+		previous.regex_suffix_searches = suffix.searches
+		previous.regex_suffix_skipped_positions = suffix.skipped_positions
+		previous.regex_suffix_rejections = suffix.rejections
+		previous.small_property_hint_hits = diagnose_small_property_hints_for_testing(enabled)
+		indexed := diagnose_indexed_properties_for_testing(enabled)
+		previous.indexed_property_hits = indexed.hits
+		previous.indexed_property_misses = indexed.misses
+		previous.string_key_scans = diagnose_string_key_scans_for_testing(enabled)
+		previous.direct_frame_clears = diagnose_direct_frame_clears_for_testing(enabled)
+		previous.direct_call_bindings = diagnose_direct_call_bindings_for_testing(enabled)
+		previous.regexp_test_results = diagnose_regexp_test_results_for_testing(enabled)
+		previous.empty_regexp_replacements = diagnose_empty_regexp_replacements_for_testing(enabled)
+		previous.validation_arity_hits = diagnose_validation_arity_for_testing(enabled)
+		previous.register_call_metadata_reads = diagnose_register_call_metadata_for_testing(enabled)
 	}
 	tier.activity = NativeCodeActivity{}
 	return previous
@@ -296,6 +331,7 @@ fn native_source(executables []&Executable) !(string, int) {
 	source.writeln(native_property_helpers())
 	source.writeln(native_length_helpers())
 	source.writeln(native_index_helpers())
+	source.writeln(native_binding_helpers())
 	mut fast_count := 0
 	for index, executable in executables {
 		mut has_properties := false
@@ -307,7 +343,8 @@ fn native_source(executables []&Executable) !(string, int) {
 		for offset, instruction in executable.instructions {
 			length_fast := native_length_instruction(instruction, executable, u32(offset))
 			index_fast := native_index_instruction(instruction, executable, u32(offset))
-			fast := if length_fast != '' { length_fast } else if index_fast != '' { index_fast } else { native_fast_instruction(instruction, executable)! }
+			binding_fast := native_binding_instruction(instruction, executable, u32(offset))
+			fast := if length_fast != '' { length_fast } else if index_fast != '' { index_fast } else if binding_fast != '' { binding_fast } else { native_fast_instruction(instruction, executable)! }
 			source.writeln('L${offset}:;')
 			if fast != '' {
 				fast_count++

@@ -179,6 +179,11 @@ fn Runtime.create_with_global_kind(engine Engine, global_kind int) &Runtime {
 	persistent := platform.enter_persistent()
 	defer { platform.leave_persistent(persistent) }
 	mut agent_vm := libjs.VM.create()
+	if engine == .libjs {
+		// Author code cannot mutate the compiler's internal executable records.
+		// Embedding diagnostics that edit them must disable this ownership mode.
+		agent_vm.use_immutable_compiler_executables(true) or { panic(err) }
+	}
 	realm_context := libjs.create_simple_execution_context(mut agent_vm)
 	mut context := unsafe { nil }
 	$if darwin || linux || windows {

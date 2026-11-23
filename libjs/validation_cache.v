@@ -28,6 +28,8 @@ struct ValidationArguments {
 @[heap]
 struct ValidationSnapshot {
 	shape        ValidationShape
+	minimum_arguments u32
+	validated_arguments u32
 	instructions []u8
 	handlers     []u8
 	arguments    []ValidationArguments
@@ -57,7 +59,7 @@ $if test {
 }
 
 fn (executable &Executable) validation_shape(arguments u32) ValidationShape {
-	return ValidationShape{arguments, executable.registers_and_locals_count, executable.local_index_base, executable.bytecode_length, executable.instructions.len, executable.constants.len, executable.local_variable_names.len, executable.identifier_table.len, if executable.parsed_source == unsafe { nil } {
+	return ValidationShape{if use_validation_arity() { u32(0) } else { arguments }, executable.registers_and_locals_count, executable.local_index_base, executable.bytecode_length, executable.instructions.len, executable.constants.len, executable.local_variable_names.len, executable.identifier_table.len, if executable.parsed_source == unsafe { nil } {
 		-1
 	} else {
 		executable.parsed_source.function_table.entries.len
@@ -79,7 +81,9 @@ fn (executable &Executable) reuse_validation(arguments u32) bool {
 		if validation_cache_disabled_for_test { return false }
 	}
 	if snapshot := executable.validation_snapshot {
-		if snapshot.shape == executable.validation_shape(arguments)
+		if arguments >= snapshot.minimum_arguments
+			&& u64(executable.registers_and_locals_count) + u64(executable.constants.len) + u64(arguments) <= 0xffffffff
+			&& snapshot.shape == executable.validation_shape(arguments)
 			&& validation_bytes_equal(snapshot.instructions, executable.instructions.data, executable.instructions.len * int(sizeof(Instruction)))
 			&& validation_bytes_equal(snapshot.handlers, executable.exception_handlers.data, executable.exception_handlers.len * int(sizeof(ExceptionHandlers))) {
 			mut same := true
@@ -91,6 +95,9 @@ fn (executable &Executable) reuse_validation(arguments u32) bool {
 				}
 			}
 			if same {
+				$if test {
+					if validation_arity_diagnostics && use_validation_arity() && arguments != snapshot.validated_arguments { validation_arity_hits++ }
+				}
 				$if test {
 					if validation_cache_diagnostic_for_test { validation_cache_hits_for_test++ }
 				}
@@ -125,6 +132,8 @@ fn (executable &Executable) remember_validation(arguments u32) {
 	}
 	owner.validation_snapshot = &ValidationSnapshot{
 		shape:        executable.validation_shape(arguments)
+		minimum_arguments: executable.minimum_validation_arguments()
+		validated_arguments: arguments
 		instructions: validation_copy_bytes(executable.instructions.data, executable.instructions.len * int(sizeof(Instruction)))
 		handlers:     validation_copy_bytes(executable.exception_handlers.data, executable.exception_handlers.len * int(sizeof(ExceptionHandlers)))
 		arguments:    entries

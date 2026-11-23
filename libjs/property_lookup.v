@@ -1,10 +1,12 @@
 module libjs
 
+import platform
+
 // Ordinary own keys are unique. Keep their insertion-ordered storage authoritative
 // and cache only successful positions, never values, descriptors or absence.
 // Small objects keep the allocation-free linear lookup. Hints are bounded even
 // when an object continually deletes and adds unrelated names.
-const property_lookup_hint_minimum = 16
+const property_lookup_hint_minimum = 8
 // Positions are recorded per key found, so only objects with many accessed
 // keys (global objects, prototypes, bundle registries) reach the bound; a
 // 64-entry table was cleared on nearly every insertion for them.
@@ -27,6 +29,16 @@ $if test {
 	__global property_lookup_hints_diagnostic_for_test bool
 	__global property_lookup_hint_hits_for_test u64
 	__global property_lookup_hint_misses_for_test u64
+	__global small_property_hints_disabled bool
+	__global small_property_hints_diagnostics bool
+	__global small_property_hint_hits u64
+	pub fn set_small_property_hints_for_testing(enabled bool) { small_property_hints_disabled = !enabled }
+	pub fn diagnose_small_property_hints_for_testing(enabled bool) u64 {
+		previous := small_property_hint_hits
+		small_property_hint_hits = 0
+		small_property_hints_diagnostics = enabled
+		return previous
+	}
 
 	// Same-executable control for focused benchmarks; no production setting or
 	// per-lookup environment access. Test processes own their objects/VMs.
@@ -41,6 +53,12 @@ $if test {
 		property_lookup_hint_misses_for_test = 0
 		return previous
 	}
+}
+
+@[inline]
+fn property_lookup_minimum() int {
+	$if test { if small_property_hints_disabled { return 16 } }
+	return property_lookup_hint_minimum
 }
 
 fn property_lookup_hash(key PropertyName) u64 {
@@ -71,6 +89,7 @@ fn (object &Object) find_own_property_with_hints(key PropertyName) int {
 			if index >= 0 && index < object.properties.len
 				&& object.properties[index].key.equals(key) {
 				$if test {
+					if small_property_hints_diagnostics && object.properties.len < 16 { small_property_hint_hits++ }
 					if property_lookup_hints_diagnostic_for_test {
 						property_lookup_hint_hits_for_test++
 					}
@@ -84,6 +103,8 @@ fn (object &Object) find_own_property_with_hints(key PropertyName) int {
 	}
 	index := object.find_own_property_linear(key)
 	if index < 0 { return index }
+	persistent := platform.enter_persistent()
+	defer { platform.leave_persistent(persistent) }
 	mut owner := unsafe { &Object(object) }
 	mut hints := owner.property_lookup_hints or {
 		created := &PropertyLookupHints{}

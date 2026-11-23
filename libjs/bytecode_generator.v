@@ -1,8 +1,8 @@
 module libjs
 
 // Selected paths from Rust/src/bytecode/{generator,codegen}.rs.
-// The V stream uses instruction indices and monotonically allocated registers;
-// upstream's register reuse, caches and packed instruction ABI remain pending.
+// The V stream uses instruction indices. Complete body statements reuse their
+// temporary range; control-flow liveness allocation and packed ABI remain pending.
 // Ordinary functions retain their defining source and compile on first call.
 // Unsupported top-level syntax fails before the program executes.
 struct BytecodeLoop {
@@ -936,12 +936,11 @@ pub fn (mut script Script) compile(mut vm VM) !&Executable {
 	generator.lexical_declarations(program.scope.children, true)!
 	generator.clear_completion()
 	generator.initialize_functions(program.scope.children)
-	for statement in program.scope.children {
-		generator.statement(mut vm, &statement)!
-	}
+	generator.body_statements(mut vm, program.scope.children)!
 	generator.emit(Instruction{ op: .end, lhs: Operand.register(register_accumulator) })
 	generator.executable.bytecode_length = u32(generator.executable.instructions.len)
 	generator.executable.validate(0)!
+	vm.remember_compiler_validation(generator.executable)
 	script.cached_executable = generator.executable
 	return generator.executable
 }

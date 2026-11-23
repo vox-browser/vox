@@ -1,11 +1,9 @@
 // SPDX-License-Identifier: BSD-2-Clause
 module libjs
 
-import math
-
 // RegExpPrototype.cpp::symbol_replace's generic algorithm. Keep RegExpExec,
-// getters, replacement callbacks and substitutions observable; do not bypass
-// them with a host regex/string replacement or a builtin-only shortcut.
+// getters, replacement callbacks and substitutions observable. An intrinsic
+// exec result can use private captures; custom results keep ordinary Gets.
 fn regexp_symbol_replace(mut vm VM) !Value {
 	if !vm.this_value().is_object() { return vm.throw_error(.type_error, 'RegExp replace requires an object') }
 	mut object := vm.this_value().as_object()
@@ -17,35 +15,35 @@ fn regexp_symbol_replace(mut vm VM) !Value {
 	global := flags.data.contains(u16(`g`))
 	unicode := flags.data.contains(u16(`u`)) || flags.data.contains(u16(`v`))
 	if global { object.set(mut vm, PropertyName.from_str('lastIndex'), Value.from_i32(0), .yes)! }
-	mut results := []&Object{}
+	mut results := []RegExpReplaceResult{}
 	for {
 		vm.consume_execution_budget()!
-		result := regexp_exec(mut vm, object, text)!
-		if result.is_null() { break }
-		results << result.as_object()
+		result := regexp_exec_for_replace(mut vm, object, text)!
+		if !result.matched { break }
+		results << result
 		if !global { break }
-		matched := result.as_object().get(mut vm, PropertyName.from_number(0))!.to_primitive_string(mut vm)!
+		matched := result.match_text(mut vm)!
 		if matched.is_empty() {
 			index := object.get(mut vm, PropertyName.from_str('lastIndex'))!.to_length(mut vm)!
 			next := if unicode && index < u64(text.utf16.len()) { index + u64(string_code_point_at(text.utf16, int(index)).code_unit_count) } else { index + 1 }
 			object.set(mut vm, PropertyName.from_str('lastIndex'), Value.from_f64(f64(next)), .yes)!
 		}
 	}
+	// All coercions, exec lookups and lastIndex effects have completed. With
+	// no matches there are no result getters or replacement callbacks to run.
+	if results.len == 0 && use_empty_regexp_replacements() {
+		$if test { if empty_regexp_replacements_diagnostics { empty_regexp_replacements++ } }
+		return Value.from_string(text)
+	}
 	mut output := []u16{}
 	mut next_source := u64(0)
 	for result in results {
 		vm.consume_execution_budget()!
-		length := length_of_array_like(mut vm, result)!
-		count := if length == 0 { u64(0) } else { length - 1 }
-		matched := result.get(mut vm, PropertyName.from_number(0))!.to_primitive_string(mut vm)!
-		position := uint(math.min(math.max(result.get(mut vm, PropertyName.from_str('index'))!.to_integer_or_infinity(mut vm)!, 0), f64(text.utf16.len())))
-		mut captures := []Value{}
-		for index := u64(1); index <= count; index++ {
-			vm.consume_execution_budget()!
-			capture := result.get(mut vm, PropertyName.from_str(index.str()))!
-			captures << if capture.is_undefined() { capture } else { Value.from_string(capture.to_primitive_string(mut vm)!) }
-		}
-		mut named := result.get(mut vm, PropertyName.from_str('groups'))!
+		parts := result.parts(mut vm, uint(text.utf16.len()))!
+		matched := parts.matched
+		position := parts.position
+		captures := parts.captures
+		mut named := parts.named
 		replacement := if functional {
 			mut args := [Value.from_string(matched)]
 			args << captures

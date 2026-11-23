@@ -298,6 +298,8 @@ mut:
 	// Explicit experimental tier; absent in ordinary/browser execution.
 	native_tier ?&NativeTier
 	native_lookup_index ?&NativeLookupIndex
+	compiler_validation_owner ?&CompilerValidationOwner
+	indexed_prototype_cache ?&IndexedPrototypeCache
 	weak_collection_registry ?&WeakCollectionRegistry
 	instruction_budget u64
 	instruction_budget_active bool
@@ -357,6 +359,7 @@ const nanoseconds_min_instant = '-8640000000000000000000'
 const nanoseconds_max_instant = '8640000000000000000000'
 
 pub fn VM.create() &VM {
+	$if test { configure_optimization_control_for_testing() }
 	mut vm := &VM{
 		length_property_key: PropertyName.from_str('length')
 		stack_info_:                StackInfo.new()
@@ -1250,6 +1253,16 @@ pub fn (vm &VM) dump_backtrace() {
 }
 
 pub fn (vm &VM) gather_roots(mut roots HeapRoots) {
+	if owner := vm.compiler_validation_owner { roots.add(voidptr(owner)) }
+	if cache := vm.indexed_prototype_cache {
+		roots.add(voidptr(cache))
+		for entry in cache.slots {
+			for position in 0 .. entry.count {
+				roots.add(voidptr(entry.states[position].object))
+				roots.add(voidptr(entry.states[position].index))
+			}
+		}
+	}
 	if tier := vm.native_tier {
 		for slot in tier.entry_cache { roots.add(voidptr(slot.executable)) }
 	}

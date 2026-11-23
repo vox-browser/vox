@@ -146,7 +146,7 @@ fn (mut function ECMAScriptFunction) compile_with_lexical_registers(mut vm VM, e
 		generator.lexical_declarations(scope.children, false)!
 		generator.initialize_functions(scope.children)
 		if function.data.kind == .generator { generator.emit(Instruction{op: .generator_start}) }
-		for statement in scope.children { generator.statement(mut vm, &statement)! }
+		generator.body_statements(mut vm, scope.children)!
 		generator.emit(Instruction{op: .end, lhs: generator.constant(js_undefined())})
 	}
 	if generator.rejected_lexicals.len > 0 {
@@ -155,6 +155,7 @@ fn (mut function ECMAScriptFunction) compile_with_lexical_registers(mut vm VM, e
 	}
 	generator.executable.bytecode_length = u32(generator.executable.instructions.len)
 	generator.executable.validate(0)!
+	vm.remember_compiler_validation(generator.executable)
 	function.executable = generator.executable
 	function.remember_function_compilation(generator.executable)
 	return generator.executable
@@ -214,11 +215,23 @@ fn (mut function ECMAScriptFunction) call_body(mut vm VM, this_value Value, argu
 		frame.this_value = bound_this
 	}
 	for index, parameter in function.data.parameters {
-		if function.parameter_in_register(index) {
+		if use_register_call_metadata() {
+			if slot := function.parameter_register(index) {
+				value := if index < arguments.len { arguments[index] } else { js_undefined() }
+				frame.values[executable.local_index_base + slot] = value
+				continue
+			}
+		} else if function.parameter_in_register(index) {
 			value := if index < arguments.len { arguments[index] } else { js_undefined() }
 			for binding in function.register_bindings {
 				if binding.parameter_index == index { frame.values[executable.local_index_base + binding.slot] = value }
 			}
+			continue
+		}
+		if simple_parameters && use_direct_call_bindings() && parameter.binding is IdentifierBinding {
+			name := parameter.binding.identifier.name
+			value := if index < arguments.len { arguments[index] } else { js_undefined() }
+			environment.initialize_call_parameter(mut vm, name, value)!
 			continue
 		}
 		for name in parameter_bound_names(parameter) {
@@ -241,6 +254,10 @@ fn (mut function ECMAScriptFunction) call_body(mut vm VM, this_value Value, argu
 	}
 	for binding in if simple_parameters { executable.global_bindings } else { []GlobalBinding{} } {
 		if function.variable_in_register(binding.name) { continue }
+		if use_direct_call_bindings() {
+			environment.initialize_call_var(mut vm, binding.name)!
+			continue
+		}
 		if !environment.has_binding_named(binding.name) {
 			environment.create_mutable_binding(mut vm, binding.name, false)!
 			environment.initialize_binding(mut vm, binding.name, js_undefined(), .normal)!

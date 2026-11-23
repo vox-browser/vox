@@ -92,7 +92,8 @@ fn expose_execution_context(context &ExecutionContext) {
 @[direct_array_access]
 fn (mut context ExecutionContext) clear_for_reuse() {
 	// The loop is bounded by this array's own length; no user code runs here.
-	for index in 0 .. context.values.len { context.values[index] = js_undefined() }
+	if use_direct_frame_clears() { context.clear_reused_values() }
+	else { for index in 0 .. context.values.len { context.values[index] = js_undefined() } }
 	values := context.values
 	environment := context.recycle_call_environment()
 	unsafe { *context = ExecutionContext{ values: values, reusable: true, cached_call_environment: environment } }

@@ -99,6 +99,7 @@ fn (mut module_record SourceTextModule) compile_module(mut vm VM) !&Executable {
 	generator.emit(Instruction{op:.end,lhs:generator.constant(js_undefined())})
 	generator.executable.bytecode_length = u32(generator.executable.instructions.len)
 	generator.executable.validate(0)!
+	vm.remember_compiler_validation(generator.executable)
 	module_record.module_executable = generator.executable
 	return generator.executable
 }

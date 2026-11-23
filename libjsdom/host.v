@@ -326,6 +326,7 @@ fn (mut host Host) method(mut object libjs.Object, name string, length int, call
 }
 
 fn (mut host Host) method_attributes(mut object libjs.Object, name string, length int, callback libjs.NativeFunctionPointer, attributes u8) {
+	object.enable_indexed_properties()
 	mut vm := host.vm
 	method := libjs.NativeFunction.create(mut vm, host.realm, host.realm.function_prototype, callback, f64(length), libjs.PropertyName.from_str(name), none)
 	object.define_direct_property(libjs.PropertyName.from_str(name), libjs.Value.from_object(method.object), attributes)
@@ -337,6 +338,7 @@ fn (mut host Host) accessor(mut object libjs.Object, name string, getter libjs.N
 }
 
 fn (mut host Host) accessor_attributes(mut object libjs.Object, name string, getter libjs.NativeFunctionPointer, setter libjs.NativeFunctionPointer, attributes u8) {
+	object.enable_indexed_properties()
 	mut vm := host.vm
 	get := libjs.NativeFunction.create(mut vm, host.realm, host.realm.function_prototype, getter, 0, libjs.PropertyName.from_str(name), 'get')
 	host.closures << voidptr(getter)

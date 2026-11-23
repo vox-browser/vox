@@ -99,6 +99,7 @@ pub fn (u Utf16String) str() string {
 }
 
 fn (a Utf16String) == (b Utf16String) bool {
+	if use_string_key_scans() { return utf16_equals(a.data, b.data) }
 	return a.data == b.data
 }
 
@@ -118,6 +119,9 @@ fn (a Utf16String) < (b Utf16String) bool {
 fn utf16_equals(a []u16, b []u16) bool {
 	if a.len != b.len {
 		return false
+	}
+	if use_string_key_scans() {
+		return a.len == 0 || a.data == b.data || unsafe { vmemcmp(a.data, b.data, a.len * int(sizeof(u16))) } == 0
 	}
 	for i in 0 .. a.len {
 		if a[i] != b[i] {
