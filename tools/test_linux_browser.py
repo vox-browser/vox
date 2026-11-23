@@ -2478,8 +2478,20 @@ def check_svg_equivalent_pattern_pixels(rows, channels, scale, marker):
         assert actual == expected, (scale, x, y, actual, expected)
 
 
+def check_svg_interleaved_pattern_pixels(rows, channels, scale, marker):
+    for offset, (left, right) in enumerate((("ff0000", "00ff00"), ("0000ff", "0000ff"),
+                                           ("ff0000", "00ff00"), ("ffff00", "ffff00"),
+                                           ("0000ff", "0000ff"), ("ffff00", "ffff00"),
+                                           ("ff0000", "00ff00"))):
+        row = rows[marker + (12 + 16 * offset) * scale]
+        for x, expected in ((4, left), (12, right), (68, left)):
+            start = x * scale * channels
+            actual = row[start:start + 3].hex()
+            assert actual == expected, (scale, x, offset, actual, expected)
+
+
 def check_svg_tile_browser(binary, artifacts, temporary, name, *, ready=None, groups=None,
-                           reuse_depths=(), check_pixels=None, run_capture=run_windowed):
+                           reuse_depths=(), child_reuse=None, check_pixels=None, run_capture=run_windowed):
     fixture = Path(__file__).resolve().parents[1] / f"Tests/Browser/Native/svg-pattern-tile-{name}.html"
     expected_groups = groups if groups is not None else (2 if ready else 3)
     if check_pixels is None:
@@ -2510,6 +2522,9 @@ def check_svg_tile_browser(binary, artifacts, temporary, name, *, ready=None, gr
         if reuse_depths:
             reused = {int(depth) for depth in re.findall(r"^VOX_SVG_TILE_RASTER reuse=hit depth=(\d+)", log, re.M)}
             assert reused == (set(reuse_depths) if mode == "cached" else set()), log
+        if child_reuse and mode == "cached":
+            actual = re.findall(r"^VOX_SVG_TILE_RASTER reuse=(\w+) depth=1 tile=16x16\b", log, re.M)
+            assert actual == child_reuse, log
         documents.append(rows[marker:height - 24])
     assert documents[0] == documents[1], f"Caching changed the pixels of {fixture.stem}"
     if ready:
@@ -2522,6 +2537,15 @@ def check_svg_equivalent_pattern_tiles(binary, artifacts, temporary, run_capture
     check_svg_tile_browser(binary, artifacts, temporary, "equivalent-paints", groups=1,
                            reuse_depths=(1,), check_pixels=check_svg_equivalent_pattern_pixels,
                            run_capture=run_capture)
+
+
+interleaved_svg_child_reuse = ["miss", "miss", "hit", "miss", "miss", "hit", "miss"]
+
+
+def check_svg_interleaved_pattern_tiles(binary, artifacts, temporary, run_capture=run_windowed):
+    check_svg_tile_browser(binary, artifacts, temporary, "interleaved-paints", groups=1,
+                           reuse_depths=(1,), child_reuse=interleaved_svg_child_reuse,
+                           check_pixels=check_svg_interleaved_pattern_pixels, run_capture=run_capture)
 
 
 def check_svg_matrix_tiles(binary, artifacts, temporary):
@@ -3360,6 +3384,7 @@ def main():
             return
         if args.pattern_nested_only:
             check_svg_equivalent_pattern_tiles(binary, artifacts, temporary)
+            check_svg_interleaved_pattern_tiles(binary, artifacts, temporary)
             check_svg_tile_browser(binary, artifacts, temporary, "nested-strokes",
                                    ready="data-nested-pattern-ready")
             check_svg_tile_browser(binary, artifacts, temporary, "nested-non-scaling-strokes")
@@ -3443,6 +3468,7 @@ def main():
         check_svg_matrix_tiles(binary, artifacts, temporary)
         check_svg_component_transfer_tiles(binary, artifacts, temporary)
         check_svg_equivalent_pattern_tiles(binary, artifacts, temporary)
+        check_svg_interleaved_pattern_tiles(binary, artifacts, temporary)
         check_svg_tile_browser(binary, artifacts, temporary, "nested-strokes",
                                ready="data-nested-pattern-ready")
         check_svg_tile_browser(binary, artifacts, temporary, "nested-non-scaling-strokes")

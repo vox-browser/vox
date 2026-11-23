@@ -7,9 +7,10 @@ import painting
 
 struct PortableSVGMaskTileBudget {
 mut:
-	pixels int = portable_svg_group_max_pixels
-	depth  int
-	last   PortableSVGMaskTileReuse
+	pixels      int = portable_svg_group_max_pixels
+	depth       int
+	recent_slot int
+	tiles       [2]PortableSVGMaskTileReuse // Both entries borrow pixels from this replay.
 }
 
 struct PortableSVGMaskTileReuse {
@@ -34,6 +35,25 @@ fn (entry &PortableSVGMaskTileReuse) matches_style(style &painting.SVGPatternPai
 	// also depends on the paint's image placement record and decoded resource.
 	info := style.shared_tile_info() or { return false }
 	return !info.has_images
+}
+
+fn (entry &PortableSVGMaskTileReuse) matches(style &painting.SVGPatternPaintStyle,
+	bounds painting.IntRect, depth int, luminance bool, metric PortableSVGTileStrokeSpace) bool {
+	return entry.pattern.width == bounds.width && entry.pattern.height == bounds.height
+		&& entry.depth == depth && entry.luminance == luminance && entry.metric == metric
+		&& entry.matches_style(style)
+}
+
+fn (budget &PortableSVGMaskTileBudget) cached_tile(style &painting.SVGPatternPaintStyle,
+	bounds painting.IntRect, luminance bool, metric PortableSVGTileStrokeSpace) ?int {
+	if budget.tiles[budget.recent_slot].matches(style, bounds, budget.depth, luminance, metric) {
+		return budget.recent_slot
+	}
+	older := 1 - budget.recent_slot
+	if budget.tiles[older].matches(style, bounds, budget.depth, luminance, metric) {
+		return older
+	}
+	return none
 }
 
 struct PortableSVGMaskPattern {
@@ -140,16 +160,16 @@ fn (mut app BrowserApp) raster_svg_mask_pattern(style &painting.SVGPatternPaintS
 		PortableSVGTileStrokeSpace{}
 	}
 	bounds := painting.IntRect{0, 0, int(width), int(height)}
-	if budget.last.pattern.width == bounds.width && budget.last.pattern.height == bounds.height
-		&& budget.last.depth == budget.depth && budget.last.luminance == luminance
-		&& budget.last.metric == metric && budget.last.matches_style(style) {
+	if slot := budget.cached_tile(style, bounds, luminance, metric) {
+		entry := &budget.tiles[slot]
 		// Charge the original subtree cost, including child tiles.
-		if budget.last.pixel_cost > budget.pixels { return none }
-		budget.pixels -= budget.last.pixel_cost
+		if entry.pixel_cost > budget.pixels { return none }
+		budget.pixels -= entry.pixel_cost
+		budget.recent_slot = slot
 		if portable_svg_raster_diagnostics {
 			eprintln('VOX_SVG_TILE_RASTER reuse=hit depth=${budget.depth} tile=${bounds.width}x${bounds.height}')
 		}
-		return PortableSVGMaskPattern{pattern: budget.last.pattern, cacheable: true}
+		return PortableSVGMaskPattern{pattern: entry.pattern, cacheable: true}
 	}
 	// Tile operations are already normalized into the cell's coordinate
 	// system. The shader maps the raster back to the exact SVG cell period.
@@ -192,7 +212,8 @@ fn (mut app BrowserApp) raster_svg_mask_pattern(style &painting.SVGPatternPaintS
 	if cacheable && !disable_portable_svg_raster_cache {
 		// Resource responses are published between replays. A pending image
 		// anywhere in the rendered subtree leaves cacheable false.
-		budget.last = PortableSVGMaskTileReuse{
+		budget.recent_slot = 1 - budget.recent_slot
+		budget.tiles[budget.recent_slot] = PortableSVGMaskTileReuse{
 			// The caller retains every paint style for the life of this replay.
 			style: unsafe { style }
 			pattern: pattern

@@ -17,12 +17,14 @@ from test_linux_browser import (check_svg_color_matrix_adjustments_tile_pixels,
                                 check_svg_component_transfer_tile_pixels,
                                 check_svg_equivalent_pattern_pixels,
                                 check_svg_mask_gradient_pixels,
+                                check_svg_interleaved_pattern_pixels,
                                 check_svg_nested_tile_device_pixels,
                                 check_svg_offset_tile_pixels,
                                 check_svg_opacity_filter_tile_pixels, check_svg_pattern_tile_image_pixels,
                                 check_svg_shared_bitmap_tile_pixels,
                                 check_svg_shared_tile_pixels,
                                 check_svg_tile_fill_stroke_pixels, rendered_png_rows,
+                                interleaved_svg_child_reuse,
                                 serve_delayed_svg_pattern_tile)
 
 
@@ -644,21 +646,21 @@ def check_nested_pattern_device_strokes(binary, fixture, directory):
     print(f"PASS: macOS {fixture.stem} keeps device stroke width and reuses translated tiles")
 
 
-def check_equivalent_pattern_tiles(binary, fixture, directory):
+def check_vector_pattern_tile_reuse(binary, fixture, directory, check_pixels, child_reuse):
     for scale in (1, 2):
         data, log = capture_document(binary, fixture, directory / f"{fixture.stem}-{scale}x",
                                      dict(VOX_GG_SVG_DIAGNOSTICS="1", LADYBIRD_SCREENSHOT_SCALE=str(scale)),
                                      ["--disable-javascript"])
         width, height, channels, rows = rendered_png_rows(data)
         assert (width, height) == (1024 * scale, 600 * scale)
-        check_svg_equivalent_pattern_pixels(rows, channels, scale, 0)
+        check_pixels(rows, channels, scale, 0)
         size = 16 * scale
         child_rasters = [line for line in log.splitlines()
                          if line.startswith("VOX_SVG_TILE_RASTER ") and " depth=1 " in line]
-        raster = f"VOX_SVG_TILE_RASTER reuse=miss depth=1 tile={size}x{size} complete=true"
-        reuse = f"VOX_SVG_TILE_RASTER reuse=hit depth=1 tile={size}x{size}"
-        assert child_rasters == [raster, reuse, raster], log
-    print("PASS: macOS reuses equivalent vector pattern tiles at 1× and 2×")
+        outcomes = {"miss": f"VOX_SVG_TILE_RASTER reuse=miss depth=1 tile={size}x{size} complete=true",
+                    "hit": f"VOX_SVG_TILE_RASTER reuse=hit depth=1 tile={size}x{size}"}
+        assert child_rasters == [outcomes[entry] for entry in child_reuse], log
+    print(f"PASS: macOS {fixture.stem} reuses vector pattern tiles at 1× and 2×")
 
 
 def main():
@@ -725,7 +727,8 @@ def main():
                                ("nested-non-scaling-strokes", "nested-deep-strokes")]
             inputs.extend(device_fixtures)
             equivalent_fixture = fixture.with_name("svg-pattern-tile-equivalent-paints.html")
-            inputs.append(equivalent_fixture)
+            interleaved_fixture = fixture.with_name("svg-pattern-tile-interleaved-paints.html")
+            inputs.extend((equivalent_fixture, interleaved_fixture))
         if args.pattern_standalone_only:
             bitmap = fixture.with_name("svg-pattern-tile-image-strokes.html")
             shared_tile = fixture.with_name("svg-pattern-tile-shared-fill-stroke.html")
@@ -804,7 +807,10 @@ def main():
             for device_fixture in device_fixtures:
                 check_nested_pattern_device_strokes(binary, device_fixture, Path(temporary))
             if args.pattern_nested_only:
-                check_equivalent_pattern_tiles(binary, equivalent_fixture, Path(temporary))
+                check_vector_pattern_tile_reuse(binary, equivalent_fixture, Path(temporary),
+                                                check_svg_equivalent_pattern_pixels, ["miss", "hit", "miss"])
+                check_vector_pattern_tile_reuse(binary, interleaved_fixture, Path(temporary),
+                                                check_svg_interleaved_pattern_pixels, interleaved_svg_child_reuse)
         assert {path: digest(path) for path in inputs} == digests
         return
     mutation = fixture.with_name("svg-gradient-mask-mutation.html")

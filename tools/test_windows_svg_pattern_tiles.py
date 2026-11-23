@@ -10,7 +10,7 @@ import subprocess
 import tempfile
 
 from test_linux_browser import (check_svg_equivalent_pattern_tiles, check_svg_hidden_pattern_tiles_browser,
-                                check_svg_pattern_tile_image_browser)
+                                check_svg_interleaved_pattern_tiles, check_svg_pattern_tile_image_browser)
 
 
 def run_guarded_capture(guard, command, env, log_path):
@@ -65,6 +65,7 @@ def main():
             check_svg_pattern_tile_image_browser(binary, artifacts, temporary, capture, shared=True)
             check_svg_hidden_pattern_tiles_browser(binary, artifacts, temporary, capture)
             check_svg_equivalent_pattern_tiles(binary, artifacts, temporary, capture)
+            check_svg_interleaved_pattern_tiles(binary, artifacts, temporary, capture)
     assert input_hashes(binary, guard) == inputs, "Windows browser or guard inputs changed during capture"
 
 
