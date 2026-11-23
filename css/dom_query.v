@@ -293,6 +293,16 @@ pub fn require_document_selector(document &dom.Document, selector_text string) !
 	}
 }
 
+// Whether every compound of a valid query selector names an element tag that
+// `document` has never seen: then nothing below the document or any connected
+// root matches it (independent_query_tags_are_absent), until the document's
+// local name history gains that name.
+pub fn document_selector_absent_by_name_history(document &dom.Document, selector_text string) bool {
+	plan := document_query_plan(document, selector_text) or { return false }
+	compounds := plan.independent_compounds() or { return false }
+	return independent_query_tags_are_absent(document.as_node(), compounds)
+}
+
 fn parse_query_selector_list(selector_text string) ?SelectorList {
 	return parse_selector_with_parser(selector_text, map[string]bool{})
 }

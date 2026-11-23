@@ -5373,6 +5373,12 @@ pub mut:
 	// Local names are immutable. Keep a conservative history without retaining
 	// elements, so an absent tag can rule out document-wide selector walks.
 	seen_element_local_names_                map[string]u64
+	// Advances whenever seen_element_local_names_ gains a name. A name absent
+	// from the history stays absent while this is unchanged; the cell gives
+	// scripts the same number without a host call (never freed, like
+	// dom_tree_version_cell_).
+	seen_element_local_name_generation_      u64
+	seen_element_local_name_generation_cell_ &u64 = unsafe { nil }
 	seen_element_classes_ map[string]bool
 	seen_element_classes_unknown_ bool
 	seen_element_class_bytes_ int
@@ -6225,7 +6231,30 @@ pub fn (mut d Document) bump_attribute_version() {
 }
 
 pub fn (mut d Document) note_element_local_name(local_name string) {
-	d.seen_element_local_names_[local_name] |= u64(1)
+	d.note_seen_element_local_name(local_name, u64(1))
+}
+
+fn (mut d Document) note_seen_element_local_name(key string, bits u64) {
+	previous := d.seen_element_local_names_[key]
+	d.seen_element_local_names_[key] = previous | bits
+	if previous == 0 {
+		d.seen_element_local_name_generation_++
+		if d.seen_element_local_name_generation_cell_ != unsafe { nil } {
+			unsafe { *d.seen_element_local_name_generation_cell_ = d.seen_element_local_name_generation_ }
+		}
+	}
+}
+
+// The local name history's generation cell, created on first use and current
+// from then on, like dom_tree_version_cell().
+pub fn (mut d Document) seen_element_local_name_generation_cell() &u64 {
+	if d.seen_element_local_name_generation_cell_ == unsafe { nil } {
+		cell := unsafe { &u64(C.calloc(1, sizeof(u64))) }
+		if cell == unsafe { nil } { panic('Local name generation cell allocation failed') }
+		d.seen_element_local_name_generation_cell_ = cell
+	}
+	unsafe { *d.seen_element_local_name_generation_cell_ = d.seen_element_local_name_generation_ }
+	return d.seen_element_local_name_generation_cell_
 }
 
 // Removal may leave a positive entry; only a negative result is a proof.
@@ -6250,7 +6279,7 @@ fn tag_attribute_history_mask(attribute_name string) u64 {
 
 pub fn (mut d Document) note_element_attribute_name(local_name string, attribute_name string) {
 	key := local_name.to_lower()
-	d.seen_element_local_names_[key] |= u64(1) | tag_attribute_history_mask(attribute_name)
+	d.note_seen_element_local_name(key, u64(1) | tag_attribute_history_mask(attribute_name))
 }
 
 pub fn (d &Document) may_have_tag_attribute(local_name string, attribute_name string) bool {
