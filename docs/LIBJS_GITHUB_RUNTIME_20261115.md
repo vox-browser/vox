@@ -12153,3 +12153,66 @@ chooses ciphers in its own order.
   | `VOX_LIBJS_CHECKED_OPERANDS=1` | 35.778B | 35.681B | 35.811B | 3,490 ms |
 
   Every pair differs by 2.44B-2.51B (−6.9%).
+
+**LibJS bytecode, dispatch and calls, 2026-11-23/24.**
+- A standalone interpreter benchmark (private `/tmp` driver over `libjs`,
+  with immutable compiled executables as `browserjs` enables them) showed a
+  trivial function-local loop iteration costing about 3,500 instructions:
+  17 bytecodes, 11 of them `mov`s that copied locals into temporaries or
+  statement completions into the accumulator, and about 200 instructions
+  per bytecode. Stepping through single dispatches with lldb: a `nop` costs
+  64 instructions in `execute_instruction()` (stack protector, seven saved
+  register pairs) and a `mov` about 120, because V emits the opcode `match`
+  as an if-chain that clang lowers to a chain of small jump-table clusters.
+- Landed: `5fa78a5b2` Number fast paths for arithmetic, comparison and
+  bitwise operators; `35a68dee5` reads uncaptured locals in place unless
+  later evaluation might assign them (codegen.rs's
+  `might_contain_assignment_expression`) and drops function-body completion
+  copies (control `VOX_LIBJS_COPY_LOCAL_READS=1`); `1f2bd8b05` dispatches
+  `mov`, jumps, boolean branches and Number arithmetic/comparisons inline in
+  the dispatch loop (control `VOX_LIBJS_SLOW_DISPATCH=1`); `0db447472`
+  builds each body's call plan (parameter slots and environment vars) once
+  instead of scanning register bindings per parameter and hashing every var
+  name per call; `9d56adb5d` tests the most frequent slow-path opcodes first.
+
+  | Benchmark (instructions) | `53314a15b` | `1f2bd8b05` | `9d56adb5d` |
+  | --- | --- | --- | --- |
+  | local `while` loop, 200,000 iterations | 700M | 96M | 95M |
+  | 400,000 calls to 80 functions with 1-80 vars | | 5.89B | 2.67B |
+  | 3,000,000 calls to a 1-argument function | | 10.17B | 9.65B |
+  | mixed script (calls, objects, arrays, strings) | | 1.73B | 1.61B |
+
+  The first column predates the trusted-executable harness; only the loop,
+  which makes no calls, is comparable across all three.
+
+- Interpreted LibJS page loads (`COHORT_VOX_ENGINE=libjs`, both controls
+  set in the control arm), every capture 2 px from the Brave reference:
+
+  | Bundle | Arm | Median | Min | Max | PNG median | Host load |
+  | --- | --- | --- | --- | --- | --- | --- |
+  | `707cce7c` (through `1f2bd8b05`) | candidate | 31.428B | 31.264B | 31.897B | 3,193 ms | 14-17 |
+  | `707cce7c` | control | 33.688B | 33.524B | 33.809B | 3,680 ms | 14-17 |
+  | `8022312d` (through `9d56adb5d`) | candidate | 30.476B | 30.215B | 30.627B | 3,976 ms | 27-35 |
+  | `8022312d` | control | 32.608B | 32.313B | 32.829B | 4,250 ms | 27-35 |
+
+  Five alternating pairs each. In-place locals and inline dispatch save
+  2.1B-2.4B per pair (−6.7%); the call plan and opcode order save another
+  ~0.95B across bundles (−3.0%; the controls moved by 1.08B, as both arms
+  use them). The second cohort ran under heavy host load from other
+  sessions, which shows in the PNG times.
+- A sampled candidate load still spends 34.5% of busy main-thread samples
+  in LibJS. Remaining interpreted costs, stepped on the benchmark: one
+  JS-to-JS call about 2,300 instructions (frame recycling and its
+  `memset`s ~300, V `array.push`/`array.set` helpers ~290,
+  `run_executable()` setup ~380, `call_body()` ~350); an own property read
+  about 350 inside `execute_property_read()` (key conversion, a hash-map
+  probe for objects with eight or more properties, UTF-16 key comparison).
+  The hint map caches only positive positions, so an inherited read on a
+  large receiver scans all of its own properties first.
+- Tried and not kept: giving the oldest pooled frame fresh value storage
+  when no pooled layout fits (−4.6% on 80 distinct frame sizes, +1.1% on
+  the mixed script); a parallel capacity index for the pool scan (slower);
+  filling fresh frame storage with direct stores (no measurable change);
+  handling `get_property`/`call`/`get_binding` in the inline dispatch loop
+  (−4.5% mixed, but +7% on the arithmetic loop from the larger loop body;
+  moving those handlers out of the loop lost the gain).
