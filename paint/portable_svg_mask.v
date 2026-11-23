@@ -20,12 +20,17 @@ fn portable_svg_content_mask_supported(mask &layout.PaintClip, portable_group bo
 		return false
 	}
 	mut depth := 0
-	for index in 0 .. mask.mask_operations.len {
+	for index := 0; index < mask.mask_operations.len; index++ {
 		operation := &mask.mask_operations[index]
 		match operation.kind {
 			.begin_opacity {
-				if depth == portable_svg_mask_max_opacity_depth
-					|| !(operation.opacity >= 0 && operation.opacity <= 1) { return false }
+				if !(operation.opacity >= 0 && operation.opacity <= 1) { return false }
+				// Replay never opens a layer if its restore alpha quantizes to zero.
+				if cpuraster.canvas_image_opacity_byte(f32(operation.opacity)) == 0 {
+					index = svg_mask_opacity_end(mask.mask_operations, index) or { return false }
+					continue
+				}
+				if depth == portable_svg_mask_max_opacity_depth { return false }
 				depth++
 			}
 			.end_opacity {
