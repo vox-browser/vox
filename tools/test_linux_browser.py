@@ -2479,7 +2479,7 @@ def check_svg_equivalent_pattern_pixels(rows, channels, scale, marker):
 
 
 def check_svg_tile_browser(binary, artifacts, temporary, name, *, ready=None, groups=None,
-                           reuse_depths=(), check_pixels=None):
+                           reuse_depths=(), check_pixels=None, run_capture=run_windowed):
     fixture = Path(__file__).resolve().parents[1] / f"Tests/Browser/Native/svg-pattern-tile-{name}.html"
     expected_groups = groups if groups is not None else (2 if ready else 3)
     if check_pixels is None:
@@ -2496,7 +2496,7 @@ def check_svg_tile_browser(binary, artifacts, temporary, name, *, ready=None, gr
         if ready:
             environment["VOX_CAPTURE_READY_SELECTOR"] = f"body[{ready}]"
         javascript = "--enable-javascript" if ready else "--disable-javascript"
-        log = run_windowed([str(binary), javascript, "--window-width=800",
+        log = run_capture([str(binary), javascript, "--window-width=800",
                             "--window-height=600", "--screenshot-viewport-height=600",
                             f"--screenshot={screenshot}", str(fixture)],
                            env=environment, log_path=artifacts / f"{label}.log")
@@ -2518,9 +2518,10 @@ def check_svg_tile_browser(binary, artifacts, temporary, name, *, ready=None, gr
         print(f"PASS: {fixture.stem} preserves pixels and cache parity", flush=True)
 
 
-def check_svg_equivalent_pattern_tiles(binary, artifacts, temporary):
+def check_svg_equivalent_pattern_tiles(binary, artifacts, temporary, run_capture=run_windowed):
     check_svg_tile_browser(binary, artifacts, temporary, "equivalent-paints", groups=1,
-                           reuse_depths=(1,), check_pixels=check_svg_equivalent_pattern_pixels)
+                           reuse_depths=(1,), check_pixels=check_svg_equivalent_pattern_pixels,
+                           run_capture=run_capture)
 
 
 def check_svg_matrix_tiles(binary, artifacts, temporary):

@@ -9,7 +9,8 @@ from pathlib import Path
 import subprocess
 import tempfile
 
-from test_linux_browser import check_svg_hidden_pattern_tiles_browser, check_svg_pattern_tile_image_browser
+from test_linux_browser import (check_svg_equivalent_pattern_tiles, check_svg_hidden_pattern_tiles_browser,
+                                check_svg_pattern_tile_image_browser)
 
 
 def run_guarded_capture(guard, command, env, log_path):
@@ -49,7 +50,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("binary", type=Path, help="Windows Vox executable")
     parser.add_argument("--guard", type=Path, required=True, help="Windows job-object guard")
-    parser.add_argument("--nested", action="store_true", help="check bitmaps inside a nested SVG pattern")
+    parser.add_argument("--nested", action="store_true", help="check nested bitmap and vector SVG patterns")
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
     binary, guard = args.binary.resolve(), args.guard.resolve()
@@ -63,6 +64,7 @@ def main():
         if args.nested:
             check_svg_pattern_tile_image_browser(binary, artifacts, temporary, capture, shared=True)
             check_svg_hidden_pattern_tiles_browser(binary, artifacts, temporary, capture)
+            check_svg_equivalent_pattern_tiles(binary, artifacts, temporary, capture)
     assert input_hashes(binary, guard) == inputs, "Windows browser or guard inputs changed during capture"
 
 
