@@ -318,6 +318,11 @@ pub fn html_canvas_element_bitmap(element &dom.HTMLCanvasElement) !&dom.Bitmap_ 
 
 pub fn html_canvas_element_set_canvas_content_dirty(element &dom.HTMLCanvasElement) ! {
 	mut state := ensure_html_canvas_element_state(element)!
+	// The compact bridge can replace the bitmap's bytes directly before
+	// reporting the draw, in addition to the ordinary 2D raster entry points.
+	if mut bitmap := state.surface.bitmap() {
+		bitmap.canvas_pixels_changed()
+	}
 	state.dirty = true
 }
 

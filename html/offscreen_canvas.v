@@ -53,7 +53,7 @@ fn create_transparent_canvas_bitmap(width u32, height u32) !&dom.Bitmap_ {
 	if byte_length > u64(max_int) {
 		return error('InvalidStateError: canvas bitmap is too large')
 	}
-	return &dom.Bitmap_{
+	mut bitmap := &dom.Bitmap_{
 		width: int(width)
 		height: int(height)
 		pitch: int(width) * 4
@@ -64,6 +64,8 @@ fn create_transparent_canvas_bitmap(width u32, height u32) !&dom.Bitmap_ {
 		alpha_type: 1
 		data: []u8{len: int(byte_length)}
 	}
+	bitmap.canvas_pixels_changed()
+	return bitmap
 }
 
 pub fn OffscreenCanvas.create(width u32, height u32) !&OffscreenCanvas {
@@ -396,6 +398,7 @@ pub fn (mut context OffscreenCanvasRenderingContext2D) put_image_data_dirty(imag
 			}
 		}
 	}
+	mutable_bitmap.canvas_pixels_changed()
 }
 
 pub fn (mut context OffscreenCanvasRenderingContext2D) draw_image_internal(request CanvasDrawImageRequest) ! {

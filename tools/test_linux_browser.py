@@ -407,8 +407,12 @@ def check_portable_video_browser(binary, artifacts, temporary):
     config = artifacts / "portable-video-selectors.json"
     config.write_text(json.dumps({"selectors": [{"name": "clip", "selector": "#clip", "limit": 1}]}))
     captures = []
-    for disabled in (False, True):
-        name = "portable-video-square" if disabled else "portable-video"
+    rounded_documents = []
+    for name, disabled, reuse_disabled in (
+        ("portable-video", False, False),
+        ("portable-video-square", True, False),
+        ("portable-video-uncached", False, True),
+    ):
         screenshot = artifacts / f"{name}.png"
         audit = artifacts / f"{name}.json"
         screenshot.unlink(missing_ok=True)
@@ -417,12 +421,18 @@ def check_portable_video_browser(binary, artifacts, temporary):
         env.update(VOX_CAPTURE_READY_SELECTOR="body[data-video-ready]",
                    VOX_CAPTURE_AUDIT_CONFIG=str(config), VOX_CAPTURE_AUDIT_PATH=str(audit),
                    VOX_DISABLE_PORTABLE_ROUNDED_IMAGE_CLIP=str(int(disabled)),
+                   VOX_DISABLE_PORTABLE_CANVAS_UPLOAD_REUSE=str(int(reuse_disabled)),
                    VOX_PORTABLE_BITMAP_UPLOAD_DIAGNOSTICS="1")
         log = run_windowed([str(binary), "--enable-javascript", "--window-width=800", "--window-height=600",
                             "--screenshot-viewport-height=516", f"--screenshot={screenshot}", str(fixture)],
                            env=env, log_path=screenshot.with_suffix(".log"), timeout=45)
         assert "VOX_PORTABLE_BITMAP upload=48x32" in log, "Missing video texture upload"
-        assert "VOX_PORTABLE_BITMAP upload=48x48" in log, "Missing axis-aligned canvas upload"
+        static_uploads = log.splitlines().count("VOX_PORTABLE_BITMAP upload=48x48")
+        changed_uploads = log.splitlines().count("VOX_PORTABLE_BITMAP upload=32x24")
+        if reuse_disabled:
+            assert static_uploads > 1 and changed_uploads > 2, (static_uploads, changed_uploads)
+        else:
+            assert (static_uploads, changed_uploads) == (1, 2), (static_uploads, changed_uploads)
         assert ("VOX_PORTABLE_BITMAP upload=256x256" in log) == disabled, "Unexpected rotated canvas source upload"
         document = json.loads(audit.read_text())
         assert document["title"] == "Portable video playback" and document["ready"] == "complete"
@@ -448,11 +458,14 @@ def check_portable_video_browser(binary, artifacts, temporary):
         assert pixel(16, 16) == (red if disabled else paper)
         assert pixel(111, 79) == (green if disabled else paper)
         assert pixel(144, 16) == (canvas if disabled else paper)
+        assert pixel(320, 28) == bytes.fromhex("1ecc56"), "Canvas update did not reach GG"
         assert pixel(234, 16) == (rotated if disabled else paper)
         if not disabled:
             assert paper[1] < pixel(237, 17)[1] < rotated[1], "Missing antialiasing on the rotated canvas edge"
+            rounded_documents.append(rows[top:top + 516])
         captures.append((media["frame_sha256"], red, green, canvas))
-    assert captures[0] == captures[1], "Rounded clips changed the decoded frame or interior sampling"
+    assert all(capture == captures[0] for capture in captures), "Replay changed the decoded frame or interior sampling"
+    assert rounded_documents[0] == rounded_documents[1], "Canvas upload reuse changed document pixels"
     print("PASS: portable video playback and rounded clipping of video frames and canvas", flush=True)
 
 

@@ -11,6 +11,7 @@ import platform
 import sokol.gfx
 
 const portable_bitmap_upload_diagnostics = os.getenv('VOX_PORTABLE_BITMAP_UPLOAD_DIAGNOSTICS') == '1'
+const disable_portable_canvas_upload_reuse = os.getenv('VOX_DISABLE_PORTABLE_CANVAS_UPLOAD_REUSE') == '1'
 
 struct PortableCanvasImage {
 	mut:
@@ -19,6 +20,7 @@ struct PortableCanvasImage {
 	height int
 	nearest bool
 	video_frame painting.VideoFrameResourceIdentity
+	canvas_revision u64
 }
 
 struct PortableBitmapStream {
@@ -45,10 +47,16 @@ fn (mut app BrowserApp) portable_bitmap_texture(stream PortableBitmapStream) &gg
 			nearest: stream.nearest
 		}
 	}
-	// Canvas and posters can occupy a former video slot. Their uploads clear
-	// its video identity so a later video draw cannot reuse those pixels.
-	needs_upload := stream.video_frame.source == 0 || slot.video_frame != stream.video_frame
+	// Each upload replaces both keys. Canvas, posters and video can share a
+	// slot across frames, and untracked bitmaps always upload their pixels.
+	revision := if disable_portable_canvas_upload_reuse { u64(0) } else { bitmap.canvas_upload_revision() }
+	needs_upload := if stream.video_frame.source != 0 {
+		slot.video_frame != stream.video_frame
+	} else {
+		revision == 0 || slot.canvas_revision != revision
+	}
 	slot.video_frame = stream.video_frame
+	slot.canvas_revision = revision
 	if index < app.portable_canvas_images.len { app.portable_canvas_images[index] = slot } else { app.portable_canvas_images << slot }
 	platform.leave_persistent(persistent)
 	if needs_upload {

@@ -1,5 +1,30 @@
 # Migrating from Skia to vlib/gg
 
+## Reusing unchanged Canvas 2D textures
+
+Canvas 2D pixel writes mark the bitmap dirty, including writes to a
+bitmap already retained by the paint list. Replay assigns a process-wide
+revision when it next needs those pixels. GG reuses the texture when
+the slot already holds that revision. Bitmap replacement, same-size
+resizing and a slot reused for another resource invalidate the match.
+
+The guarded ARM64 Linux build used V `5a39a4d` and single-unit Clang
+18.1.3 `-O0`. Its executable SHA-256 was
+`f8707854498d6d787b5f8d5933023b346200b80435bd3a3e26591757de200614`.
+The same binary captured the video and canvas fixture with reuse enabled
+and disabled. The static 48 × 48 canvas went from 101 source uploads to
+one. The 32 × 24 canvas went from 101 uploads to two, one for its initial
+pixels and one after an in-place color change. Both 800 × 516 document
+crops matched at SHA-256
+`c5fbac00860d1e4d17d41c95fb964079ac0c4141bb42c4d5a33af74809ca78ac`.
+[Video and canvas fixture](../Tests/Browser/Native/portable-video.html)
+
+Linux headless startup and nine Xvfb captures passed. The focused HTML
+canvas tests covered draws, pixel writes, clearing, cloning and same-size
+resets. The builds, captures, native tests and guards exited zero. The
+macOS and Windows D3D11 source checks and 21 Python driver tests also
+passed. Hardware frame timings remain unmeasured.
+
 ## Deferring streaming texture uploads until draw
 
 Rounded bitmap replay now acquires a streaming texture after it finds
