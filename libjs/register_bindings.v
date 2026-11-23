@@ -2,9 +2,8 @@ module libjs
 
 // Parser scope analysis marks uncaptured bindings that cannot be observed by
 // eval or with. Complex parameter lists stay on their existing environment
-// path; lexical_registers.v describes the let/const bindings. Local reads still
-// copy into a temporary so later argument/RHS evaluation cannot change an
-// earlier read.
+// path; lexical_registers.v describes the let/const bindings. local_operands.v
+// reads a local in place unless later argument/RHS evaluation might assign it.
 struct FunctionRegisterBinding {
 	name            Utf16String
 	slot            u32

@@ -118,7 +118,9 @@ fn test_register_bindings_preserve_loop_budget_boundaries_and_cleanup() {
 			assert vm.interpreter_stack().depth() == 0 && vm.execution_context_stack().len == 1
 			assert !vm.instruction_budget_active
 		}
-		assert completed[0] == completed[1], 'Budget ${budget}'
+		// Register reads skip the environment path's copies, so they never need
+		// a larger budget than the same loop through environment bindings.
+		assert completed[1] || !completed[0], 'Budget ${budget}'
 	}
 }
 

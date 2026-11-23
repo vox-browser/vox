@@ -148,16 +148,24 @@ fn compound_assignment_opcode(op AssignmentOp) !OpCode {
 // codegen.rs::{generate_member_expression,generate_call_expression}: retain the
 // base before evaluating a computed key and reuse it as a method's receiver.
 fn (mut generator BytecodeGenerator) member_reference(mut vm VM, expression &Expression) !(Operand, Operand) {
+	return generator.member_reference_retained(mut vm, expression, true)
+}
+
+// `retained` keeps the base and key across later evaluation that may assign
+// this frame's locals; otherwise the caller consumes them first.
+fn (mut generator BytecodeGenerator) member_reference_retained(mut vm VM, expression &Expression, retained bool) !(Operand, Operand) {
 	kind := expression.kind
 	object := kind.object or { return error('Missing member base') }
+	property := kind.property or { return error('Missing member property') }
 	mut base := Operand{}
 	if object.kind.tag == .super_expr {
 		base = generator.temporary()
 		generator.emit(Instruction{op: .resolve_this_binding, dst: base})
+	} else if !retained && (!kind.computed || !might_contain_assignment(property)) {
+		base = generator.immediate_value(mut vm, object)!
 	} else { base = generator.expression(mut vm, object)! }
-	property := kind.property or { return error('Missing member property') }
 	key := if kind.computed {
-		generator.expression(mut vm, property)!
+		if retained { generator.expression(mut vm, property)! } else { generator.immediate_value(mut vm, property)! }
 	} else if identifier := property.kind.private_identifier() {
 		generator.constant(Value.from_string(vm.create_string(identifier.name)))
 	} else {
@@ -193,7 +201,7 @@ fn (mut generator BytecodeGenerator) short_circuit(op LogicalOp, operand Operand
 // base and property are Values, as upstream: GetByValue and PutByValue each
 // perform ToPropertyKey, without re-evaluating either AST expression.
 fn (mut generator BytecodeGenerator) member_assignment(mut vm VM, target &Expression, op AssignmentOp, rhs &Expression) !Operand {
-	base, key := generator.member_reference(mut vm, target)!
+	base, key := generator.member_reference_retained(mut vm, target, might_contain_assignment(rhs))!
 	dst := generator.temporary()
 	mut jumps := []u32{}
 	if op != .assignment {
@@ -214,7 +222,7 @@ fn (mut generator BytecodeGenerator) member_assignment(mut vm VM, target &Expres
 			jumps = generator.short_circuit(logical, dst)
 		}
 	}
-	right := generator.expression(mut vm, rhs)!
+	right := generator.immediate_value(mut vm, rhs)!
 	if op == .assignment || jumps.len > 0 {
 		generator.emit(Instruction{ op: .mov, dst: dst, lhs: right })
 	} else {
@@ -388,7 +396,8 @@ fn (mut generator BytecodeGenerator) expression(mut vm VM, expression &Expressio
 				// receiver or environment this-binding is supplied to [[Construct]].
 				callee = generator.expression(mut vm, &data.callee)!
 			} else {
-				callee, this_value = generator.call_reference(mut vm, &data.callee)!
+				callee, this_value = generator.call_reference_retained(mut vm, &data.callee,
+					arguments_might_contain_assignment(data.arguments, 0))!
 			}
 			// codegen.rs::generate_call_expression: evaluate arguments left to
 			// right after retaining the callee and receiver. This generator's
@@ -402,7 +411,7 @@ fn (mut generator BytecodeGenerator) expression(mut vm VM, expression &Expressio
 			return value
 		}
 		.member {
-			base, key := generator.member_reference(mut vm, expression)!
+			base, key := generator.member_reference_retained(mut vm, expression, false)!
 			dst := generator.temporary()
 			generator.emit(Instruction{
 				op:     member_property_opcode(expression, .get_property)
@@ -425,21 +434,21 @@ fn (mut generator BytecodeGenerator) expression(mut vm VM, expression &Expressio
 				}
 			}
 			op := binary_opcode(kind.binary_op)
-			left :=
-				generator.expression(mut vm, kind.lhs or { return error('Missing binary lhs') })!
-			right := generator.expression(mut vm,
-				kind.rhs or { return error('Missing binary rhs') })!
+			rhs := kind.rhs or { return error('Missing binary rhs') }
+			left := generator.value_before(mut vm, kind.lhs or { return error('Missing binary lhs') },
+				rhs)!
+			right := generator.immediate_value(mut vm, rhs)!
 			dst := generator.temporary()
 			generator.emit(Instruction{ op: op, dst: dst, lhs: left, rhs: right })
 			return dst
 		}
 		.logical {
 			dst := generator.temporary()
-			left := generator.expression(mut vm,
+			left := generator.immediate_value(mut vm,
 				kind.lhs or { return error('Missing logical lhs') })!
 			generator.emit(Instruction{ op: .mov, dst: dst, lhs: left })
 			jumps := generator.short_circuit(kind.logical_op, dst)
-			right := generator.expression(mut vm, kind.rhs or {
+			right := generator.immediate_value(mut vm, kind.rhs or {
 				return error('Missing logical rhs')
 			})!
 			generator.emit(Instruction{ op: .mov, dst: dst, lhs: right })
@@ -492,7 +501,7 @@ fn (mut generator BytecodeGenerator) expression(mut vm VM, expression &Expressio
 					value, _ := generator.optional_chain_reference(mut vm, operand, true)!
 					return value
 				} else if operand.kind.tag == .member {
-					base, key := generator.member_reference(mut vm, operand)!
+					base, key := generator.member_reference_retained(mut vm, operand, false)!
 					generator.emit(Instruction{
 						op:     member_property_opcode(operand, .delete_property)
 						dst:    dst
@@ -506,7 +515,7 @@ fn (mut generator BytecodeGenerator) expression(mut vm VM, expression &Expressio
 				}
 				return dst
 			}
-			value := generator.expression(mut vm, operand)!
+			value := generator.immediate_value(mut vm, operand)!
 			if kind.unary_op == .void_op { return generator.constant(js_undefined()) }
 			op := match kind.unary_op {
 				.plus { OpCode.unary_plus }
@@ -538,13 +547,30 @@ fn (mut generator BytecodeGenerator) expression(mut vm VM, expression &Expressio
 			_ := identifier_name(target.expression) or {
 				return generator.unsupported('property assignment')
 			}
-			dst := generator.temporary()
+			rhs := kind.rhs or { return error('Missing assignment rhs') }
 			if kind.assignment_op == .assignment {
-				right := generator.expression(mut vm, kind.rhs or {
-					return error('Missing assignment rhs')
-				})!
+				right := generator.expression(mut vm, rhs)!
+				// The right side's own result register already holds the value.
+				if generator.is_expression_temporary(right) {
+					generator.store_identifier(target.expression, right)!
+					return right
+				}
+				dst := generator.temporary()
 				generator.emit(Instruction{ op: .mov, dst: dst, lhs: right })
-			} else {
+				generator.store_identifier(target.expression, dst)!
+				return dst
+			}
+			dst := generator.temporary()
+			logical_assignment := kind.assignment_op in [.and_assignment, .or_assignment, .nullish_assignment]
+			if !logical_assignment && !might_contain_assignment(rhs) {
+				if local := generator.in_place_register(target.expression) {
+					right := generator.immediate_value(mut vm, rhs)!
+					generator.emit(Instruction{ op: compound_assignment_opcode(kind.assignment_op)!, dst: dst, lhs: local, rhs: right })
+					generator.store_identifier(target.expression, dst)!
+					return dst
+				}
+			}
+			{
 				generator.load_identifier(target.expression, dst)!
 				mut jumps := []u32{}
 				if kind.assignment_op in [.and_assignment, .or_assignment, .nullish_assignment] {
@@ -556,9 +582,7 @@ fn (mut generator BytecodeGenerator) expression(mut vm VM, expression &Expressio
 
 					jumps = generator.short_circuit(logical, dst)
 				}
-				right := generator.expression(mut vm, kind.rhs or {
-					return error('Missing assignment rhs')
-				})!
+				right := generator.immediate_value(mut vm, rhs)!
 				if jumps.len > 0 {
 					generator.emit(Instruction{ op: .mov, dst: dst, lhs: right })
 				} else {
@@ -572,15 +596,13 @@ fn (mut generator BytecodeGenerator) expression(mut vm VM, expression &Expressio
 				}
 				return dst
 			}
-			generator.store_identifier(target.expression, dst)!
-			return dst
 		}
 		.update {
 			operand := kind.argument or { return error('Missing update operand') }
 			if operand.kind.tag == .member {
 				// generate_update_expression: retain base/key for store-back, and
 				// preserve the numeric old value for postfix results.
-				base, key := generator.member_reference(mut vm, operand)!
+				base, key := generator.member_reference_retained(mut vm, operand, false)!
 				old := generator.temporary()
 				generator.emit(Instruction{
 					op:     member_property_opcode(operand, .get_property)
@@ -611,8 +633,12 @@ fn (mut generator BytecodeGenerator) expression(mut vm VM, expression &Expressio
 			}
 			_ := identifier_name(operand) or { return generator.unsupported('property update') }
 			old := generator.temporary()
-			generator.load_identifier(operand, old)!
-			generator.emit(Instruction{ op: .to_numeric, dst: old, lhs: old })
+			if local := generator.in_place_register(operand) {
+				generator.emit(Instruction{ op: .to_numeric, dst: old, lhs: local })
+			} else {
+				generator.load_identifier(operand, old)!
+				generator.emit(Instruction{ op: .to_numeric, dst: old, lhs: old })
+			}
 			dst := generator.temporary()
 			generator.emit(Instruction{
 				op:  if kind.update_op == .increment { OpCode.increment } else { OpCode.decrement }
@@ -725,7 +751,15 @@ fn (mut generator BytecodeGenerator) lexical_declarations(children []Statement, 
 	}
 }
 
+// A function body never writes the accumulator, so its completion reads as
+// undefined; scripts and eval code still propagate statement completions.
+fn (mut generator BytecodeGenerator) completion_value() Operand {
+	if generator.drops_completions() { return generator.constant(js_undefined()) }
+	return Operand.register(register_accumulator)
+}
+
 fn (mut generator BytecodeGenerator) clear_completion() {
+	if generator.drops_completions() { return }
 	undefined := generator.constant(js_undefined())
 	generator.emit(Instruction{
 		op:  .mov
@@ -772,7 +806,7 @@ fn (mut generator BytecodeGenerator) statement(mut vm VM, statement &Statement) 
 		}
 		.return_stmt {
 			if !generator.function_body { return generator.unsupported('return outside function') }
-			value := if argument := kind.return_arg { generator.expression(mut vm, argument)! } else { generator.constant(js_undefined()) }
+			value := if argument := kind.return_arg { generator.immediate_value(mut vm, argument)! } else { generator.constant(js_undefined()) }
 			generator.emit_return(value)
 		}
 		.empty, .debugger_stmt {}
@@ -780,11 +814,15 @@ fn (mut generator BytecodeGenerator) statement(mut vm VM, statement &Statement) 
 			value := generator.expression(mut vm, kind.expression or {
 				return error('Missing expression')
 			})!
-			generator.emit(Instruction{
-				op:  .mov
-				dst: Operand.register(register_accumulator)
-				lhs: value
-			})
+			// A function's completion value is unobservable; its End names
+			// undefined or a returned operand, never the accumulator.
+			if !generator.drops_completions() {
+				generator.emit(Instruction{
+					op:  .mov
+					dst: Operand.register(register_accumulator)
+					lhs: value
+				})
+			}
 		}
 		.block {
 			scope := kind.scope or { return error('Missing block scope') }
@@ -809,13 +847,15 @@ fn (mut generator BytecodeGenerator) statement(mut vm VM, statement &Statement) 
         .variable_declaration {
             for declaration in kind.declarations {
                 if declaration.init==none && kind.decl_kind==.var_kind { continue }
-                value := if init := declaration.init { generator.expression(mut vm,&init)! } else { generator.constant(js_undefined()) }
+                value := if init := declaration.init {
+                    if declaration.target is IdentifierVarTarget { generator.immediate_value(mut vm, &init)! } else { generator.expression(mut vm, &init)! }
+                } else { generator.constant(js_undefined()) }
                 generator.initialize_declaration_target(mut vm,declaration.target,value,kind.decl_kind!=.var_kind)!
             }
         }
 		.if_stmt {
 			generator.clear_completion()
-			test := generator.expression(mut vm, kind.test or { return error('Missing if test') })!
+			test := generator.immediate_value(mut vm, kind.test or { return error('Missing if test') })!
 			alternate := generator.emit(Instruction{ op: .jump_if_false, lhs: test })
 			generator.statement(mut vm,
 				kind.consequent or { return error('Missing if consequent') })!
@@ -858,7 +898,7 @@ fn (mut generator BytecodeGenerator) statement(mut vm VM, statement &Statement) 
 			mut exit_jump := ?u32(none)
 			if kind.tag != .do_while {
 				if test := kind.test {
-					value := generator.expression(mut vm, test)!
+					value := generator.immediate_value(mut vm, test)!
 					exit_jump = generator.emit(Instruction{ op: .jump_if_false, lhs: value })
 				}
 			}
@@ -870,7 +910,7 @@ fn (mut generator BytecodeGenerator) statement(mut vm VM, statement &Statement) 
 			generator.copy_for_iteration_bindings(per_iteration)
 			if update := kind.update { generator.expression(mut vm, update)! }
 			if kind.tag == .do_while {
-				value := generator.expression(mut vm, kind.test or {
+				value := generator.immediate_value(mut vm, kind.test or {
 					return error('Missing do-while test')
 				})!
 				generator.emit(Instruction{ op: .jump_if_true, lhs: value, target: start })
@@ -894,7 +934,7 @@ fn (mut generator BytecodeGenerator) statement(mut vm VM, statement &Statement) 
 			generator.loop_control_statement(statement)!
 		}
 		.throw_stmt {
-			value := generator.expression(mut vm, kind.throw_expr or {
+			value := generator.immediate_value(mut vm, kind.throw_expr or {
 				return error('Missing throw value')
 			})!
 			generator.emit(Instruction{ op: .throw_op, lhs: value })

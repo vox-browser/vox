@@ -73,15 +73,15 @@ fn (mut generator BytecodeGenerator) conditional_tail(mut vm VM, expression &Exp
 	for current.kind.tag == .conditional {
 		generator.range = current.range
 		branches := current.kind.conditional_data or { return error('Missing conditional branches') }
-		test := generator.expression(mut vm, &branches.test)!
+		test := generator.immediate_value(mut vm, &branches.test)!
 		otherwise := generator.emit(Instruction{op: .jump_if_false, lhs: test})
-		value := generator.expression(mut vm, &branches.consequent)!
+		value := generator.immediate_value(mut vm, &branches.consequent)!
 		generator.emit(Instruction{op: .mov, dst: dst, lhs: value})
 		ends << generator.emit(Instruction{op: .jump})
 		generator.patch(otherwise)
 		current = &branches.alternate
 	}
-	value := generator.expression(mut vm, current)!
+	value := generator.immediate_value(mut vm, current)!
 	generator.emit(Instruction{op: .mov, dst: dst, lhs: value})
 	for end in ends { generator.patch(end) }
 	return dst

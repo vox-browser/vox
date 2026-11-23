@@ -23,7 +23,7 @@ fn (mut generator BytecodeGenerator) try_finally_statement(mut vm VM, data &TryS
 	generator.try_catch_body(mut vm, data)!
 	end := u32(generator.executable.instructions.len)
 	context := generator.finalizers.pop()
-	generator.emit(Instruction{op: .mov, dst: value, lhs: Operand.register(register_accumulator)})
+	generator.emit(Instruction{op: .mov, dst: value, lhs: generator.completion_value()})
 	generator.emit(Instruction{op: .mov, dst: status, lhs: generator.constant(Value.from_i32(0))})
 	mut entries := [generator.emit(Instruction{op: .jump})]
 
@@ -41,7 +41,7 @@ fn (mut generator BytecodeGenerator) try_finally_statement(mut vm VM, data &TryS
 	for index, exit in context.abrupts {
 		generator.patch(exit.jump)
 		for _ in depth .. exit.scope_depth { generator.emit(Instruction{op: .leave_scope}) }
-		generator.emit(Instruction{op: .mov, dst: value, lhs: Operand.register(register_accumulator)})
+		generator.emit(Instruction{op: .mov, dst: value, lhs: generator.completion_value()})
 		generator.emit(Instruction{op: .mov, dst: status, lhs: generator.constant(Value.from_i32(i32(index + 3)))})
 		entries << generator.emit(Instruction{op: .jump})
 	}

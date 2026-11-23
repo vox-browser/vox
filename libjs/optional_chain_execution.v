@@ -4,11 +4,17 @@ module libjs
 // codegen.rs::generate_optional_chain: retain both the value and Reference's
 // receiver. Parentheses terminate short-circuiting but preserve a method's this.
 fn (mut generator BytecodeGenerator) call_reference(mut vm VM, expression &Expression) !(Operand, Operand) {
+	return generator.call_reference_retained(mut vm, expression, true)
+}
+
+// `retained`: the callee and receiver outlive argument evaluation that may
+// assign this frame's locals, so they need their own registers.
+fn (mut generator BytecodeGenerator) call_reference_retained(mut vm VM, expression &Expression, retained bool) !(Operand, Operand) {
 	if expression.kind.tag == .optional_chain {
 		return generator.optional_chain_reference(mut vm, expression, false)
 	}
 	if expression.kind.tag == .member {
-		base, key := generator.member_reference(mut vm, expression)!
+		base, key := generator.member_reference_retained(mut vm, expression, retained)!
 		value := generator.temporary()
 		generator.emit(Instruction{ op: member_property_opcode(expression, .get_property), dst: value, lhs: base, rhs: key, strict: generator.strict })
 		if object := expression.kind.object {
@@ -22,6 +28,7 @@ fn (mut generator BytecodeGenerator) call_reference(mut vm VM, expression &Expre
 	}
 	if expression.kind.tag == .identifier_expr {
 		if local := generator.expression_register(expression) {
+			if !retained && !copy_local_reads { return local, generator.constant(js_undefined()) }
 			value := generator.temporary()
 			generator.emit(Instruction{op: .mov, dst: value, lhs: local})
 			return value, generator.constant(js_undefined())
