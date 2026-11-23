@@ -4787,6 +4787,32 @@ The candidate allocated about 1,171 KiB less per callback. Replay medians
 fell 5.7–15.6% within the pairs, with substantial variation between the
 two controls. These results cover synthetic software-rendered replay.
 
+#### macOS verification of equivalent pattern reuse
+
+`1c27a5923` adds the fixture to the macOS nested-pattern suite and the
+Windows job-guard driver. The published macOS control `dc65068e…`
+rendered the expected pixels and rasterized all three child tiles at
+each scale. The new regression rejected that raster sequence.
+
+Compact receipt `20261123-124219-99b5a85b` completed single-unit C
+`-prod` compilation. Staging the executable on the Data volume hit
+its space limit. A private RAM-backed bundle replayed the 124 sealed
+inputs with the same compiler flags and verified the staged runtime
+assets against the receipt hashes. Its executable SHA-256 was
+`37076e9ae7bc9003a76b916315c8158d3b58ace7d940257f58af41c2066c8752`.
+
+The candidate rasterized two child tiles and reused one at each scale.
+Full 1024 × 600 CSS-pixel document captures matched the macOS control
+at 1× and 2×. Their decoded RGBA SHA-256 values were
+`ff76fa5e1ae32f63dea0ba76792a3c60924bcf4d4b55c1c840055b2cba01e366` and
+`f45e5dd68b4487a27a316f0e0bf81fa8043755d0ec360b191820e65a88a345ce`.
+The 800 × 516 crop at 1× matched the Linux reference above. Headless
+startup and 26 fresh browser captures passed across the nested-pattern,
+delayed-bitmap and live opacity-filter suites. Compilation and runtime
+guards exited zero. The pinned CPU raster differential suite also passed
+with count 20,000 and seed `20261106`. Windows runner unit checks passed.
+The Windows VM still requires its host disk reserve.
+
 ## Sharing the portable SVG fallback with Windows
 
 The standard Windows D3D11 window now uses the same CPU raster and GG texture
