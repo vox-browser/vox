@@ -4172,6 +4172,52 @@ Executable and fixture identities stayed fixed. Browser,
 probe, and runtime guard exits were zero. Production frame
 timing remains open.
 
+### Trimming isolated SVG tile rows to the filter clip
+
+In `4c4a17a64`, the shared tile rasterizer resolves the filter clip
+before allocating the layer and passes the clipped bottom edge to
+nested layers. It keeps the existing rules for leading rows, including
+the origin used by bitmap and pattern paints. Filters that create
+coverage from transparent input retain the rows they need within the
+clip. The restore reuses the resolved clip.
+
+The [offset row crop fixture](../Tests/Browser/Native/svg-pattern-tile-offset-cropped-rows.html)
+uses nested opacity over a tall source and edits an offset subregion
+while the tile is used in a fill, a stroke and an alpha mask. In the
+40 × 80 tile, diagnostics showed these row counts per isolated layer
+at both nesting depths.
+
+| 1× capture | Initial rows | Edited rows |
+| --- | ---: | ---: |
+| macOS control, leading-row crop enabled | 73 | 73 |
+| Linux candidate, default | 14 | 19 |
+| Linux candidate, leading-row crop enabled | 7 | 12 |
+
+The two layer buffers used 23,360 bytes in the control and 4,480 or
+6,080 bytes on the default candidate path, excluding the root tile.
+Both candidate settings and the macOS control matched Brave
+158.1.100.58 in these 384 × 108 RGB crops.
+
+| State | SHA-256 |
+| --- | --- |
+| Initial | `350629d45f0b6d3c9bf1c1afc4eca5a2f938f0d745fbfe84758e7f9aee74630d` |
+| Edited | `a2bd7a9bf4e30b70de93f8e36bda42b513f385c154b492734396db219cff362c` |
+
+The 22 Linux offset, color-matrix, component-transfer, opacity and
+nested-bitmap fixtures passed their cache-parity checks. The 23 Python
+driver tests, macOS canvas layer tests, and macOS and both Windows
+source checks passed. The browser and runtime guard exits were zero.
+
+The aarch64 Linux candidate used the deferred Clang `-O0` link and
+the existing LibJS function-pointer diagnostic allowance. Its
+executable SHA-256 was
+`bf79dc9238b6f72cbf406f0a63fade589ed635cf8cd3dcca67db2e5f568ba9aa`.
+The macOS control was `9717e8165`, with executable SHA-256
+`90bbd3acf2fa7f917058f45ee2de73e3e4a924e46e18d88ee4e058504c04734c`.
+The production build volume ran out of space while writing generated
+C. macOS candidate runtime, Windows runtime and production frame
+timing remain open.
+
 ## Sharing the portable SVG fallback with Windows
 
 The standard Windows D3D11 window now uses the same CPU raster and GG texture
